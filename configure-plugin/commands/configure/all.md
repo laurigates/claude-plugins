@@ -42,6 +42,7 @@ Execute each configure command in check-only mode:
 /configure:cache-busting --check-only
 /configure:tests --check-only
 /configure:coverage --check-only
+/configure:memory-profiling --check-only
 /configure:linting --check-only
 /configure:formatting --check-only
 /configure:dead-code --check-only
@@ -116,6 +117,7 @@ If `--fix` flag or user confirms:
    /configure:cache-busting --fix
    /configure:tests --fix
    /configure:coverage --fix
+   /configure:memory-profiling --fix
    /configure:linting --fix
    /configure:formatting --fix
    /configure:dead-code --fix
@@ -149,6 +151,7 @@ components:
   cache-busting: "2025.1"
   tests: "2025.1"
   coverage: "2025.1"
+  memory_profiling: "2025.1"
   linting: "2025.1"
   formatting: "2025.1"
   dead-code: "2025.1"
@@ -209,6 +212,7 @@ Not all components apply to all project types:
 | Cache Busting | ✅ | ⏭️ SKIP | Optional | ⏭️ SKIP |
 | Tests | ✅ | Optional | ✅ | ✅ |
 | Coverage | ✅ | Optional | ✅ | ✅ |
+| Memory Profiling | ⏭️ SKIP | ⏭️ SKIP | ✅ | ⏭️ SKIP |
 | Linting | ✅ | Optional | ✅ | ✅ |
 | Formatting | ✅ | Optional | ✅ | ✅ |
 | Dead Code | ✅ | Optional | ✅ | ✅ |
@@ -230,6 +234,7 @@ Not all components apply to all project types:
 - `/configure:cache-busting` - Cache-busting strategies
 - `/configure:tests` - Testing framework setup
 - `/configure:coverage` - Code coverage configuration
+- `/configure:memory-profiling` - Memory profiling with pytest-memray
 - `/configure:linting` - Linter configuration
 - `/configure:formatting` - Code formatter setup
 - `/configure:dead-code` - Dead code detection
