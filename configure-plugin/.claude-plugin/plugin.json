@@ -1,0 +1,22 @@
+{
+  "name": "configure-plugin",
+  "version": "1.0.0",
+  "description": "FVH infrastructure standards - comprehensive project configuration for pre-commit, CI/CD, Docker, testing, linting, formatting, and more",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "repository": "https://github.com/laurigates/claude-plugins",
+  "license": "MIT",
+  "keywords": [
+    "fvh",
+    "infrastructure",
+    "standards",
+    "configuration",
+    "pre-commit",
+    "ci-cd",
+    "docker",
+    "testing",
+    "linting",
+    "formatting"
+  ]
+}

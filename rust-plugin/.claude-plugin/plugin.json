@@ -1,0 +1,6 @@
+{
+  "name": "rust-plugin",
+  "version": "1.0.0",
+  "description": "Rust development - cargo, clippy, testing, memory safety",
+  "keywords": ["rust", "cargo", "clippy", "memory-safety", "testing"]
+}

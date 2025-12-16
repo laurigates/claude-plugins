@@ -1,0 +1,6 @@
+{
+  "name": "terraform-plugin",
+  "version": "1.0.0",
+  "description": "Terraform and Terraform Cloud - infrastructure as code",
+  "keywords": ["terraform", "infrastructure", "iac", "tfc"]
+}

@@ -1,0 +1,19 @@
+{
+  "name": "git-plugin",
+  "version": "1.0.0",
+  "description": "Git workflows - commits, branches, PRs, issue processing, and repository management",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "repository": "https://github.com/laurigates/claude-plugins",
+  "license": "MIT",
+  "keywords": [
+    "git",
+    "github",
+    "commits",
+    "branches",
+    "pull-requests",
+    "issues",
+    "version-control"
+  ]
+}

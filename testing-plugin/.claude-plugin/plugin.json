@@ -1,0 +1,19 @@
+{
+  "name": "testing-plugin",
+  "version": "1.0.0",
+  "description": "Test execution, TDD workflow, testing strategies, and quality analysis",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "repository": "https://github.com/laurigates/claude-plugins",
+  "license": "MIT",
+  "keywords": [
+    "testing",
+    "tdd",
+    "test-driven-development",
+    "pytest",
+    "vitest",
+    "coverage",
+    "test-runner"
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "name": "kubernetes-plugin",
+  "version": "1.0.0",
+  "description": "Kubernetes and Helm operations - deployments, charts, releases",
+  "keywords": ["kubernetes", "helm", "k8s", "deployments", "charts", "argocd"]
+}

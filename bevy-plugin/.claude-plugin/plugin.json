@@ -1,0 +1,12 @@
+{
+  "name": "bevy-plugin",
+  "version": "1.0.0",
+  "description": "Bevy game engine development - ECS, rendering, game architecture",
+  "keywords": [
+    "bevy",
+    "game-engine",
+    "ecs",
+    "rust",
+    "gamedev"
+  ]
+}

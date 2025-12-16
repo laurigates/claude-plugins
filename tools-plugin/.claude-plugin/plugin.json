@@ -1,0 +1,20 @@
+{
+  "name": "tools-plugin",
+  "version": "1.0.0",
+  "description": "General utilities - fd, rg, jq, yq, shell, imagemagick, vectorcode",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "repository": "https://github.com/laurigates/claude-plugins",
+  "license": "MIT",
+  "keywords": [
+    "tools",
+    "utilities",
+    "fd",
+    "ripgrep",
+    "jq",
+    "yq",
+    "shell",
+    "imagemagick"
+  ]
+}

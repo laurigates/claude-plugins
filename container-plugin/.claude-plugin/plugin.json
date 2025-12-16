@@ -1,0 +1,16 @@
+{
+  "name": "container-plugin",
+  "version": "1.0.0",
+  "description": "Container development and deployment - Docker, registry, Skaffold",
+  "keywords": [
+    "container",
+    "docker",
+    "dockerfile",
+    "registry",
+    "skaffold",
+    "deployment",
+    "kubernetes",
+    "orbstack",
+    "12-factor"
+  ]
+}

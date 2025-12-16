@@ -1,0 +1,18 @@
+{
+  "name": "graphiti-plugin",
+  "version": "1.0.0",
+  "description": "Graphiti knowledge graph - memory, learning, episode storage",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "repository": "https://github.com/laurigates/claude-plugins",
+  "license": "MIT",
+  "keywords": [
+    "graphiti",
+    "knowledge-graph",
+    "memory",
+    "learning",
+    "episodic-memory",
+    "semantic-search"
+  ]
+}

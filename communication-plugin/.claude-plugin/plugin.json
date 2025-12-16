@@ -1,0 +1,6 @@
+{
+  "name": "communication-plugin",
+  "version": "1.0.0",
+  "description": "External communication formatting - Google Chat, ticket drafting",
+  "keywords": ["communication", "google-chat", "formatting", "tickets"]
+}

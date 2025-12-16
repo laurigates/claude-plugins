@@ -1,0 +1,18 @@
+{
+  "name": "typescript-plugin",
+  "version": "1.0.0",
+  "description": "TypeScript development - strict types, ESLint, Biome, dead code detection",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "repository": "https://github.com/laurigates/claude-plugins",
+  "license": "MIT",
+  "keywords": [
+    "typescript",
+    "eslint",
+    "biome",
+    "types",
+    "knip",
+    "dead-code"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "name": "python-plugin",
+  "version": "1.0.0",
+  "description": "Python development ecosystem - uv, ruff, pytest, packaging, type checking",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "repository": "https://github.com/laurigates/claude-plugins",
+  "license": "MIT",
+  "keywords": [
+    "python",
+    "uv",
+    "ruff",
+    "pytest",
+    "packaging",
+    "type-checking",
+    "basedpyright"
+  ]
+}

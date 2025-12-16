@@ -1,0 +1,19 @@
+{
+  "name": "blueprint-plugin",
+  "version": "1.0.0",
+  "description": "Blueprint Development methodology - PRD/PRP workflow for structured feature development with systematic research, validation gates, and work-order generation",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "repository": "https://github.com/laurigates/claude-plugins",
+  "license": "MIT",
+  "keywords": [
+    "blueprint",
+    "prd",
+    "prp",
+    "requirements",
+    "methodology",
+    "documentation-first",
+    "work-orders"
+  ]
+}

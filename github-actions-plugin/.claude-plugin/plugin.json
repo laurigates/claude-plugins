@@ -1,0 +1,16 @@
+{
+  "name": "github-actions-plugin",
+  "version": "1.0.0",
+  "description": "GitHub Actions CI/CD - workflows, authentication, inspection",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "repository": "https://github.com/laurigates/claude-plugins",
+  "license": "MIT",
+  "keywords": [
+    "github-actions",
+    "ci-cd",
+    "workflows",
+    "automation"
+  ]
+}

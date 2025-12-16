@@ -1,0 +1,35 @@
+{
+  "name": "sync-plugin",
+  "version": "1.0.0",
+  "description": "External system synchronization - GitHub and Podio integration for task management and daily catch-up workflows",
+  "keywords": ["sync", "github", "podio", "integration", "daily", "workflow", "obsidian"],
+  "author": "lgates",
+  "commands": {
+    "sync:daily": "commands/sync/daily.md",
+    "sync:github-podio": "commands/sync/github-podio.md"
+  },
+  "dependencies": {
+    "mcp-servers": [
+      "github",
+      "podio-mcp"
+    ]
+  },
+  "configuration": {
+    "obsidian": {
+      "vault_path": "~/Documents/FVH Vault",
+      "daily_notes_path": "~/Documents/FVH Vault/Daily Notes",
+      "note_format": "YYYY-MM-DD.md"
+    },
+    "podio": {
+      "default_workspace": {
+        "org_label": "fvh",
+        "space_label": "iot-workspace",
+        "app_label": "datadev-kanban"
+      }
+    },
+    "state": {
+      "directory": "~/.config/claude-code",
+      "daily_state_file": "sync:daily-state.json"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "accessibility-plugin",
+  "version": "1.0.0",
+  "description": "Accessibility and UX implementation - WCAG, ARIA, design tokens",
+  "keywords": [
+    "accessibility",
+    "wcag",
+    "aria",
+    "ux",
+    "design-tokens",
+    "service-design",
+    "usability"
+  ]
+}

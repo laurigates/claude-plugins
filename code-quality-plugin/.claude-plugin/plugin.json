@@ -1,0 +1,19 @@
+{
+  "name": "code-quality-plugin",
+  "version": "1.0.0",
+  "description": "Code review, refactoring, linting, anti-pattern detection, and static analysis",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "repository": "https://github.com/laurigates/claude-plugins",
+  "license": "MIT",
+  "keywords": [
+    "code-review",
+    "refactoring",
+    "linting",
+    "analysis",
+    "anti-patterns",
+    "ast-grep",
+    "security"
+  ]
+}

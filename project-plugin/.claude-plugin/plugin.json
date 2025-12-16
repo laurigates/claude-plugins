@@ -1,0 +1,6 @@
+{
+  "name": "project-plugin",
+  "version": "1.0.0",
+  "description": "Project initialization and management - setup, modernization",
+  "keywords": ["project", "initialization", "setup", "modernization"]
+}
