@@ -10,6 +10,7 @@ argument-hint: [--filter <label>] [--limit <n>]
 - Open issues: !`gh issue list --state open --json number,title,labels`
 - Open PRs: !`gh pr list --state open --json number,title,state`
 - Current branch: !`git branch --show-current`
+- Available labels: !`gh label list --json name,description --limit 50`
 
 ## Parameters
 

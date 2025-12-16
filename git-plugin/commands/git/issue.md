@@ -10,6 +10,12 @@ argument-hint: <issue-number>
 - Current branch: !`git branch --show-current`
 - Clean working tree: !`git status --porcelain | wc -l`
 - Open PRs: !`gh pr list --state open --json number,title`
+- Available labels: !`gh label list --json name,description --limit 50`
+
+## Parameters
+
+Parse these parameters from the command (all optional):
+- `--labels <label1,label2>`: Apply labels to the created PR (defaults to issue's labels if not specified)
 
 ## Your task
 
@@ -22,9 +28,10 @@ Process and fix GitHub issue #$1 using a TDD workflow with the **main-branch dev
 
 ### Step 2: Analyze Issue
 
-1. **Fetch issue details**: Run `gh issue view $1 --json title,body,state,assignees` or use `mcp__github__issue_read` with issue_number=$1
-2. **Identify requirements** and acceptance criteria from the issue
-3. **Plan the implementation** approach
+1. **Fetch issue details**: Run `gh issue view $1 --json title,body,state,assignees,labels` or use `mcp__github__issue_read` with issue_number=$1
+2. **Capture issue labels** for later PR creation (unless `--labels` override provided)
+3. **Identify requirements** and acceptance criteria from the issue
+4. **Plan the implementation** approach
 
 ### Step 3: TDD Workflow
 
@@ -55,6 +62,12 @@ Use `mcp__github__create_pull_request` with:
 - `base`: `main`
 - `title`: From issue title with `fix:` prefix
 - `body`: Include `Fixes #$1` to auto-link
+
+After PR creation, apply labels:
+```bash
+# Use --labels if provided, otherwise inherit from issue
+gh pr edit <pr-number> --add-label "<labels>"
+```
 
 ## Main-Branch Development Pattern
 

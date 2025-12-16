@@ -14,6 +14,7 @@ description: Complete workflow from changes to PR - analyze changes, create logi
 - Recent commits: !`git log --oneline -10`
 - Remote status: !`git remote -v | head -1`
 - Upstream status: !`git status -sb | head -1`
+- Available labels: !`gh label list --json name,description --limit 50`
 
 ## Parameters
 
@@ -27,6 +28,7 @@ Parse these parameters from the command (all optional):
 - `--issue <num>`: Link to specific issue number (requires --pr)
 - `--no-commit`: Skip commit creation (assume commits already exist)
 - `--range <start>..<end>`: Push specific commit range instead of all commits on main
+- `--labels <label1,label2>`: Apply labels to the created PR (requires --pr)
 
 ## Your task
 
@@ -85,6 +87,11 @@ Use `mcp__github__create_pull_request` with:
 - `title`: Derived from commit message
 - `body`: Include summary and issue link if --issue provided
 - `draft`: true if --draft flag set
+
+If `--labels` provided, add labels after PR creation:
+```bash
+gh pr edit <pr-number> --add-label "label1,label2"
+```
 
 ## Workflow Guidance
 
