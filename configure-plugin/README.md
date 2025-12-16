@@ -45,6 +45,7 @@ All commands support two modes:
 | `/configure:api-tests` | API testing configuration |
 | `/configure:integration-tests` | Integration test configuration |
 | `/configure:load-tests` | Load/performance test configuration |
+| `/configure:memory-profiling` | Memory profiling with pytest-memray for Python |
 | `/configure:ux-testing` | UX testing (Playwright, accessibility, visual regression) |
 
 ### Code Quality
