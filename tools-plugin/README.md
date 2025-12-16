@@ -36,6 +36,7 @@ Collection of general-purpose development utilities for file finding, text searc
 | Skill | Description |
 |-------|-------------|
 | `shell-expert` | Shell scripting and bash patterns |
+| `justfile-expert` | Just command runner and recipe development |
 | `imagemagick-conversion` | Image conversion and manipulation |
 
 ### Code Search
@@ -75,6 +76,16 @@ jq -r '.dependencies | keys[]' package.json
 ```bash
 yq '.services' docker-compose.yml
 yq -i '.version = "2.0"' config.yaml
+```
+
+### Run Project Tasks (Justfile)
+
+```bash
+just                        # Show available recipes
+just test                   # Run tests
+just lint                   # Run linters
+just build                  # Build project
+just dev                    # Development mode with watch
 ```
 
 ### Universal Dependency Install

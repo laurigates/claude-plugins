@@ -67,6 +67,7 @@ All commands support two modes:
 | `/configure:feature-flags` | Feature flag infrastructure (OpenFeature + providers) |
 | `/configure:sentry` | Sentry error tracking |
 | `/configure:makefile` | Makefile with standard targets |
+| `/configure:justfile` | Justfile with standard recipes (simpler alternative to Make) |
 | `/configure:package-management` | Modern package managers (uv for Python, bun for TypeScript) |
 
 ## Skills
