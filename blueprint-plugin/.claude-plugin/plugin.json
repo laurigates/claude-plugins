@@ -1,7 +1,7 @@
 {
   "name": "blueprint-plugin",
-  "version": "1.0.0",
-  "description": "Blueprint Development methodology - PRD/PRP workflow for structured feature development with systematic research, validation gates, and work-order generation",
+  "version": "1.1.0",
+  "description": "Blueprint Development methodology - PRD/PRP workflow for structured feature development with version tracking, modular rules, and CLAUDE.md management",
   "author": {
     "name": "Lauri Gates"
   },
@@ -14,6 +14,8 @@
     "requirements",
     "methodology",
     "documentation-first",
-    "work-orders"
+    "work-orders",
+    "version-tracking",
+    "modular-rules"
   ]
 }

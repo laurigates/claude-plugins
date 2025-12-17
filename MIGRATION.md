@@ -313,18 +313,18 @@ tools: Tool1, Tool2, mcp__server-name
 
 ---
 
-### 14. project-plugin
+### 14. project-plugin - COMPLETE
 **Purpose:** Project initialization and management
 
 | Type | Name | Status | Notes |
 |------|------|--------|-------|
-| Command | project/init | [ ] | |
-| Command | project/new | [ ] | |
-| Command | project/modernize | [ ] | |
-| Command | project/modernize-exp | [ ] | |
-| Command | project-continue | [ ] | |
-| Command | project-test-loop | [ ] | |
-| Skill | project-discovery | [ ] | |
+| Command | project/init | [x] | Namespaced as `/project:init` |
+| Command | project/new | [x] | Namespaced as `/project:new` |
+| Command | project/modernize | [x] | Namespaced as `/project:modernize` |
+| Command | project/modernize-exp | [x] | Namespaced as `/project:modernize-exp` |
+| Command | project/continue | [x] | Namespaced as `/project:continue` (was `project-continue`) |
+| Command | project/test-loop | [x] | Namespaced as `/project:test-loop` (was `project-test-loop`) |
+| Skill | project-discovery | [x] | |
 
 ---
 

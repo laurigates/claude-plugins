@@ -30,13 +30,20 @@ Generate workflow commands customized for this project.
    - Check project-specific tools
 
 4. **Generate `/project:continue` command**:
+
+   Create file at `.claude/commands/project/continue.md`:
    ```markdown
    ---
-   description: "Analyze project state and continue development where left off"
+   description: "Continue development on [project-name] (project-specific)"
    allowed_tools: [Read, Bash, Grep, Glob, Edit, Write]
    ---
 
-   Continue project development:
+   Continue project development (customized for this project).
+
+   **Project-specific configuration**:
+   - Test command: `[detected_test_command]`
+   - Build command: `[detected_build_command]`
+   - Dev command: `[detected_dev_command]`
 
    1. **Check current state**:
       - Run `git status` (branch, uncommitted changes)
@@ -64,13 +71,19 @@ Generate workflow commands customized for this project.
    ```
 
 5. **Generate `/project:test-loop` command**:
+
+   Create file at `.claude/commands/project/test-loop.md`:
    ```markdown
    ---
-   description: "Run test → fix → refactor loop with TDD workflow"
+   description: "TDD loop for [project-name] using [test-runner]"
    allowed_tools: [Read, Edit, Bash]
    ---
 
-   Run TDD cycle:
+   Run TDD cycle (customized for this project).
+
+   **Project-specific configuration**:
+   - Test command: `[detected_test_command]`
+   - Watch mode: `[detected_watch_command]` (if available)
 
    1. **Run test suite**: `[detected_test_command]`
    2. **If tests fail**:
@@ -99,13 +112,18 @@ Generate workflow commands customized for this project.
    - If CLI: Commands for building, testing CLI
    - If library: Commands for building, publishing
 
-7. **Report**:
+7. **Update manifest**:
+   - Read `.claude/blueprints/.manifest.json`
+   - Add generated commands to `generated_artifacts.commands`
+   - Update `updated_at` timestamp
+
+8. **Report**:
    ```
    ✅ Workflow commands generated!
 
    Created:
-   - .claude/commands/project-continue.md
-   - .claude/commands/project-test-loop.md
+   - .claude/commands/project/continue.md → /project:continue
+   - .claude/commands/project/test-loop.md → /project:test-loop
    [- Additional project-specific commands]
 
    Detected configuration:
@@ -117,9 +135,9 @@ Generate workflow commands customized for this project.
    Next steps:
    1. Use `/project:continue` to start or resume development
    2. Use `/project:test-loop` for TDD automation
-   3. Use `/blueprint:work-order` to create isolated tasks
+   3. Use `/blueprint-work-order` to create isolated tasks
 
-   All commands are now available via slash syntax!
+   All commands use namespaced pattern (project:*) and are now available!
    ```
 
 **Important**:

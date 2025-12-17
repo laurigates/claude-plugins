@@ -5,7 +5,7 @@ allowed_tools: [Read, Edit, Bash]
 
 Run automated TDD cycle: test → fix → refactor.
 
-**Note**: This is a generic template. Run `/blueprint:generate-commands` to create a project-specific version with correct test commands.
+**Note**: This is a generic template. Run `/blueprint-generate-commands` to create a project-specific version in `.claude/commands/project/test-loop.md`.
 
 **Steps**:
 
