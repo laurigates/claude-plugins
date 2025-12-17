@@ -7,9 +7,9 @@
     {
       "name": "blueprint-plugin",
       "source": "./blueprint-plugin",
-      "description": "Blueprint Development methodology - PRD/PRP workflow for structured feature development",
-      "version": "1.0.0",
-      "keywords": ["blueprint", "prd", "prp", "requirements", "methodology"],
+      "description": "Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, and CLAUDE.md management",
+      "version": "1.1.0",
+      "keywords": ["blueprint", "prd", "prp", "requirements", "methodology", "version-tracking", "modular-rules"],
       "category": "development"
     },
     {
@@ -111,9 +111,9 @@
     {
       "name": "project-plugin",
       "source": "./project-plugin",
-      "description": "Project initialization and management - setup, modernization",
-      "version": "1.0.0",
-      "keywords": ["project", "initialization", "setup", "modernization"],
+      "description": "Project initialization and management - setup, modernization, and continuous development workflows",
+      "version": "1.1.0",
+      "keywords": ["project", "initialization", "setup", "modernization", "tdd", "workflow"],
       "category": "development"
     },
     {

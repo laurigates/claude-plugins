@@ -5,7 +5,7 @@ allowed_tools: [Read, Bash, Grep, Glob, Edit, Write]
 
 Continue project development by analyzing current state and resuming work.
 
-**Note**: This is a generic template. Run `/blueprint:generate-commands` to create a project-specific version.
+**Note**: This is a generic template. Run `/blueprint-generate-commands` to create a project-specific version in `.claude/commands/project/continue.md`.
 
 **Steps**:
 
@@ -98,7 +98,7 @@ Continue project development by analyzing current state and resuming work.
 **Handling Common Scenarios**:
 
 **Scenario: Starting new feature**:
-1. Create work-order first with `/blueprint:work-order`
+1. Create work-order first with `/blueprint-work-order`
 2. Then continue with this command
 
 **Scenario: Blocked by dependency**:

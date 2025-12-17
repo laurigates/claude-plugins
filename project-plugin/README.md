@@ -68,7 +68,7 @@ Systematically modernize applications to current standards and best practices.
 ### `/project:modernize-exp`
 Experimental version of modernize with latest tooling recommendations. Same features as `/project:modernize` but may include bleeding-edge practices.
 
-### `/project-continue`
+### `/project:continue`
 Analyze project state and continue development where you left off.
 
 **Features:**
@@ -81,12 +81,12 @@ Analyze project state and continue development where you left off.
 
 **Usage:**
 ```bash
-/project-continue
+/project:continue
 ```
 
-**Note:** Generic template that should be customized per project using `/blueprint:generate-commands`.
+**Note:** Generic template that should be customized per project using `/blueprint-generate-commands`. Project-specific version is generated to `.claude/commands/project/continue.md`.
 
-### `/project-test-loop`
+### `/project:test-loop`
 Run automated TDD cycle: test → fix → refactor.
 
 **Features:**
@@ -98,10 +98,10 @@ Run automated TDD cycle: test → fix → refactor.
 
 **Usage:**
 ```bash
-/project-test-loop
+/project:test-loop
 ```
 
-**Note:** Generic template that should be customized per project using `/blueprint:generate-commands`.
+**Note:** Generic template that should be customized per project using `/blueprint-generate-commands`. Project-specific version is generated to `.claude/commands/project/test-loop.md`.
 
 ## Skills
 
@@ -189,8 +189,8 @@ Follow strict RED → GREEN → REFACTOR workflow:
 ## Integration
 
 ### With Blueprint Plugin
-- `/blueprint:generate-commands` - Creates project-specific versions of generic commands
-- `/blueprint:work-order` - Create work orders before starting features
+- `/blueprint-generate-commands` - Creates project-specific versions of generic commands
+- `/blueprint-work-order` - Create work orders before starting features
 
 ### With Git Plugin
 - `/git:smartcommit` - Conventional commits integration
