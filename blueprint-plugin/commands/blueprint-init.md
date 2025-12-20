@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-17
+reviewed: 2025-12-17
 description: "Initialize Blueprint Development structure in current project"
 allowed_tools: [Bash, Write, Read, AskUserQuestion]
 ---

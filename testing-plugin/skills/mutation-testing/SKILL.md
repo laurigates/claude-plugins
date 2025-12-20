@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: mutation-testing
 description: |
   Validate test effectiveness with mutation testing using Stryker (TypeScript/JavaScript)

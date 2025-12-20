@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 description: Check and configure Dockerfile for FVH standards (minimal Alpine/slim, non-root, multi-stage)
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 argument-hint: "[--check-only] [--fix] [--type <frontend|python|go|rust>]"

@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: github-issue-search
 description: |
   Search GitHub issues to find solutions, workarounds, and discussions for open

@@ -3,6 +3,9 @@ description: Bundle or compile with Bun
 args: <entry> [--compile] [--minify]
 allowed-tools: Bash, Read
 argument-hint: ./src/index.ts [--compile] [--minify]
+created: 2025-12-20
+modified: 2025-12-20
+reviewed: 2025-12-20
 ---
 
 # /bun:build

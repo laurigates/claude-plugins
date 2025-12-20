@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: Vitest Testing
 description: |
   Vitest test runner for JavaScript and TypeScript. Fast, modern alternative to Jest.

@@ -1,3 +1,9 @@
+---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
+---
+
 # GitHub Labels
 
 Reference for discovering and applying labels to GitHub PRs and issues.

@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 description: Show FVH infrastructure standards compliance status (read-only)
 allowed-tools: Glob, Grep, Read, TodoWrite
 argument-hint: "[--verbose]"

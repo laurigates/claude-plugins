@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 allowed-tools: Read, Glob, Task, TodoWrite, mcp__graphiti-memory__add_memory, mcp__graphiti-memory__search_memory_nodes, mcp__graphiti-memory__search_memory_facts
 argument-hint: [vault-directory]
 description: Build comprehensive knowledge graph from Obsidian vault documentation

@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: graphiti-episode-storage
 description: |
   Store episodes in Graphiti Memory: agent executions, error resolutions, workflow

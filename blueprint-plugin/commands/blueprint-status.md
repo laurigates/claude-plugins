@@ -1,4 +1,7 @@
 ---
+created: 2025-12-17
+modified: 2025-12-17
+reviewed: 2025-12-17
 description: "Show blueprint version, configuration, and check for available upgrades"
 allowed_tools: [Read, Bash, Glob]
 ---

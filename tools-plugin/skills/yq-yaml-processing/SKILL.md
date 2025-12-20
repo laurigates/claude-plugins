@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: yq YAML Processing
 description: YAML querying, filtering, and transformation with yq command-line tool. Use when working with YAML files, parsing YAML configuration, modifying Kubernetes manifests, GitHub Actions workflows, or transforming YAML structures.
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob

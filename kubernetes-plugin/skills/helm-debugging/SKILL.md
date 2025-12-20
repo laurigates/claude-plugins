@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: helm-debugging
 description: |
   Debug and troubleshoot Helm deployment failures, template errors, and configuration

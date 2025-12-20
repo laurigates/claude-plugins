@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: Playwright Testing
 description: |
   Playwright end-to-end testing for web applications. Cross-browser testing (Chromium, Firefox, WebKit),

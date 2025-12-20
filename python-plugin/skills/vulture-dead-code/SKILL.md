@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: vulture-dead-code
 description: |
   Vulture and deadcode tools for detecting unused Python code (functions, classes, variables, imports).

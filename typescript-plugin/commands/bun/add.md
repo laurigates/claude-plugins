@@ -3,6 +3,9 @@ description: Add package dependency with Bun
 args: <package> [--dev] [--exact]
 allowed-tools: Bash, Read
 argument-hint: package-name [--dev] [--exact]
+created: 2025-12-20
+modified: 2025-12-20
+reviewed: 2025-12-20
 ---
 
 # /bun:add

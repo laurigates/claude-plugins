@@ -2,6 +2,9 @@
 name: Bun Development
 description: Bun runtime for running scripts, testing, building, and project initialization - optimized flags for fast feedback and minimal output.
 allowed-tools: Bash, BashOutput, Read, Write, Edit, Grep, Glob, TodoWrite
+created: 2025-12-20
+modified: 2025-12-20
+reviewed: 2025-12-20
 ---
 
 # Bun Development

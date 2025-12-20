@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: VectorCode Semantic Search
 description: Semantic code search with VectorCode using embeddings for finding code by meaning, not just keywords. Use when searching for code patterns, similar implementations, concept-based search, or when keyword search fails. Automatically available via MCP.
 allowed-tools: mcp__vectorcode, Read, Grep, Glob

@@ -1,3 +1,9 @@
+---
+created: 2025-12-17
+modified: 2025-12-17
+reviewed: 2025-12-17
+---
+
 # FVH README Standards (v2025.1)
 
 This skill provides README.md templates and standards for FVH projects.

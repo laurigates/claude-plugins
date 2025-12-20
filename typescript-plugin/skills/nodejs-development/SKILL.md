@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: nodejs-development
 description: |
   Modern Node.js development with Bun, Vite, Vue 3, Pinia, and TypeScript. Covers

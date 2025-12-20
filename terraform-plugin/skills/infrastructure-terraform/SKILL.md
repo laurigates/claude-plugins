@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: infrastructure-terraform
 description: |
   Infrastructure as Code with Terraform including HCL configuration, state management,

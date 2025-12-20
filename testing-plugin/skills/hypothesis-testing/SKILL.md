@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: hypothesis-testing
 description: |
   Property-based testing with Hypothesis for discovering edge cases and validating invariants.

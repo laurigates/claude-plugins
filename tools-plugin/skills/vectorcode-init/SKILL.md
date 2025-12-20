@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: vectorcode-init
 description: |
   Initialize VectorCode with automatic configuration generation. Installs git hooks,

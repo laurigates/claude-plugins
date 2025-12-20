@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 description: Run all FVH infrastructure standards checks and configure compliance
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, SlashCommand
 argument-hint: "[--check-only] [--fix] [--type <frontend|infrastructure|python>]"

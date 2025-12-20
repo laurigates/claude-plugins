@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: Biome Tooling
 description: |
   Biome all-in-one formatter and linter for JavaScript, TypeScript, JSX, TSX, JSON, and CSS.

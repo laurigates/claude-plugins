@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: Knip Dead Code Detection
 description: |
   Knip finds unused files, dependencies, exports, and types in JavaScript/TypeScript projects.

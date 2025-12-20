@@ -3,6 +3,9 @@ description: Run tests with Bun test runner
 args: [pattern] [--coverage] [--bail] [--watch]
 allowed-tools: Bash, BashOutput, Read
 argument-hint: [test-pattern] [--coverage] [--bail] [--watch]
+created: 2025-12-20
+modified: 2025-12-20
+reviewed: 2025-12-20
 ---
 
 # /bun:test

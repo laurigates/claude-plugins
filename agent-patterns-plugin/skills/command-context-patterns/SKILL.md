@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: command-context-patterns
 description: |
   Write safe context expressions in Claude Code slash command files. Covers

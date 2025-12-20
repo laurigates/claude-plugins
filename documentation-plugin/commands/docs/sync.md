@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 description: "Synchronize documentation with actual skills, commands, and agents in the codebase"
 allowed_tools: [Bash, Grep, Glob, Read, Edit, Write, TodoWrite]
 ---

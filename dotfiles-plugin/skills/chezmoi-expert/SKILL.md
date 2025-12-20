@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: chezmoi-expert
 description: |
   Comprehensive chezmoi dotfiles management expertise including templates, cross-platform

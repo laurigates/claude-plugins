@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: clippy-advanced
 description: |
   Advanced Clippy configuration for comprehensive Rust linting with custom rules, categories, and IDE integration.

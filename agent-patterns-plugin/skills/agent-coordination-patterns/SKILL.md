@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: agent-coordination-patterns
 description: |
   Coordinate multi-agent workflows: sequential, parallel, and iterative patterns.

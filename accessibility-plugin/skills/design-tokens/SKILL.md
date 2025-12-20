@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: design-tokens
 description: CSS custom property architecture, theme systems, design token organization, and component library integration. Use when implementing design systems, theme switching, dark mode, or when the user mentions tokens, CSS variables, theming, or design system setup.
 allowed-tools: Glob, Grep, Read, Edit, Write, Bash, TodoWrite

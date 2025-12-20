@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: multi-agent-workflows
 description: |
   Orchestrate complex multi-agent workflows for development, infrastructure, and

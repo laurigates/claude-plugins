@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: requirements-documentation
 model: claude-opus-4-5
 color: "#9C27B0"

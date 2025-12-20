@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: uv-tool-management
 description: |
   Install and manage global Python CLI tools with uv (pipx alternative). Covers

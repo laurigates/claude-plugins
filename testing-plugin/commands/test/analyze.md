@@ -1,3 +1,9 @@
+---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
+---
+
 # Test Analysis and Fix Planning
 
 Analyzes test results from any testing framework, uses Zen planner to create a systematic fix strategy, and delegates fixes to appropriate subagents.

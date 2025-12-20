@@ -1,3 +1,9 @@
+---
+created: 2025-12-20
+modified: 2025-12-20
+reviewed: 2025-12-20
+---
+
 # claude-plugins
 
 Claude Code plugin collection providing skills, commands, and agents for development workflows.
@@ -31,6 +37,9 @@ See `.claude/rules/skill-development.md` for detailed patterns.
    name: <Skill Name>
    description: <1-2 sentence description>
    allowed-tools: Bash, Read, Grep, Glob, TodoWrite
+   created: YYYY-MM-DD
+   modified: YYYY-MM-DD
+   reviewed: YYYY-MM-DD
    ---
    ```
 3. Follow content structure: Core Expertise → Commands → Patterns → Quick Reference
@@ -58,6 +67,9 @@ Commands are user-invocable via `/plugin:command` syntax.
    args: <arg-spec>
    allowed-tools: Bash, Read
    argument-hint: human hint
+   created: YYYY-MM-DD
+   modified: YYYY-MM-DD
+   reviewed: YYYY-MM-DD
    ---
    ```
 3. Include: Context → Execution → Post-actions

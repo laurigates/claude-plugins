@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: tfc-run-status
 description: Quick status check for Terraform Cloud runs showing status, resource changes, timestamps, and available actions. Use when monitoring run progress or checking if a run can be applied/canceled. Requires TFE_TOKEN environment variable.
 allowed-tools: Bash, Read

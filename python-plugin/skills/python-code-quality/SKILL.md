@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: python-code-quality
 description: |
   Python code quality with ruff (linting & formatting) and mypy (type checking).

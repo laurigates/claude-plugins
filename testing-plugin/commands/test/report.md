@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 allowed-tools: Read, Glob, Bash(git:*)
 argument-hint: "[--history] [--coverage] [--flaky]"
 description: Show test status from last run (without re-executing)

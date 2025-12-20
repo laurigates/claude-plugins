@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: blueprint-development
 description: "Generate project-specific skills and commands from PRDs for Blueprint Development methodology. Use when generating skills for architecture patterns, testing strategies, implementation guides, or quality standards from requirements documents."
 ---

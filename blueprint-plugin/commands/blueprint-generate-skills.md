@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 description: "Generate project-specific skills from PRDs"
 allowed_tools: [Read, Write, Glob]
 ---

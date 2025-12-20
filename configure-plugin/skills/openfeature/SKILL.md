@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: openfeature
 description: |
   OpenFeature vendor-agnostic feature flag SDK with standardized API across

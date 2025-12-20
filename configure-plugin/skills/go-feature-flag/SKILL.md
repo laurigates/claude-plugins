@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: go-feature-flag
 description: |
   GO Feature Flag (GOFF) self-hosted feature flag solution with OpenFeature

@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 description: "Check skills/commands for negative framing and suggest positive alternatives"
 allowed_tools: [Bash, Grep, Read, Edit, AskUserQuestion]
 ---

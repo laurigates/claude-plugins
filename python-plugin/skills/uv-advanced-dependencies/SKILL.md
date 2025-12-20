@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: uv-advanced-dependencies
 description: |
   Advanced dependency scenarios in uv projects: Git dependencies, path dependencies,

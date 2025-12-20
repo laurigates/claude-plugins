@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: ruff Integration
 description: Integrate ruff with editors, pre-commit hooks, and CI/CD pipelines. LSP configuration, GitHub Actions, GitLab CI, and development workflows. Use when setting up ruff tooling or configuring development environments.
 allowed-tools: Bash, Read, Edit, Write, Grep, Glob

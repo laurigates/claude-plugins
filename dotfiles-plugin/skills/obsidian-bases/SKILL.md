@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: obsidian-bases
 description: Obsidian Bases database feature for YAML-based interactive note views. Use when creating .base files, writing filter queries, building formulas, configuring table/card views, or working with Obsidian properties and frontmatter databases.
 allowed-tools: Read, Write, Edit, Grep, Glob

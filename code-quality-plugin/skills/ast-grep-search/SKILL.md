@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: ast-grep Search
 description: AST-based code search using ast-grep for structural pattern matching. Use when searching for code patterns, refactoring, or performing semantic code analysis across multiple languages.
 allowed-tools: Bash, Read, Grep, Glob

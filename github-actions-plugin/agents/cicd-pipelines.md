@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: cicd-pipelines
 model: claude-opus-4-5
 color: "#20BF6B"

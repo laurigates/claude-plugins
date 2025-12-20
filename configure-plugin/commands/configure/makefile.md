@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 description: Check and configure Makefile with standard targets for FVH standards
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite
 argument-hint: "[--check-only] [--fix]"

@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: MCP Server Management
 description: Intelligent MCP server installation and management. Suggests MCP servers based on project context and helps install them project-by-project. Use when configuring MCP servers or when project needs specific integrations.
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, AskUserQuestion

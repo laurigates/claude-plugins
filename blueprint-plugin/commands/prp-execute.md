@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 description: "Execute a PRP with validation loop, TDD workflow, and quality gates"
 allowed_tools: [Read, Write, Edit, Glob, Bash, Task]
 ---

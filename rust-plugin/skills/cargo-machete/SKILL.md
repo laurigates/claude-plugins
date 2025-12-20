@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: cargo-machete
 description: |
   Detect unused dependencies in Rust projects for cleaner Cargo.toml files and faster builds.

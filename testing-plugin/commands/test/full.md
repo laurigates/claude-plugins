@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 allowed-tools: Task, TodoWrite
 argument-hint: "[--coverage] [--parallel] [--report]"
 description: Complete test suite including integration and E2E tests

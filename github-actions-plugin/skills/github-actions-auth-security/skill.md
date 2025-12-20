@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: GitHub Actions Authentication and Security
 description: GitHub Actions security and authentication for Claude Code including API keys, OIDC, AWS Bedrock, Google Vertex AI, secrets management, and permission scoping. Use when setting up authentication or discussing security for GitHub Actions workflows.
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, WebFetch

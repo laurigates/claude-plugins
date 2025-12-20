@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: uv-workspaces
 description: |
   Manage monorepo and multi-package Python projects with uv workspaces. Covers

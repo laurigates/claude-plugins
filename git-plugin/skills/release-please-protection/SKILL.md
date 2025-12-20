@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: release-please-protection
 description: |
   Detects and prevents manual edits to release-please managed files (CHANGELOG.md,

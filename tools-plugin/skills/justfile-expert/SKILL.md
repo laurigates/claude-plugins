@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: justfile-expert
 description: |
   Just command runner expertise, Justfile syntax, recipe development, and cross-platform

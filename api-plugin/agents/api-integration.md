@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: api-integration
 color: "#FF4785"
 description: Use proactively when exploring and integrating with REST APIs, especially when documentation is limited or unavailable. Automatically discovers endpoints, infers schemas, and generates client code.

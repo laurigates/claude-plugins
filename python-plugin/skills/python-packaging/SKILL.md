@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: python-packaging
 description: |
   Build and publish Python packages with uv and modern build tools. Covers uv build,

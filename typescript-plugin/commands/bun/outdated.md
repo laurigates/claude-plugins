@@ -1,6 +1,9 @@
 ---
 description: Check for outdated dependencies
 allowed-tools: Bash, Read
+created: 2025-12-20
+modified: 2025-12-20
+reviewed: 2025-12-20
 ---
 
 # /bun:outdated

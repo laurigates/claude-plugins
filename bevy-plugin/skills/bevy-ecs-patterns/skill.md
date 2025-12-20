@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: Bevy ECS Patterns
 description: Advanced Bevy ECS patterns including complex queries, system scheduling, change detection, entity relationships, and performance optimization. Use when working on advanced Bevy game architecture, optimizing ECS performance, or implementing complex game systems.
 allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebFetch, WebSearch, BashOutput, KillShell

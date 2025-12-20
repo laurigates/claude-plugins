@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: tfc-plan-json
 description: Download and analyze structured Terraform plan JSON output from Terraform Cloud. Use when analyzing resource changes, diffing infrastructure, or programmatically inspecting plan details. Requires TFE_TOKEN environment variable.
 allowed-tools: Bash, Read

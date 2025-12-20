@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: graphiti-learning-workflows
 description: |
   Learn from historical data and build institutional knowledge with Graphiti Memory.

@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: neovim-configuration
 description: |
   Modern Neovim configuration expertise including Lua scripting, plugin management with

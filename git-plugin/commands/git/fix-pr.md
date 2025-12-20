@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 allowed-tools: Bash, Edit, Read, Glob, Grep, Write, TodoWrite, mcp__github__pull_request_read
 argument-hint: [pr-number] [--auto-fix] [--push]
 description: Analyze and fix failing PR checks

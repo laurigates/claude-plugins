@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: github-social-preview
 description: |
   Generate GitHub repository social preview images (Open Graph images).

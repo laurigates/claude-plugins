@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: tfc-list-runs
 description: List Terraform Cloud runs for a workspace with filtering by status, operation type, and date. Use when reviewing run history, finding failed runs, or auditing infrastructure changes. Requires TFE_TOKEN environment variable.
 allowed-tools: Bash, Read

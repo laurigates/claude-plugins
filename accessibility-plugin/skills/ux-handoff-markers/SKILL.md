@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: ux-handoff-markers
 description: Standardized inline markers for inter-agent communication. Use when creating handoff annotations for other agents, scanning for pending work from upstream agents, or when the user mentions @HANDOFF markers, agent coordination, or cross-agent communication.
 allowed-tools: Glob, Grep, Read, Edit, Write, TodoWrite

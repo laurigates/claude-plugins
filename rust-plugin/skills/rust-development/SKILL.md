@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: rust-development
 description: |
   Modern Rust development with cargo, rustc, clippy, rustfmt, async programming, and

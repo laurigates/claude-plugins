@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: argocd-login
 description: |
   ArgoCD CLI authentication with SSO. Provides argocd login command, gRPC-Web

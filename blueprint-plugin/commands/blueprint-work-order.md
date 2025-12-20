@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 description: "Create work-order with minimal context for isolated subagent execution"
 allowed_tools: [Read, Write, Glob, Bash]
 ---

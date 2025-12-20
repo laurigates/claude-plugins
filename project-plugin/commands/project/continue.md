@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-17
+reviewed: 2025-12-17
 description: "Analyze project state and continue development where left off"
 allowed_tools: [Read, Bash, Grep, Glob, Edit, Write]
 ---

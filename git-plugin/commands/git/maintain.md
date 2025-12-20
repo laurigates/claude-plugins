@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 allowed-tools: Bash, Read, Glob, TodoWrite
 argument-hint: [--prune] [--gc] [--verify] [--branches] [--stash] [--all]
 description: Perform repository maintenance and cleanup

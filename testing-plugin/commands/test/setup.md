@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 allowed-tools: Read, Write, Edit, MultiEdit, Bash(pip install:*), Bash(npm install:*), Bash(pre-commit:*), Bash(pytest:*), Bash(npm test:*), Bash(git:*), TodoWrite, SlashCommand
 description: Configure comprehensive testing infrastructure with CI/CD integration
 argument-hint: [--coverage] [--ci <github|gitlab|circleci>]

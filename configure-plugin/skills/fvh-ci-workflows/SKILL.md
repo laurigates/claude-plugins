@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: fvh-ci-workflows
 description: |
   FVH (Forum Virium Helsinki) GitHub Actions workflow standards. Use when configuring

@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: git-security-checks
 description: |
   Pre-commit security validation and secret detection. Runs detect-secrets scan

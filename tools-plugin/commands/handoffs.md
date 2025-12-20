@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 description: "List, filter, and manage @HANDOFF markers across the codebase"
 allowed_tools: [Bash, Grep, Read, TodoWrite]
 ---

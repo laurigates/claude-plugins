@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: uv-run
 description: |
   Run Python scripts with uv including inline dependencies (PEP 723),

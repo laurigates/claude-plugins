@@ -1,3 +1,9 @@
+---
+created: 2025-12-20
+modified: 2025-12-20
+reviewed: 2025-12-20
+---
+
 # Skill Development
 
 ## Skill File Structure
@@ -11,8 +17,21 @@ Skills live in `plugins/<plugin-name>/skills/<skill-name>/skill.md`.
 name: <Skill Name>
 description: <1-2 sentence description of capability>
 allowed-tools: <Comma-separated list of tools>
+created: YYYY-MM-DD
+modified: YYYY-MM-DD
+reviewed: YYYY-MM-DD
 ---
 ```
+
+### Date Fields
+
+| Field | Purpose | When to Update |
+|-------|---------|----------------|
+| `created` | Initial creation date | Set once, never change |
+| `modified` | Last substantive change | Content updates, not typo fixes |
+| `reviewed` | Last verified current | After checking against latest docs |
+
+**Review triggers**: Tool major version releases, Claude Code updates, quarterly audits.
 
 ### Common Tool Sets
 
@@ -93,6 +112,9 @@ description: <What the command does>
 args: <argument specification>
 allowed-tools: <Comma-separated list>
 argument-hint: <Human-readable hint>
+created: YYYY-MM-DD
+modified: YYYY-MM-DD
+reviewed: YYYY-MM-DD
 ---
 ```
 

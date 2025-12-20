@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: helm-chart-development
 description: |
   Create, test, and package Helm charts for Kubernetes. Covers helm create, Chart.yaml,

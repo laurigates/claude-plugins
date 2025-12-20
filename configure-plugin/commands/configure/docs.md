@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 description: Check and configure code documentation standards and generators (TSDoc, JSDoc, pydoc, rustdoc)
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
 argument-hint: "[--check-only] [--fix] [--level <minimal|standard|strict>] [--type <typescript|javascript|python|rust>] [--generator <typedoc|sphinx|mkdocs|rustdoc>]"

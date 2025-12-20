@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: cargo-nextest
 description: |
   Next-generation test runner for Rust with parallel execution, advanced filtering, and CI integration.

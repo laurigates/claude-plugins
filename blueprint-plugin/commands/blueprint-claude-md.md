@@ -1,4 +1,7 @@
 ---
+created: 2025-12-17
+modified: 2025-12-17
+reviewed: 2025-12-17
 description: "Generate or update CLAUDE.md from project context and blueprint artifacts"
 allowed_tools: [Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion]
 ---

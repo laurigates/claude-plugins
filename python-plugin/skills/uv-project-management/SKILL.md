@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: uv-project-management
 description: |
   Python project setup, dependencies, and lockfiles with uv package manager. Covers

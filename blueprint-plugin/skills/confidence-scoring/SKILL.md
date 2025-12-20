@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: confidence-scoring
 description: "Assess quality of PRPs and work-orders using systematic confidence scoring. Use when evaluating readiness for execution or subagent delegation."
 ---

@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: agent-file-coordination
 description: |
   File-based context sharing for multi-agent workflows. Provides directory

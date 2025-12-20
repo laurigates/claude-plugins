@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: fvh-release-please
 description: |
   FVH (Forum Virium Helsinki) release-please standards and configuration. Use when

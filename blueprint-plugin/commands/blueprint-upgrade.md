@@ -1,4 +1,7 @@
 ---
+created: 2025-12-17
+modified: 2025-12-17
+reviewed: 2025-12-17
 description: "Upgrade blueprint structure to the latest format version"
 allowed_tools: [Read, Write, Edit, Bash, Glob, AskUserQuestion]
 ---

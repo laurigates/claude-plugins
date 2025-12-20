@@ -1,4 +1,7 @@
 ---
+created: 2025-12-16
+modified: 2025-12-16
+reviewed: 2025-12-16
 name: imagemagick-conversion
 description: |
   Convert and manipulate images with ImageMagick. Covers format conversion,
