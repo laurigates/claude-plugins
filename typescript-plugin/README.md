@@ -1,10 +1,10 @@
 # TypeScript Plugin
 
-TypeScript development for Claude Code - strict types, ESLint, Biome, and dead code detection.
+TypeScript development for Claude Code - strict types, ESLint, Biome, Bun runtime, and dead code detection.
 
 ## Overview
 
-TypeScript development support with modern tooling: strict type configuration, ESLint/Biome for linting, and Knip for dead code detection.
+TypeScript development support with modern tooling: strict type configuration, ESLint/Biome for linting, Bun for fast runtime/testing/bundling, and Knip for dead code detection.
 
 ## Skills
 
@@ -13,6 +13,8 @@ TypeScript development support with modern tooling: strict type configuration, E
 | `typescript-strict` | Strict TypeScript configuration and patterns |
 | `eslint-configuration` | ESLint configuration and patterns |
 | `biome-tooling` | Biome linter and formatter |
+| `bun-package-manager` | Fast package management with Bun |
+| `bun-development` | Bun runtime, testing, and bundling |
 | `knip-dead-code` | Detect dead code in TypeScript/JavaScript projects |
 
 ## Agents
@@ -42,6 +44,16 @@ TypeScript development support with modern tooling: strict type configuration, E
 biome init
 biome check .
 biome format . --write
+```
+
+### Bun Commands
+
+```bash
+/bun:install           # Install dependencies
+/bun:add lodash        # Add package
+/bun:test              # Run tests with compact output
+/bun:build ./src/index.ts  # Bundle for production
+/bun:outdated          # Check for updates
 ```
 
 ### Dead Code Detection
