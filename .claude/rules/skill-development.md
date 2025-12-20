@@ -1,0 +1,127 @@
+# Skill Development
+
+## Skill File Structure
+
+Skills live in `plugins/<plugin-name>/skills/<skill-name>/skill.md`.
+
+### Required YAML Frontmatter
+
+```yaml
+---
+name: <Skill Name>
+description: <1-2 sentence description of capability>
+allowed-tools: <Comma-separated list of tools>
+---
+```
+
+### Common Tool Sets
+
+| Skill Type | Typical Tools |
+|------------|---------------|
+| CLI tool | `Bash, Read, Grep, Glob, TodoWrite` |
+| Development | `Bash, BashOutput, Read, Write, Edit, Grep, Glob, TodoWrite` |
+| Research | `Read, WebFetch, WebSearch, Grep, Glob` |
+
+## Content Structure
+
+Follow this structure for consistency:
+
+```markdown
+# <Skill Name>
+
+## Core Expertise
+- Why this tool matters
+- Key advantages over alternatives
+- Performance characteristics
+
+## Essential Commands
+- Most common operations with examples
+- Group by workflow (install, run, test, build)
+
+## Advanced Features
+- Lesser-known but useful flags
+- Complex patterns
+
+## Common Patterns
+- Real-world usage examples
+- Integration with other tools
+
+## Agentic Optimizations
+| Context | Command |
+|---------|---------|
+- Table of optimized commands for AI workflows
+
+## Quick Reference
+| Flag | Description |
+|------|-------------|
+- Compact reference table of key flags
+
+## Error Handling (optional)
+- Common issues and solutions
+```
+
+## Naming Conventions
+
+| Pattern | Example |
+|---------|---------|
+| Tool-focused | `fd-file-finding`, `rg-code-search` |
+| Workflow-focused | `bun-development`, `bun-package-manager` |
+| Framework-focused | `biome-tooling`, `typescript-strict` |
+
+## Skill Granularity
+
+Choose granularity based on:
+
+| Factor | Single Skill | Multiple Skills |
+|--------|--------------|-----------------|
+| Related operations | Yes | No |
+| Shared context | Yes | No |
+| Independent workflows | No | Yes |
+| Different user intents | No | Yes |
+
+**Rule of thumb**: If operations are typically used together, keep them in one skill.
+
+## Command File Structure
+
+Commands live in `plugins/<plugin-name>/commands/<command-name>.md` or nested in subdirectories.
+
+### Required YAML Frontmatter
+
+```yaml
+---
+description: <What the command does>
+args: <argument specification>
+allowed-tools: <Comma-separated list>
+argument-hint: <Human-readable hint>
+---
+```
+
+### Content Structure
+
+```markdown
+# /<command-name>
+
+<Brief description>
+
+## Context
+- Environment detection commands (backticks for execution)
+
+## Parameters
+- Detailed parameter descriptions
+
+## Execution
+- Command templates with conditional logic
+
+## Post-actions
+- Follow-up steps after execution
+```
+
+## Plugin Metadata
+
+Update `.claude-plugin/plugin.json` when adding skills:
+- Add relevant keywords
+- Update description if scope changes
+
+Update `README.md`:
+- Add skill to skills table
+- Add usage examples for new commands
