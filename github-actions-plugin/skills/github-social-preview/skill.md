@@ -1,15 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2025-12-21
 reviewed: 2025-12-16
 name: github-social-preview
-description: |
-  Generate GitHub repository social preview images (Open Graph images).
-  Creates 1280x640 PNG images optimized for social media sharing.
-  Uses nano-banana-pro for AI image generation with GitHub-specific prompts.
-  Use when user mentions: social preview, Open Graph image, OG image,
-  repository image, GitHub preview, social media preview, repo thumbnail,
-  share image, or needs an image for repository settings.
+description: Generate 1280x640 PNG social preview images for GitHub repositories using nano-banana-pro. Use when user mentions social preview, Open Graph image, or needs repository images for social media sharing.
 ---
 
 # GitHub Social Preview Image Generator

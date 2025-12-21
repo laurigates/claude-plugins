@@ -1,13 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2025-12-21
 reviewed: 2025-12-16
 name: github-issue-search
-description: |
-  Search GitHub issues to find solutions, workarounds, and discussions for open
-  source problems. Covers search query syntax, error message patterns, and
-  MCP tool usage. Use when encountering errors with OSS libraries, searching
-  for known issues, or finding upstream bug workarounds.
+description: Search GitHub issues for solutions, workarounds, and discussions for open source problems. Use when encountering errors with OSS libraries or finding upstream bug workarounds.
 ---
 
 # GitHub Issue Search for Solutions
