@@ -15,6 +15,7 @@ TypeScript development support with modern tooling: strict type configuration, E
 | `biome-tooling` | Biome linter and formatter |
 | `bun-package-manager` | Fast package management with Bun |
 | `bun-development` | Bun runtime, testing, and bundling |
+| `bun-publishing` | Publish packages to npm with Bun build |
 | `knip-dead-code` | Detect dead code in TypeScript/JavaScript projects |
 
 ## Agents
@@ -54,6 +55,8 @@ biome format . --write
 /bun:test              # Run tests with compact output
 /bun:build ./src/index.ts  # Bundle for production
 /bun:outdated          # Check for updates
+/bun:publish           # Publish to npm
+/bun:publish --dry-run # Preview publish
 ```
 
 ### Dead Code Detection

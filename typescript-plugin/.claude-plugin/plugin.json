@@ -11,6 +11,8 @@
     "typescript",
     "javascript",
     "bun",
+    "npm",
+    "publishing",
     "eslint",
     "biome",
     "types",
