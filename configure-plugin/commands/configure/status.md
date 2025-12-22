@@ -120,7 +120,8 @@ If `--verbose` flag:
 
 ## See Also
 
-- `/configure:all` - Fix all compliance issues
+- `/configure:all` - Run all compliance checks
+- `/configure:select` - Interactively select which components to configure
 - `/configure:pre-commit` - Pre-commit specific checks
 - `/configure:release-please` - Release-please specific checks
 - `/configure:cache-busting` - Cache-busting specific checks

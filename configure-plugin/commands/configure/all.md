@@ -224,6 +224,7 @@ Not all components apply to all project types:
 
 ## See Also
 
+- `/configure:select` - Interactively select which components to configure
 - `/configure:status` - Quick read-only status overview
 - `/configure:pre-commit` - Pre-commit specific checks
 - `/configure:release-please` - Release automation checks

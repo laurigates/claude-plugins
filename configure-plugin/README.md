@@ -17,6 +17,7 @@ All commands support two modes:
 | Command | Description |
 |---------|-------------|
 | `/configure:all` | Run all infrastructure standards checks |
+| `/configure:select` | Interactively select which components to configure |
 | `/configure:status` | Show compliance status (read-only) |
 
 ### CI/CD & Version Control
@@ -97,6 +98,14 @@ Shows compliance status for all configured standards without making changes.
 ```
 
 Automatically configures the project to meet all FVH standards.
+
+### Select Components Interactively
+
+```bash
+/configure:select
+```
+
+Presents multi-select menus to choose which components to check/fix.
 
 ### Check Specific Domain
 
