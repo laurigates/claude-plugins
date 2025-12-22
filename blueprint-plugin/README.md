@@ -12,15 +12,33 @@ PRD (Product Requirements) → PRP (Product Requirement Prompt) → Work-Order �
 
 ## Commands
 
+### Onboarding Commands
+
 | Command | Description |
 |---------|-------------|
 | `/blueprint-init` | Initialize Blueprint Development structure in a project |
+| `/blueprint-prd` | Generate initial PRD from existing project documentation |
+| `/blueprint-adr` | Generate Architecture Decision Records from existing codebase |
+
+### Workflow Commands
+
+| Command | Description |
+|---------|-------------|
 | `/blueprint-generate-commands` | Generate workflow commands from project structure and PRDs |
 | `/blueprint-generate-skills` | Generate project-specific skills from PRDs |
 | `/blueprint-work-order` | Create work-order with minimal context for subagent execution |
 | `/prp-create` | Create a PRP with systematic research and validation gates |
 | `/prp-execute` | Execute a PRP with validation loop, TDD workflow, and quality gates |
 | `/prp-curate-docs` | Curate documentation for ai_docs to optimize AI context |
+
+### Management Commands
+
+| Command | Description |
+|---------|-------------|
+| `/blueprint-status` | Show blueprint version and configuration |
+| `/blueprint-upgrade` | Upgrade to latest blueprint format |
+| `/blueprint-rules` | Manage modular rules |
+| `/blueprint-claude-md` | Update CLAUDE.md from blueprint artifacts |
 
 ## Skills
 
@@ -29,11 +47,13 @@ PRD (Product Requirements) → PRP (Product Requirement Prompt) → Work-Order �
 | `blueprint-development` | Core methodology for generating project-specific skills and commands from PRDs |
 | `confidence-scoring` | Assess quality of PRPs and work-orders for execution readiness |
 
-## Agent
+## Agents
 
-| Agent | Description |
-|-------|-------------|
-| `requirements-documentation` | Creates comprehensive PRDs before implementation begins |
+| Agent | Trigger | Description |
+|-------|---------|-------------|
+| `requirements-documentation` | New features requested | Creates comprehensive PRDs before implementation begins |
+| `architecture-decisions` | Architecture decisions made | Documents ADRs for significant technical decisions |
+| `prp-preparation` | Implementation starting | Checks if PRP exists, suggests creating one if missing |
 
 ## Workflow
 
@@ -47,21 +67,36 @@ Creates the directory structure:
 ```
 .claude/blueprints/
 ├── prds/                 # Product Requirements Documents
+├── adrs/                 # Architecture Decision Records
+├── prps/                 # Product Requirement Prompts
 ├── work-orders/          # Task packages for subagents
 │   ├── completed/
 │   └── archived/
 └── work-overview.md      # Current phase and progress
 ```
 
-### 2. Write PRDs
+### 2. Generate Initial Documentation (Onboarding)
 
-Create PRDs in `.claude/blueprints/prds/` documenting:
+For existing projects, generate initial documentation from codebase:
+
+```bash
+/blueprint-prd    # Generate PRD from README and docs
+/blueprint-adr    # Generate ADRs from architecture analysis
+```
+
+These commands analyze existing documentation and code patterns, asking clarifying questions to fill gaps.
+
+### 3. Write or Refine PRDs
+
+Create or refine PRDs in `.claude/blueprints/prds/` documenting:
 - Feature requirements and user stories
 - Technical decisions and architecture
 - TDD requirements and test strategies
 - Success criteria and quality standards
 
-### 3. Generate Project Skills
+The `requirements-documentation` agent triggers proactively for new features.
+
+### 4. Generate Project Skills
 
 ```bash
 /blueprint-generate-skills
@@ -73,7 +108,7 @@ Extracts patterns from PRDs and generates project-specific skills:
 - Implementation guides
 - Quality standards
 
-### 4. Create Work-Orders
+### 5. Create Work-Orders
 
 ```bash
 /blueprint-work-order
@@ -81,7 +116,7 @@ Extracts patterns from PRDs and generates project-specific skills:
 
 Generates isolated task packages with minimal context for subagent execution.
 
-### 5. Execute with TDD
+### 6. Execute with TDD
 
 ```bash
 /prp-execute

@@ -11,11 +11,14 @@
     "blueprint",
     "prd",
     "prp",
+    "adr",
     "requirements",
+    "architecture-decisions",
     "methodology",
     "documentation-first",
     "work-orders",
     "version-tracking",
-    "modular-rules"
+    "modular-rules",
+    "onboarding"
   ]
 }
