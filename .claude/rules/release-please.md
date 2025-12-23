@@ -1,0 +1,74 @@
+# Release-Please Configuration
+
+This monorepo uses [release-please](https://github.com/googleapis/release-please) for automated versioning and changelog generation.
+
+## Structure
+
+| File | Purpose |
+|------|---------|
+| `.github/workflows/release-please.yml` | GitHub Actions workflow |
+| `release-please-config.json` | Monorepo package configuration |
+| `.release-please-manifest.json` | Current versions for all plugins |
+
+## How It Works
+
+1. **Conventional commits** trigger version bumps:
+   - `feat:` → minor version bump
+   - `fix:` → patch version bump
+   - `feat!:` or `BREAKING CHANGE:` → major version bump
+
+2. **Scoped commits** target specific plugins:
+   - `feat(blueprint-plugin): add new command` → bumps blueprint-plugin
+   - `fix(git-plugin): handle edge case` → bumps git-plugin
+
+3. **Release PRs** are created automatically per plugin (`separate-pull-requests: true`)
+
+4. **Version updates** automatically sync to `plugin.json` via `extra-files`
+
+## Protected Files
+
+**Never manually edit:**
+- `**/CHANGELOG.md` - Auto-generated from commits
+- Version field in `plugin.json` - Managed by release-please
+
+## Adding a New Plugin
+
+When adding a new plugin, update both config files:
+
+**release-please-config.json:**
+```json
+{
+  "packages": {
+    "new-plugin": {
+      "release-type": "simple",
+      "extra-files": ["new-plugin/.claude-plugin/plugin.json"],
+      "changelog-sections": [
+        {"type": "feat", "section": "Features"},
+        {"type": "fix", "section": "Bug Fixes"},
+        {"type": "perf", "section": "Performance"},
+        {"type": "refactor", "section": "Code Refactoring"},
+        {"type": "docs", "section": "Documentation"}
+      ]
+    }
+  }
+}
+```
+
+**.release-please-manifest.json:**
+```json
+{
+  "new-plugin": "1.0.0"
+}
+```
+
+## Version Checking
+
+Fetch latest release-please-action version:
+```bash
+curl -s https://api.github.com/repos/googleapis/release-please-action/releases/latest | jq -r '.tag_name'
+```
+
+## Requirements
+
+- `MY_RELEASE_PLEASE_TOKEN` secret must be configured in repository settings
+- Token needs `contents: write` and `pull-requests: write` permissions
