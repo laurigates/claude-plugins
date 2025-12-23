@@ -64,6 +64,34 @@ OrbStack-optimized Skaffold workflows for local Kubernetes development without p
 - Direct pod IP access from host
 - Auto HTTPS certificates
 
+#### skaffold-testing
+Container image validation with Skaffold test and verify stages for robust CI/CD pipelines.
+
+**Key Features:**
+- Container structure tests for image hygiene
+- Custom tests for security scanning (Grype, Trivy)
+- Post-deployment verification with the verify stage
+- Profile-based testing (quick vs thorough)
+- Essential security test templates
+
+**Use when:**
+- Configuring pre-deploy image validation
+- Setting up security scanning in CI
+- Implementing post-deployment integration tests
+- Creating robust container testing pipelines
+
+**Testing Lifecycle:**
+```
+Build → Test → Deploy → Verify
+         ↑               ↑
+    Pre-deploy      Post-deploy
+```
+
+**Test Types:**
+- `structureTests`: Validate image contents (files, commands, metadata)
+- `custom`: Run arbitrary commands (security scans, unit tests)
+- `verify`: Post-deployment integration tests
+
 ### Commands
 
 #### deploy:release
@@ -148,6 +176,8 @@ Skills are automatically activated when relevant keywords are detected:
 
 **skaffold-orbstack:** OrbStack, k8s.orb.local, Skaffold, service access, port-forward
 
+**skaffold-testing:** skaffold test, skaffold verify, container-structure-test, image testing, security scanning, Grype, Trivy, pre-deploy validation
+
 ### Command Usage
 
 Commands can be invoked using the Claude chat interface:
@@ -207,6 +237,11 @@ This plugin enforces strict security best practices:
 - BuildKit (for cache mounts and optimizations)
 - Trivy or Grype (for security scanning)
 
+### Skaffold Testing
+- container-structure-test binary
+- Grype or Trivy (for vulnerability scanning)
+- Skaffold v2.0+ (for verify stage)
+
 ### Skaffold Workflows
 - OrbStack (recommended) or minikube/kind
 - kubectl
@@ -236,7 +271,7 @@ This plugin enforces strict security best practices:
 
 ## Keywords
 
-container, docker, dockerfile, registry, skaffold, deployment, kubernetes, orbstack, 12-factor, multi-stage-builds, security, image-optimization
+container, docker, dockerfile, registry, skaffold, deployment, kubernetes, orbstack, 12-factor, multi-stage-builds, security, image-optimization, container-structure-test, grype, trivy, verify, image-testing
 
 ## License
 

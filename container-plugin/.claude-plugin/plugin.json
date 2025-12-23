@@ -11,6 +11,12 @@
     "deployment",
     "kubernetes",
     "orbstack",
-    "12-factor"
+    "12-factor",
+    "container-structure-test",
+    "image-testing",
+    "security-scanning",
+    "grype",
+    "trivy",
+    "verify"
   ]
 }
