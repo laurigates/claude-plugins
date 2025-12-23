@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2025-12-22
 reviewed: 2025-12-16
 description: Check and configure release-please workflow for FVH standards
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -19,12 +19,18 @@ This command validates release-please configuration and workflow against FVH sta
 
 ## Version Checking
 
-**CRITICAL**: Before configuring release-please, verify latest action version:
+**CRITICAL**: Before configuring release-please, fetch latest action version from GitHub API:
 
-1. **release-please-action**: Check [GitHub releases](https://github.com/google-github-actions/release-please-action/releases)
-2. **release-please CLI**: Check [GitHub releases](https://github.com/googleapis/release-please/releases)
+```bash
+# Fetch latest release-please-action version
+curl -s https://api.github.com/repos/googleapis/release-please-action/releases/latest | jq -r '.tag_name'
+```
 
-Use WebSearch or WebFetch to verify current versions before configuring release-please.
+Use this command to get the current version dynamically rather than hardcoding.
+
+**References**:
+- [release-please-action releases](https://github.com/googleapis/release-please-action/releases)
+- [release-please CLI releases](https://github.com/googleapis/release-please/releases)
 
 ## Workflow
 

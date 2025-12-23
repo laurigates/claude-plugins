@@ -1,0 +1,270 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "packages": {
+    "accessibility-plugin": {
+      "release-type": "simple",
+      "extra-files": ["accessibility-plugin/.claude-plugin/plugin.json"],
+      "changelog-sections": [
+        {"type": "feat", "section": "Features"},
+        {"type": "fix", "section": "Bug Fixes"},
+        {"type": "perf", "section": "Performance"},
+        {"type": "refactor", "section": "Code Refactoring"},
+        {"type": "docs", "section": "Documentation"}
+      ]
+    },
+    "agent-patterns-plugin": {
+      "release-type": "simple",
+      "extra-files": ["agent-patterns-plugin/.claude-plugin/plugin.json"],
+      "changelog-sections": [
+        {"type": "feat", "section": "Features"},
+        {"type": "fix", "section": "Bug Fixes"},
+        {"type": "perf", "section": "Performance"},
+        {"type": "refactor", "section": "Code Refactoring"},
+        {"type": "docs", "section": "Documentation"}
+      ]
+    },
+    "api-plugin": {
+      "release-type": "simple",
+      "extra-files": ["api-plugin/.claude-plugin/plugin.json"],
+      "changelog-sections": [
+        {"type": "feat", "section": "Features"},
+        {"type": "fix", "section": "Bug Fixes"},
+        {"type": "perf", "section": "Performance"},
+        {"type": "refactor", "section": "Code Refactoring"},
+        {"type": "docs", "section": "Documentation"}
+      ]
+    },
+    "bevy-plugin": {
+      "release-type": "simple",
+      "extra-files": ["bevy-plugin/.claude-plugin/plugin.json"],
+      "changelog-sections": [
+        {"type": "feat", "section": "Features"},
+        {"type": "fix", "section": "Bug Fixes"},
+        {"type": "perf", "section": "Performance"},
+        {"type": "refactor", "section": "Code Refactoring"},
+        {"type": "docs", "section": "Documentation"}
+      ]
+    },
+    "blueprint-plugin": {
+      "release-type": "simple",
+      "extra-files": ["blueprint-plugin/.claude-plugin/plugin.json"],
+      "changelog-sections": [
+        {"type": "feat", "section": "Features"},
+        {"type": "fix", "section": "Bug Fixes"},
+        {"type": "perf", "section": "Performance"},
+        {"type": "refactor", "section": "Code Refactoring"},
+        {"type": "docs", "section": "Documentation"}
+      ]
+    },
+    "code-quality-plugin": {
+      "release-type": "simple",
+      "extra-files": ["code-quality-plugin/.claude-plugin/plugin.json"],
+      "changelog-sections": [
+        {"type": "feat", "section": "Features"},
+        {"type": "fix", "section": "Bug Fixes"},
+        {"type": "perf", "section": "Performance"},
+        {"type": "refactor", "section": "Code Refactoring"},
+        {"type": "docs", "section": "Documentation"}
+      ]
+    },
+    "communication-plugin": {
+      "release-type": "simple",
+      "extra-files": ["communication-plugin/.claude-plugin/plugin.json"],
+      "changelog-sections": [
+        {"type": "feat", "section": "Features"},
+        {"type": "fix", "section": "Bug Fixes"},
+        {"type": "perf", "section": "Performance"},
+        {"type": "refactor", "section": "Code Refactoring"},
+        {"type": "docs", "section": "Documentation"}
+      ]
+    },
+    "configure-plugin": {
+      "release-type": "simple",
+      "extra-files": ["configure-plugin/.claude-plugin/plugin.json"],
+      "changelog-sections": [
+        {"type": "feat", "section": "Features"},
+        {"type": "fix", "section": "Bug Fixes"},
+        {"type": "perf", "section": "Performance"},
+        {"type": "refactor", "section": "Code Refactoring"},
+        {"type": "docs", "section": "Documentation"}
+      ]
+    },
+    "container-plugin": {
+      "release-type": "simple",
+      "extra-files": ["container-plugin/.claude-plugin/plugin.json"],
+      "changelog-sections": [
+        {"type": "feat", "section": "Features"},
+        {"type": "fix", "section": "Bug Fixes"},
+        {"type": "perf", "section": "Performance"},
+        {"type": "refactor", "section": "Code Refactoring"},
+        {"type": "docs", "section": "Documentation"}
+      ]
+    },
+    "documentation-plugin": {
+      "release-type": "simple",
+      "extra-files": ["documentation-plugin/.claude-plugin/plugin.json"],
+      "changelog-sections": [
+        {"type": "feat", "section": "Features"},
+        {"type": "fix", "section": "Bug Fixes"},
+        {"type": "perf", "section": "Performance"},
+        {"type": "refactor", "section": "Code Refactoring"},
+        {"type": "docs", "section": "Documentation"}
+      ]
+    },
+    "dotfiles-plugin": {
+      "release-type": "simple",
+      "extra-files": ["dotfiles-plugin/.claude-plugin/plugin.json"],
+      "changelog-sections": [
+        {"type": "feat", "section": "Features"},
+        {"type": "fix", "section": "Bug Fixes"},
+        {"type": "perf", "section": "Performance"},
+        {"type": "refactor", "section": "Code Refactoring"},
+        {"type": "docs", "section": "Documentation"}
+      ]
+    },
+    "first-plugin": {
+      "release-type": "simple",
+      "extra-files": ["first-plugin/.claude-plugin/plugin.json"],
+      "changelog-sections": [
+        {"type": "feat", "section": "Features"},
+        {"type": "fix", "section": "Bug Fixes"},
+        {"type": "perf", "section": "Performance"},
+        {"type": "refactor", "section": "Code Refactoring"},
+        {"type": "docs", "section": "Documentation"}
+      ]
+    },
+    "git-plugin": {
+      "release-type": "simple",
+      "extra-files": ["git-plugin/.claude-plugin/plugin.json"],
+      "changelog-sections": [
+        {"type": "feat", "section": "Features"},
+        {"type": "fix", "section": "Bug Fixes"},
+        {"type": "perf", "section": "Performance"},
+        {"type": "refactor", "section": "Code Refactoring"},
+        {"type": "docs", "section": "Documentation"}
+      ]
+    },
+    "github-actions-plugin": {
+      "release-type": "simple",
+      "extra-files": ["github-actions-plugin/.claude-plugin/plugin.json"],
+      "changelog-sections": [
+        {"type": "feat", "section": "Features"},
+        {"type": "fix", "section": "Bug Fixes"},
+        {"type": "perf", "section": "Performance"},
+        {"type": "refactor", "section": "Code Refactoring"},
+        {"type": "docs", "section": "Documentation"}
+      ]
+    },
+    "graphiti-plugin": {
+      "release-type": "simple",
+      "extra-files": ["graphiti-plugin/.claude-plugin/plugin.json"],
+      "changelog-sections": [
+        {"type": "feat", "section": "Features"},
+        {"type": "fix", "section": "Bug Fixes"},
+        {"type": "perf", "section": "Performance"},
+        {"type": "refactor", "section": "Code Refactoring"},
+        {"type": "docs", "section": "Documentation"}
+      ]
+    },
+    "kubernetes-plugin": {
+      "release-type": "simple",
+      "extra-files": ["kubernetes-plugin/.claude-plugin/plugin.json"],
+      "changelog-sections": [
+        {"type": "feat", "section": "Features"},
+        {"type": "fix", "section": "Bug Fixes"},
+        {"type": "perf", "section": "Performance"},
+        {"type": "refactor", "section": "Code Refactoring"},
+        {"type": "docs", "section": "Documentation"}
+      ]
+    },
+    "project-plugin": {
+      "release-type": "simple",
+      "extra-files": ["project-plugin/.claude-plugin/plugin.json"],
+      "changelog-sections": [
+        {"type": "feat", "section": "Features"},
+        {"type": "fix", "section": "Bug Fixes"},
+        {"type": "perf", "section": "Performance"},
+        {"type": "refactor", "section": "Code Refactoring"},
+        {"type": "docs", "section": "Documentation"}
+      ]
+    },
+    "python-plugin": {
+      "release-type": "simple",
+      "extra-files": ["python-plugin/.claude-plugin/plugin.json"],
+      "changelog-sections": [
+        {"type": "feat", "section": "Features"},
+        {"type": "fix", "section": "Bug Fixes"},
+        {"type": "perf", "section": "Performance"},
+        {"type": "refactor", "section": "Code Refactoring"},
+        {"type": "docs", "section": "Documentation"}
+      ]
+    },
+    "rust-plugin": {
+      "release-type": "simple",
+      "extra-files": ["rust-plugin/.claude-plugin/plugin.json"],
+      "changelog-sections": [
+        {"type": "feat", "section": "Features"},
+        {"type": "fix", "section": "Bug Fixes"},
+        {"type": "perf", "section": "Performance"},
+        {"type": "refactor", "section": "Code Refactoring"},
+        {"type": "docs", "section": "Documentation"}
+      ]
+    },
+    "sync-plugin": {
+      "release-type": "simple",
+      "extra-files": ["sync-plugin/.claude-plugin/plugin.json"],
+      "changelog-sections": [
+        {"type": "feat", "section": "Features"},
+        {"type": "fix", "section": "Bug Fixes"},
+        {"type": "perf", "section": "Performance"},
+        {"type": "refactor", "section": "Code Refactoring"},
+        {"type": "docs", "section": "Documentation"}
+      ]
+    },
+    "terraform-plugin": {
+      "release-type": "simple",
+      "extra-files": ["terraform-plugin/.claude-plugin/plugin.json"],
+      "changelog-sections": [
+        {"type": "feat", "section": "Features"},
+        {"type": "fix", "section": "Bug Fixes"},
+        {"type": "perf", "section": "Performance"},
+        {"type": "refactor", "section": "Code Refactoring"},
+        {"type": "docs", "section": "Documentation"}
+      ]
+    },
+    "testing-plugin": {
+      "release-type": "simple",
+      "extra-files": ["testing-plugin/.claude-plugin/plugin.json"],
+      "changelog-sections": [
+        {"type": "feat", "section": "Features"},
+        {"type": "fix", "section": "Bug Fixes"},
+        {"type": "perf", "section": "Performance"},
+        {"type": "refactor", "section": "Code Refactoring"},
+        {"type": "docs", "section": "Documentation"}
+      ]
+    },
+    "tools-plugin": {
+      "release-type": "simple",
+      "extra-files": ["tools-plugin/.claude-plugin/plugin.json"],
+      "changelog-sections": [
+        {"type": "feat", "section": "Features"},
+        {"type": "fix", "section": "Bug Fixes"},
+        {"type": "perf", "section": "Performance"},
+        {"type": "refactor", "section": "Code Refactoring"},
+        {"type": "docs", "section": "Documentation"}
+      ]
+    },
+    "typescript-plugin": {
+      "release-type": "simple",
+      "extra-files": ["typescript-plugin/.claude-plugin/plugin.json"],
+      "changelog-sections": [
+        {"type": "feat", "section": "Features"},
+        {"type": "fix", "section": "Bug Fixes"},
+        {"type": "perf", "section": "Performance"},
+        {"type": "refactor", "section": "Code Refactoring"},
+        {"type": "docs", "section": "Documentation"}
+      ]
+    }
+  },
+  "separate-pull-requests": true
+}
