@@ -1,16 +1,18 @@
 ---
 created: 2025-12-16
-modified: 2025-12-17
-reviewed: 2025-12-17
+modified: 2025-12-22
+reviewed: 2025-12-22
 description: "Generate workflow commands based on project structure and PRDs"
-allowed_tools: [Read, Write, Bash, Glob]
+allowed_tools: [Read, Write, Bash, Glob, AskUserQuestion]
 ---
 
 Generate workflow commands customized for this project.
 
+Commands are generated to `.claude/blueprints/generated/commands/` (regeneratable layer).
+
 **Prerequisites**:
 - Project has recognizable structure (package.json, Makefile, etc.)
-- PRDs exist in `.claude/blueprints/prds/`
+- PRDs exist in `docs/prds/`
 
 **Steps**:
 
@@ -32,9 +34,17 @@ Generate workflow commands customized for this project.
    - Check `Makefile` targets
    - Check project-specific tools
 
-4. **Generate `/project:continue` command**:
+4. **Check for existing generated commands**:
+   ```bash
+   ls .claude/blueprints/generated/commands/ 2>/dev/null
+   ```
+   - If commands exist, check manifest for content hashes
+   - Compare current content hash vs stored hash
+   - If modified, offer options: overwrite, skip, or promote to custom
 
-   Create file at `.claude/commands/project/continue.md`:
+5. **Generate `/project:continue` command**:
+
+   Create file at `.claude/blueprints/generated/commands/project-continue.md`:
    ```markdown
    ---
    description: "Continue development on [project-name] (project-specific)"
@@ -53,7 +63,7 @@ Generate workflow commands customized for this project.
       - Run `git log -5 --oneline` (recent commits)
 
    2. **Read context**:
-      - All PRDs in `.claude/blueprints/prds/`
+      - All PRDs in `docs/prds/`
       - `work-overview.md` (current phase and progress)
       - Recent work-orders (completed and pending)
 
@@ -73,9 +83,9 @@ Generate workflow commands customized for this project.
    - Approach and plan
    ```
 
-5. **Generate `/project:test-loop` command**:
+6. **Generate `/project:test-loop` command**:
 
-   Create file at `.claude/commands/project/test-loop.md`:
+   Create file at `.claude/blueprints/generated/commands/project-test-loop.md`:
    ```markdown
    ---
    description: "TDD loop for [project-name] using [test-runner]"
@@ -110,38 +120,77 @@ Generate workflow commands customized for this project.
    - Current status (all pass / needs work / blocked)
    ```
 
-6. **Generate project-specific commands** (optional):
+7. **Generate project-specific commands** (optional):
    - If web app: Commands for starting dev server, running migrations
    - If CLI: Commands for building, testing CLI
    - If library: Commands for building, publishing
 
-7. **Update manifest**:
-   - Read `.claude/blueprints/.manifest.json`
-   - Add generated commands to `generated_artifacts.commands`
-   - Update `updated_at` timestamp
-
-8. **Report**:
+8. **Update manifest with generation tracking**:
+   ```json
+   {
+     "project": {
+       "detected_stack": ["typescript", "bun", "react"]
+     },
+     "generated": {
+       "commands": {
+         "project-continue": {
+           "source": "auto-detection",
+           "detected_stack": "[detected stack]",
+           "generated_at": "[ISO timestamp]",
+           "plugin_version": "2.0.0",
+           "content_hash": "sha256:...",
+           "status": "current"
+         },
+         "project-test-loop": { ... }
+       }
+     }
+   }
    ```
-   ✅ Workflow commands generated!
 
-   Created:
-   - .claude/commands/project/continue.md → /project:continue
-   - .claude/commands/project/test-loop.md → /project:test-loop
+9. **Report**:
+   ```
+   Workflow commands generated!
+
+   Created in .claude/blueprints/generated/commands/:
+   - project-continue.md → /project:continue
+   - project-test-loop.md → /project:test-loop
    [- Additional project-specific commands]
 
    Detected configuration:
    - Project type: [Node.js / Python / Rust / etc.]
+   - Stack: [detected libraries/frameworks]
    - Test command: [detected command]
    - Build command: [detected command]
    - Dev command: [detected command]
 
-   Next steps:
-   1. Use `/project:continue` to start or resume development
-   2. Use `/project:test-loop` for TDD automation
-   3. Use `/blueprint-work-order` to create isolated tasks
-
-   All commands use namespaced pattern (project:*) and are now available!
+   Layer information:
+   - Plugin layer: Generic commands from blueprint-plugin
+   - Generated layer: These commands (regeneratable)
+   - Custom layer: Override by creating .claude/commands/project/
    ```
+
+10. **Prompt for next action** (use AskUserQuestion):
+    ```
+    question: "Workflow commands ready. What would you like to do?"
+    options:
+      - label: "Start development (Recommended)"
+        description: "Run /project:continue to begin working on next task"
+      - label: "Create a work-order"
+        description: "Package a task for isolated subagent execution"
+      - label: "Update CLAUDE.md"
+        description: "Regenerate project overview with new commands"
+      - label: "Promote command to custom layer"
+        description: "Move a generated command to .claude/commands/ for customization"
+      - label: "I'm done for now"
+        description: "Exit - commands are ready to use anytime"
+    ```
+
+    **Based on selection:**
+    - "Start development" → Run `/project:continue`
+    - "Create a work-order" → Run `/blueprint:work-order`
+    - "Update CLAUDE.md" → Run `/blueprint:claude-md`
+    - "Promote command" → Run `/blueprint:promote [command-name]`
+    - "I'm done for now" → Exit
 
 **Important**:
 - Detect actual project commands (detect dynamically from project structure)
@@ -152,4 +201,4 @@ Generate workflow commands customized for this project.
 **Error Handling**:
 - If project type unclear → Ask user for clarification
 - If no test command found → Ask user how to run tests
-- If commands already exist → Ask to overwrite or skip
+- If commands already exist and modified → Offer to promote to custom layer before overwriting

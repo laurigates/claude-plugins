@@ -1,6 +1,6 @@
 ---
 created: 2025-12-17
-modified: 2025-12-17
+modified: 2025-12-22
 reviewed: 2025-12-17
 description: "Generate or update CLAUDE.md from project context and blueprint artifacts"
 allowed_tools: [Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion]
@@ -170,6 +170,26 @@ Generate or update the project's CLAUDE.md file based on blueprint artifacts, PR
 - Reference modular rules for details
 - Update when PRDs change significantly
 - Include current focus/phase for context
+
+11. **Prompt for next action** (use AskUserQuestion):
+    ```
+    question: "CLAUDE.md updated. What would you like to do next?"
+    options:
+      - label: "Check blueprint status (Recommended)"
+        description: "Run /blueprint:status to verify configuration"
+      - label: "Manage modular rules"
+        description: "Add or edit rules in .claude/rules/"
+      - label: "Continue development"
+        description: "Run /project:continue to work on next task"
+      - label: "I'm done for now"
+        description: "Exit - CLAUDE.md is saved"
+    ```
+
+    **Based on selection:**
+    - "Check blueprint status" → Run `/blueprint:status`
+    - "Manage modular rules" → Run `/blueprint:rules`
+    - "Continue development" → Run `/project:continue`
+    - "I'm done" → Exit
 
 **Template Sections** (customize per project type):
 

@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2025-12-17
-reviewed: 2025-12-17
+modified: 2025-12-22
+reviewed: 2025-12-22
 description: "Initialize Blueprint Development structure in current project"
 allowed_tools: [Bash, Write, Read, AskUserQuestion]
 ---
@@ -17,7 +17,7 @@ Initialize Blueprint Development in this project.
      Use AskUserQuestion:
      question: "Blueprint already initialized (v{version}). What would you like to do?"
      options:
-       - "Check for upgrades" → run /blueprint-upgrade
+       - "Check for upgrades" → run /blueprint:upgrade
        - "Reinitialize (will reset manifest)" → continue with step 2
        - "Cancel" → exit
      ```
@@ -42,45 +42,72 @@ Initialize Blueprint Development in this project.
    ```
 
 4. **Create directory structure**:
+
+   **Project documentation (in docs/):**
+   ```
+   docs/
+   ├── prds/                        # Product Requirements Documents
+   ├── adrs/                        # Architecture Decision Records
+   └── prps/                        # Product Requirement Prompts
+   ```
+
+   **Claude configuration (in .claude/):**
    ```
    .claude/
    ├── blueprints/
-   │   ├── .manifest.json          # Version tracking (NEW)
-   │   ├── prds/                   # Product Requirements Documents
-   │   ├── work-orders/            # Task packages for subagents
-   │   │   ├── completed/          # Completed work-orders
-   │   │   └── archived/           # Obsolete work-orders
-   │   └── templates/              # Custom templates (optional)
-   └── rules/                      # Modular rules (if selected)
-       ├── development.md          # Development workflow rules
-       └── testing.md              # Testing requirements
+   │   ├── .manifest.json           # Version tracking
+   │   ├── work-orders/             # Task packages for subagents
+   │   │   ├── completed/
+   │   │   └── archived/
+   │   ├── ai_docs/                 # Curated documentation (on-demand)
+   │   │   ├── libraries/
+   │   │   └── project/
+   │   ├── generated/               # Auto-generated content (regeneratable)
+   │   │   ├── skills/              # Skills from PRDs
+   │   │   └── commands/            # Commands from project detection
+   │   └── work-overview.md         # Progress tracking
+   ├── skills/                      # Custom skill overrides (optional)
+   └── commands/                    # Custom command overrides (optional)
    ```
 
-5. **Create `.manifest.json`**:
+   **With modular rules (if selected):**
+   ```
+   .claude/
+   └── rules/                       # Modular rules
+       ├── development.md           # Development workflow rules
+       └── testing.md               # Testing requirements
+   ```
+
+5. **Create `.manifest.json`** (v2.0.0 schema):
    ```json
    {
-     "format_version": "1.1.0",
+     "format_version": "2.0.0",
      "created_at": "[ISO timestamp]",
      "updated_at": "[ISO timestamp]",
      "created_by": {
-       "blueprint_plugin": "1.0.0"
+       "blueprint_plugin": "2.0.0"
      },
      "project": {
        "name": "[detected or asked]",
-       "type": "[personal|team|opensource]"
+       "type": "[personal|team|opensource]",
+       "detected_stack": []
      },
      "structure": {
        "has_prds": true,
+       "has_adrs": true,
+       "has_prps": true,
        "has_work_orders": true,
        "has_ai_docs": false,
-       "has_templates": false,
        "has_modular_rules": "[based on user choice]",
        "claude_md_mode": "[single|modular|both]"
      },
-     "generated_artifacts": {
-       "commands": [],
+     "generated": {
+       "skills": {},
+       "commands": {}
+     },
+     "custom_overrides": {
        "skills": [],
-       "rules": []
+       "commands": []
      }
    }
    ```
@@ -92,18 +119,18 @@ Initialize Blueprint Development in this project.
    ## Current Phase: [Phase name - e.g., "Planning", "Phase 1", "MVP"]
 
    ### Completed
-   - ✅ [Completed task 1]
+   - (none yet)
 
    ### In Progress
-   - ⏳ [Current task]
+   - (none yet)
 
    ### Pending
-   - ⏹️ [Pending task 1]
-   - ⏹️ [Pending task 2]
+   - (none yet)
 
    ## Next Steps
-   1. [Next step 1]
-   2. [Next step 2]
+   1. Create a PRD to define project requirements
+   2. Generate project-specific skills from PRDs
+   3. Generate workflow commands for your stack
    ```
 
 7. **Create initial rules** (if modular rules selected):
@@ -113,16 +140,22 @@ Initialize Blueprint Development in this project.
 8. **Handle `.gitignore`** based on project type:
    - Personal: Add `.claude/` to `.gitignore`
    - Team: Commit `.claude/` (ask about secrets)
-   - Open source: Commit `.claude/rules/`, gitignore `.claude/blueprints/work-orders/`
+   - Open source: Commit `docs/`, `.claude/rules/`, gitignore `.claude/blueprints/work-orders/`
 
 9. **Report**:
    ```
-   ✅ Blueprint Development initialized! (v1.1.0)
+   Blueprint Development initialized! (v2.0.0)
 
-   Created:
-   - .claude/blueprints/.manifest.json (version tracking)
-   - .claude/blueprints/prds/
+   Project documentation created:
+   - docs/prds/           (Product Requirements Documents)
+   - docs/adrs/           (Architecture Decision Records)
+   - docs/prps/           (Product Requirement Prompts)
+
+   Claude configuration created:
+   - .claude/blueprints/.manifest.json
    - .claude/blueprints/work-orders/
+   - .claude/blueprints/ai_docs/
+   - .claude/blueprints/generated/
    - .claude/blueprints/work-overview.md
    [- .claude/rules/ (if modular rules enabled)]
 
@@ -130,16 +163,44 @@ Initialize Blueprint Development in this project.
    - Project type: [personal|team|opensource]
    - Rules mode: [single|modular|both]
 
-   Next steps:
-   1. Write PRDs in `.claude/blueprints/prds/`
-   2. Run `/blueprint-generate-skills` to create project-specific skills
-   3. Run `/blueprint-generate-commands` to create workflow commands
-   4. Run `/blueprint-rules` to add domain-specific rules
-   5. Start development with `/project:continue`
-
-   Management commands:
-   - `/blueprint-status` - Check version and configuration
-   - `/blueprint-upgrade` - Upgrade to latest format
-   - `/blueprint-rules` - Manage modular rules
-   - `/blueprint-claude-md` - Update CLAUDE.md
+   Architecture:
+   - Plugin layer: Generic commands from blueprint-plugin (auto-updated)
+   - Generated layer: Skills/commands regeneratable from docs/prds/
+   - Custom layer: Your overrides in .claude/skills/ and .claude/commands/
    ```
+
+10. **Prompt for next action** (use AskUserQuestion):
+    ```
+    question: "Blueprint initialized. What would you like to do next?"
+    options:
+      - label: "Create a PRD"
+        description: "Write requirements for a feature (recommended first step)"
+      - label: "Generate project commands"
+        description: "Detect project type and create /project:continue, /project:test-loop"
+      - label: "Add modular rules"
+        description: "Create .claude/rules/ for domain-specific guidelines"
+      - label: "I'm done for now"
+        description: "Exit - you can run /blueprint:status anytime to see options"
+    ```
+
+    **Based on selection:**
+    - "Create a PRD" → Run `/blueprint:prd`
+    - "Generate project commands" → Run `/blueprint:generate-commands`
+    - "Add modular rules" → Run `/blueprint:rules`
+    - "I'm done for now" → Show quick reference and exit
+
+**Quick Reference** (show if user selects "I'm done for now"):
+```
+Management commands:
+- /blueprint:status          - Check version and configuration
+- /blueprint:upgrade         - Upgrade to latest format version
+- /blueprint:prd             - Create a Product Requirements Document
+- /blueprint:adr             - Create an Architecture Decision Record
+- /blueprint:prp-create      - Create a Product Requirement Prompt
+- /blueprint:generate-skills - Generate skills from PRDs
+- /blueprint:generate-commands - Create workflow commands
+- /blueprint:sync            - Check for stale generated content
+- /blueprint:promote         - Move generated content to custom layer
+- /blueprint:rules           - Manage modular rules
+- /blueprint:claude-md       - Update CLAUDE.md
+```

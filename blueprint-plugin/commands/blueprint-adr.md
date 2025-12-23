@@ -28,7 +28,7 @@ If no PRD → suggest `/blueprint:prd` first (recommended, not required)
 
 ### 1.2 Create ADR Directory
 ```bash
-mkdir -p .claude/blueprints/adrs
+mkdir -p docs/adrs
 ```
 
 ### 1.3 Analyze Project Structure
@@ -205,7 +205,7 @@ Use `/blueprint:adr` or the `architecture-decisions` agent to create new ADRs.
 ```
 ✅ ADRs Generated: {count} records
 
-**Location**: `.claude/blueprints/adrs/`
+**Location**: `docs/adrs/`
 
 **Decisions documented**:
 - ADR-0001: {title} - {status}
@@ -223,13 +223,13 @@ Use `/blueprint:adr` or the `architecture-decisions` agent to create new ADRs.
 **Recommended next steps**:
 1. Review generated ADRs for accuracy
 2. Add rationale where marked as "inferred"
-3. Run `/prp:create` for feature implementation
+3. Run `/blueprint:prp-create` for feature implementation
 4. Run `/blueprint:generate-skills` for project skills
 ```
 
 ### 4.2 Suggest Next Steps
 - If PRD missing → suggest `/blueprint:prd`
-- If ready for implementation → suggest `/prp:create`
+- If ready for implementation → suggest `/blueprint:prp-create`
 - If architecture evolving → explain how to add new ADRs
 
 ## Phase 5: Update Manifest
@@ -245,6 +245,30 @@ Update `.claude/blueprints/.manifest.json`:
 - Mark uncertain rationales for user review
 - Keep ADRs concise - focus on "why", not implementation details
 - Reference related ADRs when decisions are connected
+
+### 4.3 Prompt for next action (use AskUserQuestion):
+
+```
+question: "ADRs generated. What would you like to do next?"
+options:
+  - label: "Create a PRP for feature work (Recommended)"
+    description: "Start implementing a specific feature with /blueprint:prp-create"
+  - label: "Generate project skills"
+    description: "Create skills from PRDs for Claude context"
+  - label: "Review and add rationale"
+    description: "Edit ADRs marked as 'inferred' or 'needs rationale'"
+  - label: "Document another architecture decision"
+    description: "Manually add a new ADR"
+  - label: "I'm done for now"
+    description: "Exit - ADRs are saved"
+```
+
+**Based on selection:**
+- "Create a PRP" → Run `/blueprint:prp-create` (ask for feature name)
+- "Generate project skills" → Run `/blueprint:generate-skills`
+- "Review and add rationale" → Show ADR files needing attention
+- "Document another decision" → Restart Phase 2 for a specific decision
+- "I'm done" → Exit
 
 **Error Handling**:
 - If minimal codebase → create fewer, broader ADRs

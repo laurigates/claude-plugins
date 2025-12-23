@@ -98,9 +98,9 @@ options:
 ## Phase 3: PRD Generation
 
 ### 3.1 Create PRD File
-Create the PRD in `.claude/blueprints/prds/`:
+Create the PRD in `docs/prds/`:
 ```
-.claude/blueprints/prds/project-overview.md
+docs/prds/project-overview.md
 ```
 
 ### 3.2 PRD Template
@@ -217,7 +217,7 @@ Show the user:
 ```
 ✅ PRD Generated: {Project Name}
 
-**Location**: `.claude/blueprints/prds/project-overview.md`
+**Location**: `docs/prds/project-overview.md`
 
 **Extracted from**:
 - {list of source documents}
@@ -235,14 +235,14 @@ Show the user:
 **Recommended next steps**:
 1. Review and refine the generated PRD
 2. Run `/blueprint:adr` to document architecture decisions
-3. Run `/prp:create` for specific features
+3. Run `/blueprint:prp-create` for specific features
 4. Run `/blueprint:generate-skills` to create project skills
 ```
 
 ### 4.2 Suggest Follow-up
 Based on what was generated:
 - If architecture unclear → suggest `/blueprint:adr`
-- If features identified → suggest `/prp:create` for key features
+- If features identified → suggest `/blueprint:prp-create` for key features
 - If PRD complete → suggest `/blueprint:generate-skills`
 
 ## Phase 5: Update Manifest
@@ -258,6 +258,30 @@ Update `.claude/blueprints/.manifest.json`:
 - Infer from code structure when documentation is sparse
 - Mark uncertain sections for user review
 - Keep PRD focused on "what" and "why", not "how"
+
+### 4.3 Prompt for next action (use AskUserQuestion):
+
+```
+question: "PRD generated. What would you like to do next?"
+options:
+  - label: "Document architecture decisions (Recommended)"
+    description: "Run /blueprint:adr to capture technical decisions"
+  - label: "Generate project skills"
+    description: "Extract skills from PRD for Claude context"
+  - label: "Create a PRP for a feature"
+    description: "Start implementing a specific feature"
+  - label: "Review and refine PRD"
+    description: "I want to edit the generated PRD first"
+  - label: "I'm done for now"
+    description: "Exit - PRD is saved"
+```
+
+**Based on selection:**
+- "Document architecture decisions" → Run `/blueprint:adr`
+- "Generate project skills" → Run `/blueprint:generate-skills`
+- "Create a PRP" → Run `/blueprint:prp-create` (ask for feature name)
+- "Review and refine" → Show PRD file location and key sections needing attention
+- "I'm done" → Exit
 
 **Error Handling**:
 - If no README.md → ask user for project description

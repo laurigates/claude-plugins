@@ -1,12 +1,12 @@
 ---
 created: 2025-12-17
-modified: 2025-12-17
-reviewed: 2025-12-17
+modified: 2025-12-22
+reviewed: 2025-12-22
 description: "Show blueprint version, configuration, and check for available upgrades"
-allowed_tools: [Read, Bash, Glob]
+allowed_tools: [Read, Bash, Glob, AskUserQuestion]
 ---
 
-Display the current blueprint configuration status and check for upgrades.
+Display the current blueprint configuration status with three-layer architecture breakdown.
 
 **Steps**:
 
@@ -14,25 +14,37 @@ Display the current blueprint configuration status and check for upgrades.
    - Look for `.claude/blueprints/.manifest.json`
    - If not found, report:
      ```
-     ❌ Blueprint not initialized in this project.
-     Run `/blueprint-init` to get started.
+     Blueprint not initialized in this project.
+     Run `/blueprint:init` to get started.
      ```
 
 2. **Read manifest and gather information**:
    - Parse `.manifest.json` for version and configuration
-   - Count PRDs in `.claude/blueprints/prds/`
+   - Count PRDs in `docs/prds/`
+   - Count ADRs in `docs/adrs/`
+   - Count PRPs in `docs/prps/`
    - Count work-orders (pending, completed, archived)
-   - Check for `.claude/rules/` directory and count rules
+   - Count generated skills in `.claude/blueprints/generated/skills/`
+   - Count generated commands in `.claude/blueprints/generated/commands/`
+   - Count custom skills in `.claude/skills/`
+   - Count custom commands in `.claude/commands/`
+   - Check for `.claude/rules/` directory
    - Check for `CLAUDE.md` file
 
 3. **Check for upgrade availability**:
    - Compare `format_version` in manifest with current plugin version
-   - Current format version: **1.1.0**
+   - Current format version: **2.0.0**
    - If manifest version < current → upgrade available
 
-4. **Display status report**:
+4. **Check generated content status**:
+   - For each generated skill/command in manifest:
+     - Hash current file content
+     - Compare with stored `content_hash`
+     - Status: `current` (unchanged), `modified` (user edited), `stale` (source PRDs changed)
+
+5. **Display status report**:
    ```
-   📋 Blueprint Status
+   Blueprint Status
 
    Version: v{format_version} {upgrade_indicator}
    Initialized: {created_at}
@@ -41,69 +53,172 @@ Display the current blueprint configuration status and check for upgrades.
    Project Configuration:
    - Name: {project.name}
    - Type: {project.type}
+   - Stack: {project.detected_stack}
    - Rules Mode: {structure.claude_md_mode}
 
-   Content:
-   - PRDs: {count} documents
-   - Work Orders: {pending} pending, {completed} completed, {archived} archived
-   - Generated Commands: {count}
-   - Generated Skills: {count}
-   - Modular Rules: {count} files
+   Project Documentation (docs/):
+   - PRDs: {count} in docs/prds/
+   - ADRs: {count} in docs/adrs/
+   - PRPs: {count} in docs/prps/
+
+   Work Orders (.claude/blueprints/work-orders/):
+   - Pending: {count}
+   - Completed: {count}
+   - Archived: {count}
+
+   Three-Layer Architecture:
+
+   Layer 1: Plugin (blueprint-plugin)
+   - Commands: /blueprint:* (auto-updated with plugin)
+   - Skills: blueprint-development, blueprint-migration, confidence-scoring
+   - Agents: requirements-documentation, architecture-decisions, prp-preparation
+
+   Layer 2: Generated (.claude/blueprints/generated/)
+   - Skills: {count} ({status_summary})
+     {list each with status indicator: ✅ current, ⚠️ modified, 🔄 stale}
+   - Commands: {count} ({status_summary})
+     {list each with status indicator}
+
+   Layer 3: Custom (.claude/skills/, .claude/commands/)
+   - Skills: {count} (user-maintained)
+   - Commands: {count} (user-maintained)
 
    Structure:
    ✅ .claude/blueprints/.manifest.json
-   {✅|❌} .claude/blueprints/prds/
+   {✅|❌} docs/prds/
+   {✅|❌} docs/adrs/
+   {✅|❌} docs/prps/
    {✅|❌} .claude/blueprints/work-orders/
-   {✅|❌} .claude/blueprints/work-overview.md
+   {✅|❌} .claude/blueprints/ai_docs/
+   {✅|❌} .claude/blueprints/generated/
    {✅|❌} .claude/rules/
    {✅|❌} CLAUDE.md
 
    {If upgrade available:}
-   ⬆️  Upgrade available: v{current} → v{latest}
-      Run `/blueprint-upgrade` to upgrade.
+   Upgrade available: v{current} → v{latest}
+      Run `/blueprint:upgrade` to upgrade.
+
+   {If modified generated content:}
+   Modified content detected: {count} files
+      Run `/blueprint:sync` to review changes.
+      Run `/blueprint:promote [name]` to move to custom layer.
+
+   {If stale generated content:}
+   Stale content detected: {count} files (PRDs changed since generation)
+      Run `/blueprint:generate-skills` to regenerate.
 
    {If up to date:}
-   ✅ Blueprint is up to date.
+   Blueprint is up to date.
    ```
 
-5. **Additional checks**:
+6. **Additional checks**:
    - Warn if work-overview.md is stale (older than latest work-order)
-   - Warn if PRDs exist but no work-orders generated
+   - Warn if PRDs exist but no generated skills
    - Warn if modular rules enabled but `.claude/rules/` is empty
-   - Suggest next actions based on state
+   - Warn if generated content is modified or stale
+
+7. **Prompt for next action** (use AskUserQuestion):
+
+   **Build options dynamically based on state:**
+   - If upgrade available → Include "Upgrade to v{latest}"
+   - If modified content → Include "Sync generated content"
+   - If stale content → Include "Regenerate skills"
+   - If PRDs exist but no generated skills → Include "Generate skills from PRDs"
+   - If skills exist but no commands → Include "Generate workflow commands"
+   - If CLAUDE.md stale → Include "Update CLAUDE.md"
+   - Always include "Continue development" and "I'm done"
+
+   ```
+   question: "What would you like to do?"
+   options:
+     # Dynamic - include based on state detected above
+     - label: "Upgrade to v{latest}" (if upgrade available)
+       description: "Upgrade blueprint format to latest version"
+     - label: "Sync generated content" (if modified)
+       description: "Review changes to generated skills/commands"
+     - label: "Regenerate from PRDs" (if stale)
+       description: "Update generated content from changed PRDs"
+     - label: "Generate skills from PRDs" (if PRDs exist, no skills)
+       description: "Extract project-specific skills from your PRDs"
+     - label: "Generate workflow commands" (if skills exist, no commands)
+       description: "Create /project:continue and /project:test-loop"
+     - label: "Update CLAUDE.md" (if stale or missing)
+       description: "Regenerate project overview document"
+     # Always include these:
+     - label: "Continue development"
+       description: "Run /project:continue to work on next task"
+     - label: "I'm done for now"
+       description: "Exit status check"
+   ```
+
+   **Based on selection:**
+   - "Upgrade" → Run `/blueprint:upgrade`
+   - "Sync" → Run `/blueprint:sync`
+   - "Regenerate" → Run `/blueprint:generate-skills`
+   - "Generate skills" → Run `/blueprint:generate-skills`
+   - "Generate commands" → Run `/blueprint:generate-commands`
+   - "Update CLAUDE.md" → Run `/blueprint:claude-md`
+   - "Continue development" → Run `/project:continue`
+   - "I'm done" → Exit
 
 **Example Output**:
 ```
-📋 Blueprint Status
+Blueprint Status
 
-Version: v1.0.0 (upgrade available!)
+Version: v2.0.0
 Initialized: 2024-01-10T09:00:00Z
 Last Updated: 2024-01-15T14:30:00Z
 
 Project Configuration:
 - Name: my-awesome-project
 - Type: team
-- Rules Mode: both
+- Stack: typescript, bun, react
+- Rules Mode: modular
 
-Content:
-- PRDs: 3 documents
-- Work Orders: 5 pending, 12 completed, 2 archived
-- Generated Commands: 2 (project-continue, project-test-loop)
-- Generated Skills: 4
-- Modular Rules: 3 files
+Project Documentation (docs/):
+- PRDs: 3 in docs/prds/
+- ADRs: 5 in docs/adrs/
+- PRPs: 2 in docs/prps/
+
+Work Orders (.claude/blueprints/work-orders/):
+- Pending: 5
+- Completed: 12
+- Archived: 2
+
+Three-Layer Architecture:
+
+Layer 1: Plugin (blueprint-plugin)
+- Commands: 13 /blueprint:* commands (auto-updated)
+- Skills: 3 (blueprint-development, blueprint-migration, confidence-scoring)
+- Agents: 3 (requirements-documentation, architecture-decisions, prp-preparation)
+
+Layer 2: Generated (.claude/blueprints/generated/)
+- Skills: 4 (3 current, 1 modified)
+  - ✅ architecture-patterns (current)
+  - ⚠️ testing-strategies (modified locally)
+  - ✅ implementation-guides (current)
+  - ✅ quality-standards (current)
+- Commands: 2 (all current)
+  - ✅ project-continue
+  - ✅ project-test-loop
+
+Layer 3: Custom (.claude/skills/, .claude/commands/)
+- Skills: 1 (my-custom-skill)
+- Commands: 0
 
 Structure:
 ✅ .claude/blueprints/.manifest.json
-✅ .claude/blueprints/prds/
+✅ docs/prds/
+✅ docs/adrs/
+✅ docs/prps/
 ✅ .claude/blueprints/work-orders/
-✅ .claude/blueprints/work-overview.md
+✅ .claude/blueprints/ai_docs/
+✅ .claude/blueprints/generated/
 ✅ .claude/rules/
 ✅ CLAUDE.md
 
-⬆️  Upgrade available: v1.0.0 → v1.1.0
-   Run `/blueprint-upgrade` to upgrade.
+Modified content detected: 1 file
+   Run `/blueprint:sync` to review or `/blueprint:promote testing-strategies` to preserve.
 
-💡 Suggestions:
-- work-overview.md hasn't been updated in 3 days
-- Consider running `/blueprint-claude-md` to sync CLAUDE.md
+Blueprint is up to date.
 ```

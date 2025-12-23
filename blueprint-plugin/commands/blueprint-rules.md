@@ -1,6 +1,6 @@
 ---
 created: 2025-12-17
-modified: 2025-12-17
+modified: 2025-12-22
 reviewed: 2025-12-17
 description: "Manage modular rules in .claude/rules/ directory"
 allowed_tools: [Read, Write, Edit, Bash, Glob, AskUserQuestion]
@@ -162,6 +162,26 @@ Manage modular rules for the project. Rules are markdown files in `.claude/rules
 
     Run `/blueprint-status` to see full configuration.
     ```
+
+11. **Prompt for next action** (use AskUserQuestion):
+    ```
+    question: "Rules updated. What would you like to do next?"
+    options:
+      - label: "Update CLAUDE.md (Recommended)"
+        description: "Regenerate overview to reflect rule changes"
+      - label: "Add another rule"
+        description: "Create additional domain-specific rules"
+      - label: "Check blueprint status"
+        description: "Run /blueprint:status to see full configuration"
+      - label: "I'm done for now"
+        description: "Exit - rules are active immediately"
+    ```
+
+    **Based on selection:**
+    - "Update CLAUDE.md" → Run `/blueprint:claude-md`
+    - "Add another rule" → Restart at step 4 (Add a new rule)
+    - "Check blueprint status" → Run `/blueprint:status`
+    - "I'm done" → Exit
 
 **Common Rule Patterns**:
 

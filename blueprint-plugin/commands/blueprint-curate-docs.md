@@ -1,14 +1,14 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2025-12-22
 reviewed: 2025-12-16
 description: "Curate library or project documentation for ai_docs to optimize AI context"
-allowed_tools: [Read, Write, Glob, Bash, WebFetch, WebSearch]
+allowed_tools: [Read, Write, Glob, Bash, WebFetch, WebSearch, AskUserQuestion]
 ---
 
 Curate documentation for a library or project pattern into an ai_docs entry.
 
-**Usage**: `/prp:curate-docs [library-name]` or `/prp:curate-docs project:[pattern-name]`
+**Usage**: `/blueprint:curate-docs [library-name]` or `/blueprint:curate-docs project:[pattern-name]`
 
 **What is ai_docs?**
 ai_docs are curated documentation entries optimized for AI agents. Unlike raw documentation, they are:
@@ -284,6 +284,27 @@ Focus on:
 - How it's implemented in this codebase
 - Integration with other patterns
 - Common mistakes
+
+### 4.4 Prompt for next action (use AskUserQuestion):
+
+```
+question: "ai_docs entry created. What would you like to do next?"
+options:
+  - label: "Curate another library/pattern"
+    description: "Create additional ai_docs entries"
+  - label: "Create PRP using this context"
+    description: "Use this ai_docs in a feature implementation"
+  - label: "Update linked PRPs"
+    description: "Add ai_docs reference to existing PRPs"
+  - label: "I'm done for now"
+    description: "Exit - ai_docs is saved and ready"
+```
+
+**Based on selection:**
+- "Curate another" → Run `/blueprint:curate-docs` (ask for library/pattern name)
+- "Create PRP using this context" → Run `/blueprint:prp-create` (ask for feature name)
+- "Update linked PRPs" → List PRPs that could benefit from this ai_docs reference
+- "I'm done" → Exit
 
 **Tips**:
 - Be ruthless about conciseness - every line uses tokens

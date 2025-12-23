@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
-reviewed: 2025-12-16
+modified: 2025-12-22
+reviewed: 2025-12-22
 name: blueprint-development
 description: "Generate project-specific skills and commands from PRDs for Blueprint Development methodology. Use when generating skills for architecture patterns, testing strategies, implementation guides, or quality standards from requirements documents."
 ---
@@ -23,7 +23,7 @@ Activate this skill when:
 
 ### Step 1: Analyze PRDs
 
-Read all PRD files in `.claude/blueprints/prds/` and extract:
+Read all PRD files in `docs/prds/` and extract:
 
 **Architecture Patterns**:
 - Project structure and organization
@@ -53,11 +53,18 @@ Read all PRD files in `.claude/blueprints/prds/` and extract:
 
 ### Step 2: Generate Four Domain Skills
 
-Create project-specific skills in `.claude/skills/`:
+Create project-specific skills in `.claude/blueprints/generated/skills/` (regeneratable layer).
+
+**Three-Layer Architecture**:
+1. **Plugin layer**: Generic skills from blueprint-plugin (auto-updated)
+2. **Generated layer**: Skills from PRDs in `.claude/blueprints/generated/skills/` (regeneratable)
+3. **Custom layer**: User overrides in `.claude/skills/` (takes precedence)
+
+Generated skills go to the generated layer:
 
 #### 1. Architecture Patterns Skill
 
-**Location**: `.claude/skills/architecture-patterns/SKILL.md`
+**Location**: `.claude/blueprints/generated/skills/architecture-patterns/skill.md`
 
 **Structure**:
 ```yaml
@@ -95,7 +102,7 @@ description: "Architecture patterns and code organization for [project name]. De
 
 #### 2. Testing Strategies Skill
 
-**Location**: `.claude/skills/testing-strategies/SKILL.md`
+**Location**: `.claude/blueprints/generated/skills/testing-strategies/skill.md`
 
 **Structure**:
 ```yaml
@@ -145,7 +152,7 @@ Follow strict RED → GREEN → REFACTOR:
 
 #### 3. Implementation Guides Skill
 
-**Location**: `.claude/skills/implementation-guides/SKILL.md`
+**Location**: `.claude/blueprints/generated/skills/implementation-guides/skill.md`
 
 **Structure**:
 ```yaml
@@ -193,7 +200,7 @@ description: "Step-by-step guides for implementing specific feature types in [pr
 
 #### 4. Quality Standards Skill
 
-**Location**: `.claude/skills/quality-standards/SKILL.md`
+**Location**: `.claude/blueprints/generated/skills/quality-standards/skill.md`
 
 **Structure**:
 ```yaml
@@ -241,7 +248,7 @@ description: "Code review criteria, performance baselines, security standards, a
 
 For each skill, create a `reference.md` file with additional details:
 
-**Location**: `.claude/skills/[skill-name]/reference.md`
+**Location**: `.claude/blueprints/generated/skills/[skill-name]/reference.md`
 
 **Content**:
 - Detailed explanations of patterns
@@ -275,7 +282,9 @@ Determine:
 
 ### Step 2: Generate Workflow Commands
 
-Create commands in `.claude/commands/`:
+Create commands in `.claude/blueprints/generated/commands/` (regeneratable layer).
+
+Commands follow the same three-layer architecture as skills:
 
 #### 1. `/blueprint:init` Command
 
@@ -428,7 +437,7 @@ Continue project development:
    - Run `git status` (branch, uncommitted changes)
    - Run `git log -5 --oneline` (recent commits)
 2. Read context:
-   - All PRDs in `.claude/blueprints/prds/`
+   - All PRDs in `docs/prds/`
    - `work-overview.md` (current phase and progress)
    - Recent work-orders (completed and pending)
 3. Identify next task:

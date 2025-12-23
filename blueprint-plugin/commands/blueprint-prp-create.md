@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2025-12-22
 reviewed: 2025-12-16
 description: "Create a PRP (Product Requirement Prompt) with systematic research, curated context, and validation gates"
-allowed_tools: [Read, Write, Glob, Bash, WebFetch, WebSearch, Task]
+allowed_tools: [Read, Write, Glob, Bash, WebFetch, WebSearch, Task, AskUserQuestion]
 ---
 
 Create a comprehensive PRP (Product Requirement Prompt) for a feature or component.
@@ -63,9 +63,9 @@ If relevant ai_docs don't exist, create them:
 ## Phase 2: Draft PRP
 
 ### 2.1 Create PRP File
-Create the PRP in `.claude/blueprints/prps/`:
+Create the PRP in `docs/prps/`:
 ```
-.claude/blueprints/prps/[feature-name].md
+docs/prps/[feature-name].md
 ```
 
 ### 2.2 Fill Sections
@@ -147,7 +147,7 @@ Show the user:
 ```
 ## PRP Created: [Feature Name]
 
-**Location:** `.claude/blueprints/prps/[feature-name].md`
+**Location:** `docs/prps/[feature-name].md`
 
 **Summary:**
 [1-2 sentence summary of what will be implemented]
@@ -174,13 +174,48 @@ Show the user:
 - Gotchas: X/10
 - Validation: X/10
 
-**Ready for:**
-- [ ] Execution (`/prp:execute [feature-name]`)
-- [ ] Work-order generation (`/blueprint:work-order`)
-
 **Needs attention (if score < 7):**
 - [List any gaps to address]
 ```
+
+### 4.3 Prompt for next action (use AskUserQuestion):
+
+**If confidence score >= 7:**
+```
+question: "PRP ready (confidence: X/10). What would you like to do?"
+options:
+  - label: "Execute PRP now (Recommended)"
+    description: "Implement the feature with TDD workflow and validation gates"
+  - label: "Create work-order for subagent"
+    description: "Package this PRP for isolated execution by a subagent"
+  - label: "Review and refine first"
+    description: "I want to improve the PRP before executing"
+  - label: "I'm done for now"
+    description: "Save PRP and exit - execute later with /blueprint:prp-execute"
+```
+
+**If confidence score < 7:**
+```
+question: "PRP needs work (confidence: X/10). What would you like to do?"
+options:
+  - label: "Research more context"
+    description: "Explore codebase and documentation to fill gaps"
+  - label: "Create ai_docs entries"
+    description: "Curate library documentation to improve context"
+  - label: "Execute anyway (risky)"
+    description: "Proceed with implementation despite low confidence"
+  - label: "I'm done for now"
+    description: "Save incomplete PRP and return later"
+```
+
+**Based on selection:**
+- "Execute PRP now" → Run `/blueprint:prp-execute [feature-name]`
+- "Create work-order" → Run `/blueprint:work-order`
+- "Review and refine" → Show PRP file location and key gaps
+- "Research more context" → Use Explore agent on identified gaps
+- "Create ai_docs entries" → Run `/blueprint:curate-docs` for relevant libraries
+- "Execute anyway" → Run `/blueprint:prp-execute [feature-name]` with warning
+- "I'm done" → Exit
 
 **Tips**:
 - Be thorough in research phase - it saves implementation time

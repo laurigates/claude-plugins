@@ -1,18 +1,18 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2025-12-22
 reviewed: 2025-12-16
 description: "Execute a PRP with validation loop, TDD workflow, and quality gates"
-allowed_tools: [Read, Write, Edit, Glob, Bash, Task]
+allowed_tools: [Read, Write, Edit, Glob, Bash, Task, AskUserQuestion]
 ---
 
 Execute a PRP (Product Requirement Prompt) with systematic implementation and validation.
 
-**Usage**: `/prp:execute [prp-name]`
+**Usage**: `/blueprint:prp-execute [prp-name]`
 
 **Prerequisites**:
-- PRP exists in `.claude/blueprints/prps/[prp-name].md`
-- Confidence score >= 7 (if lower, suggest `/prp:create` refinement)
+- PRP exists in `docs/prps/[prp-name].md`
+- Confidence score >= 7 (if lower, suggest `/blueprint:prp-create` refinement)
 
 **Execution Phases**:
 
@@ -20,7 +20,7 @@ Execute a PRP (Product Requirement Prompt) with systematic implementation and va
 
 ### 1.1 Read PRP
 ```bash
-cat .claude/blueprints/prps/$PRP_NAME.md
+cat docs/prps/$PRP_NAME.md
 ```
 
 ### 1.2 Verify Confidence Score
@@ -270,6 +270,30 @@ If unable to proceed:
 1. Document the blocker
 2. Create work-order for blocker resolution
 3. Report to user with options
+
+### 5.4 Prompt for next action (use AskUserQuestion):
+
+```
+question: "PRP execution complete. What would you like to do next?"
+options:
+  - label: "Commit changes (Recommended)"
+    description: "Create a commit with conventional message for this feature"
+  - label: "Create work-order for follow-up"
+    description: "Package remaining work or enhancements"
+  - label: "Update ai_docs"
+    description: "Document new patterns or gotchas discovered"
+  - label: "Continue to next PRP"
+    description: "If there are more PRPs to execute"
+  - label: "I'm done for now"
+    description: "Exit - changes are saved locally"
+```
+
+**Based on selection:**
+- "Commit changes" → Run `/git:commit` or guide through commit
+- "Create work-order" → Run `/blueprint:work-order`
+- "Update ai_docs" → Run `/blueprint:curate-docs` for relevant patterns
+- "Continue to next PRP" → List available PRPs and run `/blueprint:prp-execute [next]`
+- "I'm done" → Exit
 
 **Tips**:
 - Trust the PRP - it was researched for a reason

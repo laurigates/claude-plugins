@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2025-12-22
 reviewed: 2025-12-16
 description: "Create work-order with minimal context for isolated subagent execution"
-allowed_tools: [Read, Write, Glob, Bash]
+allowed_tools: [Read, Write, Glob, Bash, AskUserQuestion]
 ---
 
 Generate a work-order document for isolated subagent execution.
@@ -147,13 +147,27 @@ Generate a work-order document for isolated subagent execution.
    - Can be executed by subagent with isolated context
    - TDD workflow enforced (tests specified first)
    - Clear success criteria defined
-
-   To execute:
-   1. Hand work-order to appropriate subagent
-   2. Or: Work on it directly with `/project:continue`
-
-   Updated work-overview.md with new pending task.
    ```
+
+9. **Prompt for next action** (use AskUserQuestion):
+   ```
+   question: "Work-order ready. What would you like to do?"
+   options:
+     - label: "Execute this work-order (Recommended)"
+       description: "Start working on the task with TDD workflow"
+     - label: "Create another work-order"
+       description: "Generate the next task from pending items"
+     - label: "Delegate to subagent"
+       description: "Hand off for isolated execution"
+     - label: "I'm done for now"
+       description: "Exit - work-order is saved and ready"
+   ```
+
+   **Based on selection:**
+   - "Execute this work-order" → Run `/project:continue` with work-order context
+   - "Create another work-order" → Run `/blueprint:work-order` again
+   - "Delegate to subagent" → Provide handoff instructions for subagent execution
+   - "I'm done" → Exit
 
 **Important**:
 - **Minimal context**: Only what's needed, not full files/PRDs
