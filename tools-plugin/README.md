@@ -1,6 +1,6 @@
 # Tools Plugin
 
-General development utilities for Claude Code - fd, rg, jq, yq, shell, imagemagick, vectorcode.
+General development utilities for Claude Code - fd, rg, jq, yq, nushell, shell, imagemagick, vectorcode.
 
 ## Overview
 
@@ -28,6 +28,7 @@ Collection of general-purpose development utilities for file finding, text searc
 
 | Skill | Description |
 |-------|-------------|
+| `nushell-data-processing` | Structured data processing with native tables (JSON, YAML, CSV, TOML) |
 | `jq-json-processing` | JSON querying and transformation with jq |
 | `yq-yaml-processing` | YAML querying and transformation with yq |
 
@@ -76,6 +77,19 @@ jq -r '.dependencies | keys[]' package.json
 ```bash
 yq '.services' docker-compose.yml
 yq -i '.version = "2.0"' config.yaml
+```
+
+### Process Structured Data (Nushell)
+
+```bash
+# Visual table output
+nu -c 'open package.json | get dependencies | transpose name version'
+
+# Cross-file comparison
+nu -c 'open .release-please-manifest.json | transpose plugin version | sort-by plugin'
+
+# Multi-format conversion
+nu -c 'open config.yaml | to json'
 ```
 
 ### Run Project Tasks (Justfile)
