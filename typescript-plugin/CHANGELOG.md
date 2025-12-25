@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/laurigates/claude-plugins/compare/v1.1.0...v1.1.1) (2025-12-25)
+
+
+### Bug Fixes
+
+* **typescript-plugin:** sync version with release-please manifest ([b090f91](https://github.com/laurigates/claude-plugins/commit/b090f917fb71c41fddd115a9792d938d115acf71))
+
 ## [1.1.0](https://github.com/laurigates/claude-plugins/compare/v1.0.0...v1.1.0) (2025-12-23)
 
 
