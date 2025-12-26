@@ -1,182 +1,300 @@
 ---
 created: 2025-12-16
-modified: 2025-12-22
-reviewed: 2025-12-16
-description: "Create work-order with minimal context for isolated subagent execution"
+modified: 2025-12-26
+reviewed: 2025-12-26
+description: "Create work-order with minimal context for isolated subagent execution, optionally linked to GitHub issue"
+args: "[--no-publish] [--from-issue N]"
+argument-hint: "--no-publish for local-only, --from-issue 123 to create from existing issue"
 allowed_tools: [Read, Write, Glob, Bash, AskUserQuestion]
 ---
 
-Generate a work-order document for isolated subagent execution.
+Generate a work-order document for isolated subagent execution with optional GitHub issue integration.
 
-**Prerequisites**:
+## Flags
+
+| Flag | Description |
+|------|-------------|
+| `--no-publish` | Create local work-order only, skip GitHub issue creation |
+| `--from-issue N` | Create work-order from existing GitHub issue #N |
+
+**Default behavior**: Creates both local work-order AND GitHub issue with `work-order` label.
+
+## Prerequisites
+
 - Blueprint Development initialized (`.claude/blueprints/` exists)
-- At least one PRD exists
+- At least one PRD exists (unless using `--from-issue`)
 - `work-overview.md` exists
+- `gh` CLI authenticated (unless using `--no-publish`)
 
-**Steps**:
+---
 
-1. **Analyze current state**:
-   - Read `work-overview.md` to understand current phase
-   - Run `git status` to check uncommitted work
-   - Run `git log -5 --oneline` to see recent work
-   - Find existing work-orders (count them for numbering)
+## Mode: Create from Existing Issue (`--from-issue N`)
 
-2. **Read relevant PRDs**:
-   - Read PRD files to understand requirements
-   - Identify next logical work unit based on:
-     * Work-overview progress
-     * PRD phase/section ordering
-     * Git history (what's been done)
+When `--from-issue N` is provided:
 
-3. **Determine next work unit**:
-   - Should be:
-     * **Specific**: Single feature/component/fix
-     * **Isolated**: Minimal dependencies
-     * **Testable**: Clear success criteria
-     * **Focused**: 1-4 hours of work
-
-   Examples of good work units:
-   - "Implement JWT token generation methods"
-   - "Add input validation to registration endpoint"
-   - "Create database migration for users table"
-
-   Examples of bad work units (too broad):
-   - "Implement authentication" (too large)
-   - "Fix bugs" (not specific)
-
-4. **Determine minimal context**:
-   - **Files to modify/create** (only relevant ones):
-     * Implementation file(s)
-     * Test file(s)
-     * Related files for reference
-
-   - **PRD sections** (only relevant sections):
-     * Don't include entire PRD
-     * Only specific requirements for this task
-
-   - **Existing code** (only relevant excerpts):
-     * Don't include full files
-     * Only code that needs integration
-
-   - **Dependencies**:
-     * External libraries needed
-     * Environment variables required
-
-5. **Generate work-order**:
-   - Number: Find highest existing work-order number and add 1 (001, 002, etc.)
-   - Name: `NNN-brief-task-description.md`
-   - Use template from `.claude/docs/blueprint-development/work-order-template.md`
-
-   **Work-order structure**:
-   ```markdown
-   # Work-Order NNN: [Task Name]
-
-   ## Objective
-   [One sentence describing what needs to be accomplished]
-
-   ## Context
-
-   ### Required Files
-   [Only files needed - list with purpose]
-
-   ### PRD Reference
-   [Link to specific PRD section, not entire PRD]
-
-   ### Technical Decisions
-   [Only decisions relevant to this specific task]
-
-   ### Existing Code
-   [Only relevant code excerpts needed for integration]
-
-   ## TDD Requirements
-
-   ### Test 1: [Test Description]
-   [Exact test to write, with code template]
-   **Expected Outcome**: Test should fail
-
-   ### Test 2: [Test Description]
-   [Exact test to write]
-   **Expected Outcome**: Test should fail
-
-   [More tests as needed]
-
-   ## Implementation Steps
-
-   1. **Write Test 1** - Run: `[test_command]` - Expected: **FAIL**
-   2. **Implement Test 1** - Run: `[test_command]` - Expected: **PASS**
-   3. **Refactor (if needed)** - Run: `[test_command]` - Expected: **STILL PASS**
-   [Repeat for all tests]
-
-   ## Success Criteria
-   - [ ] All specified tests written and passing
-   - [ ] [Specific functional requirement met]
-   - [ ] [Performance/security baseline met]
-   - [ ] No regressions (existing tests pass)
-
-   ## Notes
-   [Additional context, gotchas, considerations]
-
-   ## Related Work-Orders
-   - **Depends on**: Work-Order NNN (if applicable)
-   - **Blocks**: Work-Order NNN (if applicable)
+1. **Fetch issue**:
+   ```bash
+   gh issue view N --json title,body,labels,number
    ```
 
-6. **Save work-order**:
-   - Save to `.claude/blueprints/work-orders/NNN-task-name.md`
-   - Ensure zero-padded numbering (001, 002, 010, 100)
+2. **Parse issue content**:
+   - Extract objective from title/body
+   - Extract any TDD requirements or success criteria if present
+   - Note existing labels
 
-7. **Update `work-overview.md`**:
-   - Add new work-order to "Pending" section
-   - Keep overview current
+3. **Generate work-order**:
+   - Number matches issue number (e.g., issue #42 → work-order `042-...`)
+   - Pre-populate from issue content
+   - Add context sections (files, PRD reference, etc.)
 
-8. **Report**:
-   ```
-   ✅ Work-order created!
-
-   Work-Order: 003-jwt-token-generation.md
-   Location: .claude/blueprints/work-orders/003-jwt-token-generation.md
-
-   Objective: [Brief objective]
-
-   Context included:
-   - Files: [List files]
-   - Tests: [Number of tests specified]
-   - Dependencies: [Key dependencies]
-
-   Ready for execution:
-   - Can be executed by subagent with isolated context
-   - TDD workflow enforced (tests specified first)
-   - Clear success criteria defined
+4. **Update issue with link**:
+   ```bash
+   gh issue comment N --body "Work-order created: \`.claude/blueprints/work-orders/NNN-task-name.md\`"
+   gh issue edit N --add-label "work-order"
    ```
 
-9. **Prompt for next action** (use AskUserQuestion):
-   ```
-   question: "Work-order ready. What would you like to do?"
-   options:
-     - label: "Execute this work-order (Recommended)"
-       description: "Start working on the task with TDD workflow"
-     - label: "Create another work-order"
-       description: "Generate the next task from pending items"
-     - label: "Delegate to subagent"
-       description: "Hand off for isolated execution"
-     - label: "I'm done for now"
-       description: "Exit - work-order is saved and ready"
-   ```
+5. **Continue to save and report** (skip to Step 6 below)
 
-   **Based on selection:**
-   - "Execute this work-order" → Run `/project:continue` with work-order context
-   - "Create another work-order" → Run `/blueprint:work-order` again
-   - "Delegate to subagent" → Provide handoff instructions for subagent execution
-   - "I'm done" → Exit
+---
 
-**Important**:
+## Mode: Create New Work-Order (Default)
+
+### Step 1: Analyze Current State
+
+- Read `work-overview.md` to understand current phase
+- Run `git status` to check uncommitted work
+- Run `git log -5 --oneline` to see recent work
+- Find existing work-orders (count them for numbering)
+
+### Step 2: Read Relevant PRDs
+
+- Read PRD files to understand requirements
+- Identify next logical work unit based on:
+  * Work-overview progress
+  * PRD phase/section ordering
+  * Git history (what's been done)
+
+### Step 3: Determine Next Work Unit
+
+Should be:
+* **Specific**: Single feature/component/fix
+* **Isolated**: Minimal dependencies
+* **Testable**: Clear success criteria
+* **Focused**: 1-4 hours of work
+
+**Good examples**:
+- "Implement JWT token generation methods"
+- "Add input validation to registration endpoint"
+- "Create database migration for users table"
+
+**Bad examples** (too broad):
+- "Implement authentication"
+- "Fix bugs"
+
+### Step 4: Determine Minimal Context
+
+- **Files to modify/create** (only relevant ones)
+- **PRD sections** (only specific requirements for this task)
+- **Existing code** (only relevant excerpts, not full files)
+- **Dependencies** (external libraries, environment variables)
+
+### Step 5: Generate Work-Order
+
+- Number: Find highest existing work-order number + 1 (001, 002, etc.)
+- Name: `NNN-brief-task-description.md`
+
+**Work-order structure**:
+
+```markdown
+# Work-Order NNN: [Task Name]
+
+**GitHub Issue**: #N
+**Status**: pending
+
+## Objective
+[One sentence describing what needs to be accomplished]
+
+## Context
+
+### Required Files
+[Only files needed - list with purpose]
+
+### PRD Reference
+[Link to specific PRD section, not entire PRD]
+
+### Technical Decisions
+[Only decisions relevant to this specific task]
+
+### Existing Code
+[Only relevant code excerpts needed for integration]
+
+## TDD Requirements
+
+### Test 1: [Test Description]
+[Exact test to write, with code template]
+**Expected Outcome**: Test should fail
+
+### Test 2: [Test Description]
+[Exact test to write]
+**Expected Outcome**: Test should fail
+
+[More tests as needed]
+
+## Implementation Steps
+
+1. **Write Test 1** - Run: `[test_command]` - Expected: **FAIL**
+2. **Implement Test 1** - Run: `[test_command]` - Expected: **PASS**
+3. **Refactor (if needed)** - Run: `[test_command]` - Expected: **STILL PASS**
+[Repeat for all tests]
+
+## Success Criteria
+- [ ] All specified tests written and passing
+- [ ] [Specific functional requirement met]
+- [ ] [Performance/security baseline met]
+- [ ] No regressions (existing tests pass)
+
+## Notes
+[Additional context, gotchas, considerations]
+
+## Related Work-Orders
+- **Depends on**: Work-Order NNN (if applicable)
+- **Blocks**: Work-Order NNN (if applicable)
+```
+
+---
+
+### Step 6: Save Work-Order
+
+Save to `.claude/blueprints/work-orders/NNN-task-name.md`
+Ensure zero-padded numbering (001, 002, 010, 100)
+
+### Step 7: Create GitHub Issue (unless `--no-publish`)
+
+```bash
+gh issue create \
+  --title "Work-Order NNN: [Task Name]" \
+  --body "## Work Order: [Task Name]
+
+**Local Context**: \`.claude/blueprints/work-orders/NNN-task-name.md\`
+
+### Objective
+[One-line objective from work order]
+
+### TDD Requirements
+- [ ] Test 1: [description]
+- [ ] Test 2: [description]
+
+### Success Criteria
+- [ ] [Criterion 1]
+- [ ] [Criterion 2]
+
+---
+*AI-assisted development work order. See linked file for full execution context.*" \
+  --label "work-order"
+```
+
+Capture issue number and update work-order file:
+```bash
+# Extract issue number from gh output
+gh issue create ... 2>&1 | grep -oE '#[0-9]+' | head -1
+```
+
+Update the `**GitHub Issue**:` line in the work-order file with the issue number.
+
+### Step 8: Update `work-overview.md`
+
+- Add new work-order to "Pending" section
+- Include GitHub issue reference if created
+- Keep overview current
+
+### Step 9: Report
+
+```
+Work-order created!
+
+Work-Order: 003-jwt-token-generation.md
+Location: .claude/blueprints/work-orders/003-jwt-token-generation.md
+GitHub Issue: #42 (or "Local only" if --no-publish)
+
+Objective: [Brief objective]
+
+Context included:
+- Files: [List files]
+- Tests: [Number of tests specified]
+- Dependencies: [Key dependencies]
+
+Ready for execution:
+- Can be executed by subagent with isolated context
+- TDD workflow enforced (tests specified first)
+- Clear success criteria defined
+- PR should use "Fixes #42" to auto-close issue
+```
+
+### Step 10: Prompt for Next Action
+
+Use AskUserQuestion:
+```
+question: "Work-order ready. What would you like to do?"
+options:
+  - label: "Execute this work-order (Recommended)"
+    description: "Start working on the task with TDD workflow"
+  - label: "Create another work-order"
+    description: "Generate the next task from pending items"
+  - label: "Delegate to subagent"
+    description: "Hand off for isolated execution"
+  - label: "I'm done for now"
+    description: "Exit - work-order is saved and ready"
+```
+
+**Based on selection:**
+- "Execute this work-order" → Run `/project:continue` with work-order context
+- "Create another work-order" → Run `/blueprint:work-order` again
+- "Delegate to subagent" → Provide handoff instructions for subagent execution
+- "I'm done" → Exit
+
+---
+
+## Key Principles
+
 - **Minimal context**: Only what's needed, not full files/PRDs
 - **Specific tests**: Exact test cases, not vague descriptions
 - **TDD enforced**: Tests specified before implementation
 - **Clear criteria**: Unambiguous success checkboxes
 - **Isolated**: Task should be doable with only provided context
+- **Transparent**: GitHub issue provides visibility to collaborators
 
-**Error Handling**:
-- If no PRDs → Guide to write PRDs first
-- If work-overview empty → Ask for current phase/status
-- If task unclear → Ask user what to work on next
+---
+
+## Error Handling
+
+| Condition | Action |
+|-----------|--------|
+| No PRDs exist | Guide to write PRDs first |
+| `work-overview.md` empty | Ask for current phase/status |
+| Task unclear | Ask user what to work on next |
+| `gh` not authenticated | Warn and fallback to `--no-publish` behavior |
+| Issue already has `work-order` label | Warn, ask to update or create new |
+
+---
+
+## GitHub Integration Notes
+
+### Completion Flow
+1. Work completed on work-order
+2. PR created with `Fixes #N` in body/title
+3. Work-order moved to `completed/` directory
+4. Issue auto-closes when PR merges
+
+### Label Convention
+The `work-order` label identifies issues created from this workflow. Create it in your repo if it doesn't exist:
+```bash
+gh label create work-order --description "AI-assisted work order" --color "0E8A16"
+```
+
+### Offline Mode
+Use `--no-publish` when:
+- Working offline
+- Private experimentation
+- Issue visibility not needed
+
+Can publish later by manually creating issue and updating work-order file.

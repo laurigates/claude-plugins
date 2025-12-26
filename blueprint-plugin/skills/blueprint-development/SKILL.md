@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2025-12-22
-reviewed: 2025-12-22
+modified: 2025-12-26
+reviewed: 2025-12-26
 name: blueprint-development
 description: "Generate project-specific skills and commands from PRDs for Blueprint Development methodology. Use when generating skills for architecture patterns, testing strategies, implementation guides, or quality standards from requirements documents."
 ---
@@ -383,12 +383,19 @@ Report:
 
 **Location**: `.claude/commands/blueprint-work-order.md`
 
-**Purpose**: Generate isolated work-order for subagent execution
+**Purpose**: Generate isolated work-order for subagent execution with GitHub visibility
+
+**Flags**:
+- `--no-publish`: Create local work-order only, skip GitHub issue
+- `--from-issue N`: Create work-order from existing GitHub issue #N
+
+**Default behavior**: Creates BOTH local work-order AND GitHub issue with `work-order` label.
 
 **Generated Content**:
 ```markdown
 ---
 description: "Create work-order with minimal context for isolated subagent execution"
+args: "[--no-publish] [--from-issue N]"
 allowed_tools: [Read, Write, Glob, Bash]
 ---
 
@@ -410,13 +417,26 @@ Generate work-order:
    - TDD requirements (tests specified)
    - Implementation steps
    - Success criteria
+   - GitHub Issue reference
 5. Save to `.claude/blueprints/work-orders/NNN-task-name.md`
+6. Create GitHub issue (unless --no-publish):
+   - Title: "Work-Order NNN: [Task Name]"
+   - Label: `work-order`
+   - Body: Summary with link to local file
+7. Update work-order with issue number
 
 Report:
 - Work-order created
 - Work-order number and objective
+- GitHub issue number (if created)
 - Ready for subagent execution
 ```
+
+**GitHub Integration Flow**:
+1. Work-order created → GitHub issue created (visibility)
+2. Work completed → PR created with `Fixes #N`
+3. PR merged → Issue auto-closes
+4. Work-order moved to `completed/`
 
 #### 5. `/project:continue` Command
 
@@ -641,3 +661,85 @@ This skill enables the core Blueprint Development workflow:
 **PRDs** (requirements) → **Skills** (how to build) → **Commands** (workflow automation) → **Work-orders** (isolated tasks)
 
 By generating project-specific skills and commands from PRDs, Blueprint Development creates a self-documenting, AI-native development environment where process, patterns, and quality standards are first-class citizens.
+
+## GitHub Work Order Integration
+
+Work orders can be linked to GitHub issues for transparency and cooperative development.
+
+### Why GitHub Integration?
+
+| Benefit | Description |
+|---------|-------------|
+| **Transparency** | Team members see work in progress via GitHub issues |
+| **Collaboration** | Comments, mentions, and discussions on issues |
+| **Traceability** | Commits and PRs link to issues automatically |
+| **Project management** | Issues integrate with GitHub Projects, milestones |
+
+### Workflow Modes
+
+**Default (GitHub-first)**:
+```bash
+/blueprint:work-order
+# Creates local markdown + GitHub issue
+# Issue has `work-order` label
+# Work-order links to issue number
+```
+
+**Local-only (offline/private)**:
+```bash
+/blueprint:work-order --no-publish
+# Creates local markdown only
+# Can publish later manually
+```
+
+**From existing issue**:
+```bash
+/blueprint:work-order --from-issue 123
+# Fetches issue #123
+# Creates local work-order with context
+# Updates issue with work-order link
+```
+
+### Label Setup
+
+Create the `work-order` label in repositories using this methodology:
+```bash
+gh label create work-order --description "AI-assisted work order" --color "0E8A16"
+```
+
+### Completion Workflow
+
+1. **Execute work-order** following TDD workflow
+2. **Create PR** with `Fixes #N` in title/body (where N = issue number)
+3. **Merge PR** → Issue auto-closes
+4. **Move work-order** to `completed/` directory
+
+### Work Order File Format
+
+```markdown
+# Work-Order 003: [Task Name]
+
+**GitHub Issue**: #42
+**Status**: pending | in-progress | completed
+
+## Objective
+[One sentence]
+
+## Context
+[Minimal context for isolated execution]
+
+## TDD Requirements
+[Specific tests]
+
+## Success Criteria
+[Checkboxes]
+```
+
+### When to Use Each Mode
+
+| Scenario | Mode |
+|----------|------|
+| Team project, need visibility | Default (creates issue) |
+| Solo exploration, quick prototype | `--no-publish` |
+| Issue already exists from discussion | `--from-issue N` |
+| Offline development | `--no-publish` |
