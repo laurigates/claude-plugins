@@ -66,6 +66,21 @@ Analyze and assimilate project-specific Claude configurations into user-scoped c
 - Identifies reusable patterns
 - Suggests generalizations for user-scoped usage
 
+#### `/workflow:primer`
+Generate a continuation primer for agent handoff with todo list and context.
+
+**Usage:**
+```bash
+/workflow:primer
+```
+
+**Features:**
+- Current state summary of accomplished work
+- Remaining todo list in priority order
+- Key context for continuation
+- Active files being worked on
+- Known blockers and issues
+
 ### Skills
 
 #### `agent-coordination-patterns`
@@ -142,6 +157,31 @@ Intelligent MCP server installation and management.
 - Intelligent server suggestions
 - Project-scoped `.mcp.json` management
 - Environment variable validation
+
+#### `agent-handoff-markers`
+Standardized inline markers for inter-agent communication.
+
+**When to use:**
+- Creating handoff annotations for other agents
+- Scanning for pending work from upstream agents
+- Coordinating asynchronous agent workflows
+- User mentions @AGENT-HANDOFF-MARKER or agent coordination
+
+**Marker Format:**
+```typescript
+// @AGENT-HANDOFF-MARKER(target-agent) {
+//   type: "category",
+//   context: "what this code does",
+//   needs: ["requirement 1", "requirement 2"],
+//   priority: "blocking|enhancement"
+// }
+```
+
+**Benefits:**
+- Asynchronous agent coordination
+- Traceability of inter-agent requests
+- Inline documentation of intent
+- CI/CD integration potential
 
 ## Installation
 

@@ -1,6 +1,6 @@
 # Tools Plugin
 
-General development utilities for Claude Code - fd, rg, jq, yq, nushell, shell, imagemagick, vectorcode.
+General development utilities for Claude Code - fd, rg, jq, yq, nushell, shell, imagemagick, vectorcode, mermaid, d2.
 
 ## Overview
 
@@ -13,7 +13,7 @@ Collection of general-purpose development utilities for file finding, text searc
 | `/deps:install` | Universal dependency installer - auto-detects package manager |
 | `/tools:vectorcode` | Initialize VectorCode with automatic configuration |
 | `/generate-image` | Generate images using Nano Banana Pro (Gemini 3 Pro Image) |
-| `/handoffs` | List, filter, and manage @HANDOFF markers |
+| `/handoffs` | List, filter, and manage @AGENT-HANDOFF-MARKER markers |
 
 ## Skills
 
@@ -39,6 +39,13 @@ Collection of general-purpose development utilities for file finding, text searc
 | `shell-expert` | Shell scripting and bash patterns |
 | `justfile-expert` | Just command runner and recipe development |
 | `imagemagick-conversion` | Image conversion and manipulation |
+
+### Diagrams
+
+| Skill | Description |
+|-------|-------------|
+| `mermaid-diagrams` | Generate diagrams from text using Mermaid CLI (flowcharts, sequence, ERD, class) |
+| `d2-diagrams` | Modern text-to-diagram language with themes, layouts, and advanced styling |
 
 ### Code Search
 
@@ -100,6 +107,23 @@ just test                   # Run tests
 just lint                   # Run linters
 just build                  # Build project
 just dev                    # Development mode with watch
+```
+
+### Generate Diagrams (Mermaid)
+
+```bash
+mmdc -i diagram.mmd -o diagram.svg    # Convert to SVG
+mmdc -i diagram.mmd -o diagram.png    # Convert to PNG
+mmdc -i diagram.mmd -o out.svg -t dark # Dark theme
+```
+
+### Generate Diagrams (D2)
+
+```bash
+d2 diagram.d2 diagram.svg             # Convert to SVG
+d2 --watch --browser diagram.d2       # Live preview
+d2 -t 101 diagram.d2 out.svg          # Themed output
+d2 --sketch diagram.d2 out.svg        # Hand-drawn style
 ```
 
 ### Universal Dependency Install

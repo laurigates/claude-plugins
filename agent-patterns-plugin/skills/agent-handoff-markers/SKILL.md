@@ -1,15 +1,47 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
-reviewed: 2025-12-16
-name: ux-handoff-markers
-description: Standardized inline markers for inter-agent communication. Use when creating handoff annotations for other agents, scanning for pending work from upstream agents, or when the user mentions @HANDOFF markers, agent coordination, or cross-agent communication.
+modified: 2025-12-26
+reviewed: 2025-12-26
+name: agent-handoff-markers
+description: Standardized inline markers for inter-agent communication. Use when creating handoff annotations for other agents, scanning for pending work from upstream agents, or when the user mentions handoff markers, agent coordination, or cross-agent communication.
 allowed-tools: Glob, Grep, Read, Edit, Write, TodoWrite
 ---
 
-# UX Handoff Markers
+# Agent Handoff Markers
 
 Structured inline markers for asynchronous agent-to-agent communication.
+
+## Benefits
+
+### Asynchronous Agent Coordination
+- Agents can request work from other agents without blocking
+- Work can be discovered and processed in future sessions
+- Enables non-linear development workflows
+
+### Traceability
+- Clear audit trail of inter-agent requests
+- Completion markers show what was delivered
+- Referenced files provide full context
+
+### Reduced Context Switching
+- Agents can complete their current work before handling handoffs
+- Markers persist until addressed
+- No need for immediate handoff processing
+
+### Improved Code Documentation
+- Markers serve as inline documentation of intent
+- Requirements are captured at the point of need
+- Context is preserved alongside the code
+
+### Workflow Flexibility
+- Any agent can create markers for any other agent
+- Priority levels allow triage
+- Type categorization enables filtering
+
+### CI/CD Integration Potential
+- Markers can be scanned in pre-commit hooks
+- Blocking markers could fail builds if unaddressed
+- Automated reports of pending work
 
 ## Core Concept
 
@@ -24,7 +56,7 @@ Handoff markers are structured comments in code that:
 ### Basic Structure
 
 ```typescript
-// @HANDOFF(target-agent) {
+// @AGENT-HANDOFF-MARKER(target-agent) {
 //   type: "category",
 //   context: "what this code does",
 //   needs: ["requirement 1", "requirement 2"],
@@ -36,7 +68,7 @@ Handoff markers are structured comments in code that:
 ### Full Example
 
 ```typescript
-// @HANDOFF(ux-implementation) {
+// @AGENT-HANDOFF-MARKER(ux-implementation) {
 //   type: "form-validation",
 //   context: "User registration form with email/password",
 //   needs: [
@@ -59,7 +91,7 @@ async function handleRegistration(data: FormData) {
   try {
     await api.register(data);
   } catch (errors) {
-    // @UX-PLACEHOLDER: implement error display
+    // @AGENT-PLACEHOLDER: implement error display
     console.error(errors);
   }
 }
@@ -70,27 +102,23 @@ async function handleRegistration(data: FormData) {
 ### UX-Related Targets
 
 ```typescript
-// @HANDOFF(ux-implementation)
+// @AGENT-HANDOFF-MARKER(ux-implementation)
 // For: Accessibility, component UX, responsive patterns, design tokens
 
-// @HANDOFF(service-design)
+// @AGENT-HANDOFF-MARKER(service-design)
 // For: User journey decisions, information architecture, high-level UX strategy
-
-// Aliases (resolve to ux-implementation)
-// @HANDOFF(accessibility)
-// @HANDOFF(ux)
 ```
 
 ### Development Targets
 
 ```typescript
-// @HANDOFF(typescript-development)
+// @AGENT-HANDOFF-MARKER(typescript-development)
 // For: Framework-specific implementation, type system, state management
 
-// @HANDOFF(code-review)
+// @AGENT-HANDOFF-MARKER(code-review)
 // For: Quality review, security assessment, performance evaluation
 
-// @HANDOFF(test-architecture)
+// @AGENT-HANDOFF-MARKER(test-architecture)
 // For: Test strategy, coverage requirements, test patterns
 ```
 
@@ -99,7 +127,7 @@ async function handleRegistration(data: FormData) {
 ### Component Implementation
 
 ```typescript
-// @HANDOFF(ux-implementation) {
+// @AGENT-HANDOFF-MARKER(ux-implementation) {
 //   type: "component-implementation",
 //   context: "Modal dialog for confirmation actions",
 //   needs: [
@@ -114,7 +142,7 @@ async function handleRegistration(data: FormData) {
 ### Accessibility
 
 ```typescript
-// @HANDOFF(ux-implementation) {
+// @AGENT-HANDOFF-MARKER(ux-implementation) {
 //   type: "accessibility",
 //   context: "Data table with sortable columns",
 //   needs: [
@@ -129,7 +157,7 @@ async function handleRegistration(data: FormData) {
 ### Form Validation
 
 ```typescript
-// @HANDOFF(ux-implementation) {
+// @AGENT-HANDOFF-MARKER(ux-implementation) {
 //   type: "form-validation",
 //   context: "Multi-step checkout form",
 //   needs: [
@@ -144,7 +172,7 @@ async function handleRegistration(data: FormData) {
 ### Loading States
 
 ```typescript
-// @HANDOFF(ux-implementation) {
+// @AGENT-HANDOFF-MARKER(ux-implementation) {
 //   type: "loading-states",
 //   context: "Dashboard data fetching",
 //   needs: [
@@ -159,7 +187,7 @@ async function handleRegistration(data: FormData) {
 ### Design Tokens
 
 ```typescript
-// @HANDOFF(ux-implementation) {
+// @AGENT-HANDOFF-MARKER(ux-implementation) {
 //   type: "design-tokens",
 //   context: "Component library theming",
 //   needs: [
@@ -174,7 +202,7 @@ async function handleRegistration(data: FormData) {
 ### Responsive Behavior
 
 ```typescript
-// @HANDOFF(ux-implementation) {
+// @AGENT-HANDOFF-MARKER(ux-implementation) {
 //   type: "responsive",
 //   context: "Navigation menu",
 //   needs: [
@@ -196,7 +224,7 @@ Work cannot proceed without this. Use for:
 - Required user flows
 
 ```typescript
-// @HANDOFF(ux-implementation) {
+// @AGENT-HANDOFF-MARKER(ux-implementation) {
 //   type: "accessibility",
 //   priority: "blocking",
 //   context: "Form submit button",
@@ -209,10 +237,10 @@ Work cannot proceed without this. Use for:
 Improves quality but not blocking. Use for:
 - Performance optimizations
 - Polish and refinement
-- Non-critical accessibility improvements
+- Non-critical improvements
 
 ```typescript
-// @HANDOFF(ux-implementation) {
+// @AGENT-HANDOFF-MARKER(ux-implementation) {
 //   type: "loading-states",
 //   priority: "enhancement",
 //   context: "Profile image upload",
@@ -226,16 +254,16 @@ Improves quality but not blocking. Use for:
 
 ```bash
 # Find all handoff markers
-rg "@HANDOFF\(" --type ts --type tsx
+rg "@AGENT-HANDOFF-MARKER\(" --type ts --type tsx
 
 # Find markers for specific agent
-rg "@HANDOFF\(ux-implementation\)" --type ts
+rg "@AGENT-HANDOFF-MARKER\(ux-implementation\)" --type ts
 
 # Find blocking markers only
-rg "@HANDOFF.*priority.*blocking" --type ts
+rg "@AGENT-HANDOFF-MARKER.*priority.*blocking" --type ts
 
 # Count markers by agent
-rg -o "@HANDOFF\([^)]+\)" | sort | uniq -c
+rg -o "@AGENT-HANDOFF-MARKER\([^)]+\)" | sort | uniq -c
 ```
 
 ### Agent Workflow
@@ -244,7 +272,7 @@ When starting work, agents should:
 
 1. **Scan for incoming markers**
    ```bash
-   rg "@HANDOFF\(ux-implementation\)" --type ts --type tsx -A 10
+   rg "@AGENT-HANDOFF-MARKER\(ux-implementation\)" --type ts --type tsx -A 10
    ```
 
 2. **Process each marker**
@@ -254,7 +282,7 @@ When starting work, agents should:
 
 3. **Mark completion**
    ```typescript
-   // @HANDOFF-COMPLETE(ux-implementation) {
+   // @AGENT-HANDOFF-MARKER-COMPLETE(ux-implementation) {
    //   implemented: ["focus trap", "ARIA dialog", "Escape key"],
    //   notes: "Uses FocusTrap from @headlessui/react"
    // }
@@ -262,7 +290,7 @@ When starting work, agents should:
 
 4. **Create downstream markers if needed**
    ```typescript
-   // @HANDOFF(typescript-development) {
+   // @AGENT-HANDOFF-MARKER(typescript-development) {
    //   type: "component-implementation",
    //   context: "Modal with UX specs defined above",
    //   needs: ["React component implementation", "state management"]
@@ -274,14 +302,14 @@ When starting work, agents should:
 ### Simple Placeholder
 
 ```typescript
-// @UX-PLACEHOLDER: error display implementation
+// @AGENT-PLACEHOLDER: error display implementation
 console.error(errors);
 ```
 
 ### Detailed Placeholder
 
 ```typescript
-// @UX-PLACEHOLDER {
+// @AGENT-PLACEHOLDER {
 //   waiting-for: "ux-implementation",
 //   requirement: "accessible error announcements",
 //   current-behavior: "logs to console"
@@ -293,8 +321,8 @@ setErrors(validationErrors);
 
 ```typescript
 function showValidationErrors(errors: ValidationError[]) {
-  // @UX-PLACEHOLDER: implement accessible error display
-  // Requirements from @HANDOFF above:
+  // @AGENT-PLACEHOLDER: implement accessible error display
+  // Requirements from @AGENT-HANDOFF-MARKER above:
   // - Focus first error field
   // - Announce via ARIA live region
   // - Display inline error messages
@@ -309,14 +337,14 @@ function showValidationErrors(errors: ValidationError[]) {
 ### Simple Completion
 
 ```typescript
-// @HANDOFF-COMPLETE(ux-implementation)
+// @AGENT-HANDOFF-MARKER-COMPLETE(ux-implementation)
 // Implemented: focus trap, ARIA attributes, keyboard handling
 ```
 
 ### Detailed Completion
 
 ```typescript
-// @HANDOFF-COMPLETE(ux-implementation) {
+// @AGENT-HANDOFF-MARKER-COMPLETE(ux-implementation) {
 //   resolved: "2024-01-15",
 //   implemented: [
 //     "WCAG 2.1 AA compliant",
@@ -355,8 +383,8 @@ When completing markers, update the agent output:
 
 ## Pending Downstream Work
 
-- @HANDOFF(typescript-development) for Modal component wrapper
-- @HANDOFF(test-architecture) for E2E accessibility tests
+- @AGENT-HANDOFF-MARKER(typescript-development) for Modal component wrapper
+- @AGENT-HANDOFF-MARKER(test-architecture) for E2E accessibility tests
 ```
 
 ### Inter-Agent Context
@@ -386,13 +414,13 @@ Update shared context with marker status:
 ### Be Specific
 
 ```typescript
-// ❌ Bad: Vague requirement
-// @HANDOFF(ux-implementation) {
+// Bad: Vague requirement
+// @AGENT-HANDOFF-MARKER(ux-implementation) {
 //   needs: ["make it accessible"]
 // }
 
-// ✅ Good: Specific requirements
-// @HANDOFF(ux-implementation) {
+// Good: Specific requirements
+// @AGENT-HANDOFF-MARKER(ux-implementation) {
 //   needs: [
 //     "ARIA combobox pattern for autocomplete",
 //     "keyboard navigation (arrow keys, Enter, Escape)",
@@ -404,13 +432,13 @@ Update shared context with marker status:
 ### Provide Context
 
 ```typescript
-// ❌ Bad: No context
-// @HANDOFF(ux-implementation) {
+// Bad: No context
+// @AGENT-HANDOFF-MARKER(ux-implementation) {
 //   needs: ["error handling"]
 // }
 
-// ✅ Good: Full context
-// @HANDOFF(ux-implementation) {
+// Good: Full context
+// @AGENT-HANDOFF-MARKER(ux-implementation) {
 //   context: "Payment form in checkout flow, high-stakes interaction",
 //   needs: ["error recovery UX", "clear error messaging"],
 //   constraints: ["PCI compliance", "real-time validation"]
@@ -420,7 +448,7 @@ Update shared context with marker status:
 ### Include References
 
 ```typescript
-// @HANDOFF(ux-implementation) {
+// @AGENT-HANDOFF-MARKER(ux-implementation) {
 //   context: "Notification system",
 //   refs: [
 //     "docs/design/notifications.md",      // Design spec
@@ -433,7 +461,7 @@ Update shared context with marker status:
 ### Clean Up Completed Markers
 
 After implementation, either:
-1. Convert to `@HANDOFF-COMPLETE` marker
+1. Convert to `@AGENT-HANDOFF-MARKER-COMPLETE` marker
 2. Remove marker and document in commit message
 3. Move to documentation if pattern is reusable
 

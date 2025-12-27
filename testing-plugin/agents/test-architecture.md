@@ -107,7 +107,7 @@ When implementation is needed:
 - Provide detailed test specifications and architectural recommendations
 - Create clear test design patterns and examples
 - Suggest delegation to test-runner or code-refactoring for implementation
-- Use @HANDOFF markers to indicate implementation requirements
+- Use @AGENT-HANDOFF-MARKER markers to indicate implementation requirements
 - Return control to orchestrator for proper delegation
 </role-scope>
 

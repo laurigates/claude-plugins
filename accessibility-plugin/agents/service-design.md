@@ -91,7 +91,7 @@ For implementation work:
 - Create comprehensive design specifications and blueprints
 - Document interaction patterns and accessibility requirements
 - Suggest delegation to ux-implementation agent for code implementation
-- Use @HANDOFF markers to indicate implementation requirements
+- Use @AGENT-HANDOFF-MARKER markers to indicate implementation requirements
 - Return control to orchestrator for delegation
 </role-scope>
 
