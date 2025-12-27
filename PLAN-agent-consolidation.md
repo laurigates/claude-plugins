@@ -50,12 +50,12 @@ These produce specs but don't complete work:
 ### Target Agent Set (5 agents)
 
 ```
-agents/
-├── test.md      # Write and run tests for specific code
-├── review.md    # Comprehensive code review (security, quality, performance)
-├── debug.md     # Diagnose and fix bugs
-├── docs.md      # Generate/update documentation
-└── ci.md        # GitHub Actions and pipeline configuration
+agents-plugin/agents/
+├── test.md      # Write and run tests (haiku)
+├── review.md    # Code review + commit review (opus)
+├── debug.md     # Diagnose and fix bugs (opus)
+├── docs.md      # Generate documentation (haiku)
+└── ci.md        # Pipeline configuration (haiku)
 ```
 
 #### Agent Scope Definitions
@@ -67,10 +67,11 @@ agents/
 - Scope: 5-15 steps, completes the job
 
 **review**
-- Input: Diff, PR, or code to review
+- Input: Diff, PR, commit, or code to review
 - Output: Review comments with specific findings
 - Steps: Read code → Check security → Check quality → Check performance → Report
 - Scope: 10-20 steps, comprehensive but bounded
+- Includes: commit message review, PR review
 
 **debug**
 - Input: Bug description, error, or failing test
@@ -140,11 +141,14 @@ Architectural knowledge becomes rules (always loaded):
 2. Consider: Should agents live in a dedicated `agents-plugin`?
 3. Update documentation
 
-## Questions to Resolve
+## Decisions
 
-1. **Plugin organization**: Should the 5 consolidated agents live in one plugin or stay distributed?
-2. **Language skills**: One skill per language, or group related languages?
-3. **Model selection**: Should all agents use opus, or should simpler tasks use haiku?
+1. **Plugin organization**: Single `agents-plugin` containing all 5 agents
+2. **Language skills**: One skill per language
+3. **Model selection**:
+   - Opus: `review` (complex analysis), `debug` (complex reasoning)
+   - Haiku: `test`, `docs`, `ci` (more straightforward tasks)
+4. **commit-review**: Folded into `review` agent
 
 ## Success Criteria
 
