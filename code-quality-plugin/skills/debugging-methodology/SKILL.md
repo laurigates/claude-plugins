@@ -3,7 +3,7 @@ name: Debugging Methodology
 description: Systematic debugging approach with tool recommendations for memory, performance, and system-level issues.
 allowed-tools: Bash, Read, Grep, Glob
 created: 2025-12-27
-modified: 2025-12-27
+modified: 2025-12-27  # Added eBPF tracing
 reviewed: 2025-12-27
 ---
 
@@ -63,9 +63,9 @@ perf top  # Real-time CPU usage
 python -m cProfile -s cumtime script.py
 ```
 
-### System Tracing
+### System Tracing (Traditional)
 ```bash
-# System calls
+# System calls (ptrace-based, high overhead)
 strace -f -e trace=all -p PID
 
 # Library calls
@@ -77,6 +77,45 @@ lsof -p PID
 # Memory mapping
 pmap -x PID
 ```
+
+### eBPF Tracing (Modern, Production-Safe)
+
+eBPF is the modern replacement for strace/ptrace-based tracing. Key advantages:
+- **Low overhead**: Safe for production use
+- **No recompilation**: Works on running binaries
+- **Non-intrusive**: Doesn't stop program execution
+- **Kernel-verified**: Bounded execution, can't crash the system
+
+```bash
+# BCC tools (install: apt install bpfcc-tools)
+# Trace syscalls with timing (like strace but faster)
+sudo syscount -p PID              # Count syscalls
+sudo opensnoop -p PID             # Trace file opens
+sudo execsnoop                    # Trace new processes
+sudo tcpconnect                   # Trace TCP connections
+sudo funccount 'vfs_*'            # Count kernel function calls
+
+# bpftrace (install: apt install bpftrace)
+# One-liner tracing scripts
+sudo bpftrace -e 'tracepoint:syscalls:sys_enter_open { printf("%s %s\n", comm, str(args->filename)); }'
+sudo bpftrace -e 'uprobe:/bin/bash:readline { printf("readline\n"); }'
+
+# Trace function arguments in Go/other languages
+sudo bpftrace -e 'uprobe:./myapp:main.handleRequest { printf("called\n"); }'
+```
+
+**eBPF Tool Hierarchy**:
+| Level | Tool | Use Case |
+|-------|------|----------|
+| High | BCC tools | Pre-built tracing scripts |
+| Medium | bpftrace | One-liner custom traces |
+| Low | libbpf/gobpf | Custom eBPF programs |
+
+**When to use eBPF over strace**:
+- Production systems (strace adds 10-100x overhead)
+- Long-running traces
+- High-frequency syscalls
+- When you can't afford to slow down the process
 
 ### Network Debugging
 ```bash
