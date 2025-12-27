@@ -143,6 +143,37 @@ Intelligent MCP server installation and management.
 - Project-scoped `.mcp.json` management
 - Environment variable validation
 
+#### `claude-hooks-configuration`
+Configure Claude Code lifecycle hooks with proper timeout settings.
+
+**When to use:**
+- Fixing "Hook cancelled" errors during session management
+- Configuring SessionStart, SessionEnd, or Stop hooks
+- Optimizing hook scripts for faster execution
+- Setting custom timeout values for hooks
+
+**Features:**
+- Hook timeout configuration patterns
+- Script optimization guidance
+- Starship timeout fixes (related issue)
+- Best practices for hook development
+
+**Common Fix:**
+```json
+{
+  "hooks": {
+    "SessionEnd": [{
+      "matcher": "",
+      "hooks": [{
+        "type": "command",
+        "command": "~/.claude/session-logger.sh",
+        "timeout": 120
+      }]
+    }]
+  }
+}
+```
+
 ## Installation
 
 ### Via Plugin System

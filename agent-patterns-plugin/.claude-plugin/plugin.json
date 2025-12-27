@@ -2,5 +2,5 @@
   "name": "agent-patterns-plugin",
   "version": "1.0.0",
   "description": "Multi-agent coordination and orchestration patterns",
-  "keywords": ["agents", "orchestration", "coordination", "patterns"]
+  "keywords": ["agents", "orchestration", "coordination", "patterns", "hooks", "configuration"]
 }
