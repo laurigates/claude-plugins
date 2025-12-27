@@ -31,7 +31,9 @@ SessionEnd hook [bash ~/.claude/session-logger.sh] failed: Hook cancelled
 
 **Root cause**: Hook execution exceeds the 60-second default timeout.
 
-**Solution**: Add explicit `timeout` field to hook configuration.
+**Solutions** (in order of preference):
+1. **Background subshell** - Run slow operations in background, exit immediately
+2. **Explicit timeout** - Add `timeout` field to hook configuration
 
 ## Hook Configuration
 
@@ -98,52 +100,56 @@ Hooks are configured in `.claude/settings.json`:
 
 ## Fixing Timeout Issues
 
-### Step 1: Identify the Hook
+### Recommended: Background Subshell Pattern
 
-Check current hook configuration:
-
-```bash
-cat ~/.claude/settings.json | jq '.hooks'
-```
-
-### Step 2: Add Timeout Field
-
-Edit the settings to add explicit timeout:
-
-```bash
-# Edit ~/.claude/settings.json
-# Add "timeout": <seconds> to each hook that's timing out
-```
-
-### Step 3: Optimize Hook Script
-
-If the hook is genuinely slow, optimize the script:
-
-| Optimization | Pattern |
-|--------------|---------|
-| Parallel execution | Use `&` and `wait` |
-| Fast test modes | `--bail=1`, `-x`, `--dots` |
-| Skip heavy operations | Conditional execution |
-| Background processing | Detach slow operations |
-
-### Example: Optimized Session Logger
+The most portable and robust solution is to run slow operations in a background subshell and exit immediately:
 
 ```bash
 #!/bin/bash
 # ~/.claude/session-logger.sh
-# Fast session logging with background processing
+# Exits instantly, work continues in background
 
-# Quick synchronous logging (< 1 second)
-echo "$(date): Session ended" >> ~/.claude/session.log
-
-# Heavy operations in background (detached)
-{
-  # Analytics, syncing, etc.
+(
+  # All slow operations go here
+  echo "$(date): Session ended" >> ~/.claude/session.log
   curl -s -X POST "https://api.example.com/log" -d "session_end=$(date)"
-} &>/dev/null &
+  # Any other slow work...
+) &>/dev/null &
 
-exit 0  # Return immediately
+exit 0
 ```
+
+**Why this works:**
+- `( )` creates a subshell for the commands
+- `&` runs the subshell in background
+- `&>/dev/null` prevents stdout/stderr from blocking
+- `exit 0` returns success immediately
+
+**Comparison of approaches:**
+
+| Approach | Portability | Speed | Notes |
+|----------|-------------|-------|-------|
+| `( ) &` | bash, zsh, sh | Instant | Recommended |
+| `disown` | Bash-only | Instant | Not POSIX |
+| `nohup` | POSIX | Slight overhead | Overkill for hooks |
+
+### Alternative: Increase Timeout
+
+If you need synchronous execution, add explicit timeout to settings:
+
+```bash
+cat ~/.claude/settings.json | jq '.hooks'
+# Edit to add "timeout": <seconds> to each hook
+```
+
+### Script Optimization Patterns
+
+| Optimization | Pattern |
+|--------------|---------|
+| Background subshell | `( commands ) &>/dev/null &` |
+| Fast test modes | `--bail=1`, `-x`, `--dots` |
+| Skip heavy operations | Conditional execution |
+| Parallel execution | Use `&` and `wait` |
 
 ## Related: Starship Timeout
 
@@ -196,8 +202,8 @@ command_timeout = 2000  # Increase if still timing out
 
 ## Best Practices
 
-1. **Set explicit timeouts** - Always specify timeout for hooks that may take >30s
-2. **Use fast patterns** - Optimize scripts to complete quickly
-3. **Detach slow operations** - Background heavy work and exit immediately
-4. **Test hook timing** - Use `time` to measure actual execution
-5. **Apply `/hooks` menu** - Use Claude Code's hook menu to reload settings
+1. **Use background subshell** - Wrap slow operations in `( ) &>/dev/null &` and `exit 0`
+2. **Set explicit timeouts** - Add `timeout` field for hooks requiring synchronous execution
+3. **Test hook timing** - Use `time bash ~/.claude/script.sh` to measure execution
+4. **Redirect all output** - Use `&>/dev/null` to prevent blocking on stdout/stderr
+5. **Apply `/hooks` menu** - Use Claude Code's hook menu to reload settings after changes
