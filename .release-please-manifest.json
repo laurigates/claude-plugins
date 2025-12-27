@@ -11,7 +11,7 @@
   "documentation-plugin": "1.0.0",
   "dotfiles-plugin": "1.0.0",
   "first-plugin": "1.0.0",
-  "git-plugin": "1.0.0",
+  "git-plugin": "1.1.0",
   "github-actions-plugin": "1.0.0",
   "graphiti-plugin": "1.0.0",
   "kubernetes-plugin": "1.0.0",
