@@ -6,7 +6,7 @@
       "component": "accessibility-plugin",
       "release-type": "simple",
       "extra-files": [
-        {"type": "json", "path": "accessibility-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+        {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
       ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
@@ -20,7 +20,7 @@
       "component": "agent-patterns-plugin",
       "release-type": "simple",
       "extra-files": [
-        {"type": "json", "path": "agent-patterns-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+        {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
       ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
@@ -34,7 +34,7 @@
       "component": "api-plugin",
       "release-type": "simple",
       "extra-files": [
-        {"type": "json", "path": "api-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+        {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
       ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
@@ -48,7 +48,7 @@
       "component": "bevy-plugin",
       "release-type": "simple",
       "extra-files": [
-        {"type": "json", "path": "bevy-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+        {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
       ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
@@ -62,7 +62,7 @@
       "component": "blueprint-plugin",
       "release-type": "simple",
       "extra-files": [
-        {"type": "json", "path": "blueprint-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+        {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
       ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
@@ -76,7 +76,7 @@
       "component": "code-quality-plugin",
       "release-type": "simple",
       "extra-files": [
-        {"type": "json", "path": "code-quality-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+        {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
       ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
@@ -90,7 +90,7 @@
       "component": "communication-plugin",
       "release-type": "simple",
       "extra-files": [
-        {"type": "json", "path": "communication-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+        {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
       ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
@@ -104,7 +104,7 @@
       "component": "configure-plugin",
       "release-type": "simple",
       "extra-files": [
-        {"type": "json", "path": "configure-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+        {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
       ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
@@ -118,7 +118,7 @@
       "component": "container-plugin",
       "release-type": "simple",
       "extra-files": [
-        {"type": "json", "path": "container-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+        {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
       ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
@@ -132,7 +132,7 @@
       "component": "documentation-plugin",
       "release-type": "simple",
       "extra-files": [
-        {"type": "json", "path": "documentation-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+        {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
       ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
@@ -146,7 +146,7 @@
       "component": "dotfiles-plugin",
       "release-type": "simple",
       "extra-files": [
-        {"type": "json", "path": "dotfiles-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+        {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
       ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
@@ -160,7 +160,7 @@
       "component": "first-plugin",
       "release-type": "simple",
       "extra-files": [
-        {"type": "json", "path": "first-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+        {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
       ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
@@ -174,7 +174,7 @@
       "component": "git-plugin",
       "release-type": "simple",
       "extra-files": [
-        {"type": "json", "path": "git-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+        {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
       ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
@@ -188,7 +188,7 @@
       "component": "github-actions-plugin",
       "release-type": "simple",
       "extra-files": [
-        {"type": "json", "path": "github-actions-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+        {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
       ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
@@ -202,7 +202,7 @@
       "component": "graphiti-plugin",
       "release-type": "simple",
       "extra-files": [
-        {"type": "json", "path": "graphiti-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+        {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
       ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
@@ -216,7 +216,7 @@
       "component": "kubernetes-plugin",
       "release-type": "simple",
       "extra-files": [
-        {"type": "json", "path": "kubernetes-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+        {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
       ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
@@ -230,7 +230,7 @@
       "component": "project-plugin",
       "release-type": "simple",
       "extra-files": [
-        {"type": "json", "path": "project-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+        {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
       ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
@@ -244,7 +244,7 @@
       "component": "python-plugin",
       "release-type": "simple",
       "extra-files": [
-        {"type": "json", "path": "python-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+        {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
       ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
@@ -258,7 +258,7 @@
       "component": "rust-plugin",
       "release-type": "simple",
       "extra-files": [
-        {"type": "json", "path": "rust-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+        {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
       ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
@@ -272,7 +272,7 @@
       "component": "sync-plugin",
       "release-type": "simple",
       "extra-files": [
-        {"type": "json", "path": "sync-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+        {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
       ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
@@ -286,7 +286,7 @@
       "component": "terraform-plugin",
       "release-type": "simple",
       "extra-files": [
-        {"type": "json", "path": "terraform-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+        {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
       ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
@@ -300,7 +300,7 @@
       "component": "testing-plugin",
       "release-type": "simple",
       "extra-files": [
-        {"type": "json", "path": "testing-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+        {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
       ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
@@ -314,7 +314,7 @@
       "component": "tools-plugin",
       "release-type": "simple",
       "extra-files": [
-        {"type": "json", "path": "tools-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+        {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
       ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
@@ -328,7 +328,7 @@
       "component": "typescript-plugin",
       "release-type": "simple",
       "extra-files": [
-        {"type": "json", "path": "typescript-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+        {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
       ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},

@@ -106,16 +106,33 @@ For JSON files, you **must** use the object format with `type`, `path`, and `jso
 }
 ```
 
-**Common Mistake:** Using a simple string path for JSON files:
+**Common Mistakes:**
+
+1. Using a simple string path for JSON files:
 ```json
 // WRONG - won't update the version field
-"extra-files": ["my-plugin/.claude-plugin/plugin.json"]
+"extra-files": [".claude-plugin/plugin.json"]
 
 // CORRECT - uses JSON updater with jsonpath
 "extra-files": [
-  {"type": "json", "path": "my-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+  {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
 ]
 ```
+
+2. Using absolute paths instead of package-relative paths:
+```json
+// WRONG - path gets doubled (package-name/package-name/.claude-plugin/...)
+"extra-files": [
+  {"type": "json", "path": "my-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+]
+
+// CORRECT - path is relative to the package directory
+"extra-files": [
+  {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
+]
+```
+
+**Key insight:** For monorepo packages, `extra-files` paths are relative to the package directory, NOT the repo root. Release-please automatically prepends the package path.
 
 **File Type Formats:**
 
