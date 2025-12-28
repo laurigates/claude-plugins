@@ -21,6 +21,6 @@
   "sync-plugin": "1.0.0",
   "terraform-plugin": "1.0.0",
   "testing-plugin": "2.0.0",
-  "tools-plugin": "1.1.0",
+  "tools-plugin": "2.0.0",
   "typescript-plugin": "1.1.1"
 }
