@@ -187,6 +187,14 @@
       "version": "1.0.0",
       "keywords": ["communication", "google-chat", "formatting", "tickets"],
       "category": "communication"
+    },
+    {
+      "name": "agents-plugin",
+      "source": "./agents-plugin",
+      "description": "Task-focused agents for test, review, debug, docs, and CI workflows",
+      "version": "1.0.0",
+      "keywords": ["agents", "testing", "code-review", "debugging", "documentation", "ci-cd"],
+      "category": "ai"
     }
   ]
 }
