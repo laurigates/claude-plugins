@@ -12,7 +12,7 @@
   "dotfiles-plugin": "1.0.0",
   "first-plugin": "1.0.0",
   "git-plugin": "1.0.0",
-  "github-actions-plugin": "1.0.1",
+  "github-actions-plugin": "1.0.0",
   "graphiti-plugin": "1.0.0",
   "kubernetes-plugin": "1.0.0",
   "project-plugin": "1.2.0",
