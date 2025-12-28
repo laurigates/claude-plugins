@@ -3,6 +3,7 @@
   "include-component-in-tag": true,
   "packages": {
     "accessibility-plugin": {
+      "component": "accessibility-plugin",
       "release-type": "simple",
       "extra-files": ["accessibility-plugin/.claude-plugin/plugin.json"],
       "changelog-sections": [
@@ -14,6 +15,7 @@
       ]
     },
     "agent-patterns-plugin": {
+      "component": "agent-patterns-plugin",
       "release-type": "simple",
       "extra-files": ["agent-patterns-plugin/.claude-plugin/plugin.json"],
       "changelog-sections": [
@@ -25,6 +27,7 @@
       ]
     },
     "api-plugin": {
+      "component": "api-plugin",
       "release-type": "simple",
       "extra-files": ["api-plugin/.claude-plugin/plugin.json"],
       "changelog-sections": [
@@ -36,6 +39,7 @@
       ]
     },
     "bevy-plugin": {
+      "component": "bevy-plugin",
       "release-type": "simple",
       "extra-files": ["bevy-plugin/.claude-plugin/plugin.json"],
       "changelog-sections": [
@@ -47,6 +51,7 @@
       ]
     },
     "blueprint-plugin": {
+      "component": "blueprint-plugin",
       "release-type": "simple",
       "extra-files": ["blueprint-plugin/.claude-plugin/plugin.json"],
       "changelog-sections": [
@@ -58,6 +63,7 @@
       ]
     },
     "code-quality-plugin": {
+      "component": "code-quality-plugin",
       "release-type": "simple",
       "extra-files": ["code-quality-plugin/.claude-plugin/plugin.json"],
       "changelog-sections": [
@@ -69,6 +75,7 @@
       ]
     },
     "communication-plugin": {
+      "component": "communication-plugin",
       "release-type": "simple",
       "extra-files": ["communication-plugin/.claude-plugin/plugin.json"],
       "changelog-sections": [
@@ -80,6 +87,7 @@
       ]
     },
     "configure-plugin": {
+      "component": "configure-plugin",
       "release-type": "simple",
       "extra-files": ["configure-plugin/.claude-plugin/plugin.json"],
       "changelog-sections": [
@@ -91,6 +99,7 @@
       ]
     },
     "container-plugin": {
+      "component": "container-plugin",
       "release-type": "simple",
       "extra-files": ["container-plugin/.claude-plugin/plugin.json"],
       "changelog-sections": [
@@ -102,6 +111,7 @@
       ]
     },
     "documentation-plugin": {
+      "component": "documentation-plugin",
       "release-type": "simple",
       "extra-files": ["documentation-plugin/.claude-plugin/plugin.json"],
       "changelog-sections": [
@@ -113,6 +123,7 @@
       ]
     },
     "dotfiles-plugin": {
+      "component": "dotfiles-plugin",
       "release-type": "simple",
       "extra-files": ["dotfiles-plugin/.claude-plugin/plugin.json"],
       "changelog-sections": [
@@ -124,6 +135,7 @@
       ]
     },
     "first-plugin": {
+      "component": "first-plugin",
       "release-type": "simple",
       "extra-files": ["first-plugin/.claude-plugin/plugin.json"],
       "changelog-sections": [
@@ -135,6 +147,7 @@
       ]
     },
     "git-plugin": {
+      "component": "git-plugin",
       "release-type": "simple",
       "extra-files": ["git-plugin/.claude-plugin/plugin.json"],
       "changelog-sections": [
@@ -146,6 +159,7 @@
       ]
     },
     "github-actions-plugin": {
+      "component": "github-actions-plugin",
       "release-type": "simple",
       "extra-files": ["github-actions-plugin/.claude-plugin/plugin.json"],
       "changelog-sections": [
@@ -157,6 +171,7 @@
       ]
     },
     "graphiti-plugin": {
+      "component": "graphiti-plugin",
       "release-type": "simple",
       "extra-files": ["graphiti-plugin/.claude-plugin/plugin.json"],
       "changelog-sections": [
@@ -168,6 +183,7 @@
       ]
     },
     "kubernetes-plugin": {
+      "component": "kubernetes-plugin",
       "release-type": "simple",
       "extra-files": ["kubernetes-plugin/.claude-plugin/plugin.json"],
       "changelog-sections": [
@@ -179,6 +195,7 @@
       ]
     },
     "project-plugin": {
+      "component": "project-plugin",
       "release-type": "simple",
       "extra-files": ["project-plugin/.claude-plugin/plugin.json"],
       "changelog-sections": [
@@ -190,6 +207,7 @@
       ]
     },
     "python-plugin": {
+      "component": "python-plugin",
       "release-type": "simple",
       "extra-files": ["python-plugin/.claude-plugin/plugin.json"],
       "changelog-sections": [
@@ -201,6 +219,7 @@
       ]
     },
     "rust-plugin": {
+      "component": "rust-plugin",
       "release-type": "simple",
       "extra-files": ["rust-plugin/.claude-plugin/plugin.json"],
       "changelog-sections": [
@@ -212,6 +231,7 @@
       ]
     },
     "sync-plugin": {
+      "component": "sync-plugin",
       "release-type": "simple",
       "extra-files": ["sync-plugin/.claude-plugin/plugin.json"],
       "changelog-sections": [
@@ -223,6 +243,7 @@
       ]
     },
     "terraform-plugin": {
+      "component": "terraform-plugin",
       "release-type": "simple",
       "extra-files": ["terraform-plugin/.claude-plugin/plugin.json"],
       "changelog-sections": [
@@ -234,6 +255,7 @@
       ]
     },
     "testing-plugin": {
+      "component": "testing-plugin",
       "release-type": "simple",
       "extra-files": ["testing-plugin/.claude-plugin/plugin.json"],
       "changelog-sections": [
@@ -245,6 +267,7 @@
       ]
     },
     "tools-plugin": {
+      "component": "tools-plugin",
       "release-type": "simple",
       "extra-files": ["tools-plugin/.claude-plugin/plugin.json"],
       "changelog-sections": [
@@ -256,6 +279,7 @@
       ]
     },
     "typescript-plugin": {
+      "component": "typescript-plugin",
       "release-type": "simple",
       "extra-files": ["typescript-plugin/.claude-plugin/plugin.json"],
       "changelog-sections": [
