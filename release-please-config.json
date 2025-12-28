@@ -5,7 +5,9 @@
     "accessibility-plugin": {
       "component": "accessibility-plugin",
       "release-type": "simple",
-      "extra-files": ["accessibility-plugin/.claude-plugin/plugin.json"],
+      "extra-files": [
+        {"type": "json", "path": "accessibility-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+      ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
         {"type": "fix", "section": "Bug Fixes"},
@@ -17,7 +19,9 @@
     "agent-patterns-plugin": {
       "component": "agent-patterns-plugin",
       "release-type": "simple",
-      "extra-files": ["agent-patterns-plugin/.claude-plugin/plugin.json"],
+      "extra-files": [
+        {"type": "json", "path": "agent-patterns-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+      ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
         {"type": "fix", "section": "Bug Fixes"},
@@ -29,7 +33,9 @@
     "api-plugin": {
       "component": "api-plugin",
       "release-type": "simple",
-      "extra-files": ["api-plugin/.claude-plugin/plugin.json"],
+      "extra-files": [
+        {"type": "json", "path": "api-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+      ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
         {"type": "fix", "section": "Bug Fixes"},
@@ -41,7 +47,9 @@
     "bevy-plugin": {
       "component": "bevy-plugin",
       "release-type": "simple",
-      "extra-files": ["bevy-plugin/.claude-plugin/plugin.json"],
+      "extra-files": [
+        {"type": "json", "path": "bevy-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+      ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
         {"type": "fix", "section": "Bug Fixes"},
@@ -53,7 +61,9 @@
     "blueprint-plugin": {
       "component": "blueprint-plugin",
       "release-type": "simple",
-      "extra-files": ["blueprint-plugin/.claude-plugin/plugin.json"],
+      "extra-files": [
+        {"type": "json", "path": "blueprint-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+      ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
         {"type": "fix", "section": "Bug Fixes"},
@@ -65,7 +75,9 @@
     "code-quality-plugin": {
       "component": "code-quality-plugin",
       "release-type": "simple",
-      "extra-files": ["code-quality-plugin/.claude-plugin/plugin.json"],
+      "extra-files": [
+        {"type": "json", "path": "code-quality-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+      ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
         {"type": "fix", "section": "Bug Fixes"},
@@ -77,7 +89,9 @@
     "communication-plugin": {
       "component": "communication-plugin",
       "release-type": "simple",
-      "extra-files": ["communication-plugin/.claude-plugin/plugin.json"],
+      "extra-files": [
+        {"type": "json", "path": "communication-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+      ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
         {"type": "fix", "section": "Bug Fixes"},
@@ -89,7 +103,9 @@
     "configure-plugin": {
       "component": "configure-plugin",
       "release-type": "simple",
-      "extra-files": ["configure-plugin/.claude-plugin/plugin.json"],
+      "extra-files": [
+        {"type": "json", "path": "configure-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+      ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
         {"type": "fix", "section": "Bug Fixes"},
@@ -101,7 +117,9 @@
     "container-plugin": {
       "component": "container-plugin",
       "release-type": "simple",
-      "extra-files": ["container-plugin/.claude-plugin/plugin.json"],
+      "extra-files": [
+        {"type": "json", "path": "container-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+      ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
         {"type": "fix", "section": "Bug Fixes"},
@@ -113,7 +131,9 @@
     "documentation-plugin": {
       "component": "documentation-plugin",
       "release-type": "simple",
-      "extra-files": ["documentation-plugin/.claude-plugin/plugin.json"],
+      "extra-files": [
+        {"type": "json", "path": "documentation-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+      ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
         {"type": "fix", "section": "Bug Fixes"},
@@ -125,7 +145,9 @@
     "dotfiles-plugin": {
       "component": "dotfiles-plugin",
       "release-type": "simple",
-      "extra-files": ["dotfiles-plugin/.claude-plugin/plugin.json"],
+      "extra-files": [
+        {"type": "json", "path": "dotfiles-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+      ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
         {"type": "fix", "section": "Bug Fixes"},
@@ -137,7 +159,9 @@
     "first-plugin": {
       "component": "first-plugin",
       "release-type": "simple",
-      "extra-files": ["first-plugin/.claude-plugin/plugin.json"],
+      "extra-files": [
+        {"type": "json", "path": "first-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+      ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
         {"type": "fix", "section": "Bug Fixes"},
@@ -149,7 +173,9 @@
     "git-plugin": {
       "component": "git-plugin",
       "release-type": "simple",
-      "extra-files": ["git-plugin/.claude-plugin/plugin.json"],
+      "extra-files": [
+        {"type": "json", "path": "git-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+      ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
         {"type": "fix", "section": "Bug Fixes"},
@@ -161,7 +187,9 @@
     "github-actions-plugin": {
       "component": "github-actions-plugin",
       "release-type": "simple",
-      "extra-files": ["github-actions-plugin/.claude-plugin/plugin.json"],
+      "extra-files": [
+        {"type": "json", "path": "github-actions-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+      ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
         {"type": "fix", "section": "Bug Fixes"},
@@ -173,7 +201,9 @@
     "graphiti-plugin": {
       "component": "graphiti-plugin",
       "release-type": "simple",
-      "extra-files": ["graphiti-plugin/.claude-plugin/plugin.json"],
+      "extra-files": [
+        {"type": "json", "path": "graphiti-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+      ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
         {"type": "fix", "section": "Bug Fixes"},
@@ -185,7 +215,9 @@
     "kubernetes-plugin": {
       "component": "kubernetes-plugin",
       "release-type": "simple",
-      "extra-files": ["kubernetes-plugin/.claude-plugin/plugin.json"],
+      "extra-files": [
+        {"type": "json", "path": "kubernetes-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+      ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
         {"type": "fix", "section": "Bug Fixes"},
@@ -197,7 +229,9 @@
     "project-plugin": {
       "component": "project-plugin",
       "release-type": "simple",
-      "extra-files": ["project-plugin/.claude-plugin/plugin.json"],
+      "extra-files": [
+        {"type": "json", "path": "project-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+      ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
         {"type": "fix", "section": "Bug Fixes"},
@@ -209,7 +243,9 @@
     "python-plugin": {
       "component": "python-plugin",
       "release-type": "simple",
-      "extra-files": ["python-plugin/.claude-plugin/plugin.json"],
+      "extra-files": [
+        {"type": "json", "path": "python-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+      ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
         {"type": "fix", "section": "Bug Fixes"},
@@ -221,7 +257,9 @@
     "rust-plugin": {
       "component": "rust-plugin",
       "release-type": "simple",
-      "extra-files": ["rust-plugin/.claude-plugin/plugin.json"],
+      "extra-files": [
+        {"type": "json", "path": "rust-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+      ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
         {"type": "fix", "section": "Bug Fixes"},
@@ -233,7 +271,9 @@
     "sync-plugin": {
       "component": "sync-plugin",
       "release-type": "simple",
-      "extra-files": ["sync-plugin/.claude-plugin/plugin.json"],
+      "extra-files": [
+        {"type": "json", "path": "sync-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+      ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
         {"type": "fix", "section": "Bug Fixes"},
@@ -245,7 +285,9 @@
     "terraform-plugin": {
       "component": "terraform-plugin",
       "release-type": "simple",
-      "extra-files": ["terraform-plugin/.claude-plugin/plugin.json"],
+      "extra-files": [
+        {"type": "json", "path": "terraform-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+      ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
         {"type": "fix", "section": "Bug Fixes"},
@@ -257,7 +299,9 @@
     "testing-plugin": {
       "component": "testing-plugin",
       "release-type": "simple",
-      "extra-files": ["testing-plugin/.claude-plugin/plugin.json"],
+      "extra-files": [
+        {"type": "json", "path": "testing-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+      ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
         {"type": "fix", "section": "Bug Fixes"},
@@ -269,7 +313,9 @@
     "tools-plugin": {
       "component": "tools-plugin",
       "release-type": "simple",
-      "extra-files": ["tools-plugin/.claude-plugin/plugin.json"],
+      "extra-files": [
+        {"type": "json", "path": "tools-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+      ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
         {"type": "fix", "section": "Bug Fixes"},
@@ -281,7 +327,9 @@
     "typescript-plugin": {
       "component": "typescript-plugin",
       "release-type": "simple",
-      "extra-files": ["typescript-plugin/.claude-plugin/plugin.json"],
+      "extra-files": [
+        {"type": "json", "path": "typescript-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+      ],
       "changelog-sections": [
         {"type": "feat", "section": "Features"},
         {"type": "fix", "section": "Bug Fixes"},

@@ -91,20 +91,41 @@ Expert knowledge for configuring Google's release-please for automated releases.
 
 ### Extra Files for Custom Version Locations
 
+For JSON files, you **must** use the object format with `type`, `path`, and `jsonpath`:
+
 ```json
 {
   "packages": {
     "my-plugin": {
       "release-type": "simple",
       "extra-files": [
-        "my-plugin/.claude-plugin/plugin.json"
+        {"type": "json", "path": "my-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
       ]
     }
   }
 }
 ```
 
-The `extra-files` array specifies additional files where version should be updated.
+**Common Mistake:** Using a simple string path for JSON files:
+```json
+// WRONG - won't update the version field
+"extra-files": ["my-plugin/.claude-plugin/plugin.json"]
+
+// CORRECT - uses JSON updater with jsonpath
+"extra-files": [
+  {"type": "json", "path": "my-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+]
+```
+
+**File Type Formats:**
+
+| File Type | Format |
+|-----------|--------|
+| JSON | `{"type": "json", "path": "...", "jsonpath": "$.version"}` |
+| YAML | `{"type": "yaml", "path": "...", "jsonpath": "$.version"}` |
+| TOML | `{"type": "toml", "path": "...", "jsonpath": "$.version"}` |
+| XML | `{"type": "xml", "path": "...", "xpath": "//version"}` |
+| Plain text | `"path/to/version.txt"` (string is fine) |
 
 ## Changelog Configuration
 
