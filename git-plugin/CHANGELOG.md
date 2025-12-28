@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v1.1.0...git-plugin-v1.1.1) (2025-12-28)
+
+
+### Bug Fixes
+
+* use JSON updater format for extra-files in release-please config ([ec1fac9](https://github.com/laurigates/claude-plugins/commit/ec1fac989e0028874e409dd808c95adff19c6edc))
+* use package-relative paths for extra-files in release-please ([e1c9dcf](https://github.com/laurigates/claude-plugins/commit/e1c9dcf9828178b8b74cf3bc8e92778f144c5a5c))
+
 ## [1.1.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v1.0.0...git-plugin-v1.1.0) (2025-12-28)
 
 
