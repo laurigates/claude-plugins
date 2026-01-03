@@ -30,6 +30,8 @@ Display the current blueprint configuration status with three-layer architecture
    - Count custom commands in `.claude/commands/`
    - Check for `.claude/rules/` directory
    - Check for `CLAUDE.md` file
+   - Check for `.claude/blueprints/feature-tracker.json`
+   - If feature tracker exists, read statistics and last_updated
 
 3. **Check for upgrade availability**:
    - Compare `format_version` in manifest with current plugin version
@@ -83,6 +85,14 @@ Display the current blueprint configuration status with three-layer architecture
    - Skills: {count} (user-maintained)
    - Commands: {count} (user-maintained)
 
+   {If feature_tracker enabled:}
+   Feature Tracker:
+   - Status: Enabled
+   - Source: {feature_tracker.source_document}
+   - Progress: {statistics.complete}/{statistics.total_features} ({statistics.completion_percentage}%)
+   - Last Sync: {last_updated}
+   - Phases: {count in_progress} active, {count complete} complete
+
    Structure:
    ✅ .claude/blueprints/.manifest.json
    {✅|❌} docs/prds/
@@ -91,6 +101,7 @@ Display the current blueprint configuration status with three-layer architecture
    {✅|❌} .claude/blueprints/work-orders/
    {✅|❌} .claude/blueprints/ai_docs/
    {✅|❌} .claude/blueprints/generated/
+   {✅|❌} .claude/blueprints/feature-tracker.json
    {✅|❌} .claude/rules/
    {✅|❌} CLAUDE.md
 
@@ -116,6 +127,8 @@ Display the current blueprint configuration status with three-layer architecture
    - Warn if PRDs exist but no generated skills
    - Warn if modular rules enabled but `.claude/rules/` is empty
    - Warn if generated content is modified or stale
+   - Warn if feature-tracker.json is older than 7 days (needs sync)
+   - Warn if feature-tracker sync targets have been modified since last sync
 
 7. **Prompt for next action** (use AskUserQuestion):
 
@@ -126,6 +139,7 @@ Display the current blueprint configuration status with three-layer architecture
    - If PRDs exist but no generated skills → Include "Generate skills from PRDs"
    - If skills exist but no commands → Include "Generate workflow commands"
    - If CLAUDE.md stale → Include "Update CLAUDE.md"
+   - If feature tracker exists but stale → Include "Sync feature tracker"
    - Always include "Continue development" and "I'm done"
 
    ```
@@ -144,6 +158,8 @@ Display the current blueprint configuration status with three-layer architecture
        description: "Create /project:continue and /project:test-loop"
      - label: "Update CLAUDE.md" (if stale or missing)
        description: "Regenerate project overview document"
+     - label: "Sync feature tracker" (if feature tracker stale)
+       description: "Synchronize tracker with work-overview.md and TODO.md"
      # Always include these:
      - label: "Continue development"
        description: "Run /project:continue to work on next task"
@@ -158,6 +174,7 @@ Display the current blueprint configuration status with three-layer architecture
    - "Generate skills" → Run `/blueprint:generate-skills`
    - "Generate commands" → Run `/blueprint:generate-commands`
    - "Update CLAUDE.md" → Run `/blueprint:claude-md`
+   - "Sync feature tracker" → Run `/blueprint:feature-tracker-sync`
    - "Continue development" → Run `/project:continue`
    - "I'm done" → Exit
 
@@ -206,6 +223,13 @@ Layer 3: Custom (.claude/skills/, .claude/commands/)
 - Skills: 1 (my-custom-skill)
 - Commands: 0
 
+Feature Tracker:
+- Status: Enabled
+- Source: REQUIREMENTS.md
+- Progress: 22/42 (52.4%)
+- Last Sync: 2024-01-14
+- Phases: 1 active, 2 complete
+
 Structure:
 ✅ .claude/blueprints/.manifest.json
 ✅ docs/prds/
@@ -214,6 +238,7 @@ Structure:
 ✅ .claude/blueprints/work-orders/
 ✅ .claude/blueprints/ai_docs/
 ✅ .claude/blueprints/generated/
+✅ .claude/blueprints/feature-tracker.json
 ✅ .claude/rules/
 ✅ CLAUDE.md
 

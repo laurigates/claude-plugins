@@ -41,7 +41,32 @@ Initialize Blueprint Development in this project.
    allowMultiSelect: false
    ```
 
-4. **Create directory structure**:
+4. **Ask about feature tracking** (use AskUserQuestion):
+   ```
+   question: "Would you like to enable feature tracking?"
+   options:
+     - label: "Yes - Track implementation against requirements"
+       description: "Creates feature-tracker.json to track FR codes from a requirements document"
+     - label: "No - Skip feature tracking"
+       description: "Can be added later with /blueprint-feature-tracker-sync"
+   ```
+
+   **If "Yes" selected:**
+   a. Ask for source document:
+      ```
+      question: "Which document contains your feature requirements?"
+      options:
+        - label: "REQUIREMENTS.md"
+          description: "Standard requirements document (most common)"
+        - label: "README.md"
+          description: "Use README as requirements source"
+        - label: "Other"
+          description: "Specify a different document"
+      ```
+   b. Create `.claude/blueprints/feature-tracker.json` from template
+   c. Set `has_feature_tracker: true` in manifest
+
+5. **Create directory structure**:
 
    **Project documentation (in docs/):**
    ```
@@ -78,7 +103,7 @@ Initialize Blueprint Development in this project.
        └── testing.md               # Testing requirements
    ```
 
-5. **Create `.manifest.json`** (v2.0.0 schema):
+6. **Create `.manifest.json`** (v2.0.0 schema):
    ```json
    {
      "format_version": "2.0.0",
@@ -99,7 +124,13 @@ Initialize Blueprint Development in this project.
        "has_work_orders": true,
        "has_ai_docs": false,
        "has_modular_rules": "[based on user choice]",
+       "has_feature_tracker": "[based on user choice]",
        "claude_md_mode": "[single|modular|both]"
+     },
+     "feature_tracker": {
+       "file": "feature-tracker.json",
+       "source_document": "[user selection]",
+       "sync_targets": ["work-overview.md", "TODO.md"]
      },
      "generated": {
        "skills": {},
@@ -112,7 +143,9 @@ Initialize Blueprint Development in this project.
    }
    ```
 
-6. **Create `work-overview.md`**:
+   Note: Include `feature_tracker` section only if feature tracking is enabled.
+
+7. **Create `work-overview.md`**:
    ```markdown
    # Work Overview: [Project Name]
 
@@ -133,16 +166,16 @@ Initialize Blueprint Development in this project.
    3. Generate workflow commands for your stack
    ```
 
-7. **Create initial rules** (if modular rules selected):
+8. **Create initial rules** (if modular rules selected):
    - `development.md`: TDD workflow, commit conventions
    - `testing.md`: Test requirements, coverage expectations
 
-8. **Handle `.gitignore`** based on project type:
+9. **Handle `.gitignore`** based on project type:
    - Personal: Add `.claude/` to `.gitignore`
    - Team: Commit `.claude/` (ask about secrets)
    - Open source: Commit `docs/`, `.claude/rules/`, gitignore `.claude/blueprints/work-orders/`
 
-9. **Report**:
+10. **Report**:
    ```
    Blueprint Development initialized! (v2.0.0)
 
@@ -158,10 +191,12 @@ Initialize Blueprint Development in this project.
    - .claude/blueprints/generated/
    - .claude/blueprints/work-overview.md
    [- .claude/rules/ (if modular rules enabled)]
+   [- .claude/blueprints/feature-tracker.json (if feature tracking enabled)]
 
    Configuration:
    - Project type: [personal|team|opensource]
    - Rules mode: [single|modular|both]
+   [- Feature tracking: enabled (source: {source_document})]
 
    Architecture:
    - Plugin layer: Generic commands from blueprint-plugin (auto-updated)
@@ -169,7 +204,7 @@ Initialize Blueprint Development in this project.
    - Custom layer: Your overrides in .claude/skills/ and .claude/commands/
    ```
 
-10. **Prompt for next action** (use AskUserQuestion):
+11. **Prompt for next action** (use AskUserQuestion):
     ```
     question: "Blueprint initialized. What would you like to do next?"
     options:
@@ -203,4 +238,6 @@ Management commands:
 - /blueprint:promote         - Move generated content to custom layer
 - /blueprint:rules           - Manage modular rules
 - /blueprint:claude-md       - Update CLAUDE.md
+- /blueprint:feature-tracker-status  - View feature completion stats
+- /blueprint:feature-tracker-sync    - Sync tracker with project files
 ```

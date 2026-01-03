@@ -40,12 +40,20 @@ PRD (Product Requirements) → PRP (Product Requirement Prompt) → Work-Order �
 | `/blueprint-rules` | Manage modular rules |
 | `/blueprint-claude-md` | Update CLAUDE.md from blueprint artifacts |
 
+### Feature Tracking Commands
+
+| Command | Description |
+|---------|-------------|
+| `/blueprint-feature-tracker-status` | Display feature completion statistics |
+| `/blueprint-feature-tracker-sync` | Synchronize tracker with work-overview.md and TODO.md |
+
 ## Skills
 
 | Skill | Description |
 |-------|-------------|
 | `blueprint-development` | Core methodology for generating project-specific skills and commands from PRDs |
 | `confidence-scoring` | Assess quality of PRPs and work-orders for execution readiness |
+| `feature-tracking` | Track implementation status against requirements with hierarchical FR codes |
 
 ## Agents
 
@@ -123,6 +131,65 @@ Generates isolated task packages with minimal context for subagent execution.
 ```
 
 Runs the implementation with RED → GREEN → REFACTOR workflow.
+
+## Feature Tracking (Optional)
+
+Track implementation progress against requirements documents using hierarchical FR codes.
+
+### Enable During Init
+
+Feature tracking can be enabled during `/blueprint-init`. When enabled, it creates:
+- `.claude/blueprints/feature-tracker.json` - Main tracker file
+
+### Feature Tracker Structure
+
+The tracker uses hierarchical FR codes mapped to your requirements:
+
+```json
+{
+  "features": {
+    "FR1": {
+      "name": "Game Setup",
+      "features": {
+        "FR1.1": { "name": "Window Config", "status": "complete" },
+        "FR1.2": { "name": "Mode Selection", "status": "in_progress" }
+      }
+    }
+  },
+  "statistics": {
+    "total_features": 42,
+    "complete": 22,
+    "completion_percentage": 52.4
+  }
+}
+```
+
+### Status Values
+
+- `not_started` - No implementation
+- `in_progress` - Active work
+- `partial` - Some sub-features complete
+- `complete` - Fully implemented
+- `blocked` - Missing dependencies
+
+### Sync Targets
+
+The tracker syncs with:
+- `work-overview.md` - Completed/pending sections
+- `TODO.md` - Checkbox states
+
+### Quick Commands
+
+```bash
+# View statistics
+jq '.statistics' .claude/blueprints/feature-tracker.json
+
+# List incomplete features
+jq '.. | objects | select(.status == "not_started") | .name' .claude/blueprints/feature-tracker.json
+
+# Show PRD status
+jq '.prds | to_entries | .[] | "\(.key): \(.value.status)"' .claude/blueprints/feature-tracker.json
+```
 
 ## Installation
 
