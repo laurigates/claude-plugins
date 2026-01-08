@@ -17,7 +17,7 @@ description: Complete workflow from changes to PR - analyze changes, create logi
 - Recent commits: !`git log --oneline -10`
 - Remote status: !`git remote -v | head -1`
 - Upstream status: !`git status -sb | head -1`
-- Available labels: !`gh label list --json name,description --limit 50`
+- Available labels: !`gh label list --json name,description --limit 50 2>/dev/null || echo "(no remote configured)"`
 
 ## Parameters
 

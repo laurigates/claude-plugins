@@ -9,11 +9,11 @@ argument-hint: [--filter <label>] [--limit <n>]
 
 ## Context
 
-- Repo: !`gh repo view --json nameWithOwner`
-- Open issues: !`gh issue list --state open --json number,title,labels`
-- Open PRs: !`gh pr list --state open --json number,title,state`
+- Repo: !`gh repo view --json nameWithOwner 2>/dev/null || echo "(no remote configured)"`
+- Open issues: !`gh issue list --state open --json number,title,labels 2>/dev/null || echo "(no remote configured)"`
+- Open PRs: !`gh pr list --state open --json number,title,state 2>/dev/null || echo "(no remote configured)"`
 - Current branch: !`git branch --show-current`
-- Available labels: !`gh label list --json name,description --limit 50`
+- Available labels: !`gh label list --json name,description --limit 50 2>/dev/null || echo "(no remote configured)"`
 
 ## Parameters
 
