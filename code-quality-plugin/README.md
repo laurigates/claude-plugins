@@ -15,6 +15,7 @@ This plugin provides comprehensive code quality tools including automated code r
 | `/code:antipatterns` | Analyze codebase for anti-patterns and code smells using ast-grep |
 | `/lint:check` | Universal linter - auto-detects and runs appropriate linting tools |
 | `/refactor` | Refactor selected code for quality improvements |
+| `/docs:quality-check` | Analyze documentation quality - PRDs, ADRs, PRPs, CLAUDE.md, and .claude/rules/ |
 
 ## Skills
 
@@ -22,6 +23,7 @@ This plugin provides comprehensive code quality tools including automated code r
 |-------|-------------|
 | `code-antipatterns-analysis` | Detect anti-patterns and code smells using ast-grep structural matching |
 | `ast-grep-search` | AST-based code search for structural pattern matching |
+| `documentation-quality` | Analyze and validate documentation quality for PRDs, ADRs, PRPs, CLAUDE.md, and .claude/rules/ |
 
 ## Agents
 
@@ -80,6 +82,21 @@ Auto-detects project type and runs appropriate linters:
 - Biome/ESLint for JavaScript/TypeScript
 - Ruff for Python
 - Clippy for Rust
+
+### Documentation Quality Check
+
+```bash
+/docs:quality-check
+```
+
+Analyzes documentation quality and standards:
+- CLAUDE.md structure and completeness
+- .claude/rules/ organization
+- ADRs (Architecture Decision Records)
+- PRDs (Product Requirements Documents)
+- PRPs (Product Requirement Prompts)
+- Freshness and git history alignment
+- Generates comprehensive quality report with actionable recommendations
 
 ## ast-grep Patterns
 
