@@ -14,6 +14,8 @@
     "branches",
     "pull-requests",
     "issues",
-    "version-control"
+    "version-control",
+    "release-please",
+    "monorepo"
   ]
 }

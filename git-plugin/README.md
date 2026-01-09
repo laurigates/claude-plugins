@@ -24,7 +24,9 @@ This plugin provides comprehensive Git workflow automation including conventiona
 | `git-branch-pr-workflow` | Git branching and PR workflow patterns |
 | `git-repo-detection` | Detect GitHub repository name and owner from git remotes |
 | `git-security-checks` | Security checks before staging files |
-| `release-please-protection` | Release-please workflow patterns and protection |
+| `release-please-configuration` | Release-please config for monorepos and version automation |
+| `release-please-protection` | Prevent manual edits to release-please managed files |
+| `release-please-pr-workflow` | Batch merge release-please PRs with conflict handling |
 
 ## Agent
 
