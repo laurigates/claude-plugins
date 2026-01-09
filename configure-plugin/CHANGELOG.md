@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.1.0...configure-plugin-v1.1.1) (2026-01-09)
+
+
+### Bug Fixes
+
+* sync plugin.json versions to match release-please manifest ([1ac44e1](https://github.com/laurigates/claude-plugins/commit/1ac44e1240eed27eb3f829edaaac9bc863634d89))
+
 ## [1.1.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.0.0...configure-plugin-v1.1.0) (2025-12-28)
 
 
