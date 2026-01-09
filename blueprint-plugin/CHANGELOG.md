@@ -1,5 +1,28 @@
 # Changelog
 
+## [3.0.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v2.0.0...blueprint-plugin-v3.0.0) (2026-01-09)
+
+
+### ⚠ BREAKING CHANGES
+
+* **blueprint-plugin:** Blueprint state moves from .claude/blueprints/ to docs/blueprint/
+
+### Features
+
+* **blueprint-plugin:** add automatic document detection and management ([ecafdfd](https://github.com/laurigates/claude-plugins/commit/ecafdfdf96bca4c78ce6cda099a9a3f14230ce25))
+* **blueprint-plugin:** add feature tracking for requirements management ([cba73bc](https://github.com/laurigates/claude-plugins/commit/cba73bcaada9e59a2f973b9fa0cff039ca7a0f68))
+* **blueprint-plugin:** implement v3.0 structure migration ([4fde69f](https://github.com/laurigates/claude-plugins/commit/4fde69fcacb5d33180296ce1c30a475c211c066c))
+
+
+### Bug Fixes
+
+* sync plugin.json versions to match release-please manifest ([1ac44e1](https://github.com/laurigates/claude-plugins/commit/1ac44e1240eed27eb3f829edaaac9bc863634d89))
+
+
+### Documentation
+
+* **blueprint-plugin:** add ADR-0011 for blueprint state relocation ([87d92a5](https://github.com/laurigates/claude-plugins/commit/87d92a5d61204064a747638ec797efbfd6d41abb))
+
 ## [2.0.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v1.1.0...blueprint-plugin-v2.0.0) (2025-12-28)
 
 
