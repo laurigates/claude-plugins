@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v1.1.1...git-plugin-v1.1.2) (2026-01-09)
+
+
+### Bug Fixes
+
+* **git-plugin:** handle missing git remote in command context ([#50](https://github.com/laurigates/claude-plugins/issues/50)) ([3ea701f](https://github.com/laurigates/claude-plugins/commit/3ea701f60537146e92808c63dfd90db8be2c7ae9))
+
 ## [1.1.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v1.1.0...git-plugin-v1.1.1) (2025-12-28)
 
 
