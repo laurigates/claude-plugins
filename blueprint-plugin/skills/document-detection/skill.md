@@ -21,14 +21,14 @@ This skill is loaded when conversation context suggests documentation opportunit
 ## Prerequisites
 
 Document detection requires:
-1. Blueprint initialized in project (`.claude/blueprints/.manifest.json` exists)
+1. Blueprint initialized in project (`docs/blueprint/manifest.json` exists)
 2. `has_document_detection: true` in manifest structure
 3. `docs/` directory structure created
 
 Check prerequisites before prompting:
 ```bash
 # Verify blueprint is initialized with document detection enabled
-jq -r '.structure.has_document_detection // false' .claude/blueprints/.manifest.json 2>/dev/null
+jq -r '.structure.has_document_detection // false' docs/blueprint/manifest.json 2>/dev/null
 ```
 
 ## Detection Patterns
@@ -233,7 +233,7 @@ After document creation:
 1. Show document location (`docs/prds/`, `docs/adrs/`, or `docs/prps/`)
 2. Summarize key sections created
 3. Suggest next steps:
-   - For PRD: "Run `/blueprint:generate-skills` to create implementation patterns"
+   - For PRD: "Run `/blueprint:generate-rules` to create implementation patterns"
    - For ADR: "Consider linking to related PRDs"
    - For PRP: "Run `/blueprint:prp-execute` when ready to implement"
 

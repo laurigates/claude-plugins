@@ -1,6 +1,6 @@
 ---
 created: 2025-12-17
-modified: 2025-12-22
+modified: 2026-01-09
 reviewed: 2025-12-22
 description: "Show blueprint version, configuration, and check for available upgrades"
 allowed_tools: [Read, Bash, Glob, AskUserQuestion]
@@ -11,7 +11,7 @@ Display the current blueprint configuration status with three-layer architecture
 **Steps**:
 
 1. **Check if blueprint is initialized**:
-   - Look for `.claude/blueprints/.manifest.json`
+   - Look for `docs/blueprint/manifest.json`
    - If not found, report:
      ```
      Blueprint not initialized in this project.
@@ -19,27 +19,26 @@ Display the current blueprint configuration status with three-layer architecture
      ```
 
 2. **Read manifest and gather information**:
-   - Parse `.manifest.json` for version and configuration
+   - Parse `manifest.json` for version and configuration
    - Count PRDs in `docs/prds/`
    - Count ADRs in `docs/adrs/`
    - Count PRPs in `docs/prps/`
    - Count work-orders (pending, completed, archived)
-   - Count generated skills in `.claude/blueprints/generated/skills/`
-   - Count generated commands in `.claude/blueprints/generated/commands/`
+   - Count generated rules in `.claude/rules/`
    - Count custom skills in `.claude/skills/`
    - Count custom commands in `.claude/commands/`
    - Check for `.claude/rules/` directory
    - Check for `CLAUDE.md` file
-   - Check for `.claude/blueprints/feature-tracker.json`
+   - Check for `docs/blueprint/feature-tracker.json`
    - If feature tracker exists, read statistics and last_updated
 
 3. **Check for upgrade availability**:
    - Compare `format_version` in manifest with current plugin version
-   - Current format version: **2.0.0**
+   - Current format version: **3.0.0**
    - If manifest version < current → upgrade available
 
 4. **Check generated content status**:
-   - For each generated skill/command in manifest:
+   - For each generated rule in manifest:
      - Hash current file content
      - Compare with stored `content_hash`
      - Status: `current` (unchanged), `modified` (user edited), `stale` (source PRDs changed)
@@ -63,7 +62,7 @@ Display the current blueprint configuration status with three-layer architecture
    - ADRs: {count} in docs/adrs/
    - PRPs: {count} in docs/prps/
 
-   Work Orders (.claude/blueprints/work-orders/):
+   Work Orders (docs/blueprint/work-orders/):
    - Pending: {count}
    - Completed: {count}
    - Archived: {count}
@@ -75,11 +74,9 @@ Display the current blueprint configuration status with three-layer architecture
    - Skills: blueprint-development, blueprint-migration, confidence-scoring
    - Agents: requirements-documentation, architecture-decisions, prp-preparation
 
-   Layer 2: Generated (.claude/blueprints/generated/)
-   - Skills: {count} ({status_summary})
+   Layer 2: Generated (.claude/rules/)
+   - Rules: {count} ({status_summary})
      {list each with status indicator: ✅ current, ⚠️ modified, 🔄 stale}
-   - Commands: {count} ({status_summary})
-     {list each with status indicator}
 
    Layer 3: Custom (.claude/skills/, .claude/commands/)
    - Skills: {count} (user-maintained)
@@ -94,14 +91,13 @@ Display the current blueprint configuration status with three-layer architecture
    - Phases: {count in_progress} active, {count complete} complete
 
    Structure:
-   ✅ .claude/blueprints/.manifest.json
+   ✅ docs/blueprint/manifest.json
    {✅|❌} docs/prds/
    {✅|❌} docs/adrs/
    {✅|❌} docs/prps/
-   {✅|❌} .claude/blueprints/work-orders/
-   {✅|❌} .claude/blueprints/ai_docs/
-   {✅|❌} .claude/blueprints/generated/
-   {✅|❌} .claude/blueprints/feature-tracker.json
+   {✅|❌} docs/blueprint/work-orders/
+   {✅|❌} docs/blueprint/ai_docs/
+   {✅|❌} docs/blueprint/feature-tracker.json
    {✅|❌} .claude/rules/
    {✅|❌} CLAUDE.md
 
@@ -124,7 +120,7 @@ Display the current blueprint configuration status with three-layer architecture
 
 6. **Additional checks**:
    - Warn if work-overview.md is stale (older than latest work-order)
-   - Warn if PRDs exist but no generated skills
+   - Warn if PRDs exist but no generated rules
    - Warn if modular rules enabled but `.claude/rules/` is empty
    - Warn if generated content is modified or stale
    - Warn if feature-tracker.json is older than 7 days (needs sync)
@@ -152,10 +148,8 @@ Display the current blueprint configuration status with three-layer architecture
        description: "Review changes to generated skills/commands"
      - label: "Regenerate from PRDs" (if stale)
        description: "Update generated content from changed PRDs"
-     - label: "Generate skills from PRDs" (if PRDs exist, no skills)
-       description: "Extract project-specific skills from your PRDs"
-     - label: "Generate workflow commands" (if skills exist, no commands)
-       description: "Create /project:continue and /project:test-loop"
+     - label: "Generate rules from PRDs" (if PRDs exist, no rules)
+       description: "Extract project-specific rules from your PRDs"
      - label: "Update CLAUDE.md" (if stale or missing)
        description: "Regenerate project overview document"
      - label: "Sync feature tracker" (if feature tracker stale)
@@ -170,9 +164,8 @@ Display the current blueprint configuration status with three-layer architecture
    **Based on selection:**
    - "Upgrade" → Run `/blueprint:upgrade`
    - "Sync" → Run `/blueprint:sync`
-   - "Regenerate" → Run `/blueprint:generate-skills`
-   - "Generate skills" → Run `/blueprint:generate-skills`
-   - "Generate commands" → Run `/blueprint:generate-commands`
+   - "Regenerate" → Run `/blueprint:generate-rules`
+   - "Generate rules" → Run `/blueprint:generate-rules`
    - "Update CLAUDE.md" → Run `/blueprint:claude-md`
    - "Sync feature tracker" → Run `/blueprint:feature-tracker-sync`
    - "Continue development" → Run `/project:continue`
@@ -182,7 +175,7 @@ Display the current blueprint configuration status with three-layer architecture
 ```
 Blueprint Status
 
-Version: v2.0.0
+Version: v3.0.0
 Initialized: 2024-01-10T09:00:00Z
 Last Updated: 2024-01-15T14:30:00Z
 
@@ -197,7 +190,7 @@ Project Documentation (docs/):
 - ADRs: 5 in docs/adrs/
 - PRPs: 2 in docs/prps/
 
-Work Orders (.claude/blueprints/work-orders/):
+Work Orders (docs/blueprint/work-orders/):
 - Pending: 5
 - Completed: 12
 - Archived: 2
@@ -209,19 +202,17 @@ Layer 1: Plugin (blueprint-plugin)
 - Skills: 3 (blueprint-development, blueprint-migration, confidence-scoring)
 - Agents: 3 (requirements-documentation, architecture-decisions, prp-preparation)
 
-Layer 2: Generated (.claude/blueprints/generated/)
-- Skills: 4 (3 current, 1 modified)
-  - ✅ architecture-patterns (current)
-  - ⚠️ testing-strategies (modified locally)
-  - ✅ implementation-guides (current)
-  - ✅ quality-standards (current)
-- Commands: 2 (all current)
-  - ✅ project-continue
-  - ✅ project-test-loop
+Layer 2: Generated (.claude/rules/)
+- Rules: 4 (3 current, 1 modified)
+  - ✅ architecture-patterns.md (current)
+  - ⚠️ testing-strategies.md (modified locally)
+  - ✅ implementation-guides.md (current)
+  - ✅ quality-standards.md (current)
 
-Layer 3: Custom (.claude/skills/, .claude/commands/)
+Layer 3: Custom (.claude/skills/, .claude/commands/, .claude/rules/)
 - Skills: 1 (my-custom-skill)
 - Commands: 0
+- Rules: 0 (user-maintained)
 
 Feature Tracker:
 - Status: Enabled
@@ -231,14 +222,13 @@ Feature Tracker:
 - Phases: 1 active, 2 complete
 
 Structure:
-✅ .claude/blueprints/.manifest.json
+✅ docs/blueprint/manifest.json
 ✅ docs/prds/
 ✅ docs/adrs/
 ✅ docs/prps/
-✅ .claude/blueprints/work-orders/
-✅ .claude/blueprints/ai_docs/
-✅ .claude/blueprints/generated/
-✅ .claude/blueprints/feature-tracker.json
+✅ docs/blueprint/work-orders/
+✅ docs/blueprint/ai_docs/
+✅ docs/blueprint/feature-tracker.json
 ✅ .claude/rules/
 ✅ CLAUDE.md
 

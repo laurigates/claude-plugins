@@ -92,7 +92,7 @@ When `has_document_detection` is enabled, Claude will proactively prompt to crea
 
 ### Enable/Disable
 
-Configure in `.claude/blueprints/.manifest.json`:
+Configure in `docs/blueprint/manifest.json`:
 
 ```json
 {

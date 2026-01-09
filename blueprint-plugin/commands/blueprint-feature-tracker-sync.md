@@ -1,6 +1,6 @@
 ---
 created: 2026-01-02
-modified: 2026-01-02
+modified: 2026-01-09
 reviewed: 2026-01-02
 description: "Synchronize feature tracker with work-overview.md, TODO.md, and PRDs"
 allowed_tools: [Read, Write, Bash, Glob, AskUserQuestion]
@@ -11,7 +11,7 @@ Synchronize the feature tracker JSON with work-overview.md and TODO.md to mainta
 **Steps**:
 
 1. **Check if feature tracking is enabled**:
-   - Look for `.claude/blueprints/feature-tracker.json`
+   - Look for `docs/blueprint/feature-tracker.json`
    - If not found, report:
      ```
      Feature tracking not enabled in this project.
@@ -19,8 +19,8 @@ Synchronize the feature tracker JSON with work-overview.md and TODO.md to mainta
      ```
 
 2. **Load current state**:
-   - Read `feature-tracker.json` for current feature status
-   - Read `work-overview.md` for completed/pending sections
+   - Read `docs/blueprint/feature-tracker.json` for current feature status
+   - Read `docs/blueprint/work-overview.md` for completed/pending sections
    - Read `TODO.md` for checkbox states
    - Read manifest for `sync_targets` configuration
 

@@ -8,22 +8,26 @@ allowed_tools: [Read, Write, Edit, Bash, Glob, AskUserQuestion]
 
 Upgrade the blueprint structure to the latest format version.
 
-**Current Format Version**: 2.0.0
+**Current Format Version**: 3.0.0
 
 This command delegates version-specific migration logic to the `blueprint-migration` skill.
 
 **Steps**:
 
 1. **Check current state**:
-   - Read `.claude/blueprints/.manifest.json`
-   - If not found, suggest running `/blueprint:init` instead
+   - Read `docs/blueprint/.manifest.json` (v3.0 location) or `.claude/blueprints/.manifest.json` (v1.x/v2.x location)
+   - If not found in either location, suggest running `/blueprint:init` instead
    - Extract current `format_version` (default to "1.0.0" if field missing)
 
 2. **Determine upgrade path**:
    ```bash
-   # Read current version
-   current=$(jq -r '.format_version // "1.0.0"' .claude/blueprints/.manifest.json)
-   target="2.0.0"
+   # Read current version - check both old and new locations
+   if [[ -f docs/blueprint/.manifest.json ]]; then
+     current=$(jq -r '.format_version // "3.0.0"' docs/blueprint/.manifest.json)
+   elif [[ -f .claude/blueprints/.manifest.json ]]; then
+     current=$(jq -r '.format_version // "1.0.0"' .claude/blueprints/.manifest.json)
+   fi
+   target="3.0.0"
    ```
 
    **Version compatibility matrix**:
@@ -31,25 +35,31 @@ This command delegates version-specific migration logic to the `blueprint-migrat
    |--------------|------------|-------------------|
    | 1.0.x        | 1.1.x      | `migrations/v1.0-to-v1.1.md` |
    | 1.x.x        | 2.0.0      | `migrations/v1.x-to-v2.0.md` |
-   | 2.0.0        | 2.0.0      | Already up to date |
+   | 2.x.x        | 3.0.0      | `migrations/v2.x-to-v3.0.md` |
+   | 3.0.0        | 3.0.0      | Already up to date |
 
 3. **Display upgrade plan**:
    ```
    Blueprint Upgrade
 
    Current version: v{current}
-   Target version: v2.0.0
+   Target version: v3.0.0
 
-   Major changes in v2.0:
+   Major changes in v3.0:
+   - Blueprint state moves from .claude/blueprints/ to docs/blueprint/
+   - Generated skills become rules in .claude/rules/
+   - No more generated/ subdirectory - cleaner structure
+   - All blueprint-related files consolidated under docs/blueprint/
+
+   (For v2.0 changes when upgrading from v1.x:)
    - PRDs, ADRs, PRPs move to docs/ (project documentation)
-   - Generated content tracked in .claude/blueprints/generated/
    - Custom overrides in .claude/skills/ and .claude/commands/
    - Content hashing for modification detection
    ```
 
 4. **Confirm with user** (use AskUserQuestion):
    ```
-   question: "Ready to upgrade blueprint from v{current} to v2.0.0?"
+   question: "Ready to upgrade blueprint from v{current} to v3.0.0?"
    options:
      - "Yes, upgrade now" → proceed
      - "Show detailed migration steps" → display migration document
@@ -60,6 +70,7 @@ This command delegates version-specific migration logic to the `blueprint-migrat
 5. **Load and execute migration document**:
    - Read the appropriate migration document from `blueprint-migration` skill
    - For v1.x → v2.0: Load `migrations/v1.x-to-v2.0.md`
+   - For v2.x → v3.0: Load `migrations/v2.x-to-v3.0.md`
    - Execute each step with user confirmation for destructive operations
 
 6. **v1.x → v2.0 migration overview** (from migration document):
@@ -129,14 +140,101 @@ This command delegates version-specific migration logic to the `blueprint-migrat
       - Move to appropriate `docs/` subdirectory
       - Record migration in upgrade_history
 
-7. **Update manifest**:
+7. **v2.x → v3.0 migration overview** (from migration document):
+
+   a. **Create docs/blueprint/ structure**:
+      ```bash
+      mkdir -p docs/blueprint/work-orders
+      mkdir -p docs/blueprint/ai_docs
+      ```
+
+   b. **Move state files from .claude/blueprints/ to docs/blueprint/**:
+      ```bash
+      # Move manifest
+      mv .claude/blueprints/.manifest.json docs/blueprint/.manifest.json
+
+      # Move work overview if exists
+      [[ -f .claude/blueprints/work-overview.md ]] && \
+        mv .claude/blueprints/work-overview.md docs/blueprint/work-overview.md
+
+      # Move feature tracker if exists
+      [[ -f .claude/blueprints/feature-tracker.md ]] && \
+        mv .claude/blueprints/feature-tracker.md docs/blueprint/feature-tracker.md
+
+      # Move work orders if exist
+      [[ -d .claude/blueprints/work-orders ]] && \
+        mv .claude/blueprints/work-orders/* docs/blueprint/work-orders/ 2>/dev/null
+
+      # Move ai_docs if exist
+      [[ -d .claude/blueprints/ai_docs ]] && \
+        mv .claude/blueprints/ai_docs/* docs/blueprint/ai_docs/ 2>/dev/null
+      ```
+
+   c. **Move generated skills to .claude/rules/**:
+      ```bash
+      # Create rules directory if needed
+      mkdir -p .claude/rules
+
+      # Move each generated skill to rules
+      for skill in .claude/blueprints/generated/skills/*.md; do
+        [[ -f "$skill" ]] || continue
+        name=$(basename "$skill" .md)
+        mv "$skill" ".claude/rules/${name}.md"
+      done
+      ```
+
+   d. **Copy README template to docs/blueprint/**:
+      ```bash
+      # Create docs/blueprint/README.md with overview of blueprint structure
+      cat > docs/blueprint/README.md << 'EOF'
+      # Blueprint Documentation
+
+      This directory contains the blueprint state and documentation for this project.
+
+      ## Contents
+
+      - `.manifest.json` - Blueprint configuration and generated content tracking
+      - `work-overview.md` - Current work focus and priorities
+      - `feature-tracker.md` - Feature requirements and status
+      - `work-orders/` - Detailed work order documents
+      - `ai_docs/` - AI-generated documentation
+
+      ## Related Directories
+
+      - `docs/prds/` - Product Requirements Documents
+      - `docs/adrs/` - Architecture Decision Records
+      - `docs/prps/` - Problem Resolution Plans
+      - `.claude/rules/` - Generated rules (from blueprint)
+      EOF
+      ```
+
+   e. **Update manifest to v3.0.0 schema**:
+      - Change `generated.skills` to `generated.rules`
+      - Update all path references from `.claude/blueprints/` to `docs/blueprint/`
+      - Bump `format_version` to "3.0.0"
+
+   f. **Remove old .claude/blueprints/ directory**:
+      ```bash
+      # Verify all content has been moved
+      if [[ -d .claude/blueprints ]]; then
+        # Remove empty directories
+        rm -rf .claude/blueprints/generated
+        rm -rf .claude/blueprints/work-orders
+        rm -rf .claude/blueprints/ai_docs
+        # Remove the blueprints directory if empty
+        rmdir .claude/blueprints 2>/dev/null || \
+          echo "Warning: .claude/blueprints/ not empty, manual cleanup may be needed"
+      fi
+      ```
+
+8. **Update manifest** (v3.0.0 schema):
    ```json
    {
-     "format_version": "2.0.0",
+     "format_version": "3.0.0",
      "created_at": "[preserved]",
      "updated_at": "[now]",
      "created_by": {
-       "blueprint_plugin": "2.0.0"
+       "blueprint_plugin": "3.0.0"
      },
      "project": {
        "name": "[preserved]",
@@ -154,12 +252,12 @@ This command delegates version-specific migration logic to the `blueprint-migrat
        "claude_md_mode": "[preserved]"
      },
      "generated": {
-       "skills": {
-         "[skill-name]": {
+       "rules": {
+         "[rule-name]": {
            "source": "docs/prds/...",
            "source_hash": "sha256:...",
            "generated_at": "[now]",
-           "plugin_version": "2.0.0",
+           "plugin_version": "3.0.0",
            "content_hash": "sha256:...",
            "status": "current"
          }
@@ -167,56 +265,57 @@ This command delegates version-specific migration logic to the `blueprint-migrat
        "commands": {}
      },
      "custom_overrides": {
-       "skills": ["[any promoted skills]"],
+       "rules": ["[any promoted rules]"],
        "commands": []
      },
      "upgrade_history": [
        {
          "from": "{previous}",
-         "to": "2.0.0",
+         "to": "3.0.0",
          "date": "[now]",
-         "changes": ["Moved PRDs to docs/", "Created generated/ layer", "..."]
+         "changes": ["Moved state to docs/blueprint/", "Converted skills to rules", "..."]
        }
      ]
    }
    ```
 
-8. **Report**:
+9. **Report**:
    ```
    Blueprint upgraded successfully!
 
-   v{previous} → v2.0.0
+   v{previous} → v3.0.0
 
-   Moved to docs/:
-   - {n} PRDs
-   - {n} ADRs
-   - {n} PRPs
+   State files moved to docs/blueprint/:
+   - .manifest.json
+   - work-overview.md
+   - feature-tracker.md
+   - work-orders/ directory
+   - ai_docs/ directory
 
-   Generated layer (.claude/blueprints/generated/):
-   - {n} skills
-   - {n} commands
+   Generated rules (.claude/rules/):
+   - {n} rules (converted from skills)
 
    Custom layer (.claude/skills/, .claude/commands/):
-   - {n} promoted skills (preserved modifications)
+   - {n} promoted rules (preserved modifications)
    - {n} promoted commands
 
    [Document detection: enabled (if selected)]
-   [Migrated root documentation: {list of files} (if migrated)]
 
-   New architecture:
-   - Plugin layer: Auto-updated with blueprint-plugin
-   - Generated layer: Regeneratable from docs/prds/
+   New v3.0 architecture:
+   - Blueprint state: docs/blueprint/ (version-controlled with project)
+   - Generated rules: .claude/rules/ (project-specific context)
    - Custom layer: Your overrides, never auto-modified
+   - Removed: .claude/blueprints/generated/ (no longer needed)
    ```
 
-9. **Prompt for next action** (use AskUserQuestion):
+10. **Prompt for next action** (use AskUserQuestion):
    ```
    question: "Upgrade complete. What would you like to do next?"
    options:
      - label: "Check status (Recommended)"
        description: "Run /blueprint:status to see updated configuration"
-     - label: "Regenerate skills from PRDs"
-       description: "Update generated skills with new tracking"
+     - label: "Regenerate rules from PRDs"
+       description: "Update generated rules with new tracking"
      - label: "Update CLAUDE.md"
        description: "Reflect new architecture in project docs"
      - label: "Commit changes"
@@ -225,13 +324,13 @@ This command delegates version-specific migration logic to the `blueprint-migrat
 
    **Based on selection:**
    - "Check status" → Run `/blueprint:status`
-   - "Regenerate skills" → Run `/blueprint:generate-skills`
+   - "Regenerate rules" → Run `/blueprint:generate-rules`
    - "Update CLAUDE.md" → Run `/blueprint:claude-md`
    - "Commit changes" → Run `/git:commit` with migration message
 
 **Rollback**:
 If upgrade fails:
 - Check git status for changes made
-- Use `git checkout -- .claude/` to restore original structure
-- Manually move docs/ content back if needed
+- Use `git checkout -- .claude/` and `git checkout -- docs/blueprint/` to restore original structure
+- Manually move content back if needed
 - Report specific failure point for debugging

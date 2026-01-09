@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2025-12-22
+modified: 2026-01-09
 reviewed: 2025-12-16
 description: "Create a PRP (Product Requirement Prompt) with systematic research, curated context, and validation gates"
 allowed_tools: [Read, Write, Glob, Bash, WebFetch, WebSearch, Task, AskUserQuestion]
@@ -12,7 +12,7 @@ Create a comprehensive PRP (Product Requirement Prompt) for a feature or compone
 A PRP is PRD + Curated Codebase Intelligence + Implementation Blueprint + Validation Gates - the minimum viable packet an AI agent needs to deliver production code successfully on first attempt.
 
 **Prerequisites**:
-- Blueprint Development initialized (`.claude/blueprints/` exists)
+- Blueprint Development initialized (`docs/blueprint/` exists)
 - Clear understanding of the feature to implement
 
 **Steps**:
@@ -51,8 +51,8 @@ Use WebSearch/WebFetch to gather:
 ### 1.4 Check/Create ai_docs
 Look for existing ai_docs:
 ```bash
-ls .claude/blueprints/ai_docs/libraries/
-ls .claude/blueprints/ai_docs/project/
+ls docs/blueprint/ai_docs/libraries/
+ls docs/blueprint/ai_docs/project/
 ```
 
 If relevant ai_docs don't exist, create them:
@@ -225,6 +225,6 @@ options:
 - Honest confidence scoring helps decide next steps
 
 **Error Handling**:
-- If `.claude/blueprints/` doesn't exist → Run `/blueprint:init` first
+- If `docs/blueprint/` doesn't exist → Run `/blueprint:init` first
 - If libraries unfamiliar → Research documentation thoroughly
 - If codebase patterns unclear → Use Explore agent extensively

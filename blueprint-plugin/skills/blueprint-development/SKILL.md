@@ -1,25 +1,25 @@
 ---
 created: 2025-12-16
-modified: 2025-12-26
+modified: 2026-01-09
 reviewed: 2025-12-26
 name: blueprint-development
-description: "Generate project-specific skills and commands from PRDs for Blueprint Development methodology. Use when generating skills for architecture patterns, testing strategies, implementation guides, or quality standards from requirements documents."
+description: "Generate project-specific rules and commands from PRDs for Blueprint Development methodology. Use when generating behavioral rules for architecture patterns, testing strategies, implementation guides, or quality standards from requirements documents."
 ---
 
-# Blueprint Development Skill Generator
+# Blueprint Development Rule Generator
 
-This skill teaches Claude how to generate project-specific skills and commands from Product Requirements Documents (PRDs) as part of the Blueprint Development methodology.
+This skill teaches Claude how to generate project-specific behavioral rules and commands from Product Requirements Documents (PRDs) as part of the Blueprint Development methodology.
 
 ## When to Use This Skill
 
 Activate this skill when:
-- User runs `/blueprint:generate-skills` command
+- User runs `/blueprint:generate-rules` command
 - User runs `/blueprint:generate-commands` command
-- User asks to "generate skills from PRDs"
-- User asks to "create project-specific skills"
+- User asks to "generate rules from PRDs"
+- User asks to "create project-specific rules"
 - User initializes Blueprint Development in a project
 
-## Skill Generation Process
+## Rule Generation Process
 
 ### Step 1: Analyze PRDs
 
@@ -51,29 +51,25 @@ Read all PRD files in `docs/prds/` and extract:
 - Security requirements (OWASP, validation, etc.)
 - Style and formatting standards
 
-### Step 2: Generate Four Domain Skills
+### Step 2: Generate Four Domain Rules
 
-Create project-specific skills in `.claude/blueprints/generated/skills/` (regeneratable layer).
+Create project-specific behavioral rules in `.claude/rules/` alongside manual rules.
 
-**Three-Layer Architecture**:
+**Two-Layer Architecture**:
 1. **Plugin layer**: Generic skills from blueprint-plugin (auto-updated)
-2. **Generated layer**: Skills from PRDs in `.claude/blueprints/generated/skills/` (regeneratable)
-3. **Custom layer**: User overrides in `.claude/skills/` (takes precedence)
+2. **Rules layer**: Behavioral rules from PRDs in `.claude/rules/` (project-specific, can be manually edited)
 
-Generated skills go to the generated layer:
+Generated rules are behavioral guidelines that Claude follows during development:
 
-#### 1. Architecture Patterns Skill
+#### 1. Architecture Patterns Rule
 
-**Location**: `.claude/blueprints/generated/skills/architecture-patterns/skill.md`
+**Location**: `.claude/rules/architecture-patterns.md`
 
 **Structure**:
-```yaml
----
-name: architecture-patterns
-description: "Architecture patterns and code organization for [project name]. Defines how code is structured, organized, and modularized in this project."
----
-
+```markdown
 # Architecture Patterns
+
+> Architecture patterns and code organization for [project name]. Defines how code is structured, organized, and modularized in this project.
 
 ## Project Structure
 [Describe directory organization, module boundaries, layering]
@@ -100,18 +96,15 @@ description: "Architecture patterns and code organization for [project name]. De
 - Reference specific directories and file structures
 - Document rationale for architectural choices
 
-#### 2. Testing Strategies Skill
+#### 2. Testing Strategies Rule
 
-**Location**: `.claude/blueprints/generated/skills/testing-strategies/skill.md`
+**Location**: `.claude/rules/testing-strategies.md`
 
 **Structure**:
-```yaml
----
-name: testing-strategies
-description: "TDD workflow, testing patterns, and coverage requirements for [project name]. Enforces test-first development and defines testing standards."
----
-
+```markdown
 # Testing Strategies
+
+> TDD workflow, testing patterns, and coverage requirements for [project name]. Enforces test-first development and defines testing standards.
 
 ## TDD Workflow
 Follow strict RED → GREEN → REFACTOR:
@@ -150,18 +143,15 @@ Follow strict RED → GREEN → REFACTOR:
 - Include specific test commands for the project
 - Document mocking patterns for external dependencies
 
-#### 3. Implementation Guides Skill
+#### 3. Implementation Guides Rule
 
-**Location**: `.claude/blueprints/generated/skills/implementation-guides/skill.md`
+**Location**: `.claude/rules/implementation-guides.md`
 
 **Structure**:
-```yaml
----
-name: implementation-guides
-description: "Step-by-step guides for implementing specific feature types in [project name]. Provides patterns for APIs, UI, data access, and integrations."
----
-
+```markdown
 # Implementation Guides
+
+> Step-by-step guides for implementing specific feature types in [project name]. Provides patterns for APIs, UI, data access, and integrations.
 
 ## API Endpoint Implementation
 ### Step 1: Write Integration Test
@@ -198,18 +188,15 @@ description: "Step-by-step guides for implementing specific feature types in [pr
 - Include code examples showing the pattern
 - Reference project-specific libraries and frameworks
 
-#### 4. Quality Standards Skill
+#### 4. Quality Standards Rule
 
-**Location**: `.claude/blueprints/generated/skills/quality-standards/skill.md`
+**Location**: `.claude/rules/quality-standards.md`
 
 **Structure**:
-```yaml
----
-name: quality-standards
-description: "Code review criteria, performance baselines, security standards, and quality gates for [project name]. Enforces project quality requirements."
----
-
+```markdown
 # Quality Standards
+
+> Code review criteria, performance baselines, security standards, and quality gates for [project name]. Enforces project quality requirements.
 
 ## Code Review Checklist
 - [ ] All functions have tests (unit and/or integration)
@@ -244,30 +231,27 @@ description: "Code review criteria, performance baselines, security standards, a
 - Extract quality criteria from PRD "Success Criteria"
 - Create specific, actionable checklist items
 
-### Step 3: Add Supporting Documentation
+### Step 3: Track Generated Rules in Manifest
 
-For each skill, create a `reference.md` file with additional details:
+Track which rules were generated from PRDs in `docs/blueprint/manifest.json`:
 
-**Location**: `.claude/blueprints/generated/skills/[skill-name]/reference.md`
+```json
+{
+  "generated": {
+    "rules": [
+      "architecture-patterns.md",
+      "testing-strategies.md",
+      "implementation-guides.md",
+      "quality-standards.md"
+    ],
+    "commands": [...]
+  },
+  "source_prds": [...],
+  "last_generated": "2026-01-09T..."
+}
+```
 
-**Content**:
-- Detailed explanations of patterns
-- Code examples (larger snippets)
-- Common pitfalls and how to avoid them
-- Links to external documentation
-- Historical context and evolution of patterns
-
-### Step 4: Create Skill Templates
-
-Create reusable templates in `.claude/skills/blueprint-development/templates/`:
-
-**Templates**:
-- `architecture-skill-template.md` - Template for architecture skills
-- `testing-skill-template.md` - Template for testing skills
-- `implementation-skill-template.md` - Template for implementation skills
-- `quality-skill-template.md` - Template for quality skills
-
-These templates can be used to quickly generate skills for new projects.
+This allows regeneration without losing track of what was auto-generated vs. manually created.
 
 ## Command Generation Process
 
@@ -282,9 +266,7 @@ Determine:
 
 ### Step 2: Generate Workflow Commands
 
-Create commands in `.claude/blueprints/generated/commands/` (regeneratable layer).
-
-Commands follow the same three-layer architecture as skills:
+Create commands in `.claude/commands/` for project-specific workflows.
 
 #### 1. `/blueprint:init` Command
 
@@ -301,53 +283,50 @@ allowed_tools: [Bash, Write]
 
 Initialize Blueprint Development structure:
 
-1. Create `.claude/blueprints/` directory
-2. Create `.claude/blueprints/prds/` for requirements
-3. Create `.claude/blueprints/work-orders/` for task packages
-4. Create `.claude/blueprints/work-orders/completed/` for completed work-orders
-5. Create placeholder `work-overview.md`
-6. Add `.claude/` to `.gitignore` (optional - ask user)
+1. Create `docs/blueprint/` directory
+2. Create `docs/prds/` for requirements
+3. Create `docs/blueprint/work-orders/` for task packages
+4. Create `docs/blueprint/work-orders/completed/` for completed work-orders
+5. Create placeholder `docs/blueprint/work-overview.md`
+6. Add `docs/blueprint/work-orders/` to `.gitignore` (optional - ask user)
 
 Report:
 - Directories created
-- Next steps: Write PRDs, then run `/blueprint:generate-skills`
+- Next steps: Write PRDs, then run `/blueprint:generate-rules`
 ```
 
-#### 2. `/blueprint:generate-skills` Command
+#### 2. `/blueprint:generate-rules` Command
 
-**Location**: `.claude/commands/blueprint-generate-skills.md`
+**Location**: `.claude/commands/blueprint-generate-rules.md`
 
-**Purpose**: Generate project-specific skills from PRDs
+**Purpose**: Generate project-specific behavioral rules from PRDs
 
 **Generated Content**:
 ```markdown
 ---
-description: "Generate project-specific skills from PRDs in .claude/blueprints/prds/"
+description: "Generate project-specific behavioral rules from PRDs in docs/prds/"
 allowed_tools: [Read, Write, Glob]
 ---
 
-Generate project-specific skills:
+Generate project-specific rules:
 
-1. Read all PRD files in `.claude/blueprints/prds/`
+1. Read all PRD files in `docs/prds/`
 2. Analyze PRDs to extract:
    - Architecture patterns and decisions
    - Testing strategies and requirements
    - Implementation guides and patterns
    - Quality standards and baselines
-3. Generate four domain skills:
-   - `.claude/skills/architecture-patterns/`
-   - `.claude/skills/testing-strategies/`
-   - `.claude/skills/implementation-guides/`
-   - `.claude/skills/quality-standards/`
-4. Each skill includes:
-   - SKILL.md with frontmatter and instructions
-   - reference.md with detailed documentation
-   - Code examples and patterns
+3. Generate four behavioral rules in `.claude/rules/`:
+   - `architecture-patterns.md`
+   - `testing-strategies.md`
+   - `implementation-guides.md`
+   - `quality-standards.md`
+4. Update manifest tracking in `docs/blueprint/manifest.json`
 
 Report:
-- Skills generated
+- Rules generated
 - Key patterns extracted
-- Next steps: Review skills, run `/project:continue` to start development
+- Next steps: Review rules, run `/project:continue` to start development
 ```
 
 #### 3. `/blueprint:generate-commands` Command
@@ -376,7 +355,7 @@ Generate workflow commands:
 Report:
 - Commands generated
 - Detected commands and tools
-- Next steps: Use `/project:continue` to start work
+- Next steps: Review rules, then use `/project:continue` to start work
 ```
 
 #### 4. `/blueprint:work-order` Command
@@ -418,7 +397,7 @@ Generate work-order:
    - Implementation steps
    - Success criteria
    - GitHub Issue reference
-5. Save to `.claude/blueprints/work-orders/NNN-task-name.md`
+5. Save to `docs/blueprint/work-orders/NNN-task-name.md`
 6. Create GitHub issue (unless --no-publish):
    - Title: "Work-Order NNN: [Task Name]"
    - Label: `work-order`
@@ -465,7 +444,7 @@ Continue project development:
    - Based on work-overview progress
    - Based on git status (resume if in progress)
 4. Begin work following TDD:
-   - Apply project-specific skills (architecture, testing, implementation, quality)
+   - Apply project-specific rules (architecture, testing, implementation, quality)
    - Follow RED → GREEN → REFACTOR workflow
    - Commit incrementally
 
@@ -520,7 +499,7 @@ Adapt command templates based on:
 - **Project type**: CLI, web app, library have different workflows
 - **Team conventions**: Match existing git workflow, commit conventions
 
-## Skill Generation Guidelines
+## Rule Generation Guidelines
 
 ### Extract, Don't Invent
 
@@ -552,26 +531,26 @@ For architecture and technical decisions, include:
 - What trade-offs were made
 - When to deviate from the pattern
 
-### Make Skills Discoverable
+### Make Rules Clear and Actionable
 
-Skill `description` field is critical for Claude's discovery:
-- Be specific about when the skill applies
-- Include key terms Claude should match on
-- Mention the project or domain
+Rules should be behavioral guidelines that Claude follows:
+- Use imperative language ("Use...", "Follow...", "Ensure...")
+- Be specific about when the rule applies
+- Include examples of correct behavior
 
-**Good description**: "Testing strategies for Express.js API project. Defines TDD workflow, mocking patterns for passport.js auth, and coverage requirements."
+**Good rule content**: "Use constructor injection for services. All service dependencies must be passed via constructor, not imported directly."
 
-**Bad description**: "Testing stuff"
+**Bad rule content**: "Dependency injection stuff"
 
-### Keep Skills Focused
+### Keep Rules Focused
 
-Each skill should have a single concern:
+Each rule file should have a single concern:
 - **Architecture patterns**: Structure and organization
 - **Testing strategies**: How to test
 - **Implementation guides**: How to implement features
 - **Quality standards**: What defines quality
 
-Don't mix concerns across skills.
+Don't mix concerns across rule files.
 
 ## Command Generation Guidelines
 
@@ -587,7 +566,7 @@ Commands should:
 
 Specify `allowed_tools` in command frontmatter:
 - `/blueprint:init`: [Bash, Write]
-- `/blueprint:generate-skills`: [Read, Write, Glob]
+- `/blueprint:generate-rules`: [Read, Write, Glob]
 - `/project:continue`: [Read, Bash, Grep, Glob, Edit, Write]
 - `/project:test-loop`: [Read, Edit, Bash]
 
@@ -609,31 +588,31 @@ Commands should detect common issues:
 
 Report errors clearly and suggest fixes.
 
-## Testing Generated Skills and Commands
+## Testing Generated Rules and Commands
 
-After generating skills and commands:
+After generating rules and commands:
 
-### 1. Verify Skills Are Discoverable
+### 1. Verify Rules Are Applied
 
-Test that Claude discovers skills in relevant contexts:
-- Mention "architecture" → architecture-patterns skill should activate
-- Mention "testing" or "TDD" → testing-strategies skill should activate
-- Mention "implement API" → implementation-guides skill should activate
-- Mention "code review" → quality-standards skill should activate
+Test that Claude applies rules in relevant contexts:
+- When discussing architecture → architecture-patterns rule should guide behavior
+- When writing tests → testing-strategies rule should guide behavior
+- When implementing features → implementation-guides rule should guide behavior
+- When reviewing code → quality-standards rule should guide behavior
 
 ### 2. Verify Commands Work
 
 Test each command:
 ```bash
 /blueprint:init              # Should create directory structure
-/blueprint:generate-skills   # Should create four skills
+/blueprint:generate-rules    # Should create four rules in .claude/rules/
 /blueprint:generate-commands # Should create workflow commands
 /project:continue            # Should analyze state and resume work
 /blueprint:work-order        # Should create work-order document
 /project:test-loop           # Should run tests and report
 ```
 
-### 3. Verify Skills Guide Correctly
+### 3. Verify Rules Guide Correctly
 
 Manually check that:
 - Architecture patterns match PRD technical decisions
@@ -644,13 +623,11 @@ Manually check that:
 ### 4. Refine as Needed
 
 During initial project development:
-- Skills may need refinement as patterns emerge
+- Rules may need refinement as patterns emerge
 - Commands may need adjustment based on actual workflow
-- Update skills and commands iteratively
+- Update rules and commands iteratively
 
 ## Examples
-
-See `.claude/skills/blueprint-development/templates/` for complete skill templates.
 
 See `.claude/docs/blueprint-development/` for complete workflow documentation and examples.
 
@@ -658,9 +635,9 @@ See `.claude/docs/blueprint-development/` for complete workflow documentation an
 
 This skill enables the core Blueprint Development workflow:
 
-**PRDs** (requirements) → **Skills** (how to build) → **Commands** (workflow automation) → **Work-orders** (isolated tasks)
+**PRDs** (requirements) → **Rules** (behavioral guidelines) → **Commands** (workflow automation) → **Work-orders** (isolated tasks)
 
-By generating project-specific skills and commands from PRDs, Blueprint Development creates a self-documenting, AI-native development environment where process, patterns, and quality standards are first-class citizens.
+By generating project-specific rules and commands from PRDs, Blueprint Development creates a self-documenting, AI-native development environment where behavioral guidelines, patterns, and quality standards are first-class citizens.
 
 ## GitHub Work Order Integration
 

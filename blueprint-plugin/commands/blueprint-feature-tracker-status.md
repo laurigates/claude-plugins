@@ -1,6 +1,6 @@
 ---
 created: 2026-01-02
-modified: 2026-01-02
+modified: 2026-01-09
 reviewed: 2026-01-02
 description: "Display feature tracker statistics and completion summary"
 allowed_tools: [Read, Bash, AskUserQuestion]
@@ -11,7 +11,7 @@ Display feature tracker statistics, phase progress, and completion summary.
 **Steps**:
 
 1. **Check if feature tracking is enabled**:
-   - Look for `.claude/blueprints/feature-tracker.json`
+   - Look for `docs/blueprint/feature-tracker.json`
    - If not found, report:
      ```
      Feature tracking not enabled in this project.
@@ -195,7 +195,7 @@ Note: 14 features ready to start. Run `/blueprint-feature-tracker-sync` before b
 **Quick Commands** (shown at end):
 ```
 Quick commands for feature tracker:
-- jq '.statistics' .claude/blueprints/feature-tracker.json
-- jq '.. | objects | select(.status == "not_started") | .name' .claude/blueprints/feature-tracker.json
-- jq '.prds | to_entries | .[] | "\(.key): \(.value.status)"' .claude/blueprints/feature-tracker.json
+- jq '.statistics' docs/blueprint/feature-tracker.json
+- jq '.. | objects | select(.status == "not_started") | .name' docs/blueprint/feature-tracker.json
+- jq '.prds | to_entries | .[] | "\(.key): \(.value.status)"' docs/blueprint/feature-tracker.json
 ```

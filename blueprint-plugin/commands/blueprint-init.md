@@ -11,7 +11,7 @@ Initialize Blueprint Development in this project.
 **Steps**:
 
 1. **Check if already initialized**:
-   - Look for `.claude/blueprints/.manifest.json`
+   - Look for `docs/blueprint/manifest.json`
    - If exists, read version and ask user:
      ```
      Use AskUserQuestion:
@@ -63,7 +63,7 @@ Initialize Blueprint Development in this project.
         - label: "Other"
           description: "Specify a different document"
       ```
-   b. Create `.claude/blueprints/feature-tracker.json` from template
+   b. Create `docs/blueprint/feature-tracker.json` from template
    c. Set `has_feature_tracker: true` in manifest
 
 5. **Ask about document detection** (use AskUserQuestion):
@@ -115,9 +115,19 @@ Initialize Blueprint Development in this project.
 
 7. **Create directory structure**:
 
-   **Project documentation (in docs/):**
+   **Blueprint structure (in docs/blueprint/):**
    ```
    docs/
+   ├── blueprint/
+   │   ├── manifest.json            # Version tracking and configuration
+   │   ├── work-overview.md         # Progress tracking
+   │   ├── work-orders/             # Task packages for subagents
+   │   │   ├── completed/
+   │   │   └── archived/
+   │   ├── ai_docs/                 # Curated documentation (on-demand)
+   │   │   ├── libraries/
+   │   │   └── project/
+   │   └── README.md                # Blueprint documentation
    ├── prds/                        # Product Requirements Documents
    ├── adrs/                        # Architecture Decision Records
    └── prps/                        # Product Requirement Prompts
@@ -126,39 +136,22 @@ Initialize Blueprint Development in this project.
    **Claude configuration (in .claude/):**
    ```
    .claude/
-   ├── blueprints/
-   │   ├── .manifest.json           # Version tracking
-   │   ├── work-orders/             # Task packages for subagents
-   │   │   ├── completed/
-   │   │   └── archived/
-   │   ├── ai_docs/                 # Curated documentation (on-demand)
-   │   │   ├── libraries/
-   │   │   └── project/
-   │   ├── generated/               # Auto-generated content (regeneratable)
-   │   │   ├── skills/              # Skills from PRDs
-   │   │   └── commands/            # Commands from project detection
-   │   └── work-overview.md         # Progress tracking
+   ├── rules/                       # Modular rules (including generated)
+   │   ├── development.md           # Development workflow rules
+   │   ├── testing.md               # Testing requirements
+   │   └── document-management.md   # Document organization rules (if detection enabled)
    ├── skills/                      # Custom skill overrides (optional)
    └── commands/                    # Custom command overrides (optional)
    ```
 
-   **With modular rules (if selected):**
-   ```
-   .claude/
-   └── rules/                       # Modular rules
-       ├── development.md           # Development workflow rules
-       ├── testing.md               # Testing requirements
-       └── document-management.md   # Document organization rules (if detection enabled)
-   ```
-
-8. **Create `.manifest.json`** (v2.0.0 schema):
+8. **Create `manifest.json`** (v3.0.0 schema):
    ```json
    {
-     "format_version": "2.0.0",
+     "format_version": "3.0.0",
      "created_at": "[ISO timestamp]",
      "updated_at": "[ISO timestamp]",
      "created_by": {
-       "blueprint_plugin": "2.0.0"
+       "blueprint_plugin": "3.0.0"
      },
      "project": {
        "name": "[detected or asked]",
@@ -182,7 +175,7 @@ Initialize Blueprint Development in this project.
        "sync_targets": ["work-overview.md", "TODO.md"]
      },
      "generated": {
-       "skills": {},
+       "rules": {},
        "commands": {}
      },
      "custom_overrides": {
@@ -223,25 +216,29 @@ Initialize Blueprint Development in this project.
 11. **Handle `.gitignore`** based on project type:
    - Personal: Add `.claude/` to `.gitignore`
    - Team: Commit `.claude/` (ask about secrets)
-   - Open source: Commit `docs/`, `.claude/rules/`, gitignore `.claude/blueprints/work-orders/`
+   - Open source: Commit `docs/`, `.claude/rules/`, gitignore `docs/blueprint/work-orders/`
 
 12. **Report**:
    ```
-   Blueprint Development initialized! (v2.0.0)
+   Blueprint Development initialized! (v3.0.0)
 
-   Project documentation created:
+   Blueprint structure created:
+   - docs/blueprint/manifest.json
+   - docs/blueprint/work-overview.md
+   - docs/blueprint/work-orders/
+   - docs/blueprint/ai_docs/
+   - docs/blueprint/README.md
+   [- docs/blueprint/feature-tracker.json (if feature tracking enabled)]
+
+   Project documentation:
    - docs/prds/           (Product Requirements Documents)
    - docs/adrs/           (Architecture Decision Records)
    - docs/prps/           (Product Requirement Prompts)
 
-   Claude configuration created:
-   - .claude/blueprints/.manifest.json
-   - .claude/blueprints/work-orders/
-   - .claude/blueprints/ai_docs/
-   - .claude/blueprints/generated/
-   - .claude/blueprints/work-overview.md
-   [- .claude/rules/ (if modular rules enabled)]
-   [- .claude/blueprints/feature-tracker.json (if feature tracking enabled)]
+   Claude configuration:
+   - .claude/rules/       (modular rules, including generated)
+   - .claude/skills/      (custom skill overrides)
+   - .claude/commands/    (custom command overrides)
 
    Configuration:
    - Project type: [personal|team|opensource]
@@ -254,7 +251,7 @@ Initialize Blueprint Development in this project.
 
    Architecture:
    - Plugin layer: Generic commands from blueprint-plugin (auto-updated)
-   - Generated layer: Skills/commands regeneratable from docs/prds/
+   - Generated layer: Rules/commands regeneratable from docs/prds/
    - Custom layer: Your overrides in .claude/skills/ and .claude/commands/
    ```
 

@@ -1,6 +1,6 @@
 ---
 created: 2026-01-02
-modified: 2026-01-02
+modified: 2026-01-09
 reviewed: 2026-01-02
 name: feature-tracking
 description: "Track feature implementation status against requirements documents. Provides hierarchical FR code tracking, phase management, and sync with work-overview.md and TODO.md."
@@ -62,7 +62,7 @@ Features are grouped by development phase:
 ## File Structure
 
 ```
-.claude/blueprints/
+docs/blueprint/
 ├── feature-tracker.json       # Main tracker file
 ├── work-overview.md           # Sync target: progress overview
 └── schemas/                   # Optional: local schema copy
@@ -75,27 +75,27 @@ The project's `TODO.md` is also a sync target.
 
 ### View completion stats
 ```bash
-jq '.statistics' .claude/blueprints/feature-tracker.json
+jq '.statistics' docs/blueprint/feature-tracker.json
 ```
 
 ### List incomplete features
 ```bash
-jq -r '.. | objects | select(.status == "not_started") | .name' .claude/blueprints/feature-tracker.json
+jq -r '.. | objects | select(.status == "not_started") | .name' docs/blueprint/feature-tracker.json
 ```
 
 ### Show PRD completion
 ```bash
-jq '.prds | to_entries | .[] | "\(.key): \(.value.status)"' .claude/blueprints/feature-tracker.json
+jq '.prds | to_entries | .[] | "\(.key): \(.value.status)"' docs/blueprint/feature-tracker.json
 ```
 
 ### List features by phase
 ```bash
-jq -r '.. | objects | select(.phase == "phase-1") | .name' .claude/blueprints/feature-tracker.json
+jq -r '.. | objects | select(.phase == "phase-1") | .name' docs/blueprint/feature-tracker.json
 ```
 
 ### Count features by status
 ```bash
-jq '[.. | objects | select(.status?) | .status] | group_by(.) | map({(.[0]): length}) | add' .claude/blueprints/feature-tracker.json
+jq '[.. | objects | select(.status?) | .status] | group_by(.) | map({(.[0]): length}) | add' docs/blueprint/feature-tracker.json
 ```
 
 ## Schema
@@ -115,14 +115,14 @@ Key schema features:
 ```bash
 # Using ajv-cli or similar JSON schema validator
 ajv validate -s schemas/feature-tracker.schema.json \
-             -d .claude/blueprints/feature-tracker.json
+             -d docs/blueprint/feature-tracker.json
 ```
 
 ## Integration Points
 
 ### Manifest Integration
 
-The `.manifest.json` references the feature tracker:
+The `manifest.json` references the feature tracker:
 ```json
 {
   "structure": {

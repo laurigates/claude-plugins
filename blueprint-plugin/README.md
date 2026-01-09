@@ -25,7 +25,7 @@ PRD (Product Requirements) → PRP (Product Requirement Prompt) → Work-Order �
 | Command | Description |
 |---------|-------------|
 | `/blueprint-generate-commands` | Generate workflow commands from project structure and PRDs |
-| `/blueprint-generate-skills` | Generate project-specific skills from PRDs |
+| `/blueprint-generate-rules` | Generate project-specific rules from PRDs |
 | `/blueprint-work-order` | Create work-order with minimal context for subagent execution |
 | `/prp-create` | Create a PRP with systematic research and validation gates |
 | `/prp-execute` | Execute a PRP with validation loop, TDD workflow, and quality gates |
@@ -73,14 +73,16 @@ PRD (Product Requirements) → PRP (Product Requirement Prompt) → Work-Order �
 
 Creates the directory structure:
 ```
-.claude/blueprints/
+docs/
+├── blueprint/
+│   ├── manifest.json     # Blueprint configuration
+│   ├── work-overview.md  # Current phase and progress
+│   └── work-orders/      # Task packages for subagents
+│       ├── completed/
+│       └── archived/
 ├── prds/                 # Product Requirements Documents
 ├── adrs/                 # Architecture Decision Records
-├── prps/                 # Product Requirement Prompts
-├── work-orders/          # Task packages for subagents
-│   ├── completed/
-│   └── archived/
-└── work-overview.md      # Current phase and progress
+└── prps/                 # Product Requirement Prompts
 ```
 
 ### 2. Generate Initial Documentation (Onboarding)
@@ -96,7 +98,7 @@ These commands analyze existing documentation and code patterns, asking clarifyi
 
 ### 3. Write or Refine PRDs
 
-Create or refine PRDs in `.claude/blueprints/prds/` documenting:
+Create or refine PRDs in `docs/prds/` documenting:
 - Feature requirements and user stories
 - Technical decisions and architecture
 - TDD requirements and test strategies
@@ -107,10 +109,10 @@ The `requirements-documentation` agent triggers proactively for new features.
 ### 4. Generate Project Skills
 
 ```bash
-/blueprint-generate-skills
+/blueprint-generate-rules
 ```
 
-Extracts patterns from PRDs and generates project-specific skills:
+Extracts patterns from PRDs and generates project-specific rules:
 - Architecture patterns
 - Testing strategies
 - Implementation guides
@@ -139,7 +141,7 @@ Track implementation progress against requirements documents using hierarchical 
 ### Enable During Init
 
 Feature tracking can be enabled during `/blueprint-init`. When enabled, it creates:
-- `.claude/blueprints/feature-tracker.json` - Main tracker file
+- `docs/blueprint/feature-tracker.json` - Main tracker file
 
 ### Feature Tracker Structure
 
@@ -182,13 +184,13 @@ The tracker syncs with:
 
 ```bash
 # View statistics
-jq '.statistics' .claude/blueprints/feature-tracker.json
+jq '.statistics' docs/blueprint/feature-tracker.json
 
 # List incomplete features
-jq '.. | objects | select(.status == "not_started") | .name' .claude/blueprints/feature-tracker.json
+jq '.. | objects | select(.status == "not_started") | .name' docs/blueprint/feature-tracker.json
 
 # Show PRD status
-jq '.prds | to_entries | .[] | "\(.key): \(.value.status)"' .claude/blueprints/feature-tracker.json
+jq '.prds | to_entries | .[] | "\(.key): \(.value.status)"' docs/blueprint/feature-tracker.json
 ```
 
 ## Installation

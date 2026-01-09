@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2025-12-26
+modified: 2026-01-09
 reviewed: 2025-12-26
 description: "Create work-order with minimal context for isolated subagent execution, optionally linked to GitHub issue"
 args: "[--no-publish] [--from-issue N]"
@@ -21,9 +21,9 @@ Generate a work-order document for isolated subagent execution with optional Git
 
 ## Prerequisites
 
-- Blueprint Development initialized (`.claude/blueprints/` exists)
+- Blueprint Development initialized (`docs/blueprint/` exists)
 - At least one PRD exists (unless using `--from-issue`)
-- `work-overview.md` exists
+- `docs/blueprint/work-overview.md` exists
 - `gh` CLI authenticated (unless using `--no-publish`)
 
 ---
@@ -49,7 +49,7 @@ When `--from-issue N` is provided:
 
 4. **Update issue with link**:
    ```bash
-   gh issue comment N --body "Work-order created: \`.claude/blueprints/work-orders/NNN-task-name.md\`"
+   gh issue comment N --body "Work-order created: \`docs/blueprint/work-orders/NNN-task-name.md\`"
    gh issue edit N --add-label "work-order"
    ```
 
@@ -61,7 +61,7 @@ When `--from-issue N` is provided:
 
 ### Step 1: Analyze Current State
 
-- Read `work-overview.md` to understand current phase
+- Read `docs/blueprint/work-overview.md` to understand current phase
 - Run `git status` to check uncommitted work
 - Run `git log -5 --oneline` to see recent work
 - Find existing work-orders (count them for numbering)
@@ -165,7 +165,7 @@ Should be:
 
 ### Step 6: Save Work-Order
 
-Save to `.claude/blueprints/work-orders/NNN-task-name.md`
+Save to `docs/blueprint/work-orders/NNN-task-name.md`
 Ensure zero-padded numbering (001, 002, 010, 100)
 
 ### Step 7: Create GitHub Issue (unless `--no-publish`)
@@ -175,7 +175,7 @@ gh issue create \
   --title "Work-Order NNN: [Task Name]" \
   --body "## Work Order: [Task Name]
 
-**Local Context**: \`.claude/blueprints/work-orders/NNN-task-name.md\`
+**Local Context**: \`docs/blueprint/work-orders/NNN-task-name.md\`
 
 ### Objective
 [One-line objective from work order]
@@ -201,7 +201,7 @@ gh issue create ... 2>&1 | grep -oE '#[0-9]+' | head -1
 
 Update the `**GitHub Issue**:` line in the work-order file with the issue number.
 
-### Step 8: Update `work-overview.md`
+### Step 8: Update `docs/blueprint/work-overview.md`
 
 - Add new work-order to "Pending" section
 - Include GitHub issue reference if created
@@ -213,7 +213,7 @@ Update the `**GitHub Issue**:` line in the work-order file with the issue number
 Work-order created!
 
 Work-Order: 003-jwt-token-generation.md
-Location: .claude/blueprints/work-orders/003-jwt-token-generation.md
+Location: docs/blueprint/work-orders/003-jwt-token-generation.md
 GitHub Issue: #42 (or "Local only" if --no-publish)
 
 Objective: [Brief objective]
