@@ -24,6 +24,7 @@ This repository was created by migrating Claude Code plugin configurations from 
 | [0008](0008-semantic-versioning-with-manifest.md) | Semantic Versioning with Manifest | Accepted | 2024-12 |
 | [0009](0009-task-focused-agent-consolidation.md) | Task-Focused Agent Consolidation | Accepted | 2024-12 |
 | [0010](0010-proactive-document-detection.md) | Proactive Document Detection | Proposed | 2026-01 |
+| [0011](0011-blueprint-state-in-docs-directory.md) | Blueprint State in docs/ Directory | Proposed | 2026-01 |
 
 ## Categories
 
@@ -44,6 +45,7 @@ This repository was created by migrating Claude Code plugin configurations from 
 
 ### Documentation & Automation
 - ADR-0010: Proactive Document Detection
+- ADR-0011: Blueprint State in docs/ Directory
 
 ## ADR Format
 

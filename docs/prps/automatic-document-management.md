@@ -1,8 +1,10 @@
 # PRP: Automatic Document Management
 
 **Created**: 2026-01-09
+**Modified**: 2026-01-09
 **Status**: Draft
 **Priority**: P1 - High Impact Feature
+**Related ADRs**: [ADR-0010](../adrs/0010-proactive-document-detection.md), [ADR-0011](../adrs/0011-blueprint-state-in-docs-directory.md)
 
 ---
 
@@ -61,42 +63,77 @@ Automatic detection transforms the blueprint-plugin from a passive tool collecti
 | `/blueprint:init` | `blueprint-plugin/commands/blueprint-init.md` | Initialize blueprint structure |
 | `/blueprint:upgrade` | `blueprint-plugin/commands/blueprint-upgrade.md` | Migrate to latest format |
 
-#### Directory Structure (v2.0.0)
+#### Directory Structure (v3.0.0 - Per ADR-0011)
+
+**IMPORTANT**: This PRP targets v3.0.0 which moves blueprint state from `.claude/blueprints/` to `docs/blueprint/` for persistent permission support. See [ADR-0011](../adrs/0011-blueprint-state-in-docs-directory.md).
 
 ```
 docs/
 ├── prds/                        # Product Requirements Documents
 ├── adrs/                        # Architecture Decision Records
-└── prps/                        # Product Requirement Prompts
-
-.claude/
-└── blueprints/
-    ├── .manifest.json           # Version tracking and structure flags
+├── prps/                        # Product Requirement Prompts
+└── blueprint/                   # Blueprint system state (NEW LOCATION)
+    ├── README.md                # Quick reference for developers
+    ├── manifest.json            # Version tracking and structure flags
+    ├── work-overview.md         # Progress tracking
+    ├── feature-tracker.json     # FR code tracking (optional)
     ├── work-orders/             # Task packages for subagents
-    ├── ai_docs/                 # Curated documentation
-    ├── generated/               # Auto-generated content
-    └── work-overview.md         # Progress tracking
+    │   ├── completed/
+    │   └── archived/
+    └── ai_docs/                 # Curated documentation
+        ├── libraries/
+        └── project/
+
+.claude/                         # Claude Code configuration
+├── rules/                       # Behavior rules (manual AND generated from PRDs)
+│   ├── development.md           # Manual rules
+│   ├── testing.md               # Manual rules
+│   ├── architecture-patterns.md # Generated from PRDs
+│   └── testing-strategies.md    # Generated from PRDs
+├── skills/                      # Custom skills
+├── commands/                    # Custom commands
+└── settings.json                # Claude Code settings
 ```
 
-#### Manifest Schema (v2.0.0)
+**Key changes in v3.0**:
+1. `.claude/` triggers per-file permission prompts → `docs/blueprint/` for state enables persistent permissions
+2. Generated "skills" are actually **rules** (behavioral guidelines) → moved to `.claude/rules/` with other rules
+3. No separate `generated/` directory → manifest tracks provenance via content hashes
 
-From `blueprint-init.md` lines 106-143:
+#### Manifest Schema (v3.0.0)
+
 ```json
 {
-  "format_version": "2.0.0",
+  "format_version": "3.0.0",
+  "created_by": {
+    "blueprint_plugin": "3.0.0"
+  },
   "structure": {
     "has_prds": true,
     "has_adrs": true,
     "has_prps": true,
     "has_work_orders": true,
     "has_ai_docs": false,
-    "has_modular_rules": false,
+    "has_modular_rules": true,
     "has_feature_tracker": false,
     "has_document_detection": false,  // NEW: Flag for this feature
     "claude_md_mode": "single"
+  },
+  "generated": {
+    "rules": {
+      "architecture-patterns": {
+        "source": "docs/prds/project-overview.md",
+        "source_hash": "sha256:...",
+        "content_hash": "sha256:...",
+        "plugin_version": "3.0.0",
+        "generated_at": "2026-01-09T..."
+      }
+    }
   }
 }
 ```
+
+Note: `generated.rules` replaces `generated.skills` - the content was always rules (behavioral guidelines), not skills (capabilities).
 
 #### AskUserQuestion Pattern
 
@@ -174,6 +211,85 @@ options:
 ```
 
 ### Task Breakdown
+
+#### 0. Implement v3.0 Structure Migration (ADR-0011)
+
+**Prerequisite for all other tasks**: Update blueprint-plugin to use `docs/blueprint/` instead of `.claude/blueprints/`.
+
+**Files to modify**:
+
+| File | Change |
+|------|--------|
+| `commands/blueprint-init.md` | Create `docs/blueprint/` structure instead of `.claude/blueprints/` |
+| `commands/blueprint-upgrade.md` | Add v2.x → v3.0 migration path |
+| `commands/blueprint-prd.md` | Update manifest path references |
+| `commands/blueprint-adr.md` | Update manifest path references |
+| `commands/blueprint-prp-create.md` | Update manifest path references |
+| `commands/blueprint-prp-execute.md` | Update manifest path references |
+| `commands/blueprint-status.md` | Update manifest path references |
+| `commands/blueprint-sync.md` | Update manifest path references |
+| `commands/blueprint-work-order.md` | Update work-order paths |
+| `commands/blueprint-curate-docs.md` | Update ai_docs paths |
+| `commands/blueprint-generate-skills.md` | Update generated paths |
+| `commands/blueprint-generate-commands.md` | Update generated paths |
+| `commands/blueprint-feature-tracker-*.md` | Update feature-tracker path |
+| `skills/blueprint-migration/skill.md` | Add v2.x-to-v3.0 migration |
+| `skills/blueprint-migration/migrations/v2.x-to-v3.0.md` | Create migration document |
+| `skills/feature-tracking/SKILL.md` | Update paths |
+| `templates/document-management-rule.md` | Update manifest path reference |
+
+**Migration document content** (`v2.x-to-v3.0.md`):
+
+```markdown
+# Migration: v2.x → v3.0.0
+
+## Summary
+- Move blueprint state from `.claude/blueprints/` to `docs/blueprint/`
+- Move generated "skills" to `.claude/rules/` (they were always rules)
+- Update manifest schema: `generated.skills` → `generated.rules`
+
+## Steps
+
+1. **Create new structure**:
+   ```bash
+   mkdir -p docs/blueprint/work-orders/{completed,archived}
+   mkdir -p docs/blueprint/ai_docs/{libraries,project}
+   ```
+
+2. **Move state files**:
+   - `.claude/blueprints/.manifest.json` → `docs/blueprint/manifest.json`
+   - `.claude/blueprints/work-overview.md` → `docs/blueprint/work-overview.md`
+   - `.claude/blueprints/feature-tracker.json` → `docs/blueprint/feature-tracker.json` (if exists)
+   - `.claude/blueprints/work-orders/*` → `docs/blueprint/work-orders/`
+   - `.claude/blueprints/ai_docs/*` → `docs/blueprint/ai_docs/`
+
+3. **Move generated content to rules**:
+   - `.claude/blueprints/generated/skills/*.md` → `.claude/rules/`
+   - These are behavioral guidelines, not skills - they belong with other rules
+
+4. **Update manifest**:
+   ```json
+   {
+     "format_version": "3.0.0",
+     "generated": {
+       "rules": { ... }  // Rename from "skills"
+     }
+   }
+   ```
+
+5. **Add README**:
+   - Copy `blueprint-readme.md` template → `docs/blueprint/README.md`
+
+6. **Remove old directory**:
+   ```bash
+   rm -rf .claude/blueprints/
+   ```
+
+7. **Preserve `.claude/` contents**:
+   - `.claude/rules/` - Keep (now includes generated rules)
+   - `.claude/skills/` - Keep (user custom skills)
+   - `.claude/commands/` - Keep (user custom commands)
+```
 
 #### 1. Create `document-detection` Skill
 
@@ -341,7 +457,7 @@ When enabled, Claude will prompt to create:
 - **ADR** when architecture decisions are debated
 - **PRP** when implementation approach is planned
 
-Configure in `.claude/blueprints/.manifest.json`:
+Configure in `docs/blueprint/manifest.json`:
 ```json
 {
   "structure": {
@@ -618,13 +734,37 @@ Score >= 7: Ready for execution. Address minor gaps during implementation.
 
 ## Files Summary
 
+### v3.0 Migration (ADR-0011) - Phase 0
+
+| File | Action | Description |
+|------|--------|-------------|
+| `blueprint-plugin/commands/blueprint-init.md` | Modify | Change `.claude/blueprints/` → `docs/blueprint/` |
+| `blueprint-plugin/commands/blueprint-upgrade.md` | Modify | Add v2.x → v3.0 migration |
+| `blueprint-plugin/commands/blueprint-prd.md` | Modify | Update manifest path |
+| `blueprint-plugin/commands/blueprint-adr.md` | Modify | Update manifest path |
+| `blueprint-plugin/commands/blueprint-prp-*.md` | Modify | Update manifest paths |
+| `blueprint-plugin/commands/blueprint-status.md` | Modify | Update manifest path |
+| `blueprint-plugin/commands/blueprint-sync.md` | Modify | Update manifest path |
+| `blueprint-plugin/commands/blueprint-work-order.md` | Modify | Update work-order paths |
+| `blueprint-plugin/commands/blueprint-curate-docs.md` | Modify | Update ai_docs paths |
+| `blueprint-plugin/commands/blueprint-generate-skills.md` | Rename/Modify | Rename to `blueprint-generate-rules.md`, output to `.claude/rules/` |
+| `blueprint-plugin/commands/blueprint-generate-commands.md` | Modify | Update paths |
+| `blueprint-plugin/commands/blueprint-feature-tracker-*.md` | Modify | Update feature-tracker path |
+| `blueprint-plugin/skills/blueprint-migration/skill.md` | Modify | Add v3.0 migration |
+| `blueprint-plugin/skills/blueprint-migration/migrations/v2.x-to-v3.0.md` | Create | Migration document |
+| `blueprint-plugin/skills/blueprint-development/SKILL.md` | Modify | Change output from skills to rules |
+| `blueprint-plugin/skills/feature-tracking/SKILL.md` | Modify | Update paths |
+| `blueprint-plugin/templates/blueprint-readme.md` | Create | README for docs/blueprint/ |
+
+### Document Detection Feature - Phases 1-4
+
 | File | Action | Lines Changed (Est.) |
 |------|--------|---------------------|
 | `blueprint-plugin/skills/document-detection/skill.md` | Create | ~150 |
-| `blueprint-plugin/templates/document-management-rule.md` | Create | ~50 |
-| `blueprint-plugin/commands/blueprint-init.md` | Modify | +40 |
-| `blueprint-plugin/commands/blueprint-upgrade.md` | Modify | +25 |
-| `blueprint-plugin/.claude-plugin/plugin.json` | Modify | +3 |
+| `blueprint-plugin/templates/document-management-rule.md` | Modify | Update manifest path |
+| `blueprint-plugin/commands/blueprint-init.md` | Modify | +40 (detection option) |
+| `blueprint-plugin/commands/blueprint-upgrade.md` | Modify | +25 (detection option) |
+| `blueprint-plugin/.claude-plugin/plugin.json` | Modify | +3 keywords |
 | `blueprint-plugin/README.md` | Modify | +15 |
 
 ---
