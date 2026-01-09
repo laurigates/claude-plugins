@@ -7,7 +7,7 @@
   "blueprint-plugin": "2.0.0",
   "code-quality-plugin": "1.1.0",
   "communication-plugin": "1.0.0",
-  "configure-plugin": "1.1.0",
+  "configure-plugin": "1.1.1",
   "container-plugin": "2.0.1",
   "documentation-plugin": "1.0.0",
   "dotfiles-plugin": "1.0.0",
