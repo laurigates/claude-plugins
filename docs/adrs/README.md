@@ -22,6 +22,8 @@ This repository was created by migrating Claude Code plugin configurations from 
 | [0006](0006-fvh-standards-enforcement.md) | FVH Standards Enforcement | Accepted | 2024-12 |
 | [0007](0007-namespace-based-command-organization.md) | Namespace-Based Command Organization | Accepted | 2024-12 |
 | [0008](0008-semantic-versioning-with-manifest.md) | Semantic Versioning with Manifest | Accepted | 2024-12 |
+| [0009](0009-task-focused-agent-consolidation.md) | Task-Focused Agent Consolidation | Accepted | 2024-12 |
+| [0010](0010-proactive-document-detection.md) | Proactive Document Detection | Proposed | 2026-01 |
 
 ## Categories
 
@@ -38,6 +40,10 @@ This repository was created by migrating Claude Code plugin configurations from 
 ### Organization & Versioning
 - ADR-0007: Namespace-Based Command Organization
 - ADR-0008: Semantic Versioning with Manifest
+- ADR-0009: Task-Focused Agent Consolidation
+
+### Documentation & Automation
+- ADR-0010: Proactive Document Detection
 
 ## ADR Format
 

@@ -24,6 +24,9 @@
     "generated-skills",
     "migration",
     "feature-tracker",
-    "requirements-tracking"
+    "requirements-tracking",
+    "document-detection",
+    "automatic-documentation",
+    "proactive-documentation"
   ]
 }

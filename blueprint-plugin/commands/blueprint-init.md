@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2025-12-22
-reviewed: 2025-12-22
+modified: 2026-01-09
+reviewed: 2026-01-09
 description: "Initialize Blueprint Development structure in current project"
-allowed_tools: [Bash, Write, Read, AskUserQuestion]
+allowed_tools: [Bash, Write, Read, AskUserQuestion, Glob]
 ---
 
 Initialize Blueprint Development in this project.
@@ -66,7 +66,54 @@ Initialize Blueprint Development in this project.
    b. Create `.claude/blueprints/feature-tracker.json` from template
    c. Set `has_feature_tracker: true` in manifest
 
-5. **Create directory structure**:
+5. **Ask about document detection** (use AskUserQuestion):
+   ```
+   question: "Would you like to enable automatic document detection?"
+   options:
+     - label: "Yes - Detect PRD/ADR/PRP opportunities"
+       description: "Claude will prompt when conversations should become documents"
+     - label: "No - Manual commands only"
+       description: "Use /blueprint:prd, /blueprint:adr, /blueprint:prp-create explicitly"
+   ```
+
+   Set `has_document_detection` in manifest based on response.
+
+   **If modular rules enabled and document detection enabled:**
+   Copy `document-management-rule.md` template to `.claude/rules/document-management.md`
+
+6. **Check for root documentation to migrate**:
+   ```bash
+   # Find markdown files in root that look like documentation (not standard files)
+   fd -d 1 -e md . | grep -viE '^\./(README|CHANGELOG|CONTRIBUTING|LICENSE|CODE_OF_CONDUCT|SECURITY)'
+   ```
+
+   **If documentation files found in root** (e.g., REQUIREMENTS.md, ARCHITECTURE.md, DESIGN.md):
+   ```
+   Use AskUserQuestion:
+   question: "Found documentation files in root directory: {file_list}. Would you like to organize them?"
+   options:
+     - label: "Yes, move to docs/"
+       description: "Migrate existing docs to proper structure (recommended)"
+     - label: "No, leave them"
+       description: "Keep files in current location"
+   ```
+
+   **If "Yes" selected:**
+   a. Analyze each file to determine type:
+      - Contains requirements, features, user stories → `docs/prds/`
+      - Contains architecture decisions, trade-offs → `docs/adrs/`
+      - Contains implementation plans → `docs/prps/`
+      - General documentation → `docs/`
+   b. Move files to appropriate `docs/` subdirectory
+   c. Rename to kebab-case if needed (REQUIREMENTS.md → requirements.md)
+   d. Report migration results:
+      ```
+      Migrated documentation:
+      - REQUIREMENTS.md → docs/prds/requirements.md
+      - ARCHITECTURE.md → docs/adrs/0001-initial-architecture.md
+      ```
+
+7. **Create directory structure**:
 
    **Project documentation (in docs/):**
    ```
@@ -100,10 +147,11 @@ Initialize Blueprint Development in this project.
    .claude/
    └── rules/                       # Modular rules
        ├── development.md           # Development workflow rules
-       └── testing.md               # Testing requirements
+       ├── testing.md               # Testing requirements
+       └── document-management.md   # Document organization rules (if detection enabled)
    ```
 
-6. **Create `.manifest.json`** (v2.0.0 schema):
+8. **Create `.manifest.json`** (v2.0.0 schema):
    ```json
    {
      "format_version": "2.0.0",
@@ -125,6 +173,7 @@ Initialize Blueprint Development in this project.
        "has_ai_docs": false,
        "has_modular_rules": "[based on user choice]",
        "has_feature_tracker": "[based on user choice]",
+       "has_document_detection": "[based on user choice]",
        "claude_md_mode": "[single|modular|both]"
      },
      "feature_tracker": {
@@ -145,7 +194,7 @@ Initialize Blueprint Development in this project.
 
    Note: Include `feature_tracker` section only if feature tracking is enabled.
 
-7. **Create `work-overview.md`**:
+9. **Create `work-overview.md`**:
    ```markdown
    # Work Overview: [Project Name]
 
@@ -166,16 +215,17 @@ Initialize Blueprint Development in this project.
    3. Generate workflow commands for your stack
    ```
 
-8. **Create initial rules** (if modular rules selected):
+10. **Create initial rules** (if modular rules selected):
    - `development.md`: TDD workflow, commit conventions
    - `testing.md`: Test requirements, coverage expectations
+   - `document-management.md`: Document organization rules (if document detection enabled)
 
-9. **Handle `.gitignore`** based on project type:
+11. **Handle `.gitignore`** based on project type:
    - Personal: Add `.claude/` to `.gitignore`
    - Team: Commit `.claude/` (ask about secrets)
    - Open source: Commit `docs/`, `.claude/rules/`, gitignore `.claude/blueprints/work-orders/`
 
-10. **Report**:
+12. **Report**:
    ```
    Blueprint Development initialized! (v2.0.0)
 
@@ -197,6 +247,10 @@ Initialize Blueprint Development in this project.
    - Project type: [personal|team|opensource]
    - Rules mode: [single|modular|both]
    [- Feature tracking: enabled (source: {source_document})]
+   [- Document detection: enabled (Claude will prompt for PRD/ADR/PRP creation)]
+
+   [Migrated documentation:]
+   [- {original} → {destination} (for each migrated file)]
 
    Architecture:
    - Plugin layer: Generic commands from blueprint-plugin (auto-updated)
@@ -204,7 +258,7 @@ Initialize Blueprint Development in this project.
    - Custom layer: Your overrides in .claude/skills/ and .claude/commands/
    ```
 
-11. **Prompt for next action** (use AskUserQuestion):
+13. **Prompt for next action** (use AskUserQuestion):
     ```
     question: "Blueprint initialized. What would you like to do next?"
     options:

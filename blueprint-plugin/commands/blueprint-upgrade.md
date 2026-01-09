@@ -1,7 +1,7 @@
 ---
 created: 2025-12-17
-modified: 2025-12-22
-reviewed: 2025-12-22
+modified: 2026-01-09
+reviewed: 2026-01-09
 description: "Upgrade blueprint structure to the latest format version"
 allowed_tools: [Read, Write, Edit, Bash, Glob, AskUserQuestion]
 ---
@@ -92,6 +92,43 @@ This command delegates version-specific migration logic to the `blueprint-migrat
       - Add `project.detected_stack` field
       - Bump `format_version` to "2.0.0"
 
+   f. **Enable document detection option** (new in v2.1):
+      ```
+      Use AskUserQuestion:
+      question: "Would you like to enable automatic document detection? (New feature)"
+      options:
+        - label: "Yes - Detect PRD/ADR/PRP opportunities"
+          description: "Claude will prompt when conversations should become documents"
+        - label: "No - Keep manual commands only"
+          description: "Continue using explicit /blueprint: commands"
+      ```
+
+      If enabled:
+      - Set `has_document_detection: true` in manifest
+      - If modular rules enabled, copy `document-management-rule.md` template to `.claude/rules/document-management.md`
+
+   g. **Migrate root documentation** (if any found):
+      ```bash
+      # Find documentation files in root (excluding standard files)
+      fd -d 1 -e md . | grep -viE '^\./(README|CHANGELOG|CONTRIBUTING|LICENSE|CODE_OF_CONDUCT|SECURITY)'
+      ```
+
+      If documentation files found (e.g., REQUIREMENTS.md, ARCHITECTURE.md, DESIGN.md):
+      ```
+      Use AskUserQuestion:
+      question: "Found documentation files in root: {file_list}. Would you like to migrate them to docs/?"
+      options:
+        - label: "Yes, migrate to docs/"
+          description: "Move to appropriate docs/ subdirectory"
+        - label: "No, leave in root"
+          description: "Keep files in current location"
+      ```
+
+      If "Yes" selected:
+      - Analyze each file to determine document type
+      - Move to appropriate `docs/` subdirectory
+      - Record migration in upgrade_history
+
 7. **Update manifest**:
    ```json
    {
@@ -113,6 +150,7 @@ This command delegates version-specific migration logic to the `blueprint-migrat
        "has_work_orders": true,
        "has_ai_docs": "[detected]",
        "has_modular_rules": "[preserved]",
+       "has_document_detection": "[based on user choice]",
        "claude_md_mode": "[preserved]"
      },
      "generated": {
@@ -161,6 +199,9 @@ This command delegates version-specific migration logic to the `blueprint-migrat
    Custom layer (.claude/skills/, .claude/commands/):
    - {n} promoted skills (preserved modifications)
    - {n} promoted commands
+
+   [Document detection: enabled (if selected)]
+   [Migrated root documentation: {list of files} (if migrated)]
 
    New architecture:
    - Plugin layer: Auto-updated with blueprint-plugin
