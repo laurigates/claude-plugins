@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v1.1.2...git-plugin-v1.2.0) (2026-01-09)
+
+
+### Features
+
+* **git-plugin:** add release-please-pr-workflow skill ([376af27](https://github.com/laurigates/claude-plugins/commit/376af27cec41dac0769f9eaab182ba809355cd96))
+
 ## [1.1.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v1.1.1...git-plugin-v1.1.2) (2026-01-09)
 
 
