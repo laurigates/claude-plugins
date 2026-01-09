@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.0.1](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.0.0...testing-plugin-v3.0.1) (2026-01-09)
+
+
+### Bug Fixes
+
+* sync plugin.json versions to match release-please manifest ([1ac44e1](https://github.com/laurigates/claude-plugins/commit/1ac44e1240eed27eb3f829edaaac9bc863634d89))
+
 ## [3.0.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v2.0.0...testing-plugin-v3.0.0) (2025-12-28)
 
 
