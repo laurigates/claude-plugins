@@ -59,142 +59,118 @@ status: draft | published
 
 ## Quick Update Format
 
-For capturing small wins and progress. Minimal structure, maximum speed.
+Capture small wins fast. No fluff.
 
 ```markdown
 ---
-title: <What you did in 5-10 words>
+title: <What you did>
 date: YYYY-MM-DD
 type: quick-update
 project: <project-name>
-tags: [<relevant-tags>]
+tags: []
 status: draft
 ---
 
 # <Title>
 
-<1-3 sentences about what you did>
+<What you did. One sentence.>
 
-## What Changed
+## Changes
 
-- <Bullet points of specific changes>
-- <Keep it concrete and scannable>
-
-## Why It Matters
-
-<1-2 sentences on significance - optional for truly quick updates>
+- <Concrete change>
+- <Another change>
 
 ---
-*Time spent: ~Xh | Difficulty: low/medium/high*
+*~Xh*
 ```
 
 ## Project Update Format
 
-For documenting meaningful progress on a project.
+Document meaningful progress.
 
 ```markdown
 ---
-title: <Project Name>: <What was accomplished>
+title: <Project>: <What was done>
 date: YYYY-MM-DD
 type: project-update
 project: <project-name>
-tags: [<relevant-tags>]
+tags: []
 status: draft
 ---
 
 # <Title>
 
-<2-3 sentence summary of what this update covers>
-
-## Context
-
-<Brief background - what is this project, where were you before this work>
+<One sentence: what changed and why it matters>
 
 ## What I Did
 
-### <Subsection if needed>
-
-<Details of the work, with code snippets if relevant>
+<Details. Code if relevant.>
 
 ```language
-// Example code if applicable
+// code
 ```
 
-## Challenges & Solutions
+## Problems Solved
 
-<What didn't work at first, how you solved it - this is the valuable learning>
+<What broke, how you fixed it>
 
 ## Results
 
-<What's working now, what changed, metrics if applicable>
+<What works now. Metrics if you have them.>
 
-## Next Steps
+## Next
 
-- [ ] <Concrete next action>
-- [ ] <Another thing to do>
+- [ ] <Next action>
 
 ---
-*Time spent: ~Xh | Difficulty: low/medium/high*
+*~Xh*
 ```
 
 ## Retrospective Format
 
-For looking back at a project, time period, or significant body of work.
+Look back at a project or time period.
 
 ```markdown
 ---
-title: "Retrospective: <Project or Time Period>"
+title: "Retro: <Project or Period>"
 date: YYYY-MM-DD
 type: retrospective
 project: <project-name>
-tags: [retrospective, <other-tags>]
+tags: [retrospective]
 status: draft
 ---
 
 # <Title>
 
-<What this retrospective covers and why you're writing it>
+## Timeline
 
-## The Journey
+- **Start**: <Initial state>
+- **Milestone**: <What happened>
+- **End**: <Current state>
 
-### Where I Started
+## Worked
 
-<Initial state, goals, expectations>
+- <Success>
 
-### Key Milestones
+## Didn't Work
 
-1. **<Milestone 1>**: <What happened, when>
-2. **<Milestone 2>**: <What happened, when>
+- <Failure or challenge>
 
-### Where I Ended Up
+## Lessons
 
-<Current state, what exists now>
+<What you know now>
 
-## What Worked
+## Next
 
-- <Thing that went well>
-- <Another success>
-
-## What Didn't Work
-
-- <Challenge or failure>
-- <What you'd do differently>
-
-## Lessons Learned
-
-<The valuable takeaways - what you know now that you didn't before>
-
-## What's Next
-
-<Future plans, continuation, or closure>
+<Plans or closure>
 
 ---
-*Project duration: <timeframe> | Status: <ongoing/paused/complete>*
+*Duration: <timeframe> | Status: ongoing/paused/complete*
 ```
 
 ## Tutorial Format
 
-For teaching others (or future you) how to do something.
+Teach how to do something.
 
 ```markdown
 ---
@@ -202,103 +178,85 @@ title: "How to <Do the Thing>"
 date: YYYY-MM-DD
 type: tutorial
 project: <project-name>
-tags: [tutorial, <technology-tags>]
+tags: [tutorial]
 status: draft
 ---
 
 # <Title>
 
-<What you'll learn and why it's useful>
-
 ## Prerequisites
 
-- <Required knowledge or setup>
-- <Tools needed>
+- <What you need>
 
-## Overview
+## Steps
 
-<Brief explanation of the approach>
-
-## Step 1: <First Step>
-
-<Explanation>
+### 1. <Step>
 
 ```language
-// Code or commands
+// code
 ```
 
-## Step 2: <Second Step>
+### 2. <Step>
 
-<Continue pattern...>
+```language
+// code
+```
 
 ## Troubleshooting
 
-### <Common Issue>
-
-<Solution>
-
-## Summary
-
-<Quick recap of what was covered>
+**<Issue>**: <Solution>
 
 ## Resources
 
-- [<Related Resource>](<url>)
+- [<Link>](<url>)
 
 ---
-*Tested with: <versions/environment> | Last verified: YYYY-MM-DD*
+*Tested: <versions>*
 ```
 
 ## Deep Dive Format
 
-For explaining complex topics, architectural decisions, or detailed analysis.
+Explain a complex topic or decision.
 
 ```markdown
 ---
-title: "<Topic>: A Deep Dive"
+title: "<Topic>"
 date: YYYY-MM-DD
 type: deep-dive
 project: <project-name>
-tags: [deep-dive, <topic-tags>]
+tags: [deep-dive]
 status: draft
 ---
 
 # <Title>
 
-<Hook - why this matters, what question you're answering>
+<The question you're answering>
 
 ## Background
 
-<Context needed to understand the topic>
+<Minimum context needed>
 
-## The Problem
+## Problem
 
-<What challenge or question prompted this exploration>
+<What prompted this>
 
-## Exploration
+## Analysis
 
-### <Aspect 1>
+### <Aspect>
 
-<Analysis, examples, code>
+<Details, code, examples>
 
-### <Aspect 2>
+## Insights
 
-<Continue as needed>
-
-## Key Insights
-
-<The main takeaways, numbered or bulleted>
+1. <Key takeaway>
+2. <Another>
 
 ## Implications
 
-<What this means for your work or the broader context>
-
-## Conclusion
-
-<Summary and final thoughts>
+<What this means going forward>
 
 ---
-*Research time: ~Xh | Confidence: low/medium/high*
+*~Xh | Confidence: low/medium/high*
 ```
 
 ## Writing Style Guidelines
@@ -307,18 +265,30 @@ status: draft
 
 | Guideline | Example |
 |-----------|---------|
-| First person | "I discovered that..." not "It was discovered..." |
-| Conversational | Write like you're explaining to a colleague |
-| Honest about uncertainty | "I think this works because..." |
+| Direct statements | "Fixed the auth bug" not "I was able to successfully fix..." |
+| Facts first | Lead with what happened, not buildup |
+| No filler phrases | Cut "basically", "actually", "in order to", "the fact that" |
 | Specific over vague | "Reduced load time from 3s to 400ms" not "Made it faster" |
+| One idea per sentence | Split compound sentences |
+
+### What to Cut
+
+| Remove | Replace With |
+|--------|--------------|
+| "I decided to..." | Just state what you did |
+| "It's worth noting that..." | State the fact directly |
+| "As you can see..." | Nothing - let the content speak |
+| "In this post I will..." | Nothing - just do it |
+| Introductory paragraphs | Jump to the point |
+| Redundant conclusions | End when you're done |
 
 ### Formatting
 
-- **Use headers liberally** - makes scanning easy later
-- **Bullet points for lists** - easier to read than paragraphs
-- **Code blocks with language tags** - syntax highlighting helps
-- **Bold for key terms** - draws the eye to important concepts
-- **Short paragraphs** - 2-4 sentences max
+- **Headers for navigation** - scan-friendly structure
+- **Bullet points** - faster to read than prose
+- **Code blocks** - show, don't describe
+- **Bold sparingly** - only for key terms
+- **One paragraph = one point** - 1-3 sentences max
 
 ### ADHD-Friendly Patterns
 
