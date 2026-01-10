@@ -45,21 +45,58 @@ jq -r '.name // empty' package.json 2>/dev/null
 ### 1.2 Gather Recent Work Context
 
 ```bash
-# Recent commits (last 7 days)
-git log --oneline --since="7 days ago" --author="$(git config user.name)" 2>/dev/null | head -10
+# Recent commits with full messages (last 7 days)
+git log --since="7 days ago" --author="$(git config user.name)" --format="%h %s" 2>/dev/null | head -10
+```
+
+```bash
+# Detailed commit messages for context
+git log --since="7 days ago" --author="$(git config user.name)" --format="### %s%n%b" 2>/dev/null | head -50
 ```
 
 ```bash
 # Files changed recently
-git diff --stat HEAD~5 2>/dev/null | tail -5
+git diff --stat HEAD~5 2>/dev/null | tail -10
 ```
 
 ```bash
-# Current branch
+# Current branch (often indicates feature/task)
 git branch --show-current 2>/dev/null
 ```
 
-### 1.3 Check for Existing Blog Directory
+```bash
+# Tags or milestones reached
+git tag --sort=-creatordate | head -3
+```
+
+### 1.3 Use Git Context for Post Content
+
+When drafting, pull directly from commits:
+
+| Git Data | Use In Post |
+|----------|-------------|
+| Commit subjects | Bullet points for "Changes" section |
+| Commit bodies | Detail for "What I Did" section |
+| Branch name | Context for what feature/task |
+| Files changed | Scope of work |
+| Diff stats | Metrics (lines added/removed) |
+
+**Example extraction:**
+```bash
+# Get commit subjects as bullet points
+git log --since="7 days ago" --format="- %s" | head -5
+```
+
+Output becomes:
+```markdown
+## Changes
+
+- Fixed auth token refresh logic
+- Added retry mechanism for API calls
+- Updated error handling in login flow
+```
+
+### 1.4 Check for Existing Blog Directory
 
 ```bash
 # Look for common blog locations
