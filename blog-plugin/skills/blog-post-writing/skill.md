@@ -122,6 +122,11 @@ status: draft
 
 - [ ] <Next action>
 
+## Reflection (optional)
+
+- **Energy**: <flow state / steady / scattered / grinding>
+- **Felt**: <satisfying / frustrating / tedious / exciting>
+
 ---
 *~Xh*
 ```
@@ -163,6 +168,12 @@ status: draft
 ## Next
 
 <Plans or closure>
+
+## Reflection
+
+- **Overall feel**: <How did this project/period feel?>
+- **Energy pattern**: <When were you in flow? When grinding?>
+- **Do differently**: <What would you change?>
 
 ---
 *Duration: <timeframe> | Status: ongoing/paused/complete*
@@ -254,6 +265,11 @@ status: draft
 ## Implications
 
 <What this means going forward>
+
+## Reflection (optional)
+
+- **Confidence**: <How sure are you about these conclusions?>
+- **Gaps**: <What don't you know yet?>
 
 ---
 *~Xh | Confidence: low/medium/high*

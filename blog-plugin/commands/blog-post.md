@@ -1,7 +1,7 @@
 ---
 description: Create a blog post about your work with guided prompts and templates
 args: [type] [--project <name>] [--title <title>]
-allowed-tools: Read, Write, Edit, Grep, Glob, Bash, TodoWrite
+allowed-tools: Read, Write, Edit, Grep, Glob, Bash, TodoWrite, AskUserQuestion
 argument-hint: quick-update | project-update | retrospective | tutorial | deep-dive
 created: 2026-01-10
 modified: 2026-01-10
@@ -136,6 +136,85 @@ question: "What topic or question are you exploring?"
 ```
 question: "What's the key insight you want to share?"
 ```
+
+## Phase 3.5: Human Factor Prompts (Optional)
+
+After gathering the core content, optionally ask about the experience. Use AskUserQuestion with multiple choice for speed.
+
+### Energy & Focus
+
+```
+question: "How was your energy during this work?"
+options:
+  - "In the zone / flow state"
+  - "Steady and focused"
+  - "Scattered but productive"
+  - "Grinding through it"
+  - "Skip"
+```
+
+### Emotional Experience
+
+```
+question: "How did this feel?"
+options:
+  - "Satisfying - solved a real problem"
+  - "Frustrating - harder than expected"
+  - "Tedious - just had to be done"
+  - "Exciting - learned something new"
+  - "Anxious - wasn't sure it would work"
+  - "Relieved - finally done"
+  - "Skip"
+```
+
+### Surprises
+
+```
+question: "Anything unexpected?"
+options:
+  - "Took longer than expected"
+  - "Easier than I thought"
+  - "Found a better approach midway"
+  - "Discovered a related issue"
+  - "Nothing surprising"
+  - "Skip"
+```
+
+### Hindsight
+
+```
+question: "Would you approach it the same way again?"
+options:
+  - "Yes, worked well"
+  - "Mostly, with minor tweaks"
+  - "No, I'd do it differently"
+  - "Too early to tell"
+  - "Skip"
+```
+
+### When to Ask
+
+| Post Type | Ask Human Factor? |
+|-----------|-------------------|
+| Quick Update | Skip unless user opts in |
+| Project Update | Ask 1-2 relevant questions |
+| Retrospective | Ask all - this is about reflection |
+| Tutorial | Ask about "what surprised you" |
+| Deep Dive | Ask about confidence/energy |
+
+### Adding to Post
+
+If user provides human factor responses, add a `## Reflection` section:
+
+```markdown
+## Reflection
+
+- **Energy**: In the zone
+- **Felt**: Satisfying - solved a real problem
+- **Surprise**: Easier than expected
+```
+
+Keep it brief. One line per response. Skip if all answers were "Skip".
 
 ## Phase 4: Generate Post
 
