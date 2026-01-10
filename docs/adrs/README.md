@@ -25,6 +25,7 @@ This repository was created by migrating Claude Code plugin configurations from 
 | [0009](0009-task-focused-agent-consolidation.md) | Task-Focused Agent Consolidation | Accepted | 2024-12 |
 | [0010](0010-proactive-document-detection.md) | Proactive Document Detection | Proposed | 2026-01 |
 | [0011](0011-blueprint-state-in-docs-directory.md) | Blueprint State in docs/ Directory | Proposed | 2026-01 |
+| [0012](0012-blog-plugin-for-project-documentation.md) | Blog Plugin for Project Documentation | Accepted | 2026-01 |
 
 ## Categories
 
@@ -46,6 +47,7 @@ This repository was created by migrating Claude Code plugin configurations from 
 ### Documentation & Automation
 - ADR-0010: Proactive Document Detection
 - ADR-0011: Blueprint State in docs/ Directory
+- ADR-0012: Blog Plugin for Project Documentation
 
 ## ADR Format
 
