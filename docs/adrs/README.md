@@ -26,6 +26,7 @@ This repository was created by migrating Claude Code plugin configurations from 
 | [0010](0010-proactive-document-detection.md) | Proactive Document Detection | Proposed | 2026-01 |
 | [0011](0011-blueprint-state-in-docs-directory.md) | Blueprint State in docs/ Directory | Proposed | 2026-01 |
 | [0012](0012-blog-plugin-for-project-documentation.md) | Blog Plugin for Project Documentation | Accepted | 2026-01 |
+| [0013](0013-project-and-blueprint-plugin-separation.md) | Project and Blueprint Plugin Separation | Accepted | 2026-01 |
 
 ## Categories
 
@@ -43,6 +44,7 @@ This repository was created by migrating Claude Code plugin configurations from 
 - ADR-0007: Namespace-Based Command Organization
 - ADR-0008: Semantic Versioning with Manifest
 - ADR-0009: Task-Focused Agent Consolidation
+- ADR-0013: Project and Blueprint Plugin Separation
 
 ### Documentation & Automation
 - ADR-0010: Proactive Document Detection
