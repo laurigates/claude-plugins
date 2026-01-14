@@ -50,6 +50,15 @@ commands: {
   label: "Commands"
   style.fill: "#f3f3f3"
 
+  # Meta command
+  execute_cmd: {
+    label: "/blueprint-execute\n\n🎯 SMART META COMMAND\nAnalyze repo state,\ndetermine next action,\nexecute automatically\n(Idempotent & Safe)"
+    shape: hexagon
+    style.fill: "#9370db"
+    style.stroke: "#4b0082"
+    style.stroke-width: 3
+  }
+
   # Init commands
   init_cmd: {
     label: "/blueprint-init\n\nInitialize structure,\ncreate directories,\nset up manifest"
@@ -234,6 +243,21 @@ artifacts: {
 
 # === WORKFLOW CONNECTIONS ===
 
+# Meta command orchestration - connects to all phases
+commands.execute_cmd -> phases.init: "Detects: Not initialized?"
+commands.execute_cmd -> phases.documentation: "Detects: PRDs needed?"
+commands.execute_cmd -> phases.preparation: "Detects: Stale content? Ready PRPs?"
+commands.execute_cmd -> phases.execution: "Detects: Pending work?"
+commands.execute_cmd -> phases.tracking: "Detects: Stale tracker?"
+commands.execute_cmd -> commands.status: "Default: Show status & options"
+
+# Meta command can delegate to any command
+commands.execute_cmd -> commands.init_cmd: "Delegates if needed"
+commands.execute_cmd -> commands.gen_rules: "Delegates if needed"
+commands.execute_cmd -> commands.prp_execute: "Delegates if needed"
+commands.execute_cmd -> commands.upgrade: "Delegates if needed"
+commands.execute_cmd -> commands.feature_sync: "Delegates if needed"
+
 # Phase 1: Initialization
 phases.init -> commands.init_cmd: "Start here"
 commands.init_cmd -> artifacts.manifest: "Creates"
@@ -359,5 +383,14 @@ concepts: {
     label: "HOW:\n1. Init: Set up structure\n2. Document: Write PRDs/ADRs\n3. Generate: Extract behavioral rules\n4. Prepare: Create PRPs with research\n5. Execute: TDD with validation gates\n6. Track: Monitor progress"
     shape: text
     style.font-size: 12
+  }
+
+  smart_mode: {
+    label: "SMART MODE:\nRun /blueprint-execute anytime!\n• Analyzes current state\n• Determines next action\n• Executes automatically\n• Safe to run repeatedly (idempotent)"
+    shape: text
+    style.font-size: 12
+    style.fill: "#f0e6ff"
+    style.stroke: "#9370db"
+    style.stroke-width: 2
   }
 }

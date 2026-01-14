@@ -2,6 +2,113 @@
 
 This document provides Mermaid diagrams showing the Blueprint Plugin workflow from different perspectives.
 
+## 0. Smart Mode: /blueprint-execute Meta Command
+
+The idempotent meta command that analyzes repository state and determines the next action:
+
+```mermaid
+graph TD
+    Start([Run /blueprint-execute]) --> CheckInit{Blueprint\ninitialized?}
+
+    CheckInit -->|No| RunInit[Run /blueprint-init]
+    RunInit --> Done([Exit])
+
+    CheckInit -->|Yes| CheckUpgrade{Upgrade\navailable?}
+
+    CheckUpgrade -->|Yes v3.0.0| RunUpgrade[Run /blueprint-upgrade]
+    RunUpgrade --> Done
+
+    CheckUpgrade -->|No| CheckStale{Generated\ncontent stale?}
+
+    CheckStale -->|Yes PRDs changed| PromptRegen{User:\nRegenerate?}
+    PromptRegen -->|Yes| RunGenRules[Run /blueprint-generate-rules]
+    RunGenRules --> Done
+    PromptRegen -->|Skip| CheckModified
+
+    CheckStale -->|No| CheckModified{Generated\ncontent modified?}
+
+    CheckModified -->|Yes user edited| PromptSync{User:\nReview/Promote?}
+    PromptSync -->|Review| RunSync[Run /blueprint-sync]
+    RunSync --> Done
+    PromptSync -->|Promote| RunPromote[Run /blueprint-promote]
+    RunPromote --> Done
+    PromptSync -->|Skip| CheckPRDs
+
+    CheckModified -->|No| CheckPRDs{PRDs exist\nno rules?}
+
+    CheckPRDs -->|Yes| RunGenRules2[Run /blueprint-generate-rules]
+    RunGenRules2 --> Done
+
+    CheckPRDs -->|No| CheckPRPs{Ready\nPRPs found?}
+
+    CheckPRPs -->|Yes| PromptPRP{User:\nSelect PRP}
+    PromptPRP --> RunPRPExec[Run /blueprint-prp-execute]
+    RunPRPExec --> Done
+
+    CheckPRPs -->|No| CheckWO{Pending\nwork-orders?}
+
+    CheckWO -->|Yes| PromptWO{User:\nSelect WO}
+    PromptWO --> ExecuteWO[Execute work-order]
+    ExecuteWO --> Done
+
+    CheckWO -->|No| CheckOverview{Tasks in\nwork-overview?}
+
+    CheckOverview -->|In Progress| PromptContinue{User:\nContinue task?}
+    PromptContinue --> WorkOnTask[Work on task]
+    WorkOnTask --> Done
+
+    CheckOverview -->|Pending| PromptStart{User:\nStart task?}
+    PromptStart --> WorkOnTask
+
+    CheckOverview -->|No tasks| CheckTracker{Feature\ntracker exists?}
+
+    CheckTracker -->|Yes stale| RunTrackerSync[Run /blueprint-feature-tracker-sync]
+    RunTrackerSync --> ShowProgress
+
+    CheckTracker -->|Yes current| ShowProgress{Show\nprogress}
+    ShowProgress --> PromptNext{User:\nNext feature?}
+    PromptNext --> WorkOnTask
+
+    CheckTracker -->|No| ShowStatus[Run /blueprint-status]
+    ShowStatus --> PromptOptions{User:\nWhat to do?}
+    PromptOptions --> Done
+
+    style Start fill:#9370db,color:#fff
+    style RunInit fill:#a8d5e2
+    style RunUpgrade fill:#cccccc
+    style RunGenRules fill:#b4d7a8
+    style RunGenRules2 fill:#b4d7a8
+    style RunPRPExec fill:#ea9999
+    style ExecuteWO fill:#ea9999
+    style RunTrackerSync fill:#d5a6bd
+    style ShowStatus fill:#d5a6bd
+    style Done fill:#90ee90
+```
+
+**Key Features:**
+- 🎯 **Idempotent**: Safe to run anytime, multiple times
+- 🔍 **State Detection**: Reads repository state, never modifies until action chosen
+- 🚀 **Single Action**: Executes ONE action per run, then exits
+- 💡 **Always Actionable**: Never leaves you stuck - always suggests next steps
+- 🔄 **Smart Delegation**: Routes to appropriate blueprint command based on state
+
+**Common Use Cases:**
+```bash
+# Morning start routine
+/blueprint-execute  # Figures out where you left off
+
+# After pulling changes
+/blueprint-execute  # Checks for stale content, upgrades
+
+# Periodic check-in
+/blueprint-execute  # Shows progress, suggests next work
+
+# When stuck or unsure
+/blueprint-execute  # Always knows what to do next
+```
+
+---
+
 ## 1. High-Level Workflow
 
 The complete journey from initialization to implementation:

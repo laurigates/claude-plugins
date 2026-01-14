@@ -35,6 +35,7 @@ PRD (Product Requirements) → PRP (Product Requirement Prompt) → Work-Order �
 
 | Command | Description |
 |---------|-------------|
+| `/blueprint-execute` | **Smart meta command** - Analyzes repository state and executes the next logical blueprint action (idempotent) |
 | `/blueprint-status` | Show blueprint version and configuration |
 | `/blueprint-upgrade` | Upgrade to latest blueprint format |
 | `/blueprint-rules` | Manage modular rules |
@@ -64,6 +65,56 @@ PRD (Product Requirements) → PRP (Product Requirement Prompt) → Work-Order �
 | `prp-preparation` | Implementation starting | Checks if PRP exists, suggests creating one if missing |
 
 ## Workflow
+
+### Smart Mode: Using `/blueprint-execute`
+
+The easiest way to use Blueprint Development is with the **idempotent meta command**:
+
+```bash
+/blueprint-execute
+```
+
+This command:
+- ✅ **Analyzes** current repository state
+- ✅ **Determines** what needs to happen next
+- ✅ **Executes** the appropriate action automatically
+- ✅ **Safe to run anytime** - idempotent and smart
+
+**Perfect for:**
+- Morning start routine (figures out where you left off)
+- After pulling changes (checks for stale content, upgrades)
+- When stuck or unsure (always knows what to do next)
+- Periodic check-ins (shows progress, suggests next work)
+
+The command automatically handles:
+1. Initialization (if not set up)
+2. Upgrades (when available)
+3. Stale content detection and regeneration
+4. PRP execution (when ready)
+5. Work-order execution (when pending)
+6. Feature tracking sync
+7. Status and next steps (when caught up)
+
+**Example usage:**
+```bash
+# First time in a project
+/blueprint-execute  # → Runs /blueprint-init
+
+# After creating PRDs
+/blueprint-execute  # → Runs /blueprint-generate-rules
+
+# When PRPs are ready
+/blueprint-execute  # → Prompts to execute PRPs
+
+# When everything is current
+/blueprint-execute  # → Shows status and options
+```
+
+---
+
+### Manual Mode: Step-by-Step Workflow
+
+You can also run individual commands directly when you know exactly what you want:
 
 ### 1. Initialize Blueprint Development
 
