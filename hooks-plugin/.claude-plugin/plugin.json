@@ -1,0 +1,18 @@
+{
+  "name": "hooks-plugin",
+  "version": "1.0.0",
+  "description": "Claude Code hooks for enforcing best practices and workflow automation",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "repository": "https://github.com/laurigates/claude-plugins",
+  "license": "MIT",
+  "keywords": [
+    "hooks",
+    "automation",
+    "best-practices",
+    "workflow",
+    "anti-patterns",
+    "tooling"
+  ]
+}
