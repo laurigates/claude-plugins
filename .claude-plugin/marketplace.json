@@ -184,7 +184,7 @@
     {
       "name": "project-plugin",
       "source": "./project-plugin",
-      "description": "Project initialization and management - setup, modernization, and continuous development workflows",
+      "description": "Project initialization, management, and maintenance - setup, modernization, changelog review, and continuous development workflows",
       "version": "1.2.1",
       "keywords": [
         "project",
@@ -192,7 +192,9 @@
         "setup",
         "modernization",
         "tdd",
-        "workflow"
+        "workflow",
+        "changelog",
+        "maintenance"
       ],
       "category": "development"
     },

@@ -103,6 +103,27 @@ Run automated TDD cycle: test → fix → refactor.
 
 **Note:** Generic template that should be customized per project using `/blueprint-generate-commands`. Project-specific version is generated to `.claude/commands/project/test-loop.md`.
 
+### `/changelog:review`
+Review Claude Code changelog for changes impacting plugin development.
+
+**Features:**
+- Fetches current Claude Code changelog from GitHub
+- Compares against last checked version
+- Identifies breaking changes, new features, and deprecations
+- Maps changes to affected plugins
+- Generates actionable report with recommendations
+- Updates version tracking file
+
+**Usage:**
+```bash
+/changelog:review                  # Review changes since last check
+/changelog:review --full           # Review entire changelog
+/changelog:review --since 2.0.0    # Review from specific version
+/changelog:review --update         # Just update tracking
+```
+
+**Automated via GitHub Actions:** A weekly workflow automatically checks for new Claude Code versions and creates GitHub issues when updates are detected.
+
 ## Skills
 
 ### `project-discovery`
@@ -133,6 +154,30 @@ See `skills/project-discovery/` for:
 - `SKILL.md` - Complete skill documentation
 - `discovery-commands.md` - Command reference
 - `examples.md` - Example discovery outputs
+
+### `changelog-review`
+Analyze Claude Code changelog for impacts on plugin development.
+
+**Automatically activates when** reviewing Claude Code updates, checking for breaking changes, or analyzing new features for plugin opportunities.
+
+**Capabilities:**
+- Version comparison and change extraction
+- Impact categorization (high/medium/low)
+- Plugin mapping for affected areas
+- Report generation with actionable items
+
+**Key Areas Monitored:**
+- Hook system changes
+- Skill/command updates
+- Agent capabilities
+- Permission patterns
+- MCP improvements
+- SDK changes
+
+**Manual invocation:**
+- "review claude code changelog"
+- "check for claude code updates"
+- "analyze changelog impacts"
 
 ## Installation
 
