@@ -27,6 +27,10 @@
     "requirements-tracking",
     "document-detection",
     "automatic-documentation",
-    "proactive-documentation"
+    "proactive-documentation",
+    "retroactive-documentation",
+    "git-history-analysis",
+    "import-plans",
+    "reverse-engineering"
   ]
 }

@@ -19,6 +19,7 @@ PRD (Product Requirements) → PRP (Product Requirement Prompt) → Work-Order �
 | `/blueprint-init` | Initialize Blueprint Development structure in a project |
 | `/blueprint-prd` | Generate initial PRD from existing project documentation |
 | `/blueprint-adr` | Generate Architecture Decision Records from existing codebase |
+| `/blueprint-import-plans` | **Retroactive import** - Generate PRDs, ADRs, and PRPs from git history and existing code |
 
 ### Workflow Commands
 
@@ -146,6 +147,19 @@ For existing projects, generate initial documentation from codebase:
 ```
 
 These commands analyze existing documentation and code patterns, asking clarifying questions to fill gaps.
+
+**For established projects with git history**, use the comprehensive import command:
+
+```bash
+/blueprint-import-plans    # Retroactively generate PRDs, ADRs, and PRPs from git history
+```
+
+This command:
+- Analyzes git commit history (conventional commits, scopes, issue references)
+- Extracts features from grouped commits
+- Identifies architecture decisions from technology changes
+- Suggests future work from TODOs and open issues
+- Generates all documentation with confidence scores
 
 ### 3. Write or Refine PRDs
 
