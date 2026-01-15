@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v1.2.0...git-plugin-v1.3.0) (2026-01-15)
+
+
+### Features
+
+* **git-plugin:** add automatic GitHub issue detection for commits ([#82](https://github.com/laurigates/claude-plugins/issues/82)) ([09be6fb](https://github.com/laurigates/claude-plugins/commit/09be6fb0d1428825f596d6319103abb06d0c3fad))
+
 ## [1.2.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v1.1.2...git-plugin-v1.2.0) (2026-01-09)
 
 
