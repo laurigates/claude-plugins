@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.0.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.0.0...blueprint-plugin-v3.0.1) (2026-01-15)
+
+
+### Documentation
+
+* **blueprint-plugin:** add comprehensive workflow diagrams ([#73](https://github.com/laurigates/claude-plugins/issues/73)) ([85a610e](https://github.com/laurigates/claude-plugins/commit/85a610e3d85ee16c89e77f2fc373241f23c941fe))
+
 ## [3.0.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v2.0.0...blueprint-plugin-v3.0.0) (2026-01-09)
 
 
