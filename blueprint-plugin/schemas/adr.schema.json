@@ -1,0 +1,79 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "blueprint-plugin/adr.schema.json",
+  "title": "Architecture Decision Record Frontmatter",
+  "description": "Schema for validating ADR frontmatter with relationship and domain fields",
+  "type": "object",
+  "required": ["date", "status"],
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the decision was made (YYYY-MM-DD)"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["Proposed", "Accepted", "Deprecated", "Superseded"],
+      "description": "Current status of the ADR"
+    },
+    "deciders": {
+      "type": "string",
+      "description": "Who made the decision"
+    },
+    "domain": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "description": "Domain/category for scoping conflict detection (e.g., state-management, data-layer)",
+      "examples": [
+        "state-management",
+        "data-layer",
+        "api-design",
+        "authentication",
+        "testing",
+        "deployment",
+        "frontend-framework",
+        "styling",
+        "build-tooling"
+      ]
+    },
+    "supersedes": {
+      "type": "string",
+      "pattern": "^ADR-\\d{4}$",
+      "description": "ADR number this decision supersedes (e.g., ADR-0003)"
+    },
+    "superseded_by": {
+      "type": "string",
+      "pattern": "^ADR-\\d{4}$",
+      "description": "ADR number that superseded this decision (set automatically)"
+    },
+    "extends": {
+      "type": "string",
+      "pattern": "^ADR-\\d{4}$",
+      "description": "ADR number this decision extends/builds upon"
+    },
+    "related": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^ADR-\\d{4}$"
+      },
+      "uniqueItems": true,
+      "description": "Related ADR numbers (non-hierarchical relationships)"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": { "const": "Superseded" }
+        },
+        "required": ["status"]
+      },
+      "then": {
+        "required": ["superseded_by"],
+        "errorMessage": "Superseded ADRs must specify which ADR superseded them"
+      }
+    }
+  ],
+  "additionalProperties": true
+}

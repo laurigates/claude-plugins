@@ -1,6 +1,6 @@
 ---
 created: 2026-01-09
-modified: 2026-01-09
+modified: 2026-01-15
 reviewed: 2026-01-09
 name: document-detection
 description: "Detect PRD/ADR/PRP opportunities in conversations and prompt for document creation. Activates when users discuss features, architecture decisions, or implementation planning."
@@ -196,6 +196,25 @@ Extract from conversation:
 - User clarifications from Step 2
 - Related existing documents (check `docs/prds/`, `docs/adrs/`, `docs/prps/`)
 
+**For ADR: Infer Domain**
+
+Map discussion topics to ADR domains:
+
+| Topic Keywords | Inferred Domain |
+|----------------|-----------------|
+| Redux, Zustand, MobX, useState, signals, store | `state-management` |
+| Prisma, Drizzle, PostgreSQL, MongoDB, ORM, database | `data-layer` |
+| REST, GraphQL, tRPC, OpenAPI, endpoints, API | `api-design` |
+| OAuth, JWT, auth0, session, tokens, login | `authentication` |
+| Vitest, Jest, Playwright, Cypress, coverage, testing | `testing` |
+| Tailwind, styled-components, CSS modules, SCSS | `styling` |
+| React, Vue, Svelte, Next.js, Nuxt, Angular | `frontend-framework` |
+| Vite, Webpack, esbuild, turbopack, bundler | `build-tooling` |
+| Docker, Kubernetes, Vercel, serverless, deploy | `deployment` |
+| Sentry, DataDog, logging, metrics, monitoring | `monitoring` |
+
+Include inferred domain in context package for `/blueprint:adr`.
+
 ### Step 4: Delegate to Documentation Agent
 
 Launch appropriate documentation command:
@@ -216,6 +235,7 @@ Run /blueprint:adr with context:
 - Options compared
 - Constraints identified
 - Trade-offs discussed
+- Inferred domain (for conflict analysis)
 ```
 
 **For PRP**:

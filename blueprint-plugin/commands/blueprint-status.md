@@ -1,6 +1,6 @@
 ---
 created: 2025-12-17
-modified: 2026-01-09
+modified: 2026-01-15
 reviewed: 2025-12-22
 description: "Show blueprint version, configuration, and check for available upgrades"
 allowed_tools: [Read, Bash, Glob, AskUserQuestion]
@@ -23,6 +23,10 @@ Display the current blueprint configuration status with three-layer architecture
    - Count PRDs in `docs/prds/`
    - Count ADRs in `docs/adrs/`
    - Count PRPs in `docs/prps/`
+   - For ADRs, also count:
+     - With domain tags (`grep -l "^domain:" docs/adrs/*.md | wc -l`)
+     - With relationship declarations (supersedes, extends, related)
+     - By status (Accepted, Superseded, Deprecated)
    - Count work-orders (pending, completed, archived)
    - Count generated rules in `.claude/rules/`
    - Count custom skills in `.claude/skills/`
@@ -60,6 +64,9 @@ Display the current blueprint configuration status with three-layer architecture
    Project Documentation (docs/):
    - PRDs: {count} in docs/prds/
    - ADRs: {count} in docs/adrs/
+     - With domain tags: {count}/{total} ({percent}%)
+     - With relationships: {count}
+     - Status: {accepted} Accepted, {superseded} Superseded, {deprecated} Deprecated
    - PRPs: {count} in docs/prps/
 
    Work Orders (docs/blueprint/work-orders/):
@@ -125,6 +132,10 @@ Display the current blueprint configuration status with three-layer architecture
    - Warn if generated content is modified or stale
    - Warn if feature-tracker.json is older than 7 days (needs sync)
    - Warn if feature-tracker sync targets have been modified since last sync
+   - Warn if ADRs have potential issues:
+     - Multiple "Accepted" ADRs in same domain (potential conflict)
+     - ADRs without domain tags (harder to detect conflicts)
+     - Missing bidirectional links (e.g., supersedes without corresponding superseded_by)
 
 7. **Prompt for next action** (use AskUserQuestion):
 
@@ -136,6 +147,7 @@ Display the current blueprint configuration status with three-layer architecture
    - If skills exist but no commands → Include "Generate workflow commands"
    - If CLAUDE.md stale → Include "Update CLAUDE.md"
    - If feature tracker exists but stale → Include "Sync feature tracker"
+   - If ADRs have potential issues → Include "Validate ADRs"
    - Always include "Continue development" and "I'm done"
 
    ```
@@ -154,6 +166,8 @@ Display the current blueprint configuration status with three-layer architecture
        description: "Regenerate project overview document"
      - label: "Sync feature tracker" (if feature tracker stale)
        description: "Synchronize tracker with work-overview.md and TODO.md"
+     - label: "Validate ADRs" (if ADR issues detected)
+       description: "Check ADR relationships, conflicts, and missing links"
      # Always include these:
      - label: "Continue development"
        description: "Run /project:continue to work on next task"
@@ -168,6 +182,7 @@ Display the current blueprint configuration status with three-layer architecture
    - "Generate rules" → Run `/blueprint:generate-rules`
    - "Update CLAUDE.md" → Run `/blueprint:claude-md`
    - "Sync feature tracker" → Run `/blueprint:feature-tracker-sync`
+   - "Validate ADRs" → Run `/blueprint:adr-validate`
    - "Continue development" → Run `/project:continue`
    - "I'm done" → Exit
 
@@ -188,6 +203,9 @@ Project Configuration:
 Project Documentation (docs/):
 - PRDs: 3 in docs/prds/
 - ADRs: 5 in docs/adrs/
+  - With domain tags: 4/5 (80%)
+  - With relationships: 2
+  - Status: 3 Accepted, 2 Superseded
 - PRPs: 2 in docs/prps/
 
 Work Orders (docs/blueprint/work-orders/):

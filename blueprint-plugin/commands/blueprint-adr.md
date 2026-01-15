@@ -1,6 +1,6 @@
 ---
 created: 2025-12-22
-modified: 2026-01-09
+modified: 2026-01-15
 reviewed: 2025-12-22
 description: "Generate Architecture Decision Records from existing project structure and documentation"
 allowed_tools: [Read, Write, Glob, Grep, Bash, AskUserQuestion, Task]
@@ -47,6 +47,74 @@ Key areas to examine:
 - **Data layer**: Database, ORM, data models
 - **API layer**: Routes, controllers, handlers
 - **Testing**: Test structure and frameworks
+
+## Phase 1.5: Conflict Analysis
+
+Before generating new ADRs, check for existing decisions that may conflict or relate.
+
+### 1.5.1 Check for Existing ADRs
+```bash
+ls docs/adrs/*.md 2>/dev/null | wc -l
+```
+
+If ADRs exist, analyze for potential conflicts with decisions about to be documented.
+
+### 1.5.2 Determine Domain for New ADR
+
+Map decision categories to domains:
+
+| Decision Category | Domain Tag |
+|------------------|------------|
+| State Management | `state-management` |
+| Database/ORM | `data-layer` |
+| Framework Choice | `frontend-framework` |
+| API Design | `api-design` |
+| Authentication | `authentication` |
+| Testing Strategy | `testing` |
+| Styling Approach | `styling` |
+| Build Tooling | `build-tooling` |
+| Deployment | `deployment` |
+
+### 1.5.3 Scan Existing ADRs in Same Domain
+
+For each domain being documented:
+```bash
+grep -l "^domain: {domain}" docs/adrs/*.md
+```
+
+For each matching ADR with `status: Accepted`:
+- Extract ADR number and title
+- Extract decision outcome (chosen option)
+- Calculate conflict score:
+  - Same domain: +0.3
+  - Both Accepted: +0.2
+  - Opposite/different outcomes: +0.4
+  - Age > 6 months: +0.1
+
+### 1.5.4 Surface Potential Conflicts
+
+If conflict score >= 0.7, prompt user:
+
+```
+question: "Found existing ADR in same domain: ADR-{XXXX} - {title}. How should the new decision relate?"
+options:
+  - label: "Supersede ADR-{XXXX}"
+    description: "New ADR replaces the existing decision"
+  - label: "Extend ADR-{XXXX}"
+    description: "New ADR builds on the existing decision"
+  - label: "Mark as related"
+    description: "Decisions are connected but independent"
+  - label: "No relationship"
+    description: "Continue without linking"
+```
+
+Store the relationship choice for inclusion in the generated ADR frontmatter.
+
+### 1.5.5 Handle Multiple Conflicts
+
+If multiple potential conflicts in same domain:
+- Present each for user decision
+- Allow bulk "supersede all" option for replacing multiple outdated decisions
 
 ## Phase 2: Identify Architecture Decisions
 
@@ -100,9 +168,17 @@ For each significant decision, create an ADR:
 ```markdown
 # ADR-{number}: {Title}
 
-**Date**: {date}
-**Status**: Accepted | Superseded | Deprecated
-**Deciders**: {who made the decision}
+---
+date: {YYYY-MM-DD}
+status: Accepted | Superseded | Deprecated | Proposed
+deciders: {who made the decision}
+domain: {domain-tag}                    # Optional: state-management, data-layer, etc.
+supersedes: ADR-{XXXX}                  # Optional: if superseding another ADR
+extends: ADR-{XXXX}                     # Optional: if extending another ADR
+related:                                # Optional: non-hierarchical relationships
+  - ADR-{YYYY}
+  - ADR-{ZZZZ}
+---
 
 ## Context
 
@@ -199,7 +275,36 @@ New ADRs should follow the [MADR template](https://adr.github.io/madr/).
 Use `/blueprint:adr` or the `architecture-decisions` agent to create new ADRs.
 ```
 
-## Phase 4: Validation & Follow-up
+## Phase 4: Relationship Updates & Validation
+
+### 4.0 Update Superseded ADRs (Bidirectional Consistency)
+
+If any new ADR supersedes an existing ADR:
+
+1. **Read the superseded ADR file**
+2. **Update its frontmatter**:
+   - Change `status: Accepted` to `status: Superseded`
+   - Add `superseded_by: ADR-{new_number}`
+3. **Update the Links section** (add if missing):
+   ```markdown
+   ## Links
+   - Superseded by [ADR-{number}](./{filename}.md)
+   ```
+
+4. **Report the update**:
+   ```
+   Updated ADR-{old_number}:
+   - Status: Accepted → Superseded
+   - Added: superseded_by: ADR-{new_number}
+   - Updated Links section
+   ```
+
+**Example**: If ADR-0012 supersedes ADR-0003:
+- In ADR-0012: `supersedes: ADR-0003`
+- In ADR-0003:
+  - `status: Superseded`
+  - `superseded_by: ADR-0012`
+  - Links section references ADR-0012
 
 ### 4.1 Present Summary
 ```
@@ -208,9 +313,17 @@ Use `/blueprint:adr` or the `architecture-decisions` agent to create new ADRs.
 **Location**: `docs/adrs/`
 
 **Decisions documented**:
-- ADR-0001: {title} - {status}
-- ADR-0002: {title} - {status}
+- ADR-0001: {title} - {status} [{domain}]
+- ADR-0002: {title} - {status} [{domain}]
 ...
+
+**Relationships established**:
+- ADR-{new} supersedes ADR-{old} (status updated)
+- ADR-{new} extends ADR-{existing}
+- ADR-{new} related to ADR-{other}
+
+**ADRs updated** (bidirectional consistency):
+- ADR-{old}: status → Superseded, superseded_by → ADR-{new}
 
 **Sources analyzed**:
 - {list of analyzed files/patterns}
@@ -223,8 +336,9 @@ Use `/blueprint:adr` or the `architecture-decisions` agent to create new ADRs.
 **Recommended next steps**:
 1. Review generated ADRs for accuracy
 2. Add rationale where marked as "inferred"
-3. Run `/blueprint:prp-create` for feature implementation
-4. Run `/blueprint:generate-skills` for project skills
+3. Run `/blueprint:adr-validate` to check relationship consistency
+4. Run `/blueprint:prp-create` for feature implementation
+5. Run `/blueprint:generate-skills` for project skills
 ```
 
 ### 4.2 Suggest Next Steps
