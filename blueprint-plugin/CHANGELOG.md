@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.0.1...blueprint-plugin-v3.1.0) (2026-01-15)
+
+
+### Features
+
+* **blueprint-plugin:** add retroactive import command for existing projects ([4b83477](https://github.com/laurigates/claude-plugins/commit/4b83477cff3c55a687d42897d9da37f09d717a61))
+
 ## [3.0.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.0.0...blueprint-plugin-v3.0.1) (2026-01-15)
 
 
