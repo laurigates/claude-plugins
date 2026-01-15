@@ -58,21 +58,32 @@ Expert knowledge for containerization and orchestration with focus on **security
 
 ## Best Practices
 
-### Image Optimization Principles
+### Core Optimization Principles
 
-**Right-Size Your Base Image**:
-- Go: Use `scratch` or `distroless` for production (2-5MB final images)
-- Node.js: Use `alpine` variants (reduces from ~900MB to ~100MB)
-- Python: Use `slim` variants, not Alpine (musl compatibility issues)
+**1. Multi-Stage Builds** (MANDATORY):
+- Separate build-time dependencies from runtime
+- Keep build tools out of production images
+- Typical reduction: 60-90% smaller final images
 
-**Optimization Journey** (typical Go app):
-1. Full base image (golang:1.23): 846MB
-2. Alpine base (golang:1.23-alpine): 312MB (63% reduction)
-3. Multi-stage build (Alpine runtime): 15MB (95% reduction)
-4. Stripped binary + flags: 8MB (47% reduction)
-5. Scratch/distroless: 2.5MB (68% reduction)
+**2. Minimal Base Images**:
+- Start with the smallest base that works
+- Prefer Alpine for most languages (except Python)
+- Consider distroless for maximum security
 
-**Result**: 99.7% size reduction with improved security and performance
+**3. Non-Root Users** (MANDATORY):
+- Always create and use non-root user
+- Set UID/GID explicitly (e.g., 1001)
+- Security compliance requirement
+
+**4. .dockerignore** (MANDATORY):
+- Exclude `.git`, `node_modules`, `__pycache__`
+- Prevent secrets and dev files from entering image
+- Reduces build context by 90-98%
+
+**5. Layer Optimization**:
+- Copy dependency manifests separately from source
+- Put frequently changing layers last
+- Combine related RUN commands with `&&`
 
 ## Version Checking
 
@@ -85,121 +96,82 @@ Expert knowledge for containerization and orchestration with focus on **security
 
 Use WebSearch or WebFetch to verify current versions.
 
-## Language-Specific Patterns
+## Language-Specific Optimization
 
-### Go (Production-Optimized)
+For detailed language-specific optimization patterns, see the dedicated skills:
 
-**Recommended**: Scratch or distroless for minimal images (2.5-5MB)
+| Language | Skill | Key Optimization | Typical Reduction |
+|----------|-------|------------------|-------------------|
+| **Go** | `go-containers` | Static binaries, scratch/distroless | 846MB → 2.5MB (99.7%) |
+| **Node.js** | `nodejs-containers` | Alpine, multi-stage, npm/yarn/pnpm | 900MB → 100MB (89%) |
+| **Python** | `python-containers` | Slim (NOT Alpine), uv, venv | 1GB → 100MB (90%) |
 
-```dockerfile
-# Build stage
-FROM golang:1.23-alpine AS builder
-WORKDIR /app
-COPY go.mod go.sum ./
-RUN go mod download
-COPY . .
+### Quick Base Image Guide
 
-# Optimized build: strip debug info, remove paths
-RUN CGO_ENABLED=0 GOOS=linux go build \
-    -a \
-    -installsuffix cgo \
-    -ldflags="-w -s" \
-    -trimpath \
-    -o main .
+**Choose the right base image**:
+- **Go**: `scratch` or `distroless/static` (2-5MB)
+- **Node.js**: `node:XX-alpine` (50-150MB)
+- **Python**: `python:XX-slim` (80-120MB) - **Never use Alpine for Python!**
+- **Nginx**: `nginx:XX-alpine` (20-40MB)
+- **Static files**: `scratch` or `nginx:alpine` (minimal)
 
-# Runtime stage - scratch for absolute minimum
-FROM scratch
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-COPY --from=builder /app/main /main
-EXPOSE 8080
-CMD ["/main"]
-```
-
-**Build flags explained**:
-- `CGO_ENABLED=0`: Static binary, no dynamic dependencies
-- `-ldflags="-w -s"`: Strip debug info (~40% size reduction)
-- `-trimpath`: Remove local filesystem paths (security)
-
-See REFERENCE.md "Go Binary Optimization" for complete 846MB→2.5MB optimization journey.
-
-### Node.js (Multi-Stage with Non-Root Alpine)
-
-**Recommended**: Alpine with non-root user (~50-100MB)
+### Multi-Stage Build Template
 
 ```dockerfile
-# Build stage - use Alpine for minimal size
-FROM node:24-alpine AS build
-
+# Build stage - includes all build tools
+FROM <language>:<version> AS builder
 WORKDIR /app
-COPY package*.json ./
-RUN --mount=type=cache,target=/root/.npm npm ci
-COPY . .
-RUN npm run build
 
-# Runtime stage - minimal nginx Alpine
-FROM nginx:1.27-alpine
+# Copy dependency manifests first (better caching)
+COPY package.json package-lock.json ./  # or go.mod, requirements.txt, etc.
 
-# Create non-root user BEFORE copying files
-RUN addgroup -g 1001 -S appgroup && \
-    adduser -u 1001 -S appuser -G appgroup
+# Install dependencies
+RUN <install-command>
 
-COPY --from=build /app/dist /usr/share/nginx/html
-
-# Security: Make nginx dirs writable by non-root
-RUN chown -R appuser:appgroup /var/cache/nginx /var/run /var/log/nginx
-
-USER appuser
-EXPOSE 8080
-
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
-```
-
-### Python (Slim with Non-Root)
-
-**Recommended**: Use `slim` not `alpine` (musl libc compatibility issues)
-
-```dockerfile
-# Build stage
-FROM python:3.11-slim AS builder
-WORKDIR /app
-RUN pip install --no-cache-dir uv
-COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-dev
+# Copy source code
 COPY . .
 
-# Runtime stage
-FROM python:3.11-slim
+# Build application
+RUN <build-command>
+
+# Runtime stage - minimal
+FROM <minimal-base>
+WORKDIR /app
+
+# Create non-root user
 RUN addgroup --gid 1001 appgroup && \
     adduser --uid 1001 --gid 1001 --disabled-password appuser
-WORKDIR /app
-COPY --from=builder --chown=appuser:appgroup /app/.venv /app/.venv
-COPY --from=builder --chown=appuser:appgroup /app .
-ENV PATH="/app/.venv/bin:$PATH"
+
+# Copy only what's needed from builder
+COPY --from=builder --chown=appuser:appuser /app/dist ./dist
+
 USER appuser
-CMD ["python", "-m", "myapp"]
+EXPOSE <port>
+
+HEALTHCHECK --interval=30s CMD <health-check-command>
+
+CMD [<start-command>]
 ```
 
-**Security Best Practices (Mandatory)**
+**Security Requirements (Mandatory)**
 - **Non-root user**: REQUIRED - never run as root in production
-- **Minimal base images**:
-  - Go: `scratch` or `distroless` (0 CVEs vs 63 CVEs in Debian-based)
-  - Node.js/Rust: `alpine` (12 CVEs vs 63 CVEs in Debian-based)
-  - Python: `slim` (8 CVEs vs 63 CVEs in full image)
+- **Minimal base images**: Choose smallest viable base
+  - Typical CVE reduction: 50-100% (full base: 50-70 CVEs → minimal: 0-12 CVEs)
+  - No shell = no shell injection attacks
+  - No package manager = no supply chain attacks
 - **Multi-stage builds**: REQUIRED - keep build tools out of runtime
-- **Binary stripping**: Use `-ldflags="-w -s"` for Go to remove debug info
-- **HEALTHCHECK**: REQUIRED for Kubernetes probes
-- **Vulnerability scanning**: Use Trivy or Grype in CI
-- **Version pinning**: Always use specific tags, never `latest`
+- **HEALTHCHECK**: REQUIRED for Kubernetes liveness/readiness probes
+- **Vulnerability scanning**: Use Trivy, Grype, or Docker Scout in CI
+- **Version pinning**: Always use specific tags (e.g., `node:20.10-alpine`), never `latest`
 - **.dockerignore**: REQUIRED - prevents secrets, .env, .git from entering image
 
-**Impact of Optimization** (real-world metrics):
-- **Image size**: 99.7% reduction (846MB → 2.5MB for Go)
-- **Security**: 100% reduction in CVEs (63 → 0 for scratch/distroless)
-- **Pull time**: 98% faster (52s → 1s)
-- **Startup time**: 62% faster (2.1s → 0.8s)
-- **Memory usage**: 73% lower (480MB → 128MB)
-- **Storage costs**: 99.8% reduction
+**Typical Impact of Full Optimization**:
+- **Image size**: 85-99% reduction
+- **Security**: 70-100% fewer CVEs
+- **Pull time**: 80-98% faster
+- **Build time**: 40-60% faster (with proper caching)
+- **Memory usage**: 60-80% lower
+- **Storage costs**: 90-99% reduction
 
 **12-Factor App Principles**
 - Configuration via environment variables
@@ -234,6 +206,13 @@ When building and testing containers, use these optimizations for faster feedbac
 - `--secret id=key,src=file`: Mount secrets without including in image
 
 For detailed Dockerfile optimization techniques, orchestration patterns, security hardening, and Skaffold configuration, see REFERENCE.md.
+
+## Related Skills
+
+**Language-Specific Container Optimization**:
+- `go-containers` - Go static binaries, scratch/distroless (846MB → 2.5MB)
+- `nodejs-containers` - Node.js Alpine patterns, npm/yarn/pnpm (900MB → 100MB)
+- `python-containers` - Python slim (NOT Alpine), uv/poetry (1GB → 100MB)
 
 ## Related Commands
 
