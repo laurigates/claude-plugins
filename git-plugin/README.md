@@ -10,7 +10,7 @@ This plugin provides comprehensive Git workflow automation including conventiona
 
 | Command | Description |
 |---------|-------------|
-| `/git:commit` | Complete workflow from changes to PR - analyze, create logical commits, push, optionally create PR |
+| `/git:commit` | Complete workflow from changes to PR - auto-detect issues, create logical commits with proper linkage, push, optionally create PR |
 | `/git:issue` | Process and fix a single GitHub issue with TDD workflow |
 | `/git:issues` | Process multiple GitHub issues in sequence |
 | `/git:fix-pr` | Analyze and fix failing PR checks |
@@ -24,6 +24,8 @@ This plugin provides comprehensive Git workflow automation including conventiona
 | `git-branch-pr-workflow` | Git branching and PR workflow patterns |
 | `git-repo-detection` | Detect GitHub repository name and owner from git remotes |
 | `git-security-checks` | Security checks before staging files |
+| `github-issue-autodetect` | Auto-detect issues that changes may fix/close for proper commit linkage |
+| `github-labels` | Discover and apply labels to GitHub PRs and issues |
 | `release-please-configuration` | Release-please config for monorepos and version automation |
 | `release-please-protection` | Prevent manual edits to release-please managed files |
 | `release-please-pr-workflow` | Batch merge release-please PRs with conflict handling |

@@ -1,12 +1,12 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
-reviewed: 2025-12-16
+modified: 2026-01-15
+reviewed: 2026-01-15
 name: git-commit-workflow
 description: |
   Commit message conventions, staging practices, and commit best practices.
   Covers conventional commits, explicit staging workflow, logical change grouping,
-  and humble fact-based communication style.
+  humble fact-based communication style, and automatic issue detection.
   Use when user mentions committing changes, writing commit messages, git add,
   git commit, staging files, or conventional commit format.
 allowed-tools: Bash, Read
@@ -410,6 +410,26 @@ See #890
 | Breaking change with migration guide | `See #N` | `See #202` |
 
 **Important:** Keywords only auto-close issues when merged to the **default branch**. PRs targeting other branches link but don't auto-close.
+
+### Automatic Issue Detection
+
+Before creating commits, scan open issues to find matches for staged changes:
+
+```bash
+# Fetch open issues for matching
+gh issue list --state open --json number,title,labels --limit 30
+
+# Get changed files for analysis
+git diff --cached --name-only
+```
+
+**Matching Heuristics:**
+- File paths mentioned in issue body → High confidence
+- Error messages or function names match → High confidence
+- Directory/component matches issue labels → Medium confidence
+- Keyword overlap in issue title → Medium confidence
+
+**See:** **github-issue-autodetect** skill for full detection algorithm and decision tree.
 
 ### Issue Reference Examples
 
