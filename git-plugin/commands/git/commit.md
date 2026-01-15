@@ -1,10 +1,10 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
-reviewed: 2025-12-16
-allowed-tools: Bash, Edit, Read, Glob, Grep, TodoWrite, mcp__github__create_pull_request
-argument-hint: [remote-branch] [--push] [--direct] [--pr] [--draft] [--issue <num>] [--no-commit] [--range <start>..<end>]
-description: Complete workflow from changes to PR - analyze changes, create logical commits, push to remote feature branch, and optionally create pull request
+modified: 2026-01-15
+reviewed: 2026-01-15
+allowed-tools: Bash, Edit, Read, Glob, Grep, TodoWrite, mcp__github__create_pull_request, mcp__github__list_issues, mcp__github__get_issue
+argument-hint: [remote-branch] [--push] [--direct] [--pr] [--draft] [--issue <num>] [--no-commit] [--range <start>..<end>] [--skip-issue-detection]
+description: Complete workflow from changes to PR - auto-detect related issues, create logical commits with proper issue linkage, push to remote feature branch, and optionally create pull request
 ---
 
 ## Context
@@ -18,6 +18,7 @@ description: Complete workflow from changes to PR - analyze changes, create logi
 - Remote status: !`git remote -v | head -1`
 - Upstream status: !`git status -sb | head -1`
 - Available labels: !`gh label list --json name,description --limit 50 2>/dev/null || echo "(no remote configured)"`
+- Open issues: !`gh issue list --state open --json number,title,labels --limit 30 2>/dev/null || echo "(no remote configured)"`
 
 ## Parameters
 
@@ -32,6 +33,7 @@ Parse these parameters from the command (all optional):
 - `--no-commit`: Skip commit creation (assume commits already exist)
 - `--range <start>..<end>`: Push specific commit range instead of all commits on main
 - `--labels <label1,label2>`: Apply labels to the created PR (requires --pr)
+- `--skip-issue-detection`: Skip automatic issue detection (use when --issue is provided or for trivial changes)
 
 ## Your task
 
@@ -42,7 +44,51 @@ Execute this commit workflow using the **main-branch development pattern**:
 1. **Check branch**: If `--direct`, any branch is valid. Otherwise, verify on main branch (warn if not).
 2. **Check for changes**: Confirm there are staged or unstaged changes to commit (unless --no-commit)
 
-### Step 2: Create Commits (unless --no-commit)
+### Step 2: Auto-Detect Related Issues (unless --skip-issue-detection or --issue provided)
+
+**Purpose**: Automatically identify open GitHub issues that the staged changes may fix or close.
+
+1. **Analyze staged changes**:
+   - Get list of changed files: `git diff --cached --name-only`
+   - Extract modified directories, file names, and content patterns
+   - Identify error messages, function names, or keywords in the diff
+
+2. **Match against open issues**:
+   - Review the open issues from context (or fetch with `gh issue list --state open`)
+   - Score each issue based on:
+     - **High confidence**: File path mentioned in issue body, error message match
+     - **Medium confidence**: Directory/component match, keyword overlap
+     - **Low confidence**: Label matches changed area (e.g., `bug` label + fix changes)
+
+3. **Report detected issues**:
+   ```
+   Detected potentially related issues:
+
+   HIGH CONFIDENCE:
+   - #123 "Login fails with invalid token" → Fixes #123
+     Match: Changes to src/auth/token.ts, issue mentions token validation
+
+   MEDIUM CONFIDENCE:
+   - #456 "Improve error messages" → Refs #456
+     Match: Error handling changes in src/auth/
+
+   Suggested closing keywords for commit message:
+   Fixes #123
+   Refs #456
+   ```
+
+4. **Determine appropriate keywords**:
+   - Use `Fixes #N` for bug fixes that fully resolve the issue
+   - Use `Closes #N` for features that complete the issue
+   - Use `Refs #N` for partial progress or related changes
+   - See **github-issue-autodetect** skill for decision tree
+
+5. **Confirm with user** (if uncertain):
+   - For high-confidence matches, include automatically
+   - For medium-confidence, suggest and confirm
+   - For low-confidence, mention but let user decide
+
+### Step 3: Create Commits (unless --no-commit)
 
 1. **Analyze changes** and detect if splitting into multiple PRs is appropriate
 2. **Group related changes** into logical commits on main
@@ -50,7 +96,10 @@ Execute this commit workflow using the **main-branch development pattern**:
 4. **Run pre-commit hooks** if configured: `pre-commit run`
 5. **Handle pre-commit modifications**: Stage any files modified by hooks with `git add -u`
 6. **Create commit** with conventional commit message format
-7. **ALWAYS include GitHub issue references** in commit messages:
+7. **Include detected issue references** from Step 2 in the commit message footer:
+   - Add high-confidence matches automatically
+   - Include medium-confidence matches if confirmed
+8. **ALWAYS include GitHub issue references** in commit messages:
    - **Closing keywords** (auto-close when merged to default branch):
      - `Fixes #N` - for bug fixes that resolve an issue
      - `Closes #N` - for features that complete an issue
@@ -63,7 +112,7 @@ Execute this commit workflow using the **main-branch development pattern**:
    - **Multiple issues**: `Fixes #1, fixes #2, fixes #3`
    - Keywords are case-insensitive and work with optional colon: `Fixes: #123`
 
-### Step 3: Push to Remote (if --push or --pr)
+### Step 4: Push to Remote (if --push or --pr)
 
 **If `--direct`**: Push current branch to same-named remote:
 
@@ -82,7 +131,7 @@ git push origin main:<remote-branch>
 git push origin <start>^..<end>:<remote-branch>
 ```
 
-### Step 4: Create PR (if --pr)
+### Step 5: Create PR (if --pr)
 
 Use `mcp__github__create_pull_request` with:
 - `head`: The remote branch name (e.g., `feat/auth-oauth2`)
@@ -115,5 +164,6 @@ gh pr edit <pr-number> --add-label "label1,label2"
 
 ## See Also
 
+- **github-issue-autodetect** skill for issue detection algorithm and keyword selection
 - **git-branch-pr-workflow** skill for detailed patterns
 - **git-commit-workflow** skill for commit message conventions
