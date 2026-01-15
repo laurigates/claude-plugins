@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.2.1...project-plugin-v1.3.0) (2026-01-15)
+
+
+### Features
+
+* **changelog-plugin:** add automated Claude Code changelog tracking ([#74](https://github.com/laurigates/claude-plugins/issues/74)) ([0e24de9](https://github.com/laurigates/claude-plugins/commit/0e24de982762a515929e05e1f260ff4daf46278a))
+
 ## [1.2.1](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.2.0...project-plugin-v1.2.1) (2026-01-09)
 
 
