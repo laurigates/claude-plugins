@@ -13,6 +13,8 @@
     "setup",
     "modernization",
     "tdd",
-    "workflow"
+    "workflow",
+    "changelog",
+    "maintenance"
   ]
 }

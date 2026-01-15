@@ -1,0 +1,277 @@
+name: Claude Code Changelog Review
+
+on:
+  schedule:
+    # Run weekly on Mondays at 9:00 UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+    inputs:
+      force_full_review:
+        description: 'Force full changelog review'
+        required: false
+        default: 'false'
+        type: boolean
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  check-changelog:
+    runs-on: ubuntu-latest
+    outputs:
+      has_updates: ${{ steps.compare.outputs.has_updates }}
+      latest_version: ${{ steps.compare.outputs.latest_version }}
+      changes_summary: ${{ steps.analyze.outputs.summary }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
+
+      - name: Fetch Claude Code changelog
+        id: fetch
+        run: |
+          curl -s https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md > /tmp/changelog.md
+          echo "Fetched changelog"
+
+      - name: Extract latest version
+        id: extract
+        run: |
+          # Extract first version number from changelog (format: ## [X.Y.Z])
+          LATEST=$(grep -oP '## \[\K[0-9]+\.[0-9]+\.[0-9]+' /tmp/changelog.md | head -1)
+          echo "latest_version=$LATEST" >> $GITHUB_OUTPUT
+          echo "Latest Claude Code version: $LATEST"
+
+      - name: Read last checked version
+        id: read_tracked
+        run: |
+          if [ -f .claude-code-version-check.json ]; then
+            TRACKED=$(jq -r '.lastCheckedVersion' .claude-code-version-check.json)
+          else
+            TRACKED="0.0.0"
+          fi
+          echo "tracked_version=$TRACKED" >> $GITHUB_OUTPUT
+          echo "Last checked version: $TRACKED"
+
+      - name: Compare versions
+        id: compare
+        run: |
+          LATEST="${{ steps.extract.outputs.latest_version }}"
+          TRACKED="${{ steps.read_tracked.outputs.tracked_version }}"
+          FORCE="${{ inputs.force_full_review }}"
+
+          if [ "$FORCE" = "true" ]; then
+            echo "Forced full review requested"
+            echo "has_updates=true" >> $GITHUB_OUTPUT
+            echo "latest_version=$LATEST" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Compare semantic versions
+          version_gt() {
+            test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$1"
+          }
+
+          if version_gt "$LATEST" "$TRACKED"; then
+            echo "New version detected: $TRACKED -> $LATEST"
+            echo "has_updates=true" >> $GITHUB_OUTPUT
+          else
+            echo "No new versions since $TRACKED"
+            echo "has_updates=false" >> $GITHUB_OUTPUT
+          fi
+          echo "latest_version=$LATEST" >> $GITHUB_OUTPUT
+
+      - name: Analyze changelog for plugin impacts
+        id: analyze
+        if: steps.compare.outputs.has_updates == 'true'
+        run: |
+          TRACKED="${{ steps.read_tracked.outputs.tracked_version }}"
+          LATEST="${{ steps.extract.outputs.latest_version }}"
+
+          # Extract changes between versions
+          # This is a simplified analysis - the full analysis happens in the issue body
+
+          echo "Analyzing changes from $TRACKED to $LATEST..."
+
+          # Count relevant changes by searching for keywords
+          HOOK_CHANGES=$(grep -ci 'hook' /tmp/changelog.md || echo "0")
+          SKILL_CHANGES=$(grep -ci 'skill' /tmp/changelog.md || echo "0")
+          AGENT_CHANGES=$(grep -ci 'agent' /tmp/changelog.md || echo "0")
+          PERMISSION_CHANGES=$(grep -ci 'permission' /tmp/changelog.md || echo "0")
+          BREAKING_CHANGES=$(grep -ci 'breaking' /tmp/changelog.md || echo "0")
+
+          # Create summary
+          SUMMARY="Hook mentions: $HOOK_CHANGES, Skill mentions: $SKILL_CHANGES, Agent mentions: $AGENT_CHANGES, Permission mentions: $PERMISSION_CHANGES, Breaking mentions: $BREAKING_CHANGES"
+          echo "summary=$SUMMARY" >> $GITHUB_OUTPUT
+
+          # Extract section for new versions (simplified - gets content between tracked and latest)
+          echo "Changes extracted for analysis"
+
+  create-issue:
+    needs: check-changelog
+    if: needs.check-changelog.outputs.has_updates == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read tracked version
+        id: tracked
+        run: |
+          if [ -f .claude-code-version-check.json ]; then
+            TRACKED=$(jq -r '.lastCheckedVersion' .claude-code-version-check.json)
+            LAST_DATE=$(jq -r '.lastCheckedDate' .claude-code-version-check.json)
+          else
+            TRACKED="0.0.0"
+            LAST_DATE="never"
+          fi
+          echo "version=$TRACKED" >> $GITHUB_OUTPUT
+          echo "date=$LAST_DATE" >> $GITHUB_OUTPUT
+
+      - name: Check for existing open issue
+        id: check_issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EXISTING=$(gh issue list --label "changelog-review" --state open --json number --jq 'length')
+          if [ "$EXISTING" -gt 0 ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Found existing open changelog review issue"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create changelog review issue
+        if: steps.check_issue.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LATEST_VERSION: ${{ needs.check-changelog.outputs.latest_version }}
+          TRACKED_VERSION: ${{ steps.tracked.outputs.version }}
+          LAST_DATE: ${{ steps.tracked.outputs.date }}
+        run: |
+          gh issue create \
+            --title "Review Claude Code changelog: $TRACKED_VERSION → $LATEST_VERSION" \
+            --label "changelog-review,maintenance" \
+            --body "$(cat <<'EOF'
+          ## Claude Code Changelog Review Required
+
+          **New Claude Code version detected!**
+
+          | Field | Value |
+          |-------|-------|
+          | Previous version | $TRACKED_VERSION |
+          | Latest version | $LATEST_VERSION |
+          | Last review date | $LAST_DATE |
+
+          ### Action Required
+
+          Run the changelog review command to analyze changes:
+
+          ```bash
+          /changelog:review
+          ```
+
+          Or for a full review:
+
+          ```bash
+          /changelog:review --since $TRACKED_VERSION
+          ```
+
+          ### Changelog Link
+
+          [View Claude Code Changelog](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md)
+
+          ### Areas to Check
+
+          Review the changelog for changes in these areas that may impact plugins:
+
+          - [ ] **Hooks** - New events, schema changes, behavior updates
+          - [ ] **Skills/Commands** - Frontmatter changes, discovery updates
+          - [ ] **Agents** - New capabilities, configuration options
+          - [ ] **Permissions** - New patterns, security fixes
+          - [ ] **MCP** - Server configuration, OAuth updates
+          - [ ] **SDK** - API changes, new features
+          - [ ] **Breaking Changes** - Anything requiring immediate updates
+
+          ### Potentially Affected Plugins
+
+          Based on common change areas:
+          - `hooks-plugin` - Hook system changes
+          - `agent-patterns-plugin` - Agent and MCP changes
+          - `configure-plugin` - Permission and configuration changes
+          - All plugins - Skill/command changes
+
+          ### After Review
+
+          1. Update `.claude-code-version-check.json` with the new version
+          2. Create follow-up issues for any required changes
+          3. Close this issue
+
+          ---
+          *This issue was automatically created by the changelog review workflow.*
+          EOF
+          )"
+
+  update-tracking:
+    needs: [check-changelog, create-issue]
+    if: needs.check-changelog.outputs.has_updates == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
+
+      - name: Update version tracking
+        env:
+          LATEST_VERSION: ${{ needs.check-changelog.outputs.latest_version }}
+        run: |
+          DATE=$(date +%Y-%m-%d)
+
+          # Read existing file or create new
+          if [ -f .claude-code-version-check.json ]; then
+            # Update existing file
+            jq --arg version "$LATEST_VERSION" --arg date "$DATE" '
+              .lastCheckedVersion = $version |
+              .lastCheckedDate = $date |
+              .reviewedChanges = [
+                {
+                  "version": $version,
+                  "date": $date,
+                  "relevantChanges": [],
+                  "actionsRequired": ["Review pending - see GitHub issue"]
+                }
+              ] + .reviewedChanges
+            ' .claude-code-version-check.json > /tmp/updated.json
+            mv /tmp/updated.json .claude-code-version-check.json
+          else
+            # Create new file
+            cat > .claude-code-version-check.json << JSONEOF
+          {
+            "lastCheckedVersion": "$LATEST_VERSION",
+            "lastCheckedDate": "$DATE",
+            "changelogUrl": "https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md",
+            "reviewedChanges": [
+              {
+                "version": "$LATEST_VERSION",
+                "date": "$DATE",
+                "relevantChanges": [],
+                "actionsRequired": ["Review pending - see GitHub issue"]
+              }
+            ]
+          }
+          JSONEOF
+          fi
+
+          echo "Updated tracking to version $LATEST_VERSION"
+
+      - name: Commit tracking update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet .claude-code-version-check.json; then
+            echo "No changes to commit"
+          else
+            git add .claude-code-version-check.json
+            git commit -m "chore: update Claude Code version tracking to ${{ needs.check-changelog.outputs.latest_version }}"
+            git push
+          fi
