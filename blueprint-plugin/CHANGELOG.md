@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.2.0...blueprint-plugin-v3.2.1) (2026-01-15)
+
+
+### Documentation
+
+* **blueprint-plugin:** update diagrams with ADR conflict detection ([e14cc65](https://github.com/laurigates/claude-plugins/commit/e14cc657a73c7510897bda1e594f49809bf51e82))
+
 ## [3.2.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.1.0...blueprint-plugin-v3.2.0) (2026-01-15)
 
 
