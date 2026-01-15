@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.1.0...blueprint-plugin-v3.2.0) (2026-01-15)
+
+
+### Features
+
+* **blueprint-plugin:** add ADR conflict detection and relationship tracking ([aac8b94](https://github.com/laurigates/claude-plugins/commit/aac8b94fe3c5942a06b9366aa8cd2d032d0300a0))
+
 ## [3.1.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.0.1...blueprint-plugin-v3.1.0) (2026-01-15)
 
 
