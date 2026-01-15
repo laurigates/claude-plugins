@@ -16,75 +16,53 @@ Comprehensive reference for Docker multi-stage builds, 12-factor app principles,
 
 ## Multi-Stage Build Patterns
 
-### Basic Multi-Stage Build
+Multi-stage builds separate build-time dependencies from runtime, dramatically reducing image sizes (60-95% reduction typical).
+
+### Generic Multi-Stage Template
 
 ```dockerfile
-# Build stage
-FROM golang:1.21-alpine AS builder
+# Build stage - includes all build tools and dependencies
+FROM <build-image>:<version> AS builder
 WORKDIR /app
-COPY go.mod go.sum ./
-RUN go mod download
-COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o main .
 
-# Final stage
-FROM alpine:latest
-RUN apk --no-cache add ca-certificates
-WORKDIR /root/
-COPY --from=builder /app/main .
-CMD ["./main"]
+# Copy dependency manifests first (better layer caching)
+COPY <dependency-files> ./
+
+# Install dependencies
+RUN <install-dependencies-command>
+
+# Copy source code
+COPY . .
+
+# Build application
+RUN <build-command>
+
+# Runtime stage - minimal base image
+FROM <runtime-image>:<version>
+WORKDIR /app
+
+# Create non-root user
+RUN <create-user-command>
+
+# Copy only compiled/built artifacts from builder
+COPY --from=builder --chown=<user>:<group> /app/<artifacts> ./
+
+# Set user
+USER <user>
+
+# Health check
+HEALTHCHECK --interval=30s CMD <health-check-command>
+
+# Start application
+CMD [<start-command>]
 ```
 
-### Node.js Multi-Stage Build
+### Language-Specific Examples
 
-```dockerfile
-# Dependencies stage
-FROM node:20-alpine AS deps
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-
-# Build stage
-FROM node:20-alpine AS builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
-
-# Production stage
-FROM node:20-alpine AS runner
-WORKDIR /app
-ENV NODE_ENV=production
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/package.json ./
-USER node
-CMD ["node", "dist/index.js"]
-```
-
-### Python Multi-Stage Build
-
-```dockerfile
-# Builder stage
-FROM python:3.11-slim AS builder
-WORKDIR /app
-RUN pip install --no-cache-dir uv
-COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-dev
-COPY . .
-RUN uv build
-
-# Runtime stage
-FROM python:3.11-slim
-WORKDIR /app
-COPY --from=builder /app/.venv /app/.venv
-COPY --from=builder /app/dist/*.whl /tmp/
-RUN pip install --no-cache-dir /tmp/*.whl && rm -rf /tmp/*.whl
-ENV PATH="/app/.venv/bin:$PATH"
-USER nobody
-CMD ["python", "-m", "myapp"]
-```
+For detailed multi-stage build patterns optimized for specific languages:
+- **Go**: See `go-containers` skill - scratch/distroless patterns
+- **Node.js**: See `nodejs-containers` skill - npm/yarn/pnpm patterns
+- **Python**: See `python-containers` skill - uv/poetry/pip patterns
 
 ### Optimized Layer Caching
 
@@ -134,6 +112,16 @@ RUN if [ "$BUILD_ENV" = "development" ]; then \
 #   --build-arg VCS_REF=$(git rev-parse --short HEAD) \
 #   -t myapp:1.2.3 .
 ```
+
+---
+
+## Language-Specific Optimization
+
+For detailed language-specific optimization patterns and step-by-step guides, see the dedicated skills:
+
+- **`go-containers`**: Go static binaries, scratch/distroless, ldflags optimization (846MB → 2.5MB, 99.7% reduction)
+- **`nodejs-containers`**: Node.js Alpine patterns, npm/yarn/pnpm, BuildKit cache (900MB → 100MB, 89% reduction)
+- **`python-containers`**: Python slim (NOT Alpine), uv/poetry, virtual environments (1GB → 100MB, 90% reduction)
 
 ---
 
@@ -933,26 +921,195 @@ RUN npm run build
 CMD ["node", "dist/server.js"]
 ```
 
-### .dockerignore
+### .dockerignore Best Practices
+
+A comprehensive `.dockerignore` file reduces build context size, speeds up builds, and prevents sensitive files from entering images.
+
+#### Universal Exclusions
 
 ```
-# .dockerignore
-node_modules
-npm-debug.log
+# Version control
 .git
 .gitignore
+.gitattributes
+.hg
+
+# IDE and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.project
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# Documentation (unless needed in image)
+README.md
+*.md
+docs/
+LICENSE
+CONTRIBUTING.md
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+Jenkinsfile
+azure-pipelines.yml
+
+# Environment and secrets
 .env
 .env.*
-*.md
-.vscode
-.idea
-dist
-build
-coverage
-.DS_Store
-Dockerfile
+*.env
+secrets/
+credentials/
+*.key
+*.pem
+*.crt
+
+# Docker files
+Dockerfile*
 docker-compose*.yml
+.dockerignore
+
+# Build artifacts
+dist/
+build/
+out/
+bin/
+target/
+tmp/
+temp/
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test coverage
+coverage/
+.nyc_output/
+*.cover
+htmlcov/
 ```
+
+#### Node.js Specific
+
+```
+# Dependencies
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json  # Only if using yarn
+yarn.lock          # Only if using npm
+
+# Testing
+coverage/
+.nyc_output/
+*.test.js
+*.spec.js
+__tests__/
+test/
+tests/
+
+# Build
+dist/
+build/
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.output/
+```
+
+#### Python Specific
+
+```
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# Testing
+.pytest_cache/
+.tox/
+.coverage
+htmlcov/
+*.cover
+
+# Type checking
+.mypy_cache/
+.pytype/
+.pyre/
+```
+
+#### Go Specific
+
+```
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go workspace
+go.work
+go.work.sum
+
+# Vendor (if using modules)
+vendor/
+
+# Testing
+*_test.go
+testdata/
+coverage.out
+```
+
+#### Impact on Build Performance
+
+| Build Context | Without .dockerignore | With .dockerignore | Improvement |
+|---------------|----------------------|-------------------|-------------|
+| **Node.js project** | 450MB (node_modules) | 12MB | 97% reduction |
+| **Python project** | 180MB (venv, pycache) | 8MB | 96% reduction |
+| **Go project** | 95MB (vendor, .git) | 2MB | 98% reduction |
+
+**Build time improvements:**
+- Initial build: 15-30% faster
+- Subsequent builds: 40-60% faster (better cache hits)
 
 ### BuildKit Optimizations
 

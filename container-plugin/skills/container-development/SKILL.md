@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
-reviewed: 2025-12-16
+modified: 2026-01-15
+reviewed: 2026-01-15
 name: container-development
 description: |
   Container development with Docker, Dockerfiles, 12-factor principles, multi-stage
@@ -58,52 +58,120 @@ Expert knowledge for containerization and orchestration with focus on **security
 
 ## Best Practices
 
+### Core Optimization Principles
+
+**1. Multi-Stage Builds** (MANDATORY):
+- Separate build-time dependencies from runtime
+- Keep build tools out of production images
+- Typical reduction: 60-90% smaller final images
+
+**2. Minimal Base Images**:
+- Start with the smallest base that works
+- Prefer Alpine for most languages (except Python)
+- Consider distroless for maximum security
+
+**3. Non-Root Users** (MANDATORY):
+- Always create and use non-root user
+- Set UID/GID explicitly (e.g., 1001)
+- Security compliance requirement
+
+**4. .dockerignore** (MANDATORY):
+- Exclude `.git`, `node_modules`, `__pycache__`
+- Prevent secrets and dev files from entering image
+- Reduces build context by 90-98%
+
+**5. Layer Optimization**:
+- Copy dependency manifests separately from source
+- Put frequently changing layers last
+- Combine related RUN commands with `&&`
+
 ## Version Checking
 
 **CRITICAL**: Before using base images, verify latest versions:
 - **Node.js Alpine**: Check [Docker Hub node](https://hub.docker.com/_/node) for latest LTS
 - **Python slim**: Check [Docker Hub python](https://hub.docker.com/_/python) for latest
+- **Go Alpine**: Check [Docker Hub golang](https://hub.docker.com/_/golang) for latest
 - **nginx Alpine**: Check [Docker Hub nginx](https://hub.docker.com/_/nginx)
+- **Distroless**: Check [Google distroless](https://github.com/GoogleContainerTools/distroless) for latest
 
 Use WebSearch or WebFetch to verify current versions.
 
-**Multi-Stage Dockerfile Pattern (Node.js - Non-Root Alpine)**
+## Language-Specific Optimization
+
+For detailed language-specific optimization patterns, see the dedicated skills:
+
+| Language | Skill | Key Optimization | Typical Reduction |
+|----------|-------|------------------|-------------------|
+| **Go** | `go-containers` | Static binaries, scratch/distroless | 846MB → 2.5MB (99.7%) |
+| **Node.js** | `nodejs-containers` | Alpine, multi-stage, npm/yarn/pnpm | 900MB → 100MB (89%) |
+| **Python** | `python-containers` | Slim (NOT Alpine), uv, venv | 1GB → 100MB (90%) |
+
+### Quick Base Image Guide
+
+**Choose the right base image**:
+- **Go**: `scratch` or `distroless/static` (2-5MB)
+- **Node.js**: `node:XX-alpine` (50-150MB)
+- **Python**: `python:XX-slim` (80-120MB) - **Never use Alpine for Python!**
+- **Nginx**: `nginx:XX-alpine` (20-40MB)
+- **Static files**: `scratch` or `nginx:alpine` (minimal)
+
+### Multi-Stage Build Template
+
 ```dockerfile
-# Build stage - use Alpine for minimal size
-FROM node:24-alpine AS build
-
+# Build stage - includes all build tools
+FROM <language>:<version> AS builder
 WORKDIR /app
-COPY package*.json ./
-RUN --mount=type=cache,target=/root/.npm npm ci
+
+# Copy dependency manifests first (better caching)
+COPY package.json package-lock.json ./  # or go.mod, requirements.txt, etc.
+
+# Install dependencies
+RUN <install-command>
+
+# Copy source code
 COPY . .
-RUN npm run build
 
-# Runtime stage - minimal nginx Alpine
-FROM nginx:1.27-alpine
+# Build application
+RUN <build-command>
 
-# Create non-root user BEFORE copying files
-RUN addgroup -g 1001 -S appgroup && \
-    adduser -u 1001 -S appuser -G appgroup
+# Runtime stage - minimal
+FROM <minimal-base>
+WORKDIR /app
 
-COPY --from=build /app/dist /usr/share/nginx/html
+# Create non-root user
+RUN addgroup --gid 1001 appgroup && \
+    adduser --uid 1001 --gid 1001 --disabled-password appuser
 
-# Security: Make nginx dirs writable by non-root
-RUN chown -R appuser:appgroup /var/cache/nginx /var/run /var/log/nginx
+# Copy only what's needed from builder
+COPY --from=builder --chown=appuser:appuser /app/dist ./dist
 
 USER appuser
-EXPOSE 8080
+EXPOSE <port>
 
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
+HEALTHCHECK --interval=30s CMD <health-check-command>
+
+CMD [<start-command>]
 ```
 
-**Security Best Practices (Mandatory)**
+**Security Requirements (Mandatory)**
 - **Non-root user**: REQUIRED - never run as root in production
-- **Minimal base images**: Alpine for Node/Go/Rust, slim for Python
+- **Minimal base images**: Choose smallest viable base
+  - Typical CVE reduction: 50-100% (full base: 50-70 CVEs → minimal: 0-12 CVEs)
+  - No shell = no shell injection attacks
+  - No package manager = no supply chain attacks
 - **Multi-stage builds**: REQUIRED - keep build tools out of runtime
-- **HEALTHCHECK**: REQUIRED for Kubernetes probes
-- **Vulnerability scanning**: Use Trivy or Grype in CI
-- **Version pinning**: Always use specific tags, never `latest`
+- **HEALTHCHECK**: REQUIRED for Kubernetes liveness/readiness probes
+- **Vulnerability scanning**: Use Trivy, Grype, or Docker Scout in CI
+- **Version pinning**: Always use specific tags (e.g., `node:20.10-alpine`), never `latest`
+- **.dockerignore**: REQUIRED - prevents secrets, .env, .git from entering image
+
+**Typical Impact of Full Optimization**:
+- **Image size**: 85-99% reduction
+- **Security**: 70-100% fewer CVEs
+- **Pull time**: 80-98% faster
+- **Build time**: 40-60% faster (with proper caching)
+- **Memory usage**: 60-80% lower
+- **Storage costs**: 90-99% reduction
 
 **12-Factor App Principles**
 - Configuration via environment variables
@@ -117,7 +185,34 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 - Continuous development loop with hot reload
 - Production-like local environment
 
+## Agentic Optimizations
+
+When building and testing containers, use these optimizations for faster feedback:
+
+| Context | Command | Purpose |
+|---------|---------|---------|
+| **Quick build** | `DOCKER_BUILDKIT=1 docker build --progress=plain -t app .` | BuildKit with plain output |
+| **Build with cache** | `docker build --cache-from app:latest -t app:new .` | Reuse layers from previous builds |
+| **Security scan** | `docker scout cves app:latest \| head -50` | Quick vulnerability check |
+| **Size analysis** | `docker images app --format "{{.Size}}"` | Check image size |
+| **Layer inspection** | `docker history app:latest --human --no-trunc` | Analyze layer sizes |
+| **Build without cache** | `docker build --no-cache --progress=plain -t app .` | Force clean build |
+| **Test container** | `docker run --rm -it app:latest /bin/sh` | Interactive testing |
+| **Quick health check** | `docker run --rm app:latest timeout 5 /health` | Verify startup |
+
+**Build optimization flags**:
+- `--target=<stage>`: Build specific stage only (faster iteration)
+- `--build-arg BUILDKIT_INLINE_CACHE=1`: Enable inline cache
+- `--secret id=key,src=file`: Mount secrets without including in image
+
 For detailed Dockerfile optimization techniques, orchestration patterns, security hardening, and Skaffold configuration, see REFERENCE.md.
+
+## Related Skills
+
+**Language-Specific Container Optimization**:
+- `go-containers` - Go static binaries, scratch/distroless (846MB → 2.5MB)
+- `nodejs-containers` - Node.js Alpine patterns, npm/yarn/pnpm (900MB → 100MB)
+- `python-containers` - Python slim (NOT Alpine), uv/poetry (1GB → 100MB)
 
 ## Related Commands
 
