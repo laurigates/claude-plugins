@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.0.1...agent-patterns-plugin-v2.1.0) (2026-01-15)
+
+
+### Features
+
+* **agent-patterns-plugin:** add claude-hooks-configuration skill ([#70](https://github.com/laurigates/claude-plugins/issues/70)) ([d97307a](https://github.com/laurigates/claude-plugins/commit/d97307ac33773792ee9e702916abefa87d2ffc7d))
+
 ## [2.0.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.0.0...agent-patterns-plugin-v2.0.1) (2026-01-09)
 
 
