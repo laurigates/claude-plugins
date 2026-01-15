@@ -1,0 +1,18 @@
+{
+  "name": "agents-plugin",
+  "version": "1.0.0",
+  "description": "Task-focused agents for test, review, debug, docs, and CI workflows",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "repository": "https://github.com/laurigates/claude-plugins",
+  "license": "MIT",
+  "keywords": [
+    "agents",
+    "testing",
+    "code-review",
+    "debugging",
+    "documentation",
+    "ci-cd"
+  ]
+}

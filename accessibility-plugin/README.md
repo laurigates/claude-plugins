@@ -45,22 +45,6 @@ CSS custom property architecture, theme systems, and design token organization.
 - Responsive token systems
 - Token naming conventions and best practices
 
-#### ux-handoff-markers
-Standardized inline markers for inter-agent communication about UX requirements.
-
-**Use when:**
-- Creating handoff annotations for other agents
-- Scanning for pending UX work from upstream agents
-- Coordinating between service design and implementation
-- User mentions @HANDOFF markers or agent coordination
-
-**Covers:**
-- Structured marker format and syntax
-- Target agent specifications
-- Priority levels (blocking vs enhancement)
-- Completion tracking patterns
-- Best practices for agent coordination
-
 ### Agents
 
 #### ux-implementation
@@ -135,11 +119,11 @@ claude agent service-design "Map user journey for onboarding experience"
 
 ### Agent Coordination
 ```bash
-# Scan for UX handoff markers
-claude skill ux-handoff-markers "Find all pending @HANDOFF(ux-implementation) markers"
+# Scan for UX handoff markers (using agent-patterns-plugin)
+/handoffs --agent ux-implementation
 
-# Create handoff for implementation
-claude skill ux-handoff-markers "Create @HANDOFF marker for modal accessibility"
+# Create handoff for implementation (see agent-patterns-plugin for marker format)
+# @AGENT-HANDOFF-MARKER(ux-implementation) { type: "accessibility", ... }
 ```
 
 ## Integration with Other Plugins
@@ -179,7 +163,7 @@ claude skill ux-handoff-markers "Create @HANDOFF marker for modal accessibility"
 - Document token purpose and usage
 
 ### Agent Coordination
-- Use @HANDOFF markers for asynchronous communication
+- Use @AGENT-HANDOFF-MARKER for asynchronous communication (see agent-patterns-plugin)
 - Provide specific requirements, not vague requests
 - Include context and references
 - Clean up completed markers

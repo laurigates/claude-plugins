@@ -1,6 +1,6 @@
 ---
 created: 2025-12-17
-modified: 2025-12-22
+modified: 2026-01-09
 reviewed: 2025-12-17
 description: "Manage modular rules in .claude/rules/ directory"
 allowed_tools: [Read, Write, Edit, Bash, Glob, AskUserQuestion]
@@ -11,7 +11,7 @@ Manage modular rules for the project. Rules are markdown files in `.claude/rules
 **Steps**:
 
 1. **Check blueprint status**:
-   - Read `.claude/blueprints/.manifest.json`
+   - Read `docs/blueprint/manifest.json`
    - Check if modular rules are enabled
    - If not enabled, offer to enable:
      ```
@@ -109,7 +109,7 @@ Manage modular rules for the project. Rules are markdown files in `.claude/rules
    ```
 
 6. **Generate rules from PRDs**:
-   - Read all PRDs in `.claude/blueprints/prds/`
+   - Read all PRDs in `docs/prds/`
    - Extract key requirements and constraints
    - Group by domain (testing, architecture, coding standards)
    - Generate rule files:

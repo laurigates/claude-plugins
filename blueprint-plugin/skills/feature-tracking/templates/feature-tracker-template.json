@@ -1,0 +1,35 @@
+{
+  "$schema": "./schemas/feature-tracker.schema.json",
+  "version": "1.0.0",
+  "last_updated": "",
+  "project": "",
+  "source_document": "REQUIREMENTS.md",
+  "phases": [
+    {
+      "id": "phase-0",
+      "name": "Foundation",
+      "status": "not_started"
+    },
+    {
+      "id": "phase-1",
+      "name": "Core Features",
+      "status": "not_started"
+    },
+    {
+      "id": "phase-2",
+      "name": "Advanced Features",
+      "status": "not_started"
+    }
+  ],
+  "features": {},
+  "prds": {},
+  "statistics": {
+    "total_features": 0,
+    "complete": 0,
+    "partial": 0,
+    "in_progress": 0,
+    "not_started": 0,
+    "blocked": 0,
+    "completion_percentage": 0
+  }
+}

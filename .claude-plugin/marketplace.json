@@ -8,40 +8,70 @@
       "name": "blueprint-plugin",
       "source": "./blueprint-plugin",
       "description": "Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, and CLAUDE.md management",
-      "version": "1.1.0",
-      "keywords": ["blueprint", "prd", "prp", "requirements", "methodology", "version-tracking", "modular-rules"],
+      "version": "3.1.0",
+      "keywords": [
+        "blueprint",
+        "prd",
+        "prp",
+        "requirements",
+        "methodology",
+        "version-tracking",
+        "modular-rules"
+      ],
       "category": "development"
     },
     {
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "FVH infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.0.0",
-      "keywords": ["fvh", "infrastructure", "standards", "configuration"],
+      "version": "1.1.1",
+      "keywords": [
+        "fvh",
+        "infrastructure",
+        "standards",
+        "configuration"
+      ],
       "category": "infrastructure"
     },
     {
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, and repository management",
-      "version": "1.0.0",
-      "keywords": ["git", "github", "commits", "branches", "pr"],
+      "version": "1.2.0",
+      "keywords": [
+        "git",
+        "github",
+        "commits",
+        "branches",
+        "pr"
+      ],
       "category": "version-control"
     },
     {
       "name": "testing-plugin",
       "source": "./testing-plugin",
       "description": "Test execution, TDD workflow, and testing strategies",
-      "version": "1.0.0",
-      "keywords": ["testing", "tdd", "pytest", "vitest", "coverage"],
+      "version": "3.0.1",
+      "keywords": [
+        "testing",
+        "tdd",
+        "pytest",
+        "vitest",
+        "coverage"
+      ],
       "category": "testing"
     },
     {
       "name": "code-quality-plugin",
       "source": "./code-quality-plugin",
       "description": "Code review, refactoring, linting, and static analysis",
-      "version": "1.0.0",
-      "keywords": ["code-review", "refactoring", "linting", "analysis"],
+      "version": "1.1.0",
+      "keywords": [
+        "code-review",
+        "refactoring",
+        "linting",
+        "analysis"
+      ],
       "category": "quality"
     },
     {
@@ -49,23 +79,41 @@
       "source": "./python-plugin",
       "description": "Python development ecosystem - uv, ruff, pytest, packaging",
       "version": "1.0.0",
-      "keywords": ["python", "uv", "ruff", "pytest", "packaging"],
+      "keywords": [
+        "python",
+        "uv",
+        "ruff",
+        "pytest",
+        "packaging"
+      ],
       "category": "language"
     },
     {
       "name": "typescript-plugin",
       "source": "./typescript-plugin",
       "description": "TypeScript development - strict types, ESLint, Biome",
-      "version": "1.0.0",
-      "keywords": ["typescript", "eslint", "biome", "types"],
+      "version": "1.2.1",
+      "keywords": [
+        "typescript",
+        "eslint",
+        "biome",
+        "types"
+      ],
       "category": "language"
     },
     {
       "name": "tools-plugin",
       "source": "./tools-plugin",
       "description": "General utilities - fd, rg, jq, shell, imagemagick",
-      "version": "1.0.0",
-      "keywords": ["tools", "utilities", "fd", "rg", "jq", "shell"],
+      "version": "2.0.1",
+      "keywords": [
+        "tools",
+        "utilities",
+        "fd",
+        "rg",
+        "jq",
+        "shell"
+      ],
       "category": "utilities"
     },
     {
@@ -73,7 +121,12 @@
       "source": "./rust-plugin",
       "description": "Rust development - cargo, clippy, testing, memory safety",
       "version": "1.0.0",
-      "keywords": ["rust", "cargo", "clippy", "memory-safety"],
+      "keywords": [
+        "rust",
+        "cargo",
+        "clippy",
+        "memory-safety"
+      ],
       "category": "language"
     },
     {
@@ -81,7 +134,12 @@
       "source": "./kubernetes-plugin",
       "description": "Kubernetes and Helm operations - deployments, charts, releases",
       "version": "1.0.0",
-      "keywords": ["kubernetes", "helm", "k8s", "deployments"],
+      "keywords": [
+        "kubernetes",
+        "helm",
+        "k8s",
+        "deployments"
+      ],
       "category": "infrastructure"
     },
     {
@@ -89,15 +147,25 @@
       "source": "./terraform-plugin",
       "description": "Terraform and Terraform Cloud - infrastructure as code",
       "version": "1.0.0",
-      "keywords": ["terraform", "infrastructure", "iac", "tfc"],
+      "keywords": [
+        "terraform",
+        "infrastructure",
+        "iac",
+        "tfc"
+      ],
       "category": "infrastructure"
     },
     {
       "name": "github-actions-plugin",
       "source": "./github-actions-plugin",
       "description": "GitHub Actions CI/CD - workflows, authentication, inspection",
-      "version": "1.0.0",
-      "keywords": ["github-actions", "ci-cd", "workflows", "automation"],
+      "version": "1.0.1",
+      "keywords": [
+        "github-actions",
+        "ci-cd",
+        "workflows",
+        "automation"
+      ],
       "category": "ci-cd"
     },
     {
@@ -105,15 +173,27 @@
       "source": "./documentation-plugin",
       "description": "Documentation generation - API docs, README, knowledge graphs",
       "version": "1.0.0",
-      "keywords": ["documentation", "docs", "api-docs", "readme"],
+      "keywords": [
+        "documentation",
+        "docs",
+        "api-docs",
+        "readme"
+      ],
       "category": "documentation"
     },
     {
       "name": "project-plugin",
       "source": "./project-plugin",
       "description": "Project initialization and management - setup, modernization, and continuous development workflows",
-      "version": "1.1.0",
-      "keywords": ["project", "initialization", "setup", "modernization", "tdd", "workflow"],
+      "version": "1.2.1",
+      "keywords": [
+        "project",
+        "initialization",
+        "setup",
+        "modernization",
+        "tdd",
+        "workflow"
+      ],
       "category": "development"
     },
     {
@@ -121,23 +201,39 @@
       "source": "./sync-plugin",
       "description": "External system synchronization - GitHub, Podio integration",
       "version": "1.0.0",
-      "keywords": ["sync", "github", "podio", "integration"],
+      "keywords": [
+        "sync",
+        "github",
+        "podio",
+        "integration"
+      ],
       "category": "integration"
     },
     {
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Multi-agent coordination and orchestration patterns",
-      "version": "1.0.0",
-      "keywords": ["agents", "orchestration", "coordination", "patterns"],
+      "version": "2.0.1",
+      "keywords": [
+        "agents",
+        "orchestration",
+        "coordination",
+        "patterns"
+      ],
       "category": "ai"
     },
     {
       "name": "accessibility-plugin",
       "source": "./accessibility-plugin",
       "description": "Accessibility and UX implementation - WCAG, ARIA, design tokens",
-      "version": "1.0.0",
-      "keywords": ["accessibility", "wcag", "aria", "ux", "design-tokens"],
+      "version": "2.0.0",
+      "keywords": [
+        "accessibility",
+        "wcag",
+        "aria",
+        "ux",
+        "design-tokens"
+      ],
       "category": "ux"
     },
     {
@@ -145,7 +241,12 @@
       "source": "./dotfiles-plugin",
       "description": "Dotfiles and editor configuration - chezmoi, neovim, obsidian",
       "version": "1.0.0",
-      "keywords": ["dotfiles", "chezmoi", "neovim", "obsidian"],
+      "keywords": [
+        "dotfiles",
+        "chezmoi",
+        "neovim",
+        "obsidian"
+      ],
       "category": "configuration"
     },
     {
@@ -153,7 +254,13 @@
       "source": "./bevy-plugin",
       "description": "Bevy game engine development - ECS, rendering, game architecture",
       "version": "1.0.0",
-      "keywords": ["bevy", "game-engine", "ecs", "rust", "gamedev"],
+      "keywords": [
+        "bevy",
+        "game-engine",
+        "ecs",
+        "rust",
+        "gamedev"
+      ],
       "category": "gamedev"
     },
     {
@@ -161,15 +268,25 @@
       "source": "./graphiti-plugin",
       "description": "Graphiti knowledge graph - memory, learning, episode storage",
       "version": "1.0.0",
-      "keywords": ["graphiti", "knowledge-graph", "memory", "learning"],
+      "keywords": [
+        "graphiti",
+        "knowledge-graph",
+        "memory",
+        "learning"
+      ],
       "category": "ai"
     },
     {
       "name": "container-plugin",
       "source": "./container-plugin",
       "description": "Container development and deployment - Docker, registry, Skaffold",
-      "version": "1.0.0",
-      "keywords": ["container", "docker", "registry", "skaffold"],
+      "version": "2.0.1",
+      "keywords": [
+        "container",
+        "docker",
+        "registry",
+        "skaffold"
+      ],
       "category": "infrastructure"
     },
     {
@@ -177,7 +294,12 @@
       "source": "./api-plugin",
       "description": "API integration and testing - REST endpoints, client generation",
       "version": "1.0.0",
-      "keywords": ["api", "rest", "integration", "testing"],
+      "keywords": [
+        "api",
+        "rest",
+        "integration",
+        "testing"
+      ],
       "category": "development"
     },
     {
@@ -185,8 +307,42 @@
       "source": "./communication-plugin",
       "description": "External communication formatting - Google Chat, ticket drafting",
       "version": "1.0.0",
-      "keywords": ["communication", "google-chat", "formatting", "tickets"],
+      "keywords": [
+        "communication",
+        "google-chat",
+        "formatting",
+        "tickets"
+      ],
       "category": "communication"
+    },
+    {
+      "name": "agents-plugin",
+      "source": "./agents-plugin",
+      "description": "Task-focused agents for test, review, debug, docs, and CI workflows",
+      "version": "1.0.0",
+      "keywords": [
+        "agents",
+        "testing",
+        "code-review",
+        "debugging",
+        "documentation",
+        "ci-cd"
+      ],
+      "category": "ai"
+    },
+    {
+      "name": "hooks-plugin",
+      "source": "./hooks-plugin",
+      "description": "Claude Code hooks for enforcing best practices and workflow automation",
+      "version": "1.0.0",
+      "keywords": [
+        "hooks",
+        "automation",
+        "best-practices",
+        "workflow",
+        "anti-patterns"
+      ],
+      "category": "automation"
     }
   ]
 }

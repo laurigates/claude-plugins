@@ -1,0 +1,13 @@
+{
+  "name": "blog-plugin",
+  "version": "1.0.0",
+  "description": "Blog post creation - project logs, technical write-ups, personal documentation",
+  "keywords": [
+    "blog",
+    "writing",
+    "documentation",
+    "project-log",
+    "devlog",
+    "technical-writing"
+  ]
+}

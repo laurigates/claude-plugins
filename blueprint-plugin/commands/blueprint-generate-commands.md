@@ -1,14 +1,14 @@
 ---
 created: 2025-12-16
-modified: 2025-12-22
-reviewed: 2025-12-22
+modified: 2025-01-09
+reviewed: 2025-01-09
 description: "Generate workflow commands based on project structure and PRDs"
 allowed_tools: [Read, Write, Bash, Glob, AskUserQuestion]
 ---
 
 Generate workflow commands customized for this project.
 
-Commands are generated to `.claude/blueprints/generated/commands/` (regeneratable layer).
+Commands are generated to `.claude/commands/` directory.
 
 **Prerequisites**:
 - Project has recognizable structure (package.json, Makefile, etc.)
@@ -17,11 +17,11 @@ Commands are generated to `.claude/blueprints/generated/commands/` (regeneratabl
 **Steps**:
 
 1. **Detect project type and stack**:
-   - Check for `package.json` → Node.js project
-   - Check for `pyproject.toml` / `setup.py` → Python project
-   - Check for `Cargo.toml` → Rust project
-   - Check for `go.mod` → Go project
-   - Check for `Makefile` → Check make targets
+   - Check for `package.json` -> Node.js project
+   - Check for `pyproject.toml` / `setup.py` -> Python project
+   - Check for `Cargo.toml` -> Rust project
+   - Check for `go.mod` -> Go project
+   - Check for `Makefile` -> Check make targets
 
 2. **Detect test runner and commands**:
    - Node.js: Check `package.json` scripts for `test`, `test:unit`, `test:integration`
@@ -36,15 +36,15 @@ Commands are generated to `.claude/blueprints/generated/commands/` (regeneratabl
 
 4. **Check for existing generated commands**:
    ```bash
-   ls .claude/blueprints/generated/commands/ 2>/dev/null
+   ls .claude/commands/ 2>/dev/null
    ```
    - If commands exist, check manifest for content hashes
    - Compare current content hash vs stored hash
-   - If modified, offer options: overwrite, skip, or promote to custom
+   - If modified, offer options: overwrite, skip, or backup
 
 5. **Generate `/project:continue` command**:
 
-   Create file at `.claude/blueprints/generated/commands/project-continue.md`:
+   Create file at `.claude/commands/project-continue.md`:
    ```markdown
    ---
    description: "Continue development on [project-name] (project-specific)"
@@ -73,8 +73,8 @@ Commands are generated to `.claude/blueprints/generated/commands/` (regeneratabl
       - Based on git status (resume if in progress)
 
    4. **Begin work following TDD**:
-      - Apply project-specific skills automatically
-      - Follow RED → GREEN → REFACTOR workflow
+      - Apply project-specific rules automatically
+      - Follow RED -> GREEN -> REFACTOR workflow
       - Commit incrementally with conventional commits
 
    Report before starting:
@@ -85,7 +85,7 @@ Commands are generated to `.claude/blueprints/generated/commands/` (regeneratabl
 
 6. **Generate `/project:test-loop` command**:
 
-   Create file at `.claude/blueprints/generated/commands/project-test-loop.md`:
+   Create file at `.claude/commands/project-test-loop.md`:
    ```markdown
    ---
    description: "TDD loop for [project-name] using [test-runner]"
@@ -137,7 +137,7 @@ Commands are generated to `.claude/blueprints/generated/commands/` (regeneratabl
            "source": "auto-detection",
            "detected_stack": "[detected stack]",
            "generated_at": "[ISO timestamp]",
-           "plugin_version": "2.0.0",
+           "plugin_version": "3.0.0",
            "content_hash": "sha256:...",
            "status": "current"
          },
@@ -151,9 +151,9 @@ Commands are generated to `.claude/blueprints/generated/commands/` (regeneratabl
    ```
    Workflow commands generated!
 
-   Created in .claude/blueprints/generated/commands/:
-   - project-continue.md → /project:continue
-   - project-test-loop.md → /project:test-loop
+   Created in .claude/commands/:
+   - project-continue.md -> /project:continue
+   - project-test-loop.md -> /project:test-loop
    [- Additional project-specific commands]
 
    Detected configuration:
@@ -162,11 +162,6 @@ Commands are generated to `.claude/blueprints/generated/commands/` (regeneratabl
    - Test command: [detected command]
    - Build command: [detected command]
    - Dev command: [detected command]
-
-   Layer information:
-   - Plugin layer: Generic commands from blueprint-plugin
-   - Generated layer: These commands (regeneratable)
-   - Custom layer: Override by creating .claude/commands/project/
    ```
 
 10. **Prompt for next action** (use AskUserQuestion):
@@ -179,18 +174,15 @@ Commands are generated to `.claude/blueprints/generated/commands/` (regeneratabl
         description: "Package a task for isolated subagent execution"
       - label: "Update CLAUDE.md"
         description: "Regenerate project overview with new commands"
-      - label: "Promote command to custom layer"
-        description: "Move a generated command to .claude/commands/ for customization"
       - label: "I'm done for now"
         description: "Exit - commands are ready to use anytime"
     ```
 
     **Based on selection:**
-    - "Start development" → Run `/project:continue`
-    - "Create a work-order" → Run `/blueprint:work-order`
-    - "Update CLAUDE.md" → Run `/blueprint:claude-md`
-    - "Promote command" → Run `/blueprint:promote [command-name]`
-    - "I'm done for now" → Exit
+    - "Start development" -> Run `/project:continue`
+    - "Create a work-order" -> Run `/blueprint:work-order`
+    - "Update CLAUDE.md" -> Run `/blueprint:claude-md`
+    - "I'm done for now" -> Exit
 
 **Important**:
 - Detect actual project commands (detect dynamically from project structure)
@@ -199,6 +191,6 @@ Commands are generated to `.claude/blueprints/generated/commands/` (regeneratabl
 - Report what was detected for transparency
 
 **Error Handling**:
-- If project type unclear → Ask user for clarification
-- If no test command found → Ask user how to run tests
-- If commands already exist and modified → Offer to promote to custom layer before overwriting
+- If project type unclear -> Ask user for clarification
+- If no test command found -> Ask user how to run tests
+- If commands already exist and modified -> Offer to backup before overwriting

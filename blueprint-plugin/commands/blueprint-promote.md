@@ -1,6 +1,6 @@
 ---
 created: 2025-12-22
-modified: 2025-12-22
+modified: 2026-01-09
 reviewed: 2025-12-22
 description: "Move generated artifact to custom layer to preserve modifications"
 args: "[skill-name|command-name]"
@@ -8,162 +8,100 @@ allowed_tools: [Read, Write, Bash, AskUserQuestion]
 argument-hint: "Name of the skill or command to promote"
 ---
 
-Promote a generated skill or command to the custom layer.
+Copy a generated rule to the custom rules layer for preservation.
 
 **Purpose**:
-- Move generated content from `.claude/blueprints/generated/` to `.claude/skills/` or `.claude/commands/`
-- Preserve local modifications that would otherwise be overwritten on regeneration
-- Custom layer takes precedence, so your version will always be used
+- Copy generated content from `.claude/rules/` to preserve modifications
+- Mark as acknowledged in manifest to prevent overwrite warnings
+- Generated rules in `.claude/rules/` are the standard location (v3.0)
 
 **Usage**: `/blueprint:promote [name]`
 
 **Examples**:
-- `/blueprint:promote testing-strategies` - Promote a skill
-- `/blueprint:promote project-continue` - Promote a command
+- `/blueprint:promote testing-strategies` - Acknowledge a rule's modifications
 
 **Steps**:
 
 1. **Parse argument**:
    - Extract `name` from arguments
-   - If no name provided, list available generated content and ask user to choose
+   - If no name provided, list available generated rules and ask user to choose
 
-2. **Locate the artifact**:
+2. **Locate the rule**:
    ```bash
-   # Check if it's a skill
-   test -d .claude/blueprints/generated/skills/{name}
-
-   # Check if it's a command
-   test -f .claude/blueprints/generated/commands/{name}.md
+   # Check if it's a generated rule
+   test -f .claude/rules/{name}.md
    ```
 
-   If not found in either location:
+   If not found:
    ```
-   Artifact '{name}' not found in generated content.
+   Rule '{name}' not found in generated content.
 
-   Available skills:
+   Available rules:
    - architecture-patterns
    - testing-strategies
    - implementation-guides
    - quality-standards
-
-   Available commands:
-   - project-continue
-   - project-test-loop
    ```
 
-3. **Check target doesn't already exist**:
-   ```bash
-   # For skills
-   test -d .claude/skills/{name}
+3. **Check if already acknowledged**:
+   - Read manifest for `custom_overrides.rules`
+   - If already in list, report "Already acknowledged"
 
-   # For commands
-   test -f .claude/commands/{name}.md
+4. **Confirm acknowledgment**:
    ```
-
-   If already exists:
-   ```
-   question: "Custom {name} already exists in .claude/skills/. What would you like to do?"
-   options:
-     - label: "Overwrite custom version"
-       description: "Replace existing custom with current generated content"
-     - label: "Keep custom version"
-       description: "Don't promote, keep the existing custom version"
-     - label: "View diff first"
-       description: "Compare versions before deciding"
-     - label: "Cancel"
-       description: "Don't make any changes"
-   ```
-
-4. **Confirm promotion**:
-   ```
-   question: "Promote {name} from generated to custom layer?"
+   question: "Acknowledge modifications to {name}?"
    description: |
      This will:
-     1. Copy {name} to .claude/skills/{name}/ (or .claude/commands/)
-     2. Remove from .claude/blueprints/generated/skills/{name}/
-     3. Update manifest to track as custom override
-     4. Prevent future regeneration from overwriting
+     1. Mark {name} as user-modified in manifest
+     2. Prevent overwrite warnings during sync
+     3. Keep the rule in .claude/rules/
 
    options:
-     - label: "Yes, promote"
-       description: "Move to custom layer and preserve my modifications"
-     - label: "No, keep in generated"
-       description: "Leave in generated layer (may be overwritten on regenerate)"
+     - label: "Yes, acknowledge"
+       description: "Mark as user-modified and preserve changes"
+     - label: "No, keep as generated"
+       description: "Leave as regeneratable (may show warnings)"
    ```
 
-5. **Execute promotion**:
-
-   **For skills:**
-   ```bash
-   # Create custom skills directory if needed
-   mkdir -p .claude/skills/{name}
-
-   # Copy skill to custom layer
-   cp -r .claude/blueprints/generated/skills/{name}/* .claude/skills/{name}/
-
-   # Remove from generated
-   rm -rf .claude/blueprints/generated/skills/{name}
-   ```
-
-   **For commands:**
-   ```bash
-   # Create custom commands directory if needed
-   mkdir -p .claude/commands
-
-   # Copy command to custom layer
-   cp .claude/blueprints/generated/commands/{name}.md .claude/commands/{name}.md
-
-   # Remove from generated
-   rm .claude/blueprints/generated/commands/{name}.md
-   ```
-
-6. **Update manifest**:
-   - Remove from `generated.skills` or `generated.commands`
-   - Add to `custom_overrides.skills` or `custom_overrides.commands`
+5. **Update manifest**:
+   - Add to `custom_overrides.rules`
    - Update `updated_at` timestamp
 
    Example manifest update:
    ```json
    {
      "generated": {
-       "skills": {
-         // testing-strategies removed
+       "rules": {
+         // testing-strategies still listed
        }
      },
      "custom_overrides": {
-       "skills": ["testing-strategies"],  // added
-       "commands": []
+       "rules": ["testing-strategies"]  // added
      }
    }
    ```
 
-7. **Report**:
+6. **Report**:
    ```
-   Skill promoted to custom layer!
+   Rule modifications acknowledged!
 
-   testing-strategies:
-   - From: .claude/blueprints/generated/skills/testing-strategies/
-   - To: .claude/skills/testing-strategies/
+   testing-strategies.md:
+   - Location: .claude/rules/testing-strategies.md
+   - Status: User-modified (acknowledged)
 
-   This skill will now:
-   - Take precedence over plugin and generated skills
-   - Not be affected by /blueprint:generate-skills
+   This rule will now:
+   - Not show modification warnings in /blueprint:sync
+   - Still be tracked in manifest
    - Be your responsibility to maintain
 
-   To edit: .claude/skills/testing-strategies/skill.md
+   To edit: .claude/rules/testing-strategies.md
    ```
 
-**Precedence reminder**:
-```
-Custom layer (.claude/skills/)          ← HIGHEST (your version)
-    ↓ overrides
-Generated layer (blueprints/generated/) ← regeneratable
-    ↓ extends
-Plugin layer (blueprint-plugin/)        ← LOWEST (auto-updated)
-```
+**Architecture note (v3.0)**:
+Generated content now goes directly to `.claude/rules/` instead of a separate generated layer.
+The manifest tracks which rules are user-modified vs auto-generated.
 
 **Tips**:
-- Promote skills you want to heavily customize
-- Keep commonly regenerated content in generated layer
-- Custom layer requires manual maintenance
-- You can always regenerate by removing from custom and running `/blueprint:generate-skills`
+- Acknowledge rules you want to customize
+- Unacknowledged modified rules will show warnings in /blueprint:sync
+- You can regenerate by removing from custom_overrides and running `/blueprint:generate-rules`

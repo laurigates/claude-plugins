@@ -1,0 +1,396 @@
+direction: right
+
+title: "Blueprint Plugin - Development Workflow" {
+  near: top-center
+  shape: text
+  style: {
+    font-size: 24
+    bold: true
+  }
+}
+
+# === PHASES ===
+phases: {
+  label: "Development Phases"
+  style.fill: "#e8f4f8"
+
+  init: {
+    label: "1. Initialization"
+    shape: rectangle
+    style.fill: "#a8d5e2"
+  }
+
+  documentation: {
+    label: "2. Documentation"
+    shape: rectangle
+    style.fill: "#ffd966"
+  }
+
+  preparation: {
+    label: "3. Preparation"
+    shape: rectangle
+    style.fill: "#b4d7a8"
+  }
+
+  execution: {
+    label: "4. Execution"
+    shape: rectangle
+    style.fill: "#ea9999"
+  }
+
+  tracking: {
+    label: "5. Tracking"
+    shape: rectangle
+    style.fill: "#d5a6bd"
+  }
+}
+
+# === COMMANDS ===
+commands: {
+  label: "Commands"
+  style.fill: "#f3f3f3"
+
+  # Meta command
+  execute_cmd: {
+    label: "/blueprint-execute\n\n🎯 SMART META COMMAND\nAnalyze repo state,\ndetermine next action,\nexecute automatically\n(Idempotent & Safe)"
+    shape: hexagon
+    style.fill: "#9370db"
+    style.stroke: "#4b0082"
+    style.stroke-width: 3
+  }
+
+  # Init commands
+  init_cmd: {
+    label: "/blueprint-init\n\nInitialize structure,\ncreate directories,\nset up manifest"
+    shape: hexagon
+    style.fill: "#a8d5e2"
+  }
+
+  # Documentation commands
+  prd_cmd: {
+    label: "/blueprint-prd\n\nGenerate PRD from\nexisting docs,\nanalyze codebase"
+    shape: hexagon
+    style.fill: "#ffd966"
+  }
+
+  adr_cmd: {
+    label: "/blueprint-adr\n\nDocument architecture\ndecisions from code"
+    shape: hexagon
+    style.fill: "#ffd966"
+  }
+
+  # Generation commands
+  gen_rules: {
+    label: "/blueprint-generate-rules\n\nExtract patterns from PRDs,\ncreate behavioral rules"
+    shape: hexagon
+    style.fill: "#b4d7a8"
+  }
+
+  gen_cmds: {
+    label: "/blueprint-generate-commands\n\nCreate project-specific\nworkflow commands"
+    shape: hexagon
+    style.fill: "#b4d7a8"
+  }
+
+  # PRP commands
+  prp_create: {
+    label: "/blueprint-prp-create\n\nResearch codebase,\ncurate context,\nscore confidence"
+    shape: hexagon
+    style.fill: "#b4d7a8"
+  }
+
+  prp_execute: {
+    label: "/blueprint-prp-execute\n\nRED→GREEN→REFACTOR,\nrun validation gates"
+    shape: hexagon
+    style.fill: "#ea9999"
+  }
+
+  # Work order commands
+  work_order: {
+    label: "/blueprint-work-order\n\nCreate isolated task,\nminimal context,\nGitHub issue"
+    shape: hexagon
+    style.fill: "#ea9999"
+  }
+
+  # Tracking commands
+  status: {
+    label: "/blueprint-status\n\nShow version,\nconfiguration"
+    shape: hexagon
+    style.fill: "#d5a6bd"
+  }
+
+  feature_status: {
+    label: "/blueprint-feature-tracker-status\n\nShow completion stats"
+    shape: hexagon
+    style.fill: "#d5a6bd"
+  }
+
+  feature_sync: {
+    label: "/blueprint-feature-tracker-sync\n\nSync with work-overview,\nTODO.md"
+    shape: hexagon
+    style.fill: "#d5a6bd"
+  }
+
+  # Support commands
+  upgrade: {
+    label: "/blueprint-upgrade\n\nUpgrade format version"
+    shape: hexagon
+    style.fill: "#cccccc"
+  }
+
+  claude_md: {
+    label: "/blueprint-claude-md\n\nUpdate CLAUDE.md\nfrom artifacts"
+    shape: hexagon
+    style.fill: "#cccccc"
+  }
+}
+
+# === SKILLS ===
+skills: {
+  label: "Skills"
+  style.fill: "#fff4e6"
+
+  blueprint_dev: {
+    label: "blueprint-development\n\nGenerate rules & commands\nfrom PRDs"
+    shape: oval
+    style.fill: "#ffcc80"
+  }
+
+  confidence: {
+    label: "confidence-scoring\n\nAssess PRP/work-order\nquality"
+    shape: oval
+    style.fill: "#ffcc80"
+  }
+
+  feature_tracking: {
+    label: "feature-tracking\n\nTrack implementation\nwith FR codes"
+    shape: oval
+    style.fill: "#ffcc80"
+  }
+
+  doc_detection: {
+    label: "document-detection\n\nProactively suggest\nPRD/ADR/PRP creation"
+    shape: oval
+    style.fill: "#ffcc80"
+  }
+
+  migration: {
+    label: "blueprint-migration\n\nUpgrade between\nformat versions"
+    shape: oval
+    style.fill: "#ffcc80"
+  }
+}
+
+# === ARTIFACTS ===
+artifacts: {
+  label: "Artifacts Created"
+  style.fill: "#f0f0f0"
+
+  manifest: {
+    label: "manifest.json\n\nVersion tracking,\nconfiguration"
+    shape: document
+    style.fill: "#e6e6e6"
+  }
+
+  prds: {
+    label: "docs/prds/\n\nRequirements,\nuser stories,\nsuccess criteria"
+    shape: document
+    style.fill: "#fff9e6"
+  }
+
+  adrs: {
+    label: "docs/adrs/\n\nArchitecture decisions,\ntrade-offs"
+    shape: document
+    style.fill: "#fff9e6"
+  }
+
+  rules: {
+    label: ".claude/rules/\n\narchitecture-patterns\ntesting-strategies\nimplementation-guides\nquality-standards"
+    shape: document
+    style.fill: "#e6ffe6"
+  }
+
+  ai_docs: {
+    label: "ai_docs/\n\nCurated library docs,\npatterns, gotchas"
+    shape: document
+    style.fill: "#e6ffe6"
+  }
+
+  prps: {
+    label: "docs/prps/\n\nPRP = PRD +\nCodebase Intelligence +\nImplementation Blueprint +\nValidation Gates"
+    shape: document
+    style.fill: "#e6ffe6"
+  }
+
+  work_orders: {
+    label: "work-orders/\n\nIsolated tasks,\nminimal context,\nTDD requirements"
+    shape: document
+    style.fill: "#ffe6e6"
+  }
+
+  work_overview: {
+    label: "work-overview.md\n\nCurrent phase,\nprogress tracking"
+    shape: document
+    style.fill: "#f9e6ff"
+  }
+
+  feature_tracker: {
+    label: "feature-tracker.json\n\nHierarchical FR codes,\ncompletion stats"
+    shape: document
+    style.fill: "#f9e6ff"
+  }
+}
+
+# === WORKFLOW CONNECTIONS ===
+
+# Meta command orchestration - connects to all phases
+commands.execute_cmd -> phases.init: "Detects: Not initialized?"
+commands.execute_cmd -> phases.documentation: "Detects: PRDs needed?"
+commands.execute_cmd -> phases.preparation: "Detects: Stale content? Ready PRPs?"
+commands.execute_cmd -> phases.execution: "Detects: Pending work?"
+commands.execute_cmd -> phases.tracking: "Detects: Stale tracker?"
+commands.execute_cmd -> commands.status: "Default: Show status & options"
+
+# Meta command can delegate to any command
+commands.execute_cmd -> commands.init_cmd: "Delegates if needed"
+commands.execute_cmd -> commands.gen_rules: "Delegates if needed"
+commands.execute_cmd -> commands.prp_execute: "Delegates if needed"
+commands.execute_cmd -> commands.upgrade: "Delegates if needed"
+commands.execute_cmd -> commands.feature_sync: "Delegates if needed"
+
+# Phase 1: Initialization
+phases.init -> commands.init_cmd: "Start here"
+commands.init_cmd -> artifacts.manifest: "Creates"
+commands.init_cmd -> artifacts.work_overview: "Creates"
+commands.init_cmd -> artifacts.feature_tracker: "Creates (optional)"
+
+# Phase 2: Documentation
+phases.documentation -> commands.prd_cmd: "Generate PRD"
+phases.documentation -> commands.adr_cmd: "Document decisions"
+commands.prd_cmd -> artifacts.prds: "Analyzes existing docs\nAsks clarifying questions"
+commands.adr_cmd -> artifacts.adrs: "Analyzes codebase\nDocuments decisions"
+
+# Skills supporting documentation
+skills.doc_detection -> commands.prd_cmd: "Suggests when needed"
+skills.doc_detection -> commands.adr_cmd: "Triggers proactively"
+
+# Phase 3: Preparation
+phases.preparation -> commands.gen_rules: "Extract patterns"
+phases.preparation -> commands.gen_cmds: "Generate workflow"
+phases.preparation -> commands.prp_create: "Plan feature"
+
+artifacts.prds -> commands.gen_rules: "Reads"
+commands.gen_rules -> artifacts.rules: "Creates 4 behavioral rules"
+skills.blueprint_dev -> commands.gen_rules: "Guides generation"
+
+artifacts.prds -> commands.gen_cmds: "Analyzes"
+commands.gen_cmds -> artifacts.rules: "Project-specific commands"
+
+commands.prp_create -> artifacts.prps: "Creates"
+commands.prp_create -> artifacts.ai_docs: "May create"
+artifacts.prds -> commands.prp_create: "Reads requirements"
+artifacts.rules -> commands.prp_create: "Follows patterns"
+skills.confidence -> commands.prp_create: "Scores readiness"
+
+# Phase 4: Execution
+phases.execution -> commands.prp_execute: "Implement feature"
+phases.execution -> commands.work_order: "Create task"
+
+artifacts.prps -> commands.prp_execute: "Executes"
+artifacts.rules -> commands.prp_execute: "Applies patterns"
+commands.prp_execute -> artifacts.work_overview: "Updates progress"
+
+commands.work_order -> artifacts.work_orders: "Creates"
+artifacts.prps -> commands.work_order: "May reference"
+artifacts.prds -> commands.work_order: "Extracts tasks from"
+artifacts.work_overview -> commands.work_order: "Reads current state"
+skills.confidence -> commands.work_order: "Validates quality"
+
+# Phase 5: Tracking
+phases.tracking -> commands.status: "Check configuration"
+phases.tracking -> commands.feature_status: "View progress"
+phases.tracking -> commands.feature_sync: "Update tracker"
+
+commands.status -> artifacts.manifest: "Reads"
+commands.feature_status -> artifacts.feature_tracker: "Reads"
+commands.feature_sync -> artifacts.feature_tracker: "Updates"
+artifacts.work_overview -> commands.feature_sync: "Syncs from"
+skills.feature_tracking -> commands.feature_sync: "Manages"
+skills.feature_tracking -> commands.feature_status: "Reports"
+
+# Support commands
+commands.upgrade -> artifacts.manifest: "Updates version"
+skills.migration -> commands.upgrade: "Handles migration"
+commands.claude_md -> artifacts.prds: "Reads"
+commands.claude_md -> artifacts.rules: "Reads"
+
+# Feedback loops
+artifacts.work_orders -> commands.prp_execute: "Can execute"
+artifacts.prps -> artifacts.work_orders: "Can be broken into"
+commands.prp_execute -> artifacts.prps: "Updates status"
+
+# Legend
+legend: {
+  label: "Legend"
+  near: bottom-right
+  style.fill: "#ffffff"
+  style.stroke: "#000000"
+
+  phases_legend: {
+    label: "Phases - Development stages"
+    shape: rectangle
+    style.fill: "#e8f4f8"
+  }
+
+  commands_legend: {
+    label: "Commands - User invocable"
+    shape: hexagon
+    style.fill: "#b0b0b0"
+  }
+
+  skills_legend: {
+    label: "Skills - Support logic"
+    shape: oval
+    style.fill: "#ffcc80"
+  }
+
+  artifacts_legend: {
+    label: "Artifacts - Created files"
+    shape: document
+    style.fill: "#e6e6e6"
+  }
+}
+
+# Key concepts
+concepts: {
+  label: "Key Concepts"
+  near: bottom-left
+  style.fill: "#fffef7"
+
+  what: {
+    label: "WHAT:\nDocumentation-first workflow\nPRD → PRP → Work-Order → Implementation"
+    shape: text
+    style.font-size: 12
+  }
+
+  why: {
+    label: "WHY:\n• Clear requirements before coding\n• AI-optimized context (minimal, curated)\n• TDD enforced from start\n• Reproducible quality gates\n• Team visibility via GitHub"
+    shape: text
+    style.font-size: 12
+  }
+
+  how: {
+    label: "HOW:\n1. Init: Set up structure\n2. Document: Write PRDs/ADRs\n3. Generate: Extract behavioral rules\n4. Prepare: Create PRPs with research\n5. Execute: TDD with validation gates\n6. Track: Monitor progress"
+    shape: text
+    style.font-size: 12
+  }
+
+  smart_mode: {
+    label: "SMART MODE:\nRun /blueprint-execute anytime!\n• Analyzes current state\n• Determines next action\n• Executes automatically\n• Safe to run repeatedly (idempotent)"
+    shape: text
+    style.font-size: 12
+    style.fill: "#f0e6ff"
+    style.stroke: "#9370db"
+    style.stroke-width: 2
+  }
+}

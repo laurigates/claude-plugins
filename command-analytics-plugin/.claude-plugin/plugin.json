@@ -1,0 +1,32 @@
+{
+  "name": "command-analytics-plugin",
+  "version": "1.1.0",
+  "description": "Track command and skill usage analytics across all projects",
+  "author": {
+    "name": "Claude Plugins",
+    "url": "https://github.com/anthropics/claude-plugins"
+  },
+  "keywords": [
+    "analytics",
+    "tracking",
+    "usage",
+    "metrics",
+    "reporting"
+  ],
+  "license": "MIT",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/track-usage.sh",
+            "timeout": 5000,
+            "continueOnError": true
+          }
+        ]
+      }
+    ]
+  }
+}

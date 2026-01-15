@@ -1,6 +1,6 @@
 ---
 created: 2025-12-17
-modified: 2025-12-22
+modified: 2026-01-09
 reviewed: 2025-12-17
 description: "Generate or update CLAUDE.md from project context and blueprint artifacts"
 allowed_tools: [Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion]
@@ -12,7 +12,7 @@ Generate or update the project's CLAUDE.md file based on blueprint artifacts, PR
 
 1. **Check current state**:
    - Look for existing `CLAUDE.md` in project root
-   - Read `.claude/blueprints/.manifest.json` for configuration
+   - Read `docs/blueprint/manifest.json` for configuration
    - Determine `claude_md_mode` (single, modular, or both)
 
 2. **Determine action** (use AskUserQuestion):
@@ -37,7 +37,7 @@ Generate or update the project's CLAUDE.md file based on blueprint artifacts, PR
 
 3. **Gather project context**:
    - **Project structure**: Detect language, framework, build tools
-   - **PRDs**: Read `.claude/blueprints/prds/*.md` for requirements
+   - **PRDs**: Read `docs/prds/*.md` for requirements
    - **Work overview**: Current phase and progress
    - **Existing rules**: Content from `.claude/rules/` if present
    - **Git history**: Recent patterns and conventions
@@ -92,7 +92,7 @@ Generate or update the project's CLAUDE.md file based on blueprint artifacts, PR
    ## See Also
    {If modular rules enabled:}
    - `.claude/rules/` - Detailed rules by domain
-   - `.claude/blueprints/prds/` - Product requirements
+   - `docs/prds/` - Product requirements
    ```
 
 5. **If modular rules mode = "both"**:

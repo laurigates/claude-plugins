@@ -1,6 +1,6 @@
 ---
 created: 2025-12-22
-modified: 2025-12-22
+modified: 2026-01-09
 reviewed: 2025-12-22
 description: "Generate initial PRD from existing project documentation during onboarding"
 allowed_tools: [Read, Write, Glob, Grep, Bash, AskUserQuestion, Task]
@@ -11,7 +11,7 @@ Generate a Product Requirements Document (PRD) for an existing project by analyz
 **Use Case**: Onboarding existing projects to Blueprint Development system.
 
 **Prerequisites**:
-- Blueprint Development initialized (`.claude/blueprints/` exists)
+- Blueprint Development initialized (`docs/blueprint/` exists)
 - Project has some existing documentation (README.md, docs/, etc.)
 
 **Steps**:
@@ -20,7 +20,7 @@ Generate a Product Requirements Document (PRD) for an existing project by analyz
 
 ### 1.1 Check Prerequisites
 ```bash
-ls .claude/blueprints/.manifest.json
+ls docs/blueprint/manifest.json
 ```
 If not found → suggest running `/blueprint:init` first.
 
@@ -247,7 +247,7 @@ Based on what was generated:
 
 ## Phase 5: Update Manifest
 
-Update `.claude/blueprints/.manifest.json`:
+Update `docs/blueprint/manifest.json`:
 - Add PRD to `generated_artifacts`
 - Update `has_prds` to true
 - Update `updated_at` timestamp

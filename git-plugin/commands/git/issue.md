@@ -9,11 +9,11 @@ argument-hint: <issue-number>
 
 ## Context
 
-- Repo: !`gh repo view --json nameWithOwner`
+- Repo: !`gh repo view --json nameWithOwner 2>/dev/null || echo "(no remote configured)"`
 - Current branch: !`git branch --show-current`
 - Clean working tree: !`git status --porcelain | wc -l`
-- Open PRs: !`gh pr list --state open --json number,title`
-- Available labels: !`gh label list --json name,description --limit 50`
+- Open PRs: !`gh pr list --state open --json number,title 2>/dev/null || echo "(no remote configured)"`
+- Available labels: !`gh label list --json name,description --limit 50 2>/dev/null || echo "(no remote configured)"`
 
 ## Parameters
 

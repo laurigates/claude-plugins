@@ -133,9 +133,6 @@ claude chat --file ~/.claude/commands/deploy:handoff.md "User API" "web-service"
 - Developer handoff checklist
 - Support and contact information
 
-#### deploy:handoff-compact
-Compact version for quick handoff continuation with todo list and primer for agent handoff.
-
 ## Installation
 
 ### Option 1: Copy to .claude directory (Manual)

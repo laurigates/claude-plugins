@@ -1,0 +1,236 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "blueprint-plugin/feature-tracker.schema.json",
+  "title": "Feature Tracker",
+  "description": "Schema for tracking feature implementation status aligned with requirements documents",
+  "type": "object",
+  "required": ["version", "last_updated", "project", "source_document", "phases", "features"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Reference to this schema file"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version of the tracker format"
+    },
+    "last_updated": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of last update (YYYY-MM-DD)"
+    },
+    "project": {
+      "type": "string",
+      "description": "Project name"
+    },
+    "source_document": {
+      "type": "string",
+      "description": "Primary requirements document (e.g., REQUIREMENTS.md)"
+    },
+    "phases": {
+      "type": "array",
+      "description": "Development phases",
+      "items": {
+        "$ref": "#/definitions/phase"
+      }
+    },
+    "features": {
+      "type": "object",
+      "description": "Top-level feature requirements (FR1, FR2, etc.)",
+      "patternProperties": {
+        "^FR\\d+$": {
+          "$ref": "#/definitions/featureCategory"
+        }
+      },
+      "additionalProperties": false
+    },
+    "prds": {
+      "type": "object",
+      "description": "Product Requirements Documents and their status",
+      "patternProperties": {
+        "^PRD_[A-Z_]+$": {
+          "$ref": "#/definitions/prd"
+        }
+      },
+      "additionalProperties": false
+    },
+    "statistics": {
+      "$ref": "#/definitions/statistics"
+    }
+  },
+  "definitions": {
+    "status": {
+      "type": "string",
+      "enum": ["not_started", "in_progress", "partial", "complete", "blocked"],
+      "description": "Implementation status"
+    },
+    "phase": {
+      "type": "object",
+      "required": ["id", "name", "status"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^phase-\\d+$",
+          "description": "Phase identifier (e.g., phase-0)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable phase name"
+        },
+        "status": {
+          "$ref": "#/definitions/status"
+        }
+      }
+    },
+    "featureCategory": {
+      "type": "object",
+      "required": ["name", "features"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Category name"
+        },
+        "features": {
+          "type": "object",
+          "description": "Features within this category",
+          "patternProperties": {
+            "^FR\\d+(\\.\\d+)+$": {
+              "$ref": "#/definitions/feature"
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "feature": {
+      "type": "object",
+      "required": ["name", "status", "phase"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Feature name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Brief description of the feature"
+        },
+        "status": {
+          "$ref": "#/definitions/status"
+        },
+        "phase": {
+          "type": "string",
+          "pattern": "^phase-\\d+$",
+          "description": "Reference to implementation phase"
+        },
+        "prd": {
+          "type": ["string", "null"],
+          "description": "Associated PRD document name (null if none)"
+        },
+        "implementation": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/definitions/implementation" }
+          ],
+          "description": "Implementation details (null if not started)"
+        },
+        "features": {
+          "type": "object",
+          "description": "Nested sub-features",
+          "patternProperties": {
+            "^FR\\d+(\\.\\d+)+$": {
+              "$ref": "#/definitions/feature"
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "implementation": {
+      "type": "object",
+      "properties": {
+        "files": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Source files involved in implementation"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Implementation notes and details"
+        },
+        "tests": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Test files or test function names"
+        },
+        "commits": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Related commit hashes"
+        }
+      }
+    },
+    "prd": {
+      "type": "object",
+      "required": ["name", "status", "features_implemented"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "PRD human-readable name"
+        },
+        "status": {
+          "$ref": "#/definitions/status"
+        },
+        "features_implemented": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of FR codes or feature descriptions implemented"
+        },
+        "tests_passing": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of tests passing for this PRD"
+        },
+        "work_orders": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Associated work order IDs"
+        }
+      }
+    },
+    "statistics": {
+      "type": "object",
+      "properties": {
+        "total_features": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "complete": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "partial": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "in_progress": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "not_started": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "blocked": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "completion_percentage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        }
+      }
+    }
+  }
+}

@@ -1,6 +1,6 @@
 ---
 created: 2025-12-22
-modified: 2025-12-22
+modified: 2026-01-09
 reviewed: 2025-12-22
 description: "Generate Architecture Decision Records from existing project structure and documentation"
 allowed_tools: [Read, Write, Glob, Grep, Bash, AskUserQuestion, Task]
@@ -11,7 +11,7 @@ Generate Architecture Decision Records (ADRs) for an existing project by analyzi
 **Use Case**: Onboarding existing projects to Blueprint Development system, documenting implicit architecture decisions.
 
 **Prerequisites**:
-- Blueprint Development initialized (`.claude/blueprints/` exists)
+- Blueprint Development initialized (`docs/blueprint/` exists)
 - Ideally PRD exists (run `/blueprint:prd` first)
 
 **Steps**:
@@ -20,8 +20,8 @@ Generate Architecture Decision Records (ADRs) for an existing project by analyzi
 
 ### 1.1 Check Prerequisites
 ```bash
-ls .claude/blueprints/.manifest.json
-ls .claude/blueprints/prds/
+ls docs/blueprint/manifest.json
+ls docs/prds/
 ```
 If blueprint not initialized → suggest `/blueprint:init`
 If no PRD → suggest `/blueprint:prd` first (recommended, not required)
@@ -234,7 +234,7 @@ Use `/blueprint:adr` or the `architecture-decisions` agent to create new ADRs.
 
 ## Phase 5: Update Manifest
 
-Update `.claude/blueprints/.manifest.json`:
+Update `docs/blueprint/manifest.json`:
 - Add `has_adrs: true` to structure
 - Add ADRs to `generated_artifacts`
 - Update `updated_at` timestamp

@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2025-12-22
+modified: 2026-01-09
 reviewed: 2025-12-16
 description: "Curate library or project documentation for ai_docs to optimize AI context"
 allowed_tools: [Read, Write, Glob, Bash, WebFetch, WebSearch, AskUserQuestion]
@@ -19,7 +19,7 @@ ai_docs are curated documentation entries optimized for AI agents. Unlike raw do
 
 **Prerequisites**:
 - Blueprint Development initialized
-- `.claude/blueprints/ai_docs/` directory exists
+- `docs/blueprint/ai_docs/` directory exists
 
 ## Phase 1: Research
 
@@ -28,7 +28,7 @@ ai_docs are curated documentation entries optimized for AI agents. Unlike raw do
 **Identify the library**:
 ```bash
 # Check if already documented
-ls .claude/blueprints/ai_docs/libraries/
+ls docs/blueprint/ai_docs/libraries/
 
 # Check project dependencies for version
 cat package.json | grep "[library-name]"
@@ -108,12 +108,12 @@ Sources for gotchas:
 
 **For libraries**:
 ```
-.claude/blueprints/ai_docs/libraries/[library-name].md
+docs/blueprint/ai_docs/libraries/[library-name].md
 ```
 
 **For project patterns**:
 ```
-.claude/blueprints/ai_docs/project/[pattern-name].md
+docs/blueprint/ai_docs/project/[pattern-name].md
 ```
 
 ### 3.2 Write Entry
@@ -217,7 +217,7 @@ Before saving, verify:
 
 ```bash
 # Write to ai_docs
-cat > .claude/blueprints/ai_docs/[type]/[name].md << 'EOF'
+cat > docs/blueprint/ai_docs/[type]/[name].md << 'EOF'
 [content]
 EOF
 ```
@@ -233,7 +233,7 @@ If PRPs reference this library/pattern:
 ```markdown
 ## ai_docs Entry Created: [Name]
 
-**Location:** `.claude/blueprints/ai_docs/[type]/[name].md`
+**Location:** `docs/blueprint/ai_docs/[type]/[name].md`
 
 **Version:** X.Y.Z
 

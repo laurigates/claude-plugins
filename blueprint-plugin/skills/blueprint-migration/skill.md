@@ -3,8 +3,8 @@ name: Blueprint Migration
 description: Versioned migration procedures for upgrading blueprint structure between format versions
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, TodoWrite
 created: 2025-12-22
-modified: 2025-12-22
-reviewed: 2025-12-22
+modified: 2026-01-09
+reviewed: 2026-01-09
 ---
 
 # Blueprint Migration
@@ -23,7 +23,7 @@ Expert skill for migrating blueprint structures between format versions. This sk
 
 ```
 1. Read current manifest version
-2. Compare with target version (latest: 2.0.0)
+2. Compare with target version (latest: 3.0.0)
 3. Load migration document for version range
 4. Execute migration steps sequentially
 5. Confirm each destructive operation
@@ -37,12 +37,17 @@ Expert skill for migrating blueprint structures between format versions. This sk
 |------|-----|----------|
 | 1.0.x | 1.1.x | `migrations/v1.0-to-v1.1.md` |
 | 1.x.x | 2.0.0 | `migrations/v1.x-to-v2.0.md` |
+| 2.x.x | 3.0.0 | `migrations/v2.x-to-v3.0.md` |
 
 ## Version Detection
 
 ```bash
-# Read manifest version
-cat .claude/blueprints/.manifest.json | jq -r '.format_version'
+# Read manifest version - check both v3.0 and legacy locations
+if [[ -f docs/blueprint/.manifest.json ]]; then
+  cat docs/blueprint/.manifest.json | jq -r '.format_version'
+elif [[ -f .claude/blueprints/.manifest.json ]]; then
+  cat .claude/blueprints/.manifest.json | jq -r '.format_version'
+fi
 
 # Detect v1.0 (no format_version field)
 if ! jq -e '.format_version' .claude/blueprints/.manifest.json > /dev/null 2>&1; then

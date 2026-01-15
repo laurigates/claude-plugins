@@ -1,6 +1,6 @@
 ---
 created: 2025-12-22
-modified: 2025-12-22
+modified: 2026-01-09
 reviewed: 2025-12-22
 description: "Check for stale generated content and offer regeneration or promotion"
 allowed_tools: [Read, Bash, Glob, AskUserQuestion]
@@ -17,62 +17,55 @@ Check the status of generated content and offer options for modified or stale fi
 
 1. **Read manifest**:
    ```bash
-   cat .claude/blueprints/.manifest.json
+   cat docs/blueprint/manifest.json
    ```
-   - Extract `generated.skills` and `generated.commands` sections
+   - Extract `generated.rules` section
    - If no generated content, report "Nothing to sync"
 
-2. **Check each generated skill**:
-   For each skill in `manifest.generated.skills`:
+2. **Check each generated rule**:
+   For each rule in `manifest.generated.rules`:
 
    a. **Verify file exists**:
       ```bash
-      test -f .claude/blueprints/generated/skills/{name}/skill.md
+      test -f .claude/rules/{name}.md
       ```
 
    b. **Hash current content**:
       ```bash
-      sha256sum .claude/blueprints/generated/skills/{name}/skill.md | cut -d' ' -f1
+      sha256sum .claude/rules/{name}.md | cut -d' ' -f1
       ```
 
    c. **Compare hashes**:
       - If `content_hash` matches → status: `current`
       - If `content_hash` differs → status: `modified`
 
-   d. **Check source freshness** (for skills from PRDs):
+   d. **Check source freshness** (for rules from PRDs):
       - Hash current PRD content
       - Compare with `source_hash` in manifest
       - If differs → status: `stale`
 
-3. **Check each generated command**:
-   Same process as skills, but for `.claude/blueprints/generated/commands/`
-
-4. **Display sync report**:
+3. **Display sync report**:
    ```
    Generated Content Sync Status
 
-   Skills (.claude/blueprints/generated/skills/):
-   ✅ architecture-patterns: Current
-   ⚠️ testing-strategies: Modified locally
-   🔄 implementation-guides: Stale (PRDs changed)
-   ✅ quality-standards: Current
-
-   Commands (.claude/blueprints/generated/commands/):
-   ✅ project-continue: Current
-   ✅ project-test-loop: Current
+   Rules (.claude/rules/):
+   ✅ architecture-patterns.md: Current
+   ⚠️ testing-strategies.md: Modified locally
+   🔄 implementation-guides.md: Stale (PRDs changed)
+   ✅ quality-standards.md: Current
 
    Summary:
-   - Current: 4 files
+   - Current: 3 files
    - Modified: 1 file (user edited)
    - Stale: 1 file (source changed)
    ```
 
-5. **For modified content**, offer options:
+4. **For modified content**, offer options:
    ```
    question: "{name} has been modified locally. What would you like to do?"
    options:
-     - label: "Keep modifications (promote to custom)"
-       description: "Move to .claude/skills/ to preserve your changes"
+     - label: "Keep modifications"
+       description: "Mark as acknowledged, preserve your changes"
      - label: "Discard modifications (regenerate)"
        description: "Overwrite with fresh generation from PRDs"
      - label: "View diff"
@@ -82,12 +75,12 @@ Check the status of generated content and offer options for modified or stale fi
    ```
 
    **Based on selection:**
-   - "Promote" → Run `/blueprint:promote {name}`
-   - "Regenerate" → Regenerate this skill from PRDs
+   - "Keep modifications" → Update `content_hash` to current, mark as acknowledged
+   - "Regenerate" → Regenerate this rule from PRDs
    - "View diff" → Show diff then re-ask
    - "Skip" → Continue to next file
 
-6. **For stale content**, offer options:
+5. **For stale content**, offer options:
    ```
    question: "{name} is stale (PRDs have changed). What would you like to do?"
    options:
@@ -102,34 +95,32 @@ Check the status of generated content and offer options for modified or stale fi
    ```
 
    **Based on selection:**
-   - "Regenerate" → Regenerate this skill from PRDs
+   - "Regenerate" → Regenerate this rule from PRDs
    - "Keep" → Update `source_hash` to current, mark as current
    - "View" → Show PRD diff then re-ask
    - "Skip" → Continue to next file
 
-7. **Update manifest** after changes:
+6. **Update manifest** after changes:
    - Update `content_hash` for regenerated files
    - Update `source_hash` if PRD changes acknowledged
    - Update `status` field appropriately
 
-8. **Final report**:
+7. **Final report**:
    ```
    Sync Complete
 
    Actions taken:
-   - testing-strategies: Promoted to custom layer
-   - implementation-guides: Regenerated from PRDs
+   - testing-strategies.md: Modifications acknowledged
+   - implementation-guides.md: Regenerated from PRDs
 
    Current state:
-   - 4 generated skills (all current)
-   - 2 generated commands (all current)
-   - 1 custom skill
+   - 4 generated rules (all current)
 
    Manifest updated.
    ```
 
 **Tips**:
 - Run `/blueprint:sync` periodically to check for drift
-- Promote skills you want to customize before regenerating
-- Regenerating will overwrite local changes - promote first to preserve
+- Acknowledge modifications you want to keep
+- Regenerating will overwrite local changes
 - Stale content still works, but may miss new patterns from PRDs

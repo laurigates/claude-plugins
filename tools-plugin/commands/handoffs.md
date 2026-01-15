@@ -2,13 +2,13 @@
 created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
-description: "List, filter, and manage @HANDOFF markers across the codebase"
+description: "List, filter, and manage @AGENT-HANDOFF-MARKER markers across the codebase"
 allowed_tools: [Bash, Grep, Read, TodoWrite]
 ---
 
 # /handoffs [OPTIONS]
 
-List all `@HANDOFF(agent)` markers in the codebase with filtering and status information.
+List all `@AGENT-HANDOFF-MARKER(agent)` markers in the codebase with filtering and status information.
 
 ## Usage
 
@@ -28,18 +28,18 @@ List all `@HANDOFF(agent)` markers in the codebase with filtering and status inf
 - `--type <type>` - Filter by handoff type (e.g., `accessibility`, `form-validation`, `loading-states`)
 - `--priority <level>` - Filter by priority (`blocking`, `enhancement`)
 - `--summary` - Show summary counts instead of full listings
-- `--completed` - Include completed handoffs (`@HANDOFF-COMPLETE`)
+- `--completed` - Include completed handoffs (`@AGENT-HANDOFF-MARKER-COMPLETE`)
 
 ## Steps
 
 1. **Scan for markers**:
    ```bash
-   # Find all @HANDOFF markers
-   rg "@HANDOFF\([^)]+\)" --type ts --type tsx --type js --type jsx --type vue -n
+   # Find all @AGENT-HANDOFF-MARKER markers
+   rg "@AGENT-HANDOFF-MARKER\([^)]+\)" --type ts --type tsx --type js --type jsx --type vue -n
    ```
 
 2. **Parse marker content**:
-   - Extract target agent from `@HANDOFF(agent-name)`
+   - Extract target agent from `@AGENT-HANDOFF-MARKER(agent-name)`
    - Parse JSON-like content for type, priority, context, needs
    - Note file path and line number
 
@@ -135,7 +135,7 @@ List all `@HANDOFF(agent)` markers in the codebase with filtering and status inf
 
    To clean up stale markers:
    - Review if still needed
-   - Convert to @HANDOFF-COMPLETE if done
+   - Convert to @AGENT-HANDOFF-MARKER-COMPLETE if done
    - Remove if obsolete
    ```
 
@@ -150,7 +150,7 @@ Found 4 handoff markers across 3 files.
 
 📍 **src/components/Modal.tsx:42** `blocking`
 ```typescript
-// @HANDOFF(ux-implementation) {
+// @AGENT-HANDOFF-MARKER(ux-implementation) {
 //   type: "accessibility",
 //   context: "Modal dialog for confirmation",
 //   needs: ["focus trap", "ARIA dialog", "Escape key"]
@@ -181,13 +181,13 @@ Found 4 handoff markers across 3 files.
 
 ## Error Handling
 
-- **No markers found**: Report "No @HANDOFF markers found in codebase"
+- **No markers found**: Report "No @AGENT-HANDOFF-MARKER markers found in codebase"
 - **Invalid filter**: Report unrecognized agent/type and list valid options
 - **Git not available**: Skip stale detection, note in output
 
 ## See Also
 
-- **Skills**: `ux-handoff-markers` for marker format and patterns
+- **Skills**: `agent-handoff-markers` for marker format and patterns
 - **Skills**: `agent-coordination-patterns` for workflow patterns
 - **Skills**: `agent-file-coordination` for file-based coordination
-- **Commands**: `/workflow:dev` for automated development with handoffs
+- **Commands**: `/workflow:primer` for agent continuation primers
