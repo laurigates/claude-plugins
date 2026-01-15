@@ -8,7 +8,7 @@
       "name": "blueprint-plugin",
       "source": "./blueprint-plugin",
       "description": "Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, and CLAUDE.md management",
-      "version": "3.1.0",
+      "version": "3.2.0",
       "keywords": [
         "blueprint",
         "prd",
@@ -185,7 +185,7 @@
       "name": "project-plugin",
       "source": "./project-plugin",
       "description": "Project initialization, management, and maintenance - setup, modernization, changelog review, and continuous development workflows",
-      "version": "1.2.1",
+      "version": "1.3.0",
       "keywords": [
         "project",
         "initialization",
@@ -215,7 +215,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Multi-agent coordination and orchestration patterns",
-      "version": "2.0.1",
+      "version": "2.1.0",
       "keywords": [
         "agents",
         "orchestration",
