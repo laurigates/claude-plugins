@@ -14,11 +14,33 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       releases_created: ${{ steps.release.outputs.releases_created }}
+      prs_created: ${{ steps.release.outputs.prs_created }}
     steps:
       - uses: googleapis/release-please-action@v4
         id: release
         with:
           token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
+
+  enable-auto-merge:
+    runs-on: ubuntu-latest
+    needs: release-please
+    if: ${{ needs.release-please.outputs.prs_created == 'true' }}
+    steps:
+      - name: Enable auto-merge for release PRs
+        env:
+          GH_TOKEN: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
+        run: |
+          # Get open release-please PRs by branch name pattern
+          gh pr list --repo ${{ github.repository }} \
+            --state open \
+            --json number,headRefName \
+            --jq '.[] | select(.headRefName | startswith("release-please--")) | .number' | \
+          while read -r pr_number; do
+            if [ -n "$pr_number" ]; then
+              echo "Enabling auto-merge for PR #$pr_number"
+              gh pr merge "$pr_number" --repo ${{ github.repository }} --auto --squash
+            fi
+          done
 
   sync-marketplace-versions:
     needs: release-please
