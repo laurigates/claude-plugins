@@ -74,7 +74,13 @@ commands: {
   }
 
   adr_cmd: {
-    label: "/blueprint-adr\n\nDocument architecture\ndecisions from code"
+    label: "/blueprint-adr\n\nDocument architecture\ndecisions from code,\nconflict analysis"
+    shape: hexagon
+    style.fill: "#ffd966"
+  }
+
+  adr_validate: {
+    label: "/blueprint-adr-validate\n\nValidate relationships,\ndetect conflicts,\nfix orphaned refs"
     shape: hexagon
     style.fill: "#ffd966"
   }
@@ -170,6 +176,12 @@ skills: {
 
   doc_detection: {
     label: "document-detection\n\nProactively suggest\nPRD/ADR/PRP creation"
+    shape: oval
+    style.fill: "#ffcc80"
+  }
+
+  adr_relationships: {
+    label: "adr-relationships\n\nDomain tagging,\nconflict detection,\nrelationship validation"
     shape: oval
     style.fill: "#ffcc80"
   }
@@ -273,6 +285,12 @@ commands.adr_cmd -> artifacts.adrs: "Analyzes codebase\nDocuments decisions"
 # Skills supporting documentation
 skills.doc_detection -> commands.prd_cmd: "Suggests when needed"
 skills.doc_detection -> commands.adr_cmd: "Triggers proactively"
+skills.adr_relationships -> commands.adr_cmd: "Conflict analysis"
+skills.adr_relationships -> commands.adr_validate: "Validation logic"
+
+# ADR validation
+phases.documentation -> commands.adr_validate: "Validate ADRs"
+commands.adr_validate -> artifacts.adrs: "Validates & updates"
 
 # Phase 3: Preparation
 phases.preparation -> commands.gen_rules: "Extract patterns"

@@ -360,7 +360,94 @@ graph LR
     style S fill:#87CEEB
 ```
 
-## 5. Skills and Their Triggers
+## 5. ADR Conflict Detection Flow
+
+How conflict detection works when creating new ADRs:
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant CMD as /blueprint-adr
+    participant Skill as adr-relationships
+    participant ADRs as docs/adrs/
+    participant Validate as /blueprint-adr-validate
+
+    User->>CMD: Create new ADR for state management
+
+    Note over CMD,Skill: Phase 1.5: Conflict Analysis
+    CMD->>Skill: Determine domain (state-management)
+    CMD->>ADRs: Scan existing ADRs with same domain
+
+    ADRs-->>CMD: Found: ADR-0003 "Use Redux" (Accepted)
+
+    CMD->>Skill: Calculate conflict score
+    Skill-->>CMD: Score: 0.8 (same domain, both Accepted)
+
+    CMD->>User: Found existing ADR in same domain
+
+    alt User chooses "Supersede"
+        User->>CMD: Supersede ADR-0003
+        CMD->>CMD: Generate new ADR-0012 with supersedes: ADR-0003
+
+        Note over CMD,ADRs: Bidirectional Update
+        CMD->>ADRs: Update ADR-0003
+        Note right of ADRs: status: Superseded<br/>superseded_by: ADR-0012
+        CMD->>ADRs: Create ADR-0012
+        Note right of ADRs: domain: state-management<br/>supersedes: ADR-0003
+
+    else User chooses "Extend"
+        User->>CMD: Extend ADR-0003
+        CMD->>ADRs: Create ADR-0012 with extends: ADR-0003
+
+    else User chooses "Related"
+        User->>CMD: Mark as related
+        CMD->>ADRs: Create ADR-0012 with related: [ADR-0003]
+
+    else User chooses "No relationship"
+        User->>CMD: Continue without linking
+        CMD->>ADRs: Create ADR-0012 (no relationship)
+    end
+
+    CMD->>User: ADR created with relationships
+
+    Note over User,Validate: Later: Validation
+    User->>Validate: Run /blueprint-adr-validate
+    Validate->>ADRs: Scan all ADRs
+    Validate->>Validate: Check reference integrity
+    Validate->>Validate: Check domain conflicts
+    Validate-->>User: Validation report
+```
+
+**ADR Frontmatter with Relationships:**
+```yaml
+---
+date: 2026-01-15
+status: Accepted
+domain: state-management          # Scopes conflict detection
+supersedes: ADR-0003              # This ADR replaces ADR-0003
+extends: ADR-0005                 # This ADR builds on ADR-0005
+related:                          # Non-hierarchical links
+  - ADR-0002
+  - ADR-0007
+---
+```
+
+**Standard Domains:**
+| Domain | Covers |
+|--------|--------|
+| `state-management` | Redux, Zustand, MobX, Context |
+| `data-layer` | Database, ORM, caching |
+| `api-design` | REST, GraphQL, tRPC |
+| `authentication` | Auth providers, sessions |
+| `testing` | Test frameworks, strategies |
+| `frontend-framework` | React, Vue, Svelte |
+| `styling` | Tailwind, CSS-in-JS |
+| `build-tooling` | Bundlers, compilers |
+| `deployment` | CI/CD, containers |
+
+---
+
+## 6. Skills and Their Triggers
 
 When each skill is activated:
 
@@ -371,6 +458,7 @@ graph TD
         CS[confidence-scoring]
         FT[feature-tracking]
         DD[document-detection]
+        AR[adr-relationships]
         MG[blueprint-migration]
     end
 
@@ -387,7 +475,10 @@ graph TD
         T7["New feature discussed"] --> DD
         T8["Architecture decision made"] --> DD
 
-        T9["Running /blueprint-upgrade"] --> MG
+        T9["Creating ADR in existing domain"] --> AR
+        T10["Running /blueprint-adr-validate"] --> AR
+
+        T11["Running /blueprint-upgrade"] --> MG
     end
 
     subgraph Actions
@@ -407,18 +498,23 @@ graph TD
         DD --> A11["Suggest ADR creation"]
         DD --> A12["Suggest PRP creation"]
 
-        MG --> A13["Migrate v1.x → v2.0"]
-        MG --> A14["Migrate v2.x → v3.0"]
+        AR --> A13["Detect domain conflicts"]
+        AR --> A14["Validate relationships"]
+        AR --> A15["Update superseded ADRs"]
+
+        MG --> A16["Migrate v1.x → v2.0"]
+        MG --> A17["Migrate v2.x → v3.0"]
     end
 
     style BD fill:#ffcc80
     style CS fill:#ffcc80
     style FT fill:#ffcc80
     style DD fill:#ffcc80
+    style AR fill:#ffcc80
     style MG fill:#ffcc80
 ```
 
-## 6. Three-Layer Architecture
+## 7. Three-Layer Architecture
 
 How the plugin, generated, and custom layers interact:
 
