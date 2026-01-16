@@ -21,6 +21,7 @@ This plugin provides comprehensive Git workflow automation including conventiona
 |-------|-------------|
 | `git-cli-agentic` | Git commands optimized for AI agents with porcelain output |
 | `gh-cli-agentic` | GitHub CLI commands optimized for AI agents with JSON output |
+| `gh-workflow-monitoring` | Watch GitHub Actions runs with blocking commands (no polling/timeouts) |
 | `git-commit-workflow` | Conventional commit patterns and best practices |
 | `git-branch-pr-workflow` | Git branching and PR workflow patterns |
 | `git-repo-detection` | Detect GitHub repository name and owner from git remotes |

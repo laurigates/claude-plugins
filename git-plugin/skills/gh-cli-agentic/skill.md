@@ -75,6 +75,19 @@ gh run list --json databaseId,status,conclusion,name,createdAt -L 10
 **Status Values**: `queued`, `in_progress`, `completed`
 **Conclusion Values**: `success`, `failure`, `cancelled`, `skipped`, `neutral`
 
+### Watch Run Until Completion
+
+```bash
+# Watch and wait for run to complete (blocking, no timeout needed)
+gh run watch $RUN_ID --compact --exit-status
+
+# Find and watch latest run
+RUN_ID=$(gh run list -L 1 --json databaseId --jq '.[0].databaseId')
+gh run watch $RUN_ID --compact --exit-status
+```
+
+See **gh-workflow-monitoring** skill for comprehensive workflow watching patterns.
+
 ### Failed Logs
 
 ```bash
