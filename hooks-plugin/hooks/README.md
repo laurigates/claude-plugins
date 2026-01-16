@@ -19,6 +19,8 @@ A PreToolUse hook that intercepts Bash commands and blocks those that should use
 | `find` | Use **Glob** tool instead |
 | `grep`/`rg` | Use **Grep** tool instead |
 | `ls *pattern*` | Consider **Glob** tool |
+| `cat/tail ...tasks/*.output` | Use **TaskOutput** tool instead |
+| `sleep && cat/tail` | Use **TaskOutput** tool with block parameter |
 
 ### How It Works
 

@@ -80,5 +80,12 @@ if echo "$COMMAND" | grep -Eq '^\s*ls\s+.*\*'; then
     block_with_reminder "REMINDER: Consider using the Glob tool for pattern-based file listing. Glob provides sorted results by modification time and handles large directories better."
 fi
 
+# Check for reading task output files (should use TaskOutput tool)
+# Detects patterns like: cat /tmp/claude/*/tasks/*.output, tail ...tasks/...output, sleep && cat ...output
+if echo "$COMMAND" | grep -Eq '(cat|tail|head).*(/tasks/|\.output)' || \
+   echo "$COMMAND" | grep -Eq 'sleep.*&&.*(cat|tail)'; then
+    block_with_reminder "REMINDER: Use the TaskOutput tool instead of Bash commands to read task output. The TaskOutput tool is designed for checking on background tasks - use it with the task_id parameter. Example: TaskOutput with task_id and block=false for non-blocking status checks."
+fi
+
 # If we get here, the command is allowed
 exit 0
