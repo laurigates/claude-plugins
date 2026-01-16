@@ -1,19 +1,20 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
-reviewed: 2025-12-16
-allowed-tools: Bash, Edit, Read, Glob, Grep, Write, TodoWrite, mcp__github__pull_request_read
+modified: 2025-01-16
+reviewed: 2025-01-16
+allowed-tools: Bash(gh pr checks:*), Bash(gh pr view:*), Bash(gh run view:*), Bash(gh run list:*), Bash(gh repo view:*), Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git add:*), Bash(git commit:*), Bash(git push:*), Bash(pre-commit:*), Bash(npm run:*), Bash(uv run:*), Read, Edit, Grep, Glob, TodoWrite, mcp__github__pull_request_read
 argument-hint: [pr-number] [--auto-fix] [--push]
 description: Analyze and fix failing PR checks
 ---
 
 ## Context
 
-- Get repo name with owner: !`gh repo view --json nameWithOwner`
-- Current git status: !`git status`
-- Current git diff (staged and unstaged changes): !`git diff HEAD`
+- Repo: !`gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null || echo "(no remote)"`
 - Current branch: !`git branch --show-current`
-- Recent commits: !`git log --oneline -10`
+- Git status: !`git status --porcelain=v2 --branch 2>/dev/null | head -20`
+- Staged changes: !`git diff --cached --numstat 2>/dev/null`
+- Unstaged changes: !`git diff --numstat 2>/dev/null`
+- Recent commits: !`git log --format='%h %s' -n 5`
 
 ## Parameters
 

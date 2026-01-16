@@ -11,8 +11,7 @@ This plugin provides comprehensive Git workflow automation including conventiona
 | Command | Description |
 |---------|-------------|
 | `/git:commit` | Complete workflow from changes to PR - auto-detect issues, create logical commits with proper linkage, push, optionally create PR |
-| `/git:issue` | Process and fix a single GitHub issue with TDD workflow |
-| `/git:issues` | Process multiple GitHub issues in sequence |
+| `/git:issue` | Process GitHub issues with interactive selection, conflict detection, and parallel work support |
 | `/git:fix-pr` | Analyze and fix failing PR checks |
 | `/git:maintain` | Repository maintenance and cleanup (prune, gc, verify, branches, stash) |
 
@@ -20,6 +19,8 @@ This plugin provides comprehensive Git workflow automation including conventiona
 
 | Skill | Description |
 |-------|-------------|
+| `git-cli-agentic` | Git commands optimized for AI agents with porcelain output |
+| `gh-cli-agentic` | GitHub CLI commands optimized for AI agents with JSON output |
 | `git-commit-workflow` | Conventional commit patterns and best practices |
 | `git-branch-pr-workflow` | Git branching and PR workflow patterns |
 | `git-repo-detection` | Detect GitHub repository name and owner from git remotes |
@@ -46,13 +47,17 @@ This plugin provides comprehensive Git workflow automation including conventiona
 
 Analyzes changes, creates logical commits with conventional messages, pushes to remote, and creates a pull request.
 
-### Process GitHub Issue
+### Process GitHub Issues
 
 ```bash
-/git:issue 123
+/git:issue              # Interactive mode - select issues
+/git:issue 123          # Process single issue
+/git:issue 123 456 789  # Process multiple issues
+/git:issue --auto       # Claude selects and prioritizes
+/git:issue --parallel   # Process parallel groups simultaneously
 ```
 
-Fetches issue #123, creates a branch, implements the fix with TDD, and prepares for PR.
+Analyzes issues for conflicts and dependencies, implements fixes with TDD workflow, and creates PRs.
 
 ### Fix Failing PR
 
@@ -75,6 +80,60 @@ Runs full repository maintenance: prune remote branches, garbage collection, ver
 ```bash
 /plugin install git-plugin@lgates-claude-plugins
 ```
+
+## Recommended Project Settings
+
+For seamless command execution without permission prompts, add these permissions to your project's `.claude/settings.json`:
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh pr:*)",
+      "Bash(gh run:*)",
+      "Bash(gh issue:*)",
+      "Bash(gh repo:*)",
+      "Bash(gh label:*)",
+      "Bash(gh workflow:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(git branch:*)",
+      "Bash(git switch:*)",
+      "Bash(git remote:*)",
+      "Bash(git stash:*)",
+      "Bash(git restore:*)",
+      "Bash(git gc:*)",
+      "Bash(git prune:*)",
+      "Bash(git fsck:*)",
+      "Bash(pre-commit:*)",
+      "Bash(detect-secrets:*)"
+    ]
+  }
+}
+```
+
+This enables:
+- **Git operations**: status, diff, log, add, commit, push, branch management
+- **GitHub CLI**: PR checks, run viewing, issue management, workflow triggers
+- **Security**: pre-commit hooks and secret detection
+
+## Agentic Optimization
+
+Commands use machine-readable output formats:
+
+| Tool | Format | Example |
+|------|--------|---------|
+| Git status | Porcelain v2 | `git status --porcelain=v2 --branch` |
+| Git diff | Numstat | `git diff --numstat` |
+| Git log | Custom format | `git log --format='%h %s' -n 10` |
+| GH CLI | JSON + jq | `gh pr checks $N --json name,state,conclusion` |
+
+See the `git-cli-agentic` and `gh-cli-agentic` skills for complete reference.
 
 ## License
 
