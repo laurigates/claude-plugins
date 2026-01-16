@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.0.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v1.3.0...git-plugin-v2.0.0) (2026-01-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* **git-plugin:** /git:issues is removed, use /git:issue instead
+
+### Features
+
+* **git-plugin:** add agentic optimizations with granular permissions ([e5e3ddb](https://github.com/laurigates/claude-plugins/commit/e5e3ddb6b74c64fdf3b1644d9eeb19e6220f73e6))
+* **git-plugin:** unify /git:issue and /git:issues into single command ([c3b00ec](https://github.com/laurigates/claude-plugins/commit/c3b00ec7b5ab73f9452f5eb63652a9004da02cd4))
+
 ## [1.3.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v1.2.0...git-plugin-v1.3.0) (2026-01-15)
 
 
