@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.0.0...git-plugin-v2.1.0) (2026-01-16)
+
+
+### Features
+
+* **git-plugin:** add gh-workflow-monitoring skill ([97bee1b](https://github.com/laurigates/claude-plugins/commit/97bee1ba517e0c021e00183be5ffe35521f7e138))
+
 ## [2.0.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v1.3.0...git-plugin-v2.0.0) (2026-01-16)
 
 
