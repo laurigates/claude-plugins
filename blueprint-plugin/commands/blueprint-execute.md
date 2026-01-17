@@ -1,6 +1,6 @@
 ---
 created: 2026-01-14
-modified: 2026-01-14
+modified: 2026-01-17
 reviewed: 2026-01-14
 description: "Idempotent meta command that determines and executes the next logical blueprint action"
 allowed_tools: [Read, Glob, Bash, AskUserQuestion, SlashCommand]
@@ -142,7 +142,10 @@ find docs/prps -name "*.md" -type f 2>/dev/null
     - label: "Skip PRP execution"
       description: "Continue to other actions"
   ```
-- **If PRP selected**: Run `/blueprint-prp-execute {selected-prp}`, then **Exit**
+- **If PRP selected**:
+  - Run `/blueprint-prp-execute {selected-prp}`
+  - Feature tracker sync happens automatically within prp-execute (Phase 5)
+  - **Exit**
 - **If "Skip"**: Continue to step 6
 
 **If no PRPs**: Continue to step 6
@@ -173,6 +176,10 @@ find docs/blueprint/work-orders -maxdepth 1 -name "*.md" -type f 2>/dev/null
 - **If work-order selected**:
   - Read and execute the work-order
   - Move to `completed/` when done
+  - **Sync feature tracker** (if enabled):
+    - Check if work-order references FR codes
+    - Update feature status based on work-order completion
+    - Recalculate statistics
   - **Exit**
 - **If "Skip"**: Continue to step 7
 
@@ -239,40 +246,56 @@ test -f docs/blueprint/feature-tracker.json
 
 **If feature tracker exists**:
 
-a. Check staleness:
+a. **Auto-sync on every execution** (keeps tracker fresh):
 ```bash
 # Get last_updated from tracker
 last_sync=$(cat docs/blueprint/feature-tracker.json | jq -r '.last_updated // empty')
-# Compare with current date (warn if > 7 days)
+# Compare with current date
 ```
 
-**If stale** (> 7 days old):
-- Report: "Feature tracker hasn't been synced in {days} days"
-- **Action**: Run `/blueprint-feature-tracker-sync`
-- Continue to step 8b after sync
+**If stale** (> 1 day old) OR if a PRP was just executed OR work-order completed:
+- Report: "Auto-syncing feature tracker..."
+- **Action**: Run feature tracker sync logic inline:
+  1. Read current feature-tracker.json
+  2. Read work-overview.md and TODO.md
+  3. Detect any discrepancies (checked boxes vs tracker status)
+  4. Auto-resolve discrepancies by trusting TODO.md/work-overview.md (most recently edited by user)
+  5. Update feature-tracker.json with new statistics
+  6. Report changes made (if any)
 
-b. Show incomplete features:
+**Auto-sync is silent when no changes** - only reports if something was updated.
+
+b. Show completion status:
 ```bash
 # Get statistics
 cat docs/blueprint/feature-tracker.json | jq '.statistics'
 ```
 
-- Report completion status
-- List next incomplete features
+- Report completion percentage: "{complete}/{total} ({percentage}%)"
+- List current phase status
+- If incomplete features exist, show next 3 actionable features
+
+c. **Only prompt if user interaction is beneficial**:
+
+**If completion < 100%** and no other pending actions:
 - Use AskUserQuestion:
   ```
-  question: "Feature tracker shows {complete}/{total} features complete. Next steps?"
+  question: "Feature tracker: {complete}/{total} complete ({percentage}%). What's next?"
   options:
     - label: "Work on: {next-incomplete-feature}"
       description: "Start implementing this feature"
-    - label: "View feature status"
-      description: "Run /blueprint-feature-tracker-status for details"
-    - label: "Sync tracker"
-      description: "Update tracker with latest progress"
-    - label: "Continue to status"
-      description: "Move to general status check"
+    - label: "Create PRP for feature"
+      description: "Create detailed implementation plan"
+    - label: "View detailed status"
+      description: "Run /blueprint-feature-tracker-status"
+    - label: "Continue to other actions"
+      description: "Skip feature work for now"
   ```
 - **Action based on selection**, then **Exit**
+
+**If completion == 100%**:
+- Report: "🎉 All features complete!"
+- Continue to step 9
 
 **If no feature tracker**: Continue to step 9
 
