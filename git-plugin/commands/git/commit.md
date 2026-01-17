@@ -11,12 +11,11 @@ description: Complete workflow from changes to PR - auto-detect related issues, 
 
 - Pre-commit config: !`find . -maxdepth 1 -name ".pre-commit-config.yaml" 2>/dev/null`
 - Current branch: !`git branch --show-current`
-- Git status: !`git status --porcelain=v2 --branch 2>/dev/null | head -20`
+- Git status: !`git status --porcelain=v2 --branch 2>/dev/null`
 - Unstaged changes: !`git diff --numstat 2>/dev/null`
 - Staged changes: !`git diff --cached --numstat 2>/dev/null`
 - Recent commits: !`git log --format='%h %s' -n 10`
 - Remote: !`git remote get-url origin 2>/dev/null || echo "(no remote)"`
-- Upstream tracking: !`git branch -vv --format='%(upstream:track)' 2>/dev/null | head -1`
 - Available labels: !`gh label list --json name --jq '.[].name' --limit 50 2>/dev/null || echo "(no remote)"`
 - Open issues: !`gh issue list --state open --json number,title,labels --jq '.[] | "\(.number): \(.title)"' --limit 30 2>/dev/null || echo "(no remote)"`
 

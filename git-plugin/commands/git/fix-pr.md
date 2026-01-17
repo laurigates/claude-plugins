@@ -11,7 +11,7 @@ description: Analyze and fix failing PR checks
 
 - Repo: !`gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null || echo "(no remote)"`
 - Current branch: !`git branch --show-current`
-- Git status: !`git status --porcelain=v2 --branch 2>/dev/null | head -20`
+- Git status: !`git status --porcelain=v2 --branch 2>/dev/null`
 - Staged changes: !`git diff --cached --numstat 2>/dev/null`
 - Unstaged changes: !`git diff --numstat 2>/dev/null`
 - Recent commits: !`git log --format='%h %s' -n 5`

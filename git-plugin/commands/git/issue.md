@@ -11,7 +11,7 @@ argument-hint: [issue-numbers...] [--auto] [--filter <label>] [--limit <n>] [--p
 
 - Repo: !`gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null || echo "(no remote)"`
 - Current branch: !`git branch --show-current`
-- Working tree status: !`git status --porcelain=v2 2>/dev/null | wc -l | tr -d ' '`
+- Working tree clean: !`git status --porcelain=v2 2>/dev/null`
 - Open issues: !`gh issue list --state open --json number,title,labels --jq '.[] | "\(.number): \(.title)"' --limit 10 2>/dev/null || echo "(no remote)"`
 - Open PRs: !`gh pr list --state open --json number,title --jq '.[] | "\(.number): \(.title)"' 2>/dev/null || echo "(no remote)"`
 - Available labels: !`gh label list --json name --jq '.[].name' --limit 50 2>/dev/null || echo "(no remote)"`

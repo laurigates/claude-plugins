@@ -10,7 +10,7 @@ description: Perform repository maintenance and cleanup
 ## Context
 
 - Current branch: !`git branch --show-current`
-- Git status: !`git status --porcelain=v2 --branch 2>/dev/null | head -10`
+- Git status: !`git status --porcelain=v2 --branch 2>/dev/null`
 - Local branches: !`git branch -vv --format='%(refname:short) %(upstream:short) %(upstream:track)'`
 - Stash list: !`git stash list 2>/dev/null`
 - Repository size: !`du -sh .git 2>/dev/null`
