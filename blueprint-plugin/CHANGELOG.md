@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.2.1...blueprint-plugin-v3.3.0) (2026-01-17)
+
+
+### Features
+
+* **blueprint-plugin:** add structured logging for deferred PRP items ([#93](https://github.com/laurigates/claude-plugins/issues/93)) ([89e853a](https://github.com/laurigates/claude-plugins/commit/89e853a9170e3b39cd92ec517926af39005e0f2c))
+
 ## [3.2.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.2.0...blueprint-plugin-v3.2.1) (2026-01-15)
 
 
