@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.3.0...blueprint-plugin-v3.4.0) (2026-01-17)
+
+
+### Features
+
+* **blueprint-plugin:** automate feature tracker sync in development loop ([#97](https://github.com/laurigates/claude-plugins/issues/97)) ([0491d9f](https://github.com/laurigates/claude-plugins/commit/0491d9fb5857fd96c5f62ba42c2dc341a7e91c50))
+
 ## [3.3.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.2.1...blueprint-plugin-v3.3.0) (2026-01-17)
 
 

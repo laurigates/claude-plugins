@@ -1,6 +1,6 @@
 {
   "name": "blueprint-plugin",
-  "version": "3.3.0",
+  "version": "3.4.0",
   "description": "Blueprint Development methodology - structured feature development with PRD/PRP workflow, three-layer architecture (plugin/generated/custom), and documentation-first development",
   "author": {
     "name": "Lauri Gates"
