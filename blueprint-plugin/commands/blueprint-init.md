@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-01-09
-reviewed: 2026-01-09
+modified: 2026-01-17
+reviewed: 2026-01-17
 description: "Initialize Blueprint Development structure in current project"
 allowed_tools: [Bash, Write, Read, AskUserQuestion, Glob]
 ---
@@ -26,10 +26,11 @@ Initialize Blueprint Development in this project.
    ```
    question: "What type of project is this?"
    options:
-     - "Personal/Solo project" → recommend .gitignore for .claude/
-     - "Team project" → recommend committing .claude/ for sharing
-     - "Open source" → recommend .claude/rules/ for contributor guidelines
+     - "Personal/Solo project"
+     - "Team project"
+     - "Open source"
    ```
+   Note: This is used for manifest metadata. Claude files are always committed regardless of project type.
 
 3. **Ask about modular rules**:
    ```
@@ -213,10 +214,10 @@ Initialize Blueprint Development in this project.
    - `testing.md`: Test requirements, coverage expectations
    - `document-management.md`: Document organization rules (if document detection enabled)
 
-11. **Handle `.gitignore`** based on project type:
-   - Personal: Add `.claude/` to `.gitignore`
-   - Team: Commit `.claude/` (ask about secrets)
-   - Open source: Commit `docs/`, `.claude/rules/`, gitignore `docs/blueprint/work-orders/`
+11. **Handle `.gitignore`**:
+   - Always commit `CLAUDE.md` and `.claude/rules/` (shared project instructions)
+   - Add `docs/blueprint/work-orders/` to `.gitignore` (task-specific, may contain sensitive details)
+   - If secrets detected in `.claude/`, warn user and suggest `.gitignore` entries
 
 12. **Report**:
    ```
