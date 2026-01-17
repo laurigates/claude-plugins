@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-01-09
+modified: 2026-01-17
 reviewed: 2025-12-16
 description: "Execute a PRP with validation loop, TDD workflow, and quality gates"
 allowed_tools: [Read, Write, Edit, Glob, Bash, Task, AskUserQuestion]
@@ -183,6 +183,86 @@ If performance baselines defined:
 
 Compare results to baseline targets.
 
+## Phase 4.5: Deferred Items Report
+
+**Purpose**: Create an audit trail for any items not implemented during this execution.
+
+### 4.5.1 Identify Deferred Items
+
+Review the PRP's Implementation Blueprint and identify:
+- **Deferred (Phase 2)** tasks that were not implemented
+- **Nice-to-Have** tasks that were skipped
+- Any **Required** tasks that couldn't be completed (blockers)
+
+### 4.5.2 Document Deferred Items
+
+Create a deferred items table:
+
+```markdown
+### Deferred Items Report
+
+| Item | Category | Reason | Follow-up Action |
+|------|----------|--------|------------------|
+| [Task name] | Phase 2 | [Why deferred] | GitHub issue |
+| [Task name] | Nice-to-Have | Time constraint | None |
+| [Task name] | Required (Blocked) | [Blocker description] | GitHub issue |
+```
+
+### 4.5.3 Create GitHub Issues for Phase 2 Items
+
+**Required**: All "Deferred (Phase 2)" and "Required (Blocked)" items MUST have GitHub issues created.
+
+For each item requiring an issue:
+
+```bash
+gh issue create \
+  --title "[PRP Follow-up] [Task name]" \
+  --body "## Context
+This task was deferred during PRP execution for: **[feature-name]**
+
+**Original PRP**: \`docs/prps/[feature-name].md\`
+
+## Task Description
+[Description from PRP]
+
+## Reason Deferred
+[Reason from deferred items table]
+
+## Acceptance Criteria
+[Relevant criteria from original PRP]
+
+## Labels
+- \`deferred-from-prp\`
+- \`[priority label if applicable]\`" \
+  --label "deferred-from-prp"
+```
+
+### 4.5.4 Update PRP with Deferred Items
+
+Add deferred items section to the PRP:
+
+```markdown
+## Deferred Items (Post-Execution)
+
+| Item | GitHub Issue | Reason |
+|------|--------------|--------|
+| [Task] | #[issue-number] | [Reason] |
+| [Task] | N/A (Nice-to-Have) | [Reason] |
+```
+
+### 4.5.5 Summary Output
+
+Include in execution report:
+
+```markdown
+### Deferred Items Summary
+- **Phase 2 items deferred**: N (GitHub issues: #X, #Y, #Z)
+- **Nice-to-Have skipped**: N
+- **Required items blocked**: N (GitHub issues: #A, #B)
+```
+
+**Important**: Do not proceed to Phase 5 until all Phase 2 and blocked items have GitHub issues created.
+
 ## Phase 5: Report
 
 ### 5.1 Execution Summary
@@ -212,6 +292,11 @@ Generate completion report:
 - [x] Criterion 1: Verified via [method]
 - [x] Criterion 2: Verified via [method]
 - [x] Criterion 3: Verified via [method]
+
+### Deferred Items Summary
+- **Phase 2 items deferred**: N (GitHub issues: #X, #Y, #Z)
+- **Nice-to-Have skipped**: N
+- **Required items blocked**: N (GitHub issues: #A, #B)
 
 ### New Gotchas Discovered
 [Document any new gotchas for future reference]

@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-01-09
+modified: 2026-01-17
 reviewed: 2025-12-16
 description: "Create a PRP (Product Requirement Prompt) with systematic research, curated context, and validation gates"
 allowed_tools: [Read, Write, Glob, Bash, WebFetch, WebSearch, Task, AskUserQuestion]
@@ -92,8 +92,34 @@ docs/prps/[feature-name].md
 
 **Implementation Blueprint**:
 - Architecture decision with rationale
-- Task breakdown with pseudocode
+- Task breakdown with pseudocode (categorized by priority)
 - Implementation order
+
+**Task Categorization** (required for each task):
+
+| Category | Description | Execution Behavior |
+|----------|-------------|--------------------|
+| **Required** | Must be implemented for MVP | Implemented in this PRP execution |
+| **Deferred (Phase 2)** | Important but not blocking MVP | Logged and created as GitHub issues |
+| **Nice-to-Have** | Optional enhancement | May be skipped, logged if deferred |
+
+Example task breakdown:
+```markdown
+### Required Tasks
+1. Implement core API endpoint
+2. Add input validation
+3. Write unit tests
+
+### Deferred Tasks (Phase 2)
+4. Add caching layer - Reason: requires Redis infrastructure decision
+5. Add rate limiting - Reason: needs capacity planning
+
+### Nice-to-Have
+6. Add OpenAPI docs generation
+7. Add request logging middleware
+```
+
+**Important**: All tasks must be explicitly categorized. During execution, any deferred or skipped items will be logged and Phase 2 items will automatically generate GitHub issues for tracking.
 
 **TDD Requirements**:
 - Test strategy (unit, integration, e2e)
