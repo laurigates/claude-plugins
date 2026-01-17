@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.1.1...git-plugin-v2.2.0) (2026-01-17)
+
+
+### Features
+
+* **git-plugin:** add advanced rebase patterns section ([#91](https://github.com/laurigates/claude-plugins/issues/91)) ([798c65e](https://github.com/laurigates/claude-plugins/commit/798c65e6b4c713e60c7032e36a9d392b51ca3700))
+
 ## [2.1.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.1.0...git-plugin-v2.1.1) (2026-01-17)
 
 
