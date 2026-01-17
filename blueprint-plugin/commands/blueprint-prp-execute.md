@@ -263,9 +263,91 @@ Include in execution report:
 
 **Important**: Do not proceed to Phase 5 until all Phase 2 and blocked items have GitHub issues created.
 
-## Phase 5: Report
+## Phase 5: Sync Feature Tracker
 
-### 5.1 Execution Summary
+**Purpose**: Automatically keep the feature tracker in sync as features are implemented.
+
+### 5.1 Check if Feature Tracking is Enabled
+
+```bash
+# Check if feature tracker exists
+test -f docs/blueprint/feature-tracker.json && echo "enabled" || echo "disabled"
+```
+
+**If disabled**: Skip to Phase 6 (Report)
+
+### 5.2 Identify Implemented Features
+
+From the PRP's Implementation Blueprint, identify which feature requirement (FR) codes were addressed:
+- Extract FR codes from task descriptions (e.g., "FR2.1", "FR2.1.1")
+- Map completed tasks to their corresponding features
+- Note any features that are now fully complete vs. partially implemented
+
+### 5.3 Update Feature Tracker
+
+For each identified FR code:
+
+1. **Update status**:
+   - `complete` if all acceptance criteria verified
+   - `partial` if some criteria met but more work needed
+   - `in_progress` if work started but not yet passing tests
+
+2. **Update implementation metadata**:
+   ```json
+   {
+     "implementation": {
+       "files": ["list of modified/created files"],
+       "tests": ["list of test files"],
+       "commits": ["commit hash from this PRP execution"],
+       "notes": "Brief implementation notes"
+     }
+   }
+   ```
+
+3. **Recalculate statistics**:
+   - Update counts for complete/partial/in_progress/not_started
+   - Recalculate completion percentage
+   - Update phase status if applicable
+
+### 5.4 Sync with Documentation
+
+Update sync targets:
+
+**work-overview.md:**
+- Move completed features to "Completed" section
+- Update "In Progress" section with partially completed features
+
+**TODO.md:**
+- Check boxes for completed features: `[ ]` → `[x]`
+- Add notes for partial completion if needed
+
+### 5.5 Feature Sync Summary
+
+Include in execution report:
+
+```markdown
+### Feature Tracker Updated
+- **Features updated**: {count}
+- **Completion**: {complete}/{total} ({percentage}%)
+- **Phase {N} status**: {status}
+
+| FR Code | Description | Previous | New |
+|---------|-------------|----------|-----|
+| FR2.1 | [desc] | not_started | complete |
+| FR2.1.1 | [desc] | partial | complete |
+```
+
+**Note**: If no FR codes are found in the PRP, skip the sync and note:
+```
+Feature tracker sync skipped: No FR codes found in this PRP.
+Consider adding FR code references to Implementation Blueprint tasks.
+```
+
+---
+
+## Phase 6: Report
+
+### 6.1 Execution Summary
 
 Generate completion report:
 
@@ -298,6 +380,11 @@ Generate completion report:
 - **Nice-to-Have skipped**: N
 - **Required items blocked**: N (GitHub issues: #A, #B)
 
+### Feature Tracker Status
+- **Features updated**: N
+- **Overall completion**: X/Y (Z%)
+- **Changes**: FR2.1 (not_started → complete), FR2.1.1 (partial → complete)
+
 ### New Gotchas Discovered
 [Document any new gotchas for future reference]
 
@@ -310,14 +397,14 @@ Generate completion report:
 - [ ] Merge to main branch
 ```
 
-### 5.2 Update ai_docs
+### 6.2 Update ai_docs
 
 If new patterns or gotchas discovered:
 - Update relevant ai_docs entries
 - Create new entries if needed
 - Document lessons learned
 
-### 5.3 Mark PRP Complete
+### 6.3 Mark PRP Complete
 
 Move or annotate PRP as executed:
 ```markdown
@@ -356,7 +443,7 @@ If unable to proceed:
 2. Create work-order for blocker resolution
 3. Report to user with options
 
-### 5.4 Prompt for next action (use AskUserQuestion):
+### 6.4 Prompt for next action (use AskUserQuestion):
 
 ```
 question: "PRP execution complete. What would you like to do next?"
