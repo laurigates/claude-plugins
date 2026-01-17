@@ -6,6 +6,7 @@
 ### Features
 
 * **blueprint-plugin:** add structured logging for deferred PRP items ([#93](https://github.com/laurigates/claude-plugins/issues/93)) ([89e853a](https://github.com/laurigates/claude-plugins/commit/89e853a9170e3b39cd92ec517926af39005e0f2c))
+* **blueprint-plugin:** always commit CLAUDE.md and .claude/rules/ ([#94](https://github.com/laurigates/claude-plugins/issues/94)) ([4bf328f](https://github.com/laurigates/claude-plugins/commit/4bf328f961f16cf8ed29d25d8f6e2e5f84775795))
 
 ## [3.2.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.2.0...blueprint-plugin-v3.2.1) (2026-01-15)
 
