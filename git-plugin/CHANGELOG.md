@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.1.0...git-plugin-v2.1.1) (2026-01-17)
+
+
+### Bug Fixes
+
+* **git-plugin:** remove piped commands from context sections ([#89](https://github.com/laurigates/claude-plugins/issues/89)) ([f5215e9](https://github.com/laurigates/claude-plugins/commit/f5215e9bea6ffd1a5fb12b485c1b55e0cebf620c))
+
 ## [2.1.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.0.0...git-plugin-v2.1.0) (2026-01-16)
 
 
