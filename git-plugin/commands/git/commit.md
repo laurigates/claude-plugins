@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-01-16
-reviewed: 2026-01-16
+modified: 2026-01-17
+reviewed: 2026-01-17
 allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git add:*), Bash(git commit:*), Bash(git push:*), Bash(git branch:*), Bash(git remote:*), Bash(gh pr:*), Bash(gh label:*), Bash(gh repo:*), Bash(gh issue:*), Bash(pre-commit:*), Bash(find:*), Read, Edit, Grep, Glob, TodoWrite, mcp__github__create_pull_request, mcp__github__list_issues, mcp__github__get_issue
 argument-hint: [remote-branch] [--push] [--direct] [--pr] [--draft] [--issue <num>] [--no-commit] [--range <start>..<end>] [--skip-issue-detection]
 description: Complete workflow from changes to PR - auto-detect related issues, create logical commits with proper issue linkage, push to remote feature branch, and optionally create pull request
@@ -16,8 +16,8 @@ description: Complete workflow from changes to PR - auto-detect related issues, 
 - Staged changes: !`git diff --cached --numstat 2>/dev/null`
 - Recent commits: !`git log --format='%h %s' -n 10`
 - Remote: !`git remote get-url origin 2>/dev/null || echo "(no remote)"`
-- Available labels: !`gh label list --json name --jq '.[].name' --limit 50 2>/dev/null || echo "(no remote)"`
-- Open issues: !`gh issue list --state open --json number,title,labels --jq '.[] | "\(.number): \(.title)"' --limit 30 2>/dev/null || echo "(no remote)"`
+- Available labels: !`gh label list --json name --limit 50 2>/dev/null || echo "[]"`
+- Open issues: !`gh issue list --state open --json number,title,labels --limit 30 2>/dev/null || echo "[]"`
 
 ## Parameters
 
