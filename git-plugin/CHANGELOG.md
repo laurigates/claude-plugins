@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.2.0...git-plugin-v2.2.1) (2026-01-18)
+
+
+### Bug Fixes
+
+* **git-plugin:** remove jq expressions with pipes from context commands ([#99](https://github.com/laurigates/claude-plugins/issues/99)) ([e96a37c](https://github.com/laurigates/claude-plugins/commit/e96a37c27f2d6dac0da5a2ceeba0f9a26dcf5a20))
+
 ## [2.2.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.1.1...git-plugin-v2.2.0) (2026-01-17)
 
 
