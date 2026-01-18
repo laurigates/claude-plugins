@@ -87,5 +87,27 @@ if echo "$COMMAND" | grep -Eq '(cat|tail|head).*(/tasks/|\.output)' || \
     block_with_reminder "REMINDER: Use the TaskOutput tool instead of Bash commands to read task output. The TaskOutput tool is designed for checking on background tasks - use it with the task_id parameter. Example: TaskOutput with task_id and block=false for non-blocking status checks."
 fi
 
+# Check for excessive pipe chains (5+ pipes suggest over-complexity)
+# Count pipes that aren't inside quotes
+PIPE_COUNT=$(echo "$COMMAND" | tr -cd '|' | wc -c)
+if [ "$PIPE_COUNT" -ge 5 ]; then
+    block_with_reminder "REMINDER: This command has $PIPE_COUNT pipes - consider simplifying. Options:
+- Use JSON output from the source (--reporter=json, --format=json) and parse with jq
+- Use awk for multi-step text processing in one command
+- Break into multiple steps with intermediate analysis
+- For test failures: use test runner's built-in summary/grouping features"
+fi
+
+# Check for multi-grep chains parsing test/task output
+# Pattern: grep ... | grep ... with sed/cut suggests parsing structured output as text
+if echo "$COMMAND" | grep -Eq 'grep.*\|.*grep.*\|.*(sed|cut|awk)' && \
+   echo "$COMMAND" | grep -Eq '(\.output|/tasks/|Error|fail|FAIL)'; then
+    block_with_reminder "REMINDER: Parsing test output with grep chains is fragile. Better alternatives:
+- Use --reporter=json (Bun, Vitest, Jest) and parse with jq
+- Use --reporter=junit for CI-style XML output
+- Check test runner docs for built-in failure grouping options
+- For Bun: 'bun test --reporter=json 2>&1 | jq .testResults'"
+fi
+
 # If we get here, the command is allowed
 exit 0
