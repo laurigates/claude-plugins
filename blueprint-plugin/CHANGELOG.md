@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.5.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.4.0...blueprint-plugin-v3.5.0) (2026-01-18)
+
+
+### Features
+
+* add shell-scripting rule for safe frontmatter extraction ([#101](https://github.com/laurigates/claude-plugins/issues/101)) ([de1ae61](https://github.com/laurigates/claude-plugins/commit/de1ae612228e0ee1a3a88aadac89792e25559aa1))
+
 ## [3.4.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.3.0...blueprint-plugin-v3.4.0) (2026-01-17)
 
 
