@@ -1,6 +1,6 @@
 ---
 created: 2026-01-15
-modified: 2026-01-15
+modified: 2026-01-18
 reviewed: 2026-01-15
 description: "Validate ADR relationships, detect orphaned references, and check domain consistency"
 allowed_tools: [Read, Bash, Glob, Grep, Edit, AskUserQuestion]
@@ -71,10 +71,11 @@ Validate Architecture Decision Records for relationship consistency, reference i
 
 8. **Group ADRs by domain**:
    ```bash
+   # Note: Use prefixed variable names to avoid shell reserved words (e.g., 'status' in zsh)
    for f in docs/adrs/*.md; do
-     domain=$(grep -m1 "^domain:" "$f" | cut -d: -f2 | tr -d ' ')
-     status=$(grep -m1 "^status:" "$f" | cut -d: -f2 | tr -d ' ')
-     [ -n "$domain" ] && echo "$domain|$status|$f"
+     adr_domain=$(head -30 "$f" | grep -m1 "^domain:" | sed 's/^[^:]*:[[:space:]]*//')
+     adr_status=$(head -30 "$f" | grep -m1 "^status:" | sed 's/^[^:]*:[[:space:]]*//')
+     [ -n "$adr_domain" ] && echo "$adr_domain|$adr_status|$f"
    done | sort
    ```
 

@@ -1,6 +1,6 @@
 ---
 created: 2025-12-20
-modified: 2025-12-22
+modified: 2026-01-18
 reviewed: 2025-12-20
 ---
 
@@ -33,6 +33,8 @@ Claude Code plugin collection providing skills, commands, and agents for develop
 | `.claude/rules/skill-development.md` | Skill creation patterns |
 | `.claude/rules/agentic-optimization.md` | CLI output optimization for AI |
 | `.claude/rules/command-naming.md` | Command namespace conventions |
+| `.claude/rules/shell-scripting.md` | Safe shell patterns and frontmatter extraction |
+| `.claude/rules/agentic-permissions.md` | Granular tool permissions for commands |
 
 ## Creating New Skills
 
