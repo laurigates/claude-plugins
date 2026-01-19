@@ -109,5 +109,19 @@ if echo "$COMMAND" | grep -Eq 'grep.*\|.*grep.*\|.*(sed|cut|awk)' && \
 - For Bun: 'bun test --reporter=json 2>&1 | jq .testResults'"
 fi
 
+# Check for chained git commands (git X && git Y)
+# This pattern can cause index.lock race conditions where the lock from the first
+# command hasn't been released before the second command tries to acquire it.
+# The fix is to run git commands as separate Bash calls, not chained.
+if echo "$COMMAND" | grep -Eq 'git\s+\S+.*&&.*git\s+\S+'; then
+    block_with_reminder "REMINDER: Chaining git commands with '&&' can cause index.lock race conditions.
+The lock file from the first command may not be released before the second runs.
+Instead of: git stash && git checkout -b branch
+Run git commands as separate Bash tool calls:
+1. git stash
+2. git checkout -b branch
+This avoids race conditions and is more reliable."
+fi
+
 # If we get here, the command is allowed
 exit 0

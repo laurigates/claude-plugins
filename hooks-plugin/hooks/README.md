@@ -21,6 +21,7 @@ A PreToolUse hook that intercepts Bash commands and blocks those that should use
 | `ls *pattern*` | Consider **Glob** tool |
 | `cat/tail ...tasks/*.output` | Use **TaskOutput** tool instead |
 | `sleep && cat/tail` | Use **TaskOutput** tool with block parameter |
+| `git X && git Y` | Run git commands as separate Bash calls (avoids index.lock race condition) |
 
 ### How It Works
 
@@ -62,6 +63,9 @@ echo $?  # Should be 2 (blocked)
 
 echo '{"tool_input": {"command": "git status"}}' | bash .claude/hooks/bash-antipatterns.sh
 echo $?  # Should be 0 (allowed)
+
+echo '{"tool_input": {"command": "git stash && git checkout -b branch"}}' | bash .claude/hooks/bash-antipatterns.sh
+echo $?  # Should be 2 (blocked - chained git commands cause lock race conditions)
 ```
 
 ### Customization
