@@ -94,7 +94,7 @@ ARG VERSION=latest
 ARG BUILD_DATE
 ARG VCS_REF
 
-# Use build args
+# Use build args for dynamic labels
 LABEL org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.created="${BUILD_DATE}" \
       org.opencontainers.image.revision="${VCS_REF}"
@@ -111,6 +111,244 @@ RUN if [ "$BUILD_ENV" = "development" ]; then \
 #   --build-arg BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
 #   --build-arg VCS_REF=$(git rev-parse --short HEAD) \
 #   -t myapp:1.2.3 .
+```
+
+---
+
+## OCI Container Labels
+
+OCI (Open Container Initiative) annotations provide standardized metadata for container images. These labels are essential for **GitHub Container Registry (GHCR)** integration and image discovery.
+
+### Complete OCI Label Reference
+
+| Label | Description | Required | Example |
+|-------|-------------|----------|---------|
+| `org.opencontainers.image.source` | Repository URL | **Required for GHCR** | `https://github.com/owner/repo` |
+| `org.opencontainers.image.description` | Short description (max 512 chars) | **Required for GHCR** | `Production API server` |
+| `org.opencontainers.image.licenses` | SPDX license identifier (max 256 chars) | **Required for GHCR** | `MIT`, `Apache-2.0` |
+| `org.opencontainers.image.version` | Semantic version | Recommended | `1.2.3` |
+| `org.opencontainers.image.revision` | VCS commit hash | Recommended | `abc123def456` |
+| `org.opencontainers.image.created` | Build timestamp (RFC 3339) | Recommended | `2025-01-19T12:00:00Z` |
+| `org.opencontainers.image.title` | Human-readable name | Optional | `My Application` |
+| `org.opencontainers.image.vendor` | Organization/company name | Optional | `Forum Virium Helsinki` |
+| `org.opencontainers.image.authors` | Contact details | Optional | `team@example.com` |
+| `org.opencontainers.image.url` | Project homepage | Optional | `https://myapp.example.com` |
+| `org.opencontainers.image.documentation` | Documentation URL | Optional | `https://docs.example.com` |
+| `org.opencontainers.image.ref.name` | Reference name (tag/digest) | Optional | `v1.2.3` |
+| `org.opencontainers.image.base.name` | Base image reference | Optional | `docker.io/library/alpine:3.19` |
+
+### GHCR-Specific Labels
+
+GitHub Container Registry uses these labels for special features:
+
+| Label | GHCR Feature |
+|-------|--------------|
+| `org.opencontainers.image.source` | **Links package to repository** (enables repo permissions inheritance) |
+| `org.opencontainers.image.description` | Displayed on package page |
+| `org.opencontainers.image.licenses` | Displayed on package page |
+
+**Important**: Without `org.opencontainers.image.source`, your container image won't be linked to your repository, and you'll need to manually manage package permissions.
+
+### Dockerfile Label Patterns
+
+#### Static Labels (for stable metadata)
+
+```dockerfile
+# Place early in Dockerfile for caching (rarely changes)
+LABEL org.opencontainers.image.source="https://github.com/owner/repo" \
+      org.opencontainers.image.description="Production API server for MyApp" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.vendor="Forum Virium Helsinki" \
+      org.opencontainers.image.title="MyApp API" \
+      org.opencontainers.image.documentation="https://docs.myapp.example.com"
+```
+
+#### Dynamic Labels (for build-time metadata)
+
+```dockerfile
+# Build arguments for dynamic values
+ARG VERSION=dev
+ARG BUILD_DATE
+ARG VCS_REF
+
+# Dynamic labels (place late in Dockerfile)
+LABEL org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
+      org.opencontainers.image.revision="${VCS_REF}"
+```
+
+#### Complete Example
+
+```dockerfile
+# syntax=docker/dockerfile:1
+FROM node:22-alpine AS builder
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM node:22-alpine
+
+# Static labels (GHCR integration)
+LABEL org.opencontainers.image.source="https://github.com/owner/myapp" \
+      org.opencontainers.image.description="Production Node.js API server" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.vendor="Forum Virium Helsinki" \
+      org.opencontainers.image.title="MyApp API"
+
+# Dynamic labels (build-time metadata)
+ARG VERSION=dev
+ARG BUILD_DATE
+ARG VCS_REF
+
+LABEL org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
+      org.opencontainers.image.revision="${VCS_REF}"
+
+# Create non-root user
+RUN addgroup -g 1001 appgroup && adduser -D -u 1001 -G appgroup appuser
+
+WORKDIR /app
+COPY --from=builder --chown=appuser:appuser /app/dist ./dist
+COPY --from=builder --chown=appuser:appuser /app/node_modules ./node_modules
+
+USER appuser
+EXPOSE 8080
+HEALTHCHECK --interval=30s CMD wget -q --spider http://localhost:8080/health || exit 1
+CMD ["node", "dist/server.js"]
+```
+
+### Build Commands with Labels
+
+```bash
+# Build with all labels
+docker build \
+  --build-arg VERSION=$(git describe --tags --always) \
+  --build-arg BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+  --build-arg VCS_REF=$(git rev-parse HEAD) \
+  --label "org.opencontainers.image.source=https://github.com/owner/repo" \
+  --label "org.opencontainers.image.description=My container image" \
+  --label "org.opencontainers.image.licenses=MIT" \
+  -t ghcr.io/owner/myapp:1.2.3 .
+
+# Override labels at build time (useful for CI)
+docker build \
+  --label "org.opencontainers.image.version=${GITHUB_REF_NAME}" \
+  --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+  -t ghcr.io/${{ github.repository }}:${{ github.sha }} .
+```
+
+### GitHub Actions Integration
+
+#### Using docker/metadata-action (Recommended)
+
+The `docker/metadata-action` automatically generates OCI-compliant labels:
+
+```yaml
+name: Build and Push
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          # Add custom labels to auto-generated ones
+          labels: |
+            org.opencontainers.image.title=My Application
+            org.opencontainers.image.description=Production API server for MyApp
+            org.opencontainers.image.vendor=Forum Virium Helsinki
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+```
+
+**Labels auto-generated by metadata-action:**
+- `org.opencontainers.image.source` - From `$GITHUB_SERVER_URL/$GITHUB_REPOSITORY`
+- `org.opencontainers.image.revision` - From `$GITHUB_SHA`
+- `org.opencontainers.image.created` - Build timestamp
+- `org.opencontainers.image.version` - From tag/ref
+- `org.opencontainers.image.licenses` - From repository license (if detectable)
+
+#### Manual Labels in GitHub Actions
+
+```yaml
+- uses: docker/build-push-action@v6
+  with:
+    context: .
+    push: true
+    tags: ghcr.io/${{ github.repository }}:${{ github.sha }}
+    labels: |
+      org.opencontainers.image.source=https://github.com/${{ github.repository }}
+      org.opencontainers.image.description=My container image
+      org.opencontainers.image.licenses=MIT
+      org.opencontainers.image.version=${{ github.ref_name }}
+      org.opencontainers.image.revision=${{ github.sha }}
+      org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
+```
+
+### Inspecting Labels
+
+```bash
+# View labels of local image
+docker inspect --format='{{json .Config.Labels}}' myapp:latest | jq
+
+# View labels of remote image (skopeo)
+skopeo inspect docker://ghcr.io/owner/myapp:latest | jq '.Labels'
+
+# View labels with crane
+crane config ghcr.io/owner/myapp:latest | jq '.config.Labels'
+```
+
+### Multi-Architecture Label Considerations
+
+For multi-arch images, labels in the Dockerfile apply to each architecture. The manifest-level annotations require the `--provenance` flag or explicit annotation:
+
+```yaml
+- uses: docker/build-push-action@v6
+  with:
+    context: .
+    platforms: linux/amd64,linux/arm64
+    push: true
+    tags: ${{ steps.meta.outputs.tags }}
+    labels: ${{ steps.meta.outputs.labels }}
+    # Enable provenance for manifest annotations
+    provenance: true
 ```
 
 ---

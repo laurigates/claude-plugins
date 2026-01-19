@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
-reviewed: 2025-12-16
+modified: 2026-01-19
+reviewed: 2026-01-19
 description: Check and configure Dockerfile for FVH standards (minimal Alpine/slim, non-root, multi-stage)
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 argument-hint: "[--check-only] [--fix] [--type <frontend|python|go|rust>]"
@@ -57,6 +57,7 @@ Use WebSearch or WebFetch to verify current base image versions before reporting
 | HEALTHCHECK | Required | FAIL if missing |
 | Build caching | `--mount=type=cache` recommended | INFO |
 | EXPOSE | Should match nginx port | INFO |
+| **OCI Labels** | Required for GHCR integration | WARN if missing |
 
 **Python Service Standards:**
 
@@ -67,6 +68,20 @@ Use WebSearch or WebFetch to verify current base image versions before reporting
 | HEALTHCHECK | Required | FAIL if missing |
 | Non-root user | Recommended | WARN if missing |
 | Poetry/uv | Modern package manager | INFO |
+| **OCI Labels** | Required for GHCR integration | WARN if missing |
+
+**OCI Container Labels Standards:**
+
+| Label | Purpose | Severity |
+|-------|---------|----------|
+| `org.opencontainers.image.source` | Links to repository (enables GHCR features) | WARN if missing |
+| `org.opencontainers.image.description` | Package description (max 512 chars) | WARN if missing |
+| `org.opencontainers.image.licenses` | SPDX license identifier | WARN if missing |
+| `org.opencontainers.image.version` | Semantic version (via ARG) | INFO if missing |
+| `org.opencontainers.image.revision` | Git commit SHA (via ARG) | INFO if missing |
+| `org.opencontainers.image.created` | Build timestamp (via ARG) | INFO if missing |
+
+**Note**: Labels can be in Dockerfile (`LABEL` instruction) or applied via `docker/metadata-action` in workflows.
 
 ### Phase 3: Report Generation
 
@@ -84,8 +99,16 @@ Configuration Checks:
   Build caching   npm cache         ✅ PASS
   EXPOSE          80                ✅ PASS
 
+OCI Labels Checks:
+  image.source    Present           ✅ PASS
+  image.description Present         ✅ PASS
+  image.licenses  Not found         ⚠️ WARN
+  image.version   Via ARG           ✅ PASS
+  image.revision  Via ARG           ✅ PASS
+
 Recommendations:
   - Consider using Node 22 LTS for stability
+  - Add org.opencontainers.image.licenses label
 ```
 
 ### Phase 4: Configuration (If Requested)
@@ -134,6 +157,20 @@ RUN --mount=type=cache,target=/root/.npm \
 
 FROM nginx:1.27-alpine
 
+# OCI labels for GHCR integration
+LABEL org.opencontainers.image.source="https://github.com/OWNER/REPO" \
+      org.opencontainers.image.description="Production frontend application" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.vendor="Forum Virium Helsinki"
+
+# Dynamic labels via build args
+ARG VERSION=dev
+ARG BUILD_DATE
+ARG VCS_REF
+LABEL org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
+      org.opencontainers.image.revision="${VCS_REF}"
+
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx/default.conf.template /etc/nginx/templates/
 
@@ -153,6 +190,20 @@ COPY pyproject.toml uv.lock ./
 RUN pip install uv && uv sync --frozen --no-dev
 
 FROM python:3.12-slim
+
+# OCI labels for GHCR integration
+LABEL org.opencontainers.image.source="https://github.com/OWNER/REPO" \
+      org.opencontainers.image.description="Production Python API server" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.vendor="Forum Virium Helsinki"
+
+# Dynamic labels via build args
+ARG VERSION=dev
+ARG BUILD_DATE
+ARG VCS_REF
+LABEL org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
+      org.opencontainers.image.revision="${VCS_REF}"
 
 RUN useradd --create-home appuser
 USER appuser
