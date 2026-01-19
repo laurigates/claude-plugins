@@ -12,6 +12,7 @@ This plugin provides comprehensive testing support including test runners, TDD w
 |---------|-------------|
 | `/test:run` | Universal test runner - auto-detects and runs appropriate testing framework |
 | `/test:quick` | Fast unit tests only (skip slow/integration/E2E) |
+| `/test:focus` | Run single test file with fail-fast mode for rapid iteration |
 | `/test:full` | Complete test suite including integration and E2E tests |
 | `/test:setup` | Configure testing infrastructure with CI/CD integration |
 | `/test:consult` | Consult test-architecture agent for testing strategy |
@@ -61,6 +62,15 @@ The plugin enforces RED → GREEN → REFACTOR:
 ```
 
 Runs only fast unit tests, skipping slow integration and E2E tests.
+
+### Focus on Single File
+
+```bash
+/test:focus login.spec.ts
+/test:focus tests/e2e/auth.spec.ts --serial
+```
+
+Runs a single test file with fail-fast mode. Stops immediately on first failure for rapid iteration. Use `--serial` for tests requiring sequential execution (WebGL, database state).
 
 ### Full Test Suite
 
