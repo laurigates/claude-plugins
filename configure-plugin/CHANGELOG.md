@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.1.1...configure-plugin-v1.2.0) (2026-01-19)
+
+
+### Features
+
+* **container:** add OCI container labels support for GHCR integration ([#104](https://github.com/laurigates/claude-plugins/issues/104)) ([6fb88b2](https://github.com/laurigates/claude-plugins/commit/6fb88b278571ac76a11a40ae55d648b6f4320c1a))
+
 ## [1.1.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.1.0...configure-plugin-v1.1.1) (2026-01-09)
 
 
