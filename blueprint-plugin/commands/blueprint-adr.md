@@ -166,19 +166,21 @@ options:
 For each significant decision, create an ADR:
 
 ```markdown
-# ADR-{number}: {Title}
-
 ---
+id: ADR-{NNNN}                          # Derived from filename (0003-*.md → ADR-0003)
 date: {YYYY-MM-DD}
 status: Accepted | Superseded | Deprecated | Proposed
 deciders: {who made the decision}
 domain: {domain-tag}                    # Optional: state-management, data-layer, etc.
 supersedes: ADR-{XXXX}                  # Optional: if superseding another ADR
 extends: ADR-{XXXX}                     # Optional: if extending another ADR
-related:                                # Optional: non-hierarchical relationships
-  - ADR-{YYYY}
-  - ADR-{ZZZZ}
+relates-to:                             # Cross-document references
+  - PRD-{NNN}                           # Related PRDs
+  - ADR-{YYYY}                          # Related ADRs
+github-issues: []                       # Linked GitHub issues
 ---
+
+# ADR-{number}: {Title}
 
 ## Context
 
@@ -306,7 +308,29 @@ If any new ADR supersedes an existing ADR:
   - `superseded_by: ADR-0012`
   - Links section references ADR-0012
 
-### 4.1 Present Summary
+### 4.1 Update Manifest
+
+Update `docs/blueprint/manifest.json` ID registry for each ADR:
+
+```json
+{
+  "id_registry": {
+    "documents": {
+      "ADR-0003": {
+        "path": "docs/adrs/0003-database-choice.md",
+        "title": "Database Choice",
+        "status": "Accepted",
+        "domain": "data-layer",
+        "relates_to": ["PRD-001"],
+        "github_issues": [],
+        "created": "{date}"
+      }
+    }
+  }
+}
+```
+
+### 4.2 Present Summary
 ```
 ✅ ADRs Generated: {count} records
 

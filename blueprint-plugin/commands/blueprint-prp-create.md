@@ -62,13 +62,62 @@ If relevant ai_docs don't exist, create them:
 
 ## Phase 2: Draft PRP
 
-### 2.1 Create PRP File
+### 2.1 Generate Document ID and Link to PRD
+
+Before creating the PRP, generate a unique ID and link to source PRD:
+
+```bash
+# Get next PRP ID from manifest
+next_prp_id() {
+  local manifest="docs/blueprint/manifest.json"
+  local last=$(jq -r '.id_registry.last_prp // 0' "$manifest" 2>/dev/null || echo "0")
+  local next=$((last + 1))
+  printf "PRP-%03d" "$next"
+}
+
+# List available PRDs for linking
+list_prds() {
+  jq -r '.id_registry.documents | to_entries[] | select(.key | startswith("PRD")) | "\(.key): \(.value.title)"' docs/blueprint/manifest.json
+}
+```
+
+**Prompt user to select source PRD** (use AskUserQuestion):
+```
+question: "Which PRD does this PRP implement?"
+options:
+  - label: "{PRD-001}: {title}" (for each PRD in manifest)
+  - label: "None / New feature"
+    description: "This PRP doesn't implement an existing PRD"
+```
+
+Store the selected PRD ID for the `implements` field.
+
+### 2.2 Create PRP File
 Create the PRP in `docs/prps/`:
 ```
 docs/prps/[feature-name].md
 ```
 
-### 2.2 Fill Sections
+### 2.3 PRP Frontmatter
+
+Include document ID and linking fields:
+
+```yaml
+---
+id: {PRP-NNN}
+created: {YYYY-MM-DD}
+modified: {YYYY-MM-DD}
+status: Draft
+implements:                    # Source PRD(s) this PRP implements
+  - {PRD-NNN}                  # or empty if standalone
+relates-to:                    # Related ADRs, other PRPs
+  - ADR-NNNN
+github-issues: []              # Linked issues (populated later)
+confidence: 0                  # Updated after scoring
+---
+```
+
+### 2.4 Fill Sections
 
 **Goal & Why**:
 - One sentence goal
@@ -173,7 +222,9 @@ Show the user:
 ```
 ## PRP Created: [Feature Name]
 
+**ID:** {PRP-NNN}
 **Location:** `docs/prps/[feature-name].md`
+**Implements:** {PRD-NNN} (or "Standalone")
 
 **Summary:**
 [1-2 sentence summary of what will be implemented]
@@ -187,6 +238,10 @@ Show the user:
 - [X] Codebase patterns identified
 - [X] External documentation referenced
 - [X] Known gotchas documented
+
+**Linked Documents:**
+- Source PRD: {PRD-NNN}
+- Related ADRs: {list}
 
 **Validation Gates:**
 - Gate 1: [Linting command]
@@ -203,6 +258,29 @@ Show the user:
 **Needs attention (if score < 7):**
 - [List any gaps to address]
 ```
+
+### 4.2.1 Update Manifest
+
+Update `docs/blueprint/manifest.json` ID registry:
+
+```json
+{
+  "id_registry": {
+    "last_prp": {new_number},
+    "documents": {
+      "{PRP-NNN}": {
+        "path": "docs/prps/{feature-name}.md",
+        "title": "{Feature Name}",
+        "implements": ["{PRD-NNN}"],
+        "github_issues": [],
+        "created": "{date}"
+      }
+    }
+  }
+}
+```
+
+If PRP implements a PRD, also update the PRD's registry entry to track the implementation relationship.
 
 ### 4.3 Prompt for next action (use AskUserQuestion):
 
