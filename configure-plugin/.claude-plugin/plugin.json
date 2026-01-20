@@ -17,6 +17,9 @@
     "docker",
     "testing",
     "linting",
-    "formatting"
+    "formatting",
+    "security",
+    "permissions",
+    "wildcards"
   ]
 }

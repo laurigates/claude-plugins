@@ -4,8 +4,11 @@ description: |
   Claude Code hooks configuration and development. Covers hook lifecycle events,
   configuration patterns, input/output schemas, and common automation use cases.
   Use when user mentions hooks, automation, PreToolUse, PostToolUse, SessionStart,
-  or needs to enforce consistent behavior in Claude Code workflows.
+  SubagentStart, or needs to enforce consistent behavior in Claude Code workflows.
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, TodoWrite
+created: 2025-12-16
+modified: 2026-01-20
+reviewed: 2026-01-20
 ---
 
 # Claude Code Hooks Configuration
@@ -33,6 +36,7 @@ Hooks are user-defined shell commands that execute at specific points in Claude 
 | **PreToolUse** | Before tool execution | Permission control, blocking dangerous ops |
 | **PostToolUse** | After tool completes | Auto-formatting, logging, validation |
 | **Stop** | Agent finishes | Notifications, git reminders |
+| **SubagentStart** | Subagent is about to start | Input modification, context injection |
 | **SubagentStop** | Subagent finishes | Task completion evaluation |
 | **PreCompact** | Before context compaction | Transcript backup |
 | **Notification** | Claude sends notification | Custom alerts |
@@ -49,6 +53,27 @@ Hooks are configured in settings files:
 - **`.claude/settings.local.json`** - Local project (not committed)
 
 Claude Code merges all matching hooks from all files.
+
+### Frontmatter Hooks (Skills and Commands)
+
+Hooks can also be defined directly in skill and command frontmatter using the `hooks` field:
+
+```yaml
+---
+name: my-skill
+description: A skill with hooks
+allowed-tools: Bash, Read
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "echo 'Pre-tool hook from skill'"
+          timeout: 10
+---
+```
+
+This allows skills and commands to define their own hooks that are active only when that skill/command is in use.
 
 ### Basic Structure
 
@@ -112,6 +137,15 @@ Hooks receive JSON via stdin with these common fields:
 }
 ```
 
+**SubagentStart additional fields:**
+```json
+{
+  "subagent_type": "Explore",
+  "subagent_prompt": "original prompt text",
+  "subagent_model": "claude-sonnet-4-20250514"
+}
+```
+
 ## Output Schema
 
 ### Exit Codes
@@ -136,6 +170,13 @@ Hooks receive JSON via stdin with these common fields:
 {
   "decision": "block",
   "reason": "required explanation for continuing"
+}
+```
+
+**SubagentStart (input modification):**
+```json
+{
+  "updatedPrompt": "modified prompt text to inject context or modify behavior"
 }
 ```
 
@@ -208,6 +249,27 @@ cat << EOF
   "additionalContext": "Current branch: $BRANCH\nPending changes:\n$GIT_STATUS"
 }
 EOF
+```
+
+### Inject Context for Subagents (SubagentStart)
+
+```bash
+#!/bin/bash
+INPUT=$(cat)
+SUBAGENT_TYPE=$(echo "$INPUT" | jq -r '.subagent_type // empty')
+ORIGINAL_PROMPT=$(echo "$INPUT" | jq -r '.subagent_prompt // empty')
+
+# Add project context to Explore agents
+if [ "$SUBAGENT_TYPE" = "Explore" ]; then
+    PROJECT_INFO="Project uses TypeScript with Bun. Main source in src/."
+    cat << EOF
+{
+  "updatedPrompt": "$PROJECT_INFO\n\n$ORIGINAL_PROMPT"
+}
+EOF
+fi
+
+exit 0
 ```
 
 ### Desktop Notification on Stop (Stop)

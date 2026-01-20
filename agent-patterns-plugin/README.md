@@ -214,6 +214,33 @@ Configure Claude Code lifecycle hooks with proper timeout settings.
 }
 ```
 
+#### `custom-agent-definitions`
+Define and configure custom agents with context forking and tool restrictions.
+
+**When to use:**
+- Creating custom agent types beyond built-in agents
+- Configuring isolated agent contexts with `context: fork`
+- Restricting agent capabilities with `disallowedTools`
+- Setting up specialized agents for specific workflows
+
+**Key Fields:**
+```yaml
+---
+name: security-auditor
+description: Security-focused code review
+model: sonnet
+context: fork
+allowed-tools: Read, Grep, Glob
+disallowedTools: Bash, Write, Edit
+---
+```
+
+**Features:**
+- Context forking for isolated agent execution
+- Tool whitelisting (`allowed-tools`)
+- Tool blacklisting (`disallowedTools`)
+- Custom agent definitions in plugins
+
 ## Installation
 
 ### Via Plugin System
@@ -309,10 +336,27 @@ MIT License - See LICENSE file for details
 
 Contributions welcome! Please follow existing patterns and conventions.
 
+## Claude Agent SDK Migration
+
+As of Claude Code 2.1.7, the legacy SDK entrypoint has been removed. If you're building custom Claude applications programmatically, migrate to the official package:
+
+```bash
+# Install the official SDK
+npm install @anthropic-ai/claude-agent-sdk
+```
+
+**Migration notes:**
+- Legacy entrypoints have been removed
+- Use `@anthropic-ai/claude-agent-sdk` for all new agent development
+- Existing integrations should update their imports
+
+See the [Claude Agent SDK documentation](https://docs.anthropic.com/claude/docs/claude-agent-sdk) for migration guidance.
+
 ## References
 
 - [Anthropic Prompt Engineering](https://docs.anthropic.com/claude/docs/prompt-engineering)
 - [Claude Code Documentation](https://docs.claude.com/claude-code)
+- [Claude Agent SDK](https://docs.anthropic.com/claude/docs/claude-agent-sdk)
 - [Multi-Agent Systems Patterns](https://en.wikipedia.org/wiki/Multi-agent_system)
 
 ## Version

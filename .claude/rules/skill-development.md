@@ -1,10 +1,43 @@
 ---
 created: 2025-12-20
-modified: 2025-12-20
-reviewed: 2025-12-20
+modified: 2026-01-20
+reviewed: 2026-01-20
 ---
 
 # Skill Development
+
+## Skills and Commands Unified (Claude Code 2.1.7+)
+
+As of Claude Code 2.1.7, skills and slash commands have been merged into a unified system:
+
+| Feature | Behavior |
+|---------|----------|
+| **Unified invocation** | Both skills and commands use `/name` syntax |
+| **Auto-discovery** | Claude Code automatically discovers skills/commands |
+| **Hot-reload** | Changes to skill/command files take effect immediately |
+| **SlashCommand tool** | Commands can invoke other commands via the SlashCommand tool |
+
+### Hot-Reload
+
+Skills and commands are reloaded automatically when modified:
+- No need to restart Claude Code
+- Changes take effect on the next invocation
+- Useful for iterative development
+
+### SlashCommand Tool Invocation
+
+Commands can invoke other commands programmatically:
+
+```markdown
+## Execution
+
+First, run the setup command:
+Use SlashCommand tool to invoke `/configure:pre-commit`
+
+Then proceed with...
+```
+
+This enables composable command workflows.
 
 ## Skill File Structure
 
