@@ -80,6 +80,7 @@ All commands support two modes:
 | `fvh-pre-commit` | FVH pre-commit hook standards |
 | `fvh-release-please` | FVH release-please standards |
 | `fvh-skaffold` | FVH Skaffold configuration standards |
+| `claude-security-settings` | Claude Code security settings and wildcard permissions |
 
 ## Usage
 

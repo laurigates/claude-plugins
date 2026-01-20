@@ -12,6 +12,9 @@
     "workflow",
     "primer",
     "hooks",
-    "configuration"
+    "configuration",
+    "context-fork",
+    "disallowedTools",
+    "custom-agents"
   ]
 }
