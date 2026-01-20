@@ -20,6 +20,7 @@ Display the current blueprint configuration status with three-layer architecture
 
 2. **Read manifest and gather information**:
    - Parse `manifest.json` for version and configuration
+   - Parse `id_registry` for traceability metrics
    - Count PRDs in `docs/prds/`
    - Count ADRs in `docs/adrs/`
    - Count PRPs in `docs/prps/`
@@ -97,6 +98,23 @@ Display the current blueprint configuration status with three-layer architecture
    - Last Sync: {last_updated}
    - Phases: {count in_progress} active, {count complete} complete
 
+   Traceability (ID Registry):
+   - Total documents: {count} ({x} PRDs, {y} ADRs, {z} PRPs, {w} WOs)
+   - With IDs: {count}/{total} ({percent}%)
+   - Linked to GitHub: {count}/{total} ({percent}%)
+   - Orphan documents: {count} (docs without GitHub issues)
+   - Orphan issues: {count} (issues without linked docs)
+   - Broken links: {count}
+
+   {If orphans exist:}
+   Orphan Documents (no GitHub issues):
+   - {PRD-001}: {title}
+   - {PRP-003}: {title}
+
+   Orphan GitHub Issues (no linked docs):
+   - #{N}: {title}
+   - #{M}: {title}
+
    Structure:
    ✅ docs/blueprint/manifest.json
    {✅|❌} docs/prds/
@@ -136,6 +154,11 @@ Display the current blueprint configuration status with three-layer architecture
      - Multiple "Accepted" ADRs in same domain (potential conflict)
      - ADRs without domain tags (harder to detect conflicts)
      - Missing bidirectional links (e.g., supersedes without corresponding superseded_by)
+   - **Traceability checks**:
+     - Warn if documents exist without IDs (run `/blueprint:sync-ids`)
+     - Warn if orphan documents exist (docs without GitHub issues)
+     - Warn if orphan issues exist (GitHub issues without linked docs)
+     - Warn if broken links detected (referenced docs/issues don't exist)
 
 7. **Prompt for next action** (use AskUserQuestion):
 
@@ -148,6 +171,8 @@ Display the current blueprint configuration status with three-layer architecture
    - If CLAUDE.md stale → Include "Update CLAUDE.md"
    - If feature tracker exists but stale → Include "Sync feature tracker"
    - If ADRs have potential issues → Include "Validate ADRs"
+   - If documents without IDs → Include "Sync document IDs"
+   - If orphan documents/issues → Include "Link documents to GitHub"
    - Always include "Continue development" and "I'm done"
 
    ```
@@ -168,6 +193,10 @@ Display the current blueprint configuration status with three-layer architecture
        description: "Synchronize tracker with work-overview.md and TODO.md"
      - label: "Validate ADRs" (if ADR issues detected)
        description: "Check ADR relationships, conflicts, and missing links"
+     - label: "Sync document IDs" (if documents without IDs)
+       description: "Assign IDs to all documents missing them"
+     - label: "Link documents to GitHub" (if orphans exist)
+       description: "Create/link GitHub issues for orphan documents"
      # Always include these:
      - label: "Continue development"
        description: "Run /project:continue to work on next task"
@@ -183,6 +212,8 @@ Display the current blueprint configuration status with three-layer architecture
    - "Update CLAUDE.md" → Run `/blueprint:claude-md`
    - "Sync feature tracker" → Run `/blueprint:feature-tracker-sync`
    - "Validate ADRs" → Run `/blueprint:adr-validate`
+   - "Sync document IDs" → Run `/blueprint:sync-ids`
+   - "Link documents to GitHub" → For each orphan, prompt to create/link issue
    - "Continue development" → Run `/project:continue`
    - "I'm done" → Exit
 
@@ -238,6 +269,14 @@ Feature Tracker:
 - Progress: 22/42 (52.4%)
 - Last Sync: 2024-01-14
 - Phases: 1 active, 2 complete
+
+Traceability (ID Registry):
+- Total documents: 22 (3 PRDs, 5 ADRs, 2 PRPs, 12 WOs)
+- With IDs: 22/22 (100%)
+- Linked to GitHub: 18/22 (82%)
+- Orphan documents: 4 (PRD-002, ADR-0004, PRP-001, WO-008)
+- Orphan issues: 2 (#23, #45)
+- Broken links: 0
 
 Structure:
 ✅ docs/blueprint/manifest.json

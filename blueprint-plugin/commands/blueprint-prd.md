@@ -97,21 +97,43 @@ options:
 
 ## Phase 3: PRD Generation
 
-### 3.1 Create PRD File
+### 3.1 Generate Document ID
+
+Before creating the PRD, generate a unique ID:
+
+```bash
+# Get next PRD ID from manifest
+next_prd_id() {
+  local manifest="docs/blueprint/manifest.json"
+  local last=$(jq -r '.id_registry.last_prd // 0' "$manifest" 2>/dev/null || echo "0")
+  local next=$((last + 1))
+  printf "PRD-%03d" "$next"
+}
+```
+
+Store the generated ID for use in the document and manifest update.
+
+### 3.2 Create PRD File
 Create the PRD in `docs/prds/`:
 ```
 docs/prds/project-overview.md
 ```
 
-### 3.2 PRD Template
+### 3.3 PRD Template
 Generate PRD with this structure:
 
 ```markdown
-# {Project Name} - Product Requirements Document
+---
+id: {PRD-NNN}
+created: {YYYY-MM-DD}
+modified: {YYYY-MM-DD}
+status: Draft
+version: "1.0"
+relates-to: []
+github-issues: []
+---
 
-**Created**: {date}
-**Status**: Draft
-**Version**: 1.0
+# {Project Name} - Product Requirements Document
 
 ## Executive Summary
 
@@ -217,6 +239,7 @@ Show the user:
 ```
 ✅ PRD Generated: {Project Name}
 
+**ID**: {PRD-NNN}
 **Location**: `docs/prds/project-overview.md`
 
 **Extracted from**:
@@ -251,6 +274,22 @@ Update `docs/blueprint/manifest.json`:
 - Add PRD to `generated_artifacts`
 - Update `has_prds` to true
 - Update `updated_at` timestamp
+- **Update ID registry**:
+  ```json
+  {
+    "id_registry": {
+      "last_prd": {new_number},
+      "documents": {
+        "{PRD-NNN}": {
+          "path": "docs/prds/{filename}.md",
+          "title": "{Project Name}",
+          "github_issues": [],
+          "created": "{date}"
+        }
+      }
+    }
+  }
+  ```
 
 **Tips**:
 - Be thorough in reading existing docs - they often contain valuable context
@@ -259,7 +298,43 @@ Update `docs/blueprint/manifest.json`:
 - Mark uncertain sections for user review
 - Keep PRD focused on "what" and "why", not "how"
 
-### 4.3 Prompt for next action (use AskUserQuestion):
+### 4.3 Prompt for GitHub Issue (use AskUserQuestion):
+
+```
+question: "Create a GitHub issue to track this PRD?"
+options:
+  - label: "Yes, create issue (Recommended)"
+    description: "Creates issue with title '[PRD-NNN] {Project Name}'"
+  - label: "No, skip for now"
+    description: "Can link later by editing github-issues in frontmatter"
+```
+
+**If yes**, create GitHub issue:
+```bash
+gh issue create \
+  --title "[{PRD-NNN}] {Project Name}" \
+  --body "## Product Requirements Document
+
+**Document**: \`docs/prds/{filename}.md\`
+**ID**: {PRD-NNN}
+
+### Summary
+{Executive summary from PRD}
+
+### Key Features
+{List of FR-* features}
+
+---
+*Auto-generated from PRD. See linked document for full requirements.*" \
+  --label "prd,requirements"
+```
+
+Capture issue number and update:
+1. PRD frontmatter: add issue number to `github-issues`
+2. Manifest: add issue to `id_registry.documents[PRD-NNN].github_issues`
+3. Manifest: add mapping to `id_registry.github_issues`
+
+### 4.4 Prompt for next action (use AskUserQuestion):
 
 ```
 question: "PRD generated. What would you like to do next?"

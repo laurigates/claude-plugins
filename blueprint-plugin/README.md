@@ -37,10 +37,11 @@ PRD (Product Requirements) → PRP (Product Requirement Prompt) → Work-Order �
 | Command | Description |
 |---------|-------------|
 | `/blueprint-execute` | **Smart meta command** - Analyzes repository state and executes the next logical blueprint action (idempotent) |
-| `/blueprint-status` | Show blueprint version and configuration |
+| `/blueprint-status` | Show blueprint version, configuration, and traceability report |
 | `/blueprint-upgrade` | Upgrade to latest blueprint format |
 | `/blueprint-rules` | Manage modular rules |
 | `/blueprint-claude-md` | Update CLAUDE.md from blueprint artifacts |
+| `/blueprint-sync-ids` | **NEW** - Assign IDs to all documents, build traceability registry |
 
 ### Feature Tracking Commands
 
@@ -56,6 +57,7 @@ PRD (Product Requirements) → PRP (Product Requirement Prompt) → Work-Order �
 | `blueprint-development` | Core methodology for generating project-specific skills and commands from PRDs |
 | `confidence-scoring` | Assess quality of PRPs and work-orders for execution readiness |
 | `feature-tracking` | Track implementation status against requirements with hierarchical FR codes |
+| `document-linking` | **NEW** - Unified ID system connecting PRDs, ADRs, PRPs, work-orders, and GitHub issues |
 
 ## Agents
 
@@ -198,6 +200,67 @@ Generates isolated task packages with minimal context for subagent execution.
 ```
 
 Runs the implementation with RED → GREEN → REFACTOR workflow.
+
+## Document Traceability
+
+All blueprint documents are connected through a unified ID system, enabling full traceability from requirements to implementation.
+
+### ID Formats
+
+| Document | Format | Example |
+|----------|--------|---------|
+| PRD | `PRD-NNN` | `PRD-001` |
+| ADR | `ADR-NNNN` | `ADR-0003` |
+| PRP | `PRP-NNN` | `PRP-007` |
+| Work-Order | `WO-NNN` | `WO-042` |
+
+### Automatic ID Assignment
+
+IDs are automatically generated when:
+- Creating documents via `/blueprint-prd`, `/blueprint-adr`, `/blueprint-prp-create`
+- Running `/blueprint-sync-ids` to batch-assign IDs to existing documents
+- Accessing documents without IDs (auto-assigned on first access)
+
+### Cross-Linking
+
+Documents link to each other via frontmatter:
+
+```yaml
+---
+id: PRP-002
+implements:
+  - PRD-001
+relates-to:
+  - ADR-0003
+github-issues:
+  - 42
+---
+```
+
+### GitHub Integration
+
+| Artifact | Format |
+|----------|--------|
+| Issue title | `[PRD-001] Feature name` |
+| Commit scope | `feat(PRD-001): description` |
+| PR reference | `Implements PRD-001, Fixes #42` |
+
+### Traceability Report
+
+Run `/blueprint-status` to see:
+- Documents with/without IDs
+- Documents linked to GitHub issues
+- Orphan documents (no issues)
+- Orphan issues (no linked docs)
+- Broken links
+
+### Sync IDs
+
+```bash
+/blueprint-sync-ids              # Assign IDs to all documents
+/blueprint-sync-ids --dry-run    # Preview changes
+/blueprint-sync-ids --link-issues # Also create GitHub issues for orphans
+```
 
 ## Feature Tracking (Optional)
 

@@ -106,8 +106,21 @@ Should be:
 **Work-order structure**:
 
 ```markdown
+---
+id: WO-NNN
+created: {YYYY-MM-DD}
+status: pending
+implements:                    # Source PRP or PRD
+  - PRP-NNN
+relates-to:                    # Related documents
+  - ADR-NNNN
+github-issues:
+  - N
+---
+
 # Work-Order NNN: [Task Name]
 
+**ID**: WO-NNN
 **GitHub Issue**: #N
 **Status**: pending
 
@@ -172,10 +185,15 @@ Ensure zero-padded numbering (001, 002, 010, 100)
 
 ```bash
 gh issue create \
-  --title "Work-Order NNN: [Task Name]" \
+  --title "[WO-NNN] [Task Name]" \
   --body "## Work Order: [Task Name]
 
+**ID**: WO-NNN
 **Local Context**: \`docs/blueprint/work-orders/NNN-task-name.md\`
+
+### Related Documents
+- **Implements**: {PRP-NNN or PRD-NNN}
+- **Related ADRs**: {list of ADR-NNNN}
 
 ### Objective
 [One-line objective from work order]
@@ -207,14 +225,44 @@ Update the `**GitHub Issue**:` line in the work-order file with the issue number
 - Include GitHub issue reference if created
 - Keep overview current
 
+### Step 8.5: Update Manifest
+
+Update `docs/blueprint/manifest.json` ID registry:
+
+```json
+{
+  "id_registry": {
+    "documents": {
+      "WO-NNN": {
+        "path": "docs/blueprint/work-orders/NNN-task-name.md",
+        "title": "[Task Name]",
+        "implements": ["PRP-NNN"],
+        "github_issues": [N],
+        "created": "{date}"
+      }
+    },
+    "github_issues": {
+      "N": ["WO-NNN", "PRP-NNN"]
+    }
+  }
+}
+```
+
+Also update the source PRP/PRD to add this work-order to its tracking.
+
 ### Step 9: Report
 
 ```
 Work-order created!
 
+ID: WO-NNN
 Work-Order: 003-jwt-token-generation.md
 Location: docs/blueprint/work-orders/003-jwt-token-generation.md
 GitHub Issue: #42 (or "Local only" if --no-publish)
+
+Traceability:
+- Implements: PRP-002 (OAuth Integration)
+- Related: ADR-0003 (Session Storage)
 
 Objective: [Brief objective]
 
@@ -228,6 +276,7 @@ Ready for execution:
 - TDD workflow enforced (tests specified first)
 - Clear success criteria defined
 - PR should use "Fixes #42" to auto-close issue
+- Commit messages should use: feat(WO-NNN): description
 ```
 
 ### Step 10: Prompt for Next Action
