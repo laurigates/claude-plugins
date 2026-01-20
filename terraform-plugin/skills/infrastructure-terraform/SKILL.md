@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-01-20
 reviewed: 2025-12-16
 name: infrastructure-terraform
 description: |
@@ -48,8 +48,15 @@ terraform state pull > backup.tfstate  # Backup state
 
 # Validation and formatting
 terraform validate              # Validate configuration
-terraform fmt -recursive        # Format all files
+terraform fmt -recursive        # Format all files recursively
+terraform fmt path/to/dir       # Format specific directory
 terraform graph | dot -Tsvg > graph.svg  # Dependency graph
+
+# Working with directories (use -chdir to stay in repo root)
+terraform -chdir=gcp fmt        # Format files in gcp/ directory
+terraform -chdir=gcp validate   # Validate gcp/ configuration
+terraform -chdir=gcp plan       # Plan from specific directory
+terraform -chdir=modules/vpc init  # Init module directory
 
 # Debugging
 export TF_LOG=DEBUG             # Enable debug logging
@@ -136,5 +143,29 @@ terraform init -reconfigure
 terraform taint aws_instance.broken
 terraform apply -target=aws_instance.web
 ```
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Format directory | `terraform -chdir=path/to/dir fmt` |
+| Check format (CI) | `terraform fmt -check -recursive` |
+| Validate config | `terraform -chdir=path/to/dir validate` |
+| Compact plan | `terraform plan -compact-warnings` |
+| JSON plan output | `terraform plan -out=plan.tfplan && terraform show -json plan.tfplan` |
+| List resources | `terraform state list` |
+
+## Quick Reference
+
+| Flag | Description |
+|------|-------------|
+| `-chdir=DIR` | Change to DIR before running command |
+| `-recursive` | Process directories recursively |
+| `-check` | Check formatting without changes (CI) |
+| `-compact-warnings` | Show warnings in compact form |
+| `-json` | Output in JSON format |
+| `-out=FILE` | Save plan to file |
+| `-target=RESOURCE` | Target specific resource |
+| `-refresh-only` | Only refresh state, no changes |
 
 For detailed debugging patterns, advanced module design, CI/CD integration, and troubleshooting strategies, see REFERENCE.md.
