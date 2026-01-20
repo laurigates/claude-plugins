@@ -25,7 +25,7 @@
   "rust-plugin": "1.0.0",
   "sync-plugin": "1.0.0",
   "terraform-plugin": "1.0.0",
-  "testing-plugin": "3.0.1",
+  "testing-plugin": "3.1.0",
   "tools-plugin": "2.0.1",
   "typescript-plugin": "1.2.1"
 }
