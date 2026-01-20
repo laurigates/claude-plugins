@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.5.0...blueprint-plugin-v3.6.0) (2026-01-20)
+
+
+### Features
+
+* **blueprint-plugin:** add unified document ID system for traceability ([#110](https://github.com/laurigates/claude-plugins/issues/110)) ([502ad7b](https://github.com/laurigates/claude-plugins/commit/502ad7b73314078f11f28f75b984789fba27930d))
+
 ## [3.5.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.4.0...blueprint-plugin-v3.5.0) (2026-01-18)
 
 
