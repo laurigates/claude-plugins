@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.0.1...testing-plugin-v3.1.0) (2026-01-20)
+
+
+### Features
+
+* **testing-plugin:** add test:focus command for fail-fast single file testing ([#108](https://github.com/laurigates/claude-plugins/issues/108)) ([d57b07b](https://github.com/laurigates/claude-plugins/commit/d57b07bb249395fb99cae67be971672ef3c59a3b))
+
 ## [3.0.1](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.0.0...testing-plugin-v3.0.1) (2026-01-09)
 
 
