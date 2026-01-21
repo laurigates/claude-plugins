@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.0.1...tools-plugin-v2.1.0) (2026-01-21)
+
+
+### Features
+
+* **tools-plugin:** add --format option and improve fd patterns ([#119](https://github.com/laurigates/claude-plugins/issues/119)) ([06937a9](https://github.com/laurigates/claude-plugins/commit/06937a9402484d346bf67ca92b26c2782aab93de))
+
 ## [2.0.1](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.0.0...tools-plugin-v2.0.1) (2026-01-09)
 
 
