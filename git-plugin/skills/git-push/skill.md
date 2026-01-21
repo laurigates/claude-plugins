@@ -1,0 +1,192 @@
+---
+created: 2026-01-21
+modified: 2026-01-21
+reviewed: 2026-01-21
+name: git-push
+description: |
+  Push local commits to remote repositories. Handles branch tracking, upstream setup,
+  and safe push patterns. Use when user says "push", "push changes", "send to remote",
+  "update remote", or similar. This skill pushes existing commits - see git-commit for
+  creating commits and git-pr for pull request creation.
+allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git push:*), Bash(git branch:*), Bash(git remote:*), Bash(git rev-list:*), Bash(git fetch:*), Read, Grep, Glob, TodoWrite
+---
+
+# Git Push
+
+Push local commits to remote repositories with proper branch tracking.
+
+## When to Use
+
+**Trigger phrases:**
+- "push" / "push changes" / "push commits"
+- "send to remote" / "update remote"
+- "sync with origin"
+- "upload changes"
+
+**Context signals:**
+- Local commits exist that aren't on remote
+- User has just committed changes
+- `git status` shows "Your branch is ahead"
+- No mention of "PR" or "pull request"
+
+## Workflow
+
+### 1. Assess Push State
+
+```bash
+# Check current branch and tracking
+git branch --show-current
+git status --porcelain=v2 --branch
+
+# Count commits ahead of remote
+git rev-list --count @{upstream}..HEAD 2>/dev/null || echo "no upstream"
+
+# Check remote exists
+git remote -v
+```
+
+### 2. Determine Push Strategy
+
+**Has upstream tracking:**
+```bash
+# Simple push to tracked branch
+git push
+```
+
+**No upstream (new branch):**
+```bash
+# Set upstream and push
+git push -u origin $(git branch --show-current)
+```
+
+**Force push needed (rebased/amended):**
+```bash
+# CAUTION: Only after explicit user confirmation
+git push --force-with-lease
+```
+
+### 3. Verify Push
+
+```bash
+# Confirm sync status
+git status --porcelain=v2 --branch
+
+# Should show: branch.ab +0 -0 (no commits ahead/behind)
+```
+
+## Push Patterns
+
+### Standard Push (Default)
+
+For regular commits on a tracked branch:
+```bash
+git push
+```
+
+### First Push (New Branch)
+
+For branches without upstream:
+```bash
+git push -u origin $(git branch --show-current)
+```
+
+### Push with Tags
+
+When commits include version tags:
+```bash
+git push --follow-tags
+```
+
+### Force Push (With Lease)
+
+For rebased or amended commits (requires confirmation):
+```bash
+# Safer than --force: fails if remote has new commits
+git push --force-with-lease
+```
+
+## Safety Checks
+
+**Before pushing, verify:**
+1. **Branch name** - Avoid pushing directly to main/master
+2. **Commit count** - Reasonable number of commits
+3. **No uncommitted changes** - Clean working tree
+4. **Remote reachable** - Network connectivity
+
+### Protected Branch Warning
+
+```bash
+branch=$(git branch --show-current)
+if [ "$branch" = "main" ] || [ "$branch" = "master" ]; then
+  echo "WARNING: Pushing directly to $branch"
+  # Prompt for confirmation
+fi
+```
+
+## Composability
+
+This skill **pushes commits only**. For full workflows:
+
+| User Intent | Skills Invoked |
+|-------------|----------------|
+| "push" | git-push only |
+| "commit and push" | git-commit → git-push |
+| "push and create PR" | git-push → git-pr |
+| "commit, push, and PR" | git-commit → git-push → git-pr |
+
+## Output
+
+On success, report:
+```
+Pushed to origin/feature-branch
+Commits pushed: 3
+Branch is now up to date with remote
+
+Ready for: create PR, continue working, or merge
+```
+
+## Error Handling
+
+**No upstream configured:**
+```
+Branch has no upstream. Setting upstream to origin/<branch>
+```
+
+**Remote has diverged:**
+```
+Push rejected: remote contains commits not in local branch.
+Options:
+1. Pull and merge: git pull
+2. Pull and rebase: git pull --rebase
+3. Force push (loses remote commits): git push --force-with-lease
+```
+
+**Remote unreachable:**
+```
+Cannot reach remote 'origin'. Check network connection.
+```
+
+**Protected branch rejection:**
+```
+Push rejected: branch 'main' is protected.
+Create a feature branch and submit a pull request instead.
+```
+
+## Quick Reference
+
+| Scenario | Command |
+|----------|---------|
+| Standard push | `git push` |
+| New branch | `git push -u origin $(git branch --show-current)` |
+| With tags | `git push --follow-tags` |
+| After rebase | `git push --force-with-lease` |
+| Check ahead count | `git rev-list --count @{upstream}..HEAD` |
+| Check tracking | `git branch -vv` |
+
+## Best Practices
+
+1. **Push frequently** - Smaller, incremental pushes are safer
+2. **Never force push shared branches** - Coordinate with team first
+3. **Use feature branches** - Keep main/master clean
+4. **Verify before force push** - Always use `--force-with-lease`
+5. **Check CI after push** - Ensure tests pass on remote

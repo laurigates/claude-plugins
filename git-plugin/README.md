@@ -15,7 +15,26 @@ This plugin provides comprehensive Git workflow automation including conventiona
 | `/git:fix-pr` | Analyze and fix failing PR checks |
 | `/git:maintain` | Repository maintenance and cleanup (prune, gc, verify, branches, stash) |
 
-## Skills
+## Layered Skills (Composable Git Workflows)
+
+Three composable skills that can be invoked individually or combined based on user intent:
+
+| Skill | Trigger Phrases | Description |
+|-------|-----------------|-------------|
+| `git-commit` | "commit", "save changes", "stage and commit" | Create commits with conventional messages and issue references |
+| `git-push` | "push", "push changes", "send to remote" | Push local commits to remote with branch tracking |
+| `git-pr` | "create PR", "open pull request", "submit for review" | Create pull requests with descriptions and issue linkage |
+
+### Composability
+
+| User Intent | Skills Invoked |
+|-------------|----------------|
+| "commit" | git-commit |
+| "commit and push" | git-commit → git-push |
+| "push and create PR" | git-push → git-pr |
+| "commit, push, and create PR" | git-commit → git-push → git-pr |
+
+## Reference Skills
 
 | Skill | Description |
 |-------|-------------|

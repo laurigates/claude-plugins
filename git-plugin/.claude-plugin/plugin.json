@@ -19,6 +19,8 @@
     "issue-linking",
     "version-control",
     "release-please",
-    "monorepo"
+    "monorepo",
+    "layered-skills",
+    "composable-workflows"
   ]
 }
