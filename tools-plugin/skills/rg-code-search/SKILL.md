@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-01-21
 reviewed: 2025-12-16
 name: rg Code Search
 description: Fast code search using ripgrep (rg) with smart defaults, regex patterns, and file filtering. Use when searching for text patterns, code snippets, or performing multi-file code analysis.
@@ -226,9 +226,9 @@ fd -e rs | xargs rg pattern --files-with-matches | xargs -I {} sh -c 'vim -c "%s
 rg -l "TODO" | xargs wc -l          # Count lines with TODOs
 rg "function" --files-with-matches | xargs nvim  # Open files in editor
 
-# Combine with fd
-fd -e py | xargs rg "class.*Test"   # Find test classes
-fd -e rs | xargs rg "unsafe"        # Find unsafe blocks
+# Combine with fd (prefer fd's native -x execution)
+fd -e py -x rg "class.*Test" {}     # Find test classes
+fd -e rs -x rg "unsafe" {}          # Find unsafe blocks
 
 # Count occurrences
 rg -c pattern | awk -F: '{sum+=$2} END {print sum}'
