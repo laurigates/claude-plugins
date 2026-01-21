@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.2.0...configure-plugin-v1.3.0) (2026-01-21)
+
+
+### Features
+
+* implement Claude Code 2.1.7 changelog review updates (issue [#78](https://github.com/laurigates/claude-plugins/issues/78)) ([#112](https://github.com/laurigates/claude-plugins/issues/112)) ([e28d8de](https://github.com/laurigates/claude-plugins/commit/e28d8deec41d3e5070861a3f1c37e9c43f452cb4))
+
 ## [1.2.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.1.1...configure-plugin-v1.2.0) (2026-01-19)
 
 
