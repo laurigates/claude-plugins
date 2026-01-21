@@ -17,7 +17,7 @@
   "git-plugin": "2.2.1",
   "github-actions-plugin": "1.0.1",
   "graphiti-plugin": "1.0.0",
-  "hooks-plugin": "1.0.0",
+  "hooks-plugin": "1.1.0",
   "kubernetes-plugin": "1.0.0",
   "langchain-plugin": "1.1.0",
   "networking-plugin": "1.1.0",
