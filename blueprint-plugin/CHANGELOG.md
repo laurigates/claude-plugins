@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.7.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.6.0...blueprint-plugin-v3.7.0) (2026-01-21)
+
+
+### Features
+
+* **blueprint-plugin:** add validation hooks for PRPs and ADRs ([5cd142f](https://github.com/laurigates/claude-plugins/commit/5cd142f1a91f3917d4bca1229e43de9130e62c72))
+
 ## [3.6.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.5.0...blueprint-plugin-v3.6.0) (2026-01-20)
 
 
