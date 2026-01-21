@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.2.0...agent-patterns-plugin-v2.3.0) (2026-01-21)
+
+
+### Features
+
+* **agent-patterns-plugin:** add delegation-first skill for automatic task delegation ([76bb2ce](https://github.com/laurigates/claude-plugins/commit/76bb2ce4d5ea444183908c75db18979ce2851acf))
+
 ## [2.2.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.1.0...agent-patterns-plugin-v2.2.0) (2026-01-20)
 
 
