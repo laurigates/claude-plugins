@@ -2,18 +2,18 @@
 created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
-name: fvh-ci-workflows
+name: ci-workflows
 description: |
-  FVH (Forum Virium Helsinki) GitHub Actions workflow standards. Use when configuring
-  CI/CD workflows, checking workflow compliance, or when the user mentions FVH workflows,
-  GitHub Actions, container builds, or CI/CD automation.
+  GitHub Actions workflow standards. Use when configuring CI/CD workflows, checking
+  workflow compliance, or when the user mentions GitHub Actions, container builds,
+  or CI/CD automation.
 ---
 
-# FVH CI Workflow Standards
+# CI Workflow Standards
 
 ## Version: 2025.1
 
-FVH standard GitHub Actions workflows for CI/CD automation.
+Standard GitHub Actions workflows for CI/CD automation.
 
 ## Required Workflows
 
@@ -95,7 +95,7 @@ jobs:
 
 **File**: `.github/workflows/release-please.yml`
 
-See `fvh-release-please` skill for details.
+See `release-please-standards` skill for details.
 
 ### 3. Test Workflow (Recommended)
 

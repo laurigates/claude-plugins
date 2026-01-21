@@ -17,7 +17,7 @@
   "git-plugin": "2.2.1",
   "github-actions-plugin": "1.0.1",
   "graphiti-plugin": "1.0.0",
-  "hooks-plugin": "1.0.0",
+  "hooks-plugin": "1.1.0",
   "kubernetes-plugin": "1.0.0",
   "langchain-plugin": "1.1.0",
   "networking-plugin": "1.1.0",
@@ -27,6 +27,6 @@
   "sync-plugin": "1.0.0",
   "terraform-plugin": "1.1.0",
   "testing-plugin": "3.1.0",
-  "tools-plugin": "2.0.1",
+  "tools-plugin": "2.1.0",
   "typescript-plugin": "1.2.1"
 }

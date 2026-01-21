@@ -2,18 +2,18 @@
 created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
-name: fvh-release-please
+name: release-please-standards
 description: |
-  FVH (Forum Virium Helsinki) release-please standards and configuration. Use when
-  configuring release-please workflows, checking release automation compliance, or
-  when the user mentions FVH release-please, automated releases, or version management.
+  Release-please standards and configuration. Use when configuring release-please
+  workflows, checking release automation compliance, or when the user mentions
+  release-please, automated releases, or version management.
 ---
 
-# FVH Release-Please Standards
+# Release-Please Standards
 
 ## Version: 2025.1
 
-FVH standard release-please configuration for automated semantic versioning and changelog generation.
+Standard release-please configuration for automated semantic versioning and changelog generation.
 
 ## Standard Configuration
 

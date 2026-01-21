@@ -197,7 +197,7 @@ Recommendations:
 
 ### Phase 7: Standards Tracking
 
-Update `.fvh-standards.yaml`:
+Update `.project-standards.yaml`:
 
 ```yaml
 standards_version: "2025.1"
@@ -266,6 +266,6 @@ Tip: Run /configure:mcp again to add more servers anytime.
 
 ## See Also
 
-- `/configure:all` - Run all FVH compliance checks
+- `/configure:all` - Run all compliance checks
 - **MCP Management skill** - Intelligent server suggestions based on project
 - **Dotfiles registry**: `~/.local/share/chezmoi/.chezmoidata.toml`

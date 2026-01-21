@@ -19,7 +19,7 @@ This repository was created by migrating Claude Code plugin configurations from 
 | [0003](0003-auto-discovery-component-pattern.md) | Auto-Discovery Component Pattern | Accepted | 2024-12 |
 | [0004](0004-marketplace-registry-model.md) | Marketplace Registry Model | Accepted | 2024-12 |
 | [0005](0005-blueprint-development-methodology.md) | Blueprint Development Methodology | Accepted | 2024-12 |
-| [0006](0006-fvh-standards-enforcement.md) | FVH Standards Enforcement | Accepted | 2024-12 |
+| [0006](0006-project-standards-enforcement.md) | Project Standards Enforcement | Accepted | 2024-12 |
 | [0007](0007-namespace-based-command-organization.md) | Namespace-Based Command Organization | Accepted | 2024-12 |
 | [0008](0008-semantic-versioning-with-manifest.md) | Semantic Versioning with Manifest | Accepted | 2024-12 |
 | [0009](0009-task-focused-agent-consolidation.md) | Task-Focused Agent Consolidation | Accepted | 2024-12 |
@@ -38,7 +38,7 @@ This repository was created by migrating Claude Code plugin configurations from 
 
 ### Development Methodology
 - ADR-0005: Blueprint Development Methodology
-- ADR-0006: FVH Standards Enforcement
+- ADR-0006: Project Standards Enforcement
 
 ### Organization & Versioning
 - ADR-0007: Namespace-Based Command Organization

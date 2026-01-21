@@ -477,7 +477,7 @@ comment:
 
 ### Phase 8: Standards Tracking
 
-Update `.fvh-standards.yaml`:
+Update `.project-standards.yaml`:
 
 ```yaml
 standards_version: "2025.1"
@@ -563,6 +563,6 @@ Coverage Reports: coverage/index.html
 
 - `/configure:tests` - Configure testing frameworks
 - `/test:coverage` - Run tests with coverage
-- `/configure:all` - Run all FVH compliance checks
+- `/configure:all` - Run all compliance checks
 - **Codecov documentation**: https://docs.codecov.com
 - **pytest-cov documentation**: https://pytest-cov.readthedocs.io

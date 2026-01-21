@@ -11,7 +11,7 @@ This plugin provides comprehensive Terraform Cloud API automation for monitoring
 | Skill | Description |
 |-------|-------------|
 | `tfc-run-logs` | Retrieve plan and apply logs from Terraform Cloud runs |
-| `tfc-workspace-runs` | Convenience wrapper for listing runs in Forum Virium Helsinki workspaces |
+| `tfc-workspace-runs` | Convenience wrapper for listing runs in configured workspaces |
 | `tfc-list-runs` | List and filter runs from Terraform Cloud workspaces |
 | `tfc-run-status` | Quick status check for TFC runs with resource changes and actions |
 | `tfc-plan-json` | Download and analyze structured Terraform plan JSON output |
@@ -29,7 +29,7 @@ export TFE_ADDRESS="app.terraform.io"    # Optional, defaults to app.terraform.i
 
 ### Check Workspace Runs
 
-List recent runs for a workspace (works with FVH workspaces):
+List recent runs for a workspace:
 
 ```bash
 # Using tfc-workspace-runs skill

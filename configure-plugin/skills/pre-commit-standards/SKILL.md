@@ -2,18 +2,18 @@
 created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
-name: fvh-pre-commit
+name: pre-commit-standards
 description: |
-  FVH (Forum Virium Helsinki) pre-commit hook standards and configuration. Use when
-  configuring pre-commit hooks in FVH repositories, checking hook compliance, or when
-  the user mentions FVH pre-commit, conventional commits, or hook configuration.
+  Pre-commit hook standards and configuration. Use when configuring pre-commit hooks
+  in repositories, checking hook compliance, or when the user mentions pre-commit,
+  conventional commits, or hook configuration.
 ---
 
-# FVH Pre-commit Standards
+# Pre-commit Standards
 
 ## Version: 2025.1
 
-FVH standard pre-commit configuration for repository compliance.
+Standard pre-commit configuration for repository compliance.
 
 ## Standard Versions (2025.1)
 
@@ -174,7 +174,7 @@ repos:
 
 ### Required Base Hooks (All Projects)
 
-Every FVH repository MUST have these hooks:
+Every repository MUST have these hooks:
 
 1. **pre-commit-hooks** (v5.0.0+)
    - `trailing-whitespace`
@@ -248,4 +248,4 @@ To update all hooks to latest versions:
 pre-commit autoupdate
 ```
 
-Then verify versions match FVH standards.
+Then verify versions match project standards.

@@ -35,7 +35,7 @@ Parse from command arguments:
 
 ## Your Task
 
-Generate a professional README.md following the FVH standards, with proper branding, badges, and documentation structure inspired by best practices.
+Generate a professional README.md following project standards, with proper branding, badges, and documentation structure inspired by best practices.
 
 ### Phase 1: Project Detection
 
@@ -336,7 +336,7 @@ Include only relevant directories, skip:
 
 ### Phase 8: Standards Tracking
 
-Update `.fvh-standards.yaml`:
+Update `.project-standards.yaml`:
 
 ```yaml
 standards_version: "2025.1"
@@ -428,4 +428,4 @@ Provide:
 - `/configure:docs` - Configure code documentation standards
 - `/configure:github-pages` - Set up documentation hosting
 - `/configure:all` - Run all compliance checks
-- **fvh-readme** skill for README templates and examples
+- **readme-standards** skill for README templates and examples

@@ -779,7 +779,7 @@ jobs:
 
 ### Phase 6: Standards Tracking
 
-Update `.fvh-standards.yaml`:
+Update `.project-standards.yaml`:
 
 ```yaml
 standards_version: "2025.1"
@@ -885,7 +885,7 @@ Documentation:
 
 - `/configure:tests` - Unit testing configuration
 - `/configure:integration-tests` - Integration testing
-- `/configure:all` - Run all FVH compliance checks
+- `/configure:all` - Run all compliance checks
 - **Pact documentation**: https://docs.pact.io
 - **OpenAPI specification**: https://swagger.io/specification
 - **Zod documentation**: https://zod.dev

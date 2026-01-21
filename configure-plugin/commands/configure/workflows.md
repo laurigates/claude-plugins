@@ -9,16 +9,16 @@ argument-hint: "[--check-only] [--fix]"
 
 # /configure:workflows
 
-Check and configure GitHub Actions CI/CD workflows against FVH (Forum Virium Helsinki) standards.
+Check and configure GitHub Actions CI/CD workflows against project standards.
 
 ## Context
 
-This command validates `.github/workflows/` configuration against FVH standards including:
+This command validates `.github/workflows/` configuration against project standards including:
 - **Container build workflows** - Multi-platform builds, registry push, security scanning
 - **Test workflows** - Linting, type checking, test execution, coverage
 - **Release workflows** - release-please automation, semantic versioning
 
-**Skills referenced**: `fvh-ci-workflows`, `github-actions-auth-security`
+**Skills referenced**: `ci-workflows`, `github-actions-auth-security`
 
 ## Version Checking
 
@@ -85,7 +85,7 @@ Use WebSearch or WebFetch to verify current versions before reporting outdated a
 ### Phase 4: Report Generation
 
 ```
-FVH GitHub Workflows Compliance Report
+GitHub Workflows Compliance Report
 ======================================
 Project Type: frontend (detected)
 Workflows Directory: .github/workflows/ (found)
@@ -116,21 +116,21 @@ Overall: 1 issue found
 
 If `--fix` flag or user confirms:
 
-1. **Missing workflows**: Create from FVH templates
+1. **Missing workflows**: Create from standard templates
 2. **Outdated actions**: Update version numbers
 3. **Missing multi-platform**: Add platforms to build-push
 4. **Missing caching**: Add GHA cache configuration
 
 ### Phase 6: Standards Tracking
 
-Update `.fvh-standards.yaml`:
+Update `.project-standards.yaml`:
 
 ```yaml
 components:
   workflows: "2025.1"
 ```
 
-## FVH Standard Templates
+## Standard Templates
 
 ### Container Build Template
 
@@ -224,6 +224,6 @@ jobs:
 - `/configure:container` - Comprehensive container infrastructure (builds, registry, scanning)
 - `/configure:dockerfile` - Dockerfile configuration and security
 - `/configure:release-please` - Release automation specifics
-- `/configure:all` - Run all FVH compliance checks
-- `fvh-ci-workflows` skill - Workflow patterns
+- `/configure:all` - Run all compliance checks
+- `ci-workflows` skill - Workflow patterns
 - `github-actions-inspection` skill - Workflow debugging

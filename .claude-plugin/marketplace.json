@@ -23,10 +23,9 @@
     {
       "name": "configure-plugin",
       "source": "./configure-plugin",
-      "description": "FVH infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
+      "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
       "version": "1.2.0",
       "keywords": [
-        "fvh",
         "infrastructure",
         "standards",
         "configuration"
@@ -105,7 +104,7 @@
       "name": "tools-plugin",
       "source": "./tools-plugin",
       "description": "General utilities - fd, rg, jq, shell, imagemagick",
-      "version": "2.0.1",
+      "version": "2.1.0",
       "keywords": [
         "tools",
         "utilities",
@@ -336,7 +335,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "keywords": [
         "hooks",
         "automation",

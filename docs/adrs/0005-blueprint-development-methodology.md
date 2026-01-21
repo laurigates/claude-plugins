@@ -137,5 +137,5 @@ Document plans in code comments.
 ## Related Decisions
 
 - ADR-0001: Plugin-Based Architecture (blueprint-plugin structure)
-- ADR-0006: FVH Standards Enforcement (standards integration)
+- ADR-0006: Project Standards Enforcement (standards integration)
 - Dotfiles ADR-0006: Documentation-First Development (predecessor methodology)

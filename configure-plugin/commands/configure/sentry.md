@@ -2,18 +2,18 @@
 created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
-description: Check and configure Sentry error tracking for FVH standards
+description: Check and configure Sentry error tracking for project standards
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 argument-hint: "[--check-only] [--fix] [--type <frontend|python|node>]"
 ---
 
 # /configure:sentry
 
-Check and configure Sentry error tracking integration against FVH (Forum Virium Helsinki) standards.
+Check and configure Sentry error tracking integration against project standards.
 
 ## Context
 
-This command validates Sentry SDK integration and configuration against FVH standards.
+This command validates Sentry SDK integration and configuration against project standards.
 
 **Skills referenced**: `sentry` (MCP server for Sentry API)
 
@@ -34,7 +34,7 @@ Use WebSearch or WebFetch to verify current SDK versions before configuring Sent
 
 Determine project type to select appropriate SDK and configuration:
 
-1. Check for `.fvh-standards.yaml` with `project_type` field
+1. Check for `.project-standards.yaml` with `project_type` field
 2. If not found, auto-detect:
    - **frontend**: Has `package.json` with vue/react dependencies
    - **node**: Has `package.json` with Node.js backend (express, fastify, etc.)
@@ -105,7 +105,7 @@ Check for Sentry SDK installation:
 ### Phase 5: Report Generation
 
 ```
-FVH Sentry Compliance Report
+Sentry Compliance Report
 ============================
 Project Type: frontend (detected)
 SDK: @sentry/vue v8.30.0
@@ -221,7 +221,7 @@ Verify Sentry integration in CI/CD:
 
 ### Phase 8: Standards Tracking
 
-Update or create `.fvh-standards.yaml`:
+Update or create `.project-standards.yaml`:
 
 ```yaml
 standards_version: "2025.1"
@@ -277,7 +277,7 @@ Required environment variables for Sentry:
 
 ## See Also
 
-- `/configure:all` - Run all FVH compliance checks
+- `/configure:all` - Run all compliance checks
 - `/configure:status` - Quick compliance overview
 - `/configure:workflows` - GitHub Actions integration
 - `sentry` MCP server - Sentry API access for project verification

@@ -2,20 +2,20 @@
 created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
-description: Check and configure Skaffold for FVH standards
+description: Check and configure Skaffold for project standards
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 argument-hint: "[--check-only] [--fix]"
 ---
 
 # /configure:skaffold
 
-Check and configure Skaffold against FVH (Forum Virium Helsinki) standards.
+Check and configure Skaffold against project standards.
 
 ## Context
 
 This command validates Skaffold configuration for local Kubernetes development using OrbStack.
 
-**Skills referenced**: `fvh-skaffold`, `container-development`, `skaffold-orbstack`
+**Skills referenced**: `skaffold-standards`, `container-development`, `skaffold-orbstack`
 
 **Applicability**: Only for projects with Kubernetes deployment (k8s/, helm/ directories)
 
@@ -74,7 +74,7 @@ Parse `skaffold.yaml` for:
 ### Phase 4: Report Generation
 
 ```
-FVH Skaffold Compliance Report
+Skaffold Compliance Report
 ==============================
 Project Type: frontend (detected)
 Skaffold: ./skaffold.yaml (found)
@@ -104,7 +104,7 @@ Overall: Fully compliant
 
 If `--fix` flag or user confirms:
 
-1. **Missing skaffold.yaml**: Create from FVH template
+1. **Missing skaffold.yaml**: Create from standard template
 2. **Security issues**: Fix port forwarding addresses
 3. **Missing profiles**: Add `db-only` profile template
 4. **Outdated API**: Update apiVersion to v4beta13
@@ -114,14 +114,14 @@ If `--fix` flag or user confirms:
 
 ### Phase 6: Standards Tracking
 
-Update `.fvh-standards.yaml`:
+Update `.project-standards.yaml`:
 
 ```yaml
 components:
   skaffold: "2025.1"
 ```
 
-## FVH Standard Template
+## Standard Template
 
 ```yaml
 apiVersion: skaffold/v4beta13
@@ -226,7 +226,7 @@ profiles:
 
 ## dotenvx Integration
 
-FVH projects use [dotenvx](https://dotenvx.com/) for encrypted secrets management in local development.
+Projects use [dotenvx](https://dotenvx.com/) for encrypted secrets management in local development.
 
 ### How It Works
 
@@ -319,5 +319,5 @@ This is a **FAIL** condition that should always be fixed.
 ## See Also
 
 - `/configure:dockerfile` - Container configuration
-- `/configure:all` - Run all FVH compliance checks
-- `fvh-skaffold` skill - Skaffold patterns
+- `/configure:all` - Run all compliance checks
+- `skaffold-standards` skill - Skaffold patterns
