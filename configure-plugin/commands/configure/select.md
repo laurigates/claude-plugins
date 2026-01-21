@@ -2,14 +2,14 @@
 created: 2025-12-22
 modified: 2025-12-22
 reviewed: 2025-12-22
-description: Interactively select which FVH infrastructure standards to configure
+description: Interactively select which infrastructure standards to configure
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, SlashCommand
 argument-hint: "[--check-only] [--fix]"
 ---
 
 # /configure:select
 
-Interactively select which FVH infrastructure standards checks to run.
+Interactively select which infrastructure standards checks to run.
 
 ## Context
 

@@ -2,18 +2,18 @@
 created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
-description: Show FVH infrastructure standards compliance status (read-only)
+description: Show infrastructure standards compliance status (read-only)
 allowed-tools: Glob, Grep, Read, TodoWrite
 argument-hint: "[--verbose]"
 ---
 
 # /configure:status
 
-Display FVH infrastructure standards compliance status without making changes.
+Display infrastructure standards compliance status without making changes.
 
 ## Context
 
-Quick read-only check of repository compliance against FVH standards. Use this to see current status before running `/configure:all` or specific configure commands.
+Quick read-only check of repository compliance against project standards. Use this to see current status before running `/configure:all` or specific configure commands.
 
 ## Workflow
 
@@ -52,7 +52,7 @@ For each component, determine status:
 
 | Status | Meaning |
 |--------|---------|
-| ✅ PASS | Fully compliant with FVH standards |
+| ✅ PASS | Fully compliant with project standards |
 | ⚠️ WARN | Present but outdated or incomplete |
 | ❌ FAIL | Missing required configuration |
 | ⏭️ SKIP | Not applicable for project type |
@@ -60,7 +60,7 @@ For each component, determine status:
 ### Phase 4: Report Output
 
 ```
-FVH Infrastructure Standards Status
+Infrastructure Standards Status
 ====================================
 Repository: R4C-Cesium-Viewer
 Project Type: frontend (detected)

@@ -1,6 +1,6 @@
 # Configure Plugin
 
-FVH (Forum Virium Helsinki) infrastructure standards enforcement for Claude Code projects.
+Infrastructure standards enforcement for Claude Code projects.
 
 ## Overview
 
@@ -24,7 +24,7 @@ All commands support two modes:
 
 | Command | Description |
 |---------|-------------|
-| `/configure:pre-commit` | Pre-commit hooks for FVH standards |
+| `/configure:pre-commit` | Pre-commit hooks for project standards |
 | `/configure:release-please` | Release-please workflow configuration |
 | `/configure:workflows` | GitHub Actions CI/CD workflows |
 | `/configure:github-pages` | GitHub Pages deployment |
@@ -33,7 +33,7 @@ All commands support two modes:
 
 | Command | Description |
 |---------|-------------|
-| `/configure:dockerfile` | Dockerfile for FVH standards (minimal Alpine/slim, non-root, multi-stage) |
+| `/configure:dockerfile` | Dockerfile for project standards (minimal Alpine/slim, non-root, multi-stage) |
 | `/configure:skaffold` | Skaffold configuration |
 | `/configure:container` | Container infrastructure (builds, registry, scanning, devcontainer) |
 
@@ -76,10 +76,10 @@ All commands support two modes:
 
 | Skill | Description |
 |-------|-------------|
-| `fvh-ci-workflows` | FVH CI/CD workflow standards |
-| `fvh-pre-commit` | FVH pre-commit hook standards |
-| `fvh-release-please` | FVH release-please standards |
-| `fvh-skaffold` | FVH Skaffold configuration standards |
+| `ci-workflows` | CI/CD workflow standards |
+| `pre-commit-standards` | Pre-commit hook standards |
+| `release-please-standards` | Release-please standards |
+| `skaffold-standards` | Skaffold configuration standards |
 
 ## Usage
 
@@ -97,7 +97,7 @@ Shows compliance status for all configured standards without making changes.
 /configure:all --fix
 ```
 
-Automatically configures the project to meet all FVH standards.
+Automatically configures the project to meet all project standards.
 
 ### Select Components Interactively
 
@@ -121,7 +121,7 @@ Presents multi-select menus to choose which components to check/fix.
 /configure:dockerfile --fix
 ```
 
-## FVH Standards Summary
+## Standards Summary
 
 - **Pre-commit**: Standardized hooks for linting, formatting, security checks
 - **CI/CD**: GitHub Actions workflows for testing, building, releasing

@@ -830,7 +830,7 @@ Documentation:
 - `/configure:tests` - Configure testing frameworks
 - `/configure:coverage` - Code coverage configuration
 - `/configure:load-tests` - Load and performance testing
-- `/configure:all` - Run all FVH compliance checks
+- `/configure:all` - Run all compliance checks
 - **pytest-memray docs**: https://pytest-memray.readthedocs.io
 - **memray docs**: https://bloomberg.github.io/memray
 - **Python memory profiling**: https://docs.python.org/3/library/tracemalloc.html

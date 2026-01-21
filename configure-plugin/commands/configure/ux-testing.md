@@ -639,7 +639,7 @@ Documentation:
 ## See Also
 
 - `/configure:tests` - Unit and integration testing configuration
-- `/configure:all` - Run all FVH compliance checks
+- `/configure:all` - Run all compliance checks
 - **Skills**: `playwright-testing`, `accessibility-implementation`
 - **Agents**: `ux-implementation` for implementing UX designs
 - **Playwright documentation**: https://playwright.dev

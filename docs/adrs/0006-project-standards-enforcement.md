@@ -1,4 +1,4 @@
-# ADR-0006: FVH Standards Enforcement
+# ADR-0006: Project Standards Enforcement
 
 ## Status
 
@@ -18,7 +18,7 @@ Professional development requires consistent infrastructure across projects: CI/
 4. **Drift**: Configurations diverge from standards over time
 5. **Onboarding friction**: New contributors face different setups per project
 
-The "FVH" (FastAPI/Vue/Helm) stack emerged as a common pattern, but the principles apply broadly.
+A common stack pattern (FastAPI/Vue/Helm) emerged, and the principles apply broadly to any project.
 
 ## Decision
 
@@ -69,10 +69,10 @@ standards:
 
 | Skill | Purpose |
 |-------|---------|
-| `fvh-ci-workflows` | GitHub Actions patterns |
-| `fvh-pre-commit` | Pre-commit hook configurations |
-| `fvh-release-please` | Release automation |
-| `fvh-skaffold` | Kubernetes deployment |
+| `ci-workflows` | GitHub Actions patterns |
+| `pre-commit-standards` | Pre-commit hook configurations |
+| `release-please-standards` | Release automation |
+| `skaffold-standards` | Kubernetes deployment |
 
 ## Consequences
 

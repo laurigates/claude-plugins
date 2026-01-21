@@ -29,7 +29,7 @@ This command systematically processes all files in the z/ directory of your curr
 
 ## Output
 
-- Complete knowledge graph stored in memory with group_id "fvh-technical-docs"
+- Complete knowledge graph stored in memory with group_id "technical-docs"
 - Rich entity relationships for cross-referencing technologies and projects
 - Enables intelligent queries about system dependencies and technical patterns
 

@@ -2,14 +2,14 @@
 created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
-description: Check and configure Justfile with standard recipes for FVH standards
+description: Check and configure Justfile with standard recipes for project standards
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
 argument-hint: "[--check-only] [--fix]"
 ---
 
 # /configure:justfile
 
-Check and configure project Justfile against FVH (Forum Virium Helsinki) standards.
+Check and configure project Justfile against project standards.
 
 ## Context
 
@@ -63,7 +63,7 @@ This command validates and creates Justfiles with standard recipes for consisten
 ### Phase 4: Report Generation
 
 ```
-FVH Justfile Compliance Report
+Justfile Compliance Report
 ==============================
 Project Type: python (detected)
 Justfile: Found
@@ -92,7 +92,7 @@ Issues: 0 found
 
 If `--fix` flag or user confirms:
 
-1. **Missing Justfile**: Create from FVH template based on project type
+1. **Missing Justfile**: Create from standard template based on project type
 2. **Missing recipes**: Add recipes with appropriate commands
 3. **Missing settings**: Add `set dotenv-load` if `.env` exists
 4. **Missing help**: Add help recipe with `just --list`
@@ -106,7 +106,7 @@ components:
   justfile: "2025.1"
 ```
 
-## FVH Justfile Template
+## Justfile Template
 
 ### Universal Structure
 
@@ -324,7 +324,7 @@ If a Makefile exists but no Justfile:
 ## See Also
 
 - `/configure:makefile` - Makefile configuration (legacy)
-- `/configure:all` - Run all FVH compliance checks
+- `/configure:all` - Run all compliance checks
 - `/configure:workflows` - GitHub Actions workflows
 - `/configure:dockerfile` - Docker configuration
 - `justfile-expert` skill - Comprehensive Just expertise

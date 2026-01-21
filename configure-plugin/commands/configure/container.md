@@ -9,7 +9,7 @@ argument-hint: "[--check-only] [--fix] [--component <dockerfile|workflow|registr
 
 # /configure:container
 
-Check and configure comprehensive container infrastructure against FVH (Forum Virium Helsinki) standards with emphasis on **minimal images**, **non-root users**, and **security hardening**.
+Check and configure comprehensive container infrastructure against project standards with emphasis on **minimal images**, **non-root users**, and **security hardening**.
 
 ## Context
 
@@ -21,7 +21,7 @@ This command validates and configures the complete container ecosystem including
 - **Devcontainer** - Development container configuration
 - **Version checking** - Validates base images and dependencies are up-to-date
 
-**Skills referenced**: `container-development`, `fvh-ci-workflows`, `github-actions-auth-security`
+**Skills referenced**: `container-development`, `ci-workflows`, `github-actions-auth-security`
 
 ## Security Philosophy
 
@@ -153,7 +153,7 @@ Run `/configure:dockerfile` checks (or reference results)
 ### Phase 3: Report Generation
 
 ```
-FVH Container Infrastructure Compliance Report
+Container Infrastructure Compliance Report
 ==============================================
 Project Type: frontend (detected)
 
@@ -222,7 +222,7 @@ components:
   container-workflow: "2025.1"
 ```
 
-## FVH Standard Templates
+## Standard Templates
 
 ### Container Build Workflow (with Security Scanning)
 
@@ -269,7 +269,7 @@ jobs:
           labels: |
             org.opencontainers.image.title=${{ github.event.repository.name }}
             org.opencontainers.image.description=${{ github.event.repository.description }}
-            org.opencontainers.image.vendor=Forum Virium Helsinki
+            org.opencontainers.image.vendor=Your Organization
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -607,6 +607,6 @@ Container Infrastructure
 - `/configure:workflows` - GitHub Actions workflow configuration
 - `/configure:skaffold` - Kubernetes development configuration
 - `/configure:security` - Security scanning configuration
-- `/configure:all` - Run all FVH compliance checks
+- `/configure:all` - Run all compliance checks
 - `container-development` skill - Container best practices
-- `fvh-ci-workflows` skill - CI/CD workflow patterns
+- `ci-workflows` skill - CI/CD workflow patterns

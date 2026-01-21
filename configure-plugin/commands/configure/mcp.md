@@ -266,6 +266,6 @@ Tip: Run /configure:mcp again to add more servers anytime.
 
 ## See Also
 
-- `/configure:all` - Run all FVH compliance checks
+- `/configure:all` - Run all compliance checks
 - **MCP Management skill** - Intelligent server suggestions based on project
 - **Dotfiles registry**: `~/.local/share/chezmoi/.chezmoidata.toml`

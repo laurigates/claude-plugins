@@ -84,7 +84,7 @@ tools: Tool1, Tool2, mcp__server-name
 
 ---
 
-### 2. configure-plugin (FVH Infrastructure Standards) - COMPLETE
+### 2. configure-plugin (Project Infrastructure Standards) - COMPLETE
 **Purpose:** Infrastructure standards enforcement for projects
 
 | Type | Name | Status | Notes |
@@ -116,10 +116,10 @@ tools: Tool1, Tool2, mcp__server-name
 | Command | configure/api-tests | [x] | API testing configuration |
 | Command | configure/integration-tests | [x] | Integration test configuration |
 | Command | configure/load-tests | [x] | Load/performance test configuration |
-| Skill | fvh-ci-workflows | [x] | |
-| Skill | fvh-pre-commit | [x] | |
-| Skill | fvh-release-please | [x] | |
-| Skill | fvh-skaffold | [x] | |
+| Skill | ci-workflows | [x] | |
+| Skill | pre-commit-standards | [x] | |
+| Skill | release-please-standards | [x] | |
+| Skill | skaffold-standards | [x] | |
 
 ---
 
@@ -482,7 +482,7 @@ Plugins can declare dependencies on other plugins to inherit their skills.
 ## Plugin Priority (Migration Order)
 
 1. **blueprint-plugin** - Core methodology, self-contained
-2. **configure-plugin** - FVH standards, high value
+2. **configure-plugin** - project standards, high value
 3. **git-plugin** - Common workflow
 4. **testing-plugin** - Essential for TDD
 5. **code-quality-plugin** - Frequently used
@@ -651,7 +651,7 @@ Based on self-contained scope and frequency of use:
 | Priority | Plugin | Status | Reason |
 |----------|--------|--------|--------|
 | 1 | blueprint-plugin | **DONE** | Self-contained methodology, defines workflow |
-| 2 | configure-plugin | **DONE** | High value, FVH standards enforcement |
+| 2 | configure-plugin | **DONE** | High value, project standards enforcement |
 | 3 | git-plugin | **DONE** | Common workflow, clear boundaries |
 | 4 | testing-plugin | **DONE** | Essential for TDD, frequently used |
 | 5 | code-quality-plugin | **DONE** | Code review/analysis cluster |

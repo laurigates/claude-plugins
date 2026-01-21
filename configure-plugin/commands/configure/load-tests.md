@@ -865,7 +865,7 @@ Documentation:
 - `/configure:tests` - Unit testing configuration
 - `/configure:integration-tests` - Integration testing
 - `/configure:api-tests` - API contract testing
-- `/configure:all` - Run all FVH compliance checks
+- `/configure:all` - Run all compliance checks
 - **k6 documentation**: https://k6.io/docs
 - **k6 examples**: https://github.com/grafana/k6/tree/master/examples
 - **Grafana k6 Cloud**: https://grafana.com/products/cloud/k6

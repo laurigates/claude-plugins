@@ -698,6 +698,6 @@ Documentation:
 - `/configure:tests` - Unit testing configuration
 - `/configure:api-tests` - API contract testing
 - `/configure:coverage` - Coverage configuration
-- `/configure:all` - Run all FVH compliance checks
+- `/configure:all` - Run all compliance checks
 - **Testcontainers documentation**: https://testcontainers.com
 - **Supertest documentation**: https://github.com/ladjs/supertest

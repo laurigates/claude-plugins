@@ -582,7 +582,7 @@ Documentation: docs/DEAD_CODE.md
 ## See Also
 
 - `/configure:linting` - Configure linting tools
-- `/configure:all` - Run all FVH compliance checks
+- `/configure:all` - Run all compliance checks
 - **Knip documentation**: https://knip.dev
 - **Vulture documentation**: https://github.com/jendrikseipp/vulture
 - **cargo-machete documentation**: https://github.com/bnjbvr/cargo-machete

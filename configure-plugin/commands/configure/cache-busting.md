@@ -15,7 +15,7 @@ argument-hint: "[--check-only] [--fix] [--framework <nextjs|vite>] [--cdn <cloud
 - Vite config: !`ls -la vite.config.* 2>/dev/null || echo "None found"`
 - Build output: !`ls -d .next/ dist/ out/ 2>/dev/null || echo "Not built"`
 - CDN config: !`ls -la vercel.json _headers _redirects public/_headers 2>/dev/null || echo "None found"`
-- FVH standards: !`ls -la .project-standards.yaml 2>/dev/null || echo "None found"`
+- Project standards: !`ls -la .project-standards.yaml 2>/dev/null || echo "None found"`
 
 ## Parameters
 

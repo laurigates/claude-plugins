@@ -2,14 +2,14 @@
 created: 2025-12-16
 modified: 2026-01-19
 reviewed: 2026-01-19
-description: Check and configure Dockerfile for FVH standards (minimal Alpine/slim, non-root, multi-stage)
+description: Check and configure Dockerfile for project standards (minimal Alpine/slim, non-root, multi-stage)
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 argument-hint: "[--check-only] [--fix] [--type <frontend|python|go|rust>]"
 ---
 
 # /configure:dockerfile
 
-Check and configure Dockerfile against FVH (Forum Virium Helsinki) standards with emphasis on **minimal images**, **non-root users**, and **multi-stage builds**.
+Check and configure Dockerfile against project standards with emphasis on **minimal images**, **non-root users**, and **multi-stage builds**.
 
 ## Context
 
@@ -86,7 +86,7 @@ Use WebSearch or WebFetch to verify current base image versions before reporting
 ### Phase 3: Report Generation
 
 ```
-FVH Dockerfile Compliance Report
+Dockerfile Compliance Report
 ================================
 Project Type: frontend (detected)
 Dockerfile: ./Dockerfile (found)
@@ -115,7 +115,7 @@ Recommendations:
 
 If `--fix` flag or user confirms:
 
-1. **Missing Dockerfile**: Create from FVH template
+1. **Missing Dockerfile**: Create from standard template
 2. **Missing HEALTHCHECK**: Add standard healthcheck
 3. **Missing multi-stage**: Suggest restructure (manual fix needed)
 4. **Outdated base images**: Update FROM lines
@@ -135,7 +135,7 @@ components:
   dockerfile: "2025.1"
 ```
 
-## FVH Standard Templates
+## Standard Templates
 
 ### Frontend (Node/Vite/nginx)
 
@@ -161,7 +161,7 @@ FROM nginx:1.27-alpine
 LABEL org.opencontainers.image.source="https://github.com/OWNER/REPO" \
       org.opencontainers.image.description="Production frontend application" \
       org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.vendor="Forum Virium Helsinki"
+      org.opencontainers.image.vendor="Your Organization"
 
 # Dynamic labels via build args
 ARG VERSION=dev
@@ -195,7 +195,7 @@ FROM python:3.12-slim
 LABEL org.opencontainers.image.source="https://github.com/OWNER/REPO" \
       org.opencontainers.image.description="Production Python API server" \
       org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.vendor="Forum Virium Helsinki"
+      org.opencontainers.image.vendor="Your Organization"
 
 # Dynamic labels via build args
 ARG VERSION=dev
@@ -239,5 +239,5 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ## See Also
 
 - `/configure:skaffold` - Kubernetes development configuration
-- `/configure:all` - Run all FVH compliance checks
+- `/configure:all` - Run all compliance checks
 - `container-development` skill - Container best practices

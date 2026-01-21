@@ -494,7 +494,7 @@ Documentation: docs/LINTING.md
 - `/configure:formatting` - Configure code formatting
 - `/configure:pre-commit` - Pre-commit hook configuration
 - `/lint:check` - Universal linter runner
-- `/configure:all` - Run all FVH compliance checks
+- `/configure:all` - Run all compliance checks
 - **Biome documentation**: https://biomejs.dev
 - **Ruff documentation**: https://docs.astral.sh/ruff
 - **Clippy documentation**: https://doc.rust-lang.org/clippy

@@ -698,7 +698,7 @@ Documentation:
 
 ## See Also
 
-- `/configure:all` - Run all FVH compliance checks
+- `/configure:all` - Run all compliance checks
 - `/configure:sentry` - Error tracking (often used with feature flags for rollback)
 - **Skills**: `openfeature`, `go-feature-flag`
 - **OpenFeature documentation**: https://openfeature.dev

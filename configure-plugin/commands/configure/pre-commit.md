@@ -2,20 +2,20 @@
 created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
-description: Check and configure pre-commit hooks for FVH standards
+description: Check and configure pre-commit hooks for project standards
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 argument-hint: "[--check-only] [--fix] [--type <frontend|infrastructure|python>]"
 ---
 
 # /configure:pre-commit
 
-Check and configure pre-commit hooks against FVH (Forum Virium Helsinki) standards.
+Check and configure pre-commit hooks against project standards.
 
 ## Context
 
-This command validates `.pre-commit-config.yaml` against FVH standards and optionally applies fixes.
+This command validates `.pre-commit-config.yaml` against project standards and optionally applies fixes.
 
-**Skills referenced**: `fvh-pre-commit`
+**Skills referenced**: `pre-commit-standards`
 
 ## Version Checking
 
@@ -50,7 +50,7 @@ Determine project type to select appropriate standards:
 
 ### Phase 3: Compliance Analysis
 
-Compare existing configuration against FVH standards (from `fvh-pre-commit` skill):
+Compare existing configuration against project standards (from `pre-commit-standards` skill):
 
 **Required Base Hooks (All Projects):**
 - `pre-commit-hooks` v5.0.0+ with: trailing-whitespace, end-of-file-fixer, check-yaml, check-json, check-merge-conflict, check-added-large-files
@@ -75,7 +75,7 @@ Compare existing configuration against FVH standards (from `fvh-pre-commit` skil
 Generate compliance report:
 
 ```
-FVH Pre-commit Compliance Report
+Pre-commit Compliance Report
 ================================
 Project Type: frontend (detected)
 Config File: .pre-commit-config.yaml (found)
@@ -97,7 +97,7 @@ Overall: 2 issues found
 
 If `--fix` flag or user confirms:
 
-1. **Missing config file**: Create from FVH template for detected project type
+1. **Missing config file**: Create from standard template for detected project type
 2. **Missing hooks**: Add required hooks with standard versions
 3. **Outdated versions**: Update `rev:` values to standard versions
 4. **Missing hook types**: Add `default_install_hook_types` with `pre-commit` and `commit-msg`
@@ -151,6 +151,6 @@ components:
 
 ## See Also
 
-- `/configure:all` - Run all FVH compliance checks
+- `/configure:all` - Run all compliance checks
 - `/configure:status` - Quick compliance overview
-- `fvh-pre-commit` skill - Standard definitions
+- `pre-commit-standards` skill - Standard definitions

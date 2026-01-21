@@ -701,6 +701,6 @@ Documentation: docs/EDITOR_SETUP.md
 
 - `/configure:formatting` - Configure code formatting
 - `/configure:linting` - Configure linting tools
-- `/configure:all` - Run all FVH compliance checks
+- `/configure:all` - Run all compliance checks
 - **EditorConfig documentation**: https://editorconfig.org
 - **VS Code settings reference**: https://code.visualstudio.com/docs/getstarted/settings

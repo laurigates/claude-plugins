@@ -13,7 +13,7 @@ argument-hint: "[--check-only] [--fix] [--source <docs|site|custom>]"
 - Documentation config: !`ls -la mkdocs.yml typedoc.json docs/conf.py docusaurus.config.* 2>/dev/null || echo "None found"`
 - Docs directory: !`ls -d docs/ site/ 2>/dev/null || echo "Not found"`
 - CNAME file: !`ls -la CNAME 2>/dev/null || echo "None found"`
-- FVH standards: !`ls -la .project-standards.yaml 2>/dev/null || echo "None found"`
+- Project standards: !`ls -la .project-standards.yaml 2>/dev/null || echo "None found"`
 
 ## Parameters
 

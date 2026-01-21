@@ -2,19 +2,18 @@
 created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
-name: fvh-skaffold
+name: skaffold-standards
 description: |
-  FVH (Forum Virium Helsinki) Skaffold configuration standards for local Kubernetes
-  development with OrbStack and dotenvx. Use when configuring Skaffold, setting up local
-  K8s development, or when the user mentions FVH Skaffold, local development, Kubernetes
-  profiles, or dotenvx secrets.
+  Skaffold configuration standards for local Kubernetes development with OrbStack
+  and dotenvx. Use when configuring Skaffold, setting up local K8s development,
+  or when the user mentions Skaffold, local development, Kubernetes profiles, or dotenvx secrets.
 ---
 
-# FVH Skaffold Standards
+# Skaffold Standards
 
 ## Version: 2025.1
 
-FVH standard Skaffold configuration for local Kubernetes development workflows using OrbStack and dotenvx.
+Standard Skaffold configuration for local Kubernetes development workflows using OrbStack and dotenvx.
 
 ## Standard Configuration
 
@@ -176,7 +175,7 @@ profiles:
 
 ### Cluster Context (CRITICAL)
 
-**Always specify `kubeContext: orbstack`** in deploy configuration. This is the FVH standard local development context.
+**Always specify `kubeContext: orbstack`** in deploy configuration. This is the standard local development context.
 
 ```yaml
 deploy:
@@ -257,7 +256,7 @@ Skaffold may not be applicable for pure infrastructure repos. Use Terraform/Helm
 
 ## dotenvx Integration
 
-FVH projects use [dotenvx](https://dotenvx.com/) for encrypted secrets management in local development.
+Projects use [dotenvx](https://dotenvx.com/) for encrypted secrets management in local development.
 
 ### How It Works
 

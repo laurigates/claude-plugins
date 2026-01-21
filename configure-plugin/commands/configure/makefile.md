@@ -2,14 +2,14 @@
 created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
-description: Check and configure Makefile with standard targets for FVH standards
+description: Check and configure Makefile with standard targets for project standards
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite
 argument-hint: "[--check-only] [--fix]"
 ---
 
 # /configure:makefile
 
-Check and configure project Makefile against FVH (Forum Virium Helsinki) standards.
+Check and configure project Makefile against project standards.
 
 ## Context
 
@@ -59,7 +59,7 @@ This command validates and creates Makefiles with standard targets for consisten
 ### Phase 4: Report Generation
 
 ```
-FVH Makefile Compliance Report
+Makefile Compliance Report
 ==============================
 Project Type: python (detected)
 Makefile: Found
@@ -88,7 +88,7 @@ Issues: 2 found
 
 If `--fix` flag or user confirms:
 
-1. **Missing Makefile**: Create from FVH template based on project type
+1. **Missing Makefile**: Create from standard template based on project type
 2. **Missing targets**: Add targets with appropriate commands
 3. **Missing defaults**: Add `.DEFAULT_GOAL`, `.PHONY`, colors
 4. **Missing help**: Add auto-generated help target
@@ -102,7 +102,7 @@ components:
   makefile: "2025.1"
 ```
 
-## FVH Makefile Template
+## Standard Makefile Template
 
 ### Universal Structure
 
@@ -279,6 +279,6 @@ clean:
 
 ## See Also
 
-- `/configure:all` - Run all FVH compliance checks
+- `/configure:all` - Run all compliance checks
 - `/configure:workflows` - GitHub Actions workflows
 - `/configure:dockerfile` - Docker configuration
