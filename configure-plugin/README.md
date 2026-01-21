@@ -80,6 +80,7 @@ All commands support two modes:
 | `pre-commit-standards` | Pre-commit hook standards |
 | `release-please-standards` | Release-please standards |
 | `skaffold-standards` | Skaffold configuration standards |
+| `claude-security-settings` | Claude Code security settings and wildcard permissions |
 
 ## Usage
 

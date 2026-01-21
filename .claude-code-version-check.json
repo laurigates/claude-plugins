@@ -1,8 +1,25 @@
 {
   "lastCheckedVersion": "2.1.7",
-  "lastCheckedDate": "2026-01-14",
+  "lastCheckedDate": "2026-01-20",
   "changelogUrl": "https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md",
   "reviewedChanges": [
+    {
+      "version": "2.1.7",
+      "date": "2026-01-20",
+      "relevantChanges": [
+        "SubagentStart hook event with input modification",
+        "Hooks in skill/command frontmatter",
+        "context:fork for agent isolation",
+        "disallowedTools for agent restrictions",
+        "Skills and slash commands merged",
+        "Hot-reload for skills/commands",
+        "SlashCommand tool invocation",
+        "Wildcard permission patterns",
+        "Shell operator protections",
+        "SDK migration to @anthropic-ai/claude-agent-sdk"
+      ],
+      "actionsRequired": []
+    },
     {
       "version": "2.1.7",
       "date": "2026-01-14",

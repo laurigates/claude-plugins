@@ -1,6 +1,6 @@
 {
   "name": "agent-patterns-plugin",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Multi-agent coordination and orchestration patterns",
   "keywords": [
     "agents",
@@ -12,6 +12,9 @@
     "workflow",
     "primer",
     "hooks",
-    "configuration"
+    "configuration",
+    "context-fork",
+    "disallowedTools",
+    "custom-agents"
   ]
 }

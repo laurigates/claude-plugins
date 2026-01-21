@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.1.0...agent-patterns-plugin-v2.2.0) (2026-01-20)
+
+
+### Features
+
+* implement Claude Code 2.1.7 changelog review updates (issue [#78](https://github.com/laurigates/claude-plugins/issues/78)) ([#112](https://github.com/laurigates/claude-plugins/issues/112)) ([e28d8de](https://github.com/laurigates/claude-plugins/commit/e28d8deec41d3e5070861a3f1c37e9c43f452cb4))
+
 ## [2.1.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.0.1...agent-patterns-plugin-v2.1.0) (2026-01-15)
 
 
