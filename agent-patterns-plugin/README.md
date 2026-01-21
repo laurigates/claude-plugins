@@ -83,6 +83,25 @@ Generate a continuation primer for agent handoff with todo list and context.
 
 ### Skills
 
+#### `delegation-first`
+Default behavior pattern that automatically delegates implementation tasks to specialized sub-agents.
+
+**When to use:**
+- Any implementation request (writing code, fixing bugs, running tests)
+- Investigation and debugging tasks
+- Code review and security audits
+- Documentation generation
+
+**Core Philosophy:**
+- **Main Claude = Architect** - focuses on design, strategy, user interaction
+- **Sub-Agents = Implementers** - handle code, tests, debugging with fresh context
+
+**Benefits:**
+- Preserves main conversation for high-level design
+- Sub-agents have dedicated context windows (no noise accumulation)
+- Parallel execution for independent tasks
+- Better results through specialized expertise
+
 #### `agent-coordination-patterns`
 Coordination patterns for sequential, parallel, and iterative agent workflows.
 
