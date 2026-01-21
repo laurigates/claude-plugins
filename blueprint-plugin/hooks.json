@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Blueprint plugin validation hooks - see docs/hook-design-decisions.md",
+  "PreToolUse": [
+    {
+      "matcher": "Write(docs/prps/**)",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/validate-prp-frontmatter.sh",
+          "timeout": 3000
+        }
+      ]
+    },
+    {
+      "matcher": "Edit(docs/prps/**)",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/validate-prp-frontmatter.sh",
+          "timeout": 3000
+        }
+      ]
+    },
+    {
+      "matcher": "Write(docs/adrs/**)",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/validate-adr-frontmatter.sh",
+          "timeout": 3000
+        }
+      ]
+    },
+    {
+      "matcher": "Edit(docs/adrs/**)",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/validate-adr-frontmatter.sh",
+          "timeout": 3000
+        }
+      ]
+    },
+    {
+      "matcher": "Skill(prp-execute)",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/check-prp-readiness.sh",
+          "timeout": 10000
+        }
+      ]
+    }
+  ]
+}
