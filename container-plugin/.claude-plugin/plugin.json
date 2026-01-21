@@ -17,6 +17,9 @@
     "security-scanning",
     "grype",
     "trivy",
-    "verify"
+    "verify",
+    "filesync",
+    "hot-reload",
+    "live-reload"
   ]
 }

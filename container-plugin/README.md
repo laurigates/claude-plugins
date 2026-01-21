@@ -92,6 +92,35 @@ Build → Test → Deploy → Verify
 - `custom`: Run arbitrary commands (security scans, unit tests)
 - `verify`: Post-deployment integration tests
 
+#### skaffold-filesync
+Fast iterative development with Skaffold file sync - copy changed files to running containers without rebuilding images.
+
+**Key Features:**
+- Three sync modes: manual, infer, and auto
+- Hot reload support for interpreted languages
+- Static asset synchronization
+- Directory stripping for complex layouts
+- Zero-config support for Buildpacks and Jib
+
+**Use when:**
+- Optimizing the development loop
+- Setting up hot reload in Kubernetes
+- Syncing source code to running containers
+- Avoiding unnecessary image rebuilds
+
+**Sync Modes:**
+| Mode | Best For |
+|------|----------|
+| `manual` | Full control, complex directory layouts |
+| `infer` | Docker builds, derives destinations from Dockerfile |
+| `auto` | Buildpacks, Jib - zero configuration |
+
+**Speed Comparison:**
+```
+Without sync: Edit → Build → Deploy → Restart (~30-60s)
+With sync:    Edit → Copy → Test (~1-2s)
+```
+
 ### Commands
 
 #### deploy:release
@@ -174,6 +203,8 @@ Skills are automatically activated when relevant keywords are detected:
 **skaffold-orbstack:** OrbStack, k8s.orb.local, Skaffold, service access, port-forward
 
 **skaffold-testing:** skaffold test, skaffold verify, container-structure-test, image testing, security scanning, Grype, Trivy, pre-deploy validation
+
+**skaffold-filesync:** file sync, hot reload, live reload, fast iteration, sync rules, copy files to container
 
 ### Command Usage
 
@@ -268,7 +299,7 @@ This plugin enforces strict security best practices:
 
 ## Keywords
 
-container, docker, dockerfile, registry, skaffold, deployment, kubernetes, orbstack, 12-factor, multi-stage-builds, security, image-optimization, container-structure-test, grype, trivy, verify, image-testing
+container, docker, dockerfile, registry, skaffold, deployment, kubernetes, orbstack, 12-factor, multi-stage-builds, security, image-optimization, container-structure-test, grype, trivy, verify, image-testing, filesync, hot-reload, live-reload
 
 ## License
 
