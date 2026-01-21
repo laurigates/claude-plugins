@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.2.1...git-plugin-v2.3.0) (2026-01-21)
+
+
+### Features
+
+* **git-plugin:** add layered composable git workflow skills ([dd0b909](https://github.com/laurigates/claude-plugins/commit/dd0b909a907dabe8eae4b97da42db490fc4d30cc))
+
 ## [2.2.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.2.0...git-plugin-v2.2.1) (2026-01-18)
 
 
