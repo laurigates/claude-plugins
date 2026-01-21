@@ -2,7 +2,7 @@
 created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
-allowed-tools: Read, Write, Edit, TodoWrite, mcp__podio-mcp__list_items, mcp__podio-mcp__create_item, mcp__podio-mcp__update_item, mcp__podio-mcp__get_item_details, mcp__github__list_issues, mcp__github__create_issue, mcp__github__update_issue, mcp__github__list_pull_requests, mcp__github__search_issues, mcp__graphiti-memory__add_memory
+allowed-tools: Read, Write, Edit, TodoWrite, mcp__podio-mcp__list_items, mcp__podio-mcp__create_item, mcp__podio-mcp__update_item, mcp__podio-mcp__get_item_details, mcp__github__list_issues, mcp__github__create_issue, mcp__github__update_issue, mcp__github__list_pull_requests, mcp__github__search_issues
 argument-hint: [--full-sync|--selective|--status-only|--enhance]
 description: Bidirectional synchronization between GitHub and Podio
 ---
@@ -158,9 +158,8 @@ Focus on enriching existing linked items with additional context and information
 - **Rollback Capability:** Track changes for potential rollback if issues arise
 - **Validation Checks:** Verify data integrity after synchronization operations
 
-## Memory Integration
+## Learning
 
-- Store synchronization patterns and outcomes using `mcp__graphiti-memory__add_memory`
 - Learn from successful synchronization strategies
 - Remember user preferences for conflict resolution
 - Track platform-specific formatting and linking patterns

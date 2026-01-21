@@ -167,7 +167,7 @@ Generate summary of changes:
 | `rust-*`, `cpp-*`, `embedded-*` | Systems Languages |
 | `container-*`, `kubernetes-*`, `helm-*`, `terraform-*` | Infrastructure & DevOps |
 | `test-*`, `playwright-*`, `mutation-*` | Testing & Quality |
-| `agent-*`, `multi-agent-*`, `graphiti-*` | Meta & Coordination |
+| `agent-*`, `multi-agent-*` | Meta & Coordination |
 
 ### Command Namespaces
 

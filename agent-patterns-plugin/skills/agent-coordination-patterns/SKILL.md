@@ -344,8 +344,6 @@ Later > Earlier (recent context)
 ## Integration with Other Skills
 
 - **agent-file-coordination**: Uses file structures for coordination
-- **graphiti-learning-workflows**: Learn optimal coordination patterns
-- **graphiti-episode-storage**: Store successful patterns
 - **multi-agent-workflows**: Higher-level workflow orchestration
 
 ## References

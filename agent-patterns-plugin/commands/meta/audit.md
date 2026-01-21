@@ -38,7 +38,7 @@ Evaluate tool assignments for security and appropriateness:
 
 **Read-only agents** (should NOT have write access):
 - research-documentation
-- code-analysis (read + vectorcode only)
+- code-analysis (read only)
 - code-review (read + LSP only)
 - security-audit (read + LSP + Bash for scanning)
 

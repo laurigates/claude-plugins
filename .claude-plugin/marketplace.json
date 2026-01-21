@@ -238,19 +238,6 @@
       "category": "ux"
     },
     {
-      "name": "dotfiles-plugin",
-      "source": "./dotfiles-plugin",
-      "description": "Dotfiles and editor configuration - chezmoi, neovim, obsidian",
-      "version": "1.0.0",
-      "keywords": [
-        "dotfiles",
-        "chezmoi",
-        "neovim",
-        "obsidian"
-      ],
-      "category": "configuration"
-    },
-    {
       "name": "bevy-plugin",
       "source": "./bevy-plugin",
       "description": "Bevy game engine development - ECS, rendering, game architecture",
@@ -263,19 +250,6 @@
         "gamedev"
       ],
       "category": "gamedev"
-    },
-    {
-      "name": "graphiti-plugin",
-      "source": "./graphiti-plugin",
-      "description": "Graphiti knowledge graph - memory, learning, episode storage",
-      "version": "1.0.0",
-      "keywords": [
-        "graphiti",
-        "knowledge-graph",
-        "memory",
-        "learning"
-      ],
-      "category": "ai"
     },
     {
       "name": "container-plugin",

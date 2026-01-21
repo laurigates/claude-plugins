@@ -81,8 +81,7 @@ Recommendations:
 
 **From dotfiles favorites registry** (`~/.local/share/chezmoi/.chezmoidata.toml`):
 
-**Memory & Knowledge:**
-- `graphiti-memory` - Graph-based memory and knowledge management
+**Context & Knowledge:**
 - `context7` - Upstash context management
 
 **Testing & Automation:**
@@ -108,11 +107,6 @@ Recommendations:
 
 ```json
 {
-  "graphiti-memory": {
-    "command": "npx",
-    "args": ["-y", "@getzep/graphiti-mcp-server"],
-    "env": { "GRAPHITI_API_KEY": "${GRAPHITI_API_KEY}" }
-  },
   "pal": {
     "command": "uvx",
     "args": [
@@ -188,7 +182,6 @@ Recommendations:
 | Server | Required Variables | Where to Set |
 |--------|-------------------|--------------|
 | `github` | `GITHUB_TOKEN` | `~/.api_tokens` |
-| `graphiti-memory` | `GRAPHITI_API_KEY` | `~/.api_tokens` |
 | `podio-mcp` | `PODIO_CLIENT_ID`, `PODIO_CLIENT_SECRET`, `PODIO_APP_ID`, `PODIO_APP_TOKEN` | project `.env` |
 | `argocd-mcp` | `ARGOCD_SERVER`, `ARGOCD_AUTH_TOKEN` | project `.env` |
 | `sentry` | `SENTRY_AUTH_TOKEN` | `~/.api_tokens` |

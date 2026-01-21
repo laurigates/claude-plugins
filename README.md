@@ -16,10 +16,8 @@ A collection of Claude Code plugins providing specialized skills, commands, and 
 | **configure-plugin** | Infrastructure | Pre-commit, CI/CD, Docker, testing configuration |
 | **container-plugin** | Infrastructure | Docker, registry, Skaffold workflows |
 | **documentation-plugin** | Documentation | API docs, README generation, knowledge graphs |
-| **dotfiles-plugin** | Configuration | Chezmoi, Neovim, Obsidian configuration |
 | **git-plugin** | Version Control | Commits, branches, PRs, repository management |
 | **github-actions-plugin** | CI/CD | GitHub Actions workflows and automation |
-| **graphiti-plugin** | AI | Knowledge graph memory and learning |
 | **kubernetes-plugin** | Infrastructure | Kubernetes and Helm operations |
 | **project-plugin** | Development | Project initialization and management |
 | **python-plugin** | Language | uv, ruff, pytest, Python packaging |

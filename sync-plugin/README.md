@@ -201,11 +201,6 @@ The plugin gracefully handles:
   - `mcp__podio-mcp__create_item`
   - `mcp__podio-mcp__update_item`
 
-### Optional MCP Servers
-
-- **graphiti-memory** - For learning synchronization patterns
-  - `mcp__graphiti-memory__add_memory`
-
 ## File Structure
 
 ```

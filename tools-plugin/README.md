@@ -1,6 +1,6 @@
 # Tools Plugin
 
-General development utilities for Claude Code - fd, rg, jq, yq, nushell, shell, imagemagick, vectorcode, mermaid, d2.
+General development utilities for Claude Code - fd, rg, jq, yq, nushell, shell, imagemagick, mermaid, d2.
 
 ## Overview
 
@@ -11,7 +11,6 @@ Collection of general-purpose development utilities for file finding, text searc
 | Command | Description |
 |---------|-------------|
 | `/deps:install` | Universal dependency installer - auto-detects package manager |
-| `/tools:vectorcode` | Initialize VectorCode with automatic configuration |
 | `/generate-image` | Generate images using Nano Banana Pro (Gemini 3 Pro Image) |
 | `/handoffs` | List, filter, and manage @AGENT-HANDOFF-MARKER markers |
 
@@ -46,13 +45,6 @@ Collection of general-purpose development utilities for file finding, text searc
 |-------|-------------|
 | `mermaid-diagrams` | Generate diagrams from text using Mermaid CLI (flowcharts, sequence, ERD, class) |
 | `d2-diagrams` | Modern text-to-diagram language with themes, layouts, and advanced styling |
-
-### Code Search
-
-| Skill | Description |
-|-------|-------------|
-| `vectorcode-init` | VectorCode initialization |
-| `vectorcode-search` | VectorCode semantic code search |
 
 ## Usage Examples
 
