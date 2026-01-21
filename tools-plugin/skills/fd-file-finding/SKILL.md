@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-01-21
 reviewed: 2025-12-16
 name: fd File Finding
 description: Fast file finding using fd command-line tool with smart defaults, gitignore awareness, and parallel execution. Use when searching for files by name, extension, or pattern across directories.
@@ -120,17 +120,35 @@ fd -e rs -x rustfmt                 # Format all Rust files
 fd -e md -X wc -l                   # Word count on all Markdown files
 ```
 
+### Output Formatting
+```bash
+# Custom output format using placeholders
+fd -e tf --format '{//}'            # Parent directory of each file
+fd -e rs --format '{/}'             # Filename without directory
+fd -e md --format '{.}'             # Path without extension
+
+# Placeholders:
+# {}   - Full path (default)
+# {/}  - Basename (filename only)
+# {//} - Parent directory
+# {.}  - Path without extension
+# {/.} - Basename without extension
+```
+
 ### Integration with Other Tools
 ```bash
-# Pipe to other commands
-fd -e log | xargs rm                # Delete all log files
-fd -e rs | xargs cat | wc -l        # Count lines in Rust files
+# Prefer fd's native execution over xargs when possible:
+fd -e log -x rm                     # Delete all log files (native)
+fd -e rs -X wc -l                   # Count lines in Rust files (batch)
 
 # Use with rg for powerful search
-fd -e py | xargs rg "import numpy"  # Find numpy imports in Python files
+fd -e py -x rg "import numpy" {}    # Find numpy imports in Python files
 
 # Open files in editor
-fd -e md | xargs nvim               # Open all Markdown in Neovim
+fd -e md -X nvim                    # Open all Markdown in Neovim (batch)
+
+# When xargs IS useful: complex pipelines or non-fd inputs
+cat filelist.txt | xargs rg "TODO"  # Process file from external list
 ```
 
 ## Common Patterns
@@ -179,6 +197,26 @@ fd -e js -E node_modules -E dist    # Exclude multiple paths
 fd -p src/components/.*\.tsx$       # Match full path
 ```
 
+### Find Directories Containing Specific Files
+```bash
+# Find all directories with Terraform configs
+fd -t f 'main\.tf$' --format '{//}'
+
+# Find all directories with package.json
+fd -t f '^package\.json$' --format '{//}'
+
+# Find Go module directories
+fd -t f '^go\.mod$' --format '{//}'
+
+# Find Python project roots (with pyproject.toml)
+fd -t f '^pyproject\.toml$' --format '{//}'
+
+# Find Cargo.toml directories (Rust projects)
+fd -t f '^Cargo\.toml$' --format '{//}'
+```
+
+**Note:** Use `--format '{//}'` instead of piping to xargs - it's faster and simpler.
+
 ## Best Practices
 
 **When to Use fd**
@@ -202,10 +240,19 @@ fd -p src/components/.*\.tsx$       # Match full path
 
 **Integration with rg**
 ```bash
-# Two-step search: find files, then search content
-fd -e py | xargs rg "class.*Test"   # Find test classes in Python
-fd -e rs | xargs rg "TODO"          # Find TODOs in Rust files
-fd -e md | xargs rg "# "            # Find headers in Markdown
+# Prefer native execution over xargs
+fd -e py -x rg "class.*Test" {}     # Find test classes in Python
+fd -e rs -x rg "TODO" {}            # Find TODOs in Rust files
+fd -e md -x rg "# " {}              # Find headers in Markdown
+```
+
+**Avoid Unnecessary xargs**
+```bash
+# Instead of: fd -t d -d 1 | xargs -I{} sh -c 'test -f {}/main.tf && echo {}'
+# Use: fd -t f 'main\.tf$' --format '{//}'
+
+# Instead of: fd -e log | xargs rm
+# Use: fd -e log -x rm
 ```
 
 ## Quick Reference
@@ -225,6 +272,7 @@ fd -e md | xargs rg "# "            # Find headers in Markdown
 | `-X CMD` | Batch execute | `fd -e md -X cat` |
 | `-s` | Case-sensitive | `fd -s Config` |
 | `-g GLOB` | Glob pattern | `fd -g '*.json'` |
+| `--format FMT` | Custom output format | `fd -e tf --format '{//}'` |
 
 ### Time Units
 - `s` = seconds
@@ -261,6 +309,12 @@ fd -e py -X wc -l
 
 # Find files excluding build artifacts
 fd -e js -E dist -E node_modules -E build
+
+# Find all Terraform/IaC project directories
+fd -t f 'main\.tf$' --format '{//}'
+
+# Find all Node.js project roots
+fd -t f '^package\.json$' --format '{//}'
 ```
 
 This makes fd the preferred tool for fast, intuitive file finding in development workflows.
