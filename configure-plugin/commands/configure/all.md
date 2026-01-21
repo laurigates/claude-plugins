@@ -19,7 +19,7 @@ Orchestrator command that runs all `/configure:*` subcommands and provides a com
 
 ### Phase 1: Project Detection
 
-1. Read `.fvh-standards.yaml` if exists
+1. Read `.project-standards.yaml` if exists
 2. Auto-detect project type:
    - **infrastructure**: Has `terraform/`, `helm/`, `argocd/`, or `*.tf` files
    - **frontend**: Has `package.json` with vue/react dependencies
@@ -132,7 +132,7 @@ If `--fix` flag or user confirms:
 
 ### Phase 5: Update Standards Tracking
 
-Create or update `.fvh-standards.yaml`:
+Create or update `.project-standards.yaml`:
 
 ```yaml
 # FVH Standards Tracking

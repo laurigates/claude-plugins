@@ -19,7 +19,7 @@ Quick read-only check of repository compliance against FVH standards. Use this t
 
 ### Phase 1: Project Detection
 
-1. Read `.fvh-standards.yaml` if exists (shows tracked version and last configured date)
+1. Read `.project-standards.yaml` if exists (shows tracked version and last configured date)
 2. Auto-detect project type from file structure
 3. Report discrepancy if detected type differs from tracked type
 
@@ -92,7 +92,7 @@ Run /configure:all to fix issues
 If `--verbose` flag:
 - Show specific version numbers for each hook/tool
 - List individual compliance checks performed
-- Show detected deviations from `.fvh-standards.yaml`
+- Show detected deviations from `.project-standards.yaml`
 - Display file modification timestamps
 - Show cache-busting configuration details (framework, CDN, hash patterns)
 

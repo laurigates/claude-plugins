@@ -35,7 +35,7 @@ Use WebSearch or WebFetch to verify current versions before reporting outdated h
 
 Determine project type to select appropriate standards:
 
-1. Check for `.fvh-standards.yaml` with `project_type` field
+1. Check for `.project-standards.yaml` with `project_type` field
 2. If not found, auto-detect:
    - **infrastructure**: Has `terraform/`, `helm/`, `argocd/`, or `*.tf` files
    - **frontend**: Has `package.json` with vue/react dependencies
@@ -104,11 +104,11 @@ If `--fix` flag or user confirms:
 
 After modification:
 - Run `pre-commit install --install-hooks` to install hooks
-- Update `.fvh-standards.yaml` with compliance status
+- Update `.project-standards.yaml` with compliance status
 
 ### Phase 6: Standards Tracking
 
-Update or create `.fvh-standards.yaml`:
+Update or create `.project-standards.yaml`:
 
 ```yaml
 standards_version: "2025.1"

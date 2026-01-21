@@ -19,7 +19,7 @@ Unlike `/configure:all` which runs everything, this command presents a multi-sel
 
 ### Phase 1: Project Detection
 
-1. Read `.fvh-standards.yaml` if exists
+1. Read `.project-standards.yaml` if exists
 2. Auto-detect project type:
    - **infrastructure**: Has `terraform/`, `helm/`, `argocd/`, or `*.tf` files
    - **frontend**: Has `package.json` with vue/react dependencies

@@ -493,7 +493,7 @@ repos:
 
 ### Phase 9: Standards Tracking
 
-Update `.fvh-standards.yaml`:
+Update `.project-standards.yaml`:
 
 ```yaml
 standards_version: "2025.1"

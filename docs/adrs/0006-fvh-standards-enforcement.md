@@ -46,7 +46,7 @@ Create a **standards enforcement plugin** (`configure-plugin`) that provides:
 
 ### Standards Tracking
 
-Projects track their standards compliance in `.fvh-standards.yaml`:
+Projects track their standards compliance in `.project-standards.yaml`:
 
 ```yaml
 version: "1.0"

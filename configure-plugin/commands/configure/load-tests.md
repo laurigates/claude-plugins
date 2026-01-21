@@ -760,7 +760,7 @@ export function handleSummary(data) {
 
 ### Phase 7: Standards Tracking
 
-Update `.fvh-standards.yaml`:
+Update `.project-standards.yaml`:
 
 ```yaml
 standards_version: "2025.1"

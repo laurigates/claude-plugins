@@ -34,7 +34,7 @@ Use WebSearch or WebFetch to verify current SDK versions before configuring Sent
 
 Determine project type to select appropriate SDK and configuration:
 
-1. Check for `.fvh-standards.yaml` with `project_type` field
+1. Check for `.project-standards.yaml` with `project_type` field
 2. If not found, auto-detect:
    - **frontend**: Has `package.json` with vue/react dependencies
    - **node**: Has `package.json` with Node.js backend (express, fastify, etc.)
@@ -221,7 +221,7 @@ Verify Sentry integration in CI/CD:
 
 ### Phase 8: Standards Tracking
 
-Update or create `.fvh-standards.yaml`:
+Update or create `.project-standards.yaml`:
 
 ```yaml
 standards_version: "2025.1"

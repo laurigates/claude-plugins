@@ -717,7 +717,7 @@ memray run --native -o output.bin python your_script.py
 
 ### Phase 8: Standards Tracking
 
-Update `.fvh-standards.yaml`:
+Update `.project-standards.yaml`:
 
 ```yaml
 standards_version: "2025.1"

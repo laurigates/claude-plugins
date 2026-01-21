@@ -102,7 +102,7 @@ If `--fix` flag or user confirms:
 
 ### Phase 6: Standards Tracking
 
-Update `.fvh-standards.yaml`:
+Update `.project-standards.yaml`:
 
 ```yaml
 components:
