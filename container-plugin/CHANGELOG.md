@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.0](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.1.0...container-plugin-v2.2.0) (2026-01-21)
+
+
+### Features
+
+* **container-plugin:** add skaffold-filesync skill ([#121](https://github.com/laurigates/claude-plugins/issues/121)) ([1113703](https://github.com/laurigates/claude-plugins/commit/111370326a19e8c82fe7d45fdc7d406027e281e6))
+
 ## [2.1.0](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.0.1...container-plugin-v2.1.0) (2026-01-19)
 
 
