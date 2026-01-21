@@ -104,7 +104,7 @@
       "name": "tools-plugin",
       "source": "./tools-plugin",
       "description": "General utilities - fd, rg, jq, shell, imagemagick",
-      "version": "2.0.1",
+      "version": "2.1.0",
       "keywords": [
         "tools",
         "utilities",
