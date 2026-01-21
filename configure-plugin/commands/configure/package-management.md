@@ -468,7 +468,7 @@ Replace npm/yarn/pnpm scripts with bun equivalents:
 
 ### Phase 7: Standards Tracking
 
-Update `.fvh-standards.yaml`:
+Update `.project-standards.yaml`:
 
 ```yaml
 standards_version: "2025.1"
@@ -554,6 +554,6 @@ Documentation: docs/PACKAGE_MANAGEMENT.md
 - `/configure:linting` - Configure linting tools (ruff, biome)
 - `/configure:formatting` - Configure formatters
 - `/deps:install` - Universal dependency installer
-- `/configure:all` - Run all FVH compliance checks
+- `/configure:all` - Run all compliance checks
 - **uv documentation**: https://docs.astral.sh/uv
 - **bun documentation**: https://bun.sh/docs

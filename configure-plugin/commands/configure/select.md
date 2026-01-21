@@ -2,14 +2,14 @@
 created: 2025-12-22
 modified: 2025-12-22
 reviewed: 2025-12-22
-description: Interactively select which FVH infrastructure standards to configure
+description: Interactively select which infrastructure standards to configure
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, SlashCommand
 argument-hint: "[--check-only] [--fix]"
 ---
 
 # /configure:select
 
-Interactively select which FVH infrastructure standards checks to run.
+Interactively select which infrastructure standards checks to run.
 
 ## Context
 
@@ -19,7 +19,7 @@ Unlike `/configure:all` which runs everything, this command presents a multi-sel
 
 ### Phase 1: Project Detection
 
-1. Read `.fvh-standards.yaml` if exists
+1. Read `.project-standards.yaml` if exists
 2. Auto-detect project type:
    - **infrastructure**: Has `terraform/`, `helm/`, `argocd/`, or `*.tf` files
    - **frontend**: Has `package.json` with vue/react dependencies

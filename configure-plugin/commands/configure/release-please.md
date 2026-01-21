@@ -2,20 +2,20 @@
 created: 2025-12-16
 modified: 2025-12-22
 reviewed: 2025-12-16
-description: Check and configure release-please workflow for FVH standards
+description: Check and configure release-please workflow for project standards
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 argument-hint: "[--check-only] [--fix]"
 ---
 
 # /configure:release-please
 
-Check and configure release-please against FVH (Forum Virium Helsinki) standards.
+Check and configure release-please against project standards.
 
 ## Context
 
-This command validates release-please configuration and workflow against FVH standards.
+This command validates release-please configuration and workflow against project standards.
 
-**Skills referenced**: `fvh-release-please`, `release-please-protection`
+**Skills referenced**: `release-please-standards`, `release-please-protection`
 
 ## Version Checking
 
@@ -71,7 +71,7 @@ Determine appropriate release-type:
 ### Phase 4: Report Generation
 
 ```
-FVH Release-Please Compliance Report
+Release-Please Compliance Report
 ====================================
 Project Type: node (detected)
 
@@ -94,7 +94,7 @@ Overall: Fully compliant
 
 If `--fix` flag or user confirms:
 
-1. **Missing workflow**: Create from FVH template
+1. **Missing workflow**: Create from standard template
 2. **Missing config**: Create with detected release-type
 3. **Missing manifest**: Create with initial version `0.0.0`
 4. **Outdated action**: Update to v4
@@ -102,14 +102,14 @@ If `--fix` flag or user confirms:
 
 ### Phase 6: Standards Tracking
 
-Update `.fvh-standards.yaml`:
+Update `.project-standards.yaml`:
 
 ```yaml
 components:
   release-please: "2025.1"
 ```
 
-## FVH Standard Templates
+## Standard Templates
 
 ### Workflow Template
 
@@ -178,5 +178,5 @@ jobs:
 ## See Also
 
 - `/configure:pre-commit` - Ensure conventional commits hook
-- `/configure:all` - Run all FVH compliance checks
+- `/configure:all` - Run all compliance checks
 - `release-please-protection` skill - Protected file rules

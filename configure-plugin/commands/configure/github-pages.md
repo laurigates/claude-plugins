@@ -13,7 +13,7 @@ argument-hint: "[--check-only] [--fix] [--source <docs|site|custom>]"
 - Documentation config: !`ls -la mkdocs.yml typedoc.json docs/conf.py docusaurus.config.* 2>/dev/null || echo "None found"`
 - Docs directory: !`ls -d docs/ site/ 2>/dev/null || echo "Not found"`
 - CNAME file: !`ls -la CNAME 2>/dev/null || echo "None found"`
-- FVH standards: !`ls -la .fvh-standards.yaml 2>/dev/null || echo "None found"`
+- Project standards: !`ls -la .project-standards.yaml 2>/dev/null || echo "None found"`
 
 ## Parameters
 
@@ -377,7 +377,7 @@ jobs:
 
 ### Phase 6: Standards Tracking
 
-Update `.fvh-standards.yaml`:
+Update `.project-standards.yaml`:
 
 ```yaml
 standards_version: "2025.1"

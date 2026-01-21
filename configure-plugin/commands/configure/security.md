@@ -621,7 +621,7 @@ jobs:
 
 ### Phase 7: Standards Tracking
 
-Update `.fvh-standards.yaml`:
+Update `.project-standards.yaml`:
 
 ```yaml
 standards_version: "2025.1"
@@ -725,7 +725,7 @@ Documentation: SECURITY.md
 
 - `/configure:workflows` - GitHub Actions workflow standards
 - `/configure:pre-commit` - Pre-commit hook configuration
-- `/configure:all` - Run all FVH compliance checks
+- `/configure:all` - Run all compliance checks
 - **GitHub Security Features**: https://docs.github.com/en/code-security
 - **detect-secrets**: https://github.com/Yelp/detect-secrets
 - **CodeQL**: https://codeql.github.com

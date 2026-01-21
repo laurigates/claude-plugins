@@ -601,7 +601,7 @@ env:
 
 ### Phase 9: Standards Tracking
 
-Update `.fvh-standards.yaml`:
+Update `.project-standards.yaml`:
 
 ```yaml
 standards_version: "2025.1"
@@ -698,7 +698,7 @@ Documentation:
 
 ## See Also
 
-- `/configure:all` - Run all FVH compliance checks
+- `/configure:all` - Run all compliance checks
 - `/configure:sentry` - Error tracking (often used with feature flags for rollback)
 - **Skills**: `openfeature`, `go-feature-flag`
 - **OpenFeature documentation**: https://openfeature.dev

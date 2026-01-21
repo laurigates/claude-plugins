@@ -586,7 +586,7 @@ repos:
 
 ### Phase 10: Standards Tracking
 
-Update `.fvh-standards.yaml`:
+Update `.project-standards.yaml`:
 
 ```yaml
 standards_version: "2025.1"
@@ -681,7 +681,7 @@ Documentation: docs/FORMATTING.md
 - `/configure:linting` - Configure linting tools
 - `/configure:editor` - Configure editor settings
 - `/configure:pre-commit` - Pre-commit hook configuration
-- `/configure:all` - Run all FVH compliance checks
+- `/configure:all` - Run all compliance checks
 - **Biome documentation**: https://biomejs.dev
 - **Ruff documentation**: https://docs.astral.sh/ruff
 - **rustfmt documentation**: https://rust-lang.github.io/rustfmt

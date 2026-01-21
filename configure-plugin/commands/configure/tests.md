@@ -404,7 +404,7 @@ Add test commands to GitHub Actions workflow:
 
 ### Phase 7: Standards Tracking
 
-Update `.fvh-standards.yaml`:
+Update `.project-standards.yaml`:
 
 ```yaml
 standards_version: "2025.1"
@@ -552,7 +552,7 @@ Documentation: docs/TESTING.md
 ## See Also
 
 - `/configure:coverage` - Configure coverage thresholds and reporting
-- `/configure:all` - Run all FVH compliance checks
+- `/configure:all` - Run all compliance checks
 - `/test:run` - Universal test runner
 - `/test:setup` - Comprehensive testing infrastructure setup
 - **Vitest documentation**: https://vitest.dev
