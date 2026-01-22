@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.7.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.7.0...blueprint-plugin-v3.7.1) (2026-01-22)
+
+
+### Bug Fixes
+
+* **blueprint-plugin:** wrap hook definitions in hooks key for external file loading ([#127](https://github.com/laurigates/claude-plugins/issues/127)) ([751eb57](https://github.com/laurigates/claude-plugins/commit/751eb57e60aa3d294c517e9d0032e1c59487c6d5))
+
 ## [3.7.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.6.0...blueprint-plugin-v3.7.0) (2026-01-21)
 
 
