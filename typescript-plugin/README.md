@@ -11,6 +11,7 @@ TypeScript development support with modern tooling: strict type configuration, E
 | Skill | Description |
 |-------|-------------|
 | `typescript-strict` | Strict TypeScript configuration and patterns |
+| `typescript-debugging` | Debugging with Bun inspector, VSCode, memory profiling |
 | `eslint-configuration` | ESLint configuration and patterns |
 | `biome-tooling` | Biome linter and formatter |
 | `bun-package-manager` | Fast package management with Bun |
@@ -54,9 +55,30 @@ biome format . --write
 /bun:add lodash        # Add package
 /bun:test              # Run tests with compact output
 /bun:build ./src/index.ts  # Bundle for production
+/bun:debug script.ts   # Debug with inspector
+/bun:debug --brk app.ts # Break at first line
 /bun:outdated          # Check for updates
 /bun:publish           # Publish to npm
 /bun:publish --dry-run # Preview publish
+```
+
+### Debugging
+
+```bash
+# Debug with web inspector
+bun --inspect script.ts
+
+# Break at first line
+bun --inspect-brk script.ts
+
+# Debug tests
+bun --inspect-brk test
+
+# Memory profiling
+bun -e "import{heapStats}from'bun:jsc';console.log(heapStats())"
+
+# Network request debugging
+BUN_CONFIG_VERBOSE_FETCH=curl bun script.ts
 ```
 
 ### Dead Code Detection
