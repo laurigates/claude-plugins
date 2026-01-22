@@ -12,6 +12,7 @@ TypeScript development support with modern tooling: strict type configuration, E
 |-------|-------------|
 | `typescript-strict` | Strict TypeScript configuration and patterns |
 | `typescript-debugging` | Debugging with Bun inspector, VSCode, memory profiling |
+| `typescript-sentry` | Error monitoring and performance tracking with Sentry |
 | `eslint-configuration` | ESLint configuration and patterns |
 | `biome-tooling` | Biome linter and formatter |
 | `bun-package-manager` | Fast package management with Bun |
@@ -79,6 +80,31 @@ bun -e "import{heapStats}from'bun:jsc';console.log(heapStats())"
 
 # Network request debugging
 BUN_CONFIG_VERBOSE_FETCH=curl bun script.ts
+```
+
+### Sentry Error Monitoring
+
+```typescript
+import * as Sentry from "@sentry/bun";
+
+// Initialize (in instrument.ts)
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  tracesSampleRate: 0.1,
+});
+
+// Capture errors
+Sentry.captureException(error, {
+  tags: { feature: "checkout" },
+});
+
+// Performance spans
+await Sentry.startSpan({ op: "db.query", name: "Fetch users" }, async () => {
+  return db.query("SELECT * FROM users");
+});
+
+// Cron monitoring
+Sentry.withMonitor("daily-cleanup", () => cleanupOldRecords());
 ```
 
 ### Dead Code Detection
