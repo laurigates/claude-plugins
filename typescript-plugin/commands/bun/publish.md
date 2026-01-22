@@ -1,4 +1,5 @@
 ---
+model: haiku
 description: Publish package to npm with Bun build
 args: [--dry-run] [--access <level>] [--provenance]
 allowed-tools: Bash, Read

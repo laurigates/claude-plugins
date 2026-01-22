@@ -1,4 +1,5 @@
 ---
+model: opus
 name: Deep Agents
 description: Deep Agents library for building complex, multi-step AI agents with planning, context management, and subagent delegation.
 allowed-tools: Bash, BashOutput, Read, Write, Edit, Grep, Glob, TodoWrite

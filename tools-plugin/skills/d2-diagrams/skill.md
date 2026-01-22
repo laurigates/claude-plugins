@@ -1,4 +1,5 @@
 ---
+model: haiku
 name: D2 Diagrams
 description: Generate diagrams from declarative text using D2 - modern text-to-diagram language with automatic layouts, themes, and advanced styling.
 allowed-tools: Bash, Read, Write, Grep, Glob, TodoWrite

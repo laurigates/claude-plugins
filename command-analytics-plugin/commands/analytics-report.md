@@ -1,4 +1,5 @@
 ---
+model: haiku
 description: Display command and skill usage analytics
 args: "[filter]"
 allowed-tools: Bash, Read

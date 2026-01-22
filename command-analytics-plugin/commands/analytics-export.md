@@ -1,4 +1,5 @@
 ---
+model: haiku
 description: Export analytics data in various formats
 args: "[format] [output-file]"
 allowed-tools: Bash, Read

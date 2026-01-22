@@ -1,4 +1,5 @@
 ---
+model: haiku
 name: Bun Package Manager
 description: Fast JavaScript package management with Bun - install, add, remove, update dependencies with optimized CLI flags for agentic workflows.
 allowed-tools: Bash, Read, Grep, Glob, TodoWrite

@@ -1,7 +1,7 @@
 ---
 created: 2025-12-20
-modified: 2026-01-20
-reviewed: 2026-01-20
+modified: 2026-01-22
+reviewed: 2026-01-22
 ---
 
 # Skill Development
@@ -47,6 +47,7 @@ Skills live in `plugins/<plugin-name>/skills/<skill-name>/skill.md`.
 
 ```yaml
 ---
+model: <opus|haiku>
 name: <Skill Name>
 description: <1-2 sentence description of capability>
 allowed-tools: <Comma-separated list of tools>
@@ -55,6 +56,20 @@ modified: YYYY-MM-DD
 reviewed: YYYY-MM-DD
 ---
 ```
+
+### Model Selection
+
+Choose the appropriate model based on task complexity:
+
+| Model | Use For |
+|-------|---------|
+| `opus` | Complex reasoning, architecture, code review, debugging methodology, security analysis, advanced testing theory |
+| `haiku` | Simple CLI operations, formatting, configuration, status checks, standard workflows |
+
+**Guidelines:**
+- Default to `haiku` for straightforward, mechanical tasks
+- Use `opus` when the skill requires planning, analysis, or complex decision-making
+- Consider: "Does this need deep reasoning or pattern matching?"
 
 ### Date Fields
 
@@ -141,6 +156,7 @@ Commands live in `plugins/<plugin-name>/commands/<command-name>.md` or nested in
 
 ```yaml
 ---
+model: <opus|haiku>
 description: <What the command does>
 args: <argument specification>
 allowed-tools: <Comma-separated list>
@@ -150,6 +166,8 @@ modified: YYYY-MM-DD
 reviewed: YYYY-MM-DD
 ---
 ```
+
+The `model` field uses the same selection criteria as skills (see Model Selection above).
 
 ### Content Structure
 

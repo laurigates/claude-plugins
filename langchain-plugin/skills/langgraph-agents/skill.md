@@ -1,4 +1,5 @@
 ---
+model: opus
 name: LangGraph Agents
 description: LangGraph framework for building stateful, multi-step AI agents with graph-based workflows, persistence, and human-in-the-loop support.
 allowed-tools: Bash, BashOutput, Read, Write, Edit, Grep, Glob, TodoWrite

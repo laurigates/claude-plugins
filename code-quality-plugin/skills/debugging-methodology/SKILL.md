@@ -1,4 +1,5 @@
 ---
+model: opus
 name: Debugging Methodology
 description: Systematic debugging approach with tool recommendations for memory, performance, and system-level issues.
 allowed-tools: Bash, Read, Grep, Glob

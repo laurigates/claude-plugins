@@ -1,4 +1,5 @@
 ---
+model: opus
 created: 2026-01-21
 modified: 2026-01-21
 reviewed: 2026-01-21

@@ -1,4 +1,5 @@
 ---
+model: haiku
 name: Claude Code Hooks Configuration
 description: Configure Claude Code lifecycle hooks with proper timeout settings to prevent hook cancellation errors.
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite

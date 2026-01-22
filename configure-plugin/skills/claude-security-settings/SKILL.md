@@ -1,4 +1,5 @@
 ---
+model: haiku
 name: claude-security-settings
 description: |
   Configure Claude Code security settings including permission wildcards, shell

@@ -1,4 +1,5 @@
 ---
+model: haiku
 description: Create a blog post about your work with guided prompts and templates
 args: [type] [--project <name>] [--title <title>]
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash, TodoWrite, AskUserQuestion

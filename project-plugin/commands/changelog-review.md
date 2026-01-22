@@ -1,4 +1,5 @@
 ---
+model: opus
 description: Review Claude Code changelog for changes impacting plugins
 args: [--full] [--since <version>] [--update]
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, WebFetch, TodoWrite

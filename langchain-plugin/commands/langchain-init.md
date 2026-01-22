@@ -1,4 +1,5 @@
 ---
+model: haiku
 description: Initialize a new LangChain TypeScript project with recommended configuration
 args: [project-name]
 allowed-tools: Bash, Read, Write, Edit
