@@ -1,4 +1,5 @@
 ---
+model: haiku
 name: Network Discovery
 description: Host and port discovery using RustScan for fast TCP scanning, arp-scan-rs for local network enumeration, and nmap for deep service analysis.
 allowed-tools: Bash, Read, Grep, Glob, TodoWrite

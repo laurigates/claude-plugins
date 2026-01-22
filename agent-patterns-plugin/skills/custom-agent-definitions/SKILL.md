@@ -1,4 +1,5 @@
 ---
+model: opus
 name: custom-agent-definitions
 description: |
   Define and configure custom agents in Claude Code. Covers context forking,

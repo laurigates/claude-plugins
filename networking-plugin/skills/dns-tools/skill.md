@@ -1,4 +1,5 @@
 ---
+model: haiku
 name: DNS Tools
 description: Modern DNS query tools with focus on dog for readable, colorized output and modern protocol support (DoT/DoH).
 allowed-tools: Bash, Read, Grep, Glob, TodoWrite

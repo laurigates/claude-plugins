@@ -1,4 +1,5 @@
 ---
+model: haiku
 name: Skaffold File Sync
 description: |
   Fast iterative development with Skaffold file sync - copy changed files to running containers

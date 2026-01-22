@@ -1,4 +1,5 @@
 ---
+model: haiku
 description: Clear all analytics data and start fresh
 args: "[--confirm]"
 allowed-tools: Bash

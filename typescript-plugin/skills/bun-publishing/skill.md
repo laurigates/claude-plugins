@@ -1,4 +1,5 @@
 ---
+model: haiku
 name: Bun npm Publishing
 description: Publish packages to npm with Bun - package.json configuration, CLI packaging, provenance signing, and release automation.
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite

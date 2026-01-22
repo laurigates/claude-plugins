@@ -1,4 +1,5 @@
 ---
+model: haiku
 description: Check for outdated dependencies
 allowed-tools: Bash, Read
 created: 2025-12-20

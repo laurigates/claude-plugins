@@ -1,4 +1,5 @@
 ---
+model: haiku
 name: Mermaid Diagrams
 description: Generate diagrams from text using Mermaid CLI (mmdc) - flowcharts, sequence diagrams, ERDs, class diagrams, state machines, and more.
 allowed-tools: Bash, Read, Write, Grep, Glob, TodoWrite

@@ -1,4 +1,5 @@
 ---
+model: haiku
 description: Show commands and skills that have never been used
 args: ""
 allowed-tools: Bash, Read, Glob

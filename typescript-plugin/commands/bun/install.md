@@ -1,4 +1,5 @@
 ---
+model: haiku
 description: Install dependencies with Bun package manager
 allowed-tools: Bash, Read
 created: 2025-12-20

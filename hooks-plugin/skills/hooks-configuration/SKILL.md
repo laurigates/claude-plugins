@@ -1,4 +1,5 @@
 ---
+model: haiku
 name: hooks-configuration
 description: |
   Claude Code hooks configuration and development. Covers hook lifecycle events,

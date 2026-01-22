@@ -1,4 +1,5 @@
 ---
+model: haiku
 description: Add package dependency with Bun
 args: <package> [--dev] [--exact]
 allowed-tools: Bash, Read
