@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.2.1...typescript-plugin-v1.3.0) (2026-01-22)
+
+
+### Features
+
+* **typescript-plugin:** add TypeScript debugging skill and /bun:debug command ([#129](https://github.com/laurigates/claude-plugins/issues/129)) ([b10c595](https://github.com/laurigates/claude-plugins/commit/b10c595d5cb894586726db0acd3025107fa22e0b))
+
 ## [1.2.1](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.2.0...typescript-plugin-v1.2.1) (2026-01-09)
 
 
