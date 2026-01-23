@@ -1,6 +1,6 @@
 {
   "name": "terraform-plugin",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Terraform and Terraform Cloud - infrastructure as code",
   "keywords": [
     "terraform",
