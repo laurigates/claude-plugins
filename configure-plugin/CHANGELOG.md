@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.4.0...configure-plugin-v1.4.1) (2026-01-23)
+
+
+### Bug Fixes
+
+* **configure-plugin:** use CLAUDE_CODE_OAUTH_TOKEN in configure:claude-plugins command ([54f43a9](https://github.com/laurigates/claude-plugins/commit/54f43a9962532e3b87e88237111e5dba3f8adbc2))
+
 ## [1.4.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.3.0...configure-plugin-v1.4.0) (2026-01-23)
 
 
