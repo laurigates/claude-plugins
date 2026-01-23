@@ -120,7 +120,7 @@ jobs:
       - name: Run Claude Code
         uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           plugin_marketplaces: |
             https://github.com/laurigates/claude-plugins.git
           plugins: |
@@ -168,7 +168,7 @@ jobs:
       - name: Claude Code Review
         uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
             Review this pull request. Focus on:
             - Code quality and best practices
@@ -207,7 +207,7 @@ Repository: <repo-name>
   Plugins:         <list>
 
 Next Steps:
-  1. Add ANTHROPIC_API_KEY to repository secrets
+  1. Add CLAUDE_CODE_OAUTH_TOKEN to repository secrets
      Settings > Secrets and variables > Actions > New repository secret
   2. Commit and push the new workflow files
   3. Test by mentioning @claude in a PR comment
@@ -236,7 +236,7 @@ If `--plugins` is not specified, select recommended plugins based on project typ
 
 ## Important Notes
 
-- The `ANTHROPIC_API_KEY` secret must be added manually to the repository
+- The `CLAUDE_CODE_OAUTH_TOKEN` secret must be added manually to the repository
 - If using AWS Bedrock or Google Vertex AI, adjust the authentication section accordingly
 - The plugin marketplace URL uses HTTPS Git format: `https://github.com/laurigates/claude-plugins.git`
 - Plugins are referenced as `<plugin-name>@lgates-claude-plugins` (marketplace name from marketplace.json)
