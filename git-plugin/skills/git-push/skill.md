@@ -1,8 +1,8 @@
 ---
 model: haiku
 created: 2026-01-21
-modified: 2026-01-21
-reviewed: 2026-01-21
+modified: 2026-01-23
+reviewed: 2026-01-23
 name: git-push
 description: |
   Push local commits to remote repositories. Handles branch tracking, upstream setup,
@@ -84,6 +84,19 @@ For regular commits on a tracked branch:
 git push
 ```
 
+### Push to Remote Feature Branch (Main-Branch Development)
+
+When on main with commits to push for a PR, push directly to a remote feature branch without creating a local branch:
+```bash
+# Push main commits to a new remote branch
+git push origin main:<remote-branch-name>
+
+# Push specific commit range to a remote branch
+git push origin <start>^..<end>:<remote-branch-name>
+```
+
+This avoids local branch juggling. After the PR merges, a `git pull` on main syncs cleanly.
+
 ### First Push (New Branch)
 
 For branches without upstream:
@@ -114,13 +127,16 @@ git push --force-with-lease
 3. **No uncommitted changes** - Clean working tree
 4. **Remote reachable** - Network connectivity
 
-### Protected Branch Warning
+### Main Branch Push Behavior
 
 ```bash
 branch=$(git branch --show-current)
 if [ "$branch" = "main" ] || [ "$branch" = "master" ]; then
-  echo "WARNING: Pushing directly to $branch"
-  # Prompt for confirmation
+  # Main-branch development: push to remote feature branch for PRs
+  # git push origin main:<feature-branch>  ← expected workflow
+
+  # Direct push to remote main: warn unless explicitly requested
+  # git push origin main  ← requires confirmation
 fi
 ```
 
@@ -134,6 +150,7 @@ This skill **pushes commits only**. For full workflows:
 | "commit and push" | git-commit → git-push |
 | "push and create PR" | git-push → git-pr |
 | "commit, push, and PR" | git-commit → git-push → git-pr |
+| "create PR" (on main) | git-pr handles push + PR creation automatically |
 
 ## Output
 
@@ -178,6 +195,8 @@ Create a feature branch and submit a pull request instead.
 | Scenario | Command |
 |----------|---------|
 | Standard push | `git push` |
+| Main to remote feature branch | `git push origin main:<branch-name>` |
+| Commit range to remote branch | `git push origin <start>^..<end>:<branch>` |
 | New branch | `git push -u origin $(git branch --show-current)` |
 | With tags | `git push --follow-tags` |
 | After rebase | `git push --force-with-lease` |
