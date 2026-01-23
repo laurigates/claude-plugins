@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.0](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.2.0...container-plugin-v2.3.0) (2026-01-23)
+
+
+### Features
+
+* add model specification to all skills and commands ([#131](https://github.com/laurigates/claude-plugins/issues/131)) ([81f2961](https://github.com/laurigates/claude-plugins/commit/81f296155b50864b8b1687b9eb18a9c2cbb08791))
+
 ## [2.2.0](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.1.0...container-plugin-v2.2.0) (2026-01-21)
 
 
