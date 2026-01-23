@@ -8,7 +8,7 @@
       "name": "blueprint-plugin",
       "source": "./blueprint-plugin",
       "description": "Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, and CLAUDE.md management",
-      "version": "3.7.1",
+      "version": "3.8.0",
       "keywords": [
         "blueprint",
         "prd",
@@ -132,7 +132,7 @@
       "name": "kubernetes-plugin",
       "source": "./kubernetes-plugin",
       "description": "Kubernetes and Helm operations - deployments, charts, releases",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "keywords": [
         "kubernetes",
         "helm",
@@ -184,7 +184,7 @@
       "name": "project-plugin",
       "source": "./project-plugin",
       "description": "Project initialization, management, and maintenance - setup, modernization, changelog review, and continuous development workflows",
-      "version": "1.3.0",
+      "version": "1.4.0",
       "keywords": [
         "project",
         "initialization",
@@ -201,7 +201,7 @@
       "name": "sync-plugin",
       "source": "./sync-plugin",
       "description": "External system synchronization - GitHub, Podio integration",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "keywords": [
         "sync",
         "github",
@@ -214,7 +214,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Multi-agent coordination and orchestration patterns",
-      "version": "2.3.0",
+      "version": "2.4.0",
       "keywords": [
         "agents",
         "orchestration",
