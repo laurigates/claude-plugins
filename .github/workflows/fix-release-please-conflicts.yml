@@ -1,0 +1,110 @@
+name: Fix Release-Please Conflicts
+
+on:
+  push:
+    branches: [main]
+    paths: ['.release-please-manifest.json']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  fix-conflicts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
+          fetch-depth: 0
+
+      - name: Wait for GitHub to compute merge status
+        run: sleep 10
+
+      - name: Find and fix conflicted release-please PRs
+        env:
+          GH_TOKEN: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Get all open release-please PRs
+          PR_DATA=$(gh pr list --state open --json number,headRefName \
+            --jq '[.[] | select(.headRefName | startswith("release-please--branches--main--components--"))]')
+
+          if [ "$PR_DATA" = "[]" ] || [ -z "$PR_DATA" ]; then
+            echo "No open release-please PRs found"
+            exit 0
+          fi
+
+          echo "$PR_DATA" | jq -c '.[]' | while read -r pr; do
+            PR_NUMBER=$(echo "$pr" | jq -r '.number')
+            BRANCH=$(echo "$pr" | jq -r '.headRefName')
+            COMPONENT=$(echo "$BRANCH" | sed 's/release-please--branches--main--components--//')
+
+            echo "Checking PR #$PR_NUMBER for component: $COMPONENT"
+
+            # Check if PR has conflicts
+            MERGEABLE=$(gh pr view "$PR_NUMBER" --json mergeable --jq '.mergeable')
+            if [ "$MERGEABLE" != "CONFLICTING" ]; then
+              echo "  State: $MERGEABLE - skipping"
+              continue
+            fi
+
+            echo "  PR is conflicting, attempting resolution..."
+
+            # Fetch the PR branch
+            git fetch origin "$BRANCH"
+
+            # Get the intended version from the PR branch's manifest
+            INTENDED_VERSION=$(git show "origin/$BRANCH:.release-please-manifest.json" | \
+              jq -r --arg comp "$COMPONENT" '.[$comp]')
+
+            if [ -z "$INTENDED_VERSION" ] || [ "$INTENDED_VERSION" = "null" ]; then
+              echo "  Could not determine intended version for $COMPONENT, skipping"
+              continue
+            fi
+
+            # Check if main already has this version
+            MAIN_VERSION=$(jq -r --arg comp "$COMPONENT" '.[$comp]' .release-please-manifest.json)
+            if [ "$MAIN_VERSION" = "$INTENDED_VERSION" ]; then
+              echo "  Main already has version $INTENDED_VERSION, skipping"
+              continue
+            fi
+
+            echo "  Bumping $COMPONENT: $MAIN_VERSION -> $INTENDED_VERSION"
+
+            # Checkout the PR branch
+            git checkout -B "$BRANCH" "origin/$BRANCH"
+
+            # Merge main into the PR branch
+            if git merge main --no-edit 2>/dev/null; then
+              echo "  Auto-merged successfully"
+            else
+              # Check which files are conflicted
+              CONFLICTED_FILES=$(git diff --name-only --diff-filter=U)
+
+              if echo "$CONFLICTED_FILES" | grep -qv "^.release-please-manifest.json$"; then
+                echo "  Unexpected conflicts in files other than manifest:"
+                echo "$CONFLICTED_FILES"
+                git merge --abort
+                git checkout main
+                continue
+              fi
+
+              # Resolve: take main's manifest and apply our version bump
+              git show main:.release-please-manifest.json | \
+                jq --arg comp "$COMPONENT" --arg ver "$INTENDED_VERSION" \
+                '.[$comp] = $ver' > .release-please-manifest.json
+
+              git add .release-please-manifest.json
+              git -c core.editor=true merge --continue
+            fi
+
+            git push origin "$BRANCH"
+            echo "  Resolved conflict for PR #$PR_NUMBER ($COMPONENT $INTENDED_VERSION)"
+
+            # Return to main for next iteration
+            git checkout main
+          done
