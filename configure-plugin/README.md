@@ -24,6 +24,7 @@ All commands support two modes:
 
 | Command | Description |
 |---------|-------------|
+| `/configure:claude-plugins` | Configure Claude Code plugin marketplace and GitHub Actions workflows |
 | `/configure:pre-commit` | Pre-commit hooks for project standards |
 | `/configure:release-please` | Release-please workflow configuration |
 | `/configure:workflows` | GitHub Actions CI/CD workflows |

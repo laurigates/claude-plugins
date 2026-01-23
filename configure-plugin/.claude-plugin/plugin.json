@@ -19,6 +19,8 @@
     "formatting",
     "security",
     "permissions",
-    "wildcards"
+    "wildcards",
+    "claude-plugins",
+    "marketplace"
   ]
 }
