@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.4.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.4.0...configure-plugin-v1.4.1) (2026-01-23)
+
+
+### Bug Fixes
+
+* **configure-plugin:** use CLAUDE_CODE_OAUTH_TOKEN in configure:claude-plugins command ([54f43a9](https://github.com/laurigates/claude-plugins/commit/54f43a9962532e3b87e88237111e5dba3f8adbc2))
+
+## [1.4.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.3.0...configure-plugin-v1.4.0) (2026-01-23)
+
+
+### Features
+
+* add model specification to all skills and commands ([#131](https://github.com/laurigates/claude-plugins/issues/131)) ([81f2961](https://github.com/laurigates/claude-plugins/commit/81f296155b50864b8b1687b9eb18a9c2cbb08791))
+* **configure-plugin:** add /configure:claude-plugins command ([#158](https://github.com/laurigates/claude-plugins/issues/158)) ([e932de3](https://github.com/laurigates/claude-plugins/commit/e932de30983525ade0609ec85a331d183c28af54))
+
 ## [1.3.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.2.0...configure-plugin-v1.3.0) (2026-01-21)
 
 
