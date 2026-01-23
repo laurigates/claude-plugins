@@ -227,7 +227,7 @@
       "name": "accessibility-plugin",
       "source": "./accessibility-plugin",
       "description": "Accessibility and UX implementation - WCAG, ARIA, design tokens",
-      "version": "2.0.0",
+      "version": "2.1.0",
       "keywords": [
         "accessibility",
         "wcag",
@@ -255,7 +255,7 @@
       "name": "container-plugin",
       "source": "./container-plugin",
       "description": "Container development and deployment - Docker, registry, Skaffold",
-      "version": "2.2.0",
+      "version": "2.3.0",
       "keywords": [
         "container",
         "docker",
@@ -268,7 +268,7 @@
       "name": "api-plugin",
       "source": "./api-plugin",
       "description": "API integration and testing - REST endpoints, client generation",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "keywords": [
         "api",
         "rest",
