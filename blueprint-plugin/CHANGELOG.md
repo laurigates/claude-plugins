@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.8.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.7.1...blueprint-plugin-v3.8.0) (2026-01-23)
+
+
+### Features
+
+* add model specification to all skills and commands ([#131](https://github.com/laurigates/claude-plugins/issues/131)) ([81f2961](https://github.com/laurigates/claude-plugins/commit/81f296155b50864b8b1687b9eb18a9c2cbb08791))
+
 ## [3.7.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.7.0...blueprint-plugin-v3.7.1) (2026-01-22)
 
 
