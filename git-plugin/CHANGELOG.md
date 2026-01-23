@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.4.0...git-plugin-v2.5.0) (2026-01-23)
+
+
+### Features
+
+* **git-plugin:** auto-create PR from main without local branch checkout ([#175](https://github.com/laurigates/claude-plugins/issues/175)) ([ca7a7bb](https://github.com/laurigates/claude-plugins/commit/ca7a7bb7d337dfebd3d5a2a3094896af3453399e))
+
 ## [2.4.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.3.0...git-plugin-v2.4.0) (2026-01-23)
 
 
