@@ -20,7 +20,7 @@
   "langchain-plugin": "1.1.0",
   "networking-plugin": "1.2.0",
   "project-plugin": "1.3.0",
-  "python-plugin": "1.1.0",
+  "python-plugin": "1.0.0",
   "rust-plugin": "1.0.0",
   "sync-plugin": "1.0.0",
   "terraform-plugin": "1.1.0",
