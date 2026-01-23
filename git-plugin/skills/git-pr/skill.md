@@ -1,15 +1,15 @@
 ---
 model: haiku
 created: 2026-01-21
-modified: 2026-01-21
-reviewed: 2026-01-21
+modified: 2026-01-23
+reviewed: 2026-01-23
 name: git-pr
 description: |
   Create pull requests with proper descriptions, labels, and issue references. Handles
   draft mode, reviewers, and base branch selection. Use when user says "create PR",
   "open pull request", "submit for review", or similar. This skill creates PRs from
   pushed branches - see git-commit for commits and git-push for pushing.
-allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git branch:*), Bash(git remote:*), Bash(gh pr:*), Bash(gh issue:*), Bash(gh repo:*), Read, Grep, Glob, TodoWrite
+allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git branch:*), Bash(git remote:*), Bash(git push:*), Bash(git fetch:*), Bash(git rev-list:*), Bash(gh pr:*), Bash(gh issue:*), Bash(gh repo:*), Read, Grep, Glob, TodoWrite
 ---
 
 # Git PR
@@ -38,38 +38,80 @@ Create pull requests with comprehensive descriptions and proper issue linkage.
 # Check current branch
 git branch --show-current
 
-# Verify not on main/master
+# Check if on main/master (main-branch development pattern)
 branch=$(git branch --show-current)
 if [ "$branch" = "main" ] || [ "$branch" = "master" ]; then
-  echo "ERROR: Cannot create PR from $branch"
-  exit 1
+  # Check for commits ahead of remote
+  git fetch origin
+  ahead=$(git rev-list --count origin/$branch..HEAD 2>/dev/null || echo "0")
+  if [ "$ahead" = "0" ]; then
+    echo "ERROR: No commits ahead of origin/$branch - nothing to create PR for"
+    exit 1
+  fi
+  # Proceed with main-branch development pattern (Step 1b)
 fi
 
-# Check if pushed to remote
-git fetch origin
+# For feature branches: check if pushed to remote
 git rev-list --count origin/$branch..HEAD 2>/dev/null || echo "not pushed"
 
 # Check for existing PR
 gh pr view --json number,state 2>/dev/null || echo "no existing PR"
 ```
 
+### 1b. Handle Commits on Main (Main-Branch Development Pattern)
+
+When commits are on `main`, automatically push them to a remote feature branch:
+
+1. **Determine branch name** from the first/primary commit message:
+   - Extract the conventional commit type and scope: `feat(auth): add OAuth` → `feat/auth-add-oauth`
+   - If no scope: `fix: handle timeout` → `fix/handle-timeout`
+   - Kebab-case, max ~50 chars
+
+2. **Push to remote feature branch** (no local branch checkout):
+   ```bash
+   # Push main commits to a new remote branch
+   git push origin main:<generated-branch-name>
+   ```
+
+3. **Create PR** targeting `main` with `--head <generated-branch-name>`
+
+4. **Do NOT reset local main** - when the PR is merged and you pull main, it resolves cleanly via fast-forward
+
+**Why this works:**
+- Commits exist on both local main and the remote feature branch
+- When the PR merges to remote main, local main just needs a `git pull` to sync
+- No history rewriting, no branch juggling, clean workflow
+
 ### 2. Analyze Commits for PR
 
 ```bash
 # Get all commits in this branch vs base
-git log main..HEAD --format='%H %s'
+# If on main: compare against origin/main (commits not yet on remote)
+# If on feature branch: compare against main
+base_ref="main"
+if [ "$(git branch --show-current)" = "main" ]; then
+  base_ref="origin/main"
+fi
+
+git log $base_ref..HEAD --format='%H %s'
 
 # Extract issue references from commit messages
-git log main..HEAD --format='%B' | grep -oE '#[0-9]+' | sort -u
+git log $base_ref..HEAD --format='%B' | grep -oE '#[0-9]+' | sort -u
 
 # Get diff stats for summary
-git diff main...HEAD --stat
+git diff $base_ref...HEAD --stat
 ```
 
 ### 3. Create PR
 
 ```bash
-gh pr create --title "the pr title" --body "$(cat <<'EOF'
+# If on main: use --head to specify the remote feature branch
+# If on feature branch: gh pr create uses current branch automatically
+gh pr create \
+  --head "<remote-branch-name>" \
+  --base main \
+  --title "the pr title" \
+  --body "$(cat <<'EOF'
 ## Summary
 <1-3 bullet points summarizing changes>
 
@@ -172,13 +214,13 @@ Link without closing:
 
 ## Composability
 
-This skill **creates PRs only**. For full workflows:
+This skill creates PRs. When on main, it also handles pushing to a remote feature branch automatically.
 
-| User Intent | Skills Invoked |
-|-------------|----------------|
-| "create PR" | git-pr only (assumes pushed) |
-| "push and create PR" | git-push → git-pr |
-| "commit and create PR" | git-commit → git-push → git-pr |
+| User Intent | On Feature Branch | On Main |
+|-------------|-------------------|---------|
+| "create PR" | Assumes already pushed | Auto-pushes to remote feature branch, then creates PR |
+| "push and create PR" | git-push → git-pr | git-pr handles both (push + PR) |
+| "commit and create PR" | git-commit → git-push → git-pr | git-commit → git-pr (auto-push) |
 
 ## Output
 
@@ -197,11 +239,12 @@ Ready for: review, CI checks, or continue working
 
 ## Error Handling
 
-**Branch not pushed:**
+**Feature branch not pushed:**
 ```
 Branch not pushed to remote. Push first with:
   git push -u origin $(git branch --show-current)
 ```
+Note: This only applies to feature branches. On main, commits are automatically pushed to a remote feature branch.
 
 **PR already exists:**
 ```
@@ -210,10 +253,10 @@ View: gh pr view 42
 Edit: gh pr edit 42
 ```
 
-**On protected branch:**
+**On main with no commits ahead:**
 ```
-Cannot create PR from main/master.
-Create a feature branch first.
+No commits ahead of origin/main - nothing to create PR for.
+Commit your changes first, then create the PR.
 ```
 
 **No commits to merge:**
