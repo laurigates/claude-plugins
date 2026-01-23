@@ -1,8 +1,16 @@
 {
   "name": "api-plugin",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "API integration and testing - REST endpoints, client generation, contract testing",
-  "keywords": ["api", "rest", "integration", "testing", "openapi", "pact", "http"],
+  "keywords": [
+    "api",
+    "rest",
+    "integration",
+    "testing",
+    "openapi",
+    "pact",
+    "http"
+  ],
   "author": {
     "name": "Lauri Gates"
   }
