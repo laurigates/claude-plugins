@@ -17,6 +17,8 @@
     "auto-close",
     "issue-detection",
     "issue-linking",
+    "documentation-derivation",
+    "git-log-analysis",
     "version-control",
     "release-please",
     "monorepo",

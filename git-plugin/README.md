@@ -14,6 +14,7 @@ This plugin provides comprehensive Git workflow automation including conventiona
 | `/git:issue` | Process GitHub issues with interactive selection, conflict detection, and parallel work support |
 | `/git:fix-pr` | Analyze and fix failing PR checks |
 | `/git:maintain` | Repository maintenance and cleanup (prune, gc, verify, branches, stash) |
+| `/git:derive-docs` | Analyze git history to derive undocumented rules, PRDs, ADRs, and PRPs |
 
 ## Layered Skills (Composable Git Workflows)
 
@@ -47,6 +48,7 @@ Three composable skills that can be invoked individually or combined based on us
 | `git-security-checks` | Security checks before staging files |
 | `github-issue-autodetect` | Auto-detect issues that changes may fix/close for proper commit linkage |
 | `github-labels` | Discover and apply labels to GitHub PRs and issues |
+| `git-log-documentation` | Derive undocumented rules, PRDs, ADRs, PRPs from git commit history |
 | `release-please-configuration` | Release-please config for monorepos and version automation |
 | `release-please-protection` | Prevent manual edits to release-please managed files |
 | `release-please-pr-workflow` | Batch merge release-please PRs with conflict handling |
@@ -86,6 +88,18 @@ Analyzes issues for conflicts and dependencies, implements fixes with TDD workfl
 ```
 
 Analyzes PR #456 check failures and attempts automatic fixes.
+
+### Derive Documentation from History
+
+```bash
+/git:derive-docs --all              # Full analysis (rules, PRD, ADR, PRP)
+/git:derive-docs --rules            # Only derive .claude/rules/
+/git:derive-docs --adr --since=2025-06-01  # ADRs from recent history
+/git:derive-docs --all --dry-run    # Report gaps without creating files
+/git:derive-docs --refinements      # Focus on plan refinement detection
+```
+
+Analyzes commit history to find undocumented conventions, features, architecture decisions, and plan refinements.
 
 ### Repository Maintenance
 
