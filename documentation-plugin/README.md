@@ -126,7 +126,7 @@ Works well with:
 ## Installation
 
 ```bash
-/plugin install documentation-plugin@lgates-claude-plugins
+/plugin install documentation-plugin@laurigates-plugins
 ```
 
 ## License

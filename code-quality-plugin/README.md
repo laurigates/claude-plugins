@@ -123,7 +123,7 @@ Works well with:
 ## Installation
 
 ```bash
-/plugin install code-quality-plugin@lgates-claude-plugins
+/plugin install code-quality-plugin@laurigates-plugins
 ```
 
 ## License

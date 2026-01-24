@@ -75,7 +75,7 @@ List runs by status, operation type, or date:
 ## Installation
 
 ```bash
-/plugin install terraform-plugin@lgates-claude-plugins
+/plugin install terraform-plugin@laurigates-plugins
 ```
 
 ## License

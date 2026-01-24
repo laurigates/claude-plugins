@@ -33,13 +33,13 @@ A collection of Claude Code plugins providing specialized skills, commands, and 
 Install plugins from this collection:
 
 ```bash
-claude plugin install lgates-claude-plugins/<plugin-name>
+claude plugin install laurigates-plugins/<plugin-name>
 ```
 
 For example:
 ```bash
-claude plugin install lgates-claude-plugins/git-plugin
-claude plugin install lgates-claude-plugins/python-plugin
+claude plugin install laurigates-plugins/git-plugin
+claude plugin install laurigates-plugins/python-plugin
 ```
 
 ## Structure

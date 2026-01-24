@@ -33,5 +33,5 @@ jobs:
           plugin_marketplaces: |
             https://github.com/laurigates/claude-plugins.git
           plugins: |
-            code-quality-plugin@lgates-claude-plugins
-            testing-plugin@lgates-claude-plugins
+            code-quality-plugin@laurigates-plugins
+            testing-plugin@laurigates-plugins
