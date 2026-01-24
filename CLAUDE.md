@@ -35,6 +35,7 @@ Claude Code plugin collection providing skills, commands, and agents for develop
 | `.claude/rules/command-naming.md` | Command namespace conventions |
 | `.claude/rules/shell-scripting.md` | Safe shell patterns and frontmatter extraction |
 | `.claude/rules/agentic-permissions.md` | Granular tool permissions for commands |
+| `.claude/rules/skill-quality.md` | Skill size limits, required sections, and quality checklist |
 
 ## Creating New Skills
 
