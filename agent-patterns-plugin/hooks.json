@@ -1,0 +1,27 @@
+{
+  "description": "Agent patterns hooks - context preservation during compaction",
+  "hooks": {
+    "PreCompact": [
+      {
+        "matcher": "auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pre-compact-primer.sh",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "manual",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pre-compact-primer.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
