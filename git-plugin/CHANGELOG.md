@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.7.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.6.0...git-plugin-v2.7.0) (2026-01-24)
+
+
+### Features
+
+* **git-plugin,code-quality-plugin,project-plugin:** add supporting scripts to skills ([#206](https://github.com/laurigates/claude-plugins/issues/206)) ([0b33d50](https://github.com/laurigates/claude-plugins/commit/0b33d502e18584b264c7c4a99dddda54dc573d08))
+
+
+### Bug Fixes
+
+* rename marketplace from 'lgates-claude-plugins' to 'laurigates-plugins' ([#195](https://github.com/laurigates/claude-plugins/issues/195)) ([4310935](https://github.com/laurigates/claude-plugins/commit/43109350d121f9c0749af86461daef9849eea133))
+
 ## [2.6.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.5.0...git-plugin-v2.6.0) (2026-01-24)
 
 
