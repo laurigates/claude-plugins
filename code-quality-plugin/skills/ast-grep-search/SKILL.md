@@ -215,7 +215,7 @@ fix: |
   try { $$$ } catch ($E) { console.error($E) }
 ```
 
-See `REFERENCE.md` in this skill directory for comprehensive YAML rule syntax.
+For comprehensive YAML rule syntax, constraints, transformations, and testing, see [REFERENCE.md](REFERENCE.md).
 
 ## Agentic Optimizations
 
