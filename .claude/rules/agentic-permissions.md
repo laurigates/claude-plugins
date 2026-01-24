@@ -1,3 +1,9 @@
+---
+created: 2026-01-16
+modified: 2026-01-20
+reviewed: 2026-01-20
+---
+
 # Agentic Permissions
 
 Commands and skills should use granular `allowed-tools` permissions to enable seamless, deterministic execution without interactive approval prompts.

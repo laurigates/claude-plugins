@@ -1,3 +1,9 @@
+---
+created: 2026-01-18
+modified: 2026-01-18
+reviewed: 2026-01-18
+---
+
 # Shell Scripting Patterns
 
 Safe, portable shell scripting patterns for use in skills and commands.

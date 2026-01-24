@@ -1,3 +1,9 @@
+---
+created: 2025-12-23
+modified: 2025-12-23
+reviewed: 2025-12-23
+---
+
 # Plugin Structure
 
 Claude Code plugins follow a standard directory structure with a `plugin.json` manifest.

@@ -1,3 +1,9 @@
+---
+created: 2025-12-23
+modified: 2025-12-23
+reviewed: 2025-12-23
+---
+
 # Release-Please Configuration
 
 This monorepo uses [release-please](https://github.com/googleapis/release-please) for automated versioning and changelog generation.
