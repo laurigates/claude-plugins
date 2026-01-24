@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-01-17
+modified: 2026-01-24
 reviewed: 2025-12-16
 name: git-branch-pr-workflow
 description: |
@@ -478,6 +478,20 @@ Configure branch rules for linear history via GitHub MCP:
 # - Require status checks to pass
 # - Enforce linear history (squash merge only)
 ```
+
+## PR Context Gathering (Recommended)
+
+Before creating a PR, gather all context in one command:
+
+```bash
+# Gather PR context (defaults to main as base)
+bash "${CLAUDE_PLUGIN_ROOT}/skills/git-branch-pr-workflow/scripts/pr-context.sh"
+
+# Specify different base branch
+bash "${CLAUDE_PLUGIN_ROOT}/skills/git-branch-pr-workflow/scripts/pr-context.sh" develop
+```
+
+The script outputs: branch info, remote status, commit range and types, diff stats, issue references found in commits, existing PR detection, and CI check results. Use this output to compose the PR title and body. See [scripts/pr-context.sh](scripts/pr-context.sh) for details.
 
 ## Pull Request Workflow
 
