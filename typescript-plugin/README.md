@@ -122,7 +122,7 @@ Works well with:
 ## Installation
 
 ```bash
-/plugin install typescript-plugin@lgates-claude-plugins
+/plugin install typescript-plugin@laurigates-plugins
 ```
 
 ## License

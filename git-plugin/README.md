@@ -112,7 +112,7 @@ Runs full repository maintenance: prune remote branches, garbage collection, ver
 ## Installation
 
 ```bash
-/plugin install git-plugin@lgates-claude-plugins
+/plugin install git-plugin@laurigates-plugins
 ```
 
 ## Recommended Project Settings

@@ -87,7 +87,7 @@ Works well with:
 ## Installation
 
 ```bash
-/plugin install python-plugin@lgates-claude-plugins
+/plugin install python-plugin@laurigates-plugins
 ```
 
 ## License

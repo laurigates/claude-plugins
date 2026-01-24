@@ -135,7 +135,7 @@ Presents multi-select menus to choose which components to check/fix.
 ## Installation
 
 ```bash
-/plugin install configure-plugin@lgates-claude-plugins
+/plugin install configure-plugin@laurigates-plugins
 ```
 
 ## License
