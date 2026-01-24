@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.1](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.2.0...testing-plugin-v3.2.1) (2026-01-24)
+
+
+### Code Refactoring
+
+* **code-quality-plugin:** improve ast-grep skill discoverability and reduce size ([#189](https://github.com/laurigates/claude-plugins/issues/189)) ([11f6fa5](https://github.com/laurigates/claude-plugins/commit/11f6fa561c3a57204fb4388a04ecd8f3ffc19f5b))
+
 ## [3.2.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.1.0...testing-plugin-v3.2.0) (2026-01-23)
 
 
