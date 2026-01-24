@@ -1,6 +1,6 @@
 ---
 name: research
-model: sonnet
+model: claude-opus-4-5
 color: "#00897B"
 description: Technical research and documentation lookup. Investigates APIs, frameworks, libraries, and best practices from web sources and documentation. Use when needing external knowledge to inform decisions.
 tools: Glob, Grep, LS, Read, WebFetch, WebSearch, TodoWrite

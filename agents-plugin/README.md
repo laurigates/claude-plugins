@@ -12,13 +12,13 @@ Task-focused agents following 12-factor agent principles. Each agent completes a
 | `docs` | haiku | Generate documentation | Codebase analysis stays isolated |
 | `ci` | haiku | Pipeline configuration | Workflow file generation |
 | `security-audit` | opus | Vulnerability scanning, OWASP analysis | Verbose scan results summarized |
-| `refactor` | sonnet | Code restructuring, SOLID improvements | Large refactoring diffs isolated |
+| `refactor` | opus | Code restructuring, SOLID improvements | Large refactoring diffs isolated |
 | `terraform-ops` | haiku | Plan/apply, drift detection, state ops | Terraform plan output (100s of lines) summarized |
 | `k8s-diagnostics` | haiku | Pod failures, log analysis, troubleshooting | kubectl describe/logs output summarized |
 | `git-ops` | haiku | Merge conflicts, rebase, bisect, cherry-pick | Conflict resolution context isolated |
 | `container-build` | haiku | Docker build, layer analysis, debugging | Build output (100s of lines) summarized |
 | `dependency-audit` | haiku | CVE scanning, outdated packages, licenses | Audit output summarized to actionable items |
-| `research` | sonnet | API docs, framework evaluation, best practices | Web fetches and docs stay in agent |
+| `research` | opus | API docs, framework evaluation, best practices | Web fetches and docs stay in agent |
 | `performance` | opus | Profiling, bottleneck identification, benchmarks | Profiler output summarized to hot paths |
 
 ## Design Principles
@@ -34,8 +34,7 @@ Task-focused agents following 12-factor agent principles. Each agent completes a
 | Model | When Used | Agents |
 |-------|-----------|--------|
 | haiku | Structured operations, mechanical tasks | test, docs, ci, terraform-ops, k8s-diagnostics, git-ops, container-build, dependency-audit |
-| sonnet | Code generation, balanced analysis | refactor, research |
-| opus | Deep reasoning, complex analysis | review, debug, security-audit, performance |
+| opus | Deep reasoning, complex analysis, code restructuring | review, debug, security-audit, performance, refactor, research |
 
 ## Usage
 

@@ -1,6 +1,6 @@
 ---
 name: refactor
-model: sonnet
+model: claude-opus-4-5
 color: "#7B1FA2"
 description: Code refactoring specialist. Restructures code for improved readability, maintainability, and SOLID adherence while preserving behavior. Use when code needs structural improvement without changing functionality.
 tools: Glob, Grep, LS, Read, Edit, Write, Bash, TodoWrite
