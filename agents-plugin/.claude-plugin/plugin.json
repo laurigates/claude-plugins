@@ -1,7 +1,7 @@
 {
   "name": "agents-plugin",
   "version": "1.0.0",
-  "description": "Task-focused agents for test, review, debug, docs, and CI workflows",
+  "description": "Task-focused agents for test, review, debug, docs, CI, security, refactoring, infrastructure, and research workflows",
   "author": {
     "name": "Lauri Gates"
   },
@@ -13,6 +13,15 @@
     "code-review",
     "debugging",
     "documentation",
-    "ci-cd"
+    "ci-cd",
+    "security",
+    "refactoring",
+    "terraform",
+    "kubernetes",
+    "git",
+    "docker",
+    "dependencies",
+    "research",
+    "performance"
   ]
 }
