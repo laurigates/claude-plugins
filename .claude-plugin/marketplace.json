@@ -36,7 +36,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, and repository management",
-      "version": "2.5.0",
+      "version": "2.6.0",
       "keywords": [
         "git",
         "github",
@@ -119,7 +119,7 @@
       "name": "rust-plugin",
       "source": "./rust-plugin",
       "description": "Rust development - cargo, clippy, testing, memory safety",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "keywords": [
         "rust",
         "cargo",
