@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.6.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.5.0...git-plugin-v2.6.0) (2026-01-24)
+
+
+### Features
+
+* **git-plugin:** add git-log-documentation skill and /git:derive-docs command ([#187](https://github.com/laurigates/claude-plugins/issues/187)) ([9cc4a0f](https://github.com/laurigates/claude-plugins/commit/9cc4a0fd22656d2316f179260f70089d69a2fbff))
+
 ## [2.5.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.4.0...git-plugin-v2.5.0) (2026-01-23)
 
 
