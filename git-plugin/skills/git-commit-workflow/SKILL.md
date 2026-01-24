@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-01-15
+modified: 2026-01-24
 reviewed: 2026-01-15
 name: git-commit-workflow
 description: |
@@ -122,6 +122,20 @@ chore(deps): dependency updates
 chore(ci): CI/CD configuration
 chore(docker): container configuration
 ```
+
+## Pre-Commit Context Gathering (Recommended)
+
+Before committing, gather all context in one command:
+
+```bash
+# Basic context: status, staged files, diff stats, recent log
+bash "${CLAUDE_PLUGIN_ROOT}/skills/git-commit-workflow/scripts/commit-context.sh"
+
+# With issue matching: also fetches open GitHub issues for auto-linking
+bash "${CLAUDE_PLUGIN_ROOT}/skills/git-commit-workflow/scripts/commit-context.sh" --with-issues
+```
+
+The script outputs: branch info, staged/unstaged status, diff stats, detected scopes, recent commit style, pre-commit config status, and optionally open issues. Use this output to compose the commit message. See [scripts/commit-context.sh](scripts/commit-context.sh) for details.
 
 ## Explicit Staging Workflow
 

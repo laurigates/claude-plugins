@@ -1,7 +1,7 @@
 ---
 model: opus
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-01-24
 reviewed: 2025-12-16
 name: git-security-checks
 description: |
@@ -23,6 +23,20 @@ Expert guidance for pre-commit security validation and secret detection using de
 - **Pre-commit Hooks**: Automated security validation before commits
 - **Secrets Baseline**: Manage false positives and legitimate secrets
 - **Security-First Workflow**: Prevent credential leaks before they happen
+
+## Quick Security Scan (Recommended)
+
+Run the comprehensive security scan pipeline in one command:
+
+```bash
+# Full scan: check all tracked files
+bash "${CLAUDE_PLUGIN_ROOT}/skills/git-security-checks/scripts/security-scan.sh"
+
+# Staged-only: check only files about to be committed
+bash "${CLAUDE_PLUGIN_ROOT}/skills/git-security-checks/scripts/security-scan.sh" --staged-only
+```
+
+The script checks: detect-secrets baseline, sensitive file patterns, .gitignore coverage, high-entropy strings in diffs, and pre-commit hook status. See [scripts/security-scan.sh](scripts/security-scan.sh) for details.
 
 ## detect-secrets Workflow
 

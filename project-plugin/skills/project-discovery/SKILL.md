@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-01-24
 reviewed: 2025-12-16
 name: project-discovery
 description: Systematic project orientation for unfamiliar codebases. Automatically activates when Claude detects uncertainty about project state, structure, or tooling. Analyzes git state (branch, changes, commits), project type (language, framework, structure), and development tooling (build, test, lint, CI/CD). Provides structured summary with risk flags and recommendations. Use when entering new projects or when working on shaky assumptions.
@@ -67,9 +67,21 @@ Do NOT activate this skill when:
 - Current conversation already established project context
 - Working in a non-git directory (this skill is git-focused)
 
-## Systematic Discovery Workflow
+## Quick Discovery (Recommended)
 
-When activated, follow this 5-phase systematic discovery process. Complete all phases before providing the summary.
+For fast, consistent project orientation, run the bundled discovery script:
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/skills/project-discovery/scripts/discover.sh"
+```
+
+This replaces the manual 5-phase process below with a single execution that outputs structured data covering git state, project type, tooling, documentation, and risk assessment. Use the script output to populate the summary template in Phase 5.
+
+For detailed reference on each phase, see the manual workflow below or [scripts/discover.sh](scripts/discover.sh).
+
+## Systematic Discovery Workflow (Manual Alternative)
+
+When the script is unavailable, follow this 5-phase systematic discovery process. Complete all phases before providing the summary.
 
 ---
 
