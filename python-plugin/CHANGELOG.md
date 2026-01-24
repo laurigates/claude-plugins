@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/laurigates/claude-plugins/compare/python-plugin-v1.1.0...python-plugin-v1.1.1) (2026-01-24)
+
+
+### Code Refactoring
+
+* **code-quality-plugin:** improve ast-grep skill discoverability and reduce size ([#189](https://github.com/laurigates/claude-plugins/issues/189)) ([11f6fa5](https://github.com/laurigates/claude-plugins/commit/11f6fa561c3a57204fb4388a04ecd8f3ffc19f5b))
+
 ## [1.1.0](https://github.com/laurigates/claude-plugins/compare/python-plugin-v1.0.0...python-plugin-v1.1.0) (2026-01-23)
 
 
