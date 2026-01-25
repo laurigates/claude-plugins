@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.2](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.2.1...testing-plugin-v3.2.2) (2026-01-25)
+
+
+### Bug Fixes
+
+* rename marketplace from 'lgates-claude-plugins' to 'laurigates-plugins' ([#195](https://github.com/laurigates/claude-plugins/issues/195)) ([4310935](https://github.com/laurigates/claude-plugins/commit/43109350d121f9c0749af86461daef9849eea133))
+
 ## [3.2.1](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.2.0...testing-plugin-v3.2.1) (2026-01-24)
 
 
