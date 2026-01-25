@@ -35,7 +35,17 @@ test-fixtures/
 │       ├── missing-catch.js    # Promise chains without .catch()
 │       ├── promise-constructor.ts # new Promise(async ...) anti-pattern
 │       └── proper-async.ts     # Correct async patterns
-└── a11y/                  # Phase 3: Accessibility (planned)
+└── a11y/                  # Phase 3: Accessibility
+    ├── wcag/              # WCAG compliance test cases
+    │   ├── missing-alt.tsx     # Images without alt attributes
+    │   ├── no-keyboard.tsx     # Elements without keyboard support
+    │   ├── heading-focus.tsx   # Heading hierarchy, focus issues
+    │   └── accessible.tsx      # Properly accessible components
+    └── aria/              # ARIA pattern test cases
+        ├── wrong-role.tsx      # Incorrect/redundant ARIA roles
+        ├── missing-states.tsx  # Missing aria-expanded, aria-checked, etc.
+        ├── missing-label.tsx   # Icon buttons without accessible names
+        └── proper-aria.tsx     # Correct ARIA implementation
 ```
 
 ## Purpose

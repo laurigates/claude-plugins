@@ -31,6 +31,14 @@ on:
         description: 'Run async pattern test'
         type: boolean
         default: true
+      test-wcag:
+        description: 'Run WCAG compliance test'
+        type: boolean
+        default: true
+      test-aria:
+        description: 'Run ARIA patterns test'
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -98,9 +106,30 @@ jobs:
       max-turns: 4
     secrets: inherit
 
+  # Phase 3: Accessibility Tests
+
+  # Test WCAG compliance workflow
+  test-wcag:
+    if: github.event_name == 'pull_request' || inputs.test-wcag
+    uses: ./.github/workflows/reusable-a11y-wcag.yml
+    with:
+      file-patterns: 'test-fixtures/a11y/wcag/**'
+      max-turns: 5
+      wcag-level: 'AA'
+    secrets: inherit
+
+  # Test ARIA patterns workflow
+  test-aria:
+    if: github.event_name == 'pull_request' || inputs.test-aria
+    uses: ./.github/workflows/reusable-a11y-aria.yml
+    with:
+      file-patterns: 'test-fixtures/a11y/aria/**'
+      max-turns: 4
+    secrets: inherit
+
   # Validate detection results
   validate-results:
-    needs: [test-secrets, test-owasp, test-deps, test-code-smell, test-typescript, test-async]
+    needs: [test-secrets, test-owasp, test-deps, test-code-smell, test-typescript, test-async, test-wcag, test-aria]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -163,6 +192,30 @@ jobs:
             echo "⚠️ Warning: Expected async issues to be detected in test fixtures"
           fi
 
+      - name: Check WCAG compliance
+        run: |
+          ISSUES_FOUND="${{ needs.test-wcag.outputs.issues-found }}"
+          LEVEL_A="${{ needs.test-wcag.outputs.level-a-issues }}"
+          echo "WCAG issues found: $ISSUES_FOUND (Level A: $LEVEL_A)"
+
+          if [ -n "$ISSUES_FOUND" ] && [ "$ISSUES_FOUND" != "0" ]; then
+            echo "✅ WCAG compliance detection working - found $ISSUES_FOUND issues"
+          else
+            echo "⚠️ Warning: Expected WCAG issues to be detected in test fixtures"
+          fi
+
+      - name: Check ARIA patterns
+        run: |
+          ISSUES_FOUND="${{ needs.test-aria.outputs.issues-found }}"
+          CRITICAL="${{ needs.test-aria.outputs.critical-issues }}"
+          echo "ARIA issues found: $ISSUES_FOUND (Critical: $CRITICAL)"
+
+          if [ -n "$ISSUES_FOUND" ] && [ "$ISSUES_FOUND" != "0" ]; then
+            echo "✅ ARIA pattern detection working - found $ISSUES_FOUND issues"
+          else
+            echo "⚠️ Warning: Expected ARIA issues to be detected in test fixtures"
+          fi
+
       - name: Summary
         run: |
           echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
@@ -180,3 +233,9 @@ jobs:
           echo "| Code Smell | ${{ needs.test-code-smell.result }} | ${{ needs.test-code-smell.outputs.issues-found }} (High: ${{ needs.test-code-smell.outputs.high-severity }}) |" >> $GITHUB_STEP_SUMMARY
           echo "| TypeScript | ${{ needs.test-typescript.result }} | ${{ needs.test-typescript.outputs.issues-found }} (any: ${{ needs.test-typescript.outputs.any-count }}) |" >> $GITHUB_STEP_SUMMARY
           echo "| Async Patterns | ${{ needs.test-async.result }} | ${{ needs.test-async.outputs.issues-found }} (Unhandled: ${{ needs.test-async.outputs.unhandled-rejections }}) |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Phase 3: Accessibility" >> $GITHUB_STEP_SUMMARY
+          echo "| Workflow | Status | Findings |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|--------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| WCAG Compliance | ${{ needs.test-wcag.result }} | ${{ needs.test-wcag.outputs.issues-found }} (Level A: ${{ needs.test-wcag.outputs.level-a-issues }}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| ARIA Patterns | ${{ needs.test-aria.result }} | ${{ needs.test-aria.outputs.issues-found }} (Critical: ${{ needs.test-aria.outputs.critical-issues }}) |" >> $GITHUB_STEP_SUMMARY
