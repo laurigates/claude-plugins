@@ -1,0 +1,166 @@
+name: WCAG Compliance (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      file-patterns:
+        description: 'Frontend file patterns'
+        required: false
+        type: string
+        default: '**/*.{tsx,jsx,vue,html}'
+      max-turns:
+        description: 'Maximum Claude turns'
+        required: false
+        type: number
+        default: 8
+      wcag-level:
+        description: 'WCAG conformance level (A, AA, AAA)'
+        required: false
+        type: string
+        default: 'AA'
+    outputs:
+      issues-found:
+        description: 'Total WCAG violations detected'
+        value: ${{ jobs.analyze.outputs.count }}
+      level-a-issues:
+        description: 'Level A violations (must fix)'
+        value: ${{ jobs.analyze.outputs.level-a }}
+      level-aa-issues:
+        description: 'Level AA violations'
+        value: ${{ jobs.analyze.outputs.level-aa }}
+    secrets:
+      CLAUDE_CODE_OAUTH_TOKEN:
+        required: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    outputs:
+      count: ${{ steps.scan.outputs.total }}
+      level-a: ${{ steps.scan.outputs.level-a }}
+      level-aa: ${{ steps.scan.outputs.level-aa }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed frontend files
+        id: changed
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- ${{ inputs.file-patterns }} 2>/dev/null | head -30 || echo "")
+          else
+            FILES=$(git diff --name-only HEAD~1 -- ${{ inputs.file-patterns }} 2>/dev/null | head -30 || echo "")
+          fi
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          echo "$FILES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          FILE_COUNT=$(echo "$FILES" | grep -c '.' || echo 0)
+          echo "count=$FILE_COUNT" >> $GITHUB_OUTPUT
+
+      - name: Claude WCAG Analysis
+        id: scan
+        if: steps.changed.outputs.count != '0'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          model: haiku
+          claude_args: "--max-turns ${{ inputs.max-turns }}"
+          prompt: |
+            Review frontend changes for WCAG 2.1 ${{ inputs.wcag-level }} compliance.
+            Focus on static code analysis patterns.
+
+            ## Files to analyze
+            ${{ steps.changed.outputs.files }}
+
+            ## Level A (Critical - Must Fix)
+
+            ### 1.1.1 Non-text Content
+            - Images without alt attribute: `<img src="...">` missing alt
+            - Images with empty alt on informative content: `<img alt="">` on non-decorative images
+            - Form inputs without associated labels
+            - Icon buttons without accessible names (aria-label or visually hidden text)
+            - SVG icons without title or aria-label
+
+            ### 2.1.1 Keyboard Accessible
+            - onClick handlers without keyboard equivalent (onKeyDown/onKeyUp)
+            - Custom interactive elements without tabIndex
+            - tabIndex > 0 (disrupts natural tab order)
+            - Mouse-only interactions (onMouseOver without onFocus)
+
+            ### 2.4.4 Link Purpose
+            - Links with generic text only ("click here", "read more", "learn more")
+            - Empty links: `<a href="..."></a>`
+            - Image links without alt text
+
+            ### 4.1.2 Name, Role, Value
+            - Custom components without ARIA roles
+            - Missing aria-label on icon-only buttons
+            - Interactive elements without accessible names
+            - Form controls without labels or aria-labelledby
+
+            ## Level AA (Should Fix)
+
+            ### 1.4.3 Contrast Minimum
+            - Flag hardcoded color values that may have contrast issues
+            - Text on background color combinations in inline styles
+            - Note: Full contrast analysis requires runtime testing
+
+            ### 2.4.6 Headings and Labels
+            - Skipped heading levels (h1 -> h3, missing h2)
+            - Generic heading text ("Section", "Details")
+            - Form labels not descriptive enough
+            - Multiple h1 elements on same page/component
+
+            ### 2.4.7 Focus Visible
+            - `outline: none` or `outline: 0` without custom focus styles
+            - Missing `:focus-visible` styles
+            - `outline: none` in CSS without alternative focus indicator
+
+            ### 1.3.1 Info and Relationships
+            - Tables without proper headers (th elements)
+            - Missing scope attribute on table headers
+            - Lists not using proper list elements (ul/ol/li)
+
+            ## Level AAA (Nice to Have)
+
+            ### 1.4.6 Contrast Enhanced
+            - 7:1 for normal text, 4.5:1 for large text
+            - Logos and decorative text exempt
+
+            ### 2.4.9 Link Purpose (Link Only)
+            - Generic link text without context
+            - Links that need surrounding context to understand
+
+            ## Exclusions (Not Violations)
+            - Decorative images with alt=""
+            - aria-hidden="true" on decorative elements
+            - Proper use of role="presentation"
+            - SVGs with aria-hidden when decorative
+
+            ## Output Format
+
+            For each issue found:
+            - **File:Line** - Exact location
+            - **WCAG Criterion** - e.g., "1.1.1 Non-text Content"
+            - **Level** - A / AA / AAA
+            - **Issue** - What's wrong
+            - **Code** - The problematic code snippet
+            - **Fix** - How to remediate with code example
+
+            Prioritize Level A issues at the top.
+
+            At the end, output machine-readable counts:
+            ```
+            TOTAL_ISSUES: <number>
+            LEVEL_A: <number>
+            LEVEL_AA: <number>
+            ```
+
+            Leave a PR comment with findings grouped by WCAG level.
