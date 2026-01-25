@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.3.0...code-quality-plugin-v1.3.1) (2026-01-25)
+
+
+### Bug Fixes
+
+* resolve claude-code-review workflow permission denials ([08b034c](https://github.com/laurigates/claude-plugins/commit/08b034c817430787e63d79234a92c622c415182f))
+
 ## [1.3.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.2.1...code-quality-plugin-v1.3.0) (2026-01-25)
 
 

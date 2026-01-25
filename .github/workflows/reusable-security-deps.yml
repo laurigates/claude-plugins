@@ -1,0 +1,198 @@
+name: Dependency Security Audit (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      package-manager:
+        description: 'Package manager to audit (npm, bun, pnpm, yarn, pip, cargo)'
+        required: false
+        type: string
+        default: 'npm'
+      max-turns:
+        description: 'Maximum Claude analysis turns'
+        required: false
+        type: number
+        default: 6
+      fail-on-high:
+        description: 'Fail workflow if high/critical vulnerabilities found'
+        required: false
+        type: boolean
+        default: false
+    outputs:
+      vulnerabilities:
+        description: 'Total vulnerabilities found'
+        value: ${{ jobs.audit.outputs.count }}
+      critical:
+        description: 'Critical/High severity vulnerabilities'
+        value: ${{ jobs.audit.outputs.critical }}
+    secrets:
+      CLAUDE_CODE_OAUTH_TOKEN:
+        required: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    outputs:
+      count: ${{ steps.analyze.outputs.vulnerabilities }}
+      critical: ${{ steps.analyze.outputs.critical }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for lockfile changes
+        id: changed
+        run: |
+          LOCKFILES="package-lock.json bun.lockb pnpm-lock.yaml yarn.lock Cargo.lock requirements.txt poetry.lock Pipfile.lock"
+          CHANGED=""
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            for lockfile in $LOCKFILES; do
+              if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q "$lockfile"; then
+                CHANGED="$CHANGED $lockfile"
+              fi
+            done
+          else
+            for lockfile in $LOCKFILES; do
+              if [ -f "$lockfile" ]; then
+                CHANGED="$CHANGED $lockfile"
+              fi
+            done
+          fi
+
+          echo "lockfiles=$CHANGED" >> $GITHUB_OUTPUT
+          if [ -n "$CHANGED" ]; then
+            echo "has_lockfiles=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_lockfiles=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup Node.js
+        if: contains(fromJSON('["npm", "bun", "pnpm", "yarn"]'), inputs.package-manager)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Bun
+        if: inputs.package-manager == 'bun'
+        uses: oven-sh/setup-bun@v1
+
+      - name: Setup Python
+        if: inputs.package-manager == 'pip'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Setup Rust
+        if: inputs.package-manager == 'cargo'
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Run audit command
+        id: audit-cmd
+        continue-on-error: true
+        run: |
+          case "${{ inputs.package-manager }}" in
+            npm)
+              npm audit --json > audit-results.json 2>&1 || true
+              ;;
+            bun)
+              # Bun doesn't have built-in audit, use npm
+              npm audit --json > audit-results.json 2>&1 || true
+              ;;
+            pnpm)
+              pnpm audit --json > audit-results.json 2>&1 || true
+              ;;
+            yarn)
+              yarn audit --json > audit-results.json 2>&1 || true
+              ;;
+            pip)
+              pip install pip-audit > /dev/null 2>&1
+              pip-audit --format json > audit-results.json 2>&1 || true
+              ;;
+            cargo)
+              cargo install cargo-audit > /dev/null 2>&1
+              cargo audit --json > audit-results.json 2>&1 || true
+              ;;
+          esac
+
+          if [ -f audit-results.json ]; then
+            echo "results<<EOF" >> $GITHUB_OUTPUT
+            cat audit-results.json | head -c 10000 >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Claude Dependency Analysis
+        id: analyze
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          model: haiku
+          claude_args: "--max-turns ${{ inputs.max-turns }}"
+          prompt: |
+            Analyze the dependency security audit results for this project.
+
+            ## Package Manager
+            ${{ inputs.package-manager }}
+
+            ## Audit Results
+            ```json
+            ${{ steps.audit-cmd.outputs.results }}
+            ```
+
+            ## Changed Lockfiles
+            ${{ steps.changed.outputs.lockfiles }}
+
+            ## Analysis Instructions
+
+            ### Parse Audit Results
+            Based on the package manager format:
+            - **npm/pnpm**: Parse advisories object with severity, url, title, module_name
+            - **yarn**: Parse auditAdvisory entries
+            - **pip-audit**: Parse vulnerabilities array with id, fix_versions
+            - **cargo-audit**: Parse vulnerabilities.list with advisory details
+
+            ### For Each Vulnerability Report:
+            - **Package** - Affected package name and version
+            - **Severity** - Critical / High / Moderate / Low
+            - **CVE/GHSA** - Identifier if available
+            - **Description** - Brief explanation of the vulnerability
+            - **Fixed Version** - Version that resolves the issue
+            - **Recommendation** - Upgrade command or action needed
+
+            ### Prioritization
+            1. Critical - Remote code execution, auth bypass
+            2. High - Data exposure, denial of service
+            3. Moderate - Limited impact vulnerabilities
+            4. Low - Minor issues, defense in depth
+
+            ### Check for Transitive Dependencies
+            If a vulnerability is in a transitive dependency:
+            - Identify the direct dependency that brings it in
+            - Check if upgrading the direct dep fixes the issue
+
+            ## Output Format
+
+            Summarize findings:
+            - Total vulnerabilities by severity
+            - Most critical issues first
+            - Actionable upgrade commands
+
+            At the end, output machine-readable counts:
+            ```
+            TOTAL_VULNERABILITIES: <number>
+            CRITICAL_HIGH: <number>
+            ```
+
+            Leave a PR comment with findings and recommended actions.
+
+      - name: Check for critical/high issues
+        if: inputs.fail-on-high && steps.analyze.outputs.critical > 0
+        run: |
+          echo "::error::Found ${{ steps.analyze.outputs.critical }} critical/high severity vulnerabilities"
+          exit 1
