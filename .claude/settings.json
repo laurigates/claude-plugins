@@ -1,4 +1,37 @@
 {
+  "extraKnownMarketplaces": {
+    "local-plugins": {
+      "source": {
+        "source": "directory",
+        "path": "./"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "blueprint-plugin@local-plugins": true,
+    "configure-plugin@local-plugins": true,
+    "git-plugin@local-plugins": true,
+    "testing-plugin@local-plugins": true,
+    "code-quality-plugin@local-plugins": true,
+    "python-plugin@local-plugins": true,
+    "typescript-plugin@local-plugins": true,
+    "tools-plugin@local-plugins": true,
+    "rust-plugin@local-plugins": true,
+    "kubernetes-plugin@local-plugins": true,
+    "terraform-plugin@local-plugins": true,
+    "github-actions-plugin@local-plugins": true,
+    "documentation-plugin@local-plugins": true,
+    "project-plugin@local-plugins": true,
+    "sync-plugin@local-plugins": true,
+    "agent-patterns-plugin@local-plugins": true,
+    "accessibility-plugin@local-plugins": true,
+    "bevy-plugin@local-plugins": true,
+    "container-plugin@local-plugins": true,
+    "api-plugin@local-plugins": true,
+    "communication-plugin@local-plugins": true,
+    "agents-plugin@local-plugins": true,
+    "hooks-plugin@local-plugins": true
+  },
   "permissions": {
     "allow": [
       "Bash(git status:*)",

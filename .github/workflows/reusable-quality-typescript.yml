@@ -1,0 +1,152 @@
+name: TypeScript Strictness (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      file-patterns:
+        description: 'TypeScript file patterns'
+        required: false
+        type: string
+        default: '**/*.{ts,tsx}'
+      max-turns:
+        description: 'Maximum Claude turns'
+        required: false
+        type: number
+        default: 6
+      strict-mode:
+        description: 'Enforce strict type checking'
+        required: false
+        type: boolean
+        default: true
+    outputs:
+      any-count:
+        description: 'Number of any types found'
+        value: ${{ jobs.analyze.outputs.any }}
+      issues-found:
+        description: 'Total type safety issues'
+        value: ${{ jobs.analyze.outputs.total }}
+    secrets:
+      CLAUDE_CODE_OAUTH_TOKEN:
+        required: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    outputs:
+      any: ${{ steps.scan.outputs.any-count }}
+      total: ${{ steps.scan.outputs.total }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed TypeScript files
+        id: changed
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- ${{ inputs.file-patterns }} 2>/dev/null | head -30 || echo "")
+          else
+            FILES=$(git diff --name-only HEAD~1 -- ${{ inputs.file-patterns }} 2>/dev/null | head -30 || echo "")
+          fi
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          echo "$FILES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          FILE_COUNT=$(echo "$FILES" | grep -c '.' || echo 0)
+          echo "count=$FILE_COUNT" >> $GITHUB_OUTPUT
+
+      - name: Claude TypeScript Analysis
+        id: scan
+        if: steps.changed.outputs.count != '0'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          model: haiku
+          claude_args: "--max-turns ${{ inputs.max-turns }}"
+          prompt: |
+            Review TypeScript changes for type safety issues.
+            Strict mode: ${{ inputs.strict-mode }}
+
+            ## Files to analyze
+            ${{ steps.changed.outputs.files }}
+
+            ## Critical Issues (Block Merge in Strict Mode)
+
+            ### Explicit `any` Usage
+            - `const data: any = ...`
+            - `function foo(x: any): any`
+            - `as any` type assertions
+            - Exception: Justified with comment explaining why
+
+            ### TypeScript Directive Suppression
+            - `@ts-ignore` without explanation comment
+            - `@ts-expect-error` without explanation
+            - `@ts-nocheck` in files
+
+            ## High Severity Issues
+
+            ### Non-null Assertions
+            - `user!.name` - assumes non-null without guard
+            - `array![0]` - risky array access
+            - Better: Use optional chaining or type guards
+
+            ### Unsafe Type Assertions
+            - `value as SomeType` without validation
+            - `<SomeType>value` (legacy syntax)
+            - Better: Use type guards or runtime validation
+
+            ### Implicit `any`
+            - Function parameters without types
+            - Variables inferred as any
+            - Callback parameters without types
+
+            ## Medium Severity Issues
+
+            ### Missing Return Types
+            - Exported functions without explicit return type
+            - Public methods without return type
+            - Async functions returning implicit Promise<any>
+
+            ### Missing Parameter Types
+            - Callback parameters without types
+            - Event handler parameters
+            - Generic array callbacks
+
+            ### Loose Array Types
+            - `any[]` instead of typed array
+            - `Array<any>` instead of specific type
+            - Tuple types used as regular arrays
+
+            ## Low Severity Issues
+
+            ### Type Assertion Alternatives
+            - Using `as const` where beneficial
+            - Using satisfies for validation
+            - Discriminated unions over type assertions
+
+            ### Generic Type Parameters
+            - Missing generic constraints
+            - Overly broad generic types
+            - Missing default generic parameters
+
+            ## Output Format
+
+            For each issue:
+            - **File:Line** - Exact location
+            - **Severity** - critical / high / medium / low
+            - **Issue** - What's wrong
+            - **Current** - The problematic code
+            - **Suggested** - Type-safe alternative
+
+            At the end, output machine-readable counts:
+            ```
+            ANY_COUNT: <number>
+            TOTAL_ISSUES: <number>
+            ```
+
+            Leave a PR comment with findings grouped by severity.
