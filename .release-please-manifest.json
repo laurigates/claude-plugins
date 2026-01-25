@@ -11,7 +11,7 @@
   "command-analytics-plugin": "1.2.0",
   "configure-plugin": "1.4.2",
   "container-plugin": "2.3.0",
-  "documentation-plugin": "1.1.1",
+  "documentation-plugin": "1.1.0",
   "first-plugin": "1.0.0",
   "git-plugin": "2.7.0",
   "hooks-plugin": "1.2.0",
@@ -23,8 +23,8 @@
   "python-plugin": "1.1.1",
   "rust-plugin": "1.1.0",
   "sync-plugin": "1.1.0",
-  "terraform-plugin": "1.2.1",
-  "tools-plugin": "2.2.1",
-  "testing-plugin": "3.2.2",
+  "terraform-plugin": "1.2.0",
+  "tools-plugin": "2.2.0",
+  "testing-plugin": "3.2.1",
   "typescript-plugin": "1.4.0"
 }
