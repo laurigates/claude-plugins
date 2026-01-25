@@ -29,7 +29,21 @@ jobs:
             - Potential bugs or security issues
             - Test coverage gaps
             - Documentation needs
-          claude_args: "--max-turns 5"
+
+            IMPORTANT: Use built-in tools (Read, Grep, Glob) for file exploration.
+            Do NOT use Bash for find/grep operations - use the dedicated tools instead.
+          claude_args: "--max-turns 10"
+          allowed_tools: |
+            Read
+            Grep
+            Glob
+            Task
+            TodoWrite
+            Bash(git status:*)
+            Bash(git diff:*)
+            Bash(git log:*)
+            Bash(git show:*)
+            Bash(gh pr:*)
           plugin_marketplaces: |
             https://github.com/laurigates/claude-plugins.git
           plugins: |

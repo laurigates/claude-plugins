@@ -1,0 +1,15 @@
+{
+  "name": "test-fixtures-deps",
+  "version": "1.0.0",
+  "description": "Test fixtures for dependency security scanning - contains intentionally outdated packages",
+  "private": true,
+  "dependencies": {
+    "lodash": "4.17.20",
+    "minimist": "1.2.5",
+    "axios": "0.21.1",
+    "node-fetch": "2.6.1"
+  },
+  "devDependencies": {
+    "jest": "26.6.3"
+  }
+}

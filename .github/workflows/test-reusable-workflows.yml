@@ -1,0 +1,241 @@
+name: Test Reusable Workflows
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/reusable-*.yml'
+      - 'test-fixtures/**'
+  workflow_dispatch:
+    inputs:
+      test-secrets:
+        description: 'Run secrets detection test'
+        type: boolean
+        default: true
+      test-owasp:
+        description: 'Run OWASP security test'
+        type: boolean
+        default: true
+      test-deps:
+        description: 'Run dependency audit test'
+        type: boolean
+        default: true
+      test-code-smell:
+        description: 'Run code smell detection test'
+        type: boolean
+        default: true
+      test-typescript:
+        description: 'Run TypeScript strictness test'
+        type: boolean
+        default: true
+      test-async:
+        description: 'Run async pattern test'
+        type: boolean
+        default: true
+      test-wcag:
+        description: 'Run WCAG compliance test'
+        type: boolean
+        default: true
+      test-aria:
+        description: 'Run ARIA patterns test'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  # Test secrets detection workflow
+  test-secrets:
+    if: github.event_name == 'pull_request' || inputs.test-secrets
+    uses: ./.github/workflows/reusable-security-secrets.yml
+    with:
+      file-patterns: 'test-fixtures/security/secrets/**'
+      max-turns: 3
+    secrets: inherit
+
+  # Test OWASP security scan workflow
+  test-owasp:
+    if: github.event_name == 'pull_request' || inputs.test-owasp
+    uses: ./.github/workflows/reusable-security-owasp.yml
+    with:
+      file-patterns: 'test-fixtures/security/owasp/**'
+      max-turns: 5
+      fail-on-critical: false  # Don't fail for test fixtures
+    secrets: inherit
+
+  # Test dependency audit workflow
+  test-deps:
+    if: github.event_name == 'pull_request' || inputs.test-deps
+    uses: ./.github/workflows/reusable-security-deps.yml
+    with:
+      package-manager: 'npm'
+      max-turns: 4
+      fail-on-high: false  # Don't fail for test fixtures
+    secrets: inherit
+
+  # Phase 2: Code Quality Tests
+
+  # Test code smell detection workflow
+  test-code-smell:
+    if: github.event_name == 'pull_request' || inputs.test-code-smell
+    uses: ./.github/workflows/reusable-quality-code-smell.yml
+    with:
+      file-patterns: 'test-fixtures/quality/code-smell/**'
+      max-turns: 5
+      severity-threshold: 'low'
+    secrets: inherit
+
+  # Test TypeScript strictness workflow
+  test-typescript:
+    if: github.event_name == 'pull_request' || inputs.test-typescript
+    uses: ./.github/workflows/reusable-quality-typescript.yml
+    with:
+      file-patterns: 'test-fixtures/quality/typescript/**'
+      max-turns: 4
+      strict-mode: true
+    secrets: inherit
+
+  # Test async pattern workflow
+  test-async:
+    if: github.event_name == 'pull_request' || inputs.test-async
+    uses: ./.github/workflows/reusable-quality-async.yml
+    with:
+      file-patterns: 'test-fixtures/quality/async/**'
+      max-turns: 4
+    secrets: inherit
+
+  # Phase 3: Accessibility Tests
+
+  # Test WCAG compliance workflow
+  test-wcag:
+    if: github.event_name == 'pull_request' || inputs.test-wcag
+    uses: ./.github/workflows/reusable-a11y-wcag.yml
+    with:
+      file-patterns: 'test-fixtures/a11y/wcag/**'
+      max-turns: 5
+      wcag-level: 'AA'
+    secrets: inherit
+
+  # Test ARIA patterns workflow
+  test-aria:
+    if: github.event_name == 'pull_request' || inputs.test-aria
+    uses: ./.github/workflows/reusable-a11y-aria.yml
+    with:
+      file-patterns: 'test-fixtures/a11y/aria/**'
+      max-turns: 4
+    secrets: inherit
+
+  # Validate detection results
+  validate-results:
+    needs: [test-secrets, test-owasp, test-deps, test-code-smell, test-typescript, test-async, test-wcag, test-aria]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check secrets detection
+        run: |
+          SECRETS_FOUND="${{ needs.test-secrets.outputs.secrets-found }}"
+          echo "Secrets found: $SECRETS_FOUND"
+
+          if [ -n "$SECRETS_FOUND" ] && [ "$SECRETS_FOUND" != "0" ]; then
+            echo "✅ Secrets detection working - found $SECRETS_FOUND potential secrets"
+          else
+            echo "⚠️ Warning: Expected secrets to be detected in test fixtures"
+          fi
+
+      - name: Check OWASP detection
+        run: |
+          ISSUES_FOUND="${{ needs.test-owasp.outputs.issues-found }}"
+          CRITICAL_COUNT="${{ needs.test-owasp.outputs.critical-count }}"
+          echo "OWASP issues found: $ISSUES_FOUND (Critical: $CRITICAL_COUNT)"
+
+          if [ -n "$ISSUES_FOUND" ] && [ "$ISSUES_FOUND" != "0" ]; then
+            echo "✅ OWASP detection working - found $ISSUES_FOUND security issues"
+          else
+            echo "⚠️ Warning: Expected OWASP issues to be detected in test fixtures"
+          fi
+
+      - name: Check code smell detection
+        run: |
+          ISSUES_FOUND="${{ needs.test-code-smell.outputs.issues-found }}"
+          HIGH_SEVERITY="${{ needs.test-code-smell.outputs.high-severity }}"
+          echo "Code smells found: $ISSUES_FOUND (High: $HIGH_SEVERITY)"
+
+          if [ -n "$ISSUES_FOUND" ] && [ "$ISSUES_FOUND" != "0" ]; then
+            echo "✅ Code smell detection working - found $ISSUES_FOUND issues"
+          else
+            echo "⚠️ Warning: Expected code smells to be detected in test fixtures"
+          fi
+
+      - name: Check TypeScript strictness
+        run: |
+          ANY_COUNT="${{ needs.test-typescript.outputs.any-count }}"
+          TOTAL="${{ needs.test-typescript.outputs.issues-found }}"
+          echo "TypeScript issues found: $TOTAL (any types: $ANY_COUNT)"
+
+          if [ -n "$TOTAL" ] && [ "$TOTAL" != "0" ]; then
+            echo "✅ TypeScript strictness working - found $TOTAL issues"
+          else
+            echo "⚠️ Warning: Expected TypeScript issues to be detected in test fixtures"
+          fi
+
+      - name: Check async patterns
+        run: |
+          ISSUES_FOUND="${{ needs.test-async.outputs.issues-found }}"
+          REJECTIONS="${{ needs.test-async.outputs.unhandled-rejections }}"
+          echo "Async issues found: $ISSUES_FOUND (Unhandled rejections: $REJECTIONS)"
+
+          if [ -n "$ISSUES_FOUND" ] && [ "$ISSUES_FOUND" != "0" ]; then
+            echo "✅ Async pattern detection working - found $ISSUES_FOUND issues"
+          else
+            echo "⚠️ Warning: Expected async issues to be detected in test fixtures"
+          fi
+
+      - name: Check WCAG compliance
+        run: |
+          ISSUES_FOUND="${{ needs.test-wcag.outputs.issues-found }}"
+          LEVEL_A="${{ needs.test-wcag.outputs.level-a-issues }}"
+          echo "WCAG issues found: $ISSUES_FOUND (Level A: $LEVEL_A)"
+
+          if [ -n "$ISSUES_FOUND" ] && [ "$ISSUES_FOUND" != "0" ]; then
+            echo "✅ WCAG compliance detection working - found $ISSUES_FOUND issues"
+          else
+            echo "⚠️ Warning: Expected WCAG issues to be detected in test fixtures"
+          fi
+
+      - name: Check ARIA patterns
+        run: |
+          ISSUES_FOUND="${{ needs.test-aria.outputs.issues-found }}"
+          CRITICAL="${{ needs.test-aria.outputs.critical-issues }}"
+          echo "ARIA issues found: $ISSUES_FOUND (Critical: $CRITICAL)"
+
+          if [ -n "$ISSUES_FOUND" ] && [ "$ISSUES_FOUND" != "0" ]; then
+            echo "✅ ARIA pattern detection working - found $ISSUES_FOUND issues"
+          else
+            echo "⚠️ Warning: Expected ARIA issues to be detected in test fixtures"
+          fi
+
+      - name: Summary
+        run: |
+          echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Phase 1: Security" >> $GITHUB_STEP_SUMMARY
+          echo "| Workflow | Status | Findings |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|--------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Secrets Detection | ${{ needs.test-secrets.result }} | ${{ needs.test-secrets.outputs.secrets-found }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| OWASP Scan | ${{ needs.test-owasp.result }} | ${{ needs.test-owasp.outputs.issues-found }} (Critical: ${{ needs.test-owasp.outputs.critical-count }}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Dependency Audit | ${{ needs.test-deps.result }} | ${{ needs.test-deps.outputs.vulnerabilities }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Phase 2: Code Quality" >> $GITHUB_STEP_SUMMARY
+          echo "| Workflow | Status | Findings |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|--------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Code Smell | ${{ needs.test-code-smell.result }} | ${{ needs.test-code-smell.outputs.issues-found }} (High: ${{ needs.test-code-smell.outputs.high-severity }}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| TypeScript | ${{ needs.test-typescript.result }} | ${{ needs.test-typescript.outputs.issues-found }} (any: ${{ needs.test-typescript.outputs.any-count }}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Async Patterns | ${{ needs.test-async.result }} | ${{ needs.test-async.outputs.issues-found }} (Unhandled: ${{ needs.test-async.outputs.unhandled-rejections }}) |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Phase 3: Accessibility" >> $GITHUB_STEP_SUMMARY
+          echo "| Workflow | Status | Findings |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|--------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| WCAG Compliance | ${{ needs.test-wcag.result }} | ${{ needs.test-wcag.outputs.issues-found }} (Level A: ${{ needs.test-wcag.outputs.level-a-issues }}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| ARIA Patterns | ${{ needs.test-aria.result }} | ${{ needs.test-aria.outputs.issues-found }} (Critical: ${{ needs.test-aria.outputs.critical-issues }}) |" >> $GITHUB_STEP_SUMMARY

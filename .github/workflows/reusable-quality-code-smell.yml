@@ -1,0 +1,161 @@
+name: Code Smell Detection (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      file-patterns:
+        description: 'File patterns to analyze'
+        required: false
+        type: string
+        default: '**/*.{js,ts,jsx,tsx}'
+      max-turns:
+        description: 'Maximum Claude turns'
+        required: false
+        type: number
+        default: 8
+      severity-threshold:
+        description: 'Minimum severity to report (low, medium, high)'
+        required: false
+        type: string
+        default: 'medium'
+    outputs:
+      issues-found:
+        description: 'Total code smells detected'
+        value: ${{ jobs.analyze.outputs.count }}
+      high-severity:
+        description: 'High severity issues'
+        value: ${{ jobs.analyze.outputs.high }}
+    secrets:
+      CLAUDE_CODE_OAUTH_TOKEN:
+        required: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    outputs:
+      count: ${{ steps.scan.outputs.total }}
+      high: ${{ steps.scan.outputs.high }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- ${{ inputs.file-patterns }} 2>/dev/null | head -30 || echo "")
+          else
+            FILES=$(git diff --name-only HEAD~1 -- ${{ inputs.file-patterns }} 2>/dev/null | head -30 || echo "")
+          fi
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          echo "$FILES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          FILE_COUNT=$(echo "$FILES" | grep -c '.' || echo 0)
+          echo "count=$FILE_COUNT" >> $GITHUB_OUTPUT
+
+      - name: Claude Code Smell Analysis
+        id: scan
+        if: steps.changed.outputs.count != '0'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          model: haiku
+          claude_args: "--max-turns ${{ inputs.max-turns }}"
+          prompt: |
+            Analyze these files for code smells and anti-patterns.
+            Minimum severity to report: ${{ inputs.severity-threshold }}
+
+            ## Files to analyze
+            ${{ steps.changed.outputs.files }}
+
+            ## Complexity Smells (High Severity)
+
+            ### Long Functions
+            - Functions over 50 lines
+            - Methods that do too many things
+            - Single responsibility violations
+
+            ### Deep Nesting
+            - 4+ levels of indentation
+            - Complex conditional chains
+            - Nested loops with conditionals
+
+            ### Large Parameter Lists
+            - 5+ function parameters
+            - Boolean flags as parameters (flag arguments)
+            - Configuration passed as multiple params vs object
+
+            ### High Cyclomatic Complexity
+            - Multiple branching paths (> 10)
+            - Complex switch statements
+            - Excessive if/else chains
+
+            ## Maintainability Smells (Medium Severity)
+
+            ### Magic Numbers
+            - Unexplained numeric literals in conditionals
+            - Repeated numeric constants
+            - Magic strings in comparisons
+
+            ### Empty Catch Blocks
+            - catch (e) {} with no handling
+            - Silently swallowed errors
+            - Missing error logging
+
+            ### Console Statements
+            - console.log() in production code
+            - console.error() without proper logging
+            - Debug statements left in
+
+            ### Callback Hell
+            - 3+ levels of nested callbacks
+            - Pyramid of doom patterns
+            - Mixed callback and Promise styles
+
+            ### Code Duplication
+            - 10+ lines of similar code
+            - Copy-paste patterns
+            - Near-duplicate functions
+
+            ## Style Smells (Low Severity)
+
+            ### Naming Issues
+            - Inconsistent naming conventions
+            - Single-letter variable names (except loop counters)
+            - Overly abbreviated names
+
+            ### TODO Comments
+            - TODO/FIXME without issue reference
+            - Stale TODO comments
+            - Commented-out code blocks
+
+            ### Dead Code
+            - Unreachable code paths
+            - Unused imports
+            - Unused variables/functions
+
+            ## Output Format
+
+            For each issue found:
+            - **File:Line** - Exact location
+            - **Smell** - Category name (e.g., "Long Function", "Deep Nesting")
+            - **Severity** - high / medium / low
+            - **Description** - Why it's problematic
+            - **Suggestion** - How to refactor
+
+            Group findings by severity (high first).
+
+            At the end, output machine-readable counts:
+            ```
+            TOTAL_ISSUES: <number>
+            HIGH_SEVERITY: <number>
+            ```
+
+            Leave a PR comment with findings, grouping by file then severity.
