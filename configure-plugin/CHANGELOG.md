@@ -7,6 +7,13 @@
 
 * rename marketplace from 'lgates-claude-plugins' to 'laurigates-plugins' ([#195](https://github.com/laurigates/claude-plugins/issues/195)) ([4310935](https://github.com/laurigates/claude-plugins/commit/43109350d121f9c0749af86461daef9849eea133))
 
+## [1.4.2](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.4.1...configure-plugin-v1.4.2) (2026-01-25)
+
+
+### Bug Fixes
+
+* rename marketplace from 'lgates-claude-plugins' to 'laurigates-plugins' ([#195](https://github.com/laurigates/claude-plugins/issues/195)) ([4310935](https://github.com/laurigates/claude-plugins/commit/43109350d121f9c0749af86461daef9849eea133))
+
 ## [1.4.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.4.0...configure-plugin-v1.4.1) (2026-01-23)
 
 
