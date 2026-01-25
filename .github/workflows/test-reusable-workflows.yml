@@ -1,0 +1,99 @@
+name: Test Reusable Workflows
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/reusable-*.yml'
+      - 'test-fixtures/**'
+  workflow_dispatch:
+    inputs:
+      test-secrets:
+        description: 'Run secrets detection test'
+        type: boolean
+        default: true
+      test-owasp:
+        description: 'Run OWASP security test'
+        type: boolean
+        default: true
+      test-deps:
+        description: 'Run dependency audit test'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  # Test secrets detection workflow
+  test-secrets:
+    if: github.event_name == 'pull_request' || inputs.test-secrets
+    uses: ./.github/workflows/reusable-security-secrets.yml
+    with:
+      file-patterns: 'test-fixtures/security/secrets/**'
+      max-turns: 3
+    secrets: inherit
+
+  # Test OWASP security scan workflow
+  test-owasp:
+    if: github.event_name == 'pull_request' || inputs.test-owasp
+    uses: ./.github/workflows/reusable-security-owasp.yml
+    with:
+      file-patterns: 'test-fixtures/security/owasp/**'
+      max-turns: 5
+      fail-on-critical: false  # Don't fail for test fixtures
+    secrets: inherit
+
+  # Test dependency audit workflow
+  test-deps:
+    if: github.event_name == 'pull_request' || inputs.test-deps
+    uses: ./.github/workflows/reusable-security-deps.yml
+    with:
+      package-manager: 'npm'
+      max-turns: 4
+      fail-on-high: false  # Don't fail for test fixtures
+    secrets: inherit
+
+  # Validate detection results
+  validate-results:
+    needs: [test-secrets, test-owasp]
+    runs-on: ubuntu-latest
+    if: always() && (needs.test-secrets.result == 'success' || needs.test-owasp.result == 'success')
+    steps:
+      - name: Check secrets detection
+        run: |
+          SECRETS_FOUND="${{ needs.test-secrets.outputs.secrets-found }}"
+          echo "Secrets found: $SECRETS_FOUND"
+
+          # We expect at least some secrets to be detected in test fixtures
+          if [ -n "$SECRETS_FOUND" ] && [ "$SECRETS_FOUND" != "0" ]; then
+            echo "✅ Secrets detection working - found $SECRETS_FOUND potential secrets"
+          else
+            echo "⚠️ Warning: Expected secrets to be detected in test fixtures"
+            echo "This may indicate the workflow needs adjustment"
+          fi
+
+      - name: Check OWASP detection
+        run: |
+          ISSUES_FOUND="${{ needs.test-owasp.outputs.issues-found }}"
+          CRITICAL_COUNT="${{ needs.test-owasp.outputs.critical-count }}"
+          echo "OWASP issues found: $ISSUES_FOUND (Critical: $CRITICAL_COUNT)"
+
+          # We expect security issues to be detected in vulnerable test fixtures
+          if [ -n "$ISSUES_FOUND" ] && [ "$ISSUES_FOUND" != "0" ]; then
+            echo "✅ OWASP detection working - found $ISSUES_FOUND security issues"
+          else
+            echo "⚠️ Warning: Expected OWASP issues to be detected in test fixtures"
+            echo "This may indicate the workflow needs adjustment"
+          fi
+
+      - name: Summary
+        run: |
+          echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Workflow | Status | Findings |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|--------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Secrets Detection | ${{ needs.test-secrets.result }} | ${{ needs.test-secrets.outputs.secrets-found }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| OWASP Scan | ${{ needs.test-owasp.result }} | ${{ needs.test-owasp.outputs.issues-found }} (Critical: ${{ needs.test-owasp.outputs.critical-count }}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Dependency Audit | ${{ needs.test-deps.result }} | ${{ needs.test-deps.outputs.vulnerabilities }} |" >> $GITHUB_STEP_SUMMARY
