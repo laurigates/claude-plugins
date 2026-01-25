@@ -1,19 +1,16 @@
 ---
 model: opus
 created: 2025-12-16
-modified: 2025-12-16
-reviewed: 2025-12-16
-allowed-tools: Task, TodoWrite
+modified: 2026-01-25
+reviewed: 2026-01-25
+allowed-tools: Task, TodoWrite, Glob, Read
 description: Perform comprehensive code review with automated fixes
 argument-hint: "[PATH]"
 ---
 
 ## Context
 
-- Review path: !`echo "${1:-.}"`
-- Files to review: !`find ${1:-.} -type f \( -name "*.py" -o -name "*.js" -o -name "*.ts" -o -name "*.go" -o -name "*.rs" \) 2>/dev/null | head -20`
-- Test files: !`find ${1:-.} -type f -name "*test*" 2>/dev/null | wc -l`
-- Project size: !`find ${1:-.} -type f -name "*.py" -o -name "*.js" -o -name "*.ts" -o -name "*.go" -o -name "*.rs" | xargs wc -l 2>/dev/null | tail -1`
+- Review path: `$1` (defaults to current directory if not specified)
 
 ## Parameters
 
@@ -23,7 +20,12 @@ argument-hint: "[PATH]"
 
 **Delegate this task to the `code-review` agent.**
 
-Use the Task tool with `subagent_type: code-review` to perform a comprehensive code review. Pass all the context gathered above to the agent.
+Use the Task tool with `subagent_type: code-review` to perform a comprehensive code review.
+
+First, use the Glob tool to discover source files to review:
+- `**/*.py`, `**/*.js`, `**/*.ts`, `**/*.go`, `**/*.rs` for source files
+- `**/*test*` patterns for test files
+Then pass the discovered files to the agent.
 
 The code-review agent should:
 
