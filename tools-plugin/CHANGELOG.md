@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.1](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.2.0...tools-plugin-v2.2.1) (2026-01-25)
+
+
+### Bug Fixes
+
+* rename marketplace from 'lgates-claude-plugins' to 'laurigates-plugins' ([#195](https://github.com/laurigates/claude-plugins/issues/195)) ([4310935](https://github.com/laurigates/claude-plugins/commit/43109350d121f9c0749af86461daef9849eea133))
+
 ## [2.2.0](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.1.0...tools-plugin-v2.2.0) (2026-01-23)
 
 
