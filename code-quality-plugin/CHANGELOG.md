@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.2.1...code-quality-plugin-v1.3.0) (2026-01-25)
+
+
+### Features
+
+* **git-plugin,code-quality-plugin,project-plugin:** add supporting scripts to skills ([#206](https://github.com/laurigates/claude-plugins/issues/206)) ([0b33d50](https://github.com/laurigates/claude-plugins/commit/0b33d502e18584b264c7c4a99dddda54dc573d08))
+
 ## [1.2.1](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.2.0...code-quality-plugin-v1.2.1) (2026-01-24)
 
 
