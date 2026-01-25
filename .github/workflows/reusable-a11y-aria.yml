@@ -1,0 +1,172 @@
+name: ARIA Patterns (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      file-patterns:
+        description: 'Component file patterns'
+        required: false
+        type: string
+        default: '**/*.{tsx,jsx,vue}'
+      max-turns:
+        description: 'Maximum Claude turns'
+        required: false
+        type: number
+        default: 6
+    outputs:
+      issues-found:
+        description: 'Total ARIA issues detected'
+        value: ${{ jobs.analyze.outputs.count }}
+      critical-issues:
+        description: 'Critical ARIA misuse'
+        value: ${{ jobs.analyze.outputs.critical }}
+    secrets:
+      CLAUDE_CODE_OAUTH_TOKEN:
+        required: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    outputs:
+      count: ${{ steps.scan.outputs.total }}
+      critical: ${{ steps.scan.outputs.critical }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed component files
+        id: changed
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- ${{ inputs.file-patterns }} 2>/dev/null | head -30 || echo "")
+          else
+            FILES=$(git diff --name-only HEAD~1 -- ${{ inputs.file-patterns }} 2>/dev/null | head -30 || echo "")
+          fi
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          echo "$FILES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          FILE_COUNT=$(echo "$FILES" | grep -c '.' || echo 0)
+          echo "count=$FILE_COUNT" >> $GITHUB_OUTPUT
+
+      - name: Claude ARIA Analysis
+        id: scan
+        if: steps.changed.outputs.count != '0'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          model: haiku
+          claude_args: "--max-turns ${{ inputs.max-turns }}"
+          prompt: |
+            Audit ARIA implementation in changed components.
+
+            ## Files to analyze
+            ${{ steps.changed.outputs.files }}
+
+            ## Role Correctness
+
+            ### Redundant Roles (Warning)
+            - `role="button"` on `<button>` (implicit role, redundant)
+            - `role="link"` on `<a href>` (implicit role, redundant)
+            - `role="heading"` on `<h1>`-`<h6>` (implicit role, redundant)
+            - `role="list"` on `<ul>` or `<ol>` (implicit role, redundant)
+
+            ### Invalid Roles (Critical)
+            - Invalid role values (typos, non-existent roles)
+            - `role` on elements that don't support it
+            - Roles that conflict with element semantics
+
+            ### Missing Roles (High)
+            - Custom dropdown without `role="listbox"` or `role="menu"`
+            - Custom toggle/switch without `role="switch"`
+            - Tab components without `role="tablist"`, `role="tab"`, `role="tabpanel"`
+            - Modal dialogs without `role="dialog"` or `role="alertdialog"`
+            - Custom combobox/autocomplete without proper roles
+
+            ## Required ARIA Attributes
+
+            ### Interactive Controls (Critical)
+            - `role="checkbox"` requires `aria-checked`
+            - `role="switch"` requires `aria-checked`
+            - `role="slider"` requires `aria-valuenow`, `aria-valuemin`, `aria-valuemax`
+            - `role="combobox"` requires `aria-expanded`, `aria-controls`
+            - `role="spinbutton"` requires `aria-valuenow`, `aria-valuemin`, `aria-valuemax`
+
+            ### State Management (High)
+            - Accordions: triggers need `aria-expanded`
+            - Dropdowns/menus: triggers need `aria-expanded`, optionally `aria-haspopup`
+            - Toggles: need `aria-pressed` or `aria-checked`
+            - Tabs: `aria-selected` on tab elements
+            - Tree items: `aria-expanded` for expandable nodes
+
+            ## Labeling Issues
+
+            ### Missing Labels (Critical)
+            - Icon-only buttons without `aria-label` or visible text
+            - Form inputs without `aria-label` or `aria-labelledby`
+            - Complex widgets without accessible name
+
+            ### Label Quality (Medium)
+            - `aria-label` that just repeats visible text (redundant)
+            - Generic labels ("button", "menu", "input")
+            - Labels that don't describe the action or purpose
+
+            ## Live Regions
+
+            ### Notifications (High)
+            - Toast/snackbar without `role="alert"` or `aria-live`
+            - Status messages without `role="status"`
+            - `aria-live="assertive"` overuse (prefer "polite" for non-urgent)
+            - Dynamic content updates without live region
+
+            ### Live Region Misuse
+            - `aria-live` on frequently updating content (too noisy)
+            - Missing `aria-atomic` when entire region should be announced
+
+            ## Focus Management
+
+            ### Modal/Dialog (High)
+            - Dialogs without `aria-modal="true"`
+            - Missing focus trap in modals
+            - Focus not returned to trigger on close
+            - Missing `aria-labelledby` pointing to dialog title
+
+            ### Focus Indicators (Medium)
+            - `aria-current` missing for navigation state
+            - `aria-selected` missing for selection state
+            - `aria-activedescendant` issues in composite widgets
+
+            ## Relationship Attributes
+
+            ### References (Medium)
+            - `aria-labelledby` referencing non-existent ID
+            - `aria-describedby` referencing non-existent ID
+            - `aria-controls` pointing to wrong element
+            - `aria-owns` used incorrectly
+
+            ## Output Format
+
+            For each issue:
+            - **File:Line** - Exact location
+            - **Severity** - Critical / High / Medium / Low
+            - **Pattern** - ARIA pattern name (e.g., "Modal Dialog", "Menu Button")
+            - **Issue** - What's wrong
+            - **Code** - The problematic code
+            - **Reference** - Link to relevant ARIA Authoring Practices Guide pattern
+            - **Fix** - Correct implementation with code example
+
+            Reference: https://www.w3.org/WAI/ARIA/apg/patterns/
+
+            At the end, output machine-readable counts:
+            ```
+            TOTAL_ISSUES: <number>
+            CRITICAL_ISSUES: <number>
+            ```
+
+            Leave a PR comment with findings grouped by severity.

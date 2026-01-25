@@ -1,0 +1,163 @@
+name: OWASP Security Scan (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      file-patterns:
+        description: 'File patterns to analyze (space-separated globs)'
+        required: false
+        type: string
+        default: '**/*.{js,ts,jsx,tsx,py,rb,go,java,php}'
+      max-turns:
+        description: 'Maximum Claude analysis turns'
+        required: false
+        type: number
+        default: 8
+      fail-on-critical:
+        description: 'Fail workflow if critical issues found'
+        required: false
+        type: boolean
+        default: true
+    outputs:
+      issues-found:
+        description: 'Total security issues detected'
+        value: ${{ jobs.scan.outputs.issue-count }}
+      critical-count:
+        description: 'Number of critical severity issues'
+        value: ${{ jobs.scan.outputs.critical-count }}
+    secrets:
+      CLAUDE_CODE_OAUTH_TOKEN:
+        required: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    outputs:
+      issue-count: ${{ steps.analyze.outputs.issues }}
+      critical-count: ${{ steps.analyze.outputs.critical }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- ${{ inputs.file-patterns }} 2>/dev/null | head -50 || echo "")
+          else
+            FILES=$(git diff --name-only HEAD~1 -- ${{ inputs.file-patterns }} 2>/dev/null | head -50 || echo "")
+          fi
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          echo "$FILES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          FILE_COUNT=$(echo "$FILES" | grep -c '.' || echo 0)
+          echo "count=$FILE_COUNT" >> $GITHUB_OUTPUT
+
+      - name: Claude OWASP Analysis
+        id: analyze
+        if: steps.changed.outputs.count != '0'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          model: haiku
+          claude_args: "--max-turns ${{ inputs.max-turns }}"
+          prompt: |
+            Analyze these files for OWASP Top 10 2021 security vulnerabilities.
+
+            ## Files to analyze
+            ${{ steps.changed.outputs.files }}
+
+            ## OWASP Top 10 2021 Categories
+
+            ### A01:2021 - Broken Access Control (Critical)
+            - Path traversal: user input in file paths without sanitization
+            - Direct object references without authorization checks
+            - Privilege escalation patterns
+            - Missing access control on sensitive endpoints
+
+            ### A02:2021 - Cryptographic Failures (Critical)
+            - Hardcoded secrets, API keys, passwords
+            - Weak cryptographic algorithms (MD5, SHA1 for security)
+            - Sensitive data in logs or error messages
+            - Missing encryption for sensitive data
+
+            ### A03:2021 - Injection (Critical)
+            - SQL injection: string concatenation in SQL queries
+            - Command injection: user input in shell commands, exec(), eval()
+            - XSS: innerHTML, dangerouslySetInnerHTML, document.write with user input
+            - Template injection: user input in templates without escaping
+            - LDAP/XML/NoSQL injection patterns
+
+            ### A04:2021 - Insecure Design (High)
+            - Missing input validation on trust boundaries
+            - Business logic flaws
+            - Missing rate limiting on sensitive operations
+            - Predictable resource identifiers
+
+            ### A05:2021 - Security Misconfiguration (High)
+            - Debug mode enabled in production
+            - Default credentials
+            - Verbose error messages exposing internals
+            - Unnecessary features enabled
+
+            ### A06:2021 - Vulnerable Components (Medium)
+            - Note: Flag outdated dependencies if version visible
+            - Known vulnerable patterns from popular libraries
+
+            ### A07:2021 - Auth Failures (Critical)
+            - Weak password requirements
+            - Session fixation
+            - Missing brute force protection
+            - Insecure session handling
+
+            ### A08:2021 - Data Integrity Failures (High)
+            - Insecure deserialization: unserialize(), pickle.loads(), JSON.parse on untrusted
+            - Missing integrity checks on critical data
+            - Unsigned JWTs or weak JWT validation
+
+            ### A09:2021 - Logging Failures (Medium)
+            - Sensitive data in logs (passwords, tokens, PII)
+            - Missing audit logs for security events
+            - Log injection vulnerabilities
+
+            ### A10:2021 - SSRF (Critical)
+            - User-controlled URLs in HTTP requests
+            - URL parsing vulnerabilities
+            - Missing allowlist for external requests
+
+            ## Severity Levels
+            - **Critical**: Exploitable with significant impact (injection, auth bypass)
+            - **High**: Exploitable with moderate impact or hard to exploit with high impact
+            - **Medium**: Limited exploitability or impact
+            - **Low**: Best practice violation, defense in depth
+
+            ## Output Format
+
+            For each issue found:
+            - **File:Line** - Exact location
+            - **Severity** - Critical / High / Medium / Low
+            - **OWASP Category** - A01-A10 with name
+            - **Vulnerability** - What the issue is
+            - **Code Snippet** - The vulnerable code
+            - **Remediation** - How to fix it with code example
+
+            At the end, output machine-readable counts:
+            ```
+            TOTAL_ISSUES: <number>
+            CRITICAL_ISSUES: <number>
+            ```
+
+            Leave a PR comment with findings grouped by severity (Critical first).
+
+      - name: Check for critical issues
+        if: inputs.fail-on-critical && steps.analyze.outputs.critical > 0
+        run: |
+          echo "::error::Found ${{ steps.analyze.outputs.critical }} critical security issues"
+          exit 1
