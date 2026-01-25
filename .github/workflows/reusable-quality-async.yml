@@ -1,0 +1,162 @@
+name: Async Pattern Validation (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      file-patterns:
+        description: 'File patterns to analyze'
+        required: false
+        type: string
+        default: '**/*.{js,ts,jsx,tsx}'
+      max-turns:
+        description: 'Maximum Claude turns'
+        required: false
+        type: number
+        default: 5
+    outputs:
+      issues-found:
+        description: 'Total async pattern issues'
+        value: ${{ jobs.analyze.outputs.count }}
+      unhandled-rejections:
+        description: 'Potential unhandled rejections'
+        value: ${{ jobs.analyze.outputs.rejections }}
+    secrets:
+      CLAUDE_CODE_OAUTH_TOKEN:
+        required: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    outputs:
+      count: ${{ steps.scan.outputs.total }}
+      rejections: ${{ steps.scan.outputs.rejections }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- ${{ inputs.file-patterns }} 2>/dev/null | head -30 || echo "")
+          else
+            FILES=$(git diff --name-only HEAD~1 -- ${{ inputs.file-patterns }} 2>/dev/null | head -30 || echo "")
+          fi
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          echo "$FILES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          FILE_COUNT=$(echo "$FILES" | grep -c '.' || echo 0)
+          echo "count=$FILE_COUNT" >> $GITHUB_OUTPUT
+
+      - name: Claude Async Pattern Analysis
+        id: scan
+        if: steps.changed.outputs.count != '0'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          model: haiku
+          claude_args: "--max-turns ${{ inputs.max-turns }}"
+          prompt: |
+            Review async code patterns for potential issues.
+
+            ## Files to analyze
+            ${{ steps.changed.outputs.files }}
+
+            ## Critical Issues (Unhandled Rejections)
+
+            ### Floating Promises
+            - Promise returned but not awaited, stored, or chained
+            - `fetchData()` called without await or .then()
+            - Async function called without handling return
+
+            Example of floating promise:
+            ```javascript
+            function process() {
+              fetchData(); // BAD: floating promise
+              return true;
+            }
+            ```
+
+            ### Missing Error Handling
+            - `promise.then(handler)` without `.catch()`
+            - async function without try-catch AND caller doesn't handle
+            - Promise.all without catch
+
+            ### Fire and Forget
+            - Intentional fire-and-forget without void operator
+            - Should use: `void asyncOperation()` if intentional
+
+            ## High Severity Issues
+
+            ### Promise Constructor Anti-pattern
+            - `new Promise(async (resolve, reject) => ...)`
+            - Wrapping async function in Promise constructor
+            - Better: Just use async function directly
+
+            ### Missing Error Propagation
+            - catch block that doesn't rethrow or handle
+            - Error transformed without preserving stack
+            - Swallowed errors in catch blocks
+
+            ### Improper Error Wrapping
+            - `catch (e) { throw e }` - loses stack in some cases
+            - Should use: `catch (e) { throw new Error('Context', { cause: e }) }`
+
+            ## Medium Severity Issues
+
+            ### Sequential Awaits
+            - Multiple independent awaits that could be parallel
+            ```javascript
+            // BAD: Sequential
+            const a = await fetchA();
+            const b = await fetchB();
+
+            // GOOD: Parallel
+            const [a, b] = await Promise.all([fetchA(), fetchB()]);
+            ```
+
+            ### Unnecessary Async
+            - async function that doesn't await anything
+            - Wrapping synchronous code in async
+
+            ### Missing Finally
+            - Resource cleanup without finally block
+            - Connection/file handles not properly closed
+
+            ### Race Condition Patterns
+            - Updating shared state in parallel async operations
+            - Missing mutex/lock patterns for concurrent updates
+
+            ## Low Severity Issues
+
+            ### Promise.resolve/reject Wrapping
+            - `Promise.resolve(syncValue)` in async function
+            - Can just return the value directly
+
+            ### Thenable Confusion
+            - Mixing .then() and await styles inconsistently
+            - Using both patterns in same function
+
+            ## Output Format
+
+            For each issue:
+            - **File:Line** - Exact location
+            - **Pattern** - Anti-pattern name
+            - **Severity** - critical / high / medium / low
+            - **Risk** - What could go wrong
+            - **Fix** - How to handle properly with code example
+
+            At the end, output machine-readable counts:
+            ```
+            TOTAL_ISSUES: <number>
+            UNHANDLED_REJECTIONS: <number>
+            ```
+
+            Leave a PR comment with findings grouped by severity.

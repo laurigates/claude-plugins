@@ -19,6 +19,18 @@ on:
         description: 'Run dependency audit test'
         type: boolean
         default: true
+      test-code-smell:
+        description: 'Run code smell detection test'
+        type: boolean
+        default: true
+      test-typescript:
+        description: 'Run TypeScript strictness test'
+        type: boolean
+        default: true
+      test-async:
+        description: 'Run async pattern test'
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -55,23 +67,52 @@ jobs:
       fail-on-high: false  # Don't fail for test fixtures
     secrets: inherit
 
+  # Phase 2: Code Quality Tests
+
+  # Test code smell detection workflow
+  test-code-smell:
+    if: github.event_name == 'pull_request' || inputs.test-code-smell
+    uses: ./.github/workflows/reusable-quality-code-smell.yml
+    with:
+      file-patterns: 'test-fixtures/quality/code-smell/**'
+      max-turns: 5
+      severity-threshold: 'low'
+    secrets: inherit
+
+  # Test TypeScript strictness workflow
+  test-typescript:
+    if: github.event_name == 'pull_request' || inputs.test-typescript
+    uses: ./.github/workflows/reusable-quality-typescript.yml
+    with:
+      file-patterns: 'test-fixtures/quality/typescript/**'
+      max-turns: 4
+      strict-mode: true
+    secrets: inherit
+
+  # Test async pattern workflow
+  test-async:
+    if: github.event_name == 'pull_request' || inputs.test-async
+    uses: ./.github/workflows/reusable-quality-async.yml
+    with:
+      file-patterns: 'test-fixtures/quality/async/**'
+      max-turns: 4
+    secrets: inherit
+
   # Validate detection results
   validate-results:
-    needs: [test-secrets, test-owasp]
+    needs: [test-secrets, test-owasp, test-deps, test-code-smell, test-typescript, test-async]
     runs-on: ubuntu-latest
-    if: always() && (needs.test-secrets.result == 'success' || needs.test-owasp.result == 'success')
+    if: always()
     steps:
       - name: Check secrets detection
         run: |
           SECRETS_FOUND="${{ needs.test-secrets.outputs.secrets-found }}"
           echo "Secrets found: $SECRETS_FOUND"
 
-          # We expect at least some secrets to be detected in test fixtures
           if [ -n "$SECRETS_FOUND" ] && [ "$SECRETS_FOUND" != "0" ]; then
             echo "✅ Secrets detection working - found $SECRETS_FOUND potential secrets"
           else
             echo "⚠️ Warning: Expected secrets to be detected in test fixtures"
-            echo "This may indicate the workflow needs adjustment"
           fi
 
       - name: Check OWASP detection
@@ -80,20 +121,62 @@ jobs:
           CRITICAL_COUNT="${{ needs.test-owasp.outputs.critical-count }}"
           echo "OWASP issues found: $ISSUES_FOUND (Critical: $CRITICAL_COUNT)"
 
-          # We expect security issues to be detected in vulnerable test fixtures
           if [ -n "$ISSUES_FOUND" ] && [ "$ISSUES_FOUND" != "0" ]; then
             echo "✅ OWASP detection working - found $ISSUES_FOUND security issues"
           else
             echo "⚠️ Warning: Expected OWASP issues to be detected in test fixtures"
-            echo "This may indicate the workflow needs adjustment"
+          fi
+
+      - name: Check code smell detection
+        run: |
+          ISSUES_FOUND="${{ needs.test-code-smell.outputs.issues-found }}"
+          HIGH_SEVERITY="${{ needs.test-code-smell.outputs.high-severity }}"
+          echo "Code smells found: $ISSUES_FOUND (High: $HIGH_SEVERITY)"
+
+          if [ -n "$ISSUES_FOUND" ] && [ "$ISSUES_FOUND" != "0" ]; then
+            echo "✅ Code smell detection working - found $ISSUES_FOUND issues"
+          else
+            echo "⚠️ Warning: Expected code smells to be detected in test fixtures"
+          fi
+
+      - name: Check TypeScript strictness
+        run: |
+          ANY_COUNT="${{ needs.test-typescript.outputs.any-count }}"
+          TOTAL="${{ needs.test-typescript.outputs.issues-found }}"
+          echo "TypeScript issues found: $TOTAL (any types: $ANY_COUNT)"
+
+          if [ -n "$TOTAL" ] && [ "$TOTAL" != "0" ]; then
+            echo "✅ TypeScript strictness working - found $TOTAL issues"
+          else
+            echo "⚠️ Warning: Expected TypeScript issues to be detected in test fixtures"
+          fi
+
+      - name: Check async patterns
+        run: |
+          ISSUES_FOUND="${{ needs.test-async.outputs.issues-found }}"
+          REJECTIONS="${{ needs.test-async.outputs.unhandled-rejections }}"
+          echo "Async issues found: $ISSUES_FOUND (Unhandled rejections: $REJECTIONS)"
+
+          if [ -n "$ISSUES_FOUND" ] && [ "$ISSUES_FOUND" != "0" ]; then
+            echo "✅ Async pattern detection working - found $ISSUES_FOUND issues"
+          else
+            echo "⚠️ Warning: Expected async issues to be detected in test fixtures"
           fi
 
       - name: Summary
         run: |
           echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Phase 1: Security" >> $GITHUB_STEP_SUMMARY
           echo "| Workflow | Status | Findings |" >> $GITHUB_STEP_SUMMARY
           echo "|----------|--------|----------|" >> $GITHUB_STEP_SUMMARY
           echo "| Secrets Detection | ${{ needs.test-secrets.result }} | ${{ needs.test-secrets.outputs.secrets-found }} |" >> $GITHUB_STEP_SUMMARY
           echo "| OWASP Scan | ${{ needs.test-owasp.result }} | ${{ needs.test-owasp.outputs.issues-found }} (Critical: ${{ needs.test-owasp.outputs.critical-count }}) |" >> $GITHUB_STEP_SUMMARY
           echo "| Dependency Audit | ${{ needs.test-deps.result }} | ${{ needs.test-deps.outputs.vulnerabilities }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Phase 2: Code Quality" >> $GITHUB_STEP_SUMMARY
+          echo "| Workflow | Status | Findings |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|--------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Code Smell | ${{ needs.test-code-smell.result }} | ${{ needs.test-code-smell.outputs.issues-found }} (High: ${{ needs.test-code-smell.outputs.high-severity }}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| TypeScript | ${{ needs.test-typescript.result }} | ${{ needs.test-typescript.outputs.issues-found }} (any: ${{ needs.test-typescript.outputs.any-count }}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Async Patterns | ${{ needs.test-async.result }} | ${{ needs.test-async.outputs.issues-found }} (Unhandled: ${{ needs.test-async.outputs.unhandled-rejections }}) |" >> $GITHUB_STEP_SUMMARY

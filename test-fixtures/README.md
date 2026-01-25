@@ -6,7 +6,7 @@ Test fixtures for validating reusable GitHub Action workflows.
 
 ```
 test-fixtures/
-├── security/
+├── security/              # Phase 1: Security
 │   ├── secrets/           # Secrets detection test cases
 │   │   ├── fake-api-key.js     # Fake AWS, Stripe, GitHub tokens
 │   │   ├── fake-password.py    # Hardcoded passwords, connection strings
@@ -18,8 +18,24 @@ test-fixtures/
 │   │   └── clean-code.ts       # Secure code patterns
 │   └── deps/              # Dependency vulnerability test cases
 │       └── package.json        # Outdated packages with known CVEs
-├── quality/               # Code quality test cases (Phase 2)
-└── a11y/                  # Accessibility test cases (Phase 3)
+├── quality/               # Phase 2: Code Quality
+│   ├── code-smell/        # Code smell detection test cases
+│   │   ├── long-function.ts    # 60+ line function
+│   │   ├── deep-nesting.js     # 5+ levels of nesting
+│   │   ├── magic-numbers.ts    # Unexplained numeric literals
+│   │   ├── empty-catch.js      # Empty catch blocks, console.log
+│   │   └── clean-code.ts       # Well-structured code
+│   ├── typescript/        # TypeScript strictness test cases
+│   │   ├── any-usage.ts        # Explicit any types
+│   │   ├── non-null-assertion.ts # user!.name patterns
+│   │   ├── missing-return-type.ts # Functions without return types
+│   │   └── strict-code.ts      # Properly typed code
+│   └── async/             # Async pattern test cases
+│       ├── floating-promise.ts # Promises not awaited or handled
+│       ├── missing-catch.js    # Promise chains without .catch()
+│       ├── promise-constructor.ts # new Promise(async ...) anti-pattern
+│       └── proper-async.ts     # Correct async patterns
+└── a11y/                  # Phase 3: Accessibility (planned)
 ```
 
 ## Purpose
