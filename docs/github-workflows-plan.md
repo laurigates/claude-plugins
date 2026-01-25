@@ -12,6 +12,124 @@ Targeted, focused Claude workflows using the haiku model for efficient CI/CD aut
 | **Actionable output** | PR comments with file:line references |
 | **Plugin leverage** | Use existing skills where available |
 
+---
+
+## Architecture Decision: Workflows in This Repository
+
+Based on [GitHub's reusable workflows documentation](https://docs.github.com/en/actions/how-tos/reuse-automations/reuse-workflows), we will keep reusable workflows **in this repository** alongside the plugins they use.
+
+### Why This Architecture
+
+| Benefit | Explanation |
+|---------|-------------|
+| **Coupled versioning** | Workflow updates ship with plugin updates |
+| **Single source of truth** | No version coordination between repos |
+| **Easier testing** | Test workflow changes against plugin changes in same PR |
+| **Simpler consumption** | Users reference one repo for both plugins and workflows |
+
+### GitHub Reusable Workflow Constraints
+
+Per [official documentation](https://docs.github.com/en/actions/how-tos/reuse-automations/reuse-workflows):
+
+| Constraint | Limit |
+|------------|-------|
+| Max reusable workflows per caller | 50 unique workflows |
+| Max nesting depth | 10 levels |
+| Subdirectories | **Not supported** - all workflows must be in `.github/workflows/` |
+| Environment variables | Do **not** propagate from caller to called workflow |
+| Environment secrets | Cannot be passed via `workflow_call` |
+
+### File Organization
+
+Since subdirectories are not supported, use **naming prefixes** to organize:
+
+```
+.github/workflows/
+├── reusable-security-owasp.yml       # Reusable (external consumption)
+├── reusable-security-secrets.yml
+├── reusable-a11y-wcag.yml
+├── reusable-quality-code-smell.yml
+├── reusable-quality-typescript.yml
+├── ...
+├── release-please.yml                 # Internal (this repo only)
+├── skill-quality-review.yml
+└── claude.yml
+```
+
+**Naming convention:**
+- `reusable-*` prefix = callable from other repositories
+- No prefix = internal to this repository
+
+### How Other Repositories Consume These Workflows
+
+**Reference syntax:**
+```yaml
+jobs:
+  security:
+    uses: laurigates/claude-plugins/.github/workflows/reusable-security-owasp.yml@v2.0.0
+    secrets: inherit  # Or pass explicitly
+```
+
+**Reference options** (in order of recommendation):
+| Method | Example | Use When |
+|--------|---------|----------|
+| Release tag | `@v2.0.0` | Production use (recommended) |
+| Commit SHA | `@a1b2c3d4...` | Maximum security/reproducibility |
+| Branch | `@main` | Development/testing only |
+
+> **Note:** If a tag and branch share the same name, the tag takes precedence.
+
+### Secrets Handling
+
+**Option 1: Inherit all secrets (same organization)**
+```yaml
+jobs:
+  scan:
+    uses: laurigates/claude-plugins/.github/workflows/reusable-security-owasp.yml@v2
+    secrets: inherit
+```
+
+**Option 2: Pass explicitly**
+```yaml
+jobs:
+  scan:
+    uses: laurigates/claude-plugins/.github/workflows/reusable-security-owasp.yml@v2
+    secrets:
+      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+```
+
+### Inputs and Outputs
+
+Reusable workflows communicate via typed inputs/outputs only:
+
+```yaml
+# In reusable workflow
+on:
+  workflow_call:
+    inputs:
+      file-patterns:
+        description: 'Glob patterns for files to analyze'
+        required: false
+        type: string
+        default: '**/*.{ts,tsx,js,jsx}'
+      max-turns:
+        description: 'Max Claude turns'
+        required: false
+        type: number
+        default: 6
+    outputs:
+      issues-found:
+        description: 'Number of issues detected'
+        value: ${{ jobs.analyze.outputs.count }}
+    secrets:
+      CLAUDE_CODE_OAUTH_TOKEN:
+        required: true
+```
+
+**Important:** Environment variables set in caller do NOT propagate. Use inputs instead.
+
+---
+
 ## Workflow Categories
 
 ```
@@ -842,57 +960,316 @@ jobs:
 
 ---
 
-## Reusable Workflow Patterns
+## Reusable Workflow Implementation
 
-For maximum reuse, create composite workflows:
+### Complete Reusable Workflow Example
 
 ```yaml
-# .github/workflows/reusable-claude-analysis.yml
-name: Reusable Claude Analysis
+# .github/workflows/reusable-security-owasp.yml
+name: OWASP Security Scan (Reusable)
 
 on:
   workflow_call:
     inputs:
-      analysis-type:
-        required: true
-        type: string
       file-patterns:
-        required: true
+        description: 'File patterns to analyze (space-separated)'
+        required: false
         type: string
+        default: '**/*.{js,ts,jsx,tsx,py}'
       max-turns:
+        description: 'Maximum Claude analysis turns'
         required: false
         type: number
-        default: 6
-      prompt:
-        required: true
-        type: string
+        default: 8
+      fail-on-critical:
+        description: 'Fail the workflow if critical issues found'
+        required: false
+        type: boolean
+        default: true
+    outputs:
+      issues-found:
+        description: 'Number of security issues detected'
+        value: ${{ jobs.scan.outputs.issue-count }}
+      critical-count:
+        description: 'Number of critical severity issues'
+        value: ${{ jobs.scan.outputs.critical-count }}
     secrets:
       CLAUDE_CODE_OAUTH_TOKEN:
         required: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    outputs:
+      issue-count: ${{ steps.analyze.outputs.issues }}
+      critical-count: ${{ steps.analyze.outputs.critical }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- ${{ inputs.file-patterns }} | head -50)
+          else
+            FILES=$(git diff --name-only HEAD~1 -- ${{ inputs.file-patterns }} | head -50)
+          fi
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          echo "$FILES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "count=$(echo "$FILES" | grep -c '.' || echo 0)" >> $GITHUB_OUTPUT
+
+      - name: Claude OWASP Analysis
+        id: analyze
+        if: steps.changed.outputs.count != '0'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          model: haiku
+          claude_args: "--max-turns ${{ inputs.max-turns }}"
+          # Plugins loaded from this repository's marketplace
+          plugin_marketplaces: |
+            https://github.com/laurigates/claude-plugins.git
+          plugins: |
+            code-quality-plugin@laurigates-plugins
+          prompt: |
+            Analyze the following changed files for OWASP Top 10 security vulnerabilities.
+
+            ## Files to analyze
+            ${{ steps.changed.outputs.files }}
+
+            ## Focus Areas (OWASP Top 10 2021)
+            1. **A01:2021 Broken Access Control** - Path traversal, privilege escalation
+            2. **A02:2021 Cryptographic Failures** - Hardcoded secrets, weak crypto
+            3. **A03:2021 Injection** - SQL, command, XSS injection points
+            4. **A04:2021 Insecure Design** - Missing input validation
+            5. **A05:2021 Security Misconfiguration** - Debug enabled, default creds
+            6. **A06:2021 Vulnerable Components** - Known CVEs (note only)
+            7. **A07:2021 Auth Failures** - Weak auth, session issues
+            8. **A08:2021 Data Integrity Failures** - Insecure deserialization
+            9. **A09:2021 Logging Failures** - Missing audit logs, sensitive data in logs
+            10. **A10:2021 SSRF** - User-controlled URLs in requests
+
+            ## Output Format
+            For each issue found:
+            - **File:Line** - Location
+            - **Severity** - Critical/High/Medium/Low
+            - **OWASP Category** - A01-A10
+            - **Description** - What the vulnerability is
+            - **Remediation** - How to fix it
+
+            Use ast-grep patterns from code-quality-plugin where applicable.
+            Leave a PR review comment summarizing findings by severity.
 ```
 
-Then call from specific workflows:
+### Caller Workflow Example (in consumer repository)
+
+```yaml
+# In another repository: .github/workflows/security.yml
+name: Security Checks
+
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'lib/**'
+
+jobs:
+  owasp-scan:
+    uses: laurigates/claude-plugins/.github/workflows/reusable-security-owasp.yml@v2.0.0
+    with:
+      file-patterns: 'src/**/*.ts lib/**/*.ts'
+      max-turns: 10
+      fail-on-critical: true
+    secrets: inherit
+
+  # Can run multiple scans in parallel
+  secrets-scan:
+    uses: laurigates/claude-plugins/.github/workflows/reusable-security-secrets.yml@v2.0.0
+    secrets: inherit
+
+  # Use outputs from reusable workflow
+  summary:
+    needs: [owasp-scan, secrets-scan]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check results
+        run: |
+          echo "OWASP issues: ${{ needs.owasp-scan.outputs.issues-found }}"
+          echo "Critical issues: ${{ needs.owasp-scan.outputs.critical-count }}"
+```
+
+### Same-Repository Reference
+
+When calling from within this repository, use relative path (no `@ref` needed):
 
 ```yaml
 jobs:
-  security-scan:
-    uses: ./.github/workflows/reusable-claude-analysis.yml
+  scan:
+    uses: ./.github/workflows/reusable-security-owasp.yml
     with:
-      analysis-type: security
-      file-patterns: '**/*.{js,ts,py}'
-      max-turns: 8
-      prompt: |
-        Analyze for OWASP Top 10 vulnerabilities...
+      file-patterns: '**/*.ts'
     secrets: inherit
 ```
+
+---
+
+## Versioning Strategy
+
+### Release Tags
+
+Use semantic versioning tags that align with plugin releases:
+
+```bash
+# Tag format
+v2.0.0    # Major: breaking changes to workflow inputs/outputs
+v2.1.0    # Minor: new workflows or non-breaking input additions
+v2.1.1    # Patch: bug fixes, prompt improvements
+```
+
+### Compatibility Matrix
+
+| Workflow Version | Plugin Version | Notes |
+|------------------|----------------|-------|
+| v2.x | 2.x+ | Current stable |
+| v1.x | 1.x | Legacy, deprecated |
+
+### Breaking Changes
+
+These changes require a **major version bump**:
+- Removing or renaming workflow inputs
+- Changing input types (string → number)
+- Removing workflow outputs
+- Changing required plugins
+
+These are **non-breaking**:
+- Adding new optional inputs with defaults
+- Adding new outputs
+- Improving prompts
+- Updating plugin versions
+
+---
+
+## Testing Reusable Workflows
+
+### Local Testing with `act`
+
+```bash
+# Install act
+brew install act
+
+# Test reusable workflow locally
+act pull_request -W .github/workflows/reusable-security-owasp.yml \
+  --secret CLAUDE_CODE_OAUTH_TOKEN="$CLAUDE_CODE_OAUTH_TOKEN"
+```
+
+### Matrix Testing
+
+Create a test workflow that exercises all reusable workflows:
+
+```yaml
+# .github/workflows/test-reusable-workflows.yml
+name: Test Reusable Workflows
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/reusable-*.yml'
+
+jobs:
+  test-security-owasp:
+    uses: ./.github/workflows/reusable-security-owasp.yml
+    with:
+      file-patterns: 'test-fixtures/security/**'
+      max-turns: 3
+    secrets: inherit
+
+  test-wcag:
+    uses: ./.github/workflows/reusable-a11y-wcag.yml
+    with:
+      file-patterns: 'test-fixtures/a11y/**'
+    secrets: inherit
+```
+
+---
+
+## Consumer Quick Start
+
+### 1. Add to your repository
+
+Create `.github/workflows/claude-checks.yml`:
+
+```yaml
+name: Claude Code Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  security:
+    uses: laurigates/claude-plugins/.github/workflows/reusable-security-owasp.yml@v2
+    secrets: inherit
+
+  accessibility:
+    uses: laurigates/claude-plugins/.github/workflows/reusable-a11y-wcag.yml@v2
+    with:
+      file-patterns: 'src/components/**/*.tsx'
+    secrets: inherit
+
+  code-quality:
+    uses: laurigates/claude-plugins/.github/workflows/reusable-quality-code-smell.yml@v2
+    secrets: inherit
+```
+
+### 2. Configure secrets
+
+Add `CLAUDE_CODE_OAUTH_TOKEN` to your repository secrets:
+1. Go to Settings → Secrets and variables → Actions
+2. Add new repository secret: `CLAUDE_CODE_OAUTH_TOKEN`
+
+### 3. (Optional) Configure for organization
+
+For organization-wide use with `secrets: inherit`:
+1. Add the secret at the organization level
+2. Configure repository access policies
+
+---
+
+## Gotchas and Troubleshooting
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| "Workflow not found" | Wrong path or ref | Verify exact path: `owner/repo/.github/workflows/file.yml@ref` |
+| Secrets not available | Not using `secrets: inherit` or explicit pass | Add `secrets: inherit` or pass explicitly |
+| Environment variables empty | Caller env vars don't propagate | Use workflow inputs instead |
+| Workflow not triggered | Permissions issue on private repo | Enable "Accessible from repositories in the organization" |
+| Output is empty | Matrix strategy returns last job only | Avoid matrix for workflows with outputs |
 
 ---
 
 ## Next Steps
 
 1. [ ] Review and prioritize workflows
-2. [ ] Create reusable composite workflow
-3. [ ] Implement Phase 1 security workflows
-4. [ ] Test on sample PRs
-5. [ ] Document workflow usage in README
-6. [ ] Add workflow status badges
+2. [ ] Implement Phase 1 security workflows with `reusable-` prefix
+3. [ ] Create test fixtures for workflow testing
+4. [ ] Test workflows on sample PRs
+5. [ ] Tag initial release (v1.0.0)
+6. [ ] Document consumer usage in main README
+7. [ ] Add workflow status badges
+
+---
+
+## References
+
+- [GitHub: Reusing workflows](https://docs.github.com/en/actions/how-tos/reuse-automations/reuse-workflows)
+- [GitHub: Workflow syntax for workflow_call](https://docs.github.com/en/actions/reference/workflows-and-actions/reusing-workflow-configurations)
+- [GitHub Blog: Using reusable workflows](https://github.blog/developer-skills/github/using-reusable-workflows-github-actions/)
