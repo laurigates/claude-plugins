@@ -126,7 +126,9 @@ Some commands are safe without context specification:
 
 ### Configuration
 
-Add to your `.claude/settings.json` or project settings:
+**Automatic (via plugin):** This hook is automatically enabled when the hooks-plugin is installed. The configuration is included in `plugin.json`.
+
+**Manual (standalone):** To use this hook without the full plugin, add to your `.claude/settings.json`:
 
 ```json
 {
@@ -137,23 +139,13 @@ Add to your `.claude/settings.json` or project settings:
         "hooks": [
           {
             "type": "command",
-            "command": "bash /path/to/hooks-plugin/hooks/validate-kubectl-context.sh",
+            "command": "bash /path/to/validate-kubectl-context.sh",
             "timeout": 3000
           }
         ]
       }
     ]
   }
-}
-```
-
-Or use the `$CLAUDE_PLUGIN_ROOT` variable if installed as a plugin:
-
-```json
-{
-  "type": "command",
-  "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/validate-kubectl-context.sh",
-  "timeout": 3000
 }
 ```
 
