@@ -260,6 +260,31 @@ disallowedTools: Bash, Write, Edit
 - Tool blacklisting (`disallowedTools`)
 - Custom agent definitions in plugins
 
+#### `agentic-patterns-source`
+Access [Awesome Agentic Patterns](https://agentic-patterns.com/) for production-ready AI agent patterns.
+
+**When to use:**
+- Designing multi-agent orchestration workflows
+- Solving context window limitations
+- Implementing feedback loops and self-correction
+- Researching security and sandboxing patterns
+- Need production-tested patterns with real-world references
+
+**Categories covered:**
+- Context & Memory (compaction, progressive disclosure, semantic filtering)
+- Feedback Loops (self-correction, CI integration, iterative refinement)
+- Orchestration & Control (planner-worker separation, lane-based queueing)
+- Reliability & Eval (failover, testing, observability)
+- Security & Safety (sandboxing, credential sync, authorization)
+- Tool Use & Environment (shell integration, API design)
+- UX & Collaboration (human handoffs, async workflows)
+
+**Features:**
+- 150+ documented production patterns
+- Real-world references (blog posts, papers, repositories)
+- Regularly updated with NEW and UPDATED badges
+- Cross-category pattern discovery
+
 ## Installation
 
 ### Via Plugin System
@@ -374,6 +399,7 @@ See the [Claude Agent SDK documentation](https://docs.anthropic.com/claude/docs/
 ## References
 
 - [Anthropic Prompt Engineering](https://docs.anthropic.com/claude/docs/prompt-engineering)
+- [Awesome Agentic Patterns](https://agentic-patterns.com/) - Production-ready AI agent patterns catalog
 - [Claude Code Documentation](https://docs.claude.com/claude-code)
 - [Claude Agent SDK](https://docs.anthropic.com/claude/docs/claude-agent-sdk)
 - [Multi-Agent Systems Patterns](https://en.wikipedia.org/wiki/Multi-agent_system)
