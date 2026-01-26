@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.2.0...hooks-plugin-v1.3.0) (2026-01-26)
+
+
+### Features
+
+* **hooks-plugin:** block git reset --hard in bash-antipatterns hook ([d8b770c](https://github.com/laurigates/claude-plugins/commit/d8b770cb3253f052ef8ad560fde1d7f2c06740a8))
+
 ## [1.2.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.1.0...hooks-plugin-v1.2.0) (2026-01-23)
 
 
