@@ -1,6 +1,18 @@
 {
-  "description": "Agent patterns hooks - context preservation during compaction",
+  "description": "Agent patterns hooks - orchestrator enforcement and context preservation",
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/orchestrator-enforcement.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
     "PreCompact": [
       {
         "matcher": "auto",
