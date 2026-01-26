@@ -80,3 +80,111 @@ Edit `bash-antipatterns.sh` to:
 
 - **0**: Command allowed
 - **2**: Command blocked with reminder (Claude sees the message)
+
+---
+
+## validate-kubectl-context.sh
+
+A PreToolUse hook that enforces explicit Kubernetes context selection to prevent accidental operations on the wrong cluster.
+
+### Why This Hook Exists
+
+Running `kubectl` or `helm` commands without specifying `--context` uses whatever context is currently active in your kubeconfig. This can lead to:
+
+- Accidentally deploying to production instead of staging
+- Deleting resources from the wrong cluster
+- Applying configuration changes to unintended environments
+
+This hook blocks kubectl/helm commands that don't explicitly specify their target context, forcing the agent to be explicit about which cluster it's operating on.
+
+### Commands Blocked
+
+| Tool | Flag Required | Example |
+|------|---------------|---------|
+| `kubectl` | `--context=NAME` | `kubectl --context=staging get pods` |
+| `helm` | `--kube-context=NAME` | `helm --kube-context=production list` |
+
+### Safe Commands (Not Blocked)
+
+Some commands are safe without context specification:
+
+**kubectl safe commands:**
+- `kubectl config` (manages kubeconfig, not cluster resources)
+- `kubectl version` (shows client/server versions)
+- `kubectl api-resources` (lists available resources)
+- `kubectl api-versions` (lists API versions)
+- `kubectl explain` (shows resource documentation)
+- `kubectl completion` (shell completion)
+
+**helm safe commands:**
+- `helm version` / `helm completion` / `helm env`
+- `helm repo` (manages chart repositories)
+- `helm search` (searches for charts)
+- `helm show` (shows chart information)
+- `helm plugin` (manages plugins)
+- `helm create` / `helm package` / `helm template` (local chart operations)
+
+### Configuration
+
+Add to your `.claude/settings.json` or project settings:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /path/to/hooks-plugin/hooks/validate-kubectl-context.sh",
+            "timeout": 3000
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Or use the `$CLAUDE_PLUGIN_ROOT` variable if installed as a plugin:
+
+```json
+{
+  "type": "command",
+  "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/validate-kubectl-context.sh",
+  "timeout": 3000
+}
+```
+
+### Testing
+
+```bash
+# Should be blocked (no context)
+echo '{"tool_input": {"command": "kubectl get pods"}}' | bash validate-kubectl-context.sh
+echo $?  # 2
+
+# Should be allowed (has context)
+echo '{"tool_input": {"command": "kubectl --context=staging get pods"}}' | bash validate-kubectl-context.sh
+echo $?  # 0
+
+# Should be allowed (safe command)
+echo '{"tool_input": {"command": "kubectl config get-contexts"}}' | bash validate-kubectl-context.sh
+echo $?  # 0
+
+# Helm - should be blocked
+echo '{"tool_input": {"command": "helm list"}}' | bash validate-kubectl-context.sh
+echo $?  # 2
+
+# Helm - should be allowed
+echo '{"tool_input": {"command": "helm --kube-context=production list"}}' | bash validate-kubectl-context.sh
+echo $?  # 0
+```
+
+### Error Message
+
+When blocked, the agent receives a helpful message explaining:
+- Why the context is required
+- How to specify the context
+- How to list available contexts
+- Example commands with proper context usage
