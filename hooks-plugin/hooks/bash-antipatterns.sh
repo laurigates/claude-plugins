@@ -123,5 +123,24 @@ Run git commands as separate Bash tool calls:
 This avoids race conditions and is more reliable."
 fi
 
+# Check for git reset --hard (destructive operation, usually unnecessary)
+# After pushing commits to a PR branch, agents sometimes think they need to reset main.
+# However, once the PR is merged, git pull will cleanly resolve the situation.
+# Exclude heredocs (<<) so commit messages mentioning "git reset" don't trigger this.
+if echo "$COMMAND" | grep -Eq '^\s*git\s+reset\s+--hard' && \
+   ! echo "$COMMAND" | grep -Eq '<<'; then
+    block_with_reminder "REMINDER: 'git reset --hard' is destructive and usually unnecessary.
+Common misconception: After pushing commits to a PR branch, you do NOT need to reset main.
+Once the PR is merged, simply run 'git pull' and git will resolve the situation cleanly.
+
+If you're trying to:
+- Sync with remote after PR merge: use 'git pull'
+- Discard uncommitted changes: use 'git checkout -- <file>' or 'git restore <file>'
+- Undo a local commit (not pushed): use 'git reset --soft HEAD~1' (keeps changes staged)
+- Switch branches cleanly: use 'git stash' then 'git checkout <branch>'
+
+Only use 'git reset --hard' if explicitly requested by the user."
+fi
+
 # If we get here, the command is allowed
 exit 0
