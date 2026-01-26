@@ -2,6 +2,80 @@
 
 This directory contains hooks that enforce best practices and remind Claude to use the correct tools.
 
+## orchestrator-enforcement.sh
+
+A PreToolUse hook that enforces the orchestrator pattern - orchestrators investigate and delegate, subagents implement.
+
+### What It Does
+
+| Tool Category | Behavior |
+|--------------|----------|
+| **Delegation** (Task) | Always allowed |
+| **Investigation** (Read, Grep, Glob, WebFetch, WebSearch) | Always allowed |
+| **Planning** (TodoWrite) | Always allowed |
+| **Implementation** (Edit, Write, NotebookEdit) | Blocked - must delegate |
+| **Git read** (status, log, diff, branch, show) | Allowed |
+| **Git write** (add, commit, push, merge) | Blocked - must delegate |
+| **GitHub CLI read** (view, list, checks) | Allowed |
+| **GitHub CLI write** (create, edit, merge) | Blocked - must delegate |
+
+### Configuration
+
+Environment variables:
+- `ORCHESTRATOR_BYPASS=1` - Disable hook entirely
+- `CLAUDE_IS_SUBAGENT=1` - Grant full tool access (set by parent agent)
+
+### Usage
+
+Add to `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash $CLAUDE_PROJECT_DIR/.claude/hooks/orchestrator-enforcement.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+When spawning subagents via Task, set the environment:
+
+```json
+{
+  "env": {
+    "CLAUDE_IS_SUBAGENT": "1"
+  }
+}
+```
+
+### Testing
+
+```bash
+# Should block Edit for orchestrator
+echo '{"tool_name": "Edit"}' | bash orchestrator-enforcement.sh
+# Returns: {"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny",...}}
+
+# Should allow with subagent flag
+echo '{"tool_name": "Edit"}' | CLAUDE_IS_SUBAGENT=1 bash orchestrator-enforcement.sh
+# Returns: (empty - allowed)
+
+# Should allow Read
+echo '{"tool_name": "Read"}' | bash orchestrator-enforcement.sh
+# Returns: (empty - allowed)
+```
+
+---
+
 ## bash-antipatterns.sh
 
 A PreToolUse hook that intercepts Bash commands and blocks those that should use built-in tools instead.

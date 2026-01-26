@@ -8,6 +8,24 @@ This plugin provides pre-built hooks that can be installed in any project to enf
 
 ## Available Hooks
 
+### orchestrator-enforcement.sh
+
+Enforces the orchestrator pattern where the main agent investigates and delegates, while subagents implement.
+
+**Tool Access:**
+
+| Category | Orchestrator | Subagent |
+|----------|--------------|----------|
+| Delegation (Task) | Allowed | Allowed |
+| Investigation (Read, Grep, Glob) | Allowed | Allowed |
+| Implementation (Edit, Write) | Blocked | Allowed |
+| Git read (status, log, diff) | Allowed | Allowed |
+| Git write (add, commit, push) | Blocked | Allowed |
+
+**Environment variables:**
+- `ORCHESTRATOR_BYPASS=1` - Disable enforcement
+- `CLAUDE_IS_SUBAGENT=1` - Grant full access to subagents
+
 ### bash-antipatterns.sh
 
 A PreToolUse hook that intercepts Bash commands and blocks those that should use built-in tools instead.
