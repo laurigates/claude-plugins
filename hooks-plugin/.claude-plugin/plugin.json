@@ -13,9 +13,6 @@
     "best-practices",
     "workflow",
     "anti-patterns",
-    "tooling",
-    "orchestrator",
-    "delegation",
-    "subagents"
+    "tooling"
   ]
 }

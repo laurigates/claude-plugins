@@ -81,6 +81,25 @@ Generate a continuation primer for agent handoff with todo list and context.
 - Active files being worked on
 - Known blockers and issues
 
+### Hooks
+
+#### `orchestrator-enforcement.sh`
+PreToolUse hook that enforces the orchestrator pattern - orchestrators investigate and delegate, subagents implement.
+
+**Tool Access:**
+
+| Category | Orchestrator | Subagent |
+|----------|--------------|----------|
+| Delegation (Task) | Allowed | Allowed |
+| Investigation (Read, Grep, Glob) | Allowed | Allowed |
+| Implementation (Edit, Write) | Blocked | Allowed |
+| Git read (status, log, diff) | Allowed | Allowed |
+| Git write (add, commit, push) | Blocked | Allowed |
+
+**Environment variables:**
+- `ORCHESTRATOR_BYPASS=1` - Disable enforcement
+- `CLAUDE_IS_SUBAGENT=1` - Grant full access to subagents
+
 ### Skills
 
 #### `delegation-first`
