@@ -4,7 +4,7 @@ Python development ecosystem for Claude Code - uv, ruff, pytest, packaging, and 
 
 ## Overview
 
-Comprehensive Python development support with modern tooling: uv for package management, ruff for linting/formatting, pytest for testing, and basedpyright for type checking.
+Comprehensive Python development support with modern Astral tooling: uv for package management, ruff for linting/formatting, ty for fast type checking, pytest for testing, and basedpyright as an alternative type checker.
 
 ## Skills
 
@@ -38,6 +38,7 @@ Comprehensive Python development support with modern tooling: uv for package man
 
 | Skill | Description |
 |-------|-------------|
+| `ty-type-checking` | Type checking with ty (Astral's fast type checker) |
 | `basedpyright-type-checking` | Type checking with basedpyright |
 
 ### Development
@@ -75,6 +76,10 @@ ruff format .
 ### Type Checking
 
 ```bash
+# Using ty (fastest, Astral ecosystem)
+ty check
+
+# Using basedpyright (stricter defaults)
 basedpyright
 ```
 
