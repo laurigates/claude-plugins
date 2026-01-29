@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.9.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.8.1...blueprint-plugin-v3.9.0) (2026-01-29)
+
+
+### Features
+
+* **blueprint:** add /blueprint:adr-list command ([#240](https://github.com/laurigates/claude-plugins/issues/240)) ([c80c1ba](https://github.com/laurigates/claude-plugins/commit/c80c1baaecddad401d9d29c02e45fa30fff81795))
+
 ## [3.8.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.8.0...blueprint-plugin-v3.8.1) (2026-01-25)
 
 
