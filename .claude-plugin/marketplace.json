@@ -318,6 +318,68 @@
         "anti-patterns"
       ],
       "category": "automation"
+    },
+    {
+      "name": "blog-plugin",
+      "source": "./blog-plugin",
+      "description": "Blog post creation - project logs, technical write-ups, personal documentation",
+      "version": "1.1.0",
+      "keywords": [
+        "blog",
+        "writing",
+        "documentation",
+        "project-log",
+        "devlog",
+        "technical-writing"
+      ],
+      "category": "documentation"
+    },
+    {
+      "name": "command-analytics-plugin",
+      "source": "./command-analytics-plugin",
+      "description": "Track command and skill usage analytics across all projects",
+      "version": "1.2.0",
+      "keywords": [
+        "analytics",
+        "tracking",
+        "usage",
+        "metrics",
+        "reporting"
+      ],
+      "category": "utilities"
+    },
+    {
+      "name": "langchain-plugin",
+      "source": "./langchain-plugin",
+      "description": "LangChain JS/TS development - agents, chains, LangGraph workflows, and Deep Agents patterns",
+      "version": "1.2.0",
+      "keywords": [
+        "langchain",
+        "langgraph",
+        "deep-agents",
+        "ai-agents",
+        "llm",
+        "typescript",
+        "javascript",
+        "rag",
+        "chains"
+      ],
+      "category": "ai"
+    },
+    {
+      "name": "networking-plugin",
+      "source": "./networking-plugin",
+      "description": "Network diagnostics, reconnaissance, monitoring, and HTTP load testing",
+      "version": "1.2.0",
+      "keywords": [
+        "networking",
+        "diagnostics",
+        "connectivity",
+        "port-scanning",
+        "monitoring",
+        "load-testing"
+      ],
+      "category": "infrastructure"
     }
   ]
 }
