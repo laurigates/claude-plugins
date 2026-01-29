@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/laurigates/claude-plugins/compare/python-plugin-v1.1.1...python-plugin-v1.2.0) (2026-01-29)
+
+
+### Features
+
+* **python-plugin:** add ty type checking skill ([#238](https://github.com/laurigates/claude-plugins/issues/238)) ([312c9c4](https://github.com/laurigates/claude-plugins/commit/312c9c478c43c31406c672d3b73813b428129157))
+
 ## [1.1.1](https://github.com/laurigates/claude-plugins/compare/python-plugin-v1.1.0...python-plugin-v1.1.1) (2026-01-24)
 
 
