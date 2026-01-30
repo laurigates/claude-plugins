@@ -45,6 +45,7 @@ Three composable skills that can be invoked individually or combined based on us
 | `gh-workflow-monitoring` | Watch GitHub Actions runs with blocking commands (no polling/timeouts) |
 | `git-commit-workflow` | Conventional commit patterns and best practices |
 | `git-branch-pr-workflow` | Git branching and PR workflow patterns |
+| `git-rebase-patterns` | Advanced rebase techniques (--reapply-cherry-picks, --update-refs, --onto, stacked PRs) |
 | `git-repo-detection` | Detect GitHub repository name and owner from git remotes |
 | `git-security-checks` | Security checks before staging files |
 | `github-issue-autodetect` | Auto-detect issues that changes may fix/close for proper commit linkage |
