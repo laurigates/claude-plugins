@@ -13,6 +13,7 @@ This plugin provides comprehensive Git workflow automation including conventiona
 | `/git:commit` | Complete workflow from changes to PR - auto-detect issues, create logical commits with proper linkage, push, optionally create PR |
 | `/git:issue` | Process GitHub issues with interactive selection, conflict detection, and parallel work support |
 | `/git:fix-pr` | Analyze and fix failing PR checks |
+| `/git:pr-feedback` | Review PR workflow results and comments, address substantive feedback from reviewers |
 | `/git:maintain` | Repository maintenance and cleanup (prune, gc, verify, branches, stash) |
 | `/git:derive-docs` | Analyze git history to derive undocumented rules, PRDs, ADRs, and PRPs |
 
@@ -39,15 +40,19 @@ Three composable skills that can be invoked individually or combined based on us
 
 | Skill | Description |
 |-------|-------------|
+| `git-branch-naming` | Branch naming conventions (type prefixes, issue linking, kebab-case) |
 | `git-cli-agentic` | Git commands optimized for AI agents with porcelain output |
 | `gh-cli-agentic` | GitHub CLI commands optimized for AI agents with JSON output |
 | `gh-workflow-monitoring` | Watch GitHub Actions runs with blocking commands (no polling/timeouts) |
 | `git-commit-workflow` | Conventional commit patterns and best practices |
 | `git-branch-pr-workflow` | Git branching and PR workflow patterns |
+| `git-rebase-patterns` | Advanced rebase techniques (--reapply-cherry-picks, --update-refs, --onto, stacked PRs) |
 | `git-repo-detection` | Detect GitHub repository name and owner from git remotes |
 | `git-security-checks` | Security checks before staging files |
 | `github-issue-autodetect` | Auto-detect issues that changes may fix/close for proper commit linkage |
+| `github-issue-writing` | Create well-structured GitHub issues with clear titles and acceptance criteria |
 | `github-labels` | Discover and apply labels to GitHub PRs and issues |
+| `github-pr-title` | Craft effective PR titles using conventional commit format |
 | `git-log-documentation` | Derive undocumented rules, PRDs, ADRs, PRPs from git commit history |
 | `release-please-configuration` | Release-please config for monorepos and version automation |
 | `release-please-protection` | Prevent manual edits to release-please managed files |
@@ -88,6 +93,16 @@ Analyzes issues for conflicts and dependencies, implements fixes with TDD workfl
 ```
 
 Analyzes PR #456 check failures and attempts automatic fixes.
+
+### Address PR Feedback
+
+```bash
+/git:pr-feedback              # Use current branch's PR
+/git:pr-feedback 789          # Review PR #789 feedback
+/git:pr-feedback 789 --push   # Address feedback and push fixes
+```
+
+Reviews PR workflow results and reviewer comments, categorizes feedback (blocking, substantive, suggestions), and systematically addresses actionable items.
 
 ### Derive Documentation from History
 
