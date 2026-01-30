@@ -3,7 +3,7 @@ model: haiku
 created: 2025-12-16
 modified: 2026-01-17
 reviewed: 2026-01-17
-allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git add:*), Bash(git commit:*), Bash(git push:*), Bash(git switch:*), Bash(git pull:*), Bash(git stash:*), Bash(gh issue:*), Bash(gh pr:*), Bash(gh repo:*), Bash(gh label:*), Bash(pre-commit:*), Read, Edit, Write, Grep, Glob, TodoWrite, AskUserQuestion, Task, mcp__github__create_pull_request, mcp__github__issue_read, mcp__github__list_issues
+allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git pull *), Bash(git stash *), Bash(gh issue *), Bash(gh pr *), Bash(gh repo *), Bash(gh label *), Bash(pre-commit *), Read, Edit, Write, Grep, Glob, TodoWrite, AskUserQuestion, Task, mcp__github__create_pull_request, mcp__github__issue_read, mcp__github__list_issues
 description: Process GitHub issues with interactive selection, conflict detection, and parallel work support
 argument-hint: [issue-numbers...] [--auto] [--filter <label>] [--limit <n>] [--parallel]
 ---

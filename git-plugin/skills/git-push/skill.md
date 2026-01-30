@@ -9,7 +9,7 @@ description: |
   and safe push patterns. Use when user says "push", "push changes", "send to remote",
   "update remote", or similar. This skill pushes existing commits - see git-commit for
   creating commits and git-pr for pull request creation.
-allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git push:*), Bash(git branch:*), Bash(git remote:*), Bash(git rev-list:*), Bash(git fetch:*), Read, Grep, Glob, TodoWrite
+allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git push *), Bash(git branch *), Bash(git remote *), Bash(git rev-list *), Bash(git fetch *), Read, Grep, Glob, TodoWrite
 ---
 
 # Git Push

@@ -9,7 +9,7 @@ description: |
   pre-commit hooks, and automatic issue detection. Use when user says "commit",
   "commit locally", "save changes", "stage and commit", or similar. This skill
   creates local commits only - see git-push for remote operations.
-allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git add:*), Bash(git commit:*), Bash(git restore:*), Bash(pre-commit:*), Bash(gh issue:*), Read, Grep, Glob, TodoWrite
+allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git restore *), Bash(pre-commit *), Bash(gh issue *), Read, Grep, Glob, TodoWrite
 ---
 
 # Git Commit

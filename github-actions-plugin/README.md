@@ -284,8 +284,8 @@ Configure allowed tools in workflows:
 
 ```yaml
 claude_args: |
-  --allowedTools 'Bash(npm:*)' 'Bash(pytest:*)' 'Bash(git:*)'
-  --disallowedTools 'Bash(rm -rf:*)' 'Bash(curl:*)'
+  --allowedTools 'Bash(npm *)' 'Bash(pytest *)' 'Bash(git *)'
+  --disallowedTools 'Bash(rm -rf *)' 'Bash(curl *)'
 ```
 
 ### MCP Server Setup
@@ -349,7 +349,7 @@ gh run view <run-id> --log-failed | grep -E "FAIL|Error" -A 5
 ### Tool Access Issues
 
 - Enable specific tools with `--allowedTools`
-- Check tool syntax: `'Bash(npm:*)'` not `'Bash(npm *)'`
+- Check tool syntax: `'Bash(npm *)'` not `'Bash(npm *)'`
 - Verify permissions include `actions: read` for CI/CD tools
 
 ## Integration

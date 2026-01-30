@@ -3,7 +3,7 @@ model: haiku
 created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
-allowed-tools: Bash(uv:*), Bash(npm:*), Bash(bun:*), Bash(cargo:*), Bash(go:*), Bash(brew:*), Read, Write
+allowed-tools: Bash(uv *), Bash(npm *), Bash(bun *), Bash(cargo *), Bash(go *), Bash(brew *), Read, Write
 argument-hint: [package-names] [--dev] [--global]
 description: Universal dependency installer that automatically detects and uses the appropriate package manager
 ---

@@ -2,7 +2,7 @@
 model: haiku
 name: git-cli-agentic
 description: Git commands optimized for AI agent workflows with porcelain output and deterministic execution patterns.
-allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git branch:*), Bash(git remote:*), Bash(git add:*), Bash(git commit:*), Bash(git push:*), Bash(git restore:*), Read
+allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git remote *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git restore *), Read
 created: 2025-01-16
 modified: 2025-01-16
 reviewed: 2025-01-16

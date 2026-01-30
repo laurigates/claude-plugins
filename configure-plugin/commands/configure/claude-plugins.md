@@ -4,7 +4,7 @@ created: 2026-01-23
 modified: 2026-01-23
 reviewed: 2026-01-23
 description: Configure .claude/settings.json and GitHub Actions workflows to use the laurigates/claude-plugins marketplace
-allowed-tools: Glob, Grep, Read, Write, Edit, Bash(mkdir:*), AskUserQuestion, TodoWrite
+allowed-tools: Glob, Grep, Read, Write, Edit, Bash(mkdir *), AskUserQuestion, TodoWrite
 argument-hint: "[--check-only] [--fix] [--plugins <plugin1,plugin2,...>]"
 ---
 
@@ -61,21 +61,21 @@ Create or merge into `.claude/settings.json` the following structure:
 {
   "permissions": {
     "allow": [
-      "Bash(git status:*)",
-      "Bash(git diff:*)",
-      "Bash(git log:*)",
-      "Bash(git branch:*)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(git push:*)",
-      "Bash(git remote:*)",
-      "Bash(git checkout:*)",
-      "Bash(git fetch:*)",
-      "Bash(gh pr:*)",
-      "Bash(gh run:*)",
-      "Bash(gh issue:*)",
-      "Bash(pre-commit:*)",
-      "Bash(detect-secrets:*)"
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git branch *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(git remote *)",
+      "Bash(git checkout *)",
+      "Bash(git fetch *)",
+      "Bash(gh pr *)",
+      "Bash(gh run *)",
+      "Bash(gh issue *)",
+      "Bash(pre-commit *)",
+      "Bash(detect-secrets *)"
     ]
   }
 }

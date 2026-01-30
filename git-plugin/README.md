@@ -39,15 +39,19 @@ Three composable skills that can be invoked individually or combined based on us
 
 | Skill | Description |
 |-------|-------------|
+| `git-branch-naming` | Branch naming conventions (type prefixes, issue linking, kebab-case) |
 | `git-cli-agentic` | Git commands optimized for AI agents with porcelain output |
 | `gh-cli-agentic` | GitHub CLI commands optimized for AI agents with JSON output |
 | `gh-workflow-monitoring` | Watch GitHub Actions runs with blocking commands (no polling/timeouts) |
 | `git-commit-workflow` | Conventional commit patterns and best practices |
 | `git-branch-pr-workflow` | Git branching and PR workflow patterns |
+| `git-rebase-patterns` | Advanced rebase techniques (--reapply-cherry-picks, --update-refs, --onto, stacked PRs) |
 | `git-repo-detection` | Detect GitHub repository name and owner from git remotes |
 | `git-security-checks` | Security checks before staging files |
 | `github-issue-autodetect` | Auto-detect issues that changes may fix/close for proper commit linkage |
+| `github-issue-writing` | Create well-structured GitHub issues with clear titles and acceptance criteria |
 | `github-labels` | Discover and apply labels to GitHub PRs and issues |
+| `github-pr-title` | Craft effective PR titles using conventional commit format |
 | `git-log-documentation` | Derive undocumented rules, PRDs, ADRs, PRPs from git commit history |
 | `release-please-configuration` | Release-please config for monorepos and version automation |
 | `release-please-protection` | Prevent manual edits to release-please managed files |
@@ -123,29 +127,29 @@ For seamless command execution without permission prompts, add these permissions
 {
   "permissions": {
     "allow": [
-      "Bash(gh pr:*)",
-      "Bash(gh run:*)",
-      "Bash(gh issue:*)",
-      "Bash(gh repo:*)",
-      "Bash(gh label:*)",
-      "Bash(gh workflow:*)",
-      "Bash(git status:*)",
-      "Bash(git diff:*)",
-      "Bash(git log:*)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(git push:*)",
-      "Bash(git pull:*)",
-      "Bash(git branch:*)",
-      "Bash(git switch:*)",
-      "Bash(git remote:*)",
-      "Bash(git stash:*)",
-      "Bash(git restore:*)",
-      "Bash(git gc:*)",
-      "Bash(git prune:*)",
-      "Bash(git fsck:*)",
-      "Bash(pre-commit:*)",
-      "Bash(detect-secrets:*)"
+      "Bash(gh pr *)",
+      "Bash(gh run *)",
+      "Bash(gh issue *)",
+      "Bash(gh repo *)",
+      "Bash(gh label *)",
+      "Bash(gh workflow *)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(git pull *)",
+      "Bash(git branch *)",
+      "Bash(git switch *)",
+      "Bash(git remote *)",
+      "Bash(git stash *)",
+      "Bash(git restore *)",
+      "Bash(git gc *)",
+      "Bash(git prune *)",
+      "Bash(git fsck *)",
+      "Bash(pre-commit *)",
+      "Bash(detect-secrets *)"
     ]
   }
 }
