@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.1.0](https://github.com/laurigates/claude-plugins/compare/finops-plugin-v1.0.0...finops-plugin-v1.1.0) (2026-01-30)
+## 1.0.0 (2026-01-30)
 
 
 ### Features
