@@ -214,7 +214,7 @@ Map discussion topics to ADR domains:
 | Docker, Kubernetes, Vercel, serverless, deploy | `deployment` |
 | Sentry, DataDog, logging, metrics, monitoring | `monitoring` |
 
-Include inferred domain in context package for `/blueprint:adr`.
+Include inferred domain in context package for `/blueprint:derive-adr`.
 
 ### Step 4: Delegate to Documentation Agent
 
@@ -222,7 +222,7 @@ Launch appropriate documentation command:
 
 **For PRD**:
 ```
-Run /blueprint:prd with context:
+Run /blueprint:derive-prd with context:
 - Feature description from conversation
 - User types identified
 - Requirements enumerated
@@ -231,7 +231,7 @@ Run /blueprint:prd with context:
 
 **For ADR**:
 ```
-Run /blueprint:adr with context:
+Run /blueprint:derive-adr with context:
 - Decision being made
 - Options compared
 - Constraints identified
@@ -274,8 +274,8 @@ Document detection integrates with existing commands:
 
 | Detection Type | Command Triggered | Document Location |
 |----------------|-------------------|-------------------|
-| PRD | `/blueprint:prd` | `docs/prds/{feature-name}.md` |
-| ADR | `/blueprint:adr` | `docs/adrs/{number}-{title}.md` |
+| PRD | `/blueprint:derive-prd` | `docs/prds/{feature-name}.md` |
+| ADR | `/blueprint:derive-adr` | `docs/adrs/{number}-{title}.md` |
 | PRP | `/blueprint:prp-create` | `docs/prps/{feature-name}.md` |
 
 ## Configuration

@@ -162,6 +162,6 @@ Rules are generated to `.claude/rules/` directory.
 - Rules should be actionable, not just documentation
 
 **Error Handling**:
-- If no PRDs found -> Guide user to write PRDs first (`/blueprint:prd`)
+- If no PRDs found -> Guide user to derive PRDs first (`/blueprint:derive-prd`)
 - If PRDs incomplete -> Generate rules with TODO markers for missing sections
 - If rules already exist and modified -> Offer to backup before overwriting

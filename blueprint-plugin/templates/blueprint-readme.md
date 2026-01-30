@@ -48,8 +48,10 @@ docs/blueprint/
 | Command | Purpose |
 |---------|---------|
 | `/blueprint:status` | Show version and configuration |
-| `/blueprint:prd` | Create a Product Requirements Document |
-| `/blueprint:adr` | Create an Architecture Decision Record |
+| `/blueprint:derive-prd` | Derive PRD from existing documentation |
+| `/blueprint:derive-adr` | Derive ADRs from codebase analysis |
+| `/blueprint:derive-plans` | Derive docs from git history |
+| `/blueprint:derive-rules` | Derive rules from git commit decisions |
 | `/blueprint:prp-create` | Create a Product Requirement Prompt |
 | `/blueprint:prp-execute` | Execute a PRP with TDD workflow |
 | `/blueprint:work-order` | Create a task package for subagent |
