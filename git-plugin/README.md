@@ -47,7 +47,9 @@ Three composable skills that can be invoked individually or combined based on us
 | `git-repo-detection` | Detect GitHub repository name and owner from git remotes |
 | `git-security-checks` | Security checks before staging files |
 | `github-issue-autodetect` | Auto-detect issues that changes may fix/close for proper commit linkage |
+| `github-issue-writing` | Create well-structured GitHub issues with clear titles and acceptance criteria |
 | `github-labels` | Discover and apply labels to GitHub PRs and issues |
+| `github-pr-title` | Craft effective PR titles using conventional commit format |
 | `git-log-documentation` | Derive undocumented rules, PRDs, ADRs, PRPs from git commit history |
 | `release-please-configuration` | Release-please config for monorepos and version automation |
 | `release-please-protection` | Prevent manual edits to release-please managed files |
