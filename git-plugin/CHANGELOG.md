@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.10.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.9.0...git-plugin-v2.10.0) (2026-01-30)
+
+
+### Features
+
+* **git-plugin:** add pr-feedback command for reviewing and addressing PR comments ([e343b9c](https://github.com/laurigates/claude-plugins/commit/e343b9cb2c2c71732fb97a50087af70be0de1e84))
+
 ## [2.9.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.8.0...git-plugin-v2.9.0) (2026-01-30)
 
 
