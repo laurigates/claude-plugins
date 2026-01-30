@@ -1,8 +1,8 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
-reviewed: 2025-12-16
+modified: 2026-01-30
+reviewed: 2026-01-30
 description: Check and configure MCP servers for project integration
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
 argument-hint: "[--check-only] [--fix] [--server <name>]"
@@ -19,6 +19,18 @@ This command validates MCP server configuration and installs servers from the fa
 **MCP Philosophy:** Servers are managed **project-by-project** to avoid context bloat:
 - ❌ **User-scoped** (in `~/.claude/settings.json`) - Bloated context everywhere
 - ✅ **Project-scoped** (in `.mcp.json`) - Clean context, explicit dependencies, team-shareable
+
+### Core Servers
+
+These servers should be installed in **all projects** by default:
+
+| Server | Purpose | Required |
+|--------|---------|----------|
+| `context7` | Documentation context from Upstash | No env vars |
+| `sequential-thinking` | Enhanced reasoning and planning | No env vars |
+| `serena` | Semantic code analysis and navigation | No env vars |
+
+Run `/configure:mcp --core` to install all core servers automatically.
 
 ## Workflow
 
@@ -101,6 +113,7 @@ Recommendations:
 
 **AI Enhancement:**
 - `sequential-thinking` - Enhanced reasoning with sequential thinking
+- `serena` - Semantic code analysis and symbol navigation
 
 ### Phase 5: Configuration (if --fix or user confirms)
 
@@ -153,6 +166,21 @@ Recommendations:
   "sequential-thinking": {
     "command": "npx",
     "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+  },
+  "serena": {
+    "type": "stdio",
+    "command": "uvx",
+    "args": [
+      "--from",
+      "git+https://github.com/oraios/serena",
+      "serena",
+      "start-mcp-server",
+      "--context",
+      "claude-code",
+      "--project",
+      "<repo-name>"
+    ],
+    "env": {}
   }
 }
 ```
@@ -233,6 +261,7 @@ Tip: Run /configure:mcp again to add more servers anytime.
 |------|-------------|
 | `--check-only` | Report status without offering to install servers |
 | `--fix` | Install specified or suggested servers without prompting |
+| `--core` | Install all core servers (context7, sequential-thinking, serena) |
 | `--server <name>` | Install specific server (can be repeated) |
 
 ## Examples
@@ -243,6 +272,9 @@ Tip: Run /configure:mcp again to add more servers anytime.
 
 # Interactive server installation
 /configure:mcp
+
+# Install all core servers (recommended for new projects)
+/configure:mcp --core
 
 # Install specific servers automatically
 /configure:mcp --fix --server github --server playwright

@@ -1,8 +1,8 @@
 ---
 model: opus
 created: 2026-01-23
-modified: 2026-01-23
-reviewed: 2026-01-23
+modified: 2026-01-30
+reviewed: 2026-01-30
 description: Configure .claude/settings.json and GitHub Actions workflows to use the laurigates/claude-plugins marketplace
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash(mkdir *), AskUserQuestion, TodoWrite
 argument-hint: "[--check-only] [--fix] [--plugins <plugin1,plugin2,...>]"
@@ -75,7 +75,10 @@ Create or merge into `.claude/settings.json` the following structure:
       "Bash(gh run *)",
       "Bash(gh issue *)",
       "Bash(pre-commit *)",
-      "Bash(detect-secrets *)"
+      "Bash(detect-secrets *)",
+      "mcp__context7",
+      "mcp__sequential-thinking",
+      "mcp__serena"
     ]
   }
 }
