@@ -12,14 +12,15 @@ PRD (Product Requirements) → PRP (Product Requirement Prompt) → Work-Order �
 
 ## Commands
 
-### Onboarding Commands
+### Derive Commands
 
 | Command | Description |
 |---------|-------------|
 | `/blueprint-init` | Initialize Blueprint Development structure in a project |
-| `/blueprint-prd` | Generate initial PRD from existing project documentation |
-| `/blueprint-adr` | Generate Architecture Decision Records from existing codebase |
-| `/blueprint-import-plans` | **Retroactive import** - Generate PRDs, ADRs, and PRPs from git history and existing code |
+| `/blueprint-derive-prd` | Derive PRD from existing project documentation |
+| `/blueprint-derive-adr` | Derive Architecture Decision Records from existing codebase |
+| `/blueprint-derive-plans` | Derive PRDs, ADRs, and PRPs from git history and existing code |
+| `/blueprint-derive-rules` | Derive rules from git commit decisions (newer overrides older) |
 
 ### Workflow Commands
 
@@ -139,21 +140,21 @@ docs/
 └── prps/                 # Product Requirement Prompts
 ```
 
-### 2. Generate Initial Documentation (Onboarding)
+### 2. Derive Documentation
 
-For existing projects, generate initial documentation from codebase:
+For existing projects, derive documentation from codebase:
 
 ```bash
-/blueprint-prd    # Generate PRD from README and docs
-/blueprint-adr    # Generate ADRs from architecture analysis
+/blueprint-derive-prd    # Derive PRD from README and docs
+/blueprint-derive-adr    # Derive ADRs from architecture analysis
 ```
 
 These commands analyze existing documentation and code patterns, asking clarifying questions to fill gaps.
 
-**For established projects with git history**, use the comprehensive import command:
+**For established projects with git history**, use the comprehensive derive command:
 
 ```bash
-/blueprint-import-plans    # Retroactively generate PRDs, ADRs, and PRPs from git history
+/blueprint-derive-plans    # Derive PRDs, ADRs, and PRPs from git history
 ```
 
 This command:
@@ -162,6 +163,18 @@ This command:
 - Identifies architecture decisions from technology changes
 - Suggests future work from TODOs and open issues
 - Generates all documentation with confidence scores
+
+**For deriving rules from significant commit decisions**:
+
+```bash
+/blueprint-derive-rules    # Derive rules from git commit log decisions
+```
+
+This command:
+- Scans git commits for significant decisions and patterns
+- Generates Claude rules from commit-evident decisions
+- Newer commits override older ones when conflicts exist
+- Links rules to source commits for traceability
 
 ### 3. Write or Refine PRDs
 
@@ -217,7 +230,7 @@ All blueprint documents are connected through a unified ID system, enabling full
 ### Automatic ID Assignment
 
 IDs are automatically generated when:
-- Creating documents via `/blueprint-prd`, `/blueprint-adr`, `/blueprint-prp-create`
+- Creating documents via `/blueprint-derive-prd`, `/blueprint-derive-adr`, `/blueprint-prp-create`
 - Running `/blueprint-sync-ids` to batch-assign IDs to existing documents
 - Accessing documents without IDs (auto-assigned on first access)
 

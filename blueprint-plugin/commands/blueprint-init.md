@@ -23,17 +23,7 @@ Initialize Blueprint Development in this project.
        - "Cancel" → exit
      ```
 
-2. **Gather project context** (use AskUserQuestion):
-   ```
-   question: "What type of project is this?"
-   options:
-     - "Personal/Solo project"
-     - "Team project"
-     - "Open source"
-   ```
-   Note: This is used for manifest metadata. Claude files are always committed regardless of project type.
-
-3. **Ask about modular rules**:
+2. **Ask about modular rules**:
    ```
    question: "How would you like to organize project instructions?"
    options:
@@ -43,7 +33,7 @@ Initialize Blueprint Development in this project.
    allowMultiSelect: false
    ```
 
-4. **Ask about feature tracking** (use AskUserQuestion):
+3. **Ask about feature tracking** (use AskUserQuestion):
    ```
    question: "Would you like to enable feature tracking?"
    options:
@@ -68,14 +58,14 @@ Initialize Blueprint Development in this project.
    b. Create `docs/blueprint/feature-tracker.json` from template
    c. Set `has_feature_tracker: true` in manifest
 
-5. **Ask about document detection** (use AskUserQuestion):
+4. **Ask about document detection** (use AskUserQuestion):
    ```
    question: "Would you like to enable automatic document detection?"
    options:
      - label: "Yes - Detect PRD/ADR/PRP opportunities"
        description: "Claude will prompt when conversations should become documents"
      - label: "No - Manual commands only"
-       description: "Use /blueprint:prd, /blueprint:adr, /blueprint:prp-create explicitly"
+       description: "Use /blueprint:derive-prd, /blueprint:derive-adr, /blueprint:prp-create explicitly"
    ```
 
    Set `has_document_detection` in manifest based on response.
@@ -83,7 +73,7 @@ Initialize Blueprint Development in this project.
    **If modular rules enabled and document detection enabled:**
    Copy `document-management-rule.md` template to `.claude/rules/document-management.md`
 
-6. **Check for root documentation to migrate**:
+5. **Check for root documentation to migrate**:
    ```bash
    # Find markdown files in root that look like documentation (not standard files)
    fd -d 1 -e md . | grep -viE '^\./(README|CHANGELOG|CONTRIBUTING|LICENSE|CODE_OF_CONDUCT|SECURITY)'
@@ -115,7 +105,7 @@ Initialize Blueprint Development in this project.
       - ARCHITECTURE.md → docs/adrs/0001-initial-architecture.md
       ```
 
-7. **Create directory structure**:
+6. **Create directory structure**:
 
    **Blueprint structure (in docs/blueprint/):**
    ```
@@ -146,7 +136,7 @@ Initialize Blueprint Development in this project.
    └── commands/                    # Custom command overrides (optional)
    ```
 
-8. **Create `manifest.json`** (v3.0.0 schema):
+7. **Create `manifest.json`** (v3.0.0 schema):
    ```json
    {
      "format_version": "3.0.0",
@@ -156,8 +146,7 @@ Initialize Blueprint Development in this project.
        "blueprint_plugin": "3.0.0"
      },
      "project": {
-       "name": "[detected or asked]",
-       "type": "[personal|team|opensource]",
+       "name": "[detected from package.json/pyproject.toml or directory name]",
        "detected_stack": []
      },
      "structure": {
@@ -189,7 +178,7 @@ Initialize Blueprint Development in this project.
 
    Note: Include `feature_tracker` section only if feature tracking is enabled.
 
-9. **Create `work-overview.md`**:
+8. **Create `work-overview.md`**:
    ```markdown
    # Work Overview: [Project Name]
 
@@ -210,17 +199,17 @@ Initialize Blueprint Development in this project.
    3. Generate workflow commands for your stack
    ```
 
-10. **Create initial rules** (if modular rules selected):
+9. **Create initial rules** (if modular rules selected):
    - `development.md`: TDD workflow, commit conventions
    - `testing.md`: Test requirements, coverage expectations
    - `document-management.md`: Document organization rules (if document detection enabled)
 
-11. **Handle `.gitignore`**:
+10. **Handle `.gitignore`**:
    - Always commit `CLAUDE.md` and `.claude/rules/` (shared project instructions)
    - Add `docs/blueprint/work-orders/` to `.gitignore` (task-specific, may contain sensitive details)
    - If secrets detected in `.claude/`, warn user and suggest `.gitignore` entries
 
-12. **Report**:
+11. **Report**:
    ```
    Blueprint Development initialized! (v3.0.0)
 
@@ -243,7 +232,6 @@ Initialize Blueprint Development in this project.
    - .claude/commands/    (custom command overrides)
 
    Configuration:
-   - Project type: [personal|team|opensource]
    - Rules mode: [single|modular|both]
    [- Feature tracking: enabled (source: {source_document})]
    [- Document detection: enabled (Claude will prompt for PRD/ADR/PRP creation)]
@@ -257,7 +245,7 @@ Initialize Blueprint Development in this project.
    - Custom layer: Your overrides in .claude/skills/ and .claude/commands/
    ```
 
-13. **Prompt for next action** (use AskUserQuestion):
+12. **Prompt for next action** (use AskUserQuestion):
     ```
     question: "Blueprint initialized. What would you like to do next?"
     options:
@@ -272,7 +260,7 @@ Initialize Blueprint Development in this project.
     ```
 
     **Based on selection:**
-    - "Create a PRD" → Run `/blueprint:prd`
+    - "Create a PRD" → Run `/blueprint:derive-prd`
     - "Generate project commands" → Run `/blueprint:generate-commands`
     - "Add modular rules" → Run `/blueprint:rules`
     - "I'm done for now" → Show quick reference and exit
@@ -282,8 +270,10 @@ Initialize Blueprint Development in this project.
 Management commands:
 - /blueprint:status          - Check version and configuration
 - /blueprint:upgrade         - Upgrade to latest format version
-- /blueprint:prd             - Create a Product Requirements Document
-- /blueprint:adr             - Create an Architecture Decision Record
+- /blueprint:derive-prd      - Derive PRD from existing documentation
+- /blueprint:derive-adr      - Derive ADRs from codebase analysis
+- /blueprint:derive-plans    - Derive docs from git history
+- /blueprint:derive-rules    - Derive rules from git commit decisions
 - /blueprint:prp-create      - Create a Product Requirement Prompt
 - /blueprint:generate-skills - Generate skills from PRDs
 - /blueprint:generate-commands - Create workflow commands

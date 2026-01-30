@@ -3,7 +3,7 @@ model: opus
 created: 2025-12-22
 modified: 2026-01-15
 reviewed: 2025-12-22
-description: "Generate Architecture Decision Records from existing project structure and documentation"
+description: "Derive Architecture Decision Records from existing project structure, dependencies, and documentation"
 allowed_tools: [Read, Write, Glob, Grep, Bash, AskUserQuestion, Task]
 ---
 
@@ -13,7 +13,7 @@ Generate Architecture Decision Records (ADRs) for an existing project by analyzi
 
 **Prerequisites**:
 - Blueprint Development initialized (`docs/blueprint/` exists)
-- Ideally PRD exists (run `/blueprint:prd` first)
+- Ideally PRD exists (run `/blueprint:derive-prd` first)
 
 **Steps**:
 
@@ -25,7 +25,7 @@ ls docs/blueprint/manifest.json
 ls docs/prds/
 ```
 If blueprint not initialized → suggest `/blueprint:init`
-If no PRD → suggest `/blueprint:prd` first (recommended, not required)
+If no PRD → suggest `/blueprint:derive-prd` first (recommended, not required)
 
 ### 1.2 Create ADR Directory
 ```bash
@@ -236,7 +236,7 @@ github-issues: []                       # Linked GitHub issues
 - {Discussion threads}
 
 ---
-*Generated from project analysis via /blueprint:adr*
+*Generated from project analysis via /blueprint:derive-adr*
 ```
 
 ### 3.2 Standard ADRs to Generate
@@ -275,7 +275,7 @@ New ADRs should follow the [MADR template](https://adr.github.io/madr/).
 
 ## Creating New ADRs
 
-Use `/blueprint:adr` or the `architecture-decisions` agent to create new ADRs.
+Use `/blueprint:derive-adr` or the `architecture-decisions` agent to create new ADRs.
 ```
 
 ## Phase 4: Relationship Updates & Validation
@@ -361,13 +361,13 @@ Update `docs/blueprint/manifest.json` ID registry for each ADR:
 **Recommended next steps**:
 1. Review generated ADRs for accuracy
 2. Add rationale where marked as "inferred"
-3. Run `/blueprint:adr-validate` to check relationship consistency
+3. Run `/blueprint:derive-adr-validate` to check relationship consistency
 4. Run `/blueprint:prp-create` for feature implementation
 5. Run `/blueprint:generate-skills` for project skills
 ```
 
 ### 4.2 Suggest Next Steps
-- If PRD missing → suggest `/blueprint:prd`
+- If PRD missing → suggest `/blueprint:derive-prd`
 - If ready for implementation → suggest `/blueprint:prp-create`
 - If architecture evolving → explain how to add new ADRs
 

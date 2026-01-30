@@ -202,4 +202,4 @@ Validate Architecture Decision Records for relationship consistency, reference i
 - Run validation after creating new ADRs
 - Domain conflicts indicate decisions that may need reconciliation
 - Untagged ADRs are valid but harder to analyze for conflicts
-- Use `/blueprint:adr` to create new ADRs with proper relationships
+- Use `/blueprint:derive-adr` to create new ADRs with proper relationships

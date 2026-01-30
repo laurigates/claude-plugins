@@ -81,7 +81,7 @@ IDs are tracked in `docs/blueprint/manifest.json`:
 
 IDs are automatically generated when:
 
-1. **Creating documents** - `/blueprint:prd`, `/blueprint:adr`, `/blueprint:prp-create`
+1. **Creating documents** - `/blueprint:derive-prd`, `/blueprint:derive-adr`, `/blueprint:prp-create`
 2. **Accessing documents without IDs** - Any command reading PRD/ADR/PRP files
 3. **Batch sync** - `/blueprint:sync-ids` assigns IDs to all documents
 
