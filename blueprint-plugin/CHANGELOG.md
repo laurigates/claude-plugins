@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.10.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.9.0...blueprint-plugin-v3.10.0) (2026-01-30)
+
+
+### Features
+
+* **blueprint-plugin:** refactor to derive-* commands and add git-based rule derivation ([ea33c2c](https://github.com/laurigates/claude-plugins/commit/ea33c2c6cc83c05167677022d5524434240a53ad))
+
 ## [3.9.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.8.1...blueprint-plugin-v3.9.0) (2026-01-29)
 
 
