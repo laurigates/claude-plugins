@@ -3,7 +3,7 @@ model: opus
 created: 2025-12-22
 modified: 2026-01-09
 reviewed: 2025-12-22
-description: "Generate initial PRD from existing project documentation during onboarding"
+description: "Derive PRD from existing project documentation, README, and codebase analysis"
 allowed_tools: [Read, Write, Glob, Grep, Bash, AskUserQuestion, Task]
 ---
 
@@ -229,7 +229,7 @@ github-issues: []
 | {phase} | {focus areas} | {status} |
 
 ---
-*Generated from existing documentation via /blueprint:prd*
+*Generated from existing documentation via /blueprint:derive-prd*
 *Review and update as project evolves*
 ```
 
@@ -258,14 +258,14 @@ Show the user:
 
 **Recommended next steps**:
 1. Review and refine the generated PRD
-2. Run `/blueprint:adr` to document architecture decisions
+2. Run `/blueprint:derive-adr` to document architecture decisions
 3. Run `/blueprint:prp-create` for specific features
 4. Run `/blueprint:generate-skills` to create project skills
 ```
 
 ### 4.2 Suggest Follow-up
 Based on what was generated:
-- If architecture unclear → suggest `/blueprint:adr`
+- If architecture unclear → suggest `/blueprint:derive-adr`
 - If features identified → suggest `/blueprint:prp-create` for key features
 - If PRD complete → suggest `/blueprint:generate-skills`
 
@@ -341,7 +341,7 @@ Capture issue number and update:
 question: "PRD generated. What would you like to do next?"
 options:
   - label: "Document architecture decisions (Recommended)"
-    description: "Run /blueprint:adr to capture technical decisions"
+    description: "Run /blueprint:derive-adr to capture technical decisions"
   - label: "Generate project skills"
     description: "Extract skills from PRD for Claude context"
   - label: "Create a PRP for a feature"
@@ -353,7 +353,7 @@ options:
 ```
 
 **Based on selection:**
-- "Document architecture decisions" → Run `/blueprint:adr`
+- "Document architecture decisions" → Run `/blueprint:derive-adr`
 - "Generate project skills" → Run `/blueprint:generate-skills`
 - "Create a PRP" → Run `/blueprint:prp-create` (ask for feature name)
 - "Review and refine" → Show PRD file location and key sections needing attention

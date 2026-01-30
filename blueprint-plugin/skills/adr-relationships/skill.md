@@ -168,7 +168,7 @@ done
 
 ## Integration Points
 
-- **`/blueprint:adr`**: Pre-creation conflict analysis
+- **`/blueprint:derive-adr`**: Pre-creation conflict analysis
 - **`/blueprint:adr-validate`**: Full validation report
 - **`/blueprint:status`**: ADR health summary
 - **document-detection skill**: Domain inference for auto-detected ADRs

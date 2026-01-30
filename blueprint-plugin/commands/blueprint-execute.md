@@ -1,10 +1,10 @@
 ---
 model: opus
 created: 2026-01-14
-modified: 2026-01-17
-reviewed: 2026-01-14
+modified: 2026-01-30
+reviewed: 2026-01-30
 description: "Idempotent meta command that determines and executes the next logical blueprint action"
-allowed_tools: [Read, Glob, Bash, AskUserQuestion, SlashCommand]
+allowed_tools: [Read, Glob, Bash, AskUserQuestion, SlashCommand, Task]
 ---
 
 Intelligent meta command that analyzes repository state and executes the appropriate blueprint action.
@@ -13,7 +13,42 @@ Intelligent meta command that analyzes repository state and executes the appropr
 
 **Usage**: `/blueprint:execute`
 
-**How it works**: This command acts as an orchestrator, detecting your project's current state and delegating to specific blueprint commands as needed.
+**How it works**: This command acts as an orchestrator, detecting your project's current state and delegating to specific blueprint commands as needed. It uses parallel agents for efficient context gathering.
+
+---
+
+## Phase 0: Parallel Context Gathering
+
+Before determining actions, launch parallel agents to gather comprehensive context efficiently:
+
+### 0.1 Launch Parallel Agents
+
+Run these agents **simultaneously** to gather context:
+
+**Agent 1: Git History Analysis**
+```
+<Task subagent_type="Explore" prompt="Analyze git repository status: recent commits (last 20), branches, any uncommitted changes, conventional commit usage. Return summary with key decisions visible in commit messages.">
+```
+
+**Agent 2: Documentation Status**
+```
+<Task subagent_type="Explore" prompt="Check documentation status: PRDs in docs/prds/, ADRs in docs/adrs/, PRPs in docs/prps/. For each found, extract frontmatter (id, status, confidence). Return counts and actionable items.">
+```
+
+**Agent 3: Blueprint State**
+```
+<Task subagent_type="Explore" prompt="Check blueprint state: manifest.json version, generated rules in .claude/rules/, feature tracker status. Report any staleness or missing components.">
+```
+
+### 0.2 Consolidate Agent Results
+
+Merge agent findings into a unified context:
+- Git history quality (conventional commits %, recent activity)
+- Documentation coverage (PRDs, ADRs, PRPs counts and status)
+- Blueprint health (version, staleness, missing components)
+- Actionable items (ready PRPs, pending work-orders)
+
+This context informs the action selection below.
 
 ---
 
@@ -56,7 +91,60 @@ cat docs/blueprint/manifest.json | grep '"format_version"'
 
 ---
 
-### 3. Check for Stale/Modified Generated Content
+### 3. Check for Missing Documentation (Derive Phase)
+
+Check if project has git history but missing documentation:
+
+```bash
+# Has git history?
+git rev-list --count HEAD 2>/dev/null || echo 0
+
+# Has PRDs?
+find docs/prds -name "*.md" 2>/dev/null | wc -l
+
+# Has ADRs?
+find docs/adrs -name "*.md" 2>/dev/null | wc -l
+
+# Has derived rules from git?
+cat docs/blueprint/manifest.json | jq -r '.derived_rules.last_derived_at // empty'
+```
+
+**If git history exists (>10 commits) but NO PRDs and NO ADRs**:
+- Report: "Project has git history but no documentation. Derivation recommended."
+- Use AskUserQuestion:
+  ```
+  question: "This project has git history but no PRDs/ADRs. How would you like to derive documentation?"
+  options:
+    - label: "Derive all from git history (Recommended)"
+      description: "Run /blueprint:derive-plans for comprehensive analysis"
+    - label: "Derive PRD only"
+      description: "Run /blueprint:derive-prd from README and docs"
+    - label: "Derive ADRs only"
+      description: "Run /blueprint:derive-adr from codebase analysis"
+    - label: "Skip derivation"
+      description: "I'll create documentation manually"
+  ```
+- **Action based on selection**, then **Exit**
+
+**If git history exists but NO derived rules**:
+- Report: "Git-based rules not yet derived."
+- Use AskUserQuestion:
+  ```
+  question: "Would you like to derive rules from git commit decisions?"
+  options:
+    - label: "Yes, derive rules from git"
+      description: "Run /blueprint:derive-rules to extract decisions from commits"
+    - label: "Skip for now"
+      description: "Continue with other actions"
+  ```
+- **If "Yes"**: Run `/blueprint:derive-rules`, then **Exit**
+- **If "Skip"**: Continue to step 4
+
+**If documentation exists**: Continue to step 4
+
+---
+
+### 4. Check for Stale/Modified Generated Content
 
 Read manifest.json `generated` section and check each generated rule:
 
@@ -97,13 +185,13 @@ done
   ```
 - **If "Review"**: Run `/blueprint-sync`, then **Exit**
 - **If "Promote"**: Ask which file to promote, run `/blueprint-promote [name]`, then **Exit**
-- **If "Skip"**: Continue to step 4
+- **If "Skip"**: Continue to step 5
 
-**If content is current**: Continue to step 4
+**If content is current**: Continue to step 5
 
 ---
 
-### 4. Check for PRDs Without Generated Rules
+### 5. Check for PRDs Without Generated Rules
 
 ```bash
 # Count PRDs
@@ -118,11 +206,11 @@ generated_count=$(cat docs/blueprint/manifest.json | jq '.generated.rules | leng
 - **Action**: Run `/blueprint-generate-rules`
 - **Exit** after generation completes
 
-**If rules exist or no PRDs**: Continue to step 5
+**If rules exist or no PRDs**: Continue to step 6
 
 ---
 
-### 5. Check for Ready PRPs
+### 6. Check for Ready PRPs
 
 ```bash
 # Find PRPs in docs/prps/
@@ -147,13 +235,13 @@ find docs/prps -name "*.md" -type f 2>/dev/null
   - Run `/blueprint-prp-execute {selected-prp}`
   - Feature tracker sync happens automatically within prp-execute (Phase 5)
   - **Exit**
-- **If "Skip"**: Continue to step 6
+- **If "Skip"**: Continue to step 7
 
-**If no PRPs**: Continue to step 6
+**If no PRPs**: Continue to step 7
 
 ---
 
-### 6. Check for Pending Work-Orders
+### 7. Check for Pending Work-Orders
 
 ```bash
 # Find pending work-orders
@@ -182,13 +270,13 @@ find docs/blueprint/work-orders -maxdepth 1 -name "*.md" -type f 2>/dev/null
     - Update feature status based on work-order completion
     - Recalculate statistics
   - **Exit**
-- **If "Skip"**: Continue to step 7
+- **If "Skip"**: Continue to step 8
 
-**If no work-orders**: Continue to step 7
+**If no work-orders**: Continue to step 8
 
 ---
 
-### 7. Check Work Overview for Next Tasks
+### 8. Check Work Overview for Next Tasks
 
 ```bash
 # Read work-overview.md
@@ -232,13 +320,13 @@ Parse the "In Progress" and "Pending" sections:
       description: "Continue to other checks"
   ```
 - **Action based on selection**
-- **Exit** if action taken, otherwise continue to step 8
+- **Exit** if action taken, otherwise continue to step 9
 
-**If no clear tasks**: Continue to step 8
+**If no clear tasks**: Continue to step 9
 
 ---
 
-### 8. Check Feature Tracker (If Enabled)
+### 9. Check Feature Tracker (If Enabled)
 
 ```bash
 # Check if feature tracker exists
@@ -296,13 +384,13 @@ c. **Only prompt if user interaction is beneficial**:
 
 **If completion == 100%**:
 - Report: "🎉 All features complete!"
-- Continue to step 9
+- Continue to step 10
 
-**If no feature tracker**: Continue to step 9
+**If no feature tracker**: Continue to step 10
 
 ---
 
-### 9. No Clear Next Action - Show Status & Options
+### 10. No Clear Next Action - Show Status & Options
 
 When no automatic action is determined, show comprehensive status and options.
 

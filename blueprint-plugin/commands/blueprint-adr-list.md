@@ -22,7 +22,7 @@ ls docs/adrs/*.md 2>/dev/null | head -1
 If no ADRs found:
 ```
 No ADRs found in docs/adrs/
-Run `/blueprint:adr` to generate ADRs from project analysis.
+Run `/blueprint:derive-adr` to generate ADRs from project analysis.
 ```
 
 ## 2. Generate ADR Table
