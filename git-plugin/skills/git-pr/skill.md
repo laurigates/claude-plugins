@@ -9,7 +9,7 @@ description: |
   draft mode, reviewers, and base branch selection. Use when user says "create PR",
   "open pull request", "submit for review", or similar. This skill creates PRs from
   pushed branches - see git-commit for commits and git-push for pushing.
-allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git branch:*), Bash(git remote:*), Bash(git push:*), Bash(git fetch:*), Bash(git rev-list:*), Bash(gh pr:*), Bash(gh issue:*), Bash(gh repo:*), Read, Grep, Glob, TodoWrite
+allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git remote *), Bash(git push *), Bash(git fetch *), Bash(git rev-list *), Bash(gh pr *), Bash(gh issue *), Bash(gh repo *), Read, Grep, Glob, TodoWrite
 ---
 
 # Git PR

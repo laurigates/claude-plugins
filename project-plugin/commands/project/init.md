@@ -3,7 +3,7 @@ model: opus
 created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
-allowed-tools: Write, Bash(mkdir:*), Bash(git init:*), Bash(gh repo create:*), Bash(pwd:*), Bash(git config:*), Bash(which:*), SlashCommand, TodoWrite
+allowed-tools: Write, Bash(mkdir *), Bash(git init *), Bash(gh repo create *), Bash(pwd *), Bash(git config *), Bash(which *), SlashCommand, TodoWrite
 argument-hint: <project-name> [project-type] [--github] [--private]
 description: Base project initialization that other commands can extend for language-specific setup
 ---

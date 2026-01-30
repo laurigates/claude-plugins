@@ -3,7 +3,7 @@ model: opus
 created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
-allowed-tools: Read, Write, Edit, MultiEdit, Bash(git:*), Bash(pytest:*), Bash(npm test:*), Bash(cargo test:*), Bash(go test:*), mcp__github__list_issues, mcp__github__create_issue, mcp__github__create_pull_request, mcp__github__get_issue, TodoWrite
+allowed-tools: Read, Write, Edit, MultiEdit, Bash(git *), Bash(pytest *), Bash(npm test *), Bash(cargo test *), Bash(go test *), mcp__github__list_issues, mcp__github__create_issue, mcp__github__create_pull_request, mcp__github__get_issue, TodoWrite
 argument-hint: [--max-cycles <n>] [--focus <bug|feature|test>]
 description: Automated development loop with issue creation and TDD
 ---

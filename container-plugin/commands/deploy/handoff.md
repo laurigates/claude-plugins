@@ -3,7 +3,7 @@ model: opus
 created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
-allowed-tools: Read, Bash(git:*), mcp__github__get_pull_request, mcp__github__list_issues, TodoWrite
+allowed-tools: Read, Bash(git *), mcp__github__get_pull_request, mcp__github__list_issues, TodoWrite
 argument-hint: [resource-name] [deployment-type]
 description: Generate deployment handoff documentation
 ---

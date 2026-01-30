@@ -38,12 +38,12 @@ Claude Code provides multiple layers of security:
 {
   "permissions": {
     "allow": [
-      "Bash(git status:*)",
-      "Bash(npm run:*)"
+      "Bash(git status *)",
+      "Bash(npm run *)"
     ],
     "deny": [
-      "Bash(rm -rf:*)",
-      "Bash(sudo:*)"
+      "Bash(rm -rf *)",
+      "Bash(sudo *)"
     ]
   }
 }
@@ -54,7 +54,7 @@ Claude Code provides multiple layers of security:
 ### Syntax
 
 ```
-Bash(command:*)
+Bash(command *)
 ```
 
 - `Bash()` - Tool identifier
@@ -65,10 +65,10 @@ Bash(command:*)
 
 | Pattern | Matches | Does NOT Match |
 |---------|---------|----------------|
-| `Bash(git:*)` | `git status`, `git diff HEAD` | `git-lfs pull` |
-| `Bash(npm run:*)` | `npm run test`, `npm run build` | `npm install` |
-| `Bash(gh pr:*)` | `gh pr view 123`, `gh pr create` | `gh issue list` |
-| `Bash(./scripts/:*)` | `./scripts/test.sh`, `./scripts/build.sh` | `/scripts/other.sh` |
+| `Bash(git *)` | `git status`, `git diff HEAD` | `git-lfs pull` |
+| `Bash(npm run *)` | `npm run test`, `npm run build` | `npm install` |
+| `Bash(gh pr *)` | `gh pr view 123`, `gh pr create` | `gh issue list` |
+| `Bash(./scripts/ *)` | `./scripts/test.sh`, `./scripts/build.sh` | `/scripts/other.sh` |
 
 ### Pattern Best Practices
 
@@ -77,11 +77,11 @@ Bash(command:*)
 {
   "permissions": {
     "allow": [
-      "Bash(git status:*)",
-      "Bash(git diff:*)",
-      "Bash(git log:*)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
     ]
   }
 }
@@ -92,10 +92,10 @@ Bash(command:*)
 {
   "permissions": {
     "allow": [
-      "Bash(bun test:*)",
-      "Bash(bun run:*)",
-      "Bash(biome check:*)",
-      "Bash(prettier:*)"
+      "Bash(bun test *)",
+      "Bash(bun run *)",
+      "Bash(biome check *)",
+      "Bash(prettier *)"
     ]
   }
 }
@@ -138,7 +138,7 @@ Then allow the script:
 ```json
 {
   "permissions": {
-    "allow": ["Bash(./scripts/deploy.sh:*)"]
+    "allow": ["Bash(./scripts/deploy.sh *)"]
   }
 }
 ```
@@ -151,12 +151,12 @@ Then allow the script:
 {
   "permissions": {
     "allow": [
-      "Bash(git status:*)",
-      "Bash(git diff:*)",
-      "Bash(git log:*)",
-      "Bash(git branch:*)",
-      "Bash(npm list:*)",
-      "Bash(bun pm ls:*)"
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git branch *)",
+      "Bash(npm list *)",
+      "Bash(bun pm ls *)"
     ]
   }
 }
@@ -168,18 +168,18 @@ Then allow the script:
 {
   "permissions": {
     "allow": [
-      "Bash(git status:*)",
-      "Bash(git diff:*)",
-      "Bash(git log:*)",
-      "Bash(git branch:*)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(git push:*)",
-      "Bash(git pull:*)",
-      "Bash(git fetch:*)",
-      "Bash(git checkout:*)",
-      "Bash(git merge:*)",
-      "Bash(git rebase:*)"
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git branch *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(git pull *)",
+      "Bash(git fetch *)",
+      "Bash(git checkout *)",
+      "Bash(git merge *)",
+      "Bash(git rebase *)"
     ]
   }
 }
@@ -191,10 +191,10 @@ Then allow the script:
 {
   "permissions": {
     "allow": [
-      "Bash(gh pr:*)",
-      "Bash(gh run:*)",
-      "Bash(gh issue:*)",
-      "Bash(gh workflow:*)"
+      "Bash(gh pr *)",
+      "Bash(gh run *)",
+      "Bash(gh issue *)",
+      "Bash(gh workflow *)"
     ]
   }
 }
@@ -206,13 +206,13 @@ Then allow the script:
 {
   "permissions": {
     "allow": [
-      "Bash(bun test:*)",
-      "Bash(npm test:*)",
-      "Bash(vitest:*)",
-      "Bash(jest:*)",
-      "Bash(biome:*)",
-      "Bash(eslint:*)",
-      "Bash(prettier:*)"
+      "Bash(bun test *)",
+      "Bash(npm test *)",
+      "Bash(vitest *)",
+      "Bash(jest *)",
+      "Bash(biome *)",
+      "Bash(eslint *)",
+      "Bash(prettier *)"
     ]
   }
 }
@@ -224,10 +224,10 @@ Then allow the script:
 {
   "permissions": {
     "allow": [
-      "Bash(pre-commit:*)",
-      "Bash(detect-secrets:*)",
-      "Bash(gitleaks:*)",
-      "Bash(trivy:*)"
+      "Bash(pre-commit *)",
+      "Bash(detect-secrets *)",
+      "Bash(gitleaks *)",
+      "Bash(trivy *)"
     ]
   }
 }
@@ -248,9 +248,9 @@ cat > .claude/settings.json << 'EOF'
 {
   "permissions": {
     "allow": [
-      "Bash(git status:*)",
-      "Bash(git diff:*)",
-      "Bash(npm run:*)"
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(npm run *)"
     ]
   }
 }
@@ -270,7 +270,7 @@ cat > .claude/settings.local.json << 'EOF'
 {
   "permissions": {
     "allow": [
-      "Bash(docker:*)"
+      "Bash(docker *)"
     ]
   }
 }
@@ -299,9 +299,9 @@ Settings merge with this priority (highest wins):
 
 | Syntax | Meaning |
 |--------|---------|
-| `Bash(cmd:*)` | Match `cmd` with any arguments |
-| `Bash(cmd arg:*)` | Match `cmd arg` with any following |
-| `Bash(./script.sh:*)` | Match specific script |
+| `Bash(cmd *)` | Match `cmd` with any arguments |
+| `Bash(cmd arg *)` | Match `cmd arg` with any following |
+| `Bash(./script.sh *)` | Match specific script |
 
 ### Deny Patterns
 
@@ -310,9 +310,9 @@ Block specific commands:
 {
   "permissions": {
     "deny": [
-      "Bash(rm -rf:*)",
-      "Bash(sudo:*)",
-      "Bash(chmod 777:*)"
+      "Bash(rm -rf *)",
+      "Bash(sudo *)",
+      "Bash(chmod 777 *)"
     ]
   }
 }

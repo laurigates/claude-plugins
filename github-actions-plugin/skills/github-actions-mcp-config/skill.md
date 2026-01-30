@@ -82,7 +82,7 @@ Expert knowledge for configuring MCP (Model Context Protocol) servers in GitHub 
 ### Allow Specific Bash Commands
 ```yaml
 claude_args: |
-  --allowedTools 'Bash(npm:*)' 'Bash(pytest:*)' 'Bash(cargo:*)'
+  --allowedTools 'Bash(npm *)' 'Bash(pytest *)' 'Bash(cargo *)'
 ```
 
 ### Enable GitHub Actions Access
@@ -91,27 +91,27 @@ permissions:
   actions: read  # Required for CI/CD tools
 
 claude_args: |
-  --allowedTools 'Bash(gh run:*)' 'Bash(gh workflow:*)'
+  --allowedTools 'Bash(gh run *)' 'Bash(gh workflow *)'
 ```
 
 ### Allow Test and Lint Commands
 ```yaml
 claude_args: |
-  --allowedTools 'Bash(npm test:*)' 'Bash(npm run lint:*)' 'Bash(pre-commit:*)'
+  --allowedTools 'Bash(npm test *)' 'Bash(npm run lint *)' 'Bash(pre-commit *)'
 ```
 
 ### Allow Build Commands with Restrictions
 ```yaml
 claude_args: |
-  --allowedTools 'Bash(make:*)' 'Bash(docker build:*)'
-  --disallowedTools 'Bash(docker push:*)' 'Bash(rm -rf:*)'
+  --allowedTools 'Bash(make *)' 'Bash(docker build *)'
+  --disallowedTools 'Bash(docker push *)' 'Bash(rm -rf *)'
 ```
 
 ### Block Dangerous Operations
 ```yaml
 claude_args: |
-  --allowedTools 'Bash(docker build:*)'
-  --disallowedTools 'Bash(docker push:*)' 'Bash(rm -rf:*)' 'Bash(curl:*)' 'Bash(wget:*)'
+  --allowedTools 'Bash(docker build *)'
+  --disallowedTools 'Bash(docker push *)' 'Bash(rm -rf *)' 'Bash(curl *)' 'Bash(wget *)'
 ```
 
 ## Tool Permission Reference
@@ -125,23 +125,23 @@ claude_args: |
 
 | Pattern | Purpose | Example |
 |---------|---------|---------|
-| `'Bash(npm:*)'` | All npm commands | `npm test`, `npm run build` |
-| `'Bash(pytest:*)'` | Python testing | `pytest`, `pytest --cov` |
-| `'Bash(cargo:*)'` | Rust commands | `cargo test`, `cargo build` |
-| `'Bash(go test:*)'` | Go testing | `go test ./...` |
-| `'Bash(git:*)'` | All git commands | `git status`, `git commit` |
-| `'Bash(pre-commit:*)'` | Pre-commit hooks | `pre-commit run --all-files` |
-| `'Bash(actionlint:*)'` | Action linting | `actionlint .github/workflows/` |
-| `'Bash(gh:*)'` | GitHub CLI | `gh pr create`, `gh issue list` |
+| `'Bash(npm *)'` | All npm commands | `npm test`, `npm run build` |
+| `'Bash(pytest *)'` | Python testing | `pytest`, `pytest --cov` |
+| `'Bash(cargo *)'` | Rust commands | `cargo test`, `cargo build` |
+| `'Bash(go test *)'` | Go testing | `go test ./...` |
+| `'Bash(git *)'` | All git commands | `git status`, `git commit` |
+| `'Bash(pre-commit *)'` | Pre-commit hooks | `pre-commit run --all-files` |
+| `'Bash(actionlint *)'` | Action linting | `actionlint .github/workflows/` |
+| `'Bash(gh *)'` | GitHub CLI | `gh pr create`, `gh issue list` |
 
 ### Build and Deployment Tools
 
 | Pattern | Purpose | Use Case |
 |---------|---------|----------|
-| `'Bash(make:*)'` | Make commands | Build automation |
-| `'Bash(docker build:*)'` | Docker build only | Container creation |
-| `'Bash(kubectl:*)'` | Kubernetes CLI | K8s operations |
-| `'Bash(terraform:*)'` | Infrastructure as Code | Terraform operations |
+| `'Bash(make *)'` | Make commands | Build automation |
+| `'Bash(docker build *)'` | Docker build only | Container creation |
+| `'Bash(kubectl *)'` | Kubernetes CLI | K8s operations |
+| `'Bash(terraform *)'` | Infrastructure as Code | Terraform operations |
 
 ## MCP Server Best Practices
 
@@ -184,7 +184,7 @@ claude_args: |
     anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
     claude_args: |
       --max-turns 20
-      --allowedTools 'Bash(npm:*)' 'Bash(git:*)'
+      --allowedTools 'Bash(npm *)' 'Bash(git *)'
 ```
 
 ### Production Environment
@@ -195,8 +195,8 @@ claude_args: |
     anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
     claude_args: |
       --max-turns 10
-      --allowedTools 'Bash(npm test:*)' 'Bash(npm run lint:*)'
-      --disallowedTools 'Bash(npm publish:*)'
+      --allowedTools 'Bash(npm test *)' 'Bash(npm run lint *)'
+      --disallowedTools 'Bash(npm publish *)'
 ```
 
 ## Multi-Repository Setup
@@ -248,10 +248,10 @@ cd mcp-server && npm install && npm test
 ```yaml
 # Enable specific tools
 claude_args: |
-  --allowedTools 'Bash(npm:*)' 'Bash(git:*)'
+  --allowedTools 'Bash(npm *)' 'Bash(git *)'
 
 # Check tool syntax
-# Correct: 'Bash(npm:*)'
+# Correct: 'Bash(npm *)'
 # Wrong:   'Bash(npm *)'
 
 # Verify additional_permissions
@@ -278,8 +278,8 @@ gh run list --workflow=claude.yml
 | Option | Purpose | Example |
 |--------|---------|---------|
 | `--mcp-config` | Configure MCP servers | `--mcp-config '{...}'` |
-| `--allowedTools` | Permit specific tools | `'Bash(npm:*)'` |
-| `--disallowedTools` | Block specific tools | `'Bash(rm -rf:*)'` |
+| `--allowedTools` | Permit specific tools | `'Bash(npm *)'` |
+| `--disallowedTools` | Block specific tools | `'Bash(rm -rf *)'` |
 | `--max-turns` | Limit conversation length | `--max-turns 10` |
 
 ### Required Secrets

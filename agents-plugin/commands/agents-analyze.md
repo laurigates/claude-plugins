@@ -2,7 +2,7 @@
 model: opus
 description: Analyze all plugins for sub-agent opportunities. Identifies skills with verbose output, gaps in agent coverage, and model selection improvements.
 args: "[--focus <plugin-name>]"
-allowed-tools: Glob, Grep, Read, Bash(ls:*), Bash(wc:*), TodoWrite
+allowed-tools: Glob, Grep, Read, Bash(ls *), Bash(wc *), TodoWrite
 argument-hint: "analyze all plugins or --focus <plugin-name>"
 created: 2026-01-24
 modified: 2026-01-24
