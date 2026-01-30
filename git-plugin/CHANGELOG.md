@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.8.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.7.0...git-plugin-v2.8.0) (2026-01-30)
+
+
+### Features
+
+* **git-plugin:** add git-branch-naming skill ([#244](https://github.com/laurigates/claude-plugins/issues/244)) ([c9e60cc](https://github.com/laurigates/claude-plugins/commit/c9e60ccba19099545064a18ec85c37e2950cd375))
+
 ## [2.7.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.6.0...git-plugin-v2.7.0) (2026-01-24)
 
 
