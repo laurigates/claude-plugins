@@ -1,8 +1,8 @@
 ---
 model: opus
 created: 2026-01-23
-modified: 2026-01-23
-reviewed: 2026-01-23
+modified: 2026-01-30
+reviewed: 2026-01-30
 description: Configure .claude/settings.json and GitHub Actions workflows to use the laurigates/claude-plugins marketplace
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash(mkdir *), AskUserQuestion, TodoWrite
 argument-hint: "[--check-only] [--fix] [--plugins <plugin1,plugin2,...>]"
@@ -28,21 +28,23 @@ Configure a project to use the `laurigates/claude-plugins` Claude Code plugin ma
 
 ### Available Plugins
 
-| Plugin | Category | Description |
-|--------|----------|-------------|
-| `git-plugin` | Version Control | Commits, branches, PRs, repository management |
-| `configure-plugin` | Infrastructure | Pre-commit, CI/CD, Docker, testing configuration |
-| `testing-plugin` | Testing | Test execution, TDD workflow, coverage |
-| `code-quality-plugin` | Quality | Code review, refactoring, linting |
-| `typescript-plugin` | Language | TypeScript, ESLint, Biome |
-| `python-plugin` | Language | uv, ruff, pytest, packaging |
-| `tools-plugin` | Utilities | fd, rg, jq, shell utilities |
-| `project-plugin` | Development | Project initialization and management |
-| `documentation-plugin` | Documentation | API docs, README generation |
-| `github-actions-plugin` | CI/CD | GitHub Actions workflows |
-| `container-plugin` | Infrastructure | Docker, registry, Skaffold |
-| `agent-patterns-plugin` | AI | Multi-agent coordination |
-| `blueprint-plugin` | Development | PRD/PRP workflow |
+The plugin list is maintained in the marketplace repository. To see all available plugins:
+
+```bash
+# List all plugins from marketplace
+curl -s https://raw.githubusercontent.com/laurigates/claude-plugins/main/.claude-plugin/marketplace.json | jq -r '.plugins[].name'
+
+# Or locally if you have the repo
+jq -r '.plugins[] | "\(.name) - \(.description)"' .claude-plugin/marketplace.json
+```
+
+**Common plugin categories:**
+- **Language**: `typescript-plugin`, `python-plugin`, `rust-plugin`
+- **Infrastructure**: `configure-plugin`, `container-plugin`, `kubernetes-plugin`, `terraform-plugin`
+- **Quality**: `code-quality-plugin`, `testing-plugin`
+- **Workflows**: `git-plugin`, `github-actions-plugin`, `blueprint-plugin`
+- **AI/Agents**: `agent-patterns-plugin`, `agents-plugin`, `langchain-plugin`
+- **Utilities**: `tools-plugin`, `documentation-plugin`, `hooks-plugin`
 
 ## Workflow
 
@@ -75,7 +77,10 @@ Create or merge into `.claude/settings.json` the following structure:
       "Bash(gh run *)",
       "Bash(gh issue *)",
       "Bash(pre-commit *)",
-      "Bash(detect-secrets *)"
+      "Bash(detect-secrets *)",
+      "mcp__context7",
+      "mcp__sequential-thinking",
+      "mcp__serena"
     ]
   }
 }
