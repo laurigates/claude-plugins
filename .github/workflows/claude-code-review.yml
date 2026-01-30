@@ -32,7 +32,7 @@ jobs:
 
             IMPORTANT: Use built-in tools (Read, Grep, Glob) for file exploration.
             Do NOT use Bash for find/grep operations - use the dedicated tools instead.
-          claude_args: "--max-turns 10"
+          claude_args: "--max-turns 20"
           additional_permissions: |
             Read
             Grep
