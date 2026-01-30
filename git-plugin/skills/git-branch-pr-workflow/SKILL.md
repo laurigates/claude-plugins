@@ -1,15 +1,16 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-01-24
+modified: 2026-01-30
 reviewed: 2025-12-16
 name: git-branch-pr-workflow
 description: |
   Branch management, pull request workflows, and GitHub integration. Main-branch
   development pattern (push main to remote feature branches), modern Git commands
-  (switch, restore), branch naming conventions, linear history, and GitHub MCP tools.
-  Use when user mentions creating branches, opening PRs, git switch, git restore,
-  feature branches, pull requests, or GitHub PR workflows.
+  (switch, restore), and GitHub MCP tools. Use when user mentions creating branches,
+  opening PRs, git switch, git restore, feature branches, pull requests, or GitHub
+  PR workflows. For naming conventions see git-branch-naming, for rebase patterns
+  see git-rebase-patterns.
 allowed-tools: Bash, Read, mcp__github__create_pull_request, mcp__github__list_pull_requests, mcp__github__update_pull_request
 ---
 
@@ -21,8 +22,8 @@ Expert guidance for branch management, pull request workflows, and GitHub integr
 
 - **Main-Branch Development**: Work on main locally, push to remote feature branches for PRs
 - **Modern Git Commands**: Use `git switch` and `git restore` instead of checkout
-- **Branch Naming**: Structured conventions (feat/, fix/, chore/, hotfix/)
-- **Linear History**: Rebase-first workflow, squash merging, clean history
+- **Branch Naming**: See [git-branch-naming](../git-branch-naming/SKILL.md) skill
+- **Linear History**: Rebase-first workflow, squash merging - see [git-rebase-patterns](../git-rebase-patterns/SKILL.md) for advanced patterns
 - **GitHub MCP Integration**: Use mcp__github__* tools instead of gh CLI
 
 ## Main-Branch Development (Preferred)
@@ -125,42 +126,11 @@ git restore --source=main --staged .    # vs git reset main .
 | `git reset HEAD file`         | `git restore --staged file`        | Unstage file        |
 | `git checkout HEAD~1 -- file` | `git restore --source=HEAD~1 file` | Restore from commit |
 
-## Branch Naming Conventions
+## Branch Naming
 
-### Structured Branch Names
+For comprehensive branch naming conventions including type prefixes, issue linking, and validation patterns, see [git-branch-naming](../git-branch-naming/SKILL.md).
 
-```bash
-# Feature development
-git switch -c feat/payment-integration
-git switch -c feat/user-dashboard
-git switch -c feat/api-v2
-
-# Bug fixes
-git switch -c fix/login-validation
-git switch -c fix/memory-leak-auth
-git switch -c fix/broken-tests
-
-# Maintenance and refactoring
-git switch -c chore/update-dependencies
-git switch -c chore/cleanup-tests
-git switch -c refactor/auth-service
-
-# Hotfixes (for production)
-git switch -c hotfix/security-patch
-git switch -c hotfix/critical-bug-fix
-```
-
-### Branch Naming Format
-
-`{type}/{description}-{YYYYMMDD}` (date optional but recommended for clarity)
-
-**Types:**
-- `feat/` - New features
-- `fix/` - Bug fixes
-- `chore/` - Maintenance, dependencies, linter fixes
-- `docs/` - Documentation changes
-- `refactor/` - Code restructuring
-- `hotfix/` - Emergency production fixes
+**Quick reference:** `{type}/{issue}-{description}` (e.g., `feat/123-user-auth`)
 
 ## Linear History Workflow
 
@@ -235,160 +205,7 @@ reword j1k2l3m implement JWT tokens
 
 ## Advanced Rebase Patterns
 
-### Reapply Cherry-Picks (`--reapply-cherry-picks`)
-
-**Problem:** After merging trunk into your feature branch multiple times (via `git merge main`), you want to rebase onto fresh trunk. Default rebase behavior may create conflicts or duplicate commits.
-
-**Solution:** `--reapply-cherry-picks` detects commits that were already applied via merge and drops the merge commits, keeping only your original changes.
-
-```bash
-# Scenario: You merged main into your branch a few times
-git log --oneline
-# abc123 Merge branch 'main' into feat/auth
-# def456 feat: add login endpoint
-# ghi789 Merge branch 'main' into feat/auth
-# jkl012 feat: add user validation
-
-# Rebase onto fresh main, dropping merge commits
-git fetch origin
-git rebase --reapply-cherry-picks origin/main
-
-# Result: Clean linear history with just your feature commits
-# jkl012 feat: add user validation
-# def456 feat: add login endpoint
-```
-
-**When to use:**
-- After merging trunk into your branch to resolve conflicts
-- Converting a merge-heavy branch to linear history
-- Before creating a PR to clean up integration merges
-
-### Update Refs (`--update-refs`)
-
-**Problem:** With stacked PRs (PR chains), rebasing one branch requires manually rebasing all dependent branches. Moving commits between branches in the stack is painful.
-
-**Solution:** `--update-refs` automatically updates all branches in the chain when you rebase. Combined with interactive rebase, you can reorganize commits across your entire PR stack in one operation.
-
-```bash
-# Scenario: Stacked PRs
-# main <- feat/auth-base <- feat/auth-oauth <- feat/auth-refresh
-
-# Rebase the entire stack onto updated main
-git switch feat/auth-refresh
-git rebase --update-refs main
-
-# All three branches (auth-base, auth-oauth, auth-refresh) are updated
-# No manual rebasing of each branch needed
-
-# Interactive rebase to move commits between branches
-git rebase -i --update-refs main
-
-# In the editor, move commit lines around to reorganize the stack:
-# pick abc123 feat: add auth base      # Will update feat/auth-base
-# pick def456 feat: add OAuth support  # Will update feat/auth-oauth
-# pick ghi789 feat: add token refresh  # Will update feat/auth-refresh
-```
-
-**Stacked PR workflow with update-refs:**
-
-```bash
-# Create PR stack
-git switch main
-git pull origin main
-
-# First PR: Base authentication
-git switch -c feat/auth-base
-# ... make commits ...
-git push -u origin feat/auth-base
-
-# Second PR: OAuth (depends on first)
-git switch -c feat/auth-oauth
-# ... make commits ...
-git push -u origin feat/auth-oauth
-
-# Third PR: Token refresh (depends on second)
-git switch -c feat/auth-refresh
-# ... make commits ...
-git push -u origin feat/auth-refresh
-
-# Main updated - rebase entire stack
-git fetch origin
-git switch feat/auth-refresh
-git rebase --update-refs origin/main
-
-# All branches rebased in one command
-git push --force-with-lease origin feat/auth-base
-git push --force-with-lease origin feat/auth-oauth
-git push --force-with-lease origin feat/auth-refresh
-```
-
-**When to use:**
-- Managing stacked PRs (PR chains with dependencies)
-- Reorganizing commits across multiple branches
-- Keeping branch hierarchies in sync during rebase
-
-### Explicit Base Control (`--onto`)
-
-**Problem:** Git's automatic base detection can be ambiguous or incorrect. You want precise control over where commits are rebased.
-
-**Solution:** `--onto` explicitly specifies the new base, bypassing Git's base detection heuristics.
-
-```bash
-# Syntax: git rebase --onto <newbase> <upstream> <branch>
-# Translates to: Take commits from <upstream>..<branch> and put them onto <newbase>
-
-# Common pattern: Rebase last N commits onto a specific branch
-git rebase --onto origin/develop HEAD~5
-# Takes your last 5 commits and puts them on top of origin/develop
-# Equivalent to: git rebase --onto origin/develop HEAD~5 HEAD
-
-# Example: Move feature commits from old base to new base
-# Scenario: You branched from develop, but should have branched from main
-git switch feat/payment
-git rebase --onto main develop feat/payment
-# Takes commits from develop..feat/payment and moves them onto main
-
-# Example: Rebase specific commit range
-# Move commits from abc123 to def456 onto main
-git rebase --onto main abc123^ def456
-# The ^ includes abc123 in the range
-
-# Example: Extract commits to new branch
-# You have commits on feat/auth that should be on separate branch
-git switch -c feat/auth-ui feat/auth  # Create new branch
-git rebase --onto main feat/auth~3 feat/auth-ui
-# Takes last 3 commits from feat/auth and puts them on main
-```
-
-**Common --onto patterns:**
-
-| Pattern | Command | Use Case |
-|---------|---------|----------|
-| Last N commits on trunk | `git rebase --onto origin/main HEAD~N` | Rebase recent work onto updated trunk |
-| Change branch base | `git rebase --onto <new-base> <old-base>` | Fix branch created from wrong base |
-| Extract commit range | `git rebase --onto <target> <start>^ <end>` | Move specific commits to new location |
-| Interactive with onto | `git rebase -i --onto <base> HEAD~N` | Clean up and rebase last N commits |
-
-**When to use:**
-- When you don't trust Git's automatic base detection
-- Rebasing a specific number of recent commits (`HEAD~N` pattern)
-- Changing the base of a branch after it was created
-- Extracting a subset of commits to a new location
-
-### Combining Advanced Flags
-
-These flags work together for powerful workflows:
-
-```bash
-# Rebase stacked PRs with cherry-pick detection
-git rebase --reapply-cherry-picks --update-refs origin/main
-
-# Interactive rebase with explicit base and branch updates
-git rebase -i --onto origin/main HEAD~10 --update-refs
-
-# Clean up merged history and update dependent branches
-git rebase --reapply-cherry-picks --update-refs --onto origin/develop origin/main
-```
+For advanced rebase techniques including `--reapply-cherry-picks`, `--update-refs`, `--onto`, stacked PR workflows, and combining flags, see [git-rebase-patterns](../git-rebase-patterns/SKILL.md).
 
 ## GitHub MCP Integration
 
