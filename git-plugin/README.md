@@ -13,6 +13,7 @@ This plugin provides comprehensive Git workflow automation including conventiona
 | `/git:commit` | Complete workflow from changes to PR - auto-detect issues, create logical commits with proper linkage, push, optionally create PR |
 | `/git:issue` | Process GitHub issues with interactive selection, conflict detection, and parallel work support |
 | `/git:fix-pr` | Analyze and fix failing PR checks |
+| `/git:pr-feedback` | Review PR workflow results and comments, address substantive feedback from reviewers |
 | `/git:maintain` | Repository maintenance and cleanup (prune, gc, verify, branches, stash) |
 | `/git:derive-docs` | Analyze git history to derive undocumented rules, PRDs, ADRs, and PRPs |
 
@@ -92,6 +93,16 @@ Analyzes issues for conflicts and dependencies, implements fixes with TDD workfl
 ```
 
 Analyzes PR #456 check failures and attempts automatic fixes.
+
+### Address PR Feedback
+
+```bash
+/git:pr-feedback              # Use current branch's PR
+/git:pr-feedback 789          # Review PR #789 feedback
+/git:pr-feedback 789 --push   # Address feedback and push fixes
+```
+
+Reviews PR workflow results and reviewer comments, categorizes feedback (blocking, substantive, suggestions), and systematically addresses actionable items.
 
 ### Derive Documentation from History
 

@@ -13,6 +13,8 @@
     "commits",
     "branches",
     "pull-requests",
+    "pr-feedback",
+    "code-review",
     "issues",
     "auto-close",
     "issue-detection",
