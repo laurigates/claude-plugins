@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.9.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.8.0...git-plugin-v2.9.0) (2026-01-30)
+
+
+### Features
+
+* **git-plugin:** add github-issue-writing and github-pr-title skills ([#246](https://github.com/laurigates/claude-plugins/issues/246)) ([9590acb](https://github.com/laurigates/claude-plugins/commit/9590acb7c36819c5735a7cdbf974617627594e94))
+
 ## [2.8.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.7.0...git-plugin-v2.8.0) (2026-01-30)
 
 

@@ -1,6 +1,6 @@
 {
   "name": "git-plugin",
-  "version": "2.8.0",
+  "version": "2.9.0",
   "description": "Git workflows - commits, branches, PRs, issue processing, auto-close detection, and repository management",
   "author": {
     "name": "Lauri Gates"
@@ -13,9 +13,7 @@
     "commits",
     "branches",
     "pull-requests",
-    "pr-titles",
     "issues",
-    "issue-writing",
     "auto-close",
     "issue-detection",
     "issue-linking",
