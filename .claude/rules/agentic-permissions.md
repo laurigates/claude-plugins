@@ -1,7 +1,7 @@
 ---
 created: 2026-01-16
-modified: 2026-01-20
-reviewed: 2026-01-20
+modified: 2026-01-30
+reviewed: 2026-01-30
 ---
 
 # Agentic Permissions
@@ -13,21 +13,21 @@ Commands and skills should use granular `allowed-tools` permissions to enable se
 ### Frontmatter Format
 
 ```yaml
-allowed-tools: Bash(git status:*), Bash(gh pr:*), Read, TodoWrite
+allowed-tools: Bash(git status *), Bash(gh pr *), Read, TodoWrite
 ```
 
-- Uses **colon separator** between command and pattern: `Bash(command:*)`
-- **Prefix matching**: `Bash(git diff:*)` matches `git diff`, `git diff --cached`, `git diff --stat`
+- Uses **space separator** between command and wildcard: `Bash(command *)`
+- **Prefix matching**: `Bash(git diff *)` matches `git diff`, `git diff --cached`, `git diff --stat`
 - Comma-separated list of tool permissions
 
 ### Pattern Examples
 
 | Pattern | Matches |
 |---------|---------|
-| `Bash(git status:*)` | `git status`, `git status --porcelain`, `git status -s` |
-| `Bash(gh pr:*)` | `gh pr view`, `gh pr checks`, `gh pr list --json` |
-| `Bash(gh run:*)` | `gh run view`, `gh run list`, `gh run view --log-failed` |
-| `Bash(npm run:*)` | `npm run test`, `npm run build`, `npm run lint` |
+| `Bash(git status *)` | `git status`, `git status --porcelain`, `git status -s` |
+| `Bash(gh pr *)` | `gh pr view`, `gh pr checks`, `gh pr list --json` |
+| `Bash(gh run *)` | `gh run view`, `gh run list`, `gh run view --log-failed` |
+| `Bash(npm run *)` | `npm run test`, `npm run build`, `npm run lint` |
 
 ## Shell Operator Protections
 
@@ -51,14 +51,14 @@ These operators are blocked by default when matched against permission patterns:
 
 When a Bash command contains shell operators:
 1. The entire command is evaluated, not just the prefix
-2. Permission patterns like `Bash(git:*)` won't match `git status && rm -rf`
+2. Permission patterns like `Bash(git *)` won't match `git status && rm -rf`
 3. Users see a clear warning about the blocked operator
 
 ### Safe Patterns
 
 ```yaml
 # These are safe - single commands only
-allowed-tools: Bash(git status:*), Bash(npm test:*), Bash(bun run:*)
+allowed-tools: Bash(git status *), Bash(npm test *), Bash(bun run *)
 ```
 
 ### Bypass (Not Recommended)
@@ -74,7 +74,7 @@ npm test && npm run build && npm run deploy
 
 Then grant permission to the script:
 ```yaml
-allowed-tools: Bash(./scripts/safe-deploy.sh:*)
+allowed-tools: Bash(./scripts/safe-deploy.sh *)
 ```
 
 ## Design Principles
@@ -90,7 +90,7 @@ allowed-tools: Bash, Read, Write
 
 **Prefer:**
 ```yaml
-allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git add:*), Read
+allowed-tools: Bash(git status *), Bash(git diff *), Bash(git add *), Read
 ```
 
 ### 2. Principle of Least Privilege
@@ -99,9 +99,9 @@ Only grant permissions needed for the command's purpose.
 
 | Command Purpose | Appropriate Permissions |
 |-----------------|------------------------|
-| Read-only diagnostics | `Bash(git status:*), Bash(gh pr view:*), Read` |
-| Commit workflow | Above + `Bash(git add:*), Bash(git commit:*)` |
-| PR workflow | Above + `Bash(git push:*), Bash(gh pr create:*)` |
+| Read-only diagnostics | `Bash(git status *), Bash(gh pr view *), Read` |
+| Commit workflow | Above + `Bash(git add *), Bash(git commit *)` |
+| PR workflow | Above + `Bash(git push *), Bash(gh pr create *)` |
 
 ### 3. Deterministic Execution
 
@@ -115,31 +115,31 @@ Commands should run the same way every time. This means:
 ### Git Read-Only
 
 ```yaml
-allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git branch:*), Bash(git remote:*), Read, Grep, Glob
+allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git remote *), Read, Grep, Glob
 ```
 
 ### Git Read-Write
 
 ```yaml
-allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git branch:*), Bash(git add:*), Bash(git commit:*), Bash(git restore:*), Read, Edit, Grep, Glob, TodoWrite
+allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git add *), Bash(git commit *), Bash(git restore *), Read, Edit, Grep, Glob, TodoWrite
 ```
 
 ### Git + GitHub CLI
 
 ```yaml
-allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git add:*), Bash(git commit:*), Bash(git push:*), Bash(gh pr:*), Bash(gh run:*), Bash(gh issue:*), Read, Edit, Grep, Glob, TodoWrite
+allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(gh pr *), Bash(gh run *), Bash(gh issue *), Read, Edit, Grep, Glob, TodoWrite
 ```
 
 ### CI/CD Diagnostics
 
 ```yaml
-allowed-tools: Bash(gh pr checks:*), Bash(gh pr view:*), Bash(gh run view:*), Bash(gh run list:*), Bash(git status:*), Bash(git diff:*), Bash(git log:*), Read, Grep, Glob, TodoWrite
+allowed-tools: Bash(gh pr checks *), Bash(gh pr view *), Bash(gh run view *), Bash(gh run list *), Bash(git status *), Bash(git diff *), Bash(git log *), Read, Grep, Glob, TodoWrite
 ```
 
 ### Security Checks
 
 ```yaml
-allowed-tools: Bash(detect-secrets:*), Bash(pre-commit:*), Bash(git status:*), Read, Grep, Glob, TodoWrite
+allowed-tools: Bash(detect-secrets *), Bash(pre-commit *), Bash(git status *), Read, Grep, Glob, TodoWrite
 ```
 
 ## Machine-Readable Output
@@ -173,19 +173,19 @@ For projects using plugins with these patterns, recommend adding to `.claude/set
 {
   "permissions": {
     "allow": [
-      "Bash(gh pr:*)",
-      "Bash(gh run:*)",
-      "Bash(gh issue:*)",
-      "Bash(git status:*)",
-      "Bash(git diff:*)",
-      "Bash(git log:*)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(git push:*)",
-      "Bash(git branch:*)",
-      "Bash(git remote:*)",
-      "Bash(pre-commit:*)",
-      "Bash(detect-secrets:*)"
+      "Bash(gh pr *)",
+      "Bash(gh run *)",
+      "Bash(gh issue *)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(git branch *)",
+      "Bash(git remote *)",
+      "Bash(pre-commit *)",
+      "Bash(detect-secrets *)"
     ]
   }
 }
@@ -207,7 +207,7 @@ Always include error fallback (`2>/dev/null || echo "..."`) to prevent context f
 
 ## Checklist for New Commands
 
-- [ ] Uses granular `Bash(command:*)` patterns instead of broad `Bash`
+- [ ] Uses granular `Bash(command *)` patterns instead of broad `Bash`
 - [ ] Context commands use JSON/porcelain output
 - [ ] Context commands have error fallbacks
 - [ ] Only necessary permissions are granted

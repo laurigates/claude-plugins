@@ -39,11 +39,11 @@ jobs:
             Glob
             Task
             TodoWrite
-            Bash(git status:*)
-            Bash(git diff:*)
-            Bash(git log:*)
-            Bash(git show:*)
-            Bash(gh pr:*)
+            Bash(git status *)
+            Bash(git diff *)
+            Bash(git log *)
+            Bash(git show *)
+            Bash(gh pr *)
           plugin_marketplaces: |
             https://github.com/laurigates/claude-plugins.git
           plugins: |

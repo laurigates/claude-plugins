@@ -2,7 +2,7 @@
 model: haiku
 name: gh-workflow-monitoring
 description: Monitor GitHub Actions workflow runs using blocking watch commands instead of polling with timeouts.
-allowed-tools: Bash(gh run:*), Bash(gh workflow:*), Bash(gh pr:*), Read
+allowed-tools: Bash(gh run *), Bash(gh workflow *), Bash(gh pr *), Read
 created: 2025-01-16
 modified: 2025-01-16
 reviewed: 2025-01-16

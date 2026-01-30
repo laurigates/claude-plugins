@@ -9,8 +9,8 @@ description: |
   Detects missing documentation from commit patterns: conventions that became rules,
   features built without requirements, architecture decisions made implicitly, and
   plan refinements visible only in commit evolution.
-allowed-tools: Bash(git log:*), Bash(git shortlog:*), Bash(git diff:*), Bash(git branch:*),
-               Bash(git show:*), Bash(git rev-list:*), Bash(git diff-tree:*),
+allowed-tools: Bash(git log *), Bash(git shortlog *), Bash(git diff *), Bash(git branch *),
+               Bash(git show *), Bash(git rev-list *), Bash(git diff-tree *),
                Read, Grep, Glob, TodoWrite
 ---
 
