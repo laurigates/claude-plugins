@@ -1,13 +1,29 @@
 {
   "name": "kubernetes-plugin",
   "version": "1.1.1",
-  "description": "Kubernetes and Helm operations - deployments, charts, releases",
+  "description": "Kubernetes and Helm operations - deployments, charts, releases, diagnostics",
   "keywords": [
     "kubernetes",
     "helm",
     "k8s",
     "deployments",
     "charts",
-    "argocd"
-  ]
+    "argocd",
+    "diagnostics",
+    "kubectl-context"
+  ],
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/validate-kubectl-context.sh",
+            "timeout": 3000
+          }
+        ]
+      }
+    ]
+  }
 }

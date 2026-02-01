@@ -13,10 +13,7 @@
     "best-practices",
     "workflow",
     "anti-patterns",
-    "tooling",
-    "kubernetes",
-    "kubectl",
-    "helm"
+    "tooling"
   ],
   "hooks": {
     "PreToolUse": [
@@ -27,11 +24,6 @@
             "type": "command",
             "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/bash-antipatterns.sh",
             "timeout": 5000
-          },
-          {
-            "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/validate-kubectl-context.sh",
-            "timeout": 3000
           }
         ]
       }
