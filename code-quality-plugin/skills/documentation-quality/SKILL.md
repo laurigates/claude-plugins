@@ -2,7 +2,7 @@
 model: haiku
 name: Documentation Quality Analysis
 description: Analyze and validate documentation quality for PRDs, ADRs, PRPs, CLAUDE.md, and .claude/rules/ to ensure standards compliance and freshness
-allowed-tools: Bash, Read, Grep, Glob, TodoWrite
+allowed-tools: Bash(markdownlint *), Bash(vale *), Read, Grep, Glob, TodoWrite
 created: 2026-01-08
 modified: 2026-01-08
 reviewed: 2026-01-08

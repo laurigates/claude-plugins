@@ -8,7 +8,7 @@ description: |
   Advanced pytest patterns including fixtures, markers, parametrization, and parallel execution.
   Use when implementing test infrastructure, organizing test suites, writing fixtures,
   or running tests with coverage. Covers pytest-cov, pytest-asyncio, pytest-xdist, pytest-mock.
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Bash(pytest *), Bash(python *), Bash(uv run *), Read, Grep, Glob
 ---
 
 # Advanced Pytest Patterns

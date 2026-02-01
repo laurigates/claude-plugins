@@ -5,7 +5,7 @@ modified: 2026-01-21
 reviewed: 2025-12-16
 name: rg Code Search
 description: Fast code search using ripgrep (rg) with smart defaults, regex patterns, and file filtering. Use when searching for text patterns, code snippets, or performing multi-file code analysis.
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Bash(rg *), Read, Grep, Glob
 ---
 
 # rg Code Search

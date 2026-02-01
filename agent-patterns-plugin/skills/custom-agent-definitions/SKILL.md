@@ -6,7 +6,7 @@ description: |
   agent field specifications, and disallowedTools restrictions. Use when
   creating custom agent types, configuring agent isolation, or restricting
   agent capabilities.
-allowed-tools: Bash, Read, Write, Edit, Glob, Grep, TodoWrite
+allowed-tools: Bash(cat *), Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-01-20
 modified: 2026-01-20
 reviewed: 2026-01-20

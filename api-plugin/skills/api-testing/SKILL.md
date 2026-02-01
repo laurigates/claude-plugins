@@ -9,7 +9,7 @@ description: |
   REST APIs, GraphQL, request/response validation, authentication, and error handling.
   Use when user mentions API testing, Supertest, httpx, REST testing, endpoint testing,
   HTTP response validation, or testing API routes.
-allowed-tools: Bash, Read, Edit, Write, Grep, Glob, TodoWrite
+allowed-tools: Bash(curl *), Bash(http *), Bash(jq *), Read, Edit, Write, Grep, Glob, TodoWrite
 ---
 
 # API Testing

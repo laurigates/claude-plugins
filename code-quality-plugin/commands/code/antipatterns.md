@@ -4,7 +4,7 @@ created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
 description: Analyze codebase for anti-patterns, code smells, and quality issues using ast-grep
-allowed-tools: Read, Bash, Glob, Grep, TodoWrite, Task
+allowed-tools: Read, Bash(sg *), Bash(rg *), Glob, Grep, TodoWrite, Task
 argument-hint: "[PATH] [--focus <category>] [--severity <level>]"
 ---
 

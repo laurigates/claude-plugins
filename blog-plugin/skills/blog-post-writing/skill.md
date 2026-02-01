@@ -5,7 +5,7 @@ description: |
   Consistent style guide for writing blog posts about projects and technical work.
   Supports quick updates, detailed write-ups, retrospectives, and tutorials.
   Designed for low-friction entry and easy scanning.
-allowed-tools: Read, Write, Edit, Grep, Glob, Bash, TodoWrite
+allowed-tools: Read, Write, Edit, Grep, Glob, Bash(hugo *), Bash(date *), TodoWrite
 created: 2026-01-10
 modified: 2026-01-10
 reviewed: 2026-01-10

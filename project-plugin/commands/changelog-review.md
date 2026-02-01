@@ -2,7 +2,7 @@
 model: opus
 description: Review Claude Code changelog for changes impacting plugins
 args: [--full] [--since <version>] [--update]
-allowed-tools: Bash, Read, Write, Edit, Glob, Grep, WebFetch, TodoWrite
+allowed-tools: Bash(git log *), Bash(git diff *), Read, Write, Edit, Glob, Grep, WebFetch, TodoWrite
 argument-hint: --full | --since 2.0.0 | --update
 created: 2026-01-14
 modified: 2026-01-14
