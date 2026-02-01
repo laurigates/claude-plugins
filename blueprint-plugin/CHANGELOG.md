@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.10.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.10.0...blueprint-plugin-v3.10.1) (2026-02-01)
+
+
+### Code Refactoring
+
+* **blueprint-plugin:** remove deprecated generate-commands ([#292](https://github.com/laurigates/claude-plugins/issues/292)) ([438cb35](https://github.com/laurigates/claude-plugins/commit/438cb353127522bc1c96c499d4fcabbb71934969))
+
 ## [3.10.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.9.0...blueprint-plugin-v3.10.0) (2026-01-30)
 
 
