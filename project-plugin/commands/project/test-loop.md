@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-17
+modified: 2026-02-01
 reviewed: 2025-12-17
 description: "Run test → fix → refactor loop with TDD workflow"
 allowed_tools: [Read, Edit, Bash]
@@ -9,7 +9,7 @@ allowed_tools: [Read, Edit, Bash]
 
 Run automated TDD cycle: test → fix → refactor.
 
-**Note**: This is a generic template. Run `/blueprint-generate-commands` to create a project-specific version in `.claude/commands/project/test-loop.md`.
+**Note**: Configure project-specific test/build commands in `CLAUDE.md` or `.claude/rules/` for automatic detection.
 
 **Steps**:
 
