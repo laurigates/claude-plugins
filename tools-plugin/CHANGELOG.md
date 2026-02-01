@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.1](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.3.0...tools-plugin-v2.3.1) (2026-02-01)
+
+
+### Bug Fixes
+
+* enforce granular Bash permissions across all plugins ([#267](https://github.com/laurigates/claude-plugins/issues/267)) ([afeb507](https://github.com/laurigates/claude-plugins/commit/afeb50754838c2923807c8f2a248b3798fd4281c))
+
 ## [2.3.0](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.2.1...tools-plugin-v2.3.0) (2026-02-01)
 
 
