@@ -1,6 +1,6 @@
 {
   "name": "tools-plugin",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "description": "General utilities - fd, rg, jq, yq, nushell, shell, imagemagick, mermaid, d2",
   "author": {
     "name": "Lauri Gates"
