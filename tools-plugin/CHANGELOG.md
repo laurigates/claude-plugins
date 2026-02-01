@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.0](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.2.1...tools-plugin-v2.3.0) (2026-02-01)
+
+
+### Features
+
+* **tools-plugin:** enhance justfile skill with MCP, shebang, and dotenv features ([#265](https://github.com/laurigates/claude-plugins/issues/265)) ([772b610](https://github.com/laurigates/claude-plugins/commit/772b610baac131c60e3c37c663d5daef341b9a07))
+
 ## [2.2.1](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.2.0...tools-plugin-v2.2.1) (2026-01-25)
 
 
