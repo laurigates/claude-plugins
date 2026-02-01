@@ -8,7 +8,7 @@ description: |
   Integrate ruff into development workflows: editor setup, pre-commit hooks, and CI/CD pipelines.
   Use when configuring ruff in VS Code, setting up pre-commit hooks, or adding ruff to GitHub Actions.
   For ruff rules/linting config see ruff-linting skill; for formatting see ruff-formatting skill.
-allowed-tools: Bash, Read, Edit, Write, Grep, Glob
+allowed-tools: Bash(ruff *), Bash(python *), Bash(uv *), Read, Edit, Write, Grep, Glob
 ---
 
 # ruff Integration

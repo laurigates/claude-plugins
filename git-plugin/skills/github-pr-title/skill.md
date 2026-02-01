@@ -7,7 +7,7 @@ name: github-pr-title
 description: |
   Craft PR titles using conventional commits format. Use when creating PRs or
   ensuring consistent PR naming. Covers type prefixes, scope, and subject writing.
-allowed-tools: Bash(git log:*), Bash(git diff:*), Bash(gh pr:*), Read, Grep, Glob, TodoWrite
+allowed-tools: Bash(git log *), Bash(git diff *), Bash(gh pr *), Read, Grep, Glob, TodoWrite
 ---
 
 # GitHub PR Title

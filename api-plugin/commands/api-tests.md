@@ -4,7 +4,7 @@ created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
 description: Check and configure API contract testing with Pact, OpenAPI validation, and schema testing
-allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
+allowed-tools: Glob, Grep, Read, Write, Edit, Bash(curl *), Bash(http *), Bash(jq *), AskUserQuestion, TodoWrite
 argument-hint: "[--check-only] [--fix] [--type <pact|openapi|schema>]"
 ---
 

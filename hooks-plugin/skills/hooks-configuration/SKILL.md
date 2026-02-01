@@ -6,7 +6,7 @@ description: |
   configuration patterns, input/output schemas, and common automation use cases.
   Use when user mentions hooks, automation, PreToolUse, PostToolUse, SessionStart,
   SubagentStart, or needs to enforce consistent behavior in Claude Code workflows.
-allowed-tools: Bash, Read, Write, Edit, Glob, Grep, TodoWrite
+allowed-tools: Bash(bash *), Bash(cat *), Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2025-12-16
 modified: 2026-01-20
 reviewed: 2026-01-20

@@ -5,7 +5,7 @@ modified: 2026-01-24
 reviewed: 2026-01-24
 name: ast-grep Structural Code Search & Refactoring
 description: Find and replace code patterns structurally using ast-grep. Use when you need to match code by its AST structure (not just text), such as finding all functions with specific signatures, replacing API patterns across files, or detecting code anti-patterns that regex cannot reliably match.
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Bash(sg *), Bash(ast-grep *), Read, Grep, Glob
 ---
 
 # ast-grep Structural Code Search & Refactoring

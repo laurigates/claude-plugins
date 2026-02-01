@@ -2,7 +2,7 @@
 model: haiku
 name: Binary Analysis
 description: Reverse engineering and binary exploration using strings, binwalk, hexdump, and related tools.
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Bash(file *), Bash(xxd *), Bash(hexdump *), Bash(strings *), Bash(objdump *), Bash(readelf *), Bash(nm *), Read, Grep, Glob
 created: 2025-12-27
 modified: 2025-12-27
 reviewed: 2025-12-27

@@ -5,7 +5,7 @@ modified: 2025-12-16
 reviewed: 2025-12-16
 name: ruff Linting
 description: Python code quality with ruff linter. Fast linting, rule selection, auto-fixing, and configuration. Use when checking Python code quality, enforcing standards, or finding bugs.
-allowed-tools: Bash, Read, Edit, Write, Grep, Glob
+allowed-tools: Bash(ruff *), Bash(python *), Bash(uv *), Read, Edit, Write, Grep, Glob
 ---
 
 # ruff Linting

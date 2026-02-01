@@ -2,7 +2,7 @@
 model: haiku
 description: Initialize a new LangChain TypeScript project with recommended configuration
 args: [project-name]
-allowed-tools: Bash, Read, Write, Edit
+allowed-tools: Bash(uv *), Bash(pip *), Bash(python *), Read, Write, Edit
 argument-hint: my-agent-project
 created: 2026-01-08
 modified: 2026-01-08
