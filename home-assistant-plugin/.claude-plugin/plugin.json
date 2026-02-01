@@ -1,0 +1,23 @@
+{
+  "name": "home-assistant-plugin",
+  "version": "1.0.0",
+  "description": "Home Assistant configuration management - YAML configuration, automations, scripts, scenes, and entity management for Home Assistant installations",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "repository": "https://github.com/laurigates/claude-plugins",
+  "license": "MIT",
+  "keywords": [
+    "home-assistant",
+    "smart-home",
+    "yaml-configuration",
+    "automations",
+    "scripts",
+    "scenes",
+    "entities",
+    "integrations",
+    "blueprints",
+    "iot",
+    "home-automation"
+  ]
+}
