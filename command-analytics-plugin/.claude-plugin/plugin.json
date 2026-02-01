@@ -1,6 +1,6 @@
 {
   "name": "command-analytics-plugin",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Track command and skill usage analytics across all projects",
   "author": {
     "name": "Claude Plugins",
