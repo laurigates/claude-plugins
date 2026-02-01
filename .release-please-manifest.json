@@ -16,7 +16,7 @@
   "git-plugin": "2.10.2",
   "github-actions-plugin": "1.1.0",
   "kubernetes-plugin": "1.1.1",
-  "langchain-plugin": "1.2.0",
+  "langchain-plugin": "1.2.1",
   "networking-plugin": "1.2.1",
   "project-plugin": "1.5.1",
   "python-plugin": "1.2.1",
