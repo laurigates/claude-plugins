@@ -54,45 +54,37 @@ jobs:
           python3 scripts/sync-plugin-configs.py --fix
           git diff > /tmp/fix.diff
 
-          # Store diff for Claude
+          # Check if there's a diff to fix
           if [ -s /tmp/fix.diff ]; then
             echo "has_diff=true" >> $GITHUB_OUTPUT
-            # Store outputs as env vars for Claude
-            {
-              echo "SYNC_OUTPUT<<SYNCEOF"
-              cat /tmp/sync-output.txt
-              echo "SYNCEOF"
-            } >> $GITHUB_ENV
-            {
-              echo "FIX_DIFF<<DIFFEOF"
-              cat /tmp/fix.diff
-              echo "DIFFEOF"
-            } >> $GITHUB_ENV
           else
             echo "has_diff=false" >> $GITHUB_OUTPUT
           fi
 
-          # Reset changes (Claude will suggest them)
+          # Reset changes (will be suggested in PR comments)
           git checkout -- .
 
-      - name: Post fix suggestions with Claude
+      - name: Check if Claude token is available
+        id: check_token
         if: github.event_name == 'pull_request' && steps.check.outcome == 'failure' && steps.diff.outputs.has_diff == 'true'
+        run: |
+          if [ -n "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}" ]; then
+            echo "available=true" >> $GITHUB_OUTPUT
+          else
+            echo "available=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Post fix suggestions with Claude
+        id: claude
+        if: github.event_name == 'pull_request' && steps.check.outcome == 'failure' && steps.diff.outputs.has_diff == 'true' && steps.check_token.outputs.available == 'true'
+        continue-on-error: true
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           model: haiku
           prompt: |
-            The plugin config validation failed. Here's the output:
-
-            ```
-            ${{ env.SYNC_OUTPUT }}
-            ```
-
-            And here's the diff that would fix it:
-
-            ```diff
-            ${{ env.FIX_DIFF }}
-            ```
+            The plugin config validation failed. Read /tmp/sync-output.txt for the validation output
+            and /tmp/fix.diff for the diff that would fix it.
 
             Post a PR review with suggested changes for each file that needs fixing.
             Use GitHub's suggestion syntax so the user can apply the fix with one click:
@@ -111,6 +103,41 @@ jobs:
             Bash(cat *)
             Bash(gh pr review *)
             Bash(gh api *)
+
+      - name: Post fallback comment
+        if: github.event_name == 'pull_request' && steps.check.outcome == 'failure' && steps.diff.outputs.has_diff == 'true' && (steps.claude.outcome == 'failure' || steps.claude.outcome == 'skipped')
+        env:
+          GH_TOKEN: ${{ secrets.MY_RELEASE_PLEASE_TOKEN || github.token }}
+        run: |
+          # Post a comment with the validation output and fix diff
+          {
+            echo "## ⚠️ Plugin Config Validation Failed"
+            echo ""
+            echo "The plugin configuration files are out of sync. Here's what needs to be fixed:"
+            echo ""
+            echo "<details>"
+            echo "<summary>Validation Output</summary>"
+            echo ""
+            echo '```'
+            cat /tmp/sync-output.txt
+            echo '```'
+            echo "</details>"
+            echo ""
+            echo "<details>"
+            echo "<summary>Fix Diff</summary>"
+            echo ""
+            echo '```diff'
+            cat /tmp/fix.diff
+            echo '```'
+            echo "</details>"
+            echo ""
+            echo "**To fix locally:**"
+            echo '```bash'
+            echo "python3 scripts/sync-plugin-configs.py --fix"
+            echo '```'
+          } > /tmp/comment.md
+
+          gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/comment.md
 
       - name: Auto-fix (workflow_dispatch only)
         if: github.event_name == 'workflow_dispatch' && inputs.fix && steps.check.outcome == 'failure'
