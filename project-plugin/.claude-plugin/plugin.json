@@ -1,6 +1,6 @@
 {
   "name": "project-plugin",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "Project initialization and management - setup, modernization, and continuous development workflows",
   "author": {
     "name": "Lauri Gates"
