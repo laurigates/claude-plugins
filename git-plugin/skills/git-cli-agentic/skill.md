@@ -4,7 +4,7 @@ name: git-cli-agentic
 description: Git commands optimized for AI agent workflows with porcelain output and deterministic execution patterns.
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git remote *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git restore *), Read
 created: 2025-01-16
-modified: 2025-01-16
+modified: 2026-01-31
 reviewed: 2025-01-16
 ---
 
@@ -15,6 +15,30 @@ Optimized git commands for AI agent consumption using porcelain output and stabl
 ## Core Principle
 
 Use `--porcelain` for machine-readable output that remains stable across Git versions and user configurations.
+
+## Working Directory
+
+**Don't use `-C` when already in the repository:**
+```bash
+# Bad - unnecessary verbosity when pwd is already the repo
+git -C /path/to/repo status
+git -C /path/to/repo log --oneline -5
+
+# Good - just run directly
+git status
+git log --oneline -5
+```
+
+**Only use `-C` when targeting a different directory:**
+```bash
+# Submodule: run command against parent repo
+git -C "$(git rev-parse --show-toplevel)" remote get-url origin
+
+# Script: iterate over multiple repos
+for repo in repos/*; do
+  git -C "$repo" status --porcelain
+done
+```
 
 ## Status Operations
 
