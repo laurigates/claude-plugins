@@ -7,6 +7,13 @@
 
 * enforce granular Bash permissions across all plugins ([#267](https://github.com/laurigates/claude-plugins/issues/267)) ([afeb507](https://github.com/laurigates/claude-plugins/commit/afeb50754838c2923807c8f2a248b3798fd4281c))
 
+## [2.10.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.10.1...git-plugin-v2.10.2) (2026-02-01)
+
+
+### Bug Fixes
+
+* enforce granular Bash permissions across all plugins ([#267](https://github.com/laurigates/claude-plugins/issues/267)) ([afeb507](https://github.com/laurigates/claude-plugins/commit/afeb50754838c2923807c8f2a248b3798fd4281c))
+
 ## [2.10.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.10.0...git-plugin-v2.10.1) (2026-02-01)
 
 
