@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.10.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.10.0...git-plugin-v2.10.1) (2026-02-01)
+
+
+### Bug Fixes
+
+* **git-plugin:** add guidance to avoid unnecessary -C flag ([#263](https://github.com/laurigates/claude-plugins/issues/263)) ([35b8950](https://github.com/laurigates/claude-plugins/commit/35b8950b992be58ebd7eb4503f1603219a3df8ef))
+
 ## [2.10.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.9.0...git-plugin-v2.10.0) (2026-01-30)
 
 
