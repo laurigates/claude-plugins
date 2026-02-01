@@ -26,5 +26,6 @@
   "tools-plugin": "2.2.1",
   "testing-plugin": "3.2.2",
   "typescript-plugin": "1.4.1",
-  "finops-plugin": "1.0.0"
+  "finops-plugin": "1.0.0",
+  "home-assistant-plugin": "1.0.0"
 }
