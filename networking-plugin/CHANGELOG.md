@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/laurigates/claude-plugins/compare/networking-plugin-v1.2.0...networking-plugin-v1.2.1) (2026-02-01)
+
+
+### Bug Fixes
+
+* enforce granular Bash permissions across all plugins ([#267](https://github.com/laurigates/claude-plugins/issues/267)) ([afeb507](https://github.com/laurigates/claude-plugins/commit/afeb50754838c2923807c8f2a248b3798fd4281c))
+
 ## [1.2.0](https://github.com/laurigates/claude-plugins/compare/networking-plugin-v1.1.0...networking-plugin-v1.2.0) (2026-01-23)
 
 
