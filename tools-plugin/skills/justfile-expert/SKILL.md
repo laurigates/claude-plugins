@@ -1,20 +1,32 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
-reviewed: 2025-12-16
+modified: 2026-02-01
+reviewed: 2026-02-01
 name: justfile-expert
 description: |
   Just command runner expertise, Justfile syntax, recipe development, and cross-platform
-  task automation. Covers recipe patterns, parameters, modules, settings, and workflow
-  integration. Use when user mentions just, justfile, recipes, command runner, task
-  automation, project commands, or needs help writing executable project documentation.
+  task automation. Covers recipe patterns, parameters, modules, settings, shebang recipes
+  for multi-language scripts, and workflow integration. Use when user mentions just,
+  justfile, recipes, command runner, task automation, project commands, or needs help
+  writing executable project documentation.
 allowed-tools: Bash, BashOutput, Grep, Glob, Read, Write, Edit, TodoWrite
 ---
 
 # Justfile Expert
 
 Expert knowledge for Just command runner, recipe development, and task automation with focus on cross-platform compatibility and project standardization.
+
+## When to Use This Skill
+
+| Use this skill when... | Use alternative when... |
+|------------------------|------------------------|
+| Creating/editing justfiles for task automation | Need build system with incremental compilation → Make |
+| Writing cross-platform project commands | Need tool version management bundled → mise tasks |
+| Adding shebang recipes (Python, Node, Ruby, etc.) | Already using mise for all project tooling |
+| Configuring dotenv loading and settings | Simple one-off shell scripts → Bash directly |
+| Setting up CI/CD with just recipes | Project already has extensive Makefile |
+| Standardizing recipes across projects | Need Docker-specific workflows → docker-compose |
 
 ## Core Expertise
 
@@ -56,8 +68,11 @@ Expert knowledge for Just command runner, recipe development, and task automatio
 - **`[private]`**: Hide from `--list` output
 - **`[no-cd]`**: Don't change directory
 - **`[no-exit-message]`**: Suppress exit messages
-- **`[unix]`** / **`[windows]`**: Platform-specific recipes
+- **`[unix]`** / **`[windows]`** / **`[linux]`** / **`[macos]`**: Platform-specific recipes
 - **`[positional-arguments]`**: Per-recipe positional args
+- **`[confirm]`** / **`[confirm("message")]`**: Require confirmation before running
+- **`[group: "name"]`**: Group recipes in `--list` output
+- **`[working-directory: "path"]`**: Run in specific directory
 
 **Module System**
 - **`mod name`**: Declare submodule
@@ -232,6 +247,53 @@ release version:
     git tag -a "v{{version}}" -m "Release {{version}}"
     git push origin "v{{version}}"
 ```
+
+## MCP Integration (just-mcp)
+
+The `just-mcp` MCP server enables AI assistants to discover and execute justfile recipes through the Model Context Protocol, reducing context waste since the AI doesn't need to read the full justfile.
+
+**Installation:**
+```bash
+# Via npm
+npx just-mcp --stdio
+
+# Via pip/uvx
+uvx just-mcp --stdio
+
+# Via cargo
+cargo install just-mcp
+```
+
+**Claude Desktop configuration (`.claude/mcp.json`):**
+```json
+{
+  "mcpServers": {
+    "just-mcp": {
+      "command": "npx",
+      "args": ["-y", "just-mcp", "--stdio"]
+    }
+  }
+}
+```
+
+**Available MCP Tools:**
+- `list_recipes` - Discover all recipes and parameters
+- `run_recipe` - Execute a recipe with arguments
+- `get_recipe_info` - Get detailed recipe documentation
+- `validate_justfile` - Check for syntax errors
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| List all recipes | `just --list` or `just -l` |
+| Dry run (preview) | `just --dry-run recipe` |
+| Show variables | `just --evaluate` |
+| JSON recipe list | `just --dump --dump-format json` |
+| Verbose execution | `just --verbose recipe` |
+| Specific justfile | `just --justfile path recipe` |
+| Working directory | `just --working-directory path recipe` |
+| Choose interactively | `just --choose` |
 
 ## Best Practices
 

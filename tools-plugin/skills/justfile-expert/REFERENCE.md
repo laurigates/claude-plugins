@@ -8,10 +8,17 @@
 # Load .env file automatically
 set dotenv-load
 
-# Load specific .env file
+# Load specific .env filename (searches in working dir and parents)
 set dotenv-filename := ".env.local"
 
-# Required .env file (fail if missing)
+# Load .env from specific path (absolute or relative to working dir)
+# Takes precedence over dotenv-filename; can override with -E flag
+set dotenv-path := "config/.env"
+
+# Override existing env vars with .env values (default: false)
+set dotenv-override
+
+# Required .env file (fail if missing, default: false)
 set dotenv-required
 
 # Export all variables as environment variables
@@ -134,10 +141,23 @@ config := config_directory()      # Config dir
 data := data_directory()          # Data dir
 
 # String operations
-upper := uppercase('hello')       # "HELLO"
-lower := lowercase('HELLO')       # "hello"
-trim := trim('  hi  ')           # "hi"
-replace := replace('ab', 'a', 'x') # "xb"
+upper := uppercase('hello')              # "HELLO"
+lower := lowercase('HELLO')              # "hello"
+trim := trim('  hi  ')                   # "hi"
+trim_start := trim_start('  hi  ')       # "hi  "
+trim_end := trim_end('  hi  ')           # "  hi"
+replace := replace('ab', 'a', 'x')       # "xb"
+replace_re := replace_regex('a1b2', '\d', 'X')  # "aXbX"
+
+# Case conversion
+snake := snakecase('fooBar')             # "foo_bar"
+kebab := kebabcase('fooBar')             # "foo-bar"
+title := titlecase('hello world')        # "Hello World"
+
+# String building
+prefixed := prepend('prefix_', 'name')   # "prefix_name"
+suffixed := append('name', '_suffix')    # "name_suffix"
+quoted := quote("it's")                  # "'it'\"'\"'s'" (shell-safe)
 
 # Path joining
 full := join('a', 'b', 'c')       # "a/b/c"
@@ -153,9 +173,40 @@ id := uuid()                      # Random UUID
 hash := sha256('content')
 hash_file := sha256_file('path')
 
+# Blake3 hash (faster alternative)
+b3_hash := blake3('content')
+b3_file := blake3_file('path')
+
 # Justfile location
 just_dir := justfile_directory()
 just_path := justfile()
+
+# External command execution
+output := shell('echo hello')           # Execute and capture output
+output := shell('echo', 'hello')        # With separate args
+
+# Executable discovery
+bin_path := which('python3')            # Find in PATH, empty if not found
+required_bin := require('python3')      # Find in PATH, error if missing
+
+# File operations
+exists := path_exists('config.json')    # Boolean check
+contents := read('VERSION')             # Read file contents
+
+# System info
+cpus := num_cpus()                      # Number of CPUs
+
+# Error handling
+error('message')                        # Abort with error message
+
+# Datetime
+now := datetime('%Y-%m-%d')             # Current date/time formatted
+
+# Semantic version matching
+matches := semver_matches('1.2.3', '>=1.0.0')
+
+# Random selection
+pick := choose('a', 'b', 'c')           # Random item from list
 ```
 
 ### Parameter Patterns
@@ -198,6 +249,25 @@ exec *args:
 ## Advanced Patterns
 
 ### Shebang Recipes
+
+Recipes starting with `#!` execute as scripts, saved to a temp file and run with the specified interpreter.
+
+**Platform Behavior:**
+- **Unix/macOS**: OS handles shebang natively
+- **Windows**: Just manually parses the shebang and invokes the interpreter (no native shebang support)
+
+**Using `-S` flag for arguments:**
+```just
+# When interpreter needs arguments, use -S to split them
+process:
+    #!/usr/bin/env -S python3 -u
+    import sys
+    print("Unbuffered output", flush=True)
+
+strict-bash:
+    #!/usr/bin/env -S bash -euo pipefail
+    echo "Running with strict mode"
+```
 
 ```just
 # Python script
