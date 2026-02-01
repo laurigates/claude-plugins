@@ -34,6 +34,7 @@
   },
   "permissions": {
     "allow": [
+      "mcp__serena",
       "Bash(git status *)",
       "Bash(git diff *)",
       "Bash(git log *)",
