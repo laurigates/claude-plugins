@@ -34,6 +34,7 @@
   },
   "permissions": {
     "allow": [
+      "mcp__serena",
       "Bash(git status *)",
       "Bash(git diff *)",
       "Bash(git log *)",
@@ -48,21 +49,18 @@
       "Bash(gh run *)",
       "Bash(gh issue *)",
       "Bash(pre-commit *)",
-      "Bash(detect-secrets *)"
-    ]
-  },
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash $CLAUDE_PROJECT_DIR/hooks-plugin/hooks/bash-antipatterns.sh",
-            "timeout": 5
-          }
-        ]
-      }
+      "Bash(detect-secrets *)",
+      "Bash(gh api *)",
+      "Bash(gh repo *)",
+      "Bash(gh workflow *)",
+      "Bash(gh label *)",
+      "Bash(git switch *)",
+      "Bash(git pull *)",
+      "Bash(git stash *)",
+      "Bash(git restore *)",
+      "Bash(git gc *)",
+      "Bash(git prune *)",
+      "Bash(git fsck *)"
     ]
   }
 }

@@ -1,6 +1,6 @@
 ---
 created: 2025-12-20
-modified: 2026-01-18
+modified: 2026-02-01
 reviewed: 2025-12-20
 ---
 
@@ -57,7 +57,7 @@ See `.claude/rules/skill-development.md` for detailed patterns.
    ```
 3. Follow content structure: Core Expertise → Commands → Patterns → Quick Reference
 4. Include agentic optimizations table
-5. Update plugin metadata (`plugin.json`, `README.md`)
+5. Update all metadata files (see Plugin Lifecycle section)
 
 ### Skill Granularity Decision
 
@@ -106,13 +106,72 @@ Key principles:
 | Workflow-focused | `git-plugin` | Git/GitHub operations |
 | Infrastructure | `configure-plugin` | Configuration automation |
 
+## Plugin Lifecycle
+
+### Files to Update
+
+When creating, modifying, or deleting a plugin, update these files:
+
+| File | Location | Action |
+|------|----------|--------|
+| `plugin.json` | `<plugin>/.claude-plugin/plugin.json` | Create/update plugin manifest |
+| `README.md` | `<plugin>/README.md` | Create/update plugin documentation |
+| `marketplace.json` | `.claude-plugin/marketplace.json` | Add/update/remove plugin entry |
+| `release-please-config.json` | Root | Add/remove plugin package config |
+| `.release-please-manifest.json` | Root | Add/remove plugin version entry |
+
+### Creating a New Plugin
+
+1. Create plugin directory structure (see Project Structure above)
+2. Create `.claude-plugin/plugin.json` with required fields
+3. Create `README.md` with plugin documentation
+4. Add entry to `.claude-plugin/marketplace.json`:
+   ```json
+   {
+     "name": "new-plugin",
+     "source": "./new-plugin",
+     "description": "Plugin description",
+     "version": "1.0.0",
+     "keywords": ["keyword1", "keyword2"],
+     "category": "category-name"
+   }
+   ```
+5. Add to `release-please-config.json`:
+   ```json
+   "new-plugin": {
+     "component": "new-plugin",
+     "release-type": "simple",
+     "extra-files": [
+       {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
+     ],
+     "changelog-sections": [
+       {"type": "feat", "section": "Features"},
+       {"type": "fix", "section": "Bug Fixes"},
+       {"type": "perf", "section": "Performance"},
+       {"type": "refactor", "section": "Code Refactoring"},
+       {"type": "docs", "section": "Documentation"}
+     ]
+   }
+   ```
+6. Add to `.release-please-manifest.json`:
+   ```json
+   "new-plugin": "1.0.0"
+   ```
+
+### Deleting a Plugin
+
+1. Remove plugin directory
+2. Remove entry from `.claude-plugin/marketplace.json`
+3. Remove package from `release-please-config.json`
+4. Remove version from `.release-please-manifest.json`
+
 ## Development Workflow
 
 1. **Research documentation** - Use context7, web search
 2. **Plan skill structure** - Decide granularity, scope
 3. **Write skills** - Follow standard structure
 4. **Create commands** - For common operations
-5. **Update metadata** - plugin.json, README.md
+5. **Update all metadata files** - See Plugin Lifecycle section
 6. **Test** - Verify skills load and commands work
 
 ## Conventions

@@ -4,7 +4,7 @@ created: 2026-01-08
 modified: 2026-01-08
 reviewed: 2026-01-08
 description: "Analyze codebase documentation quality - PRDs, ADRs, PRPs, CLAUDE.md, and .claude/rules/"
-allowed-tools: Read, Glob, Grep, Bash, TodoWrite, Task
+allowed-tools: Read, Glob, Grep, Bash(markdownlint *), Bash(vale *), TodoWrite, Task
 argument-hint: "[PATH]"
 ---
 

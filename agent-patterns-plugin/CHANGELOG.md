@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.5.2](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.5.1...agent-patterns-plugin-v2.5.2) (2026-02-01)
+
+
+### Bug Fixes
+
+* **agent-patterns-plugin:** make orchestrator enforcement opt-in instead of opt-out ([f607b7c](https://github.com/laurigates/claude-plugins/commit/f607b7c8141f6d11bef906f5f11b434284083677))
+
+## [2.5.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.5.0...agent-patterns-plugin-v2.5.1) (2026-02-01)
+
+
+### Bug Fixes
+
+* enforce granular Bash permissions across all plugins ([#267](https://github.com/laurigates/claude-plugins/issues/267)) ([afeb507](https://github.com/laurigates/claude-plugins/commit/afeb50754838c2923807c8f2a248b3798fd4281c))
+
 ## [2.5.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.4.0...agent-patterns-plugin-v2.5.0) (2026-01-26)
 
 

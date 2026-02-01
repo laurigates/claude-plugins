@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.3.0...hooks-plugin-v1.3.1) (2026-02-01)
+
+
+### Bug Fixes
+
+* enforce granular Bash permissions across all plugins ([#267](https://github.com/laurigates/claude-plugins/issues/267)) ([afeb507](https://github.com/laurigates/claude-plugins/commit/afeb50754838c2923807c8f2a248b3798fd4281c))
+
 ## [1.3.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.2.0...hooks-plugin-v1.3.0) (2026-01-26)
 
 

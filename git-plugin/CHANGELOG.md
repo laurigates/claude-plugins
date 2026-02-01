@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.10.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.10.1...git-plugin-v2.10.2) (2026-02-01)
+
+
+### Bug Fixes
+
+* enforce granular Bash permissions across all plugins ([#267](https://github.com/laurigates/claude-plugins/issues/267)) ([afeb507](https://github.com/laurigates/claude-plugins/commit/afeb50754838c2923807c8f2a248b3798fd4281c))
+
+## [2.10.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.10.1...git-plugin-v2.10.2) (2026-02-01)
+
+
+### Bug Fixes
+
+* enforce granular Bash permissions across all plugins ([#267](https://github.com/laurigates/claude-plugins/issues/267)) ([afeb507](https://github.com/laurigates/claude-plugins/commit/afeb50754838c2923807c8f2a248b3798fd4281c))
+
+## [2.10.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.10.0...git-plugin-v2.10.1) (2026-02-01)
+
+
+### Bug Fixes
+
+* **git-plugin:** add guidance to avoid unnecessary -C flag ([#263](https://github.com/laurigates/claude-plugins/issues/263)) ([35b8950](https://github.com/laurigates/claude-plugins/commit/35b8950b992be58ebd7eb4503f1603219a3df8ef))
+
 ## [2.10.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.9.0...git-plugin-v2.10.0) (2026-01-30)
 
 

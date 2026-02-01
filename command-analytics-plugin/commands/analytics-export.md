@@ -2,7 +2,7 @@
 model: haiku
 description: Export analytics data in various formats
 args: "[format] [output-file]"
-allowed-tools: Bash, Read
+allowed-tools: Bash(jq *), Bash(cat *), Read
 argument-hint: "Format: json, csv, or markdown. Optional output file path."
 created: 2026-01-10
 modified: 2026-01-10

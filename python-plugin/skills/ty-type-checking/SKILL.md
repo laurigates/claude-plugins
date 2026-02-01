@@ -8,7 +8,7 @@ description: |
   Python type checking with ty, Astral's extremely fast type checker (10-100x faster than mypy/Pyright).
   Use when checking Python types, configuring type checking rules, or setting up type checking in projects.
   Triggered by: ty, type checking, type errors, static analysis, mypy alternative, pyright alternative.
-allowed-tools: Bash, Read, Edit, Write, Grep, Glob, TodoWrite
+allowed-tools: Bash(ty *), Bash(python *), Bash(uv *), Read, Edit, Write, Grep, Glob, TodoWrite
 ---
 
 # ty Type Checking

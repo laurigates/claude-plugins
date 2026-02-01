@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/laurigates/claude-plugins/compare/blog-plugin-v1.1.0...blog-plugin-v1.1.1) (2026-02-01)
+
+
+### Bug Fixes
+
+* enforce granular Bash permissions across all plugins ([#267](https://github.com/laurigates/claude-plugins/issues/267)) ([afeb507](https://github.com/laurigates/claude-plugins/commit/afeb50754838c2923807c8f2a248b3798fd4281c))
+
 ## [1.1.0](https://github.com/laurigates/claude-plugins/compare/blog-plugin-v1.0.0...blog-plugin-v1.1.0) (2026-01-23)
 
 

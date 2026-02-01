@@ -9,7 +9,7 @@ description: |
   pod copying, node debugging, debug profiles, and interactive troubleshooting sessions.
   Use when user mentions kubectl debug, debugging pods, ephemeral containers, node debugging,
   or interactive troubleshooting in Kubernetes clusters.
-allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebFetch
+allowed-tools: Glob, Grep, Read, Bash(kubectl *), Bash(stern *), Edit, Write, TodoWrite, WebFetch
 ---
 
 # kubectl debug - Interactive Kubernetes Debugging

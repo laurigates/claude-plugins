@@ -2,7 +2,7 @@
 model: opus
 description: Analyze plugin skills for supporting script opportunities and create them
 args: [--analyze] [--create <plugin/skill>] [--all]
-allowed-tools: Bash, Read, Write, Edit, Glob, Grep, TodoWrite
+allowed-tools: Bash(chmod *), Bash(mkdir *), Read, Write, Edit, Glob, Grep, TodoWrite
 argument-hint: --analyze | --create git-plugin/git-commit-workflow | --all
 created: 2026-01-24
 modified: 2026-01-24

@@ -8,7 +8,7 @@ description: |
   Create well-structured GitHub issues with clear titles, descriptions, and
   acceptance criteria. Use when filing bugs, requesting features, or structuring
   issue content.
-allowed-tools: Bash(gh issue:*), Bash(gh label:*), Bash(gh repo:*), Read, Grep, Glob, TodoWrite
+allowed-tools: Bash(gh issue *), Bash(gh label *), Bash(gh repo *), Read, Grep, Glob, TodoWrite
 ---
 
 # GitHub Issue Writing
