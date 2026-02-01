@@ -6,7 +6,7 @@
 # Subagents (spawned via Task) get full tool access.
 #
 # Configuration:
-#   ORCHESTRATOR_BYPASS=1        - Disable this hook entirely
+#   ORCHESTRATOR_MODE=1          - Enable orchestrator enforcement (disabled by default)
 #   CLAUDE_IS_SUBAGENT=1         - Set by parent to grant full access
 #
 # Exit codes:
@@ -17,8 +17,8 @@
 
 set -euo pipefail
 
-# Bypass check
-[[ "${ORCHESTRATOR_BYPASS:-0}" == "1" ]] && exit 0
+# Opt-in check: if orchestrator mode is not enabled, allow everything
+[[ "${ORCHESTRATOR_MODE:-0}" != "1" ]] && exit 0
 
 # Subagent detection - environment variable set by parent agent
 # When Task spawns subagents, set CLAUDE_IS_SUBAGENT=1 in the environment
