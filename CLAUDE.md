@@ -1,6 +1,6 @@
 ---
 created: 2025-12-20
-modified: 2026-02-01
+modified: 2026-02-02
 reviewed: 2025-12-20
 ---
 
@@ -36,6 +36,7 @@ Claude Code plugin collection providing skills, commands, and agents for develop
 | `.claude/rules/shell-scripting.md` | Safe shell patterns and frontmatter extraction |
 | `.claude/rules/agentic-permissions.md` | Granular tool permissions for commands |
 | `.claude/rules/skill-quality.md` | Skill size limits, required sections, and quality checklist |
+| `.claude/rules/handling-blocked-hooks.md` | How to respond when hooks block commands |
 
 ## Creating New Skills
 
