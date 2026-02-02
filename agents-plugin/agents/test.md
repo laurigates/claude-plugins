@@ -3,10 +3,10 @@ name: test
 model: haiku
 color: "#4CAF50"
 description: Write and run tests. Analyzes code, writes appropriate tests, executes them, and reports results. Completes the full testing cycle.
-tools: Glob, Grep, LS, Read, Edit, Write, Bash, BashOutput, TodoWrite
+tools: Glob, Grep, LS, Read, Edit, Write, Bash(npm test *), Bash(npm run test *), Bash(yarn test *), Bash(bun test *), Bash(pytest *), Bash(vitest *), Bash(jest *), Bash(cargo test *), Bash(go test *), Bash(git status *), Bash(git diff *), Bash(git log *), BashOutput, TodoWrite
 created: 2025-12-27
-modified: 2025-12-27
-reviewed: 2025-12-27
+modified: 2026-02-02
+reviewed: 2026-02-02
 ---
 
 # Test Agent

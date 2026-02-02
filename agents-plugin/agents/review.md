@@ -3,10 +3,10 @@ name: review
 model: claude-opus-4-5
 color: "#E53E3E"
 description: Comprehensive code review including quality, security, performance, and commit/PR analysis. Provides actionable findings with specific recommendations.
-tools: Glob, Grep, LS, Read, Bash, TodoWrite
+tools: Glob, Grep, LS, Read, Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(gh pr *), Bash(npm test *), Bash(yarn test *), Bash(bun test *), TodoWrite
 created: 2025-12-27
-modified: 2025-12-27
-reviewed: 2025-12-27
+modified: 2026-02-02
+reviewed: 2026-02-02
 ---
 
 # Review Agent

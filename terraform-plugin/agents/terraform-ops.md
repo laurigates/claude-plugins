@@ -3,13 +3,13 @@ name: terraform-ops
 model: haiku
 color: "#5C4EE5"
 description: Terraform infrastructure operations. Runs plan/apply, analyzes drift, validates configurations, and summarizes verbose infrastructure changes. Use when working with Terraform/OpenTofu.
-tools: Glob, Grep, LS, Read, Edit, Write, Bash, TodoWrite
+tools: Glob, Grep, LS, Read, Edit, Write, Bash(terraform *), Bash(tofu *), Bash(tflint *), Bash(git status *), Bash(git diff *), TodoWrite
 skills:
   - terraform-workflow
   - terraform-state-management
 created: 2026-01-24
-modified: 2026-01-24
-reviewed: 2026-01-24
+modified: 2026-02-02
+reviewed: 2026-02-02
 ---
 
 # Terraform Ops Agent
