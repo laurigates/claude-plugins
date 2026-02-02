@@ -27,6 +27,7 @@ All commands support two modes:
 | `/configure:claude-plugins` | Configure Claude Code plugin marketplace and GitHub Actions workflows |
 | `/configure:pre-commit` | Pre-commit hooks for project standards |
 | `/configure:release-please` | Release-please workflow configuration |
+| `/configure:reusable-workflows` | Install Claude-powered reusable workflows (security, quality, a11y) |
 | `/configure:workflows` | GitHub Actions CI/CD workflows |
 | `/configure:github-pages` | GitHub Pages deployment |
 
