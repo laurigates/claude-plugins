@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.1](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.3.0...container-plugin-v2.3.1) (2026-02-02)
+
+
+### Bug Fixes
+
+* **agent-patterns-plugin:** block git writes for parallel agents to prevent conflicts ([#299](https://github.com/laurigates/claude-plugins/issues/299)) ([a2c2ce0](https://github.com/laurigates/claude-plugins/commit/a2c2ce07d67ead9b30470b398777be355672281b))
+
 ## [2.3.0](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.2.0...container-plugin-v2.3.0) (2026-01-23)
 
 
