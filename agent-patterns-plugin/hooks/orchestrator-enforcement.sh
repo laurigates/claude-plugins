@@ -1,13 +1,18 @@
 #!/bin/bash
 #
-# PreToolUse: Enforce orchestrator pattern
+# PreToolUse: Enforce orchestrator pattern and git safety
 #
 # Orchestrators investigate and delegate - they don't implement.
-# Subagents (spawned via Task) get full tool access.
+# Subagents (spawned via Task) get implementation access but NOT git write access.
+# Only the git-ops agent (with CLAUDE_GIT_AGENT=1) can perform git write operations.
+#
+# This prevents parallel agent conflicts where multiple agents doing git operations
+# (branching, stashing, committing) cause files to disappear/reappear for each other.
 #
 # Configuration:
 #   ORCHESTRATOR_MODE=1          - Enable orchestrator enforcement (disabled by default)
-#   CLAUDE_IS_SUBAGENT=1         - Set by parent to grant full access
+#   CLAUDE_IS_SUBAGENT=1         - Set by parent to grant implementation access (not git)
+#   CLAUDE_GIT_AGENT=1           - Set for git-ops agent to grant git write access
 #
 # Exit codes:
 #   0 - Allow (no output or JSON with allow decision)
@@ -19,10 +24,6 @@ set -euo pipefail
 
 # Opt-in check: if orchestrator mode is not enabled, allow everything
 [[ "${ORCHESTRATOR_MODE:-0}" != "1" ]] && exit 0
-
-# Subagent detection - environment variable set by parent agent
-# When Task spawns subagents, set CLAUDE_IS_SUBAGENT=1 in the environment
-[[ "${CLAUDE_IS_SUBAGENT:-0}" == "1" ]] && exit 0
 
 # Read hook input
 INPUT=$(cat)
@@ -40,6 +41,10 @@ deny() {
 EOF
     exit 0
 }
+
+# --- Context Detection ---
+IS_SUBAGENT="${CLAUDE_IS_SUBAGENT:-0}"
+IS_GIT_AGENT="${CLAUDE_GIT_AGENT:-0}"
 
 # --- Tool Categories ---
 
@@ -60,10 +65,14 @@ case "$TOOL_NAME" in
         ;;
 esac
 
-# Blocked: implementation tools
+# Implementation tools: blocked for orchestrator, allowed for subagents
 case "$TOOL_NAME" in
     Edit|Write|NotebookEdit)
-        deny "Tool '$TOOL_NAME' blocked for orchestrator. Use Task() to delegate implementation to a subagent."
+        if [[ "$IS_SUBAGENT" != "1" ]]; then
+            deny "Tool '$TOOL_NAME' blocked for orchestrator. Use Task() to delegate implementation to a subagent."
+        fi
+        # Subagents can use Edit/Write/NotebookEdit
+        exit 0
         ;;
 esac
 
@@ -76,23 +85,47 @@ if [[ "$TOOL_NAME" == "Bash" ]]; then
     # Extract first word (command name)
     FIRST_WORD="${COMMAND%% *}"
 
-    # Git commands: allow read, block write
+    # Git commands: allow read, block write (for ALL contexts except git-agent)
+    # This prevents parallel agent conflicts where multiple agents doing git operations
+    # cause shared state corruption (files disappearing, branch confusion, etc.)
     if [[ "$FIRST_WORD" == "git" ]]; then
         # Extract git subcommand
         GIT_CMD=$(echo "$COMMAND" | awk '{print $2}')
 
         case "$GIT_CMD" in
-            # Read operations - allow
+            # Read operations - always allow
             status|log|diff|branch|show|remote|fetch|ls-files|rev-parse|describe|config)
                 exit 0
                 ;;
-            # Navigation - allow
-            checkout|switch|stash)
-                exit 0
+            # Navigation operations - allow for git-agent only (can cause parallel conflicts)
+            checkout|switch)
+                if [[ "$IS_GIT_AGENT" == "1" ]]; then
+                    exit 0
+                fi
+                if [[ "$IS_SUBAGENT" == "1" ]]; then
+                    deny "Git '$GIT_CMD' blocked for parallel safety. Branch switching during parallel execution causes file conflicts. Request orchestrator to coordinate git operations after parallel work completes."
+                fi
+                deny "Git '$GIT_CMD' blocked for orchestrator. Use Task() to delegate to git-ops agent."
                 ;;
-            # Write operations - block
+            # Stash operations - allow for git-agent only (can cause parallel conflicts)
+            stash)
+                if [[ "$IS_GIT_AGENT" == "1" ]]; then
+                    exit 0
+                fi
+                if [[ "$IS_SUBAGENT" == "1" ]]; then
+                    deny "Git stash blocked for parallel safety. Stashing during parallel execution causes files to disappear for other agents. Request orchestrator to coordinate git operations after parallel work completes."
+                fi
+                deny "Git stash blocked for orchestrator. Use Task() to delegate to git-ops agent."
+                ;;
+            # Write operations - only git-agent
             add|commit|push|merge|rebase|reset|cherry-pick|revert|tag)
-                deny "Git '$GIT_CMD' blocked for orchestrator. Use Task() to delegate git operations."
+                if [[ "$IS_GIT_AGENT" == "1" ]]; then
+                    exit 0
+                fi
+                if [[ "$IS_SUBAGENT" == "1" ]]; then
+                    deny "Git '$GIT_CMD' blocked for parallel safety. Git writes during parallel execution cause conflicts. Edit files in place and let the orchestrator coordinate commits after parallel work completes."
+                fi
+                deny "Git '$GIT_CMD' blocked for orchestrator. Use Task() to delegate to git-ops agent."
                 ;;
             # Default - allow (for unknown git commands)
             *)
@@ -122,7 +155,7 @@ if [[ "$TOOL_NAME" == "Bash" ]]; then
             ;;
     esac
 
-    # GitHub CLI - allow read operations
+    # GitHub CLI - read operations always allowed, write operations allowed for subagents
     if [[ "$FIRST_WORD" == "gh" ]]; then
         GH_CMD=$(echo "$COMMAND" | awk '{print $2}')
         case "$GH_CMD" in
@@ -134,6 +167,10 @@ if [[ "$TOOL_NAME" == "Bash" ]]; then
                         exit 0
                         ;;
                     create|edit|merge|close|reopen|comment)
+                        # Subagents can perform GitHub write operations as part of their tasks
+                        if [[ "$IS_SUBAGENT" == "1" ]]; then
+                            exit 0
+                        fi
                         deny "GitHub CLI '$GH_CMD $GH_SUBCMD' blocked for orchestrator. Use Task() to delegate."
                         ;;
                     *)
@@ -147,9 +184,11 @@ if [[ "$TOOL_NAME" == "Bash" ]]; then
         esac
     fi
 
-    # Block file modification patterns
+    # Block file modification patterns for orchestrator only - subagents can implement
     if [[ "$COMMAND" =~ (^|[[:space:]])(sed[[:space:]]+-i|awk.*\>|tee[[:space:]]|>[[:space:]]|>>) ]]; then
-        deny "File modification via Bash blocked for orchestrator. Use Task() to delegate."
+        if [[ "$IS_SUBAGENT" != "1" ]]; then
+            deny "File modification via Bash blocked for orchestrator. Use Task() to delegate."
+        fi
     fi
 
     # Default: allow other bash commands

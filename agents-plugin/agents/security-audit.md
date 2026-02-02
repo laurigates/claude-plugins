@@ -3,10 +3,10 @@ name: security-audit
 model: claude-opus-4-5
 color: "#D32F2F"
 description: Security vulnerability analysis. Scans code for OWASP top 10, secrets exposure, injection risks, auth flaws, and insecure configurations. Use proactively when reviewing security-sensitive code.
-tools: Glob, Grep, LS, Read, Bash, TodoWrite
+tools: Glob, Grep, LS, Read, Bash(semgrep *), Bash(bandit *), Bash(trufflehog *), Bash(gitleaks *), Bash(detect-secrets *), Bash(npm audit *), Bash(snyk *), Bash(git status *), Bash(git diff *), Bash(git log *), TodoWrite
 created: 2026-01-24
-modified: 2026-01-24
-reviewed: 2026-01-24
+modified: 2026-02-02
+reviewed: 2026-02-02
 ---
 
 # Security Audit Agent

@@ -3,10 +3,10 @@ name: performance
 model: claude-opus-4-5
 color: "#E65100"
 description: Performance analysis and profiling. Identifies bottlenecks, analyzes profiler output, benchmarks code, and recommends optimizations. Use when investigating slow code or system performance issues.
-tools: Glob, Grep, LS, Read, Bash, TodoWrite
+tools: Glob, Grep, LS, Read, Bash(hyperfine *), Bash(py-spy *), Bash(perf *), Bash(time *), Bash(npm run *), Bash(cargo bench *), Bash(go test -bench *), Bash(git status *), Bash(git diff *), TodoWrite
 created: 2026-01-24
-modified: 2026-01-24
-reviewed: 2026-01-24
+modified: 2026-02-02
+reviewed: 2026-02-02
 ---
 
 # Performance Agent

@@ -3,10 +3,10 @@ name: debug
 model: claude-opus-4-5
 color: "#FF7043"
 description: Diagnose and fix bugs. Finds root cause, implements fix, verifies solution. Handles errors, failures, and unexpected behavior.
-tools: Glob, Grep, LS, Read, Edit, Write, Bash, BashOutput, TodoWrite
+tools: Glob, Grep, LS, Read, Edit, Write, Bash(npm *), Bash(yarn *), Bash(bun *), Bash(pytest *), Bash(python *), Bash(node *), Bash(cargo *), Bash(go *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git show *), BashOutput, TodoWrite
 created: 2025-12-27
-modified: 2025-12-27
-reviewed: 2025-12-27
+modified: 2026-02-02
+reviewed: 2026-02-02
 ---
 
 # Debug Agent

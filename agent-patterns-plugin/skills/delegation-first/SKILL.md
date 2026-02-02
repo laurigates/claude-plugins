@@ -143,6 +143,60 @@ I'll run these in parallel:
 - Each agent has clean context
 - Main conversation stays light
 
+## Git Operations in Parallel Workflows
+
+**CRITICAL**: When running parallel agents, git operations MUST be deferred to avoid conflicts.
+
+### Why Git Conflicts Happen
+
+Git is shared state - all parallel agents see the same working directory:
+- Agent A stashes → files disappear for Agent B
+- Agent A commits → Agent B's changes conflict
+- Agent A switches branch → Agent B loses context
+
+### The Pattern
+
+```
+1. Launch parallel agents for implementation work
+2. Agents edit files directly (Edit/Write tools) - NO git operations
+3. All agents complete their work
+4. THEN delegate git operations to git-ops agent
+```
+
+### Delegation Example
+
+```markdown
+User: "Refactor the auth module and add tests"
+
+Main Claude: "I'll run these in parallel:
+1. code-refactoring → refactor auth module
+2. test-runner → add auth tests
+
+[Launch both - they edit files, no git operations]
+
+[Both complete]
+
+Now I'll have git-ops commit the changes."
+[Delegate to git-ops: "Commit the auth refactoring and new tests"]
+```
+
+### Git Operation Delegation
+
+| Task | Delegate To | NOT To |
+|------|-------------|--------|
+| Commit changes | `git-ops` | Any other agent |
+| Create branch | `git-ops` | Any other agent |
+| Rebase/merge | `git-ops` | Any other agent |
+| Resolve conflicts | `git-ops` | Any other agent |
+
+### If a Subagent Needs Git
+
+If an implementation agent reports needing a git operation:
+1. Have them complete what they can without git
+2. Return control to orchestrator
+3. Orchestrator delegates to git-ops for the git work
+4. Then resume the implementation agent if needed
+
 ## Agent Selection Reference
 
 ### Code & Implementation
@@ -152,6 +206,7 @@ I'll run these in parallel:
 | Write new code | `python-development`, `typescript-development`, etc. | New features |
 | Refactor existing | `code-refactoring` | Quality improvements |
 | Fix bugs | `system-debugging` → fix agent | Debug then fix |
+| Git operations | `git-ops` | Commits, rebases, merges, branches |
 
 ### Analysis & Review
 

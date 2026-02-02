@@ -3,13 +3,13 @@ name: container-build
 model: haiku
 color: "#2496ED"
 description: Container build and debugging. Builds Docker images, analyzes build failures, inspects layers, and troubleshoots container issues. Use for Docker/container operations.
-tools: Glob, Grep, LS, Read, Edit, Write, Bash, TodoWrite
+tools: Glob, Grep, LS, Read, Edit, Write, Bash(docker *), Bash(podman *), Bash(buildah *), Bash(dive *), Bash(git status *), Bash(git diff *), TodoWrite
 skills:
   - docker-development
   - dockerfile-optimization
 created: 2026-01-24
-modified: 2026-01-24
-reviewed: 2026-01-24
+modified: 2026-02-02
+reviewed: 2026-02-02
 ---
 
 # Container Build Agent
