@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.3](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.5.2...agent-patterns-plugin-v2.5.3) (2026-02-02)
+
+
+### Bug Fixes
+
+* **agent-patterns-plugin:** block git writes for parallel agents to prevent conflicts ([#299](https://github.com/laurigates/claude-plugins/issues/299)) ([a2c2ce0](https://github.com/laurigates/claude-plugins/commit/a2c2ce07d67ead9b30470b398777be355672281b))
+
 ## [2.5.2](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.5.1...agent-patterns-plugin-v2.5.2) (2026-02-01)
 
 
