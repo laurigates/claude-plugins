@@ -8,8 +8,8 @@ description: |
   SubagentStart, or needs to enforce consistent behavior in Claude Code workflows.
 allowed-tools: Bash(bash *), Bash(cat *), Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2025-12-16
-modified: 2026-01-20
-reviewed: 2026-01-20
+modified: 2026-02-02
+reviewed: 2026-02-02
 ---
 
 # Claude Code Hooks Configuration
@@ -359,6 +359,38 @@ exit 0
     ]
   }
 }
+```
+
+## Handling Blocked Commands
+
+When a PreToolUse hook blocks a command:
+
+| Situation | Action |
+|-----------|--------|
+| Hook suggests alternative | Use the suggested tool/approach |
+| Alternative won't work | Ask user to run command manually |
+| User says "proceed" | Still blocked - explain and provide command for manual execution |
+
+**Critical**: User permission does NOT bypass hooks. Retrying a blocked command will fail again.
+
+**When command is legitimately needed:**
+1. Explain why the command is required
+2. Describe alternatives considered and why they won't work
+3. Provide exact command for user to run manually
+4. Let user decide
+
+Example response:
+```
+The hook blocked `git reset --hard abc123` because it's usually unnecessary.
+
+I considered:
+- `git pull`: Won't work because we need to discard local commits, not merge
+- `git restore`: Only handles file changes, not commit history
+
+If you need to proceed, please run manually:
+git reset --hard abc123
+
+This is needed because [specific justification].
 ```
 
 ## Best Practices
