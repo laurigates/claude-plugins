@@ -22,6 +22,17 @@ A PreToolUse hook that intercepts Bash commands and blocks those that should use
 | `cat/tail ...tasks/*.output` | Use **TaskOutput** tool instead |
 | `sleep && cat/tail` | Use **TaskOutput** tool with block parameter |
 | `git X && git Y` | Run git commands as separate Bash calls (avoids index.lock race condition) |
+| `git reset --hard` | Use safer alternatives; if truly needed, ask user to run manually |
+
+### Handling Blocked Commands
+
+When a command is blocked:
+
+1. **Read the reminder** - It explains why and suggests alternatives
+2. **Use the alternative** - Most of the time, the suggested approach is correct
+3. **If truly needed** - Don't retry; ask the user to run the command manually with an explanation
+
+**Important**: User permission does not bypass hook blocks. If a command is blocked, retrying will fail again. For rare edge cases where the blocked command is legitimately required, ask the user to run it manually and explain why.
 
 ### How It Works
 

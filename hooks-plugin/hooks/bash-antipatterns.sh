@@ -139,7 +139,12 @@ If you're trying to:
 - Undo a local commit (not pushed): use 'git reset --soft HEAD~1' (keeps changes staged)
 - Switch branches cleanly: use 'git stash' then 'git checkout <branch>'
 
-Only use 'git reset --hard' if explicitly requested by the user."
+IF THIS COMMAND IS TRULY REQUIRED (rare edge cases like fixing corrupted state):
+Do NOT retry the command - this hook will continue to block it.
+Instead, ask the user to run it manually. Provide:
+1. The exact command: $COMMAND
+2. Why it's needed in this specific situation
+3. What alternatives you considered and why they won't work"
 fi
 
 # If we get here, the command is allowed
