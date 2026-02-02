@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.11.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.10.2...git-plugin-v2.11.0) (2026-02-02)
+
+
+### Features
+
+* **git-plugin:** add git-worktree-agent-workflow skill ([#298](https://github.com/laurigates/claude-plugins/issues/298)) ([f225ee9](https://github.com/laurigates/claude-plugins/commit/f225ee9c301a978b008eea2c7a4340f4a4e8e3e3))
+
 ## [2.10.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.10.1...git-plugin-v2.10.2) (2026-02-01)
 
 
