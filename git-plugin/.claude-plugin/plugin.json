@@ -25,6 +25,8 @@
     "release-please",
     "monorepo",
     "layered-skills",
-    "composable-workflows"
+    "composable-workflows",
+    "worktree",
+    "parallel-agents"
   ]
 }
