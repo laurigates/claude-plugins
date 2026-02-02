@@ -8,7 +8,7 @@
       "name": "accessibility-plugin",
       "source": "./accessibility-plugin",
       "description": "Accessibility and UX implementation - WCAG, ARIA, design tokens",
-      "version": "2.1.0",
+      "version": "2.1.1",
       "keywords": [
         "accessibility",
         "wcag",
@@ -22,7 +22,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Multi-agent coordination and orchestration patterns",
-      "version": "2.5.0",
+      "version": "2.5.2",
       "keywords": [
         "agents",
         "orchestration",
@@ -50,7 +50,7 @@
       "name": "api-plugin",
       "source": "./api-plugin",
       "description": "API integration and testing - REST endpoints, client generation",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "keywords": [
         "api",
         "rest",
@@ -63,7 +63,7 @@
       "name": "bevy-plugin",
       "source": "./bevy-plugin",
       "description": "Bevy game engine development - ECS, rendering, game architecture",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "keywords": [
         "bevy",
         "game-engine",
@@ -77,7 +77,7 @@
       "name": "blog-plugin",
       "source": "./blog-plugin",
       "description": "Blog post creation - project logs, technical write-ups, personal documentation",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "keywords": [
         "blog",
         "writing",
@@ -92,7 +92,7 @@
       "name": "blueprint-plugin",
       "source": "./blueprint-plugin",
       "description": "Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, and CLAUDE.md management",
-      "version": "3.9.0",
+      "version": "3.10.1",
       "keywords": [
         "blueprint",
         "prd",
@@ -108,7 +108,7 @@
       "name": "code-quality-plugin",
       "source": "./code-quality-plugin",
       "description": "Code review, refactoring, linting, and static analysis",
-      "version": "1.3.1",
+      "version": "1.3.2",
       "keywords": [
         "code-review",
         "refactoring",
@@ -121,7 +121,7 @@
       "name": "command-analytics-plugin",
       "source": "./command-analytics-plugin",
       "description": "Track command and skill usage analytics across all projects",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "keywords": [
         "analytics",
         "tracking",
@@ -183,10 +183,26 @@
       "category": "documentation"
     },
     {
+      "name": "finops-plugin",
+      "source": "./finops-plugin",
+      "description": "GitHub Actions FinOps analysis - billing, cache usage, workflow efficiency, and waste identification",
+      "version": "1.0.0",
+      "keywords": [
+        "finops",
+        "github-actions",
+        "billing",
+        "cache",
+        "cost-optimization",
+        "workflow-analysis",
+        "waste-detection"
+      ],
+      "category": "ci-cd"
+    },
+    {
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, and repository management",
-      "version": "2.9.0",
+      "version": "2.10.2",
       "keywords": [
         "git",
         "github",
@@ -213,7 +229,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "1.3.0",
+      "version": "1.3.1",
       "keywords": [
         "hooks",
         "automation",
@@ -227,7 +243,7 @@
       "name": "kubernetes-plugin",
       "source": "./kubernetes-plugin",
       "description": "Kubernetes and Helm operations - deployments, charts, releases",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "keywords": [
         "kubernetes",
         "helm",
@@ -240,7 +256,7 @@
       "name": "langchain-plugin",
       "source": "./langchain-plugin",
       "description": "LangChain JS/TS development - agents, chains, LangGraph workflows, and Deep Agents patterns",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "keywords": [
         "langchain",
         "langgraph",
@@ -258,7 +274,7 @@
       "name": "networking-plugin",
       "source": "./networking-plugin",
       "description": "Network diagnostics, reconnaissance, monitoring, and HTTP load testing",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "keywords": [
         "networking",
         "diagnostics",
@@ -273,7 +289,7 @@
       "name": "project-plugin",
       "source": "./project-plugin",
       "description": "Project initialization, management, and maintenance - setup, modernization, changelog review, and continuous development workflows",
-      "version": "1.5.0",
+      "version": "1.5.2",
       "keywords": [
         "project",
         "initialization",
@@ -290,7 +306,7 @@
       "name": "python-plugin",
       "source": "./python-plugin",
       "description": "Python development ecosystem - uv, ruff, pytest, packaging",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "keywords": [
         "python",
         "uv",
@@ -357,7 +373,7 @@
       "name": "tools-plugin",
       "source": "./tools-plugin",
       "description": "General utilities - fd, rg, jq, shell, imagemagick",
-      "version": "2.2.1",
+      "version": "2.3.1",
       "keywords": [
         "tools",
         "utilities",
