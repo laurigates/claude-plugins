@@ -332,6 +332,79 @@ Later > Earlier (recent context)
 - Review critical paths
 - Ensure completeness
 
+## Parallel Agent Git Safety
+
+**CRITICAL**: Git operations in parallel agents cause severe conflicts.
+
+### The Problem
+
+Git is **shared state** - all agents see the same working directory:
+
+| Operation | Conflict |
+|-----------|----------|
+| `git stash` | Files disappear for other agents |
+| `git checkout` | Working directory changes unexpectedly |
+| `git commit` | Race conditions, lost changes |
+| `git rebase` | History changes mid-operation |
+| `git reset` | Other agents' work gets wiped |
+
+### The Solution
+
+**Only the `git-ops` agent performs git write operations.**
+
+| Agent Type | Git Read | Git Write |
+|------------|----------|-----------|
+| Orchestrator | ✅ status, log, diff | ❌ Blocked |
+| Parallel Subagent | ✅ status, log, diff | ❌ Blocked |
+| git-ops Agent | ✅ All | ✅ All |
+
+### Workflow Pattern
+
+```
+Orchestrator: Plan work, identify files
+    │
+    ├→ Agent A: Edit files (no git)
+    ├→ Agent B: Edit files (no git)
+    └→ Agent C: Edit files (no git)
+    │
+    ↓ (all complete)
+    │
+Orchestrator: Delegate to git-ops
+    │
+    └→ git-ops: Stage, commit, push
+```
+
+### Implementation Rules
+
+1. **Subagents edit files directly** - use Edit/Write tools, not git
+2. **No stashing** - if you need to preserve state, document it, don't stash
+3. **No branch switching** - work on current branch only
+4. **No committing** - let orchestrator coordinate commits after all work done
+5. **Defer git to orchestrator** - if git operation needed, return and request it
+
+### Orchestrator Coordination
+
+After parallel agents complete:
+1. Review changes with `git status` and `git diff`
+2. Delegate to `git-ops` for commits: "Commit these changes with message X"
+3. Or commit yourself if ORCHESTRATOR_MODE is not enabled
+
+### Error Messages
+
+If you see these errors, you're hitting the parallel safety guards:
+
+```
+Git 'commit' blocked for parallel safety. Edit files in place and let the
+orchestrator coordinate commits after parallel work completes.
+```
+
+```
+Git stash blocked for parallel safety. Stashing during parallel execution
+causes files to disappear for other agents.
+```
+
+**Resolution**: Return control to orchestrator with your completed work. The orchestrator will coordinate git operations.
+
 ## Common Pitfalls
 
 - ❌ Starting without reading context
@@ -341,6 +414,7 @@ Later > Earlier (recent context)
 - ❌ Parallel work without contracts
 - ❌ No integration validation
 - ❌ Infinite iteration loops
+- ❌ **Git operations in parallel agents** (causes file conflicts)
 
 ## Integration with Other Skills
 
