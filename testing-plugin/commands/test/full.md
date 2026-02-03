@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-03
 reviewed: 2025-12-16
 allowed-tools: Task, TodoWrite
 argument-hint: "[--coverage] [--parallel] [--report]"
@@ -10,8 +10,8 @@ description: Complete test suite including integration and E2E tests
 
 ## Context
 
-- Project type: !`ls -la pyproject.toml package.json Cargo.toml go.mod 2>/dev/null | head -1`
-- Test structure: !`find . -type d -name "test*" -o -name "__tests__" 2>/dev/null | head -10`
+- Project files: !`ls -la pyproject.toml package.json Cargo.toml go.mod 2>/dev/null`
+- Test directories: !`find . -type d \( -name "test*" -o -name "__tests__" \) 2>/dev/null`
 - E2E setup: !`ls -la playwright.config.* cypress.config.* 2>/dev/null`
 - CI environment: !`echo "CI=$CI GITHUB_ACTIONS=$GITHUB_ACTIONS"`
 

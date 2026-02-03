@@ -5,7 +5,7 @@ args: "[path]"
 allowed-tools: Bash(python3 *), Bash(docker exec *), Bash(ha *), Read, Grep, Glob
 argument-hint: "Optional path to config directory (defaults to current directory)"
 created: 2025-02-01
-modified: 2025-02-01
+modified: 2026-02-03
 reviewed: 2025-02-01
 ---
 
@@ -15,8 +15,8 @@ Validate Home Assistant configuration files for YAML syntax errors and common is
 
 ## Context
 
-- Config path: `{{ path | default('.') }}`
-- YAML files: !`find {{ path | default('.') }} -name "*.yaml" -type f 2>/dev/null`
+- Config path: `{{ path or '.' }}`
+- YAML files: !`find {{ path or '.' }} -name "*.yaml" -type f 2>/dev/null`
 
 ## Validation Steps
 
@@ -25,7 +25,7 @@ Validate Home Assistant configuration files for YAML syntax errors and common is
 Validate all YAML files for proper syntax:
 
 ```bash
-find {{ path | default('.') }} -name "*.yaml" -type f -exec python3 -c "
+find {{ path or '.' }} -name "*.yaml" -type f -exec python3 -c "
 import yaml
 import sys
 try:
@@ -44,14 +44,14 @@ except yaml.YAMLError as e:
 **Check for undefined secrets:**
 ```bash
 # Find secret references
-grep -rh "!secret [a-z_]*" {{ path | default('.') }} --include="*.yaml" 2>/dev/null | \
+grep -rh "!secret [a-z_]*" {{ path or '.' }} --include="*.yaml" 2>/dev/null | \
   sed 's/.*!secret //' | sort -u > /tmp/used_secrets.txt
 
 # Check if secrets.yaml exists
-if [ -f "{{ path | default('.') }}/secrets.yaml" ]; then
+if [ -f "{{ path or '.' }}/secrets.yaml" ]; then
   echo "secrets.yaml found"
   # List defined secrets
-  grep "^[a-z_]*:" {{ path | default('.') }}/secrets.yaml | sed 's/:.*//' | sort -u > /tmp/defined_secrets.txt
+  grep "^[a-z_]*:" {{ path or '.' }}/secrets.yaml | sed 's/:.*//' | sort -u > /tmp/defined_secrets.txt
   echo "Undefined secrets:"
   comm -23 /tmp/used_secrets.txt /tmp/defined_secrets.txt
 else
@@ -75,7 +75,7 @@ class DuplicateKeyChecker(yaml.SafeLoader):
         return super().construct_mapping(node, deep)
 
 for f in ['configuration.yaml', 'automations.yaml', 'scripts.yaml', 'scenes.yaml']:
-    path = '{{ path | default('.') }}/' + f
+    path = '{{ path or '.' }}/' + f
     try:
         with open(path) as file:
             yaml.load(file, Loader=DuplicateKeyChecker)

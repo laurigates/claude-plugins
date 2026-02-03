@@ -1,7 +1,7 @@
 ---
 model: opus
 created: 2026-01-24
-modified: 2026-01-24
+modified: 2026-02-03
 reviewed: 2026-01-24
 allowed-tools: Bash(git log *), Bash(git shortlog *), Bash(git diff *), Bash(git branch *),
                Bash(git show *), Bash(git rev-list *), Bash(git diff-tree *),
@@ -14,7 +14,6 @@ description: Analyze git history to derive undocumented rules, PRDs, ADRs, and P
 
 - Current branch: !`git branch --show-current`
 - Commit count: !`git rev-list --count HEAD 2>/dev/null`
-- First commit: !`git log --format='%ai' --reverse 2>/dev/null | head -1`
 - Latest commit: !`git log --format='%ai' -1 2>/dev/null`
 - Existing rules: !`ls .claude/rules/ 2>/dev/null`
 - Existing docs: !`ls docs/prds/ docs/adrs/ docs/prps/ 2>/dev/null`
