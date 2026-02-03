@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.3](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.2.2...testing-plugin-v3.2.3) (2026-02-03)
+
+
+### Bug Fixes
+
+* remove shell operators from context commands across all plugins ([#316](https://github.com/laurigates/claude-plugins/issues/316)) ([ecabe72](https://github.com/laurigates/claude-plugins/commit/ecabe72ebd100af1219f97012832d8ba500965b5))
+
 ## [3.2.2](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.2.1...testing-plugin-v3.2.2) (2026-01-25)
 
 
