@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.5.2...project-plugin-v1.6.0) (2026-02-03)
+
+
+### Features
+
+* Add args and argument-hint parameters to commands ([6f7958e](https://github.com/laurigates/claude-plugins/commit/6f7958e78ba39b91e6d1e918935d58ae7ad376aa))
+
 ## [1.5.2](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.5.1...project-plugin-v1.5.2) (2026-02-01)
 
 
