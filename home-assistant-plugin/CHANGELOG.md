@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/laurigates/claude-plugins/compare/home-assistant-plugin-v1.1.1...home-assistant-plugin-v1.1.2) (2026-02-03)
+
+
+### Bug Fixes
+
+* remove shell operators from context commands in multiple plugins ([#326](https://github.com/laurigates/claude-plugins/issues/326)) ([b028f73](https://github.com/laurigates/claude-plugins/commit/b028f7385f66f8f063a95874840c51e553694205))
+
 ## [1.1.1](https://github.com/laurigates/claude-plugins/compare/home-assistant-plugin-v1.1.0...home-assistant-plugin-v1.1.1) (2026-02-03)
 
 
