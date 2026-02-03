@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/laurigates/claude-plugins/compare/documentation-plugin-v1.1.2...documentation-plugin-v1.2.0) (2026-02-03)
+
+
+### Features
+
+* Add args and argument-hint parameters to commands ([6f7958e](https://github.com/laurigates/claude-plugins/commit/6f7958e78ba39b91e6d1e918935d58ae7ad376aa))
+
 ## [1.1.2](https://github.com/laurigates/claude-plugins/compare/documentation-plugin-v1.1.1...documentation-plugin-v1.1.2) (2026-02-03)
 
 
