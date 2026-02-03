@@ -10,11 +10,11 @@ argument-hint: "[--check-only] [--fix] [--source <docs|site|custom>]"
 
 ## Context
 
-- GitHub workflows: !`ls -la .github/workflows/*doc*.yml .github/workflows/*pages*.yml 2>/dev/null || echo "None found"`
-- Documentation config: !`ls -la mkdocs.yml typedoc.json docs/conf.py docusaurus.config.* 2>/dev/null || echo "None found"`
-- Docs directory: !`ls -d docs/ site/ 2>/dev/null || echo "Not found"`
-- CNAME file: !`ls -la CNAME 2>/dev/null || echo "None found"`
-- Project standards: !`ls -la .project-standards.yaml 2>/dev/null || echo "None found"`
+- GitHub workflows: !`ls -la .github/workflows/*doc*.yml .github/workflows/*pages*.yml 2>/dev/null`
+- Documentation config: !`ls -la mkdocs.yml typedoc.json docs/conf.py docusaurus.config.* 2>/dev/null`
+- Docs directory: !`ls -d docs/ site/ 2>/dev/null`
+- CNAME file: !`ls -la CNAME 2>/dev/null`
+- Project standards: !`ls -la .project-standards.yaml 2>/dev/null`
 
 ## Parameters
 

@@ -10,10 +10,10 @@ description: Universal test runner that automatically detects and runs the appro
 
 ## Context
 
-- Project indicators: !`ls -la pyproject.toml package.json Cargo.toml go.mod 2>/dev/null || echo "none found"`
-- Test directories: !`ls -d tests/ test/ __tests__/ spec/ 2>/dev/null || echo "none found"`
-- Package.json test script: !`cat package.json 2>/dev/null | grep -A2 '"test"' | head -3`
-- Pytest config: !`cat pyproject.toml 2>/dev/null | grep -A5 '\[tool.pytest' | head -6`
+- Project indicators: !`ls -la pyproject.toml package.json Cargo.toml go.mod 2>/dev/null`
+- Test directories: !`ls -d tests/ test/ __tests__/ spec/ 2>/dev/null`
+- Package.json test script: !`grep -A2 '"test"' package.json 2>/dev/null`
+- Pytest config: !`grep -A5 '\[tool.pytest' pyproject.toml 2>/dev/null`
 
 ## Parameters
 

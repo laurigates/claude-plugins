@@ -171,11 +171,11 @@ gh api repos/{owner}/{repo}/issues --paginate --jq '.[].number'
 
 ## Error Handling in Context
 
-Always include fallback for context expressions:
+Use `2>/dev/null` to suppress errors in context expressions (do NOT use `||` fallbacks - blocked by Claude Code 2.1.7+):
 
 ```markdown
-- PR checks: !`gh pr checks $PR --json name,state,conclusion 2>/dev/null || echo "[]"`
-- Run status: !`gh run view $ID --json status,conclusion 2>/dev/null || echo "{}"`
+- PR checks: !`gh pr checks $PR --json name,state,conclusion 2>/dev/null`
+- Run status: !`gh run view $ID --json status,conclusion 2>/dev/null`
 ```
 
 ## Field Reference

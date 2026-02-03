@@ -15,8 +15,8 @@ Analyze GitHub Actions cache usage - size breakdown, cache key patterns, branch 
 
 ## Context
 
-- Current repo: !`gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null || echo "not in a repo"`
-- Repo owner: !`gh repo view --json owner --jq '.owner.login' 2>/dev/null || echo "unknown"`
+- Current repo: !`gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null`
+- Repo owner: !`gh repo view --json owner --jq '.owner.login' 2>/dev/null`
 
 ## Parameters
 

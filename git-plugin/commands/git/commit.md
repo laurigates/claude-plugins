@@ -16,9 +16,9 @@ description: Complete workflow from changes to PR - auto-detect related issues, 
 - Unstaged changes: !`git diff --numstat 2>/dev/null`
 - Staged changes: !`git diff --cached --numstat 2>/dev/null`
 - Recent commits: !`git log --format='%h %s' -n 10`
-- Remote: !`git remote get-url origin 2>/dev/null || echo "(no remote)"`
-- Available labels: !`gh label list --json name --limit 50 2>/dev/null || echo "[]"`
-- Open issues: !`gh issue list --state open --json number,title,labels --limit 30 2>/dev/null || echo "[]"`
+- Remote: !`git remote get-url origin 2>/dev/null`
+- Available labels: !`gh label list --json name --limit 50 2>/dev/null`
+- Open issues: !`gh issue list --state open --json number,title,labels --limit 30 2>/dev/null`
 
 ## Parameters
 

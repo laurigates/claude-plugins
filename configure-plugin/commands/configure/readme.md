@@ -12,12 +12,12 @@ argument-hint: "[--check-only] [--fix] [--style <minimal|standard|detailed>] [--
 
 - Project root: !`pwd`
 - Project name: !`basename $(pwd)`
-- README exists: !`ls -la README.md 2>/dev/null || echo "Not found"`
-- Package files: !`ls -la package.json pyproject.toml Cargo.toml go.mod 2>/dev/null || echo "None found"`
-- Git remote: !`git remote get-url origin 2>/dev/null || echo "No remote"`
-- License file: !`ls -la LICENSE* 2>/dev/null || echo "None found"`
-- Assets directory: !`ls -d assets/ public/ images/ docs/assets/ 2>/dev/null || echo "None found"`
-- Logo files: !`ls assets/logo* assets/icon* public/logo* images/logo* 2>/dev/null || echo "None found"`
+- README exists: !`ls -la README.md 2>/dev/null`
+- Package files: !`ls -la package.json pyproject.toml Cargo.toml go.mod 2>/dev/null`
+- Git remote: !`git remote get-url origin 2>/dev/null`
+- License file: !`ls -la LICENSE* 2>/dev/null`
+- Assets directory: !`ls -d assets/ public/ images/ docs/assets/ 2>/dev/null`
+- Logo files: !`ls assets/logo* assets/icon* public/logo* images/logo* 2>/dev/null`
 
 ## Parameters
 

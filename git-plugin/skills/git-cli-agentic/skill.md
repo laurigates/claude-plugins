@@ -293,12 +293,12 @@ git push -u origin HEAD
 
 ## Error Handling in Context
 
-Always include fallback for context expressions:
+Use `2>/dev/null` to suppress errors in context expressions (do NOT use `||` fallbacks - blocked by Claude Code 2.1.7+):
 
 ```markdown
-- Git status: !`git status --porcelain=v2 --branch 2>/dev/null || echo "not a git repo"`
-- Current branch: !`git branch --show-current 2>/dev/null || echo "detached"`
-- Remote URL: !`git remote get-url origin 2>/dev/null || echo "no remote"`
+- Git status: !`git status --porcelain=v2 --branch 2>/dev/null`
+- Current branch: !`git branch --show-current 2>/dev/null`
+- Remote URL: !`git remote get-url origin 2>/dev/null`
 ```
 
 ## Combining with GH CLI

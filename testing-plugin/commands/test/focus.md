@@ -11,10 +11,10 @@ description: Run single test file with fail-fast mode for rapid iteration
 ## Context
 
 - Project type: !`ls -la pyproject.toml package.json Cargo.toml go.mod 2>/dev/null | head -1`
-- Playwright config: !`ls playwright.config.* 2>/dev/null || echo "none"`
-- Vitest config: !`ls vitest.config.* vite.config.* 2>/dev/null | head -1 || echo "none"`
-- Jest config: !`ls jest.config.* 2>/dev/null || echo "none"`
-- Pytest config: !`grep -l "pytest" pyproject.toml setup.cfg 2>/dev/null | head -1 || echo "none"`
+- Playwright config: !`ls playwright.config.* 2>/dev/null`
+- Vitest config: !`ls vitest.config.* vite.config.* 2>/dev/null`
+- Jest config: !`ls jest.config.* 2>/dev/null`
+- Pytest config: !`grep -l "pytest" pyproject.toml setup.cfg 2>/dev/null`
 - Package scripts: !`cat package.json 2>/dev/null | grep -E '"test' | head -5`
 
 ## Parameters

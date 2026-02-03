@@ -10,7 +10,7 @@ description: Review PR workflow results and comments, then address substantive f
 
 ## Context
 
-- Repo: !`gh repo view --json nameWithOwner -q '.nameWithOwner' 2>/dev/null || echo "unknown"`
+- Repo: !`gh repo view --json nameWithOwner -q '.nameWithOwner' 2>/dev/null`
 - Current branch: !`git branch --show-current`
 - Git status: !`git status --porcelain=v2 --branch 2>/dev/null`
 - Staged changes: !`git diff --cached --numstat 2>/dev/null`

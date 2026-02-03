@@ -189,8 +189,8 @@ gh run view $RUN_ID --json status 2>/dev/null && gh run watch $RUN_ID --compact
 Use in command frontmatter:
 
 ```markdown
-- In-progress runs: !`gh run list --status in_progress --json databaseId,name --jq '.[0] // "none"' 2>/dev/null`
-- Latest run: !`gh run list -L 1 --json databaseId,name,status,conclusion 2>/dev/null || echo "[]"`
+- In-progress runs: !`gh run list --status in_progress --json databaseId,name --jq '.[0]' 2>/dev/null`
+- Latest run: !`gh run list -L 1 --json databaseId,name,status,conclusion 2>/dev/null`
 ```
 
 ## See Also

@@ -13,11 +13,11 @@ description: Analyze git history to derive undocumented rules, PRDs, ADRs, and P
 ## Context
 
 - Current branch: !`git branch --show-current`
-- Commit count: !`git rev-list --count HEAD 2>/dev/null || echo "0"`
+- Commit count: !`git rev-list --count HEAD 2>/dev/null`
 - First commit: !`git log --format='%ai' --reverse 2>/dev/null | head -1`
 - Latest commit: !`git log --format='%ai' -1 2>/dev/null`
-- Existing rules: !`ls .claude/rules/ 2>/dev/null || echo "none"`
-- Existing docs: !`ls docs/prds/ docs/adrs/ docs/prps/ 2>/dev/null || echo "none"`
+- Existing rules: !`ls .claude/rules/ 2>/dev/null`
+- Existing docs: !`ls docs/prds/ docs/adrs/ docs/prps/ 2>/dev/null`
 - Commit conventions sample: !`git log --format='%s' -20 2>/dev/null`
 
 ## Parameters

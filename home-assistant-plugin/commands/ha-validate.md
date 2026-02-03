@@ -16,7 +16,7 @@ Validate Home Assistant configuration files for YAML syntax errors and common is
 ## Context
 
 - Config path: `{{ path | default('.') }}`
-- YAML files: !`find {{ path | default('.') }} -name "*.yaml" -type f 2>/dev/null | head -20 || echo "No YAML files found"`
+- YAML files: !`find {{ path | default('.') }} -name "*.yaml" -type f 2>/dev/null`
 
 ## Validation Steps
 
