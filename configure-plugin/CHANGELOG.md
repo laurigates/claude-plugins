@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.5.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.4.2...configure-plugin-v1.5.0) (2026-02-03)
+
+
+### Features
+
+* **configure-plugin:** add reusable-workflows installer command ([#310](https://github.com/laurigates/claude-plugins/issues/310)) ([839a63b](https://github.com/laurigates/claude-plugins/commit/839a63b30f3a27cf862fcff86adcb0d6f4492e6d))
+
+
+### Bug Fixes
+
+* **configure-plugin:** remove shell operators from context commands ([18baf15](https://github.com/laurigates/claude-plugins/commit/18baf158a12f821e3f73a7b03c29e4d4b39f527c))
+
 ## [1.4.2](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.4.1...configure-plugin-v1.4.2) (2026-01-25)
 
 
