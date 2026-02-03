@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.5](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.3.4...code-quality-plugin-v1.3.5) (2026-02-03)
+
+
+### Bug Fixes
+
+* **code-quality-plugin:** remove parameter substitution from context commands ([5171301](https://github.com/laurigates/claude-plugins/commit/5171301b8ee6168cc7241509057efa37fa709c9d))
+
 ## [1.3.4](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.3.3...code-quality-plugin-v1.3.4) (2026-02-03)
 
 
