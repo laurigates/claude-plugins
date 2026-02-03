@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.2.4...testing-plugin-v3.3.0) (2026-02-03)
+
+
+### Features
+
+* Add args and argument-hint parameters to commands ([6f7958e](https://github.com/laurigates/claude-plugins/commit/6f7958e78ba39b91e6d1e918935d58ae7ad376aa))
+
 ## [3.2.4](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.2.3...testing-plugin-v3.2.4) (2026-02-03)
 
 
