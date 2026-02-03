@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.4](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.5.3...agent-patterns-plugin-v2.5.4) (2026-02-03)
+
+
+### Bug Fixes
+
+* remove shell operators from context commands in multiple plugins ([#326](https://github.com/laurigates/claude-plugins/issues/326)) ([b028f73](https://github.com/laurigates/claude-plugins/commit/b028f7385f66f8f063a95874840c51e553694205))
+
 ## [2.5.3](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.5.2...agent-patterns-plugin-v2.5.3) (2026-02-02)
 
 
