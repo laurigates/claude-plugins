@@ -98,7 +98,73 @@ jobs:
 
 See `release-please-standards` skill for details.
 
-### 3. Test Workflow (Recommended)
+### 3. ArgoCD Auto-merge Workflow (Optional)
+
+**File**: `.github/workflows/argocd-automerge.yml`
+
+Auto-merge PRs from ArgoCD Image Updater branches:
+
+```yaml
+name: Auto-merge ArgoCD Image Updater branches
+
+on:
+  push:
+    branches:
+      - 'image-updater-**'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  create-and-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create Pull Request
+        id: create-pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_URL=$(gh pr create \
+            --base main \
+            --head "${{ github.ref_name }}" \
+            --title "chore(deps): update container image" \
+            --body "Automated image update by argocd-image-updater.
+
+          Branch: \`${{ github.ref_name }}\`" \
+            2>&1) || true
+
+          if echo "$PR_URL" | grep -q "already exists"; then
+            PR_URL=$(gh pr view "${{ github.ref_name }}" --json url -q .url)
+          fi
+
+          echo "pr_url=$PR_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Approve PR
+        env:
+          GH_TOKEN: ${{ secrets.AUTO_MERGE_PAT || secrets.GITHUB_TOKEN }}
+        run: gh pr review --approve "${{ github.ref_name }}"
+        continue-on-error: true
+
+      - name: Enable auto-merge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr merge --auto --squash "${{ github.ref_name }}"
+```
+
+**Key features:**
+- Triggers on `image-updater-**` branches from ArgoCD Image Updater
+- Creates PR automatically if not exists
+- Self-approval with optional PAT (for bypassing GitHub restrictions)
+- Squash merge with auto-merge enabled
+
+**Prerequisites:**
+- Enable auto-merge in repository settings
+- Optional: `AUTO_MERGE_PAT` secret for self-approval
+
+### 4. Test Workflow (Recommended)
 
 **File**: `.github/workflows/test.yml`
 
@@ -210,6 +276,7 @@ platforms: linux/amd64,linux/arm64
 | container-build | Container builds | Yes (if Dockerfile) |
 | release-please | Automated releases | Yes |
 | test | Testing and linting | Recommended |
+| argocd-automerge | Auto-merge image updates | Optional (if using ArgoCD Image Updater) |
 
 ### Required Elements
 
