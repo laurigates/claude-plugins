@@ -66,8 +66,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          model: haiku
-          claude_args: "--max-turns ${{ inputs.max-turns }}"
+          claude_args: "--model haiku --max-turns ${{ inputs.max-turns }}"
           prompt: |
             Analyze these files for code smells and anti-patterns.
             Minimum severity to report: ${{ inputs.severity-threshold }}
