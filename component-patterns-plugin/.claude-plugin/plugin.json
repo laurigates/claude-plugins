@@ -1,0 +1,22 @@
+{
+  "name": "component-patterns-plugin",
+  "version": "1.0.0",
+  "description": "Reusable UI component patterns for implementing common features across different frameworks and tech stacks",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "repository": "https://github.com/laurigates/claude-plugins",
+  "license": "MIT",
+  "keywords": [
+    "components",
+    "ui-patterns",
+    "version-badge",
+    "tooltips",
+    "framework-agnostic",
+    "react",
+    "vue",
+    "svelte",
+    "nextjs",
+    "nuxt"
+  ]
+}

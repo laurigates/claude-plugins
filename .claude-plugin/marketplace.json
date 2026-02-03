@@ -145,6 +145,22 @@
       "category": "communication"
     },
     {
+      "name": "component-patterns-plugin",
+      "source": "./component-patterns-plugin",
+      "description": "Reusable UI component patterns - version badge, tooltips, and common UI elements for React, Vue, Svelte",
+      "version": "1.0.0",
+      "keywords": [
+        "components",
+        "ui-patterns",
+        "version-badge",
+        "react",
+        "vue",
+        "svelte",
+        "framework-agnostic"
+      ],
+      "category": "ux"
+    },
+    {
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
