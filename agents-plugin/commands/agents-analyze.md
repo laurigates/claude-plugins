@@ -5,7 +5,7 @@ args: "[--focus <plugin-name>]"
 allowed-tools: Glob, Grep, Read, Bash(ls *), Bash(wc *), TodoWrite
 argument-hint: "analyze all plugins or --focus <plugin-name>"
 created: 2026-01-24
-modified: 2026-01-24
+modified: 2026-02-03
 reviewed: 2026-01-24
 ---
 
@@ -15,10 +15,10 @@ Analyze the plugin collection to identify where sub-agents would improve workflo
 
 ## Context
 
-- Plugins: !`ls -d */  2>/dev/null | grep -c plugin`
-- Existing agents: !`ls agents-plugin/agents/*.md 2>/dev/null | xargs -I{} basename {} .md | tr '\n' ', '`
-- Total skills: !`find . -path '*/skills/*/skill.md' 2>/dev/null | wc -l`
-- Total commands: !`find . -path '*/commands/*.md' 2>/dev/null | wc -l`
+- Plugin directories: !`ls -d *-plugin/ 2>/dev/null`
+- Existing agents: !`ls agents-plugin/agents/*.md 2>/dev/null`
+- Skills: !`find . -path '*/skills/*/skill.md' 2>/dev/null`
+- Commands: !`find . -path '*/commands/*.md' -not -path './agents-plugin/*' 2>/dev/null`
 
 ## Parameters
 

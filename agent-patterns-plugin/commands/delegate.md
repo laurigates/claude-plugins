@@ -1,7 +1,7 @@
 ---
 model: opus
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-03
 reviewed: 2025-12-16
 description: Delegate tasks to specialized agents with automatic task-agent matching and parallel execution
 allowed-tools: Task, TodoWrite, AskUserQuestion
@@ -11,9 +11,9 @@ argument-hint: "<task-description>"
 ## Context
 
 - Working directory: !`pwd`
-- Git status: !`git status --porcelain 2>/dev/null | head -10`
-- Project type: !`ls -1 package.json pyproject.toml Cargo.toml go.mod 2>/dev/null | head -1`
-- Recent files: !`git diff --name-only HEAD~5 2>/dev/null | head -10`
+- Git status: !`git status --porcelain 2>/dev/null`
+- Project files: !`ls -1 package.json pyproject.toml Cargo.toml go.mod 2>/dev/null`
+- Recent files: !`git diff --name-only HEAD~5 2>/dev/null`
 
 ## Parameters
 

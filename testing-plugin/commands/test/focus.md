@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2026-01-19
-modified: 2026-01-19
+modified: 2026-02-03
 reviewed: 2026-01-19
 allowed-tools: Bash, Read, Grep, Glob, TodoWrite
 argument-hint: "<file-path> [--serial] [--debug]"
@@ -10,12 +10,12 @@ description: Run single test file with fail-fast mode for rapid iteration
 
 ## Context
 
-- Project type: !`ls -la pyproject.toml package.json Cargo.toml go.mod 2>/dev/null | head -1`
+- Project files: !`ls -la pyproject.toml package.json Cargo.toml go.mod 2>/dev/null`
 - Playwright config: !`ls playwright.config.* 2>/dev/null`
 - Vitest config: !`ls vitest.config.* vite.config.* 2>/dev/null`
 - Jest config: !`ls jest.config.* 2>/dev/null`
 - Pytest config: !`grep -l "pytest" pyproject.toml setup.cfg 2>/dev/null`
-- Package scripts: !`cat package.json 2>/dev/null | grep -E '"test' | head -5`
+- Package.json: !`cat package.json 2>/dev/null`
 
 ## Parameters
 

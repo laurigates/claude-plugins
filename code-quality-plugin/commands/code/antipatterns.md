@@ -1,7 +1,7 @@
 ---
 model: opus
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-03
 reviewed: 2025-12-16
 description: Analyze codebase for anti-patterns, code smells, and quality issues using ast-grep
 allowed-tools: Read, Bash(sg *), Bash(rg *), Glob, Grep, TodoWrite, Task
@@ -11,11 +11,9 @@ argument-hint: "[PATH] [--focus <category>] [--severity <level>]"
 ## Context
 
 - Analysis path: !`echo "${1:-.}"`
-- Languages detected: !`find ${1:-.} -type f \( -name "*.js" -o -name "*.ts" -o -name "*.jsx" -o -name "*.tsx" -o -name "*.vue" -o -name "*.py" \) 2>/dev/null | head -5 | xargs -I {} basename {} | sed 's/.*\.//' | sort -u | tr '\n' ' '`
-- Total source files: !`find ${1:-.} -type f \( -name "*.js" -o -name "*.ts" -o -name "*.jsx" -o -name "*.tsx" -o -name "*.vue" -o -name "*.py" \) 2>/dev/null | wc -l`
-- Has Vue: !`find ${1:-.} -name "*.vue" 2>/dev/null -print -quit`
-- Has React: !`find ${1:-.} -name "*.tsx" -o -name "*.jsx" 2>/dev/null -print -quit`
-- Has Python: !`find ${1:-.} -name "*.py" 2>/dev/null -print -quit`
+- JS/TS files: !`find ${1:-.} -type f \( -name "*.js" -o -name "*.ts" -o -name "*.jsx" -o -name "*.tsx" \) 2>/dev/null`
+- Vue files: !`find ${1:-.} -name "*.vue" 2>/dev/null`
+- Python files: !`find ${1:-.} -name "*.py" 2>/dev/null`
 
 ## Your Task
 
