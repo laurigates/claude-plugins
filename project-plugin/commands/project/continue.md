@@ -1,10 +1,12 @@
 ---
 model: opus
-created: 2025-12-16
-modified: 2026-02-01
-reviewed: 2025-12-17
 description: "Analyze project state and continue development where left off"
-allowed_tools: [Read, Bash, Grep, Glob, Edit, Write]
+args: "[--task <id>] [--skip-status]"
+argument-hint: "--task to resume specific task, --skip-status to skip state analysis"
+allowed-tools: Read, Bash, Grep, Glob, Edit, Write
+created: 2025-12-16
+modified: 2026-02-03
+reviewed: 2025-12-17
 ---
 
 Continue project development by analyzing current state and resuming work.

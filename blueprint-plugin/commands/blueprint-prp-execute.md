@@ -1,10 +1,12 @@
 ---
 model: opus
-created: 2025-12-16
-modified: 2026-01-17
-reviewed: 2025-12-16
 description: "Execute a PRP with validation loop, TDD workflow, and quality gates"
-allowed_tools: [Read, Write, Edit, Glob, Bash, Task, AskUserQuestion]
+args: "[prp-name]"
+argument-hint: "Name of PRP to execute (e.g., feature-auth-oauth2)"
+allowed-tools: Read, Write, Edit, Glob, Bash, Task, AskUserQuestion
+created: 2025-12-16
+modified: 2026-02-03
+reviewed: 2025-12-16
 ---
 
 Execute a PRP (Product Requirement Prompt) with systematic implementation and validation.

@@ -1,9 +1,11 @@
 ---
 model: haiku
 description: Install dependencies with Bun package manager
+args: "[--frozen-lockfile] [--production]"
+argument-hint: "--frozen-lockfile for CI, --production for deployment"
 allowed-tools: Bash, Read
 created: 2025-12-20
-modified: 2025-12-20
+modified: 2026-02-03
 reviewed: 2025-12-20
 ---
 

@@ -1,10 +1,12 @@
 ---
 model: opus
-created: 2025-12-16
-modified: 2025-12-16
-reviewed: 2025-12-16
 description: "Synchronize documentation with actual skills, commands, and agents in the codebase"
-allowed_tools: [Bash, Grep, Glob, Read, Edit, Write, TodoWrite]
+args: "[--scope <type>] [--dry-run] [--verbose]"
+argument-hint: "--scope skills|commands|agents, --dry-run to preview, --verbose for details"
+allowed-tools: Bash, Grep, Glob, Read, Edit, Write, TodoWrite
+created: 2025-12-16
+modified: 2026-02-03
+reviewed: 2025-12-16
 ---
 
 # /docs:sync [OPTIONS]

@@ -1,10 +1,12 @@
 ---
 model: opus
-created: 2025-12-16
-modified: 2026-01-09
-reviewed: 2025-12-16
 description: "Curate library or project documentation for ai_docs to optimize AI context"
-allowed_tools: [Read, Write, Glob, Bash, WebFetch, WebSearch, AskUserQuestion]
+args: "[library-name|project:pattern-name]"
+argument-hint: "Library name (e.g., redis, pydantic) or project:pattern-name"
+allowed-tools: Read, Write, Glob, Bash, WebFetch, WebSearch, AskUserQuestion
+created: 2025-12-16
+modified: 2026-02-03
+reviewed: 2025-12-16
 ---
 
 Curate documentation for a library or project pattern into an ai_docs entry.
