@@ -10,9 +10,9 @@ description: Fast unit tests only (skip slow/integration/E2E)
 
 ## Context
 
-- Project type: !`ls -la pyproject.toml package.json Cargo.toml go.mod 2>/dev/null | head -1`
-- Test directories: !`ls -d tests/unit/ test/unit/ __tests__/unit/ 2>/dev/null || echo "no unit dir"`
-- Last test run: !`ls -la .pytest_cache/v/cache/lastfailed 2>/dev/null || echo "no cache"`
+- Project type: !`ls -la pyproject.toml package.json Cargo.toml go.mod 2>/dev/null`
+- Test directories: !`ls -d tests/unit/ test/unit/ __tests__/unit/ 2>/dev/null`
+- Last test run: !`ls -la .pytest_cache/v/cache/lastfailed 2>/dev/null`
 
 ## Parameters
 

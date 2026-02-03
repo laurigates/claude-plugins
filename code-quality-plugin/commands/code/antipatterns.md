@@ -13,9 +13,9 @@ argument-hint: "[PATH] [--focus <category>] [--severity <level>]"
 - Analysis path: !`echo "${1:-.}"`
 - Languages detected: !`find ${1:-.} -type f \( -name "*.js" -o -name "*.ts" -o -name "*.jsx" -o -name "*.tsx" -o -name "*.vue" -o -name "*.py" \) 2>/dev/null | head -5 | xargs -I {} basename {} | sed 's/.*\.//' | sort -u | tr '\n' ' '`
 - Total source files: !`find ${1:-.} -type f \( -name "*.js" -o -name "*.ts" -o -name "*.jsx" -o -name "*.tsx" -o -name "*.vue" -o -name "*.py" \) 2>/dev/null | wc -l`
-- Has Vue: !`find ${1:-.} -name "*.vue" 2>/dev/null | head -1 | grep -q . && echo "yes" || echo "no"`
-- Has React: !`grep -r "from 'react'" ${1:-.} 2>/dev/null | head -1 | grep -q . && echo "yes" || echo "no"`
-- Has Python: !`find ${1:-.} -name "*.py" 2>/dev/null | head -1 | grep -q . && echo "yes" || echo "no"`
+- Has Vue: !`find ${1:-.} -name "*.vue" 2>/dev/null -print -quit`
+- Has React: !`find ${1:-.} -name "*.tsx" -o -name "*.jsx" 2>/dev/null -print -quit`
+- Has Python: !`find ${1:-.} -name "*.py" 2>/dev/null -print -quit`
 
 ## Your Task
 

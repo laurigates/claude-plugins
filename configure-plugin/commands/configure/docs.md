@@ -11,14 +11,14 @@ argument-hint: "[--check-only] [--fix] [--level <minimal|standard|strict>] [--ty
 ## Context
 
 - Project root: !`pwd`
-- Package files: !`ls -la package.json pyproject.toml Cargo.toml 2>/dev/null || echo "None found"`
-- Biome config: !`ls -la biome.json 2>/dev/null || echo "None found"`
-- TSDoc config: !`ls -la tsdoc.json typedoc.json 2>/dev/null || echo "None found"`
-- Python config: !`ls -la pyproject.toml ruff.toml .ruff.toml 2>/dev/null || echo "None found"`
-- Rust config: !`ls -la Cargo.toml clippy.toml 2>/dev/null || echo "None found"`
-- Pre-commit: !`ls -la .pre-commit-config.yaml 2>/dev/null || echo "None found"`
-- Doc generators: !`ls -la mkdocs.yml docs/conf.py docusaurus.config.* 2>/dev/null || echo "None found"`
-- Docs directory: !`ls -d docs/ 2>/dev/null || echo "Not found"`
+- Package files: !`ls -la package.json pyproject.toml Cargo.toml 2>/dev/null`
+- Biome config: !`ls -la biome.json 2>/dev/null`
+- TSDoc config: !`ls -la tsdoc.json typedoc.json 2>/dev/null`
+- Python config: !`ls -la pyproject.toml ruff.toml .ruff.toml 2>/dev/null`
+- Rust config: !`ls -la Cargo.toml clippy.toml 2>/dev/null`
+- Pre-commit: !`ls -la .pre-commit-config.yaml 2>/dev/null`
+- Doc generators: !`ls -la mkdocs.yml docs/conf.py docusaurus.config.* 2>/dev/null`
+- Docs directory: !`ls -d docs/ 2>/dev/null`
 
 ## Parameters
 

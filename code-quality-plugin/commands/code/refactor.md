@@ -11,8 +11,8 @@ description: Refactor code following SOLID principles and best practices
 ## Context
 
 - Target path: !`echo "$1"`
-- File type: !`file "$1" 2>/dev/null || echo "directory or not found"`
-- Lines of code: !`wc -l "$1" 2>/dev/null || find "$1" -type f \( -name "*.py" -o -name "*.js" -o -name "*.ts" \) -exec wc -l {} + 2>/dev/null | tail -1`
+- File type: !`file "$1" 2>/dev/null`
+- Lines of code: !`wc -l "$1" 2>/dev/null`
 
 ## Parameters
 

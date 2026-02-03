@@ -15,7 +15,7 @@ Analyze GitHub Actions workflow runs for a repository - frequency, duration, suc
 
 ## Context
 
-- Current repo: !`gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null || echo "not in a repo"`
+- Current repo: !`gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null`
 
 ## Parameters
 

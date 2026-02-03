@@ -13,12 +13,15 @@ Analyze and validate documentation quality for a codebase, ensuring PRDs, ADRs, 
 ## Context
 
 - Target path: !`echo "${1:-.}"`
-- Blueprint initialized: !`test -d ${1:-.}/.claude/blueprints && echo "✅ Yes" || echo "❌ No"`
-- CLAUDE.md exists: !`test -f ${1:-.}/CLAUDE.md && echo "✅ Yes" || echo "❌ No"`
-- Rules directory: !`test -d ${1:-.}/.claude/rules && echo "✅ Yes ($(ls ${1:-.}/.claude/rules/*.md 2>/dev/null | wc -l) files)" || echo "❌ No"`
-- ADRs: !`(test -d ${1:-.}/docs/adr && echo "✅ Yes ($(ls ${1:-.}/docs/adr/*.md 2>/dev/null | wc -l) files)") || (test -d ${1:-.}/docs/adrs && echo "✅ Yes ($(ls ${1:-.}/docs/adrs/*.md 2>/dev/null | wc -l) files)") || echo "❌ No"`
-- PRDs: !`(test -d ${1:-.}/docs/prds && echo "✅ Yes ($(ls ${1:-.}/docs/prds/*.md 2>/dev/null | wc -l) files)") || (test -d ${1:-.}/.claude/blueprints/prds && echo "✅ Yes ($(ls ${1:-.}/.claude/blueprints/prds/*.md 2>/dev/null | wc -l) files)") || echo "❌ No"`
-- PRPs: !`(test -d ${1:-.}/docs/prps && echo "✅ Yes ($(ls ${1:-.}/docs/prps/*.md 2>/dev/null | wc -l) files)") || (test -d ${1:-.}/.claude/blueprints/prps && echo "✅ Yes ($(ls ${1:-.}/.claude/blueprints/prps/*.md 2>/dev/null | wc -l) files)") || echo "❌ No"`
+- Blueprint dir exists: !`test -d ${1:-.}/.claude/blueprints`
+- CLAUDE.md exists: !`test -f ${1:-.}/CLAUDE.md`
+- Rules directory: !`ls -1 ${1:-.}/.claude/rules/*.md 2>/dev/null`
+- ADRs (docs/adr): !`ls -1 ${1:-.}/docs/adr/*.md 2>/dev/null`
+- ADRs (docs/adrs): !`ls -1 ${1:-.}/docs/adrs/*.md 2>/dev/null`
+- PRDs (docs/prds): !`ls -1 ${1:-.}/docs/prds/*.md 2>/dev/null`
+- PRDs (blueprints): !`ls -1 ${1:-.}/.claude/blueprints/prds/*.md 2>/dev/null`
+- PRPs (docs/prps): !`ls -1 ${1:-.}/docs/prps/*.md 2>/dev/null`
+- PRPs (blueprints): !`ls -1 ${1:-.}/.claude/blueprints/prps/*.md 2>/dev/null`
 
 ## Parameters
 

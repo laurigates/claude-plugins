@@ -12,7 +12,7 @@ description: Complete test suite including integration and E2E tests
 
 - Project type: !`ls -la pyproject.toml package.json Cargo.toml go.mod 2>/dev/null | head -1`
 - Test structure: !`find . -type d -name "test*" -o -name "__tests__" 2>/dev/null | head -10`
-- E2E setup: !`ls -la playwright.config.* cypress.config.* 2>/dev/null || echo "no e2e config"`
+- E2E setup: !`ls -la playwright.config.* cypress.config.* 2>/dev/null`
 - CI environment: !`echo "CI=$CI GITHUB_ACTIONS=$GITHUB_ACTIONS"`
 
 ## Parameters
