@@ -58,7 +58,7 @@ fi
 if echo "$COMMAND" | grep -Eq 'cat\s*>\s*[^|]*commit' || \
    echo "$COMMAND" | grep -Eq "(cat|echo|printf)\s*>\s*/tmp/.*<<.*EOF" && \
    echo "$COMMAND" | grep -Eq '(feat|fix|docs|refactor|test|chore|perf|ci)(\(.+\))?[!:]'; then
-    block_with_reminder "REMINDER: Do NOT write commit messages to temp files. Use HEREDOC directly in git commit:
+    block_with_reminder "REMINDER: Use HEREDOC directly in git commit:
 
 git commit -m \"\$(cat <<'EOF'
 type(scope): description
@@ -67,9 +67,7 @@ Body text here.
 
 Fixes #123
 EOF
-)\"
-
-This pattern passes the commit message directly to git without creating intermediate files."
+)\""
 fi
 
 # Check for cat > file (writing files)
