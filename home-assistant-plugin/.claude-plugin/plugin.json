@@ -1,6 +1,6 @@
 {
   "name": "home-assistant-plugin",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Home Assistant configuration management - YAML configuration, automations, scripts, scenes, and entity management for Home Assistant installations",
   "author": {
     "name": "Lauri Gates"
