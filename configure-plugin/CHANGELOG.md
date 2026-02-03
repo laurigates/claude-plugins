@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.5.0...configure-plugin-v1.5.1) (2026-02-03)
+
+
+### Bug Fixes
+
+* remove shell operators from context commands across all plugins ([#316](https://github.com/laurigates/claude-plugins/issues/316)) ([ecabe72](https://github.com/laurigates/claude-plugins/commit/ecabe72ebd100af1219f97012832d8ba500965b5))
+
 ## [1.5.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.4.2...configure-plugin-v1.5.0) (2026-02-03)
 
 
