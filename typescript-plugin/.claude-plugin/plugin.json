@@ -1,6 +1,6 @@
 {
   "name": "typescript-plugin",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "description": "TypeScript development - strict types, ESLint, Biome, Bun runtime, debugging, Sentry monitoring, dead code detection",
   "author": {
     "name": "Lauri Gates"
