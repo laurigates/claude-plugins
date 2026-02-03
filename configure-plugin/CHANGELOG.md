@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.5.1...configure-plugin-v1.6.0) (2026-02-03)
+
+
+### Features
+
+* **configure-plugin:** add ArgoCD Image Updater auto-merge workflow ([8624928](https://github.com/laurigates/claude-plugins/commit/86249282d89555fe4b90c08a56f3be2bcf098220))
+
 ## [1.5.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.5.0...configure-plugin-v1.5.1) (2026-02-03)
 
 
