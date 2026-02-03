@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/laurigates/claude-plugins/compare/finops-plugin-v1.0.0...finops-plugin-v1.0.1) (2026-02-03)
+
+
+### Bug Fixes
+
+* remove shell operators from context commands across all plugins ([#316](https://github.com/laurigates/claude-plugins/issues/316)) ([ecabe72](https://github.com/laurigates/claude-plugins/commit/ecabe72ebd100af1219f97012832d8ba500965b5))
+
 ## 1.0.0 (2026-01-30)
 
 
