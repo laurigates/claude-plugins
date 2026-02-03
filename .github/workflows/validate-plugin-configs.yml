@@ -81,7 +81,6 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          model: haiku
           prompt: |
             The plugin config validation failed. Read /tmp/sync-output.txt for the validation output
             and /tmp/fix.diff for the diff that would fix it.
@@ -95,7 +94,7 @@ jobs:
 
             For JSON files, show the complete corrected content in the suggestion block.
             Keep your explanation brief - focus on the actionable suggestions.
-          claude_args: "--max-turns 6"
+          claude_args: "--model haiku --max-turns 15"
           additional_permissions: |
             Read
             Grep
