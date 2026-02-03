@@ -1,10 +1,10 @@
 ---
 model: opus
 created: 2026-01-23
-modified: 2026-01-30
+modified: 2026-02-03
 reviewed: 2026-01-30
 description: Configure .claude/settings.json and GitHub Actions workflows to use the laurigates/claude-plugins marketplace
-allowed-tools: Glob, Grep, Read, Write, Edit, Bash(mkdir *), AskUserQuestion, TodoWrite
+allowed-tools: Glob, Grep, Read, Write, Edit, Bash(mkdir *), Bash(test *), Bash(ls *), Bash(git remote *), AskUserQuestion, TodoWrite
 argument-hint: "[--check-only] [--fix] [--plugins <plugin1,plugin2,...>]"
 ---
 
@@ -14,9 +14,9 @@ Configure a project to use the `laurigates/claude-plugins` Claude Code plugin ma
 
 ## Context
 
-- Settings file: !`cat .claude/settings.json 2>/dev/null || echo "not found"`
-- Workflows dir: !`ls .github/workflows/claude*.yml 2>/dev/null || echo "none"`
-- Git remote: !`git remote get-url origin 2>/dev/null || echo "unknown"`
+- Settings file exists: !`test -f .claude/settings.json`
+- Workflows: !`ls -1 .github/workflows/claude*.yml 2>/dev/null`
+- Git remote: !`git remote get-url origin 2>/dev/null`
 
 ## Parameters
 
