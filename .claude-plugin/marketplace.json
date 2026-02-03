@@ -22,7 +22,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Multi-agent coordination and orchestration patterns",
-      "version": "2.5.2",
+      "version": "2.5.3",
       "keywords": [
         "agents",
         "orchestration",
@@ -35,7 +35,7 @@
       "name": "agents-plugin",
       "source": "./agents-plugin",
       "description": "Task-focused agents for test, review, debug, docs, and CI workflows",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "keywords": [
         "agents",
         "testing",
@@ -160,7 +160,7 @@
       "name": "container-plugin",
       "source": "./container-plugin",
       "description": "Container development and deployment - Docker, registry, Skaffold",
-      "version": "2.3.0",
+      "version": "2.3.1",
       "keywords": [
         "container",
         "docker",
@@ -202,7 +202,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, and repository management",
-      "version": "2.10.2",
+      "version": "2.11.0",
       "keywords": [
         "git",
         "github",
@@ -229,7 +229,7 @@
       "name": "home-assistant-plugin",
       "source": "./home-assistant-plugin",
       "description": "Home Assistant configuration management - YAML configuration, automations, scripts, scenes, and entity management for Home Assistant installations",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "keywords": [
         "home-assistant",
         "smart-home",
