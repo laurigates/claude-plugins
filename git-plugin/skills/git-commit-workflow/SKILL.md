@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-01-24
+modified: 2026-02-03
 reviewed: 2026-01-15
 name: git-commit-workflow
 description: |
@@ -255,6 +255,30 @@ git commit -m "feat(feature): add new user management feature"
 - API documentation
 - User guides
 - Commit type: `docs`
+
+## Commit Message Formatting
+
+### HEREDOC Pattern (Required)
+
+**ALWAYS use HEREDOC directly in git commit. NEVER write commit messages to temporary files.**
+
+```bash
+# ✅ CORRECT: HEREDOC directly in git commit
+git commit -m "$(cat <<'EOF'
+feat(auth): add OAuth2 support
+
+Implements token refresh and secure storage.
+
+Fixes #123
+EOF
+)"
+
+# ❌ WRONG: Writing to temp file first
+# cat > /tmp/commit_msg.txt << 'EOF' ...
+# git commit -F /tmp/commit_msg.txt
+#
+# This creates unnecessary files and breaks the workflow.
+```
 
 ## Communication Style
 

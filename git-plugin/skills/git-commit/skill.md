@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2026-01-21
-modified: 2026-01-21
+modified: 2026-02-03
 reviewed: 2026-01-21
 name: git-commit
 description: |
@@ -84,7 +84,10 @@ gh issue list --state open --json number,title,labels --limit 30
 
 ### 5. Create Commit
 
+**IMPORTANT:** Use HEREDOC directly in the git commit command. NEVER write commit messages to temporary files.
+
 ```bash
+# ✅ CORRECT: HEREDOC directly in git commit
 git commit -m "$(cat <<'EOF'
 type(scope): concise description
 
@@ -96,6 +99,10 @@ Refs #456
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 EOF
 )"
+
+# ❌ WRONG: Writing to temp file first
+# cat > /tmp/commit_msg.txt << 'EOF' ...
+# git commit -F /tmp/commit_msg.txt
 ```
 
 ### Conventional Commit Types
