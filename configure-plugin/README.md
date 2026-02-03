@@ -24,6 +24,7 @@ All commands support two modes:
 
 | Command | Description |
 |---------|-------------|
+| `/configure:argocd-automerge` | Auto-merge workflow for ArgoCD Image Updater branches |
 | `/configure:claude-plugins` | Configure Claude Code plugin marketplace and GitHub Actions workflows |
 | `/configure:pre-commit` | Pre-commit hooks for project standards |
 | `/configure:release-please` | Release-please workflow configuration |
