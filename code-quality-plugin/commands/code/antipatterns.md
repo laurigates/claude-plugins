@@ -10,10 +10,10 @@ argument-hint: "[PATH] [--focus <category>] [--severity <level>]"
 
 ## Context
 
-- Analysis path: !`echo "${1:-.}"`
-- JS/TS files: !`find ${1:-.} -type f \( -name "*.js" -o -name "*.ts" -o -name "*.jsx" -o -name "*.tsx" \) 2>/dev/null`
-- Vue files: !`find ${1:-.} -name "*.vue" 2>/dev/null`
-- Python files: !`find ${1:-.} -name "*.py" 2>/dev/null`
+- Analysis path: `$1` (defaults to current directory if not specified)
+- JS/TS files: !`find . -type f \( -name "*.js" -o -name "*.ts" -o -name "*.jsx" -o -name "*.tsx" \) 2>/dev/null`
+- Vue files: !`find . -name "*.vue" 2>/dev/null`
+- Python files: !`find . -name "*.py" 2>/dev/null`
 
 ## Your Task
 

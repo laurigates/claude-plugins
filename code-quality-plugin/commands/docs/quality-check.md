@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2026-01-08
-modified: 2026-01-08
+modified: 2026-02-03
 reviewed: 2026-01-08
 description: "Analyze codebase documentation quality - PRDs, ADRs, PRPs, CLAUDE.md, and .claude/rules/"
 allowed-tools: Read, Glob, Grep, Bash(markdownlint *), Bash(vale *), TodoWrite, Task
@@ -12,16 +12,16 @@ Analyze and validate documentation quality for a codebase, ensuring PRDs, ADRs, 
 
 ## Context
 
-- Target path: !`echo "${1:-.}"`
-- Blueprint dir exists: !`test -d ${1:-.}/.claude/blueprints`
-- CLAUDE.md exists: !`test -f ${1:-.}/CLAUDE.md`
-- Rules directory: !`ls -1 ${1:-.}/.claude/rules/*.md 2>/dev/null`
-- ADRs (docs/adr): !`ls -1 ${1:-.}/docs/adr/*.md 2>/dev/null`
-- ADRs (docs/adrs): !`ls -1 ${1:-.}/docs/adrs/*.md 2>/dev/null`
-- PRDs (docs/prds): !`ls -1 ${1:-.}/docs/prds/*.md 2>/dev/null`
-- PRDs (blueprints): !`ls -1 ${1:-.}/.claude/blueprints/prds/*.md 2>/dev/null`
-- PRPs (docs/prps): !`ls -1 ${1:-.}/docs/prps/*.md 2>/dev/null`
-- PRPs (blueprints): !`ls -1 ${1:-.}/.claude/blueprints/prps/*.md 2>/dev/null`
+- Target path: `$1` (defaults to current directory if not specified)
+- Blueprint dir exists: !`test -d .claude/blueprints`
+- CLAUDE.md exists: !`test -f CLAUDE.md`
+- Rules directory: !`ls -1 .claude/rules/*.md 2>/dev/null`
+- ADRs (docs/adr): !`ls -1 docs/adr/*.md 2>/dev/null`
+- ADRs (docs/adrs): !`ls -1 docs/adrs/*.md 2>/dev/null`
+- PRDs (docs/prds): !`ls -1 docs/prds/*.md 2>/dev/null`
+- PRDs (blueprints): !`ls -1 .claude/blueprints/prds/*.md 2>/dev/null`
+- PRPs (docs/prps): !`ls -1 docs/prps/*.md 2>/dev/null`
+- PRPs (blueprints): !`ls -1 .claude/blueprints/prps/*.md 2>/dev/null`
 
 ## Parameters
 
