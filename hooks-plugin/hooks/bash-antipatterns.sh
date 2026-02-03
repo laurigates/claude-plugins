@@ -53,6 +53,23 @@ if echo "$COMMAND" | grep -Eq '(^|\s)(echo|printf)\s+.*>\s*[^&]' && \
     fi
 fi
 
+# Check for commit message being written to temp file
+# Pattern: cat > /tmp/commit_msg.txt or similar, often with heredoc containing conventional commit
+if echo "$COMMAND" | grep -Eq 'cat\s*>\s*[^|]*commit' || \
+   echo "$COMMAND" | grep -Eq "(cat|echo|printf)\s*>\s*/tmp/.*<<.*EOF" && \
+   echo "$COMMAND" | grep -Eq '(feat|fix|docs|refactor|test|chore|perf|ci)(\(.+\))?[!:]'; then
+    block_with_reminder "REMINDER: Use HEREDOC directly in git commit:
+
+git commit -m \"\$(cat <<'EOF'
+type(scope): description
+
+Body text here.
+
+Fixes #123
+EOF
+)\""
+fi
+
 # Check for cat > file (writing files)
 if echo "$COMMAND" | grep -Eq 'cat\s*>\s*[^|]'; then
     block_with_reminder "REMINDER: Use the Write tool instead of 'cat > file' to create files. The Write tool is the proper way to write file contents."

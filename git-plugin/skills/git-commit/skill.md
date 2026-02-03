@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2026-01-21
-modified: 2026-01-21
+modified: 2026-02-03
 reviewed: 2026-01-21
 name: git-commit
 description: |
@@ -83,6 +83,8 @@ gh issue list --state open --json number,title,labels --limit 30
 - Directory/component matches (medium confidence)
 
 ### 5. Create Commit
+
+**IMPORTANT:** Use HEREDOC directly in the git commit command.
 
 ```bash
 git commit -m "$(cat <<'EOF'
