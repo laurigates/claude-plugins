@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.11.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.11.0...git-plugin-v2.11.1) (2026-02-03)
+
+
+### Bug Fixes
+
+* remove shell operators from context commands across all plugins ([#316](https://github.com/laurigates/claude-plugins/issues/316)) ([ecabe72](https://github.com/laurigates/claude-plugins/commit/ecabe72ebd100af1219f97012832d8ba500965b5))
+
 ## [2.11.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.10.2...git-plugin-v2.11.0) (2026-02-02)
 
 
