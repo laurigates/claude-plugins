@@ -242,6 +242,25 @@
       "category": "ci-cd"
     },
     {
+      "name": "health-plugin",
+      "source": "./health-plugin",
+      "description": "Diagnose and fix Claude Code configuration issues - plugin registry, settings, hooks, MCP servers",
+      "version": "1.0.0",
+      "keywords": [
+        "health",
+        "diagnostics",
+        "troubleshooting",
+        "plugins",
+        "settings",
+        "hooks",
+        "mcp",
+        "configuration",
+        "fix",
+        "repair"
+      ],
+      "category": "utilities"
+    },
+    {
       "name": "home-assistant-plugin",
       "source": "./home-assistant-plugin",
       "description": "Home Assistant configuration management - YAML configuration, automations, scripts, scenes, and entity management for Home Assistant installations",
