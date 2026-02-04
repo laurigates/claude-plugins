@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.11.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.10.1...blueprint-plugin-v3.11.0) (2026-02-04)
+
+
+### Features
+
+* Add args and argument-hint parameters to commands ([6f7958e](https://github.com/laurigates/claude-plugins/commit/6f7958e78ba39b91e6d1e918935d58ae7ad376aa))
+* **blueprint-plugin:** consolidate tracking files and add work-order auto-creation ([0cb7b59](https://github.com/laurigates/claude-plugins/commit/0cb7b59a95bb67433827ca4700ac57ec8a67db96))
+
 ## [3.11.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.10.1...blueprint-plugin-v3.11.0) (2026-02-03)
 
 
