@@ -3,6 +3,18 @@
 ## [1.3.6](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.3.5...code-quality-plugin-v1.3.6) (2026-02-04)
 
 
+### Bug Fixes
+
+* **code-quality-plugin:** handle missing argument in refactor command ([c627bdb](https://github.com/laurigates/claude-plugins/commit/c627bdb774f3afb6d9120195813f47104eaa0ba0))
+
+
+### Documentation
+
+* **rules, settings:** refactor to emphasize positive guidance patterns ([#360](https://github.com/laurigates/claude-plugins/issues/360)) ([a4ea8a8](https://github.com/laurigates/claude-plugins/commit/a4ea8a8990e2a40bb2331855db5fd68631c14d7e))
+
+## [1.3.6](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.3.5...code-quality-plugin-v1.3.6) (2026-02-04)
+
+
 ### Documentation
 
 * **rules, settings:** refactor to emphasize positive guidance patterns ([#360](https://github.com/laurigates/claude-plugins/issues/360)) ([a4ea8a8](https://github.com/laurigates/claude-plugins/commit/a4ea8a8990e2a40bb2331855db5fd68631c14d7e))
