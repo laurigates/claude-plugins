@@ -11,9 +11,9 @@ description: Run single test file with fail-fast mode for rapid iteration
 ## Context
 
 - Project files: !`ls -la pyproject.toml package.json Cargo.toml go.mod 2>/dev/null`
-- Playwright config: !`ls playwright.config.* 2>/dev/null`
-- Vitest config: !`ls vitest.config.* vite.config.* 2>/dev/null`
-- Jest config: !`ls jest.config.* 2>/dev/null`
+- Playwright config: !`find . -maxdepth 1 -name 'playwright.config.*' 2>/dev/null`
+- Vitest config: !`find . -maxdepth 1 \( -name 'vitest.config.*' -o -name 'vite.config.*' \) 2>/dev/null`
+- Jest config: !`find . -maxdepth 1 -name 'jest.config.*' 2>/dev/null`
 - Pytest config: !`grep -l "pytest" pyproject.toml setup.cfg 2>/dev/null`
 - Package.json: !`cat package.json 2>/dev/null`
 

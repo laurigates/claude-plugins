@@ -83,12 +83,8 @@ allowed-tools: Bash(./scripts/safe-deploy.sh *)
 
 Prefer specific command patterns over broad tool access.
 
-**Avoid:**
-```yaml
-allowed-tools: Bash, Read, Write
-```
+Use specific command patterns:
 
-**Prefer:**
 ```yaml
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git add *), Read
 ```
@@ -193,13 +189,13 @@ For projects using plugins with these patterns, recommend adding to `.claude/set
 
 ## Context Section Patterns
 
-Context commands (using `!` backtick syntax) are subject to the same shell operator protections.
+Context commands use `!` backtick syntax and are subject to shell operator protections.
 
-**Important:** Do NOT use `||`, `&&`, or other shell operators in context commands. They will be blocked.
+### Context Command Patterns
 
-### Correct Patterns
+Use `2>/dev/null` to suppress errors. Empty output is acceptable - commands handle missing context gracefully.
 
-Use `2>/dev/null` to suppress errors. Empty output is acceptable - commands handle missing context gracefully:
+Use `find` for file/directory discovery (succeeds with empty output when no matches):
 
 ```markdown
 ## Context
@@ -208,34 +204,22 @@ Use `2>/dev/null` to suppress errors. Empty output is acceptable - commands hand
 - PR checks: !`gh pr checks $PR_NUMBER --json name,state,conclusion 2>/dev/null`
 - Current branch: !`git branch --show-current 2>/dev/null`
 - Config exists: !`test -f .config.json`
-- Workflows: !`ls -1 .github/workflows/*.yml 2>/dev/null`
-```
-
-### Incorrect Patterns (will be blocked)
-
-```markdown
-## Context
-
-# ❌ WRONG - || operator blocked
-- Git status: !`git status 2>/dev/null || echo "not a git repo"`
-- Config: !`cat config.json 2>/dev/null || echo "{}"`
-
-# ❌ WRONG - && operator blocked
-- Has tests: !`test -d tests && echo "yes"`
+- Workflows: !`find .github/workflows -maxdepth 1 -name '*.yml' 2>/dev/null`
+- Directories: !`find . -maxdepth 1 -type d \( -name 'src' -o -name 'lib' \) 2>/dev/null`
+- Config files: !`find . -maxdepth 1 \( -name '*.config.js' -o -name '*.config.ts' \) 2>/dev/null`
 ```
 
 ### Handling Missing Context
 
-Commands should be written to handle empty context gracefully:
 - Check for empty values before using them
-- Provide defaults in the command logic, not in context expressions
-- Use existence checks (`test -f`, `test -d`) which return exit codes, not output
+- Provide defaults in the command logic
+- Use existence checks (`test -f`, `test -d`) for boolean context
 
 ## Checklist for New Commands
 
-- [ ] Uses granular `Bash(command *)` patterns instead of broad `Bash`
+- [ ] Uses granular `Bash(command *)` patterns
 - [ ] Context commands use JSON/porcelain output
-- [ ] Context commands use `2>/dev/null` for error suppression (NOT `|| echo "..."`)
-- [ ] Context commands contain NO shell operators (`||`, `&&`, `;`, `|`)
+- [ ] Context commands use `2>/dev/null` for error suppression
+- [ ] Context commands use `find` for file/directory discovery
 - [ ] Only necessary permissions are granted
 - [ ] Matches a standard permission set or documents why custom set is needed

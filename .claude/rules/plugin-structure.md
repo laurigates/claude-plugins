@@ -72,18 +72,14 @@ plugin-name/
 | `version` | Semantic versioning (MAJOR.MINOR.PATCH) |
 | `commands`/`agents`/`hooks` | Relative paths starting with `./` |
 
-### Valid Names
-```
-✅ my-plugin
-✅ api-tester
-✅ code-quality-plugin
-```
+### Name Format
 
-### Invalid Names
+Use kebab-case: lowercase letters, hyphens between words, starts with a letter.
+
 ```
-❌ My Plugin (spaces)
-❌ myPlugin (camelCase)
-❌ -my-plugin (leading hyphen)
+my-plugin
+api-tester
+code-quality-plugin
 ```
 
 ## Custom Component Paths
@@ -154,7 +150,6 @@ By default, Claude discovers components in standard directories. Override with e
 
 ## Version Management
 
-Versions are managed automatically by release-please:
-- Never manually edit the `version` field
-- Use conventional commits to trigger version bumps
-- See `.claude/rules/release-please.md` for details
+Versions are managed automatically by release-please. Use conventional commits to trigger version bumps.
+
+See `.claude/rules/release-please.md` for details.

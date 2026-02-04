@@ -75,8 +75,8 @@ Choose the appropriate model based on task complexity:
 
 | Field | Purpose | When to Update |
 |-------|---------|----------------|
-| `created` | Initial creation date | Set once, never change |
-| `modified` | Last substantive change | Content updates, not typo fixes |
+| `created` | Initial creation date | Set once at creation |
+| `modified` | Last substantive change | Content updates (not typo fixes) |
 | `reviewed` | Last verified current | After checking against latest docs |
 
 **Review triggers**: Tool major version releases, Claude Code updates, quarterly audits.

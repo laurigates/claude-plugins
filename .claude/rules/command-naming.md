@@ -44,16 +44,14 @@ For related command groups within a plugin, use hyphenated suffixes:
 ## Consistency Rules
 
 1. **All commands in a plugin use the same namespace prefix**
-   - Correct: `/blueprint:prp-create`, `/blueprint:prp-execute`
-   - Wrong: `/prp:create`, `/prp:execute` (separate namespace for related feature)
+   - `/blueprint:prp-create`, `/blueprint:prp-execute`
 
 2. **Related commands share a common prefix within the namespace**
    - `/blueprint:prp-create`, `/blueprint:prp-execute` (PRP workflow)
    - `/blueprint:generate-skills`, `/blueprint:generate-commands` (generation commands)
 
 3. **Command names are kebab-case**
-   - Correct: `/blueprint:prp-create`, `/blueprint:work-order`
-   - Wrong: `/blueprint:prpCreate`, `/blueprint:work_order`
+   - `/blueprint:prp-create`, `/blueprint:work-order`
 
 4. **Filenames match command paths exactly**
    - Command `/blueprint:prp-create` → File `blueprint-prp-create.md`
