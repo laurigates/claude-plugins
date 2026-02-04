@@ -112,7 +112,7 @@ Initialize Blueprint Development in this project.
    docs/
    ├── blueprint/
    │   ├── manifest.json            # Version tracking and configuration
-   │   ├── work-overview.md         # Progress tracking
+   │   ├── feature-tracker.json     # Progress tracking (if enabled)
    │   ├── work-orders/             # Task packages for subagents
    │   │   ├── completed/
    │   │   └── archived/
@@ -136,14 +136,14 @@ Initialize Blueprint Development in this project.
    └── commands/                    # Custom command overrides (optional)
    ```
 
-7. **Create `manifest.json`** (v3.0.0 schema):
+7. **Create `manifest.json`** (v3.1.0 schema):
    ```json
    {
-     "format_version": "3.0.0",
+     "format_version": "3.1.0",
      "created_at": "[ISO timestamp]",
      "updated_at": "[ISO timestamp]",
      "created_by": {
-       "blueprint_plugin": "3.0.0"
+       "blueprint_plugin": "3.1.0"
      },
      "project": {
        "name": "[detected from package.json/pyproject.toml or directory name]",
@@ -163,7 +163,7 @@ Initialize Blueprint Development in this project.
      "feature_tracker": {
        "file": "feature-tracker.json",
        "source_document": "[user selection]",
-       "sync_targets": ["work-overview.md", "TODO.md"]
+       "sync_targets": ["TODO.md"]
      },
      "generated": {
        "rules": {},
@@ -177,45 +177,24 @@ Initialize Blueprint Development in this project.
    ```
 
    Note: Include `feature_tracker` section only if feature tracking is enabled.
+   Note: As of v3.1.0, progress tracking is consolidated into feature-tracker.json (work-overview.md removed).
 
-8. **Create `work-overview.md`**:
-   ```markdown
-   # Work Overview: [Project Name]
-
-   ## Current Phase: [Phase name - e.g., "Planning", "Phase 1", "MVP"]
-
-   ### Completed
-   - (none yet)
-
-   ### In Progress
-   - (none yet)
-
-   ### Pending
-   - (none yet)
-
-   ## Next Steps
-   1. Create a PRD to define project requirements
-   2. Generate project-specific skills from PRDs
-   3. Generate workflow commands for your stack
-   ```
-
-9. **Create initial rules** (if modular rules selected):
+8. **Create initial rules** (if modular rules selected):
    - `development.md`: TDD workflow, commit conventions
    - `testing.md`: Test requirements, coverage expectations
    - `document-management.md`: Document organization rules (if document detection enabled)
 
-10. **Handle `.gitignore`**:
+9. **Handle `.gitignore`**:
    - Always commit `CLAUDE.md` and `.claude/rules/` (shared project instructions)
    - Add `docs/blueprint/work-orders/` to `.gitignore` (task-specific, may contain sensitive details)
    - If secrets detected in `.claude/`, warn user and suggest `.gitignore` entries
 
-11. **Report**:
+10. **Report**:
    ```
-   Blueprint Development initialized! (v3.0.0)
+   Blueprint Development initialized! (v3.1.0)
 
    Blueprint structure created:
    - docs/blueprint/manifest.json
-   - docs/blueprint/work-overview.md
    - docs/blueprint/work-orders/
    - docs/blueprint/ai_docs/
    - docs/blueprint/README.md
@@ -245,7 +224,7 @@ Initialize Blueprint Development in this project.
    - Custom layer: Your overrides in .claude/skills/ and .claude/commands/
    ```
 
-12. **Prompt for next action** (use AskUserQuestion):
+11. **Prompt for next action** (use AskUserQuestion):
     ```
     question: "Blueprint initialized. What would you like to do next?"
     options:

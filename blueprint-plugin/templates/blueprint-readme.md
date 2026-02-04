@@ -16,8 +16,7 @@ Blueprint Development is a structured, documentation-first methodology for AI-as
 docs/blueprint/
 ├── README.md            # This file
 ├── manifest.json        # Version tracking, project configuration
-├── work-overview.md     # Current progress and next steps
-├── feature-tracker.json # FR code tracking (optional)
+├── feature-tracker.json # FR code tracking and progress (optional)
 ├── work-orders/         # Task packages for subagent execution
 │   ├── completed/
 │   └── archived/
@@ -31,8 +30,7 @@ docs/blueprint/
 | File | Purpose |
 |------|---------|
 | `manifest.json` | Tracks blueprint version, enabled features, and generated content metadata |
-| `work-overview.md` | Shows current phase, completed work, and pending tasks |
-| `feature-tracker.json` | Maps requirement codes (FR1, FR1.1) to implementation status |
+| `feature-tracker.json` | Maps requirement codes (FR1, FR1.1) to implementation status, tracks current phase and tasks |
 
 ## Related Locations
 

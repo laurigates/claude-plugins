@@ -4,7 +4,7 @@ created: 2026-01-02
 modified: 2026-01-09
 reviewed: 2026-01-02
 name: feature-tracking
-description: "Track feature implementation status against requirements documents. Provides hierarchical FR code tracking, phase management, and sync with work-overview.md and TODO.md."
+description: "Track feature implementation status against requirements documents. Provides hierarchical FR code tracking, phase management, task tracking, and sync with TODO.md."
 ---
 
 # Feature Tracking Skill
@@ -18,7 +18,8 @@ The feature tracker maintains a JSON file that maps requirements from a source d
 - **Hierarchical FR codes**: FR1, FR2.1, FR2.1.1, etc.
 - **Phase-based development**: Group features by development phase
 - **PRD integration**: Link features to Product Requirements Documents
-- **Sync targets**: Keep work-overview.md and TODO.md in sync
+- **Task tracking**: Track in-progress and pending tasks (replaces work-overview.md)
+- **Sync targets**: Keep TODO.md in sync
 
 ## When to Use
 
@@ -64,13 +65,14 @@ Features are grouped by development phase:
 
 ```
 docs/blueprint/
-├── feature-tracker.json       # Main tracker file
-├── work-overview.md           # Sync target: progress overview
+├── feature-tracker.json       # Main tracker file (source of truth)
 └── schemas/                   # Optional: local schema copy
     └── feature-tracker.schema.json
 ```
 
-The project's `TODO.md` is also a sync target.
+The project's `TODO.md` is a sync target for checkbox states.
+
+**Note**: As of v1.1.0, `feature-tracker.json` includes a `tasks` section that tracks in-progress and pending tasks, replacing the separate `work-overview.md` file.
 
 ## Quick Commands
 
@@ -132,7 +134,7 @@ The `manifest.json` references the feature tracker:
   "feature_tracker": {
     "file": "feature-tracker.json",
     "source_document": "REQUIREMENTS.md",
-    "sync_targets": ["work-overview.md", "TODO.md"]
+    "sync_targets": ["TODO.md"]
   }
 }
 ```
@@ -167,18 +169,24 @@ Work orders can reference specific FR codes. When a work order is completed, upd
 ## Sync Process
 
 The sync process ensures consistency between:
-1. `feature-tracker.json` (source of truth)
-2. `work-overview.md` (human-readable summary)
-3. `TODO.md` (checkbox-based task list)
+1. `feature-tracker.json` (source of truth for features AND tasks)
+2. `TODO.md` (checkbox-based task list)
 
 ### Sync Steps
 
-1. **Load current state** from feature-tracker.json
-2. **Compare** with work-overview.md and TODO.md
+1. **Load current state** from feature-tracker.json (features and tasks)
+2. **Compare** with TODO.md checkbox states
 3. **Verify** implementation status for each feature
 4. **Recalculate** statistics
-5. **Update** sync targets with changes
+5. **Update** TODO.md with changes
 6. **Report** what was synchronized
+
+### Human-Readable Summary
+
+Use `--summary` flag to generate a markdown overview:
+```bash
+/blueprint:feature-tracker-sync --summary
+```
 
 ### Status Verification
 
@@ -214,7 +222,7 @@ When completing a feature:
    ```
 
 2. Run `/blueprint-feature-tracker-sync` to update:
-   - work-overview.md "Completed" section
+   - Move task from `tasks.in_progress` to `tasks.completed`
    - TODO.md checkboxes
    - Statistics recalculation
 

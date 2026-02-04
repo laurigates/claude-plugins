@@ -1,9 +1,15 @@
 {
   "$schema": "./schemas/feature-tracker.schema.json",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "last_updated": "",
   "project": "",
   "source_document": "REQUIREMENTS.md",
+  "current_phase": "phase-0",
+  "tasks": {
+    "in_progress": [],
+    "pending": [],
+    "completed": []
+  },
   "phases": [
     {
       "id": "phase-0",

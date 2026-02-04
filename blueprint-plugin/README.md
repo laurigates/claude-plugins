@@ -49,7 +49,7 @@ PRD (Product Requirements) → PRP (Product Requirement Prompt) → Work-Order �
 | Command | Description |
 |---------|-------------|
 | `/blueprint-feature-tracker-status` | Display feature completion statistics |
-| `/blueprint-feature-tracker-sync` | Synchronize tracker with work-overview.md and TODO.md |
+| `/blueprint-feature-tracker-sync` | Synchronize tracker with TODO.md, generate progress summary |
 
 ## Skills
 
@@ -130,14 +130,14 @@ Creates the directory structure:
 ```
 docs/
 ├── blueprint/
-│   ├── manifest.json     # Blueprint configuration
-│   ├── work-overview.md  # Current phase and progress
-│   └── work-orders/      # Task packages for subagents
+│   ├── manifest.json        # Blueprint configuration
+│   ├── feature-tracker.json # Progress tracking (optional)
+│   └── work-orders/         # Task packages for subagents
 │       ├── completed/
 │       └── archived/
-├── prds/                 # Product Requirements Documents
-├── adrs/                 # Architecture Decision Records
-└── prps/                 # Product Requirement Prompts
+├── prds/                    # Product Requirements Documents
+├── adrs/                    # Architecture Decision Records
+└── prps/                    # Product Requirement Prompts
 ```
 
 ### 2. Derive Documentation
@@ -318,8 +318,12 @@ The tracker uses hierarchical FR codes mapped to your requirements:
 ### Sync Targets
 
 The tracker syncs with:
-- `work-overview.md` - Completed/pending sections
 - `TODO.md` - Checkbox states
+
+Use `--summary` flag to generate a human-readable progress report:
+```bash
+/blueprint:feature-tracker-sync --summary
+```
 
 ### Quick Commands
 
