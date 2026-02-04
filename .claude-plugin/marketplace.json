@@ -35,7 +35,7 @@
       "name": "agents-plugin",
       "source": "./agents-plugin",
       "description": "Task-focused agents for test, review, debug, docs, and CI workflows",
-      "version": "1.1.2",
+      "version": "1.1.3",
       "keywords": [
         "agents",
         "testing",
@@ -240,6 +240,25 @@
         "automation"
       ],
       "category": "ci-cd"
+    },
+    {
+      "name": "health-plugin",
+      "source": "./health-plugin",
+      "description": "Diagnose and fix Claude Code configuration issues - plugin registry, settings, hooks, MCP servers",
+      "version": "1.0.0",
+      "keywords": [
+        "health",
+        "diagnostics",
+        "troubleshooting",
+        "plugins",
+        "settings",
+        "hooks",
+        "mcp",
+        "configuration",
+        "fix",
+        "repair"
+      ],
+      "category": "utilities"
     },
     {
       "name": "home-assistant-plugin",
