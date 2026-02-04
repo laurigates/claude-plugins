@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.6.0...configure-plugin-v1.6.1) (2026-02-04)
+
+
+### Documentation
+
+* **rules, settings:** refactor to emphasize positive guidance patterns ([#360](https://github.com/laurigates/claude-plugins/issues/360)) ([a4ea8a8](https://github.com/laurigates/claude-plugins/commit/a4ea8a8990e2a40bb2331855db5fd68631c14d7e))
+
 ## [1.6.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.5.1...configure-plugin-v1.6.0) (2026-02-03)
 
 
