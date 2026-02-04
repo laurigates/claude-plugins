@@ -15,8 +15,8 @@ Analyze the plugin collection to identify where sub-agents would improve workflo
 
 ## Context
 
-- Plugin directories: !`ls -d *-plugin/ 2>/dev/null`
-- Existing agents: !`ls agents-plugin/agents/*.md 2>/dev/null`
+- Plugin directories: !`find . -maxdepth 1 -type d -name '*-plugin' 2>/dev/null`
+- Existing agents: !`find agents-plugin/agents -maxdepth 1 -name '*.md' 2>/dev/null`
 - Skills: !`find . -path '*/skills/*/skill.md' 2>/dev/null`
 - Commands: !`find . -path '*/commands/*.md' -not -path './agents-plugin/*' 2>/dev/null`
 
