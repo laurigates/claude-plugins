@@ -133,10 +133,10 @@ fi
 if echo "$COMMAND" | grep -Eq 'git\s+\S+.*&&.*git\s+\S+'; then
     block_with_reminder "REMINDER: Chaining git commands with '&&' can cause index.lock race conditions.
 The lock file from the first command may not be released before the second runs.
-Instead of: git stash && git checkout -b branch
+Instead of: git fetch && git switch -c branch
 Run git commands as separate Bash tool calls:
-1. git stash
-2. git checkout -b branch
+1. git fetch
+2. git switch -c branch
 This avoids race conditions and is more reliable."
 fi
 
