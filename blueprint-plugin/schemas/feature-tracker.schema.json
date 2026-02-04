@@ -28,6 +28,15 @@
       "type": "string",
       "description": "Primary requirements document (e.g., REQUIREMENTS.md)"
     },
+    "current_phase": {
+      "type": "string",
+      "pattern": "^phase-\\d+$",
+      "description": "Currently active phase (e.g., phase-1)"
+    },
+    "tasks": {
+      "$ref": "#/definitions/tasks",
+      "description": "Active and pending tasks (replaces work-overview.md)"
+    },
     "phases": {
       "type": "array",
       "description": "Development phases",
@@ -64,6 +73,55 @@
       "type": "string",
       "enum": ["not_started", "in_progress", "partial", "complete", "blocked"],
       "description": "Implementation status"
+    },
+    "tasks": {
+      "type": "object",
+      "description": "Active and pending tasks for progress tracking",
+      "properties": {
+        "in_progress": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/task" },
+          "description": "Tasks currently being worked on"
+        },
+        "pending": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/task" },
+          "description": "Tasks queued for future work"
+        },
+        "completed": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/task" },
+          "description": "Recently completed tasks (last 10)"
+        }
+      }
+    },
+    "task": {
+      "type": "object",
+      "required": ["id", "description"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Task identifier (FR code, WO-NNN, or custom)"
+        },
+        "description": {
+          "type": "string",
+          "description": "Brief task description"
+        },
+        "source": {
+          "type": "string",
+          "description": "Source document (PRP-NNN, PRD-NNN, WO-NNN)"
+        },
+        "added": {
+          "type": "string",
+          "format": "date",
+          "description": "Date task was added"
+        },
+        "completed": {
+          "type": "string",
+          "format": "date",
+          "description": "Date task was completed (for completed tasks)"
+        }
+      }
     },
     "phase": {
       "type": "object",

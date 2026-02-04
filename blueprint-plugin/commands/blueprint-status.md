@@ -145,12 +145,12 @@ Display the current blueprint configuration status with three-layer architecture
    ```
 
 6. **Additional checks**:
-   - Warn if work-overview.md is stale (older than latest work-order)
+   - Warn if feature-tracker.json is stale (> 1 day since last update)
    - Warn if PRDs exist but no generated rules
    - Warn if modular rules enabled but `.claude/rules/` is empty
    - Warn if generated content is modified or stale
    - Warn if feature-tracker.json is older than 7 days (needs sync)
-   - Warn if feature-tracker sync targets have been modified since last sync
+   - Warn if TODO.md has been modified since last sync
    - Warn if ADRs have potential issues:
      - Multiple "Accepted" ADRs in same domain (potential conflict)
      - ADRs without domain tags (harder to detect conflicts)
@@ -191,7 +191,7 @@ Display the current blueprint configuration status with three-layer architecture
      - label: "Update CLAUDE.md" (if stale or missing)
        description: "Regenerate project overview document"
      - label: "Sync feature tracker" (if feature tracker stale)
-       description: "Synchronize tracker with work-overview.md and TODO.md"
+       description: "Synchronize tracker with TODO.md"
      - label: "Validate ADRs" (if ADR issues detected)
        description: "Check ADR relationships, conflicts, and missing links"
      - label: "Sync document IDs" (if documents without IDs)

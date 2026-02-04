@@ -27,16 +27,51 @@ cat docs/prps/$PRP_NAME.md
 ```
 
 ### 1.2 Verify Confidence Score
-- If score >= 9: Ready for autonomous execution
+- If score >= 9: Ready for autonomous execution (or delegation)
 - If score 7-8: Proceed with some discovery expected
 - If score < 7: **STOP** - Recommend refinement first
 
-### 1.3 Read ai_docs References
+### 1.3 Offer Delegation (Confidence >= 9)
+
+**If confidence score >= 9**, the PRP is ready for autonomous execution by a subagent. Offer the user a choice:
+
+```
+Use AskUserQuestion:
+question: "This PRP has high confidence (score: {score}). How would you like to proceed?"
+options:
+  - label: "Execute now (current session)"
+    description: "Implement the feature in this session with TDD workflow"
+  - label: "Create work-order for delegation"
+    description: "Generate a work-order that can be executed by a subagent"
+  - label: "Create multiple work-orders (break down tasks)"
+    description: "Split PRP into separate work-orders for parallel execution"
+```
+
+**If "Create work-order"**:
+- Run `/blueprint:work-order --from-prp {prp-name}`
+- Work-order will include:
+  - PRP objective and success criteria
+  - Relevant context (files, patterns, ai_docs references)
+  - TDD requirements from PRP
+  - Clear isolation boundary
+- **Exit** after work-order creation (user can execute it later)
+
+**If "Create multiple work-orders"**:
+- Analyze the PRP's Implementation Blueprint
+- Identify independent tasks that can be parallelized
+- For each task, generate a focused work-order
+- Report list of created work-orders
+- **Exit** - user can delegate these to multiple subagents
+
+**If "Execute now"** or confidence < 9:
+- Continue to Phase 2
+
+### 1.5 Read ai_docs References
 Load all referenced ai_docs entries for context:
 - `ai_docs/libraries/*.md`
 - `ai_docs/project/patterns.md`
 
-### 1.4 Plan Execution
+### 1.6 Plan Execution
 Based on the Implementation Blueprint:
 1. Create TodoWrite entries for each task
 2. Order by dependencies

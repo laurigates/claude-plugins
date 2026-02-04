@@ -219,6 +219,28 @@ find docs/prps -name "*.md" -type f 2>/dev/null
 
 **If PRPs found**:
 - List all PRPs with their confidence scores (if present in frontmatter)
+- Count high-confidence PRPs (score >= 9)
+
+**If multiple high-confidence PRPs exist (>= 2 with score >= 9)**:
+- Report: "Found {count} high-confidence PRPs ready for delegation"
+- Use AskUserQuestion:
+  ```
+  question: "Multiple PRPs are ready for parallel execution. What would you like to do?"
+  options:
+    - label: "Create work-orders for all (parallel delegation)"
+      description: "Generate work-orders for {count} PRPs to execute in parallel"
+    - label: "Execute one PRP now"
+      description: "Choose a single PRP to execute in this session"
+    - label: "Skip PRP execution"
+      description: "Continue to other actions"
+  ```
+- **If "Create work-orders for all"**:
+  - For each high-confidence PRP:
+    - Run `/blueprint:work-order --from-prp {prp-name} --no-publish`
+  - Report: "Created {count} work-orders. You can now delegate these to subagents."
+  - **Exit**
+
+**If single PRP or "Execute one PRP now" selected**:
 - Use AskUserQuestion:
   ```
   question: "Found {count} PRP(s). Which would you like to execute?"
@@ -276,42 +298,40 @@ find docs/blueprint/work-orders -maxdepth 1 -name "*.md" -type f 2>/dev/null
 
 ---
 
-### 8. Check Work Overview for Next Tasks
+### 8. Check Feature Tracker for Active Tasks
 
 ```bash
-# Read work-overview.md
-cat docs/blueprint/work-overview.md
+# Read tasks from feature-tracker.json
+cat docs/blueprint/feature-tracker.json | jq '{
+  in_progress: .tasks.in_progress,
+  pending: .tasks.pending,
+  current_phase: .current_phase
+}'
 ```
 
-Parse the "In Progress" and "Pending" sections:
-- Extract task items
-- Check if any are actionable
-
 **If in-progress tasks found**:
-- Report: "Found {count} in-progress tasks in work-overview.md"
+- Report: "Found {count} in-progress tasks"
 - Use AskUserQuestion:
   ```
   question: "You have in-progress tasks. What would you like to do?"
   options:
-    - label: "Continue current work"
-      description: "Work on: {first-in-progress-task}"
-    - label: "Create PRP for task"
-      description: "Create detailed PRP for systematic execution"
-    - label: "Create work-order for task"
-      description: "Package task for subagent execution"
+    - label: "Continue: {first-task.description}"
+      description: "Resume work on [{first-task.id}]"
+    - label: "Create work-order for delegation"
+      description: "Package current task for subagent execution"
     - label: "Skip to pending tasks"
       description: "Move to pending items instead"
   ```
 - **Action based on selection**, then **Exit**
 
 **If pending tasks found** (and no in-progress):
-- Report: "Found {count} pending tasks in work-overview.md"
+- Report: "Found {count} pending tasks"
 - Use AskUserQuestion:
   ```
   question: "You have pending tasks. What would you like to do?"
   options:
-    - label: "Start: {first-pending-task}"
-      description: "Begin work on this task"
+    - label: "Start: {first-task.description}"
+      description: "Begin work on [{first-task.id}]"
     - label: "Create PRP for task"
       description: "Create detailed PRP for systematic execution"
     - label: "Create work-order for task"
@@ -319,10 +339,11 @@ Parse the "In Progress" and "Pending" sections:
     - label: "Skip for now"
       description: "Continue to other checks"
   ```
-- **Action based on selection**
+- **If task selected**: Move task to in_progress in feature-tracker.json, then work on it
+- **If "Create work-order"**: Run `/blueprint:work-order` with task context
 - **Exit** if action taken, otherwise continue to step 9
 
-**If no clear tasks**: Continue to step 9
+**If no tasks in tracker**: Continue to step 9
 
 ---
 
@@ -346,10 +367,10 @@ last_sync=$(cat docs/blueprint/feature-tracker.json | jq -r '.last_updated // em
 - Report: "Auto-syncing feature tracker..."
 - **Action**: Run feature tracker sync logic inline:
   1. Read current feature-tracker.json
-  2. Read work-overview.md and TODO.md
+  2. Read TODO.md (if exists) for checkbox states
   3. Detect any discrepancies (checked boxes vs tracker status)
-  4. Auto-resolve discrepancies by trusting TODO.md/work-overview.md (most recently edited by user)
-  5. Update feature-tracker.json with new statistics
+  4. Auto-resolve discrepancies by trusting TODO.md (most recently edited by user)
+  5. Update feature-tracker.json with new statistics and task states
   6. Report changes made (if any)
 
 **Auto-sync is silent when no changes** - only reports if something was updated.

@@ -17,15 +17,46 @@ Generate a work-order document for isolated subagent execution with optional Git
 |------|-------------|
 | `--no-publish` | Create local work-order only, skip GitHub issue creation |
 | `--from-issue N` | Create work-order from existing GitHub issue #N |
+| `--from-prp NAME` | Create work-order from existing PRP (auto-populates context) |
 
 **Default behavior**: Creates both local work-order AND GitHub issue with `work-order` label.
 
 ## Prerequisites
 
 - Blueprint Development initialized (`docs/blueprint/` exists)
-- At least one PRD exists (unless using `--from-issue`)
-- `docs/blueprint/work-overview.md` exists
+- At least one PRD exists (unless using `--from-issue` or `--from-prp`)
 - `gh` CLI authenticated (unless using `--no-publish`)
+
+---
+
+## Mode: Create from PRP (`--from-prp NAME`)
+
+When `--from-prp NAME` is provided:
+
+1. **Read PRP**:
+   ```bash
+   cat docs/prps/$NAME.md
+   ```
+
+2. **Extract PRP content**:
+   - Parse frontmatter for id, confidence score, implements references
+   - Extract Objective section
+   - Extract Implementation Blueprint tasks
+   - Extract TDD Requirements
+   - Extract Success Criteria
+   - Note ai_docs references
+
+3. **Verify confidence**:
+   - If confidence < 9: Warn that PRP may not be ready for delegation
+   - Ask to proceed anyway or return to refine PRP
+
+4. **Generate work-order**:
+   - Pre-populate from PRP content
+   - Include relevant ai_docs as inline context (not references)
+   - Copy TDD requirements verbatim
+   - Include file list from PRP's Codebase Intelligence section
+
+5. **Continue to Step 6** (save and optionally publish)
 
 ---
 
@@ -62,7 +93,7 @@ When `--from-issue N` is provided:
 
 ### Step 1: Analyze Current State
 
-- Read `docs/blueprint/work-overview.md` to understand current phase
+- Read `docs/blueprint/feature-tracker.json` for current phase and tasks
 - Run `git status` to check uncommitted work
 - Run `git log -5 --oneline` to see recent work
 - Find existing work-orders (count them for numbering)
@@ -220,11 +251,13 @@ gh issue create ... 2>&1 | grep -oE '#[0-9]+' | head -1
 
 Update the `**GitHub Issue**:` line in the work-order file with the issue number.
 
-### Step 8: Update `docs/blueprint/work-overview.md`
+### Step 8: Update `docs/blueprint/feature-tracker.json`
 
-- Add new work-order to "Pending" section
-- Include GitHub issue reference if created
-- Keep overview current
+Add new work-order to pending tasks:
+```bash
+jq '.tasks.pending += [{"id": "WO-NNN", "description": "[Task name]", "source": "PRP-NNN", "added": "YYYY-MM-DD"}]' \
+  docs/blueprint/feature-tracker.json > tmp.json && mv tmp.json docs/blueprint/feature-tracker.json
+```
 
 ### Step 8.5: Update Manifest
 
@@ -320,7 +353,7 @@ options:
 | Condition | Action |
 |-----------|--------|
 | No PRDs exist | Guide to write PRDs first |
-| `work-overview.md` empty | Ask for current phase/status |
+| No tasks in feature-tracker | Ask for current phase/status |
 | Task unclear | Ask user what to work on next |
 | `gh` not authenticated | Warn and fallback to `--no-publish` behavior |
 | Issue already has `work-order` label | Warn, ask to update or create new |
