@@ -202,7 +202,7 @@
       "name": "finops-plugin",
       "source": "./finops-plugin",
       "description": "GitHub Actions FinOps analysis - billing, cache usage, workflow efficiency, and waste identification",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "keywords": [
         "finops",
         "github-actions",
