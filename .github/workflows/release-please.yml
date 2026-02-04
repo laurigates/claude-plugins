@@ -42,20 +42,48 @@ jobs:
             fi
           done
 
-  sync-marketplace-versions:
+  # Sync marketplace.json versions to release-please PRs before they merge
+  # This ensures the marketplace.json update is included in the release PR itself
+  sync-release-pr:
     needs: release-please
-    if: needs.release-please.outputs.releases_created == 'true'
+    if: needs.release-please.outputs.prs_created == 'true'
     runs-on: ubuntu-latest
     steps:
+      - name: Get release PR branch
+        id: get-pr
+        env:
+          GH_TOKEN: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
+        run: |
+          # Get the most recent release-please PR
+          PR_DATA=$(gh pr list --repo ${{ github.repository }} \
+            --state open \
+            --json number,headRefName \
+            --jq '.[] | select(.headRefName | startswith("release-please--")) | {number, branch: .headRefName}' \
+            | head -1)
+
+          if [ -n "$PR_DATA" ]; then
+            PR_NUMBER=$(echo "$PR_DATA" | jq -r '.number')
+            PR_BRANCH=$(echo "$PR_DATA" | jq -r '.branch')
+            echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+            echo "pr_branch=$PR_BRANCH" >> $GITHUB_OUTPUT
+            echo "found=true" >> $GITHUB_OUTPUT
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+          fi
+
       - uses: actions/checkout@v4
+        if: steps.get-pr.outputs.found == 'true'
         with:
           token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
+          ref: ${{ steps.get-pr.outputs.pr_branch }}
 
       - name: Sync plugin config files
+        if: steps.get-pr.outputs.found == 'true'
         run: |
           python3 scripts/sync-plugin-configs.py --fix
 
       - name: Check for changes
+        if: steps.get-pr.outputs.found == 'true'
         id: check
         run: |
           if git diff --quiet; then
@@ -64,11 +92,11 @@ jobs:
             echo "changed=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Commit and push
-        if: steps.check.outputs.changed == 'true'
+      - name: Commit and push to release PR
+        if: steps.get-pr.outputs.found == 'true' && steps.check.outputs.changed == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "chore: sync plugin config files from release-please manifest"
+          git commit -m "chore: sync marketplace.json versions"
           git push
