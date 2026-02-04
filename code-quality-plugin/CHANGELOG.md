@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.7](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.3.6...code-quality-plugin-v1.3.7) (2026-02-04)
+
+
+### Bug Fixes
+
+* **code-quality-plugin:** handle missing argument in refactor command ([c627bdb](https://github.com/laurigates/claude-plugins/commit/c627bdb774f3afb6d9120195813f47104eaa0ba0))
+
 ## [1.3.6](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.3.5...code-quality-plugin-v1.3.6) (2026-02-04)
 
 
