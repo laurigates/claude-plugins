@@ -27,7 +27,7 @@ Create a **marketplace registry** via `marketplace.json` at the repository root:
 
 ```json
 {
-  "name": "laurigates-plugins",
+  "name": "laurigates-claude-plugins",
   "description": "Curated collection of Claude Code plugins",
   "owner": {
     "name": "Lauri Gates"
@@ -58,7 +58,7 @@ Create a **marketplace registry** via `marketplace.json` at the repository root:
 
 ```bash
 # Install from marketplace
-/plugin install blueprint-plugin@laurigates-plugins
+/plugin install blueprint-plugin@laurigates-claude-plugins
 
 # Install directly from GitHub
 /plugin install github:laurigates/claude-plugins/blueprint-plugin

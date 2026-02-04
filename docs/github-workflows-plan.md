@@ -1039,7 +1039,7 @@ jobs:
           plugin_marketplaces: |
             https://github.com/laurigates/claude-plugins.git
           plugins: |
-            code-quality-plugin@laurigates-plugins
+            code-quality-plugin@laurigates-claude-plugins
           prompt: |
             Analyze the following changed files for OWASP Top 10 security vulnerabilities.
 

@@ -341,7 +341,7 @@ jq '.prds | to_entries | .[] | "\(.key): \(.value.status)"' docs/blueprint/featu
 ## Installation
 
 ```bash
-/plugin install blueprint-plugin@laurigates-plugins
+/plugin install blueprint-plugin@laurigates-claude-plugins
 ```
 
 ## License
