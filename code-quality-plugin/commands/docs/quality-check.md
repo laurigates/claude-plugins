@@ -15,13 +15,13 @@ Analyze and validate documentation quality for a codebase, ensuring PRDs, ADRs, 
 - Target path: `$1` (defaults to current directory if not specified)
 - Blueprint dir exists: !`test -d .claude/blueprints`
 - CLAUDE.md exists: !`test -f CLAUDE.md`
-- Rules directory: !`ls -1 .claude/rules/*.md 2>/dev/null`
-- ADRs (docs/adr): !`ls -1 docs/adr/*.md 2>/dev/null`
-- ADRs (docs/adrs): !`ls -1 docs/adrs/*.md 2>/dev/null`
-- PRDs (docs/prds): !`ls -1 docs/prds/*.md 2>/dev/null`
-- PRDs (blueprints): !`ls -1 .claude/blueprints/prds/*.md 2>/dev/null`
-- PRPs (docs/prps): !`ls -1 docs/prps/*.md 2>/dev/null`
-- PRPs (blueprints): !`ls -1 .claude/blueprints/prps/*.md 2>/dev/null`
+- Rules directory: !`find .claude/rules -maxdepth 1 -name '*.md' 2>/dev/null`
+- ADRs (docs/adr): !`find docs/adr -maxdepth 1 -name '*.md' 2>/dev/null`
+- ADRs (docs/adrs): !`find docs/adrs -maxdepth 1 -name '*.md' 2>/dev/null`
+- PRDs (docs/prds): !`find docs/prds -maxdepth 1 -name '*.md' 2>/dev/null`
+- PRDs (blueprints): !`find .claude/blueprints/prds -maxdepth 1 -name '*.md' 2>/dev/null`
+- PRPs (docs/prps): !`find docs/prps -maxdepth 1 -name '*.md' 2>/dev/null`
+- PRPs (blueprints): !`find .claude/blueprints/prps -maxdepth 1 -name '*.md' 2>/dev/null`
 
 ## Parameters
 

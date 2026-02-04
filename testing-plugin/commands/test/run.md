@@ -11,7 +11,7 @@ description: Universal test runner that automatically detects and runs the appro
 ## Context
 
 - Project indicators: !`ls -la pyproject.toml package.json Cargo.toml go.mod 2>/dev/null`
-- Test directories: !`ls -d tests/ test/ __tests__/ spec/ 2>/dev/null`
+- Test directories: !`find . -maxdepth 1 -type d \( -name 'tests' -o -name 'test' -o -name '__tests__' -o -name 'spec' \) 2>/dev/null`
 - Package.json test script: !`grep -A2 '"test"' package.json 2>/dev/null`
 - Pytest config: !`grep -A5 '\[tool.pytest' pyproject.toml 2>/dev/null`
 

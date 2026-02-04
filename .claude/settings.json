@@ -1,66 +1,28 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(fd *)",
+      "Bash(ls *)",
+      "Bash(pre-commit *)",
+      "Bash(rg *)",
+      "WebFetch(domain:agentic-patterns.com)",
+      "mcp__chrome-devtools",
+      "mcp__context7",
+      "mcp__playwright",
+      "mcp__sequential-thinking",
+      "mcp__serena"
+    ]
+  },
+  "enabledPlugins": {},
   "extraKnownMarketplaces": {
-    "local-plugins": {
+    "laurigates-plugins": {
       "source": {
-        "source": "directory",
-        "path": "./"
+        "source": "github",
+        "repo": "laurigates/claude-plugins"
       }
     }
   },
-  "enabledPlugins": {
-    "blueprint-plugin@local-plugins": true,
-    "configure-plugin@local-plugins": true,
-    "git-plugin@local-plugins": true,
-    "testing-plugin@local-plugins": true,
-    "code-quality-plugin@local-plugins": true,
-    "python-plugin@local-plugins": true,
-    "typescript-plugin@local-plugins": true,
-    "tools-plugin@local-plugins": true,
-    "rust-plugin@local-plugins": true,
-    "kubernetes-plugin@local-plugins": true,
-    "terraform-plugin@local-plugins": true,
-    "github-actions-plugin@local-plugins": true,
-    "documentation-plugin@local-plugins": true,
-    "project-plugin@local-plugins": true,
-    "sync-plugin@local-plugins": true,
-    "agent-patterns-plugin@local-plugins": true,
-    "accessibility-plugin@local-plugins": true,
-    "bevy-plugin@local-plugins": true,
-    "container-plugin@local-plugins": true,
-    "api-plugin@local-plugins": true,
-    "communication-plugin@local-plugins": true,
-    "agents-plugin@local-plugins": true,
-    "hooks-plugin@local-plugins": true
-  },
-  "permissions": {
-    "allow": [
-      "mcp__serena",
-      "Bash(git status *)",
-      "Bash(git diff *)",
-      "Bash(git log *)",
-      "Bash(git branch *)",
-      "Bash(git add *)",
-      "Bash(git commit *)",
-      "Bash(git push *)",
-      "Bash(git remote *)",
-      "Bash(git checkout *)",
-      "Bash(git fetch *)",
-      "Bash(gh pr *)",
-      "Bash(gh run *)",
-      "Bash(gh issue *)",
-      "Bash(pre-commit *)",
-      "Bash(detect-secrets *)",
-      "Bash(gh api *)",
-      "Bash(gh repo *)",
-      "Bash(gh workflow *)",
-      "Bash(gh label *)",
-      "Bash(git switch *)",
-      "Bash(git pull *)",
-      "Bash(git stash *)",
-      "Bash(git restore *)",
-      "Bash(git gc *)",
-      "Bash(git prune *)",
-      "Bash(git fsck *)"
-    ]
-  }
+  "enabledMcpjsonServers": ["serena"],
+  "enableAllProjectMcpServers": true
 }
