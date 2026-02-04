@@ -7,6 +7,13 @@
 
 * **rules, settings:** refactor to emphasize positive guidance patterns ([#360](https://github.com/laurigates/claude-plugins/issues/360)) ([a4ea8a8](https://github.com/laurigates/claude-plugins/commit/a4ea8a8990e2a40bb2331855db5fd68631c14d7e))
 
+## [1.1.3](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.1.2...agents-plugin-v1.1.3) (2026-02-04)
+
+
+### Documentation
+
+* **rules, settings:** refactor to emphasize positive guidance patterns ([#360](https://github.com/laurigates/claude-plugins/issues/360)) ([a4ea8a8](https://github.com/laurigates/claude-plugins/commit/a4ea8a8990e2a40bb2331855db5fd68631c14d7e))
+
 ## [1.1.2](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.1.1...agents-plugin-v1.1.2) (2026-02-03)
 
 
