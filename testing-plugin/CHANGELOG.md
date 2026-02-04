@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.1](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.3.0...testing-plugin-v3.3.1) (2026-02-04)
+
+
+### Documentation
+
+* **rules, settings:** refactor to emphasize positive guidance patterns ([#360](https://github.com/laurigates/claude-plugins/issues/360)) ([a4ea8a8](https://github.com/laurigates/claude-plugins/commit/a4ea8a8990e2a40bb2331855db5fd68631c14d7e))
+
 ## [3.3.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.2.4...testing-plugin-v3.3.0) (2026-02-03)
 
 

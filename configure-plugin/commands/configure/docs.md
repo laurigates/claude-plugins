@@ -17,8 +17,8 @@ argument-hint: "[--check-only] [--fix] [--level <minimal|standard|strict>] [--ty
 - Python config: !`ls -la pyproject.toml ruff.toml .ruff.toml 2>/dev/null`
 - Rust config: !`ls -la Cargo.toml clippy.toml 2>/dev/null`
 - Pre-commit: !`ls -la .pre-commit-config.yaml 2>/dev/null`
-- Doc generators: !`ls -la mkdocs.yml docs/conf.py docusaurus.config.* 2>/dev/null`
-- Docs directory: !`ls -d docs/ 2>/dev/null`
+- Doc generators: !`find . -maxdepth 1 \( -name 'mkdocs.yml' -o -name 'docusaurus.config.*' \) 2>/dev/null`
+- Docs directory: !`find . -maxdepth 1 -type d -name 'docs' 2>/dev/null`
 
 ## Parameters
 
