@@ -51,16 +51,26 @@ Use proper markdown link format so Claude knows what the file contains:
 For detailed X, Y, and Z patterns, see [REFERENCE.md](REFERENCE.md).
 ```
 
+## Writing Style
+
+Use **positive guidance** - describe what to do, not what to avoid. This reinforces correct patterns instead of drawing attention to incorrect ones.
+
+| Instead of | Write |
+|------------|-------|
+| "Do not use broad permissions" | "Use granular permissions" |
+| "Avoid ls with globs" | "Use find for file discovery" |
+| "Never edit CHANGELOG manually" | "Use conventional commits to update changelog" |
+
 ## Description Quality
 
 Descriptions must match real user intents. They are loaded into Claude's context for skill selection.
 
-**Bad** (jargon-heavy, tool-centric):
+**Tool-centric** (less effective):
 ```yaml
 description: AST-based code search using ast-grep for structural pattern matching
 ```
 
-**Good** (intent-matching, action-oriented):
+**Intent-matching** (effective):
 ```yaml
 description: |
   Find and replace code patterns structurally using ast-grep. Use when you need

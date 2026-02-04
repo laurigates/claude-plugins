@@ -15,7 +15,7 @@ Configure a project to use the `laurigates/claude-plugins` Claude Code plugin ma
 ## Context
 
 - Settings file exists: !`test -f .claude/settings.json`
-- Workflows: !`ls -1 .github/workflows/claude*.yml 2>/dev/null`
+- Workflows: !`find .github/workflows -maxdepth 1 -name 'claude*.yml' 2>/dev/null`
 - Git remote: !`git remote get-url origin 2>/dev/null`
 
 ## Parameters

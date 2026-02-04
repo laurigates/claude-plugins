@@ -10,34 +10,28 @@ Safe, portable shell scripting patterns for use in skills and commands.
 
 ## Reserved Variable Names
 
-**NEVER use these as variable names** - they are read-only or have special meaning in bash/zsh:
+These variables are read-only or have special meaning in bash/zsh. Use prefixed alternatives instead.
 
-| Variable | Shell | Issue |
-|----------|-------|-------|
-| `status` | zsh | Read-only, holds last command exit status |
-| `PWD` | both | Read-only, current directory |
-| `OLDPWD` | both | Read-only, previous directory |
-| `UID` | both | Read-only, user ID |
-| `EUID` | both | Read-only, effective user ID |
-| `PPID` | both | Read-only, parent process ID |
-| `RANDOM` | both | Special, generates random numbers |
-| `SECONDS` | both | Special, time since shell start |
-| `LINENO` | both | Special, current line number |
-| `HISTCMD` | both | Read-only, history number |
-| `HOSTNAME` | both | May be read-only |
-| `HOSTTYPE` | both | May be read-only |
-| `OSTYPE` | both | May be read-only |
+| Reserved | Shell | Reason | Use Instead |
+|----------|-------|--------|-------------|
+| `status` | zsh | Read-only exit status | `item_status`, `doc_status` |
+| `name` | both | Common collision | `item_name`, `file_name` |
+| `type` | both | Common collision | `item_type`, `doc_type` |
+| `path` | both | Common collision | `file_path`, `doc_path` |
+| `PWD` | both | Read-only current directory | - |
+| `OLDPWD` | both | Read-only previous directory | - |
+| `UID` | both | Read-only user ID | - |
+| `EUID` | both | Read-only effective user ID | - |
+| `PPID` | both | Read-only parent process ID | - |
+| `RANDOM` | both | Special, generates random numbers | - |
+| `SECONDS` | both | Special, time since shell start | - |
+| `LINENO` | both | Special, current line number | - |
+| `HISTCMD` | both | Read-only history number | - |
+| `HOSTNAME` | both | May be read-only | - |
+| `HOSTTYPE` | both | May be read-only | - |
+| `OSTYPE` | both | May be read-only | - |
 
-### Safe Alternatives
-
-| Avoid | Use Instead |
-|-------|-------------|
-| `status` | `item_status`, `doc_status`, `prp_status` |
-| `name` | `item_name`, `file_name`, `prp_name` |
-| `type` | `item_type`, `doc_type` |
-| `path` | `file_path`, `doc_path` |
-
-**Convention**: Prefix with a descriptive context (e.g., `prp_`, `adr_`, `doc_`).
+**Convention**: Prefix variables with descriptive context (e.g., `prp_`, `adr_`, `doc_`).
 
 ## YAML Frontmatter Extraction
 
@@ -216,7 +210,7 @@ item_FIELD=$(head -50 "$file" | grep -m1 "^FIELD:" | sed 's/^[^:]*:[[:space:]]*/
 
 ## Checklist for New Commands
 
-- [ ] Variable names avoid reserved words (especially `status`)
+- [ ] Variable names use prefixed form (e.g., `doc_status` instead of `status`)
 - [ ] Frontmatter extraction uses `head -50 | grep -m1 "^field:" | sed ...` pattern
 - [ ] Error handling with `|| true` or `|| echo ""`
 - [ ] Default values with `${var:-default}`
