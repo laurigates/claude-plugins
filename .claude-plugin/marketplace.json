@@ -22,7 +22,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Multi-agent coordination and orchestration patterns",
-      "version": "2.5.3",
+      "version": "2.5.4",
       "keywords": [
         "agents",
         "orchestration",
@@ -35,7 +35,7 @@
       "name": "agents-plugin",
       "source": "./agents-plugin",
       "description": "Task-focused agents for test, review, debug, docs, and CI workflows",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "keywords": [
         "agents",
         "testing",
@@ -108,7 +108,7 @@
       "name": "code-quality-plugin",
       "source": "./code-quality-plugin",
       "description": "Code review, refactoring, linting, and static analysis",
-      "version": "1.3.3",
+      "version": "1.3.5",
       "keywords": [
         "code-review",
         "refactoring",
@@ -148,7 +148,7 @@
       "name": "component-patterns-plugin",
       "source": "./component-patterns-plugin",
       "description": "Reusable UI component patterns - version badge, tooltips, and common UI elements for React, Vue, Svelte",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "keywords": [
         "components",
         "ui-patterns",
@@ -164,7 +164,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.5.1",
+      "version": "1.6.0",
       "keywords": [
         "infrastructure",
         "standards",
@@ -189,7 +189,7 @@
       "name": "documentation-plugin",
       "source": "./documentation-plugin",
       "description": "Documentation generation - API docs, README, knowledge graphs",
-      "version": "1.1.1",
+      "version": "1.2.0",
       "keywords": [
         "documentation",
         "docs",
@@ -218,7 +218,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, and repository management",
-      "version": "2.11.1",
+      "version": "2.11.2",
       "keywords": [
         "git",
         "github",
@@ -245,7 +245,7 @@
       "name": "home-assistant-plugin",
       "source": "./home-assistant-plugin",
       "description": "Home Assistant configuration management - YAML configuration, automations, scripts, scenes, and entity management for Home Assistant installations",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "keywords": [
         "home-assistant",
         "smart-home",
@@ -324,7 +324,7 @@
       "name": "project-plugin",
       "source": "./project-plugin",
       "description": "Project initialization, management, and maintenance - setup, modernization, changelog review, and continuous development workflows",
-      "version": "1.5.2",
+      "version": "1.6.0",
       "keywords": [
         "project",
         "initialization",
@@ -394,7 +394,7 @@
       "name": "testing-plugin",
       "source": "./testing-plugin",
       "description": "Test execution, TDD workflow, and testing strategies",
-      "version": "3.2.3",
+      "version": "3.3.0",
       "keywords": [
         "testing",
         "tdd",
