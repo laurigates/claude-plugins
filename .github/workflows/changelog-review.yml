@@ -140,76 +140,87 @@ jobs:
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: Create issue body file
+        if: steps.check_issue.outputs.exists == 'false'
+        env:
+          LATEST_VERSION: ${{ needs.check-changelog.outputs.latest_version }}
+          TRACKED_VERSION: ${{ steps.tracked.outputs.version }}
+          LAST_DATE: ${{ steps.tracked.outputs.date }}
+        run: |
+          cat > /tmp/issue-body.md << 'ISSUE_BODY'
+          ## Claude Code Changelog Review Required
+
+          **New Claude Code version detected!**
+
+          | Field | Value |
+          |-------|-------|
+          | Previous version | TRACKED_VERSION_PLACEHOLDER |
+          | Latest version | LATEST_VERSION_PLACEHOLDER |
+          | Last review date | LAST_DATE_PLACEHOLDER |
+
+          ### Action Required
+
+          Run the changelog review command to analyze changes:
+
+          ```bash
+          /changelog:review
+          ```
+
+          Or for a full review:
+
+          ```bash
+          /changelog:review --since TRACKED_VERSION_PLACEHOLDER
+          ```
+
+          ### Changelog Link
+
+          [View Claude Code Changelog](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md)
+
+          ### Areas to Check
+
+          Review the changelog for changes in these areas that may impact plugins:
+
+          - [ ] **Hooks** - New events, schema changes, behavior updates
+          - [ ] **Skills/Commands** - Frontmatter changes, discovery updates
+          - [ ] **Agents** - New capabilities, configuration options
+          - [ ] **Permissions** - New patterns, security fixes
+          - [ ] **MCP** - Server configuration, OAuth updates
+          - [ ] **SDK** - API changes, new features
+          - [ ] **Breaking Changes** - Anything requiring immediate updates
+
+          ### Potentially Affected Plugins
+
+          Based on common change areas:
+          - `hooks-plugin` - Hook system changes
+          - `agent-patterns-plugin` - Agent and MCP changes
+          - `configure-plugin` - Permission and configuration changes
+          - All plugins - Skill/command changes
+
+          ### After Review
+
+          1. Update `.claude-code-version-check.json` with the new version
+          2. Create follow-up issues for any required changes
+          3. Close this issue
+
+          ---
+          *This issue was automatically created by the changelog review workflow.*
+          ISSUE_BODY
+          sed -i "s/TRACKED_VERSION_PLACEHOLDER/$TRACKED_VERSION/g" /tmp/issue-body.md
+          sed -i "s/LATEST_VERSION_PLACEHOLDER/$LATEST_VERSION/g" /tmp/issue-body.md
+          sed -i "s/LAST_DATE_PLACEHOLDER/$LAST_DATE/g" /tmp/issue-body.md
+          sed -i 's/^          //' /tmp/issue-body.md
+
       - name: Create changelog review issue
         if: steps.check_issue.outputs.exists == 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           LATEST_VERSION: ${{ needs.check-changelog.outputs.latest_version }}
           TRACKED_VERSION: ${{ steps.tracked.outputs.version }}
-          LAST_DATE: ${{ steps.tracked.outputs.date }}
         run: |
           gh issue create \
             --title "Review Claude Code changelog: $TRACKED_VERSION → $LATEST_VERSION" \
             --label "changelog-review,maintenance" \
-            --body "$(cat <<EOF
-## Claude Code Changelog Review Required
-
-**New Claude Code version detected!**
-
-| Field | Value |
-|-------|-------|
-| Previous version | $TRACKED_VERSION |
-| Latest version | $LATEST_VERSION |
-| Last review date | $LAST_DATE |
-
-### Action Required
-
-Run the changelog review command to analyze changes:
-
-\`\`\`bash
-/changelog:review
-\`\`\`
-
-Or for a full review:
-
-\`\`\`bash
-/changelog:review --since $TRACKED_VERSION
-\`\`\`
-
-### Changelog Link
-
-[View Claude Code Changelog](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md)
-
-### Areas to Check
-
-Review the changelog for changes in these areas that may impact plugins:
-
-- [ ] **Hooks** - New events, schema changes, behavior updates
-- [ ] **Skills/Commands** - Frontmatter changes, discovery updates
-- [ ] **Agents** - New capabilities, configuration options
-- [ ] **Permissions** - New patterns, security fixes
-- [ ] **MCP** - Server configuration, OAuth updates
-- [ ] **SDK** - API changes, new features
-- [ ] **Breaking Changes** - Anything requiring immediate updates
-
-### Potentially Affected Plugins
-
-Based on common change areas:
-- \`hooks-plugin\` - Hook system changes
-- \`agent-patterns-plugin\` - Agent and MCP changes
-- \`configure-plugin\` - Permission and configuration changes
-- All plugins - Skill/command changes
-
-### After Review
-
-1. Update \`.claude-code-version-check.json\` with the new version
-2. Create follow-up issues for any required changes
-3. Close this issue
-
----
-*This issue was automatically created by the changelog review workflow.*
-EOF
-)"
+            --body-file /tmp/issue-body.md
 
   update-tracking:
     needs: [check-changelog, create-issue]
