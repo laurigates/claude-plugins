@@ -13,7 +13,7 @@
   "configure-plugin": "1.6.1",
   "container-plugin": "2.3.1",
   "documentation-plugin": "1.2.0",
-  "hooks-plugin": "1.3.1",
+  "hooks-plugin": "1.3.2",
   "health-plugin": "1.0.0",
   "git-plugin": "2.11.2",
   "github-actions-plugin": "1.1.0",

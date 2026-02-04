@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.3.1...hooks-plugin-v1.3.2) (2026-02-04)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** update git chaining examples in bash-antipatterns hook ([3c375a0](https://github.com/laurigates/claude-plugins/commit/3c375a0b784114a5e2218db0a9782d402f01015b))
+
 ## [1.3.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.3.0...hooks-plugin-v1.3.1) (2026-02-01)
 
 
