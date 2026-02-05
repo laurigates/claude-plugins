@@ -2,10 +2,10 @@
 model: opus
 name: custom-agent-definitions
 description: |
-  Create and configure custom agents in Claude Code's agents/ directory. Use when
-  you want to define a specialized agent with its own system prompt, restrict which
-  tools an agent can use, set up an agent with isolated context, or add a new agent
-  type to your project's .claude/ configuration.
+  Write and configure custom agent definitions in Claude Code's agents/ directory. Use
+  when you want to create a new agent .md file, define a specialized agent with its own
+  system prompt and tools, set up an agent with isolated context, or configure agent
+  capabilities and restrictions in your project's .claude/ configuration.
 allowed-tools: Bash(cat *), Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-01-20
 modified: 2026-02-05

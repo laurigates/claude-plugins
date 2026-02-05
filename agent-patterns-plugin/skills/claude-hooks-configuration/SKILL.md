@@ -2,9 +2,9 @@
 model: haiku
 name: Claude Code Hooks Configuration
 description: |
-  Set up and configure Claude Code hooks (SessionStart, PreToolUse, PostToolUse, etc.)
-  in settings.json. Use when you want to add a hook that runs before or after tool calls,
-  run a script on session start, configure hook timeouts to prevent cancellation errors,
+  Set up Claude Code lifecycle hooks and event handlers in settings.json. Use when you
+  want to trigger a script on session start, run a hook before or after tool calls
+  (PreToolUse/PostToolUse), configure hook timeouts to prevent cancellation errors,
   or debug hooks that aren't firing correctly.
 allowed-tools: Bash(cat *), Bash(bash *), Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2025-12-27

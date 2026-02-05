@@ -2,10 +2,10 @@
 model: opus
 name: Deep Agents
 description: |
-  Build AI agents using the Deep Agents TypeScript library. Use when you want to
-  create an agent that plans and executes multi-step tasks, manages file system
-  context, delegates subtasks to child agents, or maintains persistent memory
-  across runs using the deep-agents package.
+  Build hierarchical AI agents using the deep-agents TypeScript/npm package. Use when
+  you want to create an orchestrator agent that plans and executes multi-step tasks,
+  manages file system context, delegates subtasks to child agents, or maintains
+  persistent memory across runs with the Deep Agents library.
 allowed-tools: Bash(python *), Bash(uv *), BashOutput, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-01-08
 modified: 2026-02-05

@@ -5,10 +5,10 @@ modified: 2026-02-05
 reviewed: 2025-12-26
 name: agent-handoff-markers
 description: |
-  Leave structured notes in code for the next agent or session to pick up. Use when
-  you need to mark incomplete work for another agent, annotate code with context a
-  future agent will need, scan for pending tasks left by a previous agent, or add
-  inline handoff instructions between sequential agents.
+  Leave structured markers in code for the next agent or session to continue from. Use
+  when you need to bookmark incomplete work for another agent, annotate code with context
+  a future agent will need, scan for pending tasks left by a previous agent, or resume
+  work by finding inline handoff instructions between sequential agents.
 allowed-tools: Glob, Grep, Read, Edit, Write, TodoWrite
 ---
 

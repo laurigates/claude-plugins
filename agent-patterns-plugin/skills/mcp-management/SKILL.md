@@ -5,9 +5,9 @@ modified: 2026-02-05
 reviewed: 2025-12-16
 name: MCP Server Management
 description: |
-  Install and configure MCP servers for Claude Code projects. Use when you want to add
-  an MCP server to your project, find the right MCP server for a specific integration
-  (database, API, file system), update MCP server settings in .mcp.json, or troubleshoot
+  Install and configure Model Context Protocol (MCP) servers for Claude Code projects.
+  Use when you want to add or enable an MCP server, connect a tool or integration
+  (database, API, file system), update MCP settings in .mcp.json, or troubleshoot
   MCP server connection issues.
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, AskUserQuestion
 ---

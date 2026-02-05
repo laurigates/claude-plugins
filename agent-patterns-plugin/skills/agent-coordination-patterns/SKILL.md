@@ -5,10 +5,10 @@ modified: 2026-02-05
 reviewed: 2025-12-16
 name: agent-coordination-patterns
 description: |
-  Run Claude Code subagents in sequence or parallel to complete a larger task.
-  Use when you want to split work across multiple agents, chain agent outputs
-  together, coordinate dependencies between subagent tasks, or design a pipeline
-  where one agent's output feeds into the next.
+  Orchestrate Claude Code subagents in sequence, parallel, or fan-out patterns to
+  complete a larger task. Use when you want to split work across multiple agents,
+  chain agent outputs together, dispatch and coordinate dependent subagent tasks,
+  or design a pipeline where one agent's output feeds into the next.
 ---
 
 # Agent Coordination Patterns

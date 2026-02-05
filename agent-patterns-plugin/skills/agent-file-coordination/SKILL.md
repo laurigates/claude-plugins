@@ -5,9 +5,9 @@ modified: 2026-02-05
 reviewed: 2025-12-16
 name: agent-file-coordination
 description: |
-  Share context between agents using structured files and directories. Use when you
-  need agents to pass results to each other via files, set up a shared workspace for
-  multi-agent collaboration, track agent progress in a coordination directory, or
+  Share state and context between agents using structured output files and directories.
+  Use when you need agents to pass results to each other via files, sync agent work
+  through a shared workspace, track agent progress in a coordination directory, or
   create handoff documents that the next agent can pick up.
 ---
 

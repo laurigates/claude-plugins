@@ -5,10 +5,10 @@ modified: 2026-02-05
 reviewed: 2026-01-26
 name: agentic-patterns-source
 description: |
-  Look up proven AI agent design patterns from agentic-patterns.com. Use when you need
-  inspiration for how to structure an agent workflow, want to implement a feedback loop
-  or context window management strategy, are deciding between agent architectures, or
-  need reference implementations for patterns like chain-of-thought, ReAct, or tool use.
+  Look up proven AI agent design patterns and best practices from agentic-patterns.com.
+  Use when you need inspiration for agent architecture, want to implement prompt chaining
+  or feedback loops, are comparing orchestration strategies, or need reference
+  implementations for patterns like chain-of-thought, ReAct, or tool use.
 allowed-tools: WebFetch, WebSearch, Task
 ---
 

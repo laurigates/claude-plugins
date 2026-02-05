@@ -5,10 +5,10 @@ modified: 2026-02-05
 reviewed: 2026-01-21
 name: delegation-first
 description: |
-  Delegate coding, testing, and debugging to subagents while the main conversation stays
-  focused on architecture and planning. Use when you want Claude to automatically spawn
-  subagents for implementation work, keep the main thread as a coordinator, or follow an
-  architect-delegates-to-builders workflow for any feature or bugfix.
+  Offload coding, testing, and debugging to subagents via the Task tool while the main
+  conversation stays focused on architecture and planning. Use when you want Claude to
+  automatically delegate implementation work to subagents, use agents for everything,
+  keep the main thread as an orchestrator, or follow an architect-and-builders workflow.
 ---
 
 # Delegation-First Development
