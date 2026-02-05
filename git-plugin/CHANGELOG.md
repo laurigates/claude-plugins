@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.11.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.11.2...git-plugin-v2.11.3) (2026-02-05)
+
+
+### Bug Fixes
+
+* **git-plugin:** remove backticks from status codes to prevent parsing bug ([373023c](https://github.com/laurigates/claude-plugins/commit/373023ce8a292211890240612785e41641563c4d))
+
 ## [2.11.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.11.1...git-plugin-v2.11.2) (2026-02-03)
 
 
