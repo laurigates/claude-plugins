@@ -245,7 +245,7 @@
       "name": "health-plugin",
       "source": "./health-plugin",
       "description": "Diagnose and fix Claude Code configuration issues - plugin registry, settings, hooks, MCP servers",
-      "version": "1.1.1",
+      "version": "1.1.0",
       "keywords": [
         "health",
         "diagnostics",
@@ -343,7 +343,7 @@
       "name": "project-plugin",
       "source": "./project-plugin",
       "description": "Project initialization, management, and maintenance - setup, modernization, changelog review, and continuous development workflows",
-      "version": "1.6.0",
+      "version": "1.6.1",
       "keywords": [
         "project",
         "initialization",
