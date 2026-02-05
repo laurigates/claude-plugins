@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.1](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.6.0...project-plugin-v1.6.1) (2026-02-05)
+
+
+### Code Refactoring
+
+* move plugin root scripts to scripts/ subdirectory ([d7344f8](https://github.com/laurigates/claude-plugins/commit/d7344f8f567ee5640aba182049f7aada5e8f4134))
+
 ## [1.6.0](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.5.2...project-plugin-v1.6.0) (2026-02-03)
 
 
