@@ -23,6 +23,12 @@ Diagnose and fix Claude Code configuration issues including plugin registry, set
 | `plugin-registry` | Understanding Claude Code's plugin registry, scopes, and troubleshooting |
 | `settings-configuration` | Settings file hierarchy, permission wildcards, and patterns |
 
+## Scripts
+
+| Script | Description |
+|--------|-------------|
+| `prune-claude-config.py` | Remove orphaned projects and cached data from `~/.claude.json` |
+
 ## Use Cases
 
 ### Plugin Shows "Installed" But Doesn't Work
@@ -73,6 +79,27 @@ When tools are blocked unexpectedly, use the settings-configuration skill to und
 - Permission wildcard patterns
 - Shell operator protections
 
+### Prune Config File
+
+Clean up your `~/.claude.json` by removing orphaned projects and cached data:
+
+```bash
+# Preview what would be removed
+python health-plugin/scripts/prune-claude-config.py --dry-run
+
+# Interactive mode (confirm before changes)
+python health-plugin/scripts/prune-claude-config.py --interactive
+
+# Run immediately (creates backup automatically)
+python health-plugin/scripts/prune-claude-config.py
+```
+
+The script removes:
+- **Orphaned projects**: Entries for directories that no longer exist
+- **Cached data**: `cachedChangelog`, `cachedStatsigGates`, `cachedDynamicConfigs`
+
+Your settings, MCP servers, and tips history are preserved.
+
 ## Quick Reference
 
 ### Plugin Registry Location
@@ -95,6 +122,7 @@ When tools are blocked unexpectedly, use the settings-configuration skill to und
 | Irrelevant plugins enabled | No relevance audit done | `/health:audit --fix` |
 | Permission denied | Missing allow pattern | Check settings-configuration skill |
 | Settings ignored | Invalid JSON | `/health:check` |
+| Large ~/.claude.json | Orphaned projects/caches | `prune-claude-config.py` |
 
 ## Related
 
