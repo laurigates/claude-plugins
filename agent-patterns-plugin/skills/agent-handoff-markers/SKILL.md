@@ -1,10 +1,14 @@
 ---
 model: opus
 created: 2025-12-16
-modified: 2025-12-26
+modified: 2026-02-05
 reviewed: 2025-12-26
 name: agent-handoff-markers
-description: Standardized inline markers for inter-agent communication. Use when creating handoff annotations for other agents, scanning for pending work from upstream agents, or when the user mentions handoff markers, agent coordination, or cross-agent communication.
+description: |
+  Leave structured notes in code for the next agent or session to pick up. Use when
+  you need to mark incomplete work for another agent, annotate code with context a
+  future agent will need, scan for pending tasks left by a previous agent, or add
+  inline handoff instructions between sequential agents.
 allowed-tools: Glob, Grep, Read, Edit, Write, TodoWrite
 ---
 

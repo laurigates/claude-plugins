@@ -1,14 +1,14 @@
 ---
 model: opus
 created: 2026-01-21
-modified: 2026-01-21
+modified: 2026-02-05
 reviewed: 2026-01-21
 name: delegation-first
 description: |
-  Default behavior pattern that automatically delegates implementation tasks to specialized
-  sub-agents while keeping the main conversation focused on architecture, design, and strategy.
-  Use when receiving ANY implementation request - the main Claude acts as architect/coordinator
-  while sub-agents handle code, tests, debugging, and documentation.
+  Delegate coding, testing, and debugging to subagents while the main conversation stays
+  focused on architecture and planning. Use when you want Claude to automatically spawn
+  subagents for implementation work, keep the main thread as a coordinator, or follow an
+  architect-delegates-to-builders workflow for any feature or bugfix.
 ---
 
 # Delegation-First Development

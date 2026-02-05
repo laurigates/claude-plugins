@@ -1,14 +1,14 @@
 ---
 model: haiku
 created: 2026-01-26
-modified: 2026-01-26
+modified: 2026-02-05
 reviewed: 2026-01-26
 name: agentic-patterns-source
 description: |
-  Access Awesome Agentic Patterns (agentic-patterns.com) for production-ready AI agent patterns.
-  Use when designing multi-agent workflows, implementing feedback loops, managing context windows,
-  or solving orchestration challenges. Contains 150+ patterns across 8 categories with real-world
-  references and implementation guidance.
+  Look up proven AI agent design patterns from agentic-patterns.com. Use when you need
+  inspiration for how to structure an agent workflow, want to implement a feedback loop
+  or context window management strategy, are deciding between agent architectures, or
+  need reference implementations for patterns like chain-of-thought, ReAct, or tool use.
 allowed-tools: WebFetch, WebSearch, Task
 ---
 

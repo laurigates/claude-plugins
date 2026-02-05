@@ -1,14 +1,14 @@
 ---
 model: opus
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-05
 reviewed: 2025-12-16
 name: agent-coordination-patterns
 description: |
-  Coordinate multi-agent workflows: sequential, parallel, and iterative patterns.
-  Defines agent handoffs, dependencies, communication protocols, and integration.
-  Use when designing multi-agent workflows, coordinating agent handoffs,
-  planning agent dependencies, or building complex agent pipelines.
+  Run Claude Code subagents in sequence or parallel to complete a larger task.
+  Use when you want to split work across multiple agents, chain agent outputs
+  together, coordinate dependencies between subagent tasks, or design a pipeline
+  where one agent's output feeds into the next.
 ---
 
 # Agent Coordination Patterns

@@ -1,14 +1,14 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-05
 reviewed: 2025-12-16
 name: agent-file-coordination
 description: |
-  File-based context sharing for multi-agent workflows. Provides directory
-  organization, agent output templates, progress tracking, and inter-agent context.
-  Use when setting up multi-agent workflows, reading/writing agent context files,
-  or maintaining workflow transparency with file-based coordination.
+  Share context between agents using structured files and directories. Use when you
+  need agents to pass results to each other via files, set up a shared workspace for
+  multi-agent collaboration, track agent progress in a coordination directory, or
+  create handoff documents that the next agent can pick up.
 ---
 
 # Agent File Coordination

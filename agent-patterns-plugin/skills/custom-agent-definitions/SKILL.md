@@ -2,13 +2,13 @@
 model: opus
 name: custom-agent-definitions
 description: |
-  Define and configure custom agents in Claude Code. Covers context forking,
-  agent field specifications, and disallowedTools restrictions. Use when
-  creating custom agent types, configuring agent isolation, or restricting
-  agent capabilities.
+  Create and configure custom agents in Claude Code's agents/ directory. Use when
+  you want to define a specialized agent with its own system prompt, restrict which
+  tools an agent can use, set up an agent with isolated context, or add a new agent
+  type to your project's .claude/ configuration.
 allowed-tools: Bash(cat *), Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-01-20
-modified: 2026-01-20
+modified: 2026-02-05
 reviewed: 2026-01-20
 ---
 
