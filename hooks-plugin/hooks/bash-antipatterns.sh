@@ -147,21 +147,25 @@ fi
 if echo "$COMMAND" | grep -Eq '^\s*git\s+reset\s+--hard' && \
    ! echo "$COMMAND" | grep -Eq '<<'; then
     block_with_reminder "REMINDER: 'git reset --hard' is destructive and usually unnecessary.
-Common misconception: After pushing commits to a PR branch, you do NOT need to reset main.
-Once the PR is merged, simply run 'git pull' and git will resolve the situation cleanly.
+
+COMMON SCENARIO - Accidentally committed to main, then pushed to a PR branch:
+You do NOT need to reset main. Once the PR is merged on GitHub, the local main
+branch will resolve itself cleanly when you run 'git pull'. No action needed now.
 
 If you're trying to:
-- Sync with remote after PR merge: use 'git pull'
+- Sync with remote after PR merge: just use 'git pull' - it resolves everything
 - Discard uncommitted changes: use 'git checkout -- <file>' or 'git restore <file>'
 - Undo a local commit (not pushed): use 'git reset --soft HEAD~1' (keeps changes staged)
 - Switch branches cleanly: use 'git stash' then 'git checkout <branch>'
 
-IF THIS COMMAND IS TRULY REQUIRED (rare edge cases like fixing corrupted state):
-Do NOT retry the command - this hook will continue to block it.
-Instead, ask the user to run it manually. Provide:
+FOR THE 'ACCIDENTAL COMMIT TO MAIN' CASE: Do nothing now. Wait for the PR to merge,
+then 'git pull' on main will fast-forward to include your commits. Problem solved.
+
+IF THIS COMMAND IS TRULY REQUIRED (rare - corrupted git state, not the PR scenario):
+Ask the user to run it manually with:
 1. The exact command: $COMMAND
-2. Why it's needed in this specific situation
-3. What alternatives you considered and why they won't work"
+2. Why it's needed (NOT 'accidentally committed to main' - that resolves with git pull)
+3. What alternatives you tried"
 fi
 
 # If we get here, the command is allowed
