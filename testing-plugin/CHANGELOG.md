@@ -1,5 +1,30 @@
 # Changelog
 
+## [3.4.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.3.2...testing-plugin-v3.4.0) (2026-02-05)
+
+
+### Features
+
+* Add args and argument-hint parameters to commands ([6f7958e](https://github.com/laurigates/claude-plugins/commit/6f7958e78ba39b91e6d1e918935d58ae7ad376aa))
+
+
+### Bug Fixes
+
+* remove shell operators from context commands across all plugins ([#316](https://github.com/laurigates/claude-plugins/issues/316)) ([ecabe72](https://github.com/laurigates/claude-plugins/commit/ecabe72ebd100af1219f97012832d8ba500965b5))
+* remove shell operators from context commands in multiple plugins ([#326](https://github.com/laurigates/claude-plugins/issues/326)) ([b028f73](https://github.com/laurigates/claude-plugins/commit/b028f7385f66f8f063a95874840c51e553694205))
+* rename marketplace from 'lgates-claude-plugins' to 'laurigates-plugins' ([#195](https://github.com/laurigates/claude-plugins/issues/195)) ([4310935](https://github.com/laurigates/claude-plugins/commit/43109350d121f9c0749af86461daef9849eea133))
+* replace ls -la with find in context commands to prevent false errors ([de8ce95](https://github.com/laurigates/claude-plugins/commit/de8ce954b4095b6c46e9326588b3fe632e87bffb))
+
+
+### Code Refactoring
+
+* **code-quality-plugin:** improve ast-grep skill discoverability and reduce size ([#189](https://github.com/laurigates/claude-plugins/issues/189)) ([11f6fa5](https://github.com/laurigates/claude-plugins/commit/11f6fa561c3a57204fb4388a04ecd8f3ffc19f5b))
+
+
+### Documentation
+
+* **rules, settings:** refactor to emphasize positive guidance patterns ([#360](https://github.com/laurigates/claude-plugins/issues/360)) ([a4ea8a8](https://github.com/laurigates/claude-plugins/commit/a4ea8a8990e2a40bb2331855db5fd68631c14d7e))
+
 ## [3.3.2](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.3.1...testing-plugin-v3.3.2) (2026-02-05)
 
 
