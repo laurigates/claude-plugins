@@ -1,5 +1,29 @@
 # Changelog
 
+## [2.12.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.11.3...git-plugin-v2.12.0) (2026-02-05)
+
+
+### Features
+
+* **git-plugin,code-quality-plugin,project-plugin:** add supporting scripts to skills ([#206](https://github.com/laurigates/claude-plugins/issues/206)) ([0b33d50](https://github.com/laurigates/claude-plugins/commit/0b33d502e18584b264c7c4a99dddda54dc573d08))
+* **git-plugin:** add git-branch-naming skill ([#244](https://github.com/laurigates/claude-plugins/issues/244)) ([c9e60cc](https://github.com/laurigates/claude-plugins/commit/c9e60ccba19099545064a18ec85c37e2950cd375))
+* **git-plugin:** add git-log-documentation skill and /git:derive-docs command ([#187](https://github.com/laurigates/claude-plugins/issues/187)) ([9cc4a0f](https://github.com/laurigates/claude-plugins/commit/9cc4a0fd22656d2316f179260f70089d69a2fbff))
+* **git-plugin:** add git-worktree-agent-workflow skill ([#298](https://github.com/laurigates/claude-plugins/issues/298)) ([f225ee9](https://github.com/laurigates/claude-plugins/commit/f225ee9c301a978b008eea2c7a4340f4a4e8e3e3))
+* **git-plugin:** add github-issue-writing and github-pr-title skills ([#246](https://github.com/laurigates/claude-plugins/issues/246)) ([9590acb](https://github.com/laurigates/claude-plugins/commit/9590acb7c36819c5735a7cdbf974617627594e94))
+* **git-plugin:** add pr-feedback command for reviewing and addressing PR comments ([e343b9c](https://github.com/laurigates/claude-plugins/commit/e343b9cb2c2c71732fb97a50087af70be0de1e84))
+* **git-plugin:** auto-create PR from main without local branch checkout ([#175](https://github.com/laurigates/claude-plugins/issues/175)) ([ca7a7bb](https://github.com/laurigates/claude-plugins/commit/ca7a7bb7d337dfebd3d5a2a3094896af3453399e))
+
+
+### Bug Fixes
+
+* **agent-patterns-plugin:** block git writes for parallel agents to prevent conflicts ([#299](https://github.com/laurigates/claude-plugins/issues/299)) ([a2c2ce0](https://github.com/laurigates/claude-plugins/commit/a2c2ce07d67ead9b30470b398777be355672281b))
+* enforce granular Bash permissions across all plugins ([#267](https://github.com/laurigates/claude-plugins/issues/267)) ([afeb507](https://github.com/laurigates/claude-plugins/commit/afeb50754838c2923807c8f2a248b3798fd4281c))
+* **git-plugin:** add guidance to avoid unnecessary -C flag ([#263](https://github.com/laurigates/claude-plugins/issues/263)) ([35b8950](https://github.com/laurigates/claude-plugins/commit/35b8950b992be58ebd7eb4503f1603219a3df8ef))
+* **git-plugin:** remove backticks from status codes to prevent parsing bug ([373023c](https://github.com/laurigates/claude-plugins/commit/373023ce8a292211890240612785e41641563c4d))
+* remove shell operators from context commands across all plugins ([#316](https://github.com/laurigates/claude-plugins/issues/316)) ([ecabe72](https://github.com/laurigates/claude-plugins/commit/ecabe72ebd100af1219f97012832d8ba500965b5))
+* remove shell operators from context commands in multiple plugins ([#326](https://github.com/laurigates/claude-plugins/issues/326)) ([b028f73](https://github.com/laurigates/claude-plugins/commit/b028f7385f66f8f063a95874840c51e553694205))
+* rename marketplace from 'lgates-claude-plugins' to 'laurigates-plugins' ([#195](https://github.com/laurigates/claude-plugins/issues/195)) ([4310935](https://github.com/laurigates/claude-plugins/commit/43109350d121f9c0749af86461daef9849eea133))
+
 ## [2.11.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.11.2...git-plugin-v2.11.3) (2026-02-05)
 
 
