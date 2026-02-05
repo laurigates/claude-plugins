@@ -92,7 +92,7 @@
       "name": "blueprint-plugin",
       "source": "./blueprint-plugin",
       "description": "Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, and CLAUDE.md management",
-      "version": "3.12.0",
+      "version": "3.11.0",
       "keywords": [
         "blueprint",
         "prd",
@@ -245,7 +245,7 @@
       "name": "health-plugin",
       "source": "./health-plugin",
       "description": "Diagnose and fix Claude Code configuration issues - plugin registry, settings, hooks, MCP servers",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "keywords": [
         "health",
         "diagnostics",
