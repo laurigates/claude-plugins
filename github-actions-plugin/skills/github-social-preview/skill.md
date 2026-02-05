@@ -58,7 +58,7 @@ PNG transparency can be beneficial for dark mode, but test against:
 
 ```bash
 # Generate a social preview for your repository
-uv run python ~/.claude/scripts/nano_banana_pro.py \
+uv run python .claude/scripts/nano_banana_pro.py \
   "Professional GitHub social preview image for [PROJECT NAME]: [DESCRIPTION]. \
    Modern, clean design with bold typography. Tech-focused aesthetic. \
    Include visual elements representing [KEY FEATURE]. \
@@ -109,7 +109,7 @@ Blue and purple color scheme.
 If you have an existing brand image or style reference:
 
 ```bash
-uv run python ~/.claude/scripts/nano_banana_pro.py \
+uv run python .claude/scripts/nano_banana_pro.py \
   "GitHub social preview in the style of the reference. \
    Include project name '[NAME]' prominently. \
    Maintain brand consistency." \
@@ -172,7 +172,7 @@ The preview may take a few minutes to propagate across platforms.
 
 ```bash
 # 1. Generate the image
-uv run python ~/.claude/scripts/nano_banana_pro.py \
+uv run python .claude/scripts/nano_banana_pro.py \
   "GitHub social preview for 'dotfiles' - a cross-platform configuration manager. \
    Show abstract connected nodes representing configuration sync. \
    Modern dark theme with blue accents. Bold 'dotfiles' text." \
