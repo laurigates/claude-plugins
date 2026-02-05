@@ -15,8 +15,8 @@ Diagnose and fix issues with the Claude Code plugin registry. This command speci
 ## Context
 
 - Current project: !`pwd`
-- Plugin registry: !`cat ~/.claude/plugins/installed_plugins.json 2>/dev/null | jq -c 'keys' 2>/dev/null`
-- Project settings: !`cat .claude/settings.json 2>/dev/null | jq -c '.enabledPlugins // empty' 2>/dev/null`
+- Plugin registry: !`jq -c 'keys' ~/.claude/plugins/installed_plugins.json 2>/dev/null`
+- Project settings: !`jq -c '.enabledPlugins // empty' .claude/settings.json 2>/dev/null`
 
 ## Background: Issue #14202
 

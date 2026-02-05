@@ -15,18 +15,18 @@ Audit the project's enabled plugins against the actual technology stack. Identif
 ## Context
 
 - Current project: !`pwd`
-- Project settings exists: !`test -f .claude/settings.json && echo "yes"`
-- Enabled plugins: !`cat .claude/settings.json 2>/dev/null | jq -r '.enabledPlugins[]? // empty' 2>/dev/null`
-- Package.json exists: !`test -f package.json && echo "yes"`
-- Cargo.toml exists: !`test -f Cargo.toml && echo "yes"`
-- pyproject.toml exists: !`test -f pyproject.toml && echo "yes"`
-- requirements.txt exists: !`test -f requirements.txt && echo "yes"`
-- go.mod exists: !`test -f go.mod && echo "yes"`
-- Dockerfile exists: !`test -f Dockerfile && echo "yes"`
-- docker-compose exists: !`test -f docker-compose.yml -o -f docker-compose.yaml -o -f compose.yml -o -f compose.yaml && echo "yes"`
-- GitHub workflows: !`find .github/workflows -name '*.yml' -o -name '*.yaml' 2>/dev/null | head -1`
-- Terraform files: !`find . -maxdepth 2 -name '*.tf' 2>/dev/null | head -1`
-- Kubernetes manifests: !`find . -maxdepth 3 \( -path '*/k8s/*' -o -path '*/kubernetes/*' \) -name '*.yaml' 2>/dev/null | head -1`
+- Project settings exists: !`find .claude -maxdepth 1 -name 'settings.json' 2>/dev/null`
+- Enabled plugins: !`jq -r '.enabledPlugins[]? // empty' .claude/settings.json 2>/dev/null`
+- Package.json exists: !`find . -maxdepth 1 -name 'package.json' 2>/dev/null`
+- Cargo.toml exists: !`find . -maxdepth 1 -name 'Cargo.toml' 2>/dev/null`
+- pyproject.toml exists: !`find . -maxdepth 1 -name 'pyproject.toml' 2>/dev/null`
+- requirements.txt exists: !`find . -maxdepth 1 -name 'requirements.txt' 2>/dev/null`
+- go.mod exists: !`find . -maxdepth 1 -name 'go.mod' 2>/dev/null`
+- Dockerfile exists: !`find . -maxdepth 1 -name 'Dockerfile' 2>/dev/null`
+- docker-compose exists: !`find . -maxdepth 1 \( -name 'docker-compose.yml' -o -name 'docker-compose.yaml' -o -name 'compose.yml' -o -name 'compose.yaml' \) 2>/dev/null`
+- GitHub workflows: !`find .github/workflows -maxdepth 1 -name '*.yml' 2>/dev/null -quit -print`
+- Terraform files: !`find . -maxdepth 2 -name '*.tf' 2>/dev/null -quit -print`
+- Kubernetes manifests: !`find . -maxdepth 3 \( -path '*/k8s/*' -o -path '*/kubernetes/*' \) -name '*.yaml' 2>/dev/null -quit -print`
 
 ## Parameters
 
@@ -180,7 +180,7 @@ User-level plugins (in `~/.claude/settings.json`) are managed separately and don
 
 When analyzing, check if a plugin is already enabled at user level:
 ```bash
-cat ~/.claude/settings.json 2>/dev/null | jq -r '.enabledPlugins[]? // empty'
+jq -r '.enabledPlugins[]? // empty' ~/.claude/settings.json 2>/dev/null
 ```
 
 If a plugin is enabled at user level, it doesn't need to be in project settings unless you want project-specific behavior.

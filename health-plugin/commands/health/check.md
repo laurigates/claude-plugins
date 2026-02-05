@@ -4,7 +4,7 @@ created: 2026-02-04
 modified: 2026-02-04
 reviewed: 2026-02-04
 description: Run a comprehensive diagnostic scan of Claude Code configuration including plugins, settings, hooks, and MCP servers
-allowed-tools: Bash(test *), Bash(cat *), Bash(ls *), Bash(jq *), Bash(head *), Read, Glob, Grep, TodoWrite
+allowed-tools: Bash(test *), Bash(cat *), Bash(ls *), Bash(jq *), Bash(head *), Bash(find *), Read, Glob, Grep, TodoWrite
 argument-hint: "[--fix] [--verbose]"
 ---
 
@@ -16,10 +16,10 @@ Run a comprehensive diagnostic scan of your Claude Code environment. Identifies 
 
 - User home: !`echo $HOME`
 - Current project: !`pwd`
-- Plugin registry exists: !`test -f ~/.claude/plugins/installed_plugins.json && echo "yes"`
-- User settings exists: !`test -f ~/.claude/settings.json && echo "yes"`
-- Project settings exists: !`test -f .claude/settings.json && echo "yes"`
-- Local settings exists: !`test -f .claude/settings.local.json && echo "yes"`
+- Plugin registry exists: !`find ~/.claude/plugins -maxdepth 1 -name 'installed_plugins.json' 2>/dev/null`
+- User settings exists: !`find ~/.claude -maxdepth 1 -name 'settings.json' 2>/dev/null`
+- Project settings exists: !`find .claude -maxdepth 1 -name 'settings.json' 2>/dev/null`
+- Local settings exists: !`find .claude -maxdepth 1 -name 'settings.local.json' 2>/dev/null`
 
 ## Parameters
 
