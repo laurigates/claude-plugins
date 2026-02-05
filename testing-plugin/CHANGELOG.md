@@ -7,6 +7,13 @@
 
 * replace ls -la with find in context commands to prevent false errors ([de8ce95](https://github.com/laurigates/claude-plugins/commit/de8ce954b4095b6c46e9326588b3fe632e87bffb))
 
+## [3.3.2](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.3.1...testing-plugin-v3.3.2) (2026-02-05)
+
+
+### Bug Fixes
+
+* replace ls -la with find in context commands to prevent false errors ([de8ce95](https://github.com/laurigates/claude-plugins/commit/de8ce954b4095b6c46e9326588b3fe632e87bffb))
+
 ## [3.3.1](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.3.0...testing-plugin-v3.3.1) (2026-02-04)
 
 
