@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.2](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.6.1...configure-plugin-v1.6.2) (2026-02-05)
+
+
+### Bug Fixes
+
+* replace ls -la with find in context commands to prevent false errors ([de8ce95](https://github.com/laurigates/claude-plugins/commit/de8ce954b4095b6c46e9326588b3fe632e87bffb))
+
 ## [1.6.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.6.0...configure-plugin-v1.6.1) (2026-02-04)
 
 
