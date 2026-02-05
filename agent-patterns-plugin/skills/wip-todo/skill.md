@@ -1,9 +1,13 @@
 ---
 name: WIP TODO Comments
-description: Leave TODO(wip) comments when work is incomplete so agents and humans can continue seamlessly.
+description: |
+  Mark unfinished work with TODO(wip) comments so the next agent or developer can pick up
+  where you left off. Use when you cannot finish a task in the current session, need to
+  leave breadcrumbs and save progress for a follow-up agent, or want to annotate partially
+  implemented code so it is easy to find and resume later.
 allowed-tools: Bash, Read, Edit, Write, Grep, Glob, TodoWrite
 created: 2025-01-24
-modified: 2025-01-24
+modified: 2026-02-05
 reviewed: 2025-01-24
 ---
 

@@ -1,10 +1,14 @@
 ---
 model: opus
 name: LangGraph Agents
-description: LangGraph framework for building stateful, multi-step AI agents with graph-based workflows, persistence, and human-in-the-loop support.
+description: |
+  Build stateful AI agents in Python using LangGraph's graph-based workflow framework.
+  Use when you want to create a state machine agent with checkpoints, define agent
+  behavior as a graph of nodes and edges, add human-in-the-loop approval steps, or
+  compose multiple agents as subgraphs in a LangGraph application.
 allowed-tools: Bash(python *), Bash(uv *), BashOutput, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-01-08
-modified: 2026-01-08
+modified: 2026-02-05
 reviewed: 2026-01-08
 ---
 

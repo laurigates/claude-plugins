@@ -1,10 +1,14 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-05
 reviewed: 2025-12-16
 name: MCP Server Management
-description: Intelligent MCP server installation and management. Suggests MCP servers based on project context and helps install them project-by-project. Use when configuring MCP servers or when project needs specific integrations.
+description: |
+  Install and configure Model Context Protocol (MCP) servers for Claude Code projects.
+  Use when you want to add or enable an MCP server, connect a tool or integration
+  (database, API, file system), update MCP settings in .mcp.json, or troubleshoot
+  MCP server connection issues.
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, AskUserQuestion
 ---
 

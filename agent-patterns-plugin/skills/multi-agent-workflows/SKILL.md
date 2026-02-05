@@ -1,14 +1,14 @@
 ---
 model: opus
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-05
 reviewed: 2025-12-16
 name: multi-agent-workflows
 description: |
-  Orchestrate complex multi-agent workflows for development, infrastructure, and
-  research. Provides workflow templates, agent sequences, and integration patterns.
-  Use when planning complex projects, coordinating multiple agents, designing
-  API development workflows, or infrastructure setup workflows.
+  Orchestrate multi-step development projects using multiple Claude Code agents with
+  workflow templates. Use when you need to build an API end-to-end, scaffold a full
+  project with tests and CI, set up infrastructure across multiple services, or divide
+  a large feature into agent-driven stages like design, implement, test, and deploy.
 ---
 
 # Multi-Agent Workflow Orchestration
