@@ -12,6 +12,7 @@ Diagnose and fix Claude Code configuration issues including plugin registry, set
 
 | Command | Description |
 |---------|-------------|
+| `/health:audit` | Audit enabled plugins against project tech stack and recommend additions/removals |
 | `/health:check` | Comprehensive diagnostic scan of Claude Code environment |
 | `/health:plugins` | Diagnose and fix plugin registry issues (addresses [#14202](https://github.com/anthropics/claude-code/issues/14202)) |
 
@@ -46,6 +47,25 @@ This is a known issue ([#14202](https://github.com/anthropics/claude-code/issues
 /health:check --verbose
 ```
 
+### Audit Plugin Relevance
+
+Ensure only relevant plugins are enabled for your project:
+
+```bash
+# See what plugins are relevant to this project
+/health:audit
+
+# Preview changes without applying
+/health:audit --dry-run
+
+# Apply recommended changes
+/health:audit --fix
+```
+
+This analyzes your project's tech stack (package.json, Cargo.toml, Dockerfile, etc.) and recommends:
+- Removing plugins that don't apply (e.g., kubernetes-plugin if no K8s manifests)
+- Adding plugins that match detected technologies (e.g., container-plugin if Dockerfile exists)
+
 ### Permission Debugging
 
 When tools are blocked unexpectedly, use the settings-configuration skill to understand:
@@ -72,6 +92,7 @@ When tools are blocked unexpectedly, use the settings-configuration skill to und
 | Symptom | Likely Cause | Command |
 |---------|--------------|---------|
 | Plugin not working | Wrong projectPath in registry | `/health:plugins --fix` |
+| Irrelevant plugins enabled | No relevance audit done | `/health:audit --fix` |
 | Permission denied | Missing allow pattern | Check settings-configuration skill |
 | Settings ignored | Invalid JSON | `/health:check` |
 
