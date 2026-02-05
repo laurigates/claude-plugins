@@ -1,6 +1,6 @@
 {
   "name": "documentation-plugin",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Documentation generation - API docs, README, knowledge graphs",
   "keywords": [
     "documentation",

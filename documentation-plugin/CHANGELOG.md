@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/laurigates/claude-plugins/compare/documentation-plugin-v1.2.0...documentation-plugin-v1.2.1) (2026-02-05)
+
+
+### Bug Fixes
+
+* replace ls -la with find in context commands to prevent false errors ([de8ce95](https://github.com/laurigates/claude-plugins/commit/de8ce954b4095b6c46e9326588b3fe632e87bffb))
+
 ## [1.2.0](https://github.com/laurigates/claude-plugins/compare/documentation-plugin-v1.1.2...documentation-plugin-v1.2.0) (2026-02-03)
 
 
