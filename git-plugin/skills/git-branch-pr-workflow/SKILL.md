@@ -389,7 +389,7 @@ git pull origin main  # Fast-forward merge handles this cleanly
 - `git pull` recognizes the commits and fast-forwards cleanly
 - No history rewriting, no data loss, no merge conflicts
 
-**Important:** Do NOT use `git reset --hard origin/main` after pushing to a PR branch. Wait for the PR to merge, then `git pull` resolves everything automatically.
+**After pushing to a PR branch:** Wait for the PR to merge, then use `git pull` to sync automatically.
 
 ### Rebase Conflicts Are Too Complex
 
