@@ -1,7 +1,7 @@
 ---
 model: opus
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-05
 reviewed: 2025-12-16
 name: kubernetes-operations
 description: |
@@ -136,5 +136,15 @@ kubectl get pods  # Which cluster is this targeting?
 - Set up alerts for critical conditions
 - Use health checks and readiness probes
 - Monitor resource usage and quotas
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Pod status (structured) | `kubectl get pods -n <ns> -o json \| jq '.items[] \| {name:.metadata.name, status:.status.phase}'` |
+| Quick overview | `kubectl get pods -n <ns> -o wide` |
+| Events (compact) | `kubectl get events -n <ns> --sort-by='.lastTimestamp' -o json` |
+| Resource details | `kubectl get <resource> -o json` |
+| Logs (bounded) | `kubectl logs <pod> -n <ns> --tail=50` |
 
 For detailed debugging commands, troubleshooting patterns, Helm workflows, and advanced K8s operations, see REFERENCE.md.

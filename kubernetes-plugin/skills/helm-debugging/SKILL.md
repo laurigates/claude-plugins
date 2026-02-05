@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-05
 reviewed: 2025-12-16
 name: helm-debugging
 description: |
@@ -790,6 +790,16 @@ argocd app sync <app-name> --prune --force
     kubectl describe pods -n prod
     kubectl logs -n prod --all-containers --tail=100
 ```
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Release status (JSON) | `helm status <release> -n <ns> -o json` |
+| All values (JSON) | `helm get values <release> -n <ns> --all -o json` |
+| Pod status (compact) | `kubectl get pods -n <ns> -l app.kubernetes.io/instance=<release> -o wide` |
+| Events (sorted) | `kubectl get events -n <ns> --sort-by='.lastTimestamp' -o json` |
+| Render + validate | `helm template <release> ./chart --debug 2>&1 \| head -100` |
 
 ## Related Skills
 

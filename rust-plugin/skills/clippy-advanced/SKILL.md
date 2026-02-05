@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-05
 reviewed: 2025-12-16
 name: clippy-advanced
 description: |
@@ -609,6 +609,15 @@ rustup update
 channel = "1.75.0"
 components = ["clippy"]
 ```
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| CI strict | `cargo clippy --workspace --all-targets -- -D warnings` |
+| JSON output | `cargo clippy --message-format=json` |
+| Compact errors | `cargo clippy --message-format=short` |
+| Quick check | `cargo clippy --message-format=short -- -D warnings` |
 
 ## References
 

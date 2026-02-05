@@ -14,15 +14,10 @@
       "mcp__serena"
     ]
   },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "serena"
+  ],
   "enabledPlugins": {},
-  "extraKnownMarketplaces": {
-    "laurigates-claude-plugins": {
-      "source": {
-        "source": "github",
-        "repo": "laurigates/claude-plugins"
-      }
-    }
-  },
-  "enabledMcpjsonServers": ["serena"],
-  "enableAllProjectMcpServers": true
+  "extraKnownMarketplaces": {}
 }

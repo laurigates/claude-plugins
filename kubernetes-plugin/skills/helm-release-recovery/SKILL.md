@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-05
 reviewed: 2025-12-16
 name: helm-release-recovery
 description: |
@@ -648,6 +648,16 @@ spec:
         factor: 2
         maxDuration: 3m
 ```
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Release history (JSON) | `helm history <release> -n <ns> --output json` |
+| Release status (JSON) | `helm status <release> -n <ns> -o json` |
+| Revision values (JSON) | `helm get values <release> -n <ns> --revision <N> -o json` |
+| Pod status (compact) | `kubectl get pods -n <ns> -l app.kubernetes.io/instance=<release> -o wide` |
+| Helm secrets (list) | `kubectl get secrets -n <ns> -l owner=helm,name=<release> -o json` |
 
 ## Related Skills
 
