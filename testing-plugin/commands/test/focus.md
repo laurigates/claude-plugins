@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2026-01-19
-modified: 2026-02-03
+modified: 2026-02-05
 reviewed: 2026-01-19
 allowed-tools: Bash, Read, Grep, Glob, TodoWrite
 argument-hint: "<file-path> [--serial] [--debug]"
@@ -10,7 +10,7 @@ description: Run single test file with fail-fast mode for rapid iteration
 
 ## Context
 
-- Project files: !`ls -la pyproject.toml package.json Cargo.toml go.mod 2>/dev/null`
+- Project files: !`find . -maxdepth 1 \( -name 'pyproject.toml' -o -name 'package.json' -o -name 'Cargo.toml' -o -name 'go.mod' \) 2>/dev/null`
 - Playwright config: !`find . -maxdepth 1 -name 'playwright.config.*' 2>/dev/null`
 - Vitest config: !`find . -maxdepth 1 \( -name 'vitest.config.*' -o -name 'vite.config.*' \) 2>/dev/null`
 - Jest config: !`find . -maxdepth 1 -name 'jest.config.*' 2>/dev/null`

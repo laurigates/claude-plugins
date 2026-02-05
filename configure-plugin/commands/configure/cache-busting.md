@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-05
 reviewed: 2025-12-16
 description: Check and configure cache-busting strategies for Next.js and Vite projects
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
@@ -11,12 +11,12 @@ argument-hint: "[--check-only] [--fix] [--framework <nextjs|vite>] [--cdn <cloud
 ## Context
 
 - Project root: !`pwd`
-- Package files: !`ls -la package.json 2>/dev/null`
+- Package files: !`find . -maxdepth 1 -name 'package.json' 2>/dev/null`
 - Next.js config: !`find . -maxdepth 1 -name 'next.config.*' 2>/dev/null`
 - Vite config: !`find . -maxdepth 1 -name 'vite.config.*' 2>/dev/null`
 - Build output: !`find . -maxdepth 1 -type d \( -name '.next' -o -name 'dist' -o -name 'out' \) 2>/dev/null`
-- CDN config: !`ls -la vercel.json _headers _redirects public/_headers 2>/dev/null`
-- Project standards: !`ls -la .project-standards.yaml 2>/dev/null`
+- CDN config: !`find . -maxdepth 1 \( -name 'vercel.json' -o -name '_headers' -o -name '_redirects' \) 2>/dev/null && find public -maxdepth 1 -name '_headers' 2>/dev/null`
+- Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml' 2>/dev/null`
 
 ## Parameters
 

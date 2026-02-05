@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-05
 reviewed: 2025-12-16
 description: Check and configure GitHub Pages deployment
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
@@ -13,8 +13,8 @@ argument-hint: "[--check-only] [--fix] [--source <docs|site|custom>]"
 - GitHub workflows: !`find .github/workflows -maxdepth 1 \( -name '*doc*.yml' -o -name '*pages*.yml' \) 2>/dev/null`
 - Documentation config: !`find . -maxdepth 1 \( -name 'mkdocs.yml' -o -name 'typedoc.json' -o -name 'docusaurus.config.*' \) 2>/dev/null`
 - Docs directory: !`find . -maxdepth 1 -type d \( -name 'docs' -o -name 'site' \) 2>/dev/null`
-- CNAME file: !`ls -la CNAME 2>/dev/null`
-- Project standards: !`ls -la .project-standards.yaml 2>/dev/null`
+- CNAME file: !`find . -maxdepth 1 -name 'CNAME' 2>/dev/null`
+- Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml' 2>/dev/null`
 
 ## Parameters
 
