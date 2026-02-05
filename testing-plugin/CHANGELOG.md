@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.5.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.4.0...testing-plugin-v3.5.0) (2026-02-05)
+
+
+### Features
+
+* add agentic optimizations and improve output formats ([3a7414c](https://github.com/laurigates/claude-plugins/commit/3a7414c82bbf1e2f6c507fdf16c6a2c57346b0fb))
+
 ## [3.4.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.3.2...testing-plugin-v3.4.0) (2026-02-05)
 
 
