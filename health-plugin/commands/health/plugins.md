@@ -1,10 +1,10 @@
 ---
 model: opus
 created: 2026-02-04
-modified: 2026-02-04
-reviewed: 2026-02-04
+modified: 2026-02-05
+reviewed: 2026-02-05
 description: Diagnose and fix plugin registry issues including orphaned entries and project-scope conflicts (addresses Claude Code issue #14202)
-allowed-tools: Bash(test *), Bash(cat *), Bash(ls *), Bash(jq *), Bash(cp *), Bash(mkdir *), Read, Write, Edit, Glob, Grep, TodoWrite, AskUserQuestion
+allowed-tools: Bash(test *), Bash(jq *), Bash(cp *), Bash(mkdir *), Read, Write, Edit, Glob, Grep, TodoWrite, AskUserQuestion
 argument-hint: "[--fix] [--dry-run] [--plugin <name>]"
 ---
 
@@ -15,8 +15,9 @@ Diagnose and fix issues with the Claude Code plugin registry. This command speci
 ## Context
 
 - Current project: !`pwd`
-- Plugin registry: !`jq -c 'keys' ~/.claude/plugins/installed_plugins.json 2>/dev/null`
+- Plugin registry: !`jq -c '.plugins | keys' ~/.claude/plugins/installed_plugins.json 2>/dev/null`
 - Project settings: !`jq -c '.enabledPlugins // empty' .claude/settings.json 2>/dev/null`
+- Project plugins dir: !`find .claude-plugin -maxdepth 1 -name '*.json' 2>/dev/null`
 
 ## Background: Issue #14202
 
@@ -121,16 +122,26 @@ After applying fixes:
 
 ```json
 {
-  "plugin-name@marketplace-name": {
-    "name": "plugin-name",
-    "source": "https://github.com/user/marketplace.git",
-    "marketplaceName": "marketplace-name",
-    "version": "1.0.0",
-    "installedAt": "2024-01-15T10:30:00Z",
-    "projectPath": "/path/to/project"  // Only for project-scoped
+  "version": 2,
+  "plugins": {
+    "plugin-name@marketplace-name": [
+      {
+        "scope": "project",
+        "projectPath": "/path/to/project",
+        "installPath": "~/.claude/plugins/cache/marketplace/plugin-name/1.0.0",
+        "version": "1.0.0",
+        "installedAt": "2024-01-15T10:30:00Z",
+        "lastUpdated": "2024-01-15T10:30:00Z",
+        "gitCommitSha": "abc123"
+      }
+    ]
   }
 }
 ```
+
+**Scope types:**
+- `"scope": "project"` — has `projectPath`, only active in that project
+- `"scope": "user"` — no `projectPath`, active globally
 
 ## Manual Workaround
 
