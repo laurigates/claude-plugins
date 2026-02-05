@@ -11,6 +11,8 @@
     "hooks",
     "mcp",
     "configuration",
+    "agentic",
+    "optimization",
     "fix",
     "repair"
   ]

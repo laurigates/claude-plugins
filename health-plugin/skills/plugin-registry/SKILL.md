@@ -8,8 +8,8 @@ description: |
   registry entries.
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-02-04
-modified: 2026-02-04
-reviewed: 2026-02-04
+modified: 2026-02-05
+reviewed: 2026-02-05
 ---
 
 # Claude Code Plugin Registry
@@ -35,43 +35,52 @@ The plugin registry is stored at:
 
 This file tracks all installed plugins across all projects.
 
-## Registry Structure
+## Registry Structure (v2)
 
 ```json
 {
-  "plugin-name@marketplace-name": {
-    "name": "plugin-name",
-    "source": "https://github.com/user/marketplace.git",
-    "marketplaceName": "marketplace-name",
-    "version": "1.0.0",
-    "installedAt": "2024-01-15T10:30:00Z",
-    "projectPath": "/path/to/project"
+  "version": 2,
+  "plugins": {
+    "plugin-name@marketplace-name": [
+      {
+        "scope": "project",
+        "projectPath": "/path/to/project",
+        "installPath": "~/.claude/plugins/cache/marketplace/plugin-name/1.0.0",
+        "version": "1.0.0",
+        "installedAt": "2024-01-15T10:30:00Z",
+        "lastUpdated": "2024-01-15T10:30:00Z",
+        "gitCommitSha": "abc123"
+      }
+    ]
   }
 }
 ```
+
+Each plugin key maps to an **array** of installations (supporting multiple scopes).
 
 ### Field Reference
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `name` | Yes | Plugin name without marketplace suffix |
-| `source` | Yes | Git URL of the marketplace |
-| `marketplaceName` | Yes | Name of the marketplace |
+| `scope` | Yes | `"project"` or `"user"` (global) |
+| `projectPath` | project only | Directory where plugin is active |
+| `installPath` | Yes | Cache path for installed plugin files |
 | `version` | Yes | Installed version |
 | `installedAt` | Yes | ISO timestamp of installation |
-| `projectPath` | No | If set, plugin is project-scoped |
+| `lastUpdated` | Yes | ISO timestamp of last update |
+| `gitCommitSha` | Yes | Git commit of installed version |
 
 ## Installation Scopes
 
-### Global Scope (default)
+### User Scope (global, default)
 
 ```bash
 /plugin install my-plugin@marketplace
 ```
 
-- No `projectPath` in registry entry
+- `"scope": "user"` in registry entry
+- No `projectPath` field
 - Available in all projects
-- Shows in "Installed" tab everywhere
 
 ### Project Scope
 
@@ -79,6 +88,7 @@ This file tracks all installed plugins across all projects.
 /plugin install my-plugin@marketplace --scope project
 ```
 
+- `"scope": "project"` in registry entry
 - Has `projectPath` set to installation directory
 - Should only be active in that project
 - **Bug #14202**: Still shows as "installed" in other projects
@@ -108,28 +118,24 @@ This file tracks all installed plugins across all projects.
 ### View Registry
 
 ```bash
-cat ~/.claude/plugins/installed_plugins.json | jq .
+jq . ~/.claude/plugins/installed_plugins.json
 ```
 
 ### List All Plugins
 
 ```bash
-cat ~/.claude/plugins/installed_plugins.json | jq 'keys[]'
+jq -r '.plugins | keys[]' ~/.claude/plugins/installed_plugins.json
 ```
 
 ### Find Project-Scoped Plugins
 
 ```bash
-cat ~/.claude/plugins/installed_plugins.json | jq 'to_entries[] | select(.value.projectPath) | {key, projectPath: .value.projectPath}'
+jq '.plugins | to_entries[] | .value[] | select(.scope == "project") | {projectPath, version}' ~/.claude/plugins/installed_plugins.json
 ```
 
 ### Find Orphaned Entries
 
-```bash
-cat ~/.claude/plugins/installed_plugins.json | jq -r 'to_entries[] | select(.value.projectPath) | .value.projectPath' | while read path; do
-  [ ! -d "$path" ] && echo "Orphaned: $path"
-done
-```
+Use the Read tool to read `~/.claude/plugins/installed_plugins.json`, then check each `projectPath` with `test -d`.
 
 ### Backup Registry
 
@@ -141,35 +147,22 @@ cp ~/.claude/plugins/installed_plugins.json ~/.claude/plugins/installed_plugins.
 
 ### Remove Orphaned Entry
 
-```bash
-# Backup first
-cp ~/.claude/plugins/installed_plugins.json ~/.claude/plugins/installed_plugins.json.backup
-
-# Remove specific plugin
-cat ~/.claude/plugins/installed_plugins.json | jq 'del(."plugin-name@marketplace")' > /tmp/plugins.json
-mv /tmp/plugins.json ~/.claude/plugins/installed_plugins.json
-```
+1. Read `~/.claude/plugins/installed_plugins.json` with the Read tool
+2. Back up with `cp ~/.claude/plugins/installed_plugins.json ~/.claude/plugins/installed_plugins.json.backup`
+3. Remove the orphaned entry from the `plugins` object
+4. Write the updated JSON with the Write tool
 
 ### Add Entry for Current Project
 
-```bash
-# Get current project path
-PROJECT_PATH=$(pwd)
+1. Read the registry with Read tool
+2. Add a new entry to the plugin's array with `scope: "project"` and current `projectPath`
+3. Write the updated JSON with Write tool
 
-# Add new entry (requires existing entry as template)
-cat ~/.claude/plugins/installed_plugins.json | jq \
-  --arg path "$PROJECT_PATH" \
-  '."plugin-name@marketplace".projectPath = $path' > /tmp/plugins.json
-mv /tmp/plugins.json ~/.claude/plugins/installed_plugins.json
-```
+### Convert Project-Scoped to User (Global)
 
-### Convert Project-Scoped to Global
-
-```bash
-cat ~/.claude/plugins/installed_plugins.json | jq \
-  'del(."plugin-name@marketplace".projectPath)' > /tmp/plugins.json
-mv /tmp/plugins.json ~/.claude/plugins/installed_plugins.json
-```
+1. Read the registry with Read tool
+2. Change `"scope": "project"` to `"scope": "user"` and remove `projectPath`
+3. Write the updated JSON with Write tool
 
 ## Project Settings Integration
 
@@ -211,10 +204,10 @@ Without this, even a correctly registered project-scoped plugin won't load.
 
 | Context | Command |
 |---------|---------|
-| View registry | `cat ~/.claude/plugins/installed_plugins.json \| jq -c .` |
-| List plugins | `cat ~/.claude/plugins/installed_plugins.json \| jq -r 'keys[]'` |
-| Check specific | `cat ~/.claude/plugins/installed_plugins.json \| jq '."name@market"'` |
-| Find by project | `cat ~/.claude/plugins/installed_plugins.json \| jq 'to_entries[] \| select(.value.projectPath=="/path")'` |
+| View registry | `jq -c . ~/.claude/plugins/installed_plugins.json` |
+| List plugins | `jq -r '.plugins \| keys[]' ~/.claude/plugins/installed_plugins.json` |
+| Check specific | `jq '.plugins."name@market"' ~/.claude/plugins/installed_plugins.json` |
+| Project plugins | `jq '.plugins \| to_entries[] \| .value[] \| select(.scope=="project")' ~/.claude/plugins/installed_plugins.json` |
 
 ## Quick Reference
 
@@ -229,8 +222,8 @@ Without this, even a correctly registered project-scoped plugin won't load.
 ```
 
 ### Scope Indicator
-- Has `projectPath` → Project-scoped
-- No `projectPath` → Global
+- `"scope": "project"` + `projectPath` → Project-scoped
+- `"scope": "user"` → Global (user-wide)
 
 ### After Editing
 Always restart Claude Code for registry changes to take effect.
