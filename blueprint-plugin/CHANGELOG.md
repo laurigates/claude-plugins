@@ -14,6 +14,13 @@
 
 * **blueprint-plugin:** consolidate tracking files and add work-order auto-creation ([0cb7b59](https://github.com/laurigates/claude-plugins/commit/0cb7b59a95bb67433827ca4700ac57ec8a67db96))
 
+## [3.12.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.11.0...blueprint-plugin-v3.12.0) (2026-02-05)
+
+
+### Features
+
+* **blueprint-plugin:** consolidate tracking files and add work-order auto-creation ([0cb7b59](https://github.com/laurigates/claude-plugins/commit/0cb7b59a95bb67433827ca4700ac57ec8a67db96))
+
 ## [3.11.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.10.1...blueprint-plugin-v3.11.0) (2026-02-04)
 
 
