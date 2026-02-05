@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SOURCE_DIR="/Users/lgates/.local/share/chezmoi/exact_dot_claude/skills"
 SKILLS_DIR="$PLUGIN_DIR/skills"
 
