@@ -218,7 +218,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, and repository management",
-      "version": "2.11.2",
+      "version": "2.12.0",
       "keywords": [
         "git",
         "github",

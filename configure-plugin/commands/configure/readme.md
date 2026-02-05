@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-17
-modified: 2026-02-04
+modified: 2026-02-05
 reviewed: 2025-12-17
 description: Check and configure README.md with logo, badges, features, tech stack, and project structure
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch
@@ -12,8 +12,8 @@ argument-hint: "[--check-only] [--fix] [--style <minimal|standard|detailed>] [--
 
 - Project root: !`pwd`
 - Project name: !`basename $(pwd)`
-- README exists: !`ls -la README.md 2>/dev/null`
-- Package files: !`ls -la package.json pyproject.toml Cargo.toml go.mod 2>/dev/null`
+- README exists: !`find . -maxdepth 1 -name 'README.md' 2>/dev/null`
+- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) 2>/dev/null`
 - Git remote: !`git remote get-url origin 2>/dev/null`
 - License file: !`find . -maxdepth 1 -name 'LICENSE*' 2>/dev/null`
 - Assets directory: !`find . -maxdepth 2 -type d \( -name 'assets' -o -name 'public' -o -name 'images' \) 2>/dev/null`

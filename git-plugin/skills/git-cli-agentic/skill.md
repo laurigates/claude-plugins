@@ -71,13 +71,13 @@ git status --short --branch
 
 | Code | Meaning |
 |------|---------|
-| `M` | Modified |
-| `A` | Added |
-| `D` | Deleted |
-| `R` | Renamed |
-| `C` | Copied |
-| `?` | Untracked |
-| `!` | Ignored |
+| M | Modified |
+| A | Added |
+| D | Deleted |
+| R | Renamed |
+| C | Copied |
+| ? | Untracked |
+| ! | Ignored |
 
 ### Quick Checks
 
