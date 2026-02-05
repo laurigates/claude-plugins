@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.1.0...health-plugin-v1.1.1) (2026-02-05)
+
+
+### Bug Fixes
+
+* **health-plugin:** remove shell operators from context commands ([d908b24](https://github.com/laurigates/claude-plugins/commit/d908b24964e528901edd1d267043c62486c3be64))
+
 ## [1.1.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.0.0...health-plugin-v1.1.0) (2026-02-05)
 
 
