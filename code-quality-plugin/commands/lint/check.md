@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-05
 reviewed: 2025-12-16
 allowed-tools: Bash(ruff *), Bash(eslint *), Bash(rustfmt *), Bash(gofmt *), Bash(prettier *), Read, SlashCommand
 argument-hint: [path] [--fix] [--format]
@@ -24,7 +24,7 @@ description: Universal linter that automatically detects and runs the appropriat
 ### Python
 {{ if PROJECT_TYPE == "python" }}
 Run Python linters:
-1. Ruff check: `uv run ruff check ${1:-.} ${2:+--fix}`
+1. Ruff check: `uv run ruff check ${1:-.} --output-format=concise ${2:+--fix}`
 2. Type checking: `uv run mypy ${1:-.}`
 3. Format check: `uv run ruff format ${1:-.} ${3:+--check}`
 4. Security: `uv run bandit -r ${1:-.}`
@@ -41,7 +41,7 @@ Run JavaScript/TypeScript linters:
 ### Rust
 {{ if PROJECT_TYPE == "rust" }}
 Run Rust linters:
-1. Clippy: `cargo clippy -- -D warnings`
+1. Clippy: `cargo clippy --message-format=short -- -D warnings`
 2. Format: `cargo fmt ${3:+} ${3:--- --check}`
 3. Check: `cargo check`
 {{ endif }}

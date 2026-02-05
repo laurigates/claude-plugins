@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-05
 reviewed: 2025-12-16
 name: helm-release-management
 description: |
@@ -566,6 +566,16 @@ helm install myapp ./chart \
   --kubeconfig=/path/to/kubeconfig \
   --namespace prod
 ```
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| List releases (structured) | `helm list -n <ns> -o json` |
+| Release history (structured) | `helm history <release> -n <ns> --output json` |
+| Release status (structured) | `helm status <release> -n <ns> -o json` |
+| Values (structured) | `helm get values <release> -n <ns> -o json` |
+| Failed releases | `helm list -n <ns> --failed -o json` |
 
 ## Related Skills
 

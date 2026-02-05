@@ -15,7 +15,7 @@ description: Run single test file with fail-fast mode for rapid iteration
 - Vitest config: !`find . -maxdepth 1 \( -name 'vitest.config.*' -o -name 'vite.config.*' \) 2>/dev/null`
 - Jest config: !`find . -maxdepth 1 -name 'jest.config.*' 2>/dev/null`
 - Pytest config: !`grep -l "pytest" pyproject.toml setup.cfg 2>/dev/null`
-- Package.json: !`cat package.json 2>/dev/null`
+- Package.json: !`head -20 package.json 2>/dev/null`
 
 ## Parameters
 

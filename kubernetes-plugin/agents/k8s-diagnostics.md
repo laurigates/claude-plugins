@@ -8,7 +8,7 @@ skills:
   - kubernetes-operations
   - kubernetes-debugging
 created: 2026-01-24
-modified: 2026-02-02
+modified: 2026-02-05
 reviewed: 2026-02-02
 ---
 
@@ -54,8 +54,8 @@ kubectl top pods -n <ns> 2>/dev/null
 
 ### Networking
 ```bash
-kubectl get svc,ep,ing -n <ns> 2>&1
-kubectl get networkpolicy -n <ns> 2>&1
+kubectl get svc,ep,ing -n <ns> -o wide 2>&1
+kubectl get networkpolicy -n <ns> -o wide 2>&1
 ```
 
 ## Common Failure Patterns
@@ -102,6 +102,16 @@ kubectl set image deploy/<name> <container>=<correct-image> -n <ns>
 - Diagnoses networking and service issues
 - Checks resource constraints and limits
 - Reviews events and logs for root cause
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Pod status (structured) | `kubectl get pods -n <ns> -o json \| jq '.items[] \| {name:.metadata.name, status:.status.phase}'` |
+| Events (compact) | `kubectl get events -n <ns> --sort-by='.lastTimestamp' -o json` |
+| Resource overview | `kubectl get deploy,rs,pods -n <ns> -o wide` |
+| Logs (bounded) | `kubectl logs <pod> -n <ns> --tail=50` |
+| Networking (wide) | `kubectl get svc,ep,ing -n <ns> -o wide` |
 
 ## What This Agent Does NOT Do
 
