@@ -12,14 +12,15 @@ The following files have been successfully created:
    ├── skills/                  ✓ Created (empty)
    ├── README.md                ✓ Created
    ├── SETUP.md                 ✓ Created (this file)
-   └── install-skills.sh        ✓ Created
+   └── scripts/
+       └── install-skills.sh    ✓ Created
    ```
 
 2. **plugin.json** - Plugin metadata with name, version, description, and keywords
 
 3. **README.md** - Comprehensive documentation of all 7 skills and usage instructions
 
-4. **install-skills.sh** - Installation script to copy skills from source directory
+4. **scripts/install-skills.sh** - Installation script to copy skills from source directory
 
 5. **SETUP.md** - This file with setup instructions
 
@@ -31,8 +32,8 @@ The skills directory is currently empty. Run the installation script to copy all
 
 ```bash
 cd /Users/lgates/repos/laurigates/claude-plugins/kubernetes-plugin
-chmod +x install-skills.sh
-./install-skills.sh
+chmod +x scripts/install-skills.sh
+./scripts/install-skills.sh
 ```
 
 This will copy the following skills from `/Users/lgates/.local/share/chezmoi/exact_dot_claude/skills/`:
@@ -76,7 +77,7 @@ Expected output:
 ./.claude-plugin/plugin.json
 ./README.md
 ./SETUP.md
-./install-skills.sh
+./scripts/install-skills.sh
 ./skills/argocd-login/SKILL.md
 ./skills/helm-chart-development/SKILL.md
 ./skills/helm-debugging/SKILL.md
@@ -141,10 +142,10 @@ claude plugins list | grep kubernetes
 ## Troubleshooting
 
 ### Issue: Skills directory is empty
-**Solution**: Run `./install-skills.sh` or manually copy skills as described above
+**Solution**: Run `./scripts/install-skills.sh` or manually copy skills as described above
 
 ### Issue: Permission denied on script
-**Solution**: `chmod +x install-skills.sh`
+**Solution**: `chmod +x scripts/install-skills.sh`
 
 ### Issue: Source skills not found
 **Verify**: `ls -la /Users/lgates/.local/share/chezmoi/exact_dot_claude/skills/`
