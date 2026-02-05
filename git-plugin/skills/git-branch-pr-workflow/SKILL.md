@@ -365,11 +365,9 @@ Closes #123
 ```bash
 # Pull with rebase to maintain linear history
 git pull --rebase origin feat/branch-name
-
-# Or reset if local changes can be discarded
-git fetch origin
-git reset --hard origin/feat/branch-name
 ```
+
+**Note:** `git reset --hard` is rarely needed. Most "diverged" states resolve cleanly with `git pull`.
 
 ### Committed to Main (Expected Workflow)
 
@@ -381,15 +379,17 @@ git push origin main:feat/new-feature
 
 # Create PR using GitHub MCP (head: feat/new-feature, base: main)
 
-# After PR is merged, local main is behind - sync it:
+# After PR is merged, local main resolves itself:
 git pull origin main  # Fast-forward merge handles this cleanly
 ```
 
-**Why this works:**
+**Why `git pull` works (no reset needed):**
 - Commits exist on both local main and remote feature branch
-- When PR merges to remote main, your local main is behind by same commits
+- When PR merges to remote main, your local main is behind by the same commits
 - `git pull` recognizes the commits and fast-forwards cleanly
 - No history rewriting, no data loss, no merge conflicts
+
+**After pushing to a PR branch:** Wait for the PR to merge, then use `git pull` to sync automatically.
 
 ### Rebase Conflicts Are Too Complex
 

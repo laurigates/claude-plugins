@@ -1,7 +1,7 @@
 ---
 model: opus
 created: 2025-12-16
-modified: 2026-02-03
+modified: 2026-02-05
 reviewed: 2025-12-16
 allowed-tools: Task, TodoWrite
 argument-hint: [--api] [--readme] [--changelog]
@@ -10,8 +10,8 @@ description: Update project documentation from code annotations
 
 ## Context
 
-- Project files: !`ls -la pyproject.toml package.json Cargo.toml go.mod 2>/dev/null`
-- Existing docs: !`ls -la README.md docs/ 2>/dev/null`
+- Project files: !`find . -maxdepth 1 \( -name 'pyproject.toml' -o -name 'package.json' -o -name 'Cargo.toml' -o -name 'go.mod' \) 2>/dev/null`
+- Existing docs: !`find . -maxdepth 1 \( -name 'README.md' -o -type d -name 'docs' \) 2>/dev/null`
 - Source files: !`find . -type f \( -name "*.py" -o -name "*.ts" -o -name "*.js" \) 2>/dev/null`
 - Python with docstrings: !`grep -r "\"\"\"" --include="*.py" -l 2>/dev/null`
 
