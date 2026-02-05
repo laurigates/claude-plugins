@@ -128,7 +128,7 @@ d2 --sketch diagram.d2 out.svg        # Hand-drawn style
 ## Installation
 
 ```bash
-/plugin install tools-plugin@laurigates-plugins
+/plugin install tools-plugin@laurigates-claude-plugins
 ```
 
 ## License

@@ -134,15 +134,15 @@ jobs:
 
 Replace `PLUGINS_LIST` with the selected plugins in the format:
 ```
-plugin-name@laurigates-plugins
+plugin-name@laurigates-claude-plugins
 ```
 
 One plugin per line. For example with default recommended plugins:
 ```yaml
           plugins: |
-            git-plugin@laurigates-plugins
-            code-quality-plugin@laurigates-plugins
-            testing-plugin@laurigates-plugins
+            git-plugin@laurigates-claude-plugins
+            code-quality-plugin@laurigates-claude-plugins
+            testing-plugin@laurigates-claude-plugins
 ```
 
 ### Phase 4: Configure .github/workflows/claude-code-review.yml
@@ -184,8 +184,8 @@ jobs:
           plugin_marketplaces: |
             https://github.com/laurigates/claude-plugins.git
           plugins: |
-            code-quality-plugin@laurigates-plugins
-            testing-plugin@laurigates-plugins
+            code-quality-plugin@laurigates-claude-plugins
+            testing-plugin@laurigates-claude-plugins
 ```
 
 ### Phase 5: Report
@@ -244,7 +244,7 @@ If `--plugins` is not specified, select recommended plugins based on project typ
 - The `CLAUDE_CODE_OAUTH_TOKEN` secret must be added manually to the repository
 - If using AWS Bedrock or Google Vertex AI, adjust the authentication section accordingly
 - The plugin marketplace URL uses HTTPS Git format: `https://github.com/laurigates/claude-plugins.git`
-- Plugins are referenced as `<plugin-name>@laurigates-plugins` (marketplace name from marketplace.json)
+- Plugins are referenced as `<plugin-name>@laurigates-claude-plugins` (marketplace name from marketplace.json)
 
 ## See Also
 

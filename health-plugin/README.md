@@ -5,7 +5,7 @@ Diagnose and fix Claude Code configuration issues including plugin registry, set
 ## Installation
 
 ```bash
-/plugin install health-plugin@laurigates-plugins
+/plugin install health-plugin@laurigates-claude-plugins
 ```
 
 ## Commands

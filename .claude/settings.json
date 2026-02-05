@@ -16,7 +16,7 @@
   },
   "enabledPlugins": {},
   "extraKnownMarketplaces": {
-    "laurigates-plugins": {
+    "laurigates-claude-plugins": {
       "source": {
         "source": "github",
         "repo": "laurigates/claude-plugins"

@@ -211,7 +211,7 @@ jobs:
           plugin_marketplaces: |
             https://github.com/laurigates/claude-plugins.git
           plugins: |
-            code-quality-plugin@laurigates-plugins
+            code-quality-plugin@laurigates-claude-plugins
           prompt: |
             Analyze these files for code smells. Minimum severity: ${{ inputs.severity-threshold }}
 

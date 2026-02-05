@@ -598,7 +598,7 @@ The root `marketplace.json` lists available plugins:
 
 ```json
 {
-  "name": "laurigates-plugins",
+  "name": "laurigates-claude-plugins",
   "owner": {
     "name": "Lauri Gates"
   },
@@ -615,7 +615,7 @@ The root `marketplace.json` lists available plugins:
 }
 ```
 
-**Installation**: `/plugin install blueprint-plugin@laurigates-plugins`
+**Installation**: `/plugin install blueprint-plugin@laurigates-claude-plugins`
 
 ---
 

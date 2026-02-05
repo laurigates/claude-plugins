@@ -124,7 +124,7 @@ template:
 ## Installation
 
 ```bash
-/plugin install home-assistant-plugin@laurigates-plugins
+/plugin install home-assistant-plugin@laurigates-claude-plugins
 ```
 
 ## License

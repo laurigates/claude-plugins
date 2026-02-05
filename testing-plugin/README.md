@@ -106,7 +106,7 @@ Works well with:
 ## Installation
 
 ```bash
-/plugin install testing-plugin@laurigates-plugins
+/plugin install testing-plugin@laurigates-claude-plugins
 ```
 
 ## License

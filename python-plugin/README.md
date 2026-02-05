@@ -92,7 +92,7 @@ Works well with:
 ## Installation
 
 ```bash
-/plugin install python-plugin@laurigates-plugins
+/plugin install python-plugin@laurigates-claude-plugins
 ```
 
 ## License
