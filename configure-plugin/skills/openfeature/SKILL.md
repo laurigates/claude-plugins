@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-06
 reviewed: 2025-12-16
 name: openfeature
 description: |
@@ -9,6 +9,7 @@ description: |
   languages. Covers SDK installation, flag evaluation, providers, and hooks.
   Use when implementing feature flags, A/B testing, canary releases, or when
   user mentions OpenFeature, feature toggles, or progressive rollouts.
+allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---
 
 # OpenFeature SDK Integration

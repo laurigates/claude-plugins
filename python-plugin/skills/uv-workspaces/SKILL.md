@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-06
 reviewed: 2025-12-16
 name: uv-workspaces
 description: |
@@ -9,6 +9,7 @@ description: |
   workspace configuration, member dependencies, shared lockfiles, and building.
   Use when user mentions uv workspaces, Python monorepo, multi-package projects,
   workspace members, or shared dependencies across packages.
+allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # UV Workspaces

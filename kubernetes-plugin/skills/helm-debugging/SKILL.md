@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-02-05
+modified: 2026-02-06
 reviewed: 2025-12-16
 name: helm-debugging
 description: |
@@ -9,6 +9,7 @@ description: |
   issues. Covers helm template, helm lint, dry-run, debugging YAML parse errors,
   value type errors, and resource conflicts. Use when user mentions Helm errors,
   debugging Helm, template rendering issues, or troubleshooting Helm deployments.
+allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # Helm Debugging & Troubleshooting

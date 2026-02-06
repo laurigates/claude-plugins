@@ -1,10 +1,10 @@
 ---
 model: opus
 created: 2025-12-17
-modified: 2026-01-09
+modified: 2026-02-06
 reviewed: 2025-12-17
 description: "Generate or update CLAUDE.md from project context and blueprint artifacts"
-allowed_tools: [Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion]
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 name: blueprint-claude-md
 ---
 

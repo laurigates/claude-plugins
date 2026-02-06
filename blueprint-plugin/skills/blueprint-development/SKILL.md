@@ -1,10 +1,11 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-01-09
+modified: 2026-02-06
 reviewed: 2025-12-26
 name: blueprint-development
 description: "Generate project-specific rules and commands from PRDs for Blueprint Development methodology. Use when generating behavioral rules for architecture patterns, testing strategies, implementation guides, or quality standards from requirements documents."
+allowed-tools: Read, Write, Edit, Grep, Glob, Bash, TodoWrite
 ---
 
 # Blueprint Development Rule Generator
@@ -279,7 +280,7 @@ Create commands in `.claude/skills/` for project-specific workflows.
 ```markdown
 ---
 description: "Initialize Blueprint Development in this project"
-allowed_tools: [Bash, Write]
+allowed-tools: Bash, Write
 ---
 
 Initialize Blueprint Development structure:
@@ -306,7 +307,7 @@ Report:
 ```markdown
 ---
 description: "Generate project-specific behavioral rules from PRDs in docs/prds/"
-allowed_tools: [Read, Write, Glob]
+allowed-tools: Read, Write, Glob
 ---
 
 Generate project-specific rules:
@@ -340,7 +341,7 @@ Report:
 ```markdown
 ---
 description: "Generate workflow commands based on project structure and PRDs"
-allowed_tools: [Read, Write, Bash, Glob]
+allowed-tools: Read, Write, Bash, Glob
 ---
 
 Generate workflow commands:
@@ -376,7 +377,7 @@ Report:
 ---
 description: "Create work-order with minimal context for isolated subagent execution"
 args: "[--no-publish] [--from-issue N]"
-allowed_tools: [Read, Write, Glob, Bash]
+allowed-tools: Read, Write, Glob, Bash
 ---
 
 Generate work-order:
@@ -428,7 +429,7 @@ Report:
 ```markdown
 ---
 description: "Analyze project state and continue development where left off"
-allowed_tools: [Read, Bash, Grep, Glob, Edit, Write]
+allowed-tools: Read, Bash, Grep, Glob, Edit, Write
 ---
 
 Continue project development:
@@ -465,7 +466,7 @@ Report before starting:
 ```markdown
 ---
 description: "Run test → fix → refactor loop with TDD workflow"
-allowed_tools: [Read, Edit, Bash]
+allowed-tools: Read, Edit, Bash
 ---
 
 Run TDD cycle:

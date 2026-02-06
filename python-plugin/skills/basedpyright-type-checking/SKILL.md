@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-06
 reviewed: 2025-12-16
 name: basedpyright-type-checking
 description: |
@@ -9,6 +9,7 @@ description: |
   Use when implementing type checking, configuring LSP, comparing type checkers,
   or setting up strict type validation in Python projects.
   Triggered by: basedpyright, pyright, type checking, LSP, mypy alternative, static analysis.
+allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # Basedpyright Type Checking

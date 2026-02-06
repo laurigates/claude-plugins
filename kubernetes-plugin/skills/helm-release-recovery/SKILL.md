@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-02-05
+modified: 2026-02-06
 reviewed: 2025-12-16
 name: helm-release-recovery
 description: |
@@ -9,6 +9,7 @@ description: |
   (pending-install, pending-upgrade). Covers helm rollback, release history,
   atomic deployments. Use when user mentions rollback, failed Helm upgrade,
   stuck release, or recovering from Helm deployment failures.
+allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # Helm Release Recovery

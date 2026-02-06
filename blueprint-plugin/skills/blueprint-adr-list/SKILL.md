@@ -4,7 +4,7 @@ created: 2026-01-29
 modified: 2026-02-06
 reviewed: 2026-02-06
 description: "List all ADRs with title, status, date, and domain in a markdown table"
-allowed_tools: [Bash, Glob]
+allowed-tools: Bash, Glob
 name: blueprint-adr-list
 ---
 

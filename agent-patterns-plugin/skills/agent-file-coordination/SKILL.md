@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-02-05
+modified: 2026-02-06
 reviewed: 2025-12-16
 name: agent-file-coordination
 description: |
@@ -9,6 +9,7 @@ description: |
   Use when you need agents to pass results to each other via files, sync agent work
   through a shared workspace, track agent progress in a coordination directory, or
   create handoff documents that the next agent can pick up.
+allowed-tools: Read, Grep, Glob, Task
 ---
 
 # Agent File Coordination

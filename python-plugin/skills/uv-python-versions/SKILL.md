@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-06
 reviewed: 2025-12-16
 name: uv-python-versions
 description: |
@@ -9,6 +9,7 @@ description: |
   uv python list, uv python pin, version pinning with .python-version file.
   Use when user mentions installing Python versions, switching Python versions,
   .python-version, uv python, or managing CPython/PyPy interpreters.
+allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # UV Python Version Management

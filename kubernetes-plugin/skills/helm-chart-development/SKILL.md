@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-06
 reviewed: 2025-12-16
 name: helm-chart-development
 description: |
@@ -9,6 +9,7 @@ description: |
   values.yaml, template development, chart dependencies, packaging, and repository publishing.
   Use when user mentions Helm charts, helm create, Chart.yaml, values.yaml, helm lint,
   helm template, helm package, or Kubernetes packaging.
+allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---
 
 # Helm Chart Development

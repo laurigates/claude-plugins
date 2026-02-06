@@ -1,13 +1,14 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-06
 reviewed: 2025-12-16
 name: cargo-llvm-cov
 description: |
   Code coverage for Rust using LLVM instrumentation with support for multiple output formats and CI integration.
   Use when measuring test coverage, generating coverage reports, enforcing coverage thresholds, or integrating with codecov/coveralls.
   Trigger terms: coverage, llvm-cov, code coverage, test coverage, coverage report, codecov, coveralls, branch coverage.
+allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # cargo-llvm-cov - Code Coverage with LLVM

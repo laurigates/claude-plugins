@@ -1,12 +1,13 @@
 ---
 model: haiku
 created: 2025-12-17
-modified: 2025-12-17
+modified: 2026-02-06
 reviewed: 2025-12-17
 name: readme-standards
 description: |
   README.md templates and standards. Use when generating or improving README files,
   checking README compliance, or when the user mentions README best practices or documentation.
+allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---
 
 # README Standards (v2025.1)

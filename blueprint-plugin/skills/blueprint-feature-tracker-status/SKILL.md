@@ -1,10 +1,10 @@
 ---
 model: opus
 created: 2026-01-02
-modified: 2026-01-09
+modified: 2026-02-06
 reviewed: 2026-01-02
 description: "Display feature tracker statistics and completion summary"
-allowed_tools: [Read, Bash, AskUserQuestion]
+allowed-tools: Read, Bash, AskUserQuestion
 name: blueprint-feature-tracker-status
 ---
 

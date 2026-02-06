@@ -4,7 +4,7 @@ created: 2025-12-22
 modified: 2026-02-06
 reviewed: 2026-02-06
 description: "Derive Architecture Decision Records from existing project structure, dependencies, and documentation"
-allowed_tools: [Read, Write, Glob, Grep, Bash, AskUserQuestion, Task]
+allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion, Task
 name: blueprint-derive-adr
 ---
 

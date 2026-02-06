@@ -1,6 +1,6 @@
 ---
 name: review
-model: claude-opus-4-5
+model: opus
 color: "#E53E3E"
 description: Comprehensive code review including quality, security, performance, and commit/PR analysis. Provides actionable findings with specific recommendations.
 tools: Glob, Grep, LS, Read, Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(gh pr *), Bash(npm test *), Bash(yarn test *), Bash(bun test *), TodoWrite

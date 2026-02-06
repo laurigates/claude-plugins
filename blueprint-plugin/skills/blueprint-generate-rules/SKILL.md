@@ -1,10 +1,10 @@
 ---
 model: opus
 created: 2025-12-16
-modified: 2025-01-09
-reviewed: 2025-01-09
+modified: 2026-02-06
+reviewed: 2026-01-09
 description: "Generate project-specific rules from PRDs"
-allowed_tools: [Read, Write, Glob, Bash, AskUserQuestion]
+allowed-tools: Read, Write, Glob, Bash, AskUserQuestion
 name: blueprint-generate-rules
 ---
 

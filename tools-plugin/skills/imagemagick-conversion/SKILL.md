@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-06
 reviewed: 2025-12-16
 name: imagemagick-conversion
 description: |
@@ -9,6 +9,7 @@ description: |
   resizing, batch processing, quality adjustment, and image transformations.
   Use when user mentions image conversion, resizing images, ImageMagick,
   magick command, batch image processing, or thumbnail generation.
+allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # ImageMagick Image Conversion

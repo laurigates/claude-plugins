@@ -1,10 +1,10 @@
 ---
 model: opus
 created: 2026-01-02
-modified: 2026-02-04
+modified: 2026-02-06
 reviewed: 2026-02-04
 description: "Synchronize feature tracker with TODO.md and PRDs, manage tasks"
-allowed_tools: [Read, Write, Bash, Glob, AskUserQuestion]
+allowed-tools: Read, Write, Bash, Glob, AskUserQuestion
 name: blueprint-feature-tracker-sync
 ---
 

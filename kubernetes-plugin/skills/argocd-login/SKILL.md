@@ -1,13 +1,14 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-06
 reviewed: 2025-12-16
 name: argocd-login
 description: |
   ArgoCD CLI authentication with SSO. Provides argocd login command, gRPC-Web
   configuration, and post-login operations. Use when user mentions ArgoCD login,
   argocd authentication, SSO auth, or accessing ArgoCD applications and clusters.
+allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # ArgoCD CLI Login

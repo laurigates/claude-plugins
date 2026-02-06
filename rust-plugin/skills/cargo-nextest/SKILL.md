@@ -1,13 +1,14 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-06
 reviewed: 2025-12-16
 name: cargo-nextest
 description: |
   Next-generation test runner for Rust with parallel execution, advanced filtering, and CI integration.
   Use when running tests, configuring test execution, setting up CI pipelines, or optimizing test performance.
   Trigger terms: nextest, test runner, parallel tests, test filtering, test performance, flaky tests, CI testing.
+allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # cargo-nextest - Next-Generation Test Runner

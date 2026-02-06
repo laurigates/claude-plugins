@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-06
 reviewed: 2025-12-16
 name: uv-tool-management
 description: |
@@ -9,6 +9,7 @@ description: |
   uv tool install, uvx for ephemeral execution, tool isolation, and updates.
   Use when user mentions uv tool, uvx, installing CLI tools globally, pipx
   replacement, or running Python tools without installation.
+allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # UV Tool Management

@@ -1,7 +1,7 @@
 ---
 model: opus
 created: 2025-12-16
-modified: 2026-02-05
+modified: 2026-02-06
 reviewed: 2025-12-16
 name: agent-coordination-patterns
 description: |
@@ -9,6 +9,7 @@ description: |
   complete a larger task. Use when you want to split work across multiple agents,
   chain agent outputs together, dispatch and coordinate dependent subagent tasks,
   or design a pipeline where one agent's output feeds into the next.
+allowed-tools: Read, Grep, Glob, Task
 ---
 
 # Agent Coordination Patterns

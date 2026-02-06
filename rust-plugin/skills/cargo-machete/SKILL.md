@@ -1,13 +1,14 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-06
 reviewed: 2025-12-16
 name: cargo-machete
 description: |
   Detect unused dependencies in Rust projects for cleaner Cargo.toml files and faster builds.
   Use when auditing dependencies, optimizing build times, cleaning up Cargo.toml, or detecting bloat.
   Trigger terms: unused dependencies, cargo-machete, dependency audit, dependency cleanup, bloat detection, cargo-udeps.
+allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # cargo-machete - Unused Dependency Detection

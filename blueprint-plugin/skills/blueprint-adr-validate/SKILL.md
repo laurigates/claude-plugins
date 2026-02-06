@@ -1,10 +1,10 @@
 ---
 model: haiku
 created: 2026-01-15
-modified: 2026-01-18
+modified: 2026-02-06
 reviewed: 2026-01-15
 description: "Validate ADR relationships, detect orphaned references, and check domain consistency"
-allowed_tools: [Read, Bash, Glob, Grep, Edit, AskUserQuestion]
+allowed-tools: Read, Bash, Glob, Grep, Edit, AskUserQuestion
 name: blueprint-adr-validate
 ---
 

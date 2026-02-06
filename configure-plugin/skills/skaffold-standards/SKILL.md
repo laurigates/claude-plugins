@@ -1,13 +1,14 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-06
 reviewed: 2025-12-16
 name: skaffold-standards
 description: |
   Skaffold configuration standards for local Kubernetes development with OrbStack
   and dotenvx. Use when configuring Skaffold, setting up local K8s development,
   or when the user mentions Skaffold, local development, Kubernetes profiles, or dotenvx secrets.
+allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---
 
 # Skaffold Standards

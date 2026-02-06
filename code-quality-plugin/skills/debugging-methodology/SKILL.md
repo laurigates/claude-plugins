@@ -4,7 +4,7 @@ name: Debugging Methodology
 description: Systematic debugging approach with tool recommendations for memory, performance, and system-level issues.
 allowed-tools: Bash, Read, Grep, Glob
 created: 2025-12-27
-modified: 2025-12-27  # Added eBPF tracing
+modified: 2025-12-27
 reviewed: 2025-12-27
 ---
 

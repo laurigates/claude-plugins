@@ -1,10 +1,10 @@
 ---
 model: opus
 created: 2025-12-17
-modified: 2026-01-15
+modified: 2026-02-06
 reviewed: 2025-12-22
 description: "Show blueprint version, configuration, and check for available upgrades"
-allowed_tools: [Read, Bash, Glob, AskUserQuestion]
+allowed-tools: Read, Bash, Glob, AskUserQuestion
 name: blueprint-status
 ---
 

@@ -1,10 +1,11 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-21
+modified: 2026-02-06
 reviewed: 2025-12-16
 name: github-social-preview
 description: Generate 1280x640 PNG social preview images for GitHub repositories using nano-banana-pro. Use when user mentions social preview, Open Graph image, or needs repository images for social media sharing.
+allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # GitHub Social Preview Image Generator

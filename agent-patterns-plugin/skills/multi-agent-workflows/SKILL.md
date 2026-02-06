@@ -1,7 +1,7 @@
 ---
 model: opus
 created: 2025-12-16
-modified: 2026-02-05
+modified: 2026-02-06
 reviewed: 2025-12-16
 name: multi-agent-workflows
 description: |
@@ -9,6 +9,7 @@ description: |
   workflow templates. Use when you need to build an API end-to-end, scaffold a full
   project with tests and CI, set up infrastructure across multiple services, or divide
   a large feature into agent-driven stages like design, implement, test, and deploy.
+allowed-tools: Read, Grep, Glob, Task
 ---
 
 # Multi-Agent Workflow Orchestration
