@@ -164,7 +164,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.6.2",
+      "version": "1.6.3",
       "keywords": [
         "infrastructure",
         "standards",
@@ -218,7 +218,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, and repository management",
-      "version": "2.12.3",
+      "version": "2.12.2",
       "keywords": [
         "git",
         "github",
