@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.4.0...code-quality-plugin-v1.5.0) (2026-02-06)
+
+
+### Features
+
+* **code-quality-plugin:** add dry-consolidation skill ([47f7218](https://github.com/laurigates/claude-plugins/commit/47f7218ae70a59ca24a0523461df5e94620194d8))
+
 ## [1.4.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.3.7...code-quality-plugin-v1.4.0) (2026-02-05)
 
 
