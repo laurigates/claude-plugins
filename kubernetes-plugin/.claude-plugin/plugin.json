@@ -1,6 +1,6 @@
 {
   "name": "kubernetes-plugin",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Kubernetes and Helm operations - deployments, charts, releases, diagnostics",
   "keywords": [
     "kubernetes",

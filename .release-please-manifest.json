@@ -17,7 +17,7 @@
   "health-plugin": "1.1.2",
   "git-plugin": "2.12.2",
   "github-actions-plugin": "1.1.0",
-  "kubernetes-plugin": "1.2.0",
+  "kubernetes-plugin": "1.2.1",
   "langchain-plugin": "1.2.1",
   "networking-plugin": "1.2.1",
   "project-plugin": "1.6.1",
