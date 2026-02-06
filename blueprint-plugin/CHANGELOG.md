@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.13.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.12.0...blueprint-plugin-v3.13.0) (2026-02-06)
+
+
+### Features
+
+* **blueprint-plugin:** improve ADR/docs commands with programmatic listing pattern ([8d02b54](https://github.com/laurigates/claude-plugins/commit/8d02b54e7cc24e8ecf80b90d3aae25b844b270f5))
+
 ## [3.12.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.11.0...blueprint-plugin-v3.12.0) (2026-02-05)
 
 
