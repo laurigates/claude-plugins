@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.4](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.1.3...agents-plugin-v1.1.4) (2026-02-06)
+
+
+### Bug Fixes
+
+* **frontmatter:** resolve 83 validation errors across 75 files ([#434](https://github.com/laurigates/claude-plugins/issues/434)) ([5beb75e](https://github.com/laurigates/claude-plugins/commit/5beb75ed4b2cb0431d060bd7102903495c03c6c5))
+
 ## [1.1.3](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.1.2...agents-plugin-v1.1.3) (2026-02-04)
 
 
