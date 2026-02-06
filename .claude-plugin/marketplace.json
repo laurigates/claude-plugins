@@ -108,7 +108,7 @@
       "name": "code-quality-plugin",
       "source": "./code-quality-plugin",
       "description": "Code review, refactoring, linting, and static analysis",
-      "version": "1.4.0",
+      "version": "1.5.0",
       "keywords": [
         "code-review",
         "refactoring",
