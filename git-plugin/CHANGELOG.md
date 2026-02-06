@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.12.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.12.2...git-plugin-v2.12.3) (2026-02-06)
+
+
+### Bug Fixes
+
+* **frontmatter:** resolve 83 validation errors across 75 files ([#434](https://github.com/laurigates/claude-plugins/issues/434)) ([5beb75e](https://github.com/laurigates/claude-plugins/commit/5beb75ed4b2cb0431d060bd7102903495c03c6c5))
+
 ## [2.12.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.12.1...git-plugin-v2.12.2) (2026-02-06)
 
 
