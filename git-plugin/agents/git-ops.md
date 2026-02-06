@@ -29,14 +29,23 @@ When multiple agents run in parallel, git operations cause conflicts:
 
 This agent centralizes all git write operations to prevent these conflicts.
 
-## Environment Configuration
+## Prerequisites
 
-This agent requires `CLAUDE_GIT_AGENT=1` to be set in its environment for the orchestrator-enforcement
-hook to allow git write operations. Without this, git writes will be blocked.
+Git write permissions (`git add`, `git commit`, `git push`, etc.) must be in the project's
+`.claude/settings.json` allow list. Without these, subagents cannot execute git commands
+since they cannot prompt the user for approval.
 
-**Current limitation**: Claude Code doesn't support agent-specific env vars. Workarounds:
-1. Set `CLAUDE_GIT_AGENT=1` globally when running git workflows
-2. Use the git-ops agent sequentially (not in parallel with other agents)
+### Orchestrator Mode (optional)
+
+When `ORCHESTRATOR_MODE=1` is set, the orchestrator-enforcement hook restricts git writes
+to agents with `CLAUDE_GIT_AGENT=1`. Since Claude Code doesn't support agent-specific env vars,
+set `CLAUDE_GIT_AGENT=1` globally when using orchestrator workflows:
+
+```bash
+export ORCHESTRATOR_MODE=1 CLAUDE_GIT_AGENT=1
+```
+
+Without orchestrator mode, git permissions are controlled solely by `.claude/settings.json`.
 
 ## Scope
 
@@ -45,11 +54,22 @@ hook to allow git write operations. Without this, git writes will be blocked.
 - **Steps**: 5-15, completes the workflow
 - **Value**: Merge conflicts and rebase output stay in sub-agent context
 
+## Important: Separate Bash Calls
+
+Run each git command as a **separate Bash tool call**. Claude Code's permission system
+blocks shell operators (`&&`, `|`, `;`).
+
+```bash
+git add <files>          # First Bash call
+git commit -m "message"  # Second Bash call
+git push origin <branch> # Third Bash call
+```
+
 ## Workflow
 
 1. **Assess** - Understand current branch state, conflicts, history
 2. **Plan** - Determine safest sequence of git operations
-3. **Execute** - Perform the git operation step by step
+3. **Execute** - Perform each git command as a separate Bash call
 4. **Resolve** - Handle conflicts if they arise
 5. **Verify** - Confirm clean state, run tests if available
 6. **Report** - Summary of what changed
