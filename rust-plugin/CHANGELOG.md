@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.1.0...rust-plugin-v1.2.0) (2026-02-06)
+
+
+### Features
+
+* add agentic optimizations and improve output formats ([3a7414c](https://github.com/laurigates/claude-plugins/commit/3a7414c82bbf1e2f6c507fdf16c6a2c57346b0fb))
+
 ## [1.2.0](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.1.0...rust-plugin-v1.2.0) (2026-02-05)
 
 
