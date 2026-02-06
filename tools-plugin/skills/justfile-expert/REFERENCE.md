@@ -1,5 +1,220 @@
 # Justfile Expert - Detailed Reference
 
+## Golden Justfile Template
+
+Use this template as a starting point for new projects. Uncomment and adapt recipes for your technology stack.
+
+```just
+# Justfile - Project task runner
+# Run `just` or `just help` to see available recipes
+# https://just.systems/
+
+####################
+# Settings
+####################
+
+# set dotenv-load                     # Uncomment if using .env files
+# set positional-arguments            # Uncomment if recipes use $1, $2, etc.
+
+####################
+# Variables
+####################
+
+# PROJECT := "my-project"
+# NAMESPACE := "my-namespace"
+
+####################
+# Metadata
+####################
+
+# Default recipe - show help
+default:
+    @just --list
+
+# Show available recipes with descriptions
+help:
+    @just --list --unsorted
+
+####################
+# Development
+####################
+
+# Start development environment
+dev:
+    echo "TODO: Start dev server"
+    # bun run dev
+    # uv run python manage.py runserver
+    # docker-compose up
+    # skaffold dev --port-forward
+
+# Build for production
+build:
+    echo "TODO: Build project"
+    # bun run build
+    # skaffold build
+    # docker-compose build
+
+# Clean build artifacts
+clean:
+    echo "TODO: Clean artifacts"
+    # rm -rf dist build .next node_modules/.cache
+    # find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+
+####################
+# Code Quality
+####################
+
+# Run linter (read-only)
+lint *args:
+    echo "TODO: Run linter"
+    # bun run lint {{ args }}
+    # uv run ruff check {{ args }}
+
+# Auto-fix lint issues
+# lint-fix:
+#     bun run lint:fix
+#     uv run ruff check --fix .
+
+# Format code (mutating)
+format *args:
+    echo "TODO: Format code"
+    # bun run format {{ args }}
+    # uv run ruff format {{ args }}
+
+# Check code formatting without modifying (non-mutating)
+format-check *args:
+    echo "TODO: Check formatting"
+    # bun run format:check {{ args }}
+    # uv run ruff format --check {{ args }}
+
+# TypeScript/Python type checking
+# typecheck:
+#     bunx tsc --noEmit --skipLibCheck
+#     uv run basedpyright
+
+# Composite: format-check + lint + typecheck (code quality only, no tests)
+# check: format-check lint typecheck
+
+# Check and auto-fix
+# check-fix:
+#     bun run check:fix
+
+####################
+# Testing
+####################
+
+# Run all tests
+test *args:
+    echo "TODO: Run tests"
+    # bun test {{ args }}
+    # uv run pytest -v {{ args }}
+
+# Run unit tests only
+# test-unit *args:
+#     bun run test:unit {{ args }}
+#     uv run pytest -m unit -v {{ args }}
+
+# Run integration tests
+# test-integration *args:
+#     bun run test:integration {{ args }}
+#     uv run pytest -m integration -v {{ args }}
+
+# Run tests with coverage report
+# test-coverage:
+#     bun run test:coverage
+#     uv run pytest --cov --cov-report=html --cov-report=term-missing
+
+####################
+# Workflows
+####################
+
+# Pre-commit checks (fast, non-mutating)
+pre-commit: format-check lint test
+    @echo "Pre-commit checks passed"
+    # With typecheck: pre-commit: format-check lint typecheck test-unit
+
+# Full CI simulation
+ci: format-check lint test build
+    @echo "CI simulation passed"
+    # With typecheck + coverage: ci: check test-coverage build
+
+####################
+# Dependencies
+####################
+
+# Install dependencies
+# install:
+#     bun install --frozen-lockfile
+#     uv sync
+
+# Update all dependencies
+# update:
+#     bun update
+#     uv lock --upgrade
+
+####################
+# Database
+####################
+
+# Run database migrations
+# db-migrate:
+#     uv run python manage.py migrate
+#     bun run db:migrate
+
+# Seed database with test data
+# db-seed:
+#     bun run db:seed
+
+# Reset database (WARNING: destroys data)
+# db-reset:
+#     echo "WARNING: This will delete all database data"
+
+####################
+# Kubernetes
+####################
+
+# Start Skaffold development
+# skaffold:
+#     skaffold dev --port-forward
+
+# Start Skaffold with file sync (hot reload)
+# dev-k8s:
+#     skaffold dev -p dev --port-forward
+
+####################
+# Documentation
+####################
+
+# Generate documentation
+# docs:
+#     bun run docs
+
+# Serve documentation locally
+# docs-serve:
+#     bun run docs:serve
+```
+
+### Naming Rules Summary
+
+- **Hyphen-separated**: `test-unit`, `format-check`, `db-migrate`
+- **Verb-first for actions**: `lint`, `format`, `build`, `test`, `clean`
+- **Noun-first for categories**: `db-migrate`, `db-seed`, `docs-serve`
+- **`_` prefix for private**: `_generate-secrets`, `_setup`
+- **Modifiers after base**: `lint-fix` (not `fix-lint`), `build-release` (not `release-build`)
+- **`-check` suffix**: Read-only verification (`format-check`)
+- **`-fix` suffix**: Auto-correction (`lint-fix`, `check-fix`)
+- **`-watch` suffix**: Watch mode (`test-watch`, `docs-watch`)
+
+### Semantic Definitions
+
+| Recipe | Equals | Description |
+|--------|--------|-------------|
+| `check` | `format-check` + `lint` + `typecheck` | Code quality only, no tests |
+| `pre-commit` | `format-check` + `lint` + `typecheck` + `test-unit` | Non-mutating, fast |
+| `ci` | `check` + `test-coverage` + `build` | Full CI simulation |
+| `clean` | Remove build artifacts | Partial cleanup |
+| `clean-all` | `clean` + remove deps/caches | Full cleanup |
+
 ## Complete Syntax Reference
 
 ### Settings
