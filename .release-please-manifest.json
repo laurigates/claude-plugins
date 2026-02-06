@@ -16,7 +16,7 @@
   "hooks-plugin": "1.3.2",
   "health-plugin": "1.1.2",
   "git-plugin": "2.12.2",
-  "github-actions-plugin": "1.1.0",
+  "github-actions-plugin": "1.1.1",
   "kubernetes-plugin": "1.2.1",
   "langchain-plugin": "1.2.1",
   "networking-plugin": "1.2.1",
