@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.2](https://github.com/laurigates/claude-plugins/compare/python-plugin-v1.2.1...python-plugin-v1.2.2) (2026-02-06)
+
+
+### Bug Fixes
+
+* **frontmatter:** resolve 83 validation errors across 75 files ([#434](https://github.com/laurigates/claude-plugins/issues/434)) ([5beb75e](https://github.com/laurigates/claude-plugins/commit/5beb75ed4b2cb0431d060bd7102903495c03c6c5))
+
 ## [1.2.1](https://github.com/laurigates/claude-plugins/compare/python-plugin-v1.2.0...python-plugin-v1.2.1) (2026-02-01)
 
 
