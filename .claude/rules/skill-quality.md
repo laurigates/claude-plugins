@@ -1,6 +1,6 @@
 # Skill Quality Standards
 
-Quality standards for maintaining effective, discoverable skills and commands.
+Quality standards for maintaining effective, discoverable skills.
 
 ## Size Limits
 
@@ -8,7 +8,6 @@ Quality standards for maintaining effective, discoverable skills and commands.
 |------|-----------|-------------------|
 | `SKILL.md` | 500 | Extract to `REFERENCE.md` |
 | `REFERENCE.md` | No limit | Supporting file, loaded on demand |
-| Command `.md` | 300 | Split into sub-commands |
 
 **Official guideline**: Keep `SKILL.md` under 500 lines. Move detailed reference material to separate supporting files.
 
