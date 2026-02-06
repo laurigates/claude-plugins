@@ -33,6 +33,13 @@ PRD (Product Requirements) → PRP (Product Requirement Prompt) → Work-Order �
 | `/prp-execute` | Execute a PRP with validation loop, TDD workflow, and quality gates |
 | `/prp-curate-docs` | Curate documentation for ai_docs to optimize AI context |
 
+### Listing Commands
+
+| Command | Description |
+|---------|-------------|
+| `/blueprint-adr-list` | List all ADRs with title, status, date, and domain |
+| `/blueprint-docs-list` | List blueprint documents (ADRs, PRDs, PRPs) with metadata |
+
 ### Management Commands
 
 | Command | Description |

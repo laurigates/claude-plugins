@@ -38,6 +38,8 @@
     "retroactive-documentation",
     "git-history-analysis",
     "import-plans",
-    "reverse-engineering"
+    "reverse-engineering",
+    "programmatic-listing",
+    "adr-backlog"
   ]
 }

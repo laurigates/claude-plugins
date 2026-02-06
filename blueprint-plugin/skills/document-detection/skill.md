@@ -1,8 +1,8 @@
 ---
 model: haiku
 created: 2026-01-09
-modified: 2026-01-15
-reviewed: 2026-01-09
+modified: 2026-02-06
+reviewed: 2026-02-06
 name: document-detection
 description: "Detect PRD/ADR/PRP opportunities in conversations and prompt for document creation. Activates when users discuss features, architecture decisions, or implementation planning."
 ---
@@ -134,11 +134,27 @@ question: "This looks like a [PRD/ADR/PRP] opportunity. Would you like to docume
 options:
   - label: "Yes, create [document type]"
     description: "I'll gather context and create the document"
+  - label: "Add to backlog"
+    description: "Record this topic for later documentation"
   - label: "Not now, remind me later"
     description: "Continue conversation, prompt again if topic expands"
   - label: "No, just continue"
     description: "Skip documentation for this topic"
 ```
+
+### Step 1.5: Backlog Path (if "Add to backlog" selected)
+
+For ADR opportunities, append the decision topic to the Proposed ADRs section in `docs/adrs/README.md`:
+
+1. Check that `docs/adrs/README.md` exists (create from template if missing)
+2. Append a bullet to the **Proposed ADRs** section:
+   ```markdown
+   - [ ] {Decision topic} — {brief context from conversation} (identified {YYYY-MM-DD})
+   ```
+3. Remove the `_No proposed ADRs at this time._` placeholder if present
+4. Confirm to user: "Added to proposed ADRs backlog. Run `/blueprint:derive-adr` when ready to document it fully."
+
+For PRD/PRP opportunities, note the topic in the conversation and suggest revisiting later. No persistent backlog file exists for these types yet.
 
 ### Step 2: Gather Clarification (if accepted)
 

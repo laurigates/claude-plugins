@@ -1,8 +1,8 @@
 ---
 model: opus
 created: 2025-12-22
-modified: 2026-01-15
-reviewed: 2025-12-22
+modified: 2026-02-06
+reviewed: 2026-02-06
 description: "Derive Architecture Decision Records from existing project structure, dependencies, and documentation"
 allowed_tools: [Read, Write, Glob, Grep, Bash, AskUserQuestion, Task]
 ---
@@ -254,29 +254,23 @@ Generate ADRs for these common decisions (if applicable):
 | `0007-api-design.md` | API style and patterns |
 | `0008-deployment-strategy.md` | Deployment approach |
 
-### 3.3 Create Index
-Generate an ADR index file:
+### 3.3 Create ADR README
 
-```markdown
-# Architecture Decision Records
+Write the ADR README template to `docs/adrs/README.md` using the template from `blueprint-plugin/templates/adr-readme.md`.
 
-This directory contains Architecture Decision Records (ADRs) documenting significant technical decisions for this project.
+The README is self-documenting: it includes a programmatic `fd` + `awk` command that generates the ADR index on demand, eliminating static tables that drift out of sync.
 
-## Index
+**Customizations when writing**:
+- If undocumented decisions were identified during Phase 2 analysis that the user chose not to create full ADRs for, add them to the **Proposed ADRs** section:
+  ```markdown
+  ## Proposed ADRs
 
-| ADR | Title | Status | Date |
-|-----|-------|--------|------|
-| [0001](0001-project-language.md) | {Title} | Accepted | {date} |
-| [0002](0002-framework-choice.md) | {Title} | Accepted | {date} |
+  Decisions identified but not yet documented as full ADRs:
 
-## Template
-
-New ADRs should follow the [MADR template](https://adr.github.io/madr/).
-
-## Creating New ADRs
-
-Use `/blueprint:derive-adr` or the `architecture-decisions` agent to create new ADRs.
-```
+  - [ ] {Decision topic} — {brief context} (identified {YYYY-MM-DD})
+  - [ ] {Decision topic} — {brief context} (identified {YYYY-MM-DD})
+  ```
+- Keep the programmatic listing command intact — it replaces the need for a static index
 
 ## Phase 4: Relationship Updates & Validation
 
