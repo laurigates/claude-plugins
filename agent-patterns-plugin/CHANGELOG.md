@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.5](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.5.4...agent-patterns-plugin-v2.5.5) (2026-02-06)
+
+
+### Bug Fixes
+
+* **frontmatter:** resolve 83 validation errors across 75 files ([#434](https://github.com/laurigates/claude-plugins/issues/434)) ([5beb75e](https://github.com/laurigates/claude-plugins/commit/5beb75ed4b2cb0431d060bd7102903495c03c6c5))
+
 ## [2.5.4](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.5.3...agent-patterns-plugin-v2.5.4) (2026-02-03)
 
 
