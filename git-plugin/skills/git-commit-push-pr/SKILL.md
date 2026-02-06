@@ -146,6 +146,32 @@ If `--labels` provided, add labels after PR creation:
 gh pr edit <pr-number> --add-label "label1,label2"
 ```
 
+### Step 6: Watch PR Checks (if --pr)
+
+After PR creation, watch CI checks to confirm the PR is ready for merge:
+
+```bash
+gh pr checks <pr-number> --watch --fail-fast --required
+```
+
+- `--watch`: Block until all checks complete (polls every 10s)
+- `--fail-fast`: Exit immediately on first check failure
+- `--required`: Only watch required checks (skip optional/informational)
+
+**On success (exit 0)**:
+- Report: "All required checks passed. PR #N is ready for merge."
+- Provide merge command: `gh pr merge <pr-number> --squash --delete-branch`
+
+**On failure (exit 1)**:
+- Report which check(s) failed with details:
+  ```bash
+  gh pr checks <pr-number> --required --json name,state,bucket,link --jq '.[] | select(.bucket == "fail")'
+  ```
+- Suggest: review failed check logs, fix issues, push again
+
+**On pending timeout** (exit 8):
+- Report: "Checks still running. Monitor with: `gh pr checks <pr-number> --watch`"
+
 ## Workflow Guidance
 
 - After running pre-commit hooks, stage files modified by hooks using `git add -u`

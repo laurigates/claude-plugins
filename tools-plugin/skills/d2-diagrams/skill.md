@@ -1,16 +1,31 @@
 ---
 model: haiku
 name: D2 Diagrams
-description: Generate diagrams from declarative text using D2 - modern text-to-diagram language with automatic layouts, themes, and advanced styling.
+description: |
+  Generate diagrams from declarative text using D2 - modern text-to-diagram language with
+  automatic layouts, themes, and advanced styling. Use when creating architecture diagrams,
+  flowcharts, decision trees, workflow diagrams, sequence flows, or ERDs from text definitions.
 allowed-tools: Bash(d2 *), Read, Write, Grep, Glob, TodoWrite
 created: 2025-12-26
-modified: 2025-12-26
-reviewed: 2025-12-26
+modified: 2026-02-06
+reviewed: 2026-02-06
 ---
 
 # D2 Diagrams
 
 Expert in generating diagrams from declarative text definitions using D2 - a modern diagram scripting language.
+
+## When to Use This Skill
+
+| Use this skill when... | Use Mermaid instead when... |
+|------------------------|-----------------------------|
+| Rich styling with classes and themes | Embedding diagrams in GitHub Markdown |
+| Complex nested container layouts | Simple flowcharts with minimal styling |
+| Architecture diagrams with icons | Diagrams that render natively in docs platforms |
+| Decision trees with colored edges | Sequence diagrams (Mermaid has richer syntax) |
+| SQL table / ERD diagrams | Wide tool support is a priority |
+
+For a detailed feature comparison, see [REFERENCE.md](REFERENCE.md).
 
 ## Core Expertise
 
@@ -23,6 +38,9 @@ Expert in generating diagrams from declarative text definitions using D2 - a mod
 ## Installation
 
 ```bash
+# mise (preferred)
+mise install d2 && mise use -g d2
+
 # macOS
 brew install d2
 
@@ -50,6 +68,8 @@ d2 diagram.d2 diagram.pdf
 # Output to stdout
 d2 diagram.d2 -
 ```
+
+> **PNG prerequisite**: The first PNG render downloads a bundled Chromium (~140 MB). Expect ~1 min delay on the initial run; subsequent renders are fast.
 
 ### Watch Mode
 
@@ -137,35 +157,6 @@ para: {shape: parallelogram}
 circle: {shape: circle}
 ```
 
-### Special Shapes
-
-```d2
-# SQL table
-users: {
-  shape: sql_table
-  id: int {constraint: primary_key}
-  name: varchar
-  email: varchar {constraint: unique}
-}
-
-# Class
-MyClass: {
-  shape: class
-  +publicField: string
-  -privateField: int
-  #protectedField: bool
-  +publicMethod(): void
-  -privateMethod(): string
-}
-
-# Code block
-code: |go
-  func main() {
-    fmt.Println("Hello")
-  }
-|
-```
-
 ### Containers (Nesting)
 
 ```d2
@@ -242,21 +233,45 @@ a -> b: {
 }
 ```
 
-### Layers and Scenarios
+### Classes (Reusable Styles)
+
+Define named style sets and apply them to multiple nodes/edges.
 
 ```d2
-# Base diagram
-a -> b -> c
-
-# Layers (for multi-page output)
-layers: {
-  layer1: {
-    a: Different in layer 1
+classes: {
+  error: {
+    style: {
+      fill: "#ffebee"
+      stroke: "#c62828"
+      font-color: "#c62828"
+      border-radius: 8
+    }
   }
-  layer2: {
-    b: Different in layer 2
+  success: {
+    style: {
+      fill: "#e8f5e9"
+      stroke: "#2e7d32"
+      font-color: "#2e7d32"
+      border-radius: 8
+    }
+  }
+  decision: {
+    shape: diamond
+    style: {
+      fill: "#fff3e0"
+      stroke: "#e65100"
+      font-color: "#e65100"
+    }
   }
 }
+
+# Apply a class
+start: Start {class: success}
+check: Valid? {class: decision}
+fail: Error {class: error}
+
+start -> check
+check -> fail: No
 ```
 
 ### Variables
@@ -341,59 +356,66 @@ api -> frontend: 5. 200 OK
 frontend -> user: 6. Show success
 ```
 
-### Database ERD
+### Decision Tree / Flowchart
+
+Uses classes for consistent styling, diamond shapes for decisions, and colored edges for Yes/No paths.
 
 ```d2
-users: {
-  shape: sql_table
-  id: int {constraint: primary_key}
-  name: varchar(100)
-  email: varchar(255) {constraint: unique}
-  created_at: timestamp
+classes: {
+  decision: {
+    shape: diamond
+    style: {
+      fill: "#fff3e0"
+      stroke: "#e65100"
+      font-color: "#e65100"
+    }
+  }
+  action: {
+    shape: rectangle
+    style: {
+      fill: "#e3f2fd"
+      stroke: "#1565c0"
+      font-color: "#1565c0"
+      border-radius: 8
+    }
+  }
+  terminal: {
+    shape: oval
+    style: {
+      fill: "#e8f5e9"
+      stroke: "#2e7d32"
+      font-color: "#2e7d32"
+    }
+  }
+  warn: {
+    shape: hexagon
+    style: {
+      fill: "#ffebee"
+      stroke: "#c62828"
+      font-color: "#c62828"
+    }
+  }
 }
 
-orders: {
-  shape: sql_table
-  id: int {constraint: primary_key}
-  user_id: int {constraint: foreign_key}
-  total: decimal
-  status: varchar(20)
-}
+start: Start {class: terminal}
+staged: Staged changes? {class: decision}
+lint: Run linter {class: action}
+pass: Lint pass? {class: decision}
+commit: Create commit {class: action}
+done: Done {class: terminal}
+fix: Fix issues {class: warn}
 
-items: {
-  shape: sql_table
-  id: int {constraint: primary_key}
-  order_id: int {constraint: foreign_key}
-  product_id: int
-  quantity: int
-}
-
-users.id <-> orders.user_id
-orders.id <-> items.order_id
+start -> staged
+staged -> lint: Yes {style.stroke: green}
+staged -> done: No {style.stroke: red}
+lint -> pass
+pass -> commit: Yes {style.stroke: green}
+pass -> fix: No {style.stroke: red}
+fix -> lint
+commit -> done
 ```
 
-### Kubernetes Deployment
-
-```d2
-cluster: Kubernetes Cluster {
-  ns: Namespace {
-    deploy: Deployment {
-      pod1: Pod
-      pod2: Pod
-      pod3: Pod
-    }
-    svc: Service {
-      shape: hexagon
-    }
-    svc -> deploy
-  }
-
-  ingress: Ingress {
-    shape: cloud
-  }
-  ingress -> ns.svc
-}
-```
+For additional patterns (Database ERD, Kubernetes Deployment), special shapes (sql_table, class, code blocks), layers, theme categories, and a full D2 vs Mermaid comparison, see [REFERENCE.md](REFERENCE.md).
 
 ## Agentic Optimizations
 
@@ -405,7 +427,7 @@ cluster: Kubernetes Cluster {
 | Sketch style | `d2 --sketch diagram.d2 output.svg` |
 | ELK layout | `d2 -l elk diagram.d2 output.svg` |
 | List themes | `d2 themes` |
-| PNG export | `d2 diagram.d2 output.png` |
+| PNG export | `d2 --scale 2 diagram.d2 output.png` |
 
 ## Quick Reference
 
@@ -417,42 +439,8 @@ cluster: Kubernetes Cluster {
 | `--dark-theme` | Dark mode theme ID |
 | `-l, --layout` | Layout engine: dagre, elk, tala |
 | `--sketch` | Hand-drawn style |
+| `--scale` | Output scale factor (e.g. `2` for 2x resolution) |
 | `--pad` | Diagram padding in pixels |
 | `--center` | Center the diagram |
 | `--animate-interval` | Animation frame interval (ms) |
 | `-h, --help` | Show help |
-
-## Theme Categories
-
-| Range | Category |
-|-------|----------|
-| 0-99 | Light themes |
-| 100-199 | Special themes |
-| 200-299 | Dark themes |
-
-Popular themes:
-- `0` - Default (Neutral)
-- `1` - Neutral Grey
-- `3` - Flagship Terrastruct
-- `4` - Cool Classics
-- `8` - Colorblind Clear
-- `100` - Earth Tones
-- `101` - Everglade Green
-- `200` - Dark Mauve
-
-## D2 vs Mermaid
-
-| Feature | D2 | Mermaid |
-|---------|----|---------|
-| Layout engines | Multiple (dagre, elk, tala) | Single |
-| Theming | 100+ themes | 4 themes |
-| Watch mode | Built-in | Requires external tools |
-| SQL tables | Native | Limited |
-| Sketch mode | Yes | No |
-| Icons | Any URL | Limited |
-| Containers | Deep nesting | Subgraphs only |
-| Markdown embedding | Growing | Excellent |
-| GitHub rendering | No | Native |
-
-**Choose D2 when**: Rich styling, complex layouts, SQL schemas, architecture diagrams
-**Choose Mermaid when**: Markdown/GitHub integration, simpler syntax, wide tool support
