@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.0](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.3.1...tools-plugin-v2.4.0) (2026-02-06)
+
+
+### Features
+
+* **tools-plugin:** add justfile naming conventions and golden template ([#424](https://github.com/laurigates/claude-plugins/issues/424)) ([75e915d](https://github.com/laurigates/claude-plugins/commit/75e915d2a31cad89854c2ce73cd0877d0990100f))
+
 ## [2.3.1](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.3.0...tools-plugin-v2.3.1) (2026-02-01)
 
 
