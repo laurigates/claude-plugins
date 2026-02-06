@@ -1,6 +1,6 @@
 ---
 name: security-audit
-model: claude-opus-4-5
+model: opus
 color: "#D32F2F"
 description: Security vulnerability analysis. Scans code for OWASP top 10, secrets exposure, injection risks, auth flaws, and insecure configurations. Use proactively when reviewing security-sensitive code.
 tools: Glob, Grep, LS, Read, Bash(semgrep *), Bash(bandit *), Bash(trufflehog *), Bash(gitleaks *), Bash(detect-secrets *), Bash(npm audit *), Bash(snyk *), Bash(git status *), Bash(git diff *), Bash(git log *), TodoWrite
