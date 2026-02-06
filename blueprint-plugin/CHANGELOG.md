@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.13.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.13.0...blueprint-plugin-v3.13.1) (2026-02-06)
+
+
+### Bug Fixes
+
+* **frontmatter:** resolve 83 validation errors across 75 files ([#434](https://github.com/laurigates/claude-plugins/issues/434)) ([5beb75e](https://github.com/laurigates/claude-plugins/commit/5beb75ed4b2cb0431d060bd7102903495c03c6c5))
+
 ## [3.13.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.12.0...blueprint-plugin-v3.13.0) (2026-02-06)
 
 
