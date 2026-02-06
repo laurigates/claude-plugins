@@ -297,7 +297,7 @@
       "name": "kubernetes-plugin",
       "source": "./kubernetes-plugin",
       "description": "Kubernetes and Helm operations - deployments, charts, releases",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "keywords": [
         "kubernetes",
         "helm",
@@ -360,7 +360,7 @@
       "name": "python-plugin",
       "source": "./python-plugin",
       "description": "Python development ecosystem - uv, ruff, pytest, packaging",
-      "version": "1.2.1",
+      "version": "1.2.2",
       "keywords": [
         "python",
         "uv",
