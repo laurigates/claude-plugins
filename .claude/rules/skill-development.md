@@ -41,7 +41,7 @@ This enables composable command workflows.
 
 ## Skill File Structure
 
-Skills live in `plugins/<plugin-name>/skills/<skill-name>/skill.md`.
+Skills live in `<plugin-name>/skills/<skill-name>/SKILL.md` (or `skill.md`).
 
 ### Required YAML Frontmatter
 
@@ -148,16 +148,15 @@ Choose granularity based on:
 
 **Rule of thumb**: If operations are typically used together, keep them in one skill.
 
-## Command File Structure
+## User-Invocable Skills
 
-Commands live in `plugins/<plugin-name>/commands/<command-name>.md` or nested in subdirectories.
-
-### Required YAML Frontmatter
+Skills that accept arguments use the same frontmatter as other skills, with additional fields:
 
 ```yaml
 ---
 model: <opus|haiku>
-description: <What the command does>
+name: <skill-name>
+description: <What it does, with trigger phrases>
 args: <argument specification>
 allowed-tools: <Comma-separated list>
 argument-hint: <Human-readable hint>
@@ -167,12 +166,10 @@ reviewed: YYYY-MM-DD
 ---
 ```
 
-The `model` field uses the same selection criteria as skills (see Model Selection above).
-
-### Content Structure
+User-invocable skills typically follow this content structure:
 
 ```markdown
-# /<command-name>
+# /<skill-name>
 
 <Brief description>
 

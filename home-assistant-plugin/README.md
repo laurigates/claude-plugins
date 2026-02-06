@@ -20,12 +20,7 @@ This plugin provides skills and commands for managing Home Assistant installatio
 | `ha-configuration` | Core YAML configuration, secrets, packages, integrations |
 | `ha-automations` | Automation rules, triggers, conditions, actions, scripts, scenes |
 | `ha-entities` | Entity domains, device classes, customization, template entities |
-
-## Commands
-
-| Command | Description |
-|---------|-------------|
-| `/ha:validate` | Validate YAML configuration files for syntax and structure errors |
+| `ha-validate` | Validate YAML configuration files for syntax and structure errors |
 
 ## Usage Examples
 

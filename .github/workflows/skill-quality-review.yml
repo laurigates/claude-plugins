@@ -5,7 +5,6 @@ on:
     types: [opened, synchronize, reopened]
     paths:
       - '**/skills/**'
-      - '**/commands/**'
 
 permissions:
   contents: read
@@ -24,7 +23,7 @@ jobs:
       - name: Get changed skill files
         id: changed
         run: |
-          FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- '**/skills/**' '**/commands/**' | head -20)
+          FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- '**/skills/**' | head -20)
           echo "files<<EOF" >> $GITHUB_OUTPUT
           echo "$FILES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
@@ -37,13 +36,13 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: "--model haiku --max-turns 10"
           prompt: |
-            Review the changed skill and command files in this PR for quality compliance.
+            Review the changed skill files in this PR for quality compliance.
             Read the rules at .claude/rules/skill-quality.md for the full checklist.
 
             Changed files:
             ${{ steps.changed.outputs.files }}
 
-            For each changed SKILL.md or command file, check:
+            For each changed SKILL.md file, check:
 
             1. **Size**: Is SKILL.md under 500 lines? If over, suggest extracting to REFERENCE.md.
             2. **"When to Use" table**: Does it have a decision table helping Claude choose this skill?

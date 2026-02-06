@@ -6,25 +6,23 @@ This plugin provides comprehensive support for designing, implementing, and mana
 
 ## What's Inside
 
-### Commands
+### Skills
 
-Located in `commands/workflow/`:
+All skills are located in the `skills/` directory:
 
-- **dev.md** - Automated development loop with issue creation and TDD
+#### Workflow Skills
+
+- **workflow-dev** - Automated development loop with issue creation and TDD
   - Continuous development cycles with issue tracking
   - Test-driven development workflows
   - GitHub issue integration
   - Automated PR creation and CI monitoring
 
-- **dev-zen.md** - AI-powered development loop with PAL MCP integration
+- **workflow-dev-zen** - AI-powered development loop with PAL MCP integration
   - Enhanced development automation with code review
   - Plan generation using multiple AI models
   - Pre-commit checks and validation
   - GitHub issue consideration during planning
-
-### Skills
-
-All skills are located in the `skills/` directory:
 
 #### Core GitHub Actions Skills
 

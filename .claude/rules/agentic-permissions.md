@@ -6,7 +6,7 @@ reviewed: 2026-02-03
 
 # Agentic Permissions
 
-Commands and skills should use granular `allowed-tools` permissions to enable seamless, deterministic execution without interactive approval prompts.
+Skills should use granular `allowed-tools` permissions to enable seamless, deterministic execution without interactive approval prompts.
 
 ## Permission Syntax
 
@@ -215,7 +215,7 @@ Use `find` for file/directory discovery (succeeds with empty output when no matc
 - Provide defaults in the command logic
 - Use existence checks (`test -f`, `test -d`) for boolean context
 
-## Checklist for New Commands
+## Checklist for New Skills
 
 - [ ] Uses granular `Bash(command *)` patterns
 - [ ] Context commands use JSON/porcelain output

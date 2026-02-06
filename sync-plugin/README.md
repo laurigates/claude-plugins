@@ -21,9 +21,9 @@ The sync-plugin enables bidirectional synchronization between GitHub and Podio, 
    - `github` - GitHub MCP server
    - `podio-mcp` - Podio MCP server
 
-## Commands
+## Skills
 
-### `/sync:daily`
+### `sync-daily`
 
 Generates an ADHD-friendly daily catch-up note in Obsidian with categorized tasks from GitHub and Podio.
 
@@ -56,7 +56,7 @@ Generates an ADHD-friendly daily catch-up note in Obsidian with categorized task
 
 **Output:** `~/Documents/FVH Vault/Daily Notes/YYYY-MM-DD.md`
 
-### `/sync:github-podio`
+### `sync-github-podio`
 
 Bidirectional synchronization between GitHub and Podio for maintaining consistent project state.
 
@@ -207,11 +207,11 @@ The plugin gracefully handles:
 sync-plugin/
 ├── .claude-plugin/
 │   └── plugin.json          # Plugin metadata and configuration
-├── commands/
-│   └── sync/
-│       ├── daily.md         # Daily catch-up command
-│       └── github-podio.md  # Bidirectional sync command
-├── skills/                  # (Reserved for future skills)
+├── skills/
+│   ├── sync-daily/
+│   │   └── SKILL.md         # Daily catch-up skill
+│   └── sync-github-podio/
+│       └── SKILL.md         # Bidirectional sync skill
 ├── agents/                  # (Reserved for future agents)
 └── README.md               # This file
 ```

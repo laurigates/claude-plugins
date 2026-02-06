@@ -6,23 +6,18 @@ Test execution, TDD workflow, testing strategies, and quality analysis for Claud
 
 This plugin provides comprehensive testing support including test runners, TDD workflows, testing strategies, and quality analysis. It supports tiered test execution (unit, integration, e2e) and multiple testing frameworks.
 
-## Commands
-
-| Command | Description |
-|---------|-------------|
-| `/test:run` | Universal test runner - auto-detects and runs appropriate testing framework |
-| `/test:quick` | Fast unit tests only (skip slow/integration/E2E) |
-| `/test:focus` | Run single test file with fail-fast mode for rapid iteration |
-| `/test:full` | Complete test suite including integration and E2E tests |
-| `/test:setup` | Configure testing infrastructure with CI/CD integration |
-| `/test:consult` | Consult test-architecture agent for testing strategy |
-| `/test:report` | Show test status from last run (without re-executing) |
-| `/test:analyze` | Analyze test results for patterns and improvements |
-
 ## Skills
 
 | Skill | Description |
 |-------|-------------|
+| `test-run` | Universal test runner - auto-detects and runs appropriate testing framework |
+| `test-quick` | Fast unit tests only (skip slow/integration/E2E) |
+| `test-focus` | Run single test file with fail-fast mode for rapid iteration |
+| `test-full` | Complete test suite including integration and E2E tests |
+| `test-setup` | Configure testing infrastructure with CI/CD integration |
+| `test-consult` | Consult test-architecture agent for testing strategy |
+| `test-report` | Show test status from last run (without re-executing) |
+| `test-analyze` | Analyze test results for patterns and improvements |
 | `test-tier-selection` | Determine appropriate test tier (unit, integration, e2e) |
 | `test-quality-analysis` | Analyze and improve test quality |
 | `hypothesis-testing` | Hypothesis-driven development patterns |

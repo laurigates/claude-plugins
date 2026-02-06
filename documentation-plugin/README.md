@@ -6,21 +6,14 @@ Documentation generation, synchronization, and knowledge management for Claude C
 
 Comprehensive documentation tooling for generating API references, maintaining README files, synchronizing docs with codebase, creating decommission plans, and building knowledge graphs from technical documentation.
 
-## Commands
-
-### Documentation Management
-
-| Command | Description |
-|---------|-------------|
-| `/docs:sync` | Synchronize documentation with actual skills, commands, and agents in codebase |
-| `/docs:generate` | Update project documentation from code annotations |
-| `/docs:decommission` | Generate comprehensive service decommission documentation |
-| `/docs:knowledge-graph` | Build knowledge graph from Obsidian vault documentation |
-
 ## Skills
 
 | Skill | Description |
 |-------|-------------|
+| `/docs:sync` | Synchronize documentation with actual skills, commands, and agents in codebase |
+| `/docs:generate` | Update project documentation from code annotations |
+| `/docs:decommission` | Generate comprehensive service decommission documentation |
+| `/docs:knowledge-graph` | Build knowledge graph from Obsidian vault documentation |
 | `claude-blog-sources` | Access Claude Blog for latest features, patterns, and best practices |
 
 ## Agents

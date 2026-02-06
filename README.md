@@ -61,7 +61,6 @@ Each plugin follows the standard Claude Code plugin structure:
 <plugin-name>/
 ├── README.md           # Plugin documentation
 ├── skills/             # Skill definitions (.md files)
-├── commands/           # Slash commands (.md files)
 └── agents/             # Agent definitions (.md files)
 ```
 

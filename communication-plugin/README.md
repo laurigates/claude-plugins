@@ -107,7 +107,6 @@ communication-plugin/
 │   │   └── skill.md
 │   └── ticket-drafting-guidelines/
 │       └── skill.md
-├── commands/                 # (empty - no commands)
 ├── agents/                   # (empty - no agents)
 └── README.md
 ```

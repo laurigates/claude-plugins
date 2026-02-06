@@ -30,17 +30,12 @@ claude plugins add /path/to/blog-plugin
 /blog:post retrospective
 ```
 
-## Commands
-
-| Command | Description |
-|---------|-------------|
-| `/blog:post` | Create a new blog post with guided prompts |
-
 ## Skills
 
 | Skill | Description |
 |-------|-------------|
 | `blog-post-writing` | Style guide and templates for consistent blog posts |
+| `blog-post` | Create a new blog post with guided prompts |
 
 ## Post Types
 

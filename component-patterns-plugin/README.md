@@ -11,16 +11,11 @@ This plugin provides framework-agnostic patterns and commands for implementing c
 - **Accessibility first**: WCAG compliant, keyboard navigable
 - **Progressive disclosure**: Show essential info first, details on demand
 
-## Commands
-
-| Command | Description |
-|---------|-------------|
-| `/components:version-badge` | Implement a version badge with tooltip showing build info and changelog |
-
 ## Skills
 
 | Skill | Description |
 |-------|-------------|
+| `/components:version-badge` | Implement a version badge with tooltip showing build info and changelog |
 | `version-badge-pattern` | Detailed implementation patterns for the version badge component |
 
 ## Version Badge Component

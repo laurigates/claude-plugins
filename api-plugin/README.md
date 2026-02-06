@@ -54,9 +54,7 @@ Expert knowledge for HTTP API testing with Supertest (TypeScript/JavaScript) and
 - **TypeScript/JavaScript**: Supertest, Express, Vitest
 - **Python**: httpx, pytest, FastAPI
 
-### Commands
-
-#### `/configure:api-tests`
+#### `configure-api-tests`
 Check and configure API contract testing infrastructure.
 
 **Features:**

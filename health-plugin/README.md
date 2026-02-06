@@ -8,19 +8,14 @@ Diagnose and fix Claude Code configuration issues including plugin registry, set
 /plugin install health-plugin@laurigates-claude-plugins
 ```
 
-## Commands
-
-| Command | Description |
-|---------|-------------|
-| `/health:agentic-audit` | Audit skills, commands, and agents for agentic output optimization |
-| `/health:audit` | Audit enabled plugins against project tech stack and recommend additions/removals |
-| `/health:check` | Comprehensive diagnostic scan of Claude Code environment |
-| `/health:plugins` | Diagnose and fix plugin registry issues (addresses [#14202](https://github.com/anthropics/claude-code/issues/14202)) |
-
 ## Skills
 
 | Skill | Description |
 |-------|-------------|
+| `/health:agentic-audit` | Audit skills, commands, and agents for agentic output optimization |
+| `/health:audit` | Audit enabled plugins against project tech stack and recommend additions/removals |
+| `/health:check` | Comprehensive diagnostic scan of Claude Code environment |
+| `/health:plugins` | Diagnose and fix plugin registry issues (addresses [#14202](https://github.com/anthropics/claude-code/issues/14202)) |
 | `plugin-registry` | Understanding Claude Code's plugin registry, scopes, and troubleshooting |
 | `settings-configuration` | Settings file hierarchy, permission wildcards, and patterns |
 

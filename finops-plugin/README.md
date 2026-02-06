@@ -17,11 +17,6 @@ This plugin provides tools for analyzing and optimizing GitHub Actions costs and
 |-------|-------------|
 | `github-actions-finops` | Core FinOps analysis - billing, workflows, waste patterns |
 | `github-actions-cache-optimization` | Cache-specific analysis and optimization |
-
-## Commands
-
-| Command | Description |
-|---------|-------------|
 | `/finops:overview [org]` | Quick summary - org billing + current repo stats |
 | `/finops:workflows [repo]` | Analyze workflow runs - frequency, duration, success rates |
 | `/finops:caches [repo\|org:name]` | Cache usage breakdown by prefix, branch, staleness |
