@@ -14,6 +14,7 @@ This plugin provides comprehensive code quality tools including automated code r
 | `/code:refactor` | Refactor code following SOLID principles and best practices |
 | `/code:antipatterns` | Analyze codebase for anti-patterns and code smells using ast-grep |
 | `/lint:check` | Universal linter - auto-detects and runs appropriate linting tools |
+| `/code:dry-consolidation` | Find and extract duplicated code into shared, tested abstractions |
 | `/refactor` | Refactor selected code for quality improvements |
 | `/docs:quality-check` | Analyze documentation quality - PRDs, ADRs, PRPs, CLAUDE.md, and .claude/rules/ |
 | `code-antipatterns-analysis` | Detect anti-patterns and code smells using ast-grep structural matching |
@@ -66,6 +67,18 @@ Refactors code following:
 - SOLID principles
 - Design patterns
 - Clean code practices
+
+### DRY Consolidation
+
+```bash
+/code:dry-consolidation src/components/
+```
+
+Finds and extracts duplicated code into shared abstractions:
+- Utility functions (string helpers, formatters, validators)
+- UI components (dialogs, pagination, error states)
+- Custom hooks (delete confirmation, form state, mutations)
+- Runs tests and verification after all extractions
 
 ### Universal Linting
 
