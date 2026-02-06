@@ -3,7 +3,7 @@ model: opus
 created: 2026-02-05
 modified: 2026-02-05
 reviewed: 2026-02-05
-description: Audit skills, commands, and agents for agentic output optimization (missing compact/JSON flags, missing Agentic Optimizations tables)
+description: Audit skills and agents for agentic output optimization (missing compact/JSON flags, missing Agentic Optimizations tables)
 allowed-tools: Bash(find *), Bash(head *), Read, Grep, Glob, TodoWrite
 argument-hint: "[--fix] [--verbose]"
 name: health-agentic-audit
@@ -19,7 +19,7 @@ Standards reference: `.claude/rules/agentic-optimization.md` and `.claude/rules/
 
 - Plugin root: !`pwd`
 - Skill files: !`find . -name 'SKILL.md' -o -name 'skill.md' 2>/dev/null`
-- Command files: !`find . -path '*/commands/*.md' -not -name 'README.md' 2>/dev/null`
+- Skill files (all): !`find . \( -name 'SKILL.md' -o -name 'skill.md' \) 2>/dev/null`
 - Agent files: !`find . -path '*/agents/*.md' -not -name 'README.md' 2>/dev/null`
 
 ## Parameters
@@ -36,7 +36,7 @@ Standards reference: `.claude/rules/agentic-optimization.md` and `.claude/rules/
 Find all plugin content files:
 
 1. Skills: `find . -name 'SKILL.md' -o -name 'skill.md'`
-2. Commands: `find . -path '*/commands/*.md' -not -name 'README.md'`
+2. Skills (all): `find . \( -name 'SKILL.md' -o -name 'skill.md' \)`
 3. Agents: `find . -path '*/agents/*.md' -not -name 'README.md'`
 
 Classify each file by type (skill, command, agent) for the report.

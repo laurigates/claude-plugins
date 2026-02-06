@@ -121,9 +121,7 @@ Without sync: Edit → Build → Deploy → Restart (~30-60s)
 With sync:    Edit → Copy → Test (~1-2s)
 ```
 
-### Commands
-
-#### deploy:release
+#### deploy-release
 Create and publish a new release with release-please automation.
 
 **Features:**
@@ -133,10 +131,10 @@ Create and publish a new release with release-please automation.
 
 **Usage:**
 ```bash
-claude chat --file ~/.claude/commands/deploy:release.md <version> [--draft] [--prerelease]
+claude chat --file ~/.claude/skills/deploy-release/SKILL.md <version> [--draft] [--prerelease]
 ```
 
-#### deploy:handoff
+#### deploy-handoff
 Generate professional deployment handoff documentation for resources and services.
 
 **Features:**
@@ -149,10 +147,10 @@ Generate professional deployment handoff documentation for resources and service
 **Usage:**
 ```bash
 # Basic handoff for current project
-claude chat --file ~/.claude/commands/deploy:handoff.md
+claude chat --file ~/.claude/skills/deploy-handoff/SKILL.md
 
 # Specific service handoff
-claude chat --file ~/.claude/commands/deploy:handoff.md "User API" "web-service"
+claude chat --file ~/.claude/skills/deploy-handoff/SKILL.md "User API" "web-service"
 ```
 
 **Output includes:**
@@ -206,16 +204,16 @@ Skills are automatically activated when relevant keywords are detected:
 
 **skaffold-filesync:** file sync, hot reload, live reload, fast iteration, sync rules, copy files to container
 
-### Command Usage
+### Skill Usage
 
-Commands can be invoked using the Claude chat interface:
+Skills can be invoked using the Claude chat interface:
 
 ```bash
 # Release automation
-claude chat --file ~/.claude/commands/deploy:release.md 1.0.0
+claude chat --file ~/.claude/skills/deploy-release/SKILL.md 1.0.0
 
 # Deployment handoff
-claude chat --file ~/.claude/commands/deploy:handoff.md "My Service" "api"
+claude chat --file ~/.claude/skills/deploy-handoff/SKILL.md "My Service" "api"
 ```
 
 ## Security Philosophy

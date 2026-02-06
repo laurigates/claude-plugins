@@ -8,7 +8,26 @@ This plugin provides comprehensive patterns, commands, and skills for coordinati
 
 ## Features
 
-### Commands
+### Hooks
+
+#### `orchestrator-enforcement.sh`
+PreToolUse hook that enforces the orchestrator pattern - orchestrators investigate and delegate, subagents implement.
+
+**Tool Access:**
+
+| Category | Orchestrator | Subagent |
+|----------|--------------|----------|
+| Delegation (Task) | Allowed | Allowed |
+| Investigation (Read, Grep, Glob) | Allowed | Allowed |
+| Implementation (Edit, Write) | Blocked | Allowed |
+| Git read (status, log, diff) | Allowed | Allowed |
+| Git write (add, commit, push) | Blocked | Allowed |
+
+**Environment variables:**
+- `ORCHESTRATOR_BYPASS=1` - Disable enforcement
+- `CLAUDE_IS_SUBAGENT=1` - Grant full access to subagents
+
+### Skills
 
 #### `/delegate`
 Intelligently delegate tasks to specialized agents with automatic task-agent matching and parallel execution.
@@ -80,27 +99,6 @@ Generate a continuation primer for agent handoff with todo list and context.
 - Key context for continuation
 - Active files being worked on
 - Known blockers and issues
-
-### Hooks
-
-#### `orchestrator-enforcement.sh`
-PreToolUse hook that enforces the orchestrator pattern - orchestrators investigate and delegate, subagents implement.
-
-**Tool Access:**
-
-| Category | Orchestrator | Subagent |
-|----------|--------------|----------|
-| Delegation (Task) | Allowed | Allowed |
-| Investigation (Read, Grep, Glob) | Allowed | Allowed |
-| Implementation (Edit, Write) | Blocked | Allowed |
-| Git read (status, log, diff) | Allowed | Allowed |
-| Git write (add, commit, push) | Blocked | Allowed |
-
-**Environment variables:**
-- `ORCHESTRATOR_BYPASS=1` - Disable enforcement
-- `CLAUDE_IS_SUBAGENT=1` - Grant full access to subagents
-
-### Skills
 
 #### `delegation-first`
 Default behavior pattern that automatically delegates implementation tasks to specialized sub-agents.
@@ -320,11 +318,6 @@ cp -r agent-patterns-plugin ~/.claude/plugins/
 Copy individual files to your `.claude/` directory:
 
 ```bash
-# Commands
-cp commands/delegate.md ~/.claude/commands/
-cp commands/check-negative-examples.md ~/.claude/commands/
-cp commands/meta/*.md ~/.claude/commands/meta/
-
 # Skills
 cp -r skills/* ~/.claude/skills/
 ```

@@ -6,21 +6,16 @@ Code review, refactoring, linting, anti-pattern detection, and static analysis f
 
 This plugin provides comprehensive code quality tools including automated code review, refactoring assistance, linting, and anti-pattern detection using ast-grep for structural analysis.
 
-## Commands
+## Skills
 
-| Command | Description |
-|---------|-------------|
+| Skill | Description |
+|-------|-------------|
 | `/code:review` | Comprehensive code review with automated fixes |
 | `/code:refactor` | Refactor code following SOLID principles and best practices |
 | `/code:antipatterns` | Analyze codebase for anti-patterns and code smells using ast-grep |
 | `/lint:check` | Universal linter - auto-detects and runs appropriate linting tools |
 | `/refactor` | Refactor selected code for quality improvements |
 | `/docs:quality-check` | Analyze documentation quality - PRDs, ADRs, PRPs, CLAUDE.md, and .claude/rules/ |
-
-## Skills
-
-| Skill | Description |
-|-------|-------------|
 | `code-antipatterns-analysis` | Detect anti-patterns and code smells using ast-grep structural matching |
 | `ast-grep-search` | AST-based code search for structural pattern matching |
 | `documentation-quality` | Analyze and validate documentation quality for PRDs, ADRs, PRPs, CLAUDE.md, and .claude/rules/ |

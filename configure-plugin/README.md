@@ -10,72 +10,9 @@ All commands support two modes:
 - `--check-only` - Audit current state without making changes
 - `--fix` - Automatically configure to meet standards
 
-## Commands
-
-### Core
-
-| Command | Description |
-|---------|-------------|
-| `/configure:all` | Run all infrastructure standards checks |
-| `/configure:select` | Interactively select which components to configure |
-| `/configure:status` | Show compliance status (read-only) |
-
-### CI/CD & Version Control
-
-| Command | Description |
-|---------|-------------|
-| `/configure:argocd-automerge` | Auto-merge workflow for ArgoCD Image Updater branches |
-| `/configure:claude-plugins` | Configure Claude Code plugin marketplace and GitHub Actions workflows |
-| `/configure:pre-commit` | Pre-commit hooks for project standards |
-| `/configure:release-please` | Release-please workflow configuration |
-| `/configure:reusable-workflows` | Install Claude-powered reusable workflows (security, quality, a11y) |
-| `/configure:workflows` | GitHub Actions CI/CD workflows |
-| `/configure:github-pages` | GitHub Pages deployment |
-
-### Container & Deployment
-
-| Command | Description |
-|---------|-------------|
-| `/configure:dockerfile` | Dockerfile for project standards (minimal Alpine/slim, non-root, multi-stage) |
-| `/configure:skaffold` | Skaffold configuration |
-| `/configure:container` | Container infrastructure (builds, registry, scanning, devcontainer) |
-
-### Testing
-
-| Command | Description |
-|---------|-------------|
-| `/configure:tests` | Testing frameworks and infrastructure |
-| `/configure:coverage` | Code coverage thresholds and reporting |
-| `/configure:api-tests` | API testing configuration |
-| `/configure:integration-tests` | Integration test configuration |
-| `/configure:load-tests` | Load/performance test configuration |
-| `/configure:memory-profiling` | Memory profiling with pytest-memray for Python |
-| `/configure:ux-testing` | UX testing (Playwright, accessibility, visual regression) |
-
-### Code Quality
-
-| Command | Description |
-|---------|-------------|
-| `/configure:linting` | Linting tools (Biome, Ruff, Clippy) |
-| `/configure:formatting` | Code formatting (Biome, Prettier, Ruff, rustfmt) |
-| `/configure:dead-code` | Dead code detection (Knip, Vulture, cargo-machete) |
-| `/configure:docs` | Documentation standards and generators |
-| `/configure:security` | Security scanning (dependency audits, SAST, secrets) |
-
-### Infrastructure
-
-| Command | Description |
-|---------|-------------|
-| `/configure:editor` | EditorConfig and VS Code workspace settings |
-| `/configure:mcp` | MCP servers for project integration |
-| `/configure:cache-busting` | Cache-busting strategies for Next.js and Vite |
-| `/configure:feature-flags` | Feature flag infrastructure (OpenFeature + providers) |
-| `/configure:sentry` | Sentry error tracking |
-| `/configure:makefile` | Makefile with standard targets |
-| `/configure:justfile` | Justfile with standard recipes (simpler alternative to Make) |
-| `/configure:package-management` | Modern package managers (uv for Python, bun for TypeScript) |
-
 ## Skills
+
+### Core Skills
 
 | Skill | Description |
 |-------|-------------|
@@ -84,6 +21,69 @@ All commands support two modes:
 | `release-please-standards` | Release-please standards |
 | `skaffold-standards` | Skaffold configuration standards |
 | `claude-security-settings` | Claude Code security settings and wildcard permissions |
+
+### Core Configuration
+
+| Skill | Description |
+|-------|-------------|
+| `configure-all` | Run all infrastructure standards checks |
+| `configure-select` | Interactively select which components to configure |
+| `configure-status` | Show compliance status (read-only) |
+
+### CI/CD & Version Control
+
+| Skill | Description |
+|-------|-------------|
+| `configure-argocd-automerge` | Auto-merge workflow for ArgoCD Image Updater branches |
+| `configure-claude-plugins` | Configure Claude Code plugin marketplace and GitHub Actions workflows |
+| `configure-pre-commit` | Pre-commit hooks for project standards |
+| `configure-release-please` | Release-please workflow configuration |
+| `configure-reusable-workflows` | Install Claude-powered reusable workflows (security, quality, a11y) |
+| `configure-workflows` | GitHub Actions CI/CD workflows |
+| `configure-github-pages` | GitHub Pages deployment |
+
+### Container & Deployment
+
+| Skill | Description |
+|-------|-------------|
+| `configure-dockerfile` | Dockerfile for project standards (minimal Alpine/slim, non-root, multi-stage) |
+| `configure-skaffold` | Skaffold configuration |
+| `configure-container` | Container infrastructure (builds, registry, scanning, devcontainer) |
+
+### Testing
+
+| Skill | Description |
+|-------|-------------|
+| `configure-tests` | Testing frameworks and infrastructure |
+| `configure-coverage` | Code coverage thresholds and reporting |
+| `configure-api-tests` | API testing configuration |
+| `configure-integration-tests` | Integration test configuration |
+| `configure-load-tests` | Load/performance test configuration |
+| `configure-memory-profiling` | Memory profiling with pytest-memray for Python |
+| `configure-ux-testing` | UX testing (Playwright, accessibility, visual regression) |
+
+### Code Quality
+
+| Skill | Description |
+|-------|-------------|
+| `configure-linting` | Linting tools (Biome, Ruff, Clippy) |
+| `configure-formatting` | Code formatting (Biome, Prettier, Ruff, rustfmt) |
+| `configure-dead-code` | Dead code detection (Knip, Vulture, cargo-machete) |
+| `configure-docs` | Documentation standards and generators |
+| `configure-security` | Security scanning (dependency audits, SAST, secrets) |
+
+### Infrastructure
+
+| Skill | Description |
+|-------|-------------|
+| `configure-editor` | EditorConfig and VS Code workspace settings |
+| `configure-mcp` | MCP servers for project integration |
+| `configure-cache-busting` | Cache-busting strategies for Next.js and Vite |
+| `configure-feature-flags` | Feature flag infrastructure (OpenFeature + providers) |
+| `configure-sentry` | Sentry error tracking |
+| `configure-makefile` | Makefile with standard targets |
+| `configure-justfile` | Justfile with standard recipes (simpler alternative to Make) |
+| `configure-package-management` | Modern package managers (uv for Python, bun for TypeScript) |
 
 ## Usage
 

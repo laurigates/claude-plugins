@@ -10,55 +10,9 @@ This plugin provides a documentation-first development workflow:
 PRD (Product Requirements) → PRP (Product Requirement Prompt) → Work-Order → Implementation
 ```
 
-## Commands
-
-### Derive Commands
-
-| Command | Description |
-|---------|-------------|
-| `/blueprint-init` | Initialize Blueprint Development structure in a project |
-| `/blueprint-derive-prd` | Derive PRD from existing project documentation |
-| `/blueprint-derive-adr` | Derive Architecture Decision Records from existing codebase |
-| `/blueprint-derive-plans` | Derive PRDs, ADRs, and PRPs from git history and existing code |
-| `/blueprint-derive-rules` | Derive rules from git commit decisions (newer overrides older) |
-
-### Workflow Commands
-
-| Command | Description |
-|---------|-------------|
-| `/blueprint-generate-commands` | Generate workflow commands from project structure and PRDs |
-| `/blueprint-generate-rules` | Generate project-specific rules from PRDs |
-| `/blueprint-work-order` | Create work-order with minimal context for subagent execution |
-| `/prp-create` | Create a PRP with systematic research and validation gates |
-| `/prp-execute` | Execute a PRP with validation loop, TDD workflow, and quality gates |
-| `/prp-curate-docs` | Curate documentation for ai_docs to optimize AI context |
-
-### Listing Commands
-
-| Command | Description |
-|---------|-------------|
-| `/blueprint-adr-list` | List all ADRs with title, status, date, and domain |
-| `/blueprint-docs-list` | List blueprint documents (ADRs, PRDs, PRPs) with metadata |
-
-### Management Commands
-
-| Command | Description |
-|---------|-------------|
-| `/blueprint-execute` | **Smart meta command** - Analyzes repository state and executes the next logical blueprint action (idempotent) |
-| `/blueprint-status` | Show blueprint version, configuration, and traceability report |
-| `/blueprint-upgrade` | Upgrade to latest blueprint format |
-| `/blueprint-rules` | Manage modular rules |
-| `/blueprint-claude-md` | Update CLAUDE.md from blueprint artifacts |
-| `/blueprint-sync-ids` | **NEW** - Assign IDs to all documents, build traceability registry |
-
-### Feature Tracking Commands
-
-| Command | Description |
-|---------|-------------|
-| `/blueprint-feature-tracker-status` | Display feature completion statistics |
-| `/blueprint-feature-tracker-sync` | Synchronize tracker with TODO.md, generate progress summary |
-
 ## Skills
+
+### Core Skills
 
 | Skill | Description |
 |-------|-------------|
@@ -66,6 +20,52 @@ PRD (Product Requirements) → PRP (Product Requirement Prompt) → Work-Order �
 | `confidence-scoring` | Assess quality of PRPs and work-orders for execution readiness |
 | `feature-tracking` | Track implementation status against requirements with hierarchical FR codes |
 | `document-linking` | **NEW** - Unified ID system connecting PRDs, ADRs, PRPs, work-orders, and GitHub issues |
+
+### Derive Skills
+
+| Skill | Description |
+|-------|-------------|
+| `blueprint-init` | Initialize Blueprint Development structure in a project |
+| `blueprint-derive-prd` | Derive PRD from existing project documentation |
+| `blueprint-derive-adr` | Derive Architecture Decision Records from existing codebase |
+| `blueprint-derive-plans` | Derive PRDs, ADRs, and PRPs from git history and existing code |
+| `blueprint-derive-rules` | Derive rules from git commit decisions (newer overrides older) |
+
+### Workflow Skills
+
+| Skill | Description |
+|-------|-------------|
+| `blueprint-generate-commands` | Generate workflow commands from project structure and PRDs |
+| `blueprint-generate-rules` | Generate project-specific rules from PRDs |
+| `blueprint-work-order` | Create work-order with minimal context for subagent execution |
+| `prp-create` | Create a PRP with systematic research and validation gates |
+| `prp-execute` | Execute a PRP with validation loop, TDD workflow, and quality gates |
+| `prp-curate-docs` | Curate documentation for ai_docs to optimize AI context |
+
+### Listing Skills
+
+| Skill | Description |
+|-------|-------------|
+| `blueprint-adr-list` | List all ADRs with title, status, date, and domain |
+| `blueprint-docs-list` | List blueprint documents (ADRs, PRDs, PRPs) with metadata |
+
+### Management Skills
+
+| Skill | Description |
+|-------|-------------|
+| `blueprint-execute` | **Smart meta command** - Analyzes repository state and executes the next logical blueprint action (idempotent) |
+| `blueprint-status` | Show blueprint version, configuration, and traceability report |
+| `blueprint-upgrade` | Upgrade to latest blueprint format |
+| `blueprint-rules` | Manage modular rules |
+| `blueprint-claude-md` | Update CLAUDE.md from blueprint artifacts |
+| `blueprint-sync-ids` | **NEW** - Assign IDs to all documents, build traceability registry |
+
+### Feature Tracking Skills
+
+| Skill | Description |
+|-------|-------------|
+| `blueprint-feature-tracker-status` | Display feature completion statistics |
+| `blueprint-feature-tracker-sync` | Synchronize tracker with TODO.md, generate progress summary |
 
 ## Agents
 

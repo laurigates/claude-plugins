@@ -133,8 +133,7 @@ Initialize Blueprint Development in this project.
    │   ├── development.md           # Development workflow rules
    │   ├── testing.md               # Testing requirements
    │   └── document-management.md   # Document organization rules (if detection enabled)
-   ├── skills/                      # Custom skill overrides (optional)
-   └── commands/                    # Custom command overrides (optional)
+   └── skills/                      # Custom skill overrides (optional)
    ```
 
 7. **Create `manifest.json`** (v3.1.0 schema):
@@ -209,7 +208,6 @@ Initialize Blueprint Development in this project.
    Claude configuration:
    - .claude/rules/       (modular rules, including generated)
    - .claude/skills/      (custom skill overrides)
-   - .claude/commands/    (custom command overrides)
 
    Configuration:
    - Rules mode: [single|modular|both]
@@ -222,7 +220,7 @@ Initialize Blueprint Development in this project.
    Architecture:
    - Plugin layer: Generic commands from blueprint-plugin (auto-updated)
    - Generated layer: Rules/commands regeneratable from docs/prds/
-   - Custom layer: Your overrides in .claude/skills/ and .claude/commands/
+   - Custom layer: Your overrides in .claude/skills/
    ```
 
 11. **Prompt for next action** (use AskUserQuestion):

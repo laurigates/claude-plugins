@@ -267,11 +267,11 @@ Determine:
 
 ### Step 2: Generate Workflow Commands
 
-Create commands in `.claude/commands/` for project-specific workflows.
+Create commands in `.claude/skills/` for project-specific workflows.
 
 #### 1. `/blueprint:init` Command
 
-**Location**: `.claude/commands/blueprint-init.md`
+**Location**: `.claude/skills/blueprint-init.md`
 
 **Purpose**: Initialize Blueprint Development structure in a project
 
@@ -298,7 +298,7 @@ Report:
 
 #### 2. `/blueprint:generate-rules` Command
 
-**Location**: `.claude/commands/blueprint-generate-rules.md`
+**Location**: `.claude/skills/blueprint-generate-rules.md`
 
 **Purpose**: Generate project-specific behavioral rules from PRDs
 
@@ -332,7 +332,7 @@ Report:
 
 #### 3. `/blueprint:generate-commands` Command
 
-**Location**: `.claude/commands/blueprint-generate-commands.md`
+**Location**: `.claude/skills/blueprint-generate-commands.md`
 
 **Purpose**: Generate workflow commands from project structure
 
@@ -361,7 +361,7 @@ Report:
 
 #### 4. `/blueprint:work-order` Command
 
-**Location**: `.claude/commands/blueprint-work-order.md`
+**Location**: `.claude/skills/blueprint-work-order.md`
 
 **Purpose**: Generate isolated work-order for subagent execution with GitHub visibility
 
@@ -420,7 +420,7 @@ Report:
 
 #### 5. `/project:continue` Command
 
-**Location**: `.claude/commands/project-continue.md`
+**Location**: `.claude/skills/project-continue.md`
 
 **Purpose**: Analyze state and resume development
 
@@ -457,7 +457,7 @@ Report before starting:
 
 #### 6. `/project:test-loop` Command
 
-**Location**: `.claude/commands/project-test-loop.md`
+**Location**: `.claude/skills/project-test-loop.md`
 
 **Purpose**: Run automated TDD cycle
 

@@ -6,10 +6,10 @@ Git workflows, commits, branches, PRs, and repository management for Claude Code
 
 This plugin provides comprehensive Git workflow automation including conventional commits, branch management, pull request handling, and issue processing.
 
-## Commands
+## Skills
 
-| Command | Description |
-|---------|-------------|
+| Skill | Description |
+|-------|-------------|
 | `/git:commit` | Complete workflow from changes to PR - auto-detect issues, create logical commits with proper linkage, push, optionally create PR |
 | `/git:issue` | Process GitHub issues with interactive selection, conflict detection, and parallel work support |
 | `/git:fix-pr` | Analyze and fix failing PR checks |

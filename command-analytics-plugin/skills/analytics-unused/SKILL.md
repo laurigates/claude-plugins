@@ -51,8 +51,8 @@ echo ""
 
 UNUSED_COUNT=0
 
-# Scan for command files
-find . -type f -path "*/commands/*.md" -not -path "*/node_modules/*" 2>/dev/null | while read -r cmd_file; do
+# Scan for skill files
+find . -type f \( -name "SKILL.md" -o -name "skill.md" \) -not -path "*/node_modules/*" 2>/dev/null | while read -r cmd_file; do
   # Extract command name from filename
   # Format: plugin-name/commands/plugin-command.md -> plugin:command
   BASENAME=$(basename "$cmd_file" .md)

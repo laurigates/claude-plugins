@@ -54,7 +54,7 @@ Scan the codebase for skills, commands, and agents, then update all documentatio
 
 3. **Parse existing documentation**:
    - `.claude/skills/CLAUDE.md` - Current skill catalog with categories
-   - `.claude/commands/CLAUDE.md` - Command reference with namespaces
+   - `.claude/skills/CLAUDE.md` - Command reference with namespaces
    - Root `CLAUDE.md` - Summary counts and highlights
 
 ### Phase 2: Analysis
@@ -72,9 +72,9 @@ Scan the codebase for skills, commands, and agents, then update all documentatio
    - Similar existing skills in same domain
    - If uncertain, suggest "Uncategorized" for manual review
 
-   **For commands**, determine namespace from file path:
-   - `commands/git/commit.md` → `git:` namespace
-   - `commands/handoffs.md` → Root level
+   **For user-invocable skills**, determine namespace from directory name:
+   - `skills/git-commit/SKILL.md` → `git:` namespace
+   - `skills/handoffs/SKILL.md` → Root level
 
    **For agents**, determine domain from description keywords
 
@@ -150,7 +150,7 @@ Generate summary of changes:
 
 ### Primary targets (always check):
 - `.claude/skills/CLAUDE.md` - Skills catalog
-- `.claude/commands/CLAUDE.md` - Commands reference
+- `.claude/skills/CLAUDE.md` - Commands reference
 - `CLAUDE.md` (root) - Repository overview
 
 ### Secondary targets (if they exist):
@@ -173,12 +173,12 @@ Generate summary of changes:
 | `test-*`, `playwright-*`, `mutation-*` | Testing & Quality |
 | `agent-*`, `multi-agent-*` | Meta & Coordination |
 
-### Command Namespaces
+### Skill Namespaces
 
-Determined by directory structure:
-- `commands/git/*.md` → `git:` namespace
-- `commands/docs/*.md` → `docs:` namespace
-- `commands/*.md` (root) → Root level commands
+Determined by skill directory name prefix:
+- `skills/git-*/SKILL.md` → `git:` namespace
+- `skills/docs-*/SKILL.md` → `docs:` namespace
+- `skills/*/SKILL.md` (no prefix) → Root level skills
 
 ## Error Handling
 

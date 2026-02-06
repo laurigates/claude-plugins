@@ -39,10 +39,10 @@ Export your analytics data for external analysis:
 - **CSV** - Import into spreadsheets
 - **Markdown** - Generate reports
 
-## Commands
+## Skills
 
-| Command | Description |
-|---------|-------------|
+| Skill | Description |
+|-------|-------------|
 | `/analytics:report [filter]` | Display usage analytics (all, commands, skills, or specific name) |
 | `/analytics:unused` | Show commands and skills that have never been used |
 | `/analytics:export [format] [file]` | Export analytics (json, csv, markdown) |

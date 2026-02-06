@@ -15,7 +15,7 @@ Generate professional handoff messages for deployed resources and services with 
 
 ## Usage
 ```bash
-claude chat --file ~/.claude/commands/deploy:handoff.md [RESOURCE_NAME] [DEPLOYMENT_TYPE]
+claude chat --file ~/.claude/skills/deploy-handoff/SKILL.md [RESOURCE_NAME] [DEPLOYMENT_TYPE]
 ```
 
 ## Arguments
@@ -135,13 +135,13 @@ podio_workspace:          # Default workspace for Podio integration
 
 ```bash
 # Basic handoff for current project
-claude chat --file ~/.claude/commands/deploy:handoff.md
+claude chat --file ~/.claude/skills/deploy-handoff/SKILL.md
 
 # Specific service handoff
-claude chat --file ~/.claude/commands/deploy:handoff.md "User API" "web-service"
+claude chat --file ~/.claude/skills/deploy-handoff/SKILL.md "User API" "web-service"
 
 # Comprehensive handoff with full details
-claude chat --file ~/.claude/commands/deploy:handoff.md "Payment System" "microservice" --detail-level comprehensive
+claude chat --file ~/.claude/skills/deploy-handoff/SKILL.md "Payment System" "microservice" --detail-level comprehensive
 ```
 
 ## Sample Output Format

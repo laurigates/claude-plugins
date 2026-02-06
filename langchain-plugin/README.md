@@ -9,12 +9,7 @@ LangChain JS/TS development skills for building AI agents, chains, and workflows
 | `langchain-development` | Core LangChain patterns - models, chains, tools, RAG |
 | `langgraph-agents` | Graph-based stateful agents with persistence |
 | `deep-agents` | Complex agents with planning and subagent delegation |
-
-## Commands
-
-| Command | Description |
-|---------|-------------|
-| `/langchain:init <name>` | Scaffold a new LangChain TypeScript project |
+| `langchain-init` | Scaffold a new LangChain TypeScript project |
 
 ## When to Use
 

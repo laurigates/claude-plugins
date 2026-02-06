@@ -2,7 +2,7 @@
 
 Project initialization and management plugin for Claude Code. Provides commands for project setup, modernization, and continuous development workflows.
 
-## Commands
+## Skills
 
 ### `/project:init`
 Base project initialization that creates universal project structure for any project type (Python, Node, Rust, Go, or generic).
@@ -84,7 +84,7 @@ Analyze project state and continue development where you left off.
 /project:continue
 ```
 
-**Note:** Generic template that should be customized per project using `/blueprint-generate-commands`. Project-specific version is generated to `.claude/commands/project/continue.md`.
+**Note:** Generic template that should be customized per project using `/blueprint-generate-commands`. Project-specific version is generated to `.claude/skills/project-continue/SKILL.md`.
 
 ### `/project:test-loop`
 Run automated TDD cycle: test → fix → refactor.
@@ -101,7 +101,7 @@ Run automated TDD cycle: test → fix → refactor.
 /project:test-loop
 ```
 
-**Note:** Generic template that should be customized per project using `/blueprint-generate-commands`. Project-specific version is generated to `.claude/commands/project/test-loop.md`.
+**Note:** Generic template that should be customized per project using `/blueprint-generate-commands`. Project-specific version is generated to `.claude/skills/project-test-loop/SKILL.md`.
 
 ### `/changelog:review`
 Review Claude Code changelog for changes impacting plugin development.
@@ -123,8 +123,6 @@ Review Claude Code changelog for changes impacting plugin development.
 ```
 
 **Automated via GitHub Actions:** A weekly workflow automatically checks for new Claude Code versions and creates GitHub issues when updates are detected.
-
-## Skills
 
 ### `project-discovery`
 Systematic project orientation for unfamiliar codebases.

@@ -33,7 +33,7 @@ Check Claude skills, commands, and subagent prompts for negative examples and co
 
    # Search in commands
    grep -rn -E "(don't|do not|doesn't|do NOT|never|NEVER|avoid|Avoid|AVOID|must not|shouldn't|should not|can't|cannot)" \
-     ~/.claude/commands/ \
+     ~/.claude/skills/ \
      --include="*.md" \
      -A 1 -B 1
    ```
@@ -69,7 +69,7 @@ Check Claude skills, commands, and subagent prompts for negative examples and co
 
    Scanned locations:
    - ~/.claude/skills/ (XX files)
-   - ~/.claude/commands/ (XX files)
+   - ~/.claude/skills/ (XX files)
 
    Total negative patterns found: XX
 
