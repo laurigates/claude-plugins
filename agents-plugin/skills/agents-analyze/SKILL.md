@@ -7,6 +7,7 @@ argument-hint: "analyze all plugins or --focus <plugin-name>"
 created: 2026-01-24
 modified: 2026-02-03
 reviewed: 2026-01-24
+name: agents-analyze
 ---
 
 # /agents:analyze

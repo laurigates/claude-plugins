@@ -7,6 +7,7 @@ argument-hint: quick-update | project-update | retrospective | tutorial | deep-d
 created: 2026-01-10
 modified: 2026-01-10
 reviewed: 2026-01-10
+name: blog-post
 ---
 
 # /blog:post
@@ -305,6 +306,7 @@ type: quick-update
 project: <detected-project>
 tags: []
 status: draft
+name: blog-post
 ---
 
 # <title>

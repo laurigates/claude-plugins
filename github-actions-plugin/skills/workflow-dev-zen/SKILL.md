@@ -6,6 +6,7 @@ reviewed: 2025-12-16
 allowed-tools: Read, Write, Edit, MultiEdit, Bash(git *), mcp__pal__codereview, mcp__pal__planner, mcp__pal__precommit, mcp__github__list_issues, mcp__github__create_issue, mcp__github__create_pull_request, TodoWrite
 argument-hint: [--max-cycles <n>] [--model <model>]
 description: AI-powered development loop with PAL MCP integration
+name: workflow-dev-zen
 ---
 
 # devloop.md - Development Loop Instructions for Claude

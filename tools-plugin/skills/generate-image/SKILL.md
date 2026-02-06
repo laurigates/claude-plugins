@@ -5,6 +5,7 @@ modified: 2025-12-16
 reviewed: 2025-12-16
 description: Generate images using Nano Banana Pro (Gemini 3 Pro Image)
 args: <prompt> [--aspect <ratio>] [--resolution <size>] [--reference <path>]
+name: generate-image
 ---
 
 Generate images using Google's Nano Banana Pro (Gemini 3 Pro Image) model.

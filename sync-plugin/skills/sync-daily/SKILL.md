@@ -6,6 +6,7 @@ reviewed: 2025-12-16
 allowed-tools: Read, Write, Edit, TodoWrite, mcp__github__list_issues, mcp__github__list_pull_requests, mcp__github__search_issues, mcp__github__get_me, mcp__podio-mcp__list_items, mcp__podio-mcp__get_item_details, Bash
 argument-hint: [--dry-run|--verbose|--full-refresh]
 description: Daily catch-up command that aggregates GitHub and Podio items into an ADHD-friendly Obsidian note
+name: sync-daily
 ---
 
 # Daily Catch-Up Command
@@ -245,6 +246,7 @@ Create a markdown note with ADHD-friendly formatting:
 4. 🚫 Follow up on BLOCKED items (unblock if possible)
 5. 📋 Review FYI items when time permits
 
+name: sync-daily
 ---
 
 *Last fetch: [timestamp] | State saved to `~/.config/claude-code/sync:daily-state.json`*

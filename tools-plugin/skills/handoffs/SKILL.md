@@ -5,6 +5,7 @@ modified: 2025-12-16
 reviewed: 2025-12-16
 description: "List, filter, and manage @AGENT-HANDOFF-MARKER markers across the codebase"
 allowed_tools: [Bash, Grep, Read, TodoWrite]
+name: handoffs
 ---
 
 # /handoffs [OPTIONS]

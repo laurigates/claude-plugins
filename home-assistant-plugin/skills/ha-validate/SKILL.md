@@ -7,6 +7,7 @@ argument-hint: "Optional path to config directory (defaults to current directory
 created: 2025-02-01
 modified: 2026-02-03
 reviewed: 2025-02-01
+name: ha-validate
 ---
 
 # /ha:validate

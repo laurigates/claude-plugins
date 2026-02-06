@@ -7,6 +7,7 @@ argument-hint: my-agent-project
 created: 2026-01-08
 modified: 2026-01-08
 reviewed: 2026-01-08
+name: langchain-init
 ---
 
 # /langchain:init
