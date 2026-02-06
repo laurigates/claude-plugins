@@ -1,12 +1,12 @@
 ---
 model: opus
 created: 2026-01-15
-modified: 2026-01-15
+modified: 2026-02-06
 reviewed: 2026-01-15
 description: "Derive PRDs, ADRs, and PRPs from git history, codebase structure, and existing documentation"
 args: "[--quick] [--since DATE]"
 argument-hint: "--quick for fast scan, --since 2024-01-01 for date range"
-allowed_tools: [Read, Write, Glob, Grep, Bash, AskUserQuestion, Task]
+allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion, Task
 name: blueprint-derive-plans
 ---
 

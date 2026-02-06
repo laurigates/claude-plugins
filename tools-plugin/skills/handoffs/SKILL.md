@@ -1,10 +1,10 @@
 ---
 model: opus
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-06
 reviewed: 2025-12-16
 description: "List, filter, and manage @AGENT-HANDOFF-MARKER markers across the codebase"
-allowed_tools: [Bash, Grep, Read, TodoWrite]
+allowed-tools: Bash, Grep, Read, TodoWrite
 name: handoffs
 ---
 

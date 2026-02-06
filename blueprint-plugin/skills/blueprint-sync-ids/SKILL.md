@@ -1,12 +1,12 @@
 ---
 model: opus
 created: 2026-01-20
-modified: 2026-01-20
+modified: 2026-02-06
 reviewed: 2026-01-20
 description: "Scan all blueprint documents and assign IDs to those missing them, update manifest registry"
 args: "[--dry-run] [--link-issues]"
 argument-hint: "--dry-run to preview changes, --link-issues to create GitHub issues for orphans"
-allowed_tools: [Read, Write, Edit, Glob, Bash, AskUserQuestion]
+allowed-tools: Read, Write, Edit, Glob, Bash, AskUserQuestion
 name: blueprint-sync-ids
 ---
 

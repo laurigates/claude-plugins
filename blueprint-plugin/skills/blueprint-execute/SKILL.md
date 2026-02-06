@@ -1,10 +1,10 @@
 ---
 model: opus
 created: 2026-01-14
-modified: 2026-01-30
+modified: 2026-02-06
 reviewed: 2026-01-30
 description: "Idempotent meta command that determines and executes the next logical blueprint action"
-allowed_tools: [Read, Glob, Bash, AskUserQuestion, SlashCommand, Task]
+allowed-tools: Read, Glob, Bash, AskUserQuestion, SlashCommand, Task
 name: blueprint-execute
 ---
 

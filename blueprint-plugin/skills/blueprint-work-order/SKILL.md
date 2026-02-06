@@ -1,12 +1,12 @@
 ---
 model: opus
 created: 2025-12-16
-modified: 2026-01-09
+modified: 2026-02-06
 reviewed: 2025-12-26
 description: "Create work-order with minimal context for isolated subagent execution, optionally linked to GitHub issue"
 args: "[--no-publish] [--from-issue N]"
 argument-hint: "--no-publish for local-only, --from-issue 123 to create from existing issue"
-allowed_tools: [Read, Write, Glob, Bash, AskUserQuestion]
+allowed-tools: Read, Write, Glob, Bash, AskUserQuestion
 name: blueprint-work-order
 ---
 

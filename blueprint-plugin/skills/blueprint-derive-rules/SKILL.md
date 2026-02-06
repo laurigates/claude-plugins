@@ -1,12 +1,12 @@
 ---
 model: opus
 created: 2026-01-30
-modified: 2026-01-30
+modified: 2026-02-06
 reviewed: 2026-01-30
 description: "Derive Claude rules from git commit log decisions. Newer commits override older decisions when conflicts exist."
 args: "[--since DATE] [--scope SCOPE]"
 argument-hint: "--since 2024-01-01 for date range, --scope api for specific area"
-allowed_tools: [Read, Write, Glob, Grep, Bash, AskUserQuestion, Task]
+allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion, Task
 name: blueprint-derive-rules
 ---
 

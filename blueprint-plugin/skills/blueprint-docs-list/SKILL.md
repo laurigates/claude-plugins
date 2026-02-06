@@ -5,7 +5,7 @@ modified: 2026-02-06
 reviewed: 2026-02-06
 description: "List blueprint documents (ADRs, PRDs, PRPs) with metadata extracted from frontmatter and headers"
 args: "<type>"
-allowed_tools: [Bash, Glob]
+allowed-tools: Bash, Glob
 argument-hint: "adrs | prds | prps | all"
 name: blueprint-docs-list
 ---

@@ -1,11 +1,11 @@
 ---
 model: opus
 created: 2025-12-22
-modified: 2026-01-09
+modified: 2026-02-06
 reviewed: 2025-12-22
 description: "Move generated artifact to custom layer to preserve modifications"
 args: "[skill-name|command-name]"
-allowed_tools: [Read, Write, Bash, AskUserQuestion]
+allowed-tools: Read, Write, Bash, AskUserQuestion
 argument-hint: "Name of the skill or command to promote"
 name: blueprint-promote
 ---

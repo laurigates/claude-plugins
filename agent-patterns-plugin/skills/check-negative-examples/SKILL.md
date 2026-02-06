@@ -1,10 +1,10 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-06
 reviewed: 2025-12-16
 description: "Check skills/commands for negative framing and suggest positive alternatives"
-allowed_tools: [Bash, Grep, Read, Edit, AskUserQuestion]
+allowed-tools: Bash, Grep, Read, Edit, AskUserQuestion
 name: check-negative-examples
 ---
 

@@ -1,10 +1,10 @@
 ---
 model: haiku
 created: 2025-12-17
-modified: 2026-01-09
+modified: 2026-02-06
 reviewed: 2025-12-17
 description: "Manage modular rules in .claude/rules/ directory"
-allowed_tools: [Read, Write, Edit, Bash, Glob, AskUserQuestion]
+allowed-tools: Read, Write, Edit, Bash, Glob, AskUserQuestion
 name: blueprint-rules
 ---
 

@@ -1,10 +1,10 @@
 ---
 model: opus
 created: 2025-12-22
-modified: 2026-01-09
+modified: 2026-02-06
 reviewed: 2025-12-22
 description: "Check for stale generated content and offer regeneration or promotion"
-allowed_tools: [Read, Bash, Glob, AskUserQuestion]
+allowed-tools: Read, Bash, Glob, AskUserQuestion
 name: blueprint-sync
 ---
 

@@ -1,10 +1,10 @@
 ---
 model: opus
 created: 2025-12-22
-modified: 2026-01-09
+modified: 2026-02-06
 reviewed: 2025-12-22
 description: "Derive PRD from existing project documentation, README, and codebase analysis"
-allowed_tools: [Read, Write, Glob, Grep, Bash, AskUserQuestion, Task]
+allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion, Task
 name: blueprint-derive-prd
 ---
 

@@ -1,10 +1,10 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-01-17
+modified: 2026-02-06
 reviewed: 2026-01-17
 description: "Initialize Blueprint Development structure in current project"
-allowed_tools: [Bash, Write, Read, AskUserQuestion, Glob]
+allowed-tools: Bash, Write, Read, AskUserQuestion, Glob
 name: blueprint-init
 ---
 
