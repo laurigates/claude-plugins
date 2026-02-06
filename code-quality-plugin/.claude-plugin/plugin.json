@@ -19,6 +19,8 @@
     "adr",
     "prd",
     "prp",
-    "quality-check"
+    "quality-check",
+    "dry-consolidation",
+    "duplication"
   ]
 }
