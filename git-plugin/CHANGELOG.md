@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.12.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.12.1...git-plugin-v2.12.2) (2026-02-06)
+
+
+### Bug Fixes
+
+* **git-ops:** enable git write permissions and clarify configuration ([#430](https://github.com/laurigates/claude-plugins/issues/430)) ([3448890](https://github.com/laurigates/claude-plugins/commit/3448890b00d1feb40a4d6e86ae5850d4cdb97b90))
+
 ## [2.12.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.12.0...git-plugin-v2.12.1) (2026-02-06)
 
 
