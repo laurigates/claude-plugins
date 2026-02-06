@@ -297,7 +297,7 @@
       "name": "kubernetes-plugin",
       "source": "./kubernetes-plugin",
       "description": "Kubernetes and Helm operations - deployments, charts, releases",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "keywords": [
         "kubernetes",
         "helm",
