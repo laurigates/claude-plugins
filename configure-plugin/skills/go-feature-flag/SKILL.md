@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-06
 reviewed: 2025-12-16
 name: go-feature-flag
 description: |
@@ -9,6 +9,7 @@ description: |
   integration. Covers flag configuration, relay proxy, targeting rules, rollouts.
   Use when user mentions GO Feature Flag, GOFF, gofeatureflag, self-hosted
   feature flags, or flags.goff.yaml configuration.
+allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---
 
 # GO Feature Flag

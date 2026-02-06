@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-06
 reviewed: 2025-12-16
 name: python-testing
 description: |
@@ -9,6 +9,7 @@ description: |
   Covers test organization, conftest.py, markers, async testing, and TDD workflows.
   Use when user mentions pytest, unit tests, test coverage, fixtures, mocking,
   or writing Python tests.
+allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # Python Testing

@@ -5,6 +5,7 @@ modified: 2026-02-06
 reviewed: 2026-02-06
 name: document-detection
 description: "Detect PRD/ADR/PRP opportunities in conversations and prompt for document creation. Activates when users discuss features, architecture decisions, or implementation planning."
+allowed-tools: Read, Grep, Glob, Bash
 ---
 
 # Document Detection

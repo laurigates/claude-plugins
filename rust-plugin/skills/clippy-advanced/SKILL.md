@@ -1,13 +1,14 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-02-05
+modified: 2026-02-06
 reviewed: 2025-12-16
 name: clippy-advanced
 description: |
   Advanced Clippy configuration for comprehensive Rust linting with custom rules, categories, and IDE integration.
   Use when configuring linting rules, enforcing code standards, setting up CI linting, or customizing clippy behavior.
   Trigger terms: clippy, linting, code quality, clippy.toml, pedantic, nursery, restriction, lint configuration, code standards.
+allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # clippy-advanced - Advanced Clippy Configuration

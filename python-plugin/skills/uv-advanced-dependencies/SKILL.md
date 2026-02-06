@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-06
 reviewed: 2025-12-16
 name: uv-advanced-dependencies
 description: |
@@ -9,6 +9,7 @@ description: |
   editable installs, dependency groups, extras, constraints, and custom indexes.
   Use when user mentions git+https dependencies, local path dependencies, editable
   installs, dependency groups, or private package indexes.
+allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # UV Advanced Dependencies

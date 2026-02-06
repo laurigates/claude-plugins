@@ -1,7 +1,7 @@
 ---
 model: opus
 created: 2026-01-21
-modified: 2026-02-05
+modified: 2026-02-06
 reviewed: 2026-01-21
 name: delegation-first
 description: |
@@ -9,6 +9,7 @@ description: |
   conversation stays focused on architecture and planning. Use when you want Claude to
   automatically delegate implementation work to subagents, use agents for everything,
   keep the main thread as an orchestrator, or follow an architect-and-builders workflow.
+allowed-tools: Read, Grep, Glob, Task
 ---
 
 # Delegation-First Development

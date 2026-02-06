@@ -1,10 +1,11 @@
 ---
 model: haiku
 created: 2026-01-02
-modified: 2026-01-09
+modified: 2026-02-06
 reviewed: 2026-01-02
 name: feature-tracking
 description: "Track feature implementation status against requirements documents. Provides hierarchical FR code tracking, phase management, task tracking, and sync with TODO.md."
+allowed-tools: Read, Write, Edit, Grep, Glob, Bash, TodoWrite
 ---
 
 # Feature Tracking Skill

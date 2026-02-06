@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-06
 reviewed: 2025-12-16
 name: python-code-quality
 description: |
@@ -9,6 +9,7 @@ description: |
   Covers pyproject.toml configuration, pre-commit hooks, and type hints.
   Use when user mentions ruff, mypy, linting, formatting, type checking,
   code style, or Python code quality.
+allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # Python Code Quality

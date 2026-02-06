@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-06
 reviewed: 2025-12-16
 name: uv-project-management
 description: |
@@ -9,6 +9,7 @@ description: |
   uv init, uv add, uv remove, uv lock, uv sync, and pyproject.toml configuration.
   Use when user mentions uv, creating Python projects, managing dependencies,
   lockfiles, pyproject.toml, or Python packaging with uv.
+allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # UV Project Management

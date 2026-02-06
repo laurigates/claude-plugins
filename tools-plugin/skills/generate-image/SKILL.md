@@ -1,9 +1,10 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-06
 reviewed: 2025-12-16
 description: Generate images using Nano Banana Pro (Gemini 3 Pro Image)
+allowed-tools: Bash, Read, WebFetch
 args: <prompt> [--aspect <ratio>] [--resolution <size>] [--reference <path>]
 name: generate-image
 ---

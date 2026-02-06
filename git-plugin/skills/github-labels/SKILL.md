@@ -1,8 +1,14 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-06
 reviewed: 2025-12-16
+name: github-labels
+description: |
+  Discover and apply labels to GitHub PRs and issues using the gh CLI. Use when
+  you need to list available labels, add or remove labels on pull requests or issues,
+  or create new labels for a repository.
+allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # GitHub Labels

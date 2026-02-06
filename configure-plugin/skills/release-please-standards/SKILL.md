@@ -1,13 +1,14 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-06
 reviewed: 2025-12-16
 name: release-please-standards
 description: |
   Release-please standards and configuration. Use when configuring release-please
   workflows, checking release automation compliance, or when the user mentions
   release-please, automated releases, or version management.
+allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---
 
 # Release-Please Standards

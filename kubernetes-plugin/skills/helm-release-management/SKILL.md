@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-02-05
+modified: 2026-02-06
 reviewed: 2025-12-16
 name: helm-release-management
 description: |
@@ -9,6 +9,7 @@ description: |
   Covers helm install, helm upgrade, helm list, helm status, release history.
   Use when user mentions deploying Helm charts, upgrading releases, helm install,
   helm upgrade, or managing Kubernetes deployments with Helm.
+allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # Helm Release Management

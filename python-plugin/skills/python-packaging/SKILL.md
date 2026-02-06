@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-06
 reviewed: 2025-12-16
 name: python-packaging
 description: |
@@ -9,6 +9,7 @@ description: |
   uv publish, pyproject.toml, versioning, entry points, and PyPI publishing.
   Use when user mentions building packages, publishing to PyPI, uv build, uv publish,
   package distribution, or Python wheel/sdist creation.
+allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # Python Packaging

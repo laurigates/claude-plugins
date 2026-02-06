@@ -1,7 +1,7 @@
 ---
 model: opus
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-06
 reviewed: 2025-12-16
 name: release-please-protection
 description: |
@@ -9,6 +9,7 @@ description: |
   version fields in package.json, pyproject.toml, Cargo.toml). Provides conventional
   commit templates. Use when editing changelogs, version bumps, release files, or
   when user mentions "release", "changelog", "version bump", or "conventional commits".
+allowed-tools: Read, Grep, Glob
 ---
 
 # Release-Please Protection

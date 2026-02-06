@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-02-05
+modified: 2026-02-06
 reviewed: 2025-12-16
 name: command-context-patterns
 description: |
@@ -9,6 +9,7 @@ description: |
   you are creating a new skill and need dynamic variables using backtick shell
   expressions, your skill's context section is failing or returning empty results,
   or you need to safely detect files and project state in skill frontmatter.
+allowed-tools: Read, Grep, Glob, Task
 ---
 
 # Command Context Patterns

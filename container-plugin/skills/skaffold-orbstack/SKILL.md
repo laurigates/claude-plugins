@@ -1,13 +1,14 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-06
 reviewed: 2025-12-16
 name: skaffold-orbstack
 description: |
   OrbStack-optimized Skaffold workflows for local Kubernetes development without port-forward.
   Use when configuring Skaffold with OrbStack, accessing services via LoadBalancer or Ingress,
   or when the user mentions OrbStack, k8s.orb.local, service access, or eliminating port-forward.
+allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # Skaffold with OrbStack - Port-Forward-Free Development

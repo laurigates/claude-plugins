@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-06
 reviewed: 2025-12-16
 name: helm-values-management
 description: |
@@ -9,6 +9,7 @@ description: |
   configurations, and secret management. Covers values files, --set, --set-string,
   values schema validation. Use when user mentions Helm values, environment-specific
   configs, values.yaml, --set overrides, or Helm configuration.
+allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---
 
 # Helm Values Management
