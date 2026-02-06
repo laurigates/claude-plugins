@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.12.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.12.0...git-plugin-v2.12.1) (2026-02-06)
+
+
+### Documentation
+
+* **git-plugin:** document PR check watching workflow ([24116de](https://github.com/laurigates/claude-plugins/commit/24116de12541b7af7677d5e1ed195628bf4599eb))
+* improve skill documentation with decision guides and references ([#426](https://github.com/laurigates/claude-plugins/issues/426)) ([24116de](https://github.com/laurigates/claude-plugins/commit/24116de12541b7af7677d5e1ed195628bf4599eb))
+
 ## [2.12.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.11.3...git-plugin-v2.12.0) (2026-02-05)
 
 
