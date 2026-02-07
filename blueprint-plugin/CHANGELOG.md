@@ -7,6 +7,13 @@
 
 * **blueprint-plugin:** add dry-run/report-only modes to blueprint skills ([#463](https://github.com/laurigates/claude-plugins/issues/463)) ([91bedfc](https://github.com/laurigates/claude-plugins/commit/91bedfc1e75d42da0d0772679a0a8c2f881e46d4))
 
+## [3.14.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.13.1...blueprint-plugin-v3.14.0) (2026-02-07)
+
+
+### Features
+
+* **blueprint-plugin:** add dry-run/report-only modes to blueprint skills ([#463](https://github.com/laurigates/claude-plugins/issues/463)) ([91bedfc](https://github.com/laurigates/claude-plugins/commit/91bedfc1e75d42da0d0772679a0a8c2f881e46d4))
+
 ## [3.13.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.13.0...blueprint-plugin-v3.13.1) (2026-02-06)
 
 
