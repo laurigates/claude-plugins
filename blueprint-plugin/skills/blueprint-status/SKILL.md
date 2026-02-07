@@ -1,14 +1,22 @@
 ---
 model: opus
 created: 2025-12-17
-modified: 2026-02-06
+modified: 2026-02-07
 reviewed: 2025-12-22
 description: "Show blueprint version, configuration, and check for available upgrades"
+args: "[--report-only]"
+argument-hint: "--report-only to display status without interactive prompts"
 allowed-tools: Read, Bash, Glob, AskUserQuestion
 name: blueprint-status
 ---
 
 Display the current blueprint configuration status with three-layer architecture breakdown.
+
+## Flags
+
+| Flag | Description |
+|------|-------------|
+| `--report-only` | Display status report and exit without prompting for next action |
 
 **Steps**:
 
@@ -162,7 +170,9 @@ Display the current blueprint configuration status with three-layer architecture
      - Warn if orphan issues exist (GitHub issues without linked docs)
      - Warn if broken links detected (referenced docs/issues don't exist)
 
-7. **Prompt for next action** (use AskUserQuestion):
+7. **If `--report-only`**: Output the status report from Steps 5-6 and exit. Skip the interactive prompt below.
+
+8. **Prompt for next action** (use AskUserQuestion):
 
    **Build options dynamically based on state:**
    - If upgrade available → Include "Upgrade to v{latest}"

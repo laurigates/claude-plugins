@@ -1,14 +1,22 @@
 ---
 model: haiku
 created: 2026-01-15
-modified: 2026-02-06
+modified: 2026-02-07
 reviewed: 2026-01-15
 description: "Validate ADR relationships, detect orphaned references, and check domain consistency"
+args: "[--report-only]"
+argument-hint: "--report-only to validate without prompting for fixes"
 allowed-tools: Read, Bash, Glob, Grep, Edit, AskUserQuestion
 name: blueprint-adr-validate
 ---
 
 Validate Architecture Decision Records for relationship consistency, reference integrity, and domain conflicts.
+
+## Flags
+
+| Flag | Description |
+|------|-------------|
+| `--report-only` | Output validation report and exit without prompting for remediation |
 
 **Use Cases**:
 - Ensure ADR integrity before major releases
@@ -146,7 +154,9 @@ Validate Architecture Decision Records for relationship consistency, reference i
 
 ## Phase 5: Remediation Options
 
-12. **Prompt for action** (use AskUserQuestion):
+12. **If `--report-only`**: Output the validation report from Phase 4 and exit. Skip all remaining steps.
+
+13. **Prompt for action** (use AskUserQuestion):
     ```
     question: "How would you like to address the issues?"
     options:
@@ -160,7 +170,7 @@ Validate Architecture Decision Records for relationship consistency, reference i
         description: "Exit without changes"
     ```
 
-13. **Execute based on selection**:
+14. **Execute based on selection**:
 
     **"Fix all automatically":**
     - For supersedes mismatches:
@@ -190,7 +200,7 @@ Validate Architecture Decision Records for relationship consistency, reference i
 
 ## Phase 6: Report Changes
 
-14. **Summarize changes made** (if any):
+15. **Summarize changes made** (if any):
     ```
     Changes Applied:
     - Updated ADR-0003: status Accepted → Superseded, added superseded_by: ADR-0012
