@@ -1,67 +1,148 @@
 # Claude Plugins
 
-A collection of Claude Code plugins providing specialized skills, commands, and agents for various development workflows.
-
-## Plugins
-
-| Plugin | Category | Description |
-|--------|----------|-------------|
-| **accessibility-plugin** | ux | Accessibility and UX implementation - WCAG, ARIA, design tokens |
-| **agent-patterns-plugin** | ai | Multi-agent coordination and orchestration patterns |
-| **agents-plugin** | ai | Task-focused agents for test, review, debug, docs, and CI workflows |
-| **api-plugin** | development | API integration and testing - REST endpoints, client generation |
-| **bevy-plugin** | gamedev | Bevy game engine development - ECS, rendering, game architecture |
-| **blog-plugin** | documentation | Blog post creation - project logs, technical write-ups, personal documentation |
-| **blueprint-plugin** | development | Blueprint Development methodology - PRD/PRP workflow with version tracking |
-| **code-quality-plugin** | quality | Code review, refactoring, linting, and static analysis |
-| **command-analytics-plugin** | utilities | Track command and skill usage analytics across all projects |
-| **communication-plugin** | communication | External communication formatting - Google Chat, ticket drafting |
-| **configure-plugin** | infrastructure | Project infrastructure standards - pre-commit, CI/CD, Docker, testing |
-| **container-plugin** | infrastructure | Container development and deployment - Docker, registry, Skaffold |
-| **documentation-plugin** | documentation | Documentation generation - API docs, README, knowledge graphs |
-| **git-plugin** | version-control | Git workflows - commits, branches, PRs, and repository management |
-| **github-actions-plugin** | ci-cd | GitHub Actions CI/CD - workflows, authentication, inspection |
-| **hooks-plugin** | automation | Claude Code hooks for enforcing best practices and workflow automation |
-| **kubernetes-plugin** | infrastructure | Kubernetes and Helm operations - deployments, charts, releases |
-| **langchain-plugin** | ai | LangChain JS/TS development - agents, chains, LangGraph, Deep Agents |
-| **networking-plugin** | infrastructure | Network diagnostics, reconnaissance, monitoring, and HTTP load testing |
-| **project-plugin** | development | Project initialization, management, and maintenance |
-| **python-plugin** | language | Python development ecosystem - uv, ruff, pytest, packaging |
-| **rust-plugin** | language | Rust development - cargo, clippy, testing, memory safety |
-| **sync-plugin** | integration | External system synchronization - GitHub, Podio integration |
-| **terraform-plugin** | infrastructure | Terraform and Terraform Cloud - infrastructure as code |
-| **testing-plugin** | testing | Test execution, TDD workflow, and testing strategies |
-| **tools-plugin** | utilities | General utilities - fd, rg, jq, shell, imagemagick |
-| **typescript-plugin** | language | TypeScript development - strict types, ESLint, Biome |
-
-> **Note:** This table is generated from `.claude-plugin/marketplace.json`. To regenerate:
-> ```bash
-> jq -r '.plugins[] | "| **\(.name)** | \(.category) | \(.description) |"' .claude-plugin/marketplace.json
-> ```
+A collection of 30 Claude Code plugins providing 285+ skills and 14 agents for development workflows.
 
 ## Installation
-
-Install plugins from this collection:
 
 ```bash
 claude plugin install laurigates-claude-plugins/<plugin-name>
 ```
 
 For example:
+
 ```bash
 claude plugin install laurigates-claude-plugins/git-plugin
 claude plugin install laurigates-claude-plugins/python-plugin
+claude plugin install laurigates-claude-plugins/testing-plugin
 ```
 
-## Structure
+## Plugins by Category
+
+### AI & Agents
+
+| Plugin | Skills | Description |
+|--------|--------|-------------|
+| **agent-patterns-plugin** | 16 | Multi-agent coordination and orchestration patterns |
+| **agents-plugin** | 1 + 10 agents | Task-focused agents for test, review, debug, docs, and CI workflows |
+| **langchain-plugin** | 4 | LangChain JS/TS development - agents, chains, LangGraph, Deep Agents |
+
+### Development
+
+| Plugin | Skills | Description |
+|--------|--------|-------------|
+| **api-plugin** | 2 | API integration and testing - REST endpoints, client generation |
+| **blueprint-plugin** | 30 | Blueprint Development methodology - PRD/PRP workflow with version tracking |
+| **home-assistant-plugin** | 4 | Home Assistant configuration - automations, scripts, scenes, entities |
+| **project-plugin** | 6 | Project initialization, management, maintenance, and continuous development |
+
+### Languages
+
+| Plugin | Skills | Description |
+|--------|--------|-------------|
+| **python-plugin** | 17 | Python ecosystem - uv, ruff, pytest, basedpyright, packaging |
+| **rust-plugin** | 5 | Rust development - cargo, clippy, nextest, memory safety |
+| **typescript-plugin** | 17 | TypeScript development - Bun, Biome, ESLint, strict types |
+
+### Quality & Testing
+
+| Plugin | Skills | Description |
+|--------|--------|-------------|
+| **code-quality-plugin** | 13 | Code review, refactoring, linting, static analysis, debugging methodology |
+| **testing-plugin** | 15 | Test execution, TDD workflow, Vitest, Playwright, mutation testing |
+
+### Version Control
+
+| Plugin | Skills | Description |
+|--------|--------|-------------|
+| **git-plugin** | 27 + 1 agent | Git workflows - commits, branches, PRs, worktrees, release-please |
+
+### CI/CD
+
+| Plugin | Skills | Description |
+|--------|--------|-------------|
+| **finops-plugin** | 7 | GitHub Actions FinOps - billing, cache usage, workflow efficiency |
+| **github-actions-plugin** | 8 | GitHub Actions CI/CD - workflows, authentication, inspection |
+
+### Infrastructure
+
+| Plugin | Skills | Description |
+|--------|--------|-------------|
+| **configure-plugin** | 42 | Project infrastructure standards - pre-commit, CI/CD, Docker, testing |
+| **container-plugin** | 9 + 1 agent | Container development - Docker, registry, Skaffold, OrbStack |
+| **kubernetes-plugin** | 8 + 1 agent | Kubernetes and Helm - deployments, charts, releases, ArgoCD |
+| **networking-plugin** | 6 | Network diagnostics, discovery, monitoring, HTTP load testing |
+| **terraform-plugin** | 6 + 1 agent | Terraform and Terraform Cloud - infrastructure as code |
+
+### Documentation & Communication
+
+| Plugin | Skills | Description |
+|--------|--------|-------------|
+| **blog-plugin** | 2 | Blog post creation - project logs, technical write-ups |
+| **communication-plugin** | 2 | Communication formatting - Google Chat, ticket drafting |
+| **documentation-plugin** | 5 | Documentation generation - API docs, README, knowledge graphs |
+
+### UX & Components
+
+| Plugin | Skills | Description |
+|--------|--------|-------------|
+| **accessibility-plugin** | 2 | Accessibility implementation - WCAG, ARIA, design tokens |
+| **component-patterns-plugin** | 2 | Reusable UI component patterns - version badge, tooltips |
+
+### Automation & Utilities
+
+| Plugin | Skills | Description |
+|--------|--------|-------------|
+| **command-analytics-plugin** | 4 | Track command and skill usage analytics across projects |
+| **health-plugin** | 6 | Diagnose and fix Claude Code configuration issues |
+| **hooks-plugin** | 1 | Claude Code hooks for enforcing best practices |
+| **tools-plugin** | 14 | General utilities - fd, rg, jq, shell, ImageMagick, d2 |
+
+### Integration
+
+| Plugin | Skills | Description |
+|--------|--------|-------------|
+| **sync-plugin** | 2 | External system synchronization - GitHub, Podio |
+
+### Game Development
+
+| Plugin | Skills | Description |
+|--------|--------|-------------|
+| **bevy-plugin** | 2 | Bevy game engine - ECS, rendering, game architecture |
+
+## Plugin Structure
 
 Each plugin follows the standard Claude Code plugin structure:
 
 ```
 <plugin-name>/
+├── .claude-plugin/
+│   └── plugin.json     # Plugin manifest
 ├── README.md           # Plugin documentation
-├── skills/             # Skill definitions (.md files)
-└── agents/             # Agent definitions (.md files)
+├── CHANGELOG.md        # Auto-generated by release-please
+├── skills/
+│   └── <skill-name>/
+│       └── SKILL.md    # Skill definition
+└── agents/             # Agent definitions (optional)
+    └── <agent>.md
+```
+
+## Development
+
+Plugins use [release-please](https://github.com/googleapis/release-please) for automated versioning. Use conventional commits to trigger releases:
+
+```bash
+feat(git-plugin): add worktree support    # minor bump
+fix(python-plugin): handle empty venv     # patch bump
+```
+
+See `CLAUDE.md` for detailed development instructions.
+
+## Regenerating the Plugin List
+
+The flat plugin list can be generated from `marketplace.json`:
+
+```bash
+jq -r '.plugins[] | "| **\(.name)** | \(.category) | \(.description) |"' .claude-plugin/marketplace.json
 ```
 
 ## License
