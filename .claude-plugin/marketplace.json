@@ -293,7 +293,9 @@
         "automation",
         "best-practices",
         "workflow",
-        "anti-patterns"
+        "anti-patterns",
+        "session-start",
+        "web"
       ],
       "category": "automation"
     },

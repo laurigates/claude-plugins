@@ -13,7 +13,9 @@
     "best-practices",
     "workflow",
     "anti-patterns",
-    "tooling"
+    "tooling",
+    "session-start",
+    "web"
   ],
   "hooks": {
     "PreToolUse": [
