@@ -512,3 +512,15 @@ options:
 - Document any new gotchas discovered
 - Update ai_docs with lessons learned
 - Commit after each passing validation cycle
+
+## Agent Teams (Optional)
+
+For large multi-module PRPs, spawn teammates per module with a shared task list:
+
+| Teammate | Focus | Value |
+|----------|-------|-------|
+| Module A implementer | Implement module A tasks from blueprint | Parallel implementation |
+| Module B implementer | Implement module B tasks from blueprint | Parallel implementation |
+| Validation runner | Run gates continuously as teammates complete tasks | Continuous quality feedback |
+
+Use this when the PRP's Implementation Blueprint has clearly independent modules. Each teammate works on its module while the shared task list tracks overall progress. This is optional — single-session execution works for smaller PRPs.

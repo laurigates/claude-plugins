@@ -78,3 +78,15 @@ The agent has expertise in:
 - Coverage analysis and reporting
 - E2E test frameworks (Playwright, Cypress)
 - CI/CD integration
+
+## Agent Teams (Optional)
+
+For large test suites, spawn teammates for parallel test execution:
+
+| Teammate | Focus | Value |
+|----------|-------|-------|
+| Unit test runner | Fast unit tests | Quick feedback loop, fail-fast |
+| Integration test runner | Component interactions | Service boundary validation |
+| E2E test runner | Full user flows | End-to-end verification |
+
+Each teammate runs its tier independently and reports results via the shared task list. This is optional — the skill runs tiers sequentially without agent teams.

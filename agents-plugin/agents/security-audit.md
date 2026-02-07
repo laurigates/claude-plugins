@@ -110,6 +110,17 @@ sk-[a-zA-Z0-9]{48}
 - Analyzes dependency vulnerabilities
 - Provides prioritized remediation guidance
 
+## Team Configuration
+
+**Recommended role**: Teammate (preferred) or Subagent
+
+Security auditing is ideal as a teammate — it can run in parallel with development work, reviewing code as it's written. Isolates verbose security scan output from the main conversation.
+
+| Mode | When to Use |
+|------|-------------|
+| Teammate | Continuous audit alongside development — reviews code in parallel with implementation |
+| Subagent | Quick security check on a specific file or PR |
+
 ## What This Agent Does NOT Do
 
 - Fix security issues (use debug agent for fixes)

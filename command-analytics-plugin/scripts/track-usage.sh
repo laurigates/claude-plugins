@@ -31,6 +31,10 @@ else
   EVENT_TYPE="skill"
 fi
 
+# Capture agent teams context when available
+TEAM_ROLE="${CLAUDE_TEAM_ROLE:-}"
+TEAM_SESSION="${CLAUDE_TEAM_SESSION:-}"
+
 # Create event record
 EVENT=$(jq -n \
   --arg timestamp "${TIMESTAMP}" \
@@ -40,6 +44,8 @@ EVENT=$(jq -n \
   --arg project "${PROJECT_DIR}" \
   --argjson success "${SUCCESS}" \
   --arg error "${ERROR_MSG}" \
+  --arg team_role "${TEAM_ROLE}" \
+  --arg team_session "${TEAM_SESSION}" \
   '{
     timestamp: $timestamp,
     type: $type,
@@ -48,7 +54,8 @@ EVENT=$(jq -n \
     project: $project,
     success: $success,
     error: $error
-  }')
+  } + (if $team_role != "" then {team_role: $team_role} else {} end)
+    + (if $team_session != "" then {team_session: $team_session} else {} end)')
 
 # Append to events file (JSONL format)
 echo "${EVENT}" >> "${EVENTS_FILE}"

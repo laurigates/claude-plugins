@@ -4,7 +4,7 @@
 date: 2026-02-07
 created: 2026-02-07
 modified: 2026-02-07
-status: Proposed
+status: Accepted
 deciders: claude-plugins team
 domain: architecture
 relates-to:

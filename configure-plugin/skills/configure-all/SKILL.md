@@ -246,3 +246,16 @@ Not all components apply to all project types:
 - `/configure:dead-code` - Dead code detection
 - `/configure:editor` - Editor/IDE configuration
 - `/configure:security` - Security scanning
+
+## Agent Teams (Optional)
+
+For faster compliance checks on large projects, spawn teammates for parallel configuration checks:
+
+| Teammate | Focus | Checks |
+|----------|-------|--------|
+| Linting teammate | Code quality configs | linting, formatting, dead-code, editor |
+| Security teammate | Security configs | security, pre-commit, container |
+| Testing teammate | Test infrastructure | tests, coverage, memory-profiling |
+| CI teammate | Deployment configs | workflows, release-please, dockerfile, skaffold |
+
+This is optional — the skill works sequentially without agent teams.

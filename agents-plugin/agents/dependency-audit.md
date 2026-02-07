@@ -104,6 +104,17 @@ govulncheck ./... 2>/dev/null
 - Provides specific upgrade commands
 - Flags license compatibility issues
 
+## Team Configuration
+
+**Recommended role**: Subagent
+
+Dependency auditing is best as a subagent — it's a quick, focused task that produces a single report. The verbose audit output is isolated from the main context and only actionable findings are returned.
+
+| Mode | When to Use |
+|------|-------------|
+| Subagent | Standard dependency health check — run audit, return findings |
+| Teammate | Only if auditing multiple ecosystems in a monorepo simultaneously |
+
 ## What This Agent Does NOT Do
 
 - Automatically upgrade packages (returns recommendations)

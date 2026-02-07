@@ -21,23 +21,27 @@
     {
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
-      "description": "Multi-agent coordination and orchestration patterns",
+      "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management",
       "version": "2.5.5",
       "keywords": [
         "agents",
-        "orchestration",
-        "coordination",
-        "patterns"
+        "configuration",
+        "assimilation",
+        "audit",
+        "mcp",
+        "teammate-definitions"
       ],
       "category": "ai"
     },
     {
       "name": "agents-plugin",
       "source": "./agents-plugin",
-      "description": "Task-focused agents for test, review, debug, docs, and CI workflows",
+      "description": "Task-focused agents with teammate and subagent role guidance for test, review, debug, docs, CI, security, refactoring, research, and performance",
       "version": "1.1.4",
       "keywords": [
         "agents",
+        "teammates",
+        "subagents",
         "testing",
         "code-review",
         "debugging",
@@ -218,7 +222,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, and repository management",
-      "version": "2.12.2",
+      "version": "2.12.3",
       "keywords": [
         "git",
         "github",

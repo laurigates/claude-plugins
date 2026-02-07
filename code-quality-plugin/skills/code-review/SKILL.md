@@ -72,3 +72,15 @@ The agent has expertise in:
 - LSP integration for accurate diagnostics
 - Security vulnerability patterns (OWASP)
 - Performance analysis and optimization
+
+## Agent Teams (Optional)
+
+For comprehensive review of large codebases, spawn specialized review teammates in parallel:
+
+| Teammate | Focus | Value |
+|----------|-------|-------|
+| Security reviewer | OWASP, secrets, auth flaws | Deep security analysis without blocking quality review |
+| Performance reviewer | N+1 queries, algorithmic complexity, resource leaks | Performance-focused review in parallel |
+| Correctness reviewer | Logic errors, edge cases, type safety | Functional correctness in parallel |
+
+This is optional — the skill works without agent teams for standard reviews.
