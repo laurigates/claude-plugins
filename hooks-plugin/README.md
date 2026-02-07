@@ -96,6 +96,24 @@ If using this plugin repository, reference the hooks directly:
 ## Skills
 
 - **hooks-configuration**: Guide for setting up and customizing hooks
+- **session-start-hook**: Generate SessionStart hooks for Claude Code on the web (dependency install, env setup, test verification)
+
+## Session Start Hooks
+
+Generate a SessionStart hook to prepare your repository for Claude Code on the web:
+
+```bash
+/hooks:session-start-hook
+```
+
+This auto-detects your project stack and generates:
+- A hook script that installs dependencies and verifies tooling
+- `.claude/settings.json` configuration for the SessionStart event
+- Environment variable persistence via `CLAUDE_ENV_FILE`
+
+Options:
+- `--remote-only`: Only run in web sessions (skip local)
+- `--no-verify`: Skip test/linter verification step
 
 ## Extending
 
