@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.3](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.1.2...health-plugin-v1.1.3) (2026-02-07)
+
+
+### Bug Fixes
+
+* **health-plugin:** replace jq context commands with test -f checks ([#480](https://github.com/laurigates/claude-plugins/issues/480)) ([24636d6](https://github.com/laurigates/claude-plugins/commit/24636d69acf1158cee151e647f126cf18c91661d))
+
 ## [1.1.2](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.1.1...health-plugin-v1.1.2) (2026-02-05)
 
 
