@@ -1,7 +1,7 @@
 ---
 model: opus
 created: 2026-02-04
-modified: 2026-02-05
+modified: 2026-02-07
 reviewed: 2026-02-05
 description: Diagnose and fix plugin registry issues including orphaned entries and project-scope conflicts (addresses Claude Code issue #14202)
 allowed-tools: Bash(test *), Bash(jq *), Bash(cp *), Bash(mkdir *), Read, Write, Edit, Glob, Grep, TodoWrite, AskUserQuestion
@@ -16,9 +16,9 @@ Diagnose and fix issues with the Claude Code plugin registry. This command speci
 ## Context
 
 - Current project: !`pwd`
-- Plugin registry: !`jq -c '.plugins | keys' ~/.claude/plugins/installed_plugins.json 2>/dev/null`
-- Project settings: !`jq -c '.enabledPlugins // empty' .claude/settings.json 2>/dev/null`
-- Project plugins dir: !`find .claude-plugin -maxdepth 1 -name '*.json' 2>/dev/null`
+- Plugin registry exists: !`test -f ~/.claude/plugins/installed_plugins.json && echo "yes" || echo "no"`
+- Project settings exists: !`test -f .claude/settings.json && echo "yes" || echo "no"`
+- Project plugins dir: !`test -d .claude-plugin && echo "yes" || echo "no"`
 
 ## Background: Issue #14202
 
