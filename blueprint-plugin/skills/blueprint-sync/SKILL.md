@@ -1,14 +1,22 @@
 ---
 model: opus
 created: 2025-12-22
-modified: 2026-02-06
+modified: 2026-02-07
 reviewed: 2025-12-22
 description: "Check for stale generated content and offer regeneration or promotion"
+args: "[--dry-run]"
+argument-hint: "--dry-run to preview sync status without modifying files"
 allowed-tools: Read, Bash, Glob, AskUserQuestion
 name: blueprint-sync
 ---
 
 Check the status of generated content and offer options for modified or stale files.
+
+## Flags
+
+| Flag | Description |
+|------|-------------|
+| `--dry-run` | Preview sync status report without interactive prompts or file modifications |
 
 **Purpose**:
 - Detect when generated skills/commands have been manually modified
@@ -62,7 +70,9 @@ Check the status of generated content and offer options for modified or stale fi
    - Stale: 1 file (source changed)
    ```
 
-4. **For modified content**, offer options:
+4. **If `--dry-run`**: Output the sync report from Step 3 and exit. Skip all remaining steps.
+
+5. **For modified content**, offer options:
    ```
    question: "{name} has been modified locally. What would you like to do?"
    options:
@@ -82,7 +92,7 @@ Check the status of generated content and offer options for modified or stale fi
    - "View diff" → Show diff then re-ask
    - "Skip" → Continue to next file
 
-5. **For stale content**, offer options:
+6. **For stale content**, offer options:
    ```
    question: "{name} is stale (PRDs have changed). What would you like to do?"
    options:
@@ -102,12 +112,12 @@ Check the status of generated content and offer options for modified or stale fi
    - "View" → Show PRD diff then re-ask
    - "Skip" → Continue to next file
 
-6. **Update manifest** after changes:
+7. **Update manifest** after changes:
    - Update `content_hash` for regenerated files
    - Update `source_hash` if PRD changes acknowledged
    - Update `status` field appropriately
 
-7. **Final report**:
+8. **Final report**:
    ```
    Sync Complete
 
