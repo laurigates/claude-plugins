@@ -1,7 +1,7 @@
 {
   "name": "agents-plugin",
   "version": "1.1.4",
-  "description": "Task-focused agents for test, review, debug, docs, CI, security, refactoring, infrastructure, and research workflows",
+  "description": "Task-focused agents for test, review, debug, docs, CI, security, refactoring, research, and performance — with teammate and subagent role guidance",
   "author": {
     "name": "Lauri Gates"
   },
@@ -9,6 +9,8 @@
   "license": "MIT",
   "keywords": [
     "agents",
+    "teammates",
+    "subagents",
     "testing",
     "code-review",
     "debugging",
@@ -16,10 +18,6 @@
     "ci-cd",
     "security",
     "refactoring",
-    "terraform",
-    "kubernetes",
-    "git",
-    "docker",
     "dependencies",
     "research",
     "performance"

@@ -99,6 +99,17 @@ When reviewing PRs:
 - Provides specific, actionable findings
 - Prioritizes issues by severity
 
+## Team Configuration
+
+**Recommended role**: Teammate (preferred) or Subagent
+
+This agent is well-suited as a teammate because code review benefits from parallel execution — spawn security, performance, and correctness reviewers simultaneously. Each reviewer gets a full context window and can communicate findings via the shared task list.
+
+| Mode | When to Use |
+|------|-------------|
+| Teammate | Multi-aspect review: spawn separate reviewers for security, performance, correctness |
+| Subagent | Single focused review of a specific file or diff |
+
 ## What This Agent Does NOT Do
 
 - Fix the issues it finds (use debug agent)

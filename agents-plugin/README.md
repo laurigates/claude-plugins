@@ -1,39 +1,51 @@
 # agents-plugin
 
-Task-focused agents following 12-factor agent principles. Each agent completes a bounded task (3-20 steps) without handoffs.
+Task-focused agents following 12-factor agent principles. Each agent completes a bounded task (3-20 steps) and can operate as a teammate (parallel, communicating) or subagent (focused, isolated).
 
 ## Agents
 
-| Agent | Model | Purpose | Context Value |
-|-------|-------|---------|---------------|
-| `test` | haiku | Write and run tests | Test output stays isolated |
-| `review` | opus | Code review, commit review, PR review | Large diffs stay in agent |
-| `debug` | opus | Diagnose and fix bugs | Debug logging stays isolated |
-| `docs` | haiku | Generate documentation | Codebase analysis stays isolated |
-| `ci` | haiku | Pipeline configuration | Workflow file generation |
-| `security-audit` | opus | Vulnerability scanning, OWASP analysis | Verbose scan results summarized |
-| `refactor` | opus | Code restructuring, SOLID improvements | Large refactoring diffs isolated |
-| `terraform-ops` | haiku | Plan/apply, drift detection, state ops | Terraform plan output (100s of lines) summarized |
-| `k8s-diagnostics` | haiku | Pod failures, log analysis, troubleshooting | kubectl describe/logs output summarized |
-| `git-ops` | haiku | Merge conflicts, rebase, bisect, cherry-pick | Conflict resolution context isolated |
-| `container-build` | haiku | Docker build, layer analysis, debugging | Build output (100s of lines) summarized |
-| `dependency-audit` | haiku | CVE scanning, outdated packages, licenses | Audit output summarized to actionable items |
-| `research` | opus | API docs, framework evaluation, best practices | Web fetches and docs stay in agent |
-| `performance` | opus | Profiling, bottleneck identification, benchmarks | Profiler output summarized to hot paths |
+| Agent | Model | Purpose | Team Role |
+|-------|-------|---------|-----------|
+| `test` | haiku | Write and run tests | Either — parallel test suites as teammate, focused testing as subagent |
+| `review` | opus | Code review, commit review, PR review | Teammate preferred — parallel security/performance/correctness review |
+| `debug` | opus | Diagnose and fix bugs | Either — parallel investigation as teammate, single fix as subagent |
+| `docs` | haiku | Generate documentation | Teammate preferred — parallel doc generation across modules |
+| `ci` | haiku | Pipeline configuration | Either — parallel setup as teammate, single workflow as subagent |
+| `security-audit` | opus | Vulnerability scanning, OWASP analysis | Teammate preferred — continuous audit alongside development |
+| `refactor` | opus | Code restructuring, SOLID improvements | Either — parallel refactoring with file-locking as teammate |
+| `dependency-audit` | haiku | CVE scanning, outdated packages, licenses | Subagent preferred — quick focused audit |
+| `research` | opus | API docs, framework evaluation, best practices | Teammate preferred — parallel research alongside implementation |
+| `performance` | opus | Profiling, bottleneck identification, benchmarks | Subagent preferred — verbose profiling isolated |
+
+## Team Roles
+
+Each agent includes a `## Team Configuration` section documenting when to use it as a teammate vs subagent:
+
+| Role | When to Use |
+|------|-------------|
+| **Teammate** | Task benefits from parallel execution and inter-agent communication via shared task list |
+| **Subagent** | Task is focused, short, and produces a single isolated result |
+
+### Recommended Roles
+
+| Best as Teammate | Best as Subagent | Either |
+|------------------|------------------|--------|
+| review, security-audit, research, docs | dependency-audit, performance | test, debug, ci, refactor |
 
 ## Design Principles
 
 - **Task-oriented**: Each agent maps to a real user request
-- **Complete the job**: No @HANDOFF patterns, agents finish what they start
+- **Complete the job**: Agents finish what they start
 - **Small scope**: 3-20 steps per task
 - **Generic + Skills**: Expertise lives in skills, agents are task runners
 - **Context isolation**: Verbose output stays in agent, only summaries return
+- **Team-aware**: Each agent documents its optimal team role
 
 ## Model Selection
 
 | Model | When Used | Agents |
 |-------|-----------|--------|
-| haiku | Structured operations, mechanical tasks | test, docs, ci, terraform-ops, k8s-diagnostics, git-ops, container-build, dependency-audit |
+| haiku | Structured operations, mechanical tasks | test, docs, ci, dependency-audit |
 | opus | Deep reasoning, complex analysis, code restructuring | review, debug, security-audit, performance, refactor, research |
 
 ## Usage
@@ -50,22 +62,7 @@ Agents are invoked automatically based on task context or explicitly via agent r
 "Set up GitHub Actions" → ci agent
 "Check for security vulnerabilities" → security-audit agent
 "Clean up this class, it's too complex" → refactor agent
-"Run terraform plan for staging" → terraform-ops agent
-"Pods are crashing in production" → k8s-diagnostics agent
-"Resolve merge conflicts on this branch" → git-ops agent
-"Docker build is failing" → container-build agent
 "Check for vulnerable dependencies" → dependency-audit agent
 "How does the Stripe API handle pagination?" → research agent
 "The API endpoint is slow, find the bottleneck" → performance agent
 ```
-
-## Skills Integration
-
-Some agents preload skills for domain expertise:
-
-| Agent | Preloaded Skills |
-|-------|-----------------|
-| `terraform-ops` | terraform-workflow, terraform-state-management |
-| `k8s-diagnostics` | kubernetes-operations, kubernetes-debugging |
-| `git-ops` | git-cli-agentic, git-commit |
-| `container-build` | docker-development, dockerfile-optimization |

@@ -73,6 +73,17 @@ Write and run tests for code. This agent completes the full cycle: analyze → w
 - Identifies untested code paths
 - Creates test files following project conventions
 
+## Team Configuration
+
+**Recommended role**: Either Teammate or Subagent
+
+Testing works well in both modes. As a teammate, it can run tests in parallel with implementation. As a subagent, it handles focused test writing for a specific module.
+
+| Mode | When to Use |
+|------|-------------|
+| Teammate | Parallel test suites — spawn unit, integration, and e2e test teammates |
+| Subagent | Focused testing for a single module or function |
+
 ## What This Agent Does NOT Do
 
 - Architectural test strategy (that's planning, not doing)

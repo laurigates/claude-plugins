@@ -122,3 +122,14 @@ Continue project development by analyzing current state and resuming work.
 1. Review PRDs for requirements
 2. Ask user for clarification
 3. Suggest creating work-orders for clarity
+
+## Agent Teams (Optional)
+
+For large codebases with multiple work fronts, spawn teammates for parallel progress:
+
+| Teammate | Focus | Value |
+|----------|-------|-------|
+| Research teammate | Investigate codebase state, PRDs, work-orders | Parallel context gathering |
+| Implementation teammate | Begin work on next task from work-overview | Start implementation immediately |
+
+The research teammate gathers project state while the implementation teammate begins the most obvious next task. This is optional — single-session continuation works for most projects.

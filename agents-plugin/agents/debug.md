@@ -92,6 +92,17 @@ For simple linter warnings (unused imports, formatting):
 - Architectural changes
 - Performance optimization (unless it's causing failures)
 
+## Team Configuration
+
+**Recommended role**: Either Teammate or Subagent
+
+Debugging works in both modes. As a subagent, it handles a single focused bug fix. As a teammate, it can investigate bugs in parallel while other work continues.
+
+| Mode | When to Use |
+|------|-------------|
+| Subagent | Single bug fix — focused diagnosis and repair |
+| Teammate | Multiple bugs to investigate in parallel, or debugging while implementation continues |
+
 ## Escalation
 
 If the bug reveals:

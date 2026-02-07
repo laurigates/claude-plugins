@@ -14,7 +14,7 @@ Collection of general-purpose development utilities for file finding, text searc
 |-------|-------------|
 | `deps-install` | Universal dependency installer - auto-detects package manager |
 | `generate-image` | Generate images using Nano Banana Pro (Gemini 3 Pro Image) |
-| `handoffs` | List, filter, and manage @AGENT-HANDOFF-MARKER markers |
+
 
 ### File & Search
 

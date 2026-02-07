@@ -130,6 +130,17 @@ hyperfine 'command1' 'command2' 2>&1  # Comparative benchmarking
 - Benchmarks before/after changes
 - Provides specific optimization recommendations
 
+## Team Configuration
+
+**Recommended role**: Subagent
+
+Performance analysis is best as a subagent — profiling output is verbose and focused, and the task produces a single analysis report. Keeping profiler output isolated from the main context prevents context pollution.
+
+| Mode | When to Use |
+|------|-------------|
+| Subagent | Standard profiling and analysis — run benchmarks, return findings |
+| Teammate | Only if profiling multiple independent services simultaneously |
+
 ## What This Agent Does NOT Do
 
 - Implement optimizations (returns recommendations)

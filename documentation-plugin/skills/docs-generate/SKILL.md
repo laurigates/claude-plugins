@@ -81,3 +81,15 @@ The agent has expertise in:
 - README best practices
 - Changelog automation from commits
 - GitHub Pages integration
+
+## Agent Teams (Optional)
+
+For large projects, spawn teammates for parallel documentation generation:
+
+| Teammate | Focus | Value |
+|----------|-------|-------|
+| API docs teammate | Extract and generate API reference | Parallel with README generation |
+| README teammate | Update project README and guides | Parallel with API docs |
+| Changelog teammate | Generate changelog from git history | Independent of other doc tasks |
+
+This is optional — the skill works with a single agent for most projects.

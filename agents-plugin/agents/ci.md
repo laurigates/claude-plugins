@@ -120,6 +120,17 @@ jobs:
 - Sets up deployment automation
 - Adds caching and optimization
 
+## Team Configuration
+
+**Recommended role**: Either Teammate or Subagent
+
+CI configuration works in both modes. As a subagent, it handles focused pipeline setup. As a teammate, it can configure workflows in parallel with code changes.
+
+| Mode | When to Use |
+|------|-------------|
+| Subagent | Single workflow configuration — create or update a specific pipeline |
+| Teammate | Setting up multiple pipelines while code is being written in parallel |
+
 ## What This Agent Does NOT Do
 
 - Manage cloud infrastructure

@@ -99,6 +99,17 @@ Calculate total price for items with optional tax.
 - Adds inline docstrings/JSDoc
 - Documents module structure
 
+## Team Configuration
+
+**Recommended role**: Teammate (preferred) or Subagent
+
+Documentation generation is ideal as a teammate — it can document modules in parallel with development. Multiple doc teammates can work on different parts of the codebase simultaneously.
+
+| Mode | When to Use |
+|------|-------------|
+| Teammate | Parallel doc generation across modules while development continues |
+| Subagent | Quick documentation for a single file or function |
+
 ## What This Agent Does NOT Do
 
 - Write tutorials or guides (that's content creation)

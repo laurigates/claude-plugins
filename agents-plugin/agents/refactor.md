@@ -93,6 +93,17 @@ Restructure code for improved quality while preserving external behavior. Makes 
 - Applies design patterns where appropriate
 - Cleans up dead code and unused imports
 
+## Team Configuration
+
+**Recommended role**: Either Teammate or Subagent
+
+Refactoring works in both modes. As a teammate, it benefits from native file-locking for safe parallel refactoring. As a subagent, it handles focused refactoring of a specific module.
+
+| Mode | When to Use |
+|------|-------------|
+| Teammate | Parallel refactoring across modules — file-locking prevents conflicts |
+| Subagent | Focused refactoring of a single file or class |
+
 ## What This Agent Does NOT Do
 
 - Add new features or behavior

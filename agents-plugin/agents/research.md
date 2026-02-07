@@ -94,6 +94,17 @@ Investigate technical topics, APIs, and documentation from web sources. Isolates
 - Finds migration guides and breaking changes
 - Researches best practices and patterns
 
+## Team Configuration
+
+**Recommended role**: Teammate (preferred) or Subagent
+
+Research is ideal as a teammate — it isolates web research from the main context window and can investigate topics in parallel with implementation work. Findings are communicated back via the shared task list.
+
+| Mode | When to Use |
+|------|-------------|
+| Teammate | Investigate topics in parallel with implementation — findings inform ongoing work |
+| Subagent | Quick one-off lookup that blocks the current task |
+
 ## What This Agent Does NOT Do
 
 - Implement solutions (returns research for main conversation to act on)
