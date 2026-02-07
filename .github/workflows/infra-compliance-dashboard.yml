@@ -38,7 +38,7 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: "--model haiku --max-turns 30"
-          direct_prompt: |
+          prompt: |
             Perform an infrastructure compliance audit on this plugin repository.
             Output ONLY the issue body in markdown format. Do not create files or make changes.
 

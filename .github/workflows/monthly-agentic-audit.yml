@@ -38,7 +38,7 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: "--model haiku --max-turns 25"
-          direct_prompt: |
+          prompt: |
             Perform a monthly agentic quality audit on all skills in this plugin repository.
             Read .claude/rules/agentic-optimization.md and .claude/rules/skill-quality.md for standards.
             Output ONLY the issue body in markdown format. Do not create files or make changes.
