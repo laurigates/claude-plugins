@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.5.0...typescript-plugin-v1.5.1) (2026-02-06)
+
+
+### Bug Fixes
+
+* **frontmatter:** resolve 83 validation errors across 75 files ([#434](https://github.com/laurigates/claude-plugins/issues/434)) ([5beb75e](https://github.com/laurigates/claude-plugins/commit/5beb75ed4b2cb0431d060bd7102903495c03c6c5))
+
 ## [1.5.0](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.4.1...typescript-plugin-v1.5.0) (2026-02-04)
 
 
