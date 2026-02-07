@@ -22,7 +22,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Multi-agent coordination and orchestration patterns",
-      "version": "2.5.4",
+      "version": "2.5.5",
       "keywords": [
         "agents",
         "orchestration",
