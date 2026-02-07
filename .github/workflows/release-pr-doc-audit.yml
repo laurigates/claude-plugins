@@ -1,0 +1,69 @@
+name: Release PR Documentation Audit
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  doc-audit:
+    if: startsWith(github.head_ref, 'release-please--')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Claude Release PR Documentation Audit
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: "--model haiku --max-turns 15"
+          prompt: |
+            This is a release-please PR. Audit the release for documentation compliance.
+
+            Perform these checks:
+
+            1. **CHANGELOG format**: For each plugin with a CHANGELOG.md change in this PR:
+               - Verify sections use conventional commit types (Features, Bug Fixes, etc.)
+               - Verify entries have proper formatting
+               - Flag empty or malformed sections
+
+            2. **Version consistency**: For each plugin being released:
+               - Read the plugin's `.claude-plugin/plugin.json` version field
+               - Read the version in `.release-please-manifest.json`
+               - Verify they match the version in the CHANGELOG heading
+               - Flag any mismatches
+
+            3. **Skill date freshness**: For each plugin being released:
+               - Find all SKILL.md files in the plugin's `skills/` directory
+               - Check the `modified` date in frontmatter
+               - Flag skills not modified in the last 90 days as potentially stale
+
+            4. **Blueprint status** (if blueprint-plugin is being released):
+               - Check that all skill frontmatter has required fields (name, description, allowed-tools)
+               - Check that skills under 500 lines have required sections ("When to Use" table, "Agentic Optimizations" table)
+
+            Output a single PR comment with a compliance table:
+
+            ```
+            ## Release Documentation Audit
+
+            | Check | Status | Details |
+            |-------|--------|---------|
+            | CHANGELOG format | ✅/⚠️/❌ | ... |
+            | Version consistency | ✅/⚠️/❌ | ... |
+            | Skill date freshness | ✅/⚠️/❌ | ... |
+            | Blueprint compliance | ✅/⚠️/❌ | ... |
+
+            ### Details
+            (expand on any non-passing checks)
+            ```
+
+            Use ✅ for pass, ⚠️ for warnings, ❌ for failures.
+            Focus ONLY on documentation compliance. Do not suggest code changes.
