@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.3.2...hooks-plugin-v1.4.0) (2026-02-07)
+
+
+### Features
+
+* **hooks-plugin:** add session-start-hook skill for Claude Code on the web ([#483](https://github.com/laurigates/claude-plugins/issues/483)) ([a9f6651](https://github.com/laurigates/claude-plugins/commit/a9f6651c2d432e7023f778d40aeeb8702e52fa5c))
+
 ## [1.3.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.3.1...hooks-plugin-v1.3.2) (2026-02-04)
 
 
