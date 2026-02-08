@@ -433,7 +433,7 @@
       "name": "tools-plugin",
       "source": "./tools-plugin",
       "description": "General utilities - fd, rg, jq, shell, imagemagick",
-      "version": "2.4.3",
+      "version": "2.4.4",
       "keywords": [
         "tools",
         "utilities",
@@ -461,7 +461,7 @@
       "name": "workflow-orchestration-plugin",
       "source": "./workflow-orchestration-plugin",
       "description": "Workflow orchestration - parallel agents, CI pipelines, preflight checks, checkpoint refactoring",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "keywords": [
         "workflow",
         "orchestration",
