@@ -8,7 +8,7 @@
       "name": "accessibility-plugin",
       "source": "./accessibility-plugin",
       "description": "Accessibility and UX implementation - WCAG, ARIA, design tokens",
-      "version": "2.1.1",
+      "version": "2.1.2",
       "keywords": [
         "accessibility",
         "wcag",
@@ -349,7 +349,7 @@
       "name": "project-plugin",
       "source": "./project-plugin",
       "description": "Project initialization, management, and maintenance - setup, modernization, changelog review, and continuous development workflows",
-      "version": "1.6.1",
+      "version": "1.6.2",
       "keywords": [
         "project",
         "initialization",
