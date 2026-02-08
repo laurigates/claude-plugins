@@ -8,7 +8,7 @@
       "name": "accessibility-plugin",
       "source": "./accessibility-plugin",
       "description": "Accessibility and UX implementation - WCAG, ARIA, design tokens",
-      "version": "2.1.2",
+      "version": "2.1.3",
       "keywords": [
         "accessibility",
         "wcag",
