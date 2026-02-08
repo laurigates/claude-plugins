@@ -139,7 +139,7 @@
       "name": "communication-plugin",
       "source": "./communication-plugin",
       "description": "External communication formatting - Google Chat, ticket drafting",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "keywords": [
         "communication",
         "google-chat",
@@ -419,7 +419,7 @@
       "name": "testing-plugin",
       "source": "./testing-plugin",
       "description": "Test execution, TDD workflow, and testing strategies",
-      "version": "3.5.0",
+      "version": "3.5.1",
       "keywords": [
         "testing",
         "tdd",
