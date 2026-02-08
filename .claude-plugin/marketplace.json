@@ -139,7 +139,7 @@
       "name": "communication-plugin",
       "source": "./communication-plugin",
       "description": "External communication formatting - Google Chat, ticket drafting",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "keywords": [
         "communication",
         "google-chat",
