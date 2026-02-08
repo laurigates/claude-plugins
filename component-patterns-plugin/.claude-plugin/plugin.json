@@ -1,6 +1,6 @@
 {
   "name": "component-patterns-plugin",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Reusable UI component patterns for implementing common features across different frameworks and tech stacks",
   "author": {
     "name": "Lauri Gates"

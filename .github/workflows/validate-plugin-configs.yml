@@ -7,6 +7,7 @@ on:
       - 'release-please-config.json'
       - '.release-please-manifest.json'
       - '.claude-plugin/marketplace.json'
+      - 'docs/PLUGIN-MAP.md'
       - 'scripts/sync-plugin-configs.py'
   push:
     branches:
@@ -16,6 +17,7 @@ on:
       - 'release-please-config.json'
       - '.release-please-manifest.json'
       - '.claude-plugin/marketplace.json'
+      - 'docs/PLUGIN-MAP.md'
       - 'scripts/sync-plugin-configs.py'
   workflow_dispatch:
     inputs:

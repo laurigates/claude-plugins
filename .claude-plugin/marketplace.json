@@ -54,7 +54,7 @@
       "name": "api-plugin",
       "source": "./api-plugin",
       "description": "API integration and testing - REST endpoints, client generation",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "keywords": [
         "api",
         "rest",
@@ -139,7 +139,7 @@
       "name": "communication-plugin",
       "source": "./communication-plugin",
       "description": "External communication formatting - Google Chat, ticket drafting",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "keywords": [
         "communication",
         "google-chat",
@@ -152,7 +152,7 @@
       "name": "component-patterns-plugin",
       "source": "./component-patterns-plugin",
       "description": "Reusable UI component patterns - version badge, tooltips, and common UI elements for React, Vue, Svelte",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "keywords": [
         "components",
         "ui-patterns",
@@ -268,7 +268,7 @@
       "name": "home-assistant-plugin",
       "source": "./home-assistant-plugin",
       "description": "Home Assistant configuration management - YAML configuration, automations, scripts, scenes, and entity management for Home Assistant installations",
-      "version": "1.1.2",
+      "version": "1.1.3",
       "keywords": [
         "home-assistant",
         "smart-home",
@@ -393,7 +393,7 @@
       "name": "sync-plugin",
       "source": "./sync-plugin",
       "description": "External system synchronization - GitHub, Podio integration",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "keywords": [
         "sync",
         "github",
@@ -419,7 +419,7 @@
       "name": "testing-plugin",
       "source": "./testing-plugin",
       "description": "Test execution, TDD workflow, and testing strategies",
-      "version": "3.5.0",
+      "version": "3.5.1",
       "keywords": [
         "testing",
         "tdd",
@@ -433,7 +433,7 @@
       "name": "tools-plugin",
       "source": "./tools-plugin",
       "description": "General utilities - fd, rg, jq, shell, imagemagick",
-      "version": "2.4.2",
+      "version": "2.4.3",
       "keywords": [
         "tools",
         "utilities",

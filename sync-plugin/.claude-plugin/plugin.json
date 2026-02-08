@@ -1,6 +1,6 @@
 {
   "name": "sync-plugin",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "External system synchronization - GitHub and Podio integration for task management and daily catch-up workflows",
   "author": {
     "name": "Lauri Gates"
