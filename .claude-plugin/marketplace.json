@@ -448,7 +448,7 @@
       "name": "typescript-plugin",
       "source": "./typescript-plugin",
       "description": "TypeScript development - strict types, ESLint, Biome",
-      "version": "1.5.1",
+      "version": "1.5.2",
       "keywords": [
         "typescript",
         "eslint",
@@ -461,7 +461,7 @@
       "name": "workflow-orchestration-plugin",
       "source": "./workflow-orchestration-plugin",
       "description": "Workflow orchestration - parallel agents, CI pipelines, preflight checks, checkpoint refactoring",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "keywords": [
         "workflow",
         "orchestration",
