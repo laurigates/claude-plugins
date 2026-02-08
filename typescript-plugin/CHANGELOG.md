@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.2](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.5.1...typescript-plugin-v1.5.2) (2026-02-08)
+
+
+### Code Refactoring
+
+* reframe negative guidance as positive guidance across skills ([7e755ee](https://github.com/laurigates/claude-plugins/commit/7e755ee1c32c39c124f3204a0d0a8d1d770e1573))
+
 ## [1.5.1](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.5.0...typescript-plugin-v1.5.1) (2026-02-06)
 
 
