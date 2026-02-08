@@ -265,6 +265,23 @@
       "category": "utilities"
     },
     {
+      "name": "google-knowledge-plugin",
+      "source": "./google-knowledge-plugin",
+      "description": "Google Developer Knowledge API - search and retrieve official Google documentation for Firebase, Cloud, Android, and Maps via MCP server",
+      "version": "1.0.0",
+      "keywords": [
+        "google",
+        "documentation",
+        "knowledge-api",
+        "mcp",
+        "firebase",
+        "google-cloud",
+        "android",
+        "maps"
+      ],
+      "category": "integration"
+    },
+    {
       "name": "home-assistant-plugin",
       "source": "./home-assistant-plugin",
       "description": "Home Assistant configuration management - YAML configuration, automations, scripts, scenes, and entity management for Home Assistant installations",

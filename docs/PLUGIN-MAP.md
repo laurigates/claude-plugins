@@ -1,6 +1,6 @@
 # Plugin Navigation Map
 
-Navigation guide for 31 plugins and 285+ skills. Start here.
+Navigation guide for 32 plugins and 287+ skills. Start here.
 
 ## Quick Start
 
@@ -180,6 +180,7 @@ Install based on your project's tech stack and domain.
 | networking-plugin | Network diagnostics or load testing needed |
 | api-plugin | Building or testing REST APIs |
 | langchain-plugin | Building AI agents with LangChain/LangGraph |
+| google-knowledge-plugin | Searching official Google docs (Firebase, Cloud, Android, Maps) |
 | home-assistant-plugin | Home Assistant configuration management |
 | blog-plugin | Writing project logs or technical posts |
 | communication-plugin | Formatting for Google Chat or ticket drafting |
