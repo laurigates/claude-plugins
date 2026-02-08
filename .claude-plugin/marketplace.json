@@ -206,7 +206,7 @@
       "name": "finops-plugin",
       "source": "./finops-plugin",
       "description": "GitHub Actions FinOps analysis - billing, cache usage, workflow efficiency, and waste identification",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "keywords": [
         "finops",
         "github-actions",
@@ -316,7 +316,7 @@
       "name": "langchain-plugin",
       "source": "./langchain-plugin",
       "description": "LangChain JS/TS development - agents, chains, LangGraph workflows, and Deep Agents patterns",
-      "version": "1.2.1",
+      "version": "1.2.2",
       "keywords": [
         "langchain",
         "langgraph",
