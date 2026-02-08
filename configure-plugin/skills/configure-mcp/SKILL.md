@@ -1,8 +1,8 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-01-30
-reviewed: 2026-01-30
+modified: 2026-02-08
+reviewed: 2026-02-08
 description: Check and configure MCP servers for project integration
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
 argument-hint: "[--check-only] [--fix] [--server <name>]"
@@ -29,9 +29,18 @@ These servers should be installed in **all projects** by default:
 |--------|---------|----------|
 | `context7` | Documentation context from Upstash | No env vars |
 | `sequential-thinking` | Enhanced reasoning and planning | No env vars |
-| `serena` | Semantic code analysis and navigation | No env vars |
 
 Run `/configure:mcp --core` to install all core servers automatically.
+
+### Optional Servers
+
+These servers provide additional capabilities for specific project types:
+
+| Server | Purpose | When to use | Install |
+|--------|---------|-------------|---------|
+| `cclsp` | LSP code navigation (find-references, go-to-definition, rename) | Large TS/Python/Rust codebases with complex type hierarchies | `npx cclsp@latest setup` |
+
+**Note:** `cclsp` provides 6 focused LSP tools without duplicating Claude Code's built-in file, shell, and search capabilities. Recommended over heavier alternatives for projects that need semantic code navigation.
 
 ## Workflow
 
@@ -114,7 +123,9 @@ Recommendations:
 
 **AI Enhancement:**
 - `sequential-thinking` - Enhanced reasoning with sequential thinking
-- `serena` - Semantic code analysis and symbol navigation
+
+**Code Intelligence (optional):**
+- `cclsp` - LSP navigation (find-references, go-to-definition, rename) for TS/Python/Rust projects
 
 ### Phase 5: Configuration (if --fix or user confirms)
 
@@ -167,21 +178,6 @@ Recommendations:
   "sequential-thinking": {
     "command": "npx",
     "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
-  },
-  "serena": {
-    "type": "stdio",
-    "command": "uvx",
-    "args": [
-      "--from",
-      "git+https://github.com/oraios/serena",
-      "serena",
-      "start-mcp-server",
-      "--context",
-      "claude-code",
-      "--project",
-      "<repo-name>"
-    ],
-    "env": {}
   }
 }
 ```
@@ -262,7 +258,7 @@ Tip: Run /configure:mcp again to add more servers anytime.
 |------|-------------|
 | `--check-only` | Report status without offering to install servers |
 | `--fix` | Install specified or suggested servers without prompting |
-| `--core` | Install all core servers (context7, sequential-thinking, serena) |
+| `--core` | Install all core servers (context7, sequential-thinking) |
 | `--server <name>` | Install specific server (can be repeated) |
 
 ## Examples

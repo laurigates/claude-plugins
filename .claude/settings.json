@@ -31,17 +31,13 @@
       "mcp__chrome-devtools",
       "mcp__context7",
       "mcp__playwright",
-      "mcp__sequential-thinking",
-      "mcp__serena"
+      "mcp__sequential-thinking"
     ]
   },
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   },
   "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": [
-    "serena"
-  ],
   "enabledPlugins": {},
   "extraKnownMarketplaces": {}
 }
