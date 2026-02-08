@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.3](https://github.com/laurigates/claude-plugins/compare/terraform-plugin-v1.2.2...terraform-plugin-v1.2.3) (2026-02-08)
+
+
+### Bug Fixes
+
+* update skill review dates to trigger release sync ([#489](https://github.com/laurigates/claude-plugins/issues/489)) ([ca20d06](https://github.com/laurigates/claude-plugins/commit/ca20d0667baaa31dfa805c7dc775a1828c515223))
+
 ## [1.2.2](https://github.com/laurigates/claude-plugins/compare/terraform-plugin-v1.2.1...terraform-plugin-v1.2.2) (2026-02-03)
 
 
