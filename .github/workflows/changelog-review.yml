@@ -34,6 +34,34 @@ jobs:
           curl -s https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md > /tmp/changelog.md
           echo "Fetched changelog"
 
+      - name: Fetch Claude Code documentation
+        id: fetch_docs
+        run: |
+          mkdir -p /tmp/claude-docs
+
+          # Fetch the full documentation index
+          curl -sf -o /tmp/claude-docs/llms.txt \
+            https://code.claude.com/docs/llms.txt || echo "llms.txt fetch failed"
+
+          # Fetch key documentation pages for review context
+          declare -A DOC_URLS
+          DOC_URLS[settings]="https://code.claude.com/docs/en/settings"
+          DOC_URLS[features-overview]="https://code.claude.com/docs/en/features-overview"
+          DOC_URLS[best-practices]="https://code.claude.com/docs/en/best-practices"
+          DOC_URLS[claude-code-on-the-web]="https://code.claude.com/docs/en/claude-code-on-the-web"
+          DOC_URLS[github-actions]="https://code.claude.com/docs/en/github-actions"
+
+          FETCH_RESULTS=""
+          for doc_name in "${!DOC_URLS[@]}"; do
+            doc_url="${DOC_URLS[$doc_name]}"
+            HTTP_CODE=$(curl -sf -o "/tmp/claude-docs/${doc_name}.html" -w '%{http_code}' "$doc_url" || true)
+            DOC_SIZE=$(wc -c < "/tmp/claude-docs/${doc_name}.html" 2>/dev/null || echo "0")
+            FETCH_RESULTS="${FETCH_RESULTS}${doc_name}: HTTP ${HTTP_CODE} (${DOC_SIZE} bytes)\n"
+          done
+
+          echo "docs_fetched=true" >> $GITHUB_OUTPUT
+          printf "Documentation fetch results:\n%b" "$FETCH_RESULTS"
+
       - name: Extract latest version
         id: extract
         run: |
@@ -88,9 +116,6 @@ jobs:
           TRACKED="${{ steps.read_tracked.outputs.tracked_version }}"
           LATEST="${{ steps.extract.outputs.latest_version }}"
 
-          # Extract changes between versions
-          # This is a simplified analysis - the full analysis happens in the issue body
-
           echo "Analyzing changes from $TRACKED to $LATEST..."
 
           # Count relevant changes by searching for keywords
@@ -99,13 +124,20 @@ jobs:
           AGENT_CHANGES=$(grep -ci 'agent' /tmp/changelog.md || echo "0")
           PERMISSION_CHANGES=$(grep -ci 'permission' /tmp/changelog.md || echo "0")
           BREAKING_CHANGES=$(grep -ci 'breaking' /tmp/changelog.md || echo "0")
+          PLUGIN_CHANGES=$(grep -ci 'plugin' /tmp/changelog.md || echo "0")
+          MCP_CHANGES=$(grep -ci 'mcp' /tmp/changelog.md || echo "0")
 
-          # Create summary
-          SUMMARY="Hook mentions: $HOOK_CHANGES, Skill mentions: $SKILL_CHANGES, Agent mentions: $AGENT_CHANGES, Permission mentions: $PERMISSION_CHANGES, Breaking mentions: $BREAKING_CHANGES"
+          SUMMARY="Hook: $HOOK_CHANGES, Skill: $SKILL_CHANGES, Agent: $AGENT_CHANGES, Permission: $PERMISSION_CHANGES, Plugin: $PLUGIN_CHANGES, MCP: $MCP_CHANGES, Breaking: $BREAKING_CHANGES"
           echo "summary=$SUMMARY" >> $GITHUB_OUTPUT
-
-          # Extract section for new versions (simplified - gets content between tracked and latest)
           echo "Changes extracted for analysis"
+
+      - name: Upload fetched documentation
+        if: steps.compare.outputs.has_updates == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: claude-code-docs
+          path: /tmp/claude-docs/
+          retention-days: 30
 
   create-issue:
     needs: check-changelog
@@ -140,37 +172,47 @@ jobs:
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Create issue body file
+      - name: Create issue body
         if: steps.check_issue.outputs.exists == 'false'
         env:
           LATEST_VERSION: ${{ needs.check-changelog.outputs.latest_version }}
           TRACKED_VERSION: ${{ steps.tracked.outputs.version }}
           LAST_DATE: ${{ steps.tracked.outputs.date }}
+          CHANGES_SUMMARY: ${{ needs.check-changelog.outputs.changes_summary }}
         run: |
-          cat > /tmp/issue-body.md << 'ISSUE_BODY'
-          ## Claude Code Changelog Review Required
+          python3 -c "
+          import os
+
+          latest = os.environ['LATEST_VERSION']
+          tracked = os.environ['TRACKED_VERSION']
+          last_date = os.environ['LAST_DATE']
+          summary = os.environ.get('CHANGES_SUMMARY', 'N/A')
+
+          body = '''## Claude Code Changelog Review Required
 
           **New Claude Code version detected!**
 
-          | Field | Value |
-          |-------|-------|
-          | Previous version | TRACKED_VERSION_PLACEHOLDER |
-          | Latest version | LATEST_VERSION_PLACEHOLDER |
-          | Last review date | LAST_DATE_PLACEHOLDER |
+          - **Previous version:** {tracked}
+          - **Latest version:** {latest}
+          - **Last review date:** {last_date}
+
+          ### Changelog Keyword Mentions
+
+          {summary}
 
           ### Action Required
 
           Run the changelog review command to analyze changes:
 
-          ```bash
+          \`\`\`bash
           /changelog:review
-          ```
+          \`\`\`
 
           Or for a full review:
 
-          ```bash
-          /changelog:review --since TRACKED_VERSION_PLACEHOLDER
-          ```
+          \`\`\`bash
+          /changelog:review --since {tracked}
+          \`\`\`
 
           ### Changelog Link
 
@@ -186,7 +228,31 @@ jobs:
           - [ ] **Permissions** - New patterns, security fixes
           - [ ] **MCP** - Server configuration, OAuth updates
           - [ ] **SDK** - API changes, new features
+          - [ ] **Plugins** - Marketplace, plugin.json schema changes
           - [ ] **Breaking Changes** - Anything requiring immediate updates
+
+          ### Documentation Review
+
+          Verify plugin rules and skills are up-to-spec with current Claude Code documentation.
+          Fetched docs are available as workflow artifacts for offline reference.
+
+          - [ ] [Settings](https://code.claude.com/docs/en/settings) - Permission syntax, plugin config, hooks config, MCP config, sandbox settings
+          - [ ] [Features Overview](https://code.claude.com/docs/en/features-overview) - Skills, hooks, agents, MCP, plugins architecture, context costs
+          - [ ] [Best Practices](https://code.claude.com/docs/en/best-practices) - CLAUDE.md guidelines, skill patterns, subagent usage, headless mode
+          - [ ] [Claude Code on the Web](https://code.claude.com/docs/en/claude-code-on-the-web) - SessionStart hooks, environment config, network access, dependency management
+          - [ ] [GitHub Actions](https://code.claude.com/docs/en/github-actions) - claude-code-action v1 config, workflow patterns, skill usage in CI
+          - [ ] [Full Documentation Index](https://code.claude.com/docs/llms.txt) - Complete docs reference
+
+          #### Rules to Verify Against Docs
+
+          Cross-check these project rules with the live documentation above:
+
+          - `.claude/rules/plugin-structure.md` vs Settings (plugin.json schema), Features Overview (plugin architecture)
+          - `.claude/rules/skill-development.md` vs Features Overview (skill system), Best Practices (skill patterns)
+          - `.claude/rules/agentic-permissions.md` vs Settings (permission syntax), Features Overview (hooks, permissions)
+          - `.claude/rules/release-please.md` vs Settings (version management)
+          - `.claude/rules/skill-quality.md` vs Best Practices (CLAUDE.md size, skill design)
+          - `.claude/rules/skill-naming.md` vs Features Overview (skill namespacing, plugin skills)
 
           ### Potentially Affected Plugins
 
@@ -200,15 +266,19 @@ jobs:
 
           1. Update `.claude-code-version-check.json` with the new version
           2. Create follow-up issues for any required changes
-          3. Close this issue
+          3. Update any rules files that are out of spec with live docs
+          4. Close this issue
 
           ---
           *This issue was automatically created by the changelog review workflow.*
-          ISSUE_BODY
-          sed -i "s/TRACKED_VERSION_PLACEHOLDER/$TRACKED_VERSION/g" /tmp/issue-body.md
-          sed -i "s/LATEST_VERSION_PLACEHOLDER/$LATEST_VERSION/g" /tmp/issue-body.md
-          sed -i "s/LAST_DATE_PLACEHOLDER/$LAST_DATE/g" /tmp/issue-body.md
-          sed -i 's/^          //' /tmp/issue-body.md
+          '''.format(tracked=tracked, latest=latest, last_date=last_date, summary=summary)
+
+          import textwrap
+          body = textwrap.dedent(body).strip()
+
+          with open('/tmp/issue-body.md', 'w') as f:
+              f.write(body)
+          "
 
       - name: Create changelog review issue
         if: steps.check_issue.outputs.exists == 'false'
@@ -255,21 +325,23 @@ jobs:
             mv /tmp/updated.json .claude-code-version-check.json
           else
             # Create new file
-            cat > .claude-code-version-check.json << JSONEOF
-          {
-            "lastCheckedVersion": "$LATEST_VERSION",
-            "lastCheckedDate": "$DATE",
-            "changelogUrl": "https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md",
-            "reviewedChanges": [
-              {
-                "version": "$LATEST_VERSION",
-                "date": "$DATE",
-                "relevantChanges": [],
-                "actionsRequired": ["Review pending - see GitHub issue"]
-              }
-            ]
+            python3 -c "
+          import json, os
+          data = {
+              'lastCheckedVersion': os.environ['LATEST_VERSION'],
+              'lastCheckedDate': '$DATE',
+              'changelogUrl': 'https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md',
+              'reviewedChanges': [{
+                  'version': os.environ['LATEST_VERSION'],
+                  'date': '$DATE',
+                  'relevantChanges': [],
+                  'actionsRequired': ['Review pending - see GitHub issue']
+              }]
           }
-          JSONEOF
+          with open('.claude-code-version-check.json', 'w') as f:
+              json.dump(data, f, indent=2)
+          print('Created new tracking file')
+          "
           fi
 
           echo "Updated tracking to version $LATEST_VERSION"
