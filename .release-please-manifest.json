@@ -21,7 +21,7 @@
   "langchain-plugin": "1.2.2",
   "networking-plugin": "1.2.1",
   "project-plugin": "1.6.2",
-  "python-plugin": "1.2.2",
+  "python-plugin": "1.2.3",
   "rust-plugin": "1.2.1",
   "sync-plugin": "1.1.2",
   "terraform-plugin": "1.2.3",
