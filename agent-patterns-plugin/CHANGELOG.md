@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.6](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.5.5...agent-patterns-plugin-v2.5.6) (2026-02-08)
+
+
+### Bug Fixes
+
+* update skill review dates to trigger release sync ([#489](https://github.com/laurigates/claude-plugins/issues/489)) ([ca20d06](https://github.com/laurigates/claude-plugins/commit/ca20d0667baaa31dfa805c7dc775a1828c515223))
+
 ## [2.5.5](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.5.4...agent-patterns-plugin-v2.5.5) (2026-02-06)
 
 
