@@ -433,7 +433,7 @@
       "name": "tools-plugin",
       "source": "./tools-plugin",
       "description": "General utilities - fd, rg, jq, shell, imagemagick",
-      "version": "2.4.3",
+      "version": "2.4.4",
       "keywords": [
         "tools",
         "utilities",
