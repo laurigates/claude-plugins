@@ -9,6 +9,7 @@
     "assimilation",
     "audit",
     "mcp",
+    "mcp-code-execution",
     "hooks",
     "custom-agents",
     "teammate-definitions"

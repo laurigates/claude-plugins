@@ -65,6 +65,22 @@ Intelligent MCP server installation and management.
 - Project-scoped `.mcp.json` management
 - Environment variable validation
 
+#### `mcp-code-execution`
+Design and scaffold the MCP code execution pattern for agent systems.
+
+**When to use:**
+- Building agents that interact with many MCP tools (50+)
+- Intermediate data is too large for model context
+- Workflows need loops, conditionals, or retries across tool calls
+- PII must stay out of the model context
+- Tasks benefit from state persistence across agent runs
+
+**Features:**
+- Decision framework: code execution vs direct tool calls
+- Typed wrapper scaffolding for MCP servers
+- Key patterns: progressive discovery, data filtering, PII tokenization, skill accumulation
+- Security checklist for sandboxed execution environments
+
 #### `claude-hooks-configuration`
 Configure Claude Code lifecycle hooks with proper timeout settings.
 
