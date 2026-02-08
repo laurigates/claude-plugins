@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.5](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.6.4...configure-plugin-v1.6.5) (2026-02-08)
+
+
+### Code Refactoring
+
+* reframe negative guidance as positive guidance across skills ([7e755ee](https://github.com/laurigates/claude-plugins/commit/7e755ee1c32c39c124f3204a0d0a8d1d770e1573))
+
 ## [1.6.4](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.6.3...configure-plugin-v1.6.4) (2026-02-08)
 
 
