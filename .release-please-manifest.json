@@ -10,7 +10,7 @@
   "component-patterns-plugin": "1.1.1",
   "code-quality-plugin": "1.5.2",
   "command-analytics-plugin": "1.2.2",
-  "configure-plugin": "1.6.4",
+  "configure-plugin": "1.6.5",
   "container-plugin": "2.3.2",
   "documentation-plugin": "1.2.2",
   "hooks-plugin": "1.4.0",
