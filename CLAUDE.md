@@ -119,6 +119,7 @@ When creating, modifying, or deleting a plugin, update these files:
 | `marketplace.json` | `.claude-plugin/marketplace.json` | Add/update/remove plugin entry |
 | `release-please-config.json` | Root | Add/remove plugin package config |
 | `.release-please-manifest.json` | Root | Add/remove plugin version entry |
+| `PLUGIN-MAP.md` | `docs/PLUGIN-MAP.md` | Add/remove plugin from navigation map |
 
 ### Creating a New Plugin
 

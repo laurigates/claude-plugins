@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.3](https://github.com/laurigates/claude-plugins/compare/finops-plugin-v1.0.2...finops-plugin-v1.0.3) (2026-02-08)
+
+
+### Bug Fixes
+
+* update skill review dates to trigger release sync ([#489](https://github.com/laurigates/claude-plugins/issues/489)) ([ca20d06](https://github.com/laurigates/claude-plugins/commit/ca20d0667baaa31dfa805c7dc775a1828c515223))
+
 ## [1.0.2](https://github.com/laurigates/claude-plugins/compare/finops-plugin-v1.0.1...finops-plugin-v1.0.2) (2026-02-04)
 
 
