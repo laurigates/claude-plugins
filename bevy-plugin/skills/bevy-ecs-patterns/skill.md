@@ -416,7 +416,7 @@ fn spawn_wave(mut commands: Commands) {
 **System Design**
 - Keep systems small and focused
 - Use events for cross-system communication
-- Avoid storing `Entity` IDs in components when possible
+- Use queries to look up entities dynamically rather than storing `Entity` IDs in components
 - Use run conditions to skip unnecessary work
 
 **Memory Layout**

@@ -389,10 +389,10 @@ module.exports = {
 --font-size-lg
 --font-weight-bold
 
-/* Avoid */
---blue           /* Not specific enough */
---padding-large  /* Mixing concern with scale */
---colorPrimary   /* Inconsistent casing */
+/* Use semantic, kebab-case names */
+--color-brand-primary  /* Semantic + specific */
+--spacing-4            /* Scale-based */
+--font-weight-bold     /* Consistent kebab-case */
 ```
 
 ### Token Scoping

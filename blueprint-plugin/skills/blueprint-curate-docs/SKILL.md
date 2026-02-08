@@ -180,16 +180,16 @@ VAR_NAME=value
 # Correct approach
 ```
 
-## Anti-Patterns
+## Common Pitfalls and Solutions
 
-### Don't Do This
-```[language]
-# Bad example
-```
-
-### Do This Instead
+### Recommended Pattern
 ```[language]
 # Good example
+```
+
+### What This Replaces
+```[language]
+# Previous pattern (for context)
 ```
 
 ## Testing

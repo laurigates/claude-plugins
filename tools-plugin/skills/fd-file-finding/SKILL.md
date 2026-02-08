@@ -247,13 +247,11 @@ fd -e rs -x rg "TODO" {}            # Find TODOs in Rust files
 fd -e md -x rg "# " {}              # Find headers in Markdown
 ```
 
-**Avoid Unnecessary xargs**
+**Use fd's Built-in Execution**
 ```bash
-# Instead of: fd -t d -d 1 | xargs -I{} sh -c 'test -f {}/main.tf && echo {}'
-# Use: fd -t f 'main\.tf$' --format '{//}'
-
-# Instead of: fd -e log | xargs rm
-# Use: fd -e log -x rm
+# fd can execute directly — no need for xargs
+fd -t f 'main\.tf$' --format '{//}'    # Find dirs containing main.tf
+fd -e log -x rm                         # Delete all .log files
 ```
 
 ## Quick Reference

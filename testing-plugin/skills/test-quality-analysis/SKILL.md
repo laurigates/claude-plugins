@@ -102,7 +102,7 @@ def test_user_creation():
 - Test public APIs, not internal implementation
 - Use semantic selectors (role, label, text)
 - Follow the "test behavior, not implementation" principle
-- Avoid testing private methods directly
+- Test through public APIs and behavioral boundaries
 
 ### Flaky Tests
 
@@ -147,7 +147,7 @@ def test_expires_in_one_hour():
 **Fix**:
 - Use proper async/await patterns
 - Mock time and dates
-- Avoid arbitrary waits, use explicit waiting
+- Use explicit waiting mechanisms (waitFor, assertions with retries)
 - Ensure test isolation
 - Reset shared state between tests
 

@@ -18,18 +18,14 @@ Use `--porcelain` for machine-readable output that remains stable across Git ver
 
 ## Working Directory
 
-**Don't use `-C` when already in the repository:**
+**Run git commands directly — your working directory is the repo:**
 ```bash
-# Bad - unnecessary verbosity when pwd is already the repo
-git -C /path/to/repo status
-git -C /path/to/repo log --oneline -5
-
-# Good - just run directly
 git status
 git log --oneline -5
+git diff --stat
 ```
 
-**Only use `-C` when targeting a different directory:**
+The `-C` flag is only needed when targeting a different repository from your current directory:
 ```bash
 # Submodule: run command against parent repo
 git -C "$(git rev-parse --show-toplevel)" remote get-url origin

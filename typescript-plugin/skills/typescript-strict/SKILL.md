@@ -541,10 +541,7 @@ import { fetchUser, type User } from './api';
 
 **Usage:**
 ```typescript
-// Instead of
-import { Button } from '../../../components/Button';
-
-// Use
+// Path aliases keep imports clean
 import { Button } from '@components/Button';
 ```
 

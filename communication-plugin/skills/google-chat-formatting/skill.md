@@ -293,33 +293,25 @@ Configuration:
 **Keep numbered lists intact**:
 - Use numbered lists for sequential steps
 - Use bullet lists for unordered items
-- Don't convert numbering to bullets
+- Keep numbered lists intact as-is
 
-### Avoiding Common Mistakes
+### Formatting Best Practices
 
-**Don't nest formatting**:
+**Use separate formatting for bold and italic**:
 ```
-❌ *bold _and italic_*    (not supported)
 ✅ *bold* and _italic_     (separate)
 ```
 
-**Don't use double formatting**:
+**Use Google Chat syntax for bold**:
 ```
-❌ **bold**               (Markdown syntax)
 ✅ *bold*                 (Google Chat syntax)
 ```
 
-**Don't leave extra whitespace**:
+**Keep whitespace clean**:
 ```
-❌ *Header*
-
-   Content
-
-❌ Trailing spaces here
-
 ✅ *Header*
 
-Content (no trailing spaces)
+Content (no trailing spaces, no extra indentation)
 ```
 
 ## Troubleshooting

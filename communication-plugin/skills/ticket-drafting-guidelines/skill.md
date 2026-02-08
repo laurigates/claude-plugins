@@ -232,12 +232,12 @@ for architecture details.
 ✅ Dependencies between tasks
 ```
 
-**What to avoid:**
+**Keep scope factual and concrete:**
 ```markdown
-❌ Percentage completion estimates
-❌ Time duration predictions
-❌ Performance improvement claims
-❌ Comparative quality statements
+✅ Concrete steps or tasks
+✅ Measurable acceptance criteria
+✅ Observable behavior changes
+✅ Verifiable outcomes
 ```
 
 **Example:**

@@ -690,7 +690,7 @@ def test_response_time(client):
 - Reset database between tests
 - Use transactions that rollback
 - Seed minimal test data
-- Avoid depending on test execution order
+- Ensure each test is independent and self-contained
 
 **Assertions**
 - Validate status codes first

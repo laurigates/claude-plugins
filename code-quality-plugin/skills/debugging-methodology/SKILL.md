@@ -169,10 +169,10 @@ When stuck, ask:
 4. What assumptions am I making that might be wrong?
 5. Can I write a minimal reproduction?
 
-## Anti-Patterns to Avoid
+## Effective Debugging Practices
 
-- **Shotgun debugging**: Random changes hoping something works
-- **Printf debugging only**: Use proper debuggers when available
-- **Fixing symptoms**: Find root cause, not just band-aids
-- **Skipping reproduction**: Always reproduce before fixing
-- **Not testing the fix**: Verify the fix actually works
+- **Targeted changes**: Form a hypothesis, change one thing at a time
+- **Use proper debuggers**: Step through code with breakpoints when possible
+- **Find root causes**: Trace issues to their origin, fix the source
+- **Reproduce first**: Create a minimal reproduction before attempting a fix
+- **Verify the fix**: Confirm the fix resolves the issue and passes tests

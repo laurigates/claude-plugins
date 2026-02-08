@@ -345,7 +345,7 @@ yq '.mayNotExist // empty' file.yaml
 - Split large multi-doc files with `-s` for easier management
 
 **Performance**
-- Use targeted queries for large files (instead of `..` recursive descent)
+- Use targeted queries with specific paths for large files
 - Use specific paths when possible
 - Process files in parallel when operating on multiple files
 - Stream large files if yq supports it
