@@ -14,6 +14,7 @@ Comprehensive documentation tooling for generating API references, maintaining R
 | `/docs:generate` | Update project documentation from code annotations |
 | `/docs:decommission` | Generate comprehensive service decommission documentation |
 | `/docs:knowledge-graph` | Build knowledge graph from Obsidian vault documentation |
+| `/docs:latex` | Convert Markdown documents to professional LaTeX with TikZ visualizations and compile to PDF |
 | `claude-blog-sources` | Access Claude Blog for latest features, patterns, and best practices |
 
 ## Agents
@@ -75,6 +76,28 @@ Creates `DECOMMISSION-my-service-name.md` with comprehensive checklists for:
 - Monitoring cleanup
 - Documentation archival
 
+### Convert Markdown to LaTeX PDF
+
+Convert Markdown documents to professional, print-ready LaTeX PDFs with visualizations:
+
+```bash
+# Convert a roadmap document with visualizations
+/docs:latex docs/ROADMAP.md --visualizations --report-type=roadmap
+
+# Convert a project lifecycle report
+/docs:latex docs/PROJECT_REPORT.md --report-type=lifecycle
+
+# Generate LaTeX source only (no PDF compilation)
+/docs:latex docs/DOCUMENT.md --no-compile
+```
+
+Produces professional documents with:
+- TikZ timeline diagrams and charts
+- Color-coded priority indicators
+- Styled callout boxes (info, warning, success)
+- Professional tables with booktabs
+- Hyperlinked table of contents
+
 ### Build Knowledge Graph
 
 Create a searchable knowledge graph from technical documentation:
@@ -115,6 +138,7 @@ Works well with:
 - **project-plugin** - For project initialization and structure
 - **git-plugin** - For committing documentation changes
 - **testing-plugin** - For documenting test strategies
+- **blog-plugin** - For technical write-ups that can be converted to LaTeX
 
 ## Installation
 
