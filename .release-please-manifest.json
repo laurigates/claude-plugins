@@ -15,7 +15,7 @@
   "documentation-plugin": "1.2.2",
   "hooks-plugin": "1.4.0",
   "health-plugin": "1.1.4",
-  "git-plugin": "2.12.3",
+  "git-plugin": "2.12.4",
   "github-actions-plugin": "1.1.1",
   "kubernetes-plugin": "1.2.1",
   "langchain-plugin": "1.2.2",
