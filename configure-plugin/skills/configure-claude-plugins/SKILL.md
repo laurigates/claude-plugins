@@ -80,8 +80,7 @@ Create or merge into `.claude/settings.json` the following structure:
       "Bash(pre-commit *)",
       "Bash(detect-secrets *)",
       "mcp__context7",
-      "mcp__sequential-thinking",
-      "mcp__serena"
+      "mcp__sequential-thinking"
     ]
   }
 }

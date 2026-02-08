@@ -225,8 +225,7 @@ Then allow the script:
   "permissions": {
     "allow": [
       "mcp__context7",
-      "mcp__sequential-thinking",
-      "mcp__serena"
+      "mcp__sequential-thinking"
     ]
   }
 }
