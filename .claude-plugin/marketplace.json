@@ -316,7 +316,7 @@
       "name": "langchain-plugin",
       "source": "./langchain-plugin",
       "description": "LangChain JS/TS development - agents, chains, LangGraph workflows, and Deep Agents patterns",
-      "version": "1.2.1",
+      "version": "1.2.2",
       "keywords": [
         "langchain",
         "langgraph",
@@ -433,7 +433,7 @@
       "name": "tools-plugin",
       "source": "./tools-plugin",
       "description": "General utilities - fd, rg, jq, shell, imagemagick",
-      "version": "2.4.2",
+      "version": "2.4.3",
       "keywords": [
         "tools",
         "utilities",
