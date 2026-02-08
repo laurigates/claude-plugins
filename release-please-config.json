@@ -435,6 +435,20 @@
         {"type": "refactor", "section": "Code Refactoring"},
         {"type": "docs", "section": "Documentation"}
       ]
+    },
+    "workflow-orchestration-plugin": {
+      "component": "workflow-orchestration-plugin",
+      "release-type": "simple",
+      "extra-files": [
+        {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
+      ],
+      "changelog-sections": [
+        {"type": "feat", "section": "Features"},
+        {"type": "fix", "section": "Bug Fixes"},
+        {"type": "perf", "section": "Performance"},
+        {"type": "refactor", "section": "Code Refactoring"},
+        {"type": "docs", "section": "Documentation"}
+      ]
     }
   },
   "separate-pull-requests": true

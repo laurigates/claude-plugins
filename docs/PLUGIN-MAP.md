@@ -1,6 +1,6 @@
 # Plugin Navigation Map
 
-Navigation guide for 31 plugins and 285+ skills. Start here.
+Navigation guide for 32 plugins and 289+ skills. Start here.
 
 ## Quick Start
 
@@ -188,6 +188,7 @@ Install based on your project's tech stack and domain.
 | command-analytics-plugin | Tracking skill/command usage metrics |
 | sync-plugin | GitHub/Podio synchronization |
 | tools-plugin | fd, rg, jq, shell, ImageMagick, d2 utilities |
+| workflow-orchestration-plugin | Parallel agent orchestration, CI pipelines, preflight checks, checkpoint refactoring |
 
 ## Key Entry Points
 
@@ -208,6 +209,10 @@ Commands organized by workflow phase.
 | **Ship** | `/git:commit` | Commit with conventional message |
 | **Ship** | `/git:pr` | Create pull request |
 | **Ship** | `/git:fix-pr` | Fix failing PR checks |
+| **Orchestrate** | `/workflow:preflight` | Pre-work validation before starting |
+| **Orchestrate** | `/workflow:parallel-issues` | Process issues in parallel with worktrees |
+| **Orchestrate** | `/workflow:ci-fix` | Fix failing CI across PRs |
+| **Orchestrate** | `/workflow:checkpoint-refactor` | Multi-phase refactoring with checkpoints |
 | **Monitor** | `/analytics-report` | View skill usage analytics |
 
 ## End-to-End Workflow
