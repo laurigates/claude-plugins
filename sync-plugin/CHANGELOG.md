@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/laurigates/claude-plugins/compare/sync-plugin-v1.1.1...sync-plugin-v1.1.2) (2026-02-08)
+
+
+### Bug Fixes
+
+* update skill review dates to trigger release sync ([#489](https://github.com/laurigates/claude-plugins/issues/489)) ([ca20d06](https://github.com/laurigates/claude-plugins/commit/ca20d0667baaa31dfa805c7dc775a1828c515223))
+
 ## [1.1.1](https://github.com/laurigates/claude-plugins/compare/sync-plugin-v1.1.0...sync-plugin-v1.1.1) (2026-01-26)
 
 
