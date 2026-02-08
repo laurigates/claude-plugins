@@ -2,7 +2,7 @@
 model: haiku
 created: 2025-02-01
 modified: 2025-02-01
-reviewed: 2025-02-01
+reviewed: 2026-02-08
 name: ha-automations
 description: |
   Home Assistant automation creation and management. Use when creating automation rules,

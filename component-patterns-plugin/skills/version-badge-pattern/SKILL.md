@@ -9,7 +9,7 @@ description: |
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2025-02-03
 modified: 2025-02-03
-reviewed: 2025-02-03
+reviewed: 2026-02-08
 ---
 
 # Version Badge Pattern

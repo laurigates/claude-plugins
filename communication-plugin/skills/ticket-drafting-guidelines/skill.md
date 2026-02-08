@@ -2,7 +2,7 @@
 model: haiku
 created: 2025-12-16
 modified: 2025-12-16
-reviewed: 2025-12-16
+reviewed: 2026-02-08
 name: ticket-drafting-guidelines
 description: |
   Structured guidelines for drafting GitHub issues and technical tickets.
