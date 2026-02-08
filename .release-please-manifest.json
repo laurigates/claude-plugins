@@ -1,5 +1,5 @@
 {
-  "accessibility-plugin": "2.1.1",
+  "accessibility-plugin": "2.1.2",
   "agent-patterns-plugin": "2.5.5",
   "agents-plugin": "1.1.4",
   "api-plugin": "1.1.1",
@@ -18,7 +18,7 @@
   "git-plugin": "2.12.3",
   "github-actions-plugin": "1.1.1",
   "kubernetes-plugin": "1.2.1",
-  "langchain-plugin": "1.2.1",
+  "langchain-plugin": "1.2.2",
   "networking-plugin": "1.2.1",
   "project-plugin": "1.6.1",
   "python-plugin": "1.2.2",
