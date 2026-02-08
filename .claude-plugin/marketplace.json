@@ -168,7 +168,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.6.4",
+      "version": "1.6.5",
       "keywords": [
         "infrastructure",
         "standards",
@@ -461,7 +461,7 @@
       "name": "workflow-orchestration-plugin",
       "source": "./workflow-orchestration-plugin",
       "description": "Workflow orchestration - parallel agents, CI pipelines, preflight checks, checkpoint refactoring",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "keywords": [
         "workflow",
         "orchestration",
