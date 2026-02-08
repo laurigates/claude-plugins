@@ -292,11 +292,11 @@ rg pattern -g '!{target,node_modules,dist,build}/'
 - Piped input (stdin)
 - System administration tasks
 
-**Common Mistakes to Avoid**
-- Forgetting to escape regex special characters
-- Not using `-u` flags when searching ignored files
-- Not excluding large binary/generated files
-- Using grep when rg would be much faster
+**Tips for Effective Searches**
+- Escape regex special characters in patterns
+- Use `-u` flags when searching ignored/hidden files
+- Exclude large binary/generated files with `--glob '!vendor'`
+- Prefer rg over grep for speed and smart defaults
 
 ## Quick Reference
 

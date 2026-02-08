@@ -503,20 +503,17 @@ Adapt command templates based on:
 
 ## Rule Generation Guidelines
 
-### Extract, Don't Invent
+### Extract from PRDs
 
-**DO**: Extract patterns, decisions, and requirements from PRDs
-**DON'T**: Invent patterns not specified in PRDs
+Extract patterns, decisions, and requirements directly from PRDs. If PRDs don't specify a pattern, ask user or use sensible defaults.
 
-If PRDs don't specify a pattern, ask user or use sensible defaults.
+### Be Specific
 
-### Be Specific, Not Generic
+Use precise, actionable guidance with concrete references:
 
-**DON'T**: "Write good code"
-**DO**: "Use constructor injection for services, following the pattern in `services/authService.js:15-20`"
+**Good**: "Use constructor injection for services, following the pattern in `services/authService.js:15-20`"
 
-**DON'T**: "Test your code"
-**DO**: "All API endpoints must have integration tests with valid input, invalid input, and authorization test cases"
+**Good**: "All API endpoints must have integration tests with valid input, invalid input, and authorization test cases"
 
 ### Include Code Examples
 

@@ -258,7 +258,7 @@ jq 'group_by(.level) | map({level: .[0].level, count: length, samples: [.[].mess
 
 **Performance**
 - Use `select()` early in pipeline to reduce data
-- Use targeted queries for large files (instead of `..` recursive descent)
+- Use targeted queries with specific paths for large files
 - Stream large JSON with `--stream` flag
 - Consider `jq -c` for faster processing
 
