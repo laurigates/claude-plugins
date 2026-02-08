@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.14.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.14.0...blueprint-plugin-v3.14.1) (2026-02-08)
+
+
+### Bug Fixes
+
+* update skill review dates to trigger release sync ([#489](https://github.com/laurigates/claude-plugins/issues/489)) ([ca20d06](https://github.com/laurigates/claude-plugins/commit/ca20d0667baaa31dfa805c7dc775a1828c515223))
+
 ## [3.14.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.13.1...blueprint-plugin-v3.14.0) (2026-02-07)
 
 
