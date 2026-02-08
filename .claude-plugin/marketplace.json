@@ -96,7 +96,7 @@
       "name": "blueprint-plugin",
       "source": "./blueprint-plugin",
       "description": "Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, and CLAUDE.md management",
-      "version": "3.14.2",
+      "version": "3.14.1",
       "keywords": [
         "blueprint",
         "prd",
@@ -419,7 +419,7 @@
       "name": "testing-plugin",
       "source": "./testing-plugin",
       "description": "Test execution, TDD workflow, and testing strategies",
-      "version": "3.5.2",
+      "version": "3.5.1",
       "keywords": [
         "testing",
         "tdd",
