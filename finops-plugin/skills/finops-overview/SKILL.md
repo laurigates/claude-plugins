@@ -6,7 +6,7 @@ allowed-tools: Bash(gh api *), Bash(gh repo *), Bash(gh workflow *), Read, TodoW
 argument-hint: Optional org name (defaults to current repo's org)
 created: 2025-01-30
 modified: 2025-01-30
-reviewed: 2025-01-30
+reviewed: 2026-02-08
 name: finops-overview
 ---
 

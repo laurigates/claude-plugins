@@ -2,7 +2,7 @@
 model: haiku
 created: 2026-01-19
 modified: 2026-02-05
-reviewed: 2026-01-19
+reviewed: 2026-02-08
 allowed-tools: Bash, Read, Grep, Glob, TodoWrite
 argument-hint: "<file-path> [--serial] [--debug]"
 description: Run single test file with fail-fast mode for rapid iteration

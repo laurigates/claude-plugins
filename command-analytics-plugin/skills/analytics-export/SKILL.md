@@ -6,7 +6,7 @@ allowed-tools: Bash(jq *), Bash(cat *), Read
 argument-hint: "Format: json, csv, or markdown. Optional output file path."
 created: 2026-01-10
 modified: 2026-01-10
-reviewed: 2026-01-10
+reviewed: 2026-02-08
 name: analytics-export
 ---
 

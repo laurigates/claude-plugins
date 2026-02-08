@@ -2,7 +2,7 @@
 model: opus
 created: 2026-02-05
 modified: 2026-02-05
-reviewed: 2026-02-05
+reviewed: 2026-02-08
 description: Audit skills and agents for agentic output optimization (missing compact/JSON flags, missing Agentic Optimizations tables)
 allowed-tools: Bash(find *), Bash(head *), Read, Grep, Glob, TodoWrite
 argument-hint: "[--fix] [--verbose]"

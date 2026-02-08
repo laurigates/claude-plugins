@@ -6,7 +6,7 @@ allowed-tools: Bash(uv *), Bash(pip *), Bash(python *), Read, Write, Edit
 argument-hint: my-agent-project
 created: 2026-01-08
 modified: 2026-01-08
-reviewed: 2026-01-08
+reviewed: 2026-02-08
 name: langchain-init
 ---
 

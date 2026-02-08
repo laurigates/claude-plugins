@@ -2,7 +2,7 @@
 model: haiku
 created: 2025-12-16
 modified: 2025-12-16
-reviewed: 2025-12-16
+reviewed: 2026-02-08
 name: api-testing
 description: |
   HTTP API testing for TypeScript (Supertest) and Python (httpx, pytest). Covers

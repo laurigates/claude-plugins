@@ -6,7 +6,7 @@ allowed-tools: Glob, Grep, Read, Bash(ls *), Bash(wc *), TodoWrite
 argument-hint: "analyze all plugins or --focus <plugin-name>"
 created: 2026-01-24
 modified: 2026-02-03
-reviewed: 2026-01-24
+reviewed: 2026-02-08
 name: agents-analyze
 ---
 

@@ -2,7 +2,7 @@
 model: haiku
 created: 2025-12-16
 modified: 2026-01-24
-reviewed: 2025-12-16
+reviewed: 2026-02-08
 name: project-discovery
 description: Systematic project orientation for unfamiliar codebases. Automatically activates when Claude detects uncertainty about project state, structure, or tooling. Analyzes git state (branch, changes, commits), project type (language, framework, structure), and development tooling (build, test, lint, CI/CD). Provides structured summary with risk flags and recommendations. Use when entering new projects or when working on shaky assumptions.
 allowed-tools: Bash(ls *), Bash(find *), Bash(wc *), Read, Grep, Glob, TodoWrite

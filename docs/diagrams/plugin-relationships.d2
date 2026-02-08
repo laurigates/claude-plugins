@@ -1,0 +1,316 @@
+direction: down
+
+title: "Claude Plugins Ecosystem" {
+  near: top-center
+  shape: text
+  style: {
+    font-size: 24
+    bold: true
+  }
+}
+
+# === CLASSES ===
+classes: {
+  foundation: {
+    style.fill: "#dbeafe"
+    style.stroke: "#3b82f6"
+  }
+  core: {
+    style.fill: "#fef9c3"
+    style.stroke: "#eab308"
+  }
+  quality: {
+    style.fill: "#dcfce7"
+    style.stroke: "#22c55e"
+  }
+  language: {
+    style.fill: "#f3e8ff"
+    style.stroke: "#a855f7"
+  }
+  infra: {
+    style.fill: "#ffedd5"
+    style.stroke: "#f97316"
+  }
+  utility: {
+    style.fill: "#f3f4f6"
+    style.stroke: "#6b7280"
+  }
+  domain: {
+    style.fill: "#fce7f3"
+    style.stroke: "#ec4899"
+  }
+}
+
+# === TIER 0: FOUNDATION ===
+foundation: {
+  label: "Tier 0 - Foundation"
+  class: foundation
+  style.font-size: 16
+  style.bold: true
+
+  health: {
+    label: "health\n6 skills"
+    shape: rectangle
+    class: foundation
+  }
+  hooks: {
+    label: "hooks\n1 skill"
+    shape: rectangle
+    class: foundation
+  }
+  configure: {
+    label: "configure\n42 skills"
+    shape: rectangle
+    class: foundation
+  }
+  agent-patterns: {
+    label: "agent-patterns\n16 skills"
+    shape: rectangle
+    class: foundation
+  }
+}
+
+# === TIER 1: CORE WORKFLOW ===
+core: {
+  label: "Tier 1 - Core Workflow"
+  class: core
+  style.font-size: 16
+  style.bold: true
+
+  blueprint: {
+    label: "blueprint\n30 skills"
+    shape: hexagon
+    style.fill: "#fbbf24"
+    style.stroke: "#b45309"
+    style.stroke-width: 3
+  }
+  git: {
+    label: "git\n27 skills + 1 agent"
+    shape: rectangle
+    class: core
+  }
+  project: {
+    label: "project\n6 skills"
+    shape: rectangle
+    class: core
+  }
+  agents: {
+    label: "agents\n1 skill + 10 agents"
+    shape: rectangle
+    class: core
+  }
+}
+
+# === TIER 2: QUALITY GATES ===
+quality: {
+  label: "Tier 2 - Quality Gates"
+  class: quality
+  style.font-size: 16
+  style.bold: true
+
+  testing: {
+    label: "testing\n15 skills"
+    shape: rectangle
+    class: quality
+  }
+  code-quality: {
+    label: "code-quality\n13 skills"
+    shape: rectangle
+    class: quality
+  }
+  documentation: {
+    label: "documentation\n5 skills"
+    shape: rectangle
+    class: quality
+  }
+}
+
+# === TIER 3: LANGUAGE ===
+language: {
+  label: "Tier 3 - Languages"
+  class: language
+  style.font-size: 16
+  style.bold: true
+
+  typescript: {
+    label: "typescript\n17 skills"
+    shape: rectangle
+    class: language
+  }
+  python: {
+    label: "python\n17 skills"
+    shape: rectangle
+    class: language
+  }
+  rust: {
+    label: "rust\n5 skills"
+    shape: rectangle
+    class: language
+  }
+}
+
+# === TIER 3: INFRASTRUCTURE ===
+infra: {
+  label: "Tier 3 - Infrastructure"
+  class: infra
+  style.font-size: 16
+  style.bold: true
+
+  container: {
+    label: "container\n9 skills + 1 agent"
+    shape: rectangle
+    class: infra
+  }
+  kubernetes: {
+    label: "kubernetes\n8 skills + 1 agent"
+    shape: rectangle
+    class: infra
+  }
+  terraform: {
+    label: "terraform\n6 skills + 1 agent"
+    shape: rectangle
+    class: infra
+  }
+  github-actions: {
+    label: "github-actions\n8 skills"
+    shape: rectangle
+    class: infra
+  }
+  networking: {
+    label: "networking\n6 skills"
+    shape: rectangle
+    class: infra
+  }
+}
+
+# === TIER 3: UTILITIES & DOMAIN ===
+utilities: {
+  label: "Tier 3 - Utilities & Domain"
+  class: utility
+  style.font-size: 16
+  style.bold: true
+
+  tools: {
+    label: "tools\n14 skills"
+    shape: rectangle
+    class: utility
+  }
+  analytics: {
+    label: "command-analytics\n4 skills"
+    shape: rectangle
+    class: utility
+  }
+  communication: {
+    label: "communication\n2 skills"
+    shape: rectangle
+    class: utility
+  }
+  sync: {
+    label: "sync\n2 skills"
+    shape: rectangle
+    class: utility
+  }
+  finops: {
+    label: "finops\n7 skills"
+    shape: rectangle
+    class: utility
+  }
+}
+
+domain: {
+  label: "Tier 3 - Domain-Specific"
+  class: domain
+  style.font-size: 16
+  style.bold: true
+
+  api: {
+    label: "api\n2 skills"
+    shape: rectangle
+    class: domain
+  }
+  blog: {
+    label: "blog\n2 skills"
+    shape: rectangle
+    class: domain
+  }
+  langchain: {
+    label: "langchain\n4 skills"
+    shape: rectangle
+    class: domain
+  }
+  home-assistant: {
+    label: "home-assistant\n4 skills"
+    shape: rectangle
+    class: domain
+  }
+  accessibility: {
+    label: "accessibility\n2 skills"
+    shape: rectangle
+    class: domain
+  }
+  component-patterns: {
+    label: "component-patterns\n2 skills"
+    shape: rectangle
+    class: domain
+  }
+  bevy: {
+    label: "bevy\n2 skills"
+    shape: rectangle
+    class: domain
+  }
+}
+
+# === RELATIONSHIPS ===
+
+# Foundation flows
+foundation.health -> foundation.configure: "audits" {
+  style.stroke: "#3b82f6"
+}
+
+# Configure provides standards for
+foundation.configure -> quality.testing: "standards" {
+  style.stroke: "#22c55e"
+  style.stroke-dash: 3
+}
+foundation.configure -> infra.container: "standards" {
+  style.stroke: "#f97316"
+  style.stroke-dash: 3
+}
+foundation.configure -> infra.github-actions: "standards" {
+  style.stroke: "#f97316"
+  style.stroke-dash: 3
+}
+
+# Blueprint coordinates
+core.blueprint -> core.git: "coordinates" {
+  style.stroke: "#eab308"
+}
+core.blueprint -> quality.testing: "coordinates" {
+  style.stroke: "#eab308"
+}
+core.blueprint -> foundation.configure: "coordinates" {
+  style.stroke: "#eab308"
+}
+
+# Agents delegate to
+core.agents -> quality.testing: "delegates" {
+  style.stroke: "#6b7280"
+  style.stroke-dash: 3
+}
+core.agents -> quality.code-quality: "delegates" {
+  style.stroke: "#6b7280"
+  style.stroke-dash: 3
+}
+core.agents -> quality.documentation: "delegates" {
+  style.stroke: "#6b7280"
+  style.stroke-dash: 3
+}
+core.agents -> infra.github-actions: "delegates" {
+  style.stroke: "#6b7280"
+  style.stroke-dash: 3
+}
+
+# Infrastructure extends
+infra.container -> infra.kubernetes: "extends" {
+  style.stroke: "#f97316"
+}
