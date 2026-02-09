@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.6](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.6.5...configure-plugin-v1.6.6) (2026-02-09)
+
+
+### Bug Fixes
+
+* **configure-plugin:** add cclsp server configuration to configure-mcp skill ([c9bfcd0](https://github.com/laurigates/claude-plugins/commit/c9bfcd0fc81a75206ec593ccbf7c1b01df8e4df3))
+
 ## [1.6.5](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.6.4...configure-plugin-v1.6.5) (2026-02-08)
 
 

@@ -168,7 +168,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.6.5",
+      "version": "1.6.6",
       "keywords": [
         "infrastructure",
         "standards",
