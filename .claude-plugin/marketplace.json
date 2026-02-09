@@ -390,18 +390,6 @@
       "category": "language"
     },
     {
-      "name": "sync-plugin",
-      "source": "./sync-plugin",
-      "description": "External system synchronization - GitHub integration",
-      "version": "1.1.2",
-      "keywords": [
-        "sync",
-        "github",
-        "integration"
-      ],
-      "category": "integration"
-    },
-    {
       "name": "terraform-plugin",
       "source": "./terraform-plugin",
       "description": "Terraform and Terraform Cloud - infrastructure as code",

@@ -348,17 +348,7 @@ tools: Tool1, Tool2, mcp__server-name
 
 ---
 
-### 16. sync-plugin
-**Purpose:** External system synchronization (GitHub)
-
-| Type | Name | Status | Notes |
-|------|------|--------|-------|
-| Command | sync/daily | [ ] | |
-| Command | whatnext | [ ] | |
-
----
-
-### 17. agent-patterns-plugin (Orchestration)
+### 16. agent-patterns-plugin (Orchestration)
 **Purpose:** Multi-agent coordination and meta-configuration
 
 | Type | Name | Status | Notes |

@@ -34,7 +34,6 @@ Since Claude Code 2.1.7+ unified commands and skills, we can consolidate all `co
 | container-plugin | 2 | 2 | In `deploy/` subdir |
 | documentation-plugin | 4 | 1 | In `docs/` subdir |
 | github-actions-plugin | 2 | 6 | In `workflow/` subdir |
-| sync-plugin | 2 | 0 | In `sync/` subdir |
 | health-plugin | 4 | 1 | In `health/` subdir |
 | component-patterns-plugin | 1 | 1 | In `components/` subdir |
 
@@ -142,8 +141,7 @@ For each plugin, in priority order:
 5. agents-plugin (1 command)
 6. tools-plugin (3 commands)
 7. container-plugin (2 commands)
-8. sync-plugin (2 commands)
-9. github-actions-plugin (2 commands)
+8. github-actions-plugin (2 commands)
 
 **Batch 2** - Medium plugins (4-8 commands):
 10. command-analytics-plugin (4 commands)

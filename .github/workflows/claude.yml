@@ -48,7 +48,6 @@ jobs:
             github-actions-plugin@laurigates-claude-plugins
             documentation-plugin@laurigates-claude-plugins
             project-plugin@laurigates-claude-plugins
-            sync-plugin@laurigates-claude-plugins
             agent-patterns-plugin@laurigates-claude-plugins
             accessibility-plugin@laurigates-claude-plugins
             bevy-plugin@laurigates-claude-plugins
