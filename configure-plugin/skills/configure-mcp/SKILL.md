@@ -115,8 +115,6 @@ Recommendations:
 
 **Productivity:**
 - `pal` - PAL (Provider Abstraction Layer) - Multi-provider LLM integration
-- `podio-mcp` - Podio project management integration
-
 **Infrastructure & Monitoring:**
 - `argocd-mcp` - ArgoCD GitOps deployment management
 - `sentry` - Sentry error tracking and monitoring
@@ -156,16 +154,6 @@ Recommendations:
       "github.com/github/github-mcp-server/cmd/github-mcp-server@latest",
       "stdio"
     ]
-  },
-  "podio-mcp": {
-    "command": "bunx",
-    "args": ["https://github.com/ForumViriumHelsinki/podio-mcp"],
-    "env": {
-      "PODIO_CLIENT_ID": "${PODIO_CLIENT_ID}",
-      "PODIO_CLIENT_SECRET": "${PODIO_CLIENT_SECRET}",
-      "PODIO_APP_ID": "${PODIO_APP_ID}",
-      "PODIO_APP_TOKEN": "${PODIO_APP_TOKEN}"
-    }
   },
   "argocd-mcp": {
     "command": "bunx",
@@ -237,7 +225,6 @@ Recommendations:
 | Server | Required Variables | Where to Set |
 |--------|-------------------|--------------|
 | `github` | `GITHUB_TOKEN` | `~/.api_tokens` |
-| `podio-mcp` | `PODIO_CLIENT_ID`, `PODIO_CLIENT_SECRET`, `PODIO_APP_ID`, `PODIO_APP_TOKEN` | project `.env` |
 | `argocd-mcp` | `ARGOCD_SERVER`, `ARGOCD_AUTH_TOKEN` | project `.env` |
 | `sentry` | `SENTRY_AUTH_TOKEN` | `~/.api_tokens` |
 
