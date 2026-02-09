@@ -23,7 +23,6 @@
   "project-plugin": "1.6.2",
   "python-plugin": "1.2.3",
   "rust-plugin": "1.2.1",
-  "sync-plugin": "1.1.2",
   "terraform-plugin": "1.2.3",
   "tools-plugin": "2.4.4",
   "testing-plugin": "3.5.2",

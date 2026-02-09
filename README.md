@@ -99,12 +99,6 @@ claude plugin install laurigates-claude-plugins/testing-plugin
 | **hooks-plugin** | 1 | Claude Code hooks for enforcing best practices |
 | **tools-plugin** | 14 | General utilities - fd, rg, jq, shell, ImageMagick, d2 |
 
-### Integration
-
-| Plugin | Skills | Description |
-|--------|--------|-------------|
-| **sync-plugin** | 2 | External system synchronization - GitHub, Podio |
-
 ### Game Development
 
 | Plugin | Skills | Description |
