@@ -10,6 +10,15 @@ name: blueprint-rules
 
 Manage modular rules for the project. Rules are markdown files in `.claude/rules/` that provide context-specific instructions to Claude.
 
+## When to Use This Skill
+
+| Use this skill when... | Use alternative when... |
+|------------------------|-------------------------|
+| Need to create/edit modular rules in .claude/rules/ | Use `/blueprint:claude-md` for single-file project instructions |
+| Want to list all project and user-level rules | Use `/blueprint:generate-rules` to auto-generate from PRDs |
+| Need to add path-specific rules for certain file types | Just need to view CLAUDE.md structure |
+| Managing user-level rules (~/.claude/rules/) | Need to sync rules with existing CLAUDE.md |
+
 ## Rules Hierarchy (precedence low → high)
 
 | Level | Location | Scope |
@@ -63,11 +72,11 @@ Project rules override user-level rules. Path-specific rules load conditionally 
      - development.md - TDD workflow and conventions
      - testing.md - Test requirements
 
-     Project Scoped Rules (apply to specific paths):
+     Path-Specific Rules (apply to specific paths):
      - frontend/react.md - paths: ["src/components/**/*.{ts,tsx}"]
      - backend/api.md - paths: ["src/api/**/*.ts"]
 
-     Total: 6 rules (2 user-level, 2 global, 2 scoped)
+     Total: 6 rules (2 user-level, 2 global, 2 path-specific)
      ```
 
 4. **Add a new rule** (use AskUserQuestion):

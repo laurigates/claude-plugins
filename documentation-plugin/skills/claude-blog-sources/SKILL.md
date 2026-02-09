@@ -13,6 +13,15 @@ allowed-tools: WebFetch, WebSearch, Task
 
 # Claude Blog Sources
 
+## When to Use This Skill
+
+| Use this skill when... | Use alternative when... |
+|------------------------|-------------------------|
+| Researching Claude Code features and best practices | You already know the answer from existing documentation |
+| Need latest updates on CLAUDE.md, @imports, memory hierarchy | Implementing known patterns without research needed |
+| Staying current with Claude Code improvements | Just need to read local project documentation |
+| Cross-referencing blog insights with official docs | Need general programming help unrelated to Claude |
+
 ## Overview
 
 The Anthropic Claude Blog (https://www.claude.com/blog/) publishes official guidance on Claude Code features, usage patterns, and best practices. This skill provides structured access to blog content for staying current with Claude capabilities.

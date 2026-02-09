@@ -10,6 +10,15 @@ name: blueprint-generate-rules
 
 Generate project-specific rules from Product Requirements Documents.
 
+## When to Use This Skill
+
+| Use this skill when... | Use alternative when... |
+|------------------------|-------------------------|
+| Need to generate rules from existing PRDs | Use `/blueprint:rules` to manually create/edit rules |
+| Want path-scoped rules for specific file types | Use `/blueprint:claude-md` for general project instructions |
+| Automating rule creation from requirements | Writing custom rules without PRD reference |
+| Extracting architecture/testing patterns from PRDs | Need to create one-off rules for specific contexts |
+
 Rules are generated to `.claude/rules/` directory. Rules with `paths` frontmatter are loaded conditionally when working on matching files.
 
 **Prerequisites**:
