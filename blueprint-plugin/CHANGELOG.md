@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.15.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.14.2...blueprint-plugin-v3.15.0) (2026-02-09)
+
+
+### Features
+
+* **blueprint-plugin,documentation-plugin:** adapt skills to Claude Code auto memory and [@import](https://github.com/import) features ([f18e27b](https://github.com/laurigates/claude-plugins/commit/f18e27bb0b2261e2a829659b919ee0f5f4fb1a4e))
+
 ## [3.14.2](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.14.1...blueprint-plugin-v3.14.2) (2026-02-08)
 
 
