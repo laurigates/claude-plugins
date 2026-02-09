@@ -419,7 +419,7 @@
       "name": "testing-plugin",
       "source": "./testing-plugin",
       "description": "Test execution, TDD workflow, and testing strategies",
-      "version": "3.5.1",
+      "version": "3.5.2",
       "keywords": [
         "testing",
         "tdd",
@@ -433,7 +433,7 @@
       "name": "tools-plugin",
       "source": "./tools-plugin",
       "description": "General utilities - fd, rg, jq, shell, imagemagick",
-      "version": "2.4.3",
+      "version": "2.4.4",
       "keywords": [
         "tools",
         "utilities",
