@@ -3,15 +3,15 @@ model: opus
 created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
-allowed-tools: Read, Write, Edit, TodoWrite, mcp__github__list_issues, mcp__github__list_pull_requests, mcp__github__search_issues, mcp__github__get_me, mcp__podio-mcp__list_items, mcp__podio-mcp__get_item_details, Bash
+allowed-tools: Read, Write, Edit, TodoWrite, mcp__github__list_issues, mcp__github__list_pull_requests, mcp__github__search_issues, mcp__github__get_me, Bash
 argument-hint: [--dry-run|--verbose|--full-refresh]
-description: Daily catch-up command that aggregates GitHub and Podio items into an ADHD-friendly Obsidian note
+description: Daily catch-up command that aggregates GitHub items into an ADHD-friendly Obsidian note
 name: sync-daily
 ---
 
 # Daily Catch-Up Command
 
-Aggregates action items from GitHub and Podio into a categorized daily summary optimized for ADHD-friendly workflow.
+Aggregates action items from GitHub into a categorized daily summary optimized for ADHD-friendly workflow.
 
 ## Configuration
 
@@ -20,13 +20,6 @@ Aggregates action items from GitHub and Podio into a categorized daily summary o
 vault_path: ~/Documents/FVH Vault
 daily_notes_path: ~/Documents/FVH Vault/Daily Notes
 note_format: YYYY-MM-DD.md
-```
-
-### Default Podio Workspace
-```yaml
-org_label: fvh
-space_label: iot-workspace
-app_label: datadev-kanban
 ```
 
 ### State File
@@ -67,9 +60,6 @@ Ignores last run timestamp and fetches all active items (useful for first run or
   "github": {
     "lastIssueUpdate": "2025-11-12T08:30:00Z",
     "lastPRUpdate": "2025-11-12T08:30:00Z"
-  },
-  "podio": {
-    "lastItemUpdate": "2025-11-12T08:30:00Z"
   }
 }
 ```
@@ -98,26 +88,7 @@ Use the GitHub MCP server to fetch items needing attention:
 - URL for quick access
 - Comments count (indicates activity)
 
-### Step 3: Fetch Podio Items
-
-Use the Podio MCP server to fetch active tasks:
-
-1. **Fetch active items** via `mcp__podio-mcp__list_items`:
-   - Workspace: `org_label="fvh", space_label="iot-workspace", app_label="datadev-kanban"`
-   - Filter by status: In Progress, To Do, On Hold
-   - Sort by last_modified descending
-2. **Get item details** for each item via `mcp__podio-mcp__get_item_details` if needed
-
-**Data to Extract:**
-- Item ID and title
-- Status (To Do, In Progress, On Hold, Blocked)
-- Priority level
-- Due date if set
-- Last modified timestamp
-- GitHub references in description
-- URL for quick access
-
-### Step 4: Categorize Items
+### Step 3: Categorize Items
 
 Apply categorization logic to all fetched items:
 
@@ -126,31 +97,26 @@ Apply categorization logic to all fetched items:
 **URGENT** - Requires immediate attention:
 - GitHub PRs with "changes requested" status
 - GitHub issues labeled with "critical" or "urgent"
-- Podio items with high priority AND status "In Progress"
 - Any item blocking others (check for "blocked by" or "blocking" keywords)
 - Items with past-due dates
 
 **ACTION NEEDED** - Requires action soon:
 - GitHub PRs awaiting your review
 - GitHub issues assigned to you without recent activity (>3 days)
-- Podio items with status "To Do" and high/medium priority
 - GitHub mentions in open issues/PRs
 - Items with due dates within next 3 days
 
 **IN PROGRESS** - Currently being worked on:
 - GitHub PRs you authored that are open
 - GitHub issues you're actively working on (recent activity <3 days)
-- Podio items with status "In Progress"
 
 **BLOCKED** - Waiting on someone else:
 - GitHub PRs awaiting other reviewers (not you)
 - GitHub issues with "blocked" label
-- Podio items with status "On Hold" or "Blocked"
 - Items with "waiting for" keywords in description
 
 **FYI** - Informational, low priority:
 - GitHub issues where you're mentioned but not assigned
-- Podio items with low priority
 - GitHub PRs where you're CC'd but not primary reviewer
 - Items with no labels indicating urgency
 
@@ -166,7 +132,7 @@ For each item:
   6. Default → FYI
 ```
 
-### Step 5: Generate Obsidian Note
+### Step 4: Generate Obsidian Note
 
 Create a markdown note with ADHD-friendly formatting:
 
@@ -264,7 +230,7 @@ name: sync-daily
 - ✅ Show counts in section headers for progress tracking
 - ✅ Include encouraging messages for empty urgent sections
 
-### Step 6: Update State File
+### Step 5: Update State File
 
 After successful execution:
 
@@ -276,16 +242,13 @@ After successful execution:
      "github": {
        "lastIssueUpdate": "[current_timestamp]",
        "lastPRUpdate": "[current_timestamp]"
-     },
-     "podio": {
-       "lastItemUpdate": "[current_timestamp]"
      }
    }
    ```
 2. **Create state directory** if it doesn't exist: `~/.config/claude-code/`
 3. **Set file permissions** to 600 (user read/write only)
 
-### Step 7: Display Summary
+### Step 6: Display Summary
 
 Show concise summary in terminal:
 
@@ -310,9 +273,7 @@ Show concise summary in terminal:
 
 ### API Failures
 
-- **GitHub API fails**: Continue with Podio only, note GitHub unavailability
-- **Podio API fails**: Continue with GitHub only, note Podio unavailability
-- **Both APIs fail**: Display error, preserve current state, suggest retry
+- **GitHub API fails**: Display error, preserve current state, suggest retry
 
 ### State File Issues
 
@@ -328,7 +289,6 @@ Show concise summary in terminal:
 
 ## Performance Optimization
 
-- **Parallel API calls**: Fetch GitHub and Podio simultaneously
 - **Minimal data**: Only fetch fields needed for categorization
 - **Pagination**: Limit to first 50 items per source (configurable)
 - **Caching**: Use state file to avoid re-fetching unchanged items

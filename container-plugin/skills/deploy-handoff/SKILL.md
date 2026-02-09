@@ -52,7 +52,7 @@ claude chat --file ~/.claude/skills/deploy-handoff/SKILL.md [RESOURCE_NAME] [DEP
    - Log locations and access methods
 
 5. **Handoff Message Generation**
-   - Professional Podio-friendly formatting
+   - Professional formatting
    - Clear sections for different types of information
    - Action items for the receiving developer
    - Contact information for follow-up questions
@@ -97,7 +97,7 @@ claude chat --file ~/.claude/skills/deploy-handoff/SKILL.md [RESOURCE_NAME] [DEP
 
 ## Output Format
 
-The command generates a Podio-friendly message with:
+The command generates a structured message with:
 - **Professional tone** suitable for client communications
 - **Clear structure** with headers and bullet points
 - **Actionable information** for immediate developer productivity
@@ -106,14 +106,10 @@ The command generates a Podio-friendly message with:
 ## Configuration Options
 
 ```yaml
-format: podio              # podio, slack, email, markdown
+format: markdown            # slack, email, markdown
 include_sensitive: false   # Include sensitive config info
 detail_level: standard     # minimal, standard, comprehensive
 template_style: professional # professional, technical, brief
-podio_workspace:          # Default workspace for Podio integration
-  org_label: fvh
-  space_label: iot-workspace
-  app_label: datadev-kanban
 ```
 
 ## Integration Points
@@ -126,7 +122,7 @@ podio_workspace:          # Default workspace for Podio integration
 
 ## Success Criteria
 - Handoff message contains all necessary information for developer productivity
-- Format is suitable for Podio ticket comments
+- Format is suitable for ticket comments
 - Message includes clear next steps and action items
 - All links and references are accurate and accessible
 - Professional tone appropriate for client-facing communications

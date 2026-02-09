@@ -1,7 +1,7 @@
 {
   "name": "sync-plugin",
   "version": "1.1.2",
-  "description": "External system synchronization - GitHub and Podio integration for task management and daily catch-up workflows",
+  "description": "External system synchronization - GitHub integration for task management and daily catch-up workflows",
   "author": {
     "name": "Lauri Gates"
   },
@@ -10,7 +10,6 @@
   "keywords": [
     "sync",
     "github",
-    "podio",
     "integration",
     "daily",
     "workflow",

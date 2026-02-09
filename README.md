@@ -103,7 +103,7 @@ claude plugin install laurigates-claude-plugins/testing-plugin
 
 | Plugin | Skills | Description |
 |--------|--------|-------------|
-| **sync-plugin** | 2 | External system synchronization - GitHub, Podio |
+| **sync-plugin** | 1 | External system synchronization - GitHub |
 
 ### Game Development
 
