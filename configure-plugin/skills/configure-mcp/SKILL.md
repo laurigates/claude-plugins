@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-02-08
+modified: 2026-02-09
 reviewed: 2026-02-08
 description: Check and configure MCP servers for project integration
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
@@ -178,6 +178,13 @@ Recommendations:
   "sequential-thinking": {
     "command": "npx",
     "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+  },
+  "cclsp": {
+    "command": "npx",
+    "args": ["-y", "cclsp@latest"],
+    "env": {
+      "CCLSP_CONFIG_PATH": "./cclsp.json"
+    }
   }
 }
 ```
@@ -202,6 +209,28 @@ Recommendations:
 4. **Git tracking recommendation**:
    - Personal projects → recommend `.gitignore` (keep API configs local)
    - Team projects → recommend tracking (share MCP setup with team)
+
+5. **cclsp setup** (if cclsp selected):
+   - Create `cclsp.json` in the project root with language servers based on detected project files
+   - Detect project languages by checking for source files:
+
+   | Files Present | Language Server Entry |
+   |---------------|----------------------|
+   | `*.ts`, `*.tsx`, `*.js`, `*.jsx` | `{"extensions": ["js", "ts", "jsx", "tsx", "mjs", "cjs"], "command": ["typescript-language-server", "--stdio"], "rootDir": "."}` |
+   | `*.py` | `{"extensions": ["py", "pyi"], "command": ["pylsp"], "rootDir": "."}` |
+   | `*.go` | `{"extensions": ["go"], "command": ["gopls", "serve"], "rootDir": "."}` |
+   | `*.rs` | `{"extensions": ["rs"], "command": ["rust-analyzer"], "rootDir": "."}` |
+
+   - Write `cclsp.json` with detected servers:
+     ```json
+     {
+       "servers": [
+         // entries based on detected languages
+       ]
+     }
+     ```
+   - Add `cclsp.json` to `.gitignore` (machine-specific language server paths)
+   - Warn user to install required language servers (`npm i -g typescript-language-server`, `pip install python-lsp-server`, etc.)
 
 ### Phase 6: Environment Variable Reference
 
@@ -278,6 +307,9 @@ Tip: Run /configure:mcp again to add more servers anytime.
 
 # Quick add github server
 /configure:mcp --server github
+
+# Install cclsp for LSP code navigation
+/configure:mcp --server cclsp
 ```
 
 ## Error Handling
