@@ -10,6 +10,15 @@ name: blueprint-claude-md
 
 Generate or update the project's CLAUDE.md file based on blueprint artifacts, PRDs, and project structure.
 
+## When to Use This Skill
+
+| Use this skill when... | Use alternative when... |
+|------------------------|-------------------------|
+| Need to create/update CLAUDE.md for team instructions | Use `/blueprint:rules` for path-specific rules |
+| Want to add @imports to existing CLAUDE.md | Use `/blueprint:generate-rules` to create rules from PRDs |
+| Need to create CLAUDE.local.md for personal preferences | Editing individual rule files directly |
+| Converting inline content to lean @import structure | Just need to view current memory configuration |
+
 ## CLAUDE.md vs Auto Memory
 
 Claude Code has two complementary systems for project context. CLAUDE.md should contain **team-shared instructions** — not patterns Claude learns on its own.
