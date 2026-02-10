@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.13.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.12.4...git-plugin-v2.13.0) (2026-02-10)
+
+
+### Features
+
+* **git-plugin:** use ./worktrees/ directory for agent worktree workflows ([a97db86](https://github.com/laurigates/claude-plugins/commit/a97db8613d879db4c06cefc6f94edcfca95f9043))
+
 ## [2.12.4](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.12.3...git-plugin-v2.12.4) (2026-02-08)
 
 
