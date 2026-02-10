@@ -195,6 +195,10 @@ git branch -D wt/issue-47 wt/issue-49 wt/issue-50
 
 # Clean up patches and empty worktrees directory
 rm -rf /tmp/patches/
+
+# Note: rmdir only removes empty directories. If worktrees remain (intentionally
+# or due to errors), the directory is preserved. This is correct behavior - manual
+# cleanup is needed if worktrees are still in use.
 rmdir worktrees 2>/dev/null || true
 ```
 
