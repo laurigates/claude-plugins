@@ -8,7 +8,7 @@ description: |
   the user says "any insights", "distill session", "what did we learn", "update recipes",
   or wants to capture session knowledge.
 allowed-tools: Bash(git diff *), Bash(git log *), Bash(git status *), Bash(just *), Read, Grep, Glob, Edit, Write, AskUserQuestion, TodoWrite
-argument-hint: "[--rules] [--skills] [--recipes] [--all] [--dry-run]"
+argument-hint: "Scope analysis to specific categories or use --dry-run to preview"
 args: "[--rules] [--skills] [--recipes] [--all] [--dry-run]"
 created: 2026-02-11
 modified: 2026-02-11
@@ -45,12 +45,12 @@ Distill session insights into reusable project knowledge. Reviews what was done 
 
 Gather session context to analyze:
 
-- Session diff: !`git diff --stat HEAD~10..HEAD 2>/dev/null`
+- Session diff: !`git diff --stat HEAD~10..HEAD 2>/dev/null || echo "recent history unavailable"`
 - Recent commits: !`git log --oneline -20 2>/dev/null`
 - Current branch: !`git branch --show-current 2>/dev/null`
 - Justfile exists: !`test -f justfile && echo "yes" || test -f Justfile && echo "yes" || echo "no"`
 - Rules directory: !`find .claude/rules -name '*.md' -type f 2>/dev/null`
-- Changed files: !`git diff --name-only HEAD~10..HEAD 2>/dev/null`
+- Changed files: !`git diff --name-only HEAD~10..HEAD 2>/dev/null || echo "none"`
 
 ## Parameters
 
