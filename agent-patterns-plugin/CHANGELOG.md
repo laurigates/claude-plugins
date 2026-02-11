@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.6.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.5.6...agent-patterns-plugin-v2.6.0) (2026-02-11)
+
+
+### Features
+
+* add required quality sections to refactored skills ([#544](https://github.com/laurigates/claude-plugins/issues/544)) ([342af54](https://github.com/laurigates/claude-plugins/commit/342af54af0f81fa50d239d06b32b353ddb7335fc))
+
 ## [2.5.6](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.5.5...agent-patterns-plugin-v2.5.6) (2026-02-08)
 
 
