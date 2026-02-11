@@ -13,6 +13,16 @@ name: configure-tests
 
 Check and configure testing frameworks against best practices (Vitest, Jest, pytest, cargo-nextest).
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up testing infrastructure | Just running tests (use `/test:run` skill) |
+| Checking test framework configuration | Tests already properly configured |
+| Migrating to modern test frameworks (Vitest, pytest, nextest) | Writing individual tests (write tests directly) |
+| Validating coverage configuration | Debugging failing tests (check test output) |
+| Ensuring test best practices | Simple project with no testing needed |
+
 ## Context
 
 - Package.json: !`test -f package.json && echo "EXISTS" || echo "MISSING"`
@@ -149,6 +159,16 @@ components:
 ```
 
 For detailed configuration templates, migration guides, CI/CD integration examples, and directory structure patterns, see [REFERENCE.md](REFERENCE.md).
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Detect test framework | `find . -maxdepth 1 \( -name 'vitest.config.*' -o -name 'jest.config.*' -o -name 'pytest.ini' \) 2>/dev/null` |
+| Check coverage config | `grep -l 'coverage' package.json pyproject.toml 2>/dev/null` |
+| List test files | `find . -path '*/tests/*' -o -path '*/test/*' -o -name '*.test.*' -o -name '*.spec.*' 2>/dev/null \| head -10` |
+| Quick compliance check | `/configure:tests --check-only` |
+| Auto-fix configuration | `/configure:tests --fix` |
 
 ## Error Handling
 

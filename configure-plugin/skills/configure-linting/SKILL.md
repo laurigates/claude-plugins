@@ -13,6 +13,16 @@ name: configure-linting
 
 Check and configure linting tools against modern best practices.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up modern linting (Biome, Ruff, Clippy) | Just running linter (use `/lint:check` skill) |
+| Migrating from ESLint/Prettier to Biome | Linters already properly configured |
+| Validating linter configuration | Fixing specific lint errors (run linter and fix) |
+| Ensuring language-specific best practices | Simple script with no linting needs |
+| Configuring pre-commit lint integration | Debugging linter issues (check linter logs) |
+
 ## Context
 
 - Project root: !`pwd`
@@ -142,6 +152,17 @@ components:
 Print a summary of all changes applied, scripts added, integrations configured, and next steps for the user.
 
 For detailed configuration templates, migration guides, and CI integration patterns, see [REFERENCE.md](REFERENCE.md).
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Detect linter config | `find . -maxdepth 1 \( -name 'biome.json' -o -name 'ruff.toml' -o -name '.eslintrc*' \) 2>/dev/null` |
+| Check Biome config | `test -f biome.json && jq -c '.linter' biome.json 2>/dev/null` |
+| Check Ruff in pyproject | `grep -A5 '\[tool.ruff\]' pyproject.toml 2>/dev/null` |
+| List lint scripts | `jq -r '.scripts \| to_entries[] \| select(.key \| contains("lint")) \| "\\(.key): \\(.value)"' package.json 2>/dev/null` |
+| Quick compliance check | `/configure:linting --check-only` |
+| Auto-fix configuration | `/configure:linting --fix` |
 
 ## Flags
 

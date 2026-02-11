@@ -13,6 +13,16 @@ name: configure-dockerfile
 
 Check and configure Dockerfile against project standards with emphasis on **minimal images**, **non-root users**, and **multi-stage builds**.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Checking Dockerfile compliance with standards | Just viewing Dockerfile (use Read tool) |
+| Creating Dockerfile from template | Dockerfile already follows all standards |
+| Validating image size, security, multi-stage builds | Need container runtime config (use `/configure:container`) |
+| Setting up minimal Alpine/slim-based images | Project uses specialized base images (custom requirements) |
+| Ensuring non-root user configuration | Debugging container issues (check logs, inspect runtime) |
+
 ## Context
 
 - Dockerfiles: !`find . -maxdepth 1 \( -name 'Dockerfile' -o -name 'Dockerfile.*' -o -name '*.Dockerfile' \) 2>/dev/null`
@@ -217,6 +227,17 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Check Dockerfile exists | `find . -maxdepth 1 \( -name 'Dockerfile' -o -name 'Dockerfile.*' \) 2>/dev/null` |
+| Validate multi-stage build | `grep -c '^FROM' Dockerfile 2>/dev/null` |
+| Check for non-root user | `grep -E '^USER [^root]' Dockerfile 2>/dev/null` |
+| Check base image | `grep '^FROM' Dockerfile \| head -1` |
+| Quick compliance check | `/configure:dockerfile --check-only` |
+| Auto-fix issues | `/configure:dockerfile --fix` |
 
 ## Flags
 
