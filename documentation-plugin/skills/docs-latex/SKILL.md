@@ -9,7 +9,7 @@ args: <file> [--no-compile] [--visualizations] [--report-type=roadmap|lifecycle|
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 argument-hint: path/to/document.md
 created: 2026-02-08
-modified: 2026-02-08
+modified: 2026-02-10
 reviewed: 2026-02-08
 ---
 
@@ -45,79 +45,22 @@ Convert Markdown documents to professional LaTeX with advanced typesetting, TikZ
 
 ## Execution
 
-### Phase 1: Analyze Markdown Source
+Execute this Markdown-to-LaTeX conversion workflow:
+
+### Step 1: Analyze the Markdown source
 
 Read the source Markdown file and extract:
 - Document title and metadata
 - Section hierarchy (map `#` levels to LaTeX chapters/sections)
-- Tables (convert to `booktabs` format)
-- Lists (itemize/enumerate)
-- Code blocks (lstlisting/minted)
-- Callout blocks or blockquotes (map to `tcolorbox` environments)
-- Priorities or status indicators (map to color-coded markers)
+- Tables, lists, code blocks, callout blocks, and blockquotes
+- Priorities or status indicators for color-coded markers
 - Numerical data suitable for visualization
 
-### Phase 2: Generate LaTeX Document
+### Step 2: Generate the LaTeX document
 
-Create a `.tex` file adjacent to the source with these components:
+Create a `.tex` file adjacent to the source. Use the document preamble, color definitions, custom environments, and conversion rules from [REFERENCE.md](REFERENCE.md).
 
-**Document class and packages:**
-```latex
-\documentclass[a4paper,11pt]{report}
-
-% Core packages
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
-\usepackage{lmodern}
-\usepackage[margin=2.5cm]{geometry}
-\usepackage{hyperref}
-\usepackage{xcolor}
-\usepackage{booktabs}
-\usepackage{longtable}
-\usepackage{enumitem}
-\usepackage{fancyhdr}
-\usepackage{titlesec}
-\usepackage{tcolorbox}
-\usepackage{fontawesome5}
-\usepackage{amssymb}
-\usepackage{graphicx}
-
-% Visualization packages (when --visualizations)
-\usepackage{tikz}
-\usepackage{pgfplots}
-\pgfplotsset{compat=1.18}
-\usetikzlibrary{shapes,arrows,positioning,calc,patterns}
-```
-
-**Color definitions:**
-```latex
-\definecolor{critical}{HTML}{DC2626}
-\definecolor{high}{HTML}{EA580C}
-\definecolor{medium}{HTML}{CA8A04}
-\definecolor{low}{HTML}{16A34A}
-\definecolor{info}{HTML}{2563EB}
-\definecolor{warning}{HTML}{D97706}
-\definecolor{success}{HTML}{059669}
-```
-
-**Custom environments:**
-```latex
-\newtcolorbox{infobox}{colback=info!5,colframe=info,title=\faInfoCircle\ Info}
-\newtcolorbox{warningbox}{colback=warning!5,colframe=warning,title=\faExclamationTriangle\ Warning}
-\newtcolorbox{successbox}{colback=success!5,colframe=success,title=\faCheckCircle\ Success}
-```
-
-**Header/footer setup:**
-```latex
-\setlength{\headheight}{14pt}
-\pagestyle{fancy}
-\fancyhf{}
-\fancyhead[L]{\leftmark}
-\fancyhead[R]{\thepage}
-\fancyfoot[C]{\small Document Title}
-```
-
-### Markdown-to-LaTeX Conversion Rules
+Apply the Markdown-to-LaTeX conversion rules:
 
 | Markdown | LaTeX |
 |----------|-------|
@@ -135,129 +78,31 @@ Create a `.tex` file adjacent to the source with these components:
 | Code blocks | `\begin{lstlisting}...\end{lstlisting}` |
 | `- [ ]` / `- [x]` | `$\square$` / `$\boxtimes$` (requires `amssymb`) |
 
-### Priority/Status Color Mapping
+### Step 3: Add visualizations (when --visualizations or data suggests it)
 
-Map status indicators found in the source to colored markers:
+Choose appropriate TikZ/PGFPlots visualizations based on document content. Use the visualization templates from [REFERENCE.md](REFERENCE.md):
+- **Timeline** for roadmaps with phases
+- **Bar/pie charts** for release or metric data
+- **Risk matrix** for documents with risk/impact data
+- **Test pyramid** for QA/testing documents
 
-```latex
-% Inline priority markers
-\newcommand{\critical}{\textcolor{critical}{\faBolt\ Critical}}
-\newcommand{\highpri}{\textcolor{high}{\faExclamationCircle\ High}}
-\newcommand{\mediumpri}{\textcolor{medium}{\faMinusCircle\ Medium}}
-\newcommand{\lowpri}{\textcolor{low}{\faCheckCircle\ Low}}
-```
+### Step 4: Compile to PDF
 
-### Phase 3: Add Visualizations (when --visualizations or data suggests it)
+1. Install LaTeX toolchain if not available:
+   ```bash
+   apt-get update && apt-get install -y texlive-latex-extra texlive-fonts-recommended \
+     texlive-fonts-extra texlive-science latexmk
+   ```
+2. Compile with two passes for cross-references:
+   ```bash
+   pdflatex -interaction=nonstopmode DOCUMENT.tex
+   pdflatex -interaction=nonstopmode DOCUMENT.tex
+   ```
+3. If compilation fails, check [REFERENCE.md](REFERENCE.md) for common compilation fixes.
 
-Choose appropriate visualizations based on document content:
+### Step 5: Clean up repository artifacts
 
-**Timeline (for roadmaps with phases):**
-```latex
-\begin{tikzpicture}[scale=1.2]
-  % Draw timeline arrow
-  \draw[->,thick] (0,0) -- (12,0);
-  % Phase markers
-  \foreach \x/\label/\dates in {
-    1.5/Phase 1/Q1,
-    4.5/Phase 2/Q2,
-    7.5/Phase 3/Q3,
-    10.5/Phase 4/Q4} {
-    \draw[thick] (\x,0.2) -- (\x,-0.2);
-    \node[above] at (\x,0.3) {\textbf{\label}};
-    \node[below] at (\x,-0.3) {\small\dates};
-  }
-\end{tikzpicture}
-```
-
-**Bar/pie charts (for release or metric data):**
-```latex
-\begin{tikzpicture}
-\begin{axis}[
-  ybar, bar width=15pt,
-  xlabel={Category}, ylabel={Count},
-  symbolic x coords={A,B,C,D},
-  xtick=data, nodes near coords
-]
-\addplot coordinates {(A,10) (B,25) (C,15) (D,8)};
-\end{axis}
-\end{tikzpicture}
-```
-
-**Risk matrix (for documents with risk/impact data):**
-```latex
-\begin{tikzpicture}
-  \fill[green!20] (0,0) rectangle (2,2);
-  \fill[yellow!20] (2,0) rectangle (4,2);
-  \fill[yellow!20] (0,2) rectangle (2,4);
-  \fill[orange!20] (2,2) rectangle (4,4);
-  \fill[red!20] (4,2) rectangle (6,4);
-  % Labels and axes
-\end{tikzpicture}
-```
-
-**Test pyramid (for QA/testing documents):**
-```latex
-\begin{tikzpicture}
-  \fill[green!30] (-3,0) -- (3,0) -- (2,1.5) -- (-2,1.5) -- cycle;
-  \node at (0,0.75) {\textbf{Unit Tests}};
-  \fill[yellow!30] (-2,1.5) -- (2,1.5) -- (1,3) -- (-1,3) -- cycle;
-  \node at (0,2.25) {\textbf{Integration}};
-  \fill[red!30] (-1,3) -- (1,3) -- (0,4.5) -- cycle;
-  \node at (0,3.5) {\textbf{E2E}};
-\end{tikzpicture}
-```
-
-### Phase 4: Compile to PDF
-
-**Install LaTeX toolchain if not available:**
-```bash
-apt-get update && apt-get install -y texlive-latex-extra texlive-fonts-recommended \
-  texlive-fonts-extra texlive-science latexmk
-```
-
-**Compile with two passes for cross-references:**
-```bash
-pdflatex -interaction=nonstopmode DOCUMENT.tex
-pdflatex -interaction=nonstopmode DOCUMENT.tex
-```
-
-Two passes are required to resolve:
-- Table of contents
-- Cross-references (`\ref`, `\pageref`)
-- Hyperlinks
-- Page numbers in headers
-
-**Common compilation fixes:**
-
-| Error | Fix |
-|-------|-----|
-| Missing `amssymb` | Add `\usepackage{amssymb}` |
-| Missing `eurosym` | Add `\usepackage{eurosym}` or replace `€` with `\texteuro{}` |
-| Header height warning | Add `\setlength{\headheight}{14pt}` |
-| Undefined control sequence | Check package imports match used commands |
-| Missing font | Install `texlive-fonts-extra` |
-
-### Phase 5: Repository Cleanup
-
-Add LaTeX build artifacts to `.gitignore` if not already present:
-
-```
-# LaTeX build artifacts
-*.aux
-*.log
-*.out
-*.toc
-*.lof
-*.lot
-*.fls
-*.fdb_latexmk
-*.synctex.gz
-*.bbl
-*.blg
-*.nav
-*.snm
-*.vrb
-```
+Add LaTeX build artifacts to `.gitignore` if not already present: `*.aux`, `*.log`, `*.out`, `*.toc`, `*.lof`, `*.lot`, `*.fls`, `*.fdb_latexmk`, `*.synctex.gz`, `*.bbl`, `*.blg`, `*.nav`, `*.snm`, `*.vrb`.
 
 ## Post-actions
 

@@ -5,7 +5,7 @@ args: "[--scope <type>] [--dry-run] [--verbose]"
 argument-hint: "--scope skills|commands|agents, --dry-run to preview, --verbose for details"
 allowed-tools: Bash, Grep, Glob, Read, Edit, Write, TodoWrite
 created: 2025-12-16
-modified: 2026-02-03
+modified: 2026-02-10
 reviewed: 2025-12-16
 name: docs-sync
 ---

@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-01-19
+modified: 2026-02-10
 reviewed: 2026-01-19
 description: Check and configure Dockerfile for project standards (minimal Alpine/slim, non-root, multi-stage)
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -15,39 +15,43 @@ Check and configure Dockerfile against project standards with emphasis on **mini
 
 ## Context
 
-This command validates Dockerfile configuration for Node.js frontend, Python, Go, and Rust service projects.
+- Dockerfiles: !`find . -maxdepth 1 \( -name 'Dockerfile' -o -name 'Dockerfile.*' -o -name '*.Dockerfile' \) 2>/dev/null`
+- Dockerignore: !`test -f .dockerignore && echo "EXISTS" || echo "MISSING"`
+- Project type: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) 2>/dev/null`
+- Base images: !`grep -h '^FROM' Dockerfile Dockerfile.* *.Dockerfile 2>/dev/null | head -5`
 
-**Skills referenced**: `container-development`
+## Parameters
 
-## Version Checking
+Parse from command arguments:
 
-**CRITICAL**: Before flagging outdated base images, verify latest versions:
+- `--check-only`: Report compliance status without modifications
+- `--fix`: Apply fixes automatically without prompting
+- `--type <type>`: Override project type detection (frontend, python, go, rust)
 
-1. **Node.js Alpine**: Check [Docker Hub node](https://hub.docker.com/_/node) for latest LTS Alpine tags
-2. **Python slim**: Check [Docker Hub python](https://hub.docker.com/_/python) for latest slim tags
-3. **nginx Alpine**: Check [Docker Hub nginx](https://hub.docker.com/_/nginx) for latest Alpine tags
-4. **Go Alpine**: Check [Docker Hub golang](https://hub.docker.com/_/golang) for latest Alpine tags
-5. **Rust Alpine**: Check [Docker Hub rust](https://hub.docker.com/_/rust) for latest Alpine tags
+## Execution
 
-Use WebSearch or WebFetch to verify current base image versions before reporting outdated images.
+Execute this Dockerfile compliance check:
 
-## Security Requirements
-
-**Non-negotiable security standards:**
-- **Non-root user**: ALL containers MUST run as non-root (FAIL if missing)
-- **Multi-stage builds**: Required to minimize attack surface (FAIL if missing)
-- **Minimal base images**: Alpine for Node.js/Go/Rust, slim for Python
-- **HEALTHCHECK**: Required for Kubernetes probes
-
-## Workflow
-
-### Phase 1: Detection
+### Step 1: Detect project type and Dockerfiles
 
 1. Find Dockerfile(s) in project root
-2. Detect project type from context (package.json, pyproject.toml)
-3. Parse Dockerfile to analyze configuration
+2. Detect project type from context (package.json, pyproject.toml, go.mod, Cargo.toml)
+3. Parse Dockerfile to analyze current configuration
+4. Apply `--type` override if provided
 
-### Phase 2: Compliance Analysis
+### Step 2: Verify latest base image versions
+
+Before flagging outdated base images, use WebSearch or WebFetch to verify latest versions:
+
+1. **Node.js Alpine**: Check Docker Hub for latest LTS Alpine tags
+2. **Python slim**: Check Docker Hub for latest slim tags
+3. **nginx Alpine**: Check Docker Hub for latest Alpine tags
+4. **Go Alpine**: Check Docker Hub for latest Alpine tags
+5. **Rust Alpine**: Check Docker Hub for latest Alpine tags
+
+### Step 3: Analyze compliance
+
+Check the Dockerfile against these standards:
 
 **Frontend (Node.js) Standards:**
 
@@ -57,9 +61,9 @@ Use WebSearch or WebFetch to verify current base image versions before reporting
 | Runtime base | `nginx:1.27-alpine` | WARN if other |
 | Multi-stage | Required | FAIL if missing |
 | HEALTHCHECK | Required | FAIL if missing |
+| Non-root user | Required | FAIL if missing |
 | Build caching | `--mount=type=cache` recommended | INFO |
-| EXPOSE | Should match nginx port | INFO |
-| **OCI Labels** | Required for GHCR integration | WARN if missing |
+| OCI Labels | Required for GHCR integration | WARN if missing |
 
 **Python Service Standards:**
 
@@ -68,67 +72,59 @@ Use WebSearch or WebFetch to verify current base image versions before reporting
 | Base image | `python:3.12-slim` | WARN if other |
 | Multi-stage | Required for production | FAIL if missing |
 | HEALTHCHECK | Required | FAIL if missing |
-| Non-root user | Recommended | WARN if missing |
-| Poetry/uv | Modern package manager | INFO |
-| **OCI Labels** | Required for GHCR integration | WARN if missing |
+| Non-root user | Required | FAIL if missing |
+| OCI Labels | Required for GHCR integration | WARN if missing |
 
-**OCI Container Labels Standards:**
+**OCI Container Labels:**
 
 | Label | Purpose | Severity |
 |-------|---------|----------|
-| `org.opencontainers.image.source` | Links to repository (enables GHCR features) | WARN if missing |
-| `org.opencontainers.image.description` | Package description (max 512 chars) | WARN if missing |
+| `org.opencontainers.image.source` | Links to repository | WARN if missing |
+| `org.opencontainers.image.description` | Package description | WARN if missing |
 | `org.opencontainers.image.licenses` | SPDX license identifier | WARN if missing |
 | `org.opencontainers.image.version` | Semantic version (via ARG) | INFO if missing |
 | `org.opencontainers.image.revision` | Git commit SHA (via ARG) | INFO if missing |
-| `org.opencontainers.image.created` | Build timestamp (via ARG) | INFO if missing |
 
-**Note**: Labels can be in Dockerfile (`LABEL` instruction) or applied via `docker/metadata-action` in workflows.
+### Step 4: Report results
 
-### Phase 3: Report Generation
+Print a compliance report:
 
 ```
 Dockerfile Compliance Report
 ================================
-Project Type: frontend (detected)
+Project Type: <type> (detected)
 Dockerfile: ./Dockerfile (found)
 
 Configuration Checks:
-  Build base      node:24-alpine    ⚠️ WARN (standard: node:22-alpine)
-  Runtime base    nginx:1.27-alpine ✅ PASS
-  Multi-stage     2 stages          ✅ PASS
-  HEALTHCHECK     Present           ✅ PASS
-  Build caching   npm cache         ✅ PASS
-  EXPOSE          80                ✅ PASS
+  Build base      <image>           [PASS|WARN]
+  Runtime base    <image>           [PASS|WARN]
+  Multi-stage     <N> stages        [PASS|FAIL]
+  HEALTHCHECK     <present|missing> [PASS|FAIL]
+  Non-root user   <present|missing> [PASS|FAIL]
+  Build caching   <enabled|missing> [PASS|INFO]
 
 OCI Labels Checks:
-  image.source    Present           ✅ PASS
-  image.description Present         ✅ PASS
-  image.licenses  Not found         ⚠️ WARN
-  image.version   Via ARG           ✅ PASS
-  image.revision  Via ARG           ✅ PASS
+  image.source       <present|missing> [PASS|WARN]
+  image.description  <present|missing> [PASS|WARN]
+  image.licenses     <present|missing> [PASS|WARN]
 
 Recommendations:
-  - Consider using Node 22 LTS for stability
-  - Add org.opencontainers.image.licenses label
+  <list specific fixes needed>
 ```
 
-### Phase 4: Configuration (If Requested)
+If `--check-only`, stop here.
 
-If `--fix` flag or user confirms:
+### Step 5: Apply fixes (if requested)
 
-1. **Missing Dockerfile**: Create from standard template
+If `--fix` flag is set or user confirms:
+
+1. **Missing Dockerfile**: Create from standard template (see Standard Templates below)
 2. **Missing HEALTHCHECK**: Add standard healthcheck
 3. **Missing multi-stage**: Suggest restructure (manual fix needed)
 4. **Outdated base images**: Update FROM lines
+5. **Missing OCI labels**: Add LABEL instructions
 
-**HEALTHCHECK Template (nginx):**
-```dockerfile
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost/health || exit 1
-```
-
-### Phase 5: Standards Tracking
+### Step 6: Update standards tracking
 
 Update `.project-standards.yaml`:
 
@@ -199,7 +195,6 @@ LABEL org.opencontainers.image.source="https://github.com/OWNER/REPO" \
       org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.vendor="Your Organization"
 
-# Dynamic labels via build args
 ARG VERSION=dev
 ARG BUILD_DATE
 ARG VCS_REF
@@ -237,9 +232,11 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 - nginx:1.27-alpine preferred over debian variant
 - HEALTHCHECK is critical for Kubernetes liveness probes
 - Build caching significantly improves CI/CD speed
+- Non-root user is mandatory for production containers
 
 ## See Also
 
+- `/configure:container` - Comprehensive container infrastructure
 - `/configure:skaffold` - Kubernetes development configuration
 - `/configure:all` - Run all compliance checks
 - `container-development` skill - Container best practices

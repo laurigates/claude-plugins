@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-10
 reviewed: 2025-12-16
 description: Show infrastructure standards compliance status (read-only)
 allowed-tools: Glob, Grep, Read, TodoWrite
@@ -15,17 +15,38 @@ Display infrastructure standards compliance status without making changes.
 
 ## Context
 
-Quick read-only check of repository compliance against project standards. Use this to see current status before running `/configure:all` or specific configure commands.
+- Project standards: !`test -f .project-standards.yaml && echo "EXISTS" || echo "MISSING"`
+- Project type: !`head -20 .project-standards.yaml 2>/dev/null | grep -m1 "^project_type:" | sed 's/^[^:]*:[[:space:]]*//'`
+- Standards version: !`head -20 .project-standards.yaml 2>/dev/null | grep -m1 "^standards_version:" | sed 's/^[^:]*:[[:space:]]*//'`
+- Last configured: !`head -20 .project-standards.yaml 2>/dev/null | grep -m1 "^last_configured:" | sed 's/^[^:]*:[[:space:]]*//'`
+- Pre-commit config: !`test -f .pre-commit-config.yaml && echo "EXISTS" || echo "MISSING"`
+- Workflows: !`find .github/workflows -maxdepth 1 -name '*.yml' 2>/dev/null`
+- Has Dockerfile: !`find . -maxdepth 1 -name 'Dockerfile*' 2>/dev/null | head -1`
+- Has skaffold: !`test -f skaffold.yaml && echo "EXISTS" || echo "MISSING"`
+- Has helm: !`find . -maxdepth 2 -type d -name 'helm' 2>/dev/null | head -1`
+- Test configs: !`find . -maxdepth 1 \( -name 'vitest.config.*' -o -name 'jest.config.*' -o -name 'pytest.ini' \) 2>/dev/null`
+- Linting config: !`find . -maxdepth 1 \( -name 'biome.json' -o -name '.eslintrc*' \) 2>/dev/null`
+- Editor config: !`test -f .editorconfig && echo "EXISTS" || echo "MISSING"`
+- Security baseline: !`test -f .secrets.baseline && echo "EXISTS" || echo "MISSING"`
+- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' \) 2>/dev/null`
 
-## Workflow
+## Parameters
 
-### Phase 1: Project Detection
+Parse from `$ARGUMENTS`:
 
-1. Read `.project-standards.yaml` if exists (shows tracked version and last configured date)
+- `--verbose`: Show detailed compliance information for each component
+
+## Execution
+
+Execute this read-only compliance status check:
+
+### Step 1: Detect project type
+
+1. Read `.project-standards.yaml` if it exists (shows tracked version and last configured date)
 2. Auto-detect project type from file structure
 3. Report discrepancy if detected type differs from tracked type
 
-### Phase 2: Configuration Scan
+### Step 2: Scan configuration files
 
 Check for presence and validity of each configuration:
 
@@ -48,50 +69,50 @@ Check for presence and validity of each configuration:
 | Editor | `.editorconfig`, `.vscode/settings.json`, `.vscode/extensions.json` |
 | Security | `.github/workflows/*security*`, `.secrets.baseline`, `pyproject.toml [tool.bandit]` |
 
-### Phase 3: Quick Compliance Check
+### Step 3: Determine compliance status
 
-For each component, determine status:
+For each component, assign a status:
 
 | Status | Meaning |
 |--------|---------|
-| ✅ PASS | Fully compliant with project standards |
-| ⚠️ WARN | Present but outdated or incomplete |
-| ❌ FAIL | Missing required configuration |
-| ⏭️ SKIP | Not applicable for project type |
+| PASS | Fully compliant with project standards |
+| WARN | Present but outdated or incomplete |
+| FAIL | Missing required configuration |
+| SKIP | Not applicable for project type |
 
-### Phase 4: Report Output
+### Step 4: Print compliance report
 
 ```
 Infrastructure Standards Status
 ====================================
-Repository: R4C-Cesium-Viewer
-Project Type: frontend (detected)
-Standards Version: 2025.1 (tracked: 2025.1)
-Last Configured: 2025-11-15
+Repository: [name]
+Project Type: [type] ([detected])
+Standards Version: [version] (tracked: [tracked])
+Last Configured: [date]
 
 Component Status:
-  Pre-commit      ✅ PASS   v5.0.0 hooks, conventional commits
-  Release-please  ✅ PASS   Node workspace plugin
-  Dockerfile      ⚠️ WARN   Missing healthcheck
-  Skaffold        ✅ PASS   3 profiles configured
-  CI Workflows    ⚠️ WARN   Missing test workflow
-  Helm            ⏭️ SKIP   No helm/ directory
-  Cache Busting   ✅ PASS   Content hashing enabled (Next.js)
-  Tests           ✅ PASS   Vitest configured
-  Coverage        ⚠️ WARN   72% (below 80% threshold)
-  Linting         ✅ PASS   Biome configured
-  Formatting      ✅ PASS   Biome configured
-  Dead Code       ⚠️ WARN   Knip found 3 unused exports
-  Editor          ✅ PASS   .editorconfig present
-  Security        ✅ PASS   detect-secrets + npm audit
+  Pre-commit      PASS   v5.0.0 hooks, conventional commits
+  Release-please  PASS   Node workspace plugin
+  Dockerfile      WARN   Missing healthcheck
+  Skaffold        PASS   3 profiles configured
+  CI Workflows    WARN   Missing test workflow
+  Helm            SKIP   No helm/ directory
+  Tests           PASS   Vitest configured
+  Coverage        WARN   72% (below 80% threshold)
+  Linting         PASS   Biome configured
+  Formatting      PASS   Biome configured
+  Dead Code       WARN   Knip found 3 unused exports
+  Editor          PASS   .editorconfig present
+  Security        PASS   detect-secrets + npm audit
 
-Summary: 2 warnings, 0 failures
+Summary: [N] warnings, [N] failures
 Run /configure:all to fix issues
 ```
 
-### Phase 5: Verbose Mode
+### Step 5: Show verbose details (if requested)
 
-If `--verbose` flag:
+If `--verbose` flag is set:
+
 - Show specific version numbers for each hook/tool
 - List individual compliance checks performed
 - Show detected deviations from `.project-standards.yaml`
@@ -103,16 +124,6 @@ If `--verbose` flag:
 | Flag | Description |
 |------|-------------|
 | `--verbose` | Show detailed compliance information |
-
-## Examples
-
-```bash
-# Quick status overview
-/configure:status
-
-# Detailed compliance report
-/configure:status --verbose
-```
 
 ## Notes
 
@@ -126,4 +137,3 @@ If `--verbose` flag:
 - `/configure:select` - Interactively select which components to configure
 - `/configure:pre-commit` - Pre-commit specific checks
 - `/configure:release-please` - Release-please specific checks
-- `/configure:cache-busting` - Cache-busting specific checks
