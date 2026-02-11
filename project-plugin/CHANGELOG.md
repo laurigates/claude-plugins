@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.7.0](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.6.2...project-plugin-v1.7.0) (2026-02-11)
+
+
+### Features
+
+* **project-plugin:** add /project:distill skill for session knowledge capture ([f2b9f7e](https://github.com/laurigates/claude-plugins/commit/f2b9f7e51cbaf7a7656e0dfd505bc75f6662ac29))
+
+
+### Code Refactoring
+
+* **project-plugin:** improve project-distill skill discoverability and robustness ([002a8c8](https://github.com/laurigates/claude-plugins/commit/002a8c8feb6e6ab0c943509689375aba95b15abd))
+
 ## [1.6.2](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.6.1...project-plugin-v1.6.2) (2026-02-08)
 
 
