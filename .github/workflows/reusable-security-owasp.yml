@@ -4,15 +4,20 @@ on:
   workflow_call:
     inputs:
       file-patterns:
-        description: 'File patterns to analyze (space-separated globs)'
+        description: 'File patterns to analyze (space-separated git pathspecs)'
         required: false
         type: string
-        default: '**/*.{js,ts,jsx,tsx,py,rb,go,java,php}'
+        default: '**/*.js **/*.ts **/*.jsx **/*.tsx **/*.py **/*.rb **/*.go **/*.java **/*.php'
       max-turns:
         description: 'Maximum Claude analysis turns'
         required: false
         type: number
-        default: 8
+        default: 6
+      file-limit:
+        description: 'Maximum number of changed files to analyze'
+        required: false
+        type: number
+        default: 50
       fail-on-critical:
         description: 'Fail workflow if critical issues found'
         required: false
@@ -49,11 +54,13 @@ jobs:
       - name: Get changed files
         id: changed
         run: |
+          set -f
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- ${{ inputs.file-patterns }} 2>/dev/null | head -50 || echo "")
+            FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- ${{ inputs.file-patterns }} 2>/dev/null | head -${{ inputs.file-limit }} || echo "")
           else
-            FILES=$(git diff --name-only HEAD~1 -- ${{ inputs.file-patterns }} 2>/dev/null | head -50 || echo "")
+            FILES=$(git diff --name-only HEAD~1 -- ${{ inputs.file-patterns }} 2>/dev/null | head -${{ inputs.file-limit }} || echo "")
           fi
+          set +f
           FILE_COUNT=$(echo "$FILES" | grep -c '.' || echo 0)
           echo "count=$FILE_COUNT" >> $GITHUB_OUTPUT
           echo "files<<EOF" >> $GITHUB_OUTPUT

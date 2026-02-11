@@ -4,15 +4,20 @@ on:
   workflow_call:
     inputs:
       file-patterns:
-        description: 'Frontend file patterns'
+        description: 'Frontend file patterns (space-separated git pathspecs)'
         required: false
         type: string
-        default: '**/*.{tsx,jsx,vue,html}'
+        default: '**/*.tsx **/*.jsx **/*.vue **/*.html'
       max-turns:
         description: 'Maximum Claude turns'
         required: false
         type: number
-        default: 8
+        default: 6
+      file-limit:
+        description: 'Maximum number of changed files to analyze'
+        required: false
+        type: number
+        default: 30
       wcag-level:
         description: 'WCAG conformance level (A, AA, AAA)'
         required: false
@@ -53,11 +58,13 @@ jobs:
       - name: Get changed frontend files
         id: changed
         run: |
+          set -f
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- ${{ inputs.file-patterns }} 2>/dev/null | head -30 || echo "")
+            FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- ${{ inputs.file-patterns }} 2>/dev/null | head -${{ inputs.file-limit }} || echo "")
           else
-            FILES=$(git diff --name-only HEAD~1 -- ${{ inputs.file-patterns }} 2>/dev/null | head -30 || echo "")
+            FILES=$(git diff --name-only HEAD~1 -- ${{ inputs.file-patterns }} 2>/dev/null | head -${{ inputs.file-limit }} || echo "")
           fi
+          set +f
           FILE_COUNT=$(echo "$FILES" | grep -c '.' || echo 0)
           echo "count=$FILE_COUNT" >> $GITHUB_OUTPUT
           echo "files<<EOF" >> $GITHUB_OUTPUT
