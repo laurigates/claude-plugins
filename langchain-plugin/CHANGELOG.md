@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/laurigates/claude-plugins/compare/langchain-plugin-v1.2.2...langchain-plugin-v1.3.0) (2026-02-11)
+
+
+### Features
+
+* add required quality sections to refactored skills ([#544](https://github.com/laurigates/claude-plugins/issues/544)) ([342af54](https://github.com/laurigates/claude-plugins/commit/342af54af0f81fa50d239d06b32b353ddb7335fc))
+
 ## [1.2.2](https://github.com/laurigates/claude-plugins/compare/langchain-plugin-v1.2.1...langchain-plugin-v1.2.2) (2026-02-08)
 
 
