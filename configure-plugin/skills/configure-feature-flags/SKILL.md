@@ -13,6 +13,16 @@ name: configure-feature-flags
 
 Check and configure feature flag infrastructure using the OpenFeature standard with pluggable providers.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Adding feature flag infrastructure to a new project | Creating or editing individual flag definitions in YAML |
+| Setting up OpenFeature SDK with a provider (GOFF, flagd, LaunchDarkly) | Debugging why a specific flag evaluation returns unexpected values |
+| Auditing existing feature flag configuration for completeness | Writing application logic that consumes feature flags |
+| Configuring relay proxy infrastructure (Docker, Kubernetes) | Managing LaunchDarkly or Split dashboard settings |
+| Adding feature flag test helpers and in-memory providers | Configuring error tracking (`/configure:sentry` instead) |
+
 ## Context
 
 - Package JSON: !`test -f package.json && echo "EXISTS" || echo "MISSING"`
@@ -138,6 +148,17 @@ components:
 Print a summary of all changes made including SDK installed, provider configured, flag file created, and next steps (start relay, initialize in app, use flags in code).
 
 For detailed code templates, flag configuration patterns, and infrastructure manifests, see [REFERENCE.md](REFERENCE.md).
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick compliance check | `/configure:feature-flags --check-only` |
+| Auto-fix with GOFF provider | `/configure:feature-flags --fix --provider goff` |
+| Validate flag config | `goff lint --file flags.goff.yaml` |
+| Check relay proxy health | `curl -s http://localhost:1031/health | jq -c` |
+| List configured flags | `curl -s http://localhost:1031/v1/feature/flags | jq -r 'keys[]'` |
+| Check SDK installed (JS) | `jq -r '.dependencies | keys[] | select(contains("openfeature"))' package.json` |
 
 ## Flags
 

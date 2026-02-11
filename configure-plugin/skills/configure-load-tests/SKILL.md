@@ -13,6 +13,16 @@ name: configure-load-tests
 
 Check and configure load and performance testing infrastructure for stress testing, benchmarking, and capacity planning.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up load testing infrastructure from scratch (k6, Artillery, Locust) | Running existing load tests — use `k6 run` or `artillery run` directly |
+| Auditing current load testing coverage (smoke, stress, spike, soak) | Writing unit or integration tests — use `/configure:tests` |
+| Adding CI/CD pipelines for performance regression detection | Profiling application memory usage — use `/configure:memory-profiling` |
+| Migrating between load testing frameworks | Benchmarking individual functions — use language-specific benchmark tools |
+| Ensuring load test thresholds and reporting are properly configured | Testing API contracts — use `/configure:api-tests` |
+
 ## Context
 
 - Project root: !`pwd`
@@ -129,6 +139,17 @@ components:
 Print a summary of framework installed, scenarios created, scripts added, CI/CD configured, thresholds set, and next steps for the user.
 
 For detailed k6 test scripts, CI workflow templates, and reporting configuration, see [REFERENCE.md](REFERENCE.md).
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick compliance check | `/configure:load-tests --check-only` |
+| Auto-fix all issues | `/configure:load-tests --fix` |
+| Run smoke test quickly | `k6 run --vus 1 --duration 10s tests/load/scenarios/smoke.k6.js` |
+| Run with JSON output | `k6 run --out json=results.json tests/load/scenarios/load.k6.js` |
+| Check k6 version | `k6 version` |
+| List test scenarios | `find tests/load -name '*.k6.js' -type f` |
 
 ## Flags
 

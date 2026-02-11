@@ -13,6 +13,16 @@ name: api-tests
 
 Check and configure API contract testing infrastructure for validating API contracts, schemas, and consumer-provider agreements.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up API contract testing (Pact, OpenAPI, schema) | Running existing API tests (use `bun test` or test runner directly) |
+| Validating OpenAPI specification compliance | Editing OpenAPI spec content (use editor directly) |
+| Adding breaking change detection to CI | General CI workflow setup (use `/configure:workflows`) |
+| Checking API testing infrastructure status | Unit or integration test setup (use `/configure:tests` or `/configure:integration-tests`) |
+| Configuring Pact consumer/provider workflows | Debugging specific API endpoint failures (use test runner with verbose output) |
+
 ## Context
 
 - Package manager: !`test -f bun.lockb && echo "bun" || (test -f package-lock.json && echo "npm") || (test -f yarn.lock && echo "yarn") || echo "unknown"`
@@ -160,6 +170,17 @@ Print a summary of all changes applied including:
 - Test commands available (with exact `bun run` / `npm run` commands)
 - CI/CD jobs configured
 - Recommended next steps for verification
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick status check | `/configure:api-tests --check-only` |
+| Auto-fix all issues | `/configure:api-tests --fix` |
+| Pact-only setup | `/configure:api-tests --fix --type pact` |
+| OpenAPI-only setup | `/configure:api-tests --fix --type openapi` |
+| Check for OpenAPI spec | `find . -maxdepth 2 \( -name 'openapi.yaml' -o -name 'swagger.json' \) 2>/dev/null` |
+| Check Pact installed | `grep -l "pact-foundation" package.json 2>/dev/null` |
 
 ## Examples
 

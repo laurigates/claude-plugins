@@ -13,6 +13,16 @@ name: configure-argocd-automerge
 
 Configure GitHub Actions workflow to automatically create and merge PRs from ArgoCD Image Updater branches.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up auto-merge for ArgoCD Image Updater branches | Configuring ArgoCD application definitions |
+| Checking if `image-updater-**` branches have auto-merge | Managing general GitHub Actions workflows (`/configure:workflows`) |
+| Creating the `argocd-automerge.yml` workflow from scratch | Setting up container builds (`/configure:container`) |
+| Verifying PAT and permissions for auto-merge workflows | Configuring branch protection rules manually |
+| Updating an existing ArgoCD auto-merge workflow | Configuring Kubernetes deployments (`/configure:skaffold`) |
+
 ## Context
 
 - Workflows dir: !`test -d .github/workflows && echo "EXISTS" || echo "MISSING"`
@@ -152,6 +162,15 @@ Ensure branch protection allows:
 | Base branch | `main` | `master`, `develop` |
 | Merge strategy | `--squash` | `--merge`, `--rebase` |
 | PR title | `chore(deps): update container image` | Custom format |
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick status check | `/configure:argocd-automerge --check-only` |
+| Auto-create workflow | `/configure:argocd-automerge --fix` |
+| List image-updater branches | `git branch -r --list 'origin/image-updater-*'` |
+| Verify workflow exists | `find .github/workflows -name '*argocd*automerge*' 2>/dev/null` |
 
 ## Flags
 

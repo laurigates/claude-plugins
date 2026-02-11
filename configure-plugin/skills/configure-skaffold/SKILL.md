@@ -13,6 +13,16 @@ name: configure-skaffold
 
 Check and configure Skaffold against project standards.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Checking Skaffold configuration compliance for a Kubernetes project | Project has no k8s/ or helm/ directories (Skaffold is not applicable) |
+| Fixing port forwarding security issues (binding to 0.0.0.0) | Managing Kubernetes manifests or Helm charts directly |
+| Adding dotenvx hooks for secret generation in Skaffold | Configuring container builds without Kubernetes (use `/configure:dockerfile`) |
+| Upgrading Skaffold API version to latest | Debugging Skaffold runtime errors (use system-debugging agent) |
+| Creating a standard skaffold.yaml from template | Setting up a non-Skaffold local dev workflow (e.g., Docker Compose) |
+
 ## Context
 
 - K8s/Helm directories: !`find . -maxdepth 1 -type d \( -name 'k8s' -o -name 'helm' \) 2>/dev/null`
@@ -116,6 +126,16 @@ Update `.project-standards.yaml`:
 components:
   skaffold: "2025.1"
 ```
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick compliance check | `/configure:skaffold --check-only` |
+| Auto-fix all issues | `/configure:skaffold --fix` |
+| Check API version | `head -5 skaffold.yaml \| grep apiVersion` |
+| Check port forwarding security | `grep -A2 'portForward' skaffold.yaml \| grep address` |
+| List profiles | `grep 'name:' skaffold.yaml \| grep -v metadata` |
 
 ## Security Note
 

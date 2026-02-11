@@ -13,6 +13,16 @@ name: configure-memory-profiling
 
 Check and configure memory profiling infrastructure for Python projects using pytest-memray.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up memory profiling for a Python project from scratch | Project is not Python — memray/pytest-memray are Python-only |
+| Adding pytest-memray integration for CI memory regression detection | Profiling CPU performance — use cProfile or py-spy instead |
+| Configuring memory leak detection in test suites | Running load/stress tests — use `/configure:load-tests` |
+| Setting memory thresholds and allocation benchmarks for CI | Quick one-off memory check — run `uv run pytest --memray` directly |
+| Enabling native C extension stack tracking for deep profiling | Profiling production systems live — use memray standalone or Grafana |
+
 ## Context
 
 - Project root: !`pwd`
@@ -133,6 +143,17 @@ components:
 Print a summary of packages installed, configuration applied, test files created, commands available, CI/CD configured, and next steps for the user.
 
 For detailed test templates, CI workflows, and standalone memray commands, see [REFERENCE.md](REFERENCE.md).
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick compliance check | `/configure:memory-profiling --check-only` |
+| Auto-fix all issues | `/configure:memory-profiling --fix` |
+| Run memory tests | `uv run pytest --memray` |
+| Detect memory leaks | `uv run pytest --memray --memray-leak-detection` |
+| Run with native tracking | `uv run pytest --memray --native` |
+| Generate flamegraph | `uv run memray flamegraph output.bin -o flamegraph.html` |
 
 ## Flags
 

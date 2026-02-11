@@ -13,6 +13,16 @@ name: configure-ux-testing
 
 Check and configure UX testing infrastructure with Playwright as the primary tool for E2E, accessibility, and visual regression testing.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up Playwright E2E testing infrastructure for a project | Running existing Playwright tests (use `bun test:e2e` or test-runner agent) |
+| Adding accessibility testing with axe-core to a project | Performing manual accessibility audits on a live site |
+| Configuring visual regression testing with screenshot assertions | Debugging a specific failing E2E test (use system-debugging agent) |
+| Setting up Playwright MCP server for Claude browser automation | Writing individual test cases (use playwright-testing skill) |
+| Creating CI/CD workflows for E2E and accessibility test execution | Configuring unit or integration tests (use `/configure:tests`) |
+
 ## Context
 
 - Package manager: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'bun.lockb' \) 2>/dev/null`
@@ -212,6 +222,17 @@ components:
 Print a summary of configuration applied, scripts added, and CI/CD setup. Include next steps for starting the dev server, running tests, updating snapshots, and opening the interactive UI.
 
 For the results report format, see [REFERENCE.md](REFERENCE.md).
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick compliance check | `/configure:ux-testing --check-only` |
+| Auto-fix all issues | `/configure:ux-testing --fix` |
+| Accessibility focus only | `/configure:ux-testing --a11y` |
+| Visual regression focus only | `/configure:ux-testing --visual` |
+| Run E2E tests compact | `bunx playwright test --reporter=line` |
+| Run a11y tests only | `bunx playwright test --project=a11y --reporter=dot` |
 
 ## Flags
 

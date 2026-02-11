@@ -13,6 +13,16 @@ name: configure-makefile
 
 Check and configure project Makefile against project standards.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up a new Makefile for a project that requires Make | Project can use Just instead — use `/configure:justfile` (preferred) |
+| Auditing existing Makefile for missing standard targets | Writing complex build rules with dependencies — consult GNU Make documentation |
+| Ensuring Makefile follows team conventions (help target, PHONY, colors) | Project uses a language-native build system (cargo, go build) exclusively |
+| Running CI/CD compliance checks on Makefile structure | Migrating from Makefile to Justfile — use `/configure:justfile` which handles migration |
+| Adding language-specific build/test/lint targets to existing Makefile | Debugging a specific Make target — run `make -n <target>` directly |
+
 ## Context
 
 - Project root: !`pwd`
@@ -145,6 +155,16 @@ components:
 Print a summary of changes applied, targets added, and suggest running `make help` to verify.
 
 For the universal Makefile template structure, see [REFERENCE.md](REFERENCE.md).
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick compliance check | `/configure:makefile --check-only` |
+| Auto-fix all issues | `/configure:makefile --fix` |
+| List existing targets | `grep -E '^[a-zA-Z_-]+:' Makefile` |
+| Dry-run a target | `make -n <target>` |
+| Show default goal | `make -p \| grep '.DEFAULT_GOAL'` |
 
 ## Flags
 
