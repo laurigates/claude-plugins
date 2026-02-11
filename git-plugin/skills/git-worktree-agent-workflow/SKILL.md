@@ -2,7 +2,7 @@
 model: opus
 created: 2026-02-02
 modified: 2026-02-10
-reviewed: 2026-02-02
+reviewed: 2026-02-10
 name: git-worktree-agent-workflow
 description: |
   Parallel agent workflows using git worktrees for isolated, concurrent issue work.
@@ -78,25 +78,31 @@ git stash drop 2>/dev/null || true
 
 ### Step 2: Create isolated worktrees
 
-Create independent working directories for each issue.
+Create independent working directories for each issue inside `./worktrees/`.
 
 ```bash
+# Ensure worktrees directory exists (gitignored)
+mkdir -p worktrees
+
 # Create worktree for each issue
-git worktree add ../project-wt-issue-47 -b wt/issue-47 main
-git worktree add ../project-wt-issue-49 -b wt/issue-49 main
-git worktree add ../project-wt-issue-50 -b wt/issue-50 main
+git worktree add ./worktrees/issue-47 -b wt/issue-47 main
+git worktree add ./worktrees/issue-49 -b wt/issue-49 main
+git worktree add ./worktrees/issue-50 -b wt/issue-50 main
 
 # List all worktrees
 git worktree list
 
 # Each worktree:
-# - Has its own working directory
+# - Lives inside ./worktrees/ (within the project directory)
 # - Shares the same .git database (efficient)
 # - Has an independent branch
 # - Can be worked on simultaneously
+# - Requires no additional permissions (already in project dir)
 ```
 
-**Naming convention**: `../project-wt-issue-{N}` with branch `wt/issue-{N}`
+**Naming convention**: `./worktrees/issue-{N}` with branch `wt/issue-{N}`
+
+**Why `./worktrees/`**: Keeping worktrees inside the project directory means agents already have file permissions — no `additionalDirectories` configuration needed. The `/worktrees/` entry in `.gitignore` prevents git from tracking worktree contents.
 
 ### Step 3: Apply existing work
 
@@ -104,8 +110,7 @@ Distribute saved patches to appropriate worktrees.
 
 **For complete patches (single-issue commits)**:
 ```bash
-cd ../project-wt-issue-47
-git am /tmp/patches/0001-feat-issue-47-implementation.patch
+git -C ./worktrees/issue-47 am /tmp/patches/0001-feat-issue-47-implementation.patch
 ```
 
 **For mixed patches (multi-issue commits)**:
@@ -114,14 +119,12 @@ git am /tmp/patches/0001-feat-issue-47-implementation.patch
 git show <commit> -- path/to/file1 path/to/file2 > /tmp/patches/issue-47-files.patch
 
 # Apply to appropriate worktree
-cd ../project-wt-issue-47
-git apply /tmp/patches/issue-47-files.patch
+git -C ./worktrees/issue-47 apply /tmp/patches/issue-47-files.patch
 ```
 
 **For partial work (needs agent completion)**:
 ```bash
-cd ../project-wt-issue-50
-git apply /tmp/patches/partial-work.patch
+git -C ./worktrees/issue-50 apply /tmp/patches/partial-work.patch
 # Agent will complete remaining work
 ```
 
@@ -133,7 +136,7 @@ Launch agents to complete work in their respective worktrees.
 
 **Agent prompt template**:
 ```
-You are working in the worktree at: /absolute/path/to/project-wt-issue-{N}
+You are working in the worktree at: {repo_root}/worktrees/issue-{N}
 
 **Issue #{N}**: {issue title}
 
@@ -151,7 +154,7 @@ You are working in the worktree at: /absolute/path/to/project-wt-issue-{N}
 
    Co-Authored-By: Claude <noreply@anthropic.com>
 
-DO NOT modify any files outside the worktree at /absolute/path/to/project-wt-issue-{N}
+DO NOT modify any files outside the worktree at {repo_root}/worktrees/issue-{N}
 ```
 
 **Parallelization**: Agents run simultaneously because:
@@ -165,8 +168,7 @@ Push branches and create PRs in order.
 
 ```bash
 # From each worktree, push to origin
-cd ../project-wt-issue-47
-git push origin wt/issue-47:fix/issue-47
+git -C ./worktrees/issue-47 push origin wt/issue-47:fix/issue-47
 
 # Create PR
 gh pr create --head fix/issue-47 --base main \
@@ -185,9 +187,9 @@ Remove worktrees and temporary branches after PRs are merged.
 
 ```bash
 # Remove worktrees
-git worktree remove ../project-wt-issue-47
-git worktree remove ../project-wt-issue-49
-git worktree remove ../project-wt-issue-50
+git worktree remove ./worktrees/issue-47
+git worktree remove ./worktrees/issue-49
+git worktree remove ./worktrees/issue-50
 
 # Prune stale worktree references
 git worktree prune
@@ -195,8 +197,13 @@ git worktree prune
 # Delete local branches
 git branch -D wt/issue-47 wt/issue-49 wt/issue-50
 
-# Clean up patches
+# Clean up patches and empty worktrees directory
 rm -rf /tmp/patches/
+
+# Note: rmdir only removes empty directories. If worktrees remain (intentionally
+# or due to errors), the directory is preserved. This is correct behavior - manual
+# cleanup is needed if worktrees are still in use.
+rmdir worktrees 2>/dev/null || true
 ```
 
 ## Orchestrator Responsibilities
@@ -259,14 +266,15 @@ Each subagent handles:
 | Context | Command |
 |---------|---------|
 | List worktrees | `git worktree list --porcelain` |
-| Create worktree | `git worktree add ../project-wt-issue-N -b wt/issue-N main` |
-| Remove worktree | `git worktree remove ../project-wt-issue-N` |
+| Create worktrees dir | `mkdir -p worktrees` |
+| Create worktree | `git worktree add ./worktrees/issue-N -b wt/issue-N main` |
+| Remove worktree | `git worktree remove ./worktrees/issue-N` |
 | Preserve commits | `git format-patch <base>..HEAD -o /tmp/patches/` |
-| Apply patch (am) | `git am /tmp/patches/*.patch` |
-| Apply patch (apply) | `git apply /tmp/patches/file.patch` |
+| Apply patch (am) | `git -C ./worktrees/issue-N am /tmp/patches/*.patch` |
+| Apply patch (apply) | `git -C ./worktrees/issue-N apply /tmp/patches/file.patch` |
 | Extract file changes | `git show <commit> -- path/to/file > /tmp/patch.patch` |
-| Check worktree status | `git -C ../project-wt-issue-N status --porcelain` |
-| Run tests in worktree | `cd ../project-wt-issue-N && npm test` |
+| Check worktree status | `git -C ./worktrees/issue-N status --porcelain` |
+| Run tests in worktree | `cd ./worktrees/issue-N && npm test` |
 | Push worktree branch | `git push origin wt/issue-N:fix/issue-N` |
 
 ## Quick Reference
@@ -292,10 +300,10 @@ Orchestrator (main repo)
     |
     +--- Step 1: Analyze & preserve contaminated work
     |
-    +--- Step 2: Create worktrees
-    |         +-- ../wt-issue-47 (complete patch)
-    |         +-- ../wt-issue-49 (complete patch)
-    |         +-- ../wt-issue-50 (partial, needs agent)
+    +--- Step 2: Create worktrees (mkdir -p worktrees)
+    |         +-- ./worktrees/issue-47 (complete patch)
+    |         +-- ./worktrees/issue-49 (complete patch)
+    |         +-- ./worktrees/issue-50 (partial, needs agent)
     |
     +--- Step 3: Apply patches
     |         +-- git am (complete patches)
@@ -303,10 +311,10 @@ Orchestrator (main repo)
     |
     +--- Step 4: Launch agents IN PARALLEL
     |         |
-    |         +---> Agent 1 -> ../wt-issue-50
+    |         +---> Agent 1 -> ./worktrees/issue-50
     |         |         +-- Completes work, commits
     |         |
-    |         +---> Agent 2 -> ../wt-issue-XX
+    |         +---> Agent 2 -> ./worktrees/issue-XX
     |                   +-- Implements from scratch, commits
     |
     +--- Step 5: Sequential integration
@@ -317,6 +325,7 @@ Orchestrator (main repo)
     +--- Step 6: Cleanup
               +-- Remove worktrees
               +-- Delete local branches
+              +-- rmdir worktrees (if empty)
 ```
 
 ## Related Skills

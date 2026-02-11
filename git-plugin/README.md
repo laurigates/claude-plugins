@@ -41,6 +41,7 @@ Three composable skills that can be invoked individually or combined based on us
 | Skill | Description |
 |-------|-------------|
 | `git-branch-naming` | Branch naming conventions (type prefixes, issue linking, kebab-case) |
+| `git-worktree-agent-workflow` | Parallel agent workflows using git worktrees for isolated, concurrent issue work |
 | `git-cli-agentic` | Git commands optimized for AI agents with porcelain output |
 | `gh-cli-agentic` | GitHub CLI commands optimized for AI agents with JSON output |
 | `gh-workflow-monitoring` | Watch GitHub Actions runs with blocking commands (no polling/timeouts) |

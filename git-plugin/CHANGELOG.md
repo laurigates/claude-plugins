@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.13.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.12.4...git-plugin-v2.13.0) (2026-02-10)
+
+
+### Features
+
+* **git-plugin:** use ./worktrees/ directory for agent worktree workflows ([a97db86](https://github.com/laurigates/claude-plugins/commit/a97db8613d879db4c06cefc6f94edcfca95f9043))
+
+### Migration Notes
+
+**git-worktree-agent-workflow**: Worktree paths have changed from `../project-wt-issue-N` to `./worktrees/issue-N`. If you're using the worktree skill from v2.11.0-v2.12.4, existing worktrees will need to be recreated with the new path structure. This eliminates the need for `additionalDirectories` configuration. See the [skill documentation](git-plugin/skills/git-worktree-agent-workflow/SKILL.md) for details.
+
 ## [2.12.4](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.12.3...git-plugin-v2.12.4) (2026-02-08)
 
 
