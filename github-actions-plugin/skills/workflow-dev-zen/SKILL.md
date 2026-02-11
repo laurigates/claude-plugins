@@ -1,7 +1,7 @@
 ---
 model: opus
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-10
 reviewed: 2025-12-16
 allowed-tools: Read, Write, Edit, MultiEdit, Bash(git *), mcp__pal__codereview, mcp__pal__planner, mcp__pal__precommit, mcp__github__list_issues, mcp__github__create_issue, mcp__github__create_pull_request, TodoWrite
 argument-hint: [--max-cycles <n>] [--model <model>]
@@ -9,26 +9,29 @@ description: AI-powered development loop with PAL MCP integration
 name: workflow-dev-zen
 ---
 
-# devloop.md - Development Loop Instructions for Claude
+# /workflow:dev-zen
 
-When the user types `/workflow:dev`, follow these instructions to execute an automated development loop.
+AI-powered development loop with PAL MCP integration (code review, planner, precommit).
 
-## Overview
+## Context
 
-Use zen to perform a codereview using gemini pro and use planner to generate a detailed plan, implement the fixes and do a final precommit check by continuing from the previous codereview. Check GitHub issues using the GitHub MCP and consider them during planning.
+- Current branch: !`git branch --show-current 2>/dev/null`
+- Working tree: !`git status --porcelain 2>/dev/null | wc -l`
+- Project type: !`find . -maxdepth 1 \( -name "package.json" -o -name "Cargo.toml" -o -name "pyproject.toml" -o -name "go.mod" -o -name "manage.py" \) 2>/dev/null`
+- Open issues: !`gh issue list --state open --limit 5 --json number,title 2>/dev/null`
 
-Execute a continuous development cycle that:
+## Parameters
 
-1. Ensures clean environment setup
-2. Identifies and creates issues from test failures
-3. Intelligently selects issues to work on
-4. Implements solutions following TDD
-5. Creates pull requests and monitors CI
-6. Repeats until stopped or issues resolved
+Parse from `$ARGUMENTS`:
 
-## Step-by-Step Instructions
+- `--max-cycles <n>`: Limit to N issue resolution cycles (default: unlimited)
+- `--model <model>`: Model for PAL MCP code review
 
-### Phase 1: Environment Setup & Assessment
+## Execution
+
+Execute this AI-powered development loop. Use PAL MCP's codereview (via Gemini Pro) for analysis, planner for detailed plans, and precommit for final checks. Check GitHub issues via GitHub MCP and consider them during planning.
+
+### Step 1: Set up environment and assess state
 
 **1. Ensure on main branch and sync**
 
@@ -59,7 +62,7 @@ git pull
 - Use `github:list_issues` with `state=open`
 - Filter out issues that are blocked or need external input
 
-### Phase 2: Issue Selection Strategy
+### Step 2: Select issue to work on
 
 **Select issues using this priority order:**
 
@@ -82,7 +85,7 @@ git pull
 - Create issues for security vulnerabilities
 - Run linting tools and create issues for violations
 
-### Phase 3: Implementation Loop
+### Step 3: Implement solution
 
 **For the selected issue, repeat until CI passes:**
 
@@ -142,7 +145,7 @@ git push origin fix/issue-{number}-{brief-description}
 - Implement fixes and push additional commits
 - Repeat until all checks pass
 
-### Phase 4: Completion & Loop
+### Step 4: Complete and loop
 
 **13. Verify CI success**
 
@@ -154,7 +157,7 @@ git push origin fix/issue-{number}-{brief-description}
 - Use `github:update_issue` to close with state `closed`
 - Add comment referencing the closing PR
 
-**15. Return to Phase 1**
+**15. Return to Step 1**
 
 - Go back to environment setup
 - Continue the loop for the next issue

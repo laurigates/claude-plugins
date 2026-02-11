@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-02-06
+modified: 2026-02-10
 reviewed: 2025-12-16
 name: ci-workflows
 description: |

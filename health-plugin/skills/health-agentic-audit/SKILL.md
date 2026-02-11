@@ -1,7 +1,7 @@
 ---
 model: opus
 created: 2026-02-05
-modified: 2026-02-05
+modified: 2026-02-10
 reviewed: 2026-02-08
 description: Audit skills and agents for agentic output optimization (missing compact/JSON flags, missing Agentic Optimizations tables)
 allowed-tools: Bash(find *), Bash(head *), Read, Grep, Glob, TodoWrite
@@ -14,6 +14,16 @@ name: health-agentic-audit
 Scan all plugin skills, commands, and agents for CLI output optimization opportunities. Checks for missing Agentic Optimizations tables, bare CLI commands without compact flags, and stale review dates.
 
 Standards reference: `.claude/rules/agentic-optimization.md` and `.claude/rules/skill-quality.md`.
+
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Auditing skills for agentic optimization compliance | General plugin audit (use `/health:audit`) |
+| Finding missing Agentic Optimizations tables | Comprehensive environment check (use `/health:check`) |
+| Reviewing CLI command patterns in skills | Plugin registry issues (use `/health:plugins`) |
+| Quality-checking skill documentation | Manual skill review preferred |
+| Batch-updating skill quality standards | Single skill needs updating |
 
 ## Context
 
@@ -29,52 +39,37 @@ Standards reference: `.claude/rules/agentic-optimization.md` and `.claude/rules/
 | `--fix` | Add skeleton Agentic Optimizations tables to flagged skills and update `modified` dates |
 | `--verbose` | Show all scanned files and detailed pattern matching results |
 
-## Workflow
+## Execution
 
-### Phase 1: Discover Files
+Execute this agentic output audit:
 
-Find all plugin content files:
+### Step 1: Discover all plugin content files
 
-1. Skills: `find . -name 'SKILL.md' -o -name 'skill.md'`
-2. Skills (all): `find . \( -name 'SKILL.md' -o -name 'skill.md' \)`
-3. Agents: `find . -path '*/agents/*.md' -not -name 'README.md'`
+Find all skills, commands, and agents in the codebase:
+
+1. Scan for skills: `find . -name 'SKILL.md' -o -name 'skill.md'`
+2. Scan for all skill variants: `find . \( -name 'SKILL.md' -o -name 'skill.md' \)`
+3. Scan for agents: `find . -path '*/agents/*.md' -not -name 'README.md'`
 
 Classify each file by type (skill, command, agent) for the report.
 
-### Phase 2: Check for Agentic Optimizations Tables
+### Step 2: Check each skill for Agentic Optimizations tables
 
 For each **skill** file:
 
-1. Check if it contains a heading matching `## Agentic Optimization` (with or without trailing "s")
-2. Check if it contains bash/shell code blocks (`` ```bash `` or `` ```sh ``)
+1. Search for a heading matching `## Agentic Optimization` (with or without trailing "s")
+2. Search for bash/shell code blocks (`` ```bash `` or `` ```sh ``)
 3. Flag skills that have bash code blocks but lack the Agentic Optimizations table
 
-Skills without any bash code blocks are informational and can be skipped (note them in verbose mode).
+Skip skills without any bash code blocks (informational skills). Note them in verbose mode.
 
-### Phase 3: Check for Bare CLI Commands
+### Step 3: Scan for bare CLI commands missing compact flags
 
-Scan execution and context sections of all files for commands missing compact/machine-readable flags.
-
-| Pattern | Issue | Suggested Fix |
-|---------|-------|---------------|
-| `kubectl get` without `-o` flag | Verbose default table output | Add `-o wide` or `-o json` |
-| `kubectl describe` without `-o` | Verbose narrative output | Consider `-o json` or targeted `get` |
-| `helm list` without `-o json` | Text table output | Add `-o json` or `--output json` |
-| `helm history` without `-o json` | Text table output | Add `-o json` |
-| `helm status` without `-o json` | Text output | Add `-o json` |
-| `cargo clippy` without `--message-format` | Verbose default output | Add `--message-format=short` |
-| `cargo test` without `--format` | Verbose default output | Add `-- --format terse` or use `cargo-nextest` |
-| `ruff check` without `--output-format` | Default verbose output | Add `--output-format=concise` or `github` |
-| `docker ps` without `--format` | Verbose default table | Add `--format` with Go template |
-| `docker images` without `--format` | Verbose default table | Add `--format` with Go template |
-| `cat <file>` in context sections | Reads entire file | Use `head -N <file>` or targeted extraction |
-| Test commands without `--bail`/`-x` | No fail-fast | Add `--bail=1`, `-x`, or `--bail` |
-| `eslint` without `--format` | Verbose default output | Add `--format=unix` or `--format=stylish` |
-| `biome check` without `--reporter` | Verbose default output | Add `--reporter=github` |
+Read execution and context sections of all files. Match commands against the bare CLI patterns in [REFERENCE.md](REFERENCE.md).
 
 Search for these patterns inside fenced code blocks and backtick context commands (`!` backtick syntax).
 
-### Phase 4: Check Frontmatter Dates
+### Step 4: Check frontmatter dates for staleness
 
 For each file, extract the `modified` date from YAML frontmatter:
 
@@ -82,63 +77,25 @@ For each file, extract the `modified` date from YAML frontmatter:
 2. Calculate days since modification
 3. Flag files where `modified` is older than 90 days as stale
 
-### Phase 5: Generate Report
+### Step 5: Generate the audit report
 
-Output a structured markdown report:
+Output a structured markdown report with these sections:
 
-```
-## Agentic Output Audit Report
-
-### Missing Agentic Optimizations Tables
-| File | Plugin | CLI Tools Detected |
-|------|--------|--------------------|
-(List skills with bash blocks but no table)
-
-### Bare CLI Commands (no compact flags)
-| File | Line | Command | Suggested Fix |
-|------|------|---------|---------------|
-(List commands missing optimization flags)
-
-### Context Section Issues
-| File | Line | Issue | Fix |
-|------|------|-------|-----|
-(Context commands using cat or verbose output)
-
-### Stale Reviews (>90 days)
-| File | Last Modified | Days Stale |
-|------|---------------|------------|
-
-### Summary
-- X skills scanned, Y commands scanned, Z agents scanned
-- N missing Agentic Optimizations tables
-- M bare CLI commands found
-- P context section issues
-- Q stale reviews
-```
+1. **Missing Agentic Optimizations Tables** — list skills with bash blocks but no table
+2. **Bare CLI Commands** — list commands missing optimization flags with file, line, command, and suggested fix
+3. **Context Section Issues** — context commands using cat or verbose output
+4. **Stale Reviews (>90 days)** — files with outdated `modified` dates
+5. **Summary** — total counts for skills/commands/agents scanned and issues found
 
 If `--verbose`: also list all scanned files with their status (pass/fail per check).
 
-### Phase 6: Apply Fixes (if --fix)
+### Step 6: Apply fixes (if --fix)
 
 When `--fix` is passed:
 
-1. **Add skeleton Agentic Optimizations tables** to flagged skills:
-   - Insert before the last heading or at the end of the file
-   - Use this template:
-     ```markdown
-     ## Agentic Optimizations
-
-     | Context | Command |
-     |---------|---------|
-     | Quick check | `TODO: add compact command` |
-     | CI mode | `TODO: add CI-friendly command` |
-     | Errors only | `TODO: add errors-only command` |
-     ```
-   - Leave TODO entries for the user to fill in
-
-2. **Update `modified` date** in frontmatter of each modified file to today's date
-
-3. **Report changes**: Show which files were modified and what was added
+1. Add skeleton Agentic Optimizations tables to flagged skills (insert before the last heading or at end of file). Use the skeleton template from [REFERENCE.md](REFERENCE.md). Leave TODO entries for the user to fill in.
+2. Update `modified` date in frontmatter of each modified file to today's date
+3. Report which files were modified and what was added
 
 Prompt the user to fill in the TODO entries with actual optimized commands.
 
@@ -166,6 +123,16 @@ Use the standard extraction pattern:
 ```bash
 head -20 "$file" | grep -m1 "^modified:" | sed 's/^[^:]*:[[:space:]]*//'
 ```
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Agentic audit scan | `/health:agentic-audit` |
+| Audit with auto-fix | `/health:agentic-audit --fix` |
+| Verbose output | `/health:agentic-audit --verbose` |
+| Find all skill files | `find . \( -name 'SKILL.md' -o -name 'skill.md' \) 2>/dev/null` |
+| Check for Agentic Optimizations table | `grep -l "## Agentic Optimizations" $(find . -name 'SKILL.md') 2>/dev/null` |
 
 ## See Also
 

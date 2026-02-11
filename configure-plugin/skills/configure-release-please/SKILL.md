@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-22
+modified: 2026-02-11
 reviewed: 2025-12-16
 description: Check and configure release-please workflow for project standards
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -15,45 +15,47 @@ Check and configure release-please against project standards.
 
 ## Context
 
-This command validates release-please configuration and workflow against project standards.
+- Workflow file: !`find .github/workflows -maxdepth 1 -name 'release-please*' 2>/dev/null`
+- Config file: !`test -f release-please-config.json && echo "EXISTS" || echo "MISSING"`
+- Manifest file: !`test -f .release-please-manifest.json && echo "EXISTS" || echo "MISSING"`
+- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) 2>/dev/null`
+- Workflows dir: !`test -d .github/workflows && echo "EXISTS" || echo "MISSING"`
 
 **Skills referenced**: `release-please-standards`, `release-please-protection`
 
-## Version Checking
+## Parameters
 
-**CRITICAL**: Before configuring release-please, fetch latest action version from GitHub API:
+Parse from command arguments:
+
+- `--check-only`: Report status without offering fixes
+- `--fix`: Apply all fixes automatically
+
+## Execution
+
+Execute this release-please configuration check:
+
+### Step 1: Fetch latest action version
+
+Run this command to get the current release-please-action version dynamically:
 
 ```bash
-# Fetch latest release-please-action version
 curl -s https://api.github.com/repos/googleapis/release-please-action/releases/latest | jq -r '.tag_name'
 ```
-
-Use this command to get the current version dynamically rather than hardcoding.
 
 **References**:
 - [release-please-action releases](https://github.com/googleapis/release-please-action/releases)
 - [release-please CLI releases](https://github.com/googleapis/release-please/releases)
 
-## Workflow
+### Step 2: Detect project type
 
-### Phase 1: Configuration Detection
-
-Check for required files:
-
-1. `.github/workflows/release-please.yml` - GitHub Actions workflow
-2. `release-please-config.json` - Release configuration
-3. `.release-please-manifest.json` - Version manifest
-
-### Phase 2: Project Type Detection
-
-Determine appropriate release-type:
+Determine appropriate release-type from detected package files:
 
 - **node**: Has `package.json` (default for frontend/backend apps)
 - **python**: Has `pyproject.toml` without `package.json`
 - **helm**: Infrastructure with Helm charts
 - **simple**: Generic projects
 
-### Phase 3: Compliance Analysis
+### Step 3: Analyze compliance
 
 **Workflow file checks**:
 - Action version: `googleapis/release-please-action@v4`
@@ -70,31 +72,13 @@ Determine appropriate release-type:
 - Valid JSON structure
 - Package paths match config
 
-### Phase 4: Report Generation
+### Step 4: Generate compliance report
 
-```
-Release-Please Compliance Report
-====================================
-Project Type: node (detected)
+Print a formatted compliance report showing file status and configuration check results. If `--check-only` is set, stop here.
 
-File Status:
-  Workflow        .github/workflows/release-please.yml  ✅ PASS
-  Config          release-please-config.json            ✅ PASS
-  Manifest        .release-please-manifest.json         ✅ PASS
+For the report format, see [REFERENCE.md](REFERENCE.md).
 
-Configuration Checks:
-  Action version  v4                                    ✅ PASS
-  Token           MY_RELEASE_PLEASE_TOKEN               ✅ PASS
-  Release type    node                                  ✅ PASS
-  Changelog       feat, fix sections                    ✅ PASS
-  Plugin          node-workspace                        ✅ PASS
-
-Overall: Fully compliant
-```
-
-### Phase 5: Configuration (If Requested)
-
-If `--fix` flag or user confirms:
+### Step 5: Apply configuration (if --fix or user confirms)
 
 1. **Missing workflow**: Create from standard template
 2. **Missing config**: Create with detected release-type
@@ -102,7 +86,9 @@ If `--fix` flag or user confirms:
 4. **Outdated action**: Update to v4
 5. **Wrong token**: Update to use MY_RELEASE_PLEASE_TOKEN
 
-### Phase 6: Standards Tracking
+For standard templates, see [REFERENCE.md](REFERENCE.md).
+
+### Step 6: Update standards tracking
 
 Update `.project-standards.yaml`:
 
@@ -110,65 +96,6 @@ Update `.project-standards.yaml`:
 components:
   release-please: "2025.1"
 ```
-
-## Standard Templates
-
-### Workflow Template
-
-```yaml
-name: Release Please
-
-on:
-  push:
-    branches:
-      - main
-
-permissions:
-  contents: write
-  pull-requests: write
-
-jobs:
-  release-please:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: googleapis/release-please-action@v4
-        with:
-          token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
-```
-
-### Config Template (Node)
-
-```json
-{
-  "packages": {
-    ".": {
-      "release-type": "node",
-      "changelog-sections": [
-        {"type": "feat", "section": "Features"},
-        {"type": "fix", "section": "Bug Fixes"},
-        {"type": "perf", "section": "Performance"},
-        {"type": "deps", "section": "Dependencies"}
-      ]
-    }
-  },
-  "plugins": ["node-workspace"]
-}
-```
-
-### Manifest Template
-
-```json
-{
-  ".": "0.0.0"
-}
-```
-
-## Flags
-
-| Flag | Description |
-|------|-------------|
-| `--check-only` | Report status without offering fixes |
-| `--fix` | Apply all fixes automatically |
 
 ## Important Notes
 

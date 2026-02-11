@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-10
 reviewed: 2025-12-16
 description: Check and configure code formatting (Biome, Prettier, Ruff, rustfmt)
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -15,29 +15,42 @@ Check and configure code formatting tools against modern best practices.
 
 ## Context
 
-This command validates code formatting configuration and upgrades to modern tools.
+- Biome config: !`test -f biome.json && echo "EXISTS" || echo "MISSING"`
+- Prettier config: !`find . -maxdepth 1 \( -name '.prettierrc*' -o -name 'prettier.config.*' \) 2>/dev/null`
+- Ruff config: !`grep -l 'tool.ruff.format' pyproject.toml 2>/dev/null`
+- Black config: !`grep -l 'tool.black' pyproject.toml 2>/dev/null`
+- Rustfmt config: !`find . -maxdepth 1 \( -name 'rustfmt.toml' -o -name '.rustfmt.toml' \) 2>/dev/null`
+- EditorConfig: !`test -f .editorconfig && echo "EXISTS" || echo "MISSING"`
+- Package JSON: !`test -f package.json && echo "EXISTS" || echo "MISSING"`
+- Python project: !`test -f pyproject.toml && echo "EXISTS" || echo "MISSING"`
+- Rust project: !`test -f Cargo.toml && echo "EXISTS" || echo "MISSING"`
+- Pre-commit: !`test -f .pre-commit-config.yaml && echo "EXISTS" || echo "MISSING"`
+- Project standards: !`test -f .project-standards.yaml && echo "EXISTS" || echo "MISSING"`
 
-**Modern formatting preferences:**
-- **JavaScript/TypeScript**: Biome (preferred) or Prettier
-- **Python**: Ruff format (replaces Black)
-- **Rust**: rustfmt (standard)
+## Parameters
+
+Parse from `$ARGUMENTS`:
+
+- `--check-only`: Report compliance status without modifications
+- `--fix`: Apply all fixes automatically without prompting
+- `--formatter <formatter>`: Override formatter detection (biome, prettier, ruff, rustfmt)
 
 ## Version Checking
 
-**CRITICAL**: Before flagging outdated formatters, verify latest releases:
+**CRITICAL**: Before flagging outdated formatters, verify latest releases using WebSearch or WebFetch:
 
 1. **Biome**: Check [biomejs.dev](https://biomejs.dev/) or [GitHub releases](https://github.com/biomejs/biome/releases)
 2. **Prettier**: Check [prettier.io](https://prettier.io/) or [npm](https://www.npmjs.com/package/prettier)
 3. **Ruff**: Check [docs.astral.sh/ruff](https://docs.astral.sh/ruff/) or [GitHub releases](https://github.com/astral-sh/ruff/releases)
 4. **rustfmt**: Bundled with Rust toolchain - check [Rust releases](https://releases.rs/)
 
-Use WebSearch or WebFetch to verify current versions before reporting outdated formatters.
+## Execution
 
-## Workflow
+Execute this code formatting configuration workflow:
 
-### Phase 1: Language Detection
+### Step 1: Detect project languages and existing formatters
 
-Detect project language and existing formatters:
+Check for language indicators and formatter configurations:
 
 | Indicator | Language | Detected Formatter |
 |-----------|----------|-------------------|
@@ -47,608 +60,95 @@ Detect project language and existing formatters:
 | `pyproject.toml` [tool.black] | Python | Black (legacy) |
 | `rustfmt.toml` or `.rustfmt.toml` | Rust | rustfmt |
 
-### Phase 2: Current State Analysis
+**Modern formatting preferences:**
+- **JavaScript/TypeScript**: Biome (preferred) or Prettier
+- **Python**: Ruff format (replaces Black)
+- **Rust**: rustfmt (standard)
 
-For each detected formatter, check configuration:
+### Step 2: Analyze current formatter configuration
 
-**Biome (preferred for JS/TS):**
-- [ ] `biome.json` exists
-- [ ] Formatter enabled
-- [ ] Indent style configured
-- [ ] Line width configured
-- [ ] Quote style configured
-- [ ] Files/ignore patterns set
+For each detected formatter, check configuration completeness:
+1. Config file exists with required settings (indent, line width, quotes, etc.)
+2. Ignore patterns configured
+3. Format scripts defined in package.json / pyproject.toml
+4. Pre-commit hook configured
+5. CI/CD check configured
 
-**Prettier:**
-- [ ] `.prettierrc.*` or `prettier.config.*` exists
-- [ ] Print width configured
-- [ ] Tab width configured
-- [ ] Semicolons configured
-- [ ] Quotes configured
-- [ ] Trailing commas configured
-- [ ] `.prettierignore` exists
+### Step 3: Generate compliance report
 
-**Ruff Format (preferred for Python):**
-- [ ] `pyproject.toml` has `[tool.ruff.format]` section
-- [ ] Quote style configured
-- [ ] Indent style configured
-- [ ] Line ending configured
-- [ ] Docstring formatting configured
-
-**rustfmt:**
-- [ ] `rustfmt.toml` or `.rustfmt.toml` exists
-- [ ] Edition configured
-- [ ] Max width configured
-- [ ] Tab spaces configured
-- [ ] Newline style configured
-
-### Phase 3: Compliance Report
-
-Generate formatted compliance report:
+Print a formatted compliance report:
 
 ```
 Code Formatting Compliance Report
 ==================================
 Project: [name]
-Language: [TypeScript | Python | Rust]
-Formatter: [Biome 1.x | Ruff 0.x | rustfmt 1.x]
+Language: [detected]
+Formatter: [detected]
 
-Configuration:
-  Config file             biome.json                 [✅ EXISTS | ❌ MISSING]
-  Formatter enabled       true                       [✅ ENABLED | ❌ DISABLED]
-  Line width              100                        [✅ CONFIGURED | ⚠️ DEFAULT]
-  Indent style            space                      [✅ CONFIGURED | ⚠️ DEFAULT]
-  Indent width            2                          [✅ CONFIGURED | ⚠️ DEFAULT]
-  Quote style             single                     [✅ CONFIGURED | ⚠️ DEFAULT]
-  Ignore patterns         node_modules, dist         [✅ CONFIGURED | ⚠️ INCOMPLETE]
-
-Format Options:
-  Semicolons              always                     [✅ CONFIGURED | ⚠️ DEFAULT]
-  Trailing commas         all                        [✅ CONFIGURED | ⚠️ DEFAULT]
-  Arrow parens            always                     [✅ CONFIGURED | ⏭️ N/A]
-  End of line             lf                         [✅ CONFIGURED | ⚠️ DEFAULT]
-
-Scripts:
-  format command          package.json scripts       [✅ CONFIGURED | ❌ MISSING]
-  format:check            package.json scripts       [✅ CONFIGURED | ❌ MISSING]
-
-Integration:
-  Pre-commit hook         .pre-commit-config.yaml    [✅ CONFIGURED | ❌ MISSING]
-  CI/CD check             .github/workflows/         [✅ CONFIGURED | ❌ MISSING]
-  Editor config           .editorconfig              [✅ CONFIGURED | ⚠️ MISSING]
+Configuration:  [status per check]
+Format Options: [status per check]
+Scripts:        [status per check]
+Integration:    [status per check]
 
 Overall: [X issues found]
-
-Recommendations:
-  - Migrate from Prettier to Biome for better performance
-  - Add .editorconfig for editor consistency
-  - Enable format-on-save in editor
+Recommendations: [list specific fixes]
 ```
 
-### Phase 4: Configuration (if --fix or user confirms)
+If `--check-only`, stop here.
 
-#### Biome Configuration (Recommended for JS/TS)
+### Step 4: Install and configure formatter (if --fix or user confirms)
 
-**Install Biome:**
-```bash
-npm install --save-dev @biomejs/biome
-# or
-bun add --dev @biomejs/biome
-```
+Based on detected language and formatter preference, install and configure. Use configuration templates from [REFERENCE.md](REFERENCE.md).
 
-**Create `biome.json`:**
-```json
-{
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
-  "formatter": {
-    "enabled": true,
-    "formatWithErrors": false,
-    "indentStyle": "space",
-    "indentWidth": 2,
-    "lineWidth": 100,
-    "lineEnding": "lf"
-  },
-  "javascript": {
-    "formatter": {
-      "quoteStyle": "single",
-      "semicolons": "always",
-      "trailingCommas": "all",
-      "arrowParentheses": "always",
-      "bracketSpacing": true,
-      "jsxQuoteStyle": "double"
-    }
-  },
-  "json": {
-    "formatter": {
-      "enabled": true,
-      "indentWidth": 2
-    }
-  },
-  "files": {
-    "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.js", "src/**/*.jsx", "*.json"],
-    "ignore": [
-      "node_modules",
-      "dist",
-      "build",
-      ".next",
-      "coverage",
-      "*.min.js"
-    ]
-  }
-}
-```
+1. Install formatter package
+2. Create configuration file (biome.json, .prettierrc.json, pyproject.toml section, rustfmt.toml)
+3. Add format scripts to package.json or Makefile/justfile
+4. Create ignore file if needed (.prettierignore)
 
-**Add npm scripts to `package.json`:**
-```json
-{
-  "scripts": {
-    "format": "biome format --write .",
-    "format:check": "biome format .",
-    "lint:format": "biome check --write ."
-  }
-}
-```
+### Step 5: Create EditorConfig integration
 
-#### Prettier Configuration (Alternative)
+Create or update `.editorconfig` with settings matching the formatter configuration.
 
-**Install Prettier:**
-```bash
-npm install --save-dev prettier
-# or
-bun add --dev prettier
-```
+### Step 6: Handle migrations (if applicable)
 
-**Create `.prettierrc.json`:**
-```json
-{
-  "printWidth": 100,
-  "tabWidth": 2,
-  "useTabs": false,
-  "semi": true,
-  "singleQuote": true,
-  "quoteProps": "as-needed",
-  "jsxSingleQuote": false,
-  "trailingComma": "all",
-  "bracketSpacing": true,
-  "bracketSameLine": false,
-  "arrowParens": "always",
-  "endOfLine": "lf",
-  "embeddedLanguageFormatting": "auto"
-}
-```
+If legacy formatter detected (Prettier -> Biome, Black -> Ruff):
+1. Import existing configuration
+2. Install new formatter
+3. Remove old formatter
+4. Update scripts
+5. Update pre-commit hooks
 
-**Create `.prettierignore`:**
-```
-node_modules
-dist
-build
-.next
-coverage
-*.min.js
-*.min.css
-package-lock.json
-pnpm-lock.yaml
-```
+Use migration guides from [REFERENCE.md](REFERENCE.md).
 
-**Add npm scripts to `package.json`:**
-```json
-{
-  "scripts": {
-    "format": "prettier --write .",
-    "format:check": "prettier --check ."
-  }
-}
-```
+### Step 7: Configure pre-commit hooks
 
-#### Ruff Format Configuration (Recommended for Python)
+Add formatter to `.pre-commit-config.yaml` using the appropriate hook repository.
 
-**Install Ruff:**
-```bash
-uv add --group dev ruff
-```
+### Step 8: Configure CI/CD integration
 
-**Update `pyproject.toml`:**
-```toml
-[tool.ruff.format]
-# Quote style (double or single)
-quote-style = "double"
+Add format check step to GitHub Actions workflow.
 
-# Indent style (space or tab)
-indent-style = "space"
+### Step 9: Configure editor integration
 
-# Line ending (auto, lf, crlf, cr)
-line-ending = "auto"
+Create or update `.vscode/settings.json` with format-on-save and `.vscode/extensions.json` with formatter extension.
 
-# Skip magic trailing comma
-skip-magic-trailing-comma = false
-
-# Docstring formatting
-docstring-code-format = true
-docstring-code-line-length = 72
-
-# Preview mode for unreleased formatting features
-preview = false
-
-[tool.ruff]
-# Line length for both linter and formatter
-line-length = 100
-
-# Exclude directories
-exclude = [
-    ".git",
-    ".venv",
-    "__pycache__",
-    "dist",
-    "build",
-]
-```
-
-**Run Ruff format:**
-```bash
-uv run ruff format .
-```
-
-#### Black Configuration (Alternative)
-
-**Install Black:**
-```bash
-uv add --group dev black
-```
-
-**Update `pyproject.toml`:**
-```toml
-[tool.black]
-line-length = 100
-target-version = ['py312']
-include = '\.pyi?$'
-extend-exclude = '''
-/(
-  # directories
-  \.eggs
-  | \.git
-  | \.venv
-  | dist
-  | build
-)/
-'''
-```
-
-#### rustfmt Configuration (Rust)
-
-**Create `rustfmt.toml`:**
-```toml
-# Edition
-edition = "2021"
-
-# Max line width
-max_width = 100
-
-# Tab spaces
-tab_spaces = 4
-
-# Hard tabs
-hard_tabs = false
-
-# Newline style (Unix, Windows, Native)
-newline_style = "Unix"
-
-# Use small heuristics
-use_small_heuristics = "Default"
-
-# Reorder imports
-reorder_imports = true
-
-# Reorder modules
-reorder_modules = true
-
-# Remove nested parens
-remove_nested_parens = true
-
-# Format code in doc comments
-format_code_in_doc_comments = true
-
-# Normalize comments
-normalize_comments = true
-
-# Wrap comments
-wrap_comments = true
-
-# Format strings
-format_strings = true
-
-# Format macro bodies
-format_macro_bodies = true
-
-# Format macro matchers
-format_macro_matchers = true
-
-# Imports granularity (Preserve, Crate, Module, Item, One)
-imports_granularity = "Crate"
-
-# Group imports (Preserve, StdExternalCrate)
-group_imports = "StdExternalCrate"
-```
-
-**Run rustfmt:**
-```bash
-cargo fmt --all
-```
-
-### Phase 5: EditorConfig Integration
-
-**Create `.editorconfig`:**
-```ini
-# EditorConfig is awesome: https://EditorConfig.org
-
-# top-most EditorConfig file
-root = true
-
-# Unix-style newlines with a newline ending every file
-[*]
-charset = utf-8
-end_of_line = lf
-insert_final_newline = true
-trim_trailing_whitespace = true
-
-# JavaScript, TypeScript, JSON
-[*.{js,jsx,ts,tsx,json,jsonc}]
-indent_style = space
-indent_size = 2
-max_line_length = 100
-
-# Python
-[*.py]
-indent_style = space
-indent_size = 4
-max_line_length = 100
-
-# Rust
-[*.rs]
-indent_style = space
-indent_size = 4
-max_line_length = 100
-
-# YAML
-[*.{yml,yaml}]
-indent_style = space
-indent_size = 2
-
-# Markdown
-[*.md]
-trim_trailing_whitespace = false
-max_line_length = off
-
-# Makefile
-[Makefile]
-indent_style = tab
-```
-
-### Phase 6: Migration Guides
-
-#### Prettier → Biome Migration
-
-**Step 1: Install Biome**
-```bash
-npm install --save-dev @biomejs/biome
-```
-
-**Step 2: Import Prettier config**
-```bash
-npx @biomejs/biome migrate prettier --write
-```
-
-**Step 3: Review and adjust `biome.json`**
-
-**Step 4: Remove Prettier**
-```bash
-npm uninstall prettier
-rm .prettierrc.* prettier.config.* .prettierignore
-```
-
-**Step 5: Update scripts**
-```json
-{
-  "scripts": {
-    "format": "biome format --write .",
-    "format:check": "biome format ."
-  }
-}
-```
-
-#### Black → Ruff Format Migration
-
-**Step 1: Install Ruff**
-```bash
-uv add --group dev ruff
-```
-
-**Step 2: Configure in `pyproject.toml`** (see Phase 4)
-
-**Step 3: Format codebase**
-```bash
-uv run ruff format .
-```
-
-**Step 4: Remove Black**
-```bash
-uv remove black
-```
-
-**Step 5: Update pre-commit hooks**
-```yaml
-repos:
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.4
-    hooks:
-      - id: ruff-format
-```
-
-### Phase 7: Pre-commit Integration
-
-**Biome:**
-```yaml
-repos:
-  - repo: https://github.com/biomejs/pre-commit
-    rev: v0.4.0
-    hooks:
-      - id: biome-check
-        additional_dependencies: ["@biomejs/biome@1.9.4"]
-```
-
-**Prettier:**
-```yaml
-repos:
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v4.0.0-alpha.8
-    hooks:
-      - id: prettier
-        types_or: [javascript, jsx, ts, tsx, json, yaml, markdown]
-```
-
-**Ruff Format:**
-```yaml
-repos:
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.4
-    hooks:
-      - id: ruff-format
-```
-
-**rustfmt:**
-```yaml
-repos:
-  - repo: https://github.com/doublify/pre-commit-rust
-    rev: v1.0
-    hooks:
-      - id: fmt
-```
-
-### Phase 8: CI/CD Integration
-
-**GitHub Actions - Biome:**
-```yaml
-- name: Check formatting
-  run: npx @biomejs/biome format .
-```
-
-**GitHub Actions - Prettier:**
-```yaml
-- name: Check formatting
-  run: npm run format:check
-```
-
-**GitHub Actions - Ruff:**
-```yaml
-- name: Check formatting
-  run: uv run ruff format --check .
-```
-
-**GitHub Actions - rustfmt:**
-```yaml
-- name: Check formatting
-  run: cargo fmt --all -- --check
-```
-
-### Phase 9: Editor Integration
-
-#### VS Code Settings
-
-**Create `.vscode/settings.json`:**
-```json
-{
-  "editor.formatOnSave": true,
-  "editor.defaultFormatter": "biomejs.biome",
-  "[javascript]": {
-    "editor.defaultFormatter": "biomejs.biome"
-  },
-  "[typescript]": {
-    "editor.defaultFormatter": "biomejs.biome"
-  },
-  "[python]": {
-    "editor.defaultFormatter": "charliermarsh.ruff"
-  },
-  "[rust]": {
-    "editor.defaultFormatter": "rust-lang.rust-analyzer",
-    "editor.formatOnSave": true
-  }
-}
-```
-
-**Create `.vscode/extensions.json`:**
-```json
-{
-  "recommendations": [
-    "biomejs.biome",
-    "charliermarsh.ruff",
-    "rust-lang.rust-analyzer",
-    "editorconfig.editorconfig"
-  ]
-}
-```
-
-### Phase 10: Standards Tracking
+### Step 10: Update standards tracking
 
 Update `.project-standards.yaml`:
 
 ```yaml
-standards_version: "2025.1"
-last_configured: "[timestamp]"
 components:
   formatting: "2025.1"
   formatting_tool: "[biome|prettier|ruff|rustfmt]"
   formatting_pre_commit: true
   formatting_ci: true
-  formatting_editor_config: true
 ```
 
-### Phase 11: Updated Compliance Report
+### Step 11: Print completion report
 
-```
-Code Formatting Configuration Complete
-=======================================
+Print a summary of changes made, scripts added, and next steps (run format, verify CI, enable format-on-save).
 
-Language: TypeScript
-Formatter: Biome 1.9.4 (modern, fast)
-
-Configuration Applied:
-  ✅ biome.json created
-  ✅ Formatter enabled
-  ✅ Line width: 100
-  ✅ Indent: 2 spaces
-  ✅ Quotes: single
-  ✅ Semicolons: always
-  ✅ Trailing commas: all
-  ✅ Ignore patterns configured
-
-Scripts Added:
-  ✅ npm run format (format all)
-  ✅ npm run format:check (check only)
-
-Integration:
-  ✅ .editorconfig created
-  ✅ Pre-commit hook configured
-  ✅ CI/CD check added
-  ✅ VS Code settings configured
-
-Migration:
-  ✅ Prettier removed
-  ✅ Configuration imported
-
-Next Steps:
-  1. Format codebase:
-     npm run format
-
-  2. Verify formatting:
-     npm run format:check
-
-  3. Enable format-on-save in editor:
-     Install Biome extension
-
-  4. Verify CI integration:
-     Push changes and check workflow
-
-Documentation: docs/FORMATTING.md
-```
+For detailed configuration templates, migration guides, and pre-commit configurations, see [REFERENCE.md](REFERENCE.md).
 
 ## Flags
 

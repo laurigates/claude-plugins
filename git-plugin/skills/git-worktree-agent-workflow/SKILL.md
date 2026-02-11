@@ -35,15 +35,19 @@ Orchestrate parallel agent workflows using git worktrees for isolated, concurren
 - **Atomic PRs**: Each worktree produces exactly one focused commit/PR
 - **Clean Integration**: Sequential PR creation maintains proper git history
 
-## Problem Statement
+## Context
 
-When multiple issues get mixed into a single branch/PR (contamination), or when you need to work on multiple independent issues in parallel, the standard single-branch workflow becomes a bottleneck. Each issue blocks the others, and mixed commits make clean PRs impossible.
+- Current branch: !`git branch --show-current 2>/dev/null`
+- Worktrees: !`git worktree list --porcelain 2>/dev/null`
+- Uncommitted changes: !`git status --porcelain 2>/dev/null | wc -l`
+- Recent commits: !`git log --oneline -10 2>/dev/null`
+- Remote tracking: !`git rev-list --left-right --count HEAD...@{u} 2>/dev/null`
 
-**Solution**: Use git worktrees to create isolated working directories for each issue, allowing parallel agent work with clean, single-purpose commits.
+## Execution
 
-## Workflow Phases
+Execute this worktree-based parallel agent workflow:
 
-### Phase 1: Preserve and Reset
+### Step 1: Preserve and reset
 
 Save all in-progress work and reset to a clean baseline.
 
@@ -72,7 +76,7 @@ git stash drop 2>/dev/null || true
 - `working-tree.patch` - Uncommitted modifications
 - `staged.patch` - Staged but uncommitted changes
 
-### Phase 2: Create Isolated Worktrees
+### Step 2: Create isolated worktrees
 
 Create independent working directories for each issue inside `./worktrees/`.
 
@@ -100,7 +104,7 @@ git worktree list
 
 **Why `./worktrees/`**: Keeping worktrees inside the project directory means agents already have file permissions — no `additionalDirectories` configuration needed. The `/worktrees/` entry in `.gitignore` prevents git from tracking worktree contents.
 
-### Phase 3: Apply Existing Work
+### Step 3: Apply existing work
 
 Distribute saved patches to appropriate worktrees.
 
@@ -124,7 +128,7 @@ git -C ./worktrees/issue-50 apply /tmp/patches/partial-work.patch
 # Agent will complete remaining work
 ```
 
-### Phase 4: Parallel Agent Execution
+### Step 4: Launch parallel agents
 
 Launch agents to complete work in their respective worktrees.
 
@@ -158,7 +162,7 @@ DO NOT modify any files outside the worktree at {repo_root}/worktrees/issue-{N}
 - No file conflicts possible
 - Independent git histories until merge
 
-### Phase 5: Sequential Integration
+### Step 5: Integrate sequentially
 
 Push branches and create PRs in order.
 
@@ -177,7 +181,7 @@ gh pr create --head fix/issue-47 --base main \
 - Enable dependent PRs if needed
 - Maintain clean git history
 
-### Phase 6: Cleanup
+### Step 6: Clean up worktrees
 
 Remove worktrees and temporary branches after PRs are merged.
 
@@ -294,18 +298,18 @@ Each subagent handles:
 ```
 Orchestrator (main repo)
     |
-    +--- Phase 1: Analyze & preserve contaminated work
+    +--- Step 1: Analyze & preserve contaminated work
     |
-    +--- Phase 2: Create worktrees (mkdir -p worktrees)
+    +--- Step 2: Create worktrees (mkdir -p worktrees)
     |         +-- ./worktrees/issue-47 (complete patch)
     |         +-- ./worktrees/issue-49 (complete patch)
     |         +-- ./worktrees/issue-50 (partial, needs agent)
     |
-    +--- Phase 3: Apply patches
+    +--- Step 3: Apply patches
     |         +-- git am (complete patches)
     |         +-- git apply (partial patches)
     |
-    +--- Phase 4: Launch agents IN PARALLEL
+    +--- Step 4: Launch agents IN PARALLEL
     |         |
     |         +---> Agent 1 -> ./worktrees/issue-50
     |         |         +-- Completes work, commits
@@ -313,12 +317,12 @@ Orchestrator (main repo)
     |         +---> Agent 2 -> ./worktrees/issue-XX
     |                   +-- Implements from scratch, commits
     |
-    +--- Phase 5: Sequential integration
+    +--- Step 5: Sequential integration
     |         +-- Verify tests pass in each worktree
     |         +-- Push branches to origin
     |         +-- Create PRs
     |
-    +--- Phase 6: Cleanup
+    +--- Step 6: Cleanup
               +-- Remove worktrees
               +-- Delete local branches
               +-- rmdir worktrees (if empty)
