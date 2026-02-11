@@ -13,6 +13,16 @@ name: configure-reusable-workflows
 
 Install Claude-powered reusable GitHub Actions workflows from claude-plugins into a project.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Adding Claude-powered reusable workflows for security, quality, or accessibility | Setting up standard CI/CD workflows (use `/configure:workflows`) |
+| Installing pre-built workflow callers from claude-plugins | Writing custom GitHub Actions workflows from scratch |
+| Automating OWASP, secret scanning, or code smell detection via CI | Configuring local security scanning tools (use `/configure:security`) |
+| Adding WCAG accessibility checks to pull request pipelines | Running one-off accessibility audits manually |
+| Bootstrapping a full suite of Claude-powered CI checks across categories | Only need to check existing workflow compliance |
+
 ## Context
 
 - Workflows dir: !`test -d .github/workflows && echo "EXISTS" || echo "MISSING"`
@@ -148,6 +158,17 @@ After installation, users can customize:
 2. **Customize patterns**: Edit `file-patterns` to match project structure
 3. **Adjust triggers**: Modify `paths` filters for relevant file types
 4. **Test manually**: Use `workflow_dispatch` to test before PR triggers
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| List available workflows | `/configure:reusable-workflows --list` |
+| Install all workflows at once | `/configure:reusable-workflows --all` |
+| Security workflows only | `/configure:reusable-workflows --security` |
+| Quality workflows only | `/configure:reusable-workflows --quality` |
+| Accessibility workflows only | `/configure:reusable-workflows --a11y` |
+| Check existing callers | `find .github/workflows -name 'claude-*' -type f` |
 
 ## Flags
 

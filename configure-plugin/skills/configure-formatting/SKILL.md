@@ -13,6 +13,16 @@ name: configure-formatting
 
 Check and configure code formatting tools against modern best practices.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up Biome, Prettier, Ruff format, or rustfmt for a project | Running an existing formatter (`biome format`, `ruff format`) |
+| Migrating from Prettier to Biome or Black to Ruff | Fixing individual formatting issues in specific files |
+| Auditing formatter configuration for completeness and best practices | Configuring linting rules (`/configure:linting` instead) |
+| Adding format-on-save and CI format checks | Setting up pre-commit hooks only (`/configure:pre-commit` instead) |
+| Standardizing formatting settings across a monorepo | Editing `.editorconfig` or `.vscode/settings.json` manually |
+
 ## Context
 
 - Biome config: !`test -f biome.json && echo "EXISTS" || echo "MISSING"`
@@ -149,6 +159,17 @@ components:
 Print a summary of changes made, scripts added, and next steps (run format, verify CI, enable format-on-save).
 
 For detailed configuration templates, migration guides, and pre-commit configurations, see [REFERENCE.md](REFERENCE.md).
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick compliance check | `/configure:formatting --check-only` |
+| Auto-fix all issues | `/configure:formatting --fix` |
+| Check Biome formatting | `biome format --check --reporter=github` |
+| Check Prettier formatting | `npx prettier --check . 2>&1 | tail -5` |
+| Check Ruff formatting | `ruff format --check --output-format=github` |
+| Check rustfmt formatting | `cargo fmt --check 2>&1 | head -20` |
 
 ## Flags
 

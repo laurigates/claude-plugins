@@ -13,6 +13,16 @@ name: configure-container
 
 Check and configure comprehensive container infrastructure against project standards with emphasis on **minimal images**, **non-root users**, and **security hardening**.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Auditing container infrastructure compliance (Dockerfile, workflows, scanning) | Writing a Dockerfile from scratch (`/configure:dockerfile`) |
+| Checking multi-stage builds, non-root users, and security hardening | Configuring Kubernetes deployments (`/configure:skaffold`) |
+| Setting up container build workflows with GHCR and multi-platform support | Running vulnerability scans on a built image (Trivy CLI directly) |
+| Verifying `.dockerignore`, OCI labels, and base image versions | Configuring devcontainer features for VS Code |
+| Adding Trivy/Grype scanning to CI pipelines | Debugging container runtime issues (system-debugging agent) |
+
 ## Context
 
 - Dockerfiles: !`find . -maxdepth 2 \( -name 'Dockerfile' -o -name 'Dockerfile.*' -o -name '*.Dockerfile' \) 2>/dev/null`
@@ -175,6 +185,17 @@ components:
 ```
 
 For detailed templates (Dockerfile, workflow, devcontainer, .dockerignore), see [REFERENCE.md](REFERENCE.md).
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick compliance check | `/configure:container --check-only` |
+| Auto-fix all issues | `/configure:container --fix` |
+| Dockerfile only | `/configure:container --check-only --component dockerfile` |
+| Workflow only | `/configure:container --check-only --component workflow` |
+| Scanning only | `/configure:container --fix --component scanning` |
+| Find all Dockerfiles | `find . -maxdepth 2 \( -name 'Dockerfile' -o -name 'Dockerfile.*' \) 2>/dev/null` |
 
 ## Flags
 

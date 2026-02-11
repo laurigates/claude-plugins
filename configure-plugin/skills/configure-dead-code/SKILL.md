@@ -13,6 +13,16 @@ name: configure-dead-code
 
 Check and configure dead code detection tools.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up dead code detection for a new project | Running an existing dead code scan (`knip`, `vulture`) |
+| Auditing whether Knip, Vulture, or cargo-machete is configured correctly | Manually removing specific unused exports or imports |
+| Migrating between dead code detection tools | Debugging why a specific file is flagged as unused |
+| Adding dead code checks to CI/CD pipelines | Reviewing dead code findings one by one |
+| Standardizing dead code detection across a monorepo | Configuring linting rules (`/configure:linting` instead) |
+
 ## Context
 
 - Project root: !`pwd`
@@ -139,6 +149,17 @@ components:
 Print a summary of changes applied, run an initial scan if possible, and provide next steps for reviewing findings.
 
 For detailed configuration templates and usage examples, see [REFERENCE.md](REFERENCE.md).
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick compliance check | `/configure:dead-code --check-only` |
+| Auto-fix all issues | `/configure:dead-code --fix` |
+| Run Knip scan (JS/TS) | `npx knip --reporter compact` |
+| Run Vulture scan (Python) | `vulture . --min-confidence 80` |
+| Run cargo-machete (Rust) | `cargo machete` |
+| CI mode (JSON output) | `npx knip --reporter json` |
 
 ## Flags
 

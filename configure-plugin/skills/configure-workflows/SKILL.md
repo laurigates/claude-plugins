@@ -13,6 +13,16 @@ name: configure-workflows
 
 Check and configure GitHub Actions CI/CD workflows against project standards.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Checking GitHub Actions workflows for compliance with project standards | Debugging a failing CI run (use github-actions-inspection skill) |
+| Setting up container build, test, or release-please workflows | Installing Claude-powered reusable workflows (use `/configure:reusable-workflows`) |
+| Updating outdated action versions (checkout, build-push, etc.) | Writing a custom workflow from scratch (use ci-workflows skill) |
+| Adding multi-platform builds or GHA caching to existing workflows | Configuring security-specific workflows (use `/configure:security`) |
+| Auditing which required workflows are missing from a project | Managing GitHub repository settings or branch protection rules |
+
 ## Context
 
 - Workflows dir: !`test -d .github/workflows && echo "EXISTS" || echo "MISSING"`
@@ -116,6 +126,16 @@ Update `.project-standards.yaml`:
 components:
   workflows: "2025.1"
 ```
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick compliance check | `/configure:workflows --check-only` |
+| Auto-fix all issues | `/configure:workflows --fix` |
+| List workflow files | `find .github/workflows -name '*.yml' -o -name '*.yaml'` |
+| Check action versions | `rg 'uses:' .github/workflows/ --no-heading` |
+| Verify release-please config | `test -f release-please-config.json && echo "EXISTS"` |
 
 ## Flags
 

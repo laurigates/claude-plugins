@@ -13,6 +13,16 @@ name: configure-package-management
 
 Check and configure modern package managers for optimal development experience.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up a new project with modern package managers (uv, bun) | Installing a single dependency — run `uv add` or `bun add` directly |
+| Migrating from legacy package managers (pip, npm, yarn, poetry) to modern ones | Project uses cargo or go mod (already optimal, no migration needed) |
+| Auditing package manager configuration for best practices | Configuring linting or formatting tools — use `/configure:linting` |
+| Ensuring lock files, dependency groups, and CI/CD integration are properly configured | Resolving a specific dependency conflict — debug with `uv pip compile` or `bun install --verbose` |
+| Detecting and cleaning up conflicting lock files from multiple managers | Only need to install dependencies — run `uv sync` or `bun install` directly |
+
 ## Context
 
 - Project root: !`pwd`
@@ -186,6 +196,17 @@ components:
 Print a summary of changes applied, migrations performed, and next steps for verifying the configuration.
 
 For detailed configuration templates and migration guides, see [REFERENCE.md](REFERENCE.md).
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick compliance check | `/configure:package-management --check-only` |
+| Auto-fix all issues | `/configure:package-management --fix` |
+| Check uv version | `uv --version` |
+| Check bun version | `bun --version` |
+| List Python deps | `uv pip list --format json` |
+| List JS deps | `bun pm ls --json` |
 
 ## Flags
 

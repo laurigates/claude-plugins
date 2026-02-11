@@ -9,6 +9,16 @@ argument-hint: "[--check-only] [--fix] [--style <minimal|standard|detailed>] [--
 name: configure-readme
 ---
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Creating a README.md for a new project from scratch | Editing specific README content — use direct file editing |
+| Auditing an existing README for missing sections (badges, install, structure) | Writing detailed API documentation — use `/configure:docs` |
+| Standardizing README format across multiple projects | Creating GitHub Pages documentation site — use `/configure:github-pages` |
+| Adding shields.io badges, tech stack table, or project structure section | Writing a changelog — use release-please automation via conventional commits |
+| Ensuring README includes correct install/build/test commands for the detected stack | Only need to update a single section — edit the file directly |
+
 ## Context
 
 - Project root: !`pwd`
@@ -164,6 +174,17 @@ Provide:
 2. Generated or updated README.md content
 3. List of detected project metadata
 4. Suggestions for improvement (logo, more features, etc.)
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick compliance check | `/configure:readme --check-only` |
+| Auto-fix all issues | `/configure:readme --fix` |
+| Minimal README | `/configure:readme --fix --style minimal` |
+| Full detailed README | `/configure:readme --fix --style detailed` |
+| Generate project tree | `tree -L 2 -I 'node_modules\|target\|__pycache__\|.git\|dist\|build' --dirsfirst` |
+| Check README exists | `test -f README.md && echo "EXISTS" \|\| echo "MISSING"` |
 
 ## See Also
 

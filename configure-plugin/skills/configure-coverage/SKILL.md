@@ -13,6 +13,16 @@ name: configure-coverage
 
 Check and configure code coverage thresholds and reporting for test frameworks.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up coverage thresholds for Vitest, Jest, pytest, or Rust | Running tests with coverage (`/test:coverage`) |
+| Configuring coverage reporters (text, JSON, HTML, lcov) | Configuring the test framework itself (`/configure:tests`) |
+| Adding Codecov or Coveralls integration to CI/CD | Analyzing test failures (test-runner agent) |
+| Auditing coverage configuration compliance across a project | Writing individual test cases |
+| Adjusting coverage threshold percentages | Configuring general CI/CD workflows (`/configure:workflows`) |
+
 ## Context
 
 - Project root: !`pwd`
@@ -145,6 +155,16 @@ components:
 Print a summary of changes applied, scripts added, and next steps for verifying coverage.
 
 For detailed configuration templates, see [REFERENCE.md](REFERENCE.md).
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick compliance check | `/configure:coverage --check-only` |
+| Auto-fix all issues | `/configure:coverage --fix` |
+| Custom threshold | `/configure:coverage --fix --threshold 90` |
+| Check coverage config exists | `find . -maxdepth 1 -name 'vitest.config.*' -o -name 'jest.config.*' 2>/dev/null` |
+| Verify coverage directory | `test -d coverage && echo "EXISTS"` |
 
 ## Flags
 

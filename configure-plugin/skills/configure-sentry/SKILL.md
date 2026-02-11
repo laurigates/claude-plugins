@@ -13,6 +13,16 @@ name: configure-sentry
 
 Check and configure Sentry error tracking integration against project standards.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up Sentry error tracking for a new project | Debugging a specific Sentry issue or alert (use Sentry MCP server) |
+| Checking Sentry SDK installation and configuration compliance | Querying Sentry events or performance data (use Sentry API/MCP) |
+| Fixing hardcoded DSNs or missing environment variable references | Managing Sentry project settings in the Sentry dashboard |
+| Adding source map upload and release tracking to CI/CD | Configuring Sentry alerting rules or notification channels |
+| Verifying Sentry configuration across frontend, Node.js, or Python projects | Installing a different error tracking tool (e.g., Bugsnag, Rollbar) |
+
 ## Context
 
 - Package.json: !`test -f package.json && echo "EXISTS" || echo "MISSING"`
@@ -149,6 +159,17 @@ components:
 Never commit DSN or auth tokens. Use environment variables or secrets management.
 
 For detailed configuration check tables, initialization templates, and CI/CD workflow examples, see [REFERENCE.md](REFERENCE.md).
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick compliance check | `/configure:sentry --check-only` |
+| Auto-fix all issues | `/configure:sentry --fix` |
+| Frontend project only | `/configure:sentry --type frontend` |
+| Python project only | `/configure:sentry --type python` |
+| Node.js project only | `/configure:sentry --type node` |
+| Check for hardcoded DSNs | `rg -l 'https://[a-f0-9]*@.*sentry\.io' --type-not env` |
 
 ## Error Handling
 

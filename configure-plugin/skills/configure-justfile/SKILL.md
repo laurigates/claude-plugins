@@ -13,6 +13,16 @@ name: configure-justfile
 
 Check and configure project Justfile against project standards.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up a new Justfile for a project | Project already uses Make exclusively and migration is not desired — use `/configure:makefile` |
+| Auditing existing Justfile for missing standard recipes | Writing complex custom recipes — use `justfile-expert` skill |
+| Migrating from Makefile to Justfile | Project has no task runner needs (single-file scripts) |
+| Ensuring Justfile follows team conventions (groups, comments, settings) | Debugging a specific recipe failure — use direct `just` commands |
+| Running CI/CD compliance checks on project task runners | Only need to list available recipes — run `just --list` directly |
+
 ## Context
 
 - Project root: !`pwd`
@@ -305,6 +315,16 @@ If a Makefile exists but no Justfile:
 1. Detect project type from Makefile commands
 2. Suggest creating Justfile with equivalent recipes
 3. Optionally keep Makefile for backwards compatibility
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick compliance check | `/configure:justfile --check-only` |
+| Auto-fix all issues | `/configure:justfile --fix` |
+| List existing recipes | `just --list` |
+| Verify specific recipe exists | `just --summary` |
+| Check Justfile syntax | `just --evaluate 2>&1` |
 
 ## Flags
 

@@ -47,12 +47,12 @@ Use **convention-based auto-discovery** where Claude Code automatically finds co
 
 ### Discovery Rules
 
-| Component | Location | Registration |
-|-----------|----------|--------------|
-| Commands | `commands/*.md` | `/command-name` |
-| Grouped Commands | `commands/group/*.md` | `/group:command-name` |
-| Skills | `skills/*/SKILL.md` | Context-activated by description |
-| Agents | `agents/*.md` | Available via `/agents` or context |
+| Component        | Location              | Registration                       |
+| ---------------- | --------------------- | ---------------------------------- |
+| Commands         | `commands/*.md`       | `/command-name`                    |
+| Grouped Commands | `commands/group/*.md` | `/group:command-name`              |
+| Skills           | `skills/*/SKILL.md`   | Context-activated by description   |
+| Agents           | `agents/*.md`         | Available via `/agents` or context |
 
 ### plugin.json Role
 
@@ -90,6 +90,7 @@ The manifest contains only metadata; it does **not** list components:
 Each component type has its own metadata format:
 
 **Commands** (YAML frontmatter):
+
 ```yaml
 ---
 description: "Create a git commit with conventional format"
@@ -99,6 +100,7 @@ argument-hint: "[--amend] [--scope SCOPE]"
 ```
 
 **Skills** (YAML frontmatter):
+
 ```yaml
 ---
 name: git-commit-workflow
@@ -107,10 +109,11 @@ description: "When committing code. Conventional commits, co-authors."
 ```
 
 **Agents** (YAML frontmatter):
+
 ```yaml
 ---
 name: commit-review
-model: claude-sonnet-4
+model: claude-opus
 color: "#4CAF50"
 description: "Review commits for quality and conventions"
 tools: Bash, Read, Grep

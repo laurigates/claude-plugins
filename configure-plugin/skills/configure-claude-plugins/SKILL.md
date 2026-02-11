@@ -13,6 +13,16 @@ name: configure-claude-plugins
 
 Configure a project to use the `laurigates/claude-plugins` Claude Code plugin marketplace. Sets up `.claude/settings.json` permissions and GitHub Actions workflows (`claude.yml`, `claude-code-review.yml`) with the marketplace pre-configured.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Onboarding a new project to use Claude Code plugins | Configuring Claude Code settings unrelated to plugins |
+| Setting up `claude.yml` and `claude-code-review.yml` workflows | Creating general GitHub Actions workflows (`/configure:workflows`) |
+| Adding the `laurigates/claude-plugins` marketplace to a repo | Installing individual plugins manually |
+| Merging plugin permissions into existing `.claude/settings.json` | Debugging Claude Code action failures (check GitHub Actions logs) |
+| Selecting recommended plugins based on project type | Developing new plugins (see CLAUDE.md plugin lifecycle) |
+
 ## Context
 
 - Settings file exists: !`test -f .claude/settings.json && echo "EXISTS" || echo "MISSING"`
@@ -205,6 +215,16 @@ Next Steps:
   2. Commit and push the new workflow files
   3. Test by mentioning @claude in a PR comment
 ```
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick status check | `/configure:claude-plugins --check-only` |
+| Auto-configure all | `/configure:claude-plugins --fix` |
+| Specific plugins only | `/configure:claude-plugins --fix --plugins git-plugin,testing-plugin` |
+| Verify settings exist | `test -f .claude/settings.json && echo "EXISTS"` |
+| List Claude workflows | `find .github/workflows -name 'claude*.yml' 2>/dev/null` |
 
 ## Flags
 

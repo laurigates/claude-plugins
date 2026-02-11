@@ -9,6 +9,20 @@ argument-hint: "[--check-only] [--fix] [--level <minimal|standard|strict>] [--ty
 name: configure-docs
 ---
 
+# /configure:docs
+
+Check and configure code documentation standards and generators.
+
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up TSDoc, JSDoc, pydoc, or rustdoc standards for a project | Writing actual documentation content for functions or modules |
+| Configuring a documentation generator (TypeDoc, MkDocs, Sphinx, rustdoc) | Deploying documentation to GitHub Pages (`/configure:github-pages` instead) |
+| Auditing documentation coverage and lint compliance | Reviewing generated documentation for accuracy |
+| Adding documentation enforcement rules to CI/CD | Editing ruff or biome configuration for non-doc rules (`/configure:linting`) |
+| Migrating between documentation conventions (e.g., numpy to google style) | Setting up pre-commit hooks only (`/configure:pre-commit` instead) |
+
 ## Context
 
 - Project root: !`pwd`
@@ -188,6 +202,17 @@ Provide:
 2. List of changes made (if --fix) or proposed (if interactive)
 3. Instructions for running documentation tests
 4. Next steps for improving coverage
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick compliance check | `/configure:docs --check-only` |
+| Auto-fix all issues | `/configure:docs --fix` |
+| Check TSDoc validity | `typedoc --emit none 2>&1 | head -20` |
+| Check Python docstrings | `ruff check --select D --output-format=github` |
+| Check Rust doc lints | `cargo doc --no-deps 2>&1 | head -20` |
+| Build docs (MkDocs) | `mkdocs build --strict 2>&1 | tail -5` |
 
 ## See Also
 
