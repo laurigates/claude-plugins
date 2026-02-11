@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.4.0...hooks-plugin-v1.5.0) (2026-02-11)
+
+
+### Features
+
+* add required quality sections to refactored skills ([#544](https://github.com/laurigates/claude-plugins/issues/544)) ([342af54](https://github.com/laurigates/claude-plugins/commit/342af54af0f81fa50d239d06b32b353ddb7335fc))
+
 ## [1.4.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.3.2...hooks-plugin-v1.4.0) (2026-02-07)
 
 
