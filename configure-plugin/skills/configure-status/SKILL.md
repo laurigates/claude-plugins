@@ -13,6 +13,16 @@ name: configure-status
 
 Display infrastructure standards compliance status without making changes.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Checking overall compliance status | Running full compliance checks with fixes (use `/configure:all --fix`) |
+| Generating compliance reports | Need to fix issues found (use `/configure:all`) |
+| Quick project health check | Checking specific component (use `/configure:X --check-only`) |
+| CI/CD status validation | Running interactive selection (use `/configure:select`) |
+| Reviewing current configuration state | Need detailed component analysis |
+
 ## Context
 
 - Project standards: !`test -f .project-standards.yaml && echo "EXISTS" || echo "MISSING"`
@@ -118,6 +128,16 @@ If `--verbose` flag is set:
 - Show detected deviations from `.project-standards.yaml`
 - Display file modification timestamps
 - Show cache-busting configuration details (framework, CDN, hash patterns)
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick status check | `/configure:status` |
+| Verbose status | `/configure:status --verbose` |
+| Check standards version | `grep "^standards_version:" .project-standards.yaml 2>/dev/null \| sed 's/.*:[[:space:]]*//'` |
+| Check last configured date | `grep "^last_configured:" .project-standards.yaml 2>/dev/null \| sed 's/.*:[[:space:]]*//'` |
+| List all workflow files | `find .github/workflows -maxdepth 1 -name '*.yml' -exec basename {} \;` |
 
 ## Flags
 

@@ -13,6 +13,16 @@ name: configure-select
 
 Interactively select which infrastructure standards checks to run.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up selected components interactively | Running all components (use `/configure:all`) |
+| Choosing specific standards to implement | Checking status only (use `/configure:status`) |
+| Customizing configuration scope for project | Single component needed (use specific `/configure:X` skill) |
+| User wants control over which components to configure | Automated full setup preferred |
+| Building configuration incrementally | Complete infrastructure setup needed immediately |
+
 ## Context
 
 - Project standards: !`test -f .project-standards.yaml && echo "EXISTS" || echo "MISSING"`
@@ -128,6 +138,15 @@ Selected Components Summary:
 | Formatting      | PASS     | Biome configured                |
 +-----------------+----------+---------------------------------+
 ```
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Interactive component selection | `/configure:select` |
+| Select and auto-fix | `/configure:select --fix` |
+| Check mode only | `/configure:select --check-only` |
+| Detect project type | `test -f .project-standards.yaml && grep "^project_type:" .project-standards.yaml \| sed 's/.*:[[:space:]]*//'` |
 
 ## Flags
 

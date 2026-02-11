@@ -13,6 +13,16 @@ name: configure-pre-commit
 
 Check and configure pre-commit hooks against project standards.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up or validating pre-commit hooks | Project doesn't use pre-commit framework (use git hooks directly) |
+| Checking compliance with project standards | Just running hooks manually (use `pre-commit run` command) |
+| Installing project-type-specific hooks | Hooks are already properly configured |
+| Migrating to pre-commit framework | Simple project with no quality checks needed |
+| Updating hook configurations for detected tools | Need to disable pre-commit entirely |
+
 ## Context
 
 - Pre-commit config: !`test -f .pre-commit-config.yaml && echo "EXISTS" || echo "MISSING"`
@@ -122,6 +132,17 @@ last_configured: "[timestamp]"
 components:
   pre-commit: "2025.1"
 ```
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Check if pre-commit installed | `command -v pre-commit >/dev/null 2>&1 && echo "installed" \|\| echo "missing"` |
+| Validate config syntax | `pre-commit validate-config .pre-commit-config.yaml 2>&1` |
+| List configured hooks | `grep -E '^\s+- id:' .pre-commit-config.yaml 2>/dev/null \| sed 's/.*id:[[:space:]]*//'` |
+| Check hook versions | `pre-commit autoupdate --freeze 2>&1` |
+| Quick compliance check | `/configure:pre-commit --check-only` |
+| Auto-fix configuration | `/configure:pre-commit --fix` |
 
 ## Flags
 

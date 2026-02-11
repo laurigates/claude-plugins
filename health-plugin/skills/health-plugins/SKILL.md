@@ -13,6 +13,16 @@ name: health-plugins
 
 Diagnose and fix issues with the Claude Code plugin registry. This command specifically addresses issue #14202 where project-scoped plugins incorrectly appear as globally installed.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Fixing plugin registry corruption (issue #14202) | Comprehensive health check (use `/health:check`) |
+| Diagnosing project-scope vs global plugin issues | Auditing plugins for relevance (use `/health:audit`) |
+| Cleaning up orphaned plugin entries | Settings validation only needed |
+| Resolving "plugin already installed" errors | Agentic optimization audit (use `/health:agentic-audit`) |
+| Manually inspecting registry JSON | Just viewing installed plugins (read registry file) |
+
 ## Context
 
 - Current project: !`pwd`
@@ -117,6 +127,17 @@ If automatic fix fails, users can manually edit `~/.claude/plugins/installed_plu
    - Change `projectPath` to current project path
    - Add a new entry with different key for current project
 4. Save and restart Claude Code
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Plugin registry diagnostics | `/health:plugins` |
+| Fix registry issues | `/health:plugins --fix` |
+| Dry-run mode | `/health:plugins --dry-run` |
+| Inspect registry | `jq '.' ~/.claude/plugins/installed_plugins.json 2>/dev/null` |
+| Check specific plugin | `jq '.["plugin-name"]' ~/.claude/plugins/installed_plugins.json 2>/dev/null` |
+| List orphaned paths | `jq -r 'to_entries[] \| select(.value.projectPath? and (.value.projectPath \| test("."))) \| .value.projectPath' ~/.claude/plugins/installed_plugins.json 2>/dev/null` |
 
 ## Flags
 

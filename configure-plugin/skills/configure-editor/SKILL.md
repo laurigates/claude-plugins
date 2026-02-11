@@ -13,6 +13,16 @@ name: configure-editor
 
 Check and configure editor settings for consistency across the team.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up consistent editor configuration across a team | Personal editor preferences only (configure in user settings) |
+| Checking EditorConfig or VS Code workspace compliance | Just viewing existing .editorconfig (use Read tool) |
+| Configuring format-on-save for detected languages | Project doesn't use VS Code (configure for other editors manually) |
+| Adding recommended VS Code extensions for project tools | Extensions are already properly configured |
+| Setting up debug configurations and tasks | Simple project with no debugging needs |
+
 ## Context
 
 - EditorConfig: !`test -f .editorconfig && echo "EXISTS" || echo "MISSING"`
@@ -119,6 +129,17 @@ Create `docs/EDITOR_SETUP.md` with quick start instructions for the team coverin
 Print a summary of all changes made, including files created/updated, extensions recommended, and next steps for the team.
 
 For detailed configuration templates and language-specific settings, see [REFERENCE.md](REFERENCE.md).
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Check if EditorConfig exists | `test -f .editorconfig && echo "exists" \|\| echo "missing"` |
+| Validate EditorConfig syntax | `editorconfig-checker .editorconfig 2>&1` (if installed) |
+| Check VS Code settings exist | `test -f .vscode/settings.json && jq empty .vscode/settings.json 2>&1` |
+| List detected languages | `find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' \) -exec basename {} \;` |
+| Quick compliance check | `/configure:editor --check-only` |
+| Auto-fix all issues | `/configure:editor --fix` |
 
 ## Flags
 

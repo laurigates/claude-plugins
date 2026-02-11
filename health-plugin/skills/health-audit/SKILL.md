@@ -13,6 +13,16 @@ name: health-audit
 
 Audit the project's enabled plugins against the actual technology stack. Identifies plugins that don't apply to this project and suggests relevant plugins that aren't enabled.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Reviewing plugin relevance for current project | General health diagnostics (use `/health:check`) |
+| Cleaning up unused plugins | Plugin registry corruption (use `/health:plugins --fix`) |
+| Discovering relevant plugins for tech stack | Agentic optimization audit (use `/health:agentic-audit`) |
+| Optimizing project-specific plugin configuration | Installing specific plugin (install directly) |
+| Onboarding to existing project | Need comprehensive settings validation |
+
 ## Context
 
 - Current project: !`pwd`
@@ -102,6 +112,16 @@ If a plugin is enabled at user level, it doesn't need to be in project settings 
 | Monorepo with multiple languages | Suggest all matching plugins |
 | Plugin not in marketplace | Flag as "unknown" but don't remove |
 | User declined changes | Respect decision, show manual instructions |
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Plugin relevance audit | `/health:audit` |
+| Audit with auto-fix | `/health:audit --fix` |
+| Dry-run mode | `/health:audit --dry-run` |
+| List enabled plugins | `jq -r '.enabledPlugins[]? // empty' .claude/settings.json 2>/dev/null` |
+| Detect project languages | `find . -maxdepth 1 \( -name 'package.json' -o -name 'Cargo.toml' -o -name 'pyproject.toml' \) -exec basename {} \;` |
 
 ## Flags
 

@@ -13,6 +13,16 @@ name: health-check
 
 Run a comprehensive diagnostic scan of your Claude Code environment. Identifies issues with plugin registry, settings files, hooks configuration, and MCP servers.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Running comprehensive Claude Code diagnostics | Checking specific component only (use `/health:plugins`, `/health:settings`) |
+| Troubleshooting general Claude Code issues | Plugin registry issues only (use `/health:plugins --fix`) |
+| Validating environment configuration | Auditing plugins for project fit (use `/health:audit`) |
+| Identifying misconfigured settings or hooks | Just viewing settings (use Read tool on settings.json) |
+| Quick health check before starting work | Need agentic optimization audit (use `/health:agentic-audit`) |
+
 ## Context
 
 - User home: !`echo $HOME`
@@ -66,6 +76,17 @@ Execute this comprehensive health check:
 ### Step 5: Generate the diagnostic report
 
 Print a structured report covering each check area (Plugin Registry, Settings Files, Hooks, MCP Servers) with status indicators (OK/WARN/ERROR), issue counts, and recommended actions. Use the report template from [REFERENCE.md](REFERENCE.md).
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick health check | `/health:check` |
+| Health check with auto-fix | `/health:check --fix` |
+| Detailed diagnostics | `/health:check --verbose` |
+| Check plugin registry exists | `test -f ~/.claude/plugins/installed_plugins.json && echo "exists" \|\| echo "missing"` |
+| Validate settings JSON | `jq empty .claude/settings.json 2>&1` |
+| List MCP servers | `jq -r '.mcpServers \| keys[]' .mcp.json 2>/dev/null` |
 
 ## Known Issues Database
 

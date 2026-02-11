@@ -15,6 +15,16 @@ Scan all plugin skills, commands, and agents for CLI output optimization opportu
 
 Standards reference: `.claude/rules/agentic-optimization.md` and `.claude/rules/skill-quality.md`.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Auditing skills for agentic optimization compliance | General plugin audit (use `/health:audit`) |
+| Finding missing Agentic Optimizations tables | Comprehensive environment check (use `/health:check`) |
+| Reviewing CLI command patterns in skills | Plugin registry issues (use `/health:plugins`) |
+| Quality-checking skill documentation | Manual skill review preferred |
+| Batch-updating skill quality standards | Single skill needs updating |
+
 ## Context
 
 - Plugin root: !`pwd`
@@ -113,6 +123,16 @@ Use the standard extraction pattern:
 ```bash
 head -20 "$file" | grep -m1 "^modified:" | sed 's/^[^:]*:[[:space:]]*//'
 ```
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Agentic audit scan | `/health:agentic-audit` |
+| Audit with auto-fix | `/health:agentic-audit --fix` |
+| Verbose output | `/health:agentic-audit --verbose` |
+| Find all skill files | `find . \( -name 'SKILL.md' -o -name 'skill.md' \) 2>/dev/null` |
+| Check for Agentic Optimizations table | `grep -l "## Agentic Optimizations" $(find . -name 'SKILL.md') 2>/dev/null` |
 
 ## See Also
 

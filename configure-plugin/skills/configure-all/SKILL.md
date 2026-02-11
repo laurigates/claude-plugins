@@ -13,6 +13,16 @@ name: configure-all
 
 Run all infrastructure standards compliance checks.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Performing comprehensive infrastructure audit | Checking single component (use specific `/configure:X` skill) |
+| Setting up new project with all standards | Project already has all standards configured |
+| CI/CD compliance validation | Need detailed status only (use `/configure:status`) |
+| Running initial configuration | Interactive component selection needed (use `/configure:select`) |
+| Batch-fixing all compliance issues with `--fix` | Manual review of each component preferred |
+
 ## Context
 
 - Project standards: !`test -f .project-standards.yaml && echo "EXISTS" || echo "MISSING"`
@@ -86,6 +96,16 @@ If `--fix` flag is set or user confirms:
 ### Step 5: Update standards tracking
 
 Create or update `.project-standards.yaml` with the current standards version, project type, timestamp, and component versions. For template, see [REFERENCE.md](REFERENCE.md).
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick compliance check (all components) | `/configure:all --check-only` |
+| Auto-fix all issues | `/configure:all --fix` |
+| Check standards file validity | `test -f .project-standards.yaml && cat .project-standards.yaml \| head -10` |
+| List project type indicators | `find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' \) -exec basename {} \;` |
+| Count missing components | `grep -c "status: missing" compliance-report.txt 2>/dev/null` |
 
 ## Flags
 

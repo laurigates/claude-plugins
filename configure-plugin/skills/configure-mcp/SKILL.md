@@ -2,7 +2,7 @@
 model: haiku
 created: 2025-12-16
 modified: 2026-02-10
-reviewed: 2026-02-10
+reviewed: 2025-12-16
 description: Check and configure MCP servers for project integration. Use when setting up MCP servers, checking MCP status, or adding new servers to a project.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
 argument-hint: "[--check-only] [--fix] [--core] [--server <name>]"
@@ -17,6 +17,16 @@ Check and configure Model Context Protocol (MCP) servers for this project.
 
 For server configurations, environment variable reference, and report templates, see [REFERENCE.md](REFERENCE.md).
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up MCP servers for a project | Configuring user-level settings (edit `~/.claude/settings.json` directly) |
+| Checking MCP server status and validating configuration | Just viewing `.mcp.json` contents (use Read tool) |
+| Adding specific servers (context7, playwright, sequential-thinking, etc.) | Installing npm/bun packages for non-MCP purposes (use package manager) |
+| Ensuring team-shareable MCP setups | Personal-only MCP configuration (use `~/.claude/settings.json`) |
+| Installing core productivity servers | Debugging specific server runtime issues (check server logs, restart Claude Code) |
+
 ## Context
 
 - Config exists: !`test -f .mcp.json && echo "EXISTS" || echo "MISSING"`
@@ -25,7 +35,7 @@ For server configurations, environment variable reference, and report templates,
 - Git tracking: !`grep -q '.mcp.json' .gitignore 2>/dev/null && echo "IGNORED" || echo "NOT IGNORED"`
 - Standards file: !`test -f .project-standards.yaml && echo "EXISTS" || echo "MISSING"`
 - Has playwright config: !`find . -maxdepth 1 -name 'playwright.config.*' 2>/dev/null`
-- Has TS/JS files: !`find . -maxdepth 2 -name '*.ts' -o -name '*.py' -o -name '*.go' -o -name '*.rs' 2>/dev/null | head -5`
+- Has TS/JS files: !`find . -maxdepth 2 \( -name '*.ts' -o -name '*.py' -o -name '*.go' -o -name '*.rs' \) 2>/dev/null | head -5`
 - Dotfiles registry: !`test -f ~/.local/share/chezmoi/.chezmoidata.toml && echo "EXISTS" || echo "MISSING"`
 
 ## Parameters
@@ -97,6 +107,18 @@ Print a summary using the report format from [REFERENCE.md](REFERENCE.md):
 ### Step 5: Update standards tracking
 
 If `.project-standards.yaml` exists, update the MCP section with current server list and timestamp.
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick status check | `jq -c '.mcpServers \| keys' .mcp.json 2>/dev/null` |
+| Validate JSON syntax | `jq empty .mcp.json 2>&1` |
+| List environment variables needed | `jq -r '.mcpServers[] \| .env // {} \| keys[]' .mcp.json 2>/dev/null \| sort -u` |
+| Check if server installed | `jq -e '.mcpServers.context7' .mcp.json >/dev/null 2>&1 && echo "installed" \|\| echo "missing"` |
+| Core servers install (automated) | `/configure:mcp --core --fix` |
+| Specific server install (automated) | `/configure:mcp --server context7 --fix` |
+| Check-only mode (CI/reporting) | `/configure:mcp --check-only` |
 
 ## Flags
 
