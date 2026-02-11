@@ -9,6 +9,16 @@ argument-hint: "[--check-only] [--fix] [--framework <nextjs|vite>] [--cdn <cloud
 name: configure-cache-busting
 ---
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Configuring content hashing for Next.js or Vite builds | Optimizing server-side caching (nginx, CDN config directly) |
+| Setting up CDN cache headers for Vercel or Cloudflare | Debugging build output issues (system-debugging agent) |
+| Verifying cache-busting compliance after a framework upgrade | Configuring general CI/CD workflows (`/configure:workflows`) |
+| Adding build verification scripts for hashed assets | Setting up container builds (`/configure:container`) |
+| Auditing static asset caching strategy across a project | Profiling frontend performance (browser devtools) |
+
 ## Context
 
 - Project root: !`pwd`
@@ -159,6 +169,17 @@ components:
 Print a summary of changes applied, cache strategy overview, and next steps for verification.
 
 For detailed configuration templates and code examples, see [REFERENCE.md](REFERENCE.md).
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick compliance check | `/configure:cache-busting --check-only` |
+| Auto-fix all issues | `/configure:cache-busting --fix` |
+| Next.js project only | `/configure:cache-busting --fix --framework nextjs` |
+| Vite project only | `/configure:cache-busting --fix --framework vite` |
+| Cloudflare CDN headers | `/configure:cache-busting --fix --cdn cloudflare` |
+| Vercel CDN headers | `/configure:cache-busting --fix --cdn vercel` |
 
 ## Output
 

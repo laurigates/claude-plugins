@@ -13,6 +13,16 @@ name: configure-integration-tests
 
 Check and configure integration testing infrastructure for testing service interactions, databases, and external dependencies.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up integration testing infrastructure with Supertest, pytest, or Testcontainers | Writing individual integration test cases for specific endpoints |
+| Creating docker-compose.test.yml for local test service containers | Running existing integration tests (`bun test`, `pytest -m integration`) |
+| Auditing integration test setup for completeness (fixtures, factories, CI) | Configuring unit test runners (`/configure:tests` instead) |
+| Adding integration test jobs to GitHub Actions with service containers | Debugging a specific failing integration test |
+| Separating integration tests from unit tests in project structure | Setting up API contract testing (`/configure:api-tests` instead) |
+
 ## Context
 
 - Project root: !`pwd`
@@ -186,6 +196,17 @@ components:
 Print a summary of changes applied, scripts added, and next steps for running integration tests.
 
 For detailed templates and code examples, see [REFERENCE.md](REFERENCE.md).
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick compliance check | `/configure:integration-tests --check-only` |
+| Auto-fix all issues | `/configure:integration-tests --fix` |
+| Run integration tests (JS) | `bun test tests/integration --dots --bail=1` |
+| Run integration tests (Python) | `pytest -m integration -x -q` |
+| Start test containers | `docker compose -f docker-compose.test.yml up -d` |
+| Check container health | `docker compose -f docker-compose.test.yml ps --format json | jq -c '.[] | {Name, State}'` |
 
 ## Flags
 

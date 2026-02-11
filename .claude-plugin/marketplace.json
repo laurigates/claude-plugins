@@ -22,7 +22,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.5.6",
+      "version": "2.6.0",
       "keywords": [
         "agents",
         "configuration",
@@ -54,7 +54,7 @@
       "name": "api-plugin",
       "source": "./api-plugin",
       "description": "API integration and testing - REST endpoints, client generation",
-      "version": "1.1.3",
+      "version": "1.2.0",
       "keywords": [
         "api",
         "rest",
@@ -287,7 +287,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "1.4.0",
+      "version": "1.5.0",
       "keywords": [
         "hooks",
         "automation",
@@ -316,7 +316,7 @@
       "name": "langchain-plugin",
       "source": "./langchain-plugin",
       "description": "LangChain JS/TS development - agents, chains, LangGraph workflows, and Deep Agents patterns",
-      "version": "1.2.2",
+      "version": "1.3.0",
       "keywords": [
         "langchain",
         "langgraph",
@@ -349,7 +349,7 @@
       "name": "project-plugin",
       "source": "./project-plugin",
       "description": "Project initialization, management, and maintenance - setup, modernization, changelog review, and continuous development workflows",
-      "version": "1.6.2",
+      "version": "1.7.0",
       "keywords": [
         "project",
         "initialization",

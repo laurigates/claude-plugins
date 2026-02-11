@@ -13,6 +13,16 @@ name: configure-api-tests
 
 Check and configure API contract testing infrastructure for validating API contracts, schemas, and consumer-provider agreements.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up Pact consumer/provider contract tests | Writing individual unit tests (`/configure:tests`) |
+| Configuring OpenAPI request/response validation | Validating a single API endpoint manually |
+| Adding JSON Schema or Zod schema testing | Checking general test coverage (`/configure:coverage`) |
+| Detecting breaking API changes in CI | Reviewing API design decisions (code-review agent) |
+| Auditing API testing compliance across a project | Configuring general CI/CD workflows (`/configure:workflows`) |
+
 ## Context
 
 - Project root: !`pwd`
@@ -159,6 +169,16 @@ components:
 Print a summary of all changes applied, scripts added, and next steps for the user to verify the configuration.
 
 For detailed templates and code examples, see [REFERENCE.md](REFERENCE.md).
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick compliance check | `/configure:api-tests --check-only` |
+| Auto-fix all issues | `/configure:api-tests --fix` |
+| Pact contracts only | `/configure:api-tests --fix --type pact` |
+| OpenAPI validation only | `/configure:api-tests --fix --type openapi` |
+| Schema testing only | `/configure:api-tests --fix --type schema` |
 
 ## Flags
 

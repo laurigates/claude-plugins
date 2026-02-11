@@ -9,6 +9,20 @@ argument-hint: "[--check-only] [--fix] [--source <docs|site|custom>]"
 name: configure-github-pages
 ---
 
+# /configure:github-pages
+
+Check and configure GitHub Pages deployment.
+
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up GitHub Pages deployment for a documentation site | Configuring documentation standards or generators (`/configure:docs` instead) |
+| Creating or updating a GitHub Actions workflow for Pages deployment | Debugging a failed GitHub Actions workflow (`/configure:workflows` instead) |
+| Migrating from `peaceiris/actions-gh-pages` to official `actions/deploy-pages` | Editing documentation content or markdown files |
+| Auditing Pages workflow for outdated action versions or missing permissions | Setting up a custom domain via DNS (manual repository settings) |
+| Adding Pages deployment to a project with an existing doc generator | Configuring CI/CD workflows unrelated to documentation |
+
 ## Context
 
 - GitHub workflows: !`find .github/workflows -maxdepth 1 \( -name '*doc*.yml' -o -name '*pages*.yml' \) 2>/dev/null`
@@ -173,6 +187,17 @@ Provide:
 2. List of changes made (if --fix) or proposed (if interactive)
 3. Post-configuration instructions
 4. URL where docs will be deployed
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick compliance check | `/configure:github-pages --check-only` |
+| Auto-fix all issues | `/configure:github-pages --fix` |
+| Check Pages workflow exists | `find .github/workflows -name '*pages*' -o -name '*doc*' 2>/dev/null` |
+| Check Pages action versions | `grep -E 'deploy-pages|upload-pages-artifact|configure-pages' .github/workflows/*.yml` |
+| Verify Pages enabled | `gh api repos/{owner}/{repo}/pages --jq '.status'` |
+| Check deployment status | `gh api repos/{owner}/{repo}/pages/builds --jq '.[0].status'` |
 
 ## See Also
 

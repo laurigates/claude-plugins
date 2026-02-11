@@ -13,6 +13,16 @@ name: configure-release-please
 
 Check and configure release-please against project standards.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up release-please for a new project from scratch | Manually editing CHANGELOG.md or version fields — use conventional commits instead |
+| Auditing existing release-please configuration for compliance | Creating a one-off release — use `gh release create` directly |
+| Upgrading release-please-action to the latest version | Debugging a failed release PR — check GitHub Actions logs directly |
+| Ensuring workflow uses correct token (MY_RELEASE_PLEASE_TOKEN) | Managing npm/PyPI publishing — configure separate publish workflows |
+| Adding a new package to a monorepo release-please configuration | Writing conventional commit messages — use `/git:commit` skill |
+
 ## Context
 
 - Workflow file: !`find .github/workflows -maxdepth 1 -name 'release-please*' 2>/dev/null`
@@ -96,6 +106,17 @@ Update `.project-standards.yaml`:
 components:
   release-please: "2025.1"
 ```
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick compliance check | `/configure:release-please --check-only` |
+| Auto-fix all issues | `/configure:release-please --fix` |
+| Check latest action version | `curl -s https://api.github.com/repos/googleapis/release-please-action/releases/latest \| jq -r '.tag_name'` |
+| Verify config JSON | `jq . release-please-config.json` |
+| Verify manifest JSON | `jq . .release-please-manifest.json` |
+| Check workflow exists | `find .github/workflows -name 'release-please*'` |
 
 ## Important Notes
 

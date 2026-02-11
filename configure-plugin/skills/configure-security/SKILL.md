@@ -13,6 +13,16 @@ name: configure-security
 
 Check and configure security scanning tools for dependency audits, SAST, and secret detection.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up dependency auditing, SAST, or secret detection for a project | Running a one-off security scan (use `detect-secrets scan` or `npm audit` directly) |
+| Checking project compliance with security scanning standards | Reviewing code for application-level vulnerabilities (use security-audit agent) |
+| Configuring Dependabot, CodeQL, or TruffleHog in CI/CD | Managing GitHub repository security settings via the web UI |
+| Creating or updating a SECURITY.md policy | Writing security documentation beyond the policy template |
+| Auditing which security tools are missing from a project | Investigating a specific CVE or vulnerability |
+
 ## Context
 
 - Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) 2>/dev/null`
@@ -175,6 +185,17 @@ components:
 Print a summary of all changes made across dependency auditing, SAST scanning, secret detection, security policy, and CI/CD integration. Include next steps for reviewing Dependabot PRs, CodeQL findings, and enabling private vulnerability reporting.
 
 For the results report format, see [REFERENCE.md](REFERENCE.md).
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick compliance check | `/configure:security --check-only` |
+| Auto-fix all security gaps | `/configure:security --fix` |
+| Dependencies only | `/configure:security --type dependencies` |
+| Secret detection only | `/configure:security --type secrets` |
+| SAST scanning only | `/configure:security --type sast` |
+| Verify secrets baseline | `detect-secrets audit .secrets.baseline` |
 
 ## Flags
 
