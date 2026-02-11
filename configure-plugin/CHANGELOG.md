@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.6.6...configure-plugin-v1.7.0) (2026-02-11)
+
+
+### Features
+
+* add required quality sections to refactored skills ([#544](https://github.com/laurigates/claude-plugins/issues/544)) ([342af54](https://github.com/laurigates/claude-plugins/commit/342af54af0f81fa50d239d06b32b353ddb7335fc))
+
 ## [1.6.6](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.6.5...configure-plugin-v1.6.6) (2026-02-09)
 
 
