@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.7.0...project-plugin-v1.8.0) (2026-02-12)
+
+
+### Features
+
+* **blueprint-plugin:** add v3.0→v3.1 migration and remove work-overview references ([e9849b0](https://github.com/laurigates/claude-plugins/commit/e9849b0a0d3d434432d32e68fee3498696fb09c8))
+
 ## [1.7.0](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.6.2...project-plugin-v1.7.0) (2026-02-11)
 
 
