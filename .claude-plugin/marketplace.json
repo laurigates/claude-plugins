@@ -435,7 +435,7 @@
       "name": "typescript-plugin",
       "source": "./typescript-plugin",
       "description": "TypeScript development - strict types, ESLint, Biome",
-      "version": "1.5.2",
+      "version": "1.5.3",
       "keywords": [
         "typescript",
         "eslint",
