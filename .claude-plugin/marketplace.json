@@ -334,7 +334,7 @@
       "name": "networking-plugin",
       "source": "./networking-plugin",
       "description": "Network diagnostics, reconnaissance, monitoring, and HTTP load testing",
-      "version": "1.2.1",
+      "version": "1.2.2",
       "keywords": [
         "networking",
         "diagnostics",

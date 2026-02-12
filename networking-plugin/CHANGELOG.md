@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.2](https://github.com/laurigates/claude-plugins/compare/networking-plugin-v1.2.1...networking-plugin-v1.2.2) (2026-02-12)
+
+
+### Bug Fixes
+
+* standardize skill name fields to kebab-case across all plugins ([72c0f83](https://github.com/laurigates/claude-plugins/commit/72c0f837a1b07004850c5906a30d619a79098f69))
+
 ## [1.2.1](https://github.com/laurigates/claude-plugins/compare/networking-plugin-v1.2.0...networking-plugin-v1.2.1) (2026-02-01)
 
 
