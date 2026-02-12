@@ -1,6 +1,6 @@
 {
   "name": "testing-plugin",
-  "version": "3.5.2",
+  "version": "3.5.3",
   "description": "Test execution, TDD workflow, testing strategies, and quality analysis",
   "author": {
     "name": "Lauri Gates"

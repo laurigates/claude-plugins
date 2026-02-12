@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.6.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.6.0...agent-patterns-plugin-v2.6.1) (2026-02-12)
+
+
+### Bug Fixes
+
+* standardize skill name fields to kebab-case across all plugins ([72c0f83](https://github.com/laurigates/claude-plugins/commit/72c0f837a1b07004850c5906a30d619a79098f69))
+
 ## [2.6.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.5.6...agent-patterns-plugin-v2.6.0) (2026-02-11)
 
 
