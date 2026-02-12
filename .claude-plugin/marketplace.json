@@ -222,7 +222,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, and repository management",
-      "version": "2.13.0",
+      "version": "2.13.1",
       "keywords": [
         "git",
         "github",
@@ -406,7 +406,7 @@
       "name": "testing-plugin",
       "source": "./testing-plugin",
       "description": "Test execution, TDD workflow, and testing strategies",
-      "version": "3.5.2",
+      "version": "3.5.3",
       "keywords": [
         "testing",
         "tdd",
