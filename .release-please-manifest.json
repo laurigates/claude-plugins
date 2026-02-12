@@ -24,7 +24,7 @@
   "python-plugin": "1.2.4",
   "rust-plugin": "1.2.1",
   "terraform-plugin": "1.2.3",
-  "tools-plugin": "2.4.4",
+  "tools-plugin": "2.4.5",
   "testing-plugin": "3.5.3",
   "typescript-plugin": "1.5.2",
   "finops-plugin": "1.0.3",
