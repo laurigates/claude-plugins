@@ -19,7 +19,7 @@
   "github-actions-plugin": "1.1.1",
   "kubernetes-plugin": "1.2.1",
   "langchain-plugin": "1.3.0",
-  "networking-plugin": "1.2.1",
+  "networking-plugin": "1.2.2",
   "project-plugin": "1.8.0",
   "python-plugin": "1.2.3",
   "rust-plugin": "1.2.1",
