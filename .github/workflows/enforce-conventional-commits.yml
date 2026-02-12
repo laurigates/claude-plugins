@@ -1,0 +1,76 @@
+name: Enforce Conventional Commits
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - synchronize
+
+permissions:
+  pull-requests: read
+
+jobs:
+  validate-pr-title:
+    name: Validate PR title
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Types that trigger release-please version bumps
+          # (feat, fix, perf, refactor, docs) plus standard
+          # conventional commit types that don't trigger releases
+          types: |
+            feat
+            fix
+            perf
+            refactor
+            docs
+            chore
+            ci
+            test
+            style
+            build
+            revert
+          # Plugin scopes matching release-please-config.json packages.
+          # Unscoped titles like "fix: typo" are also allowed since
+          # requireScope is false.
+          scopes: |
+            accessibility-plugin
+            agent-patterns-plugin
+            agents-plugin
+            api-plugin
+            bevy-plugin
+            blog-plugin
+            blueprint-plugin
+            code-quality-plugin
+            communication-plugin
+            component-patterns-plugin
+            command-analytics-plugin
+            configure-plugin
+            container-plugin
+            documentation-plugin
+            finops-plugin
+            git-plugin
+            github-actions-plugin
+            hooks-plugin
+            health-plugin
+            home-assistant-plugin
+            kubernetes-plugin
+            langchain-plugin
+            networking-plugin
+            project-plugin
+            python-plugin
+            rust-plugin
+            terraform-plugin
+            testing-plugin
+            tools-plugin
+            typescript-plugin
+            workflow-orchestration-plugin
+          requireScope: false
+          # Allow ! for breaking changes, e.g. "feat!: remove deprecated API"
+          subjectPattern: ^.+$
+          subjectPatternError: |
+            The subject (after the type/scope prefix) must not be empty.
