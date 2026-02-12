@@ -3,7 +3,7 @@ model: opus
 created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
-name: Bevy Game Engine
+name: bevy-game-engine
 description: Bevy game engine development including ECS architecture, rendering, input handling, asset management, and game loop design. Use when building games with Bevy, working with entities/components/systems, or when the user mentions Bevy, game development in Rust, or 2D/3D games.
 allowed-tools: Glob, Grep, Read, Bash(cargo *), Edit, Write, TodoWrite, WebFetch, WebSearch, BashOutput, KillShell
 ---

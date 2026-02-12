@@ -1,6 +1,6 @@
 ---
 model: haiku
-name: session-start-hook
+name: hooks-session-start-hook
 description: |
   Create a SessionStart hook for Claude Code on the web. Use when setting up a repository
   for remote Claude Code sessions, ensuring dependencies install and tests/linters run

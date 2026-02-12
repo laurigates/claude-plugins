@@ -3,7 +3,7 @@ model: haiku
 created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
-name: ruff Formatting
+name: ruff-formatting
 description: Python code formatting with ruff format. Fast, Black-compatible formatting for consistent code style. Use when formatting Python files, enforcing style, or checking format compliance.
 allowed-tools: Bash(ruff *), Bash(python *), Bash(uv *), Read, Edit, Write, Grep, Glob
 ---

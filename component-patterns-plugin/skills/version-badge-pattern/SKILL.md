@@ -1,6 +1,6 @@
 ---
 model: haiku
-name: Version Badge Pattern
+name: version-badge-pattern
 description: |
   Implement a version badge UI component showing build version, git commit, and
   recent changelog in a tooltip. Use when adding version visibility to applications

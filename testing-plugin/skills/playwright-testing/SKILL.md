@@ -3,7 +3,7 @@ model: haiku
 created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
-name: Playwright Testing
+name: playwright-testing
 description: |
   Playwright end-to-end testing for web applications. Cross-browser testing (Chromium, Firefox, WebKit),
   visual regression, API testing, mobile emulation. Use when writing E2E tests, testing across browsers,

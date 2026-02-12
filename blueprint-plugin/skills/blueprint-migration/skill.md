@@ -1,6 +1,6 @@
 ---
 model: opus
-name: Blueprint Migration
+name: blueprint-migration
 description: Versioned migration procedures for upgrading blueprint structure between format versions
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, TodoWrite
 created: 2025-12-22

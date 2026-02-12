@@ -3,7 +3,7 @@ model: haiku
 created: 2025-12-16
 modified: 2026-01-24
 reviewed: 2026-01-24
-name: ruff Integration
+name: ruff-integration
 description: |
   Integrate ruff into development workflows: editor setup, pre-commit hooks, and CI/CD pipelines.
   Use when configuring ruff in VS Code, setting up pre-commit hooks, or adding ruff to GitHub Actions.
