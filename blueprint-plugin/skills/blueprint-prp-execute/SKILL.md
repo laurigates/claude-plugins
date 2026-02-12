@@ -352,10 +352,6 @@ For each identified FR code:
 
 Update sync targets:
 
-**work-overview.md:**
-- Move completed features to "Completed" section
-- Update "In Progress" section with partially completed features
-
 **TODO.md:**
 - Check boxes for completed features: `[ ]` → `[x]`
 - Add notes for partial completion if needed
