@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.16.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.16.0...blueprint-plugin-v3.16.1) (2026-02-12)
+
+
+### Bug Fixes
+
+* standardize skill name fields to kebab-case across all plugins ([72c0f83](https://github.com/laurigates/claude-plugins/commit/72c0f837a1b07004850c5906a30d619a79098f69))
+
 ## [3.16.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.15.0...blueprint-plugin-v3.16.0) (2026-02-12)
 
 

@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.13.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.13.1...git-plugin-v2.13.2) (2026-02-12)
+
+
+### Documentation
+
+* **git-plugin:** remove exclusive git permissions claims from git-ops agent ([0f92846](https://github.com/laurigates/claude-plugins/commit/0f928466543e7a302c11ff9d51ae481c8bf887eb))
+
+## [2.13.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.13.0...git-plugin-v2.13.1) (2026-02-12)
+
+
+### Bug Fixes
+
+* standardize skill name fields to kebab-case across all plugins ([72c0f83](https://github.com/laurigates/claude-plugins/commit/72c0f837a1b07004850c5906a30d619a79098f69))
+
 ## [2.13.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.12.4...git-plugin-v2.13.0) (2026-02-10)
 
 
