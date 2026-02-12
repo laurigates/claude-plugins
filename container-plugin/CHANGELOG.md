@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.3](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.3.2...container-plugin-v2.3.3) (2026-02-12)
+
+
+### Bug Fixes
+
+* standardize skill name fields to kebab-case across all plugins ([72c0f83](https://github.com/laurigates/claude-plugins/commit/72c0f837a1b07004850c5906a30d619a79098f69))
+
 ## [2.3.2](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.3.1...container-plugin-v2.3.2) (2026-02-06)
 
 
