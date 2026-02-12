@@ -1,6 +1,6 @@
 ---
 model: opus
-name: Deep Agents
+name: deep-agents
 description: |
   Build hierarchical AI agents using the deep-agents TypeScript/npm package. Use when
   you want to create an orchestrator agent that plans and executes multi-step tasks,

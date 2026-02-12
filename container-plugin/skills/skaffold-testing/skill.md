@@ -1,6 +1,6 @@
 ---
 model: haiku
-name: Skaffold Testing
+name: skaffold-testing
 description: |
   Container image validation with Skaffold test and verify stages. Covers container-structure-tests
   for image hygiene, custom tests for security scanning, and post-deployment verification.

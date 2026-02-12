@@ -3,7 +3,7 @@ model: haiku
 created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
-name: yq YAML Processing
+name: yq-yaml-processing
 description: YAML querying, filtering, and transformation with yq command-line tool. Use when working with YAML files, parsing YAML configuration, modifying Kubernetes manifests, GitHub Actions workflows, or transforming YAML structures.
 allowed-tools: Bash(yq *), Read, Write, Edit, Grep, Glob
 ---

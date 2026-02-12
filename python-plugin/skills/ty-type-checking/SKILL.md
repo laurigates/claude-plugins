@@ -3,7 +3,7 @@ model: haiku
 created: 2026-01-29
 modified: 2026-01-29
 reviewed: 2026-01-29
-name: ty Type Checking
+name: ty-type-checking
 description: |
   Python type checking with ty, Astral's extremely fast type checker (10-100x faster than mypy/Pyright).
   Use when checking Python types, configuring type checking rules, or setting up type checking in projects.

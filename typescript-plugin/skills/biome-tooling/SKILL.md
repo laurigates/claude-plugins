@@ -3,7 +3,7 @@ model: haiku
 created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
-name: Biome Tooling
+name: biome-tooling
 description: |
   Biome all-in-one formatter and linter for JavaScript, TypeScript, JSX, TSX, JSON, and CSS.
   Zero-config setup, 15-20x faster than ESLint/Prettier. Use when working with modern JavaScript/TypeScript

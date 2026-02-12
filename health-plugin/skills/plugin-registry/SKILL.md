@@ -1,6 +1,6 @@
 ---
 model: haiku
-name: Plugin Registry
+name: plugin-registry
 description: |
   Understanding Claude Code's plugin registry structure, installation scopes,
   and common issues. Use when troubleshooting plugin installation problems,

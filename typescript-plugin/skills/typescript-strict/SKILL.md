@@ -3,7 +3,7 @@ model: haiku
 created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
-name: TypeScript Strict Mode
+name: typescript-strict
 description: |
   TypeScript strict mode configuration for 2025. Recommended tsconfig.json settings,
   strict flags explained, moduleResolution strategies (Bundler vs NodeNext),

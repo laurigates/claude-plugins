@@ -3,7 +3,7 @@ model: haiku
 created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
-name: Vitest Testing
+name: vitest-testing
 description: |
   Vitest test runner for JavaScript and TypeScript. Fast, modern alternative to Jest.
   Vite-native, ESM support, watch mode, UI mode, coverage, mocking, snapshot testing.

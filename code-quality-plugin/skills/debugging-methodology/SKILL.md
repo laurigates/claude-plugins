@@ -1,6 +1,6 @@
 ---
 model: opus
-name: Debugging Methodology
+name: debugging-methodology
 description: Systematic debugging approach with tool recommendations for memory, performance, and system-level issues.
 allowed-tools: Bash, Read, Grep, Glob
 created: 2025-12-27

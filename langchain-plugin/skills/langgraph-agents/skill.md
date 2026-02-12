@@ -1,6 +1,6 @@
 ---
 model: opus
-name: LangGraph Agents
+name: langgraph-agents
 description: |
   Build stateful AI agents in Python using LangGraph's graph-based workflow framework.
   Use when you want to create a state machine agent with checkpoints, define agent

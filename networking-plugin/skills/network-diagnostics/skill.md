@@ -3,7 +3,7 @@ model: haiku
 created: 2026-01-01
 modified: 2026-01-01
 reviewed: 2026-01-01
-name: Network Diagnostics
+name: network-diagnostics
 description: Connectivity troubleshooting with modern Rust-based tools - trippy (traceroute/mtr), gping (graphical ping), and ss (socket statistics). Preferred over legacy netstat/traceroute.
 allowed-tools: Bash(ping *), Bash(traceroute *), Bash(mtr *), Bash(netstat *), Bash(ss *), Bash(ip *), Read, Grep, Glob, TodoWrite
 ---

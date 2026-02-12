@@ -3,7 +3,7 @@ model: haiku
 created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
-name: Knip Dead Code Detection
+name: knip-dead-code
 description: |
   Knip finds unused files, dependencies, exports, and types in JavaScript/TypeScript projects.
   Plugin system for frameworks (React, Next.js, Vite), test runners (Vitest, Jest), and build tools.
