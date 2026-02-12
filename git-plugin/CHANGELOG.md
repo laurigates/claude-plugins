@@ -1,5 +1,28 @@
 # Changelog
 
+## [2.14.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.13.2...git-plugin-v2.14.0) (2026-02-12)
+
+
+### Features
+
+* **git-plugin:** use ./worktrees/ directory for agent worktree workflows ([a97db86](https://github.com/laurigates/claude-plugins/commit/a97db8613d879db4c06cefc6f94edcfca95f9043))
+
+
+### Bug Fixes
+
+* standardize skill name fields to kebab-case across all plugins ([72c0f83](https://github.com/laurigates/claude-plugins/commit/72c0f837a1b07004850c5906a30d619a79098f69))
+
+
+### Code Refactoring
+
+* reframe negative guidance as positive guidance across skills ([7e755ee](https://github.com/laurigates/claude-plugins/commit/7e755ee1c32c39c124f3204a0d0a8d1d770e1573))
+
+
+### Documentation
+
+* **git-plugin:** improve worktree documentation and migration notes ([03d04ef](https://github.com/laurigates/claude-plugins/commit/03d04ef1035d3a9f8675342c5c79ad163bc6edee))
+* **git-plugin:** remove exclusive git permissions claims from git-ops agent ([0f92846](https://github.com/laurigates/claude-plugins/commit/0f928466543e7a302c11ff9d51ae481c8bf887eb))
+
 ## [2.13.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.13.1...git-plugin-v2.13.2) (2026-02-12)
 
 
