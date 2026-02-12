@@ -249,7 +249,7 @@
       "name": "health-plugin",
       "source": "./health-plugin",
       "description": "Diagnose and fix Claude Code configuration issues - plugin registry, settings, hooks, MCP servers",
-      "version": "1.1.4",
+      "version": "1.1.5",
       "keywords": [
         "health",
         "diagnostics",
