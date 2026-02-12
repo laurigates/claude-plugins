@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.5.0...hooks-plugin-v1.5.1) (2026-02-12)
+
+
+### Bug Fixes
+
+* standardize skill name fields to kebab-case across all plugins ([72c0f83](https://github.com/laurigates/claude-plugins/commit/72c0f837a1b07004850c5906a30d619a79098f69))
+
 ## [1.5.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.4.0...hooks-plugin-v1.5.0) (2026-02-11)
 
 
