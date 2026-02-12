@@ -1,14 +1,15 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-02-06
-reviewed: 2025-12-16
+modified: 2026-02-12
+reviewed: 2026-02-12
 name: uv-workspaces
 description: |
   Manage monorepo and multi-package Python projects with uv workspaces. Covers
-  workspace configuration, member dependencies, shared lockfiles, and building.
-  Use when user mentions uv workspaces, Python monorepo, multi-package projects,
-  workspace members, or shared dependencies across packages.
+  workspace configuration, virtual workspaces, member dependencies, shared lockfiles,
+  source inheritance, and building. Use when user mentions uv workspaces, Python
+  monorepo, multi-package projects, workspace members, or shared dependencies across
+  packages.
 allowed-tools: Bash, Read, Grep, Glob
 ---
 
@@ -16,13 +17,15 @@ allowed-tools: Bash, Read, Grep, Glob
 
 Quick reference for managing monorepo and multi-package projects with UV workspaces.
 
-## When This Skill Applies
+## When to Use This Skill
 
-- Monorepo projects with multiple Python packages
-- Shared dependencies across multiple packages
-- Library packages with example applications
-- Projects with plugins or extensions
-- Internal package dependencies
+| Use this skill when... | Use another skill instead when... |
+|------------------------|-----------------------------------|
+| Setting up a Python monorepo with shared deps | Managing a single package (`uv-project-management`) |
+| Configuring workspace members and inter-package deps | Adding git/URL dependencies (`uv-advanced-dependencies`) |
+| Using `--package` or `--all-packages` flags | Building/publishing to PyPI (`python-packaging`) |
+| Creating virtual workspaces (root with no project) | Managing Python versions (`uv-python-versions`) |
+| Debugging workspace dependency resolution | Running standalone scripts (`uv-run`) |
 
 ## Quick Reference
 
@@ -31,7 +34,7 @@ Quick reference for managing monorepo and multi-package projects with UV workspa
 ```
 my-workspace/
 ├── pyproject.toml          # Root workspace config
-├── uv.lock                # Shared lockfile
+├── uv.lock                 # Shared lockfile (all members)
 ├── packages/
 │   ├── core/
 │   │   ├── pyproject.toml
@@ -48,250 +51,153 @@ my-workspace/
 ### Root pyproject.toml
 
 ```toml
-[tool.uv.workspace]
-members = [
-    "packages/*",
-]
-
-# Or explicit:
-members = [
-    "packages/core",
-    "packages/api",
-    "packages/cli",
-]
-
-# Exclude patterns
-exclude = [
-    "packages/experimental",
-]
-```
-
-### Package pyproject.toml
-
-```toml
 [project]
-name = "my-core"
+name = "my-workspace"
 version = "0.1.0"
-dependencies = []
+requires-python = ">=3.11"
 
-# Depend on workspace member
-[project]
-dependencies = ["my-utils"]
-
-[tool.uv.sources]
-my-utils = { workspace = true }
-```
-
-## Common Commands
-
-```bash
-# Install all workspace members
-uv sync
-
-# Build specific package
-uv build --package my-core
-
-# Run in package context
-uv run --package my-api python script.py
-
-# Add dependency to specific member
-cd packages/my-core
-uv add requests
-
-# Lock entire workspace
-uv lock
-```
-
-## Workspace Members
-
-### Declaring Members
-
-```toml
 [tool.uv.workspace]
-# Glob patterns
 members = ["packages/*"]
 
-# Explicit paths
-members = [
-    "packages/core",
-    "apps/web",
-    "tools/cli",
-]
-
-# Mixed
-members = [
-    "packages/*",
-    "apps/special",
-]
-
-# Exclusions
-exclude = ["packages/archived"]
+# Optional: exclude specific members
+exclude = ["packages/experimental"]
 ```
 
-### Member Dependencies
+### Virtual Workspace (No Root Package)
 
-**Depend on another workspace member:**
+When the root is purely organizational and not a package itself, omit the `[project]` table:
+
 ```toml
-# packages/api/pyproject.toml
+# Root pyproject.toml — virtual workspace (no [project] table)
+[tool.uv.workspace]
+members = ["packages/*"]
+```
+
+- The root is **not** a workspace member
+- All members live in subdirectories
+- `uv run` and `uv sync` require `--package` or `--all-packages`
+
+### Member pyproject.toml
+
+```toml
 [project]
 name = "my-api"
+version = "0.1.0"
+requires-python = ">=3.11"
 dependencies = [
-    "my-core",  # Workspace member
-    "fastapi",  # PyPI package
+    "my-core",       # Workspace member
+    "fastapi",       # External (PyPI)
 ]
 
 [tool.uv.sources]
 my-core = { workspace = true }
 ```
 
-## Shared Dependencies
+## Common Commands
 
-### Common Patterns
+| Operation | Command |
+|-----------|---------|
+| Sync workspace root | `uv sync` |
+| Sync all members | `uv sync --all-packages` |
+| Sync specific member | `uv sync --package my-api` |
+| Run in member context | `uv run --package my-api python script.py` |
+| Lock entire workspace | `uv lock` |
+| Upgrade a dependency | `uv lock --upgrade-package requests` |
+| Build specific package | `uv build --package my-core` |
+| Add dep to member | `cd packages/api && uv add requests` |
+| Add workspace dep | `cd packages/api && uv add ../core` |
 
-**Development dependencies in root:**
+## Key Behaviors
+
+### Source Inheritance
+
+Root `tool.uv.sources` apply to **all members** unless overridden:
+
 ```toml
 # Root pyproject.toml
-[dependency-groups]
-dev = [
-    "pytest>=7.0",
-    "ruff>=0.1.0",
-    "mypy>=1.7",
-]
+[tool.uv.sources]
+my-utils = { workspace = true }
 
-# All members can use these
+# Member overrides root source entirely for that dependency
+# packages/special/pyproject.toml
+[tool.uv.sources]
+my-utils = { path = "../custom-utils" }
 ```
 
-**Member-specific dependencies:**
+Override is **per-dependency and total** — if a member defines a source for a dependency, the root source for that dependency is ignored completely.
+
+### requires-python Resolution
+
+The workspace enforces the **intersection** of all members' `requires-python`:
+
 ```toml
-# packages/api/pyproject.toml
-[project]
-dependencies = [
-    "fastapi>=0.110.0",
-]
-
-[dependency-groups]
-test = [
-    "pytest-asyncio",  # Only for this member
-]
+# packages/core: requires-python = ">=3.10"
+# packages/api:  requires-python = ">=3.11"
+# Effective:     requires-python = ">=3.11"
 ```
 
-## Lockfile Management
+All members must have compatible Python version requirements.
 
-```bash
-# Single lockfile for entire workspace
-uv.lock
+### Editable Installations
 
-# Update lockfile
-uv lock
+Workspace member dependencies are **always editable** — source changes are immediately available without reinstallation.
 
-# Upgrade specific package across workspace
-uv lock --upgrade-package requests
+### Default Scope
 
-# Sync all members
-uv sync
-```
-
-## Building Packages
-
-```bash
-# Build all packages
-uv build
-
-# Build specific package
-uv build --package my-core
-uv build --package my-api
-
-# Build multiple packages
-uv build --package my-core --package my-api
-```
-
-## Common Workflows
-
-### Creating a Workspace
-
-```bash
-# Create root
-mkdir my-workspace && cd my-workspace
-
-# Create root pyproject.toml
-cat > pyproject.toml << 'EOF'
-[tool.uv.workspace]
-members = ["packages/*"]
-EOF
-
-# Create first package
-mkdir -p packages/core
-cd packages/core
-uv init core
-
-# Create second package
-cd ../..
-mkdir -p packages/api
-cd packages/api
-uv init api
-
-# Configure workspace dependency
-# Edit packages/api/pyproject.toml to depend on core
-```
-
-### Adding Inter-Package Dependencies
-
-```bash
-# In packages/api/
-uv add ../core
-
-# Or manually edit pyproject.toml:
-# [project]
-# dependencies = ["my-core"]
-#
-# [tool.uv.sources]
-# my-core = { workspace = true }
-```
-
-### Testing Across Workspace
-
-```bash
-# Test all packages
-uv run pytest packages/*/tests/
-
-# Test specific package
-uv run --package my-core pytest
-
-# Run with coverage
-uv run pytest --cov=packages
-```
+| Command | Default scope | Override |
+|---------|---------------|----------|
+| `uv lock` | Entire workspace | — |
+| `uv sync` | Workspace root only | `--package`, `--all-packages` |
+| `uv run` | Workspace root only | `--package`, `--all-packages` |
+| `uv build` | All members | `--package` |
 
 ## Workspace vs Path Dependencies
 
-### Workspace Member
+| Feature | `{ workspace = true }` | `{ path = "../pkg" }` |
+|---------|------------------------|------------------------|
+| Shared lockfile | Yes | No |
+| Always editable | Yes | Optional |
+| Must be workspace member | Yes | No |
+| `--package` flag works | Yes | No |
+| Conflicting deps allowed | No | Yes |
 
-```toml
-[tool.uv.sources]
-my-package = { workspace = true }
+Use path dependencies when members need conflicting requirements or separate virtual environments.
+
+## Docker Layer Caching
+
+```dockerfile
+# Install deps first (cached layer)
+COPY pyproject.toml uv.lock packages/*/pyproject.toml ./
+RUN uv sync --frozen --no-install-workspace
+
+# Then install project (changes frequently)
+COPY . .
+RUN uv sync --frozen
 ```
 
-- Always editable
-- Must be workspace member
-- Shared lockfile
+| Flag | Effect |
+|------|--------|
+| `--no-install-project` | Skip current project, install deps only |
+| `--no-install-workspace` | Skip all workspace members, install deps only |
+| `--no-install-package <name>` | Skip specific package(s) |
+| `--frozen` | Skip lockfile freshness check |
 
-### Path Dependency
+## Agentic Optimizations
 
-```toml
-[tool.uv.sources]
-my-package = { path = "../my-package" }
-```
-
-- Can be outside workspace
-- Optional editability
-- Independent locking
+| Context | Command |
+|---------|---------|
+| Sync all members | `uv sync --all-packages` |
+| CI sync (frozen) | `uv sync --all-packages --frozen` |
+| Test specific member | `uv run --package my-core pytest --dots --bail=1` |
+| Test all members | `uv run --all-packages pytest --dots --bail=1` |
+| Lock with upgrade | `uv lock --upgrade-package <dep>` |
+| Build one package | `uv build --package my-core` |
+| Docker deps layer | `uv sync --frozen --no-install-workspace` |
 
 ## See Also
 
-- `uv-project-management` - Managing individual packages
-- `uv-advanced-dependencies` - Path and Git dependencies
-- `python-packaging` - Building and publishing workspace packages
+- `uv-project-management` — Managing individual packages
+- `uv-advanced-dependencies` — Path and Git dependencies
+- `python-packaging` — Building and publishing workspace packages
 
-## References
-
-- Official docs: https://docs.astral.sh/uv/concepts/projects/workspaces/
-- Detailed guide: See REFERENCE.md in this skill directory
+For detailed workspace patterns, CI/CD examples, and troubleshooting, see [REFERENCE.md](REFERENCE.md).
