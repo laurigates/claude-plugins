@@ -289,8 +289,7 @@ Initialize Blueprint Development structure:
 2. Create `docs/prds/` for requirements
 3. Create `docs/blueprint/work-orders/` for task packages
 4. Create `docs/blueprint/work-orders/completed/` for completed work-orders
-5. Create placeholder `docs/blueprint/work-overview.md`
-6. Add `docs/blueprint/work-orders/` to `.gitignore` (optional - ask user)
+5. Add `docs/blueprint/work-orders/` to `.gitignore` (optional - ask user)
 
 Report:
 - Directories created
@@ -383,7 +382,7 @@ allowed-tools: Read, Write, Glob, Bash
 Generate work-order:
 
 1. Analyze current project state:
-   - Read work-overview.md
+   - Read feature-tracker.json
    - Check git status
    - Read relevant PRDs
 2. Identify next logical work unit
@@ -439,11 +438,11 @@ Continue project development:
    - Run `git log -5 --oneline` (recent commits)
 2. Read context:
    - All PRDs in `docs/prds/`
-   - `work-overview.md` (current phase and progress)
+   - `feature-tracker.json` (current phase, tasks, and progress)
    - Recent work-orders (completed and pending)
 3. Identify next task:
    - Based on PRD requirements
-   - Based on work-overview progress
+   - Based on feature tracker progress
    - Based on git status (resume if in progress)
 4. Begin work following TDD:
    - Apply project-specific rules (architecture, testing, implementation, quality)

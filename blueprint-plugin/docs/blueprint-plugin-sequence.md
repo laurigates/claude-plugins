@@ -51,7 +51,7 @@ graph TD
     PromptWO --> ExecuteWO[Execute work-order]
     ExecuteWO --> Done
 
-    CheckWO -->|No| CheckOverview{Tasks in\nwork-overview?}
+    CheckWO -->|No| CheckOverview{Tasks in\nfeature-tracker?}
 
     CheckOverview -->|In Progress| PromptContinue{User:\nContinue task?}
     PromptContinue --> WorkOnTask[Work on task]
@@ -174,7 +174,7 @@ graph TB
     FixTypes --> TDDCycle
     FixTests --> TDDCycle
 
-    ValidationGates -->|All Pass| UpdateProgress[Update work-overview.md]
+    ValidationGates -->|All Pass| UpdateProgress[Update feature-tracker.json]
     UpdateProgress --> TrackFeatures[/blueprint-feature-tracker-sync/]
 
     TrackFeatures --> MoreWork{More work?}
@@ -492,7 +492,7 @@ graph TD
 
         FT --> A7["Track FR codes"]
         FT --> A8["Calculate completion %"]
-        FT --> A9["Sync with work-overview"]
+        FT --> A9["Track task progress"]
 
         DD --> A10["Suggest PRD creation"]
         DD --> A11["Suggest ADR creation"]
@@ -592,7 +592,7 @@ Traditional development loses context between planning and implementation. Bluep
 3. **Generate**: Extract behavioral rules and workflow commands from PRDs
 4. **Prepare**: Create PRPs with research (codebase analysis + external docs + confidence scoring)
 5. **Execute**: TDD cycle (RED → GREEN → REFACTOR) with validation gates
-6. **Track**: Monitor progress with feature tracker and work-overview
+6. **Track**: Monitor progress with feature tracker
 
 The workflow has **three layers**:
 - **Plugin layer**: Generic commands from blueprint-plugin (auto-updated)

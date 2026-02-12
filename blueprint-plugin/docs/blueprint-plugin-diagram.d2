@@ -132,7 +132,7 @@ commands: {
   }
 
   feature_sync: {
-    label: "/blueprint-feature-tracker-sync\n\nSync with work-overview,\nTODO.md"
+    label: "/blueprint-feature-tracker-sync\n\nSync with project docs,\nTODO.md"
     shape: hexagon
     style.fill: "#d5a6bd"
   }
@@ -240,12 +240,6 @@ artifacts: {
     style.fill: "#ffe6e6"
   }
 
-  work_overview: {
-    label: "work-overview.md\n\nCurrent phase,\nprogress tracking"
-    shape: document
-    style.fill: "#f9e6ff"
-  }
-
   feature_tracker: {
     label: "feature-tracker.json\n\nHierarchical FR codes,\ncompletion stats"
     shape: document
@@ -273,7 +267,6 @@ commands.execute_cmd -> commands.feature_sync: "Delegates if needed"
 # Phase 1: Initialization
 phases.init -> commands.init_cmd: "Start here"
 commands.init_cmd -> artifacts.manifest: "Creates"
-commands.init_cmd -> artifacts.work_overview: "Creates"
 commands.init_cmd -> artifacts.feature_tracker: "Creates (optional)"
 
 # Phase 2: Documentation
@@ -316,12 +309,12 @@ phases.execution -> commands.work_order: "Create task"
 
 artifacts.prps -> commands.prp_execute: "Executes"
 artifacts.rules -> commands.prp_execute: "Applies patterns"
-commands.prp_execute -> artifacts.work_overview: "Updates progress"
+commands.prp_execute -> artifacts.feature_tracker: "Updates progress"
 
 commands.work_order -> artifacts.work_orders: "Creates"
 artifacts.prps -> commands.work_order: "May reference"
 artifacts.prds -> commands.work_order: "Extracts tasks from"
-artifacts.work_overview -> commands.work_order: "Reads current state"
+artifacts.feature_tracker -> commands.work_order: "Reads current state"
 skills.confidence -> commands.work_order: "Validates quality"
 
 # Phase 5: Tracking
@@ -332,7 +325,6 @@ phases.tracking -> commands.feature_sync: "Update tracker"
 commands.status -> artifacts.manifest: "Reads"
 commands.feature_status -> artifacts.feature_tracker: "Reads"
 commands.feature_sync -> artifacts.feature_tracker: "Updates"
-artifacts.work_overview -> commands.feature_sync: "Syncs from"
 skills.feature_tracking -> commands.feature_sync: "Manages"
 skills.feature_tracking -> commands.feature_status: "Reports"
 

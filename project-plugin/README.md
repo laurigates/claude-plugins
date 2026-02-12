@@ -77,7 +77,7 @@ Analyze project state and continue development where you left off.
 - Analyzes state and determines next task
 - Reports project status before starting
 - Begins work following TDD (RED → GREEN → REFACTOR)
-- Updates work-overview as work progresses
+- Updates feature tracker as work progresses
 
 **Usage:**
 ```bash
