@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.16.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.15.0...blueprint-plugin-v3.16.0) (2026-02-12)
+
+
+### Features
+
+* **blueprint-plugin:** add v3.0→v3.1 migration and remove work-overview references ([e9849b0](https://github.com/laurigates/claude-plugins/commit/e9849b0a0d3d434432d32e68fee3498696fb09c8))
+
 ## [3.15.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.14.2...blueprint-plugin-v3.15.0) (2026-02-09)
 
 
