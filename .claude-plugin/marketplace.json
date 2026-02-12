@@ -366,7 +366,7 @@
       "name": "python-plugin",
       "source": "./python-plugin",
       "description": "Python development ecosystem - uv, ruff, pytest, packaging",
-      "version": "1.2.3",
+      "version": "1.2.4",
       "keywords": [
         "python",
         "uv",
