@@ -420,7 +420,7 @@
       "name": "tools-plugin",
       "source": "./tools-plugin",
       "description": "General utilities - fd, rg, jq, shell, imagemagick",
-      "version": "2.4.4",
+      "version": "2.4.5",
       "keywords": [
         "tools",
         "utilities",
