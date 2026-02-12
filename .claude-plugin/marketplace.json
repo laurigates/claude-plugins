@@ -152,7 +152,7 @@
       "name": "component-patterns-plugin",
       "source": "./component-patterns-plugin",
       "description": "Reusable UI component patterns - version badge, tooltips, and common UI elements for React, Vue, Svelte",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "keywords": [
         "components",
         "ui-patterns",
@@ -180,7 +180,7 @@
       "name": "container-plugin",
       "source": "./container-plugin",
       "description": "Container development and deployment - Docker, registry, Skaffold",
-      "version": "2.3.2",
+      "version": "2.3.3",
       "keywords": [
         "container",
         "docker",
@@ -249,7 +249,7 @@
       "name": "health-plugin",
       "source": "./health-plugin",
       "description": "Diagnose and fix Claude Code configuration issues - plugin registry, settings, hooks, MCP servers",
-      "version": "1.1.4",
+      "version": "1.1.5",
       "keywords": [
         "health",
         "diagnostics",
@@ -366,7 +366,7 @@
       "name": "python-plugin",
       "source": "./python-plugin",
       "description": "Python development ecosystem - uv, ruff, pytest, packaging",
-      "version": "1.2.3",
+      "version": "1.2.4",
       "keywords": [
         "python",
         "uv",

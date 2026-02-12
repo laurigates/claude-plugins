@@ -1,6 +1,6 @@
 {
   "name": "health-plugin",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "description": "Diagnose and fix Claude Code configuration issues including plugin registry, settings, hooks, and MCP servers",
   "keywords": [
     "health",
