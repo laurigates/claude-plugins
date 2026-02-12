@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.5](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.4.4...tools-plugin-v2.4.5) (2026-02-12)
+
+
+### Bug Fixes
+
+* standardize skill name fields to kebab-case across all plugins ([72c0f83](https://github.com/laurigates/claude-plugins/commit/72c0f837a1b07004850c5906a30d619a79098f69))
+
 ## [2.4.4](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.4.3...tools-plugin-v2.4.4) (2026-02-09)
 
 
