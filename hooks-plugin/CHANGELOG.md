@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.5.1...hooks-plugin-v1.5.2) (2026-02-13)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** detect broad git staging commands (git add -A, git add .) ([c7f75b6](https://github.com/laurigates/claude-plugins/commit/c7f75b639dc2c59ad9191cb730e459eaf124ec1c))
+
 ## [1.5.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.5.0...hooks-plugin-v1.5.1) (2026-02-12)
 
 
