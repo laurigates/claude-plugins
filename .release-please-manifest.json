@@ -8,6 +8,7 @@
   "blueprint-plugin": "3.16.1",
   "communication-plugin": "1.1.2",
   "component-patterns-plugin": "1.1.2",
+  "css-plugin": "1.0.0",
   "code-quality-plugin": "1.5.4",
   "command-analytics-plugin": "1.2.2",
   "configure-plugin": "1.7.0",
