@@ -1,0 +1,18 @@
+{
+  "name": "css-plugin",
+  "version": "1.0.0",
+  "description": "CSS tooling - Lightning CSS transpilation/minification, UnoCSS atomic utility generation",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "license": "MIT",
+  "keywords": [
+    "css",
+    "lightning-css",
+    "unocss",
+    "atomic-css",
+    "minification",
+    "transpilation",
+    "vite"
+  ]
+}
