@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.5.3...testing-plugin-v3.6.0) (2026-02-13)
+
+
+### Features
+
+* add test-runner agent documentation ([#587](https://github.com/laurigates/claude-plugins/issues/587)) ([16b2721](https://github.com/laurigates/claude-plugins/commit/16b2721de3955f8bd597bb1f3b2ff84d7a0d2ae4))
+
 ## [3.5.3](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.5.2...testing-plugin-v3.5.3) (2026-02-12)
 
 
