@@ -1,23 +1,47 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
-reviewed: 2025-12-16
+modified: 2026-02-09
+reviewed: 2026-02-09
 name: claude-blog-sources
 description: |
-  Access Claude Blog for latest Claude Code improvements, usage patterns, and best practices.
-  Use when researching Claude Code features, CLAUDE.md optimization, or staying current with
-  Claude capabilities. Checks recent articles for relevant updates and patterns.
+  Access Claude Blog and official Claude Code documentation for latest improvements, usage patterns,
+  and best practices. Use when researching Claude Code features, CLAUDE.md optimization, memory
+  management, or staying current with Claude capabilities.
 allowed-tools: WebFetch, WebSearch, Task
 ---
 
 # Claude Blog Sources
 
+## When to Use This Skill
+
+| Use this skill when... | Use alternative when... |
+|------------------------|-------------------------|
+| Researching Claude Code features and best practices | You already know the answer from existing documentation |
+| Need latest updates on CLAUDE.md, @imports, memory hierarchy | Implementing known patterns without research needed |
+| Staying current with Claude Code improvements | Just need to read local project documentation |
+| Cross-referencing blog insights with official docs | Need general programming help unrelated to Claude |
+
 ## Overview
 
 The Anthropic Claude Blog (https://www.claude.com/blog/) publishes official guidance on Claude Code features, usage patterns, and best practices. This skill provides structured access to blog content for staying current with Claude capabilities.
 
-## Primary Blog URL
+## Primary Sources
+
+### Official Documentation (preferred for technical details)
+
+**Claude Code Docs**: https://code.claude.com/docs/en/
+
+| Topic | URL | Description |
+|-------|-----|-------------|
+| Memory management | /docs/en/memory | CLAUDE.md, auto memory, @imports, rules hierarchy |
+| Configuration | /docs/en/configuration | Settings, permissions, MCP servers |
+| Hooks | /docs/en/hooks | Pre/post tool use hooks |
+| Claude Code overview | /docs/en/overview | Getting started, features |
+
+Use official docs as the authoritative reference. Blog posts supplement with patterns and examples.
+
+### Blog
 
 **Main Blog**: https://www.claude.com/blog/
 
@@ -91,17 +115,29 @@ For staying current with Claude improvements:
    - Update CLAUDE.md files with new best practices
    - Create new Skills for newly documented features
 
-## CLAUDE.md Best Practices (from Blog)
+## CLAUDE.md Best Practices (from Blog + Official Docs)
 
-Based on the official blog post on CLAUDE.md files:
+Based on official documentation and blog posts:
 
 ### Structure Guidelines
 
 - **Keep concise**: Treat as documentation both humans and Claude need to understand quickly
 - **Strategic placement**: Root for team-wide, parent dirs for monorepos, home folder for universal
-- **Break into files**: Large information should be in separate markdown files, referenced from CLAUDE.md
+- **Use `@import`**: Reference existing docs with `@path/to/file.md` instead of duplicating content
+- **Use `CLAUDE.local.md`**: Personal preferences go here (auto-gitignored), not in shared CLAUDE.md
+- **Use `.claude/rules/`**: Path-specific rules with `paths` frontmatter for conditional loading
 
-### Essential Sections
+### Memory Hierarchy
+
+| Layer | Purpose | Managed by |
+|-------|---------|------------|
+| CLAUDE.md | Team instructions (checked into git) | Developers |
+| CLAUDE.local.md | Personal preferences (gitignored) | Individual |
+| .claude/rules/ | Path-specific and domain rules | Developers |
+| ~/.claude/rules/ | User-level rules (all projects) | Individual |
+| Auto memory | Claude's own learnings | Claude (automatic) |
+
+### Essential Sections (team-shared)
 
 1. **Project Overview**: Brief summary, key technologies, architectural patterns
 2. **Directory Map**: Visual hierarchy showing key directories
@@ -110,17 +146,26 @@ Based on the official blog post on CLAUDE.md files:
 5. **Workflows**: Standard approaches for different task types
 6. **Tool Integration**: MCP servers, custom tools with usage examples
 
+### What Auto Memory Handles (omit from CLAUDE.md)
+
+- Current focus and work-in-progress context
+- Key file relationships and navigation patterns
+- Debugging insights and workarounds
+- Personal preferences and habits
+
 ### What to Avoid
 
 - Sensitive information (API keys, credentials, connection strings)
 - Excessive length (keep concise from context engineering perspective)
 - Theoretical content not matching actual development reality
+- Content that duplicates auto memory concerns
 
 ### Evolution Strategy
 
 - Start simple, expand deliberately
 - Add sections based on real friction points
 - Maintain as living document that evolves with codebase
+- Use `@import` to keep CLAUDE.md lean as the project grows
 
 ## Delegation Pattern
 
@@ -142,7 +187,13 @@ Extract practical patterns and update recommendations. Focus on:
 
 ## Recent Articles Checklist
 
-*Last reviewed: November 2025. Update this list monthly when reviewing new articles.*
+*Last reviewed: February 2026. Update this list monthly when reviewing new articles.*
+
+Official documentation worth checking (authoritative reference):
+
+- [ ] /docs/en/memory - Memory management, CLAUDE.md, @imports, auto memory, rules hierarchy
+- [ ] /docs/en/configuration - Settings, permissions, MCP servers
+- [ ] /docs/en/hooks - Hook system for tool use events
 
 Articles worth checking (sorted by relevance to Claude Code):
 

@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.1.2](https://github.com/laurigates/claude-plugins/compare/component-patterns-plugin-v1.1.1...component-patterns-plugin-v1.1.2) (2026-02-12)
+
+
+### Bug Fixes
+
+* standardize skill name fields to kebab-case across all plugins ([72c0f83](https://github.com/laurigates/claude-plugins/commit/72c0f837a1b07004850c5906a30d619a79098f69))
+
+## [1.1.1](https://github.com/laurigates/claude-plugins/compare/component-patterns-plugin-v1.1.0...component-patterns-plugin-v1.1.1) (2026-02-08)
+
+
+### Bug Fixes
+
+* update skill review dates to trigger release sync ([#489](https://github.com/laurigates/claude-plugins/issues/489)) ([ca20d06](https://github.com/laurigates/claude-plugins/commit/ca20d0667baaa31dfa805c7dc775a1828c515223))
+
 ## [1.1.0](https://github.com/laurigates/claude-plugins/compare/component-patterns-plugin-v1.0.0...component-patterns-plugin-v1.1.0) (2026-02-03)
 
 

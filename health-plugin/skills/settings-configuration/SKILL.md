@@ -1,6 +1,6 @@
 ---
 model: haiku
-name: Settings Configuration
+name: settings-configuration
 description: |
   Claude Code settings file hierarchy, permission wildcards, and configuration
   patterns. Use when setting up project permissions, debugging settings issues,

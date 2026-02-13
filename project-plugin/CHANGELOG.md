@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.8.0](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.7.0...project-plugin-v1.8.0) (2026-02-12)
+
+
+### Features
+
+* **blueprint-plugin:** add v3.0→v3.1 migration and remove work-overview references ([e9849b0](https://github.com/laurigates/claude-plugins/commit/e9849b0a0d3d434432d32e68fee3498696fb09c8))
+
+## [1.7.0](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.6.2...project-plugin-v1.7.0) (2026-02-11)
+
+
+### Features
+
+* **project-plugin:** add /project:distill skill for session knowledge capture ([f2b9f7e](https://github.com/laurigates/claude-plugins/commit/f2b9f7e51cbaf7a7656e0dfd505bc75f6662ac29))
+
+
+### Code Refactoring
+
+* **project-plugin:** improve project-distill skill discoverability and robustness ([002a8c8](https://github.com/laurigates/claude-plugins/commit/002a8c8feb6e6ab0c943509689375aba95b15abd))
+
+## [1.6.2](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.6.1...project-plugin-v1.6.2) (2026-02-08)
+
+
+### Bug Fixes
+
+* update skill review dates to trigger release sync ([#489](https://github.com/laurigates/claude-plugins/issues/489)) ([ca20d06](https://github.com/laurigates/claude-plugins/commit/ca20d0667baaa31dfa805c7dc775a1828c515223))
+
 ## [1.6.1](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.6.0...project-plugin-v1.6.1) (2026-02-05)
 
 

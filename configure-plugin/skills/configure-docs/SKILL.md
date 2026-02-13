@@ -1,13 +1,27 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-02-05
+modified: 2026-02-11
 reviewed: 2025-12-16
 description: Check and configure code documentation standards and generators (TSDoc, JSDoc, pydoc, rustdoc)
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
 argument-hint: "[--check-only] [--fix] [--level <minimal|standard|strict>] [--type <typescript|javascript|python|rust>] [--generator <typedoc|sphinx|mkdocs|rustdoc>]"
 name: configure-docs
 ---
+
+# /configure:docs
+
+Check and configure code documentation standards and generators.
+
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up TSDoc, JSDoc, pydoc, or rustdoc standards for a project | Writing actual documentation content for functions or modules |
+| Configuring a documentation generator (TypeDoc, MkDocs, Sphinx, rustdoc) | Deploying documentation to GitHub Pages (`/configure:github-pages` instead) |
+| Auditing documentation coverage and lint compliance | Reviewing generated documentation for accuracy |
+| Adding documentation enforcement rules to CI/CD | Editing ruff or biome configuration for non-doc rules (`/configure:linting`) |
+| Migrating between documentation conventions (e.g., numpy to google style) | Setting up pre-commit hooks only (`/configure:pre-commit` instead) |
 
 ## Context
 
@@ -44,13 +58,13 @@ Parse from command arguments:
 | Rust | rustdoc |
 | Multi-language/Other | MkDocs |
 
-## Your Task
+## Execution
 
-Configure documentation standards for the detected project language(s), including linter rules and compliance tests.
+Execute this documentation standards configuration check:
 
-### Phase 1: Language Detection
+### Step 1: Detect project language
 
-Detect project language(s) from file structure:
+Identify language(s) from file structure:
 
 | Indicator | Language |
 |-----------|----------|
@@ -59,11 +73,11 @@ Detect project language(s) from file structure:
 | `pyproject.toml` or `*.py` files | Python |
 | `Cargo.toml` | Rust |
 
-**Multi-language projects:** Configure each detected language. Allow `--type` override to focus on one.
+For multi-language projects, configure each detected language. Allow `--type` override to focus on one.
 
-### Phase 2: Current State Analysis
+### Step 2: Analyze current documentation state
 
-For each detected language, check existing documentation configuration:
+For each detected language, check existing configuration:
 
 **TypeScript/JavaScript:**
 - [ ] `tsdoc.json` exists (TypeScript)
@@ -80,9 +94,9 @@ For each detected language, check existing documentation configuration:
 - [ ] `missing_docs` lint configured
 - [ ] `[lints.rustdoc]` section for rustdoc-specific lints
 
-### Phase 3: Compliance Report
+### Step 3: Generate compliance report
 
-Generate formatted compliance report:
+Print a formatted compliance report:
 
 ```
 Documentation Standards Compliance Report
@@ -91,208 +105,81 @@ Project: [name]
 Languages: [detected languages]
 Enforcement Level: [minimal|standard|strict]
 
-TypeScript/JavaScript:
-  tsdoc.json              [✅ PASS | ❌ MISSING | ⏭️ N/A]
-  TypeDoc configured      [✅ PASS | ❌ MISSING | ⚠️ OUTDATED]
-  API docs generated      [✅ PASS | ❌ DISABLED]
+Linting Standards:
+  TypeScript/JavaScript:
+    tsdoc.json              [PASS | MISSING | N/A]
+    TypeDoc configured      [PASS | MISSING | OUTDATED]
+    API docs generated      [PASS | DISABLED]
 
-Python:
-  ruff pydocstyle        [✅ PASS | ❌ MISSING]
-  convention             [✅ google | ⚠️ not set]
-  D rules enabled        [✅ PASS | ❌ DISABLED]
+  Python:
+    ruff pydocstyle        [PASS | MISSING]
+    convention             [google | not set]
+    D rules enabled        [PASS | DISABLED]
 
-Rust:
-  missing_docs lint      [✅ PASS | ❌ DISABLED]
-  rustdoc lints          [✅ PASS | ⚠️ PARTIAL]
+  Rust:
+    missing_docs lint      [PASS | DISABLED]
+    rustdoc lints          [PASS | PARTIAL]
+
+Documentation Generator:
+  Generator type         [typedoc|mkdocs|sphinx|rustdoc]  [DETECTED | SUGGESTED]
+  Config file            [config path]                     [EXISTS | MISSING]
+  Build script           [command]                         [EXISTS | MISSING]
+  Output directory       [docs/|site/|target/doc/]         [EXISTS | NOT BUILT]
 
 Overall: [X issues found]
+
+Next Steps:
+  - Run `[build command]` to generate documentation locally
+  - Run `/configure:github-pages` to set up deployment
 ```
 
-### Phase 4: Configuration (if --fix or user confirms)
+If `--check-only`, stop here.
+
+### Step 4: Configure documentation standards (if --fix or user confirms)
+
+Apply configuration based on detected language. Use templates from [REFERENCE.md](REFERENCE.md):
 
 #### TypeScript Configuration
-
-**Create/update `tsdoc.json`:**
-```json
-{
-  "$schema": "https://developer.microsoft.com/json-schemas/tsdoc/v0/tsdoc.schema.json"
-}
-```
-
-**Install TypeDoc for API documentation:**
-```bash
-npm install --save-dev typedoc
-# or
-bun add --dev typedoc
-```
-
-**Configure `typedoc.json`:**
-```json
-{
-  "$schema": "https://typedoc.org/schema.json",
-  "entryPoints": ["./src"],
-  "entryPointStrategy": "expand",
-  "out": "docs/api",
-  "name": "PROJECT_NAME",
-  "includeVersion": true,
-  "readme": "README.md"
-}
-```
+1. Create `tsdoc.json` with schema reference
+2. Install TypeDoc: `npm install --save-dev typedoc`
+3. Create `typedoc.json` with entry points and output directory
 
 #### Python Configuration
-
-**Update `pyproject.toml`:**
-```toml
-[tool.ruff.lint]
-select = [
-    "E",    # pycodestyle errors
-    "F",    # pyflakes
-    "D",    # pydocstyle
-]
-
-[tool.ruff.lint.pydocstyle]
-convention = "google"  # or "numpy" for scientific projects
-```
-
-**Level-specific configuration:**
-
-| Level | Rules |
-|-------|-------|
-| minimal | `D1` (missing docstrings warning) |
-| standard | `D` with convention, ignore D107 (init), D203 |
-| strict | All D rules, no ignores |
+1. Update `pyproject.toml` with `[tool.ruff.lint.pydocstyle]` section
+2. Set convention to `google` (or `numpy` for scientific projects)
+3. Configure level-specific rules (minimal: D1 only, standard: D with convention, strict: all D rules)
 
 #### Rust Configuration
+1. Update `Cargo.toml` with `[lints.rust]` section
+2. Set `missing_docs = "warn"` (standard) or `"deny"` (strict)
+3. Add `[lints.rustdoc]` section for broken link detection
 
-**Update `Cargo.toml`:**
-```toml
-[lints.rust]
-missing_docs = "warn"  # standard level
-# missing_docs = "deny"  # strict level
+### Step 5: Configure documentation tests
 
-[lints.rustdoc]
-broken_intra_doc_links = "warn"
-missing_crate_level_docs = "warn"
-```
+Create tests to validate documentation compliance:
 
-**For strict level, add clippy lint:**
-```toml
-[lints.clippy]
-missing_docs_in_private_items = "warn"
-```
+1. **TypeScript/JavaScript**: Add `docs:check` script running `typedoc --emit none`
+2. **Python**: Add test file running `ruff check --select D` on source
+3. **Rust**: Add `cargo doc --no-deps` and `cargo clippy -- -W missing_docs` to CI
 
-### Phase 5: Test Configuration
+Use test templates from [REFERENCE.md](REFERENCE.md).
 
-Create tests to validate documentation compliance.
+### Step 6: Set up documentation generator
 
-#### TypeScript/JavaScript Tests
+Auto-detect or configure the documentation site generator:
 
-**Add npm script to `package.json`:**
-```json
-{
-  "scripts": {
-    "docs:build": "typedoc",
-    "docs:check": "typedoc --emit none"
-  }
-}
-```
+1. Check for existing generator configs (use existing if found)
+2. If `--generator` provided, use specified generator
+3. Otherwise, match to detected project type
+4. Create config file and add build scripts
 
-**Create test file `tests/docs.test.ts`:**
-```typescript
-import { execSync } from 'child_process';
-import { describe, it, expect } from 'vitest';
+Use generator templates from [REFERENCE.md](REFERENCE.md).
 
-describe('Documentation Compliance', () => {
-  it('should generate API documentation without errors', () => {
-    expect(() => {
-      execSync('npm run docs:check', { stdio: 'pipe' });
-    }).not.toThrow();
-  });
-});
-```
+### Step 7: Add pre-commit integration
 
-#### Python Tests
+If `.pre-commit-config.yaml` exists, add documentation hooks for the detected language. Use hook templates from [REFERENCE.md](REFERENCE.md).
 
-**Add test file `tests/test_docs.py`:**
-```python
-"""Documentation compliance tests."""
-import subprocess
-import pytest
-
-
-def test_pydocstyle_compliance():
-    """Verify all modules have proper docstrings."""
-    result = subprocess.run(
-        ["ruff", "check", "--select", "D", "--output-format", "json", "src/"],
-        capture_output=True,
-        text=True,
-    )
-    assert result.returncode == 0, f"Documentation violations found:\n{result.stdout}"
-
-
-def test_public_api_documented():
-    """Verify public API has docstrings."""
-    result = subprocess.run(
-        ["ruff", "check", "--select", "D1", "src/"],
-        capture_output=True,
-        text=True,
-    )
-    assert result.returncode == 0, f"Missing public docstrings:\n{result.stdout}"
-```
-
-#### Rust Tests
-
-**Add test in `tests/docs.rs`:**
-```rust
-//! Documentation compliance tests.
-
-#[test]
-fn verify_docs_compile() {
-    // Run rustdoc in test mode to verify doc examples compile
-    // This is automatically done by `cargo test --doc`
-}
-```
-
-**Add CI check in `.github/workflows/docs.yml`:**
-```yaml
-name: Documentation Check
-on: [push, pull_request]
-jobs:
-  docs:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Check documentation
-        run: |
-          cargo doc --no-deps
-          cargo clippy -- -W missing_docs
-```
-
-### Phase 6: Pre-commit Integration
-
-If `.pre-commit-config.yaml` exists, add documentation hooks:
-
-```yaml
-repos:
-  # Python
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.2
-    hooks:
-      - id: ruff
-        args: [--select, D, --fix]
-
-  # Rust (if not already present)
-  - repo: local
-    hooks:
-      - id: cargo-clippy-docs
-        name: clippy docs
-        entry: cargo clippy -- -W missing_docs
-        language: system
-        types: [rust]
-        pass_filenames: false
-```
-
-### Phase 7: Standards Tracking
+### Step 8: Update standards tracking
 
 Update `.project-standards.yaml`:
 
@@ -306,189 +193,7 @@ components:
   docs_languages: ["typescript", "python", "rust"]
 ```
 
-### Phase 8: Documentation Generator Setup
-
-Auto-detect and configure the appropriate static site generator for publishing documentation.
-
-**Detection Logic:**
-1. Check for existing generator configs (use existing if found)
-2. If `--generator` provided, use specified generator
-3. Otherwise, match to detected project type
-
-#### TypeScript/JavaScript: TypeDoc
-
-**Install TypeDoc:**
-```bash
-npm install --save-dev typedoc
-# or
-bun add --dev typedoc
-```
-
-**Create `typedoc.json`:**
-```json
-{
-  "$schema": "https://typedoc.org/schema.json",
-  "entryPoints": ["./src"],
-  "entryPointStrategy": "expand",
-  "out": "docs/api",
-  "name": "PROJECT_NAME",
-  "includeVersion": true,
-  "readme": "README.md",
-  "plugin": ["typedoc-plugin-markdown"]
-}
-```
-
-#### Python: MkDocs (Default)
-
-**Install MkDocs with Material theme:**
-```bash
-uv add --group docs mkdocs mkdocs-material mkdocstrings[python]
-```
-
-**Create `mkdocs.yml`:**
-```yaml
-site_name: PROJECT_NAME
-site_description: Project description
-repo_url: https://github.com/OWNER/REPO
-
-theme:
-  name: material
-  features:
-    - navigation.tabs
-    - navigation.sections
-    - search.suggest
-
-plugins:
-  - search
-  - mkdocstrings:
-      handlers:
-        python:
-          options:
-            show_source: true
-            show_root_heading: true
-
-nav:
-  - Home: index.md
-  - API Reference: api/
-```
-
-#### Python: Sphinx (Alternative)
-
-**Install Sphinx:**
-```bash
-uv add --group docs sphinx sphinx-rtd-theme sphinx-autodoc-typehints myst-parser
-```
-
-**Create `docs/conf.py`:**
-```python
-project = 'PROJECT_NAME'
-extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.napoleon',
-    'sphinx_autodoc_typehints',
-    'myst_parser',
-]
-html_theme = 'sphinx_rtd_theme'
-```
-
-#### Rust: rustdoc
-
-**Update `Cargo.toml`:**
-```toml
-[package.metadata.docs.rs]
-all-features = true
-rustdoc-args = ["--cfg", "docsrs"]
-
-[lints.rustdoc]
-broken_intra_doc_links = "warn"
-missing_crate_level_docs = "warn"
-```
-
-### Phase 9: Build Scripts
-
-Add documentation build commands to the project.
-
-#### TypeScript/JavaScript
-
-**Add to `package.json`:**
-```json
-{
-  "scripts": {
-    "docs:build": "typedoc",
-    "docs:serve": "npx serve docs"
-  }
-}
-```
-
-#### Python (MkDocs)
-
-**Add to `pyproject.toml`:**
-```toml
-[project.scripts]
-# Or use uv run directly:
-# uv run mkdocs build
-# uv run mkdocs serve
-```
-
-**Build command:** `mkdocs build` (outputs to `site/`)
-**Serve command:** `mkdocs serve`
-
-#### Python (Sphinx)
-
-**Create `docs/Makefile`:**
-```makefile
-SPHINXBUILD = sphinx-build
-SOURCEDIR = .
-BUILDDIR = _build
-
-html:
-	$(SPHINXBUILD) -b html $(SOURCEDIR) $(BUILDDIR)/html
-```
-
-**Build command:** `make -C docs html` (outputs to `docs/_build/html/`)
-
-#### Rust
-
-**Build command:** `cargo doc --no-deps` (outputs to `target/doc/`)
-
-### Phase 10: Updated Compliance Report
-
-Add generator status to the compliance report:
-
-```
-Documentation Standards Compliance Report
-=========================================
-Project: [name]
-Languages: [detected languages]
-Enforcement Level: [minimal|standard|strict]
-
-Linting Standards:
-  TypeScript/JavaScript:
-    tsdoc.json              [✅ PASS | ❌ MISSING | ⏭️ N/A]
-    TypeDoc configured      [✅ PASS | ❌ MISSING | ⚠️ OUTDATED]
-    API docs generated      [✅ PASS | ❌ DISABLED]
-
-  Python:
-    ruff pydocstyle        [✅ PASS | ❌ MISSING]
-    convention             [✅ google | ⚠️ not set]
-    D rules enabled        [✅ PASS | ❌ DISABLED]
-
-  Rust:
-    missing_docs lint      [✅ PASS | ❌ DISABLED]
-    rustdoc lints          [✅ PASS | ⚠️ PARTIAL]
-
-Documentation Generator:
-  Generator type         [typedoc|mkdocs|sphinx|rustdoc]  [✅ DETECTED | ⚠️ SUGGESTED]
-  Config file            [config path]                     [✅ EXISTS | ❌ MISSING]
-  Build script           [command]                         [✅ EXISTS | ❌ MISSING]
-  Output directory       [docs/|site/|target/doc/]         [✅ EXISTS | ⏭️ NOT BUILT]
-
-Overall: [X issues found]
-
-Next Steps:
-  - Run `[build command]` to generate documentation locally
-  - Run `/configure:github-pages` to set up deployment
-```
+For detailed configuration templates, see [REFERENCE.md](REFERENCE.md).
 
 ## Output
 
@@ -497,6 +202,17 @@ Provide:
 2. List of changes made (if --fix) or proposed (if interactive)
 3. Instructions for running documentation tests
 4. Next steps for improving coverage
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick compliance check | `/configure:docs --check-only` |
+| Auto-fix all issues | `/configure:docs --fix` |
+| Check TSDoc validity | `typedoc --emit none 2>&1 | head -20` |
+| Check Python docstrings | `ruff check --select D --output-format=github` |
+| Check Rust doc lints | `cargo doc --no-deps 2>&1 | head -20` |
+| Build docs (MkDocs) | `mkdocs build --strict 2>&1 | tail -5` |
 
 ## See Also
 

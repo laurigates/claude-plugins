@@ -206,6 +206,20 @@ def check_sync(repo_root: Path) -> tuple[list[str], dict]:
             )
             fixes["version_mismatches"].append((name, manifest_version))
 
+    # Check for plugins missing from docs/PLUGIN-MAP.md (informational only)
+    plugin_map_path = repo_root / "docs" / "PLUGIN-MAP.md"
+    fixes["missing_from_plugin_map"] = []
+    if plugin_map_path.exists():
+        plugin_map_text = plugin_map_path.read_text()
+        missing_from_map = [
+            name for name in sorted(plugin_names) if name not in plugin_map_text
+        ]
+        for name in missing_from_map:
+            issues.append(
+                f"Plugin '{name}' missing from docs/PLUGIN-MAP.md (add manually to appropriate section)"
+            )
+            fixes["missing_from_plugin_map"].append(name)
+
     return issues, fixes
 
 

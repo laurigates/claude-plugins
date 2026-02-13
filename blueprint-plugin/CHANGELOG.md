@@ -1,5 +1,40 @@
 # Changelog
 
+## [3.16.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.16.0...blueprint-plugin-v3.16.1) (2026-02-12)
+
+
+### Bug Fixes
+
+* standardize skill name fields to kebab-case across all plugins ([72c0f83](https://github.com/laurigates/claude-plugins/commit/72c0f837a1b07004850c5906a30d619a79098f69))
+
+## [3.16.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.15.0...blueprint-plugin-v3.16.0) (2026-02-12)
+
+
+### Features
+
+* **blueprint-plugin:** add v3.0→v3.1 migration and remove work-overview references ([e9849b0](https://github.com/laurigates/claude-plugins/commit/e9849b0a0d3d434432d32e68fee3498696fb09c8))
+
+## [3.15.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.14.2...blueprint-plugin-v3.15.0) (2026-02-09)
+
+
+### Features
+
+* **blueprint-plugin,documentation-plugin:** adapt skills to Claude Code auto memory and [@import](https://github.com/import) features ([f18e27b](https://github.com/laurigates/claude-plugins/commit/f18e27bb0b2261e2a829659b919ee0f5f4fb1a4e))
+
+## [3.14.2](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.14.1...blueprint-plugin-v3.14.2) (2026-02-08)
+
+
+### Code Refactoring
+
+* reframe negative guidance as positive guidance across skills ([7e755ee](https://github.com/laurigates/claude-plugins/commit/7e755ee1c32c39c124f3204a0d0a8d1d770e1573))
+
+## [3.14.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.14.0...blueprint-plugin-v3.14.1) (2026-02-08)
+
+
+### Bug Fixes
+
+* update skill review dates to trigger release sync ([#489](https://github.com/laurigates/claude-plugins/issues/489)) ([ca20d06](https://github.com/laurigates/claude-plugins/commit/ca20d0667baaa31dfa805c7dc775a1828c515223))
+
 ## [3.14.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.13.1...blueprint-plugin-v3.14.0) (2026-02-07)
 
 

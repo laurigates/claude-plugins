@@ -127,3 +127,4 @@ When reviewing skill/command changes:
 - [ ] No duplicate content with sibling skills
 - [ ] Frontmatter has all required fields (name, description, allowed-tools)
 - [ ] Date fields updated (modified, reviewed)
+- [ ] User-invocable skills follow execution structure (see `.claude/rules/skill-execution-structure.md`)

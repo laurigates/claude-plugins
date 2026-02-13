@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-11
 reviewed: 2025-12-16
 description: Check and configure modern package managers (uv for Python, bun for TypeScript)
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -13,9 +13,32 @@ name: configure-package-management
 
 Check and configure modern package managers for optimal development experience.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up a new project with modern package managers (uv, bun) | Installing a single dependency — run `uv add` or `bun add` directly |
+| Migrating from legacy package managers (pip, npm, yarn, poetry) to modern ones | Project uses cargo or go mod (already optimal, no migration needed) |
+| Auditing package manager configuration for best practices | Configuring linting or formatting tools — use `/configure:linting` |
+| Ensuring lock files, dependency groups, and CI/CD integration are properly configured | Resolving a specific dependency conflict — debug with `uv pip compile` or `bun install --verbose` |
+| Detecting and cleaning up conflicting lock files from multiple managers | Only need to install dependencies — run `uv sync` or `bun install` directly |
+
 ## Context
 
-This command validates package manager configuration and migrates to modern tools.
+- Project root: !`pwd`
+- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) 2>/dev/null`
+- Lock files: !`find . -maxdepth 1 \( -name 'uv.lock' -o -name 'bun.lockb' -o -name 'package-lock.json' -o -name 'yarn.lock' -o -name 'pnpm-lock.yaml' -o -name 'poetry.lock' -o -name 'Pipfile.lock' \) 2>/dev/null`
+- Python venv: !`find . -maxdepth 1 -type d -name '.venv' 2>/dev/null`
+- Legacy files: !`find . -maxdepth 1 \( -name 'requirements.txt' -o -name 'Pipfile' \) 2>/dev/null`
+- Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml' 2>/dev/null`
+
+## Parameters
+
+Parse from command arguments:
+
+- `--check-only`: Report compliance status without modifications (CI/CD mode)
+- `--fix`: Apply fixes automatically without prompting
+- `--manager <uv|bun|npm|cargo>`: Override detection (focus on specific manager)
 
 **Modern package manager preferences:**
 - **Python**: uv (replaces pip, poetry, pipenv, pyenv) - 10-100x faster
@@ -23,22 +46,13 @@ This command validates package manager configuration and migrates to modern tool
 - **Rust**: cargo (standard, no alternatives needed)
 - **Go**: go mod (standard, no alternatives needed)
 
-## Version Checking
+## Execution
 
-**CRITICAL**: Before configuring package managers, verify latest versions:
+Execute this package management compliance check:
 
-1. **uv**: Check [docs.astral.sh/uv](https://docs.astral.sh/uv/) or [GitHub releases](https://github.com/astral-sh/uv/releases)
-2. **bun**: Check [bun.sh](https://bun.sh/) or [GitHub releases](https://github.com/oven-sh/bun/releases)
-3. **npm**: Check [npm docs](https://docs.npmjs.com/) for latest version
-4. **Rust/cargo**: Check [Rust releases](https://releases.rs/)
+### Step 1: Detect project languages and current package managers
 
-Use WebSearch or WebFetch to verify current versions before configuring package managers.
-
-## Workflow
-
-### Phase 1: Language Detection
-
-Detect project languages and current package managers:
+Check for language and manager indicators:
 
 | Indicator | Language | Current Manager | Recommended |
 |-----------|----------|-----------------|-------------|
@@ -46,15 +60,17 @@ Detect project languages and current package managers:
 | `requirements.txt` | Python | pip | uv |
 | `Pipfile` | Python | pipenv | uv |
 | `poetry.lock` | Python | poetry | uv |
-| `uv.lock` | Python | uv ✓ | uv |
-| `package.json` + `bun.lockb` | JavaScript/TypeScript | bun ✓ | bun |
+| `uv.lock` | Python | uv | uv |
+| `package.json` + `bun.lockb` | JavaScript/TypeScript | bun | bun |
 | `package.json` + `package-lock.json` | JavaScript/TypeScript | npm | bun |
 | `package.json` + `yarn.lock` | JavaScript/TypeScript | yarn | bun |
 | `package.json` + `pnpm-lock.yaml` | JavaScript/TypeScript | pnpm | bun |
-| `Cargo.toml` | Rust | cargo ✓ | cargo |
-| `go.mod` | Go | go mod ✓ | go mod |
+| `Cargo.toml` | Rust | cargo | cargo |
+| `go.mod` | Go | go mod | go mod |
 
-### Phase 2: Current State Analysis
+Use WebSearch or WebFetch to verify latest versions before configuring.
+
+### Step 2: Analyze current configuration state
 
 For each detected language, check configuration:
 
@@ -76,7 +92,9 @@ For each detected language, check configuration:
 - [ ] Type definitions configured (TypeScript)
 - [ ] Workspaces configured (if monorepo)
 
-### Phase 3: Compliance Report
+### Step 3: Generate compliance report
+
+Print a formatted compliance report:
 
 ```
 Package Management Configuration Report
@@ -85,21 +103,21 @@ Project: [name]
 Languages: Python, TypeScript
 
 Python:
-  Package manager           uv 0.5.x                   [✅ MODERN | ⚠️ LEGACY pip]
-  pyproject.toml            exists                     [✅ EXISTS | ❌ MISSING]
-  Lock file                 uv.lock                    [✅ EXISTS | ⚠️ OUTDATED | ❌ MISSING]
-  Virtual environment       .venv/                     [✅ EXISTS | ❌ MISSING]
-  Python version            3.12                       [✅ PINNED | ⚠️ NOT PINNED]
-  Dependency groups         dev, test, docs            [✅ CONFIGURED | ⚠️ MINIMAL]
-  Build backend             hatchling                  [✅ CONFIGURED | ⚠️ MISSING]
+  Package manager           uv 0.5.x                   [MODERN | LEGACY pip]
+  pyproject.toml            exists                     [EXISTS | MISSING]
+  Lock file                 uv.lock                    [EXISTS | OUTDATED | MISSING]
+  Virtual environment       .venv/                     [EXISTS | MISSING]
+  Python version            3.12                       [PINNED | NOT PINNED]
+  Dependency groups         dev, test, docs            [CONFIGURED | MINIMAL]
+  Build backend             hatchling                  [CONFIGURED | MISSING]
 
 JavaScript/TypeScript:
-  Package manager           bun 1.1.x                  [✅ MODERN | ⚠️ npm | ⚠️ yarn]
-  package.json              exists                     [✅ EXISTS | ❌ MISSING]
-  Lock file                 bun.lockb                  [✅ EXISTS | ❌ MISSING]
-  Scripts                   dev, build, test, lint     [✅ COMPLETE | ⚠️ INCOMPLETE]
-  Type definitions          tsconfig.json              [✅ CONFIGURED | ⚠️ MISSING]
-  Engine constraints        package.json engines       [✅ PINNED | ⚠️ NOT PINNED]
+  Package manager           bun 1.1.x                  [MODERN | npm | yarn]
+  package.json              exists                     [EXISTS | MISSING]
+  Lock file                 bun.lockb                  [EXISTS | MISSING]
+  Scripts                   dev, build, test, lint     [COMPLETE | INCOMPLETE]
+  Type definitions          tsconfig.json              [CONFIGURED | MISSING]
+  Engine constraints        package.json engines       [PINNED | NOT PINNED]
 
 Overall: [X issues found]
 
@@ -110,365 +128,56 @@ Recommendations:
   - Migrate from npm to bun for better performance
 ```
 
-### Phase 4: Configuration (if --fix or user confirms)
+If `--check-only`, stop here.
+
+### Step 4: Configure package managers (if --fix or user confirms)
+
+Apply configuration based on detected languages. Use templates from [REFERENCE.md](REFERENCE.md):
 
 #### Python with uv
-
-**Install uv:**
-```bash
-# Via mise (recommended)
-mise use uv@latest
-
-# Or via curl
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Or via homebrew
-brew install uv
-```
-
-**Initialize project:**
-```bash
-# New project
-uv init my-project
-cd my-project
-
-# Existing project with requirements.txt
-uv init
-uv add -r requirements.txt
-rm requirements.txt
-
-# Existing project with poetry
-uv init
-# Copy dependencies from pyproject.toml [tool.poetry.dependencies]
-# Then: uv add <deps>
-```
-
-**Create `pyproject.toml`:**
-```toml
-[project]
-name = "my-project"
-version = "0.1.0"
-description = "Project description"
-readme = "README.md"
-requires-python = ">=3.12"
-license = { text = "MIT" }
-authors = [
-    { name = "Your Name", email = "you@example.com" }
-]
-dependencies = [
-    # Production dependencies
-]
-
-[project.optional-dependencies]
-dev = [
-    "ruff>=0.8.0",
-    "basedpyright>=1.22.0",
-]
-test = [
-    "pytest>=8.0",
-    "pytest-cov>=6.0",
-    "pytest-asyncio>=0.24",
-]
-docs = [
-    "mkdocs>=1.6",
-    "mkdocs-material>=9.5",
-]
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.uv]
-dev-dependencies = [
-    # Dev dependencies installed with `uv sync`
-    "ruff>=0.8.0",
-    "basedpyright>=1.22.0",
-    "pytest>=8.0",
-]
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/my_project"]
-```
-
-**Common uv commands:**
-```bash
-# Install dependencies
-uv sync
-
-# Add production dependency
-uv add httpx
-
-# Add dev dependency
-uv add --group dev pytest
-
-# Run script
-uv run python script.py
-uv run pytest
-
-# Create virtual environment
-uv venv
-
-# Pin Python version
-uv python pin 3.12
-
-# Update dependencies
-uv lock --upgrade
-uv sync
-```
-
-**Add to `.gitignore`:**
-```gitignore
-# Python
-.venv/
-__pycache__/
-*.pyc
-.pytest_cache/
-.ruff_cache/
-dist/
-*.egg-info/
-```
+1. Install uv (via mise, curl, or homebrew)
+2. Initialize project with `uv init` or migrate from existing manager
+3. Create/update `pyproject.toml` with project metadata and dependency groups
+4. Generate `uv.lock`
+5. Update `.gitignore`
 
 #### JavaScript/TypeScript with bun
+1. Install bun (via mise, curl, or homebrew)
+2. Remove old lock files (`package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`)
+3. Run `bun install` to generate `bun.lockb`
+4. Update scripts in `package.json`
+5. Update `.gitignore`
 
-**Install bun:**
-```bash
-# Via mise (recommended)
-mise use bun@latest
+### Step 5: Handle migrations
 
-# Or via curl
-curl -fsSL https://bun.sh/install | bash
+If migrating from a legacy manager:
 
-# Or via homebrew
-brew install bun
-```
+**pip/poetry to uv:**
+1. Install uv
+2. Run `uv init`
+3. Migrate dependencies: `uv add -r requirements.txt` or copy from poetry
+4. Remove old files (`requirements.txt`, `Pipfile`, `poetry.lock`)
+5. Update CI/CD workflows
 
-**Initialize project:**
-```bash
-# New project
-bun init
+**npm/yarn/pnpm to bun:**
+1. Install bun
+2. Remove old lock files and `node_modules`
+3. Run `bun install`
+4. Update scripts to use bun equivalents
+5. Update CI/CD workflows
 
-# Existing project - migrate from npm
-rm -rf node_modules package-lock.json
-bun install
+Use migration templates from [REFERENCE.md](REFERENCE.md).
 
-# Existing project - migrate from yarn
-rm -rf node_modules yarn.lock
-bun install
+### Step 6: Configure CI/CD integration
 
-# Existing project - migrate from pnpm
-rm -rf node_modules pnpm-lock.yaml
-bun install
-```
+Update GitHub Actions workflows to use modern package managers:
 
-**Create/update `package.json`:**
-```json
-{
-  "name": "my-project",
-  "version": "0.1.0",
-  "type": "module",
-  "scripts": {
-    "dev": "bun run --watch src/index.ts",
-    "build": "bun build src/index.ts --outdir dist",
-    "test": "bun test",
-    "lint": "biome check .",
-    "lint:fix": "biome check --write .",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {},
-  "devDependencies": {
-    "@biomejs/biome": "^1.9.0",
-    "@types/bun": "latest",
-    "typescript": "^5.7.0"
-  },
-  "engines": {
-    "bun": ">=1.1.0"
-  }
-}
-```
+- **Python**: Replace `pip install` with `astral-sh/setup-uv@v4` + `uv sync`
+- **JavaScript**: Replace `actions/setup-node` with `oven-sh/setup-bun@v2`
 
-**TypeScript configuration (`tsconfig.json`):**
-```json
-{
-  "compilerOptions": {
-    "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "strict": true,
-    "skipLibCheck": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "types": ["bun-types"]
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
-}
-```
+Use CI workflow templates from [REFERENCE.md](REFERENCE.md).
 
-**Common bun commands:**
-```bash
-# Install dependencies
-bun install
-
-# Add dependency
-bun add zod
-
-# Add dev dependency
-bun add --dev @types/node
-
-# Run script
-bun run dev
-bun run build
-
-# Run TypeScript directly
-bun src/index.ts
-
-# Run tests
-bun test
-
-# Update dependencies
-bun update
-```
-
-**Add to `.gitignore`:**
-```gitignore
-# JavaScript/TypeScript
-node_modules/
-dist/
-.turbo/
-*.tsbuildinfo
-```
-
-### Phase 5: Migration Guides
-
-#### pip/poetry → uv Migration
-
-**Step 1: Install uv**
-```bash
-mise use uv@latest
-```
-
-**Step 2: Initialize uv project**
-```bash
-uv init
-```
-
-**Step 3: Migrate dependencies**
-
-From `requirements.txt`:
-```bash
-uv add -r requirements.txt
-rm requirements.txt
-```
-
-From `poetry` (`pyproject.toml`):
-```bash
-# Extract dependencies from [tool.poetry.dependencies]
-# Add them with uv add
-uv add httpx fastapi pydantic
-uv add --group dev pytest ruff
-```
-
-**Step 4: Remove old files**
-```bash
-rm -f requirements.txt requirements-dev.txt
-rm -f Pipfile Pipfile.lock
-rm -f poetry.lock
-# Update pyproject.toml to remove [tool.poetry] section
-```
-
-**Step 5: Update CI/CD**
-```yaml
-# GitHub Actions
-- name: Install uv
-  uses: astral-sh/setup-uv@v4
-
-- name: Install dependencies
-  run: uv sync
-
-- name: Run tests
-  run: uv run pytest
-```
-
-#### npm/yarn/pnpm → bun Migration
-
-**Step 1: Install bun**
-```bash
-mise use bun@latest
-```
-
-**Step 2: Remove old lock files**
-```bash
-rm -rf node_modules
-rm -f package-lock.json yarn.lock pnpm-lock.yaml
-```
-
-**Step 3: Install with bun**
-```bash
-bun install
-```
-
-**Step 4: Update scripts**
-Replace npm/yarn/pnpm scripts with bun equivalents:
-```json
-{
-  "scripts": {
-    "dev": "bun run --watch src/index.ts",
-    "build": "bun build src/index.ts --outdir dist",
-    "test": "bun test"
-  }
-}
-```
-
-**Step 5: Update CI/CD**
-```yaml
-# GitHub Actions
-- name: Setup Bun
-  uses: oven-sh/setup-bun@v2
-
-- name: Install dependencies
-  run: bun install
-
-- name: Run tests
-  run: bun test
-```
-
-### Phase 6: CI/CD Integration
-
-**GitHub Actions - uv:**
-```yaml
-- name: Install uv
-  uses: astral-sh/setup-uv@v4
-  with:
-    enable-cache: true
-
-- name: Set up Python
-  run: uv python install
-
-- name: Install dependencies
-  run: uv sync --all-extras
-
-- name: Run tests
-  run: uv run pytest
-```
-
-**GitHub Actions - bun:**
-```yaml
-- name: Setup Bun
-  uses: oven-sh/setup-bun@v2
-  with:
-    bun-version: latest
-
-- name: Install dependencies
-  run: bun install --frozen-lockfile
-
-- name: Run tests
-  run: bun test
-```
-
-### Phase 7: Standards Tracking
+### Step 7: Update standards tracking
 
 Update `.project-standards.yaml`:
 
@@ -482,42 +191,22 @@ components:
   lock_files_committed: true
 ```
 
-### Phase 8: Final Report
+### Step 8: Print final report
 
-```
-Package Management Configuration Complete
-==========================================
+Print a summary of changes applied, migrations performed, and next steps for verifying the configuration.
 
-Python:
-  ✅ uv installed (0.5.x)
-  ✅ pyproject.toml configured
-  ✅ uv.lock created
-  ✅ Dependency groups: dev, test, docs
-  ✅ Python 3.12 pinned
+For detailed configuration templates and migration guides, see [REFERENCE.md](REFERENCE.md).
 
-JavaScript/TypeScript:
-  ✅ bun installed (1.1.x)
-  ✅ package.json updated
-  ✅ bun.lockb created
-  ✅ Scripts configured
+## Agentic Optimizations
 
-Migration:
-  ✅ poetry.lock removed
-  ✅ package-lock.json removed
-  ✅ CI/CD workflows updated
-
-Next Steps:
-  1. Verify dependencies install correctly:
-     uv sync && bun install
-
-  2. Run tests to ensure nothing broke:
-     uv run pytest && bun test
-
-  3. Commit lock files:
-     git add uv.lock bun.lockb
-
-Documentation: docs/PACKAGE_MANAGEMENT.md
-```
+| Context | Command |
+|---------|---------|
+| Quick compliance check | `/configure:package-management --check-only` |
+| Auto-fix all issues | `/configure:package-management --fix` |
+| Check uv version | `uv --version` |
+| Check bun version | `bun --version` |
+| List Python deps | `uv pip list --format json` |
+| List JS deps | `bun pm ls --json` |
 
 ## Flags
 

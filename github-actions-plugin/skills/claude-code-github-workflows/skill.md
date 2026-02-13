@@ -3,7 +3,7 @@ model: opus
 created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
-name: Claude Code GitHub Workflows
+name: claude-code-github-workflows
 description: Claude Code workflow design and automation patterns for PR reviews, issue triage, and CI/CD integration. Use when creating or modifying GitHub Actions workflows that integrate Claude Code.
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, WebFetch, mcp__github
 ---

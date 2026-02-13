@@ -3,7 +3,7 @@ model: haiku
 created: 2025-12-16
 modified: 2026-01-21
 reviewed: 2025-12-16
-name: fd File Finding
+name: fd-file-finding
 description: Fast file finding using fd command-line tool with smart defaults, gitignore awareness, and parallel execution. Use when searching for files by name, extension, or pattern across directories.
 allowed-tools: Bash, Read, Grep, Glob
 ---
@@ -247,13 +247,11 @@ fd -e rs -x rg "TODO" {}            # Find TODOs in Rust files
 fd -e md -x rg "# " {}              # Find headers in Markdown
 ```
 
-**Avoid Unnecessary xargs**
+**Use fd's Built-in Execution**
 ```bash
-# Instead of: fd -t d -d 1 | xargs -I{} sh -c 'test -f {}/main.tf && echo {}'
-# Use: fd -t f 'main\.tf$' --format '{//}'
-
-# Instead of: fd -e log | xargs rm
-# Use: fd -e log -x rm
+# fd can execute directly — no need for xargs
+fd -t f 'main\.tf$' --format '{//}'    # Find dirs containing main.tf
+fd -e log -x rm                         # Delete all .log files
 ```
 
 ## Quick Reference

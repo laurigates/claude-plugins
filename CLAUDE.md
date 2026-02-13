@@ -34,6 +34,7 @@ Claude Code plugin collection providing skills and agents for development workfl
 | `.claude/rules/shell-scripting.md` | Safe shell patterns and frontmatter extraction |
 | `.claude/rules/agentic-permissions.md` | Granular tool permissions for skills |
 | `.claude/rules/skill-quality.md` | Skill size limits, required sections, and quality checklist |
+| `.claude/rules/skill-execution-structure.md` | Imperative execution patterns for user-invocable skills |
 | `.claude/rules/handling-blocked-hooks.md` | How to respond when hooks block commands |
 
 ## Creating New Skills
@@ -119,6 +120,7 @@ When creating, modifying, or deleting a plugin, update these files:
 | `marketplace.json` | `.claude-plugin/marketplace.json` | Add/update/remove plugin entry |
 | `release-please-config.json` | Root | Add/remove plugin package config |
 | `.release-please-manifest.json` | Root | Add/remove plugin version entry |
+| `PLUGIN-MAP.md` | `docs/PLUGIN-MAP.md` | Add/remove plugin from navigation map |
 
 ### Creating a New Plugin
 

@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.3.1](https://github.com/laurigates/claude-plugins/compare/langchain-plugin-v1.3.0...langchain-plugin-v1.3.1) (2026-02-12)
+
+
+### Bug Fixes
+
+* standardize skill name fields to kebab-case across all plugins ([72c0f83](https://github.com/laurigates/claude-plugins/commit/72c0f837a1b07004850c5906a30d619a79098f69))
+
+## [1.3.0](https://github.com/laurigates/claude-plugins/compare/langchain-plugin-v1.2.2...langchain-plugin-v1.3.0) (2026-02-11)
+
+
+### Features
+
+* add required quality sections to refactored skills ([#544](https://github.com/laurigates/claude-plugins/issues/544)) ([342af54](https://github.com/laurigates/claude-plugins/commit/342af54af0f81fa50d239d06b32b353ddb7335fc))
+
+## [1.3.0](https://github.com/laurigates/claude-plugins/compare/langchain-plugin-v1.2.2...langchain-plugin-v1.3.0) (2026-02-11)
+
+
+### Features
+
+* add required quality sections to refactored skills ([#544](https://github.com/laurigates/claude-plugins/issues/544)) ([342af54](https://github.com/laurigates/claude-plugins/commit/342af54af0f81fa50d239d06b32b353ddb7335fc))
+
+## [1.2.2](https://github.com/laurigates/claude-plugins/compare/langchain-plugin-v1.2.1...langchain-plugin-v1.2.2) (2026-02-08)
+
+
+### Bug Fixes
+
+* update skill review dates to trigger release sync ([#489](https://github.com/laurigates/claude-plugins/issues/489)) ([ca20d06](https://github.com/laurigates/claude-plugins/commit/ca20d0667baaa31dfa805c7dc775a1828c515223))
+
 ## [1.2.1](https://github.com/laurigates/claude-plugins/compare/langchain-plugin-v1.2.0...langchain-plugin-v1.2.1) (2026-02-01)
 
 

@@ -1,7 +1,7 @@
 ---
 model: opus
 created: 2026-02-05
-modified: 2026-02-05
+modified: 2026-02-10
 reviewed: 2026-02-05
 description: Audit enabled plugins against project tech stack and recommend additions/removals for relevance
 allowed-tools: Bash(test *), Bash(find *), Bash(jq *), Bash(claude plugin *), Read, Write, Edit, Glob, Grep, TodoWrite, AskUserQuestion
@@ -12,6 +12,16 @@ name: health-audit
 # /health:audit
 
 Audit the project's enabled plugins against the actual technology stack. Identifies plugins that don't apply to this project and suggests relevant plugins that aren't enabled.
+
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Reviewing plugin relevance for current project | General health diagnostics (use `/health:check`) |
+| Cleaning up unused plugins | Plugin registry corruption (use `/health:plugins --fix`) |
+| Discovering relevant plugins for tech stack | Agentic optimization audit (use `/health:agentic-audit`) |
+| Optimizing project-specific plugin configuration | Installing specific plugin (install directly) |
+| Onboarding to existing project | Need comprehensive settings validation |
 
 ## Context
 
@@ -37,141 +47,48 @@ Audit the project's enabled plugins against the actual technology stack. Identif
 | `--dry-run` | Show what would be changed without modifying files |
 | `--verbose` | Show detailed analysis of each plugin decision |
 
-## Workflow
+## Execution
 
-### Phase 1: Detect Technology Stack
+Execute this plugin relevance audit:
 
-Analyze project files to determine the technology stack:
+### Step 1: Detect the project technology stack
 
-| Indicator | Technology | Related Plugins |
-|-----------|------------|-----------------|
-| `package.json` + `tsconfig.json` | TypeScript | typescript-plugin |
-| `package.json` (no tsconfig) | JavaScript | typescript-plugin (JS support) |
-| `bun.lockb` or bun in package.json | Bun runtime | typescript-plugin |
-| `Cargo.toml` | Rust | rust-plugin |
-| `pyproject.toml`, `requirements.txt`, `setup.py` | Python | python-plugin |
-| `go.mod` | Go | (no plugin yet) |
-| `Dockerfile`, `docker-compose.yml` | Docker/Containers | container-plugin |
-| `.github/workflows/*.yml` | GitHub Actions | github-actions-plugin |
-| `*.tf` files | Terraform | terraform-plugin |
-| `k8s/`, `kubernetes/` with manifests | Kubernetes | kubernetes-plugin |
-| `bevy` in Cargo.toml | Bevy game engine | bevy-plugin |
-| `.claude-plugin/` directory | Claude plugin development | (this repo) |
-| `docs/` with markdown | Documentation | documentation-plugin |
-| `langchain` in dependencies | LangChain | langchain-plugin |
-| OpenAPI/Swagger specs | API development | api-plugin |
-| `biome.json`, `.eslintrc*` | Code quality | code-quality-plugin |
-| `vitest.config.*`, `jest.config.*` | Testing | testing-plugin |
-| Home Assistant configs | Home Assistant | home-assistant-plugin |
+Analyze project files from the context above to determine the technology stack. Match indicators against the tech stack mapping in [REFERENCE.md](REFERENCE.md).
 
-### Phase 2: Get Available Plugins
+### Step 2: Retrieve available plugins
 
-Run `claude plugin list --json` to get all available plugins from configured marketplaces.
+Run `claude plugin list --json` to get all available plugins from configured marketplaces. Parse the output for plugin name, description, keywords, and category.
 
-Parse the output to get:
-- Plugin name
-- Description
-- Keywords
-- Category
+### Step 3: Read currently enabled plugins
 
-### Phase 3: Get Currently Enabled Plugins
+Read `.claude/settings.json` and extract the `enabledPlugins` array. If the file does not exist or `enabledPlugins` is not set, treat as empty list.
 
-Read `.claude/settings.json` and extract `enabledPlugins` array.
+### Step 4: Analyze plugin relevance
 
-If file doesn't exist or `enabledPlugins` is not set, treat as empty list.
+Compare each enabled plugin against the detected tech stack. Use the plugin relevance mapping in [REFERENCE.md](REFERENCE.md) to determine which plugins are relevant, irrelevant, or missing.
 
-### Phase 4: Analyze Relevance
+Categorize each plugin as:
+- **RELEVANT** -- matches detected tech stack
+- **NOT RELEVANT** -- no matching indicators found
+- **MISSING** -- relevant plugin not currently enabled
 
-For each enabled plugin, check if it matches the detected tech stack:
+### Step 5: Generate the audit report
 
-| Plugin | Relevant When |
-|--------|--------------|
-| typescript-plugin | package.json exists |
-| python-plugin | Python project indicators exist |
-| rust-plugin | Cargo.toml exists |
-| container-plugin | Dockerfile or compose file exists |
-| kubernetes-plugin | K8s manifests exist |
-| github-actions-plugin | .github/workflows/ exists |
-| terraform-plugin | *.tf files exist |
-| git-plugin | Always relevant (all repos use git) |
-| tools-plugin | Always relevant (common CLI tools) |
-| configure-plugin | Always relevant (setup automation) |
-| testing-plugin | Test files/configs exist |
-| code-quality-plugin | Linter configs exist |
-| bevy-plugin | Bevy in Cargo.toml dependencies |
-| langchain-plugin | LangChain in dependencies |
-| api-plugin | OpenAPI specs exist |
-| documentation-plugin | docs/ directory with markdown |
-| blueprint-plugin | docs/blueprint/ or planning documents |
-| agents-plugin | Agent development context |
-| project-plugin | Project management needs |
+Print a structured report covering:
+1. Detected technology stack with evidence
+2. Currently enabled plugins with relevance status
+3. Suggested plugins to add (with reasons)
+4. Suggested plugins to remove (with reasons)
+5. Summary counts
 
-### Phase 5: Generate Report
+### Step 6: Apply changes (if --fix)
 
-```
-Plugin Audit Report
-===================
-Project: <current-directory>
-Date: <timestamp>
+When `--fix` is passed:
 
-Detected Technology Stack
--------------------------
-- TypeScript/JavaScript (package.json, tsconfig.json)
-- Docker (Dockerfile, docker-compose.yml)
-- GitHub Actions (.github/workflows/)
-
-Currently Enabled Plugins (N)
------------------------------
-✓ typescript-plugin     - RELEVANT (TypeScript project)
-✓ git-plugin            - RELEVANT (all repos)
-✗ kubernetes-plugin     - NOT RELEVANT (no K8s manifests found)
-✗ terraform-plugin      - NOT RELEVANT (no .tf files found)
-✗ python-plugin         - NOT RELEVANT (no Python indicators)
-
-Suggested Plugins to Add (N)
-----------------------------
-+ container-plugin      - Docker files detected
-+ github-actions-plugin - Workflow files detected
-+ testing-plugin        - Test configuration detected
-
-Suggested Plugins to Remove (N)
--------------------------------
-- kubernetes-plugin     - No K8s usage detected
-- terraform-plugin      - No Terraform usage detected
-- python-plugin         - No Python usage detected
-
-Summary
--------
-Enabled: N plugins
-Relevant: N plugins
-Irrelevant: N plugins (consider removing)
-Missing: N plugins (consider adding)
-
-Run `/health:audit --fix` to apply these recommendations.
-```
-
-### Phase 6: Apply Changes (if --fix)
-
-If `--fix` flag is provided:
-
-1. **Backup current settings**
-   ```bash
-   cp .claude/settings.json .claude/settings.json.backup
-   ```
-
-2. **Ask for confirmation** before each category of changes:
-   - "Remove these irrelevant plugins? [y/N]: kubernetes-plugin, terraform-plugin"
-   - "Add these relevant plugins? [y/N]: container-plugin, github-actions-plugin"
-
-3. **Update `.claude/settings.json`**
-   - Remove confirmed irrelevant plugins from `enabledPlugins`
-   - Add confirmed relevant plugins to `enabledPlugins`
-   - Preserve other settings
-
-4. **Verify changes**
-   - Re-read the file
-   - Confirm JSON is valid
-   - Show diff of changes
+1. Back up current settings: `cp .claude/settings.json .claude/settings.json.backup`
+2. Ask for confirmation before each category of changes (removals, additions)
+3. Update `.claude/settings.json` -- remove confirmed irrelevant plugins, add confirmed relevant plugins, preserve other settings
+4. Verify changes by re-reading the file, confirming valid JSON, and showing the diff
 
 ## User-Level vs Project-Level
 
@@ -195,6 +112,16 @@ If a plugin is enabled at user level, it doesn't need to be in project settings 
 | Monorepo with multiple languages | Suggest all matching plugins |
 | Plugin not in marketplace | Flag as "unknown" but don't remove |
 | User declined changes | Respect decision, show manual instructions |
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Plugin relevance audit | `/health:audit` |
+| Audit with auto-fix | `/health:audit --fix` |
+| Dry-run mode | `/health:audit --dry-run` |
+| List enabled plugins | `jq -r '.enabledPlugins[]? // empty' .claude/settings.json 2>/dev/null` |
+| Detect project languages | `find . -maxdepth 1 \( -name 'package.json' -o -name 'Cargo.toml' -o -name 'pyproject.toml' \) -exec basename {} \;` |
 
 ## Flags
 

@@ -1,7 +1,7 @@
 ---
 model: opus
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-10
 reviewed: 2025-12-16
 allowed-tools: Read, Bash(git *), mcp__github__get_pull_request, mcp__github__list_issues, TodoWrite
 argument-hint: [resource-name] [deployment-type]
@@ -13,49 +13,60 @@ name: deploy-handoff
 
 Generate professional handoff messages for deployed resources and services with all necessary information for developer handoff.
 
-## Usage
-```bash
-claude chat --file ~/.claude/skills/deploy-handoff/SKILL.md [RESOURCE_NAME] [DEPLOYMENT_TYPE]
-```
+## Context
 
-## Arguments
-- `RESOURCE_NAME` (optional): Name of the deployed resource/service
-- `DEPLOYMENT_TYPE` (optional): Type of deployment (web-app, api, database, infrastructure, etc.)
+- Repository: !`git remote get-url origin 2>/dev/null`
+- Branch: !`git branch --show-current 2>/dev/null`
+- Last commit: !`git log --oneline -1 2>/dev/null`
+- README: !`test -f README.md && echo "EXISTS" || echo "MISSING"`
+- Docker: !`find . -maxdepth 1 \( -name "Dockerfile" -o -name "docker-compose*.yml" \) 2>/dev/null`
+- CI/CD: !`find .github/workflows -maxdepth 1 -name '*.yml' 2>/dev/null`
+- Config files: !`find . -maxdepth 1 \( -name ".env.example" -o -name "*.config.*" \) 2>/dev/null`
 
-## Workflow
+## Parameters
 
-1. **Resource Discovery**
-   - Gather deployment details from current repository context
-   - Identify relevant documentation and configuration files
-   - Extract repository information and branch details
+- `$1` (RESOURCE_NAME, optional): Name of the deployed resource/service
+- `$2` (DEPLOYMENT_TYPE, optional): Type of deployment (web-app, api, database, infrastructure, etc.)
 
-2. **Information Collection**
-   - Service/resource name and purpose
-   - Deployment environment details
-   - Access URLs and endpoints
-   - Configuration and environment variables
-   - Dependencies and prerequisites
-   - Monitoring and logging information
+## Execution
 
-3. **Documentation Links**
-   - Repository URL and relevant branches
-   - Deployment documentation
-   - API documentation (if applicable)
-   - Configuration guides
-   - Troubleshooting resources
+Execute this deployment handoff documentation workflow:
 
-4. **Access Information**
-   - Service URLs and endpoints
-   - Database connection details (without credentials)
-   - Admin/management interfaces
-   - Monitoring dashboards
-   - Log locations and access methods
+### Step 1: Discover resource details
 
-5. **Handoff Message Generation**
-   - Professional Podio-friendly formatting
-   - Clear sections for different types of information
-   - Action items for the receiving developer
-   - Contact information for follow-up questions
+Gather deployment details from current repository context. Identify relevant documentation and configuration files. Extract repository information and branch details.
+
+### Step 2: Collect technical information
+
+Collect:
+- Service/resource name and purpose
+- Deployment environment details
+- Access URLs and endpoints
+- Configuration and environment variables
+- Dependencies and prerequisites
+- Monitoring and logging information
+
+### Step 3: Gather documentation links
+
+Find and compile:
+- Repository URL and relevant branches
+- Deployment documentation
+- API documentation (if applicable)
+- Configuration guides
+- Troubleshooting resources
+
+### Step 4: Compile access information
+
+Assemble:
+- Service URLs and endpoints
+- Database connection details (without credentials)
+- Admin/management interfaces
+- Monitoring dashboards
+- Log locations and access methods
+
+### Step 5: Generate handoff message
+
+Create a professionally formatted handoff message with clear sections, action items for the receiving developer, and contact information for follow-up questions.
 
 ## Template Structure
 
@@ -97,7 +108,7 @@ claude chat --file ~/.claude/skills/deploy-handoff/SKILL.md [RESOURCE_NAME] [DEP
 
 ## Output Format
 
-The command generates a Podio-friendly message with:
+The command generates a structured message with:
 - **Professional tone** suitable for client communications
 - **Clear structure** with headers and bullet points
 - **Actionable information** for immediate developer productivity
@@ -106,14 +117,10 @@ The command generates a Podio-friendly message with:
 ## Configuration Options
 
 ```yaml
-format: podio              # podio, slack, email, markdown
+format: markdown            # slack, email, markdown
 include_sensitive: false   # Include sensitive config info
 detail_level: standard     # minimal, standard, comprehensive
 template_style: professional # professional, technical, brief
-podio_workspace:          # Default workspace for Podio integration
-  org_label: fvh
-  space_label: iot-workspace
-  app_label: datadev-kanban
 ```
 
 ## Integration Points
@@ -126,7 +133,7 @@ podio_workspace:          # Default workspace for Podio integration
 
 ## Success Criteria
 - Handoff message contains all necessary information for developer productivity
-- Format is suitable for Podio ticket comments
+- Format is suitable for ticket comments
 - Message includes clear next steps and action items
 - All links and references are accurate and accessible
 - Professional tone appropriate for client-facing communications

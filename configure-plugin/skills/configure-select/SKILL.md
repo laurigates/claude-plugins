@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-22
-modified: 2025-12-22
+modified: 2026-02-10
 reviewed: 2025-12-22
 description: Interactively select which infrastructure standards to configure
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, SlashCommand
@@ -13,27 +13,52 @@ name: configure-select
 
 Interactively select which infrastructure standards checks to run.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up selected components interactively | Running all components (use `/configure:all`) |
+| Choosing specific standards to implement | Checking status only (use `/configure:status`) |
+| Customizing configuration scope for project | Single component needed (use specific `/configure:X` skill) |
+| User wants control over which components to configure | Automated full setup preferred |
+| Building configuration incrementally | Complete infrastructure setup needed immediately |
+
 ## Context
 
-Unlike `/configure:all` which runs everything, this command presents a multi-select interface to choose specific components. Useful when you want to configure a subset without running all 20+ checks.
+- Project standards: !`test -f .project-standards.yaml && echo "EXISTS" || echo "MISSING"`
+- Project type: !`head -20 .project-standards.yaml 2>/dev/null | grep -m1 "^project_type:" | sed 's/^[^:]*:[[:space:]]*//'`
+- Has terraform: !`find . -maxdepth 2 \( -name '*.tf' -o -type d -name 'terraform' \) 2>/dev/null | head -1`
+- Has package.json: !`test -f package.json && echo "EXISTS" || echo "MISSING"`
+- Has pyproject.toml: !`test -f pyproject.toml && echo "EXISTS" || echo "MISSING"`
+- Has Cargo.toml: !`test -f Cargo.toml && echo "EXISTS" || echo "MISSING"`
 
-## Workflow
+## Parameters
 
-### Phase 1: Project Detection
+Parse from `$ARGUMENTS`:
 
-1. Read `.project-standards.yaml` if exists
-2. Auto-detect project type:
+- `--check-only`: Report status without offering fixes (CI/CD mode)
+- `--fix`: Apply fixes automatically to all selected components
+
+## Execution
+
+Execute this interactive component selection workflow:
+
+### Step 1: Detect project type
+
+1. Read `.project-standards.yaml` if it exists (check `project_type` field)
+2. Auto-detect from file structure:
    - **infrastructure**: Has `terraform/`, `helm/`, `argocd/`, or `*.tf` files
    - **frontend**: Has `package.json` with vue/react dependencies
    - **python**: Has `pyproject.toml` or `requirements.txt`
    - **rust**: Has `Cargo.toml`
 3. Report detected type to user
 
-### Phase 2: Component Selection
+### Step 2: Present component selection
 
 Use AskUserQuestion with multiSelect to present four category-based questions:
 
 **Question 1: CI/CD & Version Control**
+
 | Option | Description |
 |--------|-------------|
 | Pre-commit hooks | Git hooks for linting, formatting, commit messages |
@@ -42,6 +67,7 @@ Use AskUserQuestion with multiSelect to present four category-based questions:
 | All CI/CD | Includes: pre-commit, release-please, workflows, github-pages, makefile |
 
 **Question 2: Container & Deployment**
+
 | Option | Description |
 |--------|-------------|
 | Dockerfile | Alpine/slim base, non-root user, multi-stage builds |
@@ -50,6 +76,7 @@ Use AskUserQuestion with multiSelect to present four category-based questions:
 | All container | Includes: dockerfile, container, skaffold, sentry, justfile |
 
 **Question 3: Testing**
+
 | Option | Description |
 |--------|-------------|
 | Test framework | Vitest, Jest, pytest, or cargo-nextest setup |
@@ -58,6 +85,7 @@ Use AskUserQuestion with multiSelect to present four category-based questions:
 | All testing | Includes: tests, coverage, api-tests, integration-tests, load-tests, ux-testing, memory-profiling |
 
 **Question 4: Code Quality**
+
 | Option | Description |
 |--------|-------------|
 | Linting & Formatting | Biome, Ruff, Clippy configuration |
@@ -65,43 +93,28 @@ Use AskUserQuestion with multiSelect to present four category-based questions:
 | Documentation | TSDoc, JSDoc, pydoc, rustdoc generators |
 | All quality | Includes: linting, formatting, dead-code, docs, security, editor, package-management |
 
-### Phase 3: Build Command List
+### Step 3: Map selections to commands
 
-Map selections to configure commands:
+| Selection | Commands |
+|-----------|----------|
+| Pre-commit hooks | `/configure:pre-commit` |
+| Release automation | `/configure:release-please` |
+| GitHub Actions | `/configure:workflows` |
+| All CI/CD | pre-commit, release-please, workflows, github-pages, makefile |
+| Dockerfile | `/configure:dockerfile` |
+| Container infra | `/configure:container` |
+| Skaffold | `/configure:skaffold` |
+| All container | dockerfile, container, skaffold, sentry, justfile |
+| Test framework | `/configure:tests` |
+| Code coverage | `/configure:coverage` |
+| API testing | `/configure:api-tests` |
+| All testing | tests, coverage, api-tests, integration-tests, load-tests, ux-testing, memory-profiling |
+| Linting & Formatting | `/configure:linting`, `/configure:formatting` |
+| Security scanning | `/configure:security` |
+| Documentation | `/configure:docs` |
+| All quality | linting, formatting, dead-code, docs, security, editor, package-management |
 
-```
-Selection Mapping:
-┌────────────────────────┬────────────────────────────────────────────┐
-│ Selection              │ Commands                                   │
-├────────────────────────┼────────────────────────────────────────────┤
-│ Pre-commit hooks       │ /configure:pre-commit                      │
-│ Release automation     │ /configure:release-please                  │
-│ GitHub Actions         │ /configure:workflows                       │
-│ All CI/CD              │ pre-commit, release-please, workflows,     │
-│                        │ github-pages, makefile                     │
-├────────────────────────┼────────────────────────────────────────────┤
-│ Dockerfile             │ /configure:dockerfile                      │
-│ Container infra        │ /configure:container                       │
-│ Skaffold               │ /configure:skaffold                        │
-│ All container          │ dockerfile, container, skaffold, sentry,   │
-│                        │ justfile                                   │
-├────────────────────────┼────────────────────────────────────────────┤
-│ Test framework         │ /configure:tests                           │
-│ Code coverage          │ /configure:coverage                        │
-│ API testing            │ /configure:api-tests                       │
-│ All testing            │ tests, coverage, api-tests, integration-   │
-│                        │ tests, load-tests, ux-testing,             │
-│                        │ memory-profiling                           │
-├────────────────────────┼────────────────────────────────────────────┤
-│ Linting & Formatting   │ /configure:linting, /configure:formatting  │
-│ Security scanning      │ /configure:security                        │
-│ Documentation          │ /configure:docs                            │
-│ All quality            │ linting, formatting, dead-code, docs,      │
-│                        │ security, editor, package-management       │
-└────────────────────────┴────────────────────────────────────────────┘
-```
-
-### Phase 4: Execute Selected Checks
+### Step 4: Execute selected checks
 
 Run each selected command with appropriate flags:
 
@@ -111,20 +124,29 @@ Run each selected command with appropriate flags:
 
 Report results as each check completes.
 
-### Phase 5: Generate Summary Report
+### Step 5: Generate summary report
 
-Same format as `/configure:all` but only for selected components:
+Print a summary for selected components only:
 
 ```
 Selected Components Summary:
-┌─────────────────┬──────────┬─────────────────────────────────┐
-│ Component       │ Status   │ Notes                           │
-├─────────────────┼──────────┼─────────────────────────────────┤
-│ Pre-commit      │ ⚠️ WARN  │ 2 outdated hooks                │
-│ Linting         │ ✅ PASS  │ Biome configured                │
-│ Formatting      │ ✅ PASS  │ Biome configured                │
-└─────────────────┴──────────┴─────────────────────────────────┘
++-----------------+----------+---------------------------------+
+| Component       | Status   | Notes                           |
++-----------------+----------+---------------------------------+
+| Pre-commit      | WARN     | 2 outdated hooks                |
+| Linting         | PASS     | Biome configured                |
+| Formatting      | PASS     | Biome configured                |
++-----------------+----------+---------------------------------+
 ```
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Interactive component selection | `/configure:select` |
+| Select and auto-fix | `/configure:select --fix` |
+| Check mode only | `/configure:select --check-only` |
+| Detect project type | `test -f .project-standards.yaml && grep "^project_type:" .project-standards.yaml \| sed 's/.*:[[:space:]]*//'` |
 
 ## Flags
 
@@ -132,19 +154,6 @@ Selected Components Summary:
 |------|-------------|
 | `--check-only` | Report status without offering fixes |
 | `--fix` | Apply fixes automatically to all selected |
-
-## Examples
-
-```bash
-# Interactive selection with audit first
-/configure:select
-
-# Check-only mode (CI-friendly)
-/configure:select --check-only
-
-# Auto-fix selected components
-/configure:select --fix
-```
 
 ## Comparison with Other Commands
 

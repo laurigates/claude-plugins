@@ -1,7 +1,7 @@
 ---
 model: opus
 created: 2025-02-03
-modified: 2025-02-03
+modified: 2026-02-10
 reviewed: 2025-02-03
 description: Implement a version badge with tooltip showing build info and recent changelog - framework agnostic
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
@@ -13,6 +13,20 @@ name: components-version-badge
 
 Implement a version badge component that displays version number, git commit, and recent changelog in a tooltip.
 
+## Context
+
+- Framework config: !`find . -maxdepth 1 \( -name "next.config.*" -o -name "nuxt.config.*" -o -name "svelte.config.*" -o -name "vite.config.*" \) 2>/dev/null`
+- Package manager: !`find . -maxdepth 1 \( -name "package.json" -o -name "bun.lockb" -o -name "pnpm-lock.yaml" \) 2>/dev/null`
+- Styling: !`find . -maxdepth 1 \( -name "tailwind.config.*" -o -name "postcss.config.*" \) 2>/dev/null`
+- UI library: !`find . -maxdepth 1 -name "components.json" 2>/dev/null`
+- Changelog: !`test -f CHANGELOG.md && echo "EXISTS" || echo "MISSING"`
+- Version: !`jq -r '.version // "unknown"' package.json 2>/dev/null`
+
+## Parameters
+
+- `--check-only`: Analyze project and show what would be implemented without making changes
+- `--location <header|footer|custom>`: Specify component placement (default: header)
+
 ## Overview
 
 This command adds a version display to your application with:
@@ -21,9 +35,9 @@ This command adds a version display to your application with:
 - **Tooltip**: Full build info (version, commit, timestamp, branch) + recent changelog entries
 - **Build-time processing**: Zero runtime overhead
 
-## Context Detection
+## Tech Stack Detection
 
-Detect the project's tech stack:
+Detect the project's tech stack from the context above:
 
 1. **Framework**:
    - Next.js: `next.config.js` or `next.config.mjs` or `next.config.ts`
@@ -47,16 +61,15 @@ Detect the project's tech stack:
    - Headless UI: `@headlessui/*` in dependencies
    - None: Use native implementation
 
-## Implementation Steps
+## Execution
 
-### Phase 1: Project Analysis
+Execute this version badge implementation workflow:
 
-1. Read `package.json` to identify dependencies
-2. Check for framework config files
-3. Check for styling configuration
-4. Check for existing component patterns
+### Step 1: Analyze project
 
-### Phase 2: Create Changelog Parser Script
+Read `package.json` to identify dependencies. Check for framework config files, styling configuration, and existing component patterns.
+
+### Step 2: Create changelog parser script
 
 Create a build-time script that parses `CHANGELOG.md`:
 
@@ -83,7 +96,7 @@ Create a build-time script that parses `CHANGELOG.md`:
 - Max 2 other changes per version
 - Last 2 versions only
 
-### Phase 3: Configure Build Pipeline
+### Step 3: Configure build pipeline
 
 Based on framework, add build-time environment variables:
 
@@ -113,7 +126,7 @@ export default defineConfig({
 });
 ```
 
-### Phase 4: Create Component
+### Step 4: Create component
 
 Create the version badge component appropriate for the detected framework:
 
@@ -147,7 +160,7 @@ src/components/
    - Both hover and focus trigger tooltip
    - Screen reader friendly content
 
-### Phase 5: Integrate Component
+### Step 5: Integrate component
 
 Add the component to the appropriate location:
 

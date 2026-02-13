@@ -1,6 +1,6 @@
 ---
 model: haiku
-name: Skaffold File Sync
+name: skaffold-filesync
 description: |
   Fast iterative development with Skaffold file sync - copy changed files to running containers
   without rebuilding images. Use when optimizing the development loop, configuring sync rules,

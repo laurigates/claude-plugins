@@ -3,7 +3,7 @@ model: haiku
 created: 2025-12-16
 modified: 2026-01-21
 reviewed: 2025-12-16
-name: rg Code Search
+name: rg-code-search
 description: Fast code search using ripgrep (rg) with smart defaults, regex patterns, and file filtering. Use when searching for text patterns, code snippets, or performing multi-file code analysis.
 allowed-tools: Bash(rg *), Read, Grep, Glob
 ---
@@ -292,11 +292,11 @@ rg pattern -g '!{target,node_modules,dist,build}/'
 - Piped input (stdin)
 - System administration tasks
 
-**Common Mistakes to Avoid**
-- Forgetting to escape regex special characters
-- Not using `-u` flags when searching ignored files
-- Not excluding large binary/generated files
-- Using grep when rg would be much faster
+**Tips for Effective Searches**
+- Escape regex special characters in patterns
+- Use `-u` flags when searching ignored/hidden files
+- Exclude large binary/generated files with `--glob '!vendor'`
+- Prefer rg over grep for speed and smart defaults
 
 ## Quick Reference
 

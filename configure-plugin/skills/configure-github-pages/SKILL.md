@@ -1,13 +1,27 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-02-05
+modified: 2026-02-11
 reviewed: 2025-12-16
 description: Check and configure GitHub Pages deployment
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
 argument-hint: "[--check-only] [--fix] [--source <docs|site|custom>]"
 name: configure-github-pages
 ---
+
+# /configure:github-pages
+
+Check and configure GitHub Pages deployment.
+
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up GitHub Pages deployment for a documentation site | Configuring documentation standards or generators (`/configure:docs` instead) |
+| Creating or updating a GitHub Actions workflow for Pages deployment | Debugging a failed GitHub Actions workflow (`/configure:workflows` instead) |
+| Migrating from `peaceiris/actions-gh-pages` to official `actions/deploy-pages` | Editing documentation content or markdown files |
+| Auditing Pages workflow for outdated action versions or missing permissions | Setting up a custom domain via DNS (manual repository settings) |
+| Adding Pages deployment to a project with an existing doc generator | Configuring CI/CD workflows unrelated to documentation |
 
 ## Context
 
@@ -25,13 +39,13 @@ Parse from command arguments:
 - `--fix`: Apply fixes automatically without prompting
 - `--source <docs|site|custom>`: Override source directory detection
 
-## Your Task
+## Execution
 
-Configure GitHub Pages deployment infrastructure for documentation.
+Execute this GitHub Pages deployment configuration check:
 
-### Phase 1: Documentation State Detection
+### Step 1: Detect documentation state
 
-Detect existing documentation configuration:
+Identify existing documentation configuration:
 
 | Config File | Generator | Output Directory |
 |-------------|-----------|------------------|
@@ -42,7 +56,7 @@ Detect existing documentation configuration:
 | `Cargo.toml` (with rustdoc) | rustdoc | `target/doc/` |
 | None | Static | `docs/` |
 
-**If no documentation configured:**
+If no documentation configured, report:
 ```
 No documentation generator detected.
 
@@ -56,24 +70,18 @@ Would you like to:
   [C] Skip - I'll configure docs later
 ```
 
-### Phase 2: Existing Workflow Analysis
+### Step 2: Analyze existing workflow
 
-Check for existing GitHub Pages workflows:
-
-**Search patterns:**
+Check for existing GitHub Pages workflows by searching for:
 - `actions/deploy-pages`
 - `actions/upload-pages-artifact`
 - `peaceiris/actions-gh-pages`
 
-**Extract from existing workflow:**
-- Current action versions
-- Permissions configuration
-- Build steps
-- Source directory
+Extract from existing workflow: current action versions, permissions, build steps, source directory.
 
-### Phase 3: Compliance Analysis
+### Step 3: Check compliance against standards
 
-Check GitHub Actions workflow against standards:
+Validate GitHub Actions workflow against standards:
 
 | Check | Standard | Severity |
 |-------|----------|----------|
@@ -84,7 +92,9 @@ Check GitHub Actions workflow against standards:
 | Environment | `github-pages` | WARN if missing |
 | Concurrency | Group defined | INFO |
 
-### Phase 4: Compliance Report
+### Step 4: Generate compliance report
+
+Print a formatted compliance report:
 
 ```
 GitHub Pages Compliance Report
@@ -97,14 +107,14 @@ Documentation Status:
   Build command       [detected command or "not configured"]
 
 GitHub Pages Workflow:
-  Workflow file       .github/workflows/docs.yml    [✅ EXISTS | ❌ MISSING]
+  Workflow file       .github/workflows/docs.yml    [EXISTS | MISSING]
 
 Workflow Checks (if exists):
-  deploy-pages        v4                            [✅ PASS | ⚠️ OUTDATED | ❌ MISSING]
-  configure-pages     v5                            [✅ PASS | ⚠️ MISSING]
-  upload-artifact     v3                            [✅ PASS | ⚠️ OUTDATED]
-  Permissions         pages: write, id-token        [✅ PASS | ❌ MISSING]
-  Environment         github-pages                  [✅ PASS | ⚠️ MISSING]
+  deploy-pages        v4                            [PASS | OUTDATED | MISSING]
+  configure-pages     v5                            [PASS | MISSING]
+  upload-artifact     v3                            [PASS | OUTDATED]
+  Permissions         pages: write, id-token        [PASS | MISSING]
+  Environment         github-pages                  [PASS | MISSING]
 
 Overall: [X issues found]
 
@@ -112,272 +122,25 @@ Recommendations:
   [List specific fixes needed]
 ```
 
-### Phase 5: Configuration (if --fix or user confirms)
+If `--check-only`, stop here.
 
-Create `.github/workflows/docs.yml` based on detected generator:
+### Step 5: Create or update workflow (if --fix or user confirms)
 
-#### TypeDoc (TypeScript/JavaScript)
+Create `.github/workflows/docs.yml` based on detected generator. Use the appropriate workflow template from [REFERENCE.md](REFERENCE.md):
 
-```yaml
-name: Documentation
+- **TypeDoc**: Node.js setup, npm ci, npm run docs:build, upload `./docs`
+- **MkDocs**: Python setup, pip install, mkdocs build, upload `./site`
+- **Sphinx**: Python setup, pip install, make html, upload `./docs/_build/html`
+- **rustdoc**: Rust toolchain, cargo doc, create index redirect, upload `./target/doc`
+- **Static HTML**: Direct upload from `./docs` directory
 
-on:
-  push:
-    branches: [main]
-    paths:
-      - 'src/**'
-      - 'typedoc.json'
-      - 'package.json'
-  workflow_dispatch:
+All workflows include:
+- Required permissions (`pages: write`, `id-token: write`)
+- Concurrency group to prevent conflicts
+- `workflow_dispatch` for manual triggers
+- Path-based triggers for relevant source files
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - run: npm ci
-      - run: npm run docs:build
-
-      - uses: actions/configure-pages@v5
-
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: './docs'
-
-  deploy:
-    needs: build
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
-```
-
-#### MkDocs (Python)
-
-```yaml
-name: Documentation
-
-on:
-  push:
-    branches: [main]
-    paths:
-      - 'docs/**'
-      - 'mkdocs.yml'
-      - 'src/**/*.py'
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install dependencies
-        run: |
-          pip install mkdocs mkdocs-material mkdocstrings[python]
-
-      - run: mkdocs build
-
-      - uses: actions/configure-pages@v5
-
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: './site'
-
-  deploy:
-    needs: build
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
-```
-
-#### Sphinx (Python)
-
-```yaml
-name: Documentation
-
-on:
-  push:
-    branches: [main]
-    paths:
-      - 'docs/**'
-      - 'src/**/*.py'
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install dependencies
-        run: |
-          pip install sphinx sphinx-rtd-theme sphinx-autodoc-typehints myst-parser
-
-      - name: Build documentation
-        run: |
-          cd docs && make html
-
-      - uses: actions/configure-pages@v5
-
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: './docs/_build/html'
-
-  deploy:
-    needs: build
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
-```
-
-#### rustdoc (Rust)
-
-```yaml
-name: Documentation
-
-on:
-  push:
-    branches: [main]
-    paths:
-      - 'src/**'
-      - 'Cargo.toml'
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: dtolnay/rust-toolchain@stable
-
-      - name: Build documentation
-        run: cargo doc --no-deps --all-features
-
-      - name: Create index redirect
-        run: |
-          echo '<meta http-equiv="refresh" content="0; url=CRATE_NAME/index.html">' > target/doc/index.html
-
-      - uses: actions/configure-pages@v5
-
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: './target/doc'
-
-  deploy:
-    needs: build
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
-```
-
-#### Static HTML (No Generator)
-
-```yaml
-name: Deploy GitHub Pages
-
-on:
-  push:
-    branches: [main]
-    paths:
-      - 'docs/**'
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
-
-jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/configure-pages@v5
-
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: './docs'
-
-      - id: deployment
-        uses: actions/deploy-pages@v4
-```
-
-### Phase 6: Standards Tracking
+### Step 6: Update standards tracking
 
 Update `.project-standards.yaml`:
 
@@ -390,7 +153,7 @@ components:
   github-pages-source: "[docs/|site/|custom]"
 ```
 
-### Phase 7: Post-Configuration Instructions
+### Step 7: Print post-configuration instructions
 
 ```
 GitHub Pages Configuration Complete
@@ -400,7 +163,7 @@ Workflow created: .github/workflows/docs.yml
 
 Next Steps:
   1. Enable GitHub Pages in repository settings:
-     Settings → Pages → Source: GitHub Actions
+     Settings -> Pages -> Source: GitHub Actions
 
   2. Push to main branch to trigger deployment:
      git add .github/workflows/docs.yml
@@ -415,6 +178,8 @@ Optional:
   - Protect deployment: Configure environment protection rules
 ```
 
+For detailed workflow templates, see [REFERENCE.md](REFERENCE.md).
+
 ## Output
 
 Provide:
@@ -422,6 +187,17 @@ Provide:
 2. List of changes made (if --fix) or proposed (if interactive)
 3. Post-configuration instructions
 4. URL where docs will be deployed
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick compliance check | `/configure:github-pages --check-only` |
+| Auto-fix all issues | `/configure:github-pages --fix` |
+| Check Pages workflow exists | `find .github/workflows -name '*pages*' -o -name '*doc*' 2>/dev/null` |
+| Check Pages action versions | `grep -E 'deploy-pages|upload-pages-artifact|configure-pages' .github/workflows/*.yml` |
+| Verify Pages enabled | `gh api repos/{owner}/{repo}/pages --jq '.status'` |
+| Check deployment status | `gh api repos/{owner}/{repo}/pages/builds --jq '.[0].status'` |
 
 ## See Also
 

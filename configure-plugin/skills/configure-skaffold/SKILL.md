@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-10
 reviewed: 2025-12-16
 description: Check and configure Skaffold for project standards
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -13,13 +13,39 @@ name: configure-skaffold
 
 Check and configure Skaffold against project standards.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Checking Skaffold configuration compliance for a Kubernetes project | Project has no k8s/ or helm/ directories (Skaffold is not applicable) |
+| Fixing port forwarding security issues (binding to 0.0.0.0) | Managing Kubernetes manifests or Helm charts directly |
+| Adding dotenvx hooks for secret generation in Skaffold | Configuring container builds without Kubernetes (use `/configure:dockerfile`) |
+| Upgrading Skaffold API version to latest | Debugging Skaffold runtime errors (use system-debugging agent) |
+| Creating a standard skaffold.yaml from template | Setting up a non-Skaffold local dev workflow (e.g., Docker Compose) |
+
 ## Context
 
-This command validates Skaffold configuration for local Kubernetes development using OrbStack.
+- K8s/Helm directories: !`find . -maxdepth 1 -type d \( -name 'k8s' -o -name 'helm' \) 2>/dev/null`
+- Skaffold config: !`test -f skaffold.yaml && echo "EXISTS" || echo "MISSING"`
+- Skaffold API version: !`head -5 skaffold.yaml 2>/dev/null | grep apiVersion`
+- Port forward config: !`grep -A2 'portForward' skaffold.yaml 2>/dev/null | grep address`
+- Profiles defined: !`grep 'name:' skaffold.yaml 2>/dev/null | grep -v 'metadata' | head -10`
+- Generate-secrets script: !`test -f scripts/generate-secrets.sh && echo "EXISTS" || echo "MISSING"`
+- Dotenvx available: !`command -v dotenvx 2>/dev/null && echo "INSTALLED" || echo "MISSING"`
+- Project standards: !`head -20 .project-standards.yaml 2>/dev/null`
 
 **Skills referenced**: `skaffold-standards`, `container-development`, `skaffold-orbstack`
 
 **Applicability**: Only for projects with Kubernetes deployment (k8s/, helm/ directories)
+
+## Parameters
+
+Parse these from `$ARGUMENTS`:
+
+| Flag | Description |
+|------|-------------|
+| `--check-only` | Report status without offering fixes |
+| `--fix` | Apply fixes automatically |
 
 ## Version Checking
 
@@ -31,26 +57,27 @@ This command validates Skaffold configuration for local Kubernetes development u
 
 Use WebSearch or WebFetch to verify current Skaffold version and API version.
 
-## Workflow
+## Execution
 
-### Phase 1: Applicability Check
+Execute this Skaffold compliance check:
 
-1. Check for `k8s/` or `helm/` directories
-2. If not found: Report SKIP (Skaffold not applicable)
-3. If found: Check for `skaffold.yaml`
+### Step 1: Check applicability
 
-### Phase 2: Configuration Detection
+Check for `k8s/` or `helm/` directories. If neither is found, report "SKIP: Skaffold not applicable (no Kubernetes manifests)" and stop. If found, proceed to check for `skaffold.yaml`.
 
-Parse `skaffold.yaml` for:
+### Step 2: Parse configuration
+
+Read `skaffold.yaml` and extract:
 - API version
-- Build configuration
-- Deploy configuration
-- Port forwarding
-- Profiles
+- Build configuration (local.push, useBuildkit)
+- Deploy configuration (kubeContext, statusCheck)
+- Port forwarding (addresses)
+- Profiles defined
+- Hooks (dotenvx integration)
 
-### Phase 3: Compliance Analysis
+### Step 3: Analyze compliance
 
-**Required Checks:**
+Check each setting against these standards:
 
 | Check | Standard | Severity |
 |-------|----------|----------|
@@ -61,60 +88,37 @@ Parse `skaffold.yaml` for:
 | kubeContext | `orbstack` | INFO (recommended for local dev) |
 | dotenvx hooks | Build or deploy hooks | INFO (recommended for secrets) |
 
-**Security-Critical:**
-- Port forwarding MUST bind to localhost only (`127.0.0.1`)
-- Never allow `0.0.0.0` or missing address
-- Secrets should be generated via dotenvx hooks, not hardcoded
+**Security-critical**: Port forwarding MUST bind to localhost only (`127.0.0.1`). Never allow `0.0.0.0` or missing address.
 
-**Recommended:**
+**Recommended settings**:
 - `db-only` or `services-only` profile for local dev workflow
 - `statusCheck: true` with reasonable deadline (180s for init containers)
 - `tolerateFailuresUntilDeadline: true` for graceful pod initialization
 - JSON log parsing for structured application logs
 - dotenvx hooks for secrets generation from .env files
 
-### Phase 4: Report Generation
+### Step 4: Report results
 
-```
-Skaffold Compliance Report
-==============================
-Project Type: frontend (detected)
-Skaffold: ./skaffold.yaml (found)
+Print a compliance report with:
+- Skaffold file location and API version
+- Each configuration check result (PASS/WARN/FAIL)
+- Profiles found
+- Scripts status (generate-secrets.sh)
+- Overall compliance status
 
-Configuration Checks:
-  API version     v4beta13          ✅ PASS
-  local.push      false             ✅ PASS
-  useBuildkit     true              ✅ PASS
-  Port security   127.0.0.1         ✅ PASS
-  statusCheck     true              ✅ PASS
-  kubeContext     orbstack          ✅ PASS
-  dotenvx hooks   build hooks       ✅ PASS
-  JSON log parse  enabled           ✅ PASS
+If `--check-only`, stop here.
 
-Profiles Found:
-  db-only         ✅ Present
-  services-only   ✅ Present
-  minimal         ✅ Present
+### Step 5: Apply fixes (if --fix or user confirms)
 
-Scripts:
-  generate-secrets.sh ✅ Present (dotenvx integration)
-
-Overall: Fully compliant
-```
-
-### Phase 5: Configuration (If Requested)
-
-If `--fix` flag or user confirms:
-
-1. **Missing skaffold.yaml**: Create from standard template
-2. **Security issues**: Fix port forwarding addresses
+1. **Missing skaffold.yaml**: Create from standard template in [REFERENCE.md](REFERENCE.md)
+2. **Security issues**: Fix port forwarding addresses to `127.0.0.1`
 3. **Missing profiles**: Add `db-only` profile template
 4. **Outdated API**: Update apiVersion to v4beta13
 5. **Missing dotenvx hooks**: Add secrets generation hook
-6. **Missing scripts**: Create `scripts/generate-secrets.sh` template
+6. **Missing scripts**: Create `scripts/generate-secrets.sh` from template in [REFERENCE.md](REFERENCE.md)
 7. **Missing kubeContext**: Add `orbstack` for local development
 
-### Phase 6: Standards Tracking
+### Step 6: Update standards tracking
 
 Update `.project-standards.yaml`:
 
@@ -123,200 +127,21 @@ components:
   skaffold: "2025.1"
 ```
 
-## Standard Template
+## Agentic Optimizations
 
-```yaml
-apiVersion: skaffold/v4beta13
-kind: Config
-metadata:
-  name: project-name-local
-
-build:
-  local:
-    push: false
-    useDockerCLI: true
-    useBuildkit: true
-    concurrency: 0
-  # Generate secrets before building
-  hooks:
-    before:
-      - command: ['sh', '-c', 'dotenvx run -- sh scripts/generate-secrets.sh']
-        os: [darwin, linux]
-  artifacts:
-    - image: app
-      context: .
-      docker:
-        dockerfile: Dockerfile
-    # Optional: init container for database migrations
-    - image: app-db-init
-      context: .
-      docker:
-        dockerfile: Dockerfile.db-init
-
-manifests:
-  rawYaml:
-    - k8s/namespace.yaml
-    - k8s/postgresql-secret.yaml
-    - k8s/postgresql-configmap.yaml
-    - k8s/postgresql-service.yaml
-    - k8s/postgresql-statefulset.yaml
-    - k8s/app-secrets.yaml
-    - k8s/app-deployment.yaml
-    - k8s/app-service.yaml
-
-deploy:
-  kubeContext: orbstack  # OrbStack for local development
-  kubectl:
-    defaultNamespace: project-name
-    # Optional: validation before deploy
-    hooks:
-      before:
-        - host:
-            command: ["sh", "-c", "echo 'Validating configuration...'"]
-            os: [darwin, linux]
-  statusCheck: true
-  # Extended timeout for init containers (db migrations, seeding)
-  statusCheckDeadlineSeconds: 180
-  # Don't fail immediately on pod restarts during initialization
-  tolerateFailuresUntilDeadline: true
-  # Parse JSON logs from applications for cleaner output
-  logs:
-    jsonParse:
-      fields: ["message", "level", "timestamp"]
-
-portForward:
-  - resourceType: service
-    resourceName: postgresql
-    namespace: project-name
-    port: 5432
-    localPort: 5435
-    address: 127.0.0.1  # REQUIRED: localhost only
-  - resourceType: service
-    resourceName: app
-    namespace: project-name
-    port: 3000
-    localPort: 8080
-    address: 127.0.0.1  # REQUIRED: localhost only
-
-profiles:
-  # Database only - for running app dev server locally
-  - name: db-only
-    build:
-      artifacts: []
-    manifests:
-      rawYaml:
-        - k8s/namespace.yaml
-        - k8s/postgresql-secret.yaml
-        - k8s/postgresql-configmap.yaml
-        - k8s/postgresql-service.yaml
-        - k8s/postgresql-statefulset.yaml
-    portForward:
-      - resourceType: service
-        resourceName: postgresql
-        namespace: project-name
-        port: 5432
-        localPort: 5435
-        address: 127.0.0.1
-
-  # Minimal - without optional features
-  - name: minimal
-    patches:
-      - op: replace
-        path: /manifests/rawYaml/4
-        value: k8s/postgresql-statefulset-minimal.yaml
-```
-
-## dotenvx Integration
-
-Projects use [dotenvx](https://dotenvx.com/) for encrypted secrets management in local development.
-
-### How It Works
-
-1. **Encrypted .env files**: `.env` files contain encrypted values
-2. **Private key**: `DOTENV_PRIVATE_KEY` decrypts values at runtime
-3. **Hooks**: Skaffold hooks run `dotenvx run -- script` to inject secrets
-4. **Generated secrets**: Scripts create Kubernetes Secret manifests from .env
-
-### Generate Secrets Script Template
-
-Create `scripts/generate-secrets.sh`:
-
-```bash
-#!/bin/bash
-# Generate Kubernetes secrets from .env using dotenvx
-# Run with: dotenvx run -- sh scripts/generate-secrets.sh
-
-set -euo pipefail
-
-# Validate required env vars are set (decrypted by dotenvx)
-: "${DATABASE_URL:?DATABASE_URL must be set}"
-: "${SECRET_KEY:?SECRET_KEY must be set}"
-
-# Generate app secrets manifest
-cat > k8s/app-secrets.yaml << EOF
-apiVersion: v1
-kind: Secret
-metadata:
-  name: app-secrets
-  namespace: project-name
-type: Opaque
-stringData:
-  DATABASE_URL: "${DATABASE_URL}"
-  SECRET_KEY: "${SECRET_KEY}"
-EOF
-
-echo "Generated k8s/app-secrets.yaml"
-```
-
-### dotenvx Setup
-
-```bash
-# Install dotenvx
-curl -sfS https://dotenvx.sh | sh
-
-# Create encrypted .env (first time)
-dotenvx set DATABASE_URL "postgresql://..."
-dotenvx set SECRET_KEY "..."
-
-# Encrypt existing .env
-dotenvx encrypt
-
-# Store private key securely (NOT in git)
-echo "DOTENV_PRIVATE_KEY=..." >> ~/.zshrc
-```
-
-### Usage Patterns
-
-**Build hook** (runs before building images):
-```yaml
-build:
-  hooks:
-    before:
-      - command: ['sh', '-c', 'dotenvx run -- sh scripts/generate-secrets.sh']
-        os: [darwin, linux]
-```
-
-**Deploy hook** (runs before applying manifests):
-```yaml
-deploy:
-  kubectl:
-    hooks:
-      before:
-        - host:
-            command: ["sh", "-c", "dotenvx run -- sh scripts/generate-secrets.sh"]
-```
-
-## Flags
-
-| Flag | Description |
-|------|-------------|
-| `--check-only` | Report status without offering fixes |
-| `--fix` | Apply fixes automatically |
+| Context | Command |
+|---------|---------|
+| Quick compliance check | `/configure:skaffold --check-only` |
+| Auto-fix all issues | `/configure:skaffold --fix` |
+| Check API version | `head -5 skaffold.yaml \| grep apiVersion` |
+| Check port forwarding security | `grep -A2 'portForward' skaffold.yaml \| grep address` |
+| List profiles | `grep 'name:' skaffold.yaml \| grep -v metadata` |
 
 ## Security Note
 
-Port forwarding without `address: 127.0.0.1` exposes services to the network.
-This is a **FAIL** condition that should always be fixed.
+Port forwarding without `address: 127.0.0.1` exposes services to the network. This is a **FAIL** condition that should always be fixed.
+
+For the standard Skaffold template, dotenvx integration patterns, and generate-secrets script template, see [REFERENCE.md](REFERENCE.md).
 
 ## See Also
 

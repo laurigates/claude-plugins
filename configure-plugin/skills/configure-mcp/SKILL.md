@@ -1,11 +1,11 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-02-08
-reviewed: 2026-02-08
-description: Check and configure MCP servers for project integration
+modified: 2026-02-10
+reviewed: 2025-12-16
+description: Check and configure MCP servers for project integration. Use when setting up MCP servers, checking MCP status, or adding new servers to a project.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
-argument-hint: "[--check-only] [--fix] [--server <name>]"
+argument-hint: "[--check-only] [--fix] [--core] [--server <name>]"
 name: configure-mcp
 ---
 
@@ -13,244 +13,112 @@ name: configure-mcp
 
 Check and configure Model Context Protocol (MCP) servers for this project.
 
+**MCP Philosophy:** Servers are managed **project-by-project** (in `.mcp.json`), not user-scoped (in `~/.claude/settings.json`), to keep context clean and dependencies explicit.
+
+For server configurations, environment variable reference, and report templates, see [REFERENCE.md](REFERENCE.md).
+
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up MCP servers for a project | Configuring user-level settings (edit `~/.claude/settings.json` directly) |
+| Checking MCP server status and validating configuration | Just viewing `.mcp.json` contents (use Read tool) |
+| Adding specific servers (context7, playwright, sequential-thinking, etc.) | Installing npm/bun packages for non-MCP purposes (use package manager) |
+| Ensuring team-shareable MCP setups | Personal-only MCP configuration (use `~/.claude/settings.json`) |
+| Installing core productivity servers | Debugging specific server runtime issues (check server logs, restart Claude Code) |
+
 ## Context
 
-This command validates MCP server configuration and installs servers from the favorites registry.
+- Config exists: !`test -f .mcp.json && echo "EXISTS" || echo "MISSING"`
+- Config contents: !`cat .mcp.json 2>/dev/null`
+- Installed servers: !`cat .mcp.json 2>/dev/null | jq -r '.mcpServers | keys[]' 2>/dev/null`
+- Git tracking: !`grep -q '.mcp.json' .gitignore 2>/dev/null && echo "IGNORED" || echo "NOT IGNORED"`
+- Standards file: !`test -f .project-standards.yaml && echo "EXISTS" || echo "MISSING"`
+- Has playwright config: !`find . -maxdepth 1 -name 'playwright.config.*' 2>/dev/null`
+- Has TS/JS files: !`find . -maxdepth 2 \( -name '*.ts' -o -name '*.py' -o -name '*.go' -o -name '*.rs' \) 2>/dev/null | head -5`
+- Dotfiles registry: !`test -f ~/.local/share/chezmoi/.chezmoidata.toml && echo "EXISTS" || echo "MISSING"`
 
-**MCP Philosophy:** Servers are managed **project-by-project** to avoid context bloat:
-- ❌ **User-scoped** (in `~/.claude/settings.json`) - Bloated context everywhere
-- ✅ **Project-scoped** (in `.mcp.json`) - Clean context, explicit dependencies, team-shareable
+## Parameters
 
-### Core Servers
+Parse these from `$ARGUMENTS`:
 
-These servers should be installed in **all projects** by default:
+- `--check-only`: Report current status, do not offer installation
+- `--fix`: Install servers without prompting for confirmation
+- `--core`: Install all core servers (`context7`, `sequential-thinking`)
+- `--server <name>`: Install specific server by name (repeatable)
 
-| Server | Purpose | Required |
+If no flags provided, run interactive mode (detect → report → offer to install).
+
+## Core Servers
+
+These servers should be installed in **all projects**:
+
+| Server | Purpose | Env Vars |
 |--------|---------|----------|
-| `context7` | Documentation context from Upstash | No env vars |
-| `sequential-thinking` | Enhanced reasoning and planning | No env vars |
+| `context7` | Documentation context from Upstash | None |
+| `sequential-thinking` | Enhanced reasoning and planning | None |
 
-Run `/configure:mcp --core` to install all core servers automatically.
+## Execution
 
-### Optional Servers
+Execute this MCP configuration workflow:
 
-These servers provide additional capabilities for specific project types:
+### Step 1: Detect current state
 
-| Server | Purpose | When to use | Install |
-|--------|---------|-------------|---------|
-| `cclsp` | LSP code navigation (find-references, go-to-definition, rename) | Large TS/Python/Rust codebases with complex type hierarchies | `npx cclsp@latest setup` |
+Check the context values above. Determine:
+1. Does `.mcp.json` exist? If yes, parse it and list all configured servers.
+2. For each server, check its command type (`npx`, `bunx`, `uvx`, `go run`) and required env vars.
+3. Flag any servers with missing required environment variables.
 
-**Note:** `cclsp` provides 6 focused LSP tools without duplicating Claude Code's built-in file, shell, and search capabilities. Recommended over heavier alternatives for projects that need semantic code navigation.
+If `--check-only`, skip to Step 4 (report only).
 
-## Workflow
+### Step 2: Identify servers to install
 
-### Phase 1: Current State Detection
+Based on the flags:
 
-Check for existing MCP configuration:
+- **`--core`**: Select `context7` and `sequential-thinking`.
+- **`--server <name>`**: Select the named server(s). Validate against the available servers in [REFERENCE.md](REFERENCE.md).
+- **No flags (interactive)**: Show the user what's installed vs available. Use AskUserQuestion to ask which servers to add. Suggest servers based on project context (e.g., suggest `playwright` if `playwright.config.*` exists, suggest `cclsp` if large TS/Python/Rust codebase).
 
-| File | Purpose | Status |
-|------|---------|--------|
-| `.mcp.json` | Project MCP configuration | EXISTS / MISSING |
-| `~/.claude/settings.json` | User-level MCP (discouraged) | CHECK |
+If all requested servers are already installed, report "All servers already configured" and stop.
 
-### Phase 2: Current Configuration Analysis
+### Step 3: Install selected servers
 
-For existing `.mcp.json`, analyze:
+For each selected server:
 
-- [ ] File exists and is valid JSON
-- [ ] mcpServers object present
-- [ ] Installed servers list
-- [ ] Environment variable references validated
-- [ ] Required env vars documented
+1. Get the server configuration from [REFERENCE.md](REFERENCE.md).
+2. If `.mcp.json` doesn't exist, create it with `{"mcpServers": {}}`.
+3. Merge the server config into the existing `mcpServers` object. Preserve existing servers.
+4. Write the updated `.mcp.json` with proper JSON formatting.
 
-**Currently Installed Servers:**
-List each server with:
-- Name
-- Command type (npx, bunx, uvx, go run)
-- Required environment variables
-- Status (✅ configured / ⚠️ missing env var)
+If `cclsp` is selected, also set up `cclsp.json` (see [REFERENCE.md](REFERENCE.md) for language detection and setup details).
 
-### Phase 3: Compliance Report
+Handle git tracking:
+- Check if `.mcp.json` is in `.gitignore`.
+- If not tracked and not ignored, recommend adding to `.gitignore` for personal projects or tracking for team projects.
 
-```
-MCP Configuration Report
-========================
-Project: [name]
-Config file: .mcp.json
+### Step 4: Report results
 
-Installed Servers:
-  github                    go run           [✅ CONFIGURED | ⚠️ NEEDS GITHUB_TOKEN]
-  playwright                bunx             [✅ CONFIGURED]
-  pal                       uvx              [✅ CONFIGURED]
-  context7                  bunx             [✅ CONFIGURED]
+Print a summary using the report format from [REFERENCE.md](REFERENCE.md):
+- List all configured servers with their status
+- Flag missing environment variables with where to set them
+- Show git tracking status
+- If servers were added, show next steps (restart Claude Code, set env vars)
 
-Environment Variables:
-  GITHUB_TOKEN              ~/.api_tokens    [✅ SET | ❌ MISSING]
-  ARGOCD_SERVER             project .env     [✅ SET | ❌ MISSING]
-  ARGOCD_AUTH_TOKEN         project .env     [✅ SET | ❌ MISSING]
+### Step 5: Update standards tracking
 
-Git Tracking:
-  .mcp.json                 .gitignore       [✅ IGNORED | ⚠️ TRACKED | ❌ NOT FOUND]
+If `.project-standards.yaml` exists, update the MCP section with current server list and timestamp.
 
-Overall: [X issues found]
+## Agentic Optimizations
 
-Recommendations:
-  - Add 'github' server for GitHub API integration
-  - Set GITHUB_TOKEN in ~/.api_tokens
-  - Add .mcp.json to .gitignore for personal projects
-```
-
-### Phase 4: Available MCP Servers
-
-**From dotfiles favorites registry** (`~/.local/share/chezmoi/.chezmoidata.toml`):
-
-**Context & Knowledge:**
-- `context7` - Upstash context management
-
-**Testing & Automation:**
-- `playwright` - Browser automation and testing
-
-**Version Control:**
-- `github` - GitHub API integration (issues, PRs, repos)
-
-**Productivity:**
-- `pal` - PAL (Provider Abstraction Layer) - Multi-provider LLM integration
-- `podio-mcp` - Podio project management integration
-
-**Infrastructure & Monitoring:**
-- `argocd-mcp` - ArgoCD GitOps deployment management
-- `sentry` - Sentry error tracking and monitoring
-
-**AI Enhancement:**
-- `sequential-thinking` - Enhanced reasoning with sequential thinking
-
-**Code Intelligence (optional):**
-- `cclsp` - LSP navigation (find-references, go-to-definition, rename) for TS/Python/Rust projects
-
-### Phase 5: Configuration (if --fix or user confirms)
-
-#### Server Configurations
-
-```json
-{
-  "pal": {
-    "command": "uvx",
-    "args": [
-      "--from",
-      "git+https://github.com/BeehiveInnovations/pal-mcp-server.git",
-      "pal-mcp-server"
-    ]
-  },
-  "playwright": {
-    "command": "bunx",
-    "args": ["-y", "@playwright/mcp@latest"]
-  },
-  "context7": {
-    "command": "bunx",
-    "args": ["-y", "@upstash/context7-mcp"]
-  },
-  "github": {
-    "command": "go",
-    "args": [
-      "run",
-      "github.com/github/github-mcp-server/cmd/github-mcp-server@latest",
-      "stdio"
-    ]
-  },
-  "podio-mcp": {
-    "command": "bunx",
-    "args": ["https://github.com/ForumViriumHelsinki/podio-mcp"],
-    "env": {
-      "PODIO_CLIENT_ID": "${PODIO_CLIENT_ID}",
-      "PODIO_CLIENT_SECRET": "${PODIO_CLIENT_SECRET}",
-      "PODIO_APP_ID": "${PODIO_APP_ID}",
-      "PODIO_APP_TOKEN": "${PODIO_APP_TOKEN}"
-    }
-  },
-  "argocd-mcp": {
-    "command": "bunx",
-    "args": ["-y", "argocd-mcp@latest", "stdio"],
-    "env": {
-      "ARGOCD_SERVER": "${ARGOCD_SERVER}",
-      "ARGOCD_AUTH_TOKEN": "${ARGOCD_AUTH_TOKEN}"
-    }
-  },
-  "sequential-thinking": {
-    "command": "npx",
-    "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
-  }
-}
-```
-
-#### Installation Steps
-
-1. **Ask which servers to install** (unless --server specified):
-   - Use AskUserQuestion with multi-select
-   - Show descriptions and required env vars
-   - Suggest based on project type (e.g., playwright if `playwright.config.*` exists)
-
-2. **Create/update `.mcp.json`**:
-   - If missing, create new file with mcpServers object
-   - If exists, merge new servers (preserve existing)
-   - Use proper JSON formatting
-
-3. **Handle environment variables**:
-   - Document required variables for each server
-   - Check if set in `~/.api_tokens` or project `.env`
-   - Warn about missing required variables
-
-4. **Git tracking recommendation**:
-   - Personal projects → recommend `.gitignore` (keep API configs local)
-   - Team projects → recommend tracking (share MCP setup with team)
-
-### Phase 6: Environment Variable Reference
-
-| Server | Required Variables | Where to Set |
-|--------|-------------------|--------------|
-| `github` | `GITHUB_TOKEN` | `~/.api_tokens` |
-| `podio-mcp` | `PODIO_CLIENT_ID`, `PODIO_CLIENT_SECRET`, `PODIO_APP_ID`, `PODIO_APP_TOKEN` | project `.env` |
-| `argocd-mcp` | `ARGOCD_SERVER`, `ARGOCD_AUTH_TOKEN` | project `.env` |
-| `sentry` | `SENTRY_AUTH_TOKEN` | `~/.api_tokens` |
-
-**Never hardcode tokens in `.mcp.json`** - always use `${VAR_NAME}` references.
-
-### Phase 7: Standards Tracking
-
-Update `.project-standards.yaml`:
-
-```yaml
-standards_version: "2025.1"
-last_configured: "[timestamp]"
-components:
-  mcp: "2025.1"
-  mcp_servers: ["github", "playwright", "context7"]
-  mcp_project_scoped: true
-```
-
-### Phase 8: Final Report
-
-```
-MCP Configuration Complete
-==========================
-
-Servers Added:
-  ✅ github (requires GITHUB_TOKEN)
-  ✅ playwright
-  ✅ context7
-
-Environment Variables:
-  ⚠️ Set GITHUB_TOKEN in ~/.api_tokens or project .env
-
-Git Tracking:
-  ✅ .mcp.json added to .gitignore
-
-Next Steps:
-  1. Restart Claude Code to load new MCP servers
-  2. Set required environment variables
-  3. Verify servers are loaded (check status bar)
-
-Tip: Run /configure:mcp again to add more servers anytime.
-```
+| Context | Command |
+|---------|---------|
+| Quick status check | `jq -c '.mcpServers \| keys' .mcp.json 2>/dev/null` |
+| Validate JSON syntax | `jq empty .mcp.json 2>&1` |
+| List environment variables needed | `jq -r '.mcpServers[] \| .env // {} \| keys[]' .mcp.json 2>/dev/null \| sort -u` |
+| Check if server installed | `jq -e '.mcpServers.context7' .mcp.json >/dev/null 2>&1 && echo "installed" \|\| echo "missing"` |
+| Core servers install (automated) | `/configure:mcp --core --fix` |
+| Specific server install (automated) | `/configure:mcp --server context7 --fix` |
+| Check-only mode (CI/reporting) | `/configure:mcp --check-only` |
 
 ## Flags
 
@@ -261,34 +129,9 @@ Tip: Run /configure:mcp again to add more servers anytime.
 | `--core` | Install all core servers (context7, sequential-thinking) |
 | `--server <name>` | Install specific server (can be repeated) |
 
-## Examples
-
-```bash
-# Check current MCP configuration
-/configure:mcp --check-only
-
-# Interactive server installation
-/configure:mcp
-
-# Install all core servers (recommended for new projects)
-/configure:mcp --core
-
-# Install specific servers automatically
-/configure:mcp --fix --server github --server playwright
-
-# Quick add github server
-/configure:mcp --server github
-```
-
 ## Error Handling
 
 - **Invalid `.mcp.json`**: Offer to backup and replace with valid template
 - **Server already installed**: Skip with informational message
-- **Missing env var**: Warn but don't fail (server may work with defaults)
-- **Unknown server**: Error with suggestion to check registry
-
-## See Also
-
-- `/configure:all` - Run all compliance checks
-- **MCP Management skill** - Intelligent server suggestions based on project
-- **Dotfiles registry**: `~/.local/share/chezmoi/.chezmoidata.toml`
+- **Missing env var**: Warn but continue (server may work with defaults)
+- **Unknown server**: Report error with available server names

@@ -1,6 +1,6 @@
 ---
 model: haiku
-name: Bun Development
+name: bun-development
 description: Bun runtime for running scripts, testing, building, and project initialization - optimized flags for fast feedback and minimal output.
 allowed-tools: Bash, BashOutput, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2025-12-20

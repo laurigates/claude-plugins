@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.4.5](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.4.4...tools-plugin-v2.4.5) (2026-02-12)
+
+
+### Bug Fixes
+
+* standardize skill name fields to kebab-case across all plugins ([72c0f83](https://github.com/laurigates/claude-plugins/commit/72c0f837a1b07004850c5906a30d619a79098f69))
+
+## [2.4.4](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.4.3...tools-plugin-v2.4.4) (2026-02-09)
+
+
+### Code Refactoring
+
+* reframe negative guidance as positive guidance across skills ([7e755ee](https://github.com/laurigates/claude-plugins/commit/7e755ee1c32c39c124f3204a0d0a8d1d770e1573))
+
+## [2.4.3](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.4.2...tools-plugin-v2.4.3) (2026-02-08)
+
+
+### Bug Fixes
+
+* update skill review dates to trigger release sync ([#489](https://github.com/laurigates/claude-plugins/issues/489)) ([ca20d06](https://github.com/laurigates/claude-plugins/commit/ca20d0667baaa31dfa805c7dc775a1828c515223))
+
 ## [2.4.2](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.4.1...tools-plugin-v2.4.2) (2026-02-06)
 
 

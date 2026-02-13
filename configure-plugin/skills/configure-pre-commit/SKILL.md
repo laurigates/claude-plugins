@@ -1,7 +1,7 @@
 ---
 model: opus
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-10
 reviewed: 2025-12-16
 description: Check and configure pre-commit hooks for project standards
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -13,44 +13,63 @@ name: configure-pre-commit
 
 Check and configure pre-commit hooks against project standards.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up or validating pre-commit hooks | Project doesn't use pre-commit framework (use git hooks directly) |
+| Checking compliance with project standards | Just running hooks manually (use `pre-commit run` command) |
+| Installing project-type-specific hooks | Hooks are already properly configured |
+| Migrating to pre-commit framework | Simple project with no quality checks needed |
+| Updating hook configurations for detected tools | Need to disable pre-commit entirely |
+
 ## Context
 
-This command validates `.pre-commit-config.yaml` against project standards and optionally applies fixes.
+- Pre-commit config: !`test -f .pre-commit-config.yaml && echo "EXISTS" || echo "MISSING"`
+- Project standards: !`test -f .project-standards.yaml && echo "EXISTS" || echo "MISSING"`
+- Project type in standards: !`head -20 .project-standards.yaml 2>/dev/null | grep -m1 "^project_type:" | sed 's/^[^:]*:[[:space:]]*//'`
+- Has terraform: !`find . -maxdepth 2 \( -name '*.tf' -o -type d -name 'terraform' \) 2>/dev/null | head -1`
+- Has helm: !`find . -maxdepth 2 -type d -name 'helm' 2>/dev/null | head -1`
+- Has package.json: !`test -f package.json && echo "EXISTS" || echo "MISSING"`
+- Has pyproject.toml: !`test -f pyproject.toml && echo "EXISTS" || echo "MISSING"`
 
-**Skills referenced**: `pre-commit-standards`
+## Parameters
 
-## Version Checking
+Parse from `$ARGUMENTS`:
 
-**CRITICAL**: Before flagging outdated hook versions, verify latest releases:
+- `--check-only`: Report status without offering fixes
+- `--fix`: Apply all fixes automatically without prompting
+- `--type <type>`: Override project type detection (`frontend`, `infrastructure`, `python`)
 
-1. **pre-commit-hooks**: Check [GitHub releases](https://github.com/pre-commit/pre-commit-hooks/releases)
-2. **conventional-pre-commit**: Check [GitHub releases](https://github.com/compilerla/conventional-pre-commit/releases)
-3. **biome**: Check [GitHub releases](https://github.com/biomejs/biome/releases)
-4. **ruff-pre-commit**: Check [GitHub releases](https://github.com/astral-sh/ruff-pre-commit/releases)
-5. **detect-secrets**: Check [GitHub releases](https://github.com/Yelp/detect-secrets/releases)
+## Execution
 
-Use WebSearch or WebFetch to verify current versions before reporting outdated hooks.
+Execute this pre-commit compliance check:
 
-## Workflow
+### Step 1: Detect project type
 
-### Phase 1: Project Type Detection
-
-Determine project type to select appropriate standards:
-
-1. Check for `.project-standards.yaml` with `project_type` field
+1. Read `.project-standards.yaml` for `project_type` field if it exists
 2. If not found, auto-detect:
    - **infrastructure**: Has `terraform/`, `helm/`, `argocd/`, or `*.tf` files
    - **frontend**: Has `package.json` with vue/react dependencies
    - **python**: Has `pyproject.toml` or `requirements.txt`
-3. Allow override via `--type` flag
+3. Apply `--type` flag override if provided
 
-### Phase 2: Configuration Detection
+### Step 2: Check configuration file
 
-1. Check if `.pre-commit-config.yaml` exists
-2. If missing: Report FAIL status, offer to create from template
-3. If exists: Read and parse configuration
+1. If `.pre-commit-config.yaml` is missing: report FAIL, offer to create from template
+2. If it exists: read and parse the configuration
 
-### Phase 3: Compliance Analysis
+### Step 3: Verify hook versions against latest releases
+
+**CRITICAL**: Before flagging outdated hooks, verify latest releases using WebSearch or WebFetch:
+
+1. **pre-commit-hooks**: [GitHub releases](https://github.com/pre-commit/pre-commit-hooks/releases)
+2. **conventional-pre-commit**: [GitHub releases](https://github.com/compilerla/conventional-pre-commit/releases)
+3. **biome**: [GitHub releases](https://github.com/biomejs/biome/releases)
+4. **ruff-pre-commit**: [GitHub releases](https://github.com/astral-sh/ruff-pre-commit/releases)
+5. **detect-secrets**: [GitHub releases](https://github.com/Yelp/detect-secrets/releases)
+
+### Step 4: Analyze compliance
 
 Compare existing configuration against project standards (from `pre-commit-standards` skill):
 
@@ -72,53 +91,58 @@ Compare existing configuration against project standards (from `pre-commit-stand
 - `ruff-pre-commit` v0.8.4+ (ruff, ruff-format)
 - `detect-secrets` v1.5.0+
 
-### Phase 4: Report Generation
+### Step 5: Generate compliance report
 
-Generate compliance report:
+Print a report in this format:
 
 ```
 Pre-commit Compliance Report
 ================================
-Project Type: frontend (detected)
-Config File: .pre-commit-config.yaml (found)
+Project Type: [type] ([detected|override])
+Config File: .pre-commit-config.yaml ([found|missing])
 
 Hook Status:
-  pre-commit-hooks     v5.0.0   ✅ PASS
-  conventional-pre-commit v3.6.0   ⚠️ WARN (standard: v4.3.0)
-  biome                v0.4.0   ✅ PASS
-  helmlint             v0.1.23  ⚠️ WARN (standard: v0.1.29)
+  [hook-name]     [version]   [PASS|WARN|FAIL] ([details])
 
 Outdated Hooks:
-  - conventional-pre-commit: v3.6.0 → v4.3.0
-  - gruntwork/helmlint: v0.1.23 → v0.1.29
+  - [hook]: [current] -> [standard]
 
-Overall: 2 issues found
+Overall: [N] issues found
 ```
 
-### Phase 5: Configuration (If Requested)
+### Step 6: Apply fixes (if requested)
 
-If `--fix` flag or user confirms:
+If `--fix` flag is set or user confirms:
 
 1. **Missing config file**: Create from standard template for detected project type
 2. **Missing hooks**: Add required hooks with standard versions
 3. **Outdated versions**: Update `rev:` values to standard versions
 4. **Missing hook types**: Add `default_install_hook_types` with `pre-commit` and `commit-msg`
 
-After modification:
-- Run `pre-commit install --install-hooks` to install hooks
-- Update `.project-standards.yaml` with compliance status
+After modification, run `pre-commit install --install-hooks` to install hooks.
 
-### Phase 6: Standards Tracking
+### Step 7: Update standards tracking
 
 Update or create `.project-standards.yaml`:
 
 ```yaml
 standards_version: "2025.1"
-project_type: "frontend"
-last_configured: "2025-11-28"
+project_type: "[detected]"
+last_configured: "[timestamp]"
 components:
   pre-commit: "2025.1"
 ```
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Check if pre-commit installed | `command -v pre-commit >/dev/null 2>&1 && echo "installed" \|\| echo "missing"` |
+| Validate config syntax | `pre-commit validate-config .pre-commit-config.yaml 2>&1` |
+| List configured hooks | `grep -E '^\s+- id:' .pre-commit-config.yaml 2>/dev/null \| sed 's/.*id:[[:space:]]*//'` |
+| Check hook versions | `pre-commit autoupdate --freeze 2>&1` |
+| Quick compliance check | `/configure:pre-commit --check-only` |
+| Auto-fix configuration | `/configure:pre-commit --fix` |
 
 ## Flags
 
@@ -128,27 +152,11 @@ components:
 | `--fix` | Apply all fixes automatically without prompting |
 | `--type <type>` | Override project type detection (frontend, infrastructure, python) |
 
-## Examples
-
-```bash
-# Check compliance and offer fixes
-/configure:pre-commit
-
-# Check only, no modifications
-/configure:pre-commit --check-only
-
-# Auto-fix all issues
-/configure:pre-commit --fix
-
-# Force infrastructure type
-/configure:pre-commit --type infrastructure
-```
-
 ## Error Handling
 
 - **No git repository**: Warn but continue (pre-commit still useful)
 - **Invalid YAML**: Report parse error, offer to replace with template
-- **Unknown hook repos**: Skip (don't remove custom hooks)
+- **Unknown hook repos**: Skip (do not remove custom hooks)
 - **Permission errors**: Report and suggest manual fix
 
 ## See Also

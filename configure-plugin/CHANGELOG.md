@@ -1,5 +1,47 @@
 # Changelog
 
+## [1.7.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.6.6...configure-plugin-v1.7.0) (2026-02-11)
+
+
+### Features
+
+* add required quality sections to refactored skills ([#544](https://github.com/laurigates/claude-plugins/issues/544)) ([342af54](https://github.com/laurigates/claude-plugins/commit/342af54af0f81fa50d239d06b32b353ddb7335fc))
+
+## [1.7.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.6.6...configure-plugin-v1.7.0) (2026-02-11)
+
+
+### Features
+
+* add required quality sections to refactored skills ([#544](https://github.com/laurigates/claude-plugins/issues/544)) ([342af54](https://github.com/laurigates/claude-plugins/commit/342af54af0f81fa50d239d06b32b353ddb7335fc))
+
+## [1.7.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.6.6...configure-plugin-v1.7.0) (2026-02-11)
+
+
+### Features
+
+* add required quality sections to refactored skills ([#544](https://github.com/laurigates/claude-plugins/issues/544)) ([342af54](https://github.com/laurigates/claude-plugins/commit/342af54af0f81fa50d239d06b32b353ddb7335fc))
+
+## [1.6.6](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.6.5...configure-plugin-v1.6.6) (2026-02-09)
+
+
+### Bug Fixes
+
+* **configure-plugin:** add cclsp server configuration to configure-mcp skill ([c9bfcd0](https://github.com/laurigates/claude-plugins/commit/c9bfcd0fc81a75206ec593ccbf7c1b01df8e4df3))
+
+## [1.6.5](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.6.4...configure-plugin-v1.6.5) (2026-02-08)
+
+
+### Code Refactoring
+
+* reframe negative guidance as positive guidance across skills ([7e755ee](https://github.com/laurigates/claude-plugins/commit/7e755ee1c32c39c124f3204a0d0a8d1d770e1573))
+
+## [1.6.4](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.6.3...configure-plugin-v1.6.4) (2026-02-08)
+
+
+### Bug Fixes
+
+* update skill review dates to trigger release sync ([#489](https://github.com/laurigates/claude-plugins/issues/489)) ([ca20d06](https://github.com/laurigates/claude-plugins/commit/ca20d0667baaa31dfa805c7dc775a1828c515223))
+
 ## [1.6.3](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.6.2...configure-plugin-v1.6.3) (2026-02-06)
 
 

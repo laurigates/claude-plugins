@@ -1,14 +1,33 @@
 ---
 model: haiku
 created: 2025-12-17
-modified: 2026-02-06
-reviewed: 2025-12-17
-description: "Manage modular rules in .claude/rules/ directory"
+modified: 2026-02-09
+reviewed: 2026-02-09
+description: "Manage modular rules in .claude/rules/ directory. Supports path-specific rules with glob patterns, brace expansion, and user-level rules."
 allowed-tools: Read, Write, Edit, Bash, Glob, AskUserQuestion
 name: blueprint-rules
 ---
 
 Manage modular rules for the project. Rules are markdown files in `.claude/rules/` that provide context-specific instructions to Claude.
+
+## When to Use This Skill
+
+| Use this skill when... | Use alternative when... |
+|------------------------|-------------------------|
+| Need to create/edit modular rules in .claude/rules/ | Use `/blueprint:claude-md` for single-file project instructions |
+| Want to list all project and user-level rules | Use `/blueprint:generate-rules` to auto-generate from PRDs |
+| Need to add path-specific rules for certain file types | Just need to view CLAUDE.md structure |
+| Managing user-level rules (~/.claude/rules/) | Need to sync rules with existing CLAUDE.md |
+
+## Rules Hierarchy (precedence low → high)
+
+| Level | Location | Scope |
+|-------|----------|-------|
+| User-level | `~/.claude/rules/*.md` | Personal rules across all projects |
+| Project rules | `.claude/rules/*.md` (no `paths`) | All files in this project |
+| Path-specific rules | `.claude/rules/*.md` (with `paths`) | Only matched files |
+
+Project rules override user-level rules. Path-specific rules load conditionally when working on matching files.
 
 **Steps**:
 
@@ -28,30 +47,36 @@ Manage modular rules for the project. Rules are markdown files in `.claude/rules
    ```
    question: "What would you like to do with modular rules?"
    options:
-     - "List existing rules" → show current rules
+     - "List existing rules" → show project and user-level rules
      - "Add a new rule" → create new rule file
      - "Edit existing rule" → modify rule
      - "Generate rules from PRDs" → auto-generate from requirements
+     - "Manage user-level rules" → personal rules in ~/.claude/rules/
      - "Sync rules with CLAUDE.md" → bidirectional sync
      - "Validate rules" → check for issues
    ```
 
 3. **List existing rules**:
    - Scan `.claude/rules/` recursively for `.md` files
+   - Scan `~/.claude/rules/` for user-level rules
    - Parse frontmatter for `paths` field (if scoped)
    - Display:
      ```
      📜 Modular Rules
 
-     Global Rules (apply to all files):
+     User-Level Rules (~/.claude/rules/ — personal, all projects):
+     - preferences.md - Personal coding style
+     - workflow.md - Personal workflow habits
+
+     Project Global Rules (apply to all files):
      - development.md - TDD workflow and conventions
      - testing.md - Test requirements
 
-     Scoped Rules (apply to specific paths):
-     - frontend/react.md - paths: ["src/components/**/*.tsx"]
+     Path-Specific Rules (apply to specific paths):
+     - frontend/react.md - paths: ["src/components/**/*.{ts,tsx}"]
      - backend/api.md - paths: ["src/api/**/*.ts"]
 
-     Total: 4 rules
+     Total: 6 rules (2 user-level, 2 global, 2 path-specific)
      ```
 
 4. **Add a new rule** (use AskUserQuestion):
@@ -92,12 +117,11 @@ Manage modular rules for the project. Rules are markdown files in `.claude/rules
    {Code examples if applicable}
    ```
 
-   **Scoped rule template**:
+   **Scoped rule template** (with `paths` frontmatter):
    ```markdown
    ---
    paths:
-     - "src/components/**/*.tsx"
-     - "src/components/**/*.ts"
+     - "src/components/**/*.{ts,tsx}"
    ---
 
    # {Rule Name}
@@ -109,6 +133,9 @@ Manage modular rules for the project. Rules are markdown files in `.claude/rules
    - {Requirement 1}
    - {Requirement 2}
    ```
+
+   Brace expansion is supported: `*.{ts,tsx}` matches both `.ts` and `.tsx` files.
+   Glob patterns follow standard syntax: `**` for recursive, `*` for single level.
 
 6. **Generate rules from PRDs**:
    - Read all PRDs in `docs/prds/`
@@ -189,8 +216,9 @@ Manage modular rules for the project. Rules are markdown files in `.claude/rules
 
 | Rule Type | Suggested Path | Scope Pattern |
 |-----------|---------------|---------------|
-| React components | `rules/frontend/react.md` | `["**/*.tsx", "**/*.jsx"]` |
-| API handlers | `rules/backend/api.md` | `["src/api/**/*", "src/routes/**/*"]` |
-| Database models | `rules/backend/models.md` | `["src/models/**/*", "src/db/**/*"]` |
-| Test files | `rules/testing.md` | `["**/*.test.*", "**/*.spec.*"]` |
+| React components | `rules/frontend/react.md` | `["**/*.{tsx,jsx}"]` |
+| API handlers | `rules/backend/api.md` | `["src/{api,routes}/**/*"]` |
+| Database models | `rules/backend/models.md` | `["src/{models,db}/**/*"]` |
+| Test files | `rules/testing.md` | `["**/*.{test,spec}.*"]` |
 | Documentation | `rules/docs.md` | `["**/*.md", "docs/**/*"]` |
+| Config files | `rules/config.md` | `["*.config.{js,ts,mjs}", ".env*"]` |

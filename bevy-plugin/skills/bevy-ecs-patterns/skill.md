@@ -3,7 +3,7 @@ model: opus
 created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
-name: Bevy ECS Patterns
+name: bevy-ecs-patterns
 description: Advanced Bevy ECS patterns including complex queries, system scheduling, change detection, entity relationships, and performance optimization. Use when working on advanced Bevy game architecture, optimizing ECS performance, or implementing complex game systems.
 allowed-tools: Glob, Grep, Read, Bash(cargo *), Edit, Write, TodoWrite, WebFetch, WebSearch, BashOutput, KillShell
 ---
@@ -416,7 +416,7 @@ fn spawn_wave(mut commands: Commands) {
 **System Design**
 - Keep systems small and focused
 - Use events for cross-system communication
-- Avoid storing `Entity` IDs in components when possible
+- Use queries to look up entities dynamically rather than storing `Entity` IDs in components
 - Use run conditions to skip unnecessary work
 
 **Memory Layout**

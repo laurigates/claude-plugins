@@ -2,7 +2,7 @@
 model: haiku
 created: 2025-12-16
 modified: 2025-12-16
-reviewed: 2025-12-16
+reviewed: 2026-02-08
 name: api-testing
 description: |
   HTTP API testing for TypeScript (Supertest) and Python (httpx, pytest). Covers
@@ -690,7 +690,7 @@ def test_response_time(client):
 - Reset database between tests
 - Use transactions that rollback
 - Seed minimal test data
-- Avoid depending on test execution order
+- Ensure each test is independent and self-contained
 
 **Assertions**
 - Validate status codes first

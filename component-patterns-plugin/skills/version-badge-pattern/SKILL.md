@@ -1,6 +1,6 @@
 ---
 model: haiku
-name: Version Badge Pattern
+name: version-badge-pattern
 description: |
   Implement a version badge UI component showing build version, git commit, and
   recent changelog in a tooltip. Use when adding version visibility to applications
@@ -9,7 +9,7 @@ description: |
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2025-02-03
 modified: 2025-02-03
-reviewed: 2025-02-03
+reviewed: 2026-02-08
 ---
 
 # Version Badge Pattern

@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-11
 reviewed: 2025-12-16
 description: Check and configure code coverage thresholds and reporting
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -13,9 +13,33 @@ name: configure-coverage
 
 Check and configure code coverage thresholds and reporting for test frameworks.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up coverage thresholds for Vitest, Jest, pytest, or Rust | Running tests with coverage (`/test:coverage`) |
+| Configuring coverage reporters (text, JSON, HTML, lcov) | Configuring the test framework itself (`/configure:tests`) |
+| Adding Codecov or Coveralls integration to CI/CD | Analyzing test failures (test-runner agent) |
+| Auditing coverage configuration compliance across a project | Writing individual test cases |
+| Adjusting coverage threshold percentages | Configuring general CI/CD workflows (`/configure:workflows`) |
+
 ## Context
 
-This command validates coverage configuration and sets up reporting for CI/CD integration.
+- Project root: !`pwd`
+- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' \) 2>/dev/null`
+- Vitest config: !`find . -maxdepth 1 -name 'vitest.config.*' 2>/dev/null`
+- Jest config: !`find . -maxdepth 1 -name 'jest.config.*' 2>/dev/null`
+- Coverage dir: !`find . -maxdepth 1 -type d -name 'coverage' 2>/dev/null`
+- Codecov config: !`find . -maxdepth 1 \( -name 'codecov.yml' -o -name '.codecov.yml' \) 2>/dev/null`
+- Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml' 2>/dev/null`
+
+## Parameters
+
+Parse from command arguments:
+
+- `--check-only`: Report compliance status without modifications (CI/CD mode)
+- `--fix`: Apply fixes automatically without prompting
+- `--threshold <percentage>`: Set coverage threshold (default: 80)
 
 **Default threshold**: 80% (lines, branches, functions, statements)
 
@@ -25,22 +49,13 @@ This command validates coverage configuration and sets up reporting for CI/CD in
 - **pytest**: `pytest-cov` plugin
 - **Rust**: `cargo-llvm-cov` or `cargo-tarpaulin`
 
-## Version Checking
+## Execution
 
-**CRITICAL**: Before configuring coverage tools, verify latest versions:
+Execute this code coverage compliance check:
 
-1. **@vitest/coverage-v8**: Check [npm](https://www.npmjs.com/package/@vitest/coverage-v8)
-2. **pytest-cov**: Check [PyPI](https://pypi.org/project/pytest-cov/)
-3. **cargo-llvm-cov**: Check [crates.io](https://crates.io/crates/cargo-llvm-cov)
-4. **codecov**: Check [GitHub releases](https://github.com/codecov/codecov-action/releases)
+### Step 1: Detect test framework and coverage configuration
 
-Use WebSearch or WebFetch to verify current versions before configuring coverage tools.
-
-## Workflow
-
-### Phase 1: Framework Detection
-
-Detect test framework and coverage configuration:
+Check for framework indicators:
 
 | Indicator | Framework | Coverage Tool |
 |-----------|-----------|---------------|
@@ -49,9 +64,11 @@ Detect test framework and coverage configuration:
 | `pyproject.toml` [tool.coverage] | pytest | pytest-cov |
 | `.cargo/config.toml` with coverage | Rust | cargo-llvm-cov |
 
-### Phase 2: Current State Analysis
+Use WebSearch or WebFetch to verify latest versions of coverage tools before configuring.
 
-For each detected framework, check coverage configuration:
+### Step 2: Analyze current coverage state
+
+For the detected framework, check configuration completeness:
 
 **Vitest:**
 - [ ] Coverage provider configured (`v8` or `istanbul`)
@@ -65,7 +82,6 @@ For each detected framework, check coverage configuration:
 - [ ] `coverageProvider` set (`v8` or `babel`)
 - [ ] `collectCoverageFrom` patterns configured
 - [ ] `coverageThresholds` configured
-- [ ] `coverageDirectory` specified
 - [ ] `coverageReporters` configured
 
 **pytest:**
@@ -73,18 +89,15 @@ For each detected framework, check coverage configuration:
 - [ ] `[tool.coverage.run]` section exists
 - [ ] `[tool.coverage.report]` section exists
 - [ ] Coverage threshold configured (`--cov-fail-under`)
-- [ ] Source directories specified
-- [ ] Exclusions configured
 
 **Rust (cargo-llvm-cov):**
 - [ ] `cargo-llvm-cov` installed
 - [ ] Coverage configuration in workspace
 - [ ] HTML/LCOV output configured
-- [ ] Exclusions configured
 
-### Phase 3: Compliance Report
+### Step 3: Generate compliance report
 
-Generate formatted compliance report:
+Print a formatted compliance report:
 
 ```
 Code Coverage Compliance Report
@@ -93,391 +106,36 @@ Project: [name]
 Framework: [Vitest 2.x | pytest 8.x | cargo-llvm-cov 0.6.x]
 
 Coverage Configuration:
-  Provider                @vitest/coverage-v8        [✅ CONFIGURED | ❌ MISSING]
-  Reporters               text, json, html, lcov     [✅ ALL | ⚠️ PARTIAL]
-  Output directory        coverage/                  [✅ CONFIGURED | ⚠️ DEFAULT]
-  Exclusions              node_modules, dist, tests  [✅ CONFIGURED | ⚠️ INCOMPLETE]
+  Provider                @vitest/coverage-v8        [CONFIGURED | MISSING]
+  Reporters               text, json, html, lcov     [ALL | PARTIAL]
+  Output directory        coverage/                  [CONFIGURED | DEFAULT]
+  Exclusions              node_modules, dist, tests  [CONFIGURED | INCOMPLETE]
 
 Thresholds:
-  Lines                   80%                        [✅ PASS | ⚠️ LOW | ❌ NOT SET]
-  Branches                80%                        [✅ PASS | ⚠️ LOW | ❌ NOT SET]
-  Functions               80%                        [✅ PASS | ⚠️ LOW | ❌ NOT SET]
-  Statements              80%                        [✅ PASS | ⚠️ LOW | ❌ NOT SET]
-
-Current Coverage (if available):
-  Lines                   85%                        [✅ ABOVE THRESHOLD]
-  Branches                78%                        [⚠️ BELOW THRESHOLD]
-  Functions               92%                        [✅ ABOVE THRESHOLD]
-  Statements              85%                        [✅ ABOVE THRESHOLD]
+  Lines                   80%                        [PASS | LOW | NOT SET]
+  Branches                80%                        [PASS | LOW | NOT SET]
+  Functions               80%                        [PASS | LOW | NOT SET]
+  Statements              80%                        [PASS | LOW | NOT SET]
 
 CI/CD Integration:
-  Coverage upload         codecov/coveralls          [✅ CONFIGURED | ❌ MISSING]
-  Artifact upload         coverage reports           [✅ CONFIGURED | ⚠️ MISSING]
+  Coverage upload         codecov/coveralls          [CONFIGURED | MISSING]
+  Artifact upload         coverage reports           [CONFIGURED | MISSING]
 
 Overall: [X issues found]
-
-Recommendations:
-  - Increase branch coverage to meet 80% threshold
-  - Add lcov reporter for better CI integration
-  - Configure coverage upload to codecov
 ```
 
-### Phase 4: Configuration (if --fix or user confirms)
+If `--check-only`, stop here.
 
-#### Vitest Coverage Configuration
+### Step 4: Configure coverage (if --fix or user confirms)
 
-**Install coverage provider:**
-```bash
-npm install --save-dev @vitest/coverage-v8
-# or for Istanbul
-npm install --save-dev @vitest/coverage-istanbul
-```
+Apply coverage configuration based on detected framework. Use templates from [REFERENCE.md](REFERENCE.md):
 
-**Update `vitest.config.ts`:**
-```typescript
-import { defineConfig } from 'vitest/config';
+1. **Install coverage provider** (e.g., `@vitest/coverage-v8`, `pytest-cov`)
+2. **Update config file** with thresholds, reporters, exclusions
+3. **Add scripts** to package.json or pyproject.toml
+4. **Configure CI/CD** with Codecov upload and artifact storage
 
-export default defineConfig({
-  test: {
-    coverage: {
-      // Provider: v8 (faster) or istanbul (more accurate)
-      provider: 'v8',
-
-      // Reporters
-      reporter: [
-        'text',           // Console output
-        'json',           // JSON report for tools
-        'html',           // HTML report for browsing
-        'lcov',           // LCOV for CI/CD (codecov, coveralls)
-      ],
-
-      // Output directory
-      reportsDirectory: './coverage',
-
-      // Thresholds (fail tests if below)
-      thresholds: {
-        lines: 80,
-        functions: 80,
-        branches: 80,
-        statements: 80,
-      },
-
-      // Files to include in coverage
-      include: ['src/**/*.{js,ts,jsx,tsx}'],
-
-      // Files to exclude
-      exclude: [
-        'node_modules/',
-        'dist/',
-        'tests/',
-        '**/*.config.*',
-        '**/*.d.ts',
-        '**/*.test.*',
-        '**/*.spec.*',
-        '**/types/',
-        '**/__tests__/',
-      ],
-
-      // Clean coverage directory before running
-      clean: true,
-
-      // All files should be shown, even if not tested
-      all: true,
-
-      // Skip full coverage check (use thresholds instead)
-      skipFull: false,
-    },
-  },
-});
-```
-
-**Add coverage scripts to `package.json`:**
-```json
-{
-  "scripts": {
-    "test:coverage": "vitest run --coverage",
-    "coverage:report": "open coverage/index.html",
-    "coverage:check": "vitest run --coverage --reporter=json"
-  }
-}
-```
-
-#### Jest Coverage Configuration
-
-**Update `jest.config.ts`:**
-```typescript
-import type { Config } from 'jest';
-
-const config: Config = {
-  // Enable coverage collection
-  collectCoverage: true,
-
-  // Coverage provider (v8 is faster, babel is more compatible)
-  coverageProvider: 'v8',
-
-  // Files to collect coverage from
-  collectCoverageFrom: [
-    'src/**/*.{js,jsx,ts,tsx}',
-    '!src/**/*.d.ts',
-    '!src/**/*.stories.*',
-    '!src/**/__tests__/**',
-    '!src/**/types/**',
-  ],
-
-  // Coverage directory
-  coverageDirectory: 'coverage',
-
-  // Coverage reporters
-  coverageReporters: [
-    'text',
-    'text-summary',
-    'json',
-    'html',
-    'lcov',
-  ],
-
-  // Coverage thresholds
-  coverageThresholds: {
-    global: {
-      lines: 80,
-      functions: 80,
-      branches: 80,
-      statements: 80,
-    },
-    // Per-file thresholds
-    './src/critical/**/*.ts': {
-      lines: 90,
-      functions: 90,
-      branches: 90,
-      statements: 90,
-    },
-  },
-
-  // Path patterns to skip for coverage
-  coveragePathIgnorePatterns: [
-    '/node_modules/',
-    '/dist/',
-    '/tests/',
-    '.config.js',
-  ],
-};
-
-export default config;
-```
-
-#### pytest Coverage Configuration
-
-**Install pytest-cov:**
-```bash
-uv add --group dev pytest-cov
-```
-
-**Update `pyproject.toml`:**
-```toml
-[tool.pytest.ini_options]
-addopts = [
-    "-v",
-    "--cov=src",
-    "--cov-report=term-missing",
-    "--cov-report=html",
-    "--cov-report=xml",
-    "--cov-report=json",
-    "--cov-fail-under=80",
-]
-
-[tool.coverage.run]
-source = ["src"]
-branch = true
-parallel = true
-omit = [
-    "*/tests/*",
-    "*/migrations/*",
-    "*/__init__.py",
-    "*/config.py",
-    "*/settings.py",
-]
-
-[tool.coverage.report]
-# Precision for coverage percentage
-precision = 2
-
-# Show missing line numbers
-show_missing = true
-
-# Fail if below threshold
-fail_under = 80
-
-# Lines to exclude from coverage
-exclude_lines = [
-    "pragma: no cover",
-    "def __repr__",
-    "def __str__",
-    "if __name__ == .__main__.:",
-    "raise AssertionError",
-    "raise NotImplementedError",
-    "if 0:",
-    "if False:",
-    "if TYPE_CHECKING:",
-    "@abstractmethod",
-    "@overload",
-]
-
-[tool.coverage.html]
-directory = "coverage/html"
-
-[tool.coverage.xml]
-output = "coverage/coverage.xml"
-
-[tool.coverage.json]
-output = "coverage/coverage.json"
-```
-
-#### Rust Coverage Configuration
-
-**Install cargo-llvm-cov:**
-```bash
-cargo install cargo-llvm-cov --locked
-```
-
-**Create `.cargo/config.toml`:**
-```toml
-[alias]
-coverage = "llvm-cov --html --open"
-coverage-lcov = "llvm-cov --lcov --output-path lcov.info"
-```
-
-**Add to `Cargo.toml`:**
-```toml
-[package.metadata.coverage]
-# Exclude files from coverage
-exclude = [
-    "tests/*",
-    "benches/*",
-    "examples/*",
-]
-```
-
-**Run coverage:**
-```bash
-# Generate HTML report
-cargo coverage
-
-# Generate LCOV for CI
-cargo coverage-lcov
-```
-
-### Phase 5: CI/CD Integration
-
-#### GitHub Actions - Vitest/Jest
-
-**Add to workflow:**
-```yaml
-- name: Run tests with coverage
-  run: npm run test:coverage
-
-- name: Upload coverage to Codecov
-  uses: codecov/codecov-action@v4
-  with:
-    token: ${{ secrets.CODECOV_TOKEN }}
-    files: ./coverage/lcov.info
-    flags: unittests
-    name: codecov-umbrella
-    fail_ci_if_error: true
-
-- name: Upload coverage artifacts
-  uses: actions/upload-artifact@v4
-  if: always()
-  with:
-    name: coverage-report
-    path: coverage/
-```
-
-#### GitHub Actions - pytest
-
-**Add to workflow:**
-```yaml
-- name: Run tests with coverage
-  run: uv run pytest --cov --cov-report=xml --cov-report=html
-
-- name: Upload coverage to Codecov
-  uses: codecov/codecov-action@v4
-  with:
-    token: ${{ secrets.CODECOV_TOKEN }}
-    files: ./coverage/coverage.xml
-    flags: unittests
-    name: codecov-umbrella
-    fail_ci_if_error: true
-
-- name: Upload coverage artifacts
-  uses: actions/upload-artifact@v4
-  if: always()
-  with:
-    name: coverage-report
-    path: coverage/
-```
-
-#### GitHub Actions - Rust
-
-**Add to workflow:**
-```yaml
-- name: Install cargo-llvm-cov
-  uses: taiki-e/install-action@cargo-llvm-cov
-
-- name: Generate coverage
-  run: cargo llvm-cov --all-features --lcov --output-path lcov.info
-
-- name: Upload coverage to Codecov
-  uses: codecov/codecov-action@v4
-  with:
-    token: ${{ secrets.CODECOV_TOKEN }}
-    files: ./lcov.info
-    flags: unittests
-    fail_ci_if_error: true
-```
-
-### Phase 6: Coverage Badges
-
-**Add to README.md:**
-
-**Codecov:**
-```markdown
-[![codecov](https://codecov.io/gh/USERNAME/REPO/branch/main/graph/badge.svg)](https://codecov.io/gh/USERNAME/REPO)
-```
-
-**Coveralls:**
-```markdown
-[![Coverage Status](https://coveralls.io/repos/github/USERNAME/REPO/badge.svg?branch=main)](https://coveralls.io/github/USERNAME/REPO?branch=main)
-```
-
-### Phase 7: Coverage Reporting Tools
-
-**Set up Codecov:**
-
-1. **Sign up**: https://codecov.io
-2. **Add repository**
-3. **Get token**: Copy from Codecov dashboard
-4. **Add secret**: GitHub repo → Settings → Secrets → `CODECOV_TOKEN`
-5. **Configure**: Add upload step to workflow (see Phase 5)
-
-**codecov.yml configuration:**
-```yaml
-coverage:
-  status:
-    project:
-      default:
-        target: 80%
-        threshold: 1%
-    patch:
-      default:
-        target: 80%
-
-comment:
-  layout: "reach,diff,flags,tree"
-  behavior: default
-  require_changes: false
-```
-
-### Phase 8: Standards Tracking
+### Step 5: Update standards tracking
 
 Update `.project-standards.yaml`:
 
@@ -492,46 +150,21 @@ components:
   coverage_ci: "codecov"
 ```
 
-### Phase 9: Updated Compliance Report
+### Step 6: Print final report
 
-```
-Code Coverage Configuration Complete
-=====================================
+Print a summary of changes applied, scripts added, and next steps for verifying coverage.
 
-Framework: Vitest with @vitest/coverage-v8
-Threshold: 80% (lines, branches, functions, statements)
+For detailed configuration templates, see [REFERENCE.md](REFERENCE.md).
 
-Configuration Applied:
-  ✅ Coverage provider installed
-  ✅ Reporters configured (text, json, html, lcov)
-  ✅ Thresholds set to 80%
-  ✅ Exclusions configured
-  ✅ CI/CD integration added
+## Agentic Optimizations
 
-Scripts Added:
-  ✅ npm run test:coverage (generate coverage)
-  ✅ npm run coverage:report (open HTML report)
-
-CI Integration:
-  ✅ Codecov upload configured
-  ✅ Coverage artifacts uploaded
-  ✅ Badge added to README
-
-Next Steps:
-  1. Run coverage locally:
-     npm run test:coverage
-
-  2. View coverage report:
-     npm run coverage:report
-
-  3. Check coverage in CI:
-     Push changes and check workflow
-
-  4. Monitor coverage trends:
-     Visit https://codecov.io/gh/USERNAME/REPO
-
-Coverage Reports: coverage/index.html
-```
+| Context | Command |
+|---------|---------|
+| Quick compliance check | `/configure:coverage --check-only` |
+| Auto-fix all issues | `/configure:coverage --fix` |
+| Custom threshold | `/configure:coverage --fix --threshold 90` |
+| Check coverage config exists | `find . -maxdepth 1 -name 'vitest.config.*' -o -name 'jest.config.*' 2>/dev/null` |
+| Verify coverage directory | `test -d coverage && echo "EXISTS"` |
 
 ## Flags
 

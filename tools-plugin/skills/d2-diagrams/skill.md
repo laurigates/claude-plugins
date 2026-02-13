@@ -1,6 +1,6 @@
 ---
 model: haiku
-name: D2 Diagrams
+name: d2-diagrams
 description: |
   Generate diagrams from declarative text using D2 - modern text-to-diagram language with
   automatic layouts, themes, and advanced styling. Use when creating architecture diagrams,

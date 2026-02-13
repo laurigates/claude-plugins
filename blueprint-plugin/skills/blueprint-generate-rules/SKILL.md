@@ -1,16 +1,25 @@
 ---
 model: opus
 created: 2025-12-16
-modified: 2026-02-06
-reviewed: 2026-01-09
-description: "Generate project-specific rules from PRDs"
+modified: 2026-02-09
+reviewed: 2026-02-09
+description: "Generate project-specific rules from PRDs. Supports path-specific rules with paths frontmatter and brace expansion."
 allowed-tools: Read, Write, Glob, Bash, AskUserQuestion
 name: blueprint-generate-rules
 ---
 
 Generate project-specific rules from Product Requirements Documents.
 
-Rules are generated to `.claude/rules/` directory.
+## When to Use This Skill
+
+| Use this skill when... | Use alternative when... |
+|------------------------|-------------------------|
+| Need to generate rules from existing PRDs | Use `/blueprint:rules` to manually create/edit rules |
+| Want path-scoped rules for specific file types | Use `/blueprint:claude-md` for general project instructions |
+| Automating rule creation from requirements | Writing custom rules without PRD reference |
+| Extracting architecture/testing patterns from PRDs | Need to create one-off rules for specific contexts |
+
+Rules are generated to `.claude/rules/` directory. Rules with `paths` frontmatter are loaded conditionally when working on matching files.
 
 **Prerequisites**:
 - `docs/prds/` directory exists
@@ -80,17 +89,35 @@ Rules are generated to `.claude/rules/` directory.
    - Fill in TDD requirements from PRDs
    - Include coverage requirements
    - Include test commands for the project
+   - Add `paths` frontmatter if tests live in specific directories:
+     ```yaml
+     ---
+     paths:
+       - "tests/**/*"
+       - "**/*.{test,spec}.*"
+     ---
+     ```
 
    **`implementation-guides.md`**:
    - Aggregated implementation patterns from all PRDs
    - Fill in step-by-step patterns for feature types
    - Include code examples
+   - Scope to source paths if applicable:
+     ```yaml
+     ---
+     paths:
+       - "src/**/*"
+       - "lib/**/*"
+     ---
+     ```
 
    **`quality-standards.md`**:
    - Aggregated quality requirements from all PRDs
    - Fill in performance baselines from PRDs
    - Fill in security requirements from PRDs
    - Create project-specific checklist
+
+   **Path-scoping guidance**: Add `paths` frontmatter when a rule only applies to specific file types or directories. This reduces context noise — Claude only loads the rule when working on matching files. Use brace expansion for concise patterns: `*.{ts,tsx}`, `src/{api,routes}/**/*`.
 
 5. **Update manifest with generation tracking**:
    ```json

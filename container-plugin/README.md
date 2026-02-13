@@ -139,7 +139,7 @@ Generate professional deployment handoff documentation for resources and service
 
 **Features:**
 - Automatic repository and deployment context detection
-- Professional Podio-friendly formatting
+- Professional formatting for handoff messages
 - Comprehensive service documentation
 - Developer handoff checklists
 - Access information and monitoring links

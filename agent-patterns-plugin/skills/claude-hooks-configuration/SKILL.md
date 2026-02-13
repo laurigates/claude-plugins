@@ -1,6 +1,6 @@
 ---
 model: haiku
-name: Claude Code Hooks Configuration
+name: claude-hooks-configuration
 description: |
   Set up Claude Code lifecycle hooks and event handlers in settings.json. Use when you
   want to trigger a script on session start, run a hook before or after tool calls

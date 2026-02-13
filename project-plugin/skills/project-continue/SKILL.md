@@ -32,7 +32,7 @@ Continue project development by analyzing current state and resuming work.
    - **PRDs**: Read all files in `.claude/blueprints/prds/`
      * Understand project goals and requirements
      * Identify features and phases
-   - **Work Overview**: Read `.claude/blueprints/work-overview.md`
+   - **Feature Tracker**: Read `docs/blueprint/feature-tracker.json` tasks section
      * Current phase and progress
      * Completed, in-progress, and pending tasks
    - **Work Orders**: Check `.claude/blueprints/work-orders/`
@@ -47,9 +47,9 @@ Continue project development by analyzing current state and resuming work.
    - Ask user if they want to continue current work or start fresh
 
    **If on clean state**:
-   - Compare work-overview against PRD requirements
+   - Compare feature tracker tasks against PRD requirements
    - Identify next logical task:
-     * Next item in work-overview "Pending" section
+     * Next pending task in feature-tracker.json
      * Next requirement in PRD
      * Next work-order to execute
    - Consider dependencies (start with unblocked tasks first)
@@ -91,7 +91,7 @@ Continue project development by analyzing current state and resuming work.
      * Commit after each RED → GREEN → REFACTOR cycle
      * Reference PRD or issue in commit message
 
-6. **Update work-overview as you go**:
+6. **Update feature tracker as you go**:
    - Mark tasks in-progress
    - Mark tasks completed
    - Update next steps
@@ -100,7 +100,7 @@ Continue project development by analyzing current state and resuming work.
 - **Always start with tests** (TDD requirement)
 - **Apply project skills** (architecture, testing, implementation, quality)
 - **Commit incrementally** (after each successful cycle)
-- **Update work-overview** (keep project state current)
+- **Update feature tracker** (keep project state current)
 
 **Handling Common Scenarios**:
 
@@ -130,6 +130,6 @@ For large codebases with multiple work fronts, spawn teammates for parallel prog
 | Teammate | Focus | Value |
 |----------|-------|-------|
 | Research teammate | Investigate codebase state, PRDs, work-orders | Parallel context gathering |
-| Implementation teammate | Begin work on next task from work-overview | Start implementation immediately |
+| Implementation teammate | Begin work on next task from feature tracker | Start implementation immediately |
 
 The research teammate gathers project state while the implementation teammate begins the most obvious next task. This is optional — single-session continuation works for most projects.

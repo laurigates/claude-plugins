@@ -3,7 +3,7 @@ model: haiku
 created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
-name: ruff Formatting
+name: ruff-formatting
 description: Python code formatting with ruff format. Fast, Black-compatible formatting for consistent code style. Use when formatting Python files, enforcing style, or checking format compliance.
 allowed-tools: Bash(ruff *), Bash(python *), Bash(uv *), Read, Edit, Write, Grep, Glob
 ---
@@ -141,8 +141,7 @@ ruff format --config '[format]\nquote-style = "single"'
 # Use double quotes (Black default)
 ruff format --config '[format]\nquote-style = "double"'
 
-# Preserve existing quotes (not recommended)
-# Not supported - ruff enforces consistency
+# Ruff enforces consistent quote style — pick one above
 ```
 
 **Quote Style Behavior**
@@ -168,7 +167,7 @@ Always uses double quotes.
 # Space indentation (default, recommended)
 indent-style = "space"
 
-# Tab indentation (not recommended)
+# Tab indentation (space is the default and most common)
 indent-style = "tab"
 ```
 
@@ -477,12 +476,12 @@ exclude = ["*.ipynb"]
 4. Use auto line-ending detection
 5. Exclude generated code and type stubs
 
-**Common Mistakes to Avoid**
-- Using `cd` instead of passing directory parameter
-- Not previewing with `--diff` before formatting
-- Mixing formatters (Black and ruff format)
-- Not excluding generated files
-- Forgetting to update pre-commit config
+**Best Practices**
+- Pass directory parameter directly: `ruff format src/`
+- Preview changes first with `--diff`
+- Use one formatter per project (ruff format replaces Black)
+- Exclude generated files in `pyproject.toml`
+- Keep pre-commit config in sync with formatter choice
 
 **Black Migration Checklist**
 - [ ] Remove Black from dependencies

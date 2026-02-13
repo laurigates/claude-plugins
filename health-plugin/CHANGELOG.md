@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.1.5](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.1.4...health-plugin-v1.1.5) (2026-02-12)
+
+
+### Bug Fixes
+
+* standardize skill name fields to kebab-case across all plugins ([72c0f83](https://github.com/laurigates/claude-plugins/commit/72c0f837a1b07004850c5906a30d619a79098f69))
+
+## [1.1.4](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.1.3...health-plugin-v1.1.4) (2026-02-08)
+
+
+### Bug Fixes
+
+* update skill review dates to trigger release sync ([#489](https://github.com/laurigates/claude-plugins/issues/489)) ([ca20d06](https://github.com/laurigates/claude-plugins/commit/ca20d0667baaa31dfa805c7dc775a1828c515223))
+
 ## [1.1.3](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.1.2...health-plugin-v1.1.3) (2026-02-07)
 
 

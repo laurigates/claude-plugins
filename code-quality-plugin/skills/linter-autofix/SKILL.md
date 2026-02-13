@@ -1,11 +1,11 @@
 ---
 model: haiku
-name: Linter Autofix Patterns
+name: linter-autofix
 description: Cross-language linter autofix commands and common fix patterns for biome, ruff, clippy, shellcheck, and more.
 allowed-tools: Bash(ruff *), Bash(eslint *), Bash(biome *), Bash(prettier *), Read, Edit, Grep
 created: 2025-12-27
 modified: 2026-01-24
-reviewed: 2025-12-27
+reviewed: 2026-02-08
 ---
 
 # Linter Autofix Patterns

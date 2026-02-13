@@ -94,11 +94,6 @@ Display feature tracker statistics, phase progress, and completion summary.
      Note: Tracker hasn't been synced in {N} days.
      Run `/blueprint-feature-tracker-sync` to update.
      ```
-   - If work-overview.md is newer than tracker, warn:
-     ```
-     Note: work-overview.md has been modified since last sync.
-     Run `/blueprint-feature-tracker-sync` to reconcile.
-     ```
 
 7. **Prompt for next action** (use AskUserQuestion):
    Build options dynamically based on state:

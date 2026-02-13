@@ -1,7 +1,7 @@
 ---
 model: opus
 created: 2026-01-23
-modified: 2026-02-03
+modified: 2026-02-10
 reviewed: 2026-01-30
 description: Configure .claude/settings.json and GitHub Actions workflows to use the laurigates/claude-plugins marketplace
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash(mkdir *), Bash(test *), Bash(ls *), Bash(git remote *), AskUserQuestion, TodoWrite
@@ -13,13 +13,27 @@ name: configure-claude-plugins
 
 Configure a project to use the `laurigates/claude-plugins` Claude Code plugin marketplace. Sets up `.claude/settings.json` permissions and GitHub Actions workflows (`claude.yml`, `claude-code-review.yml`) with the marketplace pre-configured.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Onboarding a new project to use Claude Code plugins | Configuring Claude Code settings unrelated to plugins |
+| Setting up `claude.yml` and `claude-code-review.yml` workflows | Creating general GitHub Actions workflows (`/configure:workflows`) |
+| Adding the `laurigates/claude-plugins` marketplace to a repo | Installing individual plugins manually |
+| Merging plugin permissions into existing `.claude/settings.json` | Debugging Claude Code action failures (check GitHub Actions logs) |
+| Selecting recommended plugins based on project type | Developing new plugins (see CLAUDE.md plugin lifecycle) |
+
 ## Context
 
-- Settings file exists: !`test -f .claude/settings.json`
+- Settings file exists: !`test -f .claude/settings.json && echo "EXISTS" || echo "MISSING"`
 - Workflows: !`find .github/workflows -maxdepth 1 -name 'claude*.yml' 2>/dev/null`
 - Git remote: !`git remote get-url origin 2>/dev/null`
+- Project type indicators: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'Dockerfile' \) 2>/dev/null`
+- Existing workflows dir: !`test -d .github/workflows && echo "EXISTS" || echo "MISSING"`
 
 ## Parameters
+
+Parse from command arguments:
 
 | Parameter | Description |
 |-----------|-------------|
@@ -27,38 +41,20 @@ Configure a project to use the `laurigates/claude-plugins` Claude Code plugin ma
 | `--fix` | Apply configuration automatically |
 | `--plugins` | Comma-separated list of plugins to install (default: all recommended) |
 
-### Available Plugins
+## Execution
 
-The plugin list is maintained in the marketplace repository. To see all available plugins:
+Execute this Claude plugins configuration workflow:
 
-```bash
-# List all plugins from marketplace
-curl -s https://raw.githubusercontent.com/laurigates/claude-plugins/main/.claude-plugin/marketplace.json | jq -r '.plugins[].name'
-
-# Or locally if you have the repo
-jq -r '.plugins[] | "\(.name) - \(.description)"' .claude-plugin/marketplace.json
-```
-
-**Common plugin categories:**
-- **Language**: `typescript-plugin`, `python-plugin`, `rust-plugin`
-- **Infrastructure**: `configure-plugin`, `container-plugin`, `kubernetes-plugin`, `terraform-plugin`
-- **Quality**: `code-quality-plugin`, `testing-plugin`
-- **Workflows**: `git-plugin`, `github-actions-plugin`, `blueprint-plugin`
-- **AI/Agents**: `agent-patterns-plugin`, `agents-plugin`, `langchain-plugin`
-- **Utilities**: `tools-plugin`, `documentation-plugin`, `hooks-plugin`
-
-## Workflow
-
-### Phase 1: Detection
+### Step 1: Detect current state
 
 1. Check for existing `.claude/settings.json`
 2. Check for existing `.github/workflows/claude.yml`
 3. Check for existing `.github/workflows/claude-code-review.yml`
-4. Detect project type (language, framework)
+4. Detect project type (language, framework) from file indicators
 
-### Phase 2: Configure .claude/settings.json
+### Step 2: Configure .claude/settings.json
 
-Create or merge into `.claude/settings.json` the following structure:
+Create or merge into `.claude/settings.json` the following permissions structure:
 
 ```json
 {
@@ -86,9 +82,9 @@ Create or merge into `.claude/settings.json` the following structure:
 }
 ```
 
-**Important:** If `.claude/settings.json` already exists, MERGE the `permissions.allow` array without duplicating entries. Preserve any existing `hooks`, `env`, or other fields.
+If `.claude/settings.json` already exists, MERGE the `permissions.allow` array without duplicating entries. Preserve any existing `hooks`, `env`, or other fields.
 
-### Phase 3: Configure .github/workflows/claude.yml
+### Step 3: Configure .github/workflows/claude.yml
 
 Create `.github/workflows/claude.yml` with the Claude Code action configured to use the plugin marketplace:
 
@@ -132,20 +128,9 @@ jobs:
             PLUGINS_LIST
 ```
 
-Replace `PLUGINS_LIST` with the selected plugins in the format:
-```
-plugin-name@laurigates-claude-plugins
-```
+Replace `PLUGINS_LIST` with the selected plugins in the format `plugin-name@laurigates-claude-plugins`, one per line.
 
-One plugin per line. For example with default recommended plugins:
-```yaml
-          plugins: |
-            git-plugin@laurigates-claude-plugins
-            code-quality-plugin@laurigates-claude-plugins
-            testing-plugin@laurigates-claude-plugins
-```
-
-### Phase 4: Configure .github/workflows/claude-code-review.yml
+### Step 4: Configure .github/workflows/claude-code-review.yml
 
 Create `.github/workflows/claude-code-review.yml` for automatic PR reviews:
 
@@ -188,9 +173,22 @@ jobs:
             testing-plugin@laurigates-claude-plugins
 ```
 
-### Phase 5: Report
+### Step 5: Select plugins
 
-Generate a status report:
+If `--plugins` is not specified, select recommended plugins based on detected project type:
+
+| Project Indicator | Recommended Plugins |
+|-------------------|---------------------|
+| `package.json` | `git-plugin`, `typescript-plugin`, `testing-plugin`, `code-quality-plugin` |
+| `pyproject.toml` / `setup.py` | `git-plugin`, `python-plugin`, `testing-plugin`, `code-quality-plugin` |
+| `Cargo.toml` | `git-plugin`, `rust-plugin`, `testing-plugin`, `code-quality-plugin` |
+| `Dockerfile` | Above + `container-plugin` |
+| `.github/workflows/` | Above + `github-actions-plugin` |
+| Default (any) | `git-plugin`, `code-quality-plugin`, `testing-plugin`, `tools-plugin` |
+
+### Step 6: Report results
+
+Print a status report:
 
 ```
 Claude Plugins Configuration Report
@@ -218,18 +216,15 @@ Next Steps:
   3. Test by mentioning @claude in a PR comment
 ```
 
-## Plugin Selection Logic
+## Agentic Optimizations
 
-If `--plugins` is not specified, select recommended plugins based on project type:
-
-| Project Indicator | Recommended Plugins |
-|-------------------|---------------------|
-| `package.json` | `git-plugin`, `typescript-plugin`, `testing-plugin`, `code-quality-plugin` |
-| `pyproject.toml` / `setup.py` | `git-plugin`, `python-plugin`, `testing-plugin`, `code-quality-plugin` |
-| `Cargo.toml` | `git-plugin`, `rust-plugin`, `testing-plugin`, `code-quality-plugin` |
-| `Dockerfile` | Above + `container-plugin` |
-| `.github/workflows/` | Above + `github-actions-plugin` |
-| Default (any) | `git-plugin`, `code-quality-plugin`, `testing-plugin`, `tools-plugin` |
+| Context | Command |
+|---------|---------|
+| Quick status check | `/configure:claude-plugins --check-only` |
+| Auto-configure all | `/configure:claude-plugins --fix` |
+| Specific plugins only | `/configure:claude-plugins --fix --plugins git-plugin,testing-plugin` |
+| Verify settings exist | `test -f .claude/settings.json && echo "EXISTS"` |
+| List Claude workflows | `find .github/workflows -name 'claude*.yml' 2>/dev/null` |
 
 ## Flags
 

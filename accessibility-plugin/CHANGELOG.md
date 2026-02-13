@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.1.3](https://github.com/laurigates/claude-plugins/compare/accessibility-plugin-v2.1.2...accessibility-plugin-v2.1.3) (2026-02-08)
+
+
+### Code Refactoring
+
+* reframe negative guidance as positive guidance across skills ([7e755ee](https://github.com/laurigates/claude-plugins/commit/7e755ee1c32c39c124f3204a0d0a8d1d770e1573))
+
+## [2.1.2](https://github.com/laurigates/claude-plugins/compare/accessibility-plugin-v2.1.1...accessibility-plugin-v2.1.2) (2026-02-08)
+
+
+### Bug Fixes
+
+* update skill review dates to trigger release sync ([#489](https://github.com/laurigates/claude-plugins/issues/489)) ([ca20d06](https://github.com/laurigates/claude-plugins/commit/ca20d0667baaa31dfa805c7dc775a1828c515223))
+
 ## [2.1.1](https://github.com/laurigates/claude-plugins/compare/accessibility-plugin-v2.1.0...accessibility-plugin-v2.1.1) (2026-02-01)
 
 

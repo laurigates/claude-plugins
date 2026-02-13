@@ -2,7 +2,7 @@
 model: haiku
 created: 2025-12-16
 modified: 2025-12-16
-reviewed: 2025-12-16
+reviewed: 2026-02-08
 name: ticket-drafting-guidelines
 description: |
   Structured guidelines for drafting GitHub issues and technical tickets.
@@ -232,12 +232,12 @@ for architecture details.
 ✅ Dependencies between tasks
 ```
 
-**What to avoid:**
+**Keep scope factual and concrete:**
 ```markdown
-❌ Percentage completion estimates
-❌ Time duration predictions
-❌ Performance improvement claims
-❌ Comparative quality statements
+✅ Concrete steps or tasks
+✅ Measurable acceptance criteria
+✅ Observable behavior changes
+✅ Verifiable outcomes
 ```
 
 **Example:**

@@ -1,5 +1,5 @@
 ---
-name: TypeScript Sentry
+name: typescript-sentry
 description: Error monitoring and performance tracking with Sentry SDK - error capture, breadcrumbs, performance spans, cron monitoring, and source maps for Bun/Node.js.
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-01-22

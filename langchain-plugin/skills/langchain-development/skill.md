@@ -1,6 +1,6 @@
 ---
 model: haiku
-name: LangChain Development
+name: langchain-development
 description: LangChain JS/TS framework for building LLM-powered applications - models, chains, tools, and RAG patterns.
 allowed-tools: Bash(python *), Bash(uv *), BashOutput, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-01-08
@@ -13,6 +13,7 @@ reviewed: 2026-01-08
 ## Core Expertise
 
 LangChain JS/TS is a framework for building LLM applications:
+
 - Unified interface across model providers (OpenAI, Anthropic, Google, etc.)
 - Composable chains and agents
 - Built-in tool integration
@@ -72,7 +73,7 @@ const openai = new ChatOpenAI({
 
 // Anthropic
 const anthropic = new ChatAnthropic({
-  model: "claude-sonnet-4-20250514",
+  model: "claude-haiku",
   temperature: 0,
 });
 
@@ -86,9 +87,7 @@ const response = await openai.invoke([
 ### Streaming
 
 ```typescript
-const stream = await openai.stream([
-  new HumanMessage("Tell me a story"),
-]);
+const stream = await openai.stream([new HumanMessage("Tell me a story")]);
 
 for await (const chunk of stream) {
   process.stdout.write(chunk.content as string);
@@ -157,9 +156,7 @@ import { ChatOpenAI } from "@langchain/openai";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 
-const prompt = ChatPromptTemplate.fromTemplate(
-  "Tell me a joke about {topic}"
-);
+const prompt = ChatPromptTemplate.fromTemplate("Tell me a joke about {topic}");
 const model = new ChatOpenAI();
 const parser = new StringOutputParser();
 
@@ -191,7 +188,7 @@ import { RunnableBranch } from "@langchain/core/runnables";
 const branch = RunnableBranch.from([
   [(x) => x.type === "math", mathChain],
   [(x) => x.type === "code", codeChain],
-  defaultChain,  // Fallback
+  defaultChain, // Fallback
 ]);
 ```
 
@@ -206,10 +203,14 @@ import { z } from "zod";
 const calculatorTool = tool(
   async ({ a, b, operation }) => {
     switch (operation) {
-      case "add": return String(a + b);
-      case "subtract": return String(a - b);
-      case "multiply": return String(a * b);
-      case "divide": return String(a / b);
+      case "add":
+        return String(a + b);
+      case "subtract":
+        return String(a - b);
+      case "multiply":
+        return String(a * b);
+      case "divide":
+        return String(a / b);
     }
   },
   {
@@ -220,7 +221,7 @@ const calculatorTool = tool(
       b: z.number(),
       operation: z.enum(["add", "subtract", "multiply", "divide"]),
     }),
-  }
+  },
 );
 ```
 
@@ -229,9 +230,7 @@ const calculatorTool = tool(
 ```typescript
 const modelWithTools = model.bindTools([calculatorTool]);
 
-const response = await modelWithTools.invoke(
-  "What is 25 * 4?"
-);
+const response = await modelWithTools.invoke("What is 25 * 4?");
 
 // Check for tool calls
 if (response.tool_calls?.length) {
@@ -270,7 +269,7 @@ import { OpenAIEmbeddings } from "@langchain/openai";
 const embeddings = new OpenAIEmbeddings();
 const vectorStore = await MemoryVectorStore.fromDocuments(
   splitDocs,
-  embeddings
+  embeddings,
 );
 
 // Search
@@ -324,46 +323,46 @@ const result = await agent.invoke({
 
 ## Agentic Optimizations
 
-| Context | Command/Pattern |
-|---------|-----------------|
-| Quick test | `npx tsx --test src/**/*.test.ts` |
-| Type check | `npx tsc --noEmit` |
-| Debug traces | Set `LANGCHAIN_TRACING_V2=true` |
-| Reduce tokens | Use `StringOutputParser` for text-only |
-| Stream output | Use `.stream()` instead of `.invoke()` |
-| Batch requests | Use `.batch([inputs])` for parallel |
+| Context         | Command/Pattern                        |
+| --------------- | -------------------------------------- |
+| Quick test      | `npx tsx --test src/**/*.test.ts`      |
+| Type check      | `npx tsc --noEmit`                     |
+| Debug traces    | Set `LANGCHAIN_TRACING_V2=true`        |
+| Reduce tokens   | Use `StringOutputParser` for text-only |
+| Stream output   | Use `.stream()` instead of `.invoke()` |
+| Batch requests  | Use `.batch([inputs])` for parallel    |
 | Cache responses | Use `InMemoryCache` for repeated calls |
 
 ## Quick Reference
 
 ### Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| `OPENAI_API_KEY` | OpenAI API key |
-| `ANTHROPIC_API_KEY` | Anthropic API key |
+| Variable               | Description              |
+| ---------------------- | ------------------------ |
+| `OPENAI_API_KEY`       | OpenAI API key           |
+| `ANTHROPIC_API_KEY`    | Anthropic API key        |
 | `LANGCHAIN_TRACING_V2` | Enable LangSmith tracing |
-| `LANGCHAIN_API_KEY` | LangSmith API key |
-| `LANGCHAIN_PROJECT` | LangSmith project name |
+| `LANGCHAIN_API_KEY`    | LangSmith API key        |
+| `LANGCHAIN_PROJECT`    | LangSmith project name   |
 
 ### Common Imports
 
-| Import | Package |
-|--------|---------|
-| `ChatOpenAI` | `@langchain/openai` |
-| `ChatAnthropic` | `@langchain/anthropic` |
-| `ChatPromptTemplate` | `@langchain/core/prompts` |
+| Import               | Package                          |
+| -------------------- | -------------------------------- |
+| `ChatOpenAI`         | `@langchain/openai`              |
+| `ChatAnthropic`      | `@langchain/anthropic`           |
+| `ChatPromptTemplate` | `@langchain/core/prompts`        |
 | `StringOutputParser` | `@langchain/core/output_parsers` |
-| `tool` | `@langchain/core/tools` |
-| `RunnableSequence` | `@langchain/core/runnables` |
+| `tool`               | `@langchain/core/tools`          |
+| `RunnableSequence`   | `@langchain/core/runnables`      |
 
 ### Key Packages
 
-| Package | Purpose |
-|---------|---------|
-| `langchain` | Core framework |
-| `@langchain/core` | Base abstractions |
-| `@langchain/openai` | OpenAI integration |
-| `@langchain/anthropic` | Anthropic integration |
+| Package                | Purpose                |
+| ---------------------- | ---------------------- |
+| `langchain`            | Core framework         |
+| `@langchain/core`      | Base abstractions      |
+| `@langchain/openai`    | OpenAI integration     |
+| `@langchain/anthropic` | Anthropic integration  |
 | `@langchain/community` | Community integrations |
-| `@langchain/langgraph` | Graph-based agents |
+| `@langchain/langgraph` | Graph-based agents     |

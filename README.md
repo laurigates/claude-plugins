@@ -1,6 +1,6 @@
 # Claude Plugins
 
-A collection of 30 Claude Code plugins providing 285+ skills and 14 agents for development workflows.
+A collection of 31 Claude Code plugins providing 285+ skills and 14 agents for development workflows.
 
 ## Installation
 
@@ -15,6 +15,8 @@ claude plugin install laurigates-claude-plugins/git-plugin
 claude plugin install laurigates-claude-plugins/python-plugin
 claude plugin install laurigates-claude-plugins/testing-plugin
 ```
+
+> **New here?** See the [Plugin Map](docs/PLUGIN-MAP.md) for setup guidance, decision trees, and recommended install order.
 
 ## Plugins by Category
 
@@ -96,12 +98,6 @@ claude plugin install laurigates-claude-plugins/testing-plugin
 | **health-plugin** | 6 | Diagnose and fix Claude Code configuration issues |
 | **hooks-plugin** | 1 | Claude Code hooks for enforcing best practices |
 | **tools-plugin** | 14 | General utilities - fd, rg, jq, shell, ImageMagick, d2 |
-
-### Integration
-
-| Plugin | Skills | Description |
-|--------|--------|-------------|
-| **sync-plugin** | 2 | External system synchronization - GitHub, Podio |
 
 ### Game Development
 

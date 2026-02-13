@@ -2,7 +2,7 @@
 model: haiku
 created: 2025-12-16
 modified: 2025-12-16
-reviewed: 2025-12-16
+reviewed: 2026-02-08
 allowed-tools: Read, Write, Edit, Bash(find *), Bash(ls *), Grep, TodoWrite
 argument-hint: <service-name>
 description: Generate comprehensive service decommission documentation
