@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/laurigates/claude-plugins/compare/python-plugin-v1.2.4...python-plugin-v1.3.0) (2026-02-13)
+
+
+### Features
+
+* expand uv-workspaces skill with virtual workspaces and Docker patterns ([#588](https://github.com/laurigates/claude-plugins/issues/588)) ([2f0f997](https://github.com/laurigates/claude-plugins/commit/2f0f997e70db1dd946ca034cfaab9695dc1349a3))
+
 ## [1.2.4](https://github.com/laurigates/claude-plugins/compare/python-plugin-v1.2.3...python-plugin-v1.2.4) (2026-02-12)
 
 
