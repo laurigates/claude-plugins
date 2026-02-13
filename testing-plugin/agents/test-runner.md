@@ -61,7 +61,7 @@ Use compact output flags to minimize context usage:
 |-----------|---------|-----|
 | pytest | `pytest -x -q --tb=short` | Fail fast, quiet, short tracebacks |
 | vitest | `npx vitest run --reporter=dot --bail=1` | Dot output, stop on first failure |
-| jest | `npx jest --bail --verbose=false` | Stop on failure, minimal output |
+| jest | `npx jest --bail --silent` | Stop on failure, silent output |
 | bun test | `bun test --bail=1` | Stop on first failure |
 | cargo test | `cargo test -- --format=terse` | Terse output |
 | go test | `go test -count=1 -short -failfast ./...` | No caching, short mode, fail fast |
@@ -73,7 +73,9 @@ Use compact output flags to minimize context usage:
 |-----------|---------|
 | pytest | `pytest -x -q --tb=short --cov --cov-report=term:skip-covered` |
 | vitest | `npx vitest run --reporter=dot --bail=1 --coverage` |
-| jest | `npx jest --bail --verbose=false --coverage` |
+| jest | `npx jest --bail --silent --coverage` |
+| cargo test | `cargo test -- --format=terse` + `cargo tarpaulin --out stdout` |
+| go test | `go test -count=1 -short -failfast -cover ./...` |
 
 ### With Pattern
 
@@ -83,7 +85,7 @@ Append the test pattern to filter:
 |-----------|---------------|
 | pytest | `pytest -x -q --tb=short -k "PATTERN"` |
 | vitest | `npx vitest run --reporter=dot --bail=1 PATTERN` |
-| jest | `npx jest --bail --verbose=false PATTERN` |
+| jest | `npx jest --bail --silent PATTERN` |
 | cargo test | `cargo test PATTERN -- --format=terse` |
 | go test | `go test -run PATTERN ./...` |
 
