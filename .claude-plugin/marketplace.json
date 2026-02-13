@@ -406,7 +406,7 @@
       "name": "testing-plugin",
       "source": "./testing-plugin",
       "description": "Test execution, TDD workflow, and testing strategies",
-      "version": "3.5.3",
+      "version": "3.6.0",
       "keywords": [
         "testing",
         "tdd",
