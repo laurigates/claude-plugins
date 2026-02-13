@@ -10,10 +10,9 @@ name: Build Container
 on:
   push:
     branches: [main]
+    tags: ['v*.*.*']
   pull_request:
     branches: [main]
-  release:
-    types: [published]
 
 env:
   REGISTRY: ghcr.io
@@ -26,6 +25,7 @@ jobs:
       contents: read
       packages: write
       security-events: write
+      id-token: write  # Required for provenance/SBOM attestations
 
     steps:
       - uses: actions/checkout@v4
@@ -53,30 +53,49 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha
+            # For release-please component tags — escape dots in regex
+            type=match,pattern=.*-v(\d+\.\d+\.\d+),group=1
+            type=match,pattern=.*-v(\d+\.\d+),group=1
+            type=match,pattern=.*-v(\d+),group=1
 
-      - uses: docker/build-push-action@v6
+      - id: build-push
+        uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=app
+          cache-to: type=gha,mode=max,scope=app
+          provenance: ${{ startsWith(github.ref, 'refs/tags/') && 'mode=max' || 'false' }}
+          sbom: ${{ startsWith(github.ref, 'refs/tags/') }}
 
+      # Pin Trivy by SHA — never use @master
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@c1824fd6edce30d7ab345a9989de00bbd46ef284 # 0.34.0
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
 
       - name: Upload Trivy scan results
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@9e907b5e64f6b83e7804b09294d44122997950d6 # v4.32.3
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
+
+      - name: Job summary
+        if: always()
+        run: |
+          echo "## Container Build" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image**: \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Digest**: \`${{ steps.build-push.outputs.digest }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tags**:" >> $GITHUB_STEP_SUMMARY
+          echo '${{ steps.meta.outputs.tags }}' | while read -r tag; do
+            echo "  - \`$tag\`" >> $GITHUB_STEP_SUMMARY
+          done
 ```
 
 ## .dockerignore Template
@@ -89,6 +108,9 @@ jobs:
 # CI/CD
 .github
 .gitlab-ci.yml
+
+# Dockerfiles (prevent variants leaking into build context)
+Dockerfile*
 
 # IDE
 .idea

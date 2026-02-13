@@ -1,7 +1,7 @@
 ---
 model: opus
 created: 2025-12-16
-modified: 2026-02-11
+modified: 2026-02-13
 reviewed: 2025-12-16
 description: Check and configure API contract testing with Pact, OpenAPI validation, and schema testing
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash(curl *), Bash(http *), Bash(jq *), AskUserQuestion, TodoWrite
@@ -25,8 +25,8 @@ Check and configure API contract testing infrastructure for validating API contr
 
 ## Context
 
-- Package manager: !`test -f bun.lockb && echo "bun" || (test -f package-lock.json && echo "npm") || (test -f yarn.lock && echo "yarn") || echo "unknown"`
-- Project language: !`test -f tsconfig.json && echo "TypeScript" || (test -f pyproject.toml && echo "Python") || (test -f package.json && echo "JavaScript") || echo "unknown"`
+- Lock files: !`find . -maxdepth 1 \( -name 'bun.lockb' -o -name 'bun.lock' -o -name 'package-lock.json' -o -name 'yarn.lock' \) 2>/dev/null`
+- Project files: !`find . -maxdepth 1 \( -name 'tsconfig.json' -o -name 'pyproject.toml' -o -name 'package.json' \) 2>/dev/null`
 - Pact installed: !`grep -l "pact-foundation/pact\|pact-python" package.json requirements*.txt pyproject.toml 2>/dev/null`
 - OpenAPI spec: !`find . -maxdepth 2 \( -name 'openapi.yaml' -o -name 'openapi.yml' -o -name 'openapi.json' -o -name 'swagger.json' -o -name 'swagger.yaml' \) 2>/dev/null`
 - Schema validator: !`grep -l '"ajv"\|"zod"' package.json 2>/dev/null`

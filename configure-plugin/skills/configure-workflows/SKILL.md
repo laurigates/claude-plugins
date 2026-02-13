@@ -1,7 +1,7 @@
 ---
 model: opus
 created: 2025-12-16
-modified: 2026-02-11
+modified: 2026-02-13
 reviewed: 2025-12-16
 description: Check and configure GitHub Actions CI/CD workflows (container builds, tests, releases)
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -50,10 +50,13 @@ Verify latest versions before reporting outdated actions:
 
 1. `actions/checkout` - [releases](https://github.com/actions/checkout/releases)
 2. `actions/setup-node` - [releases](https://github.com/actions/setup-node/releases)
-3. `docker/build-push-action` - [releases](https://github.com/docker/build-push-action/releases)
-4. `docker/login-action` - [releases](https://github.com/docker/login-action/releases)
-5. `docker/metadata-action` - [releases](https://github.com/docker/metadata-action/releases)
-6. `google-github-actions/release-please-action` - [releases](https://github.com/google-github-actions/release-please-action/releases)
+3. `actions/cache` - [releases](https://github.com/actions/cache/releases)
+4. `docker/setup-buildx-action` - [releases](https://github.com/docker/setup-buildx-action/releases)
+5. `docker/build-push-action` - [releases](https://github.com/docker/build-push-action/releases)
+6. `docker/login-action` - [releases](https://github.com/docker/login-action/releases)
+7. `docker/metadata-action` - [releases](https://github.com/docker/metadata-action/releases)
+8. `reproducible-containers/buildkit-cache-dance` - [releases](https://github.com/reproducible-containers/buildkit-cache-dance/releases)
+9. `google-github-actions/release-please-action` - [releases](https://github.com/google-github-actions/release-please-action/releases)
 
 Use WebSearch or WebFetch to verify current versions.
 
@@ -83,6 +86,14 @@ Determine required workflows based on project type:
 | Registry | GHCR (ghcr.io) | INFO |
 | Caching | GHA cache enabled | WARN if missing |
 | Permissions | Explicit | WARN if missing |
+| `id-token: write` | Required when provenance/SBOM enabled | WARN if missing |
+| Cache scope | Explicit `scope=` when multiple build jobs | WARN if missing |
+| Dead metadata tags | No `type=schedule` without schedule trigger | INFO |
+| Semver regex escaping | Dots escaped in `type=match` patterns (`\d+\.\d+`) | WARN if unescaped |
+| Hardcoded image names | Derive from `${{ github.repository }}` | INFO if hardcoded |
+| Digest output | Capture `build-push` digest via `id:` for traceability | INFO if missing |
+| Job summary | Write image/digest/tags to `$GITHUB_STEP_SUMMARY` | INFO if missing |
+| Duplicated job conditions | Identical `if:` on sibling jobs; suggest gate job | INFO |
 
 **Release Please Workflow Checks:**
 

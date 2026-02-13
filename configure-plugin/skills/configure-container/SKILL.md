@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-02-11
+modified: 2026-02-13
 reviewed: 2026-01-19
 description: Check and configure container infrastructure (builds, registry, scanning, devcontainer)
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite, SlashCommand, WebSearch, WebFetch
@@ -79,6 +79,7 @@ Check each component against standards:
 | HEALTHCHECK | Required for K8s probes | FAIL if missing |
 | Non-root user | REQUIRED (not optional) | FAIL if missing |
 | .dockerignore | Required | WARN if missing |
+| .dockerignore `Dockerfile*` | Use glob to exclude all Dockerfile variants from context | WARN if only `Dockerfile` |
 | Base image version | Latest stable (check Docker Hub) | WARN if outdated |
 | Minimal base | Alpine for Node, slim for Python | WARN if bloated |
 
@@ -111,6 +112,9 @@ Check each component against standards:
 | Multi-platform | linux/amd64,linux/arm64 | WARN if missing |
 | Build caching | GHA cache enabled | WARN if missing |
 | Security scan | Trivy/Grype in workflow | WARN if missing |
+| `id-token: write` | Required when provenance/SBOM configured | WARN if missing |
+| Cache scope | Explicit `scope=` for multi-image builds | WARN if missing |
+| Scanner pinned | Trivy/Grype action pinned by SHA (not `@master`) | WARN if unpinned |
 
 **Container Labels Standards (GHCR Integration):**
 
