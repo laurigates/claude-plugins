@@ -105,8 +105,27 @@ if echo "$COMMAND" | grep -Eq '(cat|tail|head).*(/tasks/|\.output)' || \
 fi
 
 # Check for excessive pipe chains (5+ pipes suggest over-complexity)
-# Count pipes that aren't inside quotes
-PIPE_COUNT=$(echo "$COMMAND" | tr -cd '|' | wc -c)
+# Strip heredoc body content first to avoid counting markdown table pipes
+# or other literal content as shell pipe operators
+COMMAND_SHELL_ONLY=$(echo "$COMMAND" | awk '
+    BEGIN { ih = 0 }
+    ih == 0 {
+        if (match($0, /<<-?[[:space:]]*[^[:space:]]*[A-Za-z_][A-Za-z_0-9]*/)) {
+            s = substr($0, RSTART)
+            gsub(/<<-?[[:space:]]*/, "", s)
+            gsub(/^[^A-Za-z_]+/, "", s)
+            gsub(/[^A-Za-z_0-9].*/, "", s)
+            if (s != "") { delim = s; ih = 1 }
+            print; next
+        }
+        print; next
+    }
+    ih == 1 {
+        t = $0; gsub(/^[[:space:]]+/, "", t); gsub(/[[:space:]]+$/, "", t)
+        if (t == delim) { ih = 0 }
+    }
+')
+PIPE_COUNT=$(echo "$COMMAND_SHELL_ONLY" | tr -cd '|' | wc -c)
 if [ "$PIPE_COUNT" -ge 5 ]; then
     block_with_reminder "REMINDER: This command has $PIPE_COUNT pipes - consider simplifying. Options:
 - Use JSON output from the source (--reporter=json, --format=json) and parse with jq
