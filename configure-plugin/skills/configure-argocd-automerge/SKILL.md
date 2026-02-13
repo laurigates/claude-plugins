@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2026-02-03
-modified: 2026-02-10
+modified: 2026-02-13
 reviewed: 2026-02-03
 description: Configure auto-merge workflow for ArgoCD Image Updater branches
 allowed-tools: Glob, Grep, Read, Write, Edit, TodoWrite
@@ -28,7 +28,7 @@ Configure GitHub Actions workflow to automatically create and merge PRs from Arg
 - Workflows dir: !`test -d .github/workflows && echo "EXISTS" || echo "MISSING"`
 - Existing automerge workflow: !`find .github/workflows -maxdepth 1 -name '*argocd*automerge*' -o -name '*automerge*argocd*' 2>/dev/null`
 - Image updater branches: !`git branch -r --list 'origin/image-updater-*' 2>/dev/null | head -5`
-- Auto-merge PAT configured: !`test -f .github/workflows/argocd-automerge.yml && grep -q 'AUTO_MERGE_PAT' .github/workflows/argocd-automerge.yml 2>/dev/null && echo "YES" || echo "NO"`
+- Auto-merge workflow: !`find .github/workflows -maxdepth 1 -name 'argocd-automerge.yml' 2>/dev/null`
 
 ## Parameters
 

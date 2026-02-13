@@ -11,7 +11,7 @@ allowed-tools: Bash(git diff *), Bash(git log *), Bash(git status *), Bash(just 
 argument-hint: "Scope analysis to specific categories or use --dry-run to preview"
 args: "[--rules] [--skills] [--recipes] [--all] [--dry-run]"
 created: 2026-02-11
-modified: 2026-02-11
+modified: 2026-02-13
 reviewed: 2026-02-11
 ---
 
@@ -48,7 +48,7 @@ Gather session context to analyze:
 - Session diff: !`git diff --stat HEAD~10..HEAD 2>/dev/null || echo "recent history unavailable"`
 - Recent commits: !`git log --oneline -20 2>/dev/null`
 - Current branch: !`git branch --show-current 2>/dev/null`
-- Justfile exists: !`test -f justfile && echo "yes" || test -f Justfile && echo "yes" || echo "no"`
+- Justfile: !`find . -maxdepth 1 \( -name 'justfile' -o -name 'Justfile' \) -print -quit 2>/dev/null`
 - Rules directory: !`find .claude/rules -name '*.md' -type f 2>/dev/null`
 - Changed files: !`git diff --name-only HEAD~10..HEAD 2>/dev/null || echo "none"`
 

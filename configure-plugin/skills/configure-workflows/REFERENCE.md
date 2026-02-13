@@ -38,13 +38,13 @@ name: Build Container
 on:
   push:
     branches: [main]
+    tags: ['v*.*.*']
   pull_request:
     branches: [main]
-  release:
-    types: [published]
 
 env:
   REGISTRY: ghcr.io
+  # Derive from repository — avoids hardcoded image names
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
@@ -53,6 +53,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write  # Required for provenance/SBOM attestations
 
     steps:
       - uses: actions/checkout@v4
@@ -70,8 +71,20 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+            # For release-please component tags: {component}-v{version}
+            # Escape dots in semver regex for correct matching
+            type=match,pattern=.*-v(\d+\.\d+\.\d+),group=1
+            type=match,pattern=.*-v(\d+\.\d+),group=1
+            type=match,pattern=.*-v(\d+),group=1
 
-      - uses: docker/build-push-action@v6
+      - id: build-push
+        uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64,linux/arm64
@@ -80,6 +93,61 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # Provenance and SBOM only on tagged releases (saves ~30s otherwise)
+          provenance: ${{ startsWith(github.ref, 'refs/tags/') && 'mode=max' || 'false' }}
+          sbom: ${{ startsWith(github.ref, 'refs/tags/') }}
+
+      - name: Job summary
+        if: always()
+        run: |
+          echo "## Container Build" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image**: \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Digest**: \`${{ steps.build-push.outputs.digest }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tags**:" >> $GITHUB_STEP_SUMMARY
+          echo '${{ steps.meta.outputs.tags }}' | while read -r tag; do
+            echo "  - \`$tag\`" >> $GITHUB_STEP_SUMMARY
+          done
+```
+
+### Multi-Job Cache Scope
+
+When a workflow has multiple build jobs (e.g., app + db-init), use explicit `scope=` to prevent cache collisions:
+
+```yaml
+# Job 1: main image
+cache-from: type=gha,scope=app
+cache-to: type=gha,mode=max,scope=app
+
+# Job 2: secondary image
+cache-from: type=gha,scope=db-init
+cache-to: type=gha,mode=max,scope=db-init
+```
+
+### BuildKit Cache Dance (Optional)
+
+For persisting BuildKit `--mount=type=cache` mounts across CI runs:
+
+```yaml
+- name: Cache BuildKit mounts
+  id: cache
+  uses: actions/cache@v4
+  with:
+    path: buildkit-cache
+    key: ${{ runner.os }}-buildkit-${{ hashFiles('package.json', 'bun.lock') }}
+    restore-keys: |
+      ${{ runner.os }}-buildkit-
+
+- name: Inject BuildKit cache mounts
+  uses: reproducible-containers/buildkit-cache-dance@v3
+  with:
+    cache-map: |
+      {
+        "dep-cache": {
+          "target": "/root/.cache",
+          "id": "dep-cache"
+        }
+      }
+    skip-extraction: ${{ steps.cache.outputs.cache-hit }}
 ```
 
 ## Test Workflow Template (Node)
