@@ -24,6 +24,7 @@ A PreToolUse hook that intercepts Bash commands and blocks those that should use
 | `timeout cmd` | Remove timeout (human approval time exceeds it) |
 | `find` | Use **Glob** tool instead |
 | `grep`/`rg` | Use **Grep** tool instead |
+| `git add -A` / `git add .` | Stage specific files by name instead |
 | 5+ pipe chain | Simplify with JSON output or awk |
 | Multi-grep test parsing | Use `--reporter=json` instead |
 

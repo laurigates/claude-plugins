@@ -21,6 +21,7 @@ A PreToolUse hook that intercepts Bash commands and blocks those that should use
 | `ls *pattern*` | Consider **Glob** tool |
 | `cat/tail ...tasks/*.output` | Use **TaskOutput** tool instead |
 | `sleep && cat/tail` | Use **TaskOutput** tool with block parameter |
+| `git add -A` / `git add .` | Stage specific files by name instead of broad staging |
 | `git X && git Y` | Run git commands as separate Bash calls (avoids index.lock race condition) |
 | `git reset --hard` | Use safer alternatives; if truly needed, ask user to run manually |
 
