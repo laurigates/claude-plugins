@@ -5,15 +5,23 @@ color: "#4CAF50"
 description: |
   Run tests and report results. Detects the project's test framework, executes tests with
   agentic-optimized flags, and returns a concise summary to the orchestrator.
-tools: Glob, Grep, LS, Read, Bash(npm test *), Bash(npm run test *), Bash(npx vitest *), Bash(npx jest *), Bash(yarn test *), Bash(bun test *), Bash(pytest *), Bash(python -m pytest *), Bash(cargo test *), Bash(go test *), Bash(make test *), TodoWrite
+tools: Glob, Grep, Read, Bash(npm test *), Bash(npm run test *), Bash(npx vitest *), Bash(npx jest *), Bash(yarn test *), Bash(bun test *), Bash(pytest *), Bash(python -m pytest *), Bash(cargo test *), Bash(go test *), Bash(just *), TodoWrite
 created: 2026-02-12
-modified: 2026-02-12
-reviewed: 2026-02-12
+modified: 2026-02-13
+reviewed: 2026-02-13
 ---
 
 # Test Runner Agent
 
 Run tests and return a concise summary. This agent handles framework detection, test execution, and result analysis — keeping verbose output contained and relaying only the important parts to the orchestrator.
+
+## When to Use This Agent
+
+| Use test-runner when... | Use test agent instead when... |
+|------------------------|-------------------------------|
+| Running existing tests as a delegated task | Writing or modifying test files |
+| Minimal output needed in orchestrator context | Detailed test authoring with TDD workflow |
+| Parallel test execution across directories | Test infrastructure setup |
 
 ## Scope
 
@@ -36,14 +44,14 @@ Check these files to determine the test framework:
 | File | Framework | Language |
 |------|-----------|----------|
 | `pyproject.toml` with `[tool.pytest]` | pytest | Python |
-| `pyproject.toml` with `[tool.unittest]` | unittest | Python |
+| `pyproject.toml` or `tests/` directory | unittest | Python |
 | `package.json` with `vitest` dep | vitest | JS/TS |
 | `package.json` with `jest` dep | jest | JS/TS |
 | `vitest.config.*` | vitest | JS/TS |
 | `jest.config.*` | jest | JS/TS |
 | `Cargo.toml` | cargo test | Rust |
 | `go.mod` | go test | Go |
-| `Makefile` with `test` target | make test | Any |
+| `justfile` with `test` recipe | just test | Any |
 
 ## Agentic-Optimized Commands
 
@@ -56,13 +64,14 @@ Use compact output flags to minimize context usage:
 | jest | `npx jest --bail --verbose=false` | Stop on failure, minimal output |
 | bun test | `bun test --bail=1` | Stop on first failure |
 | cargo test | `cargo test -- --format=terse` | Terse output |
-| go test | `go test -count=1 -short ./...` | No caching, short mode |
+| go test | `go test -count=1 -short -failfast ./...` | No caching, short mode, fail fast |
+| unittest | `python -m unittest discover -q` | Quiet discovery mode |
 
 ### With Coverage
 
 | Framework | Command |
 |-----------|---------|
-| pytest | `pytest -x -q --tb=short --cov --cov-report=term-missing:skip-covered` |
+| pytest | `pytest -x -q --tb=short --cov --cov-report=term:skip-covered` |
 | vitest | `npx vitest run --reporter=dot --bail=1 --coverage` |
 | jest | `npx jest --bail --verbose=false --coverage` |
 
