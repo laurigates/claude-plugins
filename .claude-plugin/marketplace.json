@@ -109,22 +109,6 @@
       "category": "development"
     },
     {
-      "name": "css-plugin",
-      "source": "./css-plugin",
-      "description": "CSS tooling - Lightning CSS transpilation/minification, UnoCSS atomic utility generation",
-      "version": "1.0.0",
-      "keywords": [
-        "css",
-        "lightning-css",
-        "unocss",
-        "atomic-css",
-        "minification",
-        "transpilation",
-        "vite"
-      ],
-      "category": "language"
-    },
-    {
       "name": "code-quality-plugin",
       "source": "./code-quality-plugin",
       "description": "Code review, refactoring, linting, and static analysis",
@@ -204,6 +188,22 @@
         "skaffold"
       ],
       "category": "infrastructure"
+    },
+    {
+      "name": "css-plugin",
+      "source": "./css-plugin",
+      "description": "CSS tooling - Lightning CSS transpilation/minification, UnoCSS atomic utility generation",
+      "version": "1.1.0",
+      "keywords": [
+        "css",
+        "lightning-css",
+        "unocss",
+        "atomic-css",
+        "minification",
+        "transpilation",
+        "vite"
+      ],
+      "category": "language"
     },
     {
       "name": "documentation-plugin",
