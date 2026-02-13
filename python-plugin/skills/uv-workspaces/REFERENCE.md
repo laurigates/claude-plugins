@@ -23,7 +23,7 @@ Complete guide to managing monorepo and multi-package projects with UV workspace
 
 ## Overview
 
-UV workspaces enable managing multiple related packages in a single repository (monorepo) with shared dependency resolution and a unified lockfile. Inspired by Cargo workspaces.
+UV workspaces enable managing multiple related packages in a single repository (monorepo) with shared dependency resolution and a unified lockfile. Inspired by [Cargo workspaces](https://doc.rust-lang.org/cargo/reference/workspaces.html).
 
 ### Key Benefits
 
@@ -603,6 +603,8 @@ jobs:
 
 ## Docker Integration
 
+> **Note**: Workspace support requires uv >= 0.1.18. Use `uv --version` to check.
+
 ### Basic Workspace Dockerfile
 
 ```dockerfile
@@ -790,6 +792,10 @@ uv lock
 
 **requires-python incompatibility:**
 ```bash
+# Error looks like:
+# error: No solution found when resolving dependencies:
+#   requires-python range is empty
+
 # Check each member's requires-python
 grep "requires-python" packages/*/pyproject.toml
 

@@ -75,7 +75,7 @@ members = ["packages/*"]
 
 - The root is **not** a workspace member
 - All members live in subdirectories
-- `uv run` and `uv sync` require `--package` or `--all-packages`
+- `uv run` and `uv sync` require `--package` or `--all-packages` (will error without them)
 
 ### Member pyproject.toml
 
@@ -111,17 +111,18 @@ my-core = { workspace = true }
 
 ### Source Inheritance
 
-Root `tool.uv.sources` apply to **all members** unless overridden:
+Root `tool.uv.sources` apply to **all members** unless overridden.
+
+**Use case**: Define workspace sources in root for all members, override only when a specific member needs a different version:
 
 ```toml
-# Root pyproject.toml
+# Root pyproject.toml — applies to all members
 [tool.uv.sources]
 my-utils = { workspace = true }
 
-# Member overrides root source entirely for that dependency
-# packages/special/pyproject.toml
+# packages/legacy/pyproject.toml — needs pinned version
 [tool.uv.sources]
-my-utils = { path = "../custom-utils" }
+my-utils = { path = "../utils-v1" }  # Overrides root entirely
 ```
 
 Override is **per-dependency and total** — if a member defines a source for a dependency, the root source for that dependency is ignored completely.
@@ -200,4 +201,4 @@ RUN uv sync --frozen
 - `uv-advanced-dependencies` — Path and Git dependencies
 - `python-packaging` — Building and publishing workspace packages
 
-For detailed workspace patterns, CI/CD examples, and troubleshooting, see [REFERENCE.md](REFERENCE.md).
+For detailed workspace patterns (virtual workspaces, Docker integration, source inheritance, syncing strategies), CI/CD examples, and troubleshooting, see [REFERENCE.md](REFERENCE.md).
