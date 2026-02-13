@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.7.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.7.0...configure-plugin-v1.7.1) (2026-02-13)
+
+
+### Documentation
+
+* improve skill documentation, standards, and context patterns ([#599](https://github.com/laurigates/claude-plugins/issues/599)) ([4a351dc](https://github.com/laurigates/claude-plugins/commit/4a351dcfac7229dd26586cdf7c8cbd51fec451d2))
+* **skills:** improve documentation, standards, and context patterns ([4a351dc](https://github.com/laurigates/claude-plugins/commit/4a351dcfac7229dd26586cdf7c8cbd51fec451d2)), closes [#596](https://github.com/laurigates/claude-plugins/issues/596)
+
 ## [1.7.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.6.6...configure-plugin-v1.7.0) (2026-02-11)
 
 
