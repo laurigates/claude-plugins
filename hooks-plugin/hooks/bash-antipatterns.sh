@@ -126,6 +126,20 @@ if echo "$COMMAND" | grep -Eq 'grep.*\|.*grep.*\|.*(sed|cut|awk)' && \
 - For Bun: 'bun test --reporter=json 2>&1 | jq .testResults'"
 fi
 
+# Check for broad git staging commands (git add -A, git add --all, git add .)
+# These can accidentally include sensitive files (.env, credentials) or large binaries.
+# Pattern handles git global flags like -C <path> before the subcommand.
+if echo "$COMMAND" | grep -Eq '^\s*git\s+(.+\s+)?add\s+(-A|--all|\.)(\s|$)'; then
+    block_with_reminder "REMINDER: Avoid broad staging commands like 'git add -A', 'git add --all', or 'git add .'.
+These can accidentally include sensitive files (.env, credentials) or large binaries.
+
+Instead, stage specific files by name:
+  git add src/file1.ts src/file2.ts
+
+Or review what would be staged first:
+  git status --porcelain"
+fi
+
 # Check for chained git commands (git X && git Y)
 # This pattern can cause index.lock race conditions where the lock from the first
 # command hasn't been released before the second command tries to acquire it.
