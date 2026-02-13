@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.3](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.1.2...github-actions-plugin-v1.1.3) (2026-02-13)
+
+
+### Code Refactoring
+
+* **github-actions-plugin:** remove redundant workflow-dev-zen skill ([#603](https://github.com/laurigates/claude-plugins/issues/603)) ([7b3abc3](https://github.com/laurigates/claude-plugins/commit/7b3abc398fe9de4877f4d51845e86a3f3ec55f53))
+
 ## [1.1.2](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.1.1...github-actions-plugin-v1.1.2) (2026-02-12)
 
 
