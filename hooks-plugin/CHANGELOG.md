@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.3](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.5.2...hooks-plugin-v1.5.3) (2026-02-13)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** exclude heredoc content from pipe count in bash-antipatterns hook ([#597](https://github.com/laurigates/claude-plugins/issues/597)) ([2045bc7](https://github.com/laurigates/claude-plugins/commit/2045bc7ea53deea6709409df066509cb642094de))
+
 ## [1.5.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.5.1...hooks-plugin-v1.5.2) (2026-02-13)
 
 
