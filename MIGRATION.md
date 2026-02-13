@@ -301,7 +301,6 @@ tools: Tool1, Tool2, mcp__server-name
 | Type    | Name                         | Status | Notes |
 | ------- | ---------------------------- | ------ | ----- |
 | Command | workflow/dev                 | [ ]    |       |
-| Command | workflow/dev-zen             | [ ]    |       |
 | Skill   | claude-code-github-workflows | [ ]    |       |
 | Skill   | github-actions-auth-security | [ ]    |       |
 | Skill   | github-actions-inspection    | [ ]    |       |
