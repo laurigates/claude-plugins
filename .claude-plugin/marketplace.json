@@ -379,6 +379,24 @@
       "category": "development"
     },
     {
+      "name": "prose-plugin",
+      "source": "./prose-plugin",
+      "description": "Prose style control - distillation, tone, voice, clarity, and consistency for written text",
+      "version": "1.1.0",
+      "keywords": [
+        "prose",
+        "writing",
+        "style",
+        "distillation",
+        "concision",
+        "tone",
+        "voice",
+        "clarity",
+        "editing"
+      ],
+      "category": "communication"
+    },
+    {
       "name": "python-plugin",
       "source": "./python-plugin",
       "description": "Python development ecosystem - uv, ruff, pytest, packaging",
@@ -476,24 +494,6 @@
         "worktree"
       ],
       "category": "automation"
-    },
-    {
-      "name": "prose-plugin",
-      "source": "./prose-plugin",
-      "description": "Prose style control - distillation, tone, voice, clarity, and consistency for written text",
-      "version": "1.0.0",
-      "keywords": [
-        "prose",
-        "writing",
-        "style",
-        "distillation",
-        "concision",
-        "tone",
-        "voice",
-        "clarity",
-        "editing"
-      ],
-      "category": "communication"
     }
   ]
 }
