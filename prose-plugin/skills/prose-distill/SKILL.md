@@ -4,7 +4,8 @@ name: prose-distill
 description: |
   Distill verbose text to its concentrated essence. Compress without losing meaning —
   precis, condensation, verbal economy. Use when user says "distill", "condense",
-  "tighten", "make concise", "shorten this", "too wordy", "omit needless words",
+  "tighten", "make concise", "make this more concise", "shorten this", "too wordy",
+  "reduce verbosity", "compress this text", "trim the fat", "omit needless words",
   or asks to reduce text length while preserving substance.
 args: [text or file path]
 allowed-tools: Read, Edit, Write, Grep, Glob, TodoWrite
