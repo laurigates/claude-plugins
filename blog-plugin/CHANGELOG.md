@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.5](https://github.com/laurigates/claude-plugins/compare/blog-plugin-v1.1.4...blog-plugin-v1.1.5) (2026-02-14)
+
+
+### Documentation
+
+* **git-plugin:** add conventional commits standards ([#616](https://github.com/laurigates/claude-plugins/issues/616)) ([5b74389](https://github.com/laurigates/claude-plugins/commit/5b74389ecdf5223dd62368390ecd9b36ccb1596c))
+
 ## [1.1.4](https://github.com/laurigates/claude-plugins/compare/blog-plugin-v1.1.3...blog-plugin-v1.1.4) (2026-02-14)
 
 
