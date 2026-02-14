@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.2](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.8.1...project-plugin-v1.8.2) (2026-02-14)
+
+
+### Code Refactoring
+
+* restructure 11 skills to execution pattern ([#609](https://github.com/laurigates/claude-plugins/issues/609)) ([0aff44a](https://github.com/laurigates/claude-plugins/commit/0aff44ae5768e3cd3aedfed568137738fc298bbc))
+
 ## [1.8.1](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.8.0...project-plugin-v1.8.1) (2026-02-13)
 
 
