@@ -81,7 +81,7 @@
       "name": "blog-plugin",
       "source": "./blog-plugin",
       "description": "Blog post creation - project logs, technical write-ups, personal documentation",
-      "version": "1.1.5",
+      "version": "1.1.6",
       "keywords": [
         "blog",
         "writing",
@@ -139,7 +139,7 @@
       "name": "communication-plugin",
       "source": "./communication-plugin",
       "description": "External communication formatting - Google Chat, ticket drafting",
-      "version": "1.1.2",
+      "version": "1.1.3",
       "keywords": [
         "communication",
         "google-chat",
@@ -400,7 +400,7 @@
       "name": "python-plugin",
       "source": "./python-plugin",
       "description": "Python development ecosystem - uv, ruff, pytest, packaging",
-      "version": "1.3.0",
+      "version": "1.3.1",
       "keywords": [
         "python",
         "uv",
@@ -454,7 +454,7 @@
       "name": "tools-plugin",
       "source": "./tools-plugin",
       "description": "General utilities - fd, rg, jq, shell, imagemagick",
-      "version": "2.4.5",
+      "version": "2.4.6",
       "keywords": [
         "tools",
         "utilities",
