@@ -1,12 +1,55 @@
-# Blueprint Development Rule Generator - Reference
+# blueprint-development REFERENCE
 
-Detailed reference material for the blueprint-development skill, including full rule templates, command templates, and generation guidelines.
+Reference material for rule generation, command creation, and detailed implementation guidance for Blueprint Development.
+
+## Extraction Patterns
+
+### Architecture Pattern Extraction
+
+Extract from PRD "Technical Considerations" or "Architecture" sections:
+
+- Project structure and module organization
+- Dependency injection patterns
+- Error handling approaches
+- Module boundaries and layering conventions
+- Code organization and file naming conventions
+- Integration patterns for external services/databases
+
+### Testing Strategy Extraction
+
+Extract from PRD "TDD Requirements" or "Success Criteria" sections:
+
+- TDD workflow specification (RED → GREEN → REFACTOR)
+- Test types to implement (unit, integration, e2e)
+- Test structure and directory organization
+- Mocking patterns and isolation strategies
+- Coverage requirements and minimum percentages
+- Test command and runners
+
+### Quality Standard Extraction
+
+Extract from PRD "Success Criteria", "Code Review", or "Quality" sections:
+
+- Code review checklist items
+- Performance baselines and targets
+- Security requirements (OWASP, validation, authentication)
+- Style and formatting standards
+- Documentation requirements
+- Dependency management policies
+
+### Implementation Guide Extraction
+
+Extract from PRD "Functional Requirements" and "Technical" sections:
+
+- API endpoint design patterns
+- UI component architecture (if applicable)
+- Database operation patterns
+- External service integration patterns
+- Data flow and state management patterns
 
 ## Rule Templates
 
-### Architecture Patterns Rule
-
-**Location**: `.claude/rules/architecture-patterns.md`
+### Architecture Patterns Rule Template
 
 ```markdown
 # Architecture Patterns
@@ -14,33 +57,31 @@ Detailed reference material for the blueprint-development skill, including full 
 > Architecture patterns and code organization for [project name]. Defines how code is structured, organized, and modularized in this project.
 
 ## Project Structure
-[Describe directory organization, module boundaries, layering]
+
+[Describe directory organization, module boundaries, layering. Include file tree example.]
 
 ## Design Patterns
-[Document architectural patterns used: MVC, layered, hexagonal, etc.]
+
+[Document architectural patterns used: MVC, layered, hexagonal, etc. Include code examples.]
 
 ## Dependency Management
-[How dependencies are injected, managed, and organized]
+
+[How dependencies are injected, managed, and organized. Show injection pattern examples.]
 
 ## Error Handling
-[Centralized error handling, error types, error propagation]
+
+[Centralized error handling, error types, error propagation. Show error handling pattern examples.]
 
 ## Code Organization
-[File naming conventions, module boundaries, separation of concerns]
+
+[File naming conventions, module boundaries, separation of concerns. Show example directory structure.]
 
 ## Integration Patterns
-[How external services, databases, APIs are integrated]
+
+[How external services, databases, APIs are integrated. Include integration examples.]
 ```
 
-**Guidelines**:
-- Extract architecture decisions from PRD "Technical Decisions" sections
-- Include code examples showing the patterns
-- Reference specific directories and file structures
-- Document rationale for architectural choices
-
-### Testing Strategies Rule
-
-**Location**: `.claude/rules/testing-strategies.md`
+### Testing Strategies Rule Template
 
 ```markdown
 # Testing Strategies
@@ -48,7 +89,8 @@ Detailed reference material for the blueprint-development skill, including full 
 > TDD workflow, testing patterns, and coverage requirements for [project name]. Enforces test-first development and defines testing standards.
 
 ## TDD Workflow
-Follow strict RED > GREEN > REFACTOR:
+
+Follow strict RED → GREEN → REFACTOR:
 1. Write failing test describing desired behavior
 2. Run test suite to confirm failure
 3. Write minimal implementation to pass
@@ -56,81 +98,40 @@ Follow strict RED > GREEN > REFACTOR:
 5. Refactor while keeping tests green
 
 ## Test Structure
-[Directory organization, naming conventions, test types]
+
+[Directory organization, naming conventions, test types.]
 
 ## Test Types
+
 ### Unit Tests
-[What to unit test, mocking patterns, isolation strategies]
+[What to unit test, mocking patterns, isolation strategies. Include example test.]
 
 ### Integration Tests
-[What to integration test, test database setup, external service handling]
+[What to integration test, test database setup, external service handling. Include example test.]
 
 ### End-to-End Tests
-[User flows to test, test environment setup, data seeding]
+[User flows to test, test environment setup, data seeding. Include example test if applicable.]
 
 ## Mocking Patterns
-[When to mock, what to mock, mocking libraries and conventions]
+
+[When to mock, what to mock, mocking libraries and conventions. Include mocking examples.]
 
 ## Coverage Requirements
-[Minimum coverage percentages, critical path requirements, edge case coverage]
+
+[Minimum coverage percentages, critical path requirements, edge case coverage.]
 
 ## Test Commands
-[How to run tests, watch mode, coverage reports, debugging tests]
+
+[How to run tests, watch mode, coverage reports, debugging tests.]
+
+**Project test commands:**
+- Run all tests: [command]
+- Watch mode: [command]
+- Coverage report: [command]
+- Debug specific test: [command]
 ```
 
-**Guidelines**:
-- Extract TDD requirements from PRD "TDD Requirements" sections
-- Extract coverage requirements from "Success Criteria"
-- Include specific test commands for the project
-- Document mocking patterns for external dependencies
-
-### Implementation Guides Rule
-
-**Location**: `.claude/rules/implementation-guides.md`
-
-```markdown
-# Implementation Guides
-
-> Step-by-step guides for implementing specific feature types in [project name]. Provides patterns for APIs, UI, data access, and integrations.
-
-## API Endpoint Implementation
-### Step 1: Write Integration Test
-[Template for API test]
-
-### Step 2: Create Route
-[Route definition pattern]
-
-### Step 3: Implement Controller
-[Controller pattern with error handling]
-
-### Step 4: Implement Service Logic
-[Service layer pattern with business logic]
-
-### Step 5: Add Data Access
-[Repository/data access pattern]
-
-## UI Component Implementation
-[Pattern for UI components if relevant]
-
-## Database Operations
-[Pattern for database queries, transactions, migrations]
-
-## External Service Integration
-[Pattern for integrating with third-party APIs/services]
-
-## Background Jobs
-[Pattern for async jobs, queues, scheduled tasks if relevant]
-```
-
-**Guidelines**:
-- Extract implementation patterns from PRD "API Design", "Data Model" sections
-- Provide step-by-step TDD workflow for each feature type
-- Include code examples showing the pattern
-- Reference project-specific libraries and frameworks
-
-### Quality Standards Rule
-
-**Location**: `.claude/rules/quality-standards.md`
+### Quality Standards Rule Template
 
 ```markdown
 # Quality Standards
@@ -138,6 +139,7 @@ Follow strict RED > GREEN > REFACTOR:
 > Code review criteria, performance baselines, security standards, and quality gates for [project name]. Enforces project quality requirements.
 
 ## Code Review Checklist
+
 - [ ] All functions have tests (unit and/or integration)
 - [ ] Input validation on all external inputs
 - [ ] Error handling doesn't leak sensitive information
@@ -145,36 +147,74 @@ Follow strict RED > GREEN > REFACTOR:
 - [ ] [Project-specific checklist items]
 
 ## Performance Baselines
+
 [Specific performance targets from PRD]
 - [Metric 1]: [Target]
 - [Metric 2]: [Target]
 
 ## Security Standards
+
 [Security requirements from PRD]
 - [Security requirement 1]
 - [Security requirement 2]
 
 ## Code Style
-[Formatting, naming conventions, documentation standards]
+
+[Formatting, naming conventions, documentation standards. Include examples.]
 
 ## Documentation Requirements
-[When and what to document]
+
+[When and what to document.]
 
 ## Dependency Management
-[Versioning, security updates, license compliance]
+
+[Versioning, security updates, license compliance.]
 ```
 
-**Guidelines**:
-- Extract performance baselines from PRD "Performance Baselines"
-- Extract security requirements from PRD "Security Compliance"
-- Extract quality criteria from PRD "Success Criteria"
-- Create specific, actionable checklist items
+### Implementation Guides Rule Template
+
+```markdown
+# Implementation Guides
+
+> Step-by-step guides for implementing specific feature types in [project name]. Provides patterns for APIs, UI, data access, and integrations.
+
+## API Endpoint Implementation
+
+### Step 1: Write Integration Test
+[Template for API test - write test first]
+
+### Step 2: Create Route
+[Route definition pattern for your framework]
+
+### Step 3: Implement Controller
+[Controller pattern with error handling and validation]
+
+### Step 4: Implement Service Logic
+[Service layer pattern with business logic]
+
+### Step 5: Add Data Access
+[Repository/data access pattern]
+
+## [Feature Type 2] Implementation
+
+[Step-by-step pattern specific to project]
+
+## Database Operations
+
+[Pattern for database queries, transactions, migrations]
+
+## External Service Integration
+
+[Pattern for integrating with third-party APIs/services]
+
+## [Additional Patterns]
+
+[Any other common implementation patterns in the project]
+```
 
 ## Command Templates
 
-### `/blueprint:init` Command
-
-**Location**: `.claude/skills/blueprint-init.md`
+### Blueprint Init Command
 
 ```markdown
 ---
@@ -186,18 +226,18 @@ Initialize Blueprint Development structure:
 
 1. Create `docs/blueprint/` directory
 2. Create `docs/prds/` for requirements
-3. Create `docs/blueprint/work-orders/` for task packages
-4. Create `docs/blueprint/work-orders/completed/` for completed work-orders
-5. Add `docs/blueprint/work-orders/` to `.gitignore` (optional - ask user)
+3. Create `docs/adrs/` for architecture decisions
+4. Create `docs/prps/` for proposed work
+5. Create `docs/blueprint/manifest.json` with initial structure
+6. Add `docs/blueprint/work-orders/` directory (for task tracking)
+7. Add `docs/blueprint/work-orders/completed/` directory
 
 Report:
 - Directories created
 - Next steps: Write PRDs, then run `/blueprint:generate-rules`
 ```
 
-### `/blueprint:generate-rules` Command
-
-**Location**: `.claude/skills/blueprint-generate-rules.md`
+### Generate Rules Command
 
 ```markdown
 ---
@@ -226,9 +266,7 @@ Report:
 - Next steps: Review rules, run `/project:continue` to start development
 ```
 
-### `/blueprint:generate-commands` Command
-
-**Location**: `.claude/skills/blueprint-generate-commands.md`
+### Generate Commands Command
 
 ```markdown
 ---
@@ -252,15 +290,7 @@ Report:
 - Next steps: Review rules, then use `/project:continue` to start work
 ```
 
-### `/blueprint:work-order` Command
-
-**Location**: `.claude/skills/blueprint-work-order.md`
-
-**Flags**:
-- `--no-publish`: Create local work-order only, skip GitHub issue
-- `--from-issue N`: Create work-order from existing GitHub issue #N
-
-**Default behavior**: Creates BOTH local work-order AND GitHub issue with `work-order` label.
+### Work Order Command
 
 ```markdown
 ---
@@ -272,22 +302,21 @@ allowed-tools: Read, Write, Glob, Bash
 Generate work-order:
 
 1. Analyze current project state:
-   - Read feature-tracker.json
+   - Read feature-tracker.json if exists
    - Check git status
    - Read relevant PRDs
 2. Identify next logical work unit
 3. Determine minimal required context:
-   - Only files that need to be created/modified
-   - Only relevant code excerpts (not full files)
+   - Only files that need modification
+   - Only relevant code excerpts
    - Only relevant PRD sections
 4. Generate work-order document:
-   - Sequential number (find highest existing + 1)
+   - Sequential number (find highest + 1)
    - Clear objective
    - Minimal context
-   - TDD requirements (tests specified)
+   - TDD requirements
    - Implementation steps
    - Success criteria
-   - GitHub Issue reference
 5. Save to `docs/blueprint/work-orders/NNN-task-name.md`
 6. Create GitHub issue (unless --no-publish):
    - Title: "Work-Order NNN: [Task Name]"
@@ -299,12 +328,9 @@ Report:
 - Work-order created
 - Work-order number and objective
 - GitHub issue number (if created)
-- Ready for subagent execution
 ```
 
-### `/project:continue` Command
-
-**Location**: `.claude/skills/project-continue.md`
+### Continue Development Command
 
 ```markdown
 ---
@@ -319,15 +345,15 @@ Continue project development:
    - Run `git log -5 --oneline` (recent commits)
 2. Read context:
    - All PRDs in `docs/prds/`
-   - `feature-tracker.json` (current phase, tasks, and progress)
+   - `feature-tracker.json` (current phase, tasks, progress)
    - Recent work-orders (completed and pending)
 3. Identify next task:
    - Based on PRD requirements
    - Based on feature tracker progress
-   - Based on git status (resume if in progress)
+   - Based on git status
 4. Begin work following TDD:
-   - Apply project-specific rules (architecture, testing, implementation, quality)
-   - Follow RED > GREEN > REFACTOR workflow
+   - Apply project-specific rules
+   - Follow RED → GREEN → REFACTOR workflow
    - Commit incrementally
 
 Report before starting:
@@ -336,13 +362,11 @@ Report before starting:
 - Approach and plan
 ```
 
-### `/project:test-loop` Command
-
-**Location**: `.claude/skills/project-test-loop.md`
+### Test Loop Command
 
 ```markdown
 ---
-description: "Run test > fix > refactor loop with TDD workflow"
+description: "Run test → fix → refactor loop with TDD workflow"
 allowed-tools: Read, Edit, Bash
 ---
 
@@ -352,7 +376,7 @@ Run TDD cycle:
 2. If tests fail:
    - Analyze failure output
    - Identify root cause
-   - Make minimal fix to pass the test
+   - Make minimal fix to pass test
    - Re-run tests to confirm
 3. If tests pass:
    - Check for refactoring opportunities
@@ -372,11 +396,7 @@ Report:
 
 ## Rule Generation Guidelines
 
-### Extract from PRDs
-
-Extract patterns, decisions, and requirements directly from PRDs. If PRDs don't specify a pattern, ask user or use sensible defaults.
-
-### Be Specific
+### Be Specific and Actionable
 
 Use precise, actionable guidance with concrete references:
 
@@ -399,14 +419,12 @@ For architecture and technical decisions, include:
 - What trade-offs were made
 - When to deviate from the pattern
 
-### Make Rules Clear and Actionable
+### Use Imperative Language
 
 Rules should be behavioral guidelines that Claude follows:
-- Use imperative language ("Use...", "Follow...", "Ensure...")
+- Use imperative language: "Use...", "Follow...", "Ensure..."
 - Be specific about when the rule applies
 - Include examples of correct behavior
-
-**Good rule content**: "Use constructor injection for services. All service dependencies must be passed via constructor, not imported directly."
 
 ### Keep Rules Focused
 
@@ -426,14 +444,6 @@ Commands should:
 - Report clearly what was done
 - Suggest next steps
 
-### Use Appropriate Tools
-
-Specify `allowed_tools` in command frontmatter:
-- `/blueprint:init`: [Bash, Write]
-- `/blueprint:generate-rules`: [Read, Write, Glob]
-- `/project:continue`: [Read, Bash, Grep, Glob, Edit, Write]
-- `/project:test-loop`: [Read, Edit, Bash]
-
 ### Provide Clear Output
 
 Commands should report:
@@ -452,44 +462,41 @@ Commands should detect common issues:
 
 Report errors clearly and suggest fixes.
 
-## Testing Generated Rules and Commands
+## Manifest Structure
 
-### 1. Verify Rules Are Applied
-
-Test that Claude applies rules in relevant contexts:
-- When discussing architecture, architecture-patterns rule should guide behavior
-- When writing tests, testing-strategies rule should guide behavior
-- When implementing features, implementation-guides rule should guide behavior
-- When reviewing code, quality-standards rule should guide behavior
-
-### 2. Verify Commands Work
-
-Test each command:
-```bash
-/blueprint:init              # Should create directory structure
-/blueprint:generate-rules    # Should create four rules in .claude/rules/
-/blueprint:generate-commands # Should create workflow commands
-/project:continue            # Should analyze state and resume work
-/blueprint:work-order        # Should create work-order document
-/project:test-loop           # Should run tests and report
+```json
+{
+  "format_version": "3.0.0",
+  "updated_at": "ISO-8601-timestamp",
+  "structure": {
+    "has_prds": true,
+    "has_adrs": true,
+    "has_prps": true
+  },
+  "generated": {
+    "rules": [
+      "architecture-patterns.md",
+      "testing-strategies.md",
+      "quality-standards.md",
+      "implementation-guides.md"
+    ],
+    "commands": [
+      "blueprint-init.md",
+      "blueprint-generate-rules.md",
+      "blueprint-generate-commands.md",
+      "blueprint-work-order.md",
+      "project-continue.md",
+      "project-test-loop.md"
+    ]
+  },
+  "source_prds": ["project-overview.md"],
+  "last_generated": "ISO-8601-timestamp"
+}
 ```
 
-### 3. Verify Rules Guide Correctly
-
-Manually check that:
-- Architecture patterns match PRD technical decisions
-- Testing strategies match PRD TDD requirements
-- Implementation guides match PRD API/feature designs
-- Quality standards match PRD success criteria
-
-### 4. Refine as Needed
-
-During initial project development:
-- Rules may need refinement as patterns emerge
-- Commands may need adjustment based on actual workflow
-- Update rules and commands iteratively
-
 ## GitHub Work Order Integration
+
+Work orders can be linked to GitHub issues for transparency and cooperative development.
 
 ### Why GitHub Integration?
 
@@ -568,3 +575,40 @@ gh label create work-order --description "AI-assisted work order" --color "0E8A1
 | Solo exploration, quick prototype | `--no-publish` |
 | Issue already exists from discussion | `--from-issue N` |
 | Offline development | `--no-publish` |
+
+## Testing Generated Rules and Commands
+
+### 1. Verify Rules Are Applied
+
+Test that Claude applies rules in relevant contexts:
+- When discussing architecture, architecture-patterns rule should guide behavior
+- When writing tests, testing-strategies rule should guide behavior
+- When implementing features, implementation-guides rule should guide behavior
+- When reviewing code, quality-standards rule should guide behavior
+
+### 2. Verify Commands Work
+
+Test each command:
+```bash
+/blueprint:init              # Should create directory structure
+/blueprint:generate-rules    # Should create four rules in .claude/rules/
+/blueprint:generate-commands # Should create workflow commands
+/project:continue            # Should analyze state and resume work
+/blueprint:work-order        # Should create work-order document
+/project:test-loop           # Should run tests and report
+```
+
+### 3. Verify Rules Guide Correctly
+
+Manually check that:
+- Architecture patterns match PRD technical decisions
+- Testing strategies match PRD TDD requirements
+- Implementation guides match PRD API/feature designs
+- Quality standards match PRD success criteria
+
+### 4. Refine as Needed
+
+During initial project development:
+- Rules may need refinement as patterns emerge
+- Commands may need adjustment based on actual workflow
+- Update rules and commands iteratively

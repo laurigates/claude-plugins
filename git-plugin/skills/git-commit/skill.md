@@ -2,7 +2,7 @@
 model: haiku
 created: 2026-01-21
 modified: 2026-02-14
-reviewed: 2026-01-21
+reviewed: 2026-02-14
 name: git-commit
 description: |
   Create commits with conventional messages and issue references. Handles staging,
@@ -102,21 +102,25 @@ EOF
 
 ### Conventional Commit Types
 
-| Type | Use Case |
-|------|----------|
-| `feat` | New feature |
-| `fix` | Bug fix |
-| `docs` | Documentation |
-| `refactor` | Code restructuring |
-| `test` | Adding tests |
-| `chore` | Maintenance, deps |
-| `perf` | Performance |
+| Type | Use Case | Version Bump |
+|------|----------|--------------|
+| `feat` | New feature | Minor |
+| `fix` | Bug fix | Patch |
+| `perf` | Performance improvement | Patch |
+| `refactor` | Code restructuring | None |
+| `docs` | Documentation | None |
+| `test` | Adding tests | None |
+| `chore` | Maintenance, deps | None |
+| `ci` | CI/CD config | None |
+| `build` | Build system, deps | None |
+
+See [Conventional Commits Standards](../../.claude/rules/conventional-commits.md) for complete reference.
 
 ### Issue References
 
 | Keyword | Effect |
 |---------|--------|
-| `Fixes #N` | Closes issue on merge (bugs) |
+| `Fixes #N` | Closes issue on merge (bug fixes) |
 | `Closes #N` | Closes issue on merge (features) |
 | `Refs #N` | Links without closing (partial work) |
 

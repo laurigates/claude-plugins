@@ -8,10 +8,10 @@ description: |
   enabling resume from any point. Supports "continue the refactor" across sessions.
 args: "[--init|--continue|--status|--phase=N]"
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(npm run *), Bash(npx *), Bash(uv run *), Bash(cargo *), Read, Write, Edit, Grep, Glob, Task, TodoWrite
-argument-hint: --init to create plan, --continue to resume, --status to check progress
+argument-hint: "--init to create plan, --continue to resume, --status to check progress"
 created: 2026-02-08
 modified: 2026-02-14
-reviewed: 2026-02-08
+reviewed: 2026-02-14
 ---
 
 # /workflow:checkpoint-refactor
@@ -75,106 +75,64 @@ Base commit: {hash}
 
 ## Execution
 
-### Mode: --init
+Execute this multi-phase refactoring workflow:
 
-Create a new refactoring plan.
+### Step 1: Initialize refactoring plan (--init mode)
 
-1. **Analyze scope**: Read the files to be refactored, understand dependencies
-2. **Define phases**: Break work into phases where each phase:
-   - Touches a bounded set of files (ideally 3-7)
-   - Has clear acceptance criteria (tests pass, types check)
+If `--init` flag provided:
+
+1. Analyze scope: Read files to be refactored, understand dependencies
+2. Define phases where each:
+   - Touches 3-7 files (bounded scope)
+   - Has clear acceptance criteria (tests, type check)
    - Can be committed independently
    - Builds on previous phases
-3. **Write plan file**: Create `REFACTOR_PLAN.md` at repo root
-4. **Record base commit**: `git log --format='%H' -1`
+3. Write plan file: Create `REFACTOR_PLAN.md` at repo root
+4. Record base commit: `git log --format='%H' -1`
 
-**Phase ordering principles**:
-- Shared utilities/types first (other phases depend on these)
-- Leaf components last (depend on shared changes)
-- Tests alongside their implementation phase
-- Each phase should leave the codebase in a working state
+**Phase ordering**: Shared utilities/types first, leaf components last, tests alongside implementation.
 
-### Mode: --continue
+### Step 2: Resume existing refactor (--continue mode)
 
-Resume from the last completed phase.
+If `--continue` flag provided:
 
-1. **Read plan file**: `REFACTOR_PLAN.md`
-2. **Find next pending phase**: First phase with status `pending` or `needs-review`
-3. **Verify prerequisites**: All prior phases are `done`
-4. **Execute phase** (see Phase Execution below)
-5. **Update plan file**: Mark phase as `done` with result summary
-6. **Commit**: `git commit -m "refactor phase N: {description}"`
+1. Read `REFACTOR_PLAN.md`
+2. Find next pending phase (status `pending` or `needs-review`)
+3. Verify all prior phases are `done`
+4. Execute phase (go to Step 4)
 
-### Mode: --status
+### Step 3: Check progress (--status mode)
 
-Show current progress.
+If `--status` flag provided:
 
-```bash
-# Parse plan file and display status table
-```
+1. Read `REFACTOR_PLAN.md`
+2. Parse plan and display status table with phases, descriptions, statuses, file counts
+3. Exit
 
-| Phase | Description | Status | Files |
-|-------|-------------|--------|-------|
-| 1 | Extract shared types | done | 4 |
-| 2 | Create utility module | done | 3 |
-| 3 | Migrate component A | in-progress | 5 |
-| 4 | Migrate component B | pending | 4 |
-| 5 | Update tests | pending | 6 |
-
-### Mode: --phase=N
-
-Execute a specific phase.
-
-### Phase Execution (shared logic)
+### Step 4: Execute target phase (--phase=N or selected via Step 2)
 
 For each phase:
 
-1. **Read context from plan file** - Only the current phase's details
-2. **Read only the files listed for this phase** - Minimize context usage
-3. **Implement changes** - Edit files according to phase description
-4. **Validate**:
-   ```bash
-   # TypeScript
-   npx tsc --noEmit 2>&1 | head -30
-
-   # Python
-   uv run mypy . 2>&1 | head -30
-
-   # Rust
-   cargo check 2>&1 | head -30
-
-   # Tests
-   npm test 2>/dev/null || uv run pytest -x 2>/dev/null || cargo test 2>/dev/null
-   ```
-5. **If validation fails**:
+1. Read context from plan file (current phase's details)
+2. Read only the files listed for this phase
+3. Implement changes according to phase description
+4. Validate with appropriate tool (tsc, mypy, cargo check, or npm/pytest test)
+5. If validation fails:
    - Fix errors if straightforward
-   - If complex, mark phase as `needs-review` in plan file with details
+   - If complex, mark phase as `needs-review` with error details
    - Commit partial work with `WIP:` prefix
-6. **If validation passes**:
+6. If validation passes:
    - Update plan file: set status to `done`, write result summary
    - Commit: `git add -u && git commit -m "refactor phase N: {description}"`
-7. **Check if more phases remain** - If yes, proceed to next phase or suggest `--continue`
+7. If more phases remain, proceed to next phase or suggest `--continue`
 
-### Sub-Agent Delegation
+### Step 5: Sub-agent delegation (for large phases)
 
-For large phases (7+ files), delegate to a Task sub-agent:
-
-```
-Agent prompt:
-Read REFACTOR_PLAN.md and execute Phase {N}.
-
-Files to modify: {file list}
-Description: {phase description}
-Acceptance criteria: {criteria}
-
-After making changes:
-1. Run validation: {typecheck/test command}
-2. Update REFACTOR_PLAN.md Phase {N} status to "done" and add result summary
-3. Stage changes: git add -u
-4. Commit: git commit -m "refactor phase {N}: {description}"
-
-If validation fails, set status to "needs-review" with error details.
-```
+For phases with 7+ files, delegate to Task sub-agent with:
+- File list to modify
+- Phase description and acceptance criteria
+- Instructions: run validation, update plan file, stage/commit changes
+- If validation fails: mark phase as `needs-review` with error details
 
 ## Recovery Patterns
 

@@ -1,63 +1,104 @@
 ---
-model: haiku
+model: opus
 created: 2025-12-16
 modified: 2026-02-14
-reviewed: 2025-12-26
+reviewed: 2026-02-14
 name: blueprint-development
 description: "Generate project-specific rules and commands from PRDs for Blueprint Development methodology. Use when generating behavioral rules for architecture patterns, testing strategies, implementation guides, or quality standards from requirements documents."
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash, TodoWrite
 ---
 
-# Blueprint Development Rule Generator
+# /blueprint:development
 
-This skill teaches Claude how to generate project-specific behavioral rules and commands from Product Requirements Documents (PRDs) as part of the Blueprint Development methodology.
+Guide and reference for the Blueprint Development methodology that generates project-specific behavioral rules and workflow commands from PRDs (Product Requirements Documents).
 
 ## When to Use This Skill
 
-Activate this skill when:
-- User runs `/blueprint:generate-rules` command
-- User runs `/blueprint:generate-commands` command
-- User asks to "generate rules from PRDs"
-- User asks to "create project-specific rules"
-- User initializes Blueprint Development in a project
+| Use this skill when... | Use alternative when... |
+|------------------------|-------------------------|
+| Starting Blueprint Development in a project | Project is already using Blueprint (use `/blueprint:status`) |
+| Need to generate rules from PRDs | Starting a brand new project with no PRD yet |
+| Want project-specific behavioral guidelines | Using generic development practices |
+| Creating workflow automation for a project | Working on isolated tasks without project context |
 
 For detailed rule templates, command templates, and generation guidelines, see [REFERENCE.md](REFERENCE.md).
 
-## Rule Generation Process
+## Context
 
-### Step 1: Analyze PRDs
+- Blueprint initialized: !`test -f docs/blueprint/manifest.json && echo "YES" || echo "NO"`
+- PRDs present: !`ls docs/prds/*.md 2>/dev/null | wc -l`
+- Rules directory: !`test -d .claude/rules && echo "YES" || echo "NO"`
+- Existing rules: !`find .claude/rules -maxdepth 1 -name "*.md" 2>/dev/null | wc -l`
+- Project type: !`ls package.json pyproject.toml Cargo.toml go.mod 2>/dev/null | head -1 | xargs basename 2>/dev/null || echo "UNKNOWN"`
+
+## Execution
+
+Execute the complete Blueprint Development setup and rule generation workflow:
+
+### Step 1: Verify project readiness
+
+Check context values above:
+
+1. If Blueprint initialized = "NO" → Error: "Blueprint not initialized. Run `/blueprint:init` first"
+2. If PRDs present = "0" → Error: "No PRDs found. Create at least one PRD in `docs/prds/` before generating rules"
+3. If Rules directory = "NO" → Create: `mkdir -p .claude/rules`
+
+### Step 2: Analyze PRDs and extract patterns
 
 Read all PRD files in `docs/prds/` and extract:
 
-| Domain | What to Extract |
-|--------|----------------|
-| **Architecture Patterns** | Project structure, DI patterns, error handling, module boundaries, code organization |
-| **Testing Strategies** | TDD workflow, test types, mocking patterns, coverage requirements |
-| **Implementation Guides** | Feature implementation patterns (API, UI, data access, integrations) |
-| **Quality Standards** | Code review checklists, performance baselines, security requirements |
+1. **Architecture Patterns**: Project structure, dependency injection, error handling, module boundaries, layering, code organization
+2. **Testing Strategies**: TDD workflow, test types (unit, integration, e2e), mocking patterns, coverage requirements
+3. **Implementation Guides**: Patterns for implementing feature types (APIs, UI, database, external services)
+4. **Quality Standards**: Code review checklist, performance baselines, security requirements, style standards
 
-### Step 2: Generate Four Domain Rules
+See [REFERENCE.md](REFERENCE.md#extraction-patterns) for specific extraction patterns for each category.
 
-Create project-specific behavioral rules in `.claude/rules/` alongside manual rules.
+### Step 3: Generate four behavioral rules in `.claude/rules/`
 
-**Two-Layer Architecture**:
-1. **Plugin layer**: Generic skills from blueprint-plugin (auto-updated)
-2. **Rules layer**: Behavioral rules from PRDs in `.claude/rules/` (project-specific, can be manually edited)
+Create project-specific rules that guide Claude's behavior during development:
 
-Generate these four rules:
+**Three required core rules:**
 
-| Rule | Location | Purpose |
-|------|----------|---------|
-| Architecture Patterns | `.claude/rules/architecture-patterns.md` | Structure, organization, design patterns, DI, error handling |
-| Testing Strategies | `.claude/rules/testing-strategies.md` | TDD workflow, test types, mocking, coverage |
-| Implementation Guides | `.claude/rules/implementation-guides.md` | Step-by-step patterns for APIs, UI, data access |
-| Quality Standards | `.claude/rules/quality-standards.md` | Code review, performance, security, code style |
+1. **`architecture-patterns.md`** - Project structure, design patterns, dependency management, error handling, integration patterns
+2. **`testing-strategies.md`** - TDD workflow, test structure, test types, mocking patterns, coverage requirements
+3. **`quality-standards.md`** - Code review checklist, performance baselines, security standards, style, documentation
 
-See [REFERENCE.md](REFERENCE.md) for full rule templates and content guidelines.
+**One optional advanced rule (if applicable):**
 
-### Step 3: Track Generated Rules in Manifest
+4. **`implementation-guides.md`** - Step-by-step patterns for implementing specific feature types from PRDs
 
-Track which rules were generated from PRDs in `docs/blueprint/manifest.json`:
+For each rule file:
+- Use templates from [REFERENCE.md](REFERENCE.md#rule-templates)
+- Extract content directly from PRDs
+- Include code examples and specific references
+- Document rationale for architectural choices
+- Use imperative language ("Use...", "Follow...", "Ensure...")
+
+See [REFERENCE.md](REFERENCE.md#rule-generation-guidelines) for detailed guidelines on creating effective rules.
+
+### Step 4: Generate workflow commands
+
+Create project-specific workflow commands in `.claude/skills/` or `docs/blueprint/`:
+
+**Six core commands:**
+
+1. **`/blueprint:init`** - Initialize Blueprint Development structure
+2. **`/blueprint:generate-rules`** - Generate project rules from PRDs (main entry point)
+3. **`/blueprint:generate-commands`** - Generate workflow commands based on project type
+4. **`/blueprint:work-order`** - Create isolated work-order for subagent execution
+5. **`/project:continue`** - Analyze state and resume development
+6. **`/project:test-loop`** - Run automated TDD cycle
+
+For each command:
+- Determine project type and language
+- Extract test runners, build commands, development workflows
+- Customize command implementations using [REFERENCE.md](REFERENCE.md#command-templates)
+- Verify with expected `allowed-tools` permissions
+
+### Step 5: Create mapping in manifest
+
+Update `docs/blueprint/manifest.json` with:
 
 ```json
 {
@@ -65,70 +106,46 @@ Track which rules were generated from PRDs in `docs/blueprint/manifest.json`:
     "rules": [
       "architecture-patterns.md",
       "testing-strategies.md",
-      "implementation-guides.md",
-      "quality-standards.md"
+      "quality-standards.md",
+      "implementation-guides.md"
     ],
-    "commands": []
+    "commands": [
+      "blueprint-init.md",
+      "blueprint-generate-rules.md",
+      "blueprint-generate-commands.md",
+      "blueprint-work-order.md",
+      "project-continue.md",
+      "project-test-loop.md"
+    ]
   },
-  "source_prds": [],
-  "last_generated": "2026-01-09T..."
+  "source_prds": ["project-overview.md"],
+  "last_generated": "ISO-8601-timestamp"
 }
 ```
 
-## Command Generation Process
+This enables regeneration without losing track of what was auto-generated vs. manually created.
 
-### Step 1: Analyze Project Structure
+### Step 6: Test and validate
 
-Determine: project type, language/framework, test runner, build commands, git workflow conventions.
+Verify rules and commands work correctly:
 
-### Step 2: Generate Workflow Commands
+1. **Test rules apply**: Check that Claude follows architecture-patterns, testing-strategies, and quality-standards during development
+2. **Test commands execute**: Run each command to verify it works as expected
+3. **Verify output quality**: Check that generated rules match PRD requirements and include concrete examples
+4. **Refine as needed**: Update rules and commands based on feedback and actual project development
 
-Create commands in `.claude/skills/` for project-specific workflows:
+### Step 7: Report results and next steps
 
-| Command | Purpose | Key Tools |
-|---------|---------|-----------|
-| `/blueprint:init` | Initialize Blueprint structure | Bash, Write |
-| `/blueprint:generate-rules` | Generate rules from PRDs | Read, Write, Glob |
-| `/blueprint:generate-commands` | Generate workflow commands | Read, Write, Bash, Glob |
-| `/blueprint:work-order` | Create isolated work-order for subagent | Read, Write, Glob, Bash |
-| `/project:continue` | Analyze state and resume development | Read, Bash, Grep, Glob, Edit, Write |
-| `/project:test-loop` | Run automated TDD cycle | Read, Edit, Bash |
+Create summary report:
 
-See [REFERENCE.md](REFERENCE.md) for full command templates.
-
-**GitHub Work-Order Integration Flow**:
-1. Work-order created - GitHub issue created (visibility)
-2. Work completed - PR created with `Fixes #N`
-3. PR merged - Issue auto-closes
-4. Work-order moved to `completed/`
-
-### Step 3: Customize Commands for Project
-
-Adapt command templates based on:
-- **Programming language**: Adjust test commands, build commands
-- **Framework**: Include framework-specific patterns
-- **Project type**: CLI, web app, library have different workflows
-- **Team conventions**: Match existing git workflow, commit conventions
-
-## Rule Generation Guidelines
-
-| Guideline | Description |
-|-----------|-------------|
-| **Extract from PRDs** | Use patterns and decisions directly from PRDs; ask user for gaps |
-| **Be specific** | Use precise, actionable guidance with concrete file:line references |
-| **Include code examples** | Every pattern should show what it looks like in practice |
-| **Document rationale** | Explain why, alternatives considered, trade-offs, when to deviate |
-| **Use imperative language** | "Use...", "Follow...", "Ensure..." |
-| **Keep rules focused** | One concern per rule file |
-
-## Command Generation Guidelines
-
-| Guideline | Description |
-|-----------|-------------|
-| **Autonomous execution** | Run without user input (except explicit prompts) |
-| **Auto-read context** | Read necessary context automatically |
-| **Clear reporting** | Report what was analyzed, done, results, and next steps |
-| **Error handling** | Detect missing files, invalid structure, missing commands |
+- Rules generated: {count} in `.claude/rules/`
+- Commands created: {count} (use `/project:continue` to start development)
+- Manifest updated with tracking metadata
+- **Next steps**:
+  1. Review generated rules for accuracy
+  2. Add project-specific additions or clarifications
+  3. Run `/project:continue` to begin Blueprint Development workflow
+  4. Use `/blueprint:work-order` to create isolated tasks for team members
 
 ## Integration with Blueprint Development
 
@@ -140,19 +157,22 @@ By generating project-specific rules and commands from PRDs, Blueprint Developme
 
 ## GitHub Work Order Integration
 
-Work orders can be linked to GitHub issues for transparency and cooperative development. See [REFERENCE.md](REFERENCE.md) for workflow modes (`--no-publish`, `--from-issue N`), label setup, completion workflow, and work order file format.
+Work orders can be linked to GitHub issues for transparency and cooperative development. See [REFERENCE.md](REFERENCE.md#github-work-order-integration) for workflow modes (`--no-publish`, `--from-issue N`), label setup, completion workflow, and work order file format.
 
 ## Agentic Optimizations
 
-| Context | Command |
-|---------|---------|
-| Generate rules | `/blueprint:generate-rules` |
-| Generate commands | `/blueprint:generate-commands` |
-| Full setup | `/blueprint:init` then `/blueprint:generate-rules` then `/blueprint:generate-commands` |
-| Work order (local) | `/blueprint:work-order --no-publish` |
-| Work order (GitHub) | `/blueprint:work-order` |
-| Work order from issue | `/blueprint:work-order --from-issue N` |
+| Context | Action |
+|---------|--------|
+| Check if rules exist | `find .claude/rules -maxdepth 1 -name "*.md" \| wc -l` |
+| List existing rules | `ls -1 .claude/rules/*.md 2>/dev/null` |
+| Count PRDs | `ls docs/prds/*.md 2>/dev/null \| wc -l` |
+| Extract PRD sections | Use Grep to find specific sections by heading pattern |
+| Fast generation | Skip manual review step, proceed with standard templates |
 
 ## Examples
 
 See `.claude/docs/blueprint-development/` for complete workflow documentation and examples.
+
+---
+
+For detailed rule templates, command examples, extraction patterns, and project-specific customization, see [REFERENCE.md](REFERENCE.md).

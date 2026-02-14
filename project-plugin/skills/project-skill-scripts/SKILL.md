@@ -1,186 +1,96 @@
 ---
 model: opus
-description: Analyze plugin skills for supporting script opportunities and create them
-args: [--analyze] [--create <plugin/skill>] [--all]
+name: project-skill-scripts
+description: Analyze plugin skills to identify opportunities where supporting scripts would improve performance (fewer tokens, faster execution, consistent results), then optionally create those scripts.
+args: "[--analyze] [--create <plugin/skill>] [--all]"
 allowed-tools: Bash(chmod *), Bash(mkdir *), Read, Write, Edit, Glob, Grep, TodoWrite
-argument-hint: --analyze | --create git-plugin/git-commit-workflow | --all
+argument-hint: "--analyze | --create git-plugin/git-commit-workflow | --all"
 created: 2026-01-24
 modified: 2026-02-14
-reviewed: 2026-01-24
-name: project-skill-scripts
+reviewed: 2026-02-14
 ---
 
 # /project:skill-scripts
 
 Analyze plugin skills to identify opportunities where supporting scripts would improve performance (fewer tokens, faster execution, consistent results), then optionally create those scripts.
 
-## Usage
+## When to Use This Skill
 
-- `/project:skill-scripts` or `/project:skill-scripts --analyze` - Scan all skills, report candidates
-- `/project:skill-scripts --create git-plugin/git-commit-workflow` - Create script for specific skill
-- `/project:skill-scripts --all` - Analyze and create scripts for all high-scoring candidates
+| Use this skill when... | Use alternative when... |
+|------------------------|--------------------------|
+| Analyzing skill improvement opportunities | Need to create a single script for a skill |
+| Bulk script creation across plugins | One-off script for one specific need |
+| Measuring coverage of scripts across portfolio | Script generation is already done |
 
-## Phase 1: Run Analysis Script
+## Context
 
-Execute the analyzer to get structured data on all skills:
+- Plugin root: !`git rev-parse --show-toplevel 2>/dev/null || echo './'`
+- Total plugins: !`find . -maxdepth 2 -name 'plugin.json' -type f 2>/dev/null | wc -l`
+- Skills with scripts: !`find . -name 'scripts/*.sh' -type f 2>/dev/null | wc -l`
 
-```bash
-bash "${CLAUDE_PLUGIN_ROOT}/skills/project-discovery/scripts/analyze-skills.sh" "$(git rev-parse --show-toplevel 2>/dev/null || echo '.')"
-```
+## Parameters
 
-Parse the output to identify:
-- Skills already with scripts (current coverage)
-- High-scoring candidates (score >= 8)
-- Script type recommendations (context-gather, workflow, multi-tool, utility)
+Parse `$ARGUMENTS` for:
 
-## Phase 2: Deep Analysis (for --create or --all)
+- `--analyze`: Scan all skills, report candidates (default)
+- `--create <plugin/skill>`: Create script for specific skill only
+- `--all`: Analyze and create scripts for all high-scoring candidates
 
-For each candidate skill, read the SKILL.md and identify:
+## Execution
 
-### 2.1 Script Opportunity Patterns
+Execute this skill script analysis and creation workflow:
 
-| Pattern | Script Type | Example |
-|---------|-------------|---------|
-| Multiple sequential git/gh commands | context-gather | Collect status + diff + log + issues |
-| Multi-phase workflow (Phase 1, 2, 3...) | workflow | Run all phases in sequence |
-| Project type detection + conditional execution | multi-tool | Detect linters, run appropriate one |
-| Repeated command with different args | utility | Run same tool across multiple targets |
-| Structured output assembly | context-gather | Build JSON/table from multiple sources |
+### Step 1: Run analysis script
 
-### 2.2 Evaluate Benefit
+Execute analyzer to get structured data on all skills:
 
-Before creating a script, verify it provides real value:
+1. Run analyzer: `bash "${CLAUDE_PLUGIN_ROOT}/skills/project-discovery/scripts/analyze-skills.sh" $(git rev-parse --show-toplevel 2>/dev/null || echo '.')`
+2. Parse output to identify:
+   - Current coverage (skills with scripts)
+   - High-scoring candidates (score >= 8)
+   - Script type recommendations
 
-| Criterion | Threshold | Benefit |
-|-----------|-----------|---------|
-| Commands replaced | >= 4 individual tool calls | Token savings |
-| Output consistency | Variable AI-composed vs deterministic | Reliability |
-| Error handling | Multiple failure points | Robustness |
-| Reuse frequency | Used in multiple contexts | Maintainability |
+### Step 2: Analyze candidates (--create or --all modes)
 
-Skip if the skill's bash usage is:
-- Single commands with simple flags
-- Interactive/creative (needs AI judgment per invocation)
-- Already well-structured with few commands
+For each candidate skill:
 
-## Phase 3: Create Scripts
+1. Read SKILL.md to understand the workflow
+2. Identify script opportunity patterns:
+   - Multiple sequential git/gh commands → context-gather script
+   - Multi-phase workflow → workflow script
+   - Project type detection + conditional execution → multi-tool script
+   - Repeated command with different args → utility script
+3. Evaluate benefit: >= 4 tool calls, consistency, error handling, reuse frequency
+4. Skip if: single simple commands, interactive/creative, already well-structured
 
-### 3.1 Script Template
+### Step 3: Create scripts
 
-All supporting scripts follow this structure:
+For approved candidates:
 
-```bash
-#!/usr/bin/env bash
-# <Description>
-# Usage: bash <script-name>.sh [args]
-#
-# <What this replaces and why it's better>
+1. Use standard script template with structured output (KEY=value, section markers)
+2. Follow design principles: structured output, error resilience, bounded output, portable
+3. Place in `<plugin>/skills/<skill-name>/scripts/<script-name>.sh`
+4. Make executable: `chmod +x <path>`
+5. Update SKILL.md with "Recommended" section referencing the script
+6. Update `modified:` date in frontmatter
 
-set -uo pipefail
+### Step 4: Report results
 
-# Parse arguments
-# ...
+Present findings:
+- Current coverage (X/Y skills have scripts)
+- Scripts created (plugin, skill, script, type, commands replaced)
+- Remaining candidates (plugin, skill, score, type, recommendation)
+- Next steps (test, commit)
 
-echo "=== <SECTION NAME> ==="
+### Step 5: Commit changes
 
-# Structured output with key=value pairs
-echo "KEY=value"
-
-# Section separators for parsing
-echo "--- <subsection> ---"
-
-echo "=== COMPLETE ==="
-```
-
-### 3.2 Script Design Principles
-
-| Principle | Implementation |
-|-----------|----------------|
-| Structured output | Use `KEY=value`, `--- section ---`, `=== PHASE ===` markers |
-| Error resilience | Use `2>/dev/null`, `|| true`, `|| echo "fallback"` |
-| Bounded output | Pipe through `head -N`, limit find results |
-| No side effects | Scripts should be read-only unless explicitly named otherwise |
-| Portable | Use POSIX-compatible constructs where possible |
-| Self-documenting | Header comment explains usage and what it replaces |
-
-### 3.3 File Placement
-
-```
-<plugin>-plugin/skills/<skill-name>/scripts/<script-name>.sh
-```
-
-Script naming conventions:
-- `discover.sh` - Discovery/exploration scripts
-- `detect-and-fix.sh` - Detection + action scripts
-- `<noun>-context.sh` - Context-gathering scripts (commit-context, pr-context)
-- `<noun>-scan.sh` - Scanning/analysis scripts
-- `analyze-<noun>.sh` - Analysis scripts
-
-### 3.4 Update SKILL.md
-
-After creating the script, add a "Recommended" section to the SKILL.md:
-
-```markdown
-## <Action Name> (Recommended)
-
-<Brief description of what the script does>:
-
-\`\`\`bash
-bash "${CLAUDE_PLUGIN_ROOT}/skills/<skill-name>/scripts/<script-name>.sh"
-\`\`\`
-
-The script outputs: <list key outputs>. See [scripts/<script-name>.sh](scripts/<script-name>.sh) for details.
-```
-
-Place this section:
-- Before the manual workflow it replaces (if replacing a workflow)
-- Near the top of the execution section (if adding context-gathering)
-- After the "When to Use" section (if it's the primary action)
-
-### 3.5 Make Executable
-
-```bash
-chmod +x <path-to-script>
-```
-
-### 3.6 Update Modified Date
-
-Update the `modified:` field in the SKILL.md frontmatter to today's date.
-
-## Phase 4: Report
-
-Present results in this format:
-
-```markdown
-## Skill Scripts Analysis
-
-### Current Coverage
-- X/Y skills have supporting scripts
-
-### Scripts Created
-| Plugin | Skill | Script | Type | Commands Replaced |
-|--------|-------|--------|------|-------------------|
-| ... | ... | ... | ... | ... |
-
-### Remaining Candidates
-| Plugin | Skill | Score | Type | Recommendation |
-|--------|-------|-------|------|----------------|
-| ... | ... | ... | ... | ... |
-
-### Next Steps
-- [ ] Test scripts in target project contexts
-- [ ] Commit changes with conventional commit message
-```
-
-## Phase 5: Commit (if changes made)
-
-Stage and commit with:
+If scripts created:
 
 ```
 feat(<affected-plugins>): add supporting scripts to skills
 ```
 
-Include in the commit body:
+Include in body:
 - Which scripts were created
 - What they replace (token/call savings)
 - Which SKILL.md files were updated

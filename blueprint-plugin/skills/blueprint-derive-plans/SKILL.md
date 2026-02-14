@@ -2,7 +2,7 @@
 model: opus
 created: 2026-01-15
 modified: 2026-02-14
-reviewed: 2026-01-15
+reviewed: 2026-02-14
 description: "Derive PRDs, ADRs, and PRPs from git history, codebase structure, and existing documentation"
 args: "[--quick] [--since DATE]"
 argument-hint: "--quick for fast scan, --since 2024-01-01 for date range"
@@ -10,211 +10,166 @@ allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion, Task
 name: blueprint-derive-plans
 ---
 
+# /blueprint:derive-plans
+
 Retroactively generate Blueprint documentation (PRDs, ADRs, PRPs) from an existing established project by analyzing git history, codebase structure, and existing documentation.
 
-**Use Case**: Onboarding established projects into the Blueprint Development system when PRD/ADR/PRP documents don't exist but the project has implementation history.
+**Use case**: Onboarding established projects into the Blueprint Development system when PRD/ADR/PRP documents don't exist but the project has implementation history.
 
-**Arguments**:
+## When to Use This Skill
+
+| Use this skill when... | Use alternative when... |
+|------------------------|-------------------------|
+| Project has git history but no PRDs/ADRs/PRPs | Starting a brand new project with no history |
+| Onboarding an established project to Blueprint | Creating a fresh PRD from scratch with user guidance |
+| Need to extract features from commit history | Project lacks conventional commits and clear history |
+| Want to document architecture decisions retroactively | Decisions are already fully documented |
+
+## Context
+
+- Git repository: !`git rev-parse --git-dir 2>/dev/null && echo "YES" || echo "NO"`
+- Blueprint initialized: !`test -f docs/blueprint/manifest.json && echo "YES" || echo "NO"`
+- Total commits: !`git rev-list --count HEAD 2>/dev/null || echo "0"`
+- First commit: !`git log --reverse --format=%ai -1 2>/dev/null || echo "UNKNOWN"`
+- Latest commit: !`git log -1 --format=%ai 2>/dev/null || echo "UNKNOWN"`
+- Project type: !`ls package.json pyproject.toml Cargo.toml go.mod pom.xml 2>/dev/null | head -1 | xargs basename 2>/dev/null || echo "UNKNOWN"`
+- Documentation files: !`find . -maxdepth 2 -name "README.md" -o -name "ARCHITECTURE.md" -o -name "DESIGN.md" 2>/dev/null | wc -l`
+
+## Parameters
+
+Parse these from `$ARGUMENTS`:
+
 - `--quick`: Fast scan (last 50 commits only)
 - `--since DATE`: Analyze commits from specific date (e.g., `--since 2024-01-01`)
 
-**Prerequisites**:
-- Project is a git repository with commit history
-- Project has some existing code and/or documentation
+Default behavior without flags: Standard analysis (last 200 commits with scope estimation).
 
 For detailed templates, manifest format, and report examples, see [REFERENCE.md](REFERENCE.md).
 
----
+## Execution
 
-## Phase 1: Prerequisites & Discovery
+Execute this retroactive documentation generation workflow:
 
-### 1.1 Check Git Repository
+### Step 1: Verify prerequisites
 
-```bash
-git rev-parse --git-dir 2>/dev/null
-```
+Check context values above:
 
-If not a git repository, error: "This directory is not a git repository. Run from project root."
+1. If git repository = "NO" → Error: "This directory is not a git repository. Run from project root."
+2. If total commits = "0" → Error: "Repository has no commit history"
+3. If Blueprint initialized = "NO" → Ask user: "Blueprint not initialized. Initialize now (Recommended) or minimal import only?"
+   - If "Initialize now" → Use Task tool to invoke `/blueprint:init`, then continue with this step 1
+   - If "Minimal import only" → Create minimal directory structure: `mkdir -p docs/prds docs/adrs docs/prps`
 
-### 1.2 Check Blueprint Status
+### Step 2: Determine analysis scope
 
-```bash
-ls docs/blueprint/manifest.json 2>/dev/null
-```
+Parse `$ARGUMENTS` for `--quick` or `--since`:
 
-**If not initialized**, use AskUserQuestion with options: "Initialize now (Recommended)", "Minimal import only", or "Cancel".
+1. If `--quick` flag present → scope = last 50 commits
+2. If `--since DATE` present → scope = commits from DATE to now
+3. Otherwise → Present options to user:
+   - Quick scan (last 50 commits)
+   - Standard analysis (last 200 commits)
+   - Full history analysis (all commits)
+   - Custom date range
 
-### 1.3 Detect Project Context
+Use selected scope for all subsequent git analysis.
 
-```bash
-# Project type detection
-ls package.json pyproject.toml Cargo.toml go.mod pom.xml build.gradle 2>/dev/null | head -1
+### Step 3: Analyze git history quality
 
-# Commit count and date range
-git rev-list --count HEAD
-git log --format="%ai" | tail -1
-git log -1 --format="%ai"
-```
+For commits in scope, calculate:
 
-### 1.4 Estimate Analysis Scope
+1. Count total commits: `git log --oneline {scope} | wc -l`
+2. Count conventional commits: `git log --format="%s" {scope} | grep -cE "^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)\(?.*\)?:" || echo 0`
+3. Calculate percentage and assign quality score (see [REFERENCE.md](REFERENCE.md#git-quality-scoring))
 
-Present scope options based on commit count: "Quick scan (last 50)", "Standard (last 200)", "Full history", or "Custom date range".
+Report: "Git history quality: {score}/10 ({percentage}% conventional commits)"
 
----
+### Step 4: Extract features and architecture decisions
 
-## Phase 2: Git History Analysis
+Using methods from [REFERENCE.md](REFERENCE.md#git-analysis-patterns):
 
-### 2.1 Assess Git History Quality
+1. Extract feature boundaries from conventional commit scopes
+2. Identify architecture decisions (migrations, major dependencies, breaking changes)
+3. Find issue references and future work items (TODOs, skipped tests)
+4. Identify release boundaries from git tags
 
-```bash
-git log --oneline {scope} | wc -l
-git log --oneline --format="%s" {scope} | grep -cE "^(feat|fix|docs|style|refactor|perf|test|build|ci|chore)\(?.*\)?:" || echo 0
-```
+Collect findings in structured format for user confirmation.
 
-**Git Quality Score**: 80%+ conventional = 9-10, 50-79% = 6-8, 20-49% = 4-5, <20% = 1-3.
+### Step 5: Analyze codebase and existing documentation
 
-### 2.2 Extract Feature Boundaries
+1. Use Explore agent to analyze architecture: directory structure, components, frameworks, patterns, entry points, data layer, API layer, testing structure
+2. Extract dependencies from manifest files (package.json, pyproject.toml, Cargo.toml, go.mod, etc.)
+3. Read and extract from existing documentation: README.md, docs/, ARCHITECTURE.md, DESIGN.md, CONTRIBUTING.md
+4. Detect future work: TODOs in code, open GitHub issues, skipped tests
 
-```bash
-git log --oneline --format="%s" {scope} | grep -oE "^\w+\(([^)]+)\)" | sed 's/.*(\([^)]*\)).*/\1/' | sort | uniq -c | sort -rn | head -20
-```
+### Step 6: Clarify project context with user
 
-For each scope with 3+ commits, capture: name, commit count, date range, type distribution.
+Ask for clarifications on:
 
-### 2.3 Extract Architecture Decisions
+1. **Project purpose** (if not clear from README): Present inferred description for confirmation or ask user to provide
+2. **Target users**: Who are the primary users (developers, end users, both)?
+3. **Feature confirmation**: Present {N} features extracted from git for review/prioritization
+4. **Architecture rationale**: For each identified decision, ask what was the main driver
+5. **Generation confirmation**: Show summary with metrics and ask if ready to generate
 
-```bash
-# Technology migrations
-git log --oneline --format="%s" {scope} | grep -iE "(migrate|switch|replace|upgrade|adopt|move from|move to)" | head -20
+For confirmation step, present:
+- Git history quality: {score}/10
+- Features identified: {N}
+- Architecture decisions: {N}
+- Future work items: {N}
+- Proposed documents: PRD, {N} ADRs, {N} PRPs
 
-# Major dependency changes
-git log --oneline --format="%s" {scope} | grep -iE "(add|install|introduce|integrate|remove|drop) .*(library|framework|package|dependency|database|orm)" | head -20
+### Step 7: Generate documents
 
-# Breaking changes
-git log --oneline --format="%s" {scope} | grep -E "^[a-z]+(\([^)]+\))?!:" | head -20
-git log --format="%B" {scope} | grep -iB5 "BREAKING CHANGE:" | head -30
-```
+Create directory structure: `mkdir -p docs/prds docs/adrs docs/prps`
 
-### 2.4 Extract Issue References
+For each document type, use templates and patterns from [REFERENCE.md](REFERENCE.md):
 
-```bash
-git log --oneline --format="%s %b" {scope} | grep -oE "(Fixes|Closes|Resolves|Refs|Related to) #[0-9]+" | sort | uniq -c | sort -rn | head -30
-```
+1. **Generate PRD** as `docs/prds/project-overview.md`
+   - Use sections and structure from REFERENCE.md
+   - Include extracted features with priorities and sources
+   - Mark sections with confidence scores
 
-### 2.5 Identify Release Boundaries
+2. **Generate ADRs** as `docs/adrs/{NNNN}-{title}.md` (one per decision)
+   - Use ADR template from REFERENCE.md
+   - Include git evidence (commit SHA, date, files changed)
+   - Mark with confidence score
 
-```bash
-git tag -l | grep -E "^v?[0-9]+\.[0-9]+" | head -20
-```
+3. **Create ADR index** at `docs/adrs/README.md`
+   - Table of all ADRs with status and dates
+   - Link to MADR template for new ADRs
 
----
+4. **Generate PRPs** as `docs/prps/{feature}.md` (one per future work item)
+   - Use PRP template from REFERENCE.md
+   - Include source reference and confidence score
+   - Suggest implementation based on codebase patterns
 
-## Phase 3: Codebase Analysis
+### Step 8: Update manifest and report results
 
-### 3.1 Architecture Discovery
-
-Use Explore agent to analyze: directory structure, major components, frameworks/libraries, design patterns, entry points, data layer, API layer, and testing structure.
-
-### 3.2 Dependency Analysis
-
-Read the project manifest (`package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`) and extract: major frameworks, testing frameworks, build tools, database drivers.
-
-### 3.3 Existing Documentation Analysis
-
-```bash
-fd -e md -d 3 . | head -30
-```
-
-Read and extract from: `README.md`, `docs/`, `ARCHITECTURE.md`, `CONTRIBUTING.md`.
-
-### 3.4 Future Work Detection
-
-```bash
-rg "TODO|FIXME|XXX|HACK" --type-add 'code:*.{ts,js,tsx,jsx,py,go,rs,java}' -t code -c 2>/dev/null | head -20
-gh issue list --state open --limit 20 --json number,title,labels 2>/dev/null || echo "[]"
-rg "(skip|xtest|xit|pending|@pytest.mark.skip|#\[ignore\])" --type-add 'test:*.{test.ts,test.js,spec.ts,spec.js,_test.py,_test.go}' -t test -c 2>/dev/null | head -10
-```
-
----
-
-## Phase 4: User Interaction
-
-Use AskUserQuestion for each of the following:
-
-1. **Project context clarification** - if purpose not clear from README
-2. **Target users** - developers, end users, or both
-3. **Feature confirmation** - review extracted features or accept all as-is
-4. **Feature prioritization** - for each major feature: P0, P1, P2, or Skip
-5. **Architecture decision rationale** - for each decision: performance, familiarity, ecosystem, feature needs, legacy, or custom explanation
-6. **Generation confirmation** - show analysis summary and offer: "Generate all", "PRD and ADRs only", "PRD only", "Let me adjust", or "Cancel"
-
----
-
-## Phase 5: Document Generation
-
-### 5.1 Create Directory Structure
-
-```bash
-mkdir -p docs/prds docs/adrs docs/prps
-```
-
-### 5.2 Generate PRD
-
-Create `docs/prds/project-overview.md` using the PRD template from [REFERENCE.md](REFERENCE.md). Include import metadata and confidence summary.
-
-### 5.3 Generate ADRs
-
-For each identified architecture decision, create `docs/adrs/{NNNN}-{title}.md` using the ADR template from [REFERENCE.md](REFERENCE.md). Create `docs/adrs/README.md` index.
-
-### 5.4 Generate PRPs
-
-For each identified future work item, create `docs/prps/{feature}.md` using the PRP template from [REFERENCE.md](REFERENCE.md).
-
----
-
-## Phase 6: Manifest Updates & Reporting
-
-### 6.1 Update Manifest
-
-Update `docs/blueprint/manifest.json` with import metadata. See [REFERENCE.md](REFERENCE.md) for format.
-
-### 6.2 Summary Report
-
-Generate completion report with: analysis summary (commits, conventional %, quality score), documents generated (PRDs, ADRs, PRPs with confidence), sections needing review, and next steps.
-
-### 6.3 Prompt Next Action
-
-Offer: "Review and refine documents", "Generate project rules", "Generate workflow commands", or "I'm done for now".
-
----
-
-## Error Handling
-
-| Condition | Action |
-|-----------|--------|
-| Not a git repository | Error with message, suggest running from project root |
-| No commits | Error: "Repository has no commit history" |
-| No README and no docs | Warn, ask user for project description |
-| Blueprint already has PRDs | Ask: Merge, Replace, or Cancel |
-| gh CLI not available | Skip issue-based analysis, warn user |
-| Very large repo (>5000 commits) | Suggest --quick or --since flag |
-| No conventional commits | Graceful degradation: lower confidence, use file-based analysis |
-
----
+1. Update `docs/blueprint/manifest.json` with import metadata: timestamp, commits analyzed, confidence scores, generated artifacts
+2. Create summary report showing:
+   - Commits analyzed with date range
+   - Git quality score
+   - Documents generated (PRD, ADR count, PRP count)
+   - Sections needing review (confidence < 7)
+   - Recommended next steps
+
+3. Prompt user for next action:
+   - Review and refine documents
+   - Generate project rules from PRD
+   - Generate workflow commands
+   - Exit (documents saved)
 
 ## Agentic Optimizations
 
 | Context | Command |
 |---------|---------|
-| Quick scan | `/blueprint:derive-plans --quick` |
-| Date-scoped | `/blueprint:derive-plans --since 2024-01-01` |
-| Commit quality check | `git log --format="%s" \| grep -cE "^(feat\|fix\|docs)\\("` |
-| Scope estimation | `git rev-list --count HEAD` |
+| Check git status | `git rev-parse --git-dir 2>/dev/null && echo "YES" \|\| echo "NO"` |
+| Count commits | `git rev-list --count HEAD 2>/dev/null \|\| echo "0"` |
+| Conventional commits count | `git log --format="%s" \| grep -cE "^(feat\|fix\|docs)" \|\| echo 0` |
+| Extract scopes | `git log --format="%s" \| grep -oE '\([^)]+\)' \| sort \| uniq -c` |
+| Fast analysis | Use `--quick` flag for last 50 commits only |
 
-## Tips
+---
 
-- **Git history quality matters**: Projects with conventional commits produce better results
-- **User input improves accuracy**: Answer clarifying questions to increase confidence scores
-- **Review low-confidence sections**: Focus review effort on sections marked < 7/10
-- **Iterative refinement**: Run import once, then refine documents manually
-- **Combine with existing docs**: If some documentation exists, import will incorporate it
+For detailed templates, git analysis patterns, document generation examples, and error handling guidance, see [REFERENCE.md](REFERENCE.md).

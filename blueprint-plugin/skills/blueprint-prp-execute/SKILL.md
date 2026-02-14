@@ -6,11 +6,13 @@ argument-hint: "Name of PRP to execute (e.g., feature-auth-oauth2)"
 allowed-tools: Read, Write, Edit, Glob, Bash, Task, AskUserQuestion
 created: 2025-12-16
 modified: 2026-02-14
-reviewed: 2025-12-16
+reviewed: 2026-02-14
 name: blueprint-prp-execute
 ---
 
-Execute a PRP (Product Requirement Prompt) with systematic implementation and validation.
+# /blueprint:prp-execute
+
+Execute a PRP (Product Requirement Prompt) with systematic implementation, validation gates, TDD workflow, and quality assurance.
 
 **Usage**: `/blueprint:prp-execute [prp-name]`
 
@@ -20,179 +22,153 @@ Execute a PRP (Product Requirement Prompt) with systematic implementation and va
 
 For detailed report templates, deferred items workflow, feature tracker sync, and error handling patterns, see [REFERENCE.md](REFERENCE.md).
 
----
+## When to Use This Skill
 
-## Phase 1: Load Context
+| Use this skill when... | Use alternative when... |
+|------------------------|-------------------------|
+| Ready to implement a planned feature from a PRP | PRP is not yet ready (confidence < 7) |
+| Want to execute with full validation and TDD workflow | Implementing ad-hoc features without documentation |
+| Need feature tracker and GitHub issue tracking | Working on isolated bug fixes |
+| Want automatic progress reporting and deferred items tracking | Quick prototyping without formal tracking |
 
-### 1.1 Read PRP
+## Context
 
-```bash
-cat docs/prps/$PRP_NAME.md
-```
+- PRP file path: !`test -f docs/prps/${1:-unknown}.md && echo "EXISTS" || echo "MISSING"`
+- PRP confidence score: !`head -50 docs/prps/${1:-unknown}.md 2>/dev/null | grep -m1 "^confidence:" | sed 's/^[^:]*:[[:space:]]*//'`
+- Feature tracker enabled: !`test -f docs/blueprint/feature-tracker.json && echo "YES" || echo "NO"`
+- Current branch: !`git rev-parse --abbrev-ref HEAD 2>/dev/null`
+- Uncommitted changes: !`git status --porcelain 2>/dev/null | wc -l`
 
-### 1.2 Verify Confidence Score
+## Parameters
 
-| Score | Action |
-|-------|--------|
-| >= 9 | Ready for autonomous execution (or delegation) |
-| 7-8 | Proceed with some discovery expected |
-| < 7 | **STOP** - Recommend refinement first |
+Parse `$ARGUMENTS`:
 
-### 1.3 Offer Delegation (Confidence >= 9)
+- `prp-name` (required): Name of PRP file in `docs/prps/` (without .md extension)
+  - Example: `feature-auth-oauth2` → loads `docs/prps/feature-auth-oauth2.md`
 
-If confidence >= 9, use AskUserQuestion to offer:
-- **Execute now** (current session) - Continue to Phase 2
-- **Create work-order for delegation** - Run `/blueprint:work-order --from-prp {prp-name}`, then **Exit**
-- **Create multiple work-orders** - Split into independent tasks for parallel execution, then **Exit**
+## Execution
 
-### 1.4 Read ai_docs References
+Execute the complete PRP implementation workflow:
 
-Load all referenced ai_docs entries: `ai_docs/libraries/*.md`, `ai_docs/project/patterns.md`.
+### Step 1: Load and validate PRP
 
-### 1.5 Plan Execution
+1. Read PRP file: `docs/prps/{prp-name}.md`
+2. Extract confidence score from frontmatter
+3. If confidence < 7 → Error: "PRP confidence too low. Run `/blueprint:prp-create {prp-name}` to refine"
+4. If confidence >= 9 → Offer delegation: "This PRP has high confidence. Execute now (current session) or create work-order for delegation?"
+   - If work-order chosen → Run `/blueprint:work-order --from-prp {prp-name}` and exit
+   - If delegation to multiple subagents chosen → Create focused work-orders per module from Implementation Blueprint and exit
+5. Continue to Step 2 if executing now OR confidence 7-8
+6. Load all referenced ai_docs entries for context
+7. Parse Implementation Blueprint and create TodoWrite entries ordered by dependencies
 
-Based on the Implementation Blueprint:
-1. Create TodoWrite entries for each task
-2. Order by dependencies
-3. Identify validation checkpoints
+### Step 2: Establish baseline with validation gates
 
----
+Run pre-implementation validation gates (see [REFERENCE.md](REFERENCE.md#validation-gates)) to establish clean starting state:
 
-## Phase 2: Run Initial Validation Gates
+1. Linting gate: `[command from PRP]` - Expected: PASS
+2. Existing tests gate: `[command from PRP]` - Expected: PASS
 
-Run validation gates to establish baseline:
+If gates fail:
+- Document existing issues
+- Decide: fix first or proceed with note
+- Continue when ready
 
-```bash
-# Gate 1: Ensure linting passes before changes
-[linting command from PRP]
-
-# Gate 2: Ensure existing tests pass
-[test command from PRP]
-```
-
-**If gates fail**: Document existing issues, decide whether to fix first or proceed.
-
----
-
-## Phase 3: TDD Implementation
+### Step 3: Execute TDD implementation cycle
 
 For each task in Implementation Blueprint:
 
-### 3.1 Write Tests First (RED)
+1. **RED phase**: Write failing test matching PRP TDD Requirements
+   - Create test file if needed
+   - Run tests → Confirm FAILURE (test is meaningful)
 
-Write test case as specified in PRP. Run tests - expected: new test **FAILS**.
+2. **GREEN phase**: Implement minimal code to pass test
+   - Follow Codebase Intelligence patterns from PRP
+   - Apply patterns from ai_docs references
+   - Watch for Known Gotchas
+   - Run tests → Confirm SUCCESS
 
-### 3.2 Implement Minimal Code (GREEN)
+3. **REFACTOR phase**: Improve code while keeping tests green
+   - Extract common patterns
+   - Improve naming, add type hints
+   - Follow project conventions
+   - Run tests → Confirm PASS
+   - Run validation gates frequently (not just at end)
 
-Write minimum code to pass the test. Follow patterns from Codebase Intelligence and ai_docs. Watch for Known Gotchas. Run tests - expected: test **PASSES**.
+4. **Mark progress**: Update TodoWrite: `✅ Task N: [Description]`
 
-### 3.3 Refactor (REFACTOR)
+### Step 4: Run comprehensive final validation
 
-Improve code while keeping tests green: extract patterns, improve naming, add type hints, follow conventions. Run tests - expected: tests **STILL PASS**.
+Execute all validation gates from PRP (see [REFERENCE.md](REFERENCE.md#validation-gates)):
+- Linting: `[cmd]` - Expected: PASS
+- Type checking: `[cmd]` - Expected: PASS
+- Unit tests: `[cmd]` - Expected: PASS (all tests)
+- Integration tests: `[cmd]` - Expected: PASS (if applicable)
+- Coverage check: `[cmd]` - Expected: Meets threshold
+- Security scan: `[cmd]` - Expected: No high/critical issues (if applicable)
+- Performance tests: `[cmd]` - Expected: Meets baseline (if defined)
 
-### 3.4 Run Validation Gates
+Verify each success criterion from PRP.
 
-After each significant change:
+### Step 5: Document deferred items
 
-```bash
-# Gate 1: Linting
-[linting command]
+Identify and track any deferred work:
 
-# Gate 2: Type checking
-[type check command]
+1. Review Implementation Blueprint - items not completed
+2. Categorize each deferred item:
+   - **Phase 2 (Required)**: Must have GitHub issues created
+   - **Nice-to-Have**: Optional, no issue required
+   - **Blocked**: Cannot complete - document blocker, create issue
+3. Create GitHub issues for all Phase 2 and Blocked items (see [REFERENCE.md](REFERENCE.md#deferred-items-workflow))
+4. Update PRP with deferred items section linking to GitHub issues
+5. Do NOT proceed to Step 6 until all required issues are created
 
-# Gate 3: Unit tests
-[test command]
-```
+### Step 6: Sync feature tracker (if enabled)
 
-**If any gate fails**: Fix, re-run, continue only when passing.
+If feature tracker exists (`docs/blueprint/feature-tracker.json`):
 
-### 3.5 Update Progress
+1. Identify which feature codes (e.g., FR2.1) were addressed from PRP
+2. Update feature tracker for each code:
+   - Status: `complete` (all criteria met) or `partial` (some criteria met) or `in_progress`
+   - Files: List of modified/created files
+   - Tests: List of test files
+   - Commits: Commit hashes
+   - Notes: Implementation notes
+3. Recalculate statistics: completion percentages, phase status
+4. Update TODO.md: Check boxes for completed features
+5. Report feature tracker changes
 
-Mark task as complete in TodoWrite.
+### Step 7: Report results and next steps
 
----
+Generate comprehensive execution summary report:
 
-## Phase 4: Final Validation
+- **Tasks completed**: X/Y
+- **Tests added**: N
+- **Files modified**: [list]
+- **Validation results**: Table of all gates (PASS/FAIL status)
+- **Success criteria**: All verified
+- **Deferred items summary**: Count and GitHub issue numbers
+- **Feature tracker updates**: Features updated and percentages
+- **New gotchas discovered**: [documented for future reference]
+- **Recommendations**: Follow-up work or ai_docs updates
 
-### 4.1 Run All Validation Gates
-
-Execute every gate from the PRP: linting, type checking, unit tests, integration tests, coverage check, security scan (if applicable).
-
-### 4.2 Verify Success Criteria
-
-Check each success criterion from PRP against actual results.
-
-### 4.3 Check Performance Baselines
-
-If performance baselines defined, run performance tests and compare to targets.
-
----
-
-## Phase 4.5: Deferred Items Report
-
-Review the PRP's Implementation Blueprint and identify deferred Phase 2, Nice-to-Have, and blocked items. Create GitHub issues for all Phase 2 and blocked items. Update PRP with deferred items section.
-
-See [REFERENCE.md](REFERENCE.md) for deferred items table format and GitHub issue template.
-
-**Important**: Do not proceed to Phase 5 until all Phase 2 and blocked items have GitHub issues created.
-
----
-
-## Phase 5: Sync Feature Tracker
-
-Check if `docs/blueprint/feature-tracker.json` exists. If enabled:
-
-1. **Identify** which FR codes were addressed by completed tasks
-2. **Update status** for each FR code (complete, partial, in_progress)
-3. **Recalculate statistics** (counts, completion percentage, phase status)
-4. **Sync documentation** (update TODO.md checkboxes)
-
-See [REFERENCE.md](REFERENCE.md) for feature tracker update format and sync details.
-
----
-
-## Phase 6: Report
-
-### 6.1 Execution Summary
-
-Generate completion report covering: implementation summary (tasks, tests, files), validation results table, success criteria verification, deferred items summary, feature tracker status, new gotchas discovered, and recommendations.
-
-See [REFERENCE.md](REFERENCE.md) for the full report template.
-
-### 6.2 Update ai_docs
-
-If new patterns or gotchas discovered, update relevant ai_docs entries.
-
-### 6.3 Mark PRP Complete
-
-Annotate PRP as executed:
-```markdown
-## Status: EXECUTED
-**Executed on**: [date]
-**Commit**: [hash]
-**Notes**: [any notes]
-```
-
-### 6.4 Prompt for Next Action
-
-Use AskUserQuestion to offer: commit changes, create work-order for follow-up, update ai_docs, continue to next PRP, or exit.
-
----
+Prompt user for next action:
+- Commit changes (Recommended) → Run `/git:commit`
+- Create work-order for follow-up → Run `/blueprint:work-order`
+- Update ai_docs with patterns → Run `/blueprint:curate-docs`
+- Continue to next PRP → Run `/blueprint:prp-execute [next]`
+- Done for now → Exit
 
 ## Agentic Optimizations
 
 | Context | Command |
 |---------|---------|
-| Execute PRP | `/blueprint:prp-execute {name}` |
-| Quick test loop | `[test command] --dots --bail=1` |
-| Lint check | `[lint command] --reporter=github` |
-| Delegate instead | `/blueprint:work-order --from-prp {name}` |
+| Check PRP exists | `test -f docs/prps/${1}.md && echo "EXISTS" \|\| echo "MISSING"` |
+| Extract confidence | `head -50 docs/prps/${1}.md \| grep -m1 "^confidence:" \| sed 's/^[^:]*:[[:space:]]*//'` |
+| List all PRPs | `ls docs/prps/*.md 2>/dev/null \| xargs basename -s .md` |
+| Check feature tracker | `test -f docs/blueprint/feature-tracker.json && echo "YES" \|\| echo "NO"` |
+| Fast validation | Run validation gates in parallel when possible |
 
-## Tips
+---
 
-- Trust the PRP - it was researched for a reason
-- Run validation gates frequently (not just at the end)
-- Document any new gotchas discovered
-- Update ai_docs with lessons learned
-- Commit after each passing validation cycle
+For detailed validation gate definitions, deferred items workflow, error handling procedures, and agent team coordination, see [REFERENCE.md](REFERENCE.md).
