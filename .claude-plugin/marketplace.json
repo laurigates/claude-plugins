@@ -482,7 +482,7 @@
       "name": "workflow-orchestration-plugin",
       "source": "./workflow-orchestration-plugin",
       "description": "Workflow orchestration - parallel agents, CI pipelines, preflight checks, checkpoint refactoring",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "keywords": [
         "workflow",
         "orchestration",
