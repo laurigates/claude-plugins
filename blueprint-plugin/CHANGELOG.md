@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.16.3](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.16.2...blueprint-plugin-v3.16.3) (2026-02-14)
+
+
+### Documentation
+
+* **git-plugin:** add conventional commits standards ([#616](https://github.com/laurigates/claude-plugins/issues/616)) ([5b74389](https://github.com/laurigates/claude-plugins/commit/5b74389ecdf5223dd62368390ecd9b36ccb1596c))
+
 ## [3.16.2](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.16.1...blueprint-plugin-v3.16.2) (2026-02-14)
 
 
