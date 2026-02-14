@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.6](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.4.5...tools-plugin-v2.4.6) (2026-02-14)
+
+
+### Code Refactoring
+
+* extract detailed content to REFERENCE.md files ([#605](https://github.com/laurigates/claude-plugins/issues/605)) ([7efbd83](https://github.com/laurigates/claude-plugins/commit/7efbd83b9a2b1ef67be702206396ba6d8102684d))
+
 ## [2.4.5](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.4.4...tools-plugin-v2.4.5) (2026-02-12)
 
 
