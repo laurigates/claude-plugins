@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/laurigates/claude-plugins/compare/python-plugin-v1.3.0...python-plugin-v1.3.1) (2026-02-14)
+
+
+### Code Refactoring
+
+* extract detailed content to REFERENCE.md files ([#605](https://github.com/laurigates/claude-plugins/issues/605)) ([7efbd83](https://github.com/laurigates/claude-plugins/commit/7efbd83b9a2b1ef67be702206396ba6d8102684d))
+
 ## [1.3.0](https://github.com/laurigates/claude-plugins/compare/python-plugin-v1.2.4...python-plugin-v1.3.0) (2026-02-13)
 
 
