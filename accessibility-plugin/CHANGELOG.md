@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.4](https://github.com/laurigates/claude-plugins/compare/accessibility-plugin-v2.1.3...accessibility-plugin-v2.1.4) (2026-02-14)
+
+
+### Code Refactoring
+
+* extract detailed content to REFERENCE.md files ([#605](https://github.com/laurigates/claude-plugins/issues/605)) ([7efbd83](https://github.com/laurigates/claude-plugins/commit/7efbd83b9a2b1ef67be702206396ba6d8102684d))
+
 ## [2.1.3](https://github.com/laurigates/claude-plugins/compare/accessibility-plugin-v2.1.2...accessibility-plugin-v2.1.3) (2026-02-08)
 
 

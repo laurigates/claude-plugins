@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.4](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.5.3...typescript-plugin-v1.5.4) (2026-02-14)
+
+
+### Code Refactoring
+
+* extract detailed content to REFERENCE.md files ([#605](https://github.com/laurigates/claude-plugins/issues/605)) ([7efbd83](https://github.com/laurigates/claude-plugins/commit/7efbd83b9a2b1ef67be702206396ba6d8102684d))
+
 ## [1.5.3](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.5.2...typescript-plugin-v1.5.3) (2026-02-12)
 
 
