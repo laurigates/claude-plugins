@@ -13,7 +13,7 @@ transcript_path=$(echo "$input" | jq -r '.transcript_path // empty')
 
 if [ -z "$transcript_path" ] || [ ! -f "$transcript_path" ]; then
   # No transcript available, output minimal instructions
-  echo '{"hookSpecificOutput":{"hookEventName":"PreCompact","customInstructions":"Preserve: current task objectives, files being modified, decisions made, blockers encountered."}}'
+  echo '{"systemMessage":"When compacting this conversation, prioritize preserving: current task objectives, files being modified, decisions made, blockers encountered."}'
   exit 0
 fi
 
@@ -80,7 +80,7 @@ fi
 
 instructions="$instructions\n- the overall goal the user is working toward\n- any architectural decisions or constraints discovered\n- error messages or issues that still need resolution"
 
-# Output as hookSpecificOutput JSON
+# Output as systemMessage JSON
 escaped_instructions=$(echo -e "$instructions" | jq -Rs .)
-echo "{\"hookSpecificOutput\":{\"hookEventName\":\"PreCompact\",\"customInstructions\":${escaped_instructions}}}"
+echo "{\"systemMessage\":${escaped_instructions}}"
 exit 0
