@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.1.1...workflow-orchestration-plugin-v1.1.2) (2026-02-14)
+
+
+### Documentation
+
+* **git-plugin:** add conventional commits standards ([#616](https://github.com/laurigates/claude-plugins/issues/616)) ([5b74389](https://github.com/laurigates/claude-plugins/commit/5b74389ecdf5223dd62368390ecd9b36ccb1596c))
+
 ## [1.1.1](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.1.0...workflow-orchestration-plugin-v1.1.1) (2026-02-14)
 
 

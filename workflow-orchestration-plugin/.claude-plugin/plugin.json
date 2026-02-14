@@ -1,6 +1,6 @@
 {
   "name": "workflow-orchestration-plugin",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Workflow orchestration patterns for parallel agents, CI pipelines, preflight checks, and checkpoint-based refactoring. Addresses common friction in multi-branch operations, permission restrictions, and context limits.",
   "author": {
     "name": "Lauri Gates"
