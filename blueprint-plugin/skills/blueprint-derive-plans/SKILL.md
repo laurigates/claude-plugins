@@ -44,6 +44,8 @@ Parse these from `$ARGUMENTS`:
 
 Default behavior without flags: Standard analysis (last 200 commits with scope estimation).
 
+For detailed templates, manifest format, and report examples, see [REFERENCE.md](REFERENCE.md).
+
 ## Execution
 
 Execute this retroactive documentation generation workflow:

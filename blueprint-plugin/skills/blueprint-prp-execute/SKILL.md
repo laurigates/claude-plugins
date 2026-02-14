@@ -20,6 +20,8 @@ Execute a PRP (Product Requirement Prompt) with systematic implementation, valid
 - PRP exists in `docs/prps/[prp-name].md`
 - Confidence score >= 7 (if lower, suggest `/blueprint:prp-create` refinement)
 
+For detailed report templates, deferred items workflow, feature tracker sync, and error handling patterns, see [REFERENCE.md](REFERENCE.md).
+
 ## When to Use This Skill
 
 | Use this skill when... | Use alternative when... |

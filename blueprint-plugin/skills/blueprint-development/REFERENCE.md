@@ -400,11 +400,9 @@ Report:
 
 Use precise, actionable guidance with concrete references:
 
-✅ **Good**: "Use constructor injection for services, following the pattern in `services/authService.js:15-20`"
+**Good**: "Use constructor injection for services, following the pattern in `services/authService.js:15-20`"
 
-✅ **Good**: "All API endpoints must have integration tests with valid input, invalid input, and authorization test cases"
-
-❌ **Bad**: "Use dependency injection"
+**Good**: "All API endpoints must have integration tests with valid input, invalid input, and authorization test cases"
 
 ### Include Code Examples
 
@@ -545,7 +543,7 @@ gh label create work-order --description "AI-assisted work order" --color "0E8A1
 
 1. **Execute work-order** following TDD workflow
 2. **Create PR** with `Fixes #N` in title/body (where N = issue number)
-3. **Merge PR** → Issue auto-closes
+3. **Merge PR** - Issue auto-closes
 4. **Move work-order** to `completed/` directory
 
 ### Work Order File Format
@@ -568,3 +566,49 @@ gh label create work-order --description "AI-assisted work order" --color "0E8A1
 ## Success Criteria
 [Checkboxes]
 ```
+
+### When to Use Each Mode
+
+| Scenario | Mode |
+|----------|------|
+| Team project, need visibility | Default (creates issue) |
+| Solo exploration, quick prototype | `--no-publish` |
+| Issue already exists from discussion | `--from-issue N` |
+| Offline development | `--no-publish` |
+
+## Testing Generated Rules and Commands
+
+### 1. Verify Rules Are Applied
+
+Test that Claude applies rules in relevant contexts:
+- When discussing architecture, architecture-patterns rule should guide behavior
+- When writing tests, testing-strategies rule should guide behavior
+- When implementing features, implementation-guides rule should guide behavior
+- When reviewing code, quality-standards rule should guide behavior
+
+### 2. Verify Commands Work
+
+Test each command:
+```bash
+/blueprint:init              # Should create directory structure
+/blueprint:generate-rules    # Should create four rules in .claude/rules/
+/blueprint:generate-commands # Should create workflow commands
+/project:continue            # Should analyze state and resume work
+/blueprint:work-order        # Should create work-order document
+/project:test-loop           # Should run tests and report
+```
+
+### 3. Verify Rules Guide Correctly
+
+Manually check that:
+- Architecture patterns match PRD technical decisions
+- Testing strategies match PRD TDD requirements
+- Implementation guides match PRD API/feature designs
+- Quality standards match PRD success criteria
+
+### 4. Refine as Needed
+
+During initial project development:
+- Rules may need refinement as patterns emerge
+- Commands may need adjustment based on actual workflow
+- Update rules and commands iteratively

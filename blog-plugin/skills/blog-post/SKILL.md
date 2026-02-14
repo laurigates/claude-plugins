@@ -2,6 +2,7 @@
 model: haiku
 name: blog-post
 description: Create a blog post about your work with guided prompts and templates
+description: Create a blog post about your work with guided prompts and templates
 args: "[type] [--project <name>] [--title <title>]"
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash(hugo *), Bash(date *), TodoWrite, AskUserQuestion
 argument-hint: "quick-update | project-update | retrospective | tutorial | deep-dive"

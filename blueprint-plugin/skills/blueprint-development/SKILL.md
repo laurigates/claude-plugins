@@ -21,6 +21,8 @@ Guide and reference for the Blueprint Development methodology that generates pro
 | Want project-specific behavioral guidelines | Using generic development practices |
 | Creating workflow automation for a project | Working on isolated tasks without project context |
 
+For detailed rule templates, command templates, and generation guidelines, see [REFERENCE.md](REFERENCE.md).
+
 ## Context
 
 - Blueprint initialized: !`test -f docs/blueprint/manifest.json && echo "YES" || echo "NO"`
@@ -136,9 +138,9 @@ Verify rules and commands work correctly:
 
 Create summary report:
 
-- ✅ Rules generated: {count} in `.claude/rules/`
-- ✅ Commands created: {count} (use `/project:continue` to start development)
-- ✅ Manifest updated with tracking metadata
+- Rules generated: {count} in `.claude/rules/`
+- Commands created: {count} (use `/project:continue` to start development)
+- Manifest updated with tracking metadata
 - **Next steps**:
   1. Review generated rules for accuracy
   2. Add project-specific additions or clarifications
@@ -149,19 +151,13 @@ Create summary report:
 
 This skill enables the core Blueprint Development workflow:
 
-```
-PRDs (requirements)
-  → Rules (behavioral guidelines)
-    → Commands (workflow automation)
-      → Work-orders (isolated tasks)
-        → TDD development
-```
+**PRDs** (requirements) - **Rules** (behavioral guidelines) - **Commands** (workflow automation) - **Work-orders** (isolated tasks)
 
-By generating project-specific rules and commands from PRDs, Blueprint Development creates a self-documenting, AI-native development environment where:
-- Behavioral guidelines are first-class citizens
-- Patterns and decisions are explicit and enforceable
-- Quality standards are automated
-- Workflow is AI-optimized
+By generating project-specific rules and commands from PRDs, Blueprint Development creates a self-documenting, AI-native development environment where behavioral guidelines, patterns, and quality standards are first-class citizens.
+
+## GitHub Work Order Integration
+
+Work orders can be linked to GitHub issues for transparency and cooperative development. See [REFERENCE.md](REFERENCE.md#github-work-order-integration) for workflow modes (`--no-publish`, `--from-issue N`), label setup, completion workflow, and work order file format.
 
 ## Agentic Optimizations
 
@@ -172,6 +168,10 @@ By generating project-specific rules and commands from PRDs, Blueprint Developme
 | Count PRDs | `ls docs/prds/*.md 2>/dev/null \| wc -l` |
 | Extract PRD sections | Use Grep to find specific sections by heading pattern |
 | Fast generation | Skip manual review step, proceed with standard templates |
+
+## Examples
+
+See `.claude/docs/blueprint-development/` for complete workflow documentation and examples.
 
 ---
 

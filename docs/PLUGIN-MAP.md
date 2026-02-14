@@ -183,10 +183,10 @@ Install based on your project's tech stack and domain.
 | home-assistant-plugin | Home Assistant configuration management |
 | blog-plugin | Writing project logs or technical posts |
 | communication-plugin | Formatting for Google Chat or ticket drafting |
+| css-plugin | Lightning CSS transpilation, UnoCSS atomic utility generation for style tooling |
 | accessibility-plugin | WCAG compliance and ARIA patterns |
 | component-patterns-plugin | Reusable UI component patterns |
 | command-analytics-plugin | Tracking skill/command usage metrics |
-| css-plugin | Lightning CSS transpilation, UnoCSS atomic utility generation for style tooling |
 | tools-plugin | fd, rg, jq, shell, ImageMagick, d2 utilities |
 | workflow-orchestration-plugin | Parallel agent orchestration, CI pipelines, preflight checks, checkpoint refactoring |
 | prose-plugin | Prose style control — distillation, tone, voice, clarity, consistency |

@@ -398,6 +398,29 @@ PRPs: {N} future work items suggested
 3. Run `/blueprint:generate-commands` for workflow automation
 ```
 
+## Next Action Prompt
+
+After completion, prompt the user with:
+
+```
+question: "Import complete (average confidence: {score}/10). What would you like to do?"
+options:
+  - label: "Review and refine documents (Recommended)"
+    description: "Go through items marked 'needs clarification'"
+  - label: "Generate project rules"
+    description: "Run /blueprint:generate-rules from the new PRD"
+  - label: "Generate workflow commands"
+    description: "Run /blueprint:generate-commands for this project"
+  - label: "I'm done for now"
+    description: "Exit - documents are saved and ready for review"
+```
+
+**Based on selection**:
+- "Review and refine" - Show list of documents needing attention with file paths
+- "Generate project rules" - Run `/blueprint:generate-rules`
+- "Generate workflow commands" - Run `/blueprint:generate-commands`
+- "I'm done" - Exit with quick reference
+
 ## Error Handling
 
 | Condition | Action |
