@@ -4,15 +4,13 @@ name: project-distill
 description: |
   Distill session insights into reusable knowledge: Claude rules, skill improvements,
   and justfile recipes. Use at the end of a session to capture learnings, update existing
-  artifacts, and avoid reinventing solutions. Prioritizes updating over adding. Use when
-  the user says "any insights", "distill session", "what did we learn", "update recipes",
-  or wants to capture session knowledge.
+  artifacts, and avoid reinventing solutions. Prioritizes updating over adding.
 allowed-tools: Bash(git diff *), Bash(git log *), Bash(git status *), Bash(just *), Read, Grep, Glob, Edit, Write, AskUserQuestion, TodoWrite
-argument-hint: "Scope analysis to specific categories or use --dry-run to preview"
+argument-hint: "--rules | --skills | --recipes | --all | --dry-run"
 args: "[--rules] [--skills] [--recipes] [--all] [--dry-run]"
 created: 2026-02-11
-modified: 2026-02-13
-reviewed: 2026-02-11
+modified: 2026-02-14
+reviewed: 2026-02-14
 ---
 
 # /project:distill
@@ -64,95 +62,67 @@ Gather session context to analyze:
 
 ## Execution
 
-### Phase 1: Session Analysis
+Execute this session distillation workflow:
 
-Understand what happened this session:
+### Step 1: Analyze session activity
 
-1. **Review git history** - Read recent commits and diffs to understand what was done
-2. **Identify patterns** - Look for repeated operations, workarounds, or discoveries
-3. **Catalog tools used** - Note CLI commands, flags, and workflows that were effective
-4. **Note pain points** - Identify where time was spent figuring things out
+Understand what happened:
 
-```bash
-# Recent session activity
-git log --oneline -20
-git diff --stat HEAD~10..HEAD
-```
+1. Review recent commits: `git log --oneline -20`
+2. Review recent diffs: `git diff --stat HEAD~10..HEAD`
+3. Identify patterns: repeated operations, workarounds, discoveries
+4. Catalog tools used: effective commands, flags, workflows
+5. Note pain points: where time was spent figuring things out
 
-### Phase 2: Evaluate Against Existing Knowledge
+### Step 2: Evaluate against existing knowledge
 
 For each potential insight, check existing artifacts:
 
 **Rules** (`.claude/rules/*.md`):
-- Read existing rules in the project's `.claude/rules/` directory
-- Check if insight updates, contradicts, or is already covered by an existing rule
+- Does it update, contradict, or duplicate an existing rule?
 - Prefer updating existing rules over creating new files
 
-**Skills** (scan relevant plugin skills):
-- Check if a pattern learned improves an existing skill's commands or examples
-- Check if a workaround suggests a skill is missing guidance
+**Skills** (relevant plugin skills):
+- Does this improve existing skill commands/examples?
+- Does this suggest missing guidance?
 
-**Justfile recipes** (`justfile` or `Justfile`):
-- Read existing recipes
-- Check if a command used repeatedly should become a recipe
-- Check if an existing recipe should be updated with better flags or patterns
-- Check if an existing recipe was made redundant by a new approach
+**Justfile recipes**:
+- Is there a repeated command that should become a recipe?
+- Should an existing recipe be updated with better flags?
+- Is an existing recipe now redundant?
 
-### Phase 3: Redundancy Check
+### Step 3: Check redundancy
 
-For each proposed change, explicitly answer:
+For each proposed change, answer:
 
-1. **Does this make an existing artifact redundant?** If so, propose removing it
-2. **Does this overlap with an existing artifact?** If so, propose merging
-3. **Is the existing version still better?** If so, skip the proposal
-4. **Will this be used more than once?** If not, skip it
+1. Does this make an existing artifact redundant? → Propose removal
+2. Does this overlap with existing artifacts? → Propose merging
+3. Is the existing version still better? → Skip the proposal
+4. Will this be used more than once? → Skip if one-off
 
-### Phase 4: Present Proposals
+### Step 4: Present proposals
 
-Present findings as a categorized list with clear rationale:
+Categorize findings as:
 
-```
-## Session Insights
-
-### Rules
-- [UPDATE] `.claude/rules/X.md` - Reason for update
-  Change: description of what changes
-- [SKIP] Considered adding Y rule, but Z already covers it
-
-### Skills
-- [UPDATE] `plugin/skills/skill-name/SKILL.md` - Add pattern discovered
-  Change: description of what changes
-- [NEW] Reason this is genuinely new and reusable
-
-### Justfile Recipes
-- [UPDATE] `recipe-name` - Better flags discovered
-  Before: `old command`
-  After: `new command`
-- [NEW] `recipe-name` - Reusable workflow not yet captured
-  Recipe: `just recipe-name`
+- [UPDATE] `.claude/rules/X.md` - Reason for update (description of change)
+- [SKIP] Considered rule Y, but Z already covers it
+- [UPDATE] `plugin/skills/skill-name/SKILL.md` - Pattern discovered
+- [NEW] Genuinely new and reusable artifact (only if justified)
+- [UPDATE] `recipe-name` - Better flags discovered (before/after)
 - [REDUNDANT] `old-recipe` - Superseded by new approach
-  Recommendation: remove or replace
-```
 
-### Phase 5: Apply Changes
+### Step 5: Apply changes
 
-If not `--dry-run`, use AskUserQuestion to confirm each category of changes before applying.
+If not `--dry-run`:
 
-Apply approved changes:
-- Edit existing files for updates
-- Create new files only for genuinely new artifacts
-- Remove redundant artifacts
+1. Use AskUserQuestion to confirm each category before applying
+2. Edit existing files for updates (preferred)
+3. Create new files only for genuinely new artifacts
+4. Remove redundant artifacts
 
-### Phase 6: Summary
+### Step 6: Report summary
 
-Output a concise summary of what was changed:
-
-```
-Distilled 3 insights:
-- Updated .claude/rules/testing.md (added playwright pattern)
-- Updated justfile recipe `test` (added --bail flag)
-- Skipped 2 insights (already covered)
-```
+Output concise summary of what was changed (rules updated, recipes added, insights skipped)
 
 ## Evaluation Criteria for Each Category
 
