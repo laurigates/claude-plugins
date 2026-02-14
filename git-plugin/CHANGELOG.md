@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.14.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.14.0...git-plugin-v2.14.1) (2026-02-14)
+
+
+### Documentation
+
+* **git-plugin:** add conventional commits standards ([#616](https://github.com/laurigates/claude-plugins/issues/616)) ([5b74389](https://github.com/laurigates/claude-plugins/commit/5b74389ecdf5223dd62368390ecd9b36ccb1596c))
+
 ## [2.14.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.13.2...git-plugin-v2.14.0) (2026-02-12)
 
 
