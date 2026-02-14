@@ -11,7 +11,7 @@ allowed-tools: Bash(git diff *), Bash(git log *), Bash(git status *), Bash(just 
 argument-hint: "Scope analysis to specific categories or use --dry-run to preview"
 args: "[--rules] [--skills] [--recipes] [--all] [--dry-run]"
 created: 2026-02-11
-modified: 2026-02-13
+modified: 2026-02-14
 reviewed: 2026-02-11
 ---
 

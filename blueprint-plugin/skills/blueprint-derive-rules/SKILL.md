@@ -1,7 +1,7 @@
 ---
 model: opus
 created: 2026-01-30
-modified: 2026-02-06
+modified: 2026-02-14
 reviewed: 2026-01-30
 description: "Derive Claude rules from git commit log decisions. Newer commits override older decisions when conflicts exist."
 args: "[--since DATE] [--scope SCOPE]"

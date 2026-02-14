@@ -1,7 +1,7 @@
 ---
 model: opus
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-14
 reviewed: 2025-12-16
 name: github-actions-inspection
 description: Inspect GitHub Actions workflow runs, check status, analyze logs, debug failures, and identify root causes. Use when investigating CI/CD failures, checking workflow status, or debugging GitHub Actions issues.

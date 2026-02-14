@@ -10,7 +10,7 @@ args: "[--init|--continue|--status|--phase=N]"
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(npm run *), Bash(npx *), Bash(uv run *), Bash(cargo *), Read, Write, Edit, Grep, Glob, Task, TodoWrite
 argument-hint: --init to create plan, --continue to resume, --status to check progress
 created: 2026-02-08
-modified: 2026-02-08
+modified: 2026-02-14
 reviewed: 2026-02-08
 ---
 

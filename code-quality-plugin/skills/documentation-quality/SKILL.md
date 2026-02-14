@@ -4,7 +4,7 @@ name: documentation-quality
 description: Analyze and validate documentation quality for PRDs, ADRs, PRPs, CLAUDE.md, and .claude/rules/ to ensure standards compliance and freshness
 allowed-tools: Bash(markdownlint *), Bash(vale *), Read, Grep, Glob, TodoWrite
 created: 2026-01-08
-modified: 2026-01-08
+modified: 2026-02-14
 reviewed: 2026-01-08
 ---
 
@@ -129,7 +129,7 @@ Calculate as average of five dimensions (each 0-10):
 ```yaml
 ---
 created: 2026-01-08
-modified: 2026-01-08
+modified: 2026-02-14
 reviewed: 2026-01-08
 ---
 ```

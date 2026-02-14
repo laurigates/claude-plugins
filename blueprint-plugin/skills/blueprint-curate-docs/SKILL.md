@@ -5,7 +5,7 @@ args: "[library-name|project:pattern-name]"
 argument-hint: "Library name (e.g., redis, pydantic) or project:pattern-name"
 allowed-tools: Read, Write, Glob, Bash, WebFetch, WebSearch, AskUserQuestion
 created: 2025-12-16
-modified: 2026-02-03
+modified: 2026-02-14
 reviewed: 2025-12-16
 name: blueprint-curate-docs
 ---

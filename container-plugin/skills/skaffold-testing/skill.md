@@ -7,7 +7,7 @@ description: |
   Use when configuring pre-deploy tests, security scans, or integration tests in Skaffold pipelines.
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2025-12-23
-modified: 2025-12-23
+modified: 2026-02-14
 reviewed: 2025-12-23
 ---
 

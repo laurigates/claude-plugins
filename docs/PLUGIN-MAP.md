@@ -183,6 +183,7 @@ Install based on your project's tech stack and domain.
 | home-assistant-plugin | Home Assistant configuration management |
 | blog-plugin | Writing project logs or technical posts |
 | communication-plugin | Formatting for Google Chat or ticket drafting |
+| css-plugin | CSS tooling with Lightning CSS and UnoCSS |
 | accessibility-plugin | WCAG compliance and ARIA patterns |
 | component-patterns-plugin | Reusable UI component patterns |
 | command-analytics-plugin | Tracking skill/command usage metrics |

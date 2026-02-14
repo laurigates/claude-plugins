@@ -5,7 +5,7 @@ args: [--analyze] [--create <plugin/skill>] [--all]
 allowed-tools: Bash(chmod *), Bash(mkdir *), Read, Write, Edit, Glob, Grep, TodoWrite
 argument-hint: --analyze | --create git-plugin/git-commit-workflow | --all
 created: 2026-01-24
-modified: 2026-01-24
+modified: 2026-02-14
 reviewed: 2026-01-24
 name: project-skill-scripts
 ---

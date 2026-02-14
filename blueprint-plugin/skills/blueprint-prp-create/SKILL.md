@@ -5,7 +5,7 @@ args: "[feature-name]"
 argument-hint: "Feature name for the PRP (e.g., auth-oauth2, api-rate-limiting)"
 allowed-tools: Read, Write, Glob, Bash, WebFetch, WebSearch, Task, AskUserQuestion
 created: 2025-12-16
-modified: 2026-02-03
+modified: 2026-02-14
 reviewed: 2025-12-16
 name: blueprint-prp-create
 ---
@@ -110,7 +110,7 @@ Include document ID and linking fields:
 ---
 id: {PRP-NNN}
 created: {YYYY-MM-DD}
-modified: {YYYY-MM-DD}
+modified: 2026-02-14
 status: Draft
 implements:                    # Source PRD(s) this PRP implements
   - {PRD-NNN}                  # or empty if standalone

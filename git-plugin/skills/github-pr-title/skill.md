@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2026-01-30
-modified: 2026-01-30
+modified: 2026-02-14
 reviewed: 2026-01-30
 name: github-pr-title
 description: |

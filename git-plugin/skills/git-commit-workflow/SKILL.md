@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-02-03
+modified: 2026-02-14
 reviewed: 2026-01-15
 name: git-commit-workflow
 description: |

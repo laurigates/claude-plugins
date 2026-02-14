@@ -1,7 +1,7 @@
 ---
 model: opus
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-14
 reviewed: 2025-12-16
 name: test-quality-analysis
 description: Detect test smells, overmocking, flaky tests, and coverage issues. Analyze test effectiveness, maintainability, and reliability. Use when reviewing tests or improving test quality.

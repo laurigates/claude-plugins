@@ -5,7 +5,7 @@ args: [type] [--project <name>] [--title <title>]
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash(hugo *), Bash(date *), TodoWrite, AskUserQuestion
 argument-hint: quick-update | project-update | retrospective | tutorial | deep-dive
 created: 2026-01-10
-modified: 2026-01-10
+modified: 2026-02-14
 reviewed: 2026-02-08
 name: blog-post
 ---
