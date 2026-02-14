@@ -26,7 +26,7 @@
   "rust-plugin": "1.2.1",
   "terraform-plugin": "1.2.3",
   "tools-plugin": "2.4.5",
-  "testing-plugin": "3.6.0",
+  "testing-plugin": "3.6.1",
   "typescript-plugin": "1.5.3",
   "finops-plugin": "1.0.3",
   "home-assistant-plugin": "1.1.3",
