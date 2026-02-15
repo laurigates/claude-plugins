@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.6](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.5.5...code-quality-plugin-v1.5.6) (2026-02-15)
+
+
+### Bug Fixes
+
+* remove pipe/ls operators from context commands and add CI linting ([#653](https://github.com/laurigates/claude-plugins/issues/653)) ([7a01eef](https://github.com/laurigates/claude-plugins/commit/7a01eef21495ed6243277fbaa88082b7ecabc793))
+
 ## [1.5.5](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.5.4...code-quality-plugin-v1.5.5) (2026-02-14)
 
 
