@@ -31,7 +31,7 @@ Check and configure UX testing infrastructure with Playwright as the primary too
 - Axe-core installed: !`grep -l '@axe-core/playwright' package.json 2>/dev/null`
 - E2E test dir: !`find . -maxdepth 2 -type d \( -name 'e2e' -o -name 'tests' \) 2>/dev/null`
 - Visual snapshots: !`find . -maxdepth 4 -type d -name '__snapshots__' 2>/dev/null`
-- MCP config: !`test -f .mcp.json && echo "EXISTS" || echo "MISSING"`
+- MCP config: !`find . -maxdepth 1 -name '.mcp.json' 2>/dev/null`
 - CI workflow: !`find .github/workflows -maxdepth 1 -name 'e2e*' 2>/dev/null`
 
 **UX Testing Stack:**

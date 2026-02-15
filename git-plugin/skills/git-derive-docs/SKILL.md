@@ -15,10 +15,10 @@ name: git-derive-docs
 
 - Current branch: !`git branch --show-current`
 - Commit count: !`git rev-list --count HEAD 2>/dev/null`
-- Latest commit: !`git log --format='%ai' -1 2>/dev/null`
+- Latest commit: !`git log --format='%ai' --max-count=1 2>/dev/null`
 - Existing rules: !`ls .claude/rules/ 2>/dev/null`
 - Existing docs: !`ls docs/prds/ docs/adrs/ docs/prps/ 2>/dev/null`
-- Commit conventions sample: !`git log --format='%s' -20 2>/dev/null`
+- Commit conventions sample: !`git log --format='%s' --max-count=20 2>/dev/null`
 
 ## Parameters
 

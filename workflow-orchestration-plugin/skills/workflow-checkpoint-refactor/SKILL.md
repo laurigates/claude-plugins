@@ -31,9 +31,9 @@ Multi-phase refactoring with persistent state that survives context limits and s
 ## Context
 
 - Repo root: !`git rev-parse --show-toplevel 2>/dev/null`
-- Plan file exists: !`test -f REFACTOR_PLAN.md && echo "yes" || echo "no"`
+- Plan file exists: !`find . -maxdepth 1 -name REFACTOR_PLAN.md 2>/dev/null`
 - Git status: !`git status --porcelain 2>/dev/null`
-- Recent commits: !`git log --oneline -5 2>/dev/null`
+- Recent commits: !`git log --oneline --max-count=5 2>/dev/null`
 
 ## Parameters
 
