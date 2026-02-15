@@ -1,6 +1,6 @@
 {
   "name": "container-plugin",
-  "version": "2.3.4",
+  "version": "2.3.5",
   "description": "Container development and deployment - Docker, registry, Skaffold",
   "keywords": [
     "container",

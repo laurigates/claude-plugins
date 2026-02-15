@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.5](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.3.4...container-plugin-v2.3.5) (2026-02-15)
+
+
+### Bug Fixes
+
+* replace broken context command patterns in skill files ([#644](https://github.com/laurigates/claude-plugins/issues/644)) ([440ba34](https://github.com/laurigates/claude-plugins/commit/440ba347bcc73a0512f74975cfd6b4af9fe8566e))
+
 ## [2.3.4](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.3.3...container-plugin-v2.3.4) (2026-02-14)
 
 
