@@ -46,6 +46,15 @@ mcp-chrome-devtools:
 cclsp:
     bunx cclsp@latest setup
 
+####################
+# Linting
+####################
+
+# Lint SKILL.md context commands for patterns that break backtick execution
+[group: "lint"]
+lint-context-commands *args:
+    ./scripts/lint-context-commands.sh {{args}}
+
 # Add all MCP servers and set up cclsp
 [group: "claude"]
 claude-setup: mcp-sentry mcp-github mcp-context7 mcp-playwright mcp-sequential-thinking mcp-chrome-devtools cclsp

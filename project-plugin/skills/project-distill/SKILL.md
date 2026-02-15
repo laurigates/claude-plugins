@@ -44,7 +44,7 @@ Distill session insights into reusable project knowledge. Reviews what was done 
 Gather session context to analyze:
 
 - Session diff: !`git diff --stat HEAD~10..HEAD 2>/dev/null || echo "recent history unavailable"`
-- Recent commits: !`git log --oneline -20 2>/dev/null`
+- Recent commits: !`git log --oneline --max-count=20 2>/dev/null`
 - Current branch: !`git branch --show-current 2>/dev/null`
 - Justfile: !`find . -maxdepth 1 \( -name 'justfile' -o -name 'Justfile' \) -print -quit 2>/dev/null`
 - Rules directory: !`find .claude/rules -name '*.md' -type f 2>/dev/null`
