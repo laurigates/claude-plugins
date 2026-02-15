@@ -29,11 +29,11 @@ Pre-work validation to prevent wasted effort from stale state, redundant work, o
 
 ## Context
 
-- Repo: !`gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null`
+- Repo: !`gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null`
 - Current branch: !`git branch --show-current 2>/dev/null`
 - Remote tracking: !`git branch -vv --format='%(refname:short) %(upstream:short) %(upstream:track)' 2>/dev/null`
 - Uncommitted changes: !`git status --porcelain 2>/dev/null`
-- Stash count: !`git stash list 2>/dev/null | wc -l`
+- Stash count: !`git stash list 2>/dev/null`
 
 ## Execution
 

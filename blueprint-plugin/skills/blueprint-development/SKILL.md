@@ -26,10 +26,10 @@ For detailed rule templates, command templates, and generation guidelines, see [
 ## Context
 
 - Blueprint initialized: !`test -f docs/blueprint/manifest.json && echo "YES" || echo "NO"`
-- PRDs present: !`ls docs/prds/*.md 2>/dev/null | wc -l`
+- PRDs present: !`find docs/prds -name "*.md" -type f 2>/dev/null`
 - Rules directory: !`test -d .claude/rules && echo "YES" || echo "NO"`
-- Existing rules: !`find .claude/rules -maxdepth 1 -name "*.md" 2>/dev/null | wc -l`
-- Project type: !`ls package.json pyproject.toml Cargo.toml go.mod 2>/dev/null | head -1 | xargs basename 2>/dev/null || echo "UNKNOWN"`
+- Existing rules: !`find .claude/rules -maxdepth 1 -name "*.md" 2>/dev/null`
+- Project type: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) -type f -print -quit 2>/dev/null`
 
 ## Execution
 

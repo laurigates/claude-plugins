@@ -31,11 +31,11 @@ For server configurations, environment variable reference, and report templates,
 
 - Config exists: !`test -f .mcp.json && echo "EXISTS" || echo "MISSING"`
 - Config contents: !`cat .mcp.json 2>/dev/null`
-- Installed servers: !`cat .mcp.json 2>/dev/null | jq -r '.mcpServers | keys[]' 2>/dev/null`
+- Installed servers: !`jq -r '.mcpServers' .mcp.json 2>/dev/null`
 - Git tracking: !`grep -q '.mcp.json' .gitignore 2>/dev/null && echo "IGNORED" || echo "NOT IGNORED"`
 - Standards file: !`test -f .project-standards.yaml && echo "EXISTS" || echo "MISSING"`
-- Has playwright config: !`find . -maxdepth 1 -name 'playwright.config.*' 2>/dev/null`
-- Has TS/JS files: !`find . -maxdepth 2 \( -name '*.ts' -o -name '*.py' -o -name '*.go' -o -name '*.rs' \) 2>/dev/null | head -5`
+- Has playwright config: !`find . -maxdepth 1 -name 'playwright.config.*' -print -quit 2>/dev/null`
+- Has TS/JS files: !`find . -maxdepth 2 \( -name '*.ts' -o -name '*.py' -o -name '*.go' -o -name '*.rs' \) -print -quit 2>/dev/null`
 - Dotfiles registry: !`test -f ~/.local/share/chezmoi/.chezmoidata.toml && echo "EXISTS" || echo "MISSING"`
 
 ## Parameters

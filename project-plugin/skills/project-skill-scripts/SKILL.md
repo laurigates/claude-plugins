@@ -25,8 +25,8 @@ Analyze plugin skills to identify opportunities where supporting scripts would i
 ## Context
 
 - Plugin root: !`git rev-parse --show-toplevel 2>/dev/null || echo './'`
-- Total plugins: !`find . -maxdepth 2 -name 'plugin.json' -type f 2>/dev/null | wc -l`
-- Skills with scripts: !`find . -name 'scripts/*.sh' -type f 2>/dev/null | wc -l`
+- Total plugins: !`find . -maxdepth 2 -name 'plugin.json' -type f 2>/dev/null`
+- Skills with scripts: !`find . -name 'scripts/*.sh' -type f 2>/dev/null`
 
 ## Parameters
 

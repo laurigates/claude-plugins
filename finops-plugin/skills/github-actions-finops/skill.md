@@ -31,7 +31,7 @@ Analyze GitHub Actions usage, costs, and efficiency across organizations and rep
 - Repo owner: !`gh repo view --json owner --jq '.owner.login' 2>/dev/null`
 - Owner type: !`gh repo view --json owner --jq '.owner.__typename' 2>/dev/null`
 - Workflow files: !`find .github/workflows -maxdepth 1 \( -name '*.yml' -o -name '*.yaml' \) 2>/dev/null`
-- Active workflows: !`gh workflow list --json id,name,state --jq '[.[] | select(.state == "active")] | length' 2>/dev/null`
+- Active workflows: !`gh workflow list --json id,name,state 2>/dev/null`
 
 ## Execution
 
@@ -170,9 +170,9 @@ For each waste pattern found, recommend the specific fix:
 |---------|---------|
 | Org billing | `gh api /orgs/$ORG/settings/billing/actions --jq '{included_minutes, total_minutes_used}'` |
 | List repos | `gh repo list $ORG --json nameWithOwner --limit 100` |
-| Workflow runs | `gh api "/repos/$O/$R/actions/runs?per_page=100" --jq '.workflow_runs \| length'` |
-| Skipped count | `gh api "..." --jq '[.workflow_runs[] \| select(.conclusion == "skipped")] \| length'` |
-| Bot triggers | `gh api "..." --jq '[.workflow_runs[] \| select(.triggering_actor.type == "Bot")] \| length'` |
+| Workflow runs | `gh api "/repos/$O/$R/actions/runs?per_page=100" --jq '.workflow_runs' --jq 'length'` |
+| Skipped count | `gh api "..." --jq '[.workflow_runs[] | select(.conclusion == "skipped")] | length'` |
+| Bot triggers | `gh api "..." --jq '[.workflow_runs[] | select(.triggering_actor.type == "Bot")] | length'` |
 
 ## See Also
 
