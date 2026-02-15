@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.6.2](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.6.1...agent-patterns-plugin-v2.6.2) (2026-02-15)
+
+
+### Bug Fixes
+
+* **agent-patterns-plugin:** use systemMessage for PreCompact hook output ([c887829](https://github.com/laurigates/claude-plugins/commit/c887829f229fdb60e54763f32b56cabf07890b58))
+* refactor pre-compact primer hook output format to systemMessage ([#641](https://github.com/laurigates/claude-plugins/issues/641)) ([c887829](https://github.com/laurigates/claude-plugins/commit/c887829f229fdb60e54763f32b56cabf07890b58))
+
 ## [2.6.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.6.0...agent-patterns-plugin-v2.6.1) (2026-02-12)
 
 
