@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.7](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.4.6...tools-plugin-v2.4.7) (2026-02-15)
+
+
+### Bug Fixes
+
+* remove pipe/ls operators from context commands and add CI linting ([#653](https://github.com/laurigates/claude-plugins/issues/653)) ([7a01eef](https://github.com/laurigates/claude-plugins/commit/7a01eef21495ed6243277fbaa88082b7ecabc793))
+
 ## [2.4.6](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.4.5...tools-plugin-v2.4.6) (2026-02-14)
 
 
