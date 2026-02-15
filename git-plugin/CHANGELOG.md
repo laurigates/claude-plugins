@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.14.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.14.1...git-plugin-v2.14.2) (2026-02-14)
+
+
+### Code Refactoring
+
+* extract detailed content to REFERENCE.md files ([#605](https://github.com/laurigates/claude-plugins/issues/605)) ([7efbd83](https://github.com/laurigates/claude-plugins/commit/7efbd83b9a2b1ef67be702206396ba6d8102684d))
+
+## [2.14.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.14.0...git-plugin-v2.14.1) (2026-02-14)
+
+
+### Documentation
+
+* **git-plugin:** add conventional commits standards ([#616](https://github.com/laurigates/claude-plugins/issues/616)) ([5b74389](https://github.com/laurigates/claude-plugins/commit/5b74389ecdf5223dd62368390ecd9b36ccb1596c))
+
 ## [2.14.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.13.2...git-plugin-v2.14.0) (2026-02-12)
 
 

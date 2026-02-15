@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.1.6](https://github.com/laurigates/claude-plugins/compare/blog-plugin-v1.1.5...blog-plugin-v1.1.6) (2026-02-14)
+
+
+### Code Refactoring
+
+* extract detailed content to REFERENCE.md files ([#605](https://github.com/laurigates/claude-plugins/issues/605)) ([7efbd83](https://github.com/laurigates/claude-plugins/commit/7efbd83b9a2b1ef67be702206396ba6d8102684d))
+
+## [1.1.5](https://github.com/laurigates/claude-plugins/compare/blog-plugin-v1.1.4...blog-plugin-v1.1.5) (2026-02-14)
+
+
+### Documentation
+
+* **git-plugin:** add conventional commits standards ([#616](https://github.com/laurigates/claude-plugins/issues/616)) ([5b74389](https://github.com/laurigates/claude-plugins/commit/5b74389ecdf5223dd62368390ecd9b36ccb1596c))
+
+## [1.1.4](https://github.com/laurigates/claude-plugins/compare/blog-plugin-v1.1.3...blog-plugin-v1.1.4) (2026-02-14)
+
+
+### Code Refactoring
+
+* restructure 11 skills to execution pattern ([#609](https://github.com/laurigates/claude-plugins/issues/609)) ([0aff44a](https://github.com/laurigates/claude-plugins/commit/0aff44ae5768e3cd3aedfed568137738fc298bbc))
+
 ## [1.1.3](https://github.com/laurigates/claude-plugins/compare/blog-plugin-v1.1.2...blog-plugin-v1.1.3) (2026-02-12)
 
 

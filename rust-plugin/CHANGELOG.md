@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.2](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.2.1...rust-plugin-v1.2.2) (2026-02-14)
+
+
+### Code Refactoring
+
+* extract detailed content to REFERENCE.md files ([#605](https://github.com/laurigates/claude-plugins/issues/605)) ([7efbd83](https://github.com/laurigates/claude-plugins/commit/7efbd83b9a2b1ef67be702206396ba6d8102684d))
+
 ## [1.2.1](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.2.0...rust-plugin-v1.2.1) (2026-02-06)
 
 

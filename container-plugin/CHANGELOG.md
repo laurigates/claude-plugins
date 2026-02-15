@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.4](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.3.3...container-plugin-v2.3.4) (2026-02-14)
+
+
+### Code Refactoring
+
+* extract detailed content to REFERENCE.md files ([#605](https://github.com/laurigates/claude-plugins/issues/605)) ([7efbd83](https://github.com/laurigates/claude-plugins/commit/7efbd83b9a2b1ef67be702206396ba6d8102684d))
+
 ## [2.3.3](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.3.2...container-plugin-v2.3.3) (2026-02-12)
 
 
