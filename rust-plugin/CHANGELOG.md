@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.3](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.2.2...rust-plugin-v1.2.3) (2026-02-15)
+
+
+### Bug Fixes
+
+* remove pipe/ls operators from context commands and add CI linting ([#653](https://github.com/laurigates/claude-plugins/issues/653)) ([7a01eef](https://github.com/laurigates/claude-plugins/commit/7a01eef21495ed6243277fbaa88082b7ecabc793))
+
 ## [1.2.2](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.2.1...rust-plugin-v1.2.2) (2026-02-14)
 
 
