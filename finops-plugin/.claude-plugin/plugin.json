@@ -1,6 +1,6 @@
 {
   "name": "finops-plugin",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "GitHub Actions FinOps analysis - billing, cache usage, workflow efficiency, and waste identification",
   "repository": "https://github.com/laurigates/claude-plugins",
   "license": "MIT",
