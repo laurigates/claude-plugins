@@ -32,8 +32,8 @@ Retroactively generate Blueprint documentation (PRDs, ADRs, PRPs) from an existi
 - Total commits: !`git rev-list --count HEAD 2>/dev/null || echo "0"`
 - First commit: !`git log --reverse --format=%ai --max-count=1 2>/dev/null || echo "UNKNOWN"`
 - Latest commit: !`git log --max-count=1 --format=%ai 2>/dev/null || echo "UNKNOWN"`
-- Project type: !`ls package.json pyproject.toml Cargo.toml go.mod pom.xml 2>/dev/null | head -1 | xargs basename 2>/dev/null || echo "UNKNOWN"`
-- Documentation files: !`find . -maxdepth 2 -name "README.md" -o -name "ARCHITECTURE.md" -o -name "DESIGN.md" 2>/dev/null | wc -l`
+- Project type: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' -o -name 'pom.xml' \) -type f -print -quit 2>/dev/null`
+- Documentation files: !`find . -maxdepth 2 \( -name "README.md" -o -name "ARCHITECTURE.md" -o -name "DESIGN.md" \) 2>/dev/null`
 
 ## Parameters
 

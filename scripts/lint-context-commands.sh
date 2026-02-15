@@ -46,22 +46,25 @@ check_pattern() {
 # ERRORS - known to break
 ##############################
 
+# All patterns anchor to "- " prefix to match context command lines only
+# (avoids false positives from markdown tables and code blocks)
+
 # git log numeric shorthand (-N) breaks backtick execution
 check_pattern ERROR \
   "git-log-shorthand" \
-  '!`[^`]*git log[^`]* -[0-9]\+[^0-9]' \
+  '^- .*!`[^`]*git log[^`]* -[0-9]\+[^0-9]' \
   "replace -N with --max-count=N"
 
 # Pipe chains in context commands (blocked by shell protections)
 check_pattern ERROR \
   "pipe-operator" \
-  '!`[^`]* | [^`]*`' \
+  '^- .*!`[^`]* | [^`]*`' \
   "remove pipe; use tool's native file arg or find instead"
 
 # ls commands that fail when files don't exist
 check_pattern ERROR \
   "ls-in-context" \
-  '!`ls [^`]*`' \
+  '^- .*!`ls [^`]*`' \
   "replace ls with find; ls returns non-zero when files are missing"
 
 ##############################
@@ -71,19 +74,19 @@ check_pattern ERROR \
 # && operator in context commands (includes test -f && echo patterns)
 check_pattern WARN \
   "shell-operator-and" \
-  '!`[^`]* && [^`]*`' \
+  '^- .*!`[^`]* && [^`]*`' \
   "remove && operator; for file checks use: find . -maxdepth 1 -name 'file' 2>/dev/null"
 
 # || operator in context commands
 check_pattern WARN \
   "shell-operator-or" \
-  '!`[^`]* || [^`]*`' \
+  '^- .*!`[^`]* || [^`]*`' \
   "remove || fallback; use 2>/dev/null and handle empty output in execution logic"
 
 # Semicolons in context commands
 check_pattern WARN \
   "shell-operator-semicolon" \
-  '!`[^`]*; [^`]*`' \
+  '^- .*!`[^`]*; [^`]*`' \
   "remove ; operator; split into separate context commands"
 
 ##############################

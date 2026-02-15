@@ -103,8 +103,8 @@ DECIMAL       HEXADECIMAL     DESCRIPTION
 
 ```bash
 # Hex + ASCII dump
-hexdump -C binary_file | head -50
-xxd binary_file | head -50
+hexdump -C binary_file
+xxd binary_file
 
 # Dump specific byte range
 xxd -s 0x100 -l 256 binary_file    # 256 bytes starting at offset 0x100

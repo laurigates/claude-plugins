@@ -26,8 +26,8 @@ Interactively select which infrastructure standards checks to run.
 ## Context
 
 - Project standards: !`test -f .project-standards.yaml && echo "EXISTS" || echo "MISSING"`
-- Project type: !`head -20 .project-standards.yaml 2>/dev/null | grep -m1 "^project_type:" | sed 's/^[^:]*:[[:space:]]*//'`
-- Has terraform: !`find . -maxdepth 2 \( -name '*.tf' -o -type d -name 'terraform' \) 2>/dev/null | head -1`
+- Project type: !`grep -m1 "^project_type:" .project-standards.yaml 2>/dev/null`
+- Has terraform: !`find . -maxdepth 2 \( -name '*.tf' -o -type d -name 'terraform' \) -print -quit 2>/dev/null`
 - Has package.json: !`test -f package.json && echo "EXISTS" || echo "MISSING"`
 - Has pyproject.toml: !`test -f pyproject.toml && echo "EXISTS" || echo "MISSING"`
 - Has Cargo.toml: !`test -f Cargo.toml && echo "EXISTS" || echo "MISSING"`

@@ -27,9 +27,9 @@ Validate Architecture Decision Records for relationship consistency, reference i
 ## Context
 
 - ADR directory exists: !`test -d docs/adrs && echo "YES" || echo "NO"`
-- ADR count: !`ls docs/adrs/*.md 2>/dev/null | wc -l`
-- Domain-tagged ADRs: !`grep -l "^domain:" docs/adrs/*.md 2>/dev/null | wc -l`
-- Flag: !`echo "${1:---}" | grep -q "report-only" && echo "REPORT-ONLY" || echo "INTERACTIVE"`
+- ADR count: !`find docs/adrs -name "*.md" -type f 2>/dev/null`
+- Domain-tagged ADRs: !`grep -l "^domain:" docs/adrs/*.md 2>/dev/null`
+- Flag: !`test "${1:---}" = "--report-only" && echo "REPORT-ONLY" || echo "INTERACTIVE"`
 
 ## Parameters
 

@@ -26,14 +26,14 @@ Display infrastructure standards compliance status without making changes.
 ## Context
 
 - Project standards: !`test -f .project-standards.yaml && echo "EXISTS" || echo "MISSING"`
-- Project type: !`head -20 .project-standards.yaml 2>/dev/null | grep -m1 "^project_type:" | sed 's/^[^:]*:[[:space:]]*//'`
-- Standards version: !`head -20 .project-standards.yaml 2>/dev/null | grep -m1 "^standards_version:" | sed 's/^[^:]*:[[:space:]]*//'`
-- Last configured: !`head -20 .project-standards.yaml 2>/dev/null | grep -m1 "^last_configured:" | sed 's/^[^:]*:[[:space:]]*//'`
+- Project type: !`grep -m1 "^project_type:" .project-standards.yaml 2>/dev/null`
+- Standards version: !`grep -m1 "^standards_version:" .project-standards.yaml 2>/dev/null`
+- Last configured: !`grep -m1 "^last_configured:" .project-standards.yaml 2>/dev/null`
 - Pre-commit config: !`test -f .pre-commit-config.yaml && echo "EXISTS" || echo "MISSING"`
 - Workflows: !`find .github/workflows -maxdepth 1 -name '*.yml' 2>/dev/null`
-- Has Dockerfile: !`find . -maxdepth 1 -name 'Dockerfile*' 2>/dev/null | head -1`
+- Has Dockerfile: !`find . -maxdepth 1 -name 'Dockerfile*' 2>/dev/null -print -quit`
 - Has skaffold: !`test -f skaffold.yaml && echo "EXISTS" || echo "MISSING"`
-- Has helm: !`find . -maxdepth 2 -type d -name 'helm' 2>/dev/null | head -1`
+- Has helm: !`find . -maxdepth 2 -type d -name 'helm' 2>/dev/null -print -quit`
 - Test configs: !`find . -maxdepth 1 \( -name 'vitest.config.*' -o -name 'jest.config.*' -o -name 'pytest.ini' \) 2>/dev/null`
 - Linting config: !`find . -maxdepth 1 \( -name 'biome.json' -o -name '.eslintrc*' \) 2>/dev/null`
 - Editor config: !`test -f .editorconfig && echo "EXISTS" || echo "MISSING"`

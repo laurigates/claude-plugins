@@ -34,7 +34,7 @@ Systematic extraction of duplicated code into shared, tested abstractions.
 - Project type: !`find . -maxdepth 1 \( -name "package.json" -o -name "Cargo.toml" -o -name "pyproject.toml" -o -name "go.mod" \) 2>/dev/null`
 - Source directories: !`find . -maxdepth 1 -type d \( -name "src" -o -name "lib" -o -name "app" -o -name "components" -o -name "packages" \) 2>/dev/null`
 - Test framework: !`find . -maxdepth 2 \( -name "vitest.config.*" -o -name "jest.config.*" -o -name "pytest.ini" -o -name "conftest.py" \) 2>/dev/null`
-- Existing shared utilities: !`find . -path "*/lib/*" -o -path "*/utils/*" -o -path "*/shared/*" -o -path "*/common/*" -o -path "*/hooks/*" 2>/dev/null | head -20`
+- Existing shared utilities: !`find . \( -path "*/lib/*" -o -path "*/utils/*" -o -path "*/shared/*" -o -path "*/common/*" -o -path "*/hooks/*" \) -type f -print -quit 2>/dev/null`
 
 ## Parameters
 

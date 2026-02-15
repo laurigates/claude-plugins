@@ -39,7 +39,7 @@ Orchestrate parallel agent workflows using git worktrees for isolated, concurren
 
 - Current branch: !`git branch --show-current 2>/dev/null`
 - Worktrees: !`git worktree list --porcelain 2>/dev/null`
-- Uncommitted changes: !`git status --porcelain 2>/dev/null | wc -l`
+- Uncommitted changes: !`git status --porcelain 2>/dev/null`
 - Recent commits: !`git log --oneline --max-count=10 2>/dev/null`
 - Remote tracking: !`git rev-list --left-right --count HEAD...@{u} 2>/dev/null`
 

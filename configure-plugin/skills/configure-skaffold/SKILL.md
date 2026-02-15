@@ -27,9 +27,9 @@ Check and configure Skaffold against project standards.
 
 - K8s/Helm directories: !`find . -maxdepth 1 -type d \( -name 'k8s' -o -name 'helm' \) 2>/dev/null`
 - Skaffold config: !`test -f skaffold.yaml && echo "EXISTS" || echo "MISSING"`
-- Skaffold API version: !`head -5 skaffold.yaml 2>/dev/null | grep apiVersion`
-- Port forward config: !`grep -A2 'portForward' skaffold.yaml 2>/dev/null | grep address`
-- Profiles defined: !`grep 'name:' skaffold.yaml 2>/dev/null | grep -v 'metadata' | head -10`
+- Skaffold API version: !`grep -m1 apiVersion skaffold.yaml 2>/dev/null`
+- Port forward config: !`grep -m1 address skaffold.yaml 2>/dev/null`
+- Profiles defined: !`grep -m10 'name:' skaffold.yaml 2>/dev/null`
 - Generate-secrets script: !`test -f scripts/generate-secrets.sh && echo "EXISTS" || echo "MISSING"`
 - Dotenvx available: !`command -v dotenvx 2>/dev/null && echo "INSTALLED" || echo "MISSING"`
 - Project standards: !`head -20 .project-standards.yaml 2>/dev/null`
