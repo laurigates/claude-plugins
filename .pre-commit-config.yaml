@@ -1,0 +1,9 @@
+repos:
+  - repo: local
+    hooks:
+      - id: lint-context-commands
+        name: lint context commands
+        entry: ./scripts/lint-context-commands.sh
+        language: script
+        files: '(SKILL|skill)\.md$'
+        pass_filenames: false
