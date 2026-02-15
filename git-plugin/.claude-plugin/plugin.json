@@ -22,6 +22,8 @@
     "documentation-derivation",
     "git-log-analysis",
     "version-control",
+    "api-pr",
+    "contents-api",
     "release-please",
     "monorepo",
     "layered-skills",

@@ -10,6 +10,7 @@ This plugin provides comprehensive Git workflow automation including conventiona
 
 | Skill | Description |
 |-------|-------------|
+| `/git:api-pr` | Create PRs via GitHub API without local git operations - for quick fixes, typos, config updates |
 | `/git:commit` | Complete workflow from changes to PR - auto-detect issues, create logical commits with proper linkage, push, optionally create PR |
 | `/git:issue` | Process GitHub issues with interactive selection, conflict detection, and parallel work support |
 | `/git:fix-pr` | Analyze and fix failing PR checks |
