@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.4](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.8.3...project-plugin-v1.8.4) (2026-02-15)
+
+
+### Bug Fixes
+
+* replace broken context command patterns in skill files ([#644](https://github.com/laurigates/claude-plugins/issues/644)) ([440ba34](https://github.com/laurigates/claude-plugins/commit/440ba347bcc73a0512f74975cfd6b4af9fe8566e))
+
 ## [1.8.3](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.8.2...project-plugin-v1.8.3) (2026-02-14)
 
 
