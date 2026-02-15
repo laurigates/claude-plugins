@@ -18,6 +18,22 @@ claude plugin install laurigates-claude-plugins/testing-plugin
 
 > **New here?** See the [Plugin Map](docs/PLUGIN-MAP.md) for setup guidance, decision trees, and recommended install order.
 
+## Quick Setup
+
+Use the included justfile for quick MCP server configuration:
+
+```bash
+# Set up all MCP servers and cclsp
+just claude-setup
+
+# Or install individual servers
+just mcp-github
+just mcp-playwright
+just mcp-context7
+```
+
+Alternatively, use the `/configure:mcp` skill for interactive configuration.
+
 ## Plugins by Category
 
 ### AI & Agents

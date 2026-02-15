@@ -5,314 +5,112 @@ args: "[library-name|project:pattern-name]"
 argument-hint: "Library name (e.g., redis, pydantic) or project:pattern-name"
 allowed-tools: Read, Write, Glob, Bash, WebFetch, WebSearch, AskUserQuestion
 created: 2025-12-16
-modified: 2026-02-03
-reviewed: 2025-12-16
+modified: 2026-02-14
+reviewed: 2026-02-14
 name: blueprint-curate-docs
 ---
 
-Curate documentation for a library or project pattern into an ai_docs entry.
+# /blueprint:curate-docs
+
+Curate library or project documentation into ai_docs entries optimized for AI agents - concise, actionable, gotcha-aware context that fits in PRPs.
 
 **Usage**: `/blueprint:curate-docs [library-name]` or `/blueprint:curate-docs project:[pattern-name]`
 
-**What is ai_docs?**
-ai_docs are curated documentation entries optimized for AI agents. Unlike raw documentation, they are:
-- **Concise**: < 200 lines, only essential information
-- **Actionable**: Code snippets that can be directly used
-- **Gotcha-aware**: Common pitfalls with solutions
-- **Version-specific**: Tied to specific library versions
-
-**Prerequisites**:
-- Blueprint Development initialized
-- `docs/blueprint/ai_docs/` directory exists
-
-## Phase 1: Research
-
-### 1.1 For Library Documentation
-
-**Identify the library**:
-```bash
-# Check if already documented
-ls docs/blueprint/ai_docs/libraries/
-
-# Check project dependencies for version
-cat package.json | grep "[library-name]"
-# or
-cat pyproject.toml | grep "[library-name]"
-# or
-cat requirements.txt | grep "[library-name]"
-```
-
-**Gather documentation**:
-1. Search for official documentation
-2. Find the specific sections relevant to project use cases
-3. Look for known issues and gotchas
-4. Search for common problems on Stack Overflow/GitHub
-
-Use WebSearch:
-```
-[library-name] documentation [specific topic]
-[library-name] common issues
-[library-name] gotchas
-[library-name] best practices
-```
-
-Use WebFetch to extract key sections:
-```
-Fetch: [library documentation URL]
-Extract: [specific pattern or topic]
-```
-
-### 1.2 For Project Patterns
-
-**Identify existing patterns**:
-```bash
-# Search for pattern implementations
-grep -r "[pattern keyword]" src/
-grep -r "[pattern keyword]" lib/
-```
-
-**Analyze the pattern**:
-- Where is it used?
-- What are the conventions?
-- What gotchas have been encountered?
-
-## Phase 2: Extract Key Information
-
-### 2.1 Determine Use Cases
-
-Identify how this library/pattern is used in this project:
-- What features depend on it?
-- What are the common operations?
-- What integrations exist?
-
-### 2.2 Extract Patterns
-
-From documentation and codebase:
-- **Quick reference**: Most common operations
-- **Patterns we use**: Project-specific implementations
-- **Configuration**: How it's configured in this project
-
-### 2.3 Document Gotchas
-
-Compile known issues:
-- Version-specific behaviors
-- Common mistakes
-- Performance pitfalls
-- Security considerations
-
-Sources for gotchas:
-- Official documentation warnings
-- GitHub issues
-- Stack Overflow discussions
-- Team experience
-
-## Phase 3: Create ai_docs Entry
-
-### 3.1 Choose Location
-
-**For libraries**:
-```
-docs/blueprint/ai_docs/libraries/[library-name].md
-```
-
-**For project patterns**:
-```
-docs/blueprint/ai_docs/project/[pattern-name].md
-```
+## When to Use This Skill
 
-### 3.2 Write Entry
+| Use this skill when... | Use alternative when... |
+|------------------------|-------------------------|
+| Creating ai_docs for PRP context | Reading raw documentation for ad-hoc tasks |
+| Documenting library patterns for reuse | One-time library usage |
+| Building knowledge base for project | General library research |
 
-Use the ai_docs template:
+## Context
 
-```markdown
-# [Library/Pattern Name]
+- ai_docs directory: !`test -d docs/blueprint/ai_docs && echo "YES" || echo "NO"`
+- Existing library docs: !`ls docs/blueprint/ai_docs/libraries/ 2>/dev/null | wc -l`
+- Existing project patterns: !`ls docs/blueprint/ai_docs/project/ 2>/dev/null | wc -l`
+- Library in dependencies: !`grep -E "^$1[\":@=]" package.json pyproject.toml requirements.txt 2>/dev/null | head -1 || echo "NOT FOUND"`
 
-**Version:** X.Y.Z
-**Last Updated:** YYYY-MM-DD
-**Use Case:** [Why we use this in this project]
+## Parameters
 
-## Quick Reference
+Parse `$ARGUMENTS`:
 
-### [Common Operation 1]
-```[language]
-# Code snippet that can be directly copied
-```
+- `library-name`: Name of library to document (e.g., `redis`, `pydantic`)
+  - Location: `docs/blueprint/ai_docs/libraries/[library-name].md`
+  - OR `project:[pattern-name]` for project patterns
+  - Location: `docs/blueprint/ai_docs/project/[pattern-name].md`
 
-### [Common Operation 2]
-```[language]
-# Code snippet that can be directly copied
-```
+## Execution
 
-## Patterns We Use
+Execute complete documentation curation workflow:
 
-### [Pattern Name]
-[When to use this pattern]
+### Step 1: Determine target and check existing docs
 
-```[language]
-# Full example as used in this project
-```
+1. Parse argument to determine if library or project pattern
+2. Check if ai_docs entry already exists
+3. If exists → Ask: Update or create new version?
+4. Check project dependencies for library version
 
-## Configuration
+### Step 2: Research and gather documentation
 
-### Environment Variables
-```bash
-VAR_NAME=value
-```
+For **libraries**:
+- Find official documentation URL
+- Search for specific sections relevant to project use cases
+- Find known issues and gotchas (WebSearch: "{library} common issues", "{library} gotchas")
+- Extract key sections with WebFetch
 
-### Our Config Pattern
-```[language]
-# How we configure this in the project
-```
+For **project patterns**:
+- Search codebase for pattern implementations: `grep -r "{pattern}" src/`
+- Identify where and how it's used
+- Document conventions and variations
+- Extract real code examples from project
 
-## Gotchas
+### Step 3: Extract key information
 
-### Gotcha 1: [Title]
-**Issue:** [What can go wrong]
-**Solution:**
-```[language]
-# Correct approach
-```
+1. **Use cases**: How/why this library/pattern is used in project
+2. **Common operations**: Most frequent uses
+3. **Patterns we use**: Project-specific implementations (with file references)
+4. **Configuration**: How it's configured in this project
+5. **Gotchas**: Version-specific behaviors, common mistakes, performance pitfalls, security considerations
 
-### Gotcha 2: [Title]
-**Issue:** [What can go wrong]
-**Solution:**
-```[language]
-# Correct approach
-```
+Sources for gotchas: GitHub issues, Stack Overflow, team experience, official docs warnings.
 
-## Common Pitfalls and Solutions
+### Step 4: Create ai_docs entry
 
-### Recommended Pattern
-```[language]
-# Good example
-```
+Generate file at appropriate location (see [REFERENCE.md](REFERENCE.md#template)):
+- `docs/blueprint/ai_docs/libraries/[library-name].md` OR
+- `docs/blueprint/ai_docs/project/[pattern-name].md`
 
-### What This Replaces
-```[language]
-# Previous pattern (for context)
-```
+Include all sections from template: Quick Reference, Patterns We Use, Configuration, Gotchas, Testing, Examples.
 
-## Testing
+Keep under 200 lines total.
 
-### How to Mock
-```[language]
-# Mocking pattern for tests
-```
+### Step 5: Add code examples
 
-## References
+Include copy-paste-ready code snippets from:
+- Project codebase (reference actual files and line numbers)
+- Official documentation examples
+- Stack Overflow solutions
+- Personal implementation experience
 
-- [Official Docs - Specific Section](url)
-- [Relevant GitHub Issue](url)
-```
+### Step 6: Validate and save
 
-### 3.3 Quality Checks
+1. Verify entry is < 200 lines
+2. Verify all code examples are accurate
+3. Verify gotchas include solutions
+4. Save file
+5. Report completion
 
-Before saving, verify:
-- [ ] Entry is < 200 lines
-- [ ] Code snippets are directly usable
-- [ ] Gotchas include solutions
-- [ ] Version is specified
-- [ ] Use cases are clear
-- [ ] Anti-patterns are shown
+## Agentic Optimizations
 
-## Phase 4: Integrate
-
-### 4.1 Save Entry
-
-```bash
-# Write to ai_docs
-cat > docs/blueprint/ai_docs/[type]/[name].md << 'EOF'
-[content]
-EOF
-```
-
-### 4.2 Update References
-
-If PRPs reference this library/pattern:
-- Add ai_docs reference to PRP
-- Update context sections
-
-### 4.3 Report
-
-```markdown
-## ai_docs Entry Created: [Name]
-
-**Location:** `docs/blueprint/ai_docs/[type]/[name].md`
-
-**Version:** X.Y.Z
-
-**Content Summary:**
-- Quick Reference: [N operations]
-- Patterns: [N patterns]
-- Gotchas: [N documented]
-- Anti-patterns: [N shown]
-
-**Lines:** [count] (target: < 200)
-
-**Use in PRPs:**
-Reference with:
-```markdown
-### ai_docs References
-- See `ai_docs/[type]/[name].md` - [Section]
-```
-
-**Linked PRPs:**
-- [List any PRPs that should reference this]
-```
-
-## Templates by Type
-
-### Library Template
-Best for: External dependencies (Redis, Pydantic, FastAPI, etc.)
-
-Focus on:
-- Version-specific behavior
-- Connection/initialization patterns
-- Error handling
-- Performance gotchas
-
-### Framework Template
-Best for: Web frameworks, ORMs, testing frameworks
-
-Focus on:
-- Project structure conventions
-- Configuration patterns
-- Extension points
-- Testing integration
-
-### Project Pattern Template
-Best for: Internal patterns (Repository, Service Layer, etc.)
-
-Focus on:
-- When to use this pattern
-- How it's implemented in this codebase
-- Integration with other patterns
-- Common mistakes
-
-### 4.4 Prompt for next action (use AskUserQuestion):
-
-```
-question: "ai_docs entry created. What would you like to do next?"
-options:
-  - label: "Curate another library/pattern"
-    description: "Create additional ai_docs entries"
-  - label: "Create PRP using this context"
-    description: "Use this ai_docs in a feature implementation"
-  - label: "Update linked PRPs"
-    description: "Add ai_docs reference to existing PRPs"
-  - label: "I'm done for now"
-    description: "Exit - ai_docs is saved and ready"
-```
-
-**Based on selection:**
-- "Curate another" → Run `/blueprint:curate-docs` (ask for library/pattern name)
-- "Create PRP using this context" → Run `/blueprint:prp-create` (ask for feature name)
-- "Update linked PRPs" → List PRPs that could benefit from this ai_docs reference
-- "I'm done" → Exit
-
-**Tips**:
-- Be ruthless about conciseness - every line uses tokens
-- Include actual line numbers from codebase examples
-- Document gotchas immediately when discovered
-- Update entries as patterns evolve
-- Link to official docs for rarely-used features
+| Context | Command |
+|---------|---------|
+| Check ai_docs exists | `test -d docs/blueprint/ai_docs && echo "YES" \|\| echo "NO"` |
+| List library docs | `ls docs/blueprint/ai_docs/libraries/ 2>/dev/null` |
+| Check library version | `grep "{library}" package.json pyproject.toml 2>/dev/null \| head -1` |
+| Search for patterns | Use grep on src/ for project patterns |
+| Fast research | Use WebSearch for common issues instead of fetching docs |
+
+---
+
+For ai_docs template, section guidelines, and example entries, see [REFERENCE.md](REFERENCE.md).
