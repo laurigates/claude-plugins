@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.5](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.1.4...github-actions-plugin-v1.1.5) (2026-02-15)
+
+
+### Bug Fixes
+
+* remove pipe/ls operators from context commands and add CI linting ([#653](https://github.com/laurigates/claude-plugins/issues/653)) ([7a01eef](https://github.com/laurigates/claude-plugins/commit/7a01eef21495ed6243277fbaa88082b7ecabc793))
+
 ## [1.1.4](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.1.3...github-actions-plugin-v1.1.4) (2026-02-14)
 
 
