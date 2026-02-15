@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.2](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.7.1...configure-plugin-v1.7.2) (2026-02-15)
+
+
+### Bug Fixes
+
+* replace broken context command patterns in skill files ([#644](https://github.com/laurigates/claude-plugins/issues/644)) ([440ba34](https://github.com/laurigates/claude-plugins/commit/440ba347bcc73a0512f74975cfd6b4af9fe8566e))
+
 ## [1.7.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.7.0...configure-plugin-v1.7.1) (2026-02-13)
 
 
