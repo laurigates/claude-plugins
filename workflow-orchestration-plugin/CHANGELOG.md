@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.3](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.1.2...workflow-orchestration-plugin-v1.1.3) (2026-02-15)
+
+
+### Bug Fixes
+
+* replace broken context command patterns in skill files ([#644](https://github.com/laurigates/claude-plugins/issues/644)) ([440ba34](https://github.com/laurigates/claude-plugins/commit/440ba347bcc73a0512f74975cfd6b4af9fe8566e))
+
 ## [1.1.2](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.1.1...workflow-orchestration-plugin-v1.1.2) (2026-02-14)
 
 

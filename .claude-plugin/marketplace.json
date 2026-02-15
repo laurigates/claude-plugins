@@ -238,7 +238,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, and repository management",
-      "version": "2.14.2",
+      "version": "2.14.3",
       "keywords": [
         "git",
         "github",
@@ -365,7 +365,7 @@
       "name": "project-plugin",
       "source": "./project-plugin",
       "description": "Project initialization, management, and maintenance - setup, modernization, changelog review, and continuous development workflows",
-      "version": "1.8.3",
+      "version": "1.8.4",
       "keywords": [
         "project",
         "initialization",
@@ -482,7 +482,7 @@
       "name": "workflow-orchestration-plugin",
       "source": "./workflow-orchestration-plugin",
       "description": "Workflow orchestration - parallel agents, CI pipelines, preflight checks, checkpoint refactoring",
-      "version": "1.1.2",
+      "version": "1.1.3",
       "keywords": [
         "workflow",
         "orchestration",
