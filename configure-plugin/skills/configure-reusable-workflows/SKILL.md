@@ -27,9 +27,9 @@ Install Claude-powered reusable GitHub Actions workflows from claude-plugins int
 
 - Workflows dir: !`test -d .github/workflows && echo "EXISTS" || echo "MISSING"`
 - Existing callers: !`find .github/workflows -maxdepth 1 -name 'claude-*' 2>/dev/null`
-- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) 2>/dev/null`
-- TypeScript files: !`find . -maxdepth 2 -name '*.ts' -o -name '*.tsx' 2>/dev/null | head -3`
-- Component files: !`find . -maxdepth 3 \( -name '*.jsx' -o -name '*.vue' -o -name '*.svelte' \) 2>/dev/null | head -3`
+- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) -print -quit 2>/dev/null`
+- TypeScript files: !`find . -maxdepth 2 \( -name '*.ts' -o -name '*.tsx' \) -print -quit 2>/dev/null`
+- Component files: !`find . -maxdepth 3 \( -name '*.jsx' -o -name '*.vue' -o -name '*.svelte' \) -print -quit 2>/dev/null`
 
 ## Parameters
 

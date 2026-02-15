@@ -16,9 +16,9 @@ Automated development loop with issue creation, TDD, and CI monitoring.
 ## Context
 
 - Current branch: !`git branch --show-current 2>/dev/null`
-- Working tree: !`git status --porcelain 2>/dev/null | wc -l`
-- Project type: !`find . -maxdepth 1 \( -name "package.json" -o -name "Cargo.toml" -o -name "pyproject.toml" -o -name "go.mod" -o -name "manage.py" \) 2>/dev/null`
-- Open issues: !`gh issue list --state open --limit 5 --json number,title 2>/dev/null`
+- Working tree: !`git status --porcelain 2>/dev/null`
+- Project type: !`find . -maxdepth 1 \( -name "package.json" -o -name "Cargo.toml" -o -name "pyproject.toml" -o -name "go.mod" -o -name "manage.py" \) -type f 2>/dev/null`
+- Open issues: !`gh issue list --state open --limit 5 --json number,title --jq '.' 2>/dev/null`
 
 ## Parameters
 

@@ -1,6 +1,6 @@
 {
   "name": "configure-plugin",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "description": "Project infrastructure standards - comprehensive project configuration for pre-commit, CI/CD, Docker, testing, linting, formatting, and more",
   "author": {
     "name": "Lauri Gates"

@@ -81,7 +81,7 @@
       "name": "blog-plugin",
       "source": "./blog-plugin",
       "description": "Blog post creation - project logs, technical write-ups, personal documentation",
-      "version": "1.1.6",
+      "version": "1.1.7",
       "keywords": [
         "blog",
         "writing",
@@ -96,7 +96,7 @@
       "name": "blueprint-plugin",
       "source": "./blueprint-plugin",
       "description": "Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, and CLAUDE.md management",
-      "version": "3.16.4",
+      "version": "3.16.5",
       "keywords": [
         "blueprint",
         "prd",
@@ -168,7 +168,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.7.1",
+      "version": "1.7.2",
       "keywords": [
         "infrastructure",
         "standards",
@@ -180,7 +180,7 @@
       "name": "container-plugin",
       "source": "./container-plugin",
       "description": "Container development and deployment - Docker, registry, Skaffold",
-      "version": "2.3.4",
+      "version": "2.3.5",
       "keywords": [
         "container",
         "docker",
@@ -238,7 +238,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, and repository management",
-      "version": "2.14.2",
+      "version": "2.14.3",
       "keywords": [
         "git",
         "github",
@@ -365,7 +365,7 @@
       "name": "project-plugin",
       "source": "./project-plugin",
       "description": "Project initialization, management, and maintenance - setup, modernization, changelog review, and continuous development workflows",
-      "version": "1.8.3",
+      "version": "1.8.4",
       "keywords": [
         "project",
         "initialization",
@@ -482,7 +482,7 @@
       "name": "workflow-orchestration-plugin",
       "source": "./workflow-orchestration-plugin",
       "description": "Workflow orchestration - parallel agents, CI pipelines, preflight checks, checkpoint refactoring",
-      "version": "1.1.2",
+      "version": "1.1.3",
       "keywords": [
         "workflow",
         "orchestration",

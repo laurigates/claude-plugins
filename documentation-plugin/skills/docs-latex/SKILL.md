@@ -31,7 +31,7 @@ Convert Markdown documents to professional LaTeX with advanced typesetting, TikZ
 - Source file exists: !`test -f "$1" && echo "yes" || echo "no"`
 - LaTeX installed: !`which pdflatex 2>/dev/null`
 - Current directory: !`pwd`
-- Available .md files: !`find . -maxdepth 2 -name '*.md' -not -name 'CHANGELOG.md' -not -name 'README.md' 2>/dev/null | head -10`
+- Available .md files: !`find . -maxdepth 2 -name '*.md' -not -name 'CHANGELOG.md' -not -name 'README.md' 2>/dev/null`
 
 ## Parameters
 
@@ -118,9 +118,9 @@ Add LaTeX build artifacts to `.gitignore` if not already present: `*.aux`, `*.lo
 | Check LaTeX installed | `which pdflatex 2>/dev/null` |
 | Quick compile | `pdflatex -interaction=nonstopmode -halt-on-error FILE.tex` |
 | Full compile (with TOC) | `pdflatex -interaction=nonstopmode FILE.tex && pdflatex -interaction=nonstopmode FILE.tex` |
-| Check PDF page count | `pdfinfo FILE.pdf 2>/dev/null \| grep Pages` |
-| Check PDF file size | `ls -lh FILE.pdf` |
+| Check PDF page count | `pdfinfo FILE.pdf 2>/dev/null` |
+| Check PDF file size | `stat -f %z FILE.pdf 2>/dev/null` |
 | Install toolchain | `apt-get install -y texlive-latex-extra texlive-fonts-recommended texlive-fonts-extra texlive-science` |
-| Errors only | `pdflatex -interaction=nonstopmode FILE.tex 2>&1 \| grep -E "^!" \| head -10` |
+| Errors only | `pdflatex -interaction=nonstopmode FILE.tex 2>&1` |
 
 For detailed LaTeX patterns, TikZ templates, and package reference, see [REFERENCE.md](REFERENCE.md).

@@ -31,7 +31,7 @@ Check and configure testing frameworks against best practices (Vitest, Jest, pyt
 - Test config files: !`find . -maxdepth 1 \( -name 'vitest.config.*' -o -name 'jest.config.*' -o -name 'pytest.ini' -o -name '.nextest.toml' \) 2>/dev/null`
 - Pytest in pyproject: !`grep -c 'tool.pytest' pyproject.toml 2>/dev/null`
 - Test directories: !`find . -maxdepth 2 -type d \( -name 'tests' -o -name '__tests__' -o -name 'test' \) 2>/dev/null`
-- Test scripts in package.json: !`grep -o '"test[^"]*"' package.json 2>/dev/null | head -5`
+- Test scripts in package.json: !`grep -m5 -o '"test[^"]*"' package.json 2>/dev/null`
 - Coverage config: !`grep -l 'coverage' vitest.config.* jest.config.* 2>/dev/null`
 - Project standards: !`head -20 .project-standards.yaml 2>/dev/null`
 
@@ -166,7 +166,7 @@ For detailed configuration templates, migration guides, CI/CD integration exampl
 |---------|---------|
 | Detect test framework | `find . -maxdepth 1 \( -name 'vitest.config.*' -o -name 'jest.config.*' -o -name 'pytest.ini' \) 2>/dev/null` |
 | Check coverage config | `grep -l 'coverage' package.json pyproject.toml 2>/dev/null` |
-| List test files | `find . -path '*/tests/*' -o -path '*/test/*' -o -name '*.test.*' -o -name '*.spec.*' 2>/dev/null \| head -10` |
+| List test files | `find . \( -path '*/tests/*' -o -path '*/test/*' -o -name '*.test.*' -o -name '*.spec.*' \) 2>/dev/null \| head -n 10` |
 | Quick compliance check | `/configure:tests --check-only` |
 | Auto-fix configuration | `/configure:tests --fix` |
 
