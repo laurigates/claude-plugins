@@ -81,7 +81,7 @@
       "name": "blog-plugin",
       "source": "./blog-plugin",
       "description": "Blog post creation - project logs, technical write-ups, personal documentation",
-      "version": "1.1.6",
+      "version": "1.1.7",
       "keywords": [
         "blog",
         "writing",
