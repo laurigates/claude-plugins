@@ -37,7 +37,7 @@
       "name": "agents-plugin",
       "source": "./agents-plugin",
       "description": "Task-focused agents with teammate and subagent role guidance for test, review, debug, docs, CI, security, refactoring, research, and performance",
-      "version": "1.2.0",
+      "version": "1.1.5",
       "keywords": [
         "agents",
         "teammates",
@@ -168,7 +168,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.7.3",
+      "version": "1.8.0",
       "keywords": [
         "infrastructure",
         "standards",
@@ -252,7 +252,7 @@
       "name": "github-actions-plugin",
       "source": "./github-actions-plugin",
       "description": "GitHub Actions CI/CD - workflows, authentication, inspection",
-      "version": "1.2.0",
+      "version": "1.1.4",
       "keywords": [
         "github-actions",
         "ci-cd",
