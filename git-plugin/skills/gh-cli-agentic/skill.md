@@ -4,8 +4,8 @@ name: gh-cli-agentic
 description: GitHub CLI commands optimized for AI agent workflows with JSON output and deterministic execution patterns.
 allowed-tools: Bash(gh pr *), Bash(gh run *), Bash(gh issue *), Bash(gh repo *), Bash(gh workflow *), Bash(gh api *), Read
 created: 2025-01-16
-modified: 2025-01-16
-reviewed: 2025-01-16
+modified: 2026-02-16
+reviewed: 2026-02-16
 ---
 
 # GitHub CLI Agentic Patterns
@@ -157,6 +157,47 @@ gh api repos/{owner}/{repo}/actions/runs --jq '.workflow_runs[:5]'
 
 # With pagination
 gh api repos/{owner}/{repo}/issues --paginate --jq '.[].number'
+```
+
+## GitHub URL Resolution
+
+Translate GitHub URLs into `gh` API commands for programmatic access.
+
+### URL → Command Mapping
+
+| URL Pattern | Command |
+|-------------|---------|
+| `github.com/{owner}/{repo}/pull/{n}` | `gh pr view {n} --repo {owner}/{repo} --json number,title,body,state` |
+| `github.com/{owner}/{repo}/issues/{n}` | `gh issue view {n} --repo {owner}/{repo} --json number,title,body,state` |
+| `github.com/{owner}/{repo}/commit/{sha}` | `gh api repos/{owner}/{repo}/commits/{sha}` |
+| `github.com/{owner}/{repo}/blob/{ref}/{path}` | `gh api repos/{owner}/{repo}/contents/{path}?ref={ref}` |
+
+### File Contents by Ref
+
+```bash
+# Get decoded file content at a specific ref (branch, tag, or SHA)
+gh api repos/{owner}/{repo}/contents/{path}?ref={ref} --jq '.content' | base64 -d
+
+# Get raw file content directly (no JSON wrapper)
+gh api repos/{owner}/{repo}/contents/{path}?ref={ref} -H "Accept: application/vnd.github.raw+json"
+```
+
+### Diff and Patch via API
+
+Use Accept headers to get raw diff or patch output from PRs and commits:
+
+```bash
+# PR diff
+gh api repos/{owner}/{repo}/pulls/{n} -H "Accept: application/vnd.github.diff"
+
+# PR patch
+gh api repos/{owner}/{repo}/pulls/{n} -H "Accept: application/vnd.github.patch"
+
+# Commit diff
+gh api repos/{owner}/{repo}/commits/{sha} -H "Accept: application/vnd.github.diff"
+
+# Commit patch
+gh api repos/{owner}/{repo}/commits/{sha} -H "Accept: application/vnd.github.patch"
 ```
 
 ## Agentic Optimizations
