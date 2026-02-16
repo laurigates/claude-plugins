@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.17.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.16.2...git-plugin-v2.17.0) (2026-02-16)
+
+
+### Features
+
+* **git-plugin:** add GitHub URL resolution patterns to gh-cli-agentic ([9c8420b](https://github.com/laurigates/claude-plugins/commit/9c8420b5542dd4fadd5b7ff607afe8b9387c14d2))
+
+
+### Bug Fixes
+
+* **git-plugin:** remove pipe operator from worktree skill context command ([#695](https://github.com/laurigates/claude-plugins/issues/695)) ([38884b1](https://github.com/laurigates/claude-plugins/commit/38884b170286289b7d31261967071bfae58c4f73))
+
+
+### Documentation
+
+* **git-plugin:** add GitHub URL resolution patterns to gh-cli-agentic ([#687](https://github.com/laurigates/claude-plugins/issues/687)) ([9c8420b](https://github.com/laurigates/claude-plugins/commit/9c8420b5542dd4fadd5b7ff607afe8b9387c14d2))
+
 ## [2.16.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.16.1...git-plugin-v2.16.2) (2026-02-16)
 
 
