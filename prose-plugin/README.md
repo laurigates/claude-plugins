@@ -1,16 +1,17 @@
 # Prose Plugin
 
-Writing style control and consistency for Claude Code. Distill, tune, and enforce prose standards.
+Prose transformation and style control for Claude Code. Synthesize, distill, tune, and enforce prose standards.
 
 ## Overview
 
-This plugin provides skills for controlling written output — tightening verbose text, enforcing consistent tone, and maintaining stylistic discipline across documents.
+This plugin provides skills for transforming and controlling written output — synthesizing unstructured thinking into plans, tightening verbose text, enforcing consistent tone, and maintaining stylistic discipline across documents.
 
 ## Skills
 
 | Skill | Description |
 |-------|-------------|
 | `prose-distill` | Compress verbose text to its essence. Lossless condensation — precis, verbal economy, Strunk & White's "omit needless words" as executable practice. |
+| `prose-synthesize` | Synthesize unstructured thinking into a structured, actionable plan. Takes stream-of-consciousness thoughts and imposes order — goals, actions, priorities, open questions. |
 
 ## Planned Skills
 
@@ -25,6 +26,16 @@ This plugin provides skills for controlling written output — tightening verbos
 | `prose-audience` | Adapt text for a target audience (developer, executive, end-user) |
 
 ## Usage
+
+### Synthesize
+
+Turn stream-of-consciousness thinking into a structured plan:
+
+```
+/prose:synthesize I need to fix the auth system, tests are broken, maybe move to JWT, deployment keeps failing, Sarah mentioned rate limiting, should do a security audit, docs are out of date
+```
+
+Result: structured plan with objective, key decisions, ordered actions, dependencies, and open questions.
 
 ### Distill
 
@@ -43,7 +54,9 @@ prose-plugin/
 ├── .claude-plugin/
 │   └── plugin.json
 ├── skills/
-│   └── prose-distill/
+│   ├── prose-distill/
+│   │   └── SKILL.md
+│   └── prose-synthesize/
 │       └── SKILL.md
 └── README.md
 ```
