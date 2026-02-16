@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/laurigates/claude-plugins/compare/prose-plugin-v1.1.0...prose-plugin-v1.2.0) (2026-02-16)
+
+
+### Features
+
+* **prose-plugin:** add prose-synthesize skill for structuring unstructured thinking ([141e2b4](https://github.com/laurigates/claude-plugins/commit/141e2b48c1da8d5e5d9b3473bd0ad4c1ab27db5e))
+
 ## [1.1.0](https://github.com/laurigates/claude-plugins/compare/prose-plugin-v1.0.0...prose-plugin-v1.1.0) (2026-02-14)
 
 
