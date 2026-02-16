@@ -4,6 +4,7 @@ created: 2026-01-30
 modified: 2026-01-30
 reviewed: 2026-01-30
 allowed-tools: Bash(gh pr checks *), Bash(gh pr view *), Bash(gh pr diff *), Bash(gh run view *), Bash(gh run list *), Bash(gh api *), Bash(gh repo view *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git pull *), Bash(pre-commit *), Bash(npm run *), Bash(uv run *), Read, Edit, Write, Grep, Glob, TodoWrite, Task, mcp__github__pull_request_read
+args: "[pr-number] [--commit] [--push]"
 argument-hint: [pr-number] [--commit] [--push]
 description: Review PR workflow results and comments, then address substantive feedback and suggestions from reviewers
 name: git-pr-feedback
