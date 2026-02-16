@@ -2,6 +2,10 @@
 
 A collection of 31 Claude Code plugins providing 285+ skills and 14 agents for development workflows.
 
+## Prerequisites
+
+- **Bash 5+** — Required for shell scripts. macOS ships bash 3.2; install via `brew install bash`.
+
 ## Installation
 
 ```bash

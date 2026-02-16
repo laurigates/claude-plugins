@@ -17,6 +17,9 @@ permissions:
 
 jobs:
   review:
+    if: >-
+      !startsWith(github.head_ref, 'release-please--')
+      && github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
