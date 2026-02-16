@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.7.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.6.1...testing-plugin-v3.7.0) (2026-02-16)
+
+
+### Features
+
+* **configure-plugin:** replace detect-secrets with gitleaks for secret scanning ([#668](https://github.com/laurigates/claude-plugins/issues/668)) ([3fc5bbc](https://github.com/laurigates/claude-plugins/commit/3fc5bbc2f8500f30160cc5dfeb5e3d1253ed0a54))
+
 ## [3.6.1](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.6.0...testing-plugin-v3.6.1) (2026-02-14)
 
 
