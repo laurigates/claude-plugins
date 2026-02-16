@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.16.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.16.1...git-plugin-v2.16.2) (2026-02-16)
+
+
+### Code Refactoring
+
+* git-worktree workflow to worktree-first implementation model ([#693](https://github.com/laurigates/claude-plugins/issues/693)) ([16d46e5](https://github.com/laurigates/claude-plugins/commit/16d46e559bbf0daa2874c11ecbf6483e6be29bc2))
+
 ## [2.16.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.16.0...git-plugin-v2.16.1) (2026-02-16)
 
 
