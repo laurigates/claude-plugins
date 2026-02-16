@@ -257,7 +257,6 @@ elif date -d "$past_date" "+%s" >/dev/null 2>&1; then
   past_ts=$(date -d "$past_date" "+%s")
 fi
 ```
-
 ## Checklist for New Commands
 
 - [ ] Variable names use prefixed form (e.g., `doc_status` instead of `status`)
