@@ -1,0 +1,225 @@
+name: Scheduled Audits
+
+on:
+  schedule:
+    - cron: '0 9 1 * *'  # Monthly on the 1st at 09:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  blueprint-health:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check for existing open issue
+        id: check_issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EXISTING=$(gh issue list --label "blueprint-health" --state open --json number --jq 'length')
+          echo "exists=$([ "$EXISTING" -gt 0 ] && echo true || echo false)" >> $GITHUB_OUTPUT
+
+      - name: Run blueprint health check
+        if: steps.check_issue.outputs.exists == 'false'
+        id: health
+        run: |
+          RESULT=$(bash scripts/blueprint-health-check.sh)
+          echo "result<<EOF" >> $GITHUB_OUTPUT
+          echo "$RESULT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create health check issue
+        if: steps.check_issue.outputs.exists == 'false' && steps.health.outputs.result
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DATE=$(date +%Y-%m-%d)
+          echo '${{ steps.health.outputs.result }}' > /tmp/issue-body.md
+          gh issue create \
+            --title "Monthly Blueprint Health: $DATE" \
+            --label "blueprint-health,maintenance" \
+            --body-file /tmp/issue-body.md
+
+  infra-compliance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check for existing open issue
+        id: check_issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EXISTING=$(gh issue list --label "infra-compliance" --state open --json number --jq 'length')
+          echo "exists=$([ "$EXISTING" -gt 0 ] && echo true || echo false)" >> $GITHUB_OUTPUT
+
+      - name: Run infra compliance check
+        if: steps.check_issue.outputs.exists == 'false'
+        id: compliance
+        run: |
+          RESULT=$(bash scripts/infra-compliance-check.sh)
+          echo "result<<EOF" >> $GITHUB_OUTPUT
+          echo "$RESULT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create compliance dashboard issue
+        if: steps.check_issue.outputs.exists == 'false' && steps.compliance.outputs.result
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          MONTH=$(date +%Y-%m)
+          echo '${{ steps.compliance.outputs.result }}' > /tmp/issue-body.md
+          gh issue create \
+            --title "Infrastructure Compliance Dashboard: $MONTH" \
+            --label "infra-compliance,maintenance" \
+            --body-file /tmp/issue-body.md
+
+  agentic-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for existing open issue
+        id: check_issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EXISTING=$(gh issue list --label "agentic-audit" --state open --json number --jq 'length')
+          echo "exists=$([ "$EXISTING" -gt 0 ] && echo true || echo false)" >> $GITHUB_OUTPUT
+
+      - name: Pre-compute deterministic data
+        if: steps.check_issue.outputs.exists == 'false'
+        id: precompute
+        run: |
+          TODAY=$(date +%s)
+          SUMMARY=""
+
+          # Find skills missing Agentic Optimizations table
+          MISSING_AGENTIC=""
+          while IFS= read -r -d '' skill; do
+            if ! grep -qi "agentic optimization" "$skill" 2>/dev/null; then
+              has_bash=$(head -50 "$skill" | grep -m1 "^allowed-tools:" | grep -c "Bash" || true)
+              rel_path="${skill#./}"
+              MISSING_AGENTIC+="- $rel_path (Bash in allowed-tools: $([ "$has_bash" -gt 0 ] && echo yes || echo no))\n"
+            fi
+          done < <(find . -path '*/skills/*' \( -iname "SKILL.md" -o -iname "skill.md" \) -print0 2>/dev/null)
+
+          # Find stale reviews (>90 days)
+          STALE_REVIEWS=""
+          while IFS= read -r -d '' skill; do
+            reviewed=$(head -50 "$skill" | grep -m1 "^reviewed:" | sed 's/^[^:]*:[[:space:]]*//' | tr -d '\r')
+            if [ -n "$reviewed" ]; then
+              rev_ts=$(date -d "$reviewed" +%s 2>/dev/null || date -j -f "%Y-%m-%d" "$reviewed" +%s 2>/dev/null || echo "")
+              if [ -n "$rev_ts" ]; then
+                days=$(( (TODAY - rev_ts) / 86400 ))
+                if [ "$days" -gt 90 ]; then
+                  STALE_REVIEWS+="- ${skill#./}: reviewed $reviewed ($days days ago)\n"
+                fi
+              fi
+            fi
+          done < <(find . -path '*/skills/*' \( -iname "SKILL.md" -o -iname "skill.md" \) -print0 2>/dev/null)
+
+          # Find skills missing required sections
+          MISSING_SECTIONS=""
+          while IFS= read -r -d '' skill; do
+            missing=""
+            grep -qi "when to use" "$skill" 2>/dev/null || missing+="When-to-Use, "
+            head -50 "$skill" | grep -qm1 "^name:" 2>/dev/null || missing+="name, "
+            head -50 "$skill" | grep -qm1 "^description:" 2>/dev/null || missing+="description, "
+            head -50 "$skill" | grep -qm1 "^allowed-tools:" 2>/dev/null || missing+="allowed-tools, "
+            if [ -n "$missing" ]; then
+              MISSING_SECTIONS+="- ${skill#./}: ${missing%, }\n"
+            fi
+          done < <(find . -path '*/skills/*' \( -iname "SKILL.md" -o -iname "skill.md" \) -print0 2>/dev/null)
+
+          TOTAL_SKILLS=$(find . -path '*/skills/*' \( -iname "SKILL.md" -o -iname "skill.md" \) 2>/dev/null | wc -l | tr -d ' ')
+
+          # Build summary
+          {
+            echo "Pre-computed data for $TOTAL_SKILLS skills:"
+            echo ""
+            echo "## Skills missing Agentic Optimizations table:"
+            echo -e "$MISSING_AGENTIC"
+            echo "## Skills with stale reviews (>90 days):"
+            echo -e "$STALE_REVIEWS"
+            echo "## Skills with missing required sections/frontmatter:"
+            echo -e "$MISSING_SECTIONS"
+          } > /tmp/precomputed.md
+
+          RESULT=$(cat /tmp/precomputed.md)
+          echo "result<<EOF" >> $GITHUB_OUTPUT
+          echo "$RESULT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Claude Agentic Quality Audit
+        if: steps.check_issue.outputs.exists == 'false'
+        id: audit
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: "--model haiku --max-turns 15"
+          prompt: |
+            Perform a monthly agentic quality audit on skills in this plugin repository.
+            Read .claude/rules/agentic-optimization.md and .claude/rules/skill-quality.md for standards.
+            Output ONLY the issue body in markdown format. Do not create files or make changes.
+
+            Here is pre-computed deterministic data to save you time:
+
+            ${{ steps.precompute.outputs.result }}
+
+            Using this data plus your own judgment, evaluate:
+
+            ### 1. Bare CLI Commands Without Compact Flags
+            - For skills in the missing agentic optimizations list above, scan their CLI examples
+            - Suggest compact/agentic-optimized flags where applicable
+
+            ### 2. Model Appropriateness
+            - Read `model` field from frontmatter of flagged skills
+            - `haiku` for CLI tools, `opus` for complex reasoning
+            - Flag potentially misassigned models
+
+            ### 3. Description Quality
+            - Read `description` field from flagged skills
+            - Good: describes user intent, includes "Use when..." scenarios
+            - Flag descriptions that could be improved
+
+            Format output as a GitHub issue body:
+
+            ```markdown
+            ## Monthly Agentic Quality Audit: YYYY-MM
+
+            ### Summary
+            | Metric | Value |
+            |--------|-------|
+            | Total skills audited | N |
+            | Missing Agentic Optimizations | N |
+            | Stale reviews (>90d) | N |
+            | Model concerns | N |
+            | Description concerns | N |
+
+            (include detail tables for each category with issues found)
+
+            ### Recommendations
+            - (prioritized actionable items)
+            ```
+
+      - name: Create audit issue
+        if: steps.check_issue.outputs.exists == 'false' && steps.audit.outputs.result
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          MONTH=$(date +%Y-%m)
+          echo '${{ steps.audit.outputs.result }}' > /tmp/issue-body.md
+          gh issue create \
+            --title "Monthly Agentic Quality Audit: $MONTH" \
+            --label "agentic-audit,maintenance" \
+            --body-file /tmp/issue-body.md

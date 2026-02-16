@@ -45,6 +45,10 @@ permissions:
   pull-requests: write
   id-token: write
 
+concurrency:
+  group: test-reusable-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   # Test secrets detection workflow
   test-secrets:

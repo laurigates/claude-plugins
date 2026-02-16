@@ -1,0 +1,90 @@
+name: Plugin PR Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '*-plugin/**'
+      - '.claude-plugin/marketplace.json'
+      - '**/skills/**'
+
+concurrency:
+  group: plugin-pr-checks-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  compliance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed plugin files
+        id: changed
+        run: |
+          FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- '*-plugin/**' '.claude-plugin/marketplace.json' '**/skills/**' | head -50)
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          echo "$FILES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          # Extract unique plugin directories affected
+          PLUGINS=$(echo "$FILES" | grep -oP '^[^/]+-plugin' | sort -u)
+          echo "plugins<<EOF" >> $GITHUB_OUTPUT
+          echo "$PLUGINS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "plugin_count=$(echo "$PLUGINS" | grep -c '.' || true)" >> $GITHUB_OUTPUT
+
+          # Check if skill files changed
+          SKILL_FILES=$(echo "$FILES" | grep -c 'skills/' || true)
+          echo "skill_count=$SKILL_FILES" >> $GITHUB_OUTPUT
+
+      - name: Run plugin compliance checks
+        id: compliance
+        if: steps.changed.outputs.plugin_count != '0'
+        run: |
+          RESULT=$(bash scripts/plugin-compliance-check.sh ${{ steps.changed.outputs.plugins }}) || true
+          echo "result<<EOF" >> $GITHUB_OUTPUT
+          echo "$RESULT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Post compliance results
+        if: steps.compliance.outputs.result
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr comment ${{ github.event.pull_request.number }} \
+            --body "${{ steps.compliance.outputs.result }}"
+
+      - name: Claude Skill Quality Review
+        if: steps.changed.outputs.skill_count != '0'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: "--model haiku --max-turns 10"
+          prompt: |
+            Review the changed skill files in this PR for quality compliance.
+            Read the rules at .claude/rules/skill-quality.md for the full checklist.
+
+            Changed files:
+            ${{ steps.changed.outputs.files }}
+
+            For each changed SKILL.md file, check:
+
+            1. **"When to Use" table**: Does it have a decision table helping Claude choose this skill?
+            2. **Agentic Optimizations**: Does it have a compact commands table? (required for CLI/tool skills)
+            3. **Description quality**: Does the description match user intents, not just tool jargon?
+            4. **Model selection**: Is `haiku` used for CLI tools and `opus` only for complex reasoning?
+            5. **Supporting file links**: If REFERENCE.md exists, is it linked with `[REFERENCE.md](REFERENCE.md)`?
+
+            For each issue found, leave a specific, actionable review comment on the relevant file.
+            If all checks pass, leave a brief approval comment.
+
+            Do NOT suggest changes unrelated to skill quality (no code style, no typo fixes).
+            Focus ONLY on the quality checklist above.
