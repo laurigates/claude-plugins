@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.0](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.3.5...container-plugin-v2.4.0) (2026-02-16)
+
+
+### Features
+
+* **configure-plugin:** replace detect-secrets with gitleaks for secret scanning ([#668](https://github.com/laurigates/claude-plugins/issues/668)) ([3fc5bbc](https://github.com/laurigates/claude-plugins/commit/3fc5bbc2f8500f30160cc5dfeb5e3d1253ed0a54))
+
 ## [2.3.5](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.3.4...container-plugin-v2.3.5) (2026-02-15)
 
 
