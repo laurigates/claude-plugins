@@ -54,7 +54,7 @@
       "name": "api-plugin",
       "source": "./api-plugin",
       "description": "API integration and testing - REST endpoints, client generation",
-      "version": "1.2.2",
+      "version": "1.3.0",
       "keywords": [
         "api",
         "rest",
@@ -440,7 +440,7 @@
       "name": "testing-plugin",
       "source": "./testing-plugin",
       "description": "Test execution, TDD workflow, and testing strategies",
-      "version": "3.6.1",
+      "version": "3.7.0",
       "keywords": [
         "testing",
         "tdd",
