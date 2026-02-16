@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.7.3...configure-plugin-v1.8.0) (2026-02-16)
+
+
+### Features
+
+* **configure-plugin:** replace detect-secrets with gitleaks for secret scanning ([#668](https://github.com/laurigates/claude-plugins/issues/668)) ([3fc5bbc](https://github.com/laurigates/claude-plugins/commit/3fc5bbc2f8500f30160cc5dfeb5e3d1253ed0a54))
+
 ## [1.7.3](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.7.2...configure-plugin-v1.7.3) (2026-02-15)
 
 
