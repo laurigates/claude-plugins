@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.16.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.16.0...git-plugin-v2.16.1) (2026-02-16)
+
+
+### Documentation
+
+* **git-plugin:** remove obsolete orchestrator mode documentation ([#685](https://github.com/laurigates/claude-plugins/issues/685)) ([9e4e794](https://github.com/laurigates/claude-plugins/commit/9e4e794fce72c4daec7fdd8fccfc16ae9ad43bac))
+
 ## [2.16.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.15.0...git-plugin-v2.16.0) (2026-02-16)
 
 
