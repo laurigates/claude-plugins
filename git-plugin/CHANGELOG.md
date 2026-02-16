@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.16.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.15.0...git-plugin-v2.16.0) (2026-02-16)
+
+
+### Features
+
+* **git-plugin:** add git-api-pr skill for server-side PR creation ([#667](https://github.com/laurigates/claude-plugins/issues/667)) ([e8a3380](https://github.com/laurigates/claude-plugins/commit/e8a338017c697ce6f231e2d089f35cc252b829eb))
+
 ## [2.15.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.14.4...git-plugin-v2.15.0) (2026-02-16)
 
 
