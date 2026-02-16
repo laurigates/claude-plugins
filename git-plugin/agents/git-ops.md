@@ -35,18 +35,6 @@ Git write permissions (`git add`, `git commit`, `git push`, etc.) must be in the
 `.claude/settings.json` allow list. Without these, subagents cannot execute git commands
 since they cannot prompt the user for approval.
 
-### Orchestrator Mode (optional)
-
-When `ORCHESTRATOR_MODE=1` is set, the orchestrator-enforcement hook restricts git writes
-to agents with `CLAUDE_GIT_AGENT=1`. Since Claude Code doesn't support agent-specific env vars,
-set `CLAUDE_GIT_AGENT=1` globally when using orchestrator workflows:
-
-```bash
-export ORCHESTRATOR_MODE=1 CLAUDE_GIT_AGENT=1
-```
-
-Without orchestrator mode, git permissions are controlled solely by `.claude/settings.json`.
-
 ## Scope
 
 - **Input**: Git operation request (commit, push, rebase, conflict resolution, bisect, cherry-pick, stash)
