@@ -2,6 +2,7 @@
 created: 2026-01-18
 modified: 2026-02-16
 reviewed: 2026-02-16
+requires: bash 5+
 ---
 
 # Shell Scripting Patterns
@@ -208,28 +209,27 @@ item_FIELD=$(head -50 "$file" | grep -m1 "^FIELD:" | sed 's/^[^:]*:[[:space:]]*/
 | created | `created_date` | `head -50 "$f" \| grep -m1 "^created:" \| sed 's/^[^:]*:[[:space:]]*//'` |
 | modified | `modified_date` | `head -50 "$f" \| grep -m1 "^modified:" \| sed 's/^[^:]*:[[:space:]]*//'` |
 
-## macOS Portability
+## Bash Version Requirement
 
-Scripts must work on both macOS (bash 3.2) and Ubuntu CI (bash 5+).
-
-### Bash 4+ Features to Avoid
-
-| Feature | Bash Version | Portable Alternative |
-|---------|-------------|---------------------|
-| `declare -A` (associative arrays) | 4.0+ | Parallel indexed arrays |
-| `mapfile` / `readarray` | 4.0+ | `while IFS= read -r -d ''` loop |
-| `grep -P` (PCRE) | GNU only | `grep -E` (extended regex) |
-| `${var,,}` (lowercase) | 4.0+ | `echo "$var" \| tr '[:upper:]' '[:lower:]'` |
-| `${var^^}` (uppercase) | 4.0+ | `echo "$var" \| tr '[:lower:]' '[:upper:]'` |
-
-### Safe Array Population (instead of mapfile)
+Scripts require **bash 5+**. macOS ships bash 3.2 (GPLv2); install a modern version via Homebrew:
 
 ```bash
-items=()
-while IFS= read -r -d '' item; do
-  items+=("$(basename "$item")")
-done < <(find . -maxdepth 1 -type d -name '*-plugin' -print0 | sort -z)
+brew install bash
 ```
+
+Homebrew bash installs to `/opt/homebrew/bin/bash` and takes priority in `$PATH`. All scripts use `#!/usr/bin/env bash` shebangs, so no system replacement is needed.
+
+### Bash 5+ Features Available
+
+These features are safe to use in all project scripts:
+
+| Feature | Example |
+|---------|---------|
+| Associative arrays | `declare -A map=([key]=value)` |
+| `mapfile` / `readarray` | `mapfile -t lines < file.txt` |
+| `${var,,}` / `${var^^}` | Lowercase/uppercase without `tr` |
+| `${var@Q}` | Shell-quoted expansion |
+| Nameref variables | `declare -n ref=varname` |
 
 ### Plugin Directory Discovery
 
@@ -239,10 +239,18 @@ Exclude `.claude-plugin` (hidden metadata directory) from `*-plugin` globs:
 find . -maxdepth 1 -type d -name '*-plugin' -not -name '.claude-plugin' -print0
 ```
 
-### Date Comparison (cross-platform)
+### GNU vs BSD Tool Differences
+
+Even with bash 5+, some CLI tools differ between macOS (BSD) and Linux (GNU). Use portable patterns for:
+
+| Tool | macOS (BSD) | Linux (GNU) | Portable |
+|------|-------------|-------------|----------|
+| `date` | `date -j -f "%Y-%m-%d"` | `date -d "2024-01-01"` | Detect with fallback |
+| `sed -i` | `sed -i ''` | `sed -i` | Use `sed -i.bak` + `rm` |
+| `grep -P` | Not available | PCRE support | Use `grep -E` (extended regex) |
 
 ```bash
-# Try macOS date first, fall back to GNU date
+# Cross-platform date comparison
 if date -j -f "%Y-%m-%d" "$past_date" "+%s" >/dev/null 2>&1; then
   past_ts=$(date -j -f "%Y-%m-%d" "$past_date" "+%s")
 elif date -d "$past_date" "+%s" >/dev/null 2>&1; then
@@ -258,5 +266,4 @@ fi
 - [ ] Default values with `${var:-default}`
 - [ ] File iteration handles empty directories
 - [ ] Output format is consistent (table or JSON)
-- [ ] No bash 4+ features (`declare -A`, `mapfile`, `grep -P`)
 - [ ] Plugin discovery excludes `.claude-plugin` directory
