@@ -17,7 +17,7 @@ Check and configure security scanning tools for dependency audits, SAST, and sec
 
 | Use this skill when... | Use another approach when... |
 |------------------------|------------------------------|
-| Setting up dependency auditing, SAST, or secret detection for a project | Running a one-off security scan (use `detect-secrets scan` or `npm audit` directly) |
+| Setting up dependency auditing, SAST, or secret detection for a project | Running a one-off security scan (use `gitleaks detect` or `npm audit` directly) |
 | Checking project compliance with security scanning standards | Reviewing code for application-level vulnerabilities (use security-audit agent) |
 | Configuring Dependabot, CodeQL, or TruffleHog in CI/CD | Managing GitHub repository security settings via the web UI |
 | Creating or updating a SECURITY.md policy | Writing security documentation beyond the policy template |
@@ -26,14 +26,12 @@ Check and configure security scanning tools for dependency audits, SAST, and sec
 ## Context
 
 - Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) 2>/dev/null`
-- Secrets baseline: !`test -f .secrets.baseline && echo "EXISTS" || echo "MISSING"`
+- Gitleaks config: !`test -f .gitleaks.toml && echo "EXISTS" || echo "MISSING"`
 - Pre-commit config: !`test -f .pre-commit-config.yaml && echo "EXISTS" || echo "MISSING"`
 - Workflows dir: !`test -d .github/workflows && echo "EXISTS" || echo "MISSING"`
 - Dependabot config: !`test -f .github/dependabot.yml && echo "EXISTS" || echo "MISSING"`
 - CodeQL workflow: !`find .github/workflows -maxdepth 1 -name 'codeql*' 2>/dev/null`
 - Security policy: !`test -f SECURITY.md && echo "EXISTS" || echo "MISSING"`
-- Gitleaks config: !`test -f .gitleaks.toml && echo "EXISTS" || echo "MISSING"`
-
 **Security scanning layers:**
 1. **Dependency auditing** - Check for known vulnerabilities in dependencies
 2. **SAST (Static Application Security Testing)** - Analyze code for security issues
@@ -57,7 +55,7 @@ Verify latest versions before configuring:
 
 1. **Trivy**: Check [GitHub releases](https://github.com/aquasecurity/trivy/releases)
 2. **Grype**: Check [GitHub releases](https://github.com/anchore/grype/releases)
-3. **detect-secrets**: Check [GitHub releases](https://github.com/Yelp/detect-secrets/releases)
+3. **gitleaks**: Check [GitHub releases](https://github.com/gitleaks/gitleaks/releases)
 4. **pip-audit**: Check [PyPI](https://pypi.org/project/pip-audit/)
 5. **cargo-audit**: Check [crates.io](https://crates.io/crates/cargo-audit)
 6. **CodeQL**: Check [GitHub releases](https://github.com/github/codeql-action/releases)
@@ -73,7 +71,7 @@ Identify project languages and existing security tools:
 | `package.json` | JavaScript/TypeScript | npm audit, Snyk |
 | `pyproject.toml` | Python | pip-audit, safety, bandit |
 | `Cargo.toml` | Rust | cargo-audit, cargo-deny |
-| `.secrets.baseline` | detect-secrets | Secret scanning |
+| `.gitleaks.toml` | gitleaks | Secret scanning |
 | `.github/workflows/` | GitHub Actions | CodeQL, Dependabot |
 
 ### Step 3: Analyze current security state
@@ -94,10 +92,10 @@ Check existing security configuration across three areas:
 - SAST in CI pipeline
 
 **Secret Detection:**
-- detect-secrets baseline exists
+- Gitleaks configured with `.gitleaks.toml`
 - Pre-commit hook configured
 - Git history scanned
-- TruffleHog or Gitleaks configured
+- TruffleHog configured (optional complement)
 
 ### Step 4: Generate compliance report
 
@@ -136,13 +134,13 @@ For CodeQL workflow and Bandit configuration templates, see [REFERENCE.md](REFER
 
 ### Step 7: Configure secret detection (if --fix or user confirms)
 
-1. Install detect-secrets: `pip install detect-secrets`
-2. Create baseline: `detect-secrets scan --baseline .secrets.baseline`
-3. Audit baseline: `detect-secrets audit .secrets.baseline`
+1. Install gitleaks: `brew install gitleaks` (or `go install github.com/gitleaks/gitleaks/v8@latest`)
+2. Create `.gitleaks.toml` with project-specific allowlists
+3. Run initial scan: `gitleaks detect --source .`
 4. Add pre-commit hook to `.pre-commit-config.yaml`
-5. Optionally configure TruffleHog or Gitleaks workflow
+5. Optionally configure TruffleHog workflow for CI
 
-For detect-secrets, TruffleHog, and Gitleaks configuration templates, see [REFERENCE.md](REFERENCE.md).
+For gitleaks, TruffleHog, and CI workflow configuration templates, see [REFERENCE.md](REFERENCE.md).
 
 ### Step 8: Create security policy
 
@@ -195,7 +193,7 @@ For the results report format, see [REFERENCE.md](REFERENCE.md).
 | Dependencies only | `/configure:security --type dependencies` |
 | Secret detection only | `/configure:security --type secrets` |
 | SAST scanning only | `/configure:security --type sast` |
-| Verify secrets baseline | `detect-secrets audit .secrets.baseline` |
+| Verify secrets scan | `gitleaks detect --source . --verbose` |
 
 ## Flags
 
@@ -218,5 +216,5 @@ For the results report format, see [REFERENCE.md](REFERENCE.md).
 - `/configure:pre-commit` - Pre-commit hook configuration
 - `/configure:all` - Run all compliance checks
 - **GitHub Security Features**: https://docs.github.com/en/code-security
-- **detect-secrets**: https://github.com/Yelp/detect-secrets
+- **gitleaks**: https://github.com/gitleaks/gitleaks
 - **CodeQL**: https://codeql.github.com

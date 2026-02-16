@@ -67,7 +67,7 @@ Execute this pre-commit compliance check:
 2. **conventional-pre-commit**: [GitHub releases](https://github.com/compilerla/conventional-pre-commit/releases)
 3. **biome**: [GitHub releases](https://github.com/biomejs/biome/releases)
 4. **ruff-pre-commit**: [GitHub releases](https://github.com/astral-sh/ruff-pre-commit/releases)
-5. **detect-secrets**: [GitHub releases](https://github.com/Yelp/detect-secrets/releases)
+5. **gitleaks**: [GitHub releases](https://github.com/gitleaks/gitleaks/releases)
 
 ### Step 4: Analyze compliance
 
@@ -85,11 +85,11 @@ Compare existing configuration against project standards (from `pre-commit-stand
 - `tflint`, `helmlint` (gruntwork v0.1.29+)
 - `actionlint` v1.7.7+
 - `helm-docs` v1.14.2+
-- `detect-secrets` v1.5.0+
+- `gitleaks` v8.22.1+
 
 **Python-specific:**
 - `ruff-pre-commit` v0.8.4+ (ruff, ruff-format)
-- `detect-secrets` v1.5.0+
+- `gitleaks` v8.22.1+
 
 ### Step 5: Generate compliance report
 

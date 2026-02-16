@@ -283,7 +283,7 @@ spec:
     - port: 5432
 ```
 
-**Connection string**: `postgres://user:pass@postgresql.default.svc.cluster.local:5432/db`  <!-- pragma: allowlist secret -->
+**Connection string**: `postgres://user:pass@postgresql.default.svc.cluster.local:5432/db`  <!-- gitleaks:allow -->
 
 ### Multi-Service Application
 

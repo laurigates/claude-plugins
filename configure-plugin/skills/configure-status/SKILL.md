@@ -37,7 +37,7 @@ Display infrastructure standards compliance status without making changes.
 - Test configs: !`find . -maxdepth 1 \( -name 'vitest.config.*' -o -name 'jest.config.*' -o -name 'pytest.ini' \) 2>/dev/null`
 - Linting config: !`find . -maxdepth 1 \( -name 'biome.json' -o -name '.eslintrc*' \) 2>/dev/null`
 - Editor config: !`test -f .editorconfig && echo "EXISTS" || echo "MISSING"`
-- Security baseline: !`test -f .secrets.baseline && echo "EXISTS" || echo "MISSING"`
+- Gitleaks config: !`test -f .gitleaks.toml && echo "EXISTS" || echo "MISSING"`
 - Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' \) 2>/dev/null`
 
 ## Parameters
@@ -77,7 +77,7 @@ Check for presence and validity of each configuration:
 | Formatting | `.prettierrc*`, `biome.json`, `pyproject.toml [tool.ruff.format]`, `rustfmt.toml` |
 | Dead Code | `knip.json`, `knip.ts`, `pyproject.toml [tool.vulture]` |
 | Editor | `.editorconfig`, `.vscode/settings.json`, `.vscode/extensions.json` |
-| Security | `.github/workflows/*security*`, `.secrets.baseline`, `pyproject.toml [tool.bandit]` |
+| Security | `.github/workflows/*security*`, `.gitleaks.toml`, `pyproject.toml [tool.bandit]` |
 
 ### Step 3: Determine compliance status
 
@@ -113,7 +113,7 @@ Component Status:
   Formatting      PASS   Biome configured
   Dead Code       WARN   Knip found 3 unused exports
   Editor          PASS   .editorconfig present
-  Security        PASS   detect-secrets + npm audit
+  Security        PASS   gitleaks + npm audit
 
 Summary: [N] warnings, [N] failures
 Run /configure:all to fix issues

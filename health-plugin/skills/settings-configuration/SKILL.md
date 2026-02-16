@@ -210,7 +210,6 @@ Then allow the script:
   "permissions": {
     "allow": [
       "Bash(pre-commit *)",
-      "Bash(detect-secrets *)",
       "Bash(gitleaks *)",
       "Bash(trivy *)"
     ]

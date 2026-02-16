@@ -135,7 +135,7 @@ allowed-tools: Bash(gh pr checks *), Bash(gh pr view *), Bash(gh run view *), Ba
 ### Security Checks
 
 ```yaml
-allowed-tools: Bash(detect-secrets *), Bash(pre-commit *), Bash(git status *), Read, Grep, Glob, TodoWrite
+allowed-tools: Bash(gitleaks *), Bash(pre-commit *), Bash(git status *), Read, Grep, Glob, TodoWrite
 ```
 
 ## Machine-Readable Output
@@ -181,7 +181,7 @@ For projects using plugins with these patterns, recommend adding to `.claude/set
       "Bash(git branch *)",
       "Bash(git remote *)",
       "Bash(pre-commit *)",
-      "Bash(detect-secrets *)"
+      "Bash(gitleaks *)"
     ]
   }
 }
