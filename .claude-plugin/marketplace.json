@@ -381,12 +381,15 @@
     {
       "name": "prose-plugin",
       "source": "./prose-plugin",
-      "description": "Prose style control - distillation, tone, voice, clarity, and consistency for written text",
+      "description": "Prose transformation and style control - synthesis, distillation, tone, voice, clarity, and consistency for written text",
       "version": "1.1.0",
       "keywords": [
         "prose",
         "writing",
         "style",
+        "synthesis",
+        "planning",
+        "structure",
         "distillation",
         "concision",
         "tone",

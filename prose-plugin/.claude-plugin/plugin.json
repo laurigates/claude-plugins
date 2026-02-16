@@ -1,7 +1,7 @@
 {
   "name": "prose-plugin",
   "version": "1.1.0",
-  "description": "Prose style control - distillation, tone, voice, clarity, and consistency for written text",
+  "description": "Prose transformation and style control - synthesis, distillation, tone, voice, clarity, and consistency for written text",
   "author": {
     "name": "Lauri Gates"
   },
@@ -11,6 +11,11 @@
     "prose",
     "writing",
     "style",
+    "synthesis",
+    "synthesize",
+    "planning",
+    "structure",
+    "organize",
     "distillation",
     "precis",
     "condensation",
