@@ -1,7 +1,7 @@
 ---
 created: 2026-01-18
-modified: 2026-01-18
-reviewed: 2026-01-18
+modified: 2026-02-16
+reviewed: 2026-02-16
 ---
 
 # Shell Scripting Patterns
@@ -208,6 +208,48 @@ item_FIELD=$(head -50 "$file" | grep -m1 "^FIELD:" | sed 's/^[^:]*:[[:space:]]*/
 | created | `created_date` | `head -50 "$f" \| grep -m1 "^created:" \| sed 's/^[^:]*:[[:space:]]*//'` |
 | modified | `modified_date` | `head -50 "$f" \| grep -m1 "^modified:" \| sed 's/^[^:]*:[[:space:]]*//'` |
 
+## macOS Portability
+
+Scripts must work on both macOS (bash 3.2) and Ubuntu CI (bash 5+).
+
+### Bash 4+ Features to Avoid
+
+| Feature | Bash Version | Portable Alternative |
+|---------|-------------|---------------------|
+| `declare -A` (associative arrays) | 4.0+ | Parallel indexed arrays |
+| `mapfile` / `readarray` | 4.0+ | `while IFS= read -r -d ''` loop |
+| `grep -P` (PCRE) | GNU only | `grep -E` (extended regex) |
+| `${var,,}` (lowercase) | 4.0+ | `echo "$var" \| tr '[:upper:]' '[:lower:]'` |
+| `${var^^}` (uppercase) | 4.0+ | `echo "$var" \| tr '[:lower:]' '[:upper:]'` |
+
+### Safe Array Population (instead of mapfile)
+
+```bash
+items=()
+while IFS= read -r -d '' item; do
+  items+=("$(basename "$item")")
+done < <(find . -maxdepth 1 -type d -name '*-plugin' -print0 | sort -z)
+```
+
+### Plugin Directory Discovery
+
+Exclude `.claude-plugin` (hidden metadata directory) from `*-plugin` globs:
+
+```bash
+find . -maxdepth 1 -type d -name '*-plugin' -not -name '.claude-plugin' -print0
+```
+
+### Date Comparison (cross-platform)
+
+```bash
+# Try macOS date first, fall back to GNU date
+if date -j -f "%Y-%m-%d" "$past_date" "+%s" >/dev/null 2>&1; then
+  past_ts=$(date -j -f "%Y-%m-%d" "$past_date" "+%s")
+elif date -d "$past_date" "+%s" >/dev/null 2>&1; then
+  past_ts=$(date -d "$past_date" "+%s")
+fi
+```
+
 ## Checklist for New Commands
 
 - [ ] Variable names use prefixed form (e.g., `doc_status` instead of `status`)
@@ -216,3 +258,5 @@ item_FIELD=$(head -50 "$file" | grep -m1 "^FIELD:" | sed 's/^[^:]*:[[:space:]]*/
 - [ ] Default values with `${var:-default}`
 - [ ] File iteration handles empty directories
 - [ ] Output format is consistent (table or JSON)
+- [ ] No bash 4+ features (`declare -A`, `mapfile`, `grep -P`)
+- [ ] Plugin discovery excludes `.claude-plugin` directory

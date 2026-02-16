@@ -55,6 +55,25 @@ cclsp:
 lint-context-commands *args:
     ./scripts/lint-context-commands.sh {{args}}
 
+# Run plugin compliance checks (validates plugin.json, frontmatter, marketplace, release-please)
+[group: "lint"]
+lint-compliance *args:
+    ./scripts/plugin-compliance-check.sh {{args}}
+
+# Run blueprint health check (skill inventory, staleness, frontmatter completeness)
+[group: "lint"]
+lint-health:
+    ./scripts/blueprint-health-check.sh
+
+# Run infrastructure compliance check (registry sync, workflow health, versions, security)
+[group: "lint"]
+lint-infra:
+    ./scripts/infra-compliance-check.sh
+
+# Run all lint checks
+[group: "lint"]
+lint-all: lint-context-commands lint-compliance lint-health lint-infra
+
 # Add all MCP servers and set up cclsp
 [group: "claude"]
 claude-setup: mcp-sentry mcp-github mcp-context7 mcp-playwright mcp-sequential-thinking mcp-chrome-devtools cclsp
