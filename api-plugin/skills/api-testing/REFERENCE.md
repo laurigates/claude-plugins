@@ -14,7 +14,7 @@ describe('Authentication', () => {
     // Login to get token
     const response = await request(app)
       .post('/api/auth/login')
-      .send({ email: 'user@example.com', password: 'password123' })  // pragma: allowlist secret
+      .send({ email: 'user@example.com', password: 'password123' })  // gitleaks:allow
       .expect(200)
 
     authToken = response.body.token
@@ -70,7 +70,7 @@ describe('Cookie handling', () => {
     // Login sets cookie
     const loginResponse = await request(app)
       .post('/api/auth/login')
-      .send({ email: 'user@example.com', password: 'password' })  // pragma: allowlist secret
+      .send({ email: 'user@example.com', password: 'password' })  // gitleaks:allow
       .expect(200)
 
     const cookies = loginResponse.headers['set-cookie']
@@ -173,7 +173,7 @@ def auth_token(client):
     """Get authentication token"""
     response = client.post(
         "/api/auth/login",
-        json={"email": "user@example.com", "password": "password123"}  # pragma: allowlist secret
+        json={"email": "user@example.com", "password": "password123"}  # gitleaks:allow
     )
     return response.json()["token"]
 
@@ -221,7 +221,7 @@ def authenticated_client():
     # Login
     response = client.post(
         "/api/auth/login",
-        json={"email": "user@example.com", "password": "password123"}  # pragma: allowlist secret
+        json={"email": "user@example.com", "password": "password123"}  # gitleaks:allow
     )
     token = response.json()["token"]
 
@@ -264,7 +264,7 @@ def test_cookie_handling(client):
     # Login sets cookie
     response = client.post(
         "/api/auth/login",
-        json={"email": "user@example.com", "password": "password"}  # pragma: allowlist secret
+        json={"email": "user@example.com", "password": "password"}  # gitleaks:allow
     )
     assert "session" in response.cookies
 
@@ -467,7 +467,7 @@ function createTestUser(overrides = {}) {
 async function authenticateUser(app: Express) {
   const response = await request(app)
     .post('/api/auth/login')
-    .send({ email: 'user@example.com', password: 'password' })  // pragma: allowlist secret
+    .send({ email: 'user@example.com', password: 'password' })  // gitleaks:allow
 
   return response.body.token
 }

@@ -123,7 +123,7 @@ roles/aiplatform.user
 # WRONG - Never hardcode!
 - uses: anthropics/claude-code-action@v1
   with:
-    anthropic_api_key: "sk-ant-api03-..."  # pragma: allowlist secret
+    anthropic_api_key: "sk-ant-api03-..."  # gitleaks:allow
 
 # CORRECT - Always use secrets
 - uses: anthropics/claude-code-action@v1

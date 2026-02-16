@@ -74,7 +74,7 @@ Create or merge into `.claude/settings.json` the following permissions structure
       "Bash(gh run *)",
       "Bash(gh issue *)",
       "Bash(pre-commit *)",
-      "Bash(detect-secrets *)",
+      "Bash(gitleaks *)",
       "mcp__context7",
       "mcp__sequential-thinking"
     ]

@@ -22,7 +22,7 @@ SAST Scanning:
   Bandit (Python)         configured                 [CONFIGURED | MISSING]
 
 Secret Detection:
-  detect-secrets          .secrets.baseline          [CONFIGURED | MISSING]
+  Gitleaks                .gitleaks.toml             [CONFIGURED | MISSING]
   Pre-commit hook         .pre-commit-config.yaml    [CONFIGURED | MISSING]
   TruffleHog              .github/workflows/         [OPTIONAL | MISSING]
   Git history scanned     clean                      [CLEAN | SECRETS FOUND]
@@ -275,17 +275,15 @@ Run: `uv run bandit -r src/ -f json -o bandit-report.json`
 
 ## Secret Detection Templates
 
-### detect-secrets Pre-commit Hook
+### Gitleaks Pre-commit Hook
 
 Add to `.pre-commit-config.yaml`:
 ```yaml
 repos:
-  - repo: https://github.com/Yelp/detect-secrets
-    rev: v1.5.0
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.22.1
     hooks:
-      - id: detect-secrets
-        args: ['--baseline', '.secrets.baseline']
-        exclude: package-lock.json
+      - id: gitleaks
 ```
 
 ### TruffleHog Workflow (`.github/workflows/trufflehog.yml`)
@@ -328,8 +326,8 @@ useDefault = true
 [allowlist]
 description = "Allowlist for false positives"
 paths = [
-    '''\.secrets\.baseline$''',
-    '''test/fixtures/.*'''
+    '''test/fixtures/.*''',
+    '''.*\.test\.(ts|js)$'''
 ]
 
 regexes = [
@@ -423,7 +421,7 @@ This project uses:
 
 - **Dependabot**: Automated dependency updates
 - **CodeQL**: Static application security testing
-- **detect-secrets**: Pre-commit secret scanning
+- **Gitleaks**: Pre-commit secret scanning
 - **TruffleHog**: Git history secret scanning
 
 ## Security Advisories
@@ -524,7 +522,7 @@ SAST Scanning:
   Scheduled weekly scans
 
 Secret Detection:
-  detect-secrets baseline created
+  Gitleaks configured with .gitleaks.toml
   Pre-commit hook configured
   TruffleHog workflow added
   Git history scanned: CLEAN

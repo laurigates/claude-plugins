@@ -161,7 +161,7 @@ For seamless command execution without permission prompts, add these permissions
       "Bash(git prune *)",
       "Bash(git fsck *)",
       "Bash(pre-commit *)",
-      "Bash(detect-secrets *)"
+      "Bash(gitleaks *)"
     ]
   }
 }

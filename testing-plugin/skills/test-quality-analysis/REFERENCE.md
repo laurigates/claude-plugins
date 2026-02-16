@@ -424,7 +424,7 @@ test('user registration flow', async () => {
   // Arrange: Setup test data and dependencies
   const userData = {
     email: 'user@example.com',
-    password: 'secure123',  // pragma: allowlist secret
+    password: 'secure123',  // gitleaks:allow
   }
   const mockEmailService = vi.fn()
 

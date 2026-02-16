@@ -1,27 +1,27 @@
 ---
 model: opus
 created: 2025-12-16
-modified: 2026-01-24
-reviewed: 2025-12-16
+modified: 2026-02-16
+reviewed: 2026-02-16
 name: git-security-checks
 description: |
-  Pre-commit security validation and secret detection. Runs detect-secrets scan
-  and audit workflow, validates secrets baseline, and integrates with pre-commit
-  hooks to prevent credential leaks.
-  Use when user mentions scanning for secrets, detect-secrets, secret detection,
-  credential scanning, pre-commit security, or .secrets.baseline.
+  Pre-commit security validation and secret detection. Runs gitleaks scan
+  and validates configuration, integrates with pre-commit hooks to prevent
+  credential leaks.
+  Use when user mentions scanning for secrets, gitleaks, secret detection,
+  credential scanning, pre-commit security, or .gitleaks.toml.
 allowed-tools: Bash, Read
 ---
 
 # Git Security Checks
 
-Expert guidance for pre-commit security validation and secret detection using detect-secrets and pre-commit hooks.
+Expert guidance for pre-commit security validation and secret detection using gitleaks and pre-commit hooks.
 
 ## Core Expertise
 
-- **detect-secrets**: Scan for hardcoded secrets and credentials
+- **gitleaks**: Scan for hardcoded secrets and credentials using regex + entropy analysis
 - **Pre-commit Hooks**: Automated security validation before commits
-- **Secrets Baseline**: Manage false positives and legitimate secrets
+- **Declarative Allowlisting**: Manage false positives via `.gitleaks.toml` configuration
 - **Security-First Workflow**: Prevent credential leaks before they happen
 
 ## Quick Security Scan (Recommended)
@@ -36,78 +36,133 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/git-security-checks/scripts/security-scan.sh"
 bash "${CLAUDE_PLUGIN_ROOT}/skills/git-security-checks/scripts/security-scan.sh" --staged-only
 ```
 
-The script checks: detect-secrets baseline, sensitive file patterns, .gitignore coverage, high-entropy strings in diffs, and pre-commit hook status. See [scripts/security-scan.sh](scripts/security-scan.sh) for details.
+The script checks: gitleaks scan, sensitive file patterns, .gitignore coverage, high-entropy strings in diffs, and pre-commit hook status. See [scripts/security-scan.sh](scripts/security-scan.sh) for details.
 
-## detect-secrets Workflow
+## Gitleaks Workflow
 
 ### Initial Setup
 
 ```bash
-# Install detect-secrets
-pip install detect-secrets
+# Install gitleaks (macOS)
+brew install gitleaks
 
-# Create initial baseline
-detect-secrets scan > .secrets.baseline
+# Install gitleaks (Go)
+go install github.com/gitleaks/gitleaks/v8@latest
 
-# Audit baseline for false positives
-detect-secrets audit .secrets.baseline
+# Install gitleaks (binary download)
+# See https://github.com/gitleaks/gitleaks/releases
+
+# Scan repository
+gitleaks detect --source .
+
+# Scan with verbose output
+gitleaks detect --source . --verbose
+```
+
+### Configuration
+
+Create `.gitleaks.toml` for project-specific allowlists:
+
+```toml
+title = "Gitleaks Configuration"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Project-wide allowlist for false positives"
+paths = [
+    '''test/fixtures/.*''',
+    '''.*\.test\.(ts|js)$''',
+]
+
+regexes = [
+    '''example\.com''',
+    '''localhost''',
+    '''fake-key-for-testing''',
+]
 ```
 
 ### Pre-commit Scan Workflow
 
-Run detect-secrets before every commit:
+Run gitleaks before every commit:
 
 ```bash
-# Scan for new secrets (using existing baseline)
-detect-secrets scan --baseline .secrets.baseline
+# Scan for secrets in current state
+gitleaks detect --source .
 
-# If new secrets detected, audit them
-detect-secrets audit .secrets.baseline
+# Scan only staged changes (pre-commit mode)
+gitleaks protect --staged
 
-# Stage the updated baseline
-git add .secrets.baseline
+# Scan with specific config
+gitleaks detect --source . --config .gitleaks.toml
 ```
 
-### Audit Process
+### Managing False Positives
 
-When new secrets are detected:
+Gitleaks provides three declarative methods for handling false positives:
+
+**1. Inline comments** — mark specific lines:
 
 ```bash
-# Run audit to review flagged items
-detect-secrets audit .secrets.baseline
+# This line is safe
+API_KEY = "fake-key-for-testing-only"  # gitleaks:allow
 
-# For each detected secret:
-# - Press 'y' if it's a real secret (DON'T COMMIT)
-# - Press 'n' if it's a false positive (safe to commit)
-# - Press 's' to skip for now
+# Works in any language
+password = "test-fixture"  # gitleaks:allow
+```
 
-# After audit, re-scan to update baseline
-detect-secrets scan --baseline .secrets.baseline
+**2. Path-based exclusions** — in `.gitleaks.toml`:
+
+```toml
+[allowlist]
+paths = [
+    '''test/fixtures/.*''',
+    '''.*\.example$''',
+    '''package-lock\.json$''',
+]
+```
+
+**3. Regex-based allowlists** — for specific patterns:
+
+```toml
+[allowlist]
+regexes = [
+    '''example\.com''',
+    '''localhost''',
+    '''PLACEHOLDER''',
+]
+```
+
+**4. Per-rule allowlists** — target specific detection rules:
+
+```toml
+[[rules]]
+id = "generic-api-key"
+description = "Generic API Key"
+
+[rules.allowlist]
+regexes = ['''test-api-key-.*''']
+paths = ['''test/.*''']
 ```
 
 ### Complete Pre-commit Security Flow
 
 ```bash
-# 1. Scan for secrets with baseline
-detect-secrets scan --baseline .secrets.baseline
+# 1. Scan for secrets
+gitleaks protect --staged
 
-# 2. If baseline updated, audit new findings
-detect-secrets audit .secrets.baseline
-
-# 3. Stage the updated baseline
-git add .secrets.baseline
-
-# 4. Run all pre-commit hooks
+# 2. Run all pre-commit hooks
 pre-commit run --all-files --show-diff-on-failure
 
-# 5. Stage your actual changes
+# 3. Stage your actual changes
 git add src/file.ts
 
-# 6. Show what's staged
+# 4. Show what's staged
 git status
 git diff --cached --stat
 
-# 7. Commit if everything passes
+# 5. Commit if everything passes
 git commit -m "feat(auth): add authentication module"
 ```
 
@@ -115,16 +170,14 @@ git commit -m "feat(auth): add authentication module"
 
 ### .pre-commit-config.yaml
 
-Example configuration with detect-secrets:
+Example configuration with gitleaks:
 
 ```yaml
 repos:
-  - repo: https://github.com/Yelp/detect-secrets
-    rev: v1.4.0
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.22.1
     hooks:
-      - id: detect-secrets
-        args: ['--baseline', '.secrets.baseline']
-        exclude: package-lock.json
+      - id: gitleaks
 ```
 
 ### Running Pre-commit Hooks
@@ -137,7 +190,7 @@ pre-commit run --all-files
 pre-commit run
 
 # Run specific hook
-pre-commit run detect-secrets
+pre-commit run gitleaks
 
 # Show diff on failure for debugging
 pre-commit run --all-files --show-diff-on-failure
@@ -148,9 +201,9 @@ pre-commit install
 
 ## Common Secret Patterns
 
-detect-secrets scans for:
+Gitleaks ships with 140+ built-in rules covering:
 
-- **API Keys**: AWS, GitHub, Stripe, etc.
+- **API Keys**: AWS, GitHub, Stripe, Google, Azure, etc.
 - **Authentication Tokens**: JWT, OAuth tokens, session tokens
 - **Passwords**: Hardcoded passwords in config files
 - **Private Keys**: RSA, SSH, PGP private keys
@@ -160,54 +213,43 @@ detect-secrets scans for:
 ### Examples of What Gets Detected
 
 ```bash
-# ❌ DETECTED: Hardcoded API key
-API_KEY = "sk_live_abc123def456ghi789"  # pragma: allowlist secret
+# Detected: Hardcoded API key
+API_KEY = "sk_live_abc123def456ghi789"  # gitleaks:allow
 
-# ❌ DETECTED: AWS credentials
-aws_access_key_id = AKIAIOSFODNN7EXAMPLE  # pragma: allowlist secret
+# Detected: AWS credentials
+aws_access_key_id = AKIAIOSFODNN7EXAMPLE  # gitleaks:allow
 
-# ❌ DETECTED: Database password
-DB_URL = "postgresql://user:Pa$$w0rd@localhost/db"  # pragma: allowlist secret
+# Detected: Database password
+DB_URL = "postgresql://user:Pa$$w0rd@localhost/db"  # gitleaks:allow
 
-# ❌ DETECTED: Private key  # pragma: allowlist secret
------BEGIN RSA PRIVATE KEY-----  # pragma: allowlist secret
-MIIEpAIBAAKCAQEA...  # pragma: allowlist secret
+# Detected: Private key  # gitleaks:allow
+-----BEGIN RSA PRIVATE KEY-----  # gitleaks:allow
+MIIEpAIBAAKCAQEA...  # gitleaks:allow
 ```
 
 ## Managing False Positives
 
 ### Excluding Files
 
-In `.secrets.baseline`:
+In `.gitleaks.toml`:
 
-```bash
-# Exclude specific files from scanning
-detect-secrets scan --exclude-files 'package-lock\.json' > .secrets.baseline
-detect-secrets scan --exclude-files '.*\.lock$' > .secrets.baseline
-detect-secrets scan --exclude-files 'test/.*\.py' > .secrets.baseline
+```toml
+[allowlist]
+paths = [
+    '''package-lock\.json$''',
+    '''.*\.lock$''',
+    '''test/.*\.py$''',
+]
 ```
 
 ### Inline Ignore Comments
 
 ```python
-# In code, mark false positives  # pragma: allowlist secret
-api_key = "test-key-1234"  # pragma: allowlist secret
+# In code, mark false positives
+api_key = "test-key-1234"  # gitleaks:allow
 
-# Or use detect-secrets specific pragma  # pragma: allowlist secret
-password = "fake-password"  # pragma: allowlist secret
-```
-
-### Baseline Management
-
-```bash
-# Update baseline to include current state
-detect-secrets scan --baseline .secrets.baseline --update
-
-# Re-audit all secrets in baseline
-detect-secrets audit .secrets.baseline
-
-# Show secrets in baseline
-cat .secrets.baseline | jq '.results'
+# Works in any language comment style
+password = "fake-password"  # gitleaks:allow
 ```
 
 ## Security Best Practices
@@ -239,13 +281,12 @@ For test fixtures or examples:
 
 ```bash
 # 1. Use obviously fake values
-API_KEY = "fake-key-for-testing-only"  # pragma: allowlist secret
+API_KEY = "fake-key-for-testing-only"  # gitleaks:allow
 
 # 2. Use placeholders
-API_KEY = "<your-api-key-here>"  # pragma: allowlist secret
+API_KEY = "<your-api-key-here>"  # gitleaks:allow
 
-# 3. Mark in baseline as false positive
-detect-secrets audit .secrets.baseline  # mark as 'n'
+# 3. Add path exclusion in .gitleaks.toml for test fixtures
 ```
 
 ## Emergency: Secret Leaked to Git History
@@ -286,7 +327,7 @@ git filter-repo --replace-text <(echo "SECRET_KEY=abc123==>SECRET_KEY=REDACTED")
 
 ```bash
 # Always run security checks before committing
-pre-commit run detect-secrets
+pre-commit run gitleaks
 
 # Check what's being committed
 git diff --cached
@@ -302,20 +343,15 @@ echo ".api_tokens" >> .gitignore
 
 ```bash
 # Before staging any files
-detect-secrets scan --baseline .secrets.baseline
+gitleaks protect --staged
 pre-commit run --all-files
 
-# If secrets detected
-detect-secrets audit .secrets.baseline
-# Review and mark false positives
-
 # Stage changes
-git add .secrets.baseline  # If updated
 git add src/feature.ts
 
 # Final check before commit
 git diff --cached  # Review changes
-detect-secrets scan --baseline .secrets.baseline  # One more scan
+gitleaks protect --staged  # One more scan
 
 # Commit
 git commit -m "feat(feature): add new capability"
@@ -334,78 +370,79 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install detect-secrets
-        run: pip install detect-secrets
-      - name: Scan for secrets
-        run: detect-secrets scan --baseline .secrets.baseline --fail-on-unaudited
+        with:
+          fetch-depth: 0
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ## Troubleshooting
 
-### Baseline Out of Sync
-
-```bash
-# Re-generate baseline from scratch
-detect-secrets scan > .secrets.baseline.new
-detect-secrets audit .secrets.baseline.new
-mv .secrets.baseline.new .secrets.baseline
-```
-
 ### Too Many False Positives
 
 ```bash
-# Exclude file patterns
-detect-secrets scan --exclude-files 'test/.*' > .secrets.baseline
+# Check what rules are triggering
+gitleaks detect --source . --verbose 2>&1 | head -50
 
-# Reduce sensitivity (use cautiously)
-detect-secrets scan --base64-limit 4.5 > .secrets.baseline
+# Add targeted allowlists in .gitleaks.toml
+# Use path exclusions for test fixtures
+# Use regex exclusions for known safe patterns
+# Use inline gitleaks:allow for individual lines
 ```
 
 ### Pre-commit Hook Failing
 
 ```bash
 # Run pre-commit in verbose mode
-pre-commit run detect-secrets --verbose
+pre-commit run gitleaks --verbose
 
-# Check baseline file exists
-ls -la .secrets.baseline
+# Check gitleaks config validity
+gitleaks detect --source . --config .gitleaks.toml --verbose
 
 # Update pre-commit hooks
 pre-commit autoupdate
 ```
 
-### Secret Detected But File Not Changed
+### Scanning Git History
 
 ```bash
-# Baseline may be stale
-detect-secrets scan --baseline .secrets.baseline --update
+# Scan entire git history for leaked secrets
+gitleaks detect --source . --log-opts="--all"
 
-# Audit to clear false positives
-detect-secrets audit .secrets.baseline
+# Scan specific commit range
+gitleaks detect --source . --log-opts="HEAD~10..HEAD"
+
+# Generate JSON report
+gitleaks detect --source . --report-format json --report-path gitleaks-report.json
 ```
 
 ## Tools Reference
 
-### detect-secrets Commands
+### Gitleaks Commands
 
 ```bash
-# Scan for secrets
-detect-secrets scan
+# Detect secrets in repository
+gitleaks detect --source .
 
-# Scan with baseline
-detect-secrets scan --baseline .secrets.baseline
+# Protect staged changes (pre-commit mode)
+gitleaks protect --staged
 
-# Audit baseline
-detect-secrets audit .secrets.baseline
+# Scan with custom config
+gitleaks detect --source . --config .gitleaks.toml
 
-# Update baseline
-detect-secrets scan --baseline .secrets.baseline --update
+# Verbose output
+gitleaks detect --source . --verbose
 
-# Exclude files
-detect-secrets scan --exclude-files 'pattern'
+# JSON report
+gitleaks detect --source . --report-format json --report-path report.json
 
-# Custom plugins
-detect-secrets scan --list-all-plugins
+# Scan git history
+gitleaks detect --source . --log-opts="--all"
+
+# Scan specific commit range
+gitleaks detect --source . --log-opts="main..HEAD"
 ```
 
 ### pre-commit Commands
@@ -418,7 +455,7 @@ pre-commit install
 pre-commit run --all-files
 
 # Run specific hook
-pre-commit run detect-secrets
+pre-commit run gitleaks
 
 # Update hook versions
 pre-commit autoupdate
