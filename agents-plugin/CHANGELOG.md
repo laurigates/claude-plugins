@@ -7,6 +7,13 @@
 
 * **configure-plugin:** replace detect-secrets with gitleaks for secret scanning ([#668](https://github.com/laurigates/claude-plugins/issues/668)) ([3fc5bbc](https://github.com/laurigates/claude-plugins/commit/3fc5bbc2f8500f30160cc5dfeb5e3d1253ed0a54))
 
+## [1.2.0](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.1.5...agents-plugin-v1.2.0) (2026-02-16)
+
+
+### Features
+
+* **configure-plugin:** replace detect-secrets with gitleaks for secret scanning ([#668](https://github.com/laurigates/claude-plugins/issues/668)) ([3fc5bbc](https://github.com/laurigates/claude-plugins/commit/3fc5bbc2f8500f30160cc5dfeb5e3d1253ed0a54))
+
 ## [1.1.5](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.1.4...agents-plugin-v1.1.5) (2026-02-08)
 
 
