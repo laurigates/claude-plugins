@@ -6,7 +6,7 @@ args: <file...> --title <title> [--base <branch>] [--branch <name>] [--body <tex
 allowed-tools: Bash(gh api *), Bash(gh pr *), Bash(gh repo *), Bash(base64 *), Bash(git remote *), Bash(mktemp *), Read, TodoWrite
 argument-hint: <files...> --title "type(scope): description"
 created: 2026-02-15
-modified: 2026-02-15
+modified: 2026-02-16
 reviewed: 2026-02-15
 ---
 
@@ -24,7 +24,7 @@ reviewed: 2026-02-15
 
 - Repo: !`gh repo view --json nameWithOwner -q '.nameWithOwner' 2>/dev/null`
 - Default branch: !`gh repo view --json defaultBranchRef -q '.defaultBranchRef.name' 2>/dev/null`
-- Auth: !`gh auth status 2>&1 | head -3`
+- Auth: !`gh auth status 2>/dev/null`
 - Working dir: !`pwd`
 
 ## Parameters
@@ -82,7 +82,7 @@ For each file path:
 ```bash
 # Base64-encode the file content and create a blob
 BLOB_SHA=$(gh api repos/$REPO/git/blobs \
-  -f content="$(base64 -w0 < "$FILE_PATH")" \
+  -f content="$(base64 < "$FILE_PATH" | tr -d '\n')" \
   -f encoding=base64 \
   -q .sha)
 ```
