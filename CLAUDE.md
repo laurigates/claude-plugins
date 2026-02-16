@@ -128,7 +128,7 @@ When creating, modifying, or deleting a plugin, update these files:
 1. Create plugin directory structure (see Project Structure above)
 2. Create `.claude-plugin/plugin.json` with required fields
 3. Create `README.md` with plugin documentation
-4. Add entry to `.claude-plugin/marketplace.json`:
+4. Add entry to `.claude-plugin/marketplace.json` (under the `plugins` array):
    ```json
    {
      "name": "new-plugin",
@@ -139,6 +139,7 @@ When creating, modifying, or deleting a plugin, update these files:
      "category": "category-name"
    }
    ```
+   Note: marketplace.json has structure `{ "name": "...", "plugins": [...] }` — add to the `plugins` array.
 5. Add to `release-please-config.json`:
    ```json
    "new-plugin": {
