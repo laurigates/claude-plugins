@@ -152,7 +152,7 @@ fi
 # Check for broad git staging commands (git add -A, git add --all, git add .)
 # These can accidentally include sensitive files (.env, credentials) or large binaries.
 # Pattern handles git global flags like -C <path> before the subcommand.
-if echo "$COMMAND" | grep -Eq '^\s*git\s+(.+\s+)?add\s+(-A|--all|\.)(\s|$)'; then
+if echo "$COMMAND" | grep -Eq '^\s*git\s+(.+\s+)?add\s+(-A|--all|\.(\s|$))'; then
     block_with_reminder "REMINDER: Avoid broad staging commands like 'git add -A', 'git add --all', or 'git add .'.
 These can accidentally include sensitive files (.env, credentials) or large binaries.
 
