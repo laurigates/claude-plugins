@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.5.4](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.5.3...hooks-plugin-v1.5.4) (2026-02-17)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** exclude quoted strings and || from pipe count in bash-antipatterns hook ([31726b0](https://github.com/laurigates/claude-plugins/commit/31726b025b15cd9a0c2f4ce9a90fbc0c4636634b))
+* pipe counting in bash-antipatterns to exclude quoted strings and operators ([#699](https://github.com/laurigates/claude-plugins/issues/699)) ([31726b0](https://github.com/laurigates/claude-plugins/commit/31726b025b15cd9a0c2f4ce9a90fbc0c4636634b))
+
 ## [1.5.3](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.5.2...hooks-plugin-v1.5.3) (2026-02-13)
 
 
