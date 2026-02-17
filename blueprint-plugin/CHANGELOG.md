@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.17.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.16.6...blueprint-plugin-v3.17.0) (2026-02-17)
+
+
+### Features
+
+* **blueprint-plugin:** add task registry for operational metadata tracking ([#706](https://github.com/laurigates/claude-plugins/issues/706)) ([565540d](https://github.com/laurigates/claude-plugins/commit/565540dbfa37c14154b0c23320306089054601b7))
+
 ## [3.16.6](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.16.5...blueprint-plugin-v3.16.6) (2026-02-15)
 
 
