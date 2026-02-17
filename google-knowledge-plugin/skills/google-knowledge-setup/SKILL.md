@@ -26,9 +26,9 @@ Configure the Google Developer Knowledge API MCP server for Claude Code.
 
 ## Context
 
-- Existing MCP config: !`cat ~/.claude.json 2>/dev/null | grep -A5 google-dev-knowledge || echo "not configured"`
-- gcloud available: !`command -v gcloud 2>/dev/null && echo "yes" || echo "no"`
-- gcloud project: !`gcloud config get-value project 2>/dev/null || echo "none"`
+- Claude config file: !`find ~ -maxdepth 1 -name '.claude.json' 2>/dev/null`
+- gcloud available: !`command -v gcloud 2>/dev/null`
+- gcloud project: !`gcloud config get-value project 2>/dev/null`
 
 ## Prerequisites
 
