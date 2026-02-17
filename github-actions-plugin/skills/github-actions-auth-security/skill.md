@@ -3,7 +3,7 @@ model: opus
 created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
-name: GitHub Actions Authentication and Security
+name: github-actions-auth-security
 description: GitHub Actions security and authentication for Claude Code including API keys, OIDC, AWS Bedrock, Google Vertex AI, secrets management, and permission scoping. Use when setting up authentication or discussing security for GitHub Actions workflows.
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, WebFetch
 ---
@@ -123,7 +123,7 @@ roles/aiplatform.user
 # WRONG - Never hardcode!
 - uses: anthropics/claude-code-action@v1
   with:
-    anthropic_api_key: "sk-ant-api03-..."  # pragma: allowlist secret
+    anthropic_api_key: "sk-ant-api03-..."  # gitleaks:allow
 
 # CORRECT - Always use secrets
 - uses: anthropics/claude-code-action@v1

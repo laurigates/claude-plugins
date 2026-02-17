@@ -27,7 +27,7 @@ Standard pre-commit configuration for repository compliance.
 | gruntwork pre-commit | v0.1.29 | helmlint, tflint (infrastructure only) |
 | actionlint | v1.7.7 | GitHub Actions validation (infrastructure only) |
 | helm-docs | v1.14.2 | Helm documentation (infrastructure only) |
-| detect-secrets | v1.5.0 | Secret scanning (recommended) |
+| gitleaks | v8.22.1 | Secret scanning (recommended) |
 
 ## Project Type Configurations
 
@@ -123,11 +123,10 @@ repos:
         args:
           - --chart-search-root=helm
 
-  - repo: https://github.com/Yelp/detect-secrets
-    rev: v1.5.0
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.22.1
     hooks:
-      - id: detect-secrets
-        args: ['--baseline', '.secrets.baseline']
+      - id: gitleaks
 ```
 
 ### Python Service
@@ -165,11 +164,10 @@ repos:
         args: [--fix]
       - id: ruff-format
 
-  - repo: https://github.com/Yelp/detect-secrets
-    rev: v1.5.0
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.22.1
     hooks:
-      - id: detect-secrets
-        args: ['--baseline', '.secrets.baseline']
+      - id: gitleaks
 ```
 
 ## Compliance Checking

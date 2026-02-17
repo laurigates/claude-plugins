@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.2.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.1.5...health-plugin-v1.2.0) (2026-02-16)
+
+
+### Features
+
+* **configure-plugin:** replace detect-secrets with gitleaks for secret scanning ([#668](https://github.com/laurigates/claude-plugins/issues/668)) ([3fc5bbc](https://github.com/laurigates/claude-plugins/commit/3fc5bbc2f8500f30160cc5dfeb5e3d1253ed0a54))
+
+## [1.1.5](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.1.4...health-plugin-v1.1.5) (2026-02-12)
+
+
+### Bug Fixes
+
+* standardize skill name fields to kebab-case across all plugins ([72c0f83](https://github.com/laurigates/claude-plugins/commit/72c0f837a1b07004850c5906a30d619a79098f69))
+
 ## [1.1.4](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.1.3...health-plugin-v1.1.4) (2026-02-08)
 
 

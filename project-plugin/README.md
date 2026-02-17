@@ -77,7 +77,7 @@ Analyze project state and continue development where you left off.
 - Analyzes state and determines next task
 - Reports project status before starting
 - Begins work following TDD (RED → GREEN → REFACTOR)
-- Updates work-overview as work progresses
+- Updates feature tracker as work progresses
 
 **Usage:**
 ```bash
@@ -152,6 +152,25 @@ See `skills/project-discovery/` for:
 - `SKILL.md` - Complete skill documentation
 - `discovery-commands.md` - Command reference
 - `examples.md` - Example discovery outputs
+
+### `/project:distill`
+Distill session insights into reusable knowledge: rules, skills, and justfile recipes.
+
+**Features:**
+- Reviews session git activity to identify learnings worth capturing
+- Proposes updates to Claude rules, skill improvements, and justfile recipes
+- Prioritizes updating existing artifacts over creating new ones
+- Checks for redundancy before proposing additions
+- Supports `--dry-run` to preview proposals without applying
+
+**Usage:**
+```bash
+/project:distill                # Analyze all categories
+/project:distill --recipes      # Justfile recipes only
+/project:distill --rules        # Claude rules only
+/project:distill --skills       # Skill improvements only
+/project:distill --dry-run      # Preview without changes
+```
 
 ### `changelog-review`
 Analyze Claude Code changelog for impacts on plugin development.

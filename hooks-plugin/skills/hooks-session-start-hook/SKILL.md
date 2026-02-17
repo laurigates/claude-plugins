@@ -1,6 +1,6 @@
 ---
 model: haiku
-name: session-start-hook
+name: hooks-session-start-hook
 description: |
   Create a SessionStart hook for Claude Code on the web. Use when setting up a repository
   for remote Claude Code sessions, ensuring dependencies install and tests/linters run
@@ -9,7 +9,7 @@ args: "[--remote-only] [--no-verify]"
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash(test *), Bash(cat *), Bash(chmod *), Bash(mkdir *), Bash(jq *), TodoWrite
 argument-hint: "--remote-only to only run in web sessions, --no-verify to skip test verification"
 created: 2026-02-07
-modified: 2026-02-07
+modified: 2026-02-10
 reviewed: 2026-02-07
 ---
 
@@ -45,7 +45,7 @@ Detect project stack:
 
 ## Execution
 
-### Phase 1: Detect Project Stack
+### Step 1: Detect project stack
 
 Identify all languages and tooling from the context above.
 
@@ -84,7 +84,7 @@ Identify all languages and tooling from the context above.
 
 Report detected stack to user before generating.
 
-### Phase 2: Generate Hook Script
+### Step 2: Generate hook script
 
 Create the script at `scripts/claude-session-start.sh` (or `.claude/hooks/session-start.sh` if no `scripts/` directory exists).
 
@@ -206,7 +206,7 @@ Adapt the template by:
 3. Using the correct test runner and linter commands
 4. Setting appropriate environment variables per language
 
-### Phase 3: Configure `.claude/settings.json`
+### Step 3: Configure `.claude/settings.json`
 
 Read existing `.claude/settings.json` if it exists. **Merge** the SessionStart hook — preserve all existing configuration.
 
@@ -238,13 +238,13 @@ Configuration to merge:
 
 Use `timeout: 120` (2 minutes) for dependency installation. Adjust path if script is in `.claude/hooks/` instead of `scripts/`.
 
-### Phase 4: Finalize
+### Step 4: Finalize
 
 1. Make the script executable: `chmod +x <script-path>`
 2. Create `.claude/` directory if needed for settings.json
 3. Report summary of what was created
 
-### Phase 5: Verify (unless --no-verify)
+### Step 5: Verify (unless --no-verify)
 
 Run the generated script locally to confirm it executes without errors. Report results.
 

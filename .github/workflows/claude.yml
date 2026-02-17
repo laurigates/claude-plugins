@@ -7,20 +7,31 @@ on:
     types: [created]
   issues:
     types: [opened, assigned]
+  pull_request_review:
+    types: [submitted]
 
-permissions:
-  contents: write
-  pull-requests: write
-  issues: write
-  id-token: write
+# Prevent concurrent Claude runs on the same issue/PR
+concurrency:
+  group: claude-${{ github.event.issue.number || github.event.pull_request.number }}
+  cancel-in-progress: false
 
 jobs:
   claude:
     if: |
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'issues' && contains(github.event.issue.body, '@claude'))
+      github.event.sender.type != 'Bot' &&
+      (
+        (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+        (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+        (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
+        (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+      )
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -31,6 +42,25 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          additional_permissions: |
+            Read
+            Write
+            Edit
+            Grep
+            Glob
+            Task
+            TodoWrite
+            Bash(git status *)
+            Bash(git diff *)
+            Bash(git log *)
+            Bash(git show *)
+            Bash(git add *)
+            Bash(git commit *)
+            Bash(git push *)
+            Bash(git checkout *)
+            Bash(git branch *)
+            Bash(gh pr *)
+            Bash(gh issue *)
           plugin_marketplaces: |
             https://github.com/laurigates/claude-plugins.git
           plugins: |
@@ -48,7 +78,6 @@ jobs:
             github-actions-plugin@laurigates-claude-plugins
             documentation-plugin@laurigates-claude-plugins
             project-plugin@laurigates-claude-plugins
-            sync-plugin@laurigates-claude-plugins
             agent-patterns-plugin@laurigates-claude-plugins
             accessibility-plugin@laurigates-claude-plugins
             bevy-plugin@laurigates-claude-plugins

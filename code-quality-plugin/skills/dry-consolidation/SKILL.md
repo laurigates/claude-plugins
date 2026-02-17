@@ -10,7 +10,7 @@ args: "[PATH] [--scope <utilities|components|hooks|all>] [--dry-run]"
 allowed-tools: Read, Write, Edit, MultiEdit, Grep, Glob, Bash(npx tsc *), Bash(npm run *), Bash(npx *), Bash(bun *), Bash(pnpm *), Bash(yarn *), Bash(pytest *), Bash(cargo *), TodoWrite, Task
 argument-hint: path or directory to scan for duplication
 created: 2026-02-06
-modified: 2026-02-06
+modified: 2026-02-10
 reviewed: 2026-02-06
 ---
 
@@ -34,7 +34,7 @@ Systematic extraction of duplicated code into shared, tested abstractions.
 - Project type: !`find . -maxdepth 1 \( -name "package.json" -o -name "Cargo.toml" -o -name "pyproject.toml" -o -name "go.mod" \) 2>/dev/null`
 - Source directories: !`find . -maxdepth 1 -type d \( -name "src" -o -name "lib" -o -name "app" -o -name "components" -o -name "packages" \) 2>/dev/null`
 - Test framework: !`find . -maxdepth 2 \( -name "vitest.config.*" -o -name "jest.config.*" -o -name "pytest.ini" -o -name "conftest.py" \) 2>/dev/null`
-- Existing shared utilities: !`find . -path "*/lib/*" -o -path "*/utils/*" -o -path "*/shared/*" -o -path "*/common/*" -o -path "*/hooks/*" 2>/dev/null | head -20`
+- Existing shared utilities: !`find . \( -path "*/lib/*" -o -path "*/utils/*" -o -path "*/shared/*" -o -path "*/common/*" -o -path "*/hooks/*" \) -type f -print -quit 2>/dev/null`
 
 ## Parameters
 
@@ -44,9 +44,9 @@ Systematic extraction of duplicated code into shared, tested abstractions.
 
 ## Execution
 
-Follow this 7-phase workflow. Use TodoWrite to track each extraction as a separate task.
+Execute this 7-step consolidation workflow. Use TodoWrite to track each extraction as a separate task.
 
-### Phase 1: Discovery
+### Step 1: Scan for duplicated patterns
 
 Scan the target path for duplicated patterns. Search for these duplication signals:
 
@@ -68,7 +68,7 @@ Look for identical multi-line blocks (3+ lines) across files.
 2. Use Glob to identify files with similar structure (e.g., all `*List.tsx`, all `*Detail.tsx`)
 3. Read candidate files to confirm duplication and measure scope
 
-### Phase 2: Classification
+### Step 2: Classify duplications
 
 Group discovered duplications into extraction categories:
 
@@ -81,7 +81,7 @@ Group discovered duplications into extraction categories:
 
 Follow the project's existing conventions for shared code location. If no convention exists, propose one based on the framework.
 
-### Phase 3: Planning
+### Step 3: Plan extractions
 
 For each duplication cluster, plan the extraction:
 
@@ -105,7 +105,7 @@ Present the plan to the user before proceeding (unless `--dry-run` was not speci
 - Estimated lines saved: [N]
 ```
 
-### Phase 4: Extraction
+### Step 4: Extract shared abstractions
 
 Execute each planned extraction:
 
@@ -118,7 +118,7 @@ Execute each planned extraction:
 
 Mark each extraction as completed in the todo list before moving to the next.
 
-### Phase 5: Testing
+### Step 5: Write tests
 
 Write tests for each extracted abstraction:
 
@@ -131,7 +131,7 @@ Write tests for each extracted abstraction:
 
 Place test files adjacent to the abstraction or in the project's test directory, following existing conventions.
 
-### Phase 6: Cleanup
+### Step 6: Clean up dead code
 
 After all extractions are complete:
 
@@ -139,7 +139,7 @@ After all extractions are complete:
 2. **Remove dead code** — inline helper functions that are now replaced
 3. **Verify no orphaned references** — search for any remaining references to removed code
 
-### Phase 7: Verification
+### Step 7: Verify all checks pass
 
 Run the full verification suite:
 

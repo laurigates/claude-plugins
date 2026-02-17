@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-11
 reviewed: 2025-12-16
 description: Check and configure Justfile with standard recipes for project standards
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
@@ -13,25 +13,54 @@ name: configure-justfile
 
 Check and configure project Justfile against project standards.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up a new Justfile for a project | Project already uses Make exclusively and migration is not desired — use `/configure:makefile` |
+| Auditing existing Justfile for missing standard recipes | Writing complex custom recipes — use `justfile-expert` skill |
+| Migrating from Makefile to Justfile | Project has no task runner needs (single-file scripts) |
+| Ensuring Justfile follows team conventions (groups, comments, settings) | Debugging a specific recipe failure — use direct `just` commands |
+| Running CI/CD compliance checks on project task runners | Only need to list available recipes — run `just --list` directly |
+
 ## Context
 
-This command validates and creates Justfiles with standard recipes for consistent development workflows across projects. Just is a simpler, cross-platform alternative to Make with clearer syntax and better error messages.
+- Project root: !`pwd`
+- Justfile: !`find . -maxdepth 1 \( -name 'justfile' -o -name 'Justfile' \) 2>/dev/null`
+- Makefile: !`find . -maxdepth 1 -name 'Makefile' 2>/dev/null`
+- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) 2>/dev/null`
+- Docker files: !`find . -maxdepth 1 \( -name 'Dockerfile' -o -name 'docker-compose.yml' \) 2>/dev/null`
+- Env file: !`find . -maxdepth 1 -name '.env' 2>/dev/null`
+- Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml' 2>/dev/null`
 
-**Required Justfile recipes**: `default`, `help`, `test`, `lint`, `build`, `clean`
+## Parameters
 
-**Optional recipes**: `format`, `start`, `stop`, `dev`
+Parse from command arguments:
 
-## Workflow
+- `--check-only`: Report compliance status without modifications (CI/CD mode)
+- `--fix`: Apply fixes automatically without prompting
 
-### Phase 1: Detection
+## Execution
+
+Execute this Justfile compliance check:
+
+### Step 1: Detect Justfile and project type
 
 1. Check for `justfile` or `Justfile` in project root
-2. If exists, analyze current recipes and settings
-3. Detect project type (python, node, rust, go, generic)
+2. If exists, read and analyze current recipes and settings
+3. Detect project type from file indicators:
 
-### Phase 2: Recipe Analysis
+| Indicator | Project Type |
+|-----------|--------------|
+| `pyproject.toml` or `requirements.txt` | Python |
+| `package.json` | Node.js |
+| `Cargo.toml` | Rust |
+| `go.mod` | Go |
+| None of the above | Generic |
 
-**Required recipes for all projects:**
+### Step 2: Analyze required and optional recipes
+
+Check for required recipes:
 
 | Recipe | Purpose | Severity |
 |--------|---------|----------|
@@ -42,7 +71,7 @@ This command validates and creates Justfiles with standard recipes for consisten
 | `build` | Build project artifacts | WARN if missing |
 | `clean` | Remove temporary files | WARN if missing |
 
-**Additional recipes (context-dependent):**
+Check for context-dependent recipes:
 
 | Recipe | When Required | Severity |
 |--------|---------------|----------|
@@ -51,7 +80,9 @@ This command validates and creates Justfiles with standard recipes for consisten
 | `stop` | If project has background service | INFO |
 | `dev` | If project supports watch mode | INFO |
 
-### Phase 3: Compliance Checks
+### Step 3: Check compliance settings
+
+Validate Justfile settings:
 
 | Check | Standard | Severity |
 |-------|----------|----------|
@@ -62,7 +93,9 @@ This command validates and creates Justfiles with standard recipes for consisten
 | Language-specific | Commands match project type | FAIL if mismatched |
 | Recipe comments | Recipes have descriptions | INFO |
 
-### Phase 4: Report Generation
+### Step 4: Generate compliance report
+
+Print a formatted compliance report:
 
 ```
 Justfile Compliance Report
@@ -90,7 +123,9 @@ Missing Recipes: none
 Issues: 0 found
 ```
 
-### Phase 5: Configuration (If Requested)
+If `--check-only`, stop here.
+
+### Step 5: Create or update Justfile (if --fix or user confirms)
 
 If `--fix` flag or user confirms:
 
@@ -99,7 +134,9 @@ If `--fix` flag or user confirms:
 3. **Missing settings**: Add `set dotenv-load` if `.env` exists
 4. **Missing help**: Add help recipe with `just --list`
 
-### Phase 6: Standards Tracking
+Use language-specific commands from the template section below.
+
+### Step 6: Update standards tracking
 
 Update `.project-standards.yaml`:
 
@@ -261,26 +298,33 @@ clean:
 
 ## Detection Logic
 
-**Project type detection (in order):**
-
-1. **Python**: `pyproject.toml` or `requirements.txt` present
-2. **Node**: `package.json` present
-3. **Rust**: `Cargo.toml` present
-4. **Go**: `go.mod` present
-5. **Generic**: None of the above
-
 **Service detection (start/stop needed):**
-
-- Has `docker-compose.yml` → Docker Compose service
-- Has `Dockerfile` + HTTP server code → Container service
-- Has `src/server.*` or `src/main.*` → Application service
+- Has `docker-compose.yml` -> Docker Compose service
+- Has `Dockerfile` + HTTP server code -> Container service
+- Has `src/server.*` or `src/main.*` -> Application service
 
 **Dev mode detection:**
-
-- Python: Has FastAPI/Flask/Django → uvicorn/flask/manage.py with reload
+- Python: Has FastAPI/Flask/Django -> uvicorn/flask/manage.py with reload
 - Node: Has `dev` script in package.json
 - Rust: Has `cargo-watch` in dependencies
 - Go: Has `air.toml` or `main.go`
+
+## Migration from Makefile
+
+If a Makefile exists but no Justfile:
+1. Detect project type from Makefile commands
+2. Suggest creating Justfile with equivalent recipes
+3. Optionally keep Makefile for backwards compatibility
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick compliance check | `/configure:justfile --check-only` |
+| Auto-fix all issues | `/configure:justfile --fix` |
+| List existing recipes | `just --list` |
+| Verify specific recipe exists | `just --summary` |
+| Check Justfile syntax | `just --evaluate 2>&1` |
 
 ## Flags
 
@@ -301,27 +345,6 @@ clean:
 # Check compliance and prompt for fixes
 /configure:justfile
 ```
-
-## Migration from Makefile
-
-If a Makefile exists but no Justfile:
-
-1. Detect project type from Makefile commands
-2. Suggest creating Justfile with equivalent recipes
-3. Optionally keep Makefile for backwards compatibility
-
-**Note**: Full `--migrate-from makefile` support planned for future iteration.
-
-## Advantages over Makefile
-
-| Aspect | Justfile | Makefile |
-|--------|----------|----------|
-| Syntax | Simple, clear | Complex, tabs required |
-| Error messages | Clear and helpful | Often cryptic |
-| Cross-platform | Excellent | Good (shell differences) |
-| Parameters | Full support | Limited |
-| Dependencies | Built-in | Built-in |
-| Installation | Single binary | Pre-installed |
 
 ## See Also
 

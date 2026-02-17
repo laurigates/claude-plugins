@@ -10,7 +10,7 @@ name: blueprint-upgrade
 
 Upgrade the blueprint structure to the latest format version.
 
-**Current Format Version**: 3.0.0
+**Current Format Version**: 3.1.0
 
 This command delegates version-specific migration logic to the `blueprint-migration` skill.
 
@@ -29,7 +29,7 @@ This command delegates version-specific migration logic to the `blueprint-migrat
    elif [[ -f .claude/blueprints/.manifest.json ]]; then
      current=$(jq -r '.format_version // "1.0.0"' .claude/blueprints/.manifest.json)
    fi
-   target="3.0.0"
+   target="3.1.0"
    ```
 
    **Version compatibility matrix**:
@@ -38,7 +38,8 @@ This command delegates version-specific migration logic to the `blueprint-migrat
    | 1.0.x        | 1.1.x      | `migrations/v1.0-to-v1.1.md` |
    | 1.x.x        | 2.0.0      | `migrations/v1.x-to-v2.0.md` |
    | 2.x.x        | 3.0.0      | `migrations/v2.x-to-v3.0.md` |
-   | 3.0.0        | 3.0.0      | Already up to date |
+   | 3.0.x        | 3.1.0      | `migrations/v3.0-to-v3.1.md` |
+   | 3.1.0        | 3.1.0      | Already up to date |
 
 3. **Check for deprecated generated commands**:
 
@@ -99,7 +100,7 @@ This command delegates version-specific migration logic to the `blueprint-migrat
 
 5. **Confirm with user** (use AskUserQuestion):
    ```
-   question: "Ready to upgrade blueprint from v{current} to v3.0.0?"
+   question: "Ready to upgrade blueprint from v{current} to v3.1.0?"
    options:
      - "Yes, upgrade now" → proceed
      - "Show detailed migration steps" → display migration document
@@ -234,8 +235,7 @@ This command delegates version-specific migration logic to the `blueprint-migrat
       ## Contents
 
       - `.manifest.json` - Blueprint configuration and generated content tracking
-      - `work-overview.md` - Current work focus and priorities
-      - `feature-tracker.md` - Feature requirements and status
+      - `feature-tracker.json` - Feature tracking with tasks and progress
       - `work-orders/` - Detailed work order documents
       - `ai_docs/` - AI-generated documentation
 
@@ -327,8 +327,7 @@ This command delegates version-specific migration logic to the `blueprint-migrat
 
    State files moved to docs/blueprint/:
    - .manifest.json
-   - work-overview.md
-   - feature-tracker.md
+   - feature-tracker.json
    - work-orders/ directory
    - ai_docs/ directory
 

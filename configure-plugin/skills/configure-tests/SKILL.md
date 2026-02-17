@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-10
 reviewed: 2025-12-16
 description: Check and configure testing frameworks and infrastructure
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -13,14 +13,42 @@ name: configure-tests
 
 Check and configure testing frameworks against best practices (Vitest, Jest, pytest, cargo-nextest).
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up testing infrastructure | Just running tests (use `/test:run` skill) |
+| Checking test framework configuration | Tests already properly configured |
+| Migrating to modern test frameworks (Vitest, pytest, nextest) | Writing individual tests (write tests directly) |
+| Validating coverage configuration | Debugging failing tests (check test output) |
+| Ensuring test best practices | Simple project with no testing needed |
+
 ## Context
 
-This command validates testing infrastructure and optionally configures or upgrades to modern frameworks.
+- Package.json: !`test -f package.json && echo "EXISTS" || echo "MISSING"`
+- Pyproject.toml: !`test -f pyproject.toml && echo "EXISTS" || echo "MISSING"`
+- Cargo.toml: !`test -f Cargo.toml && echo "EXISTS" || echo "MISSING"`
+- Test config files: !`find . -maxdepth 1 \( -name 'vitest.config.*' -o -name 'jest.config.*' -o -name 'pytest.ini' -o -name '.nextest.toml' \) 2>/dev/null`
+- Pytest in pyproject: !`grep -c 'tool.pytest' pyproject.toml 2>/dev/null`
+- Test directories: !`find . -maxdepth 2 -type d \( -name 'tests' -o -name '__tests__' -o -name 'test' \) 2>/dev/null`
+- Test scripts in package.json: !`grep -m5 -o '"test[^"]*"' package.json 2>/dev/null`
+- Coverage config: !`grep -l 'coverage' vitest.config.* jest.config.* 2>/dev/null`
+- Project standards: !`head -20 .project-standards.yaml 2>/dev/null`
 
 **Modern testing stack preferences:**
 - **JavaScript/TypeScript**: Vitest (preferred) or Jest
 - **Python**: pytest with pytest-cov
 - **Rust**: cargo-nextest for improved performance
+
+## Parameters
+
+Parse these from `$ARGUMENTS`:
+
+| Flag | Description |
+|------|-------------|
+| `--check-only` | Report status without offering fixes |
+| `--fix` | Apply all fixes automatically without prompting |
+| `--framework <framework>` | Override framework detection (`vitest`, `jest`, `pytest`, `nextest`) |
 
 ## Version Checking
 
@@ -33,11 +61,13 @@ This command validates testing infrastructure and optionally configures or upgra
 
 Use WebSearch or WebFetch to verify current versions before reporting outdated frameworks.
 
-## Workflow
+## Execution
 
-### Phase 1: Framework Detection
+Execute this testing framework compliance check:
 
-Detect project language and existing test framework:
+### Step 1: Detect framework
+
+Identify the project language and existing test framework:
 
 | Indicator | Language | Detected Framework |
 |-----------|----------|-------------------|
@@ -48,501 +78,97 @@ Detect project language and existing test framework:
 | `Cargo.toml` | Rust | cargo test |
 | `.nextest.toml` | Rust | cargo-nextest |
 
-### Phase 2: Current State Analysis
+If `--framework` flag is provided, use that value instead.
 
-For each detected framework, check configuration:
+### Step 2: Analyze current state
+
+Read the detected framework's configuration and check completeness. For each framework, verify:
 
 **Vitest:**
-- [ ] `vitest.config.ts` or `vitest.config.js` exists
-- [ ] `globals: true` configured for compatibility
-- [ ] `environment` set appropriately (jsdom, happy-dom, node)
-- [ ] Coverage configured with `@vitest/coverage-v8` or `@vitest/coverage-istanbul`
-- [ ] Watch mode exclusions configured
+- Config file exists (`vitest.config.ts` or `.js`)
+- `globals: true` configured for compatibility
+- `environment` set appropriately (jsdom, happy-dom, node)
+- Coverage configured with `@vitest/coverage-v8` or `@vitest/coverage-istanbul`
+- Watch mode exclusions configured
 
 **Jest:**
-- [ ] `jest.config.js` or `jest.config.ts` exists
-- [ ] `testEnvironment` configured
-- [ ] Coverage configuration present
-- [ ] Transform configured for TypeScript/JSX
-- [ ] Module path aliases configured
+- Config file exists (`jest.config.js` or `.ts`)
+- `testEnvironment` configured
+- Coverage configuration present
+- Transform configured for TypeScript/JSX
+- Module path aliases configured
 
 **pytest:**
-- [ ] `pyproject.toml` has `[tool.pytest.ini_options]` section
-- [ ] `testpaths` configured
-- [ ] `addopts` includes useful flags (`-v`, `--strict-markers`)
-- [ ] `markers` defined for test categorization
-- [ ] `pytest-cov` installed
+- `pyproject.toml` has `[tool.pytest.ini_options]` section
+- `testpaths` configured
+- `addopts` includes useful flags (`-v`, `--strict-markers`)
+- `markers` defined for test categorization
+- `pytest-cov` installed
 
 **cargo-nextest:**
-- [ ] `.nextest.toml` exists
-- [ ] Profile configurations (default, ci)
-- [ ] Retry policy configured
-- [ ] Test groups defined if needed
+- `.nextest.toml` exists
+- Profile configurations (default, ci)
+- Retry policy configured
+- Test groups defined if needed
 
-### Phase 3: Compliance Report
+### Step 3: Report results
 
-Generate formatted compliance report:
+Print a compliance report with:
+- Detected framework and version
+- Configuration check results for each item
+- Test organization (unit/integration/e2e directories)
+- Package scripts status (test, test:watch, test:coverage)
+- Overall issue count and recommendations
 
-```
-Testing Framework Compliance Report
-====================================
-Project: [name]
-Language: [TypeScript | Python | Rust]
-Framework: [Vitest 2.x | pytest 8.x | cargo-nextest 0.9.x]
+If `--check-only`, stop here.
 
-Configuration:
-  Config file             vitest.config.ts           [✅ EXISTS | ❌ MISSING]
-  Test directory          tests/ or __tests__/       [✅ EXISTS | ⚠️ NON-STANDARD]
-  Coverage provider       @vitest/coverage-v8        [✅ CONFIGURED | ❌ MISSING]
-  Environment             jsdom                      [✅ CONFIGURED | ⚠️ NOT SET]
-  Watch exclusions        node_modules, dist         [✅ CONFIGURED | ⚠️ INCOMPLETE]
+### Step 4: Apply fixes (if --fix or user confirms)
 
-Test Organization:
-  Unit tests              src/**/*.test.ts           [✅ FOUND | ❌ NONE]
-  Integration tests       tests/integration/         [✅ FOUND | ⏭️ N/A]
-  E2E tests               tests/e2e/                 [✅ FOUND | ⏭️ N/A]
+Install dependencies and create configuration using templates from [REFERENCE.md](REFERENCE.md):
 
-Scripts:
-  test command            package.json scripts       [✅ CONFIGURED | ❌ MISSING]
-  test:watch              package.json scripts       [✅ CONFIGURED | ⚠️ MISSING]
-  test:coverage           package.json scripts       [✅ CONFIGURED | ❌ MISSING]
+1. **Missing config**: Create framework config file from template
+2. **Missing dependencies**: Install required packages
+3. **Missing coverage**: Add coverage configuration with 80% threshold
+4. **Missing scripts**: Add test scripts to package.json
+5. **Missing test directories**: Create standard test directory structure
 
-Overall: [X issues found]
+### Step 5: Set up test organization
 
-Recommendations:
-  - Add coverage configuration with 80% threshold
-  - Configure watch mode exclusions
-  - Add test:ui script for Vitest UI
-```
+Create standard test directory structure for the detected language. See directory structure patterns in [REFERENCE.md](REFERENCE.md).
 
-### Phase 4: Configuration (if --fix or user confirms)
+### Step 6: Configure CI/CD integration
 
-#### Vitest Configuration (Recommended for JS/TS)
+Check for test commands in GitHub Actions workflows. If missing, add CI test commands using the CI templates from [REFERENCE.md](REFERENCE.md).
 
-**Install dependencies:**
-```bash
-npm install --save-dev vitest @vitest/ui @vitest/coverage-v8
-# or
-bun add --dev vitest @vitest/ui @vitest/coverage-v8
-```
+### Step 7: Handle migration (if upgrading)
 
-**Create `vitest.config.ts`:**
-```typescript
-import { defineConfig } from 'vitest/config';
-import { resolve } from 'path';
+If migrating between frameworks (e.g., Jest to Vitest, unittest to pytest), follow the migration guide in [REFERENCE.md](REFERENCE.md).
 
-export default defineConfig({
-  test: {
-    // Enable globals for compatibility with Jest-style tests
-    globals: true,
-
-    // Test environment (jsdom for DOM testing, node for backend)
-    environment: 'jsdom', // or 'node', 'happy-dom'
-
-    // Setup files to run before tests
-    setupFiles: ['./tests/setup.ts'],
-
-    // Coverage configuration
-    coverage: {
-      provider: 'v8', // or 'istanbul'
-      reporter: ['text', 'json', 'html', 'lcov'],
-      exclude: [
-        'node_modules/',
-        'dist/',
-        'tests/',
-        '**/*.config.*',
-        '**/*.d.ts',
-      ],
-      thresholds: {
-        lines: 80,
-        functions: 80,
-        branches: 80,
-        statements: 80,
-      },
-    },
-
-    // Watch mode exclusions
-    watchExclude: ['**/node_modules/**', '**/dist/**', '**/.next/**'],
-
-    // Test timeout
-    testTimeout: 10000,
-
-    // Include/exclude patterns
-    include: ['**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
-    exclude: ['node_modules', 'dist', '.next', 'out'],
-  },
-
-  // Resolve aliases (if using path aliases)
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, './src'),
-    },
-  },
-});
-```
-
-**Add npm scripts to `package.json`:**
-```json
-{
-  "scripts": {
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:ui": "vitest --ui",
-    "test:coverage": "vitest run --coverage",
-    "test:ci": "vitest run --coverage --reporter=junit --reporter=default"
-  }
-}
-```
-
-#### Jest Configuration (Alternative)
-
-**Create `jest.config.ts`:**
-```typescript
-import type { Config } from 'jest';
-
-const config: Config = {
-  preset: 'ts-jest',
-  testEnvironment: 'jsdom',
-  roots: ['<rootDir>/src', '<rootDir>/tests'],
-  testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
-
-  transform: {
-    '^.+\\.tsx?$': ['ts-jest', {
-      tsconfig: 'tsconfig.json',
-    }],
-  },
-
-  collectCoverageFrom: [
-    'src/**/*.{js,jsx,ts,tsx}',
-    '!src/**/*.d.ts',
-    '!src/**/*.stories.tsx',
-  ],
-
-  coverageThresholds: {
-    global: {
-      lines: 80,
-      functions: 80,
-      branches: 80,
-      statements: 80,
-    },
-  },
-
-  moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1',
-  },
-
-  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
-};
-
-export default config;
-```
-
-#### Python pytest Configuration
-
-**Update `pyproject.toml`:**
-```toml
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test_*.py", "*_test.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-
-addopts = [
-    "-v",
-    "--strict-markers",
-    "--strict-config",
-    "--cov=src",
-    "--cov-report=term-missing",
-    "--cov-report=html",
-    "--cov-report=xml",
-    "--cov-fail-under=80",
-]
-
-markers = [
-    "unit: Unit tests",
-    "integration: Integration tests",
-    "e2e: End-to-end tests",
-    "slow: Slow running tests",
-]
-
-[tool.coverage.run]
-source = ["src"]
-omit = [
-    "*/tests/*",
-    "*/migrations/*",
-    "*/__init__.py",
-]
-
-[tool.coverage.report]
-exclude_lines = [
-    "pragma: no cover",
-    "def __repr__",
-    "if __name__ == .__main__.:",
-    "raise AssertionError",
-    "raise NotImplementedError",
-    "if 0:",
-    "if False:",
-    "if TYPE_CHECKING:",
-]
-```
-
-**Install dependencies:**
-```bash
-uv add --group dev pytest pytest-cov pytest-asyncio pytest-mock
-```
-
-#### Rust cargo-nextest Configuration
-
-**Install cargo-nextest:**
-```bash
-cargo install cargo-nextest --locked
-```
-
-**Create `.nextest.toml`:**
-```toml
-[profile.default]
-retries = 0
-fail-fast = false
-
-# Run tests with all features enabled
-test-threads = "num-cpus"
-
-[profile.ci]
-retries = 2
-fail-fast = true
-test-threads = 2
-
-# JUnit output for CI
-[profile.ci.junit]
-path = "target/nextest/ci/junit.xml"
-
-[profile.default.junit]
-path = "target/nextest/default/junit.xml"
-```
-
-**Add to `.cargo/config.toml` (optional):**
-```toml
-[alias]
-test = "nextest run"
-```
-
-### Phase 5: Test Organization
-
-Create standard test directory structure:
-
-**JavaScript/TypeScript:**
-```
-tests/
-├── setup.ts              # Test setup and global mocks
-├── unit/                 # Unit tests
-│   └── utils.test.ts
-├── integration/          # Integration tests
-│   └── api.test.ts
-└── e2e/                  # E2E tests
-    └── user-flow.test.ts
-```
-
-**Python:**
-```
-tests/
-├── conftest.py           # pytest fixtures and configuration
-├── unit/                 # Unit tests
-│   └── test_utils.py
-├── integration/          # Integration tests
-│   └── test_api.py
-└── e2e/                  # E2E tests
-    └── test_user_flow.py
-```
-
-**Rust:**
-```
-tests/
-├── integration_test.rs   # Integration tests
-└── common/               # Shared test utilities
-    └── mod.rs
-```
-
-### Phase 6: CI/CD Integration
-
-Add test commands to GitHub Actions workflow:
-
-**JavaScript/TypeScript (Vitest):**
-```yaml
-- name: Run tests
-  run: npm test -- --reporter=junit --reporter=default --coverage
-
-- name: Upload coverage
-  uses: codecov/codecov-action@v4
-  with:
-    files: ./coverage/lcov.info
-```
-
-**Python (pytest):**
-```yaml
-- name: Run tests
-  run: |
-    uv run pytest --junitxml=junit.xml --cov-report=xml
-
-- name: Upload coverage
-  uses: codecov/codecov-action@v4
-  with:
-    files: ./coverage.xml
-```
-
-**Rust (cargo-nextest):**
-```yaml
-- name: Install nextest
-  uses: taiki-e/install-action@nextest
-
-- name: Run tests
-  run: cargo nextest run --profile ci --no-fail-fast
-
-- name: Upload test results
-  uses: actions/upload-artifact@v4
-  with:
-    name: test-results
-    path: target/nextest/ci/junit.xml
-```
-
-### Phase 7: Standards Tracking
+### Step 8: Update standards tracking
 
 Update `.project-standards.yaml`:
 
 ```yaml
 standards_version: "2025.1"
-last_configured: "[timestamp]"
+last_configured: "<timestamp>"
 components:
   tests: "2025.1"
-  tests_framework: "[vitest|jest|pytest|nextest]"
+  tests_framework: "<vitest|jest|pytest|nextest>"
   tests_coverage_threshold: 80
   tests_ci_integrated: true
 ```
 
-### Phase 8: Migration Guide (if upgrading)
+For detailed configuration templates, migration guides, CI/CD integration examples, and directory structure patterns, see [REFERENCE.md](REFERENCE.md).
 
-**Jest → Vitest Migration:**
+## Agentic Optimizations
 
-1. **Update dependencies:**
-   ```bash
-   npm uninstall jest @types/jest
-   npm install --save-dev vitest @vitest/ui @vitest/coverage-v8
-   ```
-
-2. **Rename config file:**
-   ```bash
-   mv jest.config.ts vitest.config.ts
-   ```
-
-3. **Update test imports:**
-   ```typescript
-   // Before (Jest)
-   import { describe, it, expect } from '@jest/globals';
-
-   // After (Vitest with globals)
-   // No import needed if globals: true in config
-   ```
-
-4. **Update package.json scripts:**
-   ```json
-   {
-     "scripts": {
-       "test": "vitest run",
-       "test:watch": "vitest"
-     }
-   }
-   ```
-
-**unittest → pytest Migration (Python):**
-
-1. **Install pytest:**
-   ```bash
-   uv add --group dev pytest pytest-cov
-   ```
-
-2. **Convert test files:**
-   ```python
-   # Before (unittest)
-   import unittest
-   class TestExample(unittest.TestCase):
-       def test_something(self):
-           self.assertEqual(1, 1)
-
-   # After (pytest)
-   def test_something():
-       assert 1 == 1
-   ```
-
-3. **Convert assertions:**
-   - `self.assertEqual(a, b)` → `assert a == b`
-   - `self.assertTrue(x)` → `assert x`
-   - `self.assertRaises(Error)` → `with pytest.raises(Error):`
-
-### Phase 9: Updated Compliance Report
-
-```
-Testing Configuration Complete
-===============================
-
-Framework: Vitest 2.x (preferred)
-Language: TypeScript
-
-Configuration Applied:
-  ✅ vitest.config.ts created with best practices
-  ✅ Coverage provider configured (@vitest/coverage-v8)
-  ✅ Test environment set (jsdom)
-  ✅ Watch exclusions configured
-  ✅ Coverage thresholds set (80%)
-
-Scripts Added:
-  ✅ npm test (run tests once)
-  ✅ npm run test:watch (watch mode)
-  ✅ npm run test:ui (Vitest UI)
-  ✅ npm run test:coverage (with coverage report)
-
-Test Structure:
-  ✅ tests/ directory created
-  ✅ setup.ts configured
-  ✅ Example tests added
-
-Next Steps:
-  1. Write your first test:
-     npm run test:watch
-
-  2. View test UI:
-     npm run test:ui
-
-  3. Check coverage:
-     npm run test:coverage
-
-  4. Verify CI integration:
-     Check .github/workflows/ for test job
-
-Documentation: docs/TESTING.md
-```
-
-## Flags
-
-| Flag | Description |
-|------|-------------|
-| `--check-only` | Report status without offering fixes |
-| `--fix` | Apply all fixes automatically without prompting |
-| `--framework <framework>` | Override framework detection (vitest, jest, pytest, nextest) |
-
-## Examples
-
-```bash
-# Check compliance and offer fixes
-/configure:tests
-
-# Check only, no modifications
-/configure:tests --check-only
-
-# Auto-fix all issues
-/configure:tests --fix
-
-# Force Vitest even if Jest is detected
-/configure:tests --framework vitest
-```
+| Context | Command |
+|---------|---------|
+| Detect test framework | `find . -maxdepth 1 \( -name 'vitest.config.*' -o -name 'jest.config.*' -o -name 'pytest.ini' \) 2>/dev/null` |
+| Check coverage config | `grep -l 'coverage' package.json pyproject.toml 2>/dev/null` |
+| List test files | `find . \( -path '*/tests/*' -o -path '*/test/*' -o -name '*.test.*' -o -name '*.spec.*' \) 2>/dev/null \| head -n 10` |
+| Quick compliance check | `/configure:tests --check-only` |
+| Auto-fix configuration | `/configure:tests --fix` |
 
 ## Error Handling
 

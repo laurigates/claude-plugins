@@ -22,6 +22,7 @@ Expert knowledge for configuring and developing Claude Code hooks to automate wo
 Hooks are user-defined shell commands that execute at specific points in Claude Code's lifecycle. Unlike relying on Claude to "decide" to run something, hooks provide **deterministic, guaranteed execution**.
 
 **Why Use Hooks?**
+
 - Enforce code formatting automatically
 - Block dangerous commands before execution
 - Inject context at session start
@@ -30,18 +31,18 @@ Hooks are user-defined shell commands that execute at specific points in Claude 
 
 ## Hook Lifecycle Events
 
-| Event | When It Fires | Key Use Cases |
-|-------|---------------|---------------|
-| **SessionStart** | Session begins/resumes | Environment setup, context loading |
-| **UserPromptSubmit** | User submits prompt | Input validation, context injection |
-| **PreToolUse** | Before tool execution | Permission control, blocking dangerous ops |
-| **PostToolUse** | After tool completes | Auto-formatting, logging, validation |
-| **Stop** | Agent finishes | Notifications, git reminders |
-| **SubagentStart** | Subagent is about to start | Input modification, context injection |
-| **SubagentStop** | Subagent finishes | Task completion evaluation |
-| **PreCompact** | Before context compaction | Transcript backup |
-| **Notification** | Claude sends notification | Custom alerts |
-| **SessionEnd** | Session terminates | Cleanup, state persistence |
+| Event                | When It Fires              | Key Use Cases                              |
+| -------------------- | -------------------------- | ------------------------------------------ |
+| **SessionStart**     | Session begins/resumes     | Environment setup, context loading         |
+| **UserPromptSubmit** | User submits prompt        | Input validation, context injection        |
+| **PreToolUse**       | Before tool execution      | Permission control, blocking dangerous ops |
+| **PostToolUse**      | After tool completes       | Auto-formatting, logging, validation       |
+| **Stop**             | Agent finishes             | Notifications, git reminders               |
+| **SubagentStart**    | Subagent is about to start | Input modification, context injection      |
+| **SubagentStop**     | Subagent finishes          | Task completion evaluation                 |
+| **PreCompact**       | Before context compaction  | Transcript backup                          |
+| **Notification**     | Claude sends notification  | Custom alerts                              |
+| **SessionEnd**       | Session terminates         | Cleanup, state persistence                 |
 
 ## Configuration
 
@@ -120,6 +121,7 @@ Hooks receive JSON via stdin with these common fields:
 ```
 
 **PreToolUse additional fields:**
+
 ```json
 {
   "tool_name": "Bash",
@@ -130,6 +132,7 @@ Hooks receive JSON via stdin with these common fields:
 ```
 
 **PostToolUse additional fields:**
+
 ```json
 {
   "tool_name": "Bash",
@@ -139,11 +142,12 @@ Hooks receive JSON via stdin with these common fields:
 ```
 
 **SubagentStart additional fields:**
+
 ```json
 {
   "subagent_type": "Explore",
   "subagent_prompt": "original prompt text",
-  "subagent_model": "claude-sonnet-4-20250514"
+  "subagent_model": "claude-opus"
 }
 ```
 
@@ -158,6 +162,7 @@ Hooks receive JSON via stdin with these common fields:
 ### JSON Response (optional)
 
 **PreToolUse:**
+
 ```json
 {
   "permissionDecision": "allow|deny|ask",
@@ -167,6 +172,7 @@ Hooks receive JSON via stdin with these common fields:
 ```
 
 **Stop/SubagentStop:**
+
 ```json
 {
   "decision": "block",
@@ -175,6 +181,7 @@ Hooks receive JSON via stdin with these common fields:
 ```
 
 **SubagentStart (input modification):**
+
 ```json
 {
   "updatedPrompt": "modified prompt text to inject context or modify behavior"
@@ -182,6 +189,7 @@ Hooks receive JSON via stdin with these common fields:
 ```
 
 **SessionStart:**
+
 ```json
 {
   "additionalContext": "Information to inject into session"
@@ -365,21 +373,23 @@ exit 0
 
 When a PreToolUse hook blocks a command:
 
-| Situation | Action |
-|-----------|--------|
-| Hook suggests alternative | Use the suggested tool/approach |
-| Alternative won't work | Ask user to run command manually |
-| User says "proceed" | Still blocked - explain and provide command for manual execution |
+| Situation                 | Action                                                           |
+| ------------------------- | ---------------------------------------------------------------- |
+| Hook suggests alternative | Use the suggested tool/approach                                  |
+| Alternative won't work    | Ask user to run command manually                                 |
+| User says "proceed"       | Still blocked - explain and provide command for manual execution |
 
 **Critical**: User permission does NOT bypass hooks. Retrying a blocked command will fail again.
 
 **When command is legitimately needed:**
+
 1. Explain why the command is required
 2. Describe alternatives considered and why they won't work
 3. Provide exact command for user to run manually
 4. Let user decide
 
 Example response:
+
 ```
 The hook blocked `git reset --hard abc123` because it's usually unnecessary.
 
@@ -396,6 +406,7 @@ This is needed because [specific justification].
 ## Best Practices
 
 **Script Development:**
+
 1. Always read input from stdin with `cat`
 2. Use `jq` for JSON parsing
 3. Quote all variables to prevent injection
@@ -404,12 +415,14 @@ This is needed because [specific justification].
 6. Keep hooks fast (< 5 seconds)
 
 **Configuration:**
+
 1. Use `$CLAUDE_PROJECT_DIR` for portable paths
 2. Set appropriate timeouts (default: 60s)
 3. Use specific matchers over wildcards
 4. Test hooks manually before enabling
 
 **Security:**
+
 1. Validate all inputs
 2. Use absolute paths
 3. Avoid touching `.env` or `.git/` directly
@@ -418,16 +431,19 @@ This is needed because [specific justification].
 ## Debugging
 
 **Verify hook registration:**
+
 ```
 /hooks
 ```
 
 **Enable debug logging:**
+
 ```bash
 claude --debug
 ```
 
 **Test hooks manually:**
+
 ```bash
 echo '{"tool_input": {"command": "cat file.txt"}}' | bash your-hook.sh
 echo $?  # Check exit code

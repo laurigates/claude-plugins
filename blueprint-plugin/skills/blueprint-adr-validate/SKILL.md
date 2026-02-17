@@ -1,8 +1,8 @@
 ---
 model: haiku
 created: 2026-01-15
-modified: 2026-02-07
-reviewed: 2026-01-15
+modified: 2026-02-14
+reviewed: 2026-02-14
 description: "Validate ADR relationships, detect orphaned references, and check domain consistency"
 args: "[--report-only]"
 argument-hint: "--report-only to validate without prompting for fixes"
@@ -10,207 +10,105 @@ allowed-tools: Read, Bash, Glob, Grep, Edit, AskUserQuestion
 name: blueprint-adr-validate
 ---
 
+# /blueprint:adr-validate
+
 Validate Architecture Decision Records for relationship consistency, reference integrity, and domain conflicts.
 
-## Flags
+**Usage**: `/blueprint:adr-validate [--report-only]`
 
-| Flag | Description |
-|------|-------------|
-| `--report-only` | Output validation report and exit without prompting for remediation |
+## When to Use This Skill
 
-**Use Cases**:
-- Ensure ADR integrity before major releases
-- Audit documentation after refactoring
-- Periodic documentation review
-- Pre-merge validation in CI
+| Use this skill when... | Use alternative when... |
+|------------------------|-------------------------|
+| Maintaining ADR integrity before releases | Creating new ADRs (use `/blueprint:derive-adr`) |
+| Auditing after refactoring or changes | Quick one-time documentation review |
+| Regular documentation review process | General ADR reading |
 
-**Steps**:
+## Context
 
-## Phase 1: Discovery
+- ADR directory exists: !`test -d docs/adrs && echo "YES" || echo "NO"`
+- ADR count: !`find docs/adrs -name "*.md" -type f 2>/dev/null`
+- Domain-tagged ADRs: !`grep -l "^domain:" docs/adrs/*.md 2>/dev/null`
+- Flag: !`test "${1:---}" = "--report-only" && echo "REPORT-ONLY" || echo "INTERACTIVE"`
 
-1. **Check for ADR directory**:
-   ```bash
-   ls docs/adrs/*.md 2>/dev/null | wc -l
-   ```
-   If no ADRs → exit with "No ADRs found in docs/adrs/"
+## Parameters
 
-2. **Parse all ADR frontmatter**:
-   For each ADR in `docs/adrs/`:
-   - Extract from YAML frontmatter:
-     - ADR number (from filename: `NNNN-*.md`)
-     - `date`
-     - `status`
-     - `domain` (optional)
-     - `supersedes` (optional)
-     - `superseded_by` (optional)
-     - `extends` (optional)
-     - `related` (optional array)
-   - Build ADR registry for cross-reference validation
+Parse `$ARGUMENTS`:
 
-## Phase 2: Reference Validation
+- `--report-only`: Output validation report without prompting for fixes
+  - Default: Interactive mode with remediation options
 
-3. **Validate supersedes references**:
-   For each ADR with `supersedes: ADR-XXXX`:
-   - Verify target ADR file exists
-   - Verify target ADR has `status: Superseded`
-   - Verify target ADR has `superseded_by: ADR-{this}`
-   - Flag mismatches as errors
+## Execution
 
-4. **Validate extends references**:
-   For each ADR with `extends: ADR-XXXX`:
-   - Verify target ADR file exists
-   - Verify target ADR status is NOT "Superseded" (warn if extending outdated)
-   - Flag missing targets as errors
+Execute complete ADR validation and remediation workflow:
 
-5. **Validate related references**:
-   For each ADR with `related:` array:
-   - Verify each referenced ADR exists
-   - Check for bidirectional links (warn if one-way)
-   - Flag orphaned references as errors
+### Step 1: Discover all ADRs
 
-6. **Check for self-references**:
-   - ADR cannot supersede, extend, or relate to itself
-   - Flag as error
+1. Check for ADR directory at `docs/adrs/`
+2. If missing → Error: "No ADRs found in docs/adrs/"
+3. Parse all ADR files: `ls docs/adrs/*.md`
+4. Extract frontmatter for each ADR: number, date, status, domain, supersedes, superseded_by, extends, related
 
-7. **Check for circular supersedes**:
-   - Build supersession graph
-   - Detect cycles (A supersedes B supersedes A)
-   - Flag as error
+### Step 2: Validate reference integrity
 
-## Phase 3: Domain Analysis
+For each ADR, validate:
 
-8. **Group ADRs by domain**:
-   ```bash
-   # Note: Use prefixed variable names to avoid shell reserved words (e.g., 'status' in zsh)
-   for f in docs/adrs/*.md; do
-     adr_domain=$(head -30 "$f" | grep -m1 "^domain:" | sed 's/^[^:]*:[[:space:]]*//')
-     adr_status=$(head -30 "$f" | grep -m1 "^status:" | sed 's/^[^:]*:[[:space:]]*//')
-     [ -n "$adr_domain" ] && echo "$adr_domain|$adr_status|$f"
-   done | sort
-   ```
+1. **supersedes references**: Verify target exists, target status = "Superseded", target has reciprocal superseded_by
+2. **extends references**: Verify target exists, warn if target is "Superseded"
+3. **related references**: Verify all targets exist, warn if one-way links
+4. **self-references**: Flag if ADR references itself
+5. **circular chains**: Detect cycles in supersession graph
 
-9. **Detect domain conflicts**:
-   For each domain with multiple ADRs:
-   - Count "Accepted" status ADRs
-   - If count > 1 → potential conflict
-   - Extract decision summaries for comparison
+See [REFERENCE.md](REFERENCE.md#validation-rules) for detailed checks.
 
-10. **List untagged ADRs**:
-    - ADRs without `domain:` field
-    - Not an error, but recommendation to add
+### Step 3: Analyze domains
 
-## Phase 4: Generate Report
+1. Group ADRs by domain field
+2. For each domain with multiple "Accepted" ADRs → potential conflict flag
+3. List untagged ADRs (not errors, but recommendations)
 
-11. **Compile validation report**:
-    ```
-    ADR Validation Report
-    =====================
+### Step 4: Generate validation report
 
-    Summary:
-    - Total ADRs: {count}
-    - With domain tags: {count} ({percent}%)
-    - With relationships: {count}
-    - Status breakdown:
-      - Accepted: {count}
-      - Proposed: {count}
-      - Superseded: {count}
-      - Deprecated: {count}
+Compile comprehensive report showing:
+- Summary: Total ADRs, domain-tagged %, relationship counts, status breakdown
+- Reference integrity: Supersedes, extends, related status (✅/⚠️/❌)
+- Errors found: Broken references, self-references, cycles
+- Warnings: Outdated extensions, one-way links
+- Domain analysis: Conflicts and untagged ADRs
 
-    Reference Integrity:
-    {✅|❌} Supersedes references: {status}
-    {✅|⚠️|❌} Extends references: {status}
-    {✅|⚠️|❌} Related references: {status}
+### Step 5: Handle --report-only flag
 
-    {If errors:}
-    Errors Found:
-    - ADR-0005: supersedes ADR-0003 but ADR-0003 status is "Accepted" (not "Superseded")
-    - ADR-0008: extends ADR-0002 which does not exist
-    - ADR-0010: related to ADR-0010 (self-reference)
+If `--report-only` flag present:
+1. Output validation report from Step 4
+2. Exit without prompting for fixes
 
-    {If warnings:}
-    Warnings:
-    - ADR-0007: extends ADR-0004 which is Superseded (consider extending ADR-0009 instead)
-    - ADR-0006 ↔ ADR-0011: one-way related link (ADR-0011 doesn't reference ADR-0006)
+### Step 6: Prompt for remediation (if interactive mode)
 
-    Domain Analysis:
-    {For each domain with issues:}
-    ⚠️ state-management: 2 Accepted ADRs (potential conflict)
-       - ADR-0003: Use Redux for global state
-       - ADR-0012: Use Zustand for state management
-       → Recommendation: ADR-0012 should supersede ADR-0003
+Ask user action via AskUserQuestion:
+- Fix all automatically (update status, add reciprocal links)
+- Review each issue individually
+- Export report to `docs/adrs/validation-report.md`
+- Skip for now
 
-    {For domains without issues:}
-    ✅ api-design: 3 ADRs (1 Accepted, 2 Superseded) - consistent
+Execute based on selection (see [REFERENCE.md](REFERENCE.md#remediation-procedures)).
 
-    Untagged ADRs (consider adding domain):
-    - ADR-0001: Project Language Choice
-    - ADR-0002: Framework Selection
+### Step 7: Report changes and summary
 
-    Issues Summary:
-    - Errors: {count} (must fix)
-    - Warnings: {count} (should review)
-    - Recommendations: {count} (optional improvements)
-    ```
+Report all changes made:
+- Updated ADRs (status changes, added links)
+- Remaining issues count
+- Next steps recommendation
 
-## Phase 5: Remediation Options
+## Agentic Optimizations
 
-12. **If `--report-only`**: Output the validation report from Phase 4 and exit. Skip all remaining steps.
+| Context | Command |
+|---------|---------|
+| Check ADR directory | `test -d docs/adrs && echo "YES" \|\| echo "NO"` |
+| Count ADRs | `ls docs/adrs/*.md 2>/dev/null \| wc -l` |
+| Extract frontmatter | `head -50 {file} \| grep -m1 "^field:" \| sed 's/^[^:]*:[[:space:]]*//'` |
+| Find by domain | `grep -l "^domain: {domain}" docs/adrs/*.md` |
+| Detect cycles | Build supersession graph and traverse |
 
-13. **Prompt for action** (use AskUserQuestion):
-    ```
-    question: "How would you like to address the issues?"
-    options:
-      - label: "Fix all automatically"
-        description: "Update superseded ADRs, add missing bidirectional links"
-      - label: "Review each issue"
-        description: "Step through issues one by one for approval"
-      - label: "Export report only"
-        description: "Save report to docs/adrs/validation-report.md"
-      - label: "Skip for now"
-        description: "Exit without changes"
-    ```
+---
 
-14. **Execute based on selection**:
-
-    **"Fix all automatically":**
-    - For supersedes mismatches:
-      - Update superseded ADR status to "Superseded"
-      - Add `superseded_by: ADR-{number}`
-    - For one-way related links:
-      - Add reciprocal `related:` entry to target ADR
-    - Report all changes made
-
-    **"Review each issue":**
-    - Loop through issues one at a time
-    - For each, show context and ask:
-      ```
-      question: "Fix this issue?"
-      options:
-        - label: "Yes, apply fix"
-        - label: "Skip this one"
-        - label: "Stop reviewing"
-      ```
-
-    **"Export report only":**
-    - Write report to `docs/adrs/validation-report.md`
-    - Include timestamp
-
-    **"Skip for now":**
-    - Exit with summary count
-
-## Phase 6: Report Changes
-
-15. **Summarize changes made** (if any):
-    ```
-    Changes Applied:
-    - Updated ADR-0003: status Accepted → Superseded, added superseded_by: ADR-0012
-    - Updated ADR-0011: added related: [ADR-0006]
-
-    Remaining issues: {count}
-    ```
-
-**Tips**:
-- Run validation after creating new ADRs
-- Domain conflicts indicate decisions that may need reconciliation
-- Untagged ADRs are valid but harder to analyze for conflicts
-- Use `/blueprint:derive-adr` to create new ADRs with proper relationships
+For validation rules, remediation procedures, and report format details, see [REFERENCE.md](REFERENCE.md).

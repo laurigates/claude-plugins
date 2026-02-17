@@ -1,5 +1,33 @@
 # Changelog
 
+## [2.4.0](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.3.5...container-plugin-v2.4.0) (2026-02-16)
+
+
+### Features
+
+* **configure-plugin:** replace detect-secrets with gitleaks for secret scanning ([#668](https://github.com/laurigates/claude-plugins/issues/668)) ([3fc5bbc](https://github.com/laurigates/claude-plugins/commit/3fc5bbc2f8500f30160cc5dfeb5e3d1253ed0a54))
+
+## [2.3.5](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.3.4...container-plugin-v2.3.5) (2026-02-15)
+
+
+### Bug Fixes
+
+* replace broken context command patterns in skill files ([#644](https://github.com/laurigates/claude-plugins/issues/644)) ([440ba34](https://github.com/laurigates/claude-plugins/commit/440ba347bcc73a0512f74975cfd6b4af9fe8566e))
+
+## [2.3.4](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.3.3...container-plugin-v2.3.4) (2026-02-14)
+
+
+### Code Refactoring
+
+* extract detailed content to REFERENCE.md files ([#605](https://github.com/laurigates/claude-plugins/issues/605)) ([7efbd83](https://github.com/laurigates/claude-plugins/commit/7efbd83b9a2b1ef67be702206396ba6d8102684d))
+
+## [2.3.3](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.3.2...container-plugin-v2.3.3) (2026-02-12)
+
+
+### Bug Fixes
+
+* standardize skill name fields to kebab-case across all plugins ([72c0f83](https://github.com/laurigates/claude-plugins/commit/72c0f837a1b07004850c5906a30d619a79098f69))
+
 ## [2.3.2](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.3.1...container-plugin-v2.3.2) (2026-02-06)
 
 

@@ -5,7 +5,7 @@ args: "[--scope <type>] [--dry-run] [--verbose]"
 argument-hint: "--scope skills|commands|agents, --dry-run to preview, --verbose for details"
 allowed-tools: Bash, Grep, Glob, Read, Edit, Write, TodoWrite
 created: 2025-12-16
-modified: 2026-02-03
+modified: 2026-02-11
 reviewed: 2025-12-16
 name: docs-sync
 ---
@@ -31,9 +31,11 @@ Scan the codebase for skills, commands, and agents, then update all documentatio
 - `--dry-run` - Preview changes without modifying files
 - `--verbose` - Show detailed progress during scanning
 
-## Workflow
+## Execution
 
-### Phase 1: Discovery
+Execute this documentation sync workflow:
+
+### Step 1: Discover codebase items
 
 1. **Scan source directories**:
    ```bash
@@ -57,7 +59,7 @@ Scan the codebase for skills, commands, and agents, then update all documentatio
    - `.claude/skills/CLAUDE.md` - Command reference with namespaces
    - Root `CLAUDE.md` - Summary counts and highlights
 
-### Phase 2: Analysis
+### Step 2: Analyze differences
 
 1. **Compare actual vs documented**:
    - Find items in directories but not in documentation (NEW)
@@ -83,7 +85,7 @@ Scan the codebase for skills, commands, and agents, then update all documentatio
    - List sections by category/namespace
    - Summary tables
 
-### Phase 3: Updates
+### Step 3: Apply updates
 
 1. **Update counts** throughout documentation:
    - Search for patterns like `**63 skills**` or `63 specialized skills`
@@ -116,7 +118,7 @@ Scan the codebase for skills, commands, and agents, then update all documentatio
    - "See also" sections
    - Related skills/commands lists
 
-### Phase 4: Report
+### Step 4: Report results
 
 Generate summary of changes:
 

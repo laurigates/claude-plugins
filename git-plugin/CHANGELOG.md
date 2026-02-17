@@ -1,5 +1,133 @@
 # Changelog
 
+## [2.17.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.16.2...git-plugin-v2.17.0) (2026-02-16)
+
+
+### Features
+
+* **git-plugin:** add GitHub URL resolution patterns to gh-cli-agentic ([9c8420b](https://github.com/laurigates/claude-plugins/commit/9c8420b5542dd4fadd5b7ff607afe8b9387c14d2))
+
+
+### Bug Fixes
+
+* **git-plugin:** remove pipe operator from worktree skill context command ([#695](https://github.com/laurigates/claude-plugins/issues/695)) ([38884b1](https://github.com/laurigates/claude-plugins/commit/38884b170286289b7d31261967071bfae58c4f73))
+
+
+### Documentation
+
+* **git-plugin:** add GitHub URL resolution patterns to gh-cli-agentic ([#687](https://github.com/laurigates/claude-plugins/issues/687)) ([9c8420b](https://github.com/laurigates/claude-plugins/commit/9c8420b5542dd4fadd5b7ff607afe8b9387c14d2))
+
+## [2.16.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.16.1...git-plugin-v2.16.2) (2026-02-16)
+
+
+### Code Refactoring
+
+* git-worktree workflow to worktree-first implementation model ([#693](https://github.com/laurigates/claude-plugins/issues/693)) ([16d46e5](https://github.com/laurigates/claude-plugins/commit/16d46e559bbf0daa2874c11ecbf6483e6be29bc2))
+
+## [2.16.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.16.0...git-plugin-v2.16.1) (2026-02-16)
+
+
+### Documentation
+
+* **git-plugin:** remove obsolete orchestrator mode documentation ([#685](https://github.com/laurigates/claude-plugins/issues/685)) ([9e4e794](https://github.com/laurigates/claude-plugins/commit/9e4e794fce72c4daec7fdd8fccfc16ae9ad43bac))
+
+## [2.16.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.15.0...git-plugin-v2.16.0) (2026-02-16)
+
+
+### Features
+
+* **git-plugin:** add git-api-pr skill for server-side PR creation ([#667](https://github.com/laurigates/claude-plugins/issues/667)) ([e8a3380](https://github.com/laurigates/claude-plugins/commit/e8a338017c697ce6f231e2d089f35cc252b829eb))
+
+## [2.15.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.14.4...git-plugin-v2.15.0) (2026-02-16)
+
+
+### Features
+
+* **configure-plugin:** replace detect-secrets with gitleaks for secret scanning ([#668](https://github.com/laurigates/claude-plugins/issues/668)) ([3fc5bbc](https://github.com/laurigates/claude-plugins/commit/3fc5bbc2f8500f30160cc5dfeb5e3d1253ed0a54))
+
+## [2.14.4](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.14.3...git-plugin-v2.14.4) (2026-02-15)
+
+
+### Bug Fixes
+
+* remove pipe/ls operators from context commands and add CI linting ([#653](https://github.com/laurigates/claude-plugins/issues/653)) ([7a01eef](https://github.com/laurigates/claude-plugins/commit/7a01eef21495ed6243277fbaa88082b7ecabc793))
+
+## [2.14.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.14.2...git-plugin-v2.14.3) (2026-02-15)
+
+
+### Bug Fixes
+
+* replace broken context command patterns in skill files ([#644](https://github.com/laurigates/claude-plugins/issues/644)) ([440ba34](https://github.com/laurigates/claude-plugins/commit/440ba347bcc73a0512f74975cfd6b4af9fe8566e))
+
+## [2.14.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.14.1...git-plugin-v2.14.2) (2026-02-14)
+
+
+### Code Refactoring
+
+* extract detailed content to REFERENCE.md files ([#605](https://github.com/laurigates/claude-plugins/issues/605)) ([7efbd83](https://github.com/laurigates/claude-plugins/commit/7efbd83b9a2b1ef67be702206396ba6d8102684d))
+
+## [2.14.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.14.0...git-plugin-v2.14.1) (2026-02-14)
+
+
+### Documentation
+
+* **git-plugin:** add conventional commits standards ([#616](https://github.com/laurigates/claude-plugins/issues/616)) ([5b74389](https://github.com/laurigates/claude-plugins/commit/5b74389ecdf5223dd62368390ecd9b36ccb1596c))
+
+## [2.14.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.13.2...git-plugin-v2.14.0) (2026-02-12)
+
+
+### Features
+
+* **git-plugin:** use ./worktrees/ directory for agent worktree workflows ([a97db86](https://github.com/laurigates/claude-plugins/commit/a97db8613d879db4c06cefc6f94edcfca95f9043))
+
+
+### Bug Fixes
+
+* standardize skill name fields to kebab-case across all plugins ([72c0f83](https://github.com/laurigates/claude-plugins/commit/72c0f837a1b07004850c5906a30d619a79098f69))
+
+
+### Code Refactoring
+
+* reframe negative guidance as positive guidance across skills ([7e755ee](https://github.com/laurigates/claude-plugins/commit/7e755ee1c32c39c124f3204a0d0a8d1d770e1573))
+
+
+### Documentation
+
+* **git-plugin:** improve worktree documentation and migration notes ([03d04ef](https://github.com/laurigates/claude-plugins/commit/03d04ef1035d3a9f8675342c5c79ad163bc6edee))
+* **git-plugin:** remove exclusive git permissions claims from git-ops agent ([0f92846](https://github.com/laurigates/claude-plugins/commit/0f928466543e7a302c11ff9d51ae481c8bf887eb))
+
+## [2.13.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.13.1...git-plugin-v2.13.2) (2026-02-12)
+
+
+### Documentation
+
+* **git-plugin:** remove exclusive git permissions claims from git-ops agent ([0f92846](https://github.com/laurigates/claude-plugins/commit/0f928466543e7a302c11ff9d51ae481c8bf887eb))
+
+## [2.13.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.13.0...git-plugin-v2.13.1) (2026-02-12)
+
+
+### Bug Fixes
+
+* standardize skill name fields to kebab-case across all plugins ([72c0f83](https://github.com/laurigates/claude-plugins/commit/72c0f837a1b07004850c5906a30d619a79098f69))
+
+## [2.13.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.12.4...git-plugin-v2.13.0) (2026-02-10)
+
+
+### Features
+
+* **git-plugin:** use ./worktrees/ directory for agent worktree workflows ([a97db86](https://github.com/laurigates/claude-plugins/commit/a97db8613d879db4c06cefc6f94edcfca95f9043))
+
+### Migration Notes
+
+**git-worktree-agent-workflow**: Worktree paths have changed from `../project-wt-issue-N` to `./worktrees/issue-N`. If you're using the worktree skill from v2.11.0-v2.12.4, existing worktrees will need to be recreated with the new path structure. This eliminates the need for `additionalDirectories` configuration. See the [skill documentation](git-plugin/skills/git-worktree-agent-workflow/SKILL.md) for details.
+
+## [2.12.4](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.12.3...git-plugin-v2.12.4) (2026-02-08)
+
+
+### Code Refactoring
+
+* reframe negative guidance as positive guidance across skills ([7e755ee](https://github.com/laurigates/claude-plugins/commit/7e755ee1c32c39c124f3204a0d0a8d1d770e1573))
+
 ## [2.12.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.12.2...git-plugin-v2.12.3) (2026-02-07)
 
 

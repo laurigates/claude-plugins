@@ -1,6 +1,6 @@
 {
   "name": "git-plugin",
-  "version": "2.12.3",
+  "version": "2.17.0",
   "description": "Git workflows - commits, branches, PRs, issue processing, auto-close detection, and repository management",
   "author": {
     "name": "Lauri Gates"
@@ -22,6 +22,8 @@
     "documentation-derivation",
     "git-log-analysis",
     "version-control",
+    "api-pr",
+    "contents-api",
     "release-please",
     "monorepo",
     "layered-skills",

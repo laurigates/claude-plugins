@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-10
 reviewed: 2025-12-16
 description: Check and configure linting tools (Biome, Ruff, Clippy)
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -13,30 +13,47 @@ name: configure-linting
 
 Check and configure linting tools against modern best practices.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up modern linting (Biome, Ruff, Clippy) | Just running linter (use `/lint:check` skill) |
+| Migrating from ESLint/Prettier to Biome | Linters already properly configured |
+| Validating linter configuration | Fixing specific lint errors (run linter and fix) |
+| Ensuring language-specific best practices | Simple script with no linting needs |
+| Configuring pre-commit lint integration | Debugging linter issues (check linter logs) |
+
 ## Context
 
-This command validates linting configuration and upgrades to modern tools.
+- Project root: !`pwd`
+- Biome config: !`find . -maxdepth 1 -name 'biome.json' -o -name 'biome.jsonc' 2>/dev/null`
+- Ruff config: !`grep -l 'tool.ruff' pyproject.toml 2>/dev/null`
+- Clippy config: !`grep -l 'lints.clippy' Cargo.toml 2>/dev/null`
+- Legacy linters: !`find . -maxdepth 1 \( -name '.eslintrc*' -o -name '.flake8' -o -name '.pylintrc' \) 2>/dev/null`
+- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' \) 2>/dev/null`
+- Pre-commit config: !`find . -maxdepth 1 -name '.pre-commit-config.yaml' 2>/dev/null`
+- CI workflows: !`find .github/workflows -maxdepth 1 -name '*.yml' 2>/dev/null`
+
+## Parameters
+
+Parse from `$ARGUMENTS`:
+
+- `--check-only`: Report linting compliance status without modifications
+- `--fix`: Apply all fixes automatically without prompting
+- `--linter <biome|ruff|clippy>`: Override auto-detection and force specific linter
 
 **Modern linting preferences:**
 - **JavaScript/TypeScript**: Biome (unified linter + formatter, fast)
 - **Python**: Ruff (replaces flake8, isort, pyupgrade)
 - **Rust**: Clippy with workspace lints
 
-## Version Checking
+## Execution
 
-**CRITICAL**: Before flagging outdated versions, verify latest releases:
+Execute this linting configuration check:
 
-1. **Biome**: Check [biomejs.dev](https://biomejs.dev/) or [GitHub releases](https://github.com/biomejs/biome/releases)
-2. **Ruff**: Check [docs.astral.sh/ruff](https://docs.astral.sh/ruff/) or [GitHub releases](https://github.com/astral-sh/ruff/releases)
-3. **Clippy**: Check [Rust releases](https://releases.rs/) for Clippy updates
+### Step 1: Detect project language and existing linters
 
-Use WebSearch or WebFetch to verify current versions before reporting outdated tools.
-
-## Workflow
-
-### Phase 1: Language Detection
-
-Detect project language and existing linters:
+Read the context values above and determine:
 
 | Indicator | Language | Detected Linter |
 |-----------|----------|-----------------|
@@ -45,375 +62,84 @@ Detect project language and existing linters:
 | `.flake8` | Python | Flake8 (legacy) |
 | `Cargo.toml` [lints.clippy] | Rust | Clippy |
 
-### Phase 2: Current State Analysis
+If `--linter` flag is set, use that linter regardless of detection.
 
-For each detected linter, check configuration:
+### Step 2: Verify latest tool versions
+
+Use WebSearch or WebFetch to check current versions:
+
+1. **Biome**: Check [biomejs.dev](https://biomejs.dev/) or [GitHub releases](https://github.com/biomejs/biome/releases)
+2. **Ruff**: Check [docs.astral.sh/ruff](https://docs.astral.sh/ruff/) or [GitHub releases](https://github.com/astral-sh/ruff/releases)
+3. **Clippy**: Check [Rust releases](https://releases.rs/)
+
+### Step 3: Analyze current linter configuration
+
+For each detected linter, check configuration completeness:
 
 **Biome (for JS/TS):**
-- [ ] `biome.json` exists
-- [ ] Linter rules configured
-- [ ] Formatter configured
-- [ ] Files/ignore patterns set
-- [ ] Recommended rules enabled
+- Config file exists with linter rules
+- Formatter configured
+- File patterns and ignores set
+- Recommended rules enabled
 
 **Ruff (for Python):**
-- [ ] `pyproject.toml` has `[tool.ruff]` section
-- [ ] Rules selected (E, F, I, N, etc.)
-- [ ] Line length configured
-- [ ] Target Python version set
-- [ ] Per-file ignores configured
+- `pyproject.toml` has `[tool.ruff]` section
+- Rules selected (E, F, I, N, etc.)
+- Line length and target Python version set
 
 **Clippy:**
-- [ ] `Cargo.toml` has `[lints.clippy]` section
-- [ ] Pedantic lints enabled
-- [ ] Allowed/denied lints configured
-- [ ] Workspace-level lints if applicable
+- `Cargo.toml` has `[lints.clippy]` section
+- Pedantic lints enabled
+- Workspace-level lints if applicable
 
-### Phase 3: Compliance Report
+### Step 4: Generate compliance report
 
-Generate formatted compliance report:
+Print a compliance report covering:
+- Config file status (exists / missing)
+- Linter enabled status
+- Rules configuration (recommended / minimal / missing)
+- Formatter integration
+- Ignore patterns
+- Lint scripts in package.json / Makefile
+- Pre-commit hook integration
+- CI/CD check integration
 
-```
-Linting Configuration Compliance Report
-========================================
-Project: [name]
-Language: [TypeScript | Python | Rust]
-Linter: [Biome 1.x | Ruff 0.x | Clippy 1.x]
+End with overall issue count and recommendations.
 
-Configuration:
-  Config file             biome.json                 [✅ EXISTS | ❌ MISSING]
-  Linter enabled          true                       [✅ ENABLED | ❌ DISABLED]
-  Rules configured        recommended + custom       [✅ CONFIGURED | ⚠️ MINIMAL]
-  Formatter integrated    biome format               [✅ CONFIGURED | ⚠️ SEPARATE]
-  Ignore patterns         node_modules, dist         [✅ CONFIGURED | ⚠️ INCOMPLETE]
+If `--check-only` is set, stop here.
 
-Rules:
-  Recommended             enabled                    [✅ ENABLED | ❌ DISABLED]
-  Suspicious              enabled                    [✅ ENABLED | ❌ DISABLED]
-  Complexity              enabled                    [✅ ENABLED | ❌ DISABLED]
-  Performance             enabled                    [✅ ENABLED | ⏭️ N/A]
-  Style                   enabled                    [✅ ENABLED | ⏭️ N/A]
+### Step 5: Configure linting (if --fix or user confirms)
 
-Scripts:
-  lint command            package.json scripts       [✅ CONFIGURED | ❌ MISSING]
-  lint:fix                package.json scripts       [✅ CONFIGURED | ❌ MISSING]
+Apply configuration using templates from [REFERENCE.md](REFERENCE.md).
 
-Integration:
-  Pre-commit hook         .pre-commit-config.yaml    [✅ CONFIGURED | ❌ MISSING]
-  CI/CD check             .github/workflows/         [✅ CONFIGURED | ❌ MISSING]
+**For Biome (JS/TS):**
+1. Install Biome as dev dependency
+2. Create `biome.json` with recommended rules
+3. Add npm scripts (`lint`, `lint:fix`, `format`, `check`)
 
-Overall: [X issues found]
+**For Ruff (Python):**
+1. Install Ruff via `uv add --group dev ruff`
+2. Add `[tool.ruff]` section to `pyproject.toml`
+3. Configure rules, line length, target version
 
-Recommendations:
-  - Enable pedantic rules for stricter checking
-  - Add lint-staged for faster pre-commit hooks
-```
+**For Clippy (Rust):**
+1. Add `[lints.clippy]` section to `Cargo.toml`
+2. Enable pedantic lints
+3. Configure workspace-level lints if applicable
 
-### Phase 4: Configuration (if --fix or user confirms)
+If legacy linters are detected (ESLint, Flake8, etc.), offer migration. See migration guides in [REFERENCE.md](REFERENCE.md).
 
-#### Biome Configuration (for JS/TS)
+### Step 6: Configure pre-commit and CI integration
 
-**Install Biome:**
-```bash
-npm install --save-dev @biomejs/biome
-# or
-bun add --dev @biomejs/biome
-```
+1. Add linter pre-commit hook to `.pre-commit-config.yaml`
+2. Add linter CI check to GitHub Actions workflow
+3. Use templates from [REFERENCE.md](REFERENCE.md)
 
-**Create `biome.json`:**
-```json
-{
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
-  "vcs": {
-    "enabled": true,
-    "clientKind": "git",
-    "useIgnoreFile": true
-  },
-  "files": {
-    "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.js", "src/**/*.jsx"],
-    "ignore": [
-      "node_modules",
-      "dist",
-      "build",
-      ".next",
-      "coverage",
-      "*.config.js",
-      "*.config.ts"
-    ]
-  },
-  "formatter": {
-    "enabled": true,
-    "formatWithErrors": false,
-    "indentStyle": "space",
-    "indentWidth": 2,
-    "lineWidth": 100
-  },
-  "linter": {
-    "enabled": true,
-    "rules": {
-      "recommended": true,
-      "suspicious": {
-        "noExplicitAny": "warn",
-        "noConsoleLog": "warn"
-      },
-      "complexity": {
-        "noExcessiveCognitiveComplexity": "warn",
-        "noForEach": "off"
-      },
-      "style": {
-        "useConst": "error",
-        "useTemplate": "warn"
-      },
-      "correctness": {
-        "noUnusedVariables": "error"
-      }
-    }
-  },
-  "organizeImports": {
-    "enabled": true
-  },
-  "javascript": {
-    "formatter": {
-      "quoteStyle": "single",
-      "semicolons": "always",
-      "trailingCommas": "all",
-      "arrowParentheses": "always"
-    }
-  },
-  "json": {
-    "formatter": {
-      "enabled": true
-    }
-  }
-}
-```
-
-**Add npm scripts to `package.json`:**
-```json
-{
-  "scripts": {
-    "lint": "biome check .",
-    "lint:fix": "biome check --write .",
-    "format": "biome format --write .",
-    "check": "biome ci ."
-  }
-}
-```
-
-#### Ruff Configuration (for Python)
-
-**Install Ruff:**
-```bash
-uv add --group dev ruff
-```
-
-**Update `pyproject.toml`:**
-```toml
-[tool.ruff]
-# Target Python version
-target-version = "py312"
-
-# Line length
-line-length = 100
-
-# Exclude directories
-exclude = [
-    ".git",
-    ".venv",
-    "__pycache__",
-    "dist",
-    "build",
-    "*.egg-info",
-]
-
-[tool.ruff.lint]
-# Rule selection
-select = [
-    "E",      # pycodestyle errors
-    "F",      # pyflakes
-    "I",      # isort
-    "N",      # pep8-naming
-    "UP",     # pyupgrade
-    "B",      # flake8-bugbear
-    "C4",     # flake8-comprehensions
-    "SIM",    # flake8-simplify
-    "TCH",    # flake8-type-checking
-    "PTH",    # flake8-use-pathlib
-    "RUF",    # Ruff-specific rules
-]
-
-# Rules to ignore
-ignore = [
-    "E501",   # Line too long (handled by formatter)
-    "B008",   # Function call in default argument
-]
-
-# Per-file ignores
-[tool.ruff.lint.per-file-ignores]
-"__init__.py" = ["F401"]  # Unused imports
-"tests/**/*.py" = ["S101"]  # Use of assert
-
-[tool.ruff.lint.isort]
-known-first-party = ["your_package"]
-force-sort-within-sections = true
-
-[tool.ruff.lint.mccabe]
-max-complexity = 10
-
-[tool.ruff.format]
-# Formatter options
-quote-style = "double"
-indent-style = "space"
-line-ending = "auto"
-```
-
-**Add to `pyproject.toml` scripts:**
-```toml
-[project.scripts]
-# Or use directly: uv run ruff check / uv run ruff format
-```
-
-#### Clippy Configuration (Rust)
-
-**Update `Cargo.toml`:**
-```toml
-[lints.clippy]
-# Enable pedantic lints
-pedantic = { level = "warn", priority = -1 }
-
-# Specific lints to deny
-all = "warn"
-correctness = "deny"
-suspicious = "deny"
-complexity = "warn"
-perf = "warn"
-style = "warn"
-
-# Allow some pedantic lints that are too noisy
-module-name-repetitions = "allow"
-missing-errors-doc = "allow"
-missing-panics-doc = "allow"
-
-# Deny specific dangerous patterns
-unwrap-used = "deny"
-expect-used = "deny"
-panic = "deny"
-
-[lints.rust]
-unsafe-code = "deny"
-missing-docs = "warn"
-```
-
-**For workspace:**
-```toml
-[workspace.lints.clippy]
-pedantic = { level = "warn", priority = -1 }
-all = "warn"
-
-[workspace.lints.rust]
-unsafe-code = "deny"
-```
-
-**Run Clippy:**
-```bash
-cargo clippy --all-targets --all-features -- -D warnings
-```
-
-### Phase 5: Migration Guides
-
-#### Flake8/isort/black → Ruff Migration
-
-**Step 1: Install Ruff**
-```bash
-uv add --group dev ruff
-```
-
-**Step 2: Configure in `pyproject.toml`** (see Phase 4)
-
-**Step 3: Remove old tools**
-```bash
-uv remove flake8 isort black pyupgrade
-rm .flake8 .isort.cfg
-```
-
-**Step 4: Update pre-commit hooks**
-```yaml
-repos:
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.4
-    hooks:
-      - id: ruff
-        args: [--fix]
-      - id: ruff-format
-```
-
-### Phase 6: Pre-commit Integration
-
-**Add to `.pre-commit-config.yaml`:**
-
-**Biome:**
-```yaml
-repos:
-  - repo: https://github.com/biomejs/pre-commit
-    rev: v0.4.0
-    hooks:
-      - id: biome-check
-        additional_dependencies: ["@biomejs/biome@1.9.4"]
-```
-
-**Ruff:**
-```yaml
-repos:
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.4
-    hooks:
-      - id: ruff
-        args: [--fix]
-      - id: ruff-format
-```
-
-**Clippy:**
-```yaml
-repos:
-  - repo: local
-    hooks:
-      - id: clippy
-        name: clippy
-        entry: cargo clippy --all-targets --all-features -- -D warnings
-        language: system
-        types: [rust]
-        pass_filenames: false
-```
-
-### Phase 7: CI/CD Integration
-
-**GitHub Actions - Biome:**
-```yaml
-- name: Run Biome
-  run: npx @biomejs/biome ci .
-```
-
-**GitHub Actions - Ruff:**
-```yaml
-- name: Run Ruff
-  run: |
-    uv run ruff check .
-    uv run ruff format --check .
-```
-
-**GitHub Actions - Clippy:**
-```yaml
-- name: Run Clippy
-  run: cargo clippy --all-targets --all-features -- -D warnings
-```
-
-### Phase 8: Standards Tracking
+### Step 7: Update standards tracking
 
 Update `.project-standards.yaml`:
 
 ```yaml
-standards_version: "2025.1"
-last_configured: "[timestamp]"
 components:
   linting: "2025.1"
   linting_tool: "[biome|ruff|clippy]"
@@ -421,47 +147,22 @@ components:
   linting_ci: true
 ```
 
-### Phase 9: Updated Compliance Report
+### Step 8: Print final compliance report
 
-```
-Linting Configuration Complete
-===============================
+Print a summary of all changes applied, scripts added, integrations configured, and next steps for the user.
 
-Language: TypeScript
-Linter: Biome 1.9.4 (modern, fast)
+For detailed configuration templates, migration guides, and CI integration patterns, see [REFERENCE.md](REFERENCE.md).
 
-Configuration Applied:
-  ✅ biome.json created with recommended rules
-  ✅ Linter and formatter integrated
-  ✅ Ignore patterns configured
-  ✅ Organize imports enabled
+## Agentic Optimizations
 
-Scripts Added:
-  ✅ npm run lint (check)
-  ✅ npm run lint:fix (fix)
-  ✅ npm run format (format)
-  ✅ npm run check (CI mode)
-
-Integration:
-  ✅ Pre-commit hook configured
-  ✅ CI/CD check added
-
-Migration:
-  ✅ ESLint removed
-  ✅ Configuration imported
-
-Next Steps:
-  1. Run linting locally:
-     npm run lint
-
-  2. Fix issues automatically:
-     npm run lint:fix
-
-  3. Verify CI integration:
-     Push changes and check workflow
-
-Documentation: docs/LINTING.md
-```
+| Context | Command |
+|---------|---------|
+| Detect linter config | `find . -maxdepth 1 \( -name 'biome.json' -o -name 'ruff.toml' -o -name '.eslintrc*' \) 2>/dev/null` |
+| Check Biome config | `test -f biome.json && jq -c '.linter' biome.json 2>/dev/null` |
+| Check Ruff in pyproject | `grep -A5 '\[tool.ruff\]' pyproject.toml 2>/dev/null` |
+| List lint scripts | `jq -r '.scripts \| to_entries[] \| select(.key \| contains("lint")) \| "\\(.key): \\(.value)"' package.json 2>/dev/null` |
+| Quick compliance check | `/configure:linting --check-only` |
+| Auto-fix configuration | `/configure:linting --fix` |
 
 ## Flags
 
@@ -495,7 +196,6 @@ Documentation: docs/LINTING.md
 
 - `/configure:formatting` - Configure code formatting
 - `/configure:pre-commit` - Pre-commit hook configuration
-- `/lint:check` - Universal linter runner
 - `/configure:all` - Run all compliance checks
 - **Biome documentation**: https://biomejs.dev
 - **Ruff documentation**: https://docs.astral.sh/ruff

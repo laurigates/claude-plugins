@@ -1,7 +1,7 @@
 ---
 model: opus
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-10
 reviewed: 2025-12-16
 allowed-tools: Read, Write, Edit, MultiEdit, Bash(git *), Bash(pytest *), Bash(npm test *), Bash(cargo test *), Bash(go test *), mcp__github__list_issues, mcp__github__create_issue, mcp__github__create_pull_request, mcp__github__get_issue, TodoWrite
 argument-hint: [--max-cycles <n>] [--focus <bug|feature|test>]
@@ -9,24 +9,32 @@ description: Automated development loop with issue creation and TDD
 name: workflow-dev
 ---
 
-# devloop.md - Development Loop Instructions for Claude
+# /workflow:dev
 
-When the user types `/workflow:dev`, follow these instructions to execute an automated development loop.
+Automated development loop with issue creation, TDD, and CI monitoring.
 
-## Overview
+## Context
 
-Execute a continuous development cycle that:
+- Current branch: !`git branch --show-current 2>/dev/null`
+- Working tree: !`git status --porcelain 2>/dev/null`
+- Project type: !`find . -maxdepth 1 \( -name "package.json" -o -name "Cargo.toml" -o -name "pyproject.toml" -o -name "go.mod" -o -name "manage.py" \) -type f 2>/dev/null`
+- Open issues: !`gh issue list --state open --limit 5 --json number,title --jq '.' 2>/dev/null`
 
-1. Ensures clean environment setup
-2. Identifies and creates issues from test failures
-3. Intelligently selects issues to work on
-4. Implements solutions following TDD
-5. Creates pull requests and monitors CI
-6. Repeats until stopped or issues resolved
+## Parameters
 
-## Step-by-Step Instructions
+Parse from `$ARGUMENTS`:
 
-### Phase 1: Environment Setup & Assessment
+- `--max-cycles <n>`: Limit to N issue resolution cycles (default: unlimited)
+- `--focus <bug|feature|test>`: Only work on issues with matching label
+- `--quick-wins`: Only pick issues estimated < 30 minutes
+- `--test-only`: Only create issues for test failures; skip implementation
+- `--dry-run`: Explain what would be done without making changes
+
+## Execution
+
+Execute this automated development loop:
+
+### Step 1: Set up environment and assess state
 
 **1. Ensure on main branch and sync**
 
@@ -57,7 +65,7 @@ git pull
 - Use `github:list_issues` with `state=open`
 - Filter out issues that are blocked or need external input
 
-### Phase 2: Issue Selection Strategy
+### Step 2: Select issue to work on
 
 **Select issues using this priority order:**
 
@@ -80,7 +88,7 @@ git pull
 - Create issues for security vulnerabilities
 - Run linting tools and create issues for violations
 
-### Phase 3: Implementation Loop
+### Step 3: Implement solution
 
 **For the selected issue, repeat until CI passes:**
 
@@ -140,7 +148,7 @@ git push origin fix/issue-{number}-{brief-description}
 - Implement fixes and push additional commits
 - Repeat until all checks pass
 
-### Phase 4: Completion & Loop
+### Step 4: Complete and loop
 
 **13. Verify CI success**
 
@@ -152,7 +160,7 @@ git push origin fix/issue-{number}-{brief-description}
 - Use `github:update_issue` to close with state `closed`
 - Add comment referencing the closing PR
 
-**15. Return to Phase 1**
+**15. Return to Step 1**
 
 - Go back to environment setup
 - Continue the loop for the next issue

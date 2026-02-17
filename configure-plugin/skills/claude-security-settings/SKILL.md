@@ -225,7 +225,6 @@ Then allow the script:
   "permissions": {
     "allow": [
       "Bash(pre-commit *)",
-      "Bash(detect-secrets *)",
       "Bash(gitleaks *)",
       "Bash(trivy *)"
     ]
@@ -331,6 +330,6 @@ Block specific commands:
 
 1. **Start restrictive** - Add permissions as needed
 2. **Use project settings** - Keep team aligned
-3. **Avoid broad Bash** - Use specific patterns
+3. **Use specific Bash patterns** - `Bash(git status *)` over `Bash`
 4. **Script compound commands** - For `&&` and `\|` workflows
 5. **Review periodically** - Remove unused permissions

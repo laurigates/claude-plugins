@@ -5,335 +5,169 @@ args: "[feature-name]"
 argument-hint: "Feature name for the PRP (e.g., auth-oauth2, api-rate-limiting)"
 allowed-tools: Read, Write, Glob, Bash, WebFetch, WebSearch, Task, AskUserQuestion
 created: 2025-12-16
-modified: 2026-02-03
-reviewed: 2025-12-16
+modified: 2026-02-14
+reviewed: 2026-02-14
 name: blueprint-prp-create
 ---
 
-Create a comprehensive PRP (Product Requirement Prompt) for a feature or component.
+# /blueprint:prp-create
 
-**What is a PRP?**
-A PRP is PRD + Curated Codebase Intelligence + Implementation Blueprint + Validation Gates - the minimum viable packet an AI agent needs to deliver production code successfully on first attempt.
+Create a comprehensive PRP (Product Requirement Prompt) - a self-contained packet with all context an AI agent needs to deliver production code on first attempt.
+
+**What is a PRP?** PRD + Curated Codebase Intelligence + Implementation Blueprint + Validation Gates = everything needed for reliable implementation.
+
+**Usage**: `/blueprint:prp-create [feature-name]`
 
 **Prerequisites**:
 - Blueprint Development initialized (`docs/blueprint/` exists)
 - Clear understanding of the feature to implement
 
-**Steps**:
+## When to Use This Skill
 
-## Phase 1: Research
+| Use this skill when... | Use alternative when... |
+|------------------------|-------------------------|
+| Creating new feature implementation packet | Executing an existing PRP (use `/blueprint:prp-execute`) |
+| Want comprehensive research and documentation | Quick prototyping without formal requirements |
+| Planning for AI agent or subagent execution | Solo developer implementing without research |
+| Need to document implementation approach | Implementing based on existing codebase patterns |
 
-### 1.1 Understand Requirements
-Ask the user or analyze context to understand:
-- **Goal**: What needs to be accomplished?
-- **Why**: What problem does this solve?
-- **Success Criteria**: How do we know it's done?
+## Context
 
-### 1.2 Research Codebase
-Explore the existing codebase to understand:
-- **Existing patterns**: How similar features are implemented
-- **Integration points**: Where this feature connects
-- **Testing patterns**: How similar features are tested
-- **File locations**: Where new code should go
+- Blueprint initialized: !`test -f docs/blueprint/manifest.json && echo "YES" || echo "NO"`
+- Last PRP ID: !`jq -r '.id_registry.last_prp // 0' docs/blueprint/manifest.json 2>/dev/null || echo "0"`
+- ai_docs available: !`find docs/blueprint/ai_docs -type f -name "*.md" 2>/dev/null`
+- Existing PRDs: !`find docs/prds -name "*.md" -type f 2>/dev/null`
 
-Use the Explore agent:
-```
-<Task subagent_type="Explore" prompt="Research patterns for [feature type] implementation">
-```
+## Parameters
 
-### 1.3 Research External Documentation
-For any libraries/frameworks involved:
-- Search for relevant documentation sections
-- Look for known issues and gotchas
-- Find best practices and patterns
+Parse `$ARGUMENTS`:
 
-Use WebSearch/WebFetch to gather:
-- Official documentation for key libraries
-- Stack Overflow discussions about common issues
-- GitHub issues for known problems
+- `feature-name` (required): Kebab-case name for PRP (e.g., `auth-oauth2`, `api-rate-limiting`)
+  - Used for filename and document ID generation
 
-### 1.4 Check/Create ai_docs
-Look for existing ai_docs:
-```bash
-ls docs/blueprint/ai_docs/libraries/
-ls docs/blueprint/ai_docs/project/
-```
+## Execution
 
-If relevant ai_docs don't exist, create them:
-- Extract key patterns from documentation
-- Document gotchas discovered in research
-- Create curated, concise entries (< 200 lines)
+Execute the complete PRP creation workflow:
 
-## Phase 2: Draft PRP
+### Step 1: Verify prerequisites and understand requirements
 
-### 2.1 Generate Document ID and Link to PRD
+1. If Blueprint not initialized → Error: "Run `/blueprint:init` first"
+2. Ask user to describe the feature: "What feature needs to be implemented?"
+   - Capture: Goal, why it matters, success criteria
+3. Ask if this implements an existing PRD: "Does this implement an existing PRD or is it standalone?"
+   - If PRD chosen → Store PRD ID for linking
+4. Determine feature type (API endpoint, database, UI, integration, etc.)
 
-Before creating the PRP, generate a unique ID and link to source PRD:
+### Step 2: Research codebase patterns
 
-```bash
-# Get next PRP ID from manifest
-next_prp_id() {
-  local manifest="docs/blueprint/manifest.json"
-  local last=$(jq -r '.id_registry.last_prp // 0' "$manifest" 2>/dev/null || echo "0")
-  local next=$((last + 1))
-  printf "PRP-%03d" "$next"
-}
+Use Explore agent to find existing patterns:
 
-# List available PRDs for linking
-list_prds() {
-  jq -r '.id_registry.documents | to_entries[] | select(.key | startswith("PRD")) | "\(.key): \(.value.title)"' docs/blueprint/manifest.json
-}
-```
+1. Similar features already implemented (identify existing patterns to follow)
+2. Relevant file locations and integration points
+3. Testing patterns used for similar features
+4. Architecture decisions that affect this feature
 
-**Prompt user to select source PRD** (use AskUserQuestion):
-```
-question: "Which PRD does this PRP implement?"
-options:
-  - label: "{PRD-001}: {title}" (for each PRD in manifest)
-  - label: "None / New feature"
-    description: "This PRP doesn't implement an existing PRD"
-```
+Store findings with specific file paths and line numbers.
 
-Store the selected PRD ID for the `implements` field.
+### Step 3: Research external documentation
 
-### 2.2 Create PRP File
-Create the PRP in `docs/prps/`:
-```
-docs/prps/[feature-name].md
-```
+For relevant libraries/frameworks, gather:
 
-### 2.3 PRP Frontmatter
+1. Official documentation sections (capture URLs with specific sections)
+2. Known issues and gotchas from Stack Overflow / GitHub discussions
+3. Best practices from documentation
+4. Common implementation patterns
 
-Include document ID and linking fields:
+Use WebSearch/WebFetch as needed. Create or update ai_docs entries if needed (see [REFERENCE.md](REFERENCE.md#creating-ai-docs)).
 
-```yaml
----
-id: {PRP-NNN}
-created: {YYYY-MM-DD}
-modified: {YYYY-MM-DD}
-status: Draft
-implements:                    # Source PRD(s) this PRP implements
-  - {PRD-NNN}                  # or empty if standalone
-relates-to:                    # Related ADRs, other PRPs
-  - ADR-NNNN
-github-issues: []              # Linked issues (populated later)
-confidence: 0                  # Updated after scoring
-name: blueprint-prp-create
----
-```
+### Step 4: Generate PRP document ID and structure
 
-### 2.4 Fill Sections
+Generate next PRP ID from manifest:
+- Extract `id_registry.last_prp` from manifest.json
+- Next ID = last_prp + 1 (format: `PRP-NNN`)
 
-**Goal & Why**:
-- One sentence goal
-- Business justification
-- Target users
-- Priority
+Create `docs/prps/[feature-name].md` with frontmatter and sections (see [REFERENCE.md](REFERENCE.md#prp-structure)).
 
-**Success Criteria**:
-- Specific, testable acceptance criteria
-- Performance baselines with metrics
-- Security requirements
+### Step 5: Draft PRP content with research findings
 
-**Context**:
-- **Documentation References**: URLs with specific sections
-- **ai_docs References**: Links to curated docs
-- **Codebase Intelligence**:
-  - Relevant files with line numbers
-  - Code snippets showing patterns to follow
-  - Integration points
-- **Known Gotchas**: Critical warnings with mitigations
+Fill all required sections (see [REFERENCE.md](REFERENCE.md#prp-sections)):
 
-**Implementation Blueprint**:
-- Architecture decision with rationale
-- Task breakdown with pseudocode (categorized by priority)
-- Implementation order
+1. **Goal & Why**: One-sentence goal, business justification, target users, priority
+2. **Success Criteria**: Specific, testable acceptance criteria with metrics
+3. **Context**:
+   - Documentation references (URLs with specific sections)
+   - ai_docs references (links to curated library docs)
+   - **Codebase Intelligence**: File paths, code snippets with line numbers, patterns to follow
+   - **Known Gotchas**: Critical warnings with mitigations
+4. **Implementation Blueprint**:
+   - Architecture decision with rationale
+   - Task breakdown (Required / Deferred / Nice-to-Have categories)
+   - Order of implementation
+5. **TDD Requirements**: Test strategy and critical test cases
+6. **Validation Gates**: Executable commands (linting, type-checking, tests, coverage)
 
-**Task Categorization** (required for each task):
+**Critical**: All tasks must be explicitly categorized (see [REFERENCE.md](REFERENCE.md#task-categorization)).
 
-| Category | Description | Execution Behavior |
-|----------|-------------|--------------------|
-| **Required** | Must be implemented for MVP | Implemented in this PRP execution |
-| **Deferred (Phase 2)** | Important but not blocking MVP | Logged and created as GitHub issues |
-| **Nice-to-Have** | Optional enhancement | May be skipped, logged if deferred |
+### Step 6: Score confidence across dimensions
 
-Example task breakdown:
-```markdown
-### Required Tasks
-1. Implement core API endpoint
-2. Add input validation
-3. Write unit tests
+Rate each dimension 1-10:
 
-### Deferred Tasks (Phase 2)
-4. Add caching layer - Reason: requires Redis infrastructure decision
-5. Add rate limiting - Reason: needs capacity planning
+| Dimension | Criteria |
+|-----------|----------|
+| **Context Completeness** | Are all file paths, code snippets, and references explicit? |
+| **Implementation Clarity** | Is pseudocode clear enough for AI to follow? |
+| **Gotchas Documented** | Are all known pitfalls documented with mitigations? |
+| **Validation Coverage** | Are all validation gates with executable commands? |
 
-### Nice-to-Have
-6. Add OpenAPI docs generation
-7. Add request logging middleware
-```
+Calculate overall score as average of dimensions. Target: 7+ for execution, 9+ for subagent delegation.
 
-**Important**: All tasks must be explicitly categorized. During execution, any deferred or skipped items will be logged and Phase 2 items will automatically generate GitHub issues for tracking.
+If score < 7 → Return to Steps 2-3 to fill gaps.
 
-**TDD Requirements**:
-- Test strategy (unit, integration, e2e)
-- Critical test cases with code templates
+### Step 7: Review and validate completeness
 
-**Validation Gates**:
-- Executable commands for each quality gate
-- Expected outcomes
-
-## Phase 3: Assess Confidence
-
-### 3.1 Score Each Dimension
-
-| Dimension | Scoring Criteria |
-|-----------|------------------|
-| Context Completeness | 10: All file paths, snippets explicit. 7: Most provided. 4: Significant gaps |
-| Implementation Clarity | 10: Pseudocode covers all cases. 7: Main path clear. 4: High-level only |
-| Gotchas Documented | 10: All known pitfalls. 7: Major gotchas. 4: Some mentioned |
-| Validation Coverage | 10: All gates have commands. 7: Main commands. 4: Incomplete |
-
-### 3.2 Calculate Overall Score
-- Average of all dimensions
-- Target: 7+ for execution, 9+ for subagent delegation
-
-### 3.3 If Score < 7
-- [ ] Research missing context
-- [ ] Add ai_docs entries
-- [ ] Document more gotchas
-- [ ] Add validation commands
-- [ ] Clarify pseudocode
-
-## Phase 4: Review
-
-### 4.1 Self-Review Checklist
+Verify checklist (see [REFERENCE.md](REFERENCE.md#review-checklist)):
 - [ ] Goal is clear and specific
 - [ ] Success criteria are testable
 - [ ] All file paths are explicit (not "somewhere in...")
-- [ ] Code snippets show actual patterns (with line references)
+- [ ] Code snippets show actual patterns with line references
 - [ ] Gotchas include mitigations
-- [ ] Validation commands are executable
+- [ ] Validation commands are copy-pasteable
 - [ ] Confidence score is honest
 
-### 4.2 Present to User
-Show the user:
-- PRP summary
-- Key implementation approach
-- Confidence score
-- Any areas needing clarification
+Update `docs/blueprint/manifest.json` ID registry with new PRP entry.
 
-**Output Template**:
-```
-## PRP Created: [Feature Name]
+### Step 8: Report PRP and prompt for next action
 
-**ID:** {PRP-NNN}
-**Location:** `docs/prps/[feature-name].md`
-**Implements:** {PRD-NNN} (or "Standalone")
+Display summary showing:
+- PRP ID and location
+- Feature summary and approach
+- Context collected (ai_docs, patterns, documentation)
+- Linked documents (source PRD if applicable)
+- Confidence score with breakdown
+- Any gaps if score < 7
 
-**Summary:**
-[1-2 sentence summary of what will be implemented]
+**If confidence >= 7**, offer user choices:
+- Execute PRP now → `/blueprint:prp-execute [feature-name]`
+- Create work-order for subagent → `/blueprint:work-order`
+- Review and refine → Show file location and gaps
+- Done for now → Exit (save for later execution)
 
-**Approach:**
-- [Key architectural decision]
-- [Main implementation pattern]
+**If confidence < 7**, offer user choices:
+- Research more context → Use Explore agent for gaps
+- Create ai_docs entries → `/blueprint:curate-docs`
+- Execute anyway (risky) → Proceed with warning
+- Done for now → Save incomplete PRP
 
-**Context Collected:**
-- [X] ai_docs entries: [list]
-- [X] Codebase patterns identified
-- [X] External documentation referenced
-- [X] Known gotchas documented
+## Agentic Optimizations
 
-**Linked Documents:**
-- Source PRD: {PRD-NNN}
-- Related ADRs: {list}
+| Context | Command |
+|---------|---------|
+| Check blueprint init | `test -f docs/blueprint/manifest.json && echo "YES" \|\| echo "NO"` |
+| Next PRP ID | `jq -r '.id_registry.last_prp // 0' docs/blueprint/manifest.json \| awk '{print $1+1}'` |
+| List existing PRPs | `ls -1 docs/prps/ 2>/dev/null \| wc -l` |
+| Search for patterns | Use Explore agent instead of manual grep |
+| Fast research | Use existing ai_docs rather than fetching docs again |
 
-**Validation Gates:**
-- Gate 1: [Linting command]
-- Gate 2: [Type checking command]
-- Gate 3: [Unit tests command]
-- Gate 4: [Integration tests command]
+---
 
-**Confidence Score:** X/10
-- Context: X/10
-- Implementation: X/10
-- Gotchas: X/10
-- Validation: X/10
-
-**Needs attention (if score < 7):**
-- [List any gaps to address]
-```
-
-### 4.2.1 Update Manifest
-
-Update `docs/blueprint/manifest.json` ID registry:
-
-```json
-{
-  "id_registry": {
-    "last_prp": {new_number},
-    "documents": {
-      "{PRP-NNN}": {
-        "path": "docs/prps/{feature-name}.md",
-        "title": "{Feature Name}",
-        "implements": ["{PRD-NNN}"],
-        "github_issues": [],
-        "created": "{date}"
-      }
-    }
-  }
-}
-```
-
-If PRP implements a PRD, also update the PRD's registry entry to track the implementation relationship.
-
-### 4.3 Prompt for next action (use AskUserQuestion):
-
-**If confidence score >= 7:**
-```
-question: "PRP ready (confidence: X/10). What would you like to do?"
-options:
-  - label: "Execute PRP now (Recommended)"
-    description: "Implement the feature with TDD workflow and validation gates"
-  - label: "Create work-order for subagent"
-    description: "Package this PRP for isolated execution by a subagent"
-  - label: "Review and refine first"
-    description: "I want to improve the PRP before executing"
-  - label: "I'm done for now"
-    description: "Save PRP and exit - execute later with /blueprint:prp-execute"
-```
-
-**If confidence score < 7:**
-```
-question: "PRP needs work (confidence: X/10). What would you like to do?"
-options:
-  - label: "Research more context"
-    description: "Explore codebase and documentation to fill gaps"
-  - label: "Create ai_docs entries"
-    description: "Curate library documentation to improve context"
-  - label: "Execute anyway (risky)"
-    description: "Proceed with implementation despite low confidence"
-  - label: "I'm done for now"
-    description: "Save incomplete PRP and return later"
-```
-
-**Based on selection:**
-- "Execute PRP now" → Run `/blueprint:prp-execute [feature-name]`
-- "Create work-order" → Run `/blueprint:work-order`
-- "Review and refine" → Show PRP file location and key gaps
-- "Research more context" → Use Explore agent on identified gaps
-- "Create ai_docs entries" → Run `/blueprint:curate-docs` for relevant libraries
-- "Execute anyway" → Run `/blueprint:prp-execute [feature-name]` with warning
-- "I'm done" → Exit
-
-**Tips**:
-- Be thorough in research phase - it saves implementation time
-- Include code snippets with actual line numbers
-- Document gotchas as you discover them
-- Validation gates should be copy-pasteable commands
-- Honest confidence scoring helps decide next steps
-
-**Error Handling**:
-- If `docs/blueprint/` doesn't exist → Run `/blueprint:init` first
-- If libraries unfamiliar → Research documentation thoroughly
-- If codebase patterns unclear → Use Explore agent extensively
+For PRP document structure, task categorization, review checklists, and ai_docs creation guidance, see [REFERENCE.md](REFERENCE.md).

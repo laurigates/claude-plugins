@@ -10,6 +10,7 @@ This plugin provides comprehensive Git workflow automation including conventiona
 
 | Skill | Description |
 |-------|-------------|
+| `/git:api-pr` | Create PRs via GitHub API without local git operations - for quick fixes, typos, config updates |
 | `/git:commit` | Complete workflow from changes to PR - auto-detect issues, create logical commits with proper linkage, push, optionally create PR |
 | `/git:issue` | Process GitHub issues with interactive selection, conflict detection, and parallel work support |
 | `/git:fix-pr` | Analyze and fix failing PR checks |
@@ -41,6 +42,7 @@ Three composable skills that can be invoked individually or combined based on us
 | Skill | Description |
 |-------|-------------|
 | `git-branch-naming` | Branch naming conventions (type prefixes, issue linking, kebab-case) |
+| `git-worktree-agent-workflow` | Parallel agent workflows using git worktrees for isolated, concurrent issue work |
 | `git-cli-agentic` | Git commands optimized for AI agents with porcelain output |
 | `gh-cli-agentic` | GitHub CLI commands optimized for AI agents with JSON output |
 | `gh-workflow-monitoring` | Watch GitHub Actions runs with blocking commands (no polling/timeouts) |
@@ -160,7 +162,7 @@ For seamless command execution without permission prompts, add these permissions
       "Bash(git prune *)",
       "Bash(git fsck *)",
       "Bash(pre-commit *)",
-      "Bash(detect-secrets *)"
+      "Bash(gitleaks *)"
     ]
   }
 }

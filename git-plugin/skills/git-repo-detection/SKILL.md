@@ -3,7 +3,7 @@ model: haiku
 created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
-name: Git Repository Detection
+name: git-repo-detection
 description: Detect GitHub repository name and owner from git remotes. Use when needing repo identifier for GitHub CLI, API calls, or when working with multiple repositories. Automatically extracts owner/repo format.
 allowed-tools: Bash, Read, Grep
 ---
@@ -175,369 +175,39 @@ gh pr list --repo "$REPO"
 gh repo view
 ```
 
-### With GitHub API
+For API usage, multiple remotes, scripts, aliases, and integration examples, see [REFERENCE.md](REFERENCE.md).
 
-```bash
-# Extract for API calls
-REPO=$(git remote get-url origin | sed 's/.*[:/]\([^/]*\/[^/]*\)\.git/\1/')
-OWNER=$(echo "$REPO" | cut -d'/' -f1)
-REPO_NAME=$(echo "$REPO" | cut -d'/' -f2)
+## Edge Cases
 
-# API request
-curl -H "Authorization: token $GITHUB_TOKEN" \
-  "https://api.github.com/repos/$OWNER/$REPO_NAME"
-
-# Or use full identifier
-curl -H "Authorization: token $GITHUB_TOKEN" \
-  "https://api.github.com/repos/$REPO"
-```
-
-### Check Multiple Remotes
-
-```bash
-# List all remotes with parsed names
-git remote | while read remote; do
-  url=$(git remote get-url "$remote")
-  repo=$(echo "$url" | sed 's/.*[:/]\([^/]*\/[^/]*\)\.git/\1/')
-  echo "$remote: $repo"
-done
-
-# Output:
-# origin: owner/repo
-# upstream: original-owner/repo
-```
-
-### Validate Repository Exists
-
-```bash
-# Extract and validate
-REPO=$(git remote get-url origin | sed 's/.*[:/]\([^/]*\/[^/]*\)\.git/\1/')
-
-# Check if repo exists on GitHub
-if gh repo view "$REPO" &>/dev/null; then
-  echo "Repository exists: $REPO"
-else
-  echo "Repository not found or not accessible: $REPO"
-fi
-```
-
-### Clone URL from Identifier
-
-```bash
-# Given owner/repo, construct URLs
-REPO="owner/repo"
-
-# HTTPS
-echo "https://github.com/${REPO}.git"
-
-# SSH
-echo "git@github.com:${REPO}.git"
-```
-
-## Common Patterns
-
-### Script Integration
-
-```bash
-#!/bin/bash
-# Get repository info for current directory
-
-get_repo_info() {
-  local origin_url=$(git remote get-url origin 2>/dev/null)
-
-  if [[ -z "$origin_url" ]]; then
-    echo "Error: Not a git repository or no origin remote" >&2
-    return 1
-  fi
-
-  # Extract owner/repo
-  local repo=$(echo "$origin_url" | sed 's/.*[:/]\([^/]*\/[^/]*\)\.git/\1/')
-
-  # Split into owner and name
-  local owner=$(echo "$repo" | cut -d'/' -f1)
-  local name=$(echo "$repo" | cut -d'/' -f2)
-
-  echo "Full: $repo"
-  echo "Owner: $owner"
-  echo "Name: $name"
-}
-
-get_repo_info
-```
-
-### Environment Variables
-
-```bash
-# Set repo variables for scripts
-export REPO_FULL=$(git remote get-url origin | sed 's/.*[:/]\([^/]*\/[^/]*\)\.git/\1/')
-export REPO_OWNER=$(echo "$REPO_FULL" | cut -d'/' -f1)
-export REPO_NAME=$(echo "$REPO_FULL" | cut -d'/' -f2)
-
-# Use in scripts
-gh issue create --repo "$REPO_FULL" --title "Bug Report"
-```
-
-### Aliases
-
-```bash
-# Add to ~/.gitconfig or ~/.bashrc
-
-# Git alias
-git config --global alias.repo-name "!git remote get-url origin | sed 's/.*[\\/:]\\([^\\/]*\\/[^\\/]*\\)\\.git/\\1/'"
-
-# Usage
-git repo-name
-
-# Shell alias
-alias repo='git remote get-url origin | sed "s/.*[:/]\([^/]*\/[^/]*\)\.git/\1/"'
-
-# Usage
-repo
-```
-
-## Edge Cases and Error Handling
-
-### No Remote
-
-```bash
-# Check if remote exists
-if git remote get-url origin &>/dev/null; then
-  REPO=$(git remote get-url origin | sed 's/.*[:/]\([^/]*\/[^/]*\)\.git/\1/')
-  echo "Repository: $REPO"
-else
-  echo "Error: No origin remote configured"
-fi
-```
-
-### Multiple Remotes
-
-```bash
-# Use specific remote (origin, upstream, etc.)
-REMOTE="${1:-origin}"
-
-if git remote get-url "$REMOTE" &>/dev/null; then
-  REPO=$(git remote get-url "$REMOTE" | sed 's/.*[:/]\([^/]*\/[^/]*\)\.git/\1/')
-  echo "Repository ($REMOTE): $REPO"
-else
-  echo "Error: Remote '$REMOTE' not found"
-fi
-```
-
-### Non-GitHub Remotes
-
-```bash
-# Check if it's a GitHub URL
-URL=$(git remote get-url origin)
-
-if [[ "$URL" =~ github\.com ]]; then
-  REPO=$(echo "$URL" | sed 's/.*[:/]\([^/]*\/[^/]*\)\.git/\1/')
-  echo "GitHub Repository: $REPO"
-else
-  echo "Not a GitHub repository: $URL"
-fi
-```
-
-### Submodules
-
-```bash
-# Get parent repo
-PARENT_REPO=$(git -C "$(git rev-parse --show-toplevel)" remote get-url origin \
-  | sed 's/.*[:/]\([^/]*\/[^/]*\)\.git/\1/')
-
-# Get submodule repo
-SUBMODULE_REPO=$(git remote get-url origin | sed 's/.*[:/]\([^/]*\/[^/]*\)\.git/\1/')
-```
-
-## Integration Examples
-
-### With Makefile
-
-```makefile
-# Makefile
-REPO := $(shell git remote get-url origin | sed 's/.*[:/]\([^\/]*\/[^\/]*\)\.git/\1/')
-OWNER := $(shell echo $(REPO) | cut -d'/' -f1)
-NAME := $(shell echo $(REPO) | cut -d'/' -f2)
-
-.PHONY: info
-info:
-	@echo "Repository: $(REPO)"
-	@echo "Owner: $(OWNER)"
-	@echo "Name: $(NAME)"
-
-.PHONY: open
-open:
-	@open "https://github.com/$(REPO)"
-```
-
-### With Shell Scripts
-
-```bash
-#!/bin/bash
-# deploy.sh
-
-set -e
-
-# Get repository identifier
-REPO=$(git remote get-url origin | sed 's/.*[:/]\([^/]*\/[^/]*\)\.git/\1/')
-
-if [[ -z "$REPO" ]]; then
-  echo "Error: Could not determine repository" >&2
-  exit 1
-fi
-
-echo "Deploying $REPO..."
-
-# Use repo identifier
-gh workflow run deploy.yml --repo "$REPO"
-```
-
-### With Python Scripts
-
-```python
-#!/usr/bin/env python3
-import subprocess
-import re
-
-def get_repo_name():
-    """Extract GitHub repository owner/name from git remote."""
-    try:
-        result = subprocess.run(
-            ['git', 'remote', 'get-url', 'origin'],
-            capture_output=True,
-            text=True,
-            check=True
-        )
-        url = result.stdout.strip()
-
-        # Parse owner/repo from URL
-        match = re.search(r'github\.com[:/](.+/.+?)(?:\.git)?$', url)
-        if match:
-            return match.group(1)
-        return None
-    except subprocess.CalledProcessError:
-        return None
-
-if __name__ == '__main__':
-    repo = get_repo_name()
-    if repo:
-        print(f"Repository: {repo}")
-    else:
-        print("Error: Could not determine repository")
-```
+| Case | Check |
+|------|-------|
+| No remote | `git remote get-url origin &>/dev/null` |
+| Non-GitHub | `git remote get-url origin \| grep -q github.com` |
+| Multiple remotes | Use `git remote get-url upstream` for fork source |
+| Submodule | `git -C "$(git rev-parse --show-toplevel)" remote get-url origin` |
 
 ## Quick Reference
 
-### One-Liners
-
-```bash
-# Full identifier (owner/repo)
-git remote get-url origin | sed 's/.*[:/]\([^/]*\/[^/]*\)\.git/\1/'
-
-# Owner only
-git remote get-url origin | sed 's/.*[:/]\([^/]*\)\/[^/]*\.git/\1/'
-
-# Name only
-basename $(git remote get-url origin) .git
-
-# Check if GitHub repo
-git remote get-url origin | grep -q github.com && echo "GitHub" || echo "Not GitHub"
-```
-
-### Common Commands
-
-```bash
-# View on GitHub (macOS)
-open "https://github.com/$(git remote get-url origin | sed 's/.*[:/]\([^/]*\/[^/]*\)\.git/\1/')"
-
-# View on GitHub (Linux)
-xdg-open "https://github.com/$(git remote get-url origin | sed 's/.*[:/]\([^/]*\/[^/]*\)\.git/\1/')"
-
-# Copy to clipboard (macOS)
-git remote get-url origin | sed 's/.*[:/]\([^/]*\/[^/]*\)\.git/\1/' | pbcopy
-
-# Copy to clipboard (Linux)
-git remote get-url origin | sed 's/.*[:/]\([^/]*\/[^/]*\)\.git/\1/' | xclip -selection clipboard
-```
-
-### Validation
-
-```bash
-# Ensure in git repo
-git rev-parse --git-dir &>/dev/null || { echo "Not a git repository"; exit 1; }
-
-# Ensure origin exists
-git remote get-url origin &>/dev/null || { echo "No origin remote"; exit 1; }
-
-# Ensure it's GitHub
-git remote get-url origin | grep -q github.com || { echo "Not a GitHub repo"; exit 1; }
-```
+| Purpose | Command |
+|---------|---------|
+| Full identifier (owner/repo) | `git remote get-url origin \| sed 's/.*[:/]\([^/]*\/[^/]*\)\.git/\1/'` |
+| Owner only | `git remote get-url origin \| sed 's/.*[:/]\([^/]*\)\/[^/]*\.git/\1/'` |
+| Name only | `basename $(git remote get-url origin) .git` |
+| Is GitHub? | `git remote get-url origin \| grep -q github.com` |
+| Validate in git repo | `git rev-parse --git-dir &>/dev/null` |
+| List remotes | `git remote -v` |
+| Set origin | `git remote set-url origin git@github.com:owner/repo.git` |
 
 ## Troubleshooting
 
-### Remote Not Found
-```bash
-# Check configured remotes
-git remote -v
+| Problem | Fix |
+|---------|-----|
+| Remote not found | `git remote add origin git@github.com:owner/repo.git` |
+| Wrong remote | `git remote set-url origin <correct-url>` |
+| Parse failure | Check raw URL: `git remote get-url origin` |
 
-# Add origin if missing
-git remote add origin git@github.com:owner/repo.git
-```
+## Related Skills
 
-### Wrong Remote
-```bash
-# Use different remote
-git remote get-url upstream
-
-# Set correct origin
-git remote set-url origin git@github.com:owner/repo.git
-```
-
-### Parse Failure
-```bash
-# Debug: Show raw URL
-git remote get-url origin
-
-# Check format matches expected pattern
-# HTTPS: https://github.com/owner/repo.git
-# SSH:   git@github.com:owner/repo.git
-```
-
-## Best Practices
-
-**Caching**
-- Cache repository identifier in scripts
-- Don't repeatedly call git commands
-- Store in environment variables
-
-**Error Handling**
-- Always check if remote exists
-- Validate URL format before parsing
-- Provide fallback values
-
-**Portability**
-- Use portable sed/awk syntax
-- Test on different shells (bash, zsh, etc.)
-- Handle both HTTPS and SSH URLs
-
-**Security**
-- Don't expose tokens in URLs
-- Use SSH for private repositories
-- Validate repository access
-
-## Integration with Other Skills
-
-**Combine with:**
 - **github MCP** - Use extracted repo name with GitHub API
 - **github-actions-inspection** - Pass repo to gh CLI commands
 - **git-workflow** - Identify repo for workflow operations
-
-**Workflow:**
-1. Detect repository (this skill)
-2. Use identifier with GitHub CLI/API
-3. Perform operations on correct repository
-
-## Resources
-
-- **git remote documentation**: `man git-remote`
-- **GitHub CLI**: Uses repository detection automatically
-- **GitHub API**: Requires `owner/repo` format

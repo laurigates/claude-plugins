@@ -1,6 +1,6 @@
 ---
 model: haiku
-name: Blog Post Writing
+name: blog-post-writing
 description: |
   Consistent style guide for writing blog posts about projects and technical work.
   Supports quick updates, detailed write-ups, retrospectives, and tutorials.

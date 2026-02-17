@@ -1,5 +1,60 @@
 # Changelog
 
+## [1.8.5](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.8.4...project-plugin-v1.8.5) (2026-02-15)
+
+
+### Bug Fixes
+
+* remove pipe/ls operators from context commands and add CI linting ([#653](https://github.com/laurigates/claude-plugins/issues/653)) ([7a01eef](https://github.com/laurigates/claude-plugins/commit/7a01eef21495ed6243277fbaa88082b7ecabc793))
+
+## [1.8.4](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.8.3...project-plugin-v1.8.4) (2026-02-15)
+
+
+### Bug Fixes
+
+* replace broken context command patterns in skill files ([#644](https://github.com/laurigates/claude-plugins/issues/644)) ([440ba34](https://github.com/laurigates/claude-plugins/commit/440ba347bcc73a0512f74975cfd6b4af9fe8566e))
+
+## [1.8.3](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.8.2...project-plugin-v1.8.3) (2026-02-14)
+
+
+### Documentation
+
+* **git-plugin:** add conventional commits standards ([#616](https://github.com/laurigates/claude-plugins/issues/616)) ([5b74389](https://github.com/laurigates/claude-plugins/commit/5b74389ecdf5223dd62368390ecd9b36ccb1596c))
+
+## [1.8.2](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.8.1...project-plugin-v1.8.2) (2026-02-14)
+
+
+### Code Refactoring
+
+* restructure 11 skills to execution pattern ([#609](https://github.com/laurigates/claude-plugins/issues/609)) ([0aff44a](https://github.com/laurigates/claude-plugins/commit/0aff44ae5768e3cd3aedfed568137738fc298bbc))
+
+## [1.8.1](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.8.0...project-plugin-v1.8.1) (2026-02-13)
+
+
+### Documentation
+
+* improve skill documentation, standards, and context patterns ([#599](https://github.com/laurigates/claude-plugins/issues/599)) ([4a351dc](https://github.com/laurigates/claude-plugins/commit/4a351dcfac7229dd26586cdf7c8cbd51fec451d2))
+* **skills:** improve documentation, standards, and context patterns ([4a351dc](https://github.com/laurigates/claude-plugins/commit/4a351dcfac7229dd26586cdf7c8cbd51fec451d2)), closes [#596](https://github.com/laurigates/claude-plugins/issues/596)
+
+## [1.8.0](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.7.0...project-plugin-v1.8.0) (2026-02-12)
+
+
+### Features
+
+* **blueprint-plugin:** add v3.0→v3.1 migration and remove work-overview references ([e9849b0](https://github.com/laurigates/claude-plugins/commit/e9849b0a0d3d434432d32e68fee3498696fb09c8))
+
+## [1.7.0](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.6.2...project-plugin-v1.7.0) (2026-02-11)
+
+
+### Features
+
+* **project-plugin:** add /project:distill skill for session knowledge capture ([f2b9f7e](https://github.com/laurigates/claude-plugins/commit/f2b9f7e51cbaf7a7656e0dfd505bc75f6662ac29))
+
+
+### Code Refactoring
+
+* **project-plugin:** improve project-distill skill discoverability and robustness ([002a8c8](https://github.com/laurigates/claude-plugins/commit/002a8c8feb6e6ab0c943509689375aba95b15abd))
+
 ## [1.6.2](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.6.1...project-plugin-v1.6.2) (2026-02-08)
 
 

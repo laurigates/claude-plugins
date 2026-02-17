@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.1.3](https://github.com/laurigates/claude-plugins/compare/communication-plugin-v1.1.2...communication-plugin-v1.1.3) (2026-02-14)
+
+
+### Code Refactoring
+
+* extract detailed content to REFERENCE.md files ([#605](https://github.com/laurigates/claude-plugins/issues/605)) ([7efbd83](https://github.com/laurigates/claude-plugins/commit/7efbd83b9a2b1ef67be702206396ba6d8102684d))
+
+## [1.1.2](https://github.com/laurigates/claude-plugins/compare/communication-plugin-v1.1.1...communication-plugin-v1.1.2) (2026-02-08)
+
+
+### Code Refactoring
+
+* reframe negative guidance as positive guidance across skills ([7e755ee](https://github.com/laurigates/claude-plugins/commit/7e755ee1c32c39c124f3204a0d0a8d1d770e1573))
+
 ## [1.1.1](https://github.com/laurigates/claude-plugins/compare/communication-plugin-v1.1.0...communication-plugin-v1.1.1) (2026-02-08)
 
 

@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2026-02-02
-modified: 2026-02-02
+modified: 2026-02-11
 reviewed: 2026-02-02
 description: Install reusable GitHub Actions workflows for security, quality, and accessibility checks
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash(mkdir *), Bash(ls *), AskUserQuestion, TodoWrite
@@ -12,6 +12,34 @@ name: configure-reusable-workflows
 # /configure:reusable-workflows
 
 Install Claude-powered reusable GitHub Actions workflows from claude-plugins into a project.
+
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Adding Claude-powered reusable workflows for security, quality, or accessibility | Setting up standard CI/CD workflows (use `/configure:workflows`) |
+| Installing pre-built workflow callers from claude-plugins | Writing custom GitHub Actions workflows from scratch |
+| Automating OWASP, secret scanning, or code smell detection via CI | Configuring local security scanning tools (use `/configure:security`) |
+| Adding WCAG accessibility checks to pull request pipelines | Running one-off accessibility audits manually |
+| Bootstrapping a full suite of Claude-powered CI checks across categories | Only need to check existing workflow compliance |
+
+## Context
+
+- Workflows dir: !`test -d .github/workflows && echo "EXISTS" || echo "MISSING"`
+- Existing callers: !`find .github/workflows -maxdepth 1 -name 'claude-*' 2>/dev/null`
+- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) -print -quit 2>/dev/null`
+- TypeScript files: !`find . -maxdepth 2 \( -name '*.ts' -o -name '*.tsx' \) -print -quit 2>/dev/null`
+- Component files: !`find . -maxdepth 3 \( -name '*.jsx' -o -name '*.vue' -o -name '*.svelte' \) -print -quit 2>/dev/null`
+
+## Parameters
+
+Parse from command arguments:
+
+- `--all`: Install all workflows
+- `--security`: Install security workflows only
+- `--quality`: Install quality workflows only
+- `--a11y`: Install accessibility workflows only
+- `--list`: List available workflows without installing
 
 ## Available Workflows
 
@@ -38,17 +66,19 @@ Install Claude-powered reusable GitHub Actions workflows from claude-plugins int
 | wcag | WCAG 2.1 compliance checking | `reusable-a11y-wcag.yml` |
 | aria | ARIA pattern validation | `reusable-a11y-aria.yml` |
 
-## Workflow
+## Execution
 
-### Phase 1: Detection
+Execute this reusable workflow installation:
+
+### Step 1: Detect current state
 
 1. Check for `.github/workflows/` directory (create if missing)
 2. List any existing Claude-powered workflow callers
 3. Determine project type from files present
 
-### Phase 2: Selection
+### Step 2: Select workflows
 
-If no flags provided, ask user which categories to install:
+If no flags provided, ask the user which categories to install:
 
 ```
 Available workflow categories:
@@ -60,7 +90,9 @@ Available workflow categories:
 Which categories? (comma-separated, e.g., 1,2):
 ```
 
-### Phase 3: Generate Caller Workflows
+If `--list` is set, print the Available Workflows tables above and stop.
+
+### Step 3: Generate caller workflows
 
 For each selected workflow, create a caller file in `.github/workflows/`.
 
@@ -68,7 +100,7 @@ For each selected workflow, create a caller file in `.github/workflows/`.
 
 Example: `claude-security-secrets.yml`
 
-### Caller Workflow Template
+Use the caller workflow template:
 
 ```yaml
 name: Claude <Category> - <Name>
@@ -92,9 +124,11 @@ jobs:
     secrets: inherit
 ```
 
-### Phase 4: Secret Reminder
+For complete caller workflow files per category, see [REFERENCE.md](REFERENCE.md).
 
-After installation, remind user:
+### Step 4: Remind about secrets
+
+After installation, print the required secret configuration:
 
 ```
 Required secret: CLAUDE_CODE_OAUTH_TOKEN
@@ -106,246 +140,6 @@ To configure:
 
 Get token from: https://console.anthropic.com/
 ```
-
-## Generated Files
-
-### Security Workflows
-
-**`.github/workflows/claude-security-secrets.yml`**
-
-```yaml
-name: Claude Security - Secrets Detection
-
-on:
-  pull_request:
-    branches: [main]
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pull-requests: write
-  id-token: write
-
-jobs:
-  scan:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-security-secrets.yml@main
-    with:
-      file-patterns: '**/*'
-      max-turns: 5
-    secrets: inherit
-```
-
-**`.github/workflows/claude-security-owasp.yml`**
-
-```yaml
-name: Claude Security - OWASP
-
-on:
-  pull_request:
-    branches: [main]
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pull-requests: write
-  id-token: write
-
-jobs:
-  scan:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-security-owasp.yml@main
-    with:
-      file-patterns: '**/*.{js,ts,jsx,tsx,py}'
-      max-turns: 6
-      fail-on-critical: true
-    secrets: inherit
-```
-
-**`.github/workflows/claude-security-deps.yml`**
-
-```yaml
-name: Claude Security - Dependencies
-
-on:
-  pull_request:
-    branches: [main]
-    paths:
-      - 'package*.json'
-      - 'requirements*.txt'
-      - 'Pipfile*'
-      - 'poetry.lock'
-      - 'go.sum'
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pull-requests: write
-  id-token: write
-
-jobs:
-  audit:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-security-deps.yml@main
-    with:
-      package-manager: 'auto'
-      max-turns: 5
-      fail-on-high: true
-    secrets: inherit
-```
-
-### Quality Workflows
-
-**`.github/workflows/claude-quality-typescript.yml`**
-
-```yaml
-name: Claude Quality - TypeScript
-
-on:
-  pull_request:
-    branches: [main]
-    paths:
-      - '**/*.ts'
-      - '**/*.tsx'
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pull-requests: write
-  id-token: write
-
-jobs:
-  analyze:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-quality-typescript.yml@main
-    with:
-      file-patterns: '**/*.{ts,tsx}'
-      max-turns: 6
-      strict-mode: true
-    secrets: inherit
-```
-
-**`.github/workflows/claude-quality-code-smell.yml`**
-
-```yaml
-name: Claude Quality - Code Smell
-
-on:
-  pull_request:
-    branches: [main]
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pull-requests: write
-  id-token: write
-
-jobs:
-  analyze:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-quality-code-smell.yml@main
-    with:
-      file-patterns: '**/*.{js,ts,jsx,tsx,py}'
-      max-turns: 5
-      severity-threshold: 'medium'
-    secrets: inherit
-```
-
-**`.github/workflows/claude-quality-async.yml`**
-
-```yaml
-name: Claude Quality - Async Patterns
-
-on:
-  pull_request:
-    branches: [main]
-    paths:
-      - '**/*.ts'
-      - '**/*.tsx'
-      - '**/*.js'
-      - '**/*.jsx'
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pull-requests: write
-  id-token: write
-
-jobs:
-  analyze:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-quality-async.yml@main
-    with:
-      file-patterns: '**/*.{js,ts,jsx,tsx}'
-      max-turns: 5
-    secrets: inherit
-```
-
-### Accessibility Workflows
-
-**`.github/workflows/claude-a11y-wcag.yml`**
-
-```yaml
-name: Claude A11y - WCAG
-
-on:
-  pull_request:
-    branches: [main]
-    paths:
-      - '**/*.tsx'
-      - '**/*.jsx'
-      - '**/*.vue'
-      - '**/*.svelte'
-      - '**/*.html'
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pull-requests: write
-  id-token: write
-
-jobs:
-  check:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-a11y-wcag.yml@main
-    with:
-      file-patterns: '**/*.{tsx,jsx,vue,svelte,html}'
-      max-turns: 6
-      wcag-level: 'AA'
-    secrets: inherit
-```
-
-**`.github/workflows/claude-a11y-aria.yml`**
-
-```yaml
-name: Claude A11y - ARIA
-
-on:
-  pull_request:
-    branches: [main]
-    paths:
-      - '**/*.tsx'
-      - '**/*.jsx'
-      - '**/*.vue'
-      - '**/*.svelte'
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pull-requests: write
-  id-token: write
-
-jobs:
-  check:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-a11y-aria.yml@main
-    with:
-      file-patterns: '**/*.{tsx,jsx,vue,svelte}'
-      max-turns: 5
-    secrets: inherit
-```
-
-## Flags
-
-| Flag | Description |
-|------|-------------|
-| `--all` | Install all workflows |
-| `--security` | Install security workflows only |
-| `--quality` | Install quality workflows only |
-| `--a11y` | Install accessibility workflows only |
-| `--list` | List available workflows without installing |
 
 ## Customization
 
@@ -364,6 +158,27 @@ After installation, users can customize:
 2. **Customize patterns**: Edit `file-patterns` to match project structure
 3. **Adjust triggers**: Modify `paths` filters for relevant file types
 4. **Test manually**: Use `workflow_dispatch` to test before PR triggers
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| List available workflows | `/configure:reusable-workflows --list` |
+| Install all workflows at once | `/configure:reusable-workflows --all` |
+| Security workflows only | `/configure:reusable-workflows --security` |
+| Quality workflows only | `/configure:reusable-workflows --quality` |
+| Accessibility workflows only | `/configure:reusable-workflows --a11y` |
+| Check existing callers | `find .github/workflows -name 'claude-*' -type f` |
+
+## Flags
+
+| Flag | Description |
+|------|-------------|
+| `--all` | Install all workflows |
+| `--security` | Install security workflows only |
+| `--quality` | Install quality workflows only |
+| `--a11y` | Install accessibility workflows only |
+| `--list` | List available workflows without installing |
 
 ## See Also
 

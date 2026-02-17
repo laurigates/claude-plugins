@@ -12,7 +12,7 @@ on:
         description: 'Maximum Claude analysis turns'
         required: false
         type: number
-        default: 6
+        default: 5
       fail-on-high:
         description: 'Fail workflow if high/critical vulnerabilities found'
         required: false

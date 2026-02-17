@@ -4,6 +4,11 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+# Cancel in-progress reviews when new commits are pushed
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   pull-requests: write
@@ -12,6 +17,9 @@ permissions:
 
 jobs:
   review:
+    if: >-
+      !startsWith(github.head_ref, 'release-please--')
+      && github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -23,6 +31,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          track_progress: true
           prompt: |
             Review this pull request. Focus on:
             - Code quality and best practices

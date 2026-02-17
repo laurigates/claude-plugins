@@ -6,6 +6,7 @@ reviewed: 2026-01-24
 allowed-tools: Bash(git log *), Bash(git shortlog *), Bash(git diff *), Bash(git branch *),
                Bash(git show *), Bash(git rev-list *), Bash(git diff-tree *),
                Bash(git status *), Read, Grep, Glob, Edit, Write, TodoWrite
+args: "[--rules] [--prd] [--adr] [--prp] [--all] [--since=<date>] [--depth=<N>]"
 argument-hint: [--rules] [--prd] [--adr] [--prp] [--all] [--since=<date>] [--depth=<N>]
 description: Analyze git history to derive undocumented rules, PRDs, ADRs, and PRPs
 name: git-derive-docs
@@ -15,10 +16,10 @@ name: git-derive-docs
 
 - Current branch: !`git branch --show-current`
 - Commit count: !`git rev-list --count HEAD 2>/dev/null`
-- Latest commit: !`git log --format='%ai' -1 2>/dev/null`
-- Existing rules: !`ls .claude/rules/ 2>/dev/null`
-- Existing docs: !`ls docs/prds/ docs/adrs/ docs/prps/ 2>/dev/null`
-- Commit conventions sample: !`git log --format='%s' -20 2>/dev/null`
+- Latest commit: !`git log --format='%ai' --max-count=1 2>/dev/null`
+- Existing rules: !`find .claude/rules/ -maxdepth 1 -type f 2>/dev/null`
+- Existing docs: !`find docs/prds/ docs/adrs/ docs/prps/ -maxdepth 1 -type f 2>/dev/null`
+- Commit conventions sample: !`git log --format='%s' --max-count=20 2>/dev/null`
 
 ## Parameters
 

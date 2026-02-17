@@ -62,7 +62,6 @@ JSON from PostToolUse containing:
    - Write back to feature-tracker.json
 
 5. **Sync dependent docs** (optional)
-   - Update `work-overview.md` completion sections
    - Update `TODO.md` checkboxes
 
 ### Output

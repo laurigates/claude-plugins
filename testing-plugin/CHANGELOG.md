@@ -1,5 +1,47 @@
 # Changelog
 
+## [3.7.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.6.1...testing-plugin-v3.7.0) (2026-02-16)
+
+
+### Features
+
+* **configure-plugin:** replace detect-secrets with gitleaks for secret scanning ([#668](https://github.com/laurigates/claude-plugins/issues/668)) ([3fc5bbc](https://github.com/laurigates/claude-plugins/commit/3fc5bbc2f8500f30160cc5dfeb5e3d1253ed0a54))
+
+## [3.6.1](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.6.0...testing-plugin-v3.6.1) (2026-02-14)
+
+
+### Code Refactoring
+
+* extract detailed content to REFERENCE.md files ([#605](https://github.com/laurigates/claude-plugins/issues/605)) ([7efbd83](https://github.com/laurigates/claude-plugins/commit/7efbd83b9a2b1ef67be702206396ba6d8102684d))
+
+## [3.6.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.5.3...testing-plugin-v3.6.0) (2026-02-13)
+
+
+### Features
+
+* add test-runner agent documentation ([#587](https://github.com/laurigates/claude-plugins/issues/587)) ([16b2721](https://github.com/laurigates/claude-plugins/commit/16b2721de3955f8bd597bb1f3b2ff84d7a0d2ae4))
+
+## [3.5.3](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.5.2...testing-plugin-v3.5.3) (2026-02-12)
+
+
+### Bug Fixes
+
+* standardize skill name fields to kebab-case across all plugins ([72c0f83](https://github.com/laurigates/claude-plugins/commit/72c0f837a1b07004850c5906a30d619a79098f69))
+
+## [3.5.2](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.5.1...testing-plugin-v3.5.2) (2026-02-09)
+
+
+### Code Refactoring
+
+* reframe negative guidance as positive guidance across skills ([7e755ee](https://github.com/laurigates/claude-plugins/commit/7e755ee1c32c39c124f3204a0d0a8d1d770e1573))
+
+## [3.5.2](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.5.1...testing-plugin-v3.5.2) (2026-02-08)
+
+
+### Code Refactoring
+
+* reframe negative guidance as positive guidance across skills ([7e755ee](https://github.com/laurigates/claude-plugins/commit/7e755ee1c32c39c124f3204a0d0a8d1d770e1573))
+
 ## [3.5.1](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.5.0...testing-plugin-v3.5.1) (2026-02-08)
 
 

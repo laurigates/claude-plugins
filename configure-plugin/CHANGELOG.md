@@ -1,5 +1,76 @@
 # Changelog
 
+## [1.8.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.7.3...configure-plugin-v1.8.0) (2026-02-16)
+
+
+### Features
+
+* **configure-plugin:** replace detect-secrets with gitleaks for secret scanning ([#668](https://github.com/laurigates/claude-plugins/issues/668)) ([3fc5bbc](https://github.com/laurigates/claude-plugins/commit/3fc5bbc2f8500f30160cc5dfeb5e3d1253ed0a54))
+
+## [1.8.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.7.3...configure-plugin-v1.8.0) (2026-02-16)
+
+
+### Features
+
+* **configure-plugin:** replace detect-secrets with gitleaks for secret scanning ([#668](https://github.com/laurigates/claude-plugins/issues/668)) ([3fc5bbc](https://github.com/laurigates/claude-plugins/commit/3fc5bbc2f8500f30160cc5dfeb5e3d1253ed0a54))
+
+## [1.7.3](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.7.2...configure-plugin-v1.7.3) (2026-02-15)
+
+
+### Bug Fixes
+
+* remove pipe/ls operators from context commands and add CI linting ([#653](https://github.com/laurigates/claude-plugins/issues/653)) ([7a01eef](https://github.com/laurigates/claude-plugins/commit/7a01eef21495ed6243277fbaa88082b7ecabc793))
+
+## [1.7.2](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.7.1...configure-plugin-v1.7.2) (2026-02-15)
+
+
+### Bug Fixes
+
+* replace broken context command patterns in skill files ([#644](https://github.com/laurigates/claude-plugins/issues/644)) ([440ba34](https://github.com/laurigates/claude-plugins/commit/440ba347bcc73a0512f74975cfd6b4af9fe8566e))
+
+## [1.7.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.7.0...configure-plugin-v1.7.1) (2026-02-13)
+
+
+### Documentation
+
+* improve skill documentation, standards, and context patterns ([#599](https://github.com/laurigates/claude-plugins/issues/599)) ([4a351dc](https://github.com/laurigates/claude-plugins/commit/4a351dcfac7229dd26586cdf7c8cbd51fec451d2))
+* **skills:** improve documentation, standards, and context patterns ([4a351dc](https://github.com/laurigates/claude-plugins/commit/4a351dcfac7229dd26586cdf7c8cbd51fec451d2)), closes [#596](https://github.com/laurigates/claude-plugins/issues/596)
+
+## [1.7.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.6.6...configure-plugin-v1.7.0) (2026-02-11)
+
+
+### Features
+
+* add required quality sections to refactored skills ([#544](https://github.com/laurigates/claude-plugins/issues/544)) ([342af54](https://github.com/laurigates/claude-plugins/commit/342af54af0f81fa50d239d06b32b353ddb7335fc))
+
+## [1.7.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.6.6...configure-plugin-v1.7.0) (2026-02-11)
+
+
+### Features
+
+* add required quality sections to refactored skills ([#544](https://github.com/laurigates/claude-plugins/issues/544)) ([342af54](https://github.com/laurigates/claude-plugins/commit/342af54af0f81fa50d239d06b32b353ddb7335fc))
+
+## [1.7.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.6.6...configure-plugin-v1.7.0) (2026-02-11)
+
+
+### Features
+
+* add required quality sections to refactored skills ([#544](https://github.com/laurigates/claude-plugins/issues/544)) ([342af54](https://github.com/laurigates/claude-plugins/commit/342af54af0f81fa50d239d06b32b353ddb7335fc))
+
+## [1.6.6](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.6.5...configure-plugin-v1.6.6) (2026-02-09)
+
+
+### Bug Fixes
+
+* **configure-plugin:** add cclsp server configuration to configure-mcp skill ([c9bfcd0](https://github.com/laurigates/claude-plugins/commit/c9bfcd0fc81a75206ec593ccbf7c1b01df8e4df3))
+
+## [1.6.5](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.6.4...configure-plugin-v1.6.5) (2026-02-08)
+
+
+### Code Refactoring
+
+* reframe negative guidance as positive guidance across skills ([7e755ee](https://github.com/laurigates/claude-plugins/commit/7e755ee1c32c39c124f3204a0d0a8d1d770e1573))
+
 ## [1.6.4](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.6.3...configure-plugin-v1.6.4) (2026-02-08)
 
 

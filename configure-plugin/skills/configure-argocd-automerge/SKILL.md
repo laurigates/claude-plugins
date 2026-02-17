@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2026-02-03
-modified: 2026-02-03
+modified: 2026-02-13
 reviewed: 2026-02-03
 description: Configure auto-merge workflow for ArgoCD Image Updater branches
 allowed-tools: Glob, Grep, Read, Write, Edit, TodoWrite
@@ -13,27 +13,43 @@ name: configure-argocd-automerge
 
 Configure GitHub Actions workflow to automatically create and merge PRs from ArgoCD Image Updater branches.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up auto-merge for ArgoCD Image Updater branches | Configuring ArgoCD application definitions |
+| Checking if `image-updater-**` branches have auto-merge | Managing general GitHub Actions workflows (`/configure:workflows`) |
+| Creating the `argocd-automerge.yml` workflow from scratch | Setting up container builds (`/configure:container`) |
+| Verifying PAT and permissions for auto-merge workflows | Configuring branch protection rules manually |
+| Updating an existing ArgoCD auto-merge workflow | Configuring Kubernetes deployments (`/configure:skaffold`) |
+
 ## Context
 
-ArgoCD Image Updater creates branches matching `image-updater-**` when updating container images. This workflow:
-1. Creates a PR from the image updater branch
-2. Approves the PR (requires PAT for self-approval)
-3. Enables auto-merge with squash
+- Workflows dir: !`test -d .github/workflows && echo "EXISTS" || echo "MISSING"`
+- Existing automerge workflow: !`find .github/workflows -maxdepth 1 \( -name '*argocd*automerge*' -o -name '*automerge*argocd*' \) 2>/dev/null`
+- Image updater branches: !`git branch -r --list 'origin/image-updater-*' 2>/dev/null`
+- Auto-merge workflow: !`find .github/workflows -maxdepth 1 -name 'argocd-automerge.yml' 2>/dev/null`
 
-**Prerequisites:**
-- Repository must have auto-merge enabled in settings
-- Branch protection rules must allow auto-merge
-- Optional: `AUTO_MERGE_PAT` secret for self-approval (different from workflow actor)
+## Parameters
 
-## Workflow
+Parse from command arguments:
 
-### Phase 1: Detection
+- `--check-only`: Report status without offering fixes
+- `--fix`: Create or update workflow automatically
+
+## Execution
+
+Execute this ArgoCD auto-merge workflow configuration:
+
+### Step 1: Detect existing workflow
 
 1. Check for `.github/workflows/` directory
-2. Look for existing ArgoCD auto-merge workflow
-3. Check for `image-updater-**` branch pattern handling
+2. Search for existing ArgoCD auto-merge workflow files
+3. Check for `image-updater-**` branch pattern handling in any workflow
 
-### Phase 2: Compliance Check
+### Step 2: Check compliance
+
+Validate the workflow against these standards:
 
 | Check | Standard | Severity |
 |-------|----------|----------|
@@ -43,7 +59,9 @@ ArgoCD Image Updater creates branches matching `image-updater-**` when updating 
 | Branch pattern | `image-updater-**` | WARN if different |
 | Auto-merge | squash merge | INFO |
 
-### Phase 3: Report
+### Step 3: Report results
+
+Print a status report:
 
 ```
 ArgoCD Auto-merge Workflow Status
@@ -51,22 +69,20 @@ ArgoCD Auto-merge Workflow Status
 Workflow: .github/workflows/argocd-automerge.yml
 
 Status:
-  Workflow exists     ✅ PASS
-  checkout action     v4              ✅ PASS
-  Permissions         Explicit        ✅ PASS
-  Branch pattern      image-updater-  ✅ PASS
-  Auto-merge          squash          ✅ PASS
+  Workflow exists     [PASS|FAIL]
+  checkout action     [version]         [PASS|WARN]
+  Permissions         [explicit|missing] [PASS|FAIL]
+  Branch pattern      [pattern]         [PASS|WARN]
+  Auto-merge          [strategy]        [PASS|INFO]
 
-Overall: PASS
+Overall: [PASS|FAIL|WARN]
 ```
 
-### Phase 4: Configuration (If Requested)
+If `--check-only`, stop here.
 
-If `--fix` flag or user confirms, create/update workflow.
+### Step 4: Configure workflow (if requested)
 
-## Standard Template
-
-**File**: `.github/workflows/argocd-automerge.yml`
+If `--fix` flag is set or user confirms, create or update `.github/workflows/argocd-automerge.yml` with the standard template:
 
 ```yaml
 name: Auto-merge ArgoCD Image Updater branches
@@ -146,6 +162,15 @@ Ensure branch protection allows:
 | Base branch | `main` | `master`, `develop` |
 | Merge strategy | `--squash` | `--merge`, `--rebase` |
 | PR title | `chore(deps): update container image` | Custom format |
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick status check | `/configure:argocd-automerge --check-only` |
+| Auto-create workflow | `/configure:argocd-automerge --fix` |
+| List image-updater branches | `git branch -r --list 'origin/image-updater-*'` |
+| Verify workflow exists | `find .github/workflows -name '*argocd*automerge*' 2>/dev/null` |
 
 ## Flags
 

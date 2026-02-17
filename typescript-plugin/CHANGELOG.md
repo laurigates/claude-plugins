@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.5.4](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.5.3...typescript-plugin-v1.5.4) (2026-02-14)
+
+
+### Code Refactoring
+
+* extract detailed content to REFERENCE.md files ([#605](https://github.com/laurigates/claude-plugins/issues/605)) ([7efbd83](https://github.com/laurigates/claude-plugins/commit/7efbd83b9a2b1ef67be702206396ba6d8102684d))
+
+## [1.5.3](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.5.2...typescript-plugin-v1.5.3) (2026-02-12)
+
+
+### Bug Fixes
+
+* standardize skill name fields to kebab-case across all plugins ([72c0f83](https://github.com/laurigates/claude-plugins/commit/72c0f837a1b07004850c5906a30d619a79098f69))
+
+## [1.5.2](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.5.1...typescript-plugin-v1.5.2) (2026-02-08)
+
+
+### Code Refactoring
+
+* reframe negative guidance as positive guidance across skills ([7e755ee](https://github.com/laurigates/claude-plugins/commit/7e755ee1c32c39c124f3204a0d0a8d1d770e1573))
+
 ## [1.5.1](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.5.0...typescript-plugin-v1.5.1) (2026-02-06)
 
 

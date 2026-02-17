@@ -57,7 +57,7 @@ ast-grep -p 'console.debug($$$)' --lang js
 ast-grep -p 'console.warn($$$)' --lang js
 ```
 
-**var Instead of let/const**
+**Use let/const for Variable Declarations**
 ```bash
 ast-grep -p 'var $VAR = $$$' --lang js
 ```
@@ -69,7 +69,7 @@ ast-grep -p 'var $VAR = $$$' --lang js
 # YAML rule for props mutation detection
 id: vue-props-mutation
 language: JavaScript
-message: Avoid mutating props directly
+message: Use computed properties or emit events to update props
 rule:
   pattern: props.$PROP = $VALUE
 ```

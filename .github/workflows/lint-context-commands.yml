@@ -1,0 +1,27 @@
+name: Lint Context Commands
+
+on:
+  pull_request:
+    paths:
+      - '**/skills/**/SKILL.md'
+      - '**/skills/**/skill.md'
+      - 'scripts/lint-context-commands.sh'
+  push:
+    branches:
+      - main
+    paths:
+      - '**/skills/**/SKILL.md'
+      - '**/skills/**/skill.md'
+      - 'scripts/lint-context-commands.sh'
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint context commands
+        run: ./scripts/lint-context-commands.sh

@@ -4,15 +4,20 @@ on:
   workflow_call:
     inputs:
       file-patterns:
-        description: 'File patterns to analyze'
+        description: 'File patterns to analyze (space-separated git pathspecs)'
         required: false
         type: string
-        default: '**/*.{js,ts,jsx,tsx}'
+        default: '**/*.js **/*.ts **/*.jsx **/*.tsx'
       max-turns:
         description: 'Maximum Claude turns'
         required: false
         type: number
         default: 5
+      file-limit:
+        description: 'Maximum number of changed files to analyze'
+        required: false
+        type: number
+        default: 30
     outputs:
       issues-found:
         description: 'Total async pattern issues'
@@ -44,12 +49,14 @@ jobs:
       - name: Get changed files
         id: changed
         run: |
+          set -f
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- ${{ inputs.file-patterns }} 2>/dev/null | head -30 || echo "")
+            FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- ${{ inputs.file-patterns }} 2>/dev/null | head -n ${{ inputs.file-limit }} || echo "")
           else
-            FILES=$(git diff --name-only HEAD~1 -- ${{ inputs.file-patterns }} 2>/dev/null | head -30 || echo "")
+            FILES=$(git diff --name-only HEAD~1 -- ${{ inputs.file-patterns }} 2>/dev/null | head -n ${{ inputs.file-limit }} || echo "")
           fi
-          FILE_COUNT=$(echo "$FILES" | grep -c '.' || echo 0)
+          set +f
+          FILE_COUNT=$(echo "$FILES" | grep -c '.' || true)
           echo "count=$FILE_COUNT" >> $GITHUB_OUTPUT
           echo "files<<EOF" >> $GITHUB_OUTPUT
           echo "$FILES" >> $GITHUB_OUTPUT

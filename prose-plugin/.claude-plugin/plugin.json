@@ -1,0 +1,30 @@
+{
+  "name": "prose-plugin",
+  "version": "1.2.0",
+  "description": "Prose transformation and style control - synthesis, distillation, tone, voice, clarity, and consistency for written text",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "repository": "https://github.com/laurigates/claude-plugins",
+  "license": "MIT",
+  "keywords": [
+    "prose",
+    "writing",
+    "style",
+    "synthesis",
+    "synthesize",
+    "planning",
+    "structure",
+    "organize",
+    "distillation",
+    "precis",
+    "condensation",
+    "concision",
+    "tone",
+    "voice",
+    "clarity",
+    "consistency",
+    "verbal-economy",
+    "editing"
+  ]
+}

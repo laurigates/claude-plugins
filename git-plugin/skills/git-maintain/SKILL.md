@@ -4,6 +4,7 @@ created: 2025-12-16
 modified: 2026-01-16
 reviewed: 2026-01-16
 allowed-tools: Bash(git status *), Bash(git branch *), Bash(git stash *), Bash(git prune *), Bash(git gc *), Bash(git repack *), Bash(git fsck *), Bash(git rm *), Bash(du *), Read, Glob, TodoWrite
+args: "[--prune] [--gc] [--verify] [--branches] [--stash] [--all]"
 argument-hint: [--prune] [--gc] [--verify] [--branches] [--stash] [--all]
 description: Perform repository maintenance and cleanup
 name: git-maintain

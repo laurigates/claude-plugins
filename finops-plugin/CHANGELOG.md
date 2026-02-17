@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.4](https://github.com/laurigates/claude-plugins/compare/finops-plugin-v1.0.3...finops-plugin-v1.0.4) (2026-02-15)
+
+
+### Bug Fixes
+
+* remove pipe/ls operators from context commands and add CI linting ([#653](https://github.com/laurigates/claude-plugins/issues/653)) ([7a01eef](https://github.com/laurigates/claude-plugins/commit/7a01eef21495ed6243277fbaa88082b7ecabc793))
+
 ## [1.0.3](https://github.com/laurigates/claude-plugins/compare/finops-plugin-v1.0.2...finops-plugin-v1.0.3) (2026-02-08)
 
 

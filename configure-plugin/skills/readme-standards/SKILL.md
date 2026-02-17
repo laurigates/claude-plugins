@@ -282,7 +282,7 @@ Write features as benefits, not just capabilities:
 - **Smart Photo Separation** - Intelligently detects and crops multiple photos from a single scan using edge analysis
 ```
 
-**Avoid:**
+**Compare — implementation-focused (less effective):**
 ```markdown
 - Uses mDNS for scanner discovery
 - Has edge detection algorithm

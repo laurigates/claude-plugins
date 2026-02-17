@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-01-24
+modified: 2026-02-10
 reviewed: 2026-02-08
 name: project-discovery
 description: Systematic project orientation for unfamiliar codebases. Automatically activates when Claude detects uncertainty about project state, structure, or tooling. Analyzes git state (branch, changes, commits), project type (language, framework, structure), and development tooling (build, test, lint, CI/CD). Provides structured summary with risk flags and recommendations. Use when entering new projects or when working on shaky assumptions.
@@ -81,11 +81,11 @@ For detailed reference on each phase, see the manual workflow below or [scripts/
 
 ## Systematic Discovery Workflow (Manual Alternative)
 
-When the script is unavailable, follow this 5-phase systematic discovery process. Complete all phases before providing the summary.
+When the script is unavailable, execute this 5-step systematic discovery process. Complete all steps before providing the summary.
 
 ---
 
-### Phase 1: Git State Analysis
+### Step 1: Analyze git state
 
 **Goal:** Understand version control state to prevent data loss and branch confusion.
 
@@ -127,7 +127,7 @@ git log --oneline -n 20 | grep -E "^[a-f0-9]+ (feat|fix|docs|style|refactor|test
 
 ---
 
-### Phase 2: Project Type Detection
+### Step 2: Detect project type
 
 **Goal:** Identify language, framework, and project structure to use correct tooling.
 
@@ -182,7 +182,7 @@ ls | grep -E "(next\.config|vite\.config|webpack\.config|tsconfig|jest\.config|p
 
 ---
 
-### Phase 3: Development Tooling Discovery
+### Step 3: Discover development tooling
 
 **Goal:** Identify build system, test framework, linters, and CI/CD to run correct commands.
 
@@ -247,7 +247,7 @@ ls -la .circleci/config.yml 2>/dev/null
 
 ---
 
-### Phase 4: Documentation Quick Scan
+### Step 4: Scan documentation
 
 **Goal:** Understand project purpose and setup requirements from documentation.
 
@@ -285,7 +285,7 @@ ls -la docs/ 2>/dev/null | head -20
 
 ---
 
-### Phase 5: State Summary & Recommendations
+### Step 5: Summarize state and recommend next actions
 
 **Goal:** Synthesize all findings into actionable summary with risk flags.
 
@@ -442,7 +442,7 @@ No README.md found or content is minimal.
 4. **Read README** for setup requirements and project conventions
 
 ### Discovery Efficiency
-1. **Complete all 5 phases** even if early phases reveal issues (comprehensive context prevents follow-up questions)
+1. **Complete all 5 steps** even if early steps reveal issues (comprehensive context prevents follow-up questions)
 2. **Highlight risk flags** prominently in summary
 3. **Provide actionable recommendations** specific to the project state
 4. **Keep discovery focused** (2-3 minutes; defer deep investigation to specialized skills)

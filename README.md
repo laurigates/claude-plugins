@@ -2,6 +2,10 @@
 
 A collection of 31 Claude Code plugins providing 285+ skills and 14 agents for development workflows.
 
+## Prerequisites
+
+- **Bash 5+** — Required for shell scripts. macOS ships bash 3.2; install via `brew install bash`.
+
 ## Installation
 
 ```bash
@@ -17,6 +21,22 @@ claude plugin install laurigates-claude-plugins/testing-plugin
 ```
 
 > **New here?** See the [Plugin Map](docs/PLUGIN-MAP.md) for setup guidance, decision trees, and recommended install order.
+
+## Quick Setup
+
+Use the included justfile for quick MCP server configuration:
+
+```bash
+# Set up all MCP servers and cclsp
+just claude-setup
+
+# Or install individual servers
+just mcp-github
+just mcp-playwright
+just mcp-context7
+```
+
+Alternatively, use the `/configure:mcp` skill for interactive configuration.
 
 ## Plugins by Category
 
@@ -98,12 +118,6 @@ claude plugin install laurigates-claude-plugins/testing-plugin
 | **health-plugin** | 6 | Diagnose and fix Claude Code configuration issues |
 | **hooks-plugin** | 1 | Claude Code hooks for enforcing best practices |
 | **tools-plugin** | 14 | General utilities - fd, rg, jq, shell, ImageMagick, d2 |
-
-### Integration
-
-| Plugin | Skills | Description |
-|--------|--------|-------------|
-| **sync-plugin** | 2 | External system synchronization - GitHub, Podio |
 
 ### Game Development
 

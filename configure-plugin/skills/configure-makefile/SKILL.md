@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-02-10
 reviewed: 2025-12-16
 description: Check and configure Makefile with standard targets for project standards
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite
@@ -13,21 +13,56 @@ name: configure-makefile
 
 Check and configure project Makefile against project standards.
 
+## When to Use This Skill
+
+| Use this skill when... | Use another approach when... |
+|------------------------|------------------------------|
+| Setting up a new Makefile for a project that requires Make | Project can use Just instead — use `/configure:justfile` (preferred) |
+| Auditing existing Makefile for missing standard targets | Writing complex build rules with dependencies — consult GNU Make documentation |
+| Ensuring Makefile follows team conventions (help target, PHONY, colors) | Project uses a language-native build system (cargo, go build) exclusively |
+| Running CI/CD compliance checks on Makefile structure | Migrating from Makefile to Justfile — use `/configure:justfile` which handles migration |
+| Adding language-specific build/test/lint targets to existing Makefile | Debugging a specific Make target — run `make -n <target>` directly |
+
 ## Context
 
-This command validates and creates Makefiles with standard targets for consistent development workflows across projects.
+- Project root: !`pwd`
+- Makefile exists: !`find . -maxdepth 1 -name 'Makefile' 2>/dev/null`
+- Makefile targets: !`grep -E '^[a-zA-Z_-]+:' Makefile 2>/dev/null`
+- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) 2>/dev/null`
+- Docker files: !`find . -maxdepth 1 \( -name 'Dockerfile' -o -name 'docker-compose.yml' -o -name 'compose.yml' \) 2>/dev/null`
+- Server files: !`find src -maxdepth 1 \( -name 'server.*' -o -name 'main.*' \) 2>/dev/null`
 
-**Required Makefile targets**: `help`, `test`, `build`, `clean`, `start`, `stop`, `lint`
+## Parameters
 
-## Workflow
+Parse from `$ARGUMENTS`:
 
-### Phase 1: Detection
+- `--check-only`: Report Makefile compliance status without modifications
+- `--fix`: Apply fixes automatically without prompting
 
-1. Check for `Makefile` in project root
-2. If exists, analyze current targets and structure
-3. Detect project type (python, node, rust, go, generic)
+**Required Makefile targets**: `help`, `test`, `build`, `clean`, `lint`
 
-### Phase 2: Target Analysis
+## Execution
+
+Execute this Makefile compliance check:
+
+### Step 1: Detect project type
+
+Read the context values and determine project type (in order):
+
+1. **Python**: `pyproject.toml` or `requirements.txt` present
+2. **Node**: `package.json` present
+3. **Rust**: `Cargo.toml` present
+4. **Go**: `go.mod` present
+5. **Generic**: None of the above
+
+Check for service indicators (start/stop needed):
+- Has `docker-compose.yml` or `compose.yml` -> Docker Compose service
+- Has `Dockerfile` + HTTP server code -> Container service
+- Has `src/server.*` or `src/main.*` -> Application service
+
+### Step 2: Analyze existing Makefile targets
+
+If Makefile exists, check against required targets:
 
 **Required targets for all projects:**
 
@@ -47,7 +82,7 @@ This command validates and creates Makefiles with standard targets for consisten
 | `stop` | If project has background service |
 | `format` | If project uses auto-formatters |
 
-### Phase 3: Compliance Checks
+### Step 3: Run compliance checks
 
 | Check | Standard | Severity |
 |-------|----------|----------|
@@ -58,44 +93,55 @@ This command validates and creates Makefiles with standard targets for consisten
 | Help target | Auto-generated from comments | WARN if missing |
 | Language-specific | Commands match project type | FAIL if mismatched |
 
-### Phase 4: Report Generation
+### Step 4: Generate compliance report
 
-```
-Makefile Compliance Report
-==============================
-Project Type: python (detected)
-Makefile: Found
+Print a report showing:
+- Project type (detected)
+- Each target with PASS/FAIL status and the command used
+- Makefile structural checks (default goal, PHONY, colors, help)
+- Missing targets list
+- Issue count
 
-Target Status:
-  help    ✅ PASS
-  test    ✅ PASS (uv run pytest)
-  build   ✅ PASS (docker build)
-  clean   ✅ PASS
-  lint    ✅ PASS (uv run ruff check)
-  format  ✅ PASS (uv run ruff format)
-  start   ❌ FAIL (missing)
-  stop    ❌ FAIL (missing)
+If `--check-only` is set, stop here.
 
-Makefile Checks:
-  Default goal        ✅ PASS (.DEFAULT_GOAL := help)
-  PHONY declarations  ✅ PASS
-  Colored output      ✅ PASS
-  Help target         ✅ PASS (auto-generated)
+### Step 5: Create or update Makefile (if --fix or user confirms)
 
-Missing Targets: start, stop
-Issues: 2 found
-```
+1. **Missing Makefile**: Create from standard template using the detected project type
+2. **Missing targets**: Add targets with appropriate language-specific commands
+3. **Missing defaults**: Add `.DEFAULT_GOAL`, `.PHONY`, color variables
+4. **Missing help**: Add auto-generated help target using awk comment parsing
 
-### Phase 5: Configuration (If Requested)
+Use the language-specific commands below:
 
-If `--fix` flag or user confirms:
+**Python (uv-based):**
+- `lint`: `@uv run ruff check .`
+- `format`: `@uv run ruff format .`
+- `test`: `@uv run pytest`
+- `build`: `@docker build -t {{PROJECT_NAME}} .`
+- `clean`: `@find . -type f -name "*.pyc" -delete` + remove cache dirs
 
-1. **Missing Makefile**: Create from standard template based on project type
-2. **Missing targets**: Add targets with appropriate commands
-3. **Missing defaults**: Add `.DEFAULT_GOAL`, `.PHONY`, colors
-4. **Missing help**: Add auto-generated help target
+**Node.js:**
+- `lint`: `@npm run lint`
+- `format`: `@npm run format`
+- `test`: `@npm test`
+- `build`: `@npm run build`
+- `clean`: `@rm -rf node_modules/ dist/ .next/ .turbo/`
 
-### Phase 6: Standards Tracking
+**Rust:**
+- `lint`: `@cargo clippy -- -D warnings`
+- `format`: `@cargo fmt`
+- `test`: `@cargo nextest run`
+- `build`: `@cargo build --release`
+- `clean`: `@cargo clean`
+
+**Go:**
+- `lint`: `@golangci-lint run`
+- `format`: `@gofmt -s -w .`
+- `test`: `@go test ./...`
+- `build`: `@go build -o bin/{{PROJECT_NAME}}`
+- `clean`: `@rm -rf bin/ dist/` + `@go clean`
+
+### Step 6: Update standards tracking
 
 Update `.project-standards.yaml`:
 
@@ -104,160 +150,21 @@ components:
   makefile: "2025.1"
 ```
 
-## Standard Makefile Template
+### Step 7: Print final report
 
-### Universal Structure
+Print a summary of changes applied, targets added, and suggest running `make help` to verify.
 
-```makefile
-# Makefile for {{PROJECT_NAME}}
-# Provides common commands for development, testing, and building.
+For the universal Makefile template structure, see [REFERENCE.md](REFERENCE.md).
 
-# Colors for console output
-BLUE := \033[0;34m
-GREEN := \033[0;32m
-YELLOW := \033[1;33m
-RED := \033[0;31m
-NC := \033[0m # No Color
+## Agentic Optimizations
 
-.DEFAULT_GOAL := help
-.PHONY: help test build clean lint format start stop
-
-##@ Help
-
-help: ## Display this help message
-	@awk 'BEGIN {FS = ":.*##"; printf "\n$(BLUE)Usage:$(NC)\n  make $(GREEN)<target>$(NC)\n"} \
-		/^[a-zA-Z_0-9-]+:.*?##/ { printf "  $(BLUE)%-15s$(NC) %s\n", $$1, $$2 } \
-		/^##@/ { printf "\n$(YELLOW)%s$(NC)\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
-	@echo ""
-
-##@ Development
-
-lint: ## Run linters
-	@echo "$(BLUE)Running linters...$(NC)"
-{{LINT_COMMAND}}
-
-format: ## Format code
-	@echo "$(BLUE)Formatting code...$(NC)"
-{{FORMAT_COMMAND}}
-
-test: ## Run tests
-	@echo "$(BLUE)Running tests...$(NC)"
-{{TEST_COMMAND}}
-
-##@ Build & Deploy
-
-build: ## Build project
-	@echo "$(BLUE)Building project...$(NC)"
-{{BUILD_COMMAND}}
-
-clean: ## Clean up temporary files and build artifacts
-	@echo "$(BLUE)Cleaning up...$(NC)"
-{{CLEAN_COMMAND}}
-
-start: ## Start service
-	@echo "$(BLUE)Starting service...$(NC)"
-{{START_COMMAND}}
-
-stop: ## Stop service
-	@echo "$(BLUE)Stopping service...$(NC)"
-{{STOP_COMMAND}}
-```
-
-### Language-Specific Commands
-
-**Python (uv-based):**
-```makefile
-lint:
-	@uv run ruff check .
-
-format:
-	@uv run ruff format .
-
-test:
-	@uv run pytest
-
-build:
-	@docker build -t {{PROJECT_NAME}} .
-
-clean:
-	@find . -type f -name "*.pyc" -delete
-	@find . -type d -name "__pycache__" -delete
-	@rm -rf .pytest_cache .ruff_cache dist/ build/
-```
-
-**Node.js:**
-```makefile
-lint:
-	@npm run lint
-
-format:
-	@npm run format
-
-test:
-	@npm test
-
-build:
-	@npm run build
-	@docker build -t {{PROJECT_NAME}} .
-
-clean:
-	@rm -rf node_modules/ dist/ .next/ .turbo/
-```
-
-**Rust:**
-```makefile
-lint:
-	@cargo clippy -- -D warnings
-
-format:
-	@cargo fmt
-
-test:
-	@cargo nextest run
-
-build:
-	@cargo build --release
-	@docker build -t {{PROJECT_NAME}} .
-
-clean:
-	@cargo clean
-```
-
-**Go:**
-```makefile
-lint:
-	@golangci-lint run
-
-format:
-	@gofmt -s -w .
-
-test:
-	@go test ./...
-
-build:
-	@go build -o bin/{{PROJECT_NAME}}
-	@docker build -t {{PROJECT_NAME}} .
-
-clean:
-	@rm -rf bin/ dist/
-	@go clean
-```
-
-## Detection Logic
-
-**Project type detection (in order):**
-
-1. **Python**: `pyproject.toml` or `requirements.txt` present
-2. **Node**: `package.json` present
-3. **Rust**: `Cargo.toml` present
-4. **Go**: `go.mod` present
-5. **Generic**: None of the above
-
-**Service detection (start/stop needed):**
-
-- Has `docker-compose.yml` → Docker Compose service
-- Has `Dockerfile` + HTTP server code → Container service
-- Has `src/server.*` or `src/main.*` → Application service
+| Context | Command |
+|---------|---------|
+| Quick compliance check | `/configure:makefile --check-only` |
+| Auto-fix all issues | `/configure:makefile --fix` |
+| List existing targets | `grep -E '^[a-zA-Z_-]+:' Makefile` |
+| Dry-run a target | `make -n <target>` |
+| Show default goal | `make -p \| grep '.DEFAULT_GOAL'` |
 
 ## Flags
 

@@ -18,12 +18,6 @@ All skills are located in the `skills/` directory:
   - GitHub issue integration
   - Automated PR creation and CI monitoring
 
-- **workflow-dev-zen** - AI-powered development loop with PAL MCP integration
-  - Enhanced development automation with code review
-  - Plan generation using multiple AI models
-  - Pre-commit checks and validation
-  - GitHub issue consideration during planning
-
 #### Core GitHub Actions Skills
 
 - **claude-code-github-workflows** - Workflow design and automation patterns
@@ -204,8 +198,6 @@ Use workflow commands for automated development:
 # Focus on bugs only
 /workflow:dev --focus bug
 
-# AI-enhanced with code review
-/workflow:dev-zen
 ```
 
 ## Examples

@@ -1,6 +1,6 @@
 ---
 created: 2025-12-20
-modified: 2026-02-06
+modified: 2026-02-14
 reviewed: 2025-12-20
 ---
 
@@ -26,6 +26,7 @@ Claude Code plugin collection providing skills and agents for development workfl
 
 | Rule | Purpose |
 |------|---------|
+| `.claude/rules/conventional-commits.md` | **Commit and PR title format standards** - drives release-please automation |
 | `.claude/rules/plugin-structure.md` | plugin.json schema and directory layout |
 | `.claude/rules/release-please.md` | Version management and changelog automation |
 | `.claude/rules/skill-development.md` | Skill creation patterns |
@@ -34,6 +35,7 @@ Claude Code plugin collection providing skills and agents for development workfl
 | `.claude/rules/shell-scripting.md` | Safe shell patterns and frontmatter extraction |
 | `.claude/rules/agentic-permissions.md` | Granular tool permissions for skills |
 | `.claude/rules/skill-quality.md` | Skill size limits, required sections, and quality checklist |
+| `.claude/rules/skill-execution-structure.md` | Imperative execution patterns for user-invocable skills |
 | `.claude/rules/handling-blocked-hooks.md` | How to respond when hooks block commands |
 
 ## Creating New Skills
@@ -126,7 +128,7 @@ When creating, modifying, or deleting a plugin, update these files:
 1. Create plugin directory structure (see Project Structure above)
 2. Create `.claude-plugin/plugin.json` with required fields
 3. Create `README.md` with plugin documentation
-4. Add entry to `.claude-plugin/marketplace.json`:
+4. Add entry to `.claude-plugin/marketplace.json` (under the `plugins` array):
    ```json
    {
      "name": "new-plugin",
@@ -137,6 +139,7 @@ When creating, modifying, or deleting a plugin, update these files:
      "category": "category-name"
    }
    ```
+   Note: marketplace.json has structure `{ "name": "...", "plugins": [...] }` — add to the `plugins` array.
 5. Add to `release-please-config.json`:
    ```json
    "new-plugin": {
@@ -166,13 +169,51 @@ When creating, modifying, or deleting a plugin, update these files:
 3. Remove package from `release-please-config.json`
 4. Remove version from `.release-please-manifest.json`
 
+## Git Workflow
+
+**CRITICAL: Commits and PR titles MUST follow conventional commit format.**
+
+### Conventional Commits
+
+All commits and PR titles must follow the pattern:
+```
+<type>(<scope>): <subject>
+```
+
+**Why:** This drives release-please version automation and maintains clean git history.
+
+- **Commits:** Use `git commit -m "feat(plugin): description"` with issue references
+- **PR titles:** MUST match conventional format - used as commit message on squash-merge
+- **Scope:** Plugin or feature name (e.g., `feat(git-plugin)`, `fix(skill-development)`)
+- **Types:** `feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `ci`, `build`, `chore`
+
+See `.claude/rules/conventional-commits.md` for complete guide and examples.
+
+### Example Workflow
+
+```bash
+# Write and test code
+git add src/feature.ts tests/feature.test.ts
+
+# Commit with conventional format + issue reference
+git commit -m "feat(git-plugin): add new workflow
+
+Closes #42
+Refs #99"
+
+# PR title must also be conventional
+gh pr create --title "feat(git-plugin): add new workflow"
+```
+
 ## Development Workflow
 
 1. **Research documentation** - Use context7, web search
 2. **Plan skill structure** - Decide granularity, scope
 3. **Write skills** - Follow standard structure
 4. **Update all metadata files** - See Plugin Lifecycle section
-5. **Test** - Verify skills load and work
+5. **Commit early** - Use conventional commit format (see Git Workflow section)
+6. **Test** - Verify skills load and work
+7. **Create PR** - Use conventional commit format for title (drives automation)
 
 ## Conventions
 

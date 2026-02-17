@@ -1,5 +1,68 @@
 # Changelog
 
+## [3.16.6](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.16.5...blueprint-plugin-v3.16.6) (2026-02-15)
+
+
+### Bug Fixes
+
+* remove pipe/ls operators from context commands and add CI linting ([#653](https://github.com/laurigates/claude-plugins/issues/653)) ([7a01eef](https://github.com/laurigates/claude-plugins/commit/7a01eef21495ed6243277fbaa88082b7ecabc793))
+
+## [3.16.5](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.16.4...blueprint-plugin-v3.16.5) (2026-02-15)
+
+
+### Bug Fixes
+
+* replace broken context command patterns in skill files ([#644](https://github.com/laurigates/claude-plugins/issues/644)) ([440ba34](https://github.com/laurigates/claude-plugins/commit/440ba347bcc73a0512f74975cfd6b4af9fe8566e))
+
+## [3.16.4](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.16.3...blueprint-plugin-v3.16.4) (2026-02-14)
+
+
+### Code Refactoring
+
+* extract detailed content to REFERENCE.md files ([#605](https://github.com/laurigates/claude-plugins/issues/605)) ([7efbd83](https://github.com/laurigates/claude-plugins/commit/7efbd83b9a2b1ef67be702206396ba6d8102684d))
+
+## [3.16.3](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.16.2...blueprint-plugin-v3.16.3) (2026-02-14)
+
+
+### Documentation
+
+* **git-plugin:** add conventional commits standards ([#616](https://github.com/laurigates/claude-plugins/issues/616)) ([5b74389](https://github.com/laurigates/claude-plugins/commit/5b74389ecdf5223dd62368390ecd9b36ccb1596c))
+
+## [3.16.2](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.16.1...blueprint-plugin-v3.16.2) (2026-02-14)
+
+
+### Code Refactoring
+
+* restructure 11 skills to execution pattern ([#609](https://github.com/laurigates/claude-plugins/issues/609)) ([0aff44a](https://github.com/laurigates/claude-plugins/commit/0aff44ae5768e3cd3aedfed568137738fc298bbc))
+
+## [3.16.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.16.0...blueprint-plugin-v3.16.1) (2026-02-12)
+
+
+### Bug Fixes
+
+* standardize skill name fields to kebab-case across all plugins ([72c0f83](https://github.com/laurigates/claude-plugins/commit/72c0f837a1b07004850c5906a30d619a79098f69))
+
+## [3.16.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.15.0...blueprint-plugin-v3.16.0) (2026-02-12)
+
+
+### Features
+
+* **blueprint-plugin:** add v3.0→v3.1 migration and remove work-overview references ([e9849b0](https://github.com/laurigates/claude-plugins/commit/e9849b0a0d3d434432d32e68fee3498696fb09c8))
+
+## [3.15.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.14.2...blueprint-plugin-v3.15.0) (2026-02-09)
+
+
+### Features
+
+* **blueprint-plugin,documentation-plugin:** adapt skills to Claude Code auto memory and [@import](https://github.com/import) features ([f18e27b](https://github.com/laurigates/claude-plugins/commit/f18e27bb0b2261e2a829659b919ee0f5f4fb1a4e))
+
+## [3.14.2](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.14.1...blueprint-plugin-v3.14.2) (2026-02-08)
+
+
+### Code Refactoring
+
+* reframe negative guidance as positive guidance across skills ([7e755ee](https://github.com/laurigates/claude-plugins/commit/7e755ee1c32c39c124f3204a0d0a8d1d770e1573))
+
 ## [3.14.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.14.0...blueprint-plugin-v3.14.1) (2026-02-08)
 
 
