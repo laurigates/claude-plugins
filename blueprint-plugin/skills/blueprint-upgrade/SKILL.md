@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-17
-modified: 2026-02-06
+modified: 2026-02-17
 reviewed: 2026-01-09
 description: "Upgrade blueprint structure to the latest format version"
 allowed-tools: Read, Write, Edit, Bash, Glob, AskUserQuestion
@@ -10,7 +10,7 @@ name: blueprint-upgrade
 
 Upgrade the blueprint structure to the latest format version.
 
-**Current Format Version**: 3.1.0
+**Current Format Version**: 3.2.0
 
 This command delegates version-specific migration logic to the `blueprint-migration` skill.
 
@@ -29,7 +29,7 @@ This command delegates version-specific migration logic to the `blueprint-migrat
    elif [[ -f .claude/blueprints/.manifest.json ]]; then
      current=$(jq -r '.format_version // "1.0.0"' .claude/blueprints/.manifest.json)
    fi
-   target="3.1.0"
+   target="3.2.0"
    ```
 
    **Version compatibility matrix**:
@@ -39,7 +39,8 @@ This command delegates version-specific migration logic to the `blueprint-migrat
    | 1.x.x        | 2.0.0      | `migrations/v1.x-to-v2.0.md` |
    | 2.x.x        | 3.0.0      | `migrations/v2.x-to-v3.0.md` |
    | 3.0.x        | 3.1.0      | `migrations/v3.0-to-v3.1.md` |
-   | 3.1.0        | 3.1.0      | Already up to date |
+   | 3.1.x        | 3.2.0      | `migrations/v3.1-to-v3.2.md` |
+   | 3.2.0        | 3.2.0      | Already up to date |
 
 3. **Check for deprecated generated commands**:
 
@@ -79,6 +80,39 @@ This command delegates version-specific migration logic to the `blueprint-migrat
 
 ---
 
+3a. **v3.1 → v3.2 migration: Add task registry**:
+
+   a. **Check if task_registry already exists**:
+      ```bash
+      jq -e '.task_registry' docs/blueprint/manifest.json 2>/dev/null
+      ```
+
+      If exists, skip to next step.
+
+   b. **Ask about maintenance task scheduling** (use AskUserQuestion):
+      ```
+      question: "New feature: Task Registry tracks when maintenance tasks last ran. How should tasks be scheduled?"
+      options:
+        - label: "Prompt before running (Recommended)"
+          description: "Always ask before running maintenance tasks"
+        - label: "Auto-run safe tasks"
+          description: "Read-only tasks run automatically when due"
+        - label: "Manual only"
+          description: "Tasks only run when explicitly invoked"
+      ```
+
+   c. **Add task_registry to manifest**:
+      Use `jq` to add the `task_registry` section to manifest.json with all tasks defaulting to:
+      - `enabled: true` (except `curate-docs` which defaults to `false`)
+      - `auto_run`: based on user choice (safe read-only tasks: `adr-validate`, `feature-tracker-sync`, `sync-ids`)
+      - `last_completed_at: null`
+      - `last_result: null`
+      - Default schedules: `derive-prd` → `on-demand`, `derive-plans` → `weekly`, `derive-rules` → `weekly`, `generate-rules` → `on-change`, `adr-validate` → `weekly`, `feature-tracker-sync` → `daily`, `sync-ids` → `on-change`, `claude-md` → `on-change`, `curate-docs` → `on-demand`
+      - `stats: {}`
+      - `context: {}`
+
+   d. **Bump format_version to 3.2.0**
+
 4. **Display upgrade plan**:
    ```
    Blueprint Upgrade
@@ -92,6 +126,12 @@ This command delegates version-specific migration logic to the `blueprint-migrat
    - No more generated/ subdirectory - cleaner structure
    - All blueprint-related files consolidated under docs/blueprint/
 
+   Major changes in v3.2:
+   - Task registry tracks operational metadata for maintenance tasks
+   - Smart scheduling: tasks know when they were last run
+   - Enable/disable individual tasks
+   - Incremental operations with context persistence
+
    (For v2.0 changes when upgrading from v1.x:)
    - PRDs, ADRs, PRPs move to docs/ (project documentation)
    - Custom overrides in .claude/skills/
@@ -100,7 +140,7 @@ This command delegates version-specific migration logic to the `blueprint-migrat
 
 5. **Confirm with user** (use AskUserQuestion):
    ```
-   question: "Ready to upgrade blueprint from v{current} to v3.1.0?"
+   question: "Ready to upgrade blueprint from v{current} to v3.2.0?"
    options:
      - "Yes, upgrade now" → proceed
      - "Show detailed migration steps" → display migration document
@@ -304,6 +344,9 @@ This command delegates version-specific migration logic to the `blueprint-migrat
        },
        "commands": {}
      },
+     "task_registry": {
+       "// note": "Added by v3.1 → v3.2 migration step above"
+     },
      "custom_overrides": {
        "rules": ["[any promoted rules]"],
        "commands": []
@@ -339,6 +382,11 @@ This command delegates version-specific migration logic to the `blueprint-migrat
    - {n} promoted skills
 
    [Document detection: enabled (if selected)]
+
+   Task registry:
+   - {n} tasks registered with scheduling metadata
+   - Auto-run mode: {user choice from migration step}
+   - Run /blueprint:status to see task health dashboard
 
    New v3.0 architecture:
    - Blueprint state: docs/blueprint/ (version-controlled with project)

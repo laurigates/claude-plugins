@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2026-01-15
-modified: 2026-02-14
+modified: 2026-02-17
 reviewed: 2026-02-14
 description: "Validate ADR relationships, detect orphaned references, and check domain consistency"
 args: "[--report-only]"
@@ -92,7 +92,24 @@ Ask user action via AskUserQuestion:
 
 Execute based on selection (see [REFERENCE.md](REFERENCE.md#remediation-procedures)).
 
-### Step 7: Report changes and summary
+### Step 7: Update task registry
+
+Update the task registry entry in `docs/blueprint/manifest.json`:
+
+```bash
+jq --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  --arg result "${VALIDATION_RESULT:-success}" \
+  --argjson processed "${ADRS_VALIDATED:-0}" \
+  '.task_registry["adr-validate"].last_completed_at = $now |
+   .task_registry["adr-validate"].last_result = $result |
+   .task_registry["adr-validate"].stats.runs_total = ((.task_registry["adr-validate"].stats.runs_total // 0) + 1) |
+   .task_registry["adr-validate"].stats.items_processed = $processed' \
+  docs/blueprint/manifest.json > tmp.json && mv tmp.json docs/blueprint/manifest.json
+```
+
+Where `VALIDATION_RESULT` is "success", "{N} warnings", or "failed: {reason}".
+
+### Step 8: Report changes and summary
 
 Report all changes made:
 - Updated ADRs (status changes, added links)
