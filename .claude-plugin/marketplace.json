@@ -303,7 +303,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "1.5.3",
+      "version": "1.5.4",
       "keywords": [
         "hooks",
         "automation",
