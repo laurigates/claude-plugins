@@ -25,9 +25,9 @@ Check and configure testing frameworks against best practices (Vitest, Jest, pyt
 
 ## Context
 
-- Package.json: !`test -f package.json && echo "EXISTS" || echo "MISSING"`
-- Pyproject.toml: !`test -f pyproject.toml && echo "EXISTS" || echo "MISSING"`
-- Cargo.toml: !`test -f Cargo.toml && echo "EXISTS" || echo "MISSING"`
+- Package.json: !`find . -maxdepth 1 -name \'package.json\' 2>/dev/null`
+- Pyproject.toml: !`find . -maxdepth 1 -name \'pyproject.toml\' 2>/dev/null`
+- Cargo.toml: !`find . -maxdepth 1 -name \'Cargo.toml\' 2>/dev/null`
 - Test config files: !`find . -maxdepth 1 \( -name 'vitest.config.*' -o -name 'jest.config.*' -o -name 'pytest.ini' -o -name '.nextest.toml' \) 2>/dev/null`
 - Pytest in pyproject: !`grep -c 'tool.pytest' pyproject.toml 2>/dev/null`
 - Test directories: !`find . -maxdepth 2 -type d \( -name 'tests' -o -name '__tests__' -o -name 'test' \) 2>/dev/null`

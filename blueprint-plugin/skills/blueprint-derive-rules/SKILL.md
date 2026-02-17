@@ -28,9 +28,9 @@ Extract project decisions from git commit history and codify them as Claude rule
 
 ## Context
 
-- Git repository: !`git rev-parse --git-dir 2>/dev/null && echo "YES" || echo "NO"`
-- Blueprint initialized: !`test -f docs/blueprint/manifest.json && echo "YES" || echo "NO"`
-- Total commits: !`git rev-list --count HEAD 2>/dev/null || echo "0"`
+- Git repository: !`git rev-parse --git-dir 2>/dev/null`
+- Blueprint initialized: !`test -f docs/blueprint/manifest.json 2>/dev/null`
+- Total commits: !`git rev-list --count HEAD 2>/dev/null`
 - Conventional commits %: !`git log --format="%s" 2>/dev/null`
 - Existing rules: !`find .claude/rules -name "*.md" -type f 2>/dev/null`
 

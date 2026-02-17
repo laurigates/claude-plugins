@@ -25,17 +25,17 @@ Check and configure code formatting tools against modern best practices.
 
 ## Context
 
-- Biome config: !`test -f biome.json && echo "EXISTS" || echo "MISSING"`
+- Biome config: !`find . -maxdepth 1 -name \'biome.json\' 2>/dev/null`
 - Prettier config: !`find . -maxdepth 1 \( -name '.prettierrc*' -o -name 'prettier.config.*' \) 2>/dev/null`
 - Ruff config: !`grep -l 'tool.ruff.format' pyproject.toml 2>/dev/null`
 - Black config: !`grep -l 'tool.black' pyproject.toml 2>/dev/null`
 - Rustfmt config: !`find . -maxdepth 1 \( -name 'rustfmt.toml' -o -name '.rustfmt.toml' \) 2>/dev/null`
-- EditorConfig: !`test -f .editorconfig && echo "EXISTS" || echo "MISSING"`
-- Package JSON: !`test -f package.json && echo "EXISTS" || echo "MISSING"`
-- Python project: !`test -f pyproject.toml && echo "EXISTS" || echo "MISSING"`
-- Rust project: !`test -f Cargo.toml && echo "EXISTS" || echo "MISSING"`
-- Pre-commit: !`test -f .pre-commit-config.yaml && echo "EXISTS" || echo "MISSING"`
-- Project standards: !`test -f .project-standards.yaml && echo "EXISTS" || echo "MISSING"`
+- EditorConfig: !`find . -maxdepth 1 -name \'.editorconfig\' 2>/dev/null`
+- Package JSON: !`find . -maxdepth 1 -name \'package.json\' 2>/dev/null`
+- Python project: !`find . -maxdepth 1 -name \'pyproject.toml\' 2>/dev/null`
+- Rust project: !`find . -maxdepth 1 -name \'Cargo.toml\' 2>/dev/null`
+- Pre-commit: !`find . -maxdepth 1 -name \'.pre-commit-config.yaml\' 2>/dev/null`
+- Project standards: !`find . -maxdepth 1 -name \'.project-standards.yaml\' 2>/dev/null`
 
 ## Parameters
 

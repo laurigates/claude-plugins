@@ -25,13 +25,13 @@ Check and configure editor settings for consistency across the team.
 
 ## Context
 
-- EditorConfig: !`test -f .editorconfig && echo "EXISTS" || echo "MISSING"`
-- VS Code settings: !`test -f .vscode/settings.json && echo "EXISTS" || echo "MISSING"`
-- VS Code extensions: !`test -f .vscode/extensions.json && echo "EXISTS" || echo "MISSING"`
-- VS Code launch: !`test -f .vscode/launch.json && echo "EXISTS" || echo "MISSING"`
-- VS Code tasks: !`test -f .vscode/tasks.json && echo "EXISTS" || echo "MISSING"`
+- EditorConfig: !`find . -maxdepth 1 -name \'.editorconfig\' 2>/dev/null`
+- VS Code settings: !`find . -maxdepth 1 -name \'.vscode/settings.json\' 2>/dev/null`
+- VS Code extensions: !`find . -maxdepth 1 -name \'.vscode/extensions.json\' 2>/dev/null`
+- VS Code launch: !`find . -maxdepth 1 -name \'.vscode/launch.json\' 2>/dev/null`
+- VS Code tasks: !`find . -maxdepth 1 -name \'.vscode/tasks.json\' 2>/dev/null`
 - Project languages: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'tsconfig.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'biome.json' \) 2>/dev/null`
-- Project standards: !`test -f .project-standards.yaml && echo "EXISTS" || echo "MISSING"`
+- Project standards: !`find . -maxdepth 1 -name \'.project-standards.yaml\' 2>/dev/null`
 
 ## Parameters
 

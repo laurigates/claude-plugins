@@ -26,9 +26,9 @@ Diagnose and fix issues with the Claude Code plugin registry. This command speci
 ## Context
 
 - Current project: !`pwd`
-- Plugin registry exists: !`test -f ~/.claude/plugins/installed_plugins.json && echo "yes" || echo "no"`
-- Project settings exists: !`test -f .claude/settings.json && echo "yes" || echo "no"`
-- Project plugins dir: !`test -d .claude-plugin && echo "yes" || echo "no"`
+- Plugin registry exists: !`find ~/.claude/plugins -maxdepth 1 -name 'installed_plugins.json' 2>/dev/null`
+- Project settings exists: !`find . -maxdepth 1 -name '.claude/settings.json' 2>/dev/null`
+- Project plugins dir: !`find . -maxdepth 1 -type d -name \'.claude-plugin\' 2>/dev/null`
 
 ## Background: Issue #14202
 

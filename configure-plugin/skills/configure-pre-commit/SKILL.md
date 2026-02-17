@@ -25,13 +25,13 @@ Check and configure pre-commit hooks against project standards.
 
 ## Context
 
-- Pre-commit config: !`test -f .pre-commit-config.yaml && echo "EXISTS" || echo "MISSING"`
-- Project standards: !`test -f .project-standards.yaml && echo "EXISTS" || echo "MISSING"`
+- Pre-commit config: !`find . -maxdepth 1 -name \'.pre-commit-config.yaml\' 2>/dev/null`
+- Project standards: !`find . -maxdepth 1 -name \'.project-standards.yaml\' 2>/dev/null`
 - Project type in standards: !`grep -m1 "^project_type:" .project-standards.yaml 2>/dev/null`
 - Has terraform: !`find . -maxdepth 2 \( -name '*.tf' -o -type d -name 'terraform' \) -print -quit 2>/dev/null`
 - Has helm: !`find . -maxdepth 2 -type d -name 'helm' -print -quit 2>/dev/null`
-- Has package.json: !`test -f package.json && echo "EXISTS" || echo "MISSING"`
-- Has pyproject.toml: !`test -f pyproject.toml && echo "EXISTS" || echo "MISSING"`
+- Has package.json: !`find . -maxdepth 1 -name \'package.json\' 2>/dev/null`
+- Has pyproject.toml: !`find . -maxdepth 1 -name \'pyproject.toml\' 2>/dev/null`
 
 ## Parameters
 

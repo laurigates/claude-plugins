@@ -29,14 +29,14 @@ For server configurations, environment variable reference, and report templates,
 
 ## Context
 
-- Config exists: !`test -f .mcp.json && echo "EXISTS" || echo "MISSING"`
+- Config exists: !`find . -maxdepth 1 -name \'.mcp.json\' 2>/dev/null`
 - Config contents: !`cat .mcp.json 2>/dev/null`
 - Installed servers: !`jq -r '.mcpServers' .mcp.json 2>/dev/null`
-- Git tracking: !`grep -q '.mcp.json' .gitignore 2>/dev/null && echo "IGNORED" || echo "NOT IGNORED"`
-- Standards file: !`test -f .project-standards.yaml && echo "EXISTS" || echo "MISSING"`
+- Git tracking: !`grep '.mcp.json' .gitignore 2>/dev/null`
+- Standards file: !`find . -maxdepth 1 -name \'.project-standards.yaml\' 2>/dev/null`
 - Has playwright config: !`find . -maxdepth 1 -name 'playwright.config.*' -print -quit 2>/dev/null`
 - Has TS/JS files: !`find . -maxdepth 2 \( -name '*.ts' -o -name '*.py' -o -name '*.go' -o -name '*.rs' \) -print -quit 2>/dev/null`
-- Dotfiles registry: !`test -f ~/.local/share/chezmoi/.chezmoidata.toml && echo "EXISTS" || echo "MISSING"`
+- Dotfiles registry: !`find . -maxdepth 1 -name \'~/.local/share/chezmoi/.chezmoidata.toml\' 2>/dev/null`
 
 ## Parameters
 
