@@ -125,7 +125,11 @@ COMMAND_SHELL_ONLY=$(echo "$COMMAND" | awk '
         if (t == delim) { ih = 0 }
     }
 ')
-PIPE_COUNT=$(echo "$COMMAND_SHELL_ONLY" | tr -cd '|' | wc -c)
+# Strip quoted strings and || operators before counting actual shell pipes
+# - Single-quoted strings contain regex alternation (grep -E '(a|b|c)')
+# - Double-quoted strings may contain literal pipe characters
+# - || is logical OR, not a pipe operator
+PIPE_COUNT=$(echo "$COMMAND_SHELL_ONLY" | sed "s/'[^']*'//g; s/\"[^\"]*\"//g; s/||//g" | tr -cd '|' | wc -c)
 if [ "$PIPE_COUNT" -ge 5 ]; then
     block_with_reminder "REMINDER: This command has $PIPE_COUNT pipes - consider simplifying. Options:
 - Use JSON output from the source (--reporter=json, --format=json) and parse with jq
