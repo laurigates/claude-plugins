@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.5](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.5.4...hooks-plugin-v1.5.5) (2026-02-17)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** allow dotfile staging in bash-antipatterns check ([#703](https://github.com/laurigates/claude-plugins/issues/703)) ([ba387e2](https://github.com/laurigates/claude-plugins/commit/ba387e29f5dd7f122ee6c51af32fcc69f04b67ee)), closes [#595](https://github.com/laurigates/claude-plugins/issues/595)
+
 ## [1.5.4](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.5.3...hooks-plugin-v1.5.4) (2026-02-17)
 
 
