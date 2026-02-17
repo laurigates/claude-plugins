@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.0](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.1.4...github-actions-plugin-v1.2.0) (2026-02-17)
+
+
+### Features
+
+* **configure-plugin:** replace detect-secrets with gitleaks for secret scanning ([#668](https://github.com/laurigates/claude-plugins/issues/668)) ([3fc5bbc](https://github.com/laurigates/claude-plugins/commit/3fc5bbc2f8500f30160cc5dfeb5e3d1253ed0a54))
+
+
+### Bug Fixes
+
+* remove pipe/ls operators from context commands and add CI linting ([#653](https://github.com/laurigates/claude-plugins/issues/653)) ([7a01eef](https://github.com/laurigates/claude-plugins/commit/7a01eef21495ed6243277fbaa88082b7ecabc793))
+
 ## [1.2.0](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.1.4...github-actions-plugin-v1.2.0) (2026-02-16)
 
 
