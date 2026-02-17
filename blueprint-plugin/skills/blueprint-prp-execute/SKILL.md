@@ -33,9 +33,9 @@ For detailed report templates, deferred items workflow, feature tracker sync, an
 
 ## Context
 
-- PRP file path: !`test -f docs/prps/${1:-unknown}.md && echo "EXISTS" || echo "MISSING"`
+- PRP file path: !`find . -maxdepth 1 -name \'docs/prps/${1:-unknown}.md\' 2>/dev/null`
 - PRP confidence score: !`grep -m1 "^confidence:" docs/prps/${1:-unknown}.md 2>/dev/null`
-- Feature tracker enabled: !`test -f docs/blueprint/feature-tracker.json && echo "YES" || echo "NO"`
+- Feature tracker enabled: !`test -f docs/blueprint/feature-tracker.json 2>/dev/null`
 - Current branch: !`git rev-parse --abbrev-ref HEAD 2>/dev/null`
 - Uncommitted changes: !`git status --porcelain 2>/dev/null`
 

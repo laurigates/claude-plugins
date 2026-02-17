@@ -25,11 +25,11 @@ Check and configure GitHub Actions CI/CD workflows against project standards.
 
 ## Context
 
-- Workflows dir: !`test -d .github/workflows && echo "EXISTS" || echo "MISSING"`
+- Workflows dir: !`find . -maxdepth 1 -type d -name \'.github/workflows\' 2>/dev/null`
 - Workflow files: !`find .github/workflows -maxdepth 1 \( -name '*.yml' -o -name '*.yaml' \) 2>/dev/null`
 - Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) 2>/dev/null`
 - Dockerfile: !`find . -maxdepth 1 -name 'Dockerfile*' 2>/dev/null`
-- Release-please config: !`test -f release-please-config.json && echo "EXISTS" || echo "MISSING"`
+- Release-please config: !`find . -maxdepth 1 -name \'release-please-config.json\' 2>/dev/null`
 
 **Skills referenced**: `ci-workflows`, `github-actions-auth-security`
 

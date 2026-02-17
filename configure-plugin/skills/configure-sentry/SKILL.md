@@ -25,9 +25,9 @@ Check and configure Sentry error tracking integration against project standards.
 
 ## Context
 
-- Package.json: !`test -f package.json && echo "EXISTS" || echo "MISSING"`
-- Pyproject.toml: !`test -f pyproject.toml && echo "EXISTS" || echo "MISSING"`
-- Requirements.txt: !`test -f requirements.txt && echo "EXISTS" || echo "MISSING"`
+- Package.json: !`find . -maxdepth 1 -name \'package.json\' 2>/dev/null`
+- Pyproject.toml: !`find . -maxdepth 1 -name \'pyproject.toml\' 2>/dev/null`
+- Requirements.txt: !`find . -maxdepth 1 -name \'requirements.txt\' 2>/dev/null`
 - Project standards: !`head -20 .project-standards.yaml 2>/dev/null`
 - Sentry in package.json: !`grep -o '"@sentry/[^"]*"' package.json 2>/dev/null`
 - Sentry in pyproject.toml: !`grep 'sentry' pyproject.toml 2>/dev/null`

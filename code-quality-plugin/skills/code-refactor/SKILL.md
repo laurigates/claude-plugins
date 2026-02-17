@@ -11,9 +11,9 @@ name: code-refactor
 
 ## Context
 
-- Target path: !`test -n "$1" && echo "$1" || echo "NOT_PROVIDED"`
-- File type: !`test -n "$1" && file "$1" 2>/dev/null`
-- Lines of code: !`test -n "$1" && wc -l "$1" 2>/dev/null`
+- Target path: !`echo "$1" 2>/dev/null`
+- File type: !`file "$1" 2>/dev/null`
+- Lines of code: !`wc -l "$1" 2>/dev/null`
 
 ## Parameters
 

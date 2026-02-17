@@ -25,7 +25,7 @@ Run all infrastructure standards compliance checks.
 
 ## Context
 
-- Project standards: !`test -f .project-standards.yaml && echo "EXISTS" || echo "MISSING"`
+- Project standards: !`find . -maxdepth 1 -name \'.project-standards.yaml\' 2>/dev/null`
 - Project type indicators: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name '*.tf' \) 2>/dev/null`
 - Infrastructure dirs: !`find . -maxdepth 1 -type d \( -name 'terraform' -o -name 'helm' -o -name 'argocd' \) 2>/dev/null`
 - Current standards version: !`grep -m1 "^standards_version:" .project-standards.yaml 2>/dev/null`

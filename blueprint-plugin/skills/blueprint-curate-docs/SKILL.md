@@ -26,10 +26,10 @@ Curate library or project documentation into ai_docs entries optimized for AI ag
 
 ## Context
 
-- ai_docs directory: !`test -d docs/blueprint/ai_docs && echo "YES" || echo "NO"`
+- ai_docs directory: !`test -d docs/blueprint/ai_docs 2>/dev/null`
 - Existing library docs: !`find docs/blueprint/ai_docs/libraries -name "*.md" -type f 2>/dev/null`
 - Existing project patterns: !`find docs/blueprint/ai_docs/project -name "*.md" -type f 2>/dev/null`
-- Library in dependencies: !`grep -m1 "^$1[\":@=]" package.json pyproject.toml requirements.txt 2>/dev/null || echo "NOT FOUND"`
+- Library in dependencies: !`grep -m1 "^$1[\":@=]" package.json pyproject.toml requirements.txt 2>/dev/null`
 
 ## Parameters
 

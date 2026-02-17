@@ -33,8 +33,8 @@ Create a comprehensive PRP (Product Requirement Prompt) - a self-contained packe
 
 ## Context
 
-- Blueprint initialized: !`test -f docs/blueprint/manifest.json && echo "YES" || echo "NO"`
-- Last PRP ID: !`jq -r '.id_registry.last_prp // 0' docs/blueprint/manifest.json 2>/dev/null || echo "0"`
+- Blueprint initialized: !`test -f docs/blueprint/manifest.json 2>/dev/null`
+- Last PRP ID: !`jq -r '.id_registry.last_prp // 0' docs/blueprint/manifest.json 2>/dev/null`
 - ai_docs available: !`find docs/blueprint/ai_docs -type f -name "*.md" 2>/dev/null`
 - Existing PRDs: !`find docs/prds -name "*.md" -type f 2>/dev/null`
 

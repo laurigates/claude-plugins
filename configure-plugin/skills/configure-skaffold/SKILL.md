@@ -26,12 +26,12 @@ Check and configure Skaffold against project standards.
 ## Context
 
 - K8s/Helm directories: !`find . -maxdepth 1 -type d \( -name 'k8s' -o -name 'helm' \) 2>/dev/null`
-- Skaffold config: !`test -f skaffold.yaml && echo "EXISTS" || echo "MISSING"`
+- Skaffold config: !`find . -maxdepth 1 -name \'skaffold.yaml\' 2>/dev/null`
 - Skaffold API version: !`grep -m1 apiVersion skaffold.yaml 2>/dev/null`
 - Port forward config: !`grep -m1 address skaffold.yaml 2>/dev/null`
 - Profiles defined: !`grep -m10 'name:' skaffold.yaml 2>/dev/null`
-- Generate-secrets script: !`test -f scripts/generate-secrets.sh && echo "EXISTS" || echo "MISSING"`
-- Dotenvx available: !`command -v dotenvx 2>/dev/null && echo "INSTALLED" || echo "MISSING"`
+- Generate-secrets script: !`find . -maxdepth 1 -name \'scripts/generate-secrets.sh\' 2>/dev/null`
+- Dotenvx available: !`command -v dotenvx 2>/dev/null`
 - Project standards: !`head -20 .project-standards.yaml 2>/dev/null`
 
 **Skills referenced**: `skaffold-standards`, `container-development`, `skaffold-orbstack`
