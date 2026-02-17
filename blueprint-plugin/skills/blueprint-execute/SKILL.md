@@ -1,7 +1,7 @@
 ---
 model: opus
 created: 2026-01-14
-modified: 2026-02-14
+modified: 2026-02-17
 reviewed: 2026-01-30
 description: "Idempotent meta command that determines and executes the next logical blueprint action"
 allowed-tools: Read, Glob, Bash, AskUserQuestion, SlashCommand, Task
@@ -29,6 +29,7 @@ Launch these agents **simultaneously** to gather context:
 | **Git History Analysis** | Recent commits (last 20), branches, uncommitted changes, conventional commit usage |
 | **Documentation Status** | PRDs, ADRs, PRPs in `docs/` - counts, frontmatter status, actionable items |
 | **Blueprint State** | manifest.json version, generated rules in `.claude/rules/`, feature tracker status |
+| **Task Registry** | Read `task_registry` from manifest.json: enabled/disabled status, schedules, last run times, due tasks |
 
 Consolidate findings into unified context: git quality, documentation coverage, blueprint health, actionable items.
 
@@ -55,6 +56,24 @@ cat docs/blueprint/manifest.json | grep '"format_version"'
 **Current format version**: 3.0.0
 
 **If manifest version < 3.0.0**: Run `/blueprint-upgrade`, then **Exit**.
+
+### 2.5. Check Task Registry for Due Tasks
+
+If manifest has `task_registry`:
+
+```bash
+jq -r '.task_registry | to_entries[] | select(.value.enabled == true) | select(.value.auto_run == true) | .key' docs/blueprint/manifest.json
+```
+
+For each enabled auto_run task, check if due based on schedule:
+- `daily`: Due if `last_completed_at` is null or > 24h ago
+- `weekly`: Due if `last_completed_at` is null or > 7d ago
+- `on-change`: Due if source inputs changed (checked by individual task)
+- `on-demand`: Never auto-triggered
+
+**If auto_run tasks are due**: Execute them silently in order (read-only tasks like validate, sync). Report results briefly. Continue to next check.
+
+**If non-auto_run tasks are due**: Note them for display in status. Don't prompt here - let specific checks handle them.
 
 ### 3. Check for Missing Documentation (Derive Phase)
 
@@ -124,7 +143,7 @@ cat docs/blueprint/feature-tracker.json | jq '{
 test -f docs/blueprint/feature-tracker.json
 ```
 
-**Auto-sync** if stale (> 1 day old) or after PRP execution/work-order completion. See [REFERENCE.md](REFERENCE.md) for sync details.
+**Auto-sync** if due per task_registry schedule (default: daily) or after PRP execution/work-order completion. See [REFERENCE.md](REFERENCE.md) for sync details.
 
 **If completion < 100%**: Show status and prompt for next feature work.
 
@@ -135,6 +154,18 @@ test -f docs/blueprint/feature-tracker.json
 Run `/blueprint-status` to display full blueprint status with available next actions.
 
 ---
+
+## Registry Updates
+
+After executing any task action, update the corresponding `task_registry` entry in manifest.json:
+
+```bash
+jq --arg task "$TASK_NAME" --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg result "$RESULT" \
+  '.task_registry[$task].last_completed_at = $now | .task_registry[$task].last_result = $result | .task_registry[$task].stats.runs_total = ((.task_registry[$task].stats.runs_total // 0) + 1)' \
+  docs/blueprint/manifest.json > tmp.json && mv tmp.json docs/blueprint/manifest.json
+```
+
+This ensures every execute run updates operational metadata for tracking and future scheduling decisions.
 
 ## Idempotency Guarantees
 

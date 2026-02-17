@@ -1,7 +1,7 @@
 ---
 model: opus
 created: 2026-01-30
-modified: 2026-02-14
+modified: 2026-02-17
 reviewed: 2026-02-14
 description: "Derive Claude rules from git commit log decisions. Newer commits override older decisions when conflicts exist."
 args: "[--since DATE] [--scope SCOPE]"
@@ -102,7 +102,25 @@ Check for conflicts with existing rules in `.claude/rules/`:
 2. Apply user choice: Update, merge, or keep separate
 3. Document conflict resolution in rule file
 
-### Step 7: Update manifest and report
+### Step 7: Update task registry
+
+Update the task registry entry in `docs/blueprint/manifest.json`:
+
+```bash
+jq --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  --arg sha "$(git rev-parse HEAD 2>/dev/null)" \
+  --argjson processed "${COMMITS_ANALYZED:-0}" \
+  --argjson created "${RULES_DERIVED:-0}" \
+  '.task_registry["derive-rules"].last_completed_at = $now |
+   .task_registry["derive-rules"].last_result = "success" |
+   .task_registry["derive-rules"].context.commits_analyzed_up_to = $sha |
+   .task_registry["derive-rules"].stats.runs_total = ((.task_registry["derive-rules"].stats.runs_total // 0) + 1) |
+   .task_registry["derive-rules"].stats.items_processed = $processed |
+   .task_registry["derive-rules"].stats.items_created = $created' \
+  docs/blueprint/manifest.json > tmp.json && mv tmp.json docs/blueprint/manifest.json
+```
+
+### Step 8: Update manifest and report
 
 1. Update `docs/blueprint/manifest.json` with derived rules metadata: timestamp, commits analyzed, rules generated, source commits
 2. Generate completion report showing:

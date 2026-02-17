@@ -1,7 +1,7 @@
 ---
 model: opus
 created: 2025-12-16
-modified: 2026-02-09
+modified: 2026-02-17
 reviewed: 2026-02-09
 description: "Generate project-specific rules from PRDs. Supports path-specific rules with paths frontmatter and brace expansion."
 allowed-tools: Read, Write, Glob, Bash, AskUserQuestion
@@ -140,7 +140,26 @@ Rules are generated to `.claude/rules/` directory. Rules with `paths` frontmatte
    }
    ```
 
-6. **Report**:
+6. **Update task registry**:
+
+   Update the task registry entry in `docs/blueprint/manifest.json`:
+
+   ```bash
+   jq --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+     --argjson processed "${PRDS_READ:-0}" \
+     --argjson created "${RULES_GENERATED:-0}" \
+     '.task_registry["generate-rules"].last_completed_at = $now |
+      .task_registry["generate-rules"].last_result = "success" |
+      .task_registry["generate-rules"].context.source_prd_hashes = ($source_prd_hashes // {}) |
+      .task_registry["generate-rules"].stats.runs_total = ((.task_registry["generate-rules"].stats.runs_total // 0) + 1) |
+      .task_registry["generate-rules"].stats.items_processed = $processed |
+      .task_registry["generate-rules"].stats.items_created = $created' \
+     docs/blueprint/manifest.json > tmp.json && mv tmp.json docs/blueprint/manifest.json
+   ```
+
+   For `source_prd_hashes`, compute `sha256sum` of each PRD file and pass as a JSON object via `--argjson`.
+
+7. **Report**:
    ```
    Rules generated from PRDs!
 
@@ -162,7 +181,7 @@ Rules are generated to `.claude/rules/` directory. Rules with `paths` frontmatte
    Rules are immediately available - Claude auto-discovers them based on context!
    ```
 
-7. **Prompt for next action** (use AskUserQuestion):
+8. **Prompt for next action** (use AskUserQuestion):
    ```
    question: "Rules generated. What would you like to do next?"
    options:

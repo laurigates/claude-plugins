@@ -1,7 +1,7 @@
 ---
 model: opus
 created: 2026-01-02
-modified: 2026-02-06
+modified: 2026-02-17
 reviewed: 2026-02-04
 description: "Synchronize feature tracker with TODO.md and PRDs, manage tasks"
 allowed-tools: Read, Write, Bash, Glob, AskUserQuestion
@@ -194,7 +194,23 @@ Unresolved Discrepancies:
 - {feature}: tracker says {status}, TODO.md shows {checkbox_state}
 ```
 
-### Step 10: Prompt for next action
+### Step 10: Update task registry
+
+Update the task registry entry in `docs/blueprint/manifest.json`:
+
+```bash
+jq --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  --arg todo_hash "$(sha256sum TODO.md 2>/dev/null | cut -d' ' -f1)" \
+  --argjson processed "${FEATURES_SYNCED:-0}" \
+  '.task_registry["feature-tracker-sync"].last_completed_at = $now |
+   .task_registry["feature-tracker-sync"].last_result = "success" |
+   .task_registry["feature-tracker-sync"].context.last_todo_hash = $todo_hash |
+   .task_registry["feature-tracker-sync"].stats.runs_total = ((.task_registry["feature-tracker-sync"].stats.runs_total // 0) + 1) |
+   .task_registry["feature-tracker-sync"].stats.items_processed = $processed' \
+  docs/blueprint/manifest.json > tmp.json && mv tmp.json docs/blueprint/manifest.json
+```
+
+### Step 11: Prompt for next action
 
 Use AskUserQuestion:
 ```

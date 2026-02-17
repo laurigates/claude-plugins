@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-02-06
+modified: 2026-02-17
 reviewed: 2026-01-17
 description: "Initialize Blueprint Development structure in current project"
 allowed-tools: Bash, Write, Read, AskUserQuestion, Glob
@@ -59,7 +59,24 @@ Initialize Blueprint Development in this project.
    b. Create `docs/blueprint/feature-tracker.json` from template
    c. Set `has_feature_tracker: true` in manifest
 
-4. **Ask about document detection** (use AskUserQuestion):
+4. **Ask about maintenance task scheduling** (use AskUserQuestion):
+   ```
+   question: "How should blueprint maintenance tasks run?"
+   options:
+     - label: "Prompt before running (Recommended)"
+       description: "Always ask before running maintenance tasks like sync, validate"
+     - label: "Auto-run safe tasks"
+       description: "Read-only tasks (validate, sync, status) run automatically when due"
+     - label: "Manual only"
+       description: "Tasks only run when you explicitly invoke them"
+   ```
+
+   Store selection for task_registry defaults:
+   - **Prompt**: all `auto_run: false`, default schedules
+   - **Auto-run safe**: read-only tasks (`adr-validate`, `feature-tracker-sync`, `sync-ids`) get `auto_run: true`; write tasks get `false`
+   - **Manual only**: all `auto_run: false`, all schedules set to `on-demand`
+
+5. **Ask about document detection** (use AskUserQuestion):
    ```
    question: "Would you like to enable automatic document detection?"
    options:
@@ -74,7 +91,7 @@ Initialize Blueprint Development in this project.
    **If modular rules enabled and document detection enabled:**
    Copy `document-management-rule.md` template to `.claude/rules/document-management.md`
 
-5. **Check for root documentation to migrate**:
+6. **Check for root documentation to migrate**:
    ```bash
    # Find markdown files in root that look like documentation (not standard files)
    fd -d 1 -e md . | grep -viE '^\./(README|CHANGELOG|CONTRIBUTING|LICENSE|CODE_OF_CONDUCT|SECURITY)'
@@ -106,7 +123,7 @@ Initialize Blueprint Development in this project.
       - ARCHITECTURE.md → docs/adrs/0001-initial-architecture.md
       ```
 
-6. **Create directory structure**:
+7. **Create directory structure**:
 
    **Blueprint structure (in docs/blueprint/):**
    ```
@@ -136,14 +153,14 @@ Initialize Blueprint Development in this project.
    └── skills/                      # Custom skill overrides (optional)
    ```
 
-7. **Create `manifest.json`** (v3.1.0 schema):
+8. **Create `manifest.json`** (v3.2.0 schema):
    ```json
    {
-     "format_version": "3.1.0",
+     "format_version": "3.2.0",
      "created_at": "[ISO timestamp]",
      "updated_at": "[ISO timestamp]",
      "created_by": {
-       "blueprint_plugin": "3.1.0"
+       "blueprint_plugin": "3.2.0"
      },
      "project": {
        "name": "[detected from package.json/pyproject.toml or directory name]",
@@ -172,26 +189,109 @@ Initialize Blueprint Development in this project.
      "custom_overrides": {
        "skills": [],
        "commands": []
+     },
+     "task_registry": {
+       "derive-prd": {
+         "enabled": true,
+         "auto_run": false,
+         "last_completed_at": null,
+         "last_result": null,
+         "schedule": "on-demand",
+         "stats": {},
+         "context": {}
+       },
+       "derive-plans": {
+         "enabled": true,
+         "auto_run": false,
+         "last_completed_at": null,
+         "last_result": null,
+         "schedule": "weekly",
+         "stats": {},
+         "context": {}
+       },
+       "derive-rules": {
+         "enabled": true,
+         "auto_run": false,
+         "last_completed_at": null,
+         "last_result": null,
+         "schedule": "weekly",
+         "stats": {},
+         "context": {}
+       },
+       "generate-rules": {
+         "enabled": true,
+         "auto_run": false,
+         "last_completed_at": null,
+         "last_result": null,
+         "schedule": "on-change",
+         "stats": {},
+         "context": {}
+       },
+       "adr-validate": {
+         "enabled": true,
+         "auto_run": "[based on maintenance task choice: true if auto-run safe, false otherwise]",
+         "last_completed_at": null,
+         "last_result": null,
+         "schedule": "weekly",
+         "stats": {},
+         "context": {}
+       },
+       "feature-tracker-sync": {
+         "enabled": true,
+         "auto_run": "[based on maintenance task choice: true if auto-run safe, false otherwise]",
+         "last_completed_at": null,
+         "last_result": null,
+         "schedule": "daily",
+         "stats": {},
+         "context": {}
+       },
+       "sync-ids": {
+         "enabled": true,
+         "auto_run": "[based on maintenance task choice: true if auto-run safe, false otherwise]",
+         "last_completed_at": null,
+         "last_result": null,
+         "schedule": "on-change",
+         "stats": {},
+         "context": {}
+       },
+       "claude-md": {
+         "enabled": true,
+         "auto_run": false,
+         "last_completed_at": null,
+         "last_result": null,
+         "schedule": "on-change",
+         "stats": {},
+         "context": {}
+       },
+       "curate-docs": {
+         "enabled": false,
+         "auto_run": false,
+         "last_completed_at": null,
+         "last_result": null,
+         "schedule": "on-demand",
+         "stats": {},
+         "context": {}
+       }
      }
    }
    ```
 
    Note: Include `feature_tracker` section only if feature tracking is enabled.
-   Note: As of v3.1.0, progress tracking is consolidated into feature-tracker.json (work-overview.md removed).
+   Note: As of v3.2.0, progress tracking is consolidated into feature-tracker.json (work-overview.md removed).
 
-8. **Create initial rules** (if modular rules selected):
+9. **Create initial rules** (if modular rules selected):
    - `development.md`: TDD workflow, commit conventions
    - `testing.md`: Test requirements, coverage expectations
    - `document-management.md`: Document organization rules (if document detection enabled)
 
-9. **Handle `.gitignore`**:
+10. **Handle `.gitignore`**:
    - Always commit `CLAUDE.md` and `.claude/rules/` (shared project instructions)
    - Add `docs/blueprint/work-orders/` to `.gitignore` (task-specific, may contain sensitive details)
    - If secrets detected in `.claude/`, warn user and suggest `.gitignore` entries
 
-10. **Report**:
+11. **Report**:
    ```
-   Blueprint Development initialized! (v3.1.0)
+   Blueprint Development initialized! (v3.2.0)
 
    Blueprint structure created:
    - docs/blueprint/manifest.json
@@ -213,6 +313,7 @@ Initialize Blueprint Development in this project.
    - Rules mode: [single|modular|both]
    [- Feature tracking: enabled (source: {source_document})]
    [- Document detection: enabled (Claude will prompt for PRD/ADR/PRP creation)]
+   [- Task scheduling: {prompt|auto-run safe|manual only}]
 
    [Migrated documentation:]
    [- {original} → {destination} (for each migrated file)]
@@ -223,7 +324,7 @@ Initialize Blueprint Development in this project.
    - Custom layer: Your overrides in .claude/skills/
    ```
 
-11. **Prompt for next action** (use AskUserQuestion):
+12. **Prompt for next action** (use AskUserQuestion):
     ```
     question: "Blueprint initialized. What would you like to do next?"
     options:

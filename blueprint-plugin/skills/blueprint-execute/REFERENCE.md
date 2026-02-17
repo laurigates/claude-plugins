@@ -245,3 +245,38 @@ When feature tracker exists and is stale (> 1 day old), or a PRP was just execut
 6. Report changes made (if any)
 
 Auto-sync is silent when no changes - only reports if something was updated.
+
+## Task Registry Schedule Logic
+
+### Due Calculation
+
+| Schedule | Due When |
+|----------|----------|
+| `daily` | `last_completed_at` is null OR > 24 hours ago |
+| `weekly` | `last_completed_at` is null OR > 7 days ago |
+| `on-change` | Source inputs changed since last run (task-specific) |
+| `on-demand` | Never auto-suggested; only runs on explicit invocation |
+
+### Priority Order for Due Tasks
+
+When multiple tasks are due, execute in this order:
+1. `sync-ids` (fast, foundational)
+2. `feature-tracker-sync` (fast, updates status)
+3. `adr-validate` (fast, read-only check)
+4. `generate-rules` (may modify files)
+5. `derive-rules` (may modify files)
+6. `derive-plans` (longer running)
+7. `claude-md` (depends on other outputs)
+
+### Auto-Run Task Prompt (for due non-auto tasks)
+
+```
+question: "These maintenance tasks are due. Which would you like to run?"
+options:
+  - label: "Run all due tasks"
+    description: "Execute {N} due tasks in priority order"
+  - label: "Choose specific tasks"
+    description: "Select which tasks to run"
+  - label: "Skip maintenance"
+    description: "Continue to other actions"
+```
