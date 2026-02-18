@@ -8,7 +8,7 @@
       "name": "accessibility-plugin",
       "source": "./accessibility-plugin",
       "description": "Accessibility and UX implementation - WCAG, ARIA, design tokens",
-      "version": "2.2.0",
+      "version": "2.1.4",
       "keywords": [
         "accessibility",
         "wcag",
@@ -37,7 +37,7 @@
       "name": "agents-plugin",
       "source": "./agents-plugin",
       "description": "Task-focused agents with teammate and subagent role guidance for test, review, debug, docs, CI, security, refactoring, research, and performance",
-      "version": "1.3.0",
+      "version": "1.2.0",
       "keywords": [
         "agents",
         "teammates",
@@ -168,7 +168,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.9.0",
+      "version": "1.8.0",
       "keywords": [
         "infrastructure",
         "standards",
@@ -319,7 +319,7 @@
       "name": "kubernetes-plugin",
       "source": "./kubernetes-plugin",
       "description": "Kubernetes and Helm operations - deployments, charts, releases",
-      "version": "1.3.0",
+      "version": "1.2.2",
       "keywords": [
         "kubernetes",
         "helm",
@@ -382,7 +382,7 @@
       "name": "prose-plugin",
       "source": "./prose-plugin",
       "description": "Prose transformation and style control - synthesis, distillation, tone, voice, clarity, and consistency for written text",
-      "version": "1.3.0",
+      "version": "1.2.0",
       "keywords": [
         "prose",
         "writing",
