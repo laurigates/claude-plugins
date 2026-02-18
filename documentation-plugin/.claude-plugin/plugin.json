@@ -1,6 +1,6 @@
 {
   "name": "documentation-plugin",
-  "version": "1.3.1",
+  "version": "1.4.0",
   "description": "Documentation generation - API docs, README, knowledge graphs, LaTeX PDF conversion",
   "keywords": [
     "documentation",

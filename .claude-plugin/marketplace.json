@@ -209,7 +209,7 @@
       "name": "documentation-plugin",
       "source": "./documentation-plugin",
       "description": "Documentation generation - API docs, README, knowledge graphs, LaTeX PDF conversion",
-      "version": "1.3.1",
+      "version": "1.4.0",
       "keywords": [
         "documentation",
         "docs",
@@ -430,7 +430,7 @@
       "name": "terraform-plugin",
       "source": "./terraform-plugin",
       "description": "Terraform and Terraform Cloud - infrastructure as code",
-      "version": "1.2.3",
+      "version": "1.3.0",
       "keywords": [
         "terraform",
         "infrastructure",
