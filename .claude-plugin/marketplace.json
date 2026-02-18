@@ -222,7 +222,7 @@
       "name": "feedback-plugin",
       "source": "./feedback-plugin",
       "description": "Session feedback analysis - capture skill bugs, enhancements, and positive patterns as GitHub issues",
-      "version": "1.1.0",
+      "version": "1.0.0",
       "keywords": [
         "feedback",
         "session-analysis",
@@ -265,7 +265,7 @@
       "name": "github-actions-plugin",
       "source": "./github-actions-plugin",
       "description": "GitHub Actions CI/CD - workflows, authentication, inspection, auto-fix",
-      "version": "1.3.0",
+      "version": "1.4.0",
       "keywords": [
         "github-actions",
         "ci-cd",
@@ -364,7 +364,7 @@
       "name": "migration-patterns-plugin",
       "source": "./migration-patterns-plugin",
       "description": "Safe database and system migration patterns - dual write, shadow mode, strangler fig",
-      "version": "1.1.0",
+      "version": "1.0.0",
       "keywords": [
         "migration",
         "dual-write",
