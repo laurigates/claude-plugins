@@ -443,7 +443,7 @@
       "name": "testing-plugin",
       "source": "./testing-plugin",
       "description": "Test execution, TDD workflow, and testing strategies",
-      "version": "3.7.0",
+      "version": "3.8.0",
       "keywords": [
         "testing",
         "tdd",
