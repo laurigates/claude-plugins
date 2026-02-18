@@ -28,6 +28,7 @@
   "tools-plugin": "2.4.7",
   "testing-plugin": "3.7.0",
   "typescript-plugin": "1.5.4",
+  "feedback-plugin": "1.0.0",
   "finops-plugin": "1.0.4",
   "home-assistant-plugin": "1.1.4",
   "workflow-orchestration-plugin": "1.1.4",
