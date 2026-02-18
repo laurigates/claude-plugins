@@ -22,7 +22,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.6.2",
+      "version": "2.7.0",
       "keywords": [
         "agents",
         "configuration",
@@ -112,7 +112,7 @@
       "name": "code-quality-plugin",
       "source": "./code-quality-plugin",
       "description": "Code review, refactoring, linting, and static analysis",
-      "version": "1.5.6",
+      "version": "1.6.0",
       "keywords": [
         "code-review",
         "refactoring",
@@ -252,7 +252,7 @@
       "name": "github-actions-plugin",
       "source": "./github-actions-plugin",
       "description": "GitHub Actions CI/CD - workflows, authentication, inspection",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "keywords": [
         "github-actions",
         "ci-cd",
@@ -365,7 +365,7 @@
       "name": "project-plugin",
       "source": "./project-plugin",
       "description": "Project initialization, management, and maintenance - setup, modernization, changelog review, and continuous development workflows",
-      "version": "1.8.5",
+      "version": "1.9.0",
       "keywords": [
         "project",
         "initialization",
