@@ -113,7 +113,7 @@ description: "When committing code. Conventional commits, co-authors."
 ```yaml
 ---
 name: commit-review
-model: claude-opus
+model: opus
 color: "#4CAF50"
 description: "Review commits for quality and conventions"
 tools: Bash, Read, Grep

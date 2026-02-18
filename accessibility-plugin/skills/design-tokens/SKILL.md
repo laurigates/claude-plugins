@@ -1,5 +1,5 @@
 ---
-model: haiku
+model: sonnet
 created: 2025-12-16
 modified: 2026-02-14
 reviewed: 2025-12-16

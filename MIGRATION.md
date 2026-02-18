@@ -42,7 +42,7 @@ Location: `agents/<agent-name>.md`
 ```yaml
 ---
 name: agent-name
-model: claude-opus # or claude-haiku
+model: claude-opus # or claude-sonnet, claude-haiku
 color: "#HEXCOLOR"
 description: Short description for agent selection
 tools: Tool1, Tool2, mcp__server-name

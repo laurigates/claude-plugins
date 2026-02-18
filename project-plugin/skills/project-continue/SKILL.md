@@ -1,5 +1,5 @@
 ---
-model: opus
+model: sonnet
 description: "Analyze project state and continue development where left off"
 args: "[--task <id>] [--skip-status]"
 argument-hint: "--task to resume specific task, --skip-status to skip state analysis"

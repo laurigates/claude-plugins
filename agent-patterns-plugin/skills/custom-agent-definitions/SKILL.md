@@ -1,5 +1,5 @@
 ---
-model: opus
+model: sonnet
 name: custom-agent-definitions
 description: |
   Write and configure custom agent definitions in Claude Code's agents/ directory. Use
@@ -222,11 +222,11 @@ description: |
 ```
 
 ### 5. Model Selection
-| Use Case | Model |
-|----------|-------|
-| Quick analysis | haiku |
-| Standard work | sonnet |
-| Complex reasoning | opus |
+| Use Case | Model | Model ID |
+|----------|-------|----------|
+| Simple/mechanical tasks | haiku | claude-haiku-4-5 |
+| Development workflows | sonnet | claude-sonnet-4-6 |
+| Deep reasoning/analysis | opus | claude-opus-4-6 |
 
 ## Agent Configuration Fields Reference
 

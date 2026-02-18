@@ -187,6 +187,7 @@ Install based on your project's tech stack and domain.
 | accessibility-plugin | WCAG compliance and ARIA patterns |
 | component-patterns-plugin | Reusable UI component patterns |
 | command-analytics-plugin | Tracking skill/command usage metrics |
+| feedback-plugin | Capturing session skill feedback as GitHub issues |
 | tools-plugin | fd, rg, jq, shell, ImageMagick, d2 utilities |
 | workflow-orchestration-plugin | Parallel agent orchestration, CI pipelines, preflight checks, checkpoint refactoring |
 | migration-patterns-plugin | Safe database and system migration patterns — dual write, shadow mode, strangler fig |

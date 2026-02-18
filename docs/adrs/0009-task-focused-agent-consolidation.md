@@ -40,20 +40,32 @@ Consolidate 23 role-based agents into 5 task-focused agents that complete bounde
 
 ```
 agents-plugin/agents/
-├── test.md      # Write and run tests (haiku)
-├── review.md    # Code/commit/PR review (opus)
-├── debug.md     # Diagnose and fix bugs (opus)
-├── docs.md      # Generate documentation (haiku)
-└── ci.md        # Pipeline configuration (haiku)
+├── test.md             # Write and run tests (haiku)
+├── review.md           # Code/commit/PR review (opus)
+├── debug.md            # Diagnose and fix bugs (opus)
+├── security-audit.md   # Security vulnerability analysis (opus)
+├── performance.md      # Performance analysis (sonnet)
+├── refactor.md         # Code refactoring (sonnet)
+├── research.md         # Technical research (sonnet)
+├── dependency-audit.md # Dependency health checks (haiku)
+├── docs.md             # Generate documentation (haiku)
+└── ci.md               # Pipeline configuration (haiku)
 ```
 
 ### Model Selection Rationale
+
+Three-tier model palette: opus (deep reasoning), sonnet (moderate judgment), haiku (mechanical tasks).
 
 | Agent | Model | Rationale |
 |-------|-------|-----------|
 | test | haiku | Straightforward: analyze → write tests → run → report |
 | review | opus | Complex reasoning: security analysis, pattern recognition, trade-offs |
 | debug | opus | Complex reasoning: root cause analysis, system-level thinking |
+| security-audit | opus | Complex reasoning: vulnerability analysis, threat modeling |
+| performance | sonnet | Pattern-based analysis: profiling, benchmarking, optimization recommendations |
+| refactor | sonnet | Pattern-based restructuring: follows established refactoring patterns |
+| research | sonnet | Moderate judgment: research, evaluate, and summarize findings |
+| dependency-audit | haiku | Mechanical: scan packages, check versions, report CVEs |
 | docs | haiku | Straightforward: analyze code → generate documentation |
 | ci | haiku | Straightforward: understand requirement → write config |
 
@@ -86,7 +98,7 @@ agents-plugin/agents/
 - **Clarity**: Users know which agent handles their task
 - **Efficiency**: Less context switching, no handoff overhead
 - **Maintainability**: 5 agents to maintain instead of 23
-- **Cost optimization**: Haiku for simple tasks, Opus only where reasoning matters
+- **Cost optimization**: Three-tier model selection — haiku for mechanical tasks, sonnet for moderate reasoning, opus only for deep analysis
 - **Reliability**: Smaller scope means fewer opportunities to lose focus
 
 ### Disadvantages

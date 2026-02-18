@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.18.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.17.0...git-plugin-v2.18.0) (2026-02-18)
+
+
+### Features
+
+* introduce three-tier model palette (opus/sonnet/haiku) ([#709](https://github.com/laurigates/claude-plugins/issues/709)) ([2c1e9cc](https://github.com/laurigates/claude-plugins/commit/2c1e9ccff5d48c2b426beac5b3b38cd4576c79a0))
+
 ## [2.17.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.16.2...git-plugin-v2.17.0) (2026-02-16)
 
 

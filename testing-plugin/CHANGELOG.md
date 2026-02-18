@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.8.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.7.0...testing-plugin-v3.8.0) (2026-02-18)
+
+
+### Features
+
+* introduce three-tier model palette (opus/sonnet/haiku) ([#709](https://github.com/laurigates/claude-plugins/issues/709)) ([2c1e9cc](https://github.com/laurigates/claude-plugins/commit/2c1e9ccff5d48c2b426beac5b3b38cd4576c79a0))
+
 ## [3.7.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.6.1...testing-plugin-v3.7.0) (2026-02-16)
 
 

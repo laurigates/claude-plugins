@@ -1,5 +1,5 @@
 ---
-model: opus
+model: sonnet
 description: "Curate library or project documentation for ai_docs to optimize AI context"
 args: "[library-name|project:pattern-name]"
 argument-hint: "Library name (e.g., redis, pydantic) or project:pattern-name"

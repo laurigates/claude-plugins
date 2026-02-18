@@ -1,5 +1,5 @@
 ---
-model: opus
+model: sonnet
 description: "Create a PRP (Product Requirement Prompt) with systematic research, curated context, and validation gates"
 args: "[feature-name]"
 argument-hint: "Feature name for the PRP (e.g., auth-oauth2, api-rate-limiting)"

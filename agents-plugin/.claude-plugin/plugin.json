@@ -1,6 +1,6 @@
 {
   "name": "agents-plugin",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Task-focused agents for test, review, debug, docs, CI, security, refactoring, research, and performance — with teammate and subagent role guidance",
   "author": {
     "name": "Lauri Gates"

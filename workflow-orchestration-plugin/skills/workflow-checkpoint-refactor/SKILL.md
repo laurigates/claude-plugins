@@ -1,5 +1,5 @@
 ---
-model: opus
+model: sonnet
 name: workflow-checkpoint-refactor
 description: |
   Multi-phase refactoring with persistent checkpoint files that survive context
