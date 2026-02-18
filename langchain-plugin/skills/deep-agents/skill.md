@@ -1,5 +1,5 @@
 ---
-model: opus
+model: sonnet
 name: deep-agents
 description: |
   Build hierarchical AI agents using the deep-agents TypeScript/npm package. Use when

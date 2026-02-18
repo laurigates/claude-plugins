@@ -105,10 +105,10 @@ Convert the 10 agent definitions to teammate-compatible templates:
 | `ci.md` | haiku | Add workflow file permissions. Restrict to `.github/` directory. |
 | `docs.md` | haiku | Add doc directory restrictions. Good teammate for parallel doc generation. |
 | `security-audit.md` | opus | Excellent teammate — can audit in parallel with development. |
-| `refactor.md` | opus | Add file-lock awareness for safe parallel refactoring. |
+| `refactor.md` | sonnet | Add file-lock awareness for safe parallel refactoring. |
 | `dependency-audit.md` | haiku | Keep as subagent — typically a quick, focused task. |
-| `research.md` | opus | Excellent teammate — isolates web research from main context. |
-| `performance.md` | opus | Keep as subagent — profiling output is verbose and focused. |
+| `research.md` | sonnet | Excellent teammate — isolates web research from main context. |
+| `performance.md` | sonnet | Keep as subagent — profiling output is verbose and focused. |
 
 **Decision per agent**: Convert to teammate template if the task benefits from parallel execution and communication. Keep as subagent if the task is focused, short, and doesn't need coordination.
 

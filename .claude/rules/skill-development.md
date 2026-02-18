@@ -47,7 +47,7 @@ Skills live in `<plugin-name>/skills/<skill-name>/SKILL.md` (or `skill.md`).
 
 ```yaml
 ---
-model: <opus|haiku>
+model: <opus|sonnet|haiku>
 name: <Skill Name>
 description: <1-2 sentence description of capability>
 allowed-tools: <Comma-separated list of tools>
@@ -63,13 +63,15 @@ Choose the appropriate model based on task complexity:
 
 | Model | Use For |
 |-------|---------|
-| `opus` | Complex reasoning, architecture, code review, debugging methodology, security analysis, advanced testing theory |
-| `haiku` | Simple CLI operations, formatting, configuration, status checks, standard workflows |
+| `opus` | Deep reasoning, architecture decisions, debugging methodology, security analysis, complex code review |
+| `sonnet` | Development workflows requiring judgment, code generation with analysis, framework expertise, multi-step pattern-based reasoning |
+| `haiku` | Simple CLI operations, formatting, configuration, status checks, standard mechanical workflows |
 
 **Guidelines:**
-- Default to `haiku` for straightforward, mechanical tasks
-- Use `opus` when the skill requires planning, analysis, or complex decision-making
-- Consider: "Does this need deep reasoning or pattern matching?"
+- Default to `sonnet` for tasks requiring moderate reasoning or development expertise
+- Use `haiku` for straightforward, mechanical tasks (CLI tools, formatting, status checks)
+- Use `opus` only when the skill requires deep reasoning, security analysis, or complex decision-making
+- Consider: "Does this need deep reasoning (opus), moderate judgment (sonnet), or mechanical execution (haiku)?"
 
 ### Date Fields
 
@@ -154,7 +156,7 @@ Skills that accept arguments use the same frontmatter as other skills, with addi
 
 ```yaml
 ---
-model: <opus|haiku>
+model: <opus|sonnet|haiku>
 name: <skill-name>
 description: <What it does, with trigger phrases>
 args: <argument specification>

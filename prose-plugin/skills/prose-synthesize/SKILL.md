@@ -1,5 +1,5 @@
 ---
-model: opus
+model: sonnet
 name: prose-synthesize
 description: |
   Synthesize unstructured thinking into a structured, actionable plan. Use when user provides

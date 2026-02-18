@@ -87,10 +87,11 @@ description: |
 
 | Model | Use For |
 |-------|---------|
-| `haiku` | CLI tool usage, configuration, standard workflows, formatting |
-| `opus` | Architecture decisions, debugging methodology, security analysis, complex reasoning |
+| `haiku` | CLI tool usage, configuration, standard mechanical workflows, formatting, status checks |
+| `sonnet` | Development workflows requiring judgment, code generation with analysis, framework expertise, multi-step pattern-based reasoning |
+| `opus` | Deep reasoning, architecture decisions, debugging methodology, security analysis, complex code review |
 
-**Default to `haiku`** unless the skill requires deep reasoning or complex decision-making.
+**Default to `sonnet`** for development tasks requiring moderate reasoning. Use `haiku` for mechanical tasks and `opus` for deep reasoning.
 
 ## Supporting Files Pattern
 
@@ -121,7 +122,7 @@ When reviewing skill/command changes:
 - [ ] Has "When to Use" decision table
 - [ ] Has "Agentic Optimizations" table (for CLI/tool skills)
 - [ ] Description matches user intents (not just tool jargon)
-- [ ] Model is appropriate (`haiku` for tools, `opus` for reasoning)
+- [ ] Model is appropriate (`haiku` for tools, `sonnet` for development workflows, `opus` for deep reasoning)
 - [ ] Reference material extracted to REFERENCE.md if needed
 - [ ] Supporting files referenced with markdown links
 - [ ] No duplicate content with sibling skills

@@ -1,5 +1,5 @@
 ---
-model: opus
+model: sonnet
 name: dry-consolidation
 description: |
   Find and extract duplicated code into shared abstractions. Use when you see repeated
