@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2026-01-21
-modified: 2026-01-23
+modified: 2026-02-18
 reviewed: 2026-01-23
 name: git-push
 description: |
@@ -54,10 +54,16 @@ git remote -v
 git push
 ```
 
-**No upstream (new branch):**
+**No upstream (new branch, same remote branch name):**
 ```bash
-# Set upstream and push
+# Set upstream and push — only use -u when local and remote names match
 git push -u origin $(git branch --show-current)
+```
+
+**On main, pushing to a differently-named remote branch:**
+```bash
+# Use explicit refspec — no -u, preserves main's tracking
+git push origin main:<remote-branch>
 ```
 
 **Force push needed (rebased/amended):**
@@ -99,9 +105,18 @@ This avoids local branch juggling. After the PR merges, a `git pull` on main syn
 
 ### First Push (New Branch)
 
-For branches without upstream:
+For branches without upstream, when remote branch name matches local:
 ```bash
 git push -u origin $(git branch --show-current)
+```
+
+**Warning:** `-u` binds the current local branch's upstream to the named remote branch. If you're on `main` and want to push to a differently-named feature branch, use the refspec form instead — otherwise `main` will track the feature branch:
+```bash
+# WRONG while on main — sets main to track origin/feat/foo:
+# git push -u origin feat/foo
+
+# CORRECT — push main commits to remote feature branch without changing tracking:
+git push origin main:feat/foo
 ```
 
 ### Push with Tags
@@ -197,7 +212,7 @@ Create a feature branch and submit a pull request instead.
 | Standard push | `git push` |
 | Main to remote feature branch | `git push origin main:<branch-name>` |
 | Commit range to remote branch | `git push origin <start>^..<end>:<branch>` |
-| New branch | `git push -u origin $(git branch --show-current)` |
+| New branch (same local/remote name) | `git push -u origin $(git branch --show-current)` |
 | With tags | `git push --follow-tags` |
 | After rebase | `git push --force-with-lease` |
 | Check ahead count | `git rev-list --count @{upstream}..HEAD` |
