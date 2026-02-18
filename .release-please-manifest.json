@@ -12,7 +12,7 @@
   "code-quality-plugin": "1.6.0",
   "command-analytics-plugin": "1.2.2",
   "configure-plugin": "1.9.0",
-  "container-plugin": "2.4.0",
+  "container-plugin": "2.5.0",
   "documentation-plugin": "1.4.0",
   "hooks-plugin": "1.5.5",
   "health-plugin": "1.2.0",
