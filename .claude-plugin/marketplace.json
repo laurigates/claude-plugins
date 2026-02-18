@@ -265,7 +265,7 @@
       "name": "github-actions-plugin",
       "source": "./github-actions-plugin",
       "description": "GitHub Actions CI/CD - workflows, authentication, inspection, auto-fix",
-      "version": "1.3.0",
+      "version": "1.4.0",
       "keywords": [
         "github-actions",
         "ci-cd",
