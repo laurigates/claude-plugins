@@ -67,7 +67,7 @@
       "name": "bevy-plugin",
       "source": "./bevy-plugin",
       "description": "Bevy game engine development - ECS, rendering, game architecture",
-      "version": "1.2.0",
+      "version": "1.1.3",
       "keywords": [
         "bevy",
         "game-engine",
@@ -180,7 +180,7 @@
       "name": "container-plugin",
       "source": "./container-plugin",
       "description": "Container development and deployment - Docker, registry, Skaffold",
-      "version": "2.5.0",
+      "version": "2.4.0",
       "keywords": [
         "container",
         "docker",
@@ -252,7 +252,7 @@
       "name": "github-actions-plugin",
       "source": "./github-actions-plugin",
       "description": "GitHub Actions CI/CD - workflows, authentication, inspection",
-      "version": "1.3.0",
+      "version": "1.2.0",
       "keywords": [
         "github-actions",
         "ci-cd",
@@ -265,7 +265,7 @@
       "name": "health-plugin",
       "source": "./health-plugin",
       "description": "Diagnose and fix Claude Code configuration issues - plugin registry, settings, hooks, MCP servers",
-      "version": "1.3.0",
+      "version": "1.2.0",
       "keywords": [
         "health",
         "diagnostics",
