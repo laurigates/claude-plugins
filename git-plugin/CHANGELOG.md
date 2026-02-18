@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.18.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.18.0...git-plugin-v2.18.1) (2026-02-18)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** block git push -u on main to differently-named branch ([#746](https://github.com/laurigates/claude-plugins/issues/746)) ([25e3e49](https://github.com/laurigates/claude-plugins/commit/25e3e494e84f676503a52a5ed24e0eb62c467e09))
+
 ## [2.18.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.17.0...git-plugin-v2.18.0) (2026-02-18)
 
 
