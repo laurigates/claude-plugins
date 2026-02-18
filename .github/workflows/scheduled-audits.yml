@@ -184,7 +184,7 @@ jobs:
 
             ### 2. Model Appropriateness
             - Read `model` field from frontmatter of flagged skills
-            - `haiku` for CLI tools, `opus` for complex reasoning
+            - `haiku` for CLI tools, `sonnet` for development workflows, `opus` for deep reasoning
             - Flag potentially misassigned models
 
             ### 3. Description Quality
