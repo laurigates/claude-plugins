@@ -1,17 +1,17 @@
 {
-  "accessibility-plugin": "2.2.0",
+  "accessibility-plugin": "2.1.4",
   "agent-patterns-plugin": "2.7.0",
-  "agents-plugin": "1.3.0",
+  "agents-plugin": "1.2.0",
   "api-plugin": "1.4.0",
   "bevy-plugin": "1.2.0",
   "blog-plugin": "1.1.7",
-  "blueprint-plugin": "3.18.0",
+  "blueprint-plugin": "3.17.0",
   "communication-plugin": "1.1.3",
   "component-patterns-plugin": "1.1.3",
   "css-plugin": "1.1.0",
   "code-quality-plugin": "1.6.0",
   "command-analytics-plugin": "1.2.2",
-  "configure-plugin": "1.9.0",
+  "configure-plugin": "1.8.0",
   "container-plugin": "2.5.0",
   "documentation-plugin": "1.4.0",
   "hooks-plugin": "1.5.5",
@@ -31,5 +31,5 @@
   "finops-plugin": "1.0.4",
   "home-assistant-plugin": "1.1.4",
   "workflow-orchestration-plugin": "1.1.4",
-  "prose-plugin": "1.3.0"
+  "prose-plugin": "1.2.0"
 }
