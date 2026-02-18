@@ -31,5 +31,6 @@
   "finops-plugin": "1.0.4",
   "home-assistant-plugin": "1.1.4",
   "workflow-orchestration-plugin": "1.1.4",
-  "prose-plugin": "1.2.0"
+  "prose-plugin": "1.2.0",
+  "migration-patterns-plugin": "1.0.0"
 }

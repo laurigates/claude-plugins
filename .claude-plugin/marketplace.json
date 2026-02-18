@@ -497,6 +497,22 @@
         "worktree"
       ],
       "category": "automation"
+    },
+    {
+      "name": "migration-patterns-plugin",
+      "source": "./migration-patterns-plugin",
+      "description": "Safe database and system migration patterns - dual write, shadow mode, strangler fig",
+      "version": "1.0.0",
+      "keywords": [
+        "migration",
+        "dual-write",
+        "shadow-mode",
+        "dark-launching",
+        "strangler-fig",
+        "database-migration",
+        "zero-downtime"
+      ],
+      "category": "infrastructure"
     }
   ]
 }
