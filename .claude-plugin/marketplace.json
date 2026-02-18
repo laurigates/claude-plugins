@@ -219,6 +219,19 @@
       "category": "documentation"
     },
     {
+      "name": "feedback-plugin",
+      "source": "./feedback-plugin",
+      "description": "Session feedback analysis - capture skill bugs, enhancements, and positive patterns as GitHub issues",
+      "version": "1.0.0",
+      "keywords": [
+        "feedback",
+        "session-analysis",
+        "skill-quality",
+        "github-issues"
+      ],
+      "category": "quality"
+    },
+    {
       "name": "finops-plugin",
       "source": "./finops-plugin",
       "description": "GitHub Actions FinOps analysis - billing, cache usage, workflow efficiency, and waste identification",

@@ -1,0 +1,18 @@
+{
+  "name": "feedback-plugin",
+  "version": "1.0.0",
+  "description": "Session feedback analysis - capture skill bugs, enhancements, and positive patterns as GitHub issues",
+  "author": {
+    "name": "Lauri Gates",
+    "url": "https://github.com/laurigates"
+  },
+  "repository": "https://github.com/laurigates/claude-plugins",
+  "license": "MIT",
+  "keywords": [
+    "feedback",
+    "session-analysis",
+    "skill-quality",
+    "github-issues",
+    "continuous-improvement"
+  ]
+}
