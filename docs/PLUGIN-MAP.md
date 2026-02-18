@@ -190,6 +190,7 @@ Install based on your project's tech stack and domain.
 | feedback-plugin | Capturing session skill feedback as GitHub issues |
 | tools-plugin | fd, rg, jq, shell, ImageMagick, d2 utilities |
 | workflow-orchestration-plugin | Parallel agent orchestration, CI pipelines, preflight checks, checkpoint refactoring |
+| migration-patterns-plugin | Safe database and system migration patterns — dual write, shadow mode, strangler fig |
 | prose-plugin | Prose style control — distillation, tone, voice, clarity, consistency |
 
 ## Key Entry Points
