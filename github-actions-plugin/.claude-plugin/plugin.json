@@ -11,6 +11,7 @@
     "github-actions",
     "ci-cd",
     "workflows",
-    "automation"
+    "automation",
+    "auto-fix"
   ]
 }

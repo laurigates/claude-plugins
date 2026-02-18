@@ -212,6 +212,7 @@ Commands organized by workflow phase.
 | **Ship** | `/git:commit` | Commit with conventional message |
 | **Ship** | `/git:pr` | Create pull request |
 | **Ship** | `/git:fix-pr` | Fix failing PR checks |
+| **Ship** | `/workflow:auto-fix` | Auto-fix CI failures or open issues |
 | **Orchestrate** | `/workflow:preflight` | Pre-work validation before starting |
 | **Orchestrate** | `/workflow:parallel-issues` | Process issues in parallel with worktrees |
 | **Orchestrate** | `/workflow:ci-fix` | Fix failing CI across PRs |
