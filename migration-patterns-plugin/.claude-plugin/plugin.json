@@ -1,6 +1,6 @@
 {
   "name": "migration-patterns-plugin",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Safe database and system migration patterns - dual write, shadow mode, strangler fig",
   "keywords": [
     "migration",
