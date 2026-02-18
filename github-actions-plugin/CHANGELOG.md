@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.3.0...github-actions-plugin-v1.4.0) (2026-02-18)
+
+
+### Features
+
+* **github-actions-plugin:** add workflow auto-fix for CI failures ([#751](https://github.com/laurigates/claude-plugins/issues/751)) ([27f1773](https://github.com/laurigates/claude-plugins/commit/27f1773022cf52f64873b13ed1e8321c5c9c1a0b))
+
 ## [1.3.0](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.2.0...github-actions-plugin-v1.3.0) (2026-02-18)
 
 
