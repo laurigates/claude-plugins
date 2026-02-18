@@ -1,6 +1,6 @@
 ---
 name: performance
-model: opus
+model: sonnet
 color: "#E65100"
 description: Performance analysis and profiling. Identifies bottlenecks, analyzes profiler output, benchmarks code, and recommends optimizations. Use when investigating slow code or system performance issues.
 tools: Glob, Grep, LS, Read, Bash(hyperfine *), Bash(py-spy *), Bash(perf *), Bash(time *), Bash(npm run *), Bash(cargo bench *), Bash(go test -bench *), Bash(git status *), Bash(git diff *), TodoWrite

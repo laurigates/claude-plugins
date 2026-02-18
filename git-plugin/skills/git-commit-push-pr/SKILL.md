@@ -1,5 +1,5 @@
 ---
-model: haiku
+model: sonnet
 name: git-commit-push-pr
 created: 2025-12-16
 modified: 2026-02-06

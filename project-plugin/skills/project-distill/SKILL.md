@@ -1,5 +1,5 @@
 ---
-model: opus
+model: sonnet
 name: project-distill
 description: |
   Distill session insights into reusable knowledge: Claude rules, skill improvements,

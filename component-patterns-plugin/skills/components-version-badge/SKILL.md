@@ -1,5 +1,5 @@
 ---
-model: opus
+model: sonnet
 created: 2025-02-03
 modified: 2026-02-10
 reviewed: 2025-02-03
