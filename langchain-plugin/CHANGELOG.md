@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/laurigates/claude-plugins/compare/langchain-plugin-v1.3.1...langchain-plugin-v1.4.0) (2026-02-18)
+
+
+### Features
+
+* introduce three-tier model palette (opus/sonnet/haiku) ([#709](https://github.com/laurigates/claude-plugins/issues/709)) ([2c1e9cc](https://github.com/laurigates/claude-plugins/commit/2c1e9ccff5d48c2b426beac5b3b38cd4576c79a0))
+
 ## [1.3.1](https://github.com/laurigates/claude-plugins/compare/langchain-plugin-v1.3.0...langchain-plugin-v1.3.1) (2026-02-12)
 
 
