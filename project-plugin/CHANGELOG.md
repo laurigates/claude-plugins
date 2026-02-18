@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.8.5...project-plugin-v1.9.0) (2026-02-18)
+
+
+### Features
+
+* introduce three-tier model palette (opus/sonnet/haiku) ([#709](https://github.com/laurigates/claude-plugins/issues/709)) ([2c1e9cc](https://github.com/laurigates/claude-plugins/commit/2c1e9ccff5d48c2b426beac5b3b38cd4576c79a0))
+
 ## [1.8.5](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.8.4...project-plugin-v1.8.5) (2026-02-15)
 
 
