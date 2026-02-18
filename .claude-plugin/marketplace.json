@@ -382,7 +382,7 @@
       "name": "prose-plugin",
       "source": "./prose-plugin",
       "description": "Prose transformation and style control - synthesis, distillation, tone, voice, clarity, and consistency for written text",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "keywords": [
         "prose",
         "writing",
