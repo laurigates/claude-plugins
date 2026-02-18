@@ -222,7 +222,7 @@
       "name": "feedback-plugin",
       "source": "./feedback-plugin",
       "description": "Session feedback analysis - capture skill bugs, enhancements, and positive patterns as GitHub issues",
-      "version": "1.1.0",
+      "version": "1.0.0",
       "keywords": [
         "feedback",
         "session-analysis",
