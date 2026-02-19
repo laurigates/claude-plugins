@@ -265,7 +265,7 @@
       "name": "github-actions-plugin",
       "source": "./github-actions-plugin",
       "description": "GitHub Actions CI/CD - workflows, authentication, inspection, auto-fix",
-      "version": "1.4.0",
+      "version": "1.4.1",
       "keywords": [
         "github-actions",
         "ci-cd",
@@ -395,7 +395,7 @@
       "name": "project-plugin",
       "source": "./project-plugin",
       "description": "Project initialization, management, and maintenance - setup, modernization, changelog review, and continuous development workflows",
-      "version": "1.9.0",
+      "version": "1.9.1",
       "keywords": [
         "project",
         "initialization",
