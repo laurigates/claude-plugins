@@ -19,7 +19,6 @@ This plugin provides comprehensive code quality tools including automated code r
 | `/docs:quality-check` | Analyze documentation quality - PRDs, ADRs, PRPs, CLAUDE.md, and .claude/rules/ |
 | `code-antipatterns-analysis` | Detect anti-patterns and code smells using ast-grep structural matching |
 | `ast-grep-search` | AST-based code search for structural pattern matching |
-| `documentation-quality` | Analyze and validate documentation quality for PRDs, ADRs, PRPs, CLAUDE.md, and .claude/rules/ |
 
 ## Agents
 

@@ -35,7 +35,7 @@ name: git-derive-docs
 
 ## Your task
 
-Analyze git commit history to identify documentation gaps. Use the `git-log-documentation` skill as reference for detection patterns and analysis techniques.
+Analyze git commit history to identify documentation gaps.
 
 ### Step 1: Determine Scope
 
@@ -186,6 +186,5 @@ Report:
 
 ## See Also
 
-- **git-log-documentation** skill for detailed detection patterns
 - **document-detection** skill (blueprint-plugin) for conversation-based detection
 - `/docs:generate --changelog` for changelog generation from commits
