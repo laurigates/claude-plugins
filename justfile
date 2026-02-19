@@ -77,3 +77,28 @@ lint-all: lint-context-commands lint-compliance lint-health lint-infra
 # Add all MCP servers and set up cclsp
 [group: "claude"]
 claude-setup: mcp-sentry mcp-github mcp-context7 mcp-playwright mcp-sequential-thinking mcp-chrome-devtools cclsp
+
+####################
+# GitHub
+####################
+
+# Rebase all open PRs onto their base branch
+[group: "github"]
+[confirm("This will rebase all open PRs. Continue?")]
+pr-rebase-all:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    prs=$(gh pr list --json number,title --jq '.[].number')
+    if [ -z "$prs" ]; then
+        echo "No open PRs found"
+        exit 0
+    fi
+    for pr in $prs; do
+        title=$(gh pr view "$pr" --json title --jq '.title')
+        printf "PR #%-5s %s ... " "$pr" "$title"
+        if gh pr update-branch --rebase "$pr" 2>/dev/null; then
+            echo "ok"
+        else
+            echo "FAILED"
+        fi
+    done
