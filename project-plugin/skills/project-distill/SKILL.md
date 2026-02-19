@@ -9,7 +9,7 @@ allowed-tools: Bash(git diff *), Bash(git log *), Bash(git status *), Bash(just 
 argument-hint: "--rules | --skills | --recipes | --all | --dry-run"
 args: "[--rules] [--skills] [--recipes] [--all] [--dry-run]"
 created: 2026-02-11
-modified: 2026-02-14
+modified: 2026-02-19
 reviewed: 2026-02-14
 ---
 
@@ -43,12 +43,12 @@ Distill session insights into reusable project knowledge. Reviews what was done 
 
 Gather session context to analyze:
 
-- Session diff: !`git diff --stat HEAD~10..HEAD 2>/dev/null`
-- Recent commits: !`git log --oneline --max-count=20 2>/dev/null`
-- Current branch: !`git branch --show-current 2>/dev/null`
-- Justfile: !`find . -maxdepth 1 \( -name 'justfile' -o -name 'Justfile' \) -print -quit 2>/dev/null`
-- Rules directory: !`find .claude/rules -name '*.md' -type f 2>/dev/null`
-- Changed files: !`git diff --name-only HEAD~10..HEAD 2>/dev/null`
+- Session diff: !`git diff --stat HEAD~10..HEAD`
+- Recent commits: !`git log --oneline --max-count=20`
+- Current branch: !`git branch --show-current`
+- Justfile: !`find . -maxdepth 1 \( -name 'justfile' -o -name 'Justfile' \) -print -quit`
+- Rules directory: !`find .claude/rules -name '*.md' -type f`
+- Changed files: !`git diff --name-only HEAD~10..HEAD`
 
 ## Parameters
 
