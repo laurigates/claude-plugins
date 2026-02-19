@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.1](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.9.0...project-plugin-v1.9.1) (2026-02-19)
+
+
+### Bug Fixes
+
+* **project-plugin:** remove redirect operators from context commands in project-distill ([aa6c87a](https://github.com/laurigates/claude-plugins/commit/aa6c87a4d0cf875e4adf32fd82261beaf9199dcd))
+
 ## [1.9.0](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.8.5...project-plugin-v1.9.0) (2026-02-18)
 
 

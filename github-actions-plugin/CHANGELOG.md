@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.4.0...github-actions-plugin-v1.4.1) (2026-02-19)
+
+
+### Documentation
+
+* **ci:** add issue descriptions for lint errors and max-turns config ([#764](https://github.com/laurigates/claude-plugins/issues/764)) ([eba261f](https://github.com/laurigates/claude-plugins/commit/eba261fa6be4134a025ad55c3ef76825b9662301))
+
 ## [1.4.0](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.3.0...github-actions-plugin-v1.4.0) (2026-02-18)
 
 
