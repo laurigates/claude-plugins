@@ -1,6 +1,6 @@
 {
   "name": "github-actions-plugin",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "GitHub Actions CI/CD - workflows, authentication, inspection",
   "author": {
     "name": "Lauri Gates"
