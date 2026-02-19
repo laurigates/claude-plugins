@@ -27,10 +27,9 @@ Automated CI failure analysis and remediation using Claude Code Action.
 
 ## Context
 
-- Workflow exists: !`test -f .github/workflows/github-workflow-auto-fix.yml && echo "EXISTS" || echo "MISSING"`
+- Workflow exists: !`find .github/workflows -maxdepth 1 -name 'github-workflow-auto-fix.yml' 2>/dev/null`
 - Current workflows: !`find .github/workflows -maxdepth 1 -name '*.yml' 2>/dev/null`
-- Workflow names: !`grep -h '^name:' .github/workflows/*.yml 2>/dev/null | sed 's/^name:[[:space:]]*//'`
-- Claude secrets configured: !`gh secret list 2>/dev/null | grep -c 'CLAUDE_CODE_OAUTH_TOKEN' || echo "0"`
+- Claude secrets configured: !`gh secret list 2>/dev/null`
 
 ## Parameters
 
