@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.18.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.18.1...git-plugin-v2.18.2) (2026-02-20)
+
+
+### Code Refactoring
+
+* consolidate skill documentation and remove reference files ([#758](https://github.com/laurigates/claude-plugins/issues/758)) ([3d1e8cc](https://github.com/laurigates/claude-plugins/commit/3d1e8ccd9becba5faec5b1df1fa06f410eca7437))
+
 ## [2.18.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.18.0...git-plugin-v2.18.1) (2026-02-18)
 
 
