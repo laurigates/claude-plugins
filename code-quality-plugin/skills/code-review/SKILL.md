@@ -5,6 +5,7 @@ modified: 2026-01-25
 reviewed: 2026-01-25
 allowed-tools: Task, TodoWrite, Glob, Read
 description: Perform comprehensive code review with automated fixes
+args: "[PATH]"
 argument-hint: "[PATH]"
 name: code-review
 ---

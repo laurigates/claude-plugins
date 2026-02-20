@@ -55,7 +55,7 @@ Three composable skills that can be invoked individually or combined based on us
 | `github-issue-writing` | Create well-structured GitHub issues with clear titles and acceptance criteria |
 | `github-labels` | Discover and apply labels to GitHub PRs and issues |
 | `github-pr-title` | Craft effective PR titles using conventional commit format |
-| `git-log-documentation` | Derive undocumented rules, PRDs, ADRs, PRPs from git commit history |
+| `git-derive-docs` | Derive undocumented rules, PRDs, ADRs, PRPs from git commit history |
 | `release-please-configuration` | Release-please config for monorepos and version automation |
 | `release-please-protection` | Prevent manual edits to release-please managed files |
 | `release-please-pr-workflow` | Batch merge release-please PRs with conflict handling |
