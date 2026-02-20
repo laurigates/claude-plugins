@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.9.2](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.9.1...project-plugin-v1.9.2) (2026-02-20)
+
+
+### Bug Fixes
+
+* **git-plugin:** Improve git command reliability in project-distill skill ([#765](https://github.com/laurigates/claude-plugins/issues/765)) ([96befca](https://github.com/laurigates/claude-plugins/commit/96befcaa949131b03a9d610cb9712a7eaa24c47f))
+* **project-plugin:** use git log instead of HEAD~10 range in project-distill ([96befca](https://github.com/laurigates/claude-plugins/commit/96befcaa949131b03a9d610cb9712a7eaa24c47f))
+
 ## [1.9.1](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.9.0...project-plugin-v1.9.1) (2026-02-19)
 
 
