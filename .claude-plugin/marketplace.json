@@ -112,7 +112,7 @@
       "name": "code-quality-plugin",
       "source": "./code-quality-plugin",
       "description": "Code review, refactoring, linting, and static analysis",
-      "version": "1.6.0",
+      "version": "1.6.1",
       "keywords": [
         "code-review",
         "refactoring",
@@ -209,7 +209,7 @@
       "name": "documentation-plugin",
       "source": "./documentation-plugin",
       "description": "Documentation generation - API docs, README, knowledge graphs, LaTeX PDF conversion",
-      "version": "1.4.0",
+      "version": "1.4.1",
       "keywords": [
         "documentation",
         "docs",
@@ -251,7 +251,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, and repository management",
-      "version": "2.18.1",
+      "version": "2.18.2",
       "keywords": [
         "git",
         "github",
@@ -265,7 +265,7 @@
       "name": "github-actions-plugin",
       "source": "./github-actions-plugin",
       "description": "GitHub Actions CI/CD - workflows, authentication, inspection, auto-fix",
-      "version": "1.4.1",
+      "version": "1.4.2",
       "keywords": [
         "github-actions",
         "ci-cd",
