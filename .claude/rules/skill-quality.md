@@ -129,3 +129,5 @@ When reviewing skill/command changes:
 - [ ] Frontmatter has all required fields (name, description, allowed-tools)
 - [ ] Date fields updated (modified, reviewed)
 - [ ] User-invocable skills follow execution structure (see `.claude/rules/skill-execution-structure.md`)
+- [ ] PR title follows conventional commit format: `type(scope): subject` (see `.claude/rules/conventional-commits.md`)
+- [ ] Commit messages follow conventional commit format with plugin name as scope (e.g., `feat(git-plugin): ...`)
