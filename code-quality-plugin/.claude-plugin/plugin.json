@@ -1,6 +1,6 @@
 {
   "name": "code-quality-plugin",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "Code review, refactoring, linting, anti-pattern detection, and static analysis",
   "author": {
     "name": "Lauri Gates"

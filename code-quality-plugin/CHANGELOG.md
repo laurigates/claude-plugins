@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.1](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.6.0...code-quality-plugin-v1.6.1) (2026-02-20)
+
+
+### Code Refactoring
+
+* consolidate skill documentation and remove reference files ([#758](https://github.com/laurigates/claude-plugins/issues/758)) ([3d1e8cc](https://github.com/laurigates/claude-plugins/commit/3d1e8ccd9becba5faec5b1df1fa06f410eca7437))
+
 ## [1.6.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.5.6...code-quality-plugin-v1.6.0) (2026-02-18)
 
 

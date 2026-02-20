@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.2](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.4.1...github-actions-plugin-v1.4.2) (2026-02-20)
+
+
+### Code Refactoring
+
+* consolidate skill documentation and remove reference files ([#758](https://github.com/laurigates/claude-plugins/issues/758)) ([3d1e8cc](https://github.com/laurigates/claude-plugins/commit/3d1e8ccd9becba5faec5b1df1fa06f410eca7437))
+
 ## [1.4.1](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.4.0...github-actions-plugin-v1.4.1) (2026-02-19)
 
 
