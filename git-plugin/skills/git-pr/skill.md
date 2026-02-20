@@ -1,8 +1,8 @@
 ---
 model: haiku
 created: 2026-01-21
-modified: 2026-01-30
-reviewed: 2026-01-30
+modified: 2026-02-20
+reviewed: 2026-02-20
 name: git-pr
 description: |
   Create pull requests with proper descriptions, labels, and issue references. Handles
@@ -45,6 +45,11 @@ Why this change is needed. Link to issue if applicable.
 - [ ] Code reviewed
 - [ ] Documentation updated (if needed)
 
+## Follow-up Issues
+<!-- Post-merge actions tracked as separate issues so they survive PR closure -->
+- Closes #456 after merge: database migration for new schema
+- Refs #457: update deployment runbook
+
 ## Related Issues
 Fixes #123
 Related: #124, #125
@@ -57,7 +62,8 @@ Related: #124, #125
 | Summary | What the PR does (1-2 sentences) | Yes |
 | Motivation | Why this change is needed | Yes |
 | Changes | Key changes as bullet points | Yes |
-| Pre-merge Checklist | Actions before merge (not including merge) | If applicable |
+| Pre-merge Checklist | Actions before merge only — never post-merge steps | If applicable |
+| Follow-up Issues | Links to issues tracking post-merge actions | If post-merge work exists |
 | Related Issues | Issue links at bottom | Yes |
 
 ### Issue Linking Syntax
@@ -78,6 +84,8 @@ Related: #124, #125     <!-- Links without closing -->
 - Follow-up work should be created as new issues, not left in checklist
 
 ## Workflow
+
+> **Before creating the PR**, check whether any post-merge follow-up actions are needed (migrations, deployments, config changes, runbook updates). Create a GitHub issue for each and link them in the PR description. See [Post-Merge Follow-up Issues](#post-merge-follow-up-issues).
 
 ### 1. Assess PR Readiness
 
@@ -118,7 +126,21 @@ git log $base_ref..HEAD --format='%B' | grep -oE '#[0-9]+' | sort -u
 git diff $base_ref...HEAD --stat
 ```
 
-### 3. Create PR
+### 3. Identify Post-Merge Follow-ups and Create Issues
+
+Before creating the PR, scan for any actions required **after** the PR is merged (deployments, migrations, config changes, external docs). For each:
+
+```bash
+# Create a follow-up issue
+gh issue create \
+  --title "[Chore] DB: Run migration for new schema" \
+  --body "Follow-up to PR that adds user_preferences.\n\nRun: rake db:migrate in production after deploy."
+# Returns: https://github.com/org/repo/issues/456
+```
+
+Keep a list of created issue numbers to link in the PR body.
+
+### 4. Create PR
 
 ```bash
 gh pr create \
@@ -137,6 +159,10 @@ Why this change is needed.
 ## Pre-merge Checklist
 - [ ] Tests pass locally
 - [ ] Code reviewed
+
+## Follow-up Issues
+- #456: run database migration after deploy
+- #457: update production config
 
 ## Related Issues
 Fixes #123
@@ -188,18 +214,53 @@ Include only actions **before** merging:
 - [ ] Documentation updated
 - [ ] Breaking changes documented
 
-**Do NOT include:**
-- Merge the PR (implied)
-- Post-merge deployment steps
-- Follow-up tasks (create issues instead)
+**Do NOT include post-merge steps in the checklist.** PR descriptions are closed and buried after merge — checklists embedded there are easily missed. Post-merge actions must be tracked as GitHub issues.
 
-## Follow-up Work
+## Post-Merge Follow-up Issues
 
-Any tasks discovered during review that are out of scope:
+When a PR requires actions **after** it is merged, create a separate GitHub issue for each follow-up. Link all follow-up issues in the PR description under a **Follow-up Issues** section.
 
-1. **Do NOT** add to PR checklist
-2. **Create** a new issue with details
-3. **Link** the new issue in PR description under Related Issues
+**Why issues, not PR checklists:** Once a PR is merged and closed, its description is rarely revisited. A GitHub issue stays open and assignable until explicitly closed, ensuring the follow-up is not lost.
+
+### Common post-merge follow-up types
+
+| Type | Example follow-up issue title |
+|------|-------------------------------|
+| Database migration | `[Chore] DB: Run schema migration for user_preferences table` |
+| Deployment | `[Chore] Ops: Deploy feature-flag config to production` |
+| Manual configuration | `[Chore] Config: Enable new OAuth provider in admin panel` |
+| External documentation | `[Docs] Wiki: Update runbook for new deploy process` |
+| Communication | `[Chore] Comms: Announce deprecation of /v1 API to customers` |
+| Dependent PR | `[Feature] Next: Implement follow-on X after Y lands` |
+
+### Workflow
+
+1. **Identify** post-merge actions from commit messages, PR body, or conversation context.
+2. **Create an issue** for each follow-up:
+   ```bash
+   gh issue create \
+     --title "[Chore] DB: Run migration for new schema" \
+     --body "After #42 merges, run: \`rake db:migrate\` in production.\n\nSee PR #42 for context." \
+     --label "chore"
+   ```
+3. **Link** the newly created issues in the PR description:
+   ```bash
+   gh pr edit <pr-number> --body "$(gh pr view <pr-number> --json body -q '.body')
+
+   ## Follow-up Issues
+   - #<issue-num>: run database migration
+   - #<issue-num>: update deployment runbook"
+   ```
+4. **Do NOT** add post-merge steps to the Pre-merge Checklist.
+
+### Example: PR description with follow-up issues
+
+```markdown
+## Follow-up Issues
+<!-- These issues track post-merge work and will stay open until completed -->
+- #456: run database migration for user_preferences table
+- #457: update production feature-flag config
+```
 
 ## Output
 
@@ -233,6 +294,7 @@ Status: Open
 | Edit PR | `gh pr edit --title "..." --body "..."` |
 | List PRs | `gh pr list` |
 | Check status | `gh pr checks` |
+| Create follow-up issue | `gh issue create --title "[Chore] ..." --body "..."` |
 
 ## Agentic Optimizations
 
@@ -241,4 +303,5 @@ Status: Open
 | PR readiness | `gh pr view --json number,state 2>/dev/null` |
 | Commits | `git log main..HEAD --format='%s'` |
 | Issue refs | `git log main..HEAD --format='%B' \| grep -oE '#[0-9]+'` |
+| Create follow-up issue | `gh issue create --title "[Chore] ..." --body "Follow-up to PR #N..."` |
 | Create PR | `gh pr create --title "..." --body "..."` |
