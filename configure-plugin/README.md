@@ -29,6 +29,7 @@ All commands support two modes:
 | `configure-all` | Run all infrastructure standards checks |
 | `configure-select` | Interactively select which components to configure |
 | `configure-status` | Show compliance status (read-only) |
+| `config-sync` | Extract, compare, and propagate tooling improvements across repos |
 
 ### CI/CD & Version Control
 
