@@ -1,6 +1,6 @@
 ---
 created: 2025-12-20
-modified: 2026-01-22
+modified: 2026-02-20
 reviewed: 2026-01-22
 ---
 
@@ -197,3 +197,25 @@ Update `.claude-plugin/plugin.json` when adding skills:
 Update `README.md`:
 - Add skill to skills table
 - Add usage examples for new commands
+
+## Git Workflow
+
+All commits and PR titles **must** follow conventional commit format. See `.claude/rules/conventional-commits.md` for the full standard.
+
+Use the plugin name as the scope:
+
+```bash
+git commit -m "feat(git-plugin): add commit workflow skill"
+git commit -m "fix(configure-plugin): correct frontmatter extraction"
+git commit -m "docs(blueprint-plugin): update skill README"
+```
+
+| Type | When to Use |
+|------|-------------|
+| `feat` | New skill or meaningful new capability |
+| `fix` | Correcting broken skill behaviour |
+| `docs` | README, CHANGELOG, or inline documentation only |
+| `refactor` | Restructuring a skill without behaviour change |
+| `chore` | Metadata updates (plugin.json, marketplace.json) |
+
+PR titles must also follow this format — they become the squash-merge commit message that drives release-please version bumps.

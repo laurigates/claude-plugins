@@ -9,7 +9,7 @@ allowed-tools: Bash(git diff *), Bash(git log *), Bash(git status *), Bash(just 
 argument-hint: "--rules | --skills | --recipes | --all | --dry-run"
 args: "[--rules] [--skills] [--recipes] [--all] [--dry-run]"
 created: 2026-02-11
-modified: 2026-02-19
+modified: 2026-02-20
 reviewed: 2026-02-14
 ---
 
@@ -43,12 +43,12 @@ Distill session insights into reusable project knowledge. Reviews what was done 
 
 Gather session context to analyze:
 
-- Session diff: !`git diff --stat HEAD~10..HEAD`
-- Recent commits: !`git log --oneline --max-count=20`
-- Current branch: !`git branch --show-current`
+- Session diff: !`git log --stat --oneline --max-count=10 2>/dev/null`
+- Recent commits: !`git log --oneline --max-count=20 2>/dev/null`
+- Current branch: !`git branch --show-current 2>/dev/null`
 - Justfile: !`find . -maxdepth 1 \( -name 'justfile' -o -name 'Justfile' \) -print -quit`
-- Rules directory: !`find .claude/rules -name '*.md' -type f`
-- Changed files: !`git diff --name-only HEAD~10..HEAD`
+- Rules directory: !`find .claude/rules -name '*.md' -type f 2>/dev/null`
+- Changed files: !`git log --name-only --max-count=10 --format='' 2>/dev/null`
 
 ## Parameters
 
@@ -68,8 +68,8 @@ Execute this session distillation workflow:
 
 Understand what happened:
 
-1. Review recent commits: `git log --oneline -20`
-2. Review recent diffs: `git diff --stat HEAD~10..HEAD`
+1. Review recent commits: `git log --oneline --max-count=20`
+2. Review recent diffs: `git log --stat --oneline --max-count=10`
 3. Identify patterns: repeated operations, workarounds, discoveries
 4. Catalog tools used: effective commands, flags, workflows
 5. Note pain points: where time was spent figuring things out
@@ -157,9 +157,9 @@ Output concise summary of what was changed (rules updated, recipes added, insigh
 
 | Context | Command |
 |---------|---------|
-| Session diff summary | `git diff --stat HEAD~10..HEAD` |
-| Recent commits | `git log --oneline -20` |
-| Files changed | `git diff --name-only HEAD~10..HEAD` |
+| Session diff summary | `git log --stat --oneline --max-count=10` |
+| Recent commits | `git log --oneline --max-count=20` |
+| Files changed | `git log --name-only --max-count=10 --format=''` |
 | List justfile recipes | `just --list` |
 | Dump justfile as JSON | `just --dump --dump-format json` |
 | Dry run recipe | `just --dry-run recipe-name` |

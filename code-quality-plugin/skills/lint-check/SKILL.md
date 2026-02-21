@@ -4,6 +4,7 @@ created: 2025-12-16
 modified: 2026-02-05
 reviewed: 2025-12-16
 allowed-tools: Bash(ruff *), Bash(eslint *), Bash(rustfmt *), Bash(gofmt *), Bash(prettier *), Read, SlashCommand
+args: "[path] [--fix] [--format]"
 argument-hint: [path] [--fix] [--format]
 description: Universal linter that automatically detects and runs the appropriate linting tools
 name: lint-check

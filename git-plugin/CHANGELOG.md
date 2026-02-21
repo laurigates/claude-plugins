@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.19.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.18.2...git-plugin-v2.19.0) (2026-02-20)
+
+
+### Features
+
+* **git-plugin:** track post-merge follow-ups as issues, not PR checklists ([ebce835](https://github.com/laurigates/claude-plugins/commit/ebce835f10cd11361c378f20bb0da572eb458117))
+* Refactor PR workflow to track post-merge actions as GitHub issues ([#769](https://github.com/laurigates/claude-plugins/issues/769)) ([ebce835](https://github.com/laurigates/claude-plugins/commit/ebce835f10cd11361c378f20bb0da572eb458117))
+
+## [2.18.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.18.1...git-plugin-v2.18.2) (2026-02-20)
+
+
+### Code Refactoring
+
+* consolidate skill documentation and remove reference files ([#758](https://github.com/laurigates/claude-plugins/issues/758)) ([3d1e8cc](https://github.com/laurigates/claude-plugins/commit/3d1e8ccd9becba5faec5b1df1fa06f410eca7437))
+
 ## [2.18.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.18.0...git-plugin-v2.18.1) (2026-02-18)
 
 

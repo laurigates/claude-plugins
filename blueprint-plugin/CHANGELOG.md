@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.19.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.18.0...blueprint-plugin-v3.19.0) (2026-02-20)
+
+
+### Features
+
+* **blueprint-plugin:** revise init questions for streamlined onboarding ([1942c1e](https://github.com/laurigates/claude-plugins/commit/1942c1e51d796afbf1225cddf9ab080351bd75e2))
+
+
+### Code Refactoring
+
+* **blueprint-plugin:** blueprint-init workflow and simplify user prompts ([#768](https://github.com/laurigates/claude-plugins/issues/768)) ([1942c1e](https://github.com/laurigates/claude-plugins/commit/1942c1e51d796afbf1225cddf9ab080351bd75e2))
+
 ## [3.18.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.17.0...blueprint-plugin-v3.18.0) (2026-02-18)
 
 
