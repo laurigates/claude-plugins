@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.9.0...configure-plugin-v1.10.0) (2026-02-21)
+
+
+### Features
+
+* **configure-plugin:** add config-sync skill for cross-repo tooling propagation ([#775](https://github.com/laurigates/claude-plugins/issues/775)) ([9cc1502](https://github.com/laurigates/claude-plugins/commit/9cc1502aeef2fa90c6909881d2a745c337148c85))
+
 ## [1.9.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.8.0...configure-plugin-v1.9.0) (2026-02-18)
 
 
