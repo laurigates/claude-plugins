@@ -4,7 +4,7 @@ Claude Agent SDK application for automated repository onboarding and maintenance
 
 ## Overview
 
-git-repo-agent analyzes a repository's technology stack, initializes blueprint methodology structure, configures project standards, and sets up documentation — all orchestrated by Claude through the Agent SDK.
+git-repo-agent analyzes a repository's technology stack, initializes blueprint methodology structure, configures project standards, runs quality and security audits, and sets up documentation — all orchestrated by Claude through the Agent SDK.
 
 ## Installation
 
@@ -34,14 +34,22 @@ git-repo-agent onboard /path/to/repo --skip-ci --skip-blueprint
 git-repo-agent onboard /path/to/repo --branch setup/init
 ```
 
-### Maintenance (Phase 2)
+### Maintain a Repository
 
 ```bash
-git-repo-agent maintain /path/to/repo --fix
+# Report-only mode (no changes)
 git-repo-agent maintain /path/to/repo --report-only
+
+# Auto-fix safe issues
+git-repo-agent maintain /path/to/repo --fix
+
+# Focus on specific categories
+git-repo-agent maintain /path/to/repo --focus docs,security
 ```
 
-### Health Check (Phase 3)
+### Quick Health Check
+
+Runs locally without LLM calls — direct Python scoring.
 
 ```bash
 git-repo-agent health /path/to/repo
@@ -52,28 +60,79 @@ git-repo-agent health /path/to/repo
 ```
 git-repo-agent/
 ├── src/git_repo_agent/
-│   ├── main.py              # CLI entry point (Typer)
-│   ├── orchestrator.py      # Core agent orchestration
+│   ├── main.py                # CLI entry point (Typer)
+│   ├── orchestrator.py        # Core agent orchestration
 │   ├── agents/
-│   │   └── blueprint.py     # Blueprint lifecycle subagent
+│   │   ├── blueprint.py       # Blueprint lifecycle (sonnet)
+│   │   ├── configure.py       # Project standards (haiku)
+│   │   ├── docs.py            # Documentation health (haiku)
+│   │   ├── quality.py         # Code quality analysis (opus)
+│   │   ├── security.py        # Security audit (opus)
+│   │   └── test_runner.py     # Test execution (haiku)
 │   ├── tools/
-│   │   └── repo_analyzer.py # Repository analysis MCP tool
+│   │   ├── repo_analyzer.py   # repo_analyze MCP tool
+│   │   ├── health_check.py    # health_score MCP tool
+│   │   └── report.py          # report_generate MCP tool
+│   ├── hooks/
+│   │   └── safety.py          # Destructive command prevention
 │   └── prompts/
-│       ├── orchestrator.md   # Orchestrator system prompt
-│       ├── onboard.md        # Onboard workflow instructions
-│       └── blueprint.md      # Blueprint subagent prompt
+│       ├── orchestrator.md    # Orchestrator system prompt
+│       ├── onboard.md         # Onboard workflow
+│       ├── maintain.md        # Maintain workflow
+│       ├── health.md          # Health command reference
+│       ├── blueprint.md       # Blueprint subagent prompt
+│       ├── configure.md       # Configure subagent prompt
+│       ├── docs.md            # Docs subagent prompt
+│       ├── quality.md         # Quality subagent prompt
+│       ├── security.md        # Security subagent prompt
+│       ├── test_runner.md     # Test runner subagent prompt
+│       └── generated/         # Compiled skill prompts
+├── scripts/
+│   └── compile_prompts.py     # Skill compilation pipeline
 └── pyproject.toml
 ```
 
-### Components
+### Subagents
 
-| Component | Role |
-|-----------|------|
-| **Orchestrator** | Coordinates subagents, manages workflow |
-| **repo_analyze** | MCP tool for detecting tech stack |
-| **Blueprint subagent** | Initializes docs/blueprint/ structure |
+| Agent | Model | Purpose |
+|-------|-------|---------|
+| **blueprint** | sonnet | Initialize and maintain blueprint methodology (PRDs, ADRs, PRPs, manifest) |
+| **configure** | haiku | Set up linting, formatting, testing, pre-commit hooks, CI/CD, coverage |
+| **docs** | haiku | Check and improve README, CLAUDE.md, API docs, blueprint docs |
+| **quality** | opus | Review code for complexity, duplication, anti-patterns, lint compliance |
+| **security** | opus | Scan for exposed secrets, dependency CVEs, insecure configurations |
+| **test_runner** | haiku | Detect test framework, execute tests, return pass/fail summary |
 
-### Technology Stack Detection
+### MCP Tools
+
+| Tool | Description |
+|------|-------------|
+| **repo_analyze** | Detect language, framework, package manager, test/lint/format tools, CI system |
+| **health_score** | Score 5 categories (docs, tests, security, quality, ci) each 0–20, total 0–100 |
+| **report_generate** | Format health findings as markdown, JSON, or terminal output |
+
+### Safety Hooks
+
+The safety module prevents destructive commands during agent execution:
+- Blocks `git push --force`, `git reset --hard`, `rm -rf`
+- Prevents modification of `.env` files and credentials
+- Logs blocked commands for review
+
+### Skill Compilation Pipeline
+
+Subagents receive domain knowledge compiled from plugin skills:
+
+```bash
+# Generate compiled skill prompts
+python scripts/compile_prompts.py
+
+# Verify output is up-to-date
+python scripts/compile_prompts.py --check
+```
+
+The compiler strips Claude Code metadata (frontmatter, `allowed-tools`, `AskUserQuestion` references) and keeps domain knowledge sections, producing self-contained prompt fragments for each subagent.
+
+## Technology Stack Detection
 
 The `repo_analyze` tool detects:
 - Language (Python, TypeScript, JavaScript, Rust, Go, Java)
@@ -95,13 +154,16 @@ uv run --directory git-repo-agent git-repo-agent --help
 
 # Test with dry run
 uv run --directory git-repo-agent git-repo-agent onboard /tmp/test-repo --dry-run
+
+# Quick health check (no API calls)
+uv run --directory git-repo-agent git-repo-agent health .
 ```
 
 ## Implementation Phases
 
 | Phase | Status | Features |
 |-------|--------|----------|
-| Phase 1 | Current | CLI, orchestrator, repo_analyze, blueprint subagent, onboard command |
-| Phase 2 | Planned | Configure subagent, docs subagent, safety hooks, maintain command |
-| Phase 3 | Planned | Quality/security subagents, health scoring, reports |
+| Phase 1 | Done | CLI, orchestrator, repo_analyze, blueprint subagent, onboard command |
+| Phase 2 | Done | Configure/docs subagents, health_score, safety hooks, maintain command, skill compilation |
+| Phase 3 | Done | Quality/security/test-runner subagents, report_generate, health command |
 | Phase 4 | Planned | Watch mode, trend tracking, GitHub Action template |
