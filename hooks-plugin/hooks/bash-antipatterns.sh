@@ -125,7 +125,11 @@ COMMAND_SHELL_ONLY=$(echo "$COMMAND" | awk '
         if (t == delim) { ih = 0 }
     }
 ')
-PIPE_COUNT=$(echo "$COMMAND_SHELL_ONLY" | tr -cd '|' | wc -c)
+# Strip quoted strings and || operators before counting actual shell pipes
+# - Single-quoted strings contain regex alternation (grep -E '(a|b|c)')
+# - Double-quoted strings may contain literal pipe characters
+# - || is logical OR, not a pipe operator
+PIPE_COUNT=$(echo "$COMMAND_SHELL_ONLY" | sed "s/'[^']*'//g; s/\"[^\"]*\"//g; s/||//g" | tr -cd '|' | wc -c)
 if [ "$PIPE_COUNT" -ge 5 ]; then
     block_with_reminder "REMINDER: This command has $PIPE_COUNT pipes - consider simplifying. Options:
 - Use JSON output from the source (--reporter=json, --format=json) and parse with jq
@@ -148,7 +152,7 @@ fi
 # Check for broad git staging commands (git add -A, git add --all, git add .)
 # These can accidentally include sensitive files (.env, credentials) or large binaries.
 # Pattern handles git global flags like -C <path> before the subcommand.
-if echo "$COMMAND" | grep -Eq '^\s*git\s+(.+\s+)?add\s+(-A|--all|\.)(\s|$)'; then
+if echo "$COMMAND" | grep -Eq '^\s*git\s+(.+\s+)?add\s+(-A|--all|\.(\s|$))'; then
     block_with_reminder "REMINDER: Avoid broad staging commands like 'git add -A', 'git add --all', or 'git add .'.
 These can accidentally include sensitive files (.env, credentials) or large binaries.
 
@@ -199,6 +203,30 @@ Ask the user to run it manually with:
 1. The exact command: $COMMAND
 2. Why it's needed for this specific situation
 3. What alternatives you tried"
+fi
+
+# Check for git push -u that would set main/master tracking to a feature branch.
+# Pattern: git push -u origin <branch> (no colon refspec) while on main/master
+# but pushing to a differently-named branch — this sets main's upstream to
+# origin/<feature-branch>, which is wrong.
+# Correct form: git push origin main:<feature-branch> (explicit refspec, no -u)
+if echo "$COMMAND" | grep -Eq '^\s*git\s+push\b' && \
+   echo "$COMMAND" | grep -Eq '\s-u\b' && \
+   echo "$COMMAND" | grep -Eq '\sorigin\s+[a-zA-Z0-9._/-]+\s*$' && \
+   ! echo "$COMMAND" | grep -q ':'; then
+    PUSH_BRANCH=$(echo "$COMMAND" | grep -oE 'origin\s+[a-zA-Z0-9._/-]+' | awk '{print $2}')
+    CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "")
+    if [ -n "$CURRENT_BRANCH" ] && [ -n "$PUSH_BRANCH" ] && \
+       [ "$CURRENT_BRANCH" != "$PUSH_BRANCH" ] && \
+       { [ "$CURRENT_BRANCH" = "main" ] || [ "$CURRENT_BRANCH" = "master" ]; }; then
+        block_with_reminder "REMINDER: 'git push -u origin $PUSH_BRANCH' while on '$CURRENT_BRANCH' will set $CURRENT_BRANCH to track origin/$PUSH_BRANCH instead of origin/$CURRENT_BRANCH.
+
+This is the main-branch development pattern: push to a remote feature branch WITHOUT -u:
+  git push origin $CURRENT_BRANCH:$PUSH_BRANCH
+
+The -u flag is only correct when local and remote branch names match:
+  git push -u origin $CURRENT_BRANCH  (pushes main to origin/main)"
+    fi
 fi
 
 # If we get here, the command is allowed

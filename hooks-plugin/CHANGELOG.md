@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.5.6](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.5.5...hooks-plugin-v1.5.6) (2026-02-18)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** block git push -u on main to differently-named branch ([#746](https://github.com/laurigates/claude-plugins/issues/746)) ([25e3e49](https://github.com/laurigates/claude-plugins/commit/25e3e494e84f676503a52a5ed24e0eb62c467e09))
+
+## [1.5.5](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.5.4...hooks-plugin-v1.5.5) (2026-02-17)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** allow dotfile staging in bash-antipatterns check ([#703](https://github.com/laurigates/claude-plugins/issues/703)) ([ba387e2](https://github.com/laurigates/claude-plugins/commit/ba387e29f5dd7f122ee6c51af32fcc69f04b67ee)), closes [#595](https://github.com/laurigates/claude-plugins/issues/595)
+
+## [1.5.4](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.5.3...hooks-plugin-v1.5.4) (2026-02-17)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** exclude quoted strings and || from pipe count in bash-antipatterns hook ([31726b0](https://github.com/laurigates/claude-plugins/commit/31726b025b15cd9a0c2f4ce9a90fbc0c4636634b))
+* pipe counting in bash-antipatterns to exclude quoted strings and operators ([#699](https://github.com/laurigates/claude-plugins/issues/699)) ([31726b0](https://github.com/laurigates/claude-plugins/commit/31726b025b15cd9a0c2f4ce9a90fbc0c4636634b))
+
 ## [1.5.3](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.5.2...hooks-plugin-v1.5.3) (2026-02-13)
 
 

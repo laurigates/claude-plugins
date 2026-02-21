@@ -1,5 +1,5 @@
 ---
-model: opus
+model: sonnet
 created: 2025-12-16
 modified: 2026-02-10
 reviewed: 2025-12-16
@@ -18,7 +18,7 @@ Generate professional handoff messages for deployed resources and services with 
 - Repository: !`git remote get-url origin 2>/dev/null`
 - Branch: !`git branch --show-current 2>/dev/null`
 - Last commit: !`git log --oneline --max-count=1 2>/dev/null`
-- README: !`test -f README.md && echo "EXISTS" || echo "MISSING"`
+- README: !`find . -maxdepth 1 -name \'README.md\' 2>/dev/null`
 - Docker: !`find . -maxdepth 1 \( -name "Dockerfile" -o -name "docker-compose*.yml" \) 2>/dev/null`
 - CI/CD: !`find .github/workflows -maxdepth 1 -name '*.yml' 2>/dev/null`
 - Config files: !`find . -maxdepth 1 \( -name ".env.example" -o -name "*.config.*" \) 2>/dev/null`

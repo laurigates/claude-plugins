@@ -1,5 +1,5 @@
 ---
-model: opus
+model: sonnet
 created: 2025-02-03
 modified: 2026-02-10
 reviewed: 2025-02-03
@@ -19,7 +19,7 @@ Implement a version badge component that displays version number, git commit, an
 - Package manager: !`find . -maxdepth 1 \( -name "package.json" -o -name "bun.lockb" -o -name "pnpm-lock.yaml" \) 2>/dev/null`
 - Styling: !`find . -maxdepth 1 \( -name "tailwind.config.*" -o -name "postcss.config.*" \) 2>/dev/null`
 - UI library: !`find . -maxdepth 1 -name "components.json" 2>/dev/null`
-- Changelog: !`test -f CHANGELOG.md && echo "EXISTS" || echo "MISSING"`
+- Changelog: !`find . -maxdepth 1 -name \'CHANGELOG.md\' 2>/dev/null`
 - Version: !`jq -r '.version // "unknown"' package.json 2>/dev/null`
 
 ## Parameters

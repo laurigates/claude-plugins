@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.0](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.4.0...container-plugin-v2.5.0) (2026-02-18)
+
+
+### Features
+
+* introduce three-tier model palette (opus/sonnet/haiku) ([#709](https://github.com/laurigates/claude-plugins/issues/709)) ([2c1e9cc](https://github.com/laurigates/claude-plugins/commit/2c1e9ccff5d48c2b426beac5b3b38cd4576c79a0))
+
 ## [2.4.0](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.3.5...container-plugin-v2.4.0) (2026-02-16)
 
 

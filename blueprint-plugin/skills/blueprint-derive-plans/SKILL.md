@@ -1,7 +1,7 @@
 ---
-model: opus
+model: sonnet
 created: 2026-01-15
-modified: 2026-02-14
+modified: 2026-02-17
 reviewed: 2026-02-14
 description: "Derive PRDs, ADRs, and PRPs from git history, codebase structure, and existing documentation"
 args: "[--quick] [--since DATE]"
@@ -27,11 +27,11 @@ Retroactively generate Blueprint documentation (PRDs, ADRs, PRPs) from an existi
 
 ## Context
 
-- Git repository: !`git rev-parse --git-dir 2>/dev/null && echo "YES" || echo "NO"`
-- Blueprint initialized: !`test -f docs/blueprint/manifest.json && echo "YES" || echo "NO"`
-- Total commits: !`git rev-list --count HEAD 2>/dev/null || echo "0"`
-- First commit: !`git log --reverse --format=%ai --max-count=1 2>/dev/null || echo "UNKNOWN"`
-- Latest commit: !`git log --max-count=1 --format=%ai 2>/dev/null || echo "UNKNOWN"`
+- Git repository: !`git rev-parse --git-dir 2>/dev/null`
+- Blueprint initialized: !`test -f docs/blueprint/manifest.json 2>/dev/null`
+- Total commits: !`git rev-list --count HEAD 2>/dev/null`
+- First commit: !`git log --reverse --format=%ai --max-count=1 2>/dev/null`
+- Latest commit: !`git log --max-count=1 --format=%ai 2>/dev/null`
 - Project type: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' -o -name 'pom.xml' \) -type f -print -quit 2>/dev/null`
 - Documentation files: !`find . -maxdepth 2 \( -name "README.md" -o -name "ARCHITECTURE.md" -o -name "DESIGN.md" \) 2>/dev/null`
 
@@ -147,6 +147,26 @@ For each document type, use templates and patterns from [REFERENCE.md](REFERENCE
 ### Step 8: Update manifest and report results
 
 1. Update `docs/blueprint/manifest.json` with import metadata: timestamp, commits analyzed, confidence scores, generated artifacts
+
+### Step 9: Update task registry
+
+Update the task registry entry in `docs/blueprint/manifest.json`:
+
+```bash
+jq --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  --arg sha "$(git rev-parse HEAD 2>/dev/null)" \
+  --argjson analyzed "${COMMITS_ANALYZED:-0}" \
+  --argjson created "${DOCS_GENERATED:-0}" \
+  '.task_registry["derive-plans"].last_completed_at = $now |
+   .task_registry["derive-plans"].last_result = "success" |
+   .task_registry["derive-plans"].context.commits_analyzed_up_to = $sha |
+   .task_registry["derive-plans"].context.commits_analyzed_count = $analyzed |
+   .task_registry["derive-plans"].stats.runs_total = ((.task_registry["derive-plans"].stats.runs_total // 0) + 1) |
+   .task_registry["derive-plans"].stats.items_processed = $analyzed |
+   .task_registry["derive-plans"].stats.items_created = $created' \
+  docs/blueprint/manifest.json > tmp.json && mv tmp.json docs/blueprint/manifest.json
+```
+
 2. Create summary report showing:
    - Commits analyzed with date range
    - Git quality score

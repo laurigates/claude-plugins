@@ -60,6 +60,13 @@ All skills are located in the `skills/` directory:
   - Repository identification from stack traces
   - Best practices for effective searching
 
+- **github-workflow-auto-fix** - Automated CI failure detection and fixing
+  - Triggers on workflow failures via `workflow_run` events
+  - Analyzes failure logs and determines root cause
+  - Auto-fixes common issues (linting, config, formatting)
+  - Opens GitHub issues for complex or external failures
+  - Safety guards against infinite loops and bot triggers
+
 - **github-social-preview** - Generate repository social preview images
   - Open Graph image creation for repositories
   - 1280x640 optimized preview images

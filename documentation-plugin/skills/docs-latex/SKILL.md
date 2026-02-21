@@ -1,5 +1,5 @@
 ---
-model: opus
+model: sonnet
 name: docs-latex
 description: |
   Convert Markdown documents to professional LaTeX with TikZ visualizations and compile to PDF.
@@ -28,7 +28,7 @@ Convert Markdown documents to professional LaTeX with advanced typesetting, TikZ
 
 ## Context
 
-- Source file exists: !`test -f "$1" && echo "yes" || echo "no"`
+- Source file exists: !`test -f "$1" 2>/dev/null`
 - LaTeX installed: !`which pdflatex 2>/dev/null`
 - Current directory: !`pwd`
 - Available .md files: !`find . -maxdepth 2 -name '*.md' -not -name 'CHANGELOG.md' -not -name 'README.md' 2>/dev/null`

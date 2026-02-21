@@ -26,12 +26,12 @@ Check and configure security scanning tools for dependency audits, SAST, and sec
 ## Context
 
 - Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) 2>/dev/null`
-- Gitleaks config: !`test -f .gitleaks.toml && echo "EXISTS" || echo "MISSING"`
-- Pre-commit config: !`test -f .pre-commit-config.yaml && echo "EXISTS" || echo "MISSING"`
-- Workflows dir: !`test -d .github/workflows && echo "EXISTS" || echo "MISSING"`
-- Dependabot config: !`test -f .github/dependabot.yml && echo "EXISTS" || echo "MISSING"`
+- Gitleaks config: !`find . -maxdepth 1 -name \'.gitleaks.toml\' 2>/dev/null`
+- Pre-commit config: !`find . -maxdepth 1 -name \'.pre-commit-config.yaml\' 2>/dev/null`
+- Workflows dir: !`find . -maxdepth 1 -type d -name \'.github/workflows\' 2>/dev/null`
+- Dependabot config: !`find . -maxdepth 1 -name \'.github/dependabot.yml\' 2>/dev/null`
 - CodeQL workflow: !`find .github/workflows -maxdepth 1 -name 'codeql*' 2>/dev/null`
-- Security policy: !`test -f SECURITY.md && echo "EXISTS" || echo "MISSING"`
+- Security policy: !`find . -maxdepth 1 -name \'SECURITY.md\' 2>/dev/null`
 **Security scanning layers:**
 1. **Dependency auditing** - Check for known vulnerabilities in dependencies
 2. **SAST (Static Application Security Testing)** - Analyze code for security issues

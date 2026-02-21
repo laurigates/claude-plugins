@@ -1,5 +1,5 @@
 ---
-model: opus
+model: sonnet
 name: project-skill-scripts
 description: Analyze plugin skills to identify opportunities where supporting scripts would improve performance (fewer tokens, faster execution, consistent results), then optionally create those scripts.
 args: "[--analyze] [--create <plugin/skill>] [--all]"
@@ -24,7 +24,7 @@ Analyze plugin skills to identify opportunities where supporting scripts would i
 
 ## Context
 
-- Plugin root: !`git rev-parse --show-toplevel 2>/dev/null || echo './'`
+- Plugin root: !`git rev-parse --show-toplevel 2>/dev/null`
 - Total plugins: !`find . -maxdepth 2 -name 'plugin.json' -type f 2>/dev/null`
 - Skills with scripts: !`find . -name 'scripts/*.sh' -type f 2>/dev/null`
 

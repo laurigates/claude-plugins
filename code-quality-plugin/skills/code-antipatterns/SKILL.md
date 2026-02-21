@@ -1,10 +1,11 @@
 ---
-model: opus
+model: sonnet
 created: 2025-12-16
 modified: 2026-02-03
 reviewed: 2025-12-16
 description: Analyze codebase for anti-patterns, code smells, and quality issues using ast-grep
 allowed-tools: Read, Bash(sg *), Bash(rg *), Glob, Grep, TodoWrite, Task
+args: "[PATH] [--focus <category>] [--severity <level>]"
 argument-hint: "[PATH] [--focus <category>] [--severity <level>]"
 name: code-antipatterns
 ---

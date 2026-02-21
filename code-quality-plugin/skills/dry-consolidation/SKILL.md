@@ -1,5 +1,5 @@
 ---
-model: opus
+model: sonnet
 name: dry-consolidation
 description: |
   Find and extract duplicated code into shared abstractions. Use when you see repeated
@@ -30,7 +30,7 @@ Systematic extraction of duplicated code into shared, tested abstractions.
 
 ## Context
 
-- Target path: !`test -n "$1" && echo "$1" || echo "src/"`
+- Target path: !`echo "$1" 2>/dev/null`
 - Project type: !`find . -maxdepth 1 \( -name "package.json" -o -name "Cargo.toml" -o -name "pyproject.toml" -o -name "go.mod" \) 2>/dev/null`
 - Source directories: !`find . -maxdepth 1 -type d \( -name "src" -o -name "lib" -o -name "app" -o -name "components" -o -name "packages" \) 2>/dev/null`
 - Test framework: !`find . -maxdepth 2 \( -name "vitest.config.*" -o -name "jest.config.*" -o -name "pytest.ini" -o -name "conftest.py" \) 2>/dev/null`

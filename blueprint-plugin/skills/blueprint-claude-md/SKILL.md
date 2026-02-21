@@ -1,7 +1,7 @@
 ---
-model: opus
+model: sonnet
 created: 2025-12-17
-modified: 2026-02-09
+modified: 2026-02-17
 reviewed: 2026-02-09
 description: "Generate or update CLAUDE.md from project context and blueprint artifacts. Supports @import syntax, CLAUDE.local.md, and auto memory delineation."
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
@@ -232,7 +232,19 @@ Use `@import` to reference existing documentation rather than duplicating conten
    - Track which PRDs contributed
    - Update timestamp
 
-10. **Report**:
+10. **Update task registry**:
+
+    Update the task registry entry in `docs/blueprint/manifest.json`:
+
+    ```bash
+    jq --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+      '.task_registry["claude-md"].last_completed_at = $now |
+       .task_registry["claude-md"].last_result = "success" |
+       .task_registry["claude-md"].stats.runs_total = ((.task_registry["claude-md"].stats.runs_total // 0) + 1)' \
+      docs/blueprint/manifest.json > tmp.json && mv tmp.json docs/blueprint/manifest.json
+    ```
+
+11. **Report**:
     ```
     ✅ CLAUDE.md updated!
 
@@ -274,7 +286,7 @@ Use `@import` to reference existing documentation rather than duplicating conten
 - Let auto memory handle "Current Focus", "Key Files", debugging tips
 - Update when PRDs change significantly
 
-11. **Prompt for next action** (use AskUserQuestion):
+12. **Prompt for next action** (use AskUserQuestion):
     ```
     question: "CLAUDE.md updated. What would you like to do next?"
     options:

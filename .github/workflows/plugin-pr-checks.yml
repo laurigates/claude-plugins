@@ -67,7 +67,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          claude_args: "--model haiku --max-turns 10"
+          claude_args: "--model haiku --max-turns 25"
           prompt: |
             Review the changed skill files in this PR for quality compliance.
             Read the rules at .claude/rules/skill-quality.md for the full checklist.
@@ -80,7 +80,7 @@ jobs:
             1. **"When to Use" table**: Does it have a decision table helping Claude choose this skill?
             2. **Agentic Optimizations**: Does it have a compact commands table? (required for CLI/tool skills)
             3. **Description quality**: Does the description match user intents, not just tool jargon?
-            4. **Model selection**: Is `haiku` used for CLI tools and `opus` only for complex reasoning?
+            4. **Model selection**: Is `haiku` used for CLI tools, `sonnet` for development workflows, and `opus` only for deep reasoning?
             5. **Supporting file links**: If REFERENCE.md exists, is it linked with `[REFERENCE.md](REFERENCE.md)`?
 
             For each issue found, leave a specific, actionable review comment on the relevant file.

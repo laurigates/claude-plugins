@@ -1,7 +1,7 @@
 ---
-model: opus
+model: sonnet
 created: 2025-12-22
-modified: 2026-02-06
+modified: 2026-02-17
 reviewed: 2025-12-22
 description: "Derive PRD from existing project documentation, README, and codebase analysis"
 allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion, Task
@@ -301,7 +301,21 @@ Update `docs/blueprint/manifest.json`:
 - Mark uncertain sections for user review
 - Keep PRD focused on "what" and "why", not "how"
 
-### 4.3 Prompt for GitHub Issue (use AskUserQuestion):
+### 4.3 Update task registry
+
+Update the task registry entry in `docs/blueprint/manifest.json`:
+
+```bash
+jq --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  --argjson created "${PRDS_GENERATED:-1}" \
+  '.task_registry["derive-prd"].last_completed_at = $now |
+   .task_registry["derive-prd"].last_result = "success" |
+   .task_registry["derive-prd"].stats.runs_total = ((.task_registry["derive-prd"].stats.runs_total // 0) + 1) |
+   .task_registry["derive-prd"].stats.items_created = $created' \
+  docs/blueprint/manifest.json > tmp.json && mv tmp.json docs/blueprint/manifest.json
+```
+
+### 4.4 Prompt for GitHub Issue (use AskUserQuestion):
 
 ```
 question: "Create a GitHub issue to track this PRD?"
@@ -338,7 +352,7 @@ Capture issue number and update:
 2. Manifest: add issue to `id_registry.documents[PRD-NNN].github_issues`
 3. Manifest: add mapping to `id_registry.github_issues`
 
-### 4.4 Prompt for next action (use AskUserQuestion):
+### 4.5 Prompt for next action (use AskUserQuestion):
 
 ```
 question: "PRD generated. What would you like to do next?"

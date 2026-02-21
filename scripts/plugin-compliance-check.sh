@@ -292,6 +292,11 @@ check_release_config() {
 for i in "${!PLUGINS[@]}"; do
   plugin="${PLUGINS[$i]}"
 
+  # Skip .claude-plugin - it's the root metadata directory, not a plugin
+  if [ "$plugin" = ".claude-plugin" ]; then
+    continue
+  fi
+
   if [ ! -d "$plugin" ]; then
     issues+=("❌ ${plugin}: Directory not found")
     results_json+=("❌")

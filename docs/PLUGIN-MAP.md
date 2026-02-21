@@ -188,8 +188,10 @@ Install based on your project's tech stack and domain.
 | accessibility-plugin | WCAG compliance and ARIA patterns |
 | component-patterns-plugin | Reusable UI component patterns |
 | command-analytics-plugin | Tracking skill/command usage metrics |
+| feedback-plugin | Capturing session skill feedback as GitHub issues |
 | tools-plugin | fd, rg, jq, shell, ImageMagick, d2 utilities |
 | workflow-orchestration-plugin | Parallel agent orchestration, CI pipelines, preflight checks, checkpoint refactoring |
+| migration-patterns-plugin | Safe database and system migration patterns — dual write, shadow mode, strangler fig |
 | prose-plugin | Prose style control — distillation, tone, voice, clarity, consistency |
 
 ## Key Entry Points
@@ -211,6 +213,7 @@ Commands organized by workflow phase.
 | **Ship** | `/git:commit` | Commit with conventional message |
 | **Ship** | `/git:pr` | Create pull request |
 | **Ship** | `/git:fix-pr` | Fix failing PR checks |
+| **Ship** | `/workflow:auto-fix` | Auto-fix CI failures or open issues |
 | **Orchestrate** | `/workflow:preflight` | Pre-work validation before starting |
 | **Orchestrate** | `/workflow:parallel-issues` | Process issues in parallel with worktrees |
 | **Orchestrate** | `/workflow:ci-fix` | Fix failing CI across PRs |

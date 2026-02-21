@@ -1,9 +1,9 @@
 ---
-model: haiku
+model: sonnet
 name: git-commit-push-pr
 created: 2025-12-16
-modified: 2026-02-06
-reviewed: 2026-02-06
+modified: 2026-02-20
+reviewed: 2026-02-20
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git branch *), Bash(git remote *), Bash(gh pr *), Bash(gh label *), Bash(gh repo *), Bash(gh issue *), Bash(pre-commit *), Bash(find *), Read, Edit, Grep, Glob, TodoWrite, mcp__github__create_pull_request, mcp__github__list_issues, mcp__github__get_issue
 args: "[remote-branch] [--push] [--direct] [--pr] [--draft] [--issue <num>] [--no-commit] [--range <start>..<end>] [--skip-issue-detection]"
 argument-hint: [remote-branch] [--push] [--direct] [--pr] [--draft] [--issue <num>] [--no-commit] [--range <start>..<end>] [--skip-issue-detection]
@@ -135,12 +135,51 @@ git push origin <start>^..<end>:<remote-branch>
 
 ### Step 5: Create PR (if --pr)
 
+**5a. Identify post-merge follow-up actions.**
+
+Before creating the PR, scan commit messages, diff context, and any conversation context for actions that must happen **after** the PR is merged:
+
+| Signal | Examples |
+|--------|---------|
+| Commit messages | "migration", "run after deploy", "manual step", "update config" |
+| File patterns | `*.sql`, migration files, deployment scripts, runbooks |
+| Context | User mentioned a deployment step, documentation update, or announcement |
+
+For each post-merge action identified, create a GitHub issue — **not a PR checklist item**. PR descriptions are closed and buried once a PR merges; issues remain open until resolved.
+
+```bash
+gh issue create \
+  --title "[Chore] DB: Run migration for new schema" \
+  --body "Follow-up to <PR-URL>.\n\nRun: rake db:migrate in production after deploy." \
+  --label "chore"
+# Note the returned issue number for the PR body
+```
+
+Common follow-up types: database migrations, production deployments, manual config changes, external documentation updates, customer-facing announcements, dependent follow-on PRs.
+
+**5b. Create the PR**, including follow-up issue links in the body.
+
 Use `mcp__github__create_pull_request` with:
 - `head`: The remote branch name (e.g., `feat/auth-oauth2`)
 - `base`: `main`
 - `title`: Derived from commit message
-- `body`: Include summary and issue link if --issue provided
+- `body`: Include summary, issue link if --issue provided, and a **Follow-up Issues** section listing any issues created in 5a
 - `draft`: true if --draft flag set
+
+PR body structure when follow-up issues exist:
+
+```markdown
+## Summary
+...
+
+## Follow-up Issues
+<!-- Post-merge actions tracked as issues so they survive PR closure -->
+- #456: run database migration for new schema
+- #457: update production feature-flag config
+
+## Related Issues
+Fixes #123
+```
 
 If `--labels` provided, add labels after PR creation:
 ```bash

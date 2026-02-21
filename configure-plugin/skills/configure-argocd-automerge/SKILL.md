@@ -25,7 +25,7 @@ Configure GitHub Actions workflow to automatically create and merge PRs from Arg
 
 ## Context
 
-- Workflows dir: !`test -d .github/workflows && echo "EXISTS" || echo "MISSING"`
+- Workflows dir: !`find . -maxdepth 1 -type d -name \'.github/workflows\' 2>/dev/null`
 - Existing automerge workflow: !`find .github/workflows -maxdepth 1 \( -name '*argocd*automerge*' -o -name '*automerge*argocd*' \) 2>/dev/null`
 - Image updater branches: !`git branch -r --list 'origin/image-updater-*' 2>/dev/null`
 - Auto-merge workflow: !`find .github/workflows -maxdepth 1 -name 'argocd-automerge.yml' 2>/dev/null`

@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.9.2](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.9.1...project-plugin-v1.9.2) (2026-02-20)
+
+
+### Bug Fixes
+
+* **git-plugin:** Improve git command reliability in project-distill skill ([#765](https://github.com/laurigates/claude-plugins/issues/765)) ([96befca](https://github.com/laurigates/claude-plugins/commit/96befcaa949131b03a9d610cb9712a7eaa24c47f))
+* **project-plugin:** use git log instead of HEAD~10 range in project-distill ([96befca](https://github.com/laurigates/claude-plugins/commit/96befcaa949131b03a9d610cb9712a7eaa24c47f))
+
+## [1.9.1](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.9.0...project-plugin-v1.9.1) (2026-02-19)
+
+
+### Bug Fixes
+
+* **project-plugin:** remove redirect operators from context commands in project-distill ([aa6c87a](https://github.com/laurigates/claude-plugins/commit/aa6c87a4d0cf875e4adf32fd82261beaf9199dcd))
+
+## [1.9.0](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.8.5...project-plugin-v1.9.0) (2026-02-18)
+
+
+### Features
+
+* introduce three-tier model palette (opus/sonnet/haiku) ([#709](https://github.com/laurigates/claude-plugins/issues/709)) ([2c1e9cc](https://github.com/laurigates/claude-plugins/commit/2c1e9ccff5d48c2b426beac5b3b38cd4576c79a0))
+
 ## [1.8.5](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.8.4...project-plugin-v1.8.5) (2026-02-15)
 
 

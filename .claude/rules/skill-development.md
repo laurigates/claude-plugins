@@ -1,6 +1,6 @@
 ---
 created: 2025-12-20
-modified: 2026-01-22
+modified: 2026-02-20
 reviewed: 2026-01-22
 ---
 
@@ -47,7 +47,7 @@ Skills live in `<plugin-name>/skills/<skill-name>/SKILL.md` (or `skill.md`).
 
 ```yaml
 ---
-model: <opus|haiku>
+model: <opus|sonnet|haiku>
 name: <Skill Name>
 description: <1-2 sentence description of capability>
 allowed-tools: <Comma-separated list of tools>
@@ -63,13 +63,15 @@ Choose the appropriate model based on task complexity:
 
 | Model | Use For |
 |-------|---------|
-| `opus` | Complex reasoning, architecture, code review, debugging methodology, security analysis, advanced testing theory |
-| `haiku` | Simple CLI operations, formatting, configuration, status checks, standard workflows |
+| `opus` | Deep reasoning, architecture decisions, debugging methodology, security analysis, complex code review |
+| `sonnet` | Development workflows requiring judgment, code generation with analysis, framework expertise, multi-step pattern-based reasoning |
+| `haiku` | Simple CLI operations, formatting, configuration, status checks, standard mechanical workflows |
 
 **Guidelines:**
-- Default to `haiku` for straightforward, mechanical tasks
-- Use `opus` when the skill requires planning, analysis, or complex decision-making
-- Consider: "Does this need deep reasoning or pattern matching?"
+- Default to `sonnet` for tasks requiring moderate reasoning or development expertise
+- Use `haiku` for straightforward, mechanical tasks (CLI tools, formatting, status checks)
+- Use `opus` only when the skill requires deep reasoning, security analysis, or complex decision-making
+- Consider: "Does this need deep reasoning (opus), moderate judgment (sonnet), or mechanical execution (haiku)?"
 
 ### Date Fields
 
@@ -154,7 +156,7 @@ Skills that accept arguments use the same frontmatter as other skills, with addi
 
 ```yaml
 ---
-model: <opus|haiku>
+model: <opus|sonnet|haiku>
 name: <skill-name>
 description: <What it does, with trigger phrases>
 args: <argument specification>
@@ -195,3 +197,25 @@ Update `.claude-plugin/plugin.json` when adding skills:
 Update `README.md`:
 - Add skill to skills table
 - Add usage examples for new commands
+
+## Git Workflow
+
+All commits and PR titles **must** follow conventional commit format. See `.claude/rules/conventional-commits.md` for the full standard.
+
+Use the plugin name as the scope:
+
+```bash
+git commit -m "feat(git-plugin): add commit workflow skill"
+git commit -m "fix(configure-plugin): correct frontmatter extraction"
+git commit -m "docs(blueprint-plugin): update skill README"
+```
+
+| Type | When to Use |
+|------|-------------|
+| `feat` | New skill or meaningful new capability |
+| `fix` | Correcting broken skill behaviour |
+| `docs` | README, CHANGELOG, or inline documentation only |
+| `refactor` | Restructuring a skill without behaviour change |
+| `chore` | Metadata updates (plugin.json, marketplace.json) |
+
+PR titles must also follow this format — they become the squash-merge commit message that drives release-please version bumps.

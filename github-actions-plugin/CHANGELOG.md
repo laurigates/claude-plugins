@@ -1,5 +1,45 @@
 # Changelog
 
+## [1.4.2](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.4.1...github-actions-plugin-v1.4.2) (2026-02-20)
+
+
+### Code Refactoring
+
+* consolidate skill documentation and remove reference files ([#758](https://github.com/laurigates/claude-plugins/issues/758)) ([3d1e8cc](https://github.com/laurigates/claude-plugins/commit/3d1e8ccd9becba5faec5b1df1fa06f410eca7437))
+
+## [1.4.1](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.4.0...github-actions-plugin-v1.4.1) (2026-02-19)
+
+
+### Documentation
+
+* **ci:** add issue descriptions for lint errors and max-turns config ([#764](https://github.com/laurigates/claude-plugins/issues/764)) ([eba261f](https://github.com/laurigates/claude-plugins/commit/eba261fa6be4134a025ad55c3ef76825b9662301))
+
+## [1.4.0](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.3.0...github-actions-plugin-v1.4.0) (2026-02-18)
+
+
+### Features
+
+* **github-actions-plugin:** add workflow auto-fix for CI failures ([#751](https://github.com/laurigates/claude-plugins/issues/751)) ([27f1773](https://github.com/laurigates/claude-plugins/commit/27f1773022cf52f64873b13ed1e8321c5c9c1a0b))
+
+## [1.3.0](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.2.0...github-actions-plugin-v1.3.0) (2026-02-18)
+
+
+### Features
+
+* introduce three-tier model palette (opus/sonnet/haiku) ([#709](https://github.com/laurigates/claude-plugins/issues/709)) ([2c1e9cc](https://github.com/laurigates/claude-plugins/commit/2c1e9ccff5d48c2b426beac5b3b38cd4576c79a0))
+
+## [1.2.0](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.1.4...github-actions-plugin-v1.2.0) (2026-02-17)
+
+
+### Features
+
+* **configure-plugin:** replace detect-secrets with gitleaks for secret scanning ([#668](https://github.com/laurigates/claude-plugins/issues/668)) ([3fc5bbc](https://github.com/laurigates/claude-plugins/commit/3fc5bbc2f8500f30160cc5dfeb5e3d1253ed0a54))
+
+
+### Bug Fixes
+
+* remove pipe/ls operators from context commands and add CI linting ([#653](https://github.com/laurigates/claude-plugins/issues/653)) ([7a01eef](https://github.com/laurigates/claude-plugins/commit/7a01eef21495ed6243277fbaa88082b7ecabc793))
+
 ## [1.2.0](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.1.4...github-actions-plugin-v1.2.0) (2026-02-16)
 
 

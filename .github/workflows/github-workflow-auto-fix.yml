@@ -1,0 +1,178 @@
+name: Auto-fix Workflow Failures
+
+on:
+  workflow_run:
+    workflows:
+      - "Plugin PR Checks"
+      - "Lint Context Commands"
+      - "Enforce Conventional Commits"
+    types: [completed]
+
+# Prevent concurrent auto-fix runs on the same branch
+concurrency:
+  group: auto-fix-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: read
+  id-token: write
+
+jobs:
+  auto-fix:
+    # Only run on failures, skip bot-triggered runs, skip main branch
+    if: >-
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.actor.type != 'Bot' &&
+      github.event.workflow_run.head_branch != 'main' &&
+      github.event.workflow_run.head_branch != 'master'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout failed branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+          fetch-depth: 0
+          token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN || github.token }}
+
+      - name: Gather failure context
+        id: context
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RUN_ID="${{ github.event.workflow_run.id }}"
+          WORKFLOW_NAME="${{ github.event.workflow_run.name }}"
+          BRANCH="${{ github.event.workflow_run.head_branch }}"
+
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "workflow_name=$WORKFLOW_NAME" >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
+          # Get failed job logs (truncated to last 500 lines)
+          gh run view "$RUN_ID" --log-failed 2>&1 | tail -500 > .auto-fix-failed-logs.txt || echo "Could not retrieve logs" > .auto-fix-failed-logs.txt
+
+          # Get run summary as JSON
+          gh run view "$RUN_ID" --json conclusion,status,name,headBranch,headSha,jobs > .auto-fix-run-summary.json 2>&1 || echo '{}' > .auto-fix-run-summary.json
+
+          # Find associated PR number
+          PR_NUMBER=$(gh pr list --head "$BRANCH" --json number --jq '.[0].number' 2>/dev/null || echo "")
+          echo "pr_number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+
+          # Check if we already have a recent auto-fix commit on this branch
+          RECENT_FIX=$(git log --oneline -5 --format='%s' | grep -c 'fix:.*resolve CI failure' || true)
+          echo "recent_fix_count=$RECENT_FIX" >> "$GITHUB_OUTPUT"
+
+      - name: Skip if already attempted fix
+        if: steps.context.outputs.recent_fix_count != '0'
+        run: |
+          echo "::notice::Skipping auto-fix - a recent fix commit already exists on this branch. Manual intervention may be needed."
+          echo "Recent commits:"
+          git log --oneline -5
+
+      - name: Analyze and fix with Claude
+        if: steps.context.outputs.recent_fix_count == '0'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: "--model sonnet --max-turns 30"
+          direct_prompt: |
+            A GitHub Actions workflow has failed on branch `${{ steps.context.outputs.branch }}`.
+            Your job is to analyze the failure, determine if it can be auto-fixed, and either fix it or open an issue.
+
+            ## Failure Details
+
+            - **Workflow:** ${{ steps.context.outputs.workflow_name }}
+            - **Branch:** ${{ steps.context.outputs.branch }}
+            - **Run ID:** ${{ steps.context.outputs.run_id }}
+            - **Commit:** ${{ github.event.workflow_run.head_sha }}
+            - **Associated PR:** ${{ steps.context.outputs.pr_number }}
+
+            ## Step 1: Read the failure logs
+
+            Read the file `.auto-fix-failed-logs.txt` for the failed job output.
+            Read the file `.auto-fix-run-summary.json` for the run summary.
+
+            ## Step 2: Analyze the failure
+
+            Determine the root cause. Common failure types in this repo:
+
+            **Auto-fixable (you should fix these):**
+            - Skill quality issues (missing "When to Use" table, missing Agentic Optimizations table)
+            - Linting errors in skill files (context command issues, frontmatter problems)
+            - Plugin config sync issues (marketplace.json, release-please-config, manifest out of sync)
+            - Missing or malformed YAML frontmatter in SKILL.md files
+            - Conventional commit format violations in PR titles
+            - Missing required files (README.md, plugin.json)
+
+            **NOT auto-fixable (open an issue instead):**
+            - GitHub Actions infrastructure failures (runner issues, network timeouts)
+            - Permission or token errors
+            - External service outages
+            - Complex architectural problems requiring design decisions
+            - Flaky tests with no clear root cause
+            - Issues requiring secrets or credentials changes
+            - Failures in workflows not related to code changes on this branch
+
+            ## Step 3: Take action
+
+            ### If auto-fixable:
+            1. Read the relevant source files to understand the issue
+            2. Make the necessary fixes
+            3. Stage and commit the changes:
+               ```
+               git add <specific-files>
+               git commit -m "fix(<scope>): resolve CI failure in ${{ steps.context.outputs.workflow_name }}"
+               ```
+            4. Push to the branch: `git push origin ${{ steps.context.outputs.branch }}`
+            5. If PR ${{ steps.context.outputs.pr_number }} exists, comment on it:
+               ```
+               gh pr comment ${{ steps.context.outputs.pr_number }} --body "Auto-fix applied for CI failure in **${{ steps.context.outputs.workflow_name }}**. The workflow should re-run automatically."
+               ```
+
+            ### If NOT auto-fixable:
+            1. Create a GitHub issue with detailed analysis:
+               ```
+               gh issue create \
+                 --title "CI failure: <brief description of the problem>" \
+                 --body "<detailed analysis with logs, root cause, and suggested manual steps>" \
+                 --label "bug,ci-failure"
+               ```
+               Note: If the labels don't exist, omit the --label flag and mention the suggested labels in the body.
+            2. If PR ${{ steps.context.outputs.pr_number }} exists, comment on it linking to the created issue.
+
+            ## Important rules
+            - Read the project rules in `.claude/rules/` for commit format and code standards
+            - Do NOT amend existing commits - always create new commits
+            - Only fix issues directly related to the CI failure
+            - Do not make unrelated improvements or refactoring
+            - If unsure whether something is fixable, err on the side of opening an issue
+          additional_permissions: |
+            Read
+            Write
+            Edit
+            Grep
+            Glob
+            Task
+            TodoWrite
+            Bash(git status *)
+            Bash(git diff *)
+            Bash(git log *)
+            Bash(git show *)
+            Bash(git add *)
+            Bash(git commit *)
+            Bash(git push *)
+            Bash(git checkout *)
+            Bash(git branch *)
+            Bash(gh pr *)
+            Bash(gh issue *)
+            Bash(gh run *)
+            Bash(python3 *)
+            Bash(bash *)
+          plugin_marketplaces: |
+            https://github.com/laurigates/claude-plugins.git
+          plugins: |
+            git-plugin@laurigates-claude-plugins
+            github-actions-plugin@laurigates-claude-plugins
+            code-quality-plugin@laurigates-claude-plugins

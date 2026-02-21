@@ -1,7 +1,7 @@
 ---
-model: opus
+model: sonnet
 created: 2025-12-17
-modified: 2026-02-07
+modified: 2026-02-17
 reviewed: 2025-12-22
 description: "Show blueprint version, configuration, and check for available upgrades"
 args: "[--report-only]"
@@ -46,6 +46,13 @@ Display the current blueprint configuration status with three-layer architecture
    - Check for `CLAUDE.md` file
    - Check for `docs/blueprint/feature-tracker.json`
    - If feature tracker exists, read statistics and last_updated
+   - Read `task_registry` from manifest (if present)
+   - For each task, calculate schedule status:
+     - `ok`: Not yet due based on schedule
+     - `due`: Due for execution based on schedule
+     - `overdue`: Past due by more than 1 schedule period (e.g., daily task not run in 2+ days)
+     - `disabled`: `enabled: false`
+     - `never`: `last_completed_at` is null (never tracked)
 
 3. **Check for upgrade availability**:
    - Compare `format_version` in manifest with current plugin version
@@ -108,6 +115,18 @@ Display the current blueprint configuration status with three-layer architecture
    - Last Sync: {last_updated}
    - Phases: {count in_progress} active, {count complete} complete
 
+   {If task_registry exists:}
+   Task Health:
+   - derive-prd          last: {age}  schedule: {schedule}  status: {status}
+   - derive-plans        last: {age}  schedule: {schedule}  status: {status}
+   - derive-rules        last: {age}  schedule: {schedule}  status: {status}
+   - generate-rules      last: {age}  schedule: {schedule}  status: {status}
+   - adr-validate        last: {age}  schedule: {schedule}  status: {status}
+   - feature-tracker-sync last: {age}  schedule: {schedule}  status: {status}
+   - sync-ids            last: {age}  schedule: {schedule}  status: {status}
+   - claude-md           last: {age}  schedule: {schedule}  status: {status}
+   - curate-docs         disabled
+
    Traceability (ID Registry):
    - Total documents: {count} ({x} PRDs, {y} ADRs, {z} PRPs, {w} WOs)
    - With IDs: {count}/{total} ({percent}%)
@@ -154,6 +173,7 @@ Display the current blueprint configuration status with three-layer architecture
    ```
 
 6. **Additional checks**:
+   - Warn if any tasks are overdue (e.g., "3 maintenance tasks overdue - run `/blueprint:execute` to catch up")
    - Warn if feature-tracker.json is stale (> 1 day since last update)
    - Warn if PRDs exist but no generated rules
    - Warn if modular rules enabled but `.claude/rules/` is empty
@@ -185,6 +205,7 @@ Display the current blueprint configuration status with three-layer architecture
    - If ADRs have potential issues → Include "Validate ADRs"
    - If documents without IDs → Include "Sync document IDs"
    - If orphan documents/issues → Include "Link documents to GitHub"
+   - If overdue tasks exist → Include "Run overdue maintenance tasks"
    - Always include "Continue development" and "I'm done"
 
    ```
@@ -209,6 +230,8 @@ Display the current blueprint configuration status with three-layer architecture
        description: "Assign IDs to all documents missing them"
      - label: "Link documents to GitHub" (if orphans exist)
        description: "Create/link GitHub issues for orphan documents"
+     - label: "Run overdue tasks ({N} due)" (if overdue tasks exist)
+       description: "Execute overdue maintenance tasks"
      # Always include these:
      - label: "Continue development"
        description: "Run /project:continue to work on next task"
@@ -226,6 +249,7 @@ Display the current blueprint configuration status with three-layer architecture
    - "Validate ADRs" → Run `/blueprint:adr-validate`
    - "Sync document IDs" → Run `/blueprint:sync-ids`
    - "Link documents to GitHub" → For each orphan, prompt to create/link issue
+   - "Run overdue tasks" → Run `/blueprint:execute` for overdue tasks
    - "Continue development" → Run `/project:continue`
    - "I'm done" → Exit
 
@@ -281,6 +305,17 @@ Feature Tracker:
 - Progress: 22/42 (52.4%)
 - Last Sync: 2024-01-14
 - Phases: 1 active, 2 complete
+
+Task Health:
+  derive-prd          last: 2d ago   schedule: on-demand   status: ok
+  derive-plans        last: 5d ago   schedule: weekly      status: due
+  derive-rules        last: 3d ago   schedule: weekly      status: ok
+  generate-rules      last: 1d ago   schedule: on-change   status: ok
+  adr-validate        last: 4d ago   schedule: weekly      status: ok
+  feature-tracker-sync last: 3d ago  schedule: daily       status: overdue
+  sync-ids            last: 3d ago   schedule: on-change   status: ok
+  claude-md           last: 2d ago   schedule: on-change   status: ok
+  curate-docs         disabled
 
 Traceability (ID Registry):
 - Total documents: 22 (3 PRDs, 5 ADRs, 2 PRPs, 12 WOs)

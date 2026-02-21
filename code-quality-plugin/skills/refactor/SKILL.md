@@ -1,9 +1,10 @@
 ---
-model: opus
+model: sonnet
 created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
 allowed-tools: Read, Write, Edit, MultiEdit, Glob, Grep, SlashCommand
+args: <code-selection>
 argument-hint: <code-selection>
 description: Refactor selected code for quality improvements
 name: refactor

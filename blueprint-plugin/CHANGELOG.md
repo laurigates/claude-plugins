@@ -1,5 +1,31 @@
 # Changelog
 
+## [3.19.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.18.0...blueprint-plugin-v3.19.0) (2026-02-20)
+
+
+### Features
+
+* **blueprint-plugin:** revise init questions for streamlined onboarding ([1942c1e](https://github.com/laurigates/claude-plugins/commit/1942c1e51d796afbf1225cddf9ab080351bd75e2))
+
+
+### Code Refactoring
+
+* **blueprint-plugin:** blueprint-init workflow and simplify user prompts ([#768](https://github.com/laurigates/claude-plugins/issues/768)) ([1942c1e](https://github.com/laurigates/claude-plugins/commit/1942c1e51d796afbf1225cddf9ab080351bd75e2))
+
+## [3.18.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.17.0...blueprint-plugin-v3.18.0) (2026-02-18)
+
+
+### Features
+
+* introduce three-tier model palette (opus/sonnet/haiku) ([#709](https://github.com/laurigates/claude-plugins/issues/709)) ([2c1e9cc](https://github.com/laurigates/claude-plugins/commit/2c1e9ccff5d48c2b426beac5b3b38cd4576c79a0))
+
+## [3.17.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.16.6...blueprint-plugin-v3.17.0) (2026-02-17)
+
+
+### Features
+
+* **blueprint-plugin:** add task registry for operational metadata tracking ([#706](https://github.com/laurigates/claude-plugins/issues/706)) ([565540d](https://github.com/laurigates/claude-plugins/commit/565540dbfa37c14154b0c23320306089054601b7))
+
 ## [3.16.6](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.16.5...blueprint-plugin-v3.16.6) (2026-02-15)
 
 

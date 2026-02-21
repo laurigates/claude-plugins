@@ -1,5 +1,5 @@
 ---
-model: opus
+model: sonnet
 created: 2025-12-16
 modified: 2026-02-14
 reviewed: 2026-02-14
@@ -25,9 +25,9 @@ For detailed rule templates, command templates, and generation guidelines, see [
 
 ## Context
 
-- Blueprint initialized: !`test -f docs/blueprint/manifest.json && echo "YES" || echo "NO"`
+- Blueprint initialized: !`test -f docs/blueprint/manifest.json 2>/dev/null`
 - PRDs present: !`find docs/prds -name "*.md" -type f 2>/dev/null`
-- Rules directory: !`test -d .claude/rules && echo "YES" || echo "NO"`
+- Rules directory: !`test -d .claude/rules 2>/dev/null`
 - Existing rules: !`find .claude/rules -maxdepth 1 -name "*.md" 2>/dev/null`
 - Project type: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) -type f -print -quit 2>/dev/null`
 

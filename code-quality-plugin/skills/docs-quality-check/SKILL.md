@@ -5,6 +5,7 @@ modified: 2026-02-03
 reviewed: 2026-01-08
 description: "Analyze codebase documentation quality - PRDs, ADRs, PRPs, CLAUDE.md, and .claude/rules/"
 allowed-tools: Read, Glob, Grep, Bash(markdownlint *), Bash(vale *), TodoWrite, Task
+args: "[PATH]"
 argument-hint: "[PATH]"
 name: docs-quality-check
 ---

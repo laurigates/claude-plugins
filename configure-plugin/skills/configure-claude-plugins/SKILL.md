@@ -1,5 +1,5 @@
 ---
-model: opus
+model: sonnet
 created: 2026-01-23
 modified: 2026-02-10
 reviewed: 2026-01-30
@@ -25,11 +25,11 @@ Configure a project to use the `laurigates/claude-plugins` Claude Code plugin ma
 
 ## Context
 
-- Settings file exists: !`test -f .claude/settings.json && echo "EXISTS" || echo "MISSING"`
+- Settings file exists: !`find . -maxdepth 1 -name \'.claude/settings.json\' 2>/dev/null`
 - Workflows: !`find .github/workflows -maxdepth 1 -name 'claude*.yml' 2>/dev/null`
 - Git remote: !`git remote get-url origin 2>/dev/null`
 - Project type indicators: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'Dockerfile' \) 2>/dev/null`
-- Existing workflows dir: !`test -d .github/workflows && echo "EXISTS" || echo "MISSING"`
+- Existing workflows dir: !`find . -maxdepth 1 -type d -name \'.github/workflows\' 2>/dev/null`
 
 ## Parameters
 
