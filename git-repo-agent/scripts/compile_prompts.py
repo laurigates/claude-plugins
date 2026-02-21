@@ -41,6 +41,21 @@ SUBAGENT_SKILLS: dict[str, list[str]] = {
         "configure-plugin/skills/configure-readme/SKILL.md",
         "blueprint-plugin/skills/blueprint-claude-md/SKILL.md",
     ],
+    "quality": [
+        "code-quality-plugin/skills/code-review-checklist/SKILL.md",
+        "code-quality-plugin/skills/code-antipatterns-analysis/SKILL.md",
+        "code-quality-plugin/skills/lint-check/SKILL.md",
+        "code-quality-plugin/skills/dry-consolidation/SKILL.md",
+    ],
+    "security": [
+        "git-plugin/skills/git-security-checks/SKILL.md",
+        "configure-plugin/skills/configure-security/SKILL.md",
+    ],
+    "test_runner": [
+        "testing-plugin/skills/test-run/SKILL.md",
+        "testing-plugin/skills/test-report/SKILL.md",
+        "testing-plugin/skills/test-tier-selection/SKILL.md",
+    ],
 }
 
 # Sections to KEEP (domain knowledge)

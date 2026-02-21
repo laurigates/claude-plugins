@@ -17,8 +17,12 @@ from rich.console import Console
 from .agents.blueprint import definition as blueprint_definition
 from .agents.configure import definition as configure_definition
 from .agents.docs import definition as docs_definition
-from .tools.health_check import health_score
+from .agents.quality import definition as quality_definition
+from .agents.security import definition as security_definition
+from .agents.test_runner import definition as test_runner_definition
+from .tools.health_check import compute_health_score, health_score
 from .tools.repo_analyzer import repo_analyze
+from .tools.report import generate_report, report_generate
 
 console = Console()
 
@@ -47,7 +51,7 @@ async def run_onboard(
     tools_server = create_sdk_mcp_server(
         name="repo-tools",
         version="1.0.0",
-        tools=[repo_analyze, health_score],
+        tools=[repo_analyze, health_score, report_generate],
     )
 
     # Build system prompt
@@ -70,6 +74,7 @@ async def run_onboard(
             "TodoWrite",
             "mcp__repo-tools__repo_analyze",
             "mcp__repo-tools__health_score",
+            "mcp__repo-tools__report_generate",
         ],
         permission_mode="acceptEdits",
         mcp_servers={"repo-tools": tools_server},
@@ -77,6 +82,9 @@ async def run_onboard(
             "blueprint": blueprint_definition,
             "configure": configure_definition,
             "docs": docs_definition,
+            "quality": quality_definition,
+            "security": security_definition,
+            "test_runner": test_runner_definition,
         },
         env={
             "DRY_RUN": str(dry_run),
@@ -124,7 +132,7 @@ async def run_maintain(
     tools_server = create_sdk_mcp_server(
         name="repo-tools",
         version="1.0.0",
-        tools=[repo_analyze, health_score],
+        tools=[repo_analyze, health_score, report_generate],
     )
 
     # Build system prompt
@@ -147,6 +155,7 @@ async def run_maintain(
             "TodoWrite",
             "mcp__repo-tools__repo_analyze",
             "mcp__repo-tools__health_score",
+            "mcp__repo-tools__report_generate",
         ],
         permission_mode="acceptEdits",
         mcp_servers={"repo-tools": tools_server},
@@ -154,6 +163,9 @@ async def run_maintain(
             "blueprint": blueprint_definition,
             "configure": configure_definition,
             "docs": docs_definition,
+            "quality": quality_definition,
+            "security": security_definition,
+            "test_runner": test_runner_definition,
         },
         env={
             "FIX_MODE": str(fix),
@@ -177,6 +189,16 @@ async def run_maintain(
     prompt = " ".join(prompt_parts)
 
     await _stream_messages(prompt, options, "Maintenance complete.")
+
+
+def run_health(repo_path: Path) -> None:
+    """Quick health check — no subagents, no LLM calls, just tools."""
+    console.print(f"[bold]Git Repo Agent[/bold] — Health Check [cyan]{repo_path}[/cyan]")
+    console.print()
+
+    scores = compute_health_score(repo_path)
+    report = generate_report(scores, "terminal")
+    console.print(report)
 
 
 async def _stream_messages(

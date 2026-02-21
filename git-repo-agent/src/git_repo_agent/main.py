@@ -107,9 +107,15 @@ def health(
         help="Path to the repository to check.",
     ),
 ) -> None:
-    """Quick health score for a repository. (Phase 3)"""
-    console.print("[yellow]health command is not yet implemented (Phase 3)[/yellow]")
-    raise typer.Exit(code=0)
+    """Quick health score for a repository."""
+    repo_path = Path(repo).resolve()
+    if not repo_path.is_dir():
+        console.print(f"[red]Error:[/red] {repo_path} is not a directory")
+        raise typer.Exit(code=1)
+
+    from .orchestrator import run_health
+
+    run_health(repo_path=repo_path)
 
 
 if __name__ == "__main__":
