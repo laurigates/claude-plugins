@@ -82,9 +82,22 @@ def maintain(
         help="Comma-separated areas to focus on (docs,tests,security).",
     ),
 ) -> None:
-    """Run maintenance checks and optionally fix issues. (Phase 2)"""
-    console.print("[yellow]maintain command is not yet implemented (Phase 2)[/yellow]")
-    raise typer.Exit(code=0)
+    """Run maintenance checks and optionally fix issues."""
+    repo_path = Path(repo).resolve()
+    if not repo_path.is_dir():
+        console.print(f"[red]Error:[/red] {repo_path} is not a directory")
+        raise typer.Exit(code=1)
+
+    from .orchestrator import run_maintain
+
+    asyncio.run(
+        run_maintain(
+            repo_path=repo_path,
+            fix=fix,
+            report_only=report_only,
+            focus=focus,
+        )
+    )
 
 
 @app.command()

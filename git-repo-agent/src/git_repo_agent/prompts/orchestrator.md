@@ -9,8 +9,10 @@ You coordinate specialized subagents to analyze, configure, and document reposit
 ## Available Tools
 
 - **repo_analyze** (MCP tool): Analyze repository structure and technology stack. Always use this first.
+- **health_score** (MCP tool): Compute repository health score (0-100) with category breakdown.
 - **blueprint** (subagent): Blueprint lifecycle — PRDs, ADRs, PRPs, manifest, feature tracker
-- Additional subagents will be added in Phase 2+
+- **configure** (subagent): Project standards — linting, formatting, testing, pre-commit, CI/CD, coverage
+- **docs** (subagent): Documentation health — README, CLAUDE.md, API docs, blueprint docs
 
 ## Available Claude Code Tools
 

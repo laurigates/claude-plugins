@@ -3,7 +3,6 @@
 from pathlib import Path
 
 from claude_agent_sdk import (
-    AgentDefinition,
     AssistantMessage,
     ClaudeAgentOptions,
     ResultMessage,
@@ -16,6 +15,9 @@ from claude_agent_sdk import (
 from rich.console import Console
 
 from .agents.blueprint import definition as blueprint_definition
+from .agents.configure import definition as configure_definition
+from .agents.docs import definition as docs_definition
+from .tools.health_check import health_score
 from .tools.repo_analyzer import repo_analyze
 
 console = Console()
@@ -41,11 +43,11 @@ async def run_onboard(
         console.print("[yellow]DRY RUN — no changes will be made[/yellow]")
     console.print()
 
-    # Create custom MCP server with repo_analyze tool
+    # Create custom MCP server with tools
     tools_server = create_sdk_mcp_server(
         name="repo-tools",
         version="1.0.0",
-        tools=[repo_analyze],
+        tools=[repo_analyze, health_score],
     )
 
     # Build system prompt
@@ -67,11 +69,14 @@ async def run_onboard(
             "AskUserQuestion",
             "TodoWrite",
             "mcp__repo-tools__repo_analyze",
+            "mcp__repo-tools__health_score",
         ],
         permission_mode="acceptEdits",
         mcp_servers={"repo-tools": tools_server},
         agents={
             "blueprint": blueprint_definition,
+            "configure": configure_definition,
+            "docs": docs_definition,
         },
         env={
             "DRY_RUN": str(dry_run),
@@ -96,6 +101,90 @@ async def run_onboard(
     prompt = " ".join(prompt_parts)
 
     # Stream and display messages
+    await _stream_messages(prompt, options, "Onboarding complete.")
+
+
+async def run_maintain(
+    repo_path: Path,
+    fix: bool = False,
+    report_only: bool = False,
+    focus: str | None = None,
+) -> None:
+    """Run the maintenance workflow for a repository."""
+    console.print(f"[bold]Git Repo Agent[/bold] — Maintaining [cyan]{repo_path}[/cyan]")
+    if report_only:
+        console.print("[yellow]REPORT ONLY — no changes will be made[/yellow]")
+    elif fix:
+        console.print("[green]FIX MODE — will auto-fix safe issues[/green]")
+    if focus:
+        console.print(f"[dim]Focus areas: {focus}[/dim]")
+    console.print()
+
+    # Create custom MCP server with tools
+    tools_server = create_sdk_mcp_server(
+        name="repo-tools",
+        version="1.0.0",
+        tools=[repo_analyze, health_score],
+    )
+
+    # Build system prompt
+    system_prompt = _load_prompt("orchestrator") + "\n\n" + _load_prompt("maintain")
+
+    # Build orchestrator options
+    options = ClaudeAgentOptions(
+        system_prompt=system_prompt,
+        cwd=str(repo_path),
+        max_turns=50,
+        allowed_tools=[
+            "Read",
+            "Write",
+            "Edit",
+            "Bash",
+            "Glob",
+            "Grep",
+            "Task",
+            "AskUserQuestion",
+            "TodoWrite",
+            "mcp__repo-tools__repo_analyze",
+            "mcp__repo-tools__health_score",
+        ],
+        permission_mode="acceptEdits",
+        mcp_servers={"repo-tools": tools_server},
+        agents={
+            "blueprint": blueprint_definition,
+            "configure": configure_definition,
+            "docs": docs_definition,
+        },
+        env={
+            "FIX_MODE": str(fix),
+            "REPORT_ONLY": str(report_only),
+            "FOCUS_AREAS": focus or "",
+        },
+    )
+
+    # Build the prompt
+    prompt_parts = [
+        f"Run maintenance checks on the repository at {repo_path}.",
+        "Start by analyzing the repo with repo_analyze and health_score, then execute the maintenance workflow.",
+    ]
+    if report_only:
+        prompt_parts.append("REPORT ONLY — do not make any changes, just generate a report.")
+    elif fix:
+        prompt_parts.append("FIX MODE — apply safe auto-fixes for issues found.")
+    if focus:
+        prompt_parts.append(f"Focus on these categories: {focus}")
+
+    prompt = " ".join(prompt_parts)
+
+    await _stream_messages(prompt, options, "Maintenance complete.")
+
+
+async def _stream_messages(
+    prompt: str,
+    options: ClaudeAgentOptions,
+    completion_msg: str,
+) -> None:
+    """Stream and display messages from a query."""
     async for message in query(prompt=prompt, options=options):
         if isinstance(message, AssistantMessage):
             for block in message.content:
@@ -111,7 +200,7 @@ async def run_onboard(
                 console.print(f"[red]Error: {message.result}[/red]")
             else:
                 console.print()
-                console.print("[bold green]Onboarding complete.[/bold green]")
+                console.print(f"[bold green]{completion_msg}[/bold green]")
                 if message.total_cost_usd:
                     console.print(
                         f"[dim]Cost: ${message.total_cost_usd:.4f}[/dim]"

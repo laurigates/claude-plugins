@@ -79,6 +79,20 @@ lint-all: lint-context-commands lint-compliance lint-health lint-infra
 claude-setup: mcp-sentry mcp-github mcp-context7 mcp-playwright mcp-sequential-thinking mcp-chrome-devtools cclsp
 
 ####################
+# Git Repo Agent
+####################
+
+# Compile plugin skills into subagent prompt files
+[group: "git-repo-agent"]
+compile-prompts:
+    python git-repo-agent/scripts/compile_prompts.py
+
+# Check if compiled prompts are up-to-date
+[group: "git-repo-agent"]
+check-prompts:
+    python git-repo-agent/scripts/compile_prompts.py --check
+
+####################
 # GitHub
 ####################
 
