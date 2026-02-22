@@ -21,6 +21,8 @@
     "prp",
     "quality-check",
     "dry-consolidation",
-    "duplication"
+    "duplication",
+    "silent-degradation",
+    "preconditions"
   ]
 }

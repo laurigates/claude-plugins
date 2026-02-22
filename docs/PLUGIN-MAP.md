@@ -1,6 +1,6 @@
 # Plugin Navigation Map
 
-Navigation guide for 32 plugins and 289+ skills. Start here.
+Navigation guide for 32 plugins and 290+ skills. Start here.
 
 ## Quick Start
 
@@ -45,7 +45,7 @@ Automated quality enforcement.
 | Plugin | Skills | Purpose |
 |--------|--------|---------|
 | testing-plugin | 15 | Test execution, TDD, Vitest, Playwright, mutation testing |
-| code-quality-plugin | 13 | Review, refactoring, linting, ast-grep, debugging |
+| code-quality-plugin | 14 | Review, refactoring, linting, ast-grep, debugging, silent degradation |
 | documentation-plugin | 5 | API docs, README generation, knowledge graphs |
 
 ### Tier 3+ - Pick What Applies
