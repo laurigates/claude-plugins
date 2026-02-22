@@ -10,7 +10,7 @@ git-repo-agent analyzes a repository's technology stack, initializes blueprint m
 
 ```bash
 # From this repo
-uv pip install -e ./git-repo-agent
+uv tool install -e ./git-repo-agent
 
 # Or with pipx
 pipx install ./git-repo-agent
@@ -94,26 +94,27 @@ git-repo-agent/
 
 ### Subagents
 
-| Agent | Model | Purpose |
-|-------|-------|---------|
-| **blueprint** | sonnet | Initialize and maintain blueprint methodology (PRDs, ADRs, PRPs, manifest) |
-| **configure** | haiku | Set up linting, formatting, testing, pre-commit hooks, CI/CD, coverage |
-| **docs** | haiku | Check and improve README, CLAUDE.md, API docs, blueprint docs |
-| **quality** | opus | Review code for complexity, duplication, anti-patterns, lint compliance |
-| **security** | opus | Scan for exposed secrets, dependency CVEs, insecure configurations |
-| **test_runner** | haiku | Detect test framework, execute tests, return pass/fail summary |
+| Agent           | Model  | Purpose                                                                    |
+| --------------- | ------ | -------------------------------------------------------------------------- |
+| **blueprint**   | sonnet | Initialize and maintain blueprint methodology (PRDs, ADRs, PRPs, manifest) |
+| **configure**   | haiku  | Set up linting, formatting, testing, pre-commit hooks, CI/CD, coverage     |
+| **docs**        | haiku  | Check and improve README, CLAUDE.md, API docs, blueprint docs              |
+| **quality**     | opus   | Review code for complexity, duplication, anti-patterns, lint compliance    |
+| **security**    | opus   | Scan for exposed secrets, dependency CVEs, insecure configurations         |
+| **test_runner** | haiku  | Detect test framework, execute tests, return pass/fail summary             |
 
 ### MCP Tools
 
-| Tool | Description |
-|------|-------------|
-| **repo_analyze** | Detect language, framework, package manager, test/lint/format tools, CI system |
-| **health_score** | Score 5 categories (docs, tests, security, quality, ci) each 0–20, total 0–100 |
-| **report_generate** | Format health findings as markdown, JSON, or terminal output |
+| Tool                | Description                                                                    |
+| ------------------- | ------------------------------------------------------------------------------ |
+| **repo_analyze**    | Detect language, framework, package manager, test/lint/format tools, CI system |
+| **health_score**    | Score 5 categories (docs, tests, security, quality, ci) each 0–20, total 0–100 |
+| **report_generate** | Format health findings as markdown, JSON, or terminal output                   |
 
 ### Safety Hooks
 
 The safety module prevents destructive commands during agent execution:
+
 - Blocks `git push --force`, `git reset --hard`, `rm -rf`
 - Prevents modification of `.env` files and credentials
 - Logs blocked commands for review
@@ -135,6 +136,7 @@ The compiler strips Claude Code metadata (frontmatter, `allowed-tools`, `AskUser
 ## Technology Stack Detection
 
 The `repo_analyze` tool detects:
+
 - Language (Python, TypeScript, JavaScript, Rust, Go, Java)
 - Framework (React, Next.js, Django, FastAPI, Axum, etc.)
 - Package manager (uv, npm, bun, cargo, etc.)
@@ -161,9 +163,9 @@ uv run --directory git-repo-agent git-repo-agent health .
 
 ## Implementation Phases
 
-| Phase | Status | Features |
-|-------|--------|----------|
-| Phase 1 | Done | CLI, orchestrator, repo_analyze, blueprint subagent, onboard command |
-| Phase 2 | Done | Configure/docs subagents, health_score, safety hooks, maintain command, skill compilation |
-| Phase 3 | Done | Quality/security/test-runner subagents, report_generate, health command |
-| Phase 4 | Planned | Watch mode, trend tracking, GitHub Action template |
+| Phase   | Status  | Features                                                                                  |
+| ------- | ------- | ----------------------------------------------------------------------------------------- |
+| Phase 1 | Done    | CLI, orchestrator, repo_analyze, blueprint subagent, onboard command                      |
+| Phase 2 | Done    | Configure/docs subagents, health_score, safety hooks, maintain command, skill compilation |
+| Phase 3 | Done    | Quality/security/test-runner subagents, report_generate, health command                   |
+| Phase 4 | Planned | Watch mode, trend tracking, GitHub Action template                                        |
