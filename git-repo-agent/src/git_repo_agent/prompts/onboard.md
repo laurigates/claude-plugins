@@ -2,15 +2,17 @@
 
 Execute this 6-step onboarding workflow for the target repository.
 
-## Step 1: Analyze Repository
+## Step 1: Review Repository Analysis
 
-Use the `repo_analyze` tool to detect:
+Review the pre-computed `repo_analyze` and `health_score` results in your system prompt.
+Key data points to consider:
 - Language and framework
 - Package manager
 - Existing tooling (linter, formatter, test framework)
 - CI/CD system
 - Blueprint status (has_claude_md, has_blueprint)
 - Git information
+- Health score category breakdown and findings
 
 ## Step 2: Plan Onboarding
 

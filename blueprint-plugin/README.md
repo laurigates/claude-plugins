@@ -30,6 +30,7 @@ PRD (Product Requirements) → PRP (Product Requirement Prompt) → Work-Order �
 | `blueprint-derive-adr` | Derive Architecture Decision Records from existing codebase |
 | `blueprint-derive-plans` | Derive PRDs, ADRs, and PRPs from git history and existing code |
 | `blueprint-derive-rules` | Derive rules from git commit decisions (newer overrides older) |
+| `blueprint-derive-tests` | Derive test regression plans from git history by identifying untested fix/feature commits |
 
 ### Workflow Skills
 
@@ -171,6 +172,18 @@ This command:
 - Suggests future work from TODOs and open issues
 - Generates all documentation with confidence scores
 
+**For identifying untested bug fixes and generating a test backlog**:
+
+```bash
+/blueprint-derive-tests    # Derive test regression plans from git history
+```
+
+This command:
+- Identifies `fix:` and `feat:` commits lacking corresponding test changes
+- Classifies coverage gaps by severity (Critical/High/Medium/Low)
+- Generates a TRP (Test Regression Plan) document in `docs/trps/`
+- Suggests prioritized test creation order
+
 **For deriving rules from significant commit decisions**:
 
 ```bash
@@ -233,6 +246,7 @@ All blueprint documents are connected through a unified ID system, enabling full
 | ADR | `ADR-NNNN` | `ADR-0003` |
 | PRP | `PRP-NNN` | `PRP-007` |
 | Work-Order | `WO-NNN` | `WO-042` |
+| TRP | `TRP-NNN` | `TRP-001` |
 
 ### Automatic ID Assignment
 

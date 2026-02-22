@@ -65,8 +65,13 @@ jobs:
       - name: Extract latest version
         id: extract
         run: |
-          # Extract first version number from changelog (format: ## [X.Y.Z])
-          LATEST=$(grep -oP '## \[\K[0-9]+\.[0-9]+\.[0-9]+' /tmp/changelog.md | head -1)
+          # Extract first version number from changelog
+          # Handles both "## 2.1.50" and "## [2.1.50]" formats
+          LATEST=$(grep -oP '## \[?\K[0-9]+\.[0-9]+\.[0-9]+' /tmp/changelog.md | head -1)
+          if [ -z "$LATEST" ]; then
+            echo "::error::Failed to extract version from changelog"
+            exit 1
+          fi
           echo "latest_version=$LATEST" >> $GITHUB_OUTPUT
           echo "Latest Claude Code version: $LATEST"
 
