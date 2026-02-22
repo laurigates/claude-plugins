@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.6.1...code-quality-plugin-v1.7.0) (2026-02-22)
+
+
+### Features
+
+* **code-quality-plugin:** add silent degradation detection skill ([#785](https://github.com/laurigates/claude-plugins/issues/785)) ([49d7cb1](https://github.com/laurigates/claude-plugins/commit/49d7cb15c2befe59d434619a306651deaf927311))
+
 ## [1.6.1](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.6.0...code-quality-plugin-v1.6.1) (2026-02-20)
 
 
