@@ -96,7 +96,7 @@
       "name": "blueprint-plugin",
       "source": "./blueprint-plugin",
       "description": "Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, and CLAUDE.md management",
-      "version": "3.19.0",
+      "version": "3.19.1",
       "keywords": [
         "blueprint",
         "prd",
@@ -112,7 +112,7 @@
       "name": "code-quality-plugin",
       "source": "./code-quality-plugin",
       "description": "Code review, refactoring, linting, and static analysis",
-      "version": "1.6.1",
+      "version": "1.7.0",
       "keywords": [
         "code-review",
         "refactoring",
