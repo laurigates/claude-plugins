@@ -1,0 +1,21 @@
+{
+  "name": "google-knowledge-plugin",
+  "version": "1.0.0",
+  "description": "Google Developer Knowledge API - search and retrieve official Google documentation for Firebase, Cloud, Android, and Maps via MCP server",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "repository": "https://github.com/laurigates/claude-plugins",
+  "license": "MIT",
+  "keywords": [
+    "google",
+    "documentation",
+    "knowledge-api",
+    "mcp",
+    "firebase",
+    "google-cloud",
+    "android",
+    "maps",
+    "developer-docs"
+  ]
+}
