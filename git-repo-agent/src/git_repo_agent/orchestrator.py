@@ -1,6 +1,7 @@
 """Orchestrator — core agent logic for git-repo-agent."""
 
 import json
+import logging
 from pathlib import Path
 
 from claude_agent_sdk import (
@@ -13,6 +14,33 @@ from claude_agent_sdk import (
     query,
 )
 from rich.console import Console
+
+logger = logging.getLogger(__name__)
+
+# Patch SDK message parser to handle unknown message types gracefully.
+# The SDK (0.1.39) raises MessageParseError for unrecognized types like
+# "rate_limit_event", which crashes the async generator irrecoverably.
+# Must patch both the module-level function AND the client's local binding,
+# since client.py uses "from .message_parser import parse_message".
+import claude_agent_sdk._internal.client as _sdk_client  # noqa: E402
+import claude_agent_sdk._internal.message_parser as _msg_parser  # noqa: E402
+
+_original_parse_message = _msg_parser.parse_message
+
+
+def _resilient_parse_message(data):
+    try:
+        return _original_parse_message(data)
+    except Exception as exc:
+        if "Unknown message type" in str(exc):
+            msg_type = data.get("type", "unknown") if isinstance(data, dict) else "unknown"
+            logger.debug("Skipping unrecognized message type: %s", msg_type)
+            return SystemMessage(subtype=msg_type, data=data if isinstance(data, dict) else {})
+        raise
+
+
+_msg_parser.parse_message = _resilient_parse_message
+_sdk_client.parse_message = _resilient_parse_message
 
 from .agents.blueprint import definition as blueprint_definition
 from .agents.configure import definition as configure_definition
