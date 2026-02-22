@@ -2,9 +2,9 @@
 
 Execute this maintenance workflow for the target repository.
 
-## Step 1: Analyze Repository
+## Step 1: Review Repository Analysis
 
-Use the `repo_analyze` and `health_score` tools to assess current state:
+Review the pre-computed `repo_analyze` and `health_score` results in your system prompt:
 - Technology stack and tooling
 - Overall health score with category breakdown
 - Specific findings per category

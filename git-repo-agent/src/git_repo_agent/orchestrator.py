@@ -1,5 +1,6 @@
 """Orchestrator — core agent logic for git-repo-agent."""
 
+import json
 from pathlib import Path
 
 from claude_agent_sdk import (
@@ -9,7 +10,6 @@ from claude_agent_sdk import (
     SystemMessage,
     TextBlock,
     ToolUseBlock,
-    create_sdk_mcp_server,
     query,
 )
 from rich.console import Console
@@ -20,9 +20,9 @@ from .agents.docs import definition as docs_definition
 from .agents.quality import definition as quality_definition
 from .agents.security import definition as security_definition
 from .agents.test_runner import definition as test_runner_definition
-from .tools.health_check import compute_health_score, health_score
-from .tools.repo_analyzer import repo_analyze
-from .tools.report import generate_report, report_generate
+from .tools.health_check import compute_health_score
+from .tools.repo_analyzer import analyze_repo
+from .tools.report import generate_report
 
 console = Console()
 
@@ -32,6 +32,26 @@ _PROMPTS_DIR = Path(__file__).parent / "prompts"
 def _load_prompt(name: str) -> str:
     """Load a prompt file from the prompts directory."""
     return (_PROMPTS_DIR / f"{name}.md").read_text(encoding="utf-8")
+
+
+def _pre_compute_context(repo_path: Path) -> str:
+    """Pre-compute repository analysis and health score.
+
+    Returns a formatted string to embed in the agent prompt.
+    See ADR-001 for why this replaces SDK MCP servers.
+    """
+    analysis = analyze_repo(repo_path)
+    health = compute_health_score(repo_path)
+
+    return (
+        "## Pre-computed Repository Analysis\n\n"
+        "The following data was computed before this session started. "
+        "Use it to plan your work — no need to re-analyze.\n\n"
+        "### repo_analyze result\n\n"
+        f"```json\n{json.dumps(analysis, indent=2)}\n```\n\n"
+        "### health_score result\n\n"
+        f"```json\n{json.dumps(health, indent=2)}\n```\n"
+    )
 
 
 async def run_onboard(
@@ -47,15 +67,18 @@ async def run_onboard(
         console.print("[yellow]DRY RUN — no changes will be made[/yellow]")
     console.print()
 
-    # Create custom MCP server with tools
-    tools_server = create_sdk_mcp_server(
-        name="repo-tools",
-        version="1.0.0",
-        tools=[repo_analyze, health_score, report_generate],
-    )
+    # Pre-compute analysis (see ADR-001)
+    console.print("[dim]Analyzing repository...[/dim]")
+    repo_context = _pre_compute_context(repo_path)
 
-    # Build system prompt
-    system_prompt = _load_prompt("orchestrator") + "\n\n" + _load_prompt("onboard")
+    # Build system prompt with embedded analysis
+    system_prompt = (
+        _load_prompt("orchestrator")
+        + "\n\n"
+        + _load_prompt("onboard")
+        + "\n\n"
+        + repo_context
+    )
 
     # Build orchestrator options
     options = ClaudeAgentOptions(
@@ -72,12 +95,8 @@ async def run_onboard(
             "Task",
             "AskUserQuestion",
             "TodoWrite",
-            "mcp__repo-tools__repo_analyze",
-            "mcp__repo-tools__health_score",
-            "mcp__repo-tools__report_generate",
         ],
         permission_mode="acceptEdits",
-        mcp_servers={"repo-tools": tools_server},
         agents={
             "blueprint": blueprint_definition,
             "configure": configure_definition,
@@ -87,17 +106,19 @@ async def run_onboard(
             "test_runner": test_runner_definition,
         },
         env={
+            "CLAUDECODE": "",
             "DRY_RUN": str(dry_run),
             "SKIP_CI": str(skip_ci),
             "SKIP_BLUEPRINT": str(skip_blueprint),
             "ONBOARD_BRANCH": branch,
         },
+        stderr=lambda line: console.print(f"[dim red]STDERR: {line}[/dim red]"),
     )
 
     # Build the prompt
     prompt_parts = [
         f"Onboard the repository at {repo_path}.",
-        "Start by analyzing the repo with repo_analyze, then plan and execute the onboarding workflow.",
+        "Repository analysis and health score are in your system prompt. Plan and execute the onboarding workflow.",
     ]
     if dry_run:
         prompt_parts.append("DRY RUN — report what you would do without making changes.")
@@ -128,15 +149,18 @@ async def run_maintain(
         console.print(f"[dim]Focus areas: {focus}[/dim]")
     console.print()
 
-    # Create custom MCP server with tools
-    tools_server = create_sdk_mcp_server(
-        name="repo-tools",
-        version="1.0.0",
-        tools=[repo_analyze, health_score, report_generate],
-    )
+    # Pre-compute analysis (see ADR-001)
+    console.print("[dim]Analyzing repository...[/dim]")
+    repo_context = _pre_compute_context(repo_path)
 
-    # Build system prompt
-    system_prompt = _load_prompt("orchestrator") + "\n\n" + _load_prompt("maintain")
+    # Build system prompt with embedded analysis
+    system_prompt = (
+        _load_prompt("orchestrator")
+        + "\n\n"
+        + _load_prompt("maintain")
+        + "\n\n"
+        + repo_context
+    )
 
     # Build orchestrator options
     options = ClaudeAgentOptions(
@@ -153,12 +177,8 @@ async def run_maintain(
             "Task",
             "AskUserQuestion",
             "TodoWrite",
-            "mcp__repo-tools__repo_analyze",
-            "mcp__repo-tools__health_score",
-            "mcp__repo-tools__report_generate",
         ],
         permission_mode="acceptEdits",
-        mcp_servers={"repo-tools": tools_server},
         agents={
             "blueprint": blueprint_definition,
             "configure": configure_definition,
@@ -168,6 +188,7 @@ async def run_maintain(
             "test_runner": test_runner_definition,
         },
         env={
+            "CLAUDECODE": "",
             "FIX_MODE": str(fix),
             "REPORT_ONLY": str(report_only),
             "FOCUS_AREAS": focus or "",
@@ -177,7 +198,7 @@ async def run_maintain(
     # Build the prompt
     prompt_parts = [
         f"Run maintenance checks on the repository at {repo_path}.",
-        "Start by analyzing the repo with repo_analyze and health_score, then execute the maintenance workflow.",
+        "Repository analysis and health score are in your system prompt. Execute the maintenance workflow.",
     ]
     if report_only:
         prompt_parts.append("REPORT ONLY — do not make any changes, just generate a report.")
