@@ -40,6 +40,9 @@
     "import-plans",
     "reverse-engineering",
     "programmatic-listing",
-    "adr-backlog"
+    "adr-backlog",
+    "test-regression-plan",
+    "derive-tests",
+    "test-gaps"
   ]
 }

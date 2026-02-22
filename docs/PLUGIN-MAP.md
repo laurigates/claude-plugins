@@ -33,7 +33,7 @@ The development loop: plan, code, commit, ship.
 
 | Plugin | Skills | Purpose |
 |--------|--------|---------|
-| blueprint-plugin | 30 | PRD/ADR/PRP methodology, `/blueprint:execute` auto-pilot |
+| blueprint-plugin | 31 | PRD/ADR/PRP/TRP methodology, `/blueprint:execute` auto-pilot |
 | git-plugin | 27 + 1 agent | Commits, branches, PRs, worktrees, release-please |
 | project-plugin | 6 | Project init, modernization, maintenance |
 | agents-plugin | 1 + 10 agents | Task delegation to specialized agents |
