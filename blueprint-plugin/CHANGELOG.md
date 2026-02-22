@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.19.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.19.0...blueprint-plugin-v3.19.1) (2026-02-22)
+
+
+### Bug Fixes
+
+* **ci:** fix version extraction in changelog-review workflow ([#779](https://github.com/laurigates/claude-plugins/issues/779)) ([dfe620c](https://github.com/laurigates/claude-plugins/commit/dfe620c615f74b09c9eb6b408ef0f254ef497450))
+
 ## [3.19.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.18.0...blueprint-plugin-v3.19.0) (2026-02-20)
 
 
