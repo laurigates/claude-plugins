@@ -15,6 +15,7 @@ on:
 permissions:
   contents: write
   issues: write
+  pull-requests: write
 
 jobs:
   check-changelog:
@@ -351,15 +352,27 @@ jobs:
 
           echo "Updated tracking to version $LATEST_VERSION"
 
-      - name: Commit tracking update
+      - name: Create PR for tracking update
+        env:
+          GH_TOKEN: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
+          LATEST_VERSION: ${{ needs.check-changelog.outputs.latest_version }}
         run: |
+          if git diff --quiet .claude-code-version-check.json; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          BRANCH="chore/update-version-tracking-${LATEST_VERSION}"
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          if git diff --quiet .claude-code-version-check.json; then
-            echo "No changes to commit"
-          else
-            git add .claude-code-version-check.json
-            git commit -m "chore: update Claude Code version tracking to ${{ needs.check-changelog.outputs.latest_version }}"
-            git push
-          fi
+          git checkout -b "$BRANCH"
+          git add .claude-code-version-check.json
+          git commit -m "chore: update Claude Code version tracking to ${LATEST_VERSION}"
+          git push -u origin "$BRANCH"
+
+          gh pr create \
+            --title "chore: update Claude Code version tracking to ${LATEST_VERSION}" \
+            --body "Automated update of \`.claude-code-version-check.json\` to track Claude Code version ${LATEST_VERSION}." \
+            --label "maintenance"
