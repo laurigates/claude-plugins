@@ -9,7 +9,7 @@ allowed-tools: Bash(git diff *), Bash(git log *), Bash(git status *), Bash(just 
 argument-hint: "--rules | --skills | --recipes | --all | --dry-run"
 args: "[--rules] [--skills] [--recipes] [--all] [--dry-run]"
 created: 2026-02-11
-modified: 2026-02-20
+modified: 2026-02-22
 reviewed: 2026-02-14
 ---
 
@@ -41,14 +41,14 @@ Distill session insights into reusable project knowledge. Reviews what was done 
 
 ## Context
 
-Gather session context to analyze:
+The primary context source is the **current conversation history** — all messages, tool calls, and results from this session are available. Git history is supplemental and may be unavailable (e.g., in non-git directories or multi-repo workspaces).
 
-- Session diff: !`git log --stat --oneline --max-count=10 2>/dev/null`
-- Recent commits: !`git log --oneline --max-count=20 2>/dev/null`
-- Current branch: !`git branch --show-current 2>/dev/null`
-- Justfile: !`find . -maxdepth 1 \( -name 'justfile' -o -name 'Justfile' \) -print -quit`
-- Rules directory: !`find .claude/rules -name '*.md' -type f 2>/dev/null`
-- Changed files: !`git log --name-only --max-count=10 --format='' 2>/dev/null`
+- Session diff: !`git log --stat --oneline --max-count=10 2>/dev/null || true`
+- Recent commits: !`git log --oneline --max-count=20 2>/dev/null || true`
+- Current branch: !`git branch --show-current 2>/dev/null || true`
+- Justfile: !`find . -maxdepth 1 \( -name 'justfile' -o -name 'Justfile' \) -print -quit 2>/dev/null || true`
+- Rules directory: !`find .claude/rules -name '*.md' -type f 2>/dev/null || true`
+- Changed files: !`git log --name-only --max-count=10 --format='' 2>/dev/null || true`
 
 ## Parameters
 
@@ -66,13 +66,15 @@ Execute this session distillation workflow:
 
 ### Step 1: Analyze session activity
 
-Understand what happened:
+Understand what happened during this session using **all available context**:
 
-1. Review recent commits: `git log --oneline --max-count=20`
-2. Review recent diffs: `git log --stat --oneline --max-count=10`
+1. Review the **conversation history** — tool calls, file edits, commands run, agent dispatches, and results
+2. If in a git repo, supplement with: `git log --oneline --max-count=20` and `git log --stat --oneline --max-count=10`
 3. Identify patterns: repeated operations, workarounds, discoveries
 4. Catalog tools used: effective commands, flags, workflows
 5. Note pain points: where time was spent figuring things out
+
+**Note:** Conversation history is the primary source. Git history is supplemental — it may be empty (non-git directory, multi-repo workspace, or no commits this session).
 
 ### Step 2: Evaluate against existing knowledge
 
