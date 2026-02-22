@@ -18,6 +18,7 @@ This plugin provides comprehensive code quality tools including automated code r
 | `/refactor` | Refactor selected code for quality improvements |
 | `/docs:quality-check` | Analyze documentation quality - PRDs, ADRs, PRPs, CLAUDE.md, and .claude/rules/ |
 | `code-antipatterns-analysis` | Detect anti-patterns and code smells using ast-grep structural matching |
+| `/code:silent-degradation` | Detect silent degradation patterns where operations succeed with zero results because preconditions are unmet |
 | `ast-grep-search` | AST-based code search for structural pattern matching |
 
 ## Agents
@@ -104,6 +105,25 @@ Analyzes documentation quality and standards:
 - PRPs (Product Requirement Prompts)
 - Freshness and git history alignment
 - Generates comprehensive quality report with actionable recommendations
+
+### Silent Degradation Scan
+
+```bash
+/code:silent-degradation src/
+```
+
+Detects patterns where code silently degrades:
+- Missing config causing features to skip without warning
+- Success banners shown when nothing actually ran
+- Multi-step operations that silently skip steps
+- Missing precondition validation for data-dependent features
+- Degraded mode without user notification
+
+```bash
+/code:silent-degradation src/ --fix
+```
+
+Applies fixes: adds precondition checks, warning messages, and status indicators.
 
 ## ast-grep Patterns
 
