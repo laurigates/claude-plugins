@@ -43,12 +43,12 @@ Distill session insights into reusable project knowledge. Reviews what was done 
 
 The primary context source is the **current conversation history** — all messages, tool calls, and results from this session are available. Git history is supplemental and may be unavailable (e.g., in non-git directories or multi-repo workspaces).
 
-- Session diff: !`git log --stat --oneline --max-count=10 2>/dev/null || true`
-- Recent commits: !`git log --oneline --max-count=20 2>/dev/null || true`
-- Current branch: !`git branch --show-current 2>/dev/null || true`
-- Justfile: !`find . -maxdepth 1 \( -name 'justfile' -o -name 'Justfile' \) -print -quit 2>/dev/null || true`
-- Rules directory: !`find .claude/rules -name '*.md' -type f 2>/dev/null || true`
-- Changed files: !`git log --name-only --max-count=10 --format='' 2>/dev/null || true`
+- Session diff: !`git log --stat --oneline --max-count=10 2>/dev/null`
+- Recent commits: !`git log --oneline --max-count=20 2>/dev/null`
+- Current branch: !`git branch --show-current 2>/dev/null`
+- Justfile: !`find . -maxdepth 1 \( -name 'justfile' -o -name 'Justfile' \) -print -quit 2>/dev/null`
+- Rules directory: !`find .claude/rules -name '*.md' -type f 2>/dev/null`
+- Changed files: !`git log --name-only --max-count=10 --format='' 2>/dev/null`
 
 ## Parameters
 
