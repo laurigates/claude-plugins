@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.4](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.9.3...project-plugin-v1.9.4) (2026-02-23)
+
+
+### Bug Fixes
+
+* **project-plugin:** remove shell operators from context commands ([#790](https://github.com/laurigates/claude-plugins/issues/790)) ([99769b5](https://github.com/laurigates/claude-plugins/commit/99769b57f7c373a6cc280571561b06dd9f1a54ef))
+
 ## [1.9.3](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.9.2...project-plugin-v1.9.3) (2026-02-23)
 
 
