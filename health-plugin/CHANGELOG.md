@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.3.0...health-plugin-v1.3.1) (2026-02-23)
+
+
+### Bug Fixes
+
+* remove 2&gt;/dev/null from context commands across all plugins ([#792](https://github.com/laurigates/claude-plugins/issues/792)) ([c72e67e](https://github.com/laurigates/claude-plugins/commit/c72e67ee37e809449f0e6282c48fac01363a59fd))
+
 ## [1.3.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.2.0...health-plugin-v1.3.0) (2026-02-18)
 
 
