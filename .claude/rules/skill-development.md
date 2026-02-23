@@ -1,7 +1,7 @@
 ---
 created: 2025-12-20
-modified: 2026-02-20
-reviewed: 2026-01-22
+modified: 2026-02-23
+reviewed: 2026-02-23
 ---
 
 # Skill Development
@@ -56,6 +56,19 @@ modified: YYYY-MM-DD
 reviewed: YYYY-MM-DD
 ---
 ```
+
+### Optional Frontmatter Fields
+
+```yaml
+---
+# ... required fields above ...
+language: <python|typescript|go|rust|etc>  # Specify primary language (optional)
+agent: <agent-name>                         # Specify custom agent to execute skill (optional)
+---
+```
+
+- **`language`**: Specify the primary programming language for the skill. Helps Claude Code select appropriate models/tools.
+- **`agent`**: Specify a custom agent for executing this skill. Overrides default model selection.
 
 ### Model Selection
 
@@ -165,6 +178,8 @@ argument-hint: <Human-readable hint>
 created: YYYY-MM-DD
 modified: YYYY-MM-DD
 reviewed: YYYY-MM-DD
+language: <optional-language>     # Specify primary language (optional)
+agent: <optional-agent>           # Specify custom agent (optional)
 ---
 ```
 
