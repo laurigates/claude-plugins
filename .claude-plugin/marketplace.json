@@ -112,7 +112,7 @@
       "name": "code-quality-plugin",
       "source": "./code-quality-plugin",
       "description": "Code review, refactoring, linting, and static analysis",
-      "version": "1.7.0",
+      "version": "1.7.1",
       "keywords": [
         "code-review",
         "refactoring",
@@ -395,7 +395,7 @@
       "name": "project-plugin",
       "source": "./project-plugin",
       "description": "Project initialization, management, and maintenance - setup, modernization, changelog review, and continuous development workflows",
-      "version": "1.9.3",
+      "version": "1.9.4",
       "keywords": [
         "project",
         "initialization",

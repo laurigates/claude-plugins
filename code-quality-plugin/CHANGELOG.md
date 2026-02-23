@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.1](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.7.0...code-quality-plugin-v1.7.1) (2026-02-23)
+
+
+### Bug Fixes
+
+* **project-plugin:** remove shell operators from context commands ([#790](https://github.com/laurigates/claude-plugins/issues/790)) ([99769b5](https://github.com/laurigates/claude-plugins/commit/99769b57f7c373a6cc280571561b06dd9f1a54ef))
+
 ## [1.7.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.6.1...code-quality-plugin-v1.7.0) (2026-02-22)
 
 
