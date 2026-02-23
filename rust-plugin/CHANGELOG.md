@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.4](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.2.3...rust-plugin-v1.2.4) (2026-02-23)
+
+
+### Bug Fixes
+
+* remove 2&gt;/dev/null from context commands across all plugins ([#792](https://github.com/laurigates/claude-plugins/issues/792)) ([c72e67e](https://github.com/laurigates/claude-plugins/commit/c72e67ee37e809449f0e6282c48fac01363a59fd))
+
 ## [1.2.3](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.2.2...rust-plugin-v1.2.3) (2026-02-15)
 
 

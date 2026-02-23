@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.19.2](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.19.1...blueprint-plugin-v3.19.2) (2026-02-23)
+
+
+### Bug Fixes
+
+* remove 2&gt;/dev/null from context commands across all plugins ([#792](https://github.com/laurigates/claude-plugins/issues/792)) ([c72e67e](https://github.com/laurigates/claude-plugins/commit/c72e67ee37e809449f0e6282c48fac01363a59fd))
+
 ## [3.19.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.19.0...blueprint-plugin-v3.19.1) (2026-02-22)
 
 

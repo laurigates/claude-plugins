@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.2.0...workflow-orchestration-plugin-v1.2.1) (2026-02-23)
+
+
+### Bug Fixes
+
+* remove 2&gt;/dev/null from context commands across all plugins ([#792](https://github.com/laurigates/claude-plugins/issues/792)) ([c72e67e](https://github.com/laurigates/claude-plugins/commit/c72e67ee37e809449f0e6282c48fac01363a59fd))
+
 ## [1.2.0](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.1.4...workflow-orchestration-plugin-v1.2.0) (2026-02-18)
 
 

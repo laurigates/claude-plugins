@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.19.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.19.0...git-plugin-v2.19.1) (2026-02-23)
+
+
+### Bug Fixes
+
+* remove 2&gt;/dev/null from context commands across all plugins ([#792](https://github.com/laurigates/claude-plugins/issues/792)) ([c72e67e](https://github.com/laurigates/claude-plugins/commit/c72e67ee37e809449f0e6282c48fac01363a59fd))
+
 ## [2.19.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.18.2...git-plugin-v2.19.0) (2026-02-20)
 
 

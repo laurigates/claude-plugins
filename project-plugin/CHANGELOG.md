@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.5](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.9.4...project-plugin-v1.9.5) (2026-02-23)
+
+
+### Bug Fixes
+
+* remove 2&gt;/dev/null from context commands across all plugins ([#792](https://github.com/laurigates/claude-plugins/issues/792)) ([c72e67e](https://github.com/laurigates/claude-plugins/commit/c72e67ee37e809449f0e6282c48fac01363a59fd))
+
 ## [1.9.4](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.9.3...project-plugin-v1.9.4) (2026-02-23)
 
 
