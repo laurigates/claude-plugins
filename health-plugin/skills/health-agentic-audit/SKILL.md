@@ -28,9 +28,9 @@ Standards reference: `.claude/rules/agentic-optimization.md` and `.claude/rules/
 ## Context
 
 - Plugin root: !`pwd`
-- Skill files: !`find . -name 'SKILL.md' -o -name 'skill.md' 2>/dev/null`
-- Skill files (all): !`find . \( -name 'SKILL.md' -o -name 'skill.md' \) 2>/dev/null`
-- Agent files: !`find . -path '*/agents/*.md' -not -name 'README.md' 2>/dev/null`
+- Skill files: !`find . -name 'SKILL.md' -o -name 'skill.md'`
+- Skill files (all): !`find . \( -name 'SKILL.md' -o -name 'skill.md' \)`
+- Agent files: !`find . -path '*/agents/*.md' -not -name 'README.md'`
 
 ## Parameters
 

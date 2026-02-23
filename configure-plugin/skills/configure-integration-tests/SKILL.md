@@ -26,13 +26,13 @@ Check and configure integration testing infrastructure for testing service inter
 ## Context
 
 - Project root: !`pwd`
-- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) 2>/dev/null`
-- Integration tests dir: !`find tests -maxdepth 1 -type d -name 'integration' 2>/dev/null`
-- Docker compose test: !`find . -maxdepth 1 -name 'docker-compose.test.yml' 2>/dev/null`
-- Vitest integration config: !`find . -maxdepth 1 -name 'vitest.integration.config.*' 2>/dev/null`
-- Supertest dep: !`grep -l 'supertest' package.json 2>/dev/null`
-- Testcontainers dep: !`grep -l 'testcontainers' package.json pyproject.toml 2>/dev/null`
-- Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml' 2>/dev/null`
+- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \)`
+- Integration tests dir: !`find tests -maxdepth 1 -type d -name 'integration'`
+- Docker compose test: !`find . -maxdepth 1 -name 'docker-compose.test.yml'`
+- Vitest integration config: !`find . -maxdepth 1 -name 'vitest.integration.config.*'`
+- Supertest dep: !`grep -l 'supertest' package.json`
+- Testcontainers dep: !`grep -l 'testcontainers' package.json pyproject.toml`
+- Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml'`
 
 ## Parameters
 

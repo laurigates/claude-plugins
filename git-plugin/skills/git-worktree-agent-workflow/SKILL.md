@@ -35,10 +35,10 @@ Start every implementation in an isolated worktree. Each task gets its own direc
 
 ## Context
 
-- Current branch: !`git branch --show-current 2>/dev/null`
-- Worktrees: !`git worktree list --porcelain 2>/dev/null`
-- Uncommitted changes: !`git status --porcelain 2>/dev/null`
-- Default branch: !`git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null`
+- Current branch: !`git branch --show-current`
+- Worktrees: !`git worktree list --porcelain`
+- Uncommitted changes: !`git status --porcelain`
+- Default branch: !`git symbolic-ref --short refs/remotes/origin/HEAD`
 
 ## Execution
 

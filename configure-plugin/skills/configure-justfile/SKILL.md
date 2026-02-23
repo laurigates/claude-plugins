@@ -26,12 +26,12 @@ Check and configure project Justfile against project standards.
 ## Context
 
 - Project root: !`pwd`
-- Justfile: !`find . -maxdepth 1 \( -name 'justfile' -o -name 'Justfile' \) 2>/dev/null`
-- Makefile: !`find . -maxdepth 1 -name 'Makefile' 2>/dev/null`
-- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) 2>/dev/null`
-- Docker files: !`find . -maxdepth 1 \( -name 'Dockerfile' -o -name 'docker-compose.yml' \) 2>/dev/null`
-- Env file: !`find . -maxdepth 1 -name '.env' 2>/dev/null`
-- Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml' 2>/dev/null`
+- Justfile: !`find . -maxdepth 1 \( -name 'justfile' -o -name 'Justfile' \)`
+- Makefile: !`find . -maxdepth 1 -name 'Makefile'`
+- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \)`
+- Docker files: !`find . -maxdepth 1 \( -name 'Dockerfile' -o -name 'docker-compose.yml' \)`
+- Env file: !`find . -maxdepth 1 -name '.env'`
+- Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml'`
 
 ## Parameters
 

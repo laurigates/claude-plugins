@@ -25,11 +25,11 @@ Check and configure GitHub Pages deployment.
 
 ## Context
 
-- GitHub workflows: !`find .github/workflows -maxdepth 1 \( -name '*doc*.yml' -o -name '*pages*.yml' \) 2>/dev/null`
-- Documentation config: !`find . -maxdepth 1 \( -name 'mkdocs.yml' -o -name 'typedoc.json' -o -name 'docusaurus.config.*' \) 2>/dev/null`
-- Docs directory: !`find . -maxdepth 1 -type d \( -name 'docs' -o -name 'site' \) 2>/dev/null`
-- CNAME file: !`find . -maxdepth 1 -name 'CNAME' 2>/dev/null`
-- Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml' 2>/dev/null`
+- GitHub workflows: !`find .github/workflows -maxdepth 1 \( -name '*doc*.yml' -o -name '*pages*.yml' \)`
+- Documentation config: !`find . -maxdepth 1 \( -name 'mkdocs.yml' -o -name 'typedoc.json' -o -name 'docusaurus.config.*' \)`
+- Docs directory: !`find . -maxdepth 1 -type d \( -name 'docs' -o -name 'site' \)`
+- CNAME file: !`find . -maxdepth 1 -name 'CNAME'`
+- Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml'`
 
 ## Parameters
 

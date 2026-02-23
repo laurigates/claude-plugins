@@ -25,11 +25,11 @@ For detailed rule templates, command templates, and generation guidelines, see [
 
 ## Context
 
-- Blueprint initialized: !`test -f docs/blueprint/manifest.json 2>/dev/null`
-- PRDs present: !`find docs/prds -name "*.md" -type f 2>/dev/null`
-- Rules directory: !`test -d .claude/rules 2>/dev/null`
-- Existing rules: !`find .claude/rules -maxdepth 1 -name "*.md" 2>/dev/null`
-- Project type: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) -type f -print -quit 2>/dev/null`
+- Blueprint initialized: !`test -f docs/blueprint/manifest.json`
+- PRDs present: !`find docs/prds -name "*.md" -type f`
+- Rules directory: !`test -d .claude/rules`
+- Existing rules: !`find .claude/rules -maxdepth 1 -name "*.md"`
+- Project type: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) -type f -print -quit`
 
 ## Execution
 

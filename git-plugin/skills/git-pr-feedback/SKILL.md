@@ -12,11 +12,11 @@ name: git-pr-feedback
 
 ## Context
 
-- Repo: !`gh repo view --json nameWithOwner -q '.nameWithOwner' 2>/dev/null`
+- Repo: !`gh repo view --json nameWithOwner -q '.nameWithOwner'`
 - Current branch: !`git branch --show-current`
-- Git status: !`git status --porcelain=v2 --branch 2>/dev/null`
-- Staged changes: !`git diff --cached --numstat 2>/dev/null`
-- Unstaged changes: !`git diff --numstat 2>/dev/null`
+- Git status: !`git status --porcelain=v2 --branch`
+- Staged changes: !`git diff --cached --numstat`
+- Unstaged changes: !`git diff --numstat`
 - Recent commits: !`git log --format='%h %s' -n 5`
 
 ## Parameters

@@ -13,9 +13,9 @@ name: code-antipatterns
 ## Context
 
 - Analysis path: `$1` (defaults to current directory if not specified)
-- JS/TS files: !`find . -type f \( -name "*.js" -o -name "*.ts" -o -name "*.jsx" -o -name "*.tsx" \) 2>/dev/null`
-- Vue files: !`find . -name "*.vue" 2>/dev/null`
-- Python files: !`find . -name "*.py" 2>/dev/null`
+- JS/TS files: !`find . -type f \( -name "*.js" -o -name "*.ts" -o -name "*.jsx" -o -name "*.tsx" \)`
+- Vue files: !`find . -name "*.vue"`
+- Python files: !`find . -name "*.py"`
 
 ## Your Task
 

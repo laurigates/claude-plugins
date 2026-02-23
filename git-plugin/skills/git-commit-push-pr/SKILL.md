@@ -12,15 +12,15 @@ description: Complete workflow from changes to PR - auto-detect related issues, 
 
 ## Context
 
-- Pre-commit config: !`find . -maxdepth 1 -name ".pre-commit-config.yaml" 2>/dev/null`
+- Pre-commit config: !`find . -maxdepth 1 -name ".pre-commit-config.yaml"`
 - Current branch: !`git branch --show-current`
-- Git status: !`git status --porcelain=v2 --branch 2>/dev/null`
-- Unstaged changes: !`git diff --numstat 2>/dev/null`
-- Staged changes: !`git diff --cached --numstat 2>/dev/null`
+- Git status: !`git status --porcelain=v2 --branch`
+- Unstaged changes: !`git diff --numstat`
+- Staged changes: !`git diff --cached --numstat`
 - Recent commits: !`git log --format='%h %s' -n 10`
-- Remote: !`git remote get-url origin 2>/dev/null`
-- Available labels: !`gh label list --json name --limit 50 2>/dev/null`
-- Open issues: !`gh issue list --state open --json number,title,labels --limit 30 2>/dev/null`
+- Remote: !`git remote get-url origin`
+- Available labels: !`gh label list --json name --limit 50`
+- Open issues: !`gh issue list --state open --json number,title,labels --limit 30`
 
 ## Parameters
 

@@ -11,12 +11,12 @@ name: test-focus
 
 ## Context
 
-- Project files: !`find . -maxdepth 1 \( -name 'pyproject.toml' -o -name 'package.json' -o -name 'Cargo.toml' -o -name 'go.mod' \) 2>/dev/null`
-- Playwright config: !`find . -maxdepth 1 -name 'playwright.config.*' 2>/dev/null`
-- Vitest config: !`find . -maxdepth 1 \( -name 'vitest.config.*' -o -name 'vite.config.*' \) 2>/dev/null`
-- Jest config: !`find . -maxdepth 1 -name 'jest.config.*' 2>/dev/null`
-- Pytest config: !`grep -l "pytest" pyproject.toml setup.cfg 2>/dev/null`
-- Package.json: !`head -20 package.json 2>/dev/null`
+- Project files: !`find . -maxdepth 1 \( -name 'pyproject.toml' -o -name 'package.json' -o -name 'Cargo.toml' -o -name 'go.mod' \)`
+- Playwright config: !`find . -maxdepth 1 -name 'playwright.config.*'`
+- Vitest config: !`find . -maxdepth 1 \( -name 'vitest.config.*' -o -name 'vite.config.*' \)`
+- Jest config: !`find . -maxdepth 1 -name 'jest.config.*'`
+- Pytest config: !`grep -l "pytest" pyproject.toml setup.cfg`
+- Package.json: !`head -20 package.json`
 
 ## Parameters
 

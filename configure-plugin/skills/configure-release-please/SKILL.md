@@ -25,11 +25,11 @@ Check and configure release-please against project standards.
 
 ## Context
 
-- Workflow file: !`find .github/workflows -maxdepth 1 -name 'release-please*' 2>/dev/null`
-- Config file: !`find . -maxdepth 1 -name \'release-please-config.json\' 2>/dev/null`
-- Manifest file: !`find . -maxdepth 1 -name \'.release-please-manifest.json\' 2>/dev/null`
-- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) 2>/dev/null`
-- Workflows dir: !`find . -maxdepth 1 -type d -name \'.github/workflows\' 2>/dev/null`
+- Workflow file: !`find .github/workflows -maxdepth 1 -name 'release-please*'`
+- Config file: !`find . -maxdepth 1 -name \'release-please-config.json\'`
+- Manifest file: !`find . -maxdepth 1 -name \'.release-please-manifest.json\'`
+- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \)`
+- Workflows dir: !`find . -maxdepth 1 -type d -name \'.github/workflows\'`
 
 **Skills referenced**: `release-please-standards`, `release-please-protection`
 

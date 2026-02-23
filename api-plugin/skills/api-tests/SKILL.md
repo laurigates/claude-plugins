@@ -25,16 +25,16 @@ Check and configure API contract testing infrastructure for validating API contr
 
 ## Context
 
-- Lock files: !`find . -maxdepth 1 \( -name 'bun.lockb' -o -name 'bun.lock' -o -name 'package-lock.json' -o -name 'yarn.lock' \) 2>/dev/null`
-- Project files: !`find . -maxdepth 1 \( -name 'tsconfig.json' -o -name 'pyproject.toml' -o -name 'package.json' \) 2>/dev/null`
-- Pact installed: !`grep -l "pact-foundation/pact\|pact-python" package.json requirements*.txt pyproject.toml 2>/dev/null`
-- OpenAPI spec: !`find . -maxdepth 2 \( -name 'openapi.yaml' -o -name 'openapi.yml' -o -name 'openapi.json' -o -name 'swagger.json' -o -name 'swagger.yaml' \) 2>/dev/null`
-- Schema validator: !`grep -l '"ajv"\|"zod"' package.json 2>/dev/null`
-- OpenAPI validation lib: !`grep -l "swagger-parser\|@apidevtools" package.json 2>/dev/null`
-- Pact contracts dir: !`find . -maxdepth 1 -type d -name \'pacts\' 2>/dev/null`
-- Contract tests: !`find . -maxdepth 3 -type d -name 'contract' 2>/dev/null`
-- API test files: !`find . -maxdepth 4 \( -name '*.pact.*' -o -name '*.openapi.*' -o -name '*.contract.*' \) 2>/dev/null`
-- CI workflows: !`find .github/workflows -maxdepth 1 \( -name '*api*' -o -name '*contract*' -o -name '*pact*' \) 2>/dev/null`
+- Lock files: !`find . -maxdepth 1 \( -name 'bun.lockb' -o -name 'bun.lock' -o -name 'package-lock.json' -o -name 'yarn.lock' \)`
+- Project files: !`find . -maxdepth 1 \( -name 'tsconfig.json' -o -name 'pyproject.toml' -o -name 'package.json' \)`
+- Pact installed: !`grep -l "pact-foundation/pact\|pact-python" package.json requirements*.txt pyproject.toml`
+- OpenAPI spec: !`find . -maxdepth 2 \( -name 'openapi.yaml' -o -name 'openapi.yml' -o -name 'openapi.json' -o -name 'swagger.json' -o -name 'swagger.yaml' \)`
+- Schema validator: !`grep -l '"ajv"\|"zod"' package.json`
+- OpenAPI validation lib: !`grep -l "swagger-parser\|@apidevtools" package.json`
+- Pact contracts dir: !`find . -maxdepth 1 -type d -name \'pacts\'`
+- Contract tests: !`find . -maxdepth 3 -type d -name 'contract'`
+- API test files: !`find . -maxdepth 4 \( -name '*.pact.*' -o -name '*.openapi.*' -o -name '*.contract.*' \)`
+- CI workflows: !`find .github/workflows -maxdepth 1 \( -name '*api*' -o -name '*contract*' -o -name '*pact*' \)`
 
 ## Parameters
 

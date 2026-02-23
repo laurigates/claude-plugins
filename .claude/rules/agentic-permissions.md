@@ -193,24 +193,27 @@ Context commands use `!` backtick syntax and are subject to shell operator prote
 
 ### Context Command Patterns
 
-Use `2>/dev/null` to suppress errors. Empty output is acceptable - commands handle missing context gracefully.
+Context commands must use plain commands without shell operators. The `>` in `2>/dev/null` is blocked by shell operator protections, just like `||`, `&&`, `|`, and `;`.
+
+Commands that fail produce empty output, which is acceptable — the context system handles missing context gracefully.
 
 Use `find` for file/directory discovery (succeeds with empty output when no matches):
 
 ```markdown
 ## Context
 
-- Git status: !`git status --porcelain=v2 --branch 2>/dev/null`
-- PR checks: !`gh pr checks $PR_NUMBER --json name,state,conclusion 2>/dev/null`
-- Current branch: !`git branch --show-current 2>/dev/null`
+- Git status: !`git status --porcelain=v2 --branch`
+- PR checks: !`gh pr checks $PR_NUMBER --json name,state,conclusion`
+- Current branch: !`git branch --show-current`
 - Config exists: !`test -f .config.json`
-- Workflows: !`find .github/workflows -maxdepth 1 -name '*.yml' 2>/dev/null`
-- Directories: !`find . -maxdepth 1 -type d \( -name 'src' -o -name 'lib' \) 2>/dev/null`
-- Config files: !`find . -maxdepth 1 \( -name '*.config.js' -o -name '*.config.ts' \) 2>/dev/null`
+- Workflows: !`find .github/workflows -maxdepth 1 -name '*.yml'`
+- Directories: !`find . -maxdepth 1 -type d \( -name 'src' -o -name 'lib' \)`
+- Config files: !`find . -maxdepth 1 \( -name '*.config.js' -o -name '*.config.ts' \)`
 ```
 
 ### Handling Missing Context
 
+- Commands that fail produce empty output — no error suppression needed
 - Check for empty values before using them
 - Provide defaults in the command logic
 - Use existence checks (`test -f`, `test -d`) for boolean context
@@ -219,7 +222,7 @@ Use `find` for file/directory discovery (succeeds with empty output when no matc
 
 - [ ] Uses granular `Bash(command *)` patterns
 - [ ] Context commands use JSON/porcelain output
-- [ ] Context commands use `2>/dev/null` for error suppression
+- [ ] Context commands contain no shell operators (`>`, `|`, `||`, `&&`, `;`)
 - [ ] Context commands use `find` for file/directory discovery
 - [ ] Only necessary permissions are granted
 - [ ] Matches a standard permission set or documents why custom set is needed

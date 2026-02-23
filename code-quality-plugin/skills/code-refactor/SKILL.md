@@ -12,9 +12,9 @@ name: code-refactor
 
 ## Context
 
-- Target path: !`echo "$1" 2>/dev/null`
-- File type: !`file "$1" 2>/dev/null`
-- Lines of code: !`wc -l "$1" 2>/dev/null`
+- Target path: !`echo "$1"`
+- File type: !`file "$1"`
+- Lines of code: !`wc -l "$1"`
 
 ## Parameters
 

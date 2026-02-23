@@ -27,12 +27,12 @@ Analyze git history to identify fix and feature commits lacking corresponding te
 
 ## Context
 
-- Git repository: !`git rev-parse --git-dir 2>/dev/null`
-- Blueprint initialized: !`test -f docs/blueprint/manifest.json 2>/dev/null`
-- Total commits: !`git rev-list --count HEAD 2>/dev/null`
-- Test framework: !`find . -maxdepth 3 \( -name 'vitest.config.*' -o -name 'jest.config.*' -o -name 'pytest.ini' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) -type f -print -quit 2>/dev/null`
-- Test files: !`find . -maxdepth 4 -type f \( -name '*.test.*' -o -name '*.spec.*' -o -name 'test_*' -o -name '*_test.*' \) -print 2>/dev/null`
-- Conventional commits sample: !`git log --format="%s" -n 10 2>/dev/null`
+- Git repository: !`git rev-parse --git-dir`
+- Blueprint initialized: !`test -f docs/blueprint/manifest.json`
+- Total commits: !`git rev-list --count HEAD`
+- Test framework: !`find . -maxdepth 3 \( -name 'vitest.config.*' -o -name 'jest.config.*' -o -name 'pytest.ini' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) -type f -print -quit`
+- Test files: !`find . -maxdepth 4 -type f \( -name '*.test.*' -o -name '*.spec.*' -o -name 'test_*' -o -name '*_test.*' \) -print`
+- Conventional commits sample: !`git log --format="%s" -n 10`
 
 ## Parameters
 

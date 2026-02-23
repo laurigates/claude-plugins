@@ -25,13 +25,13 @@ Check and configure editor settings for consistency across the team.
 
 ## Context
 
-- EditorConfig: !`find . -maxdepth 1 -name \'.editorconfig\' 2>/dev/null`
-- VS Code settings: !`find . -maxdepth 1 -name \'.vscode/settings.json\' 2>/dev/null`
-- VS Code extensions: !`find . -maxdepth 1 -name \'.vscode/extensions.json\' 2>/dev/null`
-- VS Code launch: !`find . -maxdepth 1 -name \'.vscode/launch.json\' 2>/dev/null`
-- VS Code tasks: !`find . -maxdepth 1 -name \'.vscode/tasks.json\' 2>/dev/null`
-- Project languages: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'tsconfig.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'biome.json' \) 2>/dev/null`
-- Project standards: !`find . -maxdepth 1 -name \'.project-standards.yaml\' 2>/dev/null`
+- EditorConfig: !`find . -maxdepth 1 -name \'.editorconfig\'`
+- VS Code settings: !`find . -maxdepth 1 -name \'.vscode/settings.json\'`
+- VS Code extensions: !`find . -maxdepth 1 -name \'.vscode/extensions.json\'`
+- VS Code launch: !`find . -maxdepth 1 -name \'.vscode/launch.json\'`
+- VS Code tasks: !`find . -maxdepth 1 -name \'.vscode/tasks.json\'`
+- Project languages: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'tsconfig.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'biome.json' \)`
+- Project standards: !`find . -maxdepth 1 -name \'.project-standards.yaml\'`
 
 ## Parameters
 

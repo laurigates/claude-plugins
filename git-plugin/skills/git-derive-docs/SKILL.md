@@ -15,11 +15,11 @@ name: git-derive-docs
 ## Context
 
 - Current branch: !`git branch --show-current`
-- Commit count: !`git rev-list --count HEAD 2>/dev/null`
-- Latest commit: !`git log --format='%ai' --max-count=1 2>/dev/null`
-- Existing rules: !`find .claude/rules/ -maxdepth 1 -type f 2>/dev/null`
-- Existing docs: !`find docs/prds/ docs/adrs/ docs/prps/ -maxdepth 1 -type f 2>/dev/null`
-- Commit conventions sample: !`git log --format='%s' --max-count=20 2>/dev/null`
+- Commit count: !`git rev-list --count HEAD`
+- Latest commit: !`git log --format='%ai' --max-count=1`
+- Existing rules: !`find .claude/rules/ -maxdepth 1 -type f`
+- Existing docs: !`find docs/prds/ docs/adrs/ docs/prps/ -maxdepth 1 -type f`
+- Commit conventions sample: !`git log --format='%s' --max-count=20`
 
 ## Parameters
 

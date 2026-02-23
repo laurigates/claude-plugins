@@ -27,10 +27,10 @@ Run a comprehensive diagnostic scan of your Claude Code environment. Identifies 
 
 - User home: !`echo $HOME`
 - Current project: !`pwd`
-- Plugin registry exists: !`find ~/.claude/plugins -maxdepth 1 -name 'installed_plugins.json' 2>/dev/null`
-- User settings exists: !`find ~/.claude -maxdepth 1 -name 'settings.json' 2>/dev/null`
-- Project settings exists: !`find .claude -maxdepth 1 -name 'settings.json' 2>/dev/null`
-- Local settings exists: !`find .claude -maxdepth 1 -name 'settings.local.json' 2>/dev/null`
+- Plugin registry exists: !`find ~/.claude/plugins -maxdepth 1 -name 'installed_plugins.json'`
+- User settings exists: !`find ~/.claude -maxdepth 1 -name 'settings.json'`
+- Project settings exists: !`find .claude -maxdepth 1 -name 'settings.json'`
+- Local settings exists: !`find .claude -maxdepth 1 -name 'settings.local.json'`
 
 ## Parameters
 

@@ -26,13 +26,13 @@ Check and configure linting tools against modern best practices.
 ## Context
 
 - Project root: !`pwd`
-- Biome config: !`find . -maxdepth 1 -name 'biome.json' -o -name 'biome.jsonc' 2>/dev/null`
-- Ruff config: !`grep -l 'tool.ruff' pyproject.toml 2>/dev/null`
-- Clippy config: !`grep -l 'lints.clippy' Cargo.toml 2>/dev/null`
-- Legacy linters: !`find . -maxdepth 1 \( -name '.eslintrc*' -o -name '.flake8' -o -name '.pylintrc' \) 2>/dev/null`
-- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' \) 2>/dev/null`
-- Pre-commit config: !`find . -maxdepth 1 -name '.pre-commit-config.yaml' 2>/dev/null`
-- CI workflows: !`find .github/workflows -maxdepth 1 -name '*.yml' 2>/dev/null`
+- Biome config: !`find . -maxdepth 1 -name 'biome.json' -o -name 'biome.jsonc'`
+- Ruff config: !`grep -l 'tool.ruff' pyproject.toml`
+- Clippy config: !`grep -l 'lints.clippy' Cargo.toml`
+- Legacy linters: !`find . -maxdepth 1 \( -name '.eslintrc*' -o -name '.flake8' -o -name '.pylintrc' \)`
+- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' \)`
+- Pre-commit config: !`find . -maxdepth 1 -name '.pre-commit-config.yaml'`
+- CI workflows: !`find .github/workflows -maxdepth 1 -name '*.yml'`
 
 ## Parameters
 

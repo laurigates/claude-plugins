@@ -11,9 +11,9 @@ name: test-quick
 
 ## Context
 
-- Project type: !`find . -maxdepth 1 \( -name 'pyproject.toml' -o -name 'package.json' -o -name 'Cargo.toml' -o -name 'go.mod' \) 2>/dev/null`
-- Test directories: !`find . -maxdepth 2 -type d \( -path '*/tests/unit' -o -path '*/test/unit' -o -path '*/__tests__/unit' \) 2>/dev/null`
-- Last test run: !`find .pytest_cache/v/cache -maxdepth 1 -name 'lastfailed' 2>/dev/null`
+- Project type: !`find . -maxdepth 1 \( -name 'pyproject.toml' -o -name 'package.json' -o -name 'Cargo.toml' -o -name 'go.mod' \)`
+- Test directories: !`find . -maxdepth 2 -type d \( -path '*/tests/unit' -o -path '*/test/unit' -o -path '*/__tests__/unit' \)`
+- Last test run: !`find .pytest_cache/v/cache -maxdepth 1 -name 'lastfailed'`
 
 ## Parameters
 

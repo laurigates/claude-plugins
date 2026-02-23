@@ -25,14 +25,14 @@ Check and configure UX testing infrastructure with Playwright as the primary too
 
 ## Context
 
-- Package manager: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'bun.lockb' \) 2>/dev/null`
-- Playwright config: !`find . -maxdepth 1 -name 'playwright.config.*' 2>/dev/null`
-- Playwright installed: !`grep -l '@playwright/test' package.json 2>/dev/null`
-- Axe-core installed: !`grep -l '@axe-core/playwright' package.json 2>/dev/null`
-- E2E test dir: !`find . -maxdepth 2 -type d \( -name 'e2e' -o -name 'tests' \) 2>/dev/null`
-- Visual snapshots: !`find . -maxdepth 4 -type d -name '__snapshots__' 2>/dev/null`
-- MCP config: !`find . -maxdepth 1 -name '.mcp.json' 2>/dev/null`
-- CI workflow: !`find .github/workflows -maxdepth 1 -name 'e2e*' 2>/dev/null`
+- Package manager: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'bun.lockb' \)`
+- Playwright config: !`find . -maxdepth 1 -name 'playwright.config.*'`
+- Playwright installed: !`grep -l '@playwright/test' package.json`
+- Axe-core installed: !`grep -l '@axe-core/playwright' package.json`
+- E2E test dir: !`find . -maxdepth 2 -type d \( -name 'e2e' -o -name 'tests' \)`
+- Visual snapshots: !`find . -maxdepth 4 -type d -name '__snapshots__'`
+- MCP config: !`find . -maxdepth 1 -name '.mcp.json'`
+- CI workflow: !`find .github/workflows -maxdepth 1 -name 'e2e*'`
 
 **UX Testing Stack:**
 - **Playwright** - Cross-browser E2E testing (primary tool)

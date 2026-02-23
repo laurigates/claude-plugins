@@ -11,9 +11,9 @@ name: test-full
 
 ## Context
 
-- Project files: !`find . -maxdepth 1 \( -name 'pyproject.toml' -o -name 'package.json' -o -name 'Cargo.toml' -o -name 'go.mod' \) 2>/dev/null`
-- Test directories: !`find . -type d \( -name "test*" -o -name "__tests__" \) 2>/dev/null`
-- E2E setup: !`find . -maxdepth 1 \( -name 'playwright.config.*' -o -name 'cypress.config.*' \) 2>/dev/null`
+- Project files: !`find . -maxdepth 1 \( -name 'pyproject.toml' -o -name 'package.json' -o -name 'Cargo.toml' -o -name 'go.mod' \)`
+- Test directories: !`find . -type d \( -name "test*" -o -name "__tests__" \)`
+- E2E setup: !`find . -maxdepth 1 \( -name 'playwright.config.*' -o -name 'cypress.config.*' \)`
 - CI environment: !`echo "CI=$CI GITHUB_ACTIONS=$GITHUB_ACTIONS"`
 
 ## Parameters

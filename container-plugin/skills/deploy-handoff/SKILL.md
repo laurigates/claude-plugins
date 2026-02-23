@@ -15,13 +15,13 @@ Generate professional handoff messages for deployed resources and services with 
 
 ## Context
 
-- Repository: !`git remote get-url origin 2>/dev/null`
-- Branch: !`git branch --show-current 2>/dev/null`
-- Last commit: !`git log --oneline --max-count=1 2>/dev/null`
-- README: !`find . -maxdepth 1 -name \'README.md\' 2>/dev/null`
-- Docker: !`find . -maxdepth 1 \( -name "Dockerfile" -o -name "docker-compose*.yml" \) 2>/dev/null`
-- CI/CD: !`find .github/workflows -maxdepth 1 -name '*.yml' 2>/dev/null`
-- Config files: !`find . -maxdepth 1 \( -name ".env.example" -o -name "*.config.*" \) 2>/dev/null`
+- Repository: !`git remote get-url origin`
+- Branch: !`git branch --show-current`
+- Last commit: !`git log --oneline --max-count=1`
+- README: !`find . -maxdepth 1 -name \'README.md\'`
+- Docker: !`find . -maxdepth 1 \( -name "Dockerfile" -o -name "docker-compose*.yml" \)`
+- CI/CD: !`find .github/workflows -maxdepth 1 -name '*.yml'`
+- Config files: !`find . -maxdepth 1 \( -name ".env.example" -o -name "*.config.*" \)`
 
 ## Parameters
 

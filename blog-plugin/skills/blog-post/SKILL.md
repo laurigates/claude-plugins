@@ -25,10 +25,10 @@ Create a blog post about your work with minimal friction. Gathers context automa
 
 ## Context
 
-- Blog directory: !`find . -maxdepth 1 -type d \( -name blog -o -name posts -o -name _posts \) -print -quit 2>/dev/null`
-- Project name: !`git remote get-url origin 2>/dev/null`
-- Recent commits: !`git rev-list --count --since="7 days ago" HEAD 2>/dev/null`
-- Current branch: !`git branch --show-current 2>/dev/null`
+- Blog directory: !`find . -maxdepth 1 -type d \( -name blog -o -name posts -o -name _posts \) -print -quit`
+- Project name: !`git remote get-url origin`
+- Recent commits: !`git rev-list --count --since="7 days ago" HEAD`
+- Current branch: !`git branch --show-current`
 
 ## Parameters
 

@@ -7,6 +7,7 @@
 # 2. Pipe operator blocked by shell protections
 # 3. ls commands that fail when files are missing (use find instead)
 # 4. Shell operators (&&, ||, ;) blocked by security protections
+# 5. Redirection operators (>, >>) blocked by security protections (includes 2>/dev/null)
 #
 # Exit codes:
 #   0 - no issues
@@ -67,6 +68,12 @@ check_pattern ERROR \
   '^- .*!`ls [^`]*`' \
   "replace ls with find; ls returns non-zero when files are missing"
 
+# Redirection operators (>, >>) including 2>/dev/null
+check_pattern ERROR \
+  "redirection-operator" \
+  '^- .*!`[^`]* [0-9]*>\/\?[^`]*`' \
+  "remove redirection; failed commands produce empty output which is handled gracefully"
+
 ##############################
 # WARNINGS - likely to break
 ##############################
@@ -75,13 +82,13 @@ check_pattern ERROR \
 check_pattern WARN \
   "shell-operator-and" \
   '^- .*!`[^`]* && [^`]*`' \
-  "remove && operator; for file checks use: find . -maxdepth 1 -name 'file' 2>/dev/null"
+  "remove && operator; for file checks use: find . -maxdepth 1 -name 'file'"
 
 # || operator in context commands
 check_pattern WARN \
   "shell-operator-or" \
   '^- .*!`[^`]* || [^`]*`' \
-  "remove || fallback; use 2>/dev/null and handle empty output in execution logic"
+  "remove || fallback; failed commands produce empty output which is handled gracefully"
 
 # Semicolons in context commands
 check_pattern WARN \

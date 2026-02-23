@@ -26,11 +26,11 @@ Check and configure modern package managers for optimal development experience.
 ## Context
 
 - Project root: !`pwd`
-- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) 2>/dev/null`
-- Lock files: !`find . -maxdepth 1 \( -name 'uv.lock' -o -name 'bun.lockb' -o -name 'package-lock.json' -o -name 'yarn.lock' -o -name 'pnpm-lock.yaml' -o -name 'poetry.lock' -o -name 'Pipfile.lock' \) 2>/dev/null`
-- Python venv: !`find . -maxdepth 1 -type d -name '.venv' 2>/dev/null`
-- Legacy files: !`find . -maxdepth 1 \( -name 'requirements.txt' -o -name 'Pipfile' \) 2>/dev/null`
-- Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml' 2>/dev/null`
+- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \)`
+- Lock files: !`find . -maxdepth 1 \( -name 'uv.lock' -o -name 'bun.lockb' -o -name 'package-lock.json' -o -name 'yarn.lock' -o -name 'pnpm-lock.yaml' -o -name 'poetry.lock' -o -name 'Pipfile.lock' \)`
+- Python venv: !`find . -maxdepth 1 -type d -name '.venv'`
+- Legacy files: !`find . -maxdepth 1 \( -name 'requirements.txt' -o -name 'Pipfile' \)`
+- Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml'`
 
 ## Parameters
 

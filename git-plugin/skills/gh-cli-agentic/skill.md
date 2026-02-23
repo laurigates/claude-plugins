@@ -215,8 +215,8 @@ gh api repos/{owner}/{repo}/commits/{sha} -H "Accept: application/vnd.github.pat
 Use `2>/dev/null` to suppress errors in context expressions (do NOT use `||` fallbacks - blocked by Claude Code 2.1.7+):
 
 ```markdown
-- PR checks: !`gh pr checks $PR --json name,state,conclusion 2>/dev/null`
-- Run status: !`gh run view $ID --json status,conclusion 2>/dev/null`
+- PR checks: !`gh pr checks $PR --json name,state,conclusion`
+- Run status: !`gh run view $ID --json status,conclusion`
 ```
 
 ## Field Reference

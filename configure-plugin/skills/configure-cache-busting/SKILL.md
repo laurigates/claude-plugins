@@ -22,12 +22,12 @@ name: configure-cache-busting
 ## Context
 
 - Project root: !`pwd`
-- Package files: !`find . -maxdepth 1 -name 'package.json' 2>/dev/null`
-- Next.js config: !`find . -maxdepth 1 -name 'next.config.*' 2>/dev/null`
-- Vite config: !`find . -maxdepth 1 -name 'vite.config.*' 2>/dev/null`
-- Build output: !`find . -maxdepth 1 -type d \( -name '.next' -o -name 'dist' -o -name 'out' \) 2>/dev/null`
-- CDN config: !`find . -maxdepth 2 \( -path './vercel.json' -o -path './_headers' -o -path './_redirects' -o -path './public/_headers' \) 2>/dev/null`
-- Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml' 2>/dev/null`
+- Package files: !`find . -maxdepth 1 -name 'package.json'`
+- Next.js config: !`find . -maxdepth 1 -name 'next.config.*'`
+- Vite config: !`find . -maxdepth 1 -name 'vite.config.*'`
+- Build output: !`find . -maxdepth 1 -type d \( -name '.next' -o -name 'dist' -o -name 'out' \)`
+- CDN config: !`find . -maxdepth 2 \( -path './vercel.json' -o -path './_headers' -o -path './_redirects' -o -path './public/_headers' \)`
+- Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml'`
 
 ## Parameters
 

@@ -25,15 +25,15 @@ Check and configure testing frameworks against best practices (Vitest, Jest, pyt
 
 ## Context
 
-- Package.json: !`find . -maxdepth 1 -name \'package.json\' 2>/dev/null`
-- Pyproject.toml: !`find . -maxdepth 1 -name \'pyproject.toml\' 2>/dev/null`
-- Cargo.toml: !`find . -maxdepth 1 -name \'Cargo.toml\' 2>/dev/null`
-- Test config files: !`find . -maxdepth 1 \( -name 'vitest.config.*' -o -name 'jest.config.*' -o -name 'pytest.ini' -o -name '.nextest.toml' \) 2>/dev/null`
-- Pytest in pyproject: !`grep -c 'tool.pytest' pyproject.toml 2>/dev/null`
-- Test directories: !`find . -maxdepth 2 -type d \( -name 'tests' -o -name '__tests__' -o -name 'test' \) 2>/dev/null`
-- Test scripts in package.json: !`grep -m5 -o '"test[^"]*"' package.json 2>/dev/null`
-- Coverage config: !`grep -l 'coverage' vitest.config.* jest.config.* 2>/dev/null`
-- Project standards: !`head -20 .project-standards.yaml 2>/dev/null`
+- Package.json: !`find . -maxdepth 1 -name \'package.json\'`
+- Pyproject.toml: !`find . -maxdepth 1 -name \'pyproject.toml\'`
+- Cargo.toml: !`find . -maxdepth 1 -name \'Cargo.toml\'`
+- Test config files: !`find . -maxdepth 1 \( -name 'vitest.config.*' -o -name 'jest.config.*' -o -name 'pytest.ini' -o -name '.nextest.toml' \)`
+- Pytest in pyproject: !`grep -c 'tool.pytest' pyproject.toml`
+- Test directories: !`find . -maxdepth 2 -type d \( -name 'tests' -o -name '__tests__' -o -name 'test' \)`
+- Test scripts in package.json: !`grep -m5 -o '"test[^"]*"' package.json`
+- Coverage config: !`grep -l 'coverage' vitest.config.* jest.config.*`
+- Project standards: !`head -20 .project-standards.yaml`
 
 **Modern testing stack preferences:**
 - **JavaScript/TypeScript**: Vitest (preferred) or Jest

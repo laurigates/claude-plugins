@@ -22,9 +22,9 @@ reviewed: 2026-02-15
 
 ## Context
 
-- Repo: !`gh repo view --json nameWithOwner -q '.nameWithOwner' 2>/dev/null`
-- Default branch: !`gh repo view --json defaultBranchRef -q '.defaultBranchRef.name' 2>/dev/null`
-- Auth: !`gh auth status 2>/dev/null`
+- Repo: !`gh repo view --json nameWithOwner -q '.nameWithOwner'`
+- Default branch: !`gh repo view --json defaultBranchRef -q '.defaultBranchRef.name'`
+- Auth: !`gh auth status`
 - Working dir: !`pwd`
 
 ## Parameters

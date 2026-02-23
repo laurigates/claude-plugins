@@ -26,14 +26,14 @@ Check and configure code documentation standards and generators.
 ## Context
 
 - Project root: !`pwd`
-- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' \) 2>/dev/null`
-- Biome config: !`find . -maxdepth 1 -name 'biome.json' 2>/dev/null`
-- TSDoc config: !`find . -maxdepth 1 \( -name 'tsdoc.json' -o -name 'typedoc.json' \) 2>/dev/null`
-- Python config: !`find . -maxdepth 1 \( -name 'pyproject.toml' -o -name 'ruff.toml' -o -name '.ruff.toml' \) 2>/dev/null`
-- Rust config: !`find . -maxdepth 1 \( -name 'Cargo.toml' -o -name 'clippy.toml' \) 2>/dev/null`
-- Pre-commit: !`find . -maxdepth 1 -name '.pre-commit-config.yaml' 2>/dev/null`
-- Doc generators: !`find . -maxdepth 1 \( -name 'mkdocs.yml' -o -name 'docusaurus.config.*' \) 2>/dev/null`
-- Docs directory: !`find . -maxdepth 1 -type d -name 'docs' 2>/dev/null`
+- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' \)`
+- Biome config: !`find . -maxdepth 1 -name 'biome.json'`
+- TSDoc config: !`find . -maxdepth 1 \( -name 'tsdoc.json' -o -name 'typedoc.json' \)`
+- Python config: !`find . -maxdepth 1 \( -name 'pyproject.toml' -o -name 'ruff.toml' -o -name '.ruff.toml' \)`
+- Rust config: !`find . -maxdepth 1 \( -name 'Cargo.toml' -o -name 'clippy.toml' \)`
+- Pre-commit: !`find . -maxdepth 1 -name '.pre-commit-config.yaml'`
+- Doc generators: !`find . -maxdepth 1 \( -name 'mkdocs.yml' -o -name 'docusaurus.config.*' \)`
+- Docs directory: !`find . -maxdepth 1 -type d -name 'docs'`
 
 ## Parameters
 

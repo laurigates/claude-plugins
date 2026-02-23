@@ -16,8 +16,8 @@ Display a quick FinOps summary including org-level billing (if admin) and curren
 
 ## Context
 
-- Current repo: !`gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null`
-- Repo org/owner: !`gh repo view --json owner --jq '.owner.login' 2>/dev/null`
+- Current repo: !`gh repo view --json nameWithOwner --jq '.nameWithOwner'`
+- Repo org/owner: !`gh repo view --json owner --jq '.owner.login'`
 
 ## Parameters
 
