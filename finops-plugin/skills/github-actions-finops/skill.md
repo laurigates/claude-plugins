@@ -27,11 +27,11 @@ Analyze GitHub Actions usage, costs, and efficiency across organizations and rep
 
 ## Context
 
-- Current repo: !`gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null`
-- Repo owner: !`gh repo view --json owner --jq '.owner.login' 2>/dev/null`
-- Owner type: !`gh repo view --json owner --jq '.owner.__typename' 2>/dev/null`
-- Workflow files: !`find .github/workflows -maxdepth 1 \( -name '*.yml' -o -name '*.yaml' \) 2>/dev/null`
-- Active workflows: !`gh workflow list --json id,name,state 2>/dev/null`
+- Current repo: !`gh repo view --json nameWithOwner --jq '.nameWithOwner'`
+- Repo owner: !`gh repo view --json owner --jq '.owner.login'`
+- Owner type: !`gh repo view --json owner --jq '.owner.__typename'`
+- Workflow files: !`find .github/workflows -maxdepth 1 \( -name '*.yml' -o -name '*.yaml' \)`
+- Active workflows: !`gh workflow list --json id,name,state`
 
 ## Execution
 

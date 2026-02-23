@@ -25,13 +25,13 @@ Check and configure comprehensive container infrastructure against project stand
 
 ## Context
 
-- Dockerfiles: !`find . -maxdepth 2 \( -name 'Dockerfile' -o -name 'Dockerfile.*' -o -name '*.Dockerfile' \) 2>/dev/null`
-- Docker ignore: !`find . -maxdepth 1 -name '.dockerignore' 2>/dev/null`
-- Container workflows: !`find .github/workflows -maxdepth 1 \( -name '*container*' -o -name '*docker*' -o -name '*build*' \) 2>/dev/null`
-- Devcontainer: !`find .devcontainer -maxdepth 1 -name 'devcontainer.json' 2>/dev/null`
-- Skaffold: !`find . -maxdepth 1 -name 'skaffold.yaml' 2>/dev/null`
-- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) 2>/dev/null`
-- Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml' 2>/dev/null`
+- Dockerfiles: !`find . -maxdepth 2 \( -name 'Dockerfile' -o -name 'Dockerfile.*' -o -name '*.Dockerfile' \)`
+- Docker ignore: !`find . -maxdepth 1 -name '.dockerignore'`
+- Container workflows: !`find .github/workflows -maxdepth 1 \( -name '*container*' -o -name '*docker*' -o -name '*build*' \)`
+- Devcontainer: !`find .devcontainer -maxdepth 1 -name 'devcontainer.json'`
+- Skaffold: !`find . -maxdepth 1 -name 'skaffold.yaml'`
+- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \)`
+- Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml'`
 
 ## Parameters
 

@@ -26,11 +26,11 @@ Check and configure dead code detection tools.
 ## Context
 
 - Project root: !`pwd`
-- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' \) 2>/dev/null`
-- Knip config: !`find . -maxdepth 1 \( -name 'knip.json' -o -name 'knip.config.*' \) 2>/dev/null`
-- Vulture config: !`find . -maxdepth 1 \( -name '.vulture' -o -name 'vulture.ini' \) 2>/dev/null`
-- Pre-commit: !`find . -maxdepth 1 -name '.pre-commit-config.yaml' 2>/dev/null`
-- Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml' 2>/dev/null`
+- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' \)`
+- Knip config: !`find . -maxdepth 1 \( -name 'knip.json' -o -name 'knip.config.*' \)`
+- Vulture config: !`find . -maxdepth 1 \( -name '.vulture' -o -name 'vulture.ini' \)`
+- Pre-commit: !`find . -maxdepth 1 -name '.pre-commit-config.yaml'`
+- Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml'`
 
 ## Parameters
 

@@ -25,14 +25,14 @@ Check and configure feature flag infrastructure using the OpenFeature standard w
 
 ## Context
 
-- Package JSON: !`find . -maxdepth 1 -name \'package.json\' 2>/dev/null`
-- Python project: !`find . -maxdepth 1 -name \'pyproject.toml\' 2>/dev/null`
-- Go project: !`find . -maxdepth 1 -name \'go.mod\' 2>/dev/null`
-- Cargo project: !`find . -maxdepth 1 -name \'Cargo.toml\' 2>/dev/null`
-- OpenFeature SDK: !`grep -l 'openfeature' package.json pyproject.toml Cargo.toml go.mod 2>/dev/null`
-- GOFF config: !`find . -maxdepth 2 -name 'flags.goff.yaml' -o -name 'flags.goff.yml' 2>/dev/null`
-- Docker compose: !`find . -maxdepth 1 -name 'docker-compose*.yml' -o -name 'docker-compose*.yaml' 2>/dev/null`
-- Project standards: !`find . -maxdepth 1 -name \'.project-standards.yaml\' 2>/dev/null`
+- Package JSON: !`find . -maxdepth 1 -name \'package.json\'`
+- Python project: !`find . -maxdepth 1 -name \'pyproject.toml\'`
+- Go project: !`find . -maxdepth 1 -name \'go.mod\'`
+- Cargo project: !`find . -maxdepth 1 -name \'Cargo.toml\'`
+- OpenFeature SDK: !`grep -l 'openfeature' package.json pyproject.toml Cargo.toml go.mod`
+- GOFF config: !`find . -maxdepth 2 -name 'flags.goff.yaml' -o -name 'flags.goff.yml'`
+- Docker compose: !`find . -maxdepth 1 -name 'docker-compose*.yml' -o -name 'docker-compose*.yaml'`
+- Project standards: !`find . -maxdepth 1 -name \'.project-standards.yaml\'`
 
 ## Parameters
 

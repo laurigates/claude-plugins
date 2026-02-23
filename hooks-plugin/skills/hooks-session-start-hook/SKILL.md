@@ -30,11 +30,11 @@ Generate a `SessionStart` hook that prepares your repository for Claude Code on 
 
 Detect project stack:
 
-- Lockfiles: !`find . -maxdepth 1 \( -name 'package-lock.json' -o -name 'yarn.lock' -o -name 'pnpm-lock.yaml' -o -name 'bun.lockb' -o -name 'poetry.lock' -o -name 'uv.lock' -o -name 'Cargo.lock' -o -name 'go.sum' -o -name 'Gemfile.lock' \) 2>/dev/null`
-- Project files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'requirements.txt' -o -name 'Cargo.toml' -o -name 'go.mod' -o -name 'Gemfile' -o -name 'pom.xml' \) -o -maxdepth 1 -name 'build.gradle*' 2>/dev/null`
-- Linter configs: !`find . -maxdepth 1 \( -name 'biome.json' -o -name 'biome.jsonc' -o -name '.eslintrc*' -o -name 'eslint.config.*' \) 2>/dev/null`
-- Existing settings: !`cat .claude/settings.json 2>/dev/null`
-- Existing hooks dir: !`find . -maxdepth 2 -type d -name 'scripts' 2>/dev/null`
+- Lockfiles: !`find . -maxdepth 1 \( -name 'package-lock.json' -o -name 'yarn.lock' -o -name 'pnpm-lock.yaml' -o -name 'bun.lockb' -o -name 'poetry.lock' -o -name 'uv.lock' -o -name 'Cargo.lock' -o -name 'go.sum' -o -name 'Gemfile.lock' \)`
+- Project files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'requirements.txt' -o -name 'Cargo.toml' -o -name 'go.mod' -o -name 'Gemfile' -o -name 'pom.xml' \) -o -maxdepth 1 -name 'build.gradle*'`
+- Linter configs: !`find . -maxdepth 1 \( -name 'biome.json' -o -name 'biome.jsonc' -o -name '.eslintrc*' -o -name 'eslint.config.*' \)`
+- Existing settings: !`cat .claude/settings.json`
+- Existing hooks dir: !`find . -maxdepth 2 -type d -name 'scripts'`
 
 ## Parameters
 

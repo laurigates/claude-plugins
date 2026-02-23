@@ -26,11 +26,11 @@ Check and configure project Makefile against project standards.
 ## Context
 
 - Project root: !`pwd`
-- Makefile exists: !`find . -maxdepth 1 -name 'Makefile' 2>/dev/null`
-- Makefile targets: !`grep -E '^[a-zA-Z_-]+:' Makefile 2>/dev/null`
-- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) 2>/dev/null`
-- Docker files: !`find . -maxdepth 1 \( -name 'Dockerfile' -o -name 'docker-compose.yml' -o -name 'compose.yml' \) 2>/dev/null`
-- Server files: !`find src -maxdepth 1 \( -name 'server.*' -o -name 'main.*' \) 2>/dev/null`
+- Makefile exists: !`find . -maxdepth 1 -name 'Makefile'`
+- Makefile targets: !`grep -E '^[a-zA-Z_-]+:' Makefile`
+- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \)`
+- Docker files: !`find . -maxdepth 1 \( -name 'Dockerfile' -o -name 'docker-compose.yml' -o -name 'compose.yml' \)`
+- Server files: !`find src -maxdepth 1 \( -name 'server.*' -o -name 'main.*' \)`
 
 ## Parameters
 

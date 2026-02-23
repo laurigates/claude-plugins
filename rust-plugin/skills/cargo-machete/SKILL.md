@@ -26,11 +26,11 @@ Detect and remove unused dependencies in Rust projects using cargo-machete.
 
 ## Context
 
-- Cargo.toml: !`find . -maxdepth 1 -name \'Cargo.toml\' 2>/dev/null`
-- Workspace: !`grep -q '\[workspace\]' Cargo.toml 2>/dev/null`
-- cargo-machete installed: !`cargo machete --version 2>/dev/null`
-- Machete config: !`find . -maxdepth 1 -name \'.cargo-machete.toml\' 2>/dev/null`
-- Workspace members: !`grep -A 20 '^\[workspace\]' Cargo.toml 2>/dev/null`
+- Cargo.toml: !`find . -maxdepth 1 -name \'Cargo.toml\'`
+- Workspace: !`grep -q '\[workspace\]' Cargo.toml`
+- cargo-machete installed: !`cargo machete --version`
+- Machete config: !`find . -maxdepth 1 -name \'.cargo-machete.toml\'`
+- Workspace members: !`grep -A 20 '^\[workspace\]' Cargo.toml`
 
 ## Execution
 

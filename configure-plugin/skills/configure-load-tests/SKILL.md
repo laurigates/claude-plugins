@@ -26,13 +26,13 @@ Check and configure load and performance testing infrastructure for stress testi
 ## Context
 
 - Project root: !`pwd`
-- k6 tests: !`find . -maxdepth 3 \( -name '*.k6.js' -o -name '*.k6.ts' \) 2>/dev/null`
-- Load test directory: !`find . -maxdepth 2 -type d -name 'load' 2>/dev/null`
-- Artillery config: !`find . -maxdepth 2 -name 'artillery.yml' -o -name 'artillery.yaml' 2>/dev/null`
-- Locust files: !`find . -maxdepth 2 -name 'locustfile.py' 2>/dev/null`
-- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' \) 2>/dev/null`
-- CI workflows: !`find .github/workflows -maxdepth 1 -name '*load*' -o -name '*perf*' 2>/dev/null`
-- k6 binary: !`command -v k6 2>/dev/null`
+- k6 tests: !`find . -maxdepth 3 \( -name '*.k6.js' -o -name '*.k6.ts' \)`
+- Load test directory: !`find . -maxdepth 2 -type d -name 'load'`
+- Artillery config: !`find . -maxdepth 2 -name 'artillery.yml' -o -name 'artillery.yaml'`
+- Locust files: !`find . -maxdepth 2 -name 'locustfile.py'`
+- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' \)`
+- CI workflows: !`find .github/workflows -maxdepth 1 -name '*load*' -o -name '*perf*'`
+- k6 binary: !`command -v k6`
 
 ## Parameters
 

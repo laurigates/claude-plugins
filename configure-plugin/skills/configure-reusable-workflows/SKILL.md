@@ -25,11 +25,11 @@ Install Claude-powered reusable GitHub Actions workflows from claude-plugins int
 
 ## Context
 
-- Workflows dir: !`find . -maxdepth 1 -type d -name \'.github/workflows\' 2>/dev/null`
-- Existing callers: !`find .github/workflows -maxdepth 1 -name 'claude-*' 2>/dev/null`
-- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) -print -quit 2>/dev/null`
-- TypeScript files: !`find . -maxdepth 2 \( -name '*.ts' -o -name '*.tsx' \) -print -quit 2>/dev/null`
-- Component files: !`find . -maxdepth 3 \( -name '*.jsx' -o -name '*.vue' -o -name '*.svelte' \) -print -quit 2>/dev/null`
+- Workflows dir: !`find . -maxdepth 1 -type d -name \'.github/workflows\'`
+- Existing callers: !`find .github/workflows -maxdepth 1 -name 'claude-*'`
+- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) -print -quit`
+- TypeScript files: !`find . -maxdepth 2 \( -name '*.ts' -o -name '*.tsx' \) -print -quit`
+- Component files: !`find . -maxdepth 3 \( -name '*.jsx' -o -name '*.vue' -o -name '*.svelte' \) -print -quit`
 
 ## Parameters
 

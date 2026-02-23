@@ -27,13 +27,13 @@ Retroactively generate Blueprint documentation (PRDs, ADRs, PRPs) from an existi
 
 ## Context
 
-- Git repository: !`git rev-parse --git-dir 2>/dev/null`
-- Blueprint initialized: !`test -f docs/blueprint/manifest.json 2>/dev/null`
-- Total commits: !`git rev-list --count HEAD 2>/dev/null`
-- First commit: !`git log --reverse --format=%ai --max-count=1 2>/dev/null`
-- Latest commit: !`git log --max-count=1 --format=%ai 2>/dev/null`
-- Project type: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' -o -name 'pom.xml' \) -type f -print -quit 2>/dev/null`
-- Documentation files: !`find . -maxdepth 2 \( -name "README.md" -o -name "ARCHITECTURE.md" -o -name "DESIGN.md" \) 2>/dev/null`
+- Git repository: !`git rev-parse --git-dir`
+- Blueprint initialized: !`test -f docs/blueprint/manifest.json`
+- Total commits: !`git rev-list --count HEAD`
+- First commit: !`git log --reverse --format=%ai --max-count=1`
+- Latest commit: !`git log --max-count=1 --format=%ai`
+- Project type: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' -o -name 'pom.xml' \) -type f -print -quit`
+- Documentation files: !`find . -maxdepth 2 \( -name "README.md" -o -name "ARCHITECTURE.md" -o -name "DESIGN.md" \)`
 
 ## Parameters
 

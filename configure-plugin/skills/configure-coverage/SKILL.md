@@ -26,12 +26,12 @@ Check and configure code coverage thresholds and reporting for test frameworks.
 ## Context
 
 - Project root: !`pwd`
-- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' \) 2>/dev/null`
-- Vitest config: !`find . -maxdepth 1 -name 'vitest.config.*' 2>/dev/null`
-- Jest config: !`find . -maxdepth 1 -name 'jest.config.*' 2>/dev/null`
-- Coverage dir: !`find . -maxdepth 1 -type d -name 'coverage' 2>/dev/null`
-- Codecov config: !`find . -maxdepth 1 \( -name 'codecov.yml' -o -name '.codecov.yml' \) 2>/dev/null`
-- Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml' 2>/dev/null`
+- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' \)`
+- Vitest config: !`find . -maxdepth 1 -name 'vitest.config.*'`
+- Jest config: !`find . -maxdepth 1 -name 'jest.config.*'`
+- Coverage dir: !`find . -maxdepth 1 -type d -name 'coverage'`
+- Codecov config: !`find . -maxdepth 1 \( -name 'codecov.yml' -o -name '.codecov.yml' \)`
+- Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml'`
 
 ## Parameters
 

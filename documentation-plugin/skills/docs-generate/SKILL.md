@@ -11,10 +11,10 @@ name: docs-generate
 
 ## Context
 
-- Project files: !`find . -maxdepth 1 \( -name 'pyproject.toml' -o -name 'package.json' -o -name 'Cargo.toml' -o -name 'go.mod' \) 2>/dev/null`
-- Existing docs: !`find . -maxdepth 1 \( -name 'README.md' -o -type d -name 'docs' \) 2>/dev/null`
-- Source files: !`find . -type f \( -name "*.py" -o -name "*.ts" -o -name "*.js" \) 2>/dev/null`
-- Python with docstrings: !`grep -r "\"\"\"" --include="*.py" -l 2>/dev/null`
+- Project files: !`find . -maxdepth 1 \( -name 'pyproject.toml' -o -name 'package.json' -o -name 'Cargo.toml' -o -name 'go.mod' \)`
+- Existing docs: !`find . -maxdepth 1 \( -name 'README.md' -o -type d -name 'docs' \)`
+- Source files: !`find . -type f \( -name "*.py" -o -name "*.ts" -o -name "*.js" \)`
+- Python with docstrings: !`grep -r "\"\"\"" --include="*.py" -l`
 
 ## Parameters
 

@@ -26,18 +26,18 @@ Audit the project's enabled plugins against the actual technology stack. Identif
 ## Context
 
 - Current project: !`pwd`
-- Project settings exists: !`find .claude -maxdepth 1 -name 'settings.json' 2>/dev/null`
-- Enabled plugins: !`jq -r '.enabledPlugins[]? // empty' .claude/settings.json 2>/dev/null`
-- Package.json exists: !`find . -maxdepth 1 -name 'package.json' 2>/dev/null`
-- Cargo.toml exists: !`find . -maxdepth 1 -name 'Cargo.toml' 2>/dev/null`
-- pyproject.toml exists: !`find . -maxdepth 1 -name 'pyproject.toml' 2>/dev/null`
-- requirements.txt exists: !`find . -maxdepth 1 -name 'requirements.txt' 2>/dev/null`
-- go.mod exists: !`find . -maxdepth 1 -name 'go.mod' 2>/dev/null`
-- Dockerfile exists: !`find . -maxdepth 1 -name 'Dockerfile' 2>/dev/null`
-- docker-compose exists: !`find . -maxdepth 1 \( -name 'docker-compose.yml' -o -name 'docker-compose.yaml' -o -name 'compose.yml' -o -name 'compose.yaml' \) 2>/dev/null`
-- GitHub workflows: !`find .github/workflows -maxdepth 1 -name '*.yml' 2>/dev/null -quit -print`
-- Terraform files: !`find . -maxdepth 2 -name '*.tf' 2>/dev/null -quit -print`
-- Kubernetes manifests: !`find . -maxdepth 3 \( -path '*/k8s/*' -o -path '*/kubernetes/*' \) -name '*.yaml' 2>/dev/null -quit -print`
+- Project settings exists: !`find .claude -maxdepth 1 -name 'settings.json'`
+- Enabled plugins: !`jq -r '.enabledPlugins[]? // empty' .claude/settings.json`
+- Package.json exists: !`find . -maxdepth 1 -name 'package.json'`
+- Cargo.toml exists: !`find . -maxdepth 1 -name 'Cargo.toml'`
+- pyproject.toml exists: !`find . -maxdepth 1 -name 'pyproject.toml'`
+- requirements.txt exists: !`find . -maxdepth 1 -name 'requirements.txt'`
+- go.mod exists: !`find . -maxdepth 1 -name 'go.mod'`
+- Dockerfile exists: !`find . -maxdepth 1 -name 'Dockerfile'`
+- docker-compose exists: !`find . -maxdepth 1 \( -name 'docker-compose.yml' -o -name 'docker-compose.yaml' -o -name 'compose.yml' -o -name 'compose.yaml' \)`
+- GitHub workflows: !`find .github/workflows -maxdepth 1 -name '*.yml' -quit -print`
+- Terraform files: !`find . -maxdepth 2 -name '*.tf' -quit -print`
+- Kubernetes manifests: !`find . -maxdepth 3 \( -path '*/k8s/*' -o -path '*/kubernetes/*' \) -name '*.yaml' -quit -print`
 
 ## Parameters
 

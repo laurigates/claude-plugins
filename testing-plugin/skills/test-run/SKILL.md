@@ -11,10 +11,10 @@ name: test-run
 
 ## Context
 
-- Project indicators: !`find . -maxdepth 1 \( -name 'pyproject.toml' -o -name 'package.json' -o -name 'Cargo.toml' -o -name 'go.mod' \) 2>/dev/null`
-- Test directories: !`find . -maxdepth 1 -type d \( -name 'tests' -o -name 'test' -o -name '__tests__' -o -name 'spec' \) 2>/dev/null`
-- Package.json test script: !`grep -A2 '"test"' package.json 2>/dev/null`
-- Pytest config: !`grep -A5 '\[tool.pytest' pyproject.toml 2>/dev/null`
+- Project indicators: !`find . -maxdepth 1 \( -name 'pyproject.toml' -o -name 'package.json' -o -name 'Cargo.toml' -o -name 'go.mod' \)`
+- Test directories: !`find . -maxdepth 1 -type d \( -name 'tests' -o -name 'test' -o -name '__tests__' -o -name 'spec' \)`
+- Package.json test script: !`grep -A2 '"test"' package.json`
+- Pytest config: !`grep -A5 '\[tool.pytest' pyproject.toml`
 
 ## Parameters
 

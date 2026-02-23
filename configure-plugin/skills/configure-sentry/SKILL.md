@@ -25,15 +25,15 @@ Check and configure Sentry error tracking integration against project standards.
 
 ## Context
 
-- Package.json: !`find . -maxdepth 1 -name \'package.json\' 2>/dev/null`
-- Pyproject.toml: !`find . -maxdepth 1 -name \'pyproject.toml\' 2>/dev/null`
-- Requirements.txt: !`find . -maxdepth 1 -name \'requirements.txt\' 2>/dev/null`
-- Project standards: !`head -20 .project-standards.yaml 2>/dev/null`
-- Sentry in package.json: !`grep -o '"@sentry/[^"]*"' package.json 2>/dev/null`
-- Sentry in pyproject.toml: !`grep 'sentry' pyproject.toml 2>/dev/null`
-- Sentry init files: !`find . -maxdepth 3 -name "*sentry*" -type f 2>/dev/null`
-- Env files referencing DSN: !`grep -rl 'SENTRY_DSN' .env* .github/workflows/ 2>/dev/null`
-- CI workflows: !`find .github/workflows -maxdepth 1 -name '*.yml' 2>/dev/null`
+- Package.json: !`find . -maxdepth 1 -name \'package.json\'`
+- Pyproject.toml: !`find . -maxdepth 1 -name \'pyproject.toml\'`
+- Requirements.txt: !`find . -maxdepth 1 -name \'requirements.txt\'`
+- Project standards: !`head -20 .project-standards.yaml`
+- Sentry in package.json: !`grep -o '"@sentry/[^"]*"' package.json`
+- Sentry in pyproject.toml: !`grep 'sentry' pyproject.toml`
+- Sentry init files: !`find . -maxdepth 3 -name "*sentry*" -type f`
+- Env files referencing DSN: !`grep -rl 'SENTRY_DSN' .env* .github/workflows/`
+- CI workflows: !`find .github/workflows -maxdepth 1 -name '*.yml'`
 
 **Skills referenced**: `sentry` (MCP server for Sentry API)
 

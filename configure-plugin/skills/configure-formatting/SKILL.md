@@ -25,17 +25,17 @@ Check and configure code formatting tools against modern best practices.
 
 ## Context
 
-- Biome config: !`find . -maxdepth 1 -name \'biome.json\' 2>/dev/null`
-- Prettier config: !`find . -maxdepth 1 \( -name '.prettierrc*' -o -name 'prettier.config.*' \) 2>/dev/null`
-- Ruff config: !`grep -l 'tool.ruff.format' pyproject.toml 2>/dev/null`
-- Black config: !`grep -l 'tool.black' pyproject.toml 2>/dev/null`
-- Rustfmt config: !`find . -maxdepth 1 \( -name 'rustfmt.toml' -o -name '.rustfmt.toml' \) 2>/dev/null`
-- EditorConfig: !`find . -maxdepth 1 -name \'.editorconfig\' 2>/dev/null`
-- Package JSON: !`find . -maxdepth 1 -name \'package.json\' 2>/dev/null`
-- Python project: !`find . -maxdepth 1 -name \'pyproject.toml\' 2>/dev/null`
-- Rust project: !`find . -maxdepth 1 -name \'Cargo.toml\' 2>/dev/null`
-- Pre-commit: !`find . -maxdepth 1 -name \'.pre-commit-config.yaml\' 2>/dev/null`
-- Project standards: !`find . -maxdepth 1 -name \'.project-standards.yaml\' 2>/dev/null`
+- Biome config: !`find . -maxdepth 1 -name \'biome.json\'`
+- Prettier config: !`find . -maxdepth 1 \( -name '.prettierrc*' -o -name 'prettier.config.*' \)`
+- Ruff config: !`grep -l 'tool.ruff.format' pyproject.toml`
+- Black config: !`grep -l 'tool.black' pyproject.toml`
+- Rustfmt config: !`find . -maxdepth 1 \( -name 'rustfmt.toml' -o -name '.rustfmt.toml' \)`
+- EditorConfig: !`find . -maxdepth 1 -name \'.editorconfig\'`
+- Package JSON: !`find . -maxdepth 1 -name \'package.json\'`
+- Python project: !`find . -maxdepth 1 -name \'pyproject.toml\'`
+- Rust project: !`find . -maxdepth 1 -name \'Cargo.toml\'`
+- Pre-commit: !`find . -maxdepth 1 -name \'.pre-commit-config.yaml\'`
+- Project standards: !`find . -maxdepth 1 -name \'.project-standards.yaml\'`
 
 ## Parameters
 

@@ -26,14 +26,14 @@ Check and configure memory profiling infrastructure for Python projects using py
 ## Context
 
 - Project root: !`pwd`
-- Python project: !`find . -maxdepth 1 \( -name 'pyproject.toml' -o -name 'setup.py' \) 2>/dev/null`
-- pytest-memray installed: !`grep -r 'pytest-memray' pyproject.toml requirements*.txt 2>/dev/null`
-- memray installed: !`grep -r 'memray' pyproject.toml requirements*.txt 2>/dev/null`
-- Conftest fixtures: !`grep -l 'memray' tests/conftest.py 2>/dev/null`
-- Memory test files: !`find tests -maxdepth 2 -name '*memory*' -o -name '*memray*' 2>/dev/null`
-- Benchmark tests: !`find tests -maxdepth 2 -type d -name 'benchmarks' 2>/dev/null`
-- CI workflows: !`find .github/workflows -maxdepth 1 -name '*memory*' 2>/dev/null`
-- Memory reports dir: !`find . -maxdepth 1 -type d -name 'memory-reports' 2>/dev/null`
+- Python project: !`find . -maxdepth 1 \( -name 'pyproject.toml' -o -name 'setup.py' \)`
+- pytest-memray installed: !`grep -r 'pytest-memray' pyproject.toml requirements*.txt`
+- memray installed: !`grep -r 'memray' pyproject.toml requirements*.txt`
+- Conftest fixtures: !`grep -l 'memray' tests/conftest.py`
+- Memory test files: !`find tests -maxdepth 2 -name '*memory*' -o -name '*memray*'`
+- Benchmark tests: !`find tests -maxdepth 2 -type d -name 'benchmarks'`
+- CI workflows: !`find .github/workflows -maxdepth 1 -name '*memory*'`
+- Memory reports dir: !`find . -maxdepth 1 -type d -name 'memory-reports'`
 
 ## Parameters
 

@@ -12,12 +12,12 @@ name: git-issue
 
 ## Context
 
-- Repo: !`gh repo view --json nameWithOwner 2>/dev/null`
+- Repo: !`gh repo view --json nameWithOwner`
 - Current branch: !`git branch --show-current`
-- Working tree clean: !`git status --porcelain=v2 2>/dev/null`
-- Open issues: !`gh issue list --state open --json number,title,labels --limit 10 2>/dev/null`
-- Open PRs: !`gh pr list --state open --json number,title 2>/dev/null`
-- Available labels: !`gh label list --json name --limit 50 2>/dev/null`
+- Working tree clean: !`git status --porcelain=v2`
+- Open issues: !`gh issue list --state open --json number,title,labels --limit 10`
+- Open PRs: !`gh pr list --state open --json number,title`
+- Available labels: !`gh label list --json name --limit 50`
 
 ## Parameters
 

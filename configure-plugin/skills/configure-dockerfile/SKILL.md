@@ -25,10 +25,10 @@ Check and configure Dockerfile against project standards with emphasis on **mini
 
 ## Context
 
-- Dockerfiles: !`find . -maxdepth 1 \( -name 'Dockerfile' -o -name 'Dockerfile.*' -o -name '*.Dockerfile' \) 2>/dev/null`
-- Dockerignore: !`find . -maxdepth 1 -name \'.dockerignore\' 2>/dev/null`
-- Project type: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) -print -quit 2>/dev/null`
-- Base images: !`grep -hm5 '^FROM' Dockerfile Dockerfile.* *.Dockerfile 2>/dev/null`
+- Dockerfiles: !`find . -maxdepth 1 \( -name 'Dockerfile' -o -name 'Dockerfile.*' -o -name '*.Dockerfile' \)`
+- Dockerignore: !`find . -maxdepth 1 -name \'.dockerignore\'`
+- Project type: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) -print -quit`
+- Base images: !`grep -hm5 '^FROM' Dockerfile Dockerfile.* *.Dockerfile`
 
 ## Parameters
 

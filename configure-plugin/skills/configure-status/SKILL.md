@@ -25,20 +25,20 @@ Display infrastructure standards compliance status without making changes.
 
 ## Context
 
-- Project standards: !`find . -maxdepth 1 -name \'.project-standards.yaml\' 2>/dev/null`
-- Project type: !`grep -m1 "^project_type:" .project-standards.yaml 2>/dev/null`
-- Standards version: !`grep -m1 "^standards_version:" .project-standards.yaml 2>/dev/null`
-- Last configured: !`grep -m1 "^last_configured:" .project-standards.yaml 2>/dev/null`
-- Pre-commit config: !`find . -maxdepth 1 -name \'.pre-commit-config.yaml\' 2>/dev/null`
-- Workflows: !`find .github/workflows -maxdepth 1 -name '*.yml' 2>/dev/null`
-- Has Dockerfile: !`find . -maxdepth 1 -name 'Dockerfile*' 2>/dev/null -print -quit`
-- Has skaffold: !`find . -maxdepth 1 -name \'skaffold.yaml\' 2>/dev/null`
-- Has helm: !`find . -maxdepth 2 -type d -name 'helm' 2>/dev/null -print -quit`
-- Test configs: !`find . -maxdepth 1 \( -name 'vitest.config.*' -o -name 'jest.config.*' -o -name 'pytest.ini' \) 2>/dev/null`
-- Linting config: !`find . -maxdepth 1 \( -name 'biome.json' -o -name '.eslintrc*' \) 2>/dev/null`
-- Editor config: !`find . -maxdepth 1 -name \'.editorconfig\' 2>/dev/null`
-- Gitleaks config: !`find . -maxdepth 1 -name \'.gitleaks.toml\' 2>/dev/null`
-- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' \) 2>/dev/null`
+- Project standards: !`find . -maxdepth 1 -name \'.project-standards.yaml\'`
+- Project type: !`grep -m1 "^project_type:" .project-standards.yaml`
+- Standards version: !`grep -m1 "^standards_version:" .project-standards.yaml`
+- Last configured: !`grep -m1 "^last_configured:" .project-standards.yaml`
+- Pre-commit config: !`find . -maxdepth 1 -name \'.pre-commit-config.yaml\'`
+- Workflows: !`find .github/workflows -maxdepth 1 -name '*.yml'`
+- Has Dockerfile: !`find . -maxdepth 1 -name 'Dockerfile*' -print -quit`
+- Has skaffold: !`find . -maxdepth 1 -name \'skaffold.yaml\'`
+- Has helm: !`find . -maxdepth 2 -type d -name 'helm' -print -quit`
+- Test configs: !`find . -maxdepth 1 \( -name 'vitest.config.*' -o -name 'jest.config.*' -o -name 'pytest.ini' \)`
+- Linting config: !`find . -maxdepth 1 \( -name 'biome.json' -o -name '.eslintrc*' \)`
+- Editor config: !`find . -maxdepth 1 -name \'.editorconfig\'`
+- Gitleaks config: !`find . -maxdepth 1 -name \'.gitleaks.toml\'`
+- Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' \)`
 
 ## Parameters
 

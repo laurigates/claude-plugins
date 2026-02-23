@@ -13,10 +13,10 @@ name: git-maintain
 ## Context
 
 - Current branch: !`git branch --show-current`
-- Git status: !`git status --porcelain=v2 --branch 2>/dev/null`
+- Git status: !`git status --porcelain=v2 --branch`
 - Local branches: !`git branch -vv --format='%(refname:short) %(upstream:short) %(upstream:track)'`
-- Stash list: !`git stash list 2>/dev/null`
-- Repository size: !`du -sh .git 2>/dev/null`
+- Stash list: !`git stash list`
+- Repository size: !`du -sh .git`
 
 ## Parameters
 
