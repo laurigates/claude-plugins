@@ -32,8 +32,8 @@ Detect code patterns where operations complete "successfully" but produce empty 
 ## Context
 
 - Scan path: `$ARGUMENTS` (defaults to current directory if empty)
-- Source files: !`find . -maxdepth 1 \( -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" -o -name "*.py" -o -name "*.go" -o -name "*.rs" \) -type f 2>/dev/null | head -5`
-- Config patterns: !`find . -maxdepth 3 \( -name ".env*" -o -name "config.*" -o -name "settings.*" \) -type f 2>/dev/null | head -5`
+- Source files: !`find . -maxdepth 1 \( -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" -o -name "*.py" -o -name "*.go" -o -name "*.rs" \) -type f 2>/dev/null`
+- Config patterns: !`find . -maxdepth 1 \( -name ".env*" -o -name "config.*" -o -name "settings.*" \) -type f 2>/dev/null`
 
 ## Parameters
 
