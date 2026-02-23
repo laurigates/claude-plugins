@@ -35,7 +35,7 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
 
           # Extract unique plugin directories affected
-          PLUGINS=$(echo "$FILES" | grep -oP '^[^/]+-plugin' | sort -u)
+          PLUGINS=$(echo "$FILES" | grep -oP '^[a-z][^/]*-plugin' | sort -u)
           echo "plugins<<EOF" >> $GITHUB_OUTPUT
           echo "$PLUGINS" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
