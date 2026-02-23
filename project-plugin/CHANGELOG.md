@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.3](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.9.2...project-plugin-v1.9.3) (2026-02-23)
+
+
+### Bug Fixes
+
+* **project-plugin:** make project-distill work without git repo ([#788](https://github.com/laurigates/claude-plugins/issues/788)) ([53647bb](https://github.com/laurigates/claude-plugins/commit/53647bb10fb20e0d293c98c7c193a04e3da6164d))
+
 ## [1.9.2](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.9.1...project-plugin-v1.9.2) (2026-02-20)
 
 
