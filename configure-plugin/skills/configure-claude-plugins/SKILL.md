@@ -27,7 +27,7 @@ Configure a project to use the `laurigates/claude-plugins` Claude Code plugin ma
 
 - Settings file exists: !`find . -maxdepth 1 -name \'.claude/settings.json\'`
 - Workflows: !`find .github/workflows -maxdepth 1 -name 'claude*.yml'`
-- Git remote: !`git remote get-url origin`
+- Git remotes: !`git remote -v`
 - Project type indicators: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'Dockerfile' \)`
 - Existing workflows dir: !`find . -maxdepth 1 -type d -name \'.github/workflows\'`
 

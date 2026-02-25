@@ -15,7 +15,7 @@ Generate professional handoff messages for deployed resources and services with 
 
 ## Context
 
-- Repository: !`git remote get-url origin`
+- Git remotes: !`git remote -v`
 - Branch: !`git branch --show-current`
 - Last commit: !`git log --oneline --max-count=1`
 - README: !`find . -maxdepth 1 -name \'README.md\'`

@@ -25,7 +25,7 @@ name: configure-readme
 - Project name: !`basename $(pwd)`
 - README exists: !`find . -maxdepth 1 -name 'README.md'`
 - Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \)`
-- Git remote: !`git remote get-url origin`
+- Git remotes: !`git remote -v`
 - License file: !`find . -maxdepth 1 -name 'LICENSE*'`
 - Assets directory: !`find . -maxdepth 2 -type d \( -name 'assets' -o -name 'public' -o -name 'images' \)`
 - Logo files: !`find . -maxdepth 3 -type f \( -name 'logo*' -o -name 'icon*' \)`
