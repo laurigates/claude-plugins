@@ -11,11 +11,10 @@ This plugin provides comprehensive code quality tools including automated code r
 | Skill | Description |
 |-------|-------------|
 | `/code:review` | Comprehensive code review with automated fixes |
-| `/code:refactor` | Refactor code following SOLID principles and best practices |
+| `/code:refactor` | Refactor code applying functional programming principles - pure functions, immutability, and composition |
 | `/code:antipatterns` | Analyze codebase for anti-patterns and code smells using ast-grep |
 | `/lint:check` | Universal linter - auto-detects and runs appropriate linting tools |
 | `/code:dry-consolidation` | Find and extract duplicated code into shared, tested abstractions |
-| `/refactor` | Refactor selected code for quality improvements |
 | `/docs:quality-check` | Analyze documentation quality - PRDs, ADRs, PRPs, CLAUDE.md, and .claude/rules/ |
 | `code-antipatterns-analysis` | Detect anti-patterns and code smells using ast-grep structural matching |
 | `/code:silent-degradation` | Detect silent degradation patterns where operations succeed with zero results because preconditions are unmet |
@@ -26,7 +25,7 @@ This plugin provides comprehensive code quality tools including automated code r
 | Agent | Description |
 |-------|-------------|
 | `code-review` | Code quality, architecture, and performance analysis |
-| `code-refactoring` | Quality improvements and SOLID principles |
+| `code-refactoring` | Functional refactoring - pure functions, immutability, and composition |
 | `code-analysis` | Structural code analysis and pattern detection |
 | `linter-fixer` | Automatic linting and code formatting |
 | `security-audit` | Security analysis and vulnerability assessment |
@@ -63,10 +62,12 @@ Scans for anti-patterns using ast-grep structural matching:
 /code:refactor src/components/
 ```
 
-Refactors code following:
-- SOLID principles
-- Design patterns
-- Clean code practices
+Refactors code applying functional programming principles:
+- Pure functions (separate computation from side effects)
+- Immutability (transform data, don't mutate it)
+- Composition (build from small, focused functions)
+- Higher-order functions (map/filter/reduce over loops)
+- Explicit effects (push I/O to the boundary)
 
 ### DRY Consolidation
 
