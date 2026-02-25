@@ -22,7 +22,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.7.0",
+      "version": "2.7.1",
       "keywords": [
         "agents",
         "configuration",
@@ -54,7 +54,7 @@
       "name": "api-plugin",
       "source": "./api-plugin",
       "description": "API integration and testing - REST endpoints, client generation",
-      "version": "1.4.1",
+      "version": "1.4.2",
       "keywords": [
         "api",
         "rest",
@@ -152,7 +152,7 @@
       "name": "component-patterns-plugin",
       "source": "./component-patterns-plugin",
       "description": "Reusable UI component patterns - version badge, tooltips, and common UI elements for React, Vue, Svelte",
-      "version": "1.2.1",
+      "version": "1.2.2",
       "keywords": [
         "components",
         "ui-patterns",
@@ -168,7 +168,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.11.1",
+      "version": "1.11.2",
       "keywords": [
         "infrastructure",
         "standards",
@@ -180,7 +180,7 @@
       "name": "container-plugin",
       "source": "./container-plugin",
       "description": "Container development and deployment - Docker, registry, Skaffold",
-      "version": "2.5.2",
+      "version": "2.5.3",
       "keywords": [
         "container",
         "docker",
@@ -209,7 +209,7 @@
       "name": "documentation-plugin",
       "source": "./documentation-plugin",
       "description": "Documentation generation - API docs, README, knowledge graphs, LaTeX PDF conversion",
-      "version": "1.4.2",
+      "version": "1.4.3",
       "keywords": [
         "documentation",
         "docs",
@@ -265,7 +265,7 @@
       "name": "github-actions-plugin",
       "source": "./github-actions-plugin",
       "description": "GitHub Actions CI/CD - workflows, authentication, inspection, auto-fix",
-      "version": "1.4.3",
+      "version": "1.4.4",
       "keywords": [
         "github-actions",
         "ci-cd",
@@ -279,7 +279,7 @@
       "name": "health-plugin",
       "source": "./health-plugin",
       "description": "Diagnose and fix Claude Code configuration issues - plugin registry, settings, hooks, MCP servers",
-      "version": "1.3.1",
+      "version": "1.3.2",
       "keywords": [
         "health",
         "diagnostics",
@@ -395,7 +395,7 @@
       "name": "project-plugin",
       "source": "./project-plugin",
       "description": "Project initialization, management, and maintenance - setup, modernization, changelog review, and continuous development workflows",
-      "version": "1.10.0",
+      "version": "1.10.1",
       "keywords": [
         "project",
         "initialization",
@@ -473,7 +473,7 @@
       "name": "testing-plugin",
       "source": "./testing-plugin",
       "description": "Test execution, TDD workflow, and testing strategies",
-      "version": "3.8.1",
+      "version": "3.8.2",
       "keywords": [
         "testing",
         "tdd",
@@ -487,7 +487,7 @@
       "name": "tools-plugin",
       "source": "./tools-plugin",
       "description": "General utilities - fd, rg, jq, shell, imagemagick",
-      "version": "2.4.7",
+      "version": "2.4.8",
       "keywords": [
         "tools",
         "utilities",
