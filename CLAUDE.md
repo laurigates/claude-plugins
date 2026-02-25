@@ -37,6 +37,7 @@ Claude Code plugin collection providing skills and agents for development workfl
 | `.claude/rules/skill-quality.md` | Skill size limits, required sections, and quality checklist |
 | `.claude/rules/skill-execution-structure.md` | Imperative execution patterns for user-invocable skills |
 | `.claude/rules/handling-blocked-hooks.md` | How to respond when hooks block commands |
+| `.claude/rules/hooks-reference.md` | Complete hook event reference (2.1.50+): all events, schemas, timeouts, PermissionRequest |
 
 ## Creating New Skills
 

@@ -8,25 +8,31 @@ description: |
   or debug hooks that aren't firing correctly.
 allowed-tools: Bash(cat *), Bash(bash *), Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2025-12-27
-modified: 2026-02-05
-reviewed: 2025-12-27
+modified: 2026-02-25
+reviewed: 2026-02-25
 ---
 
 # Claude Code Hooks Configuration
 
 ## Core Expertise
 
-Configure Claude Code lifecycle hooks (SessionStart, SessionEnd, Stop, PreToolUse, PostToolUse) with proper timeout settings to prevent "Hook cancelled" errors during session management.
+Configure Claude Code lifecycle hooks (SessionStart, SessionEnd, Stop, PreToolUse, PostToolUse, PermissionRequest, and more) with proper timeout settings to prevent "Hook cancelled" errors during session management.
 
 ## Hook Types
 
 | Hook | Trigger | Default Timeout |
 |------|---------|-----------------|
-| `SessionStart` | When Claude Code session begins | 60 seconds |
-| `SessionEnd` | When session ends or `/clear` runs | 60 seconds |
-| `Stop` | When assistant stops responding | 60 seconds |
-| `PreToolUse` | Before a tool executes | 60 seconds |
-| `PostToolUse` | After a tool completes | 60 seconds |
+| `SessionStart` | When Claude Code session begins | 10 minutes |
+| `SessionEnd` | When session ends or `/clear` runs | 10 minutes |
+| `Stop` | When **main agent** stops responding | 10 minutes |
+| `SubagentStop` | When a **subagent** (Task tool) finishes | 10 minutes |
+| `PreToolUse` | Before a tool executes | 10 minutes |
+| `PostToolUse` | After a tool completes | 10 minutes |
+| `PermissionRequest` | When Claude requests permission for a tool | 10 minutes |
+
+> **Note**: Default timeout increased from 60 seconds to **10 minutes** in Claude Code 2.1.50. Always set explicit timeouts anyway — it documents intent and prevents unintentional long-running hooks.
+
+For full event reference including WorktreeCreate, WorktreeRemove, TeammateIdle, TaskCompleted, and ConfigChange, see [.claude/rules/hooks-reference.md](../../.claude/rules/hooks-reference.md).
 
 ## Common Issue: Hook Cancelled Error
 
@@ -34,7 +40,7 @@ Configure Claude Code lifecycle hooks (SessionStart, SessionEnd, Stop, PreToolUs
 SessionEnd hook [bash ~/.claude/session-logger.sh] failed: Hook cancelled
 ```
 
-**Root cause**: Hook execution exceeds the 60-second default timeout.
+**Root cause**: Hook execution exceeds the configured timeout. With the 2.1.50 default of 10 minutes, this is now less common — but explicitly setting `"timeout"` in your hook config is still recommended.
 
 **Solutions** (in order of preference):
 1. **Background subshell** - Run slow operations in background, exit immediately
@@ -97,11 +103,12 @@ Hooks are configured in `.claude/settings.json`:
 
 | Hook Type | Recommended Timeout | Use Case |
 |-----------|---------------------|----------|
-| SessionStart | 120-300s | Tests, linters, dependency checks |
-| SessionEnd | 60-120s | Logging, cleanup, state saving |
-| Stop | 30-60s | Git status checks, quick validations |
-| PreToolUse | 10-30s | Quick validations |
-| PostToolUse | 30-60s | Logging, notifications |
+| SessionStart | 120–300s | Tests, linters, dependency checks |
+| SessionEnd | 60–120s | Logging, cleanup, state saving |
+| Stop / SubagentStop | 30–60s | Git status checks, quick validations |
+| PreToolUse | 10–30s | Quick validations |
+| PostToolUse | 30–120s | Logging, notifications |
+| PermissionRequest | 5–15s | Keep fast for good UX |
 
 ## Fixing Timeout Issues
 
@@ -192,7 +199,7 @@ command_timeout = 2000  # Increase if still timing out
 
 | Setting | Location | Default |
 |---------|----------|---------|
-| Hook timeout | `.claude/settings.json` → hook → `timeout` | 60s |
+| Hook timeout | `.claude/settings.json` → hook → `timeout` | 10 minutes (600s) since 2.1.50 |
 | Starship timeout | `~/.config/starship.toml` → `command_timeout` | 500ms |
 | Node detection | `~/.config/starship.toml` → `[nodejs]` | Auto |
 
@@ -200,7 +207,7 @@ command_timeout = 2000  # Increase if still timing out
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| Hook cancelled | Timeout exceeded | Add `"timeout": 120` |
+| Hook cancelled | Timeout exceeded | Add explicit `"timeout"` (e.g. `"timeout": 120`) |
 | Hook failed | Script error | Check exit code, add error handling |
 | Command not found | Missing script | Verify script path and permissions |
 | Permission denied | Script not executable | `chmod +x ~/.claude/script.sh` |
