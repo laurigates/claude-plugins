@@ -147,7 +147,7 @@ export PATH="$HOME/.local/bin:$PATH"
 # Code quality
 uv tool install ruff
 uv tool install black
-uv tool install mypy
+uv tool install ty
 
 # Documentation
 uv tool install mkdocs
@@ -208,13 +208,13 @@ Each tool gets its own virtual environment:
 ```bash
 # Install common development tools globally
 uv tool install ruff
-uv tool install mypy
+uv tool install ty
 uv tool install pytest
 uv tool install ipython
 
 # Now available in any project
 ruff check .
-mypy src/
+ty check src/
 pytest
 ipython
 ```
@@ -253,7 +253,7 @@ uvx pycowsay "hello"
 
 - `uv-project-management` - Project-specific dependencies
 - `uv-python-versions` - Python versions for tools
-- `python-code-quality` - Using ruff, mypy, black
+- `python-code-quality` - Using ruff, ty, black
 
 ## References
 

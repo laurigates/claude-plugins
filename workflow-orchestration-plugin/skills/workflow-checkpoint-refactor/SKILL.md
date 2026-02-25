@@ -116,7 +116,7 @@ For each phase:
 1. Read context from plan file (current phase's details)
 2. Read only the files listed for this phase
 3. Implement changes according to phase description
-4. Validate with appropriate tool (tsc, mypy, cargo check, or npm/pytest test)
+4. Validate with appropriate tool (tsc, ty check, cargo check, or npm/pytest test)
 5. If validation fails:
    - Fix errors if straightforward
    - If complex, mark phase as `needs-review` with error details

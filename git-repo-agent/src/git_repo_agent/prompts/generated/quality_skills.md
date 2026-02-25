@@ -599,7 +599,7 @@ This skill is designed to work with the `/code:antipatterns` command, which:
 {{ if PROJECT_TYPE == "python" }}
 Run Python linters:
 1. Ruff check: `uv run ruff check ${1:-.} --output-format=concise ${2:+--fix}`
-2. Type checking: `uv run mypy ${1:-.}`
+2. Type checking: `uv run ty check ${1:-.} --hide-progress`
 3. Format check: `uv run ruff format ${1:-.} ${3:+--check}`
 4. Security: `uv run bandit -r ${1:-.}`
 {{ endif }}
@@ -791,7 +791,7 @@ npm run test              # Full test suite
 
 **Python projects:**
 ```bash
-python -m mypy .          # Type checking
+ty check .                # Type checking
 ruff check .              # Linting
 pytest                    # Test suite
 ```

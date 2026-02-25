@@ -31,7 +31,7 @@ dependencies = [
 dev = [
     "pytest>=8.0.0",
     "pytest-cov>=4.0.0",
-    "mypy>=1.8.0",
+    "ty>=0.0.10",
     "ruff>=0.1.0",
 ]
 docs = [
@@ -100,23 +100,15 @@ skip-magic-trailing-comma = false
 ## Type Checking Configuration
 
 ```toml
-[tool.mypy]
-python_version = "3.10"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-warn_unreachable = true
-strict_equality = true
+[tool.ty]
+python-version = "3.10"
+exclude = [
+    "**/__pycache__",
+    "**/.venv",
+]
 
-[[tool.mypy.overrides]]
-module = ["tests.*"]
-disallow_untyped_defs = false
+[tool.ty.rules]
+possibly-unbound = "warn"
 ```
 
 ## pytest Configuration
@@ -220,11 +212,10 @@ repos:
         args: [--fix]
       - id: ruff-format
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.8.0
+  - repo: https://github.com/astral-sh/ty
+    rev: v0.0.10
     hooks:
-      - id: mypy
-        additional_dependencies: [types-requests]
+      - id: ty
 
   - repo: https://github.com/PyCQA/bandit
     rev: 1.7.5
@@ -266,7 +257,7 @@ jobs:
         run: uv run ruff check .
 
       - name: Run type checking
-        run: uv run mypy .
+        run: uv run ty check --hide-progress
 
       - name: Run tests
         run: uv run pytest --cov --cov-report=xml

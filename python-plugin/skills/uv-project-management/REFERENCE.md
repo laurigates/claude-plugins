@@ -103,7 +103,7 @@ uv add httpx aiohttp requests
 ```bash
 # Add to dev dependencies
 uv add --dev pytest
-uv add --dev pytest pytest-cov black ruff mypy
+uv add --dev pytest pytest-cov black ruff ty
 
 # Alternative syntax
 uv add -d pytest
@@ -182,7 +182,7 @@ dev = [
     "pytest>=7.4.0",
     "pytest-asyncio>=0.21.0",
     "ruff>=0.1.0",
-    "mypy>=1.7.0",
+    "ty>=0.0.10",
 ]
 docs = [
     "mkdocs-material>=9.0.0",
@@ -411,7 +411,7 @@ uv init my-api && cd my-api
 uv add fastapi 'uvicorn[standard]' pydantic sqlalchemy
 
 # Add development tools
-uv add --dev pytest pytest-asyncio pytest-cov ruff mypy
+uv add --dev pytest pytest-asyncio pytest-cov ruff ty
 
 # Add documentation
 uv add --group docs mkdocs-material mkdocstrings
@@ -436,7 +436,7 @@ uv run pytest
 uv run ruff check
 
 # Run type checker
-uv run mypy src/
+uv run ty check src/
 ```
 
 ### Updating Dependencies
@@ -500,7 +500,7 @@ jobs:
         run: uv run ruff check
 
       - name: Type check
-        run: uv run mypy src/
+        run: uv run ty check src/ --hide-progress
 ```
 
 ---
@@ -595,7 +595,7 @@ Prefer modern `[dependency-groups]` over `[project.optional-dependencies]`:
 
 ```toml
 [dependency-groups]
-dev = ["pytest", "ruff", "mypy"]
+dev = ["pytest", "ruff", "ty"]
 docs = ["mkdocs-material"]
 ```
 

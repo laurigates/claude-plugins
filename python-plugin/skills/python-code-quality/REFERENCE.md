@@ -1,6 +1,6 @@
 # Python Code Quality - Comprehensive Reference
 
-Complete guide to Python code quality with ruff and mypy.
+Complete guide to Python code quality with ruff and ty.
 
 ## Ruff (Linter & Formatter)
 
@@ -54,37 +54,44 @@ indent-style = "space"
 
 ---
 
-## Mypy (Type Checking)
+## ty (Type Checking)
 
-Static type checker for Python.
+Extremely fast Python type checker from Astral (10-100x faster than mypy/Pyright), written in Rust.
 
 ### Installation
 
 ```bash
-uv add --dev mypy
+uv add --dev ty
 ```
 
 ### Usage
 
 ```bash
 # Type check project
-mypy .
+ty check
 
-# Strict mode
-mypy --strict .
+# Type check specific directory
+ty check src/
 
-# Incremental mode
-mypy --incremental .
+# Hide progress (useful for CI)
+ty check --hide-progress
+
+# Verbose mode
+ty check --verbose
 ```
 
 ### Configuration
 
 ```toml
-[tool.mypy]
-python_version = "3.11"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
+[tool.ty]
+python-version = "3.11"
+exclude = [
+    "**/__pycache__",
+    "**/.venv",
+]
+
+[tool.ty.rules]
+possibly-unbound = "warn"
 ```
 
 ---
@@ -102,5 +109,5 @@ disallow_untyped_defs = true
 ## References
 
 - **Ruff**: https://docs.astral.sh/ruff/
-- **Mypy**: https://mypy.readthedocs.io/
+- **ty**: https://docs.astral.sh/ty/
 - **Type Hints**: https://docs.python.org/3/library/typing.html

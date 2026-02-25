@@ -1,20 +1,20 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-02-06
+modified: 2026-02-25
 reviewed: 2025-12-16
 name: python-code-quality
 description: |
-  Python code quality with ruff (linting & formatting) and mypy (type checking).
+  Python code quality with ruff (linting & formatting) and ty (type checking).
   Covers pyproject.toml configuration, pre-commit hooks, and type hints.
-  Use when user mentions ruff, mypy, linting, formatting, type checking,
+  Use when user mentions ruff, ty, linting, formatting, type checking,
   code style, or Python code quality.
 allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # Python Code Quality
 
-Quick reference for Python code quality tools: ruff (linting & formatting), mypy (type checking).
+Quick reference for Python code quality tools: ruff (linting & formatting), ty (type checking).
 
 ## When This Skill Applies
 
@@ -49,20 +49,20 @@ uv run ruff check --select E501  # Line too long
 uv run ruff check --ignore E501
 ```
 
-### Mypy (Type Checking)
+### ty (Type Checking)
 
 ```bash
 # Type check project
-uv run mypy .
+uv run ty check
 
 # Type check specific file
-uv run mypy src/module.py
+uv run ty check src/module.py
 
-# Strict mode
-uv run mypy --strict .
+# Check with explicit Python version
+uv run ty check --python 3.11
 
-# Show error codes
-uv run mypy --show-error-codes .
+# Verbose output
+uv run ty check --verbose
 ```
 
 ## pyproject.toml Configuration
@@ -89,12 +89,16 @@ ignore = [
 [tool.ruff.lint.isort]
 known-first-party = ["myproject"]
 
-[tool.mypy]
-python_version = "3.11"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-exclude = ["tests"]
+[tool.ty]
+python-version = "3.11"
+exclude = [
+    "**/__pycache__",
+    "**/.venv",
+    "tests",
+]
+
+[tool.ty.rules]
+possibly-unbound = "warn"
 ```
 
 ## Type Hints
@@ -130,11 +134,10 @@ repos:
         args: [--fix]
       - id: ruff-format
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.7.1
+  - repo: https://github.com/astral-sh/ty
+    rev: v0.0.10
     hooks:
-      - id: mypy
-        additional_dependencies: [types-requests]
+      - id: ty
 ```
 
 ## Common Ruff Rules
@@ -155,5 +158,5 @@ repos:
 ## References
 
 - Ruff: https://docs.astral.sh/ruff/
-- Mypy: https://mypy.readthedocs.io/
+- ty: https://docs.astral.sh/ty/
 - Detailed guide: See REFERENCE.md
