@@ -22,6 +22,9 @@
     "wildcards",
     "config-sync",
     "claude-plugins",
-    "marketplace"
+    "marketplace",
+    "web-session",
+    "session-start",
+    "remote"
   ]
 }

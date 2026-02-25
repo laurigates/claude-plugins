@@ -85,6 +85,7 @@ All commands support two modes:
 | `configure-makefile` | Makefile with standard targets |
 | `configure-justfile` | Justfile with standard recipes (simpler alternative to Make) |
 | `configure-package-management` | Modern package managers (uv for Python, bun for TypeScript) |
+| `configure-web-session` | SessionStart hook + install script for Claude Code on the web |
 
 ## Usage
 
@@ -125,6 +126,17 @@ Presents multi-select menus to choose which components to check/fix.
 /configure:pre-commit --fix
 /configure:dockerfile --fix
 ```
+
+### Set Up Claude Code on the Web
+
+```bash
+/configure:web-session --fix
+```
+
+Creates `scripts/install_pkgs.sh` and configures a `SessionStart` hook in
+`.claude/settings.json` so remote sessions auto-install infrastructure tools
+(helm, terraform, tflint, actionlint, gitleaks, just, pre-commit) that are
+absent from the base image.
 
 ## Standards Summary
 
