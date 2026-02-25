@@ -5,6 +5,7 @@ modified: 2026-02-11
 reviewed: 2025-12-16
 description: Check and configure cache-busting strategies for Next.js and Vite projects
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
+args: "[--check-only] [--fix] [--framework <nextjs|vite>] [--cdn <cloudflare|vercel|none>]"
 argument-hint: "[--check-only] [--fix] [--framework <nextjs|vite>] [--cdn <cloudflare|vercel|none>]"
 name: configure-cache-busting
 ---

@@ -5,6 +5,7 @@ modified: 2026-02-10
 reviewed: 2026-01-19
 description: Check and configure Dockerfile for project standards (minimal Alpine/slim, non-root, multi-stage)
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite, WebSearch, WebFetch
+args: "[--check-only] [--fix] [--type <frontend|python|go|rust>]"
 argument-hint: "[--check-only] [--fix] [--type <frontend|python|go|rust>]"
 name: configure-dockerfile
 ---

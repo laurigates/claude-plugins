@@ -5,6 +5,7 @@ modified: 2026-02-10
 reviewed: 2025-02-03
 description: Implement a version badge with tooltip showing build info and recent changelog - framework agnostic
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
+args: "[--check-only] [--location <header|footer|custom>]"
 argument-hint: "[--check-only] [--location <header|footer|custom>]"
 name: components-version-badge
 ---

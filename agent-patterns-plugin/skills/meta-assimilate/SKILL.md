@@ -4,6 +4,7 @@ created: 2025-12-16
 modified: 2025-12-16
 reviewed: 2025-12-16
 allowed-tools: Read, Write, Edit, MultiEdit, Glob, Grep, TodoWrite
+args: <project-path>
 argument-hint: <project-path>
 description: Analyze and assimilate project-specific Claude configurations
 name: meta-assimilate

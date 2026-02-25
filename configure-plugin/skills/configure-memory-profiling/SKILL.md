@@ -5,6 +5,7 @@ modified: 2026-02-10
 reviewed: 2025-12-16
 description: Check and configure memory profiling with pytest-memray for Python projects
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
+args: "[--check-only] [--fix] [--threshold <mb>] [--native]"
 argument-hint: "[--check-only] [--fix] [--threshold <mb>] [--native]"
 name: configure-memory-profiling
 ---

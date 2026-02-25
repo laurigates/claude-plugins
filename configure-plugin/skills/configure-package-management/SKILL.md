@@ -5,6 +5,7 @@ modified: 2026-02-11
 reviewed: 2025-12-16
 description: Check and configure modern package managers (uv for Python, bun for TypeScript)
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
+args: "[--check-only] [--fix] [--manager <uv|bun|npm|cargo>]"
 argument-hint: "[--check-only] [--fix] [--manager <uv|bun|npm|cargo>]"
 name: configure-package-management
 ---

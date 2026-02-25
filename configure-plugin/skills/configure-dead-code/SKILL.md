@@ -5,6 +5,7 @@ modified: 2026-02-11
 reviewed: 2025-12-16
 description: Check and configure dead code detection (Knip, Vulture, cargo-machete)
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
+args: "[--check-only] [--fix] [--tool <knip|vulture|deadcode|machete>]"
 argument-hint: "[--check-only] [--fix] [--tool <knip|vulture|deadcode|machete>]"
 name: configure-dead-code
 ---

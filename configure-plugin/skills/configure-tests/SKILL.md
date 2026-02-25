@@ -5,6 +5,7 @@ modified: 2026-02-10
 reviewed: 2025-12-16
 description: Check and configure testing frameworks and infrastructure
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
+args: "[--check-only] [--fix] [--framework <vitest|jest|pytest|nextest>]"
 argument-hint: "[--check-only] [--fix] [--framework <vitest|jest|pytest|nextest>]"
 name: configure-tests
 ---

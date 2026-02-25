@@ -5,6 +5,7 @@ modified: 2026-02-11
 reviewed: 2026-02-08
 description: Check and configure README.md with logo, badges, features, tech stack, and project structure
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch
+args: "[--check-only] [--fix] [--style <minimal|standard|detailed>] [--badges <shields|custom>]"
 argument-hint: "[--check-only] [--fix] [--style <minimal|standard|detailed>] [--badges <shields|custom>]"
 name: configure-readme
 ---

@@ -5,6 +5,7 @@ modified: 2026-02-11
 reviewed: 2025-12-16
 description: Check and configure security scanning (dependency audits, SAST, secrets)
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
+args: "[--check-only] [--fix] [--type <dependencies|sast|secrets|all>]"
 argument-hint: "[--check-only] [--fix] [--type <dependencies|sast|secrets|all>]"
 name: configure-security
 ---

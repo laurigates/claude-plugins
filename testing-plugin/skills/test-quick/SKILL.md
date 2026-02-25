@@ -4,6 +4,7 @@ created: 2025-12-16
 modified: 2026-02-05
 reviewed: 2025-12-16
 allowed-tools: Task, TodoWrite
+args: "[path] [--watch] [--affected]"
 argument-hint: "[path] [--watch] [--affected]"
 description: Fast unit tests only (skip slow/integration/E2E)
 name: test-quick
