@@ -5,6 +5,7 @@ modified: 2026-02-10
 reviewed: 2025-12-16
 description: Check and configure linting tools (Biome, Ruff, Clippy)
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
+args: "[--check-only] [--fix] [--linter <biome|ruff|clippy>]"
 argument-hint: "[--check-only] [--fix] [--linter <biome|ruff|clippy>]"
 name: configure-linting
 ---

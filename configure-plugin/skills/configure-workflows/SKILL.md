@@ -5,6 +5,7 @@ modified: 2026-02-13
 reviewed: 2025-12-16
 description: Check and configure GitHub Actions CI/CD workflows (container builds, tests, releases)
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite, WebSearch, WebFetch
+args: "[--check-only] [--fix]"
 argument-hint: "[--check-only] [--fix]"
 name: configure-workflows
 ---

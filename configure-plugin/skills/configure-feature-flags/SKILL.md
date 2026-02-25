@@ -5,6 +5,7 @@ modified: 2026-02-10
 reviewed: 2025-12-16
 description: Check and configure feature flag infrastructure (OpenFeature + providers)
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
+args: "[--check-only] [--fix] [--provider <goff|flagd|launchdarkly|split>]"
 argument-hint: "[--check-only] [--fix] [--provider <goff|flagd|launchdarkly|split>]"
 name: configure-feature-flags
 ---

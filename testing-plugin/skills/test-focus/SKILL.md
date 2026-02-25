@@ -4,6 +4,7 @@ created: 2026-01-19
 modified: 2026-02-05
 reviewed: 2026-02-08
 allowed-tools: Bash, Read, Grep, Glob, TodoWrite
+args: "<file-path> [--serial] [--debug]"
 argument-hint: "<file-path> [--serial] [--debug]"
 description: Run single test file with fail-fast mode for rapid iteration
 name: test-focus

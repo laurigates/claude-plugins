@@ -5,6 +5,7 @@ modified: 2026-02-10
 reviewed: 2026-02-08
 description: Audit skills and agents for agentic output optimization (missing compact/JSON flags, missing Agentic Optimizations tables)
 allowed-tools: Bash(find *), Bash(head *), Read, Grep, Glob, TodoWrite
+args: "[--fix] [--verbose]"
 argument-hint: "[--fix] [--verbose]"
 name: health-agentic-audit
 ---

@@ -5,6 +5,7 @@ modified: 2026-02-10
 reviewed: 2025-12-16
 description: Check and configure load and performance testing with k6, Artillery, or Locust
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
+args: "[--check-only] [--fix] [--framework <k6|artillery|locust>]"
 argument-hint: "[--check-only] [--fix] [--framework <k6|artillery|locust>]"
 name: configure-load-tests
 ---

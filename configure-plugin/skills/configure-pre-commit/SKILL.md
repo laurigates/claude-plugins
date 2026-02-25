@@ -5,6 +5,7 @@ modified: 2026-02-10
 reviewed: 2025-12-16
 description: Check and configure pre-commit hooks for project standards
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
+args: "[--check-only] [--fix] [--type <frontend|infrastructure|python>]"
 argument-hint: "[--check-only] [--fix] [--type <frontend|infrastructure|python>]"
 name: configure-pre-commit
 ---

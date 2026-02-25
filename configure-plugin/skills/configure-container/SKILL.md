@@ -5,6 +5,7 @@ modified: 2026-02-13
 reviewed: 2026-01-19
 description: Check and configure container infrastructure (builds, registry, scanning, devcontainer)
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite, SlashCommand, WebSearch, WebFetch
+args: "[--check-only] [--fix] [--component <dockerfile|workflow|registry|scanning|devcontainer>]"
 argument-hint: "[--check-only] [--fix] [--component <dockerfile|workflow|registry|scanning|devcontainer>]"
 name: configure-container
 ---

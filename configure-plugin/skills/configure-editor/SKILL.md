@@ -5,6 +5,7 @@ modified: 2026-02-10
 reviewed: 2025-12-16
 description: Check and configure EditorConfig and VS Code workspace settings
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
+args: "[--check-only] [--fix]"
 argument-hint: "[--check-only] [--fix]"
 name: configure-editor
 ---

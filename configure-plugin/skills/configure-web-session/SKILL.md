@@ -7,6 +7,7 @@ description: |
   start. Use when pre-commit hooks, justfile recipes, or CI tools fail in remote
   sessions because infrastructure tools are absent from the base image.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
+args: "[--check-only] [--fix] [--tools <list>]"
 argument-hint: "[--check-only] [--fix] [--tools <list>]"
 created: 2026-02-25
 modified: 2026-02-25

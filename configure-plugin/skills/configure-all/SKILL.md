@@ -5,6 +5,7 @@ modified: 2026-02-10
 reviewed: 2025-12-16
 description: Run all infrastructure standards checks and configure compliance
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, SlashCommand
+args: "[--check-only] [--fix] [--type <frontend|infrastructure|python>]"
 argument-hint: "[--check-only] [--fix] [--type <frontend|infrastructure|python>]"
 name: configure-all
 ---

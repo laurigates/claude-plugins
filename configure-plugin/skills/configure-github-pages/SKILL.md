@@ -5,6 +5,7 @@ modified: 2026-02-11
 reviewed: 2025-12-16
 description: Check and configure GitHub Pages deployment
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
+args: "[--check-only] [--fix] [--source <docs|site|custom>]"
 argument-hint: "[--check-only] [--fix] [--source <docs|site|custom>]"
 name: configure-github-pages
 ---

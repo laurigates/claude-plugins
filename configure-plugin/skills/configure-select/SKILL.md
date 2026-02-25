@@ -5,6 +5,7 @@ modified: 2026-02-10
 reviewed: 2025-12-22
 description: Interactively select which infrastructure standards to configure
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, SlashCommand
+args: "[--check-only] [--fix]"
 argument-hint: "[--check-only] [--fix]"
 name: configure-select
 ---
