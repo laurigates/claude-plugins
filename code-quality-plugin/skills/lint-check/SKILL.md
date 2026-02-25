@@ -81,5 +81,5 @@ If no specific linters found:
 
 After linting:
 1. Summary of issues found/fixed
-2. If unfixable issues exist, suggest `/refactor` command
+2. If unfixable issues exist, suggest `/code:refactor` command
 3. If all clean, ready for `/git:smartcommit`

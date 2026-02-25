@@ -24,7 +24,7 @@ Systematic extraction of duplicated code into shared, tested abstractions.
 |------------------------|--------------------------|
 | Multiple files have identical/near-identical code blocks | Single file needs cleanup → `/code:refactor` |
 | Copy-pasted utility functions across components | Looking for anti-patterns without fixing → `/code:antipatterns` |
-| Repeated UI patterns (dialogs, pagination, error states) | General SOLID refactoring → `/refactor` |
+| Repeated UI patterns (dialogs, pagination, error states) | Functional refactoring of a file or directory → `/code:refactor` |
 | Duplicated hooks or state management boilerplate | Structural code search only → `ast-grep-search` |
 | Import blocks are bloated from repeated inline patterns | Linting/formatting issues → `/lint:check` |
 
@@ -202,7 +202,6 @@ After all phases complete, report:
 
 ## See Also
 
-- `/code:refactor` — General SOLID refactoring for single files
+- `/code:refactor` — Functional refactoring of a file or directory (pure functions, immutability, composition)
 - `/code:antipatterns` — Detection-only analysis for code smells
-- `/refactor` — Quick refactoring of selected code
 - `ast-grep-search` — Structural code search for finding patterns
