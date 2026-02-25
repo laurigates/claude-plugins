@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.8.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.7.2...code-quality-plugin-v1.8.0) (2026-02-25)
+
+
+### Features
+
+* **python-plugin:** replace mypy with ty for type checking ([96a1aaa](https://github.com/laurigates/claude-plugins/commit/96a1aaa9c5f7e07725c72ce0a6f99f7fbf222d57))
+* refocus code-refactor skill on functional programming principles ([#807](https://github.com/laurigates/claude-plugins/issues/807)) ([a9fa79b](https://github.com/laurigates/claude-plugins/commit/a9fa79b16aac2ecf014e8f74d5cbafaeb9df9f0f))
+* replace mypy with ty for Python type checking ([#808](https://github.com/laurigates/claude-plugins/issues/808)) ([96a1aaa](https://github.com/laurigates/claude-plugins/commit/96a1aaa9c5f7e07725c72ce0a6f99f7fbf222d57))
+
+
+### Code Refactoring
+
+* **code-quality-plugin:** replace /refactor with FP-oriented /code:refactor ([a9fa79b](https://github.com/laurigates/claude-plugins/commit/a9fa79b16aac2ecf014e8f74d5cbafaeb9df9f0f))
+
 ## [1.7.2](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.7.1...code-quality-plugin-v1.7.2) (2026-02-23)
 
 
