@@ -1,6 +1,6 @@
 {
   "name": "feedback-plugin",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Session feedback analysis - capture skill bugs, enhancements, and positive patterns as GitHub issues",
   "author": {
     "name": "Lauri Gates",
