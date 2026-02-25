@@ -47,7 +47,7 @@ UV provides tool management capabilities similar to pipx, allowing you to instal
 # Install latest version
 uv tool install ruff
 uv tool install black
-uv tool install mypy
+uv tool install ty
 
 # Output shows installed executables:
 # Resolved 1 package in 123ms
@@ -127,7 +127,7 @@ uv tool install --python 3.11 ruff
 uv tool install --python 3.12 pytest
 
 # Use Python from PATH
-uv tool install --python python3.11 mypy
+uv tool install --python python3.11 ty
 ```
 
 ---
@@ -217,9 +217,8 @@ uv tool list
 # black v23.12.0
 #  - black
 #  - blackd
-# mypy v1.7.1
-#  - mypy
-#  - stubgen
+# ty v0.0.10
+#  - ty
 ```
 
 **Verbose output:**
@@ -239,7 +238,7 @@ uv tool list --verbose
 uv tool upgrade ruff
 
 # Update multiple tools
-uv tool upgrade ruff black mypy
+uv tool upgrade ruff black ty
 
 # Update all tools
 uv tool upgrade --all
@@ -252,7 +251,7 @@ uv tool upgrade --all
 uv tool uninstall ruff
 
 # Remove multiple tools
-uv tool uninstall ruff black mypy
+uv tool uninstall ruff black ty
 
 # Remove all tools
 uv tool uninstall --all
@@ -390,14 +389,14 @@ tool-bin-dir = "~/.local/bin"
 ```bash
 # Install essential tools
 uv tool install ruff      # Linter & formatter
-uv tool install mypy      # Type checker
+uv tool install ty        # Type checker
 uv tool install pytest    # Test runner
 uv tool install ipython   # Enhanced REPL
 uv tool install httpie    # HTTP client
 
 # Verify installations
 ruff --version
-mypy --version
+ty --version
 pytest --version
 ```
 
@@ -603,7 +602,7 @@ uv tool install ruff
 ```
 ruff>=0.1.0
 black==23.12.0
-mypy>=1.7
+ty>=0.0.10
 pytest>=7.4
 ```
 
@@ -680,7 +679,7 @@ ruff-0.2 check .
 tools=(
     "ruff>=0.1.0"
     "black>=23.0"
-    "mypy>=1.7"
+    "ty>=0.0.10"
     "pytest>=7.4"
     "ipython>=8.0"
 )
@@ -701,12 +700,12 @@ uv tool list
 - name: Install tools
   run: |
     uv tool install ruff
-    uv tool install mypy
+    uv tool install ty
 
 - name: Run linters
   run: |
     ruff check .
-    mypy src/
+    ty check src/ --hide-progress
 ```
 
 ### Docker Integration
@@ -719,7 +718,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 # Install tools globally
 RUN uv tool install ruff && \
-    uv tool install mypy
+    uv tool install ty
 
 # Tools available system-wide
 CMD ["ruff", "check", "."]
@@ -731,7 +730,7 @@ CMD ["ruff", "check", "."]
 
 - **uv-project-management** - Project dependencies vs tools
 - **uv-python-versions** - Python versions for tools
-- **python-code-quality** - Using ruff, mypy, black
+- **python-code-quality** - Using ruff, ty, black
 
 ---
 

@@ -237,7 +237,7 @@ ruff check tests/ &
 wait
 
 # Combine with other tools
-ruff check && pytest && mypy
+ruff check && pytest && ty check
 ```
 
 ## CI/CD Integration

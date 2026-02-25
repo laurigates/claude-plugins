@@ -152,7 +152,7 @@ npm run test              # Full test suite
 
 **Python projects:**
 ```bash
-python -m mypy .          # Type checking
+ty check .                # Type checking
 ruff check .              # Linting
 pytest                    # Test suite
 ```

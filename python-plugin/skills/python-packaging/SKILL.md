@@ -93,7 +93,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "ruff", "mypy"]
+dev = ["pytest", "ruff", "ty"]
 
 [project.urls]
 Homepage = "https://github.com/user/my-package"

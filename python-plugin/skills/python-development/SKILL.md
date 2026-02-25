@@ -358,7 +358,7 @@ my-project/
 - **uv-project-management** - Project setup and dependency management
 - **uv-tool-management** - Installing CLI tools globally
 - **python-testing** - Testing with pytest
-- **python-code-quality** - Linting and type checking with ruff/mypy
+- **python-code-quality** - Linting and type checking with ruff/ty
 - **python-packaging** - Building and publishing packages
 - **uv-python-versions** - Managing Python interpreters
 

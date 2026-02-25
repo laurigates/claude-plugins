@@ -242,7 +242,7 @@ Follow strict RED → GREEN → REFACTOR workflow:
 
 ## Project Types Supported
 
-- **Python**: pyproject.toml, uv, pytest, ruff, mypy
+- **Python**: pyproject.toml, uv, pytest, ruff, ty
 - **JavaScript/TypeScript**: package.json, bun/pnpm/npm, Vitest/Jest, ESLint, Prettier
 - **Rust**: Cargo.toml, cargo test, clippy, rustfmt
 - **Go**: go.mod, go test, golangci-lint

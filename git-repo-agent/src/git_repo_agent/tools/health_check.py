@@ -207,7 +207,7 @@ def _score_quality(repo: Path) -> tuple[int, list[str]]:
     elif (repo / "pyproject.toml").exists():
         try:
             content = (repo / "pyproject.toml").read_text(encoding="utf-8")
-            if "tool.pyright" in content or "tool.basedpyright" in content or "tool.mypy" in content:
+            if "tool.pyright" in content or "tool.basedpyright" in content or "tool.mypy" in content or "tool.ty" in content:
                 score += 5
         except OSError:
             pass

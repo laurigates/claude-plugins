@@ -137,7 +137,7 @@ uv run pytest
 uv add fastapi uvicorn 'pydantic>=2.0'
 
 # Development tooling
-uv add --dev pytest pytest-cov ruff mypy
+uv add --dev pytest pytest-cov ruff ty
 
 # Documentation
 uv add --group docs sphinx mkdocs-material

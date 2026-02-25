@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-02-05
+modified: 2026-02-25
 reviewed: 2025-12-16
 allowed-tools: Bash(ruff *), Bash(eslint *), Bash(rustfmt *), Bash(gofmt *), Bash(prettier *), Read, SlashCommand
 args: "[path] [--fix] [--format]"
@@ -27,7 +27,7 @@ name: lint-check
 {{ if PROJECT_TYPE == "python" }}
 Run Python linters:
 1. Ruff check: `uv run ruff check ${1:-.} --output-format=concise ${2:+--fix}`
-2. Type checking: `uv run mypy ${1:-.}`
+2. Type checking: `uv run ty check ${1:-.} --hide-progress`
 3. Format check: `uv run ruff format ${1:-.} ${3:+--check}`
 4. Security: `uv run bandit -r ${1:-.}`
 {{ endif }}
