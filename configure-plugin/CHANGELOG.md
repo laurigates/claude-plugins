@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.10.1...configure-plugin-v1.11.0) (2026-02-25)
+
+
+### Features
+
+* **configure-plugin:** add configure-web-session skill for Claude Code on the web ([#801](https://github.com/laurigates/claude-plugins/issues/801)) ([9f1f0fd](https://github.com/laurigates/claude-plugins/commit/9f1f0fd3ea4587fe6642199046f79d037f5a9431))
+
 ## [1.10.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.10.0...configure-plugin-v1.10.1) (2026-02-23)
 
 
