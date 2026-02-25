@@ -5,6 +5,7 @@ modified: 2026-02-11
 reviewed: 2025-12-16
 description: Check and configure integration testing for services, databases, and external dependencies
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
+args: "[--check-only] [--fix] [--framework <supertest|pytest|testcontainers>]"
 argument-hint: "[--check-only] [--fix] [--framework <supertest|pytest|testcontainers>]"
 name: configure-integration-tests
 ---

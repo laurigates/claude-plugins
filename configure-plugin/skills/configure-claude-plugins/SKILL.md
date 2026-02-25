@@ -5,6 +5,7 @@ modified: 2026-02-10
 reviewed: 2026-01-30
 description: Configure .claude/settings.json and GitHub Actions workflows to use the laurigates/claude-plugins marketplace
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash(mkdir *), Bash(test *), Bash(ls *), Bash(git remote *), AskUserQuestion, TodoWrite
+args: "[--check-only] [--fix] [--plugins <plugin1,plugin2,...>]"
 argument-hint: "[--check-only] [--fix] [--plugins <plugin1,plugin2,...>]"
 name: configure-claude-plugins
 ---

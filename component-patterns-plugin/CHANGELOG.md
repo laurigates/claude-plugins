@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.2](https://github.com/laurigates/claude-plugins/compare/component-patterns-plugin-v1.2.1...component-patterns-plugin-v1.2.2) (2026-02-25)
+
+
+### Bug Fixes
+
+* **skills:** add missing args field to 57 skills with argument-hint ([#812](https://github.com/laurigates/claude-plugins/issues/812)) ([f670423](https://github.com/laurigates/claude-plugins/commit/f670423777d3d0e4edf52a1594ad82efaa13793e)), closes [#805](https://github.com/laurigates/claude-plugins/issues/805)
+
 ## [1.2.1](https://github.com/laurigates/claude-plugins/compare/component-patterns-plugin-v1.2.0...component-patterns-plugin-v1.2.1) (2026-02-23)
 
 

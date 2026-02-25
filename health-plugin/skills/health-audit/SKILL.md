@@ -5,6 +5,7 @@ modified: 2026-02-10
 reviewed: 2026-02-05
 description: Audit enabled plugins against project tech stack and recommend additions/removals for relevance
 allowed-tools: Bash(test *), Bash(find *), Bash(jq *), Bash(claude plugin *), Read, Write, Edit, Glob, Grep, TodoWrite, AskUserQuestion
+args: "[--fix] [--dry-run] [--verbose]"
 argument-hint: "[--fix] [--dry-run] [--verbose]"
 name: health-audit
 ---

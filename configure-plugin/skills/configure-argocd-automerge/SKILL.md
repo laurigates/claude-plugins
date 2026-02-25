@@ -5,6 +5,7 @@ modified: 2026-02-13
 reviewed: 2026-02-03
 description: Configure auto-merge workflow for ArgoCD Image Updater branches
 allowed-tools: Glob, Grep, Read, Write, Edit, TodoWrite
+args: "[--check-only] [--fix]"
 argument-hint: "[--check-only] [--fix]"
 name: configure-argocd-automerge
 ---

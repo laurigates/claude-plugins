@@ -4,6 +4,7 @@ created: 2025-12-16
 modified: 2026-02-05
 reviewed: 2025-12-16
 allowed-tools: Task, TodoWrite
+args: [test-pattern] [--coverage] [--watch]
 argument-hint: [test-pattern] [--coverage] [--watch]
 description: Universal test runner that automatically detects and runs the appropriate testing framework
 name: test-run

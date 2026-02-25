@@ -5,6 +5,7 @@ modified: 2026-02-10
 reviewed: 2025-12-16
 description: Show infrastructure standards compliance status (read-only)
 allowed-tools: Glob, Grep, Read, TodoWrite
+args: "[--verbose]"
 argument-hint: "[--verbose]"
 name: configure-status
 ---

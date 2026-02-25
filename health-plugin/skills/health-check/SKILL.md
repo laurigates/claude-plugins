@@ -5,6 +5,7 @@ modified: 2026-02-10
 reviewed: 2026-02-04
 description: Run a comprehensive diagnostic scan of Claude Code configuration including plugins, settings, hooks, and MCP servers
 allowed-tools: Bash(test *), Bash(jq *), Bash(head *), Bash(find *), Read, Glob, Grep, TodoWrite
+args: "[--fix] [--verbose]"
 argument-hint: "[--fix] [--verbose]"
 name: health-check
 ---

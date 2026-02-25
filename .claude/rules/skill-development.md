@@ -213,6 +213,10 @@ Update `README.md`:
 - Add skill to skills table
 - Add usage examples for new commands
 
+## Related Rules
+
+For creating agents (rather than skills), see `.claude/rules/agent-development.md`.
+
 ## Git Workflow
 
 All commits and PR titles **must** follow conventional commit format. See `.claude/rules/conventional-commits.md` for the full standard.

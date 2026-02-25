@@ -5,6 +5,7 @@ modified: 2026-02-11
 reviewed: 2025-12-16
 description: Check and configure release-please workflow for project standards
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
+args: "[--check-only] [--fix]"
 argument-hint: "[--check-only] [--fix]"
 name: configure-release-please
 ---

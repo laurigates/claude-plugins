@@ -5,6 +5,7 @@ modified: 2026-02-10
 reviewed: 2026-02-05
 description: Diagnose and fix plugin registry issues including orphaned entries and project-scope conflicts (addresses Claude Code issue #14202)
 allowed-tools: Bash(test *), Bash(jq *), Bash(cp *), Bash(mkdir *), Read, Write, Edit, Glob, Grep, TodoWrite, AskUserQuestion
+args: "[--fix] [--dry-run] [--plugin <name>]"
 argument-hint: "[--fix] [--dry-run] [--plugin <name>]"
 name: health-plugins
 ---

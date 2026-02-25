@@ -5,6 +5,7 @@ modified: 2026-02-11
 reviewed: 2025-12-16
 description: Check and configure UX testing infrastructure (Playwright, accessibility, visual regression)
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
+args: "[--check-only] [--fix] [--a11y] [--visual]"
 argument-hint: "[--check-only] [--fix] [--a11y] [--visual]"
 name: configure-ux-testing
 ---

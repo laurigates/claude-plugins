@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.11.2](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.11.1...configure-plugin-v1.11.2) (2026-02-25)
+
+
+### Bug Fixes
+
+* **configure-plugin:** extract go-feature-flag SKILL.md to under 500 lines ([#810](https://github.com/laurigates/claude-plugins/issues/810)) ([80ba44f](https://github.com/laurigates/claude-plugins/commit/80ba44f6f932cca6a307353ae7e082a8c9484cb9)), closes [#802](https://github.com/laurigates/claude-plugins/issues/802)
+* **skills:** add missing args field to 57 skills with argument-hint ([#812](https://github.com/laurigates/claude-plugins/issues/812)) ([f670423](https://github.com/laurigates/claude-plugins/commit/f670423777d3d0e4edf52a1594ad82efaa13793e)), closes [#805](https://github.com/laurigates/claude-plugins/issues/805)
+
 ## [1.11.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.11.0...configure-plugin-v1.11.1) (2026-02-25)
 
 

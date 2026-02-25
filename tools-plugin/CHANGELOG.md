@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.8](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.4.7...tools-plugin-v2.4.8) (2026-02-25)
+
+
+### Bug Fixes
+
+* **skills:** add missing args field to 57 skills with argument-hint ([#812](https://github.com/laurigates/claude-plugins/issues/812)) ([f670423](https://github.com/laurigates/claude-plugins/commit/f670423777d3d0e4edf52a1594ad82efaa13793e)), closes [#805](https://github.com/laurigates/claude-plugins/issues/805)
+
 ## [2.4.7](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.4.6...tools-plugin-v2.4.7) (2026-02-15)
 
 

@@ -5,6 +5,7 @@ modified: 2026-02-11
 reviewed: 2026-02-02
 description: Install reusable GitHub Actions workflows for security, quality, and accessibility checks
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash(mkdir *), Bash(ls *), AskUserQuestion, TodoWrite
+args: "[--all] [--security] [--quality] [--a11y] [--list]"
 argument-hint: "[--all] [--security] [--quality] [--a11y] [--list]"
 name: configure-reusable-workflows
 ---
