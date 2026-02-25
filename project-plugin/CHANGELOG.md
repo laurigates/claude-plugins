@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.10.0](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.9.5...project-plugin-v1.10.0) (2026-02-25)
+
+
+### Features
+
+* **python-plugin:** replace mypy with ty for type checking ([96a1aaa](https://github.com/laurigates/claude-plugins/commit/96a1aaa9c5f7e07725c72ce0a6f99f7fbf222d57))
+* replace mypy with ty for Python type checking ([#808](https://github.com/laurigates/claude-plugins/issues/808)) ([96a1aaa](https://github.com/laurigates/claude-plugins/commit/96a1aaa9c5f7e07725c72ce0a6f99f7fbf222d57))
+
 ## [1.9.5](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.9.4...project-plugin-v1.9.5) (2026-02-23)
 
 
