@@ -30,7 +30,7 @@ Analyze the current session for skill feedback and create GitHub issues to track
 
 ## Context
 
-- Repository: !`git remote get-url origin`
+- Git remotes: !`git remote -v`
 - Open feedback issues: !`gh issue list --label session-feedback --state open --json number,title --jq '.[].title'`
 - Open positive issues: !`gh issue list --label positive-feedback --state open --json number,title --jq '.[].title'`
 
