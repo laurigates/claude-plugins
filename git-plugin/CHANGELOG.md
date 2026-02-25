@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.19.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.19.1...git-plugin-v2.19.2) (2026-02-25)
+
+
+### Bug Fixes
+
+* replace git remote get-url with git remote -v for verbose output ([#804](https://github.com/laurigates/claude-plugins/issues/804)) ([e39407a](https://github.com/laurigates/claude-plugins/commit/e39407a366d2d0ba431df0f456074b847073eea8))
+* **skills:** replace git remote get-url origin with git remote -v in context commands ([e39407a](https://github.com/laurigates/claude-plugins/commit/e39407a366d2d0ba431df0f456074b847073eea8))
+
 ## [2.19.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.19.0...git-plugin-v2.19.1) (2026-02-23)
 
 
