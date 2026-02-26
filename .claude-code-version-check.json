@@ -20,7 +20,22 @@
       "actionsRequired": [
         "Created .claude/rules/hooks-reference.md to document hook system enhancements",
         "Created .claude/rules/agent-development.md to document agent system enhancements"
-      ]
+      ],
+      "mcpVerification": {
+        "verifiedDate": "2026-02-26",
+        "verifiedIn": "issue-799",
+        "findings": [
+          "OAuth improvements (step-up auth, discovery caching): Remote MCP servers using HTTP+SSE support OAuth 2.1; discovery metadata cached per server URL; step-up auth triggers re-authorization mid-session when additional scopes needed",
+          "Dynamic MCP updates (list_changed): Servers declaring listChanged capability send notifications/tools/list_changed; Claude Code refreshes tool list without session restart",
+          "/mcp enable/disable commands: Session-scoped server toggling; does not modify .mcp.json; use for runtime management",
+          "Plugin.json schema: No new fields required; mcpServers field supports both inline and external file; url+headers fields for remote OAuth servers"
+        ],
+        "actionsRequired": [
+          "Updated agent-patterns-plugin/skills/mcp-management/SKILL.md: was stub (19 lines), now full skill with OAuth, enable/disable, list_changed documentation",
+          "Updated configure-plugin/skills/configure-mcp/SKILL.md: added Runtime Server Management section with /mcp enable/disable command reference",
+          "Updated configure-plugin/skills/configure-mcp/REFERENCE.md: added Remote MCP Servers section with HTTP+SSE OAuth configuration patterns"
+        ]
+      }
     },
     {
       "version": "2.1.7",

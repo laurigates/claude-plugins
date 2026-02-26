@@ -1,8 +1,8 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-02-10
-reviewed: 2025-12-16
+modified: 2026-02-26
+reviewed: 2026-02-26
 description: Check and configure MCP servers for project integration. Use when setting up MCP servers, checking MCP status, or adding new servers to a project.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix] [--core] [--server <name>]"
@@ -108,6 +108,18 @@ Print a summary using the report format from [REFERENCE.md](REFERENCE.md):
 ### Step 5: Update standards tracking
 
 If `.project-standards.yaml` exists, update the MCP section with current server list and timestamp.
+
+## Runtime Server Management
+
+After configuring `.mcp.json`, use these `/mcp` commands in Claude Code to manage servers without editing files:
+
+| Command | Description |
+|---------|-------------|
+| `/mcp` | List all configured servers and connection status |
+| `/mcp enable <server>` | Enable a server for the current session |
+| `/mcp disable <server>` | Disable a server for the current session (session-scoped) |
+
+**Note**: Enable/disable are session-scoped only. Permanent changes require editing `.mcp.json`.
 
 ## Agentic Optimizations
 
