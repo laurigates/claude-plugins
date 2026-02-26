@@ -22,7 +22,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.7.1",
+      "version": "2.7.2",
       "keywords": [
         "agents",
         "configuration",
@@ -317,7 +317,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "1.5.7",
+      "version": "1.5.8",
       "keywords": [
         "hooks",
         "automation",
