@@ -4,6 +4,15 @@ on:
   push:
     branches:
       - main
+  # Allow manual triggering, e.g. after fix-release-conflicts closes a stale PR
+  workflow_dispatch: {}
+
+# Prevent concurrent runs from racing on the release-please branch.
+# cancel-in-progress: false ensures queued runs wait rather than being
+# cancelled — avoids a race where two runs both try to update CHANGELOG.md.
+concurrency:
+  group: release-please
+  cancel-in-progress: false
 
 permissions:
   contents: write

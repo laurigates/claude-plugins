@@ -1,0 +1,102 @@
+name: Fix release-please conflicts
+
+# When the release-please PR gets merge conflicts (typically from rapid commits
+# to main that change CHANGELOG.md or plugin.json files that are managed
+# exclusively by automation), this workflow closes the stale PR and lets
+# release-please recreate it fresh.
+#
+# Root cause: release-please creates a branch modifying managed files
+# (CHANGELOG.md, plugin.json, .release-please-manifest.json). When commits
+# land on main, those same files change, making the existing release-please
+# branch stale. The next release-please run may not be able to force-push if
+# GitHub has already marked the PR as conflicted.
+
+on:
+  # Check after every push to main (runs after release-please)
+  push:
+    branches: [main]
+  # Periodic safety net
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: fix-release-conflicts
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  fix-conflicts:
+    runs-on: ubuntu-latest
+    # Delay slightly so release-please has time to run first
+    steps:
+      - name: Wait for release-please to finish
+        if: github.event_name == 'push'
+        run: sleep 30
+
+      - name: Check for conflicted release-please PR
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.MY_RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          # Find open release-please PRs
+          PR_JSON=$(gh pr list \
+            --repo "${{ github.repository }}" \
+            --head "release-please--branches--main" \
+            --state open \
+            --json number,mergeable,headRefName \
+            --limit 1 \
+            -q '.[0] // empty')
+
+          if [ -z "$PR_JSON" ]; then
+            echo "No open release-please PR found"
+            echo "has_conflict=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          NUMBER=$(echo "$PR_JSON" | jq -r '.number')
+          MERGEABLE=$(echo "$PR_JSON" | jq -r '.mergeable')
+          BRANCH=$(echo "$PR_JSON" | jq -r '.headRefName')
+
+          echo "PR #$NUMBER on branch $BRANCH — mergeable: $MERGEABLE"
+
+          if [ "$MERGEABLE" = "CONFLICTING" ]; then
+            echo "has_conflict=true" >> "$GITHUB_OUTPUT"
+            echo "pr_number=$NUMBER" >> "$GITHUB_OUTPUT"
+            echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_conflict=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Close conflicted PR and delete branch
+        if: steps.check.outputs.has_conflict == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.MY_RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER="${{ steps.check.outputs.pr_number }}"
+          BRANCH="${{ steps.check.outputs.branch }}"
+
+          echo "Closing conflicted PR #$PR_NUMBER and deleting branch $BRANCH"
+
+          # Close the PR (release-please will recreate it)
+          gh pr close "$PR_NUMBER" \
+            --repo "${{ github.repository }}" \
+            --comment "Closing due to merge conflicts. Release-please will recreate this PR automatically on the next trigger." \
+            --delete-branch
+
+          echo "Deleted branch $BRANCH"
+
+      - name: Retrigger release-please
+        if: steps.check.outputs.has_conflict == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.MY_RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Triggering release-please workflow to recreate the PR"
+          gh workflow run release-please.yml \
+            --repo "${{ github.repository }}" \
+            --ref main
+
+          echo "Release-please workflow triggered successfully"
