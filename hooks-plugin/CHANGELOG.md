@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.7.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.6.0...hooks-plugin-v1.7.0) (2026-02-26)
+
+
+### Features
+
+* **hooks-plugin:** add SessionEnd hook for git session cleanup ([#820](https://github.com/laurigates/claude-plugins/issues/820)) ([0c59ce1](https://github.com/laurigates/claude-plugins/commit/0c59ce1c885a1a798d5daf5ae10922aa6219f46f))
+
+
+### Bug Fixes
+
+* **scripts:** enhance context command linter with stderr safety checks and fix violations ([#819](https://github.com/laurigates/claude-plugins/issues/819)) ([2975b9b](https://github.com/laurigates/claude-plugins/commit/2975b9b0bf6698bdecf627e3d28bad06fde03cd1))
+
 ## [1.6.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.5.8...hooks-plugin-v1.6.0) (2026-02-26)
 
 
