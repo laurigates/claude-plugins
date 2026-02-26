@@ -1,8 +1,8 @@
 ---
 model: sonnet
 created: 2026-01-30
-modified: 2026-01-30
-reviewed: 2026-01-30
+modified: 2026-02-26
+reviewed: 2026-02-26
 allowed-tools: Bash(gh pr checks *), Bash(gh pr view *), Bash(gh pr diff *), Bash(gh run view *), Bash(gh run list *), Bash(gh api *), Bash(gh repo view *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git pull *), Bash(pre-commit *), Bash(npm run *), Bash(uv run *), Read, Edit, Write, Grep, Glob, TodoWrite, Task, mcp__github__pull_request_read
 args: "[pr-number] [--commit] [--push]"
 argument-hint: [pr-number] [--commit] [--push]
@@ -12,7 +12,7 @@ name: git-pr-feedback
 
 ## Context
 
-- Repo: !`gh repo view --json nameWithOwner -q '.nameWithOwner'`
+- Repo: !`git remote -v`
 - Current branch: !`git branch --show-current`
 - Git status: !`git status --porcelain=v2 --branch`
 - Staged changes: !`git diff --cached --numstat`
@@ -28,6 +28,15 @@ Parse these parameters from the command (all optional):
 | `$1` | PR number (if not provided, detect from current branch) |
 | `--commit` | Create commit(s) after addressing feedback |
 | `--push` | Push changes after committing (implies --commit) |
+
+## When to Use This Skill
+
+| Use this skill when... | Use another skill instead when... |
+|------------------------|----------------------------------|
+| A PR has reviewer comments to address | CI checks are failing with no review comments → use `git-fix-pr` |
+| You need to systematically work through review feedback | You're creating a new PR → use `git-commit-push-pr` |
+| A reviewer has requested changes | You want to understand PR workflow patterns → use `git-branch-pr-workflow` |
+| You want to address both CI failures and reviewer feedback together | |
 
 ## Your Task
 
@@ -53,8 +62,6 @@ Review PR workflow results and reviewer comments, then address substantive feedb
    git pull origin <branch-name>
    ```
 
-name: git-pr-feedback
----
 
 ### Step 2: Gather PR Status
 
@@ -119,8 +126,6 @@ For each comment, determine:
 
 **Create a todo list** using TodoWrite with all actionable items.
 
-name: git-pr-feedback
----
 
 ### Step 4: Address Feedback
 
@@ -185,8 +190,6 @@ If a comment requires explanation rather than code change:
    git add -u  # Stage any formatter changes
    ```
 
-name: git-pr-feedback
----
 
 ### Step 6: Push Changes (if --push)
 
@@ -226,8 +229,6 @@ Provide a summary of actions taken:
 - [ ] Monitor CI for new run
 ```
 
-name: git-pr-feedback
----
 
 ## Decision Tree: Handling Different Feedback Types
 
@@ -257,8 +258,6 @@ Is it a "Request Changes" review?
 | Review summaries | `gh api repos/{owner}/{repo}/pulls/$PR/reviews` |
 | PR discussion | `gh api repos/{owner}/{repo}/issues/$PR/comments` |
 
-name: git-pr-feedback
----
 
 ## See Also
 
