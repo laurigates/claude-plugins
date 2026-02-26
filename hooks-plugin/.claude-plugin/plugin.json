@@ -1,6 +1,6 @@
 {
   "name": "hooks-plugin",
-  "version": "1.5.7",
+  "version": "1.6.0",
   "description": "Claude Code hooks for enforcing best practices and workflow automation",
   "author": {
     "name": "Lauri Gates"
@@ -15,7 +15,10 @@
     "anti-patterns",
     "tooling",
     "session-start",
-    "web"
+    "web",
+    "git-stash",
+    "git-cleanup",
+    "session-end"
   ],
   "hooks": {
     "PreToolUse": [
@@ -26,6 +29,30 @@
             "type": "command",
             "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/bash-antipatterns.sh",
             "timeout": 5000
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/git-stash-reminder.sh",
+            "timeout": 10000
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/git-session-cleanup.sh",
+            "timeout": 30000
           }
         ]
       }

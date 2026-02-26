@@ -28,6 +28,25 @@ A PreToolUse hook that intercepts Bash commands and blocks those that should use
 | 5+ pipe chain | Simplify with JSON output or awk |
 | Multi-grep test parsing | Use `--reporter=json` instead |
 
+### git-stash-reminder.sh
+
+A Stop hook that checks for orphaned git stashes before Claude exits. Classifies stashes by age and recommends `pop` (recent) or `drop` (stale).
+
+| Stash Age | Action |
+|-----------|--------|
+| < 2 hours | Recommend `git stash pop` |
+| >= 2 hours | Recommend `git stash drop stash@{N}` |
+
+### git-session-cleanup.sh
+
+A SessionEnd hook that runs cleanup operations when the session terminates: commits any staged changes, switches to the main/master branch, and pulls the latest changes.
+
+| Step | Behaviour |
+|------|-----------|
+| Commit | Commits staged files with `chore: auto-commit staged changes` (skipped if nothing staged) |
+| Switch | Switches to `main` (or `master` if `main` doesn't exist); no-op if already on main |
+| Pull | Runs `git pull --ff-only` to fast-forward the branch |
+
 ## Installation
 
 ### Option 1: Copy to Project
