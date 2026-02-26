@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.19.4](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.19.3...git-plugin-v2.19.4) (2026-02-26)
+
+
+### Documentation
+
+* **git-plugin:** update git-pr-feedback skill documentation and metadata ([#823](https://github.com/laurigates/claude-plugins/issues/823)) ([aa3fba5](https://github.com/laurigates/claude-plugins/commit/aa3fba56b82a3192a3d73ab34eb8024978398076))
+
 ## [2.19.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.19.2...git-plugin-v2.19.3) (2026-02-26)
 
 
