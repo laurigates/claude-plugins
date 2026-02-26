@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.5.8...hooks-plugin-v1.6.0) (2026-02-26)
+
+
+### Features
+
+* **hooks-plugin:** add git stash reminder Stop hook ([#817](https://github.com/laurigates/claude-plugins/issues/817)) ([1edf2a9](https://github.com/laurigates/claude-plugins/commit/1edf2a97e16eaaa3523f0c4d02d06ea7087816b1))
+
 ## [1.5.8](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.5.7...hooks-plugin-v1.5.8) (2026-02-26)
 
 
