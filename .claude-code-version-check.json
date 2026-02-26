@@ -1,14 +1,25 @@
 {
   "lastCheckedVersion": "2.1.50",
-  "lastCheckedDate": "2026-02-23",
+  "lastCheckedDate": "2026-02-25",
   "changelogUrl": "https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md",
   "reviewedChanges": [
     {
       "version": "2.1.50",
-      "date": "2026-02-23",
-      "relevantChanges": [],
+      "date": "2026-02-25",
+      "relevantChanges": [
+        "New hook events: WorktreeCreate, WorktreeRemove, TeammateIdle, TaskCompleted, ConfigChange",
+        "Hook default timeout increased from 60 seconds to 10 minutes",
+        "PermissionRequest hook for auto approve/deny of permission requests",
+        "Stop and SubagentStop clarified as distinct events (main agent vs subagent)",
+        "Agent teams: TeamCreate, SendMessage, TaskOutput, TaskStop native tools",
+        "Task tool isolation: 'worktree' parameter for isolated git worktree execution",
+        "Task tool run_in_background: true parameter for background agent execution",
+        "Agent memory hierarchy: user/project/local/auto scopes",
+        "Multi-agent collaboration via lead+teammates architecture"
+      ],
       "actionsRequired": [
-        "Review pending - see GitHub issue"
+        "Created .claude/rules/hooks-reference.md to document hook system enhancements",
+        "Created .claude/rules/agent-development.md to document agent system enhancements"
       ]
     },
     {
