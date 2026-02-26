@@ -15,7 +15,8 @@
     "anti-patterns",
     "tooling",
     "session-start",
-    "web"
+    "web",
+    "git-stash"
   ],
   "hooks": {
     "PreToolUse": [
@@ -26,6 +27,18 @@
             "type": "command",
             "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/bash-antipatterns.sh",
             "timeout": 5000
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/git-stash-reminder.sh",
+            "timeout": 10000
           }
         ]
       }
