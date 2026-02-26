@@ -9,8 +9,8 @@ allowed-tools: Bash(git diff *), Bash(git log *), Bash(git status *), Bash(just 
 argument-hint: "--rules | --skills | --recipes | --all | --dry-run"
 args: "[--rules] [--skills] [--recipes] [--all] [--dry-run]"
 created: 2026-02-11
-modified: 2026-02-22
-reviewed: 2026-02-14
+modified: 2026-02-26
+reviewed: 2026-02-26
 ---
 
 # /project:distill
@@ -43,12 +43,9 @@ Distill session insights into reusable project knowledge. Reviews what was done 
 
 The primary context source is the **current conversation history** — all messages, tool calls, and results from this session are available. Git history is supplemental and may be unavailable (e.g., in non-git directories or multi-repo workspaces).
 
-- Session diff: !`git log --stat --oneline --max-count=10`
-- Recent commits: !`git log --oneline --max-count=20`
-- Current branch: !`git branch --show-current`
+- Git repo detected: !`test -d .git`
 - Justfile: !`find . -maxdepth 1 \( -name 'justfile' -o -name 'Justfile' \) -print -quit`
 - Rules directory: !`find .claude/rules -name '*.md' -type f`
-- Changed files: !`git log --name-only --max-count=10 --format=''`
 
 ## Parameters
 
