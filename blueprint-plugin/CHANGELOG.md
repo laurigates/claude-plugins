@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.19.3](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.19.2...blueprint-plugin-v3.19.3) (2026-02-26)
+
+
+### Bug Fixes
+
+* **scripts:** enhance context command linter with stderr safety checks and fix violations ([#819](https://github.com/laurigates/claude-plugins/issues/819)) ([2975b9b](https://github.com/laurigates/claude-plugins/commit/2975b9b0bf6698bdecf627e3d28bad06fde03cd1))
+
 ## [3.19.2](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.19.1...blueprint-plugin-v3.19.2) (2026-02-23)
 
 
