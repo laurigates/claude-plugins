@@ -11,6 +11,7 @@
 # 6. Commands that write to stderr with empty $1 (wc, file, stat)
 # 7. cat/head/tail with hardcoded paths that write to stderr when missing (use find or test)
 # 8. git log -n N shorthand (use --max-count=N)
+# 9. gh repo view uses GitHub GraphQL API (TLS-sensitive, fails in proxy/offline envs)
 #
 # Exit codes:
 #   0 - no issues
@@ -106,6 +107,13 @@ check_pattern ERROR \
   "tail-hardcoded-path" \
   '^- .*!`tail [^`$]*`' \
   "use test -f for existence checks or find for discovery; tail writes to stderr on missing files"
+
+# gh repo view uses GitHub's GraphQL API (TLS-sensitive; fails in proxy/offline/cert-error envs)
+# Regression: git-pr-feedback used this and failed with x509 TLS cert error (PR #799)
+check_pattern WARN \
+  "gh-api-in-context" \
+  '^- .*!`[^`]*gh repo view[^`]*`' \
+  "replace 'gh repo view' with 'git remote -v'; gh API calls fail with TLS errors in some environments"
 
 ##############################
 # WARNINGS - likely to break
