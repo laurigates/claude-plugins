@@ -192,3 +192,85 @@ When blocked, the agent receives a helpful message explaining:
 - How to specify the context
 - How to list available contexts
 - Example commands with proper context usage
+
+---
+
+## git-stash-reminder.sh
+
+A Stop hook that checks for orphaned git stashes before Claude exits. Stashes created during a session (branch switches, conflict resolution) are easily forgotten — this hook blocks the exit until they're addressed.
+
+### Behavior
+
+| Stash Age | Classification | Recommendation |
+|-----------|---------------|----------------|
+| < 2 hours | Recent | `git stash pop` (likely from this session) |
+| >= 2 hours | Stale | `git stash drop stash@{N}` (probably orphaned) |
+| No stashes | — | Silent exit (no output) |
+| Not a git repo | — | Silent exit (no output) |
+
+### How It Works
+
+1. The hook receives JSON input from Claude Code containing the working directory (`cwd`)
+2. It checks whether the directory is a git repository
+3. It lists all stashes with `git stash list --format='%gd|%ct|%gs'`
+4. Each stash is classified by age (2-hour threshold)
+5. If stashes exist, it outputs a `{"decision": "block", "reason": "..."}` JSON response
+6. Claude sees the stash list grouped by age with recommended actions
+
+### Edge Cases
+
+- **No stashes**: Exits silently with code 0
+- **Not a git repo**: Exits silently with code 0
+- **No `cwd` in input**: Exits silently with code 0
+- **Stash subjects containing `|`**: Handled safely via `IFS='|' read -r ref ts subject` (subject captures remainder)
+- **Mixed ages**: Both "Recent" and "Stale" sections shown in a single message
+
+### Configuration
+
+The hook is configured in `.claude-plugin/plugin.json` as a Stop event:
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/git-stash-reminder.sh",
+            "timeout": 10000
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### Testing
+
+```bash
+# Test: no stashes (should exit 0, no output)
+echo '{"cwd": "/tmp/test-repo"}' | bash hooks/git-stash-reminder.sh
+
+# Test: with stashes (should output block JSON)
+cd /tmp && git init test-stash && cd test-stash
+echo "test" > file.txt && git add . && git commit -m "init"
+echo "change" > file.txt && git stash
+echo '{"cwd": "/tmp/test-stash"}' | bash hooks/git-stash-reminder.sh
+# Expected: {"decision":"block","reason":"Found 1 git stash(es)..."}
+
+# Test: not a git repo (should exit 0, no output)
+echo '{"cwd": "/tmp"}' | bash hooks/git-stash-reminder.sh
+
+# Cleanup
+rm -rf /tmp/test-stash
+```
+
+### Customization
+
+Edit `git-stash-reminder.sh` to:
+- Adjust the `STALE_THRESHOLD` variable (default: 7200 seconds / 2 hours)
+- Change age display format
+- Modify classification logic or recommendations
