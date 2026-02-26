@@ -8,7 +8,10 @@
 # 3. ls commands that fail when files are missing (use find instead)
 # 4. Shell operators (&&, ||, ;) blocked by security protections
 # 5. Redirection operators (>, >>) blocked by security protections (includes 2>/dev/null)
-# 6. gh repo view uses GitHub GraphQL API (TLS-sensitive, fails in proxy/offline envs)
+# 6. Commands that write to stderr with empty $1 (wc, file, stat)
+# 7. cat/head/tail with hardcoded paths that write to stderr when missing (use find or test)
+# 8. git log -n N shorthand (use --max-count=N)
+# 9. gh repo view uses GitHub GraphQL API (TLS-sensitive, fails in proxy/offline envs)
 #
 # Exit codes:
 #   0 - no issues
@@ -51,11 +54,17 @@ check_pattern() {
 # All patterns anchor to "- " prefix to match context command lines only
 # (avoids false positives from markdown tables and code blocks)
 
-# git log numeric shorthand (-N) breaks backtick execution
+# git log numeric shorthand (-N or -n N) breaks backtick execution
 check_pattern ERROR \
   "git-log-shorthand" \
   '^- .*!`[^`]*git log[^`]* -[0-9]\+[^0-9]' \
   "replace -N with --max-count=N"
+
+# git log -n N shorthand (use --max-count=N)
+check_pattern ERROR \
+  "git-log-n-shorthand" \
+  '^- .*!`[^`]*git log[^`]* -n [0-9]' \
+  "replace -n N with --max-count=N"
 
 # Pipe chains in context commands (blocked by shell protections)
 check_pattern ERROR \
@@ -74,6 +83,30 @@ check_pattern ERROR \
   "redirection-operator" \
   '^- .*!`[^`]* [0-9]*>\/\?[^`]*`' \
   "remove redirection; failed commands produce empty output which is handled gracefully"
+
+# Commands that write to stderr when $1 is empty/missing
+# (wc, file, stat produce "No such file" errors on empty args)
+check_pattern ERROR \
+  "stderr-on-empty-arg" \
+  '^- .*!`\(wc\|file\|stat\) [^`]*\$[1-9]' \
+  "use test -f/test -d for existence checks; these commands write to stderr on empty \$1"
+
+# cat/head/tail with hardcoded paths write to stderr when file is missing
+# (use find or test -f for detection, or Read tool for file contents)
+check_pattern ERROR \
+  "cat-hardcoded-path" \
+  '^- .*!`cat [^`$]*`' \
+  "use test -f for existence checks or find for discovery; cat writes to stderr on missing files"
+
+check_pattern ERROR \
+  "head-hardcoded-path" \
+  '^- .*!`head [^`$]*`' \
+  "use test -f for existence checks or find for discovery; head writes to stderr on missing files"
+
+check_pattern ERROR \
+  "tail-hardcoded-path" \
+  '^- .*!`tail [^`$]*`' \
+  "use test -f for existence checks or find for discovery; tail writes to stderr on missing files"
 
 # gh repo view uses GitHub's GraphQL API (TLS-sensitive; fails in proxy/offline/cert-error envs)
 # Regression: git-pr-feedback used this and failed with x509 TLS cert error (PR #799)

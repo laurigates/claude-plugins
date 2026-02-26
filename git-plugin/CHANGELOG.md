@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.19.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.19.2...git-plugin-v2.19.3) (2026-02-26)
+
+
+### Bug Fixes
+
+* **scripts:** enhance context command linter with stderr safety checks and fix violations ([#819](https://github.com/laurigates/claude-plugins/issues/819)) ([2975b9b](https://github.com/laurigates/claude-plugins/commit/2975b9b0bf6698bdecf627e3d28bad06fde03cd1))
+
 ## [2.19.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.19.1...git-plugin-v2.19.2) (2026-02-25)
 
 

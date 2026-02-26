@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.8.3](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.8.2...testing-plugin-v3.8.3) (2026-02-26)
+
+
+### Bug Fixes
+
+* **scripts:** enhance context command linter with stderr safety checks and fix violations ([#819](https://github.com/laurigates/claude-plugins/issues/819)) ([2975b9b](https://github.com/laurigates/claude-plugins/commit/2975b9b0bf6698bdecf627e3d28bad06fde03cd1))
+
 ## [3.8.2](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.8.1...testing-plugin-v3.8.2) (2026-02-25)
 
 

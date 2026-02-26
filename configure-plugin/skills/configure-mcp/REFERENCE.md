@@ -162,6 +162,35 @@ Next Steps:
   3. Verify servers are loaded (check status bar)
 ```
 
+## Remote MCP Servers (HTTP+SSE with OAuth)
+
+For remote servers using HTTP+SSE transport (Claude Code 2.1.50+):
+
+```json
+{
+  "my-remote-server": {
+    "url": "https://mcp.example.com/sse",
+    "headers": {
+      "Authorization": "Bearer ${MY_API_TOKEN}"
+    }
+  }
+}
+```
+
+### OAuth Authentication Flow
+
+1. Claude Code discovers OAuth metadata from `/.well-known/oauth-authorization-server` (cached per server URL)
+2. User authorizes in the browser on first use
+3. Token is persisted and reused across sessions
+4. Step-up auth triggered mid-session when a tool requires additional scopes
+
+### Remote Server Notes
+
+- Use `${VAR_NAME}` in header values — never hardcode tokens
+- Discovery metadata is cached; use `/mcp disable` + `/mcp enable` to force refresh
+- Remote servers using OAuth do not need `env` block; use `headers` with Bearer token instead
+- Step-up auth is automatic — Claude Code handles re-authorization prompts
+
 ## Standards Tracking Template
 
 Update `.project-standards.yaml`:

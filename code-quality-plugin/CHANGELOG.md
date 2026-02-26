@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.1](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.8.0...code-quality-plugin-v1.8.1) (2026-02-26)
+
+
+### Bug Fixes
+
+* **scripts:** enhance context command linter with stderr safety checks and fix violations ([#819](https://github.com/laurigates/claude-plugins/issues/819)) ([2975b9b](https://github.com/laurigates/claude-plugins/commit/2975b9b0bf6698bdecf627e3d28bad06fde03cd1))
+
 ## [1.8.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.7.2...code-quality-plugin-v1.8.0) (2026-02-25)
 
 

@@ -17,7 +17,7 @@ name: git-pr-feedback
 - Git status: !`git status --porcelain=v2 --branch`
 - Staged changes: !`git diff --cached --numstat`
 - Unstaged changes: !`git diff --numstat`
-- Recent commits: !`git log --format='%h %s' -n 5`
+- Recent commits: !`git log --format='%h %s' --max-count=5`
 
 ## Parameters
 

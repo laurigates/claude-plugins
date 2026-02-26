@@ -31,7 +31,7 @@ Resolve merge conflicts in pull requests automatically.
 - Current branch: !`git branch --show-current`
 - Git status: !`git status --porcelain=v2 --branch`
 - Conflicted files: !`git diff --name-only --diff-filter=U`
-- Recent commits on current branch: !`git log --format='%h %s' -n 5`
+- Recent commits on current branch: !`git log --format='%h %s' --max-count=5`
 
 ## Parameters
 
