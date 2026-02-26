@@ -16,7 +16,9 @@
     "tooling",
     "session-start",
     "web",
-    "git-stash"
+    "git-stash",
+    "git-cleanup",
+    "session-end"
   ],
   "hooks": {
     "PreToolUse": [
@@ -39,6 +41,18 @@
             "type": "command",
             "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/git-stash-reminder.sh",
             "timeout": 10000
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/git-session-cleanup.sh",
+            "timeout": 30000
           }
         ]
       }
