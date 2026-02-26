@@ -171,7 +171,3 @@ jobs:
             Bash(git push *)
             Bash(git merge *)
             Bash(gh pr *)
-          plugin_marketplaces: |
-            https://github.com/laurigates/claude-plugins.git
-          plugins: |
-            git-plugin@laurigates-claude-plugins
