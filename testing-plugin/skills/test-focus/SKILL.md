@@ -17,7 +17,7 @@ name: test-focus
 - Vitest config: !`find . -maxdepth 1 \( -name 'vitest.config.*' -o -name 'vite.config.*' \)`
 - Jest config: !`find . -maxdepth 1 -name 'jest.config.*'`
 - Pytest config: !`grep -l "pytest" pyproject.toml setup.cfg`
-- Package.json: !`head -20 package.json`
+- Package.json exists: !`test -f package.json`
 
 ## Parameters
 

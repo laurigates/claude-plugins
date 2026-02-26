@@ -34,7 +34,7 @@ Check and configure testing frameworks against best practices (Vitest, Jest, pyt
 - Test directories: !`find . -maxdepth 2 -type d \( -name 'tests' -o -name '__tests__' -o -name 'test' \)`
 - Test scripts in package.json: !`grep -m5 -o '"test[^"]*"' package.json`
 - Coverage config: !`grep -l 'coverage' vitest.config.* jest.config.*`
-- Project standards: !`head -20 .project-standards.yaml`
+- Project standards: !`test -f .project-standards.yaml`
 
 **Modern testing stack preferences:**
 - **JavaScript/TypeScript**: Vitest (preferred) or Jest

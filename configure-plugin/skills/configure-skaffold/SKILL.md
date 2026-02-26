@@ -33,7 +33,7 @@ Check and configure Skaffold against project standards.
 - Profiles defined: !`grep -m10 'name:' skaffold.yaml`
 - Generate-secrets script: !`find . -maxdepth 1 -name \'scripts/generate-secrets.sh\'`
 - Dotenvx available: !`command -v dotenvx`
-- Project standards: !`head -20 .project-standards.yaml`
+- Project standards: !`test -f .project-standards.yaml`
 
 **Skills referenced**: `skaffold-standards`, `container-development`, `skaffold-orbstack`
 

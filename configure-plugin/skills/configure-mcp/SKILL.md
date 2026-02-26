@@ -31,7 +31,6 @@ For server configurations, environment variable reference, and report templates,
 ## Context
 
 - Config exists: !`find . -maxdepth 1 -name \'.mcp.json\'`
-- Config contents: !`cat .mcp.json`
 - Installed servers: !`jq -r '.mcpServers' .mcp.json`
 - Git tracking: !`grep '.mcp.json' .gitignore`
 - Standards file: !`find . -maxdepth 1 -name \'.project-standards.yaml\'`

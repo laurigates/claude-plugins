@@ -32,7 +32,7 @@ Analyze git history to identify fix and feature commits lacking corresponding te
 - Total commits: !`git rev-list --count HEAD`
 - Test framework: !`find . -maxdepth 3 \( -name 'vitest.config.*' -o -name 'jest.config.*' -o -name 'pytest.ini' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) -type f -print -quit`
 - Test files: !`find . -maxdepth 4 -type f \( -name '*.test.*' -o -name '*.spec.*' -o -name 'test_*' -o -name '*_test.*' \) -print`
-- Conventional commits sample: !`git log --format="%s" -n 10`
+- Conventional commits sample: !`git log --format="%s" --max-count=10`
 
 ## Parameters
 

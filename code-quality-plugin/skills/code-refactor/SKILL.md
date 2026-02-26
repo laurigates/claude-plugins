@@ -1,8 +1,8 @@
 ---
 model: sonnet
 created: 2025-12-16
-modified: 2026-02-25
-reviewed: 2026-02-25
+modified: 2026-02-26
+reviewed: 2026-02-26
 allowed-tools: Task, TodoWrite
 args: <file-path|directory>
 argument-hint: <file-path|directory>
@@ -23,8 +23,8 @@ name: code-refactor
 ## Context
 
 - Target path: !`echo "$1"`
-- File type: !`file "$1"`
-- Lines of code: !`wc -l "$1"`
+- Target is file: !`test -f "$1"`
+- Target is directory: !`test -d "$1"`
 
 ## Parameters
 

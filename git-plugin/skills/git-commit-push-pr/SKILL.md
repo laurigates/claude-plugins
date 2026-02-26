@@ -17,7 +17,7 @@ description: Complete workflow from changes to PR - auto-detect related issues, 
 - Git status: !`git status --porcelain=v2 --branch`
 - Unstaged changes: !`git diff --numstat`
 - Staged changes: !`git diff --cached --numstat`
-- Recent commits: !`git log --format='%h %s' -n 10`
+- Recent commits: !`git log --format='%h %s' --max-count=10`
 - Git remotes: !`git remote -v`
 - Available labels: !`gh label list --json name --limit 50`
 - Open issues: !`gh issue list --state open --json number,title,labels --limit 30`

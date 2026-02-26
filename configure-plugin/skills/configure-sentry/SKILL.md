@@ -29,7 +29,7 @@ Check and configure Sentry error tracking integration against project standards.
 - Package.json: !`find . -maxdepth 1 -name \'package.json\'`
 - Pyproject.toml: !`find . -maxdepth 1 -name \'pyproject.toml\'`
 - Requirements.txt: !`find . -maxdepth 1 -name \'requirements.txt\'`
-- Project standards: !`head -20 .project-standards.yaml`
+- Project standards: !`test -f .project-standards.yaml`
 - Sentry in package.json: !`grep -o '"@sentry/[^"]*"' package.json`
 - Sentry in pyproject.toml: !`grep 'sentry' pyproject.toml`
 - Sentry init files: !`find . -maxdepth 3 -name "*sentry*" -type f`
