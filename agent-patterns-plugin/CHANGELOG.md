@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.7.2](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.7.1...agent-patterns-plugin-v2.7.2) (2026-02-26)
+
+
+### Documentation
+
+* **hooks-plugin:** document Claude Code 2.1.50 hook system enhancements ([#813](https://github.com/laurigates/claude-plugins/issues/813)) ([92f1b1d](https://github.com/laurigates/claude-plugins/commit/92f1b1dda1ba03918f283f9961c7a161dd3fdf70)), closes [#798](https://github.com/laurigates/claude-plugins/issues/798)
+
 ## [2.7.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.7.0...agent-patterns-plugin-v2.7.1) (2026-02-25)
 
 
