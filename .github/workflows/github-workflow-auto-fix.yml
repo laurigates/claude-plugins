@@ -22,9 +22,10 @@ permissions:
 
 jobs:
   auto-fix:
-    # Only run on failures, skip main branch, allow Claude bot
+    # Only run on failures, skip main branch, allow Claude bot, skip auto-fix commits (loop prevention)
     if: >-
       github.event.workflow_run.conclusion == 'failure' &&
+      !startsWith(github.event.workflow_run.head_commit.message, 'fix(auto):') &&
       (github.event.workflow_run.actor.type != 'Bot' ||
        github.event.workflow_run.actor.login == 'claude[bot]' ||
        github.event.workflow_run.actor.login == 'claude') &&
@@ -43,6 +44,7 @@ jobs:
         id: context
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CI_CONTEXT_DIR: ${{ runner.temp }}/ci-failure-context
         run: |
           RUN_ID="${{ github.event.workflow_run.id }}"
           WORKFLOW_NAME="${{ github.event.workflow_run.name }}"
@@ -52,11 +54,17 @@ jobs:
           echo "workflow_name=$WORKFLOW_NAME" >> "$GITHUB_OUTPUT"
           echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
 
-          # Get failed job logs (truncated to last 500 lines)
-          gh run view "$RUN_ID" --log-failed 2>&1 | tail -500 > .auto-fix-failed-logs.txt || echo "Could not retrieve logs" > .auto-fix-failed-logs.txt
+          # Save failure context to runner temp dir (auto-cleaned by GitHub)
+          mkdir -p "${CI_CONTEXT_DIR}"
+          echo "context_dir=${CI_CONTEXT_DIR}" >> "$GITHUB_OUTPUT"
 
-          # Get run summary as JSON
-          gh run view "$RUN_ID" --json conclusion,status,name,headBranch,headSha,jobs > .auto-fix-run-summary.json 2>&1 || echo '{}' > .auto-fix-run-summary.json
+          # Get failed job logs (truncated to last 65536 bytes)
+          gh run view "$RUN_ID" --log-failed 2>&1 | tail -c 65536 > "${CI_CONTEXT_DIR}/failure-logs.txt" || echo "Could not retrieve logs" > "${CI_CONTEXT_DIR}/failure-logs.txt"
+
+          # Get structured failed jobs summary
+          gh run view "$RUN_ID" --json jobs \
+            -q '.jobs[] | select(.conclusion == "failure") | "Job: \(.name)\nStatus: \(.conclusion)\nSteps:\n" + ([.steps[] | select(.conclusion == "failure") | "  - \(.name): \(.conclusion)"] | join("\n"))' \
+            > "${CI_CONTEXT_DIR}/failed-jobs.txt" 2>/dev/null || echo "Could not retrieve job details" > "${CI_CONTEXT_DIR}/failed-jobs.txt"
 
           # Find associated PR number
           PR_NUMBER=$(gh pr list --head "$BRANCH" --json number --jq '.[0].number' 2>/dev/null || echo "")
@@ -66,6 +74,25 @@ jobs:
           RECENT_FIX=$(git log --oneline -5 --format='%s' | grep -c 'fix:.*resolve CI failure' || true)
           echo "recent_fix_count=$RECENT_FIX" >> "$GITHUB_OUTPUT"
 
+      - name: Check for PR flood guard
+        id: dedup
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Skip if >2 open auto-fix PRs already exist to prevent flooding
+          EXISTING_PRS=$(gh pr list \
+            --search "auto-fix in:title head:auto-fix/" \
+            --state open \
+            --json number \
+            -q 'length')
+
+          if [ "${EXISTING_PRS}" -gt "2" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::Skipping auto-fix: ${EXISTING_PRS} auto-fix PRs already open"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Skip if already attempted fix
         if: steps.context.outputs.recent_fix_count != '0'
         run: |
@@ -74,7 +101,7 @@ jobs:
           git log --oneline -5
 
       - name: Analyze and fix with Claude
-        if: steps.context.outputs.recent_fix_count == '0'
+        if: steps.context.outputs.recent_fix_count == '0' && steps.dedup.outputs.skip != 'true'
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -94,8 +121,8 @@ jobs:
 
             ## Step 1: Read the failure logs
 
-            Read the file `.auto-fix-failed-logs.txt` for the failed job output.
-            Read the file `.auto-fix-run-summary.json` for the run summary.
+            Read the file `${{ steps.context.outputs.context_dir }}/failed-jobs.txt` for a summary of which jobs and steps failed.
+            Read the file `${{ steps.context.outputs.context_dir }}/failure-logs.txt` for the detailed failure output.
 
             ## Step 2: Analyze the failure
 
