@@ -1,0 +1,173 @@
+name: Auto-resolve PR Conflicts
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Specific PR number to resolve (leave empty for all conflicting PRs)'
+        required: false
+        type: string
+
+# Only one conflict resolution run at a time
+concurrency:
+  group: auto-resolve-conflicts
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
+
+jobs:
+  find-conflicts:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.find.outputs.matrix }}
+      has_conflicts: ${{ steps.find.outputs.has_conflicts }}
+    steps:
+      - name: Find conflicting PRs
+        id: find
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -n "${{ inputs.pr_number }}" ]; then
+            MATRIX='{"include":[{"pr_number":"${{ inputs.pr_number }}"}]}'
+          else
+            PRS=$(gh pr list --repo "${{ github.repository }}" --state open --json number,mergeable \
+              --jq '[.[] | select(.mergeable == "CONFLICTING") | {"pr_number": (.number | tostring)}]')
+
+            if [ -z "$PRS" ] || [ "$PRS" = "[]" ]; then
+              echo "has_conflicts=false" >> "$GITHUB_OUTPUT"
+              echo "matrix={\"include\":[]}" >> "$GITHUB_OUTPUT"
+              echo "::notice::No PRs with merge conflicts found"
+              exit 0
+            fi
+
+            MATRIX="{\"include\":$PRS}"
+          fi
+
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+          COUNT=$(echo "$MATRIX" | jq '.include | length')
+          if [ "$COUNT" -gt 0 ]; then
+            echo "has_conflicts=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Found $COUNT PR(s) with merge conflicts"
+          else
+            echo "has_conflicts=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  resolve:
+    needs: find-conflicts
+    if: needs.find-conflicts.outputs.has_conflicts == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.find-conflicts.outputs.matrix) }}
+      max-parallel: 1
+      fail-fast: false
+    steps:
+      - name: Get PR details
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_JSON=$(gh pr view "${{ matrix.pr_number }}" --repo "${{ github.repository }}" \
+            --json headRefName,baseRefName,title,number)
+          echo "head_branch=$(echo "$PR_JSON" | jq -r '.headRefName')" >> "$GITHUB_OUTPUT"
+          echo "base_branch=$(echo "$PR_JSON" | jq -r '.baseRefName')" >> "$GITHUB_OUTPUT"
+          echo "title=$(echo "$PR_JSON" | jq -r '.title')" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pr.outputs.head_branch }}
+          fetch-depth: 0
+          token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN || github.token }}
+
+      - name: Attempt merge to surface conflicts
+        id: merge
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin "${{ steps.pr.outputs.base_branch }}"
+
+          if git merge "origin/${{ steps.pr.outputs.base_branch }}" --no-commit --no-ff 2>/dev/null; then
+            echo "has_conflicts=false" >> "$GITHUB_OUTPUT"
+            # No conflicts — abort the merge, nothing to do
+            git merge --abort 2>/dev/null || git reset --hard HEAD
+            echo "::notice::PR #${{ matrix.pr_number }} has no actual conflicts"
+          else
+            echo "has_conflicts=true" >> "$GITHUB_OUTPUT"
+
+            # Capture conflicted files for context
+            CONFLICTED=$(git diff --name-only --diff-filter=U)
+            echo "conflicted_files<<EOF" >> "$GITHUB_OUTPUT"
+            echo "$CONFLICTED" >> "$GITHUB_OUTPUT"
+            echo "EOF" >> "$GITHUB_OUTPUT"
+            echo "::warning::PR #${{ matrix.pr_number }} has conflicts in: $CONFLICTED"
+          fi
+
+      - name: Resolve conflicts with Claude
+        if: steps.merge.outputs.has_conflicts == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          allowed_bots: "claude[bot],claude"
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: "--model haiku --max-turns 20"
+          direct_prompt: |
+            You are resolving merge conflicts on PR #${{ matrix.pr_number }}: "${{ steps.pr.outputs.title }}"
+
+            Branch `${{ steps.pr.outputs.head_branch }}` has conflicts when merging `${{ steps.pr.outputs.base_branch }}`.
+
+            A `git merge origin/${{ steps.pr.outputs.base_branch }}` has already been started and left in a conflicted state.
+
+            ## Conflicted Files
+
+            ${{ steps.merge.outputs.conflicted_files }}
+
+            ## Instructions
+
+            For each conflicted file:
+
+            1. Read the file to see the conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`)
+            2. Understand what BOTH sides intended:
+               - **HEAD (PR branch)**: The feature/fix changes from this PR
+               - **base branch**: Changes that landed on the base branch since this PR was created
+            3. Resolve by combining both intents:
+               - Keep ALL functional changes from both sides
+               - For config files (JSON, YAML), merge entries from both sides
+               - For code, integrate both changes preserving logic from each
+               - Remove ALL conflict markers
+            4. Stage the resolved file with `git add <file>`
+
+            After resolving ALL conflicts:
+
+            1. Verify no conflict markers remain: search all conflicted files for `<<<<<<<`
+            2. Commit: `git commit --no-edit` (uses the auto-generated merge commit message)
+            3. Push: `git push origin ${{ steps.pr.outputs.head_branch }}`
+            4. Comment on PR: `gh pr comment ${{ matrix.pr_number }} --body "Merge conflicts with ${{ steps.pr.outputs.base_branch }} have been automatically resolved."`
+
+            ## Important Rules
+
+            - Preserve ALL changes from both sides when possible
+            - For JSON/YAML arrays or objects, include entries from both sides
+            - For version bumps, take the higher version
+            - For changelog files, include entries from both sides in chronological order
+            - If a conflict cannot be resolved without understanding business logic, abort with `git merge --abort` and comment on the PR explaining which files need manual resolution
+            - Run each git command as a separate Bash call (no `&&` chaining)
+          additional_permissions: |
+            Read
+            Edit
+            Grep
+            Glob
+            TodoWrite
+            Bash(git status *)
+            Bash(git diff *)
+            Bash(git log *)
+            Bash(git show *)
+            Bash(git add *)
+            Bash(git commit *)
+            Bash(git push *)
+            Bash(git merge *)
+            Bash(gh pr *)
