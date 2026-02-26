@@ -8,6 +8,7 @@
 # 3. ls commands that fail when files are missing (use find instead)
 # 4. Shell operators (&&, ||, ;) blocked by security protections
 # 5. Redirection operators (>, >>) blocked by security protections (includes 2>/dev/null)
+# 6. gh repo view uses GitHub GraphQL API (TLS-sensitive, fails in proxy/offline envs)
 #
 # Exit codes:
 #   0 - no issues
@@ -73,6 +74,13 @@ check_pattern ERROR \
   "redirection-operator" \
   '^- .*!`[^`]* [0-9]*>\/\?[^`]*`' \
   "remove redirection; failed commands produce empty output which is handled gracefully"
+
+# gh repo view uses GitHub's GraphQL API (TLS-sensitive; fails in proxy/offline/cert-error envs)
+# Regression: git-pr-feedback used this and failed with x509 TLS cert error (PR #799)
+check_pattern WARN \
+  "gh-api-in-context" \
+  '^- .*!`[^`]*gh repo view[^`]*`' \
+  "replace 'gh repo view' with 'git remote -v'; gh API calls fail with TLS errors in some environments"
 
 ##############################
 # WARNINGS - likely to break
