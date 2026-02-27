@@ -10,8 +10,10 @@ args: "[PATH] [--scope <utilities|components|hooks|all>] [--dry-run]"
 allowed-tools: Read, Write, Edit, MultiEdit, Grep, Glob, Bash(npx tsc *), Bash(npm run *), Bash(npx *), Bash(bun *), Bash(pnpm *), Bash(yarn *), Bash(pytest *), Bash(cargo *), TodoWrite, Task
 argument-hint: path or directory to scan for duplication
 created: 2026-02-06
-modified: 2026-02-10
+modified: 2026-02-27
 reviewed: 2026-02-06
+context: fork
+agent: general-purpose
 ---
 
 # DRY Consolidation
