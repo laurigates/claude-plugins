@@ -9,6 +9,7 @@ description: |
   strict flags explained, moduleResolution strategies (Bundler vs NodeNext),
   verbatimModuleSyntax, noUncheckedIndexedAccess. Use when setting up TypeScript projects
   or migrating to stricter type safety.
+user-invocable: false
 allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebFetch, WebSearch, BashOutput, KillShell
 ---
 

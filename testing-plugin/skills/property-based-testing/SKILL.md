@@ -9,6 +9,7 @@ description: |
   Generate test cases automatically, find edge cases, and test mathematical properties.
   Use when user mentions property-based testing, fast-check, Hypothesis, generating
   test data, QuickCheck-style testing, or finding edge cases automatically.
+user-invocable: false
 allowed-tools: Bash, Read, Edit, Write, Grep, Glob, TodoWrite
 ---
 

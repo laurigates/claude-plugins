@@ -9,6 +9,7 @@ description: |
   and cluster stability. Covers K8s workloads, networking, storage, and debugging pods.
   Use when user mentions Kubernetes, K8s, kubectl, pods, deployments, services, ingress,
   ConfigMaps, Secrets, or cluster operations.
+user-invocable: false
 allowed-tools: Glob, Grep, Read, Bash(kubectl *), Bash(helm *), Bash(kustomize *), Edit, Write, TodoWrite, WebFetch
 ---
 

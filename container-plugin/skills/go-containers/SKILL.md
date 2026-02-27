@@ -10,6 +10,7 @@ description: |
   from 846MB to 2.5MB (99.7% reduction). Covers ldflags, trimpath, and build flag
   optimizations specific to Go applications.
   Use when working with Go containers, Dockerfiles for Go apps, or optimizing Go image sizes.
+user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob, Edit, Write, TodoWrite, WebSearch, WebFetch
 ---
 

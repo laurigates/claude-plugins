@@ -11,6 +11,7 @@ description: |
   opening PRs, git switch, git restore, feature branches, pull requests, or GitHub
   PR workflows. For naming conventions see git-branch-naming, for rebase patterns
   see git-rebase-patterns.
+user-invocable: false
 allowed-tools: Bash, Read, mcp__github__create_pull_request, mcp__github__list_pull_requests, mcp__github__update_pull_request
 ---
 

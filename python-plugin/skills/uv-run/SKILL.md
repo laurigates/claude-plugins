@@ -9,6 +9,7 @@ description: |
   temporary dependencies (--with), and ephemeral tool execution.
   Use when running scripts, needing one-off dependencies, or creating
   executable Python scripts. No venv activation required.
+user-invocable: false
 allowed-tools: Glob, Grep, Read, WebFetch, TodoWrite, WebSearch, BashOutput, KillShell, Edit, Write, NotebookEdit, Bash
 ---
 

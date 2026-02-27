@@ -9,6 +9,7 @@ description: |
   pod copying, node debugging, debug profiles, and interactive troubleshooting sessions.
   Use when user mentions kubectl debug, debugging pods, ephemeral containers, node debugging,
   or interactive troubleshooting in Kubernetes clusters.
+user-invocable: false
 allowed-tools: Glob, Grep, Read, Bash(kubectl *), Bash(stern *), Edit, Write, TodoWrite, WebFetch
 ---
 

@@ -5,6 +5,7 @@ description: |
   Configure Claude Code security settings including permission wildcards, shell
   operator protections, and project-level access controls. Use when setting up
   project permissions, configuring allowed tools, or securing Claude Code workflows.
+user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-01-20
 modified: 2026-01-20

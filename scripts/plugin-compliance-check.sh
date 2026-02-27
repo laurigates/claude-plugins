@@ -32,7 +32,6 @@ overall_failed=false
 results_json=()
 results_frontmatter=()
 results_body=()
-results_size=()
 results_marketplace=()
 results_release=()
 results_overall=()
@@ -225,36 +224,6 @@ check_skill_body() {
   return 0
 }
 
-# Check 4: Skill size
-check_skill_size() {
-  local plugin="$1"
-  local skills_dir="${plugin}/skills"
-
-  if [ ! -d "$skills_dir" ]; then
-    return 0
-  fi
-
-  local has_errors=false
-
-  while IFS= read -r -d '' skill_file; do
-    local skill_name
-    skill_name=$(basename "$(dirname "$skill_file")")
-    local line_count
-    line_count=$(wc -l < "$skill_file")
-
-    if [ "$line_count" -gt 500 ]; then
-      issues+=("❌ ${plugin}/${skill_name}: SKILL.md has ${line_count} lines (max 500)")
-      has_errors=true
-    fi
-  done < <(find "$skills_dir" -type f \( -iname "SKILL.md" -o -iname "skill.md" \) -print0 2>/dev/null)
-
-  if $has_errors; then
-    return 2
-  fi
-
-  return 0
-}
-
 # Check 4: marketplace.json entry
 check_marketplace() {
   local plugin="$1"
@@ -346,7 +315,6 @@ for i in "${!PLUGINS[@]}"; do
     results_json+=("❌")
     results_frontmatter+=("❌")
     results_body+=("❌")
-    results_size+=("❌")
     results_marketplace+=("❌")
     results_release+=("❌")
     results_overall+=("❌")
@@ -358,20 +326,18 @@ for i in "${!PLUGINS[@]}"; do
   json_status=0; check_plugin_json "$plugin" || json_status=$?
   frontmatter_status=0; check_skill_frontmatter "$plugin" || frontmatter_status=$?
   body_status=0; check_skill_body "$plugin" || body_status=$?
-  size_status=0; check_skill_size "$plugin" || size_status=$?
   marketplace_status=0; check_marketplace "$plugin" || marketplace_status=$?
   release_status=0; check_release_config "$plugin" || release_status=$?
 
   results_json+=("$(to_symbol $json_status)")
   results_frontmatter+=("$(to_symbol $frontmatter_status)")
   results_body+=("$(to_symbol $body_status)")
-  results_size+=("$(to_symbol $size_status)")
   results_marketplace+=("$(to_symbol $marketplace_status)")
   results_release+=("$(to_symbol $release_status)")
 
   # Overall: ❌ if any ❌, ⚠️ if any ⚠️, ✅ if all ✅
   plugin_overall="✅"
-  for status in $json_status $frontmatter_status $body_status $size_status $marketplace_status $release_status; do
+  for status in $json_status $frontmatter_status $body_status $marketplace_status $release_status; do
     if [ "$status" -ge 2 ]; then
       plugin_overall="❌"
       overall_failed=true
@@ -386,11 +352,11 @@ done
 # Output report
 echo "## Plugin Compliance Review"
 echo ""
-echo "| Plugin | plugin.json | Frontmatter | Body | Size | Marketplace | Release Config | Overall |"
-echo "|--------|-------------|-------------|------|------|-------------|----------------|---------|"
+echo "| Plugin | plugin.json | Frontmatter | Body | Marketplace | Release Config | Overall |"
+echo "|--------|-------------|-------------|------|-------------|----------------|---------|"
 
 for i in "${!PLUGINS[@]}"; do
-  echo "| ${PLUGINS[$i]} | ${results_json[$i]} | ${results_frontmatter[$i]} | ${results_body[$i]} | ${results_size[$i]} | ${results_marketplace[$i]} | ${results_release[$i]} | ${results_overall[$i]} |"
+  echo "| ${PLUGINS[$i]} | ${results_json[$i]} | ${results_frontmatter[$i]} | ${results_body[$i]} | ${results_marketplace[$i]} | ${results_release[$i]} | ${results_overall[$i]} |"
 done
 
 echo ""

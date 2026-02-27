@@ -5,6 +5,7 @@ description: |
   Analyze Claude Code changelog for changes that impact plugin development.
   Use when checking for new features, breaking changes, or opportunities to
   improve plugins based on Claude Code updates.
+user-invocable: false
 allowed-tools: Bash(git log *), Bash(git diff *), Read, Write, Edit, Glob, Grep, WebFetch, TodoWrite
 created: 2026-01-14
 modified: 2026-01-14

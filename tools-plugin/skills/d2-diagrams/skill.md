@@ -5,6 +5,7 @@ description: |
   Generate diagrams from declarative text using D2 - modern text-to-diagram language with
   automatic layouts, themes, and advanced styling. Use when creating architecture diagrams,
   flowcharts, decision trees, workflow diagrams, sequence flows, or ERDs from text definitions.
+user-invocable: false
 allowed-tools: Bash(d2 *), Read, Write, Grep, Glob, TodoWrite
 created: 2025-12-26
 modified: 2026-02-06

@@ -10,6 +10,7 @@ description: |
   source inheritance, and building. Use when user mentions uv workspaces, Python
   monorepo, multi-package projects, workspace members, or shared dependencies across
   packages.
+user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---
 

@@ -9,6 +9,7 @@ description: |
   uv tool install, uvx for ephemeral execution, tool isolation, and updates.
   Use when user mentions uv tool, uvx, installing CLI tools globally, pipx
   replacement, or running Python tools without installation.
+user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---
 

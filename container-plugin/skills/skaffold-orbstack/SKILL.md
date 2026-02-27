@@ -8,6 +8,7 @@ description: |
   OrbStack-optimized Skaffold workflows for local Kubernetes development without port-forward.
   Use when configuring Skaffold with OrbStack, accessing services via LoadBalancer or Ingress,
   or when the user mentions OrbStack, k8s.orb.local, service access, or eliminating port-forward.
+user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---
 

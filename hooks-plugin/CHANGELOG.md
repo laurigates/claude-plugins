@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.8.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.7.1...hooks-plugin-v1.8.0) (2026-02-27)
+
+
+### Features
+
+* add metadata fields to skill definitions across all plugins ([#828](https://github.com/laurigates/claude-plugins/issues/828)) ([59b3d1f](https://github.com/laurigates/claude-plugins/commit/59b3d1fadd8fd888f95ced8b071fb66cf6f9c825))
+* add skill invocation control via user-invocable and disable-model-invocation frontmatter ([59b3d1f](https://github.com/laurigates/claude-plugins/commit/59b3d1fadd8fd888f95ced8b071fb66cf6f9c825))
+
+## [1.7.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.7.0...hooks-plugin-v1.7.1) (2026-02-27)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** Skip branch operations in git worktrees during session cleanup ([#826](https://github.com/laurigates/claude-plugins/issues/826)) ([63104c9](https://github.com/laurigates/claude-plugins/commit/63104c9eab8354128e7b6ddc7c7ab11ccae53ffe))
+* **hooks-plugin:** skip git switch and pull in worktrees during SessionEnd ([63104c9](https://github.com/laurigates/claude-plugins/commit/63104c9eab8354128e7b6ddc7c7ab11ccae53ffe))
+
 ## [1.7.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.6.0...hooks-plugin-v1.7.0) (2026-02-26)
 
 

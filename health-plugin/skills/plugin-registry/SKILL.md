@@ -6,6 +6,7 @@ description: |
   and common issues. Use when troubleshooting plugin installation problems,
   understanding why plugins show as installed incorrectly, or manually fixing
   registry entries.
+user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-02-04
 modified: 2026-02-05

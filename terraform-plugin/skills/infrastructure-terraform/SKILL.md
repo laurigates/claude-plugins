@@ -10,6 +10,7 @@ description: |
   remote backends, and Terraform modules.
   Use when user mentions Terraform, HCL, terraform plan, terraform apply, tfstate,
   infrastructure as code, or IaC provisioning.
+user-invocable: false
 allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite
 ---
 

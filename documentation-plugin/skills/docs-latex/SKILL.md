@@ -8,6 +8,7 @@ description: |
 args: <file> [--no-compile] [--visualizations] [--report-type=roadmap|lifecycle|general]
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 argument-hint: path/to/document.md
+disable-model-invocation: true
 created: 2026-02-08
 modified: 2026-02-10
 reviewed: 2026-02-08

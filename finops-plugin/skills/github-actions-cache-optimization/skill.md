@@ -5,6 +5,7 @@ description: |
   Analyze and optimize GitHub Actions cache usage. Use when investigating
   cache bloat, identifying stale caches, optimizing cache keys, or comparing
   cache usage across repositories.
+user-invocable: false
 allowed-tools: Bash(gh api *), Bash(gh repo *), Bash(gh cache *), Read, Grep, Glob, TodoWrite
 created: 2025-01-30
 modified: 2025-01-30

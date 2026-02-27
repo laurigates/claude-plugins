@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.20.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.19.3...blueprint-plugin-v3.20.0) (2026-02-27)
+
+
+### Features
+
+* add metadata fields to skill definitions across all plugins ([#828](https://github.com/laurigates/claude-plugins/issues/828)) ([59b3d1f](https://github.com/laurigates/claude-plugins/commit/59b3d1fadd8fd888f95ced8b071fb66cf6f9c825))
+* add skill invocation control via user-invocable and disable-model-invocation frontmatter ([59b3d1f](https://github.com/laurigates/claude-plugins/commit/59b3d1fadd8fd888f95ced8b071fb66cf6f9c825))
+
 ## [3.19.3](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.19.2...blueprint-plugin-v3.19.3) (2026-02-26)
 
 

@@ -9,6 +9,7 @@ description: |
   Covers helm install, helm upgrade, helm list, helm status, release history.
   Use when user mentions deploying Helm charts, upgrading releases, helm install,
   helm upgrade, or managing Kubernetes deployments with Helm.
+user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---
 

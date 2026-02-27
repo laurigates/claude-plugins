@@ -9,6 +9,7 @@ description: |
   Covers test organization, conftest.py, markers, async testing, and TDD workflows.
   Use when user mentions pytest, unit tests, test coverage, fixtures, mocking,
   or writing Python tests.
+user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---
 

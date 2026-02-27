@@ -6,6 +6,7 @@ reviewed: 2025-12-16
 allowed-tools: Read, Bash(git *), mcp__github__get_pull_request, mcp__github__list_issues, TodoWrite
 args: [resource-name] [deployment-type]
 argument-hint: [resource-name] [deployment-type]
+disable-model-invocation: true
 description: Generate deployment handoff documentation
 name: deploy-handoff
 ---

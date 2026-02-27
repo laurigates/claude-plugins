@@ -2,6 +2,7 @@
 model: haiku
 name: gh-cli-agentic
 description: GitHub CLI commands optimized for AI agent workflows with JSON output and deterministic execution patterns.
+user-invocable: false
 allowed-tools: Bash(gh pr *), Bash(gh run *), Bash(gh issue *), Bash(gh repo *), Bash(gh workflow *), Bash(gh api *), Read
 created: 2025-01-16
 modified: 2026-02-16

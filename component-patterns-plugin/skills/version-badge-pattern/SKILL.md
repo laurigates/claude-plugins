@@ -6,6 +6,7 @@ description: |
   recent changelog in a tooltip. Use when adding version visibility to applications
   for support, debugging, and change awareness. Works with React, Vue, Svelte, and
   plain JavaScript.
+user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2025-02-03
 modified: 2026-02-14

@@ -5,6 +5,7 @@ description: |
   CSS transpilation, bundling, and minification using Lightning CSS (Rust-based).
   Use when configuring CSS processing in Vite, replacing PostCSS/autoprefixer,
   setting up browser targets, enabling CSS modules, or optimizing CSS for production.
+user-invocable: false
 allowed-tools: Bash, Read, Edit, Write, Grep, Glob, TodoWrite
 created: 2026-02-13
 modified: 2026-02-13

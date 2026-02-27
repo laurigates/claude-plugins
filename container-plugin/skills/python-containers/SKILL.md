@@ -10,6 +10,7 @@ description: |
   from ~1GB to ~80-120MB. Covers musl libc issues, wheel building, and Python-specific
   dependency management patterns.
   Use when working with Python containers, Dockerfiles for Python apps, or optimizing Python image sizes.
+user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob, Edit, Write, TodoWrite, WebSearch, WebFetch
 ---
 

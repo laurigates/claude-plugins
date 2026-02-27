@@ -10,6 +10,7 @@ description: |
   For running scripts, see uv-run. For project setup, see uv-project-management.
   Use when user mentions Python, type hints, async Python, decorators, context managers,
   or writing Pythonic code.
+user-invocable: false
 allowed-tools: Glob, Grep, Read, WebFetch, TodoWrite, WebSearch, BashOutput, KillShell, Edit, Write, NotebookEdit, Bash
 ---
 

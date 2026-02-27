@@ -10,6 +10,7 @@ description: |
   and the modern Rust ecosystem including Tokio, Serde, and popular crates.
   Use when user mentions Rust, cargo, rustc, clippy, rustfmt, ownership, borrowing,
   lifetimes, async Rust, or Rust crates.
+user-invocable: false
 allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebFetch, WebSearch, BashOutput, KillShell
 ---
 

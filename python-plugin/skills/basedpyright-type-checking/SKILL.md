@@ -9,6 +9,7 @@ description: |
   Use when implementing type checking, configuring LSP, comparing type checkers,
   or setting up strict type validation in Python projects.
   Triggered by: basedpyright, pyright, type checking, LSP, mypy alternative, static analysis.
+user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---
 

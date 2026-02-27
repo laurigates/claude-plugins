@@ -2,6 +2,7 @@
 model: opus
 name: code-review-checklist
 description: Structured code review approach covering security, quality, performance, and consistency.
+user-invocable: false
 allowed-tools: Read, Grep, Glob
 created: 2025-12-27
 modified: 2025-12-27

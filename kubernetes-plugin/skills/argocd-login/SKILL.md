@@ -8,6 +8,7 @@ description: |
   ArgoCD CLI authentication with SSO. Provides argocd login command, gRPC-Web
   configuration, and post-login operations. Use when user mentions ArgoCD login,
   argocd authentication, SSO auth, or accessing ArgoCD applications and clusters.
+user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---
 

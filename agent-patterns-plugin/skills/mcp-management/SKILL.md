@@ -10,6 +10,7 @@ description: |
   (database, API, file system), update MCP settings in .mcp.json, manage OAuth-authenticated
   remote MCP servers, enable/disable individual servers at runtime, or troubleshoot
   MCP server connection issues.
+user-invocable: false
 allowed-tools: Bash(jq *), Bash(find *), Read, Write, Edit, Grep, Glob, AskUserQuestion
 ---
 

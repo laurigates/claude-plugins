@@ -7,6 +7,7 @@ reviewed: 2026-02-20
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git branch *), Bash(git remote *), Bash(gh pr *), Bash(gh label *), Bash(gh repo *), Bash(gh issue *), Bash(pre-commit *), Bash(find *), Read, Edit, Grep, Glob, TodoWrite, mcp__github__create_pull_request, mcp__github__list_issues, mcp__github__get_issue
 args: "[remote-branch] [--push] [--direct] [--pr] [--draft] [--issue <num>] [--no-commit] [--range <start>..<end>] [--skip-issue-detection]"
 argument-hint: [remote-branch] [--push] [--direct] [--pr] [--draft] [--issue <num>] [--no-commit] [--range <start>..<end>] [--skip-issue-detection]
+disable-model-invocation: true
 description: Complete workflow from changes to PR - auto-detect related issues, create logical commits with proper issue linkage, push to remote feature branch, and optionally create pull request
 ---
 

@@ -9,6 +9,7 @@ description: |
   uv python list, uv python pin, version pinning with .python-version file.
   Use when user mentions installing Python versions, switching Python versions,
   .python-version, uv python, or managing CPython/PyPy interpreters.
+user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---
 

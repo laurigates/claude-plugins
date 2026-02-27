@@ -5,6 +5,7 @@ modified: 2026-01-01
 reviewed: 2026-01-01
 name: http-load-testing
 description: HTTP load testing and stress testing with oha - real-time TUI, latency correction for coordinated omission, and HTTP/2-3 support. Includes comparison with wrk, vegeta, and hey.
+user-invocable: false
 allowed-tools: Bash(hey *), Bash(ab *), Bash(wrk *), Bash(curl *), Read, Grep, Glob, TodoWrite
 ---
 
