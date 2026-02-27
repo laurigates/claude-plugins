@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.21.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.20.0...blueprint-plugin-v3.21.0) (2026-02-27)
+
+
+### Features
+
+* **hooks-plugin:** add LLM-powered prompt and agent hooks documentation and examples ([#834](https://github.com/laurigates/claude-plugins/issues/834)) ([203d1d9](https://github.com/laurigates/claude-plugins/commit/203d1d9494e37771b1186f0e50948c75109c8fe6))
+
 ## [3.20.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.19.3...blueprint-plugin-v3.20.0) (2026-02-27)
 
 
