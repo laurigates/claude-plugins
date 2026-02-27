@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.20.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.19.4...git-plugin-v2.20.0) (2026-02-27)
+
+
+### Features
+
+* add metadata fields to skill definitions across all plugins ([#828](https://github.com/laurigates/claude-plugins/issues/828)) ([59b3d1f](https://github.com/laurigates/claude-plugins/commit/59b3d1fadd8fd888f95ced8b071fb66cf6f9c825))
+* add skill invocation control via user-invocable and disable-model-invocation frontmatter ([59b3d1f](https://github.com/laurigates/claude-plugins/commit/59b3d1fadd8fd888f95ced8b071fb66cf6f9c825))
+
 ## [2.19.4](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.19.3...git-plugin-v2.19.4) (2026-02-26)
 
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.0](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.5.4...typescript-plugin-v1.6.0) (2026-02-27)
+
+
+### Features
+
+* add metadata fields to skill definitions across all plugins ([#828](https://github.com/laurigates/claude-plugins/issues/828)) ([59b3d1f](https://github.com/laurigates/claude-plugins/commit/59b3d1fadd8fd888f95ced8b071fb66cf6f9c825))
+* add skill invocation control via user-invocable and disable-model-invocation frontmatter ([59b3d1f](https://github.com/laurigates/claude-plugins/commit/59b3d1fadd8fd888f95ced8b071fb66cf6f9c825))
+
 ## [1.5.4](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.5.3...typescript-plugin-v1.5.4) (2026-02-14)
 
 
