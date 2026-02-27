@@ -96,7 +96,7 @@
       "name": "blueprint-plugin",
       "source": "./blueprint-plugin",
       "description": "Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, and CLAUDE.md management",
-      "version": "3.21.0",
+      "version": "3.22.0",
       "keywords": [
         "blueprint",
         "prd",
@@ -319,7 +319,7 @@
       "name": "kubernetes-plugin",
       "source": "./kubernetes-plugin",
       "description": "Kubernetes and Helm operations - deployments, charts, releases",
-      "version": "1.4.1",
+      "version": "1.5.0",
       "keywords": [
         "kubernetes",
         "helm",
@@ -446,7 +446,7 @@
       "name": "terraform-plugin",
       "source": "./terraform-plugin",
       "description": "Terraform and Terraform Cloud - infrastructure as code",
-      "version": "1.4.0",
+      "version": "1.5.0",
       "keywords": [
         "terraform",
         "infrastructure",
