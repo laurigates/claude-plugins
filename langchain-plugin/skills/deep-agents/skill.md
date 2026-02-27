@@ -6,6 +6,7 @@ description: |
   you want to create an orchestrator agent that plans and executes multi-step tasks,
   manages file system context, delegates subtasks to child agents, or maintains
   persistent memory across runs with the Deep Agents library.
+user-invocable: false
 allowed-tools: Bash(python *), Bash(uv *), BashOutput, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-01-08
 modified: 2026-02-05

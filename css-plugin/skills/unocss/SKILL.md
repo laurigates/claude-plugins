@@ -5,6 +5,7 @@ description: |
   Atomic CSS engine for on-demand utility class generation using UnoCSS.
   Use when setting up utility-first CSS, configuring UnoCSS presets (wind3/wind4, icons,
   typography), integrating with Vite/frameworks, or generating optimized atomic stylesheets.
+user-invocable: false
 allowed-tools: Bash, Read, Edit, Write, Grep, Glob, TodoWrite
 created: 2026-02-13
 modified: 2026-02-13

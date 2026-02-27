@@ -2,6 +2,7 @@
 model: haiku
 name: dns-tools
 description: Modern DNS query tools with focus on dog for readable, colorized output and modern protocol support (DoT/DoH).
+user-invocable: false
 allowed-tools: Bash(dig *), Bash(nslookup *), Bash(host *), Bash(whois *), Read, Grep, Glob, TodoWrite
 created: 2026-01-01
 modified: 2026-01-01

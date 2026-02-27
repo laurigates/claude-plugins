@@ -10,6 +10,7 @@ description: |
   and positive framing without estimates or bold claims.
   Use when user mentions creating issues, drafting tickets, writing bug reports,
   GitHub issue templates, or structuring technical tickets.
+user-invocable: false
 allowed-tools: Read, Grep, WebFetch
 ---
 

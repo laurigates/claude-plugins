@@ -6,6 +6,7 @@ reviewed: 2025-12-16
 description: Generate images using Nano Banana Pro (Gemini 3 Pro Image)
 allowed-tools: Bash, Read, WebFetch
 args: <prompt> [--aspect <ratio>] [--resolution <size>] [--reference <path>]
+disable-model-invocation: true
 name: generate-image
 ---
 

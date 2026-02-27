@@ -8,6 +8,7 @@ description: |
   Playwright end-to-end testing for web applications. Cross-browser testing (Chromium, Firefox, WebKit),
   visual regression, API testing, mobile emulation. Use when writing E2E tests, testing across browsers,
   or setting up automated UI testing workflows.
+user-invocable: false
 allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebFetch, WebSearch, BashOutput, KillShell
 ---
 

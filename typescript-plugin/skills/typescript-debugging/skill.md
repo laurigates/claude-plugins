@@ -1,6 +1,7 @@
 ---
 name: typescript-debugging
 description: Modern TypeScript/JavaScript debugging with Bun - inspector flags, web debugger, VSCode integration, memory profiling, and heap analysis.
+user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-01-22
 modified: 2026-01-22

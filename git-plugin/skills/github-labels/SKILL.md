@@ -8,6 +8,7 @@ description: |
   Discover and apply labels to GitHub PRs and issues using the gh CLI. Use when
   you need to list available labels, add or remove labels on pull requests or issues,
   or create new labels for a repository.
+user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---
 

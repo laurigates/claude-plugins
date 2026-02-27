@@ -8,6 +8,7 @@ description: |
   Craft PR titles using conventional commits format. Use when creating PRs or
   ensuring consistent PR naming. PR titles MUST follow conventional commits to
   drive release-please automation and maintain consistent git history.
+user-invocable: false
 allowed-tools: Bash(git log *), Bash(git diff *), Bash(gh pr *), Read, Grep, Glob, TodoWrite
 ---
 

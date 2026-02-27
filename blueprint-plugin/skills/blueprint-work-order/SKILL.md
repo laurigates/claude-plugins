@@ -6,6 +6,7 @@ reviewed: 2025-12-26
 description: "Create work-order with minimal context for isolated subagent execution, optionally linked to GitHub issue"
 args: "[--no-publish] [--from-issue N]"
 argument-hint: "--no-publish for local-only, --from-issue 123 to create from existing issue"
+disable-model-invocation: true
 allowed-tools: Read, Write, Glob, Bash, AskUserQuestion
 name: blueprint-work-order
 ---

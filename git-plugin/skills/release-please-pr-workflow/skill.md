@@ -9,6 +9,7 @@ description: |
   conflict resolution through PR closure/recreation, and iterative processing until
   all PRs are merged. Use when merging release PRs, handling PR conflicts, or
   managing release automation in monorepos.
+user-invocable: false
 allowed-tools: Bash, Read, TodoWrite
 ---
 

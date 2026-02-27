@@ -5,6 +5,7 @@ modified: 2025-12-16
 reviewed: 2026-02-08
 name: accessibility-implementation
 description: WCAG 2.1/2.2 compliance implementation, ARIA patterns, keyboard navigation, focus management, and accessibility testing. Use when implementing accessible components, fixing accessibility issues, or when the user mentions WCAG, ARIA, screen readers, or keyboard navigation.
+user-invocable: false
 allowed-tools: Glob, Grep, Read, Edit, Write, Bash(npm *), Bash(npx *), Bash(axe *), BashOutput, TodoWrite, WebSearch, WebFetch
 ---
 

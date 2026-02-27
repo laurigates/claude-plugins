@@ -7,6 +7,7 @@ allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git a
 description: Process GitHub issues with interactive selection, conflict detection, and parallel work support
 args: "[issue-numbers...] [--auto] [--filter <label>] [--limit <n>] [--parallel]"
 argument-hint: [issue-numbers...] [--auto] [--filter <label>] [--limit <n>] [--parallel]
+disable-model-invocation: true
 name: git-issue
 ---
 

@@ -11,6 +11,7 @@ description: |
   image construction.
   Use when user mentions Docker, Dockerfile, containers, docker-compose, multi-stage
   builds, container images, container security, or 12-factor app principles.
+user-invocable: false
 allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebSearch, WebFetch
 ---
 

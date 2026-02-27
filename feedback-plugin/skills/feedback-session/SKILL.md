@@ -9,6 +9,7 @@ description: |
 args: "[--dry-run] [--bugs-only] [--enhancements-only] [--positive-only] [plugin-name]"
 allowed-tools: Bash(gh issue *), Bash(gh label *), Bash(gh search *), Bash(git status *), Bash(git remote *), Read, Grep, Glob, AskUserQuestion, TodoWrite
 argument-hint: "--dry-run | --bugs-only | plugin-name"
+disable-model-invocation: true
 created: 2026-02-18
 modified: 2026-02-18
 reviewed: 2026-02-18

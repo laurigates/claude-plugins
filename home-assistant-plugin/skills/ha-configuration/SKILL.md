@@ -8,6 +8,7 @@ description: |
   Home Assistant YAML configuration management. Use when editing configuration.yaml,
   setting up integrations, configuring secrets, managing packages, or troubleshooting
   Home Assistant configuration issues. Covers core configuration patterns and best practices.
+user-invocable: false
 allowed-tools: Read, Edit, Write, Grep, Glob, TodoWrite
 ---
 

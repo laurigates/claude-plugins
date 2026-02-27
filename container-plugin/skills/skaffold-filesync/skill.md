@@ -5,6 +5,7 @@ description: |
   Fast iterative development with Skaffold file sync - copy changed files to running containers
   without rebuilding images. Use when optimizing the development loop, configuring sync rules,
   or when the user mentions file sync, hot reload, live reload, or fast iteration.
+user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-01-21
 modified: 2026-01-21

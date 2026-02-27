@@ -8,6 +8,7 @@ description: |
   Property-based testing with Hypothesis for discovering edge cases and validating invariants.
   Use when testing code with many possible inputs, verifying mathematical properties,
   testing serialization round-trips, or finding edge cases that example-based tests miss.
+user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---
 

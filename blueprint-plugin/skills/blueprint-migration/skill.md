@@ -2,6 +2,7 @@
 model: sonnet
 name: blueprint-migration
 description: Versioned migration procedures for upgrading blueprint structure between format versions
+user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, TodoWrite
 created: 2025-12-22
 modified: 2026-01-09

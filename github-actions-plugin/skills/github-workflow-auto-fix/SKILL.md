@@ -8,6 +8,7 @@ description: |
 allowed-tools: Bash(gh run *), Bash(gh pr *), Bash(gh issue *), Bash(git status *), Bash(git diff *), Bash(git log *), Read, Write, Edit, Grep, Glob, TodoWrite
 args: "[--setup] [--workflows <names>] [--dry-run]"
 argument-hint: --setup to create workflow, or --dry-run to preview
+disable-model-invocation: true
 created: 2026-02-18
 modified: 2026-02-19
 reviewed: 2026-02-18

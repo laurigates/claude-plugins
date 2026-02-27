@@ -8,6 +8,7 @@ description: |
   SubagentStart, PermissionRequest, WorktreeCreate, WorktreeRemove, TeammateIdle,
   TaskCompleted, ConfigChange, or needs to enforce consistent behavior in Claude
   Code workflows.
+user-invocable: false
 allowed-tools: Bash(bash *), Bash(cat *), Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2025-12-16
 modified: 2026-02-25

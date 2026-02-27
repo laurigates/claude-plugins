@@ -5,6 +5,7 @@ modified: 2026-02-14
 reviewed: 2026-02-14
 name: blueprint-development
 description: "Generate project-specific rules and commands from PRDs for Blueprint Development methodology. Use when generating behavioral rules for architecture patterns, testing strategies, implementation guides, or quality standards from requirements documents."
+user-invocable: false
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash, TodoWrite
 ---
 

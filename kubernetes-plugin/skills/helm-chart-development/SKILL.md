@@ -9,6 +9,7 @@ description: |
   values.yaml, template development, chart dependencies, packaging, and repository publishing.
   Use when user mentions Helm charts, helm create, Chart.yaml, values.yaml, helm lint,
   helm template, helm package, or Kubernetes packaging.
+user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---
 

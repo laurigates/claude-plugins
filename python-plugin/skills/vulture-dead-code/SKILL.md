@@ -8,6 +8,7 @@ description: |
   Vulture and deadcode tools for detecting unused Python code (functions, classes, variables, imports).
   Use when cleaning up codebases, removing unused code, or enforcing code hygiene in CI.
   Triggered by: vulture, deadcode, dead code detection, unused code, code cleanup, remove unused.
+user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---
 

@@ -9,6 +9,7 @@ description: |
   (pending-install, pending-upgrade). Covers helm rollback, release history,
   atomic deployments. Use when user mentions rollback, failed Helm upgrade,
   stuck release, or recovering from Helm deployment failures.
+user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---
 

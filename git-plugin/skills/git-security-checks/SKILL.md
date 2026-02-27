@@ -10,6 +10,7 @@ description: |
   credential leaks.
   Use when user mentions scanning for secrets, gitleaks, secret detection,
   credential scanning, pre-commit security, or .gitleaks.toml.
+user-invocable: false
 allowed-tools: Bash, Read
 ---
 

@@ -5,6 +5,7 @@ modified: 2026-01-01
 reviewed: 2026-01-01
 name: network-monitoring
 description: Real-time network traffic monitoring with bandwhich and Sniffnet. Per-process bandwidth tracking, connection analysis, and visual traffic inspection.
+user-invocable: false
 allowed-tools: Bash(iftop *), Bash(nethogs *), Bash(tcpdump *), Bash(ss *), Bash(netstat *), Read, Grep, Glob, TodoWrite
 ---
 
