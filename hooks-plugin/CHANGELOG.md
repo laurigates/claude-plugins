@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.9.0...hooks-plugin-v1.10.0) (2026-02-27)
+
+
+### Features
+
+* **hooks-plugin:** add session-end issue hook for deferred todo tracking ([#839](https://github.com/laurigates/claude-plugins/issues/839)) ([3549547](https://github.com/laurigates/claude-plugins/commit/35495473cc93c7828577edc796f50f4ea58443e1))
+
 ## [1.9.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.8.0...hooks-plugin-v1.9.0) (2026-02-27)
 
 
