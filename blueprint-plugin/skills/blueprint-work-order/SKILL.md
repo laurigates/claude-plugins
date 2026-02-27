@@ -59,9 +59,6 @@ When `--from-prp NAME` is provided:
 
 5. **Continue to Step 6** (save and optionally publish)
 
-name: blueprint-work-order
----
-
 ## Mode: Create from Existing Issue (`--from-issue N`)
 
 When `--from-issue N` is provided:
@@ -209,9 +206,6 @@ github-issues:
 - **Blocks**: Work-Order NNN (if applicable)
 ```
 
-name: blueprint-work-order
----
-
 ### Step 6: Save Work-Order
 
 Save to `docs/blueprint/work-orders/NNN-task-name.md`
@@ -339,9 +333,6 @@ options:
 - "Delegate to subagent" → Provide handoff instructions for subagent execution
 - "I'm done" → Exit
 
-name: blueprint-work-order
----
-
 ## Key Principles
 
 - **Minimal context**: Only what's needed, not full files/PRDs
@@ -362,9 +353,6 @@ name: blueprint-work-order
 | Task unclear | Ask user what to work on next |
 | `gh` not authenticated | Warn and fallback to `--no-publish` behavior |
 | Issue already has `work-order` label | Warn, ask to update or create new |
-
-name: blueprint-work-order
----
 
 ## GitHub Integration Notes
 

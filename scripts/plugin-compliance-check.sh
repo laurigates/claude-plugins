@@ -197,11 +197,13 @@ check_skill_body() {
     # Detect YAML-key lines immediately followed by '---' outside the frontmatter.
     # In CommonMark, "key: value\n---" creates a setext H2 heading — clearly unintended.
     # Use awk: skip the opening frontmatter block (first ---...--- pair), then flag hits.
+    # Also skip content inside triple-backtick code fences to avoid false positives.
     local bad_lines
     bad_lines=$(awk '
       /^---$/ && fm_count < 2 { fm_count++; prev = ""; next }
       fm_count >= 2 {
-        if (prev ~ /^[a-z][a-z-]*:/ && /^---$/) {
+        if (/^```/) { in_code = !in_code }
+        if (!in_code && prev ~ /^[a-z][a-z-]*:/ && /^---$/) {
           print NR ": " prev
         }
         prev = $0
