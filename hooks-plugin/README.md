@@ -37,6 +37,17 @@ A Stop hook that checks for orphaned git stashes before Claude exits. Classifies
 | < 2 hours | Recommend `git stash pop` |
 | >= 2 hours | Recommend `git stash drop stash@{N}` |
 
+### session-end-issue-hook.sh
+
+A Stop hook that fires when the main agent finishes a response. If the session transcript contains any `TodoWrite` todos with `status: "pending"` or `status: "in_progress"`, it blocks and surfaces the list to Claude with suggested `gh issue create` commands. Silent when all todos are completed.
+
+| Condition | Behaviour |
+|-----------|-----------|
+| No pending todos | Exits 0 silently — no interruption |
+| Pending / in-progress todos | Blocks with list and `gh issue create` suggestions |
+
+Configure via `/hooks:session-end-issue-hook` or see [Session End Issue Hook](#session-end-issue-hook) below.
+
 ### git-session-cleanup.sh
 
 A SessionEnd hook that runs cleanup operations when the session terminates: commits any staged changes, switches to the main/master branch, and pulls the latest changes.
@@ -115,8 +126,11 @@ If using this plugin repository, reference the hooks directly:
 
 ## Skills
 
-- **hooks-configuration**: Guide for setting up and customizing hooks
-- **session-start-hook**: Generate SessionStart hooks for Claude Code on the web (dependency install, env setup, test verification)
+| Skill | Invocation | Purpose |
+|-------|-----------|---------|
+| hooks-configuration | `/hooks:hooks-configuration` | Guide for setting up and customizing hooks |
+| hooks-session-start-hook | `/hooks:session-start-hook` | Generate SessionStart hooks for Claude Code on the web |
+| hooks-session-end-issue-hook | `/hooks:session-end-issue-hook` | Configure Stop hook that defers unfinished todos to GitHub issues |
 
 ## Session Start Hooks
 
@@ -134,6 +148,23 @@ This auto-detects your project stack and generates:
 Options:
 - `--remote-only`: Only run in web sessions (skip local)
 - `--no-verify`: Skip test/linter verification step
+
+## Session End Issue Hook
+
+Configure a Stop hook that surfaces unfinished todos at session end and suggests creating GitHub issues:
+
+```bash
+/hooks:session-end-issue-hook
+```
+
+This configures a `Stop` hook in `.claude/settings.json` that:
+- Reads the session transcript after each Claude response
+- Finds any todos with `status: "pending"` or `status: "in_progress"` from the last `TodoWrite` call
+- If any exist: blocks with the list and suggested `gh issue create` commands so Claude can defer them
+- If all completed: exits silently
+
+Options:
+- `--no-verify`: Skip `gh` authentication check
 
 ## Extending
 
