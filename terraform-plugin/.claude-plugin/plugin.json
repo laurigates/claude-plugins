@@ -7,5 +7,6 @@
     "infrastructure",
     "iac",
     "tfc"
-  ]
+  ],
+  "hooks": "./hooks.json"
 }

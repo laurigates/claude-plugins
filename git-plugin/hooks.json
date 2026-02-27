@@ -1,0 +1,27 @@
+{
+  "description": "git-plugin hooks - PR issue auto-close enforcement",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/validate-pr-issue-links.sh",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__github__create_pull_request",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Check the 'body' field in tool_input for GitHub issue closing keywords: closes, fixes, resolves (case-insensitive, followed by #N or owner/repo#N). If the body already contains closing keywords, return {\"ok\": true}. If the PR title or body is clearly for infrastructure, documentation, or dependency updates with no bug or feature issue to close, return {\"ok\": true}. If the title or body describes a bug fix or feature implementation but the body lacks closing keywords, return {\"ok\": false, \"reason\": \"PR body is missing issue closing keywords. Add 'Closes #N', 'Fixes #N', or 'Resolves #N' to automatically close the related issue when this PR merges to the default branch. Use 'Fixes' for bugs, 'Closes' for features/enhancements, 'Resolves' for general issues. For multiple issues repeat the keyword: Fixes #1, Fixes #2.\"}",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

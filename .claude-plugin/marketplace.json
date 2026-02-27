@@ -248,20 +248,6 @@
       "category": "ci-cd"
     },
     {
-      "name": "git-plugin",
-      "source": "./git-plugin",
-      "description": "Git workflows - commits, branches, PRs, and repository management",
-      "version": "2.21.0",
-      "keywords": [
-        "git",
-        "github",
-        "commits",
-        "branches",
-        "pr"
-      ],
-      "category": "version-control"
-    },
-    {
       "name": "github-actions-plugin",
       "source": "./github-actions-plugin",
       "description": "GitHub Actions CI/CD - workflows, authentication, inspection, auto-fix",
