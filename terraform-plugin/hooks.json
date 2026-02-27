@@ -1,0 +1,17 @@
+{
+  "description": "terraform-plugin hooks - apply gate requiring plan-first workflow",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/validate-terraform-apply.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
