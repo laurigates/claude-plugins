@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.21.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.20.0...git-plugin-v2.21.0) (2026-02-27)
+
+
+### Features
+
+* add `context: fork` guidance and apply to verbose skills ([#833](https://github.com/laurigates/claude-plugins/issues/833)) ([cced641](https://github.com/laurigates/claude-plugins/commit/cced641a953953b97f37528960782cacd75dbcab))
+* integrate worktree isolation into agent framework ([#830](https://github.com/laurigates/claude-plugins/issues/830)) ([564ffcf](https://github.com/laurigates/claude-plugins/commit/564ffcf8f34cf9d672816b42dabcf1280c701589))
+* **skills:** add context: fork to verbose autonomous skills ([cced641](https://github.com/laurigates/claude-plugins/commit/cced641a953953b97f37528960782cacd75dbcab))
+
 ## [2.20.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.19.4...git-plugin-v2.20.0) (2026-02-27)
 
 
