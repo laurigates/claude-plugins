@@ -1,0 +1,205 @@
+name: Skill Splitter
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '**/skills/**/SKILL.md'
+      - '**/skills/**/skill.md'
+
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: 'What to process'
+        type: choice
+        options: [all, plugin, skill]
+        default: all
+      target:
+        description: 'Plugin name (scope=plugin) or skill path (scope=skill), e.g. hooks-plugin or hooks-plugin/skills/hooks-configuration'
+        type: string
+        required: false
+
+concurrency:
+  group: skill-splitter-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  split:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN || github.token }}
+          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref }}
+          fetch-depth: 0
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Check for loop prevention
+        id: loop
+        run: |
+          LAST_MSG=$(git log -1 --format='%s')
+          if echo "$LAST_MSG" | grep -qE '^refactor\(split\):'; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "::notice::Skipping - last commit was a skill splitter commit (loop prevention)"
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Detect skills to process
+        id: detect
+        run: |
+          SKILLS=""
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # PR: process all changed SKILL.md files on this branch
+            SKILLS=$(git diff --name-only origin/${{ github.base_ref }}...HEAD \
+              -- '**/skills/**/SKILL.md' '**/skills/**/skill.md' | head -30)
+
+          elif [ "${{ inputs.scope }}" = "skill" ]; then
+            # Specific skill: resolve to SKILL.md path
+            TARGET="${{ inputs.target }}"
+            # Strip trailing slash and /SKILL.md if provided
+            TARGET="${TARGET%/SKILL.md}"
+            TARGET="${TARGET%/skill.md}"
+            TARGET="${TARGET%/}"
+            if [ -f "${TARGET}/SKILL.md" ]; then
+              SKILLS="${TARGET}/SKILL.md"
+            elif [ -f "${TARGET}/skill.md" ]; then
+              SKILLS="${TARGET}/skill.md"
+            else
+              echo "::error::Skill not found at ${TARGET}/SKILL.md"
+              exit 1
+            fi
+
+          elif [ "${{ inputs.scope }}" = "plugin" ]; then
+            # Plugin: all skills in the specified plugin
+            PLUGIN="${{ inputs.target }}"
+            if [ ! -d "${PLUGIN}/skills" ]; then
+              echo "::error::Plugin skills directory not found: ${PLUGIN}/skills"
+              exit 1
+            fi
+            SKILLS=$(find "${PLUGIN}/skills" \( -name "SKILL.md" -o -name "skill.md" \) 2>/dev/null | sort)
+
+          else
+            # All: skills >300 lines without an existing REFERENCE.md
+            while IFS= read -r -d '' skill_file; do
+              skill_dir=$(dirname "$skill_file")
+              line_count=$(wc -l < "$skill_file")
+              if [ "$line_count" -gt 300 ] && [ ! -f "${skill_dir}/REFERENCE.md" ]; then
+                SKILLS="${SKILLS}${skill_file}"$'\n'
+              fi
+            done < <(find . -path '*/skills/*/SKILL.md' -not -path './.git/*' -print0 2>/dev/null)
+          fi
+
+          # Clean up empty lines
+          SKILLS=$(echo "$SKILLS" | grep -v '^[[:space:]]*$' || true)
+          COUNT=$(echo "$SKILLS" | grep -c '[^[:space:]]' || echo "0")
+
+          echo "skills_list<<EOF" >> $GITHUB_OUTPUT
+          echo "$SKILLS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "skills_count=$COUNT" >> $GITHUB_OUTPUT
+
+          if [ "$COUNT" = "0" ]; then
+            echo "::notice::No skills to process"
+          else
+            echo "::notice::Found $COUNT skill(s) to evaluate"
+            echo "$SKILLS"
+          fi
+
+      - name: Split skills with Claude
+        if: steps.loop.outputs.skip != 'true' && steps.detect.outputs.skills_count != '0'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          allowed_bots: "claude[bot],claude"
+          claude_args: "--model haiku --max-turns 60"
+          direct_prompt: |
+            You are a skill content organizer. Your job is to split SKILL.md files that contain
+            too much inline reference material by extracting that content into REFERENCE.md files.
+
+            ## Split Guidelines
+
+            First read `.claude/rules/skill-quality.md` to understand the full rules. The core principle:
+
+            **Keep in SKILL.md** (always loaded into context — keep it focused):
+            - "When to Use" decision table (required)
+            - Installation/setup steps (brief)
+            - 5–10 most common commands with examples
+            - Agentic Optimizations table (required for CLI/tool skills)
+            - Quick Reference flags table (compact — not exhaustive)
+            - Core expertise bullets
+
+            **Move to REFERENCE.md** (loaded on demand — unlimited size):
+            - Complete option/flag reference tables
+            - Full configuration examples or Golden File templates
+            - Migration guides and upgrade paths
+            - Advanced/edge-case patterns not needed for daily use
+            - Detailed schemas, complete JSON configs, full environment variable tables
+            - Editor integrations, build system integrations
+            - Any large block not needed for 80% of use cases
+
+            ## Skills to Process
+
+            ${{ steps.detect.outputs.skills_list }}
+
+            ## Your Task
+
+            For each skill file path listed above, work through these steps:
+
+            ### Step 1: Assess
+
+            Read the SKILL.md file. Determine if splitting is beneficial:
+            - **Skip** if the skill is already well-organized and focused (the essentials are clear)
+            - **Skip** if a REFERENCE.md already exists in the same directory (content already split)
+            - **Split** if the skill has large sections of exhaustive reference material that a user
+              wouldn't need for most interactions (long tables, full templates, complete schemas,
+              extensive examples, etc.)
+
+            ### Step 2: Split (if beneficial)
+
+            a. Identify which **whole sections** to move. Never split a section in half.
+
+            b. Create `REFERENCE.md` in the same directory as the SKILL.md:
+               ```
+               # <Skill Name> - Reference
+
+               <One-line description of what this reference covers>
+
+               ## <Section 1 moved from SKILL.md>
+               ...
+
+               ## <Section 2 moved from SKILL.md>
+               ...
+               ```
+
+            c. Update SKILL.md:
+               - Remove the moved sections entirely
+               - At the end of the file, add a link:
+                 `For [brief description of what was moved], see [REFERENCE.md](REFERENCE.md).`
+
+            d. Commit this skill's changes:
+               ```
+               git add <skill_dir>/SKILL.md <skill_dir>/REFERENCE.md
+               git commit -m "refactor(split): extract reference content from <skill-name>"
+               ```
+
+            ### Step 3: Skip (if not beneficial)
+
+            Do nothing. No commit. Move to the next skill.
+
+            ---
+
+            After processing **all** skills:
+            - If any commits were made: `git push origin HEAD`
+            - If no splits were needed: do nothing (no push required)
