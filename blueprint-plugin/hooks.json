@@ -50,6 +50,12 @@
           "type": "command",
           "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/check-prp-readiness.sh",
           "timeout": 10000
+        },
+        {
+          "type": "agent",
+          "prompt": "You are evaluating PRP (Product Requirements Proposal) content quality before execution. The command hook already validated structural requirements (confidence score, required sections, file references). Your job is to evaluate content quality.\n\nContext: $ARGUMENTS\n\n1. Read the PRP file referenced in the tool input\n2. Check that requirements are specific enough to implement (not vague 'improve performance' style)\n3. Verify acceptance criteria are testable and measurable\n4. Check that edge cases and error scenarios are identified\n5. Verify implementation steps are clear and logically ordered\n6. Confirm the scope is well-bounded (not open-ended)\n\nRespond with {\"ok\": true} if the PRP content is ready for implementation, or {\"ok\": false, \"reason\": \"specific content gaps that need addressing before execution\"} if it needs more detail.",
+          "timeout": 45,
+          "statusMessage": "Evaluating PRP content quality..."
         }
       ]
     }

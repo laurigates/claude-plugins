@@ -436,6 +436,65 @@ exit 0
 }
 ```
 
+## Prompt-Based and Agent-Based Hooks
+
+In addition to command hooks, Claude Code supports LLM-powered hooks for decisions that require judgment.
+
+### Hook Types
+
+| Type | How It Works | Default Timeout | Use When |
+|------|-------------|-----------------|----------|
+| `command` | Runs a shell command, reads stdin, returns exit code | 600s | Deterministic rules (regex, field checks) |
+| `prompt` | Single-turn LLM call (Haiku), returns `{ok: true/false}` | 30s | Judgment on hook input data alone |
+| `agent` | Multi-turn subagent with tool access, returns `{ok: true/false}` | 60s | Verification needing file/tool access |
+
+### Supported Events
+
+Prompt and agent hooks work on: `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `PermissionRequest`, `Stop`, `SubagentStop`, `TaskCompleted`, `UserPromptSubmit`.
+
+All other events (`SessionStart`, `SessionEnd`, `PreCompact`, etc.) support only `command` hooks.
+
+### Prompt Hook Configuration
+
+```json
+{
+  "type": "prompt",
+  "prompt": "Evaluate whether all tasks are complete. $ARGUMENTS",
+  "model": "haiku",
+  "timeout": 30,
+  "statusMessage": "Checking completeness..."
+}
+```
+
+### Agent Hook Configuration
+
+```json
+{
+  "type": "agent",
+  "prompt": "Run the test suite and verify all tests pass. $ARGUMENTS",
+  "model": "haiku",
+  "timeout": 120,
+  "statusMessage": "Running test verification..."
+}
+```
+
+### Response Schema (both types)
+
+```json
+{"ok": true}
+{"ok": false, "reason": "Explanation of what's wrong"}
+```
+
+### Stop Hook Loop Prevention
+
+Stop hooks fire every time Claude finishes responding, including after acting on stop hook feedback. Include this check in Stop hook prompts:
+
+```
+First: if stop_hook_active is true in the input, respond with {"ok": true} immediately.
+```
+
+For the full decision guide on when to use each hook type, see [.claude/rules/prompt-agent-hooks.md](../../.claude/rules/prompt-agent-hooks.md).
+
 ## Handling Blocked Commands
 
 When a PreToolUse hook blocks a command:
