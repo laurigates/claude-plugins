@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.3.0...workflow-orchestration-plugin-v1.4.0) (2026-02-27)
+
+
+### Features
+
+* integrate worktree isolation into agent framework ([#830](https://github.com/laurigates/claude-plugins/issues/830)) ([564ffcf](https://github.com/laurigates/claude-plugins/commit/564ffcf8f34cf9d672816b42dabcf1280c701589))
+
 ## [1.3.0](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.2.1...workflow-orchestration-plugin-v1.3.0) (2026-02-25)
 
 

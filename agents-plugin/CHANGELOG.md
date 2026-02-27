@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.0](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.3.1...agents-plugin-v1.4.0) (2026-02-27)
+
+
+### Features
+
+* add `context: fork` guidance and apply to verbose skills ([#833](https://github.com/laurigates/claude-plugins/issues/833)) ([cced641](https://github.com/laurigates/claude-plugins/commit/cced641a953953b97f37528960782cacd75dbcab))
+* **skills:** add context: fork to verbose autonomous skills ([cced641](https://github.com/laurigates/claude-plugins/commit/cced641a953953b97f37528960782cacd75dbcab))
+
 ## [1.3.1](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.3.0...agents-plugin-v1.3.1) (2026-02-23)
 
 
