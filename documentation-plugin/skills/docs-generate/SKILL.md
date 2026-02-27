@@ -1,13 +1,15 @@
 ---
 model: sonnet
 created: 2025-12-16
-modified: 2026-02-05
+modified: 2026-02-27
 reviewed: 2025-12-16
 allowed-tools: Task, TodoWrite
 args: [--api] [--readme] [--changelog]
 argument-hint: [--api] [--readme] [--changelog]
 description: Update project documentation from code annotations
 name: docs-generate
+context: fork
+agent: general-purpose
 ---
 
 ## Context

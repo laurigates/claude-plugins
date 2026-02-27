@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-02-09
+modified: 2026-02-27
 reviewed: 2026-02-09
 name: claude-blog-sources
 description: |
@@ -9,6 +9,8 @@ description: |
   and best practices. Use when researching Claude Code features, CLAUDE.md optimization, memory
   management, or staying current with Claude capabilities.
 allowed-tools: WebFetch, WebSearch, Task
+context: fork
+agent: general-purpose
 ---
 
 # Claude Blog Sources

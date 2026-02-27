@@ -1,13 +1,15 @@
 ---
 model: opus
 created: 2025-12-16
-modified: 2026-01-25
+modified: 2026-02-27
 reviewed: 2026-01-25
 allowed-tools: Task, TodoWrite, Glob, Read
 description: Perform comprehensive code review with automated fixes
 args: "[PATH]"
 argument-hint: "[PATH]"
 name: code-review
+context: fork
+agent: general-purpose
 ---
 
 ## Context
