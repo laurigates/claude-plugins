@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.8.0...hooks-plugin-v1.9.0) (2026-02-27)
+
+
+### Features
+
+* **hooks-plugin:** add LLM-powered prompt and agent hooks documentation and examples ([#834](https://github.com/laurigates/claude-plugins/issues/834)) ([203d1d9](https://github.com/laurigates/claude-plugins/commit/203d1d9494e37771b1186f0e50948c75109c8fe6))
+
 ## [1.8.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.7.1...hooks-plugin-v1.8.0) (2026-02-27)
 
 
