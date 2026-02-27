@@ -8,6 +8,7 @@ description: |
   Advanced Clippy configuration for comprehensive Rust linting with custom rules, categories, and IDE integration.
   Use when configuring linting rules, enforcing code standards, setting up CI linting, or customizing clippy behavior.
   Trigger terms: clippy, linting, code quality, clippy.toml, pedantic, nursery, restriction, lint configuration, code standards.
+user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---
 

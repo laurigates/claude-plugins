@@ -9,6 +9,7 @@ description: |
   REST APIs, GraphQL, request/response validation, authentication, and error handling.
   Use when user mentions API testing, Supertest, httpx, REST testing, endpoint testing,
   HTTP response validation, or testing API routes.
+user-invocable: false
 allowed-tools: Bash(curl *), Bash(http *), Bash(jq *), Read, Edit, Write, Grep, Glob, TodoWrite
 ---
 

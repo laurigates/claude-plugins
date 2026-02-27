@@ -5,6 +5,7 @@ modified: 2026-02-14
 reviewed: 2025-12-16
 name: google-chat-formatting
 description: Convert text to Google Chat compatible formatting (Markdown to Google Chat syntax). Use when formatting messages for Google Chat, converting Markdown documents for Google Chat, or when the user mentions Google Chat formatting.
+user-invocable: false
 allowed-tools: Read, Write, Edit, Bash
 ---
 

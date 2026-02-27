@@ -69,9 +69,6 @@ Output example:
 
 **Exit** after displaying summary.
 
-name: blueprint-feature-tracker-sync
----
-
 ## Mode: Full Sync (Default)
 
 ### Step 1: Check if feature tracking is enabled
@@ -257,9 +254,6 @@ When planning future work:
 jq '.tasks.pending += [{"id": "FR4.1", "description": "Webhook support", "source": "PRD-001", "added": "2026-02-04"}]' \
   docs/blueprint/feature-tracker.json > tmp.json && mv tmp.json docs/blueprint/feature-tracker.json
 ```
-
-name: blueprint-feature-tracker-sync
----
 
 ## Example Output
 

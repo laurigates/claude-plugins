@@ -8,6 +8,7 @@ description: |
   Pre-commit hook standards and configuration. Use when configuring pre-commit hooks
   in repositories, checking hook compliance, or when the user mentions pre-commit,
   conventional commits, or hook configuration.
+user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---
 

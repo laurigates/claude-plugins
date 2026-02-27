@@ -9,6 +9,7 @@ description: |
   integration. Covers flag configuration, relay proxy, targeting rules, rollouts.
   Use when user mentions GO Feature Flag, GOFF, gofeatureflag, self-hosted
   feature flags, or flags.goff.yaml configuration.
+user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---
 

@@ -1,13 +1,15 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-02-05
+modified: 2026-02-27
 reviewed: 2025-12-16
 allowed-tools: Task, TodoWrite
 args: "[--coverage] [--parallel] [--report]"
 argument-hint: "[--coverage] [--parallel] [--report]"
 description: Complete test suite including integration and E2E tests
 name: test-full
+context: fork
+agent: general-purpose
 ---
 
 ## Context

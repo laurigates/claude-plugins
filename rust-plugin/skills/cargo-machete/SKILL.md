@@ -8,6 +8,7 @@ description: |
   Detect unused dependencies in Rust projects for cleaner Cargo.toml files and faster builds.
   Use when auditing dependencies, optimizing build times, cleaning up Cargo.toml, or detecting bloat.
   Trigger terms: unused dependencies, cargo-machete, dependency audit, dependency cleanup, bloat detection, cargo-udeps.
+user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---
 

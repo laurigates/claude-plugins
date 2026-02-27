@@ -6,6 +6,7 @@ reviewed: 2025-12-26
 description: "Create work-order with minimal context for isolated subagent execution, optionally linked to GitHub issue"
 args: "[--no-publish] [--from-issue N]"
 argument-hint: "--no-publish for local-only, --from-issue 123 to create from existing issue"
+disable-model-invocation: true
 allowed-tools: Read, Write, Glob, Bash, AskUserQuestion
 name: blueprint-work-order
 ---
@@ -58,9 +59,6 @@ When `--from-prp NAME` is provided:
    - Include file list from PRP's Codebase Intelligence section
 
 5. **Continue to Step 6** (save and optionally publish)
-
-name: blueprint-work-order
----
 
 ## Mode: Create from Existing Issue (`--from-issue N`)
 
@@ -209,9 +207,6 @@ github-issues:
 - **Blocks**: Work-Order NNN (if applicable)
 ```
 
-name: blueprint-work-order
----
-
 ### Step 6: Save Work-Order
 
 Save to `docs/blueprint/work-orders/NNN-task-name.md`
@@ -339,9 +334,6 @@ options:
 - "Delegate to subagent" → Provide handoff instructions for subagent execution
 - "I'm done" → Exit
 
-name: blueprint-work-order
----
-
 ## Key Principles
 
 - **Minimal context**: Only what's needed, not full files/PRDs
@@ -362,9 +354,6 @@ name: blueprint-work-order
 | Task unclear | Ask user what to work on next |
 | `gh` not authenticated | Warn and fallback to `--no-publish` behavior |
 | Issue already has `work-order` label | Warn, ask to update or create new |
-
-name: blueprint-work-order
----
 
 ## GitHub Integration Notes
 

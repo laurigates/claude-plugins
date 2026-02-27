@@ -9,6 +9,7 @@ description: |
   Analyzes diffs, file paths, and issue metadata to suggest appropriate
   closing keywords (Fixes, Closes, Resolves) for commit messages.
   Use when committing changes to ensure proper issue linkage.
+user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob, mcp__github__list_issues, mcp__github__get_issue
 ---
 

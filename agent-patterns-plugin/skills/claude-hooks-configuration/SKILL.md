@@ -6,6 +6,7 @@ description: |
   want to trigger a script on session start, run a hook before or after tool calls
   (PreToolUse/PostToolUse), configure hook timeouts to prevent cancellation errors,
   or debug hooks that aren't firing correctly.
+user-invocable: false
 allowed-tools: Bash(cat *), Bash(bash *), Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2025-12-27
 modified: 2026-02-25

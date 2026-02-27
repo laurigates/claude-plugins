@@ -5,6 +5,7 @@ modified: 2026-02-06
 reviewed: 2026-01-20
 name: document-linking
 description: "Unified ID system for PRDs, ADRs, PRPs, and GitHub issues. Auto-generates IDs on document access, maintains bidirectional links, and provides traceability across all artifacts."
+user-invocable: false
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash, TodoWrite
 ---
 

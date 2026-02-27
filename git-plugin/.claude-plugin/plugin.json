@@ -1,7 +1,11 @@
 {
   "name": "git-plugin",
+<<<<<<< claude/scoped-hooks-exploration-NDyJC
   "hooks": "./hooks.json",
   "version": "2.19.4",
+=======
+  "version": "2.21.0",
+>>>>>>> main
   "description": "Git workflows - commits, branches, PRs, issue processing, auto-close detection, and repository management",
   "author": {
     "name": "Lauri Gates"

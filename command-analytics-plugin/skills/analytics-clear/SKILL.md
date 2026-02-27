@@ -4,6 +4,7 @@ description: Clear all analytics data and start fresh
 args: "[--confirm]"
 allowed-tools: Bash
 argument-hint: "Use --confirm to skip confirmation prompt"
+disable-model-invocation: true
 created: 2026-01-10
 modified: 2026-01-10
 reviewed: 2026-01-10

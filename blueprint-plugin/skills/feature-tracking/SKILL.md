@@ -5,6 +5,7 @@ modified: 2026-02-06
 reviewed: 2026-02-08
 name: feature-tracking
 description: "Track feature implementation status against requirements documents. Provides hierarchical FR code tracking, phase management, task tracking, and sync with TODO.md."
+user-invocable: false
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash, TodoWrite
 ---
 

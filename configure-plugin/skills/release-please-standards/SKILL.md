@@ -8,6 +8,7 @@ description: |
   Release-please standards and configuration. Use when configuring release-please
   workflows, checking release automation compliance, or when the user mentions
   release-please, automated releases, or version management.
+user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---
 

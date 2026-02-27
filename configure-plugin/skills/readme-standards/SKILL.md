@@ -7,6 +7,7 @@ name: readme-standards
 description: |
   README.md templates and standards. Use when generating or improving README files,
   checking README compliance, or when the user mentions README best practices or documentation.
+user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---
 

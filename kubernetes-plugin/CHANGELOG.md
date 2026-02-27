@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.4.1](https://github.com/laurigates/claude-plugins/compare/kubernetes-plugin-v1.4.0...kubernetes-plugin-v1.4.1) (2026-02-27)
+
+
+### Bug Fixes
+
+* heredoc false positives in kubectl/helm context validation ([#836](https://github.com/laurigates/claude-plugins/issues/836)) ([ebd9569](https://github.com/laurigates/claude-plugins/commit/ebd9569d8794c67b67f033a0b5de804c8cde927c))
+* **kubernetes-plugin:** strip heredoc bodies before kubectl/helm context check ([ebd9569](https://github.com/laurigates/claude-plugins/commit/ebd9569d8794c67b67f033a0b5de804c8cde927c))
+
+## [1.4.0](https://github.com/laurigates/claude-plugins/compare/kubernetes-plugin-v1.3.0...kubernetes-plugin-v1.4.0) (2026-02-27)
+
+
+### Features
+
+* add metadata fields to skill definitions across all plugins ([#828](https://github.com/laurigates/claude-plugins/issues/828)) ([59b3d1f](https://github.com/laurigates/claude-plugins/commit/59b3d1fadd8fd888f95ced8b071fb66cf6f9c825))
+* add skill invocation control via user-invocable and disable-model-invocation frontmatter ([59b3d1f](https://github.com/laurigates/claude-plugins/commit/59b3d1fadd8fd888f95ced8b071fb66cf6f9c825))
+
 ## [1.3.0](https://github.com/laurigates/claude-plugins/compare/kubernetes-plugin-v1.2.2...kubernetes-plugin-v1.3.0) (2026-02-18)
 
 

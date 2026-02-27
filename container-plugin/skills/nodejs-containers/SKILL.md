@@ -10,6 +10,7 @@ description: |
   and optimization from ~900MB to ~50-100MB. Covers npm/yarn/pnpm patterns,
   BuildKit cache mounts, and non-root user configuration.
   Use when working with Node.js containers, Dockerfiles for Node apps, or optimizing Node image sizes.
+user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob, Edit, Write, TodoWrite, WebSearch, WebFetch
 ---
 

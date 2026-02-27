@@ -1,14 +1,17 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-02-09
+modified: 2026-02-27
 reviewed: 2026-02-09
 name: claude-blog-sources
 description: |
   Access Claude Blog and official Claude Code documentation for latest improvements, usage patterns,
   and best practices. Use when researching Claude Code features, CLAUDE.md optimization, memory
   management, or staying current with Claude capabilities.
+user-invocable: false
 allowed-tools: WebFetch, WebSearch, Task
+context: fork
+agent: general-purpose
 ---
 
 # Claude Blog Sources

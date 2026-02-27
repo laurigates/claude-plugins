@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.6.0](https://github.com/laurigates/claude-plugins/compare/documentation-plugin-v1.5.0...documentation-plugin-v1.6.0) (2026-02-27)
+
+
+### Features
+
+* add `context: fork` guidance and apply to verbose skills ([#833](https://github.com/laurigates/claude-plugins/issues/833)) ([cced641](https://github.com/laurigates/claude-plugins/commit/cced641a953953b97f37528960782cacd75dbcab))
+* **skills:** add context: fork to verbose autonomous skills ([cced641](https://github.com/laurigates/claude-plugins/commit/cced641a953953b97f37528960782cacd75dbcab))
+
+## [1.5.0](https://github.com/laurigates/claude-plugins/compare/documentation-plugin-v1.4.3...documentation-plugin-v1.5.0) (2026-02-27)
+
+
+### Features
+
+* add metadata fields to skill definitions across all plugins ([#828](https://github.com/laurigates/claude-plugins/issues/828)) ([59b3d1f](https://github.com/laurigates/claude-plugins/commit/59b3d1fadd8fd888f95ced8b071fb66cf6f9c825))
+* add skill invocation control via user-invocable and disable-model-invocation frontmatter ([59b3d1f](https://github.com/laurigates/claude-plugins/commit/59b3d1fadd8fd888f95ced8b071fb66cf6f9c825))
+
 ## [1.4.3](https://github.com/laurigates/claude-plugins/compare/documentation-plugin-v1.4.2...documentation-plugin-v1.4.3) (2026-02-25)
 
 

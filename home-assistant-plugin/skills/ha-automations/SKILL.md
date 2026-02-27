@@ -8,6 +8,7 @@ description: |
   Home Assistant automation creation and management. Use when creating automation rules,
   working with triggers, conditions, actions, scripts, scenes, or blueprints.
   Covers automation patterns, device triggers, and complex conditional logic.
+user-invocable: false
 allowed-tools: Read, Edit, Write, Grep, Glob, TodoWrite
 ---
 

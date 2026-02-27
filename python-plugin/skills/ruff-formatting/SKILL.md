@@ -5,6 +5,7 @@ modified: 2026-02-14
 reviewed: 2025-12-16
 name: ruff-formatting
 description: Python code formatting with ruff format. Fast, Black-compatible formatting for consistent code style. Use when formatting Python files, enforcing style, or checking format compliance.
+user-invocable: false
 allowed-tools: Bash(ruff *), Bash(python *), Bash(uv *), Read, Edit, Write, Grep, Glob
 ---
 

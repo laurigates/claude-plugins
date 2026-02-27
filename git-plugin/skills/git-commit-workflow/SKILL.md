@@ -10,6 +10,7 @@ description: |
   humble fact-based communication style, and automatic issue detection.
   Use when user mentions committing changes, writing commit messages, git add,
   git commit, staging files, or conventional commit format.
+user-invocable: false
 allowed-tools: Bash, Read
 ---
 

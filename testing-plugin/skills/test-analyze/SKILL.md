@@ -5,9 +5,11 @@ args: "<results-path> [--type <test-type>] [--focus <area>]"
 argument-hint: "Path to test results (e.g., ./test-results/), optional --type and --focus filters"
 allowed-tools: Task, Read, Glob, Grep, TodoWrite
 created: 2025-12-16
-modified: 2026-02-03
+modified: 2026-02-27
 reviewed: 2025-12-16
 name: test-analyze
+context: fork
+agent: general-purpose
 ---
 
 # Test Analysis and Fix Planning

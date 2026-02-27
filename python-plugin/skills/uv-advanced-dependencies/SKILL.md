@@ -9,6 +9,7 @@ description: |
   editable installs, dependency groups, extras, constraints, and custom indexes.
   Use when user mentions git+https dependencies, local path dependencies, editable
   installs, dependency groups, or private package indexes.
+user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---
 

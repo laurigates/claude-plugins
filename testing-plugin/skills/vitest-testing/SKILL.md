@@ -8,6 +8,7 @@ description: |
   Vitest test runner for JavaScript and TypeScript. Fast, modern alternative to Jest.
   Vite-native, ESM support, watch mode, UI mode, coverage, mocking, snapshot testing.
   Use when setting up tests for Vite projects, migrating from Jest, or needing fast test execution.
+user-invocable: false
 allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebFetch, WebSearch, BashOutput, KillShell
 ---
 

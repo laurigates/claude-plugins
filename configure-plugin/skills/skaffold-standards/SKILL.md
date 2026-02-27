@@ -8,6 +8,7 @@ description: |
   Skaffold configuration standards for local Kubernetes development with OrbStack
   and dotenvx. Use when configuring Skaffold, setting up local K8s development,
   or when the user mentions Skaffold, local development, Kubernetes profiles, or dotenvx secrets.
+user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---
 

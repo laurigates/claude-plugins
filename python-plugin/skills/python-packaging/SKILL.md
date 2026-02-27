@@ -9,6 +9,7 @@ description: |
   uv publish, pyproject.toml, versioning, entry points, and PyPI publishing.
   Use when user mentions building packages, publishing to PyPI, uv build, uv publish,
   package distribution, or Python wheel/sdist creation.
+user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---
 

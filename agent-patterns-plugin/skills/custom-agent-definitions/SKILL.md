@@ -6,6 +6,7 @@ description: |
   when you want to create a new agent .md file, define a specialized agent with its own
   system prompt and tools, set up an agent with isolated context, or configure agent
   capabilities and restrictions in your project's .claude/ configuration.
+user-invocable: false
 allowed-tools: Bash(cat *), Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-01-20
 modified: 2026-02-05

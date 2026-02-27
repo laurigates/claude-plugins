@@ -5,6 +5,7 @@ modified: 2025-12-16
 reviewed: 2025-12-16
 name: github-actions-mcp-config
 description: MCP server configuration for GitHub Actions including tool permissions, environment variables, and multi-server setups. Use when configuring MCP servers in GitHub Actions workflows.
+user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, WebFetch
 ---
 

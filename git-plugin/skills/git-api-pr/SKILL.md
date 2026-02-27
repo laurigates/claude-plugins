@@ -5,6 +5,7 @@ description: Create PRs via GitHub API without local git operations. Use when yo
 args: <file...> --title <title> [--base <branch>] [--branch <name>] [--body <text>] [--draft] [--delete]
 allowed-tools: Bash(gh api *), Bash(gh pr *), Bash(gh repo *), Bash(base64 *), Bash(git remote *), Bash(mktemp *), Read, TodoWrite
 argument-hint: <files...> --title "type(scope): description"
+disable-model-invocation: true
 created: 2026-02-15
 modified: 2026-02-16
 reviewed: 2026-02-15

@@ -1,6 +1,6 @@
 {
   "name": "hooks-plugin",
-  "version": "1.7.0",
+  "version": "1.9.0",
   "description": "Claude Code hooks for enforcing best practices and workflow automation",
   "author": {
     "name": "Lauri Gates"
@@ -18,7 +18,12 @@
     "web",
     "git-stash",
     "git-cleanup",
-    "session-end"
+    "session-end",
+    "prompt-hooks",
+    "agent-hooks",
+    "task-completeness",
+    "test-verification",
+    "quality-gates"
   ],
   "hooks": {
     "PreToolUse": [
@@ -35,12 +40,59 @@
     ],
     "Stop": [
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
             "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/git-stash-reminder.sh",
             "timeout": 10000
+          },
+          {
+            "type": "prompt",
+            "prompt": "You are evaluating whether Claude should stop working. First: if stop_hook_active is true in the input, respond with {\"ok\": true} immediately.\n\nOtherwise, analyze the conversation context: $ARGUMENTS\n\nCheck:\n1. Were all user-requested tasks completed?\n2. Are there incomplete TODO items or unaddressed requirements?\n3. Did Claude encounter errors that still need fixing?\n4. Were there explicit deliverables (commits, PRs, files) that haven't been produced yet?\n\nRespond with {\"ok\": true} if all tasks appear complete, or {\"ok\": false, \"reason\": \"brief description of remaining work\"} if work remains.",
+            "timeout": 30,
+            "statusMessage": "Checking task completeness..."
+          },
+          {
+            "type": "agent",
+            "prompt": "You are verifying that changes made in this session don't break tests. First: if stop_hook_active is true in the input, respond with {\"ok\": true} immediately.\n\nOtherwise:\n1. Run git status to check for modified files\n2. If source files were changed (not just docs/config), look for a test runner:\n   - package.json with test script → npm test -- --bail\n   - pytest.ini or pyproject.toml with pytest → pytest -x --tb=short\n   - Cargo.toml → cargo test\n   - go.mod → go test ./...\n   - Makefile with test target → make test\n3. Run the test suite with compact/fail-fast flags\n4. If tests pass, respond {\"ok\": true}\n5. If tests fail, respond {\"ok\": false, \"reason\": \"Test failures: [summary of failures]\"}\n6. If no test runner is found or no source files changed, respond {\"ok\": true}\n\nContext: $ARGUMENTS",
+            "timeout": 120,
+            "statusMessage": "Running test verification..."
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "You are evaluating whether a subagent's output is complete and actionable. Context: $ARGUMENTS\n\nCheck:\n1. Does the output address the original task/prompt that spawned the subagent?\n2. Is the response specific and actionable (not vague platitudes or generic advice)?\n3. Are there obvious gaps, unanswered questions, or incomplete sections?\n4. If the task was research, are findings concrete with file paths or code references?\n5. If the task was implementation, were the changes actually made?\n\nRespond with {\"ok\": true} if the output is satisfactory, or {\"ok\": false, \"reason\": \"what's missing or inadequate\"} if it needs more work.",
+            "timeout": 30,
+            "statusMessage": "Evaluating subagent output quality..."
+          }
+        ]
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "hooks": [
+          {
+            "type": "agent",
+            "prompt": "You are verifying that a completed task meets quality standards before accepting it. Context: $ARGUMENTS\n\n1. Run git diff --stat to see what files were changed\n2. For each changed source file, search for TODO/FIXME/HACK comments that may indicate unfinished work\n3. Check that no debugging artifacts remain (stray console.log, print() statements, debugger keywords)\n4. If the task involved adding new functionality, check if test files exist nearby or were updated\n5. Verify the changes are consistent with the task description\n\nRespond with {\"ok\": true} if the implementation looks complete and clean, or {\"ok\": false, \"reason\": \"specific issues found\"} if problems remain.",
+            "timeout": 60,
+            "statusMessage": "Verifying task implementation quality..."
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "You are classifying a user prompt for safety before Claude processes it. Context: $ARGUMENTS\n\nCheck if the prompt explicitly requests:\n1. Destructive filesystem operations (delete directories, rm -rf, overwrite important files)\n2. Destructive git operations (force push, reset --hard, delete branches with unsaved work)\n3. Irreversible changes to shared resources (push to main/master, close/delete PRs or issues)\n4. Operations affecting production systems (deploy, database migrations, service restarts)\n\nIMPORTANT: Only flag prompts that explicitly request dangerous actions. Do not flag normal development requests like 'fix this bug', 'add a feature', 'refactor this code', or 'run tests'. Most prompts are safe.\n\nRespond with {\"ok\": true} for safe prompts (the vast majority). Respond with {\"ok\": false, \"reason\": \"Warning: this prompt requests [specific destructive action]. Confirm with the user before proceeding.\"} only for clearly dangerous prompts.",
+            "timeout": 15,
+            "statusMessage": "Classifying prompt..."
           }
         ]
       }

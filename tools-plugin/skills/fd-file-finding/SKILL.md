@@ -5,6 +5,7 @@ modified: 2026-01-21
 reviewed: 2025-12-16
 name: fd-file-finding
 description: Fast file finding using fd command-line tool with smart defaults, gitignore awareness, and parallel execution. Use when searching for files by name, extension, or pattern across directories.
+user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---
 

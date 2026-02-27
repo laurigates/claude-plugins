@@ -2,6 +2,7 @@
 model: haiku
 name: langchain-development
 description: LangChain JS/TS framework for building LLM-powered applications - models, chains, tools, and RAG patterns.
+user-invocable: false
 allowed-tools: Bash(python *), Bash(uv *), BashOutput, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-01-08
 modified: 2026-01-08

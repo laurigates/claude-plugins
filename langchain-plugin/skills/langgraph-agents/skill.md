@@ -6,6 +6,7 @@ description: |
   Use when you want to create a state machine agent with checkpoints, define agent
   behavior as a graph of nodes and edges, add human-in-the-loop approval steps, or
   compose multiple agents as subgraphs in a LangGraph application.
+user-invocable: false
 allowed-tools: Bash(python *), Bash(uv *), BashOutput, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-01-08
 modified: 2026-02-05
