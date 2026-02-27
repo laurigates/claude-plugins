@@ -58,25 +58,20 @@ If uncommitted changes exist, stash them before proceeding.
 Create an isolated working directory for the task.
 
 ```bash
-# Ensure worktrees directory exists (gitignored)
-mkdir -p worktrees
-
 # Single issue
-git worktree add ./worktrees/issue-47 -b wt/issue-47 origin/main
+git worktree add <path> -b wt/issue-47 origin/main
 
 # Feature work
-git worktree add ./worktrees/feat-auth -b wt/feat-auth origin/main
+git worktree add <path> -b wt/feat-auth origin/main
 ```
 
-**Naming conventions**:
+**Branch naming conventions**:
 
-| Task type | Worktree path | Branch name |
-|-----------|---------------|-------------|
-| Issue | `./worktrees/issue-{N}` | `wt/issue-{N}` |
-| Feature | `./worktrees/feat-{name}` | `wt/feat-{name}` |
-| Fix | `./worktrees/fix-{name}` | `wt/fix-{name}` |
-
-**Why `./worktrees/`**: Inside the project directory so agents already have file permissions. The `/worktrees/` entry in `.gitignore` prevents tracking worktree contents.
+| Task type | Branch name |
+|-----------|-------------|
+| Issue | `wt/issue-{N}` |
+| Feature | `wt/feat-{name}` |
+| Fix | `wt/fix-{name}` |
 
 ### Step 3: Implement in the worktree
 
@@ -86,12 +81,12 @@ All work happens inside the worktree directory.
 ```bash
 # Edit files in the worktree
 # Run tests in the worktree
-cd ./worktrees/issue-47 && npm test
+cd <worktree-path> && npm test
 ```
 
 **Subagent** — pass the absolute path:
 ```
-You are working in the worktree at: {repo_root}/worktrees/issue-{N}
+You are working in the worktree at: {worktree_path}
 
 **Issue #{N}**: {issue title}
 
@@ -105,15 +100,14 @@ You are working in the worktree at: {repo_root}/worktrees/issue-{N}
 
    Fixes #{N}
 
-Work ONLY within {repo_root}/worktrees/issue-{N}
+Work ONLY within {worktree_path}
 ```
 
 **Multiple issues in parallel** — create one worktree per issue, launch agents simultaneously:
 ```bash
-mkdir -p worktrees
-git worktree add ./worktrees/issue-47 -b wt/issue-47 origin/main
-git worktree add ./worktrees/issue-49 -b wt/issue-49 origin/main
-git worktree add ./worktrees/issue-50 -b wt/issue-50 origin/main
+git worktree add <path-47> -b wt/issue-47 origin/main
+git worktree add <path-49> -b wt/issue-49 origin/main
+git worktree add <path-50> -b wt/issue-50 origin/main
 ```
 
 Then dispatch agents in parallel — each receives its own worktree path. Agents run simultaneously because each has an isolated directory with no file conflicts.
@@ -122,11 +116,11 @@ Then dispatch agents in parallel — each receives its own worktree path. Agents
 
 ```bash
 # Check each worktree has a clean, focused commit
-git -C ./worktrees/issue-47 log --oneline origin/main..HEAD
-git -C ./worktrees/issue-47 diff --stat origin/main
+git -C <worktree-path> log --oneline origin/main..HEAD
+git -C <worktree-path> diff --stat origin/main
 
 # Run tests in the worktree
-cd ./worktrees/issue-47 && npm test
+cd <worktree-path> && npm test
 ```
 
 **Verification checklist**:
@@ -141,7 +135,7 @@ Push the worktree branch and create a PR. Handle PRs sequentially to maintain cl
 
 ```bash
 # Push
-git -C ./worktrees/issue-47 push -u origin wt/issue-47
+git -C <worktree-path> push -u origin wt/issue-47
 
 # Create PR
 gh pr create --head wt/issue-47 --base main \
@@ -154,17 +148,14 @@ gh pr create --head wt/issue-47 --base main \
 Remove worktrees after PRs are created (or merged).
 
 ```bash
-# Remove worktrees
-git worktree remove ./worktrees/issue-47
+# Remove worktree
+git worktree remove <worktree-path>
 
 # Prune stale references
 git worktree prune
 
 # Delete local branch (after PR merge)
 git branch -D wt/issue-47
-
-# Remove empty worktrees directory
-rmdir worktrees 2>/dev/null || true
 ```
 
 ## Orchestrator vs Subagent Roles
@@ -191,7 +182,7 @@ Each worktree is a separate directory tree. If the project uses `node_modules`, 
 
 ```bash
 # Install dependencies in the worktree
-cd ./worktrees/issue-47 && npm install
+cd <worktree-path> && npm install
 ```
 
 Shared lockfiles ensure consistent versions across worktrees.
@@ -204,15 +195,15 @@ Orchestrator (main repo, on main branch)
     +--- Step 1: git fetch, confirm clean
     |
     +--- Step 2: Create worktrees
-    |         +-- ./worktrees/issue-47
-    |         +-- ./worktrees/issue-49
+    |         +-- <path-47>
+    |         +-- <path-49>
     |
     +--- Step 3: Launch agents IN PARALLEL
     |         |
-    |         +---> Agent 1 -> ./worktrees/issue-47
+    |         +---> Agent 1 -> <path-47>
     |         |         +-- Implements, tests, commits
     |         |
-    |         +---> Agent 2 -> ./worktrees/issue-49
+    |         +---> Agent 2 -> <path-49>
     |                   +-- Implements, tests, commits
     |
     +--- Step 4: Verify each worktree
@@ -227,13 +218,13 @@ Orchestrator (main repo, on main branch)
 | Context | Command |
 |---------|---------|
 | List worktrees | `git worktree list --porcelain` |
-| Create worktree | `git worktree add ./worktrees/issue-N -b wt/issue-N origin/main` |
-| Remove worktree | `git worktree remove ./worktrees/issue-N` |
-| Check worktree status | `git -C ./worktrees/issue-N status --porcelain` |
-| Worktree log | `git -C ./worktrees/issue-N log --oneline origin/main..HEAD` |
-| Worktree diff | `git -C ./worktrees/issue-N diff --stat origin/main` |
-| Push worktree branch | `git -C ./worktrees/issue-N push -u origin wt/issue-N` |
-| Run tests in worktree | `cd ./worktrees/issue-N && npm test` |
+| Create worktree | `git worktree add <path> -b wt/issue-N origin/main` |
+| Remove worktree | `git worktree remove <path>` |
+| Check worktree status | `git -C <path> status --porcelain` |
+| Worktree log | `git -C <path> log --oneline origin/main..HEAD` |
+| Worktree diff | `git -C <path> diff --stat origin/main` |
+| Push worktree branch | `git -C <path> push -u origin wt/issue-N` |
+| Run tests in worktree | `cd <path> && npm test` |
 | Prune stale | `git worktree prune` |
 
 ## Quick Reference
