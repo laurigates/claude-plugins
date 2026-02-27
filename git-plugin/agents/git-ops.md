@@ -3,9 +3,9 @@ name: git-ops
 model: haiku
 color: "#F05032"
 description: |
-  Specialized agent for git write operations. Handles merge conflicts, interactive rebases, cherry-picks,
-  bisect, commits, and multi-branch workflows. Use for git operations that modify repository
-  state (commit, push, rebase, merge, stash, checkout), especially in parallel agent workflows.
+  Specialized agent for complex git write operations. Handles merge conflicts, rebases, cherry-picks,
+  bisect, and multi-step git workflows. Use when git operations are verbose or multi-step (conflict
+  resolution, rebase with conflicts, bisect) to keep that output isolated from the main context.
 tools: Glob, Grep, LS, Read, Edit, Write, Bash, TodoWrite
 skills:
   - git-cli-agentic
@@ -21,13 +21,13 @@ reviewed: 2026-02-12
 
 ## Why This Agent Exists
 
-When multiple agents run in parallel, git operations cause conflicts:
-- **Stashing**: Files disappear for other agents
-- **Branch switching**: Working directory changes unexpectedly
-- **Commits**: Race conditions, lost changes
-- **Rebasing**: Shared history changes mid-operation
+Complex git operations produce verbose, multi-step output that fills the main context window:
+- **Merge conflicts**: Reading both sides, resolving, continuing — many tool calls
+- **Rebasing**: Conflict-by-conflict resolution with context at each step
+- **Bisect**: Iterative good/bad marking across many commits
+- **Cherry-pick chains**: Sequential picks with potential conflicts
 
-This agent specializes in complex git workflows to help avoid these conflicts in parallel execution.
+Delegating these to a dedicated agent keeps the main session focused while the agent handles the back-and-forth.
 
 ## Prerequisites
 
