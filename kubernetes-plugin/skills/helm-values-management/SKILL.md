@@ -9,6 +9,7 @@ description: |
   configurations, and secret management. Covers values files, --set, --set-string,
   values schema validation. Use when user mentions Helm values, environment-specific
   configs, values.yaml, --set overrides, or Helm configuration.
+user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---
 

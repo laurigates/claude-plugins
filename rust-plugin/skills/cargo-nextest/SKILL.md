@@ -8,6 +8,7 @@ description: |
   Next-generation test runner for Rust with parallel execution, advanced filtering, and CI integration.
   Use when running tests, configuring test execution, setting up CI pipelines, or optimizing test performance.
   Trigger terms: nextest, test runner, parallel tests, test filtering, test performance, flaky tests, CI testing.
+user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---
 

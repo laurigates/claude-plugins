@@ -6,6 +6,7 @@ description: |
   building agents that interact with many MCP tools, when intermediate data is too large
   for model context, when you need loops/conditionals across tool calls, or when PII must
   stay out of the model context. Based on Anthropic's engineering guidance.
+user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-02-08
 modified: 2026-02-08

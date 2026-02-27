@@ -8,6 +8,7 @@ description: |
 args: "[--remote-only] [--no-verify]"
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash(test *), Bash(cat *), Bash(chmod *), Bash(mkdir *), Bash(jq *), TodoWrite
 argument-hint: "--remote-only to only run in web sessions, --no-verify to skip test verification"
+disable-model-invocation: true
 created: 2026-02-07
 modified: 2026-02-10
 reviewed: 2026-02-07

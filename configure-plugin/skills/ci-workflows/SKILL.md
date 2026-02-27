@@ -8,6 +8,7 @@ description: |
   GitHub Actions workflow standards. Use when configuring CI/CD workflows, checking
   workflow compliance, or when the user mentions GitHub Actions, container builds,
   or CI/CD automation.
+user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---
 

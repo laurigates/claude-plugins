@@ -9,6 +9,7 @@ description: |
   JavaScript/TypeScript projects, high-performance tooling, and modern frameworks.
   Use when user mentions Node.js, Bun, Vite, Vue, Pinia, npm, pnpm, JavaScript runtime,
   or building frontend/backend JS applications.
+user-invocable: false
 allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebFetch, WebSearch, BashOutput, KillShell, NotebookEdit
 ---
 

@@ -9,6 +9,7 @@ description: |
   and mutmut (Python). Find weak tests that pass despite code mutations.
   Use when user mentions mutation testing, Stryker, mutmut, test effectiveness,
   finding weak tests, or improving test quality through mutation analysis.
+user-invocable: false
 allowed-tools: Bash, Read, Edit, Write, Grep, Glob, TodoWrite
 ---
 

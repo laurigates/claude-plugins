@@ -9,6 +9,7 @@ description: |
   version fields in package.json, pyproject.toml, Cargo.toml). Provides conventional
   commit templates. Use when editing changelogs, version bumps, release files, or
   when user mentions "release", "changelog", "version bump", or "conventional commits".
+user-invocable: false
 allowed-tools: Read, Grep, Glob
 ---
 

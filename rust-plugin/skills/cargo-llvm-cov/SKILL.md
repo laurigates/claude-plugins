@@ -8,6 +8,7 @@ description: |
   Code coverage for Rust using LLVM instrumentation with support for multiple output formats and CI integration.
   Use when measuring test coverage, generating coverage reports, enforcing coverage thresholds, or integrating with codecov/coveralls.
   Trigger terms: coverage, llvm-cov, code coverage, test coverage, coverage report, codecov, coveralls, branch coverage.
+user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---
 

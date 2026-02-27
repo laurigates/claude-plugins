@@ -8,6 +8,7 @@ description: |
   Access Claude Blog and official Claude Code documentation for latest improvements, usage patterns,
   and best practices. Use when researching Claude Code features, CLAUDE.md optimization, memory
   management, or staying current with Claude capabilities.
+user-invocable: false
 allowed-tools: WebFetch, WebSearch, Task
 ---
 

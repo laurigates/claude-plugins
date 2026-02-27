@@ -5,6 +5,7 @@ modified: 2026-01-01
 reviewed: 2026-01-01
 name: layer2-discovery
 description: Layer 2 network topology mapping and neighbor discovery using LLDP/CDP protocols and ARP scanning. Covers lldpd/lldpcli for switch topology, arp-scan-rs for fast host discovery, and arping for single-host probes.
+user-invocable: false
 allowed-tools: Bash(arp *), Bash(ip *), Bash(bridge *), Bash(ethtool *), Read, Write, Edit, Grep, Glob
 ---
 

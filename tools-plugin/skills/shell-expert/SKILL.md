@@ -10,6 +10,7 @@ description: |
   and system automation with bash, zsh, and POSIX shell.
   Use when user mentions shell scripts, bash, zsh, CLI commands, pipes, command-line
   automation, or writing portable shell code.
+user-invocable: false
 allowed-tools: Bash, BashOutput, KillShell, Grep, Glob, Read, Write, Edit, TodoWrite
 ---
 

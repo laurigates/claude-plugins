@@ -9,6 +9,7 @@ description: |
   manifest files, component tagging, changelog sections, and extra-files setup.
   Use when setting up automated releases, fixing release workflow issues, or
   configuring version bump automation.
+user-invocable: false
 allowed-tools: Read, Write, Edit, Bash, Grep, Glob, TodoWrite
 ---
 

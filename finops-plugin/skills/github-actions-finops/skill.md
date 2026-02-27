@@ -6,6 +6,7 @@ description: |
   Use when investigating CI/CD costs, identifying wasted runs, or optimizing
   workflow triggers. Covers org-level billing, per-repo workflow analysis,
   and waste pattern detection.
+user-invocable: false
 allowed-tools: Bash(gh api *), Bash(gh repo *), Bash(gh workflow *), Bash(gh run *), Read, Grep, Glob, TodoWrite
 created: 2025-01-30
 modified: 2026-02-11

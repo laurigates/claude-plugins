@@ -8,6 +8,7 @@ description: |
   Home Assistant entity and domain management. Use when working with entity IDs,
   device classes, customizations, template entities, groups, or understanding
   entity naming conventions and domain-specific attributes.
+user-invocable: false
 allowed-tools: Read, Edit, Write, Grep, Glob, TodoWrite
 ---
 

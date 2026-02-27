@@ -9,6 +9,7 @@ description: |
   starting any implementation task — single issue, feature, or multi-issue
   parallel work. Each worktree provides a clean, isolated directory with its
   own branch, preventing cross-contamination and enabling atomic PRs.
+user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, Task, TodoWrite
 ---
 

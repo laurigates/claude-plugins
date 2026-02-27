@@ -9,6 +9,7 @@ description: |
   uv init, uv add, uv remove, uv lock, uv sync, and pyproject.toml configuration.
   Use when user mentions uv, creating Python projects, managing dependencies,
   lockfiles, pyproject.toml, or Python packaging with uv.
+user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---
 

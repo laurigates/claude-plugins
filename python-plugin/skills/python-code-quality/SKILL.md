@@ -9,6 +9,7 @@ description: |
   Covers pyproject.toml configuration, pre-commit hooks, and type hints.
   Use when user mentions ruff, ty, linting, formatting, type checking,
   code style, or Python code quality.
+user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---
 

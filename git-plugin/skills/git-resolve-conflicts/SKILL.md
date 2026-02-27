@@ -8,6 +8,7 @@ description: |
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git merge *), Bash(git checkout *), Bash(git rebase *), Bash(gh pr *), Read, Edit, Grep, Glob, TodoWrite
 args: "[pr-number] [--push]"
 argument-hint: PR number to resolve conflicts for
+disable-model-invocation: true
 created: 2026-02-26
 modified: 2026-02-26
 reviewed: 2026-02-26

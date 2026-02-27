@@ -9,6 +9,7 @@ description: |
   workspaces (github, sentry, gcp, onelogin, twingate). Requires TFE_TOKEN.
   Use when user mentions TFC runs, Terraform Cloud workspace, listing TFC runs,
   infrastructure run history, or checking Terraform Cloud status.
+user-invocable: false
 allowed-tools: Bash, Read
 ---
 

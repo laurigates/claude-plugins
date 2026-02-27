@@ -3,6 +3,7 @@ model: opus
 description: "Execute a PRP with validation loop, TDD workflow, and quality gates"
 args: "[prp-name]"
 argument-hint: "Name of PRP to execute (e.g., feature-auth-oauth2)"
+disable-model-invocation: true
 allowed-tools: Read, Write, Edit, Glob, Bash, Task, AskUserQuestion
 created: 2025-12-16
 modified: 2026-02-14

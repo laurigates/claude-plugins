@@ -10,6 +10,7 @@ description: |
   for multi-language scripts, and workflow integration. Use when user mentions just,
   justfile, recipes, command runner, task automation, project commands, or needs help
   writing executable project documentation.
+user-invocable: false
 allowed-tools: Bash, BashOutput, Grep, Glob, Read, Write, Edit, TodoWrite
 ---
 

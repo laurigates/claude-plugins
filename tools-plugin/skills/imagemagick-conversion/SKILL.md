@@ -9,6 +9,7 @@ description: |
   resizing, batch processing, quality adjustment, and image transformations.
   Use when user mentions image conversion, resizing images, ImageMagick,
   magick command, batch image processing, or thumbnail generation.
+user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---
 

@@ -6,6 +6,7 @@ description: |
   Use when rebasing branches, cleaning up commit history, managing PR stacks, or converting
   merge-heavy branches to linear history. Covers --reapply-cherry-picks, --update-refs, --onto,
   and interactive rebase workflows.
+user-invocable: false
 allowed-tools: Bash, Read
 created: 2026-01-30
 modified: 2026-01-30
