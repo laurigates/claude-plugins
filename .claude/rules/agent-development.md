@@ -37,6 +37,7 @@ reviewed: YYYY-MM-DD
 # ... required fields above ...
 color: "#E53E3E"       # Hex color for UI display
 context: fork          # Context isolation: 'fork' creates independent context copy
+isolation: worktree    # Filesystem isolation: give agent its own git worktree
 ---
 ```
 
@@ -49,6 +50,7 @@ context: fork          # Context isolation: 'fork' creates independent context c
 | `model` | string | Yes | `opus`, `sonnet`, or `haiku` |
 | `tools` | comma-list | Yes | Tools the agent can use |
 | `context` | string | No | `fork` for isolated context (default: shared) |
+| `isolation` | string | No | `worktree` to run agent in an isolated git worktree |
 | `color` | string | No | Hex color for UI display |
 | `created` | date | Recommended | Initial creation date |
 | `modified` | date | Recommended | Last substantive change |
@@ -93,15 +95,24 @@ tools: Glob, Grep, LS, Read, WebFetch, WebSearch, TodoWrite
 - Isolated experiments or background tasks
 - Agents that generate verbose output that would fill the main context
 
-### Worktree Isolation (Task Tool)
+### Worktree Isolation
 
-For filesystem-level isolation, launch agents in a temporary git worktree using the Task tool's `isolation` parameter:
+For filesystem-level isolation, give agents their own git worktree so they work on an isolated copy of the repository. The worktree is automatically cleaned up if the agent makes no changes; if changes are made, the worktree path and branch are returned.
 
-```
-Task tool with isolation: "worktree"
-```
+**Two ways to enable worktree isolation:**
 
-This gives the agent an isolated copy of the repository. The worktree is automatically cleaned up if the agent makes no changes; if changes are made, the worktree path and branch are returned.
+1. **Agent frontmatter** — baked into the agent definition:
+   ```yaml
+   ---
+   name: implementer
+   isolation: worktree
+   ---
+   ```
+
+2. **Task tool parameter** — set per invocation:
+   ```
+   Task tool with isolation: "worktree"
+   ```
 
 **Use worktree isolation when:**
 - Agent will make commits on a separate branch
@@ -113,7 +124,7 @@ This gives the agent an isolated copy of the repository. The worktree is automat
 | Isolation Type | Mechanism | Isolates | Use Case |
 |----------------|-----------|----------|----------|
 | `context: fork` | Context fork | Context window | Research, exploration |
-| `isolation: "worktree"` | Git worktree | Filesystem + Git | Implementation, commits |
+| `isolation: worktree` | Git worktree | Filesystem + Git | Implementation, commits |
 | Manual worktree | `git worktree add` | Filesystem + Git | Complex multi-issue parallel work |
 
 ## Background Execution
@@ -282,7 +293,8 @@ User-level custom agents can be placed in `.claude/agents/`.
 - [ ] `model` is appropriate (`haiku` for mechanical, `sonnet` for development, `opus` for deep reasoning)
 - [ ] `tools` uses principle of least privilege
 - [ ] Granular `Bash(command *)` patterns used instead of bare `Bash`
-- [ ] `context: fork` added if agent should run in isolation
+- [ ] `context: fork` added if agent needs isolated context window
+- [ ] `isolation: worktree` added if agent needs filesystem-level git isolation
 - [ ] `## Team Configuration` section documents teammate vs subagent recommendation
 - [ ] `## Scope` section defines input/output/step count
 - [ ] Date fields set (`created`, `modified`, `reviewed`)

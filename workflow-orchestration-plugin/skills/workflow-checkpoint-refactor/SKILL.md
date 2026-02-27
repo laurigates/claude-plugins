@@ -170,4 +170,3 @@ For phases with 7+ files, delegate to Task sub-agent with:
 
 - [code-review-checklist](../../../code-quality-plugin/skills/code-review-checklist/SKILL.md) - Review refactored code
 - [refactoring-patterns](../../../code-quality-plugin/skills/refactoring-patterns/SKILL.md) - Refactoring techniques
-- [git-worktree-agent-workflow](../../../git-plugin/skills/git-worktree-agent-workflow/SKILL.md) - Parallel agent isolation

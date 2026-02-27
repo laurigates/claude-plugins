@@ -88,7 +88,6 @@ Process directly with standard TDD workflow.
 3. Present recommendations for approval
 4. Process approved issues
 
-name: git-issue
 ---
 
 ## Issue Analysis Engine
@@ -230,7 +229,6 @@ Task(subagent_type="general-purpose", prompt="Process issue #N with TDD workflow
 3. Wait for all agents to complete
 4. Consolidate results
 
-name: git-issue
 ---
 
 ## Commit Message Format
@@ -273,7 +271,6 @@ git push origin main:fix/issue-$N    # Push to remote feature branch
 # Continue on main for next issue
 ```
 
-name: git-issue
 ---
 
 ## Summary Report
