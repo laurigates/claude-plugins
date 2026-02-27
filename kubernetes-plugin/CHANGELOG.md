@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.5.0](https://github.com/laurigates/claude-plugins/compare/kubernetes-plugin-v1.4.1...kubernetes-plugin-v1.5.0) (2026-02-27)
+
+
+### Features
+
+* add safety hooks for Terraform, Kubernetes, Git, and Blueprint plugins ([#835](https://github.com/laurigates/claude-plugins/issues/835)) ([d4d86a0](https://github.com/laurigates/claude-plugins/commit/d4d86a03b96d99642f341effb8f3999df5246c8b))
+* **blueprint-plugin:** add PreCompact hook for derivation workflow context ([d4d86a0](https://github.com/laurigates/claude-plugins/commit/d4d86a03b96d99642f341effb8f3999df5246c8b))
+* **kubernetes-plugin:** add kubectl dry-run injection hook ([d4d86a0](https://github.com/laurigates/claude-plugins/commit/d4d86a03b96d99642f341effb8f3999df5246c8b))
+* **terraform-plugin:** add terraform apply gate hook ([d4d86a0](https://github.com/laurigates/claude-plugins/commit/d4d86a03b96d99642f341effb8f3999df5246c8b))
+
 ## [1.4.1](https://github.com/laurigates/claude-plugins/compare/kubernetes-plugin-v1.4.0...kubernetes-plugin-v1.4.1) (2026-02-27)
 
 
