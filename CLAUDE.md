@@ -38,6 +38,7 @@ Claude Code plugin collection providing skills and agents for development workfl
 | `.claude/rules/skill-execution-structure.md` | Imperative execution patterns for user-invocable skills |
 | `.claude/rules/handling-blocked-hooks.md` | How to respond when hooks block commands |
 | `.claude/rules/hooks-reference.md` | Complete hook event reference (2.1.50+): all events, schemas, timeouts, PermissionRequest |
+| `.claude/rules/prompt-agent-hooks.md` | **When to use prompt/agent hooks** — decision tree, config schema, prompts guide |
 | `.claude/rules/agent-development.md` | Agent configuration, isolation, background execution, memory, and teams |
 | `.claude/rules/regression-testing.md` | **Required**: add a script check for every skill bug fixed |
 

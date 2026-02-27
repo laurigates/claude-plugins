@@ -47,6 +47,60 @@ A SessionEnd hook that runs cleanup operations when the session terminates: comm
 | Switch | Switches to `main` (or `master` if `main` doesn't exist); no-op if already on main |
 | Pull | Runs `git pull --ff-only` to fast-forward the branch |
 
+## Prompt-Based and Agent-Based Hooks
+
+LLM-powered hooks that use judgment instead of deterministic rules.
+
+### Stop — Task Completeness Gate (prompt)
+
+A `type: "prompt"` hook that evaluates whether Claude completed all user-requested tasks before stopping. Prevents Claude from finishing prematurely with incomplete work.
+
+| Aspect | Detail |
+|--------|--------|
+| Type | `prompt` (single-turn LLM call) |
+| Timeout | 30s |
+| Loop prevention | Checks `stop_hook_active` to avoid infinite loops |
+
+### Stop — Test Verification (agent)
+
+A `type: "agent"` hook that runs the project's test suite before allowing Claude to stop. Detects the test runner automatically (npm, pytest, cargo, go, make).
+
+| Aspect | Detail |
+|--------|--------|
+| Type | `agent` (multi-turn with tool access) |
+| Timeout | 120s |
+| Skip condition | No source files changed, or no test runner found |
+
+### SubagentStop — Output Quality Gate (prompt)
+
+A `type: "prompt"` hook that evaluates subagent output completeness. Blocks vague or incomplete subagent results.
+
+| Aspect | Detail |
+|--------|--------|
+| Type | `prompt` (single-turn LLM call) |
+| Timeout | 30s |
+| Checks | Addresses original task, specificity, completeness |
+
+### TaskCompleted — Implementation Verification (agent)
+
+A `type: "agent"` hook that verifies task implementation quality when a team task is marked complete. Checks for leftover TODOs, debug artifacts, and test coverage.
+
+| Aspect | Detail |
+|--------|--------|
+| Type | `agent` (multi-turn with tool access) |
+| Timeout | 60s |
+| Checks | TODO/FIXME comments, debug artifacts, test presence |
+
+### UserPromptSubmit — Prompt Safety Classification (prompt)
+
+A `type: "prompt"` hook that classifies user prompts for safety before Claude processes them. Flags destructive operations (force push, rm -rf, production deployments).
+
+| Aspect | Detail |
+|--------|--------|
+| Type | `prompt` (single-turn LLM call) |
+| Timeout | 15s |
+| Scope | Only flags explicitly destructive requests |
+
 ## Installation
 
 ### Option 1: Copy to Project

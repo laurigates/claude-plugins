@@ -359,6 +359,24 @@ jq '.. | objects | select(.status == "not_started") | .name' docs/blueprint/feat
 jq '.prds | to_entries | .[] | "\(.key): \(.value.status)"' docs/blueprint/feature-tracker.json
 ```
 
+## Hooks
+
+### Validation Hooks (command)
+
+| Hook | Event | Target | Purpose |
+|------|-------|--------|---------|
+| `validate-prp-frontmatter.sh` | PreToolUse | `Write\|Edit(docs/prps/**)` | Structural validation of PRP frontmatter |
+| `validate-adr-frontmatter.sh` | PreToolUse | `Write\|Edit(docs/adrs/**)` | Structural validation of ADR frontmatter |
+| `check-prp-readiness.sh` | PreToolUse | `Skill(prp-execute)` | Confidence score, required sections, file references |
+
+### Quality Hooks (agent)
+
+| Hook | Event | Target | Purpose |
+|------|-------|--------|---------|
+| PRP Content Quality | PreToolUse | `Skill(prp-execute)` | LLM-powered evaluation of PRP content quality before execution |
+
+The PRP content quality agent hook runs alongside the structural command hook. The command hook validates structure (confidence >= 7/10, required sections, file references). The agent hook evaluates content quality (specificity of requirements, testability of acceptance criteria, edge case coverage).
+
 ## Installation
 
 ```bash

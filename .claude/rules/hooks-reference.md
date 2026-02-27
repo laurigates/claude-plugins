@@ -1,6 +1,6 @@
 # Hook System Reference (Claude Code 2.1.50+)
 
-Comprehensive reference for Claude Code hook events, schemas, and patterns. This supplements `.claude/rules/handling-blocked-hooks.md` with full event coverage.
+Comprehensive reference for Claude Code hook events, schemas, and patterns. This supplements `.claude/rules/handling-blocked-hooks.md` with full event coverage. For guidance on when to use `type: "prompt"` and `type: "agent"` hooks instead of `type: "command"`, see `.claude/rules/prompt-agent-hooks.md`.
 
 ## Hook Events
 
