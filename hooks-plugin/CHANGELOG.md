@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.10.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.10.1...hooks-plugin-v1.10.2) (2026-02-28)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** narrow git chain check to index-modifying commands ([f8d24e6](https://github.com/laurigates/claude-plugins/commit/f8d24e655960aafaffcc0026064c7e026ef98810))
+* refine git chained command check to only flag index-modifying operations ([#843](https://github.com/laurigates/claude-plugins/issues/843)) ([f8d24e6](https://github.com/laurigates/claude-plugins/commit/f8d24e655960aafaffcc0026064c7e026ef98810))
+
 ## [1.10.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.10.0...hooks-plugin-v1.10.1) (2026-02-28)
 
 
