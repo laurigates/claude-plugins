@@ -195,35 +195,66 @@ When blocked, the agent receives a helpful message explaining:
 
 ---
 
-## git-stash-reminder.sh
+## git-stash-session-init.sh
 
-A Stop hook that checks for orphaned git stashes before Claude exits. Stashes created during a session (branch switches, conflict resolution) are easily forgotten — this hook blocks the exit until they're addressed.
-
-### Behavior
-
-| Stash Age | Classification | Recommendation |
-|-----------|---------------|----------------|
-| < 2 hours | Recent | `git stash pop` (likely from this session) |
-| >= 2 hours | Stale | `git stash drop stash@{N}` (probably orphaned) |
-| No stashes | — | Silent exit (no output) |
-| Not a git repo | — | Silent exit (no output) |
+A SessionStart hook that records the current git stash baseline for session-scoped tracking. Required by `git-stash-reminder.sh`.
 
 ### How It Works
 
-1. The hook receives JSON input from Claude Code containing the working directory (`cwd`)
-2. It checks whether the directory is a git repository
-3. It lists all stashes with `git stash list --format='%gd|%ct|%gs'`
-4. Each stash is classified by age (2-hour threshold)
-5. If stashes exist, it outputs a `{"decision": "block", "reason": "..."}` JSON response
-6. Claude sees the stash list grouped by age with recommended actions
+1. Receives JSON input with `cwd` and `session_id`
+2. Lists all current stash commit hashes with `git stash list --format='%H'`
+3. Writes hashes to `/tmp/claude-stash-baselines/{session_id}`
+4. The Stop hook uses this baseline to ignore pre-existing stashes
+
+### Behavior
+
+| Event | Action |
+|-------|--------|
+| Session startup | Records all stash commit hashes as baseline |
+| Session resume | Re-records baseline (stashes at resume time are pre-existing) |
+| Not a git repo | Silent exit |
+| No stashes | Creates empty baseline file |
+
+### Configuration
+
+Configured in `.claude-plugin/plugin.json` as a SessionStart event with matcher `""` (all events).
+
+---
+
+## git-stash-reminder.sh
+
+A Stop hook that checks for git stashes **created during the current session**. Pre-existing stashes (recorded at session start by `git-stash-session-init.sh`) are ignored. Only blocks when session-created stashes remain unaddressed.
+
+### Behavior
+
+| Condition | Action |
+|-----------|--------|
+| Session stashes exist | Block exit, recommend `git stash pop` |
+| Only pre-existing stashes | Silent exit (no block) |
+| No stashes at all | Silent exit |
+| No baseline file | Silent exit (avoids false positives) |
+| `stop_hook_active` is true | Silent exit (prevents infinite loops) |
+| Not a git repo | Silent exit |
+
+### How It Works
+
+1. The hook receives JSON input with `cwd`, `session_id`, and `stop_hook_active`
+2. Guards against infinite loops (`stop_hook_active` check)
+3. Lists current stashes with `git stash list --format='%H|%gd|%ct|%gs'`
+4. Loads the baseline file for this session (written by `git-stash-session-init.sh`)
+5. Filters out stashes whose commit hashes appear in the baseline
+6. If new (session-created) stashes remain, outputs `{"decision": "block", "reason": "..."}`
+7. Claude sees the list of session stashes with recommended actions
 
 ### Edge Cases
 
 - **No stashes**: Exits silently with code 0
 - **Not a git repo**: Exits silently with code 0
 - **No `cwd` in input**: Exits silently with code 0
-- **Stash subjects containing `|`**: Handled safely via `IFS='|' read -r ref ts subject` (subject captures remainder)
-- **Mixed ages**: Both "Recent" and "Stale" sections shown in a single message
+- **No baseline file**: Exits silently (avoids false positives on first use)
+- **`stop_hook_active` is true**: Exits silently (loop prevention)
+- **Stash subjects containing `|`**: Handled safely via `IFS='|' read` (subject captures remainder)
+- **Pre-existing stashes only**: All filtered out by baseline comparison, silent exit
 
 ### Configuration
 
@@ -234,7 +265,6 @@ The hook is configured in `.claude-plugin/plugin.json` as a Stop event:
   "hooks": {
     "Stop": [
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
@@ -251,26 +281,38 @@ The hook is configured in `.claude-plugin/plugin.json` as a Stop event:
 ### Testing
 
 ```bash
-# Test: no stashes (should exit 0, no output)
-echo '{"cwd": "/tmp/test-repo"}' | bash hooks/git-stash-reminder.sh
-
-# Test: with stashes (should output block JSON)
+# Setup test repo
 cd /tmp && git init test-stash && cd test-stash
 echo "test" > file.txt && git add . && git commit -m "init"
-echo "change" > file.txt && git stash
-echo '{"cwd": "/tmp/test-stash"}' | bash hooks/git-stash-reminder.sh
-# Expected: {"decision":"block","reason":"Found 1 git stash(es)..."}
 
-# Test: not a git repo (should exit 0, no output)
-echo '{"cwd": "/tmp"}' | bash hooks/git-stash-reminder.sh
+# Create a pre-existing stash
+echo "old" > file.txt && git stash push -m "pre-existing"
+
+# Record baseline (simulates SessionStart)
+echo '{"cwd": "/tmp/test-stash", "session_id": "test-123"}' | \
+  bash hooks/git-stash-session-init.sh
+
+# Test: only pre-existing stashes (should exit 0, no output)
+echo '{"cwd": "/tmp/test-stash", "session_id": "test-123"}' | \
+  bash hooks/git-stash-reminder.sh
+
+# Create a new stash during the "session"
+echo "new" > file.txt && git stash push -m "session stash"
+
+# Test: new session stash (should output block JSON)
+echo '{"cwd": "/tmp/test-stash", "session_id": "test-123"}' | \
+  bash hooks/git-stash-reminder.sh
+# Expected: {"decision":"block","reason":"Found 1 git stash(es) created during this session..."}
+
+# Test: stop_hook_active guard (should exit 0, no output)
+echo '{"cwd": "/tmp/test-stash", "session_id": "test-123", "stop_hook_active": true}' | \
+  bash hooks/git-stash-reminder.sh
+
+# Test: missing baseline (should exit 0, no output)
+echo '{"cwd": "/tmp/test-stash", "session_id": "no-baseline"}' | \
+  bash hooks/git-stash-reminder.sh
 
 # Cleanup
 rm -rf /tmp/test-stash
+rm -f /tmp/claude-stash-baselines/test-123
 ```
-
-### Customization
-
-Edit `git-stash-reminder.sh` to:
-- Adjust the `STALE_THRESHOLD` variable (default: 7200 seconds / 2 hours)
-- Change age display format
-- Modify classification logic or recommendations
