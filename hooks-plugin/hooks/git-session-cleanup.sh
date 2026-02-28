@@ -16,6 +16,13 @@ if [ -z "$CWD" ]; then
     exit 0
 fi
 
+# Clean up stash baseline file for this session
+SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // empty')
+SESSION_ID=$(echo "$SESSION_ID" | tr -cd 'a-zA-Z0-9_-')
+if [ -n "$SESSION_ID" ]; then
+    rm -f "/tmp/claude-stash-baselines/${SESSION_ID}" 2>/dev/null || true
+fi
+
 # Guard: not a git repository
 if ! git -C "$CWD" rev-parse --git-dir >/dev/null 2>&1; then
     exit 0

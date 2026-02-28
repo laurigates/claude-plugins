@@ -28,14 +28,19 @@ A PreToolUse hook that intercepts Bash commands and blocks those that should use
 | 5+ pipe chain | Simplify with JSON output or awk |
 | Multi-grep test parsing | Use `--reporter=json` instead |
 
+### git-stash-session-init.sh
+
+A SessionStart hook that records the stash baseline for session-scoped tracking. Required by `git-stash-reminder.sh`.
+
 ### git-stash-reminder.sh
 
-A Stop hook that checks for orphaned git stashes before Claude exits. Classifies stashes by age and recommends `pop` (recent) or `drop` (stale).
+A Stop hook that checks for git stashes **created during the current session**. Pre-existing stashes (recorded at session start by `git-stash-session-init.sh`) are ignored.
 
-| Stash Age | Action |
+| Condition | Action |
 |-----------|--------|
-| < 2 hours | Recommend `git stash pop` |
-| >= 2 hours | Recommend `git stash drop stash@{N}` |
+| Session stashes exist | Recommend `git stash pop` |
+| Only pre-existing stashes | Silent exit (no block) |
+| No stashes at all | Silent exit |
 
 ### session-end-issue-hook.sh
 
