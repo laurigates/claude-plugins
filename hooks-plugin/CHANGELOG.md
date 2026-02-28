@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.10.0...hooks-plugin-v1.10.1) (2026-02-28)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** scope git stash reminder to session-created stashes only ([#841](https://github.com/laurigates/claude-plugins/issues/841)) ([bf35e8d](https://github.com/laurigates/claude-plugins/commit/bf35e8d9ebf755ab429cae647d3bf36cf4fba89e))
+
 ## [1.10.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.9.0...hooks-plugin-v1.10.0) (2026-02-27)
 
 
