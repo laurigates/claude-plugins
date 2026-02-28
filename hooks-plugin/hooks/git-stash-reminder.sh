@@ -56,6 +56,7 @@ NEW_COUNT=0
 
 while IFS='|' read -r hash ref ts subject; do
     [ -z "$hash" ] && continue
+    [ -z "$ts" ] && continue
 
     # Skip stashes that existed at session start (in the baseline)
     if [ -n "$BASELINE_HASHES" ] && echo "$BASELINE_HASHES" | grep -qF "$hash" 2>/dev/null; then
