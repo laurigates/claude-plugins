@@ -163,17 +163,20 @@ Or review what would be staged first:
   git status --porcelain"
 fi
 
-# Check for chained git commands (git X && git Y)
-# This pattern can cause index.lock race conditions where the lock from the first
-# command hasn't been released before the second command tries to acquire it.
+# Check for chained git commands that involve index-modifying operations (git X && git Y)
+# index.lock race conditions only occur when one command writes to the git index.
+# Index-modifying commands: add, commit, rm, mv, reset (not read-only commands like status/diff/log).
 # The fix is to run git commands as separate Bash calls, not chained.
-if echo "$COMMAND" | grep -Eq 'git\s+\S+.*&&.*git\s+\S+'; then
+INDEX_MODIFYING='(add|commit|rm|mv|reset)'
+if echo "$COMMAND" | grep -Eq "git\\s+${INDEX_MODIFYING}\\b.*&&.*git\\s+\\S+" || \
+   echo "$COMMAND" | grep -Eq "git\\s+\\S+.*&&.*git\\s+${INDEX_MODIFYING}\\b"; then
     block_with_reminder "REMINDER: Chaining git commands with '&&' can cause index.lock race conditions.
-The lock file from the first command may not be released before the second runs.
-Instead of: git fetch && git switch -c branch
+The lock file from an index-modifying command (add, commit, rm, mv, reset) may not be
+released before the next command tries to acquire it.
+Instead of: git add . && git commit -m 'msg'
 Run git commands as separate Bash tool calls:
-1. git fetch
-2. git switch -c branch
+1. git add src/file.ts
+2. git commit -m 'msg'
 This avoids race conditions and is more reliable."
 fi
 
