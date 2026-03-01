@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.10.2...hooks-plugin-v1.11.0) (2026-03-01)
+
+
+### Features
+
+* add GitHub MCP server configuration ([#846](https://github.com/laurigates/claude-plugins/issues/846)) ([47baa7f](https://github.com/laurigates/claude-plugins/commit/47baa7fcb9605b585148ddf2deabc98652bf58bd))
+
 ## [1.10.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.10.1...hooks-plugin-v1.10.2) (2026-02-28)
 
 
