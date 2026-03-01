@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.11.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.11.0...hooks-plugin-v1.11.1) (2026-03-01)
+
+
+### Bug Fixes
+
+* bash-antipatterns hook exemptions for find and grep ([#845](https://github.com/laurigates/claude-plugins/issues/845)) ([f618dd6](https://github.com/laurigates/claude-plugins/commit/f618dd6715b1d920f9807ded9b8368ebe3c8f358))
+* **hooks-plugin:** correct find and grep exemptions in bash-antipatterns hook ([f618dd6](https://github.com/laurigates/claude-plugins/commit/f618dd6715b1d920f9807ded9b8368ebe3c8f358))
+
 ## [1.11.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.10.2...hooks-plugin-v1.11.0) (2026-03-01)
 
 
