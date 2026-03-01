@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.22.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.21.0...git-plugin-v2.22.0) (2026-03-01)
+
+
+### Features
+
+* add safety hooks for Terraform, Kubernetes, Git, and Blueprint plugins ([#835](https://github.com/laurigates/claude-plugins/issues/835)) ([d4d86a0](https://github.com/laurigates/claude-plugins/commit/d4d86a03b96d99642f341effb8f3999df5246c8b))
+* **blueprint-plugin:** add PreCompact hook for derivation workflow context ([d4d86a0](https://github.com/laurigates/claude-plugins/commit/d4d86a03b96d99642f341effb8f3999df5246c8b))
+* **git-plugin:** add git-conflicts skill for merge conflict resolution ([#849](https://github.com/laurigates/claude-plugins/issues/849)) ([ce62049](https://github.com/laurigates/claude-plugins/commit/ce62049ce6405cfb3930e7f94f5228866e3f4b16))
+* **kubernetes-plugin:** add kubectl dry-run injection hook ([d4d86a0](https://github.com/laurigates/claude-plugins/commit/d4d86a03b96d99642f341effb8f3999df5246c8b))
+* **terraform-plugin:** add terraform apply gate hook ([d4d86a0](https://github.com/laurigates/claude-plugins/commit/d4d86a03b96d99642f341effb8f3999df5246c8b))
+
 ## [2.21.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.20.0...git-plugin-v2.21.0) (2026-02-27)
 
 

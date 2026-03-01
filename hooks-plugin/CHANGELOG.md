@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.12.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.11.1...hooks-plugin-v1.12.0) (2026-03-01)
+
+
+### Features
+
+* add security, branch protection, and checkpoint hooks ([#852](https://github.com/laurigates/claude-plugins/issues/852)) ([55441bf](https://github.com/laurigates/claude-plugins/commit/55441bf40fcb3b5fa34572fa2c6087e8365b73b7))
+
+
+### Bug Fixes
+
+* **hooks-plugin:** stop hook should allow Claude confirmation questions ([f6ca9d4](https://github.com/laurigates/claude-plugins/commit/f6ca9d42255a9423391872db712f026ceb8566b3))
+* replace test -f/-d with find in context commands ([#850](https://github.com/laurigates/claude-plugins/issues/850)) ([a236ac8](https://github.com/laurigates/claude-plugins/commit/a236ac80ab81ce37878268b2ad76f7ad6d4aa5fb))
+
 ## [1.11.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.11.0...hooks-plugin-v1.11.1) (2026-03-01)
 
 
