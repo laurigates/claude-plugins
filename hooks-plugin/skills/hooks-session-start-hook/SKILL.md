@@ -10,7 +10,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(test *), Bash(cat *), Bash(ch
 argument-hint: "--remote-only to only run in web sessions, --no-verify to skip test verification"
 disable-model-invocation: true
 created: 2026-02-07
-modified: 2026-02-10
+modified: 2026-03-01
 reviewed: 2026-02-07
 ---
 
@@ -34,7 +34,7 @@ Detect project stack:
 - Lockfiles: !`find . -maxdepth 1 \( -name 'package-lock.json' -o -name 'yarn.lock' -o -name 'pnpm-lock.yaml' -o -name 'bun.lockb' -o -name 'poetry.lock' -o -name 'uv.lock' -o -name 'Cargo.lock' -o -name 'go.sum' -o -name 'Gemfile.lock' \)`
 - Project files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'requirements.txt' -o -name 'Cargo.toml' -o -name 'go.mod' -o -name 'Gemfile' -o -name 'pom.xml' \) -o -maxdepth 1 -name 'build.gradle*'`
 - Linter configs: !`find . -maxdepth 1 \( -name 'biome.json' -o -name 'biome.jsonc' -o -name '.eslintrc*' -o -name 'eslint.config.*' \)`
-- Existing settings: !`test -f .claude/settings.json`
+- Existing settings: !`find .claude -maxdepth 1 -name 'settings.json' -type f`
 - Existing hooks dir: !`find . -maxdepth 2 -type d -name 'scripts'`
 
 ## Parameters

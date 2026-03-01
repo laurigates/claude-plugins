@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-02-10
+modified: 2026-03-01
 reviewed: 2025-12-16
 description: Check and configure Sentry error tracking for project standards
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -29,7 +29,7 @@ Check and configure Sentry error tracking integration against project standards.
 - Package.json: !`find . -maxdepth 1 -name \'package.json\'`
 - Pyproject.toml: !`find . -maxdepth 1 -name \'pyproject.toml\'`
 - Requirements.txt: !`find . -maxdepth 1 -name \'requirements.txt\'`
-- Project standards: !`test -f .project-standards.yaml`
+- Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml' -type f`
 - Sentry in package.json: !`grep -o '"@sentry/[^"]*"' package.json`
 - Sentry in pyproject.toml: !`grep 'sentry' pyproject.toml`
 - Sentry init files: !`find . -maxdepth 3 -name "*sentry*" -type f`

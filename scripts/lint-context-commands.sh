@@ -9,9 +9,10 @@
 # 4. Shell operators (&&, ||, ;) blocked by security protections
 # 5. Redirection operators (>, >>) blocked by security protections (includes 2>/dev/null)
 # 6. Commands that write to stderr with empty $1 (wc, file, stat)
-# 7. cat/head/tail with hardcoded paths that write to stderr when missing (use find or test)
+# 7. cat/head/tail with hardcoded paths that write to stderr when missing (use find)
 # 8. git log -n N shorthand (use --max-count=N)
 # 9. gh repo view uses GitHub GraphQL API (TLS-sensitive, fails in proxy/offline envs)
+# 10. test -f / test -d require Bash permission not granted to context commands (use find)
 #
 # Exit codes:
 #   0 - no issues
@@ -89,24 +90,31 @@ check_pattern ERROR \
 check_pattern ERROR \
   "stderr-on-empty-arg" \
   '^- .*!`\(wc\|file\|stat\) [^`]*\$[1-9]' \
-  "use test -f/test -d for existence checks; these commands write to stderr on empty \$1"
+  "use find for existence checks; these commands write to stderr on empty \$1"
 
 # cat/head/tail with hardcoded paths write to stderr when file is missing
-# (use find or test -f for detection, or Read tool for file contents)
+# (use find for detection, or Read tool for file contents)
 check_pattern ERROR \
   "cat-hardcoded-path" \
   '^- .*!`cat [^`$]*`' \
-  "use test -f for existence checks or find for discovery; cat writes to stderr on missing files"
+  "use find for existence checks or discovery; cat writes to stderr on missing files"
 
 check_pattern ERROR \
   "head-hardcoded-path" \
   '^- .*!`head [^`$]*`' \
-  "use test -f for existence checks or find for discovery; head writes to stderr on missing files"
+  "use find for existence checks or discovery; head writes to stderr on missing files"
 
 check_pattern ERROR \
   "tail-hardcoded-path" \
   '^- .*!`tail [^`$]*`' \
-  "use test -f for existence checks or find for discovery; tail writes to stderr on missing files"
+  "use find for existence checks or discovery; tail writes to stderr on missing files"
+
+# test -f / test -d require Bash permission that context commands don't have
+# Regression: project-distill used test -d .git and failed outside sandbox mode (PR #TBD)
+check_pattern ERROR \
+  "test-in-context" \
+  '^- .*!`test -[fd] [^`]*`' \
+  "replace with find: 'test -f path/file' -> 'find path -maxdepth 1 -name file -type f'"
 
 # gh repo view uses GitHub's GraphQL API (TLS-sensitive; fails in proxy/offline/cert-error envs)
 # Regression: git-pr-feedback used this and failed with x509 TLS cert error (PR #799)

@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2026-01-08
-modified: 2026-02-03
+modified: 2026-03-01
 reviewed: 2026-01-08
 description: "Analyze codebase documentation quality - PRDs, ADRs, PRPs, CLAUDE.md, and .claude/rules/"
 allowed-tools: Read, Glob, Grep, Bash(markdownlint *), Bash(vale *), TodoWrite, Task
@@ -15,8 +15,8 @@ Analyze and validate documentation quality for a codebase, ensuring PRDs, ADRs, 
 ## Context
 
 - Target path: `$1` (defaults to current directory if not specified)
-- Blueprint dir exists: !`test -d .claude/blueprints`
-- CLAUDE.md exists: !`test -f CLAUDE.md`
+- Blueprint dir exists: !`find .claude -maxdepth 1 -name 'blueprints' -type d`
+- CLAUDE.md exists: !`find . -maxdepth 1 -name 'CLAUDE.md' -type f`
 - Rules directory: !`find .claude/rules -maxdepth 1 -name '*.md'`
 - ADRs (docs/adr): !`find docs/adr -maxdepth 1 -name '*.md'`
 - ADRs (docs/adrs): !`find docs/adrs -maxdepth 1 -name '*.md'`

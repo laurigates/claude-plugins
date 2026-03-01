@@ -1,7 +1,7 @@
 ---
 model: sonnet
 created: 2026-02-22
-modified: 2026-02-22
+modified: 2026-03-01
 reviewed: 2026-02-22
 description: "Derive test regression plans from git history by identifying fix and feature commits lacking corresponding tests. Use when you need to find untested bug fixes, coverage gaps, or generate a test backlog from commit analysis."
 args: "[--since DATE] [--quick] [--scope AREA]"
@@ -28,7 +28,7 @@ Analyze git history to identify fix and feature commits lacking corresponding te
 ## Context
 
 - Git repository: !`git rev-parse --git-dir`
-- Blueprint initialized: !`test -f docs/blueprint/manifest.json`
+- Blueprint initialized: !`find docs/blueprint -maxdepth 1 -name 'manifest.json' -type f`
 - Total commits: !`git rev-list --count HEAD`
 - Test framework: !`find . -maxdepth 3 \( -name 'vitest.config.*' -o -name 'jest.config.*' -o -name 'pytest.ini' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) -type f -print -quit`
 - Test files: !`find . -maxdepth 4 -type f \( -name '*.test.*' -o -name '*.spec.*' -o -name 'test_*' -o -name '*_test.*' \) -print`

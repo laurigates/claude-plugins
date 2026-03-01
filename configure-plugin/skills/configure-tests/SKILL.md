@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-02-10
+modified: 2026-03-01
 reviewed: 2025-12-16
 description: Check and configure testing frameworks and infrastructure
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -34,7 +34,7 @@ Check and configure testing frameworks against best practices (Vitest, Jest, pyt
 - Test directories: !`find . -maxdepth 2 -type d \( -name 'tests' -o -name '__tests__' -o -name 'test' \)`
 - Test scripts in package.json: !`grep -m5 -o '"test[^"]*"' package.json`
 - Coverage config: !`grep -l 'coverage' vitest.config.* jest.config.*`
-- Project standards: !`test -f .project-standards.yaml`
+- Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml' -type f`
 
 **Modern testing stack preferences:**
 - **JavaScript/TypeScript**: Vitest (preferred) or Jest

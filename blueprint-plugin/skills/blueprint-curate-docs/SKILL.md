@@ -5,7 +5,7 @@ args: "[library-name|project:pattern-name]"
 argument-hint: "Library name (e.g., redis, pydantic) or project:pattern-name"
 allowed-tools: Read, Write, Glob, Bash, WebFetch, WebSearch, AskUserQuestion
 created: 2025-12-16
-modified: 2026-02-17
+modified: 2026-03-01
 reviewed: 2026-02-14
 name: blueprint-curate-docs
 ---
@@ -26,7 +26,7 @@ Curate library or project documentation into ai_docs entries optimized for AI ag
 
 ## Context
 
-- ai_docs directory: !`test -d docs/blueprint/ai_docs`
+- ai_docs directory: !`find docs/blueprint -maxdepth 1 -name 'ai_docs' -type d`
 - Existing library docs: !`find docs/blueprint/ai_docs/libraries -name "*.md" -type f`
 - Existing project patterns: !`find docs/blueprint/ai_docs/project -name "*.md" -type f`
 - Library in dependencies: !`grep -m1 "^$1[\":@=]" package.json pyproject.toml requirements.txt`
