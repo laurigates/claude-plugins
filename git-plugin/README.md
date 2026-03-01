@@ -15,6 +15,7 @@ This plugin provides comprehensive Git workflow automation including conventiona
 | `/git:issue` | Process GitHub issues with interactive selection, conflict detection, and parallel work support |
 | `/git:fix-pr` | Analyze and fix failing PR checks |
 | `/git:pr-feedback` | Review PR workflow results and comments, address substantive feedback from reviewers |
+| `/git:conflicts` | Resolve merge conflicts with zdiff3, rerere, and modern git tooling |
 | `/git:resolve-conflicts` | Resolve merge conflicts in PRs automatically |
 | `/git:maintain` | Repository maintenance and cleanup (prune, gc, verify, branches, stash) |
 | `/git:derive-docs` | Analyze git history to derive undocumented rules, PRDs, ADRs, and PRPs |
@@ -117,6 +118,17 @@ Reviews PR workflow results and reviewer comments, categorizes feedback (blockin
 ```
 
 Analyzes commit history to find undocumented conventions, features, architecture decisions, and plan refinements.
+
+### Resolve Merge Conflicts
+
+```bash
+/git:conflicts                # Resolve conflicts in current merge/rebase
+/git:conflicts 123            # Fetch base branch for PR #123 and resolve
+/git:conflicts --theirs       # Accept all incoming changes
+/git:conflicts --push         # Push after resolving
+```
+
+Configures zdiff3 conflict markers and rerere, then resolves each conflict intelligently or accepts one side wholesale.
 
 ### Repository Maintenance
 
