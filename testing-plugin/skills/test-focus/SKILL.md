@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2026-01-19
-modified: 2026-02-05
+modified: 2026-03-01
 reviewed: 2026-02-08
 allowed-tools: Bash, Read, Grep, Glob, TodoWrite
 args: "<file-path> [--serial] [--debug]"
@@ -17,7 +17,7 @@ name: test-focus
 - Vitest config: !`find . -maxdepth 1 \( -name 'vitest.config.*' -o -name 'vite.config.*' \)`
 - Jest config: !`find . -maxdepth 1 -name 'jest.config.*'`
 - Pytest config: !`grep -l "pytest" pyproject.toml setup.cfg`
-- Package.json exists: !`test -f package.json`
+- Package.json exists: !`find . -maxdepth 1 -name 'package.json' -type f`
 
 ## Parameters
 

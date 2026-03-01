@@ -1,7 +1,7 @@
 ---
 model: sonnet
 created: 2026-01-30
-modified: 2026-02-17
+modified: 2026-03-01
 reviewed: 2026-02-14
 description: "Derive Claude rules from git commit log decisions. Newer commits override older decisions when conflicts exist."
 args: "[--since DATE] [--scope SCOPE]"
@@ -29,7 +29,7 @@ Extract project decisions from git commit history and codify them as Claude rule
 ## Context
 
 - Git repository: !`git rev-parse --git-dir`
-- Blueprint initialized: !`test -f docs/blueprint/manifest.json`
+- Blueprint initialized: !`find docs/blueprint -maxdepth 1 -name 'manifest.json' -type f`
 - Total commits: !`git rev-list --count HEAD`
 - Conventional commits %: !`git log --format="%s"`
 - Existing rules: !`find .claude/rules -name "*.md" -type f`

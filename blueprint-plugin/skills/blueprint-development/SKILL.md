@@ -1,7 +1,7 @@
 ---
 model: sonnet
 created: 2025-12-16
-modified: 2026-02-14
+modified: 2026-03-01
 reviewed: 2026-02-14
 name: blueprint-development
 description: "Generate project-specific rules and commands from PRDs for Blueprint Development methodology. Use when generating behavioral rules for architecture patterns, testing strategies, implementation guides, or quality standards from requirements documents."
@@ -26,9 +26,9 @@ For detailed rule templates, command templates, and generation guidelines, see [
 
 ## Context
 
-- Blueprint initialized: !`test -f docs/blueprint/manifest.json`
+- Blueprint initialized: !`find docs/blueprint -maxdepth 1 -name 'manifest.json' -type f`
 - PRDs present: !`find docs/prds -name "*.md" -type f`
-- Rules directory: !`test -d .claude/rules`
+- Rules directory: !`find .claude -maxdepth 1 -name 'rules' -type d`
 - Existing rules: !`find .claude/rules -maxdepth 1 -name "*.md"`
 - Project type: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) -type f -print -quit`
 

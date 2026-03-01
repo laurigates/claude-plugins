@@ -1,7 +1,7 @@
 ---
 model: sonnet
 created: 2026-01-15
-modified: 2026-02-17
+modified: 2026-03-01
 reviewed: 2026-02-14
 description: "Derive PRDs, ADRs, and PRPs from git history, codebase structure, and existing documentation"
 args: "[--quick] [--since DATE]"
@@ -28,7 +28,7 @@ Retroactively generate Blueprint documentation (PRDs, ADRs, PRPs) from an existi
 ## Context
 
 - Git repository: !`git rev-parse --git-dir`
-- Blueprint initialized: !`test -f docs/blueprint/manifest.json`
+- Blueprint initialized: !`find docs/blueprint -maxdepth 1 -name 'manifest.json' -type f`
 - Total commits: !`git rev-list --count HEAD`
 - First commit: !`git log --reverse --format=%ai --max-count=1`
 - Latest commit: !`git log --max-count=1 --format=%ai`

@@ -5,7 +5,7 @@ args: "[feature-name]"
 argument-hint: "Feature name for the PRP (e.g., auth-oauth2, api-rate-limiting)"
 allowed-tools: Read, Write, Glob, Bash, WebFetch, WebSearch, Task, AskUserQuestion
 created: 2025-12-16
-modified: 2026-02-14
+modified: 2026-03-01
 reviewed: 2026-02-14
 name: blueprint-prp-create
 ---
@@ -33,7 +33,7 @@ Create a comprehensive PRP (Product Requirement Prompt) - a self-contained packe
 
 ## Context
 
-- Blueprint initialized: !`test -f docs/blueprint/manifest.json`
+- Blueprint initialized: !`find docs/blueprint -maxdepth 1 -name 'manifest.json' -type f`
 - Last PRP ID: !`jq -r '.id_registry.last_prp // 0' docs/blueprint/manifest.json`
 - ai_docs available: !`find docs/blueprint/ai_docs -type f -name "*.md"`
 - Existing PRDs: !`find docs/prds -name "*.md" -type f`

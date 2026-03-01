@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2026-01-15
-modified: 2026-02-17
+modified: 2026-03-01
 reviewed: 2026-02-14
 description: "Validate ADR relationships, detect orphaned references, and check domain consistency"
 args: "[--report-only]"
@@ -26,7 +26,7 @@ Validate Architecture Decision Records for relationship consistency, reference i
 
 ## Context
 
-- ADR directory exists: !`test -d docs/adrs`
+- ADR directory exists: !`find docs -maxdepth 1 -name 'adrs' -type d`
 - ADR count: !`find docs/adrs -name "*.md" -type f`
 - Domain-tagged ADRs: !`grep -l "^domain:" docs/adrs/*.md`
 - Flag: !`echo "${1:---}"`

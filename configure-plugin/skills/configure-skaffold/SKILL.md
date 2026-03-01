@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-02-10
+modified: 2026-03-01
 reviewed: 2025-12-16
 description: Check and configure Skaffold for project standards
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -33,7 +33,7 @@ Check and configure Skaffold against project standards.
 - Profiles defined: !`grep -m10 'name:' skaffold.yaml`
 - Generate-secrets script: !`find . -maxdepth 1 -name \'scripts/generate-secrets.sh\'`
 - Dotenvx available: !`command -v dotenvx`
-- Project standards: !`test -f .project-standards.yaml`
+- Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml' -type f`
 
 **Skills referenced**: `skaffold-standards`, `container-development`, `skaffold-orbstack`
 
