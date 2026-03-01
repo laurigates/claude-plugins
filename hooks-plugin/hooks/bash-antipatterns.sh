@@ -232,5 +232,37 @@ The -u flag is only correct when local and remote branch names match:
     fi
 fi
 
+# Check for piped execution from network (curl/wget piped to shell)
+if echo "$COMMAND" | grep -Eq '(curl|wget)\s+.*\|\s*(bash|sh|zsh|sudo)'; then
+    block_with_reminder "REMINDER: Piping network content directly to a shell is dangerous.
+Instead:
+1. Download the script first: curl -o script.sh <url>
+2. Review the contents: Read tool on script.sh
+3. Execute if safe: bash script.sh
+
+This prevents executing untrusted code blindly."
+fi
+
+# Check for fork bombs and similar recursive patterns
+if echo "$COMMAND" | grep -Eq ':\(\)\s*\{.*\|.*&\s*\}\s*;' || \
+   echo "$COMMAND" | grep -Eq 'bomb\(\)\s*\{.*bomb.*bomb' || \
+   echo "$COMMAND" | grep -Eq '\bwhile\s+true.*fork\b'; then
+    block_with_reminder "REMINDER: This command contains a fork bomb or recursive process pattern that will consume all system resources."
+fi
+
+# Check for chmod 777 (overly permissive)
+if echo "$COMMAND" | grep -Eq 'chmod\s+(-R\s+)?777\b'; then
+    block_with_reminder "REMINDER: 'chmod 777' grants read/write/execute to everyone — this is a security risk.
+Use more restrictive permissions:
+- chmod 755 for directories and executables (owner: rwx, others: rx)
+- chmod 644 for regular files (owner: rw, others: r)
+- chmod 600 for sensitive files (owner: rw, others: none)"
+fi
+
+# Check for writes to block devices
+if echo "$COMMAND" | grep -Eq '>\s*/dev/(sd|hd|nvme|vd|xvd)[a-z]'; then
+    block_with_reminder "REMINDER: Writing directly to a block device will destroy the filesystem. This is almost certainly not what you want."
+fi
+
 # If we get here, the command is allowed
 exit 0
