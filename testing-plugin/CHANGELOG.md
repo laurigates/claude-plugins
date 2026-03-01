@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.10.1](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.10.0...testing-plugin-v3.10.1) (2026-03-01)
+
+
+### Bug Fixes
+
+* replace test -f/-d with find in context commands ([#850](https://github.com/laurigates/claude-plugins/issues/850)) ([a236ac8](https://github.com/laurigates/claude-plugins/commit/a236ac80ab81ce37878268b2ad76f7ad6d4aa5fb))
+
 ## [3.10.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.9.0...testing-plugin-v3.10.0) (2026-02-27)
 
 
