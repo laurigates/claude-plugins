@@ -67,7 +67,8 @@ Check the conflict style from context. If `merge.conflictStyle` is not `zdiff3`:
 
 1. Set for this repo: `git config merge.conflictStyle zdiff3`
 2. Re-checkout conflicted files with zdiff3 markers: `git checkout --conflict=zdiff3 -- <file>` for each conflicted file
-3. Also enable rerere if not already: `git config rerere.enabled true`
+3. Enable rerere if not already: `git config rerere.enabled true`
+4. Enable rerere autoupdate: `git config rerere.autoupdate true` (auto-stages files resolved by rerere)
 
 This gives three-way conflict markers with the common ancestor, compacted by removing shared lines at conflict boundaries. Much easier to resolve than the default two-way markers.
 
@@ -154,6 +155,10 @@ Summarize what was resolved:
 - Use the common ancestor (zdiff3 `|||||||` section) to understand what both sides changed
 - Integrate both modifications preserving the intent of each
 - If same line changed incompatibly, prefer the PR branch change and note in commit message
+
+### Squash Merge Pitfall
+
+If the same conflicts keep recurring, the likely cause is squash merges. Squash-merging breaks the common ancestry chain, so stacked or sibling branches lose their merge base. Rerere mitigates this by replaying recorded resolutions, but the root fix is to avoid squash merges on branches with dependents.
 
 ### When to Abort
 
