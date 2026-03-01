@@ -80,15 +80,24 @@ if echo "$COMMAND" | grep -Eq '^\s*timeout\s+'; then
     block_with_reminder "REMINDER: The 'timeout' command is usually unnecessary - the Bash tool has its own timeout parameter. Human approval time typically exceeds any timeout value anyway. Remove the timeout wrapper and use the command directly."
 fi
 
-# Check for find command (should use Glob)
+# Check for find command (should use Glob for simple patterns)
+# Allow find when using directory-discovery flags that Glob cannot replicate:
+# -maxdepth, -mindepth, -type, -print0. These are recommended in agentic-permissions.md
+# and shell-scripting.md for context commands. Block simple name-pattern searches
+# and any -exec usage (dangerous; runs arbitrary commands).
 if echo "$COMMAND" | grep -Eq '^\s*find\s+' && \
-   ! echo "$COMMAND" | grep -Eq 'find\s+.*-exec'; then
-    block_with_reminder "REMINDER: Use the Glob tool instead of 'find' for file pattern matching. Glob is faster and optimized for codebase searches. Example: Glob with pattern '**/*.ts' instead of 'find . -name \"*.ts\"'"
+   ! echo "$COMMAND" | grep -Eq 'find\s+.*(-maxdepth|-mindepth|-type\s|-print0)'; then
+    block_with_reminder "REMINDER: Use the Glob tool instead of 'find' for file pattern matching. Glob is faster and optimized for codebase searches. Example: Glob with pattern '**/*.ts' instead of 'find . -name \"*.ts\"'
+If you need -maxdepth, -type d, or -print0 for directory discovery that Glob cannot do, use find with those flags directly."
 fi
 
 # Check for grep/rg command (should use Grep tool)
+# Allow grep -q / grep --quiet: these are boolean exit-code checks the Grep tool
+# cannot replicate (e.g. grep -q pattern file && do_thing).
+# Also allow piped grep (already excluded by the '|' check above).
 if echo "$COMMAND" | grep -Eq '^\s*(grep|rg)\s+' && \
-   ! echo "$COMMAND" | grep -q '|'; then
+   ! echo "$COMMAND" | grep -q '|' && \
+   ! echo "$COMMAND" | grep -Eq '(grep|rg)[^|]*\s(-[a-zA-Z]*q[a-zA-Z]*(\s|$)|--quiet(\s|$))'; then
     block_with_reminder "REMINDER: Use the Grep tool instead of 'grep' or 'rg' commands. The Grep tool is optimized for codebase searches with proper permissions and result formatting."
 fi
 
