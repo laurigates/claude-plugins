@@ -27,6 +27,10 @@ A PreToolUse hook that intercepts Bash commands and blocks those that should use
 | `git add -A` / `git add .` | Stage specific files by name instead |
 | 5+ pipe chain | Simplify with JSON output or awk |
 | Multi-grep test parsing | Use `--reporter=json` instead |
+| `curl \| sh` / `wget \| bash` | Download first, review, then execute |
+| Fork bombs | Blocked unconditionally |
+| `chmod 777` | Use restrictive permissions (755, 644, 600) |
+| Write to block device | Blocked unconditionally |
 
 ### git-stash-session-init.sh
 
@@ -62,6 +66,76 @@ A SessionEnd hook that runs cleanup operations when the session terminates: comm
 | Commit | Commits staged files with `chore: auto-commit staged changes` (skipped if nothing staged) |
 | Switch | Switches to `main` (or `master` if `main` doesn't exist); no-op if already on main |
 | Pull | Runs `git pull --ff-only` to fast-forward the branch |
+
+### secret-protection.sh
+
+A PreToolUse hook that blocks access to sensitive files and prevents credential exposure.
+
+| Category | Blocked Patterns |
+|----------|-----------------|
+| Environment files | `.env`, `.env.*` (allows `.env.example`, `.env.sample`) |
+| SSH credentials | `.ssh/id_*`, `.pem`, `*_rsa`, `*_ed25519` |
+| Cloud credentials | `.aws/credentials`, `.config/gcloud/`, `.kube/config`, `.docker/config.json` |
+| Credential files | `credentials.json`, `secrets.json`, `*.keystore`, `*.key` |
+| Env var exposure | Commands that echo `$API_KEY`, `$SECRET`, `$TOKEN`, `$PASSWORD` |
+| Full env dump | Bare `printenv` or `env` commands |
+
+**Toggle:** `CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION=1`
+
+### branch-protection.sh
+
+A PreToolUse hook that blocks write operations on protected branches (main, master).
+
+| Operation | Behavior |
+|-----------|----------|
+| Read-only git (status, diff, log, show) | Allowed |
+| Checkout/switch to another branch | Allowed |
+| Push with explicit refspec (`main:feature`) | Allowed |
+| Commit, merge, rebase, push | Blocked with branch creation suggestion |
+| Staging (git add, rm, mv) | Blocked |
+| Reset | Blocked |
+
+**Toggle:** `CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1`
+
+### auto-checkpoint.sh
+
+A PreToolUse hook that creates a git stash checkpoint before destructive operations.
+
+| Trigger | Checkpoint Created |
+|---------|-------------------|
+| `git reset` | Named stash with timestamp |
+| `git checkout -- <files>` | Named stash with timestamp |
+| `git restore` (non-staged) | Named stash with timestamp |
+| `rm -rf` (non-build-artifact) | Named stash with timestamp |
+| `git clean -f` | Named stash with timestamp |
+
+Skips checkpointing for build artifact removal (node_modules, dist, build, .next, etc.).
+
+**Toggle:** `CLAUDE_HOOKS_DISABLE_AUTO_CHECKPOINT=1`
+
+### event-logger.sh
+
+A development hook that logs all hook events to `~/.claude/hook-events.log`.
+
+| Mode | Environment Variable | Output |
+|------|---------------------|--------|
+| Off (default) | — | No logging |
+| Summary | `CLAUDE_HOOKS_ENABLE_EVENT_LOGGER=1` | One-line per event (timestamp, event, tool, session) |
+| Verbose | Above + `CLAUDE_HOOKS_EVENT_LOGGER_VERBOSE=1` | Full JSON input logged |
+
+Custom log path: `CLAUDE_HOOKS_EVENT_LOG=/path/to/log`
+
+### permission-auto-approve.sh
+
+A PermissionRequest hook that auto-approves safe operations and auto-denies dangerous ones.
+
+| Decision | Patterns |
+|----------|----------|
+| Auto-approve | Read-only git, test runners, linters, gh CLI reads |
+| Auto-deny | `rm -rf /`, force push to main/master |
+| Pass through | Everything else (user decides) |
+
+**Toggle:** `CLAUDE_HOOKS_DISABLE_PERMISSION_AUTO=1`
 
 ## Prompt-Based and Agent-Based Hooks
 
@@ -232,6 +306,41 @@ Add new hooks by:
 1. Creating a new `.sh` script in `hooks/`
 2. Following the input/output conventions (see existing hooks)
 3. Adding configuration to `.claude/settings.json`
+
+## Toggling Hooks
+
+Every hook can be individually enabled or disabled via environment variables. Set these in your shell profile or `.claude/settings.json` environment.
+
+| Hook | Disable Variable | Default |
+|------|-----------------|---------|
+| secret-protection.sh | `CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION=1` | Enabled |
+| branch-protection.sh | `CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1` | Enabled |
+| auto-checkpoint.sh | `CLAUDE_HOOKS_DISABLE_AUTO_CHECKPOINT=1` | Enabled |
+| permission-auto-approve.sh | `CLAUDE_HOOKS_DISABLE_PERMISSION_AUTO=1` | Enabled |
+| event-logger.sh | `CLAUDE_HOOKS_ENABLE_EVENT_LOGGER=1` | **Disabled** (opt-in) |
+
+Example — disable branch protection for a session:
+
+```bash
+CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1 claude
+```
+
+## Hook Performance
+
+Hooks run synchronously — a slow hook adds latency to every Claude action. Keep PreToolUse hooks fast since they fire most frequently.
+
+| Language | Startup Latency | Best For |
+|----------|----------------|----------|
+| Bash | ~10-20ms | Pattern matching, file checks, git operations |
+| Node.js | ~50-100ms | Complex JSON parsing, multi-step logic |
+| Python | ~200-400ms | Heavy computation, ML-based checks |
+
+**Guidelines:**
+- Keep PreToolUse hooks under 100ms total (fires on every tool call)
+- Stop/SessionEnd hooks can be slower (fire infrequently)
+- Prefer Bash for simple regex/grep checks
+- Use `jq` for JSON parsing in Bash hooks (fast, no startup overhead)
+- Set explicit timeouts to document expected performance
 
 ## Hook Exit Codes
 
