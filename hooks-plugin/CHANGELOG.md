@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.12.0...hooks-plugin-v1.12.1) (2026-03-02)
+
+
+### Documentation
+
+* **rules:** update rules and skills for Claude Code 2.1.50-2.1.63 ([#859](https://github.com/laurigates/claude-plugins/issues/859)) ([6c66021](https://github.com/laurigates/claude-plugins/commit/6c66021fefa205abfc4f575229e3bbb9cdc6263a))
+
 ## [1.12.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.11.1...hooks-plugin-v1.12.0) (2026-03-01)
 
 

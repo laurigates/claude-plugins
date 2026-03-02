@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.23.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.23.0...git-plugin-v2.23.1) (2026-03-02)
+
+
+### Documentation
+
+* **rules:** update rules and skills for Claude Code 2.1.50-2.1.63 ([#859](https://github.com/laurigates/claude-plugins/issues/859)) ([6c66021](https://github.com/laurigates/claude-plugins/commit/6c66021fefa205abfc4f575229e3bbb9cdc6263a))
+
 ## [2.23.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.22.0...git-plugin-v2.23.0) (2026-03-02)
 
 
