@@ -9,31 +9,51 @@ description: |
 user-invocable: false
 allowed-tools: Bash(cat *), Bash(bash *), Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2025-12-27
-modified: 2026-02-25
-reviewed: 2026-02-25
+modified: 2026-03-02
+reviewed: 2026-03-02
 ---
 
 # Claude Code Hooks Configuration
 
 ## Core Expertise
 
-Configure Claude Code lifecycle hooks (SessionStart, SessionEnd, Stop, PreToolUse, PostToolUse, PermissionRequest, and more) with proper timeout settings to prevent "Hook cancelled" errors during session management.
+Configure Claude Code lifecycle hooks (all 17 events including SessionStart, Stop, PreToolUse, PostToolUse, PostToolUseFailure, PermissionRequest, WorktreeCreate, TeammateIdle, TaskCompleted, ConfigChange, and more) with proper timeout settings to prevent "Hook cancelled" errors during session management.
 
-## Hook Types
+## Hook Events
 
 | Hook | Trigger | Default Timeout |
 |------|---------|-----------------|
-| `SessionStart` | When Claude Code session begins | 10 minutes |
-| `SessionEnd` | When session ends or `/clear` runs | 10 minutes |
-| `Stop` | When **main agent** stops responding | 10 minutes |
-| `SubagentStop` | When a **subagent** (Task tool) finishes | 10 minutes |
-| `PreToolUse` | Before a tool executes | 10 minutes |
-| `PostToolUse` | After a tool completes | 10 minutes |
-| `PermissionRequest` | When Claude requests permission for a tool | 10 minutes |
+| `SessionStart` | When Claude Code session begins | 600s (command) |
+| `SessionEnd` | When session ends or `/clear` runs | 600s (command) |
+| `Stop` | When **main agent** stops responding | 600s (command) |
+| `SubagentStop` | When a **subagent** (Task tool) finishes | 600s (command) |
+| `PreToolUse` | Before a tool executes | 600s (command) |
+| `PostToolUse` | After a tool completes | 600s (command) |
+| `PostToolUseFailure` | After a tool execution fails | 600s (command) |
+| `PermissionRequest` | When Claude requests permission for a tool | 600s (command) |
+| `WorktreeCreate` | New git worktree created via EnterWorktree | 600s (command) |
+| `WorktreeRemove` | Worktree removed after session exits | 600s (command) |
+| `TeammateIdle` | Teammate in agent team goes idle | 600s (command) |
+| `TaskCompleted` | Task in shared task list marked complete | 600s (command) |
+| `ConfigChange` | Claude Code settings change at runtime | 600s (command) |
 
-> **Note**: Default timeout increased from 60 seconds to **10 minutes** in Claude Code 2.1.50. Always set explicit timeouts anyway — it documents intent and prevents unintentional long-running hooks.
+Default timeouts: `command` = 600s, `prompt` = 30s, `agent` = 60s. Always set explicit timeouts — it documents intent.
 
-For full event reference including WorktreeCreate, WorktreeRemove, TeammateIdle, TaskCompleted, and ConfigChange, see [.claude/rules/hooks-reference.md](../../.claude/rules/hooks-reference.md).
+## Hook Types
+
+| Type | How It Works | Default Timeout | Use When |
+|------|-------------|-----------------|----------|
+| `command` | Runs a shell command, reads stdin, returns exit code/JSON | 600s | Deterministic rules |
+| `http` | Sends hook data to an HTTPS endpoint | 30s | Remote/centralized policy |
+| `prompt` | Single-turn LLM call, returns `{ok: true/false}` | 30s | Judgment on hook input data |
+| `agent` | Multi-turn subagent with tool access, returns `{ok: true/false}` | 60s | Verification needing file/tool access |
+
+### Async and Once
+
+- **`async: true`** on command hooks: fire-and-forget, does not block the operation
+- **`once: true`** on any hook handler: runs only once per session, subsequent triggers skipped
+
+For full event reference, schemas, and examples, see [.claude/rules/hooks-reference.md](../../.claude/rules/hooks-reference.md).
 
 ## Common Issue: Hook Cancelled Error
 

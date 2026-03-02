@@ -1,7 +1,7 @@
 ---
 created: 2025-12-20
-modified: 2026-02-23
-reviewed: 2026-02-23
+modified: 2026-03-02
+reviewed: 2026-03-02
 ---
 
 # Skill Development
@@ -64,11 +64,23 @@ reviewed: YYYY-MM-DD
 # ... required fields above ...
 language: <python|typescript|go|rust|etc>  # Specify primary language (optional)
 agent: <agent-name>                         # Specify custom agent to execute skill (optional)
+disable-model-invocation: true              # Skill content is the complete prompt (optional)
+hooks:                                       # Skill-scoped hooks (optional)
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "bash ${CLAUDE_PLUGIN_ROOT}/hooks/validate.sh"
+          timeout: 10
 ---
 ```
 
 - **`language`**: Specify the primary programming language for the skill. Helps Claude Code select appropriate models/tools.
 - **`agent`**: Specify a custom agent for executing this skill. Overrides default model selection.
+- **`disable-model-invocation`**: When `true`, the skill content is used as the complete prompt without additional model reasoning. The skill body is passed directly to the model as instructions.
+- **`hooks`**: Define hooks that are only active when this skill is loaded. Uses the same schema as settings.json hooks. Agent `Stop` hooks are converted to `SubagentStop` when the agent runs as a subagent.
+
+> **Note**: The `description` field must be a string type. Multi-line YAML strings using `|` or `>` are supported. Non-string values cause a crash (fixed in 2.1.51).
 
 ### Model Selection
 

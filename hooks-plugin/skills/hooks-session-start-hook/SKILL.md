@@ -10,8 +10,8 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(test *), Bash(cat *), Bash(ch
 argument-hint: "--remote-only to only run in web sessions, --no-verify to skip test verification"
 disable-model-invocation: true
 created: 2026-02-07
-modified: 2026-03-01
-reviewed: 2026-02-07
+modified: 2026-03-02
+reviewed: 2026-03-02
 ---
 
 # /hooks:session-start-hook

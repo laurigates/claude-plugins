@@ -11,8 +11,8 @@ description: |
 user-invocable: false
 allowed-tools: Bash(bash *), Bash(cat *), Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2025-12-16
-modified: 2026-02-25
-reviewed: 2026-02-25
+modified: 2026-03-02
+reviewed: 2026-03-02
 ---
 
 # Claude Code Hooks Configuration
@@ -41,6 +41,7 @@ Hooks are user-defined shell commands that execute at specific points in Claude 
 | **UserPromptSubmit**   | User submits prompt                        | Input validation, context injection        |
 | **PreToolUse**         | Before tool execution                      | Permission control, blocking dangerous ops |
 | **PostToolUse**        | After tool completes                       | Auto-formatting, logging, validation       |
+| **PostToolUseFailure** | After tool execution fails                 | Retry decisions, error handling            |
 | **PermissionRequest**  | Claude requests permission for a tool      | Auto approve/deny without user prompt      |
 | **Stop**               | **Main agent** finishes responding         | Notifications, git reminders               |
 | **SubagentStart**      | Subagent (Task tool) is about to start     | Input modification, context injection      |
@@ -174,13 +175,16 @@ Hooks receive JSON via stdin with these common fields:
 
 ### JSON Response (optional)
 
-**PreToolUse:**
+**PreToolUse** (wrapped in `hookSpecificOutput`):
 
 ```json
 {
-  "permissionDecision": "allow|deny|ask",
-  "permissionDecisionReason": "explanation",
-  "updatedInput": { "modified": "input" }
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "allow|deny|ask",
+    "permissionDecisionReason": "explanation",
+    "updatedInput": { "modified": "input" }
+  }
 }
 ```
 
@@ -201,11 +205,14 @@ Hooks receive JSON via stdin with these common fields:
 }
 ```
 
-**SessionStart:**
+**SessionStart** (wrapped in `hookSpecificOutput`):
 
 ```json
 {
-  "additionalContext": "Information to inject into session"
+  "hookSpecificOutput": {
+    "hookEventName": "SessionStart",
+    "additionalContext": "Information to inject into session"
+  }
 }
 ```
 
@@ -266,11 +273,13 @@ exit 0
 GIT_STATUS=$(git status --short 2>/dev/null | head -5)
 BRANCH=$(git branch --show-current 2>/dev/null)
 
-cat << EOF
-{
-  "additionalContext": "Current branch: $BRANCH\nPending changes:\n$GIT_STATUS"
-}
-EOF
+CONTEXT="Current branch: $BRANCH\nPending changes:\n$GIT_STATUS"
+jq -n --arg ctx "$CONTEXT" '{
+  "hookSpecificOutput": {
+    "hookEventName": "SessionStart",
+    "additionalContext": $ctx
+  }
+}'
 ```
 
 ### Inject Context for Subagents (SubagentStart)
@@ -445,12 +454,43 @@ In addition to command hooks, Claude Code supports LLM-powered hooks for decisio
 | Type | How It Works | Default Timeout | Use When |
 |------|-------------|-----------------|----------|
 | `command` | Runs a shell command, reads stdin, returns exit code | 600s | Deterministic rules (regex, field checks) |
+| `http` | Sends hook data to an HTTPS endpoint, reads JSON response | 30s | Remote/centralized policy enforcement |
 | `prompt` | Single-turn LLM call (Haiku), returns `{ok: true/false}` | 30s | Judgment on hook input data alone |
 | `agent` | Multi-turn subagent with tool access, returns `{ok: true/false}` | 60s | Verification needing file/tool access |
+
+### Additional Hook Handler Fields
+
+- **`async: true`**: Fire-and-forget for command hooks (non-blocking, exit code ignored)
+- **`once: true`**: Run only once per session; subsequent triggers are skipped
+
+### HTTP Hook Configuration
+
+```json
+{
+  "type": "http",
+  "url": "https://hooks.example.com/pre-tool-use",
+  "headers": {
+    "Authorization": "Bearer ${HOOKS_API_KEY}"
+  },
+  "timeout": 30
+}
+```
+
+Only HTTPS URLs are allowed. Header values support `${ENV_VAR}` expansion.
 
 ### Supported Events
 
 Prompt and agent hooks work on: `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `PermissionRequest`, `Stop`, `SubagentStop`, `TaskCompleted`, `UserPromptSubmit`.
+
+### CLAUDE_ENV_FILE (SessionStart)
+
+SessionStart hooks can write environment variables that persist for the session via `CLAUDE_ENV_FILE`:
+
+```bash
+if [ -n "$CLAUDE_ENV_FILE" ]; then
+  echo "NODE_ENV=development" >> "$CLAUDE_ENV_FILE"
+fi
+```
 
 All other events (`SessionStart`, `SessionEnd`, `PreCompact`, etc.) support only `command` hooks.
 

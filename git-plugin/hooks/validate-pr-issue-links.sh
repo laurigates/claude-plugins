@@ -23,19 +23,20 @@ if [ -z "$COMMAND" ]; then exit 0; fi
 if ! echo "$COMMAND" | grep -qE '(^|\s)gh\s+pr\s+create'; then exit 0; fi
 
 # Extract body content from --body-file (preferred pattern for multi-line bodies)
+# Uses perl instead of grep -P for macOS BSD grep compatibility
 BODY=""
 if echo "$COMMAND" | grep -qE '\-\-body-file'; then
-    BODY_FILE=$(echo "$COMMAND" | grep -oP '(?<=--body-file[= ])\S+' 2>/dev/null || true)
+    BODY_FILE=$(echo "$COMMAND" | perl -ne 'if (/--body-file[= ](\S+)/) { print $1; }' 2>/dev/null || true)
     if [ -n "$BODY_FILE" ] && [ -f "$BODY_FILE" ]; then
         BODY=$(cat "$BODY_FILE")
     fi
 fi
 
-# Fall back to inline --body argument
+# Fall back to inline --body argument (single-quoted, then double-quoted)
 if [ -z "$BODY" ] && echo "$COMMAND" | grep -qE '\-\-body\b'; then
-    BODY=$(echo "$COMMAND" | grep -oP "(?<=--body ')[^']*(?=')" 2>/dev/null || true)
+    BODY=$(echo "$COMMAND" | perl -ne "if (/--body '([^']*)'/) { print \$1; }" 2>/dev/null || true)
     if [ -z "$BODY" ]; then
-        BODY=$(echo "$COMMAND" | grep -oP '(?<=--body ")[^"]*(?=")' 2>/dev/null || true)
+        BODY=$(echo "$COMMAND" | perl -ne 'if (/--body "([^"]*)"/) { print $1; }' 2>/dev/null || true)
     fi
 fi
 
