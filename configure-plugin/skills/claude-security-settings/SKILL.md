@@ -8,8 +8,8 @@ description: |
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-01-20
-modified: 2026-01-20
-reviewed: 2026-01-20
+modified: 2026-03-02
+reviewed: 2026-03-02
 ---
 
 # Claude Code Security Settings
@@ -60,7 +60,16 @@ Bash(command *)
 
 - `Bash()` - Tool identifier
 - `command` - Command prefix to match
-- `:*` - Wildcard suffix matching any arguments
+- `*` - Wildcard suffix matching any arguments
+- `:ask` suffix - Always prompt for user confirmation (e.g., `Bash(git push *):ask`)
+
+### Permission Tiers
+
+| Tier | Behavior | Example |
+|------|----------|---------|
+| `allow` | Auto-allowed, no prompt | `"allow": ["Bash(git status *)"]` |
+| `ask` | Always prompts for confirmation | `"allow": ["Bash(git push *):ask"]` |
+| `deny` | Auto-denied, blocked | `"deny": ["Bash(rm -rf *)"]` |
 
 ### Pattern Examples
 
