@@ -19,6 +19,7 @@ This plugin provides comprehensive Git workflow automation including conventiona
 | `/git:resolve-conflicts` | Resolve merge conflicts in PRs automatically |
 | `/git:maintain` | Repository maintenance and cleanup (prune, gc, verify, branches, stash) |
 | `/git:derive-docs` | Analyze git history to derive undocumented rules, PRDs, ADRs, and PRPs |
+| `/git:upstream-pr` | Submit clean PRs to upstream repositories from fork work |
 
 ## Layered Skills (Composable Git Workflows)
 
@@ -60,6 +61,7 @@ Three composable skills that can be invoked individually or combined based on us
 | `release-please-configuration` | Release-please config for monorepos and version automation |
 | `release-please-protection` | Prevent manual edits to release-please managed files |
 | `release-please-pr-workflow` | Batch merge release-please PRs with conflict handling |
+| `git-fork-workflow` | Fork management, upstream sync, divergence detection, cross-fork PRs |
 
 ## Agent
 
@@ -129,6 +131,17 @@ Analyzes commit history to find undocumented conventions, features, architecture
 ```
 
 Configures zdiff3 conflict markers and rerere, then resolves each conflict intelligently or accepts one side wholesale.
+
+### Submit PR to Upstream from Fork
+
+```bash
+/git:upstream-pr                              # Interactive commit selection
+/git:upstream-pr --commits abc123,def456      # Specific commits
+/git:upstream-pr --branch feat/my-fix --draft # Named branch, draft PR
+/git:upstream-pr --dry-run                    # Preview without changes
+```
+
+Cherry-picks selected commits onto a clean branch from `upstream/main`, squashes them, and creates a cross-fork PR.
 
 ### Repository Maintenance
 
