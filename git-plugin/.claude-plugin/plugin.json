@@ -32,6 +32,10 @@
     "layered-skills",
     "composable-workflows",
     "worktree",
-    "parallel-agents"
+    "parallel-agents",
+    "fork",
+    "upstream",
+    "cherry-pick",
+    "cross-fork-pr"
   ]
 }

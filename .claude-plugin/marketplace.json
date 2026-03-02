@@ -260,7 +260,9 @@
         "pull-requests",
         "merge-conflicts",
         "conflict-resolution",
-        "version-control"
+        "version-control",
+        "fork",
+        "upstream"
       ],
       "category": "development"
     },
