@@ -2,6 +2,9 @@
 created: 2025-12-20
 modified: 2026-03-02
 reviewed: 2026-03-02
+paths:
+  - "**/skills/**"
+  - "**/SKILL.md"
 ---
 
 # Skill Development

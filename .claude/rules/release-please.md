@@ -2,6 +2,10 @@
 created: 2025-12-23
 modified: 2025-12-23
 reviewed: 2025-12-23
+paths:
+  - "release-please-config.json"
+  - ".release-please-manifest.json"
+  - "**/CHANGELOG.md"
 ---
 
 # Release-Please Configuration

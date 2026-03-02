@@ -2,6 +2,8 @@
 created: 2025-12-23
 modified: 2025-12-23
 reviewed: 2026-02-23
+paths:
+  - "**/.claude-plugin/**"
 ---
 
 # Plugin Structure

@@ -1,3 +1,9 @@
+---
+paths:
+  - "**/skills/**"
+  - "scripts/**"
+---
+
 # Regression Testing for Script Checks
 
 When you fix a skill quality issue, a context command bug, or a skill body corruption problem, you **MUST** add a regression check to prevent the same issue from recurring.

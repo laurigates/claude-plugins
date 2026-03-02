@@ -3,6 +3,9 @@ created: 2026-01-18
 modified: 2026-03-02
 reviewed: 2026-03-02
 requires: bash 5+
+paths:
+  - "**/*.sh"
+  - "scripts/**"
 ---
 
 # Shell Scripting Patterns

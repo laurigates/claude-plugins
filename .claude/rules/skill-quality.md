@@ -1,3 +1,9 @@
+---
+paths:
+  - "**/skills/**"
+  - "**/SKILL.md"
+---
+
 # Skill Quality Standards
 
 Quality standards for maintaining effective, discoverable skills.
