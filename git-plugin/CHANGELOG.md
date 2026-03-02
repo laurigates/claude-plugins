@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.23.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.22.0...git-plugin-v2.23.0) (2026-03-02)
+
+
+### Features
+
+* **git-plugin:** add fork-to-upstream PR workflow skills ([#856](https://github.com/laurigates/claude-plugins/issues/856)) ([cb7ec04](https://github.com/laurigates/claude-plugins/commit/cb7ec046c2d37a109f384a5670e7f6310d9cbbb9))
+
 ## [2.22.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.21.0...git-plugin-v2.22.0) (2026-03-01)
 
 
