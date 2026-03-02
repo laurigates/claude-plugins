@@ -1,3 +1,8 @@
+---
+paths:
+  - "**/agents/**"
+---
+
 # Agent Development
 
 Patterns and standards for creating and configuring custom agents in Claude Code plugins.

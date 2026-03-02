@@ -2,6 +2,9 @@
 created: 2025-12-20
 modified: 2025-12-20
 reviewed: 2025-12-20
+paths:
+  - "**/skills/**"
+  - "**/SKILL.md"
 ---
 
 # Agentic Optimization

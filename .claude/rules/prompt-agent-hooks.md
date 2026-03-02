@@ -1,3 +1,10 @@
+---
+paths:
+  - ".claude/hooks/**"
+  - "**/.claude-plugin/plugin.json"
+  - ".claude/settings*.json"
+---
+
 # Prompt-Based and Agent-Based Hooks
 
 When to use LLM-powered hooks (`type: "prompt"` and `type: "agent"`), HTTP hooks (`type: "http"`), or deterministic command hooks (`type: "command"`).

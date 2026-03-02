@@ -2,6 +2,8 @@
 created: 2025-12-23
 modified: 2026-02-06
 reviewed: 2026-02-06
+paths:
+  - "**/skills/**"
 ---
 
 # Skill Naming Conventions

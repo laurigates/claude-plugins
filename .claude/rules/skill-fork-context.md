@@ -1,3 +1,10 @@
+---
+paths:
+  - "**/skills/**"
+  - "**/SKILL.md"
+  - "**/agents/**"
+---
+
 # Skill Fork Context
 
 When to set `context: fork` and `agent:` in skill frontmatter so verbose, autonomous skills protect the main context window.

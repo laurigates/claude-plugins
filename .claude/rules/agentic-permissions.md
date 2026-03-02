@@ -2,6 +2,10 @@
 created: 2026-01-16
 modified: 2026-03-02
 reviewed: 2026-03-02
+paths:
+  - "**/skills/**"
+  - "**/SKILL.md"
+  - "**/agents/**"
 ---
 
 # Agentic Permissions

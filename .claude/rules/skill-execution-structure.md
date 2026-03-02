@@ -1,3 +1,9 @@
+---
+paths:
+  - "**/skills/**"
+  - "**/SKILL.md"
+---
+
 # Skill Execution Structure
 
 User-invocable skills must be structured so the model **executes immediately** upon invocation, rather than summarizing or narrating the skill content.

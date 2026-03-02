@@ -1,3 +1,10 @@
+---
+paths:
+  - ".claude/hooks/**"
+  - "**/.claude-plugin/plugin.json"
+  - ".claude/settings*.json"
+---
+
 # Hook System Reference (Claude Code 2.1.63+)
 
 Comprehensive reference for Claude Code hook events, schemas, and patterns. This supplements `.claude/rules/handling-blocked-hooks.md` with full event coverage. For guidance on when to use `type: "prompt"`, `type: "agent"`, and `type: "http"` hooks instead of `type: "command"`, see `.claude/rules/prompt-agent-hooks.md`.
