@@ -1,7 +1,7 @@
 ---
 created: 2026-01-18
-modified: 2026-02-16
-reviewed: 2026-02-16
+modified: 2026-03-02
+reviewed: 2026-03-02
 requires: bash 5+
 ---
 
@@ -208,6 +208,10 @@ item_FIELD=$(head -50 "$file" | grep -m1 "^FIELD:" | sed 's/^[^:]*:[[:space:]]*/
 | domain | `doc_domain` | `head -50 "$f" \| grep -m1 "^domain:" \| sed 's/^[^:]*:[[:space:]]*//'` |
 | created | `created_date` | `head -50 "$f" \| grep -m1 "^created:" \| sed 's/^[^:]*:[[:space:]]*//'` |
 | modified | `modified_date` | `head -50 "$f" \| grep -m1 "^modified:" \| sed 's/^[^:]*:[[:space:]]*//'` |
+
+## BashTool Login Shell Behavior (2.1.51+)
+
+As of Claude Code 2.1.51, the BashTool skips the login shell `-l` flag by default when a shell snapshot is available. This means `.bash_profile` and `.profile` are not sourced on every command. Environment setup that depends on login shell initialization should use `SessionStart` hooks or `CLAUDE_ENV_FILE` instead.
 
 ## Bash Version Requirement
 

@@ -1,6 +1,6 @@
-# Hook System Reference (Claude Code 2.1.50+)
+# Hook System Reference (Claude Code 2.1.63+)
 
-Comprehensive reference for Claude Code hook events, schemas, and patterns. This supplements `.claude/rules/handling-blocked-hooks.md` with full event coverage. For guidance on when to use `type: "prompt"` and `type: "agent"` hooks instead of `type: "command"`, see `.claude/rules/prompt-agent-hooks.md`.
+Comprehensive reference for Claude Code hook events, schemas, and patterns. This supplements `.claude/rules/handling-blocked-hooks.md` with full event coverage. For guidance on when to use `type: "prompt"`, `type: "agent"`, and `type: "http"` hooks instead of `type: "command"`, see `.claude/rules/prompt-agent-hooks.md`.
 
 ## Hook Events
 
@@ -19,6 +19,7 @@ Comprehensive reference for Claude Code hook events, schemas, and patterns. This
 |-------|--------------|-----------------|
 | `PreToolUse` | Before a tool executes | tool name (regex) |
 | `PostToolUse` | After a tool completes | tool name (regex) |
+| `PostToolUseFailure` | After a tool execution fails | tool name (regex) |
 | `PermissionRequest` | Claude requests permission for a tool | tool name (regex) |
 
 ### Agent Lifecycle Events
@@ -82,7 +83,15 @@ These are the two most commonly confused events:
 
 ## Timeouts
 
-As of Claude Code 2.1.50, the default hook timeout is **10 minutes (600 seconds)**, increased from the previous 60-second default.
+Default timeouts vary by hook type:
+
+| Hook Type | Default Timeout |
+|-----------|-----------------|
+| `command` | 600 seconds (10 minutes) |
+| `prompt` | 30 seconds |
+| `agent` | 60 seconds |
+
+The command hook default was increased from 60 seconds in Claude Code 2.1.50.
 
 | Hook Type | Recommended Timeout | Notes |
 |-----------|---------------------|-------|
@@ -134,7 +143,7 @@ Set timeout explicitly even though the default is now 10 minutes — explicit ti
 }
 ```
 
-### PreToolUse / PostToolUse
+### PreToolUse / PostToolUse / PostToolUseFailure
 
 ```json
 {
@@ -145,7 +154,7 @@ Set timeout explicitly even though the default is now 10 minutes — explicit ti
   "tool_response": { }
 }
 ```
-`tool_response` is only present for `PostToolUse`.
+`tool_response` is only present for `PostToolUse` and `PostToolUseFailure`.
 
 ### PermissionRequest (2.1.50+)
 
@@ -232,24 +241,35 @@ Set timeout explicitly even though the default is now 10 minutes — explicit ti
 
 ### PreToolUse — Allow, Deny, or Modify
 
+PreToolUse hooks wrap their JSON response in a `hookSpecificOutput` envelope:
+
 ```json
 {
-  "permissionDecision": "allow",
-  "permissionDecisionReason": "Command matches approved pattern"
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "allow",
+    "permissionDecisionReason": "Command matches approved pattern"
+  }
 }
 ```
 
 ```json
 {
-  "permissionDecision": "deny",
-  "permissionDecisionReason": "Destructive operation blocked by policy"
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "deny",
+    "permissionDecisionReason": "Destructive operation blocked by policy"
+  }
 }
 ```
 
 ```json
 {
-  "permissionDecision": "ask",
-  "permissionDecisionReason": "Unusual command, require human confirmation"
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "ask",
+    "permissionDecisionReason": "Unusual command, require human confirmation"
+  }
 }
 ```
 
@@ -257,9 +277,12 @@ Optionally modify the tool input before execution:
 
 ```json
 {
-  "permissionDecision": "allow",
-  "updatedInput": {
-    "command": "npm test -- --bail=1"
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "allow",
+    "updatedInput": {
+      "command": "npm test -- --bail=1"
+    }
   }
 }
 ```
@@ -303,7 +326,10 @@ Return nothing (exit 0) to allow the stop.
 
 ```json
 {
-  "additionalContext": "Branch: main\nUncommitted: 0 files\nTests: passing"
+  "hookSpecificOutput": {
+    "hookEventName": "SessionStart",
+    "additionalContext": "Branch: main\nUncommitted: 0 files\nTests: passing"
+  }
 }
 ```
 
@@ -459,6 +485,167 @@ exit 0
 
 ---
 
+## HTTP Hooks (2.1.63+)
+
+HTTP hooks send hook data to a URL endpoint instead of executing a shell command. Useful for centralized hook management and remote hook processing.
+
+### Configuration
+
+```json
+{
+  "type": "http",
+  "url": "https://hooks.example.com/pre-tool-use",
+  "headers": {
+    "Authorization": "Bearer ${HOOKS_API_KEY}"
+  },
+  "timeout": 30
+}
+```
+
+| Field | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `type` | Yes | — | `"http"` |
+| `url` | Yes | — | HTTPS endpoint to receive hook data |
+| `headers` | No | `{}` | HTTP headers; values support `${ENV_VAR}` expansion |
+| `timeout` | No | 30s | Seconds before request is canceled |
+
+### Security
+
+- Only HTTPS URLs are allowed
+- Environment variable expansion in headers uses `${VAR}` syntax
+- Use `allowedEnvVars` in the hook configuration to restrict which env vars can be referenced
+
+### Response Format
+
+The HTTP endpoint returns the same JSON schema as command hooks for the given event. Non-2xx responses are treated as hook failures.
+
+---
+
+## Async Hooks
+
+Command hooks can run asynchronously with `async: true`. Async hooks fire-and-forget — they do not block the operation and their exit code is ignored.
+
+```json
+{
+  "type": "command",
+  "command": "bash .claude/hooks/log-audit.sh",
+  "async": true,
+  "timeout": 60
+}
+```
+
+Use async hooks for non-blocking side effects like logging, metrics, and notifications where you do not need to gate the operation on the hook result.
+
+---
+
+## Hook Handler Fields
+
+### `once` Field
+
+Set `once: true` on a hook handler to run it only once per session. Subsequent triggers of the same hook are skipped.
+
+```json
+{
+  "type": "command",
+  "command": "bash .claude/hooks/one-time-setup.sh",
+  "once": true,
+  "timeout": 120
+}
+```
+
+Useful for `SessionStart` setup scripts or one-time validation checks.
+
+---
+
+## Hooks in Skill/Agent Frontmatter
+
+Skills and agents can define scoped hooks in their YAML frontmatter. These hooks are only active when the skill/agent is loaded.
+
+### Skill Frontmatter Hooks
+
+```yaml
+---
+name: my-skill
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "bash ${CLAUDE_PLUGIN_ROOT}/hooks/validate.sh"
+          timeout: 10
+---
+```
+
+### Agent Frontmatter Hooks
+
+Agent hooks defined with `Stop` are automatically converted to `SubagentStop` when the agent runs as a subagent, since agents execute in subagent context.
+
+```yaml
+---
+name: my-agent
+hooks:
+  Stop:
+    - matcher: ""
+      hooks:
+        - type: command
+          command: "bash ${CLAUDE_PLUGIN_ROOT}/hooks/verify-output.sh"
+          timeout: 30
+---
+```
+
+---
+
+## Environment Variables
+
+### `CLAUDE_ENV_FILE`
+
+When set, `CLAUDE_ENV_FILE` points to a file path where `SessionStart` hooks can write environment variables that persist for the session. Write `KEY=VALUE` lines to this file.
+
+```bash
+#!/bin/bash
+# SessionStart hook using CLAUDE_ENV_FILE
+if [ -n "$CLAUDE_ENV_FILE" ]; then
+  echo "NODE_ENV=development" >> "$CLAUDE_ENV_FILE"
+  echo "PYTHONDONTWRITEBYTECODE=1" >> "$CLAUDE_ENV_FILE"
+fi
+exit 0
+```
+
+### `CLAUDE_CODE_REMOTE`
+
+Set to `"true"` when Claude Code is running in a remote/web session (e.g., Claude Code on the web). Use this to conditionally run hooks only in remote environments:
+
+```bash
+#!/bin/bash
+if [ "$CLAUDE_CODE_REMOTE" != "true" ]; then
+  exit 0  # Skip in local sessions
+fi
+# Remote-only setup here
+```
+
+---
+
+## Matcher Patterns
+
+### MCP Tool Matching
+
+MCP tools use the naming pattern `mcp__<server>__<tool>`. Match them with regex patterns:
+
+```json
+{
+  "matcher": "mcp__.*",
+  "hooks": [...]
+}
+```
+
+| Pattern | Matches |
+|---------|---------|
+| `mcp__.*` | All MCP tools from any server |
+| `mcp__github__.*` | All tools from the `github` MCP server |
+| `mcp__github__create_pull_request` | Specific MCP tool |
+
+---
+
 ## Exit Codes
 
 | Code | Meaning | Effect |
@@ -466,6 +653,8 @@ exit 0
 | `0` | Success | Operation allowed/continues |
 | `2` | Blocking error | Operation blocked; stderr shown to Claude |
 | Other | Non-blocking error | Logged in verbose mode, operation continues |
+
+> **Note**: `WorktreeCreate` and `WorktreeRemove` treat any non-zero exit code as a failure (not just exit code 2).
 
 ---
 
@@ -564,6 +753,7 @@ exit 0
 | `PreCompact` | Session | |
 | `PreToolUse` | Tool | |
 | `PostToolUse` | Tool | |
+| `PostToolUseFailure` | Tool | |
 | `PermissionRequest` | Tool | ✓ |
 | `Stop` | Agent | |
 | `SubagentStart` | Agent | |

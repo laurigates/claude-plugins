@@ -82,6 +82,11 @@ description: |
 - [ ] Includes "Use when..." clause with specific scenarios
 - [ ] Mentions common trigger phrases users would say
 - [ ] Distinguishes from related skills
+- [ ] Is a string type (non-string values cause a crash)
+
+### `disable-model-invocation` Field
+
+Set `disable-model-invocation: true` when the skill body is a complete, self-contained prompt that should be passed directly without additional model reasoning. Useful for skills that are fully deterministic templates.
 
 ## Model Selection
 

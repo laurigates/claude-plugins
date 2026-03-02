@@ -1,12 +1,13 @@
 # Prompt-Based and Agent-Based Hooks
 
-When to use LLM-powered hooks (`type: "prompt"` and `type: "agent"`) instead of deterministic command hooks (`type: "command"`).
+When to use LLM-powered hooks (`type: "prompt"` and `type: "agent"`), HTTP hooks (`type: "http"`), or deterministic command hooks (`type: "command"`).
 
 ## Hook Type Decision
 
 | Choose... | When... | Example |
 |-----------|---------|---------|
 | `type: "command"` | Logic is deterministic: regex, field presence, exit codes | Frontmatter validation, anti-pattern regex, git stash check |
+| `type: "http"` | Logic is deterministic but handled by a **remote service** | Centralized policy enforcement, external audit logging, webhook integrations |
 | `type: "prompt"` | Decision requires **judgment** and the hook input data is sufficient | Task completeness evaluation, prompt classification, output quality |
 | `type: "agent"` | Decision requires judgment **and** inspecting files or running commands | Test verification, code review, implementation quality checks |
 
@@ -14,7 +15,10 @@ When to use LLM-powered hooks (`type: "prompt"` and `type: "agent"`) instead of 
 
 ```
 Does the check have a deterministic rule?
-├─ Yes → type: "command" (regex, field check, exit code)
+├─ Yes →
+│   Is the logic handled by a remote service?
+│   ├─ Yes → type: "http" (webhook, centralized policy)
+│   └─ No → type: "command" (regex, field check, exit code)
 └─ No, requires judgment →
     Does verification need to read files or run commands?
     ├─ No, hook input data is enough → type: "prompt"
@@ -172,6 +176,7 @@ Respond with {"ok": true} if [all checks pass], or {"ok": false, "reason": "spec
 | Hook Type | Latency | Cost | Use When |
 |-----------|---------|------|----------|
 | `command` | ~10ms | Free | Deterministic checks |
+| `http` | ~50-500ms | Free (self-hosted) | Remote/centralized deterministic checks |
 | `prompt` | ~1-3s | Low (Haiku) | Judgment on hook input data |
 | `agent` | ~5-60s | Medium | Verification needing file/tool access |
 

@@ -1,7 +1,7 @@
 ---
 created: 2026-01-16
-modified: 2026-02-03
-reviewed: 2026-02-23
+modified: 2026-03-02
+reviewed: 2026-03-02
 ---
 
 # Agentic Permissions
@@ -19,6 +19,11 @@ allowed-tools: Bash(git status *), Bash(gh pr *), Read, TodoWrite
 - Uses **space separator** between command and wildcard: `Bash(command *)`
 - **Prefix matching**: `Bash(git diff *)` matches `git diff`, `git diff --cached`, `git diff --stat`
 - Comma-separated list of tool permissions
+- **`ask` tier**: Use `ask` to prompt the user for confirmation (neither auto-allow nor auto-deny):
+  ```yaml
+  allowed-tools: Bash(git push *):ask, Bash(git status *), Read
+  ```
+  The `:ask` suffix on a pattern means Claude can use the tool but will always prompt for confirmation.
 
 ### Pattern Examples
 
@@ -31,7 +36,7 @@ allowed-tools: Bash(git status *), Bash(gh pr *), Read, TodoWrite
 
 ## Shell Operator Protections
 
-Claude Code 2.1.7+ includes built-in protections against dangerous shell operators in permission patterns.
+Claude Code 2.1.7+ includes built-in protections against dangerous shell operators in permission patterns. As of 2.1.59, the "always allow" permission prompt handles compound bash commands more accurately — each subcommand is evaluated against permission patterns individually.
 
 ### Protected Operators
 

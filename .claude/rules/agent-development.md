@@ -38,8 +38,17 @@ reviewed: YYYY-MM-DD
 color: "#E53E3E"       # Hex color for UI display
 context: fork          # Context isolation: 'fork' creates independent context copy
 isolation: worktree    # Filesystem isolation: give agent its own git worktree
+hooks:                 # Agent-scoped hooks (active only when agent is running)
+  Stop:
+    - matcher: ""
+      hooks:
+        - type: command
+          command: "bash ${CLAUDE_PLUGIN_ROOT}/hooks/verify.sh"
+          timeout: 30
 ---
 ```
+
+> **Note**: Agent hooks defined with `Stop` are automatically converted to `SubagentStop` when the agent runs as a subagent, since subagents fire `SubagentStop` instead of `Stop`.
 
 ### Complete Field Reference
 
@@ -52,6 +61,7 @@ isolation: worktree    # Filesystem isolation: give agent its own git worktree
 | `context` | string | No | `fork` for isolated context (default: shared) |
 | `isolation` | string | No | `worktree` to run agent in an isolated git worktree |
 | `color` | string | No | Hex color for UI display |
+| `hooks` | object | No | Agent-scoped hooks (same schema as settings.json hooks) |
 | `created` | date | Recommended | Initial creation date |
 | `modified` | date | Recommended | Last substantive change |
 | `reviewed` | date | Recommended | Last verified against current docs |
@@ -183,6 +193,8 @@ The auto memory directory (`~/.claude/projects/<project>/memory/`) is loaded int
 Agents can read and write to auto memory files to build on knowledge across sessions.
 
 ## Agent Teams (Multi-Agent Collaboration)
+
+> **Experimental**: Agent teams are disabled by default. Enable with the `--enable-teams` flag or via settings. The API and behavior may change between versions.
 
 Agent teams enable multiple agents to collaborate on complex tasks with a shared task list and messaging.
 
