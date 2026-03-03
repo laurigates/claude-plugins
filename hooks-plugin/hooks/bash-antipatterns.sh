@@ -45,10 +45,12 @@ if echo "$COMMAND" | grep -Eq "awk\s+.*>\s*['\"]?[^|]+" && \
 fi
 
 # Check for cat/echo writing to files (not heredocs in valid bash scripts)
-if echo "$COMMAND" | grep -Eq '(^|\s)(echo|printf)\s+.*>\s*[^&]' && \
+# Use [^;&|]* instead of .* to avoid crossing command separators (;, &&, ||, |)
+# which would cause false positives when echo "text" is followed by an unrelated 2>/dev/null
+if echo "$COMMAND" | grep -Eq '(^|\s)(echo|printf)\s+[^;&|]*>\s*[^&]' && \
    ! echo "$COMMAND" | grep -Eq '(echo|printf).*>>\s*/dev/null'; then
     # Allow echo to /dev/null, but warn about file writes
-    if echo "$COMMAND" | grep -Eq '(echo|printf)\s+[^>]+>\s*[a-zA-Z/\.]'; then
+    if echo "$COMMAND" | grep -Eq '(echo|printf)\s+[^;&|>]+>\s*[a-zA-Z/\.]'; then
         block_with_reminder "REMINDER: Use the Write tool instead of 'echo/printf > file' to create files. The Write tool properly handles file creation and provides better error handling."
     fi
 fi
