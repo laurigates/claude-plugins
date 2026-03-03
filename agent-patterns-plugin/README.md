@@ -81,6 +81,15 @@ Design and scaffold the MCP code execution pattern for agent systems.
 - Key patterns: progressive discovery, data filtering, PII tokenization, skill accumulation
 - Security checklist for sandboxed execution environments
 
+#### `agent-teams`
+Configure and orchestrate Claude Code agent teams with TeamCreate, SendMessage, and shared task list workflows.
+
+**When to use:**
+- Setting up multi-agent parallel workflows
+- Coordinating lead/teammate architectures
+- Managing task assignment and inter-agent communication
+- Implementing graceful team shutdown procedures
+
 #### `claude-hooks-configuration`
 Configure Claude Code lifecycle hooks with proper timeout settings.
 
