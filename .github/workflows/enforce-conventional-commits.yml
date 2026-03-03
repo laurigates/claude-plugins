@@ -8,69 +8,123 @@ on:
       - synchronize
 
 permissions:
-  pull-requests: read
+  pull-requests: write
 
 jobs:
-  validate-pr-title:
-    name: Validate PR title
+  fix-pr-title:
+    name: Fix PR title
     runs-on: ubuntu-latest
     steps:
-      - uses: amannn/action-semantic-pull-request@v5
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Auto-fix PR title to conventional commits format
+        uses: actions/github-script@v7
         with:
-          # Types that trigger release-please version bumps
-          # (feat, fix, perf, refactor, docs) plus standard
-          # conventional commit types that don't trigger releases
-          types: |
-            feat
-            fix
-            perf
-            refactor
-            docs
-            chore
-            ci
-            test
-            style
-            build
-            revert
-          # Plugin scopes matching release-please-config.json packages.
-          # Unscoped titles like "fix: typo" are also allowed since
-          # requireScope is false.
-          scopes: |
-            accessibility-plugin
-            agent-patterns-plugin
-            agents-plugin
-            api-plugin
-            bevy-plugin
-            blog-plugin
-            blueprint-plugin
-            code-quality-plugin
-            communication-plugin
-            component-patterns-plugin
-            command-analytics-plugin
-            configure-plugin
-            container-plugin
-            documentation-plugin
-            finops-plugin
-            git-plugin
-            github-actions-plugin
-            hooks-plugin
-            health-plugin
-            home-assistant-plugin
-            kubernetes-plugin
-            langchain-plugin
-            networking-plugin
-            project-plugin
-            python-plugin
-            rust-plugin
-            terraform-plugin
-            testing-plugin
-            tools-plugin
-            typescript-plugin
-            workflow-orchestration-plugin
-          requireScope: false
-          # Allow ! for breaking changes, e.g. "feat!: remove deprecated API"
-          subjectPattern: ^.+$
-          subjectPatternError: |
-            The subject (after the type/scope prefix) must not be empty.
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const VALID_TYPES = [
+              'feat', 'fix', 'perf', 'refactor', 'docs',
+              'chore', 'ci', 'test', 'style', 'build', 'revert'
+            ];
+
+            // Map common words/aliases to canonical types
+            const TYPE_ALIASES = {
+              feature: 'feat', features: 'feat', new: 'feat',
+              add: 'feat', adds: 'feat', added: 'feat',
+              enhancement: 'feat', enhance: 'feat', enhance: 'feat',
+              implement: 'feat', implements: 'feat', implemented: 'feat',
+              introduce: 'feat', introduces: 'feat',
+              bugfix: 'fix', bug: 'fix', hotfix: 'fix', patch: 'fix',
+              fixes: 'fix', fixed: 'fix',
+              improvement: 'perf', improve: 'perf', improves: 'perf',
+              optimize: 'perf', optimizes: 'perf', optimized: 'perf',
+              performance: 'perf',
+              refactoring: 'refactor', cleanup: 'refactor',
+              clean: 'refactor', remove: 'refactor', removed: 'refactor',
+              delete: 'refactor', deleted: 'refactor',
+              documentation: 'docs', doc: 'docs', readme: 'docs',
+              update: 'chore', updates: 'chore', updated: 'chore',
+              upgrade: 'build', upgrades: 'build', upgraded: 'build',
+              dependency: 'build', dependencies: 'build', deps: 'build',
+              testing: 'test', tests: 'test', spec: 'test',
+              pipeline: 'ci', workflow: 'ci',
+              format: 'style', formatting: 'style',
+              rollback: 'revert',
+            };
+
+            // Matches a valid conventional commit: type(scope)!: subject
+            const VALID_PATTERN = /^(feat|fix|perf|refactor|docs|chore|ci|test|style|build|revert)(\([^)]+\))?!?: .+/;
+
+            function attemptFix(title) {
+              // Already valid
+              if (VALID_PATTERN.test(title)) {
+                return { fixed: title, changed: false, reason: 'Already valid' };
+              }
+
+              // Pattern: word(scope)?: subject  OR  word: subject  (with any casing / alias)
+              const colonPattern = /^([A-Za-z]+)(\([^)]*\))?(!)?: (.+)$/;
+              const colonMatch = title.match(colonPattern);
+              if (colonMatch) {
+                const [, typePart, scope, bang, subject] = colonMatch;
+                const lower = typePart.toLowerCase();
+                const resolved = VALID_TYPES.includes(lower) ? lower : TYPE_ALIASES[lower];
+                if (resolved) {
+                  const fixed = `${resolved}${scope || ''}${bang || ''}: ${subject}`;
+                  return {
+                    fixed,
+                    changed: fixed !== title,
+                    reason: `Normalized type "${typePart}" → "${resolved}"`,
+                  };
+                }
+              }
+
+              // Pattern: verb at start of sentence ("Add feature X", "Fixed bug Y")
+              const words = title.trim().split(/\s+/);
+              if (words.length >= 2) {
+                const first = words[0].toLowerCase().replace(/:$/, '');
+                const resolved = TYPE_ALIASES[first];
+                if (resolved) {
+                  const rest = words.slice(1).join(' ');
+                  const subject = rest.charAt(0).toLowerCase() + rest.slice(1);
+                  return {
+                    fixed: `${resolved}: ${subject}`,
+                    changed: true,
+                    reason: `Inferred type "${resolved}" from leading word "${words[0]}"`,
+                  };
+                }
+              }
+
+              return { fixed: title, changed: false, reason: null };
+            }
+
+            const pr = context.payload.pull_request;
+            const originalTitle = pr.title;
+            const { fixed, changed, reason } = attemptFix(originalTitle);
+
+            if (!changed && VALID_PATTERN.test(fixed)) {
+              console.log(`✓ PR title already follows conventional commits format: "${originalTitle}"`);
+              return;
+            }
+
+            if (changed) {
+              console.log(`Fixing PR title: "${originalTitle}" → "${fixed}" (${reason})`);
+              await github.rest.pulls.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number,
+                title: fixed,
+              });
+              console.log('✓ PR title updated successfully.');
+              return;
+            }
+
+            // Could not auto-fix — fail with helpful message
+            const types = VALID_TYPES.join(', ');
+            core.setFailed(
+              `PR title "${originalTitle}" does not follow conventional commits format and could not be auto-fixed.\n\n` +
+              `Expected format: <type>(<scope>): <subject>\n` +
+              `Valid types: ${types}\n\n` +
+              `Examples:\n` +
+              `  feat(git-plugin): add new workflow\n` +
+              `  fix: resolve null pointer in auth service\n` +
+              `  docs(readme): update installation steps\n\n` +
+              `Please update the PR title manually.`
+            );
