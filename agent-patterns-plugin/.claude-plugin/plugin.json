@@ -12,6 +12,9 @@
     "mcp-code-execution",
     "hooks",
     "custom-agents",
-    "teammate-definitions"
+    "teammate-definitions",
+    "agent-teams",
+    "teams",
+    "multi-agent"
   ]
 }
