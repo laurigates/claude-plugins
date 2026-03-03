@@ -97,6 +97,29 @@ assert_exit \
     "grep in pipeline is allowed (piped output has different semantics)" 0 \
     "git log --oneline | grep pattern"
 
+# ── echo/printf file-write detection ─────────────────────────────────────────
+# Regression: echo "---"; git ... 2>/dev/null was falsely blocked because
+# the regex used .* which crossed the ; command separator and matched the
+# unrelated 2>/dev/null as if echo were redirecting to a file.
+echo ""
+echo "echo/printf file-write detection (true positives blocked, false negatives allowed):"
+
+assert_exit \
+    "echo text > file is blocked" 2 \
+    "echo hello > file.txt"
+
+assert_exit \
+    "printf text > file is blocked" 2 \
+    "printf hello > file.txt"
+
+assert_exit \
+    "echo separator followed by unrelated 2>/dev/null is allowed" 0 \
+    "git log --oneline | head -20; echo '---'; git log --oneline 2>/dev/null | head -20"
+
+assert_exit \
+    "echo in compound command before git 2>/dev/null is allowed" 0 \
+    "cd /some/repo && git log --oneline -10 -- infra/ 2>/dev/null | head -20; echo '---'; git log --oneline 2>/dev/null | head -20"
+
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
