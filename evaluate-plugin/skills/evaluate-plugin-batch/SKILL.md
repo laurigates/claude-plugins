@@ -29,8 +29,8 @@ Batch evaluate all skills in a plugin. Runs `/evaluate:skill` for each skill, th
 
 ## Context
 
-- Plugin skills: !`ls -d $1/skills/*/SKILL.md 2>/dev/null`
-- Existing evals: !`ls $1/skills/*/evals.json 2>/dev/null`
+- Plugin skills: !`find $1/skills -name "SKILL.md" -maxdepth 3`
+- Existing evals: !`find $1/skills -name "evals.json" -maxdepth 3`
 
 ## Parameters
 
