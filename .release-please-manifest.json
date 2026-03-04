@@ -17,7 +17,7 @@
   "evaluate-plugin": "1.2.0",
   "feedback-plugin": "1.2.0",
   "finops-plugin": "1.2.0",
-  "git-plugin": "2.25.0",
+  "git-plugin": "2.25.1",
   "github-actions-plugin": "1.5.0",
   "health-plugin": "1.4.0",
   "home-assistant-plugin": "1.2.0",
