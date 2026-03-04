@@ -1,5 +1,67 @@
 # Changelog
 
+## [2.25.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.24.0...git-plugin-v2.25.0) (2026-03-04)
+
+
+### Features
+
+* add `context: fork` guidance and apply to verbose skills ([#833](https://github.com/laurigates/claude-plugins/issues/833)) ([cced641](https://github.com/laurigates/claude-plugins/commit/cced641a953953b97f37528960782cacd75dbcab))
+* add metadata fields to skill definitions across all plugins ([#828](https://github.com/laurigates/claude-plugins/issues/828)) ([59b3d1f](https://github.com/laurigates/claude-plugins/commit/59b3d1fadd8fd888f95ced8b071fb66cf6f9c825))
+* add safety hooks for Terraform, Kubernetes, Git, and Blueprint plugins ([#835](https://github.com/laurigates/claude-plugins/issues/835)) ([d4d86a0](https://github.com/laurigates/claude-plugins/commit/d4d86a03b96d99642f341effb8f3999df5246c8b))
+* add skill invocation control via user-invocable and disable-model-invocation frontmatter ([59b3d1f](https://github.com/laurigates/claude-plugins/commit/59b3d1fadd8fd888f95ced8b071fb66cf6f9c825))
+* **blueprint-plugin:** add PreCompact hook for derivation workflow context ([d4d86a0](https://github.com/laurigates/claude-plugins/commit/d4d86a03b96d99642f341effb8f3999df5246c8b))
+* **configure-plugin:** replace detect-secrets with gitleaks for secret scanning ([#668](https://github.com/laurigates/claude-plugins/issues/668)) ([3fc5bbc](https://github.com/laurigates/claude-plugins/commit/3fc5bbc2f8500f30160cc5dfeb5e3d1253ed0a54))
+* evaluate-plugin for skill evaluation and benchmarking ([#871](https://github.com/laurigates/claude-plugins/issues/871)) ([22cf97a](https://github.com/laurigates/claude-plugins/commit/22cf97a513245928e2e5b2572758ea0e33e34b90))
+* **git-plugin:** add fork-to-upstream PR workflow skills ([#856](https://github.com/laurigates/claude-plugins/issues/856)) ([cb7ec04](https://github.com/laurigates/claude-plugins/commit/cb7ec046c2d37a109f384a5670e7f6310d9cbbb9))
+* **git-plugin:** add git-api-pr skill for server-side PR creation ([#667](https://github.com/laurigates/claude-plugins/issues/667)) ([e8a3380](https://github.com/laurigates/claude-plugins/commit/e8a338017c697ce6f231e2d089f35cc252b829eb))
+* **git-plugin:** add git-conflicts skill for merge conflict resolution ([#849](https://github.com/laurigates/claude-plugins/issues/849)) ([ce62049](https://github.com/laurigates/claude-plugins/commit/ce62049ce6405cfb3930e7f94f5228866e3f4b16))
+* **git-plugin:** add GitHub URL resolution patterns to gh-cli-agentic ([9c8420b](https://github.com/laurigates/claude-plugins/commit/9c8420b5542dd4fadd5b7ff607afe8b9387c14d2))
+* **git-plugin:** track post-merge follow-ups as issues, not PR checklists ([ebce835](https://github.com/laurigates/claude-plugins/commit/ebce835f10cd11361c378f20bb0da572eb458117))
+* **git-plugin:** use ./worktrees/ directory for agent worktree workflows ([a97db86](https://github.com/laurigates/claude-plugins/commit/a97db8613d879db4c06cefc6f94edcfca95f9043))
+* integrate worktree isolation into agent framework ([#830](https://github.com/laurigates/claude-plugins/issues/830)) ([564ffcf](https://github.com/laurigates/claude-plugins/commit/564ffcf8f34cf9d672816b42dabcf1280c701589))
+* introduce three-tier model palette (opus/sonnet/haiku) ([#709](https://github.com/laurigates/claude-plugins/issues/709)) ([2c1e9cc](https://github.com/laurigates/claude-plugins/commit/2c1e9ccff5d48c2b426beac5b3b38cd4576c79a0))
+* **kubernetes-plugin:** add kubectl dry-run injection hook ([d4d86a0](https://github.com/laurigates/claude-plugins/commit/d4d86a03b96d99642f341effb8f3999df5246c8b))
+* Refactor PR workflow to track post-merge actions as GitHub issues ([#769](https://github.com/laurigates/claude-plugins/issues/769)) ([ebce835](https://github.com/laurigates/claude-plugins/commit/ebce835f10cd11361c378f20bb0da572eb458117))
+* **skills:** add context: fork to verbose autonomous skills ([cced641](https://github.com/laurigates/claude-plugins/commit/cced641a953953b97f37528960782cacd75dbcab))
+* **terraform-plugin:** add terraform apply gate hook ([d4d86a0](https://github.com/laurigates/claude-plugins/commit/d4d86a03b96d99642f341effb8f3999df5246c8b))
+
+
+### Bug Fixes
+
+* **frontmatter:** resolve 83 validation errors across 75 files ([#434](https://github.com/laurigates/claude-plugins/issues/434)) ([5beb75e](https://github.com/laurigates/claude-plugins/commit/5beb75ed4b2cb0431d060bd7102903495c03c6c5))
+* **git-ops:** enable git write permissions and clarify configuration ([#430](https://github.com/laurigates/claude-plugins/issues/430)) ([3448890](https://github.com/laurigates/claude-plugins/commit/3448890b00d1feb40a4d6e86ae5850d4cdb97b90))
+* **git-plugin:** remove backticks from status codes to prevent parsing bug ([373023c](https://github.com/laurigates/claude-plugins/commit/373023ce8a292211890240612785e41641563c4d))
+* **git-plugin:** remove pipe operator from worktree skill context command ([#695](https://github.com/laurigates/claude-plugins/issues/695)) ([38884b1](https://github.com/laurigates/claude-plugins/commit/38884b170286289b7d31261967071bfae58c4f73))
+* **hooks-plugin:** block git push -u on main to differently-named branch ([#746](https://github.com/laurigates/claude-plugins/issues/746)) ([25e3e49](https://github.com/laurigates/claude-plugins/commit/25e3e494e84f676503a52a5ed24e0eb62c467e09))
+* remove 2&gt;/dev/null from context commands across all plugins ([#792](https://github.com/laurigates/claude-plugins/issues/792)) ([c72e67e](https://github.com/laurigates/claude-plugins/commit/c72e67ee37e809449f0e6282c48fac01363a59fd))
+* remove pipe/ls operators from context commands and add CI linting ([#653](https://github.com/laurigates/claude-plugins/issues/653)) ([7a01eef](https://github.com/laurigates/claude-plugins/commit/7a01eef21495ed6243277fbaa88082b7ecabc793))
+* replace broken context command patterns in skill files ([#644](https://github.com/laurigates/claude-plugins/issues/644)) ([440ba34](https://github.com/laurigates/claude-plugins/commit/440ba347bcc73a0512f74975cfd6b4af9fe8566e))
+* replace git remote get-url with git remote -v for verbose output ([#804](https://github.com/laurigates/claude-plugins/issues/804)) ([e39407a](https://github.com/laurigates/claude-plugins/commit/e39407a366d2d0ba431df0f456074b847073eea8))
+* **scripts:** enhance context command linter with stderr safety checks and fix violations ([#819](https://github.com/laurigates/claude-plugins/issues/819)) ([2975b9b](https://github.com/laurigates/claude-plugins/commit/2975b9b0bf6698bdecf627e3d28bad06fde03cd1))
+* **skills:** replace git remote get-url origin with git remote -v in context commands ([e39407a](https://github.com/laurigates/claude-plugins/commit/e39407a366d2d0ba431df0f456074b847073eea8))
+* standardize skill name fields to kebab-case across all plugins ([72c0f83](https://github.com/laurigates/claude-plugins/commit/72c0f837a1b07004850c5906a30d619a79098f69))
+
+
+### Code Refactoring
+
+* consolidate skill documentation and remove reference files ([#758](https://github.com/laurigates/claude-plugins/issues/758)) ([3d1e8cc](https://github.com/laurigates/claude-plugins/commit/3d1e8ccd9becba5faec5b1df1fa06f410eca7437))
+* extract detailed content to REFERENCE.md files ([#605](https://github.com/laurigates/claude-plugins/issues/605)) ([7efbd83](https://github.com/laurigates/claude-plugins/commit/7efbd83b9a2b1ef67be702206396ba6d8102684d))
+* git-worktree workflow to worktree-first implementation model ([#693](https://github.com/laurigates/claude-plugins/issues/693)) ([16d46e5](https://github.com/laurigates/claude-plugins/commit/16d46e559bbf0daa2874c11ecbf6483e6be29bc2))
+* reframe negative guidance as positive guidance across skills ([7e755ee](https://github.com/laurigates/claude-plugins/commit/7e755ee1c32c39c124f3204a0d0a8d1d770e1573))
+
+
+### Documentation
+
+* **git-plugin:** add conventional commits standards ([#616](https://github.com/laurigates/claude-plugins/issues/616)) ([5b74389](https://github.com/laurigates/claude-plugins/commit/5b74389ecdf5223dd62368390ecd9b36ccb1596c))
+* **git-plugin:** add GitHub URL resolution patterns to gh-cli-agentic ([#687](https://github.com/laurigates/claude-plugins/issues/687)) ([9c8420b](https://github.com/laurigates/claude-plugins/commit/9c8420b5542dd4fadd5b7ff607afe8b9387c14d2))
+* **git-plugin:** document PR check watching workflow ([24116de](https://github.com/laurigates/claude-plugins/commit/24116de12541b7af7677d5e1ed195628bf4599eb))
+* **git-plugin:** improve worktree documentation and migration notes ([03d04ef](https://github.com/laurigates/claude-plugins/commit/03d04ef1035d3a9f8675342c5c79ad163bc6edee))
+* **git-plugin:** remove exclusive git permissions claims from git-ops agent ([0f92846](https://github.com/laurigates/claude-plugins/commit/0f928466543e7a302c11ff9d51ae481c8bf887eb))
+* **git-plugin:** remove obsolete orchestrator mode documentation ([#685](https://github.com/laurigates/claude-plugins/issues/685)) ([9e4e794](https://github.com/laurigates/claude-plugins/commit/9e4e794fce72c4daec7fdd8fccfc16ae9ad43bac))
+* **git-plugin:** update git-pr-feedback skill documentation and metadata ([#823](https://github.com/laurigates/claude-plugins/issues/823)) ([aa3fba5](https://github.com/laurigates/claude-plugins/commit/aa3fba56b82a3192a3d73ab34eb8024978398076))
+* improve skill documentation with decision guides and references ([#426](https://github.com/laurigates/claude-plugins/issues/426)) ([24116de](https://github.com/laurigates/claude-plugins/commit/24116de12541b7af7677d5e1ed195628bf4599eb))
+* **rules:** update rules and skills for Claude Code 2.1.50-2.1.63 ([#859](https://github.com/laurigates/claude-plugins/issues/859)) ([6c66021](https://github.com/laurigates/claude-plugins/commit/6c66021fefa205abfc4f575229e3bbb9cdc6263a))
+
 ## [2.24.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.23.1...git-plugin-v2.24.0) (2026-03-04)
 
 
