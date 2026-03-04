@@ -178,6 +178,44 @@ jobs:
       - run: npm run test:coverage
 ```
 
+## Renovate Caller Workflow Template
+
+```yaml
+name: Renovate
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+    inputs:
+      dryRun:
+        description: 'Dry run mode'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'full'
+          - 'lookup'
+      logLevel:
+        description: 'Log level'
+        required: false
+        default: 'info'
+        type: choice
+        options:
+          - info
+          - debug
+          - warn
+
+jobs:
+  renovate:
+    uses: ForumViriumHelsinki/.github/.github/workflows/reusable-renovate.yml@main
+    with:
+      log-level: ${{ inputs.logLevel || 'info' }}
+      dry-run: ${{ inputs.dryRun || 'false' }}
+    secrets: inherit
+```
+
 ## Claude Auto-Fix Workflow Template
 
 ```yaml

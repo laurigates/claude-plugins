@@ -71,9 +71,9 @@ Determine required workflows based on project type:
 
 | Project Type | Required Workflows |
 |--------------|-------------------|
-| Frontend | container-build, release-please (optional: claude-auto-fix) |
-| Python | container-build, release-please, test (optional: claude-auto-fix) |
-| Infrastructure | release-please (optional: docs, claude-auto-fix) |
+| Frontend | container-build, release-please, renovate (optional: claude-auto-fix) |
+| Python | container-build, release-please, test, renovate (optional: claude-auto-fix) |
+| Infrastructure | release-please, renovate (optional: docs, claude-auto-fix) |
 
 ### Step 3: Analyze workflow compliance
 
@@ -112,6 +112,15 @@ Determine required workflows based on project type:
 | Linting | npm run lint | WARN if missing |
 | Type check | npm run typecheck | WARN if missing |
 | Coverage | Coverage upload | INFO |
+
+**Renovate Workflow Checks:**
+
+| Check | Standard | Severity |
+|-------|----------|----------|
+| RENOVATE_REPOSITORIES env var | Must be set (`${{ github.repository }}`) | FAIL if missing |
+| checkout action | v6 | WARN if older |
+| renovatebot/github-action | Minor-pinned (e.g., v46.1.0), not major tag | WARN if major-only |
+| Uses reusable workflow | Preferred (except infrastructure) | INFO if standalone |
 
 **Claude Auto-Fix Workflow Checks (if present):**
 
