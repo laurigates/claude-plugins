@@ -1,6 +1,6 @@
 # Plugin Navigation Map
 
-Navigation guide for 33 plugins and 290+ skills. Start here.
+Navigation guide for 34 plugins and 296+ skills. Start here.
 
 ## Quick Start
 
@@ -98,6 +98,7 @@ flowchart TD
     A -->|Game dev| E[bevy-plugin]
     A -->|UI components| F[component-patterns-plugin + accessibility-plugin]
     A -->|Blog / Content| G[blog-plugin]
+    A -->|Knowledge base| I[obsidian-plugin]
     A -->|General app| H[No domain plugins needed]
 ```
 
@@ -194,6 +195,7 @@ Install based on your project's tech stack and domain.
 | workflow-orchestration-plugin | Parallel agent orchestration, CI pipelines, preflight checks, checkpoint refactoring |
 | migration-patterns-plugin | Safe database and system migration patterns — dual write, shadow mode, strangler fig |
 | prose-plugin | Prose style control — distillation, tone, voice, clarity, consistency |
+| obsidian-plugin | Obsidian CLI vault management — files, search, properties, tasks, publish, sync |
 
 ## Key Entry Points
 
