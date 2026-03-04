@@ -101,6 +101,58 @@ def maintain(
 
 
 @app.command()
+def diagnose(
+    repo: str = typer.Argument(
+        ".",
+        help="Path to the repository to diagnose.",
+    ),
+    sources: Optional[str] = typer.Option(
+        None,
+        "--sources",
+        help="Comma-separated diagnostic sources (kubectl,argocd,actions,packages). Default: auto-detect.",
+    ),
+    create_issue: bool = typer.Option(
+        False,
+        "--create-issue",
+        help="Create a GitHub issue with aggregated diagnostics.",
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Collect and display diagnostics without creating issues.",
+    ),
+    namespace: Optional[str] = typer.Option(
+        None,
+        "--namespace",
+        help="Kubernetes namespace for kubectl/argocd queries.",
+    ),
+    app_name: Optional[str] = typer.Option(
+        None,
+        "--app",
+        help="ArgoCD application name.",
+    ),
+) -> None:
+    """Diagnose pipeline failures and optionally create a GitHub issue."""
+    repo_path = Path(repo).resolve()
+    if not repo_path.is_dir():
+        console.print(f"[red]Error:[/red] {repo_path} is not a directory")
+        raise typer.Exit(code=1)
+
+    from .orchestrator import run_diagnose
+
+    asyncio.run(
+        run_diagnose(
+            repo_path=repo_path,
+            sources=sources,
+            create_issue=create_issue,
+            dry_run=dry_run,
+            namespace=namespace,
+            app_name=app_name,
+        )
+    )
+
+
+@app.command()
 def health(
     repo: str = typer.Argument(
         ".",

@@ -52,6 +52,37 @@ SENSITIVE_FILE_PATTERNS = [
 # Protected branches
 PROTECTED_BRANCHES = frozenset({"main", "master", "production", "release"})
 
+# Read-only kubectl commands (allowlist approach)
+KUBECTL_READONLY_VERBS = frozenset({
+    "get",
+    "describe",
+    "logs",
+    "top",
+    "api-resources",
+    "api-versions",
+    "cluster-info",
+    "version",
+    "explain",
+    "auth",  # auth can-i is read-only
+})
+
+# Read-only argocd subcommands (allowlist approach)
+ARGOCD_READONLY_COMMANDS = frozenset({
+    "app get",
+    "app list",
+    "app history",
+    "app manifests",
+    "app diff",
+    "app logs",
+    "app resources",
+    "cluster list",
+    "proj list",
+    "proj get",
+    "repo list",
+    "repo get",
+    "version",
+})
+
 
 def check_bash_command(command: str) -> HookResult:
     """Check a Bash command for dangerous operations."""
@@ -82,6 +113,63 @@ def check_bash_command(command: str) -> HookResult:
                 f"Only allowed on build artifact directories: {', '.join(sorted(SAFE_RM_DIRS))}",
             )
 
+    # kubectl read-only enforcement
+    if "kubectl" in command:
+        result = _check_kubectl_readonly(command)
+        if not result.allowed:
+            return result
+
+    # argocd read-only enforcement
+    if "argocd" in command:
+        result = _check_argocd_readonly(command)
+        if not result.allowed:
+            return result
+
+    return HookResult(allowed=True)
+
+
+def _check_kubectl_readonly(command: str) -> HookResult:
+    """Ensure kubectl commands are read-only."""
+    # Extract the kubectl verb (first arg after kubectl and optional global flags)
+    kubectl_match = re.search(r"kubectl\s+(?:--\S+\s+|-\S\s+)*(\S+)", command)
+    if not kubectl_match:
+        return HookResult(allowed=True)
+
+    verb = kubectl_match.group(1)
+    if verb not in KUBECTL_READONLY_VERBS:
+        return HookResult(
+            allowed=False,
+            reason=f"kubectl '{verb}' is blocked — only read-only operations are "
+            f"allowed: {', '.join(sorted(KUBECTL_READONLY_VERBS))}",
+        )
+    return HookResult(allowed=True)
+
+
+def _check_argocd_readonly(command: str) -> HookResult:
+    """Ensure argocd commands are read-only."""
+    # Extract the argocd subcommand pair (e.g. "app get", "app sync")
+    argocd_match = re.search(r"argocd\s+(?:--\S+\s+|-\S\s+)*(\S+)\s+(\S+)", command)
+    if not argocd_match:
+        # Single-word commands like "argocd version"
+        single_match = re.search(r"argocd\s+(?:--\S+\s+|-\S\s+)*(\S+)", command)
+        if single_match:
+            sub = single_match.group(1)
+            if sub in ("version",):
+                return HookResult(allowed=True)
+            return HookResult(
+                allowed=False,
+                reason=f"argocd '{sub}' is blocked — only read-only operations are "
+                f"allowed: {', '.join(sorted(ARGOCD_READONLY_COMMANDS))}",
+            )
+        return HookResult(allowed=True)
+
+    subcommand = f"{argocd_match.group(1)} {argocd_match.group(2)}"
+    if not any(subcommand.startswith(allowed) for allowed in ARGOCD_READONLY_COMMANDS):
+        return HookResult(
+            allowed=False,
+            reason=f"argocd '{subcommand}' is blocked — only read-only operations are "
+            f"allowed: {', '.join(sorted(ARGOCD_READONLY_COMMANDS))}",
+        )
     return HookResult(allowed=True)
 
 
