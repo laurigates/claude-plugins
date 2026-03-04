@@ -71,9 +71,9 @@ Determine required workflows based on project type:
 
 | Project Type | Required Workflows |
 |--------------|-------------------|
-| Frontend | container-build, release-please |
-| Python | container-build, release-please, test |
-| Infrastructure | release-please (optional: docs) |
+| Frontend | container-build, release-please, renovate |
+| Python | container-build, release-please, test, renovate |
+| Infrastructure | release-please, renovate (optional: docs) |
 
 ### Step 3: Analyze workflow compliance
 
@@ -112,6 +112,15 @@ Determine required workflows based on project type:
 | Linting | npm run lint | WARN if missing |
 | Type check | npm run typecheck | WARN if missing |
 | Coverage | Coverage upload | INFO |
+
+**Renovate Workflow Checks:**
+
+| Check | Standard | Severity |
+|-------|----------|----------|
+| RENOVATE_REPOSITORIES env var | Must be set (`${{ github.repository }}`) | FAIL if missing |
+| checkout action | v6 | WARN if older |
+| renovatebot/github-action | Minor-pinned (e.g., v46.1.0), not major tag | WARN if major-only |
+| Uses reusable workflow | Preferred (except infrastructure) | INFO if standalone |
 
 ### Step 4: Generate compliance report
 

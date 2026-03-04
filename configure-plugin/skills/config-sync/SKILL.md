@@ -71,6 +71,7 @@ Shared structure with specific fields that vary per repo.
 |-------------|-----------------|
 | `.github/workflows/auto-merge-image-updater.yml` | Branch prefix pattern |
 | `.github/workflows/release-please.yml` | Publish job, extra steps |
+| `.github/workflows/renovate.yml` | Standalone (infrastructure) vs reusable caller (all others) |
 
 ### Tier 3: Structural (standard skeleton, project-specific bodies)
 
