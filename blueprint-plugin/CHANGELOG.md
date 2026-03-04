@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.22.2](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.22.1...blueprint-plugin-v3.22.2) (2026-03-04)
+
+
+### Bug Fixes
+
+* haiku model incompatibility with AskUserQuestion tool ([#881](https://github.com/laurigates/claude-plugins/issues/881)) ([c09e400](https://github.com/laurigates/claude-plugins/commit/c09e40031e2eef7fa78640ee1d8327a0f18bbe64))
+
 ## [3.22.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.22.0...blueprint-plugin-v3.22.1) (2026-03-01)
 
 
