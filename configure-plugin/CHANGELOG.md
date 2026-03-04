@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.12.2...configure-plugin-v1.13.0) (2026-03-04)
+
+
+### Features
+
+* **configure-plugin:** add Claude auto-fix workflow template ([#872](https://github.com/laurigates/claude-plugins/issues/872)) ([3b983eb](https://github.com/laurigates/claude-plugins/commit/3b983ebd78f34f680a66733700385b8e5f8af96a))
+
 ## [1.12.2](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.12.1...configure-plugin-v1.12.2) (2026-03-02)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.24.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.23.1...git-plugin-v2.24.0) (2026-03-04)
+
+
+### Features
+
+* evaluate-plugin for skill evaluation and benchmarking ([#871](https://github.com/laurigates/claude-plugins/issues/871)) ([22cf97a](https://github.com/laurigates/claude-plugins/commit/22cf97a513245928e2e5b2572758ea0e33e34b90))
+
 ## [2.23.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.23.0...git-plugin-v2.23.1) (2026-03-02)
 
 
