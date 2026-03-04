@@ -222,7 +222,7 @@
       "name": "evaluate-plugin",
       "source": "./evaluate-plugin",
       "description": "Skill evaluation and benchmarking - test skill effectiveness with behavioral eval cases, grade results, and track quality improvements",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "keywords": [
         "evaluation",
         "benchmarking",
@@ -265,7 +265,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.24.0",
+      "version": "2.25.0",
       "keywords": [
         "git",
         "github",
@@ -411,6 +411,24 @@
       "category": "infrastructure"
     },
     {
+      "name": "obsidian-plugin",
+      "source": "./obsidian-plugin",
+      "description": "Obsidian CLI operations - vault management, search, properties, tasks, plugins, publish, and sync",
+      "version": "1.1.0",
+      "keywords": [
+        "obsidian",
+        "vault",
+        "notes",
+        "markdown",
+        "knowledge-base",
+        "daily-notes",
+        "properties",
+        "publish",
+        "sync"
+      ],
+      "category": "development"
+    },
+    {
       "name": "project-plugin",
       "source": "./project-plugin",
       "description": "Project initialization, management, and maintenance - setup, modernization, changelog review, and continuous development workflows",
@@ -546,24 +564,6 @@
         "worktree"
       ],
       "category": "automation"
-    },
-    {
-      "name": "obsidian-plugin",
-      "source": "./obsidian-plugin",
-      "description": "Obsidian CLI operations - vault management, search, properties, tasks, plugins, publish, and sync",
-      "version": "1.0.0",
-      "keywords": [
-        "obsidian",
-        "vault",
-        "notes",
-        "markdown",
-        "knowledge-base",
-        "daily-notes",
-        "properties",
-        "publish",
-        "sync"
-      ],
-      "category": "development"
     }
   ]
 }
