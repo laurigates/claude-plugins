@@ -146,7 +146,12 @@ check_skill_frontmatter() {
     fm_reviewed=$(extract_field "$skill_file" "reviewed")
 
     local missing_recommended=()
-    [ -z "$fm_model" ] && missing_recommended+=("model")
+    # Skills using AskUserQuestion must omit model: haiku (or omit model entirely).
+    # Omitting model is the documented correct approach for interactive skills, so
+    # do not flag missing model as a recommendation for them.
+    local uses_ask_user_question=false
+    echo "$fm_allowed_tools" | grep -q "AskUserQuestion" && uses_ask_user_question=true
+    [ -z "$fm_model" ] && ! $uses_ask_user_question && missing_recommended+=("model")
     [ -z "$fm_created" ] && missing_recommended+=("created")
     [ -z "$fm_modified" ] && missing_recommended+=("modified")
     [ -z "$fm_reviewed" ] && missing_recommended+=("reviewed")
