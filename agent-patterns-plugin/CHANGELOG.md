@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.9.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.8.1...agent-patterns-plugin-v2.9.0) (2026-03-03)
+
+
+### Features
+
+* **agent-patterns-plugin:** add agent-teams skill ([#868](https://github.com/laurigates/claude-plugins/issues/868)) ([9af253e](https://github.com/laurigates/claude-plugins/commit/9af253e36f189a0f9550cfa5f19e38f9435d27cd)), closes [#860](https://github.com/laurigates/claude-plugins/issues/860)
+
 ## [2.8.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.8.0...agent-patterns-plugin-v2.8.1) (2026-03-02)
 
 
