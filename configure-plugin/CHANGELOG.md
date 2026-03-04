@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.13.0...configure-plugin-v1.14.0) (2026-03-04)
+
+
+### Features
+
+* **configure:** add renovate workflow checks and caller template ([#870](https://github.com/laurigates/claude-plugins/issues/870)) ([91146d7](https://github.com/laurigates/claude-plugins/commit/91146d7ff2c5703fddb31bcb0851128a1cc2741f))
+
 ## [1.13.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.12.2...configure-plugin-v1.13.0) (2026-03-04)
 
 
