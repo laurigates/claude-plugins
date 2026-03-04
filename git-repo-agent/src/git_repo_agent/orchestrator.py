@@ -44,11 +44,13 @@ _sdk_client.parse_message = _resilient_parse_message
 
 from .agents.blueprint import definition as blueprint_definition
 from .agents.configure import definition as configure_definition
+from .agents.diagnose import definition as diagnose_definition
 from .agents.docs import definition as docs_definition
 from .agents.quality import definition as quality_definition
 from .agents.security import definition as security_definition
 from .agents.test_runner import definition as test_runner_definition
 from .tools.health_check import compute_health_score
+from .tools.pipeline_collector import collect_pipeline_diagnostics
 from .tools.repo_analyzer import analyze_repo
 from .tools.report import generate_report
 
@@ -238,6 +240,116 @@ async def run_maintain(
     prompt = " ".join(prompt_parts)
 
     await _stream_messages(prompt, options, "Maintenance complete.")
+
+
+async def run_diagnose(
+    repo_path: Path,
+    sources: str | None = None,
+    create_issue: bool = False,
+    dry_run: bool = False,
+    namespace: str | None = None,
+    app_name: str | None = None,
+) -> None:
+    """Run the pipeline diagnostics workflow for a repository."""
+    console.print(f"[bold]Git Repo Agent[/bold] — Diagnosing [cyan]{repo_path}[/cyan]")
+    if dry_run:
+        console.print("[yellow]DRY RUN — diagnostics only, no issues created[/yellow]")
+    if create_issue and not dry_run:
+        console.print("[green]Will create GitHub issue with findings[/green]")
+    if sources:
+        console.print(f"[dim]Sources: {sources}[/dim]")
+    console.print()
+
+    # Pre-compute analysis and pipeline diagnostics (see ADR-001)
+    console.print("[dim]Analyzing repository...[/dim]")
+    analysis = analyze_repo(repo_path)
+
+    console.print("[dim]Collecting pipeline diagnostics...[/dim]")
+    source_list = [s.strip() for s in sources.split(",")] if sources else None
+    diagnostics = collect_pipeline_diagnostics(
+        repo_path,
+        sources=source_list,
+        namespace=namespace,
+        app_name=app_name,
+    )
+
+    # Report available/unavailable sources
+    available = diagnostics.get("available_sources", [])
+    if available:
+        console.print(f"[dim]Available sources: {', '.join(available)}[/dim]")
+    else:
+        console.print("[yellow]No CLI diagnostic sources detected[/yellow]")
+
+    # Build pre-computed context
+    context = (
+        "## Pre-computed Repository Analysis\n\n"
+        "The following data was computed before this session started.\n\n"
+        "### repo_analyze result\n\n"
+        f"```json\n{json.dumps(analysis, indent=2)}\n```\n\n"
+        "## Pre-computed Pipeline Diagnostics\n\n"
+        f"```json\n{json.dumps(diagnostics, indent=2)}\n```\n"
+    )
+
+    # Build system prompt with embedded analysis and diagnostics
+    system_prompt = (
+        _load_prompt("orchestrator")
+        + "\n\n"
+        + _load_prompt("diagnose_workflow")
+        + "\n\n"
+        + context
+    )
+
+    # Include GitHub MCP tools for issue creation
+    allowed_tools = [
+        "Read",
+        "Bash",
+        "Glob",
+        "Grep",
+        "Task",
+        "AskUserQuestion",
+        "TodoWrite",
+        "mcp__github__issue_write",
+        "mcp__github__issue_read",
+        "mcp__github__list_issues",
+        "mcp__github__search_issues",
+    ]
+
+    options = ClaudeAgentOptions(
+        system_prompt=system_prompt,
+        cwd=str(repo_path),
+        max_turns=30,
+        allowed_tools=allowed_tools,
+        permission_mode="acceptEdits",
+        agents={
+            "diagnose": diagnose_definition,
+        },
+        env={
+            "CLAUDECODE": "",
+            "CREATE_ISSUE": str(create_issue),
+            "DRY_RUN": str(dry_run),
+            "DIAGNOSTIC_SOURCES": sources or "auto",
+            "K8S_NAMESPACE": namespace or "",
+            "ARGOCD_APP": app_name or "",
+        },
+    )
+
+    # Build the prompt
+    prompt_parts = [
+        f"Run pipeline diagnostics for the repository at {repo_path}.",
+        "Pipeline diagnostic data is in your system prompt.",
+    ]
+    if create_issue and not dry_run:
+        prompt_parts.append(
+            "Create a GitHub issue with the aggregated diagnostic findings."
+        )
+    if dry_run:
+        prompt_parts.append(
+            "DRY RUN — display diagnostics without creating issues."
+        )
+
+    prompt = " ".join(prompt_parts)
+
+    await _stream_messages(prompt, options, "Diagnostics complete.")
 
 
 def run_health(repo_path: Path) -> None:

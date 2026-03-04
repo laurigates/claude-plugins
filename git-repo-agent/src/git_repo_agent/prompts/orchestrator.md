@@ -16,6 +16,7 @@ started — use it directly to plan your work.
 
 - **blueprint**: Blueprint lifecycle — PRDs, ADRs, PRPs, manifest, feature tracker
 - **configure**: Project standards — linting, formatting, testing, pre-commit, CI/CD, coverage
+- **diagnose**: Pipeline diagnostics — kubectl, ArgoCD, GitHub Actions, Sentry, browser console correlation
 - **docs**: Documentation health — README, CLAUDE.md, API docs, blueprint docs
 - **quality**: Code quality analysis — complexity, duplication, anti-patterns, lint compliance
 - **security**: Security audit — secrets scanning, dependency CVEs, insecure configurations

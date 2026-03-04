@@ -47,6 +47,37 @@ git-repo-agent maintain /path/to/repo --fix
 git-repo-agent maintain /path/to/repo --focus docs,security
 ```
 
+### Diagnose Pipeline Failures
+
+Collect diagnostics from multiple GitOps sources, correlate errors, and optionally create a GitHub issue.
+
+```bash
+# Auto-detect available sources, display diagnostics
+git-repo-agent diagnose /path/to/repo --dry-run
+
+# Specify sources and Kubernetes namespace
+git-repo-agent diagnose /path/to/repo --sources kubectl,argocd,actions --namespace production
+
+# Create a GitHub issue with findings
+git-repo-agent diagnose /path/to/repo --create-issue
+
+# Target a specific ArgoCD application
+git-repo-agent diagnose /path/to/repo --sources argocd --app my-app --namespace prod
+```
+
+**Diagnostic sources:**
+
+| Source | CLI Required | Data Collected |
+|--------|-------------|----------------|
+| kubectl | `kubectl` | Pod status, restart counts, warning/error events |
+| argocd | `argocd` | Sync status, health, conditions, deployment history |
+| actions | `gh` | Workflow run failures, failed job/step details |
+| packages | `gh` | Package versions, tagging consistency |
+| sentry | Sentry MCP | Error events, stack traces (if MCP server configured) |
+| chrome | Chrome DevTools MCP | Console errors, network failures (if MCP server configured) |
+
+kubectl and argocd operations are **strictly read-only** — safety hooks block any mutating commands.
+
 ### Quick Health Check
 
 Runs locally without LLM calls — direct Python scoring.
@@ -65,6 +96,7 @@ git-repo-agent/
 │   ├── agents/
 │   │   ├── blueprint.py       # Blueprint lifecycle (sonnet)
 │   │   ├── configure.py       # Project standards (haiku)
+│   │   ├── diagnose.py        # Pipeline diagnostics (sonnet)
 │   │   ├── docs.py            # Documentation health (haiku)
 │   │   ├── quality.py         # Code quality analysis (opus)
 │   │   ├── security.py        # Security audit (opus)
@@ -72,6 +104,7 @@ git-repo-agent/
 │   ├── tools/
 │   │   ├── repo_analyzer.py   # repo_analyze MCP tool
 │   │   ├── health_check.py    # health_score MCP tool
+│   │   ├── pipeline_collector.py # Pipeline diagnostics collector
 │   │   └── report.py          # report_generate MCP tool
 │   ├── hooks/
 │   │   └── safety.py          # Destructive command prevention
@@ -79,6 +112,8 @@ git-repo-agent/
 │       ├── orchestrator.md    # Orchestrator system prompt
 │       ├── onboard.md         # Onboard workflow
 │       ├── maintain.md        # Maintain workflow
+│       ├── diagnose.md        # Diagnose subagent prompt
+│       ├── diagnose_workflow.md # Diagnose workflow
 │       ├── health.md          # Health command reference
 │       ├── blueprint.md       # Blueprint subagent prompt
 │       ├── configure.md       # Configure subagent prompt
@@ -98,6 +133,7 @@ git-repo-agent/
 | --------------- | ------ | -------------------------------------------------------------------------- |
 | **blueprint**   | sonnet | Initialize and maintain blueprint methodology (PRDs, ADRs, PRPs, manifest) |
 | **configure**   | haiku  | Set up linting, formatting, testing, pre-commit hooks, CI/CD, coverage     |
+| **diagnose**    | sonnet | Correlate pipeline failures across kubectl, ArgoCD, GitHub Actions, Sentry |
 | **docs**        | haiku  | Check and improve README, CLAUDE.md, API docs, blueprint docs              |
 | **quality**     | opus   | Review code for complexity, duplication, anti-patterns, lint compliance    |
 | **security**    | opus   | Scan for exposed secrets, dependency CVEs, insecure configurations         |
@@ -117,6 +153,7 @@ The safety module prevents destructive commands during agent execution:
 
 - Blocks `git push --force`, `git reset --hard`, `rm -rf`
 - Prevents modification of `.env` files and credentials
+- Enforces read-only `kubectl` and `argocd` operations (allowlist approach)
 - Logs blocked commands for review
 
 ### Skill Compilation Pipeline
@@ -159,6 +196,9 @@ uv run --directory git-repo-agent git-repo-agent onboard /tmp/test-repo --dry-ru
 
 # Quick health check (no API calls)
 uv run --directory git-repo-agent git-repo-agent health .
+
+# Pipeline diagnostics (dry run)
+uv run --directory git-repo-agent git-repo-agent diagnose . --dry-run
 ```
 
 ## Implementation Phases
@@ -169,3 +209,4 @@ uv run --directory git-repo-agent git-repo-agent health .
 | Phase 2 | Done    | Configure/docs subagents, health_score, safety hooks, maintain command, skill compilation |
 | Phase 3 | Done    | Quality/security/test-runner subagents, report_generate, health command                   |
 | Phase 4 | Planned | Watch mode, trend tracking, GitHub Action template                                        |
+| Phase 5 | Done    | Pipeline diagnostics (kubectl, ArgoCD, GitHub Actions, Sentry, Chrome DevTools)           |
