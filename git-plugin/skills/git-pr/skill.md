@@ -1,8 +1,8 @@
 ---
 model: haiku
 created: 2026-01-21
-modified: 2026-02-20
-reviewed: 2026-02-20
+modified: 2026-03-04
+reviewed: 2026-03-04
 name: git-pr
 description: |
   Create pull requests with proper descriptions, labels, and issue references. Handles
@@ -94,15 +94,14 @@ Related: #124, #125     <!-- Links without closing -->
 # Check current branch
 git branch --show-current
 
-# Check if on main (main-branch development pattern)
-branch=$(git branch --show-current)
-if [ "$branch" = "main" ] || [ "$branch" = "master" ]; then
-  git fetch origin
-  ahead=$(git rev-list --count origin/$branch..HEAD 2>/dev/null || echo "0")
-  if [ "$ahead" = "0" ]; then
-    echo "No commits ahead - nothing to create PR for"
-    exit 1
-  fi
+# Fetch latest remote state for accurate comparison
+git fetch origin main
+
+# Check commits ahead of origin/main (always compare against remote)
+ahead=$(git rev-list --count origin/main..HEAD 2>/dev/null || echo "0")
+if [ "$ahead" = "0" ]; then
+  echo "No commits ahead of origin/main - nothing to create PR for"
+  exit 1
 fi
 
 # Check for existing PR
@@ -111,12 +110,14 @@ gh pr view --json number,state 2>/dev/null || echo "no existing PR"
 
 ### 2. Analyze Commits
 
+**CRITICAL:** Always compare against `origin/main` (not local `main`) to avoid including commits that haven't been merged to the remote. Local `main` may be ahead of `origin/main` with unrelated commits.
+
 ```bash
-# Get commits for PR
-base_ref="main"
-if [ "$(git branch --show-current)" = "main" ]; then
-  base_ref="origin/main"
-fi
+# Fetch latest remote state
+git fetch origin main
+
+# Always use origin/main as base reference
+base_ref="origin/main"
 
 git log $base_ref..HEAD --format='%H %s'
 
@@ -302,7 +303,7 @@ Status: Open
 | Context | Command |
 |---------|---------|
 | PR readiness | `gh pr view --json number,state 2>/dev/null` |
-| Commits | `git log main..HEAD --format='%s'` |
-| Issue refs | `git log main..HEAD --format='%B' \| grep -oE '#[0-9]+'` |
+| Commits | `git log origin/main..HEAD --format='%s'` |
+| Issue refs | `git log origin/main..HEAD --format='%B' \| grep -oE '#[0-9]+'` |
 | Create follow-up issue | `gh issue create --title "[Chore] ..." --body "Follow-up to PR #N..."` |
 | Create PR | `gh pr create --title "..." --body "..."` |

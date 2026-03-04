@@ -12,10 +12,21 @@ BASE_BRANCH="${1:-main}"
 
 echo "=== PR CONTEXT ==="
 
+# Fetch latest remote state to ensure accurate comparison
+# CRITICAL: Always compare against origin/<base> to avoid including
+# commits on local main that haven't been merged to the remote.
+echo "--- FETCHING REMOTE ---"
+git fetch origin "$BASE_BRANCH" 2>/dev/null && echo "FETCHED=origin/$BASE_BRANCH" || echo "FETCH_FAILED=true"
+echo ""
+
+# Use origin/<base> as the comparison ref
+BASE_REF="origin/$BASE_BRANCH"
+
 # Current branch
 current_branch=$(git branch --show-current 2>/dev/null || echo "DETACHED")
 echo "HEAD_BRANCH=$current_branch"
 echo "BASE_BRANCH=$BASE_BRANCH"
+echo "BASE_REF=$BASE_REF"
 
 if [ "$current_branch" = "$BASE_BRANCH" ]; then
   echo "WARNING: Currently on base branch ($BASE_BRANCH)"
@@ -37,30 +48,30 @@ else
 fi
 echo ""
 
-# Commits since base
-echo "--- COMMITS (since $BASE_BRANCH) ---"
-if git rev-parse --verify "$BASE_BRANCH" >/dev/null 2>&1; then
-  commit_count=$(git rev-list --count "$BASE_BRANCH..HEAD" 2>/dev/null || echo "0")
+# Commits since base (compared against origin, not local)
+echo "--- COMMITS (since $BASE_REF) ---"
+if git rev-parse --verify "$BASE_REF" >/dev/null 2>&1; then
+  commit_count=$(git rev-list --count "$BASE_REF..HEAD" 2>/dev/null || echo "0")
   echo "COUNT=$commit_count"
   echo "COMMITS:"
-  git log --oneline "$BASE_BRANCH..HEAD" 2>/dev/null | head -20 | sed 's/^/  /'
+  git log --oneline "$BASE_REF..HEAD" 2>/dev/null | head -20 | sed 's/^/  /'
 else
   echo "COUNT=unknown"
-  echo "HINT: Base branch '$BASE_BRANCH' not found locally. Try 'git fetch origin $BASE_BRANCH'"
+  echo "HINT: Remote ref '$BASE_REF' not found. Try 'git fetch origin $BASE_BRANCH'"
 fi
 echo ""
 
-# Diff stats against base
-echo "--- DIFF STATS (vs $BASE_BRANCH) ---"
-if git rev-parse --verify "$BASE_BRANCH" >/dev/null 2>&1; then
-  git diff --stat "$BASE_BRANCH...HEAD" 2>/dev/null | tail -15
+# Diff stats against base (compared against origin, not local)
+echo "--- DIFF STATS (vs $BASE_REF) ---"
+if git rev-parse --verify "$BASE_REF" >/dev/null 2>&1; then
+  git diff --stat "$BASE_REF...HEAD" 2>/dev/null | tail -15
 
   echo ""
   echo "FILES_CHANGED:"
-  git diff --name-only "$BASE_BRANCH...HEAD" 2>/dev/null | head -30 | sed 's/^/  /'
+  git diff --name-only "$BASE_REF...HEAD" 2>/dev/null | head -30 | sed 's/^/  /'
 
   # Insertions/deletions summary
-  diffstat=$(git diff --shortstat "$BASE_BRANCH...HEAD" 2>/dev/null)
+  diffstat=$(git diff --shortstat "$BASE_REF...HEAD" 2>/dev/null)
   echo ""
   echo "SHORTSTAT: $diffstat"
 fi
@@ -68,7 +79,7 @@ echo ""
 
 # Issue references in commits
 echo "--- ISSUE REFERENCES ---"
-refs=$(git log --oneline "$BASE_BRANCH..HEAD" 2>/dev/null | grep -oE "#[0-9]+" | sort -u)
+refs=$(git log --oneline "$BASE_REF..HEAD" 2>/dev/null | grep -oE "#[0-9]+" | sort -u)
 if [ -n "$refs" ]; then
   echo "REFERENCED_ISSUES:"
   echo "$refs" | sed 's/^/  /'
@@ -77,7 +88,7 @@ else
 fi
 
 # Closing keywords in commits
-closes=$(git log "$BASE_BRANCH..HEAD" --format="%B" 2>/dev/null | grep -iE "(close|fix|resolve)[sd]?\s+#[0-9]+" | head -5)
+closes=$(git log "$BASE_REF..HEAD" --format="%B" 2>/dev/null | grep -iE "(close|fix|resolve)[sd]?\s+#[0-9]+" | head -5)
 if [ -n "$closes" ]; then
   echo "CLOSING_KEYWORDS:"
   echo "$closes" | sed 's/^/  /'
@@ -86,8 +97,8 @@ echo ""
 
 # Conventional commit type summary
 echo "--- COMMIT TYPE BREAKDOWN ---"
-if git rev-parse --verify "$BASE_BRANCH" >/dev/null 2>&1; then
-  git log --oneline "$BASE_BRANCH..HEAD" 2>/dev/null | \
+if git rev-parse --verify "$BASE_REF" >/dev/null 2>&1; then
+  git log --oneline "$BASE_REF..HEAD" 2>/dev/null | \
     grep -oE "^[a-f0-9]+ (feat|fix|docs|style|refactor|test|chore|build|ci|perf|revert)" | \
     awk '{print $2}' | sort | uniq -c | sort -rn | sed 's/^/  /' || echo "  (non-conventional)"
 fi
@@ -100,7 +111,7 @@ if [ "${commit_count:-0}" -eq 1 ]; then
   echo "TITLE_SUGGESTION: $(git log --oneline -1 HEAD 2>/dev/null | sed 's/^[a-f0-9]* //')"
 elif [ "${commit_count:-0}" -gt 1 ]; then
   # Multiple commits: suggest based on dominant type
-  dominant_type=$(git log --oneline "$BASE_BRANCH..HEAD" 2>/dev/null | \
+  dominant_type=$(git log --oneline "$BASE_REF..HEAD" 2>/dev/null | \
     grep -oE "^[a-f0-9]+ (feat|fix|docs|refactor|chore)" | \
     awk '{print $2}' | sort | uniq -c | sort -rn | head -1 | awk '{print $2}')
   echo "DOMINANT_TYPE=${dominant_type:-mixed}"
