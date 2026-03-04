@@ -30,7 +30,7 @@ permissions:
 
 jobs:
   fix-conflicts:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     # Delay slightly so release-please has time to run first
     steps:
       - name: Wait for release-please to finish
