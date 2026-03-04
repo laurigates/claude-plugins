@@ -110,64 +110,57 @@ jobs:
 
       - name: Resolve conflicts with Claude
         if: steps.merge.outputs.has_conflicts == 'true'
-        uses: anthropics/claude-code-action@v1
-        with:
-          allowed_bots: "claude[bot],claude"
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          claude_args: "--model haiku --max-turns 20"
-          direct_prompt: |
-            You are resolving merge conflicts on PR #${{ matrix.pr_number }}: "${{ steps.pr.outputs.title }}"
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          GH_TOKEN: ${{ secrets.MY_RELEASE_PLEASE_TOKEN || github.token }}
+        run: |
+          PROMPT=$(cat <<'PROMPT_EOF'
+          You are resolving merge conflicts on PR #${{ matrix.pr_number }}: "${{ steps.pr.outputs.title }}"
 
-            Branch `${{ steps.pr.outputs.head_branch }}` has conflicts when merging `${{ steps.pr.outputs.base_branch }}`.
+          Branch `${{ steps.pr.outputs.head_branch }}` has conflicts when merging `${{ steps.pr.outputs.base_branch }}`.
 
-            A `git merge origin/${{ steps.pr.outputs.base_branch }}` has already been started and left in a conflicted state.
+          A `git merge origin/${{ steps.pr.outputs.base_branch }}` has already been started and left in a conflicted state.
 
-            ## Conflicted Files
+          ## Conflicted Files
 
-            ${{ steps.merge.outputs.conflicted_files }}
+          ${{ steps.merge.outputs.conflicted_files }}
 
-            ## Instructions
+          ## Instructions
 
-            For each conflicted file:
+          For each conflicted file:
 
-            1. Read the file to see the conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`)
-            2. Understand what BOTH sides intended:
-               - **HEAD (PR branch)**: The feature/fix changes from this PR
-               - **base branch**: Changes that landed on the base branch since this PR was created
-            3. Resolve by combining both intents:
-               - Keep ALL functional changes from both sides
-               - For config files (JSON, YAML), merge entries from both sides
-               - For code, integrate both changes preserving logic from each
-               - Remove ALL conflict markers
-            4. Stage the resolved file with `git add <file>`
+          1. Read the file to see the conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`)
+          2. Understand what BOTH sides intended:
+             - **HEAD (PR branch)**: The feature/fix changes from this PR
+             - **base branch**: Changes that landed on the base branch since this PR was created
+          3. Resolve by combining both intents:
+             - Keep ALL functional changes from both sides
+             - For config files (JSON, YAML), merge entries from both sides
+             - For code, integrate both changes preserving logic from each
+             - Remove ALL conflict markers
+          4. Stage the resolved file with `git add <file>`
 
-            After resolving ALL conflicts:
+          After resolving ALL conflicts:
 
-            1. Verify no conflict markers remain: search all conflicted files for `<<<<<<<`
-            2. Commit: `git commit --no-edit` (uses the auto-generated merge commit message)
-            3. Push: `git push origin ${{ steps.pr.outputs.head_branch }}`
-            4. Comment on PR: `gh pr comment ${{ matrix.pr_number }} --body "Merge conflicts with ${{ steps.pr.outputs.base_branch }} have been automatically resolved."`
+          1. Verify no conflict markers remain: search all conflicted files for `<<<<<<<`
+          2. Commit: `git commit --no-edit` (uses the auto-generated merge commit message)
+          3. Push: `git push origin ${{ steps.pr.outputs.head_branch }}`
+          4. Comment on PR: `gh pr comment ${{ matrix.pr_number }} --body "Merge conflicts with ${{ steps.pr.outputs.base_branch }} have been automatically resolved."`
 
-            ## Important Rules
+          ## Important Rules
 
-            - Preserve ALL changes from both sides when possible
-            - For JSON/YAML arrays or objects, include entries from both sides
-            - For version bumps, take the higher version
-            - For changelog files, include entries from both sides in chronological order
-            - If a conflict cannot be resolved without understanding business logic, abort with `git merge --abort` and comment on the PR explaining which files need manual resolution
-            - Run each git command as a separate Bash call (no `&&` chaining)
-          additional_permissions: |
-            Read
-            Edit
-            Grep
-            Glob
-            TodoWrite
-            Bash(git status *)
-            Bash(git diff *)
-            Bash(git log *)
-            Bash(git show *)
-            Bash(git add *)
-            Bash(git commit *)
-            Bash(git push *)
-            Bash(git merge *)
-            Bash(gh pr *)
+          - Preserve ALL changes from both sides when possible
+          - For JSON/YAML arrays or objects, include entries from both sides
+          - For version bumps, take the higher version
+          - For changelog files, include entries from both sides in chronological order
+          - If a conflict cannot be resolved without understanding business logic, abort with `git merge --abort` and comment on the PR explaining which files need manual resolution
+          - Run each git command as a separate Bash call (no `&&` chaining)
+          PROMPT_EOF
+          )
+
+          npx @anthropic-ai/claude-code --print \
+            --model haiku \
+            --max-turns 20 \
+            --allowedTools "Read,Edit,Grep,Glob,TodoWrite,Bash(git status *),Bash(git diff *),Bash(git log *),Bash(git show *),Bash(git add *),Bash(git commit *),Bash(git push *),Bash(git merge *),Bash(gh pr *)" \
+            "$PROMPT"

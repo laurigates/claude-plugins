@@ -80,7 +80,7 @@ jobs:
               const words = title.trim().split(/\s+/);
               if (words.length >= 2) {
                 const first = words[0].toLowerCase().replace(/:$/, '');
-                const resolved = TYPE_ALIASES[first];
+                const resolved = VALID_TYPES.includes(first) ? first : TYPE_ALIASES[first];
                 if (resolved) {
                   const rest = words.slice(1).join(' ');
                   const subject = rest.charAt(0).toLowerCase() + rest.slice(1);
