@@ -14,10 +14,10 @@
   "container-plugin": "2.6.0",
   "css-plugin": "1.2.0",
   "documentation-plugin": "1.6.1",
-  "evaluate-plugin": "1.1.0",
+  "evaluate-plugin": "1.2.0",
   "feedback-plugin": "1.2.0",
   "finops-plugin": "1.2.0",
-  "git-plugin": "2.24.0",
+  "git-plugin": "2.25.0",
   "github-actions-plugin": "1.5.0",
   "health-plugin": "1.4.0",
   "home-assistant-plugin": "1.2.0",
@@ -35,5 +35,5 @@
   "tools-plugin": "2.5.0",
   "typescript-plugin": "1.6.0",
   "workflow-orchestration-plugin": "1.4.0",
-  "obsidian-plugin": "1.0.0"
+  "obsidian-plugin": "1.1.0"
 }
