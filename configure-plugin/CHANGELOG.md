@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.14.0...configure-plugin-v1.14.1) (2026-03-04)
+
+
+### Bug Fixes
+
+* haiku model incompatibility with AskUserQuestion tool ([#881](https://github.com/laurigates/claude-plugins/issues/881)) ([c09e400](https://github.com/laurigates/claude-plugins/commit/c09e40031e2eef7fa78640ee1d8327a0f18bbe64))
+
 ## [1.14.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.13.0...configure-plugin-v1.14.0) (2026-03-04)
 
 

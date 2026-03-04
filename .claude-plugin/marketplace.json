@@ -81,7 +81,7 @@
       "name": "blog-plugin",
       "source": "./blog-plugin",
       "description": "Blog post creation - project logs, technical write-ups, personal documentation",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "keywords": [
         "blog",
         "writing",
@@ -96,7 +96,7 @@
       "name": "blueprint-plugin",
       "source": "./blueprint-plugin",
       "description": "Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, and CLAUDE.md management",
-      "version": "3.22.1",
+      "version": "3.22.2",
       "keywords": [
         "blueprint",
         "prd",
@@ -168,7 +168,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.14.0",
+      "version": "1.14.1",
       "keywords": [
         "infrastructure",
         "standards",
@@ -265,7 +265,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.25.1",
+      "version": "2.25.2",
       "keywords": [
         "git",
         "github",

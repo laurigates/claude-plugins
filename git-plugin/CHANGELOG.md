@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.25.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.25.1...git-plugin-v2.25.2) (2026-03-04)
+
+
+### Bug Fixes
+
+* haiku model incompatibility with AskUserQuestion tool ([#881](https://github.com/laurigates/claude-plugins/issues/881)) ([c09e400](https://github.com/laurigates/claude-plugins/commit/c09e40031e2eef7fa78640ee1d8327a0f18bbe64))
+
 ## [2.25.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.25.0...git-plugin-v2.25.1) (2026-03-04)
 
 

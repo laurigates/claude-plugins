@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/laurigates/claude-plugins/compare/blog-plugin-v1.2.0...blog-plugin-v1.2.1) (2026-03-04)
+
+
+### Bug Fixes
+
+* haiku model incompatibility with AskUserQuestion tool ([#881](https://github.com/laurigates/claude-plugins/issues/881)) ([c09e400](https://github.com/laurigates/claude-plugins/commit/c09e40031e2eef7fa78640ee1d8327a0f18bbe64))
+
 ## [1.2.0](https://github.com/laurigates/claude-plugins/compare/blog-plugin-v1.1.9...blog-plugin-v1.2.0) (2026-02-27)
 
 
