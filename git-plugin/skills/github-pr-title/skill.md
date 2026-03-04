@@ -1,8 +1,8 @@
 ---
 model: haiku
 created: 2026-01-30
-modified: 2026-02-14
-reviewed: 2026-02-14
+modified: 2026-03-04
+reviewed: 2026-03-04
 name: github-pr-title
 description: |
   Craft PR titles using conventional commits format. Use when creating PRs or
@@ -130,8 +130,8 @@ revert: feat(auth): add OAuth support
 
 | Context | Command |
 |---------|---------|
-| Get commits | `git log main..HEAD --format='%s' -n 10` |
-| Changed dirs | `git diff main..HEAD --name-only \| xargs dirname \| sort -u` |
+| Get commits | `git log origin/main..HEAD --format='%s' -n 10` |
+| Changed dirs | `git diff origin/main..HEAD --name-only \| xargs dirname \| sort -u` |
 | Update title | `gh pr edit N --title "new title"` |
 | Discover scopes | `gh pr list --state merged -L 30 --json title \| jq -r '.[].title' \| grep -oE '\([^)]+\)' \| sort \| uniq` |
 
