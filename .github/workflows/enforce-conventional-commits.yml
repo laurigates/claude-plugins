@@ -13,7 +13,7 @@ permissions:
 jobs:
   fix-pr-title:
     name: Fix PR title
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: Auto-fix PR title to conventional commits format
         uses: actions/github-script@v7
