@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.12.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.12.1...hooks-plugin-v1.12.2) (2026-03-03)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** fix UserPromptSubmit hook false-positives and user-facing message ([b8316cf](https://github.com/laurigates/claude-plugins/commit/b8316cff8a0773553e258563dd10117d34feb617))
+* **hooks-plugin:** prevent echo false positive when followed by unrelated 2&gt;/dev/null ([e6ca8ab](https://github.com/laurigates/claude-plugins/commit/e6ca8ab305d37cf4551081d617e0821c0dbfe6a8))
+* refine safety prompt classification with stricter criteria ([#863](https://github.com/laurigates/claude-plugins/issues/863)) ([b8316cf](https://github.com/laurigates/claude-plugins/commit/b8316cff8a0773553e258563dd10117d34feb617))
+* regex false positives in echo/printf file-write detection ([#864](https://github.com/laurigates/claude-plugins/issues/864)) ([e6ca8ab](https://github.com/laurigates/claude-plugins/commit/e6ca8ab305d37cf4551081d617e0821c0dbfe6a8))
+
 ## [1.12.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.12.0...hooks-plugin-v1.12.1) (2026-03-02)
 
 

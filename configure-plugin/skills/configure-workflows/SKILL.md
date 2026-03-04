@@ -1,7 +1,7 @@
 ---
 model: sonnet
 created: 2025-12-16
-modified: 2026-02-13
+modified: 2026-03-04
 reviewed: 2025-12-16
 description: Check and configure GitHub Actions CI/CD workflows (container builds, tests, releases)
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -71,9 +71,9 @@ Determine required workflows based on project type:
 
 | Project Type | Required Workflows |
 |--------------|-------------------|
-| Frontend | container-build, release-please, renovate |
-| Python | container-build, release-please, test, renovate |
-| Infrastructure | release-please, renovate (optional: docs) |
+| Frontend | container-build, release-please, renovate (optional: claude-auto-fix) |
+| Python | container-build, release-please, test, renovate (optional: claude-auto-fix) |
+| Infrastructure | release-please, renovate (optional: docs, claude-auto-fix) |
 
 ### Step 3: Analyze workflow compliance
 
@@ -121,6 +121,17 @@ Determine required workflows based on project type:
 | checkout action | v6 | WARN if older |
 | renovatebot/github-action | Minor-pinned (e.g., v46.1.0), not major tag | WARN if major-only |
 | Uses reusable workflow | Preferred (except infrastructure) | INFO if standalone |
+
+**Claude Auto-Fix Workflow Checks (if present):**
+
+| Check | Standard | Severity |
+|-------|----------|----------|
+| workflow_run trigger | Monitors at least one workflow | WARN if misconfigured |
+| Loop prevention | Skips fix(auto): commits | FAIL if missing |
+| Deduplication | Caps open auto-fix PRs | WARN if missing |
+| Claude Code Action | anthropics/claude-code-action@v1 | WARN if older |
+| OAuth token | CLAUDE_CODE_OAUTH_TOKEN secret | FAIL if missing |
+| Permissions | Minimal required set | WARN if excessive |
 
 ### Step 4: Generate compliance report
 

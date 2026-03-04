@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-02-10
+modified: 2026-03-04
 reviewed: 2025-12-16
 name: ci-workflows
 description: |
@@ -209,6 +209,46 @@ jobs:
           files: ./coverage/lcov.info
 ```
 
+### 5. Claude Auto-Fix Workflow (Optional)
+
+**File**: `.github/workflows/claude-auto-fix.yml`
+
+Automated CI failure analysis and remediation using Claude Code Action:
+
+```yaml
+name: Claude Auto-fix CI Failures
+
+on:
+  workflow_run:
+    # Customize: list the CI workflow names to monitor
+    workflows: ["CI"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Failed workflow run ID to analyze"
+        required: true
+        type: string
+
+concurrency:
+  group: auto-fix-${{ github.event.workflow_run.head_branch || github.ref_name }}
+  cancel-in-progress: false
+```
+
+**Key features:**
+- Triggers on `workflow_run` completion for monitored workflows
+- Gathers failure logs and context automatically
+- Deduplication: caps open auto-fix PRs at 3
+- Loop prevention: skips commits starting with `fix(auto):`
+- Auto-fixable failures get a fix PR; complex failures get a GitHub issue
+- Uses `anthropics/claude-code-action@v1` with scoped tool permissions
+
+**Prerequisites:**
+- `CLAUDE_CODE_OAUTH_TOKEN` secret configured in repository settings
+- At least one CI workflow to monitor (customize `workflows:` list)
+
+For the full template, see the [Claude Auto-Fix Workflow Template](../configure-workflows/REFERENCE.md#claude-auto-fix-workflow-template) in configure-workflows.
+
 ## Workflow Standards
 
 ### Action Versions
@@ -279,6 +319,7 @@ platforms: linux/amd64,linux/arm64
 | release-please | Automated releases | Yes |
 | test | Testing and linting | Recommended |
 | argocd-automerge | Auto-merge image updates | Optional (if using ArgoCD Image Updater) |
+| claude-auto-fix | Automated CI failure remediation | Optional |
 
 ### Required Elements
 
@@ -306,6 +347,7 @@ platforms: linux/amd64,linux/arm64
 | GITHUB_TOKEN | Container registry auth | Auto-provided |
 | SENTRY_AUTH_TOKEN | Source map upload | If using Sentry |
 | MY_RELEASE_PLEASE_TOKEN | Release PR creation | For release-please |
+| CLAUDE_CODE_OAUTH_TOKEN | Claude Code Action auth | For claude-auto-fix |
 
 ## Troubleshooting
 

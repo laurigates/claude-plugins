@@ -8,3 +8,6 @@ __pycache__/
 
 # git-repo-agent
 git-repo-agent/uv.lock
+
+# Eval results (transient run data)
+**/eval-results/

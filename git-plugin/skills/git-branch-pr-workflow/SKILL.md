@@ -1,8 +1,8 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-01-30
-reviewed: 2025-12-16
+modified: 2026-03-04
+reviewed: 2026-03-04
 name: git-branch-pr-workflow
 description: |
   Branch management, pull request workflows, and GitHub integration. Main-branch
@@ -297,19 +297,45 @@ Configure branch rules for linear history via GitHub MCP:
 # - Enforce linear history (squash merge only)
 ```
 
+## Branch Comparison: Always Use origin/main
+
+**CRITICAL:** When comparing branches for PR creation, always compare against `origin/main` (or `origin/<base-branch>`), **never** local `main`. Local `main` may contain commits that haven't been merged to the remote, causing PRs to include unrelated changes.
+
+### Why This Matters
+
+```bash
+# WRONG: compares against local main (may include unpushed commits)
+git log main..HEAD --format='%s'
+git diff main...HEAD --stat
+
+# CORRECT: compares against remote main (matches what GitHub will show)
+git fetch origin main
+git log origin/main..HEAD --format='%s'
+git diff origin/main...HEAD --stat
+```
+
+**Common scenario:** You commit changes on local `main` for one PR, push to a feature branch, then start working on a second PR. If you compare against local `main`, the second PR's diff looks correct. But if the first PR hasn't merged yet, `origin/main` is behind — and comparing against it reveals that both PRs' changes would be included.
+
+### Rules
+
+1. **Always fetch before comparing:** `git fetch origin main`
+2. **Use `origin/main` in all diff/log commands** for PR context
+3. **Base PRs on `origin/main`** when creating branches: `git switch -c feat/foo origin/main`
+4. The `pr-context.sh` script handles this automatically
+
 ## PR Context Gathering (Recommended)
 
 Before creating a PR, gather all context in one command:
 
 ```bash
-# Gather PR context (defaults to main as base)
+# Gather PR context (defaults to main as base, compares against origin/main)
 bash "${CLAUDE_PLUGIN_ROOT}/skills/git-branch-pr-workflow/scripts/pr-context.sh"
 
-# Specify different base branch
+# Specify different base branch (compares against origin/develop)
 bash "${CLAUDE_PLUGIN_ROOT}/skills/git-branch-pr-workflow/scripts/pr-context.sh" develop
 ```
 
-The script outputs: branch info, remote status, commit range and types, diff stats, issue references found in commits, existing PR detection, and CI check results. Use this output to compose the PR title and body. See [scripts/pr-context.sh](scripts/pr-context.sh) for details.
+The script fetches the latest remote state and compares against `origin/<base>` to ensure accurate PR context. Outputs: branch info, remote status, commit range and types, diff stats, issue references found in commits, existing PR detection, and CI check results. Use this output to compose the PR title and body. See [scripts/pr-context.sh](scripts/pr-context.sh) for details.
 
 ## Pull Request Workflow
 

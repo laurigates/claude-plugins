@@ -22,7 +22,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.8.1",
+      "version": "2.9.0",
       "keywords": [
         "agents",
         "configuration",
@@ -168,7 +168,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.12.2",
+      "version": "1.13.0",
       "keywords": [
         "infrastructure",
         "standards",
@@ -219,6 +219,20 @@
       "category": "documentation"
     },
     {
+      "name": "evaluate-plugin",
+      "source": "./evaluate-plugin",
+      "description": "Skill evaluation and benchmarking - test skill effectiveness with behavioral eval cases, grade results, and track quality improvements",
+      "version": "1.2.0",
+      "keywords": [
+        "evaluation",
+        "benchmarking",
+        "skill-quality",
+        "testing",
+        "grading"
+      ],
+      "category": "quality"
+    },
+    {
       "name": "feedback-plugin",
       "source": "./feedback-plugin",
       "description": "Session feedback analysis - capture skill bugs, enhancements, and positive patterns as GitHub issues",
@@ -251,7 +265,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.23.1",
+      "version": "2.25.1",
       "keywords": [
         "git",
         "github",
@@ -322,7 +336,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "1.12.1",
+      "version": "1.12.2",
       "keywords": [
         "hooks",
         "automation",
@@ -395,6 +409,24 @@
         "load-testing"
       ],
       "category": "infrastructure"
+    },
+    {
+      "name": "obsidian-plugin",
+      "source": "./obsidian-plugin",
+      "description": "Obsidian CLI operations - vault management, search, properties, tasks, plugins, publish, and sync",
+      "version": "1.1.0",
+      "keywords": [
+        "obsidian",
+        "vault",
+        "notes",
+        "markdown",
+        "knowledge-base",
+        "daily-notes",
+        "properties",
+        "publish",
+        "sync"
+      ],
+      "category": "development"
     },
     {
       "name": "project-plugin",
