@@ -30,6 +30,9 @@
       "WebFetch(domain:agentic-patterns.com)",
       "mcp__chrome-devtools",
       "mcp__context7",
+      "mcp__github__issue_read",
+      "mcp__github__issue_write",
+      "mcp__github__search_issues",
       "mcp__playwright",
       "mcp__sequential-thinking"
     ]
