@@ -219,6 +219,20 @@
       "category": "documentation"
     },
     {
+      "name": "evaluate-plugin",
+      "source": "./evaluate-plugin",
+      "description": "Skill evaluation and benchmarking - test skill effectiveness with behavioral eval cases, grade results, and track quality improvements",
+      "version": "1.0.0",
+      "keywords": [
+        "evaluation",
+        "benchmarking",
+        "skill-quality",
+        "testing",
+        "grading"
+      ],
+      "category": "quality"
+    },
+    {
       "name": "feedback-plugin",
       "source": "./feedback-plugin",
       "description": "Session feedback analysis - capture skill bugs, enhancements, and positive patterns as GitHub issues",

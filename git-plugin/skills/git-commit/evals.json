@@ -1,0 +1,65 @@
+{
+  "skill_name": "git-commit",
+  "skill_path": "git-plugin/skills/git-commit/SKILL.md",
+  "evals": [
+    {
+      "id": "gc-001",
+      "description": "Basic conventional commit with scope for a new feature",
+      "prompt": "I just added a new OAuth login feature to the auth module. Please commit my staged changes.",
+      "expectations": [
+        "Commit message starts with feat(",
+        "Commit message includes a scope related to auth or oauth",
+        "Subject line uses imperative mood",
+        "Subject line does not end with a period",
+        "Subject begins with lowercase after the colon"
+      ],
+      "tags": ["conventional-commits", "feat", "basic"]
+    },
+    {
+      "id": "gc-002",
+      "description": "Bug fix commit with issue reference",
+      "prompt": "I fixed the null pointer crash in the API serializer. This fixes issue #42. Please commit.",
+      "expectations": [
+        "Commit message starts with fix(",
+        "Commit message references #42 in the body or footer",
+        "Uses Fixes or Closes keyword for the issue reference",
+        "Subject describes the fix, not just 'fix bug'"
+      ],
+      "tags": ["conventional-commits", "fix", "issue-ref"]
+    },
+    {
+      "id": "gc-003",
+      "description": "Breaking change commit",
+      "prompt": "I removed the deprecated /v1/users endpoint. This is a breaking change. Please commit.",
+      "expectations": [
+        "Commit message includes ! before the colon OR includes BREAKING CHANGE in footer",
+        "Commit message explains what was removed",
+        "Commit type is feat or fix or refactor"
+      ],
+      "tags": ["conventional-commits", "breaking-change"]
+    },
+    {
+      "id": "gc-004",
+      "description": "Documentation-only change",
+      "prompt": "I updated the README with new installation instructions. Please commit.",
+      "expectations": [
+        "Commit message starts with docs(",
+        "Subject mentions README or documentation or installation",
+        "Does not use feat or fix type"
+      ],
+      "tags": ["conventional-commits", "docs"]
+    },
+    {
+      "id": "gc-005",
+      "description": "Multi-issue commit with body",
+      "prompt": "I refactored the database connection pooling to use async/await. This closes #100 and is related to #101. Please commit with a detailed message.",
+      "expectations": [
+        "Commit message starts with refactor(",
+        "Commit message references both #100 and #101",
+        "Commit has a body (not just a subject line)",
+        "Body provides context about what changed"
+      ],
+      "tags": ["conventional-commits", "refactor", "multi-issue", "body"]
+    }
+  ]
+}
