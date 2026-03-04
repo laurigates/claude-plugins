@@ -546,6 +546,24 @@
         "worktree"
       ],
       "category": "automation"
+    },
+    {
+      "name": "obsidian-plugin",
+      "source": "./obsidian-plugin",
+      "description": "Obsidian CLI operations - vault management, search, properties, tasks, plugins, publish, and sync",
+      "version": "1.0.0",
+      "keywords": [
+        "obsidian",
+        "vault",
+        "notes",
+        "markdown",
+        "knowledge-base",
+        "daily-notes",
+        "properties",
+        "publish",
+        "sync"
+      ],
+      "category": "development"
     }
   ]
 }

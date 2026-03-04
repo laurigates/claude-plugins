@@ -1,0 +1,17 @@
+{
+  "name": "obsidian-plugin",
+  "version": "1.0.0",
+  "description": "Obsidian CLI operations - vault management, search, properties, tasks, plugins, publish, and sync",
+  "keywords": [
+    "obsidian",
+    "vault",
+    "notes",
+    "markdown",
+    "knowledge-base",
+    "daily-notes",
+    "properties",
+    "frontmatter",
+    "publish",
+    "sync"
+  ]
+}

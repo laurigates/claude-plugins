@@ -34,5 +34,6 @@
   "testing-plugin": "3.10.1",
   "tools-plugin": "2.5.0",
   "typescript-plugin": "1.6.0",
-  "workflow-orchestration-plugin": "1.4.0"
+  "workflow-orchestration-plugin": "1.4.0",
+  "obsidian-plugin": "1.0.0"
 }
