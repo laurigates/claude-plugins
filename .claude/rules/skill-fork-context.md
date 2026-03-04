@@ -33,6 +33,10 @@ A skill benefits from forked context when **all three** of the following are tru
 | User needs to review intermediate steps | Fork hides the working — use main context instead |
 | Skill is already invoked inside a Task | Already isolated; double-forking adds no value |
 
+## Model Constraint for Interactive Skills
+
+Skills that use `AskUserQuestion` **must not** set `model: haiku`. The haiku model does not reliably format `AskUserQuestion` tool calls, causing prompts to return empty responses without displaying to the user. Omit the `model` field entirely (inherits the parent session model) or use `model: sonnet` / `model: opus`.
+
 ## Decision Table
 
 ```
@@ -103,7 +107,7 @@ allowed-tools: Bash(bun test *), TodoWrite
 
 ## Checklist for New Skills
 
-- [ ] Does the skill use `AskUserQuestion`? If yes, **omit** `context: fork`.
+- [ ] Does the skill use `AskUserQuestion`? If yes, **omit** `context: fork` and **do not** set `model: haiku`.
 - [ ] Does the skill use `Task`, multi-file reads, or web research? If yes, **add** `context: fork`.
 - [ ] Is the output a self-contained artifact? If yes, confirm `context: fork` is appropriate.
 - [ ] Set `agent: general-purpose` whenever `context: fork` is set (unless a specialised agent exists).

@@ -29,6 +29,7 @@ This ensures the CI catches the same class of problem in any future skill, not j
 |-------|-----------|-------------|----------|
 | `gh repo view` in context command fails with TLS/x509 error | Uses GitHub GraphQL API; fails in proxy/offline/cert-error environments | `lint-context-commands.sh` rule `gh-api-in-context` | PR #799 |
 | `name: fieldname` + `---` in skill body renders as accidental H2 heading | YAML frontmatter key leaked into markdown body; `key\n---` is a setext heading | `plugin-compliance-check.sh` `check_skill_body()` | PR #799 |
+| `model: haiku` with `AskUserQuestion` causes empty silent prompts | Haiku model doesn't reliably format AskUserQuestion tool calls; prompts return empty | `plugin-compliance-check.sh` `check_skill_frontmatter()` | PR #879 |
 
 ## How to Add a Regression Check
 

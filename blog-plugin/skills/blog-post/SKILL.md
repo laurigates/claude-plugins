@@ -1,5 +1,4 @@
 ---
-model: haiku
 name: blog-post
 description: Create a blog post about your work with guided prompts and templates
 description: Create a blog post about your work with guided prompts and templates
