@@ -168,7 +168,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.12.2",
+      "version": "1.13.0",
       "keywords": [
         "infrastructure",
         "standards",
@@ -222,7 +222,7 @@
       "name": "evaluate-plugin",
       "source": "./evaluate-plugin",
       "description": "Skill evaluation and benchmarking - test skill effectiveness with behavioral eval cases, grade results, and track quality improvements",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "keywords": [
         "evaluation",
         "benchmarking",
@@ -265,7 +265,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.23.1",
+      "version": "2.24.0",
       "keywords": [
         "git",
         "github",
