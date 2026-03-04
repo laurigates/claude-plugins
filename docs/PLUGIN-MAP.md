@@ -1,6 +1,6 @@
 # Plugin Navigation Map
 
-Navigation guide for 32 plugins and 290+ skills. Start here.
+Navigation guide for 33 plugins and 290+ skills. Start here.
 
 ## Quick Start
 
@@ -47,6 +47,7 @@ Automated quality enforcement.
 | testing-plugin | 15 | Test execution, TDD, Vitest, Playwright, mutation testing |
 | code-quality-plugin | 14 | Review, refactoring, linting, ast-grep, debugging, silent degradation |
 | documentation-plugin | 5 | API docs, README generation, knowledge graphs |
+| evaluate-plugin | 4 + 3 agents | Skill evaluation, benchmarking, quality improvement |
 
 ### Tier 3+ - Pick What Applies
 
@@ -187,6 +188,7 @@ Install based on your project's tech stack and domain.
 | accessibility-plugin | WCAG compliance and ARIA patterns |
 | component-patterns-plugin | Reusable UI component patterns |
 | command-analytics-plugin | Tracking skill/command usage metrics |
+| evaluate-plugin | Behavioral skill evaluation, benchmarking, and quality improvement |
 | feedback-plugin | Capturing session skill feedback as GitHub issues |
 | tools-plugin | fd, rg, jq, shell, ImageMagick, d2 utilities |
 | workflow-orchestration-plugin | Parallel agent orchestration, CI pipelines, preflight checks, checkpoint refactoring |
@@ -217,6 +219,8 @@ Commands organized by workflow phase.
 | **Orchestrate** | `/workflow:parallel-issues` | Process issues in parallel with worktrees |
 | **Orchestrate** | `/workflow:ci-fix` | Fix failing CI across PRs |
 | **Orchestrate** | `/workflow:checkpoint-refactor` | Multi-phase refactoring with checkpoints |
+| **Evaluate** | `/evaluate:skill` | Evaluate skill effectiveness with test cases |
+| **Evaluate** | `/evaluate:improve` | Suggest improvements based on eval results |
 | **Monitor** | `/analytics-report` | View skill usage analytics |
 
 ## End-to-End Workflow

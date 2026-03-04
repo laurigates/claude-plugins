@@ -14,6 +14,7 @@
   "container-plugin": "2.6.0",
   "css-plugin": "1.2.0",
   "documentation-plugin": "1.6.1",
+  "evaluate-plugin": "1.0.0",
   "feedback-plugin": "1.2.0",
   "finops-plugin": "1.2.0",
   "git-plugin": "2.23.1",
