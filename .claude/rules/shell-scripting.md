@@ -101,6 +101,37 @@ get_array_field() {
 related_items=$(get_array_field "$file" "related")
 ```
 
+## Hook Script Conventions
+
+### Error Handling Flags
+
+All hook scripts must include `set -euo pipefail` after the shebang and comment block. Exception: logging/observability hooks may use `set -uo pipefail` (omit `-e`) with a comment explaining why.
+
+### Block Function
+
+Hook scripts that block tool use (exit code 2) must use a standard `block()` function:
+
+```bash
+block() {
+    echo "$1" >&2
+    exit 2
+}
+```
+
+Do not use variants like `block_error()`, `block_with_reminder()`, or inline `echo >&2; exit 2`.
+
+### Variable Naming
+
+Use `TOOL_NAME` (not `TOOL`) when extracting the tool name from hook input:
+
+```bash
+TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty')
+```
+
+### Lint Script
+
+Run `bash scripts/lint-shell-scripts.sh` to validate all scripts comply with these conventions. Use `--fix` to auto-fix shebang issues.
+
 ## Error Handling
 
 ### Standard Fallback Pattern
