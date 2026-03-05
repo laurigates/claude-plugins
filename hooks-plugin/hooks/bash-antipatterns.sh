@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # PreToolUse hook for Bash tool - detects anti-patterns and reminds Claude
 # to use built-in tools instead of shell commands
 

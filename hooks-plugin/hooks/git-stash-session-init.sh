@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # SessionStart hook - records current git stash hashes as a session baseline
 # Used by git-stash-reminder.sh to only flag stashes created during this session
 set -euo pipefail

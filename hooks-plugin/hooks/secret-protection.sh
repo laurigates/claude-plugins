@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # PreToolUse hook — blocks access to sensitive files and credential exposure
 #
 # Toggle: set CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION=1 to skip this hook

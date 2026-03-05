@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # PreToolUse hook for Bash tool - validates kubectl/helm commands include --context
 #
 # This hook enforces explicit Kubernetes context selection to prevent accidental

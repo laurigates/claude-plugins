@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Development hook — logs all hook events to a file for debugging
 #
 # Toggle: set CLAUDE_HOOKS_ENABLE_EVENT_LOGGER=1 to enable (disabled by default)

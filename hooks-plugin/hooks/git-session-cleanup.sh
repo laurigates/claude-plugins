@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # SessionEnd hook - commits staged changes, switches to main/master, and pulls
 # Runs when a Claude Code session ends in a git repository
 #

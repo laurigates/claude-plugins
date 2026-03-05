@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ShellSpec tests for validate-prp-frontmatter.sh
 
 Describe "validate-prp-frontmatter.sh"

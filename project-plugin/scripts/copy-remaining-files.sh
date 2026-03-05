@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Copy remaining command files
 cp /Users/lgates/.local/share/chezmoi/exact_dot_claude/commands/project/new.md commands/project/

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # PermissionRequest hook — auto-approve safe operations, auto-deny dangerous ones
 #
 # Toggle: set CLAUDE_HOOKS_DISABLE_PERMISSION_AUTO=1 to skip this hook

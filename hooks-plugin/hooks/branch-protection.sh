@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # PreToolUse hook — blocks write operations on protected branches (main, master)
 #
 # Toggle: set CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1 to skip this hook

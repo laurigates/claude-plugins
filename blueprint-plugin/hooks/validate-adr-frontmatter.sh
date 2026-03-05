@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # PreToolUse hook - validates ADR frontmatter before Write/Edit
 # Blocks on missing required fields or sections
 # See docs/hook-design-decisions.md for rationale

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # PreToolUse hook - checks PRP readiness before execution
 # Blocks if confidence < 7, required sections missing, or broken references
 # See docs/hook-design-decisions.md for rationale
