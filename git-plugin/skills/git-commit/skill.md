@@ -101,6 +101,8 @@ EOF
 )"
 ```
 
+For trailer conventions (Co-authored-by, Signed-off-by, BREAKING CHANGE, Release-As), see **git-commit-trailers** skill.
+
 ### Conventional Commit Types
 
 | Type | Use Case | Version Bump |
@@ -176,3 +178,4 @@ Cannot commit: unresolved merge conflicts in <file>
 3. **Run pre-commit before staging** - Avoids re-staging formatter changes
 4. **Keep subject under 72 chars** - Better display in git log
 5. **Use imperative mood** - "Add feature" not "Added feature"
+6. **Add appropriate trailers** - Co-authored-by for pair/AI work, Signed-off-by for DCO projects, BREAKING CHANGE for major versions (see git-commit-trailers)

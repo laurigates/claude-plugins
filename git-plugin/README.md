@@ -49,6 +49,7 @@ Three composable skills that can be invoked individually or combined based on us
 | `gh-cli-agentic` | GitHub CLI commands optimized for AI agents with JSON output |
 | `gh-workflow-monitoring` | Watch GitHub Actions runs with blocking commands (no polling/timeouts) |
 | `git-commit-workflow` | Conventional commit patterns and best practices |
+| `git-commit-trailers` | Commit trailer conventions — release-please trailers (BREAKING CHANGE, Release-As), attribution (Co-authored-by, Signed-off-by), git interpret-trailers |
 | `git-branch-pr-workflow` | Git branching and PR workflow patterns |
 | `git-rebase-patterns` | Advanced rebase techniques (--reapply-cherry-picks, --update-refs, --onto, stacked PRs) |
 | `git-repo-detection` | Detect GitHub repository name and owner from git remotes |

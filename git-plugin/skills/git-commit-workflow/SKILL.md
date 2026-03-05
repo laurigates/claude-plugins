@@ -42,6 +42,8 @@ type(scope): description
 [optional footer(s)]
 ```
 
+For footer/trailer patterns (Co-authored-by, BREAKING CHANGE, Release-As), see **git-commit-trailers** skill.
+
 ### Commit Types
 
 - **feat**: New feature for the user
