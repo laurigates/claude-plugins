@@ -41,7 +41,8 @@ permissions:
 
 jobs:
   analyze:
-    runs-on: ubuntu-latest
+    # ubuntu-slim: 15-min max. Callers must keep max-turns <= 8.
+    runs-on: ubuntu-slim
     outputs:
       any: ${{ steps.scan.outputs.any-count }}
       total: ${{ steps.scan.outputs.total }}
