@@ -121,9 +121,9 @@ git-repo-agent/
 │       ├── quality.md         # Quality subagent prompt
 │       ├── security.md        # Security subagent prompt
 │       ├── test_runner.md     # Test runner subagent prompt
-│       └── generated/         # Compiled skill prompts
+│       └── compiler.py        # Runtime skill compilation
 ├── scripts/
-│   └── compile_prompts.py     # Skill compilation pipeline
+│   └── compile_prompts.py     # Debug/inspection CLI for compiled prompts
 └── pyproject.toml
 ```
 
