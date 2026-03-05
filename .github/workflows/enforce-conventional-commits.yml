@@ -27,26 +27,62 @@ jobs:
 
             // Map common words/aliases to canonical types
             const TYPE_ALIASES = {
+              // feat
               feature: 'feat', features: 'feat', new: 'feat',
               add: 'feat', adds: 'feat', added: 'feat',
-              enhancement: 'feat', enhance: 'feat', enhance: 'feat',
+              enhancement: 'feat', enhance: 'feat',
               implement: 'feat', implements: 'feat', implemented: 'feat',
-              introduce: 'feat', introduces: 'feat',
+              introduce: 'feat', introduces: 'feat', introduced: 'feat',
+              create: 'feat', creates: 'feat', created: 'feat',
+              enable: 'feat', enables: 'feat', enabled: 'feat',
+              support: 'feat', supports: 'feat',
+              // fix
               bugfix: 'fix', bug: 'fix', hotfix: 'fix', patch: 'fix',
-              fixes: 'fix', fixed: 'fix',
-              improvement: 'perf', improve: 'perf', improves: 'perf',
+              fixes: 'fix', fixed: 'fix', resolve: 'fix', resolves: 'fix', resolved: 'fix',
+              correct: 'fix', corrects: 'fix', corrected: 'fix',
+              repair: 'fix', repairs: 'fix', repaired: 'fix',
+              // perf
+              improvement: 'perf', improve: 'perf', improves: 'perf', improved: 'perf',
               optimize: 'perf', optimizes: 'perf', optimized: 'perf',
-              performance: 'perf',
-              refactoring: 'refactor', cleanup: 'refactor',
-              clean: 'refactor', remove: 'refactor', removed: 'refactor',
-              delete: 'refactor', deleted: 'refactor',
+              performance: 'perf', speed: 'perf', faster: 'perf',
+              // refactor
+              refactoring: 'refactor',
+              cleanup: 'refactor', clean: 'refactor',
+              remove: 'refactor', removed: 'refactor', removes: 'refactor',
+              delete: 'refactor', deleted: 'refactor', deletes: 'refactor',
+              migrate: 'refactor', migrates: 'refactor', migrated: 'refactor',
+              rename: 'refactor', renames: 'refactor', renamed: 'refactor',
+              move: 'refactor', moves: 'refactor', moved: 'refactor',
+              extract: 'refactor', extracts: 'refactor', extracted: 'refactor',
+              split: 'refactor', splits: 'refactor',
+              consolidate: 'refactor', consolidates: 'refactor', consolidated: 'refactor',
+              reorganize: 'refactor', reorganizes: 'refactor', reorganized: 'refactor',
+              restructure: 'refactor', restructures: 'refactor', restructured: 'refactor',
+              simplify: 'refactor', simplifies: 'refactor', simplified: 'refactor',
+              rewrite: 'refactor', rewrites: 'refactor', rewrote: 'refactor',
+              convert: 'refactor', converts: 'refactor', converted: 'refactor',
+              replace: 'refactor', replaces: 'refactor', replaced: 'refactor',
+              // style
+              standardize: 'style', standardizes: 'style', standardized: 'style',
+              normalize: 'style', normalizes: 'style', normalized: 'style',
+              format: 'style', formatting: 'style', formats: 'style', formatted: 'style',
+              lint: 'style', linting: 'style',
+              // docs
               documentation: 'docs', doc: 'docs', readme: 'docs',
+              document: 'docs', documents: 'docs', documented: 'docs',
+              // chore
               update: 'chore', updates: 'chore', updated: 'chore',
+              configure: 'chore', configures: 'chore', configured: 'chore',
+              setup: 'chore', disable: 'chore', switch: 'chore',
+              // build
               upgrade: 'build', upgrades: 'build', upgraded: 'build',
               dependency: 'build', dependencies: 'build', deps: 'build',
+              bump: 'build', pin: 'build', pins: 'build', pinned: 'build',
+              // test
               testing: 'test', tests: 'test', spec: 'test',
+              // ci
               pipeline: 'ci', workflow: 'ci',
-              format: 'style', formatting: 'style',
+              // revert
               rollback: 'revert',
             };
 
