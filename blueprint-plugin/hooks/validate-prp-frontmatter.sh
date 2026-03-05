@@ -22,8 +22,8 @@ if [ -z "$CONTENT" ]; then
 fi
 
 # Function to output blocking error (exit code 2)
-block_error() {
-    echo "ERROR: $1" >&2
+block() {
+    echo "$1" >&2
     exit 2
 }
 
@@ -56,7 +56,7 @@ check_required_field() {
     local value
     value=$(get_field "$frontmatter" "$field")
     if [ -z "$value" ]; then
-        block_error "Missing required frontmatter field: ${field}"
+        block "ERROR: Missing required frontmatter field: ${field}"
     fi
 }
 
@@ -65,7 +65,7 @@ check_required_section() {
     local content="$1"
     local section="$2"
     if ! echo "$content" | grep -q "^## ${section}"; then
-        block_error "Missing required section: ## ${section}"
+        block "ERROR: Missing required section: ## ${section}"
     fi
 }
 
@@ -77,7 +77,7 @@ validate_status() {
             return 0
             ;;
         *)
-            block_error "Invalid PRP status: '${prp_status}'. Valid values: draft, ready, in-progress, completed"
+            block "ERROR: Invalid PRP status: '${prp_status}'. Valid values: draft, ready, in-progress, completed"
             ;;
     esac
 }
@@ -90,11 +90,11 @@ validate_confidence() {
     score=$(echo "$confidence" | sed 's|/10||' | tr -d ' ')
 
     if ! [[ "$score" =~ ^[0-9]+$ ]]; then
-        block_error "Invalid confidence format: '${confidence}'. Use format: N/10 (e.g., 7/10)"
+        block "ERROR: Invalid confidence format: '${confidence}'. Use format: N/10 (e.g., 7/10)"
     fi
 
     if [ "$score" -lt 1 ] || [ "$score" -gt 10 ]; then
-        block_error "Confidence score out of range: ${score}. Must be 1-10"
+        block "ERROR: Confidence score out of range: ${score}. Must be 1-10"
     fi
 }
 
@@ -124,7 +124,7 @@ check_review_staleness() {
 FRONTMATTER=$(extract_frontmatter "$CONTENT")
 
 if [ -z "$FRONTMATTER" ]; then
-    block_error "No YAML frontmatter found. PRPs must have frontmatter between --- delimiters"
+    block "ERROR: No YAML frontmatter found. PRPs must have frontmatter between --- delimiters"
 fi
 
 # Required frontmatter fields (comprehensive set)
@@ -137,10 +137,10 @@ check_required_field "$FRONTMATTER" "domain"
 
 # Feature-codes and related can be empty arrays, just need to exist
 if ! echo "$FRONTMATTER" | grep -q "^feature-codes:"; then
-    block_error "Missing required frontmatter field: feature-codes (can be empty array [])"
+    block "ERROR: Missing required frontmatter field: feature-codes (can be empty array [])"
 fi
 if ! echo "$FRONTMATTER" | grep -q "^related:"; then
-    block_error "Missing required frontmatter field: related (can be empty array [])"
+    block "ERROR: Missing required frontmatter field: related (can be empty array [])"
 fi
 
 # Validate status value
