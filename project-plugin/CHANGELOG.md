@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.0](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.11.1...project-plugin-v1.12.0) (2026-03-05)
+
+
+### Features
+
+* standardize shell script conventions and add linting ([#892](https://github.com/laurigates/claude-plugins/issues/892)) ([0eba700](https://github.com/laurigates/claude-plugins/commit/0eba7009728418bdef6355bd91fc9ee50c6982a8))
+
 ## [1.11.1](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.11.0...project-plugin-v1.11.1) (2026-03-01)
 
 

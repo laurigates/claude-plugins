@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.23.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.22.2...blueprint-plugin-v3.23.0) (2026-03-05)
+
+
+### Features
+
+* standardize shell script conventions and add linting ([#892](https://github.com/laurigates/claude-plugins/issues/892)) ([0eba700](https://github.com/laurigates/claude-plugins/commit/0eba7009728418bdef6355bd91fc9ee50c6982a8))
+
 ## [3.22.2](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.22.1...blueprint-plugin-v3.22.2) (2026-03-04)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.26.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.25.2...git-plugin-v2.26.0) (2026-03-05)
+
+
+### Features
+
+* standardize shell script conventions and add linting ([#892](https://github.com/laurigates/claude-plugins/issues/892)) ([0eba700](https://github.com/laurigates/claude-plugins/commit/0eba7009728418bdef6355bd91fc9ee50c6982a8))
+
 ## [2.25.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.25.1...git-plugin-v2.25.2) (2026-03-04)
 
 

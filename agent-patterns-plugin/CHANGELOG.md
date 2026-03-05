@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.10.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.9.0...agent-patterns-plugin-v2.10.0) (2026-03-05)
+
+
+### Features
+
+* standardize shell script conventions and add linting ([#892](https://github.com/laurigates/claude-plugins/issues/892)) ([0eba700](https://github.com/laurigates/claude-plugins/commit/0eba7009728418bdef6355bd91fc9ee50c6982a8))
+
 ## [2.9.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.8.1...agent-patterns-plugin-v2.9.0) (2026-03-03)
 
 
