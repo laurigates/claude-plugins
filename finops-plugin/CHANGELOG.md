@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/laurigates/claude-plugins/compare/finops-plugin-v1.2.0...finops-plugin-v1.3.0) (2026-03-05)
+
+
+### Features
+
+* **finops-plugin:** extract inline bash into standalone scripts ([#889](https://github.com/laurigates/claude-plugins/issues/889)) ([74bab2c](https://github.com/laurigates/claude-plugins/commit/74bab2c438005c0a8dd249b9a96a56a4ad8f4283))
+
 ## [1.2.0](https://github.com/laurigates/claude-plugins/compare/finops-plugin-v1.1.0...finops-plugin-v1.2.0) (2026-02-27)
 
 
