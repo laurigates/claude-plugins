@@ -4,14 +4,16 @@ from pathlib import Path
 
 from claude_agent_sdk import AgentDefinition
 
+from git_repo_agent.prompts.compiler import get_compiled_prompt
+
 _PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
 
 
 def _load_prompt() -> str:
     base = (_PROMPTS_DIR / "diagnose.md").read_text(encoding="utf-8")
-    generated = _PROMPTS_DIR / "generated" / "diagnose_skills.md"
-    if generated.exists():
-        base += "\n\n" + generated.read_text(encoding="utf-8")
+    skills = get_compiled_prompt("diagnose")
+    if skills:
+        base += "\n\n" + skills
     return base
 
 
