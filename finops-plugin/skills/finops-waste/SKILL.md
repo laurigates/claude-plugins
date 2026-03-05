@@ -2,10 +2,10 @@
 model: haiku
 description: Identify workflow waste patterns and suggest fixes - skipped runs, bot triggers, missing concurrency
 args: "[repo]"
-allowed-tools: Bash(gh api *), Bash(gh workflow *), Bash(gh repo *), Read, Grep, Glob, Edit, TodoWrite
+allowed-tools: Bash(gh api *), Bash(gh workflow *), Bash(gh repo *), Bash(bash *), Read, Grep, Glob, Edit, TodoWrite
 argument-hint: Optional repo (owner/name format, defaults to current repo)
 created: 2025-01-30
-modified: 2025-01-30
+modified: 2026-03-05
 reviewed: 2025-01-30
 name: finops-waste
 ---
@@ -27,64 +27,18 @@ Identify GitHub Actions waste patterns and provide actionable fix suggestions. A
 
 ## Execution
 
-**1. Determine repository:**
+**1. Run API-based waste analysis:**
 
 ```bash
-REPO="${1:-$(gh repo view --json nameWithOwner --jq '.nameWithOwner')}"
-echo "=== Waste Analysis: $REPO ==="
-echo ""
+bash "${SKILL_DIR}/scripts/waste-analysis.sh" "$REPO"
 ```
 
-**2. Skipped runs analysis:**
-
-```bash
-echo "=== Skipped Runs ==="
-SKIPPED_DATA=$(gh api "/repos/$REPO/actions/runs?per_page=100" \
-  --jq '{
-    total: (.workflow_runs | length),
-    skipped: [.workflow_runs[] | select(.conclusion == "skipped")] | length,
-    by_workflow: ([.workflow_runs[] | select(.conclusion == "skipped")] |
-                  group_by(.name) |
-                  map({workflow: .[0].name, count: length}) |
-                  sort_by(-.count))
-  }')
-
-echo "$SKIPPED_DATA" | jq -r '"Total runs: \(.total)\nSkipped: \(.skipped) (\(.skipped * 100 / .total | floor)%)"'
-echo ""
-echo "By workflow:"
-echo "$SKIPPED_DATA" | jq -r '.by_workflow[] | "  \(.workflow): \(.count) skipped"'
-```
-
-**3. Bot-triggered runs:**
-
-```bash
-echo ""
-echo "=== Bot-Triggered Runs ==="
-gh api "/repos/$REPO/actions/runs?per_page=100" \
-  --jq '{
-    total: (.workflow_runs | length),
-    bot_triggered: [.workflow_runs[] | select(.triggering_actor.type == "Bot")] | length,
-    bots: ([.workflow_runs[] | select(.triggering_actor.type == "Bot")] |
-           group_by(.triggering_actor.login) |
-           map({bot: .[0].triggering_actor.login, count: length}) |
-           sort_by(-.count))
-  }' | jq -r '"Bot-triggered: \(.bot_triggered)/\(.total) runs\n\nBy bot:"'
-
-gh api "/repos/$REPO/actions/runs?per_page=100" \
-  --jq '[.workflow_runs[] | select(.triggering_actor.type == "Bot")] |
-        group_by(.triggering_actor.login) |
-        map({bot: .[0].triggering_actor.login, count: length}) |
-        sort_by(-.count)[] |
-        "  \(.bot): \(.count) runs"'
-```
-
-**4. Workflow file analysis:**
+**2. Workflow file analysis (requires local filesystem):**
 
 ```bash
 echo ""
 echo "=== Workflow File Analysis ==="
 
-# Check each workflow file
 for f in .github/workflows/*.yml .github/workflows/*.yaml 2>/dev/null; do
   [ -f "$f" ] || continue
   name=$(basename "$f")
@@ -116,37 +70,6 @@ for f in .github/workflows/*.yml .github/workflows/*.yaml 2>/dev/null; do
     echo "  $name: OK"
   fi
 done
-```
-
-**5. Duplicate/concurrent runs:**
-
-```bash
-echo ""
-echo "=== Potential Duplicate Runs ==="
-# Find runs on same commit that could have been deduplicated
-gh api "/repos/$REPO/actions/runs?per_page=100" \
-  --jq '.workflow_runs | group_by(.head_sha) |
-        map(select(length > 1)) |
-        map({
-          sha: .[0].head_sha[0:7],
-          runs: length,
-          workflows: [.[].name] | unique
-        }) |
-        .[0:5][] |
-        "  Commit \(.sha): \(.runs) runs (\(.workflows | join(", ")))"'
-```
-
-**6. High-frequency workflows without path filters:**
-
-```bash
-echo ""
-echo "=== High-Frequency Workflows ==="
-gh api "/repos/$REPO/actions/runs?per_page=100" \
-  --jq '.workflow_runs | group_by(.name) |
-        map(select(length > 30)) |
-        map({workflow: .[0].name, count: length}) |
-        sort_by(-.count)[] |
-        "  \(.workflow): \(.count) runs in sample - review trigger conditions"'
 ```
 
 ## Fix Suggestions
