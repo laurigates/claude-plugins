@@ -23,6 +23,8 @@
 #   }
 # }
 
+set -euo pipefail
+
 # Read the JSON input from stdin
 INPUT=$(cat)
 

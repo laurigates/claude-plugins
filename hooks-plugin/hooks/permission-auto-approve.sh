@@ -10,6 +10,8 @@
 #
 # Customize the APPROVE and DENY patterns below for your project.
 
+set -euo pipefail
+
 # Toggle off
 [ "${CLAUDE_HOOKS_DISABLE_PERMISSION_AUTO:-}" = "1" ] && exit 0
 

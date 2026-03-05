@@ -6,6 +6,8 @@
 # Matches: Read, Edit, Write, Bash
 # Detects: .env files, SSH keys, cloud credentials, private keys, token files
 
+set -euo pipefail
+
 # Toggle off
 [ "${CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION:-}" = "1" ] && exit 0
 

@@ -8,6 +8,9 @@
 #
 # Use this to understand what data flows through hooks while developing your own.
 
+# No -e: logging should be resilient to parse failures
+set -uo pipefail
+
 # Disabled by default — opt-in only
 [ "${CLAUDE_HOOKS_ENABLE_EVENT_LOGGER:-}" != "1" ] && exit 0
 

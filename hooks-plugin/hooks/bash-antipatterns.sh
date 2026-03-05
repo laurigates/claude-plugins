@@ -2,6 +2,8 @@
 # PreToolUse hook for Bash tool - detects anti-patterns and reminds Claude
 # to use built-in tools instead of shell commands
 
+set -euo pipefail
+
 # Read the JSON input from stdin
 INPUT=$(cat)
 

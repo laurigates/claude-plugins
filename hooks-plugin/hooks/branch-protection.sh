@@ -7,6 +7,8 @@
 # Detects: git commit, git push, git merge on main/master
 # Allows: read-only git operations (status, diff, log, branch, etc.)
 
+set -euo pipefail
+
 # Toggle off
 [ "${CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION:-}" = "1" ] && exit 0
 
@@ -41,7 +43,7 @@ fi
 # Block: commit, push, merge, rebase, reset, cherry-pick, revert, stash pop/apply
 
 # Extract the git subcommand (handle global flags like -C <path>)
-GIT_SUBCMD=$(echo "$COMMAND" | grep -oE 'git\s+(-[A-Za-z]\s+\S+\s+)*[a-z-]+' | awk '{print $NF}')
+GIT_SUBCMD=$(echo "$COMMAND" | grep -oE 'git\s+(-[A-Za-z]\s+\S+\s+)*[a-z-]+' | awk '{print $NF}' || true)
 
 case "$GIT_SUBCMD" in
   # Read-only operations — always allowed
