@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.2](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.14.1...configure-plugin-v1.14.2) (2026-03-05)
+
+
+### Bug Fixes
+
+* **configure-plugin:** suppress grep errors when .project-standards.yaml is missing ([be9add9](https://github.com/laurigates/claude-plugins/commit/be9add9530ffa161543a0c8c266746b6ffbabdd5))
+
 ## [1.14.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.14.0...configure-plugin-v1.14.1) (2026-03-04)
 
 
