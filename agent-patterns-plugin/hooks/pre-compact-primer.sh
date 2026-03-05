@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Pre-compact primer hook
 # Generates customInstructions for the compaction process to preserve key context.
 # This extracts active work state from the transcript and tells the compaction

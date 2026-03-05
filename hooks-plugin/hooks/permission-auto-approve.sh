@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # PermissionRequest hook — auto-approve safe operations, auto-deny dangerous ones
 #
 # Toggle: set CLAUDE_HOOKS_DISABLE_PERMISSION_AUTO=1 to skip this hook
@@ -10,16 +10,18 @@
 #
 # Customize the APPROVE and DENY patterns below for your project.
 
+set -euo pipefail
+
 # Toggle off
 [ "${CLAUDE_HOOKS_DISABLE_PERMISSION_AUTO:-}" = "1" ] && exit 0
 
 INPUT=$(cat)
 
-TOOL=$(echo "$INPUT" | jq -r '.tool_name // empty')
+TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty')
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 
 # Only handle Bash commands
-if [ "$TOOL" != "Bash" ]; then
+if [ "$TOOL_NAME" != "Bash" ]; then
   exit 0
 fi
 

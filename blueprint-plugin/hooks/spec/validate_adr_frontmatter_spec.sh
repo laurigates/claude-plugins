@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ShellSpec tests for validate-adr-frontmatter.sh
 
 Describe "validate-adr-frontmatter.sh"

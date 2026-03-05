@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Development hook — logs all hook events to a file for debugging
 #
 # Toggle: set CLAUDE_HOOKS_ENABLE_EVENT_LOGGER=1 to enable (disabled by default)
@@ -7,6 +7,9 @@
 # Output: ~/.claude/hook-events.log
 #
 # Use this to understand what data flows through hooks while developing your own.
+
+# No -e: logging should be resilient to parse failures
+set -uo pipefail
 
 # Disabled by default — opt-in only
 [ "${CLAUDE_HOOKS_ENABLE_EVENT_LOGGER:-}" != "1" ] && exit 0
@@ -19,11 +22,11 @@ mkdir -p "$(dirname "$LOG_FILE")"
 
 TIMESTAMP=$(date -Iseconds 2>/dev/null || date '+%Y-%m-%dT%H:%M:%S')
 EVENT=$(echo "$INPUT" | jq -r '.hook_event_name // "unknown"')
-TOOL=$(echo "$INPUT" | jq -r '.tool_name // "-"')
+TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // "-"')
 SESSION=$(echo "$INPUT" | jq -r '.session_id // "-"' | head -c 12)
 
 # Compact summary line
-SUMMARY="${TIMESTAMP} | ${EVENT} | tool=${TOOL} | session=${SESSION}"
+SUMMARY="${TIMESTAMP} | ${EVENT} | tool=${TOOL_NAME} | session=${SESSION}"
 
 # Log tool input for PreToolUse/PostToolUse (abbreviated)
 if [ "$EVENT" = "PreToolUse" ] || [ "$EVENT" = "PostToolUse" ]; then

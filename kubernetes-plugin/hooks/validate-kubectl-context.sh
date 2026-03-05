@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # PreToolUse hook for Bash tool - validates kubectl/helm commands include --context
 #
 # This hook enforces explicit Kubernetes context selection to prevent accidental
@@ -23,6 +23,8 @@
 #   }
 # }
 
+set -euo pipefail
+
 # Read the JSON input from stdin
 INPUT=$(cat)
 
@@ -35,9 +37,8 @@ if [ -z "$COMMAND" ]; then
 fi
 
 # Function to output a blocking message (exit code 2 = blocking error)
-block_with_reminder() {
-    local message="$1"
-    echo "$message" >&2
+block() {
+    echo "$1" >&2
     exit 2
 }
 
@@ -86,7 +87,7 @@ if echo "$COMMAND_CLEAN" | grep -Eq '(^|\s|;|&&|\|)kubectl\s+'; then
 
     # Check if --context is specified (short form -c is not standard for kubectl)
     if ! echo "$COMMAND_CLEAN" | grep -Eq '\s--context[= ]'; then
-        block_with_reminder "KUBECTL SAFETY: Missing --context flag.
+        block "KUBECTL SAFETY: Missing --context flag.
 
 Always specify the Kubernetes context explicitly to avoid operating on the wrong cluster:
 
@@ -119,7 +120,7 @@ if echo "$COMMAND_CLEAN" | grep -Eq '(^|\s|;|&&|\|)helm\s+'; then
 
     # Check if --kube-context is specified (helm uses --kube-context, not --context)
     if ! echo "$COMMAND_CLEAN" | grep -Eq '\s--kube-context[= ]'; then
-        block_with_reminder "HELM SAFETY: Missing --kube-context flag.
+        block "HELM SAFETY: Missing --kube-context flag.
 
 Always specify the Kubernetes context explicitly to avoid operating on the wrong cluster:
 

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Stop hook - surfaces pending todos before Claude exits and suggests GitHub issue creation
 # Fires when the main agent finishes a response; blocks if unfinished todos exist so Claude
 # can offer to create GitHub issues before the user ends the session.

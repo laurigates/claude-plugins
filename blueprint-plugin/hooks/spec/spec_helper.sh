@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ShellSpec spec_helper for blueprint-plugin hooks
 
 # Set project root for fixture paths

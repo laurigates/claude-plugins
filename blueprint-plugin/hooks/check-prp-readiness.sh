@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # PreToolUse hook - checks PRP readiness before execution
 # Blocks if confidence < 7, required sections missing, or broken references
 # See docs/hook-design-decisions.md for rationale
@@ -32,8 +32,8 @@ PRP_NAME=$(echo "$SKILL_ARGS" | awk '{print $1}')
 PRP_PATH="docs/prps/${PRP_NAME}.md"
 
 # Function to output blocking error (exit code 2)
-block_error() {
-    echo "ERROR: $1" >&2
+block() {
+    echo "$1" >&2
     exit 2
 }
 
@@ -51,7 +51,7 @@ info() {
 if [ ! -f "$PRP_PATH" ]; then
     # Try with .md suffix already included
     if [ ! -f "${PRP_NAME}" ]; then
-        block_error "PRP file not found: ${PRP_PATH}"
+        block "ERROR: PRP file not found: ${PRP_PATH}"
     else
         PRP_PATH="$PRP_NAME"
     fi
@@ -75,30 +75,30 @@ get_field() {
 FRONTMATTER=$(extract_frontmatter "$PRP_CONTENT")
 
 if [ -z "$FRONTMATTER" ]; then
-    block_error "PRP has no frontmatter. Cannot validate readiness"
+    block "ERROR: PRP has no frontmatter. Cannot validate readiness"
 fi
 
 # Check confidence score
 CONFIDENCE=$(get_field "$FRONTMATTER" "confidence")
 if [ -z "$CONFIDENCE" ]; then
-    block_error "PRP missing confidence score. Run /blueprint:prp-create to add one"
+    block "ERROR: PRP missing confidence score. Run /blueprint:prp-create to add one"
 fi
 
 # Extract numeric confidence value
 SCORE=$(echo "$CONFIDENCE" | sed 's|/10||' | tr -d ' ')
 if ! [[ "$SCORE" =~ ^[0-9]+$ ]]; then
-    block_error "Invalid confidence format: '${CONFIDENCE}'. Expected N/10 (e.g., 7/10)"
+    block "ERROR: Invalid confidence format: '${CONFIDENCE}'. Expected N/10 (e.g., 7/10)"
 fi
 
 if [ "$SCORE" -lt "$MIN_CONFIDENCE" ]; then
-    block_error "Confidence score ${SCORE}/10 is below minimum ${MIN_CONFIDENCE}/10. Refine PRP with /blueprint:prp-create before execution"
+    block "ERROR: Confidence score ${SCORE}/10 is below minimum ${MIN_CONFIDENCE}/10. Refine PRP with /blueprint:prp-create before execution"
 fi
 
 # Check for required sections
 check_section() {
     local section="$1"
     if ! echo "$PRP_CONTENT" | grep -q "^## ${section}"; then
-        block_error "PRP missing required section: ## ${section}"
+        block "ERROR: PRP missing required section: ## ${section}"
     fi
 }
 
@@ -122,7 +122,7 @@ for ref in $AI_DOC_REFS; do
 done
 
 if [ ${#MISSING_FILES[@]} -gt 0 ]; then
-    block_error "PRP references missing ai_docs files: ${MISSING_FILES[*]}"
+    block "ERROR: PRP references missing ai_docs files: ${MISSING_FILES[*]}"
 fi
 
 # Extract and validate URL references (markdown links)

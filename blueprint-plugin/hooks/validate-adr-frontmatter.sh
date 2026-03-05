@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # PreToolUse hook - validates ADR frontmatter before Write/Edit
 # Blocks on missing required fields or sections
 # See docs/hook-design-decisions.md for rationale
@@ -22,8 +22,8 @@ if [ -z "$CONTENT" ]; then
 fi
 
 # Function to output blocking error (exit code 2)
-block_error() {
-    echo "ERROR: $1" >&2
+block() {
+    echo "$1" >&2
     exit 2
 }
 
@@ -56,7 +56,7 @@ check_required_field() {
     local value
     value=$(get_field "$frontmatter" "$field")
     if [ -z "$value" ]; then
-        block_error "Missing required frontmatter field: ${field}"
+        block "ERROR: Missing required frontmatter field: ${field}"
     fi
 }
 
@@ -65,7 +65,7 @@ check_required_section() {
     local content="$1"
     local section="$2"
     if ! echo "$content" | grep -q "^## ${section}"; then
-        block_error "Missing required section: ## ${section}"
+        block "ERROR: Missing required section: ## ${section}"
     fi
 }
 
@@ -77,7 +77,7 @@ validate_status() {
             return 0
             ;;
         *)
-            block_error "Invalid ADR status: '${adr_status}'. Valid values: Draft, Proposed, Accepted, Rejected, Withdrawn, Superseded, Deprecated"
+            block "ERROR: Invalid ADR status: '${adr_status}'. Valid values: Draft, Proposed, Accepted, Rejected, Withdrawn, Superseded, Deprecated"
             ;;
     esac
 }
@@ -120,7 +120,7 @@ check_domain() {
 FRONTMATTER=$(extract_frontmatter "$CONTENT")
 
 if [ -z "$FRONTMATTER" ]; then
-    block_error "No YAML frontmatter found. ADRs must have frontmatter between --- delimiters"
+    block "ERROR: No YAML frontmatter found. ADRs must have frontmatter between --- delimiters"
 fi
 
 # Required frontmatter fields

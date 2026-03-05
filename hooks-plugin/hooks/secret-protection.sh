@@ -1,10 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # PreToolUse hook — blocks access to sensitive files and credential exposure
 #
 # Toggle: set CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION=1 to skip this hook
 #
 # Matches: Read, Edit, Write, Bash
 # Detects: .env files, SSH keys, cloud credentials, private keys, token files
+
+set -euo pipefail
 
 # Toggle off
 [ "${CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION:-}" = "1" ] && exit 0

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ShellSpec tests for check-prp-readiness.sh
 
 Describe "check-prp-readiness.sh"

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Stop hook - reminds about git stashes created DURING the current session
 # Uses a baseline file written by git-stash-session-init.sh at SessionStart
 # to distinguish session stashes from pre-existing ones

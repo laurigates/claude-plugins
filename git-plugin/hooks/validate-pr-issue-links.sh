@@ -14,6 +14,11 @@
 
 set -euo pipefail
 
+block() {
+    echo "$1" >&2
+    exit 2
+}
+
 INPUT=$(cat)
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 CWD=$(echo "$INPUT" | jq -r '.cwd // empty')
@@ -64,7 +69,7 @@ fi
 
 # Commits reference issues but PR body doesn't — block with specific guidance
 ISSUE_LIST=$(echo "$COMMIT_ISSUES" | tr '\n' ' ' | sed 's/ $//')
-echo "PR ISSUE LINKING: PR body is missing issue closing keywords.
+block "PR ISSUE LINKING: PR body is missing issue closing keywords.
 
 Commits in this branch reference:  ${ISSUE_LIST}
 
@@ -78,5 +83,4 @@ For multiple issues, repeat the keyword:
   Fixes #1, Fixes #2
 
 Keywords are case-insensitive. Colons are optional (Closes: #10 works).
-Issue auto-close only triggers when merging to the repository's default branch." >&2
-exit 2
+Issue auto-close only triggers when merging to the repository's default branch."

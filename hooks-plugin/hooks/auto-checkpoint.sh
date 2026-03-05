@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # PreToolUse hook — auto-creates a git stash checkpoint before destructive operations
 #
 # Toggle: set CLAUDE_HOOKS_DISABLE_AUTO_CHECKPOINT=1 to skip this hook
@@ -6,6 +6,8 @@
 # Matches: Bash
 # Triggers on: git reset, git checkout -- (file restore), rm -rf, file overwrites
 # Creates: a named git stash as a recovery checkpoint
+
+set -euo pipefail
 
 # Toggle off
 [ "${CLAUDE_HOOKS_DISABLE_AUTO_CHECKPOINT:-}" = "1" ] && exit 0
@@ -31,8 +33,7 @@ create_checkpoint() {
   local reason="$1"
   if has_changes; then
     TIMESTAMP=$(date '+%Y%m%d-%H%M%S' 2>/dev/null || date '+%s')
-    git stash push -m "auto-checkpoint before ${reason} (${TIMESTAMP})" --include-untracked >/dev/null 2>&1
-    if [ $? -eq 0 ]; then
+    if git stash push -m "auto-checkpoint before ${reason} (${TIMESTAMP})" --include-untracked >/dev/null 2>&1; then
       # Immediately pop the stash so changes are still present, but the checkpoint exists in reflog
       git stash pop >/dev/null 2>&1
       echo "Created checkpoint stash before ${reason}. Recover with: git stash list" >&2
