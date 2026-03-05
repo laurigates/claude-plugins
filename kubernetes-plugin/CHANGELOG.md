@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/laurigates/claude-plugins/compare/kubernetes-plugin-v1.5.0...kubernetes-plugin-v1.6.0) (2026-03-05)
+
+
+### Features
+
+* standardize shell script conventions and add linting ([#892](https://github.com/laurigates/claude-plugins/issues/892)) ([0eba700](https://github.com/laurigates/claude-plugins/commit/0eba7009728418bdef6355bd91fc9ee50c6982a8))
+
 ## [1.5.0](https://github.com/laurigates/claude-plugins/compare/kubernetes-plugin-v1.4.1...kubernetes-plugin-v1.5.0) (2026-02-27)
 
 
