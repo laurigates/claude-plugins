@@ -22,11 +22,11 @@ mkdir -p "$(dirname "$LOG_FILE")"
 
 TIMESTAMP=$(date -Iseconds 2>/dev/null || date '+%Y-%m-%dT%H:%M:%S')
 EVENT=$(echo "$INPUT" | jq -r '.hook_event_name // "unknown"')
-TOOL=$(echo "$INPUT" | jq -r '.tool_name // "-"')
+TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // "-"')
 SESSION=$(echo "$INPUT" | jq -r '.session_id // "-"' | head -c 12)
 
 # Compact summary line
-SUMMARY="${TIMESTAMP} | ${EVENT} | tool=${TOOL} | session=${SESSION}"
+SUMMARY="${TIMESTAMP} | ${EVENT} | tool=${TOOL_NAME} | session=${SESSION}"
 
 # Log tool input for PreToolUse/PostToolUse (abbreviated)
 if [ "$EVENT" = "PreToolUse" ] || [ "$EVENT" = "PostToolUse" ]; then

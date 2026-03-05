@@ -17,11 +17,11 @@ set -euo pipefail
 
 INPUT=$(cat)
 
-TOOL=$(echo "$INPUT" | jq -r '.tool_name // empty')
+TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty')
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 
 # Only handle Bash commands
-if [ "$TOOL" != "Bash" ]; then
+if [ "$TOOL_NAME" != "Bash" ]; then
   exit 0
 fi
 
