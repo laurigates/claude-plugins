@@ -36,6 +36,9 @@
     "fork",
     "upstream",
     "cherry-pick",
-    "cross-fork-pr"
+    "cross-fork-pr",
+    "trailers",
+    "interpret-trailers",
+    "release-as"
   ]
 }
