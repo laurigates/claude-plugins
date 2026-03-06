@@ -11,3 +11,21 @@ git-repo-agent/uv.lock
 
 # Eval results (transient run data)
 **/eval-results/
+
+# Temporary files
+tmp/
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+credentials.json
+secrets.json
+
+# OS files
+.DS_Store
+
+# Logs
+*.log
