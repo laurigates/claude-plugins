@@ -15,6 +15,7 @@
     "teammate-definitions",
     "agent-teams",
     "teams",
-    "multi-agent"
+    "multi-agent",
+    "plugin-settings"
   ]
 }
