@@ -67,6 +67,13 @@ All skills are located in the `skills/` directory:
   - Opens GitHub issues for complex or external failures
   - Safety guards against infinite loops and bot triggers
 
+- **ci-autofix-reusable** - Reusable CI auto-fix workflow (`workflow_call`)
+  - `workflow_call`-based reusable workflow template
+  - Customizable auto-fix criteria via inputs
+  - Fan-out support for fixing all failing PRs at once
+  - Caller workflow template with `workflow_run` and `workflow_dispatch` triggers
+  - Cross-repository usage support
+
 - **github-social-preview** - Generate repository social preview images
   - Open Graph image creation for repositories
   - 1280x640 optimized preview images
