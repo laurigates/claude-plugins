@@ -1,6 +1,6 @@
 # Claude Plugins
 
-A collection of 31 Claude Code plugins providing 285+ skills and 14 agents for development workflows.
+A collection of 37 Claude Code plugins providing 300+ skills and 14 agents for development workflows.
 
 ## Prerequisites
 
@@ -55,12 +55,14 @@ Alternatively, use the `/configure:mcp` skill for interactive configuration.
 | **api-plugin** | 2 | API integration and testing - REST endpoints, client generation |
 | **blueprint-plugin** | 30 | Blueprint Development methodology - PRD/PRP workflow with version tracking |
 | **home-assistant-plugin** | 4 | Home Assistant configuration - automations, scripts, scenes, entities |
+| **obsidian-plugin** | 6 | Obsidian CLI operations - vault management, search, properties, tasks |
 | **project-plugin** | 6 | Project initialization, management, maintenance, and continuous development |
 
 ### Languages
 
 | Plugin | Skills | Description |
 |--------|--------|-------------|
+| **css-plugin** | 2 | CSS tooling - Lightning CSS transpilation, UnoCSS atomic utilities |
 | **python-plugin** | 17 | Python ecosystem - uv, ruff, pytest, basedpyright, packaging |
 | **rust-plugin** | 5 | Rust development - cargo, clippy, nextest, memory safety |
 | **typescript-plugin** | 17 | TypeScript development - Bun, Biome, ESLint, strict types |
@@ -70,6 +72,8 @@ Alternatively, use the `/configure:mcp` skill for interactive configuration.
 | Plugin | Skills | Description |
 |--------|--------|-------------|
 | **code-quality-plugin** | 13 | Code review, refactoring, linting, static analysis, debugging methodology |
+| **evaluate-plugin** | 4 + 3 agents | Skill evaluation and benchmarking - test effectiveness, grade results |
+| **feedback-plugin** | 1 | Session feedback analysis - capture skill bugs and enhancements as issues |
 | **testing-plugin** | 15 | Test execution, TDD workflow, Vitest, Playwright, mutation testing |
 
 ### Version Control
@@ -92,6 +96,7 @@ Alternatively, use the `/configure:mcp` skill for interactive configuration.
 | **configure-plugin** | 42 | Project infrastructure standards - pre-commit, CI/CD, Docker, testing |
 | **container-plugin** | 9 + 1 agent | Container development - Docker, registry, Skaffold, OrbStack |
 | **kubernetes-plugin** | 8 + 1 agent | Kubernetes and Helm - deployments, charts, releases, ArgoCD |
+| **migration-patterns-plugin** | 2 | Safe database and system migration - dual write, shadow mode |
 | **networking-plugin** | 6 | Network diagnostics, discovery, monitoring, HTTP load testing |
 | **terraform-plugin** | 6 + 1 agent | Terraform and Terraform Cloud - infrastructure as code |
 
@@ -102,6 +107,7 @@ Alternatively, use the `/configure:mcp` skill for interactive configuration.
 | **blog-plugin** | 2 | Blog post creation - project logs, technical write-ups |
 | **communication-plugin** | 2 | Communication formatting - Google Chat, ticket drafting |
 | **documentation-plugin** | 5 | Documentation generation - API docs, README, knowledge graphs |
+| **prose-plugin** | 2 | Prose transformation - synthesis, distillation, tone, clarity |
 
 ### UX & Components
 
@@ -118,6 +124,7 @@ Alternatively, use the `/configure:mcp` skill for interactive configuration.
 | **health-plugin** | 6 | Diagnose and fix Claude Code configuration issues |
 | **hooks-plugin** | 1 | Claude Code hooks for enforcing best practices |
 | **tools-plugin** | 14 | General utilities - fd, rg, jq, shell, ImageMagick, d2 |
+| **workflow-orchestration-plugin** | 2 | Workflow orchestration - preflight checks, checkpoint refactoring |
 
 ### Game Development
 
