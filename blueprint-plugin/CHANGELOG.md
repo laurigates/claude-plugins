@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.24.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.23.0...blueprint-plugin-v3.24.0) (2026-03-07)
+
+
+### Features
+
+* **blueprint-plugin:** add path scoping to derive-rules skill ([#902](https://github.com/laurigates/claude-plugins/issues/902)) ([2dc5706](https://github.com/laurigates/claude-plugins/commit/2dc5706c8c31be2a43b15eb3ef9d66e76b9de66c))
+
 ## [3.23.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.22.2...blueprint-plugin-v3.23.0) (2026-03-05)
 
 
