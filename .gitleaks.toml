@@ -1,0 +1,25 @@
+title = "gitleaks config"
+
+[allowlist]
+description = "Allow test fixtures, documentation, and example configurations"
+paths = [
+  # Test fixtures with intentional fake secrets for workflow validation
+  '''test-fixtures/security/secrets/.*''',
+
+  # Documentation referencing secret patterns (not actual secrets)
+  '''docs/github-workflows-plan\.md''',
+  '''docs/prps/reusable-workflows-phase1-security\.md''',
+  '''docs/reusable-workflows-usage\.md''',
+
+  # Skills containing example configurations with placeholder credentials
+  '''home-assistant-plugin/skills/ha-configuration/SKILL\.md''',
+  '''git-plugin/skills/git-security-checks/SKILL\.md''',
+  '''agent-patterns-plugin/skills/mcp-management/SKILL\.md''',
+
+  # Reusable workflow defining secret detection patterns (not actual secrets)
+  '''\.github/workflows/reusable-security-secrets\.yml''',
+
+  # Virtual environments
+  '''\.venv/.*''',
+  '''git-repo-agent/\.venv/.*''',
+]
