@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016  # Single-quoted JSON test data contains $() intentionally
 # Regression tests for validate-kubectl-context.sh
 #
 # Run: bash kubernetes-plugin/hooks/test-validate-kubectl-context.sh

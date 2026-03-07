@@ -10,6 +10,7 @@
 # Note: Workflow file analysis (concurrency, path filters) requires local
 #       filesystem access and is handled inline in SKILL.md.
 
+# shellcheck disable=SC2016  # jq expressions use $ for variable references, not shell expansion
 set -euo pipefail
 
 REPO="${1:-$(gh repo view --json nameWithOwner --jq '.nameWithOwner')}"

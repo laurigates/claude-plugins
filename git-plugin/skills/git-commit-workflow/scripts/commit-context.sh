@@ -45,7 +45,7 @@ if [ "$staged_count" -gt 0 ]; then
 
   echo ""
   echo "--- STAGED FILES ---"
-  echo "$staged_files" | sed 's/^/  /'
+  while IFS= read -r line; do printf '  %s\n' "$line"; done <<< "$staged_files"
 
   # Detect change types for commit message suggestion
   echo ""

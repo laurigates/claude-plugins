@@ -69,6 +69,7 @@ fi
 # Check Bash commands for sensitive file access and credential exposure
 if [ "$TOOL_NAME" = "Bash" ] && [ -n "$COMMAND" ]; then
   # Block printing environment variables that likely contain secrets
+  # shellcheck disable=SC2016  # $(...) is a grep pattern, not shell expansion
   if echo "$COMMAND" | grep -Eq '(echo|printf|cat|env|printenv|export).*\$(.*_(KEY|SECRET|TOKEN|PASSWORD|CREDENTIAL|AUTH)s?)'; then
     block "BLOCKED: Command may expose secret environment variables.
 Use the application's configuration system instead of echoing secrets.

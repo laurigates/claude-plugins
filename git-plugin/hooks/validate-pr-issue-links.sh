@@ -68,7 +68,8 @@ if [ -z "$COMMIT_ISSUES" ]; then
 fi
 
 # Commits reference issues but PR body doesn't — block with specific guidance
-ISSUE_LIST=$(echo "$COMMIT_ISSUES" | tr '\n' ' ' | sed 's/ $//')
+ISSUE_LIST=$(echo "$COMMIT_ISSUES" | tr '\n' ' ')
+ISSUE_LIST=${ISSUE_LIST% }
 block "PR ISSUE LINKING: PR body is missing issue closing keywords.
 
 Commits in this branch reference:  ${ISSUE_LIST}

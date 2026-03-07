@@ -7,7 +7,7 @@ Describe "check-prp-readiness.sh"
   setup() {
     TEST_DIR=$(mktemp -d)
     mkdir -p "$TEST_DIR/docs/prps"
-    cd "$TEST_DIR"
+    cd "$TEST_DIR" || return
   }
 
   cleanup() {

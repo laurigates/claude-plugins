@@ -85,7 +85,8 @@ if [ -z "$CONFIDENCE" ]; then
 fi
 
 # Extract numeric confidence value
-SCORE=$(echo "$CONFIDENCE" | sed 's|/10||' | tr -d ' ')
+SCORE=${CONFIDENCE/\/10/}
+SCORE=${SCORE// /}
 if ! [[ "$SCORE" =~ ^[0-9]+$ ]]; then
     block "ERROR: Invalid confidence format: '${CONFIDENCE}'. Expected N/10 (e.g., 7/10)"
 fi

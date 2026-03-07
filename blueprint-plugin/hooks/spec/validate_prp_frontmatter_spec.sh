@@ -3,7 +3,6 @@
 
 Describe "validate-prp-frontmatter.sh"
   HOOK_SCRIPT="$SHELLSPEC_PROJECT_ROOT/validate-prp-frontmatter.sh"
-  FIXTURES="$SHELLSPEC_PROJECT_ROOT/spec/fixtures"
 
   Describe "valid PRP"
     It "passes validation for a complete PRP"

@@ -39,7 +39,8 @@ for skill_file in $skill_dirs; do
   if [ -d "$skill_dir/scripts" ]; then
     with_scripts=$((with_scripts + 1))
     script_count=$(find "$skill_dir/scripts" -type f 2>/dev/null | wc -l | tr -d ' ')
-    scripts=$(find "$skill_dir/scripts" -type f -exec basename {} \; 2>/dev/null | tr '\n' ', ' | sed 's/,$//')
+    scripts=$(find "$skill_dir/scripts" -type f -exec basename {} \; 2>/dev/null | tr '\n' ', ')
+    scripts=${scripts%,}
     echo "  HAS_SCRIPTS: $plugin_name/$skill_name ($script_count: $scripts)"
   fi
 done

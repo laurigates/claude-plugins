@@ -7,6 +7,7 @@
 #   org   GitHub organization name (default: current repo's org)
 #   repo  Repository in owner/name format (default: current repo)
 
+# shellcheck disable=SC2016  # jq expressions use $ for variable references, not shell expansion
 set -euo pipefail
 
 ORG="${1:-$(gh repo view --json owner --jq '.owner.login')}"

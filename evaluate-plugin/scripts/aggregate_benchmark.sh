@@ -5,6 +5,7 @@
 # Reads:  <plugin-name>/skills/*/eval-results/benchmark.json
 # Writes: <plugin-name>/eval-results/plugin-benchmark.json
 
+# shellcheck disable=SC2016  # jq expressions use $ for variable references, not shell expansion
 set -euo pipefail
 
 plugin_name="${1:?Usage: aggregate_benchmark.sh <plugin-name>}"

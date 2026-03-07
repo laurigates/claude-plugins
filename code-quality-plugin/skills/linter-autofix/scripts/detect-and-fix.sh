@@ -18,7 +18,7 @@ for arg in "$@"; do
   esac
 done
 
-cd "$TARGET_PATH"
+cd "$TARGET_PATH" || exit 1
 
 echo "=== LINTER DETECTION ==="
 
@@ -148,7 +148,9 @@ if [ "$CHECK_ONLY" = false ]; then
   changed=$(git diff --name-only 2>/dev/null | head -20)
   if [ -n "$changed" ]; then
     echo "FILES_MODIFIED:"
-    echo "$changed" | sed 's/^/  - /'
+    while IFS= read -r line; do
+      printf '  - %s\n' "$line"
+    done <<< "$changed"
   else
     echo "FILES_MODIFIED: none"
   fi

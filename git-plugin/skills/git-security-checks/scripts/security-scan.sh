@@ -78,7 +78,7 @@ echo "FOUND:"
 for pattern in "${sensitive_patterns[@]}"; do
   matches=$(echo "$file_list" | grep -E "(^|/)${pattern}$" 2>/dev/null || true)
   if [ -n "$matches" ]; then
-    echo "$matches" | sed 's/^/  - /'
+    while IFS= read -r line; do printf '  - %s\n' "$line"; done <<< "$matches"
     findings=$((findings + 1))
   fi
 done
@@ -167,4 +167,4 @@ else
 fi
 echo "=== SCAN COMPLETE ==="
 
-exit $([ $findings -gt 0 ] && echo 1 || echo 0)
+exit "$([ $findings -gt 0 ] && echo 1 || echo 0)"

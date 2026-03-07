@@ -10,6 +10,7 @@
 # Output: Active workflows, run summary, duration analysis, triggers, failures,
 #         and high-frequency detection.
 
+# shellcheck disable=SC2016  # jq expressions use $ for variable references, not shell expansion
 set -euo pipefail
 
 REPO=""

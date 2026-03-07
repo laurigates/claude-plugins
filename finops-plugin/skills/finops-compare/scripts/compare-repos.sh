@@ -8,6 +8,7 @@
 #   repos     Space-separated repo names (default: all org repos)
 #   --limit   Max repos for auto-discovery (default: 30)
 
+# shellcheck disable=SC2016  # jq expressions use $ for variable references, not shell expansion
 set -euo pipefail
 
 if [[ $# -eq 0 ]]; then

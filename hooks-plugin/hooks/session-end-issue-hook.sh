@@ -10,6 +10,7 @@ set -euo pipefail
 # Read JSON input from stdin
 INPUT=$(cat)
 TRANSCRIPT_PATH=$(echo "$INPUT" | jq -r '.transcript_path // empty')
+# shellcheck disable=SC2034  # CWD reserved for future use by hook consumers
 CWD=$(echo "$INPUT" | jq -r '.cwd // empty')
 
 # Guard: no transcript path provided
@@ -80,4 +81,5 @@ REASON="${REASON}\nAlternatively, mark todos as completed or cancelled if they a
 
 # Output block decision with proper JSON escaping via jq
 FORMATTED_REASON=$(printf '%b' "$REASON")
+# shellcheck disable=SC2016  # jq expression, not shell expansion
 jq -n --arg reason "$FORMATTED_REASON" '{"decision": "block", "reason": $reason}'

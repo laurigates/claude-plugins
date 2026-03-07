@@ -10,6 +10,7 @@
 #
 # Output: Per-repo run counts, org-wide totals, top consumers, failure hotspots.
 
+# shellcheck disable=SC2016  # jq expressions use $ for variable references, not shell expansion
 set -euo pipefail
 
 ORG=""
@@ -113,6 +114,7 @@ fi
 
 echo ""
 echo "=== Top 10 by Run Count ==="
+# shellcheck disable=SC2034  # Positional fields — not all used in every loop
 sort -k2 -n -r "$TMPFILE" | head -10 | while read -r repo total success failure skipped cancelled; do
   short="${repo#*/}"
   printf "  %-40s %d runs\n" "$short" "$total"
@@ -120,6 +122,7 @@ done
 
 echo ""
 echo "=== Failure Hotspots ==="
+# shellcheck disable=SC2034  # Positional fields — not all used in every loop
 sort -k4 -n -r "$TMPFILE" | head -10 | while read -r repo total success failure skipped cancelled; do
   if [[ "$failure" -gt 0 ]]; then
     short="${repo#*/}"
@@ -130,6 +133,7 @@ done
 
 echo ""
 echo "=== Waste Hotspots (skipped + cancelled) ==="
+# shellcheck disable=SC2034  # Positional fields — not all used in every loop
 while read -r repo total success failure skipped cancelled; do
   waste=$((skipped + cancelled))
   if [[ "$waste" -gt 5 ]]; then
