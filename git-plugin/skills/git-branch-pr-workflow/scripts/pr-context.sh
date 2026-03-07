@@ -82,7 +82,7 @@ echo "--- ISSUE REFERENCES ---"
 refs=$(git log --oneline "$BASE_REF..HEAD" 2>/dev/null | grep -oE "#[0-9]+" | sort -u)
 if [ -n "$refs" ]; then
   echo "REFERENCED_ISSUES:"
-  echo "$refs" | sed 's/^/  /'
+  while IFS= read -r line; do printf '  %s\n' "$line"; done <<< "$refs"
 else
   echo "REFERENCED_ISSUES: none"
 fi
@@ -91,7 +91,7 @@ fi
 closes=$(git log "$BASE_REF..HEAD" --format="%B" 2>/dev/null | grep -iE "(close|fix|resolve)[sd]?\s+#[0-9]+" | head -5)
 if [ -n "$closes" ]; then
   echo "CLOSING_KEYWORDS:"
-  echo "$closes" | sed 's/^/  /'
+  while IFS= read -r line; do printf '  %s\n' "$line"; done <<< "$closes"
 fi
 echo ""
 

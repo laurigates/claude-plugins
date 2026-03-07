@@ -1,0 +1,37 @@
+{
+  "snapshots": [
+    {
+      "date": "2026-03-06",
+      "overall_score": 62,
+      "grade": "D",
+      "category_scores": {
+        "docs": 17,
+        "tests": 10,
+        "security": 16,
+        "quality": 2,
+        "ci": 17
+      },
+      "fixed_count": 3,
+      "remaining_count": 12,
+      "fixed_items": [
+        "Updated CLAUDE.md reviewed date to 2026-03-06",
+        "Added .editorconfig for consistent formatting",
+        "Expanded .gitignore with common sensitive/temp patterns"
+      ],
+      "remaining_items": [
+        "README.md plugin count stale (says 31, actual 37)",
+        "PLUGIN-MAP.md plugin count stale (says 34, actual 37)",
+        "Skill counts conflicting across docs (285 vs 296 vs ~344)",
+        "17 plugins missing author/repository/license in plugin.json",
+        "8 ShellCheck warnings across scripts",
+        "No test framework for git-repo-agent",
+        "ShellCheck not in pre-commit or CI",
+        "scheduled-audits.yml script injection risk",
+        "No gitleaks in pre-commit config",
+        "No .gitleaks.toml allowlist for test fixtures",
+        "No SECURITY.md",
+        "No type checking configured for Python sub-project"
+      ]
+    }
+  ]
+}

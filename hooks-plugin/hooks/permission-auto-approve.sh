@@ -56,6 +56,7 @@ fi
 # --- AUTO-DENY: Dangerous operations ---
 
 # Destructive filesystem operations on root or home
+# shellcheck disable=SC2016  # $HOME is a grep pattern, not shell expansion
 if echo "$COMMAND" | grep -Eq 'rm\s+(-rf|-fr)\s+(/|~/|\$HOME)'; then
   echo '{"decision": "deny", "reason": "Destructive operation on root or home directory"}'
   exit 0

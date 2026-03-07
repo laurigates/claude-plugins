@@ -38,7 +38,8 @@ modified_files=$(jq -r '
 ' "$transcript_path" 2>/dev/null | sort -u | tail -20)
 
 if [ -n "$modified_files" ]; then
-  file_list=$(echo "$modified_files" | tr '\n' ', ' | sed 's/,$//')
+  file_list=$(echo "$modified_files" | tr '\n' ', ')
+  file_list=${file_list%,}
   primer_parts+=("files actively being modified: ${file_list}")
 fi
 

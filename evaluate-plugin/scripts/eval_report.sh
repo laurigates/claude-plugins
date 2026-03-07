@@ -4,6 +4,7 @@
 # Usage: ./evaluate-plugin/scripts/eval_report.sh <benchmark.json>
 # Output: Formatted markdown report to stdout
 
+# shellcheck disable=SC2016  # jq expressions use $ for variable references, not shell expansion
 set -euo pipefail
 
 benchmark_file="${1:?Usage: eval_report.sh <benchmark.json>}"

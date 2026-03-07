@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016  # jq expressions use $ for variable references, not shell expansion
 set -euo pipefail
 
 # Plugin compliance checker - validates plugin structure and metadata
@@ -6,7 +7,7 @@ set -euo pipefail
 # If no args provided, auto-detects all *-plugin directories
 
 # Change to repository root
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 
 # Auto-detect plugins if no args provided
 if [ $# -eq 0 ]; then

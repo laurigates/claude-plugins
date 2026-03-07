@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016  # Grep patterns use backticks and $ literally, not as shell expansion
 # Lint SKILL.md context backtick commands for patterns that break
 # Claude Code's backtick execution engine.
 #

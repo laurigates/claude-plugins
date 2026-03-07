@@ -36,10 +36,12 @@ days_since_date() {
 
   # Try macOS date format first
   if date -j -f "%Y-%m-%d" "$past_date" "+%s" >/dev/null 2>&1; then
-    local past_timestamp=$(date -j -f "%Y-%m-%d" "$past_date" "+%s")
+    local past_timestamp
+    past_timestamp=$(date -j -f "%Y-%m-%d" "$past_date" "+%s")
   # Fallback to GNU date format
   elif date -d "$past_date" "+%s" >/dev/null 2>&1; then
-    local past_timestamp=$(date -d "$past_date" "+%s")
+    local past_timestamp
+    past_timestamp=$(date -d "$past_date" "+%s")
   else
     echo "N/A"
     return
@@ -51,7 +53,7 @@ days_since_date() {
 }
 
 # 1. Find all plugins (directories ending in -plugin)
-cd "$REPO_ROOT"
+cd "$REPO_ROOT" || exit 1
 while IFS= read -r -d '' plugin_dir; do
   plugin_name=$(basename "$plugin_dir")
   ((total_plugins++))
@@ -103,7 +105,6 @@ while IFS= read -r -d '' plugin_dir; do
     ((total_skills++))
     ((plugin_skill_count++))
 
-    skill_rel_path="${skill_file#$REPO_ROOT/}"
     skill_name=$(basename "$(dirname "$skill_file")")
 
     # Extract frontmatter fields

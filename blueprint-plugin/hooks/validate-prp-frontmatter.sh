@@ -87,7 +87,8 @@ validate_confidence() {
     local confidence="$1"
     # Extract numeric part (e.g., "7/10" -> "7" or "7" -> "7")
     local score
-    score=$(echo "$confidence" | sed 's|/10||' | tr -d ' ')
+    score=${confidence/\/10/}
+    score=${score// /}
 
     if ! [[ "$score" =~ ^[0-9]+$ ]]; then
         block "ERROR: Invalid confidence format: '${confidence}'. Use format: N/10 (e.g., 7/10)"

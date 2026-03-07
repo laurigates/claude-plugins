@@ -8,6 +8,7 @@
 #   repo        Per-repo analysis (default: current repo)
 #   org:orgname Org-wide top repos by cache size
 
+# shellcheck disable=SC2016  # jq expressions use $ for variable references, not shell expansion
 set -euo pipefail
 
 ARG="${1:-$(gh repo view --json nameWithOwner --jq '.nameWithOwner')}"

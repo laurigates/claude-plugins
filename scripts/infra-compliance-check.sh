@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016,SC2015  # SC2016: jq $ refs; SC2015: intentional && ... || true guard
 set -euo pipefail
 
 # Infrastructure Compliance Check Script
@@ -24,6 +25,7 @@ workflow_rows=()
 version_rows=()
 skill_rows=()
 security_rows=()
+# shellcheck disable=SC2034  # recommendations reserved for future use
 recommendations=()
 
 total_skills_count=0

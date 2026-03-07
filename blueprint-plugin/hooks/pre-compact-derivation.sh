@@ -64,7 +64,8 @@ if [ -n "$ACTIVE_DERIVATION" ]; then
 fi
 
 if [ -n "$DERIVATION_OUTPUT" ]; then
-    file_list=$(echo "$DERIVATION_OUTPUT" | tr '\n' ', ' | sed 's/,$//')
+    file_list=$(echo "$DERIVATION_OUTPUT" | tr '\n' ', ')
+    file_list=${file_list%,}
     parts+=("output documents being written: ${file_list}")
 fi
 

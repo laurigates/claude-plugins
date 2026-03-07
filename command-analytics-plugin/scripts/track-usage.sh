@@ -3,6 +3,7 @@
 # Command Analytics Tracker
 # Captures Skill tool invocations to track command/skill usage
 
+# shellcheck disable=SC2016  # jq expressions use $ for variable references, not shell expansion
 set -euo pipefail
 
 # Analytics directory

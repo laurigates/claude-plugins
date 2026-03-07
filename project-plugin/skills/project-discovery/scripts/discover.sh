@@ -10,7 +10,7 @@
 set -euo pipefail
 
 TARGET_DIR="${1:-.}"
-cd "$TARGET_DIR"
+cd "$TARGET_DIR" || exit 1
 
 # Phase 1: Git State Analysis
 echo "=== PHASE 1: GIT STATE ==="
@@ -106,7 +106,7 @@ fi
 
 # Directory structure
 echo "TOP_DIRS:"
-ls -d */ 2>/dev/null | head -15 | sed 's/^/  - /'
+find . -maxdepth 1 -type d ! -name '.' -print 2>/dev/null | sed 's|^\./||' | sort | head -15 | sed 's/^/  - /'
 
 echo "=== END PHASE 2 ==="
 echo ""
@@ -159,7 +159,7 @@ fi
 # CI/CD
 echo "CI_CD:"
 if [ -d ".github/workflows" ]; then
-  ls .github/workflows/*.yml .github/workflows/*.yaml 2>/dev/null | xargs -I{} basename {} | sed 's/^/  - github: /'
+  find .github/workflows -maxdepth 1 \( -name '*.yml' -o -name '*.yaml' \) -exec basename {} \; 2>/dev/null | sed 's/^/  - github: /'
 fi
 [ -f ".gitlab-ci.yml" ] && echo "  - gitlab-ci"
 [ -f ".circleci/config.yml" ] && echo "  - circleci"

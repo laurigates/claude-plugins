@@ -88,4 +88,5 @@ REASON="${REASON}\nRun 'git stash list' to inspect, or 'git stash show -p stash@
 
 # Output block decision with proper JSON escaping via jq
 FORMATTED_REASON=$(printf '%b' "$REASON")
+# shellcheck disable=SC2016  # jq expression, not shell expansion
 jq -n --arg reason "$FORMATTED_REASON" '{"decision": "block", "reason": $reason}'
