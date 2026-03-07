@@ -1,7 +1,7 @@
 ---
 model: sonnet
 created: 2026-01-30
-modified: 2026-03-01
+modified: 2026-03-07
 reviewed: 2026-02-14
 description: "Derive Claude rules from git commit log decisions. Newer commits override older decisions when conflicts exist."
 args: "[--since DATE] [--scope SCOPE]"
@@ -90,9 +90,12 @@ For each decision, generate rule file using template from [REFERENCE.md](REFEREN
 3. Generate actionable rule statement
 4. Include code examples from commit diffs
 5. Reference any superseded earlier decisions
+6. Add `paths` frontmatter when the rule is naturally scoped to specific file types (see [REFERENCE.md](REFERENCE.md#rule-categories) for suggested patterns per category)
 
 Generate separate rule files by category (see [REFERENCE.md](REFERENCE.md#rule-categories)):
 - `code-style.md`, `testing-standards.md`, `api-conventions.md`, `error-handling.md`, `dependencies.md`, `security-practices.md`
+
+Path-scope rules where appropriate — e.g., `testing-standards.md` scoped to test files reduces context noise when working on non-test code.
 
 ### Step 6: Handle conflicts with existing rules
 

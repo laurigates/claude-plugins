@@ -1,3 +1,9 @@
+---
+created: 2026-01-01
+modified: 2026-03-07
+reviewed: 2026-03-07
+---
+
 # Handling Blocked Hooks
 
 When a PreToolUse hook blocks a command, follow this decision process.

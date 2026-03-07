@@ -35,6 +35,9 @@ git log --format="%H|%ai|%s" | grep -i "{topic}" | sort -t'|' -k2 -r
 
 ## Rule Template
 
+Rules may include an optional `paths` frontmatter to scope them to specific file types or directories. Add `paths` when the rule only applies to certain parts of the codebase — this reduces context noise and keeps rules relevant.
+
+**Global rule** (applies to all files — no frontmatter needed):
 ```markdown
 # {Rule Title}
 
@@ -71,18 +74,36 @@ git log --format="%H|%ai|%s" | grep -i "{topic}" | sort -t'|' -k2 -r
 *Derived from git history via /blueprint:derive-rules*
 ```
 
+**Path-scoped rule** (add `paths` frontmatter when rule only applies to specific files):
+```markdown
+---
+paths:
+  - "{glob-pattern}"
+  - "{glob-pattern}"
+---
+
+# {Rule Title}
+
+{Rule description — applies only to matched paths}
+
+## Source
+...
+```
+
 ## Rule Categories
 
-Generate separate rule files by category:
+Generate separate rule files by category. Apply `paths` frontmatter where the rule is naturally scoped to specific file types or directories:
 
-| File | Content | Source Commits |
-|------|---------|---|
-| `code-style.md` | Naming, formatting, structure rules | `refactor:`, `style:` |
-| `testing-standards.md` | Testing approach, coverage, fixtures | `test:` |
-| `api-conventions.md` | Endpoint patterns, error handling | `feat:` (api scope), `fix:` (api scope) |
-| `error-handling.md` | Exception patterns, fallbacks | `fix:` (error-related) |
-| `dependencies.md` | Package management, version policies | `chore:` (deps), `build:` |
-| `security-practices.md` | Auth, validation, secrets handling | `fix:` (security), `feat:` (security) |
+| File | Content | Source Commits | Suggested `paths` |
+|------|---------|---|---|
+| `code-style.md` | Naming, formatting, structure rules | `refactor:`, `style:` | *(global — omit paths)* |
+| `testing-standards.md` | Testing approach, coverage, fixtures | `test:` | `["**/*.{test,spec}.*", "tests/**/*", "test/**/*"]` |
+| `api-conventions.md` | Endpoint patterns, error handling | `feat:` (api scope), `fix:` (api scope) | `["src/{api,routes}/**/*", "**/*controller*", "**/*handler*"]` |
+| `error-handling.md` | Exception patterns, fallbacks | `fix:` (error-related) | *(global — omit paths)* |
+| `dependencies.md` | Package management, version policies | `chore:` (deps), `build:` | `["package.json", "go.mod", "Cargo.toml", "pyproject.toml", "*.lock"]` |
+| `security-practices.md` | Auth, validation, secrets handling | `fix:` (security), `feat:` (security) | *(global — omit paths)* |
+
+**Path scoping guidance**: Use `paths` when the rule only makes sense in context of specific files. Omit `paths` for rules that apply universally (e.g., error handling philosophy, security mindset). Use brace expansion for concise patterns: `*.{ts,tsx}`, `src/{api,routes}/**/*`.
 
 ## Conflict Resolution Strategy
 
