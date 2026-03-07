@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.5.0...github-actions-plugin-v1.6.0) (2026-03-07)
+
+
+### Features
+
+* **github-actions-plugin:** add reusable CI auto-fix workflow skill ([#895](https://github.com/laurigates/claude-plugins/issues/895)) ([8b34b53](https://github.com/laurigates/claude-plugins/commit/8b34b53eb97ab599a7d58780ea26bf70d9cece13))
+
 ## [1.5.0](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.4.4...github-actions-plugin-v1.5.0) (2026-02-27)
 
 
