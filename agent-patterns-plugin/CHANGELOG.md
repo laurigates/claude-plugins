@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.11.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.10.0...agent-patterns-plugin-v2.11.0) (2026-03-08)
+
+
+### Features
+
+* **agent-patterns-plugin:** add plugin-settings skill ([#897](https://github.com/laurigates/claude-plugins/issues/897)) ([c42e574](https://github.com/laurigates/claude-plugins/commit/c42e574b8f525b79bdd15ceb3fb2b1d75a1e347e))
+
 ## [2.10.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.9.0...agent-patterns-plugin-v2.10.0) (2026-03-05)
 
 
