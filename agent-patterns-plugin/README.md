@@ -90,6 +90,20 @@ Configure and orchestrate Claude Code agent teams with TeamCreate, SendMessage, 
 - Managing task assignment and inter-agent communication
 - Implementing graceful team shutdown procedures
 
+#### `plugin-settings`
+Configure per-project plugin settings using `.claude/plugin-name.local.md` files.
+
+**When to use:**
+- Building plugins that need user-configurable behavior
+- Storing agent state between sessions
+- Controlling hook activation per-project without editing `hooks.json`
+
+**Features:**
+- YAML frontmatter for structured settings
+- Markdown body for prompts and additional context
+- Standard `extract_field` parsing pattern
+- Toggle-based hook activation, agent state management
+
 #### `claude-hooks-configuration`
 Configure Claude Code lifecycle hooks with proper timeout settings.
 
