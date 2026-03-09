@@ -38,10 +38,11 @@ if echo "$COMMAND" | grep -qE '\-\-body-file'; then
 fi
 
 # Fall back to inline --body argument (single-quoted, then double-quoted)
+# Uses -0777 to slurp entire input so multi-line body content is matched correctly
 if [ -z "$BODY" ] && echo "$COMMAND" | grep -qE '\-\-body\b'; then
-    BODY=$(echo "$COMMAND" | perl -ne "if (/--body '([^']*)'/) { print \$1; }" 2>/dev/null || true)
+    BODY=$(echo "$COMMAND" | perl -0777 -ne "if (/--body '([^']*)'/) { print \$1; }" 2>/dev/null || true)
     if [ -z "$BODY" ]; then
-        BODY=$(echo "$COMMAND" | perl -ne 'if (/--body "([^"]*)"/) { print $1; }' 2>/dev/null || true)
+        BODY=$(echo "$COMMAND" | perl -0777 -ne 'if (/--body "([^"]*)"/) { print $1; }' 2>/dev/null || true)
     fi
 fi
 
