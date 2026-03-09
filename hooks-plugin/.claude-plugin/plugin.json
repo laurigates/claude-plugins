@@ -124,9 +124,9 @@
             "statusMessage": "Checking task completeness..."
           },
           {
-            "type": "agent",
-            "prompt": "You are verifying that changes made in this session don't break tests. First: if stop_hook_active is true in the input, respond with {\"ok\": true} immediately.\n\nOtherwise:\n1. Run git status to check for modified files\n2. If source files were changed (not just docs/config), look for a test runner:\n   - package.json with test script → npm test -- --bail\n   - pytest.ini or pyproject.toml with pytest → pytest -x --tb=short\n   - Cargo.toml → cargo test\n   - go.mod → go test ./...\n   - Makefile with test target → make test\n3. Run the test suite with compact/fail-fast flags\n4. If tests pass, respond {\"ok\": true}\n5. If tests fail, respond {\"ok\": false, \"reason\": \"Test failures: [summary of failures]\"}\n6. If no test runner is found or no source files changed, respond {\"ok\": true}\n\nContext: $ARGUMENTS",
-            "timeout": 120,
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/test-verification.sh",
+            "timeout": 60000,
             "statusMessage": "Running test verification..."
           }
         ]

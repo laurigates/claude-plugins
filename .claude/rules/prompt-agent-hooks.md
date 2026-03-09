@@ -190,10 +190,15 @@ Respond with {"ok": true} if [all checks pass], or {"ok": false, "reason": "spec
 ### Optimization Tips
 
 - Default to `command` hooks — free and instant
+- Convert `agent` hooks to `command` hooks when the logic is deterministic (e.g., test verification: `git diff` + test runner detection is a bash script, not an LLM task)
 - Use `prompt` hooks sparingly on high-frequency events (`PreToolUse` fires often)
-- Use `agent` hooks on low-frequency events (`Stop`, `TaskCompleted`)
+- Reserve `agent` hooks for checks that genuinely require LLM judgment AND tool access
 - Set appropriate timeouts (don't use 120s when 30s suffices)
 - Use the `model` field to pick the cheapest model that works
+
+### Anti-Patterns
+
+- **SessionEnd hooks that mutate git state**: Hooks that run `git switch main`, `git pull`, or auto-commit affect every repository and cause unintended side effects across unrelated sessions. Keep SessionEnd hooks to cleanup only (temp files, logs).
 
 ## Plugin Integration Patterns
 
@@ -230,7 +235,7 @@ The command hook runs first (fast structural validation). If it passes, the agen
 | Event | Recommended Type | Pattern |
 |-------|-----------------|---------|
 | `Stop` | `prompt` | Task completeness evaluation |
-| `Stop` | `agent` | Test suite verification |
+| `Stop` | `command` | Test suite verification (deterministic: `git diff` → detect test runner → run tests) |
 | `SubagentStop` | `prompt` | Output completeness check |
 | `TaskCompleted` | `agent` | Implementation quality gate |
 | `UserPromptSubmit` | `prompt` | Intent classification, safety check |

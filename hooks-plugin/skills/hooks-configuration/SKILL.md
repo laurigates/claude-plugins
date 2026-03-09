@@ -11,8 +11,8 @@ description: |
 user-invocable: false
 allowed-tools: Bash(bash *), Bash(cat *), Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2025-12-16
-modified: 2026-03-02
-reviewed: 2026-03-02
+modified: 2026-03-09
+reviewed: 2026-03-09
 ---
 
 # Claude Code Hooks Configuration
@@ -511,12 +511,14 @@ All other events (`SessionStart`, `SessionEnd`, `PreCompact`, etc.) support only
 ```json
 {
   "type": "agent",
-  "prompt": "Run the test suite and verify all tests pass. $ARGUMENTS",
+  "prompt": "Check for TODO/FIXME comments and debugging artifacts in changed files. $ARGUMENTS",
   "model": "haiku",
-  "timeout": 120,
-  "statusMessage": "Running test verification..."
+  "timeout": 60,
+  "statusMessage": "Checking implementation quality..."
 }
 ```
+
+> **Note**: Prefer `command` hooks over `agent` hooks when the logic is deterministic. For example, test verification (detect changed files → find test runner → run tests) is better as a bash script than an agent hook — it eliminates LLM latency on every invocation.
 
 ### Response Schema (both types)
 
