@@ -16,8 +16,7 @@ Display a quick FinOps summary including org-level billing (if admin) and curren
 
 ## Context
 
-- Current repo: !`git remote -v | head -1`
-- Repo org/owner: !`git remote get-url origin 2>/dev/null | sed 's/.*github.com[:/]\([^/]*\).*/\1/'`
+- Current repo URL: !`git remote get-url origin`
 
 ## Parameters
 

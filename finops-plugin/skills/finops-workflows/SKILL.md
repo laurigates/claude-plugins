@@ -16,7 +16,7 @@ Analyze GitHub Actions workflow runs for a repository - frequency, duration, suc
 
 ## Context
 
-- Current repo: !`git remote -v | head -1`
+- Current repo URL: !`git remote get-url origin`
 
 ## Parameters
 

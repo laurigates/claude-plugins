@@ -16,7 +16,7 @@ Identify GitHub Actions waste patterns and provide actionable fix suggestions. A
 
 ## Context
 
-- Current repo: !`git remote -v | head -1`
+- Current repo URL: !`git remote get-url origin`
 - Workflow files: !`find .github/workflows -maxdepth 1 \( -name '*.yml' -o -name '*.yaml' \)`
 
 ## Parameters

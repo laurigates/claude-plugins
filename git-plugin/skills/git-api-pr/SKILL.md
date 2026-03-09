@@ -23,8 +23,8 @@ reviewed: 2026-02-15
 
 ## Context
 
-- Repo: !`git remote -v | head -1`
-- Default branch: !`git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||'`
+- Repo: !`git remote get-url origin`
+- Default branch: !`git symbolic-ref refs/remotes/origin/HEAD`
 - Auth: !`gh auth status`
 - Working dir: !`pwd`
 

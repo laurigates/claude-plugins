@@ -28,10 +28,8 @@ Analyze GitHub Actions usage, costs, and efficiency across organizations and rep
 
 ## Context
 
-- Current repo: !`git remote -v | head -1`
-- Repo owner: !`git remote get-url origin 2>/dev/null | sed 's/.*github.com[:/]\([^/]*\).*/\1/'`
-- Owner type: !`gh api repos/$(git remote get-url origin 2>/dev/null | sed 's/.*github.com[:/]//' | sed 's/\.git$//') --jq '.owner.type' 2>/dev/null || echo "unknown"`
-- Workflow files: !`find .github/workflows -maxdepth 1 \( -name '*.yml' -o -name '*.yaml' \)`
+- Current repo URL: !`git remote get-url origin`
+- Workflow files: !`find .github/workflows -maxdepth 1 -name '*.yml' -o -name '*.yaml'`
 - Active workflows: !`gh workflow list --json id,name,state`
 
 ## Execution
@@ -40,7 +38,7 @@ Execute this GitHub Actions FinOps analysis:
 
 ### Step 1: Determine scope
 
-Read the Context values above. Set `$OWNER` and `$REPO` from the current repo. If owner type is "Organization", set `$GITHUB_ORG` to the repo owner for org-level billing queries.
+Read the Context values above. Parse `$OWNER` and `$REPO` from the current repo URL (e.g., `https://github.com/OWNER/REPO.git`). Run `gh api repos/$OWNER/$REPO --jq '.owner.type'` to determine if the owner is an "Organization" or "User". If Organization, set `$GITHUB_ORG` to the repo owner for org-level billing queries.
 
 If no repo context is available, ask the user for the target organization or repository.
 
