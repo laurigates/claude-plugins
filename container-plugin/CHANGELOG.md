@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.7.0](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.6.0...container-plugin-v2.7.0) (2026-03-09)
+
+
+### Features
+
+* **rules:** update rules for Claude Code 2.1.63-2.1.71 changes ([#917](https://github.com/laurigates/claude-plugins/issues/917)) ([20341e8](https://github.com/laurigates/claude-plugins/commit/20341e871fe7e91eb79d51aa02ad7bc9003a93e1))
+
 ## [2.6.0](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.5.3...container-plugin-v2.6.0) (2026-02-27)
 
 
