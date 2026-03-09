@@ -10,9 +10,10 @@ tools: Glob, Grep, LS, Read, Edit, Write, Bash, TodoWrite
 skills:
   - git-cli-agentic
   - git-commit
+maxTurns: 20
 created: 2026-01-24
-modified: 2026-02-12
-reviewed: 2026-02-12
+modified: 2026-03-09
+reviewed: 2026-03-09
 ---
 
 # Git Ops Agent

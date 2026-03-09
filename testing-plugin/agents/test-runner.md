@@ -6,9 +6,10 @@ description: |
   Run tests and report results. Detects the project's test framework, executes tests with
   agentic-optimized flags, and returns a concise summary to the orchestrator.
 tools: Glob, Grep, Read, Bash(npm test *), Bash(npm run test *), Bash(npx vitest *), Bash(npx jest *), Bash(yarn test *), Bash(bun test *), Bash(pytest *), Bash(python -m pytest *), Bash(cargo test *), Bash(go test *), Bash(just *), TodoWrite
+maxTurns: 12
 created: 2026-02-12
-modified: 2026-02-13
-reviewed: 2026-02-13
+modified: 2026-03-09
+reviewed: 2026-03-09
 ---
 
 # Test Runner Agent

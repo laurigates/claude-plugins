@@ -7,9 +7,10 @@ tools: Glob, Grep, LS, Read, Edit, Write, Bash(docker *), Bash(podman *), Bash(b
 skills:
   - docker-development
   - dockerfile-optimization
+maxTurns: 15
 created: 2026-01-24
-modified: 2026-02-02
-reviewed: 2026-02-02
+modified: 2026-03-09
+reviewed: 2026-03-09
 ---
 
 # Container Build Agent

@@ -10,8 +10,8 @@ description: |
 user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 created: 2026-03-03
-modified: 2026-03-03
-reviewed: 2026-03-03
+modified: 2026-03-09
+reviewed: 2026-03-09
 ---
 
 # Agent Teams
@@ -35,7 +35,7 @@ reviewed: 2026-03-03
 ```
 Lead Agent (orchestrator)
     ├── TeamCreate — creates team + shared task list
-    ├── Task tool — spawns teammate agents
+    ├── Agent tool — spawns teammate agents
     ├── SendMessage — communicates with teammates
     ├── TaskUpdate — assigns tasks to teammates
     └── Teammates (run in parallel)
@@ -82,7 +82,7 @@ TaskCreate({
 
 ### 3. Spawn Teammates
 
-Use the Task tool to spawn each teammate with the team context:
+Use the Agent tool to spawn each teammate with the team context:
 
 ```
 Agent tool with:

@@ -1,8 +1,8 @@
 ---
 model: sonnet
 created: 2025-12-16
-modified: 2026-02-27
-reviewed: 2025-12-16
+modified: 2026-03-09
+reviewed: 2026-03-09
 allowed-tools: Task, TodoWrite
 args: [--api] [--readme] [--changelog]
 argument-hint: [--api] [--readme] [--changelog]
@@ -29,7 +29,7 @@ agent: general-purpose
 
 **Delegate this task to the `documentation` agent.**
 
-Use the Task tool with `subagent_type: documentation` to generate or update project documentation. Pass all the context gathered above and the parsed parameters to the agent.
+Use the Agent tool with `subagent_type: documentation` to generate or update project documentation. Pass all the context gathered above and the parsed parameters to the agent.
 
 The documentation agent should:
 

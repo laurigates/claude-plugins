@@ -4,9 +4,10 @@ model: haiku
 color: "#4A90E2"
 description: Generate documentation from code. Creates README files, API references, and inline documentation based on code analysis.
 tools: Glob, Grep, LS, Read, Edit, Write, TodoWrite
+maxTurns: 15
 created: 2025-12-27
-modified: 2025-12-27
-reviewed: 2025-12-27
+modified: 2026-03-09
+reviewed: 2026-03-09
 ---
 
 # Docs Agent

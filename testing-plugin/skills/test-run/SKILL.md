@@ -1,8 +1,8 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-02-05
-reviewed: 2025-12-16
+modified: 2026-03-09
+reviewed: 2026-03-09
 allowed-tools: Task, TodoWrite
 args: [test-pattern] [--coverage] [--watch]
 argument-hint: [test-pattern] [--coverage] [--watch]
@@ -27,7 +27,7 @@ name: test-run
 
 **Delegate this task to the `test-runner` agent.**
 
-Use the Task tool with `subagent_type: test-runner` to run tests with the appropriate framework. Pass all the context gathered above and the parsed parameters to the agent.
+Use the Agent tool with `subagent_type: test-runner` to run tests with the appropriate framework. Pass all the context gathered above and the parsed parameters to the agent.
 
 The test-runner agent should:
 

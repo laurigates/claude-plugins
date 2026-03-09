@@ -7,9 +7,11 @@ description: |
   quality and structure quality to objectively determine which output is better.
   Use to compare with-skill vs baseline runs without bias.
 tools: Read, Glob, Grep, Bash(cat *), Bash(find *), TodoWrite
+context: fork
+maxTurns: 12
 created: 2026-03-04
-modified: 2026-03-04
-reviewed: 2026-03-04
+modified: 2026-03-09
+reviewed: 2026-03-09
 ---
 
 # Eval Comparator Agent

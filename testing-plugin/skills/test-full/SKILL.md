@@ -1,8 +1,8 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-02-27
-reviewed: 2025-12-16
+modified: 2026-03-09
+reviewed: 2026-03-09
 allowed-tools: Task, TodoWrite
 args: "[--coverage] [--parallel] [--report]"
 argument-hint: "[--coverage] [--parallel] [--report]"
@@ -29,7 +29,7 @@ agent: general-purpose
 
 **Delegate this task to the `test-runner` agent.**
 
-Use the Task tool with `subagent_type: test-runner` to run the complete test suite. Pass all the context gathered above and specify **All Tiers** execution.
+Use the Agent tool with `subagent_type: test-runner` to run the complete test suite. Pass all the context gathered above and specify **All Tiers** execution.
 
 The test-runner agent should:
 

@@ -1,8 +1,8 @@
 ---
 model: haiku
 created: 2025-12-16
-modified: 2026-02-05
-reviewed: 2025-12-16
+modified: 2026-03-09
+reviewed: 2026-03-09
 allowed-tools: Task, TodoWrite
 args: "[path] [--watch] [--affected]"
 argument-hint: "[path] [--watch] [--affected]"
@@ -26,7 +26,7 @@ name: test-quick
 
 **Delegate this task to the `test-runner` agent.**
 
-Use the Task tool with `subagent_type: test-runner` to run fast unit tests only. Pass all the context gathered above and specify **Tier 1 (unit tests)** execution.
+Use the Agent tool with `subagent_type: test-runner` to run fast unit tests only. Pass all the context gathered above and specify **Tier 1 (unit tests)** execution.
 
 The test-runner agent should:
 
