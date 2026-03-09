@@ -28,9 +28,9 @@ Analyze GitHub Actions usage, costs, and efficiency across organizations and rep
 
 ## Context
 
-- Current repo: !`gh repo view --json nameWithOwner --jq '.nameWithOwner'`
-- Repo owner: !`gh repo view --json owner --jq '.owner.login'`
-- Owner type: !`gh repo view --json owner --jq '.owner.__typename'`
+- Current repo: !`git remote -v | head -1`
+- Repo owner: !`git remote get-url origin 2>/dev/null | sed 's/.*github.com[:/]\([^/]*\).*/\1/'`
+- Owner type: !`gh api repos/$(git remote get-url origin 2>/dev/null | sed 's/.*github.com[:/]//' | sed 's/\.git$//') --jq '.owner.type' 2>/dev/null || echo "unknown"`
 - Workflow files: !`find .github/workflows -maxdepth 1 \( -name '*.yml' -o -name '*.yaml' \)`
 - Active workflows: !`gh workflow list --json id,name,state`
 

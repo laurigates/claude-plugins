@@ -16,7 +16,7 @@ Identify GitHub Actions waste patterns and provide actionable fix suggestions. A
 
 ## Context
 
-- Current repo: !`gh repo view --json nameWithOwner --jq '.nameWithOwner'`
+- Current repo: !`git remote -v | head -1`
 - Workflow files: !`find .github/workflows -maxdepth 1 \( -name '*.yml' -o -name '*.yaml' \)`
 
 ## Parameters

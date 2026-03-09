@@ -29,7 +29,7 @@ Pre-work validation to prevent wasted effort from stale state, redundant work, o
 
 ## Context
 
-- Repo: !`gh repo view --json nameWithOwner --jq '.nameWithOwner'`
+- Repo: !`git remote -v | head -1`
 - Current branch: !`git branch --show-current`
 - Remote tracking: !`git branch -vv --format='%(refname:short) %(upstream:short) %(upstream:track)'`
 - Uncommitted changes: !`git status --porcelain`
