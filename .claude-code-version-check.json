@@ -1,8 +1,16 @@
 {
-  "lastCheckedVersion": "2.1.63",
-  "lastCheckedDate": "2026-03-02",
+  "lastCheckedVersion": "2.1.71",
+  "lastCheckedDate": "2026-03-09",
   "changelogUrl": "https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md",
   "reviewedChanges": [
+    {
+      "version": "2.1.71",
+      "date": "2026-03-09",
+      "relevantChanges": [],
+      "actionsRequired": [
+        "Review pending - see GitHub issue"
+      ]
+    },
     {
       "version": "2.1.63",
       "date": "2026-03-02",
