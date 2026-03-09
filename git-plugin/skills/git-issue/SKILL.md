@@ -12,7 +12,7 @@ name: git-issue
 
 ## Context
 
-- Repo: !`gh repo view --json nameWithOwner`
+- Repo: !`git remote get-url origin`
 - Current branch: !`git branch --show-current`
 - Working tree clean: !`git status --porcelain=v2`
 - Open issues: !`gh issue list --state open --json number,title,labels --limit 10`

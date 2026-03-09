@@ -23,8 +23,8 @@ reviewed: 2026-02-15
 
 ## Context
 
-- Repo: !`gh repo view --json nameWithOwner -q '.nameWithOwner'`
-- Default branch: !`gh repo view --json defaultBranchRef -q '.defaultBranchRef.name'`
+- Repo: !`git remote get-url origin`
+- Default branch: !`git symbolic-ref refs/remotes/origin/HEAD`
 - Auth: !`gh auth status`
 - Working dir: !`pwd`
 

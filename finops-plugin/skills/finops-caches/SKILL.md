@@ -16,8 +16,7 @@ Analyze GitHub Actions cache usage - size breakdown, cache key patterns, branch 
 
 ## Context
 
-- Current repo: !`gh repo view --json nameWithOwner --jq '.nameWithOwner'`
-- Repo owner: !`gh repo view --json owner --jq '.owner.login'`
+- Current repo URL: !`git remote get-url origin`
 
 ## Parameters
 

@@ -13,7 +13,7 @@ name: git-fix-pr
 
 ## Context
 
-- Repo: !`gh repo view --json nameWithOwner`
+- Repo: !`git remote get-url origin`
 - Current branch: !`git branch --show-current`
 - Git status: !`git status --porcelain=v2 --branch`
 - Staged changes: !`git diff --cached --numstat`

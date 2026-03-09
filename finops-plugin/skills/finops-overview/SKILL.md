@@ -16,8 +16,7 @@ Display a quick FinOps summary including org-level billing (if admin) and curren
 
 ## Context
 
-- Current repo: !`gh repo view --json nameWithOwner --jq '.nameWithOwner'`
-- Repo org/owner: !`gh repo view --json owner --jq '.owner.login'`
+- Current repo URL: !`git remote get-url origin`
 
 ## Parameters
 
