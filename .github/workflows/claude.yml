@@ -61,6 +61,8 @@ jobs:
             Bash(git branch *)
             Bash(gh pr *)
             Bash(gh issue *)
+            Bash(gh api *)
+            WebFetch
           plugin_marketplaces: |
             https://github.com/laurigates/claude-plugins.git
           plugins: |
