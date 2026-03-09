@@ -1,8 +1,33 @@
 {
-  "lastCheckedVersion": "2.1.63",
-  "lastCheckedDate": "2026-03-02",
+  "lastCheckedVersion": "2.1.71",
+  "lastCheckedDate": "2026-03-09",
   "changelogUrl": "https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md",
   "reviewedChanges": [
+    {
+      "version": "2.1.71",
+      "date": "2026-03-09",
+      "relevantChanges": [
+        "Task tool renamed to Agent tool in 2.1.63 (Task still works as alias)",
+        "New subagent frontmatter fields: permissionMode, maxTurns, skills, memory, background, mcpServers",
+        "Agent(name) syntax in tools field to restrict spawnable subagent types",
+        "--agents CLI flag for session-scoped subagent definitions",
+        "Subagent scope priority updated: CLI > project > user > plugin",
+        "Persistent subagent memory via memory field (user/project/local scope)",
+        "Preload skills into subagents via skills field",
+        "New skill string substitutions: $ARGUMENTS[N], $N, ${CLAUDE_SESSION_ID}, ${CLAUDE_SKILL_DIR}",
+        "New settings: CLAUDE_CODE_EFFORT_LEVEL, CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING",
+        "New plugin settings: strictKnownMarketplaces, hostPattern marketplace source",
+        "New MCP settings: allowManagedMcpServersOnly",
+        "New env vars: SLASH_COMMAND_TOOL_CHAR_BUDGET, CLAUDE_CODE_DISABLE_BACKGROUND_TASKS, CLAUDE_AUTOCOMPACT_PCT_OVERRIDE",
+        "Weaker sandbox options for restricted Docker/WSL2 environments",
+        "Skill context budget: 2% of context window, fallback 16,000 characters"
+      ],
+      "actionsRequired": [
+        "Updated .claude/rules/agent-development.md: new subagent fields, Task→Agent rename, persistent memory, skills preloading, scope priority, agent spawning restrictions",
+        "Updated .claude/rules/skill-development.md: new string substitution variables ($ARGUMENTS[N], $N, ${CLAUDE_SESSION_ID}, ${CLAUDE_SKILL_DIR}), name field now optional",
+        "Updated .claude/rules/hooks-reference.md: version header updated to 2.1.71+"
+      ]
+    },
     {
       "version": "2.1.63",
       "date": "2026-03-02",

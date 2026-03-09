@@ -1,7 +1,7 @@
 ---
 created: 2025-12-20
-modified: 2026-03-02
-reviewed: 2026-03-02
+modified: 2026-03-09
+reviewed: 2026-03-09
 paths:
   - "**/skills/**"
   - "**/SKILL.md"
@@ -51,7 +51,7 @@ Skills live in `<plugin-name>/skills/<skill-name>/SKILL.md` (or `skill.md`).
 ```yaml
 ---
 model: <opus|sonnet|haiku>
-name: <Skill Name>
+name: <Skill Name>        # Optional: uses directory name if omitted
 description: <1-2 sentence description of capability>
 allowed-tools: <Comma-separated list of tools>
 created: YYYY-MM-DD
@@ -59,6 +59,8 @@ modified: YYYY-MM-DD
 reviewed: YYYY-MM-DD
 ---
 ```
+
+> **Note**: `name` is optional — if omitted, the directory name is used. `description` is strongly recommended so Claude knows when to load the skill.
 
 ### Optional Frontmatter Fields
 
@@ -84,6 +86,33 @@ hooks:                                       # Skill-scoped hooks (optional)
 - **`hooks`**: Define hooks that are only active when this skill is loaded. Uses the same schema as settings.json hooks. Agent `Stop` hooks are converted to `SubagentStop` when the agent runs as a subagent.
 
 > **Note**: The `description` field must be a string type. Multi-line YAML strings using `|` or `>` are supported. Non-string values cause a crash (fixed in 2.1.51).
+
+### String Substitutions
+
+Skills support these dynamic variables in content:
+
+| Variable | Description |
+|----------|-------------|
+| `$ARGUMENTS` | All arguments passed at invocation; appended as `ARGUMENTS: <value>` if not in content |
+| `$ARGUMENTS[N]` | 0-based indexed argument (e.g., `$ARGUMENTS[0]` for first arg) |
+| `$N` | Shorthand for `$ARGUMENTS[N]` (e.g., `$0` first, `$1` second) |
+| `${CLAUDE_SESSION_ID}` | Current session ID — useful for logging and session-specific files |
+| `${CLAUDE_SKILL_DIR}` | Directory containing the skill's `SKILL.md` file — use for bundled scripts |
+| `${CLAUDE_PLUGIN_ROOT}` | Root of the loaded plugin (hooks only) |
+
+**Examples:**
+
+```markdown
+## Execution
+
+Fix GitHub issue $ARGUMENTS.
+
+Migrate the $ARGUMENTS[0] component from $ARGUMENTS[1] to $ARGUMENTS[2].
+
+Log to logs/${CLAUDE_SESSION_ID}.log.
+
+Run helper: !`bash ${CLAUDE_SKILL_DIR}/scripts/helper.sh`
+```
 
 ### Model Selection
 

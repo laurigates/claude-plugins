@@ -3,9 +3,11 @@ paths:
   - "**/agents/**"
 ---
 
-# Agent Development
+# Agent Development (Claude Code 2.1.71+)
 
 Patterns and standards for creating and configuring custom agents in Claude Code plugins.
+
+> **Note (2.1.63)**: The `Task` tool was renamed to `Agent` tool. Existing `Task(...)` references in settings and agent definitions still work as aliases, but new code should use `Agent`.
 
 ## Agent vs Skill
 
@@ -43,6 +45,15 @@ reviewed: YYYY-MM-DD
 color: "#E53E3E"       # Hex color for UI display
 context: fork          # Context isolation: 'fork' creates independent context copy
 isolation: worktree    # Filesystem isolation: give agent its own git worktree
+permissionMode: default  # Permission mode: default, acceptEdits, dontAsk, bypassPermissions, plan
+maxTurns: 20           # Maximum agentic turns before agent stops
+background: false      # Set true to always run as a background task
+memory: user           # Persistent memory scope: user, project, or local
+skills:                # Preload skill content into agent context at startup
+  - api-conventions
+  - error-handling-patterns
+mcpServers:            # MCP servers available to this agent
+  - slack
 hooks:                 # Agent-scoped hooks (active only when agent is running)
   Stop:
     - matcher: ""
@@ -61,12 +72,19 @@ hooks:                 # Agent-scoped hooks (active only when agent is running)
 |-------|------|----------|-------------|
 | `name` | string | Yes | Agent identifier (kebab-case) |
 | `description` | string | Yes | Purpose and use cases for agent selection |
-| `model` | string | Yes | `opus`, `sonnet`, or `haiku` |
-| `tools` | comma-list | Yes | Tools the agent can use |
+| `model` | string | Yes | `opus`, `sonnet`, `haiku`, or `inherit` |
+| `tools` | comma-list | Yes | Tools the agent can use; use `Agent(name)` to restrict spawnable subagents |
 | `context` | string | No | `fork` for isolated context (default: shared) |
 | `isolation` | string | No | `worktree` to run agent in an isolated git worktree |
 | `color` | string | No | Hex color for UI display |
+| `permissionMode` | string | No | `default`, `acceptEdits`, `dontAsk`, `bypassPermissions`, or `plan` |
+| `maxTurns` | number | No | Maximum agentic turns before agent stops |
+| `background` | bool | No | Set `true` to always run as a background task |
+| `memory` | string | No | Persistent memory scope: `user`, `project`, or `local` |
+| `skills` | list | No | Skill names to preload into agent context at startup |
+| `mcpServers` | list | No | MCP server names or inline configs available to this agent |
 | `hooks` | object | No | Agent-scoped hooks (same schema as settings.json hooks) |
+| `disallowedTools` | comma-list | No | Tools to deny even if in the inherited list |
 | `created` | date | Recommended | Initial creation date |
 | `modified` | date | Recommended | Last substantive change |
 | `reviewed` | date | Recommended | Last verified against current docs |
@@ -75,10 +93,18 @@ hooks:                 # Agent-scoped hooks (active only when agent is running)
 
 | Field | Used In | Supports |
 |-------|---------|----------|
-| `tools` | Agent `.md` files in `agents/` | Tool names, `Bash(command *)` patterns |
+| `tools` | Agent `.md` files in `agents/` | Tool names, `Bash(command *)` patterns, `Agent(name)` to restrict subagent spawning |
 | `allowed-tools` | Skill `SKILL.md` files | Tool names, `Bash(command *)` patterns |
 
 Both support granular Bash permission patterns like `Bash(git status *)`.
+
+To restrict which subagents an agent can spawn (when running as main thread with `claude --agent`):
+
+```yaml
+tools: Agent(worker, researcher), Read, Bash
+```
+
+This is an allowlist — only `worker` and `researcher` can be spawned. To allow any subagent without restriction, use `Agent` without parentheses. If `Agent` is omitted, the agent cannot spawn any subagents.
 
 ## Model Selection for Agents
 
@@ -142,12 +168,31 @@ For filesystem-level isolation, give agents their own git worktree so they work 
 | `isolation: worktree` | Git worktree | Filesystem + Git | Implementation, commits |
 | Manual worktree | `git worktree add` | Filesystem + Git | Complex multi-issue parallel work |
 
+## Preloading Skills into Agents
+
+Use the `skills` field to inject full skill content into an agent's context at startup. Unlike the main session where skill descriptions are loaded and full content loads on invocation, preloaded skills are fully injected immediately.
+
+```yaml
+---
+name: api-developer
+description: Implement API endpoints following team conventions
+skills:
+  - api-conventions
+  - error-handling-patterns
+---
+Implement API endpoints. Follow the conventions and patterns from the preloaded skills.
+```
+
+Agents do **not** inherit skills from the parent session — they must be listed explicitly.
+
+---
+
 ## Background Execution
 
-Agents can run in the background using the Task tool's `run_in_background` parameter:
+Agents can run in the background using the Agent tool's `run_in_background` parameter (previously `Task tool`):
 
 ```
-Task tool with run_in_background: true
+Agent tool with run_in_background: true
 ```
 
 **Background execution behavior:**
@@ -166,7 +211,29 @@ Task tool with run_in_background: true
 - When the agent's work must complete before the next step
 - Research agents whose findings inform your next steps
 
-## Agent Memory
+## Persistent Agent Memory
+
+The `memory` field enables per-agent persistent memory that survives across conversations:
+
+```yaml
+---
+name: code-reviewer
+memory: user
+---
+Update your agent memory with patterns, conventions, and recurring issues you discover.
+```
+
+| Scope | Location | Use When |
+|-------|----------|----------|
+| `user` | `~/.claude/agent-memory/<name>/` | Learning should apply across all projects |
+| `project` | `.claude/agent-memory/<name>/` | Knowledge is project-specific and shareable via git |
+| `local` | `.claude/agent-memory-local/<name>/` | Project-specific but not committed to git |
+
+When `memory` is set, Read/Write/Edit are auto-enabled for the memory directory, and the first 200 lines of `MEMORY.md` are injected into the agent's system prompt.
+
+---
+
+## Agent Memory (Session Hierarchy)
 
 Agents participate in Claude Code's memory hierarchy. Memory is loaded from multiple scopes in order of specificity:
 
@@ -208,7 +275,7 @@ Agent teams enable multiple agents to collaborate on complex tasks with a shared
 ```
 Lead Agent (orchestrator)
     ├── TeamCreate — creates team and task list
-    ├── Task tool — spawns teammate agents
+    ├── Agent tool — spawns teammate agents (previously Task tool)
     ├── SendMessage — communicates with teammates
     ├── TaskUpdate — assigns tasks to teammates
     └── Teammate Agents
@@ -301,7 +368,23 @@ my-plugin/
 
 Plugin agents are auto-discovered by Claude Code from the `agents/` directory.
 
-User-level custom agents can be placed in `.claude/agents/`.
+User-level custom agents can be placed in `~/.claude/agents/`.
+
+### Scope Priority
+
+When multiple agents share the same name, higher-priority location wins:
+
+| Location | Scope | Priority |
+|----------|-------|----------|
+| `--agents` CLI flag (JSON) | Current session only | 1 (highest) |
+| `.claude/agents/` | Current project | 2 |
+| `~/.claude/agents/` | All projects | 3 |
+| Plugin `agents/` directory | Where plugin is enabled | 4 (lowest) |
+
+CLI-defined agents use `--agents` flag with JSON (same frontmatter fields, use `prompt` for body):
+```bash
+claude --agents '{"my-agent": {"description": "...", "prompt": "...", "tools": ["Read"]}}'
+```
 
 ## Checklist for New Agents
 
@@ -312,6 +395,10 @@ User-level custom agents can be placed in `.claude/agents/`.
 - [ ] Granular `Bash(command *)` patterns used instead of bare `Bash`
 - [ ] `context: fork` added if agent needs isolated context window
 - [ ] `isolation: worktree` added if agent needs filesystem-level git isolation
+- [ ] `permissionMode` set if non-default permission behavior is needed
+- [ ] `maxTurns` set if agent should be bounded
+- [ ] `memory` scope set if agent needs cross-session persistence
+- [ ] `skills` list populated if agent needs specific domain knowledge preloaded
 - [ ] `## Team Configuration` section documents teammate vs subagent recommendation
 - [ ] `## Scope` section defines input/output/step count
 - [ ] Date fields set (`created`, `modified`, `reviewed`)
