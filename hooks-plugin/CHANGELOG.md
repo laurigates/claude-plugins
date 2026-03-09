@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.13.0...hooks-plugin-v1.13.1) (2026-03-09)
+
+
+### Performance
+
+* **hooks-plugin:** replace agent hook with deterministic test verification script ([#906](https://github.com/laurigates/claude-plugins/issues/906)) ([8a29621](https://github.com/laurigates/claude-plugins/commit/8a296219e31f53cbf7a960c5c15bbdd3fe0cc204))
+
 ## [1.13.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.12.2...hooks-plugin-v1.13.0) (2026-03-05)
 
 
