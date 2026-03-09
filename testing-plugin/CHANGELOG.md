@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.11.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.10.1...testing-plugin-v3.11.0) (2026-03-09)
+
+
+### Features
+
+* **rules:** update rules for Claude Code 2.1.63-2.1.71 changes ([#917](https://github.com/laurigates/claude-plugins/issues/917)) ([20341e8](https://github.com/laurigates/claude-plugins/commit/20341e871fe7e91eb79d51aa02ad7bc9003a93e1))
+
 ## [3.10.1](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.10.0...testing-plugin-v3.10.1) (2026-03-01)
 
 
