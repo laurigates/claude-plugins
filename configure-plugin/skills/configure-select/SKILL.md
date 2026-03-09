@@ -26,7 +26,7 @@ Interactively select which infrastructure standards checks to run.
 ## Context
 
 - Project standards: !`find . -maxdepth 1 -name \'.project-standards.yaml\'`
-- Project type: !`grep -m1 "^project_type:" .project-standards.yaml 2>/dev/null`
+- Project type: !`grep -m1 "^project_type:" .project-standards.yaml`
 - Has terraform: !`find . -maxdepth 2 \( -name '*.tf' -o -type d -name 'terraform' \) -print -quit`
 - Has package.json: !`find . -maxdepth 1 -name \'package.json\'`
 - Has pyproject.toml: !`find . -maxdepth 1 -name \'pyproject.toml\'`

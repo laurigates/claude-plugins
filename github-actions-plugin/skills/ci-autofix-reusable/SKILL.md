@@ -28,10 +28,10 @@ Generate a reusable GitHub Actions workflow for automated CI failure analysis an
 
 ## Context
 
-- Reusable workflow exists: !`test -f .github/workflows/reusable-ci-autofix.yml && echo "EXISTS" || echo "MISSING"`
-- Caller workflow exists: !`test -f .github/workflows/auto-fix.yml && echo "EXISTS" || echo "MISSING"`
-- Current workflows: !`find .github/workflows -maxdepth 1 -name '*.yml' -type f 2>/dev/null`
-- Claude secrets configured: !`gh secret list 2>/dev/null | head -5`
+- Reusable workflow exists: !`find .github/workflows -maxdepth 1 -name 'reusable-ci-autofix.yml' -type f`
+- Caller workflow exists: !`find .github/workflows -maxdepth 1 -name 'auto-fix.yml' -type f`
+- Current workflows: !`find .github/workflows -maxdepth 1 -name '*.yml' -type f`
+- Claude secrets configured: !`gh secret list`
 
 ## Parameters
 

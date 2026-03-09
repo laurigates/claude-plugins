@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   scan:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-security-secrets.yml@main
+    uses: laurigates/.github/.github/workflows/reusable-security-secrets.yml@main
     with:
       file-patterns: '**/*'
       max-turns: 5
@@ -43,7 +43,7 @@ permissions:
 
 jobs:
   scan:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-security-owasp.yml@main
+    uses: laurigates/.github/.github/workflows/reusable-security-owasp.yml@main
     with:
       file-patterns: '**/*.{js,ts,jsx,tsx,py}'
       max-turns: 6
@@ -74,7 +74,7 @@ permissions:
 
 jobs:
   audit:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-security-deps.yml@main
+    uses: laurigates/.github/.github/workflows/reusable-security-deps.yml@main
     with:
       package-manager: 'auto'
       max-turns: 5
@@ -104,7 +104,7 @@ permissions:
 
 jobs:
   analyze:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-quality-typescript.yml@main
+    uses: laurigates/.github/.github/workflows/reusable-quality-typescript.yml@main
     with:
       file-patterns: '**/*.{ts,tsx}'
       max-turns: 6
@@ -129,7 +129,7 @@ permissions:
 
 jobs:
   analyze:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-quality-code-smell.yml@main
+    uses: laurigates/.github/.github/workflows/reusable-quality-code-smell.yml@main
     with:
       file-patterns: '**/*.{js,ts,jsx,tsx,py}'
       max-turns: 5
@@ -159,7 +159,7 @@ permissions:
 
 jobs:
   analyze:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-quality-async.yml@main
+    uses: laurigates/.github/.github/workflows/reusable-quality-async.yml@main
     with:
       file-patterns: '**/*.{js,ts,jsx,tsx}'
       max-turns: 5
@@ -191,7 +191,7 @@ permissions:
 
 jobs:
   check:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-a11y-wcag.yml@main
+    uses: laurigates/.github/.github/workflows/reusable-a11y-wcag.yml@main
     with:
       file-patterns: '**/*.{tsx,jsx,vue,svelte,html}'
       max-turns: 6
@@ -221,7 +221,7 @@ permissions:
 
 jobs:
   check:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-a11y-aria.yml@main
+    uses: laurigates/.github/.github/workflows/reusable-a11y-aria.yml@main
     with:
       file-patterns: '**/*.{tsx,jsx,vue,svelte}'
       max-turns: 5

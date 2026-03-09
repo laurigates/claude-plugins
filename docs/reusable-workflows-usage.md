@@ -25,15 +25,15 @@ on:
 
 jobs:
   security:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-security-owasp.yml@main
+    uses: laurigates/.github/.github/workflows/reusable-security-owasp.yml@main
     secrets: inherit
 
   quality:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-quality-typescript.yml@main
+    uses: laurigates/.github/.github/workflows/reusable-quality-typescript.yml@main
     secrets: inherit
 
   accessibility:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-a11y-wcag.yml@main
+    uses: laurigates/.github/.github/workflows/reusable-a11y-wcag.yml@main
     secrets: inherit
 ```
 
@@ -63,7 +63,7 @@ Scans for leaked API keys, tokens, passwords, and private keys.
 ```yaml
 jobs:
   secrets:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-security-secrets.yml@main
+    uses: laurigates/.github/.github/workflows/reusable-security-secrets.yml@main
     with:
       file-patterns: '**/*'        # Files to scan (default: all)
       max-turns: 5                  # Claude analysis turns (default: 5)
@@ -100,7 +100,7 @@ Analyzes code for OWASP Top 10 2021 vulnerabilities.
 ```yaml
 jobs:
   security:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-security-owasp.yml@main
+    uses: laurigates/.github/.github/workflows/reusable-security-owasp.yml@main
     with:
       file-patterns: 'src/**/*.{ts,tsx,js,jsx}'
       max-turns: 8
@@ -142,7 +142,7 @@ Audits package dependencies for known vulnerabilities.
 ```yaml
 jobs:
   deps:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-security-deps.yml@main
+    uses: laurigates/.github/.github/workflows/reusable-security-deps.yml@main
     with:
       package-manager: 'npm'        # npm, bun, pnpm, yarn, pip, cargo
       max-turns: 6
@@ -184,7 +184,7 @@ Identifies code smells and anti-patterns.
 ```yaml
 jobs:
   quality:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-quality-code-smell.yml@main
+    uses: laurigates/.github/.github/workflows/reusable-quality-code-smell.yml@main
     with:
       file-patterns: 'src/**/*.{js,ts,jsx,tsx}'
       max-turns: 8
@@ -224,7 +224,7 @@ Validates TypeScript type safety and strictness.
 ```yaml
 jobs:
   typescript:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-quality-typescript.yml@main
+    uses: laurigates/.github/.github/workflows/reusable-quality-typescript.yml@main
     with:
       file-patterns: 'src/**/*.{ts,tsx}'
       max-turns: 6
@@ -264,7 +264,7 @@ Validates async/await and Promise patterns.
 ```yaml
 jobs:
   async:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-quality-async.yml@main
+    uses: laurigates/.github/.github/workflows/reusable-quality-async.yml@main
     with:
       file-patterns: 'src/**/*.{js,ts,jsx,tsx}'
       max-turns: 5
@@ -304,7 +304,7 @@ Checks for WCAG 2.1 accessibility compliance.
 ```yaml
 jobs:
   wcag:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-a11y-wcag.yml@main
+    uses: laurigates/.github/.github/workflows/reusable-a11y-wcag.yml@main
     with:
       file-patterns: 'src/components/**/*.{tsx,jsx,vue,html}'
       max-turns: 8
@@ -345,7 +345,7 @@ Validates ARIA implementation correctness.
 ```yaml
 jobs:
   aria:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-a11y-aria.yml@main
+    uses: laurigates/.github/.github/workflows/reusable-a11y-aria.yml@main
     with:
       file-patterns: 'src/components/**/*.{tsx,jsx,vue}'
       max-turns: 6
@@ -390,41 +390,41 @@ on:
 jobs:
   # Security checks
   secrets:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-security-secrets.yml@main
+    uses: laurigates/.github/.github/workflows/reusable-security-secrets.yml@main
     secrets: inherit
 
   owasp:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-security-owasp.yml@main
+    uses: laurigates/.github/.github/workflows/reusable-security-owasp.yml@main
     with:
       fail-on-critical: true
     secrets: inherit
 
   deps:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-security-deps.yml@main
+    uses: laurigates/.github/.github/workflows/reusable-security-deps.yml@main
     secrets: inherit
 
   # Quality checks
   code-quality:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-quality-code-smell.yml@main
+    uses: laurigates/.github/.github/workflows/reusable-quality-code-smell.yml@main
     secrets: inherit
 
   typescript:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-quality-typescript.yml@main
+    uses: laurigates/.github/.github/workflows/reusable-quality-typescript.yml@main
     secrets: inherit
 
   async:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-quality-async.yml@main
+    uses: laurigates/.github/.github/workflows/reusable-quality-async.yml@main
     secrets: inherit
 
   # Accessibility checks
   wcag:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-a11y-wcag.yml@main
+    uses: laurigates/.github/.github/workflows/reusable-a11y-wcag.yml@main
     with:
       wcag-level: 'AA'
     secrets: inherit
 
   aria:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-a11y-aria.yml@main
+    uses: laurigates/.github/.github/workflows/reusable-a11y-aria.yml@main
     secrets: inherit
 
   # Summary job
@@ -464,13 +464,13 @@ on:
 jobs:
   security:
     # Only run if source files changed
-    uses: laurigates/claude-plugins/.github/workflows/reusable-security-owasp.yml@main
+    uses: laurigates/.github/.github/workflows/reusable-security-owasp.yml@main
     secrets: inherit
 
   accessibility:
     # Only run if component files changed
     if: contains(github.event.pull_request.changed_files, 'components/')
-    uses: laurigates/claude-plugins/.github/workflows/reusable-a11y-wcag.yml@main
+    uses: laurigates/.github/.github/workflows/reusable-a11y-wcag.yml@main
     with:
       file-patterns: 'src/components/**/*.tsx'
     secrets: inherit
@@ -481,7 +481,7 @@ jobs:
 ```yaml
 jobs:
   security:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-security-owasp.yml@main
+    uses: laurigates/.github/.github/workflows/reusable-security-owasp.yml@main
     with:
       fail-on-critical: false  # Don't fail automatically
     secrets: inherit
@@ -506,19 +506,19 @@ jobs:
 ### Recommended: Use Release Tags
 
 ```yaml
-uses: laurigates/claude-plugins/.github/workflows/reusable-security-owasp.yml@v2.0.0
+uses: laurigates/.github/.github/workflows/reusable-security-owasp.yml@v2.0.0
 ```
 
 ### Development: Use Branch
 
 ```yaml
-uses: laurigates/claude-plugins/.github/workflows/reusable-security-owasp.yml@main
+uses: laurigates/.github/.github/workflows/reusable-security-owasp.yml@main
 ```
 
 ### Maximum Security: Use Commit SHA
 
 ```yaml
-uses: laurigates/claude-plugins/.github/workflows/reusable-security-owasp.yml@abc123def456
+uses: laurigates/.github/.github/workflows/reusable-security-owasp.yml@abc123def456
 ```
 
 ---
@@ -530,7 +530,7 @@ uses: laurigates/claude-plugins/.github/workflows/reusable-security-owasp.yml@ab
 ```yaml
 jobs:
   scan:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-security-owasp.yml@main
+    uses: laurigates/.github/.github/workflows/reusable-security-owasp.yml@main
     secrets: inherit
 ```
 
@@ -539,7 +539,7 @@ jobs:
 ```yaml
 jobs:
   scan:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-security-owasp.yml@main
+    uses: laurigates/.github/.github/workflows/reusable-security-owasp.yml@main
     secrets:
       CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 ```

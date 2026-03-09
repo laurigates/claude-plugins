@@ -117,7 +117,7 @@ permissions:
 
 jobs:
   check:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-<category>-<name>.yml@main
+    uses: laurigates/.github/.github/workflows/reusable-<category>-<name>.yml@main
     with:
       # Default inputs - customize as needed
       max-turns: 5
