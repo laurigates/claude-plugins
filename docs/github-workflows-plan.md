@@ -66,7 +66,7 @@ Since subdirectories are not supported, use **naming prefixes** to organize:
 ```yaml
 jobs:
   security:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-security-owasp.yml@v2.0.0
+    uses: laurigates/.github/.github/workflows/reusable-security-owasp.yml@v2.0.0
     secrets: inherit  # Or pass explicitly
 ```
 
@@ -85,7 +85,7 @@ jobs:
 ```yaml
 jobs:
   scan:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-security-owasp.yml@v2
+    uses: laurigates/.github/.github/workflows/reusable-security-owasp.yml@v2
     secrets: inherit
 ```
 
@@ -93,7 +93,7 @@ jobs:
 ```yaml
 jobs:
   scan:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-security-owasp.yml@v2
+    uses: laurigates/.github/.github/workflows/reusable-security-owasp.yml@v2
     secrets:
       CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 ```
@@ -1084,7 +1084,7 @@ on:
 
 jobs:
   owasp-scan:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-security-owasp.yml@v2.0.0
+    uses: laurigates/.github/.github/workflows/reusable-security-owasp.yml@v2.0.0
     with:
       file-patterns: 'src/**/*.ts lib/**/*.ts'
       max-turns: 10
@@ -1093,7 +1093,7 @@ jobs:
 
   # Can run multiple scans in parallel
   secrets-scan:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-security-secrets.yml@v2.0.0
+    uses: laurigates/.github/.github/workflows/reusable-security-secrets.yml@v2.0.0
     secrets: inherit
 
   # Use outputs from reusable workflow
@@ -1216,17 +1216,17 @@ on:
 
 jobs:
   security:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-security-owasp.yml@v2
+    uses: laurigates/.github/.github/workflows/reusable-security-owasp.yml@v2
     secrets: inherit
 
   accessibility:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-a11y-wcag.yml@v2
+    uses: laurigates/.github/.github/workflows/reusable-a11y-wcag.yml@v2
     with:
       file-patterns: 'src/components/**/*.tsx'
     secrets: inherit
 
   code-quality:
-    uses: laurigates/claude-plugins/.github/workflows/reusable-quality-code-smell.yml@v2
+    uses: laurigates/.github/.github/workflows/reusable-quality-code-smell.yml@v2
     secrets: inherit
 ```
 
