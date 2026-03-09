@@ -28,7 +28,7 @@ Check and configure pre-commit hooks against project standards.
 
 - Pre-commit config: !`find . -maxdepth 1 -name \'.pre-commit-config.yaml\'`
 - Project standards: !`find . -maxdepth 1 -name \'.project-standards.yaml\'`
-- Project type in standards: !`grep -m1 "^project_type:" .project-standards.yaml 2>/dev/null`
+- Project type in standards: !`grep -m1 "^project_type:" .project-standards.yaml`
 - Has terraform: !`find . -maxdepth 2 \( -name '*.tf' -o -type d -name 'terraform' \) -print -quit`
 - Has helm: !`find . -maxdepth 2 -type d -name 'helm' -print -quit`
 - Has package.json: !`find . -maxdepth 1 -name \'package.json\'`

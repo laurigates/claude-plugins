@@ -27,9 +27,9 @@ Display infrastructure standards compliance status without making changes.
 ## Context
 
 - Project standards: !`find . -maxdepth 1 -name \'.project-standards.yaml\'`
-- Project type: !`grep -m1 "^project_type:" .project-standards.yaml 2>/dev/null`
-- Standards version: !`grep -m1 "^standards_version:" .project-standards.yaml 2>/dev/null`
-- Last configured: !`grep -m1 "^last_configured:" .project-standards.yaml 2>/dev/null`
+- Project type: !`grep -m1 "^project_type:" .project-standards.yaml`
+- Standards version: !`grep -m1 "^standards_version:" .project-standards.yaml`
+- Last configured: !`grep -m1 "^last_configured:" .project-standards.yaml`
 - Pre-commit config: !`find . -maxdepth 1 -name \'.pre-commit-config.yaml\'`
 - Workflows: !`find .github/workflows -maxdepth 1 -name '*.yml'`
 - Has Dockerfile: !`find . -maxdepth 1 -name 'Dockerfile*' -print -quit`
