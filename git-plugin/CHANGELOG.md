@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.26.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.26.0...git-plugin-v2.26.1) (2026-03-09)
+
+
+### Bug Fixes
+
+* **git-plugin:** fix multi-line PR body parsing in issue link hook ([78ce925](https://github.com/laurigates/claude-plugins/commit/78ce9259f5137f8471ac12dbe71afe8fffc6a933))
+* multi-line body parsing in PR validation hook ([#911](https://github.com/laurigates/claude-plugins/issues/911)) ([78ce925](https://github.com/laurigates/claude-plugins/commit/78ce9259f5137f8471ac12dbe71afe8fffc6a933))
+
 ## [2.26.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.25.2...git-plugin-v2.26.0) (2026-03-05)
 
 
