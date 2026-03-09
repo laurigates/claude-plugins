@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.4.0...workflow-orchestration-plugin-v1.4.1) (2026-03-09)
+
+
+### Bug Fixes
+
+* **finops-plugin,git-plugin:** replace gh repo view with git remote in context commands ([#913](https://github.com/laurigates/claude-plugins/issues/913)) ([f4cf31a](https://github.com/laurigates/claude-plugins/commit/f4cf31aebdc00d6a6d7ca911db3cf1534b13ce75))
+
 ## [1.4.0](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.3.0...workflow-orchestration-plugin-v1.4.0) (2026-02-27)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.26.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.26.1...git-plugin-v2.26.2) (2026-03-09)
+
+
+### Bug Fixes
+
+* **finops-plugin,git-plugin:** replace gh repo view with git remote in context commands ([#913](https://github.com/laurigates/claude-plugins/issues/913)) ([f4cf31a](https://github.com/laurigates/claude-plugins/commit/f4cf31aebdc00d6a6d7ca911db3cf1534b13ce75))
+
 ## [2.26.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.26.0...git-plugin-v2.26.1) (2026-03-09)
 
 
