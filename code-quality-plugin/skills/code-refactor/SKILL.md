@@ -1,8 +1,8 @@
 ---
 model: sonnet
 created: 2025-12-16
-modified: 2026-03-01
-reviewed: 2026-02-26
+modified: 2026-03-09
+reviewed: 2026-03-09
 allowed-tools: Task, TodoWrite
 args: <file-path|directory>
 argument-hint: <file-path|directory>
@@ -32,7 +32,7 @@ name: code-refactor
 
 **Delegate this task to the `code-refactoring` agent.**
 
-Use the Task tool with `subagent_type: code-refactoring` to refactor the specified code. Pass all the context gathered above to the agent.
+Use the Agent tool with `subagent_type: code-refactoring` to refactor the specified code. Pass all the context gathered above to the agent.
 
 The code-refactoring agent should:
 

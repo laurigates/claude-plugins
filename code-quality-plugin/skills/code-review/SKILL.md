@@ -1,8 +1,8 @@
 ---
 model: opus
 created: 2025-12-16
-modified: 2026-02-27
-reviewed: 2026-01-25
+modified: 2026-03-09
+reviewed: 2026-03-09
 allowed-tools: Task, TodoWrite, Glob, Read
 description: Perform comprehensive code review with automated fixes
 args: "[PATH]"
@@ -24,7 +24,7 @@ agent: general-purpose
 
 **Delegate this task to the `code-review` agent.**
 
-Use the Task tool with `subagent_type: code-review` to perform a comprehensive code review.
+Use the Agent tool with `subagent_type: code-review` to perform a comprehensive code review.
 
 First, use the Glob tool to discover source files to review:
 - `**/*.py`, `**/*.js`, `**/*.ts`, `**/*.go`, `**/*.rs` for source files

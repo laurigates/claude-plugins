@@ -4,9 +4,10 @@ model: sonnet
 color: "#7B1FA2"
 description: Code refactoring specialist. Restructures code for improved readability, maintainability, and SOLID adherence while preserving behavior. Use when code needs structural improvement without changing functionality.
 tools: Glob, Grep, LS, Read, Edit, Write, Bash(npm test *), Bash(npm run *), Bash(yarn test *), Bash(bun test *), Bash(pytest *), Bash(vitest *), Bash(cargo test *), Bash(git status *), Bash(git diff *), Bash(git log *), TodoWrite
+maxTurns: 20
 created: 2026-01-24
-modified: 2026-02-02
-reviewed: 2026-02-02
+modified: 2026-03-09
+reviewed: 2026-03-09
 ---
 
 # Refactor Agent

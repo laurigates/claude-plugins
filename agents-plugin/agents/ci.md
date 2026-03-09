@@ -4,9 +4,10 @@ model: haiku
 color: "#20BF6B"
 description: Configure CI/CD pipelines. Creates and updates GitHub Actions workflows, build configurations, and deployment automation.
 tools: Glob, Grep, LS, Read, Edit, Write, Bash(gh pr *), Bash(gh run *), Bash(gh workflow *), Bash(npm *), Bash(yarn *), Bash(bun *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), TodoWrite
+maxTurns: 15
 created: 2025-12-27
-modified: 2026-02-02
-reviewed: 2026-02-02
+modified: 2026-03-09
+reviewed: 2026-03-09
 ---
 
 # CI Agent

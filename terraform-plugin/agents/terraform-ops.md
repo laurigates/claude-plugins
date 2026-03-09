@@ -7,9 +7,10 @@ tools: Glob, Grep, LS, Read, Edit, Write, Bash(terraform *), Bash(tofu *), Bash(
 skills:
   - terraform-workflow
   - terraform-state-management
+maxTurns: 15
 created: 2026-01-24
-modified: 2026-02-02
-reviewed: 2026-02-02
+modified: 2026-03-09
+reviewed: 2026-03-09
 ---
 
 # Terraform Ops Agent

@@ -9,8 +9,8 @@ description: |
 user-invocable: false
 allowed-tools: Bash(cat *), Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-01-20
-modified: 2026-02-05
-reviewed: 2026-02-08
+modified: 2026-03-09
+reviewed: 2026-03-09
 ---
 
 # Custom Agent Definitions
@@ -74,7 +74,7 @@ Your research doesn't affect the main conversation context.
 
 ### Agent Field for Delegation
 
-The `agent` field specifies which agent type to use when delegating via the Task tool:
+The `agent` field specifies which agent type to use when delegating via the Agent tool:
 
 ```yaml
 ---
@@ -179,7 +179,7 @@ Each agent file follows the same YAML frontmatter + markdown body structure.
 ### Via Task Tool
 
 ```
-Task tool with subagent_type="security-auditor" for security analysis.
+Agent tool with subagent_type="security-auditor" for security analysis.
 ```
 
 ### Via Delegation
@@ -237,7 +237,13 @@ description: |
 | `description` | string | What the agent does |
 | `model` | string | Model to use (haiku, sonnet, opus) |
 | `context` | string | Context mode: `fork` or default |
-| `allowed-tools` | list | Tools the agent can use |
+| `permissionMode` | string | `default`, `acceptEdits`, `dontAsk`, `bypassPermissions`, or `plan` |
+| `maxTurns` | number | Maximum agentic turns before agent stops |
+| `background` | bool | Set `true` to always run as a background task |
+| `memory` | string | Persistent memory scope: `user`, `project`, or `local` |
+| `skills` | list | Skill names to preload into agent context at startup |
+| `mcpServers` | list | MCP server names available to this agent |
+| `tools` | list | Tools the agent can use (in agents/ dir; use `allowed-tools` in skills) |
 | `disallowedTools` | list | Tools the agent cannot use |
 | `created` | date | Creation date |
 | `modified` | date | Last modification date |

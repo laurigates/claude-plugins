@@ -7,9 +7,10 @@ tools: Glob, Grep, LS, Read, Bash(kubectl *), Bash(helm *), Bash(kustomize *), B
 skills:
   - kubernetes-operations
   - kubernetes-debugging
+maxTurns: 20
 created: 2026-01-24
-modified: 2026-02-05
-reviewed: 2026-02-02
+modified: 2026-03-09
+reviewed: 2026-03-09
 ---
 
 # Kubernetes Diagnostics Agent

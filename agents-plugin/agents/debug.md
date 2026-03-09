@@ -4,9 +4,10 @@ model: opus
 color: "#FF7043"
 description: Diagnose and fix bugs. Finds root cause, implements fix, verifies solution. Handles errors, failures, and unexpected behavior.
 tools: Glob, Grep, LS, Read, Edit, Write, Bash(npm *), Bash(yarn *), Bash(bun *), Bash(pytest *), Bash(python *), Bash(node *), Bash(cargo *), Bash(go *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git show *), BashOutput, TodoWrite
+maxTurns: 20
 created: 2025-12-27
-modified: 2026-02-02
-reviewed: 2026-02-02
+modified: 2026-03-09
+reviewed: 2026-03-09
 ---
 
 # Debug Agent
