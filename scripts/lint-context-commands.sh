@@ -69,6 +69,7 @@ check_pattern ERROR \
   "replace -n N with --max-count=N"
 
 # Pipe chains in context commands (blocked by shell protections)
+# Regression: ci-autofix-reusable used `gh secret list 2>/dev/null | head -5` (issue #899)
 check_pattern ERROR \
   "pipe-operator" \
   '^- .*!`[^`]* | [^`]*`' \
@@ -81,6 +82,7 @@ check_pattern ERROR \
   "replace ls with find; ls returns non-zero when files are missing"
 
 # Redirection operators (>, >>) including 2>/dev/null
+# Regression: ci-autofix-reusable used `find .github/workflows ... 2>/dev/null` (issue #899)
 check_pattern ERROR \
   "redirection-operator" \
   '^- .*!`[^`]* [0-9]*>\/\?[^`]*`' \
@@ -111,6 +113,7 @@ check_pattern ERROR \
   "use find for existence checks or discovery; tail writes to stderr on missing files"
 
 # test -f / test -d require Bash permission that context commands don't have
+# Regression: ci-autofix-reusable used `test -f path && echo "EXISTS" || echo "MISSING"` (issue #899)
 # Regression: project-distill used test -d .git and failed outside sandbox mode (PR #TBD)
 check_pattern ERROR \
   "test-in-context" \
@@ -129,12 +132,14 @@ check_pattern WARN \
 ##############################
 
 # && operator in context commands (includes test -f && echo patterns)
+# Regression: ci-autofix-reusable used `test -f path && echo "EXISTS" || echo "MISSING"` (issue #899)
 check_pattern WARN \
   "shell-operator-and" \
   '^- .*!`[^`]* && [^`]*`' \
   "remove && operator; for file checks use: find . -maxdepth 1 -name 'file'"
 
 # || operator in context commands
+# Regression: ci-autofix-reusable used `test -f path && echo "EXISTS" || echo "MISSING"` (issue #899)
 check_pattern WARN \
   "shell-operator-or" \
   '^- .*!`[^`]* || [^`]*`' \
