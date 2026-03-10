@@ -31,7 +31,7 @@ Check and configure integration testing infrastructure for testing service inter
 - Docker compose test: !`find . -maxdepth 1 -name 'docker-compose.test.yml'`
 - Vitest integration config: !`find . -maxdepth 1 -name 'vitest.integration.config.*'`
 - Supertest dep: !`grep -l 'supertest' package.json`
-- Testcontainers dep: !`grep -l 'testcontainers' package.json pyproject.toml`
+- Testcontainers dep: !`find . -maxdepth 1 \( -name package.json -o -name pyproject.toml \) -exec grep -l 'testcontainers' {} +`
 - Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml'`
 
 ## Parameters

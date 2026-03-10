@@ -28,7 +28,7 @@ Check and configure API contract testing infrastructure for validating API contr
 
 - Lock files: !`find . -maxdepth 1 \( -name 'bun.lockb' -o -name 'bun.lock' -o -name 'package-lock.json' -o -name 'yarn.lock' \)`
 - Project files: !`find . -maxdepth 1 \( -name 'tsconfig.json' -o -name 'pyproject.toml' -o -name 'package.json' \)`
-- Pact installed: !`grep -l "pact-foundation/pact\|pact-python" package.json requirements*.txt pyproject.toml`
+- Pact installed: !`find . -maxdepth 1 \( -name package.json -o -name 'requirements*.txt' -o -name pyproject.toml \) -exec grep -l "pact-foundation/pact\|pact-python" {} +`
 - OpenAPI spec: !`find . -maxdepth 2 \( -name 'openapi.yaml' -o -name 'openapi.yml' -o -name 'openapi.json' -o -name 'swagger.json' -o -name 'swagger.yaml' \)`
 - Schema validator: !`grep -l '"ajv"\|"zod"' package.json`
 - OpenAPI validation lib: !`grep -l "swagger-parser\|@apidevtools" package.json`
