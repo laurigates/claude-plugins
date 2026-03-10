@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/laurigates/claude-plugins/compare/api-plugin-v1.5.0...api-plugin-v1.5.1) (2026-03-10)
+
+
+### Bug Fixes
+
+* **skills:** use find -exec in context commands for missing file resilience ([#919](https://github.com/laurigates/claude-plugins/issues/919)) ([9520d25](https://github.com/laurigates/claude-plugins/commit/9520d250132a293833c3604ade47f5b547de28f1))
+
 ## [1.5.0](https://github.com/laurigates/claude-plugins/compare/api-plugin-v1.4.2...api-plugin-v1.5.0) (2026-02-27)
 
 

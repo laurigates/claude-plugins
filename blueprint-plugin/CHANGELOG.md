@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.24.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.24.0...blueprint-plugin-v3.24.1) (2026-03-10)
+
+
+### Bug Fixes
+
+* **skills:** use find -exec in context commands for missing file resilience ([#919](https://github.com/laurigates/claude-plugins/issues/919)) ([9520d25](https://github.com/laurigates/claude-plugins/commit/9520d250132a293833c3604ade47f5b547de28f1))
+
 ## [3.24.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.23.0...blueprint-plugin-v3.24.0) (2026-03-07)
 
 
