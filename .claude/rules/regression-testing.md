@@ -31,6 +31,7 @@ This ensures the CI catches the same class of problem in any future skill, not j
 | `name: fieldname` + `---` in skill body renders as accidental H2 heading | YAML frontmatter key leaked into markdown body; `key\n---` is a setext heading | `plugin-compliance-check.sh` `check_skill_body()` | PR #799 |
 | `model: haiku` with `AskUserQuestion` causes empty silent prompts | Haiku model doesn't reliably format AskUserQuestion tool calls; prompts return empty | `plugin-compliance-check.sh` `check_skill_frontmatter()` | PR #879 |
 | `test -f path && echo "EXISTS" \|\| echo "MISSING"` in context command fails | `test -f` requires Bash permission; `&&`/`\|\|` are blocked shell operators; `2>/dev/null` and pipes are blocked | `lint-context-commands.sh` rules `test-in-context`, `shell-operator-and`, `shell-operator-or`, `redirection-operator`, `pipe-operator` | issue #899 |
+| `grep ... package.json pyproject.toml requirements.txt` fails when files missing | grep writes to stderr when hardcoded filenames don't exist; non-JS/Python projects lack these files | `lint-context-commands.sh` rule `grep-hardcoded-multi-file` | PR #TBD |
 
 ## How to Add a Regression Check
 

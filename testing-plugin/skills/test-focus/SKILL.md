@@ -16,7 +16,7 @@ name: test-focus
 - Playwright config: !`find . -maxdepth 1 -name 'playwright.config.*'`
 - Vitest config: !`find . -maxdepth 1 \( -name 'vitest.config.*' -o -name 'vite.config.*' \)`
 - Jest config: !`find . -maxdepth 1 -name 'jest.config.*'`
-- Pytest config: !`grep -l "pytest" pyproject.toml setup.cfg`
+- Pytest config: !`find . -maxdepth 1 \( -name pyproject.toml -o -name setup.cfg \) -exec grep -l 'pytest' {} +`
 - Package.json exists: !`find . -maxdepth 1 -name 'package.json' -type f`
 
 ## Parameters

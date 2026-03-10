@@ -27,7 +27,7 @@ Check and configure API contract testing infrastructure for validating API contr
 
 - Project root: !`pwd`
 - Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' \)`
-- Pact deps: !`grep -l 'pact' package.json pyproject.toml`
+- Pact deps: !`find . -maxdepth 1 \( -name package.json -o -name pyproject.toml \) -exec grep -l 'pact' {} +`
 - OpenAPI spec: !`find . -maxdepth 1 \( -name 'openapi.yaml' -o -name 'openapi.json' -o -name 'swagger.json' \)`
 - Pact dir: !`find . -maxdepth 1 -type d -name 'pacts'`
 - Contract tests: !`find tests -maxdepth 2 -type d -name 'contract'`

@@ -29,7 +29,7 @@ Check and configure feature flag infrastructure using the OpenFeature standard w
 - Python project: !`find . -maxdepth 1 -name \'pyproject.toml\'`
 - Go project: !`find . -maxdepth 1 -name \'go.mod\'`
 - Cargo project: !`find . -maxdepth 1 -name \'Cargo.toml\'`
-- OpenFeature SDK: !`grep -l 'openfeature' package.json pyproject.toml Cargo.toml go.mod`
+- OpenFeature SDK: !`find . -maxdepth 1 \( -name package.json -o -name pyproject.toml -o -name Cargo.toml -o -name go.mod \) -exec grep -l 'openfeature' {} +`
 - GOFF config: !`find . -maxdepth 2 -name 'flags.goff.yaml' -o -name 'flags.goff.yml'`
 - Docker compose: !`find . -maxdepth 1 -name 'docker-compose*.yml' -o -name 'docker-compose*.yaml'`
 - Project standards: !`find . -maxdepth 1 -name \'.project-standards.yaml\'`

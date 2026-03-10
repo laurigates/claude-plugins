@@ -14,6 +14,7 @@
 # 8. git log -n N shorthand (use --max-count=N)
 # 9. gh repo view uses GitHub GraphQL API (TLS-sensitive, fails in proxy/offline envs)
 # 10. test -f / test -d require Bash permission not granted to context commands (use find)
+# 11. grep with multiple hardcoded filenames fails when files don't exist (use find -exec grep)
 #
 # Exit codes:
 #   0 - no issues
@@ -111,6 +112,13 @@ check_pattern ERROR \
   "tail-hardcoded-path" \
   '^- .*!`tail [^`$]*`' \
   "use find for existence checks or discovery; tail writes to stderr on missing files"
+
+# grep with multiple hardcoded filenames writes to stderr when files don't exist
+# Regression: blueprint-curate-docs used `grep -m1 ... package.json pyproject.toml requirements.txt` (PR #TBD)
+check_pattern ERROR \
+  "grep-hardcoded-multi-file" \
+  '^- .*!`[^`]*grep [^`]* [a-zA-Z_-]*\.\(json\|toml\|txt\|yaml\|yml\|cfg\|ini\) [a-zA-Z_-]*\.\(json\|toml\|txt\|yaml\|yml\|cfg\|ini\)' \
+  "replace with find -exec grep: 'find . -maxdepth 1 \\( -name f1 -o -name f2 \\) -exec grep pattern {} +'"
 
 # test -f / test -d require Bash permission that context commands don't have
 # Regression: ci-autofix-reusable used `test -f path && echo "EXISTS" || echo "MISSING"` (issue #899)
