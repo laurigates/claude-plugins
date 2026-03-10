@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.11.1](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.11.0...testing-plugin-v3.11.1) (2026-03-10)
+
+
+### Bug Fixes
+
+* **skills:** use find -exec in context commands for missing file resilience ([#919](https://github.com/laurigates/claude-plugins/issues/919)) ([9520d25](https://github.com/laurigates/claude-plugins/commit/9520d250132a293833c3604ade47f5b547de28f1))
+
 ## [3.11.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.10.1...testing-plugin-v3.11.0) (2026-03-09)
 
 

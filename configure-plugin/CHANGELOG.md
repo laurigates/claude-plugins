@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.3](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.14.2...configure-plugin-v1.14.3) (2026-03-10)
+
+
+### Bug Fixes
+
+* **skills:** use find -exec in context commands for missing file resilience ([#919](https://github.com/laurigates/claude-plugins/issues/919)) ([9520d25](https://github.com/laurigates/claude-plugins/commit/9520d250132a293833c3604ade47f5b547de28f1))
+
 ## [1.14.2](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.14.1...configure-plugin-v1.14.2) (2026-03-05)
 
 
