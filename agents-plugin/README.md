@@ -16,6 +16,7 @@ Task-focused agents following 12-factor agent principles. Each agent completes a
 | `dependency-audit` | haiku | CVE scanning, outdated packages, licenses | Subagent preferred — quick focused audit |
 | `research` | opus | API docs, framework evaluation, best practices | Teammate preferred — parallel research alongside implementation |
 | `performance` | opus | Profiling, bottleneck identification, benchmarks | Subagent preferred — verbose profiling isolated |
+| `search-replace` | haiku | Cross-platform search and replace | Subagent preferred — focused bounded replacement task |
 
 ## Team Roles
 
@@ -30,7 +31,7 @@ Each agent includes a `## Team Configuration` section documenting when to use it
 
 | Best as Teammate | Best as Subagent | Either |
 |------------------|------------------|--------|
-| review, security-audit, research, docs | dependency-audit, performance | test, debug, ci, refactor |
+| review, security-audit, research, docs | dependency-audit, performance, search-replace | test, debug, ci, refactor |
 
 ## Design Principles
 
@@ -45,7 +46,7 @@ Each agent includes a `## Team Configuration` section documenting when to use it
 
 | Model | When Used | Agents |
 |-------|-----------|--------|
-| haiku | Structured operations, mechanical tasks | test, docs, ci, dependency-audit |
+| haiku | Structured operations, mechanical tasks | test, docs, ci, dependency-audit, search-replace |
 | opus | Deep reasoning, complex analysis, code restructuring | review, debug, security-audit, performance, refactor, research |
 
 ## Usage
@@ -65,4 +66,5 @@ Agents are invoked automatically based on task context or explicitly via agent r
 "Check for vulnerable dependencies" → dependency-audit agent
 "How does the Stripe API handle pagination?" → research agent
 "The API endpoint is slow, find the bottleneck" → performance agent
+"Replace oldFunction with newFunction across the codebase" → search-replace agent
 ```
