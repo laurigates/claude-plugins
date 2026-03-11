@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.3](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.13.2...hooks-plugin-v1.13.3) (2026-03-11)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** fix env var syntax and bun test command ([#926](https://github.com/laurigates/claude-plugins/issues/926)) ([b5a1dd4](https://github.com/laurigates/claude-plugins/commit/b5a1dd48d69e0665de37e408e8484d3acf8221c4))
+
 ## [1.13.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.13.1...hooks-plugin-v1.13.2) (2026-03-11)
 
 
