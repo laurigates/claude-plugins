@@ -25,7 +25,7 @@ block() {
 # Sensitive file patterns (applied to Read, Edit, Write file_path and Bash arguments)
 check_sensitive_path() {
   local target="$1"
-  [ -z "$target" ] && return 1
+  [ -z "$target" ] && return 0
 
   # .env files (but allow .env.example, .env.sample, .env.template)
   if echo "$target" | grep -Eq '(^|/)\.env($|\.[^(example|sample|template)])' && \
@@ -58,7 +58,7 @@ Set CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION=1 to override."
 Set CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION=1 to override."
   fi
 
-  return 1
+  return 0
 }
 
 # Check file_path for Read, Edit, Write tools
