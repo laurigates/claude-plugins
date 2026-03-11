@@ -73,12 +73,44 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           PR_JSON=$(gh pr view "${{ matrix.pr_number }}" --repo "${{ github.repository }}" \
-            --json headRefName,baseRefName,title,number)
+            --json headRefName,baseRefName,title,number,author)
           echo "head_branch=$(echo "$PR_JSON" | jq -r '.headRefName')" >> "$GITHUB_OUTPUT"
           echo "base_branch=$(echo "$PR_JSON" | jq -r '.baseRefName')" >> "$GITHUB_OUTPUT"
           echo "title=$(echo "$PR_JSON" | jq -r '.title')" >> "$GITHUB_OUTPUT"
+          echo "author=$(echo "$PR_JSON" | jq -r '.author.login')" >> "$GITHUB_OUTPUT"
+
+      - name: Check for stale automated PRs
+        id: stale_check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="${{ steps.pr.outputs.head_branch }}"
+          IS_STALE="false"
+
+          # Detect automated PR branch patterns
+          case "$BRANCH" in
+            chore/update-version-tracking-*) IS_STALE="true" ;;
+            dependabot/*)                    IS_STALE="true" ;;
+            renovate/*)                      IS_STALE="true" ;;
+          esac
+
+          echo "is_stale_automated=$IS_STALE" >> "$GITHUB_OUTPUT"
+          if [ "$IS_STALE" = "true" ]; then
+            echo "::notice::PR #${{ matrix.pr_number }} is a stale automated PR (branch: $BRANCH) — will close instead of resolving"
+          fi
+
+      - name: Close stale automated PR
+        if: steps.stale_check.outputs.is_stale_automated == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr comment "${{ matrix.pr_number }}" --repo "${{ github.repository }}" \
+            --body "Closing this stale automated PR due to merge conflicts. It will be recreated automatically on the next run."
+          gh pr close "${{ matrix.pr_number }}" --repo "${{ github.repository }}" --delete-branch
+          echo "::notice::Closed stale automated PR #${{ matrix.pr_number }} and deleted branch ${{ steps.pr.outputs.head_branch }}"
 
       - name: Checkout PR branch
+        if: steps.stale_check.outputs.is_stale_automated != 'true'
         uses: actions/checkout@v4
         with:
           ref: ${{ steps.pr.outputs.head_branch }}
@@ -86,6 +118,7 @@ jobs:
           token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN || github.token }}
 
       - name: Attempt merge to surface conflicts
+        if: steps.stale_check.outputs.is_stale_automated != 'true'
         id: merge
         run: |
           git config user.name "github-actions[bot]"
@@ -109,13 +142,16 @@ jobs:
           fi
 
       - name: Resolve conflicts with Claude
-        if: steps.merge.outputs.has_conflicts == 'true'
+        if: steps.merge.outputs.has_conflicts == 'true' && steps.stale_check.outputs.is_stale_automated != 'true'
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           GH_TOKEN: ${{ secrets.MY_RELEASE_PLEASE_TOKEN || github.token }}
         run: |
-          PROMPT=$(cat <<'PROMPT_EOF'
+          cat <<'PROMPT_EOF' | npx @anthropic-ai/claude-code --print \
+            --model haiku \
+            --max-turns 20 \
+            --allowedTools "Read,Edit,Grep,Glob,TodoWrite,Bash(git status *),Bash(git diff *),Bash(git log *),Bash(git show *),Bash(git add *),Bash(git commit *),Bash(git push *),Bash(git merge *),Bash(gh pr *),Bash(jq *)" \
+            -
           You are resolving merge conflicts on PR #${{ matrix.pr_number }}: "${{ steps.pr.outputs.title }}"
 
           Branch `${{ steps.pr.outputs.head_branch }}` has conflicts when merging `${{ steps.pr.outputs.base_branch }}`.
@@ -144,9 +180,10 @@ jobs:
           After resolving ALL conflicts:
 
           1. Verify no conflict markers remain: search all conflicted files for `<<<<<<<`
-          2. Commit: `git commit --no-edit` (uses the auto-generated merge commit message)
-          3. Push: `git push origin ${{ steps.pr.outputs.head_branch }}`
-          4. Comment on PR: `gh pr comment ${{ matrix.pr_number }} --body "Merge conflicts with ${{ steps.pr.outputs.base_branch }} have been automatically resolved."`
+          2. For each JSON file that was conflicted, validate it: `jq empty <file>`. If validation fails, re-read the file and fix the syntax error.
+          3. Commit: `git commit --no-edit` (uses the auto-generated merge commit message)
+          4. Push: `git push origin ${{ steps.pr.outputs.head_branch }}`
+          5. Comment on PR: `gh pr comment ${{ matrix.pr_number }} --body "Merge conflicts with ${{ steps.pr.outputs.base_branch }} have been automatically resolved."`
 
           ## Important Rules
 
@@ -157,10 +194,3 @@ jobs:
           - If a conflict cannot be resolved without understanding business logic, abort with `git merge --abort` and comment on the PR explaining which files need manual resolution
           - Run each git command as a separate Bash call (no `&&` chaining)
           PROMPT_EOF
-          )
-
-          npx @anthropic-ai/claude-code --print \
-            --model haiku \
-            --max-turns 20 \
-            --allowedTools "Read,Edit,Grep,Glob,TodoWrite,Bash(git status *),Bash(git diff *),Bash(git log *),Bash(git show *),Bash(git add *),Bash(git commit *),Bash(git push *),Bash(git merge *),Bash(gh pr *)" \
-            "$PROMPT"
