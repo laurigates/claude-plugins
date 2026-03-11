@@ -57,7 +57,7 @@ TEST_CMD=""
 if [ -f "$CWD/bun.lockb" ] || [ -f "$CWD/bun.lock" ]; then
     # Bun project - check for test script
     if [ -f "$CWD/package.json" ] && jq -e '.scripts.test' "$CWD/package.json" >/dev/null 2>&1; then
-        TEST_CMD="bun test --bail"
+        TEST_CMD="bun run test -- --bail"
     fi
 elif [ -f "$CWD/package.json" ] && jq -e '.scripts.test' "$CWD/package.json" >/dev/null 2>&1; then
     TEST_CMD="npm test -- --bail"
