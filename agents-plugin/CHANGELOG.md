@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.0](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.5.0...agents-plugin-v1.6.0) (2026-03-11)
+
+
+### Features
+
+* **agents-plugin:** add search-replace agent ([3158657](https://github.com/laurigates/claude-plugins/commit/31586572845a31dd8601e26f9855700ccf815308))
+* search-replace agent for cross-platform text replacement ([#924](https://github.com/laurigates/claude-plugins/issues/924)) ([3158657](https://github.com/laurigates/claude-plugins/commit/31586572845a31dd8601e26f9855700ccf815308))
+
 ## [1.5.0](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.4.0...agents-plugin-v1.5.0) (2026-03-09)
 
 
