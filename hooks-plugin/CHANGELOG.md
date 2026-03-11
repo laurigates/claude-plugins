@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.13.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.13.1...hooks-plugin-v1.13.2) (2026-03-11)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** fix secret-protection.sh failing on non-sensitive files ([4328a4d](https://github.com/laurigates/claude-plugins/commit/4328a4de045b9188eded91080140f579d87f474c))
+* secret protection hook return codes ([#921](https://github.com/laurigates/claude-plugins/issues/921)) ([4328a4d](https://github.com/laurigates/claude-plugins/commit/4328a4de045b9188eded91080140f579d87f474c))
+
 ## [1.13.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.13.0...hooks-plugin-v1.13.1) (2026-03-09)
 
 
