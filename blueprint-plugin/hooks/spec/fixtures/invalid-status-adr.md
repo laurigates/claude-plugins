@@ -1,4 +1,5 @@
 ---
+id: ADR-0002
 status: Pending
 created: 2025-01-20
 modified: 2025-01-20

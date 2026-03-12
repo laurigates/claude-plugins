@@ -1,6 +1,7 @@
 ---
+model: sonnet
 created: 2026-01-09
-modified: 2026-02-06
+modified: 2026-03-12
 reviewed: 2026-02-06
 name: document-detection
 description: "Detect PRD/ADR/PRP opportunities in conversations and prompt for document creation. Activates when users discuss features, architecture decisions, or implementation planning."

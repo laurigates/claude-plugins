@@ -1,4 +1,5 @@
 ---
+id: ADR-0001
 status: Accepted
 created: 2025-01-20
 modified: 2025-01-20

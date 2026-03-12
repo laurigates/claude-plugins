@@ -124,6 +124,14 @@ if [ -z "$FRONTMATTER" ]; then
 fi
 
 # Required frontmatter fields
+check_required_field "$FRONTMATTER" "id"
+
+# Validate ID format (ADR-NNNN)
+ADR_ID=$(get_field "$FRONTMATTER" "id")
+if [ -n "$ADR_ID" ] && ! [[ "$ADR_ID" =~ ^ADR-[0-9]{4,}$ ]]; then
+    block "ERROR: Invalid ADR id format: '${ADR_ID}'. Expected format: ADR-NNNN (e.g., ADR-0001)"
+fi
+
 check_required_field "$FRONTMATTER" "status"
 check_required_field "$FRONTMATTER" "created"
 check_required_field "$FRONTMATTER" "modified"

@@ -7,7 +7,7 @@ Describe "validate-adr-frontmatter.sh"
   Describe "valid ADR"
     It "passes validation for a complete ADR"
       Data
-        #|{"tool_input": {"content": "---\nstatus: Accepted\ncreated: 2025-01-20\nmodified: 2025-01-20\ndomain: authentication\n---\n\n# ADR 0001\n\n## Context\n\nContext here.\n\n## Decision\n\nDecision here.\n\n## Consequences\n\nConsequences here.\n\n## Options Considered\n\n1. Option A\n\n## Related ADRs\n\nNone."}}
+        #|{"tool_input": {"content": "---\nid: ADR-0001\nstatus: Accepted\ncreated: 2025-01-20\nmodified: 2025-01-20\ndomain: authentication\n---\n\n# ADR 0001\n\n## Context\n\nContext here.\n\n## Decision\n\nDecision here.\n\n## Consequences\n\nConsequences here.\n\n## Options Considered\n\n1. Option A\n\n## Related ADRs\n\nNone."}}
       End
       When call bash "$HOOK_SCRIPT"
       The status should equal 0
@@ -15,10 +15,32 @@ Describe "validate-adr-frontmatter.sh"
     End
   End
 
+  Describe "missing id field"
+    It "blocks when id field is missing"
+      Data
+        #|{"tool_input": {"content": "---\nstatus: Accepted\ncreated: 2025-01-20\nmodified: 2025-01-20\ndomain: api\n---\n\n## Context\n\n## Decision\n\n## Consequences\n\n## Options Considered\n\n## Related ADRs\n"}}
+      End
+      When call bash "$HOOK_SCRIPT"
+      The status should equal 2
+      The stderr should include "ERROR: Missing required frontmatter field: id"
+    End
+  End
+
+  Describe "invalid id format"
+    It "blocks when ADR id format is wrong"
+      Data
+        #|{"tool_input": {"content": "---\nid: ADR1\nstatus: Accepted\ncreated: 2025-01-20\nmodified: 2025-01-20\ndomain: api\n---\n\n## Context\n\n## Decision\n\n## Consequences\n\n## Options Considered\n\n## Related ADRs\n"}}
+      End
+      When call bash "$HOOK_SCRIPT"
+      The status should equal 2
+      The stderr should include "ERROR: Invalid ADR id format"
+    End
+  End
+
   Describe "invalid status"
     It "blocks when status is not in valid set"
       Data
-        #|{"tool_input": {"content": "---\nstatus: Pending\ncreated: 2025-01-20\nmodified: 2025-01-20\ndomain: api\n---\n\n## Context\n\n## Decision\n\n## Consequences\n\n## Options Considered\n\n## Related ADRs\n"}}
+        #|{"tool_input": {"content": "---\nid: ADR-0002\nstatus: Pending\ncreated: 2025-01-20\nmodified: 2025-01-20\ndomain: api\n---\n\n## Context\n\n## Decision\n\n## Consequences\n\n## Options Considered\n\n## Related ADRs\n"}}
       End
       When call bash "$HOOK_SCRIPT"
       The status should equal 2
@@ -38,7 +60,7 @@ Describe "validate-adr-frontmatter.sh"
     End
 
     It "accepts valid status: $1"
-      input="{\"tool_input\": {\"content\": \"---\\nstatus: $1\\ncreated: 2025-01-20\\nmodified: 2025-01-20\\ndomain: test\\n---\\n\\n## Context\\n\\n## Decision\\n\\n## Consequences\\n\\n## Options Considered\\n\\n## Related ADRs\\n\"}}"
+      input="{\"tool_input\": {\"content\": \"---\\nid: ADR-0001\\nstatus: $1\\ncreated: 2025-01-20\\nmodified: 2025-01-20\\ndomain: test\\n---\\n\\n## Context\\n\\n## Decision\\n\\n## Consequences\\n\\n## Options Considered\\n\\n## Related ADRs\\n\"}}"
       When call bash -c "echo '$input' | bash '$HOOK_SCRIPT'"
       The status should equal 0
       The stderr should include "ADR frontmatter validation passed"
@@ -59,7 +81,7 @@ Describe "validate-adr-frontmatter.sh"
   Describe "missing required section"
     It "blocks when Decision section is missing"
       Data
-        #|{"tool_input": {"content": "---\nstatus: Proposed\ncreated: 2025-01-20\nmodified: 2025-01-20\n---\n\n## Context\n\nSome context.\n\n## Consequences\n\n## Options Considered\n\n## Related ADRs\n"}}
+        #|{"tool_input": {"content": "---\nid: ADR-0003\nstatus: Proposed\ncreated: 2025-01-20\nmodified: 2025-01-20\n---\n\n## Context\n\nSome context.\n\n## Consequences\n\n## Options Considered\n\n## Related ADRs\n"}}
       End
       When call bash "$HOOK_SCRIPT"
       The status should equal 2
@@ -70,7 +92,7 @@ Describe "validate-adr-frontmatter.sh"
   Describe "missing domain warning"
     It "warns when domain field is missing but doesn't block"
       Data
-        #|{"tool_input": {"content": "---\nstatus: Proposed\ncreated: 2025-01-20\nmodified: 2025-01-20\n---\n\n## Context\n\n## Decision\n\n## Consequences\n\n## Options Considered\n\n## Related ADRs\n"}}
+        #|{"tool_input": {"content": "---\nid: ADR-0004\nstatus: Proposed\ncreated: 2025-01-20\nmodified: 2025-01-20\n---\n\n## Context\n\n## Decision\n\n## Consequences\n\n## Options Considered\n\n## Related ADRs\n"}}
       End
       When call bash "$HOOK_SCRIPT"
       The status should equal 0
