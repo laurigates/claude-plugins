@@ -2,6 +2,16 @@
 
 Execute this maintenance workflow for the target repository.
 
+## Operating Modes
+
+The workflow has three modes, determined by environment variables:
+
+| Mode | Condition | Behavior |
+|------|-----------|----------|
+| **Interactive** (default) | `FIX_MODE` ≠ "True" AND `REPORT_ONLY` ≠ "True" | Analyze → present findings → ask user → execute selected fixes → report |
+| **Auto-fix** | `FIX_MODE` = "True" | Analyze → apply conservative auto-fixes → report |
+| **Report-only** | `REPORT_ONLY` = "True" | Analyze → report only, no changes |
+
 ## Step 1: Review Repository Analysis
 
 Review the pre-computed `repo_analyze` and `health_score` results in your system prompt:
@@ -23,9 +33,20 @@ Based on the health score, prioritize work:
 
 If `--focus` is specified, limit work to those categories only.
 
-## Step 3: Execute Fixes
+## Step 3: Present Plan and Get User Input
 
-If `--fix` is enabled (not `--report-only`):
+In **interactive mode** (default), use `AskUserQuestion` to present findings and let the user choose which fixes to apply. **After the user responds, you MUST proceed to Step 4 to execute their selections.** Do NOT end the session after asking questions — the user's answers drive the next phase.
+
+In **auto-fix mode**, skip this step and proceed directly to Step 4.
+
+In **report-only mode**, skip to Step 5.
+
+## Step 4: Execute Fixes
+
+Execute fixes based on the operating mode:
+
+- **Interactive mode**: Apply exactly the fixes the user selected in Step 3
+- **Auto-fix mode**: Apply all conservative auto-fixes
 
 ### Auto-fix scope (conservative)
 - Lint auto-fixes (run linter with `--fix` flag)
@@ -44,7 +65,7 @@ If `--fix` is enabled (not `--report-only`):
 - Architecture decisions (report only)
 - Breaking configuration changes (report only)
 
-## Step 4: Record Health History
+## Step 5: Record Health History
 
 After analysis, append a health snapshot to `docs/health-history.json`:
 
@@ -71,7 +92,7 @@ After analysis, append a health snapshot to `docs/health-history.json`:
 
 Create the file if it doesn't exist. Append to the `snapshots` array if it does.
 
-## Step 5: Generate Report
+## Step 6: Generate Report
 
 Output a maintenance report:
 
