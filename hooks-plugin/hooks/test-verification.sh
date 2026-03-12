@@ -63,10 +63,10 @@ elif [ -f "$CWD/Makefile" ] && grep -q '^test:' "$CWD/Makefile" 2>/dev/null; the
 elif [ -f "$CWD/bun.lockb" ] || [ -f "$CWD/bun.lock" ]; then
     # Bun project - check for test script
     if [ -f "$CWD/package.json" ] && jq -e '.scripts.test' "$CWD/package.json" >/dev/null 2>&1; then
-        TEST_CMD="bun run test -- --bail"
+        TEST_CMD="bun run test -- --bail=1"
     fi
 elif [ -f "$CWD/package.json" ] && jq -e '.scripts.test' "$CWD/package.json" >/dev/null 2>&1; then
-    TEST_CMD="npm test -- --bail"
+    TEST_CMD="npm test -- --bail=1"
 elif [ -f "$CWD/pytest.ini" ] || [ -f "$CWD/setup.cfg" ] && grep -q '\[tool:pytest\]' "$CWD/setup.cfg" 2>/dev/null; then
     # Use uv run if uv.lock exists (project uses uv for dependency management)
     if [ -f "$CWD/uv.lock" ]; then
