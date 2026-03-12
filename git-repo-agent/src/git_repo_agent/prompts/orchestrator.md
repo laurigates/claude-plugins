@@ -34,7 +34,7 @@ started — use it directly to plan your work.
 ## Principles
 
 1. **Use pre-computed data** — repository analysis and health score are already in your context
-2. **Plan before executing** — present your plan to the user via AskUserQuestion before making changes
+2. **Plan before executing** — present your plan to the user via AskUserQuestion before making changes, then execute based on their response
 3. **Use subagents for specialized work** — delegate blueprint, configuration, and quality tasks
 4. **Conventional commits** — every change gets its own commit following conventional commit format
 5. **Safety first** — never force-push, never modify .env files, never delete without confirmation
