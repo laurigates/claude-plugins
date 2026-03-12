@@ -27,7 +27,7 @@ jobs:
 
             // Map common words/aliases to canonical types
             const TYPE_ALIASES = {
-              // feat
+              // feat — new functionality or capability
               feature: 'feat', features: 'feat', new: 'feat',
               add: 'feat', adds: 'feat', added: 'feat',
               enhancement: 'feat', enhance: 'feat',
@@ -36,16 +36,47 @@ jobs:
               create: 'feat', creates: 'feat', created: 'feat',
               enable: 'feat', enables: 'feat', enabled: 'feat',
               support: 'feat', supports: 'feat',
-              // fix
+              allow: 'feat', allows: 'feat', allowed: 'feat',
+              expose: 'feat', exposes: 'feat', exposed: 'feat',
+              extend: 'feat', extends: 'feat', extended: 'feat',
+              integrate: 'feat', integrates: 'feat', integrated: 'feat',
+              wire: 'feat', wires: 'feat', wired: 'feat',
+              register: 'feat', registers: 'feat', registered: 'feat',
+              accept: 'feat', accepts: 'feat', accepted: 'feat',
+              provide: 'feat', provides: 'feat', provided: 'feat',
+              include: 'feat', includes: 'feat', included: 'feat',
+              scaffold: 'feat', scaffolds: 'feat', scaffolded: 'feat',
+              generate: 'feat', generates: 'feat', generated: 'feat',
+              define: 'feat', defines: 'feat', defined: 'feat',
+              // fix — bug fixes and error handling
               bugfix: 'fix', bug: 'fix', hotfix: 'fix', patch: 'fix',
               fixes: 'fix', fixed: 'fix', resolve: 'fix', resolves: 'fix', resolved: 'fix',
               correct: 'fix', corrects: 'fix', corrected: 'fix',
               repair: 'fix', repairs: 'fix', repaired: 'fix',
-              // perf
+              suppress: 'fix', suppresses: 'fix', suppressed: 'fix',
+              prevent: 'fix', prevents: 'fix', prevented: 'fix',
+              avoid: 'fix', avoids: 'fix', avoided: 'fix',
+              handle: 'fix', handles: 'fix', handled: 'fix',
+              guard: 'fix', guards: 'fix', guarded: 'fix',
+              ensure: 'fix', ensures: 'fix', ensured: 'fix',
+              sanitize: 'fix', sanitizes: 'fix', sanitized: 'fix',
+              catch: 'fix', catches: 'fix', caught: 'fix',
+              address: 'fix', addresses: 'fix', addressed: 'fix',
+              mitigate: 'fix', mitigates: 'fix', mitigated: 'fix',
+              // perf — performance improvements
               improvement: 'perf', improve: 'perf', improves: 'perf', improved: 'perf',
               optimize: 'perf', optimizes: 'perf', optimized: 'perf',
               performance: 'perf', speed: 'perf', faster: 'perf',
-              // refactor
+              cache: 'perf', caches: 'perf', cached: 'perf',
+              parallelize: 'perf', parallelizes: 'perf', parallelized: 'perf',
+              batch: 'perf', batches: 'perf', batched: 'perf',
+              prefetch: 'perf', prefetches: 'perf', prefetched: 'perf',
+              lazy: 'perf', defer: 'perf', defers: 'perf', deferred: 'perf',
+              throttle: 'perf', throttles: 'perf', throttled: 'perf',
+              streamline: 'perf', streamlines: 'perf', streamlined: 'perf',
+              minimize: 'perf', minimizes: 'perf', minimized: 'perf',
+              accelerate: 'perf', accelerates: 'perf', accelerated: 'perf',
+              // refactor — code restructure (no behavior change)
               refactoring: 'refactor',
               cleanup: 'refactor', clean: 'refactor',
               remove: 'refactor', removed: 'refactor', removes: 'refactor',
@@ -62,27 +93,66 @@ jobs:
               rewrite: 'refactor', rewrites: 'refactor', rewrote: 'refactor',
               convert: 'refactor', converts: 'refactor', converted: 'refactor',
               replace: 'refactor', replaces: 'refactor', replaced: 'refactor',
-              // style
+              wrap: 'refactor', wraps: 'refactor', wrapped: 'refactor',
+              inline: 'refactor', inlines: 'refactor', inlined: 'refactor',
+              deduplicate: 'refactor', dedup: 'refactor',
+              decouple: 'refactor', decouples: 'refactor', decoupled: 'refactor',
+              encapsulate: 'refactor', encapsulates: 'refactor', encapsulated: 'refactor',
+              modularize: 'refactor', modularizes: 'refactor', modularized: 'refactor',
+              generalize: 'refactor', generalizes: 'refactor', generalized: 'refactor',
+              isolate: 'refactor', isolates: 'refactor', isolated: 'refactor',
+              separate: 'refactor', separates: 'refactor', separated: 'refactor',
+              unify: 'refactor', unifies: 'refactor', unified: 'refactor',
+              flatten: 'refactor', flattens: 'refactor', flattened: 'refactor',
+              collapse: 'refactor', collapses: 'refactor', collapsed: 'refactor',
+              drop: 'refactor', drops: 'refactor', dropped: 'refactor',
+              deprecate: 'refactor', deprecates: 'refactor', deprecated: 'refactor',
+              prune: 'refactor', prunes: 'refactor', pruned: 'refactor',
+              // style — formatting, linting, no logic change
               standardize: 'style', standardizes: 'style', standardized: 'style',
               normalize: 'style', normalizes: 'style', normalized: 'style',
               format: 'style', formatting: 'style', formats: 'style', formatted: 'style',
               lint: 'style', linting: 'style',
-              // docs
+              // docs — documentation only
               documentation: 'docs', doc: 'docs', readme: 'docs',
               document: 'docs', documents: 'docs', documented: 'docs',
-              // chore
+              describe: 'docs', describes: 'docs', described: 'docs',
+              explain: 'docs', explains: 'docs', explained: 'docs',
+              annotate: 'docs', annotates: 'docs', annotated: 'docs',
+              clarify: 'docs', clarifies: 'docs', clarified: 'docs',
+              // chore — maintenance, tooling
               update: 'chore', updates: 'chore', updated: 'chore',
               configure: 'chore', configures: 'chore', configured: 'chore',
               setup: 'chore', disable: 'chore', switch: 'chore',
-              // build
+              sync: 'chore', syncs: 'chore', synced: 'chore',
+              align: 'chore', aligns: 'chore', aligned: 'chore',
+              adjust: 'chore', adjusts: 'chore', adjusted: 'chore',
+              tweak: 'chore', tweaks: 'chore', tweaked: 'chore',
+              set: 'chore', sets: 'chore',
+              prepare: 'chore', prepares: 'chore', prepared: 'chore',
+              init: 'chore', initialize: 'chore', initializes: 'chore', initialized: 'chore',
+              tidy: 'chore', tidied: 'chore',
+              maintain: 'chore', maintains: 'chore', maintained: 'chore',
+              // build — build system or dependencies
               upgrade: 'build', upgrades: 'build', upgraded: 'build',
               dependency: 'build', dependencies: 'build', deps: 'build',
               bump: 'build', pin: 'build', pins: 'build', pinned: 'build',
-              // test
+              install: 'build', installs: 'build', installed: 'build',
+              compile: 'build', compiles: 'build', compiled: 'build',
+              bundle: 'build', bundles: 'build', bundled: 'build',
+              lock: 'build', locks: 'build', locked: 'build',
+              // test — adding or modifying tests
               testing: 'test', tests: 'test', spec: 'test',
-              // ci
+              assert: 'test', asserts: 'test', asserted: 'test',
+              verify: 'test', verifies: 'test', verified: 'test',
+              check: 'test', checks: 'test', checked: 'test',
+              cover: 'test', covers: 'test', covered: 'test',
+              mock: 'test', mocks: 'test', mocked: 'test',
+              // ci — CI/CD configuration
               pipeline: 'ci', workflow: 'ci',
-              // revert
+              automate: 'ci', automates: 'ci', automated: 'ci',
+              deploy: 'ci', deploys: 'ci', deployed: 'ci',
+              // revert — undo previous changes
               rollback: 'revert',
             };
 
