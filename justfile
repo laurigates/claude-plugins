@@ -82,6 +82,11 @@ claude-setup: mcp-sentry mcp-github mcp-context7 mcp-playwright mcp-sequential-t
 # Git Repo Agent
 ####################
 
+# Install git-repo-agent as editable uv tool
+[group: "git-repo-agent"]
+install-agent:
+    uv tool install -e ./git-repo-agent
+
 # Compile plugin skills into subagent prompt files
 [group: "git-repo-agent"]
 compile-prompts:
