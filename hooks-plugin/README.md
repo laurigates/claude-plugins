@@ -91,7 +91,8 @@ A PreToolUse hook that blocks write operations on protected branches (main, mast
 | Read-only git (status, diff, log, show) | Allowed |
 | Checkout/switch to another branch | Allowed |
 | Push with explicit refspec (`main:feature`) | Allowed |
-| Commit, merge, rebase, push | Blocked with branch creation suggestion |
+| Merge (local feature branch into main) | Allowed (reversible) |
+| Commit, rebase, push | Blocked with branch creation suggestion |
 | Staging (git add, rm, mv) | Blocked |
 | Reset | Blocked |
 
