@@ -52,9 +52,15 @@ if [ -z "$SOURCE_FILES" ]; then
 fi
 
 # Detect test runner and build command
+# Priority: explicit build recipes (justfile/Makefile) first since they handle
+# venv/env setup correctly, then language-specific tool detection
 TEST_CMD=""
 
-if [ -f "$CWD/bun.lockb" ] || [ -f "$CWD/bun.lock" ]; then
+if [ -f "$CWD/justfile" ] && grep -q '^test' "$CWD/justfile" 2>/dev/null; then
+    TEST_CMD="just test"
+elif [ -f "$CWD/Makefile" ] && grep -q '^test:' "$CWD/Makefile" 2>/dev/null; then
+    TEST_CMD="make test"
+elif [ -f "$CWD/bun.lockb" ] || [ -f "$CWD/bun.lock" ]; then
     # Bun project - check for test script
     if [ -f "$CWD/package.json" ] && jq -e '.scripts.test' "$CWD/package.json" >/dev/null 2>&1; then
         TEST_CMD="bun run test -- --bail"
@@ -62,17 +68,22 @@ if [ -f "$CWD/bun.lockb" ] || [ -f "$CWD/bun.lock" ]; then
 elif [ -f "$CWD/package.json" ] && jq -e '.scripts.test' "$CWD/package.json" >/dev/null 2>&1; then
     TEST_CMD="npm test -- --bail"
 elif [ -f "$CWD/pytest.ini" ] || [ -f "$CWD/setup.cfg" ] && grep -q '\[tool:pytest\]' "$CWD/setup.cfg" 2>/dev/null; then
-    TEST_CMD="pytest -x --tb=short"
+    # Use uv run if uv.lock exists (project uses uv for dependency management)
+    if [ -f "$CWD/uv.lock" ]; then
+        TEST_CMD="uv run pytest -x --tb=short"
+    else
+        TEST_CMD="pytest -x --tb=short"
+    fi
 elif [ -f "$CWD/pyproject.toml" ] && grep -q '\[tool\.pytest' "$CWD/pyproject.toml" 2>/dev/null; then
-    TEST_CMD="pytest -x --tb=short"
+    if [ -f "$CWD/uv.lock" ]; then
+        TEST_CMD="uv run pytest -x --tb=short"
+    else
+        TEST_CMD="pytest -x --tb=short"
+    fi
 elif [ -f "$CWD/Cargo.toml" ]; then
     TEST_CMD="cargo test"
 elif [ -f "$CWD/go.mod" ]; then
     TEST_CMD="go test ./..."
-elif [ -f "$CWD/Makefile" ] && grep -q '^test:' "$CWD/Makefile" 2>/dev/null; then
-    TEST_CMD="make test"
-elif [ -f "$CWD/justfile" ] && grep -q '^test' "$CWD/justfile" 2>/dev/null; then
-    TEST_CMD="just test"
 fi
 
 # Guard: no test runner found
