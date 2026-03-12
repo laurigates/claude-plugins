@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.25.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.24.1...blueprint-plugin-v3.25.0) (2026-03-12)
+
+
+### Features
+
+* auto-sync registry and unified ID validation for blueprint docs ([#934](https://github.com/laurigates/claude-plugins/issues/934)) ([5a494c4](https://github.com/laurigates/claude-plugins/commit/5a494c453ac07f81b053549c789a7cc67ba7d9ce))
+
 ## [3.24.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.24.0...blueprint-plugin-v3.24.1) (2026-03-10)
 
 
