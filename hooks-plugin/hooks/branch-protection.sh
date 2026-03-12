@@ -4,8 +4,8 @@
 # Toggle: set CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1 to skip this hook
 #
 # Matches: Bash
-# Detects: git commit, git push, git merge on main/master
-# Allows: read-only git operations (status, diff, log, branch, etc.)
+# Detects: git commit, git push, git rebase on main/master
+# Allows: read-only git operations, git merge (local, reversible)
 
 set -euo pipefail
 
@@ -39,8 +39,8 @@ if [ "$CURRENT_BRANCH" != "main" ] && [ "$CURRENT_BRANCH" != "master" ]; then
 fi
 
 # Protected branches: block write operations
-# Allow: status, diff, log, show, branch (list), remote, fetch, pull, stash list, tag (list)
-# Block: commit, push, merge, rebase, reset, cherry-pick, revert, stash pop/apply
+# Allow: status, diff, log, show, branch (list), remote, fetch, pull, stash list, tag (list), merge
+# Block: commit, push, rebase, reset, cherry-pick, revert, stash pop/apply
 
 # Extract the git subcommand (handle global flags like -C <path>)
 GIT_SUBCMD=$(echo "$COMMAND" | grep -oE 'git\s+(-[A-Za-z]\s+\S+\s+)*[a-z-]+' | awk '{print $NF}' || true)
@@ -58,8 +58,12 @@ Set CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1 to override."
     fi
     exit 0
     ;;
+  # Merge — allowed on protected branches (local, reversible operation)
+  merge)
+    exit 0
+    ;;
   # Write operations — blocked on protected branches
-  commit|merge|rebase|cherry-pick|revert)
+  commit|rebase|cherry-pick|revert)
     block "BLOCKED: 'git $GIT_SUBCMD' on protected branch '$CURRENT_BRANCH'.
 Create a feature branch first:
   git checkout -b feature/your-change
