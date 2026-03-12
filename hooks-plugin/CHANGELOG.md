@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.13.4](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.13.3...hooks-plugin-v1.13.4) (2026-03-12)
+
+
+### Bug Fixes
+
+* allow local git merge on protected branches ([#929](https://github.com/laurigates/claude-plugins/issues/929)) ([eb11049](https://github.com/laurigates/claude-plugins/commit/eb11049f8a33d7ed077cbc062759d823908b1209))
+* **hooks-plugin:** allow local merge to main in branch protection ([eb11049](https://github.com/laurigates/claude-plugins/commit/eb11049f8a33d7ed077cbc062759d823908b1209)), closes [#42](https://github.com/laurigates/claude-plugins/issues/42)
+
 ## [1.13.3](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.13.2...hooks-plugin-v1.13.3) (2026-03-11)
 
 
