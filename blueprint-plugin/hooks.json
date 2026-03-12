@@ -4,6 +4,26 @@
   "hooks": {
     "PreToolUse": [
     {
+      "matcher": "Write(docs/prds/**)",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/validate-prd-frontmatter.sh",
+          "timeout": 3000
+        }
+      ]
+    },
+    {
+      "matcher": "Edit(docs/prds/**)",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/validate-prd-frontmatter.sh",
+          "timeout": 3000
+        }
+      ]
+    },
+    {
       "matcher": "Write(docs/prps/**)",
       "hooks": [
         {
@@ -56,6 +76,88 @@
           "prompt": "You are evaluating PRP (Product Requirements Proposal) content quality before execution. The command hook already validated structural requirements (confidence score, required sections, file references). Your job is to evaluate content quality.\n\nContext: $ARGUMENTS\n\n1. Read the PRP file referenced in the tool input\n2. Check that requirements are specific enough to implement (not vague 'improve performance' style)\n3. Verify acceptance criteria are testable and measurable\n4. Check that edge cases and error scenarios are identified\n5. Verify implementation steps are clear and logically ordered\n6. Confirm the scope is well-bounded (not open-ended)\n\nRespond with {\"ok\": true} if the PRP content is ready for implementation, or {\"ok\": false, \"reason\": \"specific content gaps that need addressing before execution\"} if it needs more detail.",
           "timeout": 45,
           "statusMessage": "Evaluating PRP content quality..."
+        }
+      ]
+    }
+  ],
+  "PostToolUse": [
+    {
+      "matcher": "Write(docs/prds/**)",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/auto-sync-id-registry.sh",
+          "timeout": 5000
+        }
+      ]
+    },
+    {
+      "matcher": "Write(docs/adrs/**)",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/auto-sync-id-registry.sh",
+          "timeout": 5000
+        }
+      ]
+    },
+    {
+      "matcher": "Write(docs/prps/**)",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/auto-sync-id-registry.sh",
+          "timeout": 5000
+        }
+      ]
+    },
+    {
+      "matcher": "Write(docs/blueprint/work-orders/**)",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/auto-sync-id-registry.sh",
+          "timeout": 5000
+        }
+      ]
+    },
+    {
+      "matcher": "Edit(docs/prds/**)",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/auto-sync-id-registry.sh",
+          "timeout": 5000
+        }
+      ]
+    },
+    {
+      "matcher": "Edit(docs/adrs/**)",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/auto-sync-id-registry.sh",
+          "timeout": 5000
+        }
+      ]
+    },
+    {
+      "matcher": "Edit(docs/prps/**)",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/auto-sync-id-registry.sh",
+          "timeout": 5000
+        }
+      ]
+    },
+    {
+      "matcher": "Edit(docs/blueprint/work-orders/**)",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/auto-sync-id-registry.sh",
+          "timeout": 5000
         }
       ]
     }

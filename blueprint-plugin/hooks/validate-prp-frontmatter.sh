@@ -129,6 +129,14 @@ if [ -z "$FRONTMATTER" ]; then
 fi
 
 # Required frontmatter fields (comprehensive set)
+check_required_field "$FRONTMATTER" "id"
+
+# Validate ID format (PRP-NNN)
+PRP_ID=$(get_field "$FRONTMATTER" "id")
+if [ -n "$PRP_ID" ] && ! [[ "$PRP_ID" =~ ^PRP-[0-9]{3,}$ ]]; then
+    block "ERROR: Invalid PRP id format: '${PRP_ID}'. Expected format: PRP-NNN (e.g., PRP-001)"
+fi
+
 check_required_field "$FRONTMATTER" "created"
 check_required_field "$FRONTMATTER" "modified"
 check_required_field "$FRONTMATTER" "reviewed"
