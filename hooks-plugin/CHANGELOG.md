@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.13.5](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.13.4...hooks-plugin-v1.13.5) (2026-03-12)
+
+
+### Bug Fixes
+
+* cat pipeline regression and improve test runner detection ([#932](https://github.com/laurigates/claude-plugins/issues/932)) ([d51ce4f](https://github.com/laurigates/claude-plugins/commit/d51ce4fda7a3cc71ba024a162eeadb07ea518b6e))
+* **hooks-plugin:** fix pytest hook issues and cat pipeline false positive ([d51ce4f](https://github.com/laurigates/claude-plugins/commit/d51ce4fda7a3cc71ba024a162eeadb07ea518b6e))
+
 ## [1.13.4](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.13.3...hooks-plugin-v1.13.4) (2026-03-12)
 
 
