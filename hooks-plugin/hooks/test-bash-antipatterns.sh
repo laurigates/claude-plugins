@@ -58,6 +58,33 @@ assert_exit \
     "find -exec (dangerous, no discovery flags) is blocked" 2 \
     "find . -exec ls {}"
 
+# ── cat pipeline regression ──────────────────────────────────────────────────
+# Regression: cat file | command was blocked even though cat is feeding a
+# pipeline — the Read tool cannot replace cat in pipelines where data flows
+# to other tools like jq, python, grep, etc.
+echo ""
+echo "cat pipeline exemption (pipelines allowed, standalone cat blocked):"
+
+assert_exit \
+    "cat file (standalone) is blocked" 2 \
+    "cat file.txt"
+
+assert_exit \
+    "cat /path/file (standalone) is blocked" 2 \
+    "cat /home/user/.claude/settings.json"
+
+assert_exit \
+    "cat file | jq is allowed (pipeline)" 0 \
+    "cat config.json | jq '.key'"
+
+assert_exit \
+    "cat file | python3 | grep is allowed (pipeline)" 0 \
+    "cat ~/.claude/settings.json 2>/dev/null | python3 -m json.tool 2>/dev/null | grep -A5 -i hook"
+
+assert_exit \
+    "cat file | command || echo fallback is allowed (pipeline)" 0 \
+    "cat ~/.claude/settings.json 2>/dev/null | python3 -m json.tool 2>/dev/null | grep -A5 -i hook || echo not found"
+
 # ── grep -q exemption regression ─────────────────────────────────────────────
 # Regression: grep -q was blocked even though the Grep tool does not support
 # boolean exit-code checks. grep -q is the standard shell idiom for testing

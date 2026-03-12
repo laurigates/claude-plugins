@@ -23,8 +23,10 @@ block() {
 
 # Check for cat used to read files (but allow cat in pipelines and heredocs)
 # Patterns: cat file, cat /path/file, cat "./file"
+# Allow cat as first command in a pipeline (cat file | ...) since the data flows to other tools
 if echo "$COMMAND" | grep -Eq '^\s*cat\s+[^|><]' && \
-   ! echo "$COMMAND" | grep -Eq '<<|cat\s*>'; then
+   ! echo "$COMMAND" | grep -Eq '<<|cat\s*>' && \
+   ! echo "$COMMAND" | grep -q '|'; then
     block "REMINDER: Use the Read tool instead of 'cat' to read files. The Read tool provides better context with line numbers and handles large files appropriately."
 fi
 
