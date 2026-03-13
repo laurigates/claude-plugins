@@ -456,6 +456,51 @@ async def _stream_interactive(prompt, options, completion_msg):
 
 See `git-repo-agent/docs/adr/003` for full context and alternatives considered.
 
+### Worktree Isolation Is Not Supported by `ClaudeAgentOptions`
+
+The `isolation: worktree` frontmatter field works for Claude Code plugin agents, but `ClaudeAgentOptions` (Python SDK) has no equivalent parameter. The workaround is to manage the worktree in Python before launching the agent:
+
+```python
+from pathlib import Path
+import subprocess
+
+def create_worktree(repo_path: Path, branch: str) -> Path:
+    worktree_path = repo_path / ".worktrees" / branch.replace("/", "-")
+    worktree_path.parent.mkdir(parents=True, exist_ok=True)
+    base = subprocess.run(
+        ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+        cwd=repo_path, capture_output=True, text=True, check=True,
+    ).stdout.strip()
+    subprocess.run(
+        ["git", "worktree", "add", "-b", branch, str(worktree_path), base],
+        cwd=repo_path, check=True,
+    )
+    return worktree_path
+
+# Set cwd to worktree so agent works in isolation
+worktree_path = create_worktree(repo_path, "feature/my-branch")
+options = ClaudeAgentOptions(cwd=str(worktree_path), ...)
+```
+
+**Instruct the agent not to create branches or push** — the orchestrator owns the worktree lifecycle:
+
+```
+"You are working in a git worktree on branch '{branch}'. Commit your changes
+ directly to this branch. Do NOT create new branches or push."
+```
+
+**Post-workflow cleanup:** Check for commits after the agent finishes, then offer to push and create a PR:
+
+```python
+result = subprocess.run(
+    ["git", "log", "--oneline", f"{base_branch}..HEAD"],
+    cwd=worktree_path, capture_output=True, text=True,
+)
+has_changes = bool(result.stdout.strip())
+```
+
+See `git-repo-agent/docs/adr/004` for full context.
+
 ## Related Rules
 
 - `.claude/rules/agentic-permissions.md` — Granular tool permission patterns
