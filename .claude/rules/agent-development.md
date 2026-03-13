@@ -1,6 +1,7 @@
 ---
 paths:
   - "**/agents/**"
+  - "**/git_repo_agent/**"
 ---
 
 # Agent Development (Claude Code 2.1.71+)
@@ -404,6 +405,56 @@ claude --agents '{"my-agent": {"description": "...", "prompt": "...", "tools": [
 - [ ] Date fields set (`created`, `modified`, `reviewed`)
 - [ ] Agent added to plugin `README.md` agents table
 - [ ] If relevant, `color` field set for UI display
+
+---
+
+## Claude Agent SDK (Python) — Interactive Workflows
+
+> Applies to Python applications using `claude-agent-sdk`, not Claude Code plugin agent `.md` files.
+
+### `query()` vs `ClaudeSDKClient`
+
+| | `query()` | `ClaudeSDKClient` |
+|---|---|---|
+| Transport | Unidirectional — closes stdin after prompt | Bidirectional — keeps connection open |
+| Follow-up messages | Not supported | `await client.query(follow_up)` |
+| Use for | One-shot queries, batch processing | Multi-turn, interactive workflows |
+
+### `AskUserQuestion` Does Not Work in SDK Subprocess Mode
+
+When Claude Code CLI runs as an SDK subprocess, its stdin/stdout are piped for the SDK JSON protocol. `AskUserQuestion` cannot reach the terminal — it fails silently, and the model wraps up as if the user provided no input.
+
+**Symptom:** Output shows `Tool: AskUserQuestion` but no prompt appears, and the session ends prematurely.
+
+**Fix:** Use the two-phase interaction pattern instead.
+
+### Two-Phase Interaction Pattern
+
+For interactive workflows that need user input between analysis and execution:
+
+```python
+async def _stream_interactive(prompt, options, completion_msg):
+    async with ClaudeSDKClient(options) as client:
+        # Phase 1: Agent outputs findings and stops
+        await client.query(prompt)
+        async for msg in client.receive_response():
+            display(msg)
+
+        # Python collects user input (works because it's in the host process)
+        user_input = console.input("Select fixes to apply (numbers, all, none): ")
+
+        # Phase 2: Send selections, agent executes
+        await client.query(f"User selected: {user_input}. Execute steps 4-6.")
+        async for msg in client.receive_response():
+            display(msg, completion_msg)
+```
+
+**Key requirements:**
+- Remove `AskUserQuestion` from `allowed_tools` for interactive mode (prevents accidental use)
+- Agent prompt must instruct the model to output findings and **stop** — not continue or ask questions
+- Phase 2 prompt must tell the model exactly what to do with the user's selections
+
+See `git-repo-agent/docs/adr/003` for full context and alternatives considered.
 
 ## Related Rules
 
