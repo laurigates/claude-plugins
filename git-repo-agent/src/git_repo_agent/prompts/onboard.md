@@ -72,8 +72,8 @@ Note: Full configuration automation is Phase 2. For Phase 1, document what shoul
 ## Step 6: Commit & Report
 
 If not in dry-run mode:
-1. Create the onboarding branch (from `ONBOARD_BRANCH` env var)
-2. Stage and commit changes with conventional commit messages
+1. Stage and commit changes with conventional commit messages to the current branch
+2. Do NOT create branches or push — the orchestrator manages the worktree and PR creation
 3. Generate a summary report of all changes made
 
 If in dry-run mode:
