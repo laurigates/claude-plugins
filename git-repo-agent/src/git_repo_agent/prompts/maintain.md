@@ -77,6 +77,10 @@ Execute fixes based on the operating mode:
 - **docs** subagent: Documentation freshness, accuracy, completeness
 - **blueprint** subagent: Blueprint structure, manifest sync
 
+### Git Worktree
+
+When making changes (interactive or auto-fix mode), you are working in a git worktree on a dedicated branch. Commit your changes directly to the current branch. Do NOT create new branches or push — the orchestrator manages the worktree and PR creation.
+
 ### What NOT to auto-fix
 - Test failures (report only)
 - Security vulnerabilities (report only)

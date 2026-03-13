@@ -2,6 +2,7 @@
 
 import json
 import logging
+from datetime import date
 from pathlib import Path
 
 from claude_agent_sdk import (
@@ -53,6 +54,15 @@ from .tools.health_check import compute_health_score
 from .tools.pipeline_collector import collect_pipeline_diagnostics
 from .tools.repo_analyzer import analyze_repo
 from .tools.report import generate_report
+from .worktree import (
+    cleanup_worktree,
+    create_github_issues,
+    create_worktree,
+    get_base_branch,
+    parse_report_only_findings,
+    push_and_create_pr,
+    worktree_has_changes,
+)
 
 console = Console()
 
@@ -101,6 +111,17 @@ async def run_onboard(
     console.print("[dim]Analyzing repository...[/dim]")
     repo_context = _pre_compute_context(repo_path)
 
+    # Create worktree for isolated work (see ADR-004)
+    base_branch = get_base_branch(repo_path)
+    worktree_path = None
+    work_dir = repo_path
+
+    if not dry_run:
+        console.print(f"[dim]Creating worktree on branch {branch}...[/dim]")
+        worktree_path = create_worktree(repo_path, branch)
+        work_dir = worktree_path
+        console.print(f"[dim]Working in: {worktree_path}[/dim]")
+
     # Build system prompt with embedded analysis
     system_prompt = (
         _load_prompt("orchestrator")
@@ -113,7 +134,7 @@ async def run_onboard(
     # Build orchestrator options
     options = ClaudeAgentOptions(
         system_prompt=system_prompt,
-        cwd=str(repo_path),
+        cwd=str(work_dir),
         max_turns=50,
         allowed_tools=[
             "Read",
@@ -145,10 +166,12 @@ async def run_onboard(
         stderr=lambda line: console.print(f"[dim red]STDERR: {line}[/dim red]"),
     )
 
-    # Build the prompt
+    # Build the prompt — agent should commit but NOT create branches (worktree handles that)
     prompt_parts = [
-        f"Onboard the repository at {repo_path}.",
+        f"Onboard the repository at {work_dir}.",
         "Repository analysis and health score are in your system prompt. Plan and execute the onboarding workflow.",
+        f"You are working in a git worktree on branch '{branch}'.",
+        "Commit your changes directly to this branch. Do NOT create new branches.",
     ]
     if dry_run:
         prompt_parts.append("DRY RUN — report what you would do without making changes.")
@@ -161,6 +184,12 @@ async def run_onboard(
 
     # Stream and display messages
     await _stream_messages(prompt, options, "Onboarding complete.")
+
+    # Post-workflow: offer to create PR if worktree has changes
+    if worktree_path and not dry_run:
+        await _prompt_pr_creation(
+            repo_path, worktree_path, branch, base_branch, "onboard"
+        )
 
 
 async def run_maintain(
@@ -195,6 +224,19 @@ async def run_maintain(
     # Interactive mode does not use AskUserQuestion — the orchestrator
     # handles user prompting in Python between two agent phases. See ADR-003.
     interactive = not fix and not report_only
+    makes_changes = not report_only
+
+    # Create worktree for isolated work when changes will be made (see ADR-004)
+    base_branch = get_base_branch(repo_path)
+    worktree_path = None
+    work_dir = repo_path
+    branch = f"maintain/{date.today().isoformat()}"
+
+    if makes_changes:
+        console.print(f"[dim]Creating worktree on branch {branch}...[/dim]")
+        worktree_path = create_worktree(repo_path, branch)
+        work_dir = worktree_path
+        console.print(f"[dim]Working in: {worktree_path}[/dim]")
 
     # Build orchestrator options
     allowed_tools = [
@@ -212,7 +254,7 @@ async def run_maintain(
 
     options = ClaudeAgentOptions(
         system_prompt=system_prompt,
-        cwd=str(repo_path),
+        cwd=str(work_dir),
         max_turns=50,
         allowed_tools=allowed_tools,
         permission_mode="acceptEdits",
@@ -234,22 +276,44 @@ async def run_maintain(
 
     # Build the prompt
     prompt_parts = [
-        f"Run maintenance checks on the repository at {repo_path}.",
+        f"Run maintenance checks on the repository at {work_dir}.",
         "Repository analysis and health score are in your system prompt. Execute the maintenance workflow.",
     ]
     if report_only:
         prompt_parts.append("REPORT ONLY — do not make any changes, just generate a report.")
     elif fix:
         prompt_parts.append("FIX MODE — apply safe auto-fixes for issues found.")
+        prompt_parts.append(
+            f"You are working in a git worktree on branch '{branch}'. "
+            "Commit your changes directly to this branch. Do NOT create new branches."
+        )
     if focus:
         prompt_parts.append(f"Focus on these categories: {focus}")
 
     prompt = " ".join(prompt_parts)
 
     if interactive:
-        await _stream_interactive(prompt, options, "Maintenance complete.")
+        collected = await _stream_interactive(
+            prompt, options, "Maintenance complete.",
+            worktree_branch=branch,
+        )
+    elif report_only:
+        collected = await _stream_messages_collecting(
+            prompt, options, "Maintenance complete.",
+        )
     else:
         await _stream_messages(prompt, options, "Maintenance complete.")
+        collected = ""
+
+    # Post-workflow: offer to create PR if worktree has changes
+    if worktree_path and makes_changes:
+        await _prompt_pr_creation(
+            repo_path, worktree_path, branch, base_branch, "maintain"
+        )
+
+    # Post-workflow: offer to create GitHub issues for report-only findings
+    if report_only and collected:
+        await _prompt_issue_creation(repo_path, collected)
 
 
 async def run_diagnose(
@@ -375,12 +439,19 @@ def run_health(repo_path: Path) -> None:
 def _display_message(
     message: AssistantMessage | ResultMessage | SystemMessage,
     completion_msg: str | None = None,
+    collected: list[str] | None = None,
 ) -> None:
-    """Display a streamed SDK message to the console."""
+    """Display a streamed SDK message to the console.
+
+    If collected is provided, appends text content to the list for
+    later processing (e.g., parsing report-only findings).
+    """
     if isinstance(message, AssistantMessage):
         for block in message.content:
             if isinstance(block, TextBlock):
                 console.print(block.text)
+                if collected is not None:
+                    collected.append(block.text)
             elif isinstance(block, ToolUseBlock):
                 console.print(
                     f"[dim]Tool: {block.name}[/dim]",
@@ -416,11 +487,31 @@ async def _stream_messages(
             _display_message(message, completion_msg)
 
 
+async def _stream_messages_collecting(
+    prompt: str,
+    options: ClaudeAgentOptions,
+    completion_msg: str,
+) -> str:
+    """Like _stream_messages but also collects agent text output.
+
+    Returns the concatenated text output for post-processing.
+    """
+    collected: list[str] = []
+    async with ClaudeSDKClient(options) as client:
+        await client.query(prompt)
+
+        async for message in client.receive_response():
+            _display_message(message, completion_msg, collected)
+
+    return "\n".join(collected)
+
+
 async def _stream_interactive(
     prompt: str,
     options: ClaudeAgentOptions,
     completion_msg: str,
-) -> None:
+    worktree_branch: str | None = None,
+) -> str:
     """Run a two-phase interactive session using ClaudeSDKClient.
 
     Phase 1: Agent analyzes and presents numbered findings, then stops.
@@ -429,13 +520,16 @@ async def _stream_interactive(
 
     This replaces AskUserQuestion which does not work in SDK subprocess
     mode. See ADR-003.
+
+    Returns concatenated agent text output for post-processing.
     """
+    collected: list[str] = []
     async with ClaudeSDKClient(options) as client:
         # Phase 1: Analysis — agent presents findings and stops
         await client.query(prompt)
 
         async for message in client.receive_response():
-            _display_message(message)
+            _display_message(message, collected=collected)
 
         # Prompt user for selections
         console.print()
@@ -453,14 +547,123 @@ async def _stream_interactive(
                 "and Step 6 (generate report)."
             )
         else:
+            worktree_note = ""
+            if worktree_branch:
+                worktree_note = (
+                    f" You are working in a git worktree on branch '{worktree_branch}'. "
+                    "Commit your changes directly to this branch. Do NOT create new branches."
+                )
             followup = (
                 f"The user selected: {user_input}. "
                 "Execute the selected fixes (Step 4), then record health "
-                "history (Step 5) and generate the maintenance report (Step 6)."
+                f"history (Step 5) and generate the maintenance report (Step 6).{worktree_note}"
             )
 
         # Phase 2: Execution
         await client.query(followup)
 
         async for message in client.receive_response():
-            _display_message(message, completion_msg)
+            _display_message(message, completion_msg, collected)
+
+    return "\n".join(collected)
+
+
+async def _prompt_pr_creation(
+    repo_path: Path,
+    worktree_path: Path,
+    branch: str,
+    base_branch: str,
+    workflow: str,
+) -> None:
+    """Check for changes in the worktree and offer to create a PR."""
+    if not worktree_has_changes(worktree_path, base_branch):
+        console.print("[dim]No changes were made in the worktree.[/dim]")
+        cleanup_worktree(repo_path, worktree_path)
+        return
+
+    console.print()
+    console.print(f"[bold]Changes committed on branch [cyan]{branch}[/cyan][/bold]")
+    create_pr = console.input(
+        "[bold]Create a pull request?[/bold] ([green]yes[/green]/[yellow]no[/yellow]): "
+    ).strip().lower()
+
+    if create_pr in ("yes", "y"):
+        pr_title = f"chore: {workflow} repository"
+        pr_body = (
+            f"## Summary\n\n"
+            f"- Automated {workflow} via git-repo-agent\n\n"
+            f"## Test plan\n\n"
+            f"- [ ] Review changes in the diff\n"
+            f"- [ ] Verify CI passes\n\n"
+            f"\U0001f916 Generated with git-repo-agent"
+        )
+        console.print("[dim]Pushing branch and creating PR...[/dim]")
+        pr_url = push_and_create_pr(
+            worktree_path, branch, base_branch, pr_title, pr_body,
+        )
+        if pr_url:
+            console.print(f"[bold green]PR created:[/bold green] {pr_url}")
+        else:
+            console.print("[red]Failed to create PR. Push branch manually:[/red]")
+            console.print(f"  cd {worktree_path} && git push -u origin {branch}")
+    else:
+        console.print(
+            f"[dim]Worktree preserved at: {worktree_path}[/dim]\n"
+            f"[dim]Branch: {branch}[/dim]\n"
+            f"[dim]To create a PR later: cd {worktree_path} && git push -u origin {branch} && gh pr create[/dim]"
+        )
+
+
+async def _prompt_issue_creation(
+    repo_path: Path,
+    agent_output: str,
+) -> None:
+    """Parse report-only findings and offer to create GitHub issues."""
+    findings = parse_report_only_findings(agent_output)
+
+    if not findings:
+        return
+
+    console.print()
+    console.print(
+        f"[bold]Found {len(findings)} report-only finding(s)[/bold] "
+        "that could be tracked as GitHub issues:"
+    )
+    for i, f in enumerate(findings, 1):
+        console.print(f"  {i}. {f['title']}")
+
+    create_issues = console.input(
+        "\n[bold]Create GitHub issues?[/bold] "
+        "([green]all[/green], comma-separated numbers, or [yellow]none[/yellow]): "
+    ).strip().lower()
+
+    if create_issues in ("none", "n", ""):
+        console.print("[yellow]No issues created.[/yellow]")
+        return
+
+    if create_issues in ("all", "a"):
+        selected = findings
+    else:
+        indices = []
+        for part in create_issues.split(","):
+            part = part.strip()
+            if part.isdigit():
+                idx = int(part) - 1
+                if 0 <= idx < len(findings):
+                    indices.append(idx)
+        selected = [findings[i] for i in indices]
+
+    if not selected:
+        console.print("[yellow]No valid selections.[/yellow]")
+        return
+
+    console.print(f"[dim]Creating {len(selected)} GitHub issue(s)...[/dim]")
+    urls = create_github_issues(repo_path, selected)
+
+    for url in urls:
+        console.print(f"  [green]Created:[/green] {url}")
+
+    if len(urls) < len(selected):
+        console.print(
+            f"[yellow]{len(selected) - len(urls)} issue(s) failed to create.[/yellow]"
+        )
