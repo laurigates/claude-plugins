@@ -4,10 +4,11 @@ External communication formatting plugin for Claude Code - specialized skills fo
 
 ## Overview
 
-This plugin provides two essential communication skills:
+This plugin provides three communication skills:
 
 1. **Google Chat Formatting** - Convert Markdown to Google Chat compatible syntax
-2. **Ticket Drafting Guidelines** - Structured approach to writing GitHub issues and technical tickets
+2. **Google Chat Function Calling** - Implement Gemini function calling for Google Chat bots
+3. **Ticket Drafting Guidelines** - Structured approach to writing GitHub issues and technical tickets
 
 ## Installation
 
@@ -58,7 +59,34 @@ pbpaste | sed -E 's/^#{1,6} (.+)$/*\1*/g' | \
 
 **Location:** `/skills/google-chat-formatting/skill.md`
 
-### 2. Ticket Drafting Guidelines
+### 2. Google Chat Function Calling
+
+Implements Gemini function calling patterns for Google Chat bot applications using Google AI and Vertex AI SDKs.
+
+**Key Features:**
+- Function declaration design with OpenAPI-style schemas
+- Multi-turn function calling flow orchestration
+- Parallel and compositional (sequential) function calling
+- Google AI vs Vertex AI SDK integration patterns
+- Google Chat bot webhook integration with Gemini backend
+
+**Activates when:**
+- Building Google Chat bots with Gemini function calling
+- Designing function declarations for Gemini APIs
+- Integrating Vertex AI or Google AI tool use in chat workflows
+
+**Calling Modes:**
+
+| Mode | Behavior |
+|------|----------|
+| `AUTO` | Model decides between text or function call |
+| `ANY` | Model always produces a function call |
+| `NONE` | Function calling disabled |
+| `VALIDATED` | Like AUTO with schema adherence (preview) |
+
+**Location:** `/skills/google-chat-function-calling/skill.md`
+
+### 3. Ticket Drafting Guidelines
 
 Structured guidelines for drafting GitHub issues and technical tickets using What/Why/How format.
 
@@ -104,6 +132,8 @@ communication-plugin/
 │   └── plugin.json          # Plugin metadata
 ├── skills/
 │   ├── google-chat-formatting/
+│   │   └── skill.md
+│   ├── google-chat-function-calling/
 │   │   └── skill.md
 │   └── ticket-drafting-guidelines/
 │       └── skill.md

@@ -184,7 +184,7 @@ Install based on your project's tech stack and domain.
 | langchain-plugin | Building AI agents with LangChain/LangGraph |
 | home-assistant-plugin | Home Assistant configuration management |
 | blog-plugin | Writing project logs or technical posts |
-| communication-plugin | Formatting for Google Chat or ticket drafting |
+| communication-plugin | Formatting for Google Chat, Gemini function calling, or ticket drafting |
 | css-plugin | Lightning CSS transpilation, UnoCSS atomic utility generation for style tooling |
 | accessibility-plugin | WCAG compliance and ARIA patterns |
 | component-patterns-plugin | Reusable UI component patterns |

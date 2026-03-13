@@ -138,13 +138,16 @@
     {
       "name": "communication-plugin",
       "source": "./communication-plugin",
-      "description": "External communication formatting - Google Chat, ticket drafting",
+      "description": "External communication formatting - Google Chat, ticket drafting, Gemini function calling",
       "version": "1.2.0",
       "keywords": [
         "communication",
         "google-chat",
         "formatting",
-        "tickets"
+        "tickets",
+        "function-calling",
+        "gemini",
+        "vertex-ai"
       ],
       "category": "communication"
     },
