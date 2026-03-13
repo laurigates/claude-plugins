@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.14.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.13.5...hooks-plugin-v1.14.0) (2026-03-13)
+
+
+### Features
+
+* hooks-permission-request-hook skill for auto-approval rules ([#937](https://github.com/laurigates/claude-plugins/issues/937)) ([0ab8571](https://github.com/laurigates/claude-plugins/commit/0ab8571dcb5f82e8b88e3db24457c7c55fd8dbfe))
+* **hooks-plugin:** add permission-request-hook skill ([0ab8571](https://github.com/laurigates/claude-plugins/commit/0ab8571dcb5f82e8b88e3db24457c7c55fd8dbfe))
+
 ## [1.13.5](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.13.4...hooks-plugin-v1.13.5) (2026-03-12)
 
 
