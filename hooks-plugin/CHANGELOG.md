@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.14.0...hooks-plugin-v1.14.1) (2026-03-13)
+
+
+### Bug Fixes
+
+* **git-repo-agent:** replace AskUserQuestion with two-phase Python-orchestrated interaction ([#939](https://github.com/laurigates/claude-plugins/issues/939)) ([8292e21](https://github.com/laurigates/claude-plugins/commit/8292e217d7b13b85e52240d55ed6f059fb0ace82))
+
 ## [1.14.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.13.5...hooks-plugin-v1.14.0) (2026-03-13)
 
 
