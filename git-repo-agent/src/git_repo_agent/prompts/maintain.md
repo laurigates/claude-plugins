@@ -8,7 +8,7 @@ The workflow has three modes, determined by environment variables:
 
 | Mode | Condition | Behavior |
 |------|-----------|----------|
-| **Interactive** (default) | `FIX_MODE` ≠ "True" AND `REPORT_ONLY` ≠ "True" | Analyze → present findings → ask user → execute selected fixes → report |
+| **Interactive** (default) | `FIX_MODE` ≠ "True" AND `REPORT_ONLY` ≠ "True" | Analyze → present findings → [orchestrator prompts user] → execute selected fixes → report |
 | **Auto-fix** | `FIX_MODE` = "True" | Analyze → apply conservative auto-fixes → report |
 | **Report-only** | `REPORT_ONLY` = "True" | Analyze → report only, no changes |
 
@@ -33,9 +33,27 @@ Based on the health score, prioritize work:
 
 If `--focus` is specified, limit work to those categories only.
 
-## Step 3: Present Plan and Get User Input
+## Step 3: Present Findings
 
-In **interactive mode** (default), use `AskUserQuestion` to present findings and let the user choose which fixes to apply. **After the user responds, you MUST proceed to Step 4 to execute their selections.** Do NOT end the session after asking questions — the user's answers drive the next phase.
+In **interactive mode** (default), present your analysis as a numbered list of actionable findings. For each finding include:
+
+- **Number** (sequential, starting at 1)
+- **Category** in brackets: `[docs]`, `[tests]`, `[security]`, `[quality]`, `[ci]`
+- **Description** of the issue
+- **Fix type**: `auto-fixable` or `report-only`
+
+Example output format:
+
+```
+1. [docs] README.md missing installation instructions — auto-fixable
+2. [security] Dependency has known CVE — report-only
+3. [quality] ESLint not configured — auto-fixable
+4. [tests] 2 test failures in auth module — report-only
+```
+
+Mark items that should NOT be auto-fixed (test failures, security vulnerabilities, architecture decisions) as "report-only".
+
+**End your response after presenting the numbered findings list.** Do NOT use `AskUserQuestion`. The orchestrator will prompt the user for their selections and send a follow-up message with their choices.
 
 In **auto-fix mode**, skip this step and proceed directly to Step 4.
 
@@ -45,7 +63,7 @@ In **report-only mode**, skip to Step 5.
 
 Execute fixes based on the operating mode:
 
-- **Interactive mode**: Apply exactly the fixes the user selected in Step 3
+- **Interactive mode**: You will receive a follow-up message from the orchestrator containing the user's selections (e.g., "1,3,5" or "all"). Apply exactly the fixes corresponding to those numbers from your Step 3 findings list.
 - **Auto-fix mode**: Apply all conservative auto-fixes
 
 ### Auto-fix scope (conservative)

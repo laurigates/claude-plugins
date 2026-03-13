@@ -7,11 +7,11 @@ from pathlib import Path
 from claude_agent_sdk import (
     AssistantMessage,
     ClaudeAgentOptions,
+    ClaudeSDKClient,
     ResultMessage,
     SystemMessage,
     TextBlock,
     ToolUseBlock,
-    query,
 )
 from rich.console import Console
 
@@ -192,22 +192,29 @@ async def run_maintain(
         + repo_context
     )
 
+    # Interactive mode does not use AskUserQuestion — the orchestrator
+    # handles user prompting in Python between two agent phases. See ADR-003.
+    interactive = not fix and not report_only
+
     # Build orchestrator options
+    allowed_tools = [
+        "Read",
+        "Write",
+        "Edit",
+        "Bash",
+        "Glob",
+        "Grep",
+        "Task",
+        "TodoWrite",
+    ]
+    if not interactive:
+        allowed_tools.append("AskUserQuestion")
+
     options = ClaudeAgentOptions(
         system_prompt=system_prompt,
         cwd=str(repo_path),
         max_turns=50,
-        allowed_tools=[
-            "Read",
-            "Write",
-            "Edit",
-            "Bash",
-            "Glob",
-            "Grep",
-            "Task",
-            "AskUserQuestion",
-            "TodoWrite",
-        ],
+        allowed_tools=allowed_tools,
         permission_mode="acceptEdits",
         agents={
             "blueprint": blueprint_definition,
@@ -239,7 +246,10 @@ async def run_maintain(
 
     prompt = " ".join(prompt_parts)
 
-    await _stream_messages(prompt, options, "Maintenance complete.")
+    if interactive:
+        await _stream_interactive(prompt, options, "Maintenance complete.")
+    else:
+        await _stream_messages(prompt, options, "Maintenance complete.")
 
 
 async def run_diagnose(
@@ -362,33 +372,95 @@ def run_health(repo_path: Path) -> None:
     console.print(report)
 
 
+def _display_message(
+    message: AssistantMessage | ResultMessage | SystemMessage,
+    completion_msg: str | None = None,
+) -> None:
+    """Display a streamed SDK message to the console."""
+    if isinstance(message, AssistantMessage):
+        for block in message.content:
+            if isinstance(block, TextBlock):
+                console.print(block.text)
+            elif isinstance(block, ToolUseBlock):
+                console.print(
+                    f"[dim]Tool: {block.name}[/dim]",
+                    highlight=False,
+                )
+    elif isinstance(message, ResultMessage):
+        if message.is_error:
+            console.print(f"[red]Error: {message.result}[/red]")
+        elif completion_msg:
+            console.print()
+            console.print(f"[bold green]{completion_msg}[/bold green]")
+        if message.total_cost_usd:
+            console.print(f"[dim]Cost: ${message.total_cost_usd:.4f}[/dim]")
+    elif isinstance(message, SystemMessage):
+        if message.subtype == "init":
+            session_id = message.data.get("session_id", "")
+            console.print(f"[dim]Session: {session_id}[/dim]")
+
+
 async def _stream_messages(
     prompt: str,
     options: ClaudeAgentOptions,
     completion_msg: str,
 ) -> None:
-    """Stream and display messages from a query."""
-    async for message in query(prompt=prompt, options=options):
-        if isinstance(message, AssistantMessage):
-            for block in message.content:
-                if isinstance(block, TextBlock):
-                    console.print(block.text)
-                elif isinstance(block, ToolUseBlock):
-                    console.print(
-                        f"[dim]Tool: {block.name}[/dim]",
-                        highlight=False,
-                    )
-        elif isinstance(message, ResultMessage):
-            if message.is_error:
-                console.print(f"[red]Error: {message.result}[/red]")
-            else:
-                console.print()
-                console.print(f"[bold green]{completion_msg}[/bold green]")
-                if message.total_cost_usd:
-                    console.print(
-                        f"[dim]Cost: ${message.total_cost_usd:.4f}[/dim]"
-                    )
-        elif isinstance(message, SystemMessage):
-            if message.subtype == "init":
-                session_id = message.data.get("session_id", "")
-                console.print(f"[dim]Session: {session_id}[/dim]")
+    """Run a single-phase session using ClaudeSDKClient.
+
+    See ADR-003 for why ClaudeSDKClient is used instead of query().
+    """
+    async with ClaudeSDKClient(options) as client:
+        await client.query(prompt)
+
+        async for message in client.receive_response():
+            _display_message(message, completion_msg)
+
+
+async def _stream_interactive(
+    prompt: str,
+    options: ClaudeAgentOptions,
+    completion_msg: str,
+) -> None:
+    """Run a two-phase interactive session using ClaudeSDKClient.
+
+    Phase 1: Agent analyzes and presents numbered findings, then stops.
+    Interlude: Python prompts the user for their selections via rich.
+    Phase 2: Agent executes the selected fixes and generates a report.
+
+    This replaces AskUserQuestion which does not work in SDK subprocess
+    mode. See ADR-003.
+    """
+    async with ClaudeSDKClient(options) as client:
+        # Phase 1: Analysis — agent presents findings and stops
+        await client.query(prompt)
+
+        async for message in client.receive_response():
+            _display_message(message)
+
+        # Prompt user for selections
+        console.print()
+        user_input = console.input(
+            "[bold]Select fixes to apply[/bold] "
+            "(comma-separated numbers, [green]all[/green], or [yellow]none[/yellow]): "
+        )
+
+        choice = user_input.strip().lower()
+        if choice in ("none", "n", ""):
+            console.print("[yellow]No fixes selected.[/yellow]")
+            followup = (
+                "The user chose not to apply any fixes. "
+                "Skip Step 4. Proceed to Step 5 (record health history) "
+                "and Step 6 (generate report)."
+            )
+        else:
+            followup = (
+                f"The user selected: {user_input}. "
+                "Execute the selected fixes (Step 4), then record health "
+                "history (Step 5) and generate the maintenance report (Step 6)."
+            )
+
+        # Phase 2: Execution
+        await client.query(followup)
+
+        async for message in client.receive_response():
+            _display_message(message, completion_msg)
