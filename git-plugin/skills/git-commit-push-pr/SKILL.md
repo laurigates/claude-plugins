@@ -8,7 +8,11 @@ allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git a
 args: "[remote-branch] [--push] [--direct] [--pr] [--draft] [--issue <num>] [--no-commit] [--range <start>..<end>] [--skip-issue-detection]"
 argument-hint: [remote-branch] [--push] [--direct] [--pr] [--draft] [--issue <num>] [--no-commit] [--range <start>..<end>] [--skip-issue-detection]
 disable-model-invocation: true
-description: Complete workflow from changes to PR - auto-detect related issues, create logical commits with proper issue linkage, push to remote feature branch, and optionally create pull request
+description: |
+  Complete workflow from changes to PR - auto-detect related issues, create logical commits
+  with proper issue linkage, push to remote feature branch, and create pull request.
+  Use when user says "create pr", "let's pr", "commit and pr", "push and create pr",
+  or wants to go from uncommitted changes to an open pull request in one step.
 ---
 
 ## Context
