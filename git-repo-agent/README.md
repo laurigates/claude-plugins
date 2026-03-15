@@ -129,15 +129,15 @@ git-repo-agent/
 
 ### Subagents
 
-| Agent           | Model  | Purpose                                                                    |
-| --------------- | ------ | -------------------------------------------------------------------------- |
-| **blueprint**   | sonnet | Initialize and maintain blueprint methodology (PRDs, ADRs, PRPs, manifest) |
-| **configure**   | haiku  | Set up linting, formatting, testing, pre-commit hooks, CI/CD, coverage     |
-| **diagnose**    | sonnet | Correlate pipeline failures across kubectl, ArgoCD, GitHub Actions, Sentry |
-| **docs**        | haiku  | Check and improve README, CLAUDE.md, API docs, blueprint docs              |
-| **quality**     | opus   | Review code for complexity, duplication, anti-patterns, lint compliance    |
-| **security**    | opus   | Scan for exposed secrets, dependency CVEs, insecure configurations         |
-| **test_runner** | haiku  | Detect test framework, execute tests, return pass/fail summary             |
+| Agent           | Model  | Skills | Purpose                                                                    |
+| --------------- | ------ | ------ | -------------------------------------------------------------------------- |
+| **blueprint**   | sonnet | 7      | Initialize and maintain blueprint methodology (PRDs, ADRs, PRPs, manifest, rules, test plans) |
+| **configure**   | haiku  | 9      | Set up linting, formatting, testing, pre-commit, CI/CD, coverage, release-please, containers, Sentry |
+| **diagnose**    | sonnet | 3      | Correlate pipeline failures using kubectl debugging, GitHub Actions inspection, systematic diagnostics |
+| **docs**        | haiku  | 5      | Check and improve README, CLAUDE.md, blueprint docs, doc quality analysis  |
+| **quality**     | opus   | 6      | Review code for complexity, duplication, anti-patterns, silent degradation, lint compliance |
+| **security**    | opus   | 3      | Scan for exposed secrets, dependency CVEs, insecure configurations, GitHub Actions auth |
+| **test_runner** | haiku  | 5      | Detect test framework, execute tests, analyze failures, assess test quality |
 
 ### MCP Tools
 

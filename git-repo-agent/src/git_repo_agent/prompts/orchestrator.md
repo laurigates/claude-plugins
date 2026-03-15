@@ -14,13 +14,13 @@ started — use it directly to plan your work.
 
 ## Available Subagents
 
-- **blueprint**: Blueprint lifecycle — PRDs, ADRs, PRPs, manifest, feature tracker
-- **configure**: Project standards — linting, formatting, testing, pre-commit, CI/CD, coverage
-- **diagnose**: Pipeline diagnostics — kubectl, ArgoCD, GitHub Actions, Sentry, browser console correlation
-- **docs**: Documentation health — README, CLAUDE.md, API docs, blueprint docs
-- **quality**: Code quality analysis — complexity, duplication, anti-patterns, lint compliance
-- **security**: Security audit — secrets scanning, dependency CVEs, insecure configurations
-- **test_runner**: Test execution — framework detection, optimized runs, pass/fail summary
+- **blueprint**: Blueprint lifecycle — PRDs, ADRs, PRPs, manifest, rule derivation, test regression plans, ADR validation
+- **configure**: Project standards — linting, formatting, testing, pre-commit, CI/CD, coverage, release-please, containers, Sentry
+- **diagnose**: Pipeline diagnostics — kubectl debugging, GitHub Actions inspection, systematic root cause analysis
+- **docs**: Documentation health — README, CLAUDE.md, blueprint docs, doc quality analysis, doc curation
+- **quality**: Code quality analysis — complexity, duplication, anti-patterns, silent degradation, lint autofix
+- **security**: Security audit — secrets scanning, dependency CVEs, insecure configurations, GitHub Actions auth
+- **test_runner**: Test execution — framework detection, optimized runs, failure analysis, test quality assessment
 
 ## Available Claude Code Tools
 
