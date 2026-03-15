@@ -2,8 +2,8 @@
 model: sonnet
 name: git-commit-push-pr
 created: 2025-12-16
-modified: 2026-02-20
-reviewed: 2026-02-20
+modified: 2026-03-15
+reviewed: 2026-03-15
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git branch *), Bash(git remote *), Bash(gh pr *), Bash(gh label *), Bash(gh repo *), Bash(gh issue *), Bash(pre-commit *), Bash(find *), Read, Edit, Grep, Glob, TodoWrite, mcp__github__create_pull_request, mcp__github__list_issues, mcp__github__get_issue
 args: "[remote-branch] [--push] [--direct] [--pr] [--draft] [--issue <num>] [--no-commit] [--range <start>..<end>] [--skip-issue-detection]"
 argument-hint: [remote-branch] [--push] [--direct] [--pr] [--draft] [--issue <num>] [--no-commit] [--range <start>..<end>] [--skip-issue-detection]
@@ -34,18 +34,21 @@ Parse these parameters from the command (all optional):
 - `--draft`: Create as draft PR (requires --pr)
 - `--issue <num>`: Link to specific issue number (requires --pr)
 - `--no-commit`: Skip commit creation (assume commits already exist)
-- `--range <start>..<end>`: Push specific commit range instead of all commits on main
+- `--range <start>..<end>`: Push specific commit range instead of all commits
 - `--labels <label1,label2>`: Apply labels to the created PR (requires --pr)
 - `--skip-issue-detection`: Skip automatic issue detection (use when --issue is provided or for trivial changes)
 
 ## Your task
 
-Execute this commit workflow using the **main-branch development pattern**:
+**IMPORTANT: Execute all steps continuously without pausing to ask for confirmation between steps.** This is a complete workflow — commit, push, and PR creation flow as a single operation. Do not stop after committing to ask whether to push or create a PR; proceed through all applicable steps.
 
-### Step 1: Verify State
+### Step 1: Verify State and Prepare Branch
 
-1. **Check branch**: If `--direct`, any branch is valid. Otherwise, verify on main branch (warn if not).
-2. **Check for changes**: Confirm there are staged or unstaged changes to commit (unless --no-commit)
+1. **Check for changes**: Confirm there are staged or unstaged changes to commit (unless --no-commit)
+2. **Prepare branch**:
+   - If `--direct`: any branch is valid, stay on current branch
+   - If on main/master: create a local feature branch before committing. Auto-generate the name from the changes (e.g., `fix/handle-timeout-edge-case`, `feat/add-oauth-support`). Use `git checkout -b <branch-name>`.
+   - If already on a feature branch: stay on it
 
 ### Step 2: Auto-Detect Related Issues (unless --skip-issue-detection or --issue provided)
 
@@ -94,7 +97,7 @@ Execute this commit workflow using the **main-branch development pattern**:
 ### Step 3: Create Commits (unless --no-commit)
 
 1. **Analyze changes** and detect if splitting into multiple PRs is appropriate
-2. **Group related changes** into logical commits on main
+2. **Group related changes** into logical commits
 3. **Stage changes**: Use `git add -u` for modified files, `git add <file>` for new files
 4. **Run pre-commit hooks** if configured: `pre-commit run`
 5. **Handle pre-commit modifications**: Stage any files modified by hooks with `git add -u`
@@ -124,14 +127,11 @@ Execute this commit workflow using the **main-branch development pattern**:
 git push origin HEAD
 ```
 
-**Otherwise** (feature branch pattern for PRs):
+**Otherwise** (feature branch — created in Step 1 or pre-existing):
 
 ```bash
-# Push main to remote feature branch
-git push origin main:<remote-branch>
-
-# Or push commit range for multi-PR workflow
-git push origin <start>^..<end>:<remote-branch>
+# Push the current feature branch and set upstream
+git push -u origin $(git branch --show-current)
 ```
 
 ### Step 5: Create PR (if --pr)
@@ -192,34 +192,27 @@ gh pr edit <pr-number> --add-label "label1,label2"
 After PR creation, watch CI checks to confirm the PR is ready for merge:
 
 ```bash
-gh pr checks <pr-number> --watch --fail-fast --required
+# Watch all checks (not just required — many repos have no required checks configured)
+gh pr checks <pr-number> --watch --fail-fast
 ```
 
-- `--watch`: Block until all checks complete (polls every 10s)
-- `--fail-fast`: Exit immediately on first check failure
-- `--required`: Only watch required checks (skip optional/informational)
-
 **On success (exit 0)**:
-- Report: "All required checks passed. PR #N is ready for merge."
+- Report: "All checks passed. PR #N is ready for merge."
 - Provide merge command: `gh pr merge <pr-number> --squash --delete-branch`
 
 **On failure (exit 1)**:
 - Report which check(s) failed with details:
   ```bash
-  gh pr checks <pr-number> --required --json name,state,bucket,link --jq '.[] | select(.bucket == "fail")'
+  gh pr checks <pr-number> --json name,state,bucket,link --jq '.[] | select(.bucket == "fail")'
   ```
 - Suggest: review failed check logs, fix issues, push again
-
-**On pending timeout** (exit 8):
-- Report: "Checks still running. Monitor with: `gh pr checks <pr-number> --watch`"
 
 ## Workflow Guidance
 
 - After running pre-commit hooks, stage files modified by hooks using `git add -u`
 - Unstaged changes after pre-commit are expected formatter output - stage them and continue
 - **Direct mode** (`--direct`): Use `git push origin HEAD` to push current branch directly
-- **Feature branch mode** (default): Use `git push origin main:<remote-branch>` for PR workflow
-- For multi-PR workflow, use `git push origin <start>^..<end>:<remote-branch>` for commit ranges
+- **Feature branch mode** (default): Create a local feature branch from main, commit there, push with `git push -u origin <branch>`
 - When encountering unexpected state, report findings and ask user how to proceed
 - Include all pre-commit automatic fixes in commits
 - **GitHub issue references (REQUIRED)**: Every commit should reference related issues:
