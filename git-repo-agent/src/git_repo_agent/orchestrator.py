@@ -50,6 +50,11 @@ from .agents.docs import definition as docs_definition
 from .agents.quality import definition as quality_definition
 from .agents.security import definition as security_definition
 from .agents.test_runner import definition as test_runner_definition
+from .tools.attributes import (
+    collect_attributes,
+    format_routing_instructions,
+    route_from_attributes,
+)
 from .tools.health_check import compute_health_score
 from .tools.pipeline_collector import collect_pipeline_diagnostics
 from .tools.repo_analyzer import analyze_repo
@@ -75,13 +80,18 @@ def _load_prompt(name: str) -> str:
 
 
 def _pre_compute_context(repo_path: Path) -> str:
-    """Pre-compute repository analysis and health score.
+    """Pre-compute repository analysis, health score, and structured attributes.
 
     Returns a formatted string to embed in the agent prompt.
     See ADR-001 for why this replaces SDK MCP servers.
     """
     analysis = analyze_repo(repo_path)
     health = compute_health_score(repo_path)
+    attr_data = collect_attributes(repo_path)
+
+    # Compute routing priorities from attributes
+    priorities = route_from_attributes(attr_data["attributes"])
+    routing = format_routing_instructions(priorities)
 
     return (
         "## Pre-computed Repository Analysis\n\n"
@@ -90,7 +100,10 @@ def _pre_compute_context(repo_path: Path) -> str:
         "### repo_analyze result\n\n"
         f"```json\n{json.dumps(analysis, indent=2)}\n```\n\n"
         "### health_score result\n\n"
-        f"```json\n{json.dumps(health, indent=2)}\n```\n"
+        f"```json\n{json.dumps(health, indent=2)}\n```\n\n"
+        "### codebase_attributes result\n\n"
+        f"```json\n{json.dumps(attr_data, indent=2)}\n```\n\n"
+        f"{routing}\n"
     )
 
 
