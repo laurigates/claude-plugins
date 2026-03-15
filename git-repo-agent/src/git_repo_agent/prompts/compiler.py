@@ -22,6 +22,9 @@ SUBAGENT_SKILLS: dict[str, list[str]] = {
         "blueprint-plugin/skills/blueprint-derive-prd/SKILL.md",
         "blueprint-plugin/skills/blueprint-derive-adr/SKILL.md",
         "blueprint-plugin/skills/blueprint-sync-ids/SKILL.md",
+        "blueprint-plugin/skills/blueprint-derive-rules/SKILL.md",
+        "blueprint-plugin/skills/blueprint-derive-tests/SKILL.md",
+        "blueprint-plugin/skills/blueprint-adr-validate/SKILL.md",
     ],
     "configure": [
         "configure-plugin/skills/configure-linting/SKILL.md",
@@ -30,25 +33,41 @@ SUBAGENT_SKILLS: dict[str, list[str]] = {
         "configure-plugin/skills/configure-pre-commit/SKILL.md",
         "configure-plugin/skills/configure-workflows/SKILL.md",
         "configure-plugin/skills/configure-coverage/SKILL.md",
+        "configure-plugin/skills/configure-release-please/SKILL.md",
+        "configure-plugin/skills/configure-dockerfile/SKILL.md",
+        "configure-plugin/skills/configure-sentry/SKILL.md",
+    ],
+    "diagnose": [
+        "kubernetes-plugin/skills/kubectl-debugging/SKILL.md",
+        "github-actions-plugin/skills/github-actions-inspection/SKILL.md",
+        "code-quality-plugin/skills/debugging-methodology/SKILL.md",
     ],
     "docs": [
         "configure-plugin/skills/configure-readme/SKILL.md",
         "blueprint-plugin/skills/blueprint-claude-md/SKILL.md",
+        "blueprint-plugin/skills/blueprint-docs-list/SKILL.md",
+        "blueprint-plugin/skills/blueprint-curate-docs/SKILL.md",
+        "code-quality-plugin/skills/docs-quality-check/SKILL.md",
     ],
     "quality": [
         "code-quality-plugin/skills/code-review-checklist/SKILL.md",
         "code-quality-plugin/skills/code-antipatterns-analysis/SKILL.md",
         "code-quality-plugin/skills/lint-check/SKILL.md",
         "code-quality-plugin/skills/dry-consolidation/SKILL.md",
+        "code-quality-plugin/skills/code-silent-degradation/SKILL.md",
+        "code-quality-plugin/skills/linter-autofix/SKILL.md",
     ],
     "security": [
         "git-plugin/skills/git-security-checks/SKILL.md",
         "configure-plugin/skills/configure-security/SKILL.md",
+        "github-actions-plugin/skills/github-actions-auth-security/SKILL.md",
     ],
     "test_runner": [
         "testing-plugin/skills/test-run/SKILL.md",
         "testing-plugin/skills/test-report/SKILL.md",
         "testing-plugin/skills/test-tier-selection/SKILL.md",
+        "testing-plugin/skills/test-analyze/SKILL.md",
+        "testing-plugin/skills/test-quality-analysis/SKILL.md",
     ],
 }
 
