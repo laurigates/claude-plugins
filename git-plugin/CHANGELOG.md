@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.27.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.27.0...git-plugin-v2.27.1) (2026-03-15)
+
+
+### Bug Fixes
+
+* **git-plugin:** resolve git-commit-push-pr failures on Sonnet and Haiku ([#944](https://github.com/laurigates/claude-plugins/issues/944)) ([c1645f0](https://github.com/laurigates/claude-plugins/commit/c1645f015ea746034840dadd579a4f8f4aa240bc))
+
 ## [2.27.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.26.2...git-plugin-v2.27.0) (2026-03-09)
 
 
