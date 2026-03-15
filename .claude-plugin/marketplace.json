@@ -109,6 +109,21 @@
       "category": "development"
     },
     {
+      "name": "codebase-attributes-plugin",
+      "source": "./codebase-attributes-plugin",
+      "description": "Structured codebase health attributes with severity-based agent routing and dashboard",
+      "version": "1.0.0",
+      "keywords": [
+        "attributes",
+        "health",
+        "routing",
+        "agents",
+        "diagnostics",
+        "dashboard"
+      ],
+      "category": "quality"
+    },
+    {
       "name": "code-quality-plugin",
       "source": "./code-quality-plugin",
       "description": "Code review, refactoring, linting, and static analysis",

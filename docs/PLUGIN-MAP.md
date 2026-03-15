@@ -1,6 +1,6 @@
 # Plugin Navigation Map
 
-Navigation guide for 37 plugins and 300+ skills. Start here.
+Navigation guide for 38 plugins and 300+ skills. Start here.
 
 ## Quick Start
 
@@ -168,6 +168,7 @@ Install based on your project's tech stack and domain.
 
 | Plugin | Install when... |
 |--------|-----------------|
+| codebase-attributes-plugin | You want structured health attributes, severity-based agent routing, or a health dashboard |
 | code-quality-plugin | You want code review, refactoring, linting automation |
 | documentation-plugin | You need generated docs, knowledge graphs |
 | typescript-plugin | Project uses TypeScript or JavaScript |
@@ -205,6 +206,9 @@ Commands organized by workflow phase.
 |-------|---------|---------|
 | **Diagnose** | `/health:check` | Scan Claude Code configuration |
 | **Diagnose** | `/health:audit` | Recommend plugins for your stack |
+| **Diagnose** | `/attributes:collect` | Collect structured health attributes |
+| **Diagnose** | `/attributes:dashboard` | Compact health dashboard |
+| **Diagnose** | `/attributes:route` | Route to agents by attribute severity |
 | **Setup** | `/project:init` | Scaffold new project |
 | **Setup** | `/configure:status` | Check infrastructure compliance |
 | **Setup** | `/configure:all` | Apply all infrastructure standards |
