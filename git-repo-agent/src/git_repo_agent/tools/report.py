@@ -106,12 +106,28 @@ def _format_terminal(scores: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def _format_attributes_terminal(scores: dict[str, Any]) -> str:
+    """Format health scores with attribute-level detail.
+
+    Requires attribute data to be present in scores under the
+    'attributes_data' key. Falls back to basic terminal format.
+    """
+    attr_data = scores.get("attributes_data")
+    if not attr_data:
+        return _format_terminal(scores)
+
+    from .attributes import format_attributes_terminal
+
+    return format_attributes_terminal(attr_data)
+
+
 def generate_report(scores: dict[str, Any], fmt: str = "terminal") -> str:
     """Generate a formatted health report.
 
     Args:
         scores: Health score data from compute_health_score().
-        fmt: Output format — "markdown", "json", or "terminal".
+            Optionally include 'attributes_data' key for attribute-level detail.
+        fmt: Output format — "markdown", "json", "terminal", or "attributes".
 
     Returns:
         Formatted report string.
@@ -120,6 +136,7 @@ def generate_report(scores: dict[str, Any], fmt: str = "terminal") -> str:
         "markdown": _format_markdown,
         "json": _format_json,
         "terminal": _format_terminal,
+        "attributes": _format_attributes_terminal,
     }
     formatter = formatters.get(fmt, _format_terminal)
     return formatter(scores)

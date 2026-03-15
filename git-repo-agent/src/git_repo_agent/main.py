@@ -170,5 +170,114 @@ def health(
     run_health(repo_path=repo_path)
 
 
+@app.command()
+def attributes(
+    repo: str = typer.Argument(
+        ".",
+        help="Path to the repository to analyze.",
+    ),
+    output: Optional[str] = typer.Option(
+        None,
+        "--output",
+        help="Write JSON output to file.",
+    ),
+    fmt: str = typer.Option(
+        "terminal",
+        "--format",
+        help="Output format: terminal, json, or routing.",
+    ),
+) -> None:
+    """Collect structured codebase health attributes with severity and actions."""
+    repo_path = Path(repo).resolve()
+    if not repo_path.is_dir():
+        console.print(f"[red]Error:[/red] {repo_path} is not a directory")
+        raise typer.Exit(code=1)
+
+    from .tools.attributes import (
+        collect_attributes,
+        format_attributes_terminal,
+        format_routing_instructions,
+        route_from_attributes,
+    )
+
+    data = collect_attributes(repo_path)
+
+    if fmt == "terminal":
+        console.print(format_attributes_terminal(data))
+    elif fmt == "routing":
+        priorities = route_from_attributes(data["attributes"])
+        console.print(format_routing_instructions(priorities))
+    else:
+        import json as _json
+
+        console.print(_json.dumps(data, indent=2))
+
+    if output:
+        import json as _json
+
+        Path(output).write_text(_json.dumps(data, indent=2), encoding="utf-8")
+        console.print(f"[dim]Written to {output}[/dim]")
+
+
+@app.command()
+def route(
+    repo: str = typer.Argument(
+        ".",
+        help="Path to the repository to analyze.",
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Show routing plan without executing.",
+    ),
+    focus: Optional[str] = typer.Option(
+        None,
+        "--focus",
+        help="Comma-separated categories to focus on.",
+    ),
+    min_severity: str = typer.Option(
+        "medium",
+        "--min-severity",
+        help="Minimum severity threshold: critical, high, medium, low.",
+    ),
+) -> None:
+    """Route to agents based on attribute analysis."""
+    repo_path = Path(repo).resolve()
+    if not repo_path.is_dir():
+        console.print(f"[red]Error:[/red] {repo_path} is not a directory")
+        raise typer.Exit(code=1)
+
+    from .tools.attributes import (
+        collect_attributes,
+        format_routing_instructions,
+        route_from_attributes,
+    )
+
+    data = collect_attributes(repo_path)
+    attrs = data["attributes"]
+
+    # Filter by focus categories
+    if focus:
+        focus_cats = {c.strip() for c in focus.split(",")}
+        attrs = [a for a in attrs if a.get("category") in focus_cats]
+
+    priorities = route_from_attributes(attrs, min_severity=min_severity)
+    console.print(format_routing_instructions(priorities))
+
+    if dry_run or not priorities:
+        return
+
+    # Non-dry-run: run maintain with attribute-driven priorities
+    from .orchestrator import run_maintain
+
+    asyncio.run(
+        run_maintain(
+            repo_path=repo_path,
+            fix=True,
+            focus=focus,
+        )
+    )
+
+
 if __name__ == "__main__":
     app()
