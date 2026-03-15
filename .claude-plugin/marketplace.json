@@ -37,7 +37,7 @@
       "name": "agents-plugin",
       "source": "./agents-plugin",
       "description": "Task-focused agents with teammate and subagent role guidance for test, review, debug, docs, CI, security, refactoring, research, and performance",
-      "version": "1.6.0",
+      "version": "1.7.0",
       "keywords": [
         "agents",
         "teammates",
@@ -109,21 +109,6 @@
       "category": "development"
     },
     {
-      "name": "codebase-attributes-plugin",
-      "source": "./codebase-attributes-plugin",
-      "description": "Structured codebase health attributes with severity-based agent routing and dashboard",
-      "version": "1.0.0",
-      "keywords": [
-        "attributes",
-        "health",
-        "routing",
-        "agents",
-        "diagnostics",
-        "dashboard"
-      ],
-      "category": "quality"
-    },
-    {
       "name": "code-quality-plugin",
       "source": "./code-quality-plugin",
       "description": "Code review, refactoring, linting, and static analysis",
@@ -133,6 +118,21 @@
         "refactoring",
         "linting",
         "analysis"
+      ],
+      "category": "quality"
+    },
+    {
+      "name": "codebase-attributes-plugin",
+      "source": "./codebase-attributes-plugin",
+      "description": "Structured codebase health attributes with severity-based agent routing and dashboard",
+      "version": "1.1.0",
+      "keywords": [
+        "attributes",
+        "health",
+        "routing",
+        "agents",
+        "diagnostics",
+        "dashboard"
       ],
       "category": "quality"
     },
