@@ -1,7 +1,7 @@
 ---
 model: sonnet
 created: 2026-01-30
-modified: 2026-02-27
+modified: 2026-03-16
 reviewed: 2026-02-26
 allowed-tools: Bash(gh pr checks *), Bash(gh pr view *), Bash(gh pr diff *), Bash(gh run view *), Bash(gh run list *), Bash(gh api *), Bash(gh repo view *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git pull *), Bash(pre-commit *), Bash(npm run *), Bash(uv run *), Read, Edit, Write, Grep, Glob, TodoWrite, Task, mcp__github__pull_request_read
 args: "[pr-number] [--commit] [--push]"
@@ -88,17 +88,40 @@ gh run view $RUN_ID --log-failed
 | Failed CI | Analyze failures, may need fixes |
 | Pending | Note status, focus on comments |
 
-#### 2b. PR Reviews and Comments
+#### 2b. Rate Limit Pre-check
+
+Before making API calls, check remaining rate limit:
+
+```bash
+gh api rate_limit --jq '.resources.core | "Remaining: \(.remaining)/\(.limit) | Resets: \(.reset)"'
+```
+
+If remaining requests are low (< 10), warn about rate limits and use `--cache` aggressively.
+
+#### 2c. PR Reviews and Comments
+
+Use `--cache 5m` on all `gh api` calls to avoid redundant requests (especially on retries or re-runs). If any `gh api` call fails with a rate limit error, wait 60 seconds and retry (up to 2 retries).
 
 ```bash
 # Get review comments (inline code comments)
-gh api repos/{owner}/{repo}/pulls/$PR/comments --jq '.[] | {path: .path, line: .line, body: .body, user: .user.login, state: .state}'
+gh api --cache 5m repos/{owner}/{repo}/pulls/$PR/comments --jq '.[] | {path: .path, line: .line, body: .body, user: .user.login, state: .state}'
 
 # Get review summaries (approve/request changes/comment)
-gh api repos/{owner}/{repo}/pulls/$PR/reviews --jq '.[] | {user: .user.login, state: .state, body: .body}'
+gh api --cache 5m repos/{owner}/{repo}/pulls/$PR/reviews --jq '.[] | {user: .user.login, state: .state, body: .body}'
 
 # Get issue-style comments (general discussion)
-gh api repos/{owner}/{repo}/issues/$PR/comments --jq '.[] | {user: .user.login, body: .body, created_at: .created_at}'
+gh api --cache 5m repos/{owner}/{repo}/issues/$PR/comments --jq '.[] | {user: .user.login, body: .body, created_at: .created_at}'
+```
+
+**Rate limit retry pattern** (use for any `gh api` call that fails):
+```bash
+# If gh api returns "rate limit" error, retry with backoff
+for i in 1 2 3; do
+  result=$(gh api --cache 5m repos/{owner}/{repo}/pulls/$PR/comments --jq '...' 2>&1) && break
+  echo "$result" | grep -qi "rate limit" || break
+  echo "Rate limited, waiting $((i * 30))s..."
+  sleep $((i * 30))
+done
 ```
 
 ---
@@ -257,9 +280,10 @@ Is it a "Request Changes" review?
 |---------|---------|
 | Quick check status | `gh pr checks $PR --json name,state,conclusion` |
 | Failed check logs | `gh run view $ID --log-failed` |
-| Review comments | `gh api repos/{owner}/{repo}/pulls/$PR/comments` |
-| Review summaries | `gh api repos/{owner}/{repo}/pulls/$PR/reviews` |
-| PR discussion | `gh api repos/{owner}/{repo}/issues/$PR/comments` |
+| Rate limit check | `gh api rate_limit --jq '.resources.core.remaining'` |
+| Review comments | `gh api --cache 5m repos/{owner}/{repo}/pulls/$PR/comments` |
+| Review summaries | `gh api --cache 5m repos/{owner}/{repo}/pulls/$PR/reviews` |
+| PR discussion | `gh api --cache 5m repos/{owner}/{repo}/issues/$PR/comments` |
 
 
 ## See Also
