@@ -7,7 +7,7 @@ allowed-tools: Bash(gh api *), Bash(gh pr *), Bash(gh repo *), Bash(base64 *), B
 argument-hint: <files...> --title "type(scope): description"
 disable-model-invocation: true
 created: 2026-02-15
-modified: 2026-02-16
+modified: 2026-03-16
 reviewed: 2026-02-15
 ---
 
@@ -59,11 +59,11 @@ Execute this server-side PR creation workflow:
 ### Step 2: Resolve base branch state
 
 ```bash
-# Get base branch SHA
-BASE_SHA=$(gh api repos/$REPO/git/ref/heads/$BASE_BRANCH -q .object.sha)
+# Get base branch SHA (cached to avoid redundant lookups on retries)
+BASE_SHA=$(gh api --cache 5m repos/$REPO/git/ref/heads/$BASE_BRANCH -q .object.sha)
 
 # Get base tree SHA
-BASE_TREE=$(gh api repos/$REPO/git/commits/$BASE_SHA -q .tree.sha)
+BASE_TREE=$(gh api --cache 5m repos/$REPO/git/commits/$BASE_SHA -q .tree.sha)
 ```
 
 If this fails, the base branch doesn't exist — report error and list available branches.
@@ -184,7 +184,7 @@ Remove any temp files created during execution.
 | Error | Recovery |
 |-------|----------|
 | `gh auth status` fails | "Run `gh auth login` first" |
-| Base branch SHA lookup fails | List branches: `gh api repos/$REPO/branches --jq '.[].name'` |
+| Base branch SHA lookup fails | List branches: `gh api --cache 5m repos/$REPO/branches --jq '.[].name'` |
 | Blob creation fails | Report which file failed and the API error |
 | Branch already exists | Suggest `--branch <different-name>` |
 | Tree creation fails | Check if file paths are valid repo-relative paths |

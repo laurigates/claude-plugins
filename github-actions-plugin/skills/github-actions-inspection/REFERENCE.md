@@ -38,9 +38,9 @@ gh run view $FAILURE --json headSha -q '.headSha'
 
 # Compare job results
 echo "Success:"
-gh api repos/:owner/:repo/actions/runs/$SUCCESS/jobs | jq '.jobs[].conclusion'
+gh api --cache 5m repos/:owner/:repo/actions/runs/$SUCCESS/jobs | jq '.jobs[].conclusion'
 echo "Failure:"
-gh api repos/:owner/:repo/actions/runs/$FAILURE/jobs | jq '.jobs[].conclusion'
+gh api --cache 5m repos/:owner/:repo/actions/runs/$FAILURE/jobs | jq '.jobs[].conclusion'
 ```
 
 ### Investigate Intermittent Failures
@@ -65,13 +65,13 @@ gh run watch $(gh run list --workflow=ci.yml --limit 1 --json databaseId -q '.[0
 
 # Check job status during run
 while true; do
-  gh api repos/:owner/:repo/actions/runs/<run-id>/jobs \
+  gh api --cache 5m repos/:owner/:repo/actions/runs/<run-id>/jobs \
     | jq '.jobs[] | {name, status, conclusion}'
   sleep 10
 done
 
 # Get step-by-step progress
-gh api repos/:owner/:repo/actions/runs/<run-id>/jobs \
+gh api --cache 5m repos/:owner/:repo/actions/runs/<run-id>/jobs \
   | jq '.jobs[0].steps[] | {name, status, conclusion, number}'
 ```
 
@@ -175,7 +175,7 @@ gh run view <run-id> --log | grep -i "out of memory\|disk space\|killed"
 
 ```bash
 # Get all failed jobs with step details
-gh api repos/:owner/:repo/actions/runs/<run-id>/jobs \
+gh api --cache 5m repos/:owner/:repo/actions/runs/<run-id>/jobs \
   | jq '.jobs[] | select(.conclusion == "failure") | {
       job: .name,
       failed_steps: [.steps[] | select(.conclusion == "failure") | .name]
@@ -191,7 +191,7 @@ gh run list --workflow=ci.yml --limit 20 --json conclusion,createdAt,headBranch 
     })'
 
 # Extract error messages from API
-gh api repos/:owner/:repo/actions/runs/<run-id>/jobs \
+gh api --cache 5m repos/:owner/:repo/actions/runs/<run-id>/jobs \
   | jq '.jobs[].steps[] | select(.conclusion == "failure") | {
       name,
       number,

@@ -9,7 +9,7 @@ description: |
 user-invocable: false
 allowed-tools: Bash(gh api *), Bash(gh repo *), Bash(gh workflow *), Bash(gh run *), Read, Grep, Glob, TodoWrite
 created: 2025-01-30
-modified: 2026-02-11
+modified: 2026-03-16
 reviewed: 2025-01-30
 ---
 
@@ -38,7 +38,14 @@ Execute this GitHub Actions FinOps analysis:
 
 ### Step 1: Determine scope
 
-Read the Context values above. Parse `$OWNER` and `$REPO` from the current repo URL (e.g., `https://github.com/OWNER/REPO.git`). Run `gh api repos/$OWNER/$REPO --jq '.owner.type'` to determine if the owner is an "Organization" or "User". If Organization, set `$GITHUB_ORG` to the repo owner for org-level billing queries.
+Read the Context values above. Parse `$OWNER` and `$REPO` from the current repo URL (e.g., `https://github.com/OWNER/REPO.git`). Run `gh api --cache 5m repos/$OWNER/$REPO --jq '.owner.type'` to determine if the owner is an "Organization" or "User". If Organization, set `$GITHUB_ORG` to the repo owner for org-level billing queries.
+
+Check rate limit before making multiple API calls:
+```bash
+gh api rate_limit --jq '.resources.core | "Remaining: \(.remaining)/\(.limit)"'
+```
+
+Use `--cache 5m` on all read-only `gh api` calls. If any call fails with a rate limit error, wait 60 seconds and retry (up to 2 retries).
 
 If no repo context is available, ask the user for the target organization or repository.
 
@@ -47,7 +54,7 @@ If no repo context is available, ask the user for the target organization or rep
 Query the Actions billing API:
 
 ```bash
-gh api /orgs/$GITHUB_ORG/settings/billing/actions \
+gh api --cache 5m /orgs/$GITHUB_ORG/settings/billing/actions \
   --jq '{included_minutes, total_minutes_used, total_paid_minutes_used}'
 ```
 
@@ -56,10 +63,10 @@ If this returns a permissions error, note that admin access is required and skip
 Optionally also check packages and storage billing:
 
 ```bash
-gh api /orgs/$GITHUB_ORG/settings/billing/packages \
+gh api --cache 5m /orgs/$GITHUB_ORG/settings/billing/packages \
   --jq '{included_gigabytes_bandwidth, total_gigabytes_bandwidth_used}'
 
-gh api /orgs/$GITHUB_ORG/settings/billing/shared-storage \
+gh api --cache 5m /orgs/$GITHUB_ORG/settings/billing/shared-storage \
   --jq '{days_left_in_billing_cycle, estimated_paid_storage_for_month}'
 ```
 
@@ -68,7 +75,7 @@ gh api /orgs/$GITHUB_ORG/settings/billing/shared-storage \
 Fetch recent runs and group by workflow:
 
 ```bash
-gh api "/repos/$OWNER/$REPO/actions/runs?per_page=100" \
+gh api --cache 5m "/repos/$OWNER/$REPO/actions/runs?per_page=100" \
   --jq '.workflow_runs | group_by(.name) |
         map({workflow: .[0].name, runs: length,
              conclusions: (group_by(.conclusion) | map({(.[0].conclusion // "unknown"): length}) | add)}) |
@@ -78,7 +85,7 @@ gh api "/repos/$OWNER/$REPO/actions/runs?per_page=100" \
 Calculate run durations:
 
 ```bash
-gh api "/repos/$OWNER/$REPO/actions/runs?per_page=20&status=completed" \
+gh api --cache 5m "/repos/$OWNER/$REPO/actions/runs?per_page=20&status=completed" \
   --jq '.workflow_runs | group_by(.name) |
         map({name: .[0].name, count: length,
              total_seconds: (map(.run_started_at as $start | .updated_at as $end |
@@ -93,7 +100,7 @@ Check each waste indicator:
 **Skipped runs:**
 
 ```bash
-gh api "/repos/$OWNER/$REPO/actions/runs?per_page=100" \
+gh api --cache 5m "/repos/$OWNER/$REPO/actions/runs?per_page=100" \
   --jq '[.workflow_runs[] | select(.conclusion == "skipped")] |
         group_by(.name) | map({workflow: .[0].name, skipped: length}) |
         sort_by(-.skipped)'
@@ -102,14 +109,14 @@ gh api "/repos/$OWNER/$REPO/actions/runs?per_page=100" \
 **Bot-triggered runs:**
 
 ```bash
-gh api "/repos/$OWNER/$REPO/actions/runs?per_page=100" \
+gh api --cache 5m "/repos/$OWNER/$REPO/actions/runs?per_page=100" \
   --jq '[.workflow_runs[] | select(.triggering_actor.type == "Bot")] | length'
 ```
 
 **High-frequency workflows (candidates for path filters):**
 
 ```bash
-gh api "/repos/$OWNER/$REPO/actions/runs?per_page=100" \
+gh api --cache 5m "/repos/$OWNER/$REPO/actions/runs?per_page=100" \
   --jq '.workflow_runs | group_by(.name) | map(select(length > 50)) |
         map({workflow: .[0].name, runs: length})'
 ```

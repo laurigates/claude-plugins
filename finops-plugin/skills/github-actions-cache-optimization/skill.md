@@ -8,7 +8,7 @@ description: |
 user-invocable: false
 allowed-tools: Bash(gh api *), Bash(gh repo *), Bash(gh cache *), Read, Grep, Glob, TodoWrite
 created: 2025-01-30
-modified: 2025-01-30
+modified: 2026-03-16
 reviewed: 2025-01-30
 ---
 
@@ -34,15 +34,25 @@ Analyze cache usage, identify bloat, and optimize cache strategies for GitHub Ac
 | Retention | 7 days without access |
 | Eviction | LRU when limit exceeded |
 
+## Rate Limit Awareness
+
+Before running multiple API calls, check remaining rate limit:
+
+```bash
+gh api rate_limit --jq '.resources.core | "Remaining: \(.remaining)/\(.limit)"'
+```
+
+Use `--cache 5m` on all read-only `gh api` calls to avoid redundant requests. If a `gh api` call fails with a rate limit error, wait 60 seconds and retry (up to 2 retries).
+
 ## Org-Level Cache Usage
 
 ```bash
 # Total cache usage across org
-gh api /orgs/$GITHUB_ORG/actions/cache/usage \
+gh api --cache 5m /orgs/$GITHUB_ORG/actions/cache/usage \
   --jq '{total_active_caches_count, total_active_caches_size_in_bytes}'
 
 # Formatted output
-gh api /orgs/$GITHUB_ORG/actions/cache/usage \
+gh api --cache 5m /orgs/$GITHUB_ORG/actions/cache/usage \
   --jq '"\(.total_active_caches_count) caches, \(.total_active_caches_size_in_bytes / 1024 / 1024 | floor)MB total"'
 ```
 
@@ -52,11 +62,11 @@ gh api /orgs/$GITHUB_ORG/actions/cache/usage \
 
 ```bash
 # Basic cache stats for repo
-gh api "/repos/$OWNER/$REPO/actions/cache/usage" \
+gh api --cache 5m "/repos/$OWNER/$REPO/actions/cache/usage" \
   --jq '{active_caches_count, active_caches_size_in_bytes}'
 
 # Formatted
-gh api "/repos/$OWNER/$REPO/actions/cache/usage" \
+gh api --cache 5m "/repos/$OWNER/$REPO/actions/cache/usage" \
   --jq '"\(.active_caches_count) caches, \(.active_caches_size_in_bytes / 1024 / 1024 | floor)MB"'
 ```
 
@@ -64,11 +74,11 @@ gh api "/repos/$OWNER/$REPO/actions/cache/usage" \
 
 ```bash
 # List all caches
-gh api "/repos/$OWNER/$REPO/actions/caches?per_page=100" \
+gh api --cache 5m "/repos/$OWNER/$REPO/actions/caches?per_page=100" \
   --jq '.actions_caches[] | "\(.key): \(.size_in_bytes / 1024 / 1024 | floor)MB, last used: \(.last_accessed_at)"'
 
 # Group by key prefix (first 3 segments)
-gh api "/repos/$OWNER/$REPO/actions/caches?per_page=100" \
+gh api --cache 5m "/repos/$OWNER/$REPO/actions/caches?per_page=100" \
   --jq '.actions_caches | group_by(.key | split("-") | .[0:3] | join("-")) |
         map({prefix: .[0].key | split("-") | .[0:3] | join("-"),
              count: length,
@@ -76,7 +86,7 @@ gh api "/repos/$OWNER/$REPO/actions/caches?per_page=100" \
         sort_by(-.size_mb)'
 
 # Caches by branch
-gh api "/repos/$OWNER/$REPO/actions/caches?per_page=100" \
+gh api --cache 5m "/repos/$OWNER/$REPO/actions/caches?per_page=100" \
   --jq '.actions_caches | group_by(.ref) |
         map({branch: .[0].ref, count: length,
              size_mb: (map(.size_in_bytes) | add / 1024 / 1024 | floor)}) |
@@ -87,13 +97,13 @@ gh api "/repos/$OWNER/$REPO/actions/caches?per_page=100" \
 
 ```bash
 # Caches not accessed in 7+ days (candidates for cleanup)
-gh api "/repos/$OWNER/$REPO/actions/caches?per_page=100" \
+gh api --cache 5m "/repos/$OWNER/$REPO/actions/caches?per_page=100" \
   --jq --arg cutoff "$(date -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ)" \
   '.actions_caches[] | select(.last_accessed_at < $cutoff) |
    "\(.key): \(.size_in_bytes / 1024 / 1024 | floor)MB, last: \(.last_accessed_at)"'
 
 # macOS date variant
-gh api "/repos/$OWNER/$REPO/actions/caches?per_page=100" \
+gh api --cache 5m "/repos/$OWNER/$REPO/actions/caches?per_page=100" \
   --jq --arg cutoff "$(date -v-7d +%Y-%m-%dT%H:%M:%SZ)" \
   '.actions_caches[] | select(.last_accessed_at < $cutoff) | ...'
 ```
@@ -114,15 +124,18 @@ gh api -X DELETE "/repos/$OWNER/$REPO/actions/caches?key=$CACHE_KEY"
 
 ```bash
 # Delete all caches for a specific branch
-gh api "/repos/$OWNER/$REPO/actions/caches?per_page=100&ref=refs/heads/$BRANCH" \
+# Note: Add sleep 0.5 between DELETEs to avoid rate limiting in large loops
+gh api --cache 5m "/repos/$OWNER/$REPO/actions/caches?per_page=100&ref=refs/heads/$BRANCH" \
   --jq '.actions_caches[].id' | while read id; do
     gh api -X DELETE "/repos/$OWNER/$REPO/actions/caches/$id"
+    sleep 0.5
   done
 
 # Delete caches matching key prefix
-gh api "/repos/$OWNER/$REPO/actions/caches?per_page=100" \
+gh api --cache 5m "/repos/$OWNER/$REPO/actions/caches?per_page=100" \
   --jq '.actions_caches[] | select(.key | startswith("PREFIX-")) | .id' | while read id; do
     gh api -X DELETE "/repos/$OWNER/$REPO/actions/caches/$id"
+    sleep 0.5
   done
 ```
 
@@ -207,13 +220,13 @@ jobs:
 # Compare cache usage across repos
 for repo in repo1 repo2 repo3; do
   echo "=== $repo ==="
-  gh api "/repos/$GITHUB_ORG/$repo/actions/cache/usage" \
+  gh api --cache 5m "/repos/$GITHUB_ORG/$repo/actions/cache/usage" \
     --jq '"\(.active_caches_count) caches, \(.active_caches_size_in_bytes / 1024 / 1024 | floor)MB"'
 done
 
-# Full org scan
+# Full org scan (use --cache to avoid rate limits across many repos)
 gh repo list $GITHUB_ORG --json nameWithOwner --limit 100 --jq '.[].nameWithOwner' | while read repo; do
-  size=$(gh api "/repos/$repo/actions/cache/usage" --jq '.active_caches_size_in_bytes // 0' 2>/dev/null)
+  size=$(gh api --cache 5m "/repos/$repo/actions/cache/usage" --jq '.active_caches_size_in_bytes // 0' 2>/dev/null)
   if [ "$size" -gt 0 ]; then
     echo "$repo: $((size / 1024 / 1024))MB"
   fi
