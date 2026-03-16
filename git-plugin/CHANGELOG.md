@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.28.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.27.1...git-plugin-v2.28.0) (2026-03-16)
+
+
+### Features
+
+* rate limit handling and caching to git-pr-feedback skill ([#951](https://github.com/laurigates/claude-plugins/issues/951)) ([6811132](https://github.com/laurigates/claude-plugins/commit/6811132f44791068bb023c78958ba2ebcbe1c69c))
+
+
+### Bug Fixes
+
+* **git-plugin:** add rate limit handling to git-pr-feedback skill ([6811132](https://github.com/laurigates/claude-plugins/commit/6811132f44791068bb023c78958ba2ebcbe1c69c))
+
 ## [2.27.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.27.0...git-plugin-v2.27.1) (2026-03-15)
 
 
