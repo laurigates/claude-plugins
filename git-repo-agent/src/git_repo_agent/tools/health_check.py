@@ -183,36 +183,69 @@ def _score_quality(repo: Path) -> tuple[int, list[str]]:
     # Formatter config
     formatter_configs = [
         "biome.json", "biome.jsonc",
-        ".prettierrc", ".prettierrc.json", "prettier.config.js",
+        ".prettierrc", ".prettierrc.json", ".prettierrc.yaml", ".prettierrc.yml",
+        "prettier.config.js", "prettier.config.mjs", "prettier.config.cjs",
+        ".clang-format",
+        "ruff.toml", ".ruff.toml",
+        ".rustfmt.toml", "rustfmt.toml",
+        ".scalafmt.conf",
     ]
     if any((repo / f).exists() for f in formatter_configs):
         score += 5
-    elif (repo / "pyproject.toml").exists():
-        try:
-            content = (repo / "pyproject.toml").read_text(encoding="utf-8")
-            if "tool.ruff" in content or "tool.black" in content:
-                score += 5
-        except OSError:
-            pass
     else:
-        findings.append("No formatter configured")
+        formatter_found = False
+        if (repo / "pyproject.toml").exists():
+            try:
+                content = (repo / "pyproject.toml").read_text(encoding="utf-8")
+                if "tool.ruff" in content or "tool.black" in content:
+                    score += 5
+                    formatter_found = True
+            except OSError:
+                pass
+        if not formatter_found:
+            findings.append("No formatter configured")
 
     # Type checking
     type_configs = [
         "tsconfig.json",
         "pyrightconfig.json", "basedpyright",
+        "mypy.ini", ".mypy.ini",
     ]
     if any((repo / f).exists() for f in type_configs):
         score += 5
-    elif (repo / "pyproject.toml").exists():
-        try:
-            content = (repo / "pyproject.toml").read_text(encoding="utf-8")
-            if "tool.pyright" in content or "tool.basedpyright" in content or "tool.mypy" in content or "tool.ty" in content:
-                score += 5
-        except OSError:
-            pass
     else:
-        findings.append("No type checking configured")
+        typechecker_found = False
+        # Check pyproject.toml
+        if (repo / "pyproject.toml").exists():
+            try:
+                content = (repo / "pyproject.toml").read_text(encoding="utf-8")
+                if any(t in content for t in ["tool.pyright", "tool.basedpyright", "tool.mypy", "tool.ty"]):
+                    score += 5
+                    typechecker_found = True
+            except OSError:
+                pass
+        # Check setup.cfg for [mypy]
+        if not typechecker_found and (repo / "setup.cfg").exists():
+            try:
+                content = (repo / "setup.cfg").read_text(encoding="utf-8")
+                if "[mypy" in content:
+                    score += 5
+                    typechecker_found = True
+            except OSError:
+                pass
+        # Check pre-commit for type checker hooks
+        if not typechecker_found:
+            pre_commit = repo / ".pre-commit-config.yaml"
+            if pre_commit.exists():
+                try:
+                    content = pre_commit.read_text(encoding="utf-8")
+                    if "mypy" in content or "pyright" in content:
+                        score += 5
+                        typechecker_found = True
+                except OSError:
+                    pass
+        if not typechecker_found:
+            findings.append("No type checking configured")
 
     # Editor config
     if (repo / ".editorconfig").exists():
