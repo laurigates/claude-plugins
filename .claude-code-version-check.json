@@ -1,8 +1,99 @@
 {
-  "lastCheckedVersion": "2.1.71",
-  "lastCheckedDate": "2026-03-09",
+  "lastCheckedVersion": "2.1.76",
+  "lastCheckedDate": "2026-03-17",
   "changelogUrl": "https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md",
   "reviewedChanges": [
+    {
+      "version": "2.1.76",
+      "date": "2026-03-17",
+      "relevantChanges": [
+        "New Elicitation hook event: intercepts MCP server input requests before showing dialog",
+        "New ElicitationResult hook event: fires after user responds; can override result",
+        "New PostCompact hook event: fires after compaction completes (companion to PreCompact)",
+        "New -n/--name CLI flag to set session display name at startup",
+        "New worktree.sparsePaths setting for sparse-checkout with --worktree",
+        "New /effort slash command to set model effort level",
+        "New feedbackSurveyRate enterprise setting for session quality survey sampling",
+        "Fixed deferred tools (via ToolSearch) losing input schemas after compaction",
+        "Fixed slash commands showing 'Unknown skill'",
+        "Fixed plan mode re-asking for approval after acceptance",
+        "Fixed Bash(cmd:*) permission rules not matching with quoted # arguments",
+        "Fixed SessionEnd hooks still using 1.5s hard limit even when hook.timeout configured (also fixed in 2.1.74)"
+      ],
+      "actionsRequired": [
+        "Update .claude/rules/hooks-reference.md: add Elicitation, ElicitationResult, PostCompact events with schemas",
+        "Update .claude/rules/prompt-agent-hooks.md: add Elicitation/ElicitationResult to supported events table",
+        "Update .claude/rules/hooks-reference.md: version header to 2.1.76+"
+      ]
+    },
+    {
+      "version": "2.1.75",
+      "date": "2026-03-13",
+      "relevantChanges": [
+        "1M context window for Opus 4.6 by default for Max, Team, Enterprise plans",
+        "New /color command for per-session prompt bar color",
+        "New /rename command for session name display",
+        "Last-modified timestamps added to memory files",
+        "Hook source display (settings/plugin/skill) in permission prompts",
+        "Async hook completion messages suppressed by default (use --verbose to see)",
+        "BREAKING: Removed deprecated Windows managed settings fallback at C:\\ProgramData\\ClaudeCode\\managed-settings.json"
+      ],
+      "actionsRequired": [
+        "Note async hook suppression behavior change in hooks-reference.md"
+      ]
+    },
+    {
+      "version": "2.1.74",
+      "date": "2026-03-12",
+      "relevantChanges": [
+        "New autoMemoryDirectory setting to configure custom directory for auto-memory storage",
+        "Actionable suggestions added to /context command",
+        "Fixed managed policy 'ask' rules being bypassed by user 'allow' rules or skill allowed-tools",
+        "Fixed full model IDs (e.g., claude-opus-4-5) being silently ignored in agent frontmatter model: field",
+        "Fixed SessionEnd hooks being killed after 1.5s regardless of hook.timeout; now configurable via CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS",
+        "Fixed MCP OAuth authentication hanging when callback port is already in use",
+        "Changed --plugin-dir so local dev copies now override installed marketplace plugins with same name"
+      ],
+      "actionsRequired": [
+        "Note full model IDs now work in agent frontmatter",
+        "Note CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS env var in hooks-reference.md"
+      ]
+    },
+    {
+      "version": "2.1.73",
+      "date": "2026-03-11",
+      "relevantChanges": [
+        "New modelOverrides setting to map model picker entries to custom provider model IDs",
+        "Fixed subagents with model: opus/sonnet/haiku being silently downgraded on Bedrock/Vertex/Foundry",
+        "Changed default Opus model on Bedrock/Vertex/Foundry to Opus 4.6",
+        "Fixed SessionStart hooks firing twice when resuming via --resume or --continue",
+        "Fixed JSON-output hooks injecting no-op system-reminder messages into model context",
+        "Deprecated /output-style command — use /config instead",
+        "Fixed deadlock when many skill files changed at once"
+      ],
+      "actionsRequired": []
+    },
+    {
+      "version": "2.1.72",
+      "date": "2026-03-10",
+      "relevantChanges": [
+        "Restored model parameter on Agent tool for per-invocation model overrides",
+        "SECURITY FIX: PreToolUse hooks returning 'allow' were bypassing deny rules (including enterprise managed settings)",
+        "Fixed permission rule matching: wildcard rules not matching heredocs/embedded newlines/no arguments",
+        "Fixed sandbox permissions: certain write operations incorrectly allowed without prompting",
+        "Fixed skill hooks firing twice per event when hooks-enabled skill invoked by model",
+        "Fixed transcript_path pointing to wrong directory for resumed/forked sessions",
+        "Fixed async hooks not receiving stdin with bash read -r",
+        "Changed CLAUDE.md HTML comments to be hidden from Claude when auto-injected",
+        "Added CLAUDE_CODE_DISABLE_CRON env var to stop scheduled cron jobs mid-session",
+        "Added lsof, pgrep, tput, ss, fd, fdfind to bash auto-approval allowlist",
+        "Fixed SDK prompt cache invalidation in query() calls, reducing input token costs up to 12x"
+      ],
+      "actionsRequired": [
+        "Note security fix: PreToolUse 'allow' bypass of deny rules is fixed",
+        "Note new CLAUDE_CODE_DISABLE_CRON env var in sandbox-guidance.md"
+      ]
+    },
     {
       "version": "2.1.71",
       "date": "2026-03-09",

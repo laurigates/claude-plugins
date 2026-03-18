@@ -48,6 +48,8 @@ Not all events support prompt/agent hooks.
 | `SubagentStop` | Subagent output quality verification |
 | `TaskCompleted` | Implementation completeness checks |
 | `UserPromptSubmit` | Prompt classification, context injection |
+| `Elicitation` | Auto-accept/decline MCP input requests |
+| `ElicitationResult` | Override MCP input results before sending |
 
 ### Events supporting only `type: "command"`
 
