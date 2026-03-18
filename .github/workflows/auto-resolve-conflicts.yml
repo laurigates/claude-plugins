@@ -111,7 +111,7 @@ jobs:
 
       - name: Checkout PR branch
         if: steps.stale_check.outputs.is_stale_automated != 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ steps.pr.outputs.head_branch }}
           fetch-depth: 0

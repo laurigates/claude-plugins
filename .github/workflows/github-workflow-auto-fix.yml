@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout failed branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event.workflow_run.head_branch }}
           fetch-depth: 0
@@ -107,7 +107,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           allowed_bots: "claude[bot],claude"
           claude_args: "--model sonnet --max-turns 30"
-          direct_prompt: |
+          prompt: |
             A GitHub Actions workflow has failed on branch `${{ steps.context.outputs.branch }}`.
             Your job is to analyze the failure, determine if it can be auto-fixed, and either fix it or open an issue.
 

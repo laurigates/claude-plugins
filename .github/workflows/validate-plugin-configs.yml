@@ -41,7 +41,7 @@ jobs:
   validate:
     runs-on: ubuntu-slim
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN || github.token }}
           # For PRs, checkout the head branch so we can push fixes
