@@ -16,6 +16,7 @@ permissions:
   contents: write
   issues: write
   pull-requests: write
+  id-token: write
 
 jobs:
   check-changelog:
@@ -23,6 +24,7 @@ jobs:
     outputs:
       has_updates: ${{ steps.compare.outputs.has_updates }}
       latest_version: ${{ steps.compare.outputs.latest_version }}
+      previous_version: ${{ steps.read_tracked.outputs.tracked_version }}
       changes_summary: ${{ steps.analyze.outputs.summary }}
     steps:
       - uses: actions/checkout@v4
@@ -34,34 +36,6 @@ jobs:
         run: |
           curl -s https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md > /tmp/changelog.md
           echo "Fetched changelog"
-
-      - name: Fetch Claude Code documentation
-        id: fetch_docs
-        run: |
-          mkdir -p /tmp/claude-docs
-
-          # Fetch the full documentation index
-          curl -sf -o /tmp/claude-docs/llms.txt \
-            https://code.claude.com/docs/llms.txt || echo "llms.txt fetch failed"
-
-          # Fetch key documentation pages for review context
-          declare -A DOC_URLS
-          DOC_URLS[settings]="https://code.claude.com/docs/en/settings"
-          DOC_URLS[features-overview]="https://code.claude.com/docs/en/features-overview"
-          DOC_URLS[best-practices]="https://code.claude.com/docs/en/best-practices"
-          DOC_URLS[claude-code-on-the-web]="https://code.claude.com/docs/en/claude-code-on-the-web"
-          DOC_URLS[github-actions]="https://code.claude.com/docs/en/github-actions"
-
-          FETCH_RESULTS=""
-          for doc_name in "${!DOC_URLS[@]}"; do
-            doc_url="${DOC_URLS[$doc_name]}"
-            HTTP_CODE=$(curl -sf -o "/tmp/claude-docs/${doc_name}.html" -w '%{http_code}' "$doc_url" || true)
-            DOC_SIZE=$(wc -c < "/tmp/claude-docs/${doc_name}.html" 2>/dev/null || echo "0")
-            FETCH_RESULTS="${FETCH_RESULTS}${doc_name}: HTTP ${HTTP_CODE} (${DOC_SIZE} bytes)\n"
-          done
-
-          echo "docs_fetched=true" >> $GITHUB_OUTPUT
-          printf "Documentation fetch results:\n%b" "$FETCH_RESULTS"
 
       - name: Extract latest version
         id: extract
@@ -137,242 +111,151 @@ jobs:
           echo "summary=$SUMMARY" >> $GITHUB_OUTPUT
           echo "Changes extracted for analysis"
 
-      - name: Upload fetched documentation
-        if: steps.compare.outputs.has_updates == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: claude-code-docs
-          path: /tmp/claude-docs/
-          retention-days: 30
-
-  create-issue:
+  claude-review:
     needs: check-changelog
-    if: needs.check-changelog.outputs.has_updates == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Read tracked version
-        id: tracked
-        run: |
-          if [ -f .claude-code-version-check.json ]; then
-            TRACKED=$(jq -r '.lastCheckedVersion' .claude-code-version-check.json)
-            LAST_DATE=$(jq -r '.lastCheckedDate' .claude-code-version-check.json)
-          else
-            TRACKED="0.0.0"
-            LAST_DATE="never"
-          fi
-          echo "version=$TRACKED" >> $GITHUB_OUTPUT
-          echo "date=$LAST_DATE" >> $GITHUB_OUTPUT
-
-      - name: Check for existing open issue
-        id: check_issue
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          EXISTING=$(gh issue list --label "changelog-review" --state open --json number --jq 'length')
-          if [ "$EXISTING" -gt 0 ]; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Found existing open changelog review issue"
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Create issue body
-        if: steps.check_issue.outputs.exists == 'false'
-        env:
-          LATEST_VERSION: ${{ needs.check-changelog.outputs.latest_version }}
-          TRACKED_VERSION: ${{ steps.tracked.outputs.version }}
-          LAST_DATE: ${{ steps.tracked.outputs.date }}
-          CHANGES_SUMMARY: ${{ needs.check-changelog.outputs.changes_summary }}
-        run: |
-          python3 -c "
-          import os
-
-          latest = os.environ['LATEST_VERSION']
-          tracked = os.environ['TRACKED_VERSION']
-          last_date = os.environ['LAST_DATE']
-          summary = os.environ.get('CHANGES_SUMMARY', 'N/A')
-
-          body = '''## Claude Code Changelog Review Required
-
-          **New Claude Code version detected!**
-
-          - **Previous version:** {tracked}
-          - **Latest version:** {latest}
-          - **Last review date:** {last_date}
-
-          ### Changelog Keyword Mentions
-
-          {summary}
-
-          ### Action Required
-
-          Run the changelog review command to analyze changes:
-
-          \`\`\`bash
-          /changelog:review
-          \`\`\`
-
-          Or for a full review:
-
-          \`\`\`bash
-          /changelog:review --since {tracked}
-          \`\`\`
-
-          ### Changelog Link
-
-          [View Claude Code Changelog](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md)
-
-          ### Areas to Check
-
-          Review the changelog for changes in these areas that may impact plugins:
-
-          - [ ] **Hooks** - New events, schema changes, behavior updates
-          - [ ] **Skills/Commands** - Frontmatter changes, discovery updates
-          - [ ] **Agents** - New capabilities, configuration options
-          - [ ] **Permissions** - New patterns, security fixes
-          - [ ] **MCP** - Server configuration, OAuth updates
-          - [ ] **SDK** - API changes, new features
-          - [ ] **Plugins** - Marketplace, plugin.json schema changes
-          - [ ] **Breaking Changes** - Anything requiring immediate updates
-
-          ### Documentation Review
-
-          Verify plugin rules and skills are up-to-spec with current Claude Code documentation.
-          Fetched docs are available as workflow artifacts for offline reference.
-
-          - [ ] [Settings](https://code.claude.com/docs/en/settings) - Permission syntax, plugin config, hooks config, MCP config, sandbox settings
-          - [ ] [Features Overview](https://code.claude.com/docs/en/features-overview) - Skills, hooks, agents, MCP, plugins architecture, context costs
-          - [ ] [Best Practices](https://code.claude.com/docs/en/best-practices) - CLAUDE.md guidelines, skill patterns, subagent usage, headless mode
-          - [ ] [Claude Code on the Web](https://code.claude.com/docs/en/claude-code-on-the-web) - SessionStart hooks, environment config, network access, dependency management
-          - [ ] [GitHub Actions](https://code.claude.com/docs/en/github-actions) - claude-code-action v1 config, workflow patterns, skill usage in CI
-          - [ ] [Full Documentation Index](https://code.claude.com/docs/llms.txt) - Complete docs reference
-
-          #### Rules to Verify Against Docs
-
-          Cross-check these project rules with the live documentation above:
-
-          - `.claude/rules/plugin-structure.md` vs Settings (plugin.json schema), Features Overview (plugin architecture)
-          - `.claude/rules/skill-development.md` vs Features Overview (skill system), Best Practices (skill patterns)
-          - `.claude/rules/agentic-permissions.md` vs Settings (permission syntax), Features Overview (hooks, permissions)
-          - `.claude/rules/release-please.md` vs Settings (version management)
-          - `.claude/rules/skill-quality.md` vs Best Practices (CLAUDE.md size, skill design)
-          - `.claude/rules/skill-naming.md` vs Features Overview (skill namespacing, plugin skills)
-
-          ### Potentially Affected Plugins
-
-          Based on common change areas:
-          - `hooks-plugin` - Hook system changes
-          - `agent-patterns-plugin` - Agent and MCP changes
-          - `configure-plugin` - Permission and configuration changes
-          - All plugins - Skill/command changes
-
-          ### After Review
-
-          1. Update `.claude-code-version-check.json` with the new version
-          2. Create follow-up issues for any required changes
-          3. Update any rules files that are out of spec with live docs
-          4. Close this issue
-
-          ---
-          *This issue was automatically created by the changelog review workflow.*
-          '''.format(tracked=tracked, latest=latest, last_date=last_date, summary=summary)
-
-          import textwrap
-          body = textwrap.dedent(body).strip()
-
-          with open('/tmp/issue-body.md', 'w') as f:
-              f.write(body)
-          "
-
-      - name: Create changelog review issue
-        if: steps.check_issue.outputs.exists == 'false'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          LATEST_VERSION: ${{ needs.check-changelog.outputs.latest_version }}
-          TRACKED_VERSION: ${{ steps.tracked.outputs.version }}
-        run: |
-          gh issue create \
-            --title "Review Claude Code changelog: $TRACKED_VERSION → $LATEST_VERSION" \
-            --label "changelog-review,maintenance" \
-            --body-file /tmp/issue-body.md
-
-  update-tracking:
-    needs: [check-changelog, create-issue]
     if: needs.check-changelog.outputs.has_updates == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
+          fetch-depth: 0
 
-      - name: Update version tracking
-        env:
-          LATEST_VERSION: ${{ needs.check-changelog.outputs.latest_version }}
-        run: |
-          DATE=$(date +%Y-%m-%d)
+      - name: Review changelog and apply updates
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: "--model sonnet --max-turns 40"
+          direct_prompt: |
+            You are reviewing Claude Code changelog changes from version ${{ needs.check-changelog.outputs.previous_version }} to ${{ needs.check-changelog.outputs.latest_version }}.
 
-          # Read existing file or create new
-          if [ -f .claude-code-version-check.json ]; then
-            # Update existing file
-            jq --arg version "$LATEST_VERSION" --arg date "$DATE" '
-              .lastCheckedVersion = $version |
-              .lastCheckedDate = $date |
-              .reviewedChanges = [
-                {
-                  "version": $version,
-                  "date": $date,
-                  "relevantChanges": [],
-                  "actionsRequired": ["Review pending - see GitHub issue"]
-                }
-              ] + .reviewedChanges
-            ' .claude-code-version-check.json > /tmp/updated.json
-            mv /tmp/updated.json .claude-code-version-check.json
-          else
-            # Create new file
-            python3 -c "
-          import json, os
-          data = {
-              'lastCheckedVersion': os.environ['LATEST_VERSION'],
-              'lastCheckedDate': '$DATE',
-              'changelogUrl': 'https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md',
-              'reviewedChanges': [{
-                  'version': os.environ['LATEST_VERSION'],
-                  'date': '$DATE',
-                  'relevantChanges': [],
-                  'actionsRequired': ['Review pending - see GitHub issue']
-              }]
-          }
-          with open('.claude-code-version-check.json', 'w') as f:
-              json.dump(data, f, indent=2)
-          print('Created new tracking file')
-          "
-          fi
+            Keyword analysis from the changelog: ${{ needs.check-changelog.outputs.changes_summary }}
 
-          echo "Updated tracking to version $LATEST_VERSION"
+            ## Step 1: Fetch and analyze the changelog
 
-      - name: Create PR for tracking update
-        env:
-          GH_TOKEN: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
-          LATEST_VERSION: ${{ needs.check-changelog.outputs.latest_version }}
-        run: |
-          if git diff --quiet .claude-code-version-check.json; then
-            echo "No changes to commit"
-            exit 0
-          fi
+            Use WebFetch to retrieve the Claude Code changelog from:
+            https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md
 
-          BRANCH="chore/update-version-tracking-${LATEST_VERSION}"
+            Extract all changes between version ${{ needs.check-changelog.outputs.previous_version }} and ${{ needs.check-changelog.outputs.latest_version }}.
 
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+            ## Step 2: Categorize changes by impact
 
-          git checkout -b "$BRANCH"
-          git add .claude-code-version-check.json
-          git commit -m "chore: update Claude Code version tracking to ${LATEST_VERSION}"
-          git push -u origin "$BRANCH"
+            For each change, assess its impact on this plugin collection:
 
-          gh pr create \
-            --title "chore: update Claude Code version tracking to ${LATEST_VERSION}" \
-            --body "Automated update of \`.claude-code-version-check.json\` to track Claude Code version ${LATEST_VERSION}." \
-            --label "maintenance"
+            - **High impact**: Breaking changes, new hook events, permission model changes, skill/agent system changes
+            - **Medium impact**: New features we should document in rules, behavior changes affecting existing skills
+            - **Low impact**: Bug fixes, performance improvements, UI changes with no plugin impact
+
+            Focus on changes relevant to:
+            - Hook system (events, schemas, timeouts, lifecycle)
+            - Skill/command system (frontmatter, discovery, invocation)
+            - Agent/subagent system (configuration, isolation, memory, teams)
+            - Permission model (wildcards, rules, sandbox)
+            - MCP system (servers, OAuth, configuration)
+            - Plugin system (marketplace, plugin.json, settings)
+
+            ## Step 3: Update .claude-code-version-check.json
+
+            Read the current `.claude-code-version-check.json` file and update it:
+            - Set `lastCheckedVersion` to `${{ needs.check-changelog.outputs.latest_version }}`
+            - Set `lastCheckedDate` to today's date (YYYY-MM-DD format)
+            - Prepend a new entry to `reviewedChanges` array with:
+              - `version`: the latest version
+              - `date`: today's date
+              - `relevantChanges`: array of strings describing each relevant change
+              - `actionsRequired`: array of strings describing what rules/skills need updating
+
+            ## Step 4: Update .claude/rules/ files
+
+            For high and medium impact changes, update the relevant rules files:
+
+            - `.claude/rules/hooks-reference.md` — for new hook events, schema changes, timeout behavior
+            - `.claude/rules/prompt-agent-hooks.md` — for new hook events in decision trees and tables
+            - `.claude/rules/agent-development.md` — for agent/subagent system changes
+            - `.claude/rules/skill-development.md` — for skill frontmatter or system changes
+            - `.claude/rules/agentic-permissions.md` — for permission model changes
+            - `.claude/rules/sandbox-guidance.md` — for sandbox or environment changes
+            - `.claude/rules/plugin-structure.md` — for plugin system changes
+
+            Read each file before editing. Only update files where changes are actually needed.
+            When updating, preserve the existing structure and add/modify only the relevant sections.
+
+            ## Step 5: Optionally verify against live documentation
+
+            If high-impact changes are found, use WebFetch to verify against:
+            - https://code.claude.com/docs/en/settings
+            - https://code.claude.com/docs/en/features-overview
+
+            Only fetch these if you need to verify specific details.
+
+            ## Step 6: Create branch, commit, and PR
+
+            1. Create branch: `chore/changelog-review-${{ needs.check-changelog.outputs.latest_version }}`
+            2. Stage all modified files: `git add .claude-code-version-check.json .claude/rules/`
+            3. Commit with message: `chore(project-plugin): review Claude Code changelog ${{ needs.check-changelog.outputs.previous_version }} → ${{ needs.check-changelog.outputs.latest_version }}`
+            4. Push: `git push -u origin chore/changelog-review-${{ needs.check-changelog.outputs.latest_version }}`
+            5. Create PR:
+               ```
+               gh pr create \
+                 --title "chore(project-plugin): review Claude Code changelog ${{ needs.check-changelog.outputs.previous_version }} → ${{ needs.check-changelog.outputs.latest_version }}" \
+                 --body "## Summary
+
+               Automated review of Claude Code changelog changes from ${{ needs.check-changelog.outputs.previous_version }} to ${{ needs.check-changelog.outputs.latest_version }}.
+
+               ### Changes Applied
+               - Updated \`.claude-code-version-check.json\` with version tracking
+               - Updated relevant \`.claude/rules/\` files for high/medium impact changes
+
+               ### Keyword Mentions
+               ${{ needs.check-changelog.outputs.changes_summary }}
+
+               ### Changelog
+               [View Claude Code Changelog](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md)
+
+               ---
+               *This PR was automatically created by the changelog review workflow.*" \
+                 --label "changelog-review,maintenance"
+               ```
+
+            ## Step 7: Create follow-up issues if needed
+
+            If any changes require more than rules updates (e.g., new skills, skill rewrites,
+            plugin restructuring), create separate GitHub issues for each follow-up:
+            ```
+            gh issue create \
+              --title "<descriptive title>" \
+              --body "<details about what needs to be done>" \
+              --label "changelog-review,enhancement"
+            ```
+
+            ## Important rules
+            - Read `.claude/rules/conventional-commits.md` for commit message format
+            - Do NOT amend existing commits — always create new commits
+            - Only update files where changes are genuinely needed
+            - Be thorough in changelog analysis but conservative in rule changes
+          additional_permissions: |
+            Read
+            Write
+            Edit
+            Grep
+            Glob
+            TodoWrite
+            WebFetch
+            Bash(git status *)
+            Bash(git diff *)
+            Bash(git log *)
+            Bash(git show *)
+            Bash(git add *)
+            Bash(git commit *)
+            Bash(git push *)
+            Bash(git checkout *)
+            Bash(git branch *)
+            Bash(gh pr *)
+            Bash(gh issue *)
+          plugin_marketplaces: |
+            https://github.com/laurigates/claude-plugins.git
+          plugins: |
+            project-plugin@laurigates-claude-plugins
+            hooks-plugin@laurigates-claude-plugins
+            agent-patterns-plugin@laurigates-claude-plugins
+            configure-plugin@laurigates-claude-plugins
