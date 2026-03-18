@@ -321,7 +321,8 @@ async def run_maintain(
     # Post-workflow: offer to create PR if worktree has changes
     if worktree_path and makes_changes:
         await _prompt_pr_creation(
-            repo_path, worktree_path, branch, base_branch, "maintain"
+            repo_path, worktree_path, branch, base_branch, "maintain",
+            agent_output=collected,
         )
 
     # Post-workflow: offer to create GitHub issues for report-only findings
@@ -449,6 +450,36 @@ def run_health(repo_path: Path) -> None:
     console.print(report)
 
 
+def _tool_detail(name: str, inputs: dict) -> str:
+    """Extract a short human-readable detail from a tool call's inputs."""
+    if name == "Bash":
+        cmd = inputs.get("command", "")
+        if len(cmd) > 120:
+            cmd = cmd[:117] + "..."
+        return cmd
+    if name == "Read":
+        return inputs.get("file_path", "")
+    if name in ("Edit", "Write"):
+        return inputs.get("file_path", "")
+    if name == "Glob":
+        return inputs.get("pattern", "")
+    if name == "Grep":
+        pattern = inputs.get("pattern", "")
+        path = inputs.get("path", "")
+        if path:
+            return f"{pattern} in {path}"
+        return pattern
+    if name == "Agent":
+        return inputs.get("description", "")
+    if name == "TodoWrite":
+        return ""
+    # Generic: show first string value if short enough
+    for v in inputs.values():
+        if isinstance(v, str) and 0 < len(v) <= 80:
+            return v
+    return ""
+
+
 def _display_message(
     message: AssistantMessage | ResultMessage | SystemMessage,
     completion_msg: str | None = None,
@@ -466,10 +497,17 @@ def _display_message(
                 if collected is not None:
                     collected.append(block.text)
             elif isinstance(block, ToolUseBlock):
-                console.print(
-                    f"[dim]Tool: {block.name}[/dim]",
-                    highlight=False,
-                )
+                detail = _tool_detail(block.name, block.input)
+                if detail:
+                    console.print(
+                        f"[dim]Tool: {block.name} → {detail}[/dim]",
+                        highlight=False,
+                    )
+                else:
+                    console.print(
+                        f"[dim]Tool: {block.name}[/dim]",
+                        highlight=False,
+                    )
     elif isinstance(message, ResultMessage):
         if message.is_error:
             console.print(f"[red]Error: {message.result}[/red]")
@@ -581,12 +619,69 @@ async def _stream_interactive(
     return "\n".join(collected)
 
 
+def _extract_report_section(agent_output: str) -> str:
+    """Extract the maintenance report from agent output.
+
+    Looks for markdown report sections (## headers and content) in the
+    collected agent output. Returns the report text, or empty string.
+    """
+    if not agent_output:
+        return ""
+
+    lines = agent_output.splitlines()
+    report_lines: list[str] = []
+    capturing = False
+
+    for line in lines:
+        # Start capturing at report-like headings
+        if line.startswith("## ") or line.startswith("# Maintenance") or line.startswith("# Health"):
+            capturing = True
+        if capturing:
+            report_lines.append(line)
+
+    return "\n".join(report_lines).strip()
+
+
+def _build_pr_content(workflow: str, agent_output: str) -> tuple[str, str]:
+    """Build PR title and body from workflow type and agent output.
+
+    Returns (title, body) tuple.
+    """
+    report = _extract_report_section(agent_output)
+
+    # Build a descriptive title from the report if possible
+    pr_title = f"chore: {workflow} repository"
+
+    if report:
+        pr_body = (
+            f"## Maintenance Report\n\n"
+            f"{report}\n\n"
+            f"---\n\n"
+            f"## Test plan\n\n"
+            f"- [ ] Review changes in the diff\n"
+            f"- [ ] Verify CI passes\n\n"
+            f"\U0001f916 Generated with git-repo-agent"
+        )
+    else:
+        pr_body = (
+            f"## Summary\n\n"
+            f"- Automated {workflow} via git-repo-agent\n\n"
+            f"## Test plan\n\n"
+            f"- [ ] Review changes in the diff\n"
+            f"- [ ] Verify CI passes\n\n"
+            f"\U0001f916 Generated with git-repo-agent"
+        )
+
+    return pr_title, pr_body
+
+
 async def _prompt_pr_creation(
     repo_path: Path,
     worktree_path: Path,
     branch: str,
     base_branch: str,
     workflow: str,
+    agent_output: str = "",
 ) -> None:
     """Check for changes in the worktree and offer to create a PR."""
     if not worktree_has_changes(worktree_path, base_branch):
@@ -601,15 +696,7 @@ async def _prompt_pr_creation(
     ).strip().lower()
 
     if create_pr in ("yes", "y"):
-        pr_title = f"chore: {workflow} repository"
-        pr_body = (
-            f"## Summary\n\n"
-            f"- Automated {workflow} via git-repo-agent\n\n"
-            f"## Test plan\n\n"
-            f"- [ ] Review changes in the diff\n"
-            f"- [ ] Verify CI passes\n\n"
-            f"\U0001f916 Generated with git-repo-agent"
-        )
+        pr_title, pr_body = _build_pr_content(workflow, agent_output)
         console.print("[dim]Pushing branch and creating PR...[/dim]")
         pr_url = push_and_create_pr(
             worktree_path, branch, base_branch, pr_title, pr_body,
