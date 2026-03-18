@@ -127,6 +127,7 @@ The web sandbox base image includes standard language runtimes and system tools 
 | `CLAUDE_ENV_FILE` | Always (when hooks run) | File path for persisting env vars across hook calls |
 | `CLAUDE_PROJECT_DIR` | Always | Project root directory |
 | `CLAUDE_PLUGIN_ROOT` | Frontmatter hooks only | Root of the loaded plugin |
+| `CLAUDE_CODE_DISABLE_CRON` | Set to stop scheduled cron jobs mid-session (2.1.72+) | Session cron management |
 
 ### Persisting Environment Variables
 

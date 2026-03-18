@@ -5,7 +5,7 @@ paths:
   - ".claude/settings*.json"
 ---
 
-# Hook System Reference (Claude Code 2.1.71+)
+# Hook System Reference (Claude Code 2.1.76+)
 
 Comprehensive reference for Claude Code hook events, schemas, and patterns. This supplements `.claude/rules/handling-blocked-hooks.md` with full event coverage. For guidance on when to use `type: "prompt"`, `type: "agent"`, and `type: "http"` hooks instead of `type: "command"`, see `.claude/rules/prompt-agent-hooks.md`.
 
@@ -19,6 +19,7 @@ Comprehensive reference for Claude Code hook events, schemas, and patterns. This
 | `SessionEnd` | Session terminates | none |
 | `UserPromptSubmit` | User submits a prompt | none |
 | `PreCompact` | Before context compaction | none |
+| `PostCompact` | After context compaction completes (2.1.76+) | matcher: `"manual"`, `"auto"`, `""` (all) |
 
 ### Tool Execution Events
 
@@ -50,6 +51,13 @@ Comprehensive reference for Claude Code hook events, schemas, and patterns. This
 |-------|--------------|-----------------|
 | `TeammateIdle` | A teammate in an agent team goes idle | teammate name |
 | `TaskCompleted` | A task in the shared task list is marked complete | task list name |
+
+### MCP Events (2.1.76+)
+
+| Event | When It Fires | Matcher Support |
+|-------|--------------|-----------------|
+| `Elicitation` | An MCP server requests structured user input mid-task | MCP server name |
+| `ElicitationResult` | After the user responds to an MCP elicitation dialog | MCP server name |
 
 ### Notification and Config Events
 
@@ -103,7 +111,7 @@ The command hook default was increased from 60 seconds in Claude Code 2.1.50.
 | Hook Type | Recommended Timeout | Notes |
 |-----------|---------------------|-------|
 | `SessionStart` | 300–600s | Dependency installs can be slow |
-| `SessionEnd` | 60–120s | Logging and cleanup |
+| `SessionEnd` | 60–120s | Configurable via `CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS` (fixed in 2.1.74; was hard-capped at 1.5s) |
 | `PreToolUse` | 10–30s | Keep fast to avoid blocking tool execution |
 | `PostToolUse` | 30–120s | Formatting, linting, logging |
 | `Stop` / `SubagentStop` | 30–60s | Notifications, git checks |
@@ -242,6 +250,51 @@ Set timeout explicitly even though the default is now 10 minutes — explicit ti
 }
 ```
 
+### PostCompact (2.1.76+)
+
+```json
+{
+  "trigger": "auto",
+  "compact_summary": "Summary of compacted conversation content..."
+}
+```
+
+`trigger` is `"manual"` or `"auto"`. PostCompact is observability only — no decision control.
+
+### Elicitation (2.1.76+)
+
+```json
+// Form mode
+{
+  "mcp_server_name": "my-mcp-server",
+  "message": "Please provide the deployment parameters",
+  "mode": "form",
+  "requested_schema": { }
+}
+
+// URL mode
+{
+  "mcp_server_name": "my-mcp-server",
+  "message": "Please authorize via browser",
+  "mode": "url",
+  "url": "https://example.com/authorize"
+}
+```
+
+### ElicitationResult (2.1.76+)
+
+```json
+{
+  "mcp_server_name": "my-mcp-server",
+  "action": "accept",
+  "mode": "form",
+  "elicitation_id": "elicit-uuid-123",
+  "content": { "environment": "production" }
+}
+```
+
+Output can override `action`/`content`. Exit code 2 changes action to `decline`.
+
 ---
 
 ## Output Schemas
@@ -279,6 +332,8 @@ PreToolUse hooks wrap their JSON response in a `hookSpecificOutput` envelope:
   }
 }
 ```
+
+> **Security Note (2.1.72)**: Prior to 2.1.72, returning `"allow"` from a PreToolUse hook could bypass `deny` rules (including enterprise managed settings). This is now fixed — `deny` rules always take precedence.
 
 Optionally modify the tool input before execution:
 
@@ -348,6 +403,16 @@ Return nothing (exit 0) to allow the stop.
   "reason": "Tests must pass before this task is accepted. Run: npm test"
 }
 ```
+
+### Elicitation — Accept, Decline, or Cancel (2.1.76+)
+
+```json
+{ "action": "accept", "content": { } }
+{ "action": "decline" }
+{ "action": "cancel" }
+```
+
+Exit code 2 also declines. Return nothing to show dialog to user.
 
 ---
 
@@ -543,6 +608,8 @@ Command hooks can run asynchronously with `async: true`. Async hooks fire-and-fo
 
 Use async hooks for non-blocking side effects like logging, metrics, and notifications where you do not need to gate the operation on the hook result.
 
+> **Note (2.1.75)**: Async hook completion messages are suppressed by default. Use `--verbose` or transcript mode to see them.
+
 ---
 
 ## Hook Handler Fields
@@ -616,6 +683,14 @@ if [ -n "$CLAUDE_ENV_FILE" ]; then
   echo "PYTHONDONTWRITEBYTECODE=1" >> "$CLAUDE_ENV_FILE"
 fi
 exit 0
+```
+
+### `CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS` (2.1.74+)
+
+Override the `SessionEnd` hook timeout in milliseconds. Prior to 2.1.74, `SessionEnd` hooks were hard-capped at 1.5 seconds regardless of `hook.timeout`. Set this to allow longer cleanup hooks:
+
+```bash
+export CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS=30000  # 30 seconds
 ```
 
 ### `CLAUDE_CODE_REMOTE`
@@ -752,22 +827,25 @@ MCP tools use the naming pattern `mcp__<server>__<tool>`. Match them with regex 
 
 ### All Hook Events
 
-| Event | Category | New in 2.1.50 |
-|-------|----------|---------------|
+| Event | Category | Since |
+|-------|----------|-------|
 | `SessionStart` | Session | |
 | `SessionEnd` | Session | |
 | `UserPromptSubmit` | Session | |
 | `PreCompact` | Session | |
+| `PostCompact` | Session | 2.1.76 |
 | `PreToolUse` | Tool | |
 | `PostToolUse` | Tool | |
 | `PostToolUseFailure` | Tool | |
-| `PermissionRequest` | Tool | ✓ |
+| `PermissionRequest` | Tool | 2.1.50 |
 | `Stop` | Agent | |
 | `SubagentStart` | Agent | |
 | `SubagentStop` | Agent | |
-| `WorktreeCreate` | Worktree | ✓ |
-| `WorktreeRemove` | Worktree | ✓ |
-| `TeammateIdle` | Teams | ✓ |
-| `TaskCompleted` | Teams | ✓ |
+| `WorktreeCreate` | Worktree | 2.1.50 |
+| `WorktreeRemove` | Worktree | 2.1.50 |
+| `TeammateIdle` | Teams | 2.1.50 |
+| `TaskCompleted` | Teams | 2.1.50 |
+| `Elicitation` | MCP | 2.1.76 |
+| `ElicitationResult` | MCP | 2.1.76 |
 | `Notification` | Misc | |
-| `ConfigChange` | Misc | ✓ |
+| `ConfigChange` | Misc | 2.1.50 |
