@@ -98,7 +98,7 @@ jobs:
             echo "found=false" >> $GITHUB_OUTPUT
           fi
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         if: steps.get-pr.outputs.found == 'true'
         with:
           token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}

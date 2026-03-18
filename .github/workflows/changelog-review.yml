@@ -27,7 +27,7 @@ jobs:
       previous_version: ${{ steps.read_tracked.outputs.tracked_version }}
       changes_summary: ${{ steps.analyze.outputs.summary }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
 
@@ -116,7 +116,7 @@ jobs:
     if: needs.check-changelog.outputs.has_updates == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
           fetch-depth: 0
@@ -126,7 +126,7 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: "--model sonnet --max-turns 40"
-          direct_prompt: |
+          prompt: |
             You are reviewing Claude Code changelog changes from version ${{ needs.check-changelog.outputs.previous_version }} to ${{ needs.check-changelog.outputs.latest_version }}.
 
             Keyword analysis from the changelog: ${{ needs.check-changelog.outputs.changes_summary }}

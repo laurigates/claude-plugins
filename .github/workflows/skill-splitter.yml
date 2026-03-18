@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN || github.token }}
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.ref }}
@@ -131,7 +131,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           allowed_bots: "claude[bot],claude"
           claude_args: "--model haiku --max-turns 60"
-          direct_prompt: |
+          prompt: |
             You are a skill content organizer. Your job is to split SKILL.md files that contain
             too much inline reference material by extracting that content into REFERENCE.md files.
 

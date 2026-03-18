@@ -21,7 +21,7 @@ jobs:
   lint:
     runs-on: ubuntu-slim
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Lint context commands
         run: ./scripts/lint-context-commands.sh
