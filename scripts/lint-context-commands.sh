@@ -15,6 +15,7 @@
 # 9. gh repo view uses GitHub GraphQL API (TLS-sensitive, fails in proxy/offline envs)
 # 10. test -f / test -d require Bash permission not granted to context commands (use find)
 # 11. grep with multiple hardcoded filenames fails when files don't exist (use find -exec grep)
+# 12. find/jq on home-directory paths (~/, $HOME) blocked by sandbox security restrictions
 #
 # Exit codes:
 #   0 - no issues
@@ -128,6 +129,13 @@ check_pattern ERROR \
   '^- .*!`test -[fd] [^`]*`' \
   "replace with find: 'test -f path/file' -> 'find path -maxdepth 1 -name file -type f'"
 
+# find/jq on home-directory paths blocked by sandbox (only working directories allowed)
+# Regression: health-check used `find ~/.claude/plugins ...` which was blocked by sandbox security (PR #TBD)
+check_pattern ERROR \
+  "home-dir-in-context" \
+  '^- .*!`[^`]*[[:space:]]~/\|[[:space:]]\$HOME/' \
+  "remove home-directory context commands; check home-dir files during execution steps instead"
+
 # gh repo view uses GitHub's GraphQL API (TLS-sensitive; fails in proxy/offline/cert-error envs)
 # Regression: git-pr-feedback used this and failed with x509 TLS cert error (PR #799)
 check_pattern WARN \
@@ -152,6 +160,13 @@ check_pattern WARN \
   "shell-operator-or" \
   '^- .*!`[^`]* || [^`]*`' \
   "remove || fallback; failed commands produce empty output which is handled gracefully"
+
+# jq on .claude/settings.json which may not exist (stderr error, and 2>/dev/null is blocked)
+# Regression: health-audit used `jq ... .claude/settings.json` which fails when file is missing (PR #TBD)
+check_pattern WARN \
+  "jq-on-optional-settings" \
+  '^- .*!`jq [^`]* \.claude/settings[^`]*`$' \
+  "replace with find for existence check; use jq during execution steps where error handling is available"
 
 # Semicolons in context commands
 check_pattern WARN \

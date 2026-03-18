@@ -1,7 +1,7 @@
 ---
 model: sonnet
 created: 2026-02-05
-modified: 2026-02-10
+modified: 2026-03-18
 reviewed: 2026-02-05
 description: Audit enabled plugins against project tech stack and recommend additions/removals for relevance
 allowed-tools: Bash(test *), Bash(find *), Bash(jq *), Bash(claude plugin *), Read, Write, Edit, Glob, Grep, TodoWrite, AskUserQuestion
@@ -28,7 +28,6 @@ Audit the project's enabled plugins against the actual technology stack. Identif
 
 - Current project: !`pwd`
 - Project settings exists: !`find .claude -maxdepth 1 -name 'settings.json'`
-- Enabled plugins: !`jq -r '.enabledPlugins[]? // empty' .claude/settings.json`
 - Package.json exists: !`find . -maxdepth 1 -name 'package.json'`
 - Cargo.toml exists: !`find . -maxdepth 1 -name 'Cargo.toml'`
 - pyproject.toml exists: !`find . -maxdepth 1 -name 'pyproject.toml'`

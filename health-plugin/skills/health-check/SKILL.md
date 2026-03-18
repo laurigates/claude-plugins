@@ -1,7 +1,7 @@
 ---
 model: haiku
 created: 2026-02-04
-modified: 2026-02-10
+modified: 2026-03-18
 reviewed: 2026-02-04
 description: Run a comprehensive diagnostic scan of Claude Code configuration including plugins, settings, hooks, and MCP servers
 allowed-tools: Bash(test *), Bash(jq *), Bash(head *), Bash(find *), Read, Glob, Grep, TodoWrite
@@ -28,8 +28,6 @@ Run a comprehensive diagnostic scan of your Claude Code environment. Identifies 
 
 - User home: !`echo $HOME`
 - Current project: !`pwd`
-- Plugin registry exists: !`find ~/.claude/plugins -maxdepth 1 -name 'installed_plugins.json'`
-- User settings exists: !`find ~/.claude -maxdepth 1 -name 'settings.json'`
 - Project settings exists: !`find .claude -maxdepth 1 -name 'settings.json'`
 - Local settings exists: !`find .claude -maxdepth 1 -name 'settings.local.json'`
 
