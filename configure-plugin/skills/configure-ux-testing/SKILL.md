@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-02-11
+modified: 2026-03-19
 reviewed: 2025-12-16
 description: Check and configure UX testing infrastructure (Playwright, accessibility, visual regression)
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -20,7 +20,7 @@ Check and configure UX testing infrastructure with Playwright as the primary too
 | Setting up Playwright E2E testing infrastructure for a project | Running existing Playwright tests (use `bun test:e2e` or test-runner agent) |
 | Adding accessibility testing with axe-core to a project | Performing manual accessibility audits on a live site |
 | Configuring visual regression testing with screenshot assertions | Debugging a specific failing E2E test (use system-debugging agent) |
-| Setting up Playwright MCP server for Claude browser automation | Writing individual test cases (use playwright-testing skill) |
+| Setting up Playwright CLI or MCP for Claude browser automation | Writing individual test cases (use playwright-testing skill) |
 | Creating CI/CD workflows for E2E and accessibility test execution | Configuring unit or integration tests (use `/configure:tests`) |
 
 ## Context
@@ -38,7 +38,8 @@ Check and configure UX testing infrastructure with Playwright as the primary too
 - **Playwright** - Cross-browser E2E testing (primary tool)
 - **axe-core** - Automated accessibility testing (WCAG compliance)
 - **Playwright screenshots** - Visual regression testing
-- **Playwright MCP** - Browser automation via MCP integration
+- **Playwright CLI** - Browser automation via CLI (preferred for AI agents with shell access)
+- **Playwright MCP** - Browser automation via MCP (fallback for sandboxed environments)
 
 ## Parameters
 
@@ -59,7 +60,8 @@ Verify latest versions before configuring:
 
 1. **@playwright/test**: Check [playwright.dev](https://playwright.dev/) or [npm](https://www.npmjs.com/package/@playwright/test)
 2. **@axe-core/playwright**: Check [npm](https://www.npmjs.com/package/@axe-core/playwright)
-3. **playwright MCP**: Check [npm](https://www.npmjs.com/package/@anthropic/mcp-server-playwright)
+3. **@playwright/cli**: Check [npm](https://www.npmjs.com/package/@playwright/cli)
+4. **playwright MCP**: Check [npm](https://www.npmjs.com/package/@playwright/mcp)
 
 Use WebSearch or WebFetch to verify current versions.
 
@@ -74,6 +76,7 @@ Check for each component:
 | `@playwright/test` in package.json | Playwright Test | Installed |
 | `tests/e2e/` or `e2e/` directory | E2E tests | Present |
 | `*.spec.ts` files with toHaveScreenshot | Visual regression | Configured |
+| `@playwright/cli` globally or in package.json | Playwright CLI | Installed |
 | `.mcp.json` with playwright server | Playwright MCP | Configured |
 
 ### Step 3: Analyze current testing state
@@ -100,8 +103,9 @@ Check for complete UX testing setup across four areas:
 - Update workflow documented
 - CI snapshot handling configured
 
-**MCP Integration:**
-- Playwright MCP server in `.mcp.json`
+**Browser Automation:**
+- Playwright CLI installed (preferred for agents with shell access)
+- Playwright MCP server in `.mcp.json` (fallback for sandboxed environments)
 - Browser automation available to Claude
 
 ### Step 4: Generate compliance report
@@ -177,9 +181,27 @@ Update `package.json` with test scripts:
 }
 ```
 
-### Step 10: Configure MCP integration (optional)
+### Step 10: Configure browser automation (optional)
 
-Add to `.mcp.json`:
+Choose the appropriate browser automation approach based on the agent's environment:
+
+**Option A: Playwright CLI (preferred when shell access is available)**
+
+Playwright CLI (`@playwright/cli`) is 4-10x more token-efficient than MCP for AI agent browser automation (~27K vs ~114K tokens per task). Snapshots and screenshots are saved to disk instead of injected into context.
+
+```bash
+# Global install
+npm install -g @playwright/cli@latest
+
+# Or project-local
+bun add --dev @playwright/cli
+```
+
+This enables Claude to navigate pages, take screenshots, fill forms, click elements, and capture page snapshots via CLI commands. See the `playwright-cli` skill for command reference.
+
+**Option B: Playwright MCP (for sandboxed environments without shell access)**
+
+Use MCP when running in environments without shell access (Claude Desktop, browser-based agents):
 
 ```json
 {
@@ -191,8 +213,6 @@ Add to `.mcp.json`:
   }
 }
 ```
-
-This enables Claude to navigate web pages, take screenshots, fill forms, click elements, and capture accessibility snapshots.
 
 ### Step 11: Create CI/CD workflow
 
@@ -214,7 +234,8 @@ components:
   ux_testing_a11y: true
   ux_testing_a11y_level: "wcag21aa"
   ux_testing_visual: true
-  ux_testing_mcp: true
+  ux_testing_cli: true
+  ux_testing_mcp: false
 ```
 
 ### Step 13: Report configuration results
@@ -254,7 +275,7 @@ For the results report format, see [REFERENCE.md](REFERENCE.md).
 
 - `/configure:tests` - Unit and integration testing configuration
 - `/configure:all` - Run all compliance checks
-- **Skills**: `playwright-testing`, `accessibility-implementation`
+- **Skills**: `playwright-testing`, `playwright-cli`, `accessibility-implementation`
 - **Agents**: `ux-implementation` for implementing UX designs
 - **Playwright documentation**: https://playwright.dev
 - **axe-core documentation**: https://www.deque.com/axe

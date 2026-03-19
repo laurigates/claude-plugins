@@ -44,7 +44,7 @@ Automated quality enforcement.
 
 | Plugin | Skills | Purpose |
 |--------|--------|---------|
-| testing-plugin | 15 | Test execution, TDD, Vitest, Playwright, mutation testing |
+| testing-plugin | 16 | Test execution, TDD, Vitest, Playwright, Playwright CLI, mutation testing |
 | code-quality-plugin | 14 | Review, refactoring, linting, ast-grep, debugging, silent degradation |
 | documentation-plugin | 5 | API docs, README generation, knowledge graphs |
 | evaluate-plugin | 4 + 3 agents | Skill evaluation, benchmarking, quality improvement |
