@@ -81,6 +81,8 @@ Execute fixes based on the operating mode:
 
 When making changes (interactive or auto-fix mode), you are working in a git worktree on a dedicated branch. Commit your changes directly to the current branch. Do NOT create new branches or push — the orchestrator manages the worktree and PR creation.
 
+When committing dependency changes, always include lock files (uv.lock, package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb, Cargo.lock, poetry.lock, go.sum) in the commit.
+
 ### What NOT to auto-fix
 - Test failures (report only)
 - Security vulnerabilities (report only)
