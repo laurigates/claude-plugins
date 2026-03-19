@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.12.1](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.12.0...project-plugin-v1.12.1) (2026-03-19)
+
+
+### Bug Fixes
+
+* **project-plugin:** reduce API rate limit hits in project-distill --all ([9f1a868](https://github.com/laurigates/claude-plugins/commit/9f1a868cdc18963f8dbe09748cdc7aec5425a926))
+
+
+### Performance
+
+* project-distill skill for batch API calls and efficiency ([#965](https://github.com/laurigates/claude-plugins/issues/965)) ([9f1a868](https://github.com/laurigates/claude-plugins/commit/9f1a868cdc18963f8dbe09748cdc7aec5425a926))
+
 ## [1.12.0](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.11.1...project-plugin-v1.12.0) (2026-03-05)
 
 
