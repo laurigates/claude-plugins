@@ -27,7 +27,8 @@ Visual Regression:
   Snapshot directory      __snapshots__              [CONFIGURED | N/A]
   CI handling             GitHub Actions artifact    [CONFIGURED | MISSING]
 
-MCP Integration:
+Browser Automation:
+  Playwright CLI          global / package.json      [INSTALLED | OPTIONAL]
   Playwright MCP          .mcp.json                  [CONFIGURED | OPTIONAL]
 
 Overall: [X issues found]
