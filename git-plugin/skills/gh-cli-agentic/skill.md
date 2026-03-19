@@ -5,8 +5,8 @@ description: GitHub CLI commands optimized for AI agent workflows with JSON outp
 user-invocable: false
 allowed-tools: Bash(gh pr *), Bash(gh run *), Bash(gh issue *), Bash(gh repo *), Bash(gh workflow *), Bash(gh api *), Read
 created: 2025-01-16
-modified: 2026-02-16
-reviewed: 2026-02-16
+modified: 2026-03-19
+reviewed: 2026-03-19
 ---
 
 # GitHub CLI Agentic Patterns
@@ -123,6 +123,9 @@ gh issue view $ISSUE_NUMBER --json number,title,body,state,labels,assignees,comm
 
 # Minimal
 gh issue view $ISSUE_NUMBER --json number,title,state,labels
+
+# With sub-issue progress
+gh issue view $ISSUE_NUMBER --json number,title,state,subIssuesSummary
 ```
 
 ### List Issues
@@ -136,6 +139,69 @@ gh issue list --label "bug" --json number,title
 
 # Assigned to me
 gh issue list --assignee @me --json number,title,state
+```
+
+### Issue Types
+
+```bash
+# Create issue with type (requires repo/org with issue types configured)
+gh issue create --title "..." --body "..." --type "Bug"
+gh issue create --title "..." --body "..." --type "Feature"
+gh issue create --title "..." --body "..." --type "Task"
+```
+
+### Sub-Issues
+
+```bash
+# List sub-issues of a parent
+gh api repos/{owner}/{repo}/issues/{parent}/sub_issues --jq '.[].number'
+
+# Add existing issue as sub-issue
+gh api repos/{owner}/{repo}/issues/{parent}/sub_issues -f sub_issue_id={child_id}
+
+# Remove sub-issue
+gh api repos/{owner}/{repo}/issues/{parent}/sub_issues/{sub_issue_id} -X DELETE
+
+# Reprioritize sub-issue (move after another sub-issue)
+gh api repos/{owner}/{repo}/issues/{parent}/sub_issues -X PATCH \
+  -f sub_issue_id={id} -f after_id={after_id}
+
+# Get sub-issue summary via issue view
+gh issue view {N} --json title,subIssuesSummary
+# Returns: {"total": 5, "completed": 3, "percentCompleted": 60}
+```
+
+### Custom Issue Fields
+
+```bash
+# List available fields for an org
+gh api orgs/{org}/issue-fields --jq '.[].name'
+
+# Get field values for an issue
+gh api repos/{owner}/{repo}/issues/{N}/issue-field-values
+
+# Set field value
+gh api repos/{owner}/{repo}/issues/{N}/issue-field-values \
+  -X POST -f field_id={id} -f value='{value}'
+```
+
+### Issue Management
+
+```bash
+# Transfer issue to another repo
+gh issue transfer {N} {target-repo}
+
+# Pin/unpin issue
+gh issue pin {N}
+gh issue unpin {N}
+
+# Lock/unlock issue thread
+gh issue lock {N} --reason resolved
+gh issue unlock {N}
+
+# Create development branch from issue
+gh issue develop {N} --checkout
+gh issue develop {N} --name {branch-name}
 ```
 
 ## Repository Operations
@@ -209,6 +275,11 @@ gh api repos/{owner}/{repo}/commits/{sha} -H "Accept: application/vnd.github.pat
 | Get failure logs | `gh run view $ID --log-failed` |
 | PR merge status | `gh pr view $N --json mergeable,reviewDecision,statusCheckRollup` |
 | Quick issue list | `gh issue list --json number,title,labels -L 10` |
+| Sub-issue progress | `gh issue view $N --json title,subIssuesSummary` |
+| List sub-issues | `gh api repos/{o}/{r}/issues/{N}/sub_issues --jq '.[].number'` |
+| Add sub-issue | `gh api repos/{o}/{r}/issues/{N}/sub_issues -f sub_issue_id=M` |
+| Transfer issue | `gh issue transfer N target-repo` |
+| Create dev branch | `gh issue develop N --checkout` |
 | Workflow trigger | `gh workflow run $NAME` |
 
 ## Error Handling in Context
@@ -228,7 +299,7 @@ Use `2>/dev/null` to suppress errors in context expressions (do NOT use `||` fal
 
 ### Issue Fields
 
-`number`, `title`, `body`, `state`, `author`, `labels`, `assignees`, `comments`, `milestone`, `url`, `createdAt`, `updatedAt`, `closedAt`
+`number`, `title`, `body`, `state`, `author`, `labels`, `assignees`, `comments`, `milestone`, `url`, `createdAt`, `updatedAt`, `closedAt`, `subIssuesSummary`, `type`
 
 ### Run Fields
 
