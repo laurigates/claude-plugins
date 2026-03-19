@@ -290,6 +290,11 @@
         "merge-conflicts",
         "conflict-resolution",
         "version-control",
+        "sub-issues",
+        "issue-hierarchy",
+        "issue-management",
+        "issue-types",
+        "custom-fields",
         "fork",
         "upstream"
       ],

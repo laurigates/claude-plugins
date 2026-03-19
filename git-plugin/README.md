@@ -13,6 +13,8 @@ This plugin provides comprehensive Git workflow automation including conventiona
 | `/git:api-pr` | Create PRs via GitHub API without local git operations - for quick fixes, typos, config updates |
 | `/git:commit` | Complete workflow from changes to PR - auto-detect issues, create logical commits with proper linkage, push, optionally create PR |
 | `/git:issue` | Process GitHub issues with interactive selection, conflict detection, and parallel work support |
+| `/git:issue-hierarchy` | Manage sub-issues and dependency relationships between issues |
+| `/git:issue-manage` | Administrative operations: transfer, pin, lock, develop branches, bulk ops, custom fields |
 | `/git:fix-pr` | Analyze and fix failing PR checks |
 | `/git:pr-feedback` | Review PR workflow results and comments, address substantive feedback from reviewers |
 | `/git:conflicts` | Resolve merge conflicts with zdiff3, rerere, and modern git tooling |
@@ -92,6 +94,31 @@ Analyzes changes, creates logical commits with conventional messages, pushes to 
 
 Analyzes issues for conflicts and dependencies, implements fixes with TDD workflow, and creates PRs.
 
+### Manage Sub-Issues and Dependencies
+
+```bash
+/git:issue-hierarchy 42 --status          # Show sub-issue progress
+/git:issue-hierarchy 42 --add 43 44 45    # Add sub-issues to parent
+/git:issue-hierarchy 42 --create "Add tests for auth"  # Create new sub-issue
+/git:issue-hierarchy 42 --deps            # Show dependency graph
+/git:issue-hierarchy 42 --block 50        # Mark #42 as blocking #50
+```
+
+Manages parent-child issue relationships and dependency tracking using GitHub's sub-issues API.
+
+### Issue Administration
+
+```bash
+/git:issue-manage transfer 42 other-repo     # Transfer issue
+/git:issue-manage pin 42 43                   # Pin important issues
+/git:issue-manage lock 42 --reason resolved   # Lock resolved discussions
+/git:issue-manage develop 42 --checkout       # Create branch from issue
+/git:issue-manage bulk close 100 101 102      # Bulk close issues
+/git:issue-manage fields 42 --list            # List custom field values
+```
+
+Administrative operations including transfer, pin/unpin, lock/unlock, branch creation, bulk operations, and custom field management.
+
 ### Fix Failing PR
 
 ```bash
@@ -170,6 +197,7 @@ For seamless command execution without permission prompts, add these permissions
       "Bash(gh run *)",
       "Bash(gh issue *)",
       "Bash(gh repo *)",
+      "Bash(gh api *)",
       "Bash(gh label *)",
       "Bash(gh workflow *)",
       "Bash(git status *)",
