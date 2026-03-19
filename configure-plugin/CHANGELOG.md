@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.14.3...configure-plugin-v1.15.0) (2026-03-19)
+
+
+### Features
+
+* playwright CLI skill for token-efficient browser automation ([#963](https://github.com/laurigates/claude-plugins/issues/963)) ([73a9705](https://github.com/laurigates/claude-plugins/commit/73a970526524f8bacf28b406ae02938ce96f2ff7))
+
 ## [1.14.3](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.14.2...configure-plugin-v1.14.3) (2026-03-10)
 
 

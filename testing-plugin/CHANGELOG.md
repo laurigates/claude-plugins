@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.12.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.11.1...testing-plugin-v3.12.0) (2026-03-19)
+
+
+### Features
+
+* playwright CLI skill for token-efficient browser automation ([#963](https://github.com/laurigates/claude-plugins/issues/963)) ([73a9705](https://github.com/laurigates/claude-plugins/commit/73a970526524f8bacf28b406ae02938ce96f2ff7))
+
 ## [3.11.1](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.11.0...testing-plugin-v3.11.1) (2026-03-10)
 
 
