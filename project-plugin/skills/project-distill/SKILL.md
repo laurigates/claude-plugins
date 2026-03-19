@@ -9,7 +9,7 @@ allowed-tools: Bash(git diff *), Bash(git log *), Bash(git status *), Bash(just 
 argument-hint: "--rules | --skills | --recipes | --all | --dry-run"
 args: "[--rules] [--skills] [--recipes] [--all] [--dry-run]"
 created: 2026-02-11
-modified: 2026-02-26
+modified: 2026-03-19
 reviewed: 2026-02-26
 ---
 
@@ -57,6 +57,18 @@ The primary context source is the **current conversation history** — all messa
 | `--all` | Analyze all three categories (default) |
 | `--dry-run` | Show proposals without applying changes |
 
+## Tool Call Efficiency
+
+Minimize LLM round-trips throughout execution to avoid API rate limits:
+
+| Principle | How |
+|-----------|-----|
+| Batch file reads | Issue multiple Read calls in a single response (e.g., read all rule files at once, not one per turn) |
+| Batch discovery | Use a single Glob to collect all files in a category, then Read them all in one response |
+| Single-pass analysis | Combine evaluation and redundancy checking — do not make separate passes over the same files |
+| Sequential categories | When `--all`, fully complete one category before starting the next (rules → skills → recipes) |
+| Parallel git commands | Issue independent git commands in a single response |
+
 ## Execution
 
 Execute this session distillation workflow:
@@ -66,40 +78,46 @@ Execute this session distillation workflow:
 Understand what happened during this session using **all available context**:
 
 1. Review the **conversation history** — tool calls, file edits, commands run, agent dispatches, and results
-2. If in a git repo, supplement with: `git log --oneline --max-count=20` and `git log --stat --oneline --max-count=10`
+2. If in a git repo, run these commands in a single response (parallel tool calls):
+   - `git log --oneline --max-count=20`
+   - `git log --stat --oneline --max-count=10`
 3. Identify patterns: repeated operations, workarounds, discoveries
 4. Catalog tools used: effective commands, flags, workflows
 5. Note pain points: where time was spent figuring things out
 
 **Note:** Conversation history is the primary source. Git history is supplemental — it may be empty (non-git directory, multi-repo workspace, or no commits this session).
 
-### Step 2: Evaluate against existing knowledge
+### Step 2: Evaluate and check redundancy (single pass per category)
 
-For each potential insight, check existing artifacts:
+Process categories sequentially. For each active category, batch all reads in one response, then analyze.
+
+**When `--all`: complete rules → then skills → then recipes. Do not interleave.**
 
 **Rules** (`.claude/rules/*.md`):
-- Does it update, contradict, or duplicate an existing rule?
-- Prefer updating existing rules over creating new files
+1. Glob `.claude/rules/*.md` to get the full file list
+2. Read ALL rule files in a single response (parallel Read calls)
+3. For each potential insight from Step 1, evaluate and check redundancy in one pass:
+   - Does it update, contradict, or duplicate an existing rule? → Update in place
+   - Does an existing rule already cover this? → Skip
+   - Does this make an existing rule redundant? → Propose removal
+   - Does this overlap with existing rules? → Propose merging
+   - Is this genuinely new and reusable? → Propose addition
+   - Prefer updating existing rules over creating new files
 
 **Skills** (relevant plugin skills):
-- Does this improve existing skill commands/examples?
-- Does this suggest missing guidance?
+1. Glob to find relevant skill files (target specific plugins from Step 1 activity, not all skills)
+2. Read matched skill files in a single response (parallel Read calls)
+3. Evaluate and check redundancy in one pass — same criteria as rules
 
 **Justfile recipes**:
-- Is there a repeated command that should become a recipe?
-- Should an existing recipe be updated with better flags?
-- Is an existing recipe now redundant?
+1. Run `just --dump --dump-format json` to get all recipes in one call
+2. Evaluate session commands against loaded recipes in one pass:
+   - Is there a repeated command that should become a recipe?
+   - Should an existing recipe be updated with better flags?
+   - Is an existing recipe now redundant or superseded?
+   - Will this be used more than once? → Skip if one-off
 
-### Step 3: Check redundancy
-
-For each proposed change, answer:
-
-1. Does this make an existing artifact redundant? → Propose removal
-2. Does this overlap with existing artifacts? → Propose merging
-3. Is the existing version still better? → Skip the proposal
-4. Will this be used more than once? → Skip if one-off
-
-### Step 4: Present proposals
+### Step 3: Present proposals
 
 Categorize findings as:
 
@@ -110,7 +128,7 @@ Categorize findings as:
 - [UPDATE] `recipe-name` - Better flags discovered (before/after)
 - [REDUNDANT] `old-recipe` - Superseded by new approach
 
-### Step 5: Apply changes
+### Step 4: Apply changes
 
 If not `--dry-run`:
 
@@ -119,7 +137,7 @@ If not `--dry-run`:
 3. Create new files only for genuinely new artifacts
 4. Remove redundant artifacts
 
-### Step 6: Report summary
+### Step 5: Report summary
 
 Output concise summary of what was changed (rules updated, recipes added, insights skipped)
 
@@ -163,6 +181,8 @@ Output concise summary of what was changed (rules updated, recipes added, insigh
 | Dump justfile as JSON | `just --dump --dump-format json` |
 | Dry run recipe | `just --dry-run recipe-name` |
 | Find rules | `find .claude/rules -name '*.md' -type f` |
+| Batch-read all rules | Glob `.claude/rules/*.md` then Read all results in one response |
+| All recipes as JSON | `just --dump --dump-format json` |
 
 ## Quick Reference
 
