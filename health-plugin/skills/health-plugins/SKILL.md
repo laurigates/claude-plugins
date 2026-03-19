@@ -1,7 +1,7 @@
 ---
 model: sonnet
 created: 2026-02-04
-modified: 2026-02-10
+modified: 2026-03-18
 reviewed: 2026-02-05
 description: Diagnose and fix plugin registry issues including orphaned entries and project-scope conflicts (addresses Claude Code issue #14202)
 allowed-tools: Bash(test *), Bash(jq *), Bash(cp *), Bash(mkdir *), Read, Write, Edit, Glob, Grep, TodoWrite, AskUserQuestion
@@ -27,7 +27,7 @@ Diagnose and fix issues with the Claude Code plugin registry. This command speci
 ## Context
 
 - Current project: !`pwd`
-- Plugin registry exists: !`find ~/.claude/plugins -maxdepth 1 -name 'installed_plugins.json'`
+- Current project has plugins: !`find . -maxdepth 2 -path '*/.claude-plugin/plugin.json' -type f`
 - Project settings exists: !`find . -maxdepth 1 -name '.claude/settings.json'`
 - Project plugins dir: !`find . -maxdepth 1 -type d -name \'.claude-plugin\'`
 
