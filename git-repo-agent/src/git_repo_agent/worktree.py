@@ -18,7 +18,7 @@ def create_worktree(repo_path: Path, branch: str) -> Path:
     Returns:
         Path to the new worktree directory.
     """
-    worktree_path = repo_path / ".worktrees" / branch.replace("/", "-")
+    worktree_path = repo_path / ".claude" / "worktrees" / branch.replace("/", "-")
     worktree_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Get current branch to use as base

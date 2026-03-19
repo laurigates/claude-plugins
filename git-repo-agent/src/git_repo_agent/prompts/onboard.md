@@ -72,7 +72,7 @@ Note: Full configuration automation is Phase 2. For Phase 1, document what shoul
 ## Step 6: Commit & Report
 
 If not in dry-run mode:
-1. Stage and commit changes with conventional commit messages to the current branch
+1. Stage and commit changes with conventional commit messages to the current branch. When committing dependency changes, always include lock files (uv.lock, package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb, Cargo.lock, poetry.lock, go.sum).
 2. Do NOT create branches or push — the orchestrator manages the worktree and PR creation
 3. Generate a summary report of all changes made
 

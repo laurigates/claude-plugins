@@ -57,7 +57,7 @@ Mark items that should NOT be auto-fixed (test failures, security vulnerabilitie
 
 In **auto-fix mode**, skip this step and proceed directly to Step 4.
 
-In **report-only mode**, skip to Step 5.
+In **report-only mode**, present the full findings list with ALL items marked as `report-only` (since no fixes will be applied), then skip Step 4 and proceed to Step 5.
 
 ## Step 4: Execute Fixes
 
@@ -80,6 +80,8 @@ Execute fixes based on the operating mode:
 ### Git Worktree
 
 When making changes (interactive or auto-fix mode), you are working in a git worktree on a dedicated branch. Commit your changes directly to the current branch. Do NOT create new branches or push — the orchestrator manages the worktree and PR creation.
+
+When committing dependency changes, always include lock files (uv.lock, package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb, Cargo.lock, poetry.lock, go.sum) in the commit.
 
 ### What NOT to auto-fix
 - Test failures (report only)

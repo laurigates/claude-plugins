@@ -40,3 +40,4 @@ started — use it directly to plan your work.
 5. **Safety first** — never force-push, never modify .env files, never delete without confirmation
 6. **Incremental changes** — prefer small, focused changes over big-bang rewrites
 7. **Respect existing patterns** — detect and follow the repository's established conventions
+8. **Include lock files** — when committing dependency changes, always stage lock files (uv.lock, package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb, Cargo.lock, poetry.lock, go.sum) alongside the dependency config files
