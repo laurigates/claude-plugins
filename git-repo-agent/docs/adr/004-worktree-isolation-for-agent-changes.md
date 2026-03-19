@@ -18,7 +18,7 @@ The Claude Code CLI supports `--worktree` for agent isolation, but the Claude Ag
 
 Manage git worktrees in Python before launching the agent:
 
-1. **Before agent runs**: Create a worktree at `<repo>/.worktrees/<branch-name>` with a dedicated branch
+1. **Before agent runs**: Create a worktree at `<repo>/.claude/worktrees/<branch-name>` with a dedicated branch
 2. **Set `cwd`**: Point the agent's working directory to the worktree
 3. **Agent commits**: Agent commits directly to the worktree branch (no branch creation)
 4. **After agent finishes**: Python prompts user to create a PR via `gh pr create`
@@ -26,7 +26,7 @@ Manage git worktrees in Python before launching the agent:
 
 ### Worktree location
 
-Worktrees are created under `<repo>/.worktrees/` with the branch name as directory name. This keeps them co-located with the target repo for easy discovery.
+Worktrees are created under `<repo>/.claude/worktrees/` with the branch name as directory name. This matches Claude's default worktree location.
 
 ### Branch naming
 
@@ -44,7 +44,7 @@ Report-only mode does not create a worktree (no changes are made). Instead, the 
 - Agent changes are isolated from the main working copy
 - Multiple agents can work on the same repo without conflicts
 - Users are prompted before any remote-visible actions (push, PR creation)
-- The `.worktrees/` directory should be in `.gitignore` of target repos
+- The `.claude/worktrees/` directory should be in `.gitignore` of target repos
 - Worktree creation adds ~1s of startup overhead
 
 ## Alternatives Considered
