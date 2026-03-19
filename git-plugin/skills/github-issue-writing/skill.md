@@ -1,8 +1,8 @@
 ---
 model: haiku
 created: 2026-01-30
-modified: 2026-01-30
-reviewed: 2026-01-30
+modified: 2026-03-19
+reviewed: 2026-03-19
 name: github-issue-writing
 description: |
   Create well-structured GitHub issues with clear titles, descriptions, and
@@ -83,6 +83,18 @@ Description of desired behavior.
 - [ ] Criterion 3
 ```
 
+## Issue Types
+
+GitHub supports first-class issue types. Use `--type` when creating issues:
+
+| Type | Use For |
+|------|---------|
+| Bug | Something broken that needs fixing |
+| Feature | New functionality request |
+| Task | General work item |
+
+Note: Available types depend on repository/org configuration. Use `gh issue create --type "Bug"` to leverage them.
+
 ## CLI Commands
 
 ```bash
@@ -94,6 +106,13 @@ gh issue create --title "..." --body "..." --label "bug" --label "priority: high
 
 # With assignee
 gh issue create --title "..." --body "..." --assignee "@me"
+
+# With issue type
+gh issue create --title "..." --body "..." --type "Bug"
+
+# As sub-issue of a parent
+gh issue create --title "..." --body "..." && \
+  gh api repos/{owner}/{repo}/issues/{parent}/sub_issues -f sub_issue_id={new_id}
 
 # Search before creating
 gh issue list --search "login error" --state all
@@ -113,6 +132,7 @@ Related to #789
 | Action | Command |
 |--------|---------|
 | Create | `gh issue create --title "..." --body "..."` |
+| Create with type | `gh issue create --title "..." --body "..." --type "Bug"` |
 | Search | `gh issue list --search "keyword"` |
 | View | `gh issue view N` |
 | Edit | `gh issue edit N --title "..."` |
@@ -123,6 +143,7 @@ Related to #789
 | Context | Command |
 |---------|---------|
 | Create issue | `gh issue create --title "..." --body "..."` |
+| Create with type | `gh issue create --title "..." --type "Bug" --body "..."` |
 | List labels | `gh label list --json name` |
 | Search issues | `gh issue list --search "keyword" --state all --json number,title` |
 | View issue | `gh issue view N --json title,body,labels` |
