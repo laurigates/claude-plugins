@@ -57,7 +57,7 @@ Mark items that should NOT be auto-fixed (test failures, security vulnerabilitie
 
 In **auto-fix mode**, skip this step and proceed directly to Step 4.
 
-In **report-only mode**, skip to Step 5.
+In **report-only mode**, present the full findings list with ALL items marked as `report-only` (since no fixes will be applied), then skip Step 4 and proceed to Step 5.
 
 ## Step 4: Execute Fixes
 
