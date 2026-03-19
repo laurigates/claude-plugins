@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.5.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.4.0...health-plugin-v1.5.0) (2026-03-19)
+
+
+### Features
+
+* sandbox security regression checks for home-dir and optional file access ([#957](https://github.com/laurigates/claude-plugins/issues/957)) ([b8f99e9](https://github.com/laurigates/claude-plugins/commit/b8f99e93513d1915db98a4aee32585245f3473a4))
+
+
+### Bug Fixes
+
+* **health-plugin:** remove context commands blocked by sandbox security ([b8f99e9](https://github.com/laurigates/claude-plugins/commit/b8f99e93513d1915db98a4aee32585245f3473a4))
+
 ## [1.4.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.3.2...health-plugin-v1.4.0) (2026-02-27)
 
 
