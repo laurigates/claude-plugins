@@ -16,7 +16,7 @@ model: sonnet
 
 ## Context
 
-- Repo: !`gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null`
+- Repo: !`git remote get-url origin`
 - Parent issue: (parsed from arguments)
 
 ## Parameters

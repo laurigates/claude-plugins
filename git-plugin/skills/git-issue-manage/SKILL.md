@@ -17,7 +17,7 @@ model: sonnet
 
 ## Context
 
-- Repo: !`gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null`
+- Repo: !`git remote get-url origin`
 - Open issues: !`gh issue list --state open --json number,title --limit 10`
 
 ## Parameters
