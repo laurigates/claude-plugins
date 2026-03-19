@@ -16,7 +16,6 @@
       "Bash(git push *)",
       "Bash(git rebase *)",
       "Bash(git remote *)",
-      "Bash(git reset *)",
       "Bash(git restore *)",
       "Bash(git rev-parse *)",
       "Bash(git show *)",
