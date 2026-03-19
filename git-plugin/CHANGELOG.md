@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.29.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.28.0...git-plugin-v2.29.0) (2026-03-19)
+
+
+### Features
+
+* issue hierarchy and management skills for GitHub issues ([#960](https://github.com/laurigates/claude-plugins/issues/960)) ([dd1d736](https://github.com/laurigates/claude-plugins/commit/dd1d736d5b7714097bb4a85382a0b8bf3da6093a))
+
 ## [2.28.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.27.1...git-plugin-v2.28.0) (2026-03-16)
 
 
