@@ -1,7 +1,7 @@
 ---
 model: sonnet
 created: 2026-01-30
-modified: 2026-03-16
+modified: 2026-03-20
 reviewed: 2026-02-26
 allowed-tools: Bash(gh pr checks *), Bash(gh pr view *), Bash(gh pr diff *), Bash(gh run view *), Bash(gh run list *), Bash(gh api *), Bash(gh repo view *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git pull *), Bash(pre-commit *), Bash(npm run *), Bash(uv run *), Read, Edit, Write, Grep, Glob, TodoWrite, Task, mcp__github__pull_request_read
 args: "[pr-number] [--commit] [--push]"
@@ -47,90 +47,109 @@ Review PR workflow results and reviewer comments, then address substantive feedb
 
 ---
 
-### Step 1: Determine PR
+### Step 1: Determine PR and Gather All Data (Single Query)
+
+**CRITICAL: Use a single GraphQL query to fetch PR details, reviews, review comments, and issue comments. This reduces ~7 API calls to 1-2, avoiding rate limits.**
 
 1. **Get PR number** from argument or detect from current branch:
    ```bash
    gh pr view --json number -q '.number'
    ```
 
-2. **Verify branch alignment**: Ensure you're on the correct branch for the PR:
+2. **Switch to PR branch** if not already on it:
    ```bash
    gh pr view $PR --json headRefName -q '.headRefName'
-   ```
-
-3. **Switch to PR branch** if not already on it:
-   ```bash
+   # If not on the right branch:
    git switch <branch-name>
    git pull origin <branch-name>
    ```
 
+3. **Fetch ALL PR data in a single GraphQL query** — this is the key to avoiding rate limits:
 
-### Step 2: Gather PR Status
+   ```bash
+   gh api graphql -f query='
+   query($owner: String!, $repo: String!, $pr: Int!) {
+     repository(owner: $owner, name: $repo) {
+       pullRequest(number: $pr) {
+         number
+         headRefName
+         state
+         reviewDecision
+         commits(last: 1) {
+           nodes {
+             commit {
+               statusCheckRollup {
+                 state
+                 contexts(first: 50) {
+                   nodes {
+                     ... on CheckRun {
+                       name
+                       conclusion
+                       status
+                       detailsUrl
+                     }
+                   }
+                 }
+               }
+             }
+           }
+         }
+         reviews(first: 50) {
+           nodes {
+             author { login }
+             state
+             body
+           }
+         }
+         reviewThreads(first: 100) {
+           nodes {
+             isResolved
+             comments(first: 20) {
+               nodes {
+                 path
+                 line
+                 body
+                 author { login }
+               }
+             }
+           }
+         }
+         comments(first: 100) {
+           nodes {
+             author { login }
+             body
+             createdAt
+           }
+         }
+       }
+     }
+   }' -F owner='{owner}' -F repo='{repo}' -F pr=$PR
+   ```
 
-Collect comprehensive information about the PR:
+   Parse `{owner}` and `{repo}` from the git remote URL.
 
-#### 2a. Workflow/Check Results
+4. **For failed checks only**, fetch detailed logs (this requires REST):
+   ```bash
+   gh run view $RUN_ID --log-failed
+   ```
 
-```bash
-# Get check status summary
-gh pr checks $PR --json name,state,conclusion,detailsUrl
-
-# For failed checks, get detailed logs
-gh run view $RUN_ID --log-failed
-```
-
-**Categorize check results:**
+**Categorize check results from the GraphQL response:**
 
 | Status | Action |
 |--------|--------|
-| All passing | Skip to Step 3 (comments) |
-| Failed CI | Analyze failures, may need fixes |
+| All passing | Skip to Step 2 (analyze comments) |
+| Failed CI | Get logs with `gh run view`, may need fixes |
 | Pending | Note status, focus on comments |
 
-#### 2b. Rate Limit Pre-check
-
-Before making API calls, check remaining rate limit:
-
-```bash
-gh api rate_limit --jq '.resources.core | "Remaining: \(.remaining)/\(.limit) | Resets: \(.reset)"'
-```
-
-If remaining requests are low (< 10), warn about rate limits and use `--cache` aggressively.
-
-#### 2c. PR Reviews and Comments
-
-Use `--cache 5m` on all `gh api` calls to avoid redundant requests (especially on retries or re-runs). If any `gh api` call fails with a rate limit error, wait 60 seconds and retry (up to 2 retries).
-
-```bash
-# Get review comments (inline code comments)
-gh api --cache 5m repos/{owner}/{repo}/pulls/$PR/comments --jq '.[] | {path: .path, line: .line, body: .body, user: .user.login, state: .state}'
-
-# Get review summaries (approve/request changes/comment)
-gh api --cache 5m repos/{owner}/{repo}/pulls/$PR/reviews --jq '.[] | {user: .user.login, state: .state, body: .body}'
-
-# Get issue-style comments (general discussion)
-gh api --cache 5m repos/{owner}/{repo}/issues/$PR/comments --jq '.[] | {user: .user.login, body: .body, created_at: .created_at}'
-```
-
-**Rate limit retry pattern** (use for any `gh api` call that fails):
-```bash
-# If gh api returns "rate limit" error, retry with backoff
-for i in 1 2 3; do
-  result=$(gh api --cache 5m repos/{owner}/{repo}/pulls/$PR/comments --jq '...' 2>&1) && break
-  echo "$result" | grep -qi "rate limit" || break
-  echo "Rate limited, waiting $((i * 30))s..."
-  sleep $((i * 30))
-done
-```
+**Rate limit handling**: If the GraphQL query fails with a rate limit error, wait 60 seconds and retry once. The single-query approach makes hitting rate limits far less likely.
 
 ---
 
-### Step 3: Analyze Feedback
+### Step 2: Analyze Feedback
 
-Create a structured analysis of all feedback:
+Create a structured analysis of all feedback from the GraphQL response:
 
-#### 3a. Categorize Comments
+#### 2a. Categorize Comments
 
 | Category | Description | Priority |
 |----------|-------------|----------|
@@ -141,7 +160,7 @@ Create a structured analysis of all feedback:
 | **Nitpicks** | Minor style/formatting | Low priority |
 | **Resolved** | Already addressed or outdated | Skip |
 
-#### 3b. Identify Actionable Items
+#### 2b. Identify Actionable Items
 
 For each comment, determine:
 
@@ -153,18 +172,18 @@ For each comment, determine:
 **Create a todo list** using TodoWrite with all actionable items.
 
 
-### Step 4: Address Feedback
+### Step 3: Address Feedback
 
 Work through the actionable items systematically:
 
-#### 4a. For Code Review Comments
+#### 3a. For Code Review Comments
 
 1. **Read the relevant code** at the specified location
 2. **Understand the context** of the reviewer's concern
 3. **Implement the fix** following their suggestion or your improved approach
 4. **Verify the change** doesn't break existing functionality
 
-#### 4b. For Failed CI Checks
+#### 3b. For Failed CI Checks
 
 1. **Identify the failure type**:
    - Linting errors → Run formatters/linters
@@ -183,7 +202,7 @@ Work through the actionable items systematically:
    uv run pytest
    ```
 
-#### 4c. For Questions/Clarifications
+#### 3c. For Questions/Clarifications
 
 If a comment requires explanation rather than code change:
 - Note that you should reply to the comment after pushing
@@ -191,7 +210,7 @@ If a comment requires explanation rather than code change:
 
 ---
 
-### Step 5: Commit Changes (if --commit or --push)
+### Step 4: Commit Changes (if --commit or --push)
 
 1. **Group related fixes** into logical commits:
    ```bash
@@ -217,7 +236,7 @@ If a comment requires explanation rather than code change:
    ```
 
 
-### Step 6: Push Changes (if --push)
+### Step 5: Push Changes (if --push)
 
 ```bash
 git push origin HEAD
@@ -225,7 +244,7 @@ git push origin HEAD
 
 ---
 
-### Step 7: Summary Report
+### Step 6: Summary Report
 
 Provide a summary of actions taken:
 
@@ -278,12 +297,9 @@ Is it a "Request Changes" review?
 
 | Context | Command |
 |---------|---------|
-| Quick check status | `gh pr checks $PR --json name,state,conclusion` |
+| All PR data (single query) | `gh api graphql -f query='...' -F owner -F repo -F pr` (see Step 1.3) |
 | Failed check logs | `gh run view $ID --log-failed` |
-| Rate limit check | `gh api rate_limit --jq '.resources.core.remaining'` |
-| Review comments | `gh api --cache 5m repos/{owner}/{repo}/pulls/$PR/comments` |
-| Review summaries | `gh api --cache 5m repos/{owner}/{repo}/pulls/$PR/reviews` |
-| PR discussion | `gh api --cache 5m repos/{owner}/{repo}/issues/$PR/comments` |
+| Quick check status (fallback) | `gh pr checks $PR --json name,state,conclusion` |
 
 
 ## See Also
