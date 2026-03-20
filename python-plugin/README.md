@@ -83,6 +83,12 @@ ty check
 basedpyright
 ```
 
+## Hooks
+
+| Hook | Event | Description |
+|------|-------|-------------|
+| `pip-to-uv.sh` | `PreToolUse` | Rewrites `pip`, `pip3`, and `python -m pip` commands to `uv pip` equivalents |
+
 ## Companion Plugins
 
 Works well with:
