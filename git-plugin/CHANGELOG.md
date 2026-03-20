@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.29.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.29.0...git-plugin-v2.29.1) (2026-03-20)
+
+
+### Performance
+
+* **git-plugin:** consolidate PR feedback API calls into single GraphQL query ([6fefc82](https://github.com/laurigates/claude-plugins/commit/6fefc82b9b51f6b0ea705eea0da81480463f82b7))
+* git-pr-feedback skill with single GraphQL query ([#967](https://github.com/laurigates/claude-plugins/issues/967)) ([6fefc82](https://github.com/laurigates/claude-plugins/commit/6fefc82b9b51f6b0ea705eea0da81480463f82b7))
+
 ## [2.29.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.28.0...git-plugin-v2.29.0) (2026-03-19)
 
 
