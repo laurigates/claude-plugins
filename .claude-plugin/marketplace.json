@@ -467,6 +467,20 @@
       "category": "development"
     },
     {
+      "name": "prompt-engineering-plugin",
+      "source": "./prompt-engineering-plugin",
+      "description": "Prompt engineering techniques for accurate, grounded Claude responses — anti-hallucination workflow with citation-backed analysis",
+      "version": "1.0.0",
+      "keywords": [
+        "prompt-engineering",
+        "hallucination",
+        "grounding",
+        "citations",
+        "accuracy"
+      ],
+      "category": "ai"
+    },
+    {
       "name": "prose-plugin",
       "source": "./prose-plugin",
       "description": "Prose transformation and style control - synthesis, distillation, tone, voice, clarity, and consistency for written text",

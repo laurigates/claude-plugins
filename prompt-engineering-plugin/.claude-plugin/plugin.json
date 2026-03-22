@@ -1,0 +1,12 @@
+{
+  "name": "prompt-engineering-plugin",
+  "version": "1.0.0",
+  "description": "Prompt engineering techniques for accurate, grounded Claude responses — anti-hallucination workflow with citation-backed analysis",
+  "keywords": [
+    "prompt-engineering",
+    "hallucination",
+    "grounding",
+    "citations",
+    "accuracy"
+  ]
+}
