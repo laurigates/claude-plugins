@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.14.1...hooks-plugin-v1.14.2) (2026-03-23)
+
+
+### Code Refactoring
+
+* branch protection hook with tiered permission decisions ([#972](https://github.com/laurigates/claude-plugins/issues/972)) ([9a672b4](https://github.com/laurigates/claude-plugins/commit/9a672b41e4eed381b45452cc7d7b3d48115b9b8f))
+
 ## [1.14.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.14.0...hooks-plugin-v1.14.1) (2026-03-13)
 
 
