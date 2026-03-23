@@ -137,20 +137,6 @@
       "category": "quality"
     },
     {
-      "name": "command-analytics-plugin",
-      "source": "./command-analytics-plugin",
-      "description": "Track command and skill usage analytics across all projects",
-      "version": "1.3.0",
-      "keywords": [
-        "analytics",
-        "tracking",
-        "usage",
-        "metrics",
-        "reporting"
-      ],
-      "category": "utilities"
-    },
-    {
       "name": "communication-plugin",
       "source": "./communication-plugin",
       "description": "External communication formatting - Google Chat, ticket drafting",

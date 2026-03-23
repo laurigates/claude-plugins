@@ -1,6 +1,6 @@
 # Plugin Navigation Map
 
-Navigation guide for 38 plugins and 300+ skills. Start here.
+Navigation guide for 37 plugins and 300+ skills. Start here.
 
 ## Quick Start
 
@@ -189,7 +189,6 @@ Install based on your project's tech stack and domain.
 | css-plugin | Lightning CSS transpilation, UnoCSS atomic utility generation for style tooling |
 | accessibility-plugin | WCAG compliance and ARIA patterns |
 | component-patterns-plugin | Reusable UI component patterns |
-| command-analytics-plugin | Tracking skill/command usage metrics |
 | evaluate-plugin | Behavioral skill evaluation, benchmarking, and quality improvement |
 | feedback-plugin | Capturing session skill feedback as GitHub issues |
 | tools-plugin | fd, rg, jq, shell, ImageMagick, d2 utilities |
@@ -228,7 +227,6 @@ Commands organized by workflow phase.
 | **Orchestrate** | `/workflow:checkpoint-refactor` | Multi-phase refactoring with checkpoints |
 | **Evaluate** | `/evaluate:skill` | Evaluate skill effectiveness with test cases |
 | **Evaluate** | `/evaluate:improve` | Suggest improvements based on eval results |
-| **Monitor** | `/analytics-report` | View skill usage analytics |
 
 ## End-to-End Workflow
 
