@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.29.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.29.1...git-plugin-v2.29.2) (2026-03-24)
+
+
+### Performance
+
+* **git-plugin,project-plugin:** reduce skill token consumption by 54% ([#976](https://github.com/laurigates/claude-plugins/issues/976)) ([26b67d8](https://github.com/laurigates/claude-plugins/commit/26b67d8a5dac2a3ef8f85f9a6d7972ccb2cce89d))
+
 ## [2.29.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.29.0...git-plugin-v2.29.1) (2026-03-20)
 
 
