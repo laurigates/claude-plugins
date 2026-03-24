@@ -1,7 +1,7 @@
 {
   "name": "git-plugin",
   "hooks": "./hooks.json",
-  "version": "2.29.1",
+  "version": "2.29.2",
   "description": "Git workflows - commits, branches, PRs, issue processing, auto-close detection, and repository management",
   "author": {
     "name": "Lauri Gates"
