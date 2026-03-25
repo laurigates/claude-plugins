@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.29.4](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.29.3...git-plugin-v2.29.4) (2026-03-25)
+
+
+### Bug Fixes
+
+* remove context: fork from all plugin skills to fix rate limit errors ([#981](https://github.com/laurigates/claude-plugins/issues/981)) ([56a90b1](https://github.com/laurigates/claude-plugins/commit/56a90b1464a9b1233a8bdb3d0716f1673bc70ad3))
+
 ## [2.29.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.29.2...git-plugin-v2.29.3) (2026-03-25)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.12.1](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.12.0...testing-plugin-v3.12.1) (2026-03-25)
+
+
+### Bug Fixes
+
+* remove context: fork from all plugin skills to fix rate limit errors ([#981](https://github.com/laurigates/claude-plugins/issues/981)) ([56a90b1](https://github.com/laurigates/claude-plugins/commit/56a90b1464a9b1233a8bdb3d0716f1673bc70ad3))
+
 ## [3.12.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.11.1...testing-plugin-v3.12.0) (2026-03-19)
 
 
