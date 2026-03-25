@@ -9,7 +9,6 @@ argument-hint: [pr-number] [--commit] [--push]
 disable-model-invocation: true
 description: Review PR workflow results and comments, then address substantive feedback and suggestions from reviewers
 name: git-pr-feedback
-context: fork
 agent: general-purpose
 ---
 

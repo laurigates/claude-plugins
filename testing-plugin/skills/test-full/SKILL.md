@@ -8,7 +8,6 @@ args: "[--coverage] [--parallel] [--report]"
 argument-hint: "[--coverage] [--parallel] [--report]"
 description: Complete test suite including integration and E2E tests
 name: test-full
-context: fork
 agent: general-purpose
 ---
 

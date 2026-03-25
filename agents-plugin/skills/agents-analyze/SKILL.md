@@ -8,7 +8,6 @@ created: 2026-01-24
 modified: 2026-02-27
 reviewed: 2026-02-08
 name: agents-analyze
-context: fork
 agent: general-purpose
 ---
 

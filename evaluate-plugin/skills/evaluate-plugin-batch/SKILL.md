@@ -8,7 +8,6 @@ description: |
 args: <plugin-name> [--create-missing-evals] [--parallel N]
 allowed-tools: Task, Read, Write, Glob, Grep, Bash(cat *), Bash(jq *), Bash(find *), Bash(ls *), Bash(date *), Bash(mkdir *), SlashCommand, TodoWrite
 argument-hint: "git-plugin [--create-missing-evals]"
-context: fork
 agent: general-purpose
 created: 2026-03-04
 modified: 2026-03-04
