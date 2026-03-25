@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.1](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.11.0...code-quality-plugin-v1.11.1) (2026-03-25)
+
+
+### Bug Fixes
+
+* remove context: fork from all plugin skills to fix rate limit errors ([#981](https://github.com/laurigates/claude-plugins/issues/981)) ([56a90b1](https://github.com/laurigates/claude-plugins/commit/56a90b1464a9b1233a8bdb3d0716f1673bc70ad3))
+
 ## [1.11.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.10.1...code-quality-plugin-v1.11.0) (2026-03-09)
 
 
