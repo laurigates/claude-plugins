@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.29.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.29.2...git-plugin-v2.29.3) (2026-03-25)
+
+
+### Bug Fixes
+
+* **git-plugin,project-plugin:** upgrade skills to opus to fix rate limit errors ([#978](https://github.com/laurigates/claude-plugins/issues/978)) ([a8fb9ba](https://github.com/laurigates/claude-plugins/commit/a8fb9baf492cbe79dd635b9bcc6f957c77ddcd82))
+
 ## [2.29.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.29.1...git-plugin-v2.29.2) (2026-03-24)
 
 
