@@ -7,7 +7,6 @@ name: code-antipatterns-analysis
 description: Analyze codebases for anti-patterns, code smells, and quality issues using ast-grep structural pattern matching. Use when reviewing code quality, identifying technical debt, or performing comprehensive code analysis across JavaScript, TypeScript, Python, Vue, React, or other supported languages.
 user-invocable: false
 allowed-tools: Bash(sg *), Bash(rg *), Read, Grep, Glob, TodoWrite, Task
-context: fork
 agent: general-purpose
 ---
 

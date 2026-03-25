@@ -8,7 +8,6 @@ description: Perform comprehensive code review with automated fixes
 args: "[PATH]"
 argument-hint: "[PATH]"
 name: code-review
-context: fork
 agent: general-purpose
 ---
 

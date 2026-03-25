@@ -10,7 +10,6 @@ description: |
   management, or staying current with Claude capabilities.
 user-invocable: false
 allowed-tools: WebFetch, WebSearch, Task
-context: fork
 agent: general-purpose
 ---
 

@@ -7,111 +7,76 @@ paths:
 
 # Skill Fork Context
 
-When to set `context: fork` and `agent:` in skill frontmatter so verbose, autonomous skills protect the main context window.
+When to set `context: fork` and `agent:` in skill frontmatter.
+
+## Current Status: Do NOT Use `context: fork` in Plugin Skills
+
+**As of March 2026, `context: fork` has two blocking issues for plugin-based skills:**
+
+1. **Broken for plugins** ([anthropics/claude-code#16803](https://github.com/anthropics/claude-code/issues/16803), OPEN) — `context: fork` is silently ignored for plugin-installed skills. It only works for skills in the user's `~/.claude/` folder.
+
+2. **Triggers rate limits with 1M context models** ([#27053](https://github.com/anthropics/claude-code/issues/27053), [#33154](https://github.com/anthropics/claude-code/issues/33154)) — Forking from an Opus 4.6 (1M) session spawns a second concurrent `[1m]` request, immediately hitting rate limits (`total_tokens: 0` rejection). This affects the default recommended model.
+
+**Use `agent: general-purpose` without `context: fork`** to get subagent isolation without triggering these issues.
+
+> **Follow-up issue**: Track upstream fixes at [#PENDING](https://github.com/laurigates/claude-plugins/issues) — revisit when #16803 and #33154 are resolved.
 
 ## What These Fields Do
 
 | Field | Value | Effect |
 |-------|-------|--------|
-| `context: fork` | `fork` | Runs the skill in an isolated subagent context. The subagent sees parent history but its intermediate output does not accumulate in the parent session. |
-| `agent` | subagent type name | Which subagent type to launch when `context: fork` is set. Use `general-purpose` for most skills. |
+| `context: fork` | `fork` | **BROKEN for plugins.** Intended to run the skill in an isolated subagent context. |
+| `agent` | subagent type name | Which subagent type to launch. Use `general-purpose` for most skills. Works without `context: fork`. |
 
-## When to Use `context: fork`
-
-A skill benefits from forked context when **all three** of the following are true:
-
-1. **Verbose intermediate output** — the skill reads many files, makes multiple web requests, spawns subagents via `Task`, or otherwise generates large amounts of intermediate context that would pollute the parent session.
-2. **Self-contained result** — the skill produces a final artifact (report, file, analysis) and hands it back cleanly; it does not need to leave its intermediate steps visible in the conversation.
-3. **No interactive prompts** — the skill does not use `AskUserQuestion`. Forked subagents run autonomously and cannot relay interactive prompts back to the user.
-
-## When NOT to Use `context: fork`
-
-| Signal | Reason to skip fork |
-|--------|---------------------|
-| Skill uses `AskUserQuestion` | Interactive prompts cannot reach the user through a forked subagent |
-| Skill is a quick diagnostic or status check | Overhead exceeds benefit; user wants to see output inline |
-| User needs to review intermediate steps | Fork hides the working — use main context instead |
-| Skill is already invoked inside a Task | Already isolated; double-forking adds no value |
-
-## Model Constraint for Interactive Skills
-
-Skills that use `AskUserQuestion` **must not** set `model: haiku`. The haiku model does not reliably format `AskUserQuestion` tool calls, causing prompts to return empty responses without displaying to the user. Omit the `model` field entirely (inherits the parent session model) or use `model: sonnet` / `model: opus`.
-
-## Decision Table
-
-```
-Does the skill use AskUserQuestion?
-  YES → Do NOT fork
-  NO ↓
-
-Does the skill spawn Task subagents OR read many files OR do multiple web fetches?
-  NO  → Do NOT fork (not verbose enough to matter)
-  YES ↓
-
-Is the final output a self-contained artifact (report, analysis, generated files)?
-  NO  → Do NOT fork (user needs to follow along)
-  YES → ADD context: fork + agent: general-purpose
-```
-
-## Frontmatter Pattern
+## Recommended Pattern
 
 ```yaml
 ---
 name: my-skill
-model: sonnet
-context: fork
+model: opus
 agent: general-purpose
 allowed-tools: Task, Read, Glob, Grep, TodoWrite
 description: ...
 ---
 ```
 
-## Canonical Examples
+Use `agent: general-purpose` for skills that need subagent isolation. Omit `context: fork` until upstream issues are resolved.
 
-### Fork — appropriate
+## Model Constraint for Interactive Skills
 
-```yaml
-# Orchestrates multiple Task subagents, produces verbose review report
-context: fork
-agent: general-purpose
-allowed-tools: Task, TodoWrite, Glob, Read
+Skills that use `AskUserQuestion` **must not** set `model: haiku`. The haiku model does not reliably format `AskUserQuestion` tool calls, causing prompts to return empty responses without displaying to the user. Use `model: sonnet` or `model: opus`.
+
+## Decision Table
+
 ```
+Does the skill use AskUserQuestion?
+  YES → Do NOT set agent: (runs inline), do NOT use model: haiku
+  NO ↓
 
-```yaml
-# Reads hundreds of files, produces analysis artifact
-context: fork
-agent: general-purpose
-allowed-tools: Glob, Grep, Read, Bash(ls *), Bash(wc *), TodoWrite
-```
+Does the skill spawn Task subagents OR read many files OR do multiple web fetches?
+  NO  → No agent needed (runs inline)
+  YES ↓
 
-```yaml
-# Web research pipeline, compiles curated output
-context: fork
-agent: general-purpose
-allowed-tools: WebFetch, WebSearch, Task
-```
-
-### Fork — not appropriate
-
-```yaml
-# Asks the user questions mid-workflow — cannot fork
-allowed-tools: Read, Write, Glob, AskUserQuestion
-# context: fork omitted
-```
-
-```yaml
-# Quick test run — user wants live output
-allowed-tools: Bash(bun test *), TodoWrite
-# context: fork omitted
+Is the final output a self-contained artifact (report, analysis, generated files)?
+  NO  → No agent needed (user needs to follow along)
+  YES → ADD agent: general-purpose (do NOT add context: fork)
 ```
 
 ## Checklist for New Skills
 
-- [ ] Does the skill use `AskUserQuestion`? If yes, **omit** `context: fork` and **do not** set `model: haiku`.
-- [ ] Does the skill use `Task`, multi-file reads, or web research? If yes, **add** `context: fork`.
-- [ ] Is the output a self-contained artifact? If yes, confirm `context: fork` is appropriate.
-- [ ] Set `agent: general-purpose` whenever `context: fork` is set (unless a specialised agent exists).
+- [ ] Does the skill use `AskUserQuestion`? If yes, **omit** `agent:` and **do not** set `model: haiku`.
+- [ ] Does the skill use `Task`, multi-file reads, or web research? If yes, **add** `agent: general-purpose`.
+- [ ] **Do NOT** add `context: fork` — it is broken for plugin skills and triggers rate limits.
 - [ ] Update `modified:` date when adding these fields.
+
+## Upstream Issues to Track
+
+| Issue | Status | Impact |
+|-------|--------|--------|
+| [#16803](https://github.com/anthropics/claude-code/issues/16803) | OPEN | `context: fork` silently ignored for plugin skills |
+| [#33154](https://github.com/anthropics/claude-code/issues/33154) | OPEN | `[1m]` models hit cascading rate limits with concurrent subagents |
+| [#27053](https://github.com/anthropics/claude-code/issues/27053) | NOT_PLANNED | Subagents return rate limit with 0 tokens |
+| [#6594](https://github.com/anthropics/claude-code/issues/6594) | NOT_PLANNED | One rate-limited subagent kills all parallel siblings |
 
 ## Related Rules
 

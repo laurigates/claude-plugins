@@ -8,7 +8,6 @@ args: [--api] [--readme] [--changelog]
 argument-hint: [--api] [--readme] [--changelog]
 description: Update project documentation from code annotations
 name: docs-generate
-context: fork
 agent: general-purpose
 ---
 
