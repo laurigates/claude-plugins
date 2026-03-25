@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.3](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.12.2...project-plugin-v1.12.3) (2026-03-25)
+
+
+### Bug Fixes
+
+* **git-plugin,project-plugin:** upgrade skills to opus to fix rate limit errors ([#978](https://github.com/laurigates/claude-plugins/issues/978)) ([a8fb9ba](https://github.com/laurigates/claude-plugins/commit/a8fb9baf492cbe79dd635b9bcc6f957c77ddcd82))
+
 ## [1.12.2](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.12.1...project-plugin-v1.12.2) (2026-03-24)
 
 
