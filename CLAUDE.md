@@ -34,6 +34,7 @@ Claude Code plugin collection providing skills and agents for development workfl
 | `.claude/rules/skill-naming.md` | Skill namespace conventions |
 | `.claude/rules/shell-scripting.md` | Safe shell patterns and frontmatter extraction |
 | `.claude/rules/agentic-permissions.md` | Granular tool permissions for skills |
+| `.claude/rules/auto-mode.md` | Auto mode permission model — tiers, migration, and `allowed-tools` interaction |
 | `.claude/rules/skill-quality.md` | Skill size limits, required sections, and quality checklist |
 | `.claude/rules/skill-execution-structure.md` | Imperative execution patterns for user-invocable skills |
 | `.claude/rules/handling-blocked-hooks.md` | How to respond when hooks block commands |
