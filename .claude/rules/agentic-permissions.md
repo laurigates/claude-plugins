@@ -70,21 +70,42 @@ When a Bash command contains shell operators:
 allowed-tools: Bash(git status *), Bash(npm test *), Bash(bun run *)
 ```
 
-### Bypass (Not Recommended)
+### Scripts for Compound Operations
 
-For legitimate compound commands, request explicit user approval or use scripts:
+When a skill needs compound operations (validation checks, multi-step diagnostics, data aggregation), use **standalone shell scripts** instead of inline commands. This consolidates many granular permission patterns into one `Bash(bash *)` pattern.
 
-```bash
-# Instead of inline operators
-#!/bin/bash
-# safe-deploy.sh
-npm test && npm run build && npm run deploy
-```
-
-Then grant permission to the script:
+**Anti-pattern** — many shell utility patterns that force inline bash:
 ```yaml
-allowed-tools: Bash(./scripts/safe-deploy.sh *)
+# Each generates complex inline commands requiring individual approval
+allowed-tools: Bash(test *), Bash(jq *), Bash(head *), Bash(find *), Bash(cp *), Read
 ```
+
+**Correct pattern** — standalone scripts with a single permission:
+```yaml
+# All script invocations auto-approved with one pattern
+allowed-tools: Bash(bash *), Read, TodoWrite
+```
+
+Scripts live in `skills/<skill-name>/scripts/` and are invoked via:
+```bash
+bash "${CLAUDE_SKILL_DIR}/scripts/check-settings.sh" --home-dir "$HOME" --project-dir "$(pwd)"
+```
+
+#### When to Use Scripts vs Granular Patterns
+
+| Use granular `Bash(command *)` | Use `Bash(bash *)` with scripts |
+|-------------------------------|--------------------------------|
+| Primary CLI tools (`git`, `gh`, `curl`, `npm`) | Shell utilities (`test`, `jq`, `find`, `cp`, `mkdir`) |
+| Single-purpose commands | Multi-step validation/diagnostics |
+| Commands that benefit from specific allowlisting | Compound operations needing `&&`, `\|\|`, pipes |
+
+#### Script Conventions
+
+Scripts must follow these patterns (see `shell-scripting.md`):
+- `#!/usr/bin/env bash` + `set -uo pipefail`
+- Accept `--home-dir`, `--project-dir` for path portability
+- Output structured `KEY=value` pairs with `=== SECTION ===` headers
+- Use prefixed variable names (avoid reserved words)
 
 ## Design Principles
 
@@ -229,7 +250,8 @@ Use `find` for file/directory discovery (succeeds with empty output when no matc
 
 ## Checklist for New Skills
 
-- [ ] Uses granular `Bash(command *)` patterns
+- [ ] Uses granular `Bash(command *)` patterns for primary CLI tools
+- [ ] Shell utility operations (`test`, `jq`, `find`, `cp`, `mkdir`) use scripts with `Bash(bash *)`
 - [ ] Context commands use JSON/porcelain output
 - [ ] Context commands contain no shell operators (`>`, `|`, `||`, `&&`, `;`)
 - [ ] Context commands use `find` for file/directory discovery
