@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.15.0...configure-plugin-v1.16.0) (2026-03-27)
+
+
+### Features
+
+* **configure-plugin,typescript-plugin:** add Next.js Sentry patterns from theme-management ([#990](https://github.com/laurigates/claude-plugins/issues/990)) ([7dcfb2a](https://github.com/laurigates/claude-plugins/commit/7dcfb2a6878fe30963471cbd0b92ee5bf62c0a7e))
+
 ## [1.15.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.14.3...configure-plugin-v1.15.0) (2026-03-19)
 
 
