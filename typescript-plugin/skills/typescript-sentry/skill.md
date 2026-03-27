@@ -1,10 +1,10 @@
 ---
 name: typescript-sentry
-description: Error monitoring and performance tracking with Sentry SDK - error capture, breadcrumbs, performance spans, cron monitoring, and source maps for Bun/Node.js.
+description: Error monitoring and performance tracking with Sentry SDK - error capture, breadcrumbs, performance spans, cron monitoring, source maps, structured logging, profiling, and enrichment helpers for Bun/Node.js/Next.js.
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-01-22
-modified: 2026-02-14
+modified: 2026-03-27
 reviewed: 2026-01-22
 ---
 
@@ -18,6 +18,9 @@ reviewed: 2026-01-22
 | Instrumenting performance spans | Monitoring infrastructure metrics (use Prometheus/Grafana) |
 | Setting up cron job monitoring | Setting up uptime monitoring (use Pingdom/UptimeRobot) |
 | Configuring source maps for Sentry | Debugging errors locally (use debugger) |
+| Adding structured logging to Sentry | Configuring project-level Sentry compliance (use `/configure:sentry`) |
+| Setting up profiling, replay, or enrichment helpers | Managing Sentry project settings in the dashboard |
+| Implementing error/transaction filtering | Creating Sentry alerting rules |
 
 ## Core Expertise
 
@@ -27,6 +30,11 @@ Sentry provides error monitoring and performance tracking:
 - Cron job monitoring for scheduled tasks
 - Source map integration for readable TypeScript traces
 - Rich context with tags, breadcrumbs, and user data
+- Structured logging forwarded to Sentry (`enableLogs`)
+- CPU/JS profiling (Node.js + browser)
+- Session replay with privacy controls
+- User feedback widget
+- Enrichment helpers (custom contexts, breadcrumb categories, fingerprinting)
 
 ## Installation
 
@@ -40,6 +48,12 @@ bun add @sentry/bun
 
 ```bash
 bun add @sentry/node
+```
+
+### Next.js
+
+```bash
+bun add @sentry/nextjs @sentry/profiling-node
 ```
 
 ### React/Browser
@@ -103,6 +117,7 @@ Sentry.captureMessage("Payment failed", {
 |---------|---------|
 | Install Bun | `bun add @sentry/bun` |
 | Install Node | `bun add @sentry/node` |
+| Install Next.js | `bun add @sentry/nextjs @sentry/profiling-node` |
 | Install React | `bun add @sentry/react` |
 | Install CLI | `bun add -D @sentry/cli` |
 | Upload maps | `npx sentry-cli sourcemaps inject ./dist && npx sentry-cli sourcemaps upload ./dist` |
@@ -157,5 +172,14 @@ Sentry.captureMessage("Payment failed", {
 | `tracesSampler` | Dynamic sampling function |
 | `sendDefaultPii` | Capture IP/headers |
 | `integrations` | SDK integrations array |
+| `enableLogs` | Forward structured logs to Sentry |
+| `profileSessionSampleRate` | Profiling sample rate (0.0-1.0) |
+| `profileLifecycle` | `"trace"` profiles every traced request |
+| `replaysSessionSampleRate` | Session replay sample rate |
+| `replaysOnErrorSampleRate` | Replay capture rate on errors |
+| `ignoreErrors` | Array of error patterns to suppress |
+| `beforeSend` | Filter/modify events before sending |
+| `beforeSendTransaction` | Filter transactions before sending |
+| `beforeSendLog` | Filter structured logs before sending |
 
 For detailed examples, advanced patterns, and best practices, see [REFERENCE.md](REFERENCE.md).
