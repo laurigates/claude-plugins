@@ -50,10 +50,13 @@ fi
 # Check for cat/echo writing to files (not heredocs in valid bash scripts)
 # Use [^;&|]* instead of .* to avoid crossing command separators (;, &&, ||, |)
 # which would cause false positives when echo "text" is followed by an unrelated 2>/dev/null
-if echo "$COMMAND" | grep -Eq '(^|\s)(echo|printf)\s+[^;&|]*>\s*[^&]' && \
-   ! echo "$COMMAND" | grep -Eq '(echo|printf).*>>\s*/dev/null'; then
+# Strip single-quoted strings first: content inside single quotes is literal bash text
+# (e.g., kubectl exec -- php -r 'echo "$c->id"') and cannot contain shell redirections.
+COMMAND_NO_SQUOTES=$(echo "$COMMAND" | sed "s/'[^']*'//g")
+if echo "$COMMAND_NO_SQUOTES" | grep -Eq '(^|\s)(echo|printf)\s+[^;&|]*>\s*[^&]' && \
+   ! echo "$COMMAND_NO_SQUOTES" | grep -Eq '(echo|printf).*>>\s*/dev/null'; then
     # Allow echo to /dev/null, but warn about file writes
-    if echo "$COMMAND" | grep -Eq '(echo|printf)\s+[^;&|>]+>\s*[a-zA-Z/\.]'; then
+    if echo "$COMMAND_NO_SQUOTES" | grep -Eq '(echo|printf)\s+[^;&|>]+>\s*[a-zA-Z/\.]'; then
         block "REMINDER: Use the Write tool instead of 'echo/printf > file' to create files. The Write tool properly handles file creation and provides better error handling."
     fi
 fi
