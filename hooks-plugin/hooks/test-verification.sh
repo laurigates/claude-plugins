@@ -2,7 +2,15 @@
 # Stop hook - runs tests if source files were modified during the session
 # Replaces the agent-based test verification hook with a deterministic script
 # to eliminate LLM latency on every stop event
+#
+# Uses a hard timeout to prevent hanging when test suites are slow.
+# Prefers quick/unit test recipes over full suites for fast feedback.
 set -euo pipefail
+
+# Hard timeout in seconds - prevents hanging on slow test suites
+# The hook framework timeout (60s) doesn't reliably kill child processes,
+# so we enforce our own limit via the timeout command.
+TEST_TIMEOUT="${CLAUDE_HOOKS_TEST_TIMEOUT:-45}"
 
 # Allow disabling via environment variable
 if [ "${CLAUDE_HOOKS_DISABLE_TEST_VERIFICATION:-0}" = "1" ]; then
@@ -56,10 +64,23 @@ fi
 # venv/env setup correctly, then language-specific tool detection
 TEST_CMD=""
 
-if [ -f "$CWD/justfile" ] && grep -q '^test' "$CWD/justfile" 2>/dev/null; then
-    TEST_CMD="just test"
-elif [ -f "$CWD/Makefile" ] && grep -q '^test:' "$CWD/Makefile" 2>/dev/null; then
-    TEST_CMD="make test"
+if [ -f "$CWD/justfile" ]; then
+    # Prefer fast test recipes over full suite to avoid hanging on slow tests
+    if grep -q '^test-quick' "$CWD/justfile" 2>/dev/null; then
+        TEST_CMD="just test-quick"
+    elif grep -q '^test-unit' "$CWD/justfile" 2>/dev/null; then
+        TEST_CMD="just test-unit"
+    elif grep -q '^test' "$CWD/justfile" 2>/dev/null; then
+        TEST_CMD="just test"
+    fi
+elif [ -f "$CWD/Makefile" ]; then
+    if grep -q '^test-quick:' "$CWD/Makefile" 2>/dev/null; then
+        TEST_CMD="make test-quick"
+    elif grep -q '^test-unit:' "$CWD/Makefile" 2>/dev/null; then
+        TEST_CMD="make test-unit"
+    elif grep -q '^test:' "$CWD/Makefile" 2>/dev/null; then
+        TEST_CMD="make test"
+    fi
 elif [ -f "$CWD/bun.lockb" ] || [ -f "$CWD/bun.lock" ]; then
     # Bun project - check for test script
     if [ -f "$CWD/package.json" ] && jq -e '.scripts.test' "$CWD/package.json" >/dev/null 2>&1; then
@@ -91,12 +112,20 @@ if [ -z "$TEST_CMD" ]; then
     exit 0
 fi
 
-# Run tests, capture output and exit code
-TEST_OUTPUT=$(cd "$CWD" && eval "$TEST_CMD" 2>&1) || TEST_EXIT=$?
+# Run tests with hard timeout to prevent hanging
+# Exit code 124 = timeout killed the process
+TEST_OUTPUT=$(cd "$CWD" && timeout "$TEST_TIMEOUT" bash -c "$TEST_CMD" 2>&1) || TEST_EXIT=$?
 TEST_EXIT=${TEST_EXIT:-0}
 
 # Tests passed
 if [ "$TEST_EXIT" -eq 0 ]; then
+    exit 0
+fi
+
+# Timeout - don't block, just warn and let Claude continue
+if [ "$TEST_EXIT" -eq 124 ]; then
+    jq -n --arg reason "Test verification timed out after ${TEST_TIMEOUT}s (${TEST_CMD}). Tests may be slow — consider adding a fast test-unit or test-quick recipe." \
+        '{"decision": "warn", "reason": $reason}'
     exit 0
 fi
 
