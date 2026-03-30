@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.15.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.15.0...hooks-plugin-v1.15.1) (2026-03-30)
+
+
+### Bug Fixes
+
+* false positives in echo/printf redirection check for quoted strings ([#993](https://github.com/laurigates/claude-plugins/issues/993)) ([3e18f02](https://github.com/laurigates/claude-plugins/commit/3e18f02590e6889318ec76d1d1126d6567038b5d))
+* **hooks-plugin:** prevent false positive on echo inside single-quoted strings ([3e18f02](https://github.com/laurigates/claude-plugins/commit/3e18f02590e6889318ec76d1d1126d6567038b5d))
+
 ## [1.15.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.14.2...hooks-plugin-v1.15.0) (2026-03-26)
 
 
