@@ -6,12 +6,12 @@ description: |
   creating GitHub issues for deferred work. Use when you want unfinished Claude Code session
   tasks automatically flagged for GitHub issue creation at session end.
 args: "[--no-verify]"
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash(test *), Bash(chmod *), Bash(mkdir *), Bash(jq *), Bash(gh *), TodoWrite
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, TodoWrite
 argument-hint: "--no-verify to skip gh auth verification"
 disable-model-invocation: true
 created: 2026-02-27
-modified: 2026-02-27
-reviewed: 2026-02-27
+modified: 2026-03-30
+reviewed: 2026-03-30
 ---
 
 # /hooks:session-end-issue-hook
