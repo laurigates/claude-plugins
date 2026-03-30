@@ -6,12 +6,12 @@ description: |
   for remote Claude Code sessions, ensuring dependencies install and tests/linters run
   automatically on session start. Detects project type, package manager, test runner, and linter.
 args: "[--remote-only] [--no-verify]"
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash(test *), Bash(cat *), Bash(chmod *), Bash(mkdir *), Bash(jq *), TodoWrite
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, TodoWrite
 argument-hint: "--remote-only to only run in web sessions, --no-verify to skip test verification"
 disable-model-invocation: true
 created: 2026-02-07
-modified: 2026-03-02
-reviewed: 2026-03-02
+modified: 2026-03-30
+reviewed: 2026-03-30
 ---
 
 # /hooks:session-start-hook

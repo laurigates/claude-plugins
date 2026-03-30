@@ -6,12 +6,12 @@ description: |
   dangerous ones. Use when you want a safer alternative to --dangerouslySkipPermissions
   that builds compound auto-approval rules tailored to your project stack.
 args: "[--strict] [--category <name>...]"
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash(test *), Bash(cat *), Bash(chmod *), Bash(mkdir *), Bash(jq *), TodoWrite
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, TodoWrite
 argument-hint: "--strict to deny unknown commands, --category git|test|lint|build|gh|deny"
 disable-model-invocation: true
 created: 2026-03-13
-modified: 2026-03-26
-reviewed: 2026-03-26
+modified: 2026-03-30
+reviewed: 2026-03-30
 ---
 
 # /hooks:permission-request-hook
