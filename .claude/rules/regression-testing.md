@@ -34,6 +34,7 @@ This ensures the CI catches the same class of problem in any future skill, not j
 | `grep ... package.json pyproject.toml requirements.txt` fails when files missing | grep writes to stderr when hardcoded filenames don't exist; non-JS/Python projects lack these files | `lint-context-commands.sh` rule `grep-hardcoded-multi-file` | PR #TBD |
 | `find ~/.claude/plugins ...` blocked by sandbox security | `find` on home-directory paths (`~/`, `$HOME`) is outside allowed working directories | `lint-context-commands.sh` rule `home-dir-in-context` | PR #TBD |
 | `jq ... .claude/settings.json` fails when file missing | jq writes to stderr when target file doesn't exist; `2>/dev/null` is blocked in context commands | `lint-context-commands.sh` rule `jq-on-optional-settings` | PR #TBD |
+| `Bash(test *), Bash(jq *)` etc. causes ~20 approval prompts | Shell utility patterns in `allowed-tools` force inline bash that can't be allowlisted; each compound command needs individual approval | `plugin-compliance-check.sh` `check_bash_patterns()` | PR #TBD |
 
 ## How to Add a Regression Check
 

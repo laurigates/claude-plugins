@@ -35,6 +35,7 @@ results_frontmatter=()
 results_body=()
 results_marketplace=()
 results_release=()
+results_bash=()
 results_overall=()
 
 # Helper: extract YAML frontmatter field
@@ -321,6 +322,66 @@ check_release_config() {
   return 0
 }
 
+# Check 6: Shell utility patterns without scripts
+# Regression: health-check used Bash(test *), Bash(jq *) etc. causing ~20 individual
+# approval prompts. Skills with shell utility patterns should use standalone scripts.
+check_bash_patterns() {
+  local plugin="$1"
+  local skills_dir="${plugin}/skills"
+
+  if [ ! -d "$skills_dir" ]; then
+    return 0
+  fi
+
+  local skill_files=()
+  while IFS= read -r -d '' f; do
+    skill_files+=("$f")
+  done < <(find "$skills_dir" -type f \( -iname "SKILL.md" -o -iname "skill.md" \) -print0 2>/dev/null)
+
+  if [ ${#skill_files[@]} -eq 0 ]; then
+    return 0
+  fi
+
+  # Shell utilities that indicate inline scripting (not primary CLI tools)
+  local shell_utils="test|jq|head|tail|cat|cp|mkdir|chmod|wc|date|ls|find"
+  local has_warnings=false
+
+  for skill_file in "${skill_files[@]}"; do
+    local skill_name
+    skill_name=$(basename "$(dirname "$skill_file")")
+
+    local fm_allowed_tools
+    fm_allowed_tools=$(extract_field "$skill_file" "allowed-tools")
+    [ -z "$fm_allowed_tools" ] && continue
+
+    # Count shell utility Bash patterns
+    local util_count=0
+    local util_list=""
+    for util in test jq head tail cat cp mkdir chmod wc date; do
+      if echo "$fm_allowed_tools" | grep -qE "Bash\(${util} "; then
+        util_count=$((util_count + 1))
+        util_list="${util_list:+${util_list}, }${util}"
+      fi
+    done
+
+    # Warn if 3+ shell utility patterns and no scripts/ directory
+    if [ "$util_count" -ge 3 ]; then
+      local scripts_dir
+      scripts_dir="$(dirname "$skill_file")/scripts"
+      if [ ! -d "$scripts_dir" ]; then
+        recommendations+=("⚠️ ${plugin}/${skill_name}: ${util_count} shell utility Bash patterns (${util_list}) — consider consolidating into scripts/ with Bash(bash *)")
+        has_warnings=true
+      fi
+    fi
+  done
+
+  if $has_warnings; then
+    return 1
+  fi
+
+  return 0
+}
+
 # Main check loop
 for i in "${!PLUGINS[@]}"; do
   plugin="${PLUGINS[$i]}"
@@ -332,6 +393,7 @@ for i in "${!PLUGINS[@]}"; do
     results_body+=("❌")
     results_marketplace+=("❌")
     results_release+=("❌")
+    results_bash+=("❌")
     results_overall+=("❌")
     overall_failed=true
     continue
@@ -343,16 +405,18 @@ for i in "${!PLUGINS[@]}"; do
   body_status=0; check_skill_body "$plugin" || body_status=$?
   marketplace_status=0; check_marketplace "$plugin" || marketplace_status=$?
   release_status=0; check_release_config "$plugin" || release_status=$?
+  bash_status=0; check_bash_patterns "$plugin" || bash_status=$?
 
   results_json+=("$(to_symbol $json_status)")
   results_frontmatter+=("$(to_symbol $frontmatter_status)")
   results_body+=("$(to_symbol $body_status)")
   results_marketplace+=("$(to_symbol $marketplace_status)")
   results_release+=("$(to_symbol $release_status)")
+  results_bash+=("$(to_symbol $bash_status)")
 
   # Overall: ❌ if any ❌, ⚠️ if any ⚠️, ✅ if all ✅
   plugin_overall="✅"
-  for status in $json_status $frontmatter_status $body_status $marketplace_status $release_status; do
+  for status in $json_status $frontmatter_status $body_status $marketplace_status $release_status $bash_status; do
     if [ "$status" -ge 2 ]; then
       plugin_overall="❌"
       overall_failed=true
@@ -367,11 +431,11 @@ done
 # Output report
 echo "## Plugin Compliance Review"
 echo ""
-echo "| Plugin | plugin.json | Frontmatter | Body | Marketplace | Release Config | Overall |"
-echo "|--------|-------------|-------------|------|-------------|----------------|---------|"
+echo "| Plugin | plugin.json | Frontmatter | Body | Marketplace | Release Config | Bash Patterns | Overall |"
+echo "|--------|-------------|-------------|------|-------------|----------------|---------------|---------|"
 
 for i in "${!PLUGINS[@]}"; do
-  echo "| ${PLUGINS[$i]} | ${results_json[$i]} | ${results_frontmatter[$i]} | ${results_body[$i]} | ${results_marketplace[$i]} | ${results_release[$i]} | ${results_overall[$i]} |"
+  echo "| ${PLUGINS[$i]} | ${results_json[$i]} | ${results_frontmatter[$i]} | ${results_body[$i]} | ${results_marketplace[$i]} | ${results_release[$i]} | ${results_bash[$i]} | ${results_overall[$i]} |"
 done
 
 echo ""
