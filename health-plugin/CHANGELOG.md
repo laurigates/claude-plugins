@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.5.0...health-plugin-v1.5.1) (2026-03-30)
+
+
+### Code Refactoring
+
+* **health-plugin:** extract health-check inline commands to standalone scripts ([#988](https://github.com/laurigates/claude-plugins/issues/988)) ([66640b2](https://github.com/laurigates/claude-plugins/commit/66640b24993f12d039e8c7cea370abd0d2b12f86))
+
 ## [1.5.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.4.0...health-plugin-v1.5.0) (2026-03-19)
 
 
