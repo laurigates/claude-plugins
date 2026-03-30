@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.15.1...hooks-plugin-v1.16.0) (2026-03-30)
+
+
+### Features
+
+* hard timeout and fast test recipe preferences to test verification hook ([#996](https://github.com/laurigates/claude-plugins/issues/996)) ([ae039cd](https://github.com/laurigates/claude-plugins/commit/ae039cd462efac3c241aa9b24d80336ec9b0207e))
+
 ## [1.15.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.15.0...hooks-plugin-v1.15.1) (2026-03-30)
 
 
