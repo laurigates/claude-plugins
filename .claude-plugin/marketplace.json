@@ -169,7 +169,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.15.0",
+      "version": "1.16.0",
       "keywords": [
         "infrastructure",
         "standards",
@@ -343,7 +343,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "1.14.2",
+      "version": "1.15.0",
       "keywords": [
         "hooks",
         "automation",
@@ -560,7 +560,7 @@
       "name": "typescript-plugin",
       "source": "./typescript-plugin",
       "description": "TypeScript development - strict types, ESLint, Biome",
-      "version": "1.6.0",
+      "version": "1.7.0",
       "keywords": [
         "typescript",
         "eslint",

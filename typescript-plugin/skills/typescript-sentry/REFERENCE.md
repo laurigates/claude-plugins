@@ -389,6 +389,330 @@ function App() {
 }
 ```
 
+## Next.js Setup
+
+### File Structure
+
+```
+sentry.server.config.ts        # Node.js server runtime init
+sentry.edge.config.ts          # Edge runtime init
+src/
+  instrumentation.ts            # Next.js register() hook — loads server/edge config
+  instrumentation-client.ts     # Client-side Sentry init
+  app/
+    error.tsx                   # Route-level error boundary
+    global-error.tsx            # Global error boundary
+    layout.tsx                  # Include <SentryUserIdentity /> here
+  lib/
+    sentry/
+      enrichment.ts             # Custom contexts, breadcrumbs, fingerprinting
+      sentry-user-identity.tsx  # Syncs NextAuth session → Sentry user
+```
+
+### next.config.mjs Integration
+
+```javascript
+import { withSentryConfig } from "@sentry/nextjs"
+
+const nextConfig = {
+  serverExternalPackages: ["@sentry/profiling-node"],
+  async headers() {
+    return [
+      { source: "/monitoring", headers: [{ key: "Cache-Control", value: "no-store" }] },
+    ]
+  },
+}
+
+const sentryOptions = {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: !process.env.CI,
+  hideSourceMaps: true,
+  tunnelRoute: "/monitoring",
+  sourcemaps: { deleteSourcemapsAfterUpload: true },
+  release: { name: version, setCommits: { auto: true, ignoreMissing: true } },
+}
+
+// Skip during container builds to save ~1GB memory
+const skip = process.env.NEXT_PUBLIC_SENTRY_SKIP_BUILD === "1"
+export default skip ? nextConfig : withSentryConfig(nextConfig, sentryOptions)
+```
+
+### Instrumentation Hook
+
+```typescript
+// src/instrumentation.ts
+import * as Sentry from "@sentry/nextjs"
+
+export async function register() {
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    await import("../sentry.server.config")
+  }
+  if (process.env.NEXT_RUNTIME === "edge") {
+    await import("../sentry.edge.config")
+  }
+}
+
+export const onRequestError = Sentry.captureRequestError
+```
+
+### Next.js Error Boundaries
+
+```tsx
+// src/app/error.tsx — route-level
+"use client"
+import * as Sentry from "@sentry/nextjs"
+import { useEffect } from "react"
+
+export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  useEffect(() => {
+    Sentry.captureException(error, {
+      tags: { errorBoundary: "route" },
+      extra: { digest: error.digest },
+    })
+  }, [error])
+  return <div><h2>Something went wrong</h2><button onClick={reset}>Try again</button></div>
+}
+```
+
+### Router Transition Instrumentation
+
+```typescript
+// src/instrumentation-client.ts (at the end)
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart
+```
+
+## Structured Logging
+
+Forward application logs to Sentry for correlation with errors and traces.
+
+```typescript
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  enableLogs: true,
+
+  // Filter logs before sending
+  beforeSendLog(log) {
+    const isProduction = process.env.NODE_ENV === "production"
+    // Drop verbose logs in production
+    if (isProduction && (log.level === "trace" || log.level === "debug")) {
+      return null
+    }
+    // Strip sensitive attributes
+    if (log.attributes) {
+      for (const key of Object.keys(log.attributes)) {
+        if (/password|token|secret|authorization|cookie/i.test(key)) {
+          delete log.attributes[key]
+        }
+      }
+    }
+    return log
+  },
+})
+```
+
+## Profiling
+
+### Node.js (Server-Side)
+
+```typescript
+import { nodeProfilingIntegration } from "@sentry/profiling-node"
+
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  profileSessionSampleRate: 1.0, // Profile 100% of sampled transactions
+  profileLifecycle: "trace",      // Profile every traced request
+  integrations: [nodeProfilingIntegration()],
+})
+```
+
+For Next.js, add `@sentry/profiling-node` to `serverExternalPackages` (native bindings).
+
+### Browser (Client-Side)
+
+```typescript
+Sentry.init({
+  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  profileSessionSampleRate: 1.0,
+  profileLifecycle: "trace",
+  integrations: [Sentry.browserProfilingIntegration()],
+})
+```
+
+Uses the JS Self-Profiling API (Chromium-based browsers only).
+
+## Session Replay
+
+```typescript
+Sentry.init({
+  replaysSessionSampleRate: 0.1, // 10% of sessions
+  replaysOnErrorSampleRate: 1.0, // 100% when errors occur
+  integrations: [
+    Sentry.replayIntegration({
+      maskAllText: true,   // Privacy: mask all text
+      blockAllMedia: true, // Privacy: block media elements
+    }),
+  ],
+})
+```
+
+## Feedback Widget
+
+```typescript
+Sentry.init({
+  integrations: [
+    Sentry.feedbackIntegration({
+      colorScheme: "system",
+      autoInject: true,
+      enableScreenshot: true,
+      showBranding: false,
+      useSentryUser: true, // Pre-fill from Sentry.setUser()
+    }),
+  ],
+})
+```
+
+## Event Filtering
+
+### Error Filtering (beforeSend)
+
+```typescript
+Sentry.init({
+  // Ignore known noise patterns
+  ignoreErrors: [
+    /chrome-extension:\/\//,
+    /moz-extension:\/\//,
+    "Network request failed",
+    "Failed to fetch",
+    "AbortError",
+  ],
+
+  // Strip sensitive data from events
+  beforeSend(event) {
+    const headers = event.request?.headers
+    if (headers) {
+      delete headers.authorization
+      delete headers.cookie
+      delete headers["x-api-key"]
+    }
+    return event
+  },
+})
+```
+
+### Transaction Filtering (beforeSendTransaction)
+
+```typescript
+Sentry.init({
+  beforeSendTransaction(event) {
+    const name = event.transaction
+    // Drop health checks and static assets
+    if (
+      name?.startsWith("GET /api/health") ||
+      name?.startsWith("GET /monitoring") ||
+      name?.startsWith("GET /_next/")
+    ) {
+      return null
+    }
+    return event
+  },
+})
+```
+
+## Enrichment Helpers
+
+### Custom Contexts
+
+```typescript
+// Domain-specific structured context
+Sentry.setContext("ai_operation", {
+  operation: "generate-description",
+  model: "gpt-4",
+  entityType: "theme",
+  entityId: "theme-123",
+})
+
+Sentry.setContext("sync_operation", {
+  source: "external-api",
+  operation: "import",
+  entityCount: 42,
+})
+```
+
+### Breadcrumb Categories
+
+```typescript
+const CATEGORIES = {
+  EXTERNAL_API: "external-api",
+  AI_OPERATION: "ai-operation",
+  SYNC_OPERATION: "sync-operation",
+  AUTH: "auth",
+} as const
+
+Sentry.addBreadcrumb({
+  category: CATEGORIES.EXTERNAL_API,
+  message: "GET https://api.example.com/themes",
+  level: "info",
+  data: { service: "theme-api", method: "GET", status: 200 },
+})
+```
+
+### Custom Fingerprinting
+
+Group related errors by service instead of stack trace:
+
+```typescript
+function captureUpstreamError(error: Error, service: string, extra?: Record<string, unknown>) {
+  Sentry.captureException(error, {
+    fingerprint: ["upstream-service", service],
+    tags: { errorType: "upstream", service },
+    extra,
+  })
+}
+```
+
+### User Identity Sync (React/Next.js)
+
+```tsx
+"use client"
+import * as Sentry from "@sentry/nextjs"
+import { useSession } from "next-auth/react"
+import { useEffect } from "react"
+
+export function SentryUserIdentity() {
+  const { data: session } = useSession()
+  useEffect(() => {
+    if (session?.user) {
+      Sentry.setUser({ id: session.user.id, email: session.user.email ?? undefined })
+    } else {
+      Sentry.setUser(null)
+    }
+  }, [session])
+  return null
+}
+```
+
+### Fire-and-Forget Operations
+
+Track non-critical background operations without blocking requests:
+
+```typescript
+function recordFireAndForgetFailure(
+  error: unknown,
+  context: { operation: string; entityType?: string; entityId?: string },
+) {
+  const message = error instanceof Error ? error.message : String(error)
+  console.error(`[fire-and-forget] ${context.operation} failed:`, message)
+  Sentry.addBreadcrumb({
+    category: "fire-and-forget",
+    level: "error",
+    message: `${context.operation} failed: ${message}`,
+    data: context,
+  })
+}
+```
+
 ## Troubleshooting
 
 ### Events Not Appearing

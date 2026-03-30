@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.14.2...hooks-plugin-v1.15.0) (2026-03-26)
+
+
+### Features
+
+* adapt permission guidance and settings for Claude Code auto mode ([#986](https://github.com/laurigates/claude-plugins/issues/986)) ([1203090](https://github.com/laurigates/claude-plugins/commit/120309051938470a5e3c80cc375c0bf7e37247ea)), closes [#983](https://github.com/laurigates/claude-plugins/issues/983)
+
 ## [1.14.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.14.1...hooks-plugin-v1.14.2) (2026-03-23)
 
 

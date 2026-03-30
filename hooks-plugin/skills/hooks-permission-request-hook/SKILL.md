@@ -10,8 +10,8 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(test *), Bash(cat *), Bash(ch
 argument-hint: "--strict to deny unknown commands, --category git|test|lint|build|gh|deny"
 disable-model-invocation: true
 created: 2026-03-13
-modified: 2026-03-13
-reviewed: 2026-03-13
+modified: 2026-03-26
+reviewed: 2026-03-26
 ---
 
 # /hooks:permission-request-hook
@@ -20,12 +20,24 @@ Generate a `PermissionRequest` hook that auto-approves safe operations, auto-den
 
 ## When to Use This Skill
 
-| Use this skill when... | Use `/hooks:hooks-configuration` instead when... |
-|---|---|
-| You want auto-approve/deny rules for Claude Code permissions | Configuring other hook types (PreToolUse, Stop, SessionStart) |
-| Replacing `--dangerouslySkipPermissions` with targeted rules | Need general hooks knowledge or debugging |
-| Setting up project-specific permission automation | Writing entirely custom hook logic from scratch |
-| You need a test harness to validate approve/deny behavior | Understanding hook lifecycle events |
+| Use this skill when... | Use auto mode instead when... | Use `/hooks:hooks-configuration` instead when... |
+|---|---|---|
+| You need deterministic, auditable approve/deny rules | AI-powered classification is sufficient | Configuring other hook types (PreToolUse, Stop, SessionStart) |
+| Enterprise compliance requires explicit rule lists | Built-in block rules cover your needs | Need general hooks knowledge or debugging |
+| Custom project-specific policies beyond auto mode defaults | You want zero-config permission handling | Writing entirely custom hook logic from scratch |
+| You need a test harness to validate approve/deny behavior | You accept ~0.4% false positive rate | Understanding hook lifecycle events |
+
+## Relationship with Auto Mode
+
+Auto mode's Tier 3 classifier provides AI-powered permission classification that largely replaces the approve/deny logic this skill generates. Auto mode includes 20+ built-in block categories (force-pushes, mass deletions, credential harvesting, etc.) and handles safe operations automatically.
+
+**This skill remains valuable for:**
+- Users not on auto mode (manual permission mode)
+- Enterprise environments needing deterministic, auditable rules
+- Custom project-specific policies that go beyond auto mode's defaults
+- Projects where 0% false positives on specific commands is critical
+
+**Both can coexist** — PermissionRequest hooks provide a secondary layer when auto mode is enabled. See `.claude/rules/auto-mode.md` for details.
 
 ## Context
 
