@@ -125,7 +125,7 @@ fi
 # Timeout - don't block, just warn and let Claude continue
 if [ "$TEST_EXIT" -eq 124 ]; then
     jq -n --arg reason "Test verification timed out after ${TEST_TIMEOUT}s (${TEST_CMD}). Tests may be slow — consider adding a fast test-unit or test-quick recipe." \
-        '{"decision": "warn", "reason": $reason}'
+        '{"decision": "approve", "reason": $reason}'
     exit 0
 fi
 
