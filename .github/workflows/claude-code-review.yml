@@ -4,58 +4,14 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
-# Cancel in-progress reviews when new commits are pushed
-concurrency:
-  group: claude-review-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
-
-permissions:
-  contents: read
-  pull-requests: write
-  issues: write
-  id-token: write
-
 jobs:
   review:
-    if: >-
-      !startsWith(github.head_ref, 'release-please--')
-      && github.actor != 'github-actions[bot]'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Claude Code Review
-        uses: anthropics/claude-code-action@v1
-        with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          allowed_bots: "claude[bot],claude"
-          track_progress: true
-          prompt: |
-            Review this pull request. Focus on:
-            - Code quality and best practices
-            - Potential bugs or security issues
-            - Test coverage gaps
-            - Documentation needs
-
-            IMPORTANT: Use built-in tools (Read, Grep, Glob) for file exploration.
-            Do NOT use Bash for find/grep operations - use the dedicated tools instead.
-          claude_args: "--max-turns 20"
-          additional_permissions: |
-            Read
-            Grep
-            Glob
-            Task
-            TodoWrite
-            Bash(git status *)
-            Bash(git diff *)
-            Bash(git log *)
-            Bash(git show *)
-            Bash(gh pr *)
-          plugin_marketplaces: |
-            https://github.com/laurigates/claude-plugins.git
-          plugins: |
-            code-quality-plugin@laurigates-claude-plugins
-            testing-plugin@laurigates-claude-plugins
+    uses: laurigates/.github/.github/workflows/reusable-claude-review.yml@main
+    secrets:
+      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+    with:
+      plugins: |
+        code-quality-plugin@laurigates-claude-plugins
+        testing-plugin@laurigates-claude-plugins
+      plugin_marketplaces: |
+        https://github.com/laurigates/claude-plugins.git

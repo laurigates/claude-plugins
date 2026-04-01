@@ -7,230 +7,82 @@ on:
       - edited
       - synchronize
 
-permissions:
-  pull-requests: write
-
 jobs:
-  fix-pr-title:
-    name: Fix PR title
-    runs-on: ubuntu-slim
-    steps:
-      - name: Auto-fix PR title to conventional commits format
-        uses: actions/github-script@v8
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const VALID_TYPES = [
-              'feat', 'fix', 'perf', 'refactor', 'docs',
-              'chore', 'ci', 'test', 'style', 'build', 'revert'
-            ];
-
-            // Map common words/aliases to canonical types
-            const TYPE_ALIASES = {
-              // feat — new functionality or capability
-              feature: 'feat', features: 'feat', new: 'feat',
-              add: 'feat', adds: 'feat', added: 'feat',
-              enhancement: 'feat', enhance: 'feat',
-              implement: 'feat', implements: 'feat', implemented: 'feat',
-              introduce: 'feat', introduces: 'feat', introduced: 'feat',
-              create: 'feat', creates: 'feat', created: 'feat',
-              enable: 'feat', enables: 'feat', enabled: 'feat',
-              support: 'feat', supports: 'feat',
-              allow: 'feat', allows: 'feat', allowed: 'feat',
-              expose: 'feat', exposes: 'feat', exposed: 'feat',
-              extend: 'feat', extends: 'feat', extended: 'feat',
-              integrate: 'feat', integrates: 'feat', integrated: 'feat',
-              wire: 'feat', wires: 'feat', wired: 'feat',
-              register: 'feat', registers: 'feat', registered: 'feat',
-              accept: 'feat', accepts: 'feat', accepted: 'feat',
-              provide: 'feat', provides: 'feat', provided: 'feat',
-              include: 'feat', includes: 'feat', included: 'feat',
-              scaffold: 'feat', scaffolds: 'feat', scaffolded: 'feat',
-              generate: 'feat', generates: 'feat', generated: 'feat',
-              define: 'feat', defines: 'feat', defined: 'feat',
-              // fix — bug fixes and error handling
-              bugfix: 'fix', bug: 'fix', hotfix: 'fix', patch: 'fix',
-              fixes: 'fix', fixed: 'fix', resolve: 'fix', resolves: 'fix', resolved: 'fix',
-              correct: 'fix', corrects: 'fix', corrected: 'fix',
-              repair: 'fix', repairs: 'fix', repaired: 'fix',
-              suppress: 'fix', suppresses: 'fix', suppressed: 'fix',
-              prevent: 'fix', prevents: 'fix', prevented: 'fix',
-              avoid: 'fix', avoids: 'fix', avoided: 'fix',
-              handle: 'fix', handles: 'fix', handled: 'fix',
-              guard: 'fix', guards: 'fix', guarded: 'fix',
-              ensure: 'fix', ensures: 'fix', ensured: 'fix',
-              sanitize: 'fix', sanitizes: 'fix', sanitized: 'fix',
-              catch: 'fix', catches: 'fix', caught: 'fix',
-              address: 'fix', addresses: 'fix', addressed: 'fix',
-              mitigate: 'fix', mitigates: 'fix', mitigated: 'fix',
-              // perf — performance improvements
-              improvement: 'perf', improve: 'perf', improves: 'perf', improved: 'perf',
-              optimize: 'perf', optimizes: 'perf', optimized: 'perf',
-              performance: 'perf', speed: 'perf', faster: 'perf',
-              cache: 'perf', caches: 'perf', cached: 'perf',
-              parallelize: 'perf', parallelizes: 'perf', parallelized: 'perf',
-              batch: 'perf', batches: 'perf', batched: 'perf',
-              prefetch: 'perf', prefetches: 'perf', prefetched: 'perf',
-              lazy: 'perf', defer: 'perf', defers: 'perf', deferred: 'perf',
-              throttle: 'perf', throttles: 'perf', throttled: 'perf',
-              streamline: 'perf', streamlines: 'perf', streamlined: 'perf',
-              minimize: 'perf', minimizes: 'perf', minimized: 'perf',
-              accelerate: 'perf', accelerates: 'perf', accelerated: 'perf',
-              // refactor — code restructure (no behavior change)
-              refactoring: 'refactor',
-              cleanup: 'refactor', clean: 'refactor',
-              remove: 'refactor', removed: 'refactor', removes: 'refactor',
-              delete: 'refactor', deleted: 'refactor', deletes: 'refactor',
-              migrate: 'refactor', migrates: 'refactor', migrated: 'refactor',
-              rename: 'refactor', renames: 'refactor', renamed: 'refactor',
-              move: 'refactor', moves: 'refactor', moved: 'refactor',
-              extract: 'refactor', extracts: 'refactor', extracted: 'refactor',
-              split: 'refactor', splits: 'refactor',
-              consolidate: 'refactor', consolidates: 'refactor', consolidated: 'refactor',
-              reorganize: 'refactor', reorganizes: 'refactor', reorganized: 'refactor',
-              restructure: 'refactor', restructures: 'refactor', restructured: 'refactor',
-              simplify: 'refactor', simplifies: 'refactor', simplified: 'refactor',
-              rewrite: 'refactor', rewrites: 'refactor', rewrote: 'refactor',
-              convert: 'refactor', converts: 'refactor', converted: 'refactor',
-              replace: 'refactor', replaces: 'refactor', replaced: 'refactor',
-              wrap: 'refactor', wraps: 'refactor', wrapped: 'refactor',
-              inline: 'refactor', inlines: 'refactor', inlined: 'refactor',
-              deduplicate: 'refactor', dedup: 'refactor',
-              decouple: 'refactor', decouples: 'refactor', decoupled: 'refactor',
-              encapsulate: 'refactor', encapsulates: 'refactor', encapsulated: 'refactor',
-              modularize: 'refactor', modularizes: 'refactor', modularized: 'refactor',
-              generalize: 'refactor', generalizes: 'refactor', generalized: 'refactor',
-              isolate: 'refactor', isolates: 'refactor', isolated: 'refactor',
-              separate: 'refactor', separates: 'refactor', separated: 'refactor',
-              unify: 'refactor', unifies: 'refactor', unified: 'refactor',
-              flatten: 'refactor', flattens: 'refactor', flattened: 'refactor',
-              collapse: 'refactor', collapses: 'refactor', collapsed: 'refactor',
-              drop: 'refactor', drops: 'refactor', dropped: 'refactor',
-              deprecate: 'refactor', deprecates: 'refactor', deprecated: 'refactor',
-              prune: 'refactor', prunes: 'refactor', pruned: 'refactor',
-              // style — formatting, linting, no logic change
-              standardize: 'style', standardizes: 'style', standardized: 'style',
-              normalize: 'style', normalizes: 'style', normalized: 'style',
-              format: 'style', formatting: 'style', formats: 'style', formatted: 'style',
-              lint: 'style', linting: 'style',
-              // docs — documentation only
-              documentation: 'docs', doc: 'docs', readme: 'docs',
-              document: 'docs', documents: 'docs', documented: 'docs',
-              describe: 'docs', describes: 'docs', described: 'docs',
-              explain: 'docs', explains: 'docs', explained: 'docs',
-              annotate: 'docs', annotates: 'docs', annotated: 'docs',
-              clarify: 'docs', clarifies: 'docs', clarified: 'docs',
-              // chore — maintenance, tooling
-              update: 'chore', updates: 'chore', updated: 'chore',
-              configure: 'chore', configures: 'chore', configured: 'chore',
-              setup: 'chore', disable: 'chore', switch: 'chore',
-              sync: 'chore', syncs: 'chore', synced: 'chore',
-              align: 'chore', aligns: 'chore', aligned: 'chore',
-              adjust: 'chore', adjusts: 'chore', adjusted: 'chore',
-              tweak: 'chore', tweaks: 'chore', tweaked: 'chore',
-              set: 'chore', sets: 'chore',
-              prepare: 'chore', prepares: 'chore', prepared: 'chore',
-              init: 'chore', initialize: 'chore', initializes: 'chore', initialized: 'chore',
-              tidy: 'chore', tidied: 'chore',
-              maintain: 'chore', maintains: 'chore', maintained: 'chore',
-              // build — build system or dependencies
-              upgrade: 'build', upgrades: 'build', upgraded: 'build',
-              dependency: 'build', dependencies: 'build', deps: 'build',
-              bump: 'build', pin: 'build', pins: 'build', pinned: 'build',
-              install: 'build', installs: 'build', installed: 'build',
-              compile: 'build', compiles: 'build', compiled: 'build',
-              bundle: 'build', bundles: 'build', bundled: 'build',
-              lock: 'build', locks: 'build', locked: 'build',
-              // test — adding or modifying tests
-              testing: 'test', tests: 'test', spec: 'test',
-              assert: 'test', asserts: 'test', asserted: 'test',
-              verify: 'test', verifies: 'test', verified: 'test',
-              check: 'test', checks: 'test', checked: 'test',
-              cover: 'test', covers: 'test', covered: 'test',
-              mock: 'test', mocks: 'test', mocked: 'test',
-              // ci — CI/CD configuration
-              pipeline: 'ci', workflow: 'ci',
-              automate: 'ci', automates: 'ci', automated: 'ci',
-              deploy: 'ci', deploys: 'ci', deployed: 'ci',
-              // revert — undo previous changes
-              rollback: 'revert',
-            };
-
-            // Matches a valid conventional commit: type(scope)!: subject
-            const VALID_PATTERN = /^(feat|fix|perf|refactor|docs|chore|ci|test|style|build|revert)(\([^)]+\))?!?: .+/;
-
-            function attemptFix(title) {
-              // Already valid
-              if (VALID_PATTERN.test(title)) {
-                return { fixed: title, changed: false, reason: 'Already valid' };
-              }
-
-              // Pattern: word(scope)?: subject  OR  word: subject  (with any casing / alias)
-              const colonPattern = /^([A-Za-z]+)(\([^)]*\))?(!)?: (.+)$/;
-              const colonMatch = title.match(colonPattern);
-              if (colonMatch) {
-                const [, typePart, scope, bang, subject] = colonMatch;
-                const lower = typePart.toLowerCase();
-                const resolved = VALID_TYPES.includes(lower) ? lower : TYPE_ALIASES[lower];
-                if (resolved) {
-                  const fixed = `${resolved}${scope || ''}${bang || ''}: ${subject}`;
-                  return {
-                    fixed,
-                    changed: fixed !== title,
-                    reason: `Normalized type "${typePart}" → "${resolved}"`,
-                  };
-                }
-              }
-
-              // Pattern: verb at start of sentence ("Add feature X", "Fixed bug Y")
-              const words = title.trim().split(/\s+/);
-              if (words.length >= 2) {
-                const first = words[0].toLowerCase().replace(/:$/, '');
-                const resolved = VALID_TYPES.includes(first) ? first : TYPE_ALIASES[first];
-                if (resolved) {
-                  const rest = words.slice(1).join(' ');
-                  const subject = rest.charAt(0).toLowerCase() + rest.slice(1);
-                  return {
-                    fixed: `${resolved}: ${subject}`,
-                    changed: true,
-                    reason: `Inferred type "${resolved}" from leading word "${words[0]}"`,
-                  };
-                }
-              }
-
-              return { fixed: title, changed: false, reason: null };
-            }
-
-            const pr = context.payload.pull_request;
-            const originalTitle = pr.title;
-            const { fixed, changed, reason } = attemptFix(originalTitle);
-
-            if (!changed && VALID_PATTERN.test(fixed)) {
-              console.log(`✓ PR title already follows conventional commits format: "${originalTitle}"`);
-              return;
-            }
-
-            if (changed) {
-              console.log(`Fixing PR title: "${originalTitle}" → "${fixed}" (${reason})`);
-              await github.rest.pulls.update({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: pr.number,
-                title: fixed,
-              });
-              console.log('✓ PR title updated successfully.');
-              return;
-            }
-
-            // Could not auto-fix — fail with helpful message
-            const types = VALID_TYPES.join(', ');
-            core.setFailed(
-              `PR title "${originalTitle}" does not follow conventional commits format and could not be auto-fixed.\n\n` +
-              `Expected format: <type>(<scope>): <subject>\n` +
-              `Valid types: ${types}\n\n` +
-              `Examples:\n` +
-              `  feat(git-plugin): add new workflow\n` +
-              `  fix: resolve null pointer in auth service\n` +
-              `  docs(readme): update installation steps\n\n` +
-              `Please update the PR title manually.`
-            );
+  conventional-commits:
+    uses: laurigates/.github/.github/workflows/reusable-enforce-conventional-commits.yml@main
+    with:
+      # Extra aliases not yet in the reusable workflow defaults.
+      # TODO: upstream these to the reusable workflow, then remove this input.
+      extra_type_aliases: >-
+        {
+          "allow":"feat","allows":"feat","allowed":"feat",
+          "expose":"feat","exposes":"feat","exposed":"feat",
+          "extend":"feat","extends":"feat","extended":"feat",
+          "integrate":"feat","integrates":"feat","integrated":"feat",
+          "wire":"feat","wires":"feat","wired":"feat",
+          "register":"feat","registers":"feat","registered":"feat",
+          "accept":"feat","accepts":"feat","accepted":"feat",
+          "provide":"feat","provides":"feat","provided":"feat",
+          "include":"feat","includes":"feat","included":"feat",
+          "scaffold":"feat","scaffolds":"feat","scaffolded":"feat",
+          "generate":"feat","generates":"feat","generated":"feat",
+          "define":"feat","defines":"feat","defined":"feat",
+          "suppress":"fix","suppresses":"fix","suppressed":"fix",
+          "prevent":"fix","prevents":"fix","prevented":"fix",
+          "avoid":"fix","avoids":"fix","avoided":"fix",
+          "handle":"fix","handles":"fix","handled":"fix",
+          "guard":"fix","guards":"fix","guarded":"fix",
+          "ensure":"fix","ensures":"fix","ensured":"fix",
+          "sanitize":"fix","sanitizes":"fix","sanitized":"fix",
+          "catch":"fix","catches":"fix","caught":"fix",
+          "address":"fix","addresses":"fix","addressed":"fix",
+          "mitigate":"fix","mitigates":"fix","mitigated":"fix",
+          "cache":"perf","caches":"perf","cached":"perf",
+          "parallelize":"perf","parallelizes":"perf","parallelized":"perf",
+          "batch":"perf","batches":"perf","batched":"perf",
+          "prefetch":"perf","prefetches":"perf","prefetched":"perf",
+          "lazy":"perf","defer":"perf","defers":"perf","deferred":"perf",
+          "throttle":"perf","throttles":"perf","throttled":"perf",
+          "streamline":"perf","streamlines":"perf","streamlined":"perf",
+          "minimize":"perf","minimizes":"perf","minimized":"perf",
+          "accelerate":"perf","accelerates":"perf","accelerated":"perf",
+          "wrap":"refactor","wraps":"refactor","wrapped":"refactor",
+          "inline":"refactor","inlines":"refactor","inlined":"refactor",
+          "deduplicate":"refactor","dedup":"refactor",
+          "decouple":"refactor","decouples":"refactor","decoupled":"refactor",
+          "encapsulate":"refactor","encapsulates":"refactor","encapsulated":"refactor",
+          "modularize":"refactor","modularizes":"refactor","modularized":"refactor",
+          "generalize":"refactor","generalizes":"refactor","generalized":"refactor",
+          "isolate":"refactor","isolates":"refactor","isolated":"refactor",
+          "separate":"refactor","separates":"refactor","separated":"refactor",
+          "unify":"refactor","unifies":"refactor","unified":"refactor",
+          "flatten":"refactor","flattens":"refactor","flattened":"refactor",
+          "collapse":"refactor","collapses":"refactor","collapsed":"refactor",
+          "drop":"refactor","drops":"refactor","dropped":"refactor",
+          "deprecate":"refactor","deprecates":"refactor","deprecated":"refactor",
+          "prune":"refactor","prunes":"refactor","pruned":"refactor",
+          "describe":"docs","describes":"docs","described":"docs",
+          "explain":"docs","explains":"docs","explained":"docs",
+          "annotate":"docs","annotates":"docs","annotated":"docs",
+          "clarify":"docs","clarifies":"docs","clarified":"docs",
+          "sync":"chore","syncs":"chore","synced":"chore",
+          "align":"chore","aligns":"chore","aligned":"chore",
+          "adjust":"chore","adjusts":"chore","adjusted":"chore",
+          "tweak":"chore","tweaks":"chore","tweaked":"chore",
+          "set":"chore","sets":"chore",
+          "prepare":"chore","prepares":"chore","prepared":"chore",
+          "init":"chore","initialize":"chore","initializes":"chore","initialized":"chore",
+          "tidy":"chore","tidied":"chore",
+          "maintain":"chore","maintains":"chore","maintained":"chore",
+          "install":"build","installs":"build","installed":"build",
+          "compile":"build","compiles":"build","compiled":"build",
+          "bundle":"build","bundles":"build","bundled":"build",
+          "lock":"build","locks":"build","locked":"build",
+          "assert":"test","asserts":"test","asserted":"test",
+          "verify":"test","verifies":"test","verified":"test",
+          "check":"test","checks":"test","checked":"test",
+          "cover":"test","covers":"test","covered":"test",
+          "mock":"test","mocks":"test","mocked":"test",
+          "automate":"ci","automates":"ci","automated":"ci",
+          "deploy":"ci","deploys":"ci","deployed":"ci"
+        }
