@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.16.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.16.1...hooks-plugin-v1.16.2) (2026-04-01)
+
+
+### Bug Fixes
+
+* change test timeout decision from warn to approve ([#1000](https://github.com/laurigates/claude-plugins/issues/1000)) ([1e5fcfe](https://github.com/laurigates/claude-plugins/commit/1e5fcfe9b04f20ae274c571da64520c240a5a207))
+* **hooks-plugin:** use valid schema value for test timeout decision ([1e5fcfe](https://github.com/laurigates/claude-plugins/commit/1e5fcfe9b04f20ae274c571da64520c240a5a207))
+
 ## [1.16.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.16.0...hooks-plugin-v1.16.1) (2026-04-01)
 
 
