@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.16.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.16.0...hooks-plugin-v1.16.1) (2026-04-01)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** prevent UserPromptSubmit hook from misinterpreting user messages as agent messages ([716835e](https://github.com/laurigates/claude-plugins/commit/716835e16dd2c0cf8c6c9107ff087e8d7a0e0fc1))
+
+
+### Performance
+
+* safety classifier to distinguish user messages from AI responses ([#998](https://github.com/laurigates/claude-plugins/issues/998)) ([716835e](https://github.com/laurigates/claude-plugins/commit/716835e16dd2c0cf8c6c9107ff087e8d7a0e0fc1))
+
 ## [1.16.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.15.1...hooks-plugin-v1.16.0) (2026-03-30)
 
 
