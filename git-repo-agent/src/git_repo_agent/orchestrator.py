@@ -703,6 +703,7 @@ async def _prompt_pr_creation(
         )
         if pr_url:
             console.print(f"[bold green]PR created:[/bold green] {pr_url}")
+            cleanup_worktree(repo_path, worktree_path)
         else:
             console.print("[red]Failed to create PR. Push branch manually:[/red]")
             console.print(f"  cd {worktree_path} && git push -u origin {branch}")
