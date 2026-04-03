@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.29.5](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.29.4...git-plugin-v2.29.5) (2026-04-03)
+
+
+### Documentation
+
+* **git-plugin:** improve github-labels skill discoverability ([#1003](https://github.com/laurigates/claude-plugins/issues/1003)) ([688ea5e](https://github.com/laurigates/claude-plugins/commit/688ea5eff2083d32c38dccb22fcd5a6bdbeb69e6)), closes [#992](https://github.com/laurigates/claude-plugins/issues/992)
+
 ## [2.29.4](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.29.3...git-plugin-v2.29.4) (2026-03-25)
 
 
