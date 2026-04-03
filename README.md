@@ -1,12 +1,20 @@
 # Claude Plugins
 
-A collection of 37 Claude Code plugins providing 300+ skills and 14 agents for development workflows.
+A curated collection of 38 Claude Code plugins providing 300+ skills and 14 agents for development workflows.
 
-## Prerequisites
+## Install the Marketplace
 
-- **Bash 5+** — Required for shell scripts. macOS ships bash 3.2; install via `brew install bash`.
+Install the full plugin collection as a marketplace:
 
-## Installation
+```bash
+claude plugin install laurigates/claude-plugins
+```
+
+This registers all 38 plugins. You can then enable individual plugins as needed.
+
+### Install Individual Plugins
+
+If you prefer to install plugins one at a time:
 
 ```bash
 claude plugin install laurigates-claude-plugins/<plugin-name>
@@ -20,9 +28,13 @@ claude plugin install laurigates-claude-plugins/python-plugin
 claude plugin install laurigates-claude-plugins/testing-plugin
 ```
 
-> **New here?** See the [Plugin Map](docs/PLUGIN-MAP.md) for setup guidance, decision trees, and recommended install order.
+## Getting Started
 
-## Quick Setup
+1. **Install the marketplace** using the command above
+2. **Run a health check** — `/health:check` then `/health:audit` to diagnose your setup and get plugin recommendations for your stack
+3. **Follow the tiered setup** — The [Plugin Map](docs/PLUGIN-MAP.md) provides a recommended install order (Tier 0 foundation through Tier 3+ stack-specific), decision trees, and project presets
+
+### MCP Server Setup
 
 Use the included justfile for quick MCP server configuration:
 
@@ -38,6 +50,10 @@ just mcp-context7
 
 Alternatively, use the `/configure:mcp` skill for interactive configuration.
 
+## Prerequisites
+
+- **Bash 5+** — Required for shell scripts. macOS ships Bash 3.2; install via `brew install bash`.
+
 ## Plugins by Category
 
 ### AI & Agents
@@ -47,6 +63,7 @@ Alternatively, use the `/configure:mcp` skill for interactive configuration.
 | **agent-patterns-plugin** | 16 | Multi-agent coordination and orchestration patterns |
 | **agents-plugin** | 1 + 10 agents | Task-focused agents for test, review, debug, docs, and CI workflows |
 | **langchain-plugin** | 4 | LangChain JS/TS development - agents, chains, LangGraph, Deep Agents |
+| **prompt-engineering-plugin** | 1 | Prompt engineering for accurate, grounded responses - anti-hallucination workflow |
 
 ### Development
 
@@ -73,6 +90,7 @@ Alternatively, use the `/configure:mcp` skill for interactive configuration.
 |--------|--------|-------------|
 | **code-quality-plugin** | 13 | Code review, refactoring, linting, static analysis, debugging methodology |
 | **evaluate-plugin** | 4 + 3 agents | Skill evaluation and benchmarking - test effectiveness, grade results |
+| **codebase-attributes-plugin** | 3 | Structured codebase health attributes with severity-based agent routing |
 | **feedback-plugin** | 1 | Session feedback analysis - capture skill bugs and enhancements as issues |
 | **testing-plugin** | 15 | Test execution, TDD workflow, Vitest, Playwright, mutation testing |
 
