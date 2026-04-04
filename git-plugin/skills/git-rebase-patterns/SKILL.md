@@ -1,5 +1,4 @@
 ---
-model: haiku
 name: git-rebase-patterns
 description: |
   Advanced git rebase patterns for linear history, stacked PRs, and clean commit management.

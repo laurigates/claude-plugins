@@ -1,5 +1,4 @@
 ---
-model: sonnet
 name: config-sync
 description: |
   Extract, compare, and propagate tooling improvements across FVH repos.

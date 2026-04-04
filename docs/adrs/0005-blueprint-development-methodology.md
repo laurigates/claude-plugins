@@ -38,10 +38,10 @@ PRD → PRP → Work Order
 
 | Component | Type | Purpose |
 |-----------|------|---------|
-| `/blueprint-init` | Command | Initialize blueprint structure in project |
-| `/blueprint-generate-commands` | Command | Create project-specific commands from PRD |
-| `/blueprint-generate-skills` | Command | Create project-specific skills from PRP |
-| `/blueprint-work-order` | Command | Generate work order from PRP |
+| `/blueprint:init` | Command | Initialize blueprint structure in project |
+| `/blueprint:generate-commands` | Command | Create project-specific commands from PRD |
+| `/blueprint:generate-skills` | Command | Create project-specific skills from PRP |
+| `/blueprint:work-order` | Command | Generate work order from PRP |
 | `/prp-create` | Command | Create new PRP from PRD |
 | `/prp-execute` | Command | Execute PRP with progress tracking |
 | `blueprint-development` | Skill | Methodology guidance and templates |

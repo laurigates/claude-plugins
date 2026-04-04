@@ -1,5 +1,4 @@
 ---
-model: haiku
 name: github-actions-cache-optimization
 description: |
   Analyze and optimize GitHub Actions cache usage. Use when investigating

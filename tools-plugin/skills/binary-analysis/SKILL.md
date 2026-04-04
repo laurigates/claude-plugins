@@ -1,5 +1,4 @@
 ---
-model: haiku
 name: binary-analysis
 description: Reverse engineering and binary exploration using strings, binwalk, hexdump, and related tools.
 user-invocable: false

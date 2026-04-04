@@ -1,5 +1,4 @@
 ---
-model: haiku
 description: Run tests with Bun test runner
 args: [pattern] [--coverage] [--bail] [--watch]
 allowed-tools: Bash, BashOutput, Read

@@ -716,7 +716,7 @@ Use `@import` to reference existing documentation rather than duplicating conten
     Note: "Current Focus" and "Key Files" are managed by Claude's
     auto memory — no need to maintain these in CLAUDE.md.
 
-    Run `/blueprint-status` to see full configuration.
+    Run `/blueprint:status` to see full configuration.
     ```
 
 **CLAUDE.md Best Practices**:

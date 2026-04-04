@@ -1,5 +1,4 @@
 ---
-model: haiku
 name: bun-publishing
 description: Publish packages to npm with Bun - package.json configuration, CLI packaging, provenance signing, and release automation.
 user-invocable: false

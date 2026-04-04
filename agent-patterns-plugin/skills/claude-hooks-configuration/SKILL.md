@@ -1,5 +1,4 @@
 ---
-model: haiku
 name: claude-hooks-configuration
 description: |
   Set up Claude Code lifecycle hooks and event handlers in settings.json. Use when you

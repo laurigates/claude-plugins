@@ -1,5 +1,4 @@
 ---
-model: opus
 description: "Execute a PRP with validation loop, TDD workflow, and quality gates"
 args: "[prp-name]"
 argument-hint: "Name of PRP to execute (e.g., feature-auth-oauth2)"

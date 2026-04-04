@@ -1,5 +1,4 @@
 ---
-model: haiku
 created: 2026-01-29
 modified: 2026-02-06
 reviewed: 2026-02-06

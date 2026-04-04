@@ -1,5 +1,4 @@
 ---
-model: opus
 name: mcp-code-execution
 description: |
   Design and scaffold the code execution pattern for MCP-based agent systems. Use when

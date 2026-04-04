@@ -1,5 +1,4 @@
 ---
-model: opus
 name: ground-response
 description: |
   Produce grounded, citation-backed responses from source documents. Use when analyzing

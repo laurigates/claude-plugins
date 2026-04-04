@@ -1,5 +1,4 @@
 ---
-model: sonnet
 name: prose-distill
 description: |
   Distill verbose text to its concentrated essence. Compress without losing meaning —

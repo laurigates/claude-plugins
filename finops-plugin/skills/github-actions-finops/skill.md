@@ -1,5 +1,4 @@
 ---
-model: haiku
 name: github-actions-finops
 description: |
   Analyze GitHub Actions billing, workflow efficiency, and waste patterns.

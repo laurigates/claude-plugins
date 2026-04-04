@@ -1,5 +1,4 @@
 ---
-model: opus
 name: feedback-session
 description: |
   Analyze current session for skill feedback and create GitHub issues. Use when

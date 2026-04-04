@@ -1,5 +1,4 @@
 ---
-model: haiku
 description: Bundle or compile with Bun
 args: <entry> [--compile] [--minify]
 allowed-tools: Bash, Read

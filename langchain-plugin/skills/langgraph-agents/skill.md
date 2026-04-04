@@ -1,5 +1,4 @@
 ---
-model: sonnet
 name: langgraph-agents
 description: |
   Build stateful AI agents in Python using LangGraph's graph-based workflow framework.

@@ -1,5 +1,4 @@
 ---
-model: sonnet
 name: attributes-route
 description: Route to specialized agents based on codebase health attributes. Use after /attributes:collect to automatically address findings by severity.
 allowed-tools: Read, Glob, Grep, Agent, TodoWrite

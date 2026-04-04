@@ -1,5 +1,4 @@
 ---
-model: sonnet
 name: git-upstream-pr
 description: |
   Submit clean PRs to upstream repositories from a fork. Use when you need to

@@ -1,5 +1,4 @@
 ---
-model: sonnet
 created: 2026-03-02
 modified: 2026-03-02
 reviewed: 2026-03-02

@@ -78,12 +78,12 @@ PRD (Product Requirements) → PRP (Product Requirement Prompt) → Work-Order �
 
 ## Workflow
 
-### Smart Mode: Using `/blueprint-execute`
+### Smart Mode: Using `/blueprint:execute`
 
 The easiest way to use Blueprint Development is with the **idempotent meta command**:
 
 ```bash
-/blueprint-execute
+/blueprint:execute
 ```
 
 This command:
@@ -110,16 +110,16 @@ The command automatically handles:
 **Example usage:**
 ```bash
 # First time in a project
-/blueprint-execute  # → Runs /blueprint-init
+/blueprint:execute  # → Runs /blueprint:init
 
 # After creating PRDs
-/blueprint-execute  # → Runs /blueprint-generate-rules
+/blueprint:execute  # → Runs /blueprint:generate-rules
 
 # When PRPs are ready
-/blueprint-execute  # → Prompts to execute PRPs
+/blueprint:execute  # → Prompts to execute PRPs
 
 # When everything is current
-/blueprint-execute  # → Shows status and options
+/blueprint:execute  # → Shows status and options
 ```
 
 ---
@@ -131,7 +131,7 @@ You can also run individual commands directly when you know exactly what you wan
 ### 1. Initialize Blueprint Development
 
 ```bash
-/blueprint-init
+/blueprint:init
 ```
 
 Creates the directory structure:
@@ -153,8 +153,8 @@ docs/
 For existing projects, derive documentation from codebase:
 
 ```bash
-/blueprint-derive-prd    # Derive PRD from README and docs
-/blueprint-derive-adr    # Derive ADRs from architecture analysis
+/blueprint:derive-prd    # Derive PRD from README and docs
+/blueprint:derive-adr    # Derive ADRs from architecture analysis
 ```
 
 These commands analyze existing documentation and code patterns, asking clarifying questions to fill gaps.
@@ -162,7 +162,7 @@ These commands analyze existing documentation and code patterns, asking clarifyi
 **For established projects with git history**, use the comprehensive derive command:
 
 ```bash
-/blueprint-derive-plans    # Derive PRDs, ADRs, and PRPs from git history
+/blueprint:derive-plans    # Derive PRDs, ADRs, and PRPs from git history
 ```
 
 This command:
@@ -175,7 +175,7 @@ This command:
 **For identifying untested bug fixes and generating a test backlog**:
 
 ```bash
-/blueprint-derive-tests    # Derive test regression plans from git history
+/blueprint:derive-tests    # Derive test regression plans from git history
 ```
 
 This command:
@@ -187,7 +187,7 @@ This command:
 **For deriving rules from significant commit decisions**:
 
 ```bash
-/blueprint-derive-rules    # Derive rules from git commit log decisions
+/blueprint:derive-rules    # Derive rules from git commit log decisions
 ```
 
 This command:
@@ -209,7 +209,7 @@ The `requirements-documentation` agent triggers proactively for new features.
 ### 4. Generate Project Skills
 
 ```bash
-/blueprint-generate-rules
+/blueprint:generate-rules
 ```
 
 Extracts patterns from PRDs and generates project-specific rules:
@@ -221,7 +221,7 @@ Extracts patterns from PRDs and generates project-specific rules:
 ### 5. Create Work-Orders
 
 ```bash
-/blueprint-work-order
+/blueprint:work-order
 ```
 
 Generates isolated task packages with minimal context for subagent execution.
@@ -251,8 +251,8 @@ All blueprint documents are connected through a unified ID system, enabling full
 ### Automatic ID Assignment
 
 IDs are automatically generated when:
-- Creating documents via `/blueprint-derive-prd`, `/blueprint-derive-adr`, `/blueprint-prp-create`
-- Running `/blueprint-sync-ids` to batch-assign IDs to existing documents
+- Creating documents via `/blueprint:derive-prd`, `/blueprint:derive-adr`, `/blueprint:prp-create`
+- Running `/blueprint:sync-ids` to batch-assign IDs to existing documents
 - Accessing documents without IDs (auto-assigned on first access)
 
 ### Cross-Linking
@@ -281,7 +281,7 @@ github-issues:
 
 ### Traceability Report
 
-Run `/blueprint-status` to see:
+Run `/blueprint:status` to see:
 - Documents with/without IDs
 - Documents linked to GitHub issues
 - Orphan documents (no issues)
@@ -291,9 +291,9 @@ Run `/blueprint-status` to see:
 ### Sync IDs
 
 ```bash
-/blueprint-sync-ids              # Assign IDs to all documents
-/blueprint-sync-ids --dry-run    # Preview changes
-/blueprint-sync-ids --link-issues # Also create GitHub issues for orphans
+/blueprint:sync-ids              # Assign IDs to all documents
+/blueprint:sync-ids --dry-run    # Preview changes
+/blueprint:sync-ids --link-issues # Also create GitHub issues for orphans
 ```
 
 ## Feature Tracking (Optional)
@@ -302,7 +302,7 @@ Track implementation progress against requirements documents using hierarchical 
 
 ### Enable During Init
 
-Feature tracking can be enabled during `/blueprint-init`. When enabled, it creates:
+Feature tracking can be enabled during `/blueprint:init`. When enabled, it creates:
 - `docs/blueprint/feature-tracker.json` - Main tracker file
 
 ### Feature Tracker Structure

@@ -1,5 +1,4 @@
 ---
-model: haiku
 name: hooks-session-end-issue-hook
 description: |
   Configure a Stop hook that surfaces unfinished todos before a session ends and suggests

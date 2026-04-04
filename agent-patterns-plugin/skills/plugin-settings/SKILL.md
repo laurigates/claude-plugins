@@ -1,5 +1,4 @@
 ---
-model: haiku
 name: plugin-settings
 description: |
   Configure per-project plugin settings using `.claude/plugin-name.local.md` files.

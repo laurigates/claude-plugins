@@ -1,5 +1,4 @@
 ---
-model: opus
 name: dual-write
 description: |
   Dual write (double write) migration pattern for safely transitioning between data stores.

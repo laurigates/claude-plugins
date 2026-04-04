@@ -188,7 +188,7 @@ Project rules override user-level rules. Path-specific rules load conditionally 
     - Global: {count}
     - Scoped: {count}
 
-    Run `/blueprint-status` to see full configuration.
+    Run `/blueprint:status` to see full configuration.
     ```
 
 11. **Prompt for next action** (use AskUserQuestion):

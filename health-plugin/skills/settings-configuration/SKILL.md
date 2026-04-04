@@ -1,5 +1,4 @@
 ---
-model: haiku
 name: settings-configuration
 description: |
   Claude Code settings file hierarchy, permission wildcards, and configuration

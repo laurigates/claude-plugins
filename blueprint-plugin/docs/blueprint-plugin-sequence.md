@@ -2,47 +2,47 @@
 
 This document provides Mermaid diagrams showing the Blueprint Plugin workflow from different perspectives.
 
-## 0. Smart Mode: /blueprint-execute Meta Command
+## 0. Smart Mode: /blueprint:execute Meta Command
 
 The idempotent meta command that analyzes repository state and determines the next action:
 
 ```mermaid
 graph TD
-    Start([Run /blueprint-execute]) --> CheckInit{Blueprint\ninitialized?}
+    Start([Run /blueprint:execute]) --> CheckInit{Blueprint\ninitialized?}
 
-    CheckInit -->|No| RunInit[Run /blueprint-init]
+    CheckInit -->|No| RunInit[Run /blueprint:init]
     RunInit --> Done([Exit])
 
     CheckInit -->|Yes| CheckUpgrade{Upgrade\navailable?}
 
-    CheckUpgrade -->|Yes v3.0.0| RunUpgrade[Run /blueprint-upgrade]
+    CheckUpgrade -->|Yes v3.0.0| RunUpgrade[Run /blueprint:upgrade]
     RunUpgrade --> Done
 
     CheckUpgrade -->|No| CheckStale{Generated\ncontent stale?}
 
     CheckStale -->|Yes PRDs changed| PromptRegen{User:\nRegenerate?}
-    PromptRegen -->|Yes| RunGenRules[Run /blueprint-generate-rules]
+    PromptRegen -->|Yes| RunGenRules[Run /blueprint:generate-rules]
     RunGenRules --> Done
     PromptRegen -->|Skip| CheckModified
 
     CheckStale -->|No| CheckModified{Generated\ncontent modified?}
 
     CheckModified -->|Yes user edited| PromptSync{User:\nReview/Promote?}
-    PromptSync -->|Review| RunSync[Run /blueprint-sync]
+    PromptSync -->|Review| RunSync[Run /blueprint:sync]
     RunSync --> Done
-    PromptSync -->|Promote| RunPromote[Run /blueprint-promote]
+    PromptSync -->|Promote| RunPromote[Run /blueprint:promote]
     RunPromote --> Done
     PromptSync -->|Skip| CheckPRDs
 
     CheckModified -->|No| CheckPRDs{PRDs exist\nno rules?}
 
-    CheckPRDs -->|Yes| RunGenRules2[Run /blueprint-generate-rules]
+    CheckPRDs -->|Yes| RunGenRules2[Run /blueprint:generate-rules]
     RunGenRules2 --> Done
 
     CheckPRDs -->|No| CheckPRPs{Ready\nPRPs found?}
 
     CheckPRPs -->|Yes| PromptPRP{User:\nSelect PRP}
-    PromptPRP --> RunPRPExec[Run /blueprint-prp-execute]
+    PromptPRP --> RunPRPExec[Run /blueprint:prp-execute]
     RunPRPExec --> Done
 
     CheckPRPs -->|No| CheckWO{Pending\nwork-orders?}
@@ -62,14 +62,14 @@ graph TD
 
     CheckOverview -->|No tasks| CheckTracker{Feature\ntracker exists?}
 
-    CheckTracker -->|Yes stale| RunTrackerSync[Run /blueprint-feature-tracker-sync]
+    CheckTracker -->|Yes stale| RunTrackerSync[Run /blueprint:feature-tracker-sync]
     RunTrackerSync --> ShowProgress
 
     CheckTracker -->|Yes current| ShowProgress{Show\nprogress}
     ShowProgress --> PromptNext{User:\nNext feature?}
     PromptNext --> WorkOnTask
 
-    CheckTracker -->|No| ShowStatus[Run /blueprint-status]
+    CheckTracker -->|No| ShowStatus[Run /blueprint:status]
     ShowStatus --> PromptOptions{User:\nWhat to do?}
     PromptOptions --> Done
 
@@ -95,16 +95,16 @@ graph TD
 **Common Use Cases:**
 ```bash
 # Morning start routine
-/blueprint-execute  # Figures out where you left off
+/blueprint:execute  # Figures out where you left off
 
 # After pulling changes
-/blueprint-execute  # Checks for stale content, upgrades
+/blueprint:execute  # Checks for stale content, upgrades
 
 # Periodic check-in
-/blueprint-execute  # Shows progress, suggests next work
+/blueprint:execute  # Shows progress, suggests next work
 
 # When stuck or unsure
-/blueprint-execute  # Always knows what to do next
+/blueprint:execute  # Always knows what to do next
 ```
 
 ---
@@ -115,19 +115,19 @@ The complete journey from initialization to implementation:
 
 ```mermaid
 graph TB
-    Start([Start New Project]) --> Init[/blueprint-init/]
+    Start([Start New Project]) --> Init[/blueprint:init/]
 
     Init --> InitArtifacts{Setup Type?}
-    InitArtifacts -->|Existing Project| GenPRD[/blueprint-prd/]
+    InitArtifacts -->|Existing Project| GenPRD[/blueprint:prd/]
     InitArtifacts -->|New Project| WritePRD[Write PRDs manually]
-    InitArtifacts -->|Architecture| GenADR[/blueprint-adr/]
+    InitArtifacts -->|Architecture| GenADR[/blueprint:adr/]
 
     GenPRD --> PRDs[(docs/prds/)]
     WritePRD --> PRDs
     GenADR --> ADRs[(docs/adrs/)]
 
-    PRDs --> GenRules[/blueprint-generate-rules/]
-    PRDs --> GenCmds[/blueprint-generate-commands/]
+    PRDs --> GenRules[/blueprint:generate-rules/]
+    PRDs --> GenCmds[/blueprint:generate-commands/]
 
     GenRules --> Rules[(4 Behavioral Rules)]
     GenCmds --> Commands[(Project Commands)]
@@ -135,8 +135,8 @@ graph TB
     Rules --> FeatureWork{Need to implement?}
     Commands --> FeatureWork
 
-    FeatureWork -->|Complex Feature| CreatePRP[/blueprint-prp-create/]
-    FeatureWork -->|Isolated Task| CreateWO[/blueprint-work-order/]
+    FeatureWork -->|Complex Feature| CreatePRP[/blueprint:prp-create/]
+    FeatureWork -->|Isolated Task| CreateWO[/blueprint:work-order/]
 
     CreatePRP --> ResearchPhase[Research Phase]
     ResearchPhase --> CurateAIDocs[Curate ai_docs]
@@ -150,7 +150,7 @@ graph TB
     PRP --> ConfidenceCheck{Confidence >= 7?}
     ConfidenceCheck -->|No| MoreResearch[More Research Needed]
     MoreResearch --> ResearchPhase
-    ConfidenceCheck -->|Yes| ExecutePRP[/blueprint-prp-execute/]
+    ConfidenceCheck -->|Yes| ExecutePRP[/blueprint:prp-execute/]
 
     CreateWO --> WorkOrder[(Work-Order)]
     WorkOrder --> OptionalGH{Create GitHub Issue?}
@@ -175,7 +175,7 @@ graph TB
     FixTests --> TDDCycle
 
     ValidationGates -->|All Pass| UpdateProgress[Update feature-tracker.json]
-    UpdateProgress --> TrackFeatures[/blueprint-feature-tracker-sync/]
+    UpdateProgress --> TrackFeatures[/blueprint:feature-tracker-sync/]
 
     TrackFeatures --> MoreWork{More work?}
     MoreWork -->|Yes| FeatureWork
@@ -200,7 +200,7 @@ Detailed view of PRP creation with research and confidence scoring:
 ```mermaid
 sequenceDiagram
     actor User
-    participant CMD as /blueprint-prp-create
+    participant CMD as /blueprint:prp-create
     participant Explore as Explore Agent
     participant WebSearch as Web/Docs
     participant Confidence as Confidence Skill
@@ -257,7 +257,7 @@ The RED → GREEN → REFACTOR workflow with validation gates:
 ```mermaid
 sequenceDiagram
     actor User
-    participant CMD as /blueprint-prp-execute
+    participant CMD as /blueprint:prp-execute
     participant PRP as PRP Document
     participant Tests as Test Suite
     participant Code as Implementation
@@ -319,7 +319,7 @@ How work-orders connect to GitHub for team visibility:
 ```mermaid
 graph LR
     subgraph "Work-Order Creation"
-        A[/blueprint-work-order/] --> B{Mode?}
+        A[/blueprint:work-order/] --> B{Mode?}
         B -->|Default| C[Analyze current state]
         B -->|--from-issue N| D[Fetch GitHub issue #N]
 
@@ -367,10 +367,10 @@ How conflict detection works when creating new ADRs:
 ```mermaid
 sequenceDiagram
     actor User
-    participant CMD as /blueprint-adr
+    participant CMD as /blueprint:adr
     participant Skill as adr-relationships
     participant ADRs as docs/adrs/
-    participant Validate as /blueprint-adr-validate
+    participant Validate as /blueprint:adr-validate
 
     User->>CMD: Create new ADR for state management
 
@@ -411,7 +411,7 @@ sequenceDiagram
     CMD->>User: ADR created with relationships
 
     Note over User,Validate: Later: Validation
-    User->>Validate: Run /blueprint-adr-validate
+    User->>Validate: Run /blueprint:adr-validate
     Validate->>ADRs: Scan all ADRs
     Validate->>Validate: Check reference integrity
     Validate->>Validate: Check domain conflicts
@@ -463,22 +463,22 @@ graph TD
     end
 
     subgraph Triggers
-        T1["User runs /blueprint-generate-rules"] --> BD
-        T2["User runs /blueprint-generate-commands"] --> BD
+        T1["User runs /blueprint:generate-rules"] --> BD
+        T2["User runs /blueprint:generate-commands"] --> BD
 
         T3["Creating PRP"] --> CS
         T4["Creating work-order"] --> CS
 
-        T5["Running /blueprint-feature-tracker-sync"] --> FT
-        T6["Running /blueprint-feature-tracker-status"] --> FT
+        T5["Running /blueprint:feature-tracker-sync"] --> FT
+        T6["Running /blueprint:feature-tracker-status"] --> FT
 
         T7["New feature discussed"] --> DD
         T8["Architecture decision made"] --> DD
 
         T9["Creating ADR in existing domain"] --> AR
-        T10["Running /blueprint-adr-validate"] --> AR
+        T10["Running /blueprint:adr-validate"] --> AR
 
-        T11["Running /blueprint-upgrade"] --> MG
+        T11["Running /blueprint:upgrade"] --> MG
     end
 
     subgraph Actions
@@ -521,11 +521,11 @@ How the plugin, generated, and custom layers interact:
 ```mermaid
 graph TB
     subgraph "Layer 1: Plugin (Auto-updated)"
-        P1["/blueprint-init"]
-        P2["/blueprint-prd"]
-        P3["/blueprint-prp-create"]
-        P4["/blueprint-prp-execute"]
-        P5["/blueprint-work-order"]
+        P1["/blueprint:init"]
+        P2["/blueprint:prd"]
+        P3["/blueprint:prp-create"]
+        P4["/blueprint:prp-execute"]
+        P5["/blueprint:work-order"]
         P6["Skills: blueprint-development,\nconfidence-scoring, etc."]
     end
 
@@ -540,8 +540,8 @@ graph TB
         C3[".claude/rules/\nManual project rules"]
     end
 
-    PRD[(docs/prds/)] --> Generate[/blueprint-generate-rules/]
-    PRD --> Generate2[/blueprint-generate-commands/]
+    PRD[(docs/prds/)] --> Generate[/blueprint:generate-rules/]
+    PRD --> Generate2[/blueprint:generate-commands/]
 
     Generate --> G1
     Generate2 --> G2

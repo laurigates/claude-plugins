@@ -1,5 +1,4 @@
 ---
-model: haiku
 name: git-branch-naming
 description: |
   Git branch naming conventions for consistent, traceable branches. Use when creating

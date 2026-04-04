@@ -1,5 +1,4 @@
 ---
-model: opus
 description: Analyze all plugins for sub-agent opportunities. Identifies skills with verbose output, gaps in agent coverage, and model selection improvements.
 args: "[--focus <plugin-name>]"
 allowed-tools: Glob, Grep, Read, Bash(ls *), Bash(wc *), TodoWrite

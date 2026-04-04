@@ -50,7 +50,6 @@ Skills live in `<plugin-name>/skills/<skill-name>/SKILL.md` (or `skill.md`).
 
 ```yaml
 ---
-model: <opus|sonnet|haiku>
 name: <Skill Name>        # Optional: uses directory name if omitted
 description: <1-2 sentence description of capability>
 allowed-tools: <Comma-separated list of tools>
@@ -118,19 +117,9 @@ Run helper: !`bash ${CLAUDE_SKILL_DIR}/scripts/helper.sh`
 
 ### Model Selection
 
-Choose the appropriate model based on task complexity:
+Skills inherit the user's active model by default. Do not set `model:` in skill frontmatter — this avoids forcing a specific model variant that may differ from the user's preferred model or require a tier they don't have access to.
 
-| Model | Use For |
-|-------|---------|
-| `opus` | Deep reasoning, architecture decisions, debugging methodology, security analysis, complex code review |
-| `sonnet` | Development workflows requiring judgment, code generation with analysis, framework expertise, multi-step pattern-based reasoning |
-| `haiku` | Simple CLI operations, formatting, configuration, status checks, standard mechanical workflows |
-
-**Guidelines:**
-- Default to `sonnet` for tasks requiring moderate reasoning or development expertise
-- Use `haiku` for straightforward, mechanical tasks (CLI tools, formatting, status checks)
-- Use `opus` only when the skill requires deep reasoning, security analysis, or complex decision-making
-- Consider: "Does this need deep reasoning (opus), moderate judgment (sonnet), or mechanical execution (haiku)?"
+> **Note**: The `model:` field is still supported in agent definitions (see `.claude/rules/agent-development.md`) where explicit model selection may be appropriate.
 
 ### Date Fields
 
@@ -215,7 +204,6 @@ Skills that accept arguments use the same frontmatter as other skills, with addi
 
 ```yaml
 ---
-model: <opus|sonnet|haiku>
 name: <skill-name>
 description: <What it does, with trigger phrases>
 args: <argument specification>

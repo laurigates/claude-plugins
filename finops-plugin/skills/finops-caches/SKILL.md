@@ -1,5 +1,4 @@
 ---
-model: haiku
 description: Analyze cache usage - size, breakdown by prefix/branch, stale cache detection
 args: "[repo|org:orgname]"
 allowed-tools: Bash(gh api *), Bash(gh repo *), Bash(bash *), Read, TodoWrite

@@ -1,5 +1,4 @@
 ---
-model: haiku
 name: Lightning CSS
 description: |
   CSS transpilation, bundling, and minification using Lightning CSS (Rust-based).

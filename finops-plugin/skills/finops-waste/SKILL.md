@@ -1,5 +1,4 @@
 ---
-model: haiku
 description: Identify workflow waste patterns and suggest fixes - skipped runs, bot triggers, missing concurrency
 args: "[repo]"
 allowed-tools: Bash(gh api *), Bash(gh workflow *), Bash(gh repo *), Bash(bash *), Read, Grep, Glob, Edit, TodoWrite

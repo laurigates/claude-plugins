@@ -1,5 +1,4 @@
 ---
-model: opus
 name: debugging-methodology
 description: Systematic debugging approach with tool recommendations for memory, performance, and system-level issues.
 user-invocable: false

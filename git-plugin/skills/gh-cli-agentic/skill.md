@@ -1,5 +1,4 @@
 ---
-model: haiku
 name: gh-cli-agentic
 description: GitHub CLI commands optimized for AI agent workflows with JSON output and deterministic execution patterns.
 user-invocable: false
