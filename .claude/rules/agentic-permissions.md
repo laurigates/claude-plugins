@@ -1,7 +1,7 @@
 ---
 created: 2026-01-16
-modified: 2026-03-26
-reviewed: 2026-03-26
+modified: 2026-03-02
+reviewed: 2026-03-02
 paths:
   - "**/skills/**"
   - "**/SKILL.md"
@@ -9,29 +9,6 @@ paths:
 ---
 
 # Agentic Permissions
-
-## Permission Modes
-
-Claude Code supports two permission models:
-
-| Mode | How it works | When to use |
-|------|-------------|-------------|
-| **Auto mode** | AI classifiers approve/deny actions across 3 tiers (safe tools, in-project edits, classifier). See `.claude/rules/auto-mode.md`. | Recommended default. Reduces approval fatigue while maintaining safety. |
-| **Manual mode** | Users approve each action unless pre-allowed via `allowed-tools` or `settings.json`. | When deterministic, auditable control is required. |
-
-### `allowed-tools` and Auto Mode
-
-In both modes, `allowed-tools` in skill frontmatter defines the **subagent permission boundary** — when a skill runs via `agent:` or `Task`, only listed tools are available. In auto mode, the main session does not need granular Bash patterns since the classifier handles them.
-
-**For new skills targeting auto mode**, broader patterns are acceptable:
-```yaml
-# Auto mode — classifier handles safety per-request
-allowed-tools: Bash, Read, Edit, Write, Grep, Glob, TodoWrite
-```
-
-**For skills requiring manual mode compatibility**, use the granular patterns documented below.
-
-## Manual Mode Permissions
 
 Skills should use granular `allowed-tools` permissions to enable seamless, deterministic execution without interactive approval prompts.
 
@@ -216,24 +193,7 @@ Commands should use output formats optimized for AI parsing.
 
 ## Project Settings Recommendation
 
-### With Auto Mode (Recommended)
-
-With auto mode enabled, granular Bash patterns in `settings.json` are unnecessary — the classifier handles them. Only add explicit permissions for tools auto mode does not cover:
-
-```json
-{
-  "permissions": {
-    "allow": [
-      "WebFetch(domain:your-docs-site.com)",
-      "mcp__your-mcp-server"
-    ]
-  }
-}
-```
-
-### Without Auto Mode (Manual)
-
-For manual mode, recommend adding to `.claude/settings.json`:
+For projects using plugins with these patterns, recommend adding to `.claude/settings.json`:
 
 ```json
 {
@@ -289,15 +249,6 @@ Use `find` for file/directory discovery (succeeds with empty output when no matc
 - Use existence checks (`test -f`, `test -d`) for boolean context
 
 ## Checklist for New Skills
-
-### Auto Mode
-
-- [ ] Lists all tools needed for subagent execution in `allowed-tools`
-- [ ] Context commands use JSON/porcelain output
-- [ ] Context commands contain no shell operators (`>`, `|`, `||`, `&&`, `;`)
-- [ ] Context commands use `find` for file/directory discovery
-
-### Manual Mode
 
 - [ ] Uses granular `Bash(command *)` patterns for primary CLI tools
 - [ ] Shell utility operations (`test`, `jq`, `find`, `cp`, `mkdir`) use scripts with `Bash(bash *)`
