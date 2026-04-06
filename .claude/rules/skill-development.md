@@ -1,7 +1,7 @@
 ---
 created: 2025-12-20
-modified: 2026-03-26
-reviewed: 2026-03-26
+modified: 2026-03-09
+reviewed: 2026-03-09
 paths:
   - "**/skills/**"
   - "**/SKILL.md"
@@ -61,8 +61,6 @@ reviewed: YYYY-MM-DD
 ```
 
 > **Note**: `name` is optional — if omitted, the directory name is used. `description` is strongly recommended so Claude knows when to load the skill.
-
-> **Auto mode note**: With auto mode, Tier 1 tools (Read, Grep, Glob) and Tier 2 tools (Edit, Write for in-project files) are automatically allowed. However, `allowed-tools` remains required because it defines the permission boundary when skills run as subagents. With auto mode as the expected model, `Bash` (broad) is acceptable — the classifier handles safety per-request. See `.claude/rules/auto-mode.md`.
 
 ### Optional Frontmatter Fields
 
