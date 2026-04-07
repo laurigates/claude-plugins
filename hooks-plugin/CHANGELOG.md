@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.3](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.16.2...hooks-plugin-v1.16.3) (2026-04-07)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** replace prompt hook with command script for task completeness ([#1010](https://github.com/laurigates/claude-plugins/issues/1010)) ([9c03197](https://github.com/laurigates/claude-plugins/commit/9c03197c1a6578ba745202a2b8cd6424008644d7))
+
 ## [1.16.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.16.1...hooks-plugin-v1.16.2) (2026-04-01)
 
 
