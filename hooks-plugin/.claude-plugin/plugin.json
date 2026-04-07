@@ -118,9 +118,9 @@
             "timeout": 10000
           },
           {
-            "type": "prompt",
-            "prompt": "You are evaluating whether Claude should stop working. Respond with ONLY a JSON object, no other text.\n\nFirst: if stop_hook_active is true in the input, respond with {\"ok\": true} immediately.\n\nOtherwise, analyze the conversation context: $ARGUMENTS\n\nIMPORTANT: If Claude's last message asks the user for confirmation or permission before proceeding (e.g. 'Want me to apply this?', 'Shall I open a PR?', 'Would you like me to commit?', 'Should I proceed?'), respond with {\"ok\": true}. Claude is correctly pausing for user approval before a potentially irreversible action — this is a valid and complete response, not missing work.\n\nOtherwise check:\n1. Were all user-requested tasks completed?\n2. Are there incomplete TODO items or unaddressed requirements?\n3. Did Claude encounter errors that still need fixing?\n4. Were there explicit deliverables (commits, PRs, files) that haven't been produced yet?\n\nRespond with ONLY one of these JSON objects (no markdown, no explanation, no other text):\n{\"ok\": true}\n{\"ok\": false, \"reason\": \"brief description of remaining work\"}",
-            "timeout": 30,
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/task-completeness.sh",
+            "timeout": 10000,
             "statusMessage": "Checking task completeness..."
           },
           {
