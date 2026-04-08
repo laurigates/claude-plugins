@@ -77,8 +77,8 @@ PATCH: Bug fixes, documentation updates
 
 | Command | Purpose |
 |---------|---------|
-| `/blueprint-status` | Display version, configuration, upgrade availability |
-| `/blueprint-upgrade` | Upgrade manifest to latest format |
+| `/blueprint:status` | Display version, configuration, upgrade availability |
+| `/blueprint:upgrade` | Upgrade manifest to latest format |
 
 ### Marketplace Sync
 
@@ -119,7 +119,7 @@ The `marketplace.json` reflects plugin versions:
 2. Update `plugin.json` version
 3. Update `marketplace.json` version
 4. Write migration notes if MAJOR change
-5. Update `/blueprint-upgrade` if manifest format changes
+5. Update `/blueprint:upgrade` if manifest format changes
 
 ### Breaking Changes (MAJOR)
 

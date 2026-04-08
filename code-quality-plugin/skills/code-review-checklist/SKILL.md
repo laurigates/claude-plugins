@@ -1,5 +1,4 @@
 ---
-model: opus
 name: code-review-checklist
 description: Structured code review approach covering security, quality, performance, and consistency.
 user-invocable: false

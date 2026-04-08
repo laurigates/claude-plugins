@@ -1,5 +1,4 @@
 ---
-model: haiku
 description: "Run test → fix → refactor loop with TDD workflow"
 args: "[test-pattern] [--max-cycles <N>]"
 argument-hint: "Test pattern to focus on, --max-cycles to limit iterations"

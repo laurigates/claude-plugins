@@ -1,5 +1,4 @@
 ---
-model: haiku
 name: plugin-registry
 description: |
   Understanding Claude Code's plugin registry structure, installation scopes,

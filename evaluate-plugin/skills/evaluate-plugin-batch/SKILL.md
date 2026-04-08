@@ -1,5 +1,4 @@
 ---
-model: opus
 name: evaluate-plugin-batch
 description: |
   Batch evaluate all skills in a plugin. Runs /evaluate:skill for each skill

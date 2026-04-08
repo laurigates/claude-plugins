@@ -1,5 +1,4 @@
 ---
-model: haiku
 name: changelog-review
 description: |
   Analyze Claude Code changelog for changes that impact plugin development.

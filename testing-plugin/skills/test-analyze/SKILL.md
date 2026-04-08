@@ -1,5 +1,4 @@
 ---
-model: opus
 description: Analyze test results and create systematic fix plan with subagent delegation
 args: "<results-path> [--type <test-type>] [--focus <area>]"
 argument-hint: "Path to test results (e.g., ./test-results/), optional --type and --focus filters"

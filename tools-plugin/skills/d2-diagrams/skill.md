@@ -1,5 +1,4 @@
 ---
-model: haiku
 name: d2-diagrams
 description: |
   Generate diagrams from declarative text using D2 - modern text-to-diagram language with

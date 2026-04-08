@@ -1,5 +1,4 @@
 ---
-model: haiku
 name: bun-development
 description: Bun runtime for running scripts, testing, building, and project initialization - optimized flags for fast feedback and minimal output.
 user-invocable: false

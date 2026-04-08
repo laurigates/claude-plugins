@@ -1,5 +1,4 @@
 ---
-model: sonnet
 name: custom-agent-definitions
 description: |
   Write and configure custom agent definitions in Claude Code's agents/ directory. Use

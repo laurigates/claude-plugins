@@ -84,7 +84,7 @@ Analyze project state and continue development where you left off.
 /project:continue
 ```
 
-**Note:** Generic template that should be customized per project using `/blueprint-generate-commands`. Project-specific version is generated to `.claude/skills/project-continue/SKILL.md`.
+**Note:** Generic template that should be customized per project using `/blueprint:generate-commands`. Project-specific version is generated to `.claude/skills/project-continue/SKILL.md`.
 
 ### `/project:test-loop`
 Run automated TDD cycle: test → fix → refactor.
@@ -101,7 +101,7 @@ Run automated TDD cycle: test → fix → refactor.
 /project:test-loop
 ```
 
-**Note:** Generic template that should be customized per project using `/blueprint-generate-commands`. Project-specific version is generated to `.claude/skills/project-test-loop/SKILL.md`.
+**Note:** Generic template that should be customized per project using `/blueprint:generate-commands`. Project-specific version is generated to `.claude/skills/project-test-loop/SKILL.md`.
 
 ### `/changelog:review`
 Review Claude Code changelog for changes impacting plugin development.
@@ -251,8 +251,8 @@ Follow strict RED → GREEN → REFACTOR workflow:
 ## Integration
 
 ### With Blueprint Plugin
-- `/blueprint-generate-commands` - Creates project-specific versions of generic commands
-- `/blueprint-work-order` - Create work orders before starting features
+- `/blueprint:generate-commands` - Creates project-specific versions of generic commands
+- `/blueprint:work-order` - Create work orders before starting features
 
 ### With Git Plugin
 - `/git:smartcommit` - Conventional commits integration

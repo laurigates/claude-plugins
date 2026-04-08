@@ -1,5 +1,4 @@
 ---
-model: haiku
 name: UnoCSS
 description: |
   Atomic CSS engine for on-demand utility class generation using UnoCSS.

@@ -1,5 +1,4 @@
 ---
-model: haiku
 name: dns-tools
 description: Modern DNS query tools with focus on dog for readable, colorized output and modern protocol support (DoT/DoH).
 user-invocable: false

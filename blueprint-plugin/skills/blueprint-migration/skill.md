@@ -1,5 +1,4 @@
 ---
-model: sonnet
 name: blueprint-migration
 description: Versioned migration procedures for upgrading blueprint structure between format versions
 user-invocable: false

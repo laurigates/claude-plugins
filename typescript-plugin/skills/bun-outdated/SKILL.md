@@ -1,5 +1,4 @@
 ---
-model: haiku
 description: Check for outdated dependencies
 args: "[package]"
 argument-hint: "Optional package name to check specific dependency"

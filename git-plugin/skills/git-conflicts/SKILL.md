@@ -1,5 +1,4 @@
 ---
-model: sonnet
 name: git-conflicts
 description: |
   Resolve merge conflicts. Use when a merge or rebase has conflicts, a PR

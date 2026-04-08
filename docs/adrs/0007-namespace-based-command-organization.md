@@ -56,7 +56,7 @@ commands/
 
 Some commands remain at root level for discoverability:
 
-- `/blueprint-init` - High-frequency entry point
+- `/blueprint:init` - High-frequency entry point
 - `/prp-create` - Direct access to PRP creation
 - `/handoffs` - Cross-cutting utility
 

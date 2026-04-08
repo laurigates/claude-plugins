@@ -1,5 +1,4 @@
 ---
-model: sonnet
 created: 2026-01-14
 modified: 2026-02-17
 reviewed: 2026-01-30
@@ -45,7 +44,7 @@ Run through these checks in order, executing the first matching action:
 test -f docs/blueprint/manifest.json
 ```
 
-**If NOT initialized**: Run `/blueprint-init`, then **Exit**.
+**If NOT initialized**: Run `/blueprint:init`, then **Exit**.
 
 ### 2. Check for Upgrades
 
@@ -55,7 +54,7 @@ cat docs/blueprint/manifest.json | grep '"format_version"'
 
 **Current format version**: 3.0.0
 
-**If manifest version < 3.0.0**: Run `/blueprint-upgrade`, then **Exit**.
+**If manifest version < 3.0.0**: Run `/blueprint:upgrade`, then **Exit**.
 
 ### 2.5. Check Task Registry for Due Tasks
 
@@ -92,7 +91,7 @@ cat docs/blueprint/manifest.json | jq -r '.derived_rules.last_derived_at // empt
 
 Check each generated rule hash against manifest:
 
-**If stale** (PRDs changed since generation): Prompt to regenerate or skip. If regenerate, run `/blueprint-generate-rules`, then **Exit**.
+**If stale** (PRDs changed since generation): Prompt to regenerate or skip. If regenerate, run `/blueprint:generate-rules`, then **Exit**.
 
 **If modified** (user edited generated files): Prompt to review, promote to custom layer, or skip. Execute selected action, then **Exit**.
 
@@ -103,7 +102,7 @@ prd_count=$(find docs/prds -name "*.md" 2>/dev/null | wc -l)
 generated_count=$(cat docs/blueprint/manifest.json | jq '.generated.rules | length')
 ```
 
-**If PRDs exist but no generated rules**: Run `/blueprint-generate-rules`, then **Exit**.
+**If PRDs exist but no generated rules**: Run `/blueprint:generate-rules`, then **Exit**.
 
 ### 6. Check for Ready PRPs
 
@@ -113,7 +112,7 @@ find docs/prps -name "*.md" -type f 2>/dev/null
 
 **If multiple high-confidence PRPs (>= 2 with score >= 9)**: Prompt for parallel work-order creation or single PRP execution.
 
-**If single PRP or user selects one**: Run `/blueprint-prp-execute {selected-prp}`, then **Exit**.
+**If single PRP or user selects one**: Run `/blueprint:prp-execute {selected-prp}`, then **Exit**.
 
 ### 7. Check for Pending Work-Orders
 
@@ -151,7 +150,7 @@ test -f docs/blueprint/feature-tracker.json
 
 ### 10. No Clear Next Action - Show Status & Options
 
-Run `/blueprint-status` to display full blueprint status with available next actions.
+Run `/blueprint:status` to display full blueprint status with available next actions.
 
 ---
 
@@ -188,8 +187,8 @@ This meta command **delegates** to existing blueprint commands rather than repla
 | Smart next action | `/blueprint:execute` |
 | Morning start | `/blueprint:execute` (figures out where you left off) |
 | After pulling changes | `/blueprint:execute` (checks for stale content) |
-| Direct init | `/blueprint-init` (skip detection) |
-| Direct PRP execution | `/blueprint-prp-execute {name}` (skip detection) |
+| Direct init | `/blueprint:init` (skip detection) |
+| Direct PRP execution | `/blueprint:prp-execute {name}` (skip detection) |
 
 ---
 

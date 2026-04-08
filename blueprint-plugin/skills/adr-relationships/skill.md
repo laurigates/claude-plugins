@@ -1,5 +1,4 @@
 ---
-model: haiku
 name: adr-relationships
 description: Domain analysis, conflict detection, and relationship validation for Architecture Decision Records. Use when creating or validating ADRs to ensure consistency.
 user-invocable: false

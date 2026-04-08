@@ -1,5 +1,4 @@
 ---
-model: haiku
 name: langchain-development
 description: LangChain JS/TS framework for building LLM-powered applications - models, chains, tools, and RAG patterns.
 user-invocable: false

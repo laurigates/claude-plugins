@@ -1,5 +1,4 @@
 ---
-model: sonnet
 name: docs-latex
 description: |
   Convert Markdown documents to professional LaTeX with TikZ visualizations and compile to PDF.

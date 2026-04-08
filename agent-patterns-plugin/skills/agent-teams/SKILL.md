@@ -1,5 +1,4 @@
 ---
-model: sonnet
 name: agent-teams
 description: |
   Configure and orchestrate Claude Code agent teams (TeamCreate, SendMessage, TaskUpdate

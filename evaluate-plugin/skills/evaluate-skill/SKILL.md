@@ -1,5 +1,4 @@
 ---
-model: opus
 name: evaluate-skill
 description: |
   Evaluate a skill's effectiveness by running test cases and grading results.

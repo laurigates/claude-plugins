@@ -1,5 +1,4 @@
 ---
-model: sonnet
 name: ci-autofix-reusable
 description: |
   Generate a reusable GitHub Actions workflow for automated CI failure detection

@@ -1,5 +1,4 @@
 ---
-model: haiku
 description: Analyze workflow runs - frequency, duration, success rates, and efficiency
 args: "[repo] [--created RANGE]"
 allowed-tools: Bash(gh api *), Bash(gh workflow *), Bash(gh repo *), Bash(bash *), Read, TodoWrite

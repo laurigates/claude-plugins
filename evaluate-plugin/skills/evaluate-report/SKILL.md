@@ -1,5 +1,4 @@
 ---
-model: haiku
 name: evaluate-report
 description: |
   View evaluation results and benchmark reports. Use when you want to see

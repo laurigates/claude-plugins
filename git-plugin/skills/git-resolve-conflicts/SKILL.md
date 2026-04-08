@@ -1,5 +1,4 @@
 ---
-model: haiku
 name: git-resolve-conflicts
 description: |
   Resolve merge conflicts in pull requests. Use when a PR has merge conflicts

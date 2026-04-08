@@ -1,5 +1,4 @@
 ---
-model: sonnet
 name: configure-web-session
 description: |
   Set up a SessionStart hook so Claude Code on the web installs project-specific

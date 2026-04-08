@@ -1,5 +1,4 @@
 ---
-model: haiku
 description: Validate Home Assistant YAML configuration files for syntax and structure errors
 args: "[path]"
 allowed-tools: Bash(python3 *), Bash(docker exec *), Bash(ha *), Read, Grep, Glob

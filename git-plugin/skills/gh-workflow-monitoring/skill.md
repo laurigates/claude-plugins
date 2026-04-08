@@ -1,5 +1,4 @@
 ---
-model: haiku
 name: gh-workflow-monitoring
 description: Monitor GitHub Actions workflow runs using blocking watch commands instead of polling with timeouts.
 user-invocable: false

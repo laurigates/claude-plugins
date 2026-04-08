@@ -1,5 +1,4 @@
 ---
-model: haiku
 name: attributes-dashboard
 description: Compact text-based health dashboard showing scores, findings, and severity breakdown. Use for at-a-glance codebase health visibility.
 allowed-tools: Bash(test *), Read, Glob, Grep

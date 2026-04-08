@@ -11,7 +11,6 @@ args: "<parent-issue> [--add <N...>] [--remove <N...>] [--create \"title\"] [--s
 argument-hint: <parent-issue> [--add N] [--status] [--deps] [--block N]
 user-invocable: true
 allowed-tools: Bash(gh api *), Bash(gh issue *), Bash(git remote *), Read, Grep, Glob, TodoWrite
-model: sonnet
 ---
 
 ## Context

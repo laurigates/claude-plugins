@@ -1,5 +1,4 @@
 ---
-model: haiku
 description: Compare FinOps metrics across multiple repositories in an organization
 args: "<org> [repo1 repo2 ...] [--limit N]"
 allowed-tools: Bash(gh api *), Bash(gh repo *), Bash(bash *), Read, TodoWrite

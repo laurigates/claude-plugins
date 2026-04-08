@@ -1,5 +1,4 @@
 ---
-model: haiku
 name: git-api-pr
 description: Create PRs via GitHub API without local git operations. Use when you want to submit file changes as a PR without committing locally — for quick fixes, typos, config updates, or when you want a clean workflow that bypasses local git state entirely.
 args: <file...> --title <title> [--base <branch>] [--branch <name>] [--body <text>] [--draft] [--delete]

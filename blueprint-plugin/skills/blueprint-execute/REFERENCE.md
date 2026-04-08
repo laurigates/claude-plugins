@@ -47,7 +47,7 @@ options:
 question: "You've modified generated content. What would you like to do?"
 options:
   - label: "Review changes"
-    description: "Run /blueprint-sync to see what changed"
+    description: "Run /blueprint:sync to see what changed"
   - label: "Promote to custom layer"
     description: "Move edited files to custom layer to prevent regeneration"
   - label: "Skip for now"
@@ -131,7 +131,7 @@ options:
   - label: "Create PRP for feature"
     description: "Create detailed implementation plan"
   - label: "View detailed status"
-    description: "Run /blueprint-feature-tracker-status"
+    description: "Run /blueprint:feature-tracker-status"
   - label: "Continue to other actions"
     description: "Skip feature work for now"
 ```
@@ -149,7 +149,7 @@ Output:
 Blueprint not initialized in this project.
 
 Initializing blueprint structure...
-[Runs /blueprint-init]
+[Runs /blueprint:init]
 ```
 
 ### Example 2: Has Ready PRPs
@@ -181,7 +181,7 @@ Blueprint Status: Up to date (v3.0.0)
 
 No pending PRPs, work-orders, or stale content detected.
 
-[Shows full status from /blueprint-status]
+[Shows full status from /blueprint:status]
 [Prompts: What would you like to do next?]
 ```
 

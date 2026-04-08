@@ -1,5 +1,4 @@
 ---
-model: sonnet
 created: 2026-01-02
 modified: 2026-02-17
 reviewed: 2026-02-04
@@ -80,7 +79,7 @@ test -f docs/blueprint/feature-tracker.json
 **If not found**, report:
 ```
 Feature tracking not enabled in this project.
-Run `/blueprint-init` and enable feature tracking to get started.
+Run `/blueprint:init` and enable feature tracking to get started.
 ```
 
 ### Step 2: Load current state
@@ -214,7 +213,7 @@ Use AskUserQuestion:
 question: "Sync complete. What would you like to do next?"
 options:
   - label: "View detailed status"
-    description: "Run /blueprint-feature-tracker-status for full breakdown"
+    description: "Run /blueprint:feature-tracker-status for full breakdown"
   - label: "Continue development"
     description: "Run /project:continue to work on next task"
   - label: "I'm done"

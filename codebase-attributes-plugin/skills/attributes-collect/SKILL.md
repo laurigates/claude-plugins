@@ -1,5 +1,4 @@
 ---
-model: haiku
 name: attributes-collect
 description: Collect codebase health attributes as structured JSON. Use when you need a structured assessment of project health before routing to specialized agents.
 allowed-tools: Bash(test *), Bash(wc *), Read, Glob, Grep, TodoWrite

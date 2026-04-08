@@ -1,5 +1,4 @@
 ---
-model: sonnet
 created: 2026-01-02
 modified: 2026-02-06
 reviewed: 2026-01-02
@@ -17,7 +16,7 @@ Display feature tracker statistics, phase progress, and completion summary.
    - If not found, report:
      ```
      Feature tracking not enabled in this project.
-     Run `/blueprint-init` and enable feature tracking to get started.
+     Run `/blueprint:init` and enable feature tracking to get started.
      ```
 
 2. **Load tracker data**:
@@ -92,7 +91,7 @@ Display feature tracker statistics, phase progress, and completion summary.
    - If `last_updated` is more than 7 days old, warn:
      ```
      Note: Tracker hasn't been synced in {N} days.
-     Run `/blueprint-feature-tracker-sync` to update.
+     Run `/blueprint:feature-tracker-sync` to update.
      ```
 
 7. **Prompt for next action** (use AskUserQuestion):
@@ -119,7 +118,7 @@ Display feature tracker statistics, phase progress, and completion summary.
    ```
 
    **Based on selection:**
-   - "Sync" → Run `/blueprint-feature-tracker-sync`
+   - "Sync" → Run `/blueprint:feature-tracker-sync`
    - "Start next" → Show next not_started feature details, suggest starting
    - "Continue" → Show in_progress features, suggest continuing
    - "View by status" → Ask which status, then list matching features
@@ -186,7 +185,7 @@ Ready to Start:
 - FR4.1: Basic Crafting (Phase 4)
 - FR4.2: Recipe System (Phase 4)
 
-Note: 14 features ready to start. Run `/blueprint-feature-tracker-sync` before beginning new work.
+Note: 14 features ready to start. Run `/blueprint:feature-tracker-sync` before beginning new work.
 ```
 
 **Quick Commands** (shown at end):

@@ -1,5 +1,4 @@
 ---
-model: haiku
 name: skaffold-testing
 description: |
   Container image validation with Skaffold test and verify stages. Covers container-structure-tests

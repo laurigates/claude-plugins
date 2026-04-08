@@ -12,7 +12,6 @@ args: "<operation> <issue-numbers...> [options]"
 argument-hint: <transfer|pin|lock|develop|bulk|fields> <issue-numbers...>
 user-invocable: true
 allowed-tools: Bash(gh issue *), Bash(gh api *), Bash(git switch *), Bash(git remote *), Read, Grep, Glob, TodoWrite, AskUserQuestion
-model: sonnet
 ---
 
 ## Context

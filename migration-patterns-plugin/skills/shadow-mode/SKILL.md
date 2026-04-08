@@ -1,5 +1,4 @@
 ---
-model: opus
 name: shadow-mode
 description: |
   Shadow mode (shadow traffic, dark launching) pattern for validating new systems under

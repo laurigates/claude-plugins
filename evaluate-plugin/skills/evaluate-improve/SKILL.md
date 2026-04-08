@@ -1,5 +1,4 @@
 ---
-model: opus
 name: evaluate-improve
 description: |
   Analyze evaluation results and suggest concrete skill improvements. Use after

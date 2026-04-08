@@ -1,5 +1,4 @@
 ---
-model: haiku
 name: version-badge-pattern
 description: |
   Implement a version badge UI component showing build version, git commit, and

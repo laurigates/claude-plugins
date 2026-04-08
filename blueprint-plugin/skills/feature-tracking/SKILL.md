@@ -1,5 +1,4 @@
 ---
-model: haiku
 created: 2026-01-02
 modified: 2026-02-06
 reviewed: 2026-02-08
@@ -202,8 +201,8 @@ For each feature, verify:
 ## Commands
 
 Related blueprint commands:
-- `/blueprint-feature-tracker-status`: Display statistics and completion summary
-- `/blueprint-feature-tracker-sync`: Synchronize tracker with sync targets
+- `/blueprint:feature-tracker-status`: Display statistics and completion summary
+- `/blueprint:feature-tracker-sync`: Synchronize tracker with sync targets
 
 ## Example: Updating Feature Status
 
@@ -223,7 +222,7 @@ When completing a feature:
    }
    ```
 
-2. Run `/blueprint-feature-tracker-sync` to update:
+2. Run `/blueprint:feature-tracker-sync` to update:
    - Move task from `tasks.in_progress` to `tasks.completed`
    - TODO.md checkboxes
    - Statistics recalculation

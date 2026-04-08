@@ -1,5 +1,4 @@
 ---
-model: sonnet
 name: github-workflow-auto-fix
 description: |
   Set up automated CI failure detection and fixing using Claude Code. Use when

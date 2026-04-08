@@ -1,5 +1,4 @@
 ---
-model: haiku
 description: Quick FinOps summary - org billing and current repo workflow/cache stats
 args: "[org]"
 allowed-tools: Bash(gh api *), Bash(gh repo *), Bash(gh workflow *), Bash(bash *), Read, TodoWrite

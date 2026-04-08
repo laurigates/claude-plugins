@@ -1,5 +1,4 @@
 ---
-model: sonnet
 description: "Synchronize documentation with actual skills, commands, and agents in the codebase"
 args: "[--scope <type>] [--dry-run] [--verbose]"
 argument-hint: "--scope skills|commands|agents, --dry-run to preview, --verbose for details"

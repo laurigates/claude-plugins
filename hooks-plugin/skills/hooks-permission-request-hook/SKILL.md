@@ -1,5 +1,4 @@
 ---
-model: haiku
 name: hooks-permission-request-hook
 description: |
   Generate a PermissionRequest hook that auto-approves safe operations and auto-denies

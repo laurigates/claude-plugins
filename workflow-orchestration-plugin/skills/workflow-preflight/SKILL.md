@@ -1,5 +1,4 @@
 ---
-model: haiku
 name: workflow-preflight
 description: |
   Pre-work validation before starting implementation. Use when beginning work

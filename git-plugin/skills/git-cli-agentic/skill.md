@@ -1,5 +1,4 @@
 ---
-model: haiku
 name: git-cli-agentic
 description: Git commands optimized for AI agent workflows with porcelain output and deterministic execution patterns.
 user-invocable: false
