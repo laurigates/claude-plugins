@@ -25,16 +25,23 @@ jobs:
       releases_created: ${{ steps.release.outputs.releases_created }}
       prs_created: ${{ steps.release.outputs.prs_created }}
     steps:
+      - name: Generate GitHub App Token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ vars.RELEASE_PLEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_PLEASE_PRIVATE_KEY }}
+
       - uses: googleapis/release-please-action@v4
         id: release
         continue-on-error: true
         with:
-          token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Ensure labels on release PRs
         if: steps.release.outputs.prs_created == 'true'
         env:
-          GH_TOKEN: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           # Apply labels via gh CLI as fallback for API eventual consistency
           gh pr list --repo "${{ github.repository }}" \
@@ -53,9 +60,16 @@ jobs:
     needs: [release-please, sync-release-pr]
     if: ${{ needs.release-please.outputs.prs_created == 'true' }}
     steps:
+      - name: Generate GitHub App Token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ vars.RELEASE_PLEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_PLEASE_PRIVATE_KEY }}
+
       - name: Enable auto-merge for release PRs
         env:
-          GH_TOKEN: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           # Get open release-please PRs by branch name pattern
           gh pr list --repo ${{ github.repository }} \
@@ -76,10 +90,17 @@ jobs:
     if: needs.release-please.outputs.prs_created == 'true'
     runs-on: ubuntu-slim
     steps:
+      - name: Generate GitHub App Token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ vars.RELEASE_PLEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_PLEASE_PRIVATE_KEY }}
+
       - name: Get release PR branch
         id: get-pr
         env:
-          GH_TOKEN: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           # Get the most recent release-please PR
           PR_DATA=$(gh pr list --repo ${{ github.repository }} \
@@ -101,7 +122,7 @@ jobs:
       - uses: actions/checkout@v6
         if: steps.get-pr.outputs.found == 'true'
         with:
-          token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
           ref: ${{ steps.get-pr.outputs.pr_branch }}
 
       - name: Sync plugin config files
