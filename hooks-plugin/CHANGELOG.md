@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.5](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.16.4...hooks-plugin-v1.16.5) (2026-04-08)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** add regression test and document prompt-leaking limitation ([#1014](https://github.com/laurigates/claude-plugins/issues/1014)) ([a294964](https://github.com/laurigates/claude-plugins/commit/a29496442ef33e1fe4292a58dcc2f6ba0ecdd5fc))
+
 ## [1.16.4](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.16.3...hooks-plugin-v1.16.4) (2026-04-08)
 
 

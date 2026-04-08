@@ -21,7 +21,7 @@
   "github-actions-plugin": "1.6.1",
   "health-plugin": "1.5.2",
   "home-assistant-plugin": "1.2.1",
-  "hooks-plugin": "1.16.4",
+  "hooks-plugin": "1.16.5",
   "kubernetes-plugin": "1.7.1",
   "langchain-plugin": "1.5.1",
   "migration-patterns-plugin": "1.2.1",
