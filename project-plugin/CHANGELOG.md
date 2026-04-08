@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.4](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.12.3...project-plugin-v1.12.4) (2026-04-08)
+
+
+### Bug Fixes
+
+* **blueprint-plugin:** remove model field from skills and fix invocation syntax ([#1007](https://github.com/laurigates/claude-plugins/issues/1007)) ([42e1e5b](https://github.com/laurigates/claude-plugins/commit/42e1e5b6c73d43e5de4b27cdee16e316de44d4c0))
+
 ## [1.12.3](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.12.2...project-plugin-v1.12.3) (2026-03-25)
 
 

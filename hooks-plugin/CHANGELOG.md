@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.4](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.16.3...hooks-plugin-v1.16.4) (2026-04-08)
+
+
+### Bug Fixes
+
+* **blueprint-plugin:** remove model field from skills and fix invocation syntax ([#1007](https://github.com/laurigates/claude-plugins/issues/1007)) ([42e1e5b](https://github.com/laurigates/claude-plugins/commit/42e1e5b6c73d43e5de4b27cdee16e316de44d4c0))
+
 ## [1.16.3](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.16.2...hooks-plugin-v1.16.3) (2026-04-07)
 
 
