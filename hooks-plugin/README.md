@@ -138,19 +138,25 @@ A PermissionRequest hook that auto-approves safe operations and auto-denies dang
 
 **Toggle:** `CLAUDE_HOOKS_DISABLE_PERMISSION_AUTO=1`
 
+### task-completeness.sh
+
+A Stop hook that checks for obvious signs of incomplete work using deterministic heuristics. Replaces the former `type: "prompt"` task-completeness hook to avoid leaking the full LLM prompt in error output (see [#1009](https://github.com/laurigates/claude-plugins/issues/1009)).
+
+| Check | Trigger |
+|-------|---------|
+| TODO/FIXME/HACK/XXX in uncommitted diff | Blocks with count and message |
+| Merge conflict markers (`<<<<`, `====`, `>>>>`) | Blocks with affected filenames |
+| Debugging artifacts (`console.log`, `debugger;`, `breakpoint()`, `pdb.set_trace`) | Blocks with count |
+| `stop_hook_active=true` in input | Exits 0 immediately (prevents infinite loops) |
+| Non-git directory | Exits 0 silently |
+
+**Toggle:** `CLAUDE_HOOKS_DISABLE_TASK_COMPLETENESS=1`
+
+> **Note on prompt-type Stop hooks**: When a `type: "prompt"` hook on `Stop` or `SubagentStop` returns `{"ok": false}`, Claude Code surfaces the full prompt text in the error message (e.g. `Stop hook error: [You are evaluating...]: reason`). This is a runtime behavior that cannot be configured away. Prefer `type: "command"` hooks with deterministic heuristics for Stop events to avoid this leakage. Only use `type: "prompt"` on Stop hooks when the check genuinely requires LLM judgment and cannot be deterministic.
+
 ## Prompt-Based and Agent-Based Hooks
 
 LLM-powered hooks that use judgment instead of deterministic rules.
-
-### Stop — Task Completeness Gate (prompt)
-
-A `type: "prompt"` hook that evaluates whether Claude completed all user-requested tasks before stopping. Prevents Claude from finishing prematurely with incomplete work.
-
-| Aspect | Detail |
-|--------|--------|
-| Type | `prompt` (single-turn LLM call) |
-| Timeout | 30s |
-| Loop prevention | Checks `stop_hook_active` to avoid infinite loops |
 
 ### Stop — Test Verification (agent)
 
@@ -318,6 +324,7 @@ Every hook can be individually enabled or disabled via environment variables. Se
 | branch-protection.sh | `CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1` | Enabled |
 | auto-checkpoint.sh | `CLAUDE_HOOKS_DISABLE_AUTO_CHECKPOINT=1` | Enabled |
 | permission-auto-approve.sh | `CLAUDE_HOOKS_DISABLE_PERMISSION_AUTO=1` | Enabled |
+| task-completeness.sh | `CLAUDE_HOOKS_DISABLE_TASK_COMPLETENESS=1` | Enabled |
 | event-logger.sh | `CLAUDE_HOOKS_ENABLE_EVENT_LOGGER=1` | **Disabled** (opt-in) |
 
 Example — disable branch protection for a session:
