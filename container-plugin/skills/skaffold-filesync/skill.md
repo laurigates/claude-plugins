@@ -7,8 +7,8 @@ description: |
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-01-21
-modified: 2026-01-21
-reviewed: 2026-01-21
+modified: 2026-04-10
+reviewed: 2026-04-10
 ---
 
 # Skaffold File Sync

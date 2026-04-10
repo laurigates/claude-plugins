@@ -13,6 +13,18 @@ name: finops-workflows
 
 Analyze GitHub Actions workflow runs for a repository - frequency, duration, success rates, and efficiency metrics.
 
+## When to Use
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Analyze workflow run frequency and duration | `/finops:workflows` | - |
+| Investigate high failure rates | `/finops:workflows` | - |
+| Understand trigger type distribution | `/finops:workflows` | - |
+| Org-wide workflow analysis | `/finops:workflows org <name>` | - |
+| Quick overall health snapshot | `/finops:overview` | Use overview for high-level summary |
+| Fix workflow configuration issues | `/finops:waste` | Use waste for actionable config fixes |
+| Compare workflow metrics across repos | `/finops:compare` | Use compare for multi-repo view |
+
 ## Context
 
 - Current repo URL: !`git remote get-url origin`
@@ -78,6 +90,17 @@ Deploy:
 === High Frequency Workflows ===
   CI: 156 runs (~5.2/day) - consider path filters
 ```
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Workflow list (JSON) | `gh workflow list --json name,id,state` |
+| Recent runs (compact) | `gh run list --workflow <name> --limit 20 --json status,conclusion,createdAt` |
+| Failed runs only | `gh run list --status failure --limit 10 --json name,createdAt,url` |
+| Run timing (JSON) | `gh api "/repos/{owner}/{repo}/actions/runs?per_page=50" --jq '.workflow_runs[] | {name,created_at,updated_at,conclusion}'` |
+| Compact per-repo analysis | `bash "${SKILL_DIR}/scripts/workflow-runs.sh" $ARGS` |
+| Org-wide analysis | `bash "${SKILL_DIR}/scripts/workflow-runs-org.sh" $ARGS` |
 
 ## Post-actions
 

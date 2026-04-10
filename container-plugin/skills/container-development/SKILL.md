@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-01-19
-reviewed: 2026-01-19
+modified: 2026-04-10
+reviewed: 2026-04-10
 name: container-development
 description: |
   Container development with Docker, Dockerfiles, 12-factor principles, multi-stage

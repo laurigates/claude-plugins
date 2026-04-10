@@ -1,7 +1,7 @@
 ---
 created: 2026-01-15
-modified: 2026-01-15
-reviewed: 2026-01-15
+modified: 2026-04-10
+reviewed: 2026-04-10
 name: go-containers
 description: |
   Go-specific container optimization patterns including static binary compilation,
