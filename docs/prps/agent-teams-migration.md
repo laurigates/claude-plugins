@@ -4,6 +4,7 @@
 **Modified**: 2026-02-07
 **Status**: Executing
 **Priority**: P1 - Architecture Simplification
+**Confidence**: 7/10
 **Related ADRs**: [ADR-0015](../adrs/0015-agent-teams-adoption.md), [ADR-0009](../adrs/0009-task-focused-agent-consolidation.md)
 
 ---

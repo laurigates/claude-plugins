@@ -24,9 +24,11 @@ This repository was created by migrating Claude Code plugin configurations from 
 | [0008](0008-semantic-versioning-with-manifest.md) | Semantic Versioning with Manifest | Accepted | 2024-12 |
 | [0009](0009-task-focused-agent-consolidation.md) | Task-Focused Agent Consolidation | Accepted | 2024-12 |
 | [0010](0010-proactive-document-detection.md) | Proactive Document Detection | Proposed | 2026-01 |
-| [0011](0011-blueprint-state-in-docs-directory.md) | Blueprint State in docs/ Directory | Proposed | 2026-01 |
+| [0011](0011-blueprint-state-in-docs-directory.md) | Blueprint State in docs/ Directory | Accepted | 2026-01 |
 | [0012](0012-blog-plugin-for-project-documentation.md) | Blog Plugin for Project Documentation | Accepted | 2026-01 |
 | [0013](0013-project-and-blueprint-plugin-separation.md) | Project and Blueprint Plugin Separation | Accepted | 2026-01 |
+| [0014](0014-reusable-workflows-in-repository.md) | Reusable GitHub Workflows in Plugin Repository | Superseded | 2026-01 |
+| [0015](0015-agent-teams-adoption.md) | Adopt Agent Teams and Deprecate Manual Orchestration | Accepted | 2026-02 |
 
 ## Categories
 
@@ -50,6 +52,12 @@ This repository was created by migrating Claude Code plugin configurations from 
 - ADR-0010: Proactive Document Detection
 - ADR-0011: Blueprint State in docs/ Directory
 - ADR-0012: Blog Plugin for Project Documentation
+
+### CI/CD & Infrastructure
+- ADR-0014: Reusable GitHub Workflows in Plugin Repository (Superseded)
+
+### Architecture Evolution
+- ADR-0015: Adopt Agent Teams and Deprecate Manual Orchestration
 
 ## ADR Format
 

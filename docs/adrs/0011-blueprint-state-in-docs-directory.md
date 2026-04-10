@@ -1,7 +1,7 @@
 # ADR-0011: Blueprint State in docs/ Directory
 
 **Date**: 2026-01-09
-**Status**: Proposed
+**Status**: Accepted
 **Deciders**: Blueprint Plugin Maintainers
 
 ## Context
