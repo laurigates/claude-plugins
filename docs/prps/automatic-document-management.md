@@ -4,6 +4,7 @@
 **Modified**: 2026-01-09
 **Status**: Draft
 **Priority**: P1 - High Impact Feature
+**Confidence**: 7/10
 **Related ADRs**: [ADR-0010](../adrs/0010-proactive-document-detection.md), [ADR-0011](../adrs/0011-blueprint-state-in-docs-directory.md)
 
 ---

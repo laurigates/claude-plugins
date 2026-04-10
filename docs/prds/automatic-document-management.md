@@ -1,6 +1,8 @@
 # Automatic Document Management - Product Requirements Document
 
 **Created**: 2026-01-09
+**Modified**: 2026-01-09
+**Reviewed**: 2026-01-09
 **Status**: Draft
 **Version**: 1.0
 **Author**: Blueprint Development Team
