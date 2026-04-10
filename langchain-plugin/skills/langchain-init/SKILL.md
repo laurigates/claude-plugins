@@ -1,5 +1,8 @@
 ---
-description: Initialize a new LangChain TypeScript project with recommended configuration
+description: |
+  Initialize a new LangChain TypeScript project with recommended configuration.
+  Use when starting a new LLM-powered application, scaffolding an AI agent project,
+  or setting up LangChain with TypeScript from scratch.
 args: [project-name]
 allowed-tools: Bash(uv *), Bash(pip *), Bash(python *), Read, Write, Edit
 argument-hint: my-agent-project
@@ -13,6 +16,17 @@ name: langchain-init
 # /langchain:init
 
 Initialize a new LangChain TypeScript project with optimal configuration for building AI agents.
+
+## When to Use
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Starting a new LLM application from scratch | Yes | - |
+| Scaffolding a LangChain TypeScript project | Yes | - |
+| Adding LangChain to an existing project | No | `langchain-development` skill for integration guidance |
+| Building a stateful graph-based agent | No | `langgraph-agents` skill for LangGraph patterns |
+| Building hierarchical multi-agent systems | No | `deep-agents` skill for Deep Agents library |
+| Need Python LangChain setup | No | Manual setup (this skill is TypeScript-only) |
 
 ## Context
 

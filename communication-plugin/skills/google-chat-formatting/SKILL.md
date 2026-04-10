@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-02-14
+modified: 2026-04-10
 reviewed: 2025-12-16
 name: google-chat-formatting
 description: Convert text to Google Chat compatible formatting (Markdown to Google Chat syntax). Use when formatting messages for Google Chat, converting Markdown documents for Google Chat, or when the user mentions Google Chat formatting.
@@ -11,6 +11,16 @@ allowed-tools: Read, Write, Edit, Bash
 # Google Chat Formatting
 
 Expert knowledge for converting Markdown and plain text to Google Chat's limited formatting syntax. Google Chat supports a subset of formatting that differs from standard Markdown.
+
+## When to Use
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Converting Markdown to Google Chat format | Yes | -- |
+| Formatting messages for Google Chat | Yes | -- |
+| Converting text for Slack or Discord | No | Use platform-specific formatting guides |
+| Writing raw Markdown for GitHub or docs | No | Use standard Markdown syntax |
+| Drafting structured tickets or issues | No | Use ticket-drafting-guidelines |
 
 ## Core Expertise
 

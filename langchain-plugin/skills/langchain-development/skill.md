@@ -1,6 +1,9 @@
 ---
 name: langchain-development
-description: LangChain JS/TS framework for building LLM-powered applications - models, chains, tools, and RAG patterns.
+description: |
+  LangChain JS/TS framework for building LLM-powered applications. Use when working
+  with chat models, prompt templates, LCEL chains, tool binding, or RAG pipelines
+  in a LangChain TypeScript project.
 user-invocable: false
 allowed-tools: Bash(python *), Bash(uv *), BashOutput, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-01-08
@@ -9,6 +12,20 @@ reviewed: 2026-01-08
 ---
 
 # LangChain Development
+
+## When to Use
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Working with chat models (OpenAI, Anthropic, etc.) | Yes | - |
+| Building LCEL chains (prompt | model | parser) | Yes | - |
+| Implementing RAG with document loaders and vector stores | Yes | - |
+| Defining and binding custom tools | Yes | - |
+| Using prompt templates and few-shot prompting | Yes | - |
+| Building stateful graph-based agent workflows | No | `langgraph-agents` for LangGraph state machines |
+| Need hierarchical agent orchestration with planning | No | `deep-agents` for Deep Agents library |
+| Scaffolding a brand-new LangChain project | No | `/langchain:init` to generate project boilerplate |
+| Simple one-off API call without LangChain framework | No | Direct SDK usage (`@anthropic-ai/sdk`, `openai`) |
 
 ## Core Expertise
 
