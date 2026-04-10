@@ -1,12 +1,12 @@
 ---
 created: 2025-12-16
-modified: 2026-02-25
+modified: 2026-04-10
 reviewed: 2025-12-16
 allowed-tools: Bash(ruff *), Bash(eslint *), Bash(rustfmt *), Bash(gofmt *), Bash(prettier *), Read, SlashCommand
 args: "[path] [--fix] [--format]"
 argument-hint: [path] [--fix] [--format]
 description: Universal linter that automatically detects and runs the appropriate linting tools
-name: lint-check
+name: code-lint
 ---
 
 ## Context
@@ -75,6 +75,7 @@ If no specific linters found:
 1. Check for Makefile: `make lint`
 2. Check for npm scripts: `npm run lint`
 3. Suggest installing appropriate linters via `/deps:install --dev`
+4. Suggest configuring project linting standards via /configure:linting
 
 ## Post-lint Actions
 

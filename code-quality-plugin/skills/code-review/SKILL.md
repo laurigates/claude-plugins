@@ -85,3 +85,9 @@ For comprehensive review of large codebases, spawn specialized review teammates 
 | Correctness reviewer | Logic errors, edge cases, type safety | Functional correctness in parallel |
 
 This is optional — the skill works without agent teams for standard reviews.
+
+## Related Configure Skills
+
+- If security scanning not configured → `/configure:security`
+- If linting not set up → `/configure:linting`
+- If test coverage not tracked → `/configure:coverage`

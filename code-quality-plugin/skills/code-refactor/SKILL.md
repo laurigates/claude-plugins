@@ -70,3 +70,9 @@ The agent has expertise in:
 - Functional refactoring patterns
 - Code smell detection and remediation
 - Semantic code search for similar patterns
+
+## Related Skills
+
+- If complexity metrics needed before refactoring → `/code:complexity`
+- If duplicated code needs consolidation → `/code:dry-consolidation`
+- If linting standards not configured → `/configure:linting`

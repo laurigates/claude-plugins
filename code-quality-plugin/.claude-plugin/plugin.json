@@ -23,6 +23,11 @@
     "dry-consolidation",
     "duplication",
     "silent-degradation",
-    "preconditions"
+    "preconditions",
+    "dead-code",
+    "dependency-audit",
+    "test-quality",
+    "complexity",
+    "supply-chain"
   ]
 }

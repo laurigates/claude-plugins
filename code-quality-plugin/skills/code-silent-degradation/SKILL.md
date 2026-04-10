@@ -246,3 +246,8 @@ return {
 | Quick scan | `/code:silent-degradation src/` |
 | Scan and fix | `/code:silent-degradation src/ --fix` |
 | Specific file | `/code:silent-degradation src/features/scanner.ts` |
+
+## Related Configure Skills
+
+- If error tracking not configured → `/configure:sentry` for error monitoring
+- If feature flags not managed → `/configure:feature-flags` for controlled rollouts

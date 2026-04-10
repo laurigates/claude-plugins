@@ -45,7 +45,7 @@ Automated quality enforcement.
 | Plugin | Skills | Purpose |
 |--------|--------|---------|
 | testing-plugin | 16 | Test execution, TDD, Vitest, Playwright, Playwright CLI, mutation testing |
-| code-quality-plugin | 14 | Review, refactoring, linting, ast-grep, debugging, silent degradation |
+| code-quality-plugin | 18 | Review, refactoring, linting, ast-grep, debugging, silent degradation, dead code, dep audit, test quality, complexity |
 | documentation-plugin | 5 | API docs, README generation, knowledge graphs |
 | evaluate-plugin | 4 + 3 agents | Skill evaluation, benchmarking, quality improvement |
 
@@ -169,7 +169,7 @@ Install based on your project's tech stack and domain.
 | Plugin | Install when... |
 |--------|-----------------|
 | codebase-attributes-plugin | You want structured health attributes, severity-based agent routing, or a health dashboard |
-| code-quality-plugin | You want code review, refactoring, linting automation |
+| code-quality-plugin | You want code review, refactoring, linting, dead code detection, dependency auditing, test quality analysis, or complexity metrics |
 | documentation-plugin | You need generated docs, knowledge graphs |
 | typescript-plugin | Project uses TypeScript or JavaScript |
 | python-plugin | Project uses Python |
