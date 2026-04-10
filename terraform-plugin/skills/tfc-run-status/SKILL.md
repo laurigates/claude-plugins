@@ -12,6 +12,19 @@ allowed-tools: Bash, Read
 
 Quick status check for Terraform Cloud runs with resource change counts, timestamps, and available actions.
 
+## When to Use
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Check if a run succeeded, failed, or is in progress | `tfc-run-status` | - |
+| See resource add/change/destroy counts | `tfc-run-status` | - |
+| Check if a run can be confirmed, canceled, or discarded | `tfc-run-status` | - |
+| Poll a run until completion | `tfc-run-status` | - |
+| View cost estimate for a run | `tfc-run-status` | - |
+| Read full plan/apply log output | `tfc-run-logs` | Use run-logs for detailed log content |
+| Analyze resource changes as structured data | `tfc-plan-json` | Use plan-json for JSON plan analysis |
+| List multiple runs or filter by status | `tfc-list-runs` | Use list-runs for run history queries |
+
 ## Prerequisites
 
 ```bash
