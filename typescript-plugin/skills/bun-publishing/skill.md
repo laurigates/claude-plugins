@@ -10,6 +10,19 @@ reviewed: 2025-12-21
 
 # Bun npm Publishing
 
+## When to Use This Skill
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Configuring package.json for npm publishing | Yes | N/A |
+| Publishing a package to npm registry | Yes | N/A |
+| Setting up CLI tool packaging with `bin` | Yes | N/A |
+| Configuring provenance signing | Yes | N/A |
+| Setting up release-please automation | Yes | N/A |
+| Validating tarball contents before publish | Yes | N/A |
+| Installing or updating dependencies | No - use `bun-package-manager` | `bun-add` for quick additions |
+| Building/bundling before publish | No - use `bun-development` | `bun-build` for quick builds |
+
 ## Core Expertise
 
 Publishing npm packages built with Bun:

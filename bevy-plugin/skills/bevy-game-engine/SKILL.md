@@ -12,6 +12,18 @@ allowed-tools: Glob, Grep, Read, Bash(cargo *), Edit, Write, TodoWrite, WebFetch
 
 Expert knowledge for developing games with Bevy, the data-driven game engine built in Rust with a focus on ergonomics, modularity, and performance.
 
+## When to Use This Skill
+
+| Use this skill when... | Use bevy-ecs-patterns instead when... |
+|------------------------|---------------------------------------|
+| Starting a new Bevy game project | Optimizing ECS query performance or archetype layout |
+| Learning or applying basic ECS concepts | Implementing complex system scheduling or ordering |
+| Handling input (keyboard, mouse, gamepad) | Using change detection (`Changed<T>`, `Added<T>`) |
+| Managing game states and transitions | Working with `ParamSet` or parallel query iteration |
+| Loading and managing assets | Designing entity relationship hierarchies |
+| Setting up plugins and app structure | Debugging archetype fragmentation or storage strategies |
+| Working with events and resources | Implementing batch spawn or deferred operations |
+
 ## Core Expertise
 
 **Bevy Architecture**
@@ -331,5 +343,19 @@ enum GameSet {
     Render,
 }
 ```
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick compile check | `cargo check 2>&1 \| head -30` |
+| Fast test run | `cargo test --lib -- --test-threads=1 -q` |
+| Run with fast compiles (dev) | `cargo run --features bevy/dynamic_linking` |
+| Run optimized build | `cargo run --release` |
+| Check for common issues | `cargo clippy -- -W clippy::all 2>&1 \| head -50` |
+| List plugins in project | `grep -rn "impl Plugin for" src/ --include="*.rs"` |
+| List game states | `grep -rn "derive.*States" src/ --include="*.rs"` |
+| Find event definitions | `grep -rn "derive.*Event" src/ --include="*.rs"` |
+| List dependencies | `cargo metadata --format-version=1 \| jq -r '.packages[0].dependencies[].name'` |
 
 For detailed ECS patterns, advanced queries, and system scheduling, see the bevy-ecs-patterns skill.

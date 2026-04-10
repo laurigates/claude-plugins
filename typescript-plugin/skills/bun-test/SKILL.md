@@ -13,6 +13,16 @@ name: bun-test
 
 Run tests using Bun's built-in test runner with optimized output.
 
+## When to Use This Skill
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Quickly running tests with compact output | Yes | N/A |
+| Running a specific test file or pattern | Yes | N/A |
+| Running tests with coverage | Yes | N/A |
+| Configuring test runner options in detail | No - use `bun-development` | Full test configuration guidance |
+| Debugging failing tests interactively | No - use `typescript-debugging` | Inspector-based debugging |
+
 ## Parameters
 
 - `pattern` (optional): Test file or name pattern

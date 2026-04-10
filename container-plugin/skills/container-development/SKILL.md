@@ -18,6 +18,21 @@ allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebSearch, WebFet
 
 Expert knowledge for containerization and orchestration with focus on **security-first**, lean container images and 12-factor app methodology.
 
+## When to Use
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Writing or optimizing Dockerfiles | Yes | - |
+| Multi-stage build patterns | Yes | - |
+| Container security hardening | Yes | - |
+| Docker Compose or orchestration | Yes | - |
+| 12-factor app containerization | Yes | - |
+| Go-specific image optimization | No | `go-containers` |
+| Node.js-specific image optimization | No | `nodejs-containers` |
+| Python-specific image optimization | No | `python-containers` |
+| Skaffold file sync configuration | No | `skaffold-filesync` |
+| OrbStack local K8s networking | No | `skaffold-orbstack` |
+
 ## Security Philosophy (Non-Negotiable)
 
 **Non-Root is MANDATORY**: ALL production containers MUST run as non-root users. This is not optional.

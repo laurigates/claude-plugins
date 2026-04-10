@@ -3,12 +3,28 @@ created: 2026-01-01
 modified: 2026-01-01
 reviewed: 2026-01-01
 name: layer2-discovery
-description: Layer 2 network topology mapping and neighbor discovery using LLDP/CDP protocols and ARP scanning. Covers lldpd/lldpcli for switch topology, arp-scan-rs for fast host discovery, and arping for single-host probes.
+description: Discover devices and map physical topology on the local network segment. Use when you need to find which switch port a server is connected to, enumerate hosts via ARP without IP routing, or identify unknown devices by MAC vendor.
 user-invocable: false
 allowed-tools: Bash(arp *), Bash(ip *), Bash(bridge *), Bash(ethtool *), Read, Write, Edit, Grep, Glob
 ---
 
 # Layer 2 Network Discovery
+
+## When to Use
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Find which switch port a server is connected to | Yes | |
+| Enumerate hosts on the local segment via ARP | Yes | |
+| Identify unknown devices by MAC vendor | Yes | |
+| Map physical network topology (LLDP/CDP) | Yes | |
+| Check if a host is alive when ICMP is blocked | Yes (arping) | |
+| Detect duplicate IP addresses | Yes (arping -D) | |
+| Scan for open TCP/UDP ports on remote hosts | | network-discovery (RustScan, nmap) |
+| Trace the network path to a remote host | | network-diagnostics (trippy) |
+| Look up DNS records for a domain | | dns-tools (dog, dig) |
+| Load test an HTTP endpoint | | http-load-testing (oha) |
+| Monitor per-process bandwidth usage | | network-monitoring (bandwhich) |
 
 Expert knowledge for Layer 2 network topology discovery and neighbor detection, operating below the IP layer for direct link-level visibility.
 

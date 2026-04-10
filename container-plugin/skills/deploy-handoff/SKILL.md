@@ -14,6 +14,18 @@ name: deploy-handoff
 
 Generate professional handoff messages for deployed resources and services with all necessary information for developer handoff.
 
+## When to Use
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Handing off a deployed service to another developer | Yes | - |
+| Documenting deployment details for a ticket | Yes | - |
+| Creating client-facing deployment summaries | Yes | - |
+| Generating access information for a new team member | Yes | - |
+| Creating a new release or version tag | No | `deploy-release` |
+| Writing or optimizing Dockerfiles | No | `container-development` |
+| Configuring Skaffold for local development | No | `skaffold-orbstack` |
+
 ## Context
 
 - Git remotes: !`git remote -v`

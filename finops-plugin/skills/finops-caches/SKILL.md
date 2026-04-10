@@ -1,5 +1,5 @@
 ---
-description: Analyze cache usage - size, breakdown by prefix/branch, stale cache detection
+description: Analyze cache usage - size, breakdown by prefix/branch, stale cache detection. Use when investigating GitHub Actions cache bloat, finding stale caches, or auditing cache key strategies.
 args: "[repo|org:orgname]"
 allowed-tools: Bash(gh api *), Bash(gh repo *), Bash(bash *), Read, TodoWrite
 argument-hint: Repo (owner/name), org:orgname for org-wide, or empty for current repo
@@ -12,6 +12,17 @@ name: finops-caches
 # /finops:caches
 
 Analyze GitHub Actions cache usage - size breakdown, cache key patterns, branch distribution, and stale cache detection.
+
+## When to Use
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Cache usage near limit or unknown | `/finops:caches` | - |
+| Identify stale or orphaned PR caches | `/finops:caches` | - |
+| Review cache key strategy effectiveness | `/finops:caches` | - |
+| Quick overall repo health check | `/finops:overview` | Start with overview first |
+| Compare cache usage across repos | `/finops:compare` | Use compare for multi-repo view |
+| Optimize workflow triggers, not caches | `/finops:waste` | Use waste for workflow-level issues |
 
 ## Context
 
@@ -61,6 +72,16 @@ Summary:
 === PR Branch Caches ===
   12 PR caches, 580MB (check if PRs are merged/closed)
 ```
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Cache list (JSON) | `gh api "/repos/{owner}/{repo}/actions/caches?per_page=100" --jq '.actions_caches'` |
+| Total cache count | `gh api "/repos/{owner}/{repo}/actions/caches" --jq '.total_count'` |
+| Delete stale cache | `gh api -X DELETE "/repos/{owner}/{repo}/actions/caches/{id}"` |
+| Cache key search | `gh api "/repos/{owner}/{repo}/actions/caches?key=prefix" --jq '.actions_caches[].key'` |
+| Compact summary | `bash "${SKILL_DIR}/scripts/cache-analysis.sh" $ARGS` |
 
 ## Post-actions
 

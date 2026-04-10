@@ -12,6 +12,20 @@ allowed-tools: Bash, Read, Grep, Glob
 
 Expert knowledge for using `fd` as a fast, user-friendly alternative to `find` with smart defaults and powerful filtering.
 
+## When to Use
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Find files by name or pattern | fd (fast, simple syntax) | find (verbose syntax) |
+| Search with gitignore awareness | fd (automatic) | find (manual excludes) |
+| Find files by extension | fd `-e` flag | Glob tool (simpler cases) |
+| Find files by modification time | fd `--changed-within` | find `-mtime` |
+| Find and execute on results | fd `-x` / `-X` | find `-exec` |
+| Find files by size | fd `--size` | find `-size` |
+| Complex boolean file logic | find (full boolean support) | fd (limited) |
+| POSIX-compatible scripts | find (POSIX standard) | fd (not POSIX) |
+| Search file contents (not names) | rg-code-search | fd (name-only search) |
+
 ## Core Expertise
 
 **fd Advantages**

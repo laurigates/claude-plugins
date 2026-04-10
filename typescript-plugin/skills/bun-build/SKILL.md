@@ -13,6 +13,16 @@ name: bun-build
 
 Bundle JavaScript/TypeScript or compile to standalone executable.
 
+## When to Use This Skill
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Quick production bundle of an entry point | Yes | N/A |
+| Compiling to a standalone executable | Yes | N/A |
+| Building for a specific target (browser/bun/node) | Yes | N/A |
+| Configuring complex build pipelines | No - use `bun-development` | Full build configuration guidance |
+| Running project build scripts (`bun run build`) | No - use `bun-development` | N/A |
+
 ## Parameters
 
 - `entry` (required): Entry point file

@@ -10,6 +10,19 @@ reviewed: 2025-12-20
 
 # Bun Development
 
+## When to Use This Skill
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Running scripts with Bun runtime | Yes | `nodejs-development` for Node.js-specific runtime |
+| Running Bun tests with `bun test` | Yes | `bun-test` for quick invocable test runs |
+| Bundling/building with Bun | Yes | `bun-build` for quick invocable builds |
+| Initializing a new Bun project | Yes | `nodejs-development` for Vite/Vue scaffolding |
+| Compiling to standalone executable | Yes | N/A |
+| Installing or managing dependencies | No - use `bun-package-manager` | `bun-add` for quick package additions |
+| Publishing packages to npm | No - use `bun-publishing` | N/A |
+| Debugging TypeScript/JS code | No - use `typescript-debugging` | N/A |
+
 ## Core Expertise
 
 Bun is an all-in-one JavaScript runtime:

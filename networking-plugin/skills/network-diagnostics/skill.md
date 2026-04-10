@@ -3,12 +3,28 @@ created: 2026-01-01
 modified: 2026-01-01
 reviewed: 2026-01-01
 name: network-diagnostics
-description: Connectivity troubleshooting with modern Rust-based tools - trippy (traceroute/mtr), gping (graphical ping), and ss (socket statistics). Preferred over legacy netstat/traceroute.
+description: Troubleshoot network connectivity, latency, and path issues. Use when you need to trace the route to a host, compare ping latency across endpoints, or inspect local socket/port usage.
 user-invocable: false
 allowed-tools: Bash(ping *), Bash(traceroute *), Bash(mtr *), Bash(netstat *), Bash(ss *), Bash(ip *), Read, Grep, Glob, TodoWrite
 ---
 
 # Network Diagnostics
+
+## When to Use
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Trace the route to a remote host | Yes (trippy) | |
+| Diagnose packet loss or high latency on a path | Yes (trippy) | |
+| Compare ping latency across multiple endpoints | Yes (gping) | |
+| Find what process is listening on a port | Yes (ss) | |
+| Count established connections to a service | Yes (ss) | |
+| Inspect local socket states (TIME_WAIT, etc.) | Yes (ss) | |
+| Scan all open ports on a remote host | | network-discovery (RustScan, nmap) |
+| Look up DNS records or check propagation | | dns-tools (dog, dig) |
+| Enumerate hosts on the local L2 segment | | layer2-discovery (ARP/LLDP) |
+| Benchmark HTTP endpoint throughput | | http-load-testing (oha) |
+| See real-time per-process bandwidth consumption | | network-monitoring (bandwhich) |
 
 Expert knowledge for network connectivity troubleshooting using modern diagnostic tools that provide richer output than legacy alternatives.
 

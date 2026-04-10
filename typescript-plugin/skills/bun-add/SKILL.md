@@ -13,6 +13,17 @@ name: bun-add
 
 Add a package to dependencies using Bun.
 
+## When to Use This Skill
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Quickly adding a single package | Yes | N/A |
+| Adding a dev dependency | Yes | N/A |
+| Pinning an exact package version | Yes | N/A |
+| Installing all project dependencies | No - use `bun-package-manager` | `bun install` |
+| Removing or updating packages | No - use `bun-package-manager` | N/A |
+| Managing workspace dependencies | No - use `bun-package-manager` | N/A |
+
 ## Parameters
 
 - `package` (required): Package name, optionally with version (e.g., `lodash`, `react@18`)

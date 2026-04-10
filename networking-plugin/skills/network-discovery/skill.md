@@ -1,6 +1,6 @@
 ---
 name: network-discovery
-description: Host and port discovery using RustScan for fast TCP scanning, arp-scan-rs for local network enumeration, and nmap for deep service analysis.
+description: Find live hosts and open ports on a network. Use when you need to scan all TCP ports on a target, enumerate hosts on a subnet, or identify running services and their versions.
 user-invocable: false
 allowed-tools: Bash(nmap *), Bash(ping *), Bash(arp *), Bash(ip *), Read, Grep, Glob, TodoWrite
 created: 2026-01-01

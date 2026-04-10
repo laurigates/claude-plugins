@@ -10,6 +10,19 @@ reviewed: 2026-01-22
 
 # TypeScript Debugging
 
+## When to Use This Skill
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Setting up Bun inspector for debugging | Yes | N/A |
+| Configuring VSCode launch.json for Bun | Yes | N/A |
+| Investigating memory leaks with heap snapshots | Yes | N/A |
+| CPU profiling TypeScript applications | Yes | N/A |
+| Debugging network requests with verbose fetch | Yes | N/A |
+| Setting up sourcemaps for debugging | Yes | `bun-development` for build-time sourcemap flags |
+| Monitoring errors in production | No - use `typescript-sentry` | N/A |
+| Running tests to find failures | No - use `bun-development` | `bun-test` for quick test runs |
+
 ## Core Expertise
 
 Modern debugging for TypeScript/JavaScript with Bun runtime:

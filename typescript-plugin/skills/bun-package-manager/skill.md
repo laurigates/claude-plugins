@@ -10,6 +10,19 @@ reviewed: 2025-12-20
 
 # Bun Package Manager
 
+## When to Use This Skill
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Installing all project dependencies | Yes | N/A |
+| Adding or removing packages | Yes | `bun-add` for quick single-package additions |
+| Updating packages or checking outdated | Yes | N/A |
+| Managing workspace dependencies | Yes | N/A |
+| CI reproducible installs (`--frozen-lockfile`) | Yes | N/A |
+| Running scripts or tests | No - use `bun-development` | `bun-test` for quick test runs |
+| Publishing packages to npm | No - use `bun-publishing` | N/A |
+| Debugging lockfile conflicts | Yes | `bun-lockfile-update` for targeted lockfile operations |
+
 ## Core Expertise
 
 Bun's package manager is significantly faster than npm/yarn/pnpm:
