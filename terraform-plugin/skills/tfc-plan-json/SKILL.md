@@ -12,6 +12,18 @@ allowed-tools: Bash, Read
 
 Download and analyze structured plan JSON output from Terraform Cloud runs for detailed resource change analysis.
 
+## When to Use
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Analyze which resources a plan creates/updates/deletes | `tfc-plan-json` | - |
+| Diff infrastructure changes programmatically | `tfc-plan-json` | - |
+| Inspect provider versions or output values in a plan | `tfc-plan-json` | - |
+| Review resource replacement reasons | `tfc-plan-json` | - |
+| Read human-readable plan/apply logs | `tfc-run-logs` | Use run-logs for text log output |
+| Quick pass/fail status of a run | `tfc-run-status` | Use run-status for status check only |
+| List multiple runs for a workspace | `tfc-list-runs` | Use list-runs for run history |
+
 ## Prerequisites
 
 ```bash

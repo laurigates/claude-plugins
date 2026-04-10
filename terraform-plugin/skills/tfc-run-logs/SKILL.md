@@ -12,6 +12,18 @@ allowed-tools: Bash, Read
 
 Retrieve and display plan and/or apply logs from Terraform Cloud runs directly in the terminal.
 
+## When to Use
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Read plan output for a TFC run | `tfc-run-logs` | - |
+| Read apply output for a TFC run | `tfc-run-logs` | - |
+| Debug a failed plan or apply | `tfc-run-logs` | - |
+| Review infrastructure changes in text form | `tfc-run-logs` | - |
+| Analyze resource changes as structured JSON | `tfc-plan-json` | Use plan-json for programmatic analysis |
+| Quick pass/fail status without reading logs | `tfc-run-status` | Use run-status for status only |
+| Find the run ID to inspect | `tfc-list-runs` or `tfc-workspace-runs` | Use list-runs to find the run first |
+
 ## Prerequisites
 
 ```bash
