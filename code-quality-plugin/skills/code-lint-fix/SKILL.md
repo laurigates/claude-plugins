@@ -1,9 +1,9 @@
 ---
-name: linter-autofix
+name: code-lint-fix
 description: Cross-language linter autofix commands and common fix patterns for biome, ruff, clippy, shellcheck, and more.
 allowed-tools: Bash(ruff *), Bash(eslint *), Bash(biome *), Bash(prettier *), Read, Edit, Grep
 created: 2025-12-27
-modified: 2026-01-24
+modified: 2026-04-10
 reviewed: 2026-02-08
 ---
 
@@ -137,10 +137,10 @@ Auto-detect project linters and run all appropriate fixers in one command:
 
 ```bash
 # Fix mode: detect linters and apply all autofixes
-bash "${CLAUDE_PLUGIN_ROOT}/skills/linter-autofix/scripts/detect-and-fix.sh"
+bash "${CLAUDE_PLUGIN_ROOT}/skills/code-lint-fix/scripts/detect-and-fix.sh"
 
 # Check-only mode: report issues without fixing
-bash "${CLAUDE_PLUGIN_ROOT}/skills/linter-autofix/scripts/detect-and-fix.sh" --check-only
+bash "${CLAUDE_PLUGIN_ROOT}/skills/code-lint-fix/scripts/detect-and-fix.sh" --check-only
 ```
 
 The script detects biome, eslint, prettier, ruff, black, clippy, rustfmt, gofmt, golangci-lint, and shellcheck. It reports which linters were found, runs them, and shows modified files. See [scripts/detect-and-fix.sh](scripts/detect-and-fix.sh) for details.
@@ -160,3 +160,4 @@ Stop and use different approach when:
 - Warning indicates potential bug (not just style)
 - Security-related linter rule
 - Type error requires interface/API changes
+- No linter configured → suggest /configure:linting or /configure:formatting

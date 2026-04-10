@@ -111,13 +111,17 @@
     {
       "name": "code-quality-plugin",
       "source": "./code-quality-plugin",
-      "description": "Code review, refactoring, linting, and static analysis",
+      "description": "Code review, refactoring, linting, dependency auditing, dead code detection, test quality, complexity metrics, and static analysis",
       "version": "1.11.2",
       "keywords": [
         "code-review",
         "refactoring",
         "linting",
-        "analysis"
+        "analysis",
+        "dead-code",
+        "dependency-audit",
+        "test-quality",
+        "complexity"
       ],
       "category": "quality"
     },

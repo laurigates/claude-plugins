@@ -176,3 +176,8 @@ After consolidating findings:
 - **Command**: `/code:review` - Comprehensive code review
 - **Agent**: `security-audit` - Deep security analysis
 - **Agent**: `code-refactoring` - Automated refactoring
+
+## Related Configure Skills
+
+- If linting not configured → `/configure:linting` for automated enforcement
+- If security scanning not set up → `/configure:security` for CI integration

@@ -1,12 +1,12 @@
 ---
 created: 2026-01-08
-modified: 2026-03-01
+modified: 2026-04-10
 reviewed: 2026-01-08
 description: "Analyze codebase documentation quality - PRDs, ADRs, PRPs, CLAUDE.md, and .claude/rules/"
 allowed-tools: Read, Glob, Grep, Bash(markdownlint *), Bash(vale *), TodoWrite, Task
 args: "[PATH]"
 argument-hint: "[PATH]"
-name: docs-quality-check
+name: code-docs-quality
 ---
 
 Analyze and validate documentation quality for a codebase, ensuring PRDs, ADRs, PRPs, CLAUDE.md, and .claude/rules/ are up to standards and current.
@@ -336,7 +336,7 @@ For each issue, provide specific guidance:
    - [ ] Create ADR for [architectural choice]
 
 ### Best Practices
-- Run `/docs:quality-check` monthly
+- Run `/code:docs-quality` monthly
 - Update `modified` dates when editing docs
 - Review `reviewed` dates quarterly
 - Use `/blueprint:adr` for new architecture decisions
@@ -383,6 +383,7 @@ Help the user understand next steps:
 - If Blueprint not initialized → suggest `/blueprint:init`
 - If ADRs missing → suggest `/blueprint:adr`
 - If PRDs missing → suggest `/blueprint:prd`
+- If documentation tooling not configured → suggest `/configure:docs`
 - If documentation outdated → provide update checklist
 - If standards not followed → show examples and templates
 

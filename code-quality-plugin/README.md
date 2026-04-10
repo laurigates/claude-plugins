@@ -4,7 +4,7 @@ Code review, refactoring, linting, anti-pattern detection, and static analysis f
 
 ## Overview
 
-This plugin provides comprehensive code quality tools including automated code review, refactoring assistance, linting, and anti-pattern detection using ast-grep for structural analysis.
+This plugin provides comprehensive code quality tools including automated code review, refactoring assistance, linting, anti-pattern detection, dependency auditing, test quality analysis, and complexity metrics using ast-grep for structural analysis.
 
 ## Skills
 
@@ -13,11 +13,16 @@ This plugin provides comprehensive code quality tools including automated code r
 | `/code:review` | Comprehensive code review with automated fixes |
 | `/code:refactor` | Refactor code applying functional programming principles - pure functions, immutability, and composition |
 | `/code:antipatterns` | Analyze codebase for anti-patterns and code smells using ast-grep |
-| `/lint:check` | Universal linter - auto-detects and runs appropriate linting tools |
+| `/code:lint` | Universal linter - auto-detects and runs appropriate linting tools |
+| `/code:lint-fix` | Cross-language linter autofix commands and common fix patterns |
 | `/code:dry-consolidation` | Find and extract duplicated code into shared, tested abstractions |
-| `/docs:quality-check` | Analyze documentation quality - PRDs, ADRs, PRPs, CLAUDE.md, and .claude/rules/ |
+| `/code:docs-quality` | Analyze documentation quality - PRDs, ADRs, PRPs, CLAUDE.md, and .claude/rules/ |
+| `/code:silent-degradation` | Detect silent degradation patterns where operations succeed with zero results |
+| `/code:dead-code` | Detect dead code, unused exports, unreachable branches, and orphaned files |
+| `/code:dep-audit` | Audit dependencies for security vulnerabilities, outdated packages, and license compliance |
+| `/code:test-quality` | Analyze test suite quality — detect test smells, empty assertions, flaky patterns |
+| `/code:complexity` | Analyze code complexity metrics — cyclomatic, cognitive, function length, coupling |
 | `code-antipatterns-analysis` | Detect anti-patterns and code smells using ast-grep structural matching |
-| `/code:silent-degradation` | Detect silent degradation patterns where operations succeed with zero results because preconditions are unmet |
 | `ast-grep-search` | AST-based code search for structural pattern matching |
 
 ## Agents
@@ -84,7 +89,7 @@ Finds and extracts duplicated code into shared abstractions:
 ### Universal Linting
 
 ```bash
-/lint:check --fix
+/code:lint --fix
 ```
 
 Auto-detects project type and runs appropriate linters:
@@ -92,10 +97,21 @@ Auto-detects project type and runs appropriate linters:
 - Ruff for Python
 - Clippy for Rust
 
+### Linter Autofix
+
+```bash
+/code:lint-fix
+```
+
+Cross-language autofix with detect-and-fix script:
+- Biome, ESLint, Prettier for JS/TS
+- Ruff for Python
+- Clippy, rustfmt for Rust
+
 ### Documentation Quality Check
 
 ```bash
-/docs:quality-check
+/code:docs-quality
 ```
 
 Analyzes documentation quality and standards:
@@ -126,6 +142,52 @@ Detects patterns where code silently degrades:
 
 Applies fixes: adds precondition checks, warning messages, and status indicators.
 
+### Dead Code Detection
+
+```bash
+/code:dead-code src/
+```
+
+Detects dead code across languages:
+- Unused exports and files (Knip for JS/TS)
+- Unused functions and variables (Vulture for Python)
+- Unused dependencies (cargo-machete for Rust)
+
+### Dependency Audit
+
+```bash
+/code:dep-audit --type all
+```
+
+Audits dependencies for:
+- Known CVEs and security vulnerabilities
+- Outdated packages
+- License compliance issues
+
+### Test Quality Analysis
+
+```bash
+/code:test-quality tests/
+```
+
+Analyzes test suite health:
+- Empty tests with no assertions
+- Weak/tautological assertions
+- Flaky patterns (setTimeout, hardcoded ports)
+- Missing edge case coverage
+
+### Complexity Analysis
+
+```bash
+/code:complexity src/ --threshold 10
+```
+
+Measures and reports:
+- Cyclomatic and cognitive complexity
+- Function length distribution
+- Nesting depth hotspots
+- File-level coupling indicators
+
 ## ast-grep Patterns
 
 The plugin includes ast-grep patterns for common issues:
@@ -141,9 +203,23 @@ ast-grep -p 'catch ($ERR) { }'
 ast-grep -p '// TODO: $MSG'
 ```
 
+## Configure Plugin Pairing
+
+This plugin works reactively (analyze and fix). The **configure-plugin** works proactively (set up tooling). They complement each other:
+
+| code-quality-plugin (reactive) | configure-plugin (proactive) |
+|---|---|
+| `/code:lint` — run linters | `/configure:linting` — set up linters |
+| `/code:lint-fix` — autofix lint issues | `/configure:formatting` — set up formatters |
+| `/code:dead-code` — find dead code | `/configure:dead-code` — set up detection tools |
+| `/code:dep-audit` — audit dependencies | `/configure:security` — set up security scanning |
+| `/code:test-quality` — analyze test quality | `/configure:tests` + `/configure:coverage` — set up frameworks |
+| `/code:docs-quality` — check doc quality | `/configure:docs` — set up doc generators |
+
 ## Companion Plugins
 
 Works well with:
+- **configure-plugin** - Proactive tool setup (see pairing table above)
 - **testing-plugin** - For test coverage analysis
 - **git-plugin** - For pre-commit quality checks
 - **python-plugin** / **typescript-plugin** - Language-specific linting
