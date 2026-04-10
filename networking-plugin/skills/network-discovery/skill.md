@@ -10,6 +10,21 @@ reviewed: 2026-01-01
 
 # Network Discovery
 
+## When to Use
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Scan all 65,535 TCP ports on a target quickly | Yes (RustScan) | |
+| Enumerate live hosts on a subnet | Yes (arp-scan-rs) | |
+| Identify running services and versions on open ports | Yes (nmap -sV) | |
+| Run NSE vulnerability or enumeration scripts | Yes (nmap --script) | |
+| Detect OS fingerprint of a remote host | Yes (nmap -O) | |
+| Discover which switch port a server is on (LLDP) | | layer2-discovery (lldpcli) |
+| Trace the route or diagnose latency to a host | | network-diagnostics (trippy, gping) |
+| Resolve DNS records for a domain | | dns-tools (dog, dig) |
+| Stress test an HTTP endpoint under load | | http-load-testing (oha) |
+| Monitor which process is using bandwidth | | network-monitoring (bandwhich) |
+
 ## Core Expertise
 
 Network discovery follows a two-phase approach: **fast enumeration** followed by **deep analysis**.

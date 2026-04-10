@@ -13,6 +13,18 @@ reviewed: 2026-01-21
 
 # Skaffold File Sync
 
+## When to Use
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Configuring Skaffold file sync rules | Yes | - |
+| Speeding up the development loop with hot reload | Yes | - |
+| Choosing between manual, infer, and auto sync | Yes | - |
+| Debugging sync issues in running containers | Yes | - |
+| Setting up OrbStack networking for Skaffold | No | `skaffold-orbstack` |
+| Adding pre-deploy container tests | No | `skaffold-testing` |
+| Writing or optimizing Dockerfiles | No | `container-development` |
+
 ## Overview
 
 File sync copies changed files directly to running containers, avoiding image rebuilds. This dramatically speeds up the development loop for interpreted languages and static assets.

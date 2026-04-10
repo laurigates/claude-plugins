@@ -60,6 +60,16 @@ bun test --reporter=junit --reporter-outfile=junit.xml $PATTERN
 | `F` | Test failed |
 | `S` | Test skipped |
 
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick test | `bun test --dots --bail=1` |
+| Filtered test | `bun test --dots --bail=1 -t "pattern"` |
+| With coverage | `bun test --dots --coverage` |
+| CI output | `bun test --reporter=junit --reporter-outfile=junit.xml` |
+| Watch mode | `bun test --watch` |
+
 ## Post-test
 
 1. Report pass/fail summary

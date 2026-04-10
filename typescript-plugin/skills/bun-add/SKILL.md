@@ -52,6 +52,16 @@ bun add --exact react@18.2.0
 bun add lodash --cwd packages/utils
 ```
 
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Add runtime dep | `bun add <package>` |
+| Add dev dep | `bun add --dev <package>` |
+| Pin exact version | `bun add --exact <package>` |
+| Add to workspace | `bun add <package> --cwd <path>` |
+| Preview changes | `bun add --dry-run <package>` |
+
 ## Post-add
 
 1. Report package version added

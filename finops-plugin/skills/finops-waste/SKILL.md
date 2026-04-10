@@ -1,5 +1,5 @@
 ---
-description: Identify workflow waste patterns and suggest fixes - skipped runs, bot triggers, missing concurrency
+description: Identify workflow waste patterns and suggest fixes - skipped runs, bot triggers, missing concurrency. Use when CI costs are high, workflows run too often, or you need to optimize GitHub Actions efficiency.
 args: "[repo]"
 allowed-tools: Bash(gh api *), Bash(gh workflow *), Bash(gh repo *), Bash(bash *), Read, Grep, Glob, Edit, TodoWrite
 argument-hint: Optional repo (owner/name format, defaults to current repo)
@@ -12,6 +12,18 @@ name: finops-waste
 # /finops:waste
 
 Identify GitHub Actions waste patterns and provide actionable fix suggestions. Analyzes skipped runs, bot triggers, missing concurrency groups, and missing path filters.
+
+## When to Use
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Reduce CI minutes/costs | `/finops:waste` | - |
+| Find missing concurrency groups or path filters | `/finops:waste` | - |
+| Identify bot-triggered workflow waste | `/finops:waste` | - |
+| Add cancel-in-progress to PR workflows | `/finops:waste` | - |
+| Quick billing and health snapshot | `/finops:overview` | Use overview for high-level summary |
+| Analyze workflow run frequency and duration | `/finops:workflows` | Use workflows for timing/frequency stats |
+| Investigate cache bloat specifically | `/finops:caches` | Use caches for cache-focused analysis |
 
 ## Context
 
@@ -159,6 +171,16 @@ By bot:
 === High-Frequency Workflows ===
   CI: 67 runs in sample - review trigger conditions
 ```
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Skipped runs count | `gh run list --limit 100 --json conclusion --jq '[.[] | select(.conclusion=="skipped")] | length'` |
+| Failed runs (compact) | `gh run list --limit 50 --status failure --json name,createdAt` |
+| Workflow file check | `bash "${SKILL_DIR}/scripts/waste-analysis.sh" "$REPO"` |
+| Check concurrency in file | `grep -l "concurrency:" .github/workflows/*.yml` |
+| Bot-triggered runs | `gh run list --limit 100 --json actor,conclusion --jq '[.[] | select(.actor.login | test("\\[bot\\]"))] | length'` |
 
 ## Post-actions
 

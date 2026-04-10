@@ -3,12 +3,27 @@ created: 2026-01-01
 modified: 2026-01-01
 reviewed: 2026-01-01
 name: network-monitoring
-description: Real-time network traffic monitoring with bandwhich and Sniffnet. Per-process bandwidth tracking, connection analysis, and visual traffic inspection.
+description: Monitor real-time network traffic and bandwidth usage per process. Use when you need to find which application is consuming bandwidth, inspect active connections, or capture a sample of traffic for analysis.
 user-invocable: false
 allowed-tools: Bash(iftop *), Bash(nethogs *), Bash(tcpdump *), Bash(ss *), Bash(netstat *), Read, Grep, Glob, TodoWrite
 ---
 
 # Network Monitoring
+
+## When to Use
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Find which process is consuming bandwidth | Yes (bandwhich) | |
+| Monitor per-connection bandwidth in real time | Yes (bandwhich) | |
+| Visually inspect traffic with protocol filtering | Yes (Sniffnet) | |
+| Capture a script-friendly sample of bandwidth data | Yes (bandwhich -r) | |
+| Identify unexpected outbound connections | Yes (bandwhich) | |
+| Scan for open ports on a remote host | | network-discovery (RustScan, nmap) |
+| Trace the route or diagnose packet loss | | network-diagnostics (trippy) |
+| Look up DNS records for a domain | | dns-tools (dog, dig) |
+| Discover devices on the local L2 segment | | layer2-discovery (ARP/LLDP) |
+| Load test an HTTP endpoint | | http-load-testing (oha) |
 
 Expert knowledge for real-time network traffic monitoring using modern Rust-based tools: bandwhich for CLI-based per-process bandwidth analysis and Sniffnet for visual traffic inspection.
 

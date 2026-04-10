@@ -1,5 +1,5 @@
 ---
-description: Analyze workflow runs - frequency, duration, success rates, and efficiency
+description: Analyze workflow runs - frequency, duration, success rates, and efficiency. Use when investigating slow CI, high failure rates, or understanding workflow run patterns over time.
 args: "[repo] [--created RANGE]"
 allowed-tools: Bash(gh api *), Bash(gh workflow *), Bash(gh repo *), Bash(bash *), Read, TodoWrite
 argument-hint: Optional repo (owner/name format, defaults to current repo). Use --created for date range. Use org mode for org-wide analysis.

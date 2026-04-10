@@ -151,6 +151,18 @@ template_style: professional # professional, technical, brief
 - All links and references are accurate and accessible
 - Professional tone appropriate for client-facing communications
 
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Git remote URL | `git remote get-url origin` |
+| Current branch | `git branch --show-current` |
+| Recent commits | `git log --oneline --max-count=5` |
+| Find config files | `find . -maxdepth 1 -name '*.config.*' -o -name '.env.example'` |
+| Find Dockerfiles | `find . -maxdepth 1 -name 'Dockerfile' -o -name 'docker-compose*.yml'` |
+| Find CI workflows | `find .github/workflows -maxdepth 1 -name '*.yml'` |
+| PR details | `gh pr view --json title,url,state,mergedAt` |
+
 ## Example Usage
 
 ```bash

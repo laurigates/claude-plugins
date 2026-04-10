@@ -16,6 +16,32 @@ allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebFetch, WebSear
 
 Expert knowledge for modern JavaScript/TypeScript development with focus on high-performance tooling and frameworks.
 
+## When to Use This Skill
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Setting up a Vue 3/Vite/TypeScript project | Yes | N/A |
+| Configuring Vite build and dev server | Yes | N/A |
+| Working with Vue 3 Composition API and Pinia | Yes | N/A |
+| General Node.js/Bun runtime guidance | Yes | `bun-development` for Bun-specific features |
+| Running Bun scripts, tests, or builds | No - use `bun-development` | `bun-test`, `bun-build` for quick invocations |
+| Managing npm/Bun dependencies | No - use `bun-package-manager` | `bun-add` for quick additions |
+| Debugging TypeScript/JS applications | No - use `typescript-debugging` | N/A |
+| Error monitoring with Sentry | No - use `typescript-sentry` | N/A |
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Create Vue+TS project | `bun create vite my-app --template vue-ts` |
+| Dev server | `bun dev` |
+| Production build | `bun build` |
+| Lint and format | `bun run check` |
+| Run tests | `bun run test` |
+| Node.js debug | `node --inspect script.js` |
+| Bun debug | `bun --inspect script.ts` |
+| CPU profile | `node --prof script.js` |
+
 ## Core Expertise
 
 **Modern JavaScript Tooling**

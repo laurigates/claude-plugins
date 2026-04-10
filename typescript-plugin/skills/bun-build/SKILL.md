@@ -59,6 +59,16 @@ bun build $ENTRY --target=bun --outdir=dist
 bun build $ENTRY --target=node --outdir=dist
 ```
 
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Prod bundle | `bun build ./src/index.ts --outdir=dist --minify --sourcemap=external` |
+| Compile to exe | `bun build --compile --minify ./app.ts --outfile myapp` |
+| Dev bundle | `bun build ./src/index.ts --outdir=dist --sourcemap=inline` |
+| Browser target | `bun build ./src/index.ts --target=browser --outdir=dist` |
+| Node target | `bun build ./src/index.ts --target=node --outdir=dist` |
+
 ## Post-build
 
 1. Report output file sizes
