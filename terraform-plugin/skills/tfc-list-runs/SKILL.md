@@ -12,6 +12,19 @@ allowed-tools: Bash, Read
 
 List and filter runs from Terraform Cloud workspaces with formatted output.
 
+## When to Use
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| List recent runs for any TFC workspace | `tfc-list-runs` | - |
+| Filter runs by status, operation, or source | `tfc-list-runs` | - |
+| List runs across an entire org | `tfc-list-runs` | - |
+| Search runs by commit SHA or user | `tfc-list-runs` | - |
+| Quick status of a single known run ID | `tfc-run-status` | Use run-status for one run's details |
+| View plan/apply log output for a run | `tfc-run-logs` | Use run-logs for log content |
+| Analyze structured plan JSON | `tfc-plan-json` | Use plan-json for resource change details |
+| List runs for known Forum Virium workspaces | `tfc-workspace-runs` | Use workspace-runs for shorthand access |
+
 ## Prerequisites
 
 ```bash

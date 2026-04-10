@@ -14,6 +14,29 @@ agent: general-purpose
 
 Analyze the plugin collection to identify where sub-agents would improve workflows by isolating verbose output, enforcing constraints, or specializing behavior.
 
+## When to Use
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Audit plugin collection for sub-agent opportunities | `/agents:analyze` | - |
+| Identify skills with verbose output needing isolation | `/agents:analyze` | - |
+| Review model selection (haiku vs opus) across agents | `/agents:analyze` | - |
+| Check for tool over-permissions in existing agents | `/agents:analyze` | - |
+| Focus analysis on a single plugin | `/agents:analyze --focus <plugin>` | - |
+| Create a new agent from scratch | Manually create agent `.md` file | Use agent-development rule for patterns |
+| Configure agent hooks or permissions | `/update-config` | Use update-config for settings.json changes |
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| List all plugins | `find . -maxdepth 1 -type d -name '*-plugin'` |
+| Count skills per plugin | `find <plugin>/skills -name 'SKILL.md' -o -name 'skill.md' \| wc -l` |
+| List existing agents | `find agents-plugin/agents -maxdepth 1 -name '*.md'` |
+| Check agent model field | `grep -r '^model:' agents-plugin/agents/` |
+| Check agent allowed-tools | `grep -r '^allowed-tools:' agents-plugin/agents/` |
+| Skill tool permissions | `grep -r '^allowed-tools:' */skills/*/SKILL.md` |
+
 ## Context
 
 - Plugin directories: !`find . -maxdepth 1 -type d -name '*-plugin'`

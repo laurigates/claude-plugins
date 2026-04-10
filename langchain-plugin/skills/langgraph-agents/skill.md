@@ -1,10 +1,10 @@
 ---
 name: langgraph-agents
 description: |
-  Build stateful AI agents in Python using LangGraph's graph-based workflow framework.
-  Use when you want to create a state machine agent with checkpoints, define agent
-  behavior as a graph of nodes and edges, add human-in-the-loop approval steps, or
-  compose multiple agents as subgraphs in a LangGraph application.
+  Build stateful AI agents using LangGraph's graph-based workflow framework. Use when
+  creating state machine agents with checkpoints, defining agent behavior as graphs of
+  nodes and edges, adding human-in-the-loop approval steps, streaming agent execution,
+  or composing multiple agents as subgraphs in a LangGraph application.
 user-invocable: false
 allowed-tools: Bash(python *), Bash(uv *), BashOutput, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-01-08
@@ -13,6 +13,21 @@ reviewed: 2026-01-08
 ---
 
 # LangGraph Agents
+
+## When to Use
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Building a stateful agent with graph-based workflow | Yes | - |
+| Need checkpointing and durable execution | Yes | - |
+| Adding human-in-the-loop approval steps | Yes | - |
+| Composing multi-agent systems as subgraphs | Yes | - |
+| Streaming agent execution (values, updates, messages) | Yes | - |
+| Implementing time-travel debugging on agent state | Yes | - |
+| Simple chain (prompt | model | parser) without state | No | `langchain-development` for LCEL chains |
+| Basic tool binding without graph workflow | No | `langchain-development` for tool patterns |
+| Hierarchical agents with planning and file context | No | `deep-agents` for Deep Agents library |
+| Scaffolding a new LangChain/LangGraph project | No | `/langchain:init` to generate boilerplate |
 
 ## Core Expertise
 

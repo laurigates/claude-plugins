@@ -1,5 +1,5 @@
 ---
-description: Compare FinOps metrics across multiple repositories in an organization
+description: Compare FinOps metrics across multiple repositories in an organization. Use when benchmarking repos against each other, identifying worst-performing repos, or doing org-wide CI cost analysis.
 args: "<org> [repo1 repo2 ...] [--limit N]"
 allowed-tools: Bash(gh api *), Bash(gh repo *), Bash(bash *), Read, TodoWrite
 argument-hint: Org name required, optional repo list, --limit for auto-discovery
@@ -12,6 +12,17 @@ name: finops-compare
 # /finops:compare
 
 Compare GitHub Actions FinOps metrics across multiple repositories - cache usage, workflow frequency, failure rates, and efficiency.
+
+## When to Use
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Compare CI metrics across org repos | `/finops:compare` | - |
+| Identify worst-performing repos in org | `/finops:compare` | - |
+| Org-wide cache or failure audit | `/finops:compare` | - |
+| Deep-dive into a single repo's caches | `/finops:caches` | Use caches for single-repo detail |
+| Deep-dive into a single repo's workflows | `/finops:workflows` | Use workflows for per-repo analysis |
+| Quick summary of current repo only | `/finops:overview` | Use overview for single-repo snapshot |
 
 ## Parameters
 
@@ -88,6 +99,15 @@ Repos with >20% failure rate:
   legacy-service: 26%
   experimental-repo: 25%
 ```
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| List org repos (JSON) | `gh api "/orgs/{org}/repos?per_page=100&sort=pushed" --jq '.[].full_name'` |
+| Cache count per repo | `gh api "/repos/{owner}/{repo}/actions/caches" --jq '.total_count'` |
+| Workflow runs (JSON) | `gh api "/repos/{owner}/{repo}/actions/runs?per_page=100" --jq '.workflow_runs'` |
+| Compact multi-repo compare | `bash "${SKILL_DIR}/scripts/compare-repos.sh" $ARGS` |
 
 ## Post-actions
 

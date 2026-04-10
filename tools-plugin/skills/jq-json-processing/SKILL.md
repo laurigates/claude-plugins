@@ -12,6 +12,20 @@ allowed-tools: Bash(jq *), Bash(cat *), Read, Write, Edit, Grep, Glob
 
 Expert knowledge for processing, querying, and transforming JSON data using jq, the lightweight and flexible command-line JSON processor.
 
+## When to Use
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Extract fields from JSON files | jq (lightweight, fast) | nushell (heavier startup) |
+| Filter and query JSON arrays | jq `select()` and `map()` | nushell `where` and `each` |
+| Transform JSON structure | jq (powerful pipe syntax) | nushell (natural syntax) |
+| Parse API responses (curl, gh) | jq (stdin pipe-friendly) | nushell (requires `from json`) |
+| Validate JSON syntax | jq `empty` (exit code check) | Python `json.tool` |
+| Process YAML or TOML data | nushell (multi-format) | jq (JSON only) |
+| Complex multi-step transforms | nushell (clearer syntax) | jq (dense expressions) |
+| Visual table output from data | nushell (native tables) | jq + column formatting |
+| CI pipelines needing JSON | jq (universally installed) | nushell (requires install) |
+
 ## Core Expertise
 
 **JSON Operations**

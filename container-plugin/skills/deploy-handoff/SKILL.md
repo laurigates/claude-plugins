@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-02-10
-reviewed: 2025-12-16
+modified: 2026-04-10
+reviewed: 2026-04-10
 allowed-tools: Read, Bash(git *), mcp__github__get_pull_request, mcp__github__list_issues, TodoWrite
 args: [resource-name] [deployment-type]
 argument-hint: [resource-name] [deployment-type]
@@ -13,6 +13,18 @@ name: deploy-handoff
 # Deployment Handoff Command
 
 Generate professional handoff messages for deployed resources and services with all necessary information for developer handoff.
+
+## When to Use
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Handing off a deployed service to another developer | Yes | - |
+| Documenting deployment details for a ticket | Yes | - |
+| Creating client-facing deployment summaries | Yes | - |
+| Generating access information for a new team member | Yes | - |
+| Creating a new release or version tag | No | `deploy-release` |
+| Writing or optimizing Dockerfiles | No | `container-development` |
+| Configuring Skaffold for local development | No | `skaffold-orbstack` |
 
 ## Context
 
@@ -138,6 +150,18 @@ template_style: professional # professional, technical, brief
 - Message includes clear next steps and action items
 - All links and references are accurate and accessible
 - Professional tone appropriate for client-facing communications
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Git remote URL | `git remote get-url origin` |
+| Current branch | `git branch --show-current` |
+| Recent commits | `git log --oneline --max-count=5` |
+| Find config files | `find . -maxdepth 1 -name '*.config.*' -o -name '.env.example'` |
+| Find Dockerfiles | `find . -maxdepth 1 -name 'Dockerfile' -o -name 'docker-compose*.yml'` |
+| Find CI workflows | `find .github/workflows -maxdepth 1 -name '*.yml'` |
+| PR details | `gh pr view --json title,url,state,mergedAt` |
 
 ## Example Usage
 

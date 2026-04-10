@@ -13,6 +13,17 @@ name: bun-add
 
 Add a package to dependencies using Bun.
 
+## When to Use This Skill
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Quickly adding a single package | Yes | N/A |
+| Adding a dev dependency | Yes | N/A |
+| Pinning an exact package version | Yes | N/A |
+| Installing all project dependencies | No - use `bun-package-manager` | `bun install` |
+| Removing or updating packages | No - use `bun-package-manager` | N/A |
+| Managing workspace dependencies | No - use `bun-package-manager` | N/A |
+
 ## Parameters
 
 - `package` (required): Package name, optionally with version (e.g., `lodash`, `react@18`)
@@ -40,6 +51,16 @@ bun add --exact react@18.2.0
 # Add to specific workspace
 bun add lodash --cwd packages/utils
 ```
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Add runtime dep | `bun add <package>` |
+| Add dev dep | `bun add --dev <package>` |
+| Pin exact version | `bun add --exact <package>` |
+| Add to workspace | `bun add <package> --cwd <path>` |
+| Preview changes | `bun add --dry-run <package>` |
 
 ## Post-add
 

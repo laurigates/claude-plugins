@@ -12,6 +12,18 @@ reviewed: 2025-12-27
 
 Tools for exploring and reverse engineering binary files, firmware, and unknown data.
 
+## When to Use
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Identify unknown file types | binary-analysis (`file`, `xxd`) | Read tool (text files only) |
+| Extract text from compiled binaries | binary-analysis (`strings`) | Grep (source code only) |
+| Analyze firmware images | binary-analysis (`binwalk`) | Manual extraction |
+| Find embedded files in binaries | binary-analysis (`binwalk -e`) | Manual offset calculation |
+| Inspect raw hex data | binary-analysis (`xxd`, `hexdump`) | Read tool (not for binary) |
+| Search source code for patterns | rg-code-search | binary-analysis (for compiled code) |
+| Read structured data files (JSON, YAML) | jq / nushell | binary-analysis (unstructured binary) |
+
 ## Quick Reference
 
 | Tool | Purpose | Install |

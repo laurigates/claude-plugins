@@ -12,6 +12,17 @@ allowed-tools: Glob, Grep, Read, Bash(cargo *), Edit, Write, TodoWrite, WebFetch
 
 Advanced patterns and techniques for Bevy's Entity Component System, focusing on performance, maintainability, and complex game architectures.
 
+## When to Use This Skill
+
+| Use this skill when... | Use bevy-game-engine instead when... |
+|------------------------|--------------------------------------|
+| Optimizing ECS query performance | Setting up a new Bevy project from scratch |
+| Implementing complex entity relationships or hierarchies | Learning basic ECS concepts (components, systems, resources) |
+| Designing system scheduling and ordering | Handling input, assets, or game states |
+| Using change detection (`Changed<T>`, `Added<T>`) | Writing basic game logic or app structure |
+| Working with `ParamSet`, parallel iteration, or batch operations | Configuring rendering, UI, or audio |
+| Debugging archetype fragmentation or storage strategies | Adding plugins or common Bevy dependencies |
+
 ## Core Expertise
 
 **Advanced Queries**
@@ -434,3 +445,15 @@ app.add_plugins(bevy::diagnostic::DiagnosticsPlugin)
 // Log system execution
 app.add_plugins(bevy::diagnostic::SystemInformationDiagnosticsPlugin);
 ```
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Quick compile check | `cargo check 2>&1 \| head -30` |
+| Fast test run | `cargo test --lib -- --test-threads=1 -q` |
+| Check ECS usage errors | `cargo clippy -- -W clippy::all 2>&1 \| head -50` |
+| List components in project | `grep -rn "derive(Component)" src/ --include="*.rs"` |
+| List systems in project | `grep -rn "fn.*Query<" src/ --include="*.rs"` |
+| Find system ordering | `grep -rn "\.add_systems\|\.chain()\|\.after(\|\.before(" src/ --include="*.rs"` |
+| Check for ParamSet usage | `grep -rn "ParamSet" src/ --include="*.rs"` |

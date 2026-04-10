@@ -17,6 +17,19 @@ allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite
 
 Expert knowledge for Infrastructure as Code using Terraform with focus on declarative HCL, state management, and resilient infrastructure.
 
+## When to Use
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Write or modify Terraform HCL config | `infrastructure-terraform` | - |
+| Run terraform plan/apply/destroy | `infrastructure-terraform` | - |
+| Debug Terraform state issues | `infrastructure-terraform` | - |
+| Design module structure or backends | `infrastructure-terraform` | - |
+| Check status of a TFC run | `tfc-run-status` | Use run-status for quick TFC status |
+| View TFC plan/apply logs | `tfc-run-logs` | Use run-logs for TFC log output |
+| Analyze TFC plan JSON output | `tfc-plan-json` | Use plan-json for structured plan data |
+| List recent TFC workspace runs | `tfc-list-runs` or `tfc-workspace-runs` | Use list-runs for TFC run history |
+
 ## Core Expertise
 
 **Terraform & IaC**

@@ -12,6 +12,19 @@ allowed-tools: Bash(nu *), Read, Write, Edit, Grep, Glob
 
 Expert knowledge for structured data processing using nushell, a shell that treats data as tables rather than text streams.
 
+## When to Use
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Complex multi-step data transforms | nushell (natural syntax) | jq (complex expressions) |
+| Multi-format processing (JSON+YAML+CSV) | nushell (native support) | jq/yq (one format each) |
+| Visual data exploration with tables | nushell (native tables) | jq (text output) |
+| Cross-file data operations | nushell (built-in glob/open) | jq + find/xargs |
+| Aggregations and group-by operations | nushell | jq (verbose syntax) |
+| Simple single-field JSON extraction | jq (faster startup) | nushell (heavier) |
+| Simple YAML field extraction | yq (faster startup) | nushell (heavier) |
+| Scripted JSON in CI pipelines | jq (universally available) | nushell (requires install) |
+
 ## Core Advantages Over jq/yq
 
 | Feature | nushell | jq/yq |

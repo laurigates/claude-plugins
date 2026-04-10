@@ -12,6 +12,20 @@ allowed-tools: Bash(rg *), Read, Grep, Glob
 
 Expert knowledge for using `rg` (ripgrep) as a blazingly fast code search tool with powerful filtering and pattern matching.
 
+## When to Use
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Search code for text patterns | rg (fast, gitignore-aware) | grep (slower, no gitignore) |
+| Find function/class definitions | rg with regex | Grep tool (simpler patterns) |
+| Search with file type filtering | rg `-t` flag | grep + find combo |
+| Multi-line pattern matching | rg `-U` flag | grep (limited multiline) |
+| Code auditing and security scans | rg (fast across large codebases) | grep (slower) |
+| Search and replace across files | rg `--replace` + sed | sed alone (no preview) |
+| Find files by name (not content) | fd-file-finding | rg (content search only) |
+| POSIX-compatible scripts | grep (POSIX standard) | rg (not POSIX) |
+| Search binary file contents | binary-analysis (`strings`) | rg (skips binary files) |
+
 ## Core Expertise
 
 **ripgrep Advantages**

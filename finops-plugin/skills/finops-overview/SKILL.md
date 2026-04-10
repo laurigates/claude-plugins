@@ -1,5 +1,5 @@
 ---
-description: Quick FinOps summary - org billing and current repo workflow/cache stats
+description: Quick FinOps summary - org billing and current repo workflow/cache stats. Use when you want a high-level snapshot of CI spending, cache usage, and workflow health before diving deeper.
 args: "[org]"
 allowed-tools: Bash(gh api *), Bash(gh repo *), Bash(gh workflow *), Bash(bash *), Read, TodoWrite
 argument-hint: Optional org name (defaults to current repo's org)
@@ -12,6 +12,18 @@ name: finops-overview
 # /finops:overview
 
 Display a quick FinOps summary including org-level billing (if admin) and current repository workflow/cache statistics.
+
+## When to Use
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| First look at CI costs and health | `/finops:overview` | - |
+| Quick billing + cache + workflow snapshot | `/finops:overview` | - |
+| Decide which finops skill to run next | `/finops:overview` | - |
+| Detailed cache analysis needed | `/finops:caches` | Use caches for full cache breakdown |
+| Detailed workflow run analysis | `/finops:workflows` | Use workflows for per-workflow stats |
+| Find and fix CI waste patterns | `/finops:waste` | Use waste for actionable fixes |
+| Multi-repo comparison | `/finops:compare` | Use compare for org-wide benchmarks |
 
 ## Context
 
@@ -51,6 +63,16 @@ Workflows (last 30 days):
 Skipped runs: 4/87
 Workflows missing concurrency: 2
 ```
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Org billing (JSON) | `gh api "/orgs/{org}/settings/billing/actions" --jq '.'` |
+| Repo cache summary | `gh api "/repos/{owner}/{repo}/actions/caches" --jq '{total: .total_count}'` |
+| Workflow list | `gh workflow list --json name,state` |
+| Recent runs (compact) | `gh run list --limit 20 --json status,conclusion,name` |
+| Compact overview | `bash "${SKILL_DIR}/scripts/billing-summary.sh" $ARGS` |
 
 ## Post-actions
 

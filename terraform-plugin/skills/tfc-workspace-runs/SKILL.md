@@ -16,6 +16,18 @@ allowed-tools: Bash, Read
 
 Convenience wrapper for quick access to runs in Forum Virium Helsinki Terraform Cloud workspaces.
 
+## When to Use
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| List runs for a known FVH workspace (github, sentry, gcp, onelogin, twingate) | `tfc-workspace-runs` | - |
+| Quick check latest run across all FVH workspaces | `tfc-workspace-runs` | - |
+| Check for in-progress runs across FVH workspaces | `tfc-workspace-runs` | - |
+| List runs for a non-FVH workspace or arbitrary workspace ID | `tfc-list-runs` | Use list-runs for generic workspace access |
+| Filter runs by status, operation, or source | `tfc-list-runs` | Use list-runs for advanced filtering |
+| Get detailed status of a specific run | `tfc-run-status` | Use run-status for single run details |
+| Read plan/apply logs for a run | `tfc-run-logs` | Use run-logs for log content |
+
 ## Prerequisites
 
 ```bash

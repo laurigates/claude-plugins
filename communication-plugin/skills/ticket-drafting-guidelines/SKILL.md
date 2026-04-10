@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-04-10
 reviewed: 2026-02-08
 name: ticket-drafting-guidelines
 description: |
@@ -26,14 +26,17 @@ Expert guidance for drafting clear, concise, and well-structured tickets for Git
 - **Neutral Tone**: Factual communication without claims or estimates
 - **Reference Integration**: Links to official documentation
 
-## When This Skill Activates
+## When to Use
 
-This skill activates when:
-
-1. User explicitly requests to "draft a ticket"
-2. User asks for help writing GitHub issues or PRs
-3. User requests ticket templates or examples
-4. User mentions structured documentation for features or bugs
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Drafting a GitHub issue or ticket | Yes | -- |
+| Writing a bug report | Yes | -- |
+| Structuring a feature request | Yes | -- |
+| Writing PR descriptions | Yes | -- |
+| Formatting text for Google Chat | No | Use google-chat-formatting |
+| Writing commit messages | No | Follow conventional commits rules |
+| Writing long-form documentation or READMEs | No | Use standard Markdown conventions |
 
 ## Ticket Structure
 
@@ -403,6 +406,16 @@ Update `config.ts` with new options
 Modify the `handleRequest` function
 Add tests in `auth.test.ts`
 ```
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| List open issues for context | `gh issue list --state open --json number,title,labels --limit 10` |
+| View existing issue for reference | `gh issue view N --json number,title,body` |
+| Create issue from drafted content | `gh issue create --title "title" --body "body"` |
+| Find related issues | `gh search issues "keyword" --repo owner/repo --json number,title --limit 5` |
+| View PR template | `cat .github/PULL_REQUEST_TEMPLATE.md` |
 
 ## Skill Configuration
 

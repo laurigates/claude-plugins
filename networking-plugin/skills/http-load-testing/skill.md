@@ -3,12 +3,27 @@ created: 2026-01-01
 modified: 2026-01-01
 reviewed: 2026-01-01
 name: http-load-testing
-description: HTTP load testing and stress testing with oha - real-time TUI, latency correction for coordinated omission, and HTTP/2-3 support. Includes comparison with wrk, vegeta, and hey.
+description: Stress test and benchmark HTTP endpoints. Use when you need to measure request latency percentiles, find a server's breaking point under load, or validate SLA targets with proper coordinated-omission correction.
 user-invocable: false
 allowed-tools: Bash(hey *), Bash(ab *), Bash(wrk *), Bash(curl *), Read, Grep, Glob, TodoWrite
 ---
 
 # HTTP Load Testing
+
+## When to Use
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Benchmark an API endpoint's throughput | Yes | |
+| Measure latency percentiles (p50/p90/p99) | Yes | |
+| Find the breaking point of a service | Yes | |
+| Validate SLA targets under sustained load | Yes | |
+| Compare latency with/without coordinated omission | Yes | |
+| Troubleshoot why a single request is slow | | network-diagnostics (trippy, gping) |
+| Resolve a domain name or check DNS records | | dns-tools (dog, dig) |
+| Scan for open ports on a host | | network-discovery (RustScan, nmap) |
+| See which process is consuming bandwidth | | network-monitoring (bandwhich) |
+| Map physical switch topology | | layer2-discovery (LLDP, ARP) |
 
 Expert knowledge for HTTP load testing using oha, a Rust-based load generator with real-time TUI visualization and proper latency measurement.
 

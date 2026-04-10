@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-02-06
-reviewed: 2025-12-16
+modified: 2026-04-10
+reviewed: 2026-04-10
 name: skaffold-orbstack
 description: |
   OrbStack-optimized Skaffold workflows for local Kubernetes development without port-forward.
@@ -12,6 +12,18 @@ allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # Skaffold with OrbStack - Port-Forward-Free Development
+
+## When to Use
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Configuring Skaffold with OrbStack K8s | Yes | - |
+| Accessing services without port-forward | Yes | - |
+| Setting up LoadBalancer or Ingress on OrbStack | Yes | - |
+| Migrating from port-forward to native networking | Yes | - |
+| Configuring file sync for hot reload | No | `skaffold-filesync` |
+| Adding pre-deploy container tests | No | `skaffold-testing` |
+| Writing or optimizing Dockerfiles | No | `container-development` |
 
 ## Overview
 
@@ -386,6 +398,19 @@ kubectl get pods -o wide
 # Connect directly (OrbStack routes pod network to macOS)
 curl http://10.42.0.15:8080
 ```
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Start dev (no port-forward) | `skaffold dev --kube-context=orbstack` |
+| Check service IPs | `kubectl get svc -o wide` |
+| Verify Ingress | `kubectl get ingress` |
+| Test DNS resolution | `nslookup my-app.default.svc.cluster.local` |
+| Check Ingress controller | `kubectl -n ingress-nginx get pods` |
+| Get pod IPs | `kubectl get pods -o wide` |
+| Run specific profile | `skaffold dev -p services-only --kube-context=orbstack` |
+| Describe Ingress | `kubectl describe ingress my-app` |
 
 ## Quick Setup Checklist
 

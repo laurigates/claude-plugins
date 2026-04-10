@@ -1,6 +1,6 @@
 ---
 name: dns-tools
-description: Modern DNS query tools with focus on dog for readable, colorized output and modern protocol support (DoT/DoH).
+description: Resolve DNS records, check propagation, and debug name resolution. Use when you need to look up A/AAAA/MX/TXT records, verify DNS changes across resolvers, or query via encrypted DNS (DoT/DoH).
 user-invocable: false
 allowed-tools: Bash(dig *), Bash(nslookup *), Bash(host *), Bash(whois *), Read, Grep, Glob, TodoWrite
 created: 2026-01-01
@@ -9,6 +9,21 @@ reviewed: 2026-01-01
 ---
 
 # DNS Tools
+
+## When to Use
+
+| Scenario | Use this skill | Alternative |
+|----------|---------------|-------------|
+| Look up DNS records (A, MX, TXT, etc.) | Yes | |
+| Check DNS propagation across resolvers | Yes | |
+| Query via encrypted DNS (DoT/DoH) | Yes | |
+| Verify email auth records (SPF/DKIM/DMARC) | Yes | |
+| Reverse DNS lookup for an IP | Yes | |
+| Troubleshoot connectivity or packet loss | | network-diagnostics (trippy, gping) |
+| Find hosts or open ports on a network | | network-discovery (RustScan, nmap) |
+| Discover devices on local L2 segment | | layer2-discovery (ARP/LLDP) |
+| Load test an HTTP endpoint | | http-load-testing (oha) |
+| Monitor real-time bandwidth per process | | network-monitoring (bandwhich) |
 
 ## Core Expertise
 
