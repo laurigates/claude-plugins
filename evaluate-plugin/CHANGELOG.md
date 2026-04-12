@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.3](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.3.2...evaluate-plugin-v1.3.3) (2026-04-12)
+
+
+### Code Refactoring
+
+* **evaluate-plugin:** extract evaluate skill inline commands to standalone scripts ([#1023](https://github.com/laurigates/claude-plugins/issues/1023)) ([bc0a3dc](https://github.com/laurigates/claude-plugins/commit/bc0a3dc238a611e5102101d507189424f251a225)), closes [#987](https://github.com/laurigates/claude-plugins/issues/987)
+* **health-plugin:** extract health-plugins inline commands to standalone scripts ([#1022](https://github.com/laurigates/claude-plugins/issues/1022)) ([b18efb0](https://github.com/laurigates/claude-plugins/commit/b18efb01ca6f47591f054809dbf805e0daa5fcca)), closes [#984](https://github.com/laurigates/claude-plugins/issues/984)
+
 ## [1.3.2](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.3.1...evaluate-plugin-v1.3.2) (2026-04-08)
 
 

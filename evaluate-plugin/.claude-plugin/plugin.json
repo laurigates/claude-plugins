@@ -1,6 +1,6 @@
 {
   "name": "evaluate-plugin",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "Skill evaluation and benchmarking - test skill effectiveness with behavioral eval cases, grade results, and track quality improvements",
   "author": {
     "name": "Lauri Gates",
