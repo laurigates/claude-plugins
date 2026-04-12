@@ -5,11 +5,11 @@ description: |
   Use when you want to test whether a skill produces correct guidance, validate
   skill improvements, or benchmark a skill before release.
 args: <plugin/skill-name> [--create-evals] [--runs N] [--baseline]
-allowed-tools: Task, Read, Write, Edit, Glob, Grep, Bash(cat *), Bash(jq *), Bash(wc *), Bash(ls *), Bash(find *), Bash(date *), Bash(mkdir *), TodoWrite
+allowed-tools: Task, Read, Write, Edit, Glob, Grep, Bash(bash *), TodoWrite
 argument-hint: "git-plugin/git-commit [--create-evals] [--runs 3] [--baseline]"
 agent: general-purpose
 created: 2026-03-04
-modified: 2026-03-04
+modified: 2026-04-12
 reviewed: 2026-03-04
 ---
 
@@ -28,8 +28,7 @@ Evaluate a skill's effectiveness by running behavioral test cases and grading th
 
 ## Context
 
-- Skill file: !`find $1/skills -name "SKILL.md" -maxdepth 3`
-- Eval cases: !`find $1/skills -name "evals.json" -maxdepth 3`
+- Skill files: !`bash ${CLAUDE_PLUGIN_ROOT}/scripts/inspect_eval.sh --plugin-dir $1`
 
 ## Parameters
 
@@ -89,21 +88,26 @@ Look for `<plugin-name>/skills/<skill-name>/evals.json`.
 
 For each eval case, for each run (up to `--runs N`):
 
-1. Create a results directory: `<plugin-name>/skills/<skill-name>/eval-results/runs/<eval-id>-run-<N>/`
-2. Record the start time.
-3. Spawn a Task subagent (`subagent_type: general-purpose`) that:
+1. Scaffold the run directory and record the start time by running:
+   ```
+   bash ${CLAUDE_PLUGIN_ROOT}/scripts/prepare_run.sh \
+     --skill-dir <plugin-name>/skills/<skill-name> \
+     --eval-id <eval-id> --run <N>
+   ```
+   Parse `RUN_DIR=`, `MANIFEST=`, and `STARTED_AT=` from output.
+2. Spawn a Task subagent (`subagent_type: general-purpose`) that:
    - Receives the skill content as context
    - Executes the eval prompt
    - Works in the repository as if it were a real user request
-4. Capture the subagent output.
-5. Record timing data (duration) and write to `timing.json`.
-6. Write the transcript to `transcript.md`.
+3. Capture the subagent output.
+4. Record timing data (duration) and write to `$RUN_DIR/timing.json`.
+5. Write the transcript to `$RUN_DIR/transcript.md`.
 
 ### Step 5: Run baseline (if --baseline)
 
-If `--baseline` is set, repeat Step 4 but **without** loading the skill content. This creates a comparison point to measure skill effectiveness.
+If `--baseline` is set, repeat Step 4 but **without** loading the skill content. Pass `--baseline` to `prepare_run.sh` so results are written into a parallel `baseline/` subdirectory. This creates a comparison point to measure skill effectiveness.
 
-Use the same eval prompts and record results in a parallel `baseline/` subdirectory.
+Use the same eval prompts and record results in the `baseline/` subdirectory.
 
 ### Step 6: Grade results
 
@@ -156,11 +160,9 @@ Print a summary table:
 
 | Context | Command |
 |---------|---------|
-| Check skill exists | `ls <plugin>/skills/<skill>/SKILL.md` |
-| Check evals exist | `ls <plugin>/skills/<skill>/evals.json` |
-| Read evals | `cat <plugin>/skills/<skill>/evals.json \| jq .` |
-| Create results dir | `mkdir -p <plugin>/skills/<skill>/eval-results/runs` |
-| Write JSON | `jq -n '<expression>' > file.json` |
+| Inspect skill eval setup | `bash evaluate-plugin/scripts/inspect_eval.sh --plugin <plugin> --skill <skill>` |
+| Print evals JSON | `bash evaluate-plugin/scripts/inspect_eval.sh --plugin <plugin> --skill <skill> --print-evals` |
+| Prepare a run directory | `bash evaluate-plugin/scripts/prepare_run.sh --skill-dir <plugin>/skills/<skill> --eval-id <id> --run <N>` |
 | Aggregate results | `bash evaluate-plugin/scripts/aggregate_benchmark.sh <plugin>` |
 
 ## Quick Reference
