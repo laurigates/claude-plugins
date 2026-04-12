@@ -5,11 +5,11 @@ description: |
   that has eval cases, then produces a plugin-level report. Use when auditing
   an entire plugin's quality or before a release.
 args: <plugin-name> [--create-missing-evals] [--parallel N]
-allowed-tools: Task, Read, Write, Glob, Grep, Bash(cat *), Bash(jq *), Bash(find *), Bash(ls *), Bash(date *), Bash(mkdir *), SlashCommand, TodoWrite
+allowed-tools: Task, Read, Write, Glob, Grep, Bash(bash *), SlashCommand, TodoWrite
 argument-hint: "git-plugin [--create-missing-evals]"
 agent: general-purpose
 created: 2026-03-04
-modified: 2026-03-04
+modified: 2026-04-12
 reviewed: 2026-03-04
 ---
 
@@ -27,8 +27,7 @@ Batch evaluate all skills in a plugin. Runs `/evaluate:skill` for each skill, th
 
 ## Context
 
-- Plugin skills: !`find $1/skills -name "SKILL.md" -maxdepth 3`
-- Existing evals: !`find $1/skills -name "evals.json" -maxdepth 3`
+- Plugin inventory: !`bash ${CLAUDE_PLUGIN_ROOT}/scripts/inspect_eval.sh --plugin-dir $1`
 
 ## Parameters
 
@@ -109,9 +108,8 @@ Rank skills by pass rate. Flag any below 50% as needing attention.
 
 | Context | Command |
 |---------|---------|
-| List plugin skills | `ls -d <plugin>/skills/*/SKILL.md` |
-| Check for evals | `find <plugin>/skills -name evals.json` |
-| Count skills | `ls -d <plugin>/skills/*/SKILL.md \| wc -l` |
+| Inventory plugin skills + evals | `bash evaluate-plugin/scripts/inspect_eval.sh --plugin-dir <plugin>` |
+| Inspect a single skill's evals | `bash evaluate-plugin/scripts/inspect_eval.sh --plugin <plugin> --skill <skill>` |
 | Aggregate results | `bash evaluate-plugin/scripts/aggregate_benchmark.sh <plugin>` |
 
 ## Quick Reference
