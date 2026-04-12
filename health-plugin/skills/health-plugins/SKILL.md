@@ -1,9 +1,9 @@
 ---
 created: 2026-02-04
-modified: 2026-03-18
+modified: 2026-04-12
 reviewed: 2026-02-05
 description: Diagnose and fix plugin registry issues including orphaned entries and project-scope conflicts (addresses Claude Code issue #14202)
-allowed-tools: Bash(test *), Bash(jq *), Bash(cp *), Bash(mkdir *), Read, Write, Edit, Glob, Grep, TodoWrite, AskUserQuestion
+allowed-tools: Bash(bash *), Read, Write, Edit, Glob, Grep, TodoWrite, AskUserQuestion
 args: "[--fix] [--dry-run] [--plugin <name>]"
 argument-hint: "[--fix] [--dry-run] [--plugin <name>]"
 name: health-plugins
@@ -28,7 +28,7 @@ Diagnose and fix issues with the Claude Code plugin registry. This command speci
 - Current project: !`pwd`
 - Current project has plugins: !`find . -maxdepth 2 -path '*/.claude-plugin/plugin.json' -type f`
 - Project settings exists: !`find . -maxdepth 1 -name '.claude/settings.json'`
-- Project plugins dir: !`find . -maxdepth 1 -type d -name \'.claude-plugin\'`
+- Project plugins dir: !`find . -maxdepth 1 -type d -name '.claude-plugin'`
 
 ## Background: Issue #14202
 
@@ -42,6 +42,8 @@ When a plugin is installed with `--scope project` in one project, other projects
 
 ## Parameters
 
+Parse these from `$ARGUMENTS`:
+
 | Parameter | Description |
 |-----------|-------------|
 | `--fix` | Apply fixes to the plugin registry |
@@ -50,46 +52,51 @@ When a plugin is installed with `--scope project` in one project, other projects
 
 ## Execution
 
-Execute this plugin registry diagnostic:
+Execute this plugin registry diagnostic by running the scripts below. Pass `--plugin <name>` through from `$ARGUMENTS` when specified.
 
-### Step 1: Read the plugin registry
+### Step 1: Diagnose the registry
 
-1. Read `~/.claude/plugins/installed_plugins.json`
-2. Parse each plugin entry to extract: plugin name and source, whether it has a `projectPath` (project-scoped), and the installation timestamp and version
+```bash
+bash "${CLAUDE_SKILL_DIR}/scripts/check-registry.sh" --home-dir "$HOME" --project-dir "$(pwd)" [--plugin <name>] [--verbose]
+```
 
-### Step 2: Identify issues in the registry
+Parse the `STATUS=`, `PLUGIN_COUNT=`, `ORPHANED_ENTRIES=`, and `ISSUES:` lines from output. The `=== PLUGINS ===` section lists each installed plugin with scope, version, source, and projectPath.
 
-Check for these issue types:
+### Step 2: Report findings
 
-| Issue Type | Detection | Severity |
-|------------|-----------|----------|
-| Orphaned projectPath | `projectPath` directory doesn't exist | WARN |
-| Missing from current project | Plugin has different `projectPath` than current directory | INFO |
-| Duplicate scopes | Same plugin installed both globally and per-project | WARN |
-| Invalid entry | Missing required fields or malformed data | ERROR |
+Print a structured diagnostic report summarising:
 
-### Step 3: Report findings
+1. Registry location, validity, and plugin counts (total / global / project-scoped)
+2. Orphaned entries (projectPath directory missing) with severity and suggested fix
+3. Plugins enabled in settings but not in the registry
+4. Plugins from other projects (INFO only, shown with `--verbose`)
 
-Print a structured diagnostic report listing all installed plugins with scope and status, followed by issues found with severity, details, and suggested fixes.
+Use the `ISSUES:` lines as the authoritative list of problems.
 
-### Step 4: Apply fixes (if --fix flag)
+### Step 3: Apply fixes (if --fix)
 
-For each issue, apply the appropriate fix:
+If `$ARGUMENTS` contains `--fix`:
 
-1. **Orphaned projectPath** -- remove the orphaned entry from installed_plugins.json
-2. **Plugin needed in current project** -- ask user which plugins to install, add new entry with current `projectPath`, update `.claude/settings.json` with `enabledPlugins` if needed
+1. Confirm with the user (via `AskUserQuestion`) which orphaned plugins to remove, unless `--dry-run` is also set.
+2. Run the fix script:
 
-Before making changes:
-1. Create backup: `~/.claude/plugins/installed_plugins.json.backup`
-2. Validate JSON after modifications
-3. Report what was changed
+   ```bash
+   bash "${CLAUDE_SKILL_DIR}/scripts/fix-registry.sh" --home-dir "$HOME" --project-dir "$(pwd)" [--plugin <name>] [--dry-run]
+   ```
+
+   The script creates a timestamped backup at `~/.claude/plugins/installed_plugins.json.backup.<UTC-timestamp>` before modifying the registry, validates the resulting JSON, and aborts safely on any error.
+3. Parse `STATUS=`, `REMOVED=`, `REMOVED_COUNT=`, and `BACKUP_PATH=` lines to report what changed.
+
+### Step 4: Handle "plugin needed in current project"
+
+When a plugin exists in the registry under a different `projectPath` and the user wants it available in the current project, use `AskUserQuestion` to confirm, then:
+
+1. Add a new entry to `.claude/settings.json` under `enabledPlugins` using the `Edit` tool.
+2. Remind the user to run `/plugin install` via the Claude Code UI for proper registry registration.
 
 ### Step 5: Verify the fix
 
-After applying fixes:
-1. Re-read the registry
-2. Confirm issues are resolved
-3. Remind user to restart Claude Code for changes to take effect
+After applying fixes, re-run Step 1 and confirm the issue count has dropped. Remind the user to restart Claude Code for changes to take effect.
 
 ## Registry Structure Reference
 
@@ -135,9 +142,8 @@ If automatic fix fails, users can manually edit `~/.claude/plugins/installed_plu
 | Plugin registry diagnostics | `/health:plugins` |
 | Fix registry issues | `/health:plugins --fix` |
 | Dry-run mode | `/health:plugins --dry-run` |
-| Inspect registry | `jq '.' ~/.claude/plugins/installed_plugins.json 2>/dev/null` |
-| Check specific plugin | `jq '.["plugin-name"]' ~/.claude/plugins/installed_plugins.json 2>/dev/null` |
-| List orphaned paths | `jq -r 'to_entries[] \| select(.value.projectPath? and (.value.projectPath \| test("."))) \| .value.projectPath' ~/.claude/plugins/installed_plugins.json 2>/dev/null` |
+| Diagnose only (script) | `bash "${CLAUDE_SKILL_DIR}/scripts/check-registry.sh" --home-dir "$HOME" --project-dir "$(pwd)"` |
+| Fix only (script) | `bash "${CLAUDE_SKILL_DIR}/scripts/fix-registry.sh" --home-dir "$HOME" --project-dir "$(pwd)"` |
 
 ## Flags
 
