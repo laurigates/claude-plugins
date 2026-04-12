@@ -55,8 +55,15 @@ Display the current blueprint configuration status with three-layer architecture
 
 3. **Check for upgrade availability**:
    - Compare `format_version` in manifest with current plugin version
-   - Current format version: **3.0.0**
+   - Current format version: **3.3.0**
    - If manifest version < current → upgrade available
+
+3a. **Monorepo portfolio refresh (v3.3.0+)**:
+   - If `workspaces.role == "root"`, invoke `/blueprint:workspace-scan` to
+     refresh `workspaces.children` and cached stats before rendering. Skip if
+     scanned within the last hour (`last_scanned_at`).
+   - If `workspaces.role == "child"`, resolve `workspaces.root_relative_path`
+     and mention the parent in the status report but do NOT trigger a scan.
 
 4. **Check generated content status**:
    - For each generated rule in manifest:
@@ -113,6 +120,16 @@ Display the current blueprint configuration status with three-layer architecture
    - Progress: {statistics.complete}/{statistics.total_features} ({statistics.completion_percentage}%)
    - Last Sync: {last_updated}
    - Phases: {count in_progress} active, {count complete} complete
+
+   {If workspaces.role == "root":}
+   Monorepo Portfolio ({workspaces.children|length} workspaces, scanned {last_scanned_at}):
+   | Workspace | Format | Progress | Phase |
+   |-----------|--------|----------|-------|
+   {for each child:}
+   | {child.path} | v{child.manifest_format_version} | {child.cached_stats.complete}/{child.cached_stats.total} ({child.cached_stats.completion_percentage}%) | {child.cached_stats.current_phase or "—"} |
+
+   {If workspaces.role == "child":}
+   Workspace: child of blueprint at {workspaces.root_relative_path}
 
    {If task_registry exists:}
    Task Health:

@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-02-20
-reviewed: 2026-01-17
+modified: 2026-04-12
+reviewed: 2026-04-12
 description: "Initialize Blueprint Development structure in current project"
 allowed-tools: Bash, Write, Read, AskUserQuestion, Glob
 name: blueprint-init
@@ -22,6 +22,27 @@ Initialize Blueprint Development in this project.
        - "Reinitialize (will reset manifest)" → continue with step 2
        - "Cancel" → exit
      ```
+
+1a. **Detect monorepo context** (format_version 3.3.0+):
+   - Walk upward from the current directory looking for an ancestor
+     `docs/blueprint/manifest.json` (stop at the repo root or `$HOME`).
+   - If an ancestor root manifest exists, this init is creating a **child**
+     workspace. Capture the relative path from the child back to the root.
+   - Additionally scan descendants (max depth 4, skipping `node_modules`,
+     `.git`, `dist`, `build`, `target`, `.venv`) for existing
+     `docs/blueprint/manifest.json`. If any are found, this init is creating a
+     **root** that will own existing children.
+   - Otherwise this is a **standalone** blueprint (no `workspaces` block written).
+
+   ```
+   Use AskUserQuestion (only when ancestor root detected):
+   question: "Found a parent blueprint at {parent_path}. Register this as a child workspace?"
+   options:
+     - label: "Yes - register as child"
+       description: "Writes workspaces.role=child + root_relative_path; root picks it up on next /blueprint:workspace-scan"
+     - label: "No - treat as standalone"
+       description: "No workspaces block written; this project is independent"
+   ```
 
 2. **Ask about feature tracking** (use AskUserQuestion):
    ```
@@ -144,14 +165,14 @@ Initialize Blueprint Development in this project.
    └── skills/                      # Custom skill overrides (optional)
    ```
 
-7. **Create `manifest.json`** (v3.2.0 schema):
+7. **Create `manifest.json`** (v3.3.0 schema):
    ```json
    {
-     "format_version": "3.2.0",
+     "format_version": "3.3.0",
      "created_at": "[ISO timestamp]",
      "updated_at": "[ISO timestamp]",
      "created_by": {
-       "blueprint_plugin": "3.2.0"
+       "blueprint_plugin": "3.3.0"
      },
      "project": {
        "name": "[detected from package.json/pyproject.toml or directory name]",
@@ -270,6 +291,29 @@ Initialize Blueprint Development in this project.
    Note: Include `feature_tracker` section only if feature tracking is enabled.
    Note: As of v3.2.0, progress tracking is consolidated into feature-tracker.json (work-overview.md removed).
 
+   **Monorepo `workspaces` block (v3.3.0+)**, appended to the manifest based on the
+   detection from Step 1a:
+
+   - **Child** (ancestor blueprint found and user opted in):
+     ```json
+     "workspaces": {
+       "role": "child",
+       "root_relative_path": "[relative path from this dir to the root]"
+     }
+     ```
+   - **Root** (descendant blueprints found):
+     ```json
+     "workspaces": {
+       "role": "root",
+       "discovery_strategy": "auto-cache",
+       "last_scanned_at": null,
+       "children": []
+     }
+     ```
+     After writing the manifest, run `/blueprint:workspace-scan` once to
+     populate `children[]`.
+   - **Standalone**: omit the `workspaces` block entirely.
+
 8. **Create initial rules**:
    - `development.md`: TDD workflow, commit conventions
    - `testing.md`: Test requirements, coverage expectations
@@ -282,7 +326,7 @@ Initialize Blueprint Development in this project.
 
 10. **Report**:
    ```
-   Blueprint Development initialized! (v3.2.0)
+   Blueprint Development initialized! (v3.3.0)
 
    Blueprint structure created:
    - docs/blueprint/manifest.json

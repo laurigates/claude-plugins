@@ -1,7 +1,7 @@
 ---
 created: 2026-01-15
-modified: 2026-03-01
-reviewed: 2026-02-14
+modified: 2026-04-12
+reviewed: 2026-04-12
 description: "Validate ADR relationships, detect orphaned references, and check domain consistency"
 args: "[--report-only]"
 argument-hint: "--report-only to validate without prompting for fixes"
@@ -57,6 +57,17 @@ For each ADR, validate:
 3. **related references**: Verify all targets exist, warn if one-way links
 4. **self-references**: Flag if ADR references itself
 5. **circular chains**: Detect cycles in supersession graph
+6. **Cross-workspace references** (v3.3.0+, manifests with `workspaces.role`):
+   Recognise these reference forms in supersedes/extends/related fields:
+   - `ADR-NNN` — local to the current workspace (existing behaviour).
+   - `<workspace-path>/ADR-NNN` — points into a sibling/child workspace. Resolve
+     by reading `<workspace-path>/docs/adrs/` from the monorepo root. Warn if
+     the workspace is not listed in root `workspaces.children`.
+   - `/ADR-NNN` — points at the monorepo root's ADR set. Resolve using the
+     manifest's `workspaces.root_relative_path` (for child manifests) or the
+     current directory (for root manifests).
+   Unresolved cross-workspace refs are reported as warnings (not errors) so
+   they do not block validation during migration.
 
 See [REFERENCE.md](REFERENCE.md#validation-rules) for detailed checks.
 

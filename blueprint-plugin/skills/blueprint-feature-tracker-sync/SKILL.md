@@ -1,7 +1,7 @@
 ---
 created: 2026-01-02
-modified: 2026-02-17
-reviewed: 2026-02-04
+modified: 2026-04-12
+reviewed: 2026-04-12
 description: "Synchronize feature tracker with TODO.md and PRDs, manage tasks"
 allowed-tools: Read, Write, Bash, Glob, AskUserQuestion
 name: blueprint-feature-tracker-sync
@@ -137,6 +137,48 @@ options:
   - `in_progress` if any feature in_progress
   - `partial` if some complete, some not
   - `not_started` if no features started
+
+### Step 6a: Resolve portfolio links (v3.3.0+, root blueprints only)
+
+Run only when the manifest at the root has `workspaces.role == "root"` AND the
+feature-tracker contains any feature with a non-empty `implemented_by` array.
+
+1. For each feature with `implemented_by`:
+   - For every `{workspace, ref}` entry, read
+     `<workspace>/docs/blueprint/feature-tracker.json` and look up `ref`.
+   - Collect the child statuses. If any entry cannot be resolved (missing file
+     or missing ref), record a warning and treat that entry as `not_started`
+     for the rollup.
+   - Derive the root feature's `status` using this rule:
+
+     | Child statuses observed | Derived status |
+     |-------------------------|----------------|
+     | All resolved entries `complete` | `complete` |
+     | Any `blocked` | `blocked` |
+     | Any `in_progress`, or a mix of `complete`/`not_started` | `partial` |
+     | All `not_started` | `not_started` |
+
+   - Overwrite the feature's `status` with the derived value. Do NOT touch
+     `implementation` on portfolio features; status alone is recomputed.
+
+2. Rebuild the top-level `workspaces` summary by reading each child's
+   `statistics` block:
+
+   ```json
+   "workspaces": {
+     "projects/esp32-lamp": {
+       "total": 14, "complete": 6, "completion_percentage": 42.9,
+       "current_phase": "phase-1", "last_synced_at": "<now>"
+     }
+   }
+   ```
+
+3. Recompute root `statistics` after the derived statuses are applied so the
+   portfolio-level totals reflect the child-driven states.
+
+4. Emit warnings in the sync report (Step 9) for unresolved `implemented_by`
+   entries, and suggest `/blueprint:workspace-scan` when a referenced
+   workspace is not present in the root manifest's `workspaces.children`.
 
 ### Step 7: Update feature-tracker.json
 

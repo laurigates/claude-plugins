@@ -66,6 +66,13 @@
     },
     "statistics": {
       "$ref": "#/definitions/statistics"
+    },
+    "workspaces": {
+      "type": "object",
+      "description": "Monorepo portfolio: cached rollup stats keyed by child workspace relative path. Populated by blueprint:feature-tracker-sync at root blueprints (format_version >= 3.3.0).",
+      "additionalProperties": {
+        "$ref": "#/definitions/workspaceStats"
+      }
     }
   },
   "definitions": {
@@ -201,6 +208,55 @@
             }
           },
           "additionalProperties": false
+        },
+        "implemented_by": {
+          "type": "array",
+          "description": "Monorepo portfolio: cross-workspace references to child-workspace FRs that implement this portfolio feature. When non-empty, status is derived by blueprint:feature-tracker-sync (format_version >= 3.3.0).",
+          "items": {
+            "$ref": "#/definitions/implementedByRef"
+          }
+        }
+      }
+    },
+    "implementedByRef": {
+      "type": "object",
+      "required": ["workspace", "ref"],
+      "properties": {
+        "workspace": {
+          "type": "string",
+          "description": "Relative path from the root blueprint to the child workspace (e.g., 'projects/esp32-lamp')"
+        },
+        "ref": {
+          "type": "string",
+          "description": "Feature code in the child workspace's feature-tracker.json (e.g., 'FR3.2')"
+        }
+      }
+    },
+    "workspaceStats": {
+      "type": "object",
+      "description": "Cached rollup statistics for a child workspace",
+      "properties": {
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "complete": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "completion_percentage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "current_phase": {
+          "type": ["string", "null"],
+          "description": "Child workspace's currently active phase"
+        },
+        "last_synced_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of last sync from child feature-tracker"
         }
       }
     },
