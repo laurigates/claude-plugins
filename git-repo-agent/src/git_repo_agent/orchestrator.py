@@ -9,11 +9,13 @@ from claude_agent_sdk import (
     AssistantMessage,
     ClaudeAgentOptions,
     ClaudeSDKClient,
+    ProcessError,
     ResultMessage,
     SystemMessage,
     TextBlock,
     ToolUseBlock,
 )
+from dataclasses import replace
 from rich.console import Console
 
 logger = logging.getLogger(__name__)
@@ -42,6 +44,32 @@ def _resilient_parse_message(data):
 
 _msg_parser.parse_message = _resilient_parse_message
 _sdk_client.parse_message = _resilient_parse_message
+
+# Patch the subprocess transport so SIGTERM-on-close (exit code -15) does not
+# produce a spurious "Task exception was never retrieved" warning when the
+# CLI subprocess doesn't exit gracefully within the SDK's 5s grace period.
+# The ProcessError is raised from the transport's read generator during
+# shutdown and often lands in a GC'd async-generator finalizer with no one
+# awaiting it. SIGTERM at close() is expected — the orchestrator has already
+# received the ResultMessage by then.
+import claude_agent_sdk._internal.transport.subprocess_cli as _sdk_subprocess  # noqa: E402
+
+_original_read_messages_impl = _sdk_subprocess.SubprocessCLITransport._read_messages_impl
+
+
+async def _quiet_read_messages_impl(self):  # type: ignore[no-untyped-def]
+    try:
+        async for data in _original_read_messages_impl(self):
+            yield data
+    except Exception as exc:
+        exit_code = getattr(exc, "exit_code", None)
+        if exit_code == -15:
+            logger.debug("Suppressing SIGTERM-on-close ProcessError: %s", exc)
+            return
+        raise
+
+
+_sdk_subprocess.SubprocessCLITransport._read_messages_impl = _quiet_read_messages_impl
 
 from .agents.blueprint import definition as blueprint_definition
 from .agents.configure import definition as configure_definition
@@ -557,66 +585,129 @@ async def _stream_messages_collecting(
     return "\n".join(collected)
 
 
+def _build_phase2_prompt(
+    findings_text: str,
+    user_selection: str,
+    worktree_branch: str | None,
+) -> str:
+    """Build the Phase 2 execution prompt.
+
+    Phase 2 is a fresh session, so we re-embed the findings list from
+    Phase 1 and give explicit instructions to execute the selected fixes
+    and commit to the worktree branch. Crucially this prompt does NOT
+    inherit the Phase 1 "stop after findings" directive — it tells the
+    agent to proceed with tool calls.
+    """
+    choice = user_selection.strip().lower()
+    if choice in ("none", "n", ""):
+        selection_instruction = (
+            "The user chose not to apply any fixes. "
+            "Skip Step 4. Proceed directly to Step 5 (record health "
+            "history) and Step 6 (generate report)."
+        )
+    else:
+        selection_instruction = (
+            f"The user selected fixes: **{user_selection}** "
+            "(reference the numbered list below). Apply exactly those fixes "
+            "from your findings list by making real tool calls (Edit, Write, "
+            "Bash, etc.), then run Step 5 (record health history) and "
+            "Step 6 (generate report)."
+        )
+
+    worktree_note = ""
+    if worktree_branch and choice not in ("none", "n", ""):
+        worktree_note = (
+            f"\n\nYou are working in a git worktree on branch "
+            f"'{worktree_branch}'. Commit your changes directly to this "
+            "branch. Do NOT create new branches or push."
+        )
+
+    return (
+        "This is the execution phase of the maintain workflow. "
+        "An earlier analysis phase produced the following numbered findings "
+        "list. Your job is to act on it, not to re-analyze.\n\n"
+        "## Findings from analysis phase\n\n"
+        f"{findings_text}\n\n"
+        "## Your task\n\n"
+        f"{selection_instruction}"
+        f"{worktree_note}\n\n"
+        "Do not ask the user any questions — they have already selected "
+        "their fixes. Execute now."
+    )
+
+
+def _phase2_system_prompt(base_system_prompt: str) -> str:
+    """Augment the system prompt for Phase 2 (execution).
+
+    Phase 1's system prompt (from maintain.md) instructs the agent to stop
+    after presenting findings. Phase 2 must override that so the agent
+    makes tool calls instead of wrapping up.
+    """
+    override = (
+        "\n\n## Phase 2 Override (execution)\n\n"
+        "You are in the EXECUTION phase. Ignore any instructions in the "
+        "workflow prompt that tell you to end your response after presenting "
+        "findings — those apply only to the analysis phase. In this phase "
+        "you MUST make tool calls to apply the selected fixes, commit them, "
+        "record the health snapshot, and output the maintenance report."
+    )
+    return base_system_prompt + override
+
+
 async def _stream_interactive(
     prompt: str,
     options: ClaudeAgentOptions,
     completion_msg: str,
     worktree_branch: str | None = None,
 ) -> str:
-    """Run a two-phase interactive session using ClaudeSDKClient.
+    """Run a two-phase interactive maintain workflow.
 
     Phase 1: Agent analyzes and presents numbered findings, then stops.
     Interlude: Python prompts the user for their selections via rich.
-    Phase 2: Agent executes the selected fixes and generates a report.
+    Phase 2: A fresh agent session receives the Phase 1 findings plus the
+    user's selections, and executes the fixes.
 
-    This replaces AskUserQuestion which does not work in SDK subprocess
-    mode. See ADR-003.
+    Two separate ClaudeSDKClient sessions are used (rather than
+    ``client.query()`` back-to-back on one client). Multi-turn on the same
+    client proved unreliable: the Phase 1 "stop after findings" anchor
+    from ``maintain.md`` caused Phase 2 to wrap up with no tool calls.
+    See ADR-003 (Revision 2026-04).
 
-    Returns concatenated agent text output for post-processing.
+    Returns concatenated agent text output from both phases for
+    post-processing (PR body, issue creation).
     """
-    collected: list[str] = []
+    # --- Phase 1: Analysis ---
+    phase1_collected: list[str] = []
     async with ClaudeSDKClient(options) as client:
-        # Phase 1: Analysis — agent presents findings and stops
         await client.query(prompt)
-
         async for message in client.receive_response():
-            _display_message(message, collected=collected)
+            _display_message(message, collected=phase1_collected)
+    phase1_text = "\n".join(phase1_collected)
 
-        # Prompt user for selections
-        console.print()
-        user_input = console.input(
-            "[bold]Select fixes to apply[/bold] "
-            "(comma-separated numbers, [green]all[/green], or [yellow]none[/yellow]): "
-        )
+    # --- Interlude: prompt user ---
+    console.print()
+    user_input = console.input(
+        "[bold]Select fixes to apply[/bold] "
+        "(comma-separated numbers, [green]all[/green], or [yellow]none[/yellow]): "
+    )
+    choice = user_input.strip().lower()
+    if choice in ("none", "n", ""):
+        console.print("[yellow]No fixes selected.[/yellow]")
 
-        choice = user_input.strip().lower()
-        if choice in ("none", "n", ""):
-            console.print("[yellow]No fixes selected.[/yellow]")
-            followup = (
-                "The user chose not to apply any fixes. "
-                "Skip Step 4. Proceed to Step 5 (record health history) "
-                "and Step 6 (generate report)."
-            )
-        else:
-            worktree_note = ""
-            if worktree_branch:
-                worktree_note = (
-                    f" You are working in a git worktree on branch '{worktree_branch}'. "
-                    "Commit your changes directly to this branch. Do NOT create new branches."
-                )
-            followup = (
-                f"The user selected: {user_input}. "
-                "Execute the selected fixes (Step 4), then record health "
-                f"history (Step 5) and generate the maintenance report (Step 6).{worktree_note}"
-            )
+    # --- Phase 2: Execution (fresh session) ---
+    phase2_prompt = _build_phase2_prompt(phase1_text, user_input, worktree_branch)
+    phase2_options = replace(
+        options,
+        system_prompt=_phase2_system_prompt(options.system_prompt or ""),
+    )
 
-        # Phase 2: Execution
-        await client.query(followup)
-
+    phase2_collected: list[str] = []
+    async with ClaudeSDKClient(phase2_options) as client:
+        await client.query(phase2_prompt)
         async for message in client.receive_response():
-            _display_message(message, completion_msg, collected)
+            _display_message(message, completion_msg, phase2_collected)
 
-    return "\n".join(collected)
+    return phase1_text + "\n" + "\n".join(phase2_collected)
 
 
 def _extract_report_section(agent_output: str) -> str:

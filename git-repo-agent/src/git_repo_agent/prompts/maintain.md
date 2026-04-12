@@ -53,7 +53,7 @@ Example output format:
 
 Mark items that should NOT be auto-fixed (test failures, security vulnerabilities, architecture decisions) as "report-only".
 
-**End your response after presenting the numbered findings list.** Do NOT use `AskUserQuestion`. The orchestrator will prompt the user for their selections and send a follow-up message with their choices.
+**In the analysis phase only: end your response after presenting the numbered findings list.** Do NOT use `AskUserQuestion`. The orchestrator will prompt the user for their selections in Python and then start a new session for the execution phase with the findings list and selections embedded in its user prompt. This "stop after findings" instruction does NOT apply when you see a "Phase 2 Override (execution)" section in your system prompt.
 
 In **auto-fix mode**, skip this step and proceed directly to Step 4.
 
@@ -63,7 +63,7 @@ In **report-only mode**, present the full findings list with ALL items marked as
 
 Execute fixes based on the operating mode:
 
-- **Interactive mode**: You will receive a follow-up message from the orchestrator containing the user's selections (e.g., "1,3,5" or "all"). Apply exactly the fixes corresponding to those numbers from your Step 3 findings list.
+- **Interactive mode**: In the execution phase you will receive a **fresh user prompt** from the orchestrator containing (a) the full numbered findings list from the analysis phase and (b) the user's selections (e.g., "1,3,5" or "all"). This is a new session — treat the embedded findings list as authoritative. Apply exactly the fixes corresponding to the user's selections by making real tool calls (Edit, Write, Bash). Do NOT re-run the analysis; do NOT present findings again; do NOT ask the user anything.
 - **Auto-fix mode**: Apply all conservative auto-fixes
 
 ### Auto-fix scope (conservative)
