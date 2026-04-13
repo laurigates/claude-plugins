@@ -1,7 +1,7 @@
 ---
 created: 2026-01-02
-modified: 2026-02-06
-reviewed: 2026-01-02
+modified: 2026-04-12
+reviewed: 2026-04-12
 description: "Display feature tracker statistics and completion summary"
 allowed-tools: Read, Bash, AskUserQuestion
 name: blueprint-feature-tracker-status
@@ -76,7 +76,28 @@ Display feature tracker statistics, phase progress, and completion summary.
    ===============
    {List first 10 not_started features by phase order}
    - {FR code}: {name} (Phase {N})
+
+   {If any feature has non-empty implemented_by (monorepo portfolio, v3.3.0+):}
+   Portfolio Features (linked to child workspaces):
+   ================================================
+   {For each portfolio feature with implemented_by:}
+   - {FR code}: {name} — derived status: {status}
+     Implemented by:
+     {For each link:}
+       - {link.workspace}/{link.ref} → {status from child feature-tracker}
+
+   {If top-level "workspaces" summary present:}
+   Workspace Rollups:
+   ==================
+   {For each workspace key:}
+   - {path}: {complete}/{total} ({completion_percentage}%) [last synced: {last_synced_at}]
    ```
+
+4a. **Resolve portfolio links** (v3.3.0+):
+   For each feature with non-empty `implemented_by`, open each referenced child
+   `<workspace>/docs/blueprint/feature-tracker.json` and look up the `ref` FR to
+   obtain its current status. Warn (do not fail) on missing workspaces or
+   refs; suggest `/blueprint:workspace-scan` + `/blueprint:feature-tracker-sync`.
 
 5. **Display visual progress bar**:
    Create ASCII progress bar:

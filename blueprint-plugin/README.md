@@ -60,6 +60,7 @@ PRD (Product Requirements) → PRP (Product Requirement Prompt) → Work-Order �
 | `blueprint-rules` | Manage modular rules |
 | `blueprint-claude-md` | Update CLAUDE.md from blueprint artifacts |
 | `blueprint-sync-ids` | **NEW** - Assign IDs to all documents, build traceability registry |
+| `blueprint-workspace-scan` | **NEW (v3.3)** - Discover child blueprints in a monorepo and refresh the root's `workspaces.children` registry with cached feature-tracker stats |
 
 ### Feature Tracking Skills
 
@@ -358,6 +359,73 @@ jq '.. | objects | select(.status == "not_started") | .name' docs/blueprint/feat
 # Show PRD status
 jq '.prds | to_entries | .[] | "\(.key): \(.value.status)"' docs/blueprint/feature-tracker.json
 ```
+
+## Monorepo Support (v3.3)
+
+Blueprint 3.3 adds first-class monorepo support so a repo-root blueprint can act
+as a **portfolio index** over child workspaces (per-project blueprints in
+subdirectories).
+
+### Roles
+
+Each manifest declares a `workspaces.role`:
+
+| Role | Written by | Meaning |
+|------|------------|---------|
+| `root` | top-level manifest in a monorepo | Owns `workspaces.children[]` registry |
+| `child` | a blueprint under an ancestor root | Carries `root_relative_path` back to root |
+| *(absent)* | standalone project | No monorepo block; existing 3.2 behaviour |
+
+### Portfolio Feature Tracking
+
+Root `feature-tracker.json` can link portfolio FRs down to child FRs:
+
+```json
+"features": {
+  "FR1.1": {
+    "name": "Motion-reactive lighting",
+    "status": "partial",
+    "phase": "phase-1",
+    "implemented_by": [
+      { "workspace": "projects/esp32-lamp", "ref": "FR3.2" },
+      { "workspace": "projects/pir-bridge", "ref": "FR1" }
+    ]
+  }
+}
+```
+
+`/blueprint:feature-tracker-sync` at the root reads each child's tracker and
+**derives** the root status from the linked children (all complete → complete,
+any blocked → blocked, any in_progress/mixed → partial, all not_started →
+not_started).
+
+### Cross-Workspace References
+
+IDs remain per-workspace. Cross-workspace references use these forms:
+
+| Form | Meaning |
+|------|---------|
+| `ADR-NNN` | Local to the current workspace |
+| `projects/foo/ADR-NNN` | Sibling/child workspace (path relative to the root) |
+| `/ADR-NNN` | The monorepo root's ID space |
+
+`/blueprint:adr-validate` resolves these forms and flags unresolved ones as
+warnings.
+
+### Discovery
+
+`/blueprint:workspace-scan` walks the filesystem, finds every
+`docs/blueprint/manifest.json` under the root, and refreshes
+`workspaces.children` with cached rollup stats. It also runs automatically at
+the top of `/blueprint:status` and `/blueprint:feature-tracker-sync` when the
+active manifest has `workspaces.role == "root"`.
+
+### Migration
+
+Existing 3.2 projects migrate with `/blueprint:upgrade`. The v3.2→v3.3
+migration is **purely additive**: it only adds the `workspaces` block (or omits
+it for standalone projects) and bumps `format_version`. Nothing is moved,
+renamed, or deleted.
 
 ## Hooks
 

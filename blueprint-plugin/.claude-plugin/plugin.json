@@ -43,6 +43,9 @@
     "adr-backlog",
     "test-regression-plan",
     "derive-tests",
-    "test-gaps"
+    "test-gaps",
+    "monorepo",
+    "workspaces",
+    "portfolio-tracking"
   ]
 }

@@ -4,8 +4,8 @@ description: Versioned migration procedures for upgrading blueprint structure be
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, TodoWrite
 created: 2025-12-22
-modified: 2026-01-09
-reviewed: 2026-01-09
+modified: 2026-04-12
+reviewed: 2026-04-12
 ---
 
 # Blueprint Migration
@@ -24,7 +24,7 @@ Expert skill for migrating blueprint structures between format versions. This sk
 
 ```
 1. Read current manifest version
-2. Compare with target version (latest: 3.1.0)
+2. Compare with target version (latest: 3.3.0)
 3. Load migration document for version range
 4. Execute migration steps sequentially
 5. Confirm each destructive operation
@@ -40,6 +40,7 @@ Expert skill for migrating blueprint structures between format versions. This sk
 | 1.x.x | 2.0.0 | `migrations/v1.x-to-v2.0.md` |
 | 2.x.x | 3.0.0 | `migrations/v2.x-to-v3.0.md` |
 | 3.0.x | 3.1.0 | `migrations/v3.0-to-v3.1.md` |
+| 3.2.x | 3.3.0 | `migrations/v3.2-to-v3.3.md` |
 
 ## Version Detection
 
