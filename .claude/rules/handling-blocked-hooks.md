@@ -77,6 +77,16 @@ the failed merge."
 | `rm -rf` | Cleaning build artifacts when other methods are insufficient |
 | Chained git commands | Complex atomic operations |
 
+## Branch Protection: Do Not Self-Serve the Bypass
+
+The `branch-protection.sh` hook in `hooks-plugin` blocks writes on `main`/`master`. When it blocks you, the correct moves — in order — are:
+
+1. **Create a feature branch**: `git checkout -b feature/your-change`, then re-run the command.
+2. **Explicit-refspec push** (for `git push` only): `git push origin main:feature/your-change` is allowed by the hook and is the right way to move local `main` commits onto a remote feature branch.
+3. **Delegate to the user** per the template above.
+
+Do **not** attempt to prefix commands with `CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1` as a self-serve override. The hook only honors that variable when the **human operator** has exported it in their shell environment — inline prefixes on an agent-emitted command are intentionally ignored. If the repo legitimately uses main-branch-dev (personal repo, dotfiles), ask the user to export the variable for their session rather than injecting it into the command.
+
 ## Key Points
 
 - Hooks protect against common mistakes - the suggested alternative is usually correct

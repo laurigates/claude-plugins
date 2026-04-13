@@ -96,7 +96,7 @@ A PreToolUse hook that blocks write operations on protected branches (main, mast
 | Staging (git add, rm, mv) | Blocked |
 | Reset | Blocked |
 
-**Toggle:** `CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1`
+**Toggle:** `export CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1` in your shell environment (e.g. in a personal repo, dotfiles, or main-branch-dev workflow). This is a **human-operator** opt-in — inline prefixes like `CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1 git commit ...` on a Bash command are intentionally not honored, so that agents cannot self-serve the bypass. When blocked on a protected branch, an agent should follow `.claude/rules/handling-blocked-hooks.md` and delegate to the user instead.
 
 ### auto-checkpoint.sh
 
