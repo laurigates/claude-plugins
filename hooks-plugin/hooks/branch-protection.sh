@@ -2,13 +2,18 @@
 # PreToolUse hook — guards write operations on protected branches (main, master)
 #
 # Behavior:
-#   - Common operations (commit, push, add): denied with guidance for Claude
-#     to consider branching. Claude can override by prefixing the command with
-#     CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1 after evaluating the context.
+#   - Common operations (commit, push, add): denied with guidance to switch to
+#     a feature branch, use an explicit-refspec push, or delegate to the user
+#     per .claude/rules/handling-blocked-hooks.md.
 #   - Destructive operations (reset, rebase): prompts user to approve via "ask"
 #   - Read-only operations: always allowed silently
 #
-# Toggle: set CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1 to skip this hook entirely
+# Toggle: a human operator can export CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1
+# in their shell environment (e.g. in a personal repo / dotfiles / main-branch-
+# dev setup). The toggle is only honored when set in the process environment —
+# inline prefixes like `CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1 git commit ...`
+# on the command line are intentionally NOT honored so that agents cannot
+# self-serve the bypass.
 #
 # Matches: Bash
 # Detects: git commit, git push, git rebase on main/master
@@ -16,7 +21,8 @@
 
 set -euo pipefail
 
-# Toggle off via environment variable
+# Human-operator escape hatch: only honored when set in the process environment
+# (not when prefixed inline on the command). See header comment for rationale.
 [ "${CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION:-}" = "1" ] && exit 0
 
 INPUT=$(cat)
@@ -28,13 +34,12 @@ COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 [ "$TOOL_NAME" != "Bash" ] && exit 0
 [ -z "$COMMAND" ] && exit 0
 
-# Allow inline override: CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1 git ...
-if echo "$COMMAND" | grep -Eq '(^|\s)CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1\s+'; then
-  exit 0
-fi
-
-# Only check git commands
-echo "$COMMAND" | grep -Eq '^\s*git\s+' || exit 0
+# Only check git commands. Allow any number of leading `VAR=value` assignments
+# before the `git` invocation so that an attempt to inline-bypass via
+# `CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1 git ...` is still treated as a git
+# command (and therefore subject to the protections below) rather than slipping
+# past this filter as "not a git command".
+echo "$COMMAND" | grep -Eq '^\s*([A-Za-z_][A-Za-z0-9_]*=\S*[[:space:]]+)*git[[:space:]]+' || exit 0
 
 # Deny with guidance — Claude sees the reason and decides to branch or override
 deny() {
@@ -82,7 +87,7 @@ case "$GIT_SUBCMD" in
     if [ "$GIT_SUBCMD" = "stash" ]; then
       if echo "$COMMAND" | grep -Eq 'stash\s+(pop|apply|drop|clear)'; then
         STASH_OP=$(echo "$COMMAND" | grep -oE '(pop|apply|drop|clear)')
-        deny "You're on '${CURRENT_BRANCH}'. Consider switching to a feature branch before 'git stash ${STASH_OP}'. If committing to ${CURRENT_BRANCH} is intentional, re-run with: CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1 git stash ${STASH_OP}"
+        deny "You're on '${CURRENT_BRANCH}'. Switch to a feature branch before 'git stash ${STASH_OP}' (git checkout -b feature/your-change), or delegate this command to the user per .claude/rules/handling-blocked-hooks.md. If this repo uses main-branch-dev, ask the user to export CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1 in their shell."
       fi
     fi
     exit 0
@@ -97,14 +102,14 @@ case "$GIT_SUBCMD" in
     ;;
   # Common write operations — deny with guidance for Claude
   commit|cherry-pick|revert)
-    deny "You're on '${CURRENT_BRANCH}'. If this repo uses PR workflows, create a feature branch: git checkout -b feature/your-change. If committing directly to ${CURRENT_BRANCH} is appropriate (e.g. personal repo, dotfiles), re-run with: CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1 git ${GIT_SUBCMD} ..."
+    deny "You're on '${CURRENT_BRANCH}'. Create a feature branch first: git checkout -b feature/your-change, then re-run 'git ${GIT_SUBCMD}'. If committing directly to ${CURRENT_BRANCH} is genuinely required (e.g. personal repo, dotfiles, main-branch-dev), delegate to the user per .claude/rules/handling-blocked-hooks.md — ask them to run it, or to export CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1 in their shell. Do not attempt to self-serve this bypass."
     ;;
   push)
     # Allow push to specific remote branch via explicit refspec
     if echo "$COMMAND" | grep -q ':'; then
       exit 0
     fi
-    deny "You're about to push directly to '${CURRENT_BRANCH}'. In collaborative repos, changes go through a PR on a feature branch. If pushing to ${CURRENT_BRANCH} is intentional, re-run with: CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1 git push ..."
+    deny "You're about to push directly to '${CURRENT_BRANCH}'. In collaborative repos, changes go through a PR on a feature branch. To push local ${CURRENT_BRANCH} to a remote feature branch, use an explicit refspec (allowed): git push origin ${CURRENT_BRANCH}:feature/your-change. If pushing to ${CURRENT_BRANCH} is genuinely intentional, delegate to the user per .claude/rules/handling-blocked-hooks.md."
     ;;
   # Staging operations
   add|rm|mv|restore|checkout|switch)
@@ -117,7 +122,7 @@ case "$GIT_SUBCMD" in
       exit 0
     fi
     # Staging implies committing — deny with guidance
-    deny "You're staging changes on '${CURRENT_BRANCH}'. If this repo uses PR workflows, switch to a feature branch: git checkout -b feature/your-change. If committing to ${CURRENT_BRANCH} is intentional, re-run with: CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1 git ${GIT_SUBCMD} ..."
+    deny "You're staging changes on '${CURRENT_BRANCH}'. Switch to a feature branch first: git checkout -b feature/your-change, then re-run 'git ${GIT_SUBCMD}'. If committing to ${CURRENT_BRANCH} is genuinely required, delegate to the user per .claude/rules/handling-blocked-hooks.md — do not self-serve the CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION bypass."
     ;;
 esac
 
