@@ -1,11 +1,204 @@
 """Git worktree management for isolated agent work."""
 
+import errno
+import json
 import logging
+import os
 import re
 import subprocess
+from datetime import datetime, timezone
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+
+def timestamped_branch(prefix: str) -> str:
+    """Return a UTC-timestamped branch name under ``prefix``.
+
+    Used by non-interactive runs so repeated scheduled invocations do not
+    collide on e.g. ``maintain/2026-04-14``.
+    """
+    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M")
+    return f"{prefix}/{stamp}"
+
+
+_LOCK_RELATIVE = Path(".claude") / "worktrees" / ".git-repo-agent.lock"
+
+
+def acquire_lock(repo_path: Path) -> Path | None:
+    """Acquire an advisory lock for a non-interactive run.
+
+    Writes PID + ISO-8601 start time to ``.claude/worktrees/.git-repo-agent.lock``
+    via ``O_CREAT | O_EXCL``. Returns the lock path on success, ``None`` if
+    a live lock is already held. Stale locks (holder process gone) are
+    reclaimed automatically.
+    """
+    lock_path = repo_path / _LOCK_RELATIVE
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+
+    payload = json.dumps(
+        {"pid": os.getpid(), "started_at": datetime.now(timezone.utc).isoformat()}
+    ).encode()
+
+    try:
+        fd = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+    except FileExistsError:
+        # Check liveness of the existing holder.
+        try:
+            existing = json.loads(lock_path.read_text(encoding="utf-8"))
+            pid = int(existing.get("pid", 0))
+        except (ValueError, OSError):
+            pid = 0
+        if pid > 0 and _pid_alive(pid):
+            return None
+        # Stale — remove and retry once.
+        try:
+            lock_path.unlink()
+        except FileNotFoundError:
+            pass
+        try:
+            fd = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+        except FileExistsError:
+            return None
+
+    with os.fdopen(fd, "wb") as f:
+        f.write(payload)
+    return lock_path
+
+
+def release_lock(lock_path: Path | None) -> None:
+    """Remove the advisory lock file. Safe to call with ``None``."""
+    if lock_path is None:
+        return
+    try:
+        lock_path.unlink()
+    except FileNotFoundError:
+        pass
+    except OSError as exc:
+        logger.warning("Failed to release lock %s: %s", lock_path, exc)
+
+
+def _pid_alive(pid: int) -> bool:
+    """True if ``pid`` is a live process we can see."""
+    try:
+        os.kill(pid, 0)
+    except OSError as exc:
+        return exc.errno == errno.EPERM
+    return True
+
+
+def refresh_base(repo_path: Path, base_branch: str) -> bool:
+    """Fetch the remote and fast-forward the local base branch.
+
+    Returns True on success, False on any failure (network, no remote,
+    non-fast-forward, etc.). Non-fatal: scheduled runs should log and
+    continue on stale base if the fetch fails.
+    """
+    fetch = subprocess.run(
+        ["git", "fetch", "origin", base_branch],
+        cwd=repo_path,
+        capture_output=True,
+        text=True,
+    )
+    if fetch.returncode != 0:
+        logger.warning("git fetch origin %s failed: %s", base_branch, fetch.stderr.strip())
+        return False
+    # Only fast-forward if the local branch is checked out and behind.
+    current = subprocess.run(
+        ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+        cwd=repo_path,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    if current != base_branch:
+        return True  # fetch is enough; worktree base will come from origin/<base>
+    ff = subprocess.run(
+        ["git", "merge", "--ff-only", f"origin/{base_branch}"],
+        cwd=repo_path,
+        capture_output=True,
+        text=True,
+    )
+    if ff.returncode != 0:
+        logger.warning("Non-fast-forward refresh of %s: %s", base_branch, ff.stderr.strip())
+        return False
+    return True
+
+
+def find_existing_pr(
+    repo_path: Path,
+    branch_prefix: str,
+    base_branch: str,
+) -> str | None:
+    """Return the URL of an open PR whose head branch starts with ``branch_prefix``.
+
+    Used by non-interactive runs to dedupe scheduled PRs. Returns None if
+    ``gh`` is unavailable, auth fails, or no match is found.
+    """
+    result = subprocess.run(
+        [
+            "gh", "pr", "list",
+            "--state", "open",
+            "--base", base_branch,
+            "--json", "url,headRefName",
+            "--limit", "100",
+        ],
+        cwd=repo_path,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        logger.debug("gh pr list failed: %s", result.stderr.strip())
+        return None
+    try:
+        prs = json.loads(result.stdout or "[]")
+    except json.JSONDecodeError:
+        return None
+    for pr in prs:
+        head = pr.get("headRefName", "")
+        if head == branch_prefix or head.startswith(f"{branch_prefix}/"):
+            return pr.get("url")
+    return None
+
+
+def find_existing_issue(repo_path: Path, title: str) -> str | None:
+    """Return the URL of an open issue with an exact matching title.
+
+    Used to dedupe report-only findings across scheduled runs.
+    """
+    result = subprocess.run(
+        [
+            "gh", "issue", "list",
+            "--state", "open",
+            "--search", f'in:title "{title}"',
+            "--json", "url,title",
+            "--limit", "50",
+        ],
+        cwd=repo_path,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        logger.debug("gh issue list failed: %s", result.stderr.strip())
+        return None
+    try:
+        issues = json.loads(result.stdout or "[]")
+    except json.JSONDecodeError:
+        return None
+    for issue in issues:
+        if issue.get("title") == title:
+            return issue.get("url")
+    return None
+
+
+def gh_auth_ok(repo_path: Path) -> bool:
+    """Check that ``gh`` is authenticated. Fast fail for scheduled runs."""
+    result = subprocess.run(
+        ["gh", "auth", "status"],
+        cwd=repo_path,
+        capture_output=True,
+        text=True,
+    )
+    return result.returncode == 0
 
 
 def create_worktree(repo_path: Path, branch: str) -> Path:

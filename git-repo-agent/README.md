@@ -78,6 +78,78 @@ git-repo-agent diagnose /path/to/repo --sources argocd --app my-app --namespace 
 
 kubectl and argocd operations are **strictly read-only** — safety hooks block any mutating commands.
 
+### Scheduled / Non-Interactive Runs
+
+`onboard`, `maintain`, and `diagnose` all support a non-interactive mode
+designed for Claude Code desktop scheduled jobs, cron, and GitHub Actions.
+See `docs/adr/005-non-interactive-scheduled-execution.md` for the full
+contract.
+
+```bash
+# Daily maintenance with auto-PR, exits 3 if an earlier scheduled run is still
+# holding the lock, exit 2 on config error, exit 4 if a safety hook blocks an op.
+git-repo-agent maintain /repo \
+  --fix --non-interactive \
+  --auto-pr=on-changes --on-duplicate=skip \
+  --refresh-base --log-format=json
+
+# Report-only: creates de-duplicated GitHub issues, never commits.
+git-repo-agent maintain /repo \
+  --report-only --non-interactive \
+  --auto-issues=on-findings --log-format=json
+```
+
+**Key flags**
+
+| Flag | Values | Use |
+|------|--------|-----|
+| `--non-interactive` | — | Required when stdin is not a TTY |
+| `--auto-pr` | `always`, `never`, `on-changes` | Policy for PR creation |
+| `--auto-issues` | `always`, `never`, `on-findings` | Policy for issue creation |
+| `--on-duplicate` | `skip`, `append`, `new` | Behaviour if an open PR already exists for this workflow |
+| `--refresh-base` | flag | `git fetch` + ff the base before starting |
+| `--log-format` | `text`, `json`, `plain` | Output style (auto-selects `plain` when piped) |
+| `--max-cost-usd` | float | Warn if session cost exceeds this |
+
+**Exit codes**
+
+| Code | Meaning |
+|------|---------|
+| 0 | Success |
+| 1 | Unexpected runtime error |
+| 2 | Config error (missing flag, bad value, missing `gh` auth, non-TTY without `--non-interactive`) |
+| 3 | Locked — another run holds the advisory lock |
+| 4 | Blocked by a safety hook |
+
+**GitHub Actions snippet**
+
+```yaml
+name: Scheduled maintenance
+on:
+  schedule:
+    - cron: "0 5 * * *"
+  workflow_dispatch:
+jobs:
+  maintain:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - run: uv tool install git+https://github.com/laurigates/claude-plugins#subdirectory=git-repo-agent
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          git-repo-agent maintain . \
+            --fix --non-interactive \
+            --auto-pr=on-changes --on-duplicate=skip \
+            --refresh-base --log-format=json
+```
+
+The two-phase interactive `maintain` (no `--fix`, no `--report-only`)
+requires a human and cannot be run non-interactively — the CLI exits
+with code 2 in that case.
+
 ### Quick Health Check
 
 Runs locally without LLM calls — direct Python scoring.
@@ -208,5 +280,5 @@ uv run --directory git-repo-agent git-repo-agent diagnose . --dry-run
 | Phase 1 | Done    | CLI, orchestrator, repo_analyze, blueprint subagent, onboard command                      |
 | Phase 2 | Done    | Configure/docs subagents, health_score, safety hooks, maintain command, skill compilation |
 | Phase 3 | Done    | Quality/security/test-runner subagents, report_generate, health command                   |
-| Phase 4 | Planned | Watch mode, trend tracking, GitHub Action template                                        |
+| Phase 4 | In progress | Non-interactive / scheduled execution (ADR-005); watch mode and trend tracking planned |
 | Phase 5 | Done    | Pipeline diagnostics (kubectl, ArgoCD, GitHub Actions, Sentry, Chrome DevTools)           |

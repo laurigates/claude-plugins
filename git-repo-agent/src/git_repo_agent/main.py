@@ -1,17 +1,98 @@
 """CLI entry point for git-repo-agent."""
 
 import asyncio
+import sys
 from pathlib import Path
 from typing import Optional
 
 import typer
 from rich.console import Console
 
+from .non_interactive import (
+    EXIT_CONFIG_ERROR,
+    EXIT_HOOK_BLOCKED,
+    EXIT_LOCKED,
+    EXIT_RUNTIME_ERROR,
+    EXIT_SUCCESS,
+    HookBlockedError,
+    LockedError,
+    NonInteractiveConfig,
+    NonInteractiveUsageError,
+)
+
 app = typer.Typer(
     name="git-repo-agent",
     help="Claude Agent SDK app for repo onboarding and maintenance.",
 )
 console = Console()
+
+
+def _build_ni_config(
+    *,
+    non_interactive: bool,
+    auto_pr: str,
+    auto_issues: str,
+    on_duplicate: str,
+    refresh_base: bool,
+    max_cost_usd: Optional[float],
+    log_format: Optional[str],
+    notify: str,
+) -> Optional[NonInteractiveConfig]:
+    """Validate non-interactive flags and return a config, or None if interactive."""
+    stdin_tty = sys.stdin.isatty()
+    stdout_tty = sys.stdout.isatty()
+
+    # Refuse silent breakage: if stdin isn't a TTY and the caller didn't opt in,
+    # exit loudly rather than letting console.input() eat an empty string.
+    if not stdin_tty and not non_interactive:
+        console.print(
+            "[red]Error:[/red] stdin is not a TTY. "
+            "Pass [bold]--non-interactive[/bold] to enable scheduled / headless "
+            "execution and declare how PR / issue decisions should be made "
+            "(e.g. --auto-pr=on-changes, --auto-issues=on-findings).",
+        )
+        raise typer.Exit(code=EXIT_CONFIG_ERROR)
+
+    if not non_interactive:
+        return None
+
+    # Default log format: plain when stdout isn't a TTY.
+    effective_log_format = log_format or ("text" if stdout_tty else "plain")
+
+    try:
+        return NonInteractiveConfig.build(
+            auto_pr=auto_pr,
+            auto_issues=auto_issues,
+            on_duplicate=on_duplicate,
+            refresh_base=refresh_base,
+            max_cost_usd=max_cost_usd,
+            log_format=effective_log_format,
+            notify=notify,
+        )
+    except NonInteractiveUsageError as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=EXIT_CONFIG_ERROR)
+
+
+def _dispatch(coro) -> None:
+    """Run an async orchestrator coroutine and map exceptions to exit codes."""
+    try:
+        asyncio.run(coro)
+    except LockedError as exc:
+        console.print(f"[yellow]{exc}[/yellow]")
+        raise typer.Exit(code=EXIT_LOCKED)
+    except HookBlockedError as exc:
+        console.print(f"[red]Blocked by safety hook:[/red] {exc}", style="bold")
+        raise typer.Exit(code=EXIT_HOOK_BLOCKED)
+    except NonInteractiveUsageError as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=EXIT_CONFIG_ERROR)
+    except typer.Exit:
+        raise
+    except Exception as exc:  # pragma: no cover - defensive
+        console.print(f"[red]Unexpected error:[/red] {exc}")
+        raise typer.Exit(code=EXIT_RUNTIME_ERROR)
+    raise typer.Exit(code=EXIT_SUCCESS)
 
 
 @app.command()
@@ -40,22 +121,62 @@ def onboard(
         "--branch",
         help="Branch name for onboarding changes.",
     ),
+    non_interactive: bool = typer.Option(
+        False, "--non-interactive",
+        help="Run without prompting (required when stdin is not a TTY).",
+    ),
+    auto_pr: str = typer.Option(
+        "on-changes", "--auto-pr",
+        help="Non-interactive PR policy: always, never, on-changes.",
+    ),
+    auto_issues: str = typer.Option(
+        "never", "--auto-issues",
+        help="Non-interactive issue policy (unused by onboard): always, never, on-findings.",
+    ),
+    on_duplicate: str = typer.Option(
+        "skip", "--on-duplicate",
+        help="Policy if an open PR on the same branch prefix exists: skip, append, new.",
+    ),
+    refresh_base: bool = typer.Option(
+        False, "--refresh-base/--no-refresh-base",
+        help="git fetch + fast-forward the base branch before starting.",
+    ),
+    max_cost_usd: Optional[float] = typer.Option(
+        None, "--max-cost-usd",
+        help="Warn if session cost exceeds this amount.",
+    ),
+    log_format: Optional[str] = typer.Option(
+        None, "--log-format",
+        help="Output format: text, json, plain. Default: plain when not a TTY.",
+    ),
 ) -> None:
     """Onboard a repository with blueprint structure and standards."""
     repo_path = Path(repo).resolve()
     if not repo_path.is_dir():
         console.print(f"[red]Error:[/red] {repo_path} is not a directory")
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=EXIT_CONFIG_ERROR)
+
+    ni = _build_ni_config(
+        non_interactive=non_interactive,
+        auto_pr=auto_pr,
+        auto_issues=auto_issues,
+        on_duplicate=on_duplicate,
+        refresh_base=refresh_base,
+        max_cost_usd=max_cost_usd,
+        log_format=log_format,
+        notify="none",
+    )
 
     from .orchestrator import run_onboard
 
-    asyncio.run(
+    _dispatch(
         run_onboard(
             repo_path=repo_path,
             dry_run=dry_run,
             skip_ci=skip_ci,
             skip_blueprint=skip_blueprint,
             branch=branch,
+            non_interactive=ni,
         )
     )
 
@@ -81,21 +202,70 @@ def maintain(
         "--focus",
         help="Comma-separated areas to focus on (docs,tests,security).",
     ),
+    non_interactive: bool = typer.Option(
+        False, "--non-interactive",
+        help="Run without prompting (required when stdin is not a TTY).",
+    ),
+    auto_pr: str = typer.Option(
+        "on-changes", "--auto-pr",
+        help="Non-interactive PR policy: always, never, on-changes.",
+    ),
+    auto_issues: str = typer.Option(
+        "on-findings", "--auto-issues",
+        help="Non-interactive issue policy (report-only): always, never, on-findings.",
+    ),
+    on_duplicate: str = typer.Option(
+        "skip", "--on-duplicate",
+        help="Policy if an open PR exists for the same workflow: skip, append, new.",
+    ),
+    refresh_base: bool = typer.Option(
+        False, "--refresh-base/--no-refresh-base",
+        help="git fetch + fast-forward the base branch before starting.",
+    ),
+    max_cost_usd: Optional[float] = typer.Option(
+        None, "--max-cost-usd",
+        help="Warn if session cost exceeds this amount.",
+    ),
+    log_format: Optional[str] = typer.Option(
+        None, "--log-format",
+        help="Output format: text, json, plain. Default: plain when not a TTY.",
+    ),
 ) -> None:
     """Run maintenance checks and optionally fix issues."""
     repo_path = Path(repo).resolve()
     if not repo_path.is_dir():
         console.print(f"[red]Error:[/red] {repo_path} is not a directory")
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=EXIT_CONFIG_ERROR)
+
+    ni = _build_ni_config(
+        non_interactive=non_interactive,
+        auto_pr=auto_pr,
+        auto_issues=auto_issues,
+        on_duplicate=on_duplicate,
+        refresh_base=refresh_base,
+        max_cost_usd=max_cost_usd,
+        log_format=log_format,
+        notify="none",
+    )
+
+    # The two-phase interactive maintain flow cannot run without a human.
+    if ni is not None and not (fix or report_only):
+        console.print(
+            "[red]Error:[/red] non-interactive `maintain` requires either "
+            "[bold]--fix[/bold] or [bold]--report-only[/bold]. The default "
+            "interactive flow needs a human to select fixes."
+        )
+        raise typer.Exit(code=EXIT_CONFIG_ERROR)
 
     from .orchestrator import run_maintain
 
-    asyncio.run(
+    _dispatch(
         run_maintain(
             repo_path=repo_path,
             fix=fix,
             report_only=report_only,
             focus=focus,
+            non_interactive=ni,
         )
     )
 
@@ -131,16 +301,43 @@ def diagnose(
         "--app",
         help="ArgoCD application name.",
     ),
+    non_interactive: bool = typer.Option(
+        False, "--non-interactive",
+        help="Run without prompting (required when stdin is not a TTY).",
+    ),
+    auto_issues: str = typer.Option(
+        "on-findings", "--auto-issues",
+        help="Non-interactive issue policy: always, never, on-findings.",
+    ),
+    max_cost_usd: Optional[float] = typer.Option(
+        None, "--max-cost-usd",
+        help="Warn if session cost exceeds this amount.",
+    ),
+    log_format: Optional[str] = typer.Option(
+        None, "--log-format",
+        help="Output format: text, json, plain. Default: plain when not a TTY.",
+    ),
 ) -> None:
     """Diagnose pipeline failures and optionally create a GitHub issue."""
     repo_path = Path(repo).resolve()
     if not repo_path.is_dir():
         console.print(f"[red]Error:[/red] {repo_path} is not a directory")
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=EXIT_CONFIG_ERROR)
+
+    ni = _build_ni_config(
+        non_interactive=non_interactive,
+        auto_pr="never",
+        auto_issues=auto_issues,
+        on_duplicate="skip",
+        refresh_base=False,
+        max_cost_usd=max_cost_usd,
+        log_format=log_format,
+        notify="none",
+    )
 
     from .orchestrator import run_diagnose
 
-    asyncio.run(
+    _dispatch(
         run_diagnose(
             repo_path=repo_path,
             sources=sources,
@@ -148,6 +345,7 @@ def diagnose(
             dry_run=dry_run,
             namespace=namespace,
             app_name=app_name,
+            non_interactive=ni,
         )
     )
 
@@ -163,7 +361,7 @@ def health(
     repo_path = Path(repo).resolve()
     if not repo_path.is_dir():
         console.print(f"[red]Error:[/red] {repo_path} is not a directory")
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=EXIT_CONFIG_ERROR)
 
     from .orchestrator import run_health
 
@@ -191,7 +389,7 @@ def attributes(
     repo_path = Path(repo).resolve()
     if not repo_path.is_dir():
         console.print(f"[red]Error:[/red] {repo_path} is not a directory")
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=EXIT_CONFIG_ERROR)
 
     from .tools.attributes import (
         collect_attributes,
@@ -245,7 +443,7 @@ def route(
     repo_path = Path(repo).resolve()
     if not repo_path.is_dir():
         console.print(f"[red]Error:[/red] {repo_path} is not a directory")
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=EXIT_CONFIG_ERROR)
 
     from .tools.attributes import (
         collect_attributes,
