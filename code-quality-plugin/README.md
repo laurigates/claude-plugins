@@ -18,6 +18,7 @@ This plugin provides comprehensive code quality tools including automated code r
 | `/code:dry-consolidation` | Find and extract duplicated code into shared, tested abstractions |
 | `/code:docs-quality` | Analyze documentation quality - PRDs, ADRs, PRPs, CLAUDE.md, and .claude/rules/ |
 | `/code:silent-degradation` | Detect silent degradation patterns where operations succeed with zero results |
+| `/code:error-swallowing` | Detect syntactic error swallowing (empty catch, `\|\| true`, `2>/dev/null`, floating promises, ignored Go/Rust errors) with context-aware surfacing recommendations |
 | `/code:dead-code` | Detect dead code, unused exports, unreachable branches, and orphaned files |
 | `/code:dep-audit` | Audit dependencies for security vulnerabilities, outdated packages, and license compliance |
 | `/code:test-quality` | Analyze test suite quality — detect test smells, empty assertions, flaky patterns |
@@ -141,6 +142,19 @@ Detects patterns where code silently degrades:
 ```
 
 Applies fixes: adds precondition checks, warning messages, and status indicators.
+
+### Error-Swallowing Scan
+
+```bash
+/code:error-swallowing src/ --severity high
+```
+
+Detects and classifies syntactic error suppression across shell, JS/TS,
+Python, Go, and Rust. Recommends a surfacing channel based on detected
+app context (CLI stderr, web toast + `console.error`, structured log,
+`Result` propagation) and applies a privacy redaction policy to any
+generated user-facing strings. Use `--emit-patch` to produce a
+reviewable diff without mutating files.
 
 ### Dead Code Detection
 

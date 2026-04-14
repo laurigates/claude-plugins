@@ -24,6 +24,8 @@
     "duplication",
     "silent-degradation",
     "preconditions",
+    "error-handling",
+    "error-swallowing",
     "dead-code",
     "dependency-audit",
     "test-quality",

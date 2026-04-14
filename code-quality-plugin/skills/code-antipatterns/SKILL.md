@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-02-03
-reviewed: 2025-12-16
+modified: 2026-04-14
+reviewed: 2026-04-14
 description: Analyze codebase for anti-patterns, code smells, and quality issues using ast-grep
-allowed-tools: Read, Bash(sg *), Bash(rg *), Glob, Grep, TodoWrite, Task
+allowed-tools: Read, Bash(sg *), Bash(rg *), Glob, Grep, TodoWrite, Task, SlashCommand
 args: "[PATH] [--focus <category>] [--severity <level>]"
 argument-hint: "[PATH] [--focus <category>] [--severity <level>]"
 name: code-antipatterns
@@ -25,12 +25,13 @@ Perform comprehensive anti-pattern analysis using ast-grep and parallel agent de
 Based on the detected languages, analyze for these categories:
 
 1. **JavaScript/TypeScript Anti-patterns**
-   - Callbacks, magic values, empty catch blocks, console.logs
+   - Callbacks, magic values, console.logs
    - var usage, deprecated patterns
+   - Error swallowing (empty catch, floating promises) → **delegate** to `/code:error-swallowing`
 
 2. **Async/Promise Patterns**
-   - Unhandled promises, nested callbacks, missing error handling
-   - Promise constructor anti-pattern
+   - Nested callbacks, Promise constructor anti-pattern
+   - Error-handling coverage (unhandled/floating promises) → **delegate** to `/code:error-swallowing`
 
 3. **Framework-Specific** (if detected)
    - **Vue 3**: Props mutation, reactivity issues, Options vs Composition API mixing
@@ -49,7 +50,19 @@ Based on the detected languages, analyze for these categories:
    - Event listeners without cleanup, setInterval leaks, inefficient patterns
 
 8. **Python Anti-patterns** (if detected)
-   - Mutable default arguments, bare except, global variables
+   - Mutable default arguments, global variables
+   - Bare except and suppression patterns → **delegate** to `/code:error-swallowing`
+
+### Delegated Category: Error Swallowing
+
+Do NOT re-implement empty-catch / bare-except / floating-promise detection
+here. Invoke `/code:error-swallowing` via the SlashCommand tool with the
+same `PATH` and severity filter, then fold its findings into the
+consolidated report under a dedicated **Error Swallowing** section.
+
+Rationale: a single source of truth prevents drift between severity
+models, app-context surfacing recommendations, and privacy redaction
+policies. See `code-quality-plugin/skills/code-error-swallowing/SKILL.md`.
 
 ### Execution Strategy
 
@@ -63,11 +76,12 @@ Detect project stack, identify file patterns, establish analysis scope
 
 ## Agent 2: JavaScript/TypeScript Analysis (code-analysis)
 - Use ast-grep for structural pattern matching
-- Focus on: empty catch, magic values, var usage, deprecated patterns
+- Focus on: magic values, var usage, deprecated patterns
+- Error swallowing handled separately via `/code:error-swallowing`
 
 ## Agent 3: Async/Promise Analysis (code-analysis)
-- Unhandled promises, nested callbacks, floating promises
-- Promise constructor anti-pattern
+- Nested callbacks, Promise constructor anti-pattern
+- Floating promises / unhandled rejections handled via `/code:error-swallowing`
 
 ## Agent 4: Framework-Specific Analysis (code-analysis)
 - Vue: props mutation, reactivity issues
@@ -87,9 +101,6 @@ Detect project stack, identify file patterns, establish analysis scope
 Use these patterns during analysis:
 
 ```bash
-# Empty catch blocks
-ast-grep -p 'try { $$$ } catch ($E) { }' --lang js
-
 # Magic numbers
 ast-grep -p 'if ($VAR > 100)' --lang js
 
