@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.11.2...code-quality-plugin-v1.12.0) (2026-04-14)
+
+
+### Features
+
+* /code:error-swallowing skill for detecting syntactic error suppression ([#1030](https://github.com/laurigates/claude-plugins/issues/1030)) ([186e062](https://github.com/laurigates/claude-plugins/commit/186e062e25bb8df4264b438899bdfcbbaf7670e6))
+
 ## [1.11.2](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.11.1...code-quality-plugin-v1.11.2) (2026-04-08)
 
 
