@@ -2,7 +2,9 @@
 
 import json
 import logging
-from datetime import date
+import signal
+import sys
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 from claude_agent_sdk import (
@@ -72,6 +74,10 @@ async def _quiet_read_messages_impl(self):  # type: ignore[no-untyped-def]
 _sdk_subprocess.SubprocessCLITransport._read_messages_impl = _quiet_read_messages_impl
 
 from .agents.blueprint import definition as blueprint_definition
+from .non_interactive import (
+    LockedError,
+    NonInteractiveConfig,
+)
 from .agents.configure import definition as configure_definition
 from .agents.diagnose import definition as diagnose_definition
 from .agents.docs import definition as docs_definition
@@ -88,12 +94,19 @@ from .tools.pipeline_collector import collect_pipeline_diagnostics
 from .tools.repo_analyzer import analyze_repo
 from .tools.report import generate_report
 from .worktree import (
+    acquire_lock,
     cleanup_worktree,
     create_github_issues,
     create_worktree,
+    find_existing_issue,
+    find_existing_pr,
     get_base_branch,
+    gh_auth_ok,
     parse_report_only_findings,
     push_and_create_pr,
+    refresh_base as refresh_base_branch,
+    release_lock,
+    timestamped_branch,
     worktree_has_changes,
 )
 
@@ -135,12 +148,194 @@ def _pre_compute_context(repo_path: Path) -> str:
     )
 
 
+def _summary_line(
+    payload: dict,
+    log_format: str | None,
+) -> None:
+    """Emit a final machine-scrapeable summary line.
+
+    JSON is printed unconditionally when log_format=='json'. For other
+    formats a one-line key=value summary is printed so a scheduler can
+    still grep for it.
+    """
+    if log_format == "json":
+        sys.stdout.write(json.dumps(payload, default=str) + "\n")
+        sys.stdout.flush()
+        return
+    parts = [f"{k}={v}" for k, v in payload.items() if v not in (None, "", [])]
+    console.print("[bold]git-repo-agent result[/bold] " + " ".join(parts))
+
+
+def _install_cleanup_handler(cleanup):
+    """Install SIGTERM/SIGINT handlers that invoke ``cleanup`` then re-exit.
+
+    Returns a token that the caller should pass to ``_restore_handlers``
+    to revert. We don't use contextlib because the orchestrator needs the
+    handler to survive until after the final PR/issue work.
+    """
+    prev_term = signal.getsignal(signal.SIGTERM)
+    prev_int = signal.getsignal(signal.SIGINT)
+
+    def _handler(signum, _frame):
+        try:
+            cleanup()
+        finally:
+            signal.signal(signum, signal.SIG_DFL)
+            # Re-raise with the default handler (propagates exit code).
+            import os
+            os.kill(os.getpid(), signum)
+
+    signal.signal(signal.SIGTERM, _handler)
+    signal.signal(signal.SIGINT, _handler)
+    return (prev_term, prev_int)
+
+
+def _restore_handlers(token) -> None:
+    prev_term, prev_int = token
+    signal.signal(signal.SIGTERM, prev_term)
+    signal.signal(signal.SIGINT, prev_int)
+
+
+def _non_interactive_allowed_tools(base: list[str]) -> list[str]:
+    """Remove AskUserQuestion — it no-ops in SDK subprocess mode (ADR-003)."""
+    return [t for t in base if t != "AskUserQuestion"]
+
+
+def _prepare_non_interactive(
+    repo_path: Path,
+    ni: NonInteractiveConfig,
+    base_branch: str,
+) -> Path:
+    """Validate auth, acquire the repo lock, optionally refresh the base.
+
+    Returns the lock path to release later. Caller must handle
+    ``LockedError`` and ``NonInteractiveUsageError``.
+    """
+    from .non_interactive import NonInteractiveUsageError
+
+    needs_gh = ni.auto_pr != "never" or ni.auto_issues != "never"
+    if needs_gh and not gh_auth_ok(repo_path):
+        raise NonInteractiveUsageError(
+            "gh CLI is not authenticated but --auto-pr / --auto-issues need it. "
+            "Run `gh auth login` or set GH_TOKEN, or pass "
+            "--auto-pr=never / --auto-issues=never."
+        )
+
+    lock_path = acquire_lock(repo_path)
+    if lock_path is None:
+        raise LockedError(
+            f"Another git-repo-agent run holds the lock at "
+            f"{repo_path / '.claude' / 'worktrees' / '.git-repo-agent.lock'}"
+        )
+
+    if ni.refresh_base:
+        if refresh_base_branch(repo_path, base_branch):
+            console.print(f"[dim]Refreshed base branch {base_branch}[/dim]")
+        else:
+            console.print(
+                f"[yellow]Warning:[/yellow] could not refresh base {base_branch}; "
+                "continuing on local HEAD."
+            )
+
+    return lock_path
+
+
+async def _auto_handle_pr(
+    repo_path: Path,
+    worktree_path: Path,
+    branch: str,
+    base_branch: str,
+    workflow: str,
+    agent_output: str,
+    ni: NonInteractiveConfig,
+) -> dict:
+    """Non-interactive PR handling. Returns a dict for the summary line."""
+    result: dict = {"branch": branch, "pr": None, "pr_action": "none"}
+
+    if not worktree_has_changes(worktree_path, base_branch):
+        result["pr_action"] = "no-changes"
+        cleanup_worktree(repo_path, worktree_path)
+        return result
+
+    if ni.auto_pr == "never":
+        result["pr_action"] = "skipped-by-policy"
+        console.print(
+            f"[dim]Changes committed on {branch}; --auto-pr=never so no PR created.[/dim]"
+        )
+        return result
+
+    # Duplicate detection: same workflow prefix, same base.
+    existing = find_existing_pr(repo_path, workflow, base_branch)
+    if existing:
+        if ni.on_duplicate == "skip":
+            result["pr_action"] = "duplicate-skip"
+            result["pr"] = existing
+            console.print(
+                f"[yellow]Open PR already exists for workflow '{workflow}': "
+                f"{existing}. Skipping.[/yellow]"
+            )
+            cleanup_worktree(repo_path, worktree_path)
+            return result
+        # "append" / "new" both fall through to creating a new PR on the
+        # timestamped branch; "append" semantics are left for a future pass.
+
+    pr_title, pr_body = _build_pr_content(workflow, agent_output)
+    console.print(f"[dim]Pushing {branch} and creating PR...[/dim]")
+    pr_url = push_and_create_pr(worktree_path, branch, base_branch, pr_title, pr_body)
+    if pr_url:
+        result["pr"] = pr_url
+        result["pr_action"] = "created"
+        console.print(f"[bold green]PR created:[/bold green] {pr_url}")
+        cleanup_worktree(repo_path, worktree_path)
+    else:
+        result["pr_action"] = "push-failed"
+        console.print(
+            f"[red]Failed to push / create PR. Worktree preserved at {worktree_path}[/red]"
+        )
+    return result
+
+
+async def _auto_handle_issues(
+    repo_path: Path,
+    agent_output: str,
+    ni: NonInteractiveConfig,
+) -> dict:
+    """Non-interactive issue handling for report-only runs."""
+    result: dict = {"issues_created": [], "issues_skipped_duplicate": 0}
+
+    if ni.auto_issues == "never":
+        return result
+
+    findings = parse_report_only_findings(agent_output)
+    if not findings and ni.auto_issues == "on-findings":
+        return result
+
+    # Dedupe by exact title.
+    to_create = []
+    for f in findings:
+        if find_existing_issue(repo_path, f["title"]):
+            result["issues_skipped_duplicate"] += 1
+        else:
+            to_create.append(f)
+
+    if not to_create:
+        return result
+
+    console.print(f"[dim]Creating {len(to_create)} GitHub issue(s)...[/dim]")
+    urls = create_github_issues(repo_path, to_create)
+    for url in urls:
+        console.print(f"  [green]Created:[/green] {url}")
+    result["issues_created"] = urls
+    return result
+
+
 async def run_onboard(
     repo_path: Path,
     dry_run: bool = False,
     skip_ci: bool = False,
     skip_blueprint: bool = False,
     branch: str = "setup/onboard",
+    non_interactive: NonInteractiveConfig | None = None,
 ) -> None:
     """Run the onboarding workflow for a repository."""
     console.print(f"[bold]Git Repo Agent[/bold] — Onboarding [cyan]{repo_path}[/cyan]")
@@ -152,8 +347,12 @@ async def run_onboard(
     console.print("[dim]Analyzing repository...[/dim]")
     repo_context = _pre_compute_context(repo_path)
 
-    # Create worktree for isolated work (see ADR-004)
     base_branch = get_base_branch(repo_path)
+    lock_path: Path | None = None
+    if non_interactive is not None:
+        lock_path = _prepare_non_interactive(repo_path, non_interactive, base_branch)
+
+    # Create worktree for isolated work (see ADR-004)
     worktree_path = None
     work_dir = repo_path
 
@@ -163,74 +362,107 @@ async def run_onboard(
         work_dir = worktree_path
         console.print(f"[dim]Working in: {worktree_path}[/dim]")
 
-    # Build system prompt with embedded analysis
-    system_prompt = (
-        _load_prompt("orchestrator")
-        + "\n\n"
-        + _load_prompt("onboard")
-        + "\n\n"
-        + repo_context
-    )
-
-    # Build orchestrator options
-    options = ClaudeAgentOptions(
-        system_prompt=system_prompt,
-        cwd=str(work_dir),
-        max_turns=50,
-        allowed_tools=[
-            "Read",
-            "Write",
-            "Edit",
-            "Bash",
-            "Glob",
-            "Grep",
-            "Task",
-            "AskUserQuestion",
-            "TodoWrite",
-        ],
-        permission_mode="acceptEdits",
-        agents={
-            "blueprint": blueprint_definition,
-            "configure": configure_definition,
-            "docs": docs_definition,
-            "quality": quality_definition,
-            "security": security_definition,
-            "test_runner": test_runner_definition,
-        },
-        env={
-            "CLAUDECODE": "",
-            "DRY_RUN": str(dry_run),
-            "SKIP_CI": str(skip_ci),
-            "SKIP_BLUEPRINT": str(skip_blueprint),
-            "ONBOARD_BRANCH": branch,
-        },
-        stderr=lambda line: console.print(f"[dim red]STDERR: {line}[/dim red]"),
-    )
-
-    # Build the prompt — agent should commit but NOT create branches (worktree handles that)
-    prompt_parts = [
-        f"Onboard the repository at {work_dir}.",
-        "Repository analysis and health score are in your system prompt. Plan and execute the onboarding workflow.",
-        f"You are working in a git worktree on branch '{branch}'.",
-        "Commit your changes directly to this branch. Do NOT create new branches.",
-    ]
-    if dry_run:
-        prompt_parts.append("DRY RUN — report what you would do without making changes.")
-    if skip_ci:
-        prompt_parts.append("Skip CI/CD setup.")
-    if skip_blueprint:
-        prompt_parts.append("Skip blueprint initialization.")
-
-    prompt = " ".join(prompt_parts)
-
-    # Stream and display messages
-    await _stream_messages(prompt, options, "Onboarding complete.")
-
-    # Post-workflow: offer to create PR if worktree has changes
-    if worktree_path and not dry_run:
-        await _prompt_pr_creation(
-            repo_path, worktree_path, branch, base_branch, "onboard"
+    cleanup_token = None
+    if non_interactive is not None and worktree_path is not None:
+        cleanup_token = _install_cleanup_handler(
+            lambda: (
+                cleanup_worktree(repo_path, worktree_path),
+                release_lock(lock_path),
+            )
         )
+
+    try:
+        # Build system prompt with embedded analysis
+        system_prompt = (
+            _load_prompt("orchestrator")
+            + "\n\n"
+            + _load_prompt("onboard")
+            + "\n\n"
+            + repo_context
+        )
+
+        allowed_tools = [
+            "Read", "Write", "Edit", "Bash", "Glob", "Grep", "Task",
+            "AskUserQuestion", "TodoWrite",
+        ]
+        if non_interactive is not None:
+            allowed_tools = _non_interactive_allowed_tools(allowed_tools)
+
+        # Build orchestrator options
+        options = ClaudeAgentOptions(
+            system_prompt=system_prompt,
+            cwd=str(work_dir),
+            max_turns=50,
+            allowed_tools=allowed_tools,
+            permission_mode="acceptEdits",
+            agents={
+                "blueprint": blueprint_definition,
+                "configure": configure_definition,
+                "docs": docs_definition,
+                "quality": quality_definition,
+                "security": security_definition,
+                "test_runner": test_runner_definition,
+            },
+            env={
+                "CLAUDECODE": "",
+                "DRY_RUN": str(dry_run),
+                "SKIP_CI": str(skip_ci),
+                "SKIP_BLUEPRINT": str(skip_blueprint),
+                "ONBOARD_BRANCH": branch,
+            },
+            stderr=lambda line: console.print(f"[dim red]STDERR: {line}[/dim red]"),
+        )
+
+        # Build the prompt — agent should commit but NOT create branches
+        prompt_parts = [
+            f"Onboard the repository at {work_dir}.",
+            "Repository analysis and health score are in your system prompt. Plan and execute the onboarding workflow.",
+            f"You are working in a git worktree on branch '{branch}'.",
+            "Commit your changes directly to this branch. Do NOT create new branches.",
+        ]
+        if dry_run:
+            prompt_parts.append("DRY RUN — report what you would do without making changes.")
+        if skip_ci:
+            prompt_parts.append("Skip CI/CD setup.")
+        if skip_blueprint:
+            prompt_parts.append("Skip blueprint initialization.")
+
+        prompt = " ".join(prompt_parts)
+
+        if non_interactive is not None:
+            agent_output = await _stream_messages_collecting(
+                prompt, options, "Onboarding complete.",
+            )
+        else:
+            await _stream_messages(prompt, options, "Onboarding complete.")
+            agent_output = ""
+
+        # Post-workflow: PR creation
+        summary: dict = {
+            "status": "success",
+            "workflow": "onboard",
+            "branch": branch,
+            "dry_run": dry_run,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+        if worktree_path and not dry_run:
+            if non_interactive is not None:
+                pr_result = await _auto_handle_pr(
+                    repo_path, worktree_path, branch, base_branch,
+                    "setup/onboard", agent_output, non_interactive,
+                )
+                summary.update(pr_result)
+            else:
+                await _prompt_pr_creation(
+                    repo_path, worktree_path, branch, base_branch, "onboard",
+                )
+
+        if non_interactive is not None:
+            _summary_line(summary, non_interactive.log_format)
+    finally:
+        if cleanup_token is not None:
+            _restore_handlers(cleanup_token)
+        release_lock(lock_path)
 
 
 async def run_maintain(
@@ -238,6 +470,7 @@ async def run_maintain(
     fix: bool = False,
     report_only: bool = False,
     focus: str | None = None,
+    non_interactive: NonInteractiveConfig | None = None,
 ) -> None:
     """Run the maintenance workflow for a repository."""
     console.print(f"[bold]Git Repo Agent[/bold] — Maintaining [cyan]{repo_path}[/cyan]")
@@ -264,14 +497,23 @@ async def run_maintain(
 
     # Interactive mode does not use AskUserQuestion — the orchestrator
     # handles user prompting in Python between two agent phases. See ADR-003.
-    interactive = not fix and not report_only
+    interactive = not fix and not report_only and non_interactive is None
     makes_changes = not report_only
 
-    # Create worktree for isolated work when changes will be made (see ADR-004)
     base_branch = get_base_branch(repo_path)
+    lock_path: Path | None = None
+    if non_interactive is not None:
+        lock_path = _prepare_non_interactive(repo_path, non_interactive, base_branch)
+
+    # Create worktree for isolated work when changes will be made (see ADR-004).
+    # Non-interactive runs use a UTC-timestamped branch so repeated scheduled
+    # invocations on the same day don't collide.
     worktree_path = None
     work_dir = repo_path
-    branch = f"maintain/{date.today().isoformat()}"
+    if non_interactive is not None:
+        branch = timestamped_branch("maintain")
+    else:
+        branch = f"maintain/{date.today().isoformat()}"
 
     if makes_changes:
         console.print(f"[dim]Creating worktree on branch {branch}...[/dim]")
@@ -279,83 +521,107 @@ async def run_maintain(
         work_dir = worktree_path
         console.print(f"[dim]Working in: {worktree_path}[/dim]")
 
-    # Build orchestrator options
-    allowed_tools = [
-        "Read",
-        "Write",
-        "Edit",
-        "Bash",
-        "Glob",
-        "Grep",
-        "Task",
-        "TodoWrite",
-    ]
-    if not interactive:
-        allowed_tools.append("AskUserQuestion")
-
-    options = ClaudeAgentOptions(
-        system_prompt=system_prompt,
-        cwd=str(work_dir),
-        max_turns=50,
-        allowed_tools=allowed_tools,
-        permission_mode="acceptEdits",
-        agents={
-            "blueprint": blueprint_definition,
-            "configure": configure_definition,
-            "docs": docs_definition,
-            "quality": quality_definition,
-            "security": security_definition,
-            "test_runner": test_runner_definition,
-        },
-        env={
-            "CLAUDECODE": "",
-            "FIX_MODE": str(fix),
-            "REPORT_ONLY": str(report_only),
-            "FOCUS_AREAS": focus or "",
-        },
-    )
-
-    # Build the prompt
-    prompt_parts = [
-        f"Run maintenance checks on the repository at {work_dir}.",
-        "Repository analysis and health score are in your system prompt. Execute the maintenance workflow.",
-    ]
-    if report_only:
-        prompt_parts.append("REPORT ONLY — do not make any changes, just generate a report.")
-    elif fix:
-        prompt_parts.append("FIX MODE — apply safe auto-fixes for issues found.")
-        prompt_parts.append(
-            f"You are working in a git worktree on branch '{branch}'. "
-            "Commit your changes directly to this branch. Do NOT create new branches."
-        )
-    if focus:
-        prompt_parts.append(f"Focus on these categories: {focus}")
-
-    prompt = " ".join(prompt_parts)
-
-    if interactive:
-        collected = await _stream_interactive(
-            prompt, options, "Maintenance complete.",
-            worktree_branch=branch,
-        )
-    elif report_only:
-        collected = await _stream_messages_collecting(
-            prompt, options, "Maintenance complete.",
-        )
-    else:
-        await _stream_messages(prompt, options, "Maintenance complete.")
-        collected = ""
-
-    # Post-workflow: offer to create PR if worktree has changes
-    if worktree_path and makes_changes:
-        await _prompt_pr_creation(
-            repo_path, worktree_path, branch, base_branch, "maintain",
-            agent_output=collected,
+    cleanup_token = None
+    if non_interactive is not None and worktree_path is not None:
+        cleanup_token = _install_cleanup_handler(
+            lambda: (
+                cleanup_worktree(repo_path, worktree_path),
+                release_lock(lock_path),
+            )
         )
 
-    # Post-workflow: offer to create GitHub issues for report-only findings
-    if report_only and collected:
-        await _prompt_issue_creation(repo_path, collected)
+    try:
+        allowed_tools = [
+            "Read", "Write", "Edit", "Bash", "Glob", "Grep", "Task", "TodoWrite",
+        ]
+        if not interactive and non_interactive is None:
+            allowed_tools.append("AskUserQuestion")
+
+        options = ClaudeAgentOptions(
+            system_prompt=system_prompt,
+            cwd=str(work_dir),
+            max_turns=50,
+            allowed_tools=allowed_tools,
+            permission_mode="acceptEdits",
+            agents={
+                "blueprint": blueprint_definition,
+                "configure": configure_definition,
+                "docs": docs_definition,
+                "quality": quality_definition,
+                "security": security_definition,
+                "test_runner": test_runner_definition,
+            },
+            env={
+                "CLAUDECODE": "",
+                "FIX_MODE": str(fix),
+                "REPORT_ONLY": str(report_only),
+                "FOCUS_AREAS": focus or "",
+            },
+        )
+
+        prompt_parts = [
+            f"Run maintenance checks on the repository at {work_dir}.",
+            "Repository analysis and health score are in your system prompt. Execute the maintenance workflow.",
+        ]
+        if report_only:
+            prompt_parts.append("REPORT ONLY — do not make any changes, just generate a report.")
+        elif fix:
+            prompt_parts.append("FIX MODE — apply safe auto-fixes for issues found.")
+            prompt_parts.append(
+                f"You are working in a git worktree on branch '{branch}'. "
+                "Commit your changes directly to this branch. Do NOT create new branches."
+            )
+        if focus:
+            prompt_parts.append(f"Focus on these categories: {focus}")
+
+        prompt = " ".join(prompt_parts)
+
+        if interactive:
+            collected = await _stream_interactive(
+                prompt, options, "Maintenance complete.",
+                worktree_branch=branch,
+            )
+        else:
+            collected = await _stream_messages_collecting(
+                prompt, options, "Maintenance complete.",
+            )
+
+        summary: dict = {
+            "status": "success",
+            "workflow": "maintain",
+            "mode": "fix" if fix else ("report-only" if report_only else "interactive"),
+            "branch": branch if makes_changes else None,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+
+        if worktree_path and makes_changes:
+            if non_interactive is not None:
+                pr_result = await _auto_handle_pr(
+                    repo_path, worktree_path, branch, base_branch,
+                    "maintain", collected, non_interactive,
+                )
+                summary.update(pr_result)
+            else:
+                await _prompt_pr_creation(
+                    repo_path, worktree_path, branch, base_branch, "maintain",
+                    agent_output=collected,
+                )
+
+        if report_only and collected:
+            if non_interactive is not None:
+                issue_result = await _auto_handle_issues(
+                    repo_path, collected, non_interactive,
+                )
+                summary.update(issue_result)
+            else:
+                await _prompt_issue_creation(repo_path, collected)
+
+        if non_interactive is not None:
+            _summary_line(summary, non_interactive.log_format)
+    finally:
+        if cleanup_token is not None:
+            _restore_handlers(cleanup_token)
+        release_lock(lock_path)
 
 
 async def run_diagnose(
@@ -365,6 +631,7 @@ async def run_diagnose(
     dry_run: bool = False,
     namespace: str | None = None,
     app_name: str | None = None,
+    non_interactive: NonInteractiveConfig | None = None,
 ) -> None:
     """Run the pipeline diagnostics workflow for a repository."""
     console.print(f"[bold]Git Repo Agent[/bold] — Diagnosing [cyan]{repo_path}[/cyan]")
@@ -429,6 +696,13 @@ async def run_diagnose(
         "mcp__github__list_issues",
         "mcp__github__search_issues",
     ]
+    if non_interactive is not None:
+        allowed_tools = _non_interactive_allowed_tools(allowed_tools)
+
+    lock_path: Path | None = None
+    if non_interactive is not None:
+        base_branch = get_base_branch(repo_path)
+        lock_path = _prepare_non_interactive(repo_path, non_interactive, base_branch)
 
     options = ClaudeAgentOptions(
         system_prompt=system_prompt,
@@ -465,7 +739,22 @@ async def run_diagnose(
 
     prompt = " ".join(prompt_parts)
 
-    await _stream_messages(prompt, options, "Diagnostics complete.")
+    try:
+        await _stream_messages(prompt, options, "Diagnostics complete.")
+
+        if non_interactive is not None:
+            _summary_line(
+                {
+                    "status": "success",
+                    "workflow": "diagnose",
+                    "dry_run": dry_run,
+                    "sources": sources,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                },
+                non_interactive.log_format,
+            )
+    finally:
+        release_lock(lock_path)
 
 
 def run_health(repo_path: Path) -> None:
