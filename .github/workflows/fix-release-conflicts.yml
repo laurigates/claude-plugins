@@ -4,7 +4,9 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: "*/30 * * * *"
+    # Offset from the top of the hour to avoid scheduling congestion that
+    # caused scheduled runs to fail with startup_failure.
+    - cron: "23,53 * * * *"
   workflow_dispatch: {}
 
 jobs:

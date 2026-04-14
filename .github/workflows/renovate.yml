@@ -2,7 +2,9 @@ name: Renovate
 
 on:
   schedule:
-    - cron: '0 * * * *'
+    # Avoid the top of the hour to reduce GitHub Actions scheduling congestion,
+    # which was causing scheduled runs to be delayed and fail with startup_failure.
+    - cron: '17 */2 * * *'
   workflow_dispatch:
     inputs:
       dryRun:
