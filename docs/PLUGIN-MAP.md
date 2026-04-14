@@ -24,7 +24,7 @@ Install these first. They configure the environment other plugins rely on.
 |--------|--------|---------|
 | health-plugin | 6 | Diagnose config issues, audit plugin selection |
 | hooks-plugin | 1 | Enforce best practices via lifecycle hooks |
-| configure-plugin | 42 | Infrastructure standards (CI, linting, testing, Docker) |
+| configure-plugin | 43 | Infrastructure standards (CI, linting, testing, Docker, repo onboarding) |
 | agent-patterns-plugin | 16 | Agent orchestration, MCP management, delegation |
 
 ### Tier 1 - Core Workflow
@@ -193,7 +193,7 @@ Install based on your project's tech stack and domain.
 | feedback-plugin | Capturing session skill feedback as GitHub issues |
 | tools-plugin | fd, rg, jq, shell, ImageMagick, d2 utilities |
 | workflow-orchestration-plugin | Parallel agent orchestration, CI pipelines, preflight checks, checkpoint refactoring |
-| migration-patterns-plugin | Safe database and system migration patterns — dual write, shadow mode, strangler fig |
+| migration-patterns-plugin | Safe database and system migration patterns — dual write, shadow mode, strangler fig; automated tooling migrations (mypy→ty, black→ruff-format, flake8→ruff, ESLint→Biome) |
 | prompt-engineering-plugin | Anti-hallucination workflow — grounded, citation-backed analysis from source documents |
 | prose-plugin | Prose style control — distillation, tone, voice, clarity, consistency |
 | obsidian-plugin | Obsidian CLI vault management — files, search, properties, tasks, publish, sync |
