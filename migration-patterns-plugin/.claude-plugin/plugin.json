@@ -1,7 +1,7 @@
 {
   "name": "migration-patterns-plugin",
   "version": "1.2.1",
-  "description": "Safe database and system migration patterns - dual write, shadow mode, strangler fig",
+  "description": "Migration patterns - dual write, shadow mode, and automated tool migrations (mypy→ty, black→ruff-format, flake8→ruff, ESLint→Biome)",
   "keywords": [
     "migration",
     "dual-write",
@@ -10,6 +10,15 @@
     "dark-launching",
     "strangler-fig",
     "database-migration",
-    "zero-downtime"
+    "zero-downtime",
+    "mypy",
+    "ty",
+    "ruff",
+    "black",
+    "flake8",
+    "isort",
+    "eslint",
+    "biome",
+    "tooling-migration"
   ]
 }

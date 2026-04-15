@@ -15,3 +15,9 @@ repos:
         language: script
         files: '(SKILL|skill)\.md$'
         pass_filenames: false
+      - id: check-driver-freshness
+        name: check configure-repo driver freshness
+        entry: bash ./scripts/check-driver-freshness.sh
+        language: system
+        files: '(SKILL|skill)\.md$'
+        pass_filenames: false

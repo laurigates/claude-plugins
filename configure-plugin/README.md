@@ -30,6 +30,7 @@ All commands support two modes:
 
 | Skill | Description |
 |-------|-------------|
+| `configure-repo` | **End-to-end driver** — onboard any repo to Claude Code with marketplace enrollment, permissions, SessionStart hook, and health validation |
 | `configure-all` | Run all infrastructure standards checks |
 | `configure-select` | Interactively select which components to configure |
 | `configure-status` | Show compliance status (read-only) |
@@ -130,6 +131,23 @@ Presents multi-select menus to choose which components to check/fix.
 /configure:pre-commit --fix
 /configure:dockerfile --fix
 ```
+
+### Onboard a Repo to Claude Code (end-to-end)
+
+```bash
+/configure:repo
+```
+
+The recommended starting point for any new repo. Runs the full onboarding workflow:
+1. Detects project stack
+2. Configures plugins, permissions, and marketplace enrollment in `.claude/settings.json`
+3. Creates `scripts/install_pkgs.sh` + `SessionStart` hook for web sessions
+4. Optionally offers tooling migrations (mypy→ty, black→ruff-format, etc.)
+5. Validates with `/health:check`
+6. Stages all files for commit
+
+The `extraKnownMarketplaces` enrollment in `.claude/settings.json` is critical for
+ephemeral web sessions (claude.ai/code) — without it, plugins are lost on every new session.
 
 ### Set Up Claude Code on the Web
 

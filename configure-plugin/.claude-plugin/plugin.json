@@ -25,6 +25,10 @@
     "marketplace",
     "web-session",
     "session-start",
-    "remote"
+    "remote",
+    "onboarding",
+    "repo-setup",
+    "stack-aware",
+    "driver"
   ]
 }
