@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/laurigates/claude-plugins/compare/migration-patterns-plugin-v1.2.1...migration-patterns-plugin-v1.3.0) (2026-04-15)
+
+
+### Features
+
+* **configure-plugin:** add /configure:repo driver, marketplace enrollment, stack-aware permissions ([#1036](https://github.com/laurigates/claude-plugins/issues/1036)) ([2952cea](https://github.com/laurigates/claude-plugins/commit/2952cea59db59c88a2c61d1d87da36598a3516a9))
+
 ## [1.2.1](https://github.com/laurigates/claude-plugins/compare/migration-patterns-plugin-v1.2.0...migration-patterns-plugin-v1.2.1) (2026-04-08)
 
 

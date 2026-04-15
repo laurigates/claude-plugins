@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.5.3...health-plugin-v1.6.0) (2026-04-15)
+
+
+### Features
+
+* **configure-plugin:** add /configure:repo driver, marketplace enrollment, stack-aware permissions ([#1036](https://github.com/laurigates/claude-plugins/issues/1036)) ([2952cea](https://github.com/laurigates/claude-plugins/commit/2952cea59db59c88a2c61d1d87da36598a3516a9))
+
 ## [1.5.3](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.5.2...health-plugin-v1.5.3) (2026-04-12)
 
 
