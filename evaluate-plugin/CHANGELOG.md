@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.4](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.3.3...evaluate-plugin-v1.3.4) (2026-04-15)
+
+
+### Documentation
+
+* **plugins:** add flow diagrams for router and pipeline plugins ([#1034](https://github.com/laurigates/claude-plugins/issues/1034)) ([a5e0e08](https://github.com/laurigates/claude-plugins/commit/a5e0e087495f0e835c3ad7e5dcf5bf7f4e61ad02))
+
 ## [1.3.3](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.3.2...evaluate-plugin-v1.3.3) (2026-04-12)
 
 

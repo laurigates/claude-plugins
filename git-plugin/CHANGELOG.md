@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.29.7](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.29.6...git-plugin-v2.29.7) (2026-04-15)
+
+
+### Documentation
+
+* **plugins:** add flow diagrams for router and pipeline plugins ([#1034](https://github.com/laurigates/claude-plugins/issues/1034)) ([a5e0e08](https://github.com/laurigates/claude-plugins/commit/a5e0e087495f0e835c3ad7e5dcf5bf7f4e61ad02))
+
 ## [2.29.6](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.29.5...git-plugin-v2.29.6) (2026-04-08)
 
 

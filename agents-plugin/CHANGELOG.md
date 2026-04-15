@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.3](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.7.2...agents-plugin-v1.7.3) (2026-04-15)
+
+
+### Documentation
+
+* **plugins:** add flow diagrams for router and pipeline plugins ([#1034](https://github.com/laurigates/claude-plugins/issues/1034)) ([a5e0e08](https://github.com/laurigates/claude-plugins/commit/a5e0e087495f0e835c3ad7e5dcf5bf7f4e61ad02))
+
 ## [1.7.2](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.7.1...agents-plugin-v1.7.2) (2026-04-08)
 
 
