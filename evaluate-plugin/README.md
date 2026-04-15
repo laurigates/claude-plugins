@@ -2,6 +2,10 @@
 
 Skill evaluation and benchmarking plugin. Tests skill effectiveness through behavioral eval cases, grades results against assertions, and tracks quality improvements over time.
 
+## Flow
+
+See [`docs/flow.md`](docs/flow.md) for a diagram of how the skills and agents fit together.
+
 ## What It Does
 
 Static compliance checks (`plugin-compliance-check.sh`) verify structure — this plugin tests **behavior**: does a skill actually produce correct results when invoked?

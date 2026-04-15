@@ -2,6 +2,10 @@
 
 Workflow orchestration patterns for parallel agents, CI pipelines, preflight checks, and checkpoint-based refactoring. Addresses common friction in multi-branch operations, permission restrictions, and context limits.
 
+## Flow
+
+See [`docs/flow.md`](docs/flow.md) for a diagram of the preflight → checkpoint → refactor pipeline.
+
 ## Skills
 
 | Skill | Command | Description |

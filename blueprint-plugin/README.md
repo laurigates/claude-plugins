@@ -2,6 +2,10 @@
 
 Blueprint Development methodology for Claude Code - structured feature development with PRDs, PRPs, and work-orders.
 
+## Flow
+
+See [`docs/flow.md`](docs/flow.md) for a diagram of how the skills fit together.
+
 ## Overview
 
 This plugin provides a documentation-first development workflow:

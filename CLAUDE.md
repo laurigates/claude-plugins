@@ -43,6 +43,7 @@ Claude Code plugin collection providing skills and agents for development workfl
 | `.claude/rules/skill-fork-context.md` | When to set `context: fork` and `agent:` on skills |
 | `.claude/rules/regression-testing.md` | **Required**: add a script check for every skill bug fixed |
 | `.claude/rules/sandbox-guidance.md` | Sandbox constraints, `CLAUDE_CODE_REMOTE` detection, and remote/local skill patterns |
+| `.claude/rules/plugin-flow-diagrams.md` | When and how to add Mermaid flow diagrams |
 
 ## Creating New Skills
 
