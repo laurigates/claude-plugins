@@ -111,7 +111,6 @@ while IFS= read -r -d '' plugin_dir; do
     skill_name_field=$(extract_field "$skill_file" "name")
     skill_desc=$(extract_field "$skill_file" "description")
     skill_allowed_tools=$(extract_field "$skill_file" "allowed-tools")
-    skill_model=$(extract_field "$skill_file" "model")
     skill_created=$(extract_field "$skill_file" "created")
     skill_modified=$(extract_field "$skill_file" "modified")
     skill_reviewed=$(extract_field "$skill_file" "reviewed")
@@ -123,8 +122,9 @@ while IFS= read -r -d '' plugin_dir; do
     [ -z "$skill_allowed_tools" ] && missing_required+="allowed-tools, "
 
     # Check recommended fields
+    # Note: `model` is intentionally not checked. Skills should inherit the
+    # user's active model by default — see .claude/rules/skill-development.md.
     missing_recommended=""
-    [ -z "$skill_model" ] && missing_recommended+="model, "
     [ -z "$skill_created" ] && missing_recommended+="created, "
     [ -z "$skill_modified" ] && missing_recommended+="modified, "
     [ -z "$skill_reviewed" ] && missing_recommended+="reviewed, "
