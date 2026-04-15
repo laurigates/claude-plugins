@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.25.2](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.25.1...blueprint-plugin-v3.25.2) (2026-04-15)
+
+
+### Documentation
+
+* **plugins:** add flow diagrams for router and pipeline plugins ([#1034](https://github.com/laurigates/claude-plugins/issues/1034)) ([a5e0e08](https://github.com/laurigates/claude-plugins/commit/a5e0e087495f0e835c3ad7e5dcf5bf7f4e61ad02))
+
 ## [3.25.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.25.0...blueprint-plugin-v3.25.1) (2026-04-08)
 
 
