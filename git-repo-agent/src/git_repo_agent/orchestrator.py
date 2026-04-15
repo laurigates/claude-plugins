@@ -74,6 +74,7 @@ async def _quiet_read_messages_impl(self):  # type: ignore[no-untyped-def]
 _sdk_subprocess.SubprocessCLITransport._read_messages_impl = _quiet_read_messages_impl
 
 from .agents.blueprint import definition as blueprint_definition
+from .blueprint_driver import BlueprintDriver, DriverOptions
 from .non_interactive import (
     LockedError,
     NonInteractiveConfig,
@@ -372,6 +373,31 @@ async def run_onboard(
         )
 
     try:
+        # Phase 0: run the blueprint state machine before handing off to the
+        # LLM orchestrator. See ADR-006. Each phase is a single compiled
+        # skill in its own ClaudeSDKClient session, so the LLM cannot skip
+        # sync-ids / adr-validate the way it could when all seven blueprint
+        # skills were crammed into one Task call. After this returns the
+        # orchestrator treats blueprint as done (SKIP_BLUEPRINT=True).
+        blueprint_already_done = skip_blueprint
+        if not skip_blueprint:
+            driver_result = await BlueprintDriver(
+                work_dir,
+                DriverOptions(
+                    dry_run=dry_run,
+                    non_interactive=non_interactive is not None,
+                ),
+            ).run()
+            if driver_result.succeeded:
+                blueprint_already_done = True
+            else:
+                failed = [p.name for p in driver_result.phases if p.status == "error"]
+                console.print(
+                    f"[yellow]Blueprint driver had failures: {failed}. "
+                    "Continuing with remaining onboarding steps.[/yellow]"
+                )
+                blueprint_already_done = True  # don't re-delegate; errors are logged
+
         # Build system prompt with embedded analysis
         system_prompt = (
             _load_prompt("orchestrator")
@@ -407,7 +433,7 @@ async def run_onboard(
                 "CLAUDECODE": "",
                 "DRY_RUN": str(dry_run),
                 "SKIP_CI": str(skip_ci),
-                "SKIP_BLUEPRINT": str(skip_blueprint),
+                "SKIP_BLUEPRINT": str(blueprint_already_done),
                 "ONBOARD_BRANCH": branch,
             },
             stderr=lambda line: console.print(f"[dim red]STDERR: {line}[/dim red]"),
@@ -424,8 +450,12 @@ async def run_onboard(
             prompt_parts.append("DRY RUN — report what you would do without making changes.")
         if skip_ci:
             prompt_parts.append("Skip CI/CD setup.")
-        if skip_blueprint:
-            prompt_parts.append("Skip blueprint initialization.")
+        if blueprint_already_done:
+            prompt_parts.append(
+                "Blueprint initialization has already been handled by the "
+                "Python driver (see ADR-006). Skip Step 3; do not invoke "
+                "the `blueprint` subagent."
+            )
 
         prompt = " ".join(prompt_parts)
 

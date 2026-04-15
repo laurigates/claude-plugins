@@ -229,3 +229,23 @@ def get_compiled_prompt(subagent_name: str) -> str:
     if not skill_paths:
         return ""
     return compile_subagent(subagent_name, skill_paths)
+
+
+@lru_cache(maxsize=None)
+def get_compiled_skill(skill_relpath: str) -> str:
+    """Compile a single skill file into a prompt fragment.
+
+    ``skill_relpath`` is relative to the plugins root, e.g.
+    ``"blueprint-plugin/skills/blueprint-init/SKILL.md"``. Returns the
+    stripped, filtered skill body (frontmatter removed, Claude Code
+    metadata sections dropped, ``AskUserQuestion`` references rewritten
+    to orchestrator-reporting). Used by the blueprint state machine
+    driver to load exactly one skill per LLM call rather than bundling
+    many skills into one subagent prompt.
+
+    Raises FileNotFoundError if the skill does not exist.
+    """
+    skill_path = _PLUGINS_ROOT / skill_relpath
+    if not skill_path.exists():
+        raise FileNotFoundError(f"Skill not found: {skill_relpath}")
+    return compile_skill(skill_path)
