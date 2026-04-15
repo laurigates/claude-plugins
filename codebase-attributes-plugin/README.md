@@ -2,6 +2,10 @@
 
 Structured codebase health attributes with severity-based agent routing.
 
+## Flow
+
+See [`docs/flow.md`](docs/flow.md) for a diagram of how the skills fit together.
+
 ## Skills
 
 | Skill | Description |

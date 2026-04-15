@@ -2,6 +2,10 @@
 
 Infrastructure standards enforcement for Claude Code projects.
 
+## Flow
+
+See [`docs/flow.md`](docs/flow.md) for a diagram of how the skills fit together.
+
 ## Overview
 
 This plugin provides comprehensive project configuration commands that check and enforce infrastructure standards across multiple domains: CI/CD, testing, code quality, containers, and more.

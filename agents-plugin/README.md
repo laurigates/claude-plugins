@@ -2,6 +2,10 @@
 
 Task-focused agents following 12-factor agent principles. Each agent completes a bounded task (3-20 steps) and can operate as a teammate (parallel, communicating) or subagent (focused, isolated).
 
+## Flow
+
+See [`docs/flow.md`](docs/flow.md) for a diagram of how `attribute-router` delegates to the domain agents.
+
 ## Agents
 
 | Agent | Model | Purpose | Team Role |

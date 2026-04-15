@@ -6,6 +6,10 @@ Git workflows, commits, branches, PRs, and repository management for Claude Code
 
 This plugin provides comprehensive Git workflow automation including conventional commits, branch management, pull request handling, and issue processing.
 
+## Flow
+
+See [`docs/flow.md`](docs/flow.md) for a diagram of how the skills fit together.
+
 ## Skills
 
 | Skill | Description |
