@@ -29,3 +29,6 @@ secrets.json
 
 # Logs
 *.log
+
+# Blueprint work-orders (per-task scratch; may contain sensitive details)
+docs/blueprint/work-orders/

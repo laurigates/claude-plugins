@@ -1,7 +1,7 @@
 ---
 created: 2025-12-20
-modified: 2026-02-14
-reviewed: 2026-03-06
+modified: 2026-04-16
+reviewed: 2026-04-16
 ---
 
 # claude-plugins
@@ -221,6 +221,27 @@ gh pr create --title "feat(git-plugin): add new workflow"
 5. **Commit early** - Use conventional commit format (see Git Workflow section)
 6. **Test** - Verify skills load and work
 7. **Create PR** - Use conventional commit format for title (drives automation)
+
+## Blueprint (constrained dogfooding)
+
+This repo runs `blueprint-plugin` against itself in a deliberately constrained mode. State lives in `docs/blueprint/`; see `docs/blueprint/README.md` for the full rationale.
+
+| Task | Status | Why |
+|------|--------|-----|
+| `adr-validate`, `sync-ids`, `feature-tracker-sync` | enabled | Read-leaning workflows that genuinely add value across 16 ADRs / 2 PRDs / 5 PRPs |
+| `derive-prd`, `derive-plans`, `derive-rules`, `generate-rules`, `claude-md`, `curate-docs` | disabled | Would treat plugin source as project requirements or could overwrite the 18 hand-written rules / hand-curated `CLAUDE.md` |
+
+**Always run `/blueprint:sync-ids` with `--dry-run` first.** Each disabled task carries a `context.disabled_reason` in the manifest — read it before flipping any flag back on.
+
+### Commit-scope convention for blueprint work
+
+| Scope | Effect | Use for |
+|-------|--------|---------|
+| `chore(blueprint): …` | No version bump | Manifest bookkeeping, sync runs, ID assignments inside `docs/blueprint/` |
+| `feat(blueprint-plugin): …` | Minor version bump on the published plugin | Skill changes inside `blueprint-plugin/` |
+| `fix(blueprint-plugin): …` | Patch version bump | Bug fixes inside `blueprint-plugin/` |
+
+The `blueprint` scope (no `-plugin` suffix) intentionally does **not** match any release-please package, so dogfooding maintenance never accidentally publishes the plugin.
 
 ## Conventions
 
