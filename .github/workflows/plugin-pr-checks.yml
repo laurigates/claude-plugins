@@ -54,6 +54,10 @@ jobs:
           echo "$RESULT" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
+      - name: Check blueprint-upgrade target version drift
+        if: contains(steps.changed.outputs.plugins, 'blueprint-plugin')
+        run: bash scripts/check-blueprint-upgrade-target.sh
+
       - name: Post compliance results
         if: steps.compliance.outputs.result
         env:

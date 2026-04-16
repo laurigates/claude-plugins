@@ -1,7 +1,7 @@
 ---
 created: 2025-12-17
-modified: 2026-02-17
-reviewed: 2026-01-09
+modified: 2026-04-16
+reviewed: 2026-04-16
 description: "Upgrade blueprint structure to the latest format version"
 allowed-tools: Read, Write, Edit, Bash, Glob, AskUserQuestion
 name: blueprint-upgrade
@@ -9,7 +9,7 @@ name: blueprint-upgrade
 
 Upgrade the blueprint structure to the latest format version.
 
-**Current Format Version**: 3.2.0
+**Current Format Version**: 3.3.0
 
 This command delegates version-specific migration logic to the `blueprint-migration` skill.
 
@@ -28,7 +28,7 @@ This command delegates version-specific migration logic to the `blueprint-migrat
    elif [[ -f .claude/blueprints/.manifest.json ]]; then
      current=$(jq -r '.format_version // "1.0.0"' .claude/blueprints/.manifest.json)
    fi
-   target="3.2.0"
+   target="3.3.0"
    ```
 
    **Version compatibility matrix**:
@@ -38,8 +38,9 @@ This command delegates version-specific migration logic to the `blueprint-migrat
    | 1.x.x        | 2.0.0      | `migrations/v1.x-to-v2.0.md` |
    | 2.x.x        | 3.0.0      | `migrations/v2.x-to-v3.0.md` |
    | 3.0.x        | 3.1.0      | `migrations/v3.0-to-v3.1.md` |
-   | 3.1.x        | 3.2.0      | `migrations/v3.1-to-v3.2.md` |
-   | 3.2.0        | 3.2.0      | Already up to date |
+   | 3.1.x        | 3.2.0      | inline (step 3a) |
+   | 3.2.x        | 3.3.0      | `migrations/v3.2-to-v3.3.md` |
+   | 3.3.0        | 3.3.0      | Already up to date |
 
 3. **Check for deprecated generated commands**:
 
@@ -112,12 +113,26 @@ This command delegates version-specific migration logic to the `blueprint-migrat
 
    d. **Bump format_version to 3.2.0**
 
+---
+
+3b. **v3.2 → v3.3 migration: Monorepo support**:
+
+   Delegate to `skills/blueprint-migration/migrations/v3.2-to-v3.3.md`. Summary of what it does:
+
+   a. Classify the blueprint as `root`, `child`, or `standalone` by walking ancestors and descendants for other `docs/blueprint/manifest.json` files.
+   b. Add a `workspaces` block to `docs/blueprint/manifest.json` (omitted for standalone).
+   c. Bump `format_version` to `3.3.0` and append an entry to `upgrade_history`.
+   d. For root blueprints, run `/blueprint:workspace-scan` to populate `workspaces.children`.
+   e. (Optional) Initialise the root `feature-tracker.json` `workspaces` summary for portfolio FR tracking.
+
+   All changes are purely additive — standalone projects get no new top-level keys beyond `format_version` and `upgrade_history`.
+
 4. **Display upgrade plan**:
    ```
    Blueprint Upgrade
 
    Current version: v{current}
-   Target version: v3.0.0
+   Target version: v3.3.0
 
    Major changes in v3.0:
    - Blueprint state moves from .claude/blueprints/ to docs/blueprint/
@@ -131,6 +146,13 @@ This command delegates version-specific migration logic to the `blueprint-migrat
    - Enable/disable individual tasks
    - Incremental operations with context persistence
 
+   Major changes in v3.3:
+   - First-class monorepo support: root/child/standalone roles
+   - `workspaces` block in manifest.json (additive; standalone projects omit it)
+   - New /blueprint:workspace-scan skill for discovering child blueprints
+   - Cross-workspace references (`<path>/ADR-NNN`, `/ADR-NNN`)
+   - Optional portfolio feature tracking via implemented_by links
+
    (For v2.0 changes when upgrading from v1.x:)
    - PRDs, ADRs, PRPs move to docs/ (project documentation)
    - Custom overrides in .claude/skills/
@@ -139,7 +161,7 @@ This command delegates version-specific migration logic to the `blueprint-migrat
 
 5. **Confirm with user** (use AskUserQuestion):
    ```
-   question: "Ready to upgrade blueprint from v{current} to v3.2.0?"
+   question: "Ready to upgrade blueprint from v{current} to v3.3.0?"
    options:
      - "Yes, upgrade now" → proceed
      - "Show detailed migration steps" → display migration document
@@ -151,6 +173,9 @@ This command delegates version-specific migration logic to the `blueprint-migrat
    - Read the appropriate migration document from `blueprint-migration` skill
    - For v1.x → v2.0: Load `migrations/v1.x-to-v2.0.md`
    - For v2.x → v3.0: Load `migrations/v2.x-to-v3.0.md`
+   - For v3.0 → v3.1: Load `migrations/v3.0-to-v3.1.md`
+   - For v3.1 → v3.2: Execute inline step 3a above
+   - For v3.2 → v3.3: Load `migrations/v3.2-to-v3.3.md` (see step 3b summary)
    - Execute each step with user confirmation for destructive operations
 
 7. **v1.x → v2.0 migration overview** (from migration document):
