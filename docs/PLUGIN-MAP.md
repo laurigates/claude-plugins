@@ -6,7 +6,7 @@ Navigation guide for 37 plugins and 300+ skills. Start here.
 
 | Intent | Commands | What happens |
 |--------|----------|--------------|
-| Diagnose setup | `/health:check` then `/health:audit` | Scans config, recommends plugins for your stack |
+| Diagnose setup | `/health:check` | Scans config and (by default) recommends plugins for your stack |
 | New project | `/project:init` then `/blueprint:init` | Scaffolds project, creates PRD |
 | Resume work | `/blueprint:execute` | Analyzes repo state, picks next action, runs it |
 
@@ -204,8 +204,7 @@ Commands organized by workflow phase.
 
 | Phase | Command | Purpose |
 |-------|---------|---------|
-| **Diagnose** | `/health:check` | Scan Claude Code configuration |
-| **Diagnose** | `/health:audit` | Recommend plugins for your stack |
+| **Diagnose** | `/health:check` | Scan Claude Code configuration (use `--scope=registry\|stack\|agentic` to narrow) |
 | **Diagnose** | `/attributes:collect` | Collect structured health attributes |
 | **Diagnose** | `/attributes:dashboard` | Compact health dashboard |
 | **Diagnose** | `/attributes:route` | Route to agents by attribute severity |

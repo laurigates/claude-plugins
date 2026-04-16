@@ -1,7 +1,8 @@
 ---
 created: 2026-02-05
-modified: 2026-02-10
-reviewed: 2026-02-08
+modified: 2026-04-15
+reviewed: 2026-04-15
+user-invocable: false
 description: Audit skills and agents for agentic output optimization (missing compact/JSON flags, missing Agentic Optimizations tables)
 allowed-tools: Bash(find *), Bash(head *), Read, Grep, Glob, TodoWrite
 args: "[--fix] [--verbose]"

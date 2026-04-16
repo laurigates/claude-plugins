@@ -1,7 +1,8 @@
 ---
 created: 2026-02-05
-modified: 2026-03-18
-reviewed: 2026-02-05
+modified: 2026-04-15
+reviewed: 2026-04-15
+user-invocable: false
 description: Audit enabled plugins against project tech stack and recommend additions/removals for relevance
 allowed-tools: Bash(test *), Bash(find *), Bash(jq *), Bash(claude plugin *), Read, Write, Edit, Glob, Grep, TodoWrite, AskUserQuestion
 args: "[--fix] [--dry-run] [--verbose]"

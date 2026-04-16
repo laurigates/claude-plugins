@@ -122,20 +122,53 @@ echo "GLOBAL_SCOPED=${global_scoped}"
 echo "ORPHANED_ENTRIES=${orphaned_count}"
 echo "OTHER_PROJECT_ENTRIES=${other_project_count}"
 
+stale_enabled_count=0
 if [ -f "$user_settings" ]; then
   enabled_count=$(jq '.enabledPlugins // {} | length' "$user_settings" 2>/dev/null || echo "0")
   echo "ENABLED_IN_SETTINGS=${enabled_count}"
 
+  # Collect marketplace plugin names (if any marketplaces are configured).
+  marketplace_names=""
+  marketplaces_dir="${home_dir}/.claude/plugins/marketplaces"
+  if [ -d "$marketplaces_dir" ]; then
+    while IFS= read -r mp_file; do
+      [ -z "$mp_file" ] && continue
+      mp_plugins=$(jq -r '.plugins[]?.name // empty' "$mp_file" 2>/dev/null)
+      marketplace_names="${marketplace_names}
+${mp_plugins}"
+    done < <(find "$marketplaces_dir" -maxdepth 3 -name '*.json' -type f 2>/dev/null)
+  fi
+
   enabled_keys=$(jq -r '.enabledPlugins // {} | keys[]' "$user_settings" 2>/dev/null)
   while IFS= read -r enabled_key; do
     [ -z "$enabled_key" ] && continue
-    if ! jq -e --arg k "$enabled_key" '.plugins[$k]' "$registry_file" >/dev/null 2>&1; then
+
+    # enabledPlugins keys are of the form "<plugin>@<marketplace>"; the registry
+    # is keyed the same way but older Claude Code versions left stale entries
+    # behind when the plugin or marketplace was removed.
+    plugin_name="${enabled_key%@*}"
+
+    # Present in registry?
+    if jq -e --arg k "$enabled_key" '.plugins[$k]' "$registry_file" >/dev/null 2>&1; then
+      continue
+    fi
+
+    # Present in any known marketplace?
+    if [ -n "$marketplace_names" ] && printf '%s\n' "$marketplace_names" | grep -Fxq "$plugin_name"; then
       issues_list="${issues_list}  - SEVERITY=WARN TYPE=enabled_not_installed PLUGIN=${enabled_key}\n"
       issue_count=$((issue_count + 1))
       [ "$check_status" = "OK" ] && check_status="WARN"
+      continue
     fi
+
+    # Neither installed nor in any marketplace -- fully stale.
+    stale_enabled_count=$((stale_enabled_count + 1))
+    issues_list="${issues_list}  - SEVERITY=WARN TYPE=stale_enabled PLUGIN=${enabled_key} FIX=remove_enabled_key\n"
+    issue_count=$((issue_count + 1))
+    [ "$check_status" = "OK" ] && check_status="WARN"
   done <<< "$enabled_keys"
 fi
+echo "STALE_ENABLED_ENTRIES=${stale_enabled_count}"
 
 echo "STATUS=${check_status}"
 echo "ISSUE_COUNT=${issue_count}"
