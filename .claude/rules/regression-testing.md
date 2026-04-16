@@ -22,6 +22,7 @@ This ensures the CI catches the same class of problem in any future skill, not j
 | Skill body structure corruption (spurious headings, leaked frontmatter) | `scripts/plugin-compliance-check.sh` → `check_skill_body()` |
 | Frontmatter field missing or malformed | `scripts/plugin-compliance-check.sh` → `check_skill_frontmatter()` |
 | Skill size exceeding limit | `scripts/plugin-compliance-check.sh` → `check_skill_size()` |
+| Blueprint upgrade target drift (migrations added without updating `blueprint-upgrade`) | `scripts/check-blueprint-upgrade-target.sh` |
 
 ## Known Regressions (Documented Bugs)
 
@@ -36,6 +37,7 @@ This ensures the CI catches the same class of problem in any future skill, not j
 | `jq ... .claude/settings.json` fails when file missing | jq writes to stderr when target file doesn't exist; `2>/dev/null` is blocked in context commands | `lint-context-commands.sh` rule `jq-on-optional-settings` | PR #TBD |
 | `Bash(test *), Bash(jq *)` etc. causes ~20 approval prompts | Shell utility patterns in `allowed-tools` force inline bash that can't be allowlisted; each compound command needs individual approval | `plugin-compliance-check.sh` `check_bash_patterns()` | PR #TBD |
 | `blueprint-{generate,derive}-rules` writes hardcoded `.claude/rules/` and clobbers hand-authored rules | SKILL.md hardcoded the output directory; no `structure.generated_rules_path` field | `plugin-compliance-check.sh` `check_skill_body()` (blueprint rules-path check) | issue #1043 |
+| `/blueprint:upgrade` reports v3.2.0 as latest after v3.3 migration was added | `blueprint-upgrade/SKILL.md` hardcodes target version; PR #1026 added `migrations/v3.2-to-v3.3.md` without updating the upgrade skill | `check-blueprint-upgrade-target.sh` compares highest migration target to `blueprint-upgrade/SKILL.md` | PR #TBD |
 
 ## How to Add a Regression Check
 
