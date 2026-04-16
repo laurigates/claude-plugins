@@ -12,12 +12,20 @@ Diagnose and fix Claude Code configuration issues including plugin registry, set
 
 | Skill | Description |
 |-------|-------------|
-| `/health:agentic-audit` | Audit skills, commands, and agents for agentic output optimization |
-| `/health:audit` | Audit enabled plugins against project tech stack and recommend additions/removals |
-| `/health:check` | Comprehensive diagnostic scan of Claude Code environment |
-| `/health:plugins` | Diagnose and fix plugin registry issues (addresses [#14202](https://github.com/anthropics/claude-code/issues/14202)) |
-| `plugin-registry` | Understanding Claude Code's plugin registry, scopes, and troubleshooting |
-| `settings-configuration` | Settings file hierarchy, permission wildcards, and patterns |
+| `/health:check` | **Single entry point.** Diagnose (and optionally fix) Claude Code environment, plugin registry, project-stack fit, and skill agentic-optimisation — routed by `--scope`. |
+| `plugin-registry` | Reference skill: Claude Code's plugin registry, scopes, and troubleshooting |
+| `settings-configuration` | Reference skill: settings file hierarchy, permission wildcards, and patterns |
+
+### Internal scopes (routed by `/health:check --scope=...`)
+
+| Scope | Covers | Internal skill |
+|-------|--------|----------------|
+| `registry` | Orphaned `projectPath` entries, stale `enabledPlugins` keys (addresses [#14202](https://github.com/anthropics/claude-code/issues/14202)) | `health-plugins` |
+| `stack` | Enabled plugins vs project tech stack | `health-audit` |
+| `agentic` | Skill/command/agent agentic-optimisation compliance | `health-agentic-audit` |
+| `all` | All of the above (default) | — |
+
+These internal skills are auto-discoverable but not user-invocable — use `/health:check` instead.
 
 ## Scripts
 
@@ -33,10 +41,10 @@ This is a known issue ([#14202](https://github.com/anthropics/claude-code/issues
 
 ```bash
 # Diagnose the issue
-/health:plugins
+/health:check --scope=registry
 
 # Fix automatically
-/health:plugins --fix
+/health:check --scope=registry --fix
 ```
 
 ### Full Environment Health Check
@@ -55,13 +63,13 @@ Ensure only relevant plugins are enabled for your project:
 
 ```bash
 # See what plugins are relevant to this project
-/health:audit
+/health:check --scope=stack
 
 # Preview changes without applying
-/health:audit --dry-run
+/health:check --scope=stack --fix --dry-run
 
 # Apply recommended changes
-/health:audit --fix
+/health:check --scope=stack --fix
 ```
 
 This analyzes your project's tech stack (package.json, Cargo.toml, Dockerfile, etc.) and recommends:
@@ -114,8 +122,8 @@ Your settings, MCP servers, and tips history are preserved.
 
 | Symptom | Likely Cause | Command |
 |---------|--------------|---------|
-| Plugin not working | Wrong projectPath in registry | `/health:plugins --fix` |
-| Irrelevant plugins enabled | No relevance audit done | `/health:audit --fix` |
+| Plugin not working | Wrong projectPath in registry | `/health:check --scope=registry --fix` |
+| Irrelevant plugins enabled | No relevance audit done | `/health:check --scope=stack --fix` |
 | Permission denied | Missing allow pattern | Check settings-configuration skill |
 | Settings ignored | Invalid JSON | `/health:check` |
 | Large ~/.claude.json | Orphaned projects/caches | `prune-claude-config.py` |
