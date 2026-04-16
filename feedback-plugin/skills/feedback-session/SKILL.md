@@ -4,14 +4,15 @@ description: |
   Analyze current session for skill feedback and create GitHub issues. Use when
   a skill gave wrong guidance, a command failed due to skill advice, you discovered
   a better pattern, or a skill worked particularly well. Creates labeled issues
-  for tracking.
-args: "[--dry-run] [--bugs-only] [--enhancements-only] [--positive-only] [plugin-name]"
+  for tracking. Supports targeting a different repo (e.g. the plugin source repo)
+  with --target-repo.
+args: "[--dry-run] [--bugs-only] [--enhancements-only] [--positive-only] [--target-repo <owner/repo>] [plugin-name]"
 allowed-tools: Bash(gh issue *), Bash(gh label *), Bash(gh search *), Bash(git status *), Bash(git remote *), Read, Grep, Glob, AskUserQuestion, TodoWrite
-argument-hint: "--dry-run | --bugs-only | plugin-name"
+argument-hint: "--dry-run | --target-repo owner/repo | plugin-name"
 disable-model-invocation: true
 created: 2026-02-18
-modified: 2026-02-18
-reviewed: 2026-02-18
+modified: 2026-04-16
+reviewed: 2026-04-16
 ---
 
 # /feedback:session
@@ -27,6 +28,13 @@ Analyze the current session for skill feedback and create GitHub issues to track
 | Discovered a better flag or pattern | Want to capture general learnings -> `/project:distill` |
 | A skill worked particularly well | Want to track command usage stats -> `/analytics-report` |
 | End of session, want to file feedback | Need to fix a skill right now -> edit the SKILL.md directly |
+| Feedback is about the plugin itself | Use `--target-repo laurigates/claude-plugins` to file against the plugin source |
+
+## Known Limitations
+
+**IaC-managed labels**: Some repositories manage GitHub labels declaratively via Terraform, Pulumi, or similar tools. In these repos, `gh label create` will either be forbidden or cause drift that the IaC tool destroys on the next apply. This skill detects this case and offers a graceful fallback (see Step 1).
+
+**Default target repo**: By default, this skill files issues against the repository in the current working directory. If you are giving feedback about a plugin skill itself rather than the application code in the session, use `--target-repo <owner/repo>` to point at the plugin source repo.
 
 ## Context
 
@@ -44,20 +52,59 @@ Parse these from `$ARGUMENTS`:
 | `--bugs-only` | Only report bugs (wrong/outdated guidance) |
 | `--enhancements-only` | Only report enhancement opportunities |
 | `--positive-only` | Only report positive feedback |
+| `--target-repo <owner/repo>` | File issues against this repo instead of the cwd repo |
+| `-R <owner/repo>` | Alias for `--target-repo` |
 | `[plugin-name]` | Scope analysis to a specific plugin |
+
+After parsing, set `$TARGET_REPO` to the value of `--target-repo`/`-R` if provided. Append `-R $TARGET_REPO` to all `gh` commands below when `$TARGET_REPO` is set.
 
 ## Execution
 
 Execute this session feedback workflow:
 
-### Step 1: Ensure labels exist
+### Step 1: Resolve target repo and ensure labels exist
 
-Check and create required labels:
+**1a. Determine target repo**
 
-1. Check if `session-feedback` label exists: `gh label list --json name --jq '.[].name' | grep -q session-feedback`
-2. If missing, create it: `gh label create session-feedback --description "Feedback from session analysis" --color "d876e3"`
-3. Check if `positive-feedback` label exists similarly
-4. If missing, create it: `gh label create positive-feedback --description "Skills that worked well" --color "0e8a16"`
+If `--target-repo` or `-R` was passed in `$ARGUMENTS`, set `$TARGET_REPO` to that value and append `-R $TARGET_REPO` to every `gh` command in the remaining steps.
+
+If not provided, infer the repo from the cwd: `gh repo view --json nameWithOwner -q '.nameWithOwner'`. Use this as the implicit target (no `-R` flag needed since `gh` defaults to cwd).
+
+**1b. Check whether labels are IaC-managed**
+
+Run: `gh label list -R $TARGET_REPO --json name,description --jq '.[].description'` (omit `-R` if no explicit target).
+
+Scan the output for IaC indicators in any label description:
+- Keywords: `terraform`, `pulumi`, `cdk`, `managed by`, `do not create`, `iac`, `infrastructure`
+
+Also check for labels.tf in the cwd: look for files matching `**/labels.tf` or `**/labels.yaml` patterns using Glob.
+
+If IaC indicators are found **or** `labels.tf` / `labels.yaml` exist in the working tree:
+- Display a warning:
+  ```
+  ⚠ IaC-managed labels detected in <repo>.
+  The `session-feedback` and `positive-feedback` labels cannot be created
+  via `gh label create` — they are managed declaratively and creating them
+  out-of-band would cause drift.
+  ```
+- Use AskUserQuestion to ask: **How would you like to proceed?**
+  Options:
+  1. **Proceed without session-feedback labels** — issues will be created with only `bug`/`enhancement` labels; add the two labels to your IaC definition to backfill.
+  2. **Use a different target repo** — enter an `owner/repo` where you can create labels freely (e.g. `laurigates/claude-plugins`).
+  3. **Abort** — stop here.
+
+  If user chooses option 2, set `$TARGET_REPO` to their input and re-run step 1b for the new repo.
+  If user chooses option 3, exit.
+  If user chooses option 1, set `$SKIP_SESSION_LABELS=true` and continue.
+
+**1c. Create missing labels (only when not IaC-managed)**
+
+Skip this step if `$SKIP_SESSION_LABELS=true`.
+
+1. Check if `session-feedback` exists: `gh label list --json name --jq '.[].name' | grep -q session-feedback`
+2. If missing: `gh label create session-feedback --description "Feedback from session analysis" --color "d876e3"`
+3. Check if `positive-feedback` exists similarly.
+4. If missing: `gh label create positive-feedback --description "Skills that worked well" --color "0e8a16"`
 
 ### Step 2: Analyze conversation history
 
@@ -96,13 +143,15 @@ Filter by `$ARGUMENTS`:
 
 ### Step 3: Deduplicate against open issues
 
-For each finding, search for existing issues:
+For each finding, search for existing issues in `$TARGET_REPO`:
 
 ```
 gh issue list --label session-feedback --search "<skill-name> <key-phrase>" --json number,title --jq '.[].title'
 ```
 
 Skip findings that match an existing open issue title. Note skipped items for the summary.
+
+If `$SKIP_SESSION_LABELS=true`, search without labels: `gh issue list --search "feedback(<plugin>)" --json number,title --jq '.[].title'`
 
 ### Step 4: Present findings for review
 
@@ -121,14 +170,19 @@ If `--dry-run`, present findings and stop here.
 
 ### Step 5: Create approved issues
 
-For each approved finding, create a GitHub issue:
+For each approved finding, create a GitHub issue in `$TARGET_REPO`:
 
 **Title format**: `feedback(<plugin-name>): <description>`
 
-**Labels**:
+**Labels** (when not `$SKIP_SESSION_LABELS`):
 - Bugs: `session-feedback`, `bug`
 - Enhancements: `session-feedback`, `enhancement`
 - Positive: `positive-feedback`
+
+**Labels** (when `$SKIP_SESSION_LABELS=true`):
+- Bugs: `bug`
+- Enhancements: `enhancement`
+- Positive: *(no label — omit the `--label` flag)*
 
 **Body template**:
 ```markdown
@@ -153,7 +207,12 @@ For each approved finding, create a GitHub issue:
 <What should change in the skill, or what should be preserved>
 ```
 
-Create each issue: `gh issue create --title "feedback(<plugin>): <desc>" --label "<labels>" --body "<body>"`
+Create each issue:
+```
+gh issue create --title "feedback(<plugin>): <desc>" --label "<labels>" --body "<body>"
+```
+
+Append `-R $TARGET_REPO` when set. Omit `--label` if no labels apply (positive + `$SKIP_SESSION_LABELS`).
 
 ### Step 6: Report summary
 
@@ -166,7 +225,7 @@ Print a summary:
 | Issues created | N |
 | Skipped by user | N |
 
-List created issue numbers with links.
+List created issue numbers with links. If `$SKIP_SESSION_LABELS=true`, remind the user to add `session-feedback` and `positive-feedback` to their IaC label definition.
 
 ## Agentic Optimizations
 
@@ -174,9 +233,12 @@ List created issue numbers with links.
 |---------|---------|
 | List feedback issues | `gh issue list --label session-feedback --json number,title,labels -q '.[]'` |
 | Search for duplicates | `gh issue list --label session-feedback --search "keyword" --json title -q '.[].title'` |
-| Create label | `gh label create name --description "desc" --color "hex"` |
-| Create issue | `gh issue create --title "t" --label "l1,l2" --body "b"` |
+| Detect IaC label signals | `gh label list --json name,description --jq '.[].description'` |
 | Check label exists | `gh label list --json name -q '.[].name'` |
+| Create label | `gh label create name --description "desc" --color "hex"` |
+| Create issue (with target) | `gh issue create -R owner/repo --title "t" --label "l1,l2" --body "b"` |
+| Create issue (no labels) | `gh issue create -R owner/repo --title "t" --body "b"` |
+| Infer current repo | `gh repo view --json nameWithOwner -q '.nameWithOwner'` |
 
 ## Quick Reference
 
@@ -186,4 +248,6 @@ List created issue numbers with links.
 | `--bugs-only` | Only bug reports |
 | `--enhancements-only` | Only enhancement suggestions |
 | `--positive-only` | Only positive feedback |
+| `--target-repo <owner/repo>` | File issues against a different repo (e.g. plugin source) |
+| `-R <owner/repo>` | Alias for `--target-repo` |
 | `[plugin-name]` | Scope to specific plugin |
