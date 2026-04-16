@@ -47,13 +47,21 @@ query($owner: String!, $repo: String!, $pr: Int!) {
       }
       reviewThreads(first: 100) {
         nodes {
+          id
           isResolved
+          isOutdated
+          isCollapsed
           comments(first: 20) {
             nodes {
+              id
+              databaseId
               path
               line
+              originalLine
+              diffHunk
               body
               author { login }
+              url
             }
           }
         }

@@ -1,8 +1,8 @@
 ---
 created: 2026-01-30
-modified: 2026-03-24
+modified: 2026-04-16
 reviewed: 2026-02-26
-allowed-tools: Bash(gh pr checks *), Bash(gh pr view *), Bash(gh pr diff *), Bash(gh run view *), Bash(gh run list *), Bash(gh api *), Bash(gh repo view *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git pull *), Bash(pre-commit *), Bash(npm run *), Bash(uv run *), Bash(bash *), Read, Edit, Write, Grep, Glob, TodoWrite, Task, mcp__github__pull_request_read
+allowed-tools: Bash(gh pr checks *), Bash(gh pr view *), Bash(gh pr diff *), Bash(gh run view *), Bash(gh run list *), Bash(gh api *), Bash(gh repo view *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git pull *), Bash(pre-commit *), Bash(npm run *), Bash(uv run *), Bash(bash *), Read, Edit, Write, Grep, Glob, TodoWrite, Task, mcp__github__pull_request_read, mcp__github__add_reply_to_pull_request_comment, mcp__github__resolve_review_thread, mcp__github__pull_request_review_write
 args: "[pr-number] [--commit] [--push]"
 argument-hint: [pr-number] [--commit] [--push]
 disable-model-invocation: true
@@ -83,21 +83,27 @@ If the GraphQL query fails with a rate limit error, wait 60 seconds and retry on
 
 Categorize all comments from the GraphQL response (see [REFERENCE.md](REFERENCE.md) for category definitions):
 
-1. Categorize each comment as Blocking, Substantive, Suggestion, Question, Nitpick, or Resolved
-2. For each actionable comment, note file, line, scope, and dependencies
-3. Create a todo list using TodoWrite with all actionable items
+1. Skip any thread where `isResolved: true` or `isOutdated: true` — already handled.
+2. Categorize each remaining comment as Blocking, Substantive, Suggestion, Question, or Nitpick.
+3. For each actionable comment, capture: thread `id`, top-level comment `databaseId`, file, line, scope, and whether the body contains a ` ```suggestion ` block.
+4. Create a todo list using TodoWrite with one item per actionable thread, including the thread `id` and `databaseId` so Steps 3–5 can reply and resolve.
 
 ---
 
 ### Step 3: Address Feedback
 
-Work through actionable items systematically:
+Work through actionable items systematically. For each thread, decide using the table below — see [REFERENCE.md](REFERENCE.md) for the full decision tree.
 
-**Code review comments:** Read relevant code, understand context, implement fix, verify no breakage.
+| Comment shape | Action |
+|---------------|--------|
+| Contains a ` ```suggestion ` block, fix is correct | **Accept the suggestion**: apply the suggestion's exact replacement to the file (see [REFERENCE.md](REFERENCE.md) "Accepting Suggestions") |
+| Contains a ` ```suggestion ` block, fix needs adjustment | Implement an improved variant; explain the deviation in the reply |
+| Inline code comment without suggestion | Read context, implement fix, verify no regressions |
+| Question / clarification | Skip code change; draft an inline reply for Step 4 |
+| Blocking review (`REQUEST_CHANGES`) | Address every concern before resolving any thread |
+| Failed CI check | Identify failure type (lint/type/test/build), fix locally, run to verify |
 
-**Failed CI checks:** Identify failure type (lint/type/test/build), fix locally, run to verify.
-
-**Questions/clarifications:** Note for PR reply; consider adding code comments for future readers.
+Mark each todo `in_progress` while working it and `completed` once the file change (if any) lands locally. Do **not** resolve threads yet — replies and resolution happen after the commit so reviewers see the linked SHA.
 
 ---
 
@@ -113,19 +119,45 @@ Run pre-commit hooks if configured, then stage any formatter changes.
 git push origin HEAD
 ```
 
-### Step 6: Summary Report
+### Step 6: Reply and Resolve Threads
 
-Provide a summary table of feedback addressed, changes made, and next steps. See [REFERENCE.md](REFERENCE.md) for report template.
+For every actionable thread tracked in Step 2, post a reply and resolve when appropriate. Owner/repo/PR are the same values used in Step 1.
+
+1. **Reply** with `mcp__github__add_reply_to_pull_request_comment` using the top-level comment's `databaseId` (a number, not the GraphQL node ID). Keep replies short — see [REFERENCE.md](REFERENCE.md) "Reply Templates".
+   - Code change made → reference the commit SHA: `Fixed in <sha> by <one-line summary>.`
+   - Suggestion accepted verbatim → `Accepted suggestion in <sha>.`
+   - Suggestion adapted → explain the deviation: `Applied a variant in <sha>: <reason>.`
+   - Deferred / out of scope → state why and link a follow-up issue if one exists.
+   - Question → answer it directly.
+
+2. **Resolve** with `mcp__github__resolve_review_thread` using the thread `id` (a `PRRT_…` GraphQL node ID) when **all** of the following hold:
+   - The reviewer's concern is fully addressed by the pushed commit, OR the reviewer asked a question that has been answered, OR the comment is a nitpick you've explicitly declined with reasoning.
+   - The thread is not part of an unsubmitted `REQUEST_CHANGES` review where other concerns remain open.
+   - You authored or own-pushed the resolving change (do not resolve threads on PRs you don't own without explicit user approval).
+
+3. **Do NOT resolve** when:
+   - The reply asks the reviewer a follow-up question.
+   - The fix is partial or deferred to another PR.
+   - The reviewer explicitly asked to keep the thread open.
+   - You merely disagree without making a change — leave it for the reviewer.
+
+If `--commit`/`--push` was not passed, still post replies for questions, but skip resolution (no resolving SHA exists yet) — note pending replies in the Step 7 summary instead.
+
+### Step 7: Summary Report
+
+Provide a summary table of feedback addressed, replies posted, threads resolved, and next steps. See [REFERENCE.md](REFERENCE.md) for the report template.
 
 ---
 
 ## Agentic Optimizations
 
-| Context | Command |
-|---------|---------|
+| Context | Command / Tool |
+|---------|----------------|
 | All PR data (single query) | `bash ${CLAUDE_SKILL_DIR}/scripts/fetch-pr-data.sh <owner> <repo> <pr>` |
 | Failed check logs | `gh run view $ID --log-failed` |
 | Quick check status (fallback) | `gh pr checks $PR --json name,state,conclusion` |
+| Reply to a review comment | `mcp__github__add_reply_to_pull_request_comment` (commentId = `databaseId`) |
+| Resolve a review thread | `mcp__github__resolve_review_thread` (threadId = `PRRT_…` node ID) |
 
 ## See Also
 
