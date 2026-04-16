@@ -1,0 +1,124 @@
+{
+  "format_version": "3.3.0",
+  "created_at": "2026-04-16T00:00:00Z",
+  "updated_at": "2026-04-16T00:00:00Z",
+  "created_by": {
+    "blueprint_plugin": "3.25.2"
+  },
+  "project": {
+    "name": "claude-plugins",
+    "detected_stack": ["claude-code-plugin", "shell", "python"]
+  },
+  "structure": {
+    "has_prds": true,
+    "has_adrs": true,
+    "has_prps": true,
+    "has_work_orders": true,
+    "has_ai_docs": true,
+    "has_modular_rules": true,
+    "has_feature_tracker": false,
+    "has_document_detection": false,
+    "claude_md_mode": "both"
+  },
+  "generated": {
+    "rules": {},
+    "commands": {}
+  },
+  "custom_overrides": {
+    "skills": [],
+    "commands": []
+  },
+  "task_registry": {
+    "derive-prd": {
+      "enabled": false,
+      "auto_run": false,
+      "last_completed_at": null,
+      "last_result": null,
+      "schedule": "on-demand",
+      "stats": {},
+      "context": {
+        "disabled_reason": "Constrained dogfooding: this repo authors PRDs by hand. derive-prd would mine plugin-feature commits as if they were project requirements."
+      }
+    },
+    "derive-plans": {
+      "enabled": false,
+      "auto_run": false,
+      "last_completed_at": null,
+      "last_result": null,
+      "schedule": "on-demand",
+      "stats": {},
+      "context": {
+        "disabled_reason": "Constrained dogfooding: docs/plans/ is hand-authored. derive-plans writes to docs/prps/ and would conflict with that convention."
+      }
+    },
+    "derive-rules": {
+      "enabled": false,
+      "auto_run": false,
+      "last_completed_at": null,
+      "last_result": null,
+      "schedule": "on-demand",
+      "stats": {},
+      "context": {
+        "disabled_reason": "Constrained dogfooding: 18 hand-written rules in .claude/rules/ are governance content. derive-rules can overwrite them by hash comparison."
+      }
+    },
+    "generate-rules": {
+      "enabled": false,
+      "auto_run": false,
+      "last_completed_at": null,
+      "last_result": null,
+      "schedule": "on-demand",
+      "stats": {},
+      "context": {
+        "disabled_reason": "Constrained dogfooding: blueprint-generated rules currently land flat in .claude/rules/ alongside hand-written ones. Re-enable only after a configurable subdirectory output path lands. Tracked in laurigates/claude-plugins#1043."
+      }
+    },
+    "adr-validate": {
+      "enabled": true,
+      "auto_run": false,
+      "last_completed_at": null,
+      "last_result": null,
+      "schedule": "weekly",
+      "stats": {},
+      "context": {}
+    },
+    "feature-tracker-sync": {
+      "enabled": true,
+      "auto_run": false,
+      "last_completed_at": null,
+      "last_result": null,
+      "schedule": "daily",
+      "stats": {},
+      "context": {}
+    },
+    "sync-ids": {
+      "enabled": true,
+      "auto_run": false,
+      "last_completed_at": null,
+      "last_result": null,
+      "schedule": "on-change",
+      "stats": {},
+      "context": {}
+    },
+    "claude-md": {
+      "enabled": false,
+      "auto_run": false,
+      "last_completed_at": null,
+      "last_result": null,
+      "schedule": "on-demand",
+      "stats": {},
+      "context": {
+        "disabled_reason": "Constrained dogfooding: CLAUDE.md is hand-curated convention guidance. claude-md offers 'regenerate completely' which is irreversible if accepted by mistake."
+      }
+    },
+    "curate-docs": {
+      "enabled": false,
+      "auto_run": false,
+      "last_completed_at": null,
+      "last_result": null,
+      "schedule": "on-demand",
+      "stats": {},
+      "context": {}
+    }
+  }
+}
