@@ -165,8 +165,8 @@ git-repo-agent/
 ├── src/git_repo_agent/
 │   ├── main.py                # CLI entry point (Typer)
 │   ├── orchestrator.py        # Core agent orchestration
+│   ├── blueprint_driver.py    # Blueprint state machine (ADR-006)
 │   ├── agents/
-│   │   ├── blueprint.py       # Blueprint lifecycle (sonnet)
 │   │   ├── configure.py       # Project standards (haiku)
 │   │   ├── diagnose.py        # Pipeline diagnostics (sonnet)
 │   │   ├── docs.py            # Documentation health (haiku)
@@ -187,7 +187,6 @@ git-repo-agent/
 │       ├── diagnose.md        # Diagnose subagent prompt
 │       ├── diagnose_workflow.md # Diagnose workflow
 │       ├── health.md          # Health command reference
-│       ├── blueprint.md       # Blueprint subagent prompt
 │       ├── configure.md       # Configure subagent prompt
 │       ├── docs.md            # Docs subagent prompt
 │       ├── quality.md         # Quality subagent prompt
@@ -203,13 +202,38 @@ git-repo-agent/
 
 | Agent           | Model  | Skills | Purpose                                                                    |
 | --------------- | ------ | ------ | -------------------------------------------------------------------------- |
-| **blueprint**   | sonnet | 7      | Initialize and maintain blueprint methodology (PRDs, ADRs, PRPs, manifest, rules, test plans) |
 | **configure**   | haiku  | 9      | Set up linting, formatting, testing, pre-commit, CI/CD, coverage, release-please, containers, Sentry |
 | **diagnose**    | sonnet | 3      | Correlate pipeline failures using kubectl debugging, GitHub Actions inspection, systematic diagnostics |
 | **docs**        | haiku  | 5      | Check and improve README, CLAUDE.md, blueprint docs, doc quality analysis  |
 | **quality**     | opus   | 6      | Review code for complexity, duplication, anti-patterns, silent degradation, lint compliance |
 | **security**    | opus   | 3      | Scan for exposed secrets, dependency CVEs, insecure configurations, GitHub Actions auth |
 | **test_runner** | haiku  | 5      | Detect test framework, execute tests, analyze failures, assess test quality |
+
+### Blueprint Driver
+
+The blueprint lifecycle runs as a deterministic Python state machine
+(`blueprint_driver.py`), not a subagent. Each phase loads exactly one
+compiled skill into its own `ClaudeSDKClient` session. See ADR-006 for
+rationale.
+
+CLI surface (`git-repo-agent blueprint <subcommand>`):
+
+| Subcommand | Phases | Purpose |
+|---|---|---|
+| `status` | `blueprint-status` → `feature-tracker-status` | Report version, docs, tracker stats |
+| `upgrade` | `blueprint-upgrade` → `sync-ids` → `adr-validate` | Migrate to latest format |
+| `sync` | `blueprint-sync` | Detect stale generated content |
+| `scan` | `workspace-scan` → `feature-tracker-sync` → `feature-tracker-status` | Refresh monorepo rollups |
+| `adr-list` | `blueprint-adr-list` | List ADRs as markdown table |
+| `derive-plans` | `blueprint-derive-plans` | Derive PRDs/ADRs/PRPs from git |
+| `generate-rules` | `blueprint-generate-rules` | Auto-generate project rules |
+| `promote <target>` | `blueprint-promote` | Preserve custom edits |
+| `prp-create <feature>` | `blueprint-prp-create` | Create a PRP for a feature |
+| `prp-execute <prp-name>` | `blueprint-prp-execute` | Execute PRP with TDD gates |
+| `work-order [--from-issue N]` | `blueprint-work-order` | Create isolated work order |
+
+The `onboard` command also runs a 9-phase onboarding sequence before the
+LLM orchestrator takes over.
 
 ### MCP Tools
 
@@ -277,7 +301,7 @@ uv run --directory git-repo-agent git-repo-agent diagnose . --dry-run
 
 | Phase   | Status  | Features                                                                                  |
 | ------- | ------- | ----------------------------------------------------------------------------------------- |
-| Phase 1 | Done    | CLI, orchestrator, repo_analyze, blueprint subagent, onboard command                      |
+| Phase 1 | Done    | CLI, orchestrator, repo_analyze, blueprint driver (ADR-006), onboard command              |
 | Phase 2 | Done    | Configure/docs subagents, health_score, safety hooks, maintain command, skill compilation |
 | Phase 3 | Done    | Quality/security/test-runner subagents, report_generate, health command                   |
 | Phase 4 | In progress | Non-interactive / scheduled execution (ADR-005); watch mode and trend tracking planned |
