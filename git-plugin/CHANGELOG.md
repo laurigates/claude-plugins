@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.30.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.29.7...git-plugin-v2.30.0) (2026-04-16)
+
+
+### Features
+
+* **blueprint-plugin:** configurable output path for generated rules ([#1046](https://github.com/laurigates/claude-plugins/issues/1046)) ([e0b37bf](https://github.com/laurigates/claude-plugins/commit/e0b37bf4c64cca772f450dbb45e81734110bf978)), closes [#1043](https://github.com/laurigates/claude-plugins/issues/1043) [#1040](https://github.com/laurigates/claude-plugins/issues/1040)
+
 ## [2.29.7](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.29.6...git-plugin-v2.29.7) (2026-04-15)
 
 
