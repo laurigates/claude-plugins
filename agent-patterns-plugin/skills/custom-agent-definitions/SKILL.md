@@ -8,8 +8,8 @@ description: |
 user-invocable: false
 allowed-tools: Bash(cat *), Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-01-20
-modified: 2026-03-09
-reviewed: 2026-03-09
+modified: 2026-04-16
+reviewed: 2026-04-16
 ---
 
 # Custom Agent Definitions
@@ -226,7 +226,7 @@ description: |
 |----------|-------|----------|
 | Simple/mechanical tasks | haiku | claude-haiku-4-5 |
 | Development workflows | sonnet | claude-sonnet-4-6 |
-| Deep reasoning/analysis | opus | claude-opus-4-6 |
+| Deep reasoning/analysis | opus | claude-opus-4-7 |
 
 ## Agent Configuration Fields Reference
 

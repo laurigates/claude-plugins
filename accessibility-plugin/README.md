@@ -66,7 +66,7 @@ Bridges the gap between service design decisions and production code.
 - Responsive implementation patterns
 - Performance-aware UX
 
-**Model:** Claude Opus 4.5
+**Model:** Claude Opus 4.7
 
 #### service-design
 Strategic UX architecture, service blueprints, and interaction design.
@@ -86,7 +86,7 @@ Strategic UX architecture, service blueprints, and interaction design.
 - Universal design principles
 - Omnichannel strategy
 
-**Model:** Claude Opus 4.5
+**Model:** Claude Opus 4.7
 
 ## Use Cases
 

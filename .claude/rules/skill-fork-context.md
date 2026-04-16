@@ -11,11 +11,11 @@ When to set `context: fork` and `agent:` in skill frontmatter.
 
 ## Current Status: Do NOT Use `context: fork` in Plugin Skills
 
-**As of March 2026, `context: fork` has two blocking issues for plugin-based skills:**
+**As of April 2026, `context: fork` has two blocking issues for plugin-based skills:**
 
 1. **Broken for plugins** ([anthropics/claude-code#16803](https://github.com/anthropics/claude-code/issues/16803), OPEN) — `context: fork` is silently ignored for plugin-installed skills. It only works for skills in the user's `~/.claude/` folder.
 
-2. **Triggers rate limits with 1M context models** ([#27053](https://github.com/anthropics/claude-code/issues/27053), [#33154](https://github.com/anthropics/claude-code/issues/33154)) — Forking from an Opus 4.6 (1M) session spawns a second concurrent `[1m]` request, immediately hitting rate limits (`total_tokens: 0` rejection). This affects the default recommended model.
+2. **Triggers rate limits with 1M context models** ([#27053](https://github.com/anthropics/claude-code/issues/27053), [#33154](https://github.com/anthropics/claude-code/issues/33154)) — Forking from an Opus 4.7 (1M) session spawns a second concurrent `[1m]` request, immediately hitting rate limits (`total_tokens: 0` rejection). This affects the default recommended model.
 
 **Use `agent: general-purpose` without `context: fork`** to get subagent isolation without triggering these issues.
 

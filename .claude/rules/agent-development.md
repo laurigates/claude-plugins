@@ -73,7 +73,7 @@ hooks:                 # Agent-scoped hooks (active only when agent is running)
 |-------|------|----------|-------------|
 | `name` | string | Yes | Agent identifier (kebab-case) |
 | `description` | string | Yes | Purpose and use cases for agent selection |
-| `model` | string | Yes | `opus`, `sonnet`, `haiku`, `inherit`, or full model ID (e.g., `claude-opus-4-5`) — full IDs fixed in 2.1.74 |
+| `model` | string | Yes | `opus`, `sonnet`, `haiku`, `inherit`, or full model ID (e.g., `claude-opus-4-7`) — full IDs fixed in 2.1.74 |
 | `tools` | comma-list | Yes | Tools the agent can use; use `Agent(name)` to restrict spawnable subagents |
 | `context` | string | No | `fork` for isolated context (default: shared) |
 | `isolation` | string | No | `worktree` to run agent in an isolated git worktree |
