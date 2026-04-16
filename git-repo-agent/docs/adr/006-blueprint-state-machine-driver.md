@@ -121,6 +121,32 @@ path; they can be deleted once `maintain` / `diagnose` also migrate.
    Rejected as too large a change. Scope this ADR to blueprint only;
    revisit for `configure`, `docs`, etc. if similar problems emerge.
 
+## Implementation Status
+
+Shipped (2026-04-15):
+
+- `onboard` mode — 9 phases, wired into `run_onboard()`.
+- `status` mode — `blueprint-status` + `blueprint-feature-tracker-status`.
+- `upgrade` mode — `blueprint-upgrade` → `sync-ids` → `adr-validate`.
+- `sync` mode — `blueprint-sync` (drift detection, non-interactive).
+- `scan` mode — `workspace-scan` → `feature-tracker-sync` → `feature-tracker-status`.
+
+All lifecycle modes are exposed through a `blueprint` Typer subcommand
+group (`git-repo-agent blueprint status|upgrade|sync|scan`). They run
+in-place on the target repository — no worktree, no PR — because they
+are typically read-only or targeted updates rather than broad
+onboarding work.
+
+Not yet shipped — candidates for a follow-up:
+
+- PRP / work-order workflows (`blueprint-prp-create`, `blueprint-prp-execute`,
+  `blueprint-work-order`) — would likely live in a separate `PrpDriver`.
+- Rule management (`blueprint-rules`, `blueprint-generate-rules`,
+  `blueprint-promote`) — `promote` is partially covered by `sync` today.
+- Deletion of the legacy `agents/blueprint.py` / `prompts/blueprint.md`
+  once `run_maintain` and `run_diagnose` also migrate (they still reference
+  the Task-based subagent).
+
 ## Related
 
 - ADR-001 — Pre-compute repo context in Python.

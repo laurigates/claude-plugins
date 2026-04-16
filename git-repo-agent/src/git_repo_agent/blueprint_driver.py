@@ -163,6 +163,128 @@ ONBOARD_PHASES: tuple[Phase, ...] = (
 
 
 # --------------------------------------------------------------------------
+# Lifecycle phase registries (invoked via the `blueprint` CLI subcommand)
+# --------------------------------------------------------------------------
+
+# Read-only status report: current blueprint version + feature tracker stats.
+STATUS_PHASES: tuple[Phase, ...] = (
+    Phase(
+        name="status",
+        skill_relpath="blueprint-plugin/skills/blueprint-status/SKILL.md",
+        model="haiku",
+        invocation=(
+            "Report the current blueprint configuration: format version, "
+            "document counts per type, and any available upgrades. Use "
+            "`--report-only` semantics — do not prompt the user, do not "
+            "modify files."
+        ),
+    ),
+    Phase(
+        name="feature_tracker_status",
+        skill_relpath="blueprint-plugin/skills/blueprint-feature-tracker-status/SKILL.md",
+        model="haiku",
+        invocation=(
+            "Display feature tracker statistics. If feature tracking is not "
+            "enabled (no `docs/blueprint/feature-tracker.json`), say so and "
+            "stop — do not create anything. Do not ask the user questions."
+        ),
+    ),
+)
+
+# Migrate the blueprint to the latest format, then re-sync IDs and validate.
+UPGRADE_PHASES: tuple[Phase, ...] = (
+    Phase(
+        name="upgrade",
+        skill_relpath="blueprint-plugin/skills/blueprint-upgrade/SKILL.md",
+        model="sonnet",
+        invocation=(
+            "Upgrade the blueprint to the latest format version. Apply all "
+            "required migrations without asking the user to confirm each "
+            "step. If the blueprint is already at the latest version, say "
+            "so and stop."
+        ),
+    ),
+    Phase(
+        name="sync_ids",
+        skill_relpath="blueprint-plugin/skills/blueprint-sync-ids/SKILL.md",
+        model="haiku",
+        invocation=(
+            "Re-assign sequential IDs after migration and update "
+            "`docs/blueprint/manifest.json` so every document is registered."
+        ),
+    ),
+    Phase(
+        name="adr_validate",
+        skill_relpath="blueprint-plugin/skills/blueprint-adr-validate/SKILL.md",
+        model="haiku",
+        invocation=(
+            "Validate ADR relationships after migration. Report broken "
+            "links, missing IDs, or inconsistencies introduced by the "
+            "version bump."
+        ),
+    ),
+)
+
+# Drift detection: report stale generated content and (non-interactively)
+# regenerate or suggest promotion.
+SYNC_PHASES: tuple[Phase, ...] = (
+    Phase(
+        name="sync",
+        skill_relpath="blueprint-plugin/skills/blueprint-sync/SKILL.md",
+        model="sonnet",
+        invocation=(
+            "Report the status of generated content (fresh / modified / "
+            "stale). Do not interactively prompt — for any modified files, "
+            "list them as candidates for `/blueprint:promote` and stop. For "
+            "stale files, regenerate them."
+        ),
+    ),
+)
+
+# Monorepo/workspace refresh: re-scan children and refresh rollup stats.
+SCAN_PHASES: tuple[Phase, ...] = (
+    Phase(
+        name="workspace_scan",
+        skill_relpath="blueprint-plugin/skills/blueprint-workspace-scan/SKILL.md",
+        model="haiku",
+        invocation=(
+            "Scan the filesystem for child blueprint workspaces and refresh "
+            "the root manifest's `workspaces.children` registry with cached "
+            "feature-tracker stats. Do not prompt the user."
+        ),
+    ),
+    Phase(
+        name="feature_tracker_sync",
+        skill_relpath="blueprint-plugin/skills/blueprint-feature-tracker-sync/SKILL.md",
+        model="haiku",
+        invocation=(
+            "Sync the feature tracker with the current workspace roster "
+            "so portfolio rollups reflect child updates."
+        ),
+    ),
+    Phase(
+        name="feature_tracker_status",
+        skill_relpath="blueprint-plugin/skills/blueprint-feature-tracker-status/SKILL.md",
+        model="haiku",
+        invocation=(
+            "Display the refreshed feature tracker statistics and portfolio "
+            "rollup. Do not prompt the user."
+        ),
+    ),
+)
+
+
+# Named registries so the CLI can dispatch by mode name.
+PHASE_REGISTRIES: dict[str, tuple[Phase, ...]] = {
+    "onboard": ONBOARD_PHASES,
+    "status": STATUS_PHASES,
+    "upgrade": UPGRADE_PHASES,
+    "sync": SYNC_PHASES,
+    "scan": SCAN_PHASES,
+}
+
+
+# --------------------------------------------------------------------------
 # Driver
 # --------------------------------------------------------------------------
 

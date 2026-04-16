@@ -24,6 +24,11 @@ app = typer.Typer(
     name="git-repo-agent",
     help="Claude Agent SDK app for repo onboarding and maintenance.",
 )
+blueprint_app = typer.Typer(
+    name="blueprint",
+    help="Blueprint lifecycle commands (status, upgrade, sync, scan).",
+)
+app.add_typer(blueprint_app, name="blueprint")
 console = Console()
 
 
@@ -475,6 +480,80 @@ def route(
             focus=focus,
         )
     )
+
+
+def _run_blueprint_mode(repo: str, mode: str, dry_run: bool) -> None:
+    """Shared dispatch for the blueprint lifecycle subcommands.
+
+    Each mode runs a fixed sequence of compiled-skill phases via the
+    ``BlueprintDriver`` state machine (see ADR-006). Unlike ``onboard``
+    these commands operate in-place on the target repository — no
+    worktree, no PR — because they are typically run ad hoc to inspect
+    or update the existing blueprint state.
+    """
+    repo_path = Path(repo).resolve()
+    if not repo_path.is_dir():
+        console.print(f"[red]Error:[/red] {repo_path} is not a directory")
+        raise typer.Exit(code=EXIT_CONFIG_ERROR)
+
+    from .blueprint_driver import BlueprintDriver, DriverOptions, PHASE_REGISTRIES
+
+    phases = PHASE_REGISTRIES.get(mode)
+    if phases is None:
+        console.print(f"[red]Error:[/red] unknown blueprint mode '{mode}'")
+        raise typer.Exit(code=EXIT_CONFIG_ERROR)
+
+    driver = BlueprintDriver(
+        repo_path,
+        DriverOptions(dry_run=dry_run, non_interactive=True),
+    )
+    result = asyncio.run(driver.run(phases))
+    if not result.succeeded:
+        raise typer.Exit(code=EXIT_RUNTIME_ERROR)
+
+
+@blueprint_app.command("status")
+def blueprint_status(
+    repo: str = typer.Argument(".", help="Path to the repository."),
+) -> None:
+    """Report blueprint version, document counts, and feature-tracker stats."""
+    _run_blueprint_mode(repo, "status", dry_run=False)
+
+
+@blueprint_app.command("upgrade")
+def blueprint_upgrade(
+    repo: str = typer.Argument(".", help="Path to the repository."),
+    dry_run: bool = typer.Option(
+        False, "--dry-run",
+        help="Report what would change without writing files.",
+    ),
+) -> None:
+    """Migrate the blueprint to the latest format version, then re-sync IDs."""
+    _run_blueprint_mode(repo, "upgrade", dry_run=dry_run)
+
+
+@blueprint_app.command("sync")
+def blueprint_sync(
+    repo: str = typer.Argument(".", help="Path to the repository."),
+    dry_run: bool = typer.Option(
+        False, "--dry-run",
+        help="Report drift without regenerating stale content.",
+    ),
+) -> None:
+    """Detect drift in generated blueprint content and regenerate stale files."""
+    _run_blueprint_mode(repo, "sync", dry_run=dry_run)
+
+
+@blueprint_app.command("scan")
+def blueprint_scan(
+    repo: str = typer.Argument(".", help="Path to the monorepo root."),
+    dry_run: bool = typer.Option(
+        False, "--dry-run",
+        help="Preview workspace discovery without updating the root manifest.",
+    ),
+) -> None:
+    """Refresh the monorepo root manifest's workspaces registry and portfolio rollup."""
+    _run_blueprint_mode(repo, "scan", dry_run=dry_run)
 
 
 if __name__ == "__main__":

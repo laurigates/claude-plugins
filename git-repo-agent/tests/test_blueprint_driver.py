@@ -15,6 +15,11 @@ from git_repo_agent.blueprint_driver import (
     BlueprintDriver,
     DriverOptions,
     ONBOARD_PHASES,
+    PHASE_REGISTRIES,
+    SCAN_PHASES,
+    STATUS_PHASES,
+    SYNC_PHASES,
+    UPGRADE_PHASES,
     Phase,
 )
 from git_repo_agent.prompts.compiler import get_compiled_skill
@@ -128,3 +133,80 @@ class TestPhaseResultReporting:
     def test_unknown_skill_raises(self, tmp_path: Path):
         with pytest.raises(FileNotFoundError):
             get_compiled_skill("does-not-exist/SKILL.md")
+
+
+class TestLifecycleRegistries:
+    """Every non-onboard registry must reference compilable skills."""
+
+    @pytest.mark.parametrize(
+        "registry",
+        [STATUS_PHASES, UPGRADE_PHASES, SYNC_PHASES, SCAN_PHASES],
+    )
+    def test_registry_skills_compile(self, registry):
+        for phase in registry:
+            body = get_compiled_skill(phase.skill_relpath)
+            assert body, f"{phase.name}: empty compiled skill"
+
+    def test_upgrade_runs_sync_ids_before_validate(self):
+        names = [p.name for p in UPGRADE_PHASES]
+        assert names.index("sync_ids") < names.index("adr_validate")
+
+    def test_scan_starts_with_workspace_scan(self):
+        assert SCAN_PHASES[0].name == "workspace_scan"
+
+    def test_status_phases_are_readonly_by_model(self):
+        # Status and scan should be cheap — haiku-only.
+        for phase in STATUS_PHASES:
+            assert phase.model == "haiku", phase.name
+        for phase in SCAN_PHASES:
+            assert phase.model == "haiku", phase.name
+
+    def test_registries_are_registered_under_expected_keys(self):
+        assert set(PHASE_REGISTRIES) == {
+            "onboard",
+            "status",
+            "upgrade",
+            "sync",
+            "scan",
+        }
+        assert PHASE_REGISTRIES["onboard"] is ONBOARD_PHASES
+        assert PHASE_REGISTRIES["status"] is STATUS_PHASES
+
+    def test_no_registry_has_duplicate_phase_names(self):
+        for name, registry in PHASE_REGISTRIES.items():
+            names = [p.name for p in registry]
+            assert len(names) == len(set(names)), f"{name} has dupes: {names}"
+
+
+class TestBlueprintCliWiring:
+    """Verify the Typer subcommands dispatch to the right registries."""
+
+    def test_blueprint_subcommands_are_registered(self):
+        from typer.testing import CliRunner
+
+        from git_repo_agent.main import app
+
+        runner = CliRunner()
+        result = runner.invoke(app, ["blueprint", "--help"])
+        assert result.exit_code == 0
+        for sub in ("status", "upgrade", "sync", "scan"):
+            assert sub in result.stdout
+
+    def test_unknown_mode_exits_with_config_error(self, tmp_path: Path):
+        from git_repo_agent.main import _run_blueprint_mode
+        from git_repo_agent.non_interactive import EXIT_CONFIG_ERROR
+        import typer
+
+        with pytest.raises(typer.Exit) as excinfo:
+            _run_blueprint_mode(str(tmp_path), mode="bogus", dry_run=False)
+        assert excinfo.value.exit_code == EXIT_CONFIG_ERROR
+
+    def test_nonexistent_repo_path_fails_fast(self, tmp_path: Path):
+        from git_repo_agent.main import _run_blueprint_mode
+        from git_repo_agent.non_interactive import EXIT_CONFIG_ERROR
+        import typer
+
+        bogus = tmp_path / "does-not-exist"
+        with pytest.raises(typer.Exit) as excinfo:
+            _run_blueprint_mode(str(bogus), mode="status", dry_run=False)
+        assert excinfo.value.exit_code == EXIT_CONFIG_ERROR
