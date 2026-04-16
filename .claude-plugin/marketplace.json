@@ -96,7 +96,7 @@
       "name": "blueprint-plugin",
       "source": "./blueprint-plugin",
       "description": "Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, CLAUDE.md management, and monorepo portfolio tracking",
-      "version": "3.25.2",
+      "version": "3.26.0",
       "keywords": [
         "blueprint",
         "prd",
@@ -273,7 +273,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.29.7",
+      "version": "2.30.0",
       "keywords": [
         "git",
         "github",
