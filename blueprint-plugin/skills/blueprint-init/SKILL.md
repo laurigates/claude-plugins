@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-04-12
+modified: 2026-04-16
 reviewed: 2026-04-12
 description: "Initialize Blueprint Development structure in current project"
 allowed-tools: Bash, Write, Read, AskUserQuestion, Glob
@@ -116,6 +116,27 @@ Initialize Blueprint Development in this project.
    - **Fully automatic**: all tasks get `auto_run: true`, default schedules
    - **Manual only**: all `auto_run: false`, all schedules set to `on-demand`
 
+4a. **Ask about generated-rules output path** (use AskUserQuestion):
+
+   Only prompt when `.claude/rules/` already exists and contains files (i.e., hand-authored rules that pre-date blueprint). Skip silently in fresh repos and use the default.
+
+   ```bash
+   # Only prompt if .claude/rules/ has any content not created by blueprint
+   find .claude/rules -maxdepth 1 -type f -name '*.md'
+   ```
+
+   ```
+   Use AskUserQuestion (only when .claude/rules/ has existing content):
+   question: "Detected existing content in .claude/rules/. Where should blueprint write generated rules?"
+   options:
+     - label: ".claude/rules/blueprint/ (Recommended)"
+       description: "Isolated subdirectory — keeps blueprint-managed and hand-authored rules separate, prevents collisions on regenerate"
+     - label: ".claude/rules/ (flat)"
+       description: "Write generated rules alongside hand-authored ones; risk of overwrite when filenames collide"
+   ```
+
+   Store the chosen path in `structure.generated_rules_path` in the manifest (defaults to `.claude/rules/` when unset). This keeps `blueprint-generate-rules` and `blueprint-derive-rules` from clobbering hand-curated rule files (issue #1043).
+
 5. **Ask about decision detection** (use AskUserQuestion):
    ```
    question: "Would you like to enable automatic decision detection?"
@@ -187,7 +208,8 @@ Initialize Blueprint Development in this project.
        "has_modular_rules": true,
        "has_feature_tracker": "[based on user choice]",
        "has_document_detection": "[based on user choice]",
-       "claude_md_mode": "both"
+       "claude_md_mode": "both",
+       "generated_rules_path": "[based on Step 4a; defaults to .claude/rules/ when prompt skipped]"
      },
      "feature_tracker": {
        "file": "feature-tracker.json",

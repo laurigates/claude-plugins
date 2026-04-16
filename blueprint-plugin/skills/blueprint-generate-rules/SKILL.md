@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-02-17
+modified: 2026-04-16
 reviewed: 2026-02-09
 description: "Generate project-specific rules from PRDs. Supports path-specific rules with paths frontmatter and brace expansion."
 allowed-tools: Read, Write, Glob, Bash, AskUserQuestion
@@ -18,13 +18,24 @@ Generate project-specific rules from Product Requirements Documents.
 | Automating rule creation from requirements | Writing custom rules without PRD reference |
 | Extracting architecture/testing patterns from PRDs | Need to create one-off rules for specific contexts |
 
-Rules are generated to `.claude/rules/` directory. Rules with `paths` frontmatter are loaded conditionally when working on matching files.
+Rules are generated to the directory configured in `structure.generated_rules_path` (defaults to `.claude/rules/` when the field is absent). Rules with `paths` frontmatter are loaded conditionally when working on matching files.
 
 **Prerequisites**:
 - `docs/prds/` directory exists
 - At least one PRD file in `docs/prds/`
 
 **Steps**:
+
+0. **Resolve the output path**:
+
+   Read `structure.generated_rules_path` from `docs/blueprint/manifest.json` (default `.claude/rules/`):
+
+   ```bash
+   RULES_DIR=$(jq -r '.structure.generated_rules_path // ".claude/rules/"' docs/blueprint/manifest.json)
+   mkdir -p "$RULES_DIR"
+   ```
+
+   Use `$RULES_DIR` for all subsequent reads/writes. This isolates blueprint-managed rules from any hand-written files in the parent `.claude/rules/` directory (issue #1043).
 
 1. **Find and read all PRDs**:
    - Use Glob to find all `.md` files in `docs/prds/`
@@ -33,8 +44,9 @@ Rules are generated to `.claude/rules/` directory. Rules with `paths` frontmatte
 
 2. **Check for existing generated rules**:
    ```bash
-   ls .claude/rules/ 2>/dev/null
+   ls "$RULES_DIR" 2>/dev/null
    ```
+   - Scope conflict checks to files under `$RULES_DIR` only — never to the parent `.claude/rules/`. Hand-written files outside `$RULES_DIR` are invisible to this check.
    - If rules exist, check manifest for content hashes
    - Compare current content hash vs stored hash
    - If modified, offer options: overwrite, skip, or backup
@@ -75,7 +87,7 @@ Rules are generated to `.claude/rules/` directory. Rules with `paths` frontmatte
 
 4. **Generate four aggregated domain rules**:
 
-   Create in `.claude/rules/`:
+   Create in `$RULES_DIR` (the configured `structure.generated_rules_path`):
 
    **`architecture-patterns.md`**:
    - Aggregated patterns from all PRDs
@@ -119,11 +131,14 @@ Rules are generated to `.claude/rules/` directory. Rules with `paths` frontmatte
    **Path-scoping guidance**: Add `paths` frontmatter when a rule only applies to specific file types or directories. This reduces context noise — Claude only loads the rule when working on matching files. Use brace expansion for concise patterns: `*.{ts,tsx}`, `src/{api,routes}/**/*`.
 
 5. **Update manifest with generation tracking**:
+
+   Store filenames **relative** to `$RULES_DIR` so the registry remains stable when `generated_rules_path` changes. The path itself lives in `structure.generated_rules_path`; the keys here are bare filenames (without directory).
+
    ```json
    {
      "generated": {
        "rules": {
-         "architecture-patterns": {
+         "architecture-patterns.md": {
            "source": "docs/prds/*",
            "source_hash": "sha256:...",
            "generated_at": "[ISO timestamp]",
@@ -131,9 +146,9 @@ Rules are generated to `.claude/rules/` directory. Rules with `paths` frontmatte
            "content_hash": "sha256:...",
            "status": "current"
          },
-         "testing-strategies": { ... },
-         "implementation-guides": { ... },
-         "quality-standards": { ... }
+         "testing-strategies.md": { ... },
+         "implementation-guides.md": { ... },
+         "quality-standards.md": { ... }
        }
      }
    }
@@ -162,7 +177,7 @@ Rules are generated to `.claude/rules/` directory. Rules with `paths` frontmatte
    ```
    Rules generated from PRDs!
 
-   Created in .claude/rules/:
+   Created in $RULES_DIR (configured via structure.generated_rules_path):
    - architecture-patterns.md
    - testing-strategies.md
    - implementation-guides.md

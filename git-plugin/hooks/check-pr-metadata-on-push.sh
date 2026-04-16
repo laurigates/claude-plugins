@@ -70,7 +70,7 @@ fi
 if [ -z "$PUSH_BRANCH" ]; then exit 0; fi
 
 # Check for an existing open PR on this branch
-PR_JSON=$(gh pr view "$PUSH_BRANCH" --repo "$(git -C "$CWD" remote get-url origin 2>/dev/null || true)" --json title,body,number,url 2>/dev/null || true)
+PR_JSON=$(gh pr view "$PUSH_BRANCH" --repo "$(git -C "$CWD" remote get-url origin 2>/dev/null || true)" --json title,body,number,url,updatedAt 2>/dev/null || true)
 
 # Guard: no open PR for this branch
 if [ -z "$PR_JSON" ] || [ "$PR_JSON" = "null" ]; then exit 0; fi
@@ -79,9 +79,41 @@ PR_NUMBER=$(echo "$PR_JSON" | jq -r '.number // empty')
 PR_TITLE=$(echo "$PR_JSON" | jq -r '.title // empty')
 PR_BODY=$(echo "$PR_JSON" | jq -r '.body // empty')
 PR_URL=$(echo "$PR_JSON" | jq -r '.url // empty')
+PR_UPDATED_AT=$(echo "$PR_JSON" | jq -r '.updatedAt // empty')
 
 # Guard: couldn't parse PR data
 if [ -z "$PR_NUMBER" ] || [ -z "$PR_TITLE" ]; then exit 0; fi
+
+# Retry-aware bypass (issue #1041): if the PR was edited after the latest
+# local commit, metadata has demonstrably been reconciled for HEAD — let
+# the push proceed silently. The block only fires when there are commits
+# the PR has not been updated to reflect.
+HEAD_COMMIT_TIME=$(git -C "$CWD" log -1 --format=%cI HEAD 2>/dev/null || true)
+if [ -n "$PR_UPDATED_AT" ] && [ -n "$HEAD_COMMIT_TIME" ]; then
+    iso_to_epoch() {
+        # Convert ISO 8601 to epoch seconds. Handles both Z (UTC) and
+        # offset (e.g. +03:00) suffixes on BSD date (macOS) and GNU date.
+        local iso="$1"
+        if [[ "$iso" == *Z ]]; then
+            # UTC: parse with TZ=UTC so BSD date doesn't assume local time
+            TZ=UTC date -j -f "%Y-%m-%dT%H:%M:%S" "${iso%Z}" "+%s" 2>/dev/null && return 0
+        else
+            # Has explicit offset like +03:00; BSD date %z wants +0300
+            local tz_normalized
+            tz_normalized=$(printf '%s' "$iso" | sed -E 's/([+-][0-9]{2}):([0-9]{2})$/\1\2/')
+            date -j -f "%Y-%m-%dT%H:%M:%S%z" "$tz_normalized" "+%s" 2>/dev/null && return 0
+        fi
+        # GNU date (Linux) accepts ISO 8601 directly
+        date -d "$iso" "+%s" 2>/dev/null && return 0
+        return 1
+    }
+    PR_UPDATED_TS=$(iso_to_epoch "$PR_UPDATED_AT" || echo "")
+    HEAD_COMMIT_TS=$(iso_to_epoch "$HEAD_COMMIT_TIME" || echo "")
+    if [ -n "$PR_UPDATED_TS" ] && [ -n "$HEAD_COMMIT_TS" ] && \
+       [ "$PR_UPDATED_TS" -gt "$HEAD_COMMIT_TS" ]; then
+        exit 0
+    fi
+fi
 
 # Get recent commits on this branch (since divergence from default branch)
 RECENT_COMMITS=""

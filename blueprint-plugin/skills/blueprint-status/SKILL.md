@@ -1,6 +1,6 @@
 ---
 created: 2025-12-17
-modified: 2026-02-17
+modified: 2026-04-16
 reviewed: 2025-12-22
 description: "Show blueprint version, configuration, and check for available upgrades"
 args: "[--report-only]"
@@ -38,7 +38,8 @@ Display the current blueprint configuration status with three-layer architecture
      - With relationship declarations (supersedes, extends, related)
      - By status (Accepted, Superseded, Deprecated)
    - Count work-orders (pending, completed, archived)
-   - Count generated rules in `.claude/rules/`
+   - Resolve the configured rules path: `jq -r '.structure.generated_rules_path // ".claude/rules/"' docs/blueprint/manifest.json`
+   - Count generated rules in the configured path (default `.claude/rules/`)
    - Count custom skills in `.claude/skills/`
    - Count custom commands in `.claude/commands/`
    - Check for `.claude/rules/` directory
@@ -105,7 +106,8 @@ Display the current blueprint configuration status with three-layer architecture
    - Skills: blueprint-development, blueprint-migration, confidence-scoring
    - Agents: requirements-documentation, architecture-decisions, prp-preparation
 
-   Layer 2: Generated (.claude/rules/)
+   Layer 2: Generated ({structure.generated_rules_path or .claude/rules/})
+   - Path: {structure.generated_rules_path} (default: .claude/rules/)
    - Rules: {count} ({status_summary})
      {list each with status indicator: ✅ current, ⚠️ modified, 🔄 stale}
 
@@ -303,7 +305,8 @@ Layer 1: Plugin (blueprint-plugin)
 - Skills: 3 (blueprint-development, blueprint-migration, confidence-scoring)
 - Agents: 3 (requirements-documentation, architecture-decisions, prp-preparation)
 
-Layer 2: Generated (.claude/rules/)
+Layer 2: Generated (.claude/rules/blueprint/)
+- Path: .claude/rules/blueprint/ (configured; default is .claude/rules/)
 - Rules: 4 (3 current, 1 modified)
   - ✅ architecture-patterns.md (current)
   - ⚠️ testing-strategies.md (modified locally)

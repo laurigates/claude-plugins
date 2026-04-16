@@ -119,7 +119,7 @@ git log --format="%H|%ai|%s" | grep -i "{topic}" | sort -t'|' -k2 -r
 3. **Breaking changes override**: `feat!:` trumps regular commits
 
 ### Handling Existing Rules
-When conflict with existing rules in `.claude/rules/`:
+When conflict with existing rules under the configured `structure.generated_rules_path` (default `.claude/rules/`). Hand-written files outside that directory are never inspected:
 
 | Option | Action |
 |--------|--------|
