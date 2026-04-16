@@ -140,6 +140,62 @@ assert_exit \
     "missing command field passes through" 0 \
     '{"tool_name":"Bash","tool_input":{},"cwd":"/tmp"}'
 
+# ── Retry-aware bypass: PR updated after HEAD commit ──────────────────────
+# Regression test for issue #1041: the hook must NOT block when the PR
+# metadata was edited after the latest local commit, because the agent
+# (or human) has demonstrably already reconciled metadata for HEAD.
+echo ""
+echo "retry-aware bypass (PR updatedAt vs HEAD commit time):"
+
+# Mock gh CLI: writes canned PR JSON from $MOCK_PR_JSON
+MOCK_BIN=$(mktemp -d)
+cat >"$MOCK_BIN/gh" <<'MOCK_EOF'
+#!/usr/bin/env bash
+# Mock: only handles `gh pr view ...` for these tests.
+if [ "${1:-}" = "pr" ] && [ "${2:-}" = "view" ]; then
+    if [ -n "${MOCK_PR_JSON:-}" ]; then
+        printf '%s' "$MOCK_PR_JSON"
+    fi
+    exit 0
+fi
+exit 0
+MOCK_EOF
+chmod +x "$MOCK_BIN/gh"
+
+# Cross-platform ISO 8601 timestamp helpers (BSD vs GNU date)
+iso_offset() {
+    local offset_sec="$1"
+    if date -u -v"${offset_sec}S" "+%Y-%m-%dT%H:%M:%SZ" 2>/dev/null; then
+        return 0
+    fi
+    date -u -d "${offset_sec} seconds" "+%Y-%m-%dT%H:%M:%SZ"
+}
+
+PR_FUTURE=$(iso_offset "+3600")  # 1h ahead of HEAD commit
+PR_PAST=$(iso_offset   "-3600")  # 1h behind HEAD commit
+
+# Make `git push origin feature` resolve to a PR via the mock
+PUSH_JSON=$(make_json "git push origin feature")
+
+# Test: PR updated AFTER HEAD commit → hook exits 0 (skip block)
+MOCK_PR_JSON=$(jq -n --arg t "$PR_FUTURE" \
+    '{number:42,title:"feat: x",body:"body",url:"https://example/42",updatedAt:$t}')
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
+    assert_exit "PR updated after HEAD commit allows push (retry-aware)" 0 "$PUSH_JSON"
+
+# Test: PR updated BEFORE HEAD commit → hook still blocks (exit 2)
+MOCK_PR_JSON=$(jq -n --arg t "$PR_PAST" \
+    '{number:42,title:"feat: x",body:"body",url:"https://example/42",updatedAt:$t}')
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
+    assert_exit "PR not updated since HEAD commit still blocks" 2 "$PUSH_JSON"
+
+# Test: missing updatedAt → fall back to legacy block behaviour
+MOCK_PR_JSON='{"number":42,"title":"feat: x","body":"body","url":"https://example/42"}'
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
+    assert_exit "missing updatedAt falls back to blocking" 2 "$PUSH_JSON"
+
+rm -rf "$MOCK_BIN"
+
 # ── Summary ────────────────────────────────────────────────────────────────
 echo ""
 echo "Results: $PASS passed, $FAIL failed, $SKIP skipped"
