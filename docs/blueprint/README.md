@@ -24,7 +24,7 @@ See `manifest.json#task_registry` (each disabled task carries a `context.disable
 | `derive-prd` | ✗ | Would invent PRDs from plugin-feature commits |
 | `derive-plans` | ✗ | Conflicts with hand-authored `docs/plans/` |
 | `derive-rules` | ✗ | Could overwrite the 18 hand-written rules |
-| `generate-rules` | ✗ | No subdirectory output path yet — re-enable once configurable |
+| `generate-rules` | ✗ | No subdirectory output path yet — re-enable once configurable ([#1043](https://github.com/laurigates/claude-plugins/issues/1043)) |
 | `claude-md` | ✗ | "Regenerate completely" prompt is too easy to mis-click |
 | `curate-docs` | ✗ | Default off in blueprint init |
 

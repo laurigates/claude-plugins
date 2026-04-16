@@ -70,7 +70,7 @@
       "schedule": "on-demand",
       "stats": {},
       "context": {
-        "disabled_reason": "Constrained dogfooding: blueprint-generated rules currently land flat in .claude/rules/ alongside hand-written ones. Re-enable only after a configurable subdirectory output path lands."
+        "disabled_reason": "Constrained dogfooding: blueprint-generated rules currently land flat in .claude/rules/ alongside hand-written ones. Re-enable only after a configurable subdirectory output path lands. Tracked in laurigates/claude-plugins#1043."
       }
     },
     "adr-validate": {
