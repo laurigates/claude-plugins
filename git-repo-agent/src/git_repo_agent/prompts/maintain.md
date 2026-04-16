@@ -75,7 +75,10 @@ Execute fixes based on the operating mode:
 ### Delegate to subagents
 - **configure** subagent: Linting, formatting, testing, pre-commit gaps
 - **docs** subagent: Documentation freshness, accuracy, completeness
-- **blueprint** subagent: Blueprint structure, manifest sync
+
+> Blueprint structure/manifest sync is available via the
+> `git-repo-agent blueprint sync` / `upgrade` CLI commands (ADR-006). There
+> is no blueprint subagent to delegate to from this workflow.
 
 ### Git Worktree
 

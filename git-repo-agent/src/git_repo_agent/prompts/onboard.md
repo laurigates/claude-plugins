@@ -18,9 +18,13 @@ Key data points to consider:
 
 Based on the analysis, determine what's needed:
 
+> Blueprint initialization runs before this session via the Python
+> ``BlueprintDriver`` (see ADR-006). By the time you start, `docs/blueprint/`
+> should already exist unless the user passed `--skip-blueprint`. Do not try
+> to delegate blueprint work.
+
 | Component | Condition | Action |
 |-----------|-----------|--------|
-| Blueprint | `has_blueprint == false` | Initialize via blueprint subagent |
 | CLAUDE.md | `has_claude_md == false` | Generate project-specific CLAUDE.md |
 | README | `has_readme == false` | Generate README.md |
 | Linter | `linter == "none"` | Configure appropriate linter |
@@ -34,13 +38,13 @@ Present the plan to the user via AskUserQuestion. Include:
 - What will be added
 - Estimated scope of changes
 
-## Step 3: Execute Blueprint Init
+## Step 3: Blueprint Already Initialized
 
-If blueprint initialization is needed and not skipped:
-1. Delegate to the `blueprint` subagent
-2. The subagent will create `docs/blueprint/` structure
-3. Derive PRDs from existing docs/README
-4. Derive ADRs from codebase architecture
+Blueprint initialization is handled by the Python ``BlueprintDriver``
+before this session runs (ADR-006). Confirm that `docs/blueprint/` exists
+and proceed. If it does not and `SKIP_BLUEPRINT` is "False", report the
+anomaly — the driver failed and should be investigated — but continue
+with remaining steps. Do not invoke any blueprint-related subagent.
 
 ## Step 4: Configure Standards
 

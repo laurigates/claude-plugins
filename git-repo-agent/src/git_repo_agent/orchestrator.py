@@ -73,7 +73,6 @@ async def _quiet_read_messages_impl(self):  # type: ignore[no-untyped-def]
 
 _sdk_subprocess.SubprocessCLITransport._read_messages_impl = _quiet_read_messages_impl
 
-from .agents.blueprint import definition as blueprint_definition
 from .blueprint_driver import BlueprintDriver, DriverOptions
 from .non_interactive import (
     LockedError,
@@ -422,7 +421,8 @@ async def run_onboard(
             allowed_tools=allowed_tools,
             permission_mode="acceptEdits",
             agents={
-                "blueprint": blueprint_definition,
+                # The blueprint lifecycle is handled by the Python
+                # BlueprintDriver (ADR-006) — no subagent registration.
                 "configure": configure_definition,
                 "docs": docs_definition,
                 "quality": quality_definition,
@@ -574,7 +574,8 @@ async def run_maintain(
             allowed_tools=allowed_tools,
             permission_mode="acceptEdits",
             agents={
-                "blueprint": blueprint_definition,
+                # The blueprint lifecycle is handled by the Python
+                # BlueprintDriver (ADR-006) — no subagent registration.
                 "configure": configure_definition,
                 "docs": docs_definition,
                 "quality": quality_definition,

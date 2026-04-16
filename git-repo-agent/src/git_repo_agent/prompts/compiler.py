@@ -15,17 +15,13 @@ _MODULE_DIR = Path(__file__).resolve().parent  # prompts/
 _REPO_ROOT = _MODULE_DIR.parent.parent.parent  # git-repo-agent/
 _PLUGINS_ROOT = _REPO_ROOT.parent  # claude-plugins/
 
-# Subagent → list of skill files (relative to PLUGINS_ROOT)
+# Subagent → list of skill files (relative to PLUGINS_ROOT).
+#
+# The `blueprint` subagent is intentionally absent — the blueprint lifecycle is
+# now driven by the Python state machine in ``blueprint_driver.py`` (see
+# ADR-006), which uses ``get_compiled_skill()`` to load one skill per phase
+# instead of bundling them into a single subagent prompt.
 SUBAGENT_SKILLS: dict[str, list[str]] = {
-    "blueprint": [
-        "blueprint-plugin/skills/blueprint-init/SKILL.md",
-        "blueprint-plugin/skills/blueprint-derive-prd/SKILL.md",
-        "blueprint-plugin/skills/blueprint-derive-adr/SKILL.md",
-        "blueprint-plugin/skills/blueprint-sync-ids/SKILL.md",
-        "blueprint-plugin/skills/blueprint-derive-rules/SKILL.md",
-        "blueprint-plugin/skills/blueprint-derive-tests/SKILL.md",
-        "blueprint-plugin/skills/blueprint-adr-validate/SKILL.md",
-    ],
     "configure": [
         "configure-plugin/skills/configure-linting/SKILL.md",
         "configure-plugin/skills/configure-formatting/SKILL.md",

@@ -74,9 +74,11 @@ creation. When the driver finishes it sets `blueprint_already_done=True`,
 which flips `SKIP_BLUEPRINT=True` in the orchestrator agent's environment so
 the LLM does not re-delegate to the `blueprint` Task.
 
-The legacy `agents/blueprint.py` and `prompts/blueprint.md` remain in the
-tree as a fallback for any future caller that still relies on the Task-based
-path; they can be deleted once `maintain` / `diagnose` also migrate.
+The legacy `agents/blueprint.py`, `prompts/blueprint.md`, and the
+`blueprint` entry in `SUBAGENT_SKILLS` have all been removed. The
+`run_maintain` and `run_diagnose` workflows no longer register a
+blueprint subagent; users who want blueprint work during maintenance
+invoke the `git-repo-agent blueprint <mode>` CLI commands instead.
 
 ## Consequences
 
@@ -107,9 +109,10 @@ path; they can be deleted once `maintain` / `diagnose` also migrate.
 
 ### Neutral
 
-- `agents/blueprint.py` / `prompts/blueprint.md` remain for now. The
-  `blueprint` entry in `SUBAGENT_SKILLS` also remains so the legacy Task
-  path still compiles its skills if someone calls it.
+- The legacy `agents/blueprint.py`, `prompts/blueprint.md`, and the
+  `blueprint` entry in `SUBAGENT_SKILLS` have all been removed. There is
+  no longer a Task-based fallback; the driver is the only way to run
+  blueprint lifecycle work.
 
 ## Alternatives Considered
 
@@ -156,9 +159,9 @@ Not yet shipped — candidates for a follow-up:
 
 - `blueprint-rules` — heavily interactive "manage modular rules"
   flow; does not fit the non-interactive driver model cleanly.
-- Deletion of the legacy `agents/blueprint.py` / `prompts/blueprint.md`
-  once `run_maintain` and `run_diagnose` also migrate (they still reference
-  the Task-based subagent).
+- Migration of other subagents (`configure`, `docs`, `quality`,
+  `security`, `test_runner`) to per-skill driver sessions if they
+  develop the same bloat problem.
 
 ## Related
 
