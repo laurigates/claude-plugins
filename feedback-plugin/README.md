@@ -1,12 +1,39 @@
 # feedback-plugin
 
-Session feedback analysis - capture skill bugs, enhancements, and positive patterns as GitHub issues.
+Session feedback analysis — capture per-session skill bugs as GitHub issues, and learn recurring friction across a week of sessions via the `friction-learner` agent.
 
 ## Skills
 
 | Skill | Description |
 |-------|-------------|
 | `/feedback:session` | Analyze session for skill feedback and create GitHub issues |
+
+## Agents
+
+| Agent | Description |
+|-------|-------------|
+| `friction-learner` | Parse last week of transcripts, cluster interruptions/hook-blocks/rejections, propose rule/skill/hook fixes, open one PR per target repo |
+
+### Friction learner
+
+Spawn via the Agent tool or wire to a weekly cron:
+
+```
+Agent({
+  subagent_type: "friction-learner",
+  prompt: "Analyze the last 7 days of sessions. Target repo: laurigates/claude-plugins. Open a PR with proposed rule edits.",
+})
+```
+
+Dry-run the pipeline manually:
+
+```bash
+python3 feedback-plugin/scripts/friction_parse.py --since 7d --out /tmp/frictions.jsonl
+python3 feedback-plugin/scripts/friction_cluster.py --in /tmp/frictions.jsonl --min-count 3 \
+  --render-pr-body /tmp/pr-body.md --out /tmp/clusters.json
+```
+
+Signatures currently recognized: `plan:entered-plan-mode`, `push:branch-has-open-pr`, `hook:pr-metadata`, `hook:branch-protection`, `hook:conventional-commit`, `hook:gitleaks`, `hook:pre-commit`, `error:<tool>:<class>`, `reject:<tool>`, `interrupt:user`.
 
 ## Usage
 
