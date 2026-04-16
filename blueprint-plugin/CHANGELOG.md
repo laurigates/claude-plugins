@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.26.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.26.0...blueprint-plugin-v3.26.1) (2026-04-16)
+
+
+### Bug Fixes
+
+* **blueprint-plugin:** advertise v3.3.0 as upgrade target ([#1048](https://github.com/laurigates/claude-plugins/issues/1048)) ([ca5db69](https://github.com/laurigates/claude-plugins/commit/ca5db694e975396aa18cbeaa7503675ea2821272)), closes [#1026](https://github.com/laurigates/claude-plugins/issues/1026)
+
 ## [3.26.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.25.2...blueprint-plugin-v3.26.0) (2026-04-16)
 
 
