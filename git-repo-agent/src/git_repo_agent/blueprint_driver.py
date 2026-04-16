@@ -285,6 +285,140 @@ PHASE_REGISTRIES: dict[str, tuple[Phase, ...]] = {
 
 
 # --------------------------------------------------------------------------
+# Single-skill commands (no args)
+# --------------------------------------------------------------------------
+
+ADR_LIST_PHASES: tuple[Phase, ...] = (
+    Phase(
+        name="adr_list",
+        skill_relpath="blueprint-plugin/skills/blueprint-adr-list/SKILL.md",
+        model="haiku",
+        invocation=(
+            "List every ADR under `docs/blueprint/adrs/` as a markdown "
+            "table with columns ID, Title, Status, Date, Domain. Print the "
+            "table to stdout. Do not modify any files."
+        ),
+    ),
+)
+
+DERIVE_PLANS_PHASES: tuple[Phase, ...] = (
+    Phase(
+        name="derive_plans",
+        skill_relpath="blueprint-plugin/skills/blueprint-derive-plans/SKILL.md",
+        model="sonnet",
+        invocation=(
+            "Derive PRDs, ADRs, and PRPs from git history and existing "
+            "documentation. Write artifacts under `docs/blueprint/`. Do "
+            "not ask the user questions."
+        ),
+    ),
+)
+
+GENERATE_RULES_PHASES: tuple[Phase, ...] = (
+    Phase(
+        name="generate_rules",
+        skill_relpath="blueprint-plugin/skills/blueprint-generate-rules/SKILL.md",
+        model="sonnet",
+        invocation=(
+            "Generate project-specific rules from the PRDs under "
+            "`docs/blueprint/prds/`. Write them to `.claude/rules/`. "
+            "Support path-specific rules via `paths` frontmatter. Do not "
+            "ask the user questions."
+        ),
+    ),
+)
+
+
+PHASE_REGISTRIES.update(
+    {
+        "adr-list": ADR_LIST_PHASES,
+        "derive-plans": DERIVE_PLANS_PHASES,
+        "generate-rules": GENERATE_RULES_PHASES,
+    }
+)
+
+
+# --------------------------------------------------------------------------
+# Dynamic phase factories (arg-taking commands)
+# --------------------------------------------------------------------------
+
+
+def make_prp_create_phase(feature: str) -> Phase:
+    """Build a one-shot phase that creates a PRP for ``feature``.
+
+    Args:
+        feature: Feature slug such as ``auth-oauth2`` or
+            ``api-rate-limiting``. Will be embedded in the prompt.
+    """
+    return Phase(
+        name="prp_create",
+        skill_relpath="blueprint-plugin/skills/blueprint-prp-create/SKILL.md",
+        model="sonnet",
+        invocation=(
+            f"Create a PRP (Product Requirement Prompt) for the feature "
+            f"`{feature}`. Perform systematic research, assemble curated "
+            "context, and define validation gates. Write the PRP under "
+            "`docs/blueprint/prps/`. Do not ask the user questions — if "
+            "ambiguities remain, record them as TODOs inside the PRP and "
+            "continue."
+        ),
+    )
+
+
+def make_prp_execute_phase(prp_name: str) -> Phase:
+    """Build a one-shot phase that executes an existing PRP."""
+    return Phase(
+        name="prp_execute",
+        skill_relpath="blueprint-plugin/skills/blueprint-prp-execute/SKILL.md",
+        model="sonnet",
+        invocation=(
+            f"Execute the PRP named `{prp_name}` using the validation-loop "
+            "TDD workflow. Run each validation gate to green before "
+            "proceeding. Do not ask the user questions — if a gate cannot "
+            "be satisfied, stop and report the blocker."
+        ),
+    )
+
+
+def make_work_order_phase(
+    from_issue: int | None = None, publish: bool = True
+) -> Phase:
+    """Build a one-shot phase that creates an isolated work order."""
+    hints: list[str] = []
+    if from_issue is not None:
+        hints.append(f"Create the work order from GitHub issue #{from_issue}.")
+    if not publish:
+        hints.append("Do not publish the work order — keep it local only.")
+    hint_text = (" " + " ".join(hints)) if hints else ""
+    return Phase(
+        name="work_order",
+        skill_relpath="blueprint-plugin/skills/blueprint-work-order/SKILL.md",
+        model="sonnet",
+        invocation=(
+            "Create a work order with minimal context suitable for isolated "
+            "subagent execution." + hint_text + " Do not ask the user "
+            "questions — infer the scope from the issue body or existing "
+            "PRDs."
+        ),
+    )
+
+
+def make_promote_phase(target: str) -> Phase:
+    """Build a one-shot phase that promotes generated content to custom."""
+    return Phase(
+        name="promote",
+        skill_relpath="blueprint-plugin/skills/blueprint-promote/SKILL.md",
+        model="haiku",
+        invocation=(
+            f"Promote the generated artifact `{target}` to the custom "
+            "layer so future regeneration preserves local modifications. "
+            "Mark the entry as acknowledged in the manifest. Do not ask "
+            "the user questions."
+        ),
+    )
+
+
+# --------------------------------------------------------------------------
 # Driver
 # --------------------------------------------------------------------------
 

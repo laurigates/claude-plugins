@@ -12,8 +12,11 @@ from pathlib import Path
 import pytest
 
 from git_repo_agent.blueprint_driver import (
+    ADR_LIST_PHASES,
     BlueprintDriver,
+    DERIVE_PLANS_PHASES,
     DriverOptions,
+    GENERATE_RULES_PHASES,
     ONBOARD_PHASES,
     PHASE_REGISTRIES,
     SCAN_PHASES,
@@ -21,6 +24,10 @@ from git_repo_agent.blueprint_driver import (
     SYNC_PHASES,
     UPGRADE_PHASES,
     Phase,
+    make_promote_phase,
+    make_prp_create_phase,
+    make_prp_execute_phase,
+    make_work_order_phase,
 )
 from git_repo_agent.prompts.compiler import get_compiled_skill
 
@@ -168,14 +175,64 @@ class TestLifecycleRegistries:
             "upgrade",
             "sync",
             "scan",
+            "adr-list",
+            "derive-plans",
+            "generate-rules",
         }
         assert PHASE_REGISTRIES["onboard"] is ONBOARD_PHASES
         assert PHASE_REGISTRIES["status"] is STATUS_PHASES
+        assert PHASE_REGISTRIES["adr-list"] is ADR_LIST_PHASES
 
     def test_no_registry_has_duplicate_phase_names(self):
         for name, registry in PHASE_REGISTRIES.items():
             names = [p.name for p in registry]
             assert len(names) == len(set(names)), f"{name} has dupes: {names}"
+
+
+class TestPhaseFactories:
+    """Dynamic phase factories interpolate args into the invocation."""
+
+    def test_prp_create_embeds_feature_slug(self):
+        phase = make_prp_create_phase("auth-oauth2")
+        assert "`auth-oauth2`" in phase.invocation
+        assert phase.model == "sonnet"
+        assert "blueprint-prp-create" in phase.skill_relpath
+
+    def test_prp_execute_embeds_prp_name(self):
+        phase = make_prp_execute_phase("feature-auth-oauth2")
+        assert "`feature-auth-oauth2`" in phase.invocation
+        assert "blueprint-prp-execute" in phase.skill_relpath
+
+    def test_work_order_from_issue(self):
+        phase = make_work_order_phase(from_issue=42, publish=True)
+        assert "#42" in phase.invocation
+        assert "local only" not in phase.invocation
+
+    def test_work_order_no_publish(self):
+        phase = make_work_order_phase(from_issue=None, publish=False)
+        assert "local only" in phase.invocation
+
+    def test_work_order_defaults_are_minimal(self):
+        phase = make_work_order_phase()
+        # no issue hint, no no-publish hint
+        assert "#" not in phase.invocation
+        assert "local only" not in phase.invocation
+
+    def test_promote_embeds_target(self):
+        phase = make_promote_phase("blueprint-derive-prd")
+        assert "`blueprint-derive-prd`" in phase.invocation
+        assert phase.model == "haiku"
+
+    def test_factory_phases_reference_existing_skills(self):
+        phases = [
+            make_prp_create_phase("x"),
+            make_prp_execute_phase("x"),
+            make_work_order_phase(),
+            make_promote_phase("x"),
+        ]
+        for phase in phases:
+            body = get_compiled_skill(phase.skill_relpath)
+            assert body, f"{phase.name}: empty compiled skill"
 
 
 class TestBlueprintCliWiring:
@@ -189,8 +246,20 @@ class TestBlueprintCliWiring:
         runner = CliRunner()
         result = runner.invoke(app, ["blueprint", "--help"])
         assert result.exit_code == 0
-        for sub in ("status", "upgrade", "sync", "scan"):
-            assert sub in result.stdout
+        for sub in (
+            "status",
+            "upgrade",
+            "sync",
+            "scan",
+            "adr-list",
+            "derive-plans",
+            "generate-rules",
+            "promote",
+            "prp-create",
+            "prp-execute",
+            "work-order",
+        ):
+            assert sub in result.stdout, sub
 
     def test_unknown_mode_exits_with_config_error(self, tmp_path: Path):
         from git_repo_agent.main import _run_blueprint_mode

@@ -482,14 +482,21 @@ def route(
     )
 
 
-def _run_blueprint_mode(repo: str, mode: str, dry_run: bool) -> None:
+def _run_blueprint_mode(
+    repo: str,
+    mode: str | None = None,
+    dry_run: bool = False,
+    phases: "tuple | None" = None,
+) -> None:
     """Shared dispatch for the blueprint lifecycle subcommands.
 
-    Each mode runs a fixed sequence of compiled-skill phases via the
-    ``BlueprintDriver`` state machine (see ADR-006). Unlike ``onboard``
-    these commands operate in-place on the target repository — no
-    worktree, no PR — because they are typically run ad hoc to inspect
-    or update the existing blueprint state.
+    Either ``mode`` (looked up in ``PHASE_REGISTRIES``) or ``phases``
+    (explicit tuple) must be provided. Each mode runs a fixed sequence
+    of compiled-skill phases via the ``BlueprintDriver`` state machine
+    (see ADR-006). Unlike ``onboard`` these commands operate in-place on
+    the target repository — no worktree, no PR — because they are
+    typically run ad hoc to inspect or update the existing blueprint
+    state.
     """
     repo_path = Path(repo).resolve()
     if not repo_path.is_dir():
@@ -498,10 +505,14 @@ def _run_blueprint_mode(repo: str, mode: str, dry_run: bool) -> None:
 
     from .blueprint_driver import BlueprintDriver, DriverOptions, PHASE_REGISTRIES
 
-    phases = PHASE_REGISTRIES.get(mode)
     if phases is None:
-        console.print(f"[red]Error:[/red] unknown blueprint mode '{mode}'")
-        raise typer.Exit(code=EXIT_CONFIG_ERROR)
+        if mode is None:
+            console.print("[red]Error:[/red] internal: mode or phases required")
+            raise typer.Exit(code=EXIT_CONFIG_ERROR)
+        phases = PHASE_REGISTRIES.get(mode)
+        if phases is None:
+            console.print(f"[red]Error:[/red] unknown blueprint mode '{mode}'")
+            raise typer.Exit(code=EXIT_CONFIG_ERROR)
 
     driver = BlueprintDriver(
         repo_path,
@@ -554,6 +565,104 @@ def blueprint_scan(
 ) -> None:
     """Refresh the monorepo root manifest's workspaces registry and portfolio rollup."""
     _run_blueprint_mode(repo, "scan", dry_run=dry_run)
+
+
+# --- No-argument generators ------------------------------------------------
+
+
+@blueprint_app.command("adr-list")
+def blueprint_adr_list(
+    repo: str = typer.Argument(".", help="Path to the repository."),
+) -> None:
+    """List every ADR as a markdown table (title, status, date, domain)."""
+    _run_blueprint_mode(repo, "adr-list", dry_run=False)
+
+
+@blueprint_app.command("derive-plans")
+def blueprint_derive_plans(
+    repo: str = typer.Argument(".", help="Path to the repository."),
+    dry_run: bool = typer.Option(
+        False, "--dry-run",
+        help="Preview what would be derived without writing artifacts.",
+    ),
+) -> None:
+    """Derive PRDs, ADRs, and PRPs from git history and existing docs."""
+    _run_blueprint_mode(repo, "derive-plans", dry_run=dry_run)
+
+
+@blueprint_app.command("generate-rules")
+def blueprint_generate_rules(
+    repo: str = typer.Argument(".", help="Path to the repository."),
+    dry_run: bool = typer.Option(
+        False, "--dry-run",
+        help="Preview rules without writing them.",
+    ),
+) -> None:
+    """Generate project rules under `.claude/rules/` from blueprint PRDs."""
+    _run_blueprint_mode(repo, "generate-rules", dry_run=dry_run)
+
+
+# --- Argument-taking factories --------------------------------------------
+
+
+@blueprint_app.command("promote")
+def blueprint_promote(
+    target: str = typer.Argument(
+        ..., help="Name of the skill, command, or rule to promote."
+    ),
+    repo: str = typer.Argument(".", help="Path to the repository."),
+) -> None:
+    """Promote a generated artifact to the custom layer to preserve edits."""
+    from .blueprint_driver import make_promote_phase
+
+    _run_blueprint_mode(repo, phases=(make_promote_phase(target),))
+
+
+@blueprint_app.command("prp-create")
+def blueprint_prp_create(
+    feature: str = typer.Argument(
+        ..., help="Feature slug, e.g. auth-oauth2 or api-rate-limiting."
+    ),
+    repo: str = typer.Argument(".", help="Path to the repository."),
+) -> None:
+    """Create a PRP with curated context and validation gates for a feature."""
+    from .blueprint_driver import make_prp_create_phase
+
+    _run_blueprint_mode(repo, phases=(make_prp_create_phase(feature),))
+
+
+@blueprint_app.command("prp-execute")
+def blueprint_prp_execute(
+    prp_name: str = typer.Argument(
+        ..., help="Name of the PRP to execute, e.g. feature-auth-oauth2."
+    ),
+    repo: str = typer.Argument(".", help="Path to the repository."),
+) -> None:
+    """Execute a PRP with the validation-loop TDD workflow."""
+    from .blueprint_driver import make_prp_execute_phase
+
+    _run_blueprint_mode(repo, phases=(make_prp_execute_phase(prp_name),))
+
+
+@blueprint_app.command("work-order")
+def blueprint_work_order(
+    repo: str = typer.Argument(".", help="Path to the repository."),
+    from_issue: Optional[int] = typer.Option(
+        None, "--from-issue",
+        help="Create a work order from an existing GitHub issue number.",
+    ),
+    no_publish: bool = typer.Option(
+        False, "--no-publish",
+        help="Keep the work order local; do not push or publish it.",
+    ),
+) -> None:
+    """Create an isolated work order suitable for subagent execution."""
+    from .blueprint_driver import make_work_order_phase
+
+    _run_blueprint_mode(
+        repo,
+        phases=(make_work_order_phase(from_issue=from_issue, publish=not no_publish),),
+    )
 
 
 if __name__ == "__main__":

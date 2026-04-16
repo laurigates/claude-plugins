@@ -125,24 +125,37 @@ path; they can be deleted once `maintain` / `diagnose` also migrate.
 
 Shipped (2026-04-15):
 
-- `onboard` mode — 9 phases, wired into `run_onboard()`.
-- `status` mode — `blueprint-status` + `blueprint-feature-tracker-status`.
-- `upgrade` mode — `blueprint-upgrade` → `sync-ids` → `adr-validate`.
-- `sync` mode — `blueprint-sync` (drift detection, non-interactive).
-- `scan` mode — `workspace-scan` → `feature-tracker-sync` → `feature-tracker-status`.
+**Static phase registries** (`git-repo-agent blueprint <mode>`):
 
-All lifecycle modes are exposed through a `blueprint` Typer subcommand
-group (`git-repo-agent blueprint status|upgrade|sync|scan`). They run
-in-place on the target repository — no worktree, no PR — because they
-are typically read-only or targeted updates rather than broad
-onboarding work.
+- `onboard` — 9 phases, wired into `run_onboard()`.
+- `status` — `blueprint-status` + `blueprint-feature-tracker-status`.
+- `upgrade` — `blueprint-upgrade` → `sync-ids` → `adr-validate`.
+- `sync` — `blueprint-sync` (drift detection, non-interactive).
+- `scan` — `workspace-scan` → `feature-tracker-sync` → `feature-tracker-status`.
+- `adr-list` — `blueprint-adr-list` (read-only).
+- `derive-plans` — `blueprint-derive-plans` (one-shot PRD/ADR/PRP derivation).
+- `generate-rules` — `blueprint-generate-rules` (rules from PRDs).
+
+**Dynamic phase factories** (arg-taking CLI subcommands):
+
+- `promote <target>` — `make_promote_phase(target)`.
+- `prp-create <feature>` — `make_prp_create_phase(feature)`.
+- `prp-execute <prp-name>` — `make_prp_execute_phase(prp_name)`.
+- `work-order [--from-issue N] [--no-publish]` — `make_work_order_phase(...)`.
+
+Factories build one-off `Phase` objects with the runtime argument
+interpolated into the invocation text. The driver runs them via the
+same `run(phases)` entry point used by static registries, so CLI,
+state management, and streaming output are unified.
+
+All lifecycle commands run in-place on the target repository — no
+worktree, no PR — because they are typically read-only or targeted
+updates rather than broad onboarding work.
 
 Not yet shipped — candidates for a follow-up:
 
-- PRP / work-order workflows (`blueprint-prp-create`, `blueprint-prp-execute`,
-  `blueprint-work-order`) — would likely live in a separate `PrpDriver`.
-- Rule management (`blueprint-rules`, `blueprint-generate-rules`,
-  `blueprint-promote`) — `promote` is partially covered by `sync` today.
+- `blueprint-rules` — heavily interactive "manage modular rules"
+  flow; does not fit the non-interactive driver model cleanly.
 - Deletion of the legacy `agents/blueprint.py` / `prompts/blueprint.md`
   once `run_maintain` and `run_diagnose` also migrate (they still reference
   the Task-based subagent).
