@@ -176,7 +176,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.17.0",
+      "version": "1.18.0",
       "keywords": [
         "infrastructure",
         "standards",
@@ -312,7 +312,7 @@
       "name": "health-plugin",
       "source": "./health-plugin",
       "description": "Diagnose and fix Claude Code configuration issues - plugin registry, settings, hooks, MCP servers",
-      "version": "1.6.0",
+      "version": "1.7.0",
       "keywords": [
         "health",
         "diagnostics",

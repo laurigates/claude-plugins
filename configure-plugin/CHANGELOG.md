@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.17.0...configure-plugin-v1.18.0) (2026-04-16)
+
+
+### Features
+
+* **health-plugin:** refactor /health:check into scope-routed diagnostic command ([#1038](https://github.com/laurigates/claude-plugins/issues/1038)) ([4807628](https://github.com/laurigates/claude-plugins/commit/48076287178e243fb1b6589989730eba766ea241))
+
 ## [1.17.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.16.2...configure-plugin-v1.17.0) (2026-04-15)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.6.0...health-plugin-v1.7.0) (2026-04-16)
+
+
+### Features
+
+* **health-plugin:** refactor /health:check into scope-routed diagnostic command ([#1038](https://github.com/laurigates/claude-plugins/issues/1038)) ([4807628](https://github.com/laurigates/claude-plugins/commit/48076287178e243fb1b6589989730eba766ea241))
+
 ## [1.6.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.5.3...health-plugin-v1.6.0) (2026-04-15)
 
 
