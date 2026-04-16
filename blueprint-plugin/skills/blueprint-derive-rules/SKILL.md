@@ -1,6 +1,6 @@
 ---
 created: 2026-01-30
-modified: 2026-03-07
+modified: 2026-04-16
 reviewed: 2026-02-14
 description: "Derive Claude rules from git commit log decisions. Newer commits override older decisions when conflicts exist."
 args: "[--since DATE] [--scope SCOPE]"
@@ -31,7 +31,8 @@ Extract project decisions from git commit history and codify them as Claude rule
 - Blueprint initialized: !`find docs/blueprint -maxdepth 1 -name 'manifest.json' -type f`
 - Total commits: !`git rev-list --count HEAD`
 - Conventional commits %: !`git log --format="%s"`
-- Existing rules: !`find .claude/rules -name "*.md" -type f`
+- Existing rules in default location: !`find .claude/rules -maxdepth 1 -name "*.md" -type f`
+- Existing rules in blueprint subdir: !`find .claude/rules/blueprint -maxdepth 1 -name "*.md" -type f`
 
 ## Parameters
 
@@ -43,6 +44,17 @@ Parse `$ARGUMENTS`:
 ## Execution
 
 Execute the complete git-to-rules derivation workflow:
+
+### Step 0: Resolve the output path
+
+Read `structure.generated_rules_path` from `docs/blueprint/manifest.json` (default `.claude/rules/`):
+
+```bash
+RULES_DIR=$(jq -r '.structure.generated_rules_path // ".claude/rules/"' docs/blueprint/manifest.json)
+mkdir -p "$RULES_DIR"
+```
+
+Use `$RULES_DIR` for all subsequent reads/writes and conflict checks. Hand-written files in the parent `.claude/rules/` are intentionally invisible to this skill (issue #1043).
 
 ### Step 1: Verify prerequisites
 
@@ -80,9 +92,9 @@ When multiple commits address the same topic:
 3. Mark overridden decisions as "superseded" with reference to newer decision
 4. Confirm significant decisions with user via AskUserQuestion
 
-### Step 5: Generate rules in `.claude/rules/`
+### Step 5: Generate rules in `$RULES_DIR`
 
-For each decision, generate rule file using template from [REFERENCE.md](REFERENCE.md#rule-template):
+For each decision, generate rule file using template from [REFERENCE.md](REFERENCE.md#rule-template). Write each file to `$RULES_DIR/<filename>.md` (the configured `structure.generated_rules_path`):
 
 1. Extract source commit, date, type
 2. Determine confidence level (High/Medium/Low based on commit frequency and clarity)
@@ -98,7 +110,7 @@ Path-scope rules where appropriate — e.g., `testing-standards.md` scoped to te
 
 ### Step 6: Handle conflicts with existing rules
 
-Check for conflicts with existing rules in `.claude/rules/`:
+Check for conflicts with existing rules **only under `$RULES_DIR`** (never the parent `.claude/rules/`, which may contain hand-authored content unrelated to blueprint):
 
 1. If conflicts found → Ask user: Git-derived overrides existing rule, or keep existing?
 2. Apply user choice: Update, merge, or keep separate

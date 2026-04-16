@@ -229,6 +229,17 @@ check_skill_body() {
       done <<< "$bad_lines"
       has_errors=true
     fi
+
+    # Regression: blueprint rule-writing skills must reference the configurable
+    # output path (`generated_rules_path`) rather than hardcoding `.claude/rules/`.
+    # See issue #1043: hardcoded paths collide with hand-authored rules in the
+    # parent .claude/rules/ directory.
+    if [ "$skill_name" = "blueprint-generate-rules" ] || [ "$skill_name" = "blueprint-derive-rules" ]; then
+      if ! grep -q "generated_rules_path" "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must reference 'generated_rules_path' to honour configurable output directory (issue #1043)")
+        has_errors=true
+      fi
+    fi
   done < <(find "$skills_dir" -type f \( -iname "SKILL.md" -o -iname "skill.md" \) -print0 2>/dev/null)
 
   if $has_errors; then
@@ -341,6 +352,7 @@ check_bash_patterns() {
   fi
 
   # Shell utilities that indicate inline scripting (not primary CLI tools)
+  # shellcheck disable=SC2034  # documents the canonical list; loop below enumerates
   local shell_utils="test|jq|head|tail|cat|cp|mkdir|chmod|wc|date|ls|find"
   local has_warnings=false
 
