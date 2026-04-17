@@ -1,6 +1,6 @@
 ---
 created: 2026-01-30
-modified: 2026-04-16
+modified: 2026-04-17
 reviewed: 2026-02-26
 allowed-tools: Bash(gh pr checks *), Bash(gh pr view *), Bash(gh pr diff *), Bash(gh run view *), Bash(gh run list *), Bash(gh api *), Bash(gh repo view *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git pull *), Bash(pre-commit *), Bash(npm run *), Bash(uv run *), Bash(bash *), Read, Edit, Write, Grep, Glob, TodoWrite, Task, mcp__github__pull_request_read, mcp__github__add_reply_to_pull_request_comment, mcp__github__resolve_review_thread, mcp__github__pull_request_review_write
 args: "[pr-number] [--commit] [--push]"
@@ -23,7 +23,7 @@ Parse these parameters from the command (all optional):
 
 | Parameter | Description |
 |-----------|-------------|
-| `$1` | PR number (if not provided, detect from current branch) |
+| `$1` | PR number (if omitted, use PR of current branch; if no such PR, list actionable PRs) |
 | `--commit` | Create commit(s) after addressing feedback |
 | `--push` | Push changes after committing (implies --commit) |
 
@@ -45,19 +45,32 @@ For feedback categorization, decision trees, commit format, and report templates
 
 ### Step 1: Determine PR and Gather All Data
 
-1. **Get PR number** from argument or detect from current branch:
-   ```bash
-   gh pr view --json number -q '.number'
-   ```
+1. **Parse owner/repo** from the git remote URL.
 
-2. **Switch to PR branch** if not already on it:
+2. **Resolve the PR number** in this order:
+   1. If `$1` was provided, use it.
+   2. Otherwise, try the PR for the current branch:
+      ```bash
+      gh pr view --json number -q '.number'
+      ```
+   3. If step 2 fails (no PR for the branch) **or** the command is on a detached/default branch, fall back to listing actionable PRs:
+      ```bash
+      bash ${CLAUDE_SKILL_DIR}/scripts/list-actionable-prs.sh <owner> <repo>
+      ```
+      The script emits a JSON array of open, non-draft PRs that have unresolved review threads, failing/errored CI, or `CHANGES_REQUESTED`. Handle the result as follows:
+
+      | Result | Action |
+      |--------|--------|
+      | Empty array | Report "No PRs need attention." and stop. |
+      | One entry | Use that PR number and continue. |
+      | Multiple entries | Print a compact table (number, author, CI, unresolved, reviewDecision, title) ordered as returned, then stop and instruct the user to re-run `/git:pr-feedback <number>`. Do **not** guess which PR they meant. |
+
+3. **Switch to PR branch** if not already on it:
    ```bash
    gh pr view $PR --json headRefName -q '.headRefName'
    git switch <branch-name>
    git pull origin <branch-name>
    ```
-
-3. **Parse owner/repo** from the git remote URL.
 
 4. **Fetch ALL PR data** using the bundled script (single GraphQL query):
    ```bash
@@ -154,6 +167,7 @@ Provide a summary table of feedback addressed, replies posted, threads resolved,
 | Context | Command / Tool |
 |---------|----------------|
 | All PR data (single query) | `bash ${CLAUDE_SKILL_DIR}/scripts/fetch-pr-data.sh <owner> <repo> <pr>` |
+| Actionable PRs (fallback selector) | `bash ${CLAUDE_SKILL_DIR}/scripts/list-actionable-prs.sh <owner> <repo>` |
 | Failed check logs | `gh run view $ID --log-failed` |
 | Quick check status (fallback) | `gh pr checks $PR --json name,state,conclusion` |
 | Reply to a review comment | `mcp__github__add_reply_to_pull_request_comment` (commentId = `databaseId`) |
