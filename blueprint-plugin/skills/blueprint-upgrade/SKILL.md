@@ -1,8 +1,10 @@
 ---
 created: 2025-12-17
-modified: 2026-04-16
-reviewed: 2026-04-16
+modified: 2026-04-17
+reviewed: 2026-04-17
 description: "Upgrade blueprint structure to the latest format version"
+args: "[--non-interactive|-y]"
+argument-hint: "[--non-interactive|-y]"
 allowed-tools: Read, Write, Edit, Bash, Glob, AskUserQuestion
 name: blueprint-upgrade
 ---
@@ -12,6 +14,31 @@ Upgrade the blueprint structure to the latest format version.
 **Current Format Version**: 3.3.0
 
 This command delegates version-specific migration logic to the `blueprint-migration` skill.
+
+## Parameters
+
+Parse `$ARGUMENTS` for flags before running any step:
+
+- `--non-interactive`, `--yes`, `-y`: Skip every `AskUserQuestion` prompt and apply the defaults in the table below. Intended for batch runs across many repos (e.g. looping `/blueprint:upgrade -y` over FVH repos that are already on `main`).
+
+Set an internal `$NONINTERACTIVE` flag to `true` when any of those tokens appear in `$ARGUMENTS`; otherwise `false`. Reference this flag at every `AskUserQuestion` call site in the steps below.
+
+### Non-interactive defaults
+
+When `$NONINTERACTIVE` is `true`, use these answers without prompting and record them in `upgrade_history[].changes` as "auto-selected in non-interactive mode":
+
+| Decision point | Step | Default | Rationale |
+|---|---|---|---|
+| Remove deprecated generated commands | 3 | "Yes, remove" | Matches "Recommended" option; the files are known-obsolete |
+| Task-registry scheduling mode | 3a | "Prompt before running" | Safest; preserves pre-existing behaviour for all tasks |
+| Upgrade confirmation | 5 | "Yes, upgrade now" | The flag is explicit consent; skip the confirmation gate |
+| Enable document detection (v1.x→v2.0) | 7f | "No, keep manual commands only" | Additive feature; do not silently change behaviour in batch mode |
+| Migrate root documentation (v1.x→v2.0) | 7g | "No, leave in root" | Least destructive; moving root docs is reversible but surprising |
+| Post-upgrade next action | 11 | Skip — report and exit | The caller is responsible for follow-up in a batch context |
+
+For the `v2.x → v3.0` modification-preservation prompt (delegated to `migrations/v2.x-to-v3.0.md`), default to **"Keep modifications"** — never discard user-edited content in batch mode, and never "Cancel migration" silently.
+
+If a migration step would require any prompt not listed above, **abort the upgrade** with a clear message rather than guessing. The caller can re-run interactively for those repos.
 
 **Steps**:
 
@@ -61,7 +88,8 @@ This command delegates version-specific migration logic to the `blueprint-migrat
    **If deprecated entries found**:
    - Report: "Found deprecated generated commands/skills from /blueprint:generate-commands"
    - List the files found
-   - Use AskUserQuestion:
+   - If `$NONINTERACTIVE` is `true`, skip the prompt and proceed as if "Yes, remove deprecated commands" was chosen.
+   - Otherwise, use AskUserQuestion:
      ```
      question: "Found deprecated generated commands. These are no longer needed - /blueprint:execute handles workflow orchestration. Remove them?"
      options:
@@ -89,7 +117,11 @@ This command delegates version-specific migration logic to the `blueprint-migrat
 
       If exists, skip to next step.
 
-   b. **Ask about maintenance task scheduling** (use AskUserQuestion):
+   b. **Ask about maintenance task scheduling**:
+
+      If `$NONINTERACTIVE` is `true`, skip the prompt and use "Prompt before running" (no tasks become auto-run).
+
+      Otherwise, use AskUserQuestion:
       ```
       question: "New feature: Task Registry tracks when maintenance tasks last ran. How should tasks be scheduled?"
       options:
@@ -159,7 +191,11 @@ This command delegates version-specific migration logic to the `blueprint-migrat
    - Content hashing for modification detection
    ```
 
-5. **Confirm with user** (use AskUserQuestion):
+5. **Confirm with user**:
+
+   If `$NONINTERACTIVE` is `true`, skip this confirmation and proceed directly to step 6.
+
+   Otherwise, use AskUserQuestion:
    ```
    question: "Ready to upgrade blueprint from v{current} to v3.3.0?"
    options:
@@ -209,6 +245,10 @@ This command delegates version-specific migration logic to the `blueprint-migrat
       - Bump `format_version` to "2.0.0"
 
    f. **Enable document detection option** (new in v2.1):
+
+      If `$NONINTERACTIVE` is `true`, skip the prompt and keep document detection disabled (treat as "No - Keep manual commands only").
+
+      Otherwise:
       ```
       Use AskUserQuestion:
       question: "Would you like to enable automatic document detection? (New feature)"
@@ -230,6 +270,10 @@ This command delegates version-specific migration logic to the `blueprint-migrat
       ```
 
       If documentation files found (e.g., REQUIREMENTS.md, ARCHITECTURE.md, DESIGN.md):
+
+      If `$NONINTERACTIVE` is `true`, skip the prompt and leave root documentation in place (treat as "No, leave in root").
+
+      Otherwise:
       ```
       Use AskUserQuestion:
       question: "Found documentation files in root: {file_list}. Would you like to migrate them to docs/?"
@@ -419,7 +463,11 @@ This command delegates version-specific migration logic to the `blueprint-migrat
    - Removed: .claude/blueprints/generated/ (no longer needed)
    ```
 
-11. **Prompt for next action** (use AskUserQuestion):
+11. **Prompt for next action**:
+
+   If `$NONINTERACTIVE` is `true`, skip this prompt entirely — print the report from step 10 and return. The batch caller owns follow-up (status checks, commits, etc.).
+
+   Otherwise, use AskUserQuestion:
    ```
    question: "Upgrade complete. What would you like to do next?"
    options:
