@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
-reviewed: 2025-12-16
+modified: 2026-04-16
+reviewed: 2026-04-16
 allowed-tools: Glob, Read, TodoWrite
 description: Audit Claude subagent configurations for completeness, security, and best practices
 args: "[--verbose]"
@@ -27,7 +27,7 @@ name: meta-audit
 For each agent, verify required fields are present:
 
 - ✅ **name**: Agent identifier (must match filename)
-- ✅ **model**: Claude model to use (e.g., "claude-opus-4-5")
+- ✅ **model**: Claude model to use (e.g., "claude-opus-4-7")
 - ✅ **color**: Hex color code for UI (e.g., "#E53E3E")
 - ✅ **description**: Clear usage guidance with "Use proactively when..."
 - ✅ **tools**: Tool list or "All" for full access

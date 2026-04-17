@@ -25,7 +25,7 @@ Specialized agent for exploring and integrating with REST APIs, especially when 
 - Generating OpenAPI specifications
 - Creating typed API clients
 
-**Model**: Claude Opus 4.5
+**Model**: Claude Opus 4.7
 
 **Workflow:**
 1. Probe for existing OpenAPI/Swagger specs

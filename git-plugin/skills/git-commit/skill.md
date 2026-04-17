@@ -95,7 +95,7 @@ Optional body explaining the change.
 Fixes #123
 Refs #456
 
-Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>
 EOF
 )"
 ```
