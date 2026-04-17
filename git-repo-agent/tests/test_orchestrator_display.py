@@ -3,7 +3,10 @@
 from git_repo_agent.orchestrator import (
     _build_phase2_prompt,
     _build_pr_content,
+    _build_pr_title,
+    _extract_fixed_items,
     _extract_report_section,
+    _normalize_subject,
     _phase2_system_prompt,
     _tool_detail,
 )
@@ -73,22 +76,110 @@ class TestExtractReportSection:
         assert _extract_report_section("just plain text\nno headings") == ""
 
 
+class TestExtractFixedItems:
+    def test_empty(self):
+        assert _extract_fixed_items("") == []
+
+    def test_no_fixed_section(self):
+        report = "## Maintenance Report\n\nHealth Score: 85/100"
+        assert _extract_fixed_items(report) == []
+
+    def test_extracts_issues_fixed_bullets(self):
+        report = (
+            "## Maintenance Report\n"
+            "### Issues Fixed\n"
+            "- Add install section to README.md\n"
+            "- Configure ESLint with default rules\n"
+            "### Remaining Issues\n"
+            "- Fix failing auth tests\n"
+        )
+        assert _extract_fixed_items(report) == [
+            "Add install section to README.md",
+            "Configure ESLint with default rules",
+        ]
+
+    def test_skips_placeholder_items(self):
+        report = "### Issues Fixed\n- <list of auto-fixed items>\n"
+        assert _extract_fixed_items(report) == []
+
+    def test_matches_changes_made_heading(self):
+        report = "### Changes Made\n- Update CLAUDE.md with project conventions\n"
+        assert _extract_fixed_items(report) == [
+            "Update CLAUDE.md with project conventions"
+        ]
+
+
+class TestNormalizeSubject:
+    def test_lowercases_first_char(self):
+        assert _normalize_subject("Add install section") == "add install section"
+
+    def test_preserves_acronyms(self):
+        assert _normalize_subject("CI workflow updated") == "CI workflow updated"
+
+    def test_strips_trailing_period(self):
+        assert _normalize_subject("add feature.") == "add feature"
+
+    def test_truncates_long_subjects(self):
+        long = "a" * 120
+        result = _normalize_subject(long)
+        assert len(result) <= 72
+        assert result.endswith("...")
+
+
+class TestBuildPrTitle:
+    def test_no_fixed_items_falls_back(self):
+        assert _build_pr_title("maintain", []) == "chore: automated maintain run"
+
+    def test_single_fixed_item_becomes_subject(self):
+        title = _build_pr_title("maintain", ["Add install section to README"])
+        assert title == "chore: add install section to README"
+
+    def test_multiple_fixed_items_summarised(self):
+        title = _build_pr_title("maintain", ["a", "b", "c"])
+        assert title == "chore: apply 3 automated maintain fixes"
+
+
 class TestBuildPrContent:
-    def test_with_report(self):
-        title, body = _build_pr_content("maintain", "## Health Score\n85/100")
-        assert title == "chore: maintain repository"
+    def test_descriptive_title_from_fixed_items(self):
+        output = (
+            "## Maintenance Report\n"
+            "### Issues Fixed\n"
+            "- Add install section to README.md\n"
+        )
+        title, body = _build_pr_content("maintain", output)
+        assert title == "chore: add install section to README.md"
         assert "## Maintenance Report" in body
-        assert "85/100" in body
+        assert "Add install section to README.md" in body
+
+    def test_onboard_uses_onboarding_heading(self):
+        output = "## Onboarding Report\nAll good"
+        _, body = _build_pr_content("onboard", output)
+        assert "## Onboarding Report" in body
+        assert "## Maintenance Report" not in body
+
+    def test_diagnose_uses_diagnostics_heading(self):
+        output = "## Diagnostics Report\nAll good"
+        _, body = _build_pr_content("diagnose", output)
+        assert "## Diagnostics Report" in body
+        assert "## Maintenance Report" not in body
 
     def test_without_report(self):
         title, body = _build_pr_content("onboard", "")
-        assert title == "chore: onboard repository"
+        assert title == "chore: automated onboard run"
         assert "## Summary" in body
         assert "Automated onboard" in body
 
     def test_fallback_for_no_headings(self):
         title, body = _build_pr_content("maintain", "no headings here")
+        assert title == "chore: automated maintain run"
         assert "## Summary" in body
+
+    def test_report_without_fixed_section_still_uses_report_body(self):
+        output = "## Health Score\n85/100"
+        title, body = _build_pr_content("maintain", output)
+        assert title == "chore: automated maintain run"
+        assert "## Maintenance Report" in body
+        assert "85/100" in body
 
 
 FINDINGS_FIXTURE = (

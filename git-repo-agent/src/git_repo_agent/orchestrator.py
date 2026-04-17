@@ -1053,19 +1053,83 @@ def _extract_report_section(agent_output: str) -> str:
     return "\n".join(report_lines).strip()
 
 
+_WORKFLOW_REPORT_HEADINGS = {
+    "maintain": "Maintenance Report",
+    "onboard": "Onboarding Report",
+    "diagnose": "Diagnostics Report",
+}
+
+_FIXED_SECTION_MARKERS = ("fixed", "changes made", "applied", "changes")
+
+_PR_TITLE_MAX = 72
+
+
+def _extract_fixed_items(report: str) -> list[str]:
+    """Extract bullet items from a "fixed" / "changes made" section.
+
+    Looks under ``###``/``##`` sub-headings whose text contains one of
+    ``_FIXED_SECTION_MARKERS`` and returns the bullet text (without the
+    leading ``- ``). Placeholder lines like ``<list of auto-fixed items>``
+    from the prompt template are ignored.
+    """
+    if not report:
+        return []
+
+    items: list[str] = []
+    capturing = False
+    for raw in report.splitlines():
+        stripped = raw.strip()
+        if stripped.startswith("#"):
+            heading = stripped.lstrip("#").strip().lower()
+            capturing = any(marker in heading for marker in _FIXED_SECTION_MARKERS)
+            continue
+        if not capturing:
+            continue
+        if stripped.startswith(("- ", "* ")):
+            item = stripped[2:].strip()
+            if item and not (item.startswith("<") and item.endswith(">")):
+                items.append(item)
+    return items
+
+
+def _normalize_subject(text: str) -> str:
+    subject = text.strip().rstrip(".")
+    if subject and subject[0].isupper() and not subject[:2].isupper():
+        subject = subject[0].lower() + subject[1:]
+    if len(subject) > _PR_TITLE_MAX:
+        subject = subject[: _PR_TITLE_MAX - 3].rstrip() + "..."
+    return subject
+
+
+def _build_pr_title(workflow: str, fixed_items: list[str]) -> str:
+    """Build a conventional-commit PR title from fixed items when available."""
+    if len(fixed_items) == 1:
+        return f"chore: {_normalize_subject(fixed_items[0])}"
+    if fixed_items:
+        return f"chore: apply {len(fixed_items)} automated {workflow} fixes"
+    return f"chore: automated {workflow} run"
+
+
 def _build_pr_content(workflow: str, agent_output: str) -> tuple[str, str]:
     """Build PR title and body from workflow type and agent output.
+
+    The title summarises the actual changes when the agent's report lists
+    fixed items; otherwise it falls back to a generic scoped title. The
+    body heading is chosen per workflow so non-maintenance runs aren't
+    mislabelled as "Maintenance Report".
 
     Returns (title, body) tuple.
     """
     report = _extract_report_section(agent_output)
-
-    # Build a descriptive title from the report if possible
-    pr_title = f"chore: {workflow} repository"
+    fixed_items = _extract_fixed_items(report)
+    pr_title = _build_pr_title(workflow, fixed_items)
+    heading = _WORKFLOW_REPORT_HEADINGS.get(
+        workflow, f"{workflow.capitalize()} Report"
+    )
 
     if report:
         pr_body = (
-            f"## Maintenance Report\n\n"
+            f"## {heading}\n\n"
             f"{report}\n\n"
             f"---\n\n"
             f"## Test plan\n\n"
@@ -1076,7 +1140,7 @@ def _build_pr_content(workflow: str, agent_output: str) -> tuple[str, str]:
     else:
         pr_body = (
             f"## Summary\n\n"
-            f"- Automated {workflow} via git-repo-agent\n\n"
+            f"- Automated {workflow} run via git-repo-agent\n\n"
             f"## Test plan\n\n"
             f"- [ ] Review changes in the diff\n"
             f"- [ ] Verify CI passes\n\n"
