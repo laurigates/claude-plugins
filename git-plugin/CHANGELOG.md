@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.31.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.30.1...git-plugin-v2.31.0) (2026-04-17)
+
+
+### Features
+
+* fallback PR selector for git-pr-feedback skill ([#1066](https://github.com/laurigates/claude-plugins/issues/1066)) ([3d958e9](https://github.com/laurigates/claude-plugins/commit/3d958e9c5a168c3941eee2e6a09843f3a684ef4d))
+
 ## [2.30.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.30.0...git-plugin-v2.30.1) (2026-04-17)
 
 
