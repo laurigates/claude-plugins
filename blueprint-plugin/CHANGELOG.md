@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.27.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.26.1...blueprint-plugin-v3.27.0) (2026-04-17)
+
+
+### Features
+
+* non-interactive mode to blueprint-upgrade skill ([#1063](https://github.com/laurigates/claude-plugins/issues/1063)) ([0d1bb74](https://github.com/laurigates/claude-plugins/commit/0d1bb74842164fffe7f2ff49bf5cc5302922cf8d))
+
 ## [3.26.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.26.0...blueprint-plugin-v3.26.1) (2026-04-16)
 
 
