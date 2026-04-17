@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.3.0...feedback-plugin-v1.3.1) (2026-04-17)
+
+
+### Bug Fixes
+
+* **feedback-plugin:** handle IaC-managed labels and add --target-repo parameter ([#1054](https://github.com/laurigates/claude-plugins/issues/1054)) ([20bdd14](https://github.com/laurigates/claude-plugins/commit/20bdd14c034a05c4c9f13bedaab5f076965bca6f))
+
 ## [1.3.0](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.2.1...feedback-plugin-v1.3.0) (2026-04-17)
 
 
