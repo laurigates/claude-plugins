@@ -15,6 +15,34 @@ if [ -z "$COMMAND" ]; then
     exit 0
 fi
 
+# Strip heredoc body content up front so detectors that scan the whole command
+# string don't false-positive on literal text inside a heredoc body. The main
+# offender is `gh pr create --body "$(cat <<'EOF' ... EOF)"` whose body may
+# contain example shell commands (e.g. "git add && git commit") that are just
+# documentation, not executable code.
+#
+# The awk program walks the command line-by-line. When it sees `<<DELIM` it
+# enters heredoc mode and suppresses subsequent lines until it sees a line
+# matching DELIM. The heredoc-opening line itself is still printed.
+COMMAND_SHELL_ONLY=$(echo "$COMMAND" | awk '
+    BEGIN { ih = 0 }
+    ih == 0 {
+        if (match($0, /<<-?[[:space:]]*[^[:space:]]*[A-Za-z_][A-Za-z_0-9]*/)) {
+            s = substr($0, RSTART)
+            gsub(/<<-?[[:space:]]*/, "", s)
+            gsub(/^[^A-Za-z_]+/, "", s)
+            gsub(/[^A-Za-z_0-9].*/, "", s)
+            if (s != "") { delim = s; ih = 1 }
+            print; next
+        }
+        print; next
+    }
+    ih == 1 {
+        t = $0; gsub(/^[[:space:]]+/, "", t); gsub(/[[:space:]]+$/, "", t)
+        if (t == delim) { ih = 0 }
+    }
+')
+
 # Function to output a blocking message (exit code 2 = blocking error)
 block() {
     echo "$1" >&2
@@ -52,6 +80,7 @@ fi
 # which would cause false positives when echo "text" is followed by an unrelated 2>/dev/null
 # Strip single-quoted strings first: content inside single quotes is literal bash text
 # (e.g., kubectl exec -- php -r 'echo "$c->id"') and cannot contain shell redirections.
+# shellcheck disable=SC2001  # bash pattern substitution can't do regex char class `[^']*`
 COMMAND_NO_SQUOTES=$(echo "$COMMAND" | sed "s/'[^']*'//g")
 if echo "$COMMAND_NO_SQUOTES" | grep -Eq '(^|\s)(echo|printf)\s+[^;&|]*>\s*[^&]' && \
    ! echo "$COMMAND_NO_SQUOTES" | grep -Eq '(echo|printf).*>>\s*/dev/null'; then
@@ -122,26 +151,8 @@ if echo "$COMMAND" | grep -Eq '(cat|tail|head).*(/tasks/|\.output)' || \
 fi
 
 # Check for excessive pipe chains (5+ pipes suggest over-complexity)
-# Strip heredoc body content first to avoid counting markdown table pipes
-# or other literal content as shell pipe operators
-COMMAND_SHELL_ONLY=$(echo "$COMMAND" | awk '
-    BEGIN { ih = 0 }
-    ih == 0 {
-        if (match($0, /<<-?[[:space:]]*[^[:space:]]*[A-Za-z_][A-Za-z_0-9]*/)) {
-            s = substr($0, RSTART)
-            gsub(/<<-?[[:space:]]*/, "", s)
-            gsub(/^[^A-Za-z_]+/, "", s)
-            gsub(/[^A-Za-z_0-9].*/, "", s)
-            if (s != "") { delim = s; ih = 1 }
-            print; next
-        }
-        print; next
-    }
-    ih == 1 {
-        t = $0; gsub(/^[[:space:]]+/, "", t); gsub(/[[:space:]]+$/, "", t)
-        if (t == delim) { ih = 0 }
-    }
-')
+# Uses COMMAND_SHELL_ONLY (heredoc body already stripped above) to avoid
+# counting markdown table pipes or other literal content as shell pipe operators.
 # Strip quoted strings and || operators before counting actual shell pipes
 # - Single-quoted strings contain regex alternation (grep -E '(a|b|c)')
 # - Double-quoted strings may contain literal pipe characters
@@ -184,9 +195,13 @@ fi
 # index.lock race conditions only occur when one command writes to the git index.
 # Index-modifying commands: add, commit, rm, mv, reset (not read-only commands like status/diff/log).
 # The fix is to run git commands as separate Bash calls, not chained.
+#
+# Uses COMMAND_SHELL_ONLY (heredoc body stripped) so that example shell
+# snippets inside `gh pr create --body "$(cat <<EOF ... EOF)"` do not trigger
+# a false positive when the body mentions `git add && git commit`.
 INDEX_MODIFYING='(add|commit|rm|mv|reset)'
-if echo "$COMMAND" | grep -Eq "git\\s+${INDEX_MODIFYING}\\b.*&&.*git\\s+\\S+" || \
-   echo "$COMMAND" | grep -Eq "git\\s+\\S+.*&&.*git\\s+${INDEX_MODIFYING}\\b"; then
+if echo "$COMMAND_SHELL_ONLY" | grep -Eq "git\\s+${INDEX_MODIFYING}\\b.*&&.*git\\s+\\S+" || \
+   echo "$COMMAND_SHELL_ONLY" | grep -Eq "git\\s+\\S+.*&&.*git\\s+${INDEX_MODIFYING}\\b"; then
     block "REMINDER: Chaining git commands with '&&' can cause index.lock race conditions.
 The lock file from an index-modifying command (add, commit, rm, mv, reset) may not be
 released before the next command tries to acquire it.
