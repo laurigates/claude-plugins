@@ -8,7 +8,7 @@
       "name": "accessibility-plugin",
       "source": "./accessibility-plugin",
       "description": "Accessibility and UX implementation - WCAG, ARIA, design tokens",
-      "version": "2.3.1",
+      "version": "2.3.2",
       "keywords": [
         "accessibility",
         "wcag",
@@ -22,7 +22,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.12.1",
+      "version": "2.12.2",
       "keywords": [
         "agents",
         "configuration",
@@ -54,7 +54,7 @@
       "name": "api-plugin",
       "source": "./api-plugin",
       "description": "API integration and testing - REST endpoints, client generation",
-      "version": "1.5.2",
+      "version": "1.5.3",
       "keywords": [
         "api",
         "rest",
@@ -176,7 +176,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.18.0",
+      "version": "1.18.1",
       "keywords": [
         "infrastructure",
         "standards",
@@ -273,7 +273,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.30.0",
+      "version": "2.30.1",
       "keywords": [
         "git",
         "github",
