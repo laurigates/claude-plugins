@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.2.1...feedback-plugin-v1.3.0) (2026-04-17)
+
+
+### Features
+
+* **feedback-plugin:** add friction-learner agent for weekly session analysis ([#1051](https://github.com/laurigates/claude-plugins/issues/1051)) ([b6301a4](https://github.com/laurigates/claude-plugins/commit/b6301a4d5766d07ba5b25c1f059d7de816a47227))
+
 ## [1.2.1](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.2.0...feedback-plugin-v1.2.1) (2026-04-08)
 
 
