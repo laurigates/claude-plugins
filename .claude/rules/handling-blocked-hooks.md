@@ -1,7 +1,7 @@
 ---
 created: 2026-01-01
-modified: 2026-03-07
-reviewed: 2026-03-07
+modified: 2026-04-17
+reviewed: 2026-04-17
 ---
 
 # Handling Blocked Hooks
@@ -81,7 +81,7 @@ the failed merge."
 
 The `branch-protection.sh` hook in `hooks-plugin` blocks writes on `main`/`master`. When it blocks you, the correct moves — in order — are:
 
-1. **Create a feature branch**: `git checkout -b feature/your-change`, then re-run the command.
+1. **Create a feature branch**: `git switch -c feature/your-change`, then re-run the command.
 2. **Explicit-refspec push** (for `git push` only): `git push origin main:feature/your-change` is allowed by the hook and is the right way to move local `main` commits onto a remote feature branch.
 3. **Delegate to the user** per the template above.
 

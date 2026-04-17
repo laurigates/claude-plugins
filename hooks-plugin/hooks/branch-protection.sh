@@ -87,7 +87,7 @@ case "$GIT_SUBCMD" in
     if [ "$GIT_SUBCMD" = "stash" ]; then
       if echo "$COMMAND" | grep -Eq 'stash\s+(pop|apply|drop|clear)'; then
         STASH_OP=$(echo "$COMMAND" | grep -oE '(pop|apply|drop|clear)')
-        deny "You're on '${CURRENT_BRANCH}'. Switch to a feature branch before 'git stash ${STASH_OP}' (git checkout -b feature/your-change), or delegate this command to the user per .claude/rules/handling-blocked-hooks.md. If this repo uses main-branch-dev, ask the user to export CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1 in their shell."
+        deny "You're on '${CURRENT_BRANCH}'. Switch to a feature branch before 'git stash ${STASH_OP}' (git switch -c feature/your-change), or delegate this command to the user per .claude/rules/handling-blocked-hooks.md. If this repo uses main-branch-dev, ask the user to export CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1 in their shell."
       fi
     fi
     exit 0
@@ -102,7 +102,7 @@ case "$GIT_SUBCMD" in
     ;;
   # Common write operations — deny with guidance for Claude
   commit|cherry-pick|revert)
-    deny "You're on '${CURRENT_BRANCH}'. Create a feature branch first: git checkout -b feature/your-change, then re-run 'git ${GIT_SUBCMD}'. If committing directly to ${CURRENT_BRANCH} is genuinely required (e.g. personal repo, dotfiles, main-branch-dev), delegate to the user per .claude/rules/handling-blocked-hooks.md — ask them to run it, or to export CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1 in their shell. Do not attempt to self-serve this bypass."
+    deny "You're on '${CURRENT_BRANCH}'. Create a feature branch first: git switch -c feature/your-change, then re-run 'git ${GIT_SUBCMD}'. If committing directly to ${CURRENT_BRANCH} is genuinely required (e.g. personal repo, dotfiles, main-branch-dev), delegate to the user per .claude/rules/handling-blocked-hooks.md — ask them to run it, or to export CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1 in their shell. Do not attempt to self-serve this bypass."
     ;;
   push)
     # Allow push to specific remote branch via explicit refspec
@@ -122,7 +122,7 @@ case "$GIT_SUBCMD" in
       exit 0
     fi
     # Staging implies committing — deny with guidance
-    deny "You're staging changes on '${CURRENT_BRANCH}'. Switch to a feature branch first: git checkout -b feature/your-change, then re-run 'git ${GIT_SUBCMD}'. If committing to ${CURRENT_BRANCH} is genuinely required, delegate to the user per .claude/rules/handling-blocked-hooks.md — do not self-serve the CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION bypass."
+    deny "You're staging changes on '${CURRENT_BRANCH}'. Switch to a feature branch first: git switch -c feature/your-change, then re-run 'git ${GIT_SUBCMD}'. If committing to ${CURRENT_BRANCH} is genuinely required, delegate to the user per .claude/rules/handling-blocked-hooks.md — do not self-serve the CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION bypass."
     ;;
 esac
 

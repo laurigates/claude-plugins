@@ -147,6 +147,52 @@ assert_exit \
     "echo in compound command before git 2>/dev/null is allowed" 0 \
     "cd /some/repo && git log --oneline -10 -- infra/ 2>/dev/null | head -20; echo '---'; git log --oneline 2>/dev/null | head -20"
 
+# ── heredoc body false-positive regression ───────────────────────────────────
+# Regression: `gh pr create --body "$(cat <<EOF ... EOF)"` bodies containing
+# example shell commands (e.g. "git add && git commit" shown as documentation
+# in a PR description) triggered the git-chain index.lock detector. The hook
+# must strip heredoc bodies before scanning for antipatterns.
+#
+# These cases have embedded quotes and newlines, so they use jq to build the
+# JSON payload safely (assert_exit's printf-based JSON cannot escape them).
+echo ""
+echo "heredoc body is ignored when scanning for antipatterns:"
+
+assert_exit_complex() {
+    local desc="$1" expected="$2" cmd="$3"
+    local json
+    json=$(jq -nc --arg cmd "$cmd" '{tool_name:"Bash",tool_input:{command:$cmd}}')
+    local exit_code=0
+    printf '%s' "$json" | bash "$HOOK" >/dev/null 2>&1 || exit_code=$?
+    if [ "$exit_code" -eq "$expected" ]; then
+        printf "  PASS: %s\n" "$desc"
+        PASS=$((PASS + 1))
+    else
+        printf "  FAIL: %s (expected exit %d, got %d)\n" "$desc" "$expected" "$exit_code"
+        FAIL=$((FAIL + 1))
+    fi
+}
+
+heredoc_body_cmd=$(cat <<'OUTER'
+gh pr create --title "fix: something" --body "$(cat <<'EOF'
+## Workflow
+
+Run git add && git commit to stage and commit.
+
+Then git push origin HEAD to publish.
+EOF
+)"
+OUTER
+)
+
+assert_exit_complex \
+    "gh pr create with heredoc body mentioning 'git add && git commit' is allowed" 0 \
+    "$heredoc_body_cmd"
+
+assert_exit_complex \
+    "plain git add && git commit (outside heredoc) is still blocked" 2 \
+    "git add file.txt && git commit -m msg"
+
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
