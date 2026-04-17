@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.6](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.16.5...hooks-plugin-v1.16.6) (2026-04-17)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** strip heredoc bodies & modernize branch-protection message ([#1076](https://github.com/laurigates/claude-plugins/issues/1076)) ([25b848e](https://github.com/laurigates/claude-plugins/commit/25b848ec074bccc9209e5ce82420ba9a386ff56f)), closes [#1068](https://github.com/laurigates/claude-plugins/issues/1068)
+
 ## [1.16.5](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.16.4...hooks-plugin-v1.16.5) (2026-04-08)
 
 
