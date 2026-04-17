@@ -106,6 +106,33 @@ Obsidian Publish and Sync service management.
 - Check Obsidian Sync status
 - Batch publishing workflows
 
+---
+
+## Vault Maintenance Skills (offline, file-level)
+
+The skills above wrap the Obsidian CLI and require a running Obsidian instance. The following operate directly on markdown files — useful for bulk maintenance passes and scheduled jobs. They power [`vault-agent`](../vault-agent/).
+
+### Vault Frontmatter
+**File**: `skills/vault-frontmatter/SKILL.md` — Offline YAML repair: strip legacy `id:`, clean null tags, remove Templater leakage.
+
+### Vault Tags
+**File**: `skills/vault-tags/SKILL.md` — Emoji-prefixed tag taxonomy, consolidation table for near-duplicates.
+
+### Vault Wikilinks
+**File**: `skills/vault-wikilinks/SKILL.md` — Broken wikilink repair, cross-namespace ambiguity handling.
+
+### Vault Orphans
+**File**: `skills/vault-orphans/SKILL.md` — Orphan note triage heuristics.
+
+### Vault Stubs
+**File**: `skills/vault-stubs/SKILL.md` — FVH/z redirect-stub pattern (for vaults using the LakuVault work-namespace convention).
+
+### Vault MOCs
+**File**: `skills/vault-mocs/SKILL.md` — Map-of-Content curation, convention drift repair.
+
+### Vault Templates
+**File**: `skills/vault-templates/SKILL.md` — Templater convention reference, drift repair.
+
 ## Installation
 
 ```bash
