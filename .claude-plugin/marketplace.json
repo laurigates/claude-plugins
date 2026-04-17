@@ -243,13 +243,14 @@
     {
       "name": "feedback-plugin",
       "source": "./feedback-plugin",
-      "description": "Session feedback analysis - capture skill bugs, enhancements, and positive patterns as GitHub issues",
+      "description": "Session feedback analysis - capture skill bugs as GitHub issues and learn from weekly friction across sessions",
       "version": "1.2.1",
       "keywords": [
         "feedback",
         "session-analysis",
         "skill-quality",
-        "github-issues"
+        "github-issues",
+        "friction-learner"
       ],
       "category": "quality"
     },
