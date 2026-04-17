@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.12.2](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.12.1...agent-patterns-plugin-v2.12.2) (2026-04-17)
+
+
+### Documentation
+
+* update Claude Opus model references to 4.7 ([#1052](https://github.com/laurigates/claude-plugins/issues/1052)) ([9ffadc5](https://github.com/laurigates/claude-plugins/commit/9ffadc553de069f47efebd4d2c54ff89e47649fd))
+
 ## [2.12.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.12.0...agent-patterns-plugin-v2.12.1) (2026-04-08)
 
 

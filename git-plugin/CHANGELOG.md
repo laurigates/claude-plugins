@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.30.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.30.0...git-plugin-v2.30.1) (2026-04-17)
+
+
+### Documentation
+
+* update Claude Opus model references to 4.7 ([#1052](https://github.com/laurigates/claude-plugins/issues/1052)) ([9ffadc5](https://github.com/laurigates/claude-plugins/commit/9ffadc553de069f47efebd4d2c54ff89e47649fd))
+
 ## [2.30.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.29.7...git-plugin-v2.30.0) (2026-04-16)
 
 
