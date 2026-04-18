@@ -1,0 +1,4 @@
+{"type":"user","timestamp":"2026-04-18T12:00:00Z","message":{"content":"How do hooks work in Claude Code?"}}
+{"type":"assistant","timestamp":"2026-04-18T12:00:10Z","message":{"content":[{"type":"tool_use","id":"toolu_plan_qa1","name":"ExitPlanMode","input":{"plan":"1. Explain hook events\n2. Show example configurations"}}]}}
+{"type":"user","timestamp":"2026-04-18T12:10:00Z","message":{"content":"Can you explain how the parser indexes tool_use_id?"}}
+{"type":"assistant","timestamp":"2026-04-18T12:10:05Z","message":{"content":[{"type":"tool_use","id":"toolu_plan_qa2","name":"ExitPlanMode","input":{"plan":"1. Walk through the index build\n2. Summarize lookup"}}]}}

@@ -15,12 +15,33 @@ PARSER = HERE.parent / "friction_parse.py"
 FIXTURES = HERE / "fixtures"
 
 
-def run_parser(fixture: Path) -> list[dict]:
+def run_parser(fixture_dir: Path) -> list[dict]:
     proc = subprocess.run(
-        [sys.executable, str(PARSER), "--root", str(fixture.parent), "--since", "3650d"],
+        [sys.executable, str(PARSER), "--root", str(fixture_dir), "--since", "3650d"],
         capture_output=True, text=True, check=True,
     )
     return [json.loads(line) for line in proc.stdout.splitlines() if line.strip()]
+
+
+def test_plan_mode_legitimate_is_not_emitted():
+    """Regression: ExitPlanMode on a change request must not emit plan_mode.
+
+    Before the fix, every ExitPlanMode collapsed to plan:entered-plan-mode
+    regardless of the preceding prompt, which inflated the cluster past
+    --min-count 3 for legitimate plan-mode entries. (Issue #1061)
+    """
+    events = run_parser(FIXTURES / "plan_mode_legitimate")
+    plan_events = [e for e in events if e["kind"] == "plan_mode"]
+    assert not plan_events, f"expected 0 plan_mode events, got {plan_events}"
+
+
+def test_plan_mode_qa_is_emitted():
+    """ExitPlanMode after a 'how does X work?' prompt must still fire."""
+    events = run_parser(FIXTURES / "plan_mode_qa")
+    plan_events = [e for e in events if e["kind"] == "plan_mode"]
+    assert len(plan_events) == 2, f"expected 2 plan_mode events, got {plan_events}"
+    for ev in plan_events:
+        assert ev["signature"] == "plan:entered-plan-mode", ev
 
 
 def test_tool_use_id_resolves_to_bash():
@@ -30,7 +51,7 @@ def test_tool_use_id_resolves_to_bash():
     toolUseName nor toolUseResult.toolName are populated on user records.
     (Issue #1059)
     """
-    events = run_parser(FIXTURES / "bash_tool_error.jsonl")
+    events = run_parser(FIXTURES / "bash_tool_error")
     tools = [e["tool"] for e in events]
     assert "?" not in tools, f"parser emitted tool='?' for {len(events)} event(s): {events}"
     by_kind = {e["kind"]: e for e in events}

@@ -1,0 +1,4 @@
+{"type":"user","timestamp":"2026-04-18T11:00:00Z","message":{"content":"Please refactor the auth module to split login and session handling into separate files."}}
+{"type":"assistant","timestamp":"2026-04-18T11:00:10Z","message":{"content":[{"type":"tool_use","id":"toolu_plan1","name":"ExitPlanMode","input":{"plan":"1. Split auth.py into login.py and session.py\n2. Update imports\n3. Run tests"}}]}}
+{"type":"user","timestamp":"2026-04-18T11:10:00Z","message":{"content":"Now add a rate limiter to the login endpoint."}}
+{"type":"assistant","timestamp":"2026-04-18T11:10:05Z","message":{"content":[{"type":"tool_use","id":"toolu_plan2","name":"ExitPlanMode","input":{"plan":"1. Install middleware\n2. Configure rate limits"}}]}}
