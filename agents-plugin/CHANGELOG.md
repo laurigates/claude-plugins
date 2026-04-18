@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.7.3...agents-plugin-v1.8.0) (2026-04-18)
+
+
+### Features
+
+* **agent-patterns-plugin:** add preflight checklist, refactor case study, and out-of-scope protocol ([#1082](https://github.com/laurigates/claude-plugins/issues/1082)) ([88c52b2](https://github.com/laurigates/claude-plugins/commit/88c52b27c0afd294a970a30b07590e56be2d0700))
+
 ## [1.7.3](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.7.2...agents-plugin-v1.7.3) (2026-04-15)
 
 
