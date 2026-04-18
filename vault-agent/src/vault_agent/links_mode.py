@@ -149,7 +149,9 @@ def render_dry_run(plan: LinksPlan) -> str:
     lines.append(
         "Low-leverage broken targets (for reference — not auto-fixed):"
     )
-    for target, count in plan.low_leverage_broken[:10]:
+    excluded = set(plan.rewrites_available.keys())
+    remaining = [(t, c) for t, c in plan.low_leverage_broken if t not in excluded]
+    for target, count in remaining[:10]:
         lines.append(f"  [[{target}]] × {count}")
     lines.append("")
     lines.append("Re-run with --fix to apply the deterministic rewrites.")
