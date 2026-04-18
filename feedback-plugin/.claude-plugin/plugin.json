@@ -1,6 +1,6 @@
 {
   "name": "feedback-plugin",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "description": "Session feedback analysis - capture skill bugs as GitHub issues and learn from weekly friction across sessions",
   "author": {
     "name": "Lauri Gates",
