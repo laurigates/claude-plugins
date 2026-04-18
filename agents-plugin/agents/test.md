@@ -6,8 +6,8 @@ description: Write and run tests. Analyzes code, writes appropriate tests, execu
 tools: Glob, Grep, LS, Read, Edit, Write, Bash(npm test *), Bash(npm run test *), Bash(yarn test *), Bash(bun test *), Bash(pytest *), Bash(vitest *), Bash(jest *), Bash(cargo test *), Bash(go test *), Bash(git status *), Bash(git diff *), Bash(git log *), BashOutput, TodoWrite
 maxTurns: 20
 created: 2025-12-27
-modified: 2026-03-09
-reviewed: 2026-03-09
+modified: 2026-04-18
+reviewed: 2026-04-18
 ---
 
 # Test Agent
@@ -84,6 +84,21 @@ Testing works well in both modes. As a teammate, it can run tests in parallel wi
 |------|-------------|
 | Teammate | Parallel test suites — spawn unit, integration, and e2e test teammates |
 | Subagent | Focused testing for a single module or function |
+
+## Out-of-Scope Discovery Protocol
+
+When operating with an exclusive write scope in an agent team, apply this protocol if you
+discover a file outside your declared scope needs to change:
+
+1. **STOP immediately.** Do not read, investigate, or edit the out-of-scope file.
+2. In your final summary, include an `Out-of-scope dependencies` section listing:
+   - The file(s) that need changes
+   - What changes are needed (one line each)
+   - Which of your deliverables is blocked without those changes
+3. Exit. The lead will triage and either expand your scope, reassign, or handle it directly.
+
+This preserves your budget for declared deliverables and produces a clean handoff instead
+of a truncated mid-investigation summary.
 
 ## What This Agent Does NOT Do
 
