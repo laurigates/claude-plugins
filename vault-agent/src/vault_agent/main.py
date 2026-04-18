@@ -37,6 +37,11 @@ from .reporting import render_json, render_markdown, render_terminal
 from .stubs_mode import render_apply as render_stubs_apply
 from .stubs_mode import render_dry_run as render_stubs_dry_run
 from .stubs_mode import run_stubs
+from .orchestrator import (
+    OrchestratorResult,
+    _has_sdk_work,
+    run_mode_with_sdk,
+)
 from .worktree import acquire_lock, release_lock
 
 app = typer.Typer(
@@ -193,7 +198,23 @@ def _run_write_mode(
     try:
         result = action()
         typer.echo(render(result))
-        _emit_summary({"mode": mode, **summary_payload(result)}, log_format)
+
+        # Hand off to the SDK for the LLM-backed portion when applicable.
+        # The deterministic path has already committed its fixes; the SDK
+        # works in the same worktree on top of those commits.
+        sdk_result = _maybe_run_sdk(
+            mode=mode, vault=vault, apply=apply, result=result, ni=ni
+        )
+
+        payload = {"mode": mode, **summary_payload(result)}
+        if sdk_result is not None:
+            payload["sdk_ran"] = True
+            payload["sdk_commits"] = sdk_result.commits_made
+            payload["sdk_files_changed"] = sdk_result.files_changed
+            if sdk_result.report_section:
+                typer.echo("")
+                typer.echo(sdk_result.report_section)
+        _emit_summary(payload, log_format)
     except LockedError as exc:
         console.print(f"[yellow]{exc}[/yellow]")
         raise typer.Exit(code=EXIT_LOCKED) from exc
@@ -225,6 +246,59 @@ def _handle_result(handle) -> dict[str, Any]:
         "files_changed": worktree_file_change_count(handle),
         "commits": worktree_commit_count(handle),
     }
+
+
+def _maybe_run_sdk(
+    *,
+    mode: str,
+    vault: Path,
+    apply: bool,
+    result,
+    ni: Optional[NonInteractiveConfig],
+) -> Optional[OrchestratorResult]:
+    """Invoke the SDK subagent session when the deterministic path leaves work.
+
+    Returns the ``OrchestratorResult`` of the SDK session, or ``None`` if the
+    audit already reflects all achievable fixes (deterministic-only vault).
+
+    Disabled when:
+      * ``ANTHROPIC_API_KEY`` and ``CLAUDE_CODE_OAUTH_TOKEN`` are both missing
+        (e.g. in CI without auth configured)
+      * ``VAULT_AGENT_SKIP_SDK=1`` is set (test escape hatch)
+    """
+    import asyncio
+    import os
+
+    if os.environ.get("VAULT_AGENT_SKIP_SDK") == "1":
+        return None
+    if not apply:
+        return None
+    # `result.audit` reflects post-deterministic state only when the mode
+    # re-ran analysis after writing; our current deterministic fixers don't
+    # re-scan, so we rely on the pre-computed audit which over-counts work.
+    # That's fine — the LLM re-reads files inside the worktree anyway.
+    if not _has_sdk_work(mode, result.audit):
+        return None
+
+    handle = getattr(result, "handle", None)
+
+    async def _go() -> OrchestratorResult:
+        return await run_mode_with_sdk(
+            vault,
+            mode,
+            apply=apply,
+            handle=handle,
+            max_cost_usd=(ni.max_cost_usd if ni is not None else None),
+            console=console,
+        )
+
+    try:
+        return asyncio.run(_go())
+    except ImportError:
+        # SDK not installed — deterministic-only run. Not an error in
+        # pure-Python deployments.
+        console.print("[dim]claude-agent-sdk not installed; skipping LLM pass.[/dim]")
+        return None
 
 
 # ---------------------------------------------------------------------------
