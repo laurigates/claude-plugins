@@ -1,0 +1,4 @@
+{"type":"assistant","timestamp":"2026-04-18T10:00:00Z","message":{"content":[{"type":"tool_use","id":"toolu_01abc","name":"Bash","input":{"command":"cat /nonexistent/file"}}]}}
+{"type":"user","timestamp":"2026-04-18T10:00:01Z","message":{"content":[{"type":"tool_result","tool_use_id":"toolu_01abc","is_error":true,"content":"cat: /nonexistent/file: No such file or directory"}]},"toolUseResult":{"is_error":true,"content":"cat: /nonexistent/file: No such file or directory"}}
+{"type":"assistant","timestamp":"2026-04-18T10:00:02Z","message":{"content":[{"type":"tool_use","id":"toolu_02xyz","name":"Edit","input":{"file_path":"/etc/passwd"}}]}}
+{"type":"user","timestamp":"2026-04-18T10:00:03Z","message":{"content":[{"type":"tool_result","tool_use_id":"toolu_02xyz","is_error":true,"content":"The user doesn't want to make this change to /etc/passwd"}]},"toolUseResult":{"is_error":true,"content":"The user doesn't want to make this change"}}

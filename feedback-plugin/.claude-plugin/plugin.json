@@ -15,5 +15,19 @@
     "github-issues",
     "continuous-improvement",
     "friction-learner"
-  ]
+  ],
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/check-open-pr.sh",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
 }

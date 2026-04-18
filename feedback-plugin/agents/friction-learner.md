@@ -13,8 +13,8 @@ context: fork
 maxTurns: 40
 memory: user
 created: 2026-04-16
-modified: 2026-04-16
-reviewed: 2026-04-16
+modified: 2026-04-18
+reviewed: 2026-04-18
 ---
 
 # Friction Learner Agent
@@ -94,21 +94,28 @@ For each cluster with ≥3 occurrences, map to a concrete deliverable:
 
 ### Step 4: Render proposed diffs per target repo
 
-The target is the repo containing the rules — usually `rulesync`. Per repo:
-
-1. Clone (or reuse worktree) of the target repo
-2. Write proposed rule file(s) to `rules/claude/friction/YYYY-WW-frictions.md`
-3. Include an **Evidence** section with session IDs + timestamps (redact paths if needed)
+Cluster output (`/tmp/clusters.json`) already carries one `path` + `body` per
+actionable cluster, produced by `friction_cluster.py`. Evidence blocks are
+redacted at parse time.
 
 ### Step 5: Open one PR per repo
 
-Use a stable branch name: `friction/YYYY-WW-<repo>`. Title:
+Delegate to the shipped helper, which clones each target repo, writes the
+proposals, branches, commits, pushes, and opens a draft PR:
 
-```
-docs(rules): add friction-learner findings for week YYYY-WW
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/friction_open_prs.py" \
+  --clusters /tmp/clusters.json \
+  --pr-body /tmp/pr-body.md \
+  --target-repo "$TARGET_REPO" \
+  --dry-run
 ```
 
-PR body contains the cluster summary table and evidence snippets.
+Drop `--dry-run` once the diff looks right. The helper uses a deterministic
+branch name (`friction/YYYY-WW-<repo_slug>`) so re-running the same week
+updates the existing PR instead of opening a new one. It also enforces the
+quiet-window guardrail (`--min-total-events`, default 5) and always creates
+drafts — PRs are never auto-merged.
 
 ### Step 6: Report summary to main session
 

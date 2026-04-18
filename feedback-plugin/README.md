@@ -31,9 +31,18 @@ Dry-run the pipeline manually:
 python3 feedback-plugin/scripts/friction_parse.py --since 7d --out /tmp/frictions.jsonl
 python3 feedback-plugin/scripts/friction_cluster.py --in /tmp/frictions.jsonl --min-count 3 \
   --render-pr-body /tmp/pr-body.md --out /tmp/clusters.json
+python3 feedback-plugin/scripts/friction_open_prs.py \
+  --clusters /tmp/clusters.json --pr-body /tmp/pr-body.md \
+  --target-repo laurigates/claude-plugins --dry-run
 ```
 
 Signatures currently recognized: `plan:entered-plan-mode`, `push:branch-has-open-pr`, `hook:pr-metadata`, `hook:branch-protection`, `hook:conventional-commit`, `hook:gitleaks`, `hook:pre-commit`, `error:<tool>:<class>`, `reject:<tool>`, `interrupt:user`.
+
+## Hooks
+
+| Hook | Event | Purpose |
+|------|-------|---------|
+| `check-open-pr.sh` | `PreToolUse` (Bash) | Prompt before `git push` to a branch that already has an open PR. Include `[force-push-ok]` in the last commit message to bypass. |
 
 ## Usage
 

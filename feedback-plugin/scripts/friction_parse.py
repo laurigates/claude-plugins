@@ -35,6 +35,23 @@ PUSH_PR_RE = re.compile(r"(open pull request|protected branch|pr .*already open|
 INTERRUPT_RE = re.compile(r"^\[Request interrupted")
 SECRET_RE = re.compile(r"\b[A-Za-z0-9_\-]{32,}\b")
 
+EDIT_VERB_RE = re.compile(
+    r"\b(add|addition|fix|change|remove|delete|drop|rename|refactor|"
+    r"implement|write|create|build|update|migrate|modify|patch|"
+    r"replace|rewrite|port|upgrade|downgrade|install|configure|"
+    r"set\s+up|hook\s+up|wire\s+up)\b",
+    re.I,
+)
+QA_PREFIX_RE = re.compile(
+    r"^\s*(?:how|what|why|does|do|did|can|could|is|are|was|were|"
+    r"should|shall|when|where|which|who|whom|whose)\b",
+    re.I,
+)
+QA_CONTAINS_RE = re.compile(
+    r"\b(explain|describe|tell me about|clarify|walk me through)\b",
+    re.I,
+)
+
 
 def redact(text: str) -> str:
     """Strip $HOME paths and token-looking strings."""
@@ -83,6 +100,8 @@ def canonical_signature(kind: str, tool: str, evidence: str) -> str:
         return "push:branch-has-open-pr"
     if kind == "plan_mode":
         return "plan:entered-plan-mode"
+    if kind == "plan_mode_legitimate":
+        return "plan:legitimate-change-request"
     if kind == "user_reject":
         return f"reject:{tool.lower()}"
     if kind == "user_interrupt":
@@ -119,72 +138,159 @@ def parse_since(spec: str) -> datetime | None:
     return datetime.fromisoformat(spec.replace("Z", "+00:00"))
 
 
-def extract_frictions(path: Path) -> Iterator[dict]:
-    session = path.stem
+def iter_jsonl(path: Path) -> Iterator[dict]:
     with path.open("r", encoding="utf-8", errors="replace") as f:
         for line in f:
             line = line.strip()
             if not line:
                 continue
             try:
-                rec = json.loads(line)
+                yield json.loads(line)
             except json.JSONDecodeError:
                 continue
 
-            rtype = rec.get("type")
-            ts = rec.get("timestamp", "")
 
-            # User interrupt markers (sit in user messages)
-            if rtype == "user":
-                msg = rec.get("message", {})
-                content = msg.get("content")
-                text = first_text(content)
-                if text and INTERRUPT_RE.match(text):
-                    yield {
-                        "session": session, "ts": ts, "kind": "user_interrupt",
-                        "tool": "-", "signature": "interrupt:user",
-                        "evidence": redact(text[:400]),
-                    }
-                    continue
-                # Tool results embedded in user messages carry is_error
-                tur = rec.get("toolUseResult") or {}
-                if not isinstance(tur, dict):
-                    tur = {"content": tur}
-                is_error = tur.get("is_error") or (isinstance(content, list) and any(
-                    isinstance(i, dict) and i.get("type") == "tool_result" and i.get("is_error")
-                    for i in content
-                ))
-                if is_error:
-                    tool = rec.get("toolUseName") or tur.get("toolName") or "?"
-                    body = text or json.dumps(tur)[:400]
-                    if HOOK_BLOCK_RE.search(body):
-                        kind = "hook_block"
-                    elif USER_REJECT_RE.search(body):
-                        kind = "user_reject"
-                    elif tool == "Bash" and "git push" in body.lower() and PUSH_PR_RE.search(body):
-                        kind = "push_to_pr_branch"
-                    else:
-                        kind = "tool_error"
-                    yield {
-                        "session": session, "ts": ts, "kind": kind,
-                        "tool": tool,
-                        "signature": canonical_signature(kind, tool, body),
-                        "evidence": redact(body[:400]),
-                    }
+def build_tool_index(path: Path) -> dict[str, str]:
+    """Map tool_use_id -> tool_name from assistant records.
 
-            elif rtype == "assistant":
-                msg = rec.get("message", {})
-                for item in msg.get("content", []) or []:
-                    if isinstance(item, dict) and item.get("type") == "tool_use":
-                        if item.get("name") == "ExitPlanMode":
-                            plan = ""
-                            inp = item.get("input") or {}
-                            if isinstance(inp, dict):
-                                plan = inp.get("plan", "")
+    In Claude Code JSONL transcripts, the tool name only lives on the
+    assistant's tool_use block. The user record carrying the tool_result
+    references it via tool_use_id. Without this index, every user-side
+    error event would report tool "?".
+    """
+    index: dict[str, str] = {}
+    for rec in iter_jsonl(path):
+        if rec.get("type") != "assistant":
+            continue
+        for item in rec.get("message", {}).get("content", []) or []:
+            if isinstance(item, dict) and item.get("type") == "tool_use":
+                tool_id = item.get("id")
+                tool_name = item.get("name")
+                if tool_id and tool_name:
+                    index[tool_id] = tool_name
+    return index
+
+
+def is_user_prompt(rec: dict) -> bool:
+    """True if a user record is a genuine prompt (not a tool_result wrapper)."""
+    if rec.get("type") != "user":
+        return False
+    content = rec.get("message", {}).get("content")
+    if isinstance(content, str):
+        return bool(content.strip()) and not INTERRUPT_RE.match(content)
+    if isinstance(content, list):
+        for item in content:
+            if isinstance(item, dict) and item.get("type") == "tool_result":
+                return False
+        text = first_text(content)
+        return bool(text.strip()) and not INTERRUPT_RE.match(text)
+    return False
+
+
+def classify_plan_mode(prompt_text: str) -> str:
+    """Return 'plan_mode' (conceptual Q&A friction) or 'plan_mode_legitimate'.
+
+    Only treat plan-mode entry as friction when the preceding user prompt
+    looks like a question with no edit-verbs. Otherwise plan mode is a
+    legitimate response to a change request.
+    """
+    if not prompt_text:
+        return "plan_mode_legitimate"
+    if EDIT_VERB_RE.search(prompt_text):
+        return "plan_mode_legitimate"
+    if QA_PREFIX_RE.match(prompt_text) or QA_CONTAINS_RE.search(prompt_text):
+        return "plan_mode"
+    return "plan_mode_legitimate"
+
+
+def lookup_tool_name(rec: dict, index: dict[str, str]) -> str:
+    """Resolve the tool name for a user tool_result record."""
+    content = rec.get("message", {}).get("content")
+    if isinstance(content, list):
+        for item in content:
+            if isinstance(item, dict) and item.get("type") == "tool_result":
+                tool_id = item.get("tool_use_id")
+                if tool_id and tool_id in index:
+                    return index[tool_id]
+    for key in ("toolUseID", "tool_use_id"):
+        tool_id = rec.get(key)
+        if tool_id and tool_id in index:
+            return index[tool_id]
+    tur = rec.get("toolUseResult") or {}
+    if isinstance(tur, dict):
+        tool_id = tur.get("tool_use_id") or tur.get("toolUseID")
+        if tool_id and tool_id in index:
+            return index[tool_id]
+        fallback = tur.get("toolName")
+        if fallback:
+            return fallback
+    return rec.get("toolUseName") or "?"
+
+
+def extract_frictions(path: Path) -> Iterator[dict]:
+    session = path.stem
+    tool_index = build_tool_index(path)
+    last_user_prompt = ""
+    for rec in iter_jsonl(path):
+        rtype = rec.get("type")
+        ts = rec.get("timestamp", "")
+
+        if is_user_prompt(rec):
+            last_user_prompt = first_text(rec.get("message", {}).get("content")) or ""
+
+        # User interrupt markers (sit in user messages)
+        if rtype == "user":
+            msg = rec.get("message", {})
+            content = msg.get("content")
+            text = first_text(content)
+            if text and INTERRUPT_RE.match(text):
+                yield {
+                    "session": session, "ts": ts, "kind": "user_interrupt",
+                    "tool": "-", "signature": "interrupt:user",
+                    "evidence": redact(text[:400]),
+                }
+                continue
+            # Tool results embedded in user messages carry is_error
+            tur = rec.get("toolUseResult") or {}
+            if not isinstance(tur, dict):
+                tur = {"content": tur}
+            is_error = tur.get("is_error") or (isinstance(content, list) and any(
+                isinstance(i, dict) and i.get("type") == "tool_result" and i.get("is_error")
+                for i in content
+            ))
+            if is_error:
+                tool = lookup_tool_name(rec, tool_index)
+                body = text or json.dumps(tur)[:400]
+                if HOOK_BLOCK_RE.search(body):
+                    kind = "hook_block"
+                elif USER_REJECT_RE.search(body):
+                    kind = "user_reject"
+                elif tool == "Bash" and "git push" in body.lower() and PUSH_PR_RE.search(body):
+                    kind = "push_to_pr_branch"
+                else:
+                    kind = "tool_error"
+                yield {
+                    "session": session, "ts": ts, "kind": kind,
+                    "tool": tool,
+                    "signature": canonical_signature(kind, tool, body),
+                    "evidence": redact(body[:400]),
+                }
+
+        elif rtype == "assistant":
+            msg = rec.get("message", {})
+            for item in msg.get("content", []) or []:
+                if isinstance(item, dict) and item.get("type") == "tool_use":
+                    if item.get("name") == "ExitPlanMode":
+                        plan = ""
+                        inp = item.get("input") or {}
+                        if isinstance(inp, dict):
+                            plan = inp.get("plan", "")
+                        kind = classify_plan_mode(last_user_prompt)
+                        if kind == "plan_mode":
                             yield {
-                                "session": session, "ts": ts, "kind": "plan_mode",
+                                "session": session, "ts": ts, "kind": kind,
                                 "tool": "ExitPlanMode",
-                                "signature": canonical_signature("plan_mode", "ExitPlanMode", plan),
+                                "signature": canonical_signature(kind, "ExitPlanMode", plan),
                                 "evidence": redact(str(plan)[:400]),
                             }
 
