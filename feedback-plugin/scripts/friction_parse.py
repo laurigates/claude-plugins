@@ -119,74 +119,123 @@ def parse_since(spec: str) -> datetime | None:
     return datetime.fromisoformat(spec.replace("Z", "+00:00"))
 
 
-def extract_frictions(path: Path) -> Iterator[dict]:
-    session = path.stem
+def iter_jsonl(path: Path) -> Iterator[dict]:
     with path.open("r", encoding="utf-8", errors="replace") as f:
         for line in f:
             line = line.strip()
             if not line:
                 continue
             try:
-                rec = json.loads(line)
+                yield json.loads(line)
             except json.JSONDecodeError:
                 continue
 
-            rtype = rec.get("type")
-            ts = rec.get("timestamp", "")
 
-            # User interrupt markers (sit in user messages)
-            if rtype == "user":
-                msg = rec.get("message", {})
-                content = msg.get("content")
-                text = first_text(content)
-                if text and INTERRUPT_RE.match(text):
-                    yield {
-                        "session": session, "ts": ts, "kind": "user_interrupt",
-                        "tool": "-", "signature": "interrupt:user",
-                        "evidence": redact(text[:400]),
-                    }
-                    continue
-                # Tool results embedded in user messages carry is_error
-                tur = rec.get("toolUseResult") or {}
-                if not isinstance(tur, dict):
-                    tur = {"content": tur}
-                is_error = tur.get("is_error") or (isinstance(content, list) and any(
-                    isinstance(i, dict) and i.get("type") == "tool_result" and i.get("is_error")
-                    for i in content
-                ))
-                if is_error:
-                    tool = rec.get("toolUseName") or tur.get("toolName") or "?"
-                    body = text or json.dumps(tur)[:400]
-                    if HOOK_BLOCK_RE.search(body):
-                        kind = "hook_block"
-                    elif USER_REJECT_RE.search(body):
-                        kind = "user_reject"
-                    elif tool == "Bash" and "git push" in body.lower() and PUSH_PR_RE.search(body):
-                        kind = "push_to_pr_branch"
-                    else:
-                        kind = "tool_error"
-                    yield {
-                        "session": session, "ts": ts, "kind": kind,
-                        "tool": tool,
-                        "signature": canonical_signature(kind, tool, body),
-                        "evidence": redact(body[:400]),
-                    }
+def build_tool_index(path: Path) -> dict[str, str]:
+    """Map tool_use_id -> tool_name from assistant records.
 
-            elif rtype == "assistant":
-                msg = rec.get("message", {})
-                for item in msg.get("content", []) or []:
-                    if isinstance(item, dict) and item.get("type") == "tool_use":
-                        if item.get("name") == "ExitPlanMode":
-                            plan = ""
-                            inp = item.get("input") or {}
-                            if isinstance(inp, dict):
-                                plan = inp.get("plan", "")
-                            yield {
-                                "session": session, "ts": ts, "kind": "plan_mode",
-                                "tool": "ExitPlanMode",
-                                "signature": canonical_signature("plan_mode", "ExitPlanMode", plan),
-                                "evidence": redact(str(plan)[:400]),
-                            }
+    In Claude Code JSONL transcripts, the tool name only lives on the
+    assistant's tool_use block. The user record carrying the tool_result
+    references it via tool_use_id. Without this index, every user-side
+    error event would report tool "?".
+    """
+    index: dict[str, str] = {}
+    for rec in iter_jsonl(path):
+        if rec.get("type") != "assistant":
+            continue
+        for item in rec.get("message", {}).get("content", []) or []:
+            if isinstance(item, dict) and item.get("type") == "tool_use":
+                tool_id = item.get("id")
+                tool_name = item.get("name")
+                if tool_id and tool_name:
+                    index[tool_id] = tool_name
+    return index
+
+
+def lookup_tool_name(rec: dict, index: dict[str, str]) -> str:
+    """Resolve the tool name for a user tool_result record."""
+    content = rec.get("message", {}).get("content")
+    if isinstance(content, list):
+        for item in content:
+            if isinstance(item, dict) and item.get("type") == "tool_result":
+                tool_id = item.get("tool_use_id")
+                if tool_id and tool_id in index:
+                    return index[tool_id]
+    for key in ("toolUseID", "tool_use_id"):
+        tool_id = rec.get(key)
+        if tool_id and tool_id in index:
+            return index[tool_id]
+    tur = rec.get("toolUseResult") or {}
+    if isinstance(tur, dict):
+        tool_id = tur.get("tool_use_id") or tur.get("toolUseID")
+        if tool_id and tool_id in index:
+            return index[tool_id]
+        fallback = tur.get("toolName")
+        if fallback:
+            return fallback
+    return rec.get("toolUseName") or "?"
+
+
+def extract_frictions(path: Path) -> Iterator[dict]:
+    session = path.stem
+    tool_index = build_tool_index(path)
+    for rec in iter_jsonl(path):
+        rtype = rec.get("type")
+        ts = rec.get("timestamp", "")
+
+        # User interrupt markers (sit in user messages)
+        if rtype == "user":
+            msg = rec.get("message", {})
+            content = msg.get("content")
+            text = first_text(content)
+            if text and INTERRUPT_RE.match(text):
+                yield {
+                    "session": session, "ts": ts, "kind": "user_interrupt",
+                    "tool": "-", "signature": "interrupt:user",
+                    "evidence": redact(text[:400]),
+                }
+                continue
+            # Tool results embedded in user messages carry is_error
+            tur = rec.get("toolUseResult") or {}
+            if not isinstance(tur, dict):
+                tur = {"content": tur}
+            is_error = tur.get("is_error") or (isinstance(content, list) and any(
+                isinstance(i, dict) and i.get("type") == "tool_result" and i.get("is_error")
+                for i in content
+            ))
+            if is_error:
+                tool = lookup_tool_name(rec, tool_index)
+                body = text or json.dumps(tur)[:400]
+                if HOOK_BLOCK_RE.search(body):
+                    kind = "hook_block"
+                elif USER_REJECT_RE.search(body):
+                    kind = "user_reject"
+                elif tool == "Bash" and "git push" in body.lower() and PUSH_PR_RE.search(body):
+                    kind = "push_to_pr_branch"
+                else:
+                    kind = "tool_error"
+                yield {
+                    "session": session, "ts": ts, "kind": kind,
+                    "tool": tool,
+                    "signature": canonical_signature(kind, tool, body),
+                    "evidence": redact(body[:400]),
+                }
+
+        elif rtype == "assistant":
+            msg = rec.get("message", {})
+            for item in msg.get("content", []) or []:
+                if isinstance(item, dict) and item.get("type") == "tool_use":
+                    if item.get("name") == "ExitPlanMode":
+                        plan = ""
+                        inp = item.get("input") or {}
+                        if isinstance(inp, dict):
+                            plan = inp.get("plan", "")
+                        yield {
+                            "session": session, "ts": ts, "kind": "plan_mode",
+                            "tool": "ExitPlanMode",
+                            "signature": canonical_signature("plan_mode", "ExitPlanMode", plan),
+                            "evidence": redact(str(plan)[:400]),
+                        }
 
 
 def main() -> int:
