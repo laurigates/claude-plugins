@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.2](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.3.1...feedback-plugin-v1.3.2) (2026-04-18)
+
+
+### Bug Fixes
+
+* **feedback-plugin:** resolve the four open friction-learner issues ([#1084](https://github.com/laurigates/claude-plugins/issues/1084)) ([7286bc0](https://github.com/laurigates/claude-plugins/commit/7286bc0740405597ea1b3ec45cd1ba12f10a9c91))
+
 ## [1.3.1](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.3.0...feedback-plugin-v1.3.1) (2026-04-17)
 
 
