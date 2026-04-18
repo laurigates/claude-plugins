@@ -186,7 +186,7 @@ Initialize Blueprint Development in this project.
    └── skills/                      # Custom skill overrides (optional)
    ```
 
-7. **Create `manifest.json`** (v3.3.0 schema):
+7. **Create `manifest.json`** (v3.3.0 schema — canonical filename is `docs/blueprint/manifest.json`, no dot prefix):
    ```json
    {
      "format_version": "3.3.0",
