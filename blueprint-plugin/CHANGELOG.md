@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.27.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.27.0...blueprint-plugin-v3.27.1) (2026-04-18)
+
+
+### Bug Fixes
+
+* **blueprint-plugin:** canonicalize manifest.json filename across blueprint docs ([#1086](https://github.com/laurigates/claude-plugins/issues/1086)) ([b08a387](https://github.com/laurigates/claude-plugins/commit/b08a3873ab33c336260ff1d5e39fd987e47dcd45))
+
 ## [3.27.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.26.1...blueprint-plugin-v3.27.0) (2026-04-17)
 
 
