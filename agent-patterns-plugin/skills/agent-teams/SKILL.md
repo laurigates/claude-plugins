@@ -9,7 +9,7 @@ description: |
 user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 created: 2026-03-03
-modified: 2026-03-09
+modified: 2026-04-18
 reviewed: 2026-03-09
 ---
 
@@ -52,6 +52,51 @@ Lead Agent (orchestrator)
 | `SendMessage` | Send DMs, broadcasts, shutdown requests, plan approvals |
 | `TaskOutput` | Get output from a background agent |
 | `TaskStop` | Stop a running background agent |
+
+## Lead Preflight
+
+Run these checks before drafting the PRP or launching agents. A 30-second preflight avoids multi-file corrections after agents have written output.
+
+### Preflight Table
+
+| Check | When to Run | Command |
+|-------|-------------|---------|
+| Next document sequence number | Plan produces a new ADR, PRD, or PRP | `ls <doc-dir>/ \| sort -V \| tail -1` |
+| Filename collision | Plan assigns specific filenames to agents | `git ls-files \| grep -i "<stem>"` |
+| Directory existence | Plan references a subdirectory by name | `find . -maxdepth 3 -type d -name "<dir>"` |
+| Resource budget | Plan allocates limited slots (pins, ports, IDs) | Read the budget file before assigning values |
+
+### Document Numbering
+
+Before drafting a PRP that assigns a sequence number (ADR, PRD, PRP) to an agent:
+
+```bash
+# Resolve the real next number — mental models and cached listings go stale
+ls docs/blueprint/adrs/ | sort -V | tail -1
+# → ADR-015-feature-name.md  →  next number is ADR-016
+```
+
+Adjust the path for your repo's convention (`adrs/`, `architecture/`, etc.).
+Write the resolved number into the PRP **before** spawning agents.
+
+### Filename Collision
+
+Before assigning any planned filename to an agent:
+
+```bash
+git ls-files | grep -i "adr-011"
+find . -name "*adr-011*" -not -path "*/.git/*"
+```
+
+If either command returns a match, the filename collides — update the plan before continuing. Agents implement exactly what the PRP says; collision detection inside an agent is informational only.
+
+### Resource Budget
+
+When the plan assigns limited resources (hardware pins, port numbers, database IDs):
+
+1. Read the current budget file (`pin_config.h`, `ports.yaml`, etc.)
+2. List already-assigned values
+3. Pick from the unassigned set — do not assume a slot is free based on memory alone
 
 ## Team Setup Workflow
 
@@ -280,6 +325,7 @@ In web sessions (`CLAUDE_CODE_REMOTE=true`):
 
 ### Workflow Checklist
 
+- [ ] Run Lead Preflight (sequence numbers, filename collisions, resource budgets)
 - [ ] `TeamCreate` with team name and description
 - [ ] `TaskCreate` for each work unit
 - [ ] Spawn teammates via Agent tool with `team_name` and `name`
