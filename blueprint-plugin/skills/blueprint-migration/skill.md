@@ -4,8 +4,8 @@ description: Versioned migration procedures for upgrading blueprint structure be
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, TodoWrite
 created: 2025-12-22
-modified: 2026-04-16
-reviewed: 2026-04-16
+modified: 2026-04-18
+reviewed: 2026-04-18
 ---
 
 # Blueprint Migration
@@ -14,11 +14,16 @@ Expert skill for migrating blueprint structures between format versions. This sk
 
 ## Core Expertise
 
-- Reading and parsing `.claude/blueprints/.manifest.json` for current version
+- Reading and parsing the blueprint manifest (`docs/blueprint/manifest.json` in v3.0+, or legacy `.claude/blueprints/.manifest.json` in v1.x/v2.x) for current version
 - Determining appropriate migration path based on version comparison
 - Executing versioned migration steps with user confirmation
 - Content hashing for detecting manual modifications
 - Safe file moves with rollback capability
+
+## Canonical Manifest Filename
+
+- **v3.0+**: `docs/blueprint/manifest.json` (canonical, no dot prefix — produced by `/blueprint:init`). Some repos carry a legacy `docs/blueprint/.manifest.json` from earlier v3.0 migrations; upgrade tooling tolerates both via the `$MANIFEST` variable resolved in `/blueprint:upgrade` Step 2.
+- **v1.x/v2.x (historical)**: `.claude/blueprints/.manifest.json` — references to this path in v1/v2 migration documents are historical and must not be renamed.
 
 ## Migration Workflow
 
@@ -46,15 +51,20 @@ Expert skill for migrating blueprint structures between format versions. This sk
 ## Version Detection
 
 ```bash
-# Read manifest version - check both v3.0 and legacy locations
-if [[ -f docs/blueprint/.manifest.json ]]; then
-  cat docs/blueprint/.manifest.json | jq -r '.format_version'
+# Resolve manifest path — canonical first, then tolerated variants
+if [[ -f docs/blueprint/manifest.json ]]; then
+  MANIFEST=docs/blueprint/manifest.json
+elif [[ -f docs/blueprint/.manifest.json ]]; then
+  MANIFEST=docs/blueprint/.manifest.json
 elif [[ -f .claude/blueprints/.manifest.json ]]; then
-  cat .claude/blueprints/.manifest.json | jq -r '.format_version'
+  MANIFEST=.claude/blueprints/.manifest.json
 fi
 
-# Detect v1.0 (no format_version field)
-if ! jq -e '.format_version' .claude/blueprints/.manifest.json > /dev/null 2>&1; then
+jq -r '.format_version // "1.0.0"' "$MANIFEST"
+
+# Detect v1.0 (no format_version field — legacy v1.x/v2.x location only)
+if [[ -f .claude/blueprints/.manifest.json ]] && \
+   ! jq -e '.format_version' .claude/blueprints/.manifest.json > /dev/null 2>&1; then
   echo "v1.0.0"
 fi
 ```
@@ -67,8 +77,8 @@ For detecting modifications to generated content:
 # Generate SHA256 hash of file content
 sha256sum path/to/file | cut -d' ' -f1
 
-# Compare with stored hash in manifest
-jq -r '.generated.skills["skill-name"].content_hash' .claude/blueprints/.manifest.json
+# Compare with stored hash in manifest (use $MANIFEST from Version Detection above)
+jq -r '.generated.skills["skill-name"].content_hash' "$MANIFEST"
 ```
 
 ## Migration Execution Pattern
@@ -94,7 +104,7 @@ If migration fails:
 
 | Operation | Command |
 |-----------|---------|
-| Check version | `jq -r '.format_version' .claude/blueprints/.manifest.json` |
+| Check version | `jq -r '.format_version' "$MANIFEST"` (resolve `$MANIFEST` first; see Version Detection) |
 | Hash file | `sha256sum file \| cut -d' ' -f1` |
 | Safe move | `cp -r source target && rm -rf source` |
 | Check empty dir | `[ -z "$(ls -A dir)" ]` |
