@@ -6,8 +6,8 @@ description: Generate documentation from code. Creates README files, API referen
 tools: Glob, Grep, LS, Read, Edit, Write, TodoWrite
 maxTurns: 15
 created: 2025-12-27
-modified: 2026-03-09
-reviewed: 2026-03-09
+modified: 2026-04-18
+reviewed: 2026-04-18
 ---
 
 # Docs Agent
@@ -110,6 +110,21 @@ Documentation generation is ideal as a teammate — it can document modules in p
 |------|-------------|
 | Teammate | Parallel doc generation across modules while development continues |
 | Subagent | Quick documentation for a single file or function |
+
+## Out-of-Scope Discovery Protocol
+
+When operating with an exclusive write scope in an agent team, apply this protocol if you
+discover a file outside your declared scope needs to change:
+
+1. **STOP immediately.** Do not read, investigate, or edit the out-of-scope file.
+2. In your final summary, include an `Out-of-scope dependencies` section listing:
+   - The file(s) that need changes
+   - What changes are needed (one line each)
+   - Which of your deliverables is blocked without those changes
+3. Exit. The lead will triage and either expand your scope, reassign, or handle it directly.
+
+This preserves your budget for declared deliverables and produces a clean handoff instead
+of a truncated mid-investigation summary.
 
 ## What This Agent Does NOT Do
 

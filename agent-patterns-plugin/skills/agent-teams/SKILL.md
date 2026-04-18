@@ -9,8 +9,8 @@ description: |
 user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 created: 2026-03-03
-modified: 2026-03-09
-reviewed: 2026-03-09
+modified: 2026-04-18
+reviewed: 2026-04-18
 ---
 
 # Agent Teams
@@ -227,6 +227,40 @@ TeamDelete()
 
 TeamDelete fails if teammates are still active.
 
+## Lead Preflight Checklist
+
+Before drafting the PRP and launching agents, run these checks:
+
+| Check | Command | Why |
+|-------|---------|-----|
+| Next ADR/PRD/PRP sequence number | `ls docs/blueprint/adrs/ \| sort -V \| tail -1` | Prevents numbering collisions when agents write docs in parallel |
+| Filename conflicts | `git ls-files \| grep <filename>` | Agent scope tables can't guard against a stale mental model of the tree |
+| Hardware pin budget (embedded) | Read `pin_config.h` or equivalent | Prevents pin assignments overlapping across Phase 1 agents |
+
+A 30-second sweep prevents multi-edit renaming work after agents return.
+
+## Out-of-Scope Discovery Protocol
+
+Include this protocol in every agent's prompt when that agent has an exclusive write scope:
+
+```markdown
+### Out-of-scope discovery protocol
+
+If you discover that a file outside your declared write scope needs to change
+for your deliverables to work:
+
+1. **STOP immediately.** Do not read, investigate, or edit the out-of-scope file.
+2. In your final summary, include a section titled `Out-of-scope dependencies` that lists:
+   - The file(s) that need changes
+   - What changes are needed (one line each)
+   - Which of your deliverables is blocked without those changes
+3. Exit. The lead will triage and either expand your scope, reassign to another agent,
+   or handle it directly.
+```
+
+This prevents the "investigate out of scope → exhaust budget → truncated summary" failure mode.
+The lead can then address the dependency before the next phase or assign a follow-up issue.
+
 ## Common Patterns
 
 ### Parallel Code Review
@@ -246,6 +280,25 @@ Tasks: backend-api, frontend-ui, tests
 Teammates: each spawned with isolation: "worktree"
 Lead: delegates git push (sub-agents must not push independently in sandbox)
 ```
+
+### Multi-Phase Architecture Refactor
+
+```
+Phase 1 (3 parallel):  Framework upgrade + new module scaffolding + ADR draft
+Phase 2 (1 serialized): Reactive executor — depends on Phase 1 contracts
+Phase 3 (1 serialized): Wire-up + legacy deletion — exclusive main.c owner
+Phase 4 (2 parallel):  Host tests + documentation finalization
+
+Key rules:
+- One owner per file across ALL phases (exclusive write scope per agent)
+- "Agent writes, lead commits" — keep branch coherent between phases
+- Phase boundaries = commit points (clean checkpoint semantics)
+- Phase 3 deletion runs AFTER Phases 1–2 finalize their contracts
+```
+
+Real-world outcome: +1850/−1826 lines, zero file-scope collisions across 6 agents,
+tests exposed a bug on first build. See also: the Out-of-Scope Discovery Protocol above —
+include it in every focused-scope agent prompt.
 
 ### Blocked Task Resolution
 
