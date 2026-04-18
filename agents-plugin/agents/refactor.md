@@ -83,6 +83,9 @@ Restructure code for improved quality while preserving external behavior. Makes 
 ### Verification
 - Existing tests: PASSED
 - New tests needed: [list if applicable]
+
+### Out-of-scope dependencies (if any)
+- file:line — change needed — blocks: [deliverable]
 ```
 
 ## What This Agent Does
@@ -104,6 +107,19 @@ Refactoring works in both modes. As a teammate, it benefits from native file-loc
 |------|-------------|
 | Teammate | Parallel refactoring across modules — file-locking prevents conflicts |
 | Subagent | Focused refactoring of a single file or class |
+
+## Out-of-scope discovery protocol
+
+If during your work you discover that a file **outside your declared write scope** needs to change for your deliverables to compile, link, or function correctly:
+
+1. **STOP immediately.** Do not read, investigate, or edit the out-of-scope file.
+2. In your final summary, include a section titled `Out-of-scope dependencies` that lists:
+   - The file(s) that need changes
+   - What changes are needed (one line each)
+   - Which of your deliverables is blocked without those changes
+3. **Exit.** The lead will triage and either expand your scope, reassign to another agent, or handle it directly.
+
+This pattern preserves your budget for your declared deliverables and produces a precise handoff rather than a truncated investigation.
 
 ## What This Agent Does NOT Do
 

@@ -77,6 +77,9 @@ For simple linter warnings (unused imports, formatting):
 
 ### Related
 - [Any related issues noticed but not fixed]
+
+### Out-of-scope dependencies (if any)
+- file:line — change needed — blocks: [fix]
 ```
 
 ## What This Agent Does
@@ -85,6 +88,19 @@ For simple linter warnings (unused imports, formatting):
 - Resolves linter warnings and errors
 - Diagnoses failing tests
 - Fixes runtime errors and exceptions
+
+## Out-of-scope discovery protocol
+
+If during your work you discover that a file **outside your declared write scope** needs to change for your fix to compile or work correctly:
+
+1. **STOP immediately.** Do not read, investigate, or edit the out-of-scope file.
+2. In your final summary, include a section titled `Out-of-scope dependencies` that lists:
+   - The file(s) that need changes
+   - What changes are needed (one line each)
+   - Which of your fixes is blocked without those changes
+3. **Exit.** The lead will triage and either expand your scope, reassign to another agent, or handle it directly.
+
+This pattern preserves your budget for your declared fix and produces a precise handoff rather than a truncated investigation.
 
 ## What This Agent Does NOT Do
 

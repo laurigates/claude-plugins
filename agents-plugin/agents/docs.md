@@ -91,6 +91,9 @@ Calculate total price for items with optional tax.
 - 15 functions documented
 - 3 classes documented
 - 2 modules documented
+
+### Out-of-scope dependencies (if any)
+- file — change needed — blocks: [deliverable]
 ```
 
 ## What This Agent Does
@@ -110,6 +113,19 @@ Documentation generation is ideal as a teammate — it can document modules in p
 |------|-------------|
 | Teammate | Parallel doc generation across modules while development continues |
 | Subagent | Quick documentation for a single file or function |
+
+## Out-of-scope discovery protocol
+
+If during your work you discover that a file **outside your declared write scope** needs to change for your documentation to be accurate or linkable:
+
+1. **STOP immediately.** Do not read, investigate, or edit the out-of-scope file.
+2. In your final summary, include a section titled `Out-of-scope dependencies` that lists:
+   - The file(s) that need changes
+   - What changes are needed (one line each)
+   - Which of your deliverables is blocked without those changes
+3. **Exit.** The lead will triage and either expand your scope, reassign to another agent, or handle it directly.
+
+This pattern preserves your budget for your declared deliverables and produces a precise handoff rather than a truncated investigation.
 
 ## What This Agent Does NOT Do
 

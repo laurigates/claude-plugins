@@ -65,6 +65,9 @@ Write and run tests for code. This agent completes the full cycle: analyze → w
 
 ### Next Steps
 - [Specific action if tests fail]
+
+### Out-of-scope dependencies (if any)
+- file — change needed — blocks: [test suite]
 ```
 
 ## What This Agent Does
@@ -84,6 +87,19 @@ Testing works well in both modes. As a teammate, it can run tests in parallel wi
 |------|-------------|
 | Teammate | Parallel test suites — spawn unit, integration, and e2e test teammates |
 | Subagent | Focused testing for a single module or function |
+
+## Out-of-scope discovery protocol
+
+If during your work you discover that a file **outside your declared write scope** needs to change for your tests to compile or pass:
+
+1. **STOP immediately.** Do not read, investigate, or edit the out-of-scope file.
+2. In your final summary, include a section titled `Out-of-scope dependencies` that lists:
+   - The file(s) that need changes
+   - What changes are needed (one line each)
+   - Which of your test suites are blocked without those changes
+3. **Exit.** The lead will triage and either expand your scope, reassign to another agent, or handle it directly.
+
+This pattern preserves your budget for your declared test suites and produces a precise handoff rather than a truncated investigation.
 
 ## What This Agent Does NOT Do
 
