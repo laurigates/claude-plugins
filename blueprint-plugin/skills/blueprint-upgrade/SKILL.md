@@ -1,7 +1,7 @@
 ---
 created: 2025-12-17
-modified: 2026-04-17
-reviewed: 2026-04-17
+modified: 2026-04-18
+reviewed: 2026-04-18
 description: "Upgrade blueprint structure to the latest format version"
 args: "[--non-interactive|-y]"
 argument-hint: "[--non-interactive|-y]"
@@ -43,20 +43,31 @@ If a migration step would require any prompt not listed above, **abort the upgra
 **Steps**:
 
 1. **Check current state**:
-   - Read `docs/blueprint/.manifest.json` (v3.0 location) or `.claude/blueprints/.manifest.json` (v1.x/v2.x location)
-   - If not found in either location, suggest running `/blueprint:init` instead
+   - Resolve manifest path — check all known locations (in order):
+     1. `docs/blueprint/.manifest.json` (v3.0+ dot-prefixed)
+     2. `docs/blueprint/manifest.json` (v3.1+ without dot prefix)
+     3. `.claude/blueprints/.manifest.json` (v1.x/v2.x location)
+   - Store the resolved path as `$MANIFEST`; if not found in any location, suggest running `/blueprint:init` instead
    - Extract current `format_version` (default to "1.0.0" if field missing)
 
 2. **Determine upgrade path**:
    ```bash
-   # Read current version - check both old and new locations
+   # Resolve manifest path once — use $MANIFEST in all subsequent jq commands
    if [[ -f docs/blueprint/.manifest.json ]]; then
-     current=$(jq -r '.format_version // "3.0.0"' docs/blueprint/.manifest.json)
+     MANIFEST=docs/blueprint/.manifest.json
+   elif [[ -f docs/blueprint/manifest.json ]]; then
+     MANIFEST=docs/blueprint/manifest.json
    elif [[ -f .claude/blueprints/.manifest.json ]]; then
-     current=$(jq -r '.format_version // "1.0.0"' .claude/blueprints/.manifest.json)
+     MANIFEST=.claude/blueprints/.manifest.json
+   else
+     echo "ERROR: no blueprint manifest found. Run /blueprint:init first."
+     exit 1
    fi
+   current=$(jq -r '.format_version // "1.0.0"' "$MANIFEST")
    target="3.3.0"
    ```
+
+   **Important**: Store the resolved `$MANIFEST` path. Use it in every `jq` invocation throughout this skill and in all delegated migration steps. This avoids silent failures when the filename differs from what a command hard-codes.
 
    **Version compatibility matrix**:
    | From Version | To Version | Migration Document |
@@ -82,7 +93,7 @@ If a migration step would require any prompt not listed above, **abort the upgra
    ls .claude/commands/project/continue.md 2>/dev/null
 
    # Check manifest for generated entries
-   jq -r '.generated.commands // {} | keys[]' docs/blueprint/.manifest.json 2>/dev/null
+   jq -r '.generated.commands // {} | keys[]' "$MANIFEST" 2>/dev/null
    ```
 
    **If deprecated entries found**:
@@ -112,7 +123,7 @@ If a migration step would require any prompt not listed above, **abort the upgra
 
    a. **Check if task_registry already exists**:
       ```bash
-      jq -e '.task_registry' docs/blueprint/manifest.json 2>/dev/null
+      jq -e '.task_registry' "$MANIFEST" 2>/dev/null
       ```
 
       If exists, skip to next step.
@@ -134,7 +145,7 @@ If a migration step would require any prompt not listed above, **abort the upgra
       ```
 
    c. **Add task_registry to manifest**:
-      Use `jq` to add the `task_registry` section to manifest.json with all tasks defaulting to:
+      Use `jq` to add the `task_registry` section to `"$MANIFEST"` with all tasks defaulting to:
       - `enabled: true` (except `curate-docs` which defaults to `false`)
       - `auto_run`: based on user choice (safe read-only tasks: `adr-validate`, `feature-tracker-sync`, `sync-ids`)
       - `last_completed_at: null`
@@ -151,8 +162,8 @@ If a migration step would require any prompt not listed above, **abort the upgra
 
    Delegate to `skills/blueprint-migration/migrations/v3.2-to-v3.3.md`. Summary of what it does:
 
-   a. Classify the blueprint as `root`, `child`, or `standalone` by walking ancestors and descendants for other `docs/blueprint/manifest.json` files.
-   b. Add a `workspaces` block to `docs/blueprint/manifest.json` (omitted for standalone).
+   a. Classify the blueprint as `root`, `child`, or `standalone` by walking ancestors and descendants for other blueprint manifest files.
+   b. Add a `workspaces` block to `$MANIFEST` (omitted for standalone).
    c. Bump `format_version` to `3.3.0` and append an entry to `upgrade_history`.
    d. For root blueprints, run `/blueprint:workspace-scan` to populate `workspaces.children`.
    e. (Optional) Initialise the root `feature-tracker.json` `workspaces` summary for portfolio FR tracking.
@@ -486,6 +497,19 @@ If a migration step would require any prompt not listed above, **abort the upgra
    - "Regenerate rules" → Run `/blueprint:generate-rules`
    - "Update CLAUDE.md" → Run `/blueprint:claude-md`
    - "Commit changes" → Run `/git:commit` with migration message
+
+**Post-migration assertion**:
+After any version bump, verify `format_version` actually changed to the target. This catches silent failures where `jq` operated on the wrong path and exited 0 with empty output:
+
+```bash
+actual=$(jq -r '.format_version' "$MANIFEST")
+if [[ "$actual" != "$target" ]]; then
+  echo "ERROR: Migration failed — format_version is '$actual', expected '$target'"
+  echo "Check that $MANIFEST was written correctly and rerun the migration step."
+  exit 1
+fi
+echo "Migration verified: format_version = $actual in $MANIFEST"
+```
 
 **Rollback**:
 If upgrade fails:
