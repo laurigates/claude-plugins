@@ -147,6 +147,9 @@ def skill_slug(skill_path: Path) -> str:
     return skill_path.parent.name
 
 
+_DISABLE_RE = re.compile(r"^disable-model-invocation:\s*true\b", re.MULTILINE)
+
+
 def audit(root: Path) -> list[dict]:
     results = []
     for path in find_skills(root):
@@ -162,13 +165,21 @@ def audit(root: Path) -> list[dict]:
                         "path": str(path.relative_to(REPO_ROOT)),
                         "category": "MISSING",
                         "description": "",
+                        "auto_invokable": True,
                         "reason": "unparseable frontmatter",
                     }
                 )
                 continue
             reason = "frontmatter YAML parse error (regex fallback)"
+            # Still look for disable-model-invocation via regex
+            try:
+                fm_text = path.read_text(encoding="utf-8").split("\n---", 1)[0]
+            except OSError:
+                fm_text = ""
+            auto_invokable = not _DISABLE_RE.search(fm_text)
         else:
             desc = fm.get("description")
+            auto_invokable = not (fm.get("disable-model-invocation") is True)
         category = classify(desc)
         preview = ""
         if isinstance(desc, str):
@@ -182,6 +193,7 @@ def audit(root: Path) -> list[dict]:
                 "path": str(path.relative_to(REPO_ROOT)),
                 "category": category,
                 "description": preview,
+                "auto_invokable": auto_invokable,
                 "reason": reason,
             }
         )
@@ -195,6 +207,9 @@ def print_summary(results: list[dict]) -> None:
     for r in results:
         per_plugin[r["plugin"]][r["category"]] += 1
 
+    auto_bad = sum(1 for r in results if r["category"] != "OK" and r["auto_invokable"])
+    explicit_only_bad = sum(1 for r in results if r["category"] != "OK" and not r["auto_invokable"])
+
     print(f"Audited {total} skills across {len(per_plugin)} plugins")
     print()
     print("Overall:")
@@ -204,6 +219,8 @@ def print_summary(results: list[dict]) -> None:
         print(f"  {cat:<11} {n:>4}  ({pct:5.1f}%)")
     bad = total - overall.get("OK", 0)
     print(f"  {'NEEDS FIX':<11} {bad:>4}  ({(bad / total * 100) if total else 0:5.1f}%)")
+    print(f"    auto-invokable: {auto_bad:>3}  (priority)")
+    print(f"    explicit-only:  {explicit_only_bad:>3}  (disable-model-invocation: true)")
     print()
 
     # Per-plugin breakdown, sorted by worst-offender count
@@ -241,9 +258,19 @@ def main() -> int:
     parser.add_argument("--plugin", help="Filter output to one plugin")
     parser.add_argument("--json", action="store_true", help="Emit JSON")
     parser.add_argument(
+        "--auto-invokable",
+        action="store_true",
+        help="Filter to skills that Claude can auto-invoke (omit those with disable-model-invocation: true)",
+    )
+    parser.add_argument(
         "--strict",
         action="store_true",
-        help="Exit non-zero if any skill is not OK (for CI use)",
+        help="Exit non-zero if any skill has a MISSING or EMPTY description (pre-commit gate)",
+    )
+    parser.add_argument(
+        "--strict-all",
+        action="store_true",
+        help="Exit non-zero if any auto-invokable skill is not OK (stricter CI gate; fails on NO_TRIGGER)",
     )
     args = parser.parse_args()
 
@@ -254,6 +281,8 @@ def main() -> int:
         filtered = [r for r in filtered if r["category"] == args.category]
     if args.plugin:
         filtered = [r for r in filtered if r["plugin"] == args.plugin]
+    if args.auto_invokable:
+        filtered = [r for r in filtered if r["auto_invokable"]]
 
     if args.json:
         json.dump(filtered, sys.stdout, indent=2)
@@ -263,9 +292,20 @@ def main() -> int:
     else:
         print_summary(results)
 
+    if args.strict_all:
+        bad = [r for r in results if r["category"] != "OK" and r["auto_invokable"]]
+        if bad:
+            print(f"\n{len(bad)} auto-invokable skills need description fixes", file=sys.stderr)
+            return 1
+        return 0
     if args.strict:
-        bad = [r for r in results if r["category"] != "OK"]
-        return 1 if bad else 0
+        bad = [r for r in results if r["category"] in ("MISSING", "EMPTY")]
+        if bad:
+            print(f"\n{len(bad)} skills have MISSING or EMPTY description:", file=sys.stderr)
+            for r in bad:
+                print(f"  {r['path']} ({r['category']})", file=sys.stderr)
+            return 1
+        return 0
     return 0
 
 
