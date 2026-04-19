@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.32.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.31.0...git-plugin-v2.32.0) (2026-04-19)
+
+
+### Features
+
+* make skills discoverable by Claude's auto-invocation ([#1090](https://github.com/laurigates/claude-plugins/issues/1090)) ([cded1da](https://github.com/laurigates/claude-plugins/commit/cded1da1ebaf350cba1285b58ecadbbaa0eb01f6))
+
 ## [2.31.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.30.1...git-plugin-v2.31.0) (2026-04-17)
 
 

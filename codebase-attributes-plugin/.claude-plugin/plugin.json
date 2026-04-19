@@ -1,6 +1,6 @@
 {
   "name": "codebase-attributes-plugin",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "description": "Structured codebase health attributes with severity-based agent routing",
   "author": {
     "name": "Lauri Gates"
