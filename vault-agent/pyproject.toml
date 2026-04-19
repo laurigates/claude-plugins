@@ -1,0 +1,28 @@
+[project]
+name = "vault-agent"
+version = "0.1.0"
+description = "Claude Agent SDK app for Obsidian vault maintenance (tags, links, stubs, MOCs)."
+readme = "README.md"
+authors = [
+    { name = "Lauri Gates", email = "lauri.gates@forumvirium.fi" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "claude-agent-sdk>=0.1.39",
+    "python-frontmatter>=1.1.0",
+    "pyyaml>=6.0.2",
+    "rich>=14.3.3",
+    "typer>=0.24.0",
+]
+
+[project.scripts]
+vault-agent = "vault_agent.main:app"
+
+[build-system]
+requires = ["uv_build>=0.10.2,<0.11.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]
