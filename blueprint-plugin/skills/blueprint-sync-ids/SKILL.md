@@ -1,8 +1,12 @@
 ---
 created: 2026-01-20
-modified: 2026-02-17
+modified: 2026-04-19
 reviewed: 2026-01-20
-description: "Scan all blueprint documents and assign IDs to those missing them, update manifest registry"
+description: |
+  Scan all blueprint documents and assign IDs to those missing them, update manifest registry.
+  Use when the user asks to "sync document IDs", assigns PRD-NNN / ADR-NNNN / PRP-NNN / WO-NNN
+  IDs to docs missing them, wants to build GitHub issue index for orphans, creates issues for
+  unlinked documents with --link-issues, or previews ID changes with --dry-run.
 args: "[--dry-run] [--link-issues]"
 argument-hint: "--dry-run to preview changes, --link-issues to create GitHub issues for orphans"
 allowed-tools: Read, Write, Edit, Glob, Bash, AskUserQuestion

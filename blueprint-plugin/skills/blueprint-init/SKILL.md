@@ -1,8 +1,13 @@
 ---
 created: 2025-12-16
-modified: 2026-04-16
+modified: 2026-04-19
 reviewed: 2026-04-12
-description: "Initialize Blueprint Development structure in current project"
+description: |
+  Initialize Blueprint Development structure in current project. Use when the user asks
+  to "init blueprint", "set up blueprint", bootstrap a new project with docs/blueprint/
+  manifest and PRD/ADR/PRP directories, enable feature tracking, migrate existing
+  documentation into blueprint-managed paths, or configure decision detection and task
+  scheduling for the first time.
 allowed-tools: Bash, Write, Read, AskUserQuestion, Glob
 name: blueprint-init
 ---

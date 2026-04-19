@@ -1,8 +1,12 @@
 ---
 created: 2026-02-06
-modified: 2026-02-06
+modified: 2026-04-19
 reviewed: 2026-02-06
-description: "List blueprint documents (ADRs, PRDs, PRPs) with metadata extracted from frontmatter and headers"
+description: |
+  List blueprint documents (ADRs, PRDs, PRPs) with metadata extracted from frontmatter and
+  headers. Use when the user asks to "list blueprint docs", "show all PRDs/ADRs/PRPs", audit
+  document statuses, generate an index table for blueprint artifacts, or wants a quick
+  overview of all project documentation at once.
 args: "<type>"
 allowed-tools: Bash, Glob
 argument-hint: "adrs | prds | prps | all"

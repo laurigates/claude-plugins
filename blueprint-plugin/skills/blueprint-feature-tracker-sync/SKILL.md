@@ -1,8 +1,12 @@
 ---
 created: 2026-01-02
-modified: 2026-04-12
+modified: 2026-04-19
 reviewed: 2026-04-12
-description: "Synchronize feature tracker with TODO.md and PRDs, manage tasks"
+description: |
+  Synchronize feature tracker with TODO.md and PRDs, manage tasks. Use when the user asks
+  to "sync feature tracker", reconcile discrepancies between TODO.md checkboxes and tracker
+  status, recalculate completion statistics, add/complete tasks in tasks.in_progress, or
+  generate a markdown progress summary with --summary.
 allowed-tools: Read, Write, Bash, Glob, AskUserQuestion
 name: blueprint-feature-tracker-sync
 ---
