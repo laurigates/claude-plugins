@@ -1,10 +1,16 @@
 ---
-description: Analyze all plugins for sub-agent opportunities. Identifies skills with verbose output, gaps in agent coverage, and model selection improvements.
+description: |
+  Analyze all plugins for sub-agent opportunities by identifying skills with verbose output,
+  gaps in agent coverage, tool over-permissions, and model selection improvements. Use when
+  the user wants to audit the plugin collection for where sub-agents would improve workflows,
+  review haiku vs opus model selection across agents, check for tool over-permissions,
+  identify skills needing context isolation (builds, test runs, terraform plans), or map
+  delegation gaps; also use when focusing the analysis on a single plugin.
 args: "[--focus <plugin-name>]"
 allowed-tools: Glob, Grep, Read, Bash(ls *), Bash(wc *), TodoWrite
 argument-hint: "analyze all plugins or --focus <plugin-name>"
 created: 2026-01-24
-modified: 2026-02-27
+modified: 2026-04-19
 reviewed: 2026-02-08
 name: agents-analyze
 agent: general-purpose

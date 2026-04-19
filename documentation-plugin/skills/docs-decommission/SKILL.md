@@ -1,12 +1,17 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-04-19
 reviewed: 2026-02-08
 allowed-tools: Read, Write, Edit, Bash(find *), Bash(ls *), Grep, TodoWrite
 args: <service-name>
 argument-hint: <service-name>
 disable-model-invocation: true
-description: Generate comprehensive service decommission documentation
+description: |
+  Generate comprehensive service decommission documentation covering infrastructure resources,
+  data management, access/security, DNS/networking, dependencies, monitoring cleanup, and
+  financial/administrative checklists. Use when the user is decommissioning or retiring a
+  service, planning to shut down infrastructure, archiving a deployed resource, or wants a
+  DECOMMISSION-<service>.md checklist created at deployment time while context is fresh.
 name: docs-decommission
 ---
 

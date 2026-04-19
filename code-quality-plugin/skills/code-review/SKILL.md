@@ -1,9 +1,14 @@
 ---
 created: 2025-12-16
-modified: 2026-03-09
+modified: 2026-04-19
 reviewed: 2026-03-09
 allowed-tools: Task, TodoWrite, Glob, Read
-description: Perform comprehensive code review with automated fixes
+description: |
+  Perform a comprehensive code review covering quality, security,
+  performance, architecture, and test coverage, with automated fixes where
+  safe. Use when the user asks to review code or a directory, audit for
+  vulnerabilities and OWASP issues, check SOLID adherence, look for
+  performance bottlenecks, or spot missing test cases.
 args: "[PATH]"
 argument-hint: "[PATH]"
 name: code-review

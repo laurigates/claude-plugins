@@ -1,10 +1,16 @@
 ---
-description: "Synchronize documentation with actual skills, commands, and agents in the codebase"
+description: |
+  Synchronize documentation with the actual skills, commands, and agents present in the
+  codebase by fixing count mismatches, adding missing entries, and removing stale
+  references. Use when the user wants to sync skill/command/agent catalogs after adding or
+  removing items, fix wrong counts in README/CLAUDE.md, detect stale entries referencing
+  removed items, or when they mention "docs out of sync", "update skill catalog", or
+  "regenerate command reference".
 args: "[--scope <type>] [--dry-run] [--verbose]"
 argument-hint: "--scope skills|commands|agents, --dry-run to preview, --verbose for details"
 allowed-tools: Bash, Grep, Glob, Read, Edit, Write, TodoWrite
 created: 2025-12-16
-modified: 2026-02-11
+modified: 2026-04-19
 reviewed: 2025-12-16
 name: docs-sync
 ---

@@ -1,13 +1,15 @@
 ---
 name: blog-post-writing
 description: |
-  Consistent style guide for writing blog posts about projects and technical work.
-  Supports quick updates, detailed write-ups, retrospectives, and tutorials.
-  Designed for low-friction entry and easy scanning.
+  Consistent style guide for writing blog posts about projects and technical work. Supports
+  quick updates, detailed write-ups, retrospectives, tutorials, and deep dives with
+  low-friction entry and easy scanning. Use when the user is writing about work they've
+  done, documenting a project update, creating a devlog entry, or when they mention "write
+  up", "blog", "post", or "devlog".
 user-invocable: false
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash(hugo *), Bash(date *), TodoWrite
 created: 2026-01-10
-modified: 2026-01-10
+modified: 2026-04-19
 reviewed: 2026-01-10
 ---
 

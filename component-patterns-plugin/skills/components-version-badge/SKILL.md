@@ -1,8 +1,14 @@
 ---
 created: 2025-02-03
-modified: 2026-02-10
+modified: 2026-04-19
 reviewed: 2025-02-03
-description: Implement a version badge with tooltip showing build info and recent changelog - framework agnostic
+description: |
+  Implement a framework-agnostic version badge component with a tooltip showing build info
+  (version, commit, branch, timestamp) and recent changelog entries. Use when the user
+  wants to add a version display to their app header or footer, surface build information
+  in the UI, expose recent changelog entries as a tooltip, or when they mention "version
+  badge", "build info display", or "commit SHA in UI". Supports Next.js, Nuxt, SvelteKit,
+  Vite+React, and plain React/Vue/Svelte.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
 args: "[--check-only] [--location <header|footer|custom>]"
 argument-hint: "[--check-only] [--location <header|footer|custom>]"

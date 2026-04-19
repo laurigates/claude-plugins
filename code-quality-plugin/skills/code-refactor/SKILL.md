@@ -1,11 +1,16 @@
 ---
 created: 2025-12-16
-modified: 2026-03-09
+modified: 2026-04-19
 reviewed: 2026-03-09
 allowed-tools: Task, TodoWrite
 args: <file-path|directory>
 argument-hint: <file-path|directory>
-description: Refactor code applying functional programming principles - pure functions, immutability, and composition. Use for file or directory-scope refactoring.
+description: |
+  Refactor code applying functional programming principles - pure functions,
+  immutability, and composition. Use when the user asks to refactor a file
+  or directory, extract pure functions, remove side effects, replace
+  imperative loops with map/filter/reduce, add early returns to deeply
+  nested code, or separate business logic from I/O.
 name: code-refactor
 ---
 

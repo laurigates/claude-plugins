@@ -1,9 +1,13 @@
 ---
 created: 2025-12-16
-modified: 2026-03-09
+modified: 2026-04-19
 reviewed: 2026-03-09
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git pull *), Bash(git stash *), Bash(gh issue *), Bash(gh pr *), Bash(gh repo *), Bash(gh label *), Bash(pre-commit *), Read, Edit, Write, Grep, Glob, TodoWrite, AskUserQuestion, Task, mcp__github__create_pull_request, mcp__github__issue_read, mcp__github__list_issues
-description: Process GitHub issues with interactive selection, conflict detection, and parallel work support
+description: |
+  Process GitHub issues end-to-end with TDD, interactive selection, conflict
+  detection, and parallel work support. Use when the user asks to work on an
+  issue, fix issue #N, pick issues to tackle, batch-process several issues
+  in parallel, or spin up PRs from a prioritized issue list.
 args: "[issue-numbers...] [--auto] [--filter <label>] [--limit <n>] [--parallel]"
 argument-hint: [issue-numbers...] [--auto] [--filter <label>] [--limit <n>] [--parallel]
 disable-model-invocation: true

@@ -1,12 +1,17 @@
 ---
 created: 2026-01-30
-modified: 2026-04-17
+modified: 2026-04-19
 reviewed: 2026-02-26
 allowed-tools: Bash(gh pr checks *), Bash(gh pr view *), Bash(gh pr diff *), Bash(gh run view *), Bash(gh run list *), Bash(gh api *), Bash(gh repo view *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git pull *), Bash(pre-commit *), Bash(npm run *), Bash(uv run *), Bash(bash *), Read, Edit, Write, Grep, Glob, TodoWrite, Task, mcp__github__pull_request_read, mcp__github__add_reply_to_pull_request_comment, mcp__github__resolve_review_thread, mcp__github__pull_request_review_write
 args: "[pr-number] [--commit] [--push]"
 argument-hint: [pr-number] [--commit] [--push]
 disable-model-invocation: true
-description: Review PR workflow results and comments, then address substantive feedback and suggestions from reviewers
+description: |
+  Review PR workflow results and reviewer comments, then address substantive
+  feedback and suggestions. Use when the user asks to address PR review
+  comments, apply reviewer suggestions, reply to review threads, resolve
+  reviewer feedback after CHANGES_REQUESTED, or work through a list of
+  unresolved review threads on a pull request.
 name: git-pr-feedback
 agent: general-purpose
 ---
