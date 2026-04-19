@@ -155,7 +155,7 @@ def onboard(
         help="Output format: text, json, plain. Default: plain when not a TTY.",
     ),
 ) -> None:
-    """Onboard a repository with blueprint structure and standards."""
+    """Bootstrap a repository: scaffold blueprint files, CI workflows, and standards, then commit on a setup branch and (per --auto-pr) open a PR."""
     repo_path = Path(repo).resolve()
     if not repo_path.is_dir():
         console.print(f"[red]Error:[/red] {repo_path} is not a directory")
@@ -236,7 +236,7 @@ def maintain(
         help="Output format: text, json, plain. Default: plain when not a TTY.",
     ),
 ) -> None:
-    """Run maintenance checks and optionally fix issues."""
+    """Scan the repo for maintenance issues (docs, tests, security, etc.). With --fix, applies fixes on a branch and (per --auto-pr) opens a PR; with --report-only, writes findings without code changes."""
     repo_path = Path(repo).resolve()
     if not repo_path.is_dir():
         console.print(f"[red]Error:[/red] {repo_path} is not a directory")
@@ -323,7 +323,7 @@ def diagnose(
         help="Output format: text, json, plain. Default: plain when not a TTY.",
     ),
 ) -> None:
-    """Diagnose pipeline failures and optionally create a GitHub issue."""
+    """Collect diagnostics from CI/CD, Kubernetes, ArgoCD, and package sources for recent failures; with --create-issue (and per --auto-issues), opens a GitHub issue aggregating the findings."""
     repo_path = Path(repo).resolve()
     if not repo_path.is_dir():
         console.print(f"[red]Error:[/red] {repo_path} is not a directory")
@@ -431,7 +431,7 @@ def route(
     dry_run: bool = typer.Option(
         False,
         "--dry-run",
-        help="Show routing plan without executing.",
+        help="Print the routing plan and exit without running maintain --fix.",
     ),
     focus: Optional[str] = typer.Option(
         None,
@@ -444,7 +444,16 @@ def route(
         help="Minimum severity threshold: critical, high, medium, low.",
     ),
 ) -> None:
-    """Route to agents based on attribute analysis."""
+    """Analyze repo health attributes and run maintenance fixes on the highest-priority issues.
+
+    Collects structured health attributes, ranks them by severity (respecting
+    --min-severity and --focus), prints the routing plan, and then runs
+    `maintain --fix` scoped to those priorities. Use --dry-run to only print
+    the plan without modifying the repository.
+
+    Side effects (unless --dry-run): may modify files, create a branch, commit,
+    and — per --auto-pr policy inherited by maintain — open a pull request.
+    """
     repo_path = Path(repo).resolve()
     if not repo_path.is_dir():
         console.print(f"[red]Error:[/red] {repo_path} is not a directory")
