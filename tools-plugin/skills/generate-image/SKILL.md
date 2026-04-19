@@ -1,8 +1,13 @@
 ---
 created: 2025-12-16
-modified: 2026-02-06
+modified: 2026-04-19
 reviewed: 2025-12-16
-description: Generate images using Nano Banana Pro (Gemini 3 Pro Image)
+description: |
+  Generate images from a text prompt using Google's Nano Banana Pro (Gemini 3 Pro Image)
+  with configurable aspect ratio, resolution (1K/2K/4K), and up to 5 reference images. Use
+  when the user wants to generate an image, produce artwork for a blog post, create a
+  product photo, mock up a portrait or cinematic scene, or when they mention "generate an
+  image", "make a picture", "Nano Banana", or "Gemini image".
 allowed-tools: Bash, Read, WebFetch
 args: <prompt> [--aspect <ratio>] [--resolution <size>] [--reference <path>]
 disable-model-invocation: true

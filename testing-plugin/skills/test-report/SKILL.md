@@ -1,11 +1,16 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-04-19
 reviewed: 2025-12-16
 allowed-tools: Read, Glob, Bash(git *)
 args: "[--history] [--coverage] [--flaky]"
 argument-hint: "[--history] [--coverage] [--flaky]"
-description: Show test status from last run (without re-executing)
+description: |
+  Show test status from the last run without re-executing tests, reading
+  cached results from pytest/vitest/jest/playwright/go/cargo caches. Use
+  when the user asks for current test health, wants a quick status check
+  for standup, needs to see coverage summary or history trend, or wants to
+  identify flaky tests from recent runs.
 name: test-report
 ---
 
