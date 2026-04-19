@@ -1,8 +1,12 @@
 ---
 created: 2025-12-16
-modified: 2026-02-10
+modified: 2026-04-19
 reviewed: 2025-12-16
-description: Check and configure memory profiling with pytest-memray for Python projects
+description: |
+  Check and configure memory profiling with pytest-memray for Python projects. Use when
+  setting up memory profiling from scratch, adding pytest-memray for CI memory regression
+  detection, configuring memory leak detection in test suites, setting memory thresholds
+  and allocation benchmarks, or when the user asks to profile Python memory usage.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--threshold <mb>] [--native]"
 argument-hint: "[--check-only] [--fix] [--threshold <mb>] [--native]"

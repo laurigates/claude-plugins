@@ -1,8 +1,12 @@
 ---
 created: 2025-12-22
-modified: 2026-02-10
+modified: 2026-04-19
 reviewed: 2025-12-22
-description: Interactively select which infrastructure standards to configure
+description: |
+  Interactively select which infrastructure standards to configure. Use when the user
+  wants to set up selected components interactively, choose specific standards to
+  implement, customize configuration scope, or build infrastructure configuration
+  incrementally rather than running the full `/configure:all` pipeline.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, SlashCommand
 args: "[--check-only] [--fix]"
 argument-hint: "[--check-only] [--fix]"

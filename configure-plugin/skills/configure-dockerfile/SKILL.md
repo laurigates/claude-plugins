@@ -1,8 +1,13 @@
 ---
 created: 2025-12-16
-modified: 2026-02-10
+modified: 2026-04-19
 reviewed: 2026-01-19
-description: Check and configure Dockerfile for project standards (minimal Alpine/slim, non-root, multi-stage)
+description: |
+  Check and configure Dockerfile for project standards (minimal Alpine/slim, non-root,
+  multi-stage builds). Use when checking Dockerfile compliance with standards, creating
+  a Dockerfile from template, validating image size and security practices, setting up
+  minimal Alpine/slim-based images, or ensuring non-root user configuration. Natural
+  triggers: "create Dockerfile", "make Dockerfile non-root", "add multi-stage build".
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--type <frontend|python|go|rust>]"
 argument-hint: "[--check-only] [--fix] [--type <frontend|python|go|rust>]"

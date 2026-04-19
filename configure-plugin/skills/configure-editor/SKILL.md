@@ -1,8 +1,14 @@
 ---
 created: 2025-12-16
-modified: 2026-02-10
+modified: 2026-04-19
 reviewed: 2025-12-16
-description: Check and configure EditorConfig and VS Code workspace settings
+description: |
+  Check and configure EditorConfig and VS Code workspace settings for team consistency.
+  Use when setting up consistent editor configuration across a team, checking
+  EditorConfig or VS Code workspace compliance, configuring format-on-save for detected
+  languages, adding recommended VS Code extensions, or setting up debug configurations
+  and tasks. Natural triggers: "set up editorconfig", "configure vscode settings",
+  "add recommended extensions".
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix]"
 argument-hint: "[--check-only] [--fix]"

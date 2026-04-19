@@ -1,8 +1,12 @@
 ---
 created: 2025-12-16
-modified: 2026-02-11
+modified: 2026-04-19
 reviewed: 2025-12-16
-description: Check and configure modern package managers (uv for Python, bun for TypeScript)
+description: |
+  Check and configure modern package managers (uv for Python, bun for TypeScript). Use when
+  setting up a new project with uv or bun, migrating from legacy managers (pip, npm, yarn,
+  poetry, pipenv) to modern ones, auditing package manager configuration, or cleaning up
+  conflicting lock files from multiple managers.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--manager <uv|bun|npm|cargo>]"
 argument-hint: "[--check-only] [--fix] [--manager <uv|bun|npm|cargo>]"

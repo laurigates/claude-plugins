@@ -1,8 +1,13 @@
 ---
 created: 2025-12-16
-modified: 2026-03-19
+modified: 2026-04-19
 reviewed: 2025-12-16
-description: Check and configure UX testing infrastructure (Playwright, accessibility, visual regression)
+description: |
+  Check and configure UX testing infrastructure (Playwright, accessibility, visual
+  regression). Use when setting up Playwright E2E testing, adding accessibility testing
+  with axe-core, configuring visual regression screenshot assertions, setting up
+  Playwright CLI or MCP for Claude browser automation, or creating CI/CD workflows for
+  E2E and accessibility tests.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--a11y] [--visual]"
 argument-hint: "[--check-only] [--fix] [--a11y] [--visual]"

@@ -1,8 +1,12 @@
 ---
 created: 2025-12-16
-modified: 2026-02-11
+modified: 2026-04-19
 reviewed: 2025-12-16
-description: Check and configure release-please workflow for project standards
+description: |
+  Check and configure release-please workflow for project standards. Use when setting up
+  release-please for a new project, auditing an existing release-please configuration,
+  upgrading release-please-action, adding a new package to a monorepo release-please
+  config, or when the user asks to automate versioning and changelogs.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix]"
 argument-hint: "[--check-only] [--fix]"
