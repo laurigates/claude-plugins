@@ -429,7 +429,7 @@
       "name": "obsidian-plugin",
       "source": "./obsidian-plugin",
       "description": "Obsidian CLI operations - vault management, search, properties, tasks, plugins, publish, and sync",
-      "version": "1.1.1",
+      "version": "1.2.0",
       "keywords": [
         "obsidian",
         "vault",
