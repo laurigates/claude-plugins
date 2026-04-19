@@ -1,6 +1,6 @@
 {
   "name": "obsidian-plugin",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Obsidian CLI operations - vault management, search, properties, tasks, plugins, publish, and sync",
   "keywords": [
     "obsidian",

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/laurigates/claude-plugins/compare/api-plugin-v1.5.3...api-plugin-v1.6.0) (2026-04-19)
+
+
+### Features
+
+* make skills discoverable by Claude's auto-invocation ([#1090](https://github.com/laurigates/claude-plugins/issues/1090)) ([cded1da](https://github.com/laurigates/claude-plugins/commit/cded1da1ebaf350cba1285b58ecadbbaa0eb01f6))
+
 ## [1.5.3](https://github.com/laurigates/claude-plugins/compare/api-plugin-v1.5.2...api-plugin-v1.5.3) (2026-04-17)
 
 

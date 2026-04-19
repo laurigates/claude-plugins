@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.28.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.27.1...blueprint-plugin-v3.28.0) (2026-04-19)
+
+
+### Features
+
+* make skills discoverable by Claude's auto-invocation ([#1090](https://github.com/laurigates/claude-plugins/issues/1090)) ([cded1da](https://github.com/laurigates/claude-plugins/commit/cded1da1ebaf350cba1285b58ecadbbaa0eb01f6))
+
 ## [3.27.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.27.0...blueprint-plugin-v3.27.1) (2026-04-18)
 
 

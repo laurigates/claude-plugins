@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/laurigates/claude-plugins/compare/blog-plugin-v1.2.2...blog-plugin-v1.3.0) (2026-04-19)
+
+
+### Features
+
+* make skills discoverable by Claude's auto-invocation ([#1090](https://github.com/laurigates/claude-plugins/issues/1090)) ([cded1da](https://github.com/laurigates/claude-plugins/commit/cded1da1ebaf350cba1285b58ecadbbaa0eb01f6))
+
 ## [1.2.2](https://github.com/laurigates/claude-plugins/compare/blog-plugin-v1.2.1...blog-plugin-v1.2.2) (2026-04-08)
 
 

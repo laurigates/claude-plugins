@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.7.0...health-plugin-v1.8.0) (2026-04-19)
+
+
+### Features
+
+* make skills discoverable by Claude's auto-invocation ([#1090](https://github.com/laurigates/claude-plugins/issues/1090)) ([cded1da](https://github.com/laurigates/claude-plugins/commit/cded1da1ebaf350cba1285b58ecadbbaa0eb01f6))
+
 ## [1.7.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.6.0...health-plugin-v1.7.0) (2026-04-16)
 
 

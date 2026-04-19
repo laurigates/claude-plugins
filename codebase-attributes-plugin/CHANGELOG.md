@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/laurigates/claude-plugins/compare/codebase-attributes-plugin-v1.1.2...codebase-attributes-plugin-v1.2.0) (2026-04-19)
+
+
+### Features
+
+* make skills discoverable by Claude's auto-invocation ([#1090](https://github.com/laurigates/claude-plugins/issues/1090)) ([cded1da](https://github.com/laurigates/claude-plugins/commit/cded1da1ebaf350cba1285b58ecadbbaa0eb01f6))
+
 ## [1.1.2](https://github.com/laurigates/claude-plugins/compare/codebase-attributes-plugin-v1.1.1...codebase-attributes-plugin-v1.1.2) (2026-04-15)
 
 
