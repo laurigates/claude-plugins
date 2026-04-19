@@ -1,10 +1,17 @@
 ---
 name: bun-package-manager
-description: Fast JavaScript package management with Bun - install, add, remove, update dependencies with optimized CLI flags for agentic workflows.
+description: |
+  Fast JavaScript package management with Bun - install, add, remove, and
+  update dependencies. Use when the user wants to install all project
+  dependencies, add or remove packages, run `bun update` or `bun outdated`,
+  manage workspace dependencies across a monorepo, produce a reproducible CI
+  install with `--frozen-lockfile`, or debug lockfile conflicts. Triggers:
+  "install dependencies", "update packages", "check outdated", "add to
+  workspace", "frozen lockfile for CI".
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob, TodoWrite
 created: 2025-12-20
-modified: 2025-12-20
+modified: 2026-04-19
 reviewed: 2025-12-20
 ---
 

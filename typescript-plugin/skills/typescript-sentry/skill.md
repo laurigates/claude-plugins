@@ -1,10 +1,18 @@
 ---
 name: typescript-sentry
-description: Error monitoring and performance tracking with Sentry SDK - error capture, breadcrumbs, performance spans, cron monitoring, source maps, structured logging, profiling, and enrichment helpers for Bun/Node.js/Next.js.
+description: |
+  Error monitoring and performance tracking with the Sentry SDK for
+  Bun/Node.js/Next.js - error capture, breadcrumbs, performance spans, cron
+  monitoring, source maps, structured logging, profiling, and enrichment
+  helpers. Use when the user wants to add Sentry to a project, instrument
+  performance spans or cron check-ins with `withMonitor`, upload source maps
+  so traces show TypeScript, filter events via `beforeSend`, or configure
+  session replay/profiling. Triggers: "add Sentry", "capture this error",
+  "monitor this cron job", "upload sourcemaps to Sentry".
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-01-22
-modified: 2026-03-27
+modified: 2026-04-19
 reviewed: 2026-01-22
 ---
 

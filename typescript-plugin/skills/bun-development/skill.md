@@ -1,10 +1,17 @@
 ---
 name: bun-development
-description: Bun runtime for running scripts, testing, building, and project initialization - optimized flags for fast feedback and minimal output.
+description: |
+  Bun runtime workflows for running scripts, testing, building, and
+  initializing projects with agent-optimized flags. Use when the user wants to
+  run a TypeScript file with `bun run` or `bunx`, use watch/hot reload during
+  development, configure `bun test` in detail, bundle or compile to a
+  standalone executable, or scaffold a new Bun project. Triggers: "run this
+  with bun", "bun watch dev", "configure bun test", "compile to exe",
+  "bun init a react app".
 user-invocable: false
 allowed-tools: Bash, BashOutput, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2025-12-20
-modified: 2025-12-20
+modified: 2026-04-19
 reviewed: 2025-12-20
 ---
 
