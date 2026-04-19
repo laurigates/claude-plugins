@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/laurigates/claude-plugins/compare/obsidian-plugin-v1.1.1...obsidian-plugin-v1.2.0) (2026-04-19)
+
+
+### Features
+
+* **vault-agent:** complete maintenance CLI — SDK session, non-interactive mode, and subagent-backed modes ([#1088](https://github.com/laurigates/claude-plugins/issues/1088)) ([e64a7c5](https://github.com/laurigates/claude-plugins/commit/e64a7c5e782c68ec3ffb6d6b75a71a4b858f7b5c))
+
 ## [1.1.1](https://github.com/laurigates/claude-plugins/compare/obsidian-plugin-v1.1.0...obsidian-plugin-v1.1.1) (2026-04-08)
 
 

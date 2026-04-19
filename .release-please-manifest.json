@@ -35,6 +35,6 @@
   "tools-plugin": "2.5.1",
   "typescript-plugin": "1.7.1",
   "workflow-orchestration-plugin": "1.4.3",
-  "obsidian-plugin": "1.1.1",
+  "obsidian-plugin": "1.2.0",
   "prompt-engineering-plugin": "1.1.1"
 }
