@@ -1,11 +1,16 @@
 ---
 created: 2025-12-16
-modified: 2026-03-09
+modified: 2026-04-19
 reviewed: 2026-03-09
 allowed-tools: Task, TodoWrite
 args: "[--coverage] [--parallel] [--report]"
 argument-hint: "[--coverage] [--parallel] [--report]"
-description: Complete test suite including integration and E2E tests
+description: |
+  Run the complete test suite in pyramid order - unit, then integration,
+  then E2E. Use when the user asks to run all tests before a PR, run the
+  full test suite with coverage, execute integration and E2E together,
+  generate an HTML test report, or run pre-commit verification across all
+  test tiers.
 name: test-full
 agent: general-purpose
 ---

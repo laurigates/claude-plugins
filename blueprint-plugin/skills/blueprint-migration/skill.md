@@ -1,10 +1,14 @@
 ---
 name: blueprint-migration
-description: Versioned migration procedures for upgrading blueprint structure between format versions
+description: |
+  Versioned migration procedures for upgrading blueprint structure between format versions.
+  Use when /blueprint:upgrade needs version-specific logic, when migrating a manifest between
+  format versions (v1.0→v1.1, v1.x→v2.0, v2.x→v3.0, v3.0→v3.1, v3.2→v3.3), or when content
+  hashing, safe file moves, and rollback are required during a blueprint format migration.
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, TodoWrite
 created: 2025-12-22
-modified: 2026-04-18
+modified: 2026-04-19
 reviewed: 2026-04-18
 ---
 

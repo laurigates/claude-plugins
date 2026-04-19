@@ -1,14 +1,14 @@
 ---
 created: 2026-04-17
-modified: 2026-04-17
+modified: 2026-04-19
 reviewed: 2026-04-17
 name: vault-wikilinks
 description: |
-  Detect and repair broken wikilinks in an Obsidian vault. Covers the
-  `[[Target]]`, `[[Target|Alias]]`, and `[[Target#Section]]` syntax,
-  basename resolution, cross-namespace ambiguity (e.g. Docker note
-  existing in both `Zettelkasten/` and `FVH/z/`), and the path-qualified
-  `[[Kanban/X]]` anti-pattern.
+  Detect and repair broken wikilinks in an Obsidian vault. Use when the
+  user asks to fix broken `[[Target]]` links, rewrite a renamed note's
+  references across the vault, resolve cross-namespace ambiguity between
+  Zettelkasten and FVH/z notes, unqualify `[[Kanban/X]]` path-qualified
+  links, or clean up wikilinks after renaming notes.
 user-invocable: false
 allowed-tools: Read, Edit, Grep, Glob
 ---

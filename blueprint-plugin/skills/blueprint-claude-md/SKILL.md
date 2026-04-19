@@ -1,8 +1,12 @@
 ---
 created: 2025-12-17
-modified: 2026-02-17
+modified: 2026-04-19
 reviewed: 2026-02-09
-description: "Generate or update CLAUDE.md from project context and blueprint artifacts. Supports @import syntax, CLAUDE.local.md, and auto memory delineation."
+description: |
+  Generate or update CLAUDE.md from project context and blueprint artifacts. Supports @import
+  syntax, CLAUDE.local.md, and auto memory delineation. Use when the user asks to "create
+  CLAUDE.md", "update CLAUDE.md", convert inline content to @import references, add
+  team-shared project instructions, or set up CLAUDE.local.md for personal preferences.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 name: blueprint-claude-md
 ---

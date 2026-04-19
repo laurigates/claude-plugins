@@ -1,14 +1,17 @@
 ---
 name: project-distill
 description: |
-  Distill session insights into reusable knowledge: Claude rules, skill improvements,
-  and justfile recipes. Use at the end of a session to capture learnings, update existing
-  artifacts, and avoid reinventing solutions. Prioritizes updating over adding.
+  Distill session insights into reusable knowledge: Claude rules, skill
+  improvements, and justfile recipes. Use when the user asks to capture
+  session learnings at end of day, extract patterns worth reusing, update
+  existing rules based on session experience, propose new justfile recipes
+  from commands we ran, or turn pain points into durable artifacts.
+  Prioritizes updating over adding.
 allowed-tools: Bash(git diff *), Bash(git log *), Bash(git status *), Bash(just *), Read, Grep, Glob, Edit, Write, AskUserQuestion, TodoWrite
 argument-hint: "--rules | --skills | --recipes | --all | --dry-run"
 args: "[--rules] [--skills] [--recipes] [--all] [--dry-run]"
 created: 2026-02-11
-modified: 2026-03-24
+modified: 2026-04-19
 reviewed: 2026-02-26
 ---
 

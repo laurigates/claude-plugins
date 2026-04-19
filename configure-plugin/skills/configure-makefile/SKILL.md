@@ -1,8 +1,12 @@
 ---
 created: 2025-12-16
-modified: 2026-02-10
+modified: 2026-04-19
 reviewed: 2025-12-16
-description: Check and configure Makefile with standard targets for project standards
+description: |
+  Check and configure Makefile with standard targets for project standards. Use when
+  setting up a new Makefile, auditing an existing Makefile for missing standard targets
+  (help, test, build, clean, lint), adding language-specific build/test/lint targets, or
+  when the user asks to create or standardize a Makefile.
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix]"
 argument-hint: "[--check-only] [--fix]"

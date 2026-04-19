@@ -1,8 +1,12 @@
 ---
 created: 2025-12-16
-modified: 2026-02-10
+modified: 2026-04-19
 reviewed: 2025-12-16
-description: Show infrastructure standards compliance status (read-only)
+description: |
+  Show infrastructure standards compliance status (read-only). Use when the user wants to
+  check overall compliance status, generate a compliance report, do a quick project
+  health check, validate CI/CD status, or review current configuration state without
+  making any changes.
 allowed-tools: Glob, Grep, Read, TodoWrite
 args: "[--verbose]"
 argument-hint: "[--verbose]"

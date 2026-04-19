@@ -1,10 +1,15 @@
 ---
-description: Run tests with Bun test runner
+description: |
+  Run tests using Bun's built-in test runner with compact, agent-friendly
+  output. Use when the user wants to run bun tests, target a specific file or
+  name pattern, collect coverage with `--coverage`, enable watch mode during
+  development, or emit JUnit XML for CI. Triggers: "run bun tests", "test this
+  file", "run tests with coverage", "watch tests", "CI test output".
 args: [pattern] [--coverage] [--bail] [--watch]
 allowed-tools: Bash, BashOutput, Read
 argument-hint: [test-pattern] [--coverage] [--bail] [--watch]
 created: 2025-12-20
-modified: 2025-12-20
+modified: 2026-04-19
 reviewed: 2025-12-20
 name: bun-test
 ---

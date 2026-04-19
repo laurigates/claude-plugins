@@ -1,9 +1,14 @@
 ---
 created: 2026-01-20
-modified: 2026-02-06
+modified: 2026-04-19
 reviewed: 2026-01-20
 name: document-linking
-description: "Unified ID system for PRDs, ADRs, PRPs, and GitHub issues. Auto-generates IDs on document access, maintains bidirectional links, and provides traceability across all artifacts."
+description: |
+  Unified ID system for PRDs, ADRs, PRPs, and GitHub issues. Auto-generates IDs on document
+  access, maintains bidirectional links, and provides traceability across all artifacts. Use
+  when the user needs to link a PRD to a PRP, connect documents to GitHub issues, find
+  orphan docs/issues, auto-assign PRD-NNN / ADR-NNNN / PRP-NNN / WO-NNN IDs, or validate
+  broken cross-document references.
 user-invocable: false
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash, TodoWrite
 ---

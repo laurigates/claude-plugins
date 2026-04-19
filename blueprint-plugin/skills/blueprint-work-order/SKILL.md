@@ -1,8 +1,12 @@
 ---
 created: 2025-12-16
-modified: 2026-02-06
+modified: 2026-04-19
 reviewed: 2025-12-26
-description: "Create work-order with minimal context for isolated subagent execution, optionally linked to GitHub issue"
+description: |
+  Create work-order with minimal context for isolated subagent execution, optionally linked
+  to GitHub issue. Use when the user asks to "create a work-order", breaks a PRP into
+  delegatable tasks for subagents, spawns a work-order from an existing PRP (--from-prp) or
+  GitHub issue (--from-issue), or needs a focused TDD task packet with clear success criteria.
 args: "[--no-publish] [--from-issue N]"
 argument-hint: "--no-publish for local-only, --from-issue 123 to create from existing issue"
 disable-model-invocation: true

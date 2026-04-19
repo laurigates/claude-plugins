@@ -1,8 +1,13 @@
 ---
 created: 2025-12-16
-modified: 2026-02-11
+modified: 2026-04-19
 reviewed: 2025-12-16
-description: Check and configure code coverage thresholds and reporting
+description: |
+  Check and configure code coverage thresholds and reporting for test frameworks.
+  Use when setting up coverage thresholds for Vitest, Jest, pytest, or Rust, configuring
+  coverage reporters (text, JSON, HTML, lcov), adding Codecov or Coveralls integration,
+  or adjusting coverage threshold percentages. Natural triggers: "set up coverage",
+  "add codecov", "configure coverage threshold".
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--threshold <percentage>]"
 argument-hint: "[--check-only] [--fix] [--threshold <percentage>]"

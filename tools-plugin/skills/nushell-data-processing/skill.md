@@ -1,9 +1,15 @@
 ---
 created: 2025-12-25
-modified: 2025-12-25
+modified: 2026-04-19
 reviewed: 2025-12-25
 name: nushell-data-processing
-description: Structured data processing with nushell - native table handling, multi-format parsing (JSON, YAML, TOML, CSV), and pipeline operations. Preferred over jq/yq for complex transformations.
+description: |
+  Structured data processing with nushell — native tables, multi-format parsing (JSON, YAML,
+  TOML, CSV, XML), pipelines, aggregations, and group-by operations. Preferred over jq/yq
+  for complex multi-step transforms. Use when the user wants to run multi-step data
+  transformations, process multiple formats together, aggregate or group records, perform
+  cross-file data operations, visually explore data as tables, or when they mention
+  "nushell", "nu pipeline", or ask for transforms that would be awkward in jq.
 user-invocable: false
 allowed-tools: Bash(nu *), Read, Write, Edit, Grep, Glob
 ---

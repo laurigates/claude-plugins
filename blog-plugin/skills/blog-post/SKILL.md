@@ -1,13 +1,16 @@
 ---
 name: blog-post
-description: Create a blog post about your work with guided prompts and templates
-description: Create a blog post about your work with guided prompts and templates
+description: |
+  Create a blog post about your work with guided prompts and structured templates. Use when
+  the user wants to write a quick update, project update, retrospective, tutorial, or deep
+  dive about their work, when they mention "devlog", "write up", or "blog post", or when
+  they need git context auto-populated into a post to reduce blank-page anxiety.
 args: "[type] [--project <name>] [--title <title>]"
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash(hugo *), Bash(date *), TodoWrite, AskUserQuestion
 argument-hint: "quick-update | project-update | retrospective | tutorial | deep-dive"
 disable-model-invocation: true
 created: 2026-01-10
-modified: 2026-02-14
+modified: 2026-04-19
 reviewed: 2026-02-14
 ---
 

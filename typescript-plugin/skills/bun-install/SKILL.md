@@ -1,10 +1,15 @@
 ---
-description: Install dependencies with Bun package manager
+description: |
+  Install all dependencies from package.json using Bun. Use when the user wants
+  to bootstrap a fresh checkout with `bun install`, run a reproducible CI
+  install with `--frozen-lockfile`, or prepare a production deployment with
+  `--production` (no devDependencies). Triggers: "install deps", "bun install",
+  "restore node_modules", "CI install", "production install".
 args: "[--frozen-lockfile] [--production]"
 argument-hint: "--frozen-lockfile for CI, --production for deployment"
 allowed-tools: Bash, Read
 created: 2025-12-20
-modified: 2026-02-03
+modified: 2026-04-19
 reviewed: 2025-12-20
 name: bun-install
 ---

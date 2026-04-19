@@ -1,10 +1,17 @@
 ---
 name: bun-publishing
-description: Publish packages to npm with Bun - package.json configuration, CLI packaging, provenance signing, and release automation.
+description: |
+  Publish npm packages built with Bun, including package.json configuration,
+  CLI tool packaging, provenance signing, and release automation. Use when the
+  user wants to set up `publishConfig`/`files`/`bin` for npm, package a CLI
+  tool with an executable entry, enable `npm publish --provenance`, validate
+  tarball contents with `npm pack --dry-run`, or wire up release-please for
+  automated versioning. Triggers: "publish to npm", "set up release-please",
+  "configure package.json for publishing", "add provenance signing".
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2025-12-21
-modified: 2025-12-21
+modified: 2026-04-19
 reviewed: 2025-12-21
 ---
 

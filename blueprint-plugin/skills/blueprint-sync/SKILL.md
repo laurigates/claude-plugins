@@ -1,8 +1,12 @@
 ---
 created: 2025-12-22
-modified: 2026-02-07
+modified: 2026-04-19
 reviewed: 2025-12-22
-description: "Check for stale generated content and offer regeneration or promotion"
+description: |
+  Check for stale generated content and offer regeneration or promotion. Use when the user
+  asks to "sync blueprint", detect manually modified generated rules, find stale content
+  when source PRDs have changed, review drift between .claude/rules/ and the manifest, or
+  reconcile edits via regenerate/promote/keep options.
 args: "[--dry-run]"
 argument-hint: "--dry-run to preview sync status without modifying files"
 allowed-tools: Read, Bash, Glob, AskUserQuestion

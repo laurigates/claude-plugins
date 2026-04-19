@@ -1,8 +1,12 @@
 ---
 created: 2026-01-02
-modified: 2026-04-12
+modified: 2026-04-19
 reviewed: 2026-04-12
-description: "Display feature tracker statistics and completion summary"
+description: |
+  Display feature tracker statistics and completion summary. Use when the user asks
+  "what's the feature completion status?", wants a progress bar showing phase progress,
+  checks PRD coverage, views blocked features, lists ready-to-start work, or asks to
+  "show feature tracker status".
 allowed-tools: Read, Bash, AskUserQuestion
 name: blueprint-feature-tracker-status
 ---

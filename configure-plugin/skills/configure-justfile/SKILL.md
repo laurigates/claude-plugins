@@ -1,8 +1,13 @@
 ---
 created: 2025-12-16
-modified: 2026-02-11
+modified: 2026-04-19
 reviewed: 2025-12-16
-description: Check and configure Justfile with standard recipes for project standards
+description: |
+  Check and configure Justfile with standard recipes for project standards. Use when
+  setting up a new Justfile for a project, auditing an existing Justfile for missing
+  standard recipes, migrating from Makefile to Justfile, or ensuring Justfile follows
+  team conventions (groups, comments, settings). Natural triggers: "set up justfile",
+  "migrate makefile to justfile", "add just recipes".
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix]"
 argument-hint: "[--check-only] [--fix]"

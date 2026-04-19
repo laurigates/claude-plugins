@@ -1,8 +1,14 @@
 ---
 created: 2026-01-23
-modified: 2026-04-14
+modified: 2026-04-19
 reviewed: 2026-04-14
-description: Configure .claude/settings.json (permissions, marketplace enrollment, enabledPlugins) and GitHub Actions workflows to use the laurigates/claude-plugins marketplace
+description: |
+  Configure .claude/settings.json (permissions, marketplace enrollment, enabledPlugins)
+  and GitHub Actions workflows to use the laurigates/claude-plugins marketplace.
+  Use when onboarding a new project to Claude Code plugins, setting up claude.yml
+  and claude-code-review.yml workflows, adding the laurigates/claude-plugins
+  marketplace to a repo, or merging plugin permissions into existing settings.
+  Natural triggers: "set up claude plugins", "add claude marketplace", "install claude.yml workflow".
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash(mkdir *), Bash(test *), Bash(ls *), Bash(git remote *), AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix] [--plugins <plugin1,plugin2,...>]"
 argument-hint: "[--check-only] [--fix] [--plugins <plugin1,plugin2,...>]"

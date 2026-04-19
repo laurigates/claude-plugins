@@ -1,11 +1,16 @@
 ---
 created: 2025-12-16
-modified: 2026-03-09
+modified: 2026-04-19
 reviewed: 2026-03-09
 allowed-tools: Task, TodoWrite
 args: [test-pattern] [--coverage] [--watch]
 argument-hint: [test-pattern] [--coverage] [--watch]
-description: Universal test runner that automatically detects and runs the appropriate testing framework
+description: |
+  Universal test runner that auto-detects and runs the appropriate testing
+  framework (pytest, vitest, jest, cargo test, go test). Use when the user
+  asks to run the tests, test a specific file or pattern, run tests with
+  coverage, start a watch-mode dev loop, or run tests without specifying
+  the framework.
 name: test-run
 ---
 

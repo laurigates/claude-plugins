@@ -1,10 +1,15 @@
 ---
-description: "Create a PRP (Product Requirement Prompt) with systematic research, curated context, and validation gates"
+description: |
+  Create a PRP (Product Requirement Prompt) with systematic research, curated context, and
+  validation gates. Use when the user asks to "create a PRP", plans a feature implementation
+  packet for AI or subagent execution, wants comprehensive research with codebase patterns
+  and gotchas, or needs to build a self-contained spec with TDD requirements and confidence
+  scoring.
 args: "[feature-name]"
 argument-hint: "Feature name for the PRP (e.g., auth-oauth2, api-rate-limiting)"
 allowed-tools: Read, Write, Glob, Bash, WebFetch, WebSearch, Task, AskUserQuestion
 created: 2025-12-16
-modified: 2026-03-01
+modified: 2026-04-19
 reviewed: 2026-02-14
 name: blueprint-prp-create
 ---

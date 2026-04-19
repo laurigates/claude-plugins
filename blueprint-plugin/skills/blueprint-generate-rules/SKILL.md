@@ -1,8 +1,13 @@
 ---
 created: 2025-12-16
-modified: 2026-04-16
+modified: 2026-04-19
 reviewed: 2026-02-09
-description: "Generate project-specific rules from PRDs. Supports path-specific rules with paths frontmatter and brace expansion."
+description: |
+  Generate project-specific rules from PRDs. Supports path-specific rules with paths
+  frontmatter and brace expansion. Use when the user asks to "generate rules from PRDs",
+  wants aggregated architecture/testing/implementation/quality standards rules auto-created
+  from docs/prds/, needs path-scoped rules for test files or specific directories, or is
+  automating rule creation from requirements.
 allowed-tools: Read, Write, Glob, Bash, AskUserQuestion
 name: blueprint-generate-rules
 ---

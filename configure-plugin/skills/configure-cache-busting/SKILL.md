@@ -1,8 +1,13 @@
 ---
 created: 2025-12-16
-modified: 2026-02-11
+modified: 2026-04-19
 reviewed: 2025-12-16
-description: Check and configure cache-busting strategies for Next.js and Vite projects
+description: |
+  Check and configure cache-busting strategies for Next.js and Vite projects.
+  Use when configuring content hashing for Next.js or Vite builds, setting up CDN
+  cache headers for Vercel or Cloudflare, adding build verification scripts for
+  hashed assets, or auditing static asset caching strategy. Natural triggers:
+  "configure cache busting", "set up CDN cache headers", "add content hashing".
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix] [--framework <nextjs|vite>] [--cdn <cloudflare|vercel|none>]"
 argument-hint: "[--check-only] [--fix] [--framework <nextjs|vite>] [--cdn <cloudflare|vercel|none>]"

@@ -1,8 +1,12 @@
 ---
 created: 2025-12-16
-modified: 2026-03-01
+modified: 2026-04-19
 reviewed: 2025-12-16
-description: Check and configure Skaffold for project standards
+description: |
+  Check and configure Skaffold for project standards. Use when checking Skaffold
+  configuration compliance for a Kubernetes project, fixing port forwarding security
+  issues (0.0.0.0 binding), adding dotenvx hooks for secret generation, upgrading
+  Skaffold API version, or creating a standard skaffold.yaml from template.
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix]"
 argument-hint: "[--check-only] [--fix]"

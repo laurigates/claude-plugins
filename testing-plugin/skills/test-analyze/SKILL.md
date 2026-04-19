@@ -1,10 +1,15 @@
 ---
-description: Analyze test results and create systematic fix plan with subagent delegation
+description: |
+  Analyze test results and create a systematic fix plan with subagent
+  delegation. Use when the user asks to triage failing tests, analyze a
+  test-results directory or JUnit XML, plan fixes for accessibility or
+  security scan findings, categorize flaky/performance/E2E failures, or
+  delegate fixes to specialized agents.
 args: "<results-path> [--type <test-type>] [--focus <area>]"
 argument-hint: "Path to test results (e.g., ./test-results/), optional --type and --focus filters"
 allowed-tools: Task, Read, Glob, Grep, TodoWrite
 created: 2025-12-16
-modified: 2026-02-27
+modified: 2026-04-19
 reviewed: 2025-12-16
 name: test-analyze
 agent: general-purpose

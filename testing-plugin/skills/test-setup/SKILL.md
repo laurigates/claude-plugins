@@ -1,9 +1,14 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-04-19
 reviewed: 2025-12-16
 allowed-tools: Read, Write, Edit, MultiEdit, Bash(pip install *), Bash(npm install *), Bash(pre-commit *), Bash(pytest *), Bash(npm test *), Bash(git *), TodoWrite, SlashCommand
-description: Configure comprehensive testing infrastructure with CI/CD integration
+description: |
+  Configure comprehensive testing infrastructure with CI/CD integration.
+  Use when the user asks to set up testing, scaffold unit/integration/E2E
+  test directories, add pre-commit hooks, create GitHub Actions test
+  workflows, wire up Codecov coverage reporting, or add test and coverage
+  badges to the README.
 args: [--coverage] [--ci <github|gitlab|circleci>]
 argument-hint: [--coverage] [--ci <github|gitlab|circleci>]
 name: test-setup

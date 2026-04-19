@@ -21,6 +21,7 @@ This ensures the CI catches the same class of problem in any future skill, not j
 | Context command antipattern (API calls, shell operators) | `scripts/lint-context-commands.sh` |
 | Skill body structure corruption (spurious headings, leaked frontmatter) | `scripts/plugin-compliance-check.sh` → `check_skill_body()` |
 | Frontmatter field missing or malformed | `scripts/plugin-compliance-check.sh` → `check_skill_frontmatter()` |
+| Description fails auto-invocation matching (missing/empty, or no "Use when..." trigger) | `scripts/plugin-compliance-check.sh` → `check_skill_descriptions()` (delegates to `scripts/audit-skill-descriptions.py`) |
 | Skill size exceeding limit | `scripts/plugin-compliance-check.sh` → `check_skill_size()` |
 | Blueprint upgrade target drift (migrations added without updating `blueprint-upgrade`) | `scripts/check-blueprint-upgrade-target.sh` |
 
@@ -38,6 +39,7 @@ This ensures the CI catches the same class of problem in any future skill, not j
 | `Bash(test *), Bash(jq *)` etc. causes ~20 approval prompts | Shell utility patterns in `allowed-tools` force inline bash that can't be allowlisted; each compound command needs individual approval | `plugin-compliance-check.sh` `check_bash_patterns()` | PR #TBD |
 | `blueprint-{generate,derive}-rules` writes hardcoded `.claude/rules/` and clobbers hand-authored rules | SKILL.md hardcoded the output directory; no `structure.generated_rules_path` field | `plugin-compliance-check.sh` `check_skill_body()` (blueprint rules-path check) | issue #1043 |
 | `/blueprint:upgrade` reports v3.2.0 as latest after v3.3 migration was added | `blueprint-upgrade/SKILL.md` hardcodes target version; PR #1026 added `migrations/v3.2-to-v3.3.md` without updating the upgrade skill | `check-blueprint-upgrade-target.sh` compares highest migration target to `blueprint-upgrade/SKILL.md` | PR #TBD |
+| Skills with capability-list descriptions ("Check and configure X") never auto-invoke | Claude matches `description` against user intent; without "Use when..." and trigger phrases the matcher never fires. 133/325 skills were affected at baseline. | `plugin-compliance-check.sh` `check_skill_descriptions()` (warns on NO_TRIGGER for auto-invokable skills; errors on MISSING/EMPTY); `audit-skill-descriptions.py --strict` in pre-commit | PR #TBD |
 
 ## How to Add a Regression Check
 

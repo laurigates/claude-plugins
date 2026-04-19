@@ -1,13 +1,13 @@
 ---
 created: 2026-04-17
-modified: 2026-04-17
+modified: 2026-04-19
 reviewed: 2026-04-17
 name: vault-mocs
 description: |
-  Map-of-Content (MOC) curation for Obsidian vaults. Covers MOC
-  conventions (`📝/moc` tag, section structure), coverage analysis
-  (which notes are orphaned from a MOC), and when to create a new MOC
-  vs. extend an existing one.
+  Map-of-Content (MOC) curation for Obsidian vaults. Use when the user asks
+  to create a new MOC for a tag category, extend an existing MOC with
+  orphaned notes, fix legacy `🗺️` MOC tags to `📝/moc`, analyze MOC
+  coverage for a category, or reorganize hand-curated hub notes.
 user-invocable: false
 allowed-tools: Read, Edit, Write, Grep, Glob
 ---

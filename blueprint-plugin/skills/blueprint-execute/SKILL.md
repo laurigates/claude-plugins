@@ -1,8 +1,12 @@
 ---
 created: 2026-01-14
-modified: 2026-02-17
+modified: 2026-04-19
 reviewed: 2026-01-30
-description: "Idempotent meta command that determines and executes the next logical blueprint action"
+description: |
+  Idempotent meta command that determines and executes the next logical blueprint action.
+  Use when the user asks "what's next?", "continue blueprint work", resumes a project after
+  pulling changes, wants smart detection of init/upgrade/derive/generate/execute steps, or
+  says things like "run blueprint" without specifying the exact command.
 allowed-tools: Read, Glob, Bash, AskUserQuestion, SlashCommand, Task
 name: blueprint-execute
 ---

@@ -21,3 +21,9 @@ repos:
         language: system
         files: '(SKILL|skill)\.md$'
         pass_filenames: false
+      - id: audit-skill-descriptions
+        name: audit skill descriptions for auto-invocation
+        entry: python3 ./scripts/audit-skill-descriptions.py --strict-all
+        language: system
+        files: '(SKILL|skill)\.md$'
+        pass_filenames: false
