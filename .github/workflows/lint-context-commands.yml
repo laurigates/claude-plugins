@@ -6,6 +6,7 @@ on:
       - '**/skills/**/SKILL.md'
       - '**/skills/**/skill.md'
       - 'scripts/lint-context-commands.sh'
+      - 'scripts/audit-skill-descriptions.py'
   push:
     branches:
       - main
@@ -13,6 +14,7 @@ on:
       - '**/skills/**/SKILL.md'
       - '**/skills/**/skill.md'
       - 'scripts/lint-context-commands.sh'
+      - 'scripts/audit-skill-descriptions.py'
 
 permissions:
   contents: read
@@ -25,3 +27,9 @@ jobs:
 
       - name: Lint context commands
         run: ./scripts/lint-context-commands.sh
+
+      - name: Install Python deps for skill-description audit
+        run: pip install --quiet pyyaml
+
+      - name: Audit skill descriptions for auto-invocation
+        run: python3 scripts/audit-skill-descriptions.py --strict-all
