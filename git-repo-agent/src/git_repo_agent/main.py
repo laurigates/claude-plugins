@@ -112,6 +112,30 @@ def _parse_csv(value: Optional[str]) -> tuple[str, ...]:
     return tuple(part.strip() for part in value.split(",") if part.strip())
 
 
+def _commit_if_dirty(repo_path: Path, message: str) -> bool:
+    """Stage everything in ``repo_path`` and commit if anything changed.
+
+    Returns ``True`` when a commit was created, ``False`` when the tree
+    was clean. Used by ``new`` to turn post-genesis phases
+    (``blueprint-init`` today; ``run_onboard`` in the future) into their
+    own follow-up commits instead of amending the genesis commit.
+    """
+    import subprocess
+
+    status = subprocess.run(
+        ["git", "status", "--porcelain"],
+        cwd=repo_path, capture_output=True, text=True, check=True,
+    )
+    if not status.stdout.strip():
+        return False
+    subprocess.run(["git", "add", "-A"], cwd=repo_path, check=True)
+    subprocess.run(
+        ["git", "commit", "-m", message],
+        cwd=repo_path, check=True, capture_output=True, text=True,
+    )
+    return True
+
+
 def _print_new_plan(result, *, spec, remote_target: str | None) -> None:
     """Pretty-print the final summary after ``new`` completes (or dry-runs)."""
     console.print()
@@ -184,6 +208,11 @@ def new(
         False,
         "--no-remote",
         help="Skip `gh repo create`; keep the repo local-only.",
+    ),
+    skip_blueprint: bool = typer.Option(
+        False,
+        "--skip-blueprint",
+        help="Skip `blueprint-init` after genesis (faster, but the repo won't have the blueprint layout).",
     ),
     extra_plugins: Optional[str] = typer.Option(
         None,
@@ -291,6 +320,35 @@ def new(
     except FileNotFoundError as exc:
         console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=EXIT_CONFIG_ERROR)
+
+    # After genesis: run blueprint-init so the repo has a blueprint layout
+    # on day one. We run only the `init` phase (see ADR-007) — the derive-*
+    # phases would have nothing to mine in a brand-new repo.
+    if not dry_run and not skip_blueprint:
+        from .blueprint_driver import (
+            BlueprintDriver,
+            DriverOptions,
+            NEW_PHASES,
+        )
+
+        console.print("[dim]Running blueprint-init...[/dim]")
+        driver = BlueprintDriver(
+            result.path,
+            DriverOptions(dry_run=False, non_interactive=True),
+        )
+        driver_result = asyncio.run(driver.run(NEW_PHASES))
+        if not driver_result.succeeded:
+            failed = [p.name for p in driver_result.phases if p.status == "error"]
+            console.print(
+                f"[yellow]blueprint-init had failures: {failed}. "
+                "Continuing — the repo is usable without it.[/yellow]"
+            )
+        # If blueprint-init wrote anything, capture it as a second commit so
+        # the genesis commit stays focused on scaffolding the user asked for.
+        _commit_if_dirty(
+            result.path,
+            message="chore: initialize blueprint layout",
+        )
 
     remote_target: str | None = None
     if not dry_run and not no_remote:

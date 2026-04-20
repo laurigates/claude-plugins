@@ -171,6 +171,7 @@ class TestLifecycleRegistries:
     def test_registries_are_registered_under_expected_keys(self):
         assert set(PHASE_REGISTRIES) == {
             "onboard",
+            "new",
             "status",
             "upgrade",
             "sync",

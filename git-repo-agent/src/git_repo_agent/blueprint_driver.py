@@ -274,9 +274,30 @@ SCAN_PHASES: tuple[Phase, ...] = (
 )
 
 
+# `git-repo-agent new` runs only the init phase. A freshly created repo has
+# no source material for the derive-* phases to mine, so running them would
+# be noisy at best (ADR-007).
+NEW_PHASES: tuple[Phase, ...] = (
+    Phase(
+        name="init",
+        skill_relpath="blueprint-plugin/skills/blueprint-init/SKILL.md",
+        model="sonnet",
+        invocation=(
+            "Initialize the blueprint structure in this brand-new repository. "
+            "Create the standard layout (`docs/blueprint/` with `prds/`, "
+            "`adrs/`, `rules/`, `manifest.json`, `feature-tracker.md`) using "
+            "the latest format version. A seed PRD already exists at "
+            "`docs/prds/0001-project-goal.md` — register it in the manifest "
+            "rather than regenerating it. Do not ask the user questions."
+        ),
+    ),
+)
+
+
 # Named registries so the CLI can dispatch by mode name.
 PHASE_REGISTRIES: dict[str, tuple[Phase, ...]] = {
     "onboard": ONBOARD_PHASES,
+    "new": NEW_PHASES,
     "status": STATUS_PHASES,
     "upgrade": UPGRADE_PHASES,
     "sync": SYNC_PHASES,

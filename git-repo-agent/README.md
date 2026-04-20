@@ -18,6 +18,50 @@ pipx install ./git-repo-agent
 
 ## Usage
 
+### Create a New Repository
+
+Go from idea to interactive-ready repo in one shell command:
+
+```bash
+git-repo-agent new "Telegram chat bot that replies to user messages"
+```
+
+This performs, in order:
+
+1. **Intent parsing** — a single Claude SDK call reads the idea and infers
+   the project name, language, and stack indicators.
+2. **Local genesis** — `git init -b main`, seed README / `.gitignore` /
+   initial PRD, plus `.claude/settings.json` that already enrols the
+   `laurigates/claude-plugins` marketplace and enables stack-appropriate
+   plugins.
+3. **`blueprint-init`** — runs the blueprint initialisation phase so the
+   repo has a blueprint layout on day one. Skip with `--skip-blueprint`.
+4. **`gh repo create --push`** — publishes the repo. Skip with
+   `--no-remote`.
+
+By the time the command returns, `cd <repo> && claude` gives you a Claude
+Code session with the right plugins already enabled. See
+[ADR-007](docs/adr/007-new-command-orchestrator.md) for the design
+rationale.
+
+**Overrides for offline / scripted use:**
+
+```bash
+# Skip intent parsing entirely — provide everything explicitly
+git-repo-agent new "..." --name "Telegram Bot" --language python \
+  --stack-indicators github-actions
+
+# Preview without touching disk or the network
+git-repo-agent new "..." --dry-run
+
+# Local-only (no GitHub repo)
+git-repo-agent new "..." --no-remote
+```
+
+See `git-repo-agent new --help` for the full flag list. Use `onboard`
+(below) on existing repositories — `new` is only for bringing a project
+into existence.
+
 ### Onboard a Repository
 
 ```bash
