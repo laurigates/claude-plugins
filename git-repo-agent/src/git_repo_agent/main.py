@@ -136,16 +136,20 @@ def new(
         ...,
         help="Short description of what you want to build (1-2 sentences).",
     ),
-    name: str = typer.Option(
-        ...,
+    name: Optional[str] = typer.Option(
+        None,
         "--name",
-        help="Human-readable project name; also drives the directory / repo slug.",
+        help=(
+            "Human-readable project name; also drives the directory / repo slug. "
+            "Inferred from the idea when omitted."
+        ),
     ),
-    language: str = typer.Option(
-        "default",
+    language: Optional[str] = typer.Option(
+        None,
         "--language",
         help=(
-            "Primary language: python | typescript | javascript | rust | go | default."
+            "Primary language: python | typescript | javascript | rust | go | default. "
+            "Inferred from the idea when omitted."
         ),
     ),
     stack_indicators: Optional[str] = typer.Option(
@@ -194,10 +198,14 @@ def new(
 ) -> None:
     """Create a new repository from an idea: genesis + plugin enrollment + (optionally) gh repo create.
 
-    This is the foundation (PR 1) of ``git-repo-agent new``: it performs
-    local genesis and writes ``.claude/settings.json`` with the right
-    marketplace + plugin list for the detected stack. Intent parsing and
-    blueprint-init scaffolding land in follow-up PRs.
+    When ``--name`` is omitted, the idea string is sent to Claude for intent
+    parsing — one short SDK call that returns a ``NewProjectSpec`` (name,
+    language, stack indicators). Any explicit flags (``--language``,
+    ``--description``, ``--stack-indicators``) layer on top as overrides.
+
+    If the Claude API is unreachable and ``--name`` was not provided, the
+    command exits with an error rather than falling back to a guessed
+    scaffold.
     """
     from pathlib import Path
 
@@ -208,8 +216,9 @@ def new(
         gh_repo_create,
         slugify,
     )
+    from .intent import IntentParseError, parse_intent
 
-    if language not in _VALID_LANGUAGES:
+    if language is not None and language not in _VALID_LANGUAGES:
         console.print(
             f"[red]Error:[/red] --language must be one of {list(_VALID_LANGUAGES)}, "
             f"got {language!r}"
@@ -227,28 +236,49 @@ def new(
         console.print(f"[red]Error:[/red] --parent-dir is not a directory: {parent}")
         raise typer.Exit(code=EXIT_CONFIG_ERROR)
 
-    try:
-        slug = slugify(name)
-    except ValueError as exc:
-        console.print(f"[red]Error:[/red] {exc}")
-        raise typer.Exit(code=EXIT_CONFIG_ERROR)
+    # Intent parsing: when --name is absent we treat this as the user
+    # asking us to infer the project shape from the idea string. Explicit
+    # flags below will still override.
+    spec: NewProjectSpec
+    if name is None:
+        console.print("[dim]Parsing project intent via Claude...[/dim]")
+        try:
+            spec = asyncio.run(parse_intent(idea))
+        except IntentParseError as exc:
+            console.print(f"[red]Error:[/red] {exc}")
+            raise typer.Exit(code=EXIT_RUNTIME_ERROR)
+    else:
+        try:
+            slug = slugify(name)
+        except ValueError as exc:
+            console.print(f"[red]Error:[/red] {exc}")
+            raise typer.Exit(code=EXIT_CONFIG_ERROR)
+        spec = NewProjectSpec(
+            name=name,
+            slug=slug,
+            description=description or idea,
+            idea=idea,
+            language=language or "default",
+            stack_indicators=(),
+            extra_plugins=(),
+        )
 
-    # Build the stack-indicator set. The language is itself an indicator
-    # when it isn't "default"; any extra indicators from --stack-indicators
-    # are merged on top (deduplicated, order-preserving).
-    indicators: list[str] = []
-    if language != "default":
-        indicators.append(language)
+    # Apply explicit overrides on top of the (possibly inferred) spec.
+    effective_language = (language or spec.language).lower()
+    effective_description = description or spec.description
+    indicators: list[str] = list(spec.stack_indicators)
+    if effective_language != "default" and effective_language not in indicators:
+        indicators.insert(0, effective_language)
     for extra in _parse_csv(stack_indicators):
         if extra not in indicators:
             indicators.append(extra)
 
     spec = NewProjectSpec(
-        name=name,
-        slug=slug,
-        description=description or idea,
+        name=spec.name,
+        slug=spec.slug,
+        description=effective_description,
         idea=idea,
-        language=language,
+        language=effective_language,
         stack_indicators=tuple(indicators),
         extra_plugins=_parse_csv(extra_plugins),
     )
