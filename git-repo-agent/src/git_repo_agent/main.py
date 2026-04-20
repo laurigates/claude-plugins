@@ -22,7 +22,7 @@ from .non_interactive import (
 
 app = typer.Typer(
     name="git-repo-agent",
-    help="Claude Agent SDK app for repo onboarding and maintenance.",
+    help="Claude Agent SDK app for repo creation, onboarding, and maintenance.",
 )
 blueprint_app = typer.Typer(
     name="blueprint",
