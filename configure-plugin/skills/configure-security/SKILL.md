@@ -1,8 +1,12 @@
 ---
 created: 2025-12-16
-modified: 2026-02-11
+modified: 2026-04-19
 reviewed: 2025-12-16
-description: Check and configure security scanning (dependency audits, SAST, secrets)
+description: |
+  Check and configure security scanning (dependency audits, SAST, secrets). Use when
+  setting up dependency auditing, SAST, or secret detection for a project, configuring
+  Dependabot, CodeQL, or TruffleHog in CI/CD, creating or updating a SECURITY.md policy,
+  or auditing which security tools are missing from a project.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--type <dependencies|sast|secrets|all>]"
 argument-hint: "[--check-only] [--fix] [--type <dependencies|sast|secrets|all>]"

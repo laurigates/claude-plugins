@@ -1,8 +1,12 @@
 ---
 created: 2026-01-15
-modified: 2026-04-12
+modified: 2026-04-19
 reviewed: 2026-04-12
-description: "Validate ADR relationships, detect orphaned references, and check domain consistency"
+description: |
+  Validate ADR relationships, detect orphaned references, and check domain consistency.
+  Use when the user asks to "validate ADRs", audits architecture decision records before
+  a release, checks for broken supersedes/extends links, investigates conflicting decisions
+  in the same domain, or wants to detect cycles in the supersession graph.
 args: "[--report-only]"
 argument-hint: "--report-only to validate without prompting for fixes"
 allowed-tools: Read, Bash, Glob, Grep, Edit, AskUserQuestion

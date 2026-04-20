@@ -136,6 +136,7 @@ def _commit_if_dirty(repo_path: Path, message: str) -> bool:
     return True
 
 
+
 def _print_new_plan(result, *, spec, remote_target: str | None) -> None:
     """Pretty-print the final summary after ``new`` completes (or dry-runs)."""
     console.print()

@@ -1,10 +1,16 @@
 ---
 name: mermaid-diagrams
-description: Generate diagrams from text using Mermaid CLI (mmdc) - flowcharts, sequence diagrams, ERDs, class diagrams, state machines, and more.
+description: |
+  Generate diagrams from text using the Mermaid CLI (mmdc) — flowcharts, sequence diagrams,
+  ERDs, class diagrams, state machines, Gantt charts, pie charts, and git graphs — with
+  output as SVG, PNG, or PDF. Use when the user wants to render a Mermaid diagram, convert
+  .mmd text to an image, embed diagrams in GitHub Markdown, create an architecture or API
+  flow diagram, or when they mention "mermaid", "flowchart", "sequence diagram", or
+  "render this diagram".
 user-invocable: false
 allowed-tools: Bash, Read, Write, Grep, Glob, TodoWrite
 created: 2025-12-26
-modified: 2025-12-26
+modified: 2026-04-19
 reviewed: 2025-12-26
 ---
 

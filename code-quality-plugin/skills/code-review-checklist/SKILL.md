@@ -1,10 +1,15 @@
 ---
 name: code-review-checklist
-description: Structured code review approach covering security, quality, performance, and consistency.
+description: |
+  Structured code review checklist covering security, correctness,
+  performance, quality, and consistency. Use when the user asks for a code
+  review, wants to check for hardcoded secrets or injection vulnerabilities,
+  verify error handling and edge cases, audit for N+1 queries or resource
+  leaks, or apply a priority-ordered review to a pull request.
 user-invocable: false
 allowed-tools: Read, Grep, Glob
 created: 2025-12-27
-modified: 2025-12-27
+modified: 2026-04-19
 reviewed: 2025-12-27
 ---
 

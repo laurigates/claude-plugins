@@ -1,10 +1,15 @@
 ---
 name: debugging-methodology
-description: Systematic debugging approach with tool recommendations for memory, performance, and system-level issues.
+description: |
+  Systematic debugging methodology with tool recommendations for memory,
+  performance, and system-level issues. Use when the user asks to debug a
+  bug, diagnose a memory leak or performance problem, trace syscalls with
+  strace/eBPF, profile CPU usage with perf, reproduce a flaky test, or
+  reason about race conditions and null pointer errors.
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 created: 2025-12-27
-modified: 2025-12-27
+modified: 2026-04-19
 reviewed: 2025-12-27
 ---
 

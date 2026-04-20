@@ -1,10 +1,15 @@
 ---
-description: Debug TypeScript/JavaScript with Bun inspector
+description: |
+  Launch a script with Bun's debugger enabled via `--inspect`. Use when the user
+  wants to interactively debug a TypeScript/JavaScript file, break at the first
+  line of a fast-exiting script, wait for a debugger to attach before running,
+  or debug tests via `bun --inspect-brk test`. Triggers: "debug this script",
+  "attach debugger", "open debug.bun.sh", "break on start".
 args: <file> [--brk] [--wait] [--port=<port>]
 allowed-tools: Bash, BashOutput, Read
 argument-hint: <script.ts> [--brk] [--wait] [--port=9229]
 created: 2026-01-22
-modified: 2026-01-22
+modified: 2026-04-19
 reviewed: 2026-01-22
 name: bun-debug
 ---

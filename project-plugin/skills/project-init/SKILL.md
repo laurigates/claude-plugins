@@ -1,12 +1,17 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-04-19
 reviewed: 2025-12-16
 allowed-tools: Write, Bash(mkdir *), Bash(git init *), Bash(gh repo create *), Bash(pwd *), Bash(git config *), Bash(which *), SlashCommand, TodoWrite
 args: <project-name> [project-type] [--github] [--private]
 argument-hint: <project-name> [project-type] [--github] [--private]
 disable-model-invocation: true
-description: Base project initialization that other commands can extend for language-specific setup
+description: |
+  Initialize a new project with a universal base structure (src/tests/docs,
+  git, README, LICENSE, .gitignore, .editorconfig, pre-commit, CI workflow,
+  Makefile). Use when the user asks to start a new project, scaffold a
+  new repo, create project skeleton, or bootstrap a Python/Node/Rust/Go
+  codebase - optionally creating a matching GitHub repository.
 name: project-init
 ---
 

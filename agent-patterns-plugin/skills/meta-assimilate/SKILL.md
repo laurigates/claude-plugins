@@ -1,11 +1,16 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
+modified: 2026-04-19
 reviewed: 2025-12-16
 allowed-tools: Read, Write, Edit, MultiEdit, Glob, Grep, TodoWrite
 args: <project-path>
 argument-hint: <project-path>
-description: Analyze and assimilate project-specific Claude configurations
+description: |
+  Analyze and assimilate project-specific Claude configurations into user-scoped agents and
+  commands. Use when you want to examine a project's .claude/{agents,commands} directory and
+  either copy, generalize, or merge useful agents and commands into your personal configuration,
+  when the user mentions assimilating or adopting another project's Claude setup, or when
+  looking to generalize a project-specific agent into a reusable one.
 name: meta-assimilate
 ---
 

@@ -36,6 +36,7 @@ results_body=()
 results_marketplace=()
 results_release=()
 results_bash=()
+results_desc=()
 results_overall=()
 
 # Helper: extract YAML frontmatter field
@@ -392,6 +393,59 @@ check_bash_patterns() {
   return 0
 }
 
+# Check 7: Skill description quality for auto-invocation
+# Regression: skills whose description lacks a "Use when..." trigger clause are
+# not matched by Claude's auto-invocation heuristic, so they rarely fire without
+# explicit user instruction. See .claude/rules/skill-quality.md "Description
+# Quality" checklist. Delegates to scripts/audit-skill-descriptions.py which
+# handles multi-line YAML block scalars correctly.
+check_skill_descriptions() {
+  local plugin="$1"
+  local skills_dir="${plugin}/skills"
+
+  if [ ! -d "$skills_dir" ]; then
+    return 0
+  fi
+
+  local audit_script="scripts/audit-skill-descriptions.py"
+  if [ ! -f "$audit_script" ] || ! command -v python3 >/dev/null 2>&1; then
+    return 0
+  fi
+
+  local audit_json
+  if ! audit_json=$(python3 "$audit_script" --plugin "$plugin" --json 2>/dev/null); then
+    return 0
+  fi
+
+  local has_errors=false
+  local has_warnings=false
+
+  while IFS=$'\t' read -r category skill_path auto; do
+    [ -z "$category" ] && continue
+    local skill_slug
+    skill_slug=$(basename "$(dirname "$skill_path")")
+    case "$category" in
+      MISSING|EMPTY)
+        issues+=("❌ ${plugin}/${skill_slug}: description is ${category} — Claude cannot auto-invoke this skill")
+        has_errors=true
+        ;;
+      NO_TRIGGER)
+        if [ "$auto" = "true" ]; then
+          recommendations+=("⚠️ ${plugin}/${skill_slug}: description lacks a \"Use when...\" trigger clause — Claude may not auto-invoke this skill (see .claude/rules/skill-quality.md)")
+          has_warnings=true
+        fi
+        ;;
+    esac
+  done < <(echo "$audit_json" | jq -r '.[] | select(.category != "OK") | [.category, .path, (.auto_invokable | tostring)] | @tsv')
+
+  if $has_errors; then
+    return 2
+  elif $has_warnings; then
+    return 1
+  fi
+  return 0
+}
+
 # Main check loop
 for i in "${!PLUGINS[@]}"; do
   plugin="${PLUGINS[$i]}"
@@ -404,6 +458,7 @@ for i in "${!PLUGINS[@]}"; do
     results_marketplace+=("❌")
     results_release+=("❌")
     results_bash+=("❌")
+    results_desc+=("❌")
     results_overall+=("❌")
     overall_failed=true
     continue
@@ -416,6 +471,7 @@ for i in "${!PLUGINS[@]}"; do
   marketplace_status=0; check_marketplace "$plugin" || marketplace_status=$?
   release_status=0; check_release_config "$plugin" || release_status=$?
   bash_status=0; check_bash_patterns "$plugin" || bash_status=$?
+  desc_status=0; check_skill_descriptions "$plugin" || desc_status=$?
 
   results_json+=("$(to_symbol $json_status)")
   results_frontmatter+=("$(to_symbol $frontmatter_status)")
@@ -423,10 +479,11 @@ for i in "${!PLUGINS[@]}"; do
   results_marketplace+=("$(to_symbol $marketplace_status)")
   results_release+=("$(to_symbol $release_status)")
   results_bash+=("$(to_symbol $bash_status)")
+  results_desc+=("$(to_symbol $desc_status)")
 
   # Overall: ❌ if any ❌, ⚠️ if any ⚠️, ✅ if all ✅
   plugin_overall="✅"
-  for status in $json_status $frontmatter_status $body_status $marketplace_status $release_status $bash_status; do
+  for status in $json_status $frontmatter_status $body_status $marketplace_status $release_status $bash_status $desc_status; do
     if [ "$status" -ge 2 ]; then
       plugin_overall="❌"
       overall_failed=true
@@ -441,11 +498,11 @@ done
 # Output report
 echo "## Plugin Compliance Review"
 echo ""
-echo "| Plugin | plugin.json | Frontmatter | Body | Marketplace | Release Config | Bash Patterns | Overall |"
-echo "|--------|-------------|-------------|------|-------------|----------------|---------------|---------|"
+echo "| Plugin | plugin.json | Frontmatter | Body | Marketplace | Release Config | Bash Patterns | Descriptions | Overall |"
+echo "|--------|-------------|-------------|------|-------------|----------------|---------------|--------------|---------|"
 
 for i in "${!PLUGINS[@]}"; do
-  echo "| ${PLUGINS[$i]} | ${results_json[$i]} | ${results_frontmatter[$i]} | ${results_body[$i]} | ${results_marketplace[$i]} | ${results_release[$i]} | ${results_bash[$i]} | ${results_overall[$i]} |"
+  echo "| ${PLUGINS[$i]} | ${results_json[$i]} | ${results_frontmatter[$i]} | ${results_body[$i]} | ${results_marketplace[$i]} | ${results_release[$i]} | ${results_bash[$i]} | ${results_desc[$i]} | ${results_overall[$i]} |"
 done
 
 echo ""

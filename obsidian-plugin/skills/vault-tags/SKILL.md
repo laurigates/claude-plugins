@@ -1,13 +1,14 @@
 ---
 created: 2026-04-17
-modified: 2026-04-17
+modified: 2026-04-19
 reviewed: 2026-04-17
 name: vault-tags
 description: |
-  Emoji-prefixed tag taxonomy for Obsidian vaults. Defines canonical
-  categories, how to consolidate near-duplicate tags (`🔍/security` vs
-  `🔒/security`, `games` vs `gaming`), and when to collapse bare
-  placeholders. Works offline on .md files.
+  Emoji-prefixed tag taxonomy for Obsidian vaults. Use when the user asks
+  to consolidate duplicate or drifted tags (e.g. `🔒/security` vs
+  `🔍/security`, `gaming` vs `🎮/games`), collapse bare emoji placeholder
+  tags like `📝` or `🌱`, convert flat tags to emoji-prefixed form, or
+  reduce over-tagged notes down to the 2-3 canonical tags.
 user-invocable: false
 allowed-tools: Read, Edit, Grep, Glob
 ---

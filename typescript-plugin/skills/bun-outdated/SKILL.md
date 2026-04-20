@@ -1,10 +1,15 @@
 ---
-description: Check for outdated dependencies
+description: |
+  Check which project dependencies have newer versions available using `bun
+  outdated`. Use when the user wants to audit dependency freshness, spot major
+  version updates before upgrading, decide between `bun update` (in-range) and
+  `bun update --latest`, or review a single package. Triggers: "check outdated",
+  "what can be upgraded", "show newer versions", "review dependency updates".
 args: "[package]"
 argument-hint: "Optional package name to check specific dependency"
 allowed-tools: Bash, Read
 created: 2025-12-20
-modified: 2026-02-03
+modified: 2026-04-19
 reviewed: 2025-12-20
 name: bun-outdated
 ---

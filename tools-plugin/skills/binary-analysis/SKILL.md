@@ -1,10 +1,16 @@
 ---
 name: binary-analysis
-description: Reverse engineering and binary exploration using strings, binwalk, hexdump, and related tools.
+description: |
+  Reverse engineering and binary exploration using strings, binwalk, hexdump, xxd, file, and
+  objdump. Use when the user needs to identify unknown file types, extract printable strings
+  from compiled binaries or firmware, analyze firmware images for embedded files, inspect
+  raw hex data, hunt for hardcoded credentials or URLs inside binaries, run entropy analysis
+  to find compressed/encrypted regions, or when they mention "reverse engineer", "firmware
+  analysis", "strings dump", "binwalk", or "hexdump this binary".
 user-invocable: false
 allowed-tools: Bash(file *), Bash(xxd *), Bash(hexdump *), Bash(strings *), Bash(objdump *), Bash(readelf *), Bash(nm *), Read, Grep, Glob
 created: 2025-12-27
-modified: 2025-12-27
+modified: 2026-04-19
 reviewed: 2025-12-27
 ---
 

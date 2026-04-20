@@ -1,10 +1,14 @@
 ---
-description: Add package dependency with Bun
+description: |
+  Add a package dependency with Bun. Use when the user wants to install a single
+  package quickly, add a dev dependency (e.g. `bun add --dev typescript`), pin an
+  exact version without a semver range, or target a specific workspace. Triggers:
+  "add express", "install lodash", "bun add a dev dep", "pin react exact".
 args: <package> [--dev] [--exact]
 allowed-tools: Bash, Read
 argument-hint: package-name [--dev] [--exact]
 created: 2025-12-20
-modified: 2025-12-20
+modified: 2026-04-19
 reviewed: 2025-12-20
 name: bun-add
 ---

@@ -1,8 +1,13 @@
 ---
 created: 2026-02-02
-modified: 2026-02-11
+modified: 2026-04-19
 reviewed: 2026-02-02
-description: Install reusable GitHub Actions workflows for security, quality, and accessibility checks
+description: |
+  Install reusable GitHub Actions workflows for security, quality, and accessibility
+  checks. Use when adding Claude-powered reusable workflows, installing pre-built workflow
+  callers from claude-plugins, automating OWASP/secret-scanning/code-smell detection in
+  CI, adding WCAG accessibility checks to PR pipelines, or bootstrapping a full suite of
+  Claude-powered CI checks.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash(mkdir *), Bash(ls *), AskUserQuestion, TodoWrite
 args: "[--all] [--security] [--quality] [--a11y] [--list]"
 argument-hint: "[--all] [--security] [--quality] [--a11y] [--list]"

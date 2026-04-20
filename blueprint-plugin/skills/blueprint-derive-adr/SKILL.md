@@ -1,8 +1,13 @@
 ---
 created: 2025-12-22
-modified: 2026-02-06
+modified: 2026-04-19
 reviewed: 2026-02-06
-description: "Derive Architecture Decision Records from existing project structure, dependencies, and documentation"
+description: |
+  Derive Architecture Decision Records from existing project structure, dependencies, and
+  documentation. Use when the user wants to onboard an existing project to blueprint by
+  documenting implicit architecture decisions, asks to "derive ADRs", "generate ADRs from
+  the codebase", or needs to capture framework, database, state-management, and testing
+  choices retroactively.
 allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion, Task
 name: blueprint-derive-adr
 ---

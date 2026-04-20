@@ -1,9 +1,15 @@
 ---
 created: 2026-02-04
-modified: 2026-04-15
+modified: 2026-04-19
 reviewed: 2026-04-15
 user-invocable: false
-description: Diagnose and fix plugin registry issues including orphaned entries and project-scope conflicts (addresses Claude Code issue #14202)
+description: |
+  Diagnose and fix Claude Code plugin registry corruption, orphaned entries, stale
+  enabledPlugins keys, and project-scope conflicts (issue #14202 where a plugin appears
+  "installed" in another project and blocks installation). Use when the user sees "plugin
+  already installed" errors across projects, needs to clean up orphaned projectPath
+  entries, wants to resolve registry-vs-settings drift, or when inspecting the registry
+  JSON directly.
 allowed-tools: Bash(bash *), Read, Write, Edit, Glob, Grep, TodoWrite, AskUserQuestion
 args: "[--fix] [--dry-run] [--plugin <name>]"
 argument-hint: "[--fix] [--dry-run] [--plugin <name>]"

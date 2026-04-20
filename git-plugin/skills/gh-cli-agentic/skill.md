@@ -1,10 +1,15 @@
 ---
 name: gh-cli-agentic
-description: GitHub CLI commands optimized for AI agent workflows with JSON output and deterministic execution patterns.
+description: |
+  GitHub CLI commands optimized for AI agent workflows with JSON output and
+  deterministic execution patterns. Use when the user asks to query PRs,
+  issues, workflow runs, or repo metadata with gh, inspect PR checks or
+  mergeable status, fetch failed CI logs, work with sub-issues, or resolve
+  a github.com URL into an API call.
 user-invocable: false
 allowed-tools: Bash(gh pr *), Bash(gh run *), Bash(gh issue *), Bash(gh repo *), Bash(gh workflow *), Bash(gh api *), Read
 created: 2025-01-16
-modified: 2026-03-19
+modified: 2026-04-19
 reviewed: 2026-03-19
 ---
 

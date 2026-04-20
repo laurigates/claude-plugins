@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.19.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.18.1...configure-plugin-v1.19.0) (2026-04-19)
+
+
+### Features
+
+* make skills discoverable by Claude's auto-invocation ([#1090](https://github.com/laurigates/claude-plugins/issues/1090)) ([cded1da](https://github.com/laurigates/claude-plugins/commit/cded1da1ebaf350cba1285b58ecadbbaa0eb01f6))
+
 ## [1.18.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.18.0...configure-plugin-v1.18.1) (2026-04-17)
 
 

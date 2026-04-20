@@ -1,9 +1,14 @@
 ---
 created: 2026-02-05
-modified: 2026-04-15
+modified: 2026-04-19
 reviewed: 2026-04-15
 user-invocable: false
-description: Audit enabled plugins against project tech stack and recommend additions/removals for relevance
+description: |
+  Audit the project's enabled plugins against the detected technology stack and recommend
+  which plugins to add or remove for relevance. Use when the user wants to review plugin
+  relevance for the current project, clean up unused plugins, discover missing plugins that
+  match the project's stack (Python, Node, Rust, Go, Terraform, Docker, Kubernetes), optimize
+  project-specific plugin configuration, or when onboarding to an existing project.
 allowed-tools: Bash(test *), Bash(find *), Bash(jq *), Bash(claude plugin *), Read, Write, Edit, Glob, Grep, TodoWrite, AskUserQuestion
 args: "[--fix] [--dry-run] [--verbose]"
 argument-hint: "[--fix] [--dry-run] [--verbose]"

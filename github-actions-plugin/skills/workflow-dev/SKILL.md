@@ -1,12 +1,18 @@
 ---
 created: 2025-12-16
-modified: 2026-02-10
+modified: 2026-04-19
 reviewed: 2025-12-16
 allowed-tools: Read, Write, Edit, MultiEdit, Bash(git *), Bash(pytest *), Bash(npm test *), Bash(cargo test *), Bash(go test *), mcp__github__list_issues, mcp__github__create_issue, mcp__github__create_pull_request, mcp__github__get_issue, TodoWrite
 args: [--max-cycles <n>] [--focus <bug|feature|test>]
 argument-hint: [--max-cycles <n>] [--focus <bug|feature|test>]
 disable-model-invocation: true
-description: Automated development loop with issue creation and TDD
+description: |
+  Automated development loop that runs tests, creates GitHub issues for failures, picks an
+  issue to work on, implements a TDD fix on a feature branch, opens a PR, and monitors CI
+  until green. Use when the user wants to run a continuous dev loop through open issues,
+  turn test failures into tracked issues, automate the issue-to-PR cycle, or when they
+  mention "work through the backlog", "autonomous dev loop", "TDD on open issues", or
+  "fix test failures and open PRs".
 name: workflow-dev
 ---
 

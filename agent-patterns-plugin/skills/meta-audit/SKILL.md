@@ -1,9 +1,14 @@
 ---
 created: 2025-12-16
-modified: 2026-04-16
+modified: 2026-04-19
 reviewed: 2026-04-16
 allowed-tools: Glob, Read, TodoWrite
-description: Audit Claude subagent configurations for completeness, security, and best practices
+description: |
+  Audit Claude subagent configurations for completeness, security, and best practices. Use when
+  the user wants to review .claude/agents/ for missing frontmatter fields, overprivileged tool
+  access, read-only agents with write permissions, inappropriate model choices, or inconsistent
+  naming; when checking agent configurations before committing; or when asked to validate
+  subagent security and privilege assignments.
 args: "[--verbose]"
 argument-hint: "[--verbose]"
 name: meta-audit

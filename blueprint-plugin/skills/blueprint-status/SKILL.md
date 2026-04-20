@@ -1,8 +1,13 @@
 ---
 created: 2025-12-17
-modified: 2026-04-16
+modified: 2026-04-19
 reviewed: 2025-12-22
-description: "Show blueprint version, configuration, and check for available upgrades"
+description: |
+  Show blueprint version, configuration, and check for available upgrades. Use when the
+  user asks to "show blueprint status", checks the three-layer architecture breakdown,
+  audits traceability and orphan documents, views task registry health, looks for stale
+  or modified generated content, or wants to see PRD/ADR/PRP counts and feature tracker
+  progress.
 args: "[--report-only]"
 argument-hint: "--report-only to display status without interactive prompts"
 allowed-tools: Read, Bash, Glob, AskUserQuestion

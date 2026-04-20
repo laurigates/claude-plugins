@@ -1,11 +1,16 @@
 ---
 name: attributes-route
-description: Route to specialized agents based on codebase health attributes. Use after /attributes:collect to automatically address findings by severity.
+description: |
+  Route to specialized agents (security, test, refactor, review, docs, configure) based on
+  codebase health attributes, prioritized by severity weights. Use when the user has
+  attribute data and wants automated remediation, when batch-fixing multiple health findings,
+  when they want severity-based agent prioritization, or when mentioning "fix health
+  findings", "route to agents", or running after `/attributes:collect`.
 allowed-tools: Read, Glob, Grep, Agent, TodoWrite
 args: "[--dry-run] [--focus <category>] [--min-severity <level>]"
 argument-hint: "--dry-run"
 created: 2026-03-15
-modified: 2026-03-15
+modified: 2026-04-19
 reviewed: 2026-03-15
 ---
 

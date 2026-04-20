@@ -1,10 +1,15 @@
 ---
-description: Bundle or compile with Bun
+description: |
+  Bundle or compile JavaScript/TypeScript with Bun. Use when the user wants a
+  quick production bundle of an entry point, to compile to a standalone
+  executable with `bun build --compile`, or to build for a specific target
+  (browser, bun, node). Triggers: "bundle src/index.ts", "compile to binary",
+  "build for node target", "make a standalone executable".
 args: <entry> [--compile] [--minify]
 allowed-tools: Bash, Read
 argument-hint: ./src/index.ts [--compile] [--minify]
 created: 2025-12-20
-modified: 2025-12-20
+modified: 2026-04-19
 reviewed: 2025-12-20
 name: bun-build
 ---
