@@ -100,6 +100,195 @@ def _dispatch(coro) -> None:
     raise typer.Exit(code=EXIT_SUCCESS)
 
 
+_VALID_LANGUAGES: tuple[str, ...] = (
+    "python", "typescript", "javascript", "rust", "go", "default",
+)
+_VALID_VISIBILITIES: tuple[str, ...] = ("private", "public")
+
+
+def _parse_csv(value: Optional[str]) -> tuple[str, ...]:
+    if not value:
+        return ()
+    return tuple(part.strip() for part in value.split(",") if part.strip())
+
+
+def _print_new_plan(result, *, spec, remote_target: str | None) -> None:
+    """Pretty-print the final summary after ``new`` completes (or dry-runs)."""
+    console.print()
+    console.print(f"[bold]Repo created:[/bold] {remote_target or '(local only)'}")
+    console.print(f"[bold]Local path:[/bold]   {result.path}")
+    console.print(f"[bold]Marketplace:[/bold]  laurigates/claude-plugins")
+    plugin_lines = ", ".join(result.plugins)
+    console.print(f"[bold]Plugins:[/bold]      {plugin_lines}")
+    if spec.stack_indicators:
+        console.print(
+            f"[bold]Indicators:[/bold]   {', '.join(spec.stack_indicators)}"
+        )
+    if result.dry_run:
+        console.print("[yellow]DRY RUN — no filesystem changes were made[/yellow]")
+    else:
+        console.print(f"[dim]Next:         cd {result.path} && claude[/dim]")
+
+
+@app.command()
+def new(
+    idea: str = typer.Argument(
+        ...,
+        help="Short description of what you want to build (1-2 sentences).",
+    ),
+    name: str = typer.Option(
+        ...,
+        "--name",
+        help="Human-readable project name; also drives the directory / repo slug.",
+    ),
+    language: str = typer.Option(
+        "default",
+        "--language",
+        help=(
+            "Primary language: python | typescript | javascript | rust | go | default."
+        ),
+    ),
+    stack_indicators: Optional[str] = typer.Option(
+        None,
+        "--stack-indicators",
+        help=(
+            "Comma-separated extra stack indicators (e.g. 'docker,github-actions'). "
+            "Merged with --language to pick plugins."
+        ),
+    ),
+    description: Optional[str] = typer.Option(
+        None,
+        "--description",
+        help="Short description (defaults to the idea argument).",
+    ),
+    owner: Optional[str] = typer.Option(
+        None,
+        "--owner",
+        help="GitHub owner for `gh repo create` (defaults to current gh user).",
+    ),
+    visibility: str = typer.Option(
+        "private",
+        "--visibility",
+        help="GitHub visibility: private or public.",
+    ),
+    parent_dir: str = typer.Option(
+        ".",
+        "--parent-dir",
+        help="Directory in which to create the new repo (default: current dir).",
+    ),
+    no_remote: bool = typer.Option(
+        False,
+        "--no-remote",
+        help="Skip `gh repo create`; keep the repo local-only.",
+    ),
+    extra_plugins: Optional[str] = typer.Option(
+        None,
+        "--extra-plugins",
+        help="Comma-separated plugins to enable beyond stack-recommended defaults.",
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Print the plan and exit without creating any files.",
+    ),
+) -> None:
+    """Create a new repository from an idea: genesis + plugin enrollment + (optionally) gh repo create.
+
+    This is the foundation (PR 1) of ``git-repo-agent new``: it performs
+    local genesis and writes ``.claude/settings.json`` with the right
+    marketplace + plugin list for the detected stack. Intent parsing and
+    blueprint-init scaffolding land in follow-up PRs.
+    """
+    from pathlib import Path
+
+    from .creator import (
+        NewProjectSpec,
+        create_repo,
+        gh_current_user,
+        gh_repo_create,
+        slugify,
+    )
+
+    if language not in _VALID_LANGUAGES:
+        console.print(
+            f"[red]Error:[/red] --language must be one of {list(_VALID_LANGUAGES)}, "
+            f"got {language!r}"
+        )
+        raise typer.Exit(code=EXIT_CONFIG_ERROR)
+    if visibility not in _VALID_VISIBILITIES:
+        console.print(
+            f"[red]Error:[/red] --visibility must be one of "
+            f"{list(_VALID_VISIBILITIES)}, got {visibility!r}"
+        )
+        raise typer.Exit(code=EXIT_CONFIG_ERROR)
+
+    parent = Path(parent_dir).resolve()
+    if not parent.is_dir():
+        console.print(f"[red]Error:[/red] --parent-dir is not a directory: {parent}")
+        raise typer.Exit(code=EXIT_CONFIG_ERROR)
+
+    try:
+        slug = slugify(name)
+    except ValueError as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=EXIT_CONFIG_ERROR)
+
+    # Build the stack-indicator set. The language is itself an indicator
+    # when it isn't "default"; any extra indicators from --stack-indicators
+    # are merged on top (deduplicated, order-preserving).
+    indicators: list[str] = []
+    if language != "default":
+        indicators.append(language)
+    for extra in _parse_csv(stack_indicators):
+        if extra not in indicators:
+            indicators.append(extra)
+
+    spec = NewProjectSpec(
+        name=name,
+        slug=slug,
+        description=description or idea,
+        idea=idea,
+        language=language,
+        stack_indicators=tuple(indicators),
+        extra_plugins=_parse_csv(extra_plugins),
+    )
+
+    try:
+        result = create_repo(spec=spec, parent_dir=parent, dry_run=dry_run)
+    except FileExistsError as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=EXIT_CONFIG_ERROR)
+    except FileNotFoundError as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=EXIT_CONFIG_ERROR)
+
+    remote_target: str | None = None
+    if not dry_run and not no_remote:
+        repo_owner = owner or gh_current_user()
+        if not repo_owner:
+            console.print(
+                "[yellow]Warning:[/yellow] could not determine gh user for "
+                "`gh repo create`. Pass --owner or --no-remote. Skipping remote."
+            )
+        else:
+            try:
+                remote_target = gh_repo_create(
+                    repo_path=result.path,
+                    owner=repo_owner,
+                    slug=spec.slug,
+                    description=spec.description,
+                    visibility=visibility,
+                )
+            except Exception as exc:  # subprocess.CalledProcessError / FileNotFoundError
+                console.print(
+                    f"[red]Failed to create GitHub repo:[/red] {exc}. "
+                    f"Local repo preserved at {result.path}."
+                )
+                raise typer.Exit(code=EXIT_RUNTIME_ERROR)
+
+    _print_new_plan(result, spec=spec, remote_target=remote_target)
+
+
 @app.command()
 def onboard(
     repo: str = typer.Argument(
@@ -155,7 +344,7 @@ def onboard(
         help="Output format: text, json, plain. Default: plain when not a TTY.",
     ),
 ) -> None:
-    """Onboard a repository with blueprint structure and standards."""
+    """Bootstrap a repository: scaffold blueprint files, CI workflows, and standards, then commit on a setup branch and (per --auto-pr) open a PR."""
     repo_path = Path(repo).resolve()
     if not repo_path.is_dir():
         console.print(f"[red]Error:[/red] {repo_path} is not a directory")
@@ -236,7 +425,7 @@ def maintain(
         help="Output format: text, json, plain. Default: plain when not a TTY.",
     ),
 ) -> None:
-    """Run maintenance checks and optionally fix issues."""
+    """Scan the repo for maintenance issues (docs, tests, security, etc.). With --fix, applies fixes on a branch and (per --auto-pr) opens a PR; with --report-only, writes findings without code changes."""
     repo_path = Path(repo).resolve()
     if not repo_path.is_dir():
         console.print(f"[red]Error:[/red] {repo_path} is not a directory")
@@ -323,7 +512,7 @@ def diagnose(
         help="Output format: text, json, plain. Default: plain when not a TTY.",
     ),
 ) -> None:
-    """Diagnose pipeline failures and optionally create a GitHub issue."""
+    """Collect diagnostics from CI/CD, Kubernetes, ArgoCD, and package sources for recent failures; with --create-issue (and per --auto-issues), opens a GitHub issue aggregating the findings."""
     repo_path = Path(repo).resolve()
     if not repo_path.is_dir():
         console.print(f"[red]Error:[/red] {repo_path} is not a directory")
@@ -431,7 +620,7 @@ def route(
     dry_run: bool = typer.Option(
         False,
         "--dry-run",
-        help="Show routing plan without executing.",
+        help="Print the routing plan and exit without running maintain --fix.",
     ),
     focus: Optional[str] = typer.Option(
         None,
@@ -444,7 +633,16 @@ def route(
         help="Minimum severity threshold: critical, high, medium, low.",
     ),
 ) -> None:
-    """Route to agents based on attribute analysis."""
+    """Analyze repo health attributes and run maintenance fixes on the highest-priority issues.
+
+    Collects structured health attributes, ranks them by severity (respecting
+    --min-severity and --focus), prints the routing plan, and then runs
+    `maintain --fix` scoped to those priorities. Use --dry-run to only print
+    the plan without modifying the repository.
+
+    Side effects (unless --dry-run): may modify files, create a branch, commit,
+    and — per --auto-pr policy inherited by maintain — open a pull request.
+    """
     repo_path = Path(repo).resolve()
     if not repo_path.is_dir():
         console.print(f"[red]Error:[/red] {repo_path} is not a directory")
