@@ -1,10 +1,15 @@
 # git-repo-agent
 
-Claude Agent SDK application for automated repository onboarding and maintenance.
+Claude Agent SDK application for repository creation, onboarding, and maintenance.
 
 ## Overview
 
-git-repo-agent analyzes a repository's technology stack, initializes blueprint methodology structure, configures project standards, runs quality and security audits, and sets up documentation — all orchestrated by Claude through the Agent SDK.
+git-repo-agent covers the full repository lifecycle:
+
+- **Create** — `git-repo-agent new "<idea>"` parses the idea via Claude, scaffolds the repo, enrols the `laurigates/claude-plugins` marketplace, runs `blueprint-init`, and pushes to GitHub — all in one command. See [ADR-007](docs/adr/007-new-command-orchestrator.md).
+- **Onboard** — `git-repo-agent onboard <existing-repo>` analyses an existing repository's technology stack, initialises blueprint methodology structure, and configures project standards.
+- **Maintain** — `git-repo-agent maintain` runs quality, security, and documentation audits and optionally applies auto-fixes on a PR branch.
+- **Diagnose** — `git-repo-agent diagnose` correlates pipeline failures from CI, Kubernetes, and ArgoCD into a single GitHub issue.
 
 ## Installation
 
@@ -208,8 +213,12 @@ git-repo-agent health /path/to/repo
 git-repo-agent/
 ├── src/git_repo_agent/
 │   ├── main.py                # CLI entry point (Typer)
-│   ├── orchestrator.py        # Core agent orchestration
+│   ├── orchestrator.py        # Core agent orchestration (onboard / maintain / diagnose)
 │   ├── blueprint_driver.py    # Blueprint state machine (ADR-006)
+│   ├── intent.py              # `new`: idea → NewProjectSpec via Claude SDK (ADR-007)
+│   ├── creator.py             # `new`: local genesis (git init, templates, initial commit)
+│   ├── plugin_enroller.py     # `new`: marketplace + enabledPlugins in .claude/settings.json
+│   ├── templates/             # Per-language seed files (README, .gitignore, PRD)
 │   ├── agents/
 │   │   ├── configure.py       # Project standards (haiku)
 │   │   ├── diagnose.py        # Pipeline diagnostics (sonnet)
@@ -350,3 +359,4 @@ uv run --directory git-repo-agent git-repo-agent diagnose . --dry-run
 | Phase 3 | Done    | Quality/security/test-runner subagents, report_generate, health command                   |
 | Phase 4 | In progress | Non-interactive / scheduled execution (ADR-005); watch mode and trend tracking planned |
 | Phase 5 | Done    | Pipeline diagnostics (kubectl, ArgoCD, GitHub Actions, Sentry, Chrome DevTools)           |
+| Phase 6 | Done    | `new` command: intent parsing, local genesis, plugin enrollment, `blueprint-init` (ADR-007) |

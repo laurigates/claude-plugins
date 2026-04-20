@@ -1,7 +1,7 @@
 [project]
 name = "git-repo-agent"
 version = "1.0.0"
-description = "Claude Agent SDK app for repo onboarding and maintenance"
+description = "Claude Agent SDK app for repo creation, onboarding, and maintenance"
 readme = "README.md"
 authors = [
     { name = "Lauri Gates", email = "lauri.gates@forumvirium.fi" }
