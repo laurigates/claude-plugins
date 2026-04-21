@@ -1,7 +1,7 @@
 ---
 created: 2025-12-20
-modified: 2026-04-16
-reviewed: 2026-04-16
+modified: 2026-04-21
+reviewed: 2026-04-21
 ---
 
 # claude-plugins
@@ -44,6 +44,7 @@ Claude Code plugin collection providing skills and agents for development workfl
 | `.claude/rules/regression-testing.md` | **Required**: add a script check for every skill bug fixed |
 | `.claude/rules/sandbox-guidance.md` | Sandbox constraints, `CLAUDE_CODE_REMOTE` detection, and remote/local skill patterns |
 | `.claude/rules/plugin-flow-diagrams.md` | When and how to add Mermaid flow diagrams |
+| `.claude/rules/agent-coworker-detection.md` | Detect other agents working in the same repo clone before destructive git ops |
 
 ## Creating New Skills
 
