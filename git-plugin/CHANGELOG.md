@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.34.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.33.0...git-plugin-v2.34.0) (2026-04-21)
+
+
+### Features
+
+* **git-plugin:** add git-coworker-check skill and coworker-detection rule ([5e427f0](https://github.com/laurigates/claude-plugins/commit/5e427f03ffd7c2d4614ef805c7931cc3a011e23b))
+
+
+### Bug Fixes
+
+* **git-plugin:** add args field to git-coworker-check frontmatter ([d548ade](https://github.com/laurigates/claude-plugins/commit/d548adee04adc917425c39ca0ec0ad979fb05d01))
+
 ## [2.33.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.32.0...git-plugin-v2.33.0) (2026-04-21)
 
 
