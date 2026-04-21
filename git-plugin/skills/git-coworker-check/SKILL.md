@@ -5,6 +5,7 @@ description: |
   running destructive git operations (stash, reset, checkout --). Use when
   starting a session in a non-worktree checkout, or before any "clean up the
   working tree" action that could wipe a coworker's in-flight changes.
+args: "[--check | --claim | --release]"
 argument-hint: [--claim | --release | --check (default)]
 allowed-tools: Bash(bash *), Bash(git status *), Bash(git stash *), Bash(git rev-parse *), Read, TodoWrite
 created: 2026-04-21
