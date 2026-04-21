@@ -90,6 +90,15 @@ Configure and orchestrate Claude Code agent teams with TeamCreate, SendMessage, 
 - Managing task assignment and inter-agent communication
 - Implementing graceful team shutdown procedures
 
+#### `parallel-agent-dispatch`
+Dispatch contract for any workflow that spawns more than one agent in parallel — applies to both native agent teams and plain parallel `Agent` tool fan-out.
+
+**When to use:**
+- Before spawning any parallel agents (worktree preflight)
+- Authoring agent prompts that need file/read/output budgets
+- Defining the mandatory Return Contract every parallel agent must emit on exit
+- Recovering from silent agent exits or worktree collisions
+
 #### `plugin-settings`
 Configure per-project plugin settings using `.claude/plugin-name.local.md` files.
 
