@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.33.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.32.0...git-plugin-v2.33.0) (2026-04-21)
+
+
+### Features
+
+* **git-plugin:** support native GitHub issue dependencies ([#1104](https://github.com/laurigates/claude-plugins/issues/1104)) ([22f43b5](https://github.com/laurigates/claude-plugins/commit/22f43b55cccf2a884ba523889529380321a29366))
+
 ## [2.32.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.31.0...git-plugin-v2.32.0) (2026-04-19)
 
 
