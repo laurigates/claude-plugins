@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.15.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.14.0...agent-patterns-plugin-v2.15.0) (2026-04-21)
+
+
+### Features
+
+* **agent-patterns-plugin:** add parallel-agent-dispatch skill ([#1101](https://github.com/laurigates/claude-plugins/issues/1101)) ([e6841b6](https://github.com/laurigates/claude-plugins/commit/e6841b6ca1f0d069ec4f843863dd66e33c54eb40))
+
 ## [2.14.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.13.0...agent-patterns-plugin-v2.14.0) (2026-04-19)
 
 
