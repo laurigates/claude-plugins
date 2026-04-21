@@ -26,6 +26,7 @@ See [`docs/flow.md`](docs/flow.md) for a diagram of how the skills fit together.
 | `/git:maintain` | Repository maintenance and cleanup (prune, gc, verify, branches, stash) |
 | `/git:derive-docs` | Analyze git history to derive undocumented rules, PRDs, ADRs, and PRPs |
 | `/git:upstream-pr` | Submit clean PRs to upstream repositories from fork work |
+| `/git:coworker-check` | Detect another agent working in the same repo clone before destructive git ops |
 
 ## Layered Skills (Composable Git Workflows)
 
