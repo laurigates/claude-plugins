@@ -1,8 +1,8 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
-reviewed: 2026-03-09
-allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git pull *), Bash(git stash *), Bash(gh issue *), Bash(gh pr *), Bash(gh repo *), Bash(gh label *), Bash(pre-commit *), Read, Edit, Write, Grep, Glob, TodoWrite, AskUserQuestion, Task, mcp__github__create_pull_request, mcp__github__issue_read, mcp__github__list_issues
+modified: 2026-04-21
+reviewed: 2026-04-21
+allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git pull *), Bash(git stash *), Bash(gh issue *), Bash(gh pr *), Bash(gh repo *), Bash(gh label *), Bash(gh api *), Bash(pre-commit *), Read, Edit, Write, Grep, Glob, TodoWrite, AskUserQuestion, Task, mcp__github__create_pull_request, mcp__github__issue_read, mcp__github__list_issues
 description: |
   Process GitHub issues end-to-end with TDD, interactive selection, conflict
   detection, and parallel work support. Use when the user asks to work on an
@@ -97,6 +97,29 @@ Process directly with standard TDD workflow.
 
 Before processing multiple issues, analyze for:
 
+### Blocker Check (run first)
+
+Before sequencing or scoring, ask GitHub which issues are blocked by other
+open work via the native dependencies API:
+
+```bash
+gh api repos/$OWNER/$REPO/issues/$N/dependencies/blocked_by \
+  --jq '.[] | select(.state == "open") | .number'
+```
+
+If the list is non-empty:
+
+1. Report the open blockers inline: `#N is blocked by #X, #Y`.
+2. Use AskUserQuestion to offer: work on a blocker first, skip this issue,
+   or proceed anyway (only appropriate if the blocker is stale or
+   mis-linked).
+3. Never silently work on a blocked issue — the "Blocked" badge exists so
+   humans don't ship work out of order.
+
+Also fetch `dependencies/blocking` to understand downstream impact —
+finishing an issue that blocks others may be higher leverage than finishing
+an independent issue of the same size.
+
 ### Conflict Detection
 
 Identify issues that cannot be worked on simultaneously:
@@ -105,7 +128,8 @@ Identify issues that cannot be worked on simultaneously:
 |---------------|------------------|
 | File overlap | Issues referencing same files/components |
 | Logical conflicts | Opposing requirements (add vs remove) |
-| Dependency chains | Issue B requires Issue A resolved first |
+| Dependency chains | `dependencies/blocked_by` returns an open issue |
+| Sub-issue ordering | Parent's `sub_issues` not yet complete |
 
 ### Confidence Scoring
 
@@ -142,7 +166,8 @@ Identify issues that can be worked simultaneously:
 
 **Parallelizable when:**
 - Different files/components
-- No shared dependencies
+- Neither issue appears in the other's `dependencies/blocked_by`
+- Neither is a sub-issue of the other
 - Independent test suites
 - No logical conflicts
 
