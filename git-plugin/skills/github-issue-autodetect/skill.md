@@ -1,7 +1,7 @@
 ---
 created: 2026-01-15
-modified: 2026-01-15
-reviewed: 2026-01-15
+modified: 2026-04-21
+reviewed: 2026-04-21
 name: github-issue-autodetect
 description: |
   Automatically detect GitHub issues that staged changes may fix or close.
@@ -105,6 +105,15 @@ Use when the commit **relates to** but doesn't fully resolve:
 | `Related to #N` | Tangentially related changes |
 | `See #N` | Context or discussion reference |
 | `Part of #N` | One of multiple commits for an issue |
+
+### Not a keyword: blocking / blocked-by
+
+`Blocks #N` and `Blocked by #N` are *relationships*, not commit trailers —
+GitHub does not parse them from commit messages. If the detected issue is a
+hard blocker for (or blocked by) the current work, record that through
+`/git:issue-hierarchy --blocked-by N` (native dependencies API) rather than
+adding a line to the commit footer. Keep commit trailers limited to the
+closing/reference keywords above.
 
 ### Decision Tree
 

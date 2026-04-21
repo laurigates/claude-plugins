@@ -1,14 +1,15 @@
 ---
 created: 2026-03-19
-modified: 2026-03-19
-reviewed: 2026-03-19
+modified: 2026-04-21
+reviewed: 2026-04-21
 name: git-issue-hierarchy
 description: |
-  Manage sub-issues and dependency relationships between GitHub issues. Use when
-  breaking issues into sub-tasks, checking sub-issue completion progress, or
-  marking blocking/blocked-by dependencies between issues.
-args: "<parent-issue> [--add <N...>] [--remove <N...>] [--create \"title\"] [--status] [--deps] [--block <N>] [--blocked-by <N>] [--unblock <N>]"
-argument-hint: <parent-issue> [--add N] [--status] [--deps] [--block N]
+  Manage sub-issues and native GitHub dependency relationships (blocked_by /
+  blocking) between issues. Use when breaking issues into sub-tasks, checking
+  sub-issue completion progress, marking one issue as blocked by another, or
+  viewing a dependency graph before starting work.
+args: "<parent-issue> [--add <N...>] [--remove <N...>] [--create \"title\"] [--status] [--deps] [--blocking] [--block <N>] [--blocked-by <N>] [--unblock <N>]"
+argument-hint: <parent-issue> [--add N] [--status] [--deps] [--blocked-by N]
 user-invocable: true
 allowed-tools: Bash(gh api *), Bash(gh issue *), Bash(git remote *), Read, Grep, Glob, TodoWrite
 ---
@@ -30,10 +31,11 @@ Parse these parameters from the command:
 | `--remove <N...>` | Remove sub-issues from parent |
 | `--status` | Show sub-issue completion progress |
 | `--list` | List all sub-issues of the parent |
-| `--deps` | Show dependency graph for the issue |
-| `--block <N>` | Mark parent issue as blocking issue N |
-| `--blocked-by <N>` | Mark parent issue as blocked by issue N |
-| `--unblock <N>` | Remove blocking relationship with issue N |
+| `--deps` | Show dependency graph (blocked_by + blocking + sub-issues) for the issue |
+| `--blocking` | List issues the parent is blocking |
+| `--block <N>` | Mark issue N as blocked by the parent (parent blocks N) |
+| `--blocked-by <N>` | Mark the parent as blocked by issue N |
+| `--unblock <N>` | Remove blocking relationship with issue N in either direction |
 
 ## When to Use
 
@@ -41,8 +43,24 @@ Parse these parameters from the command:
 |------------------------|----------------------|
 | Breaking issues into sub-tasks | Creating standalone issues (`github-issue-writing`) |
 | Checking sub-issue completion progress | Implementing/processing issues (`git:issue`) |
-| Adding dependency relationships | Auto-detecting related issues (`github-issue-autodetect`) |
-| Viewing dependency graph | Searching for OSS solutions (`github-issue-search`) |
+| Recording `blocked_by` / `blocking` dependencies | Auto-detecting related issues (`github-issue-autodetect`) |
+| Viewing a blocker graph before picking work | Searching for OSS solutions (`github-issue-search`) |
+
+### Sub-issues vs. dependencies vs. "related to"
+
+GitHub ships three distinct ways to link issues. Pick the right one — they're
+not interchangeable:
+
+| Relationship | When to use | API surface |
+|--------------|-------------|-------------|
+| **Sub-issue** (parent ↔ child) | Child issue is a *part of* the parent's scope. Completing all children fulfils the parent. | `issues/{N}/sub_issues` |
+| **Blocked by** (hard dependency) | Parent *cannot start or ship* until the other issue closes. Makes the blocked issue render a "Blocked" badge on boards. | `issues/{N}/dependencies/blocked_by` |
+| **Blocking** (read-only inverse) | You want to see everything *this* issue gates. Managed by creating `blocked_by` links on the other side. | `issues/{N}/dependencies/blocking` |
+| **"Related to #N" in body** | Soft cross-reference, no lifecycle coupling, no board indicator. | Plain markdown — no API needed |
+
+Sub-issues express **composition** ("is part of"). Dependencies express
+**ordering** ("must happen before"). The same two issues should rarely use
+both — a sub-issue is implicitly ordered by its parent's scope.
 
 ## Execution
 
@@ -81,8 +99,9 @@ Remove specified sub-issues.
 **If `--list`:**
 List all sub-issues with their states.
 
-**If `--deps`, `--block`, `--blocked-by`, `--unblock`:**
-Manage dependency relationships.
+**If `--deps`, `--blocking`, `--block`, `--blocked-by`, `--unblock`:**
+Manage native GitHub issue dependencies via the `dependencies/blocked_by` and
+`dependencies/blocking` API endpoints.
 
 ### Step 3: Execute API Calls
 
@@ -153,40 +172,94 @@ gh api repos/$OWNER/$REPO_NAME/issues/$PARENT/sub_issues/$SUB_ISSUE_ID -X DELETE
 
 #### Dependency Management
 
-Dependencies use issue body text conventions that GitHub renders as tracked relationships.
+Dependencies use GitHub's native `dependencies/blocked_by` and
+`dependencies/blocking` endpoints. They appear in the issue sidebar under
+"Relationships" and mark the blocked issue with a "Blocked" badge on project
+boards. Both endpoints require the target issue's **node id** (`.id` on the
+issue payload), not the human-readable issue number.
 
-**Add "blocks" relationship (`--block <N>`):**
+**Add "blocked by" relationship (`--blocked-by <N>`): parent is blocked by N**
 
-1. Read current body of issue N: `gh issue view $N --json body --jq '.body'`
-2. Append `Blocked by #$PARENT` to a `## Dependencies` section in issue N's body
-3. Update: `gh issue edit $N --body "$UPDATED_BODY"`
+```bash
+# Resolve the blocker's node id
+BLOCKER_ID=$(gh api repos/$OWNER/$REPO_NAME/issues/$N --jq '.id')
 
-**Add "blocked by" relationship (`--blocked-by <N>`):**
+# Record the dependency on the parent
+gh api repos/$OWNER/$REPO_NAME/issues/$PARENT/dependencies/blocked_by \
+  -f issue_id=$BLOCKER_ID
+```
 
-1. Read current body of parent issue: `gh issue view $PARENT --json body --jq '.body'`
-2. Append `Blocked by #$N` to a `## Dependencies` section
-3. Update: `gh issue edit $PARENT --body "$UPDATED_BODY"`
+**Add "blocks" relationship (`--block <N>`): parent blocks issue N**
+
+The API is one-directional — write the relationship on the *blocked* side:
+
+```bash
+# Resolve the parent's node id
+PARENT_ID=$(gh api repos/$OWNER/$REPO_NAME/issues/$PARENT --jq '.id')
+
+# Record on issue N that it is blocked by the parent
+gh api repos/$OWNER/$REPO_NAME/issues/$N/dependencies/blocked_by \
+  -f issue_id=$PARENT_ID
+```
 
 **Remove relationship (`--unblock <N>`):**
 
-1. Read both issue bodies
-2. Remove `Blocked by #$PARENT` from issue N and `Blocked by #$N` from parent
-3. Update both issues
+Look up which side carries the link, then delete it. The `DELETE` path takes
+the stored dependency's `{issue_id}` segment:
+
+```bash
+# Is the parent blocked by N?
+gh api repos/$OWNER/$REPO_NAME/issues/$PARENT/dependencies/blocked_by \
+  --jq ".[] | select(.number == $N) | .id"
+
+# Or does the parent block N?
+gh api repos/$OWNER/$REPO_NAME/issues/$N/dependencies/blocked_by \
+  --jq ".[] | select(.number == $PARENT) | .id"
+
+# Delete whichever is present
+gh api repos/$OWNER/$REPO_NAME/issues/$ISSUE/dependencies/blocked_by/$DEP_ID \
+  -X DELETE
+```
+
+**List what the parent blocks (`--blocking`):**
+
+```bash
+gh api repos/$OWNER/$REPO_NAME/issues/$PARENT/dependencies/blocking \
+  --jq '.[] | "#\(.number) \(.state) \(.title)"'
+```
 
 **Show dependency graph (`--deps`):**
 
-1. Read issue body for dependency keywords: `Blocked by #N`, `Blocks #N`
-2. Recursively scan referenced issues
-3. Build and display dependency tree
+Combine both dependency endpoints with the sub-issues summary. Do not parse
+issue bodies — the native API is authoritative:
+
+```bash
+# What blocks the parent
+gh api repos/$OWNER/$REPO_NAME/issues/$PARENT/dependencies/blocked_by \
+  --jq '.[] | "#\(.number) \(.state) \(.title)"'
+
+# What the parent blocks
+gh api repos/$OWNER/$REPO_NAME/issues/$PARENT/dependencies/blocking \
+  --jq '.[] | "#\(.number) \(.state) \(.title)"'
+
+# Sub-issues (composition, not ordering)
+gh api repos/$OWNER/$REPO_NAME/issues/$PARENT/sub_issues \
+  --jq '.[] | "#\(.number) \(.state) \(.title)"'
+```
+
+Render output as:
 
 ```
 #42 Refactor authentication
 ├── Blocked by: #40 Database migration (✓ closed)
-├── Blocks: #45 Deploy auth v2
+├── Blocks:     #45 Deploy auth v2 (○ open)
 └── Sub-issues:
     ├── #43 ✓ Extract token validation
     └── #44 ○ Add refresh token support
 ```
+
+Surface `Blocked by` entries that are still `open` prominently — those are
+what prevent the parent from starting.
 
 ### Step 4: Report Results
 
@@ -198,15 +271,19 @@ Report what was done:
 | `--add` | Confirmation of each added sub-issue |
 | `--create` | New issue number + confirmation added as sub-issue |
 | `--remove` | Confirmation of each removed sub-issue |
-| `--deps` | Dependency tree visualization |
-| `--block/--blocked-by` | Confirmation of relationship added |
+| `--deps` | Dependency tree visualization (blocked_by + blocking + sub-issues) |
+| `--blocking` | List of issues the parent blocks |
+| `--block/--blocked-by` | Confirmation of relationship added, rendered with direction |
+| `--unblock` | Confirmation of relationship removed |
 
 ## Error Handling
 
 | Error | Cause | Action |
 |-------|-------|--------|
 | 404 on sub_issues endpoint | Sub-issues not enabled for repo | Report: "Sub-issues are not available for this repository. Enable them in repository settings." |
+| 404 on dependencies endpoint | Issue dependencies feature not enabled for repo/org | Report: "Issue dependencies are not available for this repository. Ask an owner to enable them under Repository settings → Features → Issues." |
 | 422 on add sub-issue | Issue already a sub-issue or circular reference | Report the specific error |
+| 422 on add dependency | Circular dependency, already linked, or self-reference | Report the specific error |
 | Issue not found | Invalid issue number | Report which issue number was not found |
 
 ## Agentic Optimizations
@@ -217,7 +294,11 @@ Report what was done:
 | List sub-issues | `gh api repos/{o}/{r}/issues/{N}/sub_issues --jq '.[].number'` |
 | Add sub-issue | `gh api repos/{o}/{r}/issues/{N}/sub_issues -f sub_issue_id=M` |
 | Remove sub-issue | `gh api repos/{o}/{r}/issues/{N}/sub_issues/M -X DELETE` |
-| Check dependencies | `gh issue view N --json body --jq '.body'` then parse for "Blocked by" |
+| List blockers | `gh api repos/{o}/{r}/issues/{N}/dependencies/blocked_by --jq '.[].number'` |
+| List blocked-by-me | `gh api repos/{o}/{r}/issues/{N}/dependencies/blocking --jq '.[].number'` |
+| Add blocker | `gh api repos/{o}/{r}/issues/{N}/dependencies/blocked_by -f issue_id=<node-id>` |
+| Remove blocker | `gh api repos/{o}/{r}/issues/{N}/dependencies/blocked_by/{dep_id} -X DELETE` |
+| Resolve node id | `gh api repos/{o}/{r}/issues/{N} --jq '.id'` |
 
 ## See Also
 

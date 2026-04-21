@@ -1,7 +1,7 @@
 ---
 created: 2026-01-30
-modified: 2026-03-19
-reviewed: 2026-03-19
+modified: 2026-04-21
+reviewed: 2026-04-21
 name: github-issue-writing
 description: |
   Create well-structured GitHub issues with clear titles, descriptions, and
@@ -119,12 +119,21 @@ gh issue list --search "login error" --state all
 
 ## Linking Issues
 
-```markdown
-## Related Issues
-Blocks #123
-Blocked by #456
-Related to #789
-```
+Pick the mechanism that matches the relationship — GitHub surfaces each one
+differently and only the native APIs trigger "Blocked" badges on project boards.
+
+| Relationship | How to record | Why |
+|--------------|---------------|-----|
+| Hard dependency (must happen before) | Native `dependencies/blocked_by` API — see `/git:issue-hierarchy --blocked-by N` | Sidebar "Relationships" entry + Blocked badge on boards |
+| Composition (part-of scope) | Sub-issue API — see `/git:issue-hierarchy --add N` | Progress bar on parent, tracked separately from dependencies |
+| Soft reference ("related to") | Plain markdown `Related to #789` in the body | Cross-link only; no lifecycle coupling |
+| Auto-close on merge | `Fixes #N` / `Closes #N` footer in commit or PR body | Closes issue when the PR merges |
+
+Do **not** write `Blocks #123` or `Blocked by #456` in issue bodies any more —
+those strings used to be GitHub's workaround for missing dependency APIs, but
+they are no longer parsed. Call `/git:issue-hierarchy` (or the REST endpoints
+at `issues/{N}/dependencies/blocked_by`) so the relationship shows up in the
+sidebar and on project boards.
 
 ## Quick Reference
 

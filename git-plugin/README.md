@@ -17,7 +17,7 @@ See [`docs/flow.md`](docs/flow.md) for a diagram of how the skills fit together.
 | `/git:api-pr` | Create PRs via GitHub API without local git operations - for quick fixes, typos, config updates |
 | `/git:commit` | Complete workflow from changes to PR - auto-detect issues, create logical commits with proper linkage, push, optionally create PR |
 | `/git:issue` | Process GitHub issues with interactive selection, conflict detection, and parallel work support |
-| `/git:issue-hierarchy` | Manage sub-issues and dependency relationships between issues |
+| `/git:issue-hierarchy` | Manage sub-issues and native `blocked_by` / `blocking` dependencies between issues |
 | `/git:issue-manage` | Administrative operations: transfer, pin, lock, develop branches, bulk ops, custom fields |
 | `/git:fix-pr` | Analyze and fix failing PR checks |
 | `/git:pr-feedback` | Review PR workflow results and comments, address substantive feedback from reviewers |
@@ -104,11 +104,25 @@ Analyzes issues for conflicts and dependencies, implements fixes with TDD workfl
 /git:issue-hierarchy 42 --status          # Show sub-issue progress
 /git:issue-hierarchy 42 --add 43 44 45    # Add sub-issues to parent
 /git:issue-hierarchy 42 --create "Add tests for auth"  # Create new sub-issue
-/git:issue-hierarchy 42 --deps            # Show dependency graph
-/git:issue-hierarchy 42 --block 50        # Mark #42 as blocking #50
+/git:issue-hierarchy 42 --deps            # Blocked-by + blocking + sub-issue graph
+/git:issue-hierarchy 42 --blocked-by 40   # Mark #42 as blocked by #40 (native API)
+/git:issue-hierarchy 42 --block 50        # Mark #50 as blocked by #42
+/git:issue-hierarchy 42 --blocking        # List what #42 currently blocks
+/git:issue-hierarchy 42 --unblock 40      # Remove the dependency between #42 and #40
 ```
 
-Manages parent-child issue relationships and dependency tracking using GitHub's sub-issues API.
+Manages parent-child issue relationships and dependency tracking using GitHub's
+sub-issues and native issue-dependencies APIs (the same endpoints that power
+the sidebar "Relationships" panel and the "Blocked" badge on project boards).
+
+**When to use which link type:**
+
+| Relationship | Command | Use for |
+|--------------|---------|---------|
+| Sub-issue | `--add N` / `--create "..."` | Composition — child is part of parent's scope |
+| Blocked by | `--blocked-by N` | Hard ordering — parent can't start until N closes |
+| Blocks | `--block N` | Hard ordering (inverse) — N can't start until parent closes |
+| Related to | Plain body text | Soft cross-reference; no lifecycle coupling |
 
 ### Issue Administration
 
