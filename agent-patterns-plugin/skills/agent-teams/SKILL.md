@@ -359,8 +359,9 @@ In web sessions (`CLAUDE_CODE_REMOTE=true`):
 | Sub-agent pushes to remote | Delegate push to lead orchestrator |
 | TeamDelete before shutdown | Shutdown all teammates first |
 
-## Related Rules
+## Related Skills and Rules
 
+- `parallel-agent-dispatch` — worktree preflight, scope budgets, and the Return Contract that every teammate must emit on exit. Team dispatches are a superset of plain parallel fan-out; follow both.
 - `.claude/rules/agent-development.md` — agent file structure, model selection, worktree isolation
 - `.claude/rules/agentic-permissions.md` — granular tool permission patterns
 - `.claude/rules/sandbox-guidance.md` — web sandbox constraints and push delegation
