@@ -254,28 +254,58 @@ def create_worktree(repo_path: Path, branch: str) -> Path:
 
 
 def worktree_has_changes(worktree_path: Path, base_branch: str | None = None) -> bool:
-    """Check if the worktree has commits beyond the base branch.
+    """True if the worktree has commits beyond base OR any uncommitted/untracked changes.
 
-    Falls back to checking for any uncommitted changes if base_branch
-    detection fails.
+    Dirty-tree detection matters because subagents (e.g. the blueprint driver
+    phases) write files without committing, and force-removing the worktree
+    would otherwise discard that work. Callers that want to push must commit
+    any dirty state first — see ``auto_commit_if_dirty``.
     """
     if base_branch is None:
-        # Detect the base branch from the worktree's upstream
-        result = subprocess.run(
+        commits = subprocess.run(
             ["git", "log", "--oneline", "HEAD", "--not", "--remotes", "-1"],
             cwd=worktree_path,
             capture_output=True,
             text=True,
         )
-        return bool(result.stdout.strip())
+    else:
+        commits = subprocess.run(
+            ["git", "log", "--oneline", f"{base_branch}..HEAD"],
+            cwd=worktree_path,
+            capture_output=True,
+            text=True,
+        )
+    if commits.stdout.strip():
+        return True
 
-    result = subprocess.run(
-        ["git", "log", "--oneline", f"{base_branch}..HEAD"],
+    dirty = subprocess.run(
+        ["git", "status", "--porcelain"],
         cwd=worktree_path,
         capture_output=True,
         text=True,
     )
-    return bool(result.stdout.strip())
+    return bool(dirty.stdout.strip())
+
+
+def auto_commit_if_dirty(worktree_path: Path, message: str) -> bool:
+    """Stage everything in the worktree and commit if the tree is dirty.
+
+    Safety net for workflows where the agent wrote files but didn't commit.
+    Returns True when a commit was created, False when the tree was already
+    clean. Raises ``subprocess.CalledProcessError`` on git failure.
+    """
+    status = subprocess.run(
+        ["git", "status", "--porcelain"],
+        cwd=worktree_path, capture_output=True, text=True, check=True,
+    )
+    if not status.stdout.strip():
+        return False
+    subprocess.run(["git", "add", "-A"], cwd=worktree_path, check=True)
+    subprocess.run(
+        ["git", "commit", "-m", message],
+        cwd=worktree_path, check=True, capture_output=True, text=True,
+    )
+    return True
 
 
 def get_base_branch(repo_path: Path) -> str:

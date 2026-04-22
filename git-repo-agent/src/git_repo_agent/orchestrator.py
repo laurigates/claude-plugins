@@ -95,6 +95,7 @@ from .tools.repo_analyzer import analyze_repo
 from .tools.report import generate_report
 from .worktree import (
     acquire_lock,
+    auto_commit_if_dirty,
     cleanup_worktree,
     create_github_issues,
     create_worktree,
@@ -256,6 +257,14 @@ async def _auto_handle_pr(
         result["pr_action"] = "no-changes"
         cleanup_worktree(repo_path, worktree_path)
         return result
+
+    if auto_commit_if_dirty(
+        worktree_path, f"chore({workflow}): commit remaining changes from agent run"
+    ):
+        console.print(
+            f"[yellow]Agent left uncommitted changes on {branch}; "
+            f"captured them as a safety-net commit.[/yellow]"
+        )
 
     if ni.auto_pr == "never":
         result["pr_action"] = "skipped-by-policy"
@@ -1163,6 +1172,14 @@ async def _prompt_pr_creation(
         console.print("[dim]No changes were made in the worktree.[/dim]")
         cleanup_worktree(repo_path, worktree_path)
         return
+
+    if auto_commit_if_dirty(
+        worktree_path, f"chore({workflow}): commit remaining changes from agent run"
+    ):
+        console.print(
+            f"[yellow]Agent left uncommitted changes on {branch}; "
+            f"captured them as a safety-net commit.[/yellow]"
+        )
 
     console.print()
     console.print(f"[bold]Changes committed on branch [cyan]{branch}[/cyan][/bold]")

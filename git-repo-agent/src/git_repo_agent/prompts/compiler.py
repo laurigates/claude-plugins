@@ -43,15 +43,15 @@ SUBAGENT_SKILLS: dict[str, list[str]] = {
         "blueprint-plugin/skills/blueprint-claude-md/SKILL.md",
         "blueprint-plugin/skills/blueprint-docs-list/SKILL.md",
         "blueprint-plugin/skills/blueprint-curate-docs/SKILL.md",
-        "code-quality-plugin/skills/docs-quality-check/SKILL.md",
+        "code-quality-plugin/skills/code-docs-quality/SKILL.md",
     ],
     "quality": [
         "code-quality-plugin/skills/code-review-checklist/SKILL.md",
         "code-quality-plugin/skills/code-antipatterns-analysis/SKILL.md",
-        "code-quality-plugin/skills/lint-check/SKILL.md",
+        "code-quality-plugin/skills/code-lint/SKILL.md",
         "code-quality-plugin/skills/dry-consolidation/SKILL.md",
         "code-quality-plugin/skills/code-silent-degradation/SKILL.md",
-        "code-quality-plugin/skills/linter-autofix/SKILL.md",
+        "code-quality-plugin/skills/code-lint-fix/SKILL.md",
     ],
     "security": [
         "git-plugin/skills/git-security-checks/SKILL.md",
