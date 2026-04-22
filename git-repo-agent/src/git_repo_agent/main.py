@@ -1,6 +1,7 @@
 """CLI entry point for git-repo-agent."""
 
 import asyncio
+import subprocess
 import sys
 from pathlib import Path
 from typing import Optional
@@ -76,6 +77,37 @@ def _build_ni_config(
         )
     except NonInteractiveUsageError as exc:
         console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=EXIT_CONFIG_ERROR)
+
+
+def _ensure_git_repo(repo_path: Path) -> None:
+    """Exit with a friendly message if ``repo_path`` is not a git work tree with at least one commit."""
+    inside = subprocess.run(
+        ["git", "rev-parse", "--is-inside-work-tree"],
+        cwd=repo_path,
+        capture_output=True,
+        text=True,
+    )
+    if inside.returncode != 0 or inside.stdout.strip() != "true":
+        console.print(
+            f"[red]Error:[/red] {repo_path} is not a git repository. "
+            f"Run [bold]git init[/bold] (or use [bold]git-repo-agent new[/bold]) first."
+        )
+        raise typer.Exit(code=EXIT_CONFIG_ERROR)
+
+    head = subprocess.run(
+        ["git", "rev-parse", "--verify", "HEAD"],
+        cwd=repo_path,
+        capture_output=True,
+        text=True,
+    )
+    if head.returncode != 0:
+        console.print(
+            f"[red]Error:[/red] {repo_path} has no commits yet. "
+            f"Worktree-based workflows need a base commit — run "
+            f"[bold]git commit --allow-empty -m 'chore: initial commit'[/bold] "
+            f"(or stage and commit your files) first."
+        )
         raise typer.Exit(code=EXIT_CONFIG_ERROR)
 
 
@@ -437,6 +469,7 @@ def onboard(
     if not repo_path.is_dir():
         console.print(f"[red]Error:[/red] {repo_path} is not a directory")
         raise typer.Exit(code=EXIT_CONFIG_ERROR)
+    _ensure_git_repo(repo_path)
 
     ni = _build_ni_config(
         non_interactive=non_interactive,
@@ -518,6 +551,7 @@ def maintain(
     if not repo_path.is_dir():
         console.print(f"[red]Error:[/red] {repo_path} is not a directory")
         raise typer.Exit(code=EXIT_CONFIG_ERROR)
+    _ensure_git_repo(repo_path)
 
     ni = _build_ni_config(
         non_interactive=non_interactive,
@@ -735,6 +769,7 @@ def route(
     if not repo_path.is_dir():
         console.print(f"[red]Error:[/red] {repo_path} is not a directory")
         raise typer.Exit(code=EXIT_CONFIG_ERROR)
+    _ensure_git_repo(repo_path)
 
     from .tools.attributes import (
         collect_attributes,
