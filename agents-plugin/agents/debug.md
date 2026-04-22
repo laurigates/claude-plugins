@@ -6,8 +6,8 @@ description: Diagnose and fix bugs. Finds root cause, implements fix, verifies s
 tools: Glob, Grep, LS, Read, Edit, Write, Bash(npm *), Bash(yarn *), Bash(bun *), Bash(pytest *), Bash(python *), Bash(node *), Bash(cargo *), Bash(go *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git show *), TaskOutput, TodoWrite
 maxTurns: 20
 created: 2025-12-27
-modified: 2026-03-09
-reviewed: 2026-03-09
+modified: 2026-04-22
+reviewed: 2026-04-22
 ---
 
 # Debug Agent
