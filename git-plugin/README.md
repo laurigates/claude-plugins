@@ -19,6 +19,7 @@ See [`docs/flow.md`](docs/flow.md) for a diagram of how the skills fit together.
 | `/git:issue` | Process GitHub issues with interactive selection, conflict detection, and parallel work support |
 | `/git:issue-hierarchy` | Manage sub-issues and native `blocked_by` / `blocking` dependencies between issues |
 | `/git:issue-manage` | Administrative operations: transfer, pin, lock, develop branches, bulk ops, custom fields |
+| `/git:triage` | Batch triage open issues and PRs: scan, categorize (implemented/stale/ready-to-merge/needs-fix), cross-link, optionally close or merge with --auto-close / --auto-merge |
 | `/git:fix-pr` | Analyze and fix failing PR checks |
 | `/git:pr-feedback` | Review PR workflow results and comments, address substantive feedback from reviewers |
 | `/git:conflicts` | Resolve merge conflicts with zdiff3, rerere, and modern git tooling |

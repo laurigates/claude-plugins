@@ -3,8 +3,10 @@
   "permissions": {
     "allow": [
       "Bash(fd *)",
+      "Bash(gh api *)",
       "Bash(gh issue *)",
       "Bash(gh pr *)",
+      "Bash(gh repo *)",
       "Bash(gh run *)",
       "Bash(git add *)",
       "Bash(git branch *)",
