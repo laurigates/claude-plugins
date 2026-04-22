@@ -47,6 +47,9 @@
     "cross-fork-pr",
     "trailers",
     "interpret-trailers",
-    "release-as"
+    "release-as",
+    "triage",
+    "backlog",
+    "grooming"
   ]
 }
