@@ -196,3 +196,60 @@ class TestBadFlags:
             ],
         )
         assert result.exit_code == EXIT_CONFIG_ERROR
+
+
+class TestVaultAndGitValidation:
+    """Regression: commands must reject non-vault / non-git targets with a friendly message
+    rather than crashing deep in the pipeline with ``CalledProcessError``.
+    """
+
+    def test_analyze_rejects_non_vault_dir(self, tmp_path: Path) -> None:
+        empty = tmp_path / "not-a-vault"
+        empty.mkdir()
+        runner = CliRunner()
+        result = runner.invoke(app, ["analyze", str(empty)])
+        assert result.exit_code == EXIT_CONFIG_ERROR
+        # Rich may line-wrap; normalize whitespace before asserting.
+        flat = " ".join(result.stdout.split())
+        assert "does not look like an Obsidian vault" in flat
+
+    def test_analyze_accepts_dir_with_markdown(self, tmp_path: Path) -> None:
+        vault_dir = tmp_path / "vault"
+        vault_dir.mkdir()
+        (vault_dir / "note.md").write_text("# hi\n")
+        runner = CliRunner()
+        result = runner.invoke(app, ["analyze", str(vault_dir)])
+        assert result.exit_code == EXIT_SUCCESS
+
+    def test_lint_fix_rejects_non_git_vault(self, tmp_path: Path) -> None:
+        """A markdown-only dir passes the vault check but fails the git check for --fix."""
+        vault_dir = tmp_path / "vault"
+        vault_dir.mkdir()
+        (vault_dir / "note.md").write_text("# hi\n")
+        runner = CliRunner()
+        result = runner.invoke(app, ["lint", str(vault_dir), "--fix", "--non-interactive"])
+        assert result.exit_code == EXIT_CONFIG_ERROR
+        flat = " ".join(result.stdout.split())
+        assert "not a git repository" in flat
+
+    def test_lint_fix_rejects_empty_git_repo(self, tmp_path: Path) -> None:
+        vault_dir = tmp_path / "vault"
+        vault_dir.mkdir()
+        (vault_dir / "note.md").write_text("# hi\n")
+        subprocess.run(["git", "init", "-q", "-b", "main"], cwd=vault_dir, check=True)
+        runner = CliRunner()
+        result = runner.invoke(app, ["lint", str(vault_dir), "--fix", "--non-interactive"])
+        assert result.exit_code == EXIT_CONFIG_ERROR
+        flat = " ".join(result.stdout.split())
+        assert "no commits yet" in flat
+
+    def test_lint_dry_run_does_not_require_git(self, tmp_path: Path) -> None:
+        """Read-only previews only need a vault — they never touch worktrees."""
+        vault_dir = tmp_path / "vault"
+        vault_dir.mkdir()
+        (vault_dir / "note.md").write_text("# hi\n")
+        runner = CliRunner()
+        result = runner.invoke(
+            app, ["lint", str(vault_dir), "--dry-run", "--non-interactive"]
+        )
+        assert result.exit_code == EXIT_SUCCESS

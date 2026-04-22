@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import signal
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Callable, Optional
@@ -74,6 +75,56 @@ def main(
 # ---------------------------------------------------------------------------
 # Non-interactive plumbing
 # ---------------------------------------------------------------------------
+
+
+def _ensure_vault(vault: Path) -> None:
+    """Exit with a friendly message if ``vault`` does not look like an Obsidian vault.
+
+    Accepts either (a) an `.obsidian/` config directory, or (b) at least one
+    markdown file anywhere below the root. This catches the "pointed at the
+    wrong directory" case before the agent starts writing.
+    """
+    if (vault / ".obsidian").is_dir():
+        return
+    # Fallback: any markdown file. Cheap because rglob is lazy.
+    for _ in vault.rglob("*.md"):
+        return
+    console.print(
+        f"[red]Error:[/red] {vault} does not look like an Obsidian vault "
+        f"(no [bold].obsidian/[/bold] directory and no markdown files)."
+    )
+    raise typer.Exit(code=EXIT_CONFIG_ERROR)
+
+
+def _ensure_git_repo(vault: Path) -> None:
+    """Exit with a friendly message if ``vault`` is not a git work tree with at least one commit.
+
+    Only needed for write modes that create worktrees. Read-only commands
+    (analyze, health, report, mocs) skip this check.
+    """
+    inside = subprocess.run(
+        ["git", "rev-parse", "--is-inside-work-tree"],
+        cwd=vault, capture_output=True, text=True,
+    )
+    if inside.returncode != 0 or inside.stdout.strip() != "true":
+        console.print(
+            f"[red]Error:[/red] {vault} is not a git repository. "
+            f"Write modes need git for worktree isolation — run [bold]git init[/bold] "
+            f"and commit your vault first."
+        )
+        raise typer.Exit(code=EXIT_CONFIG_ERROR)
+
+    head = subprocess.run(
+        ["git", "rev-parse", "--verify", "HEAD"],
+        cwd=vault, capture_output=True, text=True,
+    )
+    if head.returncode != 0:
+        console.print(
+            f"[red]Error:[/red] {vault} has no commits yet. "
+            f"Worktree-based workflows need a base commit — run "
+            f"[bold]git add -A && git commit -m 'chore: initial vault commit'[/bold] first."
+        )
+        raise typer.Exit(code=EXIT_CONFIG_ERROR)
 
 
 def _build_ni_config(
@@ -312,6 +363,7 @@ def analyze(
     format: str = typer.Option("text", "--format", help="text | json | markdown"),
 ) -> None:
     """Run all read-only analyzers and emit a report. No LLM."""
+    _ensure_vault(vault)
     audit = run_audit(vault)
     if format == "json":
         typer.echo(render_json(audit))
@@ -326,6 +378,7 @@ def health(
     vault: Path = typer.Argument(..., exists=True, file_okay=False, dir_okay=True),
 ) -> None:
     """Compute the vault health score (0-100). No LLM."""
+    _ensure_vault(vault)
     audit = run_audit(vault)
     h = audit.health
     console.print(
@@ -341,6 +394,7 @@ def report(
     format: str = typer.Option("md", "--format", help="md | json"),
 ) -> None:
     """Emit a formatted report from the latest analysis."""
+    _ensure_vault(vault)
     audit = run_audit(vault)
     if format == "json":
         typer.echo(render_json(audit))
@@ -366,6 +420,9 @@ def lint(
     ),
 ) -> None:
     """Mechanical fixes: bare emoji tags, legacy id:, Templater leakage."""
+    _ensure_vault(vault)
+    if not dry_run:
+        _ensure_git_repo(vault)
     ni = _build_ni_config(
         non_interactive=non_interactive,
         apply=not dry_run,
@@ -405,6 +462,9 @@ def links(
     ),
 ) -> None:
     """Broken-wikilink repair and cross-namespace ambiguity resolution."""
+    _ensure_vault(vault)
+    if not dry_run:
+        _ensure_git_repo(vault)
     ni = _build_ni_config(
         non_interactive=non_interactive,
         apply=not dry_run,
@@ -444,6 +504,9 @@ def stubs(
     ),
 ) -> None:
     """Classify FVH/z stubs; fix broken_redirects; report stale_duplicates."""
+    _ensure_vault(vault)
+    if not dry_run:
+        _ensure_git_repo(vault)
     ni = _build_ni_config(
         non_interactive=non_interactive,
         apply=not dry_run,
@@ -473,6 +536,7 @@ def mocs(
     ),
 ) -> None:
     """MOC analysis: inventory, coverage, missing-MOC candidates."""
+    _ensure_vault(vault)
     _, report = run_mocs(vault)
     typer.echo(render_mocs_report(report))
 
@@ -500,6 +564,9 @@ def maintain(
     ),
 ) -> None:
     """Run multiple modes sequentially in a single worktree."""
+    _ensure_vault(vault)
+    if not dry_run:
+        _ensure_git_repo(vault)
     mode_list = [m.strip() for m in modes.split(",") if m.strip()]
     ni = _build_ni_config(
         non_interactive=non_interactive,

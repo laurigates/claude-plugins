@@ -114,14 +114,30 @@ def get_base_branch(vault_path: Path) -> str:
 def create_worktree(vault_path: Path, branch: str) -> WorktreeHandle:
     """Create an isolated worktree on ``branch`` branched off HEAD.
 
-    Removes any stale worktree at the same path and deletes any leftover
-    branch of the same name.
+    Removes any stale *clean* worktree at the same path and deletes any
+    leftover branch of the same name. Refuses to remove a pre-existing
+    worktree that has uncommitted or untracked changes, since branch names
+    are minute-timestamped and two runs within the same minute would
+    otherwise destroy the first's agent output.
     """
     worktree_path = vault_path / ".claude" / "worktrees" / branch.replace("/", "-")
     worktree_path.parent.mkdir(parents=True, exist_ok=True)
     base = get_base_branch(vault_path)
 
     if worktree_path.exists():
+        dirty = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=worktree_path,
+            capture_output=True,
+            text=True,
+        )
+        if dirty.returncode == 0 and dirty.stdout.strip():
+            raise RuntimeError(
+                f"Refusing to overwrite worktree at {worktree_path}: it has "
+                f"uncommitted changes from a concurrent or prior run. Review "
+                f"with `git -C {worktree_path} status`, then commit or discard "
+                f"before re-running."
+            )
         subprocess.run(
             ["git", "worktree", "remove", "--force", str(worktree_path)],
             cwd=vault_path,
