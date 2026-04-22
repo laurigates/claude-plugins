@@ -138,8 +138,15 @@ Apply the same operation to multiple issues at once.
 
 **Bulk label:**
 ```bash
+# Pre-check: create any missing labels before applying
+for LABEL in $(echo "$LABELS" | tr ',' '\n'); do
+  if ! gh label list --search "$LABEL" --json name | jq -e ".[] | select(.name==\"$LABEL\")" >/dev/null 2>&1; then
+    echo "Label '$LABEL' not found — skipping (create it first with: gh label create \"$LABEL\")"
+    LABELS=$(echo "$LABELS" | sed "s/,$LABEL//;s/$LABEL,//;s/^$LABEL$//")
+  fi
+done
 for N in $ISSUE_NUMBERS; do
-  gh issue edit $N --add-label "$LABELS"
+  [ -n "$LABELS" ] && gh issue edit $N --add-label "$LABELS"
 done
 ```
 
