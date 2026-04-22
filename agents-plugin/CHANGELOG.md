@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.1](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.9.0...agents-plugin-v1.9.1) (2026-04-22)
+
+
+### Bug Fixes
+
+* **agents-plugin:** replace stale BashOutput tool reference with TaskOutput ([407e3b9](https://github.com/laurigates/claude-plugins/commit/407e3b994b74128eef281c721178a0e68c12435e))
+
 ## [1.9.0](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.8.0...agents-plugin-v1.9.0) (2026-04-19)
 
 
