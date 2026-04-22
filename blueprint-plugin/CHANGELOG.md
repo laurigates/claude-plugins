@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.28.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.28.0...blueprint-plugin-v3.28.1) (2026-04-22)
+
+
+### Bug Fixes
+
+* **git-plugin,blueprint-plugin:** add label pre-check before --add-label calls ([7cbed31](https://github.com/laurigates/claude-plugins/commit/7cbed3146b21034fa749452e4b380324cc0f812c))
+
 ## [3.28.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.27.1...blueprint-plugin-v3.28.0) (2026-04-19)
 
 
