@@ -85,6 +85,10 @@ When `--from-issue N` is provided:
 4. **Update issue with link**:
    ```bash
    gh issue comment N --body "Work-order created: \`docs/blueprint/work-orders/NNN-task-name.md\`"
+   # Ensure the label exists before applying it
+   if ! gh label list --search "work-order" --json name | jq -e '.[] | select(.name=="work-order")' >/dev/null 2>&1; then
+     gh label create work-order --description "AI-assisted work order" --color "0E8A16"
+   fi
    gh issue edit N --add-label "work-order"
    ```
 
