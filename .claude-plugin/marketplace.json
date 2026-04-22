@@ -37,7 +37,7 @@
       "name": "agents-plugin",
       "source": "./agents-plugin",
       "description": "Task-focused agents with teammate and subagent role guidance for test, review, debug, docs, CI, security, refactoring, research, and performance",
-      "version": "1.9.0",
+      "version": "1.9.1",
       "keywords": [
         "agents",
         "teammates",
@@ -96,7 +96,7 @@
       "name": "blueprint-plugin",
       "source": "./blueprint-plugin",
       "description": "Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, CLAUDE.md management, and monorepo portfolio tracking",
-      "version": "3.28.0",
+      "version": "3.28.1",
       "keywords": [
         "blueprint",
         "prd",
@@ -274,7 +274,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.34.0",
+      "version": "2.34.1",
       "keywords": [
         "git",
         "github",
