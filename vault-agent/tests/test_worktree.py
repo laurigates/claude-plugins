@@ -105,3 +105,35 @@ class TestWorktreeLifecycle:
         assert "merge" in text
 
         cleanup_worktree(handle)
+
+
+class TestWorktreeCollisionSafety:
+    """Regression: two runs in the same minute produce the same branch name.
+
+    The old ``create_worktree`` force-removed any pre-existing worktree at
+    the target path. If the first run had uncommitted agent output there,
+    the second run would silently destroy it.
+    """
+
+    def test_refuses_to_overwrite_dirty_worktree(self, tmp_path: Path) -> None:
+        _init_repo(tmp_path)
+        branch = timestamped_branch()
+        handle = create_worktree(tmp_path, branch)
+
+        # Simulate agent output that wasn't committed yet.
+        (handle.worktree_path / "agent-output.md").write_text("valuable work\n")
+
+        with pytest.raises(RuntimeError, match="uncommitted changes"):
+            create_worktree(tmp_path, branch)
+
+        # Original work is preserved.
+        assert (handle.worktree_path / "agent-output.md").exists()
+
+    def test_overwrites_clean_worktree(self, tmp_path: Path) -> None:
+        _init_repo(tmp_path)
+        branch = timestamped_branch()
+        create_worktree(tmp_path, branch)
+
+        # Second call on a clean worktree is fine.
+        handle2 = create_worktree(tmp_path, branch)
+        assert handle2.worktree_path.exists()
