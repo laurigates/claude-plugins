@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "component-patterns-plugin",
   "version": "1.4.0",
   "description": "Reusable UI component patterns for implementing common features across different frameworks and tech stacks",

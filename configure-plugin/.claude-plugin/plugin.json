@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "configure-plugin",
   "version": "1.19.0",
   "description": "Project infrastructure standards - comprehensive project configuration for pre-commit, CI/CD, Docker, testing, linting, formatting, and more",

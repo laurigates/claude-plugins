@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "langchain-plugin",
   "version": "1.5.1",
   "description": "LangChain JS/TS development - agents, chains, LangGraph workflows, and Deep Agents patterns",

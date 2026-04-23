@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "evaluate-plugin",
   "version": "1.4.0",
   "description": "Skill evaluation and benchmarking - test skill effectiveness with behavioral eval cases, grade results, and track quality improvements",
