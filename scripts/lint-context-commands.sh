@@ -16,6 +16,7 @@
 # 10. test -f / test -d require Bash permission not granted to context commands (use find)
 # 11. grep with multiple hardcoded filenames fails when files don't exist (use find -exec grep)
 # 12. find/jq on home-directory paths (~/, $HOME) blocked by sandbox security restrictions
+# 13. gh issue/pr list without -R fails in repos without remotes ("no git remotes found")
 #
 # Exit codes:
 #   0 - no issues
@@ -142,6 +143,23 @@ check_pattern WARN \
   "gh-api-in-context" \
   '^- .*!`[^`]*gh repo view[^`]*`' \
   "replace 'gh repo view' with 'git remote -v'; gh API calls fail with TLS errors in some environments"
+
+# gh issue/pr list without -R requires a configured git remote and fails with
+# "no git remotes found" in repos that lack one.
+# Regression: feedback-session had 'gh issue list --label ...' in context and failed
+# when invoked from a repo without remotes (PR #TBD)
+while IFS= read -r match; do
+  gh_file="${match%%:*}"; match="${match#*:}"
+  gh_line="${match%%:*}"; gh_content="${match#*:}"
+  # Skip if command explicitly targets a repo (-R works without a local remote)
+  if printf '%s' "$gh_content" | grep -q -- '-R '; then
+    continue
+  fi
+  report ERROR \
+    "gh-list-needs-remote" \
+    "$gh_file" "$gh_line" "$gh_content" \
+    "move 'gh issue/pr list' out of context (needs a remote); fetch during execution steps, or pass '-R owner/repo'"
+done < <(grep -rn '^- .*!`[^`]*gh \(issue\|pr\) list' --include='SKILL.md' --include='skill.md' . 2>/dev/null || true)
 
 ##############################
 # WARNINGS - likely to break

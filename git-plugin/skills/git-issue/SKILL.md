@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-04-21
+modified: 2026-04-23
 reviewed: 2026-04-21
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git pull *), Bash(git stash *), Bash(gh issue *), Bash(gh pr *), Bash(gh repo *), Bash(gh label *), Bash(gh api *), Bash(pre-commit *), Read, Edit, Write, Grep, Glob, TodoWrite, AskUserQuestion, Task, mcp__github__create_pull_request, mcp__github__issue_read, mcp__github__list_issues
 description: |
@@ -16,12 +16,11 @@ name: git-issue
 
 ## Context
 
-- Repo: !`git remote get-url origin`
+- Git remotes: !`git remote -v`
 - Current branch: !`git branch --show-current`
 - Working tree clean: !`git status --porcelain=v2`
-- Open issues: !`gh issue list --state open --json number,title,labels --limit 10`
-- Open PRs: !`gh pr list --state open --json number,title`
-- Available labels: !`gh label list --json name --limit 50`
+
+Open issues, open PRs, and available labels are fetched during execution (requires a configured git remote).
 
 ## Parameters
 

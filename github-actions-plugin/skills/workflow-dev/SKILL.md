@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
+modified: 2026-04-23
 reviewed: 2025-12-16
 allowed-tools: Read, Write, Edit, MultiEdit, Bash(git *), Bash(pytest *), Bash(npm test *), Bash(cargo test *), Bash(go test *), mcp__github__list_issues, mcp__github__create_issue, mcp__github__create_pull_request, mcp__github__get_issue, TodoWrite
 args: [--max-cycles <n>] [--focus <bug|feature|test>]
@@ -25,7 +25,8 @@ Automated development loop with issue creation, TDD, and CI monitoring.
 - Current branch: !`git branch --show-current`
 - Working tree: !`git status --porcelain`
 - Project type: !`find . -maxdepth 1 \( -name "package.json" -o -name "Cargo.toml" -o -name "pyproject.toml" -o -name "go.mod" -o -name "manage.py" \) -type f`
-- Open issues: !`gh issue list --state open --limit 5 --json number,title --jq '.'`
+
+Open issues are fetched during execution (requires a configured git remote).
 
 ## Parameters
 
