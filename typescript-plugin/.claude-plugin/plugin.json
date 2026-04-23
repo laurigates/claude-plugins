@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "typescript-plugin",
   "version": "1.8.0",
   "description": "TypeScript development - strict types, ESLint, Biome, Bun runtime, debugging, Sentry monitoring, dead code detection",

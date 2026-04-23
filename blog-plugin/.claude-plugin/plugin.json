@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "blog-plugin",
   "version": "1.3.0",
   "description": "Blog post creation - project logs, technical write-ups, personal documentation",

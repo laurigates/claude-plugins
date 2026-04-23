@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "blueprint-plugin",
   "version": "3.28.1",
   "description": "Blueprint Development methodology - structured feature development with PRD/PRP workflow, three-layer architecture (plugin/generated/custom), and documentation-first development",

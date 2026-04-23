@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "api-plugin",
   "version": "1.6.0",
   "description": "API integration and testing - REST endpoints, client generation, contract testing",

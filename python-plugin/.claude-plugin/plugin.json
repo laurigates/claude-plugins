@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "python-plugin",
   "version": "1.5.1",
   "description": "Python development ecosystem - uv, ruff, pytest, packaging, type checking",

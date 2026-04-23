@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "code-quality-plugin",
   "version": "1.13.0",
   "description": "Code review, refactoring, linting, anti-pattern detection, and static analysis",

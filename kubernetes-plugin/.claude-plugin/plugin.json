@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "kubernetes-plugin",
   "version": "1.7.1",
   "description": "Kubernetes and Helm operations - deployments, charts, releases, diagnostics",

@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "git-plugin",
   "hooks": "./hooks.json",
   "version": "2.34.1",

@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "finops-plugin",
   "version": "1.3.2",
   "description": "GitHub Actions FinOps analysis - billing, cache usage, workflow efficiency, and waste identification",

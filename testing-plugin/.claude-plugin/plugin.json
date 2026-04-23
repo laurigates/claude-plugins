@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "testing-plugin",
   "version": "3.13.0",
   "description": "Test execution, TDD workflow, testing strategies, and quality analysis",
