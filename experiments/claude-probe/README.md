@@ -22,18 +22,21 @@ to fix each regression — and stop there.
 
 ## Quickstart
 
+The repo-root justfile registers this as a module — run recipes from
+either the repo root (`just claude-probe::run-one …`) or from this
+directory (`just run-one …`).
+
 ```sh
-# Run all 8 tests × 4 conditions × 3 runs in the current repo cwd.
+# From repo root:
+just claude-probe::run                                    # full suite
+just claude-probe::run-one 01-glob-vs-find opus-medium-probe
+just claude-probe::compare
+just claude-probe::compare-fast                           # skip LLM judge
+
+# Or from experiments/claude-probe/:
 just run
-
-# Fast iteration on a single test / condition.
 just run-one 01-glob-vs-find opus-medium-probe
-
-# Score + compare the last suite run.
 just compare
-
-# Cheap version (skips the LLM judge).
-just compare-fast
 ```
 
 See `docs/methodology.md` for the scoring rubric and why each variable
