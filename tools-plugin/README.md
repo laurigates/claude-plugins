@@ -37,6 +37,7 @@ Collection of general-purpose development utilities for file finding, text searc
 |-------|-------------|
 | `shell-expert` | Shell scripting and bash patterns |
 | `justfile-expert` | Just command runner and recipe development |
+| `cli-smoke-recipes` | Advisory pattern for exposing transforming modules via CLI plus a bulk-smoke justfile recipe — decoders, codecs, parsers, formatters |
 | `imagemagick-conversion` | Image conversion and manipulation |
 
 ### Diagrams
