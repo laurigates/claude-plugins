@@ -13,8 +13,8 @@ description: |
 user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 created: 2026-04-21
-modified: 2026-04-21
-reviewed: 2026-04-21
+modified: 2026-04-24
+reviewed: 2026-04-24
 ---
 
 # Parallel Agent Dispatch
@@ -72,6 +72,73 @@ These budgets are what prevents the "security audit agent hit context limits"
 and "prompt is too long" failure modes — without them, a well-intentioned
 agent exhausts its window on exploration and truncates its actual deliverable.
 
+#### Shared-File Exclusion List
+
+Even when each agent's declared file scope is disjoint, a second list of
+**orchestrator-only files** must be excluded from every agent's write-path.
+These are the files that many agents are tempted to touch because their work
+"relates to" them, and where last-writer-wins silently destroys earlier work.
+
+Adapt this template to the repository's stack:
+
+- Blueprint manifest (`docs/blueprint/manifest.json`) — ID registry, agents
+  risk clobbering each other's pre-allocated IDs
+- Per-project feature tracker (stats, phases, notes) — touched by every slab
+- Top-level plan / roadmap docs — agents cite these, they do not edit them
+- Build manifests (`CMakeLists.txt`, `pyproject.toml`, `package.json`,
+  `Cargo.toml`, `go.mod`) — added-dependency edits are cross-cutting
+- `justfile` / `Makefile` — new recipes land through the orchestrator so
+  conflicting recipe names surface at review time
+- Local task-queue stores (e.g. `~/.task/` for taskwarrior) — serialised
+  writes, never concurrent
+
+Every dispatched agent brief must call these out explicitly as **not in
+scope**, regardless of what the agent's declared write-paths say. The
+exclusion list belongs under a `### Orchestrator-only files` heading in
+the brief, not buried in prose.
+
+> Evidence: five-agent parallel dispatch, zero merge conflicts (2026-04-23).
+> Before this discipline, informal dispatches suffered silent manifest
+> clobbers (last-writer-wins) because each agent independently "also"
+> updated the manifest.
+
+#### Pre-Allocated Blueprint IDs
+
+The Worktree Preflight table mandates a **shared counter snapshot**. That
+snapshot must expand into **explicit per-agent ID assignment** in each
+brief — "Use WO-012 for this slice. Other agents claim WO-013 and WO-014."
+
+"Pick the next free ID" is a race condition under parallelism: two agents
+read the same counter, both allocate the same number, the second commit
+silently overwrites the first's manifest entry. Pre-allocation eliminates
+the race; the orchestrator, running alone, is the only writer.
+
+The same discipline applies to any shared monotonic identifier — ADR
+numbers, migration sequences, feature-request codes, PRP slugs. If agents
+need to reference them, the orchestrator assigns them up front.
+
+> Evidence: pre-allocation was added after observing a silent WO-number
+> collision in an early three-agent dispatch.
+
+#### Wave Splits for Exclusive Locks
+
+At dispatch time, check every candidate agent for resources with an
+**exclusive lock**:
+
+- Ghidra project lock (analyses fail on second concurrent invocation)
+- Git index on a shared checkout (two agents in the same cwd contend)
+- Database migration lock (single-writer)
+- Task-queue bulk modifications (taskwarrior `task modify`, `task done`
+  across many IDs)
+- Single-writer caches (build outputs, compiled decompilation)
+
+An agent that needs an exclusive lock **cannot share a wave** with another
+lock-contender. Either dispatch the lock-holder alone and parallelise the
+siblings afterwards, or pre-compute the locked tool's artefacts to
+gitignored scratch so all downstream agents read-only siblings.
+
+See `exclusive-lock-dispatch` for the full pattern.
+
 ### 3. Return Contract (mandatory structured summary)
 
 Every parallel agent must end its run with this schema as its final message,
@@ -104,6 +171,37 @@ regardless of success or failure:
 Include the schema verbatim in every dispatched agent's prompt under a heading
 like `### Return contract (mandatory)`. Do not paraphrase — agents follow
 concrete schemas more reliably than prose instructions.
+
+#### Verbatim patches, not prose
+
+The single largest productivity multiplier across multi-wave dispatches is
+filling **`Orchestrator action needed`** with **complete patches**, not
+prose descriptions of the edit.
+
+Agents should emit:
+
+- Complete CMake / build-manifest blocks with surrounding context, ready
+  for `Edit(old_string=…, new_string=…)`.
+- Full justfile / Makefile recipes including shebang and every parameter.
+- Literal prose paragraphs for docs updates — tracker evidence strings,
+  plan bullets, format-spec paragraphs — not "update the port plan with
+  findings about X."
+- Exact line numbers where the orchestrator must insert, when the target
+  is long.
+
+Prose descriptions like "add `src/foo.c` to `CMakeLists.txt`" force the
+orchestrator to re-derive the exact position. At five agents per wave,
+that derivation cost multiplies and is measurably slower **and** more
+error-prone than mechanical pasting.
+
+The orchestrator's role for `Orchestrator action needed` is `Edit(old=…,
+new=…)` — a mechanical operation, not prose synthesis. Brief agents
+accordingly.
+
+> Evidence: six-wave landing of a renderer module shipped in one day,
+> with `Orchestrator action needed` uniformly populated with verbatim
+> patches. Earlier prose-style return contracts required the orchestrator
+> to re-read source files on every merge.
 
 ## Why the Schema Matters
 
