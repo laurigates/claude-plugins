@@ -13,9 +13,25 @@ help:
 # Running
 ##########
 
-# Run full suite: all tests x all conditions x N runs. Filter by test name glob.
+# Default: iterate on sonnet (4 conditions × filter × runs). Cheap.
 [group: "run"]
-run filter="*" runs="3":
+run filter="*" runs="3": (run-sonnet filter runs)
+
+# Sonnet-only sweep — 4 conditions, recommended for day-to-day iteration.
+[group: "run"]
+run-sonnet filter="*" runs="3":
+    bash scripts/run-suite.sh --filter "{{filter}}" --runs "{{runs}}" \
+        --conditions sonnet-xhigh-default,sonnet-xhigh-probe,sonnet-medium-default,sonnet-medium-probe
+
+# Opus-only sweep — 4 conditions, reserve for confirmation runs. Expensive.
+[group: "run"]
+run-opus filter="*" runs="3":
+    bash scripts/run-suite.sh --filter "{{filter}}" --runs "{{runs}}" \
+        --conditions opus-xhigh-default,opus-xhigh-probe,opus-medium-default,opus-medium-probe
+
+# Full 8-condition sweep (sonnet + opus). Expensive — think before running.
+[group: "run"]
+run-all filter="*" runs="3":
     bash scripts/run-suite.sh --filter "{{filter}}" --runs "{{runs}}"
 
 # Run a single (test, condition, run_n) triple for fast iteration.
@@ -28,18 +44,6 @@ run-one test condition run_n="1":
     bash scripts/run-one.sh "{{test}}" "{{condition}}" "{{run_n}}" "results/${run_id}"
     printf '%s' "${run_id}" > results/LATEST
     echo "run_id=${run_id}"
-
-# Run only the default (non-override) conditions.
-[group: "run"]
-run-default filter="*" runs="3":
-    bash scripts/run-suite.sh --filter "{{filter}}" --runs "{{runs}}" \
-        --conditions opus-xhigh-default,opus-medium-default
-
-# Run only the probe (override) conditions.
-[group: "run"]
-run-probe filter="*" runs="3":
-    bash scripts/run-suite.sh --filter "{{filter}}" --runs "{{runs}}" \
-        --conditions opus-xhigh-probe,opus-medium-probe
 
 ##########
 # Scoring

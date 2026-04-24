@@ -23,21 +23,33 @@ to fix each regression — and stop there.
 ## Quickstart
 
 The repo-root justfile registers this as a module — run recipes from
-either the repo root (`just claude-probe::run-one …`) or from this
-directory (`just run-one …`).
+either the repo root (`just claude-probe::run …`) or from this
+directory (`just run …`).
 
 ```sh
-# From repo root:
-just claude-probe::run                                    # full suite
-just claude-probe::run-one 01-glob-vs-find opus-medium-probe
-just claude-probe::compare
-just claude-probe::compare-fast                           # skip LLM judge
+# Day-to-day (sonnet, cheap): 4 conditions × tests × runs.
+just claude-probe::run
 
-# Or from experiments/claude-probe/:
-just run
-just run-one 01-glob-vs-find opus-medium-probe
-just compare
+# Narrow to one test.
+just claude-probe::run 01-glob-vs-find
+
+# Confirmation pass on opus (expensive — reserve for stable probe versions).
+just claude-probe::run-opus
+
+# Single invocation for fast iteration.
+just claude-probe::run-one 01-glob-vs-find sonnet-medium-probe
+
+# Score and aggregate the last run (LLM judge on Haiku).
+just claude-probe::compare
+just claude-probe::compare-fast   # skip LLM judge
+
+# Full 8-condition sweep across both tiers (very expensive).
+just claude-probe::run-all
 ```
+
+The model tier split (`run-sonnet` vs `run-opus`) exists because a full
+8-test Opus sweep burns through a monthly quota fast. Iterate on sonnet
+until a probe version looks stable, then confirm on opus.
 
 See `docs/methodology.md` for the scoring rubric and why each variable
 is what it is. `docs/decision-analysis.md` has the original motivation
