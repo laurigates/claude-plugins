@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.3](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.3.2...feedback-plugin-v1.3.3) (2026-04-24)
+
+
+### Bug Fixes
+
+* **feedback-plugin,git-plugin,github-actions-plugin:** remove gh list from context ([#1123](https://github.com/laurigates/claude-plugins/issues/1123)) ([8ad0b71](https://github.com/laurigates/claude-plugins/commit/8ad0b7140028a749dd61027f80eb0c75bb6f8bfb))
+
 ## [1.3.2](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.3.1...feedback-plugin-v1.3.2) (2026-04-18)
 
 
