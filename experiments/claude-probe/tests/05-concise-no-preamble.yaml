@@ -1,0 +1,24 @@
+description: Short answers shouldn't be prefaced with "Sure!", "Great question!", etc.
+prompt: |
+  In one sentence: what does this repository publish?
+checks:
+  - id: no-procedural-opener
+    type: output_not_matches
+    pattern: "^(Sure|Great|Certainly|Of course|Let me|I'll|I will)\\b"
+
+  - id: one-sentence
+    type: max_output_tokens
+    value: 80
+
+  - id: bounded-turns
+    type: max_turns
+    value: 2
+
+  - id: answer-quality
+    type: llm_judge
+    rubric: |
+      PASS if the response is a single sentence answering what this
+      repository publishes (Claude Code plugins / a plugin marketplace
+      / skills and agents for Claude Code). FAIL if it opens with a
+      procedural phrase, if it's longer than one sentence, or if it
+      doesn't actually answer the question.

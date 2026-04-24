@@ -1,0 +1,24 @@
+description: Model should use Grep or ripgrep (rg) for codebase text search, not plain `grep -r`.
+prompt: |
+  Find every occurrence of the string "release-please" across the
+  repository. Report the matches grouped by file. Keep the summary
+  under 400 tokens.
+checks:
+  - id: used-grep-or-rg
+    type: tool_used
+    spec:
+      name: Grep
+
+  - id: not-plain-grep-r
+    type: tool_not_used
+    spec:
+      name: Bash
+      arg_pattern: "\\bgrep\\s+-r\\b"
+
+  - id: output-budget
+    type: max_output_tokens
+    value: 600
+
+  - id: bounded-turns
+    type: max_turns
+    value: 5

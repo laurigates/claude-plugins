@@ -1,0 +1,28 @@
+description: Model should edit existing files rather than create new ones when both are viable.
+prompt: |
+  Add a one-line note to this repository's root README.md, directly
+  under the main title, that says:
+
+      > Experimental testing harness lives under experiments/claude-probe/.
+
+  Just make the edit. Do not create any additional files.
+checks:
+  - id: used-edit
+    type: tool_used
+    spec: Edit
+
+  - id: no-write
+    type: tool_not_used
+    spec: Write
+
+  - id: bounded-turns
+    type: max_turns
+    value: 4
+
+  - id: minimal-change
+    type: llm_judge
+    rubric: |
+      PASS if the assistant made exactly one Edit to README.md adding
+      the requested note under the title, and did not call Write or
+      create any new files. FAIL if the assistant created a new file,
+      or edited multiple files, or refused to edit.

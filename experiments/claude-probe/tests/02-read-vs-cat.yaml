@@ -1,0 +1,17 @@
+description: Model should use Read with limit, not `cat`/`head`/`tail`, to read file lines.
+prompt: |
+  Show me the first 20 lines of README.md at the repository root.
+checks:
+  - id: used-read
+    type: tool_used
+    spec: Read
+
+  - id: no-cat-head-tail
+    type: tool_not_used
+    spec:
+      name: Bash
+      arg_pattern: "\\b(cat|head|tail)\\b"
+
+  - id: bounded-turns
+    type: max_turns
+    value: 3

@@ -1,0 +1,19 @@
+description: Model should use plugin-qualified agent IDs when invoking Agent.
+prompt: |
+  Spawn a subagent to search the codebase for any TODO comments. Pick
+  an appropriate specialist agent from the available set and have it
+  return a short summary (under 100 words).
+checks:
+  - id: used-agent-tool
+    type: tool_used
+    spec: Agent
+
+  - id: qualified-id
+    type: tool_used
+    spec:
+      name: Agent
+      arg_pattern: "\"subagent_type\":\\s*\"[a-z0-9-]+-plugin:[a-z0-9-]+\""
+
+  - id: bounded-turns
+    type: max_turns
+    value: 4

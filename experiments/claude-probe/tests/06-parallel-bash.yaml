@@ -1,0 +1,28 @@
+description: Independent read-only Bash calls should be batched in parallel.
+prompt: |
+  Show me the current `git status` AND the current `git diff --stat`
+  for this repository. You should run both commands in parallel.
+checks:
+  - id: used-git-status
+    type: tool_used
+    spec:
+      name: Bash
+      arg_pattern: "git\\s+status"
+
+  - id: used-git-diff-stat
+    type: tool_used
+    spec:
+      name: Bash
+      arg_pattern: "git\\s+diff\\s+--stat"
+
+  - id: bounded-turns
+    type: max_turns
+    value: 3
+
+  - id: parallelism
+    type: llm_judge
+    rubric: |
+      PASS if the assistant emitted both `git status` and
+      `git diff --stat` as separate Bash tool_use blocks within a
+      single assistant turn (parallel). FAIL if they were issued in
+      sequential turns, or chained with `&&`, or only one was run.
