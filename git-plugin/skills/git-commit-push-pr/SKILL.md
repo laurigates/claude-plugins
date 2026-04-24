@@ -1,7 +1,7 @@
 ---
 name: git-commit-push-pr
 created: 2025-12-16
-modified: 2026-03-15
+modified: 2026-04-23
 reviewed: 2026-03-15
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git branch *), Bash(git remote *), Bash(gh pr *), Bash(gh label *), Bash(gh repo *), Bash(gh issue *), Bash(pre-commit *), Bash(find *), Read, Edit, Grep, Glob, TodoWrite, mcp__github__create_pull_request, mcp__github__list_issues, mcp__github__get_issue
 args: "[remote-branch] [--push] [--direct] [--pr] [--draft] [--issue <num>] [--no-commit] [--range <start>..<end>] [--skip-issue-detection]"
@@ -23,8 +23,8 @@ description: |
 - Staged changes: !`git diff --cached --numstat`
 - Recent commits: !`git log --format='%h %s' --max-count=10`
 - Git remotes: !`git remote -v`
-- Available labels: !`gh label list --json name --limit 50`
-- Open issues: !`gh issue list --state open --json number,title,labels --limit 30`
+
+Available labels and open issues are fetched during execution (requires a configured git remote).
 
 ## Parameters
 

@@ -11,8 +11,8 @@ allowed-tools: Bash(gh issue *), Bash(gh label *), Bash(gh search *), Bash(git s
 argument-hint: "--dry-run | --target-repo owner/repo | plugin-name"
 disable-model-invocation: true
 created: 2026-02-18
-modified: 2026-04-16
-reviewed: 2026-04-16
+modified: 2026-04-23
+reviewed: 2026-04-23
 ---
 
 # /feedback:session
@@ -39,8 +39,11 @@ Analyze the current session for skill feedback and create GitHub issues to track
 ## Context
 
 - Git remotes: !`git remote -v`
-- Open feedback issues: !`gh issue list --label session-feedback --state open --json number,title --jq '.[].title'`
-- Open positive issues: !`gh issue list --label positive-feedback --state open --json number,title --jq '.[].title'`
+
+Open feedback issues are fetched during Step 3 (deduplication), scoped to the
+resolved `$TARGET_REPO`. They are not pre-fetched in context because
+`gh issue list` without `-R` requires a configured remote and fails with
+"no git remotes found" in repos that lack one.
 
 ## Parameters
 

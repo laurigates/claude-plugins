@@ -1,6 +1,6 @@
 ---
 created: 2026-03-19
-modified: 2026-03-19
+modified: 2026-04-23
 reviewed: 2026-03-19
 name: git-issue-manage
 description: |
@@ -16,8 +16,9 @@ allowed-tools: Bash(gh issue *), Bash(gh api *), Bash(git switch *), Bash(git re
 
 ## Context
 
-- Repo: !`git remote get-url origin`
-- Open issues: !`gh issue list --state open --json number,title --limit 10`
+- Git remotes: !`git remote -v`
+
+Open issues are fetched during execution (requires a configured git remote).
 
 ## Parameters
 
