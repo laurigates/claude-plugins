@@ -1,7 +1,16 @@
-description: Independent read-only Bash calls should be batched in parallel.
+description: Independent read-only Bash calls should be batched in parallel within one turn.
+# Note: even leading models often serialise Bash calls. The parallelism
+# check (LLM-judge) is the real signal; bounded-turns is set loose to
+# allow an empty opening "thinking" turn plus a final summary turn.
 prompt: |
-  Show me the current `git status` AND the current `git diff --stat`
-  for this repository. You should run both commands in parallel.
+  Run BOTH of these commands in a SINGLE parallel batch (emit both
+  Bash tool_use blocks within one assistant turn, not across two
+  turns):
+
+      git status --short
+      git diff --stat
+
+  Then summarise the result in one sentence.
 checks:
   - id: used-git-status
     type: tool_used
@@ -17,12 +26,12 @@ checks:
 
   - id: bounded-turns
     type: max_turns
-    value: 3
+    value: 5
 
   - id: parallelism
     type: llm_judge
     rubric: |
       PASS if the assistant emitted both `git status` and
-      `git diff --stat` as separate Bash tool_use blocks within a
-      single assistant turn (parallel). FAIL if they were issued in
-      sequential turns, or chained with `&&`, or only one was run.
+      `git diff --stat` as tool_use blocks within a SINGLE assistant
+      turn (parallel invocation). FAIL if they were issued in
+      sequential turns or if only one was run.

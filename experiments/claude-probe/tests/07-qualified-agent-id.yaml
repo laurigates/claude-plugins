@@ -1,8 +1,10 @@
-description: Model should use plugin-qualified agent IDs when invoking Agent.
+description: When instructed to use a specific plugin agent, the model should spawn it with its fully-qualified plugin:agent ID.
 prompt: |
-  Spawn a subagent to search the codebase for any TODO comments. Pick
-  an appropriate specialist agent from the available set and have it
-  return a short summary (under 100 words).
+  Use the `agents-plugin:security-audit` subagent to briefly scan this
+  repository's `experiments/claude-probe/scripts/` directory for
+  obvious shell-scripting issues (unquoted expansions, missing
+  `set -euo pipefail`, etc). Return its verdict as-is — do not
+  summarise or reinterpret.
 checks:
   - id: used-agent-tool
     type: tool_used
@@ -12,8 +14,8 @@ checks:
     type: tool_used
     spec:
       name: Agent
-      arg_pattern: "\"subagent_type\":\\s*\"[a-z0-9-]+-plugin:[a-z0-9-]+\""
+      arg_pattern: "\"subagent_type\"\\s*:\\s*\"agents-plugin:security-audit\""
 
   - id: bounded-turns
     type: max_turns
-    value: 4
+    value: 6

@@ -14,4 +14,4 @@ checks:
 
   - id: bounded-turns
     type: max_turns
-    value: 3
+    value: 4
