@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.8.0...health-plugin-v1.9.0) (2026-04-24)
+
+
+### Features
+
+* **health-plugin:** add skill-audit ([#1139](https://github.com/laurigates/claude-plugins/issues/1139)) ([79b68f1](https://github.com/laurigates/claude-plugins/commit/79b68f1b1cffea81fce29f64eb80d9ff7e236413))
+
 ## [1.8.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.7.0...health-plugin-v1.8.0) (2026-04-19)
 
 

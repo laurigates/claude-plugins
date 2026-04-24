@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "health-plugin",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "description": "Diagnose and fix Claude Code configuration issues including plugin registry, settings, hooks, MCP servers, SessionStart executability, pre-commit validity, permissions coverage, and marketplace enrollment",
   "keywords": [
     "health",
