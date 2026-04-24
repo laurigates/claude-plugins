@@ -527,6 +527,22 @@
       "category": "language"
     },
     {
+      "name": "taskwarrior-plugin",
+      "source": "./taskwarrior-plugin",
+      "description": "Coordination layer for multi-agent work using taskwarrior - parallel-safe queries, urgency scoring, and optional GitHub linkage via ghid/ghpr UDAs",
+      "version": "1.0.0",
+      "keywords": [
+        "taskwarrior",
+        "coordination",
+        "multi-agent",
+        "queue",
+        "local-first",
+        "urgency",
+        "github-integration"
+      ],
+      "category": "automation"
+    },
+    {
       "name": "terraform-plugin",
       "source": "./terraform-plugin",
       "description": "Terraform and Terraform Cloud - infrastructure as code",

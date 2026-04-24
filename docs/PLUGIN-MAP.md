@@ -192,6 +192,7 @@ Install based on your project's tech stack and domain.
 | evaluate-plugin | Behavioral skill evaluation, benchmarking, and quality improvement |
 | feedback-plugin | Capturing session skill feedback as GitHub issues |
 | tools-plugin | fd, rg, jq, shell, ImageMagick, d2 utilities |
+| taskwarrior-plugin | Multi-agent coordination via taskwarrior — parallel-safe queries, urgency scoring, optional GitHub issue/PR linkage |
 | workflow-orchestration-plugin | Parallel agent orchestration, CI pipelines, preflight checks, checkpoint refactoring |
 | migration-patterns-plugin | Safe database and system migration patterns — dual write, shadow mode, strangler fig; automated tooling migrations (mypy→ty, black→ruff-format, flake8→ruff, ESLint→Biome) |
 | prompt-engineering-plugin | Anti-hallucination workflow — grounded, citation-backed analysis from source documents |
