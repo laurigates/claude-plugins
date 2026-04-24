@@ -63,8 +63,9 @@ PRD (Product Requirements) → PRP (Product Requirement Prompt) → Work-Order �
 | `blueprint-upgrade` | Upgrade to latest blueprint format |
 | `blueprint-rules` | Manage modular rules |
 | `blueprint-claude-md` | Update CLAUDE.md from blueprint artifacts |
-| `blueprint-sync-ids` | **NEW** - Assign IDs to all documents, build traceability registry |
-| `blueprint-workspace-scan` | **NEW (v3.3)** - Discover child blueprints in a monorepo and refresh the root's `workspaces.children` registry with cached feature-tracker stats |
+| `blueprint-sync-ids` | Assign IDs to all documents, build traceability registry |
+| `blueprint-workspace-scan` | Discover child blueprints in a monorepo and refresh the root's `workspaces.children` registry with cached feature-tracker stats |
+| `blueprint-docs-currency` | Advisory discipline for same-commit landing of code and its docs (API, format specs, error enums, milestone status, ADRs); research-promotion workflow from `tmp/` to `docs/` |
 
 ### Feature Tracking Skills
 
