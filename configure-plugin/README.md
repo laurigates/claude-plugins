@@ -35,6 +35,7 @@ All commands support two modes:
 | `configure-select` | Interactively select which components to configure |
 | `configure-status` | Show compliance status (read-only) |
 | `config-sync` | Extract, compare, and propagate tooling improvements across repos |
+| `multi-repo-discipline` | Advisory discipline for multi-repo workspaces — read-only fixtures, upstream/downstream pairs, and when sibling-repo commits need user confirmation |
 
 ### CI/CD & Version Control
 
