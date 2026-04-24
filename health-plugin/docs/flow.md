@@ -3,6 +3,7 @@
 ```mermaid
 flowchart TD
     U[User] -->|/health:check<br/>--scope --fix --dry-run| R["/health:check<br/>(router)"]
+    U -->|/health:skill-audit| SA[health-skill-audit<br/>skill-to-skill overlap<br/>split-pressure<br/>consolidation candidates]
 
     R --> ENV[Step 1: Environment checks]
     ENV --> CP[check-plugins.sh]
@@ -36,7 +37,7 @@ flowchart TD
     classDef prompt fill:#dda0dd,stroke:#8b5a8b,color:#000
 
     class R router
-    class CP,CS,CH,CM,REG,STK,AGT check
+    class CP,CS,CH,CM,REG,STK,AGT,SA check
     class FR,FS,FA fix
     class ASK prompt
 ```
@@ -58,3 +59,9 @@ flowchart TD
 | `stack` | `health-audit/` workflow | `health-audit/` `--fix` flow |
 | `agentic` | `health-agentic-audit/` workflow | `health-agentic-audit/` `--fix` flow |
 | `all` | All of the above + environment checks | `AskUserQuestion` to pick scopes |
+
+## Sibling skills (not scoped under `/health:check`)
+
+| Skill | Invocation | Purpose |
+|-------|------------|---------|
+| `health-skill-audit` | `/health:skill-audit [--plugin X] [--strict]` | Skill-to-skill overlap, split-pressure, and consolidation candidates (read-only; report-only; writes `tmp/skill-audit/`). |

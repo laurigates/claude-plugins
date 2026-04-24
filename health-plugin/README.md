@@ -13,6 +13,7 @@ Diagnose and fix Claude Code configuration issues including plugin registry, set
 | Skill | Description |
 |-------|-------------|
 | `/health:check` | **Single entry point.** Diagnose (and optionally fix) Claude Code environment, plugin registry, project-stack fit, and skill agentic-optimisation — routed by `--scope`. |
+| `/health:skill-audit` | Audit the plugin skill tree for skill-to-skill overlap, split-pressure inside a SKILL.md, and consolidation candidates. Writes four reports to `tmp/skill-audit/`. |
 | `plugin-registry` | Reference skill: Claude Code's plugin registry, scopes, and troubleshooting |
 | `settings-configuration` | Reference skill: settings file hierarchy, permission wildcards, and patterns |
 
