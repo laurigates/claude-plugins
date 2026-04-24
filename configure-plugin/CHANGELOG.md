@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.20.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.19.0...configure-plugin-v1.20.0) (2026-04-24)
+
+
+### Features
+
+* **configure-plugin:** add multi-repo-discipline skill ([#1136](https://github.com/laurigates/claude-plugins/issues/1136)) ([98fde82](https://github.com/laurigates/claude-plugins/commit/98fde82e21c479ca35edce1df6233af72ba93941))
+
 ## [1.19.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.18.1...configure-plugin-v1.19.0) (2026-04-19)
 
 

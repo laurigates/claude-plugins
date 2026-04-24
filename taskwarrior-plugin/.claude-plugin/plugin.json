@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "taskwarrior-plugin",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Coordination layer for multi-agent work using taskwarrior - parallel-safe queries, urgency scoring, and optional GitHub linkage via ghid/ghpr UDAs",
   "keywords": [
     "taskwarrior",

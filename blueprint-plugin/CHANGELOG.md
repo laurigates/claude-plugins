@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.29.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.28.1...blueprint-plugin-v3.29.0) (2026-04-24)
+
+
+### Features
+
+* **blueprint-plugin:** add blueprint-docs-currency skill + claude-plugins docs-currency rule ([#1135](https://github.com/laurigates/claude-plugins/issues/1135)) ([b2e6d9b](https://github.com/laurigates/claude-plugins/commit/b2e6d9bc8e1b7154498b866d0c46f46907a5afd2))
+
 ## [3.28.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.28.0...blueprint-plugin-v3.28.1) (2026-04-22)
 
 

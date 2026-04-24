@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.7.0](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.6.0...tools-plugin-v2.7.0) (2026-04-24)
+
+
+### Features
+
+* **tools-plugin:** add cli-smoke-recipes skill ([#1137](https://github.com/laurigates/claude-plugins/issues/1137)) ([ce5b70c](https://github.com/laurigates/claude-plugins/commit/ce5b70c3326bb4fe6e9b32ba46a9bdd5ba7e73df))
+
 ## [2.6.0](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.5.1...tools-plugin-v2.6.0) (2026-04-19)
 
 
