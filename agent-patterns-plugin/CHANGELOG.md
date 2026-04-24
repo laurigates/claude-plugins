@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.16.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.15.0...agent-patterns-plugin-v2.16.0) (2026-04-24)
+
+
+### Features
+
+* **agent-patterns-plugin:** refine parallel-agent-dispatch and add exclusive-lock-dispatch ([#1131](https://github.com/laurigates/claude-plugins/issues/1131)) ([d243b9a](https://github.com/laurigates/claude-plugins/commit/d243b9ab404e468f24bb637256251e17ad934370))
+
 ## [2.15.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.14.0...agent-patterns-plugin-v2.15.0) (2026-04-21)
 
 

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "workflow-orchestration-plugin",
-  "version": "1.4.3",
+  "version": "1.5.0",
   "description": "Workflow orchestration patterns for parallel agents, CI pipelines, preflight checks, and checkpoint-based refactoring. Addresses common friction in multi-branch operations, permission restrictions, and context limits.",
   "author": {
     "name": "Lauri Gates"

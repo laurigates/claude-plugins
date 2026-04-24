@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.4.3...workflow-orchestration-plugin-v1.5.0) (2026-04-24)
+
+
+### Features
+
+* **workflow-orchestration-plugin:** add workflow-wave-dispatch skill ([#1132](https://github.com/laurigates/claude-plugins/issues/1132)) ([d21bc24](https://github.com/laurigates/claude-plugins/commit/d21bc2412826f89d4c5ea1abda011632edbe713f))
+
 ## [1.4.3](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.4.2...workflow-orchestration-plugin-v1.4.3) (2026-04-15)
 
 
