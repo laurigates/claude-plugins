@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-01-20
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: infrastructure-terraform
 description: |
   Infrastructure as Code with Terraform including HCL configuration, state management,
@@ -17,18 +17,14 @@ allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite
 
 Expert knowledge for Infrastructure as Code using Terraform with focus on declarative HCL, state management, and resilient infrastructure.
 
-## When to Use
+## When to Use This Skill
 
-| Scenario | Use this skill | Alternative |
-|----------|---------------|-------------|
-| Write or modify Terraform HCL config | `infrastructure-terraform` | - |
-| Run terraform plan/apply/destroy | `infrastructure-terraform` | - |
-| Debug Terraform state issues | `infrastructure-terraform` | - |
-| Design module structure or backends | `infrastructure-terraform` | - |
-| Check status of a TFC run | `tfc-run-status` | Use run-status for quick TFC status |
-| View TFC plan/apply logs | `tfc-run-logs` | Use run-logs for TFC log output |
-| Analyze TFC plan JSON output | `tfc-plan-json` | Use plan-json for structured plan data |
-| List recent TFC workspace runs | `tfc-list-runs` or `tfc-workspace-runs` | Use list-runs for TFC run history |
+| Use this skill when... | Use a `tfc-*` sibling instead when... |
+|---|---|
+| Writing or modifying Terraform HCL configuration locally | Inspecting Terraform Cloud run state via API (`tfc-run-status`) |
+| Running `terraform init/plan/apply/destroy` against a backend | Reading TFC plan/apply log streams (`tfc-run-logs`) |
+| Designing module structure, providers, or remote backends | Analyzing structured plan JSON from a TFC run (`tfc-plan-json`) |
+| Debugging local state, drift, or import workflows | Listing or filtering TFC run history (`tfc-list-runs`, `tfc-workspace-runs`) |
 
 ## Core Expertise
 

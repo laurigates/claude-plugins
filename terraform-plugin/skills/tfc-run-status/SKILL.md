@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: tfc-run-status
 description: Quick status check for Terraform Cloud runs showing status, resource changes, timestamps, and available actions. Use when monitoring run progress or checking if a run can be applied/canceled. Requires TFE_TOKEN environment variable.
 user-invocable: false
@@ -12,18 +12,14 @@ allowed-tools: Bash, Read
 
 Quick status check for Terraform Cloud runs with resource change counts, timestamps, and available actions.
 
-## When to Use
+## When to Use This Skill
 
-| Scenario | Use this skill | Alternative |
-|----------|---------------|-------------|
-| Check if a run succeeded, failed, or is in progress | `tfc-run-status` | - |
-| See resource add/change/destroy counts | `tfc-run-status` | - |
-| Check if a run can be confirmed, canceled, or discarded | `tfc-run-status` | - |
-| Poll a run until completion | `tfc-run-status` | - |
-| View cost estimate for a run | `tfc-run-status` | - |
-| Read full plan/apply log output | `tfc-run-logs` | Use run-logs for detailed log content |
-| Analyze resource changes as structured data | `tfc-plan-json` | Use plan-json for JSON plan analysis |
-| List multiple runs or filter by status | `tfc-list-runs` | Use list-runs for run history queries |
+| Use this skill when... | Use a sibling instead when... |
+|---|---|
+| Checking whether a known run ID succeeded, failed, or is mid-flight | Reading the full plan/apply log text (`tfc-run-logs`) |
+| Polling a run until it reaches a final state | Analyzing structured plan JSON for resource changes (`tfc-plan-json`) |
+| Inspecting available actions (confirm/cancel/discard) on a run | Listing or filtering many runs to discover an ID (`tfc-list-runs`) |
+| Reading cost estimate or resource add/change/destroy counts | Browsing latest runs for FVH workspaces (`tfc-workspace-runs`) |
 
 ## Prerequisites
 

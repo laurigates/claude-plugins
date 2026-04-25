@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: tfc-list-runs
 description: List Terraform Cloud runs for a workspace with filtering by status, operation type, and date. Use when reviewing run history, finding failed runs, or auditing infrastructure changes. Requires TFE_TOKEN environment variable.
 user-invocable: false
@@ -12,18 +12,14 @@ allowed-tools: Bash, Read
 
 List and filter runs from Terraform Cloud workspaces with formatted output.
 
-## When to Use
+## When to Use This Skill
 
-| Scenario | Use this skill | Alternative |
-|----------|---------------|-------------|
-| List recent runs for any TFC workspace | `tfc-list-runs` | - |
-| Filter runs by status, operation, or source | `tfc-list-runs` | - |
-| List runs across an entire org | `tfc-list-runs` | - |
-| Search runs by commit SHA or user | `tfc-list-runs` | - |
-| Quick status of a single known run ID | `tfc-run-status` | Use run-status for one run's details |
-| View plan/apply log output for a run | `tfc-run-logs` | Use run-logs for log content |
-| Analyze structured plan JSON | `tfc-plan-json` | Use plan-json for resource change details |
-| List runs for known Forum Virium workspaces | `tfc-workspace-runs` | Use workspace-runs for shorthand access |
+| Use this skill when... | Use a sibling instead when... |
+|---|---|
+| Listing recent runs for an arbitrary TFC workspace by ID | Inspecting a single known run ID for status (`tfc-run-status`) |
+| Filtering runs by status, operation, or source across an org | Reading plan/apply log content for a run (`tfc-run-logs`) |
+| Searching runs by commit SHA or VCS user | Analyzing structured plan JSON for resource changes (`tfc-plan-json`) |
+| Auditing run history across many TFC workspaces | Listing runs for the known Forum Virium workspaces (`tfc-workspace-runs`) |
 
 ## Prerequisites
 

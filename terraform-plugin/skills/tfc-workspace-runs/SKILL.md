@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: tfc-workspace-runs
 description: |
   Convenience wrapper for listing Terraform Cloud runs in Forum Virium Helsinki
@@ -16,17 +16,14 @@ allowed-tools: Bash, Read
 
 Convenience wrapper for quick access to runs in Forum Virium Helsinki Terraform Cloud workspaces.
 
-## When to Use
+## When to Use This Skill
 
-| Scenario | Use this skill | Alternative |
-|----------|---------------|-------------|
-| List runs for a known FVH workspace (github, sentry, gcp, onelogin, twingate) | `tfc-workspace-runs` | - |
-| Quick check latest run across all FVH workspaces | `tfc-workspace-runs` | - |
-| Check for in-progress runs across FVH workspaces | `tfc-workspace-runs` | - |
-| List runs for a non-FVH workspace or arbitrary workspace ID | `tfc-list-runs` | Use list-runs for generic workspace access |
-| Filter runs by status, operation, or source | `tfc-list-runs` | Use list-runs for advanced filtering |
-| Get detailed status of a specific run | `tfc-run-status` | Use run-status for single run details |
-| Read plan/apply logs for a run | `tfc-run-logs` | Use run-logs for log content |
+| Use this skill when... | Use a sibling instead when... |
+|---|---|
+| Listing runs for an FVH workspace by shorthand (github, sentry, gcp, onelogin, twingate) | Listing runs for a non-FVH workspace or arbitrary ID (`tfc-list-runs`) |
+| Sweeping latest runs across every FVH workspace at once | Filtering by status, operation, or source with full options (`tfc-list-runs`) |
+| Checking which FVH workspaces have in-progress runs | Reading detailed status for a single known run (`tfc-run-status`) |
+| Discovering the right run ID before drilling into logs/plan JSON | Reading plan/apply log content for a specific run (`tfc-run-logs`) |
 
 ## Prerequisites
 
