@@ -1,7 +1,7 @@
 ---
 created: 2026-01-08
-modified: 2026-04-19
-reviewed: 2026-01-08
+modified: 2026-04-25
+reviewed: 2026-04-25
 description: |
   Analyze codebase documentation quality across PRDs, ADRs, PRPs, CLAUDE.md,
   and .claude/rules/. Use when the user asks to audit or score documentation,
@@ -14,6 +14,15 @@ name: code-docs-quality
 ---
 
 Analyze and validate documentation quality for a codebase, ensuring PRDs, ADRs, PRPs, CLAUDE.md, and .claude/rules/ are up to standards and current.
+
+## When to Use This Skill
+
+| Use this skill when... | Use something else instead when... |
+|------------------------|------------------------------------|
+| Auditing PRD/ADR/PRP/CLAUDE.md/rules for staleness, frontmatter, structure | Reviewing source code quality and architecture → `code-review` |
+| Scoring whether CLAUDE.md still matches recent code changes | Detecting unused/dead code in source → `code-dead-code` |
+| Validating `.claude/rules/` markdown structure and metadata | Refactoring source modules → `code-refactor` |
+| Cataloging missing or orphaned ADRs / PRDs | Auditing dependencies and licensing → `code-dep-audit` |
 
 ## Context
 

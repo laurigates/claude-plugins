@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-02-27
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: code-antipatterns-analysis
 description: Analyze codebases for anti-patterns, code smells, and quality issues using ast-grep structural pattern matching. Use when reviewing code quality, identifying technical debt, or performing comprehensive code analysis across JavaScript, TypeScript, Python, Vue, React, or other supported languages.
 user-invocable: false
@@ -10,6 +10,15 @@ agent: general-purpose
 ---
 
 # Code Anti-patterns Analysis
+
+## When to Use This Skill
+
+| Use this skill when... | Use something else instead when... |
+|------------------------|------------------------------------|
+| You need the catalog of ast-grep anti-pattern queries to author a scan | Running the user-invocable scanner directly → `code-antipatterns` |
+| Designing or extending parallel-delegated anti-pattern detection | Looking up ast-grep pattern syntax itself → `ast-grep-search` |
+| Auditing for swallowed errors specifically | Use the dedicated scanner → `code-error-swallowing` |
+| Cataloging quality issues for a broader review | Running a full code review → `code-review` |
 
 Expert knowledge for systematic detection and analysis of anti-patterns, code smells, and quality issues across codebases using ast-grep and parallel agent delegation.
 
