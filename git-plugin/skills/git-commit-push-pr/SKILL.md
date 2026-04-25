@@ -1,7 +1,7 @@
 ---
 name: git-commit-push-pr
 created: 2025-12-16
-modified: 2026-04-23
+modified: 2026-04-25
 reviewed: 2026-03-15
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git branch *), Bash(git remote *), Bash(gh pr *), Bash(gh label *), Bash(gh repo *), Bash(gh issue *), Bash(pre-commit *), Bash(find *), Read, Edit, Grep, Glob, TodoWrite, mcp__github__create_pull_request, mcp__github__list_issues, mcp__github__get_issue
 args: "[remote-branch] [--push] [--direct] [--pr] [--draft] [--issue <num>] [--no-commit] [--range <start>..<end>] [--skip-issue-detection]"
@@ -202,6 +202,16 @@ gh pr checks <pr-number> --watch --fail-fast
 **On success (exit 0)**:
 - Report: "All checks passed. PR #N is ready for merge."
 - Provide merge command: `gh pr merge <pr-number> --squash --delete-branch`
+
+> **Pitfall — `--delete-branch` from the PR's own working tree:** before running `gh pr merge <N> --squash --auto --delete-branch`, switch your working tree to `main` (or any branch other than the PR head). If your cwd or any worktree has the PR's branch checked out, the local-branch-delete step fails with `cannot delete branch 'X' used by worktree at Y` even though the server-side merge is queued correctly. The misleading error makes it look like the merge failed; confirm with `gh pr view <N> --json state`.
+>
+> Safer two-step pattern:
+>
+> ```bash
+> git switch main
+> git pull
+> gh pr merge <pr-number> --squash --auto --delete-branch
+> ```
 
 **On failure (exit 1)**:
 - Report which check(s) failed with details:
