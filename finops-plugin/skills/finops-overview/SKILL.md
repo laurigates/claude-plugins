@@ -4,8 +4,8 @@ args: "[org]"
 allowed-tools: Bash(gh api *), Bash(gh repo *), Bash(gh workflow *), Bash(bash *), Read, TodoWrite
 argument-hint: Optional org name (defaults to current repo's org)
 created: 2025-01-30
-modified: 2026-03-05
-reviewed: 2026-02-08
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: finops-overview
 ---
 
@@ -13,17 +13,14 @@ name: finops-overview
 
 Display a quick FinOps summary including org-level billing (if admin) and current repository workflow/cache statistics.
 
-## When to Use
+## When to Use This Skill
 
-| Scenario | Use this skill | Alternative |
-|----------|---------------|-------------|
-| First look at CI costs and health | `/finops:overview` | - |
-| Quick billing + cache + workflow snapshot | `/finops:overview` | - |
-| Decide which finops skill to run next | `/finops:overview` | - |
-| Detailed cache analysis needed | `/finops:caches` | Use caches for full cache breakdown |
-| Detailed workflow run analysis | `/finops:workflows` | Use workflows for per-workflow stats |
-| Find and fix CI waste patterns | `/finops:waste` | Use waste for actionable fixes |
-| Multi-repo comparison | `/finops:compare` | Use compare for org-wide benchmarks |
+| Use this skill when... | Use a sibling instead when... |
+|---|---|
+| You need a first-look snapshot of CI costs, cache, and workflow health | You need a detailed cache breakdown — use `/finops:caches` |
+| You want billing + cache + workflow stats in one view before drilling deeper | You need per-workflow run frequency and duration analysis — use `/finops:workflows` |
+| You are deciding which finops skill to run next | You want to find and fix CI waste patterns — use `/finops:waste` |
+| You want a single-repo summary | You want to benchmark across many repos in an org — use `/finops:compare` |
 
 ## Context
 

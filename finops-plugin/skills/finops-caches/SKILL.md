@@ -4,8 +4,8 @@ args: "[repo|org:orgname]"
 allowed-tools: Bash(gh api *), Bash(gh repo *), Bash(bash *), Read, TodoWrite
 argument-hint: Repo (owner/name), org:orgname for org-wide, or empty for current repo
 created: 2025-01-30
-modified: 2026-03-05
-reviewed: 2025-01-30
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: finops-caches
 ---
 
@@ -13,16 +13,14 @@ name: finops-caches
 
 Analyze GitHub Actions cache usage - size breakdown, cache key patterns, branch distribution, and stale cache detection.
 
-## When to Use
+## When to Use This Skill
 
-| Scenario | Use this skill | Alternative |
-|----------|---------------|-------------|
-| Cache usage near limit or unknown | `/finops:caches` | - |
-| Identify stale or orphaned PR caches | `/finops:caches` | - |
-| Review cache key strategy effectiveness | `/finops:caches` | - |
-| Quick overall repo health check | `/finops:overview` | Start with overview first |
-| Compare cache usage across repos | `/finops:compare` | Use compare for multi-repo view |
-| Optimize workflow triggers, not caches | `/finops:waste` | Use waste for workflow-level issues |
+| Use this skill when... | Use a sibling instead when... |
+|---|---|
+| Cache usage is near the 10GB repo limit or unknown | You need a high-level repo health snapshot first — use `/finops:overview` |
+| You need to identify stale or orphaned PR-branch caches | You want to compare cache footprints across many repos — use `/finops:compare` |
+| You are reviewing cache key strategy and prefix breakdown | You want to optimize workflow triggers rather than caches — use `/finops:waste` |
+| You want to track down a single bloated cache entry | You are investigating slow or noisy workflow runs — use `/finops:workflows` |
 
 ## Context
 

@@ -4,8 +4,8 @@ args: "<org> [repo1 repo2 ...] [--limit N]"
 allowed-tools: Bash(gh api *), Bash(gh repo *), Bash(bash *), Read, TodoWrite
 argument-hint: Org name required, optional repo list, --limit for auto-discovery
 created: 2025-01-30
-modified: 2026-03-05
-reviewed: 2025-01-30
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: finops-compare
 ---
 
@@ -13,16 +13,14 @@ name: finops-compare
 
 Compare GitHub Actions FinOps metrics across multiple repositories - cache usage, workflow frequency, failure rates, and efficiency.
 
-## When to Use
+## When to Use This Skill
 
-| Scenario | Use this skill | Alternative |
-|----------|---------------|-------------|
-| Compare CI metrics across org repos | `/finops:compare` | - |
-| Identify worst-performing repos in org | `/finops:compare` | - |
-| Org-wide cache or failure audit | `/finops:compare` | - |
-| Deep-dive into a single repo's caches | `/finops:caches` | Use caches for single-repo detail |
-| Deep-dive into a single repo's workflows | `/finops:workflows` | Use workflows for per-repo analysis |
-| Quick summary of current repo only | `/finops:overview` | Use overview for single-repo snapshot |
+| Use this skill when... | Use a sibling instead when... |
+|---|---|
+| You need to benchmark CI metrics across many repos in an org | You only need a snapshot of the current repo — use `/finops:overview` |
+| You want to identify the worst-performing repos in an org | You need a deep dive on one repo's caches — use `/finops:caches` |
+| You are running an org-wide cache or failure audit | You need per-workflow analysis on one repo — use `/finops:workflows` |
+| You want to rank repos by efficiency or cache size | You want actionable workflow waste fixes — use `/finops:waste` |
 
 ## Parameters
 
