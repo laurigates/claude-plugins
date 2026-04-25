@@ -9,10 +9,20 @@ args: "[test-pattern] [--max-cycles <N>]"
 argument-hint: "Test pattern to focus on, --max-cycles to limit iterations"
 allowed-tools: Read, Edit, Bash
 created: 2025-12-16
-modified: 2026-04-19
-reviewed: 2025-12-17
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: project-test-loop
 ---
+
+# /project:test-loop
+
+## When to Use This Skill
+
+| Use this skill when... | Use project-continue instead when... |
+|---|---|
+| Driving a RED -> GREEN -> REFACTOR loop until tests pass | Resuming general project work where tests are not the bottleneck |
+| Iterating on failing tests with auto fix-and-retry behavior | Use project-distill instead when capturing patterns from a finished session |
+| Bounding TDD iterations with `--max-cycles` to avoid runaway loops | Use project-discovery instead when the test command itself is unknown |
 
 Run automated TDD cycle: test → fix → refactor.
 

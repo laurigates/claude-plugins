@@ -8,10 +8,20 @@ args: "[--task <id>] [--skip-status]"
 argument-hint: "--task to resume specific task, --skip-status to skip state analysis"
 allowed-tools: Read, Bash, Grep, Glob, Edit, Write
 created: 2025-12-16
-modified: 2026-04-19
-reviewed: 2025-12-17
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: project-continue
 ---
+
+# /project:continue
+
+## When to Use This Skill
+
+| Use this skill when... | Use project-discovery instead when... |
+|---|---|
+| Resuming work on a known project with PRDs and feature-tracker state | Entering an unfamiliar codebase needing orientation on tooling/structure |
+| Picking the next task off the feature tracker after a break | Use project-test-loop instead when the next step is iterating on failing tests |
+| Asking "what's next" in a project with established blueprint state | Use project-init instead when no project structure exists yet |
 
 Continue project development by analyzing current state and resuming work.
 

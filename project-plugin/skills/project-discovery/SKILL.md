@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-02-10
-reviewed: 2026-02-08
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: project-discovery
 description: Systematic project orientation for unfamiliar codebases. Automatically activates when Claude detects uncertainty about project state, structure, or tooling. Analyzes git state (branch, changes, commits), project type (language, framework, structure), and development tooling (build, test, lint, CI/CD). Provides structured summary with risk flags and recommendations. Use when entering new projects or when working on shaky assumptions.
 user-invocable: false
@@ -9,6 +9,14 @@ allowed-tools: Bash(ls *), Bash(find *), Bash(wc *), Read, Grep, Glob, TodoWrite
 ---
 
 # Project Discovery
+
+## When to Use This Skill
+
+| Use this skill when... | Use project-continue instead when... |
+|---|---|
+| Entering an unfamiliar codebase and need orientation on language/tooling | Resuming known work on a familiar project from PRDs and feature tracker |
+| Reasoning shows uncertainty phrases ("not sure what this does") | Already have a clear next task and just need to continue executing |
+| Onboarding a fresh clone where build/test commands are unknown | Use project-init instead when scaffolding a brand-new project from scratch |
 
 Systematic project orientation to understand codebase state before making changes. Prevents working on incorrect assumptions by establishing clear context about git state, project structure, and development tooling.
 
