@@ -1,7 +1,7 @@
 ---
 created: 2026-03-05
-modified: 2026-03-05
-reviewed: 2026-03-05
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: git-commit-trailers
 description: |
   Git commit trailer conventions and patterns. Use when composing commit messages
@@ -13,6 +13,15 @@ allowed-tools: Bash(git interpret-trailers *), Bash(git log *), Bash(git config 
 ---
 
 # Git Commit Trailers
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative when... |
+|---|---|
+| Adding `BREAKING CHANGE:`, `Release-As:`, `Co-authored-by:`, or `Signed-off-by:` trailers | Use `git-commit-workflow` for the type/scope/subject portion of the message |
+| Driving release-please version bumps via trailer metadata | Use `release-please-configuration` to set up the manifest and changelog rules |
+| Parsing or programmatically adding trailers via `git interpret-trailers` | Use `github-issue-autodetect` to insert `Fixes #N` / `Closes #N` references |
+| Auditing existing commits for missing or malformed trailer keys | Use `git-commit-push-pr` for the end-to-end commit-to-PR macro |
 
 Structured key-value metadata at the end of commit messages. Trailers drive release-please automation, attribution, and issue linking.
 

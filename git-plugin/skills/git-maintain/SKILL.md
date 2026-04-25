@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
-reviewed: 2026-01-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 allowed-tools: Bash(git status *), Bash(git branch *), Bash(git stash *), Bash(git prune *), Bash(git gc *), Bash(git repack *), Bash(git fsck *), Bash(git rm *), Bash(du *), Read, Glob, TodoWrite
 args: "[--prune] [--gc] [--verify] [--branches] [--stash] [--all]"
 argument-hint: [--prune] [--gc] [--verify] [--branches] [--stash] [--all]
@@ -13,6 +13,15 @@ description: |
   stashes, verify repo integrity with git fsck, or shrink the .git directory.
 name: git-maintain
 ---
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative when... |
+|---|---|
+| Running `git gc`, repacking objects, or shrinking the `.git` directory | Use `git-coworker-check` first if other agents may be writing to the same checkout |
+| Pruning merged local branches and old stashes | Use `git-cli-agentic` for read-only branch/stash queries without mutating state |
+| Verifying repo integrity with `git fsck` | Use `git-security-checks` for secret scanning rather than object integrity |
+| Cleaning up a checkout before a long-lived feature branch goes stale | Use `git-rebase-patterns` to clean up commit history rather than the object store |
 
 ## Context
 

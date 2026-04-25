@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-02-14
-reviewed: 2026-01-15
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: git-commit-workflow
 description: |
   Commit message conventions, staging practices, and commit best practices.
@@ -14,6 +14,15 @@ allowed-tools: Bash, Read
 ---
 
 # Git Commit Workflow
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative when... |
+|---|---|
+| Designing the conventional-commit message and staging conventions for a repo | Use `git-commit` to actually create a commit (handles pre-commit hooks, issue detection) |
+| Reviewing how to group changes logically into focused commits | Use `git-commit-trailers` for `BREAKING CHANGE` / `Co-authored-by` trailer rules |
+| Discussing humble, fact-based commit communication style | Use `github-issue-autodetect` to add `Fixes #N` / `Closes #N` links to messages |
+| Authoring `feat(scope): subject` rules for your codebase | Use `github-pr-title` to apply the same conventional format to PR titles |
 
 Expert guidance for commit message conventions, staging practices, and commit best practices using conventional commits and explicit staging workflows.
 

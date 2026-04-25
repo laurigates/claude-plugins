@@ -1,7 +1,7 @@
 ---
 created: 2026-01-30
-modified: 2026-03-04
-reviewed: 2026-03-04
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: github-pr-title
 description: |
   Craft PR titles using conventional commits format. Use when creating PRs or
@@ -17,13 +17,14 @@ Craft clear PR titles using conventional commits format.
 
 **CRITICAL:** PR titles must follow conventional commit format. This drives release-please version automation and ensures consistent git history when using squash-and-merge.
 
-## When to Use
+## When to Use This Skill
 
-| Use this skill when... | Use X instead when... |
-|------------------------|----------------------|
-| Creating a PR title | Full PR workflow (`git-pr`) |
-| Reviewing title format | Issue titles (`github-issue-writing`) |
-| Updating existing PR title | Fixing committed messages (see `git-commit`) |
+| Use this skill when... | Use the alternative when... |
+|---|---|
+| Authoring a `type(scope): subject` PR title that drives release-please automation | Use `git-pr` for the full PR creation workflow (body, labels, reviewers) |
+| Renaming an existing PR title to fix release-please version-bump detection | Use `git-commit-workflow` to set the same conventions on commit messages |
+| Selecting the right `feat`, `fix`, `perf`, `refactor`, `chore` type for a PR | Use `github-issue-writing` for issue titles (different `[Type] Component:` format) |
+| Validating PR title format before merge to maintain clean git history | Use `git-commit` to fix already-committed message formats locally |
 
 ## Format
 

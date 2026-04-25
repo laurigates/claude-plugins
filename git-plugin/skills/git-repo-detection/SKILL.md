@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: git-repo-detection
 description: Detect GitHub repository name and owner from git remotes. Use when needing repo identifier for GitHub CLI, API calls, or when working with multiple repositories. Automatically extracts owner/repo format.
 user-invocable: false
@@ -9,6 +9,15 @@ allowed-tools: Bash, Read, Grep
 ---
 
 # Git Repository Detection
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative when... |
+|---|---|
+| Extracting `owner/repo` from a git remote (HTTPS or SSH URL) for `gh` calls | Use `gh-cli-agentic` once you already have the `owner/repo` identifier |
+| Handling GitHub Enterprise host URLs alongside github.com | Use `git-fork-workflow` when the question is fork vs upstream identification |
+| Resolving the repo identifier to pass with `gh -R` to avoid remote-required errors | Use `git-cli-agentic` for raw `git remote -v` parsing if you need URL details |
+| Detecting which repo a script is running inside before issuing API calls | Use `git-coworker-check` to detect concurrent agents in the same checkout |
 
 Expert knowledge for detecting and extracting GitHub repository information from git remotes, including repository name, owner, and full identifiers.
 

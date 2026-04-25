@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-02-06
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: release-please-protection
 description: |
   Detects and prevents manual edits to release-please managed files (CHANGELOG.md,
@@ -13,6 +13,15 @@ allowed-tools: Read, Grep, Glob
 ---
 
 # Release-Please Protection
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative when... |
+|---|---|
+| Detecting manual edits to `CHANGELOG.md`, `package.json` version fields, etc. | Use `release-please-configuration` to set up the manifest in the first place |
+| Warning before a manual changelog or version bump conflicts with release-please | Use `release-please-pr-workflow` once release PRs already exist and need merging |
+| Suggesting conventional-commit alternatives instead of editing managed files | Use `git-commit-trailers` for `Release-As:` / `BREAKING CHANGE:` overrides |
+| Protecting release-managed files during refactors and bulk edits | Use `git-security-checks` for credential leaks rather than version-file mutations |
 
 Automatically detects and prevents manual edits to release-please managed files across all projects.
 

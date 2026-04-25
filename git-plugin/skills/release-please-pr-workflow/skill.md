@@ -1,7 +1,7 @@
 ---
 created: 2026-01-09
-modified: 2026-01-09
-reviewed: 2026-01-09
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: release-please-pr-workflow
 description: |
   Manages release-please PR merging workflow for monorepos. Handles batch merging,
@@ -13,6 +13,15 @@ allowed-tools: Bash, Read, TodoWrite
 ---
 
 # Release-Please PR Workflow
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative when... |
+|---|---|
+| Iteratively merging multiple release-please PRs in a monorepo | Use `release-please-configuration` to fix the upstream config that produced them |
+| Resolving conflicts between sibling release PRs by closure/recreation | Use `git-resolve-conflicts` for ordinary feature-PR merge conflicts |
+| Coordinating sequential merges when `separate-pull-requests: true` | Use `git-fix-pr` if individual release PRs have failing CI checks |
+| Reducing the open release PR queue after a burst of releasable commits | Use `release-please-protection` to detect manual edits to changelog/version files |
 
 Expert knowledge for managing release-please PRs in monorepos, including batch merging, conflict handling, and iterative processing.
 

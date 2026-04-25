@@ -1,7 +1,7 @@
 ---
 created: 2026-03-19
-modified: 2026-04-23
-reviewed: 2026-03-19
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: git-issue-manage
 description: |
   Administrative operations on GitHub issues. Use when transferring issues
@@ -13,6 +13,15 @@ argument-hint: <transfer|pin|lock|develop|bulk|fields> <issue-numbers...>
 user-invocable: true
 allowed-tools: Bash(gh issue *), Bash(gh api *), Bash(git switch *), Bash(git remote *), Read, Grep, Glob, TodoWrite, AskUserQuestion
 ---
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative when... |
+|---|---|
+| Transferring, pinning, locking, or bulk-editing GitHub issues | Use `github-issue-writing` to compose a single issue body well |
+| Creating a development branch from an issue (`gh issue develop`) | Use `git-branch-pr-workflow` for general branch + PR design |
+| Updating custom issue fields (priority, severity, custom selects) in bulk | Use `github-labels` for label-only operations on issues and PRs |
+| Performing bulk operations across many issue numbers in one command | Use `git-triage` to evaluate issues and PRs by completion evidence and CI state |
 
 ## Context
 
