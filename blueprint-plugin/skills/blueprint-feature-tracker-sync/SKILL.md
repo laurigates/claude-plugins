@@ -1,12 +1,14 @@
 ---
 created: 2026-01-02
-modified: 2026-04-19
-reviewed: 2026-04-12
+modified: 2026-04-25
+reviewed: 2026-04-25
 description: |
-  Synchronize feature tracker with TODO.md and PRDs, manage tasks. Use when the user asks
-  to "sync feature tracker", reconcile discrepancies between TODO.md checkboxes and tracker
-  status, recalculate completion statistics, add/complete tasks in tasks.in_progress, or
-  generate a markdown progress summary with --summary.
+  Synchronize feature tracker with TODO.md, taskwarrior sidecars, and PRDs; manage tasks.
+  Use when the user asks to "sync feature tracker", reconcile discrepancies between
+  TODO.md checkboxes and tracker status, drain WO entries from a taskwarrior sidecar
+  (bpid/bpdoc UDAs) into tasks.completed with --drain-wave, recalculate completion
+  statistics, add/complete tasks in tasks.in_progress, or generate a markdown progress
+  summary with --summary.
 allowed-tools: Read, Write, Bash, Glob, AskUserQuestion
 name: blueprint-feature-tracker-sync
 ---
@@ -15,12 +17,27 @@ Synchronize the feature tracker JSON with TODO.md and manage task progress.
 
 **Note**: As of v1.1.0, feature-tracker.json is the single source of truth for progress tracking. The `tasks` section replaces work-overview.md.
 
-**Usage**: `/blueprint:feature-tracker-sync [--summary]`
+**Usage**: `/blueprint:feature-tracker-sync [--summary] [--drain-wave WO-A,WO-B,...] [--evidence-files <list>] [--evidence <text>]`
 
 **Flags**:
 | Flag | Description |
 |------|-------------|
 | `--summary` | Generate human-readable markdown summary (stdout only, no file) |
+| `--drain-wave WO-A,WO-B,...` | Sidecar mode: drain a comma-separated list of completed WOs from `tasks.pending` into `tasks.completed`, then flip any FRs whose `implementing_wos` are now all closed |
+| `--evidence-files <list>` | Comma-separated list of files (one per WO) holding the evidence string for `--drain-wave`. Pairs positionally with the WO list |
+| `--evidence <text>` | Inline evidence string (single WO only). Use when the text is short and free of single quotes |
+
+---
+
+## Mode Selection (run first)
+
+Decide which mode applies before any work:
+
+1. If `--summary` is present, run **Mode: Generate Summary** and exit.
+2. If `--drain-wave` is present, run **Mode: Taskwarrior Sidecar Drain** and exit.
+3. Otherwise, run sidecar detection (Step 0 below). If a sidecar is detected and
+   `TODO.md` is absent, prefer **Sidecar Drain** semantics for any user-facing
+   completion prompts; otherwise run **Mode: Full Sync (Default)**.
 
 ---
 
@@ -73,6 +90,36 @@ Output example:
 **Exit** after displaying summary.
 
 ## Mode: Full Sync (Default)
+
+### Step 0: Detect taskwarrior sidecar
+
+Determine whether this project uses the taskwarrior-sidecar convention
+(taskwarrior is the authoritative pending/completed queue, linked to blueprint
+via the `bpid`/`bpdoc` UDAs). Either signal is sufficient:
+
+1. **Marker rule file**: `test -f .claude/rules/task-tracking.md`.
+2. **Live taskwarrior linkage**: any task carries a `bpid` matching one of the
+   project's blueprint IDs.
+
+   Use the parallel-safe `export | jq` idiom (see
+   `.claude/rules/parallel-safe-queries.md`) — never `task list`, which exits
+   1 on empty results and silently cancels sibling tool calls in a parallel
+   Bash batch:
+
+   ```bash
+   task bpid.any: status:any export | jq 'length'
+   ```
+
+   Treat any non-zero count as "sidecar present".
+
+If a sidecar is detected, set `SIDECAR=true` and:
+
+- Skip the `TODO.md` reconciliation steps (Steps 4–5, 8) — there is no
+  authoritative TODO file to align against.
+- Continue with statistics recalculation (Step 6) and tracker write (Step 7),
+  using taskwarrior `status:completed` as the truth signal for WO entries.
+- When the user is closing one or more WOs, route them to **Mode: Taskwarrior
+  Sidecar Drain** instead of editing `TODO.md`.
 
 ### Step 1: Check if feature tracking is enabled
 
@@ -268,6 +315,164 @@ options:
 
 ---
 
+## Mode: Taskwarrior Sidecar Drain (`--drain-wave`)
+
+Drain one or more completed WOs from `tasks.pending` into `tasks.completed`,
+sourcing evidence from taskwarrior annotations (or from named files / an
+inline string), then flip any FR-level entries whose implementing WOs are
+now all closed.
+
+### Step 1: Parse the wave list
+
+Split `--drain-wave` on commas. For each WO ID, line up the matching evidence
+source in this priority order:
+
+1. The matching positional entry in `--evidence-files` (file path), read with
+   `jq --rawfile` to dodge single-quote collisions.
+2. `--evidence` (single-WO drains only).
+3. The latest `annotate` line on the linked taskwarrior task (Step 2).
+4. As a last resort, prompt the user for evidence with `AskUserQuestion`.
+
+Refuse the run with a clear message if the WO list and `--evidence-files`
+list are both provided but their lengths disagree — partial drains are
+worse than no drain.
+
+### Step 2: Source evidence from taskwarrior
+
+For each WO in the wave, fetch the latest annotation. Use the parallel-safe
+`export | jq` idiom — never `task list` — so a missing-task case returns
+exit 0 instead of cancelling sibling tool calls (see
+`.claude/rules/parallel-safe-queries.md`):
+
+```bash
+task bpid:"$WO" status:completed export \
+  | jq -r '.[0].annotations | sort_by(.entry) | last | .description // empty'
+```
+
+If the result is empty, fall back to `status:any` (the user may have closed
+the task before drain). If still empty, fall back to the next priority source
+from Step 1.
+
+Persist each evidence string to a temp file (`mktemp`) — embedded single
+quotes in commit messages collide with shell when inlined into a `jq`
+program literal, and `--rawfile` is the standard escape:
+
+```bash
+ev_file="$(mktemp)"
+printf '%s' "$EVIDENCE_STRING" > "$ev_file"
+```
+
+### Step 3: Drain pending → completed
+
+For each `WO-NNN` in the wave, with its evidence file `$ev_file`, advance
+the tracker in a single `jq` pass per WO. Store the date once and pass it
+in as an argument so the same value lands on every entry:
+
+```bash
+today="$(date -u +%Y-%m-%d)"
+jq --arg id "$WO" \
+   --arg today "$today" \
+   --rawfile ev "$ev_file" '
+  .tasks.completed = (
+    [ .tasks.pending[]
+      | select(.id == $id)
+      | . + {"completed": $today, "evidence": $ev}
+    ] + .tasks.completed
+  )
+  | .tasks.pending = [.tasks.pending[] | select(.id != $id)]
+' docs/blueprint/feature-tracker.json > docs/blueprint/feature-tracker.json.tmp
+mv docs/blueprint/feature-tracker.json.tmp docs/blueprint/feature-tracker.json
+```
+
+Loop the WOs sequentially — each pass reads the file the previous pass
+wrote — so concurrent writes cannot collide on the same file.
+
+If a WO ID is not in `tasks.pending`, report `skipped: not pending` for
+that entry and continue. Do not error the whole wave.
+
+### Step 4: Flip FR status when implementing WOs are all closed
+
+For each feature whose `implementing_wos` array overlaps the drained wave,
+recompute its `status`. The flip is the second hand-jq pattern users
+repeat per wave; do it once here:
+
+```bash
+jq --arg today "$today" '
+  (.features // [])
+  |= map(
+    if (.implementing_wos // []) | length > 0 then
+      . as $fr
+      | (.implementing_wos
+         | map(. as $woid
+               | (($fr | .. | objects | select(has("id")) | select(.id == $woid))
+                  // null)
+               | . != null)) as $resolved
+      | (((.implementing_wos | length) > 0)
+         and ([.implementing_wos[] as $wo
+                | any(($fr.parent_tracker.tasks.completed // [])[]; .id == $wo)]
+              | all)) as $all_done
+      | if $all_done and (.status // "") != "complete"
+        then . + {"status": "complete", "completed_at": $today}
+        else .
+        end
+    else .
+    end
+  )
+' docs/blueprint/feature-tracker.json > docs/blueprint/feature-tracker.json.tmp
+mv docs/blueprint/feature-tracker.json.tmp docs/blueprint/feature-tracker.json
+```
+
+If the tracker schema stores features in a flat `features` array but with a
+different shape (e.g., nested under `phases[].features[]`), adapt the path
+prefix while preserving the same logic: a feature flips to `complete` only
+when **every** WO ID listed in `implementing_wos` appears in
+`tasks.completed`.
+
+Record each flip in the run report (Step 6). Never silently downgrade an
+already-`complete` FR.
+
+### Step 5: Recalculate statistics
+
+Re-run Step 6 of **Mode: Full Sync (Default)** so the totals reflect the
+drained WOs and any flipped FRs. Then write the updated `last_updated` and
+`current_phase` per Step 7 of Full Sync.
+
+### Step 6: Report
+
+Print a Drain Report:
+
+```
+Sidecar Drain Report
+====================
+Wave: WO-031, WO-032, WO-033
+Drained:
+- WO-031: pending -> completed  (evidence: 142 chars from tw annotation)
+- WO-032: pending -> completed  (evidence: 209 chars from /tmp/wo032_ev.txt)
+- WO-033: skipped (not in tasks.pending)
+
+FR flips:
+- FR-017 (Skill Progression): in_progress -> complete
+
+Statistics:
+- Total Features: 42
+- Complete: 23 (54.8%)  [+1 from FR-017]
+- Recently Completed: WO-031, WO-032 added to top of tasks.completed
+
+Next: run /taskwarrior:task-done if any sibling tasks should also close.
+```
+
+Clean up temp evidence files with `rm -f "$ev_file"`.
+
+### Single-WO short form
+
+For the common one-WO case, the same flow with `--drain-wave WO-031` and
+either `--evidence "<text>"` or no evidence flag (annotation autosourced) is
+shorter than the legacy hand-rolled `jq` one-liner — and emits the same
+on-disk shape. Prefer `/taskwarrior:task-done` when you also need to close
+the linked taskwarrior task; this skill only edits the tracker.
+
+---
+
 ## Task Management
 
 ### Adding a task to in_progress
@@ -334,3 +539,15 @@ Changes Made:
 
 All sync targets updated successfully.
 ```
+
+## Related
+
+- `taskwarrior-plugin:task-done` — close a single taskwarrior task and drain
+  the linked tracker entry; pairs with this skill's `--drain-wave` for
+  wave-granular drains where multiple WOs land at once.
+- `taskwarrior-plugin:task-coordinate` — surface the next N unblocked tasks
+  before starting a wave, so the WOs you eventually drain here line up with
+  what the queue actually scheduled.
+- `.claude/rules/parallel-safe-queries.md` — the `task ... export | jq`
+  idiom is mandatory whenever this skill queries taskwarrior. `task list`
+  exits 1 on empty results and silently cancels sibling parallel tool calls.
