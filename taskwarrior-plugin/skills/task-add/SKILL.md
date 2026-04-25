@@ -19,6 +19,14 @@ reviewed: 2026-04-25
 
 File a coordination task. When a GitHub remote is present, offer optional linkage so GitHub stays the system of record and taskwarrior stays the parallel-safe query layer.
 
+## When to Use This Skill
+
+| Use this skill when... | Use `task-status` / `task-coordinate` / `task-done` instead when... |
+|---|---|
+| Filing a brand-new coordination task with `bpid:` / `bpdoc:` linkage | Auditing existing queue health — use `task-status` |
+| Mirroring a GitHub issue into the local queue via `ghid:` | Picking the next-N candidates for a parallel wave — use `task-coordinate` |
+| Pre-filling a task body from `gh issue view` output | Closing an in-flight task and draining its tracker — use `task-done` |
+
 ## Context
 
 - Task CLI available: !`command -v task`

@@ -11,13 +11,21 @@ args: "<task-id> [commit-hash]"
 allowed-tools: Bash(task *), Bash(git config *), Bash(git log *), Bash(git rev-parse *), Bash(gh auth *), Bash(gh issue *), Bash(gh pr *), Read, Edit, TodoWrite
 argument-hint: task id (required), commit sha (optional — defaults to HEAD)
 created: 2026-04-24
-modified: 2026-04-24
-reviewed: 2026-04-24
+modified: 2026-04-25
+reviewed: 2026-04-25
 ---
 
 # /taskwarrior:task-done
 
 Close a task with full coordination hygiene: annotate with the landing commit, drain the tracker entry, optionally close the GitHub issue.
+
+## When to Use This Skill
+
+| Use this skill when... | Use `task-add` / `task-status` / `task-coordinate` instead when... |
+|---|---|
+| Closing a task whose work has landed in a commit | Filing a brand-new task — use `task-add` |
+| Draining a linked blueprint tracker entry to `done` | Reading current queue state without mutating it — use `task-status` |
+| Closing a `ghid`-linked GitHub issue or commenting on a `ghpr` PR | Picking the next dispatch candidate from the queue — use `task-coordinate` |
 
 ## Context
 

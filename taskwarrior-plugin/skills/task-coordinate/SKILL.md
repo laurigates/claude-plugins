@@ -20,6 +20,14 @@ reviewed: 2026-04-25
 
 Next-candidate-agent surfacing for parallel / wave dispatch. Pairs with `agent-patterns-plugin:parallel-agent-dispatch` and `workflow-orchestration-plugin:workflow-wave-dispatch`.
 
+## When to Use This Skill
+
+| Use this skill when... | Use `task-status` / `task-add` / `task-done` instead when... |
+|---|---|
+| Picking the top-N unblocked tasks for a parallel-agent wave | Producing a full queue audit (pending + blocked + drift) — use `task-status` |
+| Filtering candidates that contend on the same exclusive lock (`ghidra`, `migration`) | Filing a new task before there is anything to coordinate — use `task-add` |
+| Emitting a `--wave` brief for an orchestrator to fan out | Closing a task that already landed via commit — use `task-done` |
+
 ## Context
 
 - Task CLI available: !`command -v task`

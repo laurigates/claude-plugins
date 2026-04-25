@@ -19,6 +19,14 @@ reviewed: 2026-04-25
 
 Read-only status report on the coordination queue. Strictly uses `export | jq` — never `list` — so parallel Bash batches from downstream skills stay safe.
 
+## When to Use This Skill
+
+| Use this skill when... | Use `task-coordinate` / `task-add` / `task-done` instead when... |
+|---|---|
+| Auditing pending / blocked / stale tasks across the project queue | Picking the top-N candidates for a wave dispatch — use `task-coordinate` |
+| Detecting drift between tasks and their linked GitHub issues / PRs | Filing a new task surfaced by drift detection — use `task-add` |
+| Folding `gh pr status` rollups into a standup-ready report | Closing a PR-ready task with a landed commit — use `task-done` |
+
 ## Context
 
 - Task CLI available: !`command -v task`
