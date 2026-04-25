@@ -1,7 +1,7 @@
 ---
 created: 2026-04-17
-modified: 2026-04-19
-reviewed: 2026-04-17
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: vault-wikilinks
 description: |
   Detect and repair broken wikilinks in an Obsidian vault. Use when the
@@ -14,6 +14,14 @@ allowed-tools: Read, Edit, Grep, Glob
 ---
 
 # Wikilink Integrity
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative instead when... |
+|---|---|
+| Repairing broken `[[Target]]` wikilinks after a note rename or move | Discovering which links Obsidian flags as unresolved in the first place — use `search-discovery` |
+| Resolving cross-namespace ambiguity between `Zettelkasten/` and `FVH/z/` notes | Reorganising or merging the FVH/z stub itself — use `vault-stubs` |
+| Unqualifying path-prefixed `[[Kanban/X]]` links to bare basenames | Reconnecting orphan notes that have no links at all — use `vault-orphans` |
 
 Obsidian resolves `[[Target]]` by looking for a note whose basename is `Target.md` anywhere in the vault. Links break silently when a note is renamed, moved, or was never created. Ambiguity arises when two notes share a basename.
 

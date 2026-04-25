@@ -1,7 +1,7 @@
 ---
 created: 2026-04-17
-modified: 2026-04-19
-reviewed: 2026-04-17
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: vault-orphans
 description: |
   Triage orphaned notes (zero incoming, zero outgoing wikilinks) in an
@@ -14,6 +14,14 @@ allowed-tools: Read, Edit, Grep, Glob
 ---
 
 # Orphan Triage
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative instead when... |
+|---|---|
+| Triaging orphan notes (zero incoming, zero outgoing wikilinks) for archive vs. reconnect | Building a new MOC hub the orphans should link into — use `vault-mocs` |
+| Distinguishing expected orphans (inbox, daily notes) from meaningful ones | Discovering the orphan list itself via the running CLI — use `search-discovery` |
+| Suggesting archival paths for stale isolated Zettelkasten notes | Classifying or consolidating FVH/z redirect stubs — use `vault-stubs` |
 
 An "orphan" is a note with no incoming wikilinks AND no outgoing wikilinks — disconnected from the knowledge graph. Some orphans are expected; others are the most productive places to add structure.
 

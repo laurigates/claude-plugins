@@ -1,7 +1,7 @@
 ---
 created: 2026-04-17
-modified: 2026-04-19
-reviewed: 2026-04-17
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: vault-templates
 description: |
   Obsidian Templater conventions and drift repair. Use when the user asks
@@ -14,6 +14,14 @@ allowed-tools: Read, Edit, Write, Grep, Glob
 ---
 
 # Templater Convention & Drift Repair
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative instead when... |
+|---|---|
+| Repairing unrendered `<% tp.file.cursor() %>` / `{{title}}` markers committed in note **bodies** | Stripping the same kind of markers inside YAML frontmatter — use `vault-frontmatter` |
+| Auditing daily-note structure drift against the canonical Templater template | Creating new daily notes interactively via the running CLI — use `vault-files` |
+| Fixing notes committed before Templater finished rendering | Reconnecting the cleaned-up notes into a hub afterwards — use `vault-mocs` |
 
 Obsidian's Templater plugin renders placeholder syntax when a new note is created. When rendering fails (plugin error, user dismissal, manual copy-paste), the literal markers get committed and persist. Fixing them is mechanical.
 

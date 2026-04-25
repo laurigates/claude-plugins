@@ -1,7 +1,7 @@
 ---
 created: 2026-03-04
-modified: 2026-03-04
-reviewed: 2026-03-04
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: properties
 description: |
   Obsidian YAML frontmatter property management via the official CLI.
@@ -13,6 +13,14 @@ allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # Obsidian Properties Management
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative instead when... |
+|---|---|
+| Reading, setting, or removing a single YAML property on a live note via the running CLI | Doing offline bulk frontmatter rewrites across many files — use `vault-frontmatter` |
+| Updating `status:`, `tags:`, or `aliases:` on a note Obsidian currently has open | Editing note body content rather than frontmatter — use `vault-files` |
+| Confirming a property change is reflected in Obsidian's metadata cache | Repairing broken wikilinks after a rename — use `vault-wikilinks` |
 
 Read, set, and remove YAML frontmatter properties on Obsidian notes using the official CLI.
 

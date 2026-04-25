@@ -1,7 +1,7 @@
 ---
 created: 2026-04-17
-modified: 2026-04-19
-reviewed: 2026-04-17
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: vault-frontmatter
 description: |
   Offline maintenance of YAML frontmatter in Obsidian notes. Use when the
@@ -14,6 +14,14 @@ allowed-tools: Read, Edit, Write, Grep, Glob
 ---
 
 # Vault Frontmatter Maintenance
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative instead when... |
+|---|---|
+| Bulk-stripping legacy `id:` fields or null `tags:` entries across many `.md` files offline | Setting a single property on one live note via the running CLI — use `properties` |
+| Cleaning up unrendered `{{title}}` / `<% tp.file.cursor() %>` placeholders inside YAML | Repairing those markers in note **body** text — use `vault-templates` |
+| Adding missing frontmatter blocks to notes that lack one | Consolidating the actual tag values once the YAML structure is sound — use `vault-tags` |
 
 Offline, file-level repair of YAML frontmatter. Complements the `properties` skill (which uses the Obsidian CLI) by operating on .md files directly — safe for bulk mechanical passes.
 

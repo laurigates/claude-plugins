@@ -1,7 +1,7 @@
 ---
 created: 2026-03-04
-modified: 2026-03-04
-reviewed: 2026-03-04
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: plugins-themes
 description: |
   Obsidian plugin and theme management via the official CLI.
@@ -14,6 +14,14 @@ allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # Obsidian Plugin & Theme Management
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative instead when... |
+|---|---|
+| Enabling, disabling, or reloading community plugins | Editing note content — use `vault-files` |
+| Switching the active theme or running developer-tool eval/screenshot | Reading or writing YAML frontmatter — use `properties` |
+| Diagnosing a plugin that fails to load in the running vault | Searching the vault for tags or backlinks — use `search-discovery` |
 
 Manage community plugins, themes, and developer tools using the official Obsidian CLI.
 

@@ -1,7 +1,7 @@
 ---
 created: 2026-03-04
-modified: 2026-03-04
-reviewed: 2026-03-04
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: publish-sync
 description: |
   Obsidian Publish and Sync management via the official CLI.
@@ -14,6 +14,14 @@ allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # Obsidian Publish & Sync
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative instead when... |
+|---|---|
+| Listing, adding, or removing notes on Obsidian Publish | Creating or moving the underlying notes themselves — use `vault-files` |
+| Checking Obsidian Sync status for the active vault | Managing community plugins or themes — use `plugins-themes` |
+| Auditing which notes are currently public vs. private | Discovering orphaned or unresolved-link notes — use `search-discovery` |
 
 Manage Obsidian Publish and Obsidian Sync services using the official CLI.
 

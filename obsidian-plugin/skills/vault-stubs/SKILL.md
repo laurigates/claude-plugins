@@ -1,7 +1,7 @@
 ---
 created: 2026-04-17
-modified: 2026-04-19
-reviewed: 2026-04-17
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: vault-stubs
 description: |
   FVH/z/ redirect-stub classification and consolidation for LakuVault. Use
@@ -14,6 +14,14 @@ allowed-tools: Read, Edit, Write, Grep, Glob
 ---
 
 # FVH/z Stub Management
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative instead when... |
+|---|---|
+| Classifying and consolidating FVH/z redirect stubs in LakuVault | Triaging generic orphan notes outside the FVH namespace — use `vault-orphans` |
+| Promoting an FVH-only note into the canonical Zettelkasten location | Repairing the wikilinks that point at the moved note afterwards — use `vault-wikilinks` |
+| Merging unique FVH content back into a Zettelkasten note | Adding the merged note into a Map of Content hub — use `vault-mocs` |
 
 In LakuVault, the `FVH/z/` directory is a work-namespace knowledge base that mirrors select Zettelkasten notes as tiny redirect stubs. Content lives in `Zettelkasten/`; `FVH/z/` points to it so work-context queries still find the topic.
 

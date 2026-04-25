@@ -1,7 +1,7 @@
 ---
 created: 2026-04-17
-modified: 2026-04-19
-reviewed: 2026-04-17
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: vault-tags
 description: |
   Emoji-prefixed tag taxonomy for Obsidian vaults. Use when the user asks
@@ -14,6 +14,14 @@ allowed-tools: Read, Edit, Grep, Glob
 ---
 
 # Vault Tag Taxonomy
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative instead when... |
+|---|---|
+| Consolidating drifted/duplicate tags (`🔒/security` vs `🔍/security`) across many notes | Setting one property on one live note via the running CLI — use `properties` |
+| Collapsing bare emoji placeholder tags like `📝` or `🌱` | Cleaning the surrounding YAML structure (null entries, missing blocks) — use `vault-frontmatter` |
+| Reducing over-tagged notes to 2-3 canonical tags | Grouping tag-aligned notes into a hub MOC — use `vault-mocs` |
 
 A two-level tag scheme built around emoji-prefixed categories. Consistent tagging enables reliable search (`tag:#🛠️/neovim`), Dataview queries, and MOC coverage analysis.
 
