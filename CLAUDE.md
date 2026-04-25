@@ -230,6 +230,7 @@ This repo runs `blueprint-plugin` against itself in a deliberately constrained m
 | Task | Status | Why |
 |------|--------|-----|
 | `adr-validate`, `sync-ids`, `feature-tracker-sync` | enabled | Read-leaning workflows that genuinely add value across 16 ADRs / 2 PRDs / 5 PRPs |
+| `story-audit`, `story-reconcile` | enabled | `story-audit` is read-only and writes only its own dated artifact under `docs/blueprint/audits/`. `story-reconcile` mutates PRDs only and confirms each edit interactively. |
 | `derive-prd`, `derive-plans`, `derive-rules`, `generate-rules`, `claude-md`, `curate-docs` | disabled | Would treat plugin source as project requirements or could overwrite the 18 hand-written rules / hand-curated `CLAUDE.md` |
 
 **Always run `/blueprint:sync-ids` with `--dry-run` first.** Each disabled task carries a `context.disabled_reason` in the manifest — read it before flipping any flag back on.
