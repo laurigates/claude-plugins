@@ -13,8 +13,8 @@ description: |
 user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 created: 2026-04-21
-modified: 2026-04-24
-reviewed: 2026-04-24
+modified: 2026-04-25
+reviewed: 2026-04-25
 ---
 
 # Parallel Agent Dispatch
@@ -174,9 +174,14 @@ concrete schemas more reliably than prose instructions.
 
 #### Verbatim patches, not prose
 
-The single largest productivity multiplier across multi-wave dispatches is
-filling **`Orchestrator action needed`** with **complete patches**, not
-prose descriptions of the edit.
+**Orchestrator edits needed must be verbatim patches, not prose.** List
+each shared file and provide the literal text the orchestrator will
+paste: complete CMake blocks with surrounding context, full justfile
+recipes including shebang, literal prose paragraphs for docs updates.
+Prose-style "add X to Y" descriptions force the orchestrator to
+re-derive the exact insertion point, which is measurably slower and
+more error-prone. If the edit is a single-line insertion, still quote
+the surrounding 2–3 lines so the paste target is unambiguous.
 
 Agents should emit:
 
@@ -189,19 +194,33 @@ Agents should emit:
 - Exact line numbers where the orchestrator must insert, when the target
   is long.
 
-Prose descriptions like "add `src/foo.c` to `CMakeLists.txt`" force the
-orchestrator to re-derive the exact position. At five agents per wave,
-that derivation cost multiplies and is measurably slower **and** more
-error-prone than mechanical pasting.
-
 The orchestrator's role for `Orchestrator action needed` is `Edit(old=…,
 new=…)` — a mechanical operation, not prose synthesis. Brief agents
 accordingly.
 
-> Evidence: six-wave landing of a renderer module shipped in one day,
-> with `Orchestrator action needed` uniformly populated with verbatim
-> patches. Earlier prose-style return contracts required the orchestrator
-> to re-read source files on every merge.
+#### Agent authors the docs-update text the orchestrator pastes
+
+The paired discipline: **the agent writes the final prose** for any
+docs update its slice requires. Port-plan sub-bullets, feature-tracker
+evidence strings, and format-spec paragraphs all belong in the agent's
+return contract as finished sentences, ready to paste. The
+orchestrator's job stays pure `Edit(old=…, new=…)` — no prose
+synthesis, no re-summarising of what landed.
+
+Evidence-strings in particular need agent authorship: the agent is the
+only party that knows what actually landed in its commits, which test
+cases passed, and which subtleties of the slice are worth recording.
+Asking the orchestrator to compose that prose retroactively forces it
+to re-read the agent's diff and produces a less faithful summary than
+the agent could write inline.
+
+> **Why this matters.** Across six sequential waves in a single
+> session, every return that emitted verbatim patches paste-integrated
+> cleanly in seconds. One earlier return that used prose ("add
+> `src/foo.c` to `CMakeLists.txt`") forced the orchestrator to re-derive
+> the exact insertion context — measurably slower and more error-prone.
+> The verbatim-patch + agent-authored-prose pairing, not the parallel
+> topology, is what made the multi-wave cadence sustainable.
 
 ## Why the Schema Matters
 
