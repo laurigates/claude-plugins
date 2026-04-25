@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.3](https://github.com/laurigates/claude-plugins/compare/accessibility-plugin-v2.3.2...accessibility-plugin-v2.3.3) (2026-04-25)
+
+
+### Documentation
+
+* **accessibility-plugin:** standardise When to Use tables ([#1181](https://github.com/laurigates/claude-plugins/issues/1181)) ([63f3ce0](https://github.com/laurigates/claude-plugins/commit/63f3ce032e65bf00f45cb6402fa85b161ad1e3d3)), closes [#1156](https://github.com/laurigates/claude-plugins/issues/1156)
+
 ## [2.3.2](https://github.com/laurigates/claude-plugins/compare/accessibility-plugin-v2.3.1...accessibility-plugin-v2.3.2) (2026-04-17)
 
 
