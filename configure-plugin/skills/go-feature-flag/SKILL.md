@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-02-25
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: go-feature-flag
 description: |
   GO Feature Flag (GOFF) self-hosted feature flag solution with OpenFeature
@@ -13,6 +13,14 @@ allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---
 
 # GO Feature Flag
+
+## When to Use This Skill
+
+| Use this skill when... | Use a sibling skill instead when... |
+|---|---|
+| You need GOFF-specific configuration — `flags.goff.yaml`, relay proxy, targeting rules | You only need the vendor-agnostic OpenFeature SDK API — use `openfeature` |
+| You are deploying or operating the self-hosted GOFF backend | You want to scaffold the full feature-flag stack including provider selection — use `configure-feature-flags` |
+| Another skill needs the canonical GOFF flag-file shape | You are evaluating which feature-flag provider to adopt — start with `configure-feature-flags` |
 
 Open-source feature flag solution with file-based configuration and OpenFeature integration. Use when setting up self-hosted feature flags, configuring flag files, or deploying the relay proxy.
 

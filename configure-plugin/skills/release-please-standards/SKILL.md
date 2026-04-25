@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-02-06
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: release-please-standards
 description: |
   Release-please standards and configuration. Use when configuring release-please
@@ -12,6 +12,14 @@ allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---
 
 # Release-Please Standards
+
+## When to Use This Skill
+
+| Use this skill when... | Use `configure-release-please` instead when... |
+|---|---|
+| You need the canonical release-please workflow, manifest, and config-file shape | You want to audit or set up release-please for a project end-to-end as an interactive workflow |
+| You are checking an existing release-please setup against documented conventions | You want runtime detection of repo type, monorepo packages, and existing config before changes |
+| Another skill needs to cite the standard release-please configuration | The user asked you to actually create or fix release-please files |
 
 ## Version: 2025.1
 
