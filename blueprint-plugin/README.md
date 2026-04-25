@@ -46,6 +46,8 @@ PRD (Product Requirements) → PRP (Product Requirement Prompt) → Work-Order �
 | `prp-create` | Create a PRP with systematic research and validation gates |
 | `prp-execute` | Execute a PRP with validation loop, TDD workflow, and quality gates |
 | `prp-curate-docs` | Curate documentation for ai_docs to optimize AI context |
+| `blueprint-story-audit` | Read-only audit fusing capability map ↔ PRD stories ↔ tests into a tier-ranked gap report. Writes `docs/blueprint/audits/<date>-story-audit.md` |
+| `blueprint-story-reconcile` | PRD-only reconciliation pass against the latest story-audit. Adds `⚠️`/`❌`/`🆕` markers and a wholesale `## Known Drift` section; confirms each PRD interactively |
 
 ### Listing Skills
 

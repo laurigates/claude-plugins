@@ -47,6 +47,10 @@
     "test-gaps",
     "monorepo",
     "workspaces",
-    "portfolio-tracking"
+    "portfolio-tracking",
+    "story-audit",
+    "coverage-gap",
+    "drift-detection",
+    "prd-reconciliation"
   ]
 }

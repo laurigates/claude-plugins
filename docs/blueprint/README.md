@@ -21,6 +21,8 @@ See `manifest.json#task_registry` (each disabled task carries a `context.disable
 | `adr-validate` | ✓ | Detects orphans, broken `supersedes` chains, and missing domain tags across 16 ADRs |
 | `sync-ids` | ✓ | Reconciles document ID frontmatter; **always run with `--dry-run` first** |
 | `feature-tracker-sync` | ✓ | Read-leaning sync against `TODO.md` (no tracker enabled yet) |
+| `story-audit` | ✓ | Read-only audit: capability map ↔ PRD stories ↔ tests, tier-ranked. Writes one dated artifact under `docs/blueprint/audits/` |
+| `story-reconcile` | ✓ | Phase 2 of story-audit. Mutates PRDs only (idempotent inline markers + wholesale `## Known Drift` section); confirms each PRD before writing |
 | `derive-prd` | ✗ | Would invent PRDs from plugin-feature commits |
 | `derive-plans` | ✗ | Conflicts with hand-authored `docs/plans/` |
 | `derive-rules` | ✗ | Could overwrite the 18 hand-written rules |
@@ -37,6 +39,7 @@ docs/blueprint/
 ├── work-orders/         # Gitignored; per-task scratch
 │   ├── completed/
 │   └── archived/
+├── audits/              # Dated story-audit artifacts (one file per run)
 └── ai_docs/             # On-demand curated docs (curate-docs is disabled)
     ├── libraries/
     └── project/

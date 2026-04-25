@@ -119,6 +119,28 @@
       "schedule": "on-demand",
       "stats": {},
       "context": {}
+    },
+    "story-audit": {
+      "enabled": true,
+      "auto_run": false,
+      "last_completed_at": null,
+      "last_result": null,
+      "schedule": "on-demand",
+      "stats": {},
+      "context": {
+        "rationale": "Read-only Phase 1: maps codebase capabilities, extracts PRD stories, and produces a single tier-ranked audit artifact under docs/blueprint/audits/. Fits the read-leaning green-list. Mutates only its own dated artifact."
+      }
+    },
+    "story-reconcile": {
+      "enabled": true,
+      "auto_run": false,
+      "last_completed_at": null,
+      "last_result": null,
+      "schedule": "on-demand",
+      "stats": {},
+      "context": {
+        "rationale": "Phase 2 of the story-audit workflow. Mutates PRD files only (never code), with idempotent inline markers and a wholesale-replaced Known Drift section. Confirms each PRD's edits via AskUserQuestion before writing."
+      }
     }
   }
 }

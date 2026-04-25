@@ -30,6 +30,17 @@ flowchart TD
 
     RUN --> TRACK[feature-tracking<br/>blueprint-feature-tracker-sync<br/>blueprint-feature-tracker-status]
 
+    subgraph AUDIT["Story-audit loop (closes intent <-> reality gap)"]
+        direction TB
+        SA[blueprint-story-audit<br/>capability map x stories x tests<br/>writes docs/blueprint/audits/]
+        SR[blueprint-story-reconcile<br/>marks PRDs with drift status<br/>+ Known Drift section]
+    end
+
+    TRACK -.->|periodic| SA
+    SA -.->|drift report| SR
+    SR -.->|updated PRD| PRD
+    SA -.->|Tier-1 gap rows| WO
+
     subgraph META["Cross-cutting management"]
         direction TB
         SID[blueprint-sync-ids<br/>assign IDs,<br/>traceability registry]
@@ -65,8 +76,8 @@ flowchart TD
     classDef prompt fill:#dda0dd,stroke:#8b5a8b,color:#000
 
     class EX router
-    class DP,DA,DPL,DR,DT,LIST,VA,VP,CR check
-    class INIT,PRD,ADR,PRP,WO,RUN,TRACK,SID,SYNC,PROM,UPG fix
+    class DP,DA,DPL,DR,DT,LIST,VA,VP,CR,SA check
+    class INIT,PRD,ADR,PRP,WO,RUN,TRACK,SID,SYNC,PROM,UPG,SR fix
 ```
 
 ## Legend
@@ -98,3 +109,4 @@ Dotted arrows are optional side-paths and cross-cutting concerns.
 | Cross-cutting: listing/status | `blueprint-docs-list`, `blueprint-adr-list`, `blueprint-status` |
 | Cross-cutting: migration | `blueprint-upgrade`, `blueprint-migration`, `blueprint-workspace-scan` |
 | Validation | `validate-prp-frontmatter.sh`, `validate-adr-frontmatter.sh`, `check-prp-readiness.sh` |
+| Story-audit loop | `blueprint-story-audit` (read-only audit), `blueprint-story-reconcile` (PRD-only mutate) |
