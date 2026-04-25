@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.13.1](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.13.0...testing-plugin-v3.13.1) (2026-04-25)
+
+
+### Documentation
+
+* **testing-plugin:** standardise When to Use tables ([#1169](https://github.com/laurigates/claude-plugins/issues/1169)) ([fe9f03f](https://github.com/laurigates/claude-plugins/commit/fe9f03f23ddbba9ff23ff1f3d4ca5b7d8f6af0c7)), closes [#1156](https://github.com/laurigates/claude-plugins/issues/1156)
+
 ## [3.13.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.12.2...testing-plugin-v3.13.0) (2026-04-19)
 
 

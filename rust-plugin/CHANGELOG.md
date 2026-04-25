@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.2](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.3.1...rust-plugin-v1.3.2) (2026-04-25)
+
+
+### Documentation
+
+* **rust-plugin:** standardise When to Use tables ([#1179](https://github.com/laurigates/claude-plugins/issues/1179)) ([8031a68](https://github.com/laurigates/claude-plugins/commit/8031a68c2d967e90e8d6bcbe2b3f58349add73ae)), closes [#1156](https://github.com/laurigates/claude-plugins/issues/1156)
+
 ## [1.3.1](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.3.0...rust-plugin-v1.3.1) (2026-04-08)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.8.1](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.8.0...container-plugin-v2.8.1) (2026-04-25)
+
+
+### Documentation
+
+* **container-plugin:** standardise When to Use tables ([#1167](https://github.com/laurigates/claude-plugins/issues/1167)) ([9541a07](https://github.com/laurigates/claude-plugins/commit/9541a0767d0c7a35830671cd50d4d2ecf2e186c3)), closes [#1156](https://github.com/laurigates/claude-plugins/issues/1156)
+
 ## [2.8.0](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.7.1...container-plugin-v2.8.0) (2026-04-19)
 
 

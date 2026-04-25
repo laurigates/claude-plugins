@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/laurigates/claude-plugins/compare/home-assistant-plugin-v1.3.0...home-assistant-plugin-v1.3.1) (2026-04-25)
+
+
+### Documentation
+
+* **home-assistant-plugin:** standardise When to Use tables ([#1176](https://github.com/laurigates/claude-plugins/issues/1176)) ([f300d84](https://github.com/laurigates/claude-plugins/commit/f300d841732780ff5d75b65f2b6e0852117493c4)), closes [#1156](https://github.com/laurigates/claude-plugins/issues/1156)
+
 ## [1.3.0](https://github.com/laurigates/claude-plugins/compare/home-assistant-plugin-v1.2.1...home-assistant-plugin-v1.3.0) (2026-04-19)
 
 

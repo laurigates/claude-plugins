@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.7.1](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.7.0...tools-plugin-v2.7.1) (2026-04-25)
+
+
+### Documentation
+
+* **tools-plugin:** standardise When to Use tables ([#1168](https://github.com/laurigates/claude-plugins/issues/1168)) ([9fe92d9](https://github.com/laurigates/claude-plugins/commit/9fe92d94e152f4a04cad2096f705eb8191e06ecf)), closes [#1156](https://github.com/laurigates/claude-plugins/issues/1156)
+
 ## [2.7.0](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.6.0...tools-plugin-v2.7.0) (2026-04-24)
 
 

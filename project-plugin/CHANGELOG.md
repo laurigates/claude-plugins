@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.2](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.13.1...project-plugin-v1.13.2) (2026-04-25)
+
+
+### Documentation
+
+* **project-plugin:** standardise When to Use tables ([#1165](https://github.com/laurigates/claude-plugins/issues/1165)) ([08ba27d](https://github.com/laurigates/claude-plugins/commit/08ba27d76c74d76d8a7068174d10ba6ad758e244)), closes [#1156](https://github.com/laurigates/claude-plugins/issues/1156)
+
 ## [1.13.1](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.13.0...project-plugin-v1.13.1) (2026-04-25)
 
 

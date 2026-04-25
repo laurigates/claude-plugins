@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.17.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.17.0...agent-patterns-plugin-v2.17.1) (2026-04-25)
+
+
+### Documentation
+
+* **agent-patterns-plugin:** standardise When to Use tables ([#1184](https://github.com/laurigates/claude-plugins/issues/1184)) ([f117dfc](https://github.com/laurigates/claude-plugins/commit/f117dfc807ba57955eccd1b19b474ee59fff3bf2)), closes [#1156](https://github.com/laurigates/claude-plugins/issues/1156)
+
 ## [2.17.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.16.0...agent-patterns-plugin-v2.17.0) (2026-04-25)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/laurigates/claude-plugins/compare/component-patterns-plugin-v1.4.0...component-patterns-plugin-v1.4.1) (2026-04-25)
+
+
+### Documentation
+
+* **component-patterns-plugin:** standardise When to Use tables ([#1177](https://github.com/laurigates/claude-plugins/issues/1177)) ([acff37d](https://github.com/laurigates/claude-plugins/commit/acff37de5964fd8cd4e6f0ed3ae0a6d92507cc6d)), closes [#1156](https://github.com/laurigates/claude-plugins/issues/1156)
+
 ## [1.4.0](https://github.com/laurigates/claude-plugins/compare/component-patterns-plugin-v1.3.1...component-patterns-plugin-v1.4.0) (2026-04-19)
 
 

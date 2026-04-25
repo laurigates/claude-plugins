@@ -23,7 +23,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.17.0",
+      "version": "2.17.1",
       "keywords": [
         "agents",
         "configuration",
@@ -38,7 +38,7 @@
       "name": "agents-plugin",
       "source": "./agents-plugin",
       "description": "Task-focused agents with teammate and subagent role guidance for test, review, debug, docs, CI, security, refactoring, research, and performance",
-      "version": "1.9.1",
+      "version": "1.9.2",
       "keywords": [
         "agents",
         "teammates",
@@ -55,7 +55,7 @@
       "name": "api-plugin",
       "source": "./api-plugin",
       "description": "API integration and testing - REST endpoints, client generation",
-      "version": "1.6.0",
+      "version": "1.6.1",
       "keywords": [
         "api",
         "rest",
@@ -82,7 +82,7 @@
       "name": "blog-plugin",
       "source": "./blog-plugin",
       "description": "Blog post creation - project logs, technical write-ups, personal documentation",
-      "version": "1.3.0",
+      "version": "1.3.1",
       "keywords": [
         "blog",
         "writing",
@@ -97,7 +97,7 @@
       "name": "blueprint-plugin",
       "source": "./blueprint-plugin",
       "description": "Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, CLAUDE.md management, and monorepo portfolio tracking",
-      "version": "3.30.0",
+      "version": "3.30.1",
       "keywords": [
         "blueprint",
         "prd",
@@ -148,7 +148,7 @@
       "name": "communication-plugin",
       "source": "./communication-plugin",
       "description": "External communication formatting - Google Chat, ticket drafting",
-      "version": "1.2.1",
+      "version": "1.2.2",
       "keywords": [
         "communication",
         "google-chat",
@@ -161,7 +161,7 @@
       "name": "component-patterns-plugin",
       "source": "./component-patterns-plugin",
       "description": "Reusable UI component patterns - version badge, tooltips, and common UI elements for React, Vue, Svelte",
-      "version": "1.4.0",
+      "version": "1.4.1",
       "keywords": [
         "components",
         "ui-patterns",
@@ -177,7 +177,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.20.0",
+      "version": "1.20.1",
       "keywords": [
         "infrastructure",
         "standards",
@@ -189,7 +189,7 @@
       "name": "container-plugin",
       "source": "./container-plugin",
       "description": "Container development and deployment - Docker, registry, Skaffold",
-      "version": "2.8.0",
+      "version": "2.8.1",
       "keywords": [
         "container",
         "docker",
@@ -259,7 +259,7 @@
       "name": "finops-plugin",
       "source": "./finops-plugin",
       "description": "GitHub Actions FinOps analysis - billing, cache usage, workflow efficiency, and waste identification",
-      "version": "1.3.2",
+      "version": "1.3.3",
       "keywords": [
         "finops",
         "github-actions",
@@ -275,7 +275,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.34.3",
+      "version": "2.34.4",
       "keywords": [
         "git",
         "github",
@@ -302,7 +302,7 @@
       "name": "github-actions-plugin",
       "source": "./github-actions-plugin",
       "description": "GitHub Actions CI/CD - workflows, authentication, inspection, auto-fix",
-      "version": "1.7.2",
+      "version": "1.7.3",
       "keywords": [
         "github-actions",
         "ci-cd",
@@ -336,7 +336,7 @@
       "name": "home-assistant-plugin",
       "source": "./home-assistant-plugin",
       "description": "Home Assistant configuration management - YAML configuration, automations, scripts, scenes, and entity management for Home Assistant installations",
-      "version": "1.3.0",
+      "version": "1.3.1",
       "keywords": [
         "home-assistant",
         "smart-home",
@@ -371,7 +371,7 @@
       "name": "kubernetes-plugin",
       "source": "./kubernetes-plugin",
       "description": "Kubernetes and Helm operations - deployments, charts, releases",
-      "version": "1.7.1",
+      "version": "1.7.2",
       "keywords": [
         "kubernetes",
         "helm",
@@ -384,7 +384,7 @@
       "name": "langchain-plugin",
       "source": "./langchain-plugin",
       "description": "LangChain JS/TS development - agents, chains, LangGraph workflows, and Deep Agents patterns",
-      "version": "1.5.1",
+      "version": "1.5.2",
       "keywords": [
         "langchain",
         "langgraph",
@@ -451,7 +451,7 @@
       "name": "project-plugin",
       "source": "./project-plugin",
       "description": "Project initialization, management, and maintenance - setup, modernization, changelog review, and continuous development workflows",
-      "version": "1.13.1",
+      "version": "1.13.2",
       "keywords": [
         "project",
         "initialization",
@@ -517,7 +517,7 @@
       "name": "rust-plugin",
       "source": "./rust-plugin",
       "description": "Rust development - cargo, clippy, testing, memory safety",
-      "version": "1.3.1",
+      "version": "1.3.2",
       "keywords": [
         "rust",
         "cargo",
@@ -530,7 +530,7 @@
       "name": "taskwarrior-plugin",
       "source": "./taskwarrior-plugin",
       "description": "Coordination layer for multi-agent work using taskwarrior - parallel-safe queries, urgency scoring, and optional GitHub linkage via ghid/ghpr UDAs",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "keywords": [
         "taskwarrior",
         "coordination",
@@ -559,7 +559,7 @@
       "name": "testing-plugin",
       "source": "./testing-plugin",
       "description": "Test execution, TDD workflow, and testing strategies",
-      "version": "3.13.0",
+      "version": "3.13.1",
       "keywords": [
         "testing",
         "tdd",
@@ -573,7 +573,7 @@
       "name": "tools-plugin",
       "source": "./tools-plugin",
       "description": "General utilities - fd, rg, jq, shell, imagemagick",
-      "version": "2.7.0",
+      "version": "2.7.1",
       "keywords": [
         "tools",
         "utilities",
@@ -588,7 +588,7 @@
       "name": "typescript-plugin",
       "source": "./typescript-plugin",
       "description": "TypeScript development - strict types, ESLint, Biome",
-      "version": "1.8.0",
+      "version": "1.8.1",
       "keywords": [
         "typescript",
         "eslint",

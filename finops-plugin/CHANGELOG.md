@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.3](https://github.com/laurigates/claude-plugins/compare/finops-plugin-v1.3.2...finops-plugin-v1.3.3) (2026-04-25)
+
+
+### Documentation
+
+* **finops-plugin:** standardise When to Use tables ([#1180](https://github.com/laurigates/claude-plugins/issues/1180)) ([41c8630](https://github.com/laurigates/claude-plugins/commit/41c8630a9c414d08f39074682a3017eaeeeba1f9)), closes [#1156](https://github.com/laurigates/claude-plugins/issues/1156)
+
 ## [1.3.2](https://github.com/laurigates/claude-plugins/compare/finops-plugin-v1.3.1...finops-plugin-v1.3.2) (2026-04-08)
 
 

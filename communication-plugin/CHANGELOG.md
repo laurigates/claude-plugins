@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.2](https://github.com/laurigates/claude-plugins/compare/communication-plugin-v1.2.1...communication-plugin-v1.2.2) (2026-04-25)
+
+
+### Documentation
+
+* **communication-plugin:** standardise When to Use tables ([#1182](https://github.com/laurigates/claude-plugins/issues/1182)) ([9fd44a9](https://github.com/laurigates/claude-plugins/commit/9fd44a94a9b9641d09300bb9d0b83094451af077)), closes [#1156](https://github.com/laurigates/claude-plugins/issues/1156)
+
 ## [1.2.1](https://github.com/laurigates/claude-plugins/compare/communication-plugin-v1.2.0...communication-plugin-v1.2.1) (2026-04-08)
 
 

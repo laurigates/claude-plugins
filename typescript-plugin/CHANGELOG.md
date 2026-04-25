@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.1](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.8.0...typescript-plugin-v1.8.1) (2026-04-25)
+
+
+### Documentation
+
+* **typescript-plugin:** standardise When to Use tables ([#1170](https://github.com/laurigates/claude-plugins/issues/1170)) ([8ac81ab](https://github.com/laurigates/claude-plugins/commit/8ac81ab9eda86effd140a59235f76b4329bb9dcb)), closes [#1156](https://github.com/laurigates/claude-plugins/issues/1156)
+
 ## [1.8.0](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.7.1...typescript-plugin-v1.8.0) (2026-04-19)
 
 

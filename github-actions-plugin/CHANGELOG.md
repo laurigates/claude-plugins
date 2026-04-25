@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.3](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.7.2...github-actions-plugin-v1.7.3) (2026-04-25)
+
+
+### Documentation
+
+* **github-actions-plugin:** standardise When to Use tables ([#1174](https://github.com/laurigates/claude-plugins/issues/1174)) ([74973e1](https://github.com/laurigates/claude-plugins/commit/74973e101f2921bfe3463e553acf15853f08b31c)), closes [#1156](https://github.com/laurigates/claude-plugins/issues/1156)
+
 ## [1.7.2](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.7.1...github-actions-plugin-v1.7.2) (2026-04-25)
 
 
