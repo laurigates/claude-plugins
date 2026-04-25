@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.2](https://github.com/laurigates/claude-plugins/compare/langchain-plugin-v1.5.1...langchain-plugin-v1.5.2) (2026-04-25)
+
+
+### Documentation
+
+* **langchain-plugin:** standardise When to Use tables ([#1183](https://github.com/laurigates/claude-plugins/issues/1183)) ([41a7f29](https://github.com/laurigates/claude-plugins/commit/41a7f293833c7a30f84b5b3174506919664a8a9c)), closes [#1156](https://github.com/laurigates/claude-plugins/issues/1156)
+
 ## [1.5.1](https://github.com/laurigates/claude-plugins/compare/langchain-plugin-v1.5.0...langchain-plugin-v1.5.1) (2026-04-08)
 
 

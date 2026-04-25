@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/laurigates/claude-plugins/compare/blog-plugin-v1.3.0...blog-plugin-v1.3.1) (2026-04-25)
+
+
+### Documentation
+
+* **blog-plugin:** standardise When to Use tables ([#1178](https://github.com/laurigates/claude-plugins/issues/1178)) ([6ab1d19](https://github.com/laurigates/claude-plugins/commit/6ab1d19fc40586f438d96a07dfa0bfbb4d81a267)), closes [#1156](https://github.com/laurigates/claude-plugins/issues/1156)
+
 ## [1.3.0](https://github.com/laurigates/claude-plugins/compare/blog-plugin-v1.2.2...blog-plugin-v1.3.0) (2026-04-19)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.2](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.9.1...agents-plugin-v1.9.2) (2026-04-25)
+
+
+### Documentation
+
+* **agents-plugin:** standardise When to Use tables ([#1185](https://github.com/laurigates/claude-plugins/issues/1185)) ([70164ae](https://github.com/laurigates/claude-plugins/commit/70164ae09afd469a255a87b20328cadc56c8524a)), closes [#1156](https://github.com/laurigates/claude-plugins/issues/1156)
+
 ## [1.9.1](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.9.0...agents-plugin-v1.9.1) (2026-04-22)
 
 

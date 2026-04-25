@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.2.0...taskwarrior-plugin-v1.2.1) (2026-04-25)
+
+
+### Documentation
+
+* **taskwarrior-plugin:** standardise When to Use tables ([#1175](https://github.com/laurigates/claude-plugins/issues/1175)) ([835035f](https://github.com/laurigates/claude-plugins/commit/835035fe38d7fff9c6da04fa6702c1790c2a0fc8)), closes [#1156](https://github.com/laurigates/claude-plugins/issues/1156)
+
 ## [1.2.0](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.1.0...taskwarrior-plugin-v1.2.0) (2026-04-25)
 
 

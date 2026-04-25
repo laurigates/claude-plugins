@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.30.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.30.0...blueprint-plugin-v3.30.1) (2026-04-25)
+
+
+### Documentation
+
+* **blueprint-plugin:** standardise When to Use tables ([#1171](https://github.com/laurigates/claude-plugins/issues/1171)) ([f5eec8f](https://github.com/laurigates/claude-plugins/commit/f5eec8f59b43b691a0c1e7840af504c0c2e7c0ce)), closes [#1156](https://github.com/laurigates/claude-plugins/issues/1156)
+
 ## [3.30.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.29.0...blueprint-plugin-v3.30.0) (2026-04-25)
 
 

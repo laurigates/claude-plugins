@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.2](https://github.com/laurigates/claude-plugins/compare/kubernetes-plugin-v1.7.1...kubernetes-plugin-v1.7.2) (2026-04-25)
+
+
+### Documentation
+
+* **kubernetes-plugin:** standardise When to Use tables ([#1164](https://github.com/laurigates/claude-plugins/issues/1164)) ([5190cb6](https://github.com/laurigates/claude-plugins/commit/5190cb64cb7327922ea1cf6af4d610ea9b68f45d)), closes [#1156](https://github.com/laurigates/claude-plugins/issues/1156)
+
 ## [1.7.1](https://github.com/laurigates/claude-plugins/compare/kubernetes-plugin-v1.7.0...kubernetes-plugin-v1.7.1) (2026-04-08)
 
 

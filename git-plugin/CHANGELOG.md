@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.34.4](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.34.3...git-plugin-v2.34.4) (2026-04-25)
+
+
+### Documentation
+
+* **git-plugin:** standardise When to Use tables ([#1172](https://github.com/laurigates/claude-plugins/issues/1172)) ([ffc0718](https://github.com/laurigates/claude-plugins/commit/ffc0718655a7a94aa34ede8a772a6cb69fbce0bb)), closes [#1156](https://github.com/laurigates/claude-plugins/issues/1156)
+
 ## [2.34.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.34.2...git-plugin-v2.34.3) (2026-04-25)
 
 

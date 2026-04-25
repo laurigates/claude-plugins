@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.1](https://github.com/laurigates/claude-plugins/compare/api-plugin-v1.6.0...api-plugin-v1.6.1) (2026-04-25)
+
+
+### Documentation
+
+* **api-plugin:** standardise When to Use tables ([#1186](https://github.com/laurigates/claude-plugins/issues/1186)) ([1e77ea2](https://github.com/laurigates/claude-plugins/commit/1e77ea21e149a3dc5ddc5ba1df86687974a084d4)), closes [#1156](https://github.com/laurigates/claude-plugins/issues/1156)
+
 ## [1.6.0](https://github.com/laurigates/claude-plugins/compare/api-plugin-v1.5.3...api-plugin-v1.6.0) (2026-04-19)
 
 
