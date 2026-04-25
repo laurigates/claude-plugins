@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 allowed-tools: Write, Bash(mkdir *), Bash(git init *), Bash(gh repo create *), Bash(pwd *), Bash(git config *), Bash(which *), SlashCommand, TodoWrite
 args: <project-name> [project-type] [--github] [--private]
 argument-hint: <project-name> [project-type] [--github] [--private]
@@ -14,6 +14,16 @@ description: |
   codebase - optionally creating a matching GitHub repository.
 name: project-init
 ---
+
+# /project:init
+
+## When to Use This Skill
+
+| Use this skill when... | Use project-discovery instead when... |
+|---|---|
+| Scaffolding a brand-new project from scratch (src/tests/docs, README, CI) | Working in an existing repo that already has structure |
+| Bootstrapping a Python/Node/Rust/Go codebase with universal base layout | Use project-continue instead when picking up work in an established project |
+| Creating a matching GitHub repository alongside the local skeleton | Use project-distill instead when extracting patterns from existing work |
 
 ## Context
 

@@ -7,11 +7,19 @@ description: |
 user-invocable: false
 allowed-tools: Bash(git log *), Bash(git diff *), Read, Write, Edit, Glob, Grep, WebFetch, TodoWrite
 created: 2026-01-14
-modified: 2026-01-14
-reviewed: 2026-01-14
+modified: 2026-04-25
+reviewed: 2026-04-25
 ---
 
 # Claude Code Changelog Review
+
+## When to Use This Skill
+
+| Use this skill when... | Use project-distill instead when... |
+|---|---|
+| Reviewing Claude Code releases for breaking changes that affect plugins | Distilling project session learnings into rules and recipes |
+| Discovering new Claude Code features that plugins can leverage | Use project-skill-scripts instead when auditing skills for script-extraction wins |
+| Tracking deprecations before they break installed plugins | Use project-continue instead when resuming feature work, not platform review |
 
 Expertise for analyzing Claude Code changelog and identifying impacts on plugin development.
 
