@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.4](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.7.3...github-actions-plugin-v1.7.4) (2026-04-25)
+
+
+### Bug Fixes
+
+* **skills:** convert When to Use sections to required table format ([#1192](https://github.com/laurigates/claude-plugins/issues/1192)) ([4a52cb4](https://github.com/laurigates/claude-plugins/commit/4a52cb4f5cbc459e5df78d361891a91bbe1496ec))
+
 ## [1.7.3](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.7.2...github-actions-plugin-v1.7.3) (2026-04-25)
 
 

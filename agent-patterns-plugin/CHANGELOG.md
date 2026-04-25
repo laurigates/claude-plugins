@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.17.2](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.17.1...agent-patterns-plugin-v2.17.2) (2026-04-25)
+
+
+### Bug Fixes
+
+* **skills:** convert When to Use sections to required table format ([#1192](https://github.com/laurigates/claude-plugins/issues/1192)) ([4a52cb4](https://github.com/laurigates/claude-plugins/commit/4a52cb4f5cbc459e5df78d361891a91bbe1496ec))
+
 ## [2.17.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.17.0...agent-patterns-plugin-v2.17.1) (2026-04-25)
 
 

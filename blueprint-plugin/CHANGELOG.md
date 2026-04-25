@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.30.2](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.30.1...blueprint-plugin-v3.30.2) (2026-04-25)
+
+
+### Bug Fixes
+
+* **skills:** convert When to Use sections to required table format ([#1192](https://github.com/laurigates/claude-plugins/issues/1192)) ([4a52cb4](https://github.com/laurigates/claude-plugins/commit/4a52cb4f5cbc459e5df78d361891a91bbe1496ec))
+
 ## [3.30.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.30.0...blueprint-plugin-v3.30.1) (2026-04-25)
 
 
