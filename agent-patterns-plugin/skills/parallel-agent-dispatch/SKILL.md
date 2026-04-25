@@ -26,15 +26,12 @@ manual salvage from orphan branches.
 
 ## When to Use This Skill
 
-Activate whenever the orchestrator is about to spawn **>1 agent in parallel**:
-
-- Plain `Agent` tool fan-out (N concurrent invocations in one message)
-- `TeamCreate` + teammate spawn via `agent-teams`
-- Worktree-isolated parallel implementation across multiple repos or features
-- Parallel investigation / audit swarms
-
-Single-agent delegation does not need this contract — `agent-teams`'
-out-of-scope protocol is sufficient for one-off subagents.
+| Use this skill when... | Use `agent-teams` instead when... |
+|---|---|
+| Spawning >1 agent via plain `Agent` tool fan-out (N concurrent invocations) | Single-agent delegation or one-off subagent spawn |
+| Using `TeamCreate` + teammate spawn for coordinated parallel work | A simple background task with no parallel siblings |
+| Running worktree-isolated parallel implementation across repos/features | A read-only inline subagent that does not write to disk |
+| Coordinating parallel investigation or audit swarms | The work fits in the current session without forking |
 
 ## The Three Pillars
 
