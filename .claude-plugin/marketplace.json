@@ -23,7 +23,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.16.0",
+      "version": "2.17.0",
       "keywords": [
         "agents",
         "configuration",
@@ -97,7 +97,7 @@
       "name": "blueprint-plugin",
       "source": "./blueprint-plugin",
       "description": "Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, CLAUDE.md management, and monorepo portfolio tracking",
-      "version": "3.29.0",
+      "version": "3.30.0",
       "keywords": [
         "blueprint",
         "prd",
@@ -451,7 +451,7 @@
       "name": "project-plugin",
       "source": "./project-plugin",
       "description": "Project initialization, management, and maintenance - setup, modernization, changelog review, and continuous development workflows",
-      "version": "1.13.0",
+      "version": "1.13.1",
       "keywords": [
         "project",
         "initialization",
