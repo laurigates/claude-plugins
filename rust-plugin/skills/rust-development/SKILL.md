@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: rust-development
 description: |
   Modern Rust development with cargo, rustc, clippy, rustfmt, async programming, and
@@ -16,6 +16,15 @@ allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebFetch, WebSear
 # Rust Development
 
 Expert knowledge for modern systems programming with Rust, focusing on memory safety, fearless concurrency, and zero-cost abstractions.
+
+## When to Use This Skill
+
+| Use this skill when... | Use sibling skill instead when... |
+|---|---|
+| Writing Rust code, ownership, lifetimes, async/await | Configuring lint rules in detail -- use `clippy-advanced` |
+| Choosing crates from the ecosystem (Tokio, Serde) | Detecting unused dependencies -- use `cargo-machete` |
+| Designing module structure or trait hierarchies | Running tests with parallel isolation -- use `cargo-nextest` |
+| Learning idiomatic Rust patterns and edition features | Generating coverage reports -- use `cargo-llvm-cov` |
 
 ## Core Expertise
 
