@@ -4,13 +4,13 @@ description: Find live hosts and open ports on a network. Use when you need to s
 user-invocable: false
 allowed-tools: Bash(nmap *), Bash(ping *), Bash(arp *), Bash(ip *), Read, Grep, Glob, TodoWrite
 created: 2026-01-01
-modified: 2026-01-01
-reviewed: 2026-01-01
+modified: 2026-04-25
+reviewed: 2026-04-25
 ---
 
 # Network Discovery
 
-## When to Use
+## When to Use This Skill
 
 | Scenario | Use this skill | Alternative |
 |----------|---------------|-------------|

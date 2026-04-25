@@ -1,7 +1,7 @@
 ---
 created: 2026-01-01
-modified: 2026-01-01
-reviewed: 2026-01-01
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: network-monitoring
 description: Monitor real-time network traffic and bandwidth usage per process. Use when you need to find which application is consuming bandwidth, inspect active connections, or capture a sample of traffic for analysis.
 user-invocable: false
@@ -10,7 +10,7 @@ allowed-tools: Bash(iftop *), Bash(nethogs *), Bash(tcpdump *), Bash(ss *), Bash
 
 # Network Monitoring
 
-## When to Use
+## When to Use This Skill
 
 | Scenario | Use this skill | Alternative |
 |----------|---------------|-------------|

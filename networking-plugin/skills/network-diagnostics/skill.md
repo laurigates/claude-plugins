@@ -1,7 +1,7 @@
 ---
 created: 2026-01-01
-modified: 2026-01-01
-reviewed: 2026-01-01
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: network-diagnostics
 description: Troubleshoot network connectivity, latency, and path issues. Use when you need to trace the route to a host, compare ping latency across endpoints, or inspect local socket/port usage.
 user-invocable: false
@@ -10,7 +10,7 @@ allowed-tools: Bash(ping *), Bash(traceroute *), Bash(mtr *), Bash(netstat *), B
 
 # Network Diagnostics
 
-## When to Use
+## When to Use This Skill
 
 | Scenario | Use this skill | Alternative |
 |----------|---------------|-------------|

@@ -4,13 +4,13 @@ description: Resolve DNS records, check propagation, and debug name resolution. 
 user-invocable: false
 allowed-tools: Bash(dig *), Bash(nslookup *), Bash(host *), Bash(whois *), Read, Grep, Glob, TodoWrite
 created: 2026-01-01
-modified: 2026-01-01
-reviewed: 2026-01-01
+modified: 2026-04-25
+reviewed: 2026-04-25
 ---
 
 # DNS Tools
 
-## When to Use
+## When to Use This Skill
 
 | Scenario | Use this skill | Alternative |
 |----------|---------------|-------------|
