@@ -8,11 +8,20 @@ description: |
 user-invocable: false
 allowed-tools: Bash(python *), Bash(uv *), BashOutput, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-01-08
-modified: 2026-02-05
-reviewed: 2026-01-08
+modified: 2026-04-25
+reviewed: 2026-04-25
 ---
 
 # Deep Agents
+
+## When to Use This Skill
+
+| Use this skill when... | Use `langgraph-agents` instead when... |
+|---|---|
+| Building hierarchical agents with planning and subagent delegation | You need a single stateful graph without sub-agents |
+| Managing large context via file-system memory across runs | Short-lived state fits in checkpointed graph memory |
+| Long-running, multi-step workflows modelled on Deep Research | Simple LCEL chains suffice (use `langchain-development`) |
+| Scaffolding from scratch (use `/langchain:init` first) | The project is already initialised and only needs graph wiring |
 
 ## Core Expertise
 
@@ -22,15 +31,6 @@ Deep Agents is a TypeScript library for building sophisticated AI agents:
 - Subagent delegation for focused exploration
 - Persistent memory across conversations
 - Modeled after Claude Code and Deep Research patterns
-
-## When to Use Deep Agents
-
-| Use Deep Agents | Use Standard LangChain |
-|-----------------|----------------------|
-| Multi-step planning required | Simple Q&A or single tool |
-| Large context (files, docs) | Small, bounded context |
-| Subtask delegation needed | Linear tool execution |
-| Long-running workflows | Quick, stateless calls |
 
 ## Installation
 

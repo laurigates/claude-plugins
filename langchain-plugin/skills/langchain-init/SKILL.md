@@ -8,8 +8,8 @@ allowed-tools: Bash(uv *), Bash(pip *), Bash(python *), Read, Write, Edit
 argument-hint: my-agent-project
 disable-model-invocation: true
 created: 2026-01-08
-modified: 2026-01-08
-reviewed: 2026-02-08
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: langchain-init
 ---
 
@@ -17,16 +17,13 @@ name: langchain-init
 
 Initialize a new LangChain TypeScript project with optimal configuration for building AI agents.
 
-## When to Use
+## When to Use This Skill
 
-| Scenario | Use this skill | Alternative |
-|----------|---------------|-------------|
-| Starting a new LLM application from scratch | Yes | - |
-| Scaffolding a LangChain TypeScript project | Yes | - |
-| Adding LangChain to an existing project | No | `langchain-development` skill for integration guidance |
-| Building a stateful graph-based agent | No | `langgraph-agents` skill for LangGraph patterns |
-| Building hierarchical multi-agent systems | No | `deep-agents` skill for Deep Agents library |
-| Need Python LangChain setup | No | Manual setup (this skill is TypeScript-only) |
+| Use this skill when... | Use a sibling skill instead when... |
+|---|---|
+| Scaffolding a brand-new LangChain TypeScript project from scratch | Adding LangChain to an existing project — use `langchain-development` |
+| Generating boilerplate, dependencies, and starter config | Building stateful graph workflows — use `langgraph-agents` |
+| Setting up the canonical project layout the other skills assume | Building hierarchical orchestrators — use `deep-agents` |
 
 ## Context
 
