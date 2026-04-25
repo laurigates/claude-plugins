@@ -43,6 +43,20 @@
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/path-bootstrap.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
   "enableAllProjectMcpServers": true,
   "enabledPlugins": {},
   "extraKnownMarketplaces": {}

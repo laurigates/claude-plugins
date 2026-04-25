@@ -1,7 +1,7 @@
 ---
 created: 2026-03-03
-modified: 2026-03-03
-reviewed: 2026-03-03
+modified: 2026-04-25
+reviewed: 2026-04-25
 paths:
   - "**/skills/**"
   - "**/SKILL.md"
@@ -139,6 +139,28 @@ if [ -n "$CLAUDE_ENV_FILE" ]; then
   echo "NODE_ENV=development" >> "$CLAUDE_ENV_FILE"
 fi
 ```
+
+### PATH Bootstrap for Agent Subshells
+
+Agent subshells spawned by the harness do **not** source the user's interactive shell config (`~/.zshrc`, `~/.bash_profile`). They start with a `/usr/bin:/bin`-only PATH and report `command not found: head` / `command not found: jq` even though the parent CLI shell has both. The fix is a SessionStart hook that prepends Homebrew bin directories to PATH via `$CLAUDE_ENV_FILE`. Guard each candidate directory with `[ -d ]` so the same script is safe in remote sandboxes where `/opt/homebrew` may not exist.
+
+```bash
+# scripts/path-bootstrap.sh
+if [ -z "${CLAUDE_ENV_FILE:-}" ]; then exit 0; fi
+
+prepend=""
+for dir in /opt/homebrew/bin /opt/homebrew/sbin /usr/local/bin /usr/local/sbin; do
+  [ -d "$dir" ] || continue
+  case ":${PATH:-}:" in *":$dir:"*) continue ;; esac
+  prepend="${prepend:+$prepend:}$dir"
+done
+
+if [ -n "$prepend" ]; then
+  printf 'PATH=%s:%s\n' "$prepend" "${PATH:-/usr/bin:/bin}" >> "$CLAUDE_ENV_FILE"
+fi
+```
+
+Wire it into `.claude/settings.json` under `hooks.SessionStart` with an empty matcher so it runs on every session start (including resumes and `/clear`).
 
 ---
 
