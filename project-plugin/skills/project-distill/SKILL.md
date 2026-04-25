@@ -5,13 +5,16 @@ description: |
   improvements, and justfile recipes. Use when the user asks to capture
   session learnings at end of day, extract patterns worth reusing, update
   existing rules based on session experience, propose new justfile recipes
-  from commands we ran, or turn pain points into durable artifacts.
-  Prioritizes updating over adding.
+  from commands we ran, or turn pain points into durable artifacts. Also
+  use when the user asks to "codify the workflow" into `.claude/rules`,
+  "analyze session patterns and promote to rules", "write a new rule
+  from these session patterns", or "extract durable knowledge from a
+  productive session". Prioritizes updating over adding.
 allowed-tools: Bash(git diff *), Bash(git log *), Bash(git status *), Bash(just *), Read, Grep, Glob, Edit, Write, AskUserQuestion, TodoWrite
 argument-hint: "--rules | --skills | --recipes | --all | --dry-run"
 args: "[--rules] [--skills] [--recipes] [--all] [--dry-run]"
 created: 2026-02-11
-modified: 2026-04-19
+modified: 2026-04-25
 reviewed: 2026-02-26
 ---
 
@@ -27,6 +30,7 @@ Distill session insights into reusable project knowledge.
 | Discovered a pattern worth reusing | Need to analyze git history for docs gaps -> `/git:log-documentation` |
 | Found a CLI workflow worth saving as a recipe | Need to configure a justfile from scratch -> `/configure:justfile` |
 | Want to update rules based on session experience | Need to check project infrastructure -> `/configure:status` |
+| Asked to "codify the workflow" or "analyze and promote session patterns to rules" | Need a one-off implementation, not a reusable rule -> implement directly |
 
 ## Core Principle: Update Over Add
 
