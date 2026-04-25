@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
-reviewed: 2026-03-09
+modified: 2026-04-25
+reviewed: 2026-04-25
 allowed-tools: Task, TodoWrite
 args: [test-pattern] [--coverage] [--watch]
 argument-hint: [test-pattern] [--coverage] [--watch]
@@ -13,6 +13,15 @@ description: |
   the framework.
 name: test-run
 ---
+
+## When to Use This Skill
+
+| Use this skill when... | Use test-quick instead when... |
+|---|---|
+| Running tests with auto-detected framework (pytest, vitest, jest, cargo, go) | You only want fast unit tests for sub-30s feedback |
+| Running a specific file or pattern with full framework defaults | Iterating on a single failing spec (use test-focus) |
+| Generating coverage in the standard run | Running the full pyramid before a PR (use test-full) |
+| Starting a watch-mode dev loop across the project | Triaging existing test results (use test-analyze) |
 
 ## Context
 

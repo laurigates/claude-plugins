@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 allowed-tools: Read, Glob, Bash(git *)
 args: "[--history] [--coverage] [--flaky]"
 argument-hint: "[--history] [--coverage] [--flaky]"
@@ -13,6 +13,15 @@ description: |
   identify flaky tests from recent runs.
 name: test-report
 ---
+
+## When to Use This Skill
+
+| Use this skill when... | Use test-run instead when... |
+|---|---|
+| Reading cached results without re-running tests | Actually executing the test suite |
+| Showing standup-ready test status from the last run | Triaging structured test output (use test-analyze) |
+| Spotting flaky tests via `--flaky` from recent runs | Picking which tier to run next (use test-tier-selection) |
+| Pulling a coverage summary from existing reports | Asking strategic questions (use test-consult) |
 
 ## Context
 

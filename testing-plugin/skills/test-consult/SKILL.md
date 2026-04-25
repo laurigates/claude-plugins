@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 allowed-tools: Task, Read, Glob, Grep
 args: "<topic> [--context <path>]"
 argument-hint: "<topic> [--context <path>]"
@@ -12,6 +12,15 @@ description: |
   tests for a new feature, or any strategic "how should we test X?" question.
 name: test-consult
 ---
+
+## When to Use This Skill
+
+| Use this skill when... | Use test-tier-selection instead when... |
+|---|---|
+| Asking strategic "how should we test X?" questions | Mechanically picking unit vs integration vs E2E for a change |
+| Designing the test approach for a new feature | Running the actual tests (use test-run, test-quick, test-full) |
+| Diagnosing flaky-test root causes | Setting up a fresh project's test infrastructure (use test-setup) |
+| Reviewing pyramid balance or coverage gaps | Triaging concrete failing-test output (use test-analyze) |
 
 ## Context
 

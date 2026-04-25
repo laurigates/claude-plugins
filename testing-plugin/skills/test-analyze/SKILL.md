@@ -9,8 +9,8 @@ args: "<results-path> [--type <test-type>] [--focus <area>]"
 argument-hint: "Path to test results (e.g., ./test-results/), optional --type and --focus filters"
 allowed-tools: Task, Read, Glob, Grep, TodoWrite
 created: 2025-12-16
-modified: 2026-04-19
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: test-analyze
 agent: general-purpose
 ---
@@ -18,6 +18,15 @@ agent: general-purpose
 # Test Analysis and Fix Planning
 
 Analyzes test results from any testing framework, uses Zen planner to create a systematic fix strategy, and delegates fixes to appropriate subagents.
+
+## When to Use This Skill
+
+| Use this skill when... | Use test-report instead when... |
+|---|---|
+| Triaging a directory of failing-test results into a fix plan | You only need a quick cached status read |
+| Categorizing flaky, performance, accessibility, or security failures | Running the tests in the first place (use test-run) |
+| Delegating fixes to specialized subagents | Asking strategic "how should we test X?" questions (use test-consult) |
+| Producing a structured plan from JUnit XML or coverage output | Iterating on a single failing spec (use test-focus) |
 
 ## Usage
 

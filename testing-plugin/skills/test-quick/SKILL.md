@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
-reviewed: 2026-03-09
+modified: 2026-04-25
+reviewed: 2026-04-25
 allowed-tools: Task, TodoWrite
 args: "[path] [--watch] [--affected]"
 argument-hint: "[path] [--watch] [--affected]"
@@ -12,6 +12,15 @@ description: |
   or get sub-30-second feedback while iterating.
 name: test-quick
 ---
+
+## When to Use This Skill
+
+| Use this skill when... | Use test-full instead when... |
+|---|---|
+| Running unit tests only for sub-30s feedback | Running the full pyramid (unit + integration + E2E) before a PR |
+| Restricting to tests affected by recent changes (`--affected`) | Generating coverage or HTML reports across all tiers |
+| Running watch-mode TDD on unit tests | Iterating on a single failing file (use test-focus) |
+| Confirming nothing broke after a small refactor | Triaging test results from a prior run (use test-analyze) |
 
 ## Context
 

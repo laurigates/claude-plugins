@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 allowed-tools: Read, Write, Edit, MultiEdit, Bash(pip install *), Bash(npm install *), Bash(pre-commit *), Bash(pytest *), Bash(npm test *), Bash(git *), TodoWrite, SlashCommand
 description: |
   Configure comprehensive testing infrastructure with CI/CD integration.
@@ -13,6 +13,15 @@ args: [--coverage] [--ci <github|gitlab|circleci>]
 argument-hint: [--coverage] [--ci <github|gitlab|circleci>]
 name: test-setup
 ---
+
+## When to Use This Skill
+
+| Use this skill when... | Use test-consult instead when... |
+|---|---|
+| Scaffolding test directories and pre-commit hooks for a new project | Asking "how should we test X?" before any setup |
+| Wiring up a CI workflow with coverage reporting | Diagnosing flaky tests in an established suite |
+| Adding test/coverage badges to the README | Choosing the right framework for a tech stack |
+| Migrating an existing project to a standard test layout | Running the actual tests (use test-run or test-full) |
 
 ## Context
 
