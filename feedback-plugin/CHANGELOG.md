@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.3.3...feedback-plugin-v1.4.0) (2026-04-25)
+
+
+### Features
+
+* **feedback-plugin:** auto-suggest plugin source repo when cwd has no remote ([#1145](https://github.com/laurigates/claude-plugins/issues/1145)) ([6c811c2](https://github.com/laurigates/claude-plugins/commit/6c811c2e4cc875ffb17620cc59ee6a639ff92f85))
+
 ## [1.3.3](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.3.2...feedback-plugin-v1.3.3) (2026-04-24)
 
 
