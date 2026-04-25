@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.1](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.13.0...code-quality-plugin-v1.13.1) (2026-04-25)
+
+
+### Documentation
+
+* **code-quality-plugin:** standardise When to Use tables ([#1162](https://github.com/laurigates/claude-plugins/issues/1162)) ([d3fe167](https://github.com/laurigates/claude-plugins/commit/d3fe1678b251b97084548e768407e6b2b28100a4)), closes [#1156](https://github.com/laurigates/claude-plugins/issues/1156)
+
 ## [1.13.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.12.0...code-quality-plugin-v1.13.0) (2026-04-19)
 
 

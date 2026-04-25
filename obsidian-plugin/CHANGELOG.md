@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/laurigates/claude-plugins/compare/obsidian-plugin-v1.3.0...obsidian-plugin-v1.3.1) (2026-04-25)
+
+
+### Documentation
+
+* **obsidian-plugin:** standardise When to Use tables ([#1163](https://github.com/laurigates/claude-plugins/issues/1163)) ([6a31ef2](https://github.com/laurigates/claude-plugins/commit/6a31ef2fb007d32cad9d27ff980bb07caf6a6968)), closes [#1156](https://github.com/laurigates/claude-plugins/issues/1156)
+
 ## [1.3.0](https://github.com/laurigates/claude-plugins/compare/obsidian-plugin-v1.2.0...obsidian-plugin-v1.3.0) (2026-04-19)
 
 
