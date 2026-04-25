@@ -1,7 +1,7 @@
 ---
 created: 2025-02-03
-modified: 2026-04-19
-reviewed: 2025-02-03
+modified: 2026-04-25
+reviewed: 2026-04-25
 description: |
   Implement a framework-agnostic version badge component with a tooltip showing build info
   (version, commit, branch, timestamp) and recent changelog entries. Use when the user
@@ -18,6 +18,14 @@ name: components-version-badge
 # /components:version-badge
 
 Implement a version badge component that displays version number, git commit, and recent changelog in a tooltip.
+
+## When to Use This Skill
+
+| Use this skill when... | Use version-badge-pattern instead when... |
+|---|---|
+| Adding a version badge end-to-end to an existing app via slash command | Studying the pattern, data flow, and accessibility checklist before adapting it manually |
+| You want auto-detection of framework, styling, and UI library with file edits applied | You need full reference implementations for React, Vue 3, Svelte, or plain CSS variants |
+| Implementing the default header placement with `--check-only` / `--location` flags | Composing the changelog-parser script and build-pipeline wiring into a custom workflow |
 
 ## Context
 
