@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-02-14
-reviewed: 2026-02-08
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: api-testing
 description: |
   HTTP API testing for TypeScript (Supertest) and Python (httpx, pytest). Covers
@@ -15,6 +15,15 @@ allowed-tools: Bash(curl *), Bash(http *), Bash(jq *), Read, Edit, Write, Grep, 
 # API Testing
 
 Expert knowledge for testing HTTP APIs with Supertest (TypeScript/JavaScript) and httpx/pytest (Python).
+
+## When to Use This Skill
+
+| Use this skill when... | Use api-tests instead when... |
+|---|---|
+| Writing Supertest endpoint tests against an Express/Fastify app | Setting up Pact consumer/provider contract testing infrastructure |
+| Writing httpx + pytest tests for a Python REST/GraphQL API | Validating an OpenAPI specification or wiring schema (Zod/AJV) checks into CI |
+| Validating request/response shapes, status codes, and auth flows in test code | Auditing or scaffolding API contract testing tooling for a project |
+| Asserting error handling (4xx/5xx) and integration state in functional tests | Adding breaking-change detection workflows to CI |
 
 ## Core Expertise
 
