@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-10
-reviewed: 2026-02-08
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: ticket-drafting-guidelines
 description: |
   Structured guidelines for drafting GitHub issues and technical tickets.
@@ -17,6 +17,14 @@ allowed-tools: Read, Grep, WebFetch
 
 Expert guidance for drafting clear, concise, and well-structured tickets for GitHub issues, pull requests, and technical documentation.
 
+## When to Use This Skill
+
+| Use this skill when... | Use google-chat-formatting instead when... |
+|---|---|
+| Drafting a GitHub issue, bug report, or feature request with What/Why/How structure | Posting a status update or announcement to a Google Chat channel |
+| Writing a PR description or technical ticket with reference links | Converting Markdown headers and bold to Google Chat's single-asterisk syntax |
+| Structuring a refactoring task or migration plan with concrete steps | Reformatting meeting notes or release notes for chat consumption |
+
 ## Core Expertise
 
 - **Structured Format**: What/Why/How organization for clarity
@@ -25,18 +33,6 @@ Expert guidance for drafting clear, concise, and well-structured tickets for Git
 - **Positive Framing**: Affirmative language without negative phrasing
 - **Neutral Tone**: Factual communication without claims or estimates
 - **Reference Integration**: Links to official documentation
-
-## When to Use
-
-| Scenario | Use this skill | Alternative |
-|----------|---------------|-------------|
-| Drafting a GitHub issue or ticket | Yes | -- |
-| Writing a bug report | Yes | -- |
-| Structuring a feature request | Yes | -- |
-| Writing PR descriptions | Yes | -- |
-| Formatting text for Google Chat | No | Use google-chat-formatting |
-| Writing commit messages | No | Follow conventional commits rules |
-| Writing long-form documentation or READMEs | No | Use standard Markdown conventions |
 
 ## Ticket Structure
 
