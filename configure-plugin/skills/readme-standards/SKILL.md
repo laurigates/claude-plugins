@@ -1,7 +1,7 @@
 ---
 created: 2025-12-17
-modified: 2026-02-06
-reviewed: 2025-12-17
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: readme-standards
 description: |
   README.md templates and standards. Use when generating or improving README files,
@@ -11,6 +11,14 @@ allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---
 
 # README Standards (v2025.1)
+
+## When to Use This Skill
+
+| Use this skill when... | Use `configure-readme` instead when... |
+|---|---|
+| You need the canonical README templates (minimal, standard, detailed) for reference | You want to audit or generate a project's README end-to-end as an interactive workflow |
+| You are checking an existing README against the documented section conventions | You want runtime context detection (package files, badges, logos) before writing |
+| Another skill needs to cite the badge or section taxonomy | The user asked you to actually create or fix a README |
 
 This skill provides README.md templates and standards for projects.
 

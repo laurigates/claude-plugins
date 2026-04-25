@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-02-06
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: skaffold-standards
 description: |
   Skaffold configuration standards for local Kubernetes development with OrbStack
@@ -12,6 +12,14 @@ allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---
 
 # Skaffold Standards
+
+## When to Use This Skill
+
+| Use this skill when... | Use `configure-skaffold` instead when... |
+|---|---|
+| You need the canonical OrbStack + dotenvx Skaffold reference (apiVersion, profiles, port-forward rules) | You want to audit or fix an existing `skaffold.yaml` end-to-end as an interactive workflow |
+| You are reviewing whether a project follows the documented profile and secret conventions | You want runtime detection of Skaffold/Kubernetes context before changing files |
+| Another skill needs to cite the standard configuration shape | The user asked you to actually generate or repair Skaffold config |
 
 ## Version: 2025.1
 

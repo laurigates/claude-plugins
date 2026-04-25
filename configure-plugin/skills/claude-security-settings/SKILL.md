@@ -7,11 +7,19 @@ description: |
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-01-20
-modified: 2026-03-02
-reviewed: 2026-03-02
+modified: 2026-04-25
+reviewed: 2026-04-25
 ---
 
 # Claude Code Security Settings
+
+## When to Use This Skill
+
+| Use this skill when... | Use `configure-claude-plugins` instead when... |
+|---|---|
+| You need the permission-wildcard syntax, shell-operator protections, and project-level allowlist patterns | You want to wire a project's `.claude/settings.json` to the marketplace and enable plugins end-to-end |
+| You are auditing or hardening an existing `.claude/settings.json` against the documented security conventions | You want runtime detection of marketplace enrollment and `enabledPlugins` before changing settings |
+| Another skill needs to cite the canonical permission-wildcard reference | The user asked you to actually onboard a project to the laurigates/claude-plugins marketplace |
 
 Expert knowledge for configuring Claude Code security and permissions.
 

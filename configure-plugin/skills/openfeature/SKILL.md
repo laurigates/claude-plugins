@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-02-06
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: openfeature
 description: |
   OpenFeature vendor-agnostic feature flag SDK with standardized API across
@@ -13,6 +13,14 @@ allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---
 
 # OpenFeature SDK Integration
+
+## When to Use This Skill
+
+| Use this skill when... | Use a sibling skill instead when... |
+|---|---|
+| You need the vendor-agnostic OpenFeature SDK API, hooks, and evaluation patterns | You need the GO Feature Flag (GOFF) self-hosted backend specifics — use `go-feature-flag` |
+| You are choosing between providers or wiring an OpenFeature client into application code | You want to scaffold the full feature-flag stack (SDK + provider + CI) from scratch — use `configure-feature-flags` |
+| Another skill needs the canonical reference for OpenFeature semantics | You want runtime detection of an existing feature-flag setup before changing anything — use `configure-feature-flags` |
 
 Vendor-agnostic feature flag SDK providing standardized API across languages and providers. Use when implementing feature flags, A/B testing, canary releases, or progressive rollouts with any feature flag backend.
 

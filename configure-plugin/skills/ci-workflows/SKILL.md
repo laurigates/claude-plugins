@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-03-04
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: ci-workflows
 description: |
   GitHub Actions workflow standards. Use when configuring CI/CD workflows, checking
@@ -12,6 +12,14 @@ allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---
 
 # CI Workflow Standards
+
+## When to Use This Skill
+
+| Use this skill when... | Use a sibling skill instead when... |
+|---|---|
+| You need the canonical GitHub Actions workflow shapes (container build, test, release) | You want to audit or install workflows end-to-end as an interactive workflow — use `configure-workflows` |
+| You are checking whether existing `.github/workflows/*.yml` follows the documented conventions | You want pre-built reusable callers wired up — use `configure-reusable-workflows` |
+| Another skill needs to cite the standard workflow structure | The user asked you to actually create or repair CI workflows |
 
 ## Version: 2025.1
 
