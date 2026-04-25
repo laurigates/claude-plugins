@@ -10,25 +10,26 @@ description: |
 user-invocable: false
 allowed-tools: Bash(file *), Bash(xxd *), Bash(hexdump *), Bash(strings *), Bash(objdump *), Bash(readelf *), Bash(nm *), Read, Grep, Glob
 created: 2025-12-27
-modified: 2026-04-19
-reviewed: 2025-12-27
+modified: 2026-04-25
+reviewed: 2026-04-25
 ---
 
 # Binary Analysis
 
 Tools for exploring and reverse engineering binary files, firmware, and unknown data.
 
-## When to Use
+## When to Use This Skill
 
-| Scenario | Use this skill | Alternative |
-|----------|---------------|-------------|
-| Identify unknown file types | binary-analysis (`file`, `xxd`) | Read tool (text files only) |
-| Extract text from compiled binaries | binary-analysis (`strings`) | Grep (source code only) |
-| Analyze firmware images | binary-analysis (`binwalk`) | Manual extraction |
-| Find embedded files in binaries | binary-analysis (`binwalk -e`) | Manual offset calculation |
-| Inspect raw hex data | binary-analysis (`xxd`, `hexdump`) | Read tool (not for binary) |
-| Search source code for patterns | rg-code-search | binary-analysis (for compiled code) |
-| Read structured data files (JSON, YAML) | jq / nushell | binary-analysis (unstructured binary) |
+| Use this skill when... | Use rg-code-search instead when... |
+|---|---|
+| Identifying unknown or non-text file types (`file`, `xxd`) | Searching tracked source files for a regex |
+| Extracting strings or symbols from compiled binaries / firmware | Auditing a repo's text-encoded files for hardcoded patterns |
+| Inspecting raw hex layout of an ELF, Mach-O, or `.bin` blob | The input is human-readable code or markdown |
+
+| Use this skill when... | Use jq-json-processing instead when... |
+|---|---|
+| Reverse-engineering an opaque binary format | The data is already structured JSON awaiting transformation |
+| Hunting embedded files with `binwalk -e` | A field needs extraction from a parsed JSON payload |
 
 ## Quick Reference
 

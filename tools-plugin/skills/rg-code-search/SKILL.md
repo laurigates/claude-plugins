@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-01-21
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: rg-code-search
 description: Fast code search using ripgrep (rg) with smart defaults, regex patterns, and file filtering. Use when searching for text patterns, code snippets, or performing multi-file code analysis.
 user-invocable: false
@@ -12,19 +12,18 @@ allowed-tools: Bash(rg *), Read, Grep, Glob
 
 Expert knowledge for using `rg` (ripgrep) as a blazingly fast code search tool with powerful filtering and pattern matching.
 
-## When to Use
+## When to Use This Skill
 
-| Scenario | Use this skill | Alternative |
-|----------|---------------|-------------|
-| Search code for text patterns | rg (fast, gitignore-aware) | grep (slower, no gitignore) |
-| Find function/class definitions | rg with regex | Grep tool (simpler patterns) |
-| Search with file type filtering | rg `-t` flag | grep + find combo |
-| Multi-line pattern matching | rg `-U` flag | grep (limited multiline) |
-| Code auditing and security scans | rg (fast across large codebases) | grep (slower) |
-| Search and replace across files | rg `--replace` + sed | sed alone (no preview) |
-| Find files by name (not content) | fd-file-finding | rg (content search only) |
-| POSIX-compatible scripts | grep (POSIX standard) | rg (not POSIX) |
-| Search binary file contents | binary-analysis (`strings`) | rg (skips binary files) |
+| Use this skill when... | Use fd-file-finding instead when... |
+|---|---|
+| Searching file contents for text or regex patterns | Searching for files by name, extension, or path |
+| Filtering matches by file type (`-t py`, `-t js`) | Filtering files by mtime, size, or `-type` |
+| Multi-line pattern matching across source files | Locating files to feed into another tool |
+
+| Use this skill when... | Use binary-analysis instead when... |
+|---|---|
+| Searching source code or text-encoded files | Extracting strings from compiled binaries or firmware |
+| Auditing repos for hardcoded patterns in tracked files | Hunting for credentials inside ELF, Mach-O, or `.bin` blobs |
 
 ## Core Expertise
 

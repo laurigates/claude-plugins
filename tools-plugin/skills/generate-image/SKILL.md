@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 description: |
   Generate images from a text prompt using Google's Nano Banana Pro (Gemini 3 Pro Image)
   with configurable aspect ratio, resolution (1K/2K/4K), and up to 5 reference images. Use
@@ -15,6 +15,19 @@ name: generate-image
 ---
 
 Generate images using Google's Nano Banana Pro (Gemini 3 Pro Image) model.
+
+## When to Use This Skill
+
+| Use this skill when... | Use imagemagick-conversion instead when... |
+|---|---|
+| Producing a brand-new image from a text prompt | Converting, resizing, or compressing an existing image |
+| Generating cinematic, product, or portrait artwork | Building thumbnails or batch-processing many files |
+| Mixing up to five reference images into a new render | Applying deterministic transforms (rotate, crop, format) |
+
+| Use this skill when... | Use mermaid-diagrams or d2-diagrams instead when... |
+|---|---|
+| The output is a photographic or illustrative image | The output is a flowchart, sequence, or architecture diagram |
+| Quality settings (1K/2K/4K) and aspect ratio matter | Diagram-as-code rendering would be more maintainable |
 
 ## Arguments
 

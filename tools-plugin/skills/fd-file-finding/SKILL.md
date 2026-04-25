@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-01-21
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: fd-file-finding
 description: Fast file finding using fd command-line tool with smart defaults, gitignore awareness, and parallel execution. Use when searching for files by name, extension, or pattern across directories.
 user-invocable: false
@@ -12,19 +12,18 @@ allowed-tools: Bash, Read, Grep, Glob
 
 Expert knowledge for using `fd` as a fast, user-friendly alternative to `find` with smart defaults and powerful filtering.
 
-## When to Use
+## When to Use This Skill
 
-| Scenario | Use this skill | Alternative |
-|----------|---------------|-------------|
-| Find files by name or pattern | fd (fast, simple syntax) | find (verbose syntax) |
-| Search with gitignore awareness | fd (automatic) | find (manual excludes) |
-| Find files by extension | fd `-e` flag | Glob tool (simpler cases) |
-| Find files by modification time | fd `--changed-within` | find `-mtime` |
-| Find and execute on results | fd `-x` / `-X` | find `-exec` |
-| Find files by size | fd `--size` | find `-size` |
-| Complex boolean file logic | find (full boolean support) | fd (limited) |
-| POSIX-compatible scripts | find (POSIX standard) | fd (not POSIX) |
-| Search file contents (not names) | rg-code-search | fd (name-only search) |
+| Use this skill when... | Use rg-code-search instead when... |
+|---|---|
+| Finding files by name, extension, or path pattern | Searching inside file contents for text or regex |
+| Filtering by mtime (`--changed-within`) or size (`--size`) | Filtering matches by file type (`-t py`, `-t js`) |
+| Locating files to feed into `-x` / `-X` execution | Auditing source code for patterns across many files |
+
+| Use this skill when... | Use jq-json-processing instead when... |
+|---|---|
+| Discovering JSON, YAML, or other files on disk | Querying or transforming the contents of those files |
+| Building a file list for downstream batch processing | Extracting fields, filtering arrays, or reshaping JSON |
 
 ## Core Expertise
 
