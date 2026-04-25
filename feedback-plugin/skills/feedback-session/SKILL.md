@@ -11,8 +11,8 @@ allowed-tools: Bash(gh issue *), Bash(gh label *), Bash(gh search *), Bash(git s
 argument-hint: "--dry-run | --target-repo owner/repo | plugin-name"
 disable-model-invocation: true
 created: 2026-02-18
-modified: 2026-04-23
-reviewed: 2026-04-23
+modified: 2026-04-25
+reviewed: 2026-04-25
 ---
 
 # /feedback:session
@@ -35,6 +35,8 @@ Analyze the current session for skill feedback and create GitHub issues to track
 **IaC-managed labels**: Some repositories manage GitHub labels declaratively via Terraform, Pulumi, or similar tools. In these repos, `gh label create` will either be forbidden or cause drift that the IaC tool destroys on the next apply. This skill detects this case and offers a graceful fallback (see Step 1).
 
 **Default target repo**: By default, this skill files issues against the repository in the current working directory. If you are giving feedback about a plugin skill itself rather than the application code in the session, use `--target-repo <owner/repo>` to point at the plugin source repo.
+
+**No-remote auto-suggest**: When the cwd has no git remote and `--target-repo` is not provided, this skill scans the session for plugin-skill references (e.g. `blueprint-plugin:blueprint-init`) and auto-suggests the dominant `<owner>/<repo>` from the plugin cache as the default — typically `laurigates/claude-plugins` for marketplace users. The user can accept the suggestion or override with a different `owner/repo`. See Step 1a.
 
 ## Context
 
@@ -69,9 +71,30 @@ Execute this session feedback workflow:
 
 **1a. Determine target repo**
 
-If `--target-repo` or `-R` was passed in `$ARGUMENTS`, set `$TARGET_REPO` to that value and append `-R $TARGET_REPO` to every `gh` command in the remaining steps.
+If `--target-repo` or `-R` was passed in `$ARGUMENTS`, set `$TARGET_REPO` to that value and append `-R $TARGET_REPO` to every `gh` command in the remaining steps. Skip the rest of this sub-step.
 
-If not provided, infer the repo from the cwd: `gh repo view --json nameWithOwner -q '.nameWithOwner'`. Use this as the implicit target (no `-R` flag needed since `gh` defaults to cwd).
+Otherwise, infer the repo from the cwd: `gh repo view --json nameWithOwner -q '.nameWithOwner'`. If this succeeds, use the returned `owner/repo` as the implicit target (no `-R` flag needed since `gh` defaults to cwd) and continue to Step 1b.
+
+If `gh repo view` fails (typically with `no git remotes found` in a repo without a remote), execute this fallback in order:
+
+1. **Scan the session for plugin-skill references.** Walk the conversation transcript and tool-call history collecting every reference of the form `<plugin>:<skill>` (skill invocations like `/blueprint:init`, agent IDs like `agents-plugin:security-audit`, and plugin names mentioned in skill bodies). For each match, look up the owning `<owner>/<repo>` by enumerating directories under `~/.claude/plugins/cache/<owner>/<repo>/` and matching `<plugin>` against the cached plugin manifests. Tally references per `<owner>/<repo>`.
+
+2. **Detect a dominant source.** Compute the share of references attributable to each `<owner>/<repo>`. If the top entry accounts for **more than ~70%** of total references **and** there are at least 3 references in total, treat it as dominant. Record the dominant `$SUGGESTED_REPO`, the reference count `$N`, and proceed to step 3. Otherwise, jump to step 4.
+
+3. **Prompt with the suggestion as the default.** Use AskUserQuestion to ask:
+
+   > **No git remote found.** Suggested target: `$SUGGESTED_REPO` (derived from $N plugin skills referenced this session). Accept, or enter a different `owner/repo`?
+
+   Provide options:
+   1. **Accept `$SUGGESTED_REPO`** — set `$TARGET_REPO` to the suggestion and append `-R $TARGET_REPO` to every `gh` command in the remaining steps.
+   2. **Enter a different `owner/repo`** — open a free-text follow-up; validate the input matches `^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$` and set `$TARGET_REPO` accordingly.
+   3. **Abort** — exit the skill.
+
+   Continue to Step 1b once `$TARGET_REPO` is set.
+
+4. **Fall back to free-text prompt (no dominant source detected).** Use AskUserQuestion to ask the user to enter an `owner/repo`. Validate the input matches `^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$`, set `$TARGET_REPO`, and continue to Step 1b. If the user declines to provide a target, exit the skill.
+
+> **Bonus / future work**: when `$SUGGESTED_REPO` is also cloned at `~/.claude/plugins/cache/<owner>/<repo>/<version>/`, that path could be used by Step 1b's `labels.tf`/`labels.yaml` Glob detection instead of cwd, so IaC-managed labels are detected correctly even when the skill runs outside the plugin checkout. This Step 1b plumbing is intentionally out of scope for this PR — track as a separate issue. For now, Step 1b continues to scan the cwd.
 
 **1b. Check whether labels are IaC-managed**
 
