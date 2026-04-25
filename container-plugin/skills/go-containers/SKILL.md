@@ -1,7 +1,7 @@
 ---
 created: 2026-01-15
-modified: 2026-04-10
-reviewed: 2026-04-10
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: go-containers
 description: |
   Go-specific container optimization patterns including static binary compilation,
@@ -17,17 +17,14 @@ allowed-tools: Bash, Read, Grep, Glob, Edit, Write, TodoWrite, WebSearch, WebFet
 
 Expert knowledge for building minimal, secure Go container images using static compilation, scratch/distroless base images, and Go-specific build optimizations.
 
-## When to Use
+## When to Use This Skill
 
-| Scenario | Use this skill | Alternative |
-|----------|---------------|-------------|
-| Building Dockerfiles for Go applications | Yes | - |
-| Optimizing Go container image sizes | Yes | - |
-| Choosing scratch vs distroless for Go | Yes | - |
-| Handling CGO and C library dependencies | Yes | - |
-| General multi-stage build patterns | No | `container-development` |
-| Node.js container optimization | No | `nodejs-containers` |
-| Python container optimization | No | `python-containers` |
+| Use this skill when... | Use `container-development` instead when... |
+|---|---|
+| Building or auditing a Dockerfile for a Go application | Writing language-agnostic multi-stage build patterns |
+| Choosing between `scratch`, `distroless`, and Alpine for a Go binary | Hardening any container against non-root / least-privilege standards |
+| Driving down a Go image from hundreds of MB to single-digit MB | Composing services with Docker Compose |
+| Resolving CGO / static-link issues specific to Go | Optimizing a Node.js (`nodejs-containers`) or Python (`python-containers`) image |
 
 ## Core Expertise
 
