@@ -9,14 +9,23 @@ args: "[--frozen-lockfile] [--production]"
 argument-hint: "--frozen-lockfile for CI, --production for deployment"
 allowed-tools: Bash, Read
 created: 2025-12-20
-modified: 2026-04-19
-reviewed: 2025-12-20
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: bun-install
 ---
 
 # /bun:install
 
 Install all dependencies from package.json using Bun.
+
+## When to Use This Skill
+
+| Use this skill when... | Use bun-add instead when... |
+|---|---|
+| Bootstrapping a fresh checkout from existing package.json | Adding a new dependency to package.json |
+| Running a CI install with `--frozen-lockfile` | Installing a single package with version pinning |
+| Preparing a production deployment with `--production` | Updating an existing dependency (use bun-lockfile-update) |
+| Restoring node_modules after deletion | Auditing what could be upgraded (use bun-outdated) |
 
 ## Context
 

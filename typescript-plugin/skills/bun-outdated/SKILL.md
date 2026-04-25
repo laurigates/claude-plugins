@@ -9,14 +9,22 @@ args: "[package]"
 argument-hint: "Optional package name to check specific dependency"
 allowed-tools: Bash, Read
 created: 2025-12-20
-modified: 2026-04-19
-reviewed: 2025-12-20
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: bun-outdated
 ---
 
 # /bun:outdated
 
 Check which dependencies have newer versions available.
+
+## When to Use This Skill
+
+| Use this skill when... | Use bun-lockfile-update instead when... |
+|---|---|
+| Auditing dependency freshness without making changes | Actually updating dependencies and regenerating bun.lockb |
+| Spotting major version updates before deciding to upgrade | Running `bun update` / `bun update --latest` workflows |
+| Reviewing a single package's available versions | Resolving lockfile conflicts or security patch updates |
 
 ## Execution
 
