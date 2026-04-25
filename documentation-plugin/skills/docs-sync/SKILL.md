@@ -10,12 +10,21 @@ args: "[--scope <type>] [--dry-run] [--verbose]"
 argument-hint: "--scope skills|commands|agents, --dry-run to preview, --verbose for details"
 allowed-tools: Bash, Grep, Glob, Read, Edit, Write, TodoWrite
 created: 2025-12-16
-modified: 2026-04-19
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: docs-sync
 ---
 
 # /docs:sync [OPTIONS]
+
+## When to Use This Skill
+
+| Use this skill when... | Use docs-generate instead when... |
+|---|---|
+| Skill / command / agent counts in README or CLAUDE.md drift from what the directories actually contain | Producing fresh API reference, README rewrites, or CHANGELOG content from code |
+| New skills were added but not yet listed in the catalog tables | The catalog itself is fine and you need to author new documentation |
+| Removed items still appear as stale entries in documentation | Drafting a service teardown checklist (use docs-decommission) |
+| Cross-references and category groupings need reconciliation after a refactor | Converting an existing Markdown document to a print-ready PDF (use docs-latex) |
 
 Scan the codebase for skills, commands, and agents, then update all documentation to reflect the current state. Fixes count mismatches, adds missing entries, and removes stale references.
 

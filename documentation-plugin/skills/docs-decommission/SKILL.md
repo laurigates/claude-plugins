@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
-reviewed: 2026-02-08
+modified: 2026-04-25
+reviewed: 2026-04-25
 allowed-tools: Read, Write, Edit, Bash(find *), Bash(ls *), Grep, TodoWrite
 args: <service-name>
 argument-hint: <service-name>
@@ -16,6 +16,14 @@ name: docs-decommission
 ---
 
 # Service Decommission Documentation Generator
+
+## When to Use This Skill
+
+| Use this skill when... | Use docs-generate instead when... |
+|---|---|
+| Retiring or shutting down a deployed service and need a complete teardown checklist | Producing API reference, README, or CHANGELOG content from code annotations |
+| Capturing infrastructure, DNS, secrets, and billing cleanup steps at deployment time while context is fresh | Drafting general project documentation that will be maintained alongside development |
+| Generating a service-specific `DECOMMISSION-<service>.md` with environments, stakeholders, and rollback steps | Synchronising existing documentation with the current codebase (use docs-sync) |
 
 Generate a comprehensive decommission checklist for ${1:-[SERVICE_NAME]} to be created at deployment time when all context is fresh.
 

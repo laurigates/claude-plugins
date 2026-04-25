@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
-reviewed: 2026-03-09
+modified: 2026-04-25
+reviewed: 2026-04-25
 allowed-tools: Task, TodoWrite
 args: [--api] [--readme] [--changelog]
 argument-hint: [--api] [--readme] [--changelog]
@@ -14,6 +14,15 @@ description: |
 name: docs-generate
 agent: general-purpose
 ---
+
+## When to Use This Skill
+
+| Use this skill when... | Use docs-sync instead when... |
+|---|---|
+| Generating fresh API reference docs from docstrings, type signatures, and module structure | Reconciling existing skill/command/agent catalogs with the current codebase |
+| Updating README.md from code analysis (installation steps, feature list, badges) | Fixing wrong counts or stale entries in CLAUDE.md / README catalogs |
+| Producing a CHANGELOG from conventional-commit history | Preparing a service teardown checklist (use docs-decommission) |
+| Building documentation pages that will be served via GitHub Pages or similar | Converting Markdown to print-ready PDF (use docs-latex) |
 
 ## Context
 
