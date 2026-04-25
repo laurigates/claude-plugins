@@ -1,7 +1,7 @@
 ---
 created: 2026-01-01
-modified: 2026-01-01
-reviewed: 2026-01-01
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: layer2-discovery
 description: Discover devices and map physical topology on the local network segment. Use when you need to find which switch port a server is connected to, enumerate hosts via ARP without IP routing, or identify unknown devices by MAC vendor.
 user-invocable: false
@@ -10,7 +10,7 @@ allowed-tools: Bash(arp *), Bash(ip *), Bash(bridge *), Bash(ethtool *), Read, W
 
 # Layer 2 Network Discovery
 
-## When to Use
+## When to Use This Skill
 
 | Scenario | Use this skill | Alternative |
 |----------|---------------|-------------|

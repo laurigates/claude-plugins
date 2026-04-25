@@ -1,7 +1,7 @@
 ---
 created: 2026-01-01
-modified: 2026-01-01
-reviewed: 2026-01-01
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: http-load-testing
 description: Stress test and benchmark HTTP endpoints. Use when you need to measure request latency percentiles, find a server's breaking point under load, or validate SLA targets with proper coordinated-omission correction.
 user-invocable: false
@@ -10,7 +10,7 @@ allowed-tools: Bash(hey *), Bash(ab *), Bash(wrk *), Bash(curl *), Read, Grep, G
 
 # HTTP Load Testing
 
-## When to Use
+## When to Use This Skill
 
 | Scenario | Use this skill | Alternative |
 |----------|---------------|-------------|
