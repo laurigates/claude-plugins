@@ -1,7 +1,7 @@
 ---
 created: 2026-01-24
-modified: 2026-04-19
-reviewed: 2026-01-24
+modified: 2026-04-25
+reviewed: 2026-04-25
 allowed-tools: Bash(git log *), Bash(git shortlog *), Bash(git diff *), Bash(git branch *),
                Bash(git show *), Bash(git rev-list *), Bash(git diff-tree *),
                Bash(git status *), Read, Grep, Glob, Edit, Write, TodoWrite
@@ -16,6 +16,15 @@ description: |
   existing git history.
 name: git-derive-docs
 ---
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative when... |
+|---|---|
+| Mining git history for undocumented rules, PRDs, ADRs, or PRPs | Use `git-cli-agentic` for one-shot porcelain queries against the history |
+| Generating skeleton documentation from commit-message patterns | Use `git-commit-workflow` to set conventions BEFORE the history accrues |
+| Detecting architectural decisions or feature work that was never recorded | Use `github-issue-writing` to file fresh issues from the gaps you find |
+| Auditing whether `.claude/rules/` and `docs/{prds,adrs,prps}/` reflect actual practice | Use `git-triage` to triage the open issues and PRs surfaced during the audit |
 
 ## Context
 

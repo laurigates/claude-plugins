@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-03-04
-reviewed: 2026-03-04
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: git-branch-pr-workflow
 description: |
   Branch management, pull request workflows, and GitHub integration. Main-branch
@@ -15,6 +15,15 @@ allowed-tools: Bash, Read, mcp__github__create_pull_request, mcp__github__list_p
 ---
 
 # Git Branch PR Workflow
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative when... |
+|---|---|
+| Designing the overall branch + PR workflow (main-branch dev, MCP integration) | Use `git-branch-naming` to pick or audit a single branch name |
+| Choosing between `git switch`, `git restore`, and feature-branch push patterns | Use `git-rebase-patterns` for linear-history cleanup and stacked PRs |
+| Creating PRs through GitHub MCP tools rather than `gh pr create` | Use `git-pr` to create PRs from a pushed branch via the `gh` CLI |
+| Coordinating commit -> push -> PR end-to-end | Use `git-commit-push-pr` for the consolidated commit+push+PR macro |
 
 Expert guidance for branch management, pull request workflows, and GitHub integration using modern Git commands and linear history practices.
 

@@ -1,7 +1,7 @@
 ---
 created: 2026-01-21
-modified: 2026-02-18
-reviewed: 2026-01-23
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: git-push
 description: |
   Push local commits to remote repositories. Handles branch tracking, upstream setup,
@@ -13,6 +13,15 @@ allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git p
 ---
 
 # Git Push
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative when... |
+|---|---|
+| Pushing existing local commits to a remote with branch tracking and upstream setup | Use `git-commit` first when there are uncommitted changes to push |
+| Sending changes to remote without opening a PR yet | Use `git-pr` afterwards to open a pull request from the pushed branch |
+| Migrating commits from local main to a remote feature branch via explicit refspec | Use `git-branch-pr-workflow` to design the broader main-branch-dev pattern |
+| Updating a remote branch with new commits after a rebase or amend | Use `git-commit-push-pr` for the consolidated commit + push + PR macro |
 
 Push local commits to remote repositories with proper branch tracking.
 

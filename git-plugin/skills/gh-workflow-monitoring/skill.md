@@ -9,11 +9,20 @@ description: |
 user-invocable: false
 allowed-tools: Bash(gh run *), Bash(gh workflow *), Bash(gh pr *), Read
 created: 2025-01-16
-modified: 2026-04-19
-reviewed: 2025-01-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 ---
 
 # GitHub Workflow Monitoring
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative when... |
+|---|---|
+| Watching a workflow run until it completes via blocking `gh run watch` | Use `gh-cli-agentic` for one-shot JSON queries of run/PR check state |
+| Waiting for CI after a push, or triggering a workflow and following progress | Use `git-fix-pr` to diagnose AND auto-correct failing checks on a PR |
+| Diagnosing a failed run with `gh run view --log-failed` | Use `git-pr-feedback` to address reviewer comments rather than CI failures |
+| Finding the latest in-progress run for a workflow | Use `gh-cli-agentic` to list completed runs by status filter |
 
 Watch and monitor GitHub Actions workflow runs using `gh run watch` - a blocking command that follows runs until completion without needing timeouts or polling.
 

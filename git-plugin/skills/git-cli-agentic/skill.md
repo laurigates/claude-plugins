@@ -9,11 +9,20 @@ description: |
 user-invocable: false
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git remote *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git restore *), Read
 created: 2025-01-16
-modified: 2026-04-19
-reviewed: 2025-01-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 ---
 
 # Git CLI Agentic Patterns
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative when... |
+|---|---|
+| Writing scriptable `git status/diff/log` calls in porcelain or `--format` mode | Use `gh-cli-agentic` for `gh` JSON queries against the GitHub API |
+| Needing `--porcelain=v2` status, `--numstat` diff counts, or custom `--format` log placeholders | Use `git-commit-workflow` for staging conventions and commit message structure |
+| Reading branch tracking info or main-branch-development push patterns | Use `git-branch-pr-workflow` for the broader branch + PR design choices |
+| Producing deterministic output for parsers and downstream tooling | Use `git-derive-docs` to mine commit history for rules/PRDs/ADRs/PRPs |
 
 Optimized git commands for AI agent consumption using porcelain output and stable formats.
 

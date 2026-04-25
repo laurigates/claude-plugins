@@ -1,7 +1,7 @@
 ---
 created: 2026-01-21
-modified: 2026-02-14
-reviewed: 2026-02-14
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: git-commit
 description: |
   Create commits with conventional messages and issue references. Handles staging,
@@ -13,6 +13,15 @@ allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git a
 ---
 
 # Git Commit
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative when... |
+|---|---|
+| Creating a local commit with conventional message and pre-commit hooks | Use `git-push` afterwards to send the commit to remote |
+| Auto-detecting related GitHub issues and inserting `Fixes #N` references | Use `github-issue-autodetect` to study the detection patterns themselves |
+| Staging and committing without pushing or opening a PR | Use `git-commit-push-pr` to chain commit + push + PR creation in one step |
+| Applying repo conventions (humble tone, logical grouping) to a single commit | Use `git-commit-workflow` for the broader staging + message convention guidance |
 
 Create local commits with proper conventional messages and issue references.
 

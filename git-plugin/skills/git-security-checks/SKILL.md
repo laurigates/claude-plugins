@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-02-16
-reviewed: 2026-02-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: git-security-checks
 description: |
   Pre-commit security validation and secret detection. Runs gitleaks scan
@@ -14,6 +14,15 @@ allowed-tools: Bash, Read
 ---
 
 # Git Security Checks
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative when... |
+|---|---|
+| Running `gitleaks` to scan for secrets before committing | Use `git-commit-workflow` for general staging and commit-message conventions |
+| Configuring `.gitleaks.toml` allowlists and pre-commit integration | Use `git-maintain` for `git fsck` integrity checks rather than secret scanning |
+| Validating that no credentials leak into a PR | Use `git-fix-pr` when CI gitleaks scans fail and you need to fix them on branch |
+| Setting up pre-commit hooks for credential scanning | Use `release-please-protection` to detect manual edits to release-managed files |
 
 Expert guidance for pre-commit security validation and secret detection using gitleaks and pre-commit hooks.
 

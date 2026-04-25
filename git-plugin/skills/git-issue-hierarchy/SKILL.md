@@ -1,7 +1,7 @@
 ---
 created: 2026-03-19
-modified: 2026-04-21
-reviewed: 2026-04-21
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: git-issue-hierarchy
 description: |
   Manage sub-issues and native GitHub dependency relationships (blocked_by /
@@ -13,6 +13,15 @@ argument-hint: <parent-issue> [--add N] [--status] [--deps] [--blocked-by N]
 user-invocable: true
 allowed-tools: Bash(gh api *), Bash(gh issue *), Bash(git remote *), Read, Grep, Glob, TodoWrite
 ---
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative when... |
+|---|---|
+| Adding/removing native GitHub sub-issues to a parent issue | Use `git-issue-manage` for transfer, pin, lock, develop-branch operations |
+| Marking issue A as `blocked_by` issue B (or unblocking) | Use `github-issue-writing` to create well-structured issue bodies in the first place |
+| Viewing a parent issue's sub-issue completion progress and dependency graph | Use `git-issue` to actually start working on issues end-to-end |
+| Checking the dependency graph before starting work on a multi-issue feature | Use `gh-cli-agentic` for raw `gh issue --json` queries without hierarchy logic |
 
 ## Context
 

@@ -1,7 +1,7 @@
 ---
 created: 2026-01-21
-modified: 2026-03-04
-reviewed: 2026-03-04
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: git-pr
 description: |
   Create pull requests with proper descriptions, labels, and issue references. Handles
@@ -16,13 +16,14 @@ allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git b
 
 Create pull requests with comprehensive descriptions and proper issue linkage.
 
-## When to Use
+## When to Use This Skill
 
-| Use this skill when... | Use X instead when... |
-|------------------------|----------------------|
-| Creating a new PR | Just crafting a title (`github-pr-title`) |
-| Full PR workflow | Just pushing (`git-push`) |
-| Submit for review | Just committing (`git-commit`) |
+| Use this skill when... | Use the alternative when... |
+|---|---|
+| Opening a PR from a pushed branch with description, labels, and issue refs | Use `github-pr-title` if you only need to author or fix the conventional title |
+| Selecting a base branch, draft mode, or reviewers as part of PR creation | Use `git-push` first if the branch has not been pushed to remote yet |
+| Going from a pushed branch to an open pull request | Use `git-commit` first if there are uncommitted changes locally |
+| Inserting `Fixes #N` / `Closes #N` issue references into the PR body | Use `git-commit-push-pr` for the consolidated commit + push + PR macro |
 
 ## PR Description Format
 

@@ -1,7 +1,7 @@
 ---
 created: 2026-01-15
-modified: 2026-04-21
-reviewed: 2026-04-21
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: github-issue-autodetect
 description: |
   Automatically detect GitHub issues that staged changes may fix or close.
@@ -13,6 +13,15 @@ allowed-tools: Bash, Read, Grep, Glob, mcp__github__list_issues, mcp__github__ge
 ---
 
 # GitHub Issue Auto-Detection
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative when... |
+|---|---|
+| Suggesting `Fixes #N` / `Closes #N` keywords from staged-diff content | Use `git-commit-workflow` for the broader commit message style |
+| Matching diff hunks against open issues by file path or label | Use `github-issue-writing` to author or restructure the issue body itself |
+| Inferring proper issue linkage before composing a commit message | Use `git-issue-hierarchy` for parent/child sub-issue and dependency links |
+| Adding closing keywords mechanically based on issue metadata | Use `git-commit-trailers` for trailer-style metadata (Co-authored-by, Release-As) |
 
 Expert guidance for automatically detecting GitHub issues that staged changes may fix or close, ensuring proper issue linkage in commit messages.
 

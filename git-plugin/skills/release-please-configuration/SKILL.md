@@ -1,7 +1,7 @@
 ---
 created: 2025-12-28
-modified: 2025-12-28
-reviewed: 2025-12-28
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: release-please-configuration
 description: |
   Configures release-please for monorepos and single-package repos. Handles
@@ -13,6 +13,15 @@ allowed-tools: Read, Write, Edit, Bash, Grep, Glob, TodoWrite
 ---
 
 # Release-Please Configuration
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative when... |
+|---|---|
+| Setting up `release-please-config.json` and `.release-please-manifest.json` | Use `release-please-pr-workflow` to actually merge release-please PRs |
+| Configuring component tagging, changelog sections, or `extra-files` for a package | Use `release-please-protection` to detect manual edits to managed files |
+| Adding a new package to a monorepo's release-please config | Use `git-commit-trailers` for `Release-As:` trailer-based version overrides |
+| Fixing release-please workflow issues (missing component, no version bump) | Use `git-commit-workflow` to ensure commits use the conventional types release-please reads |
 
 Expert knowledge for configuring Google's release-please for automated releases.
 

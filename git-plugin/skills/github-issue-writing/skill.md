@@ -1,7 +1,7 @@
 ---
 created: 2026-01-30
-modified: 2026-04-21
-reviewed: 2026-04-21
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: github-issue-writing
 description: |
   Create well-structured GitHub issues with clear titles, descriptions, and
@@ -15,13 +15,14 @@ allowed-tools: Bash(gh issue *), Bash(gh label *), Bash(gh repo *), Read, Grep, 
 
 Create well-structured, actionable GitHub issues.
 
-## When to Use
+## When to Use This Skill
 
-| Use this skill when... | Use X instead when... |
-|------------------------|----------------------|
-| Creating new issues | Processing existing issues (`git:issue`) |
-| Writing bug reports | Auto-detecting issues (`github-issue-autodetect`) |
-| Filing feature requests | Creating PRs (`git-pr`) |
+| Use this skill when... | Use the alternative when... |
+|---|---|
+| Filing a new bug, feature, or chore issue with clear title and acceptance criteria | Use `git-issue` to start working on existing issues end-to-end |
+| Structuring an issue body with reproduction steps, scope, and definition of done | Use `github-issue-autodetect` to link existing issues from staged diffs |
+| Choosing the `[Type] Component: Description` title format | Use `github-pr-title` to author the conventional title for the PR that fixes it |
+| Designing a feature-request issue before implementation begins | Use `git-issue-manage` for transfer/pin/lock/develop-branch admin operations |
 
 ## Issue Title Format
 

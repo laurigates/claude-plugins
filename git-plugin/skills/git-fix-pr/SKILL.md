@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
-reviewed: 2026-01-17
+modified: 2026-04-25
+reviewed: 2026-04-25
 allowed-tools: Bash(gh pr checks *), Bash(gh pr view *), Bash(gh run view *), Bash(gh run list *), Bash(gh repo view *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(pre-commit *), Bash(npm run *), Bash(uv run *), Read, Edit, Grep, Glob, TodoWrite, mcp__github__pull_request_read
 args: "[pr-number] [--auto-fix] [--push]"
 argument-hint: [pr-number] [--auto-fix] [--push]
@@ -13,6 +13,15 @@ description: |
   before pushing corrections.
 name: git-fix-pr
 ---
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative when... |
+|---|---|
+| Fixing failing CI checks on an existing PR (lint, type, test) | Use `git-pr-feedback` to address reviewer comments rather than CI failures |
+| Reproducing red GitHub Actions runs locally before pushing corrections | Use `gh-workflow-monitoring` to passively watch a run rather than fix it |
+| Auto-applying lint/format/type fixes and pushing them to the PR branch | Use `git-resolve-conflicts` when the failure is a merge conflict, not a check |
+| Diagnosing why a pull request is red after a push | Use `git-triage` to sweep many PRs at once instead of fixing one |
 
 ## Context
 
