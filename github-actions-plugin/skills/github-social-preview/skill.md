@@ -219,17 +219,12 @@ magick social-preview.png -quality 85 preview.jpg
 
 ## When to Use This Skill
 
-**✓ Use for:**
-- Creating new repository social preview images
-- Refreshing outdated preview images
-- Generating project thumbnails for documentation
-- Creating Open Graph images for GitHub Pages
-
-**✗ Don't use for:**
-- General image generation (use nano-banana-pro directly)
-- Complex illustrations or detailed artwork
-- Images requiring pixel-perfect layouts
-- Animated GIF previews (use video editing tools)
+| Use this skill when... | Use other skills instead when... |
+|---|---|
+| Creating or refreshing a repository's social preview image | Generating arbitrary images from a text prompt — use `nano-banana-pro` directly |
+| Producing project thumbnails for documentation | Resizing or optimizing an existing image — use `imagemagick-conversion` |
+| Generating Open Graph images for GitHub Pages | Producing complex illustrations or pixel-perfect layouts (use a dedicated design tool) |
+| You want repo metadata (name, language, description) auto-fed into the prompt | Producing animated GIF previews (use video editing tools) |
 
 ## Related Skills
 

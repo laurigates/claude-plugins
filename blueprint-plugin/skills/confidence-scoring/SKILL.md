@@ -14,12 +14,11 @@ This skill provides systematic evaluation of PRPs (Product Requirement Prompts) 
 
 ## When to Use This Skill
 
-Activate this skill when:
-- Creating a new PRP (`/prp:create`)
-- Generating a work-order (`/blueprint:work-order`)
-- Deciding whether to execute or refine a PRP
-- Evaluating whether a task is ready for subagent delegation
-- Reviewing PRPs/work-orders for quality
+| Use this skill when... | Use `blueprint-prp-create` instead when... |
+|---|---|
+| Scoring a draft PRP/work-order before execution or delegation | Authoring the PRP itself from research and context |
+| Deciding whether a work-order is ready for a subagent or needs refinement | Producing the work-order content (use `blueprint-work-order`) |
+| Reviewing existing PRPs/work-orders for context completeness and validation gates | Generating the PRD that the PRP derives from (use `blueprint-derive-prd`) |
 
 ## Scoring Dimensions
 
