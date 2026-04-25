@@ -8,26 +8,20 @@ description: |
 user-invocable: false
 allowed-tools: Bash(python *), Bash(uv *), BashOutput, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-01-08
-modified: 2026-02-05
-reviewed: 2026-01-08
+modified: 2026-04-25
+reviewed: 2026-04-25
 ---
 
 # LangGraph Agents
 
-## When to Use
+## When to Use This Skill
 
-| Scenario | Use this skill | Alternative |
-|----------|---------------|-------------|
-| Building a stateful agent with graph-based workflow | Yes | - |
-| Need checkpointing and durable execution | Yes | - |
-| Adding human-in-the-loop approval steps | Yes | - |
-| Composing multi-agent systems as subgraphs | Yes | - |
-| Streaming agent execution (values, updates, messages) | Yes | - |
-| Implementing time-travel debugging on agent state | Yes | - |
-| Simple chain (prompt | model | parser) without state | No | `langchain-development` for LCEL chains |
-| Basic tool binding without graph workflow | No | `langchain-development` for tool patterns |
-| Hierarchical agents with planning and file context | No | `deep-agents` for Deep Agents library |
-| Scaffolding a new LangChain/LangGraph project | No | `/langchain:init` to generate boilerplate |
+| Use this skill when... | Use a sibling skill instead when... |
+|---|---|
+| Building stateful agents as graphs of nodes/edges with checkpointing | Writing simple LCEL chains without state — use `langchain-development` |
+| Adding human-in-the-loop approval, streaming, or time-travel debugging | Doing basic tool binding without a graph — use `langchain-development` |
+| Composing multi-agent systems as subgraphs | Needing hierarchical planning + file-system context — use `deep-agents` |
+| Wiring graphs into an initialised project | Scaffolding a brand-new project — use `langchain-init` (`/langchain:init`) |
 
 ## Core Expertise
 

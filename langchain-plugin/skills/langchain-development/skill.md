@@ -7,25 +7,20 @@ description: |
 user-invocable: false
 allowed-tools: Bash(python *), Bash(uv *), BashOutput, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-01-08
-modified: 2026-01-08
-reviewed: 2026-01-08
+modified: 2026-04-25
+reviewed: 2026-04-25
 ---
 
 # LangChain Development
 
-## When to Use
+## When to Use This Skill
 
-| Scenario | Use this skill | Alternative |
-|----------|---------------|-------------|
-| Working with chat models (OpenAI, Anthropic, etc.) | Yes | - |
-| Building LCEL chains (prompt | model | parser) | Yes | - |
-| Implementing RAG with document loaders and vector stores | Yes | - |
-| Defining and binding custom tools | Yes | - |
-| Using prompt templates and few-shot prompting | Yes | - |
-| Building stateful graph-based agent workflows | No | `langgraph-agents` for LangGraph state machines |
-| Need hierarchical agent orchestration with planning | No | `deep-agents` for Deep Agents library |
-| Scaffolding a brand-new LangChain project | No | `/langchain:init` to generate project boilerplate |
-| Simple one-off API call without LangChain framework | No | Direct SDK usage (`@anthropic-ai/sdk`, `openai`) |
+| Use this skill when... | Use a sibling skill instead when... |
+|---|---|
+| Building LCEL chains (prompt → model → parser) or RAG pipelines | You need stateful graph workflows — use `langgraph-agents` |
+| Working with chat models, prompt templates, or tool binding | You need hierarchical multi-agent orchestration — use `deep-agents` |
+| Adding LangChain to an existing TypeScript project | You are scaffolding a brand-new project — use `langchain-init` (`/langchain:init`) |
+| Implementing document loaders and vector stores | You only need a one-off SDK call without LangChain — use the provider SDK directly |
 
 ## Core Expertise
 
