@@ -21,10 +21,27 @@ Both systems stay in sync via UDAs (`ghid`, `ghpr`) and tags (`+gh`, `+pr-ready`
 
 | Skill | Purpose |
 |-------|---------|
-| `/taskwarrior:task-add` | File a task with bpid / bpdoc / bpms fields; offers GitHub issue linkage when a remote is detected |
+| `/taskwarrior:task-add` | File a task with bpid / bpdoc / bpms fields; auto-tags `project:` from the current repo; offers GitHub issue linkage when a remote is detected |
 | `/taskwarrior:task-done` | Close a task, annotate with commit hash, drain the linked feature-tracker entry; offers to close the linked GitHub issue |
-| `/taskwarrior:task-status` | Read-only consolidated queue + drift report; folds in `gh pr status` when GitHub is present |
-| `/taskwarrior:task-coordinate` | Surface the next N unblocked tasks sorted by urgency that do not contend on an exclusive lock — input for parallel / wave dispatch |
+| `/taskwarrior:task-status` | Read-only consolidated queue + drift report scoped to the current project; folds in `gh pr status` when GitHub is present |
+| `/taskwarrior:task-coordinate` | Surface the next N unblocked tasks (in the current project) sorted by urgency that do not contend on an exclusive lock — input for parallel / wave dispatch |
+
+## Project scoping
+
+`task-add`, `task-status`, and `task-coordinate` all default to the
+**current repo's project** so an agent in repo A is not distracted by
+tasks from repos B and C. The project identifier is the basename of the
+git toplevel (or the cwd if no git repo is present).
+
+| Skill | Default scope | Override | Opt out |
+|-------|---------------|----------|---------|
+| `task-add` | Tags new task with `project:<repo>` | `project:<name>` arg | `--no-project` |
+| `task-status` | Filters report to `project:<repo>` | `--project=<name>` | `--all` |
+| `task-coordinate` | Filters dispatch candidates to `project:<repo>` | `--project=<name>` | `--all` (rare) |
+
+Tasks filed before this default existed have no `project:` set and will
+not match the auto-filter — pass `--all` once to find them, then
+backfill with `task <ID> modify project:<name>`.
 
 ## User-Defined Attributes (UDAs)
 

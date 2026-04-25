@@ -7,12 +7,12 @@ description: |
   task #7 still pending" surfaces in one view. Use when auditing queue
   health, orienting before a wave dispatch, spotting tasks that lost
   their linked issue or PR, or producing a standup summary.
-args: "[--mine] [--blocked] [--stale=N]"
-allowed-tools: Bash(task *), Bash(git config *), Bash(gh auth *), Bash(gh pr *), Bash(jq *), Read, TodoWrite
+args: "[--mine] [--blocked] [--stale=N] [--project=<name>] [--all]"
+allowed-tools: Bash(task *), Bash(git config *), Bash(git rev-parse *), Bash(gh auth *), Bash(gh pr *), Bash(jq *), Read, TodoWrite
 argument-hint: optional filters
 created: 2026-04-24
-modified: 2026-04-24
-reviewed: 2026-04-24
+modified: 2026-04-25
+reviewed: 2026-04-25
 ---
 
 # /taskwarrior:task-status
@@ -22,9 +22,10 @@ Read-only status report on the coordination queue. Strictly uses `export | jq` �
 ## Context
 
 - Task CLI available: !`command -v task`
-- Pending count (export/jq): !`task status:pending export`
+- Git toplevel: !`git rev-parse --show-toplevel`
 - Git remote: !`git config --get remote.origin.url`
 - GH auth: !`gh auth status`
+- Known projects: !`task _projects`
 
 ## Parameters
 
@@ -33,7 +34,25 @@ Parse `$ARGUMENTS`:
 - `--mine` — limit to tasks where `assigned:` matches current user / agent
 - `--blocked` — only tasks with `+blocked` / `+blocked-on-merge` or active `depends:`
 - `--stale=N` — highlight tasks modified > N days ago
-- No flags — full report
+- `--project=<name>` — override the auto-detected project filter
+- `--all` — opt out of project filtering and report across every project
+- No flags — full report **scoped to the current project**
+
+### Project resolution
+
+Default behaviour is project-scoped — surfacing tasks from other repos as
+"queue noise" is the most common waste of agent context. Resolve the
+project identifier in this order:
+
+1. `--project=<name>` if provided.
+2. `--all` → no project filter.
+3. Basename of the path reported as `Git toplevel` in Context.
+4. If no git repo, basename of the cwd.
+
+Cross-check the resolved name against `Known projects`. If it is not in
+the list, note it (likely a fresh project or no tasks filed yet) but
+still apply the filter — `task export` returns `[]` cleanly when the
+project has no matching tasks.
 
 ## Execution
 
@@ -41,17 +60,20 @@ Execute this workflow:
 
 ### Step 1: Snapshot the queue
 
-Pull full state as JSON in a single call. `task export` emits `[]` on an
-empty store — valid and exit 0.
+Pull full state as JSON in a single call, scoped to the resolved project
+(omit `project:$PROJECT` only when `--all` is set). `task export` emits
+`[]` on an empty store — valid and exit 0. Substitute the literal
+project name into the filter — do **not** use `$()` command substitution
+in the inline command (shell-operator protections will reject it).
 
 ```bash
-task status:pending export | jq '.[] | {id, description, urgency, tags, bpid, bpdoc, ghid, ghpr, modified, depends}'
+task project:myrepo status:pending export | jq '.[] | {id, description, urgency, tags, bpid, bpdoc, ghid, ghpr, modified, depends}'
 ```
 
-For completeness also pull recently-completed:
+For completeness also pull recently-completed in the same project:
 
 ```bash
-task status:completed end.after:now-7d export | jq '.[] | {id, description, bpid, ghid, end}'
+task project:myrepo status:completed end.after:now-7d export | jq '.[] | {id, description, bpid, ghid, end}'
 ```
 
 ### Step 2: Sort and group
@@ -60,7 +82,7 @@ By urgency descending, then by milestone (`bpms`), then by blueprint kind
 (`+wo` / `+prp` / `+fr` / `+re`). Use jq to partition:
 
 ```bash
-task status:pending export \
+task project:myrepo status:pending export \
   | jq 'group_by(.bpms) | map({milestone: .[0].bpms, tasks: sort_by(-.urgency)})'
 ```
 
@@ -92,6 +114,14 @@ with a green PR are the highest-value drain candidates.
 
 ### Step 5: Render
 
+Lead the report with the resolved project scope so the reader knows
+whether they're seeing a single-project view or `--all`:
+
+```
+Project: myrepo (auto-detected from git toplevel)
+Pass --all for cross-project view, --project=<name> to override.
+```
+
 Output these sections, in order:
 
 1. **Summary**: pending count, ready count (unblocked), blocked count, stale count
@@ -107,8 +137,9 @@ Each row cites the command to act on it (`/taskwarrior:task-done 7`).
 
 | Context | Command |
 |---------|---------|
-| Full queue JSON | `task status:pending export \| jq` |
-| Ready-for-dispatch | `task status:pending -BLOCKED export \| jq 'sort_by(-.urgency) \| .[:5]'` |
+| Project queue JSON | `task project:myrepo status:pending export \| jq` |
+| Cross-project queue (`--all`) | `task status:pending export \| jq` |
+| Ready-for-dispatch | `task project:myrepo status:pending -BLOCKED export \| jq 'sort_by(-.urgency) \| .[:5]'` |
 | PR status | `gh pr status --json number,state,statusCheckRollup` |
 | Drift check | `gh issue view "$GHID" --json state` |
 | Never use | `task list`, `task next`, `task report` — exit 1 on empty |
@@ -117,6 +148,7 @@ Each row cites the command to act on it (`/taskwarrior:task-done 7`).
 
 | Filter | Expands to |
 |--------|-----------|
+| `project:<name>` | Single project (default scope) |
 | `status:pending` | Open tasks |
 | `-BLOCKED` | Exclude `depends:`-blocked |
 | `urgency.above:5` | High-urgency only |

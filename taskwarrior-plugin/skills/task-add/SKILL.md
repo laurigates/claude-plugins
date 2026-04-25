@@ -7,12 +7,12 @@ description: |
   or offers to create a new issue. Use when adding a coordination task for
   multi-agent work, linking a blueprint WO to an actionable queue entry,
   or mirroring a GitHub issue into the local task queue.
-args: "[description]"
+args: "[description] [project:<name>] [--no-project]"
 allowed-tools: Bash(task *), Bash(git config *), Bash(git rev-parse *), Bash(gh auth *), Bash(gh issue *), Bash(gh api *), Read, TodoWrite
 argument-hint: short task description
 created: 2026-04-24
-modified: 2026-04-24
-reviewed: 2026-04-24
+modified: 2026-04-25
+reviewed: 2026-04-25
 ---
 
 # /taskwarrior:task-add
@@ -22,18 +22,37 @@ File a coordination task. When a GitHub remote is present, offer optional linkag
 ## Context
 
 - Task CLI available: !`command -v task`
+- Git toplevel: !`git rev-parse --show-toplevel`
 - Git remote: !`git config --get remote.origin.url`
 - GH auth: !`gh auth status`
 - Existing UDAs: !`task _udas`
-- Duplicate check preamble: !`task _projects`
+- Known projects: !`task _projects`
 
 ## Parameters
 
 Parse `$ARGUMENTS`:
 
 - Freeform short description (required).
+- Optional inline `project:<name>` to override the auto-detected project.
+- Optional `--no-project` to file the task without any project (cross-cutting work).
 - Optional inline `bpid:WO-012` / `bpdoc:docs/wo/012.md` / `bpms:M6` / `ghid:145` / `ghpr:99` fields.
 - Optional tags: `+wo`, `+prp`, `+fr`, `+re`, `+gh`, `+pr-ready`, `+needs-review`, `+blocked-on-merge`, `+blocked`.
+
+### Project resolution
+
+By default every task is filed under the current repo's project so
+`/taskwarrior:task-status` and `/taskwarrior:task-coordinate` only see
+tasks relevant to where the agent is working. Resolve the project in
+this order:
+
+1. Explicit `project:<name>` in `$ARGUMENTS`.
+2. `--no-project` → file with no project (rare; cross-cutting work).
+3. Basename of the path reported as `Git toplevel` in Context.
+4. If no git repo, basename of cwd.
+
+Cross-check the resolved name against `Known projects` and reuse the
+exact spelling when it matches (case-insensitive) — taskwarrior treats
+`MyRepo` and `myrepo` as different projects.
 
 ## Execution
 
@@ -69,10 +88,12 @@ If either fails, skip GitHub-related branches in later steps.
 
 ### Step 3: Duplicate check by bpid
 
-If `bpid:` was given, run parallel-safe:
+If `bpid:` was given, run parallel-safe and constrain to the resolved
+project so a matching `bpid` in another repo's queue is not surfaced as
+a false-positive duplicate:
 
 ```bash
-task bpid:"$BPID" export | jq '.[] | {id, description, status}'
+task project:myrepo bpid:"$BPID" export | jq '.[] | {id, description, status}'
 ```
 
 Never use `task bpid:"$BPID" list` — it exits 1 on empty result and cancels sibling tool calls in parallel batches (see `.claude/rules/parallel-safe-queries.md`).
@@ -99,10 +120,13 @@ gh issue create --title "$TITLE" --body "$BODY"
 
 ### Step 5: Create the task
 
-Compose the taskwarrior add command from the collected inputs. Quote every field; tags use the `+tag` form:
+Compose the taskwarrior add command from the collected inputs. Always
+include `project:` (the resolved project from Parameters) unless the
+user passed `--no-project`. Quote every field; tags use the `+tag` form:
 
 ```bash
 task add "$DESCRIPTION" \
+  project:myrepo \
   bpid:"$BPID" \
   bpdoc:"$BPDOC" \
   bpms:"$BPMS" \
@@ -118,6 +142,7 @@ Run with only the fields that were provided; omit empty UDAs entirely rather tha
 Print:
 
 - New task ID
+- Project (auto-detected / overridden / `--no-project`)
 - bpid → bpdoc → bpms chain
 - ghid/ghpr if linked
 - Tags applied
@@ -136,6 +161,8 @@ Print:
 
 | Flag / field | Purpose |
 |--------------|---------|
+| `project:` | Project (defaults to repo basename) |
+| `--no-project` | File without a project (cross-cutting) |
 | `bpid:` | Blueprint ID link |
 | `bpdoc:` | Blueprint doc path |
 | `bpms:` | Milestone |
