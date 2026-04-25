@@ -1,7 +1,7 @@
 ---
 created: 2026-03-04
-modified: 2026-03-04
-reviewed: 2026-03-04
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: search-discovery
 description: |
   Obsidian vault search and discovery via the official CLI.
@@ -14,6 +14,14 @@ allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # Obsidian Search & Discovery
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative instead when... |
+|---|---|
+| Running full-text search, tag queries, or backlink traversal against the running vault | Triaging orphaned notes for archival or MOC linking — use `vault-orphans` |
+| Listing unresolved wikilinks Obsidian currently flags as broken | Repairing the broken wikilinks once located — use `vault-wikilinks` |
+| Enumerating notes matching a tag before a tag-rename pass | Performing the tag consolidation itself — use `vault-tags` |
 
 Full-text search, tag operations, and link graph traversal using the official Obsidian CLI.
 

@@ -1,7 +1,7 @@
 ---
 created: 2026-03-04
-modified: 2026-03-04
-reviewed: 2026-03-04
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: tasks
 description: |
   Obsidian task management via the official CLI.
@@ -13,6 +13,14 @@ allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # Obsidian Task Management
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative instead when... |
+|---|---|
+| Listing open `- [ ]` tasks across the vault, creating tasks, or marking tasks complete | Editing arbitrary note content rather than checklist lines — use `vault-files` |
+| Filing a task on a daily note via the running Obsidian CLI | Tracking work in `taskwarrior` outside Obsidian — use a `taskwarrior-plugin` skill |
+| Verifying which tasks Obsidian itself indexes as open | Searching for arbitrary text patterns including non-task content — use `search-discovery` |
 
 List, create, and complete tasks across the Obsidian vault using the official CLI.
 

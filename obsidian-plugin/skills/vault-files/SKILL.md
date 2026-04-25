@@ -1,7 +1,7 @@
 ---
 created: 2026-03-04
-modified: 2026-03-04
-reviewed: 2026-03-04
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: vault-files
 description: |
   Obsidian vault file and folder operations via the official CLI.
@@ -14,6 +14,14 @@ allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # Obsidian Vault File Operations
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative instead when... |
+|---|---|
+| Reading, creating, appending, moving, or deleting notes through the running CLI | Doing offline bulk edits across many `.md` files — use `vault-frontmatter` or `vault-templates` |
+| Opening or creating today's daily note | Curating MOC hub notes that organise existing content — use `vault-mocs` |
+| Managing folder layout while Obsidian is running | Renaming a note and rewriting all links to it — use `vault-wikilinks` |
 
 Comprehensive guidance for managing files, folders, and daily notes in Obsidian vaults using the official Obsidian CLI.
 

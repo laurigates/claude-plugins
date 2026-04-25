@@ -1,7 +1,7 @@
 ---
 created: 2026-04-17
-modified: 2026-04-19
-reviewed: 2026-04-17
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: vault-mocs
 description: |
   Map-of-Content (MOC) curation for Obsidian vaults. Use when the user asks
@@ -13,6 +13,14 @@ allowed-tools: Read, Edit, Write, Grep, Glob
 ---
 
 # MOC Curation
+
+## When to Use This Skill
+
+| Use this skill when... | Use the alternative instead when... |
+|---|---|
+| Creating or extending a Map of Content hub for a tag category | Reconnecting individual orphaned notes without building a hub — use `vault-orphans` |
+| Migrating legacy `🗺️` MOC tags to canonical `📝/moc` | Renaming or consolidating non-MOC tags across the vault — use `vault-tags` |
+| Auditing MOC coverage and linking orphans into existing hubs | Repairing broken `[[...]]` references inside an existing MOC — use `vault-wikilinks` |
 
 A Map of Content (MOC) is a structured hub note that organizes related content via wikilinks. It's the primary navigation surface of a mature Obsidian vault — more useful than tags, more discoverable than search.
 
