@@ -1,7 +1,7 @@
 ---
 created: 2025-12-22
-modified: 2026-04-19
-reviewed: 2025-12-22
+modified: 2026-04-25
+reviewed: 2026-04-25
 description: |
   Move generated artifact to custom layer to preserve modifications. Use when the user
   wants to "promote" a generated rule to keep manual edits, asks to preserve changes to
@@ -14,6 +14,14 @@ name: blueprint-promote
 ---
 
 Copy a generated rule to the custom rules layer for preservation.
+
+## When to Use This Skill
+
+| Use this skill when... | Use blueprint-sync instead when... |
+|---|---|
+| You want to preserve manual edits to a single generated rule | You want to scan all generated content for drift first |
+| You want to stop sync warnings on a modified auto-generated file | You want regenerate/keep options across many files at once |
+| You say "promote from proposed to custom" or "acknowledge modifications" | Use blueprint-generate-rules instead to regenerate from PRDs |
 
 **Purpose**:
 - Copy generated content from `.claude/rules/` to preserve modifications

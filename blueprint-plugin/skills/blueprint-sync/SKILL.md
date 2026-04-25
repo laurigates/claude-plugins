@@ -1,7 +1,7 @@
 ---
 created: 2025-12-22
-modified: 2026-04-19
-reviewed: 2025-12-22
+modified: 2026-04-25
+reviewed: 2026-04-25
 description: |
   Check for stale generated content and offer regeneration or promotion. Use when the user
   asks to "sync blueprint", detect manually modified generated rules, find stale content
@@ -14,6 +14,15 @@ name: blueprint-sync
 ---
 
 Check the status of generated content and offer options for modified or stale files.
+
+## When to Use This Skill
+
+| Use this skill when... | Use blueprint-promote instead when... |
+|---|---|
+| You want to detect stale or modified generated rules/skills | You've decided to keep one specific edited rule (single artifact) |
+| You're reconciling drift between `.claude/rules/` and the manifest | You want to acknowledge modifications and stop sync warnings |
+| You want regenerate/promote/keep options for many files at once | Use blueprint-generate-rules instead to (re)generate from PRDs |
+| You preview status with `--dry-run` before changing anything | Use blueprint-sync-ids instead for ID assignment, not content drift |
 
 ## Flags
 

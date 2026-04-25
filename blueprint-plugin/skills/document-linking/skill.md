@@ -1,7 +1,7 @@
 ---
 created: 2026-01-20
-modified: 2026-04-19
-reviewed: 2026-01-20
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: document-linking
 description: |
   Unified ID system for PRDs, ADRs, PRPs, and GitHub issues. Auto-generates IDs on document
@@ -16,6 +16,15 @@ allowed-tools: Read, Write, Edit, Grep, Glob, Bash, TodoWrite
 # Document Linking
 
 Provides a unified ID system connecting PRDs, ADRs, PRPs, work-orders, GitHub issues, commits, and PRs. IDs are project-scoped, auto-generated on first access, and maintained bidirectionally.
+
+## When to Use This Skill
+
+| Use this skill when... | Use blueprint-sync-ids instead when... |
+|---|---|
+| You need bidirectional links between PRD/ADR/PRP/issue at runtime | You're doing a one-shot bulk ID assignment for docs missing IDs |
+| You're auto-assigning an ID on first document access | You want a `--dry-run` preview of bulk ID changes |
+| You want to validate broken cross-document references | Use blueprint-adr-validate instead for ADR-only relationship checks |
+| You need to find orphan docs/issues across the project | Use document-detection instead when capturing a brand-new doc |
 
 ## ID Format
 

@@ -1,7 +1,7 @@
 ---
 created: 2026-01-29
-modified: 2026-04-19
-reviewed: 2026-02-06
+modified: 2026-04-25
+reviewed: 2026-04-25
 description: |
   List all ADRs with title, status, date, and domain in a markdown table. Use when
   the user wants to see all architecture decision records, generate an ADR index for
@@ -12,6 +12,14 @@ name: blueprint-adr-list
 ---
 
 List Architecture Decision Records dynamically from the filesystem.
+
+## When to Use This Skill
+
+| Use this skill when... | Use blueprint-docs-list instead when... |
+|---|---|
+| You only need ADR-specific output with title, status, date, domain | You want a combined index across ADRs, PRDs, and PRPs |
+| You're generating an ADR index for a README | You want quick counts/summaries of all blueprint document types |
+| You're auditing ADR status in a markdown table | Use blueprint-adr-validate instead for relationship/conflict checks |
 
 **Use Case**: Generate ADR index tables for README files, audit ADR status, or quickly view all architectural decisions.
 

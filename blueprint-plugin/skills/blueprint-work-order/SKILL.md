@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
-reviewed: 2025-12-26
+modified: 2026-04-25
+reviewed: 2026-04-25
 description: |
   Create work-order with minimal context for isolated subagent execution, optionally linked
   to GitHub issue. Use when the user asks to "create a work-order", breaks a PRP into
@@ -15,6 +15,15 @@ name: blueprint-work-order
 ---
 
 Generate a work-order document for isolated subagent execution with optional GitHub issue integration.
+
+## When to Use This Skill
+
+| Use this skill when... | Use blueprint-prp-create instead when... |
+|---|---|
+| You're breaking a PRP into delegatable subagent tasks | You're creating the PRP itself with full research and validation gates |
+| You want a focused TDD task packet with minimal context | You need a comprehensive context-gathered implementation plan |
+| You want to spawn a work-order from an existing PRP (`--from-prp`) | Use blueprint-prp-execute instead when running an already-written PRP |
+| You're creating a work-order from a GitHub issue (`--from-issue`) | Use confidence-scoring instead to evaluate readiness before delegating |
 
 ## Flags
 

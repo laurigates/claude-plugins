@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
-reviewed: 2026-04-12
+modified: 2026-04-25
+reviewed: 2026-04-25
 description: |
   Initialize Blueprint Development structure in current project. Use when the user asks
   to "init blueprint", "set up blueprint", bootstrap a new project with docs/blueprint/
@@ -13,6 +13,15 @@ name: blueprint-init
 ---
 
 Initialize Blueprint Development in this project.
+
+## When to Use This Skill
+
+| Use this skill when... | Use blueprint-upgrade instead when... |
+|---|---|
+| The project has no `docs/blueprint/manifest.json` yet | The project already has a manifest at an older format version |
+| You're bootstrapping a new project's PRD/ADR/PRP directories | You're migrating v1.x→v2, v2→v3, or v3.x→v3.y |
+| You want to enable feature tracking and decision detection from scratch | Use blueprint-derive-prd / blueprint-derive-adr to populate after init |
+| You're configuring task scheduling for the first time | Use blueprint-execute instead when you want auto-detection of next step |
 
 **Steps**:
 

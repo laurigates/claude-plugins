@@ -1,7 +1,7 @@
 ---
 created: 2025-12-22
-modified: 2026-04-19
-reviewed: 2026-02-06
+modified: 2026-04-25
+reviewed: 2026-04-25
 description: |
   Derive Architecture Decision Records from existing project structure, dependencies, and
   documentation. Use when the user wants to onboard an existing project to blueprint by
@@ -13,6 +13,14 @@ name: blueprint-derive-adr
 ---
 
 Generate Architecture Decision Records (ADRs) for an existing project by analyzing code structure, dependencies, and documentation.
+
+## When to Use This Skill
+
+| Use this skill when... | Use blueprint-derive-prd instead when... |
+|---|---|
+| You're documenting implicit architecture decisions retroactively from code | You want to extract requirements/personas from README, not decisions |
+| You need to capture framework, database, state-management choices as ADRs | Use blueprint-derive-plans instead to derive PRDs+ADRs+PRPs together |
+| You're onboarding an existing project and want decisions on record | Use adr-relationships instead when authoring/validating one ADR |
 
 **Use Case**: Onboarding existing projects to Blueprint Development system, documenting implicit architecture decisions.
 

@@ -1,7 +1,7 @@
 ---
 created: 2026-02-06
-modified: 2026-04-19
-reviewed: 2026-02-06
+modified: 2026-04-25
+reviewed: 2026-04-25
 description: |
   List blueprint documents (ADRs, PRDs, PRPs) with metadata extracted from frontmatter and
   headers. Use when the user asks to "list blueprint docs", "show all PRDs/ADRs/PRPs", audit
@@ -14,6 +14,14 @@ name: blueprint-docs-list
 ---
 
 List blueprint documents programmatically from the filesystem. Extracts metadata from YAML frontmatter and markdown headers.
+
+## When to Use This Skill
+
+| Use this skill when... | Use blueprint-adr-list instead when... |
+|---|---|
+| You want a combined index of ADRs, PRDs, and PRPs (or summary across all) | You only need an ADR-specific index table |
+| You want to audit document statuses across all blueprint types | You need ADR-specific fields like domain or status filtering |
+| You want a quick overview using `all` to see counts of every doc type | You're generating an ADR index for a README |
 
 **Use Case**: Audit document status, generate index tables, or get a quick overview of all project documentation.
 

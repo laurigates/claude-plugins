@@ -1,7 +1,7 @@
 ---
 created: 2026-01-14
-modified: 2026-04-19
-reviewed: 2026-01-30
+modified: 2026-04-25
+reviewed: 2026-04-25
 description: |
   Idempotent meta command that determines and executes the next logical blueprint action.
   Use when the user asks "what's next?", "continue blueprint work", resumes a project after
@@ -12,6 +12,15 @@ name: blueprint-execute
 ---
 
 Intelligent meta command that analyzes repository state and executes the appropriate blueprint action.
+
+## When to Use This Skill
+
+| Use this skill when... | Use blueprint-status instead when... |
+|---|---|
+| You want auto-detection of init/upgrade/derive/generate/execute steps | You only want to view status without taking action |
+| You're resuming a project after pulling and want "what's next?" | You want a read-only report with `--report-only` |
+| You want one entry point that delegates to specific blueprint skills | Use blueprint-init instead when bootstrapping a brand-new project |
+| You say things like "run blueprint" without specifying a command | Use blueprint-upgrade instead when you know you need to migrate |
 
 **Concept**: Run this command anytime to automatically determine what should happen next in your blueprint workflow. Safe to run repeatedly - it's idempotent and will always figure out the right action.
 

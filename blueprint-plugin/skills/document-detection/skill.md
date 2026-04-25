@@ -1,7 +1,7 @@
 ---
 created: 2026-01-09
-modified: 2026-04-19
-reviewed: 2026-02-06
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: document-detection
 description: |
   Detect PRD/ADR/PRP opportunities in conversations and prompt for document creation. Use
@@ -16,6 +16,15 @@ allowed-tools: Read, Grep, Glob, Bash
 # Document Detection
 
 Proactively identify when conversations should become structured documents (PRDs, ADRs, or PRPs) and guide users through the documentation workflow.
+
+## When to Use This Skill
+
+| Use this skill when... | Use blueprint-derive-prd instead when... |
+|---|---|
+| Mid-conversation cues suggest a PRD/ADR/PRP should be captured | You're explicitly extracting a PRD from existing README/docs |
+| The user says "I want to build...", "users should be able to..." | Use blueprint-derive-adr instead when the cue is a tech-choice decision |
+| The user compares trade-offs ("should we use X or Y?") | Use document-linking instead to wire IDs across already-created docs |
+| Implementation scope is being discussed and warrants a PRP | Use blueprint-prp-create instead when you've already decided to author a PRP |
 
 ## When This Skill Activates
 
