@@ -1,7 +1,7 @@
 ---
 created: 2025-12-25
-modified: 2026-04-19
-reviewed: 2025-12-25
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: nushell-data-processing
 description: |
   Structured data processing with nushell — native tables, multi-format parsing (JSON, YAML,
@@ -18,18 +18,18 @@ allowed-tools: Bash(nu *), Read, Write, Edit, Grep, Glob
 
 Expert knowledge for structured data processing using nushell, a shell that treats data as tables rather than text streams.
 
-## When to Use
+## When to Use This Skill
 
-| Scenario | Use this skill | Alternative |
-|----------|---------------|-------------|
-| Complex multi-step data transforms | nushell (natural syntax) | jq (complex expressions) |
-| Multi-format processing (JSON+YAML+CSV) | nushell (native support) | jq/yq (one format each) |
-| Visual data exploration with tables | nushell (native tables) | jq (text output) |
-| Cross-file data operations | nushell (built-in glob/open) | jq + find/xargs |
-| Aggregations and group-by operations | nushell | jq (verbose syntax) |
-| Simple single-field JSON extraction | jq (faster startup) | nushell (heavier) |
-| Simple YAML field extraction | yq (faster startup) | nushell (heavier) |
-| Scripted JSON in CI pipelines | jq (universally available) | nushell (requires install) |
+| Use this skill when... | Use jq-json-processing instead when... |
+|---|---|
+| Performing multi-step transforms across JSON, YAML, CSV, TOML | The input is JSON only and a single jq expression suffices |
+| Aggregating, grouping, or visually exploring tabular data | The pipeline runs in CI on a minimal image without nushell |
+| Combining multiple files into one cross-file analysis | Stdin-piping small payloads from `gh` or `curl` |
+
+| Use this skill when... | Use yq-yaml-processing instead when... |
+|---|---|
+| Working across YAML plus other formats in one pipeline | Editing YAML in place while preserving comments and order |
+| Aggregating across many Kubernetes manifests | Targeted updates to a single Helm values or workflow file |
 
 ## Core Advantages Over jq/yq
 

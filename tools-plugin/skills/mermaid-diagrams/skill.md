@@ -10,25 +10,22 @@ description: |
 user-invocable: false
 allowed-tools: Bash, Read, Write, Grep, Glob, TodoWrite
 created: 2025-12-26
-modified: 2026-04-19
-reviewed: 2025-12-26
+modified: 2026-04-25
+reviewed: 2026-04-25
 ---
 
 # Mermaid Diagrams
 
 Expert in generating diagrams from Markdown-inspired text definitions using Mermaid CLI.
 
-## When to Use
+## When to Use This Skill
 
-| Scenario | Use this skill | Alternative |
-|----------|---------------|-------------|
-| Embedding diagrams in GitHub Markdown | Mermaid (native rendering) | D2 (requires image export) |
-| Simple flowcharts with minimal styling | Mermaid | D2 (overkill for simple cases) |
-| Sequence diagrams with rich syntax | Mermaid | D2 (basic sequence support) |
-| Diagrams that render in docs platforms | Mermaid (wide platform support) | D2 (needs CLI rendering) |
-| Complex nested container layouts | D2 | Mermaid (limited nesting) |
-| Rich styling with classes and themes | D2 | Mermaid (basic styling) |
-| Architecture diagrams with icons | D2 | Mermaid (no icon support) |
+| Use this skill when... | Use d2-diagrams instead when... |
+|---|---|
+| Embedding a diagram directly in a GitHub README or wiki | The output needs rich styling, custom themes, or icons |
+| Authoring sequence diagrams or simple flowcharts | The diagram has deeply nested containers or complex layouts |
+| Targeting platforms that natively render Mermaid (GitHub, GitLab, Notion) | Generating standalone SVG/PDF architecture diagrams |
+| Diagrams must travel as plain text alongside the source | A premium layout engine (`tala`) materially improves the result |
 
 ## Core Expertise
 

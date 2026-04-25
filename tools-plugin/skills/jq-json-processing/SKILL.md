@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: jq-json-processing
 description: JSON querying, filtering, and transformation with jq command-line tool. Use when working with JSON data, parsing JSON files, filtering JSON arrays/objects, or transforming JSON structures.
 user-invocable: false
@@ -12,19 +12,18 @@ allowed-tools: Bash(jq *), Bash(cat *), Read, Write, Edit, Grep, Glob
 
 Expert knowledge for processing, querying, and transforming JSON data using jq, the lightweight and flexible command-line JSON processor.
 
-## When to Use
+## When to Use This Skill
 
-| Scenario | Use this skill | Alternative |
-|----------|---------------|-------------|
-| Extract fields from JSON files | jq (lightweight, fast) | nushell (heavier startup) |
-| Filter and query JSON arrays | jq `select()` and `map()` | nushell `where` and `each` |
-| Transform JSON structure | jq (powerful pipe syntax) | nushell (natural syntax) |
-| Parse API responses (curl, gh) | jq (stdin pipe-friendly) | nushell (requires `from json`) |
-| Validate JSON syntax | jq `empty` (exit code check) | Python `json.tool` |
-| Process YAML or TOML data | nushell (multi-format) | jq (JSON only) |
-| Complex multi-step transforms | nushell (clearer syntax) | jq (dense expressions) |
-| Visual table output from data | nushell (native tables) | jq + column formatting |
-| CI pipelines needing JSON | jq (universally installed) | nushell (requires install) |
+| Use this skill when... | Use yq-yaml-processing instead when... |
+|---|---|
+| Extracting or filtering fields in JSON input | Working with YAML files (Kubernetes, GH Actions, Helm) |
+| Parsing `gh`, `curl`, or `kubectl -o json` responses | Editing YAML in place while preserving comments |
+| CI pipelines on minimal images (jq is universally installed) | Converting YAML → JSON before processing |
+
+| Use this skill when... | Use nushell-data-processing instead when... |
+|---|---|
+| One-off pipeline transforms that fit in a single expression | Multi-step transforms that span JSON, YAML, CSV, and TOML |
+| Stdin-piped JSON from another command | Aggregations, group-by, or visual table exploration |
 
 ## Core Expertise
 

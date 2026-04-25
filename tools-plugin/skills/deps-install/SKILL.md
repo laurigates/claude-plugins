@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 allowed-tools: Bash(uv *), Bash(npm *), Bash(bun *), Bash(cargo *), Bash(go *), Bash(brew *), Read, Write
 args: [package-names] [--dev] [--global]
 argument-hint: [package-names] [--dev] [--global]
@@ -14,6 +14,19 @@ description: |
   or "run the right package manager here".
 name: deps-install
 ---
+
+## When to Use This Skill
+
+| Use this skill when... | Use justfile-expert instead when... |
+|---|---|
+| Installing packages without picking a manager up front | Defining a project-local `just install` recipe |
+| One-off `--global` or `--dev` installs across mixed projects | Standardising `just deps` / `just sync` for a team |
+| Auto-detecting between uv, bun, npm, cargo, and go | The repo already exposes installation as a recipe |
+
+| Use this skill when... | Use shell-expert instead when... |
+|---|---|
+| The user just wants the install command run | Writing a custom installer script with retries or branching |
+| Syncing the lockfile via the right native subcommand | Composing multi-package-manager bootstrap logic in shell |
 
 ## Context
 

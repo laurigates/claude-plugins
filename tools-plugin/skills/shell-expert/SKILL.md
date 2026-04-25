@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
-reviewed: 2026-02-08
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: shell-expert
 description: |
   Shell scripting expertise, command-line tools, automation, and cross-platform
@@ -17,7 +17,18 @@ allowed-tools: Bash, BashOutput, KillShell, Grep, Glob, Read, Write, Edit, TodoW
 
 Expert knowledge for shell scripting, command-line tools, and automation with focus on robust, portable, and efficient solutions.
 
-## Core Expertise
+## When to Use This Skill
+
+| Use this skill when... | Use justfile-expert instead when... |
+|---|---|
+| Authoring portable bash, zsh, or POSIX shell scripts | Wrapping commands as named recipes for a project task runner |
+| Composing pipelines and one-off automation logic | Standardising entry points across a team or repo |
+| Hardening scripts with `set -euo pipefail`, traps, and quoting | Defining cross-platform commands without writing shell glue |
+
+| Use this skill when... | Use jq-json-processing instead when... |
+|---|---|
+| Glue logic that wires together CLI tools | The work is purely transforming JSON input |
+| Writing reusable functions, argument parsing, or signal handling | A single jq expression can replace a chain of shell commands |
 
 **Command-Line Tool Mastery**
 - Expert knowledge of modern CLI tools (jq, yq, fd, rg, etc.)
