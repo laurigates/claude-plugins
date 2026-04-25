@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
-reviewed: 2026-02-08
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: tfc-run-logs
 description: Retrieve plan and apply logs from Terraform Cloud runs. Use when examining TFC run output, debugging failed plans/applies, or reviewing infrastructure changes. Requires TFE_TOKEN environment variable.
 user-invocable: false
@@ -12,17 +12,14 @@ allowed-tools: Bash, Read
 
 Retrieve and display plan and/or apply logs from Terraform Cloud runs directly in the terminal.
 
-## When to Use
+## When to Use This Skill
 
-| Scenario | Use this skill | Alternative |
-|----------|---------------|-------------|
-| Read plan output for a TFC run | `tfc-run-logs` | - |
-| Read apply output for a TFC run | `tfc-run-logs` | - |
-| Debug a failed plan or apply | `tfc-run-logs` | - |
-| Review infrastructure changes in text form | `tfc-run-logs` | - |
-| Analyze resource changes as structured JSON | `tfc-plan-json` | Use plan-json for programmatic analysis |
-| Quick pass/fail status without reading logs | `tfc-run-status` | Use run-status for status only |
-| Find the run ID to inspect | `tfc-list-runs` or `tfc-workspace-runs` | Use list-runs to find the run first |
+| Use this skill when... | Use a sibling instead when... |
+|---|---|
+| Reading plan or apply output text for a known TFC run ID | Analyzing resource changes as structured JSON (`tfc-plan-json`) |
+| Debugging a failed plan or apply by inspecting log lines | Checking only the pass/fail status without log content (`tfc-run-status`) |
+| Reviewing infrastructure changes in human-readable form | Searching for the right run ID across history (`tfc-list-runs`) |
+| Capturing logs to share with a teammate or paste into an issue | Browsing latest runs for FVH workspaces by shorthand (`tfc-workspace-runs`) |
 
 ## Prerequisites
 

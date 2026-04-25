@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: tfc-plan-json
 description: Download and analyze structured Terraform plan JSON output from Terraform Cloud. Use when analyzing resource changes, diffing infrastructure, or programmatically inspecting plan details. Requires TFE_TOKEN environment variable.
 user-invocable: false
@@ -12,17 +12,14 @@ allowed-tools: Bash, Read
 
 Download and analyze structured plan JSON output from Terraform Cloud runs for detailed resource change analysis.
 
-## When to Use
+## When to Use This Skill
 
-| Scenario | Use this skill | Alternative |
-|----------|---------------|-------------|
-| Analyze which resources a plan creates/updates/deletes | `tfc-plan-json` | - |
-| Diff infrastructure changes programmatically | `tfc-plan-json` | - |
-| Inspect provider versions or output values in a plan | `tfc-plan-json` | - |
-| Review resource replacement reasons | `tfc-plan-json` | - |
-| Read human-readable plan/apply logs | `tfc-run-logs` | Use run-logs for text log output |
-| Quick pass/fail status of a run | `tfc-run-status` | Use run-status for status check only |
-| List multiple runs for a workspace | `tfc-list-runs` | Use list-runs for run history |
+| Use this skill when... | Use a sibling instead when... |
+|---|---|
+| Programmatically diffing which resources a plan will create/update/delete | Reading the human-readable plan/apply log (`tfc-run-logs`) |
+| Inspecting provider versions or planned output values in a run | Checking only the pass/fail status of a run (`tfc-run-status`) |
+| Auditing resource replacement reasons across a plan | Listing multiple runs to find the right run ID (`tfc-list-runs`) |
+| Feeding plan JSON into downstream tooling (cost, policy, drift) | Browsing FVH-specific workspace runs by shorthand (`tfc-workspace-runs`) |
 
 ## Prerequisites
 
