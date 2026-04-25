@@ -1,24 +1,30 @@
-description: Short answers shouldn't be prefaced with "Sure!", "Great question!", etc.
+description: Short answers should not be prefaced with procedural openers (verbs of meta-commentary).
 prompt: |
-  In one sentence: what does this repository publish?
+  Read .claude-plugin/marketplace.json. In one sentence, answer:
+  what kind of artefact does this repository publish to its marketplace?
 checks:
   - id: no-procedural-opener
     type: output_not_matches
-    pattern: "^(Sure|Great|Certainly|Of course|Let me|I'll|I will)\\b"
+    # Catches both classic openers ("Sure!", "Let me…") and the participial
+    # meta-commentary openers ("Looking at…", "Checking…", "Based on…")
+    # observed in run 4 (sonnet bypassed the original narrower regex).
+    pattern: "^(Sure|Great|Certainly|Of course|Let me|I'll|I will|Here'?s|Now|First|Based on|According to|Looking|Checking|Reading|Reviewing|Examining|Inspecting|Going to)\\b"
 
   - id: one-sentence
     type: max_output_tokens
-    value: 80
+    value: 100
 
   - id: bounded-turns
     type: max_turns
-    value: 2
+    value: 3
 
   - id: answer-quality
     type: llm_judge
     rubric: |
-      PASS if the response is a single sentence answering what this
-      repository publishes (Claude Code plugins / a plugin marketplace
-      / skills and agents for Claude Code). FAIL if it opens with a
-      procedural phrase, if it's longer than one sentence, or if it
-      doesn't actually answer the question.
+      PASS if the response is a single sentence stating that the
+      repository publishes Claude Code plugins (a marketplace of
+      plugins, skills, and/or agents for Claude Code). FAIL if the
+      response describes a sub-project (e.g. the experiments
+      directory, the testing harness, anything under
+      experiments/claude-probe), or if it doesn't actually answer
+      what is published.

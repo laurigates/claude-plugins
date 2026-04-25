@@ -147,6 +147,7 @@ def main() -> int:
 
     for i, check in enumerate(judge_checks):
         cid = check.get("id") or f"judge{i+1}"
+        observational = bool(check.get("observational"))
         rubric = check.get("rubric", "")
         prompt = render_prompt(rubric, test.get("prompt", ""), transcript_text)
         verdict, reason = run_judge(prompt)
@@ -157,6 +158,9 @@ def main() -> int:
             "INDETERMINATE": "SKIP",
             "ERROR": "ERROR",
         }.get(verdict, "ERROR")
+        if observational and result in ("PASS", "FAIL"):
+            reason = f"observational[{result}]: {reason}"
+            result = "INFO"
         print(
             "\t".join(
                 [

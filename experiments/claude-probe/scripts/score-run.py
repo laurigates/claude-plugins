@@ -157,6 +157,7 @@ def run_checks(test: dict[str, Any], events: list[dict[str, Any]]) -> list[dict[
     for i, check in enumerate(test.get("checks", [])):
         cid = check.get("id") or f"check{i+1}"
         kind = check.get("type")
+        observational = bool(check.get("observational"))
         try:
             if kind == "tool_used":
                 ok, detail = check_tool_used(tool_uses, check["spec"])
@@ -176,7 +177,13 @@ def run_checks(test: dict[str, Any], events: list[dict[str, Any]]) -> list[dict[
             else:
                 results.append({"id": cid, "type": kind, "result": "ERROR", "detail": f"unknown type: {kind}"})
                 continue
-            results.append({"id": cid, "type": kind, "result": "PASS" if ok else "FAIL", "detail": detail})
+            if observational:
+                # Preserve the underlying verdict in detail; report as INFO so
+                # compare.py excludes it from pass-rate totals.
+                outcome = "PASS" if ok else "FAIL"
+                results.append({"id": cid, "type": kind, "result": "INFO", "detail": f"observational[{outcome}]: {detail}"})
+            else:
+                results.append({"id": cid, "type": kind, "result": "PASS" if ok else "FAIL", "detail": detail})
         except Exception as e:  # noqa: BLE001
             results.append({"id": cid, "type": kind, "result": "ERROR", "detail": repr(e)})
     return results

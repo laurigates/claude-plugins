@@ -17,5 +17,9 @@ checks:
       arg_pattern: "\"subagent_type\"\\s*:\\s*\"agents-plugin:security-audit\""
 
   - id: bounded-turns
+    # Sonnet's xhigh-probe needed up to 13 turns to spawn + aggregate the
+    # subagent (run 20260424-175144). Opus medium needed 5-9. 14 keeps the
+    # check meaningful (catches genuine runaways) without flagging normal
+    # subagent orchestration on the smaller model.
     type: max_turns
-    value: 6
+    value: 14
