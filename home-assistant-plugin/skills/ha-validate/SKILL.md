@@ -10,14 +10,23 @@ args: "[path]"
 allowed-tools: Bash(python3 *), Bash(docker exec *), Bash(ha *), Read, Grep, Glob
 argument-hint: "Optional path to config directory (defaults to current directory)"
 created: 2025-02-01
-modified: 2026-04-19
-reviewed: 2025-02-01
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: ha-validate
 ---
 
 # /ha:validate
 
 Validate Home Assistant configuration files for YAML syntax errors and common issues.
+
+## When to Use This Skill
+
+| Use this skill when... | Use ha-configuration instead when... |
+|---|---|
+| Checking YAML syntax in configuration.yaml or automations.yaml | Editing configuration.yaml to add or change integrations |
+| Detecting undefined `!secret` references against secrets.yaml | Adding new entries to secrets.yaml |
+| Finding duplicate keys in scripts.yaml or scenes.yaml | Reorganizing configuration into packages |
+| Running `hass --script check_config` via Docker or HA OS | Authoring template sensors and recorder/logger config |
 
 ## Context
 
