@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
-reviewed: 2026-02-08
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: accessibility-implementation
 description: WCAG 2.1/2.2 compliance implementation, ARIA patterns, keyboard navigation, focus management, and accessibility testing. Use when implementing accessible components, fixing accessibility issues, or when the user mentions WCAG, ARIA, screen readers, or keyboard navigation.
 user-invocable: false
@@ -11,6 +11,15 @@ allowed-tools: Glob, Grep, Read, Edit, Write, Bash(npm *), Bash(npx *), Bash(axe
 # Accessibility Implementation
 
 Technical implementation of WCAG guidelines, ARIA patterns, and assistive technology support.
+
+## When to Use This Skill
+
+| Use this skill when... | Use design-tokens instead when... |
+|---|---|
+| Implementing WCAG 2.1/2.2 success criteria in code | Setting up CSS custom properties or theme systems |
+| Adding ARIA roles, states, or live regions | Defining semantic colour tokens used by themes |
+| Wiring keyboard navigation, focus traps, or skip links | Organizing primitive/semantic/component token tiers |
+| Auditing components with axe-core, jest-axe, or Playwright | Implementing light/dark mode token overrides |
 
 ## Core Expertise
 
