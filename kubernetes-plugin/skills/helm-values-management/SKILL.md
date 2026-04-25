@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-02-14
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: helm-values-management
 description: |
   Manage Helm values across environments with override precedence, multi-environment
@@ -15,6 +15,14 @@ allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 # Helm Values Management
 
 Comprehensive guidance for managing Helm values across environments, understanding override precedence, and advanced configuration strategies.
+
+## When to Use This Skill
+
+| Use this skill when... | Use <sibling> instead when... |
+|---|---|
+| Designing per-environment values files (dev/staging/prod) and override precedence | Use helm-release-management when the focus is the install/upgrade command itself rather than values shape |
+| Reasoning about `--set`, `--set-string`, `--values`, and `--reuse-values` behaviour | Use helm-debugging when values rendering produces wrong YAML or value type errors |
+| Adding values schema validation or secret-injection patterns | Use helm-chart-development when the values schema lives inside a chart you are authoring |
 
 ## When to Use
 

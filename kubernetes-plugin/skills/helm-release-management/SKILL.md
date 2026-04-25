@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-02-14
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: helm-release-management
 description: |
   Manage Helm releases: install, upgrade, uninstall, list, and inspect releases.
@@ -15,6 +15,14 @@ allowed-tools: Bash, Read, Grep, Glob
 # Helm Release Management
 
 Comprehensive guidance for day-to-day Helm release operations including installation, upgrades, uninstallation, and release tracking.
+
+## When to Use This Skill
+
+| Use this skill when... | Use <sibling> instead when... |
+|---|---|
+| Running `helm install`, `helm upgrade`, `helm uninstall`, or listing releases | Use helm-release-recovery when an upgrade has failed and needs rollback or stuck-state recovery |
+| Checking release status, history, or rolling out a new chart version | Use helm-values-management when the focus is configuring values across environments |
+| Promoting an existing chart from staging to production | Use helm-chart-development when authoring the chart that will be installed |
 
 ## When to Use
 
