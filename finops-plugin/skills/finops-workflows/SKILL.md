@@ -4,8 +4,8 @@ args: "[repo] [--created RANGE]"
 allowed-tools: Bash(gh api *), Bash(gh workflow *), Bash(gh repo *), Bash(bash *), Read, TodoWrite
 argument-hint: Optional repo (owner/name format, defaults to current repo). Use --created for date range. Use org mode for org-wide analysis.
 created: 2025-01-30
-modified: 2026-03-05
-reviewed: 2025-01-30
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: finops-workflows
 ---
 
@@ -13,17 +13,14 @@ name: finops-workflows
 
 Analyze GitHub Actions workflow runs for a repository - frequency, duration, success rates, and efficiency metrics.
 
-## When to Use
+## When to Use This Skill
 
-| Scenario | Use this skill | Alternative |
-|----------|---------------|-------------|
-| Analyze workflow run frequency and duration | `/finops:workflows` | - |
-| Investigate high failure rates | `/finops:workflows` | - |
-| Understand trigger type distribution | `/finops:workflows` | - |
-| Org-wide workflow analysis | `/finops:workflows org <name>` | - |
-| Quick overall health snapshot | `/finops:overview` | Use overview for high-level summary |
-| Fix workflow configuration issues | `/finops:waste` | Use waste for actionable config fixes |
-| Compare workflow metrics across repos | `/finops:compare` | Use compare for multi-repo view |
+| Use this skill when... | Use a sibling instead when... |
+|---|---|
+| You need to analyze workflow run frequency, duration, and trigger distribution | You only need a quick high-level health snapshot — use `/finops:overview` |
+| You are investigating high failure rates on specific workflows | You want actionable fixes for workflow config waste — use `/finops:waste` |
+| You need org-wide workflow timing analysis (`/finops:workflows org <name>`) | You want to compare workflow metrics across many repos — use `/finops:compare` |
+| You want to identify slow or noisy workflows by duration | You are investigating cache size or stale caches — use `/finops:caches` |
 
 ## Context
 

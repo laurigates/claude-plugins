@@ -4,8 +4,8 @@ args: "[repo]"
 allowed-tools: Bash(gh api *), Bash(gh workflow *), Bash(gh repo *), Bash(bash *), Read, Grep, Glob, Edit, TodoWrite
 argument-hint: Optional repo (owner/name format, defaults to current repo)
 created: 2025-01-30
-modified: 2026-03-05
-reviewed: 2025-01-30
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: finops-waste
 ---
 
@@ -13,17 +13,14 @@ name: finops-waste
 
 Identify GitHub Actions waste patterns and provide actionable fix suggestions. Analyzes skipped runs, bot triggers, missing concurrency groups, and missing path filters.
 
-## When to Use
+## When to Use This Skill
 
-| Scenario | Use this skill | Alternative |
-|----------|---------------|-------------|
-| Reduce CI minutes/costs | `/finops:waste` | - |
-| Find missing concurrency groups or path filters | `/finops:waste` | - |
-| Identify bot-triggered workflow waste | `/finops:waste` | - |
-| Add cancel-in-progress to PR workflows | `/finops:waste` | - |
-| Quick billing and health snapshot | `/finops:overview` | Use overview for high-level summary |
-| Analyze workflow run frequency and duration | `/finops:workflows` | Use workflows for timing/frequency stats |
-| Investigate cache bloat specifically | `/finops:caches` | Use caches for cache-focused analysis |
+| Use this skill when... | Use a sibling instead when... |
+|---|---|
+| You want actionable fixes for CI cost waste — concurrency, path filters, bot guards | You need a high-level billing and health snapshot — use `/finops:overview` |
+| You need to add `cancel-in-progress` to PR workflows | You need workflow run frequency and duration stats — use `/finops:workflows` |
+| You are auditing skipped runs and bot-triggered noise | You are auditing cache bloat or stale caches — use `/finops:caches` |
+| You want to fix one repo's workflow config | You want to rank waste across many repos — use `/finops:compare` |
 
 ## Context
 
