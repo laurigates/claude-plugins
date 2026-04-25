@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-02-14
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: helm-release-recovery
 description: |
   Recover from failed Helm deployments, rollback releases, fix stuck states
@@ -15,6 +15,14 @@ allowed-tools: Bash, Read, Grep, Glob
 # Helm Release Recovery
 
 Comprehensive guidance for recovering from failed Helm deployments, rolling back releases, and managing stuck or corrupted release states.
+
+## When to Use This Skill
+
+| Use this skill when... | Use <sibling> instead when... |
+|---|---|
+| Rolling back a failed `helm upgrade` or restoring a previous revision | Use helm-release-management for normal install/upgrade/uninstall flows that aren't broken |
+| Releasing a stuck `pending-install` or `pending-upgrade` state | Use helm-debugging when the underlying template, values, or rendered manifest is the actual root cause |
+| Cleaning up corrupted release secrets or partial deployments | Use kubectl-debugging when recovery requires inspecting individual pods or nodes |
 
 ## When to Use
 

@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: kubectl-debugging
 description: |
   Debug Kubernetes pods, nodes, and workloads using kubectl debug. Covers ephemeral containers,
@@ -15,6 +15,14 @@ allowed-tools: Glob, Grep, Read, Bash(kubectl *), Bash(stern *), Edit, Write, To
 # kubectl debug - Interactive Kubernetes Debugging
 
 Expert knowledge for debugging Kubernetes resources using `kubectl debug` - ephemeral containers, pod copies, and node access.
+
+## When to Use This Skill
+
+| Use this skill when... | Use <sibling> instead when... |
+|---|---|
+| Attaching an ephemeral debug container to a running pod with `kubectl debug` | Use kubernetes-operations for general kubectl workflows (apply, get, describe, logs) |
+| Creating a pod copy with a different image or command for interactive troubleshooting | Use helm-debugging when the failure is in template rendering or chart configuration, not the running container |
+| Opening a node-level debug session to inspect host namespaces or filesystems | Use helm-release-recovery when the recovery action is a Helm rollback rather than per-pod debugging |
 
 ## Core Capabilities
 

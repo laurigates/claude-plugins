@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-02-05
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: kubernetes-operations
 description: |
   Kubernetes operations including deployment, management, troubleshooting, kubectl mastery,
@@ -15,6 +15,14 @@ allowed-tools: Glob, Grep, Read, Bash(kubectl *), Bash(helm *), Bash(kustomize *
 # Kubernetes Operations
 
 Expert knowledge for Kubernetes cluster management, deployment, and troubleshooting with mastery of kubectl and cloud-native patterns.
+
+## When to Use This Skill
+
+| Use this skill when... | Use <sibling> instead when... |
+|---|---|
+| Working with kubectl against pods, deployments, services, ingress, ConfigMaps, or Secrets | Use kubectl-debugging when you specifically need `kubectl debug` ephemeral containers or node sessions |
+| Applying or inspecting raw Kubernetes manifests and kustomize overlays | Use helm-release-management when the workload is delivered as a Helm chart |
+| Diagnosing cluster-level networking, storage, or workload health | Use argocd-login when the issue is authenticating to ArgoCD before any cluster operation |
 
 ## Core Expertise
 

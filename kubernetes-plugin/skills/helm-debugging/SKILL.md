@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-02-14
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: helm-debugging
 description: |
   Debug and troubleshoot Helm deployment failures, template errors, and configuration
@@ -15,6 +15,14 @@ allowed-tools: Bash, Read, Grep, Glob
 # Helm Debugging & Troubleshooting
 
 Comprehensive guidance for diagnosing and fixing Helm deployment failures, template errors, and configuration issues.
+
+## When to Use This Skill
+
+| Use this skill when... | Use <sibling> instead when... |
+|---|---|
+| Diagnosing template render errors, value type errors, or YAML parse failures | Use helm-release-recovery when the release itself is stuck (pending-install/upgrade) and needs rollback |
+| Inspecting why a chart deployed but pods are crashing or images won't pull | Use kubectl-debugging when you need an ephemeral container or node-level debug session |
+| Running `helm lint`, `helm template`, or `--dry-run` to validate before deploy | Use helm-chart-development when authoring or restructuring a chart from scratch |
 
 ## When to Use
 

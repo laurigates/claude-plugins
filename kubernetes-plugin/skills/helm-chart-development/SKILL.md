@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-02-14
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: helm-chart-development
 description: |
   Create, test, and package Helm charts for Kubernetes. Covers helm create, Chart.yaml,
@@ -15,6 +15,14 @@ allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 # Helm Chart Development
 
 Comprehensive guidance for creating, testing, and packaging custom Helm charts with best practices for maintainability and reusability.
+
+## When to Use This Skill
+
+| Use this skill when... | Use <sibling> instead when... |
+|---|---|
+| Authoring a new chart with `helm create`, Chart.yaml, templates, dependencies | Use helm-release-management when installing or upgrading an existing chart |
+| Linting, packaging, or publishing your own chart | Use helm-values-management when overriding values across environments |
+| Adding chart tests or refining template structure | Use helm-debugging when an existing deployment is failing or templates render incorrectly |
 
 ## When to Use
 

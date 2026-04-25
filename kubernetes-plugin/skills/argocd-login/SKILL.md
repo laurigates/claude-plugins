@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-02-06
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: argocd-login
 description: |
   ArgoCD CLI authentication with SSO. Provides argocd login command, gRPC-Web
@@ -14,6 +14,14 @@ allowed-tools: Bash, Read, Grep, Glob
 # ArgoCD CLI Login
 
 ArgoCD CLI authentication with SSO for the Data Portal cluster.
+
+## When to Use This Skill
+
+| Use this skill when... | Use kubernetes-operations instead when... |
+|---|---|
+| Authenticating to ArgoCD CLI via SSO | Working directly with kubectl against the cluster |
+| Resolving ArgoCD CLI auth errors before running argocd commands | Inspecting Kubernetes workloads without going through ArgoCD |
+| Setting up gRPC-Web access to argocd.dataportal.fi | Using kubectl-debugging to debug a specific pod or node |
 
 ## When to Use
 
