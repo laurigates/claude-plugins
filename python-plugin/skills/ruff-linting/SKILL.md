@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: ruff-linting
 description: Python code quality with ruff linter. Fast linting, rule selection, auto-fixing, and configuration. Use when checking Python code quality, enforcing standards, or finding bugs.
 user-invocable: false
@@ -11,6 +11,14 @@ allowed-tools: Bash(ruff *), Bash(python *), Bash(uv *), Read, Edit, Write, Grep
 # ruff Linting
 
 Expert knowledge for using `ruff check` as an extremely fast Python linter with comprehensive rule support and automatic fixing.
+
+## When to Use This Skill
+
+| Use this skill when... | Use a focused sibling instead when... |
+|---|---|
+| Running `ruff check`, selecting rule sets, or auto-fixing lint violations | Running `ruff format` to enforce code style — use ruff-formatting |
+| Configuring `[tool.ruff.lint]` rules and per-file ignores in pyproject.toml | Wiring ruff into pre-commit, editor, or CI — use ruff-integration |
+| Migrating from Flake8/pylint/isort/pyupgrade to ruff's combined rule set | Comparing ruff against type-checkers and formatters at a stack level — use python-code-quality |
 
 ## Core Expertise
 

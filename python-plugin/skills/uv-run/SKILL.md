@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: uv-run
 description: |
   Run Python scripts with uv including inline dependencies (PEP 723),
@@ -15,6 +15,14 @@ allowed-tools: Glob, Grep, Read, WebFetch, TodoWrite, WebSearch, BashOutput, Kil
 # UV Run
 
 Run Python scripts with uv - no manual venv activation needed.
+
+## When to Use This Skill
+
+| Use this skill when... | Use a focused sibling instead when... |
+|---|---|
+| Running a one-off script with `uv run script.py` and no project context | Adding a long-lived dependency to a project — use uv-project-management |
+| Embedding PEP 723 inline metadata or `--with` deps into a self-contained script | Installing a global CLI tool (`uv tool install` / `uvx`) — use uv-tool-management |
+| Executing project commands inside the project venv without manual activation | Authoring the project's pyproject.toml or lockfile — use uv-project-management |
 
 ## Core Capabilities
 

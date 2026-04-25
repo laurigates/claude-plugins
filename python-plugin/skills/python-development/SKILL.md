@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: python-development
 description: |
   Core Python development concepts, idioms, best practices, and language features.
@@ -16,6 +16,14 @@ allowed-tools: Glob, Grep, Read, WebFetch, TodoWrite, WebSearch, BashOutput, Kil
 # Python Development
 
 Core Python language concepts, idioms, and best practices.
+
+## When to Use This Skill
+
+| Use this skill when... | Use a focused sibling instead when... |
+|---|---|
+| Writing idiomatic Python 3.10+ code (match statements, structural pattern matching, PEP 604 unions) | Running a single script or one-off command — use uv-run |
+| Adding type hints, decorators, or context managers to library code | Initializing a project or adding dependencies — use uv-project-management |
+| Designing async/await flows or refactoring to Pythonic patterns | Writing or running pytest tests — use python-testing |
 
 ## Core Expertise
 

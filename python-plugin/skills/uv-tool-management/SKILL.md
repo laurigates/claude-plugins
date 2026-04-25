@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-02-06
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: uv-tool-management
 description: |
   Install and manage global Python CLI tools with uv (pipx alternative). Covers
@@ -15,6 +15,14 @@ allowed-tools: Bash, Read, Grep, Glob
 # UV Tool Management
 
 Quick reference for installing and managing global Python tools with UV (pipx alternative).
+
+## When to Use This Skill
+
+| Use this skill when... | Use a focused sibling instead when... |
+|---|---|
+| Installing a global CLI tool (ruff, black, ipython) with `uv tool install` as a pipx replacement | Running a project script inside its venv — use uv-run |
+| Running a one-off CLI invocation via `uvx tool` without installing | Adding the tool as a project dev dependency — use uv-project-management |
+| Listing, upgrading, or uninstalling globally installed tools | Pinning the Python version a tool runs on — use uv-python-versions |
 
 ## When This Skill Applies
 
