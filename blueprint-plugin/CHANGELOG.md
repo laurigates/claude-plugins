@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.30.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.29.0...blueprint-plugin-v3.30.0) (2026-04-25)
+
+
+### Features
+
+* **blueprint-plugin:** add taskwarrior-sidecar mode to feature-tracker-sync ([#1147](https://github.com/laurigates/claude-plugins/issues/1147)) ([4e8020a](https://github.com/laurigates/claude-plugins/commit/4e8020aad4d14228f8cf7afdfb9333f95da21606))
+
 ## [3.29.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.28.1...blueprint-plugin-v3.29.0) (2026-04-24)
 
 
