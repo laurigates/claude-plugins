@@ -14,6 +14,14 @@ description: |
   or wants to go from uncommitted changes to an open pull request in one step.
 ---
 
+## When to Use This Skill
+
+| Use this skill when... | Use X instead when... |
+|------------------------|----------------------|
+| Going from uncommitted changes to an open PR in one step | Creating commits only with no push or PR (`/git:commit`) |
+| Auto-detecting issues, committing, pushing, and opening a PR together | Pushing existing commits to a remote without opening a PR (`/git:push`) |
+| Running the full commit-push-PR pipeline non-interactively | Opening a PR from already-pushed commits (`/git:pr-create`) |
+
 ## Context
 
 - Pre-commit config: !`find . -maxdepth 1 -name ".pre-commit-config.yaml"`

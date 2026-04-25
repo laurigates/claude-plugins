@@ -14,6 +14,14 @@ disable-model-invocation: true
 name: git-issue
 ---
 
+## When to Use This Skill
+
+| Use this skill when... | Use X instead when... |
+|------------------------|----------------------|
+| Implementing a fix for one or more open issues with TDD and PR creation | Performing administrative ops (transfer, pin, lock, bulk edit) on issues (`/git:issue-manage`) |
+| Picking issues from the backlog to work on, optionally in parallel | Periodically grooming open issues and PRs to close stale or completed ones (`/git:triage`) |
+| Going from an issue number to a merged-ready PR end-to-end | Hierarchical sub-issue planning and tracking (`/git:issue-hierarchy`) |
+
 ## Context
 
 - Git remotes: !`git remote -v`

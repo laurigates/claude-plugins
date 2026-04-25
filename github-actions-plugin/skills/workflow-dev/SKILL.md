@@ -20,6 +20,14 @@ name: workflow-dev
 
 Automated development loop with issue creation, TDD, and CI monitoring.
 
+## When to Use This Skill
+
+| Use this skill when... | Use X instead when... |
+|------------------------|----------------------|
+| Running a continuous loop that turns test failures into issues, then resolves them | Inspecting an existing workflow run or debugging CI failures (`/workflow:github-actions-inspection`) |
+| Automating the full issue → branch → PR → green-CI cycle through the backlog | Generating a reusable auto-fix workflow file for multiple repos (`/workflow:ci-autofix-reusable`) |
+| Wanting Claude to pick the next issue and drive it through TDD without user input | Searching upstream OSS issues for known errors or workarounds (`/workflow:github-issue-search`) |
+
 ## Context
 
 - Current branch: !`git branch --show-current`
