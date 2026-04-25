@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.1](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.13.0...project-plugin-v1.13.1) (2026-04-25)
+
+
+### Documentation
+
+* **project-plugin:** broaden project-distill triggers for codify-workflow ([#1148](https://github.com/laurigates/claude-plugins/issues/1148)) ([d9b3dc7](https://github.com/laurigates/claude-plugins/commit/d9b3dc70a6c2fd557add92e540810be7c2da0cd4)), closes [#1130](https://github.com/laurigates/claude-plugins/issues/1130)
+
 ## [1.13.0](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.12.4...project-plugin-v1.13.0) (2026-04-19)
 
 

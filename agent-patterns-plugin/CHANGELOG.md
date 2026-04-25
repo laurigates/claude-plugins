@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.17.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.16.0...agent-patterns-plugin-v2.17.0) (2026-04-25)
+
+
+### Features
+
+* **agent-patterns-plugin:** add wave-based-dispatch skill for sequential WO chains ([#1152](https://github.com/laurigates/claude-plugins/issues/1152)) ([76bb8c7](https://github.com/laurigates/claude-plugins/commit/76bb8c7a46c4280afa2ce9cbbd412372bae30202)), closes [#1128](https://github.com/laurigates/claude-plugins/issues/1128)
+
+
+### Documentation
+
+* **agent-patterns-plugin:** codify verbatim-patch + agent-authors-prose ([#1150](https://github.com/laurigates/claude-plugins/issues/1150)) ([2b5da94](https://github.com/laurigates/claude-plugins/commit/2b5da94bc6f5cd3d952ed5d55797b6face6b61d9))
+* **agent-patterns-plugin:** warn about worktree-isolated Edit/Write path resolution ([#1151](https://github.com/laurigates/claude-plugins/issues/1151)) ([e21d4dd](https://github.com/laurigates/claude-plugins/commit/e21d4dd729cd09155cfb427d9d30bb1eb80a3489)), closes [#1091](https://github.com/laurigates/claude-plugins/issues/1091)
+
 ## [2.16.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.15.0...agent-patterns-plugin-v2.16.0) (2026-04-24)
 
 
