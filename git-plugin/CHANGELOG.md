@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.34.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.34.2...git-plugin-v2.34.3) (2026-04-25)
+
+
+### Documentation
+
+* **git-plugin,github-actions-plugin:** add When to Use tables to 3 skills ([#1144](https://github.com/laurigates/claude-plugins/issues/1144)) ([aa5a803](https://github.com/laurigates/claude-plugins/commit/aa5a8032ba06b299fb0dfa18d5e65c6b4d3ee851))
+
 ## [2.34.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.34.1...git-plugin-v2.34.2) (2026-04-24)
 
 
