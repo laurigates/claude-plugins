@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.2](https://github.com/laurigates/claude-plugins/compare/python-plugin-v1.5.1...python-plugin-v1.5.2) (2026-04-25)
+
+
+### Documentation
+
+* **python-plugin:** standardise When to Use tables ([#1160](https://github.com/laurigates/claude-plugins/issues/1160)) ([df7b36e](https://github.com/laurigates/claude-plugins/commit/df7b36e82d85e78ceaf3f6a998b400dca1e5f0f3)), closes [#1156](https://github.com/laurigates/claude-plugins/issues/1156)
+
 ## [1.5.1](https://github.com/laurigates/claude-plugins/compare/python-plugin-v1.5.0...python-plugin-v1.5.1) (2026-04-08)
 
 

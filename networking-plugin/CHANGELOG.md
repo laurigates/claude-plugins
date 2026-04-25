@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.2](https://github.com/laurigates/claude-plugins/compare/networking-plugin-v1.3.1...networking-plugin-v1.3.2) (2026-04-25)
+
+
+### Documentation
+
+* **networking-plugin:** standardise When to Use tables ([#1159](https://github.com/laurigates/claude-plugins/issues/1159)) ([106370a](https://github.com/laurigates/claude-plugins/commit/106370a6d2158e11603e2735069cdab9e307446c)), closes [#1156](https://github.com/laurigates/claude-plugins/issues/1156)
+
 ## [1.3.1](https://github.com/laurigates/claude-plugins/compare/networking-plugin-v1.3.0...networking-plugin-v1.3.1) (2026-04-08)
 
 

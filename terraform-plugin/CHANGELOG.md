@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.2](https://github.com/laurigates/claude-plugins/compare/terraform-plugin-v1.7.1...terraform-plugin-v1.7.2) (2026-04-25)
+
+
+### Documentation
+
+* **terraform-plugin:** standardise When to Use tables ([#1161](https://github.com/laurigates/claude-plugins/issues/1161)) ([606c0de](https://github.com/laurigates/claude-plugins/commit/606c0de5e6112af7574269141a3b14a66ac5d6fe)), closes [#1156](https://github.com/laurigates/claude-plugins/issues/1156)
+
 ## [1.7.1](https://github.com/laurigates/claude-plugins/compare/terraform-plugin-v1.7.0...terraform-plugin-v1.7.1) (2026-04-08)
 
 
