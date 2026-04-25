@@ -10,8 +10,8 @@ args: "[--focus <plugin-name>]"
 allowed-tools: Glob, Grep, Read, Bash(ls *), Bash(wc *), TodoWrite
 argument-hint: "analyze all plugins or --focus <plugin-name>"
 created: 2026-01-24
-modified: 2026-04-19
-reviewed: 2026-02-08
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: agents-analyze
 agent: general-purpose
 ---
@@ -20,17 +20,14 @@ agent: general-purpose
 
 Analyze the plugin collection to identify where sub-agents would improve workflows by isolating verbose output, enforcing constraints, or specializing behavior.
 
-## When to Use
+## When to Use This Skill
 
-| Scenario | Use this skill | Alternative |
-|----------|---------------|-------------|
-| Audit plugin collection for sub-agent opportunities | `/agents:analyze` | - |
-| Identify skills with verbose output needing isolation | `/agents:analyze` | - |
-| Review model selection (haiku vs opus) across agents | `/agents:analyze` | - |
-| Check for tool over-permissions in existing agents | `/agents:analyze` | - |
-| Focus analysis on a single plugin | `/agents:analyze --focus <plugin>` | - |
-| Create a new agent from scratch | Manually create agent `.md` file | Use agent-development rule for patterns |
-| Configure agent hooks or permissions | `/update-config` | Use update-config for settings.json changes |
+| Use this skill when... | Use a sibling skill instead when... |
+|---|---|
+| Auditing the whole plugin collection for sub-agent opportunities (verbose-output skills, model mismatches, tool over-permissions) | Auditing a single agent's frontmatter, tool list, and prompt completeness — use `agent-patterns-plugin:meta-audit` |
+| Mapping delegation gaps and producing a list of proposed new agents | Authoring the new agent file from that proposal — use `agent-patterns-plugin:custom-agent-definitions` |
+| Reviewing haiku vs opus model selection across the plugin tree | Configuring an agent's hooks, permissions, or settings.json wiring — use `agent-patterns-plugin:claude-hooks-configuration` |
+| Focusing the analysis on a single plugin's skills (`--focus <plugin>`) | Coordinating multiple agents at runtime — use `agent-patterns-plugin:agent-teams` or `parallel-agent-dispatch` |
 
 ## Agentic Optimizations
 
