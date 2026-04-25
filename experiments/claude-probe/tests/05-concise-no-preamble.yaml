@@ -1,0 +1,35 @@
+description: Short answers should not be prefaced with procedural openers (verbs of meta-commentary).
+prompt: |
+  Read .claude-plugin/marketplace.json. In one sentence, answer:
+  what kind of artefact does this repository publish to its marketplace?
+checks:
+  - id: no-procedural-opener
+    type: output_not_matches
+    # Catches both classic openers ("Sure!", "Let me…") and the participial
+    # meta-commentary openers ("Looking at…", "Checking…", "Based on…")
+    # observed in run 4 (sonnet bypassed the original narrower regex).
+    pattern: "^(Sure|Great|Certainly|Of course|Let me|I'll|I will|Here'?s|Now|First|Based on|According to|Looking|Checking|Reading|Reviewing|Examining|Inspecting|Going to)\\b"
+
+  - id: response-budget
+    # Token cap is a noisy proxy for "one sentence" — when the prompt
+    # requires a tool call (Read marketplace.json) the response naturally
+    # grows to 120-260 tokens. Cap is set generously to catch genuine
+    # paragraph-length runaways. The single-sentence assertion lives in
+    # the answer-quality judge.
+    type: max_output_tokens
+    value: 400
+
+  - id: bounded-turns
+    type: max_turns
+    value: 3
+
+  - id: answer-quality
+    type: llm_judge
+    rubric: |
+      PASS if the response is a single sentence stating that the
+      repository publishes Claude Code plugins (a marketplace of
+      plugins, skills, and/or agents for Claude Code). FAIL if the
+      response describes a sub-project (e.g. the experiments
+      directory, the testing harness, anything under
+      experiments/claude-probe), or if it doesn't actually answer
+      what is published.

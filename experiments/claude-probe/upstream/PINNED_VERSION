@@ -1,0 +1,10 @@
+repo:   https://github.com/Piebald-AI/claude-code-system-prompts
+commit: e48b9782c5ec18fc0b690ba91b70c8ebd04db31f
+date:   2026-04-23
+
+Only the fragments actively referenced by prompts/probe.md are mirrored
+here. To refresh:
+
+    git clone --depth 1 https://github.com/Piebald-AI/claude-code-system-prompts /tmp/piebald
+    cp /tmp/piebald/system-prompts/<fragment>.md experiments/claude-probe/upstream/piebald-system-prompts/
+    # then update this file with the new commit SHA

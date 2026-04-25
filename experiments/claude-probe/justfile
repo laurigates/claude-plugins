@@ -1,0 +1,91 @@
+# claude-probe — system-prompt override A/B testing harness.
+# Run `just` or `just help` for the recipe list.
+
+set positional-arguments
+
+default: help
+
+# List all recipes.
+help:
+    @just --list
+
+##########
+# Running
+##########
+
+# Default: iterate on sonnet (4 conditions × filter × runs). Cheap.
+[group: "run"]
+run filter="*" runs="3": (run-sonnet filter runs)
+
+# Sonnet-only sweep — 4 conditions, recommended for day-to-day iteration.
+[group: "run"]
+run-sonnet filter="*" runs="3":
+    bash scripts/run-suite.sh --filter "{{filter}}" --runs "{{runs}}" \
+        --conditions sonnet-xhigh-default,sonnet-xhigh-probe,sonnet-medium-default,sonnet-medium-probe
+
+# Opus-only sweep — 4 conditions, reserve for confirmation runs. Expensive.
+[group: "run"]
+run-opus filter="*" runs="3":
+    bash scripts/run-suite.sh --filter "{{filter}}" --runs "{{runs}}" \
+        --conditions opus-xhigh-default,opus-xhigh-probe,opus-medium-default,opus-medium-probe
+
+# Full 8-condition sweep (sonnet + opus). Expensive — think before running.
+[group: "run"]
+run-all filter="*" runs="3":
+    bash scripts/run-suite.sh --filter "{{filter}}" --runs "{{runs}}"
+
+# Run a single (test, condition, run_n) triple for fast iteration.
+[group: "run"]
+run-one test condition run_n="1":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    run_id="adhoc-$(date -u +%Y%m%d-%H%M%S)"
+    mkdir -p "results/${run_id}"
+    bash scripts/run-one.sh "{{test}}" "{{condition}}" "{{run_n}}" "results/${run_id}"
+    printf '%s' "${run_id}" > results/LATEST
+    echo "run_id=${run_id}"
+
+##########
+# Scoring
+##########
+
+# Score a single transcript (TSV to stdout).
+[group: "score"]
+score transcript:
+    scripts/score-run.py "{{transcript}}"
+
+# Aggregate + compare last run (or pass a run-id).
+[group: "score"]
+compare run_id="latest":
+    scripts/compare.py "{{run_id}}"
+
+# Aggregate without invoking the LLM judge (cheap).
+[group: "score"]
+compare-fast run_id="latest":
+    scripts/compare.py "{{run_id}}" --no-judge
+
+##########
+# Housekeeping
+##########
+
+# List test ids.
+[group: "meta"]
+tests:
+    @find tests -maxdepth 1 -name '*.yaml' -exec basename {} .yaml \; | sort
+
+# List condition ids.
+[group: "meta"]
+conditions:
+    @python3 -c 'import yaml; [print(c["id"]) for c in yaml.safe_load(open("conditions.yaml"))["conditions"]]'
+
+# Show the probe prompt.
+[group: "meta"]
+show-probe:
+    @cat prompts/probe.md
+
+# Delete all results (confirmed).
+[group: "meta"]
+[confirm("delete all results/?")]
+clean:
+    rm -rf results
+    mkdir -p results

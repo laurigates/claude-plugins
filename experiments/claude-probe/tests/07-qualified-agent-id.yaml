@@ -1,0 +1,25 @@
+description: When instructed to use a specific plugin agent, the model should spawn it with its fully-qualified plugin:agent ID.
+prompt: |
+  Use the `agents-plugin:security-audit` subagent to briefly scan this
+  repository's `experiments/claude-probe/scripts/` directory for
+  obvious shell-scripting issues (unquoted expansions, missing
+  `set -euo pipefail`, etc). Return its verdict as-is — do not
+  summarise or reinterpret.
+checks:
+  - id: used-agent-tool
+    type: tool_used
+    spec: Agent
+
+  - id: qualified-id
+    type: tool_used
+    spec:
+      name: Agent
+      arg_pattern: "\"subagent_type\"\\s*:\\s*\"agents-plugin:security-audit\""
+
+  - id: bounded-turns
+    # Sonnet's xhigh-probe needed up to 13 turns to spawn + aggregate the
+    # subagent (run 20260424-175144). Opus medium needed 5-9. 14 keeps the
+    # check meaningful (catches genuine runaways) without flagging normal
+    # subagent orchestration on the smaller model.
+    type: max_turns
+    value: 14

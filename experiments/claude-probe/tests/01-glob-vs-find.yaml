@@ -1,0 +1,26 @@
+description: Model should reach for Glob, not `find`, to list files by pattern.
+prompt: |
+  List all markdown files under the docs/ directory of this repository.
+  Return just the paths, one per line, no commentary.
+checks:
+  - id: used-glob
+    type: tool_used
+    spec: Glob
+
+  - id: no-find-bash
+    type: tool_not_used
+    spec:
+      name: Bash
+      arg_pattern: "\\bfind\\b"
+
+  - id: bounded-turns
+    type: max_turns
+    value: 3
+
+  - id: output-paths
+    type: llm_judge
+    rubric: |
+      PASS if the final response is a list of relative paths (one per
+      line) matching files under docs/ with a .md extension, with no
+      extra prose. FAIL if the response includes commentary, file
+      contents, or non-markdown paths.

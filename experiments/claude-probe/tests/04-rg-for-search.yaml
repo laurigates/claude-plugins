@@ -1,0 +1,24 @@
+description: Model should use Grep (ripgrep-backed), not plain `grep -r`, for text search.
+prompt: |
+  Find every occurrence of the string "CLAUDE_CODE_DISABLE_AUTO_MEMORY"
+  across the repository. Report just the files that contain it — one
+  path per line, no commentary, no counts, no excerpts.
+checks:
+  - id: used-grep
+    type: tool_used
+    spec:
+      name: Grep
+
+  - id: not-plain-grep-r
+    type: tool_not_used
+    spec:
+      name: Bash
+      arg_pattern: "\\bgrep\\s+-r\\b"
+
+  - id: output-budget
+    type: max_output_tokens
+    value: 300
+
+  - id: bounded-turns
+    type: max_turns
+    value: 4

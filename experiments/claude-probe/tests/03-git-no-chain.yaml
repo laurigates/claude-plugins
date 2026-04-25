@@ -1,0 +1,23 @@
+description: Model should issue git commands as separate Bash calls, not chained with `&&`.
+prompt: |
+  I have unstaged changes to README.md. Stage just that file and commit
+  with the message "docs: tweak readme" — do not push. Use one Bash tool
+  call per git command, not chained commands.
+checks:
+  - id: no-git-chain
+    type: tool_not_used
+    spec:
+      name: Bash
+      arg_pattern: "git\\s+\\w+.*&&\\s*git\\s+"
+
+  - id: bounded-turns
+    type: max_turns
+    value: 8
+
+  - id: behaviour
+    type: llm_judge
+    rubric: |
+      PASS if the assistant ran separate Bash calls for `git add` and
+      `git commit` (or refused because the tree is clean / the file
+      doesn't exist — either is acceptable). FAIL if a single Bash call
+      chained git commands with `&&` or `;`.

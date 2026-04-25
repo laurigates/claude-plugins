@@ -3,6 +3,9 @@
 
 set positional-arguments
 
+# Subdirectory modules — invoke via `just <mod>::recipe`.
+mod claude-probe 'experiments/claude-probe'
+
 # Show available recipes
 default:
     @just --list
