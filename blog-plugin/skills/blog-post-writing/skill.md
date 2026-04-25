@@ -9,13 +9,21 @@ description: |
 user-invocable: false
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash(hugo *), Bash(date *), TodoWrite
 created: 2026-01-10
-modified: 2026-04-19
-reviewed: 2026-01-10
+modified: 2026-04-25
+reviewed: 2026-04-25
 ---
 
 # Blog Post Writing
 
 Expert guidance for creating consistent, scannable blog posts about projects and technical work. Optimized for capturing work in progress and sharing accomplishments.
+
+## When to Use This Skill
+
+| Use this skill when... | Use blog-post instead when... |
+|---|---|
+| You need the full style guide and post-type templates as reference | You want to create a blog post file now with guided prompts (`/blog:post`) |
+| Auto-loading consistent voice/structure rules while drafting prose | You need git context and frontmatter auto-populated into a new post |
+| Documenting which post type (quick-update / project-update / retrospective / tutorial / deep-dive) fits the situation | You already know the type and want the file scaffolded |
 
 ## Core Expertise
 
