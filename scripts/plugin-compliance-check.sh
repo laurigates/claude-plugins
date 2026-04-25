@@ -37,6 +37,7 @@ results_marketplace=()
 results_release=()
 results_bash=()
 results_desc=()
+results_when_to_use=()
 results_overall=()
 
 # Helper: extract YAML frontmatter field
@@ -446,6 +447,66 @@ check_skill_descriptions() {
   return 0
 }
 
+# Check 8: "When to Use This Skill" section presence
+# Regression: Wave 3 issue draining (umbrella issue #1156) swept every plugin's
+# skills to comply with .claude/rules/skill-quality.md (lines 27-38), which
+# requires every SKILL.md to have a `## When to Use This Skill` heading
+# immediately followed by a markdown table. This check keeps the tree compliant.
+check_skill_when_to_use() {
+  local plugin="$1"
+  local skills_dir="${plugin}/skills"
+
+  if [ ! -d "$skills_dir" ]; then
+    return 0
+  fi
+
+  local skill_files=()
+  while IFS= read -r -d '' f; do
+    skill_files+=("$f")
+  done < <(find "$skills_dir" -type f \( -iname "SKILL.md" -o -iname "skill.md" \) -print0 2>/dev/null)
+
+  if [ ${#skill_files[@]} -eq 0 ]; then
+    return 0
+  fi
+
+  local has_errors=false
+
+  for skill_file in "${skill_files[@]}"; do
+    local skill_name
+    skill_name=$(basename "$(dirname "$skill_file")")
+
+    # Find the heading line number (exact match, anchored).
+    local heading_line
+    heading_line=$(grep -n '^## When to Use This Skill$' "$skill_file" | head -1 | cut -d: -f1)
+
+    if [ -z "$heading_line" ]; then
+      issues+=("❌ ${plugin}/${skill_name}: SKILL.md missing '## When to Use This Skill' heading (see .claude/rules/skill-quality.md)")
+      has_errors=true
+      continue
+    fi
+
+    # Look for a markdown table row (line starting with '|') within ~10 lines
+    # after the heading. The blank line and the table header both count as
+    # acceptable interleaving — we only need the first '|' to appear by then.
+    local window_start=$((heading_line + 1))
+    local window_end=$((heading_line + 10))
+    local table_line
+    table_line=$(awk -v start="$window_start" -v end="$window_end" \
+      'NR >= start && NR <= end && /^\|/ { print NR; exit }' "$skill_file")
+
+    if [ -z "$table_line" ]; then
+      issues+=("❌ ${plugin}/${skill_name}: SKILL.md '## When to Use This Skill' heading at line ${heading_line} not followed by a markdown table within 10 lines")
+      has_errors=true
+    fi
+  done
+
+  if $has_errors; then
+    return 2
+  fi
+
+  return 0
+}
+
 # Main check loop
 for i in "${!PLUGINS[@]}"; do
   plugin="${PLUGINS[$i]}"
@@ -459,6 +520,7 @@ for i in "${!PLUGINS[@]}"; do
     results_release+=("❌")
     results_bash+=("❌")
     results_desc+=("❌")
+    results_when_to_use+=("❌")
     results_overall+=("❌")
     overall_failed=true
     continue
@@ -472,6 +534,7 @@ for i in "${!PLUGINS[@]}"; do
   release_status=0; check_release_config "$plugin" || release_status=$?
   bash_status=0; check_bash_patterns "$plugin" || bash_status=$?
   desc_status=0; check_skill_descriptions "$plugin" || desc_status=$?
+  when_to_use_status=0; check_skill_when_to_use "$plugin" || when_to_use_status=$?
 
   results_json+=("$(to_symbol $json_status)")
   results_frontmatter+=("$(to_symbol $frontmatter_status)")
@@ -480,10 +543,11 @@ for i in "${!PLUGINS[@]}"; do
   results_release+=("$(to_symbol $release_status)")
   results_bash+=("$(to_symbol $bash_status)")
   results_desc+=("$(to_symbol $desc_status)")
+  results_when_to_use+=("$(to_symbol $when_to_use_status)")
 
   # Overall: ❌ if any ❌, ⚠️ if any ⚠️, ✅ if all ✅
   plugin_overall="✅"
-  for status in $json_status $frontmatter_status $body_status $marketplace_status $release_status $bash_status $desc_status; do
+  for status in $json_status $frontmatter_status $body_status $marketplace_status $release_status $bash_status $desc_status $when_to_use_status; do
     if [ "$status" -ge 2 ]; then
       plugin_overall="❌"
       overall_failed=true
@@ -498,11 +562,11 @@ done
 # Output report
 echo "## Plugin Compliance Review"
 echo ""
-echo "| Plugin | plugin.json | Frontmatter | Body | Marketplace | Release Config | Bash Patterns | Descriptions | Overall |"
-echo "|--------|-------------|-------------|------|-------------|----------------|---------------|--------------|---------|"
+echo "| Plugin | plugin.json | Frontmatter | Body | Marketplace | Release Config | Bash Patterns | Descriptions | When-to-Use | Overall |"
+echo "|--------|-------------|-------------|------|-------------|----------------|---------------|--------------|-------------|---------|"
 
 for i in "${!PLUGINS[@]}"; do
-  echo "| ${PLUGINS[$i]} | ${results_json[$i]} | ${results_frontmatter[$i]} | ${results_body[$i]} | ${results_marketplace[$i]} | ${results_release[$i]} | ${results_bash[$i]} | ${results_desc[$i]} | ${results_overall[$i]} |"
+  echo "| ${PLUGINS[$i]} | ${results_json[$i]} | ${results_frontmatter[$i]} | ${results_body[$i]} | ${results_marketplace[$i]} | ${results_release[$i]} | ${results_bash[$i]} | ${results_desc[$i]} | ${results_when_to_use[$i]} | ${results_overall[$i]} |"
 done
 
 echo ""
