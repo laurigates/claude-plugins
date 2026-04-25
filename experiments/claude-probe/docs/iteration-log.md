@@ -67,3 +67,66 @@ default.
   accumulated cache.
 - 06-parallel-bash may or may not improve; the default fails too, so
   this is a model-behaviour ceiling more than a prompt issue.
+
+## v2 measurement — 2026-04-25 (runs `20260425-042945` sonnet + `20260425-050710` opus, with test fixes from `afd46bd6`)
+
+### Evidence
+
+Two clean apples-to-apples sweeps of the v2 probe:
+
+- Run 5: sonnet × 4 conditions × 7 tests × 3 runs (post-fix tests)
+- Run 6: opus × 4 conditions × 7 tests × 3 runs (post-fix tests)
+
+Test fixes between v2 measurement and the original v2 sweep:
+- 05 procedural-opener regex extended; prompt grounded on
+  `marketplace.json` to remove the cwd-confusion ambiguity
+- 06 parallelism check marked `observational: true`
+- 07 bounded-turns 6 → 14 (sonnet-friendly)
+- (Then in this commit) 05 token cap 100 → 400 (the marketplace.json
+  read added 100-200 tokens; cap was a noisy proxy for sentence count)
+
+### Capability pass rate (test 05's bogus token cap excluded)
+
+| condition | sonnet | opus |
+|---|---|---|
+| medium-default | 60/60 (100%) | 60/60 (100%) |
+| medium-probe | 59/60 (98.3%) | 59/60 (98.3%) |
+| xhigh-default | 59/60 (98.3%) | 59/60 (98.3%) |
+| xhigh-probe | 59/60 (98.3%) | 59/60 (98.3%) |
+
+**Probe v2 is at functional parity with the default Claude Code system
+prompt across both models and both effort levels.** The 1-failure
+deltas (probe vs default) are within sampling noise at n=3.
+
+### Token usage — opposite effects on the two models
+
+| condition | sonnet out_mean | opus out_mean |
+|---|---|---|
+| medium-default | 629 | 487 |
+| medium-probe | 536 (-15%) | 555 (+14%) |
+| xhigh-default | 686 | 539 |
+| xhigh-probe | 642 (-6%) | 681 (+26%) |
+
+The probe's brevity directives **reduce** output on sonnet but
+**increase** it on opus. Reading: the directives target verbosity
+patterns sonnet exhibits more strongly than opus; on opus, removing
+the default's broader scaffolding gives extended-thinking output more
+room to expand. The probe is tonally calibrated for sonnet, not opus.
+
+### Cross-model behaviour ceilings (observational)
+
+- **Test 06 parallelism** still fails ~12/12 across all conditions on
+  both models. Even when the prompt explicitly demands parallel emission,
+  the model serialises. This is independent of system prompt — won't be
+  fixed by probe iteration. The parallel-tool fragment we pulled from
+  Piebald didn't change the rate.
+
+### Verdict for v2
+
+- **Capability**: parity. Safe to use.
+- **Cost on sonnet**: net win (~10% fewer output tokens on average).
+- **Cost on opus**: net loss (~20% more output tokens on average).
+- **Recommendation**: if sonnet is the working model, deploy v2; if
+  opus, either stick with default or work on a v3 that adds
+  opus-specific brevity scaffolding without re-introducing the bulk
+  of the default prompt.

@@ -10,9 +10,14 @@ checks:
     # observed in run 4 (sonnet bypassed the original narrower regex).
     pattern: "^(Sure|Great|Certainly|Of course|Let me|I'll|I will|Here'?s|Now|First|Based on|According to|Looking|Checking|Reading|Reviewing|Examining|Inspecting|Going to)\\b"
 
-  - id: one-sentence
+  - id: response-budget
+    # Token cap is a noisy proxy for "one sentence" — when the prompt
+    # requires a tool call (Read marketplace.json) the response naturally
+    # grows to 120-260 tokens. Cap is set generously to catch genuine
+    # paragraph-length runaways. The single-sentence assertion lives in
+    # the answer-quality judge.
     type: max_output_tokens
-    value: 100
+    value: 400
 
   - id: bounded-turns
     type: max_turns
