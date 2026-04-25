@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
-reviewed: 2026-03-09
+modified: 2026-04-25
+reviewed: 2026-04-25
 allowed-tools: Task, TodoWrite
 args: "[--coverage] [--parallel] [--report]"
 argument-hint: "[--coverage] [--parallel] [--report]"
@@ -14,6 +14,15 @@ description: |
 name: test-full
 agent: general-purpose
 ---
+
+## When to Use This Skill
+
+| Use this skill when... | Use test-quick instead when... |
+|---|---|
+| Running the complete pyramid (unit, integration, E2E) before a PR | You only need fast unit-test feedback |
+| Generating coverage and HTML reports across all tiers | Iterating on a single failing file (use test-focus) |
+| Forcing parallel pre-commit verification across the suite | Running tests for one specific framework run (use test-run) |
+| Producing a CI-like full pass locally | Asking strategic questions about strategy (use test-consult) |
 
 ## Context
 

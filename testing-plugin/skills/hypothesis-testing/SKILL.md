@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-01-24
-reviewed: 2026-01-24
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: hypothesis-testing
 description: |
   Property-based testing with Hypothesis for discovering edge cases and validating invariants.
@@ -14,6 +14,15 @@ allowed-tools: Bash, Read, Grep, Glob
 # Hypothesis Property-Based Testing
 
 Automatically generate test cases to find edge cases and validate properties of your code.
+
+## When to Use This Skill
+
+| Use this skill when... | Use property-based-testing instead when... |
+|---|---|
+| Writing Python property-based tests with Hypothesis | Working in a non-Python language (TS, Rust, etc.) |
+| Generating test data for serialization round-trips | Writing example-based tests (use python-testing) |
+| Validating mathematical invariants (commutative, associative) | Running an existing test suite (use test-run) |
+| Using NumPy or Django strategy extensions | Designing the overall test strategy (use test-consult) |
 
 ## When to Use Hypothesis vs Example-Based Tests
 

@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: test-tier-selection
 description: Automatic selection of appropriate test tiers based on change scope. Guides unit tests for small changes, full suite for larger changes. Use when running tests, discussing testing strategy, or after code modifications.
 user-invocable: false
@@ -11,6 +11,15 @@ allowed-tools: Bash, Read, Glob, Grep
 # Test Tier Selection
 
 Automatic guidance for selecting appropriate test tiers based on change context and scope.
+
+## When to Use This Skill
+
+| Use this skill when... | Use test-consult instead when... |
+|---|---|
+| Mechanically deciding which tier to run for a given change | Reviewing overall test pyramid balance or strategy |
+| Mapping change type (refactor, API, UI) to required tiers | Designing a new feature's test approach |
+| Justifying why an E2E run is or isn't needed | Diagnosing flaky tests in an existing suite |
+| Picking between test-quick, test-run, and test-full | Setting up a project's test infrastructure (use test-setup) |
 
 ## Test Tier Definitions
 

@@ -1,7 +1,7 @@
 ---
 created: 2026-01-19
-modified: 2026-04-19
-reviewed: 2026-02-08
+modified: 2026-04-25
+reviewed: 2026-04-25
 allowed-tools: Bash, Read, Grep, Glob, TodoWrite
 args: "<file-path> [--serial] [--debug]"
 argument-hint: "<file-path> [--serial] [--debug]"
@@ -13,6 +13,15 @@ description: |
   execution for WebGL or database tests.
 name: test-focus
 ---
+
+## When to Use This Skill
+
+| Use this skill when... | Use test-run instead when... |
+|---|---|
+| Iterating on a single failing spec with fail-fast feedback | Running the full test suite for a project |
+| Forcing serial execution for WebGL or shared-state tests | Running tests in watch mode across many files (use test-quick) |
+| Running one test file in headed/debug mode | Triaging a directory of test results (use test-analyze) |
+| Sub-30s feedback on a known-broken file | Choosing which tier to run (use test-tier-selection) |
 
 ## Context
 
