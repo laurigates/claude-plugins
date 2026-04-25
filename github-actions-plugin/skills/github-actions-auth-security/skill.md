@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: github-actions-auth-security
 description: GitHub Actions security and authentication for Claude Code including API keys, OIDC, AWS Bedrock, Google Vertex AI, secrets management, and permission scoping. Use when setting up authentication or discussing security for GitHub Actions workflows.
 user-invocable: false
@@ -9,6 +9,15 @@ allowed-tools: Bash, Read, Write, Edit, Grep, Glob, WebFetch
 ---
 
 # GitHub Actions Authentication and Security
+
+## When to Use This Skill
+
+| Use this skill when... | Use claude-code-github-workflows instead when... |
+|---|---|
+| Choosing between Anthropic API, AWS Bedrock, or Vertex AI authentication | Authoring the workflow trigger, prompt, or job orchestration |
+| Scoping `permissions:` blocks to least-privilege per task | Adding a new automation pattern (PR review, issue triage, CI auto-fix) |
+| Hardening against prompt injection or external-contributor attack surface | Configuring `--mcp-config` and tool allowlists — see github-actions-mcp-config |
+| Rotating `ANTHROPIC_API_KEY` / `AWS_ROLE_ARN` / `GCP_CREDENTIALS` secrets | Inspecting failing workflow runs — see github-actions-inspection |
 
 Expert knowledge for securing GitHub Actions workflows with Claude Code, including authentication methods, secrets management, and security best practices.
 
