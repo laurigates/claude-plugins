@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-10
-reviewed: 2026-04-10
+modified: 2026-04-25
+reviewed: 2026-04-25
 allowed-tools: Read, Write, Edit, Bash(git *), Bash(gh release *), Bash(gh pr *), TodoWrite
 args: <version> [--draft] [--prerelease]
 argument-hint: <version> [--draft] [--prerelease]
@@ -17,17 +17,14 @@ name: deploy-release
 
 Create GitHub releases using release-please automation or manual release workflows for containerized applications.
 
-## When to Use
+## When to Use This Skill
 
-| Scenario | Use this skill | Alternative |
-|----------|---------------|-------------|
-| Cutting a new release from main | Yes | - |
-| Setting up release-please automation | Yes | - |
-| Creating a manual GitHub release | Yes | - |
-| Publishing a pre-release or draft | Yes | - |
-| Deploying to Kubernetes | No | `deploy-handoff` for handoff docs |
-| Building container images | No | `container-development` for Dockerfiles |
-| Tagging without a GitHub release | No | Use `git tag` directly |
+| Use this skill when... | Use `deploy-handoff` instead when... |
+|---|---|
+| Cutting a new release from `main` and tagging a version | Documenting an already-deployed service for another developer or client |
+| Setting up or auditing release-please automation and manifests | Generating access URLs, monitoring links, and onboarding checklists for a deployed resource |
+| Publishing a manual GitHub release, draft, or pre-release | Producing handoff prose for a ticket rather than cutting a version |
+| Driving the version-tag side of a containerized release pipeline | Building or hardening container images themselves (use `container-development`) |
 
 ## Context
 

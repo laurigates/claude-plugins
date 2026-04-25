@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-10
-reviewed: 2026-04-10
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: container-development
 description: |
   Container development with Docker, Dockerfiles, 12-factor principles, multi-stage
@@ -18,20 +18,14 @@ allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebSearch, WebFet
 
 Expert knowledge for containerization and orchestration with focus on **security-first**, lean container images and 12-factor app methodology.
 
-## When to Use
+## When to Use This Skill
 
-| Scenario | Use this skill | Alternative |
-|----------|---------------|-------------|
-| Writing or optimizing Dockerfiles | Yes | - |
-| Multi-stage build patterns | Yes | - |
-| Container security hardening | Yes | - |
-| Docker Compose or orchestration | Yes | - |
-| 12-factor app containerization | Yes | - |
-| Go-specific image optimization | No | `go-containers` |
-| Node.js-specific image optimization | No | `nodejs-containers` |
-| Python-specific image optimization | No | `python-containers` |
-| Skaffold file sync configuration | No | `skaffold-filesync` |
-| OrbStack local K8s networking | No | `skaffold-orbstack` |
+| Use this skill when... | Use a language-specific sibling (`go-containers`, `nodejs-containers`, `python-containers`) instead when... |
+|---|---|
+| Writing or optimizing language-agnostic Dockerfiles | Optimizing Go static binaries, Node.js Alpine builds, or Python slim images |
+| Authoring multi-stage build patterns or 12-factor configuration | The image-size goal is dominated by language runtime choices (scratch, distroless, musl/glibc) |
+| Hardening containers (non-root, minimal base, secrets) | Running Skaffold sync (`skaffold-filesync`) or OrbStack networking (`skaffold-orbstack`) |
+| Composing services with Docker Compose | The work is purely a Skaffold pre-deploy test (`skaffold-testing`) |
 
 ## Security Philosophy (Non-Negotiable)
 

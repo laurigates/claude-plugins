@@ -7,23 +7,19 @@ description: |
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-01-21
-modified: 2026-04-10
-reviewed: 2026-04-10
+modified: 2026-04-25
+reviewed: 2026-04-25
 ---
 
 # Skaffold File Sync
 
-## When to Use
+## When to Use This Skill
 
-| Scenario | Use this skill | Alternative |
-|----------|---------------|-------------|
-| Configuring Skaffold file sync rules | Yes | - |
-| Speeding up the development loop with hot reload | Yes | - |
-| Choosing between manual, infer, and auto sync | Yes | - |
-| Debugging sync issues in running containers | Yes | - |
-| Setting up OrbStack networking for Skaffold | No | `skaffold-orbstack` |
-| Adding pre-deploy container tests | No | `skaffold-testing` |
-| Writing or optimizing Dockerfiles | No | `container-development` |
+| Use this skill when... | Use a sibling Skaffold/container skill instead when... |
+|---|---|
+| Configuring Skaffold `sync` rules (manual / infer / auto) | Wiring OrbStack networking or Ingress (`skaffold-orbstack`) |
+| Optimizing the inner edit -> running-container loop for hot reload | Adding pre-deploy `test` or post-deploy `verify` stages (`skaffold-testing`) |
+| Debugging why files are not syncing into a running pod | Writing or hardening the Dockerfile itself (`container-development`) |
 
 ## Overview
 

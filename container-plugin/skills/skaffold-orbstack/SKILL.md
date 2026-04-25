@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-10
-reviewed: 2026-04-10
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: skaffold-orbstack
 description: |
   OrbStack-optimized Skaffold workflows for local Kubernetes development without port-forward.
@@ -13,17 +13,13 @@ allowed-tools: Bash, Read, Grep, Glob
 
 # Skaffold with OrbStack - Port-Forward-Free Development
 
-## When to Use
+## When to Use This Skill
 
-| Scenario | Use this skill | Alternative |
-|----------|---------------|-------------|
-| Configuring Skaffold with OrbStack K8s | Yes | - |
-| Accessing services without port-forward | Yes | - |
-| Setting up LoadBalancer or Ingress on OrbStack | Yes | - |
-| Migrating from port-forward to native networking | Yes | - |
-| Configuring file sync for hot reload | No | `skaffold-filesync` |
-| Adding pre-deploy container tests | No | `skaffold-testing` |
-| Writing or optimizing Dockerfiles | No | `container-development` |
+| Use this skill when... | Use a sibling Skaffold/container skill instead when... |
+|---|---|
+| Wiring Skaffold against the OrbStack local Kubernetes cluster | Defining file-sync rules for the inner dev loop (`skaffold-filesync`) |
+| Reaching services via `*.k8s.orb.local`, LoadBalancer, or Ingress without port-forward | Adding pre-deploy `test` or post-deploy `verify` stages (`skaffold-testing`) |
+| Migrating an existing project off `kubectl port-forward` onto OrbStack networking | Hardening or shrinking the container image itself (`container-development`) |
 
 ## Overview
 
