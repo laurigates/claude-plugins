@@ -278,7 +278,7 @@ CLI surface (`git-repo-agent blueprint <subcommand>`):
 | `sync` | `blueprint-sync` | Detect stale generated content |
 | `scan` | `workspace-scan` → `feature-tracker-sync` → `feature-tracker-status` | Refresh monorepo rollups |
 | `adr-list` | `blueprint-adr-list` | List ADRs as markdown table |
-| `derive-plans` | `blueprint-derive-plans` | Derive PRDs/ADRs/PRPs from git |
+| `derive-plans` | `blueprint-derive-plans` | Derive PRDs/ADRs/PRPs from git (disabled for the claude-plugins repo itself — see [`CLAUDE.md`](../CLAUDE.md) "Blueprint constrained dogfooding") |
 | `generate-rules` | `blueprint-generate-rules` | Auto-generate project rules |
 | `promote <target>` | `blueprint-promote` | Preserve custom edits |
 | `prp-create <feature>` | `blueprint-prp-create` | Create a PRP for a feature |
