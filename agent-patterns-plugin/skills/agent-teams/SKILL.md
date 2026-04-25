@@ -9,8 +9,8 @@ description: |
 user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 created: 2026-03-03
-modified: 2026-04-18
-reviewed: 2026-04-18
+modified: 2026-04-25
+reviewed: 2026-04-25
 ---
 
 # Agent Teams
@@ -260,6 +260,76 @@ for your deliverables to work:
 
 This prevents the "investigate out of scope → exhaust budget → truncated summary" failure mode.
 The lead can then address the dependency before the next phase or assign a follow-up issue.
+
+## Worktree-Isolated Edit/Write Path Resolution
+
+> **Known failure mode (worktree isolation):** Agents launched with
+> `isolation: "worktree"` may have `Edit`/`Write` tool calls silently
+> resolve relative paths against the **parent repo** rather than the
+> agent's worktree, even though `Bash` commands and `git status`
+> correctly operate inside the worktree. The agent gets no immediate
+> signal that file writes are landing on the wrong branch — commits
+> can land on a sibling agent's branch or on the parent repo's
+> working tree. Cleanup requires cherry-pick + rebase
+> drop-if-upstream after the fact.
+>
+> Tracking: laurigates/claude-plugins#1091
+
+The bug lives in Claude Code's worktree path-resolution layer (upstream).
+Until it is fixed, harden every worktree-isolated agent prompt with the
+preamble below and run the post-flight check before merging.
+
+### Recommended agent-prompt preamble
+
+Paste this verbatim at the **top** of any worktree-isolated agent's
+prompt — before any other instructions or task description:
+
+```
+**First action MUST be:**
+
+  pwd
+  git rev-parse --show-toplevel
+  ls -la
+
+**All file edits must use absolute paths rooted at your worktree.**
+**If `Edit` or `Write` appears to target anything outside your worktree,
+stop and report — do not retry.**
+```
+
+The three commands give the agent (and the transcript reader) an
+unambiguous signal of where it actually is. Absolute paths bypass the
+relative-resolution bug entirely. The "stop and report" clause prevents
+the recovery-by-retry loop that compounds the damage.
+
+### Lead post-flight check
+
+After agents return, run from the **parent repo** before merging:
+
+```bash
+git diff origin/main..HEAD     # parent's intended branch should be clean
+git status --porcelain         # no straggler edits in parent worktree
+```
+
+If either is non-empty, an agent's `Edit`/`Write` leaked into the parent.
+Inspect the diff before any further git operations.
+
+### Recovery pattern
+
+If a stray commit lands on the wrong branch:
+
+1. **Cherry-pick** the commit onto the intended branch:
+   `git cherry-pick <stray-sha>`.
+2. **Rewrite the wrong branch** to drop the duplicate. Rebase onto the
+   correct base with drop-if-upstream so git removes the commit that
+   already exists upstream:
+   `git rebase --onto <new-base> <old-base> <wrong-branch>` (run with
+   `git config rebase.dropOnUpstream true` or use `git rebase -i` and
+   delete the duplicate line).
+3. **Verify** with `git log --oneline <wrong-branch> ^<intended-branch>`
+   that only the wrong-branch's own commits remain.
+
+For the broader concurrency context (shared-clone vs. worktree
+coordination), see `.claude/rules/agent-coworker-detection.md`.
 
 ## Common Patterns
 
