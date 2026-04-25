@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-02-06
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: cargo-nextest
 description: |
   Next-generation test runner for Rust with parallel execution, advanced filtering, and CI integration.
@@ -14,6 +14,15 @@ allowed-tools: Bash, Read, Grep, Glob
 # cargo-nextest - Next-Generation Test Runner
 
 cargo-nextest is a faster, more reliable test runner for Rust that executes each test in its own process for better isolation and parallel performance.
+
+## When to Use This Skill
+
+| Use this skill when... | Use sibling skill instead when... |
+|---|---|
+| Running tests in parallel with process isolation | Measuring code coverage -- use `cargo-llvm-cov` |
+| Filtering tests by package, name, or pattern | Linting test code style -- use `clippy-advanced` |
+| Setting up flaky-test retries in CI | Auditing unused test deps -- use `cargo-machete` |
+| Optimizing test runtime via partitioning | Authoring tests / async patterns -- use `rust-development` |
 
 ## Installation
 

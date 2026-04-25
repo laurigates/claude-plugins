@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-02-06
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: cargo-llvm-cov
 description: |
   Code coverage for Rust using LLVM instrumentation with support for multiple output formats and CI integration.
@@ -14,6 +14,15 @@ allowed-tools: Bash, Read, Grep, Glob
 # cargo-llvm-cov - Code Coverage with LLVM
 
 cargo-llvm-cov provides accurate code coverage for Rust using LLVM's instrumentation-based coverage. It supports multiple output formats and integrates seamlessly with CI platforms.
+
+## When to Use This Skill
+
+| Use this skill when... | Use sibling skill instead when... |
+|---|---|
+| Measuring line / branch coverage with LLVM instrumentation | Just running tests fast in parallel -- use `cargo-nextest` |
+| Generating HTML / lcov / codecov reports | Auditing unused dependencies -- use `cargo-machete` |
+| Enforcing coverage thresholds in CI | Configuring lint rules -- use `clippy-advanced` |
+| Wiring codecov.io or coveralls upload | Writing the tests themselves -- use `rust-development` |
 
 ## Installation
 
