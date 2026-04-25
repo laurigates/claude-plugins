@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.31.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.30.2...blueprint-plugin-v3.31.0) (2026-04-25)
+
+
+### Features
+
+* **blueprint-plugin:** add story-audit and story-reconcile skills ([#1173](https://github.com/laurigates/claude-plugins/issues/1173)) ([3ea17aa](https://github.com/laurigates/claude-plugins/commit/3ea17aac3a7cad519fdd64fa421823fbc6142c3d))
+
 ## [3.30.2](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.30.1...blueprint-plugin-v3.30.2) (2026-04-25)
 
 
