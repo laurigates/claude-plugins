@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
-reviewed: 2026-04-14
+modified: 2026-04-25
+reviewed: 2026-04-25
 description: |
   Analyze a codebase for anti-patterns, code smells, and quality issues using
   ast-grep. Use when the user asks to find code smells, detect anti-patterns,
@@ -13,6 +13,15 @@ args: "[PATH] [--focus <category>] [--severity <level>]"
 argument-hint: "[PATH] [--focus <category>] [--severity <level>]"
 name: code-antipatterns
 ---
+
+## When to Use This Skill
+
+| Use this skill when... | Use something else instead when... |
+|------------------------|------------------------------------|
+| Running a parallel anti-pattern scan and producing a report | Looking up the catalog of anti-pattern queries → `code-antipatterns-analysis` |
+| Specifically targeting empty catches, floating promises, or `\|\| true` | Use the dedicated scanner → `code-error-swallowing` |
+| Finding success-on-empty / silent degradation patterns | Use the dedicated scanner → `code-silent-degradation` |
+| Broad code-quality review across security, perf, and architecture | Run the full review delegate → `code-review` |
 
 ## Context
 

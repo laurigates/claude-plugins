@@ -9,13 +9,22 @@ description: |
 user-invocable: false
 allowed-tools: Read, Grep, Glob
 created: 2025-12-27
-modified: 2026-04-19
-reviewed: 2025-12-27
+modified: 2026-04-25
+reviewed: 2026-04-25
 ---
 
 # Code Review Checklist
 
 Structured approach to reviewing code changes.
+
+## When to Use This Skill
+
+| Use this skill when... | Use something else instead when... |
+|------------------------|------------------------------------|
+| Walking a priority-ordered manual review checklist | Running a full delegated review pass → `code-review` |
+| Hunting for hardcoded secrets, injection, or N+1 query patterns | Scanning specifically for anti-patterns → `code-antipatterns` |
+| Verifying error handling and edge cases in a PR diff | Targeting swallowed errors directly → `code-error-swallowing` |
+| Applying a deterministic checklist to a small change | Refactoring after the checklist surfaces issues → `code-refactor` |
 
 ## Review Priority Order
 

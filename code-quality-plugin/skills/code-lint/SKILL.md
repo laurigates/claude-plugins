@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 allowed-tools: Bash(ruff *), Bash(eslint *), Bash(rustfmt *), Bash(gofmt *), Bash(prettier *), Read, SlashCommand
 args: "[path] [--fix] [--format]"
 argument-hint: [path] [--fix] [--format]
@@ -12,6 +12,15 @@ description: |
   or run pre-commit checks across a polyglot repository.
 name: code-lint
 ---
+
+## When to Use This Skill
+
+| Use this skill when... | Use something else instead when... |
+|------------------------|------------------------------------|
+| Auto-detecting and running the correct linter for a polyglot repo | Looking up autofix patterns and exact commands → `code-lint-fix` |
+| Running ruff/eslint/clippy/gofmt with optional `--fix` and `--format` | Detecting structural anti-patterns linters miss → `code-antipatterns` |
+| Driving a one-shot lint pass before commit | Reviewing broader code quality and architecture → `code-review` |
+| Running language-aware lint over a path argument | Scanning specifically for swallowed errors → `code-error-swallowing` |
 
 ## Context
 

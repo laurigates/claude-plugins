@@ -9,13 +9,22 @@ description: |
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 created: 2025-12-27
-modified: 2026-04-19
-reviewed: 2025-12-27
+modified: 2026-04-25
+reviewed: 2026-04-25
 ---
 
 # Debugging Methodology
 
 Systematic approach to finding and fixing bugs.
+
+## When to Use This Skill
+
+| Use this skill when... | Use something else instead when... |
+|------------------------|------------------------------------|
+| Diagnosing a live bug, memory leak, race, or perf regression | Bug is hidden by a swallowed error → `code-error-swallowing` |
+| Reasoning about reproduction, isolation, and root cause | Bug is hidden by silent success-on-empty → `code-silent-degradation` |
+| Choosing strace/eBPF/perf for system-level investigation | Reviewing surrounding code quality once root cause is known → `code-review` |
+| Documenting hypotheses and binary-searching the failure | Refactoring the buggy module after the fix → `code-refactor` |
 
 ## Core Principles
 

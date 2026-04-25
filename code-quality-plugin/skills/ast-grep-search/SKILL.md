@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-01-24
-reviewed: 2026-01-24
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: ast-grep-search
 description: Find and replace code patterns structurally using ast-grep. Use when you need to match code by its AST structure (not just text), such as finding all functions with specific signatures, replacing API patterns across files, or detecting code anti-patterns that regex cannot reliably match.
 user-invocable: false
@@ -11,6 +11,15 @@ allowed-tools: Bash(sg *), Bash(ast-grep *), Read, Grep, Glob
 # ast-grep Structural Code Search & Refactoring
 
 Structural code search and refactoring using `ast-grep` — matches code by its AST (abstract syntax tree) rather than text patterns.
+
+## When to Use This Skill
+
+| Use this skill when... | Use something else instead when... |
+|------------------------|------------------------------------|
+| The pattern depends on AST structure (function shape, call form, argument count) | Searching plain text or regex matches → `tools-plugin:rg-code-search` |
+| Refactoring API call sites across many files while preserving captured variables | Running a one-shot anti-pattern scan with a report → `code-antipatterns` |
+| Hand-written structural search/replace for an ad-hoc migration | Functional refactors of a known file/directory → `code-refactor` |
+| Building a new ast-grep rule for a codebase-specific smell | Looking up agentic flags for an existing linter → `code-lint` |
 
 ## When to Use ast-grep vs Grep/ripgrep
 

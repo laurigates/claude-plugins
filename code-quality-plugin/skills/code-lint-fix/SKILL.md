@@ -8,13 +8,22 @@ description: |
   across a mixed-language project.
 allowed-tools: Bash(ruff *), Bash(eslint *), Bash(biome *), Bash(prettier *), Read, Edit, Grep
 created: 2025-12-27
-modified: 2026-04-19
-reviewed: 2026-02-08
+modified: 2026-04-25
+reviewed: 2026-04-25
 ---
 
 # Linter Autofix Patterns
 
 Quick reference for running linter autofixes across languages.
+
+## When to Use This Skill
+
+| Use this skill when... | Use something else instead when... |
+|------------------------|------------------------------------|
+| Looking up the autofix command for biome/ruff/clippy/rustfmt/gofmt | Running the auto-detected linter end-to-end → `code-lint` |
+| Recalling common fix patterns (unused imports, prefer-const, quoted shell vars) | Refactoring beyond what the linter can auto-fix → `code-refactor` |
+| Picking the right `--fix` invocation per language | Detecting smells the linter does not catch → `code-antipatterns` |
+| Scripting a detect-and-fix pass across a polyglot tree | Reviewing broader quality and architecture → `code-review` |
 
 ## Autofix Commands
 

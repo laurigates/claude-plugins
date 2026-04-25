@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
-reviewed: 2026-03-09
+modified: 2026-04-25
+reviewed: 2026-04-25
 allowed-tools: Task, TodoWrite, Glob, Read
 description: |
   Perform a comprehensive code review covering quality, security,
@@ -14,6 +14,15 @@ argument-hint: "[PATH]"
 name: code-review
 agent: general-purpose
 ---
+
+## When to Use This Skill
+
+| Use this skill when... | Use something else instead when... |
+|------------------------|------------------------------------|
+| Running an end-to-end review across quality, security, perf, and tests | Walking a manual security/correctness checklist → `code-review-checklist` |
+| Auditing a directory or PR delta with delegated agent analysis | Specifically scanning for code smells → `code-antipatterns` |
+| Spotting missing test cases or weak assertions | Auditing test code quality on its own → `code-test-quality` |
+| Producing a consolidated review report | Refactoring after the review surfaces issues → `code-refactor` |
 
 ## Context
 
