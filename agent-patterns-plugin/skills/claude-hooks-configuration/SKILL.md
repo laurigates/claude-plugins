@@ -8,11 +8,20 @@ description: |
 user-invocable: false
 allowed-tools: Bash(cat *), Bash(bash *), Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2025-12-27
-modified: 2026-03-02
-reviewed: 2026-03-02
+modified: 2026-04-25
+reviewed: 2026-04-25
 ---
 
 # Claude Code Hooks Configuration
+
+## When to Use This Skill
+
+| Use this skill when... | Use plugin-settings instead when... |
+|---|---|
+| Wiring a SessionStart, PreToolUse, PostToolUse, or Stop hook into `.claude/settings.json` | Storing per-project plugin state in `.claude/plugin-name.local.md` |
+| Setting explicit hook timeouts to prevent "Hook cancelled" errors | Configuring user-tunable plugin behaviour exposed by skill authors |
+| Choosing between `command`, `http`, `prompt`, and `agent` hook types | Persisting agent state between sessions outside the hook lifecycle |
+| Debugging a hook that fires inconsistently or is silently skipped | Configuring per-project rather than per-session behaviour |
 
 ## Core Expertise
 

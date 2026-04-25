@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
-reviewed: 2026-04-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 allowed-tools: Glob, Read, TodoWrite
 description: |
   Audit Claude subagent configurations for completeness, security, and best practices. Use when
@@ -13,6 +13,16 @@ args: "[--verbose]"
 argument-hint: "[--verbose]"
 name: meta-audit
 ---
+
+# meta-audit
+
+## When to Use This Skill
+
+| Use this skill when... | Use custom-agent-definitions instead when... |
+|---|---|
+| Reviewing existing `.claude/agents/*.md` files for missing frontmatter, overprivileged tools, or wrong models | Authoring a new agent definition file from scratch |
+| Validating read-only vs write-enabled agent privilege boundaries before committing | Configuring a single agent's `model`, `allowed-tools`, or `context: fork` |
+| Auditing agents across an entire project for naming and security consistency | Copying or generalising another project's agents (use meta-assimilate) |
 
 ## Context
 

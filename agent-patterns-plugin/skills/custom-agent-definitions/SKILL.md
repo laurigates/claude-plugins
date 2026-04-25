@@ -8,13 +8,22 @@ description: |
 user-invocable: false
 allowed-tools: Bash(cat *), Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-01-20
-modified: 2026-04-16
-reviewed: 2026-04-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 ---
 
 # Custom Agent Definitions
 
 Expert knowledge for defining and configuring custom agents in Claude Code.
+
+## When to Use This Skill
+
+| Use this skill when... | Use agent-teams instead when... |
+|---|---|
+| Authoring a new `.md` agent definition file in `.claude/agents/` | Spawning multiple already-defined agents that need to coordinate via TeamCreate |
+| Configuring a single agent's `model`, `allowed-tools`, or `context: fork` | Setting up a lead/teammate architecture with a shared task list |
+| Constraining tool access for a specialised read-only or write-restricted agent | Sequencing parallel work across worktrees (see parallel-agent-dispatch) |
+| Writing the system prompt that defines what one agent does | Auditing existing agent definitions for security or completeness (see meta-audit) |
 
 ## Core Concepts
 

@@ -8,13 +8,22 @@ description: |
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-02-08
-modified: 2026-02-08
-reviewed: 2026-02-08
+modified: 2026-04-25
+reviewed: 2026-04-25
 ---
 
 # MCP Code Execution Pattern
 
 Expert knowledge for designing agent systems that generate and execute code to interact with MCP servers, instead of calling tools directly.
+
+## When to Use This Skill
+
+| Use this skill when... | Use mcp-management instead when... |
+|---|---|
+| Designing agents that fan out across 10+ MCP servers or 50+ tools | Installing or configuring a single MCP server in `.mcp.json` |
+| Intermediate tool results are large (>10K tokens) and would blow context | Operating one or two servers where every result is small enough to inline |
+| Workflows need loops, retries, or conditionals across tool calls | Doing a one-shot connection check or linear 2–3-call sequence |
+| PII must not reach the model context | Tool responses contain no sensitive data |
 
 ## When to Use This Pattern
 
