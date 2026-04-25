@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: github-actions-mcp-config
 description: MCP server configuration for GitHub Actions including tool permissions, environment variables, and multi-server setups. Use when configuring MCP servers in GitHub Actions workflows.
 user-invocable: false
@@ -9,6 +9,14 @@ allowed-tools: Bash, Read, Write, Edit, Grep, Glob, WebFetch
 ---
 
 # GitHub Actions MCP Configuration
+
+## When to Use This Skill
+
+| Use this skill when... | Use claude-code-github-workflows instead when... |
+|---|---|
+| Wiring `--mcp-config` JSON into `anthropics/claude-code-action@v1` | Designing the workflow trigger, permissions block, or job structure |
+| Constraining tool access via `--allowedTools` / `--disallowedTools` patterns | Authoring PR-review, issue-triage, or CI-failure-autofix prompts |
+| Adding a Python (uvx) or Node MCP server with secret-backed env vars | Setting up the auth method (API key vs Bedrock vs Vertex) — see github-actions-auth-security |
 
 Expert knowledge for configuring MCP (Model Context Protocol) servers in GitHub Actions workflows, including tool permissions and multi-server coordination.
 

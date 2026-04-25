@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2025-12-16
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: claude-code-github-workflows
 description: Claude Code workflow design and automation patterns for PR reviews, issue triage, and CI/CD integration. Use when creating or modifying GitHub Actions workflows that integrate Claude Code.
 user-invocable: false
@@ -9,6 +9,15 @@ allowed-tools: Bash, Read, Write, Edit, Grep, Glob, WebFetch, mcp__github
 ---
 
 # Claude Code GitHub Workflows
+
+## When to Use This Skill
+
+| Use this skill when... | Use the linked sibling instead when... |
+|---|---|
+| Designing a new `anthropics/claude-code-action@v1` workflow (PR review, issue triage, CI auto-fix) | Configuring the auth method or hardening permissions — see github-actions-auth-security |
+| Choosing trigger events (`issue_comment`, `pull_request`, `workflow_run`) and `if:` guards | Wiring MCP servers and `--allowedTools` patterns — see github-actions-mcp-config |
+| Adding path filters, custom trigger phrases, or external-contributor flows | Debugging a failing workflow run — see github-actions-inspection |
+| Authoring the `prompt:` block (review focus areas, triage labelling, auto-fix instructions) | Building a self-hosted reusable auto-fix workflow — see ci-autofix-reusable |
 
 Expert knowledge for designing GitHub Actions workflows that integrate Claude Code for automated code assistance, PR reviews, and issue triage.
 
