@@ -1,7 +1,7 @@
 ---
 created: 2026-01-20
-modified: 2026-04-19
-reviewed: 2026-01-20
+modified: 2026-04-25
+reviewed: 2026-04-25
 description: |
   Scan all blueprint documents and assign IDs to those missing them, update manifest registry.
   Use when the user asks to "sync document IDs", assigns PRD-NNN / ADR-NNNN / PRP-NNN / WO-NNN
@@ -14,6 +14,14 @@ name: blueprint-sync-ids
 ---
 
 Scan all PRDs, ADRs, PRPs, and work-orders, assign IDs to documents missing them, and update the manifest registry.
+
+## When to Use This Skill
+
+| Use this skill when... | Use blueprint-sync instead when... |
+|---|---|
+| You're assigning PRD-NNN / ADR-NNNN / PRP-NNN / WO-NNN to docs missing them | You want to detect modified or stale generated content (not IDs) |
+| You're previewing ID assignments with `--dry-run` | You're reconciling drift between `.claude/rules/` and the manifest |
+| You want to create GitHub issues for orphan docs via `--link-issues` | Use document-linking instead for runtime cross-doc traceability |
 
 ## Flags
 

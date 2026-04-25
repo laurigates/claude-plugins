@@ -1,7 +1,7 @@
 ---
 created: 2025-12-22
-modified: 2026-04-19
-reviewed: 2025-12-22
+modified: 2026-04-25
+reviewed: 2026-04-25
 description: |
   Derive PRD from existing project documentation, README, and codebase analysis. Use when
   the user asks to "derive a PRD", "generate a PRD from the README", onboards an existing
@@ -12,6 +12,14 @@ name: blueprint-derive-prd
 ---
 
 Generate a Product Requirements Document (PRD) for an existing project by analyzing README, documentation, and project structure.
+
+## When to Use This Skill
+
+| Use this skill when... | Use blueprint-derive-adr instead when... |
+|---|---|
+| You're onboarding an existing project and need a PRD from README/docs | You want architectural decisions documented as ADRs, not requirements |
+| You need to extract problem statements, stakeholders, personas from existing prose | Use blueprint-derive-plans instead to derive PRDs+ADRs+PRPs together |
+| You want to capture features and user goals retroactively | Use blueprint-init instead when you need to bootstrap blueprint first |
 
 **Use Case**: Onboarding existing projects to Blueprint Development system.
 

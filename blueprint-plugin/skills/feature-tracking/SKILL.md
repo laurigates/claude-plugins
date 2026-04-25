@@ -1,7 +1,7 @@
 ---
 created: 2026-01-02
-modified: 2026-04-19
-reviewed: 2026-02-08
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: feature-tracking
 description: |
   Track feature implementation status against requirements documents. Provides hierarchical
@@ -16,6 +16,15 @@ allowed-tools: Read, Write, Edit, Grep, Glob, Bash, TodoWrite
 
 Track feature implementation status against requirements documents using hierarchical FR codes.
 
+## When to Use This Skill
+
+| Use this skill when... | Use blueprint-feature-tracker-sync instead when... |
+|---|---|
+| You need to read or update feature implementation status by FR code | You want to reconcile TODO.md checkboxes with the tracker |
+| You're recalculating completion percentages mid-development | You want to drain WO entries from a taskwarrior sidecar |
+| You manage hierarchical FR codes (FR1, FR1.2, FR1.2.1) | You want a markdown progress summary via `--summary` |
+| You add features or phases to feature-tracker.json | Use blueprint-feature-tracker-status to view stats without modifying |
+
 ## Overview
 
 The feature tracker maintains a JSON file that maps requirements from a source document (e.g., REQUIREMENTS.md) to implementation status. It supports:
@@ -26,7 +35,7 @@ The feature tracker maintains a JSON file that maps requirements from a source d
 - **Task tracking**: Track in-progress and pending tasks (replaces work-overview.md)
 - **Sync targets**: Keep TODO.md in sync
 
-## When to Use
+## When to Run
 
 Run feature tracking operations when:
 - Feature implementation status changes

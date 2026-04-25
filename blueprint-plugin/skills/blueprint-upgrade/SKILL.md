@@ -1,7 +1,7 @@
 ---
 created: 2025-12-17
-modified: 2026-04-19
-reviewed: 2026-04-18
+modified: 2026-04-25
+reviewed: 2026-04-25
 description: |
   Upgrade blueprint structure to the latest format version. Use when the user asks to
   "upgrade blueprint", migrates between format versions (v1.x→v2, v2→v3, v3.0→v3.1/3.2/3.3),
@@ -14,6 +14,15 @@ name: blueprint-upgrade
 ---
 
 Upgrade the blueprint structure to the latest format version.
+
+## When to Use This Skill
+
+| Use this skill when... | Use blueprint-init instead when... |
+|---|---|
+| The project has a manifest at v1.x, v2.x, v3.0, v3.1, or v3.2 | The project has no `docs/blueprint/manifest.json` at all |
+| You want the user-facing upgrade entry point with prompts | Use blueprint-migration instead when implementing version-specific logic |
+| You're adding the v3.2 task registry or v3.3 monorepo workspaces | Use blueprint-execute instead when you want auto-detection of next step |
+| You're running batch upgrades across repos with `--non-interactive`/`-y` | Use blueprint-status instead to first audit current version |
 
 **Current Format Version**: 3.3.0
 

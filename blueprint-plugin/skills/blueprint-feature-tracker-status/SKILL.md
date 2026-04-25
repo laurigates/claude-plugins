@@ -1,7 +1,7 @@
 ---
 created: 2026-01-02
-modified: 2026-04-19
-reviewed: 2026-04-12
+modified: 2026-04-25
+reviewed: 2026-04-25
 description: |
   Display feature tracker statistics and completion summary. Use when the user asks
   "what's the feature completion status?", wants a progress bar showing phase progress,
@@ -12,6 +12,15 @@ name: blueprint-feature-tracker-status
 ---
 
 Display feature tracker statistics, phase progress, and completion summary.
+
+## When to Use This Skill
+
+| Use this skill when... | Use blueprint-feature-tracker-sync instead when... |
+|---|---|
+| You want a read-only view of completion stats and phase progress | You need to reconcile TODO.md with the tracker (writes) |
+| You want to see PRD coverage and ready-to-start work | You want to drain WO entries via `--drain-wave` |
+| You're checking blocked features without modifying state | You want to recalculate completion percentages |
+| You want a quick "where are we?" snapshot | Use feature-tracking instead for low-level FR-code edits |
 
 **Steps**:
 

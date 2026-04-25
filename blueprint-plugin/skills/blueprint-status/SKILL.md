@@ -1,7 +1,7 @@
 ---
 created: 2025-12-17
-modified: 2026-04-19
-reviewed: 2025-12-22
+modified: 2026-04-25
+reviewed: 2026-04-25
 description: |
   Show blueprint version, configuration, and check for available upgrades. Use when the
   user asks to "show blueprint status", checks the three-layer architecture breakdown,
@@ -15,6 +15,15 @@ name: blueprint-status
 ---
 
 Display the current blueprint configuration status with three-layer architecture breakdown.
+
+## When to Use This Skill
+
+| Use this skill when... | Use blueprint-execute instead when... |
+|---|---|
+| You want a read-only status report (PRD/ADR/PRP counts, traceability) | You want auto-detection that takes the next action, not just reports |
+| You want the three-layer architecture breakdown | Use blueprint-feature-tracker-status instead for FR/phase progress |
+| You want to audit orphan docs and stale generated content | Use blueprint-sync instead for an actionable drift reconcile |
+| You run with `--report-only` for non-interactive auditing | Use blueprint-upgrade instead when you've already spotted an upgrade |
 
 ## Flags
 

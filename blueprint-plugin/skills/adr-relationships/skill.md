@@ -4,13 +4,22 @@ description: Domain analysis, conflict detection, and relationship validation fo
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob, TodoWrite
 created: 2026-01-15
-modified: 2026-01-15
-reviewed: 2026-01-15
+modified: 2026-04-25
+reviewed: 2026-04-25
 ---
 
 # ADR Relationship Management
 
 Provides logic for domain analysis, conflict detection, and relationship tracking in Architecture Decision Records.
+
+## When to Use This Skill
+
+| Use this skill when... | Use blueprint-adr-validate instead when... |
+|---|---|
+| You need domain tagging logic for grouping related ADRs | You're running a one-shot ADR validation report |
+| You need conflict detection between ADRs in the same domain | You're auditing all ADRs before a release |
+| You need bidirectional relationship validation between ADRs | Use blueprint-adr-list instead when you only need a flat ADR index |
+| You're authoring a new ADR and want to find related decisions | Use blueprint-derive-adr instead when generating ADRs from existing code |
 
 ## Core Capabilities
 

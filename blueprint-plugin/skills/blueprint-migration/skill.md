@@ -8,13 +8,21 @@ description: |
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, TodoWrite
 created: 2025-12-22
-modified: 2026-04-19
-reviewed: 2026-04-18
+modified: 2026-04-25
+reviewed: 2026-04-25
 ---
 
 # Blueprint Migration
 
 Expert skill for migrating blueprint structures between format versions. This skill is triggered by `/blueprint:upgrade` and handles version-specific migration logic.
+
+## When to Use This Skill
+
+| Use this skill when... | Use blueprint-upgrade instead when... |
+|---|---|
+| You need version-specific migration logic (v3.0→v3.1, v3.2→v3.3, etc.) | You're invoking the user-facing upgrade workflow with prompts |
+| You need content hashing to detect manual modifications during migration | You want the high-level "upgrade my blueprint" entry point |
+| You're implementing a new migration step between format versions | Use blueprint-init instead when the project has no manifest yet |
 
 ## Core Expertise
 

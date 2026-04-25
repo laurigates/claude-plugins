@@ -15,6 +15,15 @@ name: blueprint-feature-tracker-sync
 
 Synchronize the feature tracker JSON with TODO.md and manage task progress.
 
+## When to Use This Skill
+
+| Use this skill when... | Use blueprint-feature-tracker-status instead when... |
+|---|---|
+| You're reconciling TODO.md checkboxes with the tracker | You want a read-only view of completion stats |
+| You're draining WO entries from a taskwarrior sidecar (`--drain-wave`) | You want PRD coverage or ready-to-start lists |
+| You're recalculating completion statistics after work | Use feature-tracking instead for low-level FR-code edits |
+| You want a markdown progress summary via `--summary` | You need a quick "where are we?" snapshot without writes |
+
 **Note**: As of v1.1.0, feature-tracker.json is the single source of truth for progress tracking. The `tasks` section replaces work-overview.md.
 
 **Usage**: `/blueprint:feature-tracker-sync [--summary] [--drain-wave WO-A,WO-B,...] [--evidence-files <list>] [--evidence <text>]`
