@@ -9,7 +9,7 @@
       "name": "accessibility-plugin",
       "source": "./accessibility-plugin",
       "description": "Accessibility and UX implementation - WCAG, ARIA, design tokens",
-      "version": "2.3.2",
+      "version": "2.3.3",
       "keywords": [
         "accessibility",
         "wcag",
@@ -218,7 +218,7 @@
       "name": "documentation-plugin",
       "source": "./documentation-plugin",
       "description": "Documentation generation - API docs, README, knowledge graphs, LaTeX PDF conversion",
-      "version": "1.8.0",
+      "version": "1.8.1",
       "keywords": [
         "documentation",
         "docs",
