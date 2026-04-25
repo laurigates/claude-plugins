@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-02-06
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: bun-lockfile-update
 description: |
   Update Bun lockfiles (bun.lockb) with proper dependency management. Covers
@@ -15,7 +15,16 @@ allowed-tools: Bash, Read, Grep, Glob
 
 Comprehensive guidance for updating Bun lockfiles (`bun.lockb`) with proper dependency management practices.
 
-## When to Use
+## When to Use This Skill
+
+| Use this skill when... | Use bun-outdated instead when... |
+|---|---|
+| Running `bun update` to refresh dependencies | Auditing what is outdated without changing anything |
+| Resolving a `bun.lockb` merge conflict by regenerating | Reviewing major version gaps before deciding to upgrade |
+| Patching a security vulnerability in a specific package | Listing newer versions for a single package |
+| Performing a major version upgrade workflow | Use bun-install when bootstrapping a fresh checkout |
+
+## Auto-Invocation Triggers
 
 Use this skill automatically when:
 - User requests lockfile update or dependency refresh

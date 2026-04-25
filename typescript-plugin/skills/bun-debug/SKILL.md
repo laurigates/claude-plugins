@@ -9,14 +9,23 @@ args: <file> [--brk] [--wait] [--port=<port>]
 allowed-tools: Bash, BashOutput, Read
 argument-hint: <script.ts> [--brk] [--wait] [--port=9229]
 created: 2026-01-22
-modified: 2026-04-19
-reviewed: 2026-01-22
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: bun-debug
 ---
 
 # /bun:debug
 
 Launch a script with Bun's debugger enabled for interactive debugging.
+
+## When to Use This Skill
+
+| Use this skill when... | Use typescript-debugging instead when... |
+|---|---|
+| Attaching an interactive debugger to a Bun script via `--inspect` | Diagnosing TypeScript compile errors or type mismatches |
+| Breaking at the first line of a fast-exiting script (`--inspect-brk`) | Setting up VSCode launch configurations for non-Bun runtimes |
+| Debugging Bun tests with `bun --inspect-brk test` | Use bun-test when you just want to run tests, not step through them |
+| Waiting for a debugger to attach before execution | Use bun-build when reproducing a build-time error |
 
 ## Parameters
 
