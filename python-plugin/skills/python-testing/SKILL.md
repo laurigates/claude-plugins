@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-02-06
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: python-testing
 description: |
   Python testing with pytest, coverage, fixtures, parametrization, and mocking.
@@ -15,6 +15,14 @@ allowed-tools: Bash, Read, Grep, Glob
 # Python Testing
 
 Quick reference for Python testing with pytest, coverage, fixtures, and best practices.
+
+## When to Use This Skill
+
+| Use this skill when... | Use pytest-advanced instead when... |
+|---|---|
+| Writing first pytest tests, learning fixtures and parametrization basics | Designing reusable conftest.py fixture hierarchies or parallel-execution markers |
+| Setting up coverage reporting and basic mocking with `unittest.mock` | Tuning pytest-xdist, custom markers, or hookimpl plugins |
+| Following TDD red-green-refactor cycles on a single module | Building shared fixture libraries across a multi-package test suite |
 
 ## When This Skill Applies
 

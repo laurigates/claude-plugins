@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-02-06
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: uv-project-management
 description: |
   Python project setup, dependencies, and lockfiles with uv package manager. Covers
@@ -15,6 +15,14 @@ allowed-tools: Bash, Read, Grep, Glob
 # UV Project Management
 
 Quick reference for UV project setup, dependencies, and lockfiles.
+
+## When to Use This Skill
+
+| Use this skill when... | Use a focused sibling instead when... |
+|---|---|
+| Running `uv init`, `uv add`, `uv remove`, `uv lock`, or `uv sync` for everyday dependency management | Running a script or one-off command — use uv-run |
+| Authoring or editing pyproject.toml `[project]` and `[tool.uv]` sections | Wiring git/path/editable deps or workspace inheritance — use uv-advanced-dependencies |
+| Bootstrapping a new single-package Python project | Splitting a repo into multi-package workspaces — use uv-workspaces |
 
 ## When This Skill Applies
 

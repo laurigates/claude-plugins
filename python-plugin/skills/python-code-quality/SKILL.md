@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-02-25
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: python-code-quality
 description: |
   Python code quality with ruff (linting & formatting) and ty (type checking).
@@ -15,6 +15,14 @@ allowed-tools: Bash, Read, Grep, Glob
 # Python Code Quality
 
 Quick reference for Python code quality tools: ruff (linting & formatting), ty (type checking).
+
+## When to Use This Skill
+
+| Use this skill when... | Use a focused sibling instead when... |
+|---|---|
+| Setting up a complete quality stack (lint + format + type-check) for a new project | Tuning only ruff lint rule selection — use ruff-linting |
+| Wiring ruff and ty into pre-commit and CI together | Configuring only ruff formatter quirks — use ruff-formatting |
+| Comparing ruff/ty/basedpyright at a high level before choosing tools | Configuring strict basedpyright/ty type-checker rules — use basedpyright-type-checking or ty-type-checking |
 
 ## When This Skill Applies
 

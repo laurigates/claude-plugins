@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-02-06
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: uv-advanced-dependencies
 description: |
   Advanced dependency scenarios in uv projects: Git dependencies, path dependencies,
@@ -15,6 +15,14 @@ allowed-tools: Bash, Read, Grep, Glob
 # UV Advanced Dependencies
 
 Quick reference for advanced dependency scenarios in UV projects.
+
+## When to Use This Skill
+
+| Use this skill when... | Use a focused sibling instead when... |
+|---|---|
+| Pinning a dependency to a git URL, branch, or tag, or installing in editable mode | Adding a normal PyPI dependency — use uv-project-management |
+| Configuring `[tool.uv.sources]`, dependency groups, extras, or custom indexes | Sharing source declarations across workspace members — use uv-workspaces |
+| Setting up private package indexes or build-time constraints | Running an ephemeral script with `--with` deps — use uv-run |
 
 ## When This Skill Applies
 

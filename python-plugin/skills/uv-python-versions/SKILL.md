@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-02-06
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: uv-python-versions
 description: |
   Install and manage Python interpreter versions with uv. Covers uv python install,
@@ -15,6 +15,14 @@ allowed-tools: Bash, Read, Grep, Glob
 # UV Python Version Management
 
 Quick reference for installing and managing Python interpreter versions with UV.
+
+## When to Use This Skill
+
+| Use this skill when... | Use a focused sibling instead when... |
+|---|---|
+| Installing a specific CPython or PyPy interpreter with `uv python install` | Adding a Python library to a project — use uv-project-management |
+| Pinning a project to a Python version via `.python-version` or `requires-python` | Installing a global Python CLI tool — use uv-tool-management |
+| Switching between multiple installed interpreters for testing | Running a script with auto-managed Python — use uv-run |
 
 ## When This Skill Applies
 

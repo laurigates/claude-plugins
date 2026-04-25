@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-02-06
-reviewed: 2025-12-16
+modified: 2026-04-25
+reviewed: 2026-04-25
 name: python-packaging
 description: |
   Build and publish Python packages with uv and modern build tools. Covers uv build,
@@ -15,6 +15,14 @@ allowed-tools: Bash, Read, Grep, Glob
 # Python Packaging
 
 Quick reference for building and publishing Python packages with UV and modern build tools.
+
+## When to Use This Skill
+
+| Use this skill when... | Use uv-project-management instead when... |
+|---|---|
+| Building a wheel/sdist with `uv build` for PyPI distribution | Setting up a new project's pyproject.toml or adding runtime dependencies |
+| Publishing a release to PyPI or a private index with `uv publish` | Managing the lockfile or syncing the local virtual environment |
+| Configuring entry points, console scripts, or package metadata for distribution | Resolving dependency conflicts or pinning versions for development |
 
 ## When This Skill Applies
 
