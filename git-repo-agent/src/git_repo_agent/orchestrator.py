@@ -4,6 +4,7 @@ import json
 import logging
 import signal
 import sys
+from collections.abc import Callable
 from datetime import date, datetime, timezone
 from pathlib import Path
 
@@ -380,6 +381,11 @@ async def run_onboard(
             )
         )
 
+    # Interactive onboard uses the two-phase pattern (ADR-008): plan in
+    # Phase 1, Python prompts the user, execute in Phase 2. Dry-run and
+    # non-interactive runs use single-phase streaming.
+    interactive = non_interactive is None and not dry_run
+
     try:
         # Phase 0: run the blueprint state machine before handing off to the
         # LLM orchestrator. See ADR-006. Each phase is a single compiled
@@ -415,12 +421,13 @@ async def run_onboard(
             + repo_context
         )
 
+        # AskUserQuestion no-ops in SDK subprocess mode (ADR-003/008); the
+        # interactive onboard path uses the two-phase pattern via
+        # _stream_interactive instead. Removing it from allowed_tools makes
+        # accidental use fail loudly rather than silently.
         allowed_tools = [
-            "Read", "Write", "Edit", "Bash", "Glob", "Grep", "Task",
-            "AskUserQuestion", "TodoWrite",
+            "Read", "Write", "Edit", "Bash", "Glob", "Grep", "Task", "TodoWrite",
         ]
-        if non_interactive is not None:
-            allowed_tools = _non_interactive_allowed_tools(allowed_tools)
 
         # Build orchestrator options
         options = ClaudeAgentOptions(
@@ -444,6 +451,7 @@ async def run_onboard(
                 "SKIP_CI": str(skip_ci),
                 "SKIP_BLUEPRINT": str(blueprint_already_done),
                 "ONBOARD_BRANCH": branch,
+                "INTERACTIVE_MODE": str(interactive),
             },
             stderr=lambda line: console.print(f"[dim red]STDERR: {line}[/dim red]"),
         )
@@ -451,10 +459,23 @@ async def run_onboard(
         # Build the prompt — agent should commit but NOT create branches
         prompt_parts = [
             f"Onboard the repository at {work_dir}.",
-            "Repository analysis and health score are in your system prompt. Plan and execute the onboarding workflow.",
+            "Repository analysis and health score are in your system prompt.",
             f"You are working in a git worktree on branch '{branch}'.",
             "Commit your changes directly to this branch. Do NOT create new branches.",
         ]
+        if interactive:
+            prompt_parts.append(
+                "INTERACTIVE_MODE is True. Plan the onboarding by following "
+                "Steps 1 and 2: present a numbered plan of actions and end "
+                "your response. Do NOT execute changes in this phase. The "
+                "orchestrator will collect the user's selection and start a "
+                "new session for execution."
+            )
+        else:
+            prompt_parts.append(
+                "Plan and execute the onboarding workflow without stopping "
+                "for plan review."
+            )
         if dry_run:
             prompt_parts.append("DRY RUN — report what you would do without making changes.")
         if skip_ci:
@@ -468,11 +489,26 @@ async def run_onboard(
 
         prompt = " ".join(prompt_parts)
 
-        if non_interactive is not None:
+        if interactive:
+            agent_output = await _stream_interactive(
+                prompt,
+                options,
+                "Onboarding complete.",
+                user_input_label=(
+                    "[bold]Apply onboarding plan?[/bold] "
+                    "(comma-separated numbers, [green]all[/green], or "
+                    "[yellow]none[/yellow]): "
+                ),
+                build_phase2_prompt=_build_onboard_phase2_prompt,
+                worktree_branch=branch,
+                none_message="No onboarding actions selected.",
+            )
+        elif non_interactive is not None:
             agent_output = await _stream_messages_collecting(
                 prompt, options, "Onboarding complete.",
             )
         else:
+            # Dry-run interactive: agent reports without making changes.
             await _stream_messages(prompt, options, "Onboarding complete.")
             agent_output = ""
 
@@ -618,8 +654,17 @@ async def run_maintain(
 
         if interactive:
             collected = await _stream_interactive(
-                prompt, options, "Maintenance complete.",
+                prompt,
+                options,
+                "Maintenance complete.",
+                user_input_label=(
+                    "[bold]Select fixes to apply[/bold] "
+                    "(comma-separated numbers, [green]all[/green], or "
+                    "[yellow]none[/yellow]): "
+                ),
+                build_phase2_prompt=_build_maintain_phase2_prompt,
                 worktree_branch=branch,
+                none_message="No fixes selected.",
             )
         else:
             collected = await _stream_messages_collecting(
@@ -914,12 +959,15 @@ async def _stream_messages_collecting(
     return "\n".join(collected)
 
 
-def _build_phase2_prompt(
+_NONE_CHOICES = ("none", "n", "no", "")
+
+
+def _build_maintain_phase2_prompt(
     findings_text: str,
     user_selection: str,
     worktree_branch: str | None,
 ) -> str:
-    """Build the Phase 2 execution prompt.
+    """Build the Phase 2 execution prompt for the maintain workflow.
 
     Phase 2 is a fresh session, so we re-embed the findings list from
     Phase 1 and give explicit instructions to execute the selected fixes
@@ -928,7 +976,7 @@ def _build_phase2_prompt(
     agent to proceed with tool calls.
     """
     choice = user_selection.strip().lower()
-    if choice in ("none", "n", ""):
+    if choice in _NONE_CHOICES:
         selection_instruction = (
             "The user chose not to apply any fixes. "
             "Skip Step 4. Proceed directly to Step 5 (record health "
@@ -944,7 +992,7 @@ def _build_phase2_prompt(
         )
 
     worktree_note = ""
-    if worktree_branch and choice not in ("none", "n", ""):
+    if worktree_branch and choice not in _NONE_CHOICES:
         worktree_note = (
             f"\n\nYou are working in a git worktree on branch "
             f"'{worktree_branch}'. Commit your changes directly to this "
@@ -962,6 +1010,57 @@ def _build_phase2_prompt(
         f"{worktree_note}\n\n"
         "Do not ask the user any questions — they have already selected "
         "their fixes. Execute now."
+    )
+
+
+def _build_onboard_phase2_prompt(
+    plan_text: str,
+    user_selection: str,
+    worktree_branch: str | None,
+) -> str:
+    """Build the Phase 2 execution prompt for the onboard workflow.
+
+    Phase 2 is a fresh session, so we re-embed the plan from Phase 1 and
+    give explicit instructions to execute the selected onboarding steps
+    and commit to the worktree branch. The prompt does NOT inherit the
+    Phase 1 "stop after presenting plan" directive — it tells the agent
+    to proceed with tool calls.
+    """
+    choice = user_selection.strip().lower()
+    if choice in _NONE_CHOICES:
+        selection_instruction = (
+            "The user chose not to apply any onboarding actions. "
+            "Skip the configuration and documentation steps. Output a brief "
+            "summary noting that no changes were applied, then end."
+        )
+    else:
+        selection_instruction = (
+            f"The user approved the plan with selection: **{user_selection}** "
+            "(reference the numbered plan below; `all` or `yes` means apply "
+            "every step). Execute exactly those steps from the plan by "
+            "making real tool calls (Edit, Write, Bash, etc.), then commit "
+            "your changes and generate the onboarding report (Step 6)."
+        )
+
+    worktree_note = ""
+    if worktree_branch and choice not in _NONE_CHOICES:
+        worktree_note = (
+            f"\n\nYou are working in a git worktree on branch "
+            f"'{worktree_branch}'. Commit your changes directly to this "
+            "branch. Do NOT create new branches or push."
+        )
+
+    return (
+        "This is the execution phase of the onboard workflow. "
+        "An earlier planning phase produced the following numbered plan. "
+        "Your job is to act on it, not to re-plan.\n\n"
+        "## Plan from planning phase\n\n"
+        f"{plan_text}\n\n"
+        "## Your task\n\n"
+        f"{selection_instruction}"
+        f"{worktree_note}\n\n"
+        "Do not ask the user any questions — they have already approved "
+        "their selection. Execute now."
     )
 
 
@@ -987,25 +1086,31 @@ async def _stream_interactive(
     prompt: str,
     options: ClaudeAgentOptions,
     completion_msg: str,
+    user_input_label: str,
+    build_phase2_prompt: Callable[[str, str, str | None], str],
     worktree_branch: str | None = None,
+    none_message: str = "No actions selected.",
 ) -> str:
-    """Run a two-phase interactive maintain workflow.
+    """Run a two-phase interactive workflow (maintain or onboard).
 
-    Phase 1: Agent analyzes and presents numbered findings, then stops.
-    Interlude: Python prompts the user for their selections via rich.
-    Phase 2: A fresh agent session receives the Phase 1 findings plus the
-    user's selections, and executes the fixes.
+    Phase 1: Agent analyzes/plans and presents output, then stops.
+    Interlude: Python prompts the user for their selection via rich.
+    Phase 2: A fresh agent session receives the Phase 1 output plus the
+    user's selection and executes the chosen actions.
 
     Two separate ClaudeSDKClient sessions are used (rather than
     ``client.query()`` back-to-back on one client). Multi-turn on the same
-    client proved unreliable: the Phase 1 "stop after findings" anchor
-    from ``maintain.md`` caused Phase 2 to wrap up with no tool calls.
-    See ADR-003 (Revision 2026-04).
+    client proved unreliable: the Phase 1 "stop after presenting" anchor
+    in the workflow markdown caused Phase 2 to wrap up with no tool calls.
+    See ADR-003 (Revision 2026-04) and ADR-008.
+
+    The caller supplies ``build_phase2_prompt`` so that the same plumbing
+    serves both maintain (findings → fixes) and onboard (plan → setup).
 
     Returns concatenated agent text output from both phases for
     post-processing (PR body, issue creation).
     """
-    # --- Phase 1: Analysis ---
+    # --- Phase 1: Analysis/planning ---
     phase1_collected: list[str] = []
     async with ClaudeSDKClient(options) as client:
         await client.query(prompt)
@@ -1015,16 +1120,13 @@ async def _stream_interactive(
 
     # --- Interlude: prompt user ---
     console.print()
-    user_input = console.input(
-        "[bold]Select fixes to apply[/bold] "
-        "(comma-separated numbers, [green]all[/green], or [yellow]none[/yellow]): "
-    )
+    user_input = console.input(user_input_label)
     choice = user_input.strip().lower()
-    if choice in ("none", "n", ""):
-        console.print("[yellow]No fixes selected.[/yellow]")
+    if choice in _NONE_CHOICES:
+        console.print(f"[yellow]{none_message}[/yellow]")
 
     # --- Phase 2: Execution (fresh session) ---
-    phase2_prompt = _build_phase2_prompt(phase1_text, user_input, worktree_branch)
+    phase2_prompt = build_phase2_prompt(phase1_text, user_input, worktree_branch)
     phase2_options = replace(
         options,
         system_prompt=_phase2_system_prompt(options.system_prompt or ""),

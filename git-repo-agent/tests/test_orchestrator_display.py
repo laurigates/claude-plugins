@@ -1,7 +1,8 @@
 """Tests for orchestrator display and PR content helpers."""
 
 from git_repo_agent.orchestrator import (
-    _build_phase2_prompt,
+    _build_maintain_phase2_prompt,
+    _build_onboard_phase2_prompt,
     _build_pr_content,
     _build_pr_title,
     _extract_fixed_items,
@@ -189,7 +190,7 @@ FINDINGS_FIXTURE = (
 )
 
 
-class TestBuildPhase2Prompt:
+class TestBuildMaintainPhase2Prompt:
     """Regression tests for the interactive-maintain Phase 2 bug.
 
     See ADR-003 Revision 2026-04-12 — Phase 2 used to silently skip tool
@@ -199,15 +200,21 @@ class TestBuildPhase2Prompt:
     """
 
     def test_embeds_findings_verbatim(self):
-        prompt = _build_phase2_prompt(FINDINGS_FIXTURE, "all", "maintain/2026-04-12")
+        prompt = _build_maintain_phase2_prompt(
+            FINDINGS_FIXTURE, "all", "maintain/2026-04-12"
+        )
         assert FINDINGS_FIXTURE in prompt
 
     def test_embeds_user_selection(self):
-        prompt = _build_phase2_prompt(FINDINGS_FIXTURE, "1,3", "maintain/2026-04-12")
+        prompt = _build_maintain_phase2_prompt(
+            FINDINGS_FIXTURE, "1,3", "maintain/2026-04-12"
+        )
         assert "1,3" in prompt
 
     def test_all_selection_instructs_execution(self):
-        prompt = _build_phase2_prompt(FINDINGS_FIXTURE, "all", "maintain/2026-04-12")
+        prompt = _build_maintain_phase2_prompt(
+            FINDINGS_FIXTURE, "all", "maintain/2026-04-12"
+        )
         # Agent must be told to make tool calls, not re-analyze or stop.
         assert "Apply exactly those fixes" in prompt
         assert "tool calls" in prompt
@@ -215,14 +222,14 @@ class TestBuildPhase2Prompt:
         assert "Do NOT create new branches" in prompt
 
     def test_none_selection_skips_fixes(self):
-        prompt = _build_phase2_prompt(FINDINGS_FIXTURE, "none", None)
+        prompt = _build_maintain_phase2_prompt(FINDINGS_FIXTURE, "none", None)
         assert "not to apply any fixes" in prompt
         assert "Skip Step 4" in prompt
         # No worktree note when nothing will be committed.
         assert "Do NOT create new branches" not in prompt
 
     def test_empty_selection_treated_as_none(self):
-        prompt = _build_phase2_prompt(FINDINGS_FIXTURE, "", None)
+        prompt = _build_maintain_phase2_prompt(FINDINGS_FIXTURE, "", None)
         assert "not to apply any fixes" in prompt
 
     def test_does_not_inherit_phase1_stop_anchor(self):
@@ -230,13 +237,97 @@ class TestBuildPhase2Prompt:
         # after presenting the numbered findings list". Phase 2 must not
         # repeat that instruction, or the agent will wrap up without
         # making any tool calls (the original bug).
-        prompt = _build_phase2_prompt(FINDINGS_FIXTURE, "all", "maintain/2026-04-12")
+        prompt = _build_maintain_phase2_prompt(
+            FINDINGS_FIXTURE, "all", "maintain/2026-04-12"
+        )
         assert "end your response after presenting" not in prompt.lower()
         # Explicit anti-instruction should be present instead.
         assert "Execute now" in prompt
 
     def test_all_forbids_asking_questions(self):
-        prompt = _build_phase2_prompt(FINDINGS_FIXTURE, "all", "maintain/2026-04-12")
+        prompt = _build_maintain_phase2_prompt(
+            FINDINGS_FIXTURE, "all", "maintain/2026-04-12"
+        )
+        assert "Do not ask the user any questions" in prompt
+
+
+PLAN_FIXTURE = (
+    "1. [claude-md] Generate CLAUDE.md with project description and lint commands\n"
+    "2. [readme] Generate README.md with quick-start guide\n"
+    "3. [linter] Configure Ruff with default rules\n"
+    "4. [pre-commit] Set up pre-commit hooks for ruff and gitleaks"
+)
+
+
+class TestBuildOnboardPhase2Prompt:
+    """Regression tests for issue #1120 — onboard ended silently when
+    `AskUserQuestion` no-ops in SDK subprocess mode. Phase 2 now embeds
+    the planning-phase plan and the user's selection in a fresh session.
+    See ADR-008.
+    """
+
+    def test_embeds_plan_verbatim(self):
+        prompt = _build_onboard_phase2_prompt(
+            PLAN_FIXTURE, "all", "setup/onboard"
+        )
+        assert PLAN_FIXTURE in prompt
+
+    def test_embeds_user_selection(self):
+        prompt = _build_onboard_phase2_prompt(
+            PLAN_FIXTURE, "1,3", "setup/onboard"
+        )
+        assert "1,3" in prompt
+
+    def test_all_selection_instructs_execution(self):
+        prompt = _build_onboard_phase2_prompt(
+            PLAN_FIXTURE, "all", "setup/onboard"
+        )
+        # Agent must be told to make tool calls, not re-plan or stop.
+        assert "Execute exactly those steps" in prompt
+        assert "tool calls" in prompt
+        assert "setup/onboard" in prompt
+        assert "Do NOT create new branches" in prompt
+
+    def test_yes_treated_as_apply(self):
+        prompt = _build_onboard_phase2_prompt(
+            PLAN_FIXTURE, "yes", "setup/onboard"
+        )
+        # "yes" is a non-none choice so it should route into the execute
+        # branch (worktree note included, no skip directive).
+        assert "Execute exactly those steps" in prompt
+        assert "Do NOT create new branches" in prompt
+
+    def test_none_selection_skips_actions(self):
+        prompt = _build_onboard_phase2_prompt(PLAN_FIXTURE, "none", None)
+        assert "not to apply any onboarding actions" in prompt
+        assert "no changes were applied" in prompt
+        # No worktree note when nothing will be committed.
+        assert "Do NOT create new branches" not in prompt
+
+    def test_empty_selection_treated_as_none(self):
+        prompt = _build_onboard_phase2_prompt(PLAN_FIXTURE, "", None)
+        assert "not to apply any onboarding actions" in prompt
+
+    def test_no_keyword_treated_as_none(self):
+        prompt = _build_onboard_phase2_prompt(PLAN_FIXTURE, "no", None)
+        assert "not to apply any onboarding actions" in prompt
+
+    def test_does_not_inherit_phase1_stop_anchor(self):
+        # The Phase 1 system prompt tells the agent to "end your response
+        # after presenting the numbered plan". Phase 2 must not repeat
+        # that, or the agent will wrap up without tool calls (issue
+        # #1120's original failure mode for onboard).
+        prompt = _build_onboard_phase2_prompt(
+            PLAN_FIXTURE, "all", "setup/onboard"
+        )
+        assert "end your response after presenting" not in prompt.lower()
+        # Explicit anti-instruction should be present instead.
+        assert "Execute now" in prompt
+
+    def test_all_forbids_asking_questions(self):
+        prompt = _build_onboard_phase2_prompt(
+            PLAN_FIXTURE, "all", "setup/onboard"
+        )
         assert "Do not ask the user any questions" in prompt
 
 
