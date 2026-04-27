@@ -23,7 +23,7 @@ PRD (Product Requirements) → PRP (Product Requirement Prompt) → Work-Order �
 | `blueprint-development` | Core methodology for generating project-specific skills and commands from PRDs |
 | `confidence-scoring` | Assess quality of PRPs and work-orders for execution readiness |
 | `feature-tracking` | Track implementation status against requirements with hierarchical FR codes |
-| `document-linking` | **NEW** - Unified ID system connecting PRDs, ADRs, PRPs, work-orders, and GitHub issues |
+| `document-linking` | Unified ID system connecting PRDs, ADRs, PRPs, work-orders, and GitHub issues |
 
 ### Derive Skills
 
@@ -40,12 +40,14 @@ PRD (Product Requirements) → PRP (Product Requirement Prompt) → Work-Order �
 
 | Skill | Description |
 |-------|-------------|
-| `blueprint-generate-commands` | Generate workflow commands from project structure and PRDs |
 | `blueprint-generate-rules` | Generate project-specific rules from PRDs |
 | `blueprint-work-order` | Create work-order with minimal context for subagent execution |
-| `prp-create` | Create a PRP with systematic research and validation gates |
-| `prp-execute` | Execute a PRP with validation loop, TDD workflow, and quality gates |
-| `prp-curate-docs` | Curate documentation for ai_docs to optimize AI context |
+| `blueprint-prp-create` | Create a PRP with systematic research and validation gates |
+| `blueprint-prp-execute` | Execute a PRP with validation loop, TDD workflow, and quality gates |
+| `blueprint-curate-docs` | Curate documentation for ai_docs to optimize AI context |
+| `blueprint-adr-validate` | Validate ADR cross-references, detect domain conflicts, and update superseded ADRs |
+| `blueprint-promote` | Promote a child workspace's status into the root monorepo's portfolio tracker |
+| `blueprint-sync` | Sync generated rules / CLAUDE.md back from PRDs after edits |
 | `blueprint-story-audit` | Read-only audit fusing capability map ↔ PRD stories ↔ tests into a tier-ranked gap report. Writes `docs/blueprint/audits/<date>-story-audit.md` |
 | `blueprint-story-reconcile` | PRD-only reconciliation pass against the latest story-audit. Adds `⚠️`/`❌`/`🆕` markers and a wholesale `## Known Drift` section; confirms each PRD interactively |
 
@@ -75,14 +77,6 @@ PRD (Product Requirements) → PRP (Product Requirement Prompt) → Work-Order �
 |-------|-------------|
 | `blueprint-feature-tracker-status` | Display feature completion statistics |
 | `blueprint-feature-tracker-sync` | Synchronize tracker with TODO.md, generate progress summary |
-
-## Agents
-
-| Agent | Trigger | Description |
-|-------|---------|-------------|
-| `requirements-documentation` | New features requested | Creates comprehensive PRDs before implementation begins |
-| `architecture-decisions` | Architecture decisions made | Documents ADRs for significant technical decisions |
-| `prp-preparation` | Implementation starting | Checks if PRP exists, suggests creating one if missing |
 
 ## Workflow
 
@@ -212,9 +206,7 @@ Create or refine PRDs in `docs/prds/` documenting:
 - TDD requirements and test strategies
 - Success criteria and quality standards
 
-The `requirements-documentation` agent triggers proactively for new features.
-
-### 4. Generate Project Skills
+### 4. Generate Project Rules
 
 ```bash
 /blueprint:generate-rules
@@ -237,7 +229,7 @@ Generates isolated task packages with minimal context for subagent execution.
 ### 6. Execute with TDD
 
 ```bash
-/prp-execute
+/blueprint:prp-execute
 ```
 
 Runs the implementation with RED → GREEN → REFACTOR workflow.

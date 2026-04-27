@@ -118,22 +118,19 @@ graph TB
     Start([Start New Project]) --> Init[/blueprint:init/]
 
     Init --> InitArtifacts{Setup Type?}
-    InitArtifacts -->|Existing Project| GenPRD[/blueprint:prd/]
+    InitArtifacts -->|Existing Project| GenPRD[/blueprint:derive-prd/]
     InitArtifacts -->|New Project| WritePRD[Write PRDs manually]
-    InitArtifacts -->|Architecture| GenADR[/blueprint:adr/]
+    InitArtifacts -->|Architecture| GenADR[/blueprint:derive-adr/]
 
     GenPRD --> PRDs[(docs/prds/)]
     WritePRD --> PRDs
     GenADR --> ADRs[(docs/adrs/)]
 
     PRDs --> GenRules[/blueprint:generate-rules/]
-    PRDs --> GenCmds[/blueprint:generate-commands/]
 
     GenRules --> Rules[(4 Behavioral Rules)]
-    GenCmds --> Commands[(Project Commands)]
 
     Rules --> FeatureWork{Need to implement?}
-    Commands --> FeatureWork
 
     FeatureWork -->|Complex Feature| CreatePRP[/blueprint:prp-create/]
     FeatureWork -->|Isolated Task| CreateWO[/blueprint:work-order/]
@@ -177,7 +174,10 @@ graph TB
     ValidationGates -->|All Pass| UpdateProgress[Update feature-tracker.json]
     UpdateProgress --> TrackFeatures[/blueprint:feature-tracker-sync/]
 
-    TrackFeatures --> MoreWork{More work?}
+    TrackFeatures --> StoryAudit[/blueprint:story-audit/]
+    StoryAudit --> Reconcile[/blueprint:story-reconcile/]
+    Reconcile --> PRDs
+    StoryAudit --> MoreWork{More work?}
     MoreWork -->|Yes| FeatureWork
     MoreWork -->|No| Done([Complete])
 
@@ -185,12 +185,13 @@ graph TB
     style GenPRD fill:#ffd966
     style GenADR fill:#ffd966
     style GenRules fill:#b4d7a8
-    style GenCmds fill:#b4d7a8
     style CreatePRP fill:#b4d7a8
     style ExecutePRP fill:#ea9999
     style CreateWO fill:#ea9999
     style TrackFeatures fill:#d5a6bd
     style TDDCycle fill:#ea9999
+    style StoryAudit fill:#8fbc8f
+    style Reconcile fill:#ffa500
 ```
 
 ## 2. PRP Creation Flow (What, Why, How)
@@ -464,7 +465,6 @@ graph TD
 
     subgraph Triggers
         T1["User runs /blueprint:generate-rules"] --> BD
-        T2["User runs /blueprint:generate-commands"] --> BD
 
         T3["Creating PRP"] --> CS
         T4["Creating work-order"] --> CS
@@ -482,8 +482,7 @@ graph TD
     end
 
     subgraph Actions
-        BD --> A1["Generate 4 behavioral rules\nfrom PRDs"]
-        BD --> A2["Create project-specific\nworkflow commands"]
+        BD --> A1["Generate behavioral rules\nfrom PRDs"]
 
         CS --> A3["Score Context Completeness"]
         CS --> A4["Score Implementation Clarity"]
@@ -502,8 +501,7 @@ graph TD
         AR --> A14["Validate relationships"]
         AR --> A15["Update superseded ADRs"]
 
-        MG --> A16["Migrate v1.x → v2.0"]
-        MG --> A17["Migrate v2.x → v3.0"]
+        MG --> A16["Migrate between\nformat versions"]
     end
 
     style BD fill:#ffcc80
@@ -522,7 +520,7 @@ How the plugin, generated, and custom layers interact:
 graph TB
     subgraph "Layer 1: Plugin (Auto-updated)"
         P1["/blueprint:init"]
-        P2["/blueprint:prd"]
+        P2["/blueprint:derive-prd"]
         P3["/blueprint:prp-create"]
         P4["/blueprint:prp-execute"]
         P5["/blueprint:work-order"]
@@ -531,30 +529,23 @@ graph TB
 
     subgraph "Layer 2: Generated (From PRDs)"
         G1[".claude/rules/\n• architecture-patterns.md\n• testing-strategies.md\n• implementation-guides.md\n• quality-standards.md"]
-        G2[".claude/commands/\n• /project:continue\n• /project:test-loop"]
     end
 
     subgraph "Layer 3: Custom (Manual)"
         C1[".claude/skills/\nCustom skill overrides"]
-        C2[".claude/commands/\nCustom command overrides"]
         C3[".claude/rules/\nManual project rules"]
     end
 
     PRD[(docs/prds/)] --> Generate[/blueprint:generate-rules/]
-    PRD --> Generate2[/blueprint:generate-commands/]
 
     Generate --> G1
-    Generate2 --> G2
 
     G1 -.->|Can override| C1
-    G2 -.->|Can override| C2
 
     Developer[Developer] --> C1
-    Developer --> C2
     Developer --> C3
 
     P6 --> G1
-    P6 --> G2
 
     style P1 fill:#a8d5e2
     style P2 fill:#ffd966
@@ -563,9 +554,7 @@ graph TB
     style P5 fill:#ea9999
     style P6 fill:#ffcc80
     style G1 fill:#e6ffe6
-    style G2 fill:#e6ffe6
     style C1 fill:#ffe6e6
-    style C2 fill:#ffe6e6
     style C3 fill:#ffe6e6
 ```
 
