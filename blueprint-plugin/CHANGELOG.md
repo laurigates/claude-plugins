@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.31.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.31.0...blueprint-plugin-v3.31.1) (2026-04-27)
+
+
+### Documentation
+
+* **blueprint-plugin:** refresh docs to match current skill set ([#1197](https://github.com/laurigates/claude-plugins/issues/1197)) ([97c99e0](https://github.com/laurigates/claude-plugins/commit/97c99e0d95c1a8ca1b4ee69a4053ae07325e6b3d))
+
 ## [3.31.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.30.2...blueprint-plugin-v3.31.0) (2026-04-25)
 
 
