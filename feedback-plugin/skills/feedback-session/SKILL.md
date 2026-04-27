@@ -11,7 +11,7 @@ allowed-tools: Bash(gh issue *), Bash(gh label *), Bash(gh search *), Bash(git s
 argument-hint: "--dry-run | --target-repo owner/repo | plugin-name"
 disable-model-invocation: true
 created: 2026-02-18
-modified: 2026-04-25
+modified: 2026-04-27
 reviewed: 2026-04-25
 ---
 
@@ -193,6 +193,8 @@ Format each finding as:
 Let the user select which findings to file as issues (use multiSelect).
 
 If `--dry-run`, present findings and stop here.
+
+**Auto mode does not skip this step.** Filing a GitHub issue is not reversible via `git restore` — closing an issue leaves noise in the issue tracker and notifies subscribers. Always confirm the selection set before Step 5, regardless of mode. To skip the prompt entirely, the user can pass `--dry-run` and re-run after reviewing.
 
 ### Step 5: Create approved issues
 
