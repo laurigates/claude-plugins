@@ -108,5 +108,6 @@ Dotted arrows are optional side-paths and cross-cutting concerns.
 | Cross-cutting: promote | `blueprint-promote` (child -> root monorepo rollup) |
 | Cross-cutting: listing/status | `blueprint-docs-list`, `blueprint-adr-list`, `blueprint-status` |
 | Cross-cutting: migration | `blueprint-upgrade`, `blueprint-migration`, `blueprint-workspace-scan` |
+| Cross-cutting: docs hygiene | `blueprint-docs-currency` (advisory: same-commit code+docs landing) |
 | Validation | `validate-prp-frontmatter.sh`, `validate-adr-frontmatter.sh`, `check-prp-readiness.sh` |
 | Story-audit loop | `blueprint-story-audit` (read-only audit), `blueprint-story-reconcile` (PRD-only mutate) |
