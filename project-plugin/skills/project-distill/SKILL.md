@@ -14,7 +14,7 @@ allowed-tools: Bash(git diff *), Bash(git log *), Bash(git status *), Bash(just 
 argument-hint: "--rules | --skills | --recipes | --all | --dry-run"
 args: "[--rules] [--skills] [--recipes] [--all] [--dry-run]"
 created: 2026-02-11
-modified: 2026-04-25
+modified: 2026-04-27
 reviewed: 2026-02-26
 ---
 
@@ -82,7 +82,11 @@ Categorize as: `[UPDATE]`, `[SKIP]`, `[NEW]`, or `[REDUNDANT]` with file paths a
 
 ### Step 4: Apply changes
 
-If not `--dry-run`: use AskUserQuestion to confirm each category, then edit/create/remove.
+If `--dry-run`: skip this step.
+
+**In auto mode**: apply proposals directly without per-category `AskUserQuestion`. All targets are reversible via `git restore` — rule files, skill files, and justfile recipes are tracked in git, so a wrong edit can be undone with one command. This matches auto mode's "prefer action over planning" directive. **Retain `AskUserQuestion` for destructive operations** (`[REDUNDANT]` proposals that remove a rule or recipe).
+
+**In manual / interactive mode**: use `AskUserQuestion` to confirm each category before applying. The user can multi-select which `[UPDATE]` / `[NEW]` proposals to accept.
 
 ### Step 5: Report summary
 
