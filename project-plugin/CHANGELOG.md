@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.0](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.13.2...project-plugin-v1.14.0) (2026-04-28)
+
+
+### Features
+
+* **project-plugin:** document auto-mode policy for distill/feedback Step 4 ([#1196](https://github.com/laurigates/claude-plugins/issues/1196)) ([ef60a52](https://github.com/laurigates/claude-plugins/commit/ef60a524ef381121391808e6eedbbd0a21586563))
+
 ## [1.13.2](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.13.1...project-plugin-v1.13.2) (2026-04-25)
 
 
