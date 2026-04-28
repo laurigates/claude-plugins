@@ -245,7 +245,7 @@
       "name": "feedback-plugin",
       "source": "./feedback-plugin",
       "description": "Session feedback analysis - capture skill bugs as GitHub issues and learn from weekly friction across sessions",
-      "version": "1.4.0",
+      "version": "1.5.0",
       "keywords": [
         "feedback",
         "session-analysis",
@@ -451,7 +451,7 @@
       "name": "project-plugin",
       "source": "./project-plugin",
       "description": "Project initialization, management, and maintenance - setup, modernization, changelog review, and continuous development workflows",
-      "version": "1.13.2",
+      "version": "1.14.0",
       "keywords": [
         "project",
         "initialization",
