@@ -9,12 +9,17 @@ Usage:
     friction_cluster.py --in frictions.jsonl --min-count 3 --render-pr-body out.md
 
 Deliverable mapping:
-    hook:*          -> rule edit documenting the block + the correct workflow
-    push:*          -> hook adjustment (pre-push PR check) + rule
-    plan:*          -> rule edit: "don't enter plan mode for conceptual Q&A"
-    error:Bash:*    -> skill patch (quick reference flag or note)
-    reject:*        -> rule edit documenting what the user declined
-    interrupt:*     -> summary only (usually not actionable)
+    hook:*                  -> rule edit documenting the block + the correct workflow
+    push:*                  -> hook adjustment (pre-push PR check) + rule
+    plan:entered-plan-mode  -> classify-required: surface samples for human review
+    reject:exitplanmode     -> classify-required: surface samples for human review
+    error:Bash:*            -> skill patch (quick reference flag or note)
+    reject:*                -> watch (rejection cause is ambiguous without sampling)
+    interrupt:*             -> summary only (usually not actionable)
+
+`classify-required` clusters are reported in the PR body with sample evidence
+so a human can decide which (if any) rule is justified. They never write a
+committed file or auto-prescribe a fix. See issue #1110.
 """
 from __future__ import annotations
 
@@ -26,30 +31,46 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable
 
-DELIVERABLES = {
-    "plan:entered-plan-mode": {
-        "kind": "rule",
-        "path": "rules/claude/friction/plan-mode-on-qa.md",
-        "title": "Avoid plan mode for conceptual Q&A",
-        "body": """# Avoid plan mode for conceptual Q&A
+_CLASSIFY_BODIES = {
+    "plan:entered-plan-mode": """\
+The parser flagged __COUNT__ ExitPlanMode entries where the preceding user
+prompt did not contain an edit verb. The Q&A heuristic produces false
+positives (feature-shaped prompts without explicit verbs look identical to
+questions), so this cluster alone does not justify a rule.
 
-When the user asks a **question** (starts with "how", "what", "why", "can", "does")
-and does not request a change to files, **do not** call `ExitPlanMode`. Answer
-the question directly.
-
-## Heuristics
-
-| Signal | Action |
+| Classification | Suggested follow-up |
 |---|---|
-| Request contains "explain", "how does", "what is", "compare" | Answer inline, no plan mode |
-| Request asks to modify, add, remove, rename, fix | Plan mode is acceptable |
-| User says "just tell me" / "no plan needed" | Never enter plan mode |
+| Q&A misfire (user wanted an inline answer) | Rule edit: "don't enter plan mode for conceptual Q&A" |
+| Parser false positive (legitimate plan, no edit verb) | Tighten `classify_plan_mode` in `friction_parse.py` |
+| Plan was OK but rejected for scope/quality | Address via the `reject:exitplanmode` cluster, not here |
 
-## Evidence
-
-__EVIDENCE__
+Cross-reference with the `reject:exitplanmode` rejection samples before
+choosing any deliverable. Mixed distributions are watch-only.
 """,
-    },
+    "reject:exitplanmode": """\
+The user rejected __COUNT__ ExitPlanMode tool calls. Plan-mode rejections
+have several distinct causes; the friction-learner does NOT prescribe a
+fix until a human samples the evidence and classifies the dominant pattern.
+
+| Classification | Suggested follow-up |
+|---|---|
+| Plan scope too broad / too detailed | Output-style rule: keep plans short |
+| Wrong approach proposed | Not actionable via rule (model judgment) |
+| User wanted an inline answer (no plan) | Rule edit: "don't enter plan mode for conceptual Q&A" |
+| User changed direction mid-flight | Not actionable |
+
+If ≥50% of the sample falls into one bucket, file a follow-up PR with the
+matching deliverable. Mixed distributions are watch-only.
+""",
+}
+
+_CLASSIFY_TITLES = {
+    "plan:entered-plan-mode": "Plan-mode entries — needs human classification",
+    "reject:exitplanmode": "ExitPlanMode rejections — needs human classification",
+}
+
+
+DELIVERABLES = {
     "push:branch-has-open-pr": {
         "kind": "rule+hook",
         "path": "rules/claude/friction/push-to-pr-branch.md",
@@ -123,7 +144,16 @@ def cluster(events: list[dict]) -> dict[str, list[dict]]:
 def propose(signature: str, hits: list[dict]) -> dict:
     spec = DELIVERABLES.get(signature)
     if spec is None:
-        if signature.startswith("hook:"):
+        if signature in _CLASSIFY_BODIES:
+            # Plan-mode clusters (entries and rejections) are not auto-prescribed.
+            # The cause requires human sampling before a rule lands. See #1110.
+            spec = {
+                "kind": "classify-required",
+                "path": "",
+                "title": _CLASSIFY_TITLES[signature],
+                "body": _CLASSIFY_BODIES[signature],
+            }
+        elif signature.startswith("hook:"):
             spec = {
                 "kind": "rule",
                 "path": f"rules/claude/friction/{signature.replace(':', '-')}.md",
@@ -181,10 +211,36 @@ def render_pr_body(proposals: list[dict], total_events: int, total_sessions: int
     ]
     for p in sorted(proposals, key=lambda x: -x["count"]):
         lines.append(f"| `{p['signature']}` | {p['count']} | {p['kind']} | `{p['path'] or '—'}` |")
+    classify = [p for p in proposals if p["kind"] == "classify-required"]
+    if classify:
+        lines += [
+            "",
+            "## Needs human classification",
+            "",
+            "These clusters were observed often enough to be actionable, but the "
+            "friction-learner does NOT prescribe a fix automatically. Sample the "
+            "evidence below and decide which deliverable (if any) is justified.",
+            "",
+        ]
+        for p in sorted(classify, key=lambda x: -x["count"]):
+            lines += [f"### {p['title']} ({p['count']})", "", p["body"].rstrip(), "", "**Sample evidence:**", ""]
+            for sample in p.get("samples", []):
+                ev = (sample.get("evidence") or "").strip().replace("\n", " ")
+                if len(ev) > 200:
+                    ev = ev[:200] + "…"
+                lines.append(
+                    f"- `{(sample.get('session') or '?')[:8]}` at "
+                    f"{sample.get('ts', '?')}: {ev}"
+                )
+            lines.append("")
     lines += ["", "## Proposed changes", ""]
-    for p in proposals:
-        if p["kind"] == "watch" or not p["body"]:
-            continue
+    proposed_changes = [
+        p for p in proposals
+        if p["kind"] not in ("watch", "classify-required") and p["body"] and p["path"]
+    ]
+    if not proposed_changes:
+        lines += ["_No auto-prescribed changes this run._", ""]
+    for p in proposed_changes:
         lines += [f"### {p['title']}", f"**File**: `{p['path']}`", "", "```markdown", p["body"].rstrip(), "```", ""]
     return "\n".join(lines) + "\n"
 
