@@ -13,8 +13,8 @@ context: fork
 maxTurns: 40
 memory: user
 created: 2026-04-16
-modified: 2026-04-18
-reviewed: 2026-04-18
+modified: 2026-04-28
+reviewed: 2026-04-28
 ---
 
 # Friction Learner Agent
@@ -89,8 +89,25 @@ For each cluster with ≥3 occurrences, map to a concrete deliverable:
 |---|---|
 | Hook block seen ≥3× | Rule edit (`CLAUDE.md` or `.claude/rules/*.md`) documenting the block + fix |
 | Tool error with a known flag-fix | Skill SKILL.md edit adding the correct flag |
-| User rejection of plan mode on Q&A | Rule edit: "don't enter plan mode for conceptual Q&A" |
+| Plan-mode entry / `ExitPlanMode` rejection | **Classify-required**: surface samples in the PR body, do NOT auto-prescribe a rule (see "Evidence gate" below) |
 | Push-to-PR-branch repeats | Hook adjustment: pre-push check for open PR on target branch |
+
+#### Evidence gate (issue #1110)
+
+Plan-mode clusters (`plan:entered-plan-mode`, `reject:exitplanmode`) have
+**ambiguous causes**. A rejection can mean any of: scope too broad, wrong
+approach, user wanted an inline answer, or user changed direction. Inferring
+"don't enter plan mode for Q&A" from the rejection count alone is unsupported.
+
+The clusterer marks these as `kind: "classify-required"` and surfaces sample
+evidence in the PR body's "Needs human classification" section. **No rule
+file is committed and no body is hardcoded.** A human must sample the
+evidence, classify the dominant cause, and only then file a follow-up PR
+with the matching deliverable.
+
+The same gate applies to any new cluster signature whose underlying cause
+cannot be determined from the cluster shape alone — when in doubt, surface
+samples rather than prescribe.
 
 ### Step 4: Render proposed diffs per target repo
 
