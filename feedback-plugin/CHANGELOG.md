@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.5.0](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.4.0...feedback-plugin-v1.5.0) (2026-04-28)
+
+
+### Features
+
+* **project-plugin:** document auto-mode policy for distill/feedback Step 4 ([#1196](https://github.com/laurigates/claude-plugins/issues/1196)) ([ef60a52](https://github.com/laurigates/claude-plugins/commit/ef60a524ef381121391808e6eedbbd0a21586563))
+
+
+### Bug Fixes
+
+* **feedback-plugin:** require human classification before plan-mode rule lands ([#1200](https://github.com/laurigates/claude-plugins/issues/1200)) ([454c947](https://github.com/laurigates/claude-plugins/commit/454c9471f6bcfc5a468ffd3eb3da017730e2b83e))
+
 ## [1.4.0](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.3.3...feedback-plugin-v1.4.0) (2026-04-25)
 
 
