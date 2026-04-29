@@ -1,6 +1,6 @@
 # Plugin Navigation Map
 
-Navigation guide for 37 plugins and 300+ skills. Start here.
+Navigation guide for 38 plugins and 300+ skills. Start here.
 
 ## Quick Start
 
@@ -198,6 +198,7 @@ Install based on your project's tech stack and domain.
 | prompt-engineering-plugin | Anti-hallucination workflow — grounded, citation-backed analysis from source documents |
 | prose-plugin | Prose style control — distillation, tone, voice, clarity, consistency |
 | obsidian-plugin | Obsidian CLI vault management — files, search, properties, tasks, publish, sync |
+| upstream-pr-plugin | Heavy-divergence fork-to-upstream PR workflow — patch-id eligibility, re-derive fallback, scrub, regression check |
 
 ## Key Entry Points
 
