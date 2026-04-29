@@ -11,8 +11,8 @@ args: "[--mine] [--blocked] [--stale=N] [--project=<name>] [--all]"
 allowed-tools: Bash(task *), Bash(git config *), Bash(git rev-parse *), Bash(gh auth *), Bash(gh pr *), Bash(jq *), Read, TodoWrite
 argument-hint: optional filters
 created: 2026-04-24
-modified: 2026-04-25
-reviewed: 2026-04-25
+modified: 2026-04-29
+reviewed: 2026-04-29
 ---
 
 # /taskwarrior:task-status
@@ -29,9 +29,9 @@ Read-only status report on the coordination queue. Strictly uses `export | jq` â
 
 ## Context
 
-- Task CLI available: !`command -v task`
+- Task CLI available: !`task --version`
 - Git toplevel: !`git rev-parse --show-toplevel`
-- Git remote: !`git config --get remote.origin.url`
+- Git remote: !`git remote`
 - GH auth: !`gh auth status`
 - Known projects: !`task _projects`
 

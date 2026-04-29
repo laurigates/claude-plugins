@@ -11,8 +11,8 @@ args: "<task-id> [commit-hash]"
 allowed-tools: Bash(task *), Bash(git config *), Bash(git log *), Bash(git rev-parse *), Bash(gh auth *), Bash(gh issue *), Bash(gh pr *), Read, Edit, TodoWrite
 argument-hint: task id (required), commit sha (optional — defaults to HEAD)
 created: 2026-04-24
-modified: 2026-04-25
-reviewed: 2026-04-25
+modified: 2026-04-29
+reviewed: 2026-04-29
 ---
 
 # /taskwarrior:task-done
@@ -29,8 +29,8 @@ Close a task with full coordination hygiene: annotate with the landing commit, d
 
 ## Context
 
-- Task CLI available: !`command -v task`
-- Git remote: !`git config --get remote.origin.url`
+- Task CLI available: !`task --version`
+- Git remote: !`git remote`
 - GH auth: !`gh auth status`
 - HEAD commit: !`git rev-parse --short HEAD`
 - Current branch: !`git branch --show-current`

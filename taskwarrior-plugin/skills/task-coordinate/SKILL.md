@@ -12,8 +12,8 @@ args: "[--n=N] [--lock=<resource>] [--wave] [--project=<name>] [--all]"
 allowed-tools: Bash(task *), Bash(git rev-parse *), Bash(jq *), Read, TodoWrite
 argument-hint: optional count (default 3) and lock filter
 created: 2026-04-24
-modified: 2026-04-25
-reviewed: 2026-04-25
+modified: 2026-04-29
+reviewed: 2026-04-29
 ---
 
 # /taskwarrior:task-coordinate
@@ -30,7 +30,7 @@ Next-candidate-agent surfacing for parallel / wave dispatch. Pairs with `agent-p
 
 ## Context
 
-- Task CLI available: !`command -v task`
+- Task CLI available: !`task --version`
 - Git toplevel: !`git rev-parse --show-toplevel`
 - Known projects: !`task _projects`
 

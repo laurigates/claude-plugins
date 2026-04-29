@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
-reviewed: 2025-12-16
+modified: 2026-04-29
+reviewed: 2026-04-29
 description: |
   Check and configure Skaffold for project standards. Use when checking Skaffold
   configuration compliance for a Kubernetes project, fixing port forwarding security
@@ -35,7 +35,7 @@ Check and configure Skaffold against project standards.
 - Port forward config: !`grep -m1 address skaffold.yaml`
 - Profiles defined: !`grep -m10 'name:' skaffold.yaml`
 - Generate-secrets script: !`find . -maxdepth 1 -name \'scripts/generate-secrets.sh\'`
-- Dotenvx available: !`command -v dotenvx`
+- Dotenvx available: !`dotenvx --version`
 - Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml' -type f`
 
 **Skills referenced**: `skaffold-standards`, `container-development`, `skaffold-orbstack`
