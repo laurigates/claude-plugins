@@ -17,6 +17,10 @@
 # 11. grep with multiple hardcoded filenames fails when files don't exist (use find -exec grep)
 # 12. find/jq on home-directory paths (~/, $HOME) blocked by sandbox security restrictions
 # 13. gh issue/pr list without -R fails in repos without remotes ("no git remotes found")
+# 14. command -v <tool> in context: 'command' is a builtin, not covered by Bash(<tool> *)
+#     permission patterns; harness rejects with permission-approval prompt (issue #1205)
+# 15. git config --get <key> in context: exits 1 when key is unset, aborting the skill
+#     before its body runs (issue #1206)
 #
 # Exit codes:
 #   0 - no issues
@@ -49,7 +53,7 @@ check_pattern() {
     file="${match%%:*}"; match="${match#*:}"
     line="${match%%:*}"; content="${match#*:}"
     report "$level" "$rule" "$file" "$line" "$content" "$fix"
-  done < <(grep -rn "$pattern" --include='SKILL.md' --include='skill.md' . 2>/dev/null || true)
+  done < <(grep -rn "$pattern" --include='SKILL.md' --include='skill.md' --exclude-dir='worktrees' --exclude-dir='node_modules' . 2>/dev/null || true)
 }
 
 ##############################
@@ -159,7 +163,25 @@ while IFS= read -r match; do
     "gh-list-needs-remote" \
     "$gh_file" "$gh_line" "$gh_content" \
     "move 'gh issue/pr list' out of context (needs a remote); fetch during execution steps, or pass '-R owner/repo'"
-done < <(grep -rn '^- .*!`[^`]*gh \(issue\|pr\) list' --include='SKILL.md' --include='skill.md' . 2>/dev/null || true)
+done < <(grep -rn '^- .*!`[^`]*gh \(issue\|pr\) list' --include='SKILL.md' --include='skill.md' --exclude-dir='worktrees' --exclude-dir='node_modules' . 2>/dev/null || true)
+
+# command -v <tool> in context: 'command' is a shell builtin, not covered by
+# Bash(<tool> *) permission patterns. The harness rejects with a permission-approval
+# prompt and the skill aborts before its body runs.
+# Regression: taskwarrior-plugin task-status used `command -v task` (issue #1205)
+check_pattern ERROR \
+  "command-v-in-context" \
+  '^- .*!`command -v ' \
+  "replace 'command -v <tool>' with '<tool> --version' (or 'tool version'); 'command' is a builtin not covered by Bash(<tool> *) permission"
+
+# git config --get <key> in context: exits 1 when the requested key is unset.
+# A non-zero exit aborts the skill before its body runs.
+# Regression: taskwarrior-plugin task-status used `git config --get remote.origin.url`
+# and aborted on any repo without a configured remote (issue #1206)
+check_pattern ERROR \
+  "git-config-get-in-context" \
+  '^- .*!`[^`]*git config --get' \
+  "replace 'git config --get <key>' with a non-failing alternative (e.g. 'git remote' for remote detection); --get exits 1 when the key is unset"
 
 ##############################
 # WARNINGS - likely to break

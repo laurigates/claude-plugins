@@ -11,8 +11,8 @@ args: "[description] [project:<name>] [--no-project]"
 allowed-tools: Bash(task *), Bash(git config *), Bash(git rev-parse *), Bash(gh auth *), Bash(gh issue *), Bash(gh api *), Read, TodoWrite
 argument-hint: short task description
 created: 2026-04-24
-modified: 2026-04-25
-reviewed: 2026-04-25
+modified: 2026-04-29
+reviewed: 2026-04-29
 ---
 
 # /taskwarrior:task-add
@@ -29,9 +29,9 @@ File a coordination task. When a GitHub remote is present, offer optional linkag
 
 ## Context
 
-- Task CLI available: !`command -v task`
+- Task CLI available: !`task --version`
 - Git toplevel: !`git rev-parse --show-toplevel`
-- Git remote: !`git config --get remote.origin.url`
+- Git remote: !`git remote`
 - GH auth: !`gh auth status`
 - Existing UDAs: !`task _udas`
 - Known projects: !`task _projects`
