@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.2](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.2.1...taskwarrior-plugin-v1.2.2) (2026-04-29)
+
+
+### Bug Fixes
+
+* **taskwarrior-plugin:** use task --version and git remote in Context probes ([#1210](https://github.com/laurigates/claude-plugins/issues/1210)) ([294bd08](https://github.com/laurigates/claude-plugins/commit/294bd08a59dda24c1a0d0afe13731b157b0d7e8a))
+
 ## [1.2.1](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.2.0...taskwarrior-plugin-v1.2.1) (2026-04-25)
 
 

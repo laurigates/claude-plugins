@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.34.5](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.34.4...git-plugin-v2.34.5) (2026-04-29)
+
+
+### Documentation
+
+* **git-plugin:** mandate --body-file for gh issue/pr bodies ([#1211](https://github.com/laurigates/claude-plugins/issues/1211)) ([b14b3ea](https://github.com/laurigates/claude-plugins/commit/b14b3ead58b722de3c9b71c6ae94a7ede8d76a78))
+
 ## [2.34.4](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.34.3...git-plugin-v2.34.4) (2026-04-25)
 
 
