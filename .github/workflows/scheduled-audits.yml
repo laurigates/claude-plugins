@@ -1,4 +1,4 @@
-name: Scheduled Audits
+name: "Plugin: Scheduled audits"
 
 on:
   schedule:

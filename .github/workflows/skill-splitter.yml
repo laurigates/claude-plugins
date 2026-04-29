@@ -1,4 +1,4 @@
-name: Skill Splitter
+name: "Plugin: Skill splitter"
 
 on:
   pull_request:

@@ -9,8 +9,8 @@ args: "[--setup] [--caller] [--workflows <names>] [--dry-run]"
 argument-hint: --setup to create reusable workflow, --caller to create caller workflow
 disable-model-invocation: true
 created: 2026-03-07
-modified: 2026-03-07
-reviewed: 2026-03-07
+modified: 2026-04-29
+reviewed: 2026-04-29
 ---
 
 # Reusable CI Auto-Fix Workflow
@@ -79,9 +79,11 @@ Key customization points:
 If `--caller` or caller workflow is missing, create `.github/workflows/auto-fix.yml` using the template from [REFERENCE.md](REFERENCE.md) § Caller Workflow.
 
 Key customization points:
-1. Set the monitored workflow names in the `workflows:` list
+1. Set the monitored workflow names in the `workflows:` list — these are **display names** and must match each target workflow's `name:` exactly
 2. Configure `auto_fixable_criteria` override if the project has specific fixable patterns
 3. Configure `verification_commands` for the project's tools
+
+**Display name convention**: The caller workflow's `name:` follows `<Domain>: <Action>` (`Auto-fix: CI failures` is canonical for `workflow_run`-triggered remediation; the reusable definition itself uses `Reusable: CI auto-fix`). Quote values containing colons. See `.claude/rules/workflow-naming.md`.
 
 ### Step 5: Validate and report
 

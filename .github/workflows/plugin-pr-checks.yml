@@ -1,4 +1,4 @@
-name: Plugin PR Checks
+name: "Plugin: PR checks"
 
 on:
   pull_request:

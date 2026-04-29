@@ -1,4 +1,4 @@
-name: Claude Code Changelog Review
+name: "Claude: Changelog review"
 
 on:
   schedule:

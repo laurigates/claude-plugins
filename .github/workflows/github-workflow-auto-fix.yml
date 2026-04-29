@@ -1,11 +1,11 @@
-name: Auto-fix Workflow Failures
+name: "Auto-fix: CI failures"
 
 on:
   workflow_run:
     workflows:
-      - "Plugin PR Checks"
-      - "Lint Context Commands"
-      - "Enforce Conventional Commits"
+      - "Plugin: PR checks"
+      - "Plugin: Lint skills"
+      - "PR: Enforce conventional commits"
     types: [completed]
 
 # Prevent concurrent auto-fix runs on the same branch

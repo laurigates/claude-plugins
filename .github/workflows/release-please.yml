@@ -1,4 +1,4 @@
-name: Release Please
+name: "Release: release-please"
 
 on:
   push:

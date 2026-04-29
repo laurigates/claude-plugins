@@ -4,9 +4,9 @@
 # The file is kept in-tree because configure-plugin/skills/configure-claude-plugins
 # dogfoods it as the canonical review workflow for downstream projects — removing
 # it would desync the plugin template from its reference repo.
-# Re-enable via Actions → Claude Code Review → Enable workflow if plugin-pr-checks
+# Re-enable via Actions → "Claude: PR review" → Enable workflow if plugin-pr-checks
 # is ever removed or repurposed.
-name: Claude Code Review
+name: "Claude: PR review"
 
 on:
   pull_request:
