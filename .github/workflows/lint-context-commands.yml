@@ -1,4 +1,4 @@
-name: Lint Context Commands
+name: "Plugin: Lint skills"
 
 on:
   pull_request:

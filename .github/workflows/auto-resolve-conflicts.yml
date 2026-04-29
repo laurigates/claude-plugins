@@ -1,4 +1,4 @@
-name: Auto-resolve PR Conflicts
+name: "PR: Auto-resolve conflicts"
 
 on:
   push:

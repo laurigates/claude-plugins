@@ -45,6 +45,7 @@ Claude Code plugin collection providing skills and agents for development workfl
 | `.claude/rules/sandbox-guidance.md` | Sandbox constraints, `CLAUDE_CODE_REMOTE` detection, and remote/local skill patterns |
 | `.claude/rules/plugin-flow-diagrams.md` | When and how to add Mermaid flow diagrams |
 | `.claude/rules/agent-coworker-detection.md` | Detect other agents working in the same repo clone before destructive git ops |
+| `.claude/rules/workflow-naming.md` | `<Domain>: <Action>` naming for `.github/workflows/*.yml` and skill-generated workflow examples |
 
 ## Creating New Skills
 

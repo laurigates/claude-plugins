@@ -1,4 +1,4 @@
-name: Fix release-please conflicts
+name: "Release: Fix release-please conflicts"
 
 on:
   push:

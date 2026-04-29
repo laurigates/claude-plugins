@@ -1,4 +1,4 @@
-name: Release PR Documentation Audit
+name: "Release: PR documentation audit"
 
 on:
   pull_request:
