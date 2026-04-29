@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin.json",
+  "name": "upstream-pr-plugin",
+  "version": "1.0.0",
+  "description": "Heavy-divergence fork-to-upstream PR workflow — eligibility checks via patch-id, cherry-pick with re-derive fallback, commit-message scrubbing, and pre-flight regression verification",
+  "author": {
+    "name": "Lauri Gates"
+  },
+  "repository": "https://github.com/laurigates/claude-plugins",
+  "license": "MIT",
+  "keywords": [
+    "fork",
+    "upstream",
+    "pull-request",
+    "cherry-pick",
+    "patch-id",
+    "re-derive",
+    "scrub",
+    "regression"
+  ]
+}

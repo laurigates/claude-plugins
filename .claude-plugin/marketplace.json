@@ -598,6 +598,23 @@
       "category": "language"
     },
     {
+      "name": "upstream-pr-plugin",
+      "source": "./upstream-pr-plugin",
+      "description": "Heavy-divergence fork-to-upstream PR workflow — eligibility checks via patch-id, cherry-pick with re-derive fallback, commit-message scrubbing, and pre-flight regression verification",
+      "version": "1.0.0",
+      "keywords": [
+        "fork",
+        "upstream",
+        "pull-request",
+        "cherry-pick",
+        "patch-id",
+        "re-derive",
+        "scrub",
+        "regression"
+      ],
+      "category": "development"
+    },
+    {
       "name": "workflow-orchestration-plugin",
       "source": "./workflow-orchestration-plugin",
       "description": "Workflow orchestration - parallel agents, CI pipelines, preflight checks, checkpoint refactoring",
