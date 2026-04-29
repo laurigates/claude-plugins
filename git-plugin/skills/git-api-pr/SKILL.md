@@ -6,8 +6,8 @@ allowed-tools: Bash(gh api *), Bash(gh pr *), Bash(gh repo *), Bash(base64 *), B
 argument-hint: <files...> --title "type(scope): description"
 disable-model-invocation: true
 created: 2026-02-15
-modified: 2026-02-16
-reviewed: 2026-02-15
+modified: 2026-04-29
+reviewed: 2026-04-29
 ---
 
 ## When to Use This Skill
@@ -151,14 +151,19 @@ If this fails with "Reference already exists", report the error and suggest usin
 
 ### Step 8: Create PR
 
+When `--body` is provided, write it to a tempfile with the `Write` tool and pass `--body-file`. This sidesteps shell quoting entirely so backticks and code fences in the body render correctly. See the **Body content** rule in `github-issue-writing` for the canonical guidance.
+
 ```bash
+# Write tool → "$TMP_BODY" (no shell escaping involved)
 gh pr create \
   --repo "$REPO" \
   --head "$BRANCH" \
   --base "$BASE_BRANCH" \
   --title "$TITLE" \
-  --body "${BODY:-"Created via API — no local git operations."}"
+  --body-file "$TMP_BODY"
 ```
+
+When `--body` is unset, fall back to the trivial-body form `--body "Created via API — no local git operations."`.
 
 Add `--draft` if the flag was provided.
 
