@@ -1,7 +1,7 @@
 ---
 created: 2026-01-30
-modified: 2026-04-25
-reviewed: 2026-04-25
+modified: 2026-04-29
+reviewed: 2026-04-29
 name: github-issue-writing
 description: |
   Create well-structured GitHub issues with clear titles, descriptions, and
@@ -95,24 +95,53 @@ GitHub supports first-class issue types. Use `--type` when creating issues:
 
 Note: Available types depend on repository/org configuration. Use `gh issue create --type "Bug"` to leverage them.
 
+## Body Content: Use `--body-file`
+
+For any non-trivial body — anything containing backticks, code fences, or multi-line content — use `--body-file <path>`, never `--body "<text>"`. This applies to **all** `gh` commands that accept a body: `gh issue create`, `gh issue edit`, `gh issue comment`, `gh pr create`, `gh pr edit`, `gh pr comment`.
+
+### When to use which
+
+| Body shape | Pattern |
+|---|---|
+| Trivially short, single line, no backticks | `--body "Short text"` is fine |
+| Contains backticks (inline code, code fences) | `--body-file /tmp/body.md` — required |
+| Multi-line | `--body-file /tmp/body.md` — required |
+| Contains shell metacharacters (`$`, `"`, `'`, `\`) | `--body-file /tmp/body.md` — required |
+
+### Why
+
+Shell-quoted `--body` strings escape backticks (`` ` `` becomes `` \` ``), breaking inline code spans and triple-backtick code fences in the rendered issue. Bash heredocs interact unpredictably with the agent's argument escaping. Writing the markdown to a file with the `Write` tool sidesteps shell quoting entirely — the file content is preserved byte-for-byte.
+
+### Pattern
+
+```
+1. Write tool → /tmp/issue-body.md   (markdown body, no shell escaping)
+2. gh issue create --title "..." --body-file /tmp/issue-body.md
+```
+
+The same `--body-file <path>` form is supported by every `gh` command that accepts a body.
+
 ## CLI Commands
 
 ```bash
-# Create issue
-gh issue create --title "[Bug] Auth: Login fails" --body "..."
+# Create issue with a body file (preferred for any non-trivial body)
+gh issue create --title "[Bug] Auth: Login fails" --body-file /tmp/issue-body.md
+
+# Trivially short body — inline --body is acceptable
+gh issue create --title "[Chore] Bump dep" --body "See renovate PR"
 
 # With labels
-gh issue create --title "..." --body "..." --label "bug" --label "priority: high"
+gh issue create --title "..." --body-file /tmp/body.md --label "bug" --label "priority: high"
 
 # With assignee
-gh issue create --title "..." --body "..." --assignee "@me"
+gh issue create --title "..." --body-file /tmp/body.md --assignee "@me"
 
 # With issue type
-gh issue create --title "..." --body "..." --type "Bug"
+gh issue create --title "..." --body-file /tmp/body.md --type "Bug"
 
 # As sub-issue of a parent
-gh issue create --title "..." --body "..." && \
-  gh api repos/{owner}/{repo}/issues/{parent}/sub_issues -f sub_issue_id={new_id}
+gh issue create --title "..." --body-file /tmp/body.md
+gh api repos/{owner}/{repo}/issues/{parent}/sub_issues -f sub_issue_id={new_id}
 
 # Search before creating
 gh issue list --search "login error" --state all
@@ -140,19 +169,20 @@ sidebar and on project boards.
 
 | Action | Command |
 |--------|---------|
-| Create | `gh issue create --title "..." --body "..."` |
-| Create with type | `gh issue create --title "..." --body "..." --type "Bug"` |
+| Create | `gh issue create --title "..." --body-file /tmp/body.md` |
+| Create with type | `gh issue create --title "..." --body-file /tmp/body.md --type "Bug"` |
 | Search | `gh issue list --search "keyword"` |
 | View | `gh issue view N` |
-| Edit | `gh issue edit N --title "..."` |
+| Edit body | `gh issue edit N --body-file /tmp/body.md` |
+| Comment | `gh issue comment N --body-file /tmp/comment.md` |
 | Labels | `gh label list` |
 
 ## Agentic Optimizations
 
 | Context | Command |
 |---------|---------|
-| Create issue | `gh issue create --title "..." --body "..."` |
-| Create with type | `gh issue create --title "..." --type "Bug" --body "..."` |
+| Create issue | `gh issue create --title "..." --body-file /tmp/body.md` |
+| Create with type | `gh issue create --title "..." --type "Bug" --body-file /tmp/body.md` |
 | List labels | `gh label list --json name` |
 | Search issues | `gh issue list --search "keyword" --state all --json number,title` |
 | View issue | `gh issue view N --json title,body,labels` |

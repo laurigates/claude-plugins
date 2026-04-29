@@ -1,8 +1,8 @@
 ---
 name: git-commit-push-pr
 created: 2025-12-16
-modified: 2026-04-25
-reviewed: 2026-03-15
+modified: 2026-04-29
+reviewed: 2026-04-29
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git branch *), Bash(git remote *), Bash(gh pr *), Bash(gh label *), Bash(gh repo *), Bash(gh issue *), Bash(pre-commit *), Bash(find *), Read, Edit, Grep, Glob, TodoWrite, mcp__github__create_pull_request, mcp__github__list_issues, mcp__github__get_issue
 args: "[remote-branch] [--push] [--direct] [--pr] [--draft] [--issue <num>] [--no-commit] [--range <start>..<end>] [--skip-issue-detection]"
 argument-hint: [remote-branch] [--push] [--direct] [--pr] [--draft] [--issue <num>] [--no-commit] [--range <start>..<end>] [--skip-issue-detection]
@@ -159,10 +159,13 @@ Before creating the PR, scan commit messages, diff context, and any conversation
 
 For each post-merge action identified, create a GitHub issue — **not a PR checklist item**. PR descriptions are closed and buried once a PR merges; issues remain open until resolved.
 
+Write the follow-up body to a tempfile with the `Write` tool and pass it via `--body-file`. Inline `--body "..."` mangles backticks and multi-line content via shell escaping; see the **Body content** rule in `github-issue-writing`.
+
 ```bash
+# Write tool → /tmp/follow-up.md (markdown body, no shell escaping)
 gh issue create \
   --title "[Chore] DB: Run migration for new schema" \
-  --body "Follow-up to <PR-URL>.\n\nRun: rake db:migrate in production after deploy." \
+  --body-file /tmp/follow-up.md \
   --label "chore"
 # Note the returned issue number for the PR body
 ```
@@ -175,8 +178,10 @@ Use `mcp__github__create_pull_request` with:
 - `head`: The remote branch name (e.g., `feat/auth-oauth2`)
 - `base`: `main`
 - `title`: Derived from commit message
-- `body`: Include summary, issue link if --issue provided, and a **Follow-up Issues** section listing any issues created in 5a
+- `body`: Include summary, issue link if --issue provided, and a **Follow-up Issues** section listing any issues created in 5a. The MCP tool takes the body as a JSON string parameter — no shell escaping, so backticks and code fences pass through unchanged.
 - `draft`: true if --draft flag set
+
+If falling back to `gh pr create` instead of the MCP tool, write the body to a tempfile and pass `--body-file /tmp/pr-body.md` (see the **Body content** rule in `github-issue-writing`).
 
 PR body structure when follow-up issues exist:
 

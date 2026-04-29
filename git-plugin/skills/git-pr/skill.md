@@ -1,7 +1,7 @@
 ---
 created: 2026-01-21
-modified: 2026-04-25
-reviewed: 2026-04-25
+modified: 2026-04-29
+reviewed: 2026-04-29
 name: git-pr
 description: |
   Create pull requests with proper descriptions, labels, and issue references. Handles
@@ -144,10 +144,19 @@ Keep a list of created issue numbers to link in the PR body.
 
 ### 4. Create PR
 
+Write the PR body to a tempfile with the `Write` tool, then pass it via `--body-file`. This sidesteps shell quoting entirely — backticks, code fences, and shell metacharacters are preserved byte-for-byte. See the **Body content** rule in `github-issue-writing` for the canonical guidance and the threshold for when bare `--body "..."` is still acceptable.
+
 ```bash
+# 1) Write tool → /tmp/pr-body.md (no shell escaping involved)
+# 2) gh pr create --body-file
 gh pr create \
   --title "feat(scope): add feature" \
-  --body "$(cat <<'EOF'
+  --body-file /tmp/pr-body.md
+```
+
+Body content of `/tmp/pr-body.md`:
+
+```markdown
 ## Summary
 Brief description of what this PR does.
 
@@ -169,8 +178,6 @@ Why this change is needed.
 ## Related Issues
 Fixes #123
 Related: #456
-EOF
-)"
 ```
 
 ## PR Title Format
@@ -205,7 +212,7 @@ When on main, push to remote feature branch:
 git push origin main:feat/feature-name
 
 # Create PR with --head
-gh pr create --head feat/feature-name --base main --title "..." --body "..."
+gh pr create --head feat/feature-name --base main --title "..." --body-file /tmp/pr-body.md
 ```
 
 ## Pre-merge Checklist Guidelines
@@ -290,13 +297,13 @@ Status: Open
 
 | Action | Command |
 |--------|---------|
-| Create PR | `gh pr create --title "..." --body "..."` |
+| Create PR | `gh pr create --title "..." --body-file /tmp/pr-body.md` |
 | Draft PR | `gh pr create --draft` |
 | View PR | `gh pr view` |
-| Edit PR | `gh pr edit --title "..." --body "..."` |
+| Edit PR | `gh pr edit --title "..." --body-file /tmp/pr-body.md` |
 | List PRs | `gh pr list` |
 | Check status | `gh pr checks` |
-| Create follow-up issue | `gh issue create --title "[Chore] ..." --body "..."` |
+| Create follow-up issue | `gh issue create --title "[Chore] ..." --body-file /tmp/issue-body.md` |
 
 ## Agentic Optimizations
 
@@ -305,5 +312,5 @@ Status: Open
 | PR readiness | `gh pr view --json number,state 2>/dev/null` |
 | Commits | `git log origin/main..HEAD --format='%s'` |
 | Issue refs | `git log origin/main..HEAD --format='%B' \| grep -oE '#[0-9]+'` |
-| Create follow-up issue | `gh issue create --title "[Chore] ..." --body "Follow-up to PR #N..."` |
-| Create PR | `gh pr create --title "..." --body "..."` |
+| Create follow-up issue | `gh issue create --title "[Chore] ..." --body-file /tmp/follow-up.md` |
+| Create PR | `gh pr create --title "..." --body-file /tmp/pr-body.md` |
