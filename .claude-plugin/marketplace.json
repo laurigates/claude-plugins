@@ -177,7 +177,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.20.1",
+      "version": "1.20.2",
       "keywords": [
         "infrastructure",
         "standards",
@@ -275,7 +275,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.34.4",
+      "version": "2.34.5",
       "keywords": [
         "git",
         "github",
@@ -530,7 +530,7 @@
       "name": "taskwarrior-plugin",
       "source": "./taskwarrior-plugin",
       "description": "Coordination layer for multi-agent work using taskwarrior - parallel-safe queries, urgency scoring, and optional GitHub linkage via ghid/ghpr UDAs",
-      "version": "1.2.1",
+      "version": "1.2.2",
       "keywords": [
         "taskwarrior",
         "coordination",
