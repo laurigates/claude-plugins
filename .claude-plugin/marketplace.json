@@ -600,8 +600,8 @@
     {
       "name": "upstream-pr-plugin",
       "source": "./upstream-pr-plugin",
-      "description": "Heavy-divergence fork-to-upstream PR workflow — eligibility checks via patch-id, cherry-pick with re-derive fallback, commit-message scrubbing, and pre-flight regression verification",
-      "version": "1.0.0",
+      "description": "Heavy-divergence fork-to-upstream PR workflow \u2014 eligibility checks via patch-id, cherry-pick with re-derive fallback, commit-message scrubbing, and pre-flight regression verification",
+      "version": "1.1.0",
       "keywords": [
         "fork",
         "upstream",
