@@ -6,8 +6,8 @@ description: Configure CI/CD pipelines. Creates and updates GitHub Actions workf
 tools: Glob, Grep, LS, Read, Edit, Write, Bash(gh pr *), Bash(gh run *), Bash(gh workflow *), Bash(npm *), Bash(yarn *), Bash(bun *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), TodoWrite
 maxTurns: 15
 created: 2025-12-27
-modified: 2026-03-09
-reviewed: 2026-03-09
+modified: 2026-04-29
+reviewed: 2026-04-29
 ---
 
 # CI Agent
@@ -28,11 +28,17 @@ Configure CI/CD pipelines. Creates GitHub Actions workflows and deployment autom
 4. **Validate** - Syntax check the configuration
 5. **Report** - List created/updated files
 
+## Display name convention
+
+Every workflow's `name:` follows `<Domain>: <Action> [<target>]` (quoted, since YAML treats `:` as a key separator). When generating workflows, mirror the example snippets below. See `.claude/rules/workflow-naming.md` for the canonical rule and active domains.
+
+When a workflow lists another by display name (`on.workflow_run.workflows`), the listed string must match the target's `name:` exactly — update both sides whenever a target's `name:` changes.
+
 ## Common Workflows
 
 ### Test on PR
 ```yaml
-name: Test
+name: "Test: Suite"
 on: [pull_request]
 jobs:
   test:
@@ -45,7 +51,7 @@ jobs:
 
 ### Deploy on Merge
 ```yaml
-name: Deploy
+name: "Deploy: Production"
 on:
   push:
     branches: [main]
@@ -67,6 +73,7 @@ jobs:
 | Parallel jobs | Matrix builds |
 | Minimal permissions | `permissions:` block |
 | Pin versions | `@v4` not `@latest` |
+| Display name convention | `name: "<Domain>: <Action>"` (quoted) |
 
 ## Language-Specific Patterns
 

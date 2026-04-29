@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
-reviewed: 2025-12-16
+modified: 2026-04-29
+reviewed: 2026-04-29
 description: |
   Check and configure GitHub Actions CI/CD workflows (container builds, tests, releases).
   Use when checking GitHub Actions workflows for compliance, setting up container build,
@@ -37,6 +37,8 @@ Check and configure GitHub Actions CI/CD workflows against project standards.
 - Release-please config: !`find . -maxdepth 1 -name \'release-please-config.json\'`
 
 **Skills referenced**: `ci-workflows`, `github-actions-auth-security`
+
+**Display name convention**: Every generated or repaired workflow's `name:` follows `<Domain>: <Action> [<target>]` (quoted, since YAML treats `:` as a key separator). See `.claude/rules/workflow-naming.md` for the full rule and active domains.
 
 ## Parameters
 

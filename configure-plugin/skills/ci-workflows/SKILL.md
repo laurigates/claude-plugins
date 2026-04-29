@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
-reviewed: 2026-04-25
+modified: 2026-04-29
+reviewed: 2026-04-29
 name: ci-workflows
 description: |
   GitHub Actions workflow standards. Use when configuring CI/CD workflows, checking
@@ -25,6 +25,10 @@ allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 
 Standard GitHub Actions workflows for CI/CD automation.
 
+## Display name convention
+
+Every workflow's `name:` follows `<Domain>: <Action> [<target>]` so the GitHub Actions sidebar groups related workflows alphabetically. Quote the value because YAML treats `:` inside an unquoted scalar as a key separator. See `.claude/rules/workflow-naming.md` for the canonical rule, the active domain list, and the cross-workflow rename procedure. Mirror the pattern in any workflow you scaffold here.
+
 ## Required Workflows
 
 ### 1. Container Build Workflow
@@ -34,7 +38,7 @@ Standard GitHub Actions workflows for CI/CD automation.
 Multi-platform container build with GHCR publishing:
 
 ```yaml
-name: Build Container
+name: "Container: Build"
 
 on:
   push:
@@ -114,7 +118,7 @@ See `release-please-standards` skill for details.
 Auto-merge PRs from ArgoCD Image Updater branches:
 
 ```yaml
-name: Auto-merge ArgoCD Image Updater branches
+name: "Image Updater: Auto-merge"
 
 on:
   push:
@@ -178,7 +182,7 @@ jobs:
 **File**: `.github/workflows/test.yml`
 
 ```yaml
-name: Tests
+name: "Test: Suite"
 
 on:
   push:
@@ -223,12 +227,13 @@ jobs:
 Automated CI failure analysis and remediation using Claude Code Action:
 
 ```yaml
-name: Claude Auto-fix CI Failures
+name: "Auto-fix: CI failures"
 
 on:
   workflow_run:
-    # Customize: list the CI workflow names to monitor
-    workflows: ["CI"]
+    # Customize: list the CI workflow display names to monitor.
+    # The strings here must match the target workflows' `name:` values exactly.
+    workflows: ["Test: Suite"]
     types: [completed]
   workflow_dispatch:
     inputs:

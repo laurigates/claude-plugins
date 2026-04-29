@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
-reviewed: 2026-04-25
+modified: 2026-04-29
+reviewed: 2026-04-29
 name: claude-code-github-workflows
 description: Claude Code workflow design and automation patterns for PR reviews, issue triage, and CI/CD integration. Use when creating or modifying GitHub Actions workflows that integrate Claude Code.
 user-invocable: false
@@ -35,10 +35,16 @@ Expert knowledge for designing GitHub Actions workflows that integrate Claude Co
 - Workflow run triggers (CI failure handling)
 - Path-filtered reviews for specific directories
 
+## Display name convention
+
+Every workflow's `name:` follows `<Domain>: <Action> [<target>]` (quoted, since YAML treats `:` as a key separator). Use the `Claude:` domain for Claude Code-driven workflows; use `Auto-fix:` for `workflow_run`-triggered remediation. See `.claude/rules/workflow-naming.md` for the canonical rule and active domains. The example snippets below dogfood the convention.
+
+When a workflow's `on.workflow_run.workflows` lists another workflow's display name, the listed string must match the target workflow's `name:` exactly — update both sides in the same change.
+
 ## Essential Workflow Template
 
 ```yaml
-name: Claude Code
+name: "Claude: @mentions"
 
 on:
   issue_comment:
@@ -76,7 +82,7 @@ jobs:
 
 ### Comprehensive PR Review
 ```yaml
-name: Claude PR Review
+name: "Claude: PR review"
 
 on:
   pull_request:
@@ -106,11 +112,12 @@ jobs:
 
 ### CI Failure Auto-Fix
 ```yaml
-name: Auto-Fix CI Failures
+name: "Auto-fix: CI failures"
 
 on:
   workflow_run:
-    workflows: ["CI"]
+    # The string here must match the target workflow's `name:` exactly.
+    workflows: ["Test: Suite"]
     types: [completed]
 
 jobs:
@@ -136,7 +143,7 @@ jobs:
 
 ### Issue Triage and Labeling
 ```yaml
-name: Issue Triage
+name: "Claude: Issue triage"
 
 on:
   issues:
@@ -161,7 +168,7 @@ jobs:
 
 ### Path-Filtered PR Review
 ```yaml
-name: Review Backend Changes
+name: "Claude: Review backend changes"
 
 on:
   pull_request:
@@ -190,7 +197,7 @@ jobs:
 
 ### Custom Trigger Phrase
 ```yaml
-name: Claude Custom Trigger
+name: "Claude: Custom trigger"
 
 on:
   issue_comment:
@@ -214,7 +221,7 @@ jobs:
 
 ### External Contributor Handling
 ```yaml
-name: Review External Contributions
+name: "Claude: Review external contributions"
 
 on:
   pull_request_target:

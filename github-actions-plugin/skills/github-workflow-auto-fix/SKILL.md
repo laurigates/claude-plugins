@@ -9,8 +9,8 @@ args: "[--setup] [--workflows <names>] [--dry-run]"
 argument-hint: --setup to create workflow, or --dry-run to preview
 disable-model-invocation: true
 created: 2026-02-18
-modified: 2026-02-19
-reviewed: 2026-02-18
+modified: 2026-04-29
+reviewed: 2026-04-29
 ---
 
 # GitHub Workflow Auto-Fix
@@ -66,17 +66,19 @@ If `--workflows` provided, use those. Otherwise, auto-detect suitable workflows:
 
 ### Step 3: Generate workflow file
 
-If `--setup` or workflow is missing, create `.github/workflows/github-workflow-auto-fix.yml`:
+If `--setup` or workflow is missing, create `.github/workflows/github-workflow-auto-fix.yml`.
+
+The workflow's display name follows `<Domain>: <Action>` (`Auto-fix:` is the canonical domain for `workflow_run`-triggered remediation; quote the value because YAML treats `:` as a key separator). The strings under `workflows:` must match the **display names** of the target workflows exactly — update both sides whenever a target's `name:` changes. See `.claude/rules/workflow-naming.md`.
 
 ```yaml
-name: Auto-fix Workflow Failures
+name: "Auto-fix: CI failures"
 
 on:
   workflow_run:
     workflows:
-      # List monitored workflows here
-      - "CI"
-      - "Lint"
+      # List monitored workflows by display name (must match their `name:` exactly)
+      - "Test: Suite"
+      - "Plugin: Lint skills"
     types: [completed]
 
 concurrency:

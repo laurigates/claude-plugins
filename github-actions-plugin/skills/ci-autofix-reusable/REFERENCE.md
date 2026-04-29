@@ -7,7 +7,7 @@ Full workflow YAML templates for the reusable CI auto-fix pattern.
 Create as `.github/workflows/reusable-ci-autofix.yml`:
 
 ```yaml
-name: Reusable CI Auto-Fix
+name: "Reusable: CI auto-fix"
 
 on:
   workflow_call:
@@ -347,17 +347,17 @@ jobs:
 
 ## Caller Workflow
 
-Create as `.github/workflows/auto-fix.yml`. Customize the `workflows:` list and input overrides for your project.
+Create as `.github/workflows/auto-fix.yml`. Customize the `workflows:` list and input overrides for your project. The strings under `workflows:` must match each target workflow's `name:` exactly.
 
 ```yaml
-name: Claude Auto-fix CI Failures
+name: "Auto-fix: CI failures"
 
 on:
   workflow_run:
     workflows:
-      # List your CI workflow names here:
-      - "CI"
-      - "Lint"
+      # List your CI workflow display names here (must match their `name:` exactly):
+      - "Test: Suite"
+      - "Lint: Suite"
     types: [completed]
 
   workflow_dispatch:
@@ -436,11 +436,12 @@ jobs:
 Example caller that overrides auto-fix criteria and verification commands for an ESP32/Python project:
 
 ```yaml
-name: Claude Auto-fix CI Failures
+name: "Auto-fix: CI failures"
 
 on:
   workflow_run:
-    workflows: ["Test Suite", "ESP32 Build Pipeline"]
+    # Match the target workflows' display names exactly.
+    workflows: ["Test: Suite", "ESP32: Build pipeline"]
     types: [completed]
 
   workflow_dispatch:

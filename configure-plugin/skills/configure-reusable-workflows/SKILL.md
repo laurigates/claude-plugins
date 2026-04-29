@@ -1,7 +1,7 @@
 ---
 created: 2026-02-02
-modified: 2026-04-19
-reviewed: 2026-02-02
+modified: 2026-04-29
+reviewed: 2026-04-29
 description: |
   Install reusable GitHub Actions workflows for security, quality, and accessibility
   checks. Use when adding Claude-powered reusable workflows, installing pre-built workflow
@@ -101,14 +101,16 @@ If `--list` is set, print the Available Workflows tables above and stop.
 
 For each selected workflow, create a caller file in `.github/workflows/`.
 
-**Naming convention**: `claude-<category>-<name>.yml`
+**Filename convention**: `claude-<category>-<name>.yml`
 
 Example: `claude-security-secrets.yml`
+
+**Display name convention**: The workflow's `name:` follows `<Domain>: <Action> [<target>]` (quoted because YAML treats `:` as a key separator). For these reusable callers, `Claude:` is the right domain. See `.claude/rules/workflow-naming.md` for the canonical rule and active domains. Example: `name: "Claude: Security secrets"`.
 
 Use the caller workflow template:
 
 ```yaml
-name: Claude <Category> - <Name>
+name: "Claude: <Action> <target>"
 
 on:
   pull_request:
