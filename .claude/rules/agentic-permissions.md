@@ -1,7 +1,7 @@
 ---
 created: 2026-01-16
-modified: 2026-03-02
-reviewed: 2026-03-02
+modified: 2026-04-29
+reviewed: 2026-04-29
 paths:
   - "**/skills/**"
   - "**/SKILL.md"
@@ -10,7 +10,23 @@ paths:
 
 # Agentic Permissions
 
-Skills should use granular `allowed-tools` permissions to enable seamless, deterministic execution without interactive approval prompts.
+Skills should use granular `allowed-tools` permissions to enable seamless, deterministic execution without interactive approval prompts. The granular patterns in this rule are also the patterns that survive auto mode — see `.claude/rules/auto-mode.md`.
+
+## Permission Modes
+
+Claude Code now ships several permission modes. The relevant ones for skill authoring are:
+
+| Mode | What runs without asking | Skill-authoring impact |
+|------|--------------------------|------------------------|
+| `default` | Reads only | Granular `allowed-tools` is the only way to avoid prompts. |
+| `acceptEdits` | Reads, file edits, common filesystem commands (`mkdir`, `touch`, `mv`, `cp`, `sed`, etc.) | Bash skills still benefit from narrow `Bash(<command> *)` patterns. |
+| `auto` | Everything that survives a classifier review | Broad rules like `Bash(*)` and `Bash(python*)` are **dropped on entering auto mode**. Narrow rules like `Bash(git status *)` carry over and skip the classifier round-trip. |
+| `dontAsk` | Pre-approved tools only | Without granular `allow` rules, the skill cannot run. |
+| `bypassPermissions` | Everything except protected paths | No safety layer — granular permissions are unenforced but still document intent. |
+
+See `.claude/rules/auto-mode.md` for the full auto-mode model (decision order, dropped-rule list, conversation boundaries, subagent behaviour, deny-and-continue thresholds).
+
+**Bottom line for skill authors**: write narrow `Bash(<command> *)` patterns. They reduce prompts in `default`/`acceptEdits`, survive transition into `auto`, and are required by `dontAsk`.
 
 ## Permission Syntax
 
@@ -216,6 +232,8 @@ For projects using plugins with these patterns, recommend adding to `.claude/set
   }
 }
 ```
+
+These narrow rules carry over into auto mode and skip the classifier. Avoid broad patterns like `Bash(*)` or `Bash(python*)` — auto mode drops them at runtime, and they reduce safety in `default`/`acceptEdits`.
 
 ## Context Section Patterns
 

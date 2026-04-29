@@ -1,7 +1,7 @@
 ---
 created: 2025-12-20
-modified: 2026-03-09
-reviewed: 2026-03-09
+modified: 2026-04-29
+reviewed: 2026-04-29
 paths:
   - "**/skills/**"
   - "**/SKILL.md"
@@ -136,6 +136,15 @@ Skills inherit the user's active model by default. Do not set `model:` in skill 
 | CLI tool | `Bash, Read, Grep, Glob, TodoWrite` |
 | Development | `Bash, BashOutput, Read, Write, Edit, Grep, Glob, TodoWrite` |
 | Research | `Read, WebFetch, WebSearch, Grep, Glob` |
+
+### Permission Patterns
+
+When listing `Bash` in `allowed-tools`, prefer narrow `Bash(<command> *)` permission rules in the project's `.claude/settings.json` over broad wildcards:
+
+- Narrow rules survive the transition into auto mode and skip the auto-classifier round-trip on each call.
+- Broad rules (`Bash(*)`, `Bash(python*)`) are dropped at runtime when auto mode is active.
+
+See `.claude/rules/agentic-permissions.md` for canonical patterns and `.claude/rules/auto-mode.md` for the full auto-mode model.
 
 ## Content Structure
 
