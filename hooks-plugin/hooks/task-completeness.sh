@@ -45,6 +45,13 @@ if [ "$DIFF_TODOS" -gt 0 ]; then
 fi
 
 # Check 2: Look for conflict markers in changed files
+#
+# Real merge markers come paired (<<<<<<< … ======= … >>>>>>>), so any
+# conflict — fully unresolved or partially resolved — leaves at least
+# one of <<<<<<< or >>>>>>> behind. Standalone `=======` lines have too
+# many legitimate non-conflict uses (decorative dividers in fenced code
+# blocks, console-output examples, ASCII art) and were the dominant
+# false-positive signal, so they are intentionally excluded.
 CONFLICT_FILES=$(
     {
         git -C "$CWD" diff --name-only 2>/dev/null || true
@@ -52,7 +59,7 @@ CONFLICT_FILES=$(
     } | sort -u | while IFS= read -r file; do
         [ -z "$file" ] && continue
         [ -f "$CWD/$file" ] || continue
-        if grep -lE '^(<{7}|={7}|>{7})' "$CWD/$file" >/dev/null 2>&1; then
+        if grep -lE '^(<{7}|>{7})' "$CWD/$file" >/dev/null 2>&1; then
             echo "$file"
         fi
     done
