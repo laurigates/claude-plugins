@@ -9,8 +9,8 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash, TodoWrite
 argument-hint: "--strict to deny unknown commands, --category git|test|lint|build|gh|deny"
 disable-model-invocation: true
 created: 2026-03-13
-modified: 2026-03-30
-reviewed: 2026-03-30
+modified: 2026-04-29
+reviewed: 2026-04-29
 ---
 
 # /hooks:permission-request-hook
@@ -25,6 +25,17 @@ Generate a `PermissionRequest` hook that auto-approves safe operations, auto-den
 | Replacing `--dangerouslySkipPermissions` with targeted rules | Need general hooks knowledge or debugging |
 | Setting up project-specific permission automation | Writing entirely custom hook logic from scratch |
 | You need a test harness to validate approve/deny behavior | Understanding hook lifecycle events |
+
+### Auto Mode vs `PermissionRequest` Hook
+
+Auto mode (Claude Code 2.1.83+) routes most approve/deny decisions through a classifier model. It overlaps with — but does not replace — a `PermissionRequest` hook. Choose this skill when you need any of:
+
+- **Deterministic, auditable rules** — the classifier's probabilistic answer is unsuitable for compliance contexts
+- **Project-specific deny lists** that go beyond the default trust set
+- **Hard 0% false-positive guarantees** for specific commands (the hook is exact, the classifier is not)
+- **Pre-approve narrow patterns** so they skip the classifier round-trip and avoid latency/token cost
+
+Hooks coexist with auto mode — they fire alongside the classifier. See `.claude/rules/auto-mode.md` for the full auto-mode model and how it interacts with allow rules and subagents.
 
 ## Context
 
