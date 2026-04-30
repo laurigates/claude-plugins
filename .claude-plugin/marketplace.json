@@ -432,7 +432,7 @@
     {
       "name": "obsidian-plugin",
       "source": "./obsidian-plugin",
-      "description": "Obsidian CLI operations - vault management, search, properties, tasks, plugins, publish, and sync",
+      "description": "Obsidian CLI operations - vault files, search, properties, tasks, plugins/themes, publish/sync, bases, command palette, file history, dev tools, workspaces, multi-vault, templates, and bookmarks",
       "version": "1.3.1",
       "keywords": [
         "obsidian",
@@ -443,7 +443,13 @@
         "daily-notes",
         "properties",
         "publish",
-        "sync"
+        "sync",
+        "bases",
+        "command-palette",
+        "file-recovery",
+        "workspaces",
+        "templates",
+        "bookmarks"
       ],
       "category": "development"
     },

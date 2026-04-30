@@ -1,0 +1,32 @@
+{
+  "_comment": "Tracks the Obsidian CLI documentation page so the obsidian-cli-changelog workflow can detect upstream changes and propose skill/README updates. See .github/workflows/obsidian-cli-changelog.yml.",
+  "docUrl": "https://publish-01.obsidian.md/access/f786db9fac45774fa4f0d8112e232d67/Extending%20Obsidian/Obsidian%20CLI.md",
+  "humanUrl": "https://obsidian.md/help/cli",
+  "lastCheckedDocSha256": "1544d5de218c9a84bb44666c6a19e35b6635532c0a853cd3721f2f6912207c75",
+  "lastCheckedDate": "2026-04-30",
+  "lastSeenObsidianVersion": "1.12.7",
+  "reviewedChanges": [
+    {
+      "date": "2026-04-30",
+      "obsidianVersion": "1.12.7",
+      "docSha256": "1544d5de218c9a84bb44666c6a19e35b6635532c0a853cd3721f2f6912207c75",
+      "summary": "Initial comprehensive coverage of the Obsidian CLI surface.",
+      "addedSkills": [
+        "bases",
+        "command-palette",
+        "file-history",
+        "dev-tools",
+        "workspaces",
+        "vault-management",
+        "templates",
+        "bookmarks"
+      ],
+      "updatedSkills": [
+        "vault-files",
+        "search-discovery",
+        "plugins-themes",
+        "publish-sync"
+      ]
+    }
+  ]
+}

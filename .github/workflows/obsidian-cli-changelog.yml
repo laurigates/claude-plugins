@@ -1,0 +1,248 @@
+name: "Plugin: Obsidian CLI changelog review"
+
+on:
+  schedule:
+    # Weekly on Tuesdays at 09:00 UTC (offset from the Claude Code review)
+    - cron: '0 9 * * 2'
+  workflow_dispatch:
+    inputs:
+      force_full_review:
+        description: 'Force review even when the doc hash is unchanged'
+        required: false
+        default: 'false'
+        type: boolean
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  id-token: write
+
+env:
+  CLI_DOC_URL: https://publish-01.obsidian.md/access/f786db9fac45774fa4f0d8112e232d67/Extending%20Obsidian/Obsidian%20CLI.md
+  RELEASES_URL: https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/desktop-releases.json
+  TRACKING_FILE: .obsidian-cli-version-check.json
+
+jobs:
+  check-cli-doc:
+    runs-on: ubuntu-latest
+    outputs:
+      has_updates: ${{ steps.compare.outputs.has_updates }}
+      latest_sha: ${{ steps.fetch.outputs.latest_sha }}
+      previous_sha: ${{ steps.read_tracked.outputs.previous_sha }}
+      latest_obsidian_version: ${{ steps.releases.outputs.latest_version }}
+      previous_obsidian_version: ${{ steps.read_tracked.outputs.previous_version }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
+
+      - name: Fetch Obsidian CLI doc
+        id: fetch
+        run: |
+          curl -sSLf "$CLI_DOC_URL" -o /tmp/obs-cli.md
+          SHA=$(sha256sum /tmp/obs-cli.md | awk '{print $1}')
+          if [ -z "$SHA" ]; then
+            echo "::error::Failed to hash Obsidian CLI doc"
+            exit 1
+          fi
+          echo "latest_sha=$SHA" >> $GITHUB_OUTPUT
+          echo "Fetched CLI doc, sha256=$SHA"
+
+      - name: Fetch latest Obsidian desktop version
+        id: releases
+        run: |
+          # Best-effort — the CLI doc hash drives change detection; this is informational metadata
+          VERSION=$(curl -sSLf "$RELEASES_URL" | jq -r '.latestVersion // empty')
+          if [ -z "$VERSION" ]; then
+            VERSION="unknown"
+          fi
+          echo "latest_version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Latest Obsidian desktop: $VERSION"
+
+      - name: Read tracked state
+        id: read_tracked
+        run: |
+          if [ -f "$TRACKING_FILE" ]; then
+            PREV_SHA=$(jq -r '.lastCheckedDocSha256 // ""' "$TRACKING_FILE")
+            PREV_VER=$(jq -r '.lastSeenObsidianVersion // "unknown"' "$TRACKING_FILE")
+          else
+            PREV_SHA=""
+            PREV_VER="unknown"
+          fi
+          echo "previous_sha=$PREV_SHA" >> $GITHUB_OUTPUT
+          echo "previous_version=$PREV_VER" >> $GITHUB_OUTPUT
+          echo "Tracked sha=$PREV_SHA version=$PREV_VER"
+
+      - name: Compare hashes
+        id: compare
+        run: |
+          LATEST="${{ steps.fetch.outputs.latest_sha }}"
+          TRACKED="${{ steps.read_tracked.outputs.previous_sha }}"
+          FORCE="${{ inputs.force_full_review }}"
+
+          if [ "$FORCE" = "true" ]; then
+            echo "Forced full review requested"
+            echo "has_updates=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          if [ "$LATEST" != "$TRACKED" ]; then
+            echo "CLI doc changed: $TRACKED -> $LATEST"
+            echo "has_updates=true" >> $GITHUB_OUTPUT
+          else
+            echo "No changes since $TRACKED"
+            echo "has_updates=false" >> $GITHUB_OUTPUT
+          fi
+
+  claude-review:
+    needs: check-cli-doc
+    if: needs.check-cli-doc.outputs.has_updates == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
+          fetch-depth: 0
+
+      - name: Review CLI doc changes and apply updates
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: "--model sonnet --max-turns 40"
+          prompt: |
+            You are reviewing changes to the Obsidian CLI documentation page.
+
+            - Doc URL (raw markdown): ${{ env.CLI_DOC_URL }}
+            - Doc URL (human): https://obsidian.md/help/cli
+            - Previous tracked SHA-256: ${{ needs.check-cli-doc.outputs.previous_sha }}
+            - Latest SHA-256: ${{ needs.check-cli-doc.outputs.latest_sha }}
+            - Previous Obsidian version: ${{ needs.check-cli-doc.outputs.previous_obsidian_version }}
+            - Latest Obsidian version: ${{ needs.check-cli-doc.outputs.latest_obsidian_version }}
+
+            ## Step 1: Fetch the current CLI doc
+
+            Use WebFetch (or `curl` via Bash) to retrieve the markdown source at
+            the doc URL above. The page lives behind an SPA — the raw markdown
+            URL is the canonical source.
+
+            Save it to `/tmp/obs-cli.md`. Read the full file.
+
+            ## Step 2: Diff against the existing skills
+
+            The obsidian-plugin lives at `obsidian-plugin/`. Each CLI-wrapping
+            skill is at `obsidian-plugin/skills/<name>/SKILL.md`:
+
+            | CLI area | Skill |
+            |----------|-------|
+            | Files, folders, daily, random, unique, wordcount, web, file/folder info, rename, --copy, version/reload/restart | `vault-files` |
+            | search, search:context, search:open, tags, tag, links, backlinks, unresolved, orphans, deadends, outline | `search-discovery` |
+            | properties, property:set/remove/read, aliases | `properties` |
+            | tasks, task | `tasks` |
+            | plugins, plugin:*, plugins:enabled, plugins:restrict, themes, theme:*, snippets, snippet:* | `plugins-themes` |
+            | publish:*, sync, sync:status, sync:deleted | `publish-sync` |
+            | bases, base:* | `bases` |
+            | commands, command, hotkeys, hotkey | `command-palette` |
+            | diff, history, history:*, sync:history, sync:read, sync:restore, sync:open | `file-history` |
+            | devtools, eval, dev:* | `dev-tools` |
+            | workspace, workspaces, workspace:*, tabs, tab:open, recents | `workspaces` |
+            | vault, vaults, vault:open, vault= prefix | `vault-management` |
+            | templates, template:read, template:insert | `templates` |
+            | bookmarks, bookmark | `bookmarks` |
+
+            For every command/flag/parameter in the new CLI doc, decide:
+
+            - **Already covered** — present in the matching skill, with current syntax. No change.
+            - **Drift** — covered but with outdated syntax, missing flags, or wrong examples. Fix in place.
+            - **New** — not yet documented. Add to the matching skill, or, for a wholly new command group, propose a new skill.
+            - **Removed upstream** — present in the skill but gone from the doc. Remove with a brief inline note.
+
+            For drift and additions, **edit the existing SKILL.md** rather than
+            creating a new file unless a new top-level command group emerged.
+
+            ## Step 3: Update the tracking file
+
+            Read `${{ env.TRACKING_FILE }}` and update it:
+
+            - `lastCheckedDocSha256`: `${{ needs.check-cli-doc.outputs.latest_sha }}`
+            - `lastCheckedDate`: today's date (YYYY-MM-DD)
+            - `lastSeenObsidianVersion`: `${{ needs.check-cli-doc.outputs.latest_obsidian_version }}`
+            - Prepend a new entry to `reviewedChanges` with:
+              - `date`
+              - `obsidianVersion`
+              - `docSha256`
+              - `summary` (one paragraph: what changed in the doc)
+              - `addedSkills` (paths) — only if a new skill was created
+              - `updatedSkills` (paths) — every skill you edited
+              - `followUpIssues` (numbers) — for anything you opened a separate issue for
+
+            ## Step 4: Bump skill `modified` and `reviewed` dates
+
+            For every SKILL.md you edited, set `modified` and `reviewed` to today's date.
+
+            ## Step 5: If a new top-level command group exists, create a new skill
+
+            Use the existing skill template (frontmatter + "When to Use" decision
+            table + sections + Agentic Optimizations table + Related Skills). See
+            `.claude/rules/skill-quality.md` for the required-sections checklist.
+            Keep SKILL.md under 500 lines.
+
+            Also update:
+            - `obsidian-plugin/README.md` (add to skills list)
+            - `obsidian-plugin/.claude-plugin/plugin.json` (keywords/description if scope changed)
+            - `.claude-plugin/marketplace.json` (description/keywords if scope changed)
+
+            ## Step 6: Branch, commit, PR
+
+            1. Create branch: `chore/obsidian-cli-review-${{ needs.check-cli-doc.outputs.latest_sha }}` (truncate to first 12 chars of the sha for the branch suffix).
+            2. Stage modified files: `${{ env.TRACKING_FILE }}` plus every SKILL.md / README / plugin.json / marketplace.json you touched.
+            3. Commit with a conventional message:
+               - For doc-drift fixes only: `docs(obsidian-plugin): sync CLI skills with upstream doc <sha-prefix>`
+               - For new skills: `feat(obsidian-plugin): cover new CLI commands from upstream doc <sha-prefix>`
+               - For removals: `refactor(obsidian-plugin): drop removed CLI commands from upstream doc <sha-prefix>`
+            4. Push: `git push -u origin <branch-name>`
+            5. Create a draft PR with a summary of what changed in the doc and which skills were touched. Title must follow conventional commit format and match the commit type.
+
+            ## Step 7: Open follow-up issues for non-trivial work
+
+            If the doc reveals work that doesn't belong in this PR (a new
+            command group needing a fresh skill design, a major refactor,
+            a breaking syntax change requiring a major version bump), open a
+            GitHub issue per follow-up via `gh issue create` with label
+            `obsidian-cli-review`.
+
+            ## Important rules
+
+            - Read `.claude/rules/conventional-commits.md` for commit format.
+            - Read `.claude/rules/skill-quality.md` and `.claude/rules/skill-development.md` before editing skills.
+            - Do NOT amend existing commits — create new commits.
+            - Be conservative: only modify a skill when the doc actually contradicts or extends it.
+            - Use `Bash(obsidian *)` permission patterns in any new skill's `allowed-tools`.
+          additional_permissions: |
+            Read
+            Write
+            Edit
+            Grep
+            Glob
+            TodoWrite
+            WebFetch
+            Bash(curl *)
+            Bash(sha256sum *)
+            Bash(jq *)
+            Bash(git status *)
+            Bash(git diff *)
+            Bash(git log *)
+            Bash(git show *)
+            Bash(git add *)
+            Bash(git commit *)
+            Bash(git push *)
+            Bash(git checkout *)
+            Bash(git branch *)
+            Bash(gh pr *)
+            Bash(gh issue *)
+          plugin_marketplaces: |
+            https://github.com/laurigates/claude-plugins.git
+          plugins: |
+            project-plugin@laurigates-claude-plugins
+            obsidian-plugin@laurigates-claude-plugins
+            configure-plugin@laurigates-claude-plugins
