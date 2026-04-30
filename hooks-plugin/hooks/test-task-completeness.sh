@@ -156,6 +156,55 @@ assert_not_contains "conflict output does not leak prompt text" "Respond with ON
 git -C "$TMPDIR" restore --staged conflict.txt 2>/dev/null || git -C "$TMPDIR" reset HEAD conflict.txt 2>/dev/null || true
 rm -f "$TMPDIR/conflict.txt"
 
+# Regression: standalone `=======` divider lines (decorative separators in
+# fenced code blocks, console-output examples, ASCII art) must NOT be flagged
+# as merge conflicts. Real conflicts always leave at least one of <<<<<<< or
+# >>>>>>> behind, even after a partial resolution.
+cat > "$TMPDIR/dividers.md" <<'DIVIDERS'
+Expected output:
+```
+==================================================
+Setup Validation
+==================================================
+All checks passed
+```
+DIVIDERS
+git -C "$TMPDIR" add dividers.md
+
+output=$(run_hook_output "$TMPDIR")
+assert_not_contains "standalone === dividers do NOT emit a block decision" '"decision"' "$output"
+
+git -C "$TMPDIR" restore --staged dividers.md 2>/dev/null || git -C "$TMPDIR" reset HEAD dividers.md 2>/dev/null || true
+rm -f "$TMPDIR/dividers.md"
+
+# Regression: an orphan <<<<<<< marker (left behind after a partial conflict
+# resolution that removed ======= and >>>>>>>) must still be flagged.
+cat > "$TMPDIR/orphan-open.txt" <<'ORPHAN_OPEN'
+<<<<<<< HEAD
+local change
+ORPHAN_OPEN
+git -C "$TMPDIR" add orphan-open.txt
+
+output=$(run_hook_output "$TMPDIR")
+assert_contains "orphan <<<<<<< marker still emits a block decision" '"decision"' "$output"
+
+git -C "$TMPDIR" restore --staged orphan-open.txt 2>/dev/null || git -C "$TMPDIR" reset HEAD orphan-open.txt 2>/dev/null || true
+rm -f "$TMPDIR/orphan-open.txt"
+
+# Regression: an orphan >>>>>>> marker (left behind after a partial conflict
+# resolution that removed <<<<<<< and =======) must still be flagged.
+cat > "$TMPDIR/orphan-close.txt" <<'ORPHAN_CLOSE'
+remote change
+>>>>>>> main
+ORPHAN_CLOSE
+git -C "$TMPDIR" add orphan-close.txt
+
+output=$(run_hook_output "$TMPDIR")
+assert_contains "orphan >>>>>>> marker still emits a block decision" '"decision"' "$output"
+
+git -C "$TMPDIR" restore --staged orphan-close.txt 2>/dev/null || git -C "$TMPDIR" reset HEAD orphan-close.txt 2>/dev/null || true
+rm -f "$TMPDIR/orphan-close.txt"
+
 # ── debugging artifacts ───────────────────────────────────────────────────────
 echo ""
 echo "debugging artifact detection:"
