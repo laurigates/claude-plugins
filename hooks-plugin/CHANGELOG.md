@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.7](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.16.6...hooks-plugin-v1.16.7) (2026-04-30)
+
+
+### Documentation
+
+* **rules:** add auto-mode rule and cross-link permission references ([#1213](https://github.com/laurigates/claude-plugins/issues/1213)) ([0e01f6e](https://github.com/laurigates/claude-plugins/commit/0e01f6e76109ad3243df0ef44adf5063c0ecbe38))
+
 ## [1.16.6](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.16.5...hooks-plugin-v1.16.6) (2026-04-17)
 
 
