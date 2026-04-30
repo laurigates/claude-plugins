@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.8](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.16.7...hooks-plugin-v1.16.8) (2026-04-30)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** drop standalone === from conflict-marker regex ([#1216](https://github.com/laurigates/claude-plugins/issues/1216)) ([49365d5](https://github.com/laurigates/claude-plugins/commit/49365d55870558fb791db1fde58826495ebb3ef6))
+
 ## [1.16.7](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.16.6...hooks-plugin-v1.16.7) (2026-04-30)
 
 
