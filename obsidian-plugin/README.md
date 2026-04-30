@@ -99,12 +99,133 @@ Plugin lifecycle and theme management with developer tools.
 
 Obsidian Publish and Sync service management.
 
-**When to use**: User mentions publishing notes, Obsidian Publish workflows, or checking sync status.
+**When to use**: User mentions publishing notes, Obsidian Publish workflows, checking sync status, or recovering sync-deleted files.
 
 **Capabilities**:
-- List, add, and remove published notes
-- Check Obsidian Sync status
-- Batch publishing workflows
+- Publish site info, list/add/remove published notes, change set, open published page
+- Sync pause/resume, status & usage, sync-deleted file listing
+- Cross-links to `file-history` for per-file sync version restore
+
+---
+
+### Bases
+**File**: `skills/bases/SKILL.md`
+
+Query and create entries in Obsidian Bases — the database-over-notes feature.
+
+**When to use**: User mentions Obsidian Bases, `.base` files, querying notes as a database, base views, or structured note queries.
+
+**Capabilities**:
+- List `.base` files and their views
+- Query a view as JSON / CSV / TSV / Markdown / paths
+- Create new entries directly into a base view
+
+---
+
+### Command Palette
+**File**: `skills/command-palette/SKILL.md`
+
+Run any Obsidian command (built-in or plugin-registered) and inspect hotkeys.
+
+**When to use**: User wants to trigger a command they would normally pick from the command palette, enumerate plugin-registered commands, or look up a hotkey.
+
+**Capabilities**:
+- List, filter, and execute commands by ID
+- List and look up hotkey bindings
+- Discover plugin-registered commands
+
+---
+
+### File History
+**File**: `skills/file-history/SKILL.md`
+
+Diff and restore previous versions from File Recovery and Sync history. Critical safety net for agentic edits.
+
+**When to use**: User mentions undo, restoring a previous version, file recovery, version history, or comparing what changed.
+
+**Capabilities**:
+- `diff` across local + sync versions, with `from`/`to` and source filter
+- Local File Recovery list, read, and restore
+- Sync version list, read, restore, and deleted-files recovery
+
+---
+
+### Dev Tools
+**File**: `skills/dev-tools/SKILL.md`
+
+Developer commands for plugin and theme development — DevTools, Chrome DevTools Protocol, eval, captured console/error buffers, CSS and DOM inspection, mobile emulation, and screenshots.
+
+**When to use**: User is developing a plugin or theme, debugging the Obsidian app, or needs to introspect the running renderer state.
+
+**Capabilities**:
+- Toggle DevTools, attach/detach CDP debugger, run CDP methods
+- Run JavaScript via `eval`, inspect captured console / errors
+- Query CSS rules with source location and DOM elements
+- Mobile emulation toggle and screenshots
+
+---
+
+### Workspaces
+**File**: `skills/workspaces/SKILL.md`
+
+Inspect and manage the Obsidian editor workspace, tabs, recents, and saved layouts.
+
+**When to use**: User asks what's open in Obsidian, wants to switch to a saved layout, save the current layout, or open files into specific tabs/groups.
+
+**Capabilities**:
+- Workspace tree, open tabs, recently opened files
+- Save / load / delete named workspaces (Workspaces core plugin)
+- Open files or non-file views (graph, file explorer) into specific tab groups
+
+---
+
+### Vault Management
+**File**: `skills/vault-management/SKILL.md`
+
+Inspect the active vault, enumerate known vaults, and target commands at a specific vault.
+
+**When to use**: User asks about vault info (path, file count, size), works across multiple vaults, or wants to run a command against a non-active vault.
+
+**Capabilities**:
+- Active vault info (`name`, `path`, `files`, `folders`, `size`)
+- List known vaults with paths
+- Multi-vault `vault=<name>` global prefix
+
+---
+
+### Templates
+**File**: `skills/templates/SKILL.md`
+
+List, read, and insert templates from the core Templates plugin, with variable resolution.
+
+**When to use**: User mentions Obsidian templates, the Templates plugin, or template variable resolution (`{{date}}`, `{{time}}`, `{{title}}`).
+
+**Capabilities**:
+- List all templates and previews (raw or resolved)
+- Insert template into the active editor
+- Cross-link to `vault-files create … template=…` for new-note creation
+
+---
+
+### Bookmarks
+**File**: `skills/bookmarks/SKILL.md`
+
+List and add Obsidian bookmarks — files, folders, headings/blocks, saved searches, and external URLs.
+
+**When to use**: User mentions Obsidian bookmarks, starring/saving notes for quick access, or scripted bookmark creation.
+
+**Capabilities**:
+- List bookmarks with type metadata
+- Bookmark files, folders, headings (`subpath=#H`), blocks (`subpath=^id`), searches, and URLs
+- Bulk-bookmark patterns from base queries
+
+---
+
+## Keeping Skills Current
+
+A scheduled GitHub workflow (`.github/workflows/obsidian-cli-changelog.yml`) fetches the upstream Obsidian CLI documentation weekly, hashes its content, and — when the hash changes — opens a draft PR with proposed skill updates. State is tracked in `.obsidian-cli-version-check.json` at the repo root.
+
+Run on demand with: **Actions → Plugin: Obsidian CLI changelog review → Run workflow**.
 
 ---
 
@@ -147,7 +268,11 @@ claude plugins add --global /path/to/obsidian-plugin
 
 - Paths are vault-relative — use `folder/note.md`, not absolute paths
 - `create` omits `.md` (added automatically), `move` requires it
+- Flags are bare words (`overwrite`, `open`, `newtab`, `permanent`, `inline`, `total`); the universal `--copy` flag is the only `--`-prefixed one
+- `file=<name>` resolves like a wikilink; `path=<full/path.md>` is exact
+- Most commands default to the active file when no target is specified
 - Use `format=json` for machine-parseable output
+- Multi-vault: prefix `vault=<name>` before the command (see `vault-management`)
 - Obsidian must be running for all CLI commands
 
 ## Keywords

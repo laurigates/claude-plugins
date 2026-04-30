@@ -35,6 +35,7 @@ Claude: PR review
 PR: Auto-resolve conflicts
 PR: Enforce conventional commits
 Plugin: Lint skills
+Plugin: Obsidian CLI changelog review
 Plugin: PR checks
 Plugin: Scheduled audits
 Plugin: Skill splitter

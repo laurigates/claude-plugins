@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "obsidian-plugin",
   "version": "1.3.1",
-  "description": "Obsidian CLI operations - vault management, search, properties, tasks, plugins, publish, and sync",
+  "description": "Obsidian CLI operations - vault files, search, properties, tasks, plugins/themes, publish/sync, bases, command palette, file history, dev tools, workspaces, multi-vault, templates, and bookmarks",
   "keywords": [
     "obsidian",
     "vault",
@@ -13,6 +13,12 @@
     "properties",
     "frontmatter",
     "publish",
-    "sync"
+    "sync",
+    "bases",
+    "command-palette",
+    "file-recovery",
+    "workspaces",
+    "templates",
+    "bookmarks"
   ]
 }
