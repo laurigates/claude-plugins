@@ -30,12 +30,31 @@ fi
 
 # Check 1: Look for TODO/FIXME markers in staged or unstaged changes
 # These indicate the author left intentional "finish this" markers
-DIFF_TODOS=$(
-    {
-        git -C "$CWD" diff 2>/dev/null || true
-        git -C "$CWD" diff --cached 2>/dev/null || true
-    } | grep -c '^\+.*\(TODO\|FIXME\|HACK\|XXX\)' 2>/dev/null
-) || DIFF_TODOS=0
+# Get list of changed files and filter out commonly auto-generated/vendor paths
+# that are not meaningful to check (minified JS, node_modules, vendor/, etc.)
+CHANGED_FILES="$(git -C "$CWD" diff --name-only 2>/dev/null || true)"
+CHANGED_FILES="$CHANGED_FILES$(printf '\n%s' "$(git -C "$CWD" diff --cached --name-only 2>/dev/null || true)")"
+FILTERED_FILES="$(echo "$CHANGED_FILES" | while IFS= read -r file; do
+    [ -z "$file" ] && continue
+    # Skip common auto-generated and vendor paths
+    case "$file" in
+        *.min.js|*.min.css|*.min.map)
+            continue
+            ;;
+        */node_modules/*|*/.git/*|*/vendor/*|*/dist/*|*/build/*)
+            continue
+            ;;
+        */.obsidian/plugins/*)
+            continue
+            ;;
+    esac
+    echo "$file"
+done)"
+DIFF_TODOS=$(echo "$FILTERED_FILES" | while IFS= read -r file; do
+    [ -z "$file" ] && continue
+    [ -f "$CWD/$file" ] || continue
+    grep -lE '^\+.*(TODO|FIXME|HACK|XXX)' "$CWD/$file" 2>/dev/null || true
+done | grep -c . 2>/dev/null || echo 0)
 
 if [ "$DIFF_TODOS" -gt 0 ]; then
     # shellcheck disable=SC2016  # jq expression, not shell expansion
