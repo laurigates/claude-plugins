@@ -49,3 +49,13 @@ Renovate
 ## Cross-workflow references
 
 When a workflow references another by display name (e.g. `on.workflow_run.workflows`), update the reference whenever the target's `name:` changes. The current cross-references live in `github-workflow-auto-fix.yml`.
+
+## Known limitations
+
+### OIDC token validation failure on workflow-modifying PRs
+
+Any PR that modifies files in `.github/workflows/` will see a `401 Unauthorized – Workflow validation failed` error in the **Claude Skill Quality Review** step of the **Plugin: PR checks** workflow. This is a GitHub Actions platform limitation: OIDC token exchange validates that the workflow file content is identical to the version on the default branch. PRs modifying workflows fail this check because the executing workflow file differs from `main`.
+
+This failure is not a code issue and requires no action — it resolves automatically when the PR merges to the default branch. The workflow then re-runs successfully on the merged commit.
+
+See [#1204](https://github.com/laurigates/claude-plugins/issues/1204) for details.
