@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.9](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.16.8...hooks-plugin-v1.16.9) (2026-05-02)
+
+
+### Bug Fixes
+
+* filter auto-generated/vendor files from TODO/FIXME check in task-completeness hook ([#1222](https://github.com/laurigates/claude-plugins/issues/1222)) ([037d0ea](https://github.com/laurigates/claude-plugins/commit/037d0eaac2171fbe872b784298913111b5ee8444))
+
 ## [1.16.8](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.16.7...hooks-plugin-v1.16.8) (2026-04-30)
 
 
