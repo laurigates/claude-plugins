@@ -399,6 +399,25 @@
       "category": "ai"
     },
     {
+      "name": "macos-plugin",
+      "source": "./macos-plugin",
+      "description": "macOS-specific dev environment tooling - kitty session persistence, LaunchServices health, incident postmortems for kernel panics, WindowServer hangs, and long-uptime drift",
+      "version": "1.0.0",
+      "keywords": [
+        "macos",
+        "darwin",
+        "kitty",
+        "session-persistence",
+        "launchservices",
+        "windowserver",
+        "kernel-panic",
+        "diagnostics",
+        "incident-postmortem",
+        "uptime"
+      ],
+      "category": "utilities"
+    },
+    {
       "name": "migration-patterns-plugin",
       "source": "./migration-patterns-plugin",
       "description": "Safe database and system migration patterns - dual write, shadow mode, strangler fig",
