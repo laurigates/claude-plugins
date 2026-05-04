@@ -7,8 +7,9 @@ description: |
 args: "[PATH] [--tool <knip|vulture|machete>] [--fix]"
 argument-hint: path or directory to scan for dead code
 allowed-tools: Bash(npx knip *), Bash(vulture *), Bash(cargo machete *), Bash(npx ts-prune *), Read, Grep, Glob, TodoWrite
+model: sonnet
 created: 2026-04-10
-modified: 2026-04-10
+modified: 2026-05-04
 reviewed: 2026-04-10
 ---
 

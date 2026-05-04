@@ -1,6 +1,6 @@
 ---
 created: 2025-12-25
-modified: 2026-04-25
+modified: 2026-05-04
 reviewed: 2026-04-25
 name: nushell-data-processing
 description: |
@@ -12,6 +12,7 @@ description: |
   "nushell", "nu pipeline", or ask for transforms that would be awkward in jq.
 user-invocable: false
 allowed-tools: Bash(nu *), Read, Write, Edit, Grep, Glob
+model: sonnet
 ---
 
 # Nushell Data Processing

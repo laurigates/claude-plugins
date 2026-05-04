@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
+modified: 2026-05-04
 reviewed: 2026-04-25
 description: |
   Generate images from a text prompt using Google's Nano Banana Pro (Gemini 3 Pro Image)
@@ -9,6 +9,7 @@ description: |
   product photo, mock up a portrait or cinematic scene, or when they mention "generate an
   image", "make a picture", "Nano Banana", or "Gemini image".
 allowed-tools: Bash, Read, WebFetch
+model: sonnet
 args: <prompt> [--aspect <ratio>] [--resolution <size>] [--reference <path>]
 disable-model-invocation: true
 name: generate-image

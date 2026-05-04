@@ -1,8 +1,9 @@
 ---
 created: 2026-02-22
-modified: 2026-02-22
+modified: 2026-05-04
 reviewed: 2026-02-22
 allowed-tools: Bash(grep *), Read, Grep, Glob, Edit, Write, TodoWrite
+model: opus
 args: "[PATH] [--fix]"
 argument-hint: "[PATH] [--fix]"
 description: |

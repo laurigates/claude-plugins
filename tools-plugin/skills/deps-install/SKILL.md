@@ -1,8 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
+modified: 2026-05-04
 reviewed: 2026-04-25
 allowed-tools: Bash(uv *), Bash(npm *), Bash(bun *), Bash(cargo *), Bash(go *), Bash(brew *), Read, Write
+model: sonnet
 args: [package-names] [--dev] [--global]
 argument-hint: [package-names] [--dev] [--global]
 description: |

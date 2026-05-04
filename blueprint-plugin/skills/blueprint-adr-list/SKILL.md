@@ -1,6 +1,6 @@
 ---
 created: 2026-01-29
-modified: 2026-04-25
+modified: 2026-05-04
 reviewed: 2026-04-25
 description: |
   List all ADRs with title, status, date, and domain in a markdown table. Use when
@@ -8,6 +8,7 @@ description: |
   a README, audit ADR status, or asks to "list ADRs", "show architecture decisions",
   or "view the ADR table".
 allowed-tools: Bash, Glob
+model: sonnet
 name: blueprint-adr-list
 ---
 

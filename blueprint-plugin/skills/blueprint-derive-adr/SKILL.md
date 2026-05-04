@@ -1,6 +1,6 @@
 ---
 created: 2025-12-22
-modified: 2026-04-25
+modified: 2026-05-04
 reviewed: 2026-04-25
 description: |
   Derive Architecture Decision Records from existing project structure, dependencies, and
@@ -9,6 +9,7 @@ description: |
   the codebase", or needs to capture framework, database, state-management, and testing
   choices retroactively.
 allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion, Task
+model: opus
 name: blueprint-derive-adr
 ---
 

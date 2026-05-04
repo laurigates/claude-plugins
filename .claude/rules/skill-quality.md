@@ -1,7 +1,7 @@
 ---
 created: 2026-03-02
-modified: 2026-03-02
-reviewed: 2026-03-02
+modified: 2026-05-03
+reviewed: 2026-05-03
 paths:
   - "**/skills/**"
   - "**/SKILL.md"
@@ -99,13 +99,15 @@ Set `disable-model-invocation: true` when the skill body is a complete, self-con
 
 ## Model Selection
 
+Skills inherit the user's active model by default. Set `model:` only at the **extremes** — see `.claude/rules/skill-development.md` for the full rationale.
+
 | Model | Use For |
 |-------|---------|
-| `haiku` | CLI tool usage, configuration, standard mechanical workflows, formatting, status checks |
-| `sonnet` | Development workflows requiring judgment, code generation with analysis, framework expertise, multi-step pattern-based reasoning |
-| `opus` | Deep reasoning, architecture decisions, debugging methodology, security analysis, complex code review |
+| `opus` | Deep reasoning, architecture decisions, debugging methodology, security analysis, complex code review, long agentic orchestration |
+| `sonnet` | Mechanical / high-volume tasks where Opus is overkill — CLI tool wrappers, formatters, status checks, single-file lookups |
+| _(unset)_ | Everything in the middle — let the user's active model decide |
 
-**Default to `sonnet`** for development tasks requiring moderate reasoning. Use `haiku` for mechanical tasks and `opus` for deep reasoning.
+**Sonnet is the floor.** `model: haiku` is disallowed: Haiku 4.5 does not reliably format `AskUserQuestion` tool calls and the cost savings vs Sonnet are modest for the quality risk. The lint check in `plugin-compliance-check.sh` errors on `model: haiku`.
 
 ## Supporting Files Pattern
 
@@ -136,7 +138,7 @@ When reviewing skill/command changes:
 - [ ] Has "When to Use" decision table
 - [ ] Has "Agentic Optimizations" table (for CLI/tool skills)
 - [ ] Description matches user intents (not just tool jargon)
-- [ ] Model is appropriate (`haiku` for tools, `sonnet` for development workflows, `opus` for deep reasoning)
+- [ ] Model selection follows extremes-only rule (`opus` for deep reasoning, `sonnet` for mechanical tasks, unset otherwise; never `haiku`)
 - [ ] Reference material extracted to REFERENCE.md if needed
 - [ ] Supporting files referenced with markdown links
 - [ ] No duplicate content with sibling skills

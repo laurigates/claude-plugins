@@ -1,6 +1,6 @@
 ---
 created: 2026-01-30
-modified: 2026-04-19
+modified: 2026-05-04
 reviewed: 2026-02-14
 description: |
   Derive Claude rules from git commit log decisions. Newer commits override older decisions
@@ -10,6 +10,7 @@ description: |
 args: "[--since DATE] [--scope SCOPE]"
 argument-hint: "--since 2024-01-01 for date range, --scope api for specific area"
 allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion, Task
+model: opus
 name: blueprint-derive-rules
 ---
 

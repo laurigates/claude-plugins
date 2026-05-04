@@ -10,8 +10,9 @@ description: |
   deciding whether a feature can advance past "in progress" without its
   CLI surface.
 allowed-tools: Read, Grep, Glob, TodoWrite
+model: sonnet
 created: 2026-04-24
-modified: 2026-04-24
+modified: 2026-05-04
 reviewed: 2026-04-24
 ---
 

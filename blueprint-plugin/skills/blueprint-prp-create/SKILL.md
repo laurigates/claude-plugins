@@ -8,8 +8,9 @@ description: |
 args: "[feature-name]"
 argument-hint: "Feature name for the PRP (e.g., auth-oauth2, api-rate-limiting)"
 allowed-tools: Read, Write, Glob, Bash, WebFetch, WebSearch, Task, AskUserQuestion
+model: opus
 created: 2025-12-16
-modified: 2026-04-19
+modified: 2026-05-04
 reviewed: 2026-02-14
 name: blueprint-prp-create
 ---

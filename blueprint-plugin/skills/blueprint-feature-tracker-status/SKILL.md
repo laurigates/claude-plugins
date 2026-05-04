@@ -1,6 +1,6 @@
 ---
 created: 2026-01-02
-modified: 2026-05-03
+modified: 2026-05-04
 reviewed: 2026-05-03
 description: |
   Display feature tracker statistics and completion summary. Use when the user asks
@@ -8,6 +8,7 @@ description: |
   checks PRD coverage, views blocked features, lists ready-to-start work, or asks to
   "show feature tracker status".
 allowed-tools: Read, Bash, AskUserQuestion
+model: sonnet
 name: blueprint-feature-tracker-status
 ---
 
