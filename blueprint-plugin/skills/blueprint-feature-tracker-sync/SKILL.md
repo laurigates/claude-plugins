@@ -1,6 +1,6 @@
 ---
 created: 2026-01-02
-modified: 2026-04-25
+modified: 2026-05-04
 reviewed: 2026-04-25
 description: |
   Synchronize feature tracker with TODO.md, taskwarrior sidecars, and PRDs; manage tasks.
@@ -10,6 +10,7 @@ description: |
   statistics, add/complete tasks in tasks.in_progress, or generate a markdown progress
   summary with --summary.
 allowed-tools: Read, Write, Bash, Glob, AskUserQuestion
+model: sonnet
 name: blueprint-feature-tracker-sync
 ---
 

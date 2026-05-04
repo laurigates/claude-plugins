@@ -1,6 +1,6 @@
 ---
 created: 2025-12-17
-modified: 2026-04-25
+modified: 2026-05-04
 reviewed: 2026-04-25
 description: |
   Show blueprint version, configuration, and check for available upgrades. Use when the
@@ -11,6 +11,7 @@ description: |
 args: "[--report-only]"
 argument-hint: "--report-only to display status without interactive prompts"
 allowed-tools: Read, Bash, Glob, AskUserQuestion
+model: sonnet
 name: blueprint-status
 ---
 

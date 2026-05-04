@@ -6,10 +6,11 @@ description: |
   ESLint and Prettier configs/hooks with Biome, preserving rule equivalents.
   Biome is a fast, zero-config-needed Rust linter+formatter that replaces both.
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash(find *), Bash(test *), Bash(npx *), Bash(bun *), AskUserQuestion, TodoWrite
+model: sonnet
 args: "[--check-only] [--fix]"
 argument-hint: "[--check-only] [--fix]"
 created: 2026-04-14
-modified: 2026-04-14
+modified: 2026-05-04
 reviewed: 2026-04-14
 ---
 

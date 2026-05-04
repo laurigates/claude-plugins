@@ -9,8 +9,9 @@ description: |
   "render this diagram".
 user-invocable: false
 allowed-tools: Bash, Read, Write, Grep, Glob, TodoWrite
+model: sonnet
 created: 2025-12-26
-modified: 2026-04-25
+modified: 2026-05-04
 reviewed: 2026-04-25
 ---
 

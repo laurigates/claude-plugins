@@ -1,11 +1,12 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
+modified: 2026-05-04
 reviewed: 2026-04-25
 name: rg-code-search
 description: Fast code search using ripgrep (rg) with smart defaults, regex patterns, and file filtering. Use when searching for text patterns, code snippets, or performing multi-file code analysis.
 user-invocable: false
 allowed-tools: Bash(rg *), Read, Grep, Glob
+model: sonnet
 ---
 
 # rg Code Search

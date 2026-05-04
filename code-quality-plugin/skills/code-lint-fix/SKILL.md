@@ -7,8 +7,9 @@ description: |
   apply prefer-const or clippy suggestions, or run a detect-and-fix pass
   across a mixed-language project.
 allowed-tools: Bash(ruff *), Bash(eslint *), Bash(biome *), Bash(prettier *), Read, Edit, Grep
+model: sonnet
 created: 2025-12-27
-modified: 2026-04-25
+modified: 2026-05-04
 reviewed: 2026-04-25
 ---
 

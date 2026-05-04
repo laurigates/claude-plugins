@@ -6,10 +6,11 @@ description: |
   config exists in pyproject.toml. Replaces the black pre-commit hook with
   ruff-format, migrates config, and removes black from dependencies.
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash(find *), Bash(test *), Bash(pre-commit *), Bash(uvx *), AskUserQuestion, TodoWrite
+model: sonnet
 args: "[--check-only] [--fix]"
 argument-hint: "[--check-only] [--fix]"
 created: 2026-04-14
-modified: 2026-04-14
+modified: 2026-05-04
 reviewed: 2026-04-14
 ---
 

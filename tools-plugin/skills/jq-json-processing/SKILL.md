@@ -1,11 +1,12 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
+modified: 2026-05-04
 reviewed: 2026-04-25
 name: jq-json-processing
 description: JSON querying, filtering, and transformation with jq command-line tool. Use when working with JSON data, parsing JSON files, filtering JSON arrays/objects, or transforming JSON structures.
 user-invocable: false
 allowed-tools: Bash(jq *), Bash(cat *), Read, Write, Edit, Grep, Glob
+model: sonnet
 ---
 
 # jq JSON Processing

@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-02-06
+modified: 2026-05-04
 reviewed: 2025-12-16
 name: imagemagick-conversion
 description: |
@@ -10,6 +10,7 @@ description: |
   magick command, batch image processing, or thumbnail generation.
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
+model: sonnet
 ---
 
 # ImageMagick Image Conversion

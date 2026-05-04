@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-02-06
+modified: 2026-05-04
 reviewed: 2026-02-06
 name: justfile-expert
 description: |
@@ -11,6 +11,7 @@ description: |
   writing executable project documentation.
 user-invocable: false
 allowed-tools: Bash, BashOutput, Grep, Glob, Read, Write, Edit, TodoWrite
+model: sonnet
 ---
 
 # Justfile Expert
