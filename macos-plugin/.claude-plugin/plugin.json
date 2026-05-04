@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "macos-plugin",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "macOS-specific dev environment tooling — kitty session persistence, LaunchServices health, incident postmortems for kernel panics, WindowServer hangs, and long-uptime drift",
   "author": {
     "name": "Lauri Gates",
