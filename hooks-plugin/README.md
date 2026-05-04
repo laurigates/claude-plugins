@@ -144,29 +144,35 @@ A Stop hook that checks for obvious signs of incomplete work using deterministic
 
 | Check | Trigger |
 |-------|---------|
-| TODO/FIXME/HACK/XXX in uncommitted diff | Blocks with count and message |
-| Merge conflict markers (`<<<<`, `====`, `>>>>`) | Blocks with affected filenames |
-| Debugging artifacts (`console.log`, `debugger;`, `breakpoint()`, `pdb.set_trace`) | Blocks with count |
+| TODO/FIXME/HACK/XXX added in uncommitted diff | Blocks with count and message |
+| Merge conflict markers (`<<<<<<<`, `>>>>>>>`) in changed files | Blocks with affected filenames |
+| Debugging artifacts (`console.log`, `debugger;`, `breakpoint()`, `pdb.set_trace`) added in diff | Blocks with count |
 | `stop_hook_active=true` in input | Exits 0 immediately (prevents infinite loops) |
 | Non-git directory | Exits 0 silently |
 
+Documentation files (`*.md`, `*.mdx`, `*.rst`, `*.txt`) and vendor/generated paths (`node_modules`, `vendor`, `dist`, `build`, `*.min.*`) are excluded from all three checks — they routinely quote literal TODO/FIXME tokens, conflict markers, and `console.log` examples in prose.
+
 **Toggle:** `CLAUDE_HOOKS_DISABLE_TASK_COMPLETENESS=1`
+
+### test-verification.sh
+
+A Stop hook that auto-detects the project's test runner and runs tests when uncommitted changes touch source files. Skips silently when no source files changed, no recognised runner is found, or the diff is documentation-only.
+
+| Aspect | Detail |
+|--------|--------|
+| Type | `command` (deterministic — replaced the former `type: "agent"` variant for latency) |
+| Timeout | 60s framework / 45s hard internal (configurable via `CLAUDE_HOOKS_TEST_TIMEOUT`) |
+| Detected runners | `justfile` (prefers `test-quick` → `test-unit` → `test`), `Makefile` (same priority), Bun, npm, pytest (uv-aware), cargo, go |
+| Skip conditions | Only docs/config files changed, no test runner found, `stop_hook_active=true` |
+| Timeout behaviour | Approves with a warning instead of blocking (does not interrupt flow) |
+
+**Toggle:** `CLAUDE_HOOKS_DISABLE_TEST_VERIFICATION=1`
 
 > **Note on prompt-type Stop hooks**: When a `type: "prompt"` hook on `Stop` or `SubagentStop` returns `{"ok": false}`, Claude Code surfaces the full prompt text in the error message (e.g. `Stop hook error: [You are evaluating...]: reason`). This is a runtime behavior that cannot be configured away. Prefer `type: "command"` hooks with deterministic heuristics for Stop events to avoid this leakage. Only use `type: "prompt"` on Stop hooks when the check genuinely requires LLM judgment and cannot be deterministic.
 
 ## Prompt-Based and Agent-Based Hooks
 
 LLM-powered hooks that use judgment instead of deterministic rules.
-
-### Stop — Test Verification (agent)
-
-A `type: "agent"` hook that runs the project's test suite before allowing Claude to stop. Detects the test runner automatically (npm, pytest, cargo, go, make).
-
-| Aspect | Detail |
-|--------|--------|
-| Type | `agent` (multi-turn with tool access) |
-| Timeout | 120s |
-| Skip condition | No source files changed, or no test runner found |
 
 ### SubagentStop — Output Quality Gate (prompt)
 
@@ -325,6 +331,7 @@ Every hook can be individually enabled or disabled via environment variables. Se
 | auto-checkpoint.sh | `CLAUDE_HOOKS_DISABLE_AUTO_CHECKPOINT=1` | Enabled |
 | permission-auto-approve.sh | `CLAUDE_HOOKS_DISABLE_PERMISSION_AUTO=1` | Enabled |
 | task-completeness.sh | `CLAUDE_HOOKS_DISABLE_TASK_COMPLETENESS=1` | Enabled |
+| test-verification.sh | `CLAUDE_HOOKS_DISABLE_TEST_VERIFICATION=1` | Enabled |
 | event-logger.sh | `CLAUDE_HOOKS_ENABLE_EVENT_LOGGER=1` | **Disabled** (opt-in) |
 
 Example — disable branch protection for a session:
