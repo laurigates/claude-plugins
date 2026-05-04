@@ -28,42 +28,61 @@ if ! git -C "$CWD" rev-parse --git-dir >/dev/null 2>&1; then
     exit 0
 fi
 
-# Check 1: Look for TODO/FIXME markers in staged or unstaged changes
-# These indicate the author left intentional "finish this" markers
-# Get list of changed files and filter out commonly auto-generated/vendor paths
-# that are not meaningful to check (minified JS, node_modules, vendor/, etc.)
-CHANGED_FILES="$(git -C "$CWD" diff --name-only 2>/dev/null || true)"
-CHANGED_FILES="$CHANGED_FILES$(printf '\n%s' "$(git -C "$CWD" diff --cached --name-only 2>/dev/null || true)")"
-FILTERED_FILES="$(echo "$CHANGED_FILES" | while IFS= read -r file; do
-    [ -z "$file" ] && continue
-    # Skip common auto-generated and vendor paths
-    case "$file" in
-        *.min.js|*.min.css|*.min.map)
-            continue
-            ;;
-        */node_modules/*|*/.git/*|*/vendor/*|*/dist/*|*/build/*)
-            continue
-            ;;
-        */.obsidian/plugins/*)
-            continue
-            ;;
+# Returns 0 if the path should be excluded from completeness checks.
+# Documentation files (*.md, *.mdx, *.rst, *.txt) frequently quote literal
+# TODO/FIXME tokens, conflict markers, or console.log examples in prose
+# (this very plugin's docs do). Vendor / generated paths are excluded for
+# the same reason — they are not the author's working code.
+is_excluded() {
+    case "$1" in
+        *.md|*.mdx|*.rst|*.txt) return 0 ;;
+        *.min.js|*.min.css|*.min.map) return 0 ;;
+        */node_modules/*|*/.git/*|*/vendor/*|*/dist/*|*/build/*) return 0 ;;
+        */.obsidian/plugins/*) return 0 ;;
+        *) return 1 ;;
     esac
-    echo "$file"
-done)"
-DIFF_TODOS=$(echo "$FILTERED_FILES" | while IFS= read -r file; do
-    [ -z "$file" ] && continue
-    [ -f "$CWD/$file" ] || continue
-    grep -lE '^\+.*(TODO|FIXME|HACK|XXX)' "$CWD/$file" 2>/dev/null || true
-done | grep -c . 2>/dev/null || echo 0)
+}
 
-if [ "$DIFF_TODOS" -gt 0 ]; then
+# Build the list of changed files we actually care about (staged + unstaged,
+# de-duplicated, excluded paths filtered out, must currently exist on disk).
+RELEVANT_FILES=()
+while IFS= read -r file; do
+    [ -z "$file" ] && continue
+    is_excluded "$file" && continue
+    [ -f "$CWD/$file" ] || continue
+    RELEVANT_FILES+=("$file")
+done < <(
+    {
+        git -C "$CWD" diff --name-only 2>/dev/null || true
+        git -C "$CWD" diff --name-only --cached 2>/dev/null || true
+    } | sort -u
+)
+
+# Nothing relevant changed → nothing to check.
+if [ "${#RELEVANT_FILES[@]}" -eq 0 ]; then
+    exit 0
+fi
+
+# Combined diff (staged + unstaged) restricted to the relevant files.
+# Re-used by Check 1 and Check 3.
+RELEVANT_DIFF=$(
+    {
+        git -C "$CWD" diff -- "${RELEVANT_FILES[@]}" 2>/dev/null || true
+        git -C "$CWD" diff --cached -- "${RELEVANT_FILES[@]}" 2>/dev/null || true
+    }
+)
+
+# Check 1: TODO/FIXME/HACK/XXX markers added in this diff.
+DIFF_TODOS=$(printf '%s\n' "$RELEVANT_DIFF" | grep -cE '^\+.*(TODO|FIXME|HACK|XXX)' || true)
+
+if [ "${DIFF_TODOS:-0}" -gt 0 ]; then
     # shellcheck disable=SC2016  # jq expression, not shell expansion
     jq -n --arg reason "Found ${DIFF_TODOS} TODO/FIXME/HACK/XXX marker(s) in uncommitted changes. Address or remove them before finishing." \
         '{"decision": "block", "reason": $reason}'
     exit 0
 fi
 
-# Check 2: Look for conflict markers in changed files
+# Check 2: conflict markers in relevant files.
 #
 # Real merge markers come paired (<<<<<<< … ======= … >>>>>>>), so any
 # conflict — fully unresolved or partially resolved — leaves at least
@@ -71,36 +90,25 @@ fi
 # many legitimate non-conflict uses (decorative dividers in fenced code
 # blocks, console-output examples, ASCII art) and were the dominant
 # false-positive signal, so they are intentionally excluded.
-CONFLICT_FILES=$(
-    {
-        git -C "$CWD" diff --name-only 2>/dev/null || true
-        git -C "$CWD" diff --name-only --cached 2>/dev/null || true
-    } | sort -u | while IFS= read -r file; do
-        [ -z "$file" ] && continue
-        [ -f "$CWD/$file" ] || continue
-        if grep -lE '^(<{7}|>{7})' "$CWD/$file" >/dev/null 2>&1; then
-            echo "$file"
-        fi
-    done
-)
+CONFLICT_FILES=()
+for file in "${RELEVANT_FILES[@]}"; do
+    if grep -lE '^(<{7}|>{7})' "$CWD/$file" >/dev/null 2>&1; then
+        CONFLICT_FILES+=("$file")
+    fi
+done
 
-if [ -n "$CONFLICT_FILES" ]; then
-    FILE_LIST=$(echo "$CONFLICT_FILES" | head -5 | tr '\n' ', ' | sed 's/,$//')
+if [ "${#CONFLICT_FILES[@]}" -gt 0 ]; then
+    FILE_LIST=$(printf '%s\n' "${CONFLICT_FILES[@]}" | head -5 | tr '\n' ', ' | sed 's/,$//')
     # shellcheck disable=SC2016  # jq expression, not shell expansion
     jq -n --arg reason "Unresolved merge conflict markers found in: ${FILE_LIST}" \
         '{"decision": "block", "reason": $reason}'
     exit 0
 fi
 
-# Check 3: Look for debugging artifacts in uncommitted changes
-DEBUG_COUNT=$(
-    {
-        git -C "$CWD" diff 2>/dev/null || true
-        git -C "$CWD" diff --cached 2>/dev/null || true
-    } | grep -cE '^\+.*(console\.log|debugger;|print\(.*DEBUG|breakpoint\(\)|pdb\.set_trace)' 2>/dev/null
-) || DEBUG_COUNT=0
+# Check 3: debugging artifacts added in this diff.
+DEBUG_COUNT=$(printf '%s\n' "$RELEVANT_DIFF" | grep -cE '^\+.*(console\.log|debugger;|print\(.*DEBUG|breakpoint\(\)|pdb\.set_trace)' || true)
 
-if [ "$DEBUG_COUNT" -gt 0 ]; then
+if [ "${DEBUG_COUNT:-0}" -gt 0 ]; then
     # shellcheck disable=SC2016  # jq expression, not shell expansion
     jq -n --arg reason "Found ${DEBUG_COUNT} debugging artifact(s) (console.log, debugger, breakpoint, etc.) in uncommitted changes. Clean up before finishing." \
         '{"decision": "block", "reason": $reason}'

@@ -4,6 +4,11 @@
 # Verifies that the Stop hook detects incomplete work without leaking
 # the full prompt text in error output (issue #1009).
 #
+# The hook contract: block by emitting {"decision":"block","reason":"..."}
+# on stdout and exit 0 (per hooks-reference.md). Exit 0 with no output =
+# allow the stop. The legacy assertions that expected exit 2 were a bug
+# in the tests themselves, not the hook.
+#
 # Run: bash hooks-plugin/hooks/test-task-completeness.sh
 # Exit 0 = all tests pass, Exit 1 = failures
 set -euo pipefail
@@ -21,9 +26,18 @@ trap 'rm -rf "$TMPDIR" "$NON_GIT_DIR"' EXIT
 git -C "$TMPDIR" init -q
 git -C "$TMPDIR" config user.email "test@example.com"
 git -C "$TMPDIR" config user.name "Test"
+git -C "$TMPDIR" config commit.gpgsign false
+git -C "$TMPDIR" config gpg.format ""
 echo "initial" > "$TMPDIR/README.md"
 git -C "$TMPDIR" add README.md
 git -C "$TMPDIR" commit -q -m "initial"
+
+# Reset the test repo to a clean state between scenarios.
+reset_repo() {
+    git -C "$TMPDIR" restore --staged . 2>/dev/null || true
+    git -C "$TMPDIR" checkout -- . 2>/dev/null || true
+    git -C "$TMPDIR" clean -fdq 2>/dev/null || true
+}
 
 # Helper: run hook with a given CWD JSON and optional extra fields
 # Returns the exit code as stdout
@@ -44,7 +58,7 @@ run_hook() {
 run_hook_output() {
     local cwd="$1"
     local extra="${2:-}"
-    local json exit_code=0
+    local json
     if [ -n "$extra" ]; then
         json=$(printf '{"cwd":"%s",%s}' "$cwd" "$extra")
     else
@@ -101,131 +115,144 @@ assert_exit "stop_hook_active=true exits 0 (no blocking)" 0 "$exit_code"
 echo ""
 echo "clean working tree:"
 
+reset_repo
 exit_code=$(run_hook "$TMPDIR")
 assert_exit "clean tree exits 0" 0 "$exit_code"
-
-# ── TODO/FIXME markers in uncommitted changes ─────────────────────────────────
-# Regression: the old prompt hook leaked the full LLM prompt in error output
-# (issue #1009). The command hook must only emit {"decision":"block","reason":"..."}
-echo ""
-echo "TODO/FIXME/HACK/XXX detection:"
-
-echo "# TODO: finish this" >> "$TMPDIR/README.md"
-
-exit_code=$(run_hook "$TMPDIR")
-assert_exit "unstaged TODO exits 2 (blocked)" 2 "$exit_code"
-
 output=$(run_hook_output "$TMPDIR")
-assert_contains     "blocked output has 'decision' field"       '"decision"'        "$output"
-assert_contains     "blocked output has 'reason' field"         '"reason"'          "$output"
-assert_not_contains "output does not leak prompt text"          "You are evaluating" "$output"
-assert_not_contains "output does not leak stop_hook_active text" "stop_hook_active"  "$output"
+assert_not_contains "clean tree emits no block decision" '"decision"' "$output"
 
-git -C "$TMPDIR" checkout -- README.md  # restore clean state
+# ── TODO/FIXME markers in source-file diffs ──────────────────────────────────
+# Regression: the old prompt hook leaked the full LLM prompt in error output
+# (issue #1009). The command hook must only emit {"decision":"block","reason":"..."}.
+# Regression (this commit): a previous version grepped the file *content* for
+# `^\+...` lines instead of the diff output, so this check was a silent no-op.
+echo ""
+echo "TODO/FIXME/HACK/XXX detection in source files:"
 
-# Staged TODO
-echo "# FIXME: broken" >> "$TMPDIR/README.md"
+reset_repo
+echo "function foo() { /* TODO: implement */ }" > "$TMPDIR/app.js"
+git -C "$TMPDIR" add app.js
+output=$(run_hook_output "$TMPDIR")
+assert_contains     "staged TODO in app.js emits block decision"   '"decision": "block"' "$output"
+assert_contains     "staged TODO message references the count"     'TODO/FIXME/HACK/XXX' "$output"
+assert_not_contains "block output does not leak prompt text"       "You are evaluating"  "$output"
+assert_not_contains "block output does not leak stop_hook_active"  "stop_hook_active"    "$output"
+
+reset_repo
+echo "# FIXME: broken" > "$TMPDIR/app.py"
+git -C "$TMPDIR" add app.py
+output=$(run_hook_output "$TMPDIR")
+assert_contains "staged FIXME in app.py emits block decision" '"decision": "block"' "$output"
+
+# ── markdown / docs files are excluded ───────────────────────────────────────
+# Documentation files (this very plugin's README) routinely quote literal
+# TODO/FIXME tokens, conflict markers, and console.log examples in prose.
+# Treating those as unfinished work is the dominant false-positive class.
+echo ""
+echo "documentation files are excluded:"
+
+reset_repo
+echo "We have a TODO list to track outstanding work." >> "$TMPDIR/README.md"
 git -C "$TMPDIR" add README.md
+output=$(run_hook_output "$TMPDIR")
+assert_not_contains "TODO in README.md does NOT emit a block decision" '"decision"' "$output"
 
-exit_code=$(run_hook "$TMPDIR")
-assert_exit "staged FIXME exits 2 (blocked)" 2 "$exit_code"
+reset_repo
+cat > "$TMPDIR/notes.md" <<'NOTES'
+Conflict example for the runbook:
+<<<<<<< HEAD
+local
+=======
+remote
+>>>>>>> main
+NOTES
+git -C "$TMPDIR" add notes.md
+output=$(run_hook_output "$TMPDIR")
+assert_not_contains "conflict markers in *.md do NOT emit a block decision" '"decision"' "$output"
 
-git -C "$TMPDIR" restore --staged README.md 2>/dev/null || git -C "$TMPDIR" reset HEAD README.md 2>/dev/null || true
-git -C "$TMPDIR" checkout -- README.md
+reset_repo
+echo "Avoid leaving console.log statements in committed code." >> "$TMPDIR/README.md"
+git -C "$TMPDIR" add README.md
+output=$(run_hook_output "$TMPDIR")
+assert_not_contains "console.log in *.md does NOT emit a block decision" '"decision"' "$output"
+
+# Mixed: markdown should be skipped but the source-file change still blocks.
+reset_repo
+echo "We have a TODO list" >> "$TMPDIR/README.md"
+echo "function foo() { /* TODO: implement */ }" > "$TMPDIR/app.js"
+git -C "$TMPDIR" add README.md app.js
+output=$(run_hook_output "$TMPDIR")
+assert_contains "TODO in source still blocks when markdown TODO is also staged" '"decision": "block"' "$output"
 
 # ── merge conflict markers ────────────────────────────────────────────────────
 echo ""
 echo "merge conflict marker detection:"
 
-cat > "$TMPDIR/conflict.txt" <<'CONFLICT'
+reset_repo
+cat > "$TMPDIR/conflict.js" <<'CONFLICT'
 <<<<<<< HEAD
 local change
 =======
 remote change
 >>>>>>> main
 CONFLICT
-git -C "$TMPDIR" add conflict.txt
-
-exit_code=$(run_hook "$TMPDIR")
-assert_exit "staged conflict markers exits 2 (blocked)" 2 "$exit_code"
-
+git -C "$TMPDIR" add conflict.js
 output=$(run_hook_output "$TMPDIR")
-assert_contains     "conflict output has 'decision' field"      '"decision"'         "$output"
-assert_not_contains "conflict output does not leak prompt text" "Respond with ONLY"  "$output"
-
-git -C "$TMPDIR" restore --staged conflict.txt 2>/dev/null || git -C "$TMPDIR" reset HEAD conflict.txt 2>/dev/null || true
-rm -f "$TMPDIR/conflict.txt"
+assert_contains     "staged conflict markers emit block decision"  '"decision": "block"' "$output"
+assert_contains     "block message names the affected file"        'conflict.js'         "$output"
+assert_not_contains "conflict output does not leak prompt text"    "Respond with ONLY"   "$output"
 
 # Regression: standalone `=======` divider lines (decorative separators in
 # fenced code blocks, console-output examples, ASCII art) must NOT be flagged
 # as merge conflicts. Real conflicts always leave at least one of <<<<<<< or
 # >>>>>>> behind, even after a partial resolution.
-cat > "$TMPDIR/dividers.md" <<'DIVIDERS'
-Expected output:
-```
-==================================================
-Setup Validation
-==================================================
-All checks passed
-```
+reset_repo
+cat > "$TMPDIR/dividers.sh" <<'DIVIDERS'
+#!/bin/bash
+echo "=================================================="
+echo "Setup Validation"
+echo "=================================================="
+echo "All checks passed"
 DIVIDERS
-git -C "$TMPDIR" add dividers.md
-
+git -C "$TMPDIR" add dividers.sh
 output=$(run_hook_output "$TMPDIR")
 assert_not_contains "standalone === dividers do NOT emit a block decision" '"decision"' "$output"
 
-git -C "$TMPDIR" restore --staged dividers.md 2>/dev/null || git -C "$TMPDIR" reset HEAD dividers.md 2>/dev/null || true
-rm -f "$TMPDIR/dividers.md"
-
-# Regression: an orphan <<<<<<< marker (left behind after a partial conflict
-# resolution that removed ======= and >>>>>>>) must still be flagged.
-cat > "$TMPDIR/orphan-open.txt" <<'ORPHAN_OPEN'
+# Regression: orphan markers (left after a partial conflict resolution) must
+# still be flagged.
+reset_repo
+cat > "$TMPDIR/orphan-open.js" <<'ORPHAN_OPEN'
 <<<<<<< HEAD
 local change
 ORPHAN_OPEN
-git -C "$TMPDIR" add orphan-open.txt
-
+git -C "$TMPDIR" add orphan-open.js
 output=$(run_hook_output "$TMPDIR")
 assert_contains "orphan <<<<<<< marker still emits a block decision" '"decision"' "$output"
 
-git -C "$TMPDIR" restore --staged orphan-open.txt 2>/dev/null || git -C "$TMPDIR" reset HEAD orphan-open.txt 2>/dev/null || true
-rm -f "$TMPDIR/orphan-open.txt"
-
-# Regression: an orphan >>>>>>> marker (left behind after a partial conflict
-# resolution that removed <<<<<<< and =======) must still be flagged.
-cat > "$TMPDIR/orphan-close.txt" <<'ORPHAN_CLOSE'
+reset_repo
+cat > "$TMPDIR/orphan-close.js" <<'ORPHAN_CLOSE'
 remote change
 >>>>>>> main
 ORPHAN_CLOSE
-git -C "$TMPDIR" add orphan-close.txt
-
+git -C "$TMPDIR" add orphan-close.js
 output=$(run_hook_output "$TMPDIR")
 assert_contains "orphan >>>>>>> marker still emits a block decision" '"decision"' "$output"
-
-git -C "$TMPDIR" restore --staged orphan-close.txt 2>/dev/null || git -C "$TMPDIR" reset HEAD orphan-close.txt 2>/dev/null || true
-rm -f "$TMPDIR/orphan-close.txt"
 
 # ── debugging artifacts ───────────────────────────────────────────────────────
 echo ""
 echo "debugging artifact detection:"
 
-echo "console.log('debug', x);" >> "$TMPDIR/app.js"
+reset_repo
+echo "console.log('debug', x);" > "$TMPDIR/app.js"
 git -C "$TMPDIR" add app.js
+output=$(run_hook_output "$TMPDIR")
+assert_contains "staged console.log emits block decision" '"decision": "block"' "$output"
 
-exit_code=$(run_hook "$TMPDIR")
-assert_exit "staged console.log exits 2 (blocked)" 2 "$exit_code"
-
-git -C "$TMPDIR" restore --staged app.js 2>/dev/null || git -C "$TMPDIR" reset HEAD app.js 2>/dev/null || true
-rm -f "$TMPDIR/app.js"
-
-echo "debugger;" >> "$TMPDIR/app.js"
+reset_repo
+echo "debugger;" > "$TMPDIR/app.js"
 git -C "$TMPDIR" add app.js
-
-exit_code=$(run_hook "$TMPDIR")
-assert_exit "staged 'debugger;' exits 2 (blocked)" 2 "$exit_code"
-
-git -C "$TMPDIR" restore --staged app.js 2>/dev/null || git -C "$TMPDIR" reset HEAD app.js 2>/dev/null || true
-rm -f "$TMPDIR/app.js"
+output=$(run_hook_output "$TMPDIR")
+assert_contains "staged 'debugger;' emits block decision" '"decision": "block"' "$output"
 
 # ── edge cases ────────────────────────────────────────────────────────────────
 echo ""
@@ -242,11 +269,13 @@ assert_exit "missing cwd field exits 0" 0 "$empty_exit"
 echo ""
 echo "CLAUDE_HOOKS_DISABLE_TASK_COMPLETENESS override:"
 
-echo "# TODO: should be ignored" >> "$TMPDIR/README.md"
+reset_repo
+echo "function f() { /* TODO: should be ignored */ }" > "$TMPDIR/app.js"
+git -C "$TMPDIR" add app.js
 override_exit=0
-printf '{"cwd":"%s"}' "$TMPDIR" | CLAUDE_HOOKS_DISABLE_TASK_COMPLETENESS=1 bash "$HOOK" >/dev/null 2>&1 || override_exit=$?
-assert_exit "CLAUDE_HOOKS_DISABLE_TASK_COMPLETENESS=1 skips checks" 0 "$override_exit"
-git -C "$TMPDIR" checkout -- README.md
+override_output=$(printf '{"cwd":"%s"}' "$TMPDIR" | CLAUDE_HOOKS_DISABLE_TASK_COMPLETENESS=1 bash "$HOOK" 2>/dev/null) || override_exit=$?
+assert_exit       "CLAUDE_HOOKS_DISABLE_TASK_COMPLETENESS=1 exits 0" 0 "$override_exit"
+assert_not_contains "CLAUDE_HOOKS_DISABLE_TASK_COMPLETENESS=1 emits no decision" '"decision"' "$override_output"
 
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo ""
