@@ -123,12 +123,6 @@
             "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/task-completeness.sh",
             "timeout": 10000,
             "statusMessage": "Checking task completeness..."
-          },
-          {
-            "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/test-verification.sh",
-            "timeout": 60000,
-            "statusMessage": "Running test verification..."
           }
         ]
       }
@@ -148,6 +142,12 @@
     "TaskCompleted": [
       {
         "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/test-verification.sh",
+            "timeout": 60000,
+            "statusMessage": "Running fast tests..."
+          },
           {
             "type": "agent",
             "prompt": "You are verifying that a completed task meets quality standards before accepting it. Context: $ARGUMENTS\n\n1. Run git diff --stat to see what files were changed\n2. For each changed source file, search for TODO/FIXME/HACK comments that may indicate unfinished work\n3. Check that no debugging artifacts remain (stray console.log, print() statements, debugger keywords)\n4. If the task involved adding new functionality, check if test files exist nearby or were updated\n5. Verify the changes are consistent with the task description\n\nRespond with {\"ok\": true} if the implementation looks complete and clean, or {\"ok\": false, \"reason\": \"specific issues found\"} if problems remain.",

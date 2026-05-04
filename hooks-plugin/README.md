@@ -34,7 +34,12 @@ A PreToolUse hook that intercepts Bash commands and blocks those that should use
 
 ### git-stash-session-init.sh
 
-A SessionStart hook that records the stash baseline for session-scoped tracking. Required by `git-stash-reminder.sh`.
+A SessionStart hook that writes two session-scoped baselines used by other hooks:
+
+| Baseline | Path | Used by |
+|----------|------|---------|
+| Pre-existing stash hashes | `/tmp/claude-stash-baselines/<session_id>` | `git-stash-reminder.sh` |
+| HEAD commit at session start | `/tmp/claude-test-baselines/<session_id>` | `test-verification.sh` |
 
 ### git-stash-reminder.sh
 
@@ -156,17 +161,27 @@ Documentation files (`*.md`, `*.mdx`, `*.rst`, `*.txt`) and vendor/generated pat
 
 ### test-verification.sh
 
-A Stop hook that auto-detects the project's test runner and runs tests when uncommitted changes touch source files. Skips silently when no source files changed, no recognised runner is found, or the diff is documentation-only.
+A **TaskCompleted** hook (previously a Stop hook) that runs an explicitly-fast test recipe when an Agent Teams task is marked complete. Three independent constraints make this hook conservative — every constraint is a silent no-op when unmet:
+
+| Layer | Constraint | Rationale |
+|-------|-----------|-----------|
+| Event | `TaskCompleted` only | Stops fire on every Claude response; TaskCompleted fires once per finished team task. The original Stop wiring re-ran tests during in-progress refactors. |
+| HEAD baseline | Skip when current HEAD matches the baseline written by `git-stash-session-init.sh` | No commits landed → nothing new to verify. Pre-existing failures at session start no longer block forever. |
+| Fast-recipe required | Only run if the project defines `test-quick`, `test-unit`, or `test-fast` in `justfile` / `Makefile` / `package.json` (`test:quick` / `test:unit` / `test:fast`) | Hour-long full-suite projects are now no-ops. The previous fallback to `just test` / `make test` / `npm test` / `pytest` / `cargo test` / `go test` is gone. |
 
 | Aspect | Detail |
 |--------|--------|
-| Type | `command` (deterministic — replaced the former `type: "agent"` variant for latency) |
+| Type | `command` (deterministic) |
 | Timeout | 60s framework / 45s hard internal (configurable via `CLAUDE_HOOKS_TEST_TIMEOUT`) |
-| Detected runners | `justfile` (prefers `test-quick` → `test-unit` → `test`), `Makefile` (same priority), Bun, npm, pytest (uv-aware), cargo, go |
-| Skip conditions | Only docs/config files changed, no test runner found, `stop_hook_active=true` |
-| Timeout behaviour | Approves with a warning instead of blocking (does not interrupt flow) |
+| Recipe priority | `test-quick` → `test-unit` → `test-fast` (first match wins) |
+| Runners | `just`, `make`, `bun run` (when `bun.lockb` / `bun.lock` is present), `npm run` |
+| Source-file gate | Skipped if only docs / config / build-recipe files changed (`*.md`, `*.json`, `justfile`, `Makefile`, `Dockerfile`, …) |
+| Failure | Block via `{"decision":"block","reason":"..."}` with the last 20 lines of test output |
+| Timeout | Approves with a warning instead of blocking — a "fast" recipe over 45s is itself a project-hygiene signal |
 
 **Toggle:** `CLAUDE_HOOKS_DISABLE_TEST_VERIFICATION=1`
+
+**Migrating from the old behaviour:** if you previously relied on `npm test` / `cargo test` running on every Stop, define a fast variant (`test:quick` / `test-quick`) that runs your unit tests only. Without one, the hook is intentionally silent.
 
 > **Note on prompt-type Stop hooks**: When a `type: "prompt"` hook on `Stop` or `SubagentStop` returns `{"ok": false}`, Claude Code surfaces the full prompt text in the error message (e.g. `Stop hook error: [You are evaluating...]: reason`). This is a runtime behavior that cannot be configured away. Prefer `type: "command"` hooks with deterministic heuristics for Stop events to avoid this leakage. Only use `type: "prompt"` on Stop hooks when the check genuinely requires LLM judgment and cannot be deterministic.
 
@@ -186,7 +201,7 @@ A `type: "prompt"` hook that evaluates subagent output completeness. Blocks vagu
 
 ### TaskCompleted — Implementation Verification (agent)
 
-A `type: "agent"` hook that verifies task implementation quality when a team task is marked complete. Checks for leftover TODOs, debug artifacts, and test coverage.
+A `type: "agent"` hook that verifies task implementation quality when a team task is marked complete. Runs alongside `test-verification.sh` (command-type) on the same event: the deterministic test run goes first, then the LLM-driven quality check fires only if tests pass.
 
 | Aspect | Detail |
 |--------|--------|
