@@ -97,7 +97,7 @@
       "name": "blueprint-plugin",
       "source": "./blueprint-plugin",
       "description": "Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, CLAUDE.md management, and monorepo portfolio tracking",
-      "version": "3.31.1",
+      "version": "3.31.2",
       "keywords": [
         "blueprint",
         "prd",
