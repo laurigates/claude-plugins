@@ -7,8 +7,9 @@ description: |
 args: "[library-name|project:pattern-name]"
 argument-hint: "Library name (e.g., redis, pydantic) or project:pattern-name"
 allowed-tools: Read, Write, Glob, Bash, WebFetch, WebSearch, AskUserQuestion
+model: opus
 created: 2025-12-16
-modified: 2026-04-19
+modified: 2026-05-04
 reviewed: 2026-02-14
 name: blueprint-curate-docs
 ---

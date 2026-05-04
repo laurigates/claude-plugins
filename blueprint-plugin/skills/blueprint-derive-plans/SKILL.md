@@ -1,6 +1,6 @@
 ---
 created: 2026-01-15
-modified: 2026-04-19
+modified: 2026-05-04
 reviewed: 2026-02-14
 description: |
   Derive PRDs, ADRs, and PRPs from git history, codebase structure, and existing documentation.
@@ -11,6 +11,7 @@ description: |
 args: "[--quick] [--since DATE]"
 argument-hint: "--quick for fast scan, --since 2024-01-01 for date range"
 allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion, Task
+model: opus
 name: blueprint-derive-plans
 ---
 

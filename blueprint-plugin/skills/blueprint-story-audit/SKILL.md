@@ -1,6 +1,6 @@
 ---
 created: 2026-04-25
-modified: 2026-04-25
+modified: 2026-05-04
 reviewed: 2026-04-25
 description: |
   Audit user stories against codebase capabilities and tests, producing a tier-ranked
@@ -11,6 +11,7 @@ description: |
 args: "[--scope <area>] [--prd <path>] [--no-write] [--report-only]"
 argument-hint: "--scope auth to limit; --prd docs/prds/PRD-001.md to override; --no-write skips artifact"
 allowed-tools: Read, Write, Glob, Grep, Bash, Task, AskUserQuestion
+model: opus
 name: blueprint-story-audit
 ---
 

@@ -8,8 +8,9 @@ description: |
   reason about race conditions and null pointer errors.
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
+model: opus
 created: 2025-12-27
-modified: 2026-04-25
+modified: 2026-05-04
 reviewed: 2026-04-25
 ---
 

@@ -7,9 +7,10 @@ description: |
   consolidates them into reusable utilities, components, hooks, and shared modules.
 args: "[PATH] [--scope <utilities|components|hooks|all>] [--dry-run]"
 allowed-tools: Read, Write, Edit, MultiEdit, Grep, Glob, Bash(npx tsc *), Bash(npm run *), Bash(npx *), Bash(bun *), Bash(pnpm *), Bash(yarn *), Bash(pytest *), Bash(cargo *), TodoWrite, Task
+model: opus
 argument-hint: path or directory to scan for duplication
 created: 2026-02-06
-modified: 2026-02-27
+modified: 2026-05-04
 reviewed: 2026-02-06
 agent: general-purpose
 ---

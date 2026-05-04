@@ -8,9 +8,10 @@ description: |
   delegation gaps; also use when focusing the analysis on a single plugin.
 args: "[--focus <plugin-name>]"
 allowed-tools: Glob, Grep, Read, Bash(ls *), Bash(wc *), TodoWrite
+model: opus
 argument-hint: "analyze all plugins or --focus <plugin-name>"
 created: 2026-01-24
-modified: 2026-04-25
+modified: 2026-05-04
 reviewed: 2026-04-25
 name: agents-analyze
 agent: general-purpose

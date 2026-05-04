@@ -1,8 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
+modified: 2026-05-04
 reviewed: 2026-04-25
 allowed-tools: Read, Write, Edit, MultiEdit, Glob, Grep, TodoWrite
+model: opus
 args: <project-path>
 argument-hint: <project-path>
 description: |

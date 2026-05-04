@@ -7,8 +7,9 @@ description: |
 args: "[PATH] [--threshold <number>] [--format <summary|detailed|json>]"
 argument-hint: path or directory to analyze for complexity
 allowed-tools: Bash(npx *), Bash(radon *), Bash(cargo *), Read, Grep, Glob, TodoWrite
+model: opus
 created: 2026-04-10
-modified: 2026-04-10
+modified: 2026-05-04
 reviewed: 2026-04-10
 ---
 

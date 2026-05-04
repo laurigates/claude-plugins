@@ -1,11 +1,12 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
+modified: 2026-05-04
 reviewed: 2026-04-25
 name: code-antipatterns-analysis
 description: Analyze codebases for anti-patterns, code smells, and quality issues using ast-grep structural pattern matching. Use when reviewing code quality, identifying technical debt, or performing comprehensive code analysis across JavaScript, TypeScript, Python, Vue, React, or other supported languages.
 user-invocable: false
 allowed-tools: Bash(sg *), Bash(rg *), Read, Grep, Glob, TodoWrite, Task
+model: opus
 agent: general-purpose
 ---
 

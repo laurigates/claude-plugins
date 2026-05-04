@@ -1,8 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
+modified: 2026-05-04
 reviewed: 2026-04-25
 allowed-tools: Task, TodoWrite, Glob, Read
+model: opus
 description: |
   Perform a comprehensive code review covering quality, security,
   performance, architecture, and test coverage, with automated fixes where

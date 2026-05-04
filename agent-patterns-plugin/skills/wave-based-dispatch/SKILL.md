@@ -15,8 +15,9 @@ description: |
   (the workflow-side scheduling view).
 user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
+model: opus
 created: 2026-04-25
-modified: 2026-04-25
+modified: 2026-05-04
 reviewed: 2026-04-25
 ---
 

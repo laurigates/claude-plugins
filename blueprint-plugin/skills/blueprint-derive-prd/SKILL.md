@@ -1,6 +1,6 @@
 ---
 created: 2025-12-22
-modified: 2026-04-25
+modified: 2026-05-04
 reviewed: 2026-04-25
 description: |
   Derive PRD from existing project documentation, README, and codebase analysis. Use when
@@ -8,6 +8,7 @@ description: |
   project to blueprint, or wants to extract problem statements, stakeholders, features, and
   user personas from existing docs into a formal Product Requirements Document.
 allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion, Task
+model: opus
 name: blueprint-derive-prd
 ---
 

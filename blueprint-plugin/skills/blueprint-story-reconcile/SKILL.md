@@ -1,6 +1,6 @@
 ---
 created: 2026-04-25
-modified: 2026-04-25
+modified: 2026-05-04
 reviewed: 2026-04-25
 description: |
   Reconcile PRD requirements with the drift report from a /blueprint:story-audit. Use
@@ -10,6 +10,7 @@ description: |
 args: "[--audit <path>] [--prd <path>] [--apply-all] [--dry-run]"
 argument-hint: "--audit docs/blueprint/audits/2026-04-25-story-audit.md (defaults to latest)"
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion
+model: opus
 name: blueprint-story-reconcile
 ---
 
