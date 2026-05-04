@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
-reviewed: 2026-02-09
+modified: 2026-05-03
+reviewed: 2026-05-03
 description: |
   Generate project-specific rules from PRDs. Supports path-specific rules with paths
   frontmatter and brace expansion. Use when the user asks to "generate rules from PRDs",
@@ -25,11 +25,11 @@ Generate project-specific rules from Product Requirements Documents.
 
 Rules are generated to the directory configured in `structure.generated_rules_path` (defaults to `.claude/rules/` when the field is absent). Rules with `paths` frontmatter are loaded conditionally when working on matching files.
 
+## Steps
+
 **Prerequisites**:
 - `docs/prds/` directory exists
 - At least one PRD file in `docs/prds/`
-
-**Steps**:
 
 0. **Resolve the output path**:
 

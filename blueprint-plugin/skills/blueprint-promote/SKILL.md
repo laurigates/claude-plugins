@@ -1,7 +1,7 @@
 ---
 created: 2025-12-22
-modified: 2026-04-25
-reviewed: 2026-04-25
+modified: 2026-05-04
+reviewed: 2026-05-04
 description: |
   Move generated artifact to custom layer to preserve modifications. Use when the user
   wants to "promote" a generated rule to keep manual edits, asks to preserve changes to
@@ -23,6 +23,8 @@ Copy a generated rule to the custom rules layer for preservation.
 | You want to stop sync warnings on a modified auto-generated file | You want regenerate/keep options across many files at once |
 | You say "promote from proposed to custom" or "acknowledge modifications" | Use blueprint-generate-rules instead to regenerate from PRDs |
 
+## Steps
+
 **Purpose**:
 - Copy generated content from `.claude/rules/` to preserve modifications
 - Mark as acknowledged in manifest to prevent overwrite warnings
@@ -32,8 +34,6 @@ Copy a generated rule to the custom rules layer for preservation.
 
 **Examples**:
 - `/blueprint:promote testing-strategies` - Acknowledge a rule's modifications
-
-**Steps**:
 
 1. **Parse argument**:
    - Extract `name` from arguments
