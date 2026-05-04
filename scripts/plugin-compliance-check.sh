@@ -150,10 +150,9 @@ check_skill_frontmatter() {
     fm_reviewed=$(extract_field "$skill_file" "reviewed")
 
     local missing_recommended=()
-    # Note: `model` is intentionally not checked here. Skills should inherit the
-    # user's active model by default — see .claude/rules/skill-development.md
-    # ("Model Selection"). The only model-related check is the regression below
-    # that rejects `model: haiku` alongside AskUserQuestion.
+    # Note: `model` may be set to `opus` or `sonnet` at the extremes; haiku is
+    # disallowed for any skill (see check below). See
+    # .claude/rules/skill-development.md ("Model Selection") for policy.
     [ -z "$fm_created" ] && missing_recommended+=("created")
     [ -z "$fm_modified" ] && missing_recommended+=("modified")
     [ -z "$fm_reviewed" ] && missing_recommended+=("reviewed")
@@ -173,10 +172,11 @@ check_skill_frontmatter() {
       has_warnings=true
     fi
 
-    # Regression: model: haiku breaks AskUserQuestion — prompts return empty without
-    # displaying to the user. Skills using AskUserQuestion must not use model: haiku.
-    if [ "$fm_model" = "haiku" ] && echo "$fm_allowed_tools" | grep -q "AskUserQuestion"; then
-      issues+=("❌ ${plugin}/${skill_name}: model: haiku with AskUserQuestion — interactive prompts will fail silently")
+    # Regression: model: haiku breaks AskUserQuestion (PR #879) and the cost
+    # savings vs Sonnet do not justify the quality risk for non-interactive
+    # skills either. Sonnet is the floor — see .claude/rules/skill-development.md.
+    if [ "$fm_model" = "haiku" ]; then
+      issues+=("❌ ${plugin}/${skill_name}: model: haiku is disallowed — use sonnet (floor) or opus")
       has_errors=true
     fi
   done

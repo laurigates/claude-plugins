@@ -1,7 +1,7 @@
 ---
 created: 2025-12-20
-modified: 2026-04-29
-reviewed: 2026-04-29
+modified: 2026-05-03
+reviewed: 2026-05-03
 paths:
   - "**/skills/**"
   - "**/SKILL.md"
@@ -115,9 +115,21 @@ Run helper: !`bash ${CLAUDE_SKILL_DIR}/scripts/helper.sh`
 
 ### Model Selection
 
-Skills inherit the user's active model by default. Do not set `model:` in skill frontmatter — this avoids forcing a specific model variant that may differ from the user's preferred model or require a tier they don't have access to.
+Skills inherit the user's active model by default. Tag a skill with `model:` only at the **extremes** where the case for overriding inheritance is clear:
 
-> **Note**: The `model:` field is still supported in agent definitions (see `.claude/rules/agent-development.md`) where explicit model selection may be appropriate.
+| Tag | Use for | Examples |
+|-----|---------|----------|
+| `model: opus` | Deep reasoning, multi-file orchestration, security review, architecture, long agentic chains | Skills that spawn many subagents, security audits, complex refactors, ADR/PRD synthesis |
+| `model: sonnet` | Mechanical / high-volume work where Opus's cost is unjustified | CLI tool wrappers (fd, rg, jq), formatters, status checks, single-file lookups |
+| _(unset)_ | Everything in the middle | Default — inherits the user's active model |
+
+**Why both extremes?** A user defaulting to Opus saves cost when a mechanical skill self-selects Sonnet. A user defaulting to Sonnet (or Haiku) gets reliable results when a complex skill self-selects Opus.
+
+**Hard constraints:**
+
+- **Do NOT use `model: haiku`.** Haiku 4.5 does not reliably format `AskUserQuestion` tool calls (fixed-forward in the lint check `check_skill_frontmatter()`), and the cost savings vs Sonnet are modest for the quality risk. Treat Sonnet as the floor.
+- **Do NOT tag the middle.** If you can't articulate why the skill needs Opus or why Sonnet is enough, leave `model:` unset and let inheritance decide.
+- The `model:` field is also supported in agent definitions (see `.claude/rules/agent-development.md`).
 
 ### Date Fields
 

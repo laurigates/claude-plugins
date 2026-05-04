@@ -42,15 +42,15 @@ description: ...
 
 Use `agent: general-purpose` for skills that need subagent isolation. Omit `context: fork` until upstream issues are resolved.
 
-## Model Constraint for Interactive Skills
+## Model Constraint
 
-Skills that use `AskUserQuestion` **must not** set `model: haiku`. The haiku model does not reliably format `AskUserQuestion` tool calls, causing prompts to return empty responses without displaying to the user. Use `model: sonnet` or `model: opus`.
+`model: haiku` is disallowed for any skill — see `.claude/rules/skill-development.md` ("Model Selection"). Sonnet is the floor; set `model: opus` or `model: sonnet` only at the extremes, otherwise leave `model:` unset to inherit.
 
 ## Decision Table
 
 ```
 Does the skill use AskUserQuestion?
-  YES → Do NOT set agent: (runs inline), do NOT use model: haiku
+  YES → Do NOT set agent: (runs inline)
   NO ↓
 
 Does the skill spawn Task subagents OR read many files OR do multiple web fetches?
@@ -64,9 +64,10 @@ Is the final output a self-contained artifact (report, analysis, generated files
 
 ## Checklist for New Skills
 
-- [ ] Does the skill use `AskUserQuestion`? If yes, **omit** `agent:` and **do not** set `model: haiku`.
+- [ ] Does the skill use `AskUserQuestion`? If yes, **omit** `agent:` (runs inline).
 - [ ] Does the skill use `Task`, multi-file reads, or web research? If yes, **add** `agent: general-purpose`.
 - [ ] **Do NOT** add `context: fork` — it is broken for plugin skills and triggers rate limits.
+- [ ] Set `model:` only at the extremes (`opus` for deep reasoning, `sonnet` for mechanical work). Never `haiku`.
 - [ ] Update `modified:` date when adding these fields.
 
 ## Upstream Issues to Track
