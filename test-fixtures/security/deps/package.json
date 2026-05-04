@@ -6,7 +6,7 @@
   "dependencies": {
     "lodash": "4.17.20",
     "minimist": "1.2.5",
-    "axios": "0.21.1",
+    "axios": "1.15.2",
     "node-fetch": "2.6.1"
   },
   "devDependencies": {
