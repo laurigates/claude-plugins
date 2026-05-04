@@ -85,6 +85,10 @@ Override via `.claude/taskwarrior-plugin.local.md` (see `agent-patterns-plugin:p
 
 See [docs/flow.md](docs/flow.md) for a diagram of how the skills fit together.
 
+## Task Tracking Lifecycle
+
+See [docs/task-tracking.md](docs/task-tracking.md) for conventions on UDAs, tags, and the full task lifecycle — including the `depends:` + `task done` auto-unblock pattern that makes sequential WO chains self-managing.
+
 ## Related
 
 - `agent-patterns-plugin:parallel-agent-dispatch` — dispatch contract that `task-coordinate` feeds

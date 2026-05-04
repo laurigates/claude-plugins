@@ -11,7 +11,7 @@ args: "<task-id> [commit-hash]"
 allowed-tools: Bash(task *), Bash(git config *), Bash(git log *), Bash(git rev-parse *), Bash(gh auth *), Bash(gh issue *), Bash(gh pr *), Read, Edit, TodoWrite
 argument-hint: task id (required), commit sha (optional — defaults to HEAD)
 created: 2026-04-24
-modified: 2026-04-29
+modified: 2026-05-04
 reviewed: 2026-04-29
 ---
 
@@ -134,8 +134,9 @@ Print:
 
 ## Related
 
-- `/taskwarrior:task-add` — file a task
+- `/taskwarrior:task-add` — file a task (use `depends:` for sequential WO chains)
 - `/taskwarrior:task-status` — see what's left
 - `blueprint-plugin:feature-tracking` — tracker format that `bpdoc` points at
 - `blueprint-plugin:blueprint-docs-currency` — companion discipline for the `bpdoc` update
 - `.claude/rules/parallel-safe-queries.md` — the `export | jq` idiom
+- `taskwarrior-plugin/docs/task-tracking.md` — full lifecycle: `depends:` + auto-unblock pattern

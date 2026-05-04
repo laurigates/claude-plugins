@@ -11,7 +11,7 @@ args: "[description] [project:<name>] [--no-project]"
 allowed-tools: Bash(task *), Bash(git config *), Bash(git rev-parse *), Bash(gh auth *), Bash(gh issue *), Bash(gh api *), Read, TodoWrite
 argument-hint: short task description
 created: 2026-04-24
-modified: 2026-04-29
+modified: 2026-05-04
 reviewed: 2026-04-29
 ---
 
@@ -145,6 +145,22 @@ task add "$DESCRIPTION" \
 
 Run with only the fields that were provided; omit empty UDAs entirely rather than passing `uda:""`.
 
+#### Sequential WOs: use `depends:` for ordered chains
+
+For work orders that must land in sequence (e.g., WO-058 → 059 → 060),
+set `depends:` on each downstream task pointing to its predecessor's
+taskwarrior numeric ID. When the predecessor closes with `task done`,
+taskwarrior **automatically unblocks all dependents** — no manual
+intervention needed (see `docs/task-tracking.md § Lifecycle`):
+
+```bash
+# WO-059 waits for WO-058 (taskwarrior ID 51)
+task add "WO-059: ..." bpid:WO-059 +wo project:myrepo depends:51
+
+# WO-060 waits for both
+task add "WO-060: ..." bpid:WO-060 +wo project:myrepo depends:51,52
+```
+
 ### Step 6: Report
 
 Print:
@@ -187,7 +203,8 @@ Print:
 ## Related
 
 - `/taskwarrior:task-status` — see current queue
-- `/taskwarrior:task-done` — close an open task
+- `/taskwarrior:task-done` — close an open task (fires auto-unblock for `depends:` chains)
 - `/taskwarrior:task-coordinate` — next-agent candidates for a wave
 - `.claude/rules/parallel-safe-queries.md` — why `export | jq`, never `list`
 - `blueprint-plugin:feature-tracking` — FR/WO IDs that `bpid` points at
+- `taskwarrior-plugin/docs/task-tracking.md` — full lifecycle including `depends:` + auto-unblock pattern
