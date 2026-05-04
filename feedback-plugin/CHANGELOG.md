@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.5.0...feedback-plugin-v1.6.0) (2026-05-04)
+
+
+### Features
+
+* **rules:** re-enable model: parameter for skills at the extremes ([#1232](https://github.com/laurigates/claude-plugins/issues/1232)) ([5abba3a](https://github.com/laurigates/claude-plugins/commit/5abba3aa13a9b7574e6a7aadd1a9dd7ca4dea812))
+
 ## [1.5.0](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.4.0...feedback-plugin-v1.5.0) (2026-04-28)
 
 

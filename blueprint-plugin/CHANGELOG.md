@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.32.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.31.2...blueprint-plugin-v3.32.0) (2026-05-04)
+
+
+### Features
+
+* **rules:** re-enable model: parameter for skills at the extremes ([#1232](https://github.com/laurigates/claude-plugins/issues/1232)) ([5abba3a](https://github.com/laurigates/claude-plugins/commit/5abba3aa13a9b7574e6a7aadd1a9dd7ca4dea812))
+
 ## [3.31.2](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.31.1...blueprint-plugin-v3.31.2) (2026-05-04)
 
 
