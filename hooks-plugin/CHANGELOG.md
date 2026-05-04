@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.16.10...hooks-plugin-v2.0.0) (2026-05-04)
+
+
+### ⚠ BREAKING CHANGES
+
+* **hooks-plugin:** scope test-verification to TaskCompleted with HEAD and fast-recipe gates ([#1235](https://github.com/laurigates/claude-plugins/issues/1235))
+
+### Code Refactoring
+
+* **hooks-plugin:** scope test-verification to TaskCompleted with HEAD and fast-recipe gates ([#1235](https://github.com/laurigates/claude-plugins/issues/1235)) ([f3aff45](https://github.com/laurigates/claude-plugins/commit/f3aff4513f886f6354d2dc75555e7526f772522b))
+
 ## [1.16.10](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.16.9...hooks-plugin-v1.16.10) (2026-05-04)
 
 
