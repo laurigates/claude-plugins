@@ -1,7 +1,7 @@
 ---
 created: 2025-12-17
-modified: 2026-04-25
-reviewed: 2026-04-25
+modified: 2026-05-03
+reviewed: 2026-05-03
 description: |
   Show blueprint version, configuration, and check for available upgrades. Use when the
   user asks to "show blueprint status", checks the three-layer architecture breakdown,
@@ -31,7 +31,7 @@ Display the current blueprint configuration status with three-layer architecture
 |------|-------------|
 | `--report-only` | Display status report and exit without prompting for next action |
 
-**Steps**:
+## Steps
 
 1. **Check if blueprint is initialized**:
    - Look for `docs/blueprint/manifest.json`

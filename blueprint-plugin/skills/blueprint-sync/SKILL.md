@@ -1,7 +1,7 @@
 ---
 created: 2025-12-22
-modified: 2026-04-25
-reviewed: 2026-04-25
+modified: 2026-05-03
+reviewed: 2026-05-03
 description: |
   Check for stale generated content and offer regeneration or promotion. Use when the user
   asks to "sync blueprint", detect manually modified generated rules, find stale content
@@ -30,12 +30,12 @@ Check the status of generated content and offer options for modified or stale fi
 |------|-------------|
 | `--dry-run` | Preview sync status report without interactive prompts or file modifications |
 
+## Steps
+
 **Purpose**:
 - Detect when generated skills/commands have been manually modified
 - Detect when source PRDs have changed (making generated content stale)
 - Offer appropriate actions: regenerate, promote to custom, or keep as-is
-
-**Steps**:
 
 1. **Read manifest**:
    ```bash
