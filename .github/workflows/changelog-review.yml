@@ -26,6 +26,7 @@ jobs:
       latest_version: ${{ steps.compare.outputs.latest_version }}
       previous_version: ${{ steps.read_tracked.outputs.tracked_version }}
       changes_summary: ${{ steps.analyze.outputs.summary }}
+      candidate_rules: ${{ steps.analyze.outputs.candidates }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -89,27 +90,78 @@ jobs:
           fi
           echo "latest_version=$LATEST" >> $GITHUB_OUTPUT
 
-      - name: Analyze changelog for plugin impacts
+      - name: Slice changelog and identify candidate rules files
         id: analyze
         if: steps.compare.outputs.has_updates == 'true'
         run: |
           TRACKED="${{ steps.read_tracked.outputs.tracked_version }}"
           LATEST="${{ steps.extract.outputs.latest_version }}"
 
-          echo "Analyzing changes from $TRACKED to $LATEST..."
+          # Slice the changelog down to just the new versions. Keyword counts
+          # below run on the slice only — counting against the full file
+          # (hundreds of versions of history) inflates every number and made
+          # the summary useless as a prompt signal.
+          awk -v tracked="$TRACKED" '
+            /^## \[?[0-9]+\.[0-9]+\.[0-9]+/ {
+              if (match($0, /[0-9]+\.[0-9]+\.[0-9]+/)) {
+                v = substr($0, RSTART, RLENGTH)
+                if (v == tracked) exit
+              }
+            }
+            { print }
+          ' /tmp/changelog.md > /tmp/excerpt.md
 
-          # Count relevant changes by searching for keywords
-          HOOK_CHANGES=$(grep -ci 'hook' /tmp/changelog.md || echo "0")
-          SKILL_CHANGES=$(grep -ci 'skill' /tmp/changelog.md || echo "0")
-          AGENT_CHANGES=$(grep -ci 'agent' /tmp/changelog.md || echo "0")
-          PERMISSION_CHANGES=$(grep -ci 'permission' /tmp/changelog.md || echo "0")
-          BREAKING_CHANGES=$(grep -ci 'breaking' /tmp/changelog.md || echo "0")
-          PLUGIN_CHANGES=$(grep -ci 'plugin' /tmp/changelog.md || echo "0")
-          MCP_CHANGES=$(grep -ci 'mcp' /tmp/changelog.md || echo "0")
+          if [ ! -s /tmp/excerpt.md ]; then
+            echo "::error::Excerpt is empty — tracked version $TRACKED not found in changelog"
+            exit 1
+          fi
 
-          SUMMARY="Hook: $HOOK_CHANGES, Skill: $SKILL_CHANGES, Agent: $AGENT_CHANGES, Permission: $PERMISSION_CHANGES, Plugin: $PLUGIN_CHANGES, MCP: $MCP_CHANGES, Breaking: $BREAKING_CHANGES"
-          echo "summary=$SUMMARY" >> $GITHUB_OUTPUT
-          echo "Changes extracted for analysis"
+          echo "Excerpt: $(wc -l < /tmp/excerpt.md) lines, $(wc -c < /tmp/excerpt.md) bytes ($TRACKED → $LATEST)"
+
+          HOOK=$(grep -ci 'hook' /tmp/excerpt.md || echo 0)
+          SKILL=$(grep -ci 'skill' /tmp/excerpt.md || echo 0)
+          AGENT=$(grep -cEi 'agent|subagent' /tmp/excerpt.md || echo 0)
+          PERM=$(grep -ci 'permission' /tmp/excerpt.md || echo 0)
+          PLUGIN=$(grep -ci 'plugin' /tmp/excerpt.md || echo 0)
+          MCP=$(grep -ci 'mcp' /tmp/excerpt.md || echo 0)
+          SANDBOX=$(grep -ci 'sandbox' /tmp/excerpt.md || echo 0)
+          BREAKING=$(grep -ci 'breaking' /tmp/excerpt.md || echo 0)
+
+          SUMMARY="Hook:$HOOK Skill:$SKILL Agent:$AGENT Permission:$PERM Plugin:$PLUGIN MCP:$MCP Sandbox:$SANDBOX Breaking:$BREAKING"
+          echo "summary=$SUMMARY" >> "$GITHUB_OUTPUT"
+
+          # Map keyword hits to the candidate rules files that are likely
+          # to need updates. Claude reads only these instead of every rule.
+          CANDIDATES=()
+          [ "$HOOK" -gt 0 ] && CANDIDATES+=(".claude/rules/hooks-reference.md" ".claude/rules/prompt-agent-hooks.md")
+          [ "$SKILL" -gt 0 ] && CANDIDATES+=(".claude/rules/skill-development.md")
+          [ "$AGENT" -gt 0 ] && CANDIDATES+=(".claude/rules/agent-development.md")
+          [ "$PERM" -gt 0 ] && CANDIDATES+=(".claude/rules/agentic-permissions.md")
+          [ "$PLUGIN" -gt 0 ] && CANDIDATES+=(".claude/rules/plugin-structure.md")
+          [ "$SANDBOX" -gt 0 ] && CANDIDATES+=(".claude/rules/sandbox-guidance.md")
+
+          if [ "${#CANDIDATES[@]}" -eq 0 ]; then
+            CANDIDATE_LIST="(none — keyword counts are zero; only the tracking JSON likely needs an update)"
+          else
+            CANDIDATE_LIST=$(printf '%s\n' "${CANDIDATES[@]}" | awk '!seen[$0]++')
+          fi
+
+          {
+            echo "candidates<<__CHANGELOG_REVIEW_EOF__"
+            echo "$CANDIDATE_LIST"
+            echo "__CHANGELOG_REVIEW_EOF__"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "Candidate rules files:"
+          echo "$CANDIDATE_LIST"
+
+      - name: Upload excerpt for claude-review job
+        if: steps.compare.outputs.has_updates == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: changelog-excerpt
+          path: /tmp/excerpt.md
+          retention-days: 7
 
   claude-review:
     needs: check-changelog
@@ -121,118 +173,92 @@ jobs:
           token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
           fetch-depth: 0
 
+      - name: Download pre-sliced changelog excerpt
+        uses: actions/download-artifact@v4
+        with:
+          name: changelog-excerpt
+          path: .
+
       - name: Review changelog and apply updates
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          claude_args: "--model sonnet --max-turns 80"
+          claude_args: "--model sonnet --max-turns 50"
           prompt: |
-            You are reviewing Claude Code changelog changes from version ${{ needs.check-changelog.outputs.previous_version }} to ${{ needs.check-changelog.outputs.latest_version }}.
+            You are reviewing Claude Code changelog changes from ${{ needs.check-changelog.outputs.previous_version }} to ${{ needs.check-changelog.outputs.latest_version }}.
 
-            Keyword analysis from the changelog: ${{ needs.check-changelog.outputs.changes_summary }}
+            ## Pre-computed inputs (use these — do not re-fetch)
 
-            ## Step 1: Fetch and analyze the changelog
+            - **Changelog excerpt**: `excerpt.md` in the repo root contains *only* the new versions, already sliced for you. Read it once with `Read`. Do **not** WebFetch the full changelog.
+            - **Keyword counts on the excerpt**: ${{ needs.check-changelog.outputs.changes_summary }}
+            - **Candidate rules files** (rules likely to need updates, based on keyword hits):
 
-            Use WebFetch to retrieve the Claude Code changelog from:
-            https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md
+              ```
+              ${{ needs.check-changelog.outputs.candidate_rules }}
+              ```
 
-            Extract all changes between version ${{ needs.check-changelog.outputs.previous_version }} and ${{ needs.check-changelog.outputs.latest_version }}.
+            ## Efficiency rules
 
-            ## Step 2: Categorize changes by impact
+            - Use `TodoWrite` once at the start to plan, then minimal narration.
+            - **Read every candidate rules file in parallel** (single message, multiple `Read` calls). Do not read them sequentially.
+            - Only `Edit` rules files that actually need changes. Files that already cover the new behavior need no edit.
+            - Skip non-candidate rules files. The keyword analysis already filtered them out.
+            - Never use `WebFetch` for the changelog or for live docs — the excerpt is the authoritative input.
 
-            For each change, assess its impact on this plugin collection:
+            ## Step 1: Read inputs in parallel
 
-            - **High impact**: Breaking changes, new hook events, permission model changes, skill/agent system changes
-            - **Medium impact**: New features we should document in rules, behavior changes affecting existing skills
-            - **Low impact**: Bug fixes, performance improvements, UI changes with no plugin impact
+            In one message, dispatch parallel `Read` calls for:
+            - `excerpt.md` (the changelog excerpt)
+            - `.claude-code-version-check.json` (current tracking state)
+            - Every candidate rules file listed above
 
-            Focus on changes relevant to:
-            - Hook system (events, schemas, timeouts, lifecycle)
-            - Skill/command system (frontmatter, discovery, invocation)
-            - Agent/subagent system (configuration, isolation, memory, teams)
-            - Permission model (wildcards, rules, sandbox)
-            - MCP system (servers, OAuth, configuration)
-            - Plugin system (marketplace, plugin.json, settings)
+            ## Step 2: Categorize changes
 
-            ## Step 3: Update .claude-code-version-check.json
+            For each entry in the excerpt, classify impact on this plugin collection:
 
-            Read the current `.claude-code-version-check.json` file and update it:
-            - Set `lastCheckedVersion` to `${{ needs.check-changelog.outputs.latest_version }}`
-            - Set `lastCheckedDate` to today's date (YYYY-MM-DD format)
-            - Prepend a new entry to `reviewedChanges` array with:
-              - `version`: the latest version
-              - `date`: today's date
-              - `relevantChanges`: array of strings describing each relevant change
-              - `actionsRequired`: array of strings describing what rules/skills need updating
+            - **High** — breaking changes, new hook events, permission model changes, skill/agent system changes
+            - **Medium** — new features worth documenting in rules, behavior changes affecting existing skills
+            - **Low** — bug fixes, perf, UI
 
-            ## Step 4: Update .claude/rules/ files
+            Focus areas: hook system, skill/command system, agent/subagent system, permission model, MCP, plugin manifest/marketplace.
 
-            For high and medium impact changes, update the relevant rules files:
+            ## Step 3: Update `.claude-code-version-check.json`
 
-            - `.claude/rules/hooks-reference.md` — for new hook events, schema changes, timeout behavior
-            - `.claude/rules/prompt-agent-hooks.md` — for new hook events in decision trees and tables
-            - `.claude/rules/agent-development.md` — for agent/subagent system changes
-            - `.claude/rules/skill-development.md` — for skill frontmatter or system changes
-            - `.claude/rules/agentic-permissions.md` — for permission model changes
-            - `.claude/rules/sandbox-guidance.md` — for sandbox or environment changes
-            - `.claude/rules/plugin-structure.md` — for plugin system changes
+            Edit it in place:
+            - `lastCheckedVersion` = `${{ needs.check-changelog.outputs.latest_version }}`
+            - `lastCheckedDate` = today (YYYY-MM-DD)
+            - Prepend a new entry to `reviewedChanges` with `version`, `date`, `relevantChanges` (array), `actionsRequired` (array).
 
-            Read each file before editing. Only update files where changes are actually needed.
-            When updating, preserve the existing structure and add/modify only the relevant sections.
+            ## Step 4: Edit only the candidate rules files that need it
 
-            ## Step 5: Optionally verify against live documentation
+            For high/medium impact changes affecting a candidate rule, edit that rule in place — preserve structure, add/modify only the relevant section. Skip candidates whose existing content already covers the new behavior.
 
-            If high-impact changes are found, use WebFetch to verify against:
-            - https://code.claude.com/docs/en/settings
-            - https://code.claude.com/docs/en/features-overview
+            ## Step 5: Branch, commit, push, PR
 
-            Only fetch these if you need to verify specific details.
+            ```bash
+            BR="chore/changelog-review-${{ needs.check-changelog.outputs.latest_version }}"
+            git switch -c "$BR"
+            git add .claude-code-version-check.json .claude/rules/
+            git commit -m "chore(project-plugin): review Claude Code changelog ${{ needs.check-changelog.outputs.previous_version }} → ${{ needs.check-changelog.outputs.latest_version }}"
+            git push -u origin "$BR"
+            gh pr create \
+              --title "chore(project-plugin): review Claude Code changelog ${{ needs.check-changelog.outputs.previous_version }} → ${{ needs.check-changelog.outputs.latest_version }}" \
+              --body "Automated review of Claude Code changelog ${{ needs.check-changelog.outputs.previous_version }} → ${{ needs.check-changelog.outputs.latest_version }}.
 
-            ## Step 6: Create branch, commit, and PR
+            **Keyword counts on excerpt:** ${{ needs.check-changelog.outputs.changes_summary }}
 
-            1. Create branch: `chore/changelog-review-${{ needs.check-changelog.outputs.latest_version }}`
-            2. Stage all modified files: `git add .claude-code-version-check.json .claude/rules/`
-            3. Commit with message: `chore(project-plugin): review Claude Code changelog ${{ needs.check-changelog.outputs.previous_version }} → ${{ needs.check-changelog.outputs.latest_version }}`
-            4. Push: `git push -u origin chore/changelog-review-${{ needs.check-changelog.outputs.latest_version }}`
-            5. Create PR:
-               ```
-               gh pr create \
-                 --title "chore(project-plugin): review Claude Code changelog ${{ needs.check-changelog.outputs.previous_version }} → ${{ needs.check-changelog.outputs.latest_version }}" \
-                 --body "## Summary
-
-               Automated review of Claude Code changelog changes from ${{ needs.check-changelog.outputs.previous_version }} to ${{ needs.check-changelog.outputs.latest_version }}.
-
-               ### Changes Applied
-               - Updated \`.claude-code-version-check.json\` with version tracking
-               - Updated relevant \`.claude/rules/\` files for high/medium impact changes
-
-               ### Keyword Mentions
-               ${{ needs.check-changelog.outputs.changes_summary }}
-
-               ### Changelog
-               [View Claude Code Changelog](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md)
-
-               ---
-               *This PR was automatically created by the changelog review workflow.*" \
-                 --label "changelog-review,maintenance"
-               ```
-
-            ## Step 7: Create follow-up issues if needed
-
-            If any changes require more than rules updates (e.g., new skills, skill rewrites,
-            plugin restructuring), create separate GitHub issues for each follow-up:
-            ```
-            gh issue create \
-              --title "<descriptive title>" \
-              --body "<details about what needs to be done>" \
-              --label "changelog-review,enhancement"
+            **Upstream changelog:** https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md" \
+              --label "changelog-review,maintenance"
             ```
 
-            ## Important rules
-            - Read `.claude/rules/conventional-commits.md` for commit message format
-            - Do NOT amend existing commits — always create new commits
-            - Only update files where changes are genuinely needed
-            - Be thorough in changelog analysis but conservative in rule changes
+            ## Step 6: Follow-up issues — only for major work
+
+            Open a `gh issue create` *only* when a change requires work beyond rules edits (new skill, skill rewrite, plugin restructuring). For routine doc updates, skip this step.
+
+            ## Conventions
+
+            - Read `.claude/rules/conventional-commits.md` only if you need to deviate from the commit format above.
+            - Create new commits — never amend.
           additional_permissions: |
             Read
             Write
@@ -240,16 +266,7 @@ jobs:
             Grep
             Glob
             TodoWrite
-            WebFetch
-            Bash(git status *)
-            Bash(git diff *)
-            Bash(git log *)
-            Bash(git show *)
-            Bash(git add *)
-            Bash(git commit *)
-            Bash(git push *)
-            Bash(git checkout *)
-            Bash(git branch *)
+            Bash(git *)
             Bash(gh pr *)
             Bash(gh issue *)
           plugin_marketplaces: |
