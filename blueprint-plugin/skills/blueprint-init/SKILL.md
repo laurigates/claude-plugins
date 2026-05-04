@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
-reviewed: 2026-04-25
+modified: 2026-05-03
+reviewed: 2026-05-03
 description: |
   Initialize Blueprint Development structure in current project. Use when the user asks
   to "init blueprint", "set up blueprint", bootstrap a new project with docs/blueprint/
@@ -23,7 +23,7 @@ Initialize Blueprint Development in this project.
 | You want to enable feature tracking and decision detection from scratch | Use blueprint-derive-prd / blueprint-derive-adr to populate after init |
 | You're configuring task scheduling for the first time | Use blueprint-execute instead when you want auto-detection of next step |
 
-**Steps**:
+## Steps
 
 1. **Check if already initialized**:
    - Look for `docs/blueprint/manifest.json`

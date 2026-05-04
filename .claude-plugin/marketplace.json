@@ -97,7 +97,7 @@
       "name": "blueprint-plugin",
       "source": "./blueprint-plugin",
       "description": "Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, CLAUDE.md management, and monorepo portfolio tracking",
-      "version": "3.31.1",
+      "version": "3.31.2",
       "keywords": [
         "blueprint",
         "prd",
@@ -397,6 +397,25 @@
         "chains"
       ],
       "category": "ai"
+    },
+    {
+      "name": "macos-plugin",
+      "source": "./macos-plugin",
+      "description": "macOS-specific dev environment tooling - kitty session persistence, LaunchServices health, incident postmortems for kernel panics, WindowServer hangs, and long-uptime drift",
+      "version": "1.1.0",
+      "keywords": [
+        "macos",
+        "darwin",
+        "kitty",
+        "session-persistence",
+        "launchservices",
+        "windowserver",
+        "kernel-panic",
+        "diagnostics",
+        "incident-postmortem",
+        "uptime"
+      ],
+      "category": "utilities"
     },
     {
       "name": "migration-patterns-plugin",

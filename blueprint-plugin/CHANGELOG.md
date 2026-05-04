@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.31.2](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.31.1...blueprint-plugin-v3.31.2) (2026-05-04)
+
+
+### Bug Fixes
+
+* **blueprint-plugin:** hoist Steps content out of dropped headings ([#1230](https://github.com/laurigates/claude-plugins/issues/1230)) ([d16b336](https://github.com/laurigates/claude-plugins/commit/d16b3368e9c95f2cbc4400d30a0e85698f91b3de))
+
 ## [3.31.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.31.0...blueprint-plugin-v3.31.1) (2026-04-27)
 
 

@@ -1,7 +1,7 @@
 ---
 created: 2026-01-02
 modified: 2026-05-04
-reviewed: 2026-04-25
+reviewed: 2026-05-03
 description: |
   Display feature tracker statistics and completion summary. Use when the user asks
   "what's the feature completion status?", wants a progress bar showing phase progress,
@@ -23,7 +23,7 @@ Display feature tracker statistics, phase progress, and completion summary.
 | You're checking blocked features without modifying state | You want to recalculate completion percentages |
 | You want a quick "where are we?" snapshot | Use feature-tracking instead for low-level FR-code edits |
 
-**Steps**:
+## Steps
 
 1. **Check if feature tracking is enabled**:
    - Look for `docs/blueprint/feature-tracker.json`
