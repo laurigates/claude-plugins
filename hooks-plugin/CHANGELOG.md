@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.10](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.16.9...hooks-plugin-v1.16.10) (2026-05-04)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** exclude docs files and repair the TODO check in task-completeness ([#1229](https://github.com/laurigates/claude-plugins/issues/1229)) ([6c8e3b3](https://github.com/laurigates/claude-plugins/commit/6c8e3b3a8a94b82e5ffa0dd0f1be70d9ea7a79de))
+
 ## [1.16.9](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.16.8...hooks-plugin-v1.16.9) (2026-05-02)
 
 
