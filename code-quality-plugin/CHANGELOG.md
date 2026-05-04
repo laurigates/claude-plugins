@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.13.1...code-quality-plugin-v1.14.0) (2026-05-04)
+
+
+### Features
+
+* **rules:** re-enable model: parameter for skills at the extremes ([#1232](https://github.com/laurigates/claude-plugins/issues/1232)) ([5abba3a](https://github.com/laurigates/claude-plugins/commit/5abba3aa13a9b7574e6a7aadd1a9dd7ca4dea812))
+
 ## [1.13.1](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.13.0...code-quality-plugin-v1.13.1) (2026-04-25)
 
 
