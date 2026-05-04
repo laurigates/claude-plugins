@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "macos-plugin",
+  "version": "1.0.0",
+  "description": "macOS-specific dev environment tooling — kitty session persistence, LaunchServices health, incident postmortems for kernel panics, WindowServer hangs, and long-uptime drift",
+  "author": {
+    "name": "Lauri Gates",
+    "url": "https://github.com/laurigates"
+  },
+  "repository": "https://github.com/laurigates/claude-plugins",
+  "license": "MIT",
+  "keywords": [
+    "macos",
+    "darwin",
+    "kitty",
+    "kitten",
+    "session-persistence",
+    "session-restore",
+    "launchctl",
+    "launchagent",
+    "launchservices",
+    "lsregister",
+    "windowserver",
+    "kernel-panic",
+    "watchdog",
+    "diagnosticreports",
+    "jetsam",
+    "incident-postmortem",
+    "uptime",
+    "kern-boottime"
+  ]
+}
