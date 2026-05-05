@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.35.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.34.5...git-plugin-v2.35.0) (2026-05-05)
+
+
+### Features
+
+* **git-plugin:** align git-pr-feedback with GitHub's documented PR-feedback workflow ([#1240](https://github.com/laurigates/claude-plugins/issues/1240)) ([baa1bff](https://github.com/laurigates/claude-plugins/commit/baa1bff63c4bf575d665b5326c00b7f09642a146))
+
 ## [2.34.5](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.34.4...git-plugin-v2.34.5) (2026-04-29)
 
 
