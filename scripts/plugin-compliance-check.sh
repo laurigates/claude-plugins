@@ -242,6 +242,26 @@ check_skill_body() {
         has_errors=true
       fi
     fi
+
+    # Regression: taskwarrior tag examples must use underscores, not hyphens.
+    # Hyphens in tags are silently parsed as exclude-filters (`+blocked-on-merge`
+    # → `+blocked` AND `-on-merge`), so the tag never lands and the literal token
+    # gets appended to the description as plain text. Quoting does not help —
+    # this is a taskwarrior parser quirk, not a shell issue. See issue #1237.
+    # Skip lines that are explanatory callouts (mentioning "hyphen" or "broken").
+    if [ "${plugin}" = "taskwarrior-plugin" ]; then
+      local hyphen_tag_lines
+      hyphen_tag_lines=$(grep -nE '\+[a-z][a-z]*-[a-z][a-z-]*' "$skill_file" 2>/dev/null \
+        | grep -viE 'hyphen|broken|silently|parsed as|do(es)? not help|never lands' \
+        || true)
+      if [ -n "$hyphen_tag_lines" ]; then
+        while IFS= read -r hit; do
+          local line_num="${hit%%:*}"
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md line ${line_num} uses hyphenated tag — taskwarrior parses '-' as exclude-filter; use underscores (issue #1237)")
+        done <<< "$hyphen_tag_lines"
+        has_errors=true
+      fi
+    fi
   done < <(find "$skills_dir" -type f \( -iname "SKILL.md" -o -iname "skill.md" \) -print0 2>/dev/null)
 
   if $has_errors; then

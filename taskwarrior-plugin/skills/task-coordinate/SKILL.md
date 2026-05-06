@@ -12,8 +12,8 @@ args: "[--n=N] [--lock=<resource>] [--wave] [--project=<name>] [--all]"
 allowed-tools: Bash(task *), Bash(git rev-parse *), Bash(jq *), Read, TodoWrite
 argument-hint: optional count (default 3) and lock filter
 created: 2026-04-24
-modified: 2026-04-29
-reviewed: 2026-04-29
+modified: 2026-05-06
+reviewed: 2026-05-06
 ---
 
 # /taskwarrior:task-coordinate
@@ -81,7 +81,7 @@ Classify each task by the locks implied by its tags or `bpid`:
 |-----------------|--------------|
 | `+re` on decomp work, `tmp/decomp/` in description | `ghidra` |
 | `+migration`, bpid starts with `MIG-` | `migration` |
-| `+bulk-task` | `task-bulk` (taskwarrior itself — single-writer) |
+| `+bulk_task` | `task-bulk` (taskwarrior itself — single-writer) |
 | Matching `bpdoc` in shared manifest | `manifest` |
 
 Drop any candidate that matches the `--lock=` filter. Two tasks that
