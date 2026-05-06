@@ -6,7 +6,7 @@ description: |
   into a coherent plan with goals, actions, and priorities. Trigger phrases: "synthesize",
   "organize my thoughts", "turn this into a plan", "make sense of this", "structure this",
   "formalize these notes", "what should I do with all this".
-args: [prose to synthesize]
+args: "[prose to synthesize]"
 allowed-tools: Read, Edit, Write, Grep, Glob, TodoWrite
 argument-hint: <unstructured thoughts or file path>
 created: 2026-02-16

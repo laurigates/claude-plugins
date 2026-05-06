@@ -3,7 +3,7 @@ description: |
   Initialize a new LangChain TypeScript project with recommended configuration.
   Use when starting a new LLM-powered application, scaffolding an AI agent project,
   or setting up LangChain with TypeScript from scratch.
-args: [project-name]
+args: "[project-name]"
 allowed-tools: Bash(uv *), Bash(pip *), Bash(python *), Read, Write, Edit
 argument-hint: my-agent-project
 disable-model-invocation: true

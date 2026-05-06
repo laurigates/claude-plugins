@@ -6,7 +6,7 @@ description: |
   "tighten", "make concise", "make this more concise", "shorten this", "too wordy",
   "reduce verbosity", "compress this text", "trim the fat", "omit needless words",
   or asks to reduce text length while preserving substance.
-args: [text or file path]
+args: "[text or file path]"
 allowed-tools: Read, Edit, Write, Grep, Glob, TodoWrite
 argument-hint: <text to distill> or <path to file>
 created: 2026-02-14

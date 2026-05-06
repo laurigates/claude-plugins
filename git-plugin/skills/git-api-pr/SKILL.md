@@ -1,9 +1,9 @@
 ---
 name: git-api-pr
 description: Create PRs via GitHub API without local git operations. Use when you want to submit file changes as a PR without committing locally — for quick fixes, typos, config updates, or when you want a clean workflow that bypasses local git state entirely.
-args: <file...> --title <title> [--base <branch>] [--branch <name>] [--body <text>] [--draft] [--delete]
+args: "<file...> --title <title> [--base <branch>] [--branch <name>] [--body <text>] [--draft] [--delete]"
 allowed-tools: Bash(gh api *), Bash(gh pr *), Bash(gh repo *), Bash(base64 *), Bash(git remote *), Bash(mktemp *), Read, TodoWrite
-argument-hint: <files...> --title "type(scope): description"
+argument-hint: '<files...> --title "type(scope): description"'
 disable-model-invocation: true
 created: 2026-02-15
 modified: 2026-04-29

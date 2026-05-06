@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.18.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.18.0...agent-patterns-plugin-v2.18.1) (2026-05-06)
+
+
+### Documentation
+
+* **agent-patterns-plugin:** document sub-agent constraint when spawning teams ([#1247](https://github.com/laurigates/claude-plugins/issues/1247)) ([bc49bde](https://github.com/laurigates/claude-plugins/commit/bc49bde048adce60b28966144b4cc90129906107))
+
 ## [2.18.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.17.2...agent-patterns-plugin-v2.18.0) (2026-05-04)
 
 

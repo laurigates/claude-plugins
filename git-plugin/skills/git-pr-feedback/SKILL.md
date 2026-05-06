@@ -1,10 +1,10 @@
 ---
 created: 2026-01-30
-modified: 2026-04-19
-reviewed: 2026-02-26
-allowed-tools: Bash(gh pr checks *), Bash(gh pr view *), Bash(gh pr diff *), Bash(gh run view *), Bash(gh run list *), Bash(gh api *), Bash(gh repo view *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git pull *), Bash(pre-commit *), Bash(npm run *), Bash(uv run *), Bash(bash *), Read, Edit, Write, Grep, Glob, TodoWrite, Task, mcp__github__pull_request_read, mcp__github__add_reply_to_pull_request_comment, mcp__github__resolve_review_thread, mcp__github__pull_request_review_write
+modified: 2026-05-05
+reviewed: 2026-05-05
+allowed-tools: Bash(gh pr checks *), Bash(gh pr view *), Bash(gh pr diff *), Bash(gh run view *), Bash(gh run list *), Bash(gh api *), Bash(gh repo view *), Bash(gh issue create *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git pull *), Bash(pre-commit *), Bash(npm run *), Bash(uv run *), Bash(bash *), Read, Edit, Write, Grep, Glob, TodoWrite, Task, mcp__github__pull_request_read, mcp__github__add_reply_to_pull_request_comment, mcp__github__resolve_review_thread, mcp__github__pull_request_review_write, mcp__github__issue_write
 args: "[pr-number] [--commit] [--push]"
-argument-hint: [pr-number] [--commit] [--push]
+argument-hint: "[pr-number] [--commit] [--push]"
 disable-model-invocation: true
 description: |
   Review PR workflow results and reviewer comments, then address substantive
@@ -114,20 +114,33 @@ Work through actionable items systematically. For each thread, decide using the 
 
 | Comment shape | Action |
 |---------------|--------|
-| Contains a ` ```suggestion ` block, fix is correct | **Accept the suggestion**: apply the suggestion's exact replacement to the file (see [REFERENCE.md](REFERENCE.md) "Accepting Suggestions") |
-| Contains a ` ```suggestion ` block, fix needs adjustment | Implement an improved variant; explain the deviation in the reply |
+| Contains a ` ```suggestion ` block, fix is correct | **Accept the suggestion**: apply the suggestion's exact replacement to the file (see [REFERENCE.md](REFERENCE.md) "Accepting Suggestions"). Record the comment author's `login` and `name`/`email` for co-author attribution in Step 4. |
+| Contains a ` ```suggestion ` block, fix needs adjustment | Implement an improved variant; explain the deviation in the reply. Record the suggester for co-author attribution. |
 | Inline code comment without suggestion | Read context, implement fix, verify no regressions |
 | Question / clarification | Skip code change; draft an inline reply for Step 4 |
 | Blocking review (`REQUEST_CHANGES`) | Address every concern before resolving any thread |
 | Failed CI check | Identify failure type (lint/type/test/build), fix locally, run to verify |
+| Out-of-scope feedback | Do not implement in this PR. Open a follow-up issue (see Step 3a) and reference its number in the reply. |
 
 Mark each todo `in_progress` while working it and `completed` once the file change (if any) lands locally. Do **not** resolve threads yet — replies and resolution happen after the commit so reviewers see the linked SHA.
+
+### Step 3a: File follow-up issues for out-of-scope feedback
+
+For any thread categorised as out-of-scope (or where the user opts to defer rather than implement now):
+
+1. Draft a one-line title and short body that quotes the reviewer comment and links the PR thread URL.
+2. Use `mcp__github__issue_write` (action `create`) or `gh issue create -R <owner>/<repo> --title "<title>" --body "<body>"` to file the issue.
+3. Capture the returned issue number — Step 6's reply uses it (`Deferred to #<n> — <reason>.`).
+
+Skip this step if the user has explicitly said not to file follow-ups. When ambiguous, ask via `AskUserQuestion` before creating an issue.
 
 ---
 
 ### Step 4: Commit Changes (if --commit or --push)
 
-Group related fixes into logical commits. See [REFERENCE.md](REFERENCE.md) for commit message format.
+Group related fixes into logical commits — one commit per logical group of accepted suggestions, not one per suggestion. See [REFERENCE.md](REFERENCE.md) for commit message format.
+
+For any commit that contains an **accepted (or adapted) suggestion**, append a `Co-authored-by:` trailer for each unique suggester. This mirrors GitHub's "Commit suggestion" / "Add suggestion to batch" behaviour, which credits the suggester as co-author. See [REFERENCE.md](REFERENCE.md) "Co-author Attribution" for how to construct the trailer line and resolve the suggester's email.
 
 Run pre-commit hooks if configured, then stage any formatter changes.
 
@@ -137,6 +150,26 @@ Run pre-commit hooks if configured, then stage any formatter changes.
 git push origin HEAD
 ```
 
+### Step 5a: Re-request Review (if --push)
+
+After a successful push that addresses substantive feedback, re-request review from any reviewer whose threads were resolved or who left a `CHANGES_REQUESTED` review. Skip this step when only nitpicks or questions were addressed.
+
+Determine reviewers to re-request from the GraphQL response captured in Step 1:
+
+- `latestReviews` entries with `state == "CHANGES_REQUESTED"`
+- Authors of any review thread you resolved in Step 6
+
+Then call:
+
+```bash
+gh api -X POST \
+  /repos/<owner>/<repo>/pulls/<pr>/requested_reviewers \
+  -f 'reviewers[]=<login1>' \
+  -f 'reviewers[]=<login2>'
+```
+
+If `gh api` returns 422 ("Reviews may only be requested from collaborators"), the reviewer cannot be re-requested via the API — note it in the Step 7 summary and continue.
+
 ### Step 6: Reply and Resolve Threads
 
 For every actionable thread tracked in Step 2, post a reply and resolve when appropriate. Owner/repo/PR are the same values used in Step 1.
@@ -145,7 +178,7 @@ For every actionable thread tracked in Step 2, post a reply and resolve when app
    - Code change made → reference the commit SHA: `Fixed in <sha> by <one-line summary>.`
    - Suggestion accepted verbatim → `Accepted suggestion in <sha>.`
    - Suggestion adapted → explain the deviation: `Applied a variant in <sha>: <reason>.`
-   - Deferred / out of scope → state why and link a follow-up issue if one exists.
+   - Deferred / out of scope → reference the follow-up issue filed in Step 3a: `Deferred to #<issue> — <reason>.`
    - Question → answer it directly.
 
 2. **Resolve** with `mcp__github__resolve_review_thread` using the thread `id` (a `PRRT_…` GraphQL node ID) when **all** of the following hold:
@@ -177,6 +210,8 @@ Provide a summary table of feedback addressed, replies posted, threads resolved,
 | Quick check status (fallback) | `gh pr checks $PR --json name,state,conclusion` |
 | Reply to a review comment | `mcp__github__add_reply_to_pull_request_comment` (commentId = `databaseId`) |
 | Resolve a review thread | `mcp__github__resolve_review_thread` (threadId = `PRRT_…` node ID) |
+| Re-request review after push | `gh api -X POST /repos/<owner>/<repo>/pulls/<pr>/requested_reviewers -f 'reviewers[]=<login>'` |
+| File follow-up issue for deferred feedback | `mcp__github__issue_write` (action `create`) or `gh issue create -R <owner>/<repo> --title <t> --body <b>` |
 
 ## See Also
 

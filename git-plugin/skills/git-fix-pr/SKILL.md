@@ -4,7 +4,7 @@ modified: 2026-04-25
 reviewed: 2026-04-25
 allowed-tools: Bash(gh pr checks *), Bash(gh pr view *), Bash(gh run view *), Bash(gh run list *), Bash(gh repo view *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(pre-commit *), Bash(npm run *), Bash(uv run *), Read, Edit, Grep, Glob, TodoWrite, mcp__github__pull_request_read
 args: "[pr-number] [--auto-fix] [--push]"
-argument-hint: [pr-number] [--auto-fix] [--push]
+argument-hint: "[pr-number] [--auto-fix] [--push]"
 disable-model-invocation: true
 description: |
   Analyze and fix failing PR checks. Use when the user asks to fix the PR,
