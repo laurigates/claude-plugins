@@ -242,7 +242,33 @@ check_skill_body() {
         has_errors=true
       fi
     fi
+
+    # Regression: taskwarrior plugin skill examples must use underscores or
+    # camelCase in tag names — never hyphens. Taskwarrior parses
+    # `+blocked-on-merge` as `+blocked` AND `-on-merge` (mid-token exclude
+    # filter), silently swallowing the tag. See issue #1237.
+    # task-add/SKILL.md is allowed to use hyphenated forms inside the
+    # documented "Tag naming gotcha" section as counter-examples.
+    if [ "$plugin" = "taskwarrior-plugin" ] && [ "$skill_name" != "task-add" ]; then
+      local tw_bad_tags
+      tw_bad_tags=$(grep -nE '\+[a-z]+-[a-z]+' "$skill_file" 2>/dev/null || true)
+      if [ -n "$tw_bad_tags" ]; then
+        while IFS= read -r hit; do
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md uses hyphenated taskwarrior tag — use underscore/camelCase (issue #1237): ${hit}")
+        done <<< "$tw_bad_tags"
+        has_errors=true
+      fi
+    fi
   done < <(find "$skills_dir" -type f \( -iname "SKILL.md" -o -iname "skill.md" \) -print0 2>/dev/null)
+
+  # Regression: task-add/SKILL.md must keep the "Tag naming gotcha" callout
+  # so the parser quirk stays documented. See issue #1237.
+  if [ "$plugin" = "taskwarrior-plugin" ] && [ -f "${skills_dir}/task-add/SKILL.md" ]; then
+    if ! grep -q "Tag naming gotcha" "${skills_dir}/task-add/SKILL.md"; then
+      issues+=("❌ ${plugin}/task-add: SKILL.md must contain the 'Tag naming gotcha' section explaining the hyphen parser quirk (issue #1237)")
+      has_errors=true
+    fi
+  fi
 
   if $has_errors; then
     return 2
