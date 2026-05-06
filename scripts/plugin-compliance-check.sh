@@ -242,6 +242,27 @@ check_skill_body() {
         has_errors=true
       fi
     fi
+
+    # Regression: taskwarrior tag examples must use underscores, not hyphens.
+    # Taskwarrior parses '-' as the exclude-filter operator even mid-token, so
+    # `+blocked-on-merge` is read as `+blocked` AND `-on-merge` (exclude).
+    # The intended tag is silently dropped. See issue #1237.
+    # Match `+word-word` patterns (ASCII letters only) outside the gotcha
+    # callout — we let lines that *describe* the bug keep the broken example.
+    if [ "$plugin" = "taskwarrior-plugin" ]; then
+      local hyphen_tag_lines
+      hyphen_tag_lines=$(grep -nE '\+[a-zA-Z][a-zA-Z]*-[a-zA-Z]' "$skill_file" \
+        | grep -vE 'exclude-filter|exclude\)|silently dropped|does not help|`task-bulk`|task-add|task-done|task-status|task-coordinate' \
+        || true)
+      if [ -n "$hyphen_tag_lines" ]; then
+        while IFS= read -r hit; do
+          local hit_line
+          hit_line="${hit%%:*}"
+          issues+=("❌ ${plugin}/${skill_name}: hyphenated tag example at line ${hit_line} — taskwarrior parses '-' as exclude (issue #1237); use underscores: '+blocked_on_merge'")
+        done <<< "$hyphen_tag_lines"
+        has_errors=true
+      fi
+    fi
   done < <(find "$skills_dir" -type f \( -iname "SKILL.md" -o -iname "skill.md" \) -print0 2>/dev/null)
 
   if $has_errors; then
