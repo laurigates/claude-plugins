@@ -14,7 +14,7 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-21
-modified: 2026-05-04
+modified: 2026-05-06
 reviewed: 2026-04-25
 ---
 
@@ -33,6 +33,15 @@ manual salvage from orphan branches.
 | Using `TeamCreate` + teammate spawn for coordinated parallel work | A simple background task with no parallel siblings |
 | Running worktree-isolated parallel implementation across repos/features | A read-only inline subagent that does not write to disk |
 | Coordinating parallel investigation or audit swarms | The work fits in the current session without forking |
+
+## Dispatch from the Main Thread When Possible
+
+`Agent`, `TeamCreate`, and other parallel-spawn tools may not be present in a sub-agent's sandbox even when they are available in the main conversation. Designing a fan-out from inside a coordinating sub-agent risks silent degradation to sequential single-thread execution — the wall-clock cost of a 5-way design landing in a 5× slower sequential mode.
+
+When planning a parallel dispatch:
+
+- **Default**: dispatch from the main conversation. The full tool surface is guaranteed.
+- **Sub-agent orchestrator**: only when the team's outputs do not need to feed back into the main thread. Brief the sub-agent to verify tool availability up front and report sequential fallback as a first-class outcome (see `agent-teams` → "Sub-Agent Caveat: Spawn Teams from the Main Thread" for the detection contract).
 
 ## The Three Pillars
 
