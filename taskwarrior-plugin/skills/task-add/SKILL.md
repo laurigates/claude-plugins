@@ -11,8 +11,8 @@ args: "[description] [project:<name>] [--no-project]"
 allowed-tools: Bash(task *), Bash(git config *), Bash(git rev-parse *), Bash(gh auth *), Bash(gh issue *), Bash(gh api *), Read, TodoWrite
 argument-hint: short task description
 created: 2026-04-24
-modified: 2026-04-29
-reviewed: 2026-04-29
+modified: 2026-05-06
+reviewed: 2026-05-06
 ---
 
 # /taskwarrior:task-add
@@ -44,7 +44,7 @@ Parse `$ARGUMENTS`:
 - Optional inline `project:<name>` to override the auto-detected project.
 - Optional `--no-project` to file the task without any project (cross-cutting work).
 - Optional inline `bpid:WO-012` / `bpdoc:docs/wo/012.md` / `bpms:M6` / `ghid:145` / `ghpr:99` fields.
-- Optional tags: `+wo`, `+prp`, `+fr`, `+re`, `+gh`, `+pr-ready`, `+needs-review`, `+blocked-on-merge`, `+blocked`.
+- Optional tags: `+wo`, `+prp`, `+fr`, `+re`, `+gh`, `+pr_ready`, `+needs_review`, `+blocked_on_merge`, `+blocked`. Use underscores or camelCase — hyphens silently break tag parsing (see "Tag naming gotcha" below).
 
 ### Project resolution
 
@@ -61,6 +61,20 @@ this order:
 Cross-check the resolved name against `Known projects` and reuse the
 exact spelling when it matches (case-insensitive) — taskwarrior treats
 `MyRepo` and `myrepo` as different projects.
+
+### Tag naming gotcha
+
+**Hyphens silently break tags.** `+blocked-on-merge` is parsed as `+blocked` AND `-on-merge` (the `-` prefix is taskwarrior's exclude-filter syntax, even mid-token), so the tag never lands and the literal `+blocked-on-merge` token ends up appended to the description as plain text. The `tags` array stays null and urgency does not tick up. **Quoting (`'+blocked-on-merge'`) does not help** — this is a taskwarrior parser quirk, not a shell issue.
+
+Use underscores or camelCase: `+blocked_on_merge`, `+blockedOnMerge`. When composing the `task add` command in Step 5, normalise any user-supplied hyphenated tags to the underscore form before invoking taskwarrior, and prefer the underscore form in any tag suggestions surfaced to the user.
+
+| Tag form | Result |
+|---|---|
+| `+blocked` | tag applied |
+| `+blocked_on_merge` | tag applied |
+| `+blockedOnMerge` | tag applied |
+| `+blocked-on-merge` | tag swallowed; literal token leaks into description |
+| `'+blocked-on-merge'` | tag swallowed; literal token leaks into description |
 
 ## Execution
 
@@ -181,8 +195,8 @@ Print:
 | `+fr` | Feature request |
 | `+re` | Research |
 | `+gh` | Linked to GitHub |
-| `+pr-ready` | Open PR waiting |
-| `+blocked-on-merge` | Waiting on another PR |
+| `+pr_ready` | Open PR waiting |
+| `+blocked_on_merge` | Waiting on another PR |
 
 ## Related
 

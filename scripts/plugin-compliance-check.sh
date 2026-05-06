@@ -242,6 +242,25 @@ check_skill_body() {
         has_errors=true
       fi
     fi
+
+    # Regression: taskwarrior-plugin SKILLs must not promote hyphenated `+tag`
+    # examples — taskwarrior parses `+blocked-on-merge` as `+blocked` AND
+    # `-on-merge` (exclude filter), silently dropping the tag and appending the
+    # literal token to the description. See issue #1237. Hyphenated tag
+    # examples are allowed only on lines that explicitly flag them as
+    # counter-examples (gotcha context, "swallowed", "Hyphens", etc.).
+    if [ "$plugin" = "taskwarrior-plugin" ]; then
+      while IFS= read -r tag_hit; do
+        tag_line_no="${tag_hit%%:*}"
+        tag_line_content="${tag_hit#*:}"
+        # Skip lines that flag the example as broken / a counter-example.
+        if echo "$tag_line_content" | grep -qiE 'swallow|silently break|hyphens|gotcha|parser quirk|does not help|exclude filter'; then
+          continue
+        fi
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md line ${tag_line_no} promotes hyphenated taskwarrior tag (use '+foo_bar' or '+fooBar' — see issue #1237): ${tag_line_content}")
+        has_errors=true
+      done < <(grep -nE '`\+[a-z][a-z0-9]*-[a-z0-9_-]+`' "$skill_file" 2>/dev/null || true)
+    fi
   done < <(find "$skills_dir" -type f \( -iname "SKILL.md" -o -iname "skill.md" \) -print0 2>/dev/null)
 
   if $has_errors; then
