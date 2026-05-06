@@ -555,7 +555,7 @@
       "name": "taskwarrior-plugin",
       "source": "./taskwarrior-plugin",
       "description": "Coordination layer for multi-agent work using taskwarrior - parallel-safe queries, urgency scoring, and optional GitHub linkage via ghid/ghpr UDAs",
-      "version": "1.2.2",
+      "version": "1.2.3",
       "keywords": [
         "taskwarrior",
         "coordination",
