@@ -73,9 +73,14 @@ lint-health:
 lint-infra:
     ./scripts/infra-compliance-check.sh
 
+# Lint taskwarrior-plugin SKILL.md / README for hyphenated tag examples (issue #1237)
+[group: "lint"]
+lint-taskwarrior-tags:
+    ./scripts/check-taskwarrior-tag-syntax.sh
+
 # Run all lint checks
 [group: "lint"]
-lint-all: lint-context-commands lint-compliance lint-health lint-infra
+lint-all: lint-context-commands lint-compliance lint-health lint-infra lint-taskwarrior-tags
 
 # Add all MCP servers and set up cclsp
 [group: "claude"]

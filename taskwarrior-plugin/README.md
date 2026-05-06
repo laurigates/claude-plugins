@@ -15,7 +15,7 @@ GitHub issues are the system of record for work the team should see. Taskwarrior
 | Cost to read 50 items | 50 API calls or rate limit | Single `task export \| jq` |
 | Discovery surface | GitHub UI | Agent-queryable shell |
 
-Both systems stay in sync via UDAs (`ghid`, `ghpr`) and tags (`+gh`, `+pr-ready`, `+blocked-on-merge`). This plugin's skills detect GitHub remotes automatically and offer the linkage; repositories without a remote operate in local-only mode.
+Both systems stay in sync via UDAs (`ghid`, `ghpr`) and tags (`+gh`, `+pr_ready`, `+blocked_on_merge`). This plugin's skills detect GitHub remotes automatically and offer the linkage; repositories without a remote operate in local-only mode.
 
 ## Skills
 
@@ -64,10 +64,12 @@ Taskwarrior UDAs are declared in `~/.taskrc`. On first use, `task-add` prompts t
 | `+fr` | Feature request |
 | `+re` | Research task |
 | `+gh` | Linked to a GitHub issue or PR |
-| `+pr-ready` | Implementation done, open PR, waiting on merge |
-| `+needs-review` | Ready for review |
-| `+blocked-on-merge` | Waiting on another PR to merge |
+| `+pr_ready` | Implementation done, open PR, waiting on merge |
+| `+needs_review` | Ready for review |
+| `+blocked_on_merge` | Waiting on another PR to merge |
 | `+blocked` | Blocked on external factor |
+
+> **Use underscores, not hyphens, in tag names.** Taskwarrior parses `+blocked-on-merge` as `+blocked` AND `-on-merge` (the `-` mid-token triggers exclude-filter syntax), silently dropping the tag and appending the literal token to the description. Quoting does not help. Underscores or camelCase are safe.
 
 ## GitHub-mode detection
 

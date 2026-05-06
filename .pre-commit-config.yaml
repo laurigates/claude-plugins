@@ -27,3 +27,9 @@ repos:
         language: system
         files: '(SKILL|skill)\.md$'
         pass_filenames: false
+      - id: check-taskwarrior-tag-syntax
+        name: check taskwarrior tag examples (issue #1237)
+        entry: ./scripts/check-taskwarrior-tag-syntax.sh
+        language: script
+        files: '^taskwarrior-plugin/.*\.md$'
+        pass_filenames: false
