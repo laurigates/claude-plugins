@@ -23,7 +23,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.18.0",
+      "version": "2.18.1",
       "keywords": [
         "agents",
         "configuration",
@@ -177,7 +177,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.20.2",
+      "version": "1.21.0",
       "keywords": [
         "infrastructure",
         "standards",
@@ -355,7 +355,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.0.0",
+      "version": "2.1.0",
       "keywords": [
         "hooks",
         "automation",
