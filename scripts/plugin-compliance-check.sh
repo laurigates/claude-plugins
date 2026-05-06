@@ -179,6 +179,42 @@ check_skill_frontmatter() {
       issues+=("❌ ${plugin}/${skill_name}: model: haiku is disallowed — use sonnet (floor) or opus")
       has_errors=true
     fi
+
+    # Regression: unquoted args:/argument-hint: values that contain `[ ... ]`
+    # flow sequences or embedded colons break YAML parsing — `[a] [b]` raises
+    # "expected block end, but found '['", and `<x> --foo "type(scope): bar"`
+    # raises "mapping values are not allowed here". When YAML parsing fails,
+    # Claude Code falls back to the file body for the description, and the
+    # skill autocompletes under its namespace prefix instead of the short form
+    # (16 skills affected before this fix). A single unquoted `[foo]` parses
+    # but yields a list instead of a string, also wrong.
+    local yaml_err
+    yaml_err=$(python3 - "$skill_file" <<'PY' 2>&1 || true)
+import sys, yaml
+path = sys.argv[1]
+with open(path) as fh:
+    content = fh.read()
+if not content.startswith('---'):
+    sys.exit(0)
+parts = content.split('---', 2)
+if len(parts) < 3:
+    sys.exit(0)
+try:
+    fm = yaml.safe_load(parts[1]) or {}
+except Exception as e:
+    print(f"PARSE_ERROR: {str(e).splitlines()[0]}")
+    sys.exit(0)
+for field in ('args', 'argument-hint'):
+    if field in fm and not isinstance(fm[field], str):
+        print(f"WRONG_TYPE: {field} parses as {type(fm[field]).__name__}, not str — quote the value")
+PY
+    if [ -n "$yaml_err" ]; then
+      while IFS= read -r line; do
+        [ -z "$line" ] && continue
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md frontmatter ${line}")
+      done <<< "$yaml_err"
+      has_errors=true
+    fi
   done
 
   if $has_errors; then

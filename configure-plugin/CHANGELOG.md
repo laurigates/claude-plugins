@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.21.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.20.2...configure-plugin-v1.21.0) (2026-05-06)
+
+
+### Features
+
+* **configure-plugin:** add --exhaustive flag to configure-claude-plugins ([#1251](https://github.com/laurigates/claude-plugins/issues/1251)) ([ba25a76](https://github.com/laurigates/claude-plugins/commit/ba25a76b2b9097bba951f4e8635d15f01863c126))
+
+
+### Documentation
+
+* **agent-patterns-plugin:** document sub-agent constraint when spawning teams ([#1247](https://github.com/laurigates/claude-plugins/issues/1247)) ([bc49bde](https://github.com/laurigates/claude-plugins/commit/bc49bde048adce60b28966144b4cc90129906107))
+
 ## [1.20.2](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.20.1...configure-plugin-v1.20.2) (2026-04-29)
 
 

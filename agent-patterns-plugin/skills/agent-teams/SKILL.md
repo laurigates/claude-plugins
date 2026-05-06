@@ -10,7 +10,7 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-03-03
-modified: 2026-05-04
+modified: 2026-05-06
 reviewed: 2026-04-25
 ---
 
@@ -27,6 +27,36 @@ reviewed: 2026-04-25
 | Background tasks need progress reporting | Agent output feeds directly into next step |
 | Complex workflows benefit from task coordination | Simple, bounded, isolated execution |
 | Independent changes to the same codebase (with worktrees) | Context sharing is fine and efficient |
+
+## Sub-Agent Caveat: Spawn Teams from the Main Thread
+
+`TeamCreate`, `Agent`, and the related parallel-spawn tools may not be present in a **sub-agent's** tool surface, even if the parent conversation has them. A sub-agent designed to orchestrate its own team can silently degrade to sequential single-thread execution — same content, much longer wall-clock — without surfacing the failure until its post-completion summary.
+
+**Authoring guidance:**
+
+| Situation | Recommended pattern |
+|-----------|---------------------|
+| Fan-out from the main conversation | Spawn the team / parallel `Agent` calls directly — full tool surface available |
+| Sub-agent orchestrating its own team | Avoid by design when possible: split the work so the main thread does the fan-out |
+| Sub-agent must orchestrate a team | Detect tool availability up front; report sequential fallback as a first-class outcome |
+
+**Detection contract for coordinating sub-agents:**
+
+Brief the orchestrating sub-agent to verify before dispatching:
+
+```
+1. Confirm Agent / TeamCreate are callable. If unavailable (e.g. ToolSearch
+   does not surface them, or invocation returns "tool not found"), do NOT
+   silently fall back.
+2. Report the constraint as the first line of the final summary:
+   "Parallel fan-out unavailable in this sandbox; executed sequentially."
+3. Continue sequentially with the same input contract — outputs should be
+   identical in content, only longer in wall-clock.
+```
+
+The wall-clock cost is real: a 5-way fan-out that degrades to sequential takes ~5× longer. Plan top-level orchestration in the main conversation when you can; reserve sub-agent orchestrators for cases where the team's outputs do not need to feed back into the main thread.
+
+> Evidence: a Phase 2 portability-audit dispatch instructed a coordinating sub-agent to spawn 5 parallel auditors via `Agent`; the `Agent` tool was not registered in the sub-agent's sandbox. Output was equivalent but wall-clock was much longer than designed, and the failure surfaced only in the post-completion note.
 
 ## Core Concepts
 

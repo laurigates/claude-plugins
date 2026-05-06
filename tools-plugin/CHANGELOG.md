@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.8.1](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.8.0...tools-plugin-v2.8.1) (2026-05-06)
+
+
+### Bug Fixes
+
+* **plugins:** quote args/argument-hint values to fix skill autocomplete ([#1254](https://github.com/laurigates/claude-plugins/issues/1254)) ([1874cff](https://github.com/laurigates/claude-plugins/commit/1874cfff8b724819bea6d9604b654cadf10b8038))
+
 ## [2.8.0](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.7.2...tools-plugin-v2.8.0) (2026-05-04)
 
 

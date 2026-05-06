@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.5](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.7.4...github-actions-plugin-v1.7.5) (2026-05-06)
+
+
+### Bug Fixes
+
+* **plugins:** quote args/argument-hint values to fix skill autocomplete ([#1254](https://github.com/laurigates/claude-plugins/issues/1254)) ([1874cff](https://github.com/laurigates/claude-plugins/commit/1874cfff8b724819bea6d9604b654cadf10b8038))
+
 ## [1.7.4](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.7.3...github-actions-plugin-v1.7.4) (2026-04-25)
 
 

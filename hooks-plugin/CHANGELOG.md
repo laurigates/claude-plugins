@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.1.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.0.0...hooks-plugin-v2.1.0) (2026-05-06)
+
+
+### Features
+
+* **configure-plugin:** add --exhaustive flag to configure-claude-plugins ([#1251](https://github.com/laurigates/claude-plugins/issues/1251)) ([ba25a76](https://github.com/laurigates/claude-plugins/commit/ba25a76b2b9097bba951f4e8635d15f01863c126))
+
+
+### Bug Fixes
+
+* **hooks-plugin:** exclude root-level vendor paths and long banner runs from task-completeness ([#1253](https://github.com/laurigates/claude-plugins/issues/1253)) ([573f9eb](https://github.com/laurigates/claude-plugins/commit/573f9eb0b61bf24b0759c0d901f9a7e0524c4bdc))
+
 ## [2.0.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v1.16.10...hooks-plugin-v2.0.0) (2026-05-04)
 
 

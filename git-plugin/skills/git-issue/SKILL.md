@@ -9,7 +9,7 @@ description: |
   issue, fix issue #N, pick issues to tackle, batch-process several issues
   in parallel, or spin up PRs from a prioritized issue list.
 args: "[issue-numbers...] [--auto] [--filter <label>] [--limit <n>] [--parallel]"
-argument-hint: [issue-numbers...] [--auto] [--filter <label>] [--limit <n>] [--parallel]
+argument-hint: "[issue-numbers...] [--auto] [--filter <label>] [--limit <n>] [--parallel]"
 disable-model-invocation: true
 name: git-issue
 ---
