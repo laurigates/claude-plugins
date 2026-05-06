@@ -3,8 +3,8 @@ created: 2025-12-16
 modified: 2026-04-25
 reviewed: 2026-04-25
 allowed-tools: Task, TodoWrite
-args: [--api] [--readme] [--changelog]
-argument-hint: [--api] [--readme] [--changelog]
+args: "[--api] [--readme] [--changelog]"
+argument-hint: "[--api] [--readme] [--changelog]"
 description: |
   Generate or update project documentation from code annotations, docstrings, type signatures,
   and git history. Use when the user wants to generate API reference docs, update the README

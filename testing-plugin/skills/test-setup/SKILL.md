@@ -9,8 +9,8 @@ description: |
   test directories, add pre-commit hooks, create GitHub Actions test
   workflows, wire up Codecov coverage reporting, or add test and coverage
   badges to the README.
-args: [--coverage] [--ci <github|gitlab|circleci>]
-argument-hint: [--coverage] [--ci <github|gitlab|circleci>]
+args: "[--coverage] [--ci <github|gitlab|circleci>]"
+argument-hint: "[--coverage] [--ci <github|gitlab|circleci>]"
 name: test-setup
 ---
 

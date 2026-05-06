@@ -4,7 +4,7 @@ modified: 2026-05-05
 reviewed: 2026-05-05
 allowed-tools: Bash(gh pr checks *), Bash(gh pr view *), Bash(gh pr diff *), Bash(gh run view *), Bash(gh run list *), Bash(gh api *), Bash(gh repo view *), Bash(gh issue create *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git pull *), Bash(pre-commit *), Bash(npm run *), Bash(uv run *), Bash(bash *), Read, Edit, Write, Grep, Glob, TodoWrite, Task, mcp__github__pull_request_read, mcp__github__add_reply_to_pull_request_comment, mcp__github__resolve_review_thread, mcp__github__pull_request_review_write, mcp__github__issue_write
 args: "[pr-number] [--commit] [--push]"
-argument-hint: [pr-number] [--commit] [--push]
+argument-hint: "[pr-number] [--commit] [--push]"
 disable-model-invocation: true
 description: |
   Review PR workflow results and reviewer comments, then address substantive
