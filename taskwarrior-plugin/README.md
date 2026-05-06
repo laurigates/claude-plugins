@@ -15,7 +15,9 @@ GitHub issues are the system of record for work the team should see. Taskwarrior
 | Cost to read 50 items | 50 API calls or rate limit | Single `task export \| jq` |
 | Discovery surface | GitHub UI | Agent-queryable shell |
 
-Both systems stay in sync via UDAs (`ghid`, `ghpr`) and tags (`+gh`, `+pr-ready`, `+blocked-on-merge`). This plugin's skills detect GitHub remotes automatically and offer the linkage; repositories without a remote operate in local-only mode.
+Both systems stay in sync via UDAs (`ghid`, `ghpr`) and tags (`+gh`, `+pr_ready`, `+blocked_on_merge`). This plugin's skills detect GitHub remotes automatically and offer the linkage; repositories without a remote operate in local-only mode.
+
+> **Tag-naming note**: hyphens in taskwarrior tags are silently parsed as exclude-filters (`+blocked-on-merge` becomes `+blocked` AND `-on-merge`), so the tag never lands. Use underscores (or camelCase) — see [`skills/task-add/SKILL.md`](skills/task-add/SKILL.md#tag-naming-gotcha).
 
 ## Skills
 
@@ -64,9 +66,9 @@ Taskwarrior UDAs are declared in `~/.taskrc`. On first use, `task-add` prompts t
 | `+fr` | Feature request |
 | `+re` | Research task |
 | `+gh` | Linked to a GitHub issue or PR |
-| `+pr-ready` | Implementation done, open PR, waiting on merge |
-| `+needs-review` | Ready for review |
-| `+blocked-on-merge` | Waiting on another PR to merge |
+| `+pr_ready` | Implementation done, open PR, waiting on merge |
+| `+needs_review` | Ready for review |
+| `+blocked_on_merge` | Waiting on another PR to merge |
 | `+blocked` | Blocked on external factor |
 
 ## GitHub-mode detection

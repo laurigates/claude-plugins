@@ -242,6 +242,23 @@ check_skill_body() {
         has_errors=true
       fi
     fi
+
+    # Regression: taskwarrior parses hyphens in tag names as exclude-filters
+    # (`+blocked-on-merge` becomes `+blocked` AND `-on-merge`), so the tag
+    # silently never lands. Skills must use underscores (`+blocked_on_merge`)
+    # in prescriptive contexts — table rows and list items. Prose mentions
+    # within a gotcha callout are allowed because those start with `**` or `>`.
+    # See issue #1237.
+    if [ "$plugin" = "taskwarrior-plugin" ]; then
+      local bad_tag_lines
+      bad_tag_lines=$(grep -nE '^(\|.*|- .*)\+(pr-ready|blocked-on-merge|needs-review|bulk-task)' "$skill_file" || true)
+      if [ -n "$bad_tag_lines" ]; then
+        while IFS= read -r hit; do
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md prescribes a hyphenated taskwarrior tag at line ${hit%%:*} — silently parsed as exclude-filter; use underscore form like '+blocked_on_merge' (issue #1237)")
+        done <<< "$bad_tag_lines"
+        has_errors=true
+      fi
+    fi
   done < <(find "$skills_dir" -type f \( -iname "SKILL.md" -o -iname "skill.md" \) -print0 2>/dev/null)
 
   if $has_errors; then
