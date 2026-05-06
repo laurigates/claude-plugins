@@ -3,8 +3,8 @@ created: 2025-12-16
 modified: 2026-04-25
 reviewed: 2026-04-25
 allowed-tools: Read, Bash(git *), mcp__github__get_pull_request, mcp__github__list_issues, TodoWrite
-args: [resource-name] [deployment-type]
-argument-hint: [resource-name] [deployment-type]
+args: "[resource-name] [deployment-type]"
+argument-hint: "[resource-name] [deployment-type]"
 disable-model-invocation: true
 description: |
   Generate professional deployment handoff documentation for a deployed service or resource,

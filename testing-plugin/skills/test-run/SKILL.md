@@ -3,8 +3,8 @@ created: 2025-12-16
 modified: 2026-04-25
 reviewed: 2026-04-25
 allowed-tools: Task, TodoWrite
-args: [test-pattern] [--coverage] [--watch]
-argument-hint: [test-pattern] [--coverage] [--watch]
+args: "[test-pattern] [--coverage] [--watch]"
+argument-hint: "[test-pattern] [--coverage] [--watch]"
 description: |
   Universal test runner that auto-detects and runs the appropriate testing
   framework (pytest, vitest, jest, cargo test, go test). Use when the user

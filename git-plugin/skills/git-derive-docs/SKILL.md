@@ -6,7 +6,7 @@ allowed-tools: Bash(git log *), Bash(git shortlog *), Bash(git diff *), Bash(git
                Bash(git show *), Bash(git rev-list *), Bash(git diff-tree *),
                Bash(git status *), Read, Grep, Glob, Edit, Write, TodoWrite
 args: "[--rules] [--prd] [--adr] [--prp] [--all] [--since=<date>] [--depth=<N>]"
-argument-hint: [--rules] [--prd] [--adr] [--prp] [--all] [--since=<date>] [--depth=<N>]
+argument-hint: "[--rules] [--prd] [--adr] [--prp] [--all] [--since=<date>] [--depth=<N>]"
 disable-model-invocation: true
 description: |
   Analyze git commit history to derive undocumented rules, PRDs, ADRs, and

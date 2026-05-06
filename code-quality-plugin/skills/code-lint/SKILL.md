@@ -5,7 +5,7 @@ reviewed: 2026-04-25
 allowed-tools: Bash(ruff *), Bash(eslint *), Bash(rustfmt *), Bash(gofmt *), Bash(prettier *), Read, SlashCommand
 model: sonnet
 args: "[path] [--fix] [--format]"
-argument-hint: [path] [--fix] [--format]
+argument-hint: "[path] [--fix] [--format]"
 description: |
   Universal linter that auto-detects and runs the appropriate linting tools
   for the project's language. Use when the user asks to lint the code, run
