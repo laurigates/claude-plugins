@@ -1,5 +1,9 @@
 # Git worktrees created by agent workflows
 /worktrees/
+.claude/worktrees/
+
+# Claude Code runtime state
+.claude/scheduled_tasks.lock
 
 # Python
 __pycache__/
