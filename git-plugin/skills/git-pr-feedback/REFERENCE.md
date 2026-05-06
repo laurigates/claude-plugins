@@ -191,6 +191,86 @@ Deferred to #<issue> — <one-line reason>.
 
 Then resolve the thread (the deferral itself is the resolution).
 
+## Multi-PR Subagent Prompt
+
+Used by Step 1A when `--all` is passed. The orchestrator dispatches one subagent per actionable PR via the `Task` tool with `isolation: "worktree"`. Substitute the placeholders (`<owner>`, `<repo>`, `<n>`, `<head-ref>`) before calling `Task`.
+
+### Prompt template
+
+```
+You are addressing review feedback for ONE pull request inside a fresh git worktree.
+
+Repository: <owner>/<repo>
+PR number: #<n>
+PR head branch: <head-ref>
+
+Constraints (the orchestrator handles these instead — do NOT do them yourself):
+- Do NOT git push.
+- Do NOT post replies via the GitHub MCP tools.
+- Do NOT resolve review threads.
+- Do NOT re-request reviewers.
+
+Steps:
+
+1. You start in an isolated worktree on a fresh branch. Switch to the PR branch:
+     git fetch origin <head-ref>
+     git switch <head-ref>
+     git pull --ff-only origin <head-ref>
+   If `--ff-only` fails (branch diverged), abort with a `blocked: branch-out-of-sync` entry in your final report.
+
+2. Run the single-PR flow of the `git-pr-feedback` skill (Steps 1–4 of SKILL.md) for PR #<n> in <owner>/<repo>:
+   - Use scripts/fetch-pr-data.sh to gather all PR data.
+   - Categorise feedback (Blocking / Substantive / Suggestion / Question / Nitpick).
+   - Make file edits and commits inside this worktree, grouping related fixes.
+   - For accepted or adapted suggestion blocks, record co-author trailers.
+   - For out-of-scope feedback, file follow-up issues per Step 3a and capture the issue number.
+
+3. For each actionable thread, draft (but do NOT post) a reply text using the templates in REFERENCE.md "Reply Templates". When the reply needs to reference the resolving commit SHA, write the literal placeholder `{{SHA}}` — the orchestrator substitutes the pushed SHA before posting.
+
+4. Stop. Do NOT push, reply, or resolve.
+
+5. Return your final message as a single fenced JSON block matching the schema below. The orchestrator parses it programmatically; freeform prose outside the block is ignored.
+
+```json
+{
+  "pr": <n>,
+  "branch": "<head-ref>",
+  "worktree_path": "<absolute path to your worktree>",
+  "commits": [
+    {"sha": "<full-sha>", "summary": "<one-line>"}
+  ],
+  "co_authors": ["<Name> <email>"],
+  "addressed": [
+    {
+      "thread_id": "<PRRT_… node id>",
+      "database_id": <integer top-level comment databaseId>,
+      "action": "fix|accept|adapt|defer|answer|decline",
+      "reply": "<reply text, may contain {{SHA}}>",
+      "resolve": true
+    }
+  ],
+  "deferred_issues": [<issue number>],
+  "blockers": ["<one-line description of any blocker>"]
+}
+```
+
+Edge cases:
+- No actionable threads found: return an empty `addressed[]` and `commits[]` and exit cleanly — no error.
+- A thread the reviewer asked to keep open: include it with `"resolve": false`.
+- A nitpick declined with reasoning: include it with `"action": "decline"`, `"resolve": true`, and the explanation in `reply`.
+```
+
+### Orchestrator handling of subagent output
+
+| Subagent return | Orchestrator action |
+|-----------------|---------------------|
+| Valid JSON, `commits[]` non-empty, no `blockers[]` | `git push origin <branch>` from main checkout, capture the resolving SHA, post replies (substituting `{{SHA}}`), resolve threads where `resolve: true`, re-request reviewers per Step 5a |
+| Valid JSON, `commits[]` empty | Skip push and SHA capture; post any replies (substituting nothing), resolve only threads where `resolve: true` and the reply does not contain `{{SHA}}` |
+| Valid JSON with `blockers[]` | Surface blockers in the summary; do not push partial work; do not resolve threads |
+| Invalid JSON | Surface raw output in the summary as `blocked: parse-error` |
+
+Worktrees share the underlying `.git/` of the main repo, so commits made by the subagent on `<head-ref>` are already visible from the main checkout. The orchestrator never needs to `cd` into the subagent's worktree to push.
+
 ## Summary Report Template
 
 ```markdown
@@ -232,3 +312,30 @@ Then resolve the thread (the deferral itself is the resolution).
 - [ ] Monitor CI for new run
 - [ ] Track follow-up issue #<n>
 ```
+
+### Multi-PR Rollup (--all)
+
+When `--all` was passed, prepend a rollup section above the per-PR sections:
+
+```markdown
+## Multi-PR Rollup
+
+| Metric | Count |
+|--------|-------|
+| PRs dispatched | N |
+| PRs succeeded (pushed) | N |
+| PRs blocked | N |
+| Total commits pushed | N |
+| Total threads resolved | N |
+| Total replies posted | N |
+| Follow-up issues filed | N |
+
+### Per-PR results
+| PR | Status | Commits | Replies | Resolved | Blockers |
+|----|--------|---------|---------|----------|----------|
+| #123 | ✅ pushed | 2 | 4 | 4 | — |
+| #145 | ⚠ blocked | 1 | 0 | 0 | branch-out-of-sync |
+| #160 | ✅ pushed (no commits — questions only) | 0 | 2 | 1 | — |
+```
+
+Then emit one of the per-PR templates above for each dispatched PR, scoped to that PR's threads and commits.
