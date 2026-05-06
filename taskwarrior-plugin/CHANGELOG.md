@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.3](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.2.2...taskwarrior-plugin-v1.2.3) (2026-05-06)
+
+
+### Bug Fixes
+
+* **taskwarrior-plugin:** document hyphen tag-parser quirk and switch to underscores ([#1248](https://github.com/laurigates/claude-plugins/issues/1248)) ([5b3ba02](https://github.com/laurigates/claude-plugins/commit/5b3ba024caf0e2baa1ea9331adc81598427f47e9))
+
 ## [1.2.2](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.2.1...taskwarrior-plugin-v1.2.2) (2026-04-29)
 
 
