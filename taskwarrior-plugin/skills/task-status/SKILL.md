@@ -11,8 +11,8 @@ args: "[--mine] [--blocked] [--stale=N] [--project=<name>] [--all]"
 allowed-tools: Bash(task *), Bash(git config *), Bash(git rev-parse *), Bash(gh auth *), Bash(gh pr *), Bash(jq *), Read, TodoWrite
 argument-hint: optional filters
 created: 2026-04-24
-modified: 2026-04-29
-reviewed: 2026-04-29
+modified: 2026-05-06
+reviewed: 2026-05-06
 ---
 
 # /taskwarrior:task-status
@@ -40,7 +40,7 @@ Read-only status report on the coordination queue. Strictly uses `export | jq` �
 Parse `$ARGUMENTS`:
 
 - `--mine` — limit to tasks where `assigned:` matches current user / agent
-- `--blocked` — only tasks with `+blocked` / `+blocked-on-merge` or active `depends:`
+- `--blocked` — only tasks with `+blocked` / `+blocked_on_merge` or active `depends:`
 - `--stale=N` — highlight tasks modified > N days ago
 - `--project=<name>` — override the auto-detected project filter
 - `--all` — opt out of project filtering and report across every project
@@ -108,7 +108,7 @@ gh issue view "$GHID" --json number,state | jq
 Flag:
 
 - Task open, issue closed — `drift: stale-open`
-- Task `+pr-ready` but PR not in `OPEN` — `drift: pr-state-mismatch`
+- Task `+pr_ready` but PR not in `OPEN` — `drift: pr-state-mismatch`
 
 ### Step 4: PR status fold-in (GitHub mode)
 
@@ -117,7 +117,7 @@ gh pr status --json number,title,state,statusCheckRollup | jq
 ```
 
 Join by `ghpr` UDA. Annotate each matched task with its PR's check
-rollup (`SUCCESS` / `FAILURE` / `PENDING`). Tasks tagged `+pr-ready`
+rollup (`SUCCESS` / `FAILURE` / `PENDING`). Tasks tagged `+pr_ready`
 with a green PR are the highest-value drain candidates.
 
 ### Step 5: Render

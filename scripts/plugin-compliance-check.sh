@@ -242,6 +242,25 @@ check_skill_body() {
         has_errors=true
       fi
     fi
+
+    # Regression: hyphens in taskwarrior tags are silently dropped — `+foo-bar`
+    # parses as `+foo` AND `-bar` (taskwarrior's exclude-filter syntax) leaving
+    # tags: null. Skill examples that use hyphenated tags teach users patterns
+    # that don't actually work. Use underscores or camelCase. (issue #1237)
+    # Skip lines that explain the gotcha (they intentionally show the broken form).
+    if [ "$plugin" = "taskwarrior-plugin" ]; then
+      local tag_hits
+      tag_hits=$(grep -nE '\+[a-z][a-z0-9_]*-[a-z]' "$skill_file" 2>/dev/null \
+        | grep -viE 'silently|swallowed|gotcha|hyphen|broken|exclude-filter' \
+        || true)
+      if [ -n "$tag_hits" ]; then
+        while IFS= read -r hit; do
+          local line_no="${hit%%:*}"
+          issues+=("❌ ${plugin}/${skill_name}: hyphenated taskwarrior tag at SKILL.md:${line_no} — use underscores (issue #1237)")
+        done <<< "$tag_hits"
+        has_errors=true
+      fi
+    fi
   done < <(find "$skills_dir" -type f \( -iname "SKILL.md" -o -iname "skill.md" \) -print0 2>/dev/null)
 
   if $has_errors; then

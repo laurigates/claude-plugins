@@ -11,8 +11,8 @@ args: "[description] [project:<name>] [--no-project]"
 allowed-tools: Bash(task *), Bash(git config *), Bash(git rev-parse *), Bash(gh auth *), Bash(gh issue *), Bash(gh api *), Read, TodoWrite
 argument-hint: short task description
 created: 2026-04-24
-modified: 2026-04-29
-reviewed: 2026-04-29
+modified: 2026-05-06
+reviewed: 2026-05-06
 ---
 
 # /taskwarrior:task-add
@@ -44,7 +44,9 @@ Parse `$ARGUMENTS`:
 - Optional inline `project:<name>` to override the auto-detected project.
 - Optional `--no-project` to file the task without any project (cross-cutting work).
 - Optional inline `bpid:WO-012` / `bpdoc:docs/wo/012.md` / `bpms:M6` / `ghid:145` / `ghpr:99` fields.
-- Optional tags: `+wo`, `+prp`, `+fr`, `+re`, `+gh`, `+pr-ready`, `+needs-review`, `+blocked-on-merge`, `+blocked`.
+- Optional tags: `+wo`, `+prp`, `+fr`, `+re`, `+gh`, `+pr_ready`, `+needs_review`, `+blocked_on_merge`, `+blocked`.
+
+> **Tag naming gotcha.** Hyphens silently break tag parsing. `+blocked-on-merge` is read as `+blocked` AND `-on-merge` (the `-` is taskwarrior's exclude-filter syntax, even mid-token), so the tag never lands and the literal `+blocked-on-merge` ends up appended to the description. Quoting (`'+blocked-on-merge'`) does not help. Use underscores or camelCase: `+blocked_on_merge`, `+blockedOnMerge`.
 
 ### Project resolution
 
@@ -181,8 +183,8 @@ Print:
 | `+fr` | Feature request |
 | `+re` | Research |
 | `+gh` | Linked to GitHub |
-| `+pr-ready` | Open PR waiting |
-| `+blocked-on-merge` | Waiting on another PR |
+| `+pr_ready` | Open PR waiting |
+| `+blocked_on_merge` | Waiting on another PR |
 
 ## Related
 
