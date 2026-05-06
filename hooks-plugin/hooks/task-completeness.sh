@@ -34,11 +34,19 @@ fi
 # (this very plugin's docs do). Vendor / generated paths are excluded for
 # the same reason — they are not the author's working code.
 is_excluded() {
+    # Each vendor/generated pattern is written twice — root-level (foo/*)
+    # and nested (*/foo/*) — because `git diff --name-only` returns paths
+    # relative to repo root, so a top-level `node_modules/` would not
+    # match `*/node_modules/*`.
     case "$1" in
         *.md|*.mdx|*.rst|*.txt) return 0 ;;
         *.min.js|*.min.css|*.min.map) return 0 ;;
-        */node_modules/*|*/.git/*|*/vendor/*|*/dist/*|*/build/*) return 0 ;;
-        */.obsidian/plugins/*) return 0 ;;
+        node_modules/*|*/node_modules/*) return 0 ;;
+        .git/*|*/.git/*) return 0 ;;
+        vendor/*|*/vendor/*) return 0 ;;
+        dist/*|*/dist/*) return 0 ;;
+        build/*|*/build/*) return 0 ;;
+        .obsidian/plugins/*|*/.obsidian/plugins/*) return 0 ;;
         *) return 1 ;;
     esac
 }
@@ -86,13 +94,16 @@ fi
 #
 # Real merge markers come paired (<<<<<<< … ======= … >>>>>>>), so any
 # conflict — fully unresolved or partially resolved — leaves at least
-# one of <<<<<<< or >>>>>>> behind. Standalone `=======` lines have too
+# one of <<<<<<< or >>>>>>> behind. Match exactly 7 marker characters
+# followed by a non-marker character or end-of-line — not 7+ — so long
+# decorative banners (e.g. 42-char `>` runs used as log delimiters in
+# minified code) are not flagged. Standalone `=======` lines have too
 # many legitimate non-conflict uses (decorative dividers in fenced code
 # blocks, console-output examples, ASCII art) and were the dominant
 # false-positive signal, so they are intentionally excluded.
 CONFLICT_FILES=()
 for file in "${RELEVANT_FILES[@]}"; do
-    if grep -lE '^(<{7}|>{7})' "$CWD/$file" >/dev/null 2>&1; then
+    if grep -lE '^<{7}([^<]|$)|^>{7}([^>]|$)' "$CWD/$file" >/dev/null 2>&1; then
         CONFLICT_FILES+=("$file")
     fi
 done

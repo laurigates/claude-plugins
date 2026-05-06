@@ -238,6 +238,47 @@ git -C "$TMPDIR" add orphan-close.js
 output=$(run_hook_output "$TMPDIR")
 assert_contains "orphan >>>>>>> marker still emits a block decision" '"decision"' "$output"
 
+# Regression: long decorative banners of `<` or `>` (>7 consecutive chars)
+# must NOT be flagged. They appear in vendored minified code — e.g. the
+# Obsidian Tasks plugin's main.js uses a 42-char `>` / `<` banner inside
+# a template literal in formatQueryForLogging() as a log delimiter.
+reset_repo
+cat > "$TMPDIR/banner.js" <<'BANNER'
+return `
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+${this.source}
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+`
+BANNER
+git -C "$TMPDIR" add banner.js
+output=$(run_hook_output "$TMPDIR")
+assert_not_contains "long >7 banner does NOT emit a block decision" '"decision"' "$output"
+
+# Regression: top-level vendored directories (e.g. `.obsidian/plugins/`
+# at the repo root) must be excluded. `git diff --name-only` returns
+# repo-root-relative paths, so a `*/foo/*` pattern that requires a
+# leading slash never matches a top-level path.
+reset_repo
+mkdir -p "$TMPDIR/.obsidian/plugins/some-plugin"
+cat > "$TMPDIR/.obsidian/plugins/some-plugin/main.js" <<'PLUGIN_CONFLICT'
+<<<<<<< HEAD
+local
+=======
+remote
+>>>>>>> main
+PLUGIN_CONFLICT
+git -C "$TMPDIR" add .obsidian/plugins/some-plugin/main.js
+output=$(run_hook_output "$TMPDIR")
+assert_not_contains "top-level .obsidian/plugins/ is excluded" '"decision"' "$output"
+
+# Same gap class for the other vendor patterns — top-level node_modules/.
+reset_repo
+mkdir -p "$TMPDIR/node_modules/pkg"
+echo "console.log('vendored');" > "$TMPDIR/node_modules/pkg/index.js"
+git -C "$TMPDIR" add node_modules/pkg/index.js
+output=$(run_hook_output "$TMPDIR")
+assert_not_contains "top-level node_modules/ is excluded from debug check" '"decision"' "$output"
+
 # ── debugging artifacts ───────────────────────────────────────────────────────
 echo ""
 echo "debugging artifact detection:"
