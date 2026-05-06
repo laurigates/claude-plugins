@@ -73,9 +73,14 @@ lint-health:
 lint-infra:
     ./scripts/infra-compliance-check.sh
 
+# Lint taskwarrior-plugin docs for hyphenated tag names (taskwarrior parser quirk)
+[group: "lint"]
+lint-taskwarrior-tags:
+    ./scripts/lint-taskwarrior-tags.sh
+
 # Run all lint checks
 [group: "lint"]
-lint-all: lint-context-commands lint-compliance lint-health lint-infra
+lint-all: lint-context-commands lint-compliance lint-health lint-infra lint-taskwarrior-tags
 
 # Add all MCP servers and set up cclsp
 [group: "claude"]

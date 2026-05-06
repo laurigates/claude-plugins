@@ -5,16 +5,20 @@ on:
     paths:
       - '**/skills/**/SKILL.md'
       - '**/skills/**/skill.md'
+      - 'taskwarrior-plugin/**/*.md'
       - 'scripts/lint-context-commands.sh'
       - 'scripts/audit-skill-descriptions.py'
+      - 'scripts/lint-taskwarrior-tags.sh'
   push:
     branches:
       - main
     paths:
       - '**/skills/**/SKILL.md'
       - '**/skills/**/skill.md'
+      - 'taskwarrior-plugin/**/*.md'
       - 'scripts/lint-context-commands.sh'
       - 'scripts/audit-skill-descriptions.py'
+      - 'scripts/lint-taskwarrior-tags.sh'
 
 permissions:
   contents: read
@@ -33,3 +37,6 @@ jobs:
 
       - name: Audit skill descriptions for auto-invocation
         run: python3 scripts/audit-skill-descriptions.py --strict-all
+
+      - name: Lint taskwarrior-plugin docs for hyphenated tag names
+        run: ./scripts/lint-taskwarrior-tags.sh
