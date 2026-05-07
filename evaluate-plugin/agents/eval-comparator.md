@@ -10,13 +10,30 @@ tools: Read, Glob, Grep, Bash(cat *), Bash(find *), TodoWrite
 context: fork
 maxTurns: 12
 created: 2026-03-04
-modified: 2026-03-09
+modified: 2026-05-07
 reviewed: 2026-03-09
 ---
 
 # Eval Comparator Agent
 
 Blind comparison of two outputs to objectively determine which is better, without knowing which used the skill.
+
+## Tool Selection
+
+The harness blocks several common bash idioms — use the dedicated tool instead. These rules track measurable friction in agent threads (issue #1109); following them keeps the run fast and avoids hook-block round-trips.
+
+| Avoid | Use instead |
+|-------|-------------|
+| `find . -name '*.ts'` | `Glob(pattern="**/*.ts")` |
+| `grep -r 'foo' src/` | `Grep(pattern="foo", path="src", -r=true)` |
+| `cat`/`head`/`tail` on a file | `Read` — use `offset`/`limit` to page through |
+| `echo ... > file` / `cat > file` | `Write(file_path=..., content=...)` |
+| `git add .` / `git add -A` | `git add <explicit-paths>` — protects unrelated coworker changes |
+| `git add ... && git commit ...` | Two separate `Bash` calls — `git`'s `index.lock` does not survive `&&` |
+
+**Read before Edit/Write.** The harness tracks read-state per agent thread. Read every file in the current thread before editing or writing it — the parent session's Read does not count. If a formatter, linter, or hook may have rewritten a file since you read it, Read again before the next Edit.
+
+`Bash(cat *)` and `Bash(find *)` are retained in `tools:` for streaming oversized JSONL transcripts; prefer `Read` and `Glob` for everything else.
 
 ## Scope
 

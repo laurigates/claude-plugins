@@ -10,13 +10,30 @@ tools: Read, Glob, Grep, Bash(cat *), Bash(jq *), Bash(find *), TodoWrite
 context: fork
 maxTurns: 20
 created: 2026-03-04
-modified: 2026-03-09
+modified: 2026-05-07
 reviewed: 2026-03-09
 ---
 
 # Eval Analyzer Agent
 
 Analyze evaluation results to identify patterns and generate prioritized improvement suggestions.
+
+## Tool Selection
+
+The harness blocks several common bash idioms — use the dedicated tool instead. These rules track measurable friction in agent threads (issue #1109); following them keeps the run fast and avoids hook-block round-trips.
+
+| Avoid | Use instead |
+|-------|-------------|
+| `find . -name '*.ts'` | `Glob(pattern="**/*.ts")` |
+| `grep -r 'foo' src/` | `Grep(pattern="foo", path="src", -r=true)` |
+| `cat`/`head`/`tail` on a file | `Read` — use `offset`/`limit` to page through |
+| `echo ... > file` / `cat > file` | `Write(file_path=..., content=...)` |
+| `git add .` / `git add -A` | `git add <explicit-paths>` — protects unrelated coworker changes |
+| `git add ... && git commit ...` | Two separate `Bash` calls — `git`'s `index.lock` does not survive `&&` |
+
+**Read before Edit/Write.** The harness tracks read-state per agent thread. Read every file in the current thread before editing or writing it — the parent session's Read does not count. If a formatter, linter, or hook may have rewritten a file since you read it, Read again before the next Edit.
+
+`Bash(cat *)` and `Bash(find *)` are retained in `tools:` because eval pipelines stream JSONL transcripts that can exceed Read's token budget. Use `Read` with `offset`/`limit` for normal files and reach for `cat` only when streaming oversized JSONL.
 
 ## Scope
 

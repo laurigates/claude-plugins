@@ -6,13 +6,28 @@ description: Code refactoring specialist. Restructures code for improved readabi
 tools: Glob, Grep, LS, Read, Edit, Write, Bash(npm test *), Bash(npm run *), Bash(yarn test *), Bash(bun test *), Bash(pytest *), Bash(vitest *), Bash(cargo test *), Bash(git status *), Bash(git diff *), Bash(git log *), TodoWrite
 maxTurns: 20
 created: 2026-01-24
-modified: 2026-04-18
+modified: 2026-05-07
 reviewed: 2026-04-18
 ---
 
 # Refactor Agent
 
 Restructure code for improved quality while preserving external behavior. Makes targeted, safe transformations.
+
+## Tool Selection
+
+The harness blocks several common bash idioms — use the dedicated tool instead. These rules track measurable friction in agent threads (issue #1109); following them keeps the run fast and avoids hook-block round-trips.
+
+| Avoid | Use instead |
+|-------|-------------|
+| `find . -name '*.ts'` | `Glob(pattern="**/*.ts")` |
+| `grep -r 'foo' src/` | `Grep(pattern="foo", path="src", -r=true)` |
+| `cat`/`head`/`tail` on a file | `Read` — use `offset`/`limit` to page through |
+| `echo ... > file` / `cat > file` | `Write(file_path=..., content=...)` |
+| `git add .` / `git add -A` | `git add <explicit-paths>` — protects unrelated coworker changes |
+| `git add ... && git commit ...` | Two separate `Bash` calls — `git`'s `index.lock` does not survive `&&` |
+
+**Read before Edit/Write.** The harness tracks read-state per agent thread. Read every file in the current thread before editing or writing it — the parent session's Read does not count. If a formatter, linter, or hook may have rewritten a file since you read it, Read again before the next Edit.
 
 ## Scope
 
