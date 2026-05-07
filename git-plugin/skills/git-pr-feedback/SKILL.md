@@ -1,10 +1,10 @@
 ---
 created: 2026-01-30
-modified: 2026-05-05
-reviewed: 2026-05-05
-allowed-tools: Bash(gh pr checks *), Bash(gh pr view *), Bash(gh pr diff *), Bash(gh run view *), Bash(gh run list *), Bash(gh api *), Bash(gh repo view *), Bash(gh issue create *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git pull *), Bash(pre-commit *), Bash(npm run *), Bash(uv run *), Bash(bash *), Read, Edit, Write, Grep, Glob, TodoWrite, Task, mcp__github__pull_request_read, mcp__github__add_reply_to_pull_request_comment, mcp__github__resolve_review_thread, mcp__github__pull_request_review_write, mcp__github__issue_write
-args: "[pr-number] [--commit] [--push]"
-argument-hint: "[pr-number] [--commit] [--push]"
+modified: 2026-05-06
+reviewed: 2026-05-06
+allowed-tools: Bash(gh pr checks *), Bash(gh pr view *), Bash(gh pr diff *), Bash(gh run view *), Bash(gh run list *), Bash(gh api *), Bash(gh repo view *), Bash(gh issue create *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git pull *), Bash(git fetch *), Bash(pre-commit *), Bash(npm run *), Bash(uv run *), Bash(bash *), Read, Edit, Write, Grep, Glob, TodoWrite, Task, mcp__github__pull_request_read, mcp__github__add_reply_to_pull_request_comment, mcp__github__resolve_review_thread, mcp__github__pull_request_review_write, mcp__github__issue_write
+args: "[pr-number] [--commit] [--push] [--all] [--dry-run] [--limit N]"
+argument-hint: "[pr-number | --all] [--commit] [--push] [--dry-run] [--limit N]"
 disable-model-invocation: true
 description: |
   Review PR workflow results and reviewer comments, then address substantive
@@ -28,9 +28,21 @@ Parse these parameters from the command (all optional):
 
 | Parameter | Description |
 |-----------|-------------|
-| `$1` | PR number (if omitted, use PR of current branch; if no such PR, list actionable PRs) |
-| `--commit` | Create commit(s) after addressing feedback |
-| `--push` | Push changes after committing (implies --commit) |
+| `$1` | PR number (if omitted, use PR of current branch; if no such PR, list actionable PRs). Mutually exclusive with `--all`. |
+| `--commit` | Create commit(s) after addressing feedback. |
+| `--push` | Push changes after committing (implies `--commit`). |
+| `--all` | Address feedback on every actionable open PR. Dispatches one subagent per PR in an isolated worktree; the orchestrator pushes, replies, and resolves. Implies `--commit --push` unless `--dry-run` is set. Mutually exclusive with `$1`. |
+| `--dry-run` | With `--all`, print the dispatch plan and stop — no subagents spawned, no commits, no pushes. Ignored without `--all`. |
+| `--limit N` | Maximum concurrent subagents under `--all` (default `3`). Use a small number to stay under GitHub rate limits and avoid `[1m]`-model concurrency cascades (see [`skill-fork-context.md`](../../../.claude/rules/skill-fork-context.md)). |
+
+**Mode selection**:
+
+| Mode | Triggered when | Flow |
+|------|----------------|------|
+| Single-PR | No `--all` | Steps 1–7 below operate on one PR. |
+| Multi-PR | `--all` is passed | **Step 1A** dispatches subagents; the orchestrator finalises (push, reply, resolve, re-request) and writes a combined summary. Skip Steps 1–6. |
+
+If both `$1` and `--all` are given, error and stop with: `--all is mutually exclusive with a PR number argument.`
 
 ## When to Use This Skill
 
@@ -49,6 +61,8 @@ For feedback categorization, decision trees, commit format, and report templates
 ---
 
 ### Step 1: Determine PR and Gather All Data
+
+> If `--all` is set, **skip this step** and jump to **Step 1A: Multi-PR Mode** below.
 
 1. **Parse owner/repo** from the git remote URL.
 
@@ -94,6 +108,55 @@ For feedback categorization, decision trees, commit format, and report templates
 | Pending | Note status, focus on comments |
 
 If the GraphQL query fails with a rate limit error, wait 60 seconds and retry once.
+
+---
+
+### Step 1A: Multi-PR Mode (--all)
+
+Reached only when `--all` is passed. The orchestrator dispatches one subagent per actionable PR; subagents commit inside isolated worktrees but never push. The orchestrator handles all GitHub-side mutations.
+
+1. **Parse owner/repo** from the git remote URL.
+
+2. **List actionable PRs** with the bundled selector:
+   ```bash
+   bash ${CLAUDE_SKILL_DIR}/scripts/list-actionable-prs.sh <owner> <repo>
+   ```
+   The script returns a JSON array of open, non-draft PRs with unresolved review threads, failing/errored CI, or `CHANGES_REQUESTED`. If the array is empty, report `No PRs need attention.` and stop.
+
+3. **Print a compact dispatch table** (number, author, ci, unresolved, reviewDecision, head, title) so the user can see what is about to be processed.
+
+4. **`--dry-run` short-circuit**: if `--dry-run` was also passed, additionally print the per-PR subagent prompt that *would* be dispatched (one per row, using the template in [REFERENCE.md](REFERENCE.md) "Multi-PR Subagent Prompt"), then stop. No subagents spawn, no commits, no pushes.
+
+5. **Dispatch subagents**, capped at `--limit N` concurrent (default `3`). For each PR call the `Task` tool with:
+   - `subagent_type: "general-purpose"`
+   - `isolation: "worktree"` — each subagent gets its own git worktree
+   - `description`: `Address review feedback for PR #<n>`
+   - `prompt`: see [REFERENCE.md](REFERENCE.md) "Multi-PR Subagent Prompt" for the canonical template. The prompt must instruct the subagent to switch its worktree to the PR's `headRefName`, run the single-PR feedback flow with `--commit` (not `--push`), and return a structured JSON summary.
+
+   Dispatch one batch of `N` `Task` calls in a single message (per the parallel-dispatch contract). When all return, dispatch the next batch until the queue is empty.
+
+6. **Collect subagent results**. Each subagent returns JSON with: `pr`, `branch`, `worktree_path`, `commits[]`, `addressed[]` (each with `thread_id`, `database_id`, `action`, `reply`, `resolve`), `deferred_issues[]`, `co_authors[]`, `blockers[]`. Treat any subagent that fails to return parseable JSON as blocked — record its raw output and continue with the rest of the batch.
+
+7. **Orchestrator finalisation** — for each PR with successful commits, run sequentially (push and the GitHub mutation tools share the same rate-limit pool):
+   1. `git push origin <branch>` from the **main checkout** — worktrees share the underlying `.git/`, so commits made by the subagent are already visible by branch name. No `cd` into the subagent's worktree is required.
+   2. Capture the resolving SHA (`git rev-parse origin/<branch>` after the push).
+   3. For each `addressed[]` entry, post the reply via `mcp__github__add_reply_to_pull_request_comment`, substituting the resolving SHA into any `{{SHA}}` placeholder the subagent left in the reply text.
+   4. Resolve threads via `mcp__github__resolve_review_thread` per Step 6's rules (only when `resolve: true` AND the resolution criteria in [REFERENCE.md](REFERENCE.md) hold).
+   5. Re-request review per Step 5a's rules.
+
+8. **Skip Steps 2–6**. Go directly to **Step 7** with a combined summary that includes a per-PR section plus a top-level rollup: dispatched, succeeded, blocked, total threads resolved, total commits pushed.
+
+#### Failure handling
+
+| Subagent state | Orchestrator action |
+|----------------|---------------------|
+| Returned valid JSON, has commits, no blockers | Push + reply + resolve as above |
+| Returned valid JSON, no commits (only questions / declined nitpicks) | Skip push; still post replies and resolve declined nitpick threads |
+| Returned valid JSON, has `blockers[]` | Surface in the summary; do **not** push partial work — let the user decide |
+| Failed to return parseable JSON | Surface its raw output in the summary as `blocked: parse-error`; do nothing further for that PR |
+| Reported a merge conflict on `git pull --ff-only` | Surface in the summary as `blocked: branch-out-of-sync`; user resolves manually |
+
+A blocked subagent does not abort the whole batch; the orchestrator continues with the others.
 
 ---
 
@@ -205,7 +268,8 @@ Provide a summary table of feedback addressed, replies posted, threads resolved,
 | Context | Command / Tool |
 |---------|----------------|
 | All PR data (single query) | `bash ${CLAUDE_SKILL_DIR}/scripts/fetch-pr-data.sh <owner> <repo> <pr>` |
-| Actionable PRs (fallback selector) | `bash ${CLAUDE_SKILL_DIR}/scripts/list-actionable-prs.sh <owner> <repo>` |
+| Actionable PRs (selector / `--all` source) | `bash ${CLAUDE_SKILL_DIR}/scripts/list-actionable-prs.sh <owner> <repo>` |
+| Dispatch a per-PR subagent (`--all`) | `Task({subagent_type: "general-purpose", isolation: "worktree", prompt: <REFERENCE.md template>})` |
 | Failed check logs | `gh run view $ID --log-failed` |
 | Quick check status (fallback) | `gh pr checks $PR --json name,state,conclusion` |
 | Reply to a review comment | `mcp__github__add_reply_to_pull_request_comment` (commentId = `databaseId`) |
