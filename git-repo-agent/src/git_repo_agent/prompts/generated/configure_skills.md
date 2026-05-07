@@ -3291,9 +3291,10 @@ Check and configure Sentry error tracking integration against project standards.
 **CRITICAL**: Before configuring Sentry SDKs, verify latest versions:
 
 1. **@sentry/vue** / **@sentry/react**: Check [npm](https://www.npmjs.com/package/@sentry/vue)
-2. **@sentry/node**: Check [npm](https://www.npmjs.com/package/@sentry/node)
-3. **sentry-sdk** (Python): Check [PyPI](https://pypi.org/project/sentry-sdk/)
-4. **@sentry/vite-plugin**: Check [npm](https://www.npmjs.com/package/@sentry/vite-plugin)
+2. **@sentry/nextjs**: Check [npm](https://www.npmjs.com/package/@sentry/nextjs)
+3. **@sentry/node**: Check [npm](https://www.npmjs.com/package/@sentry/node)
+4. **sentry-sdk** (Python): Check [PyPI](https://pypi.org/project/sentry-sdk/)
+5. **@sentry/vite-plugin**: Check [npm](https://www.npmjs.com/package/@sentry/vite-plugin)
 
 Use WebSearch or WebFetch to verify current SDK versions before configuring Sentry.
 
@@ -3309,7 +3310,8 @@ Determine the project type to select the appropriate SDK and configuration:
 
 1. Read `.project-standards.yaml` for `project_type` field
 2. If not found, auto-detect:
-   - **frontend**: Has `package.json` with vue/react dependencies
+   - **nextjs**: Has `package.json` with `next` dependency (check for `@sentry/nextjs`)
+   - **frontend**: Has `package.json` with vue/react dependencies (without Next.js)
    - **node**: Has `package.json` with Node.js backend (express, fastify, etc.)
    - **python**: Has `pyproject.toml` or `requirements.txt`
 3. If `--type` flag is provided, use that value instead
@@ -3318,6 +3320,10 @@ Determine the project type to select the appropriate SDK and configuration:
 ### Step 2: Check SDK installation
 
 Check for Sentry SDK based on detected project type:
+
+**Next.js:**
+- `@sentry/nextjs` in package.json dependencies
+- `@sentry/profiling-node` (recommended for server profiling)
 
 **Frontend (Vue/React):**
 - `@sentry/vue` or `@sentry/react` in package.json dependencies
@@ -3337,10 +3343,24 @@ Check for Sentry SDK based on detected project type:
 Read the Sentry initialization files and check against the compliance tables in . Validate:
 
 1. DSN comes from environment variables (not hardcoded)
-2. Tracing sample rate is configured
-3. Source maps are enabled (frontend)
+2. Tracing sample rate is configured (different for prod vs dev)
+3. Source maps are enabled (frontend/Next.js)
 4. Init location is correct (Node.js: before other imports)
 5. Framework integration is enabled (Python)
+
+**Additional checks for Next.js projects:**
+
+6. `src/instrumentation.ts` exists with `register()` and `onRequestError` exports
+7. `src/instrumentation-client.ts` exists with client-side Sentry init
+8. `sentry.server.config.ts` and `sentry.edge.config.ts` exist at project root
+9. `next.config.mjs` wraps config with `withSentryConfig()`
+10. Tunnel route configured (`tunnelRoute: "/monitoring"`)
+11. Source maps hidden and deleted after upload (`hideSourceMaps`, `deleteSourcemapsAfterUpload`)
+12. `@sentry/profiling-node` listed in `serverExternalPackages`
+13. Error boundaries exist (`src/app/error.tsx`, `src/app/global-error.tsx`)
+14. Structured logging enabled (`enableLogs: true`)
+15. Sensitive header stripping in `beforeSend`
+16. Transaction filtering in `beforeSendTransaction` (drop health checks, static assets)
 
 
 ### Step 4: Run security checks
@@ -3400,10 +3420,14 @@ components:
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `SENTRY_DSN` | Sentry Data Source Name | Yes |
-| `SENTRY_ENVIRONMENT` | Environment name | Recommended |
-| `SENTRY_RELEASE` | Release version | Recommended |
+| `SENTRY_DSN` | Sentry Data Source Name (server-side) | Yes |
+| `NEXT_PUBLIC_SENTRY_DSN` | Sentry DSN for client-side (Next.js) | Next.js only |
+| `SENTRY_ENVIRONMENT` | Environment name (server-side) | Recommended |
+| `NEXT_PUBLIC_SENTRY_ENVIRONMENT` | Environment name (client-side, Next.js) | Next.js only |
+| `SENTRY_ORG` | Sentry organization slug | For source maps |
+| `SENTRY_PROJECT` | Sentry project slug | For source maps |
 | `SENTRY_AUTH_TOKEN` | Auth token for CI/CD | For source maps |
+| `NEXT_PUBLIC_SENTRY_SKIP_BUILD` | Skip Sentry webpack plugin in builds | Container builds |
 
 Never commit DSN or auth tokens. Use environment variables or secrets management.
 
@@ -3422,6 +3446,35 @@ For detailed configuration check tables, initialization templates, and CI/CD wor
 
 
 ## Configuration Check Tables
+
+
+### Next.js Configuration Checks
+
+| Check | Standard | Severity |
+|-------|----------|----------|
+| DSN from env (server) | `process.env.SENTRY_DSN` | FAIL if hardcoded |
+| DSN from env (client) | `process.env.NEXT_PUBLIC_SENTRY_DSN` | FAIL if hardcoded |
+| Server config | `sentry.server.config.ts` at root | FAIL if missing |
+| Edge config | `sentry.edge.config.ts` at root | WARN if missing |
+| Instrumentation hook | `src/instrumentation.ts` with `register()` | FAIL if missing |
+| Client instrumentation | `src/instrumentation-client.ts` | FAIL if missing |
+| withSentryConfig | `next.config.mjs` wraps with `withSentryConfig()` | FAIL if missing |
+| Tunnel route | `tunnelRoute: "/monitoring"` | WARN if missing |
+| Source maps hidden | `hideSourceMaps: true` | WARN if exposed |
+| Source maps deleted | `deleteSourcemapsAfterUpload: true` | WARN if retained |
+| Tracing | `tracesSampleRate` set (prod ≤ 0.2) | WARN if missing/high |
+| Profiling (server) | `@sentry/profiling-node` + `nodeProfilingIntegration()` | INFO (optional) |
+| Profiling (client) | `browserProfilingIntegration()` | INFO (optional) |
+| Session replay | `replayIntegration()` | INFO (optional) |
+| Structured logging | `enableLogs: true` | INFO (optional) |
+| Error boundaries | `src/app/error.tsx` + `src/app/global-error.tsx` | WARN if missing |
+| Sensitive header stripping | `beforeSend` removes auth/cookie headers | WARN if missing |
+| Transaction filtering | `beforeSendTransaction` drops health/static | INFO (recommended) |
+| External packages | `@sentry/profiling-node` in `serverExternalPackages` | FAIL if profiling used |
+| Container build skip | `NEXT_PUBLIC_SENTRY_SKIP_BUILD` support | INFO (for Docker) |
+| User identity sync | Component calling `Sentry.setUser()` | INFO (optional) |
+| Enrichment helpers | Custom contexts, breadcrumb categories | INFO (optional) |
+| Feedback widget | `feedbackIntegration()` | INFO (optional) |
 
 
 ### Frontend Configuration Checks
@@ -3474,11 +3527,17 @@ Configuration Checks:
   Tracing configured       PASS/WARN
   Session replay           PASS/SKIP
   Release auto-injection   PASS/WARN
+  Profiling configured     PASS/SKIP
+  Structured logging       PASS/SKIP
+  Error boundaries         PASS/WARN
+  Header stripping         PASS/WARN
+  Transaction filtering    PASS/SKIP
 
 Security Checks:
   No hardcoded DSN         PASS/FAIL
   No DSN in git history    PASS/FAIL
   Sample rates reasonable  PASS/WARN
+  No auth tokens in client PASS/FAIL
 
 Missing Configuration:
   - <item>
@@ -3491,6 +3550,367 @@ Overall: <N> warnings, <N> failures
 
 
 ## Initialization Templates
+
+
+### Next.js — Server Config
+
+```typescript
+// sentry.server.config.ts (project root)
+import * as Sentry from "@sentry/nextjs"
+import { nodeProfilingIntegration } from "@sentry/profiling-node"
+
+const isProduction = process.env.NODE_ENV === "production"
+
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  release: process.env.NEXT_PUBLIC_APP_VERSION,
+  environment: process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV,
+
+  tracesSampleRate: isProduction ? 0.1 : 1.0,
+
+  // Profiling
+  profileSessionSampleRate: 1.0,
+  profileLifecycle: "trace",
+
+  // Structured logging
+  enableLogs: true,
+  beforeSendLog(log) {
+    if (isProduction && (log.level === "trace" || log.level === "debug")) {
+      return null // Drop verbose logs in production
+    }
+    return log
+  },
+
+  integrations: [
+    Sentry.httpIntegration(),
+    Sentry.onUnhandledRejectionIntegration(),
+    nodeProfilingIntegration(),
+  ],
+
+  // Strip sensitive headers
+  beforeSend(event) {
+    const headers = event.request?.headers
+    if (headers) {
+      delete headers.authorization
+      delete headers.cookie
+      delete headers["x-api-key"]
+    }
+    return event
+  },
+
+  // Drop low-value transactions
+  beforeSendTransaction(event) {
+    const name = event.transaction
+    if (
+      name?.startsWith("GET /api/health") ||
+      name?.startsWith("GET /monitoring") ||
+      name?.startsWith("GET /_next/")
+    ) {
+      return null
+    }
+    return event
+  },
+
+  initialScope: {
+    tags: {
+      runtime: "nodejs",
+      ...(process.env.HOSTNAME && { "k8s.pod": process.env.HOSTNAME }),
+    },
+  },
+})
+```
+
+
+### Next.js — Edge Config
+
+```typescript
+// sentry.edge.config.ts (project root)
+import * as Sentry from "@sentry/nextjs"
+
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  release: process.env.NEXT_PUBLIC_APP_VERSION,
+  environment: process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV,
+  tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
+  enableLogs: true,
+  initialScope: {
+    tags: { runtime: "edge" },
+  },
+})
+```
+
+
+### Next.js — Client Instrumentation
+
+```typescript
+// src/instrumentation-client.ts
+import * as Sentry from "@sentry/nextjs"
+
+const isProduction = process.env.NODE_ENV === "production"
+
+Sentry.init({
+  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  environment:
+    process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT || process.env.NODE_ENV,
+
+  tracesSampleRate: isProduction ? 0.1 : 1.0,
+
+  // Session replay
+  replaysSessionSampleRate: 0.1,
+  replaysOnErrorSampleRate: 1.0,
+
+  // Profiling
+  profileSessionSampleRate: 1.0,
+  profileLifecycle: "trace",
+
+  // Structured logging
+  enableLogs: true,
+
+  integrations: [
+    Sentry.replayIntegration({ maskAllText: true, blockAllMedia: true }),
+    Sentry.browserTracingIntegration(),
+    Sentry.feedbackIntegration({
+      colorScheme: "system",
+      autoInject: true,
+      enableScreenshot: true,
+      showBranding: false,
+    }),
+    Sentry.browserProfilingIntegration(),
+  ],
+
+  ignoreErrors: [
+    /chrome-extension:\/\//,
+    /moz-extension:\/\//,
+    "Network request failed",
+    "Failed to fetch",
+    "AbortError",
+  ],
+})
+
+// Export for Next.js router transition instrumentation
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart
+```
+
+
+### Next.js — Server Instrumentation Hook
+
+```typescript
+// src/instrumentation.ts
+import * as Sentry from "@sentry/nextjs"
+
+export async function register() {
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    await import("../sentry.server.config")
+  }
+  if (process.env.NEXT_RUNTIME === "edge") {
+    await import("../sentry.edge.config")
+  }
+}
+
+export const onRequestError = Sentry.captureRequestError
+```
+
+
+### Next.js — next.config.mjs Integration
+
+```javascript
+// next.config.mjs
+import { withSentryConfig } from "@sentry/nextjs"
+
+const nextConfig = {
+  // Keep @sentry/profiling-node unbundled (native bindings)
+  serverExternalPackages: ["@sentry/profiling-node"],
+
+  async headers() {
+    return [
+      {
+        source: "/monitoring",
+        headers: [{ key: "Cache-Control", value: "no-store" }],
+      },
+    ]
+  },
+}
+
+const sentryOptions = {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: !process.env.CI,
+  disableServerWebpackPlugin: process.env.NODE_ENV !== "production",
+  disableClientWebpackPlugin: process.env.NODE_ENV !== "production",
+  disableLogger: true,
+  hideSourceMaps: true,
+  release: {
+    name: version,
+    setCommits: { auto: true, ignoreMissing: true },
+  },
+  tunnelRoute: "/monitoring",
+  sourcemaps: { deleteSourcemapsAfterUpload: true },
+}
+
+// Skip Sentry plugin during container builds (saves ~1GB memory)
+const skipSentry = process.env.NEXT_PUBLIC_SENTRY_SKIP_BUILD === "1"
+export default skipSentry ? nextConfig : withSentryConfig(nextConfig, sentryOptions)
+```
+
+
+### Next.js — Error Boundaries
+
+```tsx
+// src/app/error.tsx
+"use client"
+import * as Sentry from "@sentry/nextjs"
+import { useEffect } from "react"
+
+export default function Error({
+  error,
+  reset,
+}: { error: Error & { digest?: string }; reset: () => void }) {
+  useEffect(() => {
+    Sentry.captureException(error, {
+      tags: { errorBoundary: "route" },
+      extra: { digest: error.digest },
+    })
+  }, [error])
+
+  return (
+    <div>
+      <h2>Something went wrong</h2>
+      <button onClick={reset}>Try again</button>
+    </div>
+  )
+}
+```
+
+```tsx
+// src/app/global-error.tsx
+"use client"
+import * as Sentry from "@sentry/nextjs"
+import { useEffect } from "react"
+
+export default function GlobalError({
+  error,
+  reset,
+}: { error: Error & { digest?: string }; reset: () => void }) {
+  useEffect(() => {
+    Sentry.captureException(error, {
+      tags: { errorBoundary: "global" },
+      extra: { digest: error.digest },
+    })
+  }, [error])
+
+  return (
+    <html>
+      <body>
+        <h2>Something went wrong</h2>
+        <button onClick={reset}>Try again</button>
+      </body>
+    </html>
+  )
+}
+```
+
+
+### Next.js — User Identity Sync
+
+```tsx
+// src/lib/sentry/sentry-user-identity.tsx
+"use client"
+import * as Sentry from "@sentry/nextjs"
+import { useSession } from "next-auth/react"
+import { useEffect } from "react"
+
+export function SentryUserIdentity() {
+  const { data: session } = useSession()
+
+  useEffect(() => {
+    if (session?.user) {
+      Sentry.setUser({
+        id: session.user.id,
+        email: session.user.email ?? undefined,
+        username: session.user.name ?? undefined,
+      })
+    } else {
+      Sentry.setUser(null)
+    }
+  }, [session])
+
+  return null // Invisible component
+}
+
+// Include in root layout: <SentryUserIdentity />
+```
+
+
+### Next.js — Enrichment Helpers
+
+```typescript
+// src/lib/sentry/enrichment.ts
+import * as Sentry from "@sentry/nextjs"
+
+// --- User identity ---
+export function setSentryUser(user: { id: string; email?: string; username?: string }) {
+  Sentry.setUser(user)
+}
+
+export function clearSentryUser() {
+  Sentry.setUser(null)
+}
+
+// --- Custom contexts ---
+export function setSentryAIContext(data: {
+  operation: string
+  model: string
+  entityType?: string
+  entityId?: string
+}) {
+  Sentry.setContext("ai_operation", data)
+}
+
+export function setSentrySyncContext(data: {
+  source: string
+  operation: string
+  entityCount?: number
+  userId?: string
+}) {
+  Sentry.setContext("sync_operation", data)
+}
+
+// --- Breadcrumb categories ---
+export const BREADCRUMB_CATEGORIES = {
+  EXTERNAL_API: "external-api",
+  AI_OPERATION: "ai-operation",
+  SYNC_OPERATION: "sync-operation",
+  AUTH: "auth",
+} as const
+
+export function addExternalApiBreadcrumb(data: {
+  service: string
+  method: string
+  url: string
+  status?: number
+}) {
+  Sentry.addBreadcrumb({
+    category: BREADCRUMB_CATEGORIES.EXTERNAL_API,
+    message: `${data.method} ${data.url}`,
+    level: data.status && data.status >= 400 ? "error" : "info",
+    data,
+  })
+}
+
+// --- Custom fingerprinting for upstream errors ---
+export function captureUpstreamError(
+  error: Error,
+  service: string,
+  extra?: Record<string, unknown>,
+) {
+  Sentry.captureException(error, {
+    fingerprint: ["upstream-service", service],
+    tags: { errorType: "upstream", service },
+    extra,
+  })
+}
+```
 
 
 ### Frontend (Vue)
@@ -3564,3 +3984,26 @@ Sentry.init({
     environment: production
     sourcemaps: './dist'
 ```
+
+
+### Next.js Container Build Optimization
+
+For Docker builds where source map upload happens in CI (not during build):
+
+```dockerfile
+
+# Skip Sentry webpack plugin during container build
+ARG NEXT_PUBLIC_SENTRY_SKIP_BUILD=1
+```
+
+This saves ~1GB memory and significant build time. Source maps are uploaded separately via CI/CD.
+
+
+## Recommended Sample Rates
+
+| Feature | Production | Development |
+|---------|-----------|-------------|
+| `tracesSampleRate` | 0.1 (10%) | 1.0 (100%) |
+| `replaysSessionSampleRate` | 0.1 (10%) | 0.0 (disabled) |
+| `replaysOnErrorSampleRate` | 1.0 (100%) | 1.0 (100%) |
+| `profileSessionSampleRate` | 1.0 (of sampled) | 1.0 |
