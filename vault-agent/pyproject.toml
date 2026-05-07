@@ -6,23 +6,23 @@ readme = "README.md"
 authors = [
     { name = "Lauri Gates", email = "lauri.gates@forumvirium.fi" }
 ]
-requires-python = ">=3.13"
+requires-python = "==3.14.4"
 dependencies = [
-    "claude-agent-sdk>=0.1.39",
-    "python-frontmatter>=1.1.0",
-    "pyyaml>=6.0.2",
-    "rich>=14.3.3",
-    "typer>=0.24.0",
+    "claude-agent-sdk==0.1.61",
+    "python-frontmatter==1.1.0",
+    "pyyaml==6.0.3",
+    "rich==15.0.0",
+    "typer==0.24.1",
 ]
 
 [project.scripts]
 vault-agent = "vault_agent.main:app"
 
 [build-system]
-requires = ["uv_build>=0.10.2,<0.11.0"]
+requires = ["uv_build==0.10.12"]
 build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
-    "pytest>=9.0.2",
+    "pytest==9.0.3",
 ]

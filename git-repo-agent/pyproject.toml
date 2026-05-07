@@ -8,9 +8,9 @@ authors = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "claude-agent-sdk>=0.1.39",
-    "rich>=14.3.3",
-    "typer>=0.24.0",
+    "claude-agent-sdk==0.1.76",
+    "rich==15.0.0",
+    "typer==0.25.1",
 ]
 
 [project.scripts]
@@ -22,5 +22,5 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
-    "pytest>=9.0.2",
+    "pytest==9.0.3",
 ]
