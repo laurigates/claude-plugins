@@ -250,6 +250,23 @@ class TestBuildMaintainPhase2Prompt:
         )
         assert "Do not ask the user any questions" in prompt
 
+    def test_warns_against_cd_before_commit(self):
+        """Regression: agent used `cd <repo> && git commit`, escaping the worktree
+        and landing commits on parent main instead of the worktree branch (issue #1260)."""
+        prompt = _build_maintain_phase2_prompt(
+            FINDINGS_FIXTURE, "all", "maintain/2026-05-07"
+        )
+        # Must warn against cd-escape antipattern.
+        assert "Never `cd`" in prompt or "IMPORTANT" in prompt
+        assert "cd" in prompt  # antipattern is named explicitly
+        assert "worktree root" in prompt or "working directory" in prompt
+
+    def test_none_selection_omits_cd_warning(self):
+        """No worktree note (and no cd warning) when the user selects none."""
+        prompt = _build_maintain_phase2_prompt(FINDINGS_FIXTURE, "none", None)
+        assert "IMPORTANT" not in prompt
+        assert "worktree root" not in prompt
+
 
 PLAN_FIXTURE = (
     "1. [claude-md] Generate CLAUDE.md with project description and lint commands\n"
@@ -329,6 +346,21 @@ class TestBuildOnboardPhase2Prompt:
             PLAN_FIXTURE, "all", "setup/onboard"
         )
         assert "Do not ask the user any questions" in prompt
+
+    def test_warns_against_cd_before_commit(self):
+        """Regression: same cd-escape antipattern applies to onboard (issue #1260)."""
+        prompt = _build_onboard_phase2_prompt(
+            PLAN_FIXTURE, "all", "setup/onboard"
+        )
+        assert "Never `cd`" in prompt or "IMPORTANT" in prompt
+        assert "cd" in prompt
+        assert "worktree root" in prompt or "working directory" in prompt
+
+    def test_none_selection_omits_cd_warning(self):
+        """No worktree note when the user selects none."""
+        prompt = _build_onboard_phase2_prompt(PLAN_FIXTURE, "none", None)
+        assert "IMPORTANT" not in prompt
+        assert "worktree root" not in prompt
 
 
 class TestPhase2SystemPrompt:

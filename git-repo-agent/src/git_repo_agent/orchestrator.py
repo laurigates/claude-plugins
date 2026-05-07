@@ -203,6 +203,56 @@ def _non_interactive_allowed_tools(base: list[str]) -> list[str]:
     return [t for t in base if t != "AskUserQuestion"]
 
 
+def _snapshot_parent_sha(repo_path: Path) -> str:
+    """Capture the current HEAD SHA of the parent repo for post-run integrity check."""
+    import subprocess as _sp
+    return _sp.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo_path, capture_output=True, text=True, check=True,
+    ).stdout.strip()
+
+
+def _warn_if_parent_moved(
+    repo_path: Path,
+    sha_before: str,
+    base_branch: str,
+    worktree_branch: str,
+) -> bool:
+    """Return True if parent HEAD is unchanged; print a warning and return False if it moved.
+
+    When an agent escapes the worktree via `cd <repo_path> && git commit`, the
+    commit lands on the parent repo's default branch instead of the worktree
+    branch. This check detects that invariant violation so the user can recover.
+    Regression: issue #1260 — maintain commit landed on parent main.
+    """
+    import subprocess as _sp
+    result = _sp.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo_path, capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        return True  # can't verify; don't block
+    current_sha = result.stdout.strip()
+    if current_sha == sha_before:
+        return True
+
+    console.print(
+        f"\n[bold red]Invariant violation:[/bold red] commit(s) landed on "
+        f"[cyan]{base_branch}[/cyan] instead of the worktree branch "
+        f"[cyan]{worktree_branch}[/cyan]. "
+        f"Parent branch moved from [dim]{sha_before[:8]}[/dim] to "
+        f"[dim]{current_sha[:8]}[/dim].\n\n"
+        f"To recover, run these commands manually:\n"
+        f"  # 1. See what landed on {base_branch}:\n"
+        f"  git -C {repo_path} log --oneline {sha_before}..HEAD\n"
+        f"  # 2. Cherry-pick each commit SHA into the worktree:\n"
+        f"  git cherry-pick <sha>   # run from inside the worktree\n"
+        f"  # 3. Reset {base_branch} back to its original tip:\n"
+        f"  git -C {repo_path} reset --hard {sha_before}\n"
+    )
+    return False
+
+
 def _prepare_non_interactive(
     repo_path: Path,
     ni: NonInteractiveConfig,
@@ -596,6 +646,10 @@ async def run_maintain(
         work_dir = worktree_path
         console.print(f"[dim]Working in: {worktree_path}[/dim]")
 
+    # Snapshot parent HEAD so we can detect if the agent escapes the worktree
+    # and accidentally commits to the parent branch (issue #1260).
+    parent_sha_before = _snapshot_parent_sha(repo_path) if makes_changes else ""
+
     cleanup_token = None
     if non_interactive is not None and worktree_path is not None:
         cleanup_token = _install_cleanup_handler(
@@ -680,6 +734,12 @@ async def run_maintain(
         }
 
         if worktree_path and makes_changes:
+            # Post-run integrity check: if the agent escaped the worktree via
+            # `cd <repo_path> && git commit`, commits land on the parent's
+            # default branch instead of the worktree branch. Warn early so the
+            # user can recover before cleanup destroys the evidence (issue #1260).
+            _warn_if_parent_moved(repo_path, parent_sha_before, base_branch, branch)
+
             if non_interactive is not None:
                 pr_result = await _auto_handle_pr(
                     repo_path, worktree_path, branch, base_branch,
@@ -996,7 +1056,13 @@ def _build_maintain_phase2_prompt(
         worktree_note = (
             f"\n\nYou are working in a git worktree on branch "
             f"'{worktree_branch}'. Commit your changes directly to this "
-            "branch. Do NOT create new branches or push."
+            "branch. Do NOT create new branches or push.\n\n"
+            "IMPORTANT: Never `cd` to a different directory in the same Bash "
+            "call as a `git commit`. A command like "
+            "`cd /other/path && git add ... && git commit` commits to whatever "
+            "branch is checked out at /other/path (the parent repo's main), "
+            "not to this worktree branch. All git operations must run from "
+            "the current working directory (the worktree root)."
         )
 
     return (
@@ -1047,7 +1113,13 @@ def _build_onboard_phase2_prompt(
         worktree_note = (
             f"\n\nYou are working in a git worktree on branch "
             f"'{worktree_branch}'. Commit your changes directly to this "
-            "branch. Do NOT create new branches or push."
+            "branch. Do NOT create new branches or push.\n\n"
+            "IMPORTANT: Never `cd` to a different directory in the same Bash "
+            "call as a `git commit`. A command like "
+            "`cd /other/path && git add ... && git commit` commits to whatever "
+            "branch is checked out at /other/path (the parent repo's main), "
+            "not to this worktree branch. All git operations must run from "
+            "the current working directory (the worktree root)."
         )
 
     return (
@@ -1271,7 +1343,12 @@ async def _prompt_pr_creation(
 ) -> None:
     """Check for changes in the worktree and offer to create a PR."""
     if not worktree_has_changes(worktree_path, base_branch):
-        console.print("[dim]No changes were made in the worktree.[/dim]")
+        console.print(
+            "[dim]No commits or uncommitted changes found in the worktree "
+            f"(branch: {base_branch}..{worktree_path.name}). "
+            "If you expected changes, check whether the parent branch moved — "
+            "a preceding warning would have been shown.[/dim]"
+        )
         cleanup_worktree(repo_path, worktree_path)
         return
 

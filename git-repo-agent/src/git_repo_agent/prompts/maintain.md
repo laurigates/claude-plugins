@@ -84,6 +84,8 @@ Execute fixes based on the operating mode:
 
 When making changes (interactive or auto-fix mode), you are working in a git worktree on a dedicated branch. Commit your changes directly to the current branch. Do NOT create new branches or push — the orchestrator manages the worktree and PR creation.
 
+**Never `cd` to a different directory in the same Bash call as a `git commit`.** All git operations must run from the current working directory (the worktree root). A command like `cd /some/path && git add ... && git commit` will commit to whatever branch is checked out at `/some/path` (the parent repo's `main`), not to the worktree branch. Use `git -C "/path"` if you need to reference another repo, but do not leave the worktree's working directory before committing.
+
 When committing dependency changes, always include lock files (uv.lock, package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb, Cargo.lock, poetry.lock, go.sum) in the commit.
 
 ### What NOT to auto-fix
