@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.36.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.35.1...git-plugin-v2.36.0) (2026-05-07)
+
+
+### Features
+
+* **git-plugin:** add --all/--dry-run/--limit flags to git-pr-feedback ([#1257](https://github.com/laurigates/claude-plugins/issues/1257)) ([b4feafd](https://github.com/laurigates/claude-plugins/commit/b4feafd761720d874f74b6c76c02df1bb4b8ba6e))
+
 ## [2.35.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.35.0...git-plugin-v2.35.1) (2026-05-06)
 
 
