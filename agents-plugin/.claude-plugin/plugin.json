@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "agents-plugin",
-  "version": "1.10.0",
+  "version": "1.10.1",
   "description": "Task-focused agents for test, review, debug, docs, CI, security, refactoring, research, performance, and search-replace — with teammate and subagent role guidance",
   "author": {
     "name": "Lauri Gates"

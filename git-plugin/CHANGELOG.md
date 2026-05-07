@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.36.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.36.0...git-plugin-v2.36.1) (2026-05-07)
+
+
+### Bug Fixes
+
+* **agents:** bake tool-selection rules into agent definitions ([#1262](https://github.com/laurigates/claude-plugins/issues/1262)) ([a9b128a](https://github.com/laurigates/claude-plugins/commit/a9b128af9238f2c20cc3c4efb92ec86c06a39752))
+
 ## [2.36.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.35.1...git-plugin-v2.36.0) (2026-05-07)
 
 

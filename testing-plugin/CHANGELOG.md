@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.13.3](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.13.2...testing-plugin-v3.13.3) (2026-05-07)
+
+
+### Bug Fixes
+
+* **agents:** bake tool-selection rules into agent definitions ([#1262](https://github.com/laurigates/claude-plugins/issues/1262)) ([a9b128a](https://github.com/laurigates/claude-plugins/commit/a9b128af9238f2c20cc3c4efb92ec86c06a39752))
+
 ## [3.13.2](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.13.1...testing-plugin-v3.13.2) (2026-05-06)
 
 

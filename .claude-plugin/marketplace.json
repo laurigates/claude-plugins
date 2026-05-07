@@ -38,7 +38,7 @@
       "name": "agents-plugin",
       "source": "./agents-plugin",
       "description": "Task-focused agents with teammate and subagent role guidance for test, review, debug, docs, CI, security, refactoring, research, and performance",
-      "version": "1.10.0",
+      "version": "1.10.1",
       "keywords": [
         "agents",
         "teammates",
@@ -189,7 +189,7 @@
       "name": "container-plugin",
       "source": "./container-plugin",
       "description": "Container development and deployment - Docker, registry, Skaffold",
-      "version": "2.8.2",
+      "version": "2.8.3",
       "keywords": [
         "container",
         "docker",
@@ -231,7 +231,7 @@
       "name": "evaluate-plugin",
       "source": "./evaluate-plugin",
       "description": "Skill evaluation and benchmarking - test skill effectiveness with behavioral eval cases, grade results, and track quality improvements",
-      "version": "1.4.0",
+      "version": "1.4.1",
       "keywords": [
         "evaluation",
         "benchmarking",
@@ -245,7 +245,7 @@
       "name": "feedback-plugin",
       "source": "./feedback-plugin",
       "description": "Session feedback analysis - capture skill bugs as GitHub issues and learn from weekly friction across sessions",
-      "version": "1.6.0",
+      "version": "1.6.1",
       "keywords": [
         "feedback",
         "session-analysis",
@@ -275,7 +275,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.36.0",
+      "version": "2.36.1",
       "keywords": [
         "git",
         "github",
@@ -371,7 +371,7 @@
       "name": "kubernetes-plugin",
       "source": "./kubernetes-plugin",
       "description": "Kubernetes and Helm operations - deployments, charts, releases",
-      "version": "1.7.2",
+      "version": "1.7.3",
       "keywords": [
         "kubernetes",
         "helm",
@@ -571,7 +571,7 @@
       "name": "terraform-plugin",
       "source": "./terraform-plugin",
       "description": "Terraform and Terraform Cloud - infrastructure as code",
-      "version": "1.7.2",
+      "version": "1.7.3",
       "keywords": [
         "terraform",
         "infrastructure",
@@ -584,7 +584,7 @@
       "name": "testing-plugin",
       "source": "./testing-plugin",
       "description": "Test execution, TDD workflow, and testing strategies",
-      "version": "3.13.2",
+      "version": "3.13.3",
       "keywords": [
         "testing",
         "tdd",

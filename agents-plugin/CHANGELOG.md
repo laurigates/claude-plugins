@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.1](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.10.0...agents-plugin-v1.10.1) (2026-05-07)
+
+
+### Bug Fixes
+
+* **agents:** bake tool-selection rules into agent definitions ([#1262](https://github.com/laurigates/claude-plugins/issues/1262)) ([a9b128a](https://github.com/laurigates/claude-plugins/commit/a9b128af9238f2c20cc3c4efb92ec86c06a39752))
+
 ## [1.10.0](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.9.2...agents-plugin-v1.10.0) (2026-05-04)
 
 
