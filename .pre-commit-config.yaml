@@ -33,3 +33,9 @@ repos:
         language: script
         files: '^taskwarrior-plugin/.*\.md$'
         pass_filenames: false
+      - id: check-agent-tool-selection
+        name: every plugin agent embeds a Tool Selection section
+        entry: ./scripts/check-agent-tool-selection.sh
+        language: script
+        files: '/agents/.*\.md$'
+        pass_filenames: false

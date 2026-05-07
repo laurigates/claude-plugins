@@ -248,9 +248,13 @@ Agents participate in Claude Code's memory hierarchy. Memory is loaded from mult
 | Auto memory | `~/.claude/projects/<project>/memory/` | Persists across sessions automatically |
 
 **For agents:**
-- Agents inherit the full memory hierarchy of their parent session
+- Agents inherit the full memory hierarchy of their parent session in principle, but **in practice user-level rules under `~/.claude/rules/*.md` do not reliably hold across agent threads** (issue #1109 measured 200+ weekly hook-block reminders even though the rules existed at the user scope).
 - `context: fork` agents see parent memory but don't write back to it
 - Auto memory in `~/.claude/projects/<project>/memory/` persists across all sessions
+
+### Bake Tool-Selection Rules into Agent Bodies
+
+For rules an agent **must not forget** between threads — the friction-mining ones, like "use Glob, not find" — embed them directly in the agent's body so they live in the system prompt rather than depending on inherited memory. Every plugin agent in this repo carries a `## Tool Selection` section that lists the bash idioms the harness blocks and the dedicated tool to use instead. New plugin agents must include the same section; `scripts/check-agent-tool-selection.sh` enforces it.
 
 ### Auto Memory Pattern
 
