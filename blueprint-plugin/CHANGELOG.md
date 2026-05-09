@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.33.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.32.1...blueprint-plugin-v3.33.0) (2026-05-09)
+
+
+### Features
+
+* **plugins:** add check_skill_size() lint and trim 4 oversized SKILL.md bodies ([#1284](https://github.com/laurigates/claude-plugins/issues/1284)) ([20c97c9](https://github.com/laurigates/claude-plugins/commit/20c97c93337d52e739ab3619a6d6c473a89903b6))
+
 ## [3.32.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.32.0...blueprint-plugin-v3.32.1) (2026-05-09)
 
 
