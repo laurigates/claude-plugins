@@ -1,7 +1,7 @@
 ---
 created: 2026-01-02
 modified: 2026-05-09
-reviewed: 2026-04-25
+reviewed: 2026-05-09
 description: Sync feature tracker with TODO.md, taskwarrior sidecars (bpid/bpdoc UDAs), and PRDs. Use when reconciling TODO.md vs tracker, draining WO entries with --drain-wave, recalculating stats, or generating --summary.
 allowed-tools: Read, Write, Bash, Glob, AskUserQuestion
 model: sonnet
@@ -477,72 +477,9 @@ the linked taskwarrior task; this skill only edits the tracker.
 
 ---
 
-## Task Management
+## Direct Edits & Sample Output
 
-### Adding a task to in_progress
-
-When starting work on a feature:
-
-```bash
-jq '.tasks.in_progress += [{"id": "FR2.3", "description": "Implement OAuth integration", "source": "PRP-002", "added": "2026-02-04"}]' \
-  docs/blueprint/feature-tracker.json > tmp.json && mv tmp.json docs/blueprint/feature-tracker.json
-```
-
-### Completing a task
-
-When finishing work:
-
-```bash
-# Move from in_progress to completed (keep last 10)
-jq '
-  .tasks.completed = ([.tasks.in_progress[] | select(.id == "FR2.3") | . + {"completed": "2026-02-04"}] + .tasks.completed)[:10] |
-  .tasks.in_progress = [.tasks.in_progress[] | select(.id != "FR2.3")]
-' docs/blueprint/feature-tracker.json > tmp.json && mv tmp.json docs/blueprint/feature-tracker.json
-```
-
-### Adding pending tasks
-
-When planning future work:
-
-```bash
-jq '.tasks.pending += [{"id": "FR4.1", "description": "Webhook support", "source": "PRD-001", "added": "2026-02-04"}]' \
-  docs/blueprint/feature-tracker.json > tmp.json && mv tmp.json docs/blueprint/feature-tracker.json
-```
-
-## Example Output
-
-```
-Feature Tracker Sync Report
-===========================
-Last Updated: 2026-02-04
-
-Statistics:
-- Total Features: 42
-- Complete: 22 (52.4%)
-- Partial: 4
-- In Progress: 2
-- Not Started: 14
-- Blocked: 0
-
-Current Phase: phase-2
-
-Phase Status:
-- Phase 0: complete
-- Phase 1: complete
-- Phase 2: in_progress
-- Phase 3-8: not_started
-
-Active Tasks:
-- Implement OAuth integration [FR2.3]
-- Add rate limiting [FR3.1]
-
-Changes Made:
-- FR2.6.1 (Skill Progression): partial -> complete
-- FR2.6.2 (Experience Points): not_started -> complete
-- Updated TODO.md: checked 2 items
-
-All sync targets updated successfully.
-```
+For ad-hoc tracker surgery (`jq` recipes for adding to `in_progress`, completing tasks, queueing pending work) and a sample summary report, see [REFERENCE.md](REFERENCE.md).
 
 ## Related
 
