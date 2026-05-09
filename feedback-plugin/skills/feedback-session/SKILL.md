@@ -1,18 +1,13 @@
 ---
 name: feedback-session
-description: |
-  Analyze current session for skill feedback and create GitHub issues. Use when
-  a skill gave wrong guidance, a command failed due to skill advice, you discovered
-  a better pattern, or a skill worked particularly well. Creates labeled issues
-  for tracking. Supports targeting a different repo (e.g. the plugin source repo)
-  with --target-repo.
+description: Analyze current session for skill feedback and create GitHub issues. Use when a skill gave wrong guidance, a command failed due to skill advice, you found a better pattern, or a skill worked well. Supports --target-repo for the plugin source repo.
 args: "[--dry-run] [--bugs-only] [--enhancements-only] [--positive-only] [--target-repo <owner/repo>] [plugin-name]"
 allowed-tools: Bash(gh issue *), Bash(gh label *), Bash(gh search *), Bash(git status *), Bash(git remote *), Read, Grep, Glob, AskUserQuestion, TodoWrite
 model: opus
 argument-hint: "--dry-run | --target-repo owner/repo | plugin-name"
 disable-model-invocation: true
 created: 2026-02-18
-modified: 2026-05-04
+modified: 2026-05-09
 reviewed: 2026-04-25
 ---
 
