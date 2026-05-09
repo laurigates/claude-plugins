@@ -1,13 +1,10 @@
 ---
 name: shadow-mode
-description: |
-  Shadow mode (shadow traffic, dark launching) pattern for validating new systems under
-  production load. Use when testing replacement services, validating new deployments,
-  comparing system behavior, or planning traffic mirroring for migration validation.
+description: Shadow mode (shadow traffic, dark launching) for validating new systems under production load. Use when testing replacement services, validating new deployments, comparing system behavior, or planning traffic mirroring for migration validation.
 user-invocable: false
 allowed-tools: Read, Grep, Glob, Edit, Write, Bash, TodoWrite
 created: 2026-02-18
-modified: 2026-02-18
+modified: 2026-05-09
 reviewed: 2026-02-18
 ---
 
