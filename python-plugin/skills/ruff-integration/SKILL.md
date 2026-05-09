@@ -1,12 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-01-24
+modified: 2026-05-09
 reviewed: 2026-01-24
 name: ruff-integration
-description: |
-  Integrate ruff into development workflows: editor setup, pre-commit hooks, and CI/CD pipelines.
-  Use when configuring ruff in VS Code, setting up pre-commit hooks, or adding ruff to GitHub Actions.
-  For ruff rules/linting config see ruff-linting skill; for formatting see ruff-formatting skill.
+description: "Integrate ruff into dev workflows: editor setup, pre-commit hooks, and CI/CD. Use when configuring ruff in VS Code, setting up pre-commit, or adding ruff to GitHub Actions. For ruff rules see ruff-linting; for formatting see ruff-formatting."
 user-invocable: false
 allowed-tools: Bash(ruff *), Bash(python *), Bash(uv *), Read, Edit, Write, Grep, Glob
 ---

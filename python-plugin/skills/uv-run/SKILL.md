@@ -1,13 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
+modified: 2026-05-09
 reviewed: 2026-04-25
 name: uv-run
-description: |
-  Run Python scripts with uv including inline dependencies (PEP 723),
-  temporary dependencies (--with), and ephemeral tool execution.
-  Use when running scripts, needing one-off dependencies, or creating
-  executable Python scripts. No venv activation required.
+description: Run Python scripts with uv including inline dependencies (PEP 723), temporary deps (--with), and ephemeral tool execution. Use when running scripts, needing one-off dependencies, or creating executable Python scripts. No venv activation required.
 user-invocable: false
 allowed-tools: Glob, Grep, Read, WebFetch, TodoWrite, WebSearch, BashOutput, KillShell, Edit, Write, NotebookEdit, Bash
 ---
