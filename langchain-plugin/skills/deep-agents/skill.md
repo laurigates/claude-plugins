@@ -1,14 +1,10 @@
 ---
 name: deep-agents
-description: |
-  Build hierarchical AI agents using the deep-agents TypeScript/npm package. Use when
-  you want to create an orchestrator agent that plans and executes multi-step tasks,
-  manages file system context, delegates subtasks to child agents, or maintains
-  persistent memory across runs with the Deep Agents library.
+description: Build hierarchical AI agents using the deep-agents TypeScript/npm package. Use when creating an orchestrator that plans multi-step tasks, manages file system context, delegates to child agents, or maintains persistent memory with Deep Agents.
 user-invocable: false
 allowed-tools: Bash(python *), Bash(uv *), BashOutput, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-01-08
-modified: 2026-04-25
+modified: 2026-05-09
 reviewed: 2026-04-25
 ---
 
