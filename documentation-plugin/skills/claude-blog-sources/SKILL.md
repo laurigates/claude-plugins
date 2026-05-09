@@ -3,10 +3,7 @@ created: 2025-12-16
 modified: 2026-02-27
 reviewed: 2026-02-09
 name: claude-blog-sources
-description: |
-  Access Claude Blog and official Claude Code documentation for latest improvements, usage patterns,
-  and best practices. Use when researching Claude Code features, CLAUDE.md optimization, memory
-  management, or staying current with Claude capabilities.
+description: Fetch Claude Blog and official Claude Code docs for latest features and best practices. Use when researching Claude Code capabilities, CLAUDE.md optimization, memory hierarchy, or @import patterns.
 user-invocable: false
 allowed-tools: WebFetch, WebSearch, Task
 agent: general-purpose

@@ -1,15 +1,12 @@
 ---
 name: docs-latex
-description: |
-  Convert Markdown documents to professional LaTeX with TikZ visualizations and compile to PDF.
-  Use when the user wants to create a presentation-quality PDF from a Markdown document, generate
-  a professional report with diagrams, or convert documentation to print-ready format.
+description: Convert Markdown documents to professional LaTeX with TikZ visualizations and compile to PDF. Use when the user wants a presentation-quality PDF from Markdown, a professional report with diagrams, or print-ready documentation.
 args: <file> [--no-compile] [--visualizations] [--report-type=roadmap|lifecycle|general]
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 argument-hint: path/to/document.md
 disable-model-invocation: true
 created: 2026-02-08
-modified: 2026-03-01
+modified: 2026-05-09
 reviewed: 2026-02-08
 ---
 
