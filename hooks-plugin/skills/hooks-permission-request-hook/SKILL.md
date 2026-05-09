@@ -1,9 +1,6 @@
 ---
 name: hooks-permission-request-hook
-description: |
-  Generate a PermissionRequest hook that auto-approves safe operations and auto-denies
-  dangerous ones. Use when you want a safer alternative to --dangerouslySkipPermissions
-  that builds compound auto-approval rules tailored to your project stack.
+description: Generate a PermissionRequest hook that auto-approves safe operations and auto-denies dangerous ones. Use when you need a safer alternative to --dangerouslySkipPermissions tailored to your project stack.
 args: "[--strict] [--category <name>...]"
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, TodoWrite
 argument-hint: "--strict to deny unknown commands, --category git|test|lint|build|gh|deny"
