@@ -6,7 +6,7 @@ allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-24
 modified: 2026-05-09
-reviewed: 2026-04-24
+reviewed: 2026-05-09
 ---
 
 # Exclusive-Lock Dispatch
@@ -121,9 +121,6 @@ analyzeHeadless tmp/ghidra/ myproj -import path/to/bin \
 analyzeHeadless tmp/ghidra/ myproj -process bin -noanalysis \
   -postScript RefreshStrings.java tmp/decomp/
 ```
-
-For more-than-a-few-scripts workflows, extract the detailed recipe and
-script inventory to `REFERENCE.md` and cite it from here.
 
 ## Taskwarrior Specifics
 
