@@ -1,12 +1,8 @@
 ---
 created: 2025-12-22
-modified: 2026-05-04
+modified: 2026-05-09
 reviewed: 2026-04-25
-description: |
-  Derive PRD from existing project documentation, README, and codebase analysis. Use when
-  the user asks to "derive a PRD", "generate a PRD from the README", onboards an existing
-  project to blueprint, or wants to extract problem statements, stakeholders, features, and
-  user personas from existing docs into a formal Product Requirements Document.
+description: Derive a PRD from existing project docs, README, and codebase. Use when onboarding an existing project to blueprint or extracting problem statements, stakeholders, features, and user personas into a formal PRD.
 allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion, Task
 model: opus
 name: blueprint-derive-prd

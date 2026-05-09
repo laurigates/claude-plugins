@@ -1,12 +1,8 @@
 ---
 created: 2026-04-25
-modified: 2026-05-04
+modified: 2026-05-09
 reviewed: 2026-04-25
-description: |
-  Reconcile PRD requirements with the drift report from a /blueprint:story-audit. Use
-  when the user wants to mark PRD entries as ✅ implemented / ⚠️ partial / ❌ missing
-  based on the latest audit, add a "Known Drift" section to a PRD, or promote a candidate
-  (code-only) story into the PRD. Mutates PRD files only — never touches source code.
+description: Reconcile PRD requirements with a /blueprint:story-audit drift report. Use when marking PRD entries implemented/partial/missing, adding a "Known Drift" section, or promoting a code-only story into the PRD. Mutates PRD files only.
 args: "[--audit <path>] [--prd <path>] [--apply-all] [--dry-run]"
 argument-hint: "--audit docs/blueprint/audits/2026-04-25-story-audit.md (defaults to latest)"
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion

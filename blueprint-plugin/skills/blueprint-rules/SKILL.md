@@ -1,13 +1,8 @@
 ---
 created: 2025-12-17
-modified: 2026-04-19
+modified: 2026-05-09
 reviewed: 2026-02-09
-description: |
-  Manage modular rules in .claude/rules/ directory. Supports path-specific rules with glob
-  patterns, brace expansion, and user-level rules. Use when the user asks to "manage rules",
-  add a path-specific rule for certain file types, list project and user-level rules, sync
-  rules with CLAUDE.md, validate glob patterns in `paths` frontmatter, or create rules for
-  React, API, testing, or config files.
+description: Manage modular rules in .claude/rules/ with path-specific glob patterns and brace expansion. Use when adding/listing project or user-level rules, syncing with CLAUDE.md, or validating `paths` frontmatter globs.
 allowed-tools: Read, Write, Edit, Bash, Glob, AskUserQuestion
 name: blueprint-rules
 ---

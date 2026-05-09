@@ -1,15 +1,11 @@
 ---
-description: |
-  Execute a PRP with validation loop, TDD workflow, and quality gates. Use when the user
-  asks to "execute a PRP", "implement the auth-oauth2 PRP", runs a planned feature from
-  docs/prps/ with red/green/refactor TDD cycles, wants automatic validation gates and
-  feature tracker sync, or needs to delegate a high-confidence PRP to subagents.
+description: Execute a PRP with validation loop, TDD workflow, and quality gates. Use when the user asks to "execute a PRP", running a planned feature from docs/prps/ with red/green/refactor cycles, or delegating a high-confidence PRP to subagents.
 args: "[prp-name]"
 argument-hint: "Name of PRP to execute (e.g., feature-auth-oauth2)"
 disable-model-invocation: true
 allowed-tools: Read, Write, Edit, Glob, Bash, Task, AskUserQuestion
 created: 2025-12-16
-modified: 2026-04-19
+modified: 2026-05-09
 reviewed: 2026-02-14
 name: blueprint-prp-execute
 ---

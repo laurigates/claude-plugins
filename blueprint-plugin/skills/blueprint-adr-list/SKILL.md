@@ -2,11 +2,7 @@
 created: 2026-01-29
 modified: 2026-05-04
 reviewed: 2026-04-25
-description: |
-  List all ADRs with title, status, date, and domain in a markdown table. Use when
-  the user wants to see all architecture decision records, generate an ADR index for
-  a README, audit ADR status, or asks to "list ADRs", "show architecture decisions",
-  or "view the ADR table".
+description: List all ADRs with title, status, date, and domain in a markdown table. Use when generating an ADR index for a README, auditing ADR status, or viewing all architecture decisions at once.
 allowed-tools: Bash, Glob
 model: sonnet
 name: blueprint-adr-list
