@@ -80,6 +80,13 @@ Related: #124, #125     <!-- Links without closing -->
 - Use `Related:` for issues that are related but not solved
 - Follow-up work should be created as new issues, not left in checklist
 
+> **Do NOT use markdown tables to track linked issues.** GitHub's auto-close
+> machinery only fires on `Fixes #N` / `Closes #N` / `Resolves #N` keywords
+> in the PR body or commits. A `| Issue | Status |` table is decorative —
+> linked issues will not auto-close on merge, even if every row says "fixed".
+> Always include the closing keyword as a bare line at the bottom of the
+> body (or in a commit message).
+
 ## Workflow
 
 > **Before creating the PR**, check whether any post-merge follow-up actions are needed (migrations, deployments, config changes, runbook updates). Create a GitHub issue for each and link them in the PR description. See [Post-Merge Follow-up Issues](#post-merge-follow-up-issues).
@@ -176,6 +183,27 @@ Fixes #123
 Related: #456
 ```
 
+### 5. Verify Closing Keywords
+
+After the PR is created, fetch the body back and confirm every issue
+referenced by number has a matching `Fixes` / `Closes` / `Resolves`
+keyword. Issues mentioned only in a markdown table or prose will not
+auto-close on merge.
+
+```bash
+PR_NUM=$(gh pr view --json number --jq .number)
+pr_body=$(gh pr view "$PR_NUM" --json body --jq .body)
+referenced=$(echo "$pr_body" | grep -oE '#[0-9]+' | sort -u)
+closing=$(echo "$pr_body" | grep -oiE '(closes|fixes|resolves)[[:space:]]+#[0-9]+' | grep -oE '#[0-9]+' | sort -u)
+missing=$(comm -23 <(echo "$referenced") <(echo "$closing"))
+[ -n "$missing" ] && echo "WARN: referenced but not auto-closing: $missing"
+```
+
+If `missing` is non-empty, edit the PR body with `gh pr edit <num> --body-file ...`
+to add `Fixes #N` / `Closes #N` lines for any issue this PR is meant to close.
+`Related: #N` is correct for issues the PR references but does not close —
+those should not appear in the warning if you re-run the check.
+
 ## PR Title Format
 
 Use conventional commits format (see `github-pr-title` skill):
@@ -210,6 +238,47 @@ git push origin main:feat/feature-name
 # Create PR with --head
 gh pr create --head feat/feature-name --base main --title "..." --body-file /tmp/pr-body.md
 ```
+
+## Stacked PRs
+
+When merging a PR whose head branch is the **base** of one or more open
+downstream PRs, deleting the head branch on merge will close every dependent
+PR. `gh pr merge --delete-branch` and the matching UI checkbox both delete
+the head branch — safe for leaf PRs, destructive for stack parents.
+
+### Pre-merge check
+
+Before merging, query for any open PR that targets the current branch as
+its base:
+
+```bash
+HEAD_BRANCH=$(gh pr view --json headRefName --jq .headRefName)
+dependents=$(gh pr list --base "$HEAD_BRANCH" --state open --json number,title,headRefName)
+echo "$dependents" | jq -e 'length > 0' >/dev/null && echo "WARN: $dependents"
+```
+
+If `dependents` is a non-empty array, this PR is the parent of a stack.
+
+### Merge rules for stacked PRs
+
+| Situation | Merge command |
+|-----------|---------------|
+| No dependents (leaf PR) | `gh pr merge --squash --delete-branch` (default) |
+| Has dependents | `gh pr merge --squash` — **omit `--delete-branch`** |
+| Has dependents, want to clean up | Re-target dependents first (see below), then merge with `--delete-branch` |
+
+### Re-targeting dependents
+
+Before merging the parent, point each dependent at the parent's base so
+they don't auto-close when the parent's branch disappears:
+
+```bash
+# For each dependent PR returned above:
+gh pr edit <dep-pr-num> --base "$(gh pr view --json baseRefName --jq .baseRefName)"
+```
+
+Once every dependent has been re-targeted (or you have explicitly chosen
+not to), it is safe to merge the parent with `--delete-branch`.
 
 ## Pre-merge Checklist Guidelines
 
@@ -299,6 +368,9 @@ Status: Open
 | Edit PR | `gh pr edit --title "..." --body-file /tmp/pr-body.md` |
 | List PRs | `gh pr list` |
 | Check status | `gh pr checks` |
+| Verify closing keywords | `gh pr view <num> --json body --jq .body \| grep -oiE '(closes\|fixes\|resolves)[[:space:]]+#[0-9]+'` |
+| Check for stacked dependents | `gh pr list --base <head> --state open --json number,title` |
+| Merge stacked parent | `gh pr merge --squash` (omit `--delete-branch`) |
 | Create follow-up issue | `gh issue create --title "[Chore] ..." --body-file /tmp/issue-body.md` |
 
 ## Agentic Optimizations
@@ -308,5 +380,7 @@ Status: Open
 | PR readiness | `gh pr view --json number,state 2>/dev/null` |
 | Commits | `git log origin/main..HEAD --format='%s'` |
 | Issue refs | `git log origin/main..HEAD --format='%B' \| grep -oE '#[0-9]+'` |
+| Verify auto-close | `gh pr view <num> --json body --jq .body \| grep -oiE '(closes\|fixes\|resolves)[[:space:]]+#[0-9]+'` |
+| Stacked-PR safety check | `gh pr list --base <head> --state open --json number,title,headRefName` |
 | Create follow-up issue | `gh issue create --title "[Chore] ..." --body-file /tmp/follow-up.md` |
 | Create PR | `gh pr create --title "..." --body-file /tmp/pr-body.md` |
