@@ -42,6 +42,21 @@ Audit Claude agent and teammate configurations for completeness, security, and b
 - Checks privilege levels
 - Generates comprehensive audit reports
 
+#### `/meta:promote`
+Evaluate whether rules, skills, commands, or agents at one `.claude/` scope should be promoted to a higher scope (parent or user-global), and execute approved promotions safely.
+
+**Usage:**
+```bash
+/meta:promote [scope-path]
+```
+
+**Features:**
+- Walks target / sources / upstream layers to find overlap candidates
+- Per-candidate checklist for owner-specific signals vs generic kernel
+- Four-action menu: promote as-is, extract kernel, keep scoped, no action
+- Per-candidate `AskUserQuestion` confirmation — no bundled approvals
+- Read-broad / write-narrow: only approved files are touched, no auto-commit
+
 #### `custom-agent-definitions`
 Define and configure custom agents and teammate templates with context forking and tool restrictions.
 
