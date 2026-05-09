@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/laurigates/claude-plugins/compare/prompt-engineering-plugin-v1.1.1...prompt-engineering-plugin-v1.1.2) (2026-05-09)
+
+
+### Documentation
+
+* trim oversized SKILL.md descriptions across 41 plugins ([#1265](https://github.com/laurigates/claude-plugins/issues/1265)) ([e13d9f4](https://github.com/laurigates/claude-plugins/commit/e13d9f46a010559082c6d5eb61b0cb891843bf97))
+
 ## [1.1.1](https://github.com/laurigates/claude-plugins/compare/prompt-engineering-plugin-v1.1.0...prompt-engineering-plugin-v1.1.1) (2026-04-08)
 
 

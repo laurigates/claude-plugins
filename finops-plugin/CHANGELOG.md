@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.4](https://github.com/laurigates/claude-plugins/compare/finops-plugin-v1.3.3...finops-plugin-v1.3.4) (2026-05-09)
+
+
+### Documentation
+
+* trim oversized SKILL.md descriptions across 41 plugins ([#1265](https://github.com/laurigates/claude-plugins/issues/1265)) ([e13d9f4](https://github.com/laurigates/claude-plugins/commit/e13d9f46a010559082c6d5eb61b0cb891843bf97))
+
 ## [1.3.3](https://github.com/laurigates/claude-plugins/compare/finops-plugin-v1.3.2...finops-plugin-v1.3.3) (2026-04-25)
 
 

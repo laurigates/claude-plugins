@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.4](https://github.com/laurigates/claude-plugins/compare/kubernetes-plugin-v1.7.3...kubernetes-plugin-v1.7.4) (2026-05-09)
+
+
+### Documentation
+
+* trim oversized SKILL.md descriptions across 41 plugins ([#1265](https://github.com/laurigates/claude-plugins/issues/1265)) ([e13d9f4](https://github.com/laurigates/claude-plugins/commit/e13d9f46a010559082c6d5eb61b0cb891843bf97))
+
 ## [1.7.3](https://github.com/laurigates/claude-plugins/compare/kubernetes-plugin-v1.7.2...kubernetes-plugin-v1.7.3) (2026-05-07)
 
 
