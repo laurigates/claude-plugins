@@ -123,13 +123,28 @@ Scoring:
 
 #### 1e. Marketplace enrollment check
 
+The local marketplace key (set by `claude marketplace add <name>`) is user-chosen and varies between installs (commonly `laurigates-claude-plugins`, sometimes `claude-plugins`). Identify the marketplace by its stable `source.repo`, not by a hardcoded local key.
+
 1. Read `.claude/settings.json`.
-2. Check that `extraKnownMarketplaces.claude-plugins` exists with `source.repo = "laurigates/claude-plugins"`.
-3. Check that `enabledPlugins` contains at least one `@claude-plugins` entry.
+2. Scan all entries under `extraKnownMarketplaces` and find the one whose `source.repo` equals `"laurigates/claude-plugins"`. Capture that entry's key as `$MP_KEY`.
+3. Check that `enabledPlugins` contains at least one key with the suffix `@$MP_KEY`.
 4. Report:
    - OK: Both checks pass
-   - WARN: `enabledPlugins` is empty or missing (marketplace enrolled but no plugins enabled)
-   - ERROR: `extraKnownMarketplaces` is missing (run `/configure:claude-plugins --fix` to add it)
+   - WARN: `enabledPlugins` has no `@$MP_KEY` entries (marketplace enrolled but no plugins enabled)
+   - ERROR: no `extraKnownMarketplaces` entry with `source.repo = laurigates/claude-plugins` (run `/configure:claude-plugins --fix` to add it)
+
+Reference `jq` snippet (for verification or fix scripts):
+
+```bash
+MP_KEY=$(jq -r '.extraKnownMarketplaces // {} | to_entries | map(select(.value.source.repo == "laurigates/claude-plugins")) | .[0].key // empty' .claude/settings.json)
+if [ -z "$MP_KEY" ]; then
+  echo "ERROR: no extraKnownMarketplaces entry with source.repo = laurigates/claude-plugins"
+else
+  jq -e --arg k "@$MP_KEY" '.enabledPlugins // {} | to_entries | map(select(.key | endswith($k))) | length > 0' .claude/settings.json >/dev/null \
+    && echo "OK: marketplace enrolled as $MP_KEY with enabled plugins" \
+    || echo "WARN: marketplace $MP_KEY enrolled but no @${MP_KEY} entries in enabledPlugins"
+fi
+```
 
 ### Step 2: Run scope-specific audits
 
@@ -218,4 +233,4 @@ Re-run the relevant checks and confirm issue counts have dropped.
 | Stale `enabledPlugins` key in settings.json | Plugin appears enabled but no registry/marketplace entry | `/health:check --scope=registry --fix` |
 | Orphaned `projectPath` | Plugin installed for deleted project | `/health:check --scope=registry --fix` |
 | Invalid settings JSON | Settings file won't load | `/health:check` |
-| Missing marketplace enrollment | `@claude-plugins` skills unavailable in web sessions | `/configure:claude-plugins --fix` |
+| Missing marketplace enrollment | laurigates/claude-plugins skills unavailable in web sessions | `/configure:claude-plugins --fix` |
