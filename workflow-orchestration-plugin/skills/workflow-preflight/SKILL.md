@@ -1,15 +1,11 @@
 ---
 name: workflow-preflight
-description: |
-  Pre-work validation before starting implementation. Use when beginning work
-  on an issue, feature, or fix to verify remote state, check for existing PRs,
-  detect branch conflicts, and prevent redundant work. Catches problems that
-  cause wasted effort: already-merged fixes, stale branches, unclean diffs.
+description: Pre-work validation before implementation. Use when starting on an issue, feature, or fix to verify remote state, check for existing PRs, detect branch conflicts, and avoid wasted effort on already-merged fixes or stale branches.
 args: "[issue-number|branch-name]"
 allowed-tools: Bash(git fetch *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git remote *), Bash(git stash *), Bash(gh pr *), Bash(gh issue *), Read, Grep, Glob, TodoWrite
 argument-hint: optional issue number or branch name to check
 created: 2026-02-08
-modified: 2026-02-08
+modified: 2026-05-09
 reviewed: 2026-02-08
 ---
 
