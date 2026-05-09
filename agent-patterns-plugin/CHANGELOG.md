@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.20.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.19.0...agent-patterns-plugin-v2.20.0) (2026-05-09)
+
+
+### Features
+
+* **agent-patterns-plugin:** add meta-promote skill for cross-scope rule promotion ([#1291](https://github.com/laurigates/claude-plugins/issues/1291)) ([25fee42](https://github.com/laurigates/claude-plugins/commit/25fee4221c7e1f09d85c3a0ef1c50965ae98f585))
+
 ## [2.19.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.18.2...agent-patterns-plugin-v2.19.0) (2026-05-09)
 
 
