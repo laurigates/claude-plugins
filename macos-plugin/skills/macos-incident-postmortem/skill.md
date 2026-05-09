@@ -1,10 +1,10 @@
 ---
 name: macos-incident-postmortem
-description: Reconstruct what happened after a macOS GUI freeze, kernel panic, or unexplained reboot by parsing /Library/Logs/DiagnosticReports/, kern.boottime, and shell history. Use when the GUI hung, you can't tell whether the machine actually rebooted, or you're investigating recent panics, watchdog timeouts, jetsam events, or thermal throttling.
+description: "Reconstruct macOS GUI freeze, kernel panic, or unexplained reboot by parsing /Library/Logs/DiagnosticReports/, kern.boottime, and shell history. Use when investigating a GUI hang, ambiguous reboot, panics, watchdog timeouts, jetsam, or thermal throttling."
 user-invocable: false
 allowed-tools: Bash(uname *), Bash(sysctl *), Bash(uptime *), Bash(last *), Bash(ls *), Bash(find *), Bash(stat *), Bash(awk *), Bash(grep *), Bash(wc *), Bash(date *), Bash(log *), Bash(pmset *), Read, Grep, Glob, TodoWrite
 created: 2026-05-03
-modified: 2026-05-03
+modified: 2026-05-09
 reviewed: 2026-05-03
 ---
 
