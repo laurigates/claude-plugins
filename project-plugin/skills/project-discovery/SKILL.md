@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
+modified: 2026-05-09
 reviewed: 2026-04-25
 name: project-discovery
-description: Systematic project orientation for unfamiliar codebases. Automatically activates when Claude detects uncertainty about project state, structure, or tooling. Analyzes git state (branch, changes, commits), project type (language, framework, structure), and development tooling (build, test, lint, CI/CD). Provides structured summary with risk flags and recommendations. Use when entering new projects or when working on shaky assumptions.
+description: Systematic project orientation for unfamiliar codebases. Auto-activates on project uncertainty. Analyzes git state, project type, and dev tooling (build, test, lint, CI/CD). Use when entering new projects or working on shaky assumptions.
 user-invocable: false
 allowed-tools: Bash(ls *), Bash(find *), Bash(wc *), Read, Grep, Glob, TodoWrite
 ---
