@@ -1,17 +1,11 @@
 ---
 name: evaluate-improve
-description: |
-  Analyze skill evaluation results and suggest concrete improvements to SKILL.md instructions,
-  descriptions, examples, error handling, tool configuration, or structure. Use after running
-  evaluations when the user wants actionable recommendations for raising pass rates,
-  improving skill descriptions so they trigger correctly, iterating on a skill after
-  benchmarking, or when they mention "improve this skill", "fix skill triggering", or
-  "what should I change based on the eval results".
+description: Analyze skill evaluation results and suggest concrete improvements to SKILL.md content, descriptions, examples, or tool config. Use when raising pass rates after evaluations, fixing triggering, or iterating on a skill.
 args: <plugin/skill-name> [--apply] [--description-only]
 allowed-tools: Task, Read, Write, Edit, Glob, Grep, Bash(cat *), Bash(jq *), Bash(find *), Bash(diff *), AskUserQuestion, TodoWrite
 argument-hint: "git-plugin/git-commit [--apply]"
 created: 2026-03-04
-modified: 2026-04-19
+modified: 2026-05-09
 reviewed: 2026-03-04
 ---
 

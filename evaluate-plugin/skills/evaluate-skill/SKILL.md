@@ -1,9 +1,6 @@
 ---
 name: evaluate-skill
-description: |
-  Evaluate a skill's effectiveness by running test cases and grading results.
-  Use when you want to test whether a skill produces correct guidance, validate
-  skill improvements, or benchmark a skill before release.
+description: Evaluate a skill's effectiveness by running test cases and grading results. Use when testing whether a skill produces correct guidance, validating improvements, or benchmarking before release.
 args: <plugin/skill-name> [--create-evals] [--runs N] [--baseline]
 allowed-tools: Task, Read, Write, Edit, Glob, Grep, Bash(bash *), TodoWrite
 argument-hint: "git-plugin/git-commit [--create-evals] [--runs 3] [--baseline]"

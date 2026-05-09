@@ -1,9 +1,6 @@
 ---
 name: evaluate-report
-description: |
-  View evaluation results and benchmark reports. Use when you want to see
-  past eval results, compare benchmark runs, or review quality trends for
-  a skill or plugin.
+description: View evaluation results and benchmark reports for a skill or plugin. Use when reviewing past eval results, comparing benchmark runs, or tracking quality trends.
 args: <plugin/skill-name | plugin-name> [--latest] [--history] [--compare]
 allowed-tools: Read, Glob, Grep, Bash(cat *), Bash(jq *), Bash(find *), Bash(ls *), TodoWrite
 argument-hint: "git-plugin/git-commit [--latest] | git-plugin [--history]"
