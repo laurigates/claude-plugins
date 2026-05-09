@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.38.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.37.0...git-plugin-v2.38.0) (2026-05-09)
+
+
+### Features
+
+* **git-plugin:** enforce closing keywords and stacked-PR safety in git-pr ([#1289](https://github.com/laurigates/claude-plugins/issues/1289)) ([c7d068b](https://github.com/laurigates/claude-plugins/commit/c7d068b112ac12f3ba93103dfe62a149cf3c0df0))
+
 ## [2.37.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.36.2...git-plugin-v2.37.0) (2026-05-09)
 
 

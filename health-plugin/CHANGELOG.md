@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.2](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.9.1...health-plugin-v1.9.2) (2026-05-09)
+
+
+### Bug Fixes
+
+* **health-plugin:** match marketplace by source.repo, not local key ([#1288](https://github.com/laurigates/claude-plugins/issues/1288)) ([3dc40fb](https://github.com/laurigates/claude-plugins/commit/3dc40fbaf71fdff4969f8b7abad011ee734a624c))
+
 ## [1.9.1](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.9.0...health-plugin-v1.9.1) (2026-05-09)
 
 
