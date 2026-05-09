@@ -1,9 +1,6 @@
 ---
 name: UnoCSS
-description: |
-  Atomic CSS engine for on-demand utility class generation using UnoCSS.
-  Use when setting up utility-first CSS, configuring UnoCSS presets (wind3/wind4, icons,
-  typography), integrating with Vite/frameworks, or generating optimized atomic stylesheets.
+description: Atomic CSS engine for on-demand utility class generation with UnoCSS. Use when setting up utility-first CSS, configuring UnoCSS presets (wind3/wind4, icons, typography), or integrating with Vite.
 user-invocable: false
 allowed-tools: Bash, Read, Edit, Write, Grep, Glob, TodoWrite
 created: 2026-02-13
