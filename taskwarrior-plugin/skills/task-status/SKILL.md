@@ -1,12 +1,6 @@
 ---
 name: task-status
-description: |
-  Read-only consolidated taskwarrior queue report — pending, blocked,
-  ready, and drift detection between the queue and linked trackers / PRs.
-  When a GitHub remote is present, folds in gh pr status so "PR #99 green,
-  task #7 still pending" surfaces in one view. Use when auditing queue
-  health, orienting before a wave dispatch, spotting tasks that lost
-  their linked issue or PR, or producing a standup summary.
+description: Read-only taskwarrior queue report covering pending, blocked, ready tasks plus drift between the queue and linked PRs/trackers. Use when auditing queue health, orienting before a wave, or for standup summaries.
 args: "[--mine] [--blocked] [--stale=N] [--project=<name>] [--all]"
 allowed-tools: Bash(task *), Bash(git config *), Bash(git rev-parse *), Bash(gh auth *), Bash(gh pr *), Bash(jq *), Read, TodoWrite
 argument-hint: optional filters
