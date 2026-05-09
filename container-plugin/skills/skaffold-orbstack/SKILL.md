@@ -1,12 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
+modified: 2026-05-09
 reviewed: 2026-04-25
 name: skaffold-orbstack
-description: |
-  OrbStack-optimized Skaffold workflows for local Kubernetes development without port-forward.
-  Use when configuring Skaffold with OrbStack, accessing services via LoadBalancer or Ingress,
-  or when the user mentions OrbStack, k8s.orb.local, service access, or eliminating port-forward.
+description: OrbStack-optimized Skaffold workflows for local Kubernetes dev without port-forward. Use when configuring Skaffold with OrbStack, accessing services via LoadBalancer or Ingress, or mentioning OrbStack, k8s.orb.local, or eliminating port-forward.
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---

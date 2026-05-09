@@ -1,14 +1,9 @@
 ---
 created: 2026-01-15
-modified: 2026-04-25
+modified: 2026-05-09
 reviewed: 2026-04-25
 name: go-containers
-description: |
-  Go-specific container optimization patterns including static binary compilation,
-  scratch/distroless base images, CGO handling, and systematic optimization journey
-  from 846MB to 2.5MB (99.7% reduction). Covers ldflags, trimpath, and build flag
-  optimizations specific to Go applications.
-  Use when working with Go containers, Dockerfiles for Go apps, or optimizing Go image sizes.
+description: "Go container optimization: static binary compilation, scratch/distroless base images, CGO handling, ldflags, trimpath. Documented journey from 846MB to 2.5MB (99.7% reduction). Use when working with Go containers or optimizing Go image sizes."
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob, Edit, Write, TodoWrite, WebSearch, WebFetch
 ---

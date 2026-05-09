@@ -6,10 +6,7 @@ allowed-tools: Read, Write, Edit, Bash(git *), Bash(gh release *), Bash(gh pr *)
 args: <version> [--draft] [--prerelease]
 argument-hint: <version> [--draft] [--prerelease]
 disable-model-invocation: true
-description: |
-  Create and publish releases using release-please automation or manual GitHub releases.
-  Use when the user wants to cut a release, create a version tag, publish a GitHub release,
-  or set up release-please manifest configuration.
+description: Create and publish releases via release-please automation or manual GitHub releases. Use when cutting a release, tagging a version, or setting up release-please manifest config.
 name: deploy-release
 ---
 
