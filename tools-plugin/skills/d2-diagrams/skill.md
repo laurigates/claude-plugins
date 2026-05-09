@@ -1,14 +1,11 @@
 ---
 name: d2-diagrams
-description: |
-  Generate diagrams from declarative text using D2 - modern text-to-diagram language with
-  automatic layouts, themes, and advanced styling. Use when creating architecture diagrams,
-  flowcharts, decision trees, workflow diagrams, sequence flows, or ERDs from text definitions.
+description: Generate diagrams from text using D2 with automatic layouts and themes. Use when creating architecture diagrams, flowcharts, decision trees, sequence flows, or ERDs.
 user-invocable: false
 allowed-tools: Bash(d2 *), Read, Write, Grep, Glob, TodoWrite
 model: sonnet
 created: 2025-12-26
-modified: 2026-05-04
+modified: 2026-05-09
 reviewed: 2026-02-06
 ---
 

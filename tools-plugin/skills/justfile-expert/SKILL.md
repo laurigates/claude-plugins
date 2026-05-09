@@ -1,14 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-05-04
+modified: 2026-05-09
 reviewed: 2026-02-06
 name: justfile-expert
-description: |
-  Just command runner expertise, Justfile syntax, recipe development, and cross-platform
-  task automation. Covers recipe patterns, parameters, modules, settings, shebang recipes
-  for multi-language scripts, and workflow integration. Use when user mentions just,
-  justfile, recipes, command runner, task automation, project commands, or needs help
-  writing executable project documentation.
+description: Just command runner expertise — Justfile syntax, recipes, parameters, modules, shebang recipes. Use when authoring justfiles, project commands, or task automation.
 user-invocable: false
 allowed-tools: Bash, BashOutput, Grep, Glob, Read, Write, Edit, TodoWrite
 model: sonnet

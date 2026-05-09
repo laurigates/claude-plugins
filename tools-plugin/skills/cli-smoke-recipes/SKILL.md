@@ -1,18 +1,10 @@
 ---
 name: cli-smoke-recipes
-description: |
-  Advisory pattern for exposing pure-function modules via CLI subcommands
-  and a bulk-smoke justfile recipe. Applies to decoders, codecs, parsers,
-  validators, formatters, compilers, transpilers — any module with an
-  input-to-output contract. Use when designing a new module that
-  transforms data, when adding CLI access to an existing library, when
-  authoring smoke recipes that iterate every shipped input, or when
-  deciding whether a feature can advance past "in progress" without its
-  CLI surface.
+description: Expose pure-function modules (decoders, parsers, formatters) via CLI subcommands plus a bulk-smoke justfile recipe. Use when designing data-transform modules or authoring smoke recipes.
 allowed-tools: Read, Grep, Glob, TodoWrite
 model: sonnet
 created: 2026-04-24
-modified: 2026-05-04
+modified: 2026-05-09
 reviewed: 2026-04-24
 ---
 
