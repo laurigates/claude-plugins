@@ -13,12 +13,17 @@ Quality standards for maintaining effective, discoverable skills.
 
 ## Size Limits
 
-| File | Max Lines | Action if Exceeded |
-|------|-----------|-------------------|
-| `SKILL.md` | 500 | Extract to `REFERENCE.md` |
-| `REFERENCE.md` | No limit | Supporting file, loaded on demand |
+| Lines | Severity | Action |
+|-------|----------|--------|
+| ≤ 200 | OK | Anthropic's ideal — silent |
+| 201 – 250 | OK (advisory) | Within target band — no warning |
+| 251 – 500 | WARN | ⚠️ in compliance table; review for `REFERENCE.md` / `scripts/` extraction |
+| > 500 | ERROR | ❌ blocks commit; must extract before merge |
 
-**Official guideline**: Keep `SKILL.md` under 500 lines. Move detailed reference material to separate supporting files.
+**Anthropic's official guideline**: Keep `SKILL.md` under 200 lines.
+**Local hard ceiling**: 500 lines (enforced by `scripts/plugin-compliance-check.sh` `check_skill_size()`).
+
+`REFERENCE.md` has no size limit — it is a supporting file loaded on demand.
 
 ## Required Sections
 
@@ -134,7 +139,7 @@ my-skill/
 
 When reviewing skill/command changes:
 
-- [ ] SKILL.md is under 500 lines
+- [ ] SKILL.md is under 500 lines (target: ≤ 250; ideal: ≤ 200)
 - [ ] Has "When to Use" decision table
 - [ ] Has "Agentic Optimizations" table (for CLI/tool skills)
 - [ ] Description matches user intents (not just tool jargon)

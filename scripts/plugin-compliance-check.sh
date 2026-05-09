@@ -38,6 +38,7 @@ results_release=()
 results_bash=()
 results_desc=()
 results_when_to_use=()
+results_size=()
 results_overall=()
 
 # Helper: extract YAML frontmatter field
@@ -543,6 +544,49 @@ check_skill_when_to_use() {
   return 0
 }
 
+# Check 9: Skill body size
+# Anthropic's guidance is 200 lines; the local rule (.claude/rules/skill-quality.md)
+# documents 500 as the hard ceiling. Threshold table:
+#   ≤ 250 lines → OK (silent — within Anthropic's ideal + small advisory band)
+#   251 – 500   → WARN (review for REFERENCE.md / scripts/ extraction)
+#   > 500       → ERROR (exceeds documented ceiling — must extract before merge)
+# See .claude/rules/skill-quality.md "Size Limits".
+check_skill_size() {
+  local plugin="$1"
+  local skills_dir="${plugin}/skills"
+
+  if [ ! -d "$skills_dir" ]; then
+    return 0
+  fi
+
+  local has_errors=false
+  local has_warnings=false
+
+  while IFS= read -r -d '' skill_file; do
+    local skill_name
+    skill_name=$(basename "$(dirname "$skill_file")")
+
+    local line_count
+    line_count=$(wc -l < "$skill_file" | tr -d ' ')
+
+    if [ "$line_count" -gt 500 ]; then
+      issues+=("❌ ${plugin}/${skill_name}: SKILL.md is ${line_count} lines (>500 ceiling) — extract content to REFERENCE.md or scripts/ (see .claude/rules/skill-quality.md)")
+      has_errors=true
+    elif [ "$line_count" -gt 250 ]; then
+      recommendations+=("⚠️ ${plugin}/${skill_name}: SKILL.md is ${line_count} lines (>250) — consider extracting to REFERENCE.md or scripts/ (Anthropic ideal: 200, ceiling: 500)")
+      has_warnings=true
+    fi
+  done < <(find "$skills_dir" -type f \( -iname "SKILL.md" -o -iname "skill.md" \) -print0 2>/dev/null)
+
+  if $has_errors; then
+    return 2
+  elif $has_warnings; then
+    return 1
+  fi
+
+  return 0
+}
+
 # Main check loop
 for i in "${!PLUGINS[@]}"; do
   plugin="${PLUGINS[$i]}"
@@ -557,6 +601,7 @@ for i in "${!PLUGINS[@]}"; do
     results_bash+=("❌")
     results_desc+=("❌")
     results_when_to_use+=("❌")
+    results_size+=("❌")
     results_overall+=("❌")
     overall_failed=true
     continue
@@ -571,6 +616,7 @@ for i in "${!PLUGINS[@]}"; do
   bash_status=0; check_bash_patterns "$plugin" || bash_status=$?
   desc_status=0; check_skill_descriptions "$plugin" || desc_status=$?
   when_to_use_status=0; check_skill_when_to_use "$plugin" || when_to_use_status=$?
+  size_status=0; check_skill_size "$plugin" || size_status=$?
 
   results_json+=("$(to_symbol $json_status)")
   results_frontmatter+=("$(to_symbol $frontmatter_status)")
@@ -580,10 +626,11 @@ for i in "${!PLUGINS[@]}"; do
   results_bash+=("$(to_symbol $bash_status)")
   results_desc+=("$(to_symbol $desc_status)")
   results_when_to_use+=("$(to_symbol $when_to_use_status)")
+  results_size+=("$(to_symbol $size_status)")
 
   # Overall: ❌ if any ❌, ⚠️ if any ⚠️, ✅ if all ✅
   plugin_overall="✅"
-  for status in $json_status $frontmatter_status $body_status $marketplace_status $release_status $bash_status $desc_status $when_to_use_status; do
+  for status in $json_status $frontmatter_status $body_status $marketplace_status $release_status $bash_status $desc_status $when_to_use_status $size_status; do
     if [ "$status" -ge 2 ]; then
       plugin_overall="❌"
       overall_failed=true
@@ -598,11 +645,11 @@ done
 # Output report
 echo "## Plugin Compliance Review"
 echo ""
-echo "| Plugin | plugin.json | Frontmatter | Body | Marketplace | Release Config | Bash Patterns | Descriptions | When-to-Use | Overall |"
-echo "|--------|-------------|-------------|------|-------------|----------------|---------------|--------------|-------------|---------|"
+echo "| Plugin | plugin.json | Frontmatter | Body | Marketplace | Release Config | Bash Patterns | Descriptions | When-to-Use | Size | Overall |"
+echo "|--------|-------------|-------------|------|-------------|----------------|---------------|--------------|-------------|------|---------|"
 
 for i in "${!PLUGINS[@]}"; do
-  echo "| ${PLUGINS[$i]} | ${results_json[$i]} | ${results_frontmatter[$i]} | ${results_body[$i]} | ${results_marketplace[$i]} | ${results_release[$i]} | ${results_bash[$i]} | ${results_desc[$i]} | ${results_when_to_use[$i]} | ${results_overall[$i]} |"
+  echo "| ${PLUGINS[$i]} | ${results_json[$i]} | ${results_frontmatter[$i]} | ${results_body[$i]} | ${results_marketplace[$i]} | ${results_release[$i]} | ${results_bash[$i]} | ${results_desc[$i]} | ${results_when_to_use[$i]} | ${results_size[$i]} | ${results_overall[$i]} |"
 done
 
 echo ""

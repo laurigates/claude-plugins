@@ -1,7 +1,7 @@
 ---
 created: 2025-12-17
 modified: 2026-05-09
-reviewed: 2026-04-25
+reviewed: 2026-05-09
 description: Upgrade blueprint structure to the latest format version. Use when migrating between format versions (v1.x→v3.x), adding the v3.2 task registry, enabling v3.3 monorepo workspaces, or batch upgrading repos with --non-interactive.
 args: "[--non-interactive|-y]"
 argument-hint: "[--non-interactive|-y]"
@@ -395,93 +395,9 @@ If a migration step would require any prompt not listed above, **abort the upgra
       fi
       ```
 
-9. **Update manifest** (v3.0.0 schema):
-   ```json
-   {
-     "format_version": "3.0.0",
-     "created_at": "[preserved]",
-     "updated_at": "[now]",
-     "created_by": {
-       "blueprint_plugin": "3.0.0"
-     },
-     "project": {
-       "name": "[preserved]",
-       "type": "[preserved]",
-       "detected_stack": []
-     },
-     "structure": {
-       "has_prds": true,
-       "has_adrs": "[detected]",
-       "has_prps": "[detected]",
-       "has_work_orders": true,
-       "has_ai_docs": "[detected]",
-       "has_modular_rules": "[preserved]",
-       "has_document_detection": "[based on user choice]",
-       "claude_md_mode": "[preserved]"
-     },
-     "generated": {
-       "rules": {
-         "[rule-name]": {
-           "source": "docs/prds/...",
-           "source_hash": "sha256:...",
-           "generated_at": "[now]",
-           "plugin_version": "3.0.0",
-           "content_hash": "sha256:...",
-           "status": "current"
-         }
-       },
-       "commands": {}
-     },
-     "task_registry": {
-       "// note": "Added by v3.1 → v3.2 migration step above"
-     },
-     "custom_overrides": {
-       "rules": ["[any promoted rules]"],
-       "commands": []
-     },
-     "upgrade_history": [
-       {
-         "from": "{previous}",
-         "to": "3.0.0",
-         "date": "[now]",
-         "changes": ["Moved state to docs/blueprint/", "Converted skills to rules", "..."]
-       }
-     ]
-   }
-   ```
+9. **Update manifest** (v3.0.0 schema): write the manifest using the v3.0.0 schema template in [REFERENCE.md](REFERENCE.md). Preserve `created_at`, `project.name`, `project.type`, `structure.has_modular_rules`, and `structure.claude_md_mode` from the previous manifest. Set `updated_at` to now, `created_by.blueprint_plugin` to "3.0.0", and `generated.rules` from the migrated skills→rules conversion.
 
-10. **Report**:
-   ```
-   Blueprint upgraded successfully!
-
-   v{previous} → v3.0.0
-
-   State files moved to docs/blueprint/:
-   - .manifest.json
-   - feature-tracker.json
-   - work-orders/ directory
-   - ai_docs/ directory
-
-   Generated rules (.claude/rules/):
-   - {n} rules (converted from skills)
-
-   Custom layer (.claude/skills/):
-   - {n} promoted rules (preserved modifications)
-   - {n} promoted skills
-
-   [Document detection: enabled (if selected)]
-
-   Task registry:
-   - {n} tasks registered with scheduling metadata
-   - Auto-run mode: {user choice from migration step}
-   - Run /blueprint:status to see task health dashboard
-
-   New v3.0 architecture:
-   - Blueprint state: docs/blueprint/ (version-controlled with project)
-   - Generated rules: .claude/rules/ (project-specific context)
-   - Custom layer: Your overrides, never auto-modified
-   - Removed: .claude/blueprints/generated/ (no longer needed)
-   ```
+10. **Report**: print the upgrade report using the standard template in [REFERENCE.md](REFERENCE.md), substituting `{previous}` with the prior `format_version` and `{n}` placeholders with the actual counts.
 
 11. **Prompt for next action**:
 
