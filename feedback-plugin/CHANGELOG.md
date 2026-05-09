@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.3](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.6.2...feedback-plugin-v1.6.3) (2026-05-09)
+
+
+### Bug Fixes
+
+* **feedback-plugin:** tolerate non-git cwd in feedback-session Context ([#1287](https://github.com/laurigates/claude-plugins/issues/1287)) ([a0a5b30](https://github.com/laurigates/claude-plugins/commit/a0a5b3052d446ed75b7c934d8db95f03fa7a4749))
+
 ## [1.6.2](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.6.1...feedback-plugin-v1.6.2) (2026-05-09)
 
 
