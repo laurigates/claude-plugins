@@ -149,8 +149,6 @@ For fast reviews, at minimum check:
 
 # Code Anti-patterns Analysis
 
-Expert knowledge for systematic detection and analysis of anti-patterns, code smells, and quality issues across codebases using ast-grep and parallel agent delegation.
-
 
 ## Analysis Philosophy
 
@@ -590,7 +588,7 @@ This skill is designed to work with the `/code:antipatterns` command, which:
 
 ---
 
-## lint-check
+## code-lint
 
 ## Linting Execution
 
@@ -654,6 +652,7 @@ If no specific linters found:
 1. Check for Makefile: `make lint`
 2. Check for npm scripts: `npm run lint`
 3. Suggest installing appropriate linters via `/deps:install --dev`
+4. Suggest configuring project linting standards via /configure:linting
 
 
 ## Post-lint Actions
@@ -834,6 +833,12 @@ After all phases complete, report:
 - N reusable abstractions created
 - All verified: typecheck + lint + N passing tests
 ```
+
+
+## Related Skills
+
+- If dead code detected during consolidation → `/code:dead-code`
+- If complexity is high after consolidation → `/code:complexity`
 
 ---
 
@@ -1051,9 +1056,15 @@ return {
 };
 ```
 
+
+## Related Configure Skills
+
+- If error tracking not configured → `/configure:sentry` for error monitoring
+- If feature flags not managed → `/configure:feature-flags` for controlled rollouts
+
 ---
 
-## linter-autofix
+## code-lint-fix
 
 # Linter Autofix Patterns
 
@@ -1203,11 +1214,11 @@ Auto-detect project linters and run all appropriate fixers in one command:
 ```bash
 
 # Fix mode: detect linters and apply all autofixes
-bash "${CLAUDE_PLUGIN_ROOT}/skills/linter-autofix/scripts/detect-and-fix.sh"
+bash "${CLAUDE_PLUGIN_ROOT}/skills/code-lint-fix/scripts/detect-and-fix.sh"
 
 
 # Check-only mode: report issues without fixing
-bash "${CLAUDE_PLUGIN_ROOT}/skills/linter-autofix/scripts/detect-and-fix.sh" --check-only
+bash "${CLAUDE_PLUGIN_ROOT}/skills/code-lint-fix/scripts/detect-and-fix.sh" --check-only
 ```
 
 The script detects biome, eslint, prettier, ruff, black, clippy, rustfmt, gofmt, golangci-lint, and shellcheck. It reports which linters were found, runs them, and shows modified files. See [scripts/detect-and-fix.sh](scripts/detect-and-fix.sh) for details.
@@ -1229,3 +1240,4 @@ Stop and use different approach when:
 - Warning indicates potential bug (not just style)
 - Security-related linter rule
 - Type error requires interface/API changes
+- No linter configured → suggest /configure:linting or /configure:formatting

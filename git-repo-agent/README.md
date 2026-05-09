@@ -319,6 +319,11 @@ python scripts/compile_prompts.py --check
 
 The compiler strips Claude Code metadata (frontmatter, `allowed-tools`, `AskUserQuestion` references) and keeps domain knowledge sections, producing self-contained prompt fragments for each subagent.
 
+The compiler operates in two modes (see [ADR-009](docs/adr/009-standalone-install-prompt-fallback.md)):
+
+- **Monorepo (dev) mode**: live-compiles from sibling `*-plugin/skills/*/SKILL.md` sources.
+- **Standalone (installed) mode**: when sibling plugin sources are absent (e.g. after `uv tool install`), reads pre-compiled artifacts from `src/git_repo_agent/prompts/generated/`. Run `scripts/compile_prompts.py` after editing any upstream skill to keep the standalone artifacts in sync.
+
 ## Technology Stack Detection
 
 The `repo_analyze` tool detects:

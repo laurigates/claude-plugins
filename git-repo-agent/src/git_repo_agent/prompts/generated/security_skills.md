@@ -2,8 +2,6 @@
 
 # Git Security Checks
 
-Expert guidance for pre-commit security validation and secret detection using gitleaks and pre-commit hooks.
-
 
 ## Core Expertise
 
@@ -1319,8 +1317,6 @@ Documentation: SECURITY.md
 ## github-actions-auth-security
 
 # GitHub Actions Authentication and Security
-
-Expert knowledge for securing GitHub Actions workflows with Claude Code, including authentication methods, secrets management, and security best practices.
 
 
 ## Core Expertise

@@ -764,8 +764,6 @@ Use `@import` to reference existing documentation rather than duplicating conten
 ## blueprint-docs-list
 
 List blueprint documents programmatically from the filesystem. Extracts metadata from YAML frontmatter and markdown headers.
-
-**Use Case**: Audit document status, generate index tables, or get a quick overview of all project documentation.
 ## Execution
 
 
@@ -1047,7 +1045,7 @@ Always include solution:
 
 ---
 
-## docs-quality-check
+## code-docs-quality
 
 Analyze and validate documentation quality for a codebase, ensuring PRDs, ADRs, PRPs, CLAUDE.md, and .claude/rules/ are up to standards and current.
 ## Your Task
@@ -1395,7 +1393,7 @@ For each issue, provide specific guidance:
 
 
 ### Best Practices
-- Run `/docs:quality-check` monthly
+- Run `/code:docs-quality` monthly
 - Update `modified` dates when editing docs
 - Review `reviewed` dates quarterly
 - Use `/blueprint:adr` for new architecture decisions
@@ -1446,6 +1444,7 @@ Help the user understand next steps:
 - If Blueprint not initialized → suggest `/blueprint:init`
 - If ADRs missing → suggest `/blueprint:adr`
 - If PRDs missing → suggest `/blueprint:prd`
+- If documentation tooling not configured → suggest `/configure:docs`
 - If documentation outdated → provide update checklist
 - If standards not followed → show examples and templates
 

@@ -259,10 +259,6 @@ For detailed option reference, examples, and troubleshooting patterns, see REFER
 
 # GitHub Actions Inspection
 
-Expert knowledge for inspecting, debugging, and troubleshooting GitHub Actions workflow runs using gh CLI and GitHub API.
-
-For detailed examples, advanced patterns, and best practices, see .
-
 
 ## Core Expertise
 

@@ -14,6 +14,29 @@ from pathlib import Path
 _MODULE_DIR = Path(__file__).resolve().parent  # prompts/
 _REPO_ROOT = _MODULE_DIR.parent.parent.parent  # git-repo-agent/
 _PLUGINS_ROOT = _REPO_ROOT.parent  # claude-plugins/
+_GENERATED_DIR = _MODULE_DIR / "generated"  # Pre-compiled subagent prompts
+_GENERATED_SKILLS_DIR = _GENERATED_DIR / "skills"  # Pre-compiled per-skill files
+
+
+def _plugin_skill_available(skill_relpath: str) -> bool:
+    """Return True when ``skill_relpath`` resolves under the monorepo plugins root.
+
+    Live compilation requires sibling plugin checkouts. When ``git-repo-agent``
+    is installed standalone (e.g. via ``uv tool install``), ``_PLUGINS_ROOT``
+    points at the package's parent directory which does not contain
+    ``*-plugin/skills/*/SKILL.md``. In that case the runtime falls back to
+    pre-compiled artifacts shipped under ``prompts/generated/``.
+    """
+    return (_PLUGINS_ROOT / skill_relpath).exists()
+
+
+def _generated_skill_path(skill_relpath: str) -> Path:
+    """Map ``<plugin>/skills/<skill>/SKILL.md`` → ``generated/skills/<plugin>/<skill>.md``."""
+    parts = Path(skill_relpath).parts
+    if len(parts) >= 4 and parts[1] == "skills" and parts[-1] == "SKILL.md":
+        return _GENERATED_SKILLS_DIR / parts[0] / f"{parts[-2]}.md"
+    # Fallback: flatten the relpath under the generated tree.
+    return _GENERATED_SKILLS_DIR / Path(skill_relpath).with_suffix(".md")
 
 # Subagent → list of skill files (relative to PLUGINS_ROOT).
 #
@@ -218,13 +241,21 @@ def compile_subagent(name: str, skill_paths: list[str]) -> str:
 def get_compiled_prompt(subagent_name: str) -> str:
     """Get compiled prompt for a subagent, with caching.
 
-    Returns the compiled skills text, or empty string if the subagent
-    has no configured skills.
+    Live compiles from sibling plugin checkouts when present (monorepo dev
+    mode); otherwise falls back to the pre-compiled artifact under
+    ``prompts/generated/<subagent>_skills.md`` shipped with the package
+    (standalone install mode). Returns an empty string if the subagent has
+    no configured skills, no sources, and no pre-compiled fallback.
     """
     skill_paths = SUBAGENT_SKILLS.get(subagent_name)
     if not skill_paths:
         return ""
-    return compile_subagent(subagent_name, skill_paths)
+    if any(_plugin_skill_available(p) for p in skill_paths):
+        return compile_subagent(subagent_name, skill_paths)
+    fallback = _GENERATED_DIR / f"{subagent_name}_skills.md"
+    if fallback.exists():
+        return fallback.read_text(encoding="utf-8")
+    return ""
 
 
 @lru_cache(maxsize=None)
@@ -239,9 +270,14 @@ def get_compiled_skill(skill_relpath: str) -> str:
     driver to load exactly one skill per LLM call rather than bundling
     many skills into one subagent prompt.
 
-    Raises FileNotFoundError if the skill does not exist.
+    Raises FileNotFoundError if the skill does not exist in either the
+    monorepo plugin tree or the package's pre-compiled ``generated/skills/``
+    directory (standalone install mode).
     """
     skill_path = _PLUGINS_ROOT / skill_relpath
-    if not skill_path.exists():
-        raise FileNotFoundError(f"Skill not found: {skill_relpath}")
-    return compile_skill(skill_path)
+    if skill_path.exists():
+        return compile_skill(skill_path)
+    fallback = _generated_skill_path(skill_relpath)
+    if fallback.exists():
+        return fallback.read_text(encoding="utf-8")
+    raise FileNotFoundError(f"Skill not found: {skill_relpath}")
