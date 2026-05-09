@@ -1,9 +1,6 @@
 ---
 name: claude-security-settings
-description: |
-  Configure Claude Code security settings including permission wildcards, shell
-  operator protections, and project-level access controls. Use when setting up
-  project permissions, configuring allowed tools, or securing Claude Code workflows.
+description: Configure Claude Code security settings — permission wildcards, shell operator protections, project-level access controls. Use when setting up project permissions or restricting allowed tools.
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-01-20

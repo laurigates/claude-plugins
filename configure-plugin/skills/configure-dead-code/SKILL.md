@@ -2,12 +2,7 @@
 created: 2025-12-16
 modified: 2026-04-19
 reviewed: 2025-12-16
-description: |
-  Check and configure dead code detection tools (Knip, Vulture, cargo-machete, deadcode).
-  Use when setting up dead code detection for a new project, auditing whether Knip,
-  Vulture, or cargo-machete is configured correctly, migrating between dead code
-  detection tools, or adding dead code checks to CI/CD pipelines. Natural triggers:
-  "set up knip", "configure vulture", "detect unused code".
+description: Check and configure dead-code detection tools (Knip, Vulture, cargo-machete, deadcode). Use when setting up unused-code detection, migrating between tools, or adding dead-code checks to CI.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--tool <knip|vulture|deadcode|machete>]"
 argument-hint: "[--check-only] [--fix] [--tool <knip|vulture|deadcode|machete>]"

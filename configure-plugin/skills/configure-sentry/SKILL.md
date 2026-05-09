@@ -1,13 +1,8 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
+modified: 2026-05-09
 reviewed: 2025-12-16
-description: |
-  Check and configure Sentry error tracking for project standards. Use when setting up
-  Sentry for a new project, checking Sentry SDK installation and configuration compliance,
-  fixing hardcoded DSNs or missing env-var references, adding source map upload and
-  release tracking to CI/CD, or verifying Sentry config across frontend, Next.js, Node, or
-  Python projects.
+description: Check and configure Sentry error tracking. Use when installing the Sentry SDK, fixing hardcoded DSNs, or adding source map upload and release tracking for frontend, Next.js, Node, or Python.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--type <frontend|nextjs|python|node>]"
 argument-hint: "[--check-only] [--fix] [--type <frontend|nextjs|python|node>]"

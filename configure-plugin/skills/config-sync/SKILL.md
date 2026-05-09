@@ -1,9 +1,6 @@
 ---
 name: config-sync
-description: |
-  Extract, compare, and propagate tooling improvements across FVH repos.
-  Use when user says "sync workflows", "propagate config", "diff workflows",
-  "extract improvements", or "config sync".
+description: Extract, compare, and propagate tooling improvements across FVH repos. Use when syncing workflows, diffing configs across repos, or extracting improvements to apply elsewhere.
 allowed-tools: Bash(git *), Bash(gh *), Bash(fd *), Bash(rg *), Bash(diff *), Bash(sha256sum *), Bash(shasum *), Read, Grep, Glob, Edit, Write, TodoWrite, AskUserQuestion
 args: <mode> [options]
 argument-hint: "extract [repo]|diff <file-pattern>|apply <file-pattern> [--from repo] [--to repos|--all]"

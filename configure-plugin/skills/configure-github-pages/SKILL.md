@@ -2,12 +2,7 @@
 created: 2025-12-16
 modified: 2026-04-19
 reviewed: 2025-12-16
-description: |
-  Check and configure GitHub Pages deployment for documentation sites. Use when
-  setting up GitHub Pages deployment, creating or updating a GitHub Actions workflow
-  for Pages deployment, migrating from peaceiris/actions-gh-pages to the official
-  actions/deploy-pages, or auditing Pages workflow for outdated action versions.
-  Natural triggers: "deploy to github pages", "set up gh-pages", "configure pages workflow".
+description: Check and configure GitHub Pages deployment workflows for docs sites. Use when setting up Pages, migrating peaceiris/actions-gh-pages to actions/deploy-pages, or auditing Pages action versions.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix] [--source <docs|site|custom>]"
 argument-hint: "[--check-only] [--fix] [--source <docs|site|custom>]"

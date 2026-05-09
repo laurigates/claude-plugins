@@ -2,12 +2,7 @@
 created: 2026-02-03
 modified: 2026-04-19
 reviewed: 2026-02-03
-description: |
-  Configure GitHub Actions auto-merge workflow for ArgoCD Image Updater branches.
-  Use when setting up auto-merge for image-updater-** branches, creating the
-  argocd-automerge.yml workflow from scratch, verifying PAT and permissions for
-  auto-merge workflows, or updating an existing ArgoCD auto-merge workflow.
-  Natural triggers: "auto-merge ArgoCD PRs", "set up image-updater automerge".
+description: Configure GitHub Actions auto-merge for ArgoCD Image Updater branches. Use when setting up auto-merge for image-updater-** branches, creating argocd-automerge.yml, or verifying PAT permissions.
 allowed-tools: Glob, Grep, Read, Write, Edit, TodoWrite
 args: "[--check-only] [--fix]"
 argument-hint: "[--check-only] [--fix]"

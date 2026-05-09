@@ -2,12 +2,7 @@
 created: 2025-12-16
 modified: 2026-04-19
 reviewed: 2025-12-16
-description: |
-  Run all infrastructure standards checks and configure compliance across a project.
-  Use when performing a comprehensive infrastructure audit, setting up a new project
-  against all standards, batch-fixing compliance issues with --fix, or validating
-  CI/CD compliance. Natural triggers: "check all standards", "audit project compliance",
-  "configure everything", "run all configure checks".
+description: Run all infrastructure standards checks and apply compliance fixes across a project. Use when performing a comprehensive audit, onboarding a new project against all standards, or batch-fixing with --fix.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, SlashCommand
 args: "[--check-only] [--fix] [--type <frontend|infrastructure|python>]"
 argument-hint: "[--check-only] [--fix] [--type <frontend|infrastructure|python>]"

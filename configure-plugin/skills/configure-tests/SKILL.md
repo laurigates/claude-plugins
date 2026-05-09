@@ -1,12 +1,8 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
+modified: 2026-05-09
 reviewed: 2025-12-16
-description: |
-  Check and configure testing frameworks and infrastructure. Use when setting up testing
-  infrastructure for a project, checking test framework configuration, migrating to
-  modern frameworks (Vitest, pytest, cargo-nextest), validating coverage configuration,
-  or when the user asks to configure Vitest, Jest, pytest, or nextest.
+description: Configure testing frameworks (Vitest, Jest, pytest, cargo-nextest). Use when setting up test infrastructure, migrating to a modern framework, or validating coverage configuration.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--framework <vitest|jest|pytest|nextest>]"
 argument-hint: "[--check-only] [--fix] [--framework <vitest|jest|pytest|nextest>]"

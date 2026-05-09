@@ -2,13 +2,7 @@
 created: 2025-12-16
 modified: 2026-04-19
 reviewed: 2025-12-16
-description: |
-  Check and configure code formatting tools (Biome, Prettier, Ruff format, rustfmt).
-  Use when setting up a formatter for a project, migrating from Prettier to Biome or
-  Black to Ruff, auditing formatter configuration for best practices, adding
-  format-on-save and CI format checks, or standardizing formatting across a monorepo.
-  Natural triggers: "set up formatting", "configure biome", "migrate to ruff format",
-  "add prettier".
+description: Check and configure code formatters (Biome, Prettier, Ruff format, rustfmt). Use when setting up formatting, migrating Prettier to Biome or Black to Ruff, adding format-on-save, or wiring CI format checks.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--formatter <biome|prettier|ruff|rustfmt>]"
 argument-hint: "[--check-only] [--fix] [--formatter <biome|prettier|ruff|rustfmt>]"

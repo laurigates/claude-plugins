@@ -1,17 +1,9 @@
 ---
 name: multi-repo-discipline
-description: |
-  Advisory rules for working in a multi-repository workspace — read-only
-  fixtures, upstream/downstream pairs, and authoritative repos that own
-  shared specs. Covers when cross-repo edits are allowed during agent
-  dispatch vs when commits in sibling repos require user confirmation.
-  Use when starting work in a parent directory that contains multiple
-  git repos, when dispatching agents that may touch sibling repos, when
-  updating a spec in an authoritative repo with downstream consumers,
-  or when a skill is about to edit a sibling's `CLAUDE.md` / `.claude/`.
+description: Advisory rules for multi-repo workspaces — read-only fixtures, upstream/downstream pairs, authoritative spec owners. Use when dispatching agents that may touch sibling repos or editing another repo's `.claude/`.
 allowed-tools: Bash(git rev-parse *), Bash(git status *), Bash(git branch *), Bash(git remote *), Bash(git log *), Read, Glob, Grep, TodoWrite
 created: 2026-04-24
-modified: 2026-04-24
+modified: 2026-05-09
 reviewed: 2026-04-24
 ---
 
