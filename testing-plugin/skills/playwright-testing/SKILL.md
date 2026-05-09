@@ -1,12 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-02-14
+modified: 2026-05-09
 reviewed: 2025-12-16
 name: playwright-testing
-description: |
-  Playwright end-to-end testing for web applications. Cross-browser testing (Chromium, Firefox, WebKit),
-  visual regression, API testing, mobile emulation. Use when writing E2E tests, testing across browsers,
-  or setting up automated UI testing workflows.
+description: "Playwright E2E testing for web apps with cross-browser (Chromium, Firefox, WebKit), visual regression, API testing, and mobile emulation. Use when writing E2E tests or setting up automated UI testing."
 user-invocable: false
 allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebFetch, WebSearch, BashOutput, KillShell
 ---
