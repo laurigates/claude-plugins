@@ -1,15 +1,9 @@
 ---
 created: 2026-03-04
-modified: 2026-04-30
+modified: 2026-05-09
 reviewed: 2026-04-30
 name: vault-files
-description: |
-  Obsidian vault file and folder operations via the official CLI — reading,
-  creating, appending, prepending, moving, renaming, deleting notes, file
-  info and word counts, listing files/folders, daily notes, random and
-  unique notes, and the web viewer. Use when the user mentions Obsidian
-  notes, vault files, daily notes, creating/editing/renaming notes, or
-  managing vault content.
+description: Obsidian vault file/folder operations via the official CLI — read, create, append, prepend, move, rename, delete notes, file info, listing, daily/random/unique notes, web viewer. Use when mentioning vault files, daily notes, or managing content.
 user-invocable: false
 allowed-tools: Bash(obsidian *), Read, Grep, Glob
 ---

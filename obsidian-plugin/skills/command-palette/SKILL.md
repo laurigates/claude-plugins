@@ -1,14 +1,9 @@
 ---
 created: 2026-04-30
-modified: 2026-04-30
+modified: 2026-05-09
 reviewed: 2026-04-30
 name: command-palette
-description: |
-  Run any Obsidian command (built-in or plugin-registered) from the CLI, list
-  available commands, and inspect or look up hotkeys. Use when the user wants
-  to trigger a command they would normally invoke from the command palette,
-  enumerate plugin-registered commands, or check which hotkey is bound to an
-  action.
+description: Run any Obsidian command (built-in or plugin-registered) from the CLI, list available commands, and inspect or look up hotkeys. Use when the user wants to trigger a command, enumerate commands, or check which hotkey is bound to an action.
 user-invocable: false
 allowed-tools: Bash(obsidian *), Read, Grep, Glob
 ---
