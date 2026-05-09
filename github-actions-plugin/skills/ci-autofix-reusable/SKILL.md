@@ -1,9 +1,6 @@
 ---
 name: ci-autofix-reusable
-description: |
-  Generate a reusable GitHub Actions workflow for automated CI failure detection
-  and fixing with Claude Code. Use when you want a workflow_call-based reusable
-  workflow that multiple repos or caller workflows can invoke with custom inputs.
+description: Generate a reusable GitHub Actions workflow for automated CI failure detection and fixing with Claude Code. Use when you want a workflow_call entry that multiple repos can invoke.
 allowed-tools: Bash(gh run *), Bash(gh pr *), Bash(gh issue *), Bash(git status *), Bash(git diff *), Bash(git log *), Read, Write, Edit, Grep, Glob, TodoWrite
 args: "[--setup] [--caller] [--workflows <names>] [--dry-run]"
 argument-hint: --setup to create reusable workflow, --caller to create caller workflow

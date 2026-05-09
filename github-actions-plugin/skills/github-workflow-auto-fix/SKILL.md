@@ -1,9 +1,6 @@
 ---
 name: github-workflow-auto-fix
-description: |
-  Set up automated CI failure detection and fixing using Claude Code. Use when
-  you want to create a GitHub Actions workflow that automatically analyzes workflow
-  failures, applies fixes for common issues, and opens issues for complex problems.
+description: Set up automated CI failure detection and fixing with Claude Code. Use when you want a GitHub Actions workflow that analyzes failures, applies common fixes, and opens issues for the rest.
 allowed-tools: Bash(gh run *), Bash(gh pr *), Bash(gh issue *), Bash(git status *), Bash(git diff *), Bash(git log *), Read, Write, Edit, Grep, Glob, TodoWrite
 args: "[--setup] [--workflows <names>] [--dry-run]"
 argument-hint: --setup to create workflow, or --dry-run to preview
