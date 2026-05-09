@@ -245,7 +245,7 @@
       "name": "feedback-plugin",
       "source": "./feedback-plugin",
       "description": "Session feedback analysis - capture skill bugs as GitHub issues and learn from weekly friction across sessions",
-      "version": "1.6.2",
+      "version": "1.6.3",
       "keywords": [
         "feedback",
         "session-analysis",
@@ -275,7 +275,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.37.0",
+      "version": "2.38.0",
       "keywords": [
         "git",
         "github",
@@ -317,7 +317,7 @@
       "name": "health-plugin",
       "source": "./health-plugin",
       "description": "Diagnose and fix Claude Code configuration issues - plugin registry, settings, hooks, MCP servers",
-      "version": "1.9.1",
+      "version": "1.9.2",
       "keywords": [
         "health",
         "diagnostics",
