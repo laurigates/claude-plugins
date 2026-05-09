@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.5](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.2.4...taskwarrior-plugin-v1.2.5) (2026-05-09)
+
+
+### Documentation
+
+* **taskwarrior-plugin:** add task-tracking lifecycle doc (resolves [#1293](https://github.com/laurigates/claude-plugins/issues/1293) conflicts) ([#1294](https://github.com/laurigates/claude-plugins/issues/1294)) ([53feabc](https://github.com/laurigates/claude-plugins/commit/53feabcf605aea12544c248fa3e09ca0f94b9e2a))
+
 ## [1.2.4](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.2.3...taskwarrior-plugin-v1.2.4) (2026-05-09)
 
 
