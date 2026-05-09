@@ -1,19 +1,11 @@
 ---
 created: 2026-04-14
-modified: 2026-04-14
+modified: 2026-05-09
 reviewed: 2026-04-14
 allowed-tools: Bash(bash *), Bash(sg *), Read, Grep, Glob, TodoWrite
 args: "[PATH] [--lang <shell|js|py|go|rust|auto>] [--severity <low|med|high>] [--emit-patch]"
 argument-hint: "[PATH] [--lang LANG] [--severity LEVEL] [--emit-patch]"
-description: |
-  Scan for syntactic error swallowing — catch/except blocks that discard errors,
-  `|| true` and `2>/dev/null` idioms in shell, floating promises in JS/TS,
-  ignored Go error returns, and discarded Rust Results. Classifies each
-  finding by severity, recommends a context-appropriate surfacing channel
-  (CLI stderr, web toast, structured log, re-raise), and applies a privacy
-  redaction policy when generating suggested replacement text. Use when
-  failures "disappear", a CI job passes despite the real work failing, or a
-  user reports that a feature silently does nothing.
+description: "Scan for error swallowing — catch/except discarding errors, `|| true`, `2>/dev/null`, floating promises in JS/TS, ignored Go errors, discarded Rust Results. Use when failures \"disappear\" or CI passes despite failing work."
 name: code-error-swallowing
 ---
 

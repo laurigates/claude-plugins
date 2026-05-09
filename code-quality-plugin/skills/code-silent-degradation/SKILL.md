@@ -1,17 +1,12 @@
 ---
 created: 2026-02-22
-modified: 2026-05-04
+modified: 2026-05-09
 reviewed: 2026-02-22
 allowed-tools: Bash(grep *), Read, Grep, Glob, Edit, Write, TodoWrite
 model: opus
 args: "[PATH] [--fix]"
 argument-hint: "[PATH] [--fix]"
-description: |
-  Detect silent degradation patterns where operations succeed with zero results
-  because preconditions are unmet. Use when features report "success" but produce
-  nothing, scan results show 0 items with no explanation, or UX shows green
-  success banners for empty outcomes. Finds missing precondition checks, silent
-  skips, and misleading success messages.
+description: "Detect silent degradation patterns where ops succeed with zero results because preconditions are unmet. Use when features report \"success\" but produce nothing, scans show 0 items unexplained, or UX shows green banners for empty outcomes."
 name: code-silent-degradation
 ---
 

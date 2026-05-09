@@ -1,15 +1,10 @@
 ---
 name: code-lint-fix
-description: |
-  Cross-language linter autofix commands and common fix patterns for biome,
-  ruff, clippy, shellcheck, and more. Use when the user wants to auto-fix
-  lint errors, sort imports, remove unused imports, quote shell variables,
-  apply prefer-const or clippy suggestions, or run a detect-and-fix pass
-  across a mixed-language project.
+description: "Cross-language linter autofix patterns for biome, ruff, clippy, shellcheck. Use when auto-fixing lint errors, sorting/removing imports, quoting shell vars, applying prefer-const/clippy suggestions, or detect-and-fix across mixed languages."
 allowed-tools: Bash(ruff *), Bash(eslint *), Bash(biome *), Bash(prettier *), Read, Edit, Grep
 model: sonnet
 created: 2025-12-27
-modified: 2026-05-04
+modified: 2026-05-09
 reviewed: 2026-04-25
 ---
 

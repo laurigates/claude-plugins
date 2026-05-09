@@ -1,16 +1,11 @@
 ---
 name: code-review-checklist
-description: |
-  Structured code review checklist covering security, correctness,
-  performance, quality, and consistency. Use when the user asks for a code
-  review, wants to check for hardcoded secrets or injection vulnerabilities,
-  verify error handling and edge cases, audit for N+1 queries or resource
-  leaks, or apply a priority-ordered review to a pull request.
+description: "Structured code review checklist for security, correctness, performance, quality, consistency. Use when reviewing PRs, checking hardcoded secrets/injection, verifying error handling and edge cases, or auditing for N+1 queries and resource leaks."
 user-invocable: false
 allowed-tools: Read, Grep, Glob
 model: opus
 created: 2025-12-27
-modified: 2026-05-04
+modified: 2026-05-09
 reviewed: 2026-04-25
 ---
 
