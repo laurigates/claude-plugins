@@ -1,13 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
+modified: 2026-05-09
 reviewed: 2026-04-25
 name: helm-chart-development
-description: |
-  Create, test, and package Helm charts for Kubernetes. Covers helm create, Chart.yaml,
-  values.yaml, template development, chart dependencies, packaging, and repository publishing.
-  Use when user mentions Helm charts, helm create, Chart.yaml, values.yaml, helm lint,
-  helm template, helm package, or Kubernetes packaging.
+description: Create, test, and package Helm charts. Covers helm create, Chart.yaml, values.yaml, template development, dependencies, packaging, and repository publishing. Use when the user mentions Helm charts, helm lint/template/package, or Kubernetes packaging.
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---

@@ -1,13 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
+modified: 2026-05-09
 reviewed: 2026-04-25
 name: helm-release-recovery
-description: |
-  Recover from failed Helm deployments, rollback releases, fix stuck states
-  (pending-install, pending-upgrade). Covers helm rollback, release history,
-  atomic deployments. Use when user mentions rollback, failed Helm upgrade,
-  stuck release, or recovering from Helm deployment failures.
+description: Recover from failed Helm deployments, rollback releases, fix stuck states (pending-install, pending-upgrade). Covers helm rollback, release history, and atomic deployments. Use when the user mentions rollback, failed Helm upgrade, or stuck release.
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---
