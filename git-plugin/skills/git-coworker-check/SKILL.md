@@ -1,15 +1,11 @@
 ---
 name: git-coworker-check
-description: |
-  Detect whether another Claude agent is working in the same repo clone before
-  running destructive git operations (stash, reset, checkout --). Use when
-  starting a session in a non-worktree checkout, or before any "clean up the
-  working tree" action that could wipe a coworker's in-flight changes.
+description: Detect another Claude agent working in the same repo clone before destructive git ops (stash, reset, checkout --). Use when starting a session in a non-worktree checkout or before any working-tree cleanup that could wipe a coworker's changes.
 args: "[--check | --claim | --release]"
 argument-hint: "[--claim | --release | --check (default)]"
 allowed-tools: Bash(bash *), Bash(git status *), Bash(git stash *), Bash(git rev-parse *), Read, TodoWrite
 created: 2026-04-21
-modified: 2026-04-21
+modified: 2026-05-09
 reviewed: 2026-04-21
 ---
 

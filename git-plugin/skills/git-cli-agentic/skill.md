@@ -1,15 +1,10 @@
 ---
 name: git-cli-agentic
-description: |
-  Git commands optimized for AI agent workflows with porcelain output and
-  deterministic, machine-readable formats. Use when the user asks for
-  scriptable git status/diff/log commands, needs porcelain=v2 output,
-  --numstat-based diff counts, custom --format placeholders in git log,
-  branch tracking info, or main-branch-development push patterns.
+description: Git commands with porcelain and machine-readable output for agent workflows. Use when scripting status/diff/log, porcelain=v2, --numstat counts, custom --format placeholders, or branch tracking info.
 user-invocable: false
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git remote *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git restore *), Read
 created: 2025-01-16
-modified: 2026-04-25
+modified: 2026-05-09
 reviewed: 2026-04-25
 ---
 

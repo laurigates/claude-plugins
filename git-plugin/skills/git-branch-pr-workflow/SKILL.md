@@ -1,15 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
+modified: 2026-05-09
 reviewed: 2026-04-25
 name: git-branch-pr-workflow
-description: |
-  Branch management, pull request workflows, and GitHub integration. Main-branch
-  development pattern (push main to remote feature branches), modern Git commands
-  (switch, restore), and GitHub MCP tools. Use when user mentions creating branches,
-  opening PRs, git switch, git restore, feature branches, pull requests, or GitHub
-  PR workflows. For naming conventions see git-branch-naming, for rebase patterns
-  see git-rebase-patterns.
+description: Branch management and PR workflows — main-branch dev pattern, git switch/restore, GitHub MCP. Use when creating branches, opening PRs, or working with feature branches. For naming see git-branch-naming, for rebase see git-rebase-patterns.
 user-invocable: false
 allowed-tools: Bash, Read, mcp__github__create_pull_request, mcp__github__list_pull_requests, mcp__github__update_pull_request
 ---

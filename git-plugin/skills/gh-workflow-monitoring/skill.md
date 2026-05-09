@@ -1,15 +1,10 @@
 ---
 name: gh-workflow-monitoring
-description: |
-  Monitor GitHub Actions workflow runs with blocking watch commands instead
-  of polling loops or timeouts. Use when the user wants to watch a workflow
-  run until it completes, wait for CI after a push, trigger a workflow and
-  follow its progress, diagnose a failed run with `gh run view --log-failed`,
-  or find the latest in-progress runs.
+description: Monitor GitHub Actions runs with blocking watch commands instead of polling loops. Use when waiting for CI after push, following a workflow to completion, or diagnosing failed runs with --log-failed.
 user-invocable: false
 allowed-tools: Bash(gh run *), Bash(gh workflow *), Bash(gh pr *), Read
 created: 2025-01-16
-modified: 2026-04-25
+modified: 2026-05-09
 reviewed: 2026-04-25
 ---
 

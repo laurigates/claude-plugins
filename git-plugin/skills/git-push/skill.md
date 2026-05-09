@@ -1,13 +1,9 @@
 ---
 created: 2026-01-21
-modified: 2026-04-25
+modified: 2026-05-09
 reviewed: 2026-04-25
 name: git-push
-description: |
-  Push local commits to remote repositories. Handles branch tracking, upstream setup,
-  and safe push patterns. Use when user says "push", "push changes", "send to remote",
-  "update remote", or similar. This skill pushes existing commits - see git-commit for
-  creating commits and git-pr for pull request creation.
+description: Push local commits to remote — handles branch tracking, upstream setup, safe push patterns. Use when user says "push", "send to remote", or "update remote". Pushes existing commits — see git-commit for commits and git-pr for PR creation.
 user-invocable: false
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git push *), Bash(git branch *), Bash(git remote *), Bash(git rev-list *), Bash(git fetch *), Read, Grep, Glob, TodoWrite
 ---

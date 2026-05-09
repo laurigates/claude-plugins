@@ -1,13 +1,9 @@
 ---
 created: 2025-12-28
-modified: 2026-04-25
+modified: 2026-05-09
 reviewed: 2026-04-25
 name: release-please-configuration
-description: |
-  Configures release-please for monorepos and single-package repos. Handles
-  manifest files, component tagging, changelog sections, and extra-files setup.
-  Use when setting up automated releases, fixing release workflow issues, or
-  configuring version bump automation.
+description: Configure release-please for monorepos and single-package repos — manifests, component tagging, changelog sections, extra-files. Use when setting up automated releases, fixing release workflow issues, or configuring version bump automation.
 user-invocable: false
 allowed-tools: Read, Write, Edit, Bash, Grep, Glob, TodoWrite
 ---

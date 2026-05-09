@@ -1,13 +1,10 @@
 ---
 name: git-branch-naming
-description: |
-  Git branch naming conventions for consistent, traceable branches. Use when creating
-  new branches, discussing branch naming standards, or setting up repository conventions.
-  Covers type prefixes (feat, fix, chore), issue linking, and kebab-case formatting.
+description: Git branch naming conventions — type prefixes (feat/fix/chore), issue linking, kebab-case. Use when creating branches or setting up repo conventions.
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 created: 2026-01-30
-modified: 2026-01-30
+modified: 2026-05-09
 reviewed: 2026-01-30
 ---
 

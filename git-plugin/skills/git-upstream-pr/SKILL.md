@@ -1,16 +1,12 @@
 ---
 name: git-upstream-pr
-description: |
-  Submit clean PRs to upstream repositories from a fork. Use when you need to
-  contribute changes back to the original repo, cherry-pick fork commits for
-  upstream, or create cross-fork pull requests. Handles branch creation from
-  upstream/main, commit selection, squashing, and cross-fork PR creation.
+description: Submit clean PRs to upstream repos from a fork — branch from upstream/main, commit selection, squashing, cross-fork PR creation. Use when contributing changes back upstream, cherry-picking fork commits, or creating cross-fork pull requests.
 args: "[--commits sha1,sha2] [--branch name] [--upstream owner/repo] [--draft] [--dry-run]"
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git remote *), Bash(git fetch *), Bash(git switch *), Bash(git cherry-pick *), Bash(git reset *), Bash(git commit *), Bash(git push *), Bash(git stash *), Bash(git rev-list *), Bash(git rev-parse *), Bash(git branch *), Bash(gh pr *), Bash(gh repo *), Bash(gh auth *), AskUserQuestion, Read, Grep, Glob, TodoWrite
 argument-hint: --commits abc123,def456 or --branch feat/my-upstream-pr
 disable-model-invocation: true
 created: 2026-03-02
-modified: 2026-03-02
+modified: 2026-05-09
 reviewed: 2026-03-02
 ---
 
