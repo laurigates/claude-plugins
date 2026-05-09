@@ -1,16 +1,11 @@
 ---
 name: attributes-dashboard
-description: |
-  Compact text-based health dashboard showing scores, findings, and severity breakdown for
-  documentation, testing, security, code quality, and CI/CD. Use when the user wants a
-  quick visual health overview of the codebase, to review health before a session, to
-  compare category scores at a glance, or to see a compact terminal-style summary of
-  critical/high/medium/low findings with action suggestions.
+description: Compact text dashboard showing scores, findings, and severity for docs, testing, security, code quality, and CI/CD. Use when the user wants a quick health overview, to compare category scores, or a terminal-style summary with action suggestions.
 allowed-tools: Bash(test *), Read, Glob, Grep
 args: "[--format <type>]"
 argument-hint: ""
 created: 2026-03-15
-modified: 2026-04-19
+modified: 2026-05-09
 reviewed: 2026-03-15
 ---
 
