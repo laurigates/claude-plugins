@@ -36,7 +36,7 @@ Analyze the current session for skill feedback and create GitHub issues to track
 
 ## Context
 
-- Git remotes: !`git remote -v`
+- Git remotes: !`git remote -v 2>/dev/null || echo "(no git repository)"`
 
 Open feedback issues are fetched during Step 3 (deduplication), scoped to the
 resolved `$TARGET_REPO`. They are not pre-fetched in context because
