@@ -23,9 +23,9 @@ Declared in `~/.taskrc`. `task-add` installs them on first use (with confirmatio
 | `+fr` | Feature request |
 | `+re` | Research task |
 | `+gh` | Linked to a GitHub issue or PR |
-| `+pr-ready` | Implementation done, open PR, waiting on merge |
-| `+needs-review` | Ready for review |
-| `+blocked-on-merge` | Waiting on another PR to merge |
+| `+pr_ready` | Implementation done, open PR, waiting on merge |
+| `+needs_review` | Ready for review |
+| `+blocked_on_merge` | Waiting on another PR to merge |
 | `+blocked` | Blocked on external factor |
 
 ## Lifecycle
