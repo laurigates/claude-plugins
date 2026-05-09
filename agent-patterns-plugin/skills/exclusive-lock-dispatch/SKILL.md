@@ -1,19 +1,11 @@
 ---
 name: exclusive-lock-dispatch
-description: |
-  Pre-dump-then-dispatch pattern for tools that hold an exclusive lock —
-  Ghidra projects, database migration locks, single-writer caches, git
-  indexes on shared checkouts, taskwarrior bulk modifications. Use when
-  planning a parallel fan-out and one or more candidate agents would need
-  a resource that cannot tolerate concurrent access, when a locked tool's
-  "retry" errors are showing up in agent returns, or when deciding whether
-  to serialise an agent or pre-compute its outputs. Complements
-  parallel-agent-dispatch §Wave Splits and workflow-wave-dispatch.
+description: Pre-dump-then-dispatch pattern for tools holding an exclusive lock (Ghidra, migrations, single-writer caches). Use when fanning out parallel agents that need a non-concurrent resource.
 user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-24
-modified: 2026-05-04
+modified: 2026-05-09
 reviewed: 2026-04-24
 ---
 

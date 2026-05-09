@@ -1,13 +1,9 @@
 ---
 created: 2026-03-04
-modified: 2026-04-25
+modified: 2026-05-09
 reviewed: 2026-04-25
 name: properties
-description: |
-  Obsidian YAML frontmatter property management via the official CLI.
-  Covers reading, setting, and removing properties/metadata on notes.
-  Use when user mentions frontmatter, properties, metadata, YAML,
-  or note attributes like status, tags, dates, aliases.
+description: Obsidian YAML frontmatter property management via the official CLI. Covers reading, setting, and removing properties on notes. Use when the user mentions frontmatter, properties, metadata, YAML, or note attributes like status, tags, dates, aliases.
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---

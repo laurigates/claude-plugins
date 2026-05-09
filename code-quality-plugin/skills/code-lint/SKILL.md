@@ -1,16 +1,12 @@
 ---
 created: 2025-12-16
-modified: 2026-05-04
+modified: 2026-05-09
 reviewed: 2026-04-25
 allowed-tools: Bash(ruff *), Bash(eslint *), Bash(rustfmt *), Bash(gofmt *), Bash(prettier *), Read, SlashCommand
 model: sonnet
 args: "[path] [--fix] [--format]"
 argument-hint: "[path] [--fix] [--format]"
-description: |
-  Universal linter that auto-detects and runs the appropriate linting tools
-  for the project's language. Use when the user asks to lint the code, run
-  ruff/eslint/clippy/gofmt, auto-fix lint errors with --fix, format code,
-  or run pre-commit checks across a polyglot repository.
+description: "Universal linter that auto-detects ruff/eslint/clippy/gofmt for the project language. Use when linting code, auto-fixing with --fix, formatting, or running pre-commit checks across a polyglot repo."
 name: code-lint
 ---
 

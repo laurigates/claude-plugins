@@ -1,12 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
+modified: 2026-05-09
 reviewed: 2026-04-25
 name: cargo-llvm-cov
-description: |
-  Code coverage for Rust using LLVM instrumentation with support for multiple output formats and CI integration.
-  Use when measuring test coverage, generating coverage reports, enforcing coverage thresholds, or integrating with codecov/coveralls.
-  Trigger terms: coverage, llvm-cov, code coverage, test coverage, coverage report, codecov, coveralls, branch coverage.
+description: "Code coverage for Rust using LLVM instrumentation, multiple output formats, and CI integration. Use when measuring coverage, generating reports, enforcing thresholds, or integrating codecov/coveralls. Triggers: coverage, llvm-cov, codecov."
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---

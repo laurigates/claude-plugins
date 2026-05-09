@@ -1,14 +1,9 @@
 ---
 created: 2026-04-17
-modified: 2026-04-25
+modified: 2026-05-09
 reviewed: 2026-04-25
 name: vault-frontmatter
-description: |
-  Offline maintenance of YAML frontmatter in Obsidian notes. Use when the
-  user asks to strip legacy `id:` fields, add missing frontmatter blocks,
-  remove null tag values, clean up unrendered Templater markers like
-  `{{title}}` or `<% tp.file.cursor() %>`, fix bare emoji placeholder tags,
-  or add `context: fvh` to FVH notes in bulk.
+description: "Offline maintenance of YAML frontmatter in Obsidian notes. Use when the user asks to strip legacy `id:` fields, add missing frontmatter, remove null tag values, clean up unrendered Templater markers, or fix bare emoji placeholder tags in bulk."
 user-invocable: false
 allowed-tools: Read, Edit, Write, Grep, Glob
 ---

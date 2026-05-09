@@ -1,17 +1,12 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
+modified: 2026-05-09
 reviewed: 2026-04-25
 allowed-tools: Read, Bash(git *), mcp__github__get_pull_request, mcp__github__list_issues, TodoWrite
 args: "[resource-name] [deployment-type]"
 argument-hint: "[resource-name] [deployment-type]"
 disable-model-invocation: true
-description: |
-  Generate professional deployment handoff documentation for a deployed service or resource,
-  including service overview, technical stack, access URLs, configuration, monitoring, and a
-  developer checklist. Use when the user is handing off a deployed service to another
-  developer, documenting deployment details for a ticket, creating client-facing deployment
-  summaries, or generating access information for a new team member.
+description: "Generate deployment handoff docs for a deployed service: overview, tech stack, access URLs, configuration, monitoring, and developer checklist. Use when handing off a service, documenting deployment, or generating client-facing summaries."
 name: deploy-handoff
 ---
 

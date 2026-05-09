@@ -3,7 +3,7 @@ created: 2026-01-01
 modified: 2026-04-25
 reviewed: 2026-04-25
 name: http-load-testing
-description: Stress test and benchmark HTTP endpoints. Use when you need to measure request latency percentiles, find a server's breaking point under load, or validate SLA targets with proper coordinated-omission correction.
+description: Stress test HTTP endpoints with oha. Use when measuring latency percentiles, finding a server's breaking point under load, or validating SLA targets with coordinated-omission correction.
 user-invocable: false
 allowed-tools: Bash(hey *), Bash(ab *), Bash(wrk *), Bash(curl *), Read, Grep, Glob, TodoWrite
 ---

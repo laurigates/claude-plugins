@@ -1,12 +1,8 @@
 ---
 created: 2026-01-30
-modified: 2026-05-04
+modified: 2026-05-09
 reviewed: 2026-02-14
-description: |
-  Derive Claude rules from git commit log decisions. Newer commits override older decisions
-  when conflicts exist. Use when the user asks to "derive rules from git history", wants to
-  extract implicit project decisions from refactor/fix/feat commits, codify coding standards
-  from commit patterns, or generate code-style, testing, and api-design rules retroactively.
+description: Derive Claude rules from git commit history (newer commits override older). Use when extracting implicit decisions from refactor/fix/feat commits or codifying code-style, testing, and api-design rules.
 args: "[--since DATE] [--scope SCOPE]"
 argument-hint: "--since 2024-01-01 for date range, --scope api for specific area"
 allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion, Task

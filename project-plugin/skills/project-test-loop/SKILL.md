@@ -1,15 +1,10 @@
 ---
-description: |
-  Run an automated test - fix - refactor TDD cycle until tests pass and
-  no refactoring opportunities remain. Use when the user asks to loop on
-  failing tests, iterate on a test pattern, run a TDD cycle, fix failing
-  tests and then refactor, or drive implementation via RED/GREEN/REFACTOR
-  until everything is green.
+description: Run an automated test-fix-refactor TDD cycle until tests pass and no refactoring opportunities remain. Use when the user asks to loop on failing tests, run a TDD cycle, or drive implementation via RED/GREEN/REFACTOR until green.
 args: "[test-pattern] [--max-cycles <N>]"
 argument-hint: "Test pattern to focus on, --max-cycles to limit iterations"
 allowed-tools: Read, Edit, Bash
 created: 2025-12-16
-modified: 2026-04-25
+modified: 2026-05-09
 reviewed: 2026-04-25
 name: project-test-loop
 ---

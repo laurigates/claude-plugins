@@ -1,13 +1,10 @@
 ---
 name: dual-write
-description: |
-  Dual write (double write) migration pattern for safely transitioning between data stores.
-  Use when planning or implementing database migrations, switching storage backends, migrating
-  to new schemas, or reviewing code that writes to multiple systems simultaneously.
+description: Dual write (double write) migration pattern for safely transitioning between data stores. Use when planning database migrations, switching storage backends, migrating to new schemas, or reviewing code that writes to multiple systems simultaneously.
 user-invocable: false
 allowed-tools: Read, Grep, Glob, Edit, Write, Bash, TodoWrite
 created: 2026-02-18
-modified: 2026-02-18
+modified: 2026-05-09
 reviewed: 2026-02-18
 ---
 

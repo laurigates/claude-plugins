@@ -1,20 +1,11 @@
 ---
 name: parallel-agent-dispatch
-description: |
-  Dispatch contract for any workflow that spawns more than one agent in parallel —
-  whether via the native TeamCreate / agent-teams flow or plain parallel Agent tool
-  fan-out. Covers the three recurring failure modes: worktree hygiene collisions,
-  unbounded agent scope leading to context overflow, and silent agent exits that
-  leave loose ends invisible to the orchestrator. Use when planning to spawn two
-  or more agents that run concurrently, when authoring a lead/orchestrator prompt
-  that will fan out work, or when recovering from a silent agent exit or worktree
-  collision. Complements agent-teams (TeamCreate mechanics) and
-  custom-agent-definitions (agent file structure).
+description: Dispatch contract for spawning multiple agents in parallel. Covers worktree collisions, scope overflow, and silent exits. Use when fanning out concurrent agents or authoring a lead prompt.
 user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-21
-modified: 2026-05-06
+modified: 2026-05-09
 reviewed: 2026-04-25
 ---
 

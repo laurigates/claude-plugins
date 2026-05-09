@@ -1,14 +1,8 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
+modified: 2026-05-09
 reviewed: 2025-12-16
-description: |
-  Check and configure integration testing for services, databases, and external
-  dependencies. Use when setting up integration testing with Supertest, pytest, or
-  Testcontainers, creating docker-compose.test.yml for local test service containers,
-  auditing integration test setup, adding integration test jobs to GitHub Actions,
-  or separating integration from unit tests. Natural triggers: "set up integration
-  tests", "add testcontainers", "configure supertest".
+description: Configure integration testing with Supertest, pytest, or Testcontainers. Use when setting up integration tests, creating docker-compose.test.yml, or separating integration from unit tests.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix] [--framework <supertest|pytest|testcontainers>]"
 argument-hint: "[--check-only] [--fix] [--framework <supertest|pytest|testcontainers>]"

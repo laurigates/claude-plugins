@@ -1,11 +1,6 @@
 ---
 name: prose-synthesize
-description: |
-  Synthesize unstructured thinking into a structured, actionable plan. Use when user provides
-  stream-of-consciousness thoughts, scattered notes, or a brain dump and needs them organized
-  into a coherent plan with goals, actions, and priorities. Trigger phrases: "synthesize",
-  "organize my thoughts", "turn this into a plan", "make sense of this", "structure this",
-  "formalize these notes", "what should I do with all this".
+description: Synthesize unstructured thinking into a structured, actionable plan with goals and priorities. Use when given stream-of-consciousness notes, brain dumps, or scattered thoughts that need organizing.
 args: "[prose to synthesize]"
 allowed-tools: Read, Edit, Write, Grep, Glob, TodoWrite
 argument-hint: <unstructured thoughts or file path>

@@ -1,14 +1,8 @@
 ---
 created: 2026-01-02
-modified: 2026-05-04
+modified: 2026-05-09
 reviewed: 2026-04-25
-description: |
-  Synchronize feature tracker with TODO.md, taskwarrior sidecars, and PRDs; manage tasks.
-  Use when the user asks to "sync feature tracker", reconcile discrepancies between
-  TODO.md checkboxes and tracker status, drain WO entries from a taskwarrior sidecar
-  (bpid/bpdoc UDAs) into tasks.completed with --drain-wave, recalculate completion
-  statistics, add/complete tasks in tasks.in_progress, or generate a markdown progress
-  summary with --summary.
+description: Sync feature tracker with TODO.md, taskwarrior sidecars (bpid/bpdoc UDAs), and PRDs. Use when reconciling TODO.md vs tracker, draining WO entries with --drain-wave, recalculating stats, or generating --summary.
 allowed-tools: Read, Write, Bash, Glob, AskUserQuestion
 model: sonnet
 name: blueprint-feature-tracker-sync

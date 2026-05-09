@@ -1,13 +1,9 @@
 ---
 created: 2026-03-19
-modified: 2026-04-25
+modified: 2026-05-09
 reviewed: 2026-04-25
 name: git-issue-hierarchy
-description: |
-  Manage sub-issues and native GitHub dependency relationships (blocked_by /
-  blocking) between issues. Use when breaking issues into sub-tasks, checking
-  sub-issue completion progress, marking one issue as blocked by another, or
-  viewing a dependency graph before starting work.
+description: Manage sub-issues and GitHub dependency relationships (blocked_by/blocking). Use when breaking issues into sub-tasks, checking sub-issue progress, marking one issue blocked by another, or viewing a dependency graph before starting work.
 args: "<parent-issue> [--add <N...>] [--remove <N...>] [--create \"title\"] [--status] [--deps] [--blocking] [--block <N>] [--blocked-by <N>] [--unblock <N>]"
 argument-hint: <parent-issue> [--add N] [--status] [--deps] [--blocked-by N]
 user-invocable: true

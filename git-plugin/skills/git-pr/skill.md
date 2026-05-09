@@ -1,13 +1,9 @@
 ---
 created: 2026-01-21
-modified: 2026-04-29
+modified: 2026-05-09
 reviewed: 2026-04-29
 name: git-pr
-description: |
-  Create pull requests with proper descriptions, labels, and issue references. Handles
-  draft mode, reviewers, and base branch selection. Use when user says "create PR",
-  "open pull request", "submit for review", or similar. This skill creates PRs from
-  pushed branches - see git-commit for commits and git-push for pushing.
+description: Create pull requests with descriptions, labels, and issue references. Use when user says "create PR", "open pull request", or "submit for review". Creates PRs from pushed branches — see git-commit for commits and git-push for pushing.
 user-invocable: false
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git remote *), Bash(git push *), Bash(git fetch *), Bash(git rev-list *), Bash(gh pr *), Bash(gh issue *), Bash(gh repo *), Read, Grep, Glob, TodoWrite
 ---

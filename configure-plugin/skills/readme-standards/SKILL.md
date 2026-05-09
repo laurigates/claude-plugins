@@ -3,9 +3,7 @@ created: 2025-12-17
 modified: 2026-04-25
 reviewed: 2026-04-25
 name: readme-standards
-description: |
-  README.md templates and standards. Use when generating or improving README files,
-  checking README compliance, or when the user mentions README best practices or documentation.
+description: README.md templates and standards. Use when generating or improving README files, checking README compliance, or applying README best practices.
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---

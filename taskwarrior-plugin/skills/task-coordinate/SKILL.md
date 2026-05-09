@@ -1,13 +1,6 @@
 ---
 name: task-coordinate
-description: |
-  Surface the next N unblocked taskwarrior tasks sorted by urgency,
-  filtered to skip any that contend on the same exclusive lock (Ghidra
-  project, git index, migration, bulk task store). Produces a
-  candidate-agent list for a parallel or wave dispatch. Use when
-  planning a parallel-agent-dispatch wave, when deciding which tasks
-  share a dispatch slot, or when deciding whether to pre-dump a locked
-  resource before fanning out.
+description: Surface the next N unblocked taskwarrior tasks sorted by urgency, skipping lock-contending tasks. Use when planning a parallel-agent-dispatch wave or deciding which tasks share a dispatch slot.
 args: "[--n=N] [--lock=<resource>] [--wave] [--project=<name>] [--all]"
 allowed-tools: Bash(task *), Bash(git rev-parse *), Bash(jq *), Read, TodoWrite
 argument-hint: optional count (default 3) and lock filter

@@ -1,13 +1,9 @@
 ---
 created: 2026-01-21
-modified: 2026-04-25
+modified: 2026-05-09
 reviewed: 2026-04-25
 name: git-commit
-description: |
-  Create commits with conventional messages and issue references. Handles staging,
-  pre-commit hooks, and automatic issue detection. Use when user says "commit",
-  "commit locally", "save changes", "stage and commit", or similar. This skill
-  creates local commits only - see git-push for remote operations.
+description: Create commits with conventional messages and issue references. Use when user says "commit", "save changes", or "stage and commit". Local commits only — see git-push for remote.
 user-invocable: false
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git restore *), Bash(pre-commit *), Bash(gh issue *), Read, Grep, Glob, TodoWrite
 ---

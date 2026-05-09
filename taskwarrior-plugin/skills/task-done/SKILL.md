@@ -1,12 +1,6 @@
 ---
 name: task-done
-description: |
-  Close a taskwarrior task, annotate it with the landing commit hash, drain
-  the linked blueprint feature-tracker entry, and — when GitHub linkage is
-  present — offer to close the linked issue or comment on the linked PR.
-  Use when finishing a coordination task, marking a WO as complete, closing
-  out research after findings are promoted to docs, or closing a GitHub
-  issue linked via ghid.
+description: Close a taskwarrior task, annotate it with the landing commit, drain the linked feature-tracker entry, and optionally close linked GitHub issues/PRs. Use when finishing a coordination task or marking a WO complete.
 args: "<task-id> [commit-hash]"
 allowed-tools: Bash(task *), Bash(git config *), Bash(git log *), Bash(git rev-parse *), Bash(gh auth *), Bash(gh issue *), Bash(gh pr *), Read, Edit, TodoWrite
 argument-hint: task id (required), commit sha (optional — defaults to HEAD)

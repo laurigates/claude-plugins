@@ -1,17 +1,12 @@
 ---
 name: mypy-to-ty
-description: |
-  Migrate a Python project from mypy to ty (Astral's type checker). Use when
-  .pre-commit-config.yaml contains mirrors-mypy, or when [tool.mypy] config
-  exists in pyproject.toml, and you want to switch to the faster ty checker.
-  Swaps the pre-commit hook to a local repo running uvx ty check, converts
-  [tool.mypy] to [tool.ty], and removes mypy.ini.
+description: Migrate a Python project from mypy to ty (Astral's type checker). Use when .pre-commit-config.yaml has mirrors-mypy or [tool.mypy] config exists. Swaps the hook to local uvx ty check, converts [tool.mypy] to [tool.ty], and removes mypy.ini.
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash(find *), Bash(test *), Bash(pre-commit *), Bash(uvx *), AskUserQuestion, TodoWrite
 model: sonnet
 args: "[--check-only] [--fix]"
 argument-hint: "[--check-only] [--fix]"
 created: 2026-04-14
-modified: 2026-05-04
+modified: 2026-05-09
 reviewed: 2026-04-14
 ---
 

@@ -1,14 +1,9 @@
 ---
 created: 2026-04-17
-modified: 2026-04-25
+modified: 2026-05-09
 reviewed: 2026-04-25
 name: vault-templates
-description: |
-  Obsidian Templater conventions and drift repair. Use when the user asks
-  to fix unrendered Templater markers like `<% tp.file.cursor() %>`,
-  replace `{{title}}` or `{{date}}` placeholders in daily notes, clean up
-  notes committed before Templater finished running, or audit daily-note
-  structure drift against the canonical template.
+description: Obsidian Templater conventions and drift repair. Use when the user asks to fix unrendered Templater markers like `<% tp.file.cursor() %>`, replace `{{title}}`/`{{date}}` placeholders, or audit daily-note structure drift.
 user-invocable: false
 allowed-tools: Read, Edit, Write, Grep, Glob
 ---

@@ -1,13 +1,8 @@
 ---
 created: 2026-04-25
-modified: 2026-05-04
+modified: 2026-05-09
 reviewed: 2026-04-25
-description: |
-  Audit user stories against codebase capabilities and tests, producing a tier-ranked
-  coverage gap report. Use when the user asks to "audit stories", run a "story audit"
-  / "coverage audit" / "PRD reconciliation", surface PRD↔code drift, identify untested
-  critical paths, or find "implicit stories" that exist in code but never made it back
-  into the PRD. Read-only — writes a single audit artifact under docs/blueprint/audits/.
+description: Audit user stories against codebase and tests for tier-ranked coverage gaps. Use when running "story audit" / "PRD reconciliation", surfacing PRD<->code drift, or finding implicit stories. Read-only — writes one artifact under docs/blueprint/audits/.
 args: "[--scope <area>] [--prd <path>] [--no-write] [--report-only]"
 argument-hint: "--scope auth to limit; --prd docs/prds/PRD-001.md to override; --no-write skips artifact"
 allowed-tools: Read, Write, Glob, Grep, Bash, Task, AskUserQuestion

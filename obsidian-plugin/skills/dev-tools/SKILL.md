@@ -1,14 +1,9 @@
 ---
 created: 2026-04-30
-modified: 2026-04-30
+modified: 2026-05-09
 reviewed: 2026-04-30
 name: dev-tools
-description: |
-  Obsidian developer commands for plugin and theme development — DevTools,
-  Chrome DevTools Protocol, JavaScript eval, captured console/error buffers,
-  CSS and DOM inspection, mobile emulation, and screenshots. Use when the
-  user is developing a plugin or theme, debugging the Obsidian app, or
-  needs to introspect the running renderer state.
+description: Obsidian developer commands for plugin/theme dev — DevTools, CDP, JavaScript eval, console/error buffers, CSS/DOM inspection, mobile emulation, screenshots. Use when developing a plugin/theme, debugging the app, or introspecting the renderer.
 user-invocable: false
 allowed-tools: Bash(obsidian *), Read, Grep, Glob
 ---

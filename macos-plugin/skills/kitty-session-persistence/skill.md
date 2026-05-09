@@ -1,10 +1,10 @@
 ---
 name: kitty-session-persistence
-description: Snapshot and restore kitty terminal sessions across crashes, reboots, and GUI hangs on macOS. Use when you want to survive WindowServer hangs without losing open tabs, configure a periodic kitty session snapshot, or restore a snapshot after a force-reboot.
+description: "Snapshot and restore kitty terminal sessions across crashes, reboots, and GUI hangs on macOS. Use when surviving WindowServer hangs without losing tabs, configuring periodic snapshots, or restoring after a force-reboot."
 user-invocable: false
 allowed-tools: Bash(kitty *), Bash(kitten *), Bash(launchctl *), Bash(uname *), Bash(plutil *), Bash(test *), Read, Write, Edit, Grep, Glob
 created: 2026-05-03
-modified: 2026-05-03
+modified: 2026-05-09
 reviewed: 2026-05-03
 ---
 

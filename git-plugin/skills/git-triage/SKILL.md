@@ -1,18 +1,11 @@
 ---
 name: git-triage
-description: |
-  Triage open GitHub issues and PRs in one sweep. Scans the codebase and merged PRs for
-  evidence of issue completion, evaluates PR CI state, merge readiness, and review
-  decision, flags stale items, and cross-links issues to the PRs that resolve them.
-  Recommends actions by default; only closes or merges with explicit --auto-close or
-  --auto-merge flags. Use for periodic backlog grooming, pre-release cleanup, post-burst
-  queue reduction, or when the user asks to "triage issues", "triage PRs", "groom the
-  backlog", or "check what's open on this repo".
+description: Triage open GitHub issues and PRs in one sweep — cross-link, flag stale items, recommend actions. Use when grooming the backlog, doing pre-release cleanup, or when the user asks to "triage issues/PRs".
 args: "[--type issues|prs|both] [--batch N] [--repo owner/name] [--days-stale-issue N] [--days-stale-pr N] [--auto-close] [--auto-merge] [--oldest-first]"
 argument-hint: "--type both --batch 10 (defaults: days-stale-issue=90, days-stale-pr=30, current repo)"
 allowed-tools: Bash(gh issue *), Bash(gh pr *), Bash(gh api *), Bash(gh repo *), Bash(git log *), Bash(rg *), Read, Grep, Glob, AskUserQuestion, TodoWrite
 created: 2026-04-22
-modified: 2026-04-22
+modified: 2026-05-09
 reviewed: 2026-04-22
 ---
 

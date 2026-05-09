@@ -1,15 +1,9 @@
 ---
 created: 2026-03-04
-modified: 2026-04-30
+modified: 2026-05-09
 reviewed: 2026-04-30
 name: search-discovery
-description: |
-  Obsidian vault search and discovery via the official CLI — full-text and
-  grep-style context search, tag listing and lookup, outgoing/incoming link
-  traversal, outline navigation, orphan and dead-end detection, and broken
-  wikilink audits. Use when the user mentions searching notes, finding tags,
-  exploring links/backlinks, headings/outline, orphaned or dead-end notes,
-  or broken wikilinks.
+description: Obsidian vault search and discovery via the official CLI — full-text/grep search, tag listing, link traversal, outline, orphan/dead-end detection, and broken wikilink audits. Use when searching notes, exploring backlinks, or auditing wikilinks.
 user-invocable: false
 allowed-tools: Bash(obsidian *), Read, Grep, Glob
 ---

@@ -1,16 +1,12 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
+modified: 2026-05-09
 reviewed: 2026-04-25
 allowed-tools: Bash(git status *), Bash(git branch *), Bash(git stash *), Bash(git prune *), Bash(git gc *), Bash(git repack *), Bash(git fsck *), Bash(git rm *), Bash(du *), Read, Glob, TodoWrite
 args: "[--prune] [--gc] [--verify] [--branches] [--stash] [--all]"
 argument-hint: "[--prune] [--gc] [--verify] [--branches] [--stash] [--all]"
 disable-model-invocation: true
-description: |
-  Perform repository maintenance and cleanup - garbage collection, branch
-  pruning, stash cleanup, and integrity verification. Use when the user asks
-  to clean up the repo, run git gc, delete merged branches, prune old
-  stashes, verify repo integrity with git fsck, or shrink the .git directory.
+description: Repository maintenance and cleanup — gc, branch pruning, stash cleanup, integrity verification. Use when user asks to clean up the repo, run git gc, delete merged branches, prune stashes, run git fsck, or shrink .git.
 name: git-maintain
 ---
 

@@ -1,13 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
+modified: 2026-05-09
 reviewed: 2026-04-25
 name: helm-debugging
-description: |
-  Debug and troubleshoot Helm deployment failures, template errors, and configuration
-  issues. Covers helm template, helm lint, dry-run, debugging YAML parse errors,
-  value type errors, and resource conflicts. Use when user mentions Helm errors,
-  debugging Helm, template rendering issues, or troubleshooting Helm deployments.
+description: Debug Helm deployment failures, template errors, and configuration issues. Covers helm template, helm lint, dry-run, YAML parse errors, value type errors, and resource conflicts. Use when the user mentions Helm errors or template rendering issues.
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---

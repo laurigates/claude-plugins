@@ -1,13 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-02-14
+modified: 2026-05-09
 reviewed: 2025-12-16
 name: basedpyright-type-checking
-description: |
-  Basedpyright static type checker configuration, installation, and usage patterns.
-  Use when implementing type checking, configuring LSP, comparing type checkers,
-  or setting up strict type validation in Python projects.
-  Triggered by: basedpyright, pyright, type checking, LSP, mypy alternative, static analysis.
+description: "Basedpyright static type checker config, installation, and usage. Use when implementing type checking, configuring LSP, comparing type checkers, or setting up strict type validation. Triggers: basedpyright, pyright, type checking, mypy alternative."
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---

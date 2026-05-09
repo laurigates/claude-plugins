@@ -3,10 +3,7 @@ created: 2025-12-16
 modified: 2026-04-29
 reviewed: 2026-04-29
 name: ci-workflows
-description: |
-  GitHub Actions workflow standards. Use when configuring CI/CD workflows, checking
-  workflow compliance, or when the user mentions GitHub Actions, container builds,
-  or CI/CD automation.
+description: GitHub Actions workflow standards. Use when configuring CI/CD workflows, checking workflow compliance, or working with container builds and CI/CD automation.
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---

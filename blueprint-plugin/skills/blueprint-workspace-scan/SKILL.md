@@ -1,16 +1,11 @@
 ---
 name: blueprint-workspace-scan
-description: |
-  Discover child blueprint workspaces under a monorepo root and refresh the root
-  manifest's workspaces.children registry with cached feature-tracker stats.
-  Use when you add/remove a child blueprint, when `/blueprint:status` shows stale
-  portfolio data, or when migrating a root from v3.2 to v3.3. Requires
-  format_version >= 3.3.0.
+description: Discover child blueprint workspaces under a monorepo root and refresh the manifest's workspaces.children registry. Use when adding/removing a child blueprint, when /blueprint:status shows stale portfolio data, or migrating to v3.3.
 args: "[--max-depth N] [--dry-run]"
 argument-hint: "--dry-run to preview without writing; --max-depth sets search depth (default 4)"
 allowed-tools: Bash(bash *), Read, Glob
 created: 2026-04-12
-modified: 2026-04-12
+modified: 2026-05-09
 reviewed: 2026-04-12
 ---
 

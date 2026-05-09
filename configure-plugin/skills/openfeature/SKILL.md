@@ -1,13 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
+modified: 2026-05-09
 reviewed: 2026-04-25
 name: openfeature
-description: |
-  OpenFeature vendor-agnostic feature flag SDK with standardized API across
-  languages. Covers SDK installation, flag evaluation, providers, and hooks.
-  Use when implementing feature flags, A/B testing, canary releases, or when
-  user mentions OpenFeature, feature toggles, or progressive rollouts.
+description: OpenFeature vendor-agnostic feature flag SDK — installation, flag evaluation, providers, hooks. Use when implementing feature flags, A/B testing, canary releases, or progressive rollouts.
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---

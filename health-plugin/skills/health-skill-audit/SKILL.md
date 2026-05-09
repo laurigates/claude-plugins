@@ -1,14 +1,8 @@
 ---
 created: 2026-04-24
-modified: 2026-04-24
+modified: 2026-05-09
 reviewed: 2026-04-24
-description: |
-  Audit the plugin skill tree for skill-to-skill overlap, split-pressure inside
-  a single SKILL.md, and small sibling skills that could consolidate. Use when
-  the user asks to find overlapping skills, surface skills that should extract
-  a REFERENCE.md or scripts/ directory, locate clusters of confusingly similar
-  skills (e.g. configure-*-test* siblings, test-* fragmentation, *-development
-  variants), or run `/health:skill-audit`.
+description: Audit the plugin skill tree for skill-to-skill overlap, split-pressure inside one SKILL.md, and small siblings worth consolidating. Use when finding confusing clusters (configure-*-test*, test-*, *-development) or surfacing REFERENCE.md candidates.
 allowed-tools: Bash(python3 *), Read, TodoWrite
 args: "[--plugin <name>] [--strict]"
 argument-hint: "[--plugin <name>] [--strict]"

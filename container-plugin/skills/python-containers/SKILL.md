@@ -1,14 +1,9 @@
 ---
 created: 2026-01-15
-modified: 2026-02-14
+modified: 2026-05-09
 reviewed: 2026-01-15
 name: python-containers
-description: |
-  Python-specific container optimization patterns including slim base images (NOT Alpine),
-  virtual environment handling, multi-stage builds with pip/poetry/uv, and optimization
-  from ~1GB to ~80-120MB. Covers musl libc issues, wheel building, and Python-specific
-  dependency management patterns.
-  Use when working with Python containers, Dockerfiles for Python apps, or optimizing Python image sizes.
+description: "Python container optimization: slim images (NOT Alpine), virtualenv, multi-stage builds with pip/poetry/uv, musl libc gotchas, wheel building. Reduces ~1GB to ~80-120MB. Use when working with Python containers or optimizing image sizes."
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob, Edit, Write, TodoWrite, WebSearch, WebFetch
 ---

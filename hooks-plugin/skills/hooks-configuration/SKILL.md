@@ -1,16 +1,10 @@
 ---
 name: hooks-configuration
-description: |
-  Claude Code hooks configuration and development. Covers hook lifecycle events,
-  configuration patterns, input/output schemas, and common automation use cases.
-  Use when user mentions hooks, automation, PreToolUse, PostToolUse, SessionStart,
-  SubagentStart, PermissionRequest, WorktreeCreate, WorktreeRemove, TeammateIdle,
-  TaskCompleted, ConfigChange, or needs to enforce consistent behavior in Claude
-  Code workflows.
+description: Claude Code hooks configuration and development. Covers lifecycle events, configuration patterns, and input/output schemas. Use when the user mentions hooks, PreToolUse, PostToolUse, SessionStart, SubagentStart, PermissionRequest, or TaskCompleted.
 user-invocable: false
 allowed-tools: Bash(bash *), Bash(cat *), Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2025-12-16
-modified: 2026-04-10
+modified: 2026-05-09
 reviewed: 2026-04-10
 ---
 

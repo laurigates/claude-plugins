@@ -1,14 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
+modified: 2026-05-09
 reviewed: 2026-04-25
 name: rust-development
-description: |
-  Modern Rust development with cargo, rustc, clippy, rustfmt, async programming, and
-  memory-safe systems programming. Covers ownership patterns, fearless concurrency,
-  and the modern Rust ecosystem including Tokio, Serde, and popular crates.
-  Use when user mentions Rust, cargo, rustc, clippy, rustfmt, ownership, borrowing,
-  lifetimes, async Rust, or Rust crates.
+description: Modern Rust development with cargo, rustc, clippy, rustfmt, async, and memory-safe systems programming. Covers ownership, fearless concurrency, and the modern ecosystem (Tokio, Serde). Use when mentioning Rust, cargo, ownership, lifetimes, or async.
 user-invocable: false
 allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebFetch, WebSearch, BashOutput, KillShell
 ---

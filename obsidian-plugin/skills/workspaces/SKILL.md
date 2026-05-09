@@ -1,13 +1,9 @@
 ---
 created: 2026-04-30
-modified: 2026-04-30
+modified: 2026-05-09
 reviewed: 2026-04-30
 name: workspaces
-description: |
-  Inspect and manage the Obsidian editor workspace — open tabs, recent files,
-  saved Workspaces (the core plugin), and individual tab management. Use when
-  the user asks what's open in Obsidian, wants to switch to a saved layout,
-  save the current layout, or open files into specific tabs/groups.
+description: Inspect and manage the Obsidian editor workspace — open tabs, recent files, saved Workspaces, tab management. Use when the user asks what's open, wants to switch to a saved layout, save the current layout, or open files into specific tabs.
 user-invocable: false
 allowed-tools: Bash(obsidian *), Read, Grep, Glob
 ---

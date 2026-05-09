@@ -1,13 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-02-14
+modified: 2026-05-09
 reviewed: 2025-12-16
 name: typescript-strict
-description: |
-  TypeScript strict mode configuration for 2025. Recommended tsconfig.json settings,
-  strict flags explained, moduleResolution strategies (Bundler vs NodeNext),
-  verbatimModuleSyntax, noUncheckedIndexedAccess. Use when setting up TypeScript projects
-  or migrating to stricter type safety.
+description: TypeScript strict mode configuration for 2025. Recommended tsconfig.json, strict flags, moduleResolution (Bundler vs NodeNext), verbatimModuleSyntax, noUncheckedIndexedAccess. Use when setting up TypeScript or migrating to stricter type safety.
 user-invocable: false
 allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebFetch, WebSearch, BashOutput, KillShell
 ---

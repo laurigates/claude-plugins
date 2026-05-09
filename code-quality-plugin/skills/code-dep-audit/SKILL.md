@@ -1,14 +1,11 @@
 ---
 name: code-dep-audit
-description: |
-  Audit dependencies for security vulnerabilities, outdated packages, and license compliance.
-  Use when checking supply chain security, preparing releases, or responding to CVE advisories.
-  Pairs with /configure:security for scanning infrastructure setup.
+description: "Audit dependencies for security vulnerabilities, outdated packages, and license compliance. Use when checking supply chain security, preparing releases, or responding to CVE advisories. Pairs with /configure:security for setup."
 args: "[--type <security|outdated|licenses|all>] [--fix]"
 argument-hint: --type security to check vulnerabilities, --type outdated for updates
 allowed-tools: Bash(npm audit *), Bash(npx *), Bash(pip-audit *), Bash(cargo audit *), Bash(pip *), Bash(uv *), Bash(cargo *), Read, Grep, Glob, TodoWrite
 created: 2026-04-10
-modified: 2026-04-10
+modified: 2026-05-09
 reviewed: 2026-04-10
 ---
 

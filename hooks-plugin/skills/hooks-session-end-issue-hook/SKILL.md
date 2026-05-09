@@ -1,9 +1,6 @@
 ---
 name: hooks-session-end-issue-hook
-description: |
-  Configure a Stop hook that surfaces unfinished todos before a session ends and suggests
-  creating GitHub issues for deferred work. Use when you want unfinished Claude Code session
-  tasks automatically flagged for GitHub issue creation at session end.
+description: Configure a Stop hook that surfaces unfinished todos at session end and suggests creating GitHub issues. Use when you want deferred work automatically flagged for issue creation.
 args: "[--no-verify]"
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, TodoWrite
 argument-hint: "--no-verify to skip gh auth verification"

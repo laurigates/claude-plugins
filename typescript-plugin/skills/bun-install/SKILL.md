@@ -1,15 +1,10 @@
 ---
-description: |
-  Install all dependencies from package.json using Bun. Use when the user wants
-  to bootstrap a fresh checkout with `bun install`, run a reproducible CI
-  install with `--frozen-lockfile`, or prepare a production deployment with
-  `--production` (no devDependencies). Triggers: "install deps", "bun install",
-  "restore node_modules", "CI install", "production install".
+description: Install all dependencies from package.json using Bun. Use when bootstrapping a fresh checkout with `bun install`, running a reproducible CI install with `--frozen-lockfile`, or preparing a production deploy with `--production`.
 args: "[--frozen-lockfile] [--production]"
 argument-hint: "--frozen-lockfile for CI, --production for deployment"
 allowed-tools: Bash, Read
 created: 2025-12-20
-modified: 2026-04-25
+modified: 2026-05-09
 reviewed: 2026-04-25
 name: bun-install
 ---

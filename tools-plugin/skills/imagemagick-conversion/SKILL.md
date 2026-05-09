@@ -1,13 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-05-04
+modified: 2026-05-09
 reviewed: 2025-12-16
 name: imagemagick-conversion
-description: |
-  Convert and manipulate images with ImageMagick. Covers format conversion,
-  resizing, batch processing, quality adjustment, and image transformations.
-  Use when user mentions image conversion, resizing images, ImageMagick,
-  magick command, batch image processing, or thumbnail generation.
+description: Convert and manipulate images with ImageMagick — format conversion, resizing, batch processing, quality. Use when converting, resizing, batch-processing, or generating thumbnails.
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 model: sonnet

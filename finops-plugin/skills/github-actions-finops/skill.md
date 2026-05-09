@@ -1,10 +1,6 @@
 ---
 name: github-actions-finops
-description: |
-  Analyze GitHub Actions billing, workflow efficiency, and waste patterns.
-  Use when investigating CI/CD costs, identifying wasted runs, or optimizing
-  workflow triggers. Covers org-level billing, per-repo workflow analysis,
-  and waste pattern detection.
+description: Analyze GitHub Actions billing, workflow efficiency, and waste patterns at org or repo level. Use when investigating CI/CD costs, identifying wasted runs, or optimizing workflow triggers.
 user-invocable: false
 allowed-tools: Bash(gh api *), Bash(gh repo *), Bash(gh workflow *), Bash(gh run *), Read, Grep, Glob, TodoWrite
 created: 2025-01-30

@@ -1,15 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
+modified: 2026-05-09
 reviewed: 2026-04-25
 allowed-tools: Task, Read, Glob, Grep
 args: "<topic> [--context <path>]"
 argument-hint: "<topic> [--context <path>]"
-description: |
-  Consult the test-architecture agent for testing strategy and design
-  decisions. Use when the user asks for advice on test coverage gaps, test
-  pyramid balance, framework selection, flaky-test remediation, designing
-  tests for a new feature, or any strategic "how should we test X?" question.
+description: "Consult the test-architecture agent for testing strategy decisions. Use when asking about coverage gaps, test pyramid balance, framework selection, flaky-test remediation, or \"how should we test X?\" questions."
 name: test-consult
 ---
 

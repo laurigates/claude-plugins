@@ -1,14 +1,8 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
+modified: 2026-05-09
 reviewed: 2025-12-16
-description: |
-  Check and configure feature flag infrastructure using OpenFeature with pluggable
-  providers. Use when adding feature flag infrastructure to a new project, setting up
-  the OpenFeature SDK with a provider (GOFF, flagd, LaunchDarkly), auditing existing
-  feature flag configuration, configuring relay proxy infrastructure, or adding
-  feature flag test helpers. Natural triggers: "set up feature flags", "add
-  openfeature", "configure launchdarkly".
+description: Configure feature flag infrastructure with OpenFeature and pluggable providers (GOFF, flagd, LaunchDarkly). Use when setting up the SDK, configuring a relay proxy, or adding flag test helpers.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--provider <goff|flagd|launchdarkly|split>]"
 argument-hint: "[--check-only] [--fix] [--provider <goff|flagd|launchdarkly|split>]"

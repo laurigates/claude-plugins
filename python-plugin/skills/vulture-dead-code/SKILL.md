@@ -1,12 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-02-14
+modified: 2026-05-09
 reviewed: 2025-12-16
 name: vulture-dead-code
-description: |
-  Vulture and deadcode tools for detecting unused Python code (functions, classes, variables, imports).
-  Use when cleaning up codebases, removing unused code, or enforcing code hygiene in CI.
-  Triggered by: vulture, deadcode, dead code detection, unused code, code cleanup, remove unused.
+description: "Vulture and deadcode tools for detecting unused Python code (functions, classes, variables, imports). Use when cleaning up codebases, removing unused code, or enforcing hygiene in CI. Triggers: vulture, deadcode, dead code detection, unused code."
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---

@@ -1,16 +1,9 @@
 ---
 name: blueprint-docs-currency
-description: |
-  Advisory skill enforcing same-commit landing of code and its docs —
-  public APIs, file format specs, error enums, milestone status, and
-  ADR-worthy decisions must travel with their documentation. Also covers
-  research promotion from tmp/ into docs/ before tracker advancement.
-  Use when committing code that changes API, format specs, or milestone
-  status; when promoting research from scratch to docs; when landing an
-  ADR-worthy decision; or when a reviewer flags missing documentation.
+description: Enforce same-commit landing of code and its docs (public APIs, file formats, error enums, ADRs). Use when committing API/format/milestone changes, promoting tmp/ research to docs/, or landing an ADR-worthy decision.
 allowed-tools: Read, Grep, Glob, TodoWrite
 created: 2026-04-24
-modified: 2026-04-24
+modified: 2026-05-09
 reviewed: 2026-04-24
 ---
 

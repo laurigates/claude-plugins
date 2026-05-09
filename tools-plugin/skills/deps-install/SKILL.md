@@ -1,18 +1,12 @@
 ---
 created: 2025-12-16
-modified: 2026-05-04
+modified: 2026-05-09
 reviewed: 2026-04-25
 allowed-tools: Bash(uv *), Bash(npm *), Bash(bun *), Bash(cargo *), Bash(go *), Bash(brew *), Read, Write
 model: sonnet
 args: "[package-names] [--dev] [--global]"
 argument-hint: "[package-names] [--dev] [--global]"
-description: |
-  Universal dependency installer that auto-detects the project's package manager (uv, bun,
-  npm, yarn, pnpm, cargo, go) and runs the correct install command for dev, global, or
-  project-local installs. Use when the user wants to install dependencies without worrying
-  which package manager the project uses, add a package as a dev dependency, install
-  globally, sync the lockfile, or when they mention "install dependencies", "add package",
-  or "run the right package manager here".
+description: Auto-detect the project's package manager (uv, bun, npm, yarn, pnpm, cargo, go) and run the right install. Use when installing deps, adding dev/global packages, or syncing lockfiles.
 name: deps-install
 ---
 

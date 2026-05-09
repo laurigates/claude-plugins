@@ -1,17 +1,12 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
+modified: 2026-05-09
 reviewed: 2026-04-25
 allowed-tools: Write, Bash(mkdir *), Bash(git init *), Bash(gh repo create *), Bash(pwd *), Bash(git config *), Bash(which *), SlashCommand, TodoWrite
 args: <project-name> [project-type] [--github] [--private]
 argument-hint: <project-name> [project-type] [--github] [--private]
 disable-model-invocation: true
-description: |
-  Initialize a new project with a universal base structure (src/tests/docs,
-  git, README, LICENSE, .gitignore, .editorconfig, pre-commit, CI workflow,
-  Makefile). Use when the user asks to start a new project, scaffold a
-  new repo, create project skeleton, or bootstrap a Python/Node/Rust/Go
-  codebase - optionally creating a matching GitHub repository.
+description: Initialize a new project with universal base structure (src/tests/docs, git, README, LICENSE, .gitignore, .editorconfig, pre-commit, CI, Makefile). Use when the user asks to start a new project, scaffold a repo, or bootstrap Python/Node/Rust/Go.
 name: project-init
 ---
 

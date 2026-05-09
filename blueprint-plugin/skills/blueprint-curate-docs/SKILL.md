@@ -1,9 +1,5 @@
 ---
-description: |
-  Curate library or project documentation for ai_docs to optimize AI context. Use when
-  the user wants to document a library's gotchas and patterns for PRP reuse, build a
-  project knowledge base under docs/blueprint/ai_docs/, capture project-specific
-  implementation patterns, or asks to "curate docs" for a library like redis or pydantic.
+description: Curate library or project documentation into ai_docs entries optimized for AI context. Use when documenting a library's gotchas and patterns for PRP reuse, or building a project knowledge base under docs/blueprint/ai_docs/.
 args: "[library-name|project:pattern-name]"
 argument-hint: "Library name (e.g., redis, pydantic) or project:pattern-name"
 allowed-tools: Read, Write, Glob, Bash, WebFetch, WebSearch, AskUserQuestion

@@ -1,9 +1,6 @@
 ---
 name: evaluate-plugin-batch
-description: |
-  Batch evaluate all skills in a plugin. Runs /evaluate:skill for each skill
-  that has eval cases, then produces a plugin-level report. Use when auditing
-  an entire plugin's quality or before a release.
+description: Batch evaluate every skill in a plugin and produce a plugin-level report. Use when auditing an entire plugin's quality or validating before a release.
 args: <plugin-name> [--create-missing-evals] [--parallel N]
 allowed-tools: Task, Read, Write, Glob, Grep, Bash(bash *), SlashCommand, TodoWrite
 argument-hint: "git-plugin [--create-missing-evals]"

@@ -1,12 +1,6 @@
 ---
 name: task-add
-description: |
-  File a new taskwarrior task with blueprint linkage (bpid/bpdoc/bpms) and,
-  when a GitHub remote is present, optional issue linkage via ghid. Checks
-  for duplicates by bpid, offers to pre-fill from an existing GitHub issue,
-  or offers to create a new issue. Use when adding a coordination task for
-  multi-agent work, linking a blueprint WO to an actionable queue entry,
-  or mirroring a GitHub issue into the local task queue.
+description: File a new taskwarrior task with blueprint linkage (bpid/bpdoc/bpms) and optional GitHub issue linkage. Use when adding multi-agent coordination tasks, linking a blueprint WO, or mirroring a GitHub issue locally.
 args: "[description] [project:<name>] [--no-project]"
 allowed-tools: Bash(task *), Bash(git config *), Bash(git rev-parse *), Bash(gh auth *), Bash(gh issue *), Bash(gh api *), Read, TodoWrite
 argument-hint: short task description

@@ -1,23 +1,11 @@
 ---
 name: wave-based-dispatch
-description: |
-  Sequential-wave counterpart to parallel-agent-dispatch for work-order chains
-  that cannot fan out at once — when one WO's output (a new file, type, or API)
-  is the next WO's input, when candidate agents share an exclusive lock (Ghidra
-  project, taskwarrior bulk modify, single-writer caches), or when the
-  orchestrator itself is the contention point because it edits the same shared
-  files between waves. Use when planning a multi-WO landing whose pieces
-  depend on each other, when deciding whether a research probe should be its
-  own wave before downstream WOs are written, or when a previous parallel
-  dispatch surfaced ordering or last-writer-wins problems. Complements
-  parallel-agent-dispatch (intra-wave contract), exclusive-lock-dispatch
-  (pre-dump mechanics), and workflow-orchestration-plugin:workflow-wave-dispatch
-  (the workflow-side scheduling view).
+description: Sequential-wave dispatch for WO chains that can't fan out — output of one WO feeds the next, shared locks, or shared files between waves. Use when planning dependent multi-WO landings.
 user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-25
-modified: 2026-05-04
+modified: 2026-05-09
 reviewed: 2026-04-25
 ---
 

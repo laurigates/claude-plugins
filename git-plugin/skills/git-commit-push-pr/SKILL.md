@@ -1,17 +1,13 @@
 ---
 name: git-commit-push-pr
 created: 2025-12-16
-modified: 2026-04-29
+modified: 2026-05-09
 reviewed: 2026-04-29
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git branch *), Bash(git remote *), Bash(gh pr *), Bash(gh label *), Bash(gh repo *), Bash(gh issue *), Bash(pre-commit *), Bash(find *), Read, Edit, Grep, Glob, TodoWrite, mcp__github__create_pull_request, mcp__github__list_issues, mcp__github__get_issue
 args: "[remote-branch] [--push] [--direct] [--pr] [--draft] [--issue <num>] [--no-commit] [--range <start>..<end>] [--skip-issue-detection]"
 argument-hint: "[remote-branch] [--push] [--direct] [--pr] [--draft] [--issue <num>] [--no-commit] [--range <start>..<end>] [--skip-issue-detection]"
 disable-model-invocation: true
-description: |
-  Complete workflow from changes to PR - auto-detect related issues, create logical commits
-  with proper issue linkage, push to remote feature branch, and create pull request.
-  Use when user says "create pr", "let's pr", "commit and pr", "push and create pr",
-  or wants to go from uncommitted changes to an open pull request in one step.
+description: End-to-end workflow from uncommitted changes to open PR — detects issues, creates logical commits, pushes, and opens the PR. Use when the user says "create pr", "commit and pr", or "push and pr".
 ---
 
 ## When to Use This Skill

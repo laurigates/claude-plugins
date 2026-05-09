@@ -3,10 +3,7 @@ created: 2025-12-16
 modified: 2026-04-25
 reviewed: 2026-04-25
 name: pre-commit-standards
-description: |
-  Pre-commit hook standards and configuration. Use when configuring pre-commit hooks
-  in repositories, checking hook compliance, or when the user mentions pre-commit,
-  conventional commits, or hook configuration.
+description: Pre-commit hook standards and configuration. Use when configuring pre-commit hooks, checking hook compliance, or working with conventional commits.
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---
