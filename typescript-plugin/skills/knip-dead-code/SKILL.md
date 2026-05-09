@@ -1,12 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-02-14
+modified: 2026-05-09
 reviewed: 2025-12-16
 name: knip-dead-code
-description: |
-  Knip finds unused files, dependencies, exports, and types in JavaScript/TypeScript projects.
-  Plugin system for frameworks (React, Next.js, Vite), test runners (Vitest, Jest), and build tools.
-  Use when cleaning up codebases, optimizing bundle size, or enforcing strict dependency hygiene in CI.
+description: Knip finds unused files, dependencies, exports, and types in JS/TS projects. Plugin system for frameworks (React, Next.js, Vite), test runners (Vitest, Jest), build tools. Use when cleaning up codebases or enforcing dep hygiene in CI.
 user-invocable: false
 allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebFetch, WebSearch, BashOutput, KillShell
 ---

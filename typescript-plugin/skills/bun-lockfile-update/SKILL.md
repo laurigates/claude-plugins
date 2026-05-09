@@ -1,13 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
+modified: 2026-05-09
 reviewed: 2026-04-25
 name: bun-lockfile-update
-description: |
-  Update Bun lockfiles (bun.lockb) with proper dependency management. Covers
-  bun update, bun install, lockfile regeneration, and security audits.
-  Use when user mentions bun lockfile, bun update, bun.lockb, updating Bun
-  dependencies, or resolving Bun lockfile conflicts.
+description: Update Bun lockfiles (bun.lockb) with proper dependency management. Covers bun update, bun install, lockfile regeneration, and security audits. Use when the user mentions bun lockfile, bun update, bun.lockb, or resolving lockfile conflicts.
 allowed-tools: Bash, Read, Grep, Glob
 ---
 

@@ -1,12 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-02-14
+modified: 2026-05-09
 reviewed: 2025-12-16
 name: biome-tooling
-description: |
-  Biome all-in-one formatter and linter for JavaScript, TypeScript, JSX, TSX, JSON, and CSS.
-  Zero-config setup, 15-20x faster than ESLint/Prettier. Use when working with modern JavaScript/TypeScript
-  projects, setting up formatting/linting, or migrating from ESLint+Prettier to a faster alternative.
+description: Biome all-in-one formatter and linter for JavaScript, TypeScript, JSX, TSX, JSON, and CSS. Zero-config, 15-20x faster than ESLint/Prettier. Use when working with modern JS/TS projects, setting up formatting/linting, or migrating from ESLint+Prettier.
 user-invocable: false
 allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebFetch, WebSearch, BashOutput, KillShell
 ---

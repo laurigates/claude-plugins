@@ -1,16 +1,11 @@
 ---
-description: |
-  Publish a package to the npm registry after building with Bun. Use when the
-  user wants to release to npm, preview a publish with `--dry-run`, publish a
-  scoped package with `--access public`, or enable supply chain `--provenance`
-  signing. Triggers: "publish to npm", "release this package", "npm publish
-  dry run", "publish scoped package with provenance".
+description: "Publish a package to npm after building with Bun. Use when the user wants to release to npm, preview with `--dry-run`, publish a scoped package with `--access public`, or enable `--provenance` signing. Triggers: 'publish to npm'."
 args: "[--dry-run] [--access <level>] [--provenance]"
 allowed-tools: Bash, Read
 argument-hint: "[--dry-run] [--access public]"
 disable-model-invocation: true
 created: 2025-12-21
-modified: 2026-04-25
+modified: 2026-05-09
 reviewed: 2026-04-25
 name: bun-publish
 ---

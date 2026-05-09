@@ -1,18 +1,10 @@
 ---
 name: typescript-debugging
-description: |
-  Modern TypeScript/JavaScript debugging with the Bun runtime - inspector
-  flags, the debug.bun.sh web debugger, VSCode `launch.json` integration,
-  memory profiling, and heap analysis. Use when the user wants to set up
-  interactive debugging, investigate a memory leak with heap snapshots, CPU
-  profile with `--cpu-prof`, debug network requests via
-  `BUN_CONFIG_VERBOSE_FETCH`, or configure sourcemaps so stack traces show
-  original TypeScript. Triggers: "debug this", "find the memory leak",
-  "profile CPU", "set up launch.json for bun".
+description: Modern TypeScript/JavaScript debugging with Bun — inspector flags, debug.bun.sh, VSCode launch.json, memory profiling, heap analysis. Use when setting up interactive debugging, investigating leaks, CPU profiling with `--cpu-prof`, or sourcemaps.
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-01-22
-modified: 2026-04-19
+modified: 2026-05-09
 reviewed: 2026-01-22
 ---
 
