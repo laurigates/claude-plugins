@@ -1,12 +1,9 @@
 ---
 created: 2025-02-01
-modified: 2025-02-01
+modified: 2026-05-09
 reviewed: 2025-02-01
 name: ha-configuration
-description: |
-  Home Assistant YAML configuration management. Use when editing configuration.yaml,
-  setting up integrations, configuring secrets, managing packages, or troubleshooting
-  Home Assistant configuration issues. Covers core configuration patterns and best practices.
+description: Home Assistant YAML configuration management. Use when editing configuration.yaml, setting up integrations, configuring secrets, managing packages, or troubleshooting HA configuration. Covers core configuration patterns and best practices.
 user-invocable: false
 allowed-tools: Read, Edit, Write, Grep, Glob, TodoWrite
 ---
