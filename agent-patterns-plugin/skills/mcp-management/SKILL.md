@@ -1,14 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-02-26
+modified: 2026-05-09
 reviewed: 2026-02-26
 name: mcp-management
-description: |
-  Install and configure Model Context Protocol (MCP) servers for Claude Code projects.
-  Use when you want to add or enable an MCP server, connect a tool or integration
-  (database, API, file system), update MCP settings in .mcp.json, manage OAuth-authenticated
-  remote MCP servers, enable/disable individual servers at runtime, or troubleshoot
-  MCP server connection issues.
+description: Install and configure MCP (Model Context Protocol) servers for Claude Code. Use when adding/enabling servers, updating .mcp.json, managing OAuth remote servers, or troubleshooting connections.
 user-invocable: false
 allowed-tools: Bash(jq *), Bash(find *), Read, Write, Edit, Grep, Glob, AskUserQuestion
 ---

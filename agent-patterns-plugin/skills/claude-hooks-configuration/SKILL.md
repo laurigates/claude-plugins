@@ -1,14 +1,10 @@
 ---
 name: claude-hooks-configuration
-description: |
-  Set up Claude Code lifecycle hooks and event handlers in settings.json. Use when you
-  want to trigger a script on session start, run a hook before or after tool calls
-  (PreToolUse/PostToolUse), configure hook timeouts to prevent cancellation errors,
-  or debug hooks that aren't firing correctly.
+description: Set up Claude Code lifecycle hooks in settings.json. Use when triggering a script on session start, running PreToolUse/PostToolUse hooks, configuring timeouts, or debugging hooks.
 user-invocable: false
 allowed-tools: Bash(cat *), Bash(bash *), Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2025-12-27
-modified: 2026-04-25
+modified: 2026-05-09
 reviewed: 2026-04-25
 ---
 

@@ -1,14 +1,10 @@
 ---
 name: mcp-code-execution
-description: |
-  Design and scaffold the code execution pattern for MCP-based agent systems. Use when
-  building agents that interact with many MCP tools, when intermediate data is too large
-  for model context, when you need loops/conditionals across tool calls, or when PII must
-  stay out of the model context. Based on Anthropic's engineering guidance.
+description: Scaffold the code execution pattern for MCP-based agents. Use when agents call many MCP tools, intermediate data exceeds context, you need loops across tool calls, or PII must stay out of context.
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-02-08
-modified: 2026-04-25
+modified: 2026-05-09
 reviewed: 2026-04-25
 ---
 

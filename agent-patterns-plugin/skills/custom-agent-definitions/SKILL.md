@@ -1,14 +1,10 @@
 ---
 name: custom-agent-definitions
-description: |
-  Write and configure custom agent definitions in Claude Code's agents/ directory. Use
-  when you want to create a new agent .md file, define a specialized agent with its own
-  system prompt and tools, set up an agent with isolated context, or configure agent
-  capabilities and restrictions in your project's .claude/ configuration.
+description: Write and configure custom agent definitions in Claude Code's agents/ directory. Use when creating an agent .md file, defining a specialized agent, or configuring agent tools and capabilities.
 user-invocable: false
 allowed-tools: Bash(cat *), Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-01-20
-modified: 2026-04-25
+modified: 2026-05-09
 reviewed: 2026-04-25
 ---
 

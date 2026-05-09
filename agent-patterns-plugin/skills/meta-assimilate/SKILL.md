@@ -1,17 +1,12 @@
 ---
 created: 2025-12-16
-modified: 2026-05-04
+modified: 2026-05-09
 reviewed: 2026-04-25
 allowed-tools: Read, Write, Edit, MultiEdit, Glob, Grep, TodoWrite
 model: opus
 args: <project-path>
 argument-hint: <project-path>
-description: |
-  Analyze and assimilate project-specific Claude configurations into user-scoped agents and
-  commands. Use when you want to examine a project's .claude/{agents,commands} directory and
-  either copy, generalize, or merge useful agents and commands into your personal configuration,
-  when the user mentions assimilating or adopting another project's Claude setup, or when
-  looking to generalize a project-specific agent into a reusable one.
+description: Copy, generalize, or merge a project's .claude/{agents,commands} into user-scoped configuration. Use when assimilating another project's Claude setup or generalizing an agent.
 name: meta-assimilate
 ---
 
