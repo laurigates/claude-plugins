@@ -1,17 +1,11 @@
 ---
 name: ground-response
-description: |
-  Produce grounded, citation-backed responses from source documents. Use when analyzing
-  long documents, answering questions about codebases or specs, or whenever response
-  accuracy is critical. Applies three anti-hallucination techniques: permits uncertainty,
-  extracts direct quotes, and verifies all claims against source material. Trigger phrases:
-  "ground this", "cite sources", "no hallucination", "verify claims", "quote the source",
-  "fact-check this against the doc", "reduce hallucination".
+description: Produce citation-backed responses from source documents with direct quotes and verified claims. Use when analyzing long docs, answering codebase or spec questions, or when response accuracy is critical.
 args: <question or task> [--source <file-or-path>]
 allowed-tools: Read, Grep, Glob, TodoWrite
 argument-hint: <question about a document or codebase>
 created: 2026-03-22
-modified: 2026-03-22
+modified: 2026-05-09
 reviewed: 2026-03-22
 ---
 
