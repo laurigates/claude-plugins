@@ -5,8 +5,8 @@ args: "[--n=N] [--lock=<resource>] [--wave] [--project=<name>] [--all]"
 allowed-tools: Bash(task *), Bash(git rev-parse *), Bash(jq *), Read, TodoWrite
 argument-hint: optional count (default 3) and lock filter
 created: 2026-04-24
-modified: 2026-05-06
-reviewed: 2026-05-06
+modified: 2026-05-09
+reviewed: 2026-05-09
 ---
 
 # /taskwarrior:task-coordinate
@@ -36,6 +36,8 @@ Parse `$ARGUMENTS`:
 - `--wave` — format output as a wave brief (orchestrator-ready)
 - `--project=<name>` — override the auto-detected project filter
 - `--all` — opt out of project filtering (cross-project wave; rare — usually wrong for dispatch)
+- `--include-active` — include `+ACTIVE` (already-claimed) tasks in candidate ranking. Default behaviour excludes them so a wave is never dispatched onto work another agent has already started via `/taskwarrior:task-claim`.
+- `--stale-after=N` — threshold (hours) for flagging a `+ACTIVE` claim as stale in the report. Default 4. Stale claims are reported only — never auto-stopped.
 
 ### Project resolution
 
@@ -55,16 +57,43 @@ Execute this workflow:
 ### Step 1: Load unblocked pending tasks
 
 Substitute the literal project name into the filter (no `$()` command
-substitution — shell-operator protections will reject it):
+substitution — shell-operator protections will reject it). Default
+behaviour excludes both `+BLOCKED` (depends-blocked) and `+ACTIVE`
+(already claimed via `/taskwarrior:task-claim`):
 
 ```bash
-task project:myrepo status:pending -BLOCKED export \
+task project:myrepo status:pending -BLOCKED -ACTIVE export \
   | jq 'sort_by(-.urgency) | .[] | {id, description, urgency, tags, bpid, depends}'
 ```
 
-Already filters out `depends:`-blocked tasks via the `-BLOCKED` virtual
-attribute. Never use `task next` — exits 1 on empty. With `--all`, drop
-the `project:` clause.
+With `--include-active`, drop the `-ACTIVE` clause so already-claimed
+tasks compete for ranking. With `--all`, drop the `project:` clause.
+Never use `task next` — exits 1 on empty.
+
+### Step 1b: Snapshot in-flight claims
+
+In parallel with Step 1 (these are independent reads), collect the set
+of currently-claimed tasks for the report:
+
+```bash
+task project:myrepo status:pending +ACTIVE export \
+  | jq '.[] | {id, description, agent, pid, host, branch, worktree, start, urgency}'
+```
+
+Empty array is exit-0 from `task export` — safe in parallel batches.
+
+### Step 1c: Detect stale claims
+
+Filter the in-flight set for claims older than `--stale-after` hours:
+
+```bash
+task project:myrepo +ACTIVE start.before:now-4h export \
+  | jq '.[] | {id, agent, host, branch, start}'
+```
+
+Stale claims are surfaced in the report only; `task-coordinate` never
+calls `task stop` on its own. The orchestrator (or the original claimer)
+decides whether to release.
 
 ### Step 2: Detect lock contenders
 
@@ -126,12 +155,38 @@ If the rank step dropped any lock-contending candidates, report them as
 deferred-to-next-wave with the lock name — the orchestrator decides
 whether to pre-dump via `exclusive-lock-dispatch` or serialise.
 
+### Step 6: Append in-flight + stale-claim sections
+
+Always emit two trailing sections so the orchestrator sees the full
+state of the project queue, not just the dispatchable subset:
+
+```
+## In flight (claimed)
+
+| Task | Agent | Branch | Host | Started |
+|------|-------|--------|------|---------|
+| #4 (WO-008) | claude-a1b2c3d4 | feature/parser | host-1 | 2h ago |
+| #9 (WO-011) | claude-9f8e7d6c | feature/api    | host-2 | 30m ago |
+
+## Stale claims (>4h)
+
+| Task | Agent | Started | Action |
+|------|-------|---------|--------|
+| #2 (WO-005) | claude-44556677 | 6h ago | Investigate; release with `/taskwarrior:task-release 2` if abandoned |
+```
+
+Empty sections render as "(none)". Never auto-stop a stale claim —
+report only, per the v1 design.
+
 ## Agentic Optimizations
 
 | Context | Command |
 |---------|---------|
-| Project unblocked by urgency | `task project:myrepo status:pending -BLOCKED export \| jq 'sort_by(-.urgency)'` |
-| Cross-project (`--all`) | `task status:pending -BLOCKED export \| jq 'sort_by(-.urgency)'` |
+| Project unclaimed + unblocked | `task project:myrepo status:pending -BLOCKED -ACTIVE export \| jq 'sort_by(-.urgency)'` |
+| Include claimed (rare) | drop `-ACTIVE` clause |
+| In-flight snapshot | `task project:myrepo +ACTIVE export \| jq '.[] \| {id, agent, branch, start}'` |
+| Stale claims | `task project:myrepo +ACTIVE start.before:now-4h export \| jq` |
+| Cross-project (`--all`) | `task status:pending -BLOCKED -ACTIVE export \| jq 'sort_by(-.urgency)'` |
 | Same-lock siblings | Filter on `tags` / bpid prefix locally, not via `task` filter |
 | Wave brief | `--wave` flag emits table with exclusion column |
 | Skip failing-filter variants | Never `task next`, always `export \| jq` |
@@ -145,11 +200,15 @@ whether to pre-dump via `exclusive-lock-dispatch` or serialise.
 | `--wave` | off | Emit wave brief format |
 | `--project=<name>` | repo basename | Override the project filter |
 | `--all` | off | Disable project filter (cross-project wave) |
+| `--include-active` | off | Include `+ACTIVE` (claimed) tasks in candidate ranking |
+| `--stale-after=N` | 4 | Hours before a `+ACTIVE` claim is flagged stale in the report |
 
 ## Related
 
+- `/taskwarrior:task-claim` — the skill agents call after picking a candidate (sets `+ACTIVE`, which this skill respects)
+- `/taskwarrior:task-release` — release a stale claim surfaced by this skill
+- `/taskwarrior:task-status` — full queue audit
 - `agent-patterns-plugin:parallel-agent-dispatch` — the dispatch contract these candidates feed
 - `agent-patterns-plugin:exclusive-lock-dispatch` — when to pre-dump instead of serialise
 - `workflow-orchestration-plugin:workflow-wave-dispatch` — wave scheduling that consumes the brief
 - `.claude/rules/parallel-safe-queries.md` — `export | jq` idiom
-- `/taskwarrior:task-status` — full queue audit
