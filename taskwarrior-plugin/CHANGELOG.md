@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.2.5...taskwarrior-plugin-v1.3.0) (2026-05-10)
+
+
+### Features
+
+* **taskwarrior-plugin:** add agent identity claims via task-claim/task-release ([#1296](https://github.com/laurigates/claude-plugins/issues/1296)) ([e1d0df2](https://github.com/laurigates/claude-plugins/commit/e1d0df2adeac0d2704884fc9c7ebc1968b8c85fb))
+
 ## [1.2.5](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.2.4...taskwarrior-plugin-v1.2.5) (2026-05-09)
 
 
