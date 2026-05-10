@@ -6,7 +6,7 @@ argument-hint: "[--claim | --release | --check (default)]"
 allowed-tools: Bash(bash *), Bash(git status *), Bash(git stash *), Bash(git rev-parse *), Read, TodoWrite
 created: 2026-04-21
 modified: 2026-05-09
-reviewed: 2026-04-21
+reviewed: 2026-05-09
 ---
 
 # /git:coworker-check
@@ -75,16 +75,19 @@ No output is expected. Stop here.
 
 ### Step 3: Detect coworkers
 
-Look up the current session's baseline files (if `--claim` was run earlier this session). Then run detection:
+Look up the current session's baseline files (if `--claim` was run earlier this session). Then run detection. Pass `--self-agent claude-${CLAUDE_SESSION_ID:0:8}` so taskwarrior claims by this same session are reported as `OWN_CLAIM_*` rather than counted as coworkers:
 
 ```
 bash ${CLAUDE_SKILL_DIR}/scripts/detect-coworkers.sh \
   --project-dir "$(pwd)" \
+  --self-agent claude-${CLAUDE_SESSION_ID:0:8} \
   --baseline-status .git/.claude-baseline-$$.status \
   --baseline-stash .git/.claude-baseline-$$.stash
 ```
 
-If no `--claim` was run, omit the `--baseline-*` flags — drift detection will return `unknown` but marker and process signals still work.
+If no `--claim` was run, omit the `--baseline-*` flags — drift detection will return `unknown` but marker, process, and taskwarrior signals still work.
+
+The taskwarrior signal is best-effort: when `task` or `jq` is not on `PATH`, the script reports `TW_SCAN_METHOD=unavailable` and the verdict falls back to the three git-side signals.
 
 ### Step 4: Interpret the verdict
 
@@ -93,8 +96,10 @@ Parse the `VERDICT=` line from the script's output:
 | Verdict | Meaning | Action |
 |---------|---------|--------|
 | `clear` | No coworker detected | Proceed; still prefer explicit `git add <paths>` over `git add -A` |
-| `drift_detected` | Files appeared since baseline but no other process/marker found | Inspect `NEW_STATUS_LINES` — may be coworker or may be a forgotten earlier edit. Ask the user before stashing. |
-| `coworker_detected` | Another agent/process is active in this clone | **Do not stash, restore, or reset.** Report the `MARKER_PID` / `PROC_PID` entries. Recommend the user switch to a worktree. |
+| `drift_detected` | Files appeared since baseline but no other process/marker/claim found | Inspect `NEW_STATUS_LINES` — may be coworker or may be a forgotten earlier edit. Ask the user before stashing. |
+| `coworker_detected` | Another agent/process/taskwarrior claim is active in this clone | **Do not stash, restore, or reset.** Report the `MARKER_PID` / `PROC_PID` / `TW_CLAIM_*` entries. Recommend the user switch to a worktree. |
+
+The four signals are independent — any one of `MARKER_COUNT > 0`, `PROC_COUNT > 0`, or `TW_CLAIM_COUNT > 0` raises `coworker_detected`. `OWN_CLAIM_*` lines are this session's own taskwarrior claims and do not contribute to the count.
 
 ### Step 5: Report findings
 
@@ -134,3 +139,5 @@ Hook-based enforcement (blocking `git stash` / `git reset --hard` when a coworke
 - `/git:maintain` — invokes this before any stash/clean operation
 - `/git:commit` — invokes this before staging when working in a shared checkout
 - `git-branch-pr-workflow` — recommends worktrees as the structural fix
+- `/taskwarrior:task-claim` — sister signal; writes the `+ACTIVE` claim that this skill now reads
+- `/taskwarrior:task-release` — drops the claim that contributes to `TW_CLAIM_COUNT`
