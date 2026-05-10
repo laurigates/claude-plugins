@@ -72,9 +72,10 @@ Execute this workflow:
 
 ### Step 1: Ensure UDAs exist
 
-If `task _udas` output lacks `bpid`, `bpdoc`, `bpms`, `ghid`, or `ghpr`, offer to install them:
+If `task _udas` output lacks any of `bpid`, `bpdoc`, `bpms`, `ghid`, `ghpr` (linkage UDAs) or `agent`, `pid`, `host`, `branch`, `worktree` (identity UDAs populated by `/taskwarrior:task-claim`), offer to install them:
 
 ```bash
+# Linkage UDAs
 task config uda.bpid.type string
 task config uda.bpid.label "Blueprint ID"
 task config uda.bpdoc.type string
@@ -85,9 +86,21 @@ task config uda.ghid.type numeric
 task config uda.ghid.label "GH Issue"
 task config uda.ghpr.type numeric
 task config uda.ghpr.label "GH PR"
+
+# Identity UDAs (populated by task-claim, drained by task-release / task-done)
+task config uda.agent.type string
+task config uda.agent.label "Agent ID"
+task config uda.pid.type numeric
+task config uda.pid.label "Agent PID"
+task config uda.host.type string
+task config uda.host.label "Host"
+task config uda.branch.type string
+task config uda.branch.label "Git branch"
+task config uda.worktree.type string
+task config uda.worktree.label "Worktree path"
 ```
 
-Install only with user confirmation on first run per host.
+Install only with user confirmation on first run per host. Identity UDAs are not set by `task-add` itself — `/taskwarrior:task-claim` stamps them when an agent picks the task up.
 
 ### Step 2: Detect GitHub mode
 
@@ -174,7 +187,7 @@ Print:
 - bpid → bpdoc → bpms chain
 - ghid/ghpr if linked
 - Tags applied
-- Suggested next step (`/taskwarrior:task-status` or `/taskwarrior:task-coordinate`)
+- Suggested next step (`/taskwarrior:task-status`, `/taskwarrior:task-coordinate`, or `/taskwarrior:task-claim` if the user is about to start)
 
 ## Agentic Optimizations
 
@@ -207,6 +220,7 @@ Print:
 ## Related
 
 - `/taskwarrior:task-status` — see current queue
+- `/taskwarrior:task-claim` — claim a task and stamp identity UDAs
 - `/taskwarrior:task-done` — close an open task (fires auto-unblock for `depends:` chains)
 - `/taskwarrior:task-coordinate` — next-agent candidates for a wave
 - `.claude/rules/parallel-safe-queries.md` — why `export | jq`, never `list`

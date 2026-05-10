@@ -5,8 +5,8 @@ args: "[--mine] [--blocked] [--stale=N] [--project=<name>] [--all]"
 allowed-tools: Bash(task *), Bash(git config *), Bash(git rev-parse *), Bash(gh auth *), Bash(gh pr *), Bash(jq *), Read, TodoWrite
 argument-hint: optional filters
 created: 2026-04-24
-modified: 2026-05-06
-reviewed: 2026-05-06
+modified: 2026-05-09
+reviewed: 2026-05-09
 ---
 
 # /taskwarrior:task-status
@@ -33,9 +33,11 @@ Read-only status report on the coordination queue. Strictly uses `export | jq` �
 
 Parse `$ARGUMENTS`:
 
-- `--mine` — limit to tasks where `assigned:` matches current user / agent
+- `--mine` — limit to tasks where the `agent` UDA matches `claude-${CLAUDE_SESSION_ID:0:8}` (the value `/taskwarrior:task-claim` writes). Useful for "what am I currently holding?" reports.
 - `--blocked` — only tasks with `+blocked` / `+blocked_on_merge` or active `depends:`
+- `--active` — only `+ACTIVE` tasks (claimed and in flight)
 - `--stale=N` — highlight tasks modified > N days ago
+- `--stale-claim-after=N` — threshold (hours) for flagging a `+ACTIVE` claim as stale in the "Stale claims" section. Default 4. Reports only — never auto-stops.
 - `--project=<name>` — override the auto-detected project filter
 - `--all` — opt out of project filtering and report across every project
 - No flags — full report **scoped to the current project**
@@ -69,7 +71,7 @@ project name into the filter — do **not** use `$()` command substitution
 in the inline command (shell-operator protections will reject it).
 
 ```bash
-task project:myrepo status:pending export | jq '.[] | {id, description, urgency, tags, bpid, bpdoc, ghid, ghpr, modified, depends}'
+task project:myrepo status:pending export | jq '.[] | {id, description, urgency, tags, bpid, bpdoc, ghid, ghpr, agent, pid, host, branch, worktree, start, modified, depends}'
 ```
 
 For completeness also pull recently-completed in the same project:
@@ -77,6 +79,17 @@ For completeness also pull recently-completed in the same project:
 ```bash
 task project:myrepo status:completed end.after:now-7d export | jq '.[] | {id, description, bpid, ghid, end}'
 ```
+
+In parallel, pull the in-flight set so the "In flight" and "Stale
+claims" sections in Step 5 have data to render:
+
+```bash
+task project:myrepo +ACTIVE export | jq '.[] | {id, description, agent, pid, host, branch, worktree, start, urgency}'
+task project:myrepo +ACTIVE start.before:now-4h export | jq '.[] | {id, agent, host, branch, start}'
+```
+
+These three reads are independent and parallel-safe — `export` returns
+exit 0 on empty.
 
 ### Step 2: Sort and group
 
@@ -126,14 +139,17 @@ Pass --all for cross-project view, --project=<name> to override.
 
 Output these sections, in order:
 
-1. **Summary**: pending count, ready count (unblocked), blocked count, stale count
-2. **By milestone**: table of pending tasks per `bpms`
-3. **Ready for dispatch**: top 5 by urgency with no `depends:` and no `+blocked*` tags
-4. **Blocked**: tasks waiting on dependencies or external factors
-5. **PR-ready** (GitHub mode): tasks with green PRs ready to close
-6. **Drift**: tasks with stale links (issue closed, missing bpdoc, etc.)
+1. **Summary**: pending count, in-flight count, ready count (unblocked + unclaimed), blocked count, stale count, stale-claim count
+2. **In flight**: `+ACTIVE` tasks with `agent` / `branch` / `host` / `worktree` and time since `start`. Sorted by `start` ascending (oldest first). Section header notes `--mine` / `--all` scope.
+3. **Stale claims** (>4h or `--stale-claim-after`): subset of "In flight" with `start.before:now-Nh`. Recommend `/taskwarrior:task-release <id>` per row — the report never auto-stops.
+4. **Ready for dispatch**: top 5 by urgency with no `depends:`, no `+blocked*` tags, and not `+ACTIVE`. These are what `/taskwarrior:task-coordinate` would emit.
+5. **By milestone**: table of pending tasks per `bpms`
+6. **Blocked**: tasks waiting on dependencies or external factors
+7. **PR-ready** (GitHub mode): tasks with green PRs ready to close
+8. **Drift**: tasks with stale links (issue closed, missing bpdoc, etc.)
 
-Each row cites the command to act on it (`/taskwarrior:task-done 7`).
+Each row cites the command to act on it (`/taskwarrior:task-done 7`,
+`/taskwarrior:task-release 4`, `/taskwarrior:task-claim 11`).
 
 ## Agentic Optimizations
 
@@ -141,7 +157,10 @@ Each row cites the command to act on it (`/taskwarrior:task-done 7`).
 |---------|---------|
 | Project queue JSON | `task project:myrepo status:pending export \| jq` |
 | Cross-project queue (`--all`) | `task status:pending export \| jq` |
-| Ready-for-dispatch | `task project:myrepo status:pending -BLOCKED export \| jq 'sort_by(-.urgency) \| .[:5]'` |
+| Ready-for-dispatch (excludes claimed) | `task project:myrepo status:pending -BLOCKED -ACTIVE export \| jq 'sort_by(-.urgency) \| .[:5]'` |
+| In flight | `task project:myrepo +ACTIVE export \| jq '.[] \| {id, agent, branch, host, start}'` |
+| Stale claims (>4h) | `task project:myrepo +ACTIVE start.before:now-4h export \| jq` |
+| Mine (claimed by this agent) | `task project:myrepo +ACTIVE agent:claude-${CLAUDE_SESSION_ID:0:8} export \| jq` |
 | PR status | `gh pr status --json number,state,statusCheckRollup` |
 | Drift check | `gh issue view "$GHID" --json state` |
 | Never use | `task list`, `task next`, `task report` — exit 1 on empty |
@@ -153,6 +172,9 @@ Each row cites the command to act on it (`/taskwarrior:task-done 7`).
 | `project:<name>` | Single project (default scope) |
 | `status:pending` | Open tasks |
 | `-BLOCKED` | Exclude `depends:`-blocked |
+| `+ACTIVE` / `-ACTIVE` | Tasks with `task start` time set / not set |
+| `start.before:now-4h` | Stale claims |
+| `agent:claude-<sid>` | Mine (UDA-based) |
 | `urgency.above:5` | High-urgency only |
 | `modified.before:now-30d` | Stale |
 | `bpms:M6` | Single milestone |
@@ -160,6 +182,8 @@ Each row cites the command to act on it (`/taskwarrior:task-done 7`).
 ## Related
 
 - `/taskwarrior:task-coordinate` — next-N candidates for dispatch
+- `/taskwarrior:task-claim` — pick up a "Ready" candidate from this report
+- `/taskwarrior:task-release` — release a "Stale claim" surfaced by this report
 - `/taskwarrior:task-add` — file something surfaced by drift detection
 - `/taskwarrior:task-done` — close PR-ready tasks
 - `.claude/rules/parallel-safe-queries.md` — `export | jq` idiom

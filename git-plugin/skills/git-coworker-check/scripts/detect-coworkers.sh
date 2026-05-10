@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # Detect other Claude/agent processes working in the same repo clone.
 #
-# Combines three signals:
-#   1. Baseline drift  — optional snapshot from a prior session
-#   2. Session markers — .git/.claude-session-<pid> files written by coworkers
-#   3. Process scan    — other claude/node processes whose cwd is this repo
+# Combines four signals:
+#   1. Baseline drift     — optional snapshot from a prior session
+#   2. Session markers    — .git/.claude-session-<pid> files written by coworkers
+#   3. Process scan       — other claude/node processes whose cwd is this repo
+#   4. Taskwarrior claims — +ACTIVE tasks in this repo's project (best-effort)
 #
 # Output is a block of KEY=value lines plus === SECTION === headers so the
 # invoking skill can parse results without re-running git.
@@ -16,12 +17,14 @@ set -uo pipefail
 project_dir=""
 baseline_status=""
 baseline_stash=""
+self_agent=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --project-dir) project_dir="$2"; shift 2 ;;
     --baseline-status) baseline_status="$2"; shift 2 ;;
     --baseline-stash) baseline_stash="$2"; shift 2 ;;
+    --self-agent) self_agent="$2"; shift 2 ;;
     *) echo "unknown arg: $1" >&2; exit 2 ;;
   esac
 done
@@ -65,6 +68,7 @@ status_drift="unknown"
 stash_drift="unknown"
 marker_drift=0
 proc_drift=0
+tw_claim_drift=0
 
 # =========================================================================
 # Signal 1: baseline drift
@@ -183,11 +187,61 @@ fi
 echo "OTHER_PROC_COUNT=$proc_drift"
 
 # =========================================================================
+# Signal 4: taskwarrior +ACTIVE claims (best-effort)
+# =========================================================================
+echo "=== TASKWARRIOR_CLAIMS ==="
+
+if command -v task >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+  project="$(basename "$repo_root")"
+  claims_json="$(task project:"$project" +ACTIVE export 2>/dev/null)"
+  if [ -z "$claims_json" ]; then
+    claims_json="[]"
+  fi
+
+  if [ "$claims_json" != "[]" ]; then
+    while IFS= read -r line; do
+      [ -n "$line" ] || continue
+      claim_agent="${line%%|*}"
+      rest="${line#*|}"
+      claim_id="${rest%%|*}"
+      rest="${rest#*|}"
+      claim_branch="${rest%%|*}"
+      rest="${rest#*|}"
+      claim_host="${rest%%|*}"
+      rest="${rest#*|}"
+      claim_pid="${rest%%|*}"
+      rest="${rest#*|}"
+      claim_start="$rest"
+
+      if [ -n "$self_agent" ] && [ "$claim_agent" = "$self_agent" ]; then
+        echo "OWN_CLAIM_TASK=$claim_id"
+        echo "OWN_CLAIM_AGENT=$claim_agent"
+        continue
+      fi
+
+      tw_claim_drift=$((tw_claim_drift + 1))
+      echo "TW_CLAIM_TASK=$claim_id"
+      echo "TW_CLAIM_AGENT=$claim_agent"
+      echo "TW_CLAIM_BRANCH=$claim_branch"
+      echo "TW_CLAIM_HOST=$claim_host"
+      echo "TW_CLAIM_PID=$claim_pid"
+      echo "TW_CLAIM_START=$claim_start"
+    done < <(printf '%s' "$claims_json" | jq -r '.[] | "\(.agent // "")|\(.id)|\(.branch // "")|\(.host // "")|\(.pid // "")|\(.start // "")"')
+  fi
+
+  echo "TW_PROJECT=$project"
+  echo "TW_CLAIM_COUNT=$tw_claim_drift"
+  echo "TW_SCAN_METHOD=task"
+else
+  echo "TW_SCAN_METHOD=unavailable"
+fi
+
+# =========================================================================
 # Summary verdict
 # =========================================================================
 echo "=== VERDICT ==="
 
-if [ "$marker_drift" -gt 0 ] || [ "$proc_drift" -gt 0 ]; then
+if [ "$marker_drift" -gt 0 ] || [ "$proc_drift" -gt 0 ] || [ "$tw_claim_drift" -gt 0 ]; then
   verdict="coworker_detected"
 elif [ "$status_drift" = "true" ] || [ "$stash_drift" = "true" ]; then
   verdict="drift_detected"
@@ -199,3 +253,4 @@ echo "STATUS_DRIFT=$status_drift"
 echo "STASH_DRIFT=$stash_drift"
 echo "MARKER_COUNT=$marker_drift"
 echo "PROC_COUNT=$proc_drift"
+echo "TW_CLAIM_COUNT=$tw_claim_drift"

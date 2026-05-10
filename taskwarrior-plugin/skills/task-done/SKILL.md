@@ -5,8 +5,8 @@ args: "<task-id> [commit-hash]"
 allowed-tools: Bash(task *), Bash(git config *), Bash(git log *), Bash(git rev-parse *), Bash(gh auth *), Bash(gh issue *), Bash(gh pr *), Read, Edit, TodoWrite
 argument-hint: task id (required), commit sha (optional — defaults to HEAD)
 created: 2026-04-24
-modified: 2026-05-04
-reviewed: 2026-04-29
+modified: 2026-05-09
+reviewed: 2026-05-09
 ---
 
 # /taskwarrior:task-done
@@ -37,6 +37,8 @@ Parse `$ARGUMENTS`:
 - `$1` — commit hash (optional; defaults to `HEAD`)
 - `--no-gh` — skip GitHub close/comment even when remote is present
 - `--no-tracker` — skip blueprint tracker drain
+- `--drain-identity` — also clear `agent` / `pid` / `host` / `branch` / `worktree` UDAs after closing (default keeps them as audit trail)
+- `--no-coworker-marker` — skip the `/git:coworker-check --release` step
 
 ## Execution
 
@@ -52,7 +54,9 @@ Never use `task $TASKID info` or `task $TASKID list` — both can exit 1 and
 cancel parallel siblings. `export | jq` returns valid JSON even when the
 task is already closed (treat empty as "no such open task" and abort).
 
-Capture: `bpid`, `bpdoc`, `ghid`, `ghpr`, `tags`, `description`.
+Capture: `bpid`, `bpdoc`, `ghid`, `ghpr`, `tags`, `description`, plus
+identity UDAs `agent`, `pid`, `host`, `branch`, `worktree`, and `start`
+(if the task was claimed via `/taskwarrior:task-claim`).
 
 ### Step 2: Resolve commit hash
 
@@ -69,6 +73,27 @@ task "$TASKID" done
 
 Annotation first, then done — if close fails (e.g. dependencies), the
 annotation is still captured.
+
+Taskwarrior auto-stops a `+ACTIVE` task on `done`, so an explicit
+`task stop` is not needed. The task transition removes `+ACTIVE` and
+records the duration. If you want to drain the identity UDAs (so the
+closed task does not retain the stamp), do so separately after the
+close — see Step 4b below.
+
+### Step 4b: Drain identity UDAs (optional)
+
+After the task is closed, optionally clear the identity stamp left by
+the original claim:
+
+```bash
+task "$TASKID" modify agent: pid: host: branch: worktree:
+```
+
+Default behaviour is to **leave** these set on closed tasks — the audit
+trail of "who claimed and landed this" is useful in `task-status`
+recently-completed reports. Drain them only when the user explicitly
+asks (e.g. compliance / privacy hygiene), or when handing the queue
+file off to another team.
 
 ### Step 4: Drain the blueprint tracker
 
@@ -94,6 +119,19 @@ When GitHub mode is active and `--no-gh` was not passed:
 
 Always confirm before mutating GitHub state — the user may want to close
 the issue as part of the PR merge rather than ahead of time.
+
+### Step 5b: Drop the coworker-check marker
+
+If the task was `+ACTIVE` (claimed via `/taskwarrior:task-claim`), the
+matching git-side session marker should be released so destructive ops
+in this clone are no longer guarded:
+
+```
+Use SlashCommand to invoke `/git:coworker-check --release`.
+```
+
+Skip when the user has more work in flight on this branch — releasing
+the marker lifts the cross-agent guard.
 
 ### Step 6: Report
 
@@ -129,7 +167,10 @@ Print:
 ## Related
 
 - `/taskwarrior:task-add` — file a task (use `depends:` for sequential WO chains)
+- `/taskwarrior:task-claim` — claim a task before working on it (this skill closes a claimed task)
+- `/taskwarrior:task-release` — release a claim without closing (handoff)
 - `/taskwarrior:task-status` — see what's left
+- `/git:coworker-check` — the matching session marker that `--no-coworker-marker` controls
 - `blueprint-plugin:feature-tracking` — tracker format that `bpdoc` points at
 - `blueprint-plugin:blueprint-docs-currency` — companion discipline for the `bpdoc` update
 - `.claude/rules/parallel-safe-queries.md` — the `export | jq` idiom
