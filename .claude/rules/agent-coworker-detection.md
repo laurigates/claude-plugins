@@ -10,13 +10,14 @@ The root cause is missing coordination: each agent assumes it is the sole writer
 
 ## Detection Signals
 
-No single signal is reliable. Combine these three and treat any positive as "assume a coworker is present".
+No single signal is reliable. Combine these four and treat any positive as "assume a coworker is present".
 
 | Signal | Detects | Cost | Platform |
 |--------|---------|------|----------|
 | **Baseline drift** — snapshot `git status --porcelain` + `git stash list` at session start; diff at risky moments | Files that appeared after we started, regardless of who created them | Free | All |
 | **Session marker** — write `.git/.claude-session-<pid>` on start, delete on exit; scan siblings | Other agents that adopt the same convention | Free | All |
 | **Process scan** — find other `claude`/`node` processes whose `cwd` is the same repo | Ad-hoc agents that do not write markers | ~100ms | Linux/macOS differ |
+| **Taskwarrior `+ACTIVE` claims** — query `task project:<repo-basename> +ACTIVE export` for claims by other agent IDs | Coworkers that picked up coordination work via `/taskwarrior:task-claim`, even from a different process tree or host | ~50ms | Any host with `task` + `jq` |
 
 ### Baseline drift
 
@@ -56,6 +57,36 @@ done
 ```
 
 macOS uses `lsof -a -d cwd -c claude -c node -Fpn` since `/proc` is not available. The process-scan signal is a fallback — do not depend on it working in sandboxed environments (Claude Code on the web, restricted sandboxes) where process enumeration may be blocked.
+
+### Taskwarrior `+ACTIVE` claims
+
+When agents coordinate via `taskwarrior-plugin`, every claimed task is `task start`-ed (which sets the `+ACTIVE` virtual tag) and stamped with identity UDAs by `/taskwarrior:task-claim`:
+
+| UDA | Source on claim |
+|-----|-----------------|
+| `agent` | `claude-${CLAUDE_SESSION_ID:0:8}` |
+| `pid` | `$$` at claim time |
+| `host` | `hostname` |
+| `branch` | `git branch --show-current` |
+| `worktree` | `git rev-parse --show-toplevel` |
+
+Probe for active claims by other agents without contacting their processes:
+
+```bash
+project="$(basename "$(git rev-parse --show-toplevel)")"
+task project:"$project" +ACTIVE export \
+  | jq '.[] | {id, agent, pid, host, branch, worktree, start}'
+```
+
+The query is parallel-safe (`export` returns `[]` and exits 0 on no matches; see `.claude/rules/parallel-safe-queries.md`). Each row's `agent` is compared against `claude-${CLAUDE_SESSION_ID:0:8}` — matches are own claims and are reported as `OWN_CLAIM_*`; anything else counts toward `TW_CLAIM_COUNT` and raises the `coworker_detected` verdict.
+
+This signal is the only one that survives:
+
+- **Different hosts.** Taskwarrior stores can be synced via TaskChampion, so a claim on host A is visible to host B.
+- **Crashed Claude processes.** The claim outlives the process; staleness is reported separately by filtering on `start.before:now-Nh` (default 4h) without auto-stopping.
+- **Worktrees in the same project.** Taskwarrior records the project basename — not the worktree path — so two agents in sibling worktrees of the same repo still see each other's claims.
+
+The cross-link cuts both ways: when one agent claims via `/taskwarrior:task-claim`, the next agent's `/git:coworker-check` sees the claim before its destructive op even if that agent never invoked taskwarrior itself. The four-signal verdict is only as strong as the weakest signal that fires, so opting in to taskwarrior coordination strengthens the guard for every clone of the project.
 
 ## Response Rules
 
