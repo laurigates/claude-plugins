@@ -94,6 +94,7 @@ jobs:
         id: analyze
         if: steps.compare.outputs.has_updates == 'true'
         run: |
+          set -euo pipefail
           TRACKED="${{ steps.read_tracked.outputs.tracked_version }}"
           LATEST="${{ steps.extract.outputs.latest_version }}"
 
@@ -118,14 +119,18 @@ jobs:
 
           echo "Excerpt: $(wc -l < /tmp/excerpt.md) lines, $(wc -c < /tmp/excerpt.md) bytes ($TRACKED → $LATEST)"
 
-          HOOK=$(grep -ci 'hook' /tmp/excerpt.md || echo 0)
-          SKILL=$(grep -ci 'skill' /tmp/excerpt.md || echo 0)
-          AGENT=$(grep -cEi 'agent|subagent' /tmp/excerpt.md || echo 0)
-          PERM=$(grep -ci 'permission' /tmp/excerpt.md || echo 0)
-          PLUGIN=$(grep -ci 'plugin' /tmp/excerpt.md || echo 0)
-          MCP=$(grep -ci 'mcp' /tmp/excerpt.md || echo 0)
-          SANDBOX=$(grep -ci 'sandbox' /tmp/excerpt.md || echo 0)
-          BREAKING=$(grep -ci 'breaking' /tmp/excerpt.md || echo 0)
+          # grep -c prints "0" AND exits 1 on zero matches, so `|| echo 0`
+          # captures "0\n0" and breaks the integer test below. Use `|| true`
+          # to preserve grep's "0" output while normalising the exit code
+          # (see .claude/rules/parallel-safe-queries.md).
+          HOOK=$(grep -ci 'hook' /tmp/excerpt.md || true)
+          SKILL=$(grep -ci 'skill' /tmp/excerpt.md || true)
+          AGENT=$(grep -cEi 'agent|subagent' /tmp/excerpt.md || true)
+          PERM=$(grep -ci 'permission' /tmp/excerpt.md || true)
+          PLUGIN=$(grep -ci 'plugin' /tmp/excerpt.md || true)
+          MCP=$(grep -ci 'mcp' /tmp/excerpt.md || true)
+          SANDBOX=$(grep -ci 'sandbox' /tmp/excerpt.md || true)
+          BREAKING=$(grep -ci 'breaking' /tmp/excerpt.md || true)
 
           SUMMARY="Hook:$HOOK Skill:$SKILL Agent:$AGENT Permission:$PERM Plugin:$PLUGIN MCP:$MCP Sandbox:$SANDBOX Breaking:$BREAKING"
           echo "summary=$SUMMARY" >> "$GITHUB_OUTPUT"
@@ -138,7 +143,11 @@ jobs:
           [ "$AGENT" -gt 0 ] && CANDIDATES+=(".claude/rules/agent-development.md")
           [ "$PERM" -gt 0 ] && CANDIDATES+=(".claude/rules/agentic-permissions.md")
           [ "$PLUGIN" -gt 0 ] && CANDIDATES+=(".claude/rules/plugin-structure.md")
+          [ "$MCP" -gt 0 ] && CANDIDATES+=(".claude/rules/hooks-reference.md" ".claude/rules/prompt-agent-hooks.md")
           [ "$SANDBOX" -gt 0 ] && CANDIDATES+=(".claude/rules/sandbox-guidance.md")
+          # Breaking upstream changes can land anywhere — surface the
+          # top-level entry points so Claude widens its read window.
+          [ "$BREAKING" -gt 0 ] && CANDIDATES+=("CLAUDE.md" ".claude/rules/plugin-structure.md")
 
           if [ "${#CANDIDATES[@]}" -eq 0 ]; then
             CANDIDATE_LIST="(none — keyword counts are zero; only the tracking JSON likely needs an update)"
