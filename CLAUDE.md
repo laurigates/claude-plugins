@@ -47,6 +47,8 @@ Claude Code plugin collection providing skills and agents for development workfl
 | `.claude/rules/plugin-flow-diagrams.md` | When and how to add Mermaid flow diagrams |
 | `.claude/rules/agent-coworker-detection.md` | Detect other agents working in the same repo clone before destructive git ops |
 | `.claude/rules/workflow-naming.md` | `<Domain>: <Action>` naming for `.github/workflows/*.yml` and skill-generated workflow examples |
+| `.claude/rules/bash-tool-replacements.md` | `find`/`grep`/`rg`/`cat`/`head`/`tail` → dedicated tools; when the Bash form is genuinely fine |
+| `.claude/rules/gh-json-fields.md` | Correct `gh --json` field names (PR `state`/`mergedAt`, not `merged`); how to discover field lists |
 
 ## Creating New Skills
 
