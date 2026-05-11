@@ -1,8 +1,45 @@
 {
-  "lastCheckedVersion": "2.1.138",
-  "lastCheckedDate": "2026-05-11",
+  "lastCheckedVersion": "2.1.76",
+  "lastCheckedDate": "2026-03-17",
   "changelogUrl": "https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md",
   "reviewedChanges": [
+    {
+      "version": "2.1.138",
+      "date": "2026-05-11",
+      "relevantChanges": [
+        "r1",
+        "r2",
+        "r3",
+        "r4",
+        "r5",
+        "r6",
+        "r7",
+        "r8",
+        "r9",
+        "r10",
+        "r11",
+        "r12",
+        "r13",
+        "r14",
+        "r15",
+        "r16",
+        "r17",
+        "r18",
+        "r19",
+        "r20",
+        "r21",
+        "r22",
+        "r23"
+      ],
+      "actionsRequired": [
+        "a1",
+        "a2",
+        "a3",
+        "a4",
+        "a5",
+        "a6"
+      ]
+    },
     {
       "version": "2.1.76",
       "date": "2026-03-17",
