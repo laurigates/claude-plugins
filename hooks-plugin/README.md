@@ -348,12 +348,29 @@ Every hook can be individually enabled or disabled via environment variables. Se
 | task-completeness.sh | `CLAUDE_HOOKS_DISABLE_TASK_COMPLETENESS=1` | Enabled |
 | test-verification.sh | `CLAUDE_HOOKS_DISABLE_TEST_VERIFICATION=1` | Enabled |
 | event-logger.sh | `CLAUDE_HOOKS_ENABLE_EVENT_LOGGER=1` | **Disabled** (opt-in) |
+| bash-antipatterns-teach.sh | `CLAUDE_HOOKS_ENABLE_BASH_ANTIPATTERNS_TEACH=1` | **Disabled** (opt-in) |
 
 Example — disable branch protection for a session:
 
 ```bash
 CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1 claude
 ```
+
+### Teach-mode experiment
+
+`bash-antipatterns-teach.sh` is an opt-in PostToolUse companion to the existing
+PreToolUse `bash-antipatterns.sh`. Where the PreToolUse hook exits 2 to block
+soft-teach patterns (`cat`, `find -name`, `grep`/`rg`, `head`/`tail`, `ls *.glob`),
+the teach hook lets the command run and prepends a corrective hint to the
+tool result the agent sees via `hookSpecificOutput.updatedToolOutput` (Claude
+Code 2.1.121+). The goal is to drop the W20-measured 21% same-session
+repeat-block rate on `grep`/`rg` toward the ~10% floor of established blocks.
+
+Phase 1 is opt-in only — the hook is wired into `plugin.json` but no-ops
+unless `CLAUDE_HOOKS_ENABLE_BASH_ANTIPATTERNS_TEACH=1` is set. The existing
+PreToolUse blocks remain in place. See
+[`docs/teach-mode-experiment.md`](docs/teach-mode-experiment.md) for the full
+hypothesis, rollout plan, and W21 evaluation criteria.
 
 ## Hook Performance
 
