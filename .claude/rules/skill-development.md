@@ -97,7 +97,7 @@ Skills support these dynamic variables in content:
 | `$N` | Shorthand for `$ARGUMENTS[N]` (e.g., `$0` first, `$1` second) |
 | `${CLAUDE_SESSION_ID}` | Current session ID — useful for logging and session-specific files |
 | `${CLAUDE_SKILL_DIR}` | Directory containing the skill's `SKILL.md` file — use for bundled scripts |
-| EFFORT_VAR | Current effort level (low, medium, high, max) -- use for effort-aware behavior |
+| `${CLAUDE_EFFORT}` | Current effort level (`low`, `medium`, `high`, `max`) — use for effort-aware behavior |
 | `${CLAUDE_PLUGIN_ROOT}` | Root of the loaded plugin (hooks only) |
 
 **Examples:**
@@ -112,7 +112,6 @@ Migrate the $ARGUMENTS[0] component from $ARGUMENTS[1] to $ARGUMENTS[2].
 Log to logs/${CLAUDE_SESSION_ID}.log.
 
 Run helper: !`bash ${CLAUDE_SKILL_DIR}/scripts/helper.sh`
-| EFFORT_VAR | Current effort level (low, medium, high, max) -- use for effort-aware behavior |
 ```
 
 ### Model Selection
@@ -293,4 +292,5 @@ git commit -m "docs(blueprint-plugin): update skill README"
 | `chore` | Metadata updates (plugin.json, marketplace.json) |
 
 PR titles must also follow this format — they become the squash-merge commit message that drives release-please version bumps.
+
 
