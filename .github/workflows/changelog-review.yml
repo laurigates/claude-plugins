@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       force_full_review:
-        description: 'Force full changelog review'
+        description: 'Force triage even if a tracking issue for the current range already exists'
         required: false
         default: 'false'
         type: boolean
@@ -27,6 +27,8 @@ jobs:
       previous_version: ${{ steps.read_tracked.outputs.tracked_version }}
       changes_summary: ${{ steps.analyze.outputs.summary }}
       candidate_rules: ${{ steps.analyze.outputs.candidates }}
+      existing_issue: ${{ steps.existing.outputs.issue_number }}
+      should_skip: ${{ steps.existing.outputs.should_skip }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -70,7 +72,7 @@ jobs:
           FORCE="${{ inputs.force_full_review }}"
 
           if [ "$FORCE" = "true" ]; then
-            echo "Forced full review requested"
+            echo "Forced full triage requested"
             echo "has_updates=true" >> $GITHUB_OUTPUT
             echo "latest_version=$LATEST" >> $GITHUB_OUTPUT
             exit 0
@@ -90,9 +92,51 @@ jobs:
           fi
           echo "latest_version=$LATEST" >> $GITHUB_OUTPUT
 
+      # Skip-if-exists check: if a changelog-review issue already covers
+      # this range, don't re-triage. This makes the workflow idempotent and
+      # prevents the "next run on top of an open backlog" failure mode.
+      - name: Check for existing tracking issue
+        id: existing
+        if: steps.compare.outputs.has_updates == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
+          FORCE: ${{ inputs.force_full_review }}
+          TRACKED: ${{ steps.read_tracked.outputs.tracked_version }}
+          LATEST: ${{ steps.extract.outputs.latest_version }}
+        run: |
+          set -euo pipefail
+
+          if [ "$FORCE" = "true" ]; then
+            echo "Force flag set — bypassing skip-if-exists"
+            echo "should_skip=false" >> "$GITHUB_OUTPUT"
+            echo "issue_number=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Look for an OPEN issue whose title matches the canonical pattern
+          # "Review Claude Code changelog: <tracked> → <latest>". Use --json
+          # then jq so the empty case is exit-0 (parallel-safe-queries.md).
+          ISSUE=$(gh issue list \
+            --repo "$GITHUB_REPOSITORY" \
+            --label changelog-review \
+            --state open \
+            --json number,title \
+            --jq ".[] | select(.title | test(\"$TRACKED.*$LATEST\")) | .number" \
+            | head -1)
+
+          if [ -n "$ISSUE" ]; then
+            echo "Existing open tracking issue #$ISSUE covers $TRACKED → $LATEST — skipping triage"
+            echo "should_skip=true" >> "$GITHUB_OUTPUT"
+            echo "issue_number=$ISSUE" >> "$GITHUB_OUTPUT"
+          else
+            echo "No open tracking issue for $TRACKED → $LATEST — triage will run"
+            echo "should_skip=false" >> "$GITHUB_OUTPUT"
+            echo "issue_number=" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Slice changelog and identify candidate rules files
         id: analyze
-        if: steps.compare.outputs.has_updates == 'true'
+        if: steps.compare.outputs.has_updates == 'true' && steps.existing.outputs.should_skip != 'true'
         run: |
           set -euo pipefail
           TRACKED="${{ steps.read_tracked.outputs.tracked_version }}"
@@ -115,6 +159,16 @@ jobs:
           if [ ! -s /tmp/excerpt.md ]; then
             echo "::error::Excerpt is empty — tracked version $TRACKED not found in changelog"
             exit 1
+          fi
+
+          # Cap the excerpt to keep the Claude phase bounded even when the
+          # gap is huge. A 200KB excerpt gives plenty of room for a year's
+          # worth of versions without overwhelming the prompt cache.
+          EXCERPT_BYTES=$(wc -c < /tmp/excerpt.md)
+          if [ "$EXCERPT_BYTES" -gt 204800 ]; then
+            echo "::warning::Excerpt is $EXCERPT_BYTES bytes — truncating to 200KB for triage"
+            head -c 204800 /tmp/excerpt.md > /tmp/excerpt-trimmed.md
+            mv /tmp/excerpt-trimmed.md /tmp/excerpt.md
           fi
 
           echo "Excerpt: $(wc -l < /tmp/excerpt.md) lines, $(wc -c < /tmp/excerpt.md) bytes ($TRACKED → $LATEST)"
@@ -164,17 +218,25 @@ jobs:
           echo "Candidate rules files:"
           echo "$CANDIDATE_LIST"
 
-      - name: Upload excerpt for claude-review job
-        if: steps.compare.outputs.has_updates == 'true'
+      - name: Upload excerpt for triage job
+        if: steps.compare.outputs.has_updates == 'true' && steps.existing.outputs.should_skip != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: changelog-excerpt
           path: /tmp/excerpt.md
           retention-days: 7
 
-  claude-review:
+      - name: Report skip
+        if: steps.existing.outputs.should_skip == 'true'
+        env:
+          ISSUE_NUMBER: ${{ steps.existing.outputs.issue_number }}
+        run: |
+          echo "::notice::Skipped triage — issue #$ISSUE_NUMBER already covers ${{ steps.read_tracked.outputs.tracked_version }} → ${{ steps.extract.outputs.latest_version }}"
+          echo "Re-run with workflow_dispatch + force_full_review=true to override."
+
+  claude-triage:
     needs: check-changelog
-    if: needs.check-changelog.outputs.has_updates == 'true'
+    if: needs.check-changelog.outputs.has_updates == 'true' && needs.check-changelog.outputs.should_skip != 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -188,19 +250,26 @@ jobs:
           name: changelog-excerpt
           path: .
 
-      - name: Review changelog and apply updates
+      - name: Triage changelog into a tracking issue
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          claude_args: "--model sonnet --max-turns 50"
+          # Triage is intentionally small-scope work — no rule edits, no
+          # multi-PR juggling. 25 turns is enough headroom for: read inputs,
+          # categorize changes, open one issue, ratchet the JSON, open one
+          # PR. If it can't finish in 25 turns, the prompt is wrong and we
+          # want to fail fast rather than burn $60 on a misdiagnosis loop.
+          claude_args: "--model sonnet --max-turns 25"
           prompt: |
-            You are reviewing Claude Code changelog changes from ${{ needs.check-changelog.outputs.previous_version }} to ${{ needs.check-changelog.outputs.latest_version }}.
+            You are TRIAGING Claude Code changelog changes from ${{ needs.check-changelog.outputs.previous_version }} to ${{ needs.check-changelog.outputs.latest_version }}.
+
+            **Triage means: open a tracking issue, ratchet the JSON state file, and open one tiny PR for the JSON change. DO NOT edit rule files. DO NOT open multiple PRs. Rule edits happen in follow-up work driven by the tracking issue.**
 
             ## Pre-computed inputs (use these — do not re-fetch)
 
             - **Changelog excerpt**: `excerpt.md` in the repo root contains *only* the new versions, already sliced for you. Read it once with `Read`. Do **not** WebFetch the full changelog.
             - **Keyword counts on the excerpt**: ${{ needs.check-changelog.outputs.changes_summary }}
-            - **Candidate rules files** (rules likely to need updates, based on keyword hits):
+            - **Candidate rules files** (rules likely to need follow-up edits, based on keyword hits):
 
               ```
               ${{ needs.check-changelog.outputs.candidate_rules }}
@@ -209,60 +278,105 @@ jobs:
             ## Efficiency rules
 
             - Use `TodoWrite` once at the start to plan, then minimal narration.
-            - **Read every candidate rules file in parallel** (single message, multiple `Read` calls). Do not read them sequentially.
-            - Only `Edit` rules files that actually need changes. Files that already cover the new behavior need no edit.
-            - Skip non-candidate rules files. The keyword analysis already filtered them out.
+            - Read `excerpt.md` once. Read `.claude-code-version-check.json` once. **Do not read rule files** — that's apply-phase work.
             - Never use `WebFetch` for the changelog or for live docs — the excerpt is the authoritative input.
+            - If you misdiagnose your own work (e.g. think a branch is empty), STOP and re-check with `git diff` / `git log` before destructive recovery. The previous run wasted ~75 minutes self-correcting a false alarm.
 
             ## Step 1: Read inputs in parallel
 
             In one message, dispatch parallel `Read` calls for:
             - `excerpt.md` (the changelog excerpt)
             - `.claude-code-version-check.json` (current tracking state)
-            - Every candidate rules file listed above
 
             ## Step 2: Categorize changes
 
-            For each entry in the excerpt, classify impact on this plugin collection:
+            For each version in the excerpt, classify impact on this plugin collection:
 
             - **High** — breaking changes, new hook events, permission model changes, skill/agent system changes
             - **Medium** — new features worth documenting in rules, behavior changes affecting existing skills
             - **Low** — bug fixes, perf, UI
 
-            Focus areas: hook system, skill/command system, agent/subagent system, permission model, MCP, plugin manifest/marketplace.
+            Focus areas: hook system, skill/command system, agent/subagent system, permission model, MCP, plugin manifest/marketplace, sandbox.
 
-            ## Step 3: Update `.claude-code-version-check.json`
+            ## Step 3: Open a tracking issue
 
-            Edit it in place:
-            - `lastCheckedVersion` = `${{ needs.check-changelog.outputs.latest_version }}`
-            - `lastCheckedDate` = today (YYYY-MM-DD)
-            - Prepend a new entry to `reviewedChanges` with `version`, `date`, `relevantChanges` (array), `actionsRequired` (array).
-
-            ## Step 4: Edit only the candidate rules files that need it
-
-            For high/medium impact changes affecting a candidate rule, edit that rule in place — preserve structure, add/modify only the relevant section. Skip candidates whose existing content already covers the new behavior.
-
-            ## Step 5: Branch, commit, push, PR
+            Open ONE issue summarizing the High and Medium changes. Group them by candidate rule file so follow-up apply work is clean.
 
             ```bash
-            BR="chore/changelog-review-${{ needs.check-changelog.outputs.latest_version }}"
-            git switch -c "$BR"
-            git add .claude-code-version-check.json .claude/rules/
-            git commit -m "chore(project-plugin): review Claude Code changelog ${{ needs.check-changelog.outputs.previous_version }} → ${{ needs.check-changelog.outputs.latest_version }}"
-            git push -u origin "$BR"
-            gh pr create \
-              --title "chore(project-plugin): review Claude Code changelog ${{ needs.check-changelog.outputs.previous_version }} → ${{ needs.check-changelog.outputs.latest_version }}" \
-              --body "Automated review of Claude Code changelog ${{ needs.check-changelog.outputs.previous_version }} → ${{ needs.check-changelog.outputs.latest_version }}.
+            gh issue create \
+              --title "Review Claude Code changelog: ${{ needs.check-changelog.outputs.previous_version }} → ${{ needs.check-changelog.outputs.latest_version }}" \
+              --label "changelog-review,maintenance" \
+              --assignee laurigates \
+              --body "$(cat <<'EOF'
+            Triage of Claude Code changelog ${{ needs.check-changelog.outputs.previous_version }} → ${{ needs.check-changelog.outputs.latest_version }}.
 
             **Keyword counts on excerpt:** ${{ needs.check-changelog.outputs.changes_summary }}
+            **Upstream changelog:** https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md
 
-            **Upstream changelog:** https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md" \
-              --label "changelog-review,maintenance"
+            ## Follow-up tasks
+
+            For each rule file below, the listed bullets are the relevant changes from the excerpt. To address: `@claude please update <file> for the bullets listed in this issue`.
+
+            ### .claude/rules/hooks-reference.md
+            - (list bullets here, citing version numbers)
+
+            ### .claude/rules/skill-development.md
+            - (...)
+
+            ### .claude/rules/agent-development.md
+            - (...)
+
+            ### .claude/rules/agentic-permissions.md
+            - (...)
+
+            ### .claude/rules/plugin-structure.md
+            - (...)
+
+            ### .claude/rules/sandbox-guidance.md
+            - (...)
+
+            (Omit sections with no relevant changes. Drop versions that are pure bug fixes / UI / perf.)
+
+            🤖 Triaged with [Claude Code](https://claude.com/claude-code)
+            EOF
+            )"
             ```
 
-            ## Step 6: Follow-up issues — only for major work
+            Skip rule-file sections that have no relevant changes — empty sections are noise.
 
-            Open a `gh issue create` *only* when a change requires work beyond rules edits (new skill, skill rewrite, plugin restructuring). For routine doc updates, skip this step.
+            ## Step 4: Ratchet `.claude-code-version-check.json`
+
+            Edit in place:
+            - `lastCheckedVersion` = `${{ needs.check-changelog.outputs.latest_version }}`
+            - `lastCheckedDate` = today (YYYY-MM-DD)
+            - Prepend a new entry to `reviewedChanges` with `version`, `date`, `relevantChanges` (array of headline bullets), `actionsRequired` (array referencing the issue number from Step 3 — e.g. `"See issue #N for rule update plan"`)
+
+            ## Step 5: Branch, commit, push, JSON-only PR
+
+            ```bash
+            BR="chore/changelog-triage-${{ needs.check-changelog.outputs.latest_version }}"
+            git switch -c "$BR"
+            git add .claude-code-version-check.json
+            git status --short      # confirm only the JSON is staged
+            git commit -m "chore(project-plugin): ratchet changelog tracking to ${{ needs.check-changelog.outputs.latest_version }}"
+            git push -u origin "$BR"
+            gh pr create \
+              --title "chore(project-plugin): ratchet changelog tracking to ${{ needs.check-changelog.outputs.latest_version }}" \
+              --label "changelog-review,maintenance" \
+              --assignee laurigates \
+              --body "Ratchets \`.claude-code-version-check.json\` to ${{ needs.check-changelog.outputs.latest_version }}. Rule edits are tracked in the linked triage issue.
+
+            Refs the triage issue opened in Step 3."
+            ```
+
+            ## Step 6: Final sanity check
+
+            Before finishing, run `git log -1 --stat` and confirm:
+            - Exactly one commit on the branch
+            - Exactly one file changed (`.claude-code-version-check.json`)
+            - No rule-file edits
+
+            If anything looks wrong, **fix it before finishing the turn**. Do not try to "recover" by closing and re-opening PRs.
 
             ## Conventions
 
@@ -275,9 +389,25 @@ jobs:
             Grep
             Glob
             TodoWrite
-            Bash(git *)
+            Bash(git status *)
+            Bash(git diff *)
+            Bash(git log *)
+            Bash(git show *)
+            Bash(git add *)
+            Bash(git commit *)
+            Bash(git push *)
+            Bash(git switch *)
+            Bash(git branch *)
             Bash(gh pr *)
             Bash(gh issue *)
+            Bash(gh api *)
+            Bash(gh label *)
+            Bash(jq *)
+            Bash(cat *)
+            Bash(grep *)
+            Bash(wc *)
+            Bash(awk *)
+            Bash(date *)
           plugin_marketplaces: |
             https://github.com/laurigates/claude-plugins.git
           plugins: |
