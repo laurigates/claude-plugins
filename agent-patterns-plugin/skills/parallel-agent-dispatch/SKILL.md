@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-21
-modified: 2026-05-09
+modified: 2026-05-11
 reviewed: 2026-04-25
 ---
 
@@ -230,6 +230,7 @@ the agent could write inline.
 | Second root cause missed | `Issues encountered` has a home for "bonus" findings |
 | Follow-up work invisible | `Deferred / skipped` and `Orchestrator action needed` |
 | Budget overrun | `status: partial` + explicit deferred list beats a truncated claim of success |
+| Pre-commit hook block | `worktree: dirty: <files>` + `status: failed` + `Orchestrator action needed` |
 
 ## Who Pushes?
 
@@ -260,6 +261,23 @@ If an agent exits without emitting the Return Contract:
    or salvage the work yourself and file a tracking issue noting the stall.
 4. Do **not** report the parent task as complete until every spawned agent
    has produced a Return Contract (or been explicitly accounted for).
+
+### Pre-commit hook stalls
+
+The dominant stall failure mode in parallel dispatches is a **pre-commit hook blocking `git commit`**. The agent's commit fails, no Return Contract is emitted, and the worktree is left dirty with the agent's actual work intact. Distinct from rate-limit cascades (transport-layer), this is a hook-layer failure.
+
+**Symptoms**: Return Contract shows `worktree: dirty: <files>` with the agent's intended diff, OR no Return Contract at all but `git -C <worktree> status --porcelain` shows the agent's work staged or unstaged.
+
+**Salvage routine**:
+1. `git -C <worktree> status` — confirm the diff matches the agent's declared scope.
+2. `pre-commit run --all-files 2>&1 | tail -40` — surface what blocked.
+3. Fix the hook failure (or rerun the agent with the fix instructions), then commit on the agent's behalf preserving its commit message.
+4. Push and continue.
+
+**Prevention** (pick one):
+- **Instruct agents to self-report on hook failure**: dispatch with "if `git commit` fails, emit your Return Contract with `status: failed`, `worktree: dirty: <files>`, and `Orchestrator action needed: pre-commit hook X failed, fix and commit on my behalf`."
+- **Pre-warm hooks**: run `pre-commit run --all-files` in worktree setup so the first commit is not the first hook run.
+- **Orchestrator-runs-hooks**: have agents commit with `--no-verify` and have the orchestrator run `pre-commit run --all-files` once before the merge wave. Trade-off: agent diffs may individually fail hooks; the orchestrator must be prepared to fix.
 
 ## Composition with agent-teams
 
