@@ -106,7 +106,7 @@ tools: Agent(worker, researcher), Read, Bash
 ```
 
 This is an allowlist — only `worker` and `researcher` can be spawned. To allow any subagent without restriction, use `Agent` without parentheses. If `Agent` is omitted, the agent cannot spawn any subagents.
-AGENT_MODE_NOTE_PLACEHOLDER
+> **Note (2.1.116+)**: Agent frontmatter `hooks:` and `mcpServers:` are active when the agent runs as a main-thread session via `claude --agent`, not just as subagents.
 
 ## Model Selection for Agents
 
@@ -170,7 +170,16 @@ For filesystem-level isolation, give agents their own git worktree so they work 
 | `isolation: worktree` | Git worktree | Filesystem + Git | Implementation, commits |
 | Manual worktree | `git worktree add` | Filesystem + Git | Complex multi-issue parallel work |
 
-WORKTREE_BASEREF_PLACEHOLDER
+### `worktree.baseRef` Setting (2.1.133+)
+
+Controls the branch base for `--worktree`, `EnterWorktree`, and agent-isolation worktrees:
+
+| Value | Base Branch | Notes |
+|-------|-------------|-------|
+| `fresh` (default) | `origin/default-branch` | Unpushed local commits NOT included |
+| `head` | Local `HEAD` | Includes unpushed commits; pre-2.1.133 default |
+
+Set `worktree.baseRef: head` to keep unpushed commits in new worktrees.
 
 ## Preloading Skills into Agents
 
@@ -188,7 +197,7 @@ Implement API endpoints. Follow the conventions and patterns from the preloaded 
 ```
 
 Agents do **not** inherit skills from the parent session — they must be listed explicitly.
-SKILL_DISCOVERY_PLACEHOLDER
+> **Note (2.1.133+)**: Subagents can discover project, user, and plugin skills via the `Skill` tool. Skills listed in `skills:` frontmatter are preloaded; the `Skill` tool discovers others on demand.
 
 ---
 
@@ -514,4 +523,5 @@ See `git-repo-agent/docs/adr/004` for full context.
 - `.claude/rules/agentic-permissions.md` — Granular tool permission patterns
 - `.claude/rules/skill-development.md` — Skill creation (use when agent is not needed)
 - `.claude/rules/agentic-optimization.md` — CLI output optimization for agent consumption
+
 
