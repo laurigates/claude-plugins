@@ -234,6 +234,7 @@ For projects using plugins with these patterns, recommend adding to `.claude/set
 ```
 
 These narrow rules carry over into auto mode and skip the classifier. Avoid broad patterns like `Bash(*)` or `Bash(python*)` — auto mode drops them at runtime, and they reduce safety in `default`/`acceptEdits`.
+HARDDENY_PLACEHOLDER
 
 ## Context Section Patterns
 
@@ -275,3 +276,4 @@ Use `find` for file/directory discovery (succeeds with empty output when no matc
 - [ ] Context commands use `find` for file/directory discovery
 - [ ] Only necessary permissions are granted
 - [ ] Matches a standard permission set or documents why custom set is needed
+
