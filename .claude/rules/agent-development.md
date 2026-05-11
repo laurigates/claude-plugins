@@ -106,6 +106,7 @@ tools: Agent(worker, researcher), Read, Bash
 ```
 
 This is an allowlist — only `worker` and `researcher` can be spawned. To allow any subagent without restriction, use `Agent` without parentheses. If `Agent` is omitted, the agent cannot spawn any subagents.
+AGENT_MODE_NOTE_PLACEHOLDER
 
 ## Model Selection for Agents
 
@@ -169,6 +170,8 @@ For filesystem-level isolation, give agents their own git worktree so they work 
 | `isolation: worktree` | Git worktree | Filesystem + Git | Implementation, commits |
 | Manual worktree | `git worktree add` | Filesystem + Git | Complex multi-issue parallel work |
 
+WORKTREE_BASEREF_PLACEHOLDER
+
 ## Preloading Skills into Agents
 
 Use the `skills` field to inject full skill content into an agent's context at startup. Unlike the main session where skill descriptions are loaded and full content loads on invocation, preloaded skills are fully injected immediately.
@@ -185,6 +188,7 @@ Implement API endpoints. Follow the conventions and patterns from the preloaded 
 ```
 
 Agents do **not** inherit skills from the parent session — they must be listed explicitly.
+SKILL_DISCOVERY_PLACEHOLDER
 
 ---
 
@@ -510,3 +514,4 @@ See `git-repo-agent/docs/adr/004` for full context.
 - `.claude/rules/agentic-permissions.md` — Granular tool permission patterns
 - `.claude/rules/skill-development.md` — Skill creation (use when agent is not needed)
 - `.claude/rules/agentic-optimization.md` — CLI output optimization for agent consumption
+
