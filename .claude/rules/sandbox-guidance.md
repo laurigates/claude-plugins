@@ -64,6 +64,7 @@ The web sandbox enforces a **"Limited" network allowlist**. Skills must only dow
 Network access mode is configured in the Claude Code web UI settings — not via code. If a skill requires access beyond the "Limited" allowlist, document this requirement explicitly and instruct users to enable "Full" network access in their web session settings.
 
 ---
+DENIEDDOMAINS_PLACEHOLDER
 
 ## Filesystem
 
@@ -128,6 +129,7 @@ The web sandbox base image includes standard language runtimes and system tools 
 | `CLAUDE_PROJECT_DIR` | Always | Project root directory |
 | `CLAUDE_PLUGIN_ROOT` | Frontmatter hooks only | Root of the loaded plugin |
 | `CLAUDE_CODE_DISABLE_CRON` | Set to stop scheduled cron jobs mid-session (2.1.72+) | Session cron management |
+SESSIONID_PLACEHOLDER
 
 ### Persisting Environment Variables
 
@@ -314,3 +316,4 @@ pypi.org
 - `.claude/rules/hooks-reference.md` — complete hook event reference and `CLAUDE_CODE_REMOTE` definition
 - `.claude/rules/shell-scripting.md` — safe shell patterns for hook scripts
 - `.claude/rules/skill-development.md` — skill creation patterns
+
