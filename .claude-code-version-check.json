@@ -1,8 +1,45 @@
 {
-  "lastCheckedVersion": "2.1.76",
-  "lastCheckedDate": "2026-03-17",
+  "lastCheckedVersion": "2.1.138",
+  "lastCheckedDate": "2026-05-11",
   "changelogUrl": "https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md",
   "reviewedChanges": [
+    {
+      "version": "2.1.138",
+      "date": "2026-05-11",
+      "relevantChanges": [
+        "New PermissionDenied hook event (2.1.89)",
+        "New TaskCreated hook event (2.1.89)",
+        "New defer decision for PreToolUse via -p --resume (2.1.89)",
+        "PostToolUse updatedToolOutput for ALL tools (2.1.121)",
+        "Hooks receive effort.level in JSON input (2.1.133)",
+        "Skills reference CLAUDE_EFFORT (2.1.120)",
+        "PreCompact can block compaction (2.1.105)",
+        "duration_ms in PostToolUse inputs (2.1.119)",
+        "UserPromptSubmit can set sessionTitle (2.1.94)",
+        "permissions.deny overrides ask decision (2.1.101)",
+        "Agent frontmatter hooks fire via --agent (2.1.116)",
+        "Agent frontmatter mcpServers loaded via --agent (2.1.117)",
+        "Subagents discover skills via Skill tool (2.1.133)",
+        "worktree.baseRef controls EnterWorktree base (2.1.133)",
+        "EnterWorktree gained path parameter (2.1.105)",
+        "Plugins ship executables under bin/ (2.1.91)",
+        "Plugin manifest experimental wrapper (2.1.129)",
+        "autoMode.hard_deny added (2.1.136)",
+        "CLAUDE_CODE_SESSION_ID in Bash subprocess (2.1.132)",
+        "sandbox.network.deniedDomains added (2.1.113)",
+        "Fixed PermissionRequest updatedInput (2.1.110)",
+        "Fixed plugin hooks on cache cleanup (2.1.136)",
+        "BREAKING: skills entry fix (2.1.136)"
+      ],
+      "actionsRequired": [
+        "Updated hooks-reference.md",
+        "Updated skill-development.md",
+        "Updated agent-development.md",
+        "Updated plugin-structure.md",
+        "Updated agentic-permissions.md",
+        "Updated sandbox-guidance.md"
+      ]
+    },
     {
       "version": "2.1.76",
       "date": "2026-03-17",

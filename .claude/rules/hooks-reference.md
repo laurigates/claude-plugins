@@ -154,7 +154,8 @@ Set timeout explicitly even though the default is now 10 minutes — explicit ti
   "transcript_path": "/path/to/conversation.json",
   "cwd": "/current/working/directory",
   "permission_mode": "default",
-  "hook_event_name": "PreToolUse"
+  "hook_event_name": "PreToolUse",
+  "effort": {"level": "high"}
 }
 ```
 
@@ -166,7 +167,8 @@ Set timeout explicitly even though the default is now 10 minutes — explicit ti
   "tool_input": {
     "command": "npm test"
   },
-  "tool_response": { }
+  "tool_response": { },
+  "duration_ms": 1234
 }
 ```
 `tool_response` is only present for `PostToolUse` and `PostToolUseFailure`.
@@ -349,7 +351,20 @@ Optionally modify the tool input before execution:
 }
 ```
 
-### PermissionRequest — Auto Approve/Deny (2.1.50+)
+### PostToolUse -- Replace Tool Output (2.1.121+)
+
+`PostToolUse` hooks can replace tool output for any tool via `hookSpecificOutput.updatedToolOutput`:
+
+```json
+{
+  "hookSpecificOutput": {
+    "hookEventName": "PostToolUse",
+    "updatedToolOutput": "Filtered or modified tool output"
+  }
+}
+```
+
+### PermissionRequest -- Auto Approve/Deny (2.1.50+)
 
 ```json
 {
@@ -849,3 +864,4 @@ MCP tools use the naming pattern `mcp__<server>__<tool>`. Match them with regex 
 | `ElicitationResult` | MCP | 2.1.76 |
 | `Notification` | Misc | |
 | `ConfigChange` | Misc | 2.1.50 |
+

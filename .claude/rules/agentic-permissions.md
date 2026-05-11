@@ -234,6 +234,21 @@ For projects using plugins with these patterns, recommend adding to `.claude/set
 ```
 
 These narrow rules carry over into auto mode and skip the classifier. Avoid broad patterns like `Bash(*)` or `Bash(python*)` — auto mode drops them at runtime, and they reduce safety in `default`/`acceptEdits`.
+### `autoMode.hard_deny` (2.1.136+)
+
+Rules in `autoMode.hard_deny` block unconditionally -- the classifier cannot override them regardless of user intent or allow exceptions:
+
+```json
+{
+  "permissions": {
+    "autoMode": {
+      "hard_deny": ["Bash(rm -rf *)"]
+    }
+  }
+}
+```
+
+Use `hard_deny` for security-critical operations that must never run in auto mode even when the user explicitly permits them. Contrast with `autoMode.soft_deny`, which the classifier can override for good reason.
 
 ## Context Section Patterns
 
@@ -275,3 +290,5 @@ Use `find` for file/directory discovery (succeeds with empty output when no matc
 - [ ] Context commands use `find` for file/directory discovery
 - [ ] Only necessary permissions are granted
 - [ ] Matches a standard permission set or documents why custom set is needed
+
+
