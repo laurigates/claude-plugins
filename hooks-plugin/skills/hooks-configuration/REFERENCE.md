@@ -327,3 +327,44 @@ Stop hooks fire every time Claude finishes responding, including after acting on
 ```
 First: if stop_hook_active is true in the input, respond with {"ok": true} immediately.
 ```
+
+## Prompt and Agent Hook Types
+
+| Type | How It Works | Default Timeout | Use When |
+|------|-------------|-----------------|----------|
+| `command` | Runs a shell command, reads stdin, returns exit code | 600s | Deterministic rules (regex, field checks) |
+| `http` | Sends hook data to an HTTPS endpoint, reads JSON response | 30s | Remote/centralized policy enforcement |
+| `prompt` | Single-turn LLM call (Haiku), returns `{ok: true/false}` | 30s | Judgment on hook input data alone |
+| `agent` | Multi-turn subagent with tool access, returns `{ok: true/false}` | 60s | Verification needing file/tool access |
+
+**Additional handler fields:**
+- **`async: true`**: Fire-and-forget (non-blocking, exit code ignored)
+- **`once: true`**: Run only once per session
+
+**Supported events for prompt/agent hooks:** `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `PermissionRequest`, `Stop`, `SubagentStop`, `TaskCompleted`, `UserPromptSubmit`.
+
+### CLAUDE_ENV_FILE (SessionStart)
+
+SessionStart hooks can write environment variables that persist for the session:
+
+```bash
+if [ -n "$CLAUDE_ENV_FILE" ]; then
+  echo "NODE_ENV=development" >> "$CLAUDE_ENV_FILE"
+fi
+```
+
+> Prefer `command` hooks over `agent` hooks when logic is deterministic — eliminates LLM latency on every invocation.
+
+## Debugging
+
+```bash
+# Verify hook registration
+/hooks
+
+# Enable debug logging
+claude --debug
+
+# Test a hook manually
+echo '{"tool_input": {"command": "cat file.txt"}}' | bash your-hook.sh
+echo $?  # Check exit code
+```

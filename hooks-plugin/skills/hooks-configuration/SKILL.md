@@ -4,7 +4,7 @@ description: Claude Code hooks configuration and development. Covers lifecycle e
 user-invocable: false
 allowed-tools: Bash(bash *), Bash(cat *), Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-05-11
 reviewed: 2026-04-10
 ---
 
@@ -202,43 +202,11 @@ For additional patterns (subagent injection, desktop notifications, audit loggin
 
 ## Prompt-Based and Agent-Based Hooks
 
-In addition to command hooks, Claude Code supports LLM-powered hooks for decisions requiring judgment.
+Four hook types: `command` (shell script, exit code), `http` (HTTPS endpoint), `prompt` (single-turn LLM call), and `agent` (multi-turn with tool access). Use `command` for deterministic rules; `prompt`/`agent` for judgment-based decisions. Add `async: true` for fire-and-forget; `once: true` to run only once per session.
 
-### Hook Types
+Prompt and agent hooks work on `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `PermissionRequest`, `Stop`, `SubagentStop`, `TaskCompleted`, `UserPromptSubmit`. All other events support `command` hooks only.
 
-| Type | How It Works | Default Timeout | Use When |
-|------|-------------|-----------------|----------|
-| `command` | Runs a shell command, reads stdin, returns exit code | 600s | Deterministic rules (regex, field checks) |
-| `http` | Sends hook data to an HTTPS endpoint, reads JSON response | 30s | Remote/centralized policy enforcement |
-| `prompt` | Single-turn LLM call (Haiku), returns `{ok: true/false}` | 30s | Judgment on hook input data alone |
-| `agent` | Multi-turn subagent with tool access, returns `{ok: true/false}` | 60s | Verification needing file/tool access |
-
-### Additional Hook Handler Fields
-
-- **`async: true`**: Fire-and-forget for command hooks (non-blocking, exit code ignored)
-- **`once: true`**: Run only once per session; subsequent triggers are skipped
-
-### Supported Events
-
-Prompt and agent hooks work on: `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `PermissionRequest`, `Stop`, `SubagentStop`, `TaskCompleted`, `UserPromptSubmit`.
-
-All other events (`SessionStart`, `SessionEnd`, `PreCompact`, etc.) support only `command` hooks.
-
-### CLAUDE_ENV_FILE (SessionStart)
-
-SessionStart hooks can write environment variables that persist for the session via `CLAUDE_ENV_FILE`:
-
-```bash
-if [ -n "$CLAUDE_ENV_FILE" ]; then
-  echo "NODE_ENV=development" >> "$CLAUDE_ENV_FILE"
-fi
-```
-
-> **Note**: Prefer `command` hooks over `agent` hooks when the logic is deterministic. For example, test verification is better as a bash script than an agent hook -- it eliminates LLM latency on every invocation.
-
-For prompt, agent, and HTTP hook configuration examples, see [REFERENCE.md](REFERENCE.md).
-
-For the full decision guide on when to use each hook type, see [.claude/rules/prompt-agent-hooks.md](../../.claude/rules/prompt-agent-hooks.md).
+For hook type details, `CLAUDE_ENV_FILE`, and configuration examples, see [REFERENCE.md](REFERENCE.md) and [.claude/rules/prompt-agent-hooks.md](../../.claude/rules/prompt-agent-hooks.md).
 
 ## Handling Blocked Commands
 
@@ -261,52 +229,12 @@ When a PreToolUse hook blocks a command:
 
 ## Best Practices
 
-**Script Development:**
-
-1. Always read input from stdin with `cat`
-2. Use `jq` for JSON parsing
-3. Quote all variables to prevent injection
-4. Exit with code 2 to block, 0 to allow
-5. Write blocking messages to stderr
-6. Keep hooks fast (< 5 seconds)
-
-**Configuration:**
-
-1. Use `$CLAUDE_PROJECT_DIR` for portable paths
-2. Set explicit timeouts (default: 10 minutes / 600s as of 2.1.50)
-3. Use specific matchers over wildcards
-4. Test hooks manually before enabling
-
-**Security:**
-
-1. Validate all inputs
-2. Use absolute paths
-3. Avoid touching `.env` or `.git/` directly
-4. Review hook code before deployment
+| Area | Key Points |
+|------|------------|
+| Script | Read stdin with `cat`; parse with `jq`; quote all vars; exit 2 to block, 0 to allow; stderr for messages; keep < 5s |
+| Config | `$CLAUDE_PROJECT_DIR` for portable paths; explicit timeouts; specific matchers over wildcards; test before enabling |
+| Security | Validate all inputs; use absolute paths; avoid `.env` / `.git/` directly; review before deploy |
 
 ## Debugging
 
-**Verify hook registration:**
-
-```
-/hooks
-```
-
-**Enable debug logging:**
-
-```bash
-claude --debug
-```
-
-**Test hooks manually:**
-
-```bash
-echo '{"tool_input": {"command": "cat file.txt"}}' | bash your-hook.sh
-echo $?  # Check exit code
-```
-
-## Available Hooks in This Plugin
-
-- **bash-antipatterns.sh**: Detects when Claude uses shell commands instead of built-in tools (cat, grep, sed, timeout, etc.)
-
-See `hooks/README.md` for full documentation.
+Use `/hooks` to verify registration, `claude --debug` for verbose logging, and `echo '{"tool_input":{"command":"..."}}' | bash your-hook.sh` to test manually. Check `$?` for exit code. See `hooks/README.md` for plugin hook documentation.
