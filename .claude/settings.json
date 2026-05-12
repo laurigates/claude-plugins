@@ -52,6 +52,10 @@
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/path-bootstrap.sh\"",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/install_pkgs.sh\""
           }
         ]
       }
