@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.1.1...hooks-plugin-v2.2.0) (2026-05-12)
+
+
+### Features
+
+* **hooks-plugin:** add bash-antipatterns-teach PostToolUse hook (opt-in) ([#1308](https://github.com/laurigates/claude-plugins/issues/1308)) ([edf32fd](https://github.com/laurigates/claude-plugins/commit/edf32fdb552037526a0f794380122c36c713acf0))
+
 ## [2.1.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.1.0...hooks-plugin-v2.1.1) (2026-05-09)
 
 
