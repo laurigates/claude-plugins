@@ -9,14 +9,16 @@ if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
   exit 0
 fi
 
-INSTALL_DIR="/usr/local/bin"
+INSTALL_DIR="${HOME}/.local/bin"
+mkdir -p "$INSTALL_DIR"
+export PATH="$INSTALL_DIR:$PATH"
 
 has() { command -v "$1" >/dev/null 2>&1; }
 
 # --- pre-commit (via pip) ---
 if ! has pre-commit; then
   echo "[install_pkgs] Installing pre-commit..."
-  pip install --quiet pre-commit
+  pip install --user --quiet pre-commit
 else
   echo "[install_pkgs] pre-commit already installed, skipping."
 fi
