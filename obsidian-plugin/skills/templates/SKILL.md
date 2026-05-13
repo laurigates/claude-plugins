@@ -3,7 +3,7 @@ created: 2026-04-30
 modified: 2026-05-09
 reviewed: 2026-04-30
 name: templates
-description: List, read, and insert Obsidian templates from the core Templates plugin. Covers template variable resolution ({{date}}, {{time}}, {{title}}) and inserting into the active file vs creating a new file. Use when the user mentions Obsidian templates.
+description: "Obsidian Templates plugin: list, read, insert templates with {{date}}/{{time}}/{{title}} variables. Use when inserting or applying a template."
 user-invocable: false
 allowed-tools: Bash(obsidian *), Read, Grep, Glob
 ---

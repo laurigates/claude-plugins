@@ -3,7 +3,7 @@ created: 2026-04-17
 modified: 2026-05-09
 reviewed: 2026-04-25
 name: vault-tags
-description: Emoji-prefixed tag taxonomy for Obsidian vaults. Use when the user asks to consolidate duplicate or drifted tags (`🔒/security` vs `🔍/security`), collapse bare emoji placeholder tags, convert flat tags to emoji-prefixed, or reduce over-tagging.
+description: "Emoji-prefixed tag taxonomy for Obsidian vaults. Use when consolidating drifted tags, collapsing bare emoji placeholders, or reducing over-tagging."
 user-invocable: false
 allowed-tools: Read, Edit, Grep, Glob
 ---

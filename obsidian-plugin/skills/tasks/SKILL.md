@@ -3,11 +3,7 @@ created: 2026-03-04
 modified: 2026-04-25
 reviewed: 2026-04-25
 name: tasks
-description: |
-  Obsidian task management via the official CLI.
-  Covers listing open tasks, creating tasks, and marking tasks complete.
-  Use when user mentions Obsidian tasks, todos, checklists,
-  or completing/creating tasks in their vault.
+description: "Obsidian tasks via CLI: list open tasks, create tasks, mark complete. Use when user mentions Obsidian tasks, todos, checklists, or completion."
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---
