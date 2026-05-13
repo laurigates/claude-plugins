@@ -3,7 +3,7 @@ created: 2026-03-04
 modified: 2026-05-09
 reviewed: 2026-04-30
 name: publish-sync
-description: Obsidian Publish and Sync via the official CLI — publish info, list/add/remove published notes, change set, sync pause/resume, status, and recovery of sync-deleted files. Use when mentioning Publish, Sync, or recovering deleted files.
+description: "Obsidian Publish and Sync operations. Use when publishing notes, managing change sets, pausing/resuming sync, or recovering sync-deleted files."
 user-invocable: false
 allowed-tools: Bash(obsidian *), Read, Grep, Glob
 ---

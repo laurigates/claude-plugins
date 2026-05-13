@@ -3,7 +3,7 @@ created: 2026-04-17
 modified: 2026-05-09
 reviewed: 2026-04-25
 name: vault-stubs
-description: FVH/z/ redirect-stub classification and consolidation for LakuVault. Use when the user asks to clean up FVH/z stubs, convert stale duplicates to canonical redirects, merge unique FVH content into Zettelkasten, or fix broken stubs.
+description: "LakuVault FVH/z redirect-stub classification. Use when cleaning stubs, converting duplicates to redirects, or merging content into Zettelkasten."
 user-invocable: false
 allowed-tools: Read, Edit, Write, Grep, Glob
 ---

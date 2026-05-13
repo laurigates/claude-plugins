@@ -3,7 +3,7 @@ created: 2026-04-17
 modified: 2026-05-09
 reviewed: 2026-04-25
 name: vault-orphans
-description: Triage orphaned notes (zero in/out wikilinks) in an Obsidian vault. Use when the user asks to find orphans, link disconnected notes into a MOC, distinguish expected orphans (inbox, daily) from meaningful ones, or reconnect Zettelkasten notes.
+description: "Triage orphaned notes (zero in/out wikilinks) in an Obsidian vault. Use when finding orphans, linking them into a MOC, or reconnecting Zettelkasten notes."
 user-invocable: false
 allowed-tools: Read, Edit, Grep, Glob
 ---

@@ -3,7 +3,7 @@ created: 2026-04-17
 modified: 2026-05-09
 reviewed: 2026-04-25
 name: vault-wikilinks
-description: Detect and repair broken wikilinks in an Obsidian vault. Use when the user asks to fix broken `[[Target]]` links, rewrite a renamed note's references, resolve ambiguity between Zettelkasten and FVH/z, or unqualify path-qualified links.
+description: "Broken Obsidian wikilink detection and repair. Use when fixing `[[Target]]` links, rewriting renamed-note refs, or resolving Zettelkasten/FVH paths."
 user-invocable: false
 allowed-tools: Read, Edit, Grep, Glob
 ---

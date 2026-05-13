@@ -3,10 +3,7 @@ created: 2026-04-30
 modified: 2026-04-30
 reviewed: 2026-04-30
 name: bookmarks
-description: |
-  List and add Obsidian bookmarks — files, folders, headings/blocks, saved
-  searches, and external URLs. Use when the user mentions Obsidian bookmarks,
-  starring/saving notes for quick access, or scripted bookmark creation.
+description: "Obsidian bookmarks: list and add file/folder/heading/saved-search/URL bookmarks. Use when starring or saving notes for quick access."
 user-invocable: false
 allowed-tools: Bash(obsidian *), Read, Grep, Glob
 ---

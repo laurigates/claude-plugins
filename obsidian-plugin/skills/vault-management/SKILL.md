@@ -3,7 +3,7 @@ created: 2026-04-30
 modified: 2026-05-09
 reviewed: 2026-04-30
 name: vault-management
-description: Inspect the active vault, enumerate known vaults, and target commands at a specific vault using the global `vault=` prefix. Use when the user asks about vault info (path, file count, size), works across vaults, or runs against a non-active vault.
+description: "Obsidian vault inspection and cross-vault routing via `vault=` prefix. Use when checking vault info (path, size, file count) or targeting a non-active vault."
 user-invocable: false
 allowed-tools: Bash(obsidian *), Read, Grep, Glob
 ---

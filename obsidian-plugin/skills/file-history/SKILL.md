@@ -3,7 +3,7 @@ created: 2026-04-30
 modified: 2026-05-09
 reviewed: 2026-04-30
 name: file-history
-description: Inspect, diff, and restore previous note versions from Obsidian's local File Recovery store and Sync history. Critical safety net for agentic edits. Use when the user mentions undo, restoring a previous version, file recovery, or version history.
+description: "Obsidian File Recovery and Sync history: inspect, diff, restore previous note versions. Use when undoing edits, restoring versions, or recovering files."
 user-invocable: false
 allowed-tools: Bash(obsidian *), Read, Grep, Glob
 ---

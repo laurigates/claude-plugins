@@ -3,7 +3,7 @@ created: 2026-04-30
 modified: 2026-05-09
 reviewed: 2026-04-30
 name: bases
-description: Query and create entries in Obsidian Bases — the database-over-notes feature. Covers listing base files and views, creating items, and view queries with structured output (json/csv/tsv/md/paths). Use when the user mentions Bases or .base files.
+description: "Obsidian Bases (database-over-notes): list base files/views, create items, run view queries with json/csv/tsv/md output. Use when user mentions Bases or .base files."
 user-invocable: false
 allowed-tools: Bash(obsidian *), Read, Grep, Glob
 ---

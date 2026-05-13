@@ -3,7 +3,7 @@ created: 2026-03-04
 modified: 2026-05-09
 reviewed: 2026-04-30
 name: plugins-themes
-description: Lifecycle management for Obsidian community plugins, themes, and CSS snippets via the official CLI — install, enable, disable, uninstall, reload, switch theme, toggle restricted mode. Use when installing/enabling Obsidian plugins or themes.
+description: "Obsidian community plugins/themes/CSS snippets management. Use when installing, enabling, switching theme, or toggling restricted mode."
 user-invocable: false
 allowed-tools: Bash(obsidian *), Read, Grep, Glob
 ---
