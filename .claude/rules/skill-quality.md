@@ -1,7 +1,7 @@
 ---
 created: 2026-03-02
-modified: 2026-05-03
-reviewed: 2026-05-03
+modified: 2026-05-13
+reviewed: 2026-05-13
 paths:
   - "**/skills/**"
   - "**/SKILL.md"
@@ -83,13 +83,12 @@ Descriptions must match real user intents. They are loaded into Claude's context
 description: AST-based code search using ast-grep for structural pattern matching
 ```
 
-**Intent-matching** (effective):
+**Intent-matching, length-aware** (effective):
 ```yaml
-description: |
-  Find and replace code patterns structurally using ast-grep. Use when you need
-  to match code by its AST structure, such as finding all functions with specific
-  signatures, replacing API patterns across files, or detecting code anti-patterns.
+description: ast-grep structural code search/rewrite. Use when matching code by AST, refactoring signatures across files, or detecting anti-patterns.
 ```
+
+The example above is **140 chars**. Front-loads the tool name and the matching verbs (`structural code search/rewrite`, `matching code by AST`, `refactoring signatures`, `detecting anti-patterns`) so trigger keywords survive truncation.
 
 ### Description Checklist
 - [ ] Describes what the user can accomplish (not just the tool name)
@@ -97,6 +96,47 @@ description: |
 - [ ] Mentions common trigger phrases users would say
 - [ ] Distinguishes from related skills
 - [ ] Is a string type (non-string values cause a crash)
+- [ ] Length within target band (see below)
+- [ ] Trigger keywords appear in the first ~120 chars
+
+## Description Length and the Listing Budget
+
+Every enabled skill's `name` + `description` is concatenated into a single block that Claude Code injects into the system prompt at session start. That block is capped by two settings introduced in Claude Code 2.1.129:
+
+| Setting | Default | What it caps |
+|---------|---------|--------------|
+| `skillListingBudgetFraction` | `0.01` (1%) | Total skill-metadata share of the context window |
+| `skillListingMaxDescChars` | `1536` | Per-skill description truncation point |
+
+On a 200K-token context that's ~2,000 tokens for **all** skill metadata combined; on a 1M-token context, ~10,000 tokens. Each listed skill costs ~35 tokens of XML wrapper *plus* `(name + description) / 4` tokens. Once the budget is blown, Claude strips descriptions from the overflow skills — they appear by name only, and `description`-based skill-selection silently degrades.
+
+### Target band
+
+| Length | Verdict |
+|--------|---------|
+| ≤ 150 chars | Ideal — leaves headroom and survives any per-skill truncation |
+| 151 – 200 chars | OK — within budget for typical plugin loadouts |
+| 201 – 300 chars | WARN — eats budget faster than it earns invocation accuracy |
+| > 300 chars | ERROR — almost always rewordable; rewrite before merge |
+| > 1536 chars | Truncated at runtime by `skillListingMaxDescChars` |
+
+The previous "intent-matching" guidance produced 220-char medians across this repo. **Target ~120–150 chars** with trigger keywords front-loaded.
+
+### Front-loading trigger keywords
+
+`skillListingMaxDescChars` truncates from the **end**, so put the words Claude needs for selection at the **start**. Order:
+
+1. **Tool / verb / domain** (first 30 chars) — `gh workflow auto-fix`, `OAuth2 token refresh`, `kubectl rollout diagnosis`
+2. **"Use when..." trigger phrases** (next ~60 chars) — concrete user intents, comma-separated
+3. **Disambiguation from sibling skills** (last ~30 chars) — only if needed
+
+| Anti-pattern | Better |
+|---|---|
+| `Comprehensive guide to ast-grep including installation, usage, common patterns, and integration with editor tooling for structural code search and refactoring across large codebases.` (180 chars, keywords late) | `ast-grep structural code search/rewrite. Use when refactoring signatures across files, finding AST patterns, detecting anti-patterns.` (135 chars, keywords first) |
+
+### Why this matters for plugin authors
+
+A plugin with 35 skills × 220 chars consumes ~3,100 tokens on its own — already over a default 200K-context budget before the user enables any other plugin. Tightening to 130 chars cuts that to ~1,950 tokens, leaving headroom for the user's other plugins. See [`skill-listing-budget`](https://claudefa.st/blog/guide/mechanics/skill-listing-budget) for the upstream rationale.
 
 ### `disable-model-invocation` Field
 
@@ -143,6 +183,7 @@ When reviewing skill/command changes:
 - [ ] Has "When to Use" decision table
 - [ ] Has "Agentic Optimizations" table (for CLI/tool skills)
 - [ ] Description matches user intents (not just tool jargon)
+- [ ] Description ≤ 150 chars with trigger keywords in the first ~120 chars (see "Description Length and the Listing Budget")
 - [ ] Model selection follows extremes-only rule (`opus` for deep reasoning, `sonnet` for mechanical tasks, unset otherwise; never `haiku`)
 - [ ] Reference material extracted to REFERENCE.md if needed
 - [ ] Supporting files referenced with markdown links
