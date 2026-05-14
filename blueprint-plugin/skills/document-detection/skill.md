@@ -3,7 +3,7 @@ created: 2026-01-09
 modified: 2026-05-09
 reviewed: 2026-04-25
 name: document-detection
-description: Detect PRD/ADR/PRP opportunities in conversations and prompt for document creation. Use when the user discusses feature requirements, compares technology trade-offs, or plans implementation scope worth capturing.
+description: Detect PRD/ADR/PRP opportunities in conversations and prompt for document creation. Use when the user discusses feature requirements, tech trade-offs, or implementation plans.
 user-invocable: false
 allowed-tools: Read, Grep, Glob, Bash
 ---

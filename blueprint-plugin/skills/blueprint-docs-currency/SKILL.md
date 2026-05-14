@@ -1,6 +1,6 @@
 ---
 name: blueprint-docs-currency
-description: Enforce same-commit landing of code and its docs (public APIs, file formats, error enums, ADRs). Use when committing API/format/milestone changes, promoting tmp/ research to docs/, or landing an ADR-worthy decision.
+description: Enforce same-commit landing of code and docs (APIs, formats, ADRs). Use when committing API/format changes, promoting research to docs/, or landing an ADR decision.
 allowed-tools: Read, Grep, Glob, TodoWrite
 created: 2026-04-24
 modified: 2026-05-09

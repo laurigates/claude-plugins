@@ -2,7 +2,7 @@
 created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2026-04-25
-description: Create a work-order with minimal context for isolated subagent execution, optionally linked to a GitHub issue. Use when breaking a PRP into delegatable tasks (--from-prp) or spawning from an issue (--from-issue) with clear success criteria.
+description: Create a work-order for isolated subagent execution, optionally linked to a GitHub issue. Use when breaking a PRP into delegatable tasks or spawning from an issue.
 args: "[--no-publish] [--from-issue N]"
 argument-hint: "--no-publish for local-only, --from-issue 123 to create from existing issue"
 disable-model-invocation: true

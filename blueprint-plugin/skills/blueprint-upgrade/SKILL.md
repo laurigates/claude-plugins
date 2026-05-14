@@ -2,7 +2,7 @@
 created: 2025-12-17
 modified: 2026-05-09
 reviewed: 2026-05-09
-description: Upgrade blueprint structure to the latest format version. Use when migrating between format versions (v1.x→v3.x), adding the v3.2 task registry, enabling v3.3 monorepo workspaces, or batch upgrading repos with --non-interactive.
+description: Upgrade blueprint structure to the latest format version. Use when migrating between format versions, enabling monorepo workspaces, or batch upgrading repos.
 args: "[--non-interactive|-y]"
 argument-hint: "[--non-interactive|-y]"
 allowed-tools: Read, Write, Edit, Bash, Glob, AskUserQuestion

@@ -2,7 +2,7 @@
 created: 2025-12-17
 modified: 2026-05-09
 reviewed: 2026-02-09
-description: Manage modular rules in .claude/rules/ with path-specific glob patterns and brace expansion. Use when adding/listing project or user-level rules, syncing with CLAUDE.md, or validating `paths` frontmatter globs.
+description: "Manage modular rules in .claude/rules/ with path-specific globs. Use when adding or listing rules, syncing with CLAUDE.md, or validating path frontmatter."
 allowed-tools: Read, Write, Edit, Bash, Glob, AskUserQuestion
 name: blueprint-rules
 ---

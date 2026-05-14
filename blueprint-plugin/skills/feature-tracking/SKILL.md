@@ -3,7 +3,7 @@ created: 2026-01-02
 modified: 2026-05-09
 reviewed: 2026-04-25
 name: feature-tracking
-description: Track feature implementation status against requirements with hierarchical FR codes (FR1.2.1), phase management, and TODO.md sync. Use when linking features to PRDs via feature-tracker.json or recalculating completion stats.
+description: Track feature implementation against requirements with hierarchical FR codes and TODO.md sync. Use when linking features to PRDs or recalculating completion stats.
 user-invocable: false
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash, TodoWrite
 ---

@@ -2,7 +2,7 @@
 created: 2026-01-02
 modified: 2026-05-09
 reviewed: 2026-05-09
-description: Sync feature tracker with TODO.md, taskwarrior sidecars (bpid/bpdoc UDAs), and PRDs. Use when reconciling TODO.md vs tracker, draining WO entries with --drain-wave, recalculating stats, or generating --summary.
+description: Sync feature tracker with TODO.md, taskwarrior sidecars, and PRDs. Use when reconciling TODO.md vs tracker, draining WO entries, or recalculating stats.
 allowed-tools: Read, Write, Bash, Glob, AskUserQuestion
 model: sonnet
 name: blueprint-feature-tracker-sync

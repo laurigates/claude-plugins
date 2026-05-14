@@ -2,7 +2,7 @@
 created: 2025-12-17
 modified: 2026-05-09
 reviewed: 2026-05-03
-description: Show blueprint version, config, upgrade availability, PRD/ADR/PRP counts, and feature tracker progress. Use when auditing traceability, orphan docs, task registry health, or stale generated content.
+description: Show blueprint version, config, PRD/ADR/PRP counts, and feature tracker progress. Use when auditing traceability, orphan docs, or stale generated content.
 args: "[--report-only]"
 argument-hint: "--report-only to display status without interactive prompts"
 allowed-tools: Read, Bash, Glob, AskUserQuestion

@@ -1,6 +1,6 @@
 ---
 name: blueprint-migration
-description: Versioned migration procedures for blueprint format upgrades (v1.0->v1.1, v1.x->v2.0, v2.x->v3.0, v3.0->v3.1, v3.2->v3.3). Use when /blueprint:upgrade needs version-specific logic, content hashing, safe file moves, or rollback.
+description: Versioned migration procedures for blueprint format upgrades (v1.x to v3.3). Use when blueprint-upgrade needs version-specific logic, content hashing, or rollback.
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, TodoWrite
 created: 2025-12-22

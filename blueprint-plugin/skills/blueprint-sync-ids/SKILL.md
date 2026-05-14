@@ -2,7 +2,7 @@
 created: 2026-01-20
 modified: 2026-05-09
 reviewed: 2026-04-25
-description: Scan blueprint docs and assign missing PRD-NNN / ADR-NNNN / PRP-NNN / WO-NNN IDs, updating the manifest registry. Use when assigning IDs to docs missing them; --dry-run to preview, --link-issues to create GitHub issues for orphans.
+description: Scan blueprint docs and assign missing PRD/ADR/PRP/WO IDs. Use when assigning IDs to docs; --dry-run to preview, --link-issues to create GitHub issues for orphans.
 args: "[--dry-run] [--link-issues]"
 argument-hint: "--dry-run to preview changes, --link-issues to create GitHub issues for orphans"
 allowed-tools: Read, Write, Edit, Glob, Bash, AskUserQuestion

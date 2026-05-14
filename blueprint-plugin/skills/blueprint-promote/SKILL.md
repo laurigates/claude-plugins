@@ -2,7 +2,7 @@
 created: 2025-12-22
 modified: 2026-05-09
 reviewed: 2026-05-04
-description: Move generated artifact to custom layer to preserve manual edits. Use when "promoting" a generated rule, preserving changes to .claude/rules/ files, or stopping sync warnings on modified auto-generated content.
+description: "Move generated artifact to custom layer to preserve manual edits. Use when promoting a generated rule, preserving .claude/rules/ changes, or stopping sync warnings."
 args: "[skill-name|command-name]"
 allowed-tools: Read, Write, Bash, AskUserQuestion
 argument-hint: "Name of the skill or command to promote"

@@ -2,7 +2,7 @@
 created: 2026-01-02
 modified: 2026-05-09
 reviewed: 2026-05-03
-description: Display feature tracker statistics, phase progress, and completion summary. Use when checking feature completion status, viewing blocked features, or seeing ready-to-start work.
+description: Display feature tracker stats, phase progress, and completion summary. Use when checking feature status, viewing blocked features, or seeing ready-to-start work.
 allowed-tools: Read, Bash, AskUserQuestion
 model: sonnet
 name: blueprint-feature-tracker-status

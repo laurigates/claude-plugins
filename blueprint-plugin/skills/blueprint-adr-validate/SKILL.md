@@ -2,7 +2,7 @@
 created: 2026-01-15
 modified: 2026-04-19
 reviewed: 2026-04-12
-description: Validate ADR relationships, detect orphaned references, and check domain consistency. Use when auditing ADRs before a release, finding broken supersedes/extends links, or detecting cycles in the supersession graph.
+description: Validate ADR relationships and domain consistency. Use when auditing ADRs before release, finding broken supersedes/extends links, or detecting cycles.
 args: "[--report-only]"
 argument-hint: "--report-only to validate without prompting for fixes"
 allowed-tools: Read, Bash, Glob, Grep, Edit, AskUserQuestion

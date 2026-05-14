@@ -2,7 +2,7 @@
 created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2026-05-03
-description: Initialize Blueprint Development structure in current project. Use when bootstrapping docs/blueprint/ with manifest, PRD/ADR/PRP directories, feature tracking, and decision detection for the first time.
+description: Initialize Blueprint Development structure. Use when bootstrapping docs/blueprint/ with manifest, PRD/ADR/PRP directories, and feature tracking for the first time.
 allowed-tools: Bash, Write, Read, AskUserQuestion, Glob
 name: blueprint-init
 ---

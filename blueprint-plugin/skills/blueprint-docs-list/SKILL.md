@@ -2,7 +2,7 @@
 created: 2026-02-06
 modified: 2026-05-09
 reviewed: 2026-04-25
-description: List blueprint documents (ADRs, PRDs, PRPs) with metadata from frontmatter and headers. Use when listing blueprint docs, auditing statuses, or generating an index table for project documentation.
+description: List blueprint documents (ADRs, PRDs, PRPs) with frontmatter metadata. Use when listing docs, auditing statuses, or generating an index for project documentation.
 args: "<type>"
 allowed-tools: Bash, Glob
 model: sonnet

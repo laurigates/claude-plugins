@@ -2,7 +2,7 @@
 created: 2026-02-22
 modified: 2026-05-04
 reviewed: 2026-02-22
-description: "Derive test regression plans from git history by identifying fix and feature commits lacking corresponding tests. Use when you need to find untested bug fixes, coverage gaps, or generate a test backlog from commit analysis."
+description: Derive test regression plans from git history by finding commits lacking tests. Use when finding untested bug fixes, coverage gaps, or generating a test backlog.
 args: "[--since DATE] [--quick] [--scope AREA]"
 argument-hint: "--since 2024-06-01 for date range, --quick for last 50, --scope auth for specific area"
 allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion, Task
