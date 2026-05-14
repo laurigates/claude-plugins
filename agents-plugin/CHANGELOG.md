@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.0](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.10.3...agents-plugin-v1.11.0) (2026-05-14)
+
+
+### Features
+
+* **agents-plugin:** broaden refactor agent bash perms and mandate audit post-pass ([#1314](https://github.com/laurigates/claude-plugins/issues/1314)) ([f4400d2](https://github.com/laurigates/claude-plugins/commit/f4400d29ef7d84870fafb99279b64497a64d167c))
+
 ## [1.10.3](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.10.2...agents-plugin-v1.10.3) (2026-05-14)
 
 

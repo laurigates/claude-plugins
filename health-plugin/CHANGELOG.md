@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.9.3...health-plugin-v1.10.0) (2026-05-14)
+
+
+### Features
+
+* **health-plugin:** add --scope=runtime to audit ~/.claude.json bloat ([#1318](https://github.com/laurigates/claude-plugins/issues/1318)) ([0b6d36c](https://github.com/laurigates/claude-plugins/commit/0b6d36c8e20b3e28c4b51e854dd85015c71e0c44))
+
 ## [1.9.3](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.9.2...health-plugin-v1.9.3) (2026-05-14)
 
 
