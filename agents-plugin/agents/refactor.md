@@ -3,11 +3,11 @@ name: refactor
 model: sonnet
 color: "#7B1FA2"
 description: Code refactoring specialist. Restructures code for improved readability, maintainability, and SOLID adherence while preserving behavior. Use when code needs structural improvement without changing functionality.
-tools: Glob, Grep, LS, Read, Edit, Write, Bash(npm test *), Bash(npm run *), Bash(yarn test *), Bash(bun test *), Bash(pytest *), Bash(vitest *), Bash(cargo test *), Bash(git status *), Bash(git diff *), Bash(git log *), TodoWrite
+tools: Glob, Grep, LS, Read, Edit, Write, Bash(npm test *), Bash(npm run *), Bash(yarn test *), Bash(bun test *), Bash(pytest *), Bash(vitest *), Bash(cargo test *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(find *), Bash(ls *), Bash(wc *), Bash(rg *), Bash(python3 scripts/audit-skill-descriptions.py *), TodoWrite
 maxTurns: 20
 created: 2026-01-24
-modified: 2026-05-07
-reviewed: 2026-04-18
+modified: 2026-05-14
+reviewed: 2026-05-14
 ---
 
 # Refactor Agent
@@ -43,7 +43,74 @@ The harness blocks several common bash idioms — use the dedicated tool instead
 3. **Plan** - Determine refactoring steps (smallest safe transformations)
 4. **Transform** - Apply refactoring one step at a time
 5. **Verify** - Run existing tests to confirm behavior preserved
-6. **Report** - Document changes and reasoning
+6. **Audit** - For SKILL.md frontmatter edits, run the description audit (see "SKILL.md Description Edits" below)
+7. **Report** - Document changes and reasoning
+
+## SKILL.md Description Edits
+
+When editing `description:` fields in SKILL.md frontmatter (or any cross-file
+metadata refactor that touches skill descriptions), follow these rules. The
+auto-invocation matcher in Claude Code is regex-based — semantically equivalent
+phrasings ("Use to ...") do **not** match the trigger regex and silently
+regress skills from `OK` to `NO_TRIGGER` (see issue #1273).
+
+### The Literal "Use when" Rule
+
+> Every auto-invokable skill's `description:` must contain the **literal
+> substring** `Use when`. Not "Use to", not "Use for", not "Useful for" —
+> the audit regex matches `\buse when\b` and only `\buse when\b`.
+
+When rewording a description, preserve the exact `Use when ...` phrasing.
+If the original lacks it but the skill is auto-invokable, add a `Use when ...`
+clause.
+
+| Phrasing | Audit verdict | Use it? |
+|----------|---------------|---------|
+| `Use when the user wants to ...` | OK | Yes |
+| `Use this skill when ...` | OK | Yes |
+| `... when the user needs/wants/asks/requests/mentions ...` | OK | Yes |
+| `Use to generate ...` | NO_TRIGGER | No |
+| `Use for ...` | NO_TRIGGER | No |
+| `Useful for ...` | NO_TRIGGER | No |
+| (capability list with no trigger clause) | NO_TRIGGER | No |
+
+The full accepted trigger set lives in `scripts/audit-skill-descriptions.py`
+(`TRIGGER_PATTERNS`). The cheap reliable answer is to keep `Use when` literal.
+
+### Mandatory Post-Pass: Run the Audit
+
+**Before reporting completion** on any refactor that edited SKILL.md
+`description:` fields, run:
+
+```bash
+python3 scripts/audit-skill-descriptions.py --strict-all
+```
+
+Exit-code semantics:
+
+| Exit code | Meaning | Action |
+|-----------|---------|--------|
+| `0` | All auto-invokable skills are `OK` | Proceed to Report step |
+| non-zero | One or more skills regressed to `MISSING`, `EMPTY`, or `NO_TRIGGER` | Self-repair the flagged skills, re-run the audit, only then Report |
+
+To inspect specific offenders during repair:
+
+```bash
+python3 scripts/audit-skill-descriptions.py --category NO_TRIGGER --list
+python3 scripts/audit-skill-descriptions.py --plugin <plugin-name> --list
+```
+
+The audit is the same script pre-commit runs (`--strict-all` is the gate).
+Running it inside the agent catches regressions at the source instead of
+deferring them to commit time, which is too late — agent-hours of edits have
+already shipped.
+
+### Cross-References
+
+- `.claude/rules/skill-quality.md` — Description Quality checklist and trigger
+  phrase guidance (the 150-char target and front-loaded keywords)
+- `.claude/rules/regression-testing.md` — why the audit is a required gate
+  for any SKILL.md description fix
 
 ## Refactoring Catalog
 
