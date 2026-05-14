@@ -1,6 +1,6 @@
 ---
 name: macos-incident-postmortem
-description: Reconstruct macOS GUI freeze, kernel panic, or unexplained reboot from DiagnosticReports and shell history. Use when investigating hangs, panics, watchdog timeouts, jetsam, or thermal throttling.
+description: Reconstruct macOS freeze, panic, or reboot from DiagnosticReports and shell history. Use when investigating hangs, panics, watchdog timeouts, jetsam, or thermal throttling.
 user-invocable: false
 allowed-tools: Bash(uname *), Bash(sysctl *), Bash(uptime *), Bash(last *), Bash(ls *), Bash(find *), Bash(stat *), Bash(awk *), Bash(grep *), Bash(wc *), Bash(date *), Bash(log *), Bash(pmset *), Read, Grep, Glob, TodoWrite
 created: 2026-05-03
