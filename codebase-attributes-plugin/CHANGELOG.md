@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.2](https://github.com/laurigates/claude-plugins/compare/codebase-attributes-plugin-v1.2.1...codebase-attributes-plugin-v1.2.2) (2026-05-14)
+
+
+### Code Refactoring
+
+* **codebase-attributes-plugin:** further tighten description under 180 chars ([3f5b497](https://github.com/laurigates/claude-plugins/commit/3f5b49748171de01f407f6d8d84645281f3771dd))
+* **codebase-attributes-plugin:** tighten skill descriptions for listing budget ([118d267](https://github.com/laurigates/claude-plugins/commit/118d2674c0bc486e718919049c137ea181122ff9))
+
 ## [1.2.1](https://github.com/laurigates/claude-plugins/compare/codebase-attributes-plugin-v1.2.0...codebase-attributes-plugin-v1.2.1) (2026-05-09)
 
 

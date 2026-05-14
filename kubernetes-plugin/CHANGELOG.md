@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.5](https://github.com/laurigates/claude-plugins/compare/kubernetes-plugin-v1.7.4...kubernetes-plugin-v1.7.5) (2026-05-14)
+
+
+### Code Refactoring
+
+* **kubernetes-plugin:** tighten skill descriptions for listing budget ([ee2cdca](https://github.com/laurigates/claude-plugins/commit/ee2cdcab90b49a7e695a4d9b6efe46bafd28c98a))
+
 ## [1.7.4](https://github.com/laurigates/claude-plugins/compare/kubernetes-plugin-v1.7.3...kubernetes-plugin-v1.7.4) (2026-05-09)
 
 

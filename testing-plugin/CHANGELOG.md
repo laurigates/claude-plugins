@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.13.5](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.13.4...testing-plugin-v3.13.5) (2026-05-14)
+
+
+### Code Refactoring
+
+* **testing-plugin:** tighten skill descriptions for listing budget ([3bfc88a](https://github.com/laurigates/claude-plugins/commit/3bfc88afed929e41734284419a7cd133f52bd98e))
+
 ## [3.13.4](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.13.3...testing-plugin-v3.13.4) (2026-05-09)
 
 

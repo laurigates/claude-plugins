@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.4.3](https://github.com/laurigates/claude-plugins/compare/component-patterns-plugin-v1.4.2...component-patterns-plugin-v1.4.3) (2026-05-14)
+
+
+### Code Refactoring
+
+* **component-patterns-plugin:** further tighten descriptions under 180 chars ([8e4be29](https://github.com/laurigates/claude-plugins/commit/8e4be298d1b4b16043a4cff6039060477d070945))
+* **component-patterns-plugin:** tighten skill descriptions (continuation) ([62428c8](https://github.com/laurigates/claude-plugins/commit/62428c83274a7cc95e306ea282cd42b727b4a1e3))
+* **component-patterns-plugin:** tighten skill descriptions for listing budget ([e3310e1](https://github.com/laurigates/claude-plugins/commit/e3310e16f0871ac32a3ba955b0c5d1cd098a8aea))
+
 ## [1.4.2](https://github.com/laurigates/claude-plugins/compare/component-patterns-plugin-v1.4.1...component-patterns-plugin-v1.4.2) (2026-05-09)
 
 

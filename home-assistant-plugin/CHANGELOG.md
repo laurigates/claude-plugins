@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.3](https://github.com/laurigates/claude-plugins/compare/home-assistant-plugin-v1.3.2...home-assistant-plugin-v1.3.3) (2026-05-14)
+
+
+### Code Refactoring
+
+* **home-assistant-plugin:** tighten skill descriptions for listing budget ([0777a75](https://github.com/laurigates/claude-plugins/commit/0777a75fca975a23b5b2203fa65b9c22015700b5))
+
 ## [1.3.2](https://github.com/laurigates/claude-plugins/compare/home-assistant-plugin-v1.3.1...home-assistant-plugin-v1.3.2) (2026-05-09)
 
 

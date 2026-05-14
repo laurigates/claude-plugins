@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.20.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.20.0...agent-patterns-plugin-v2.20.1) (2026-05-14)
+
+
+### Code Refactoring
+
+* **agent-patterns-plugin:** tighten skill descriptions for listing budget ([7a5504b](https://github.com/laurigates/claude-plugins/commit/7a5504bc1b33ae1a7460513405b23e96e10bfe65))
+
 ## [2.20.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.19.0...agent-patterns-plugin-v2.20.0) (2026-05-09)
 
 

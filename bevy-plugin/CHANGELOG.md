@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.3](https://github.com/laurigates/claude-plugins/compare/bevy-plugin-v1.3.2...bevy-plugin-v1.3.3) (2026-05-14)
+
+
+### Code Refactoring
+
+* **bevy-plugin:** tighten skill descriptions (continuation) ([160d3f3](https://github.com/laurigates/claude-plugins/commit/160d3f32b162901474fdf6ead639d7e880c4da7a))
+* **bevy-plugin:** tighten skill descriptions for listing budget ([2860a79](https://github.com/laurigates/claude-plugins/commit/2860a79ee6b4eaf52eca0e8a2e79672ae1d52601))
+
 ## [1.3.2](https://github.com/laurigates/claude-plugins/compare/bevy-plugin-v1.3.1...bevy-plugin-v1.3.2) (2026-05-09)
 
 

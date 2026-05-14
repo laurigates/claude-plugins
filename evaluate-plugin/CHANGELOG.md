@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.3](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.4.2...evaluate-plugin-v1.4.3) (2026-05-14)
+
+
+### Code Refactoring
+
+* **evaluate-plugin:** tighten skill descriptions for listing budget ([8ebbf3a](https://github.com/laurigates/claude-plugins/commit/8ebbf3a651e7a38c9dbf2b9197c3747104d9fcd8))
+
 ## [1.4.2](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.4.1...evaluate-plugin-v1.4.2) (2026-05-09)
 
 

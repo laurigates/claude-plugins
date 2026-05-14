@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.3](https://github.com/laurigates/claude-plugins/compare/blog-plugin-v1.3.2...blog-plugin-v1.3.3) (2026-05-14)
+
+
+### Code Refactoring
+
+* **blog-plugin:** further tighten description under 180 chars ([69fffaf](https://github.com/laurigates/claude-plugins/commit/69fffaf84a0cf8744b5a35f6248e07f404bb0145))
+* **blog-plugin:** tighten skill descriptions for listing budget ([532d1cd](https://github.com/laurigates/claude-plugins/commit/532d1cd9ac7b76191fb174e66a8165d923eb3a59))
+
 ## [1.3.2](https://github.com/laurigates/claude-plugins/compare/blog-plugin-v1.3.1...blog-plugin-v1.3.2) (2026-05-09)
 
 

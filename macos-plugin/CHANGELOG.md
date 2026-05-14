@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.2](https://github.com/laurigates/claude-plugins/compare/macos-plugin-v1.1.1...macos-plugin-v1.1.2) (2026-05-14)
+
+
+### Code Refactoring
+
+* **macos-plugin:** further tighten description under 180 chars ([0c7677e](https://github.com/laurigates/claude-plugins/commit/0c7677eb78927b1c8688ec4ef8b2a6c9801ae069))
+* **macos-plugin:** tighten skill descriptions (continuation) ([1623157](https://github.com/laurigates/claude-plugins/commit/162315721e5a6e0e78dfe01c8a5f318882f39d2f))
+* **macos-plugin:** tighten skill descriptions for listing budget ([658b239](https://github.com/laurigates/claude-plugins/commit/658b2399f08e2149a8fd98057e4a83a77e371f3a))
+
 ## [1.1.1](https://github.com/laurigates/claude-plugins/compare/macos-plugin-v1.1.0...macos-plugin-v1.1.1) (2026-05-09)
 
 

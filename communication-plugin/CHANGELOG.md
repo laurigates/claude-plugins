@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.4](https://github.com/laurigates/claude-plugins/compare/communication-plugin-v1.2.3...communication-plugin-v1.2.4) (2026-05-14)
+
+
+### Code Refactoring
+
+* **communication-plugin:** tighten skill descriptions for listing budget ([4fa8425](https://github.com/laurigates/claude-plugins/commit/4fa8425732a2527df7ac2e4bba51e17c98efde29))
+
 ## [1.2.3](https://github.com/laurigates/claude-plugins/compare/communication-plugin-v1.2.2...communication-plugin-v1.2.3) (2026-05-09)
 
 

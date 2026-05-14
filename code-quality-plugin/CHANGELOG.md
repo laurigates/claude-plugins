@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.3](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.14.2...code-quality-plugin-v1.14.3) (2026-05-14)
+
+
+### Code Refactoring
+
+* **code-quality-plugin:** tighten skill descriptions for listing budget ([a53db55](https://github.com/laurigates/claude-plugins/commit/a53db552f41c30c7422963079426072d696eb16d))
+
 ## [1.14.2](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.14.1...code-quality-plugin-v1.14.2) (2026-05-09)
 
 

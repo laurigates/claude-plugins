@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.3](https://github.com/laurigates/claude-plugins/compare/obsidian-plugin-v1.3.2...obsidian-plugin-v1.3.3) (2026-05-14)
+
+
+### Code Refactoring
+
+* **obsidian-plugin:** tighten skill descriptions for listing budget ([5008fab](https://github.com/laurigates/claude-plugins/commit/5008fab71f21df68cc108575c1bc7a828a5d7fd3))
+
 ## [1.3.2](https://github.com/laurigates/claude-plugins/compare/obsidian-plugin-v1.3.1...obsidian-plugin-v1.3.2) (2026-05-09)
 
 

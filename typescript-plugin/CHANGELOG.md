@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.4](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.8.3...typescript-plugin-v1.8.4) (2026-05-14)
+
+
+### Code Refactoring
+
+* **typescript-plugin:** tighten skill descriptions for listing budget ([2b0d073](https://github.com/laurigates/claude-plugins/commit/2b0d073732c498adc12087f8837eba0b8d7b457f))
+
 ## [1.8.3](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.8.2...typescript-plugin-v1.8.3) (2026-05-09)
 
 

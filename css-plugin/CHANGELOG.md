@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.3](https://github.com/laurigates/claude-plugins/compare/css-plugin-v1.2.2...css-plugin-v1.2.3) (2026-05-14)
+
+
+### Code Refactoring
+
+* **css-plugin:** further tighten descriptions under 180 chars ([3071b6b](https://github.com/laurigates/claude-plugins/commit/3071b6bee04d841c412c82fb80087060a1ff4eee))
+* **css-plugin:** tighten skill descriptions for listing budget ([bcd165b](https://github.com/laurigates/claude-plugins/commit/bcd165b9d15ab7ffc3db5b4e9f04961248512cb8))
+
 ## [1.2.2](https://github.com/laurigates/claude-plugins/compare/css-plugin-v1.2.1...css-plugin-v1.2.2) (2026-05-09)
 
 

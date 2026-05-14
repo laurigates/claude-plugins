@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.8.4](https://github.com/laurigates/claude-plugins/compare/documentation-plugin-v1.8.3...documentation-plugin-v1.8.4) (2026-05-14)
+
+
+### Code Refactoring
+
+* **documentation-plugin:** further tighten descriptions under 180 chars ([0261724](https://github.com/laurigates/claude-plugins/commit/02617244a671dff94853dd1cad90f3aa829df908))
+* **documentation-plugin:** tighten skill descriptions for listing budget ([ca4f0b3](https://github.com/laurigates/claude-plugins/commit/ca4f0b380745e79cd7f6fe361561869b3d895c3f))
+
 ## [1.8.3](https://github.com/laurigates/claude-plugins/compare/documentation-plugin-v1.8.2...documentation-plugin-v1.8.3) (2026-05-09)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.3](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.9.2...health-plugin-v1.9.3) (2026-05-14)
+
+
+### Code Refactoring
+
+* **health-plugin:** tighten skill descriptions for listing budget ([1905692](https://github.com/laurigates/claude-plugins/commit/19056926889d88a0ed4fdd2c3774383e5effb316))
+
 ## [1.9.2](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.9.1...health-plugin-v1.9.2) (2026-05-09)
 
 

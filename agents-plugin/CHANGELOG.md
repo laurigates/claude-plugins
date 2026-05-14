@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.10.3](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.10.2...agents-plugin-v1.10.3) (2026-05-14)
+
+
+### Code Refactoring
+
+* **agents-plugin:** further tighten description under 180 chars ([97184e3](https://github.com/laurigates/claude-plugins/commit/97184e34900c4659261fba317b72d07268c5b76c))
+* **agents-plugin:** tighten skill descriptions for listing budget ([17e7e79](https://github.com/laurigates/claude-plugins/commit/17e7e792cc55f855cb058b49b0176048be90f02b))
+
 ## [1.10.2](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.10.1...agents-plugin-v1.10.2) (2026-05-09)
 
 
