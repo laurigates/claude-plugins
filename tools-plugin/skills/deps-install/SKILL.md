@@ -6,7 +6,7 @@ allowed-tools: Bash(uv *), Bash(npm *), Bash(bun *), Bash(cargo *), Bash(go *), 
 model: sonnet
 args: "[package-names] [--dev] [--global]"
 argument-hint: "[package-names] [--dev] [--global]"
-description: Auto-detect the project's package manager (uv, bun, npm, yarn, pnpm, cargo, go) and run the right install. Use when installing deps, adding dev/global packages, or syncing lockfiles.
+description: "Deps install: auto-detect package manager (uv, bun, npm, yarn, pnpm, cargo, go) and run the right install. Use when installing deps or syncing lockfiles."
 name: deps-install
 ---
 

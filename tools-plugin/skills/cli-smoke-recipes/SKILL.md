@@ -1,6 +1,6 @@
 ---
 name: cli-smoke-recipes
-description: Expose pure-function modules (decoders, parsers, formatters) via CLI subcommands plus a bulk-smoke justfile recipe. Use when designing data-transform modules or authoring smoke recipes.
+description: "CLI smoke recipes: expose pure-function modules via subcommands with a bulk-smoke justfile recipe. Use when designing data-transform modules or authoring smoke tests."
 allowed-tools: Read, Grep, Glob, TodoWrite
 model: sonnet
 created: 2026-04-24

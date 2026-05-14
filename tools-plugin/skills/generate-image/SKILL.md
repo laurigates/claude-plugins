@@ -2,7 +2,7 @@
 created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2026-04-25
-description: Generate images via Google's Nano Banana Pro (Gemini 3 Pro Image) with configurable aspect ratio, resolution, and reference images. Use when creating artwork, product photos, or mockups.
+description: "Image generation via Gemini 3 Pro Image: aspect ratio, resolution, reference images. Use when creating artwork, product photos, or mockups with AI."
 allowed-tools: Bash, Read, WebFetch
 model: sonnet
 args: <prompt> [--aspect <ratio>] [--resolution <size>] [--reference <path>]

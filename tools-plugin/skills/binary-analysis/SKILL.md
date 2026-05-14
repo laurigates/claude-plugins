@@ -1,6 +1,6 @@
 ---
 name: binary-analysis
-description: Reverse engineer binaries with strings, binwalk, hexdump, xxd, file, objdump. Use when identifying unknown files, extracting strings, hunting credentials, or entropy analysis.
+description: "Binary analysis: strings, binwalk, hexdump, xxd, file, objdump. Use when identifying unknown files, extracting strings, hunting credentials, or entropy analysis."
 user-invocable: false
 allowed-tools: Bash(file *), Bash(xxd *), Bash(hexdump *), Bash(strings *), Bash(objdump *), Bash(readelf *), Bash(nm *), Read, Grep, Glob
 created: 2025-12-27
