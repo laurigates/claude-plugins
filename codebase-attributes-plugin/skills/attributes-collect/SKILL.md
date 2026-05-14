@@ -1,6 +1,6 @@
 ---
 name: attributes-collect
-description: Collect codebase health attributes as structured JSON. Use when you need a structured assessment of project health before routing to specialized agents.
+description: Collect codebase health attributes as structured JSON. Use when assessing project health before routing to specialized agents via attributes-route.
 allowed-tools: Bash(test *), Bash(wc *), Read, Glob, Grep, TodoWrite
 args: "[--output <path>] [--categories <list>]"
 argument-hint: "[--output .claude/attributes.json]"
