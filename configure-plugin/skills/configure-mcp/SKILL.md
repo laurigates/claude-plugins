@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-02-26
-reviewed: 2026-02-26
+modified: 2026-05-14
+reviewed: 2026-05-14
 description: Check and configure MCP servers for project integration. Use when setting up MCP servers, checking MCP status, or adding new servers to a project.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix] [--core] [--server <name>]"
@@ -30,7 +30,6 @@ For server configurations, environment variable reference, and report templates,
 ## Context
 
 - Config exists: !`find . -maxdepth 1 -name \'.mcp.json\'`
-- Installed servers: !`jq -r '.mcpServers' .mcp.json`
 - Git tracking: !`grep '.mcp.json' .gitignore`
 - Standards file: !`find . -maxdepth 1 -name \'.project-standards.yaml\'`
 - Has playwright config: !`find . -maxdepth 1 -name 'playwright.config.*' -print -quit`
@@ -63,10 +62,10 @@ Execute this MCP configuration workflow:
 
 ### Step 1: Detect current state
 
-Check the context values above. Determine:
-1. Does `.mcp.json` exist? If yes, parse it and list all configured servers.
-2. For each server, check its command type (`npx`, `bunx`, `uvx`, `go run`) and required env vars.
-3. Flag any servers with missing required environment variables.
+First, test whether `.mcp.json` exists in the current working directory:
+
+- **If `.mcp.json` is absent** (the `Config exists` context line is empty, or `test -f .mcp.json` would fail): print "No `.mcp.json` found — starting fresh." and treat `mcpServers` as `{}` for the remainder of the workflow. Do **not** abort. Proceed to Step 2 so the user can still install core servers or specific servers via flags / interactive mode; Step 3 will create the file from scratch.
+- **If `.mcp.json` exists**: use the `Read` tool to load `.mcp.json` and parse the `mcpServers` object. List all configured servers and surface the result to subsequent steps. For each server, check its command type (`npx`, `bunx`, `uvx`, `go run`) and required env vars. Flag any servers with missing required environment variables.
 
 If `--check-only`, skip to Step 4 (report only).
 
