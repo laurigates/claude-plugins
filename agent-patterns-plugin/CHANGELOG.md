@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.21.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.20.2...agent-patterns-plugin-v2.21.0) (2026-05-14)
+
+
+### Features
+
+* **agent-patterns-plugin:** add verify-before-plan skill ([#1315](https://github.com/laurigates/claude-plugins/issues/1315)) ([46e3678](https://github.com/laurigates/claude-plugins/commit/46e3678438ee77095d9eac82c60a570af8b20a6a))
+
 ## [2.20.2](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.20.1...agent-patterns-plugin-v2.20.2) (2026-05-14)
 
 

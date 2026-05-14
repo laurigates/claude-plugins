@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.5](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.6.4...feedback-plugin-v1.6.5) (2026-05-14)
+
+
+### Documentation
+
+* **feedback-plugin:** codify dominance heuristic in feedback-session ([#1320](https://github.com/laurigates/claude-plugins/issues/1320)) ([f9fb8aa](https://github.com/laurigates/claude-plugins/commit/f9fb8aadcdbd1aecce3584521285cf1c4bdeaafd))
+
 ## [1.6.4](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.6.3...feedback-plugin-v1.6.4) (2026-05-14)
 
 

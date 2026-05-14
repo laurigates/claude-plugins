@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.3](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.21.2...configure-plugin-v1.21.3) (2026-05-14)
+
+
+### Bug Fixes
+
+* **configure-plugin:** handle missing .mcp.json gracefully in /configure-mcp ([#1313](https://github.com/laurigates/claude-plugins/issues/1313)) ([c1fce74](https://github.com/laurigates/claude-plugins/commit/c1fce7443a6357bdebb26208556386ae9f76a4ef))
+
 ## [1.21.2](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.21.1...configure-plugin-v1.21.2) (2026-05-14)
 
 
