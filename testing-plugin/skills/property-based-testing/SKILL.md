@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2025-12-16
 name: property-based-testing
-description: "Property-based testing with fast-check (TS/JS) and Hypothesis (Python). Use when generating test data, finding edge cases automatically, testing mathematical properties, or writing QuickCheck-style tests."
+description: "Property-based testing with fast-check (TS/JS) and Hypothesis (Python). Use when generating test data, finding edge cases, testing properties, or writing QuickCheck-style tests."
 user-invocable: false
 allowed-tools: Bash, Read, Edit, Write, Grep, Glob, TodoWrite
 ---

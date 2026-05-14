@@ -5,7 +5,7 @@ reviewed: 2026-04-25
 allowed-tools: Task, TodoWrite
 args: "[--coverage] [--parallel] [--report]"
 argument-hint: "[--coverage] [--parallel] [--report]"
-description: "Run the complete test suite in pyramid order — unit, then integration, then E2E. Use when running all tests before a PR, with coverage, generating HTML reports, or pre-commit verification across all test tiers."
+description: "Run complete test suite in pyramid order — unit, integration, E2E. Use when running all tests before a PR, generating coverage reports, or doing pre-commit verification."
 name: test-full
 agent: general-purpose
 ---

@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2025-12-16
 name: mutation-testing
-description: "Validate test effectiveness with mutation testing using Stryker (TS/JS) and mutmut (Python). Use when finding weak tests that pass despite mutated code, or improving test quality through mutation analysis."
+description: "Mutation testing with Stryker (TS/JS) and mutmut (Python). Use when finding weak tests that pass on mutated code, or improving test quality through mutation analysis."
 user-invocable: false
 allowed-tools: Bash, Read, Edit, Write, Grep, Glob, TodoWrite
 ---

@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2026-04-25
 name: hypothesis-testing
-description: "Property-based testing with Hypothesis for Python. Use when testing code with many possible inputs, verifying invariants, testing serialization round-trips, or finding edge cases that example-based tests miss."
+description: "Property-based testing with Hypothesis (Python). Use when testing with many inputs, verifying invariants, testing round-trips, or finding edge cases example tests miss."
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---

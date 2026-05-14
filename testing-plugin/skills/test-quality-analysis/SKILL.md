@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-02-14
 reviewed: 2025-12-16
 name: test-quality-analysis
-description: Detect test smells, overmocking, flaky tests, and coverage issues. Analyze test effectiveness, maintainability, and reliability. Use when reviewing tests or improving test quality.
+description: "Detect test smells, overmocking, flaky tests, and coverage issues. Use when reviewing tests, improving test quality, or analyzing test effectiveness and reliability."
 user-invocable: false
 allowed-tools: Bash, Read, Edit, Write, Grep, Glob, TodoWrite
 ---
