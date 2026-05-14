@@ -2,7 +2,7 @@
 created: 2025-02-03
 modified: 2026-05-09
 reviewed: 2026-04-25
-description: Framework-agnostic version badge with a tooltip showing build info (version, commit, branch, timestamp) and recent changelog. Use when adding version display to app header/footer. Supports Next.js, Nuxt, SvelteKit, Vite+React, plain React/Vue/Svelte.
+description: Version badge with build-info tooltip (version, commit, changelog). Use when adding version display to app header/footer. Supports Next.js, Nuxt, SvelteKit, Vite+React, React/Vue/Svelte.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
 args: "[--check-only] [--location <header|footer|custom>]"
 argument-hint: "[--check-only] [--location <header|footer|custom>]"
