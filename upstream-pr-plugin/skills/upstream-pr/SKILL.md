@@ -1,6 +1,6 @@
 ---
 name: upstream-pr
-description: Submit a single commit from a heavily-diverged fork to upstream as a clean PR. Handles eligibility (patch-id matching), cherry-pick with re-derive fallback for dense conflicts, message scrubbing, and regression checks. Use when direct rebase fails.
+description: Submit a diverged-fork commit to upstream as a clean PR via cherry-pick with re-derive fallback, message scrubbing, and regression checks. Use when direct rebase fails.
 args: "<sha> [--topic <slug>]"
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git remote *), Bash(git fetch *), Bash(git switch *), Bash(git checkout *), Bash(git cherry-pick *), Bash(git reset *), Bash(git commit *), Bash(git push *), Bash(git stash *), Bash(git rev-list *), Bash(git rev-parse *), Bash(git branch *), Bash(git cat-file *), Bash(git patch-id *), Bash(gh pr *), Bash(gh repo *), Bash(bash *), Bash(uv *), Bash(pytest *), Bash(ruff *), Bash(python3 *), Read, Edit, Write, Grep, Glob, TodoWrite
 argument-hint: "<sha-to-send-upstream>"
