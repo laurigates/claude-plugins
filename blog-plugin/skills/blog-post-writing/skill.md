@@ -1,6 +1,6 @@
 ---
 name: blog-post-writing
-description: Style guide for blog posts about projects and technical work. Supports quick updates, write-ups, retrospectives, tutorials, and deep dives. Use when writing about work done, documenting a project update, or mentioning blog/post/devlog.
+description: Style guide for technical blog posts — updates, retrospectives, tutorials, deep dives. Use when writing about work done, documenting a project update, or mentioning blog/post/devlog.
 user-invocable: false
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash(hugo *), Bash(date *), TodoWrite
 created: 2026-01-10
