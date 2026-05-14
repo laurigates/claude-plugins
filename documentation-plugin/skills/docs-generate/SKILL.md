@@ -5,7 +5,7 @@ reviewed: 2026-04-25
 allowed-tools: Task, TodoWrite
 args: "[--api] [--readme] [--changelog]"
 argument-hint: "[--api] [--readme] [--changelog]"
-description: Generate or update project docs from code annotations, docstrings, type signatures, and git history. Use when the user wants API reference docs, README from code, a CHANGELOG from conventional commits, or to regenerate docs.
+description: Generate or update docs from code annotations, docstrings, and git history. Use when wanting API reference, README from code, or CHANGELOG from conventional commits.
 name: docs-generate
 agent: general-purpose
 ---

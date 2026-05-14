@@ -6,7 +6,7 @@ allowed-tools: Read, Write, Edit, Bash(find *), Bash(ls *), Grep, TodoWrite
 args: <service-name>
 argument-hint: <service-name>
 disable-model-invocation: true
-description: Generate service decommission docs covering infrastructure, data, access, DNS, dependencies, monitoring cleanup, and financial checklists. Use when decommissioning a service or wanting a DECOMMISSION-<service>.md created at deploy time.
+description: "Generate DECOMMISSION-<service>.md covering infra, data, access, DNS, dependencies, monitoring, and financial checklists. Use when decommissioning a service."
 name: docs-decommission
 ---
 

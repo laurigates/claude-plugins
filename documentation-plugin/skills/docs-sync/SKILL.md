@@ -1,5 +1,5 @@
 ---
-description: Synchronize docs with the actual skills, commands, and agents in the codebase by fixing count mismatches, adding missing entries, and removing stale references. Use when docs are out of sync, updating skill catalog, or regenerating command reference.
+description: Sync docs with actual skills, commands, and agents by fixing mismatches and stale entries. Use when docs are out of sync, updating the skill catalog, or regenerating command reference.
 args: "[--scope <type>] [--dry-run] [--verbose]"
 argument-hint: "--scope skills|commands|agents, --dry-run to preview, --verbose for details"
 allowed-tools: Bash, Grep, Glob, Read, Edit, Write, TodoWrite
