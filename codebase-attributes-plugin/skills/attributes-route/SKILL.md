@@ -1,6 +1,6 @@
 ---
 name: attributes-route
-description: "Route to specialized agents (security, test, refactor, review, docs, configure) based on codebase health attributes, prioritized by severity. Use when the user has attribute data and wants automated remediation after `/attributes:collect`."
+description: "Route to specialized agents (security, test, refactor, docs) based on codebase health attributes by severity. Use when the user has attribute data and wants automated remediation."
 allowed-tools: Read, Glob, Grep, Agent, TodoWrite
 args: "[--dry-run] [--focus <category>] [--min-severity <level>]"
 argument-hint: "--dry-run"
