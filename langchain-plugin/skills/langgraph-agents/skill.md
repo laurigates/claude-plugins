@@ -1,6 +1,6 @@
 ---
 name: langgraph-agents
-description: Build stateful AI agents using LangGraph's graph-based workflow framework. Use when creating state-machine agents with checkpoints, defining behavior as graphs, adding human-in-the-loop, streaming execution, or composing subgraphs.
+description: LangGraph stateful AI agents with graph-based workflows. Use when creating state-machine agents with checkpoints, human-in-the-loop, streaming execution, or subgraph composition.
 user-invocable: false
 allowed-tools: Bash(python *), Bash(uv *), BashOutput, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-01-08
