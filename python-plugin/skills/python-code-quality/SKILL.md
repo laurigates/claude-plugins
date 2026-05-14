@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2026-04-25
 name: python-code-quality
-description: Python code quality with ruff (linting & formatting) and ty (type checking). Covers pyproject.toml configuration, pre-commit hooks, and type hints. Use when the user mentions ruff, ty, linting, formatting, type checking, or Python code style.
+description: Python code quality with ruff and ty. Use when the user mentions ruff, ty, linting, formatting, type checking, or Python code style.
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---

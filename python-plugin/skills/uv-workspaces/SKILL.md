@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2026-02-12
 name: uv-workspaces
-description: Manage monorepo and multi-package Python projects with uv workspaces. Covers workspace config, virtual workspaces, member deps, shared lockfiles, source inheritance, and building. Use when the user mentions uv workspaces or Python monorepo.
+description: Manage multi-package Python projects with uv workspaces. Use when the user mentions uv workspaces, Python monorepo, shared lockfiles, or member dependencies.
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---

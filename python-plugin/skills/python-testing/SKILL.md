@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2026-04-25
 name: python-testing
-description: Python testing with pytest, coverage, fixtures, parametrization, and mocking. Covers test organization, conftest.py, markers, async testing, and TDD. Use when the user mentions pytest, unit tests, coverage, fixtures, mocking, or writing Python tests.
+description: Python testing with pytest, coverage, fixtures, and mocking. Use when the user mentions pytest, unit tests, coverage, fixtures, mocking, or writing Python tests.
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---

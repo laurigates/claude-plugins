@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2026-04-25
 name: python-development
-description: Core Python development concepts, idioms, and language features (3.10+). Covers type hints, async/await, and Pythonic patterns. For scripts see uv-run; for project setup see uv-project-management. Use when mentioning Python, type hints, or async.
+description: Core Python development idioms and language features (3.10+). Use when mentioning Python, type hints, or async. For scripts see uv-run; for project setup see uv-project-management.
 user-invocable: false
 allowed-tools: Glob, Grep, Read, WebFetch, TodoWrite, WebSearch, BashOutput, KillShell, Edit, Write, NotebookEdit, Bash
 ---

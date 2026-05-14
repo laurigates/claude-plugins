@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2026-01-24
 name: pytest-advanced
-description: "Advanced pytest patterns: fixtures, markers, parametrization, parallel execution. Use when implementing test infrastructure, organizing test suites, writing fixtures, or running with coverage. Covers pytest-cov, pytest-asyncio, pytest-xdist."
+description: "Advanced pytest: fixtures, markers, parametrization, parallel execution. Use when implementing test infrastructure, writing fixtures, or running with coverage."
 user-invocable: false
 allowed-tools: Bash(pytest *), Bash(python *), Bash(uv run *), Read, Grep, Glob
 ---
