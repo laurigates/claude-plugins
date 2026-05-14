@@ -1,6 +1,6 @@
 ---
 name: task-status
-description: Read-only taskwarrior queue report covering pending, blocked, ready tasks plus drift between the queue and linked PRs/trackers. Use when auditing queue health, orienting before a wave, or for standup summaries.
+description: Read-only taskwarrior queue report — pending, blocked, ready tasks plus drift vs linked PRs/trackers. Use when auditing queue health, orienting before a wave, or for standup summaries.
 args: "[--mine] [--blocked] [--stale=N] [--project=<name>] [--all]"
 allowed-tools: Bash(task *), Bash(git config *), Bash(git rev-parse *), Bash(gh auth *), Bash(gh pr *), Bash(jq *), Read, TodoWrite
 argument-hint: optional filters

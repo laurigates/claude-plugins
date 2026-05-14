@@ -1,6 +1,6 @@
 ---
 name: task-claim
-description: Claim a taskwarrior task as in-flight by this agent. Marks the task `+ACTIVE` (`task start`), populates identity UDAs (agent / pid / host / branch / worktree), and writes a `git-coworker-check` session marker so other agents can see the work is taken. Use when picking up a task from `/taskwarrior:task-coordinate` output before starting implementation.
+description: Claim a taskwarrior task as in-flight (+ACTIVE), populate identity UDAs, and write a coworker marker. Use when picking up a task from task-coordinate output before starting implementation.
 args: "<task-id> [--no-coworker-marker] [--force]"
 allowed-tools: Bash(task *), Bash(git rev-parse *), Bash(git branch *), Bash(git config *), Bash(hostname *), Bash(jq *), Bash(bash *), Read, TodoWrite
 argument-hint: task id (required)
