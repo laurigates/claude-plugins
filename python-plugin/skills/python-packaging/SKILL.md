@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2026-04-25
 name: python-packaging
-description: Build and publish Python packages with uv and modern build tools. Covers uv build, uv publish, pyproject.toml, versioning, entry points, and PyPI publishing. Use when the user mentions building packages, publishing to PyPI, or wheel/sdist creation.
+description: Build and publish Python packages with uv. Use when the user mentions building packages, publishing to PyPI, wheel/sdist creation, or entry points.
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---

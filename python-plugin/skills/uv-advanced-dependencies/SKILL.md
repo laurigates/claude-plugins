@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2026-04-25
 name: uv-advanced-dependencies
-description: "Advanced dependency scenarios in uv projects: Git deps, path deps, editable installs, dependency groups, extras, constraints, and custom indexes. Use when the user mentions git+https deps, local path deps, editable installs, or private indexes."
+description: "Advanced uv dependencies: Git deps, path deps, editable installs, groups, extras, custom indexes. Use when the user mentions git+https deps, editable installs, or private indexes."
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---

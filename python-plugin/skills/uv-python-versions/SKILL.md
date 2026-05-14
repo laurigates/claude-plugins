@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2026-04-25
 name: uv-python-versions
-description: Install and manage Python interpreter versions with uv. Covers uv python install/list/pin and .python-version pinning. Use when the user mentions installing or switching Python versions, .python-version, uv python, or managing CPython/PyPy.
+description: Install and manage Python interpreter versions with uv. Use when the user mentions installing Python versions, .python-version, uv python, or managing CPython/PyPy.
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---
