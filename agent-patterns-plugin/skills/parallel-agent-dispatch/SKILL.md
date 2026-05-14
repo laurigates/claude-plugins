@@ -137,6 +137,32 @@ gitignored scratch so all downstream agents read-only siblings.
 
 See `exclusive-lock-dispatch` for the full pattern.
 
+#### Refactor-brief template
+
+For bulk content rewrites (description tightening, naming sweeps),
+use the brief shape that worked across six concurrent refactor
+agents. Load-bearing: per-step ordering, a PRECIOUS list, a per-file cap.
+
+```markdown
+**Scope**: <glob>, capped at N files. Do NOT chain edits across files
+you have not Read in this run.
+
+**Procedure (per file)**: Read first, then propose, then Edit.
+No batch-rewrites across unread files.
+
+**PRECIOUS — preserve verbatim**: literal "Use when..." triggers,
+sibling-skill cross-references, tool names, negative-scope clauses.
+
+**Cut**: marketing prose, redundant restatement, adjective stacking.
+
+**Final step**: run `<repo regression script>`; loop until exit 0
+before emitting the Return Contract.
+```
+
+> Evidence: issue [#1279](https://github.com/laurigates/claude-plugins/issues/1279)
+> — six agents, 41 plugins, cleanest batch hit 28.9% reduction with
+> zero >250-char outliers. PR #1314 productizes the post-pass.
+
 ### 3. Return Contract (mandatory structured summary)
 
 Every parallel agent must end its run with this schema as its final message,
@@ -268,6 +294,37 @@ both the permission to run the script and the requirement to clear it.
 Cross-reference `.claude/rules/regression-testing.md` for the catalogue
 of regression scripts and the rule that every fixed bug ships with a
 matching script check.
+
+### 5. Reviewer-agent verification (verify-then-fix)
+
+Self-attestation is unreliable: an agent can return `status: success`
+with a half-written file or claim "tests pass" without running them.
+For high-stakes dispatches (PR "ready to merge", security audits,
+shared-state mutations), spawn a **separate reviewer agent** *after*
+the worker reports done and *before* the orchestrator trusts it.
+
+The reviewer:
+
+- Runs in its **own worktree** (different cwd than the worker).
+- Ideally uses a **different model** so the same blind spot does not pass.
+- Receives the worker's claim and branch — not the reasoning trace —
+  and re-derives a verdict from the diff.
+- Returns the Return Contract: `success` = claim holds; `failed` =
+  claim does not hold.
+
+**Verify-then-fix loop**: on a reviewer flag, the orchestrator fixes
+inline or dispatches a follow-up worker scoped to the regression.
+Do **not** close on the worker's self-claim alone.
+
+**Self-author guard for `gh pr` flows**: `gh pr review --reviewer
+<user>` returns HTTP 422 when the target is the PR author. Brief
+reviewers: *"Do not pass `--reviewer <author>`; if the dispatch lead
+is the PR author, post inline comments instead."*
+
+> Evidence: issue [#1239](https://github.com/laurigates/claude-plugins/issues/1239)
+> — three parallel-dispatch rounds; verify-then-fix caught a "ready
+> to merge" claim where helm-template did not confirm the hypothesis,
+> and the self-author guard prevented HTTP 422 across every fix PR.
 
 ## Why the Schema Matters
 
