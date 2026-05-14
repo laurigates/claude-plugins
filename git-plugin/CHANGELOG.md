@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.39.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.39.2...git-plugin-v2.39.3) (2026-05-14)
+
+
+### Documentation
+
+* **git-plugin:** add coworker-check success example from [#1277](https://github.com/laurigates/claude-plugins/issues/1277) ([#1324](https://github.com/laurigates/claude-plugins/issues/1324)) ([e7c4d78](https://github.com/laurigates/claude-plugins/commit/e7c4d78b75a1b989868082788c1fb61a46f9fea1))
+
 ## [2.39.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.39.1...git-plugin-v2.39.2) (2026-05-14)
 
 
