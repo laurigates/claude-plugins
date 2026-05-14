@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2026-04-25
 name: helm-values-management
-description: Manage Helm values across environments with override precedence, multi-env configs, and secret management. Covers values files, --set, --set-string, schema validation. Use when the user mentions Helm values, env-specific configs, or values.yaml.
+description: "Manage Helm values — override precedence, multi-env configs, --set, schema validation, secrets. Use when the user mentions Helm values, env-specific configs, or values.yaml."
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---

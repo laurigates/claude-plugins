@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2026-04-25
 name: kubernetes-operations
-description: "Kubernetes operations: deployment, management, troubleshooting, kubectl mastery, cluster stability. Covers workloads, networking, storage, and pod debugging. Use when the user mentions K8s, kubectl, pods, deployments, services, or ingress."
+description: "Kubernetes operations — deployment, management, troubleshooting, kubectl mastery. Use when the user mentions K8s, kubectl, pods, deployments, services, ingress, or cluster stability."
 user-invocable: false
 allowed-tools: Glob, Grep, Read, Bash(kubectl *), Bash(helm *), Bash(kustomize *), Edit, Write, TodoWrite, WebFetch
 ---

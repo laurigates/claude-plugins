@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2026-04-25
 name: helm-release-management
-description: "Manage Helm releases: install, upgrade, uninstall, list, and inspect. Covers helm install/upgrade/list/status and release history. Use when the user mentions deploying Helm charts, upgrading releases, or managing Kubernetes deployments with Helm."
+description: "Manage Helm releases — install, upgrade, uninstall, list, inspect, history. Use when the user mentions deploying Helm charts, upgrading releases, or managing Kubernetes deployments."
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---

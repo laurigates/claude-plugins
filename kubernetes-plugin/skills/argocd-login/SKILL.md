@@ -3,10 +3,7 @@ created: 2025-12-16
 modified: 2026-04-25
 reviewed: 2026-04-25
 name: argocd-login
-description: |
-  ArgoCD CLI authentication with SSO. Provides argocd login command, gRPC-Web
-  configuration, and post-login operations. Use when user mentions ArgoCD login,
-  argocd authentication, SSO auth, or accessing ArgoCD applications and clusters.
+description: "ArgoCD CLI auth with SSO and gRPC-Web. Use when the user mentions ArgoCD login, argocd authentication, SSO auth, or accessing ArgoCD applications and clusters."
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---

@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2026-04-25
 name: kubectl-debugging
-description: Debug Kubernetes pods, nodes, and workloads using kubectl debug. Covers ephemeral containers, pod copying, node debugging, debug profiles, and interactive sessions. Use when the user mentions kubectl debug, debugging pods, or ephemeral containers.
+description: "Debug K8s pods/nodes with kubectl debug — ephemeral containers, pod copying, debug profiles, interactive sessions. Use when the user mentions kubectl debug or debugging pods."
 user-invocable: false
 allowed-tools: Glob, Grep, Read, Bash(kubectl *), Bash(stern *), Edit, Write, TodoWrite, WebFetch
 ---
