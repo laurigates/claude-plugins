@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2026-04-25
 name: ticket-drafting-guidelines
-description: Structured guidelines for drafting GitHub issues and technical tickets. Uses What/Why/How format with concise descriptions and positive framing without estimates. Use when creating issues, drafting tickets, or writing bug reports.
+description: Guidelines for drafting GitHub issues using What/Why/How format. Use when creating issues, drafting tickets, or writing bug reports with concise and positive framing.
 user-invocable: false
 allowed-tools: Read, Grep, WebFetch
 ---
