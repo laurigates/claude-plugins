@@ -1,6 +1,6 @@
 ---
 name: blog-post
-description: Create a blog post via guided prompts and structured templates with git context auto-populated. Use when writing a quick update, project update, retrospective, tutorial, deep dive, or devlog entry.
+description: Create a blog post via guided prompts with git context auto-populated. Use when writing a quick update, retrospective, tutorial, deep dive, or devlog entry.
 args: "[type] [--project <name>] [--title <title>]"
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash(hugo *), Bash(date *), TodoWrite, AskUserQuestion
 argument-hint: "quick-update | project-update | retrospective | tutorial | deep-dive"
