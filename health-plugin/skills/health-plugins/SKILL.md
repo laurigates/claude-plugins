@@ -3,7 +3,7 @@ created: 2026-02-04
 modified: 2026-05-09
 reviewed: 2026-04-15
 user-invocable: false
-description: 'Diagnose and fix Claude Code plugin registry corruption — orphaned entries, stale enabledPlugins keys, cross-project scope conflicts (issue #14202). Use when seeing "plugin already installed" errors or registry-vs-settings drift.'
+description: "Diagnose and fix Claude Code plugin registry corruption — orphaned entries, stale keys, scope conflicts. Use when seeing plugin-already-installed errors or registry drift."
 allowed-tools: Bash(bash *), Read, Write, Edit, Glob, Grep, TodoWrite, AskUserQuestion
 args: "[--fix] [--dry-run] [--plugin <name>]"
 argument-hint: "[--fix] [--dry-run] [--plugin <name>]"
