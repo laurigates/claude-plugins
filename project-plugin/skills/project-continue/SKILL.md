@@ -1,5 +1,5 @@
 ---
-description: Analyze project state and continue development where left off. Use when the user asks to resume work, pick up where we left off, figure out what to do next, identify the next task from PRDs and feature tracker, or continue TDD after a break.
+description: Resume development from current project state. Use when the user asks to continue work, pick up where we left off, find the next task, or resume a TDD cycle after a break.
 args: "[--task <id>] [--skip-status]"
 argument-hint: "--task to resume specific task, --skip-status to skip state analysis"
 allowed-tools: Read, Bash, Grep, Glob, Edit, Write

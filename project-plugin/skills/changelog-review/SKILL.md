@@ -1,6 +1,6 @@
 ---
 name: changelog-review
-description: Analyze Claude Code changelog for plugin-impact changes. Use when checking new features, breaking changes, or improvement opportunities for plugins from Claude Code updates.
+description: Claude Code changelog analysis for plugin impact. Use when checking new features, breaking changes, or upgrade opportunities from a Claude Code release.
 user-invocable: false
 allowed-tools: Bash(git log *), Bash(git diff *), Read, Write, Edit, Glob, Grep, WebFetch, TodoWrite
 created: 2026-01-14

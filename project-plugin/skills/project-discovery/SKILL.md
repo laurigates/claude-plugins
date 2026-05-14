@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2026-05-09
 name: project-discovery
-description: Systematic project orientation for unfamiliar codebases. Auto-activates on project uncertainty. Analyzes git state, project type, and dev tooling (build, test, lint, CI/CD). Use when entering new projects or working on shaky assumptions.
+description: Project orientation for unfamiliar codebases. Use when entering a new project, exploring unknown repos, or working on shaky assumptions about build, test, lint, or CI setup.
 user-invocable: false
 allowed-tools: Bash(ls *), Bash(find *), Bash(wc *), Read, Grep, Glob, TodoWrite
 ---

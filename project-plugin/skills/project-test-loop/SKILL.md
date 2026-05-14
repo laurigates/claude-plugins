@@ -1,5 +1,5 @@
 ---
-description: Run an automated test-fix-refactor TDD cycle until tests pass and no refactoring opportunities remain. Use when the user asks to loop on failing tests, run a TDD cycle, or drive implementation via RED/GREEN/REFACTOR until green.
+description: Automated TDD test-fix-refactor cycle until tests pass. Use when looping on failing tests, running a TDD cycle, or driving RED/GREEN/REFACTOR until green.
 args: "[test-pattern] [--max-cycles <N>]"
 argument-hint: "Test pattern to focus on, --max-cycles to limit iterations"
 allowed-tools: Read, Edit, Bash

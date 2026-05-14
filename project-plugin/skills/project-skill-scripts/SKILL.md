@@ -1,6 +1,6 @@
 ---
 name: project-skill-scripts
-description: Analyze plugin skills to find where supporting scripts would improve performance (fewer tokens, faster, more consistent), then optionally create them. Use when auditing skills for script opportunities or extracting bash blocks from SKILL.md.
+description: Find and create supporting scripts for plugin skills. Use when auditing skills for script opportunities, improving token efficiency, or extracting bash blocks from SKILL.md.
 args: "[--analyze] [--create <plugin/skill>] [--all]"
 allowed-tools: Bash(chmod *), Bash(mkdir *), Read, Write, Edit, Glob, Grep, TodoWrite
 argument-hint: "--analyze | --create git-plugin/git-commit-workflow | --all"
