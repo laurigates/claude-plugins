@@ -1,5 +1,5 @@
 ---
-description: Identify workflow waste patterns and suggest fixes - skipped runs, bot triggers, missing concurrency. Use when CI costs are high, workflows run too often, or you need to optimize GitHub Actions efficiency.
+description: "Identify GitHub Actions waste — skipped runs, bot triggers, missing concurrency — and suggest fixes. Use when CI costs are high or workflows run too often."
 args: "[repo]"
 allowed-tools: Bash(gh api *), Bash(gh workflow *), Bash(gh repo *), Bash(bash *), Read, Grep, Glob, Edit, TodoWrite
 argument-hint: Optional repo (owner/name format, defaults to current repo)
