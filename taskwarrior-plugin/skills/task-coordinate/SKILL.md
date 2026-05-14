@@ -1,6 +1,6 @@
 ---
 name: task-coordinate
-description: Surface the next N unblocked taskwarrior tasks sorted by urgency, skipping lock-contending tasks. Use when planning a parallel-agent-dispatch wave or deciding which tasks share a dispatch slot.
+description: Surface next N unblocked taskwarrior tasks by urgency, skipping lock-contending tasks. Use when planning a parallel-agent wave or choosing tasks for a dispatch slot.
 args: "[--n=N] [--lock=<resource>] [--wave] [--project=<name>] [--all]"
 allowed-tools: Bash(task *), Bash(git rev-parse *), Bash(jq *), Read, TodoWrite
 argument-hint: optional count (default 3) and lock filter

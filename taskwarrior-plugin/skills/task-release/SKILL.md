@@ -1,6 +1,6 @@
 ---
 name: task-release
-description: Release a taskwarrior task without closing it. Stops the `+ACTIVE` clock, annotates the current state for the next agent to read, and clears the `pid` UDA (keeps `agent` / `branch` / `worktree` for handoff context). Use when pausing mid-task, handing off to another agent, or aborting cleanly when the work is not actually done.
+description: Release a taskwarrior task without closing it — stops +ACTIVE clock and annotates state for handoff. Use when pausing mid-task, handing off to another agent, or aborting cleanly.
 args: "<task-id> [<state-message>] [--clear-identity] [--no-coworker-marker]"
 allowed-tools: Bash(task *), Bash(git rev-parse *), Bash(git branch *), Bash(jq *), Bash(bash *), Read, TodoWrite
 argument-hint: task id (required) and optional state message
