@@ -1,5 +1,5 @@
 ---
-description: "Publish a package to npm after building with Bun. Use when the user wants to release to npm, preview with `--dry-run`, publish a scoped package with `--access public`, or enable `--provenance` signing. Triggers: 'publish to npm'."
+description: "Bun publish to npm. Use when the user wants to release to npm, preview with --dry-run, publish a scoped package with --access public, or enable --provenance signing."
 args: "[--dry-run] [--access <level>] [--provenance]"
 allowed-tools: Bash, Read
 argument-hint: "[--dry-run] [--access public]"

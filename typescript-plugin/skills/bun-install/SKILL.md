@@ -1,5 +1,5 @@
 ---
-description: Install all dependencies from package.json using Bun. Use when bootstrapping a fresh checkout with `bun install`, running a reproducible CI install with `--frozen-lockfile`, or preparing a production deploy with `--production`.
+description: "Bun install: install all deps from package.json. Use when bootstrapping a checkout, running a reproducible CI install (--frozen-lockfile), or deploying (--production)."
 args: "[--frozen-lockfile] [--production]"
 argument-hint: "--frozen-lockfile for CI, --production for deployment"
 allowed-tools: Bash, Read

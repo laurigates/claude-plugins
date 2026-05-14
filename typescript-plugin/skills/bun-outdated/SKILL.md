@@ -1,5 +1,5 @@
 ---
-description: Check which dependencies have newer versions using `bun outdated`. Use when auditing freshness, spotting major updates before upgrading, deciding between `bun update` and `bun update --latest`, or reviewing a single package.
+description: "Bun outdated: check which deps have newer versions. Use when auditing freshness, spotting major updates, or deciding between bun update and bun update --latest."
 args: "[package]"
 argument-hint: "Optional package name to check specific dependency"
 allowed-tools: Bash, Read

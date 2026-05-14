@@ -1,5 +1,5 @@
 ---
-description: "Launch a script with Bun's debugger via `--inspect`. Use when the user wants to interactively debug a TS/JS file, break at the first line, wait for a debugger to attach, or debug tests via `bun --inspect-brk test`. Triggers: 'debug this'."
+description: "Bun debugger via --inspect. Use when the user wants to debug a TS/JS file interactively, break at first line, wait for attach, or debug tests with --inspect-brk."
 args: <file> [--brk] [--wait] [--port=<port>]
 allowed-tools: Bash, BashOutput, Read
 argument-hint: <script.ts> [--brk] [--wait] [--port=9229]
