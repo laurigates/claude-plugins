@@ -2,7 +2,7 @@
 created: 2025-12-16
 modified: 2026-04-19
 reviewed: 2026-01-19
-description: Check and configure Dockerfiles for minimal Alpine/slim base, non-root user, and multi-stage builds. Use when creating a Dockerfile, hardening for security, or auditing image size and layering.
+description: "Dockerfile standards: Alpine/slim base, non-root user, multi-stage builds. Use when creating a Dockerfile, hardening security, or auditing image size."
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--type <frontend|python|go|rust>]"
 argument-hint: "[--check-only] [--fix] [--type <frontend|python|go|rust>]"

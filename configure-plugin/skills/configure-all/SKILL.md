@@ -2,7 +2,7 @@
 created: 2025-12-16
 modified: 2026-04-19
 reviewed: 2025-12-16
-description: Run all infrastructure standards checks and apply compliance fixes across a project. Use when performing a comprehensive audit, onboarding a new project against all standards, or batch-fixing with --fix.
+description: "Run all infrastructure standards checks and fixes. Use when onboarding a new project, doing a full compliance audit, or batch-fixing with --fix."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, SlashCommand
 args: "[--check-only] [--fix] [--type <frontend|infrastructure|python>]"
 argument-hint: "[--check-only] [--fix] [--type <frontend|infrastructure|python>]"

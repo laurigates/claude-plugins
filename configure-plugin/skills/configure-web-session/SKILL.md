@@ -1,6 +1,6 @@
 ---
 name: configure-web-session
-description: Set up a SessionStart hook so Claude Code on the web installs project tools (helm, terraform, gitleaks, just). Use when pre-commit or CI tools fail in remote sessions due to missing binaries.
+description: "SessionStart hook for Claude Code web sessions to install tools (helm, terraform, gitleaks, just). Use when CI tools fail in remote sessions due to missing binaries."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix] [--tools <list>]"
 argument-hint: "[--check-only] [--fix] [--tools <list>]"

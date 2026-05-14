@@ -2,7 +2,7 @@
 created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2026-04-29
-description: Configure Skaffold for Kubernetes projects. Use when fixing port forwarding security (0.0.0.0 binding), adding dotenvx hooks for secret generation, upgrading Skaffold API version, or creating skaffold.yaml from template.
+description: "Skaffold for Kubernetes: port forwarding, dotenvx hooks, API version. Use when fixing 0.0.0.0 binding, adding secret generation hooks, or creating skaffold.yaml."
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix]"
 argument-hint: "[--check-only] [--fix]"

@@ -2,7 +2,7 @@
 created: 2025-12-16
 modified: 2026-04-29
 reviewed: 2026-04-29
-description: Check and configure GitHub Actions CI/CD workflows for container builds, tests, and releases. Use when updating outdated action versions, adding multi-platform builds, or auditing required workflows.
+description: "GitHub Actions CI/CD workflows for container builds, tests, releases. Use when updating outdated action versions, adding multi-platform builds, or auditing workflows."
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix]"
 argument-hint: "[--check-only] [--fix]"

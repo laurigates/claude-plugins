@@ -1,6 +1,6 @@
 ---
 name: multi-repo-discipline
-description: Advisory rules for multi-repo workspaces — read-only fixtures, upstream/downstream pairs, authoritative spec owners. Use when dispatching agents that may touch sibling repos or editing another repo's `.claude/`.
+description: "Multi-repo workspace rules: read-only fixtures, upstream/downstream pairs. Use when dispatching agents across sibling repos or editing another repo's .claude/."
 allowed-tools: Bash(git rev-parse *), Bash(git status *), Bash(git branch *), Bash(git remote *), Bash(git log *), Read, Glob, Grep, TodoWrite
 created: 2026-04-24
 modified: 2026-05-09

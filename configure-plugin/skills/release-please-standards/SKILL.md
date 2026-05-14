@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-04-25
 reviewed: 2026-04-25
 name: release-please-standards
-description: Release-please standards and configuration. Use when configuring release-please workflows, checking release automation compliance, or working with automated releases and version bumps.
+description: "release-please standards and configuration reference. Use when configuring release workflows, checking automation compliance, or working with version bumps."
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---

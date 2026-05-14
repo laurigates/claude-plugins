@@ -2,7 +2,7 @@
 created: 2025-12-16
 modified: 2026-04-19
 reviewed: 2025-12-16
-description: Check and configure modern linters (Biome, Ruff, Clippy). Use when setting up linting, migrating ESLint/Prettier to Biome, or wiring lint checks into pre-commit and CI.
+description: "Modern linters: Biome, Ruff, Clippy. Use when setting up linting, migrating ESLint/Prettier to Biome, or wiring lint into pre-commit and CI."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--linter <biome|ruff|clippy>]"
 argument-hint: "[--check-only] [--fix] [--linter <biome|ruff|clippy>]"

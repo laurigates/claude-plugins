@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2026-04-25
 name: skaffold-standards
-description: Skaffold standards for local Kubernetes development with OrbStack and dotenvx. Use when configuring Skaffold, setting up local K8s, Kubernetes profiles, or dotenvx secrets.
+description: "Skaffold standards with OrbStack and dotenvx for local K8s. Use when configuring Skaffold, setting up K8s profiles, or managing dotenvx secrets."
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---

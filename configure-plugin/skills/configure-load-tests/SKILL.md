@@ -2,7 +2,7 @@
 created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2026-04-29
-description: Configure load and performance testing with k6, Artillery, or Locust. Use when setting up load tests, auditing smoke/stress/spike/soak coverage, adding CI performance regression detection, or migrating between load testing frameworks.
+description: "Load testing: k6, Artillery, Locust. Use when setting up load tests, auditing smoke/stress/spike/soak coverage, or adding CI performance regression detection."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix] [--framework <k6|artillery|locust>]"
 argument-hint: "[--check-only] [--fix] [--framework <k6|artillery|locust>]"

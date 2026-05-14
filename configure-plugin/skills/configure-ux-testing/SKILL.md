@@ -2,7 +2,7 @@
 created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2025-12-16
-description: Configure UX testing — Playwright E2E, accessibility (axe-core), visual regression. Use when setting up E2E testing, configuring screenshot assertions, setting up Playwright CLI/MCP for browser automation, or adding E2E/a11y CI workflows.
+description: "UX testing: Playwright E2E, axe-core a11y, visual regression. Use when setting up E2E testing, screenshot assertions, browser automation, or a11y CI workflows."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--a11y] [--visual]"
 argument-hint: "[--check-only] [--fix] [--a11y] [--visual]"

@@ -2,7 +2,7 @@
 created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2025-12-16
-description: Configure modern package managers (uv for Python, bun for TypeScript). Use when setting up uv or bun, migrating from legacy managers (pip, npm, yarn, poetry, pipenv), or cleaning up conflicting lock files.
+description: "Package managers: uv (Python), bun (TypeScript). Use when setting up uv or bun, migrating from pip/npm/yarn/poetry/pipenv, or resolving lockfile conflicts."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--manager <uv|bun|npm|cargo>]"
 argument-hint: "[--check-only] [--fix] [--manager <uv|bun|npm|cargo>]"
