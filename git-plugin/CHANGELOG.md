@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.39.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.39.1...git-plugin-v2.39.2) (2026-05-14)
+
+
+### Documentation
+
+* **git-plugin:** document commit-loop pattern and front-load coworker-check ([#1316](https://github.com/laurigates/claude-plugins/issues/1316)) ([f7c2e33](https://github.com/laurigates/claude-plugins/commit/f7c2e33de3a571f8fe5a19bb787bc75501abe7a0))
+
 ## [2.39.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.39.0...git-plugin-v2.39.1) (2026-05-14)
 
 

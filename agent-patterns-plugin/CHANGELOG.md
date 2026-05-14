@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.20.2](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.20.1...agent-patterns-plugin-v2.20.2) (2026-05-14)
+
+
+### Documentation
+
+* **agent-patterns-plugin:** document pre-commit stalls, rate-limit cascade, and agent self-verification in parallel-dispatch ([#1317](https://github.com/laurigates/claude-plugins/issues/1317)) ([7319709](https://github.com/laurigates/claude-plugins/commit/73197091ea6ff9d25ba3fd34a8ad0a2e292fe1c3))
+
 ## [2.20.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.20.0...agent-patterns-plugin-v2.20.1) (2026-05-14)
 
 
