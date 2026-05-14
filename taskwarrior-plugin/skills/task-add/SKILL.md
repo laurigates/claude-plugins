@@ -1,6 +1,6 @@
 ---
 name: task-add
-description: Add a taskwarrior task with blueprint (bpid/bpdoc) and optional GitHub issue linkage. Use when adding coordination tasks, linking a blueprint WO, or mirroring a GitHub issue locally.
+description: Add a taskwarrior task with blueprint linkage and optional GitHub issue. Use when adding coordination tasks, linking a blueprint WO, or mirroring a GitHub issue locally.
 args: "[description] [project:<name>] [--no-project]"
 allowed-tools: Bash(task *), Bash(git config *), Bash(git rev-parse *), Bash(gh auth *), Bash(gh issue *), Bash(gh api *), Read, TodoWrite
 argument-hint: short task description
