@@ -1,10 +1,6 @@
 ---
 name: plugin-registry
-description: |
-  Understanding Claude Code's plugin registry structure, installation scopes,
-  and common issues. Use when troubleshooting plugin installation problems,
-  understanding why plugins show as installed incorrectly, or manually fixing
-  registry entries.
+description: "Claude Code plugin registry structure, installation scopes, and common issues. Use when troubleshooting plugin installation problems or manually fixing registry entries."
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-02-04

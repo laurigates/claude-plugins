@@ -3,7 +3,7 @@ created: 2026-02-05
 modified: 2026-05-09
 reviewed: 2026-04-15
 user-invocable: false
-description: Audit enabled plugins against the detected stack (Python, Node, Rust, Go, Terraform, Docker, Kubernetes) and recommend additions or removals. Use when cleaning up unused plugins, discovering stack-relevant ones, or onboarding a project.
+description: "Plugin audit against detected stack (Python, Node, Rust, Go, Terraform, Docker, K8s). Use when cleaning up unused plugins or discovering stack-relevant ones for a project."
 allowed-tools: Bash(test *), Bash(find *), Bash(jq *), Bash(claude plugin *), Read, Write, Edit, Glob, Grep, TodoWrite, AskUserQuestion
 args: "[--fix] [--dry-run] [--verbose]"
 argument-hint: "[--fix] [--dry-run] [--verbose]"

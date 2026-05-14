@@ -2,7 +2,7 @@
 created: 2026-02-04
 modified: 2026-05-09
 reviewed: 2026-04-16
-description: One-stop diagnostic scan of Claude Code configuration — plugins, settings, hooks, MCP, SessionStart, permissions, marketplace — with optional fixes across registry/stack/agentic scopes. Use when troubleshooting Claude Code setup or before starting work.
+description: "Claude Code health check — scans plugins, settings, hooks, MCP, permissions, marketplace with optional fixes. Use when checking project health or troubleshooting setup."
 allowed-tools: Bash(bash *), Bash(pre-commit *), Read, Glob, Grep, TodoWrite, AskUserQuestion
 args: "[--scope=all|registry|stack|agentic] [--fix] [--dry-run] [--verbose]"
 argument-hint: "[--scope=all|registry|stack|agentic] [--fix] [--dry-run] [--verbose]"

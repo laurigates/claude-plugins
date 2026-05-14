@@ -1,9 +1,6 @@
 ---
 name: settings-configuration
-description: |
-  Claude Code settings file hierarchy, permission wildcards, and configuration
-  patterns. Use when setting up project permissions, debugging settings issues,
-  or understanding why certain tools are allowed or blocked.
+description: "Claude Code settings hierarchy, permission wildcards, and configuration patterns. Use when setting up permissions, debugging settings issues, or understanding allowed tools."
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-02-04

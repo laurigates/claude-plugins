@@ -3,7 +3,7 @@ created: 2026-02-05
 modified: 2026-04-19
 reviewed: 2026-04-15
 user-invocable: false
-description: Audit plugin skills, commands, and agents for agentic output compliance — missing optimization tables, bare CLI commands, stale review dates. Use when batch-checking skill documentation quality.
+description: "Audit skills, commands, and agents for agentic output compliance — optimization tables, bare CLI commands. Use when batch-checking skill documentation quality."
 allowed-tools: Bash(find *), Bash(head *), Read, Grep, Glob, TodoWrite
 args: "[--fix] [--verbose]"
 argument-hint: "[--fix] [--verbose]"
