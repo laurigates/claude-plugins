@@ -1,6 +1,6 @@
 ---
 name: workflow-checkpoint-refactor
-description: Multi-phase refactoring with persistent checkpoint files that survive context limits. Use when refactoring spans 10+ files, needs phased rollout, or risks running out of context — supports "continue the refactor" across sessions.
+description: Multi-phase refactoring with checkpoint files that survive context limits. Use when refactoring spans 10+ files, needs phased rollout, or risks running out of context mid-session.
 args: "[--init|--continue|--status|--phase=N]"
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(npm run *), Bash(npx *), Bash(uv run *), Bash(cargo *), Read, Write, Edit, Grep, Glob, Task, TodoWrite
 argument-hint: "--init to create plan, --continue to resume, --status to check progress"

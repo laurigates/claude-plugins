@@ -1,6 +1,6 @@
 ---
 name: workflow-wave-dispatch
-description: Sequential-wave dispatch contract for multi-agent work with cross-task dependencies or shared locks. Use when planning multi-step implementations, recovering from parallel-dispatch ordering issues, or scheduling waves around verification gates.
+description: Sequential-wave dispatch for multi-agent work with cross-task dependencies or shared locks. Use when planning multi-step work, recovering from parallel-dispatch ordering issues, or gating waves on verification.
 user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 created: 2026-04-24
