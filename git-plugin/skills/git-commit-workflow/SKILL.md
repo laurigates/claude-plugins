@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
-reviewed: 2026-04-25
+modified: 2026-05-14
+reviewed: 2026-05-14
 name: git-commit-workflow
 description: "Conventional commit format, staging, and message conventions. Use when writing commit messages, staging files, grouping changes, or auto-detecting linked issues."
 user-invocable: false
@@ -22,6 +22,17 @@ allowed-tools: Bash, Read
 Expert guidance for commit message conventions, staging practices, and commit best practices using conventional commits and explicit staging workflows.
 
 For detailed examples, advanced patterns, and best practices, see [REFERENCE.md](REFERENCE.md).
+
+## Preconditions
+
+Before staging any files — especially for bulk-edit / commit-loop workflows that touch many subdirectories — verify the working tree is yours alone:
+
+| Check | Why | How |
+|-------|-----|-----|
+| Coworker check | Another Claude session in the same checkout may have already pre-staged files (`git commit -a` retry, abandoned staging) that your loop would sweep into the wrong commit. **Run this up front, not opportunistically.** | `SlashCommand` → `/git:coworker-check` |
+| Working tree scoped | Confirm `git status --porcelain` shows only your edits | `git status --porcelain` |
+
+If `/git:coworker-check` returns anything other than `clear`, stop and either move to a fresh worktree (`git worktree add ../<repo>-<task>`) or ask the user before proceeding. See `.claude/rules/agent-coworker-detection.md` for the four detection signals.
 
 ## Core Expertise
 
@@ -132,9 +143,56 @@ git diff --cached  # Review actual changes
 git commit -m "feat(auth): add OAuth2 support"
 ```
 
-## Commit Message Formatting
+## Bulk-edit / per-plugin commit loops
 
-### HEREDOC Pattern (Required)
+When a single change touches many subdirectories (per-plugin, per-package, per-doc) and each needs its own scoped commit for release-please, write a one-shot script rather than chaining commands inline.
+
+### Why inline loops fail
+
+| Pattern | What blocks it |
+|---------|----------------|
+| `for d in a b c; do git add "$d/" && git commit -m "..."; done` | `bash-antipatterns.sh` blocks `git add ... && git commit ...` — chaining index-modifying git commands risks an `index.lock` race condition |
+| `git add -A`, `git add --all`, `git add .` | `bash-antipatterns.sh` blocks broad staging — sweeps in `.env`, large binaries, and **any coworker session's in-flight files** in a shared checkout (see `.claude/rules/agent-coworker-detection.md`) |
+| Repeating `git add <paths>; git commit -m "..."` as separate Bash tool calls per plugin | Works, but ~3 tool calls × N plugins becomes hundreds of round-trips for a 40-plugin sweep |
+
+### Canonical recipe
+
+Write the loop to `/tmp/commit-loop-<slug>.sh`, then run it in **one** Bash call. The hook treats the file as a script, not a chain — index-modifying commands are sequential within bash, not racing through separate tool invocations.
+
+```bash
+#!/bin/bash
+# /tmp/commit-loop-trim-descriptions.sh
+set -uo pipefail
+cd "$REPO_ROOT" || exit 1
+
+for p in plugin-a plugin-b plugin-c; do
+  # Skip plugins with nothing staged or modified inside them
+  [ -z "$(git status --porcelain "$p/")" ] && continue
+
+  git add "$p/skills/"            # explicit path, never -A or .
+  git commit -m "docs($p): trim skill descriptions for listing budget"
+done
+```
+
+Invoke once:
+
+```bash
+bash /tmp/commit-loop-trim-descriptions.sh
+```
+
+Each iteration runs pre-commit hooks and produces a clean per-plugin commit. Use `;` or newlines (not `&&`) between `git add` and `git commit` inside the script.
+
+### Failure recovery
+
+If the loop aborts mid-way (a pre-commit hook fails on plugin K of N), the commits for plugins 1..K-1 have **already landed** — they are not rolled back. Recovery rules:
+
+| Situation | Action |
+|-----------|--------|
+| Pre-commit hook caught a real issue in plugin K | Fix the issue, re-run the script — the `[ -z ... ] && continue` guard skips plugins with no remaining changes |
+| Script re-run picks up plugin K's leftover staged paths | Good — the unstaged-or-staged check via `git status --porcelain "$p/"` catches both |
+| You want to skip plugin K and continue | Edit the script to remove plugin K from the list, re-run |
+
+Do **not** re-stage paths that already committed cleanly; `git status` is the source of truth for what's left.
 
 **ALWAYS use HEREDOC directly in git commit.**
 
