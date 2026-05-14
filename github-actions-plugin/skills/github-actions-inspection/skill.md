@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-04-25
 reviewed: 2026-04-25
 name: github-actions-inspection
-description: Inspect GitHub Actions workflow runs, check status, analyze logs, debug failures, and identify root causes. Use when investigating CI/CD failures, checking workflow status, or debugging GitHub Actions issues.
+description: "Inspect GitHub Actions runs, analyze logs, debug failures. Use when investigating CI/CD failures, checking workflow status, or debugging GitHub Actions issues."
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob, mcp__github
 ---

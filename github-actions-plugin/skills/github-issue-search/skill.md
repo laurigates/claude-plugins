@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-04-25
 reviewed: 2026-04-25
 name: github-issue-search
-description: Search GitHub issues for solutions, workarounds, and discussions for open source problems. Use when encountering errors with OSS libraries or finding upstream bug workarounds.
+description: "Search GitHub issues for solutions and workarounds. Use when encountering errors with OSS libraries, finding upstream bug workarounds, or researching known issues."
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---
