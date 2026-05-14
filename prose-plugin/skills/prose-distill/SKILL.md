@@ -1,6 +1,6 @@
 ---
 name: prose-distill
-description: Distill verbose text to its concentrated essence — precis, condensation, verbal economy. Use when asked to condense, tighten, shorten, reduce verbosity, or omit needless words while preserving substance.
+description: "Prose distill: condense verbose text to its essence. Use when asked to condense, tighten, shorten, reduce verbosity, or omit needless words while preserving substance."
 args: "[text or file path]"
 allowed-tools: Read, Edit, Write, Grep, Glob, TodoWrite
 argument-hint: <text to distill> or <path to file>
