@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2026-04-25
 name: infrastructure-terraform
-description: "Infrastructure as Code with Terraform: HCL, state management, modular design, plan-apply workflows. Covers cloud and on-prem provisioning, remote backends, and modules. Use when the user mentions Terraform, HCL, terraform plan/apply, tfstate, or IaC."
+description: "Terraform IaC: HCL, state management, modules, plan-apply workflows. Use when the user mentions Terraform, HCL, terraform plan/apply, tfstate, or IaC provisioning."
 user-invocable: false
 allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite
 ---

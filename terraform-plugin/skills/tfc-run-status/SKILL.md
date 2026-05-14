@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-04-25
 reviewed: 2026-04-25
 name: tfc-run-status
-description: Quick status check for a Terraform Cloud run with resource counts, timestamps, and actions. Use when polling a run, checking pass/fail, or seeing if it can be applied or canceled. Requires TFE_TOKEN.
+description: "Terraform Cloud run status with resource counts and actions. Use when polling a run, checking pass/fail, or seeing if it can be applied or canceled. Requires TFE_TOKEN."
 user-invocable: false
 allowed-tools: Bash, Read
 ---
