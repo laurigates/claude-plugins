@@ -2,7 +2,7 @@
 created: 2025-12-22
 modified: 2026-05-09
 reviewed: 2026-04-25
-description: Derive ADRs from project structure, dependencies, and docs. Use when onboarding an existing project by documenting implicit architecture decisions or capturing framework/database/testing choices retroactively.
+description: Derive ADRs from project structure, deps, and docs. Use when onboarding a project to capture implicit architecture, framework, or database decisions retroactively.
 allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion, Task
 model: opus
 name: blueprint-derive-adr

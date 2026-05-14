@@ -1,5 +1,5 @@
 ---
-description: Create a PRP (Product Requirement Prompt) with systematic research, curated context, and validation gates. Use when planning a feature implementation packet for AI/subagent execution with TDD requirements and confidence scoring.
+description: Create a PRP (Product Requirement Prompt) with research, context, and validation gates. Use when planning a feature packet for subagent execution with TDD and confidence scoring.
 args: "[feature-name]"
 argument-hint: "Feature name for the PRP (e.g., auth-oauth2, api-rate-limiting)"
 allowed-tools: Read, Write, Glob, Bash, WebFetch, WebSearch, Task, AskUserQuestion

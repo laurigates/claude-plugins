@@ -1,5 +1,5 @@
 ---
-description: Execute a PRP with validation loop, TDD workflow, and quality gates. Use when the user asks to "execute a PRP", running a planned feature from docs/prps/ with red/green/refactor cycles, or delegating a high-confidence PRP to subagents.
+description: Execute a PRP with validation loop, TDD, and quality gates. Use when asked to execute a PRP, run a planned feature from docs/prps/, or delegate a PRP to subagents.
 args: "[prp-name]"
 argument-hint: "Name of PRP to execute (e.g., feature-auth-oauth2)"
 disable-model-invocation: true

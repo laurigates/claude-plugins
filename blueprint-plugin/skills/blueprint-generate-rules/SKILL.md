@@ -2,7 +2,7 @@
 created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2026-05-03
-description: Generate project-specific rules from PRDs with path-scoped frontmatter. Use when auto-creating architecture/testing/implementation/quality rules from docs/prds/ or path-scoped rules for test files or specific directories.
+description: Generate project-specific rules from PRDs with path-scoped frontmatter. Use when auto-creating architecture, testing, or quality rules from docs/prds/.
 allowed-tools: Read, Write, Glob, Bash, AskUserQuestion
 name: blueprint-generate-rules
 ---

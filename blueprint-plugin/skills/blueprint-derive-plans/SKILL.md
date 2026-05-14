@@ -2,7 +2,7 @@
 created: 2026-01-15
 modified: 2026-05-09
 reviewed: 2026-02-14
-description: Derive PRDs, ADRs, and PRPs from git history, codebase, and existing docs. Use when onboarding an established project to blueprint, extracting features from conventional commits, or documenting architecture decisions retroactively.
+description: Derive PRDs, ADRs, PRPs from git history and codebase. Use when onboarding a project to blueprint or extracting features from conventional commits retroactively.
 args: "[--quick] [--since DATE]"
 argument-hint: "--quick for fast scan, --since 2024-01-01 for date range"
 allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion, Task

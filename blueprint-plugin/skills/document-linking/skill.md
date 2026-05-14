@@ -3,7 +3,7 @@ created: 2026-01-20
 modified: 2026-05-09
 reviewed: 2026-04-25
 name: document-linking
-description: Unified ID system for PRDs, ADRs, PRPs, and GitHub issues with bidirectional links. Use when linking PRD<->PRP, finding orphans, auto-assigning PRD-NNN / ADR-NNNN / PRP-NNN / WO-NNN IDs, or validating cross-doc references.
+description: Unified ID system for PRDs, ADRs, PRPs, and GitHub issues with bidirectional links. Use when linking docs, finding orphans, auto-assigning IDs, or validating cross-doc references.
 user-invocable: false
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash, TodoWrite
 ---
