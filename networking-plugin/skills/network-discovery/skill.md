@@ -1,6 +1,6 @@
 ---
 name: network-discovery
-description: Find live hosts and open ports on a network. Use when you need to scan all TCP ports on a target, enumerate hosts on a subnet, or identify running services and their versions.
+description: Network host and port discovery with nmap. Use when scanning TCP ports, enumerating hosts on a subnet, or identifying running services and versions.
 user-invocable: false
 allowed-tools: Bash(nmap *), Bash(ping *), Bash(arp *), Bash(ip *), Read, Grep, Glob, TodoWrite
 created: 2026-01-01
