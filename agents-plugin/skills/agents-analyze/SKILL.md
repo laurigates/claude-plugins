@@ -1,5 +1,5 @@
 ---
-description: Audit plugins for sub-agent opportunities — verbose-output skills, coverage gaps, tool over-permissions, and model selection. Use when reviewing where sub-agents would help or auditing haiku/opus choices.
+description: Audit plugins for sub-agent opportunities — verbose skills, coverage gaps, over-permissions, and model selection. Use when reviewing where sub-agents would help or auditing model choices.
 args: "[--focus <plugin-name>]"
 allowed-tools: Glob, Grep, Read, Bash(ls *), Bash(wc *), TodoWrite
 model: opus
