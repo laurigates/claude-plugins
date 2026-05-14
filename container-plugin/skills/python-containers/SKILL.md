@@ -3,7 +3,7 @@ created: 2026-01-15
 modified: 2026-05-09
 reviewed: 2026-01-15
 name: python-containers
-description: "Python container optimization: slim images (NOT Alpine), virtualenv, multi-stage builds with pip/poetry/uv, musl libc gotchas, wheel building. Reduces ~1GB to ~80-120MB. Use when working with Python containers or optimizing image sizes."
+description: "Python container optimization — slim images (not Alpine), virtualenv, multi-stage, pip/poetry/uv, musl gotchas (1GB to ~120MB). Use when working with Python containers or optimizing image sizes."
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob, Edit, Write, TodoWrite, WebSearch, WebFetch
 ---

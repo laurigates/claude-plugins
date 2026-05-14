@@ -1,6 +1,6 @@
 ---
 name: skaffold-testing
-description: Container image validation with Skaffold test/verify stages. Covers container-structure-tests, custom security scanning, and post-deployment verification. Use when configuring pre-deploy tests, security scans, or integration tests in Skaffold.
+description: "Container image validation with Skaffold test/verify stages — container-structure-tests, security scans. Use when configuring pre-deploy tests or integration tests in Skaffold."
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2025-12-23
