@@ -1,6 +1,6 @@
 ---
 name: dns-tools
-description: Resolve DNS records, check propagation, and debug name resolution. Use when you need to look up A/AAAA/MX/TXT records, verify DNS changes across resolvers, or query via encrypted DNS (DoT/DoH).
+description: DNS resolution and propagation debugging. Use when looking up A/AAAA/MX/TXT records, verifying DNS changes across resolvers, or querying via DoT/DoH.
 user-invocable: false
 allowed-tools: Bash(dig *), Bash(nslookup *), Bash(host *), Bash(whois *), Read, Grep, Glob, TodoWrite
 created: 2026-01-01
