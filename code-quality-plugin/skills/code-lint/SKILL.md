@@ -6,7 +6,7 @@ allowed-tools: Bash(ruff *), Bash(eslint *), Bash(rustfmt *), Bash(gofmt *), Bas
 model: sonnet
 args: "[path] [--fix] [--format]"
 argument-hint: "[path] [--fix] [--format]"
-description: "Universal linter that auto-detects ruff/eslint/clippy/gofmt for the project language. Use when linting code, auto-fixing with --fix, formatting, or running pre-commit checks across a polyglot repo."
+description: Universal linter that auto-detects ruff/eslint/clippy/gofmt for the project language. Use when linting code, auto-fixing, formatting, or running pre-commit checks.
 name: code-lint
 ---
 

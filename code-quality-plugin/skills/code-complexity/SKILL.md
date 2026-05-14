@@ -1,9 +1,6 @@
 ---
 name: code-complexity
-description: |
-  Analyze code complexity metrics — cyclomatic complexity, cognitive complexity,
-  function length, and file-level coupling. Use when identifying refactoring
-  targets, tracking codebase health over time, or reviewing large changes.
+description: Analyze code complexity metrics (cyclomatic, cognitive, function length, coupling). Use when identifying refactoring targets, tracking codebase health, or reviewing large changes.
 args: "[PATH] [--threshold <number>] [--format <summary|detailed|json>]"
 argument-hint: path or directory to analyze for complexity
 allowed-tools: Bash(npx *), Bash(radon *), Bash(cargo *), Read, Grep, Glob, TodoWrite

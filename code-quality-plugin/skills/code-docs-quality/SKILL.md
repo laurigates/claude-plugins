@@ -2,7 +2,7 @@
 created: 2026-01-08
 modified: 2026-05-09
 reviewed: 2026-04-25
-description: "Analyze docs quality across PRDs, ADRs, PRPs, CLAUDE.md, .claude/rules/. Use when auditing or scoring documentation, checking for stale ADRs/PRDs, validating rule frontmatter/structure, or reviewing whether CLAUDE.md is up to date."
+description: "Analyze docs quality across PRDs, ADRs, PRPs, CLAUDE.md, .claude/rules/. Use when auditing documentation, checking for stale ADRs/PRDs, or validating rule frontmatter structure."
 allowed-tools: Read, Glob, Grep, Bash(markdownlint *), Bash(vale *), TodoWrite, Task
 args: "[PATH]"
 argument-hint: "[PATH]"

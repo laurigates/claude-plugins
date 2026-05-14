@@ -5,7 +5,7 @@ reviewed: 2026-03-09
 allowed-tools: Task, TodoWrite
 args: <file-path|directory>
 argument-hint: <file-path|directory>
-description: "Refactor code applying functional principles — pure functions, immutability, composition. Use when extracting pure functions, removing side effects, replacing imperative loops with map/filter/reduce, or separating logic from I/O."
+description: Refactor toward pure functions, immutability, composition. Use when extracting pure functions, removing side effects, replacing loops with map/filter/reduce, or separating I/O.
 name: code-refactor
 ---
 

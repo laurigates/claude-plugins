@@ -4,7 +4,7 @@ modified: 2026-05-09
 reviewed: 2026-04-25
 allowed-tools: Task, TodoWrite, Glob, Read
 model: opus
-description: "Comprehensive code review covering quality, security, performance, architecture, and test coverage with safe automated fixes. Use when reviewing code, auditing OWASP issues, checking SOLID, or finding perf bottlenecks and missing tests."
+description: Code review for quality, security, performance, and architecture. Use when reviewing code, auditing OWASP, checking SOLID, or finding perf bottlenecks and test gaps.
 args: "[PATH]"
 argument-hint: "[PATH]"
 name: code-review

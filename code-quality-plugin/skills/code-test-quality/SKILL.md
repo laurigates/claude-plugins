@@ -1,6 +1,6 @@
 ---
 name: code-test-quality
-description: "Analyze test suite quality — test smells, empty assertions, flaky patterns, coverage gaps, missing edge cases. Use when test suite is unreliable, coverage is misleading, or after major refactors. Pairs with /configure:tests and /configure:coverage."
+description: "Analyze test quality: smells, empty assertions, flaky patterns, coverage gaps. Use when tests are unreliable, coverage is misleading, or after major refactors."
 args: "[PATH] [--focus <smells|coverage|flaky|all>]"
 argument-hint: path to test directory or specific test file
 allowed-tools: Bash(npx vitest *), Bash(npx jest *), Bash(pytest *), Bash(cargo test *), Read, Grep, Glob, TodoWrite

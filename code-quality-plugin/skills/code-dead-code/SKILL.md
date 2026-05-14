@@ -1,9 +1,6 @@
 ---
 name: code-dead-code
-description: |
-  Detect dead code, unused exports, unreachable branches, and orphaned files.
-  Use when reducing maintenance burden, cleaning up after refactors, or auditing
-  codebase health. Pairs with /configure:dead-code for tool setup.
+description: Detect dead code, unused exports, unreachable branches, and orphaned files. Use when reducing maintenance burden, cleaning up after refactors, or auditing codebase health.
 args: "[PATH] [--tool <knip|vulture|machete>] [--fix]"
 argument-hint: path or directory to scan for dead code
 allowed-tools: Bash(npx knip *), Bash(vulture *), Bash(cargo machete *), Bash(npx ts-prune *), Read, Grep, Glob, TodoWrite
