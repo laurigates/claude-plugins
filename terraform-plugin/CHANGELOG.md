@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.5](https://github.com/laurigates/claude-plugins/compare/terraform-plugin-v1.7.4...terraform-plugin-v1.7.5) (2026-05-14)
+
+
+### Code Refactoring
+
+* **terraform-plugin:** tighten skill descriptions for listing budget ([806f8e7](https://github.com/laurigates/claude-plugins/commit/806f8e7de8784964e9863d3d2e6f356d22037e6c))
+
 ## [1.7.4](https://github.com/laurigates/claude-plugins/compare/terraform-plugin-v1.7.3...terraform-plugin-v1.7.4) (2026-05-09)
 
 

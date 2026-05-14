@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.1](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.3.0...taskwarrior-plugin-v1.3.1) (2026-05-14)
+
+
+### Code Refactoring
+
+* **taskwarrior-plugin:** further tighten descriptions under 180 chars ([629fad9](https://github.com/laurigates/claude-plugins/commit/629fad936158464f7435c603ecdf4a0312e3784a))
+* **taskwarrior-plugin:** tighten skill descriptions (continuation) ([d7ae5ad](https://github.com/laurigates/claude-plugins/commit/d7ae5ad40dce72db789e058834a1ba25cceb8a10))
+* **taskwarrior-plugin:** tighten skill descriptions for listing budget ([f574fe0](https://github.com/laurigates/claude-plugins/commit/f574fe0495428f4ca8b47bdf099304249e6612b6))
+
 ## [1.3.0](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.2.5...taskwarrior-plugin-v1.3.0) (2026-05-10)
 
 

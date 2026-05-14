@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.2](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.21.1...configure-plugin-v1.21.2) (2026-05-14)
+
+
+### Code Refactoring
+
+* **configure-plugin:** tighten skill descriptions for listing budget ([de02d91](https://github.com/laurigates/claude-plugins/commit/de02d91e9250112e2ffcc2624537360153ec456d))
+
 ## [1.21.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.21.0...configure-plugin-v1.21.1) (2026-05-09)
 
 

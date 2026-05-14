@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.4](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.6.3...feedback-plugin-v1.6.4) (2026-05-14)
+
+
+### Code Refactoring
+
+* **feedback-plugin:** tighten skill descriptions for listing budget ([7e9f9a1](https://github.com/laurigates/claude-plugins/commit/7e9f9a16e6d5a20bbffa69e17bb8fc488b2ebc8d))
+
 ## [1.6.3](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.6.2...feedback-plugin-v1.6.3) (2026-05-09)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.7](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.7.6...github-actions-plugin-v1.7.7) (2026-05-14)
+
+
+### Code Refactoring
+
+* **github-actions-plugin:** tighten skill descriptions for listing budget ([c47e092](https://github.com/laurigates/claude-plugins/commit/c47e09281bc3339762902ea340bd9ee471e4d17b))
+
 ## [1.7.6](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.7.5...github-actions-plugin-v1.7.6) (2026-05-09)
 
 

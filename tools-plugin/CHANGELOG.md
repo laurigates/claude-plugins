@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.8.3](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.8.2...tools-plugin-v2.8.3) (2026-05-14)
+
+
+### Code Refactoring
+
+* **tools-plugin:** tighten skill descriptions for listing budget ([c1e7ffd](https://github.com/laurigates/claude-plugins/commit/c1e7ffdd6a421abe2e61f158a20a29b5ec4d457c))
+
 ## [2.8.2](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.8.1...tools-plugin-v2.8.2) (2026-05-09)
 
 

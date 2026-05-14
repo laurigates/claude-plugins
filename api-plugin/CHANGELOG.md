@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.3](https://github.com/laurigates/claude-plugins/compare/api-plugin-v1.6.2...api-plugin-v1.6.3) (2026-05-14)
+
+
+### Code Refactoring
+
+* **api-plugin:** tighten skill descriptions for listing budget ([e39b6d3](https://github.com/laurigates/claude-plugins/commit/e39b6d3cfbb7807371e7d6fae70c94cd5f56d676))
+
 ## [1.6.2](https://github.com/laurigates/claude-plugins/compare/api-plugin-v1.6.1...api-plugin-v1.6.2) (2026-05-09)
 
 

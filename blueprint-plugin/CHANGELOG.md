@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.33.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.33.0...blueprint-plugin-v3.33.1) (2026-05-14)
+
+
+### Code Refactoring
+
+* **blueprint-plugin:** tighten skill descriptions for listing budget ([be877cd](https://github.com/laurigates/claude-plugins/commit/be877cdbb2a97126bd22228f2061ef0604eb1a5f))
+
 ## [3.33.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.32.1...blueprint-plugin-v3.33.0) (2026-05-09)
 
 

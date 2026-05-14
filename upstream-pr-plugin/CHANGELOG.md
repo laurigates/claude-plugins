@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/laurigates/claude-plugins/compare/upstream-pr-plugin-v1.1.1...upstream-pr-plugin-v1.1.2) (2026-05-14)
+
+
+### Code Refactoring
+
+* **upstream-pr-plugin:** tighten skill descriptions for listing budget ([8680286](https://github.com/laurigates/claude-plugins/commit/86802861ce5c75f7b4ac338a7070779401b9358e))
+
 ## [1.1.1](https://github.com/laurigates/claude-plugins/compare/upstream-pr-plugin-v1.1.0...upstream-pr-plugin-v1.1.1) (2026-05-09)
 
 

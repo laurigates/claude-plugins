@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.3](https://github.com/laurigates/claude-plugins/compare/prompt-engineering-plugin-v1.1.2...prompt-engineering-plugin-v1.1.3) (2026-05-14)
+
+
+### Code Refactoring
+
+* **prompt-engineering-plugin:** tighten skill descriptions for listing budget ([e2b3157](https://github.com/laurigates/claude-plugins/commit/e2b315765209d0cb97884699f60b2ed7aad02778))
+
 ## [1.1.2](https://github.com/laurigates/claude-plugins/compare/prompt-engineering-plugin-v1.1.1...prompt-engineering-plugin-v1.1.2) (2026-05-09)
 
 

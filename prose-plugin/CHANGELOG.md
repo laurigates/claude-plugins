@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.4](https://github.com/laurigates/claude-plugins/compare/prose-plugin-v1.3.3...prose-plugin-v1.3.4) (2026-05-14)
+
+
+### Code Refactoring
+
+* **prose-plugin:** tighten skill descriptions for listing budget ([504d590](https://github.com/laurigates/claude-plugins/commit/504d590fedb05764402e86319d61717009454872))
+
 ## [1.3.3](https://github.com/laurigates/claude-plugins/compare/prose-plugin-v1.3.2...prose-plugin-v1.3.3) (2026-05-09)
 
 

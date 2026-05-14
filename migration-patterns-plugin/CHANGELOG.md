@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.2](https://github.com/laurigates/claude-plugins/compare/migration-patterns-plugin-v1.4.1...migration-patterns-plugin-v1.4.2) (2026-05-14)
+
+
+### Code Refactoring
+
+* **migration-patterns-plugin:** tighten skill descriptions (continuation) ([f3b7e87](https://github.com/laurigates/claude-plugins/commit/f3b7e870524b876c7846af5a86a5a94c673a3bde))
+* **migration-patterns-plugin:** tighten skill descriptions for listing budget ([582d294](https://github.com/laurigates/claude-plugins/commit/582d294571b89e7e374c47da9271c87b44ca3b85))
+
 ## [1.4.1](https://github.com/laurigates/claude-plugins/compare/migration-patterns-plugin-v1.4.0...migration-patterns-plugin-v1.4.1) (2026-05-09)
 
 

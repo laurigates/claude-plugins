@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.4](https://github.com/laurigates/claude-plugins/compare/python-plugin-v1.5.3...python-plugin-v1.5.4) (2026-05-14)
+
+
+### Code Refactoring
+
+* **python-plugin:** tighten skill descriptions for listing budget ([b301e18](https://github.com/laurigates/claude-plugins/commit/b301e1801dc1d1845b0f0cf73fda91d056afe021))
+
 ## [1.5.3](https://github.com/laurigates/claude-plugins/compare/python-plugin-v1.5.2...python-plugin-v1.5.3) (2026-05-09)
 
 

@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.5.2](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.5.1...workflow-orchestration-plugin-v1.5.2) (2026-05-14)
+
+
+### Code Refactoring
+
+* **workflow-orchestration-plugin:** further tighten descriptions under 180 chars ([85c010a](https://github.com/laurigates/claude-plugins/commit/85c010af5e728b9495b59e97bc1a6b8d8139abeb))
+* **workflow-orchestration-plugin:** tighten skill descriptions (continuation) ([107ce55](https://github.com/laurigates/claude-plugins/commit/107ce55cdcee6f0825d3447fcc6cdcb69ed02633))
+* **workflow-orchestration-plugin:** tighten skill descriptions for listing budget ([e2f8058](https://github.com/laurigates/claude-plugins/commit/e2f8058026d3e9760e79a52a44d767011b4be141))
+
 ## [1.5.1](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.5.0...workflow-orchestration-plugin-v1.5.1) (2026-05-09)
 
 

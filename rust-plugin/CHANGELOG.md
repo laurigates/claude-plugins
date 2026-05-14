@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.4](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.3.3...rust-plugin-v1.3.4) (2026-05-14)
+
+
+### Code Refactoring
+
+* **rust-plugin:** tighten skill descriptions for listing budget ([86b7f3e](https://github.com/laurigates/claude-plugins/commit/86b7f3ea4e4ed0d13f56332dcd38d2045634d70c))
+
 ## [1.3.3](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.3.2...rust-plugin-v1.3.3) (2026-05-09)
 
 

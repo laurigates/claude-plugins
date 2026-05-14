@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.2.0...hooks-plugin-v2.2.1) (2026-05-14)
+
+
+### Code Refactoring
+
+* **hooks-plugin:** tighten skill descriptions for listing budget ([c364ffd](https://github.com/laurigates/claude-plugins/commit/c364ffdf9f324604534c49581080c3e9b5244643))
+
 ## [2.2.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.1.1...hooks-plugin-v2.2.0) (2026-05-12)
 
 

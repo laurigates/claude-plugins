@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.4](https://github.com/laurigates/claude-plugins/compare/networking-plugin-v1.3.3...networking-plugin-v1.3.4) (2026-05-14)
+
+
+### Code Refactoring
+
+* **networking-plugin:** tighten skill descriptions for listing budget ([c5a508d](https://github.com/laurigates/claude-plugins/commit/c5a508d470d52aced620afced1b745ed22d5cc58))
+
 ## [1.3.3](https://github.com/laurigates/claude-plugins/compare/networking-plugin-v1.3.2...networking-plugin-v1.3.3) (2026-05-09)
 
 

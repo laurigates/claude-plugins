@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.1](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.15.0...project-plugin-v1.15.1) (2026-05-14)
+
+
+### Code Refactoring
+
+* **project-plugin:** tighten skill descriptions for listing budget ([e4ff932](https://github.com/laurigates/claude-plugins/commit/e4ff932b9ef9fbdaf88be90db345dbee97655a88))
+
 ## [1.15.0](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.14.1...project-plugin-v1.15.0) (2026-05-09)
 
 

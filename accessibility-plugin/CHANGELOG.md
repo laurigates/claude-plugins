@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.5](https://github.com/laurigates/claude-plugins/compare/accessibility-plugin-v2.3.4...accessibility-plugin-v2.3.5) (2026-05-14)
+
+
+### Code Refactoring
+
+* **accessibility-plugin:** tighten skill descriptions for listing budget ([60e9352](https://github.com/laurigates/claude-plugins/commit/60e93521385d2a0d7b52b664d6f1b2a5e780baff))
+
 ## [2.3.4](https://github.com/laurigates/claude-plugins/compare/accessibility-plugin-v2.3.3...accessibility-plugin-v2.3.4) (2026-05-09)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.5](https://github.com/laurigates/claude-plugins/compare/finops-plugin-v1.3.4...finops-plugin-v1.3.5) (2026-05-14)
+
+
+### Code Refactoring
+
+* **finops-plugin:** tighten skill descriptions for listing budget ([ec026e0](https://github.com/laurigates/claude-plugins/commit/ec026e015fb9e154299bc955dcc426973ab6c39d))
+
 ## [1.3.4](https://github.com/laurigates/claude-plugins/compare/finops-plugin-v1.3.3...finops-plugin-v1.3.4) (2026-05-09)
 
 

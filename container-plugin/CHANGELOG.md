@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.8.5](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.8.4...container-plugin-v2.8.5) (2026-05-14)
+
+
+### Code Refactoring
+
+* **container-plugin:** tighten skill descriptions for listing budget ([567c435](https://github.com/laurigates/claude-plugins/commit/567c4352666f0d544ec0cbf7a98e78287b99fafd))
+
 ## [2.8.4](https://github.com/laurigates/claude-plugins/compare/container-plugin-v2.8.3...container-plugin-v2.8.4) (2026-05-09)
 
 

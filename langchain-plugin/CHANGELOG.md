@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.5](https://github.com/laurigates/claude-plugins/compare/langchain-plugin-v1.5.4...langchain-plugin-v1.5.5) (2026-05-14)
+
+
+### Code Refactoring
+
+* **langchain-plugin:** tighten skill descriptions for listing budget ([a0f7ecf](https://github.com/laurigates/claude-plugins/commit/a0f7ecf45489bd154de6b85a73dca7db7392f04f))
+
 ## [1.5.4](https://github.com/laurigates/claude-plugins/compare/langchain-plugin-v1.5.3...langchain-plugin-v1.5.4) (2026-05-09)
 
 

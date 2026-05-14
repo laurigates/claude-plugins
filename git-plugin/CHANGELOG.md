@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.39.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.39.0...git-plugin-v2.39.1) (2026-05-14)
+
+
+### Code Refactoring
+
+* **git-plugin:** tighten skill descriptions for listing budget ([17e70ad](https://github.com/laurigates/claude-plugins/commit/17e70ad902d58bfef212606c8b6756cb909c0a3f))
+
 ## [2.39.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.38.0...git-plugin-v2.39.0) (2026-05-10)
 
 
