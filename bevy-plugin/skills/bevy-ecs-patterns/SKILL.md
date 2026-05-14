@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2025-12-16
 name: bevy-ecs-patterns
-description: "Advanced Bevy ECS patterns: complex queries, system scheduling, change detection, entity relationships, and performance tuning. Use when working on advanced Bevy game architecture, optimizing ECS, or implementing complex game systems."
+description: "Advanced Bevy ECS: complex queries, system scheduling, change detection, and performance tuning. Use when optimizing Bevy architecture or implementing complex game systems."
 user-invocable: false
 allowed-tools: Glob, Grep, Read, Bash(cargo *), Edit, Write, TodoWrite, WebFetch, WebSearch, BashOutput, KillShell
 ---
