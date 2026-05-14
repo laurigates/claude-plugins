@@ -1,6 +1,6 @@
 ---
 name: black-to-ruff-format
-description: Migrate a Python project from black to ruff format. Use when .pre-commit-config.yaml contains psf/black, or [tool.black] config exists in pyproject.toml. Replaces the black hook with ruff-format, migrates config, and removes black from dependencies.
+description: "Migrate Python formatting from black to ruff-format. Use when psf/black is in .pre-commit-config.yaml or [tool.black] exists in pyproject.toml."
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash(find *), Bash(test *), Bash(pre-commit *), Bash(uvx *), AskUserQuestion, TodoWrite
 model: sonnet
 args: "[--check-only] [--fix]"

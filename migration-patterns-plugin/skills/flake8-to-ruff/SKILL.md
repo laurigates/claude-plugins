@@ -1,6 +1,6 @@
 ---
 name: flake8-to-ruff
-description: Migrate a Python project from flake8 and/or isort to ruff linting. Use when .pre-commit-config.yaml has pycqa/flake8 or PyCQA/isort, or [tool.flake8]/[tool.isort] config exists. Replaces both with one ruff hook and removes the old tools.
+description: "Migrate Python linting from flake8/isort to ruff. Use when pycqa/flake8 or PyCQA/isort is in .pre-commit-config.yaml or [tool.flake8]/[tool.isort] config exists."
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash(find *), Bash(test *), Bash(pre-commit *), Bash(uvx *), AskUserQuestion, TodoWrite
 model: sonnet
 args: "[--check-only] [--fix]"

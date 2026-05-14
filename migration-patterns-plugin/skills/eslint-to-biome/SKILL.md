@@ -1,6 +1,6 @@
 ---
 name: eslint-to-biome
-description: Migrate a JavaScript/TypeScript project from ESLint to Biome. Use when .eslintrc* or eslint.config.* exists and no biome.json is present. Replaces ESLint and Prettier configs/hooks with Biome, preserving rule equivalents (Rust linter+formatter).
+description: "Migrate JS/TS linting from ESLint+Prettier to Biome. Use when .eslintrc* or eslint.config.* exists and no biome.json is present."
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash(find *), Bash(test *), Bash(npx *), Bash(bun *), AskUserQuestion, TodoWrite
 model: sonnet
 args: "[--check-only] [--fix]"
