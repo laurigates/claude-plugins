@@ -1,6 +1,6 @@
 ---
 name: feedback-session
-description: Analyze current session for skill feedback and create GitHub issues. Use when a skill gave wrong guidance, a command failed due to skill advice, you found a better pattern, or a skill worked well. Supports --target-repo for the plugin source repo.
+description: Analyze session for skill feedback and create GitHub issues. Use when a skill gave wrong guidance, a command failed, you found a better pattern, or a skill worked well.
 args: "[--dry-run] [--bugs-only] [--enhancements-only] [--positive-only] [--target-repo <owner/repo>] [plugin-name]"
 allowed-tools: Bash(gh issue *), Bash(gh label *), Bash(gh search *), Bash(git status *), Bash(git remote *), Read, Grep, Glob, AskUserQuestion, TodoWrite
 model: opus
