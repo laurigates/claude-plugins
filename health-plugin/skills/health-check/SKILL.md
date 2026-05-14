@@ -1,11 +1,11 @@
 ---
 created: 2026-02-04
-modified: 2026-05-09
-reviewed: 2026-04-16
-description: "Claude Code health check — scans plugins, settings, hooks, MCP, permissions, marketplace with optional fixes. Use when checking project health or troubleshooting setup."
+modified: 2026-05-14
+reviewed: 2026-05-14
+description: "Claude Code health check — scans plugins, settings, hooks, MCP, runtime state, permissions, marketplace with optional fixes. Use when checking project health or troubleshooting setup."
 allowed-tools: Bash(bash *), Bash(pre-commit *), Read, Glob, Grep, TodoWrite, AskUserQuestion
-args: "[--scope=all|registry|stack|agentic] [--fix] [--dry-run] [--verbose]"
-argument-hint: "[--scope=all|registry|stack|agentic] [--fix] [--dry-run] [--verbose]"
+args: "[--scope=all|registry|stack|agentic|runtime] [--fix] [--dry-run] [--verbose]"
+argument-hint: "[--scope=all|registry|stack|agentic|runtime] [--fix] [--dry-run] [--verbose]"
 name: health-check
 ---
 
@@ -35,7 +35,7 @@ Parse these from `$ARGUMENTS`:
 
 | Parameter | Description |
 |-----------|-------------|
-| `--scope=<all\|registry\|stack\|agentic>` | Which audits to run. Default `all`. |
+| `--scope=<all\|registry\|stack\|agentic\|runtime>` | Which audits to run. Default `all`. |
 | `--fix` | Apply fixes to findings (prompts for confirmation). |
 | `--dry-run` | Preview fixes without modifying files. |
 | `--verbose` | Include detailed diagnostics. |
@@ -47,7 +47,8 @@ Parse these from `$ARGUMENTS`:
 | `registry` | Plugin registry health (orphaned `projectPath`, stale `enabledPlugins`, registry-vs-settings drift) |
 | `stack` | Enabled plugins vs detected project tech stack |
 | `agentic` | Skill/command/agent agentic-optimisation compliance |
-| `all` | Environment checks + all three audits |
+| `runtime` | `~/.claude.json` bloat (dead `projects[]`, dead `githubRepoPaths[*]`, orphaned `disabledMcpServers`, duplicate MCP naming). Read-only audit. |
+| `all` | Environment checks + all four audits |
 
 ## Execution
 
@@ -161,6 +162,18 @@ For `--scope=stack` or `all`: follow the tech-stack audit steps from the interna
 
 For `--scope=agentic` or `all`: follow the skill-quality audit steps from the internal `health-agentic-audit` skill (see `${CLAUDE_PLUGIN_ROOT}/skills/health-agentic-audit/SKILL.md` and its `REFERENCE.md`).
 
+For `--scope=runtime` or `all`:
+
+```bash
+bash "${CLAUDE_SKILL_DIR}/scripts/check-runtime.sh" --home-dir "$HOME" --project-dir "$(pwd)"
+```
+
+Parse `STATUS=`, `RUNTIME_SIZE_BYTES=`, `PROJECTS_TOTAL=`, `PROJECTS_DEAD=`, `GH_PATHS_TOTAL=`, `GH_PATHS_DEAD=`, `ORPHAN_DISABLED_MCP=`, `DUPLICATE_MCP=`, `CLEANUP_SUGGESTED=`, and `ISSUES:`. Pass `--verbose` to list every dead path / orphaned server (default is a single rolled-up issue per category to keep output compact).
+
+The runtime scope audits `~/.claude.json` — the harness state file that grows with every session and is never auto-pruned. It reports four classes of bloat: dead `projects[]` keys, dead `githubRepoPaths[*]` worktree paths, orphaned `disabledMcpServers[]` entries, and bare-vs-namespaced duplicate MCP names. The audit is **read-only**: it prints suggested `jq` filters for the operator to run manually after closing other Claude Code sessions.
+
+> **Concurrent-write warning.** The harness rewrites `~/.claude.json` on session end. Before acting on the audit's suggested cleanups, close every other Claude Code session — otherwise the in-memory state of a live session will clobber your edits when it next writes the file. An automated cleanup writer is out of scope for this audit.
+
 ### Step 3: Report findings
 
 Print a consolidated report grouped by scope:
@@ -169,6 +182,7 @@ Print a consolidated report grouped by scope:
 2. **Registry** — orphaned projectPath entries, stale enabledPlugins keys, registry-vs-settings drift
 3. **Stack** — detected stack + relevant/irrelevant/missing plugin recommendations
 4. **Agentic** — skills missing optimisation tables, bare CLI commands, stale reviews
+5. **Runtime** — `~/.claude.json` size, dead projects/githubRepoPaths, orphaned disabledMcpServers, duplicate MCP naming (read-only — no `--fix` path)
 
 Use `STATUS=` indicators (OK/WARN/ERROR) and issue counts per scope. Include a summary table:
 
@@ -185,6 +199,7 @@ Use `STATUS=` indicators (OK/WARN/ERROR) and issue counts per scope. Include a s
 | Registry audit | OK/WARN/ERROR | ... |
 | Stack audit | OK/WARN/ERROR | ... |
 | Agentic audit | OK/WARN/ERROR | ... |
+| Runtime audit | OK/WARN/ERROR | ... |
 
 See [REFERENCE.md](REFERENCE.md) for the full report template.
 
@@ -216,6 +231,7 @@ Re-run the relevant checks and confirm issue counts have dropped.
 | Registry only | `/health:check --scope=registry` |
 | Stack relevance only | `/health:check --scope=stack` |
 | Agentic audit only | `/health:check --scope=agentic` |
+| Runtime state audit (~/.claude.json) | `/health:check --scope=runtime` |
 | Fix everything (interactive) | `/health:check --fix` |
 | Dry-run preview of fixes | `/health:check --fix --dry-run` |
 | Detailed diagnostics | `/health:check --verbose` |
