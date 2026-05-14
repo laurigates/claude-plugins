@@ -1,6 +1,6 @@
 ---
 name: attributes-dashboard
-description: Codebase health dashboard with scores and severity for docs, testing, security, and CI/CD. Use when wanting a quick health overview or terminal-style summary with action suggestions.
+description: Codebase health dashboard with scores and severity for docs, testing, security, and CI/CD. Use when wanting a health overview or terminal-style summary with action suggestions.
 allowed-tools: Bash(test *), Read, Glob, Grep
 args: "[--format <type>]"
 argument-hint: ""
