@@ -2,7 +2,7 @@
 created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2025-12-16
-description: Configure pre-commit hooks. Use when setting up or validating hooks, installing project-type-specific hooks (frontend, infrastructure, python), or migrating to the pre-commit framework.
+description: "pre-commit hooks setup and validation. Use when installing hooks, configuring frontend/infrastructure/python project types, or migrating to pre-commit."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--type <frontend|infrastructure|python>]"
 argument-hint: "[--check-only] [--fix] [--type <frontend|infrastructure|python>]"

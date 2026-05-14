@@ -2,7 +2,7 @@
 created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2025-12-16
-description: Configure security scanning — dependency audits, SAST, secrets. Use when setting up Dependabot, CodeQL, or TruffleHog in CI/CD, creating a SECURITY.md policy, or auditing missing security tools.
+description: "Security scanning: dependency audits, SAST, secrets detection. Use when setting up Dependabot, CodeQL, or TruffleHog in CI, or creating a SECURITY.md policy."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--type <dependencies|sast|secrets|all>]"
 argument-hint: "[--check-only] [--fix] [--type <dependencies|sast|secrets|all>]"

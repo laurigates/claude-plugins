@@ -2,7 +2,7 @@
 created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2025-12-16
-description: Configure memory profiling with pytest-memray for Python. Use when setting up memory profiling, adding CI memory regression detection, configuring leak detection in tests, or setting memory thresholds and allocation benchmarks.
+description: "Memory profiling with pytest-memray for Python. Use when setting up memory profiling, adding CI memory regression detection, or setting memory thresholds."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--threshold <mb>] [--native]"
 argument-hint: "[--check-only] [--fix] [--threshold <mb>] [--native]"

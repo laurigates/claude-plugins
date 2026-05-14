@@ -1,6 +1,6 @@
 ---
 name: configure-repo
-description: End-to-end driver that produces a working .claude/ directory, SessionStart hook, and install_pkgs.sh, all staged for commit. Use when onboarding any repo to Claude Code with the laurigates/claude-plugins marketplace.
+description: "Repo onboarding driver: .claude/ directory, SessionStart hook, install_pkgs.sh. Use when onboarding any repo to Claude Code with the claude-plugins marketplace."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash(git add *), Bash(git status *), Bash(git diff *), Bash(find *), Bash(mkdir *), Bash(test *), AskUserQuestion, TodoWrite, SlashCommand
 args: "[--check-only] [--skip-health] [--skip-migrations]"
 argument-hint: "[--check-only] [--skip-health] [--skip-migrations]"

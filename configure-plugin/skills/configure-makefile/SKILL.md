@@ -2,7 +2,7 @@
 created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2025-12-16
-description: Configure Makefile with standard targets. Use when setting up a new Makefile, auditing for missing standard targets (help, test, build, clean, lint), or adding language-specific build/test/lint targets.
+description: "Makefile with standard targets (help, test, build, clean, lint). Use when setting up a Makefile, auditing missing targets, or adding language-specific targets."
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix]"
 argument-hint: "[--check-only] [--fix]"

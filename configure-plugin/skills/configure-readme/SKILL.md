@@ -2,7 +2,7 @@
 created: 2025-12-17
 modified: 2026-05-09
 reviewed: 2026-02-08
-description: Configure README.md with logo, badges, features, tech stack, and project structure. Use when creating a new README, auditing for missing sections, standardizing format across projects, or adding shields.io badges.
+description: "README.md with logo, badges, features, tech stack sections. Use when creating a README, auditing missing sections, or adding shields.io badges."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch
 args: "[--check-only] [--fix] [--style <minimal|standard|detailed>] [--badges <shields|custom>]"
 argument-hint: "[--check-only] [--fix] [--style <minimal|standard|detailed>] [--badges <shields|custom>]"

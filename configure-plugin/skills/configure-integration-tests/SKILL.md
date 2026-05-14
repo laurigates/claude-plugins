@@ -2,7 +2,7 @@
 created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2025-12-16
-description: Configure integration testing with Supertest, pytest, or Testcontainers. Use when setting up integration tests, creating docker-compose.test.yml, or separating integration from unit tests.
+description: "Integration testing: Supertest, pytest, Testcontainers. Use when setting up integration tests, creating docker-compose.test.yml, or separating from unit tests."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix] [--framework <supertest|pytest|testcontainers>]"
 argument-hint: "[--check-only] [--fix] [--framework <supertest|pytest|testcontainers>]"

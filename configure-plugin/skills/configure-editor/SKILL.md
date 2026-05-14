@@ -2,7 +2,7 @@
 created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2025-12-16
-description: Configure EditorConfig and VS Code workspace settings for team consistency. Use when setting up editor config, format-on-save, recommended extensions, or debug configurations.
+description: "EditorConfig and VS Code workspace settings for team consistency. Use when setting up format-on-save, recommended extensions, or debug configurations."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix]"
 argument-hint: "[--check-only] [--fix]"

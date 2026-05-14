@@ -2,7 +2,7 @@
 created: 2026-02-02
 modified: 2026-04-29
 reviewed: 2026-04-29
-description: Install Claude-powered reusable GitHub Actions workflows for security, quality, and accessibility. Use when adding OWASP/secret/code-smell scans or WCAG checks to PR pipelines.
+description: "Reusable GitHub Actions workflows for security, quality, accessibility. Use when adding OWASP/secret/code-smell scans or WCAG checks to PR pipelines."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash(mkdir *), Bash(ls *), AskUserQuestion, TodoWrite
 args: "[--all] [--security] [--quality] [--a11y] [--list]"
 argument-hint: "[--all] [--security] [--quality] [--a11y] [--list]"

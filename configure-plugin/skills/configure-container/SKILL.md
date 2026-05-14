@@ -2,7 +2,7 @@
 created: 2025-12-16
 modified: 2026-04-19
 reviewed: 2026-01-19
-description: Check and configure container infrastructure — builds, GHCR registry, Trivy/Grype scanning, devcontainer. Use when setting up multi-platform GHCR workflows or adding container scanning to CI.
+description: "Container infrastructure: GHCR builds, Trivy/Grype scanning, devcontainer. Use when setting up multi-platform GHCR workflows or adding container scanning to CI."
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite, SlashCommand, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--component <dockerfile|workflow|registry|scanning|devcontainer>]"
 argument-hint: "[--check-only] [--fix] [--component <dockerfile|workflow|registry|scanning|devcontainer>]"
