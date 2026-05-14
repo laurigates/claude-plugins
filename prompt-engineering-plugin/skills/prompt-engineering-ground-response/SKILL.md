@@ -1,6 +1,6 @@
 ---
 name: ground-response
-description: Produce citation-backed responses from source documents with direct quotes and verified claims. Use when analyzing long docs, answering codebase or spec questions, or when response accuracy is critical.
+description: Citation-backed responses with direct quotes from source documents. Use when analyzing long docs, answering codebase/spec questions, or when response accuracy is critical.
 args: <question or task> [--source <file-or-path>]
 allowed-tools: Read, Grep, Glob, TodoWrite
 argument-hint: <question about a document or codebase>
