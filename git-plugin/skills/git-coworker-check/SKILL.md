@@ -40,6 +40,12 @@ The rule: **the orchestrator stops before fan-out if the playing field is conten
 | `drift_detected` | Inspect the new files. If they are yours from earlier in the session, proceed with explicit paths. If unknown, stop and ask. |
 | `coworker_detected` | **Stop.** Recommend `git worktree add ../<repo>-<task>` for a fresh isolated checkout, or wait for the other session to finish. Do not start the loop. |
 
+### Worked example: detection enables defensive restoration (#1277)
+
+A second positive scenario from the field — the "stop and inspect" rather than "stop and abort" branch. A description-trimming refactor agent ran in a checkout that already had ~7 active `claude` processes touching the same files. The `coworker_detected` verdict fired off the **process-scan signal** alone (the `ps`-based fallback, well before any taskwarrior coordination existed for this batch). Per the verdict-to-action table above, the agent did not stash or reset; it scoped its pass to the remaining 17 files and inspected the coworker's already-landed edits before writing.
+
+That inspection caught a real regression: in `git-fork-workflow`, the coworker had cut the description from 358 → 240 chars and dropped the sibling cross-reference `For creating upstream PRs, see git-upstream-pr`. The agent re-added the line on its own pass. Eight other skills had a stale `modified:` date for the same reason and were stamped forward. No work was lost; a silent cross-reference regression became an explicit recovery. `Evidence: issue #1277.`
+
 ## Context
 
 - Repo root: !`git rev-parse --show-toplevel`
