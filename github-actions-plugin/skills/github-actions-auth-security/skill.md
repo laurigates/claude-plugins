@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-04-25
 reviewed: 2026-04-25
 name: github-actions-auth-security
-description: Configure GitHub Actions auth and security for Claude Code — API keys, OIDC, AWS Bedrock, Vertex AI, secrets, and permission scoping. Use when setting up workflow authentication or security.
+description: "GitHub Actions auth and security for Claude Code — OIDC, AWS Bedrock, Vertex AI, secrets, permission scoping. Use when setting up workflow authentication or security."
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, WebFetch
 ---

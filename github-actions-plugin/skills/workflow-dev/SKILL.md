@@ -6,7 +6,7 @@ allowed-tools: Read, Write, Edit, MultiEdit, Bash(git *), Bash(pytest *), Bash(n
 args: "[--max-cycles <n>] [--focus <bug|feature|test>]"
 argument-hint: "[--max-cycles <n>] [--focus <bug|feature|test>]"
 disable-model-invocation: true
-description: "Automated dev loop: runs tests, files GitHub issues for failures, picks an issue, implements a TDD fix on a branch, opens a PR, and watches CI until green. Use when running a continuous dev loop through open issues, autonomous TDD, or fix-and-PR cycles."
+description: "Automated dev loop — run tests, file issues for failures, TDD fix on branch, open PR, watch CI. Use when running a continuous dev loop, autonomous TDD, or fix-and-PR cycles."
 name: workflow-dev
 ---
 
