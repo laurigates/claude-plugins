@@ -1,6 +1,6 @@
 ---
 name: version-badge-pattern
-description: Version badge UI pattern showing build version, git commit, and changelog in a tooltip. Use when adding version visibility for support or debugging. Works with React, Vue, Svelte, and JS.
+description: Version badge UI showing build version, git commit, and changelog in a tooltip. Use when adding version visibility for support or debugging. Works with React, Vue, Svelte, and JS.
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2025-02-03
