@@ -6,7 +6,7 @@ allowed-tools: Read, Bash(git *), mcp__github__get_pull_request, mcp__github__li
 args: "[resource-name] [deployment-type]"
 argument-hint: "[resource-name] [deployment-type]"
 disable-model-invocation: true
-description: "Generate deployment handoff docs for a deployed service: overview, tech stack, access URLs, configuration, monitoring, and developer checklist. Use when handing off a service, documenting deployment, or generating client-facing summaries."
+description: "Generate deployment handoff docs — tech stack, access URLs, config, monitoring, dev checklist. Use when handing off a service, documenting deployments, or creating client-facing summaries."
 name: deploy-handoff
 ---
 

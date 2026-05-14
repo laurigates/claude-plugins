@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2026-04-25
 name: container-development
-description: Container development with Docker, Dockerfiles, 12-factor, multi-stage builds, and Skaffold. Enforces non-root users, minimal Alpine/slim images, and security hardening. Use when mentioning Docker, Dockerfile, docker-compose, or container security.
+description: "Container development — Docker, multi-stage builds, Skaffold, non-root users, Alpine/slim images, security hardening. Use when working with Docker, Dockerfiles, docker-compose, or container security."
 user-invocable: false
 allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebSearch, WebFetch
 ---

@@ -3,7 +3,7 @@ created: 2026-01-15
 modified: 2026-05-09
 reviewed: 2026-01-15
 name: nodejs-containers
-description: "Node.js container optimization: Alpine variants, multi-stage builds, node_modules caching, prod dep separation, BuildKit cache mounts. Reduces ~900MB to ~50-100MB. Use when working with Node.js containers or optimizing Node image sizes."
+description: "Node.js container optimization — Alpine, multi-stage builds, node_modules caching, BuildKit mounts (900MB to ~100MB). Use when working with Node.js containers or optimizing image sizes."
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob, Edit, Write, TodoWrite, WebSearch, WebFetch
 ---
