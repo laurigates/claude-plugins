@@ -1,6 +1,6 @@
 ---
 name: git-triage
-description: Triage open GitHub issues and PRs in one sweep — cross-link, flag stale items, recommend actions. Use when grooming the backlog, doing pre-release cleanup, or when the user asks to "triage issues/PRs".
+description: "Triage GitHub issues and PRs — cross-link, flag stale items, recommend actions. Use when grooming the backlog, pre-release cleanup, or asked to triage issues/PRs."
 args: "[--type issues|prs|both] [--batch N] [--repo owner/name] [--days-stale-issue N] [--days-stale-pr N] [--auto-close] [--auto-merge] [--oldest-first]"
 argument-hint: "--type both --batch 10 (defaults: days-stale-issue=90, days-stale-pr=30, current repo)"
 allowed-tools: Bash(gh issue *), Bash(gh pr *), Bash(gh api *), Bash(gh repo *), Bash(git log *), Bash(rg *), Read, Grep, Glob, AskUserQuestion, TodoWrite

@@ -6,11 +6,7 @@ allowed-tools: Bash(gh pr checks *), Bash(gh pr view *), Bash(gh run view *), Ba
 args: "[pr-number] [--auto-fix] [--push]"
 argument-hint: "[pr-number] [--auto-fix] [--push]"
 disable-model-invocation: true
-description: |
-  Analyze and fix failing PR checks. Use when the user asks to fix the PR,
-  resolve failing CI checks, diagnose red GitHub Actions runs, auto-fix
-  lint/type/test failures on a pull request, or reproduce CI errors locally
-  before pushing corrections.
+description: "Analyze and fix failing PR checks. Use when asked to fix a PR, resolve red CI checks, auto-fix lint/test failures, or reproduce CI errors locally before pushing."
 name: git-fix-pr
 ---
 

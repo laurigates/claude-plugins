@@ -6,7 +6,7 @@ allowed-tools: Bash(git status *), Bash(git branch *), Bash(git stash *), Bash(g
 args: "[--prune] [--gc] [--verify] [--branches] [--stash] [--all]"
 argument-hint: "[--prune] [--gc] [--verify] [--branches] [--stash] [--all]"
 disable-model-invocation: true
-description: Repository maintenance and cleanup — gc, branch pruning, stash cleanup, integrity verification. Use when user asks to clean up the repo, run git gc, delete merged branches, prune stashes, run git fsck, or shrink .git.
+description: "Repo maintenance — gc, branch pruning, stash cleanup, fsck. Use when asked to clean up the repo, run git gc, delete merged branches, prune stashes, or shrink .git."
 name: git-maintain
 ---
 

@@ -3,7 +3,7 @@ created: 2026-03-02
 modified: 2026-05-09
 reviewed: 2026-03-02
 name: git-fork-workflow
-description: Fork management and upstream synchronization. Use when working with forks, syncing with upstream, detecting divergence, or preparing commits for upstream contribution. For creating upstream PRs, see git-upstream-pr.
+description: "Fork management and upstream sync. Use when working with forks, syncing with upstream, detecting divergence, or preparing commits for contribution."
 allowed-tools: Bash(git remote *), Bash(git fetch *), Bash(git log *), Bash(git status *), Bash(git diff *), Bash(git rev-list *), Bash(gh repo *), Read, Grep, Glob
 ---
 

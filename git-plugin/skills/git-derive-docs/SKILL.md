@@ -8,7 +8,7 @@ allowed-tools: Bash(git log *), Bash(git shortlog *), Bash(git diff *), Bash(git
 args: "[--rules] [--prd] [--adr] [--prp] [--all] [--since=<date>] [--depth=<N>]"
 argument-hint: "[--rules] [--prd] [--adr] [--prp] [--all] [--since=<date>] [--depth=<N>]"
 disable-model-invocation: true
-description: Derive undocumented rules, PRDs, ADRs, and PRPs from git commit history. Use when finding doc gaps, detecting unrecorded architectural decisions, deriving conventions from commit patterns, or generating skeleton docs.
+description: "Derive ADRs, rules, PRDs from git commit history. Use when finding doc gaps, detecting unrecorded decisions, deriving conventions from commits, or generating skeleton docs."
 name: git-derive-docs
 ---
 

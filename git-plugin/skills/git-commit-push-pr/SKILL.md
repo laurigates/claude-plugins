@@ -7,7 +7,7 @@ allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git a
 args: "[remote-branch] [--push] [--direct] [--pr] [--draft] [--issue <num>] [--no-commit] [--range <start>..<end>] [--skip-issue-detection]"
 argument-hint: "[remote-branch] [--push] [--direct] [--pr] [--draft] [--issue <num>] [--no-commit] [--range <start>..<end>] [--skip-issue-detection]"
 disable-model-invocation: true
-description: End-to-end workflow from uncommitted changes to open PR — detects issues, creates logical commits, pushes, and opens the PR. Use when the user says "create pr", "commit and pr", or "push and pr".
+description: "End-to-end commit-to-PR workflow. Use when the user says \"create pr\", \"commit and pr\", \"push and pr\", or wants to go from uncommitted changes to an open PR."
 ---
 
 ## When to Use This Skill
