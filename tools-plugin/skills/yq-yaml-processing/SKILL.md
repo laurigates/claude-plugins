@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-05-04
 reviewed: 2025-12-16
 name: yq-yaml-processing
-description: Query, filter, and transform YAML with yq. Use when parsing YAML files or configs, modifying Kubernetes manifests or GitHub Actions workflows, or transforming YAML structures.
+description: "yq YAML processing: query, filter, transform YAML. Use when parsing configs, modifying Kubernetes manifests or GitHub Actions workflows, or transforming YAML."
 user-invocable: false
 allowed-tools: Bash(yq *), Read, Write, Edit, Grep, Glob
 model: sonnet

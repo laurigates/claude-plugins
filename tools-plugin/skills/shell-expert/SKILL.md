@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2026-04-25
 name: shell-expert
-description: "Shell scripting expertise — bash, zsh, POSIX, CLI tools, automation, cross-platform best practices. Use when writing shell scripts, pipes, command-line automation, or portable shell code."
+description: "Shell scripting: bash, zsh, POSIX, CLI tools, cross-platform automation. Use when writing shell scripts, pipes, command-line automation, or portable shell code."
 user-invocable: false
 allowed-tools: Bash, BashOutput, KillShell, Grep, Glob, Read, Write, Edit, TodoWrite
 ---
