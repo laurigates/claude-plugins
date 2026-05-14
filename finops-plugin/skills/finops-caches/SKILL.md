@@ -1,5 +1,5 @@
 ---
-description: Analyze cache usage - size, breakdown by prefix/branch, stale cache detection. Use when investigating GitHub Actions cache bloat, finding stale caches, or auditing cache key strategies.
+description: "GitHub Actions cache analysis — size, prefix/branch breakdown, stale detection. Use when investigating cache bloat, stale caches, or auditing cache key strategies."
 args: "[repo|org:orgname]"
 allowed-tools: Bash(gh api *), Bash(gh repo *), Bash(bash *), Read, TodoWrite
 argument-hint: Repo (owner/name), org:orgname for org-wide, or empty for current repo

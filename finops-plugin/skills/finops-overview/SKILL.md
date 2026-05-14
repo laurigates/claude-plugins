@@ -1,5 +1,5 @@
 ---
-description: Quick FinOps summary - org billing and current repo workflow/cache stats. Use when you want a high-level snapshot of CI spending, cache usage, and workflow health before diving deeper.
+description: "FinOps snapshot — org billing, workflow stats, cache usage. Use when you want a high-level view of CI spending or workflow health before diving deeper."
 args: "[org]"
 allowed-tools: Bash(gh api *), Bash(gh repo *), Bash(gh workflow *), Bash(bash *), Read, TodoWrite
 argument-hint: Optional org name (defaults to current repo's org)

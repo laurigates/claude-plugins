@@ -1,5 +1,5 @@
 ---
-description: Compare FinOps metrics across multiple repositories in an organization. Use when benchmarking repos against each other, identifying worst-performing repos, or doing org-wide CI cost analysis.
+description: "FinOps metrics comparison across repos in an org. Use when benchmarking repos, identifying worst-performing ones, or doing org-wide CI cost analysis."
 args: "<org> [repo1 repo2 ...] [--limit N]"
 allowed-tools: Bash(gh api *), Bash(gh repo *), Bash(bash *), Read, TodoWrite
 argument-hint: Org name required, optional repo list, --limit for auto-discovery
