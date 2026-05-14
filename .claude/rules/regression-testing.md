@@ -14,6 +14,39 @@ When you fix a skill quality issue, a context command bug, or a skill body corru
 
 This ensures the CI catches the same class of problem in any future skill, not just the one you just fixed.
 
+## Semantic vs. syntactic gates
+
+A regression check has two layers, and both matter:
+
+| Gate | Asks | Catches | Misses |
+|------|------|---------|--------|
+| **Syntactic** | Does the file parse? Is the YAML schema valid? Does the frontmatter have the required fields? | Truncated files, broken YAML, missing fields | A description that parses but no longer triggers auto-invocation; an error enum that compiles but drops a user-facing code; a response shape that validates but omits a contract field |
+| **Semantic** | Does the artefact still carry the **intent** it was designed for — the trigger phrase, the contract field, the invariant the consumer depends on? | Bulk-edit drift where an agent "tightens" prose and silently breaks downstream matchers | Pure parse failures (covered by the syntactic gate) |
+
+Syntactic-only gates are easy to write and feel like coverage, but bulk-edit agents reliably produce syntactically-valid output that violates semantic invariants. The auto-invocation matcher does not care that the YAML parses; it cares that the literal trigger phrase is present.
+
+**Canonical example (issue #1278):** `scripts/audit-skill-descriptions.py --strict-all` is a semantic gate — it checks that auto-invokable descriptions contain the literal `Use when` substring (the matcher's only trigger). In a 68-skill bulk edit, four of six refactor subagents replaced `Use when...` with `Use to...` / `Use for...`. Every output was YAML-valid; agent self-reports said "done"; pre-edit reviews approved the diffs. The semantic gate fired:
+
+> `68 auto-invokable skills need description fixes / Audited 706 skills across 41 plugins`
+
+Without it, all 68 unmatchable descriptions would have shipped silently.
+
+### Required pattern
+
+When you author a regression script for a class of bulk-edit risk (descriptions, error enums, exit codes, response shapes, format versions), the script **MUST** encode the *semantic invariant*, not just the *syntactic shell*. A frontmatter parser is not enough; a `Use when` substring check is.
+
+### Script-design checklist
+
+Your regression script should answer:
+
+| Question | Why |
+|----------|-----|
+| (a) Does the artefact still parse? | Syntactic floor — necessary, not sufficient |
+| (b) Does it still carry the trigger / contract / invariant it was designed for? | The semantic question that bulk-edit agents reliably break |
+| (c) Is the failure message actionable enough that an agent can self-repair? | A pre-commit failure that emits `--json` lets a follow-up agent enumerate paths, repair, and re-run without human relay |
+
+The audit script in this repo is the canonical example — it pairs a human report with `--json` output for scriptable repair. PR #1314 bakes that same audit into `agents-plugin/agents/refactor.md` as a mandatory post-pass, so the refactor agent self-verifies before reporting completion.
+
 ## Where to Add the Check
 
 | Problem Type | Add Check To |
