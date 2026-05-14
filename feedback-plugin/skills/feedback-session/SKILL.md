@@ -7,8 +7,8 @@ model: opus
 argument-hint: "--dry-run | --target-repo owner/repo | plugin-name"
 disable-model-invocation: true
 created: 2026-02-18
-modified: 2026-05-09
-reviewed: 2026-04-25
+modified: 2026-05-14
+reviewed: 2026-05-14
 ---
 
 # /feedback:session
@@ -96,6 +96,18 @@ If `gh repo view` fails (typically with `no git remotes found` in a repo without
    Continue to Step 1b once `$TARGET_REPO` is set.
 
 4. **Fall back to free-text prompt (no dominant source detected).** Use AskUserQuestion to ask the user to enter an `owner/repo`. Validate the input matches `^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$`, set `$TARGET_REPO`, and continue to Step 1b. If the user declines to provide a target, exit the skill.
+
+#### Dominant-source detection: parameters and tiering
+
+The thresholds and prompt order above are deliberate. Keep them aligned when editing this step.
+
+| Parameter | Value | Why |
+|-----------|-------|-----|
+| Dominance threshold | **> 70%** of total references | Lower thresholds risk wrong defaults on mixed sessions; higher would suppress correct suggestions on small ones |
+| Minimum sample size | **≥ 3** references | Two references can both come from one stray skill mention; three is the smallest sample that survives one outlier |
+| Prompt tiering | suggestion → free-text → abort | The user can correct a wrong guess in one keystroke without redoing the scan, and `Abort` is always one selection away |
+
+Evidence: issue #1207 (positive feedback) reported the first end-to-end exercise of this fallback in a no-remote cwd. The 3/3 100%-dominant case auto-suggested `laurigates/claude-plugins`, the user accepted on the first prompt, and the free-text tier never fired — confirming the "Recommended" affordance lands the suggestion cleanly when the heuristic is well-tuned.
 
 > **Bonus / future work**: when `$SUGGESTED_REPO` is also cloned at `~/.claude/plugins/cache/<owner>/<repo>/<version>/`, that path could be used by Step 1b's `labels.tf`/`labels.yaml` Glob detection instead of cwd, so IaC-managed labels are detected correctly even when the skill runs outside the plugin checkout. This Step 1b plumbing is intentionally out of scope for this PR — track as a separate issue. For now, Step 1b continues to scan the cwd.
 
