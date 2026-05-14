@@ -1,5 +1,5 @@
 ---
-description: Validate Home Assistant YAML for syntax errors, undefined secret references, and duplicate keys, with optional Docker/HA OS full-config checks. Use when validating HA config, diagnosing YAML errors, or running hass --script check_config.
+description: Validate Home Assistant YAML for syntax errors, undefined secrets, and duplicate keys. Use when validating HA config, diagnosing YAML errors, or running hass check_config.
 args: "[path]"
 allowed-tools: Bash(python3 *), Bash(docker exec *), Bash(ha *), Read, Grep, Glob
 argument-hint: "Optional path to config directory (defaults to current directory)"

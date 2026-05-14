@@ -3,7 +3,7 @@ created: 2025-02-01
 modified: 2026-02-14
 reviewed: 2025-02-01
 name: ha-entities
-description: Home Assistant entity and domain management. Use when working with entity IDs, device classes, customizations, template entities, groups, or domain-specific attributes.
+description: Home Assistant entity and domain management. Use when working with entity IDs, device classes, template entities, groups, or domain-specific attribute customizations.
 user-invocable: false
 allowed-tools: Read, Edit, Write, Grep, Glob, TodoWrite
 ---
