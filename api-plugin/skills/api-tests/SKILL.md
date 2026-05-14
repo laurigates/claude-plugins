@@ -2,7 +2,7 @@
 created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2025-12-16
-description: Configure API contract testing with Pact, OpenAPI validation, and Zod/AJV schemas. Use when setting up contract tests, validating OpenAPI compliance, or adding breaking-change CI checks.
+description: API contract testing with Pact, OpenAPI validation, and Zod/AJV schemas. Use when setting up contract tests, validating OpenAPI compliance, or adding breaking-change CI checks.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash(curl *), Bash(http *), Bash(jq *), AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix] [--type <pact|openapi|schema>]"
 argument-hint: "[--check-only] [--fix] [--type <pact|openapi|schema>]"
