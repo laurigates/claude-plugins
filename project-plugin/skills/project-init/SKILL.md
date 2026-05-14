@@ -6,7 +6,7 @@ allowed-tools: Write, Bash(mkdir *), Bash(git init *), Bash(gh repo create *), B
 args: <project-name> [project-type] [--github] [--private]
 argument-hint: <project-name> [project-type] [--github] [--private]
 disable-model-invocation: true
-description: Initialize a new project with universal base structure (src/tests/docs, git, README, LICENSE, .gitignore, .editorconfig, pre-commit, CI, Makefile). Use when the user asks to start a new project, scaffold a repo, or bootstrap Python/Node/Rust/Go.
+description: Scaffold a new project with base structure (git, README, LICENSE, CI, pre-commit). Use when starting a new project, initializing a repo, or bootstrapping Python/Node/Rust/Go.
 name: project-init
 ---
 
