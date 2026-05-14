@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2026-04-25
 name: release-please-protection
-description: Prevent manual edits to release-please managed files (CHANGELOG.md, version fields in package.json/pyproject.toml/Cargo.toml). Use when editing changelogs, bumping versions, or releasing.
+description: "Block manual edits to release-please files (CHANGELOG, version fields). Use when editing changelogs, bumping versions, or releasing to avoid conflicting with automation."
 user-invocable: false
 allowed-tools: Read, Grep, Glob
 ---

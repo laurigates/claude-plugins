@@ -3,11 +3,7 @@ created: 2026-03-19
 modified: 2026-04-25
 reviewed: 2026-04-25
 name: git-issue-manage
-description: |
-  Administrative operations on GitHub issues. Use when transferring issues
-  between repos, pinning important issues, locking resolved discussions,
-  creating development branches from issues, performing bulk operations,
-  or managing custom issue fields.
+description: "GitHub issue admin operations. Use when transferring issues, pinning, locking discussions, creating dev branches from issues, bulk ops, or managing custom fields."
 args: "<operation> <issue-numbers...> [options]"
 argument-hint: <transfer|pin|lock|develop|bulk|fields> <issue-numbers...>
 user-invocable: true

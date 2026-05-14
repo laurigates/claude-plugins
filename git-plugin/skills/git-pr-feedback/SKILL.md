@@ -6,7 +6,7 @@ allowed-tools: Bash(gh pr checks *), Bash(gh pr view *), Bash(gh pr diff *), Bas
 args: "[pr-number] [--commit] [--push] [--all] [--dry-run] [--limit N]"
 argument-hint: "[pr-number | --all] [--commit] [--push] [--dry-run] [--limit N]"
 disable-model-invocation: true
-description: Address PR review comments, apply reviewer suggestions, and resolve threads. Use when CHANGES_REQUESTED is set, when working through unresolved review threads, or when replying to reviewer feedback.
+description: "Address PR review comments and resolve threads. Use when CHANGES_REQUESTED is set, working through unresolved review threads, or replying to reviewer feedback."
 name: git-pr-feedback
 agent: general-purpose
 ---

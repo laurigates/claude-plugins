@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2026-04-25
 name: git-security-checks
-description: Pre-commit security validation and secret detection via gitleaks. Use when user mentions scanning for secrets, gitleaks, secret/credential detection, pre-commit security, or .gitleaks.toml.
+description: "Pre-commit security validation and secret detection via gitleaks. Use when scanning for secrets, setting up gitleaks, or configuring .gitleaks.toml pre-commit security."
 user-invocable: false
 allowed-tools: Bash, Read
 ---

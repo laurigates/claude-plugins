@@ -1,9 +1,6 @@
 ---
 name: git-resolve-conflicts
-description: |
-  Resolve merge conflicts in pull requests. Use when a PR has merge conflicts
-  with its base branch, when rebasing produces conflicts, or when automated
-  merges fail due to conflicting changes.
+description: "Resolve PR merge conflicts. Use when a PR has conflicts with its base branch, rebasing produces conflicts, or automated merges fail."
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git merge *), Bash(git checkout *), Bash(git rebase *), Bash(gh pr *), Read, Edit, Grep, Glob, TodoWrite
 args: "[pr-number] [--push]"
 argument-hint: PR number to resolve conflicts for

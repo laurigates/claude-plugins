@@ -1,6 +1,6 @@
 ---
 name: git-rebase-patterns
-description: Advanced git rebase patterns for linear history, stacked PRs, and commit management. Use when rebasing branches, cleaning history, managing PR stacks, or converting merge-heavy branches. Covers --reapply-cherry-picks, --update-refs, --onto.
+description: "Advanced git rebase — linear history, stacked PRs, --update-refs, --onto. Use when rebasing branches, cleaning history, managing PR stacks, or fixing merge-heavy branches."
 user-invocable: false
 allowed-tools: Bash, Read
 created: 2026-01-30
