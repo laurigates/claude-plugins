@@ -5,8 +5,8 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-21
-modified: 2026-05-09
-reviewed: 2026-04-25
+modified: 2026-05-14
+reviewed: 2026-05-14
 ---
 
 # Parallel Agent Dispatch
@@ -220,6 +220,55 @@ the agent could write inline.
 > The verbatim-patch + agent-authored-prose pairing, not the parallel
 > topology, is what made the multi-wave cadence sustainable.
 
+### 4. Agent self-verification in bulk-edit briefs
+
+When fanning out agents to bulk-edit content covered by a regression
+script, the brief **must** include the script as the agent's own
+final verification step before it reports completion. Exit 0 means
+ship; non-zero means fix-and-re-run inside the same agent's budget.
+
+This shifts validation from commit-time (orchestrator pre-commit) to
+edit-time (per-agent). A regression that only one of six agents
+introduces is cheap for that one agent to repair; the same regression
+multiplied across all six and surfaced at the merge-wave pre-commit is
+an aggregate fixer-pass.
+
+Repository regression scripts to wire into briefs:
+
+| Bulk edit | Agent's final verification step |
+|-----------|--------------------------------|
+| SKILL.md description rewrites | `python3 scripts/audit-skill-descriptions.py --strict-all` |
+| Context-command edits in skill bodies | `bash scripts/lint-context-commands.sh` |
+| `allowed-tools` / bash-permission edits | `bash scripts/plugin-compliance-check.sh` |
+
+The brief must instruct: **run the script, read the output, and if
+non-zero, re-edit and re-run before emitting the Return Contract.**
+Treating the script as advisory ("flag any issues for the orchestrator")
+defeats the purpose — the regression lands in the agent's diff and the
+agent already has the context to fix it.
+
+> **Evidence (2026-05-09 cascade).** Six refactor agents shortened
+> descriptions across 41 plugins. Each agent believed it was preserving
+> "Use when..." triggers, but 4 of the 6 silently introduced "Use to..."
+> or "Use for..." variants that do not match the `audit-skill-descriptions.py`
+> regex. The aggregate damage (68 `NO_TRIGGER` skills) only surfaced
+> when pre-commit ran on the mega-commit — a single fixer-agent pass
+> repaired them, but only because pre-commit forced the issue. If each
+> refactor agent had run `audit-skill-descriptions.py --strict-all` as
+> its last step and looped on failures, the regression would have been
+> caught per-agent.
+
+**Canonical example: PR #1314** (`agents-plugin/agents/refactor.md`).
+That PR bakes this exact pattern into the repository's refactor agent:
+it broadens the agent's bash permissions to cover the audit script and
+mandates an audit post-pass before the agent reports done. New
+bulk-edit dispatch briefs should follow the same shape — agents inherit
+both the permission to run the script and the requirement to clear it.
+
+Cross-reference `.claude/rules/regression-testing.md` for the catalogue
+of regression scripts and the rule that every fixed bug ships with a
+matching script check.
+
 ## Why the Schema Matters
 
 | Failure mode (observed) | Schema field that catches it |
@@ -230,6 +279,8 @@ the agent could write inline.
 | Second root cause missed | `Issues encountered` has a home for "bonus" findings |
 | Follow-up work invisible | `Deferred / skipped` and `Orchestrator action needed` |
 | Budget overrun | `status: partial` + explicit deferred list beats a truncated claim of success |
+| Pre-commit hook stall at commit time | `worktree: dirty: <files>` + `status: failed` with `Orchestrator action needed` naming the hook that blocked |
+| Concurrent rate-limit cascade | `status: partial` + recovery-dispatch follow-up agent on the unfinished slice |
 
 ## Who Pushes?
 
@@ -260,6 +311,100 @@ If an agent exits without emitting the Return Contract:
    or salvage the work yourself and file a tracking issue noting the stall.
 4. Do **not** report the parent task as complete until every spawned agent
    has produced a Return Contract (or been explicitly accounted for).
+
+### When the agent stalled at commit / push
+
+The dominant cause of silent stalls in real parallel dispatches is a
+**pre-commit hook blocking `git commit`** — typically a slow audit,
+secrets scan, or lint that runs longer than the agent's effective
+budget. The agent's `git commit` call is parked on the hook, no retry
+fires, no Return Contract is emitted, and the agent's actual diff is
+sitting intact in the worktree. Distinct from a transport-layer
+rate-limit cascade (see below), this is a hook-layer stall with the
+agent's work fully preserved.
+
+**Symptoms** (any of):
+
+- Return Contract reports `worktree: dirty: <files>` matching the
+  agent's declared scope, with no `commits:` and no `pr:` line.
+- No Return Contract at all, but `git -C <worktree> status --porcelain`
+  shows staged or unstaged work in the agent's declared scope.
+- Commits landed but the branch was never pushed
+  (`git -C <worktree> log --oneline origin/main..HEAD` shows commits
+  but the remote has none).
+
+**Salvage routine** — do **not** discard the worktree. From the parent:
+
+1. `cd <worktree>` and run `git status` — confirm the diff matches the
+   agent's declared scope.
+2. `git log --oneline origin/main..HEAD` — confirm whether commits
+   already landed locally.
+3. If commits landed but were never pushed:
+   `git push -u origin <branch>` — done.
+4. If the diff is uncommitted, run
+   `pre-commit run --all-files 2>&1 | tail -40` to surface what
+   blocked, fix the hook failure (or rerun the agent with the fix
+   instructions), then commit on the agent's behalf preserving its
+   intended commit message and push.
+
+**Prevention.** Dispatch briefs should, at minimum, instruct the agent
+to run `pre-commit run --files <its scope>` (or the project's
+equivalent) **before** attempting `git commit`. This surfaces hook
+failures inside the agent's reasoning budget, where the agent can fix
+them, rather than at commit time where they manifest as a stall. Two
+follow-up options if the project's hooks are still slow enough to risk
+budget exhaustion:
+
+- Pre-warm pre-commit hooks during worktree setup so the agent's first
+  commit isn't the first hook run on the new worktree.
+- Brief agents to commit with `--no-verify` and have the orchestrator
+  run `pre-commit run --all-files` once before the merge wave. Trade-off:
+  individual agent diffs may fail hooks; the merge-wave fixer must be
+  ready to repair.
+
+Add to every brief an explicit fallback: *"If `git commit` fails or
+hangs, emit your Return Contract with `status: failed`,
+`worktree: dirty: <files>`, and `Orchestrator action needed: pre-commit
+hook X failed, fix and commit on my behalf."*
+
+## Concurrent rate-limit risk
+
+Opus 4.7 (1M) parents running **six or more** concurrent subagents can
+hit `Server is temporarily limiting requests` partway through a wave.
+Each `[1m]` request counts independently against the rate-limit
+window, and the cascade tends to strike agents that have already
+completed substantial work — surviving siblings finish cleanly, but
+rate-limited agents return partial state with no Return Contract.
+Matches the documented upstream issue
+[anthropics/claude-code#33154](https://github.com/anthropics/claude-code/issues/33154).
+
+**Mitigation**: cap concurrent agent dispatch at **≤ 5** for Opus 4.7
+(1M) parents. Five was reliable across multiple sessions; six landed
+at the edge of safe and produced the cascade in the evidence below.
+When the fan-out genuinely needs more than five agents, dispatch in
+waves (e.g. five now, the next batch when the first wave reports) or
+stagger by ~30 seconds so the requests are not simultaneous.
+
+**Recovery**. When a subagent returns with the rate-limit signature
+(`API Error: Server is temporarily limiting requests · Rate limited`
+plus `status: completed` and a partial scope), use the
+**recovery-dispatch pattern**: re-dispatch the missed slice as a small
+follow-up agent rather than retrying the entire wave. The successful
+siblings' work is already on disk; only the rate-limited agent's
+remaining scope needs another pass. Issue
+[#1280](https://github.com/laurigates/claude-plugins/issues/1280)
+documents this recovery shape as positive evidence — a single-agent
+follow-up cleanly closed the gap left by a rate-limited cascade agent.
+
+| Symptom | Action |
+|---------|--------|
+| 6+ agents queued at dispatch time | Split into waves of ≤ 5 |
+| Wave returns with one or two `Rate limited` agents | Recovery-dispatch the missed slice; do not retry the whole wave |
+| Same agent rate-limits twice in a row | Smaller scope or staggered dispatch — the wave size is still too high |
+
+Cross-reference `.claude/rules/skill-fork-context.md`, which documents
+the underlying `[1m]` rate-limit issue and lists the upstream tickets
+(#16803, #27053, #33154, #6594) to track for upstream fixes.
 
 ## Composition with agent-teams
 
