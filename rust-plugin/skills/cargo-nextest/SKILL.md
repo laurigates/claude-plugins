@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2026-04-25
 name: cargo-nextest
-description: "Next-gen test runner for Rust with parallel execution, advanced filtering, and CI integration. Use when running tests, configuring execution, setting up CI, or optimizing performance. Triggers: nextest, test runner, parallel tests, flaky tests."
+description: "cargo-nextest: fast Rust test runner with parallel execution and advanced filtering. Use when running tests, setting up CI, or diagnosing flaky/slow tests."
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---
