@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2026-04-25
 name: code-antipatterns-analysis
-description: "Analyze codebases for anti-patterns and code smells via ast-grep structural matching across JS, TS, Python, Vue, React. Use when reviewing code quality, identifying tech debt, or doing broad code analysis. Pairs with /code-antipatterns."
+description: Analyze codebases for anti-patterns via ast-grep structural matching across JS, TS, Python, Vue, React. Use when reviewing code quality, identifying tech debt, or doing broad code analysis.
 user-invocable: false
 allowed-tools: Bash(sg *), Bash(rg *), Read, Grep, Glob, TodoWrite, Task
 model: opus

@@ -5,7 +5,7 @@ reviewed: 2026-04-14
 allowed-tools: Bash(bash *), Bash(sg *), Read, Grep, Glob, TodoWrite
 args: "[PATH] [--lang <shell|js|py|go|rust|auto>] [--severity <low|med|high>] [--emit-patch]"
 argument-hint: "[PATH] [--lang LANG] [--severity LEVEL] [--emit-patch]"
-description: "Scan for error swallowing — catch/except discarding errors, `|| true`, `2>/dev/null`, floating promises in JS/TS, ignored Go errors, discarded Rust Results. Use when failures \"disappear\" or CI passes despite failing work."
+description: "Scan for error swallowing: catch/except discarding errors, || true, 2>/dev/null, floating promises, ignored Go errors, discarded Rust Results. Use when failures disappear or CI passes despite failing work."
 name: code-error-swallowing
 ---
 

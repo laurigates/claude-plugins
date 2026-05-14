@@ -2,7 +2,7 @@
 created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2026-04-25
-description: "Analyze a codebase for anti-patterns and code smells using ast-grep. Use when finding magic numbers, console.logs, var usage, excessive `any`, security issues like eval/innerHTML, long functions, or deep nesting."
+description: Analyze a codebase for anti-patterns using ast-grep. Use when finding magic numbers, console.logs, var usage, excessive any, eval/innerHTML security issues, or deep nesting.
 allowed-tools: Read, Bash(sg *), Bash(rg *), Glob, Grep, TodoWrite, Task, SlashCommand
 args: "[PATH] [--focus <category>] [--severity <level>]"
 argument-hint: "[PATH] [--focus <category>] [--severity <level>]"

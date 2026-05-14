@@ -6,7 +6,7 @@ allowed-tools: Bash(grep *), Read, Grep, Glob, Edit, Write, TodoWrite
 model: opus
 args: "[PATH] [--fix]"
 argument-hint: "[PATH] [--fix]"
-description: "Detect silent degradation patterns where ops succeed with zero results because preconditions are unmet. Use when features report \"success\" but produce nothing, scans show 0 items unexplained, or UX shows green banners for empty outcomes."
+description: Detect silent degradation where ops succeed with zero results. Use when features report success but produce nothing, scans return 0 items, or UI shows success for empty outcomes.
 name: code-silent-degradation
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: debugging-methodology
-description: "Systematic debugging methodology with tool recommendations for memory, performance, system-level issues. Use when diagnosing memory leaks, tracing syscalls with strace/eBPF, profiling with perf, or reasoning about races."
+description: Systematic debugging for memory, performance, and system-level issues. Use when diagnosing memory leaks, tracing syscalls with strace/eBPF, profiling, or reasoning about races.
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 model: opus

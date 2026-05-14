@@ -1,6 +1,6 @@
 ---
 name: code-review-checklist
-description: "Structured code review checklist for security, correctness, performance, quality, consistency. Use when reviewing PRs, checking hardcoded secrets/injection, verifying error handling and edge cases, or auditing for N+1 queries and resource leaks."
+description: Checklist for security, correctness, and performance review. Use when reviewing PRs, checking for secrets/injection, verifying error handling, or auditing N+1 queries.
 user-invocable: false
 allowed-tools: Read, Grep, Glob
 model: opus
