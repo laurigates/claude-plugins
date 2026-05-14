@@ -1,12 +1,12 @@
 ---
 name: git-coworker-check
-description: "Detect coworker Claude agents before destructive git ops (stash, reset, checkout). Use when starting a session in a shared checkout or before working-tree cleanup."
+description: "Detect coworker Claude agents in a shared checkout. Use when starting a session in a shared clone, before destructive git ops (stash, reset, checkout), or before bulk-edit / commit-loop workflows."
 args: "[--check | --claim | --release]"
 argument-hint: "[--claim | --release | --check (default)]"
 allowed-tools: Bash(bash *), Bash(git status *), Bash(git stash *), Bash(git rev-parse *), Read, TodoWrite
 created: 2026-04-21
-modified: 2026-05-09
-reviewed: 2026-05-09
+modified: 2026-05-14
+reviewed: 2026-05-14
 ---
 
 # /git:coworker-check
@@ -21,9 +21,24 @@ destructive operations that could destroy its uncommitted changes.
 | Session starts in a clone that may already be in use | You control the session and can create `git worktree add ../<task>` |
 | About to run `git stash`, `git reset --hard`, `git checkout -- .` | You already know the working tree is yours alone |
 | `git status` shows files you don't remember touching | Baseline + markers are already confirming you are alone |
+| **Bulk-edit / commit-loop fan-out** about to start (per-plugin, per-package commits across many subdirectories) | Each iteration is already isolated in its own worktree |
 
 See `.claude/rules/agent-coworker-detection.md` for the full rationale and
 signal design.
+
+## Bulk-edit / commit-loop precondition
+
+Bulk-edit and commit-loop workflows (`git-commit-workflow` "Bulk-edit / per-plugin commit loops", per-package release-please loops, mass refactors) **MUST** run this check **up front, before staging any files** — not opportunistically partway through.
+
+**Why front-loaded, not opportunistic.** A real divergence scenario from the field: two Claude sessions converged on the same trim-descriptions task. Session A used `general-purpose` subagents in the main checkout; session B used worktrees + per-plugin commits. Session B landed 11 clean per-plugin commits and stopped. Session A's first commit then grabbed **all 30 remaining plugins** in a single mega-commit, because session A had previously hit a `git commit -a` failure that left everything pre-staged, and session B's loop never noticed because it ran `/git:coworker-check` *during* its work rather than *before*. The end result was correct, but the commit history said `docs(configure-plugin): ...` for changes spanning 30 plugins.
+
+The rule: **the orchestrator stops before fan-out if the playing field is contended.** Mid-loop checks let "the agent who happens to look first wins" — which is non-deterministic and produces misleading commit histories.
+
+| Verdict from up-front check | What to do |
+|-----------------------------|-----------|
+| `clear` | Proceed with the bulk-edit / commit loop |
+| `drift_detected` | Inspect the new files. If they are yours from earlier in the session, proceed with explicit paths. If unknown, stop and ask. |
+| `coworker_detected` | **Stop.** Recommend `git worktree add ../<repo>-<task>` for a fresh isolated checkout, or wait for the other session to finish. Do not start the loop. |
 
 ## Context
 
@@ -117,12 +132,15 @@ Print a short summary:
 
 ## Integration
 
-Other git-plugin skills should invoke this via SlashCommand before destructive operations:
+Other git-plugin skills should invoke this via SlashCommand before destructive operations or fan-out:
 
 ```markdown
-Before staging: Use SlashCommand to invoke `/git:coworker-check`.
+Before staging (or before starting a per-plugin commit loop):
+Use SlashCommand to invoke `/git:coworker-check`.
 If the verdict is not `clear`, stop and ask the user how to proceed.
 ```
+
+Bulk-edit / commit-loop skills (`git-commit-workflow`, per-plugin release-please loops, mass refactors) must invoke this **before staging any files** — see the "Bulk-edit / commit-loop precondition" section above for why an opportunistic mid-loop check is insufficient.
 
 Hook-based enforcement (blocking `git stash` / `git reset --hard` when a coworker is detected) belongs in `hooks-plugin`, not here.
 
@@ -138,6 +156,7 @@ Hook-based enforcement (blocking `git stash` / `git reset --hard` when a coworke
 
 - `/git:maintain` — invokes this before any stash/clean operation
 - `/git:commit` — invokes this before staging when working in a shared checkout
+- `git-commit-workflow` — invokes this as a precondition for bulk-edit / per-plugin commit loops
 - `git-branch-pr-workflow` — recommends worktrees as the structural fix
 - `/taskwarrior:task-claim` — sister signal; writes the `+ACTIVE` claim that this skill now reads
 - `/taskwarrior:task-release` — drops the claim that contributes to `TW_CLAIM_COUNT`
