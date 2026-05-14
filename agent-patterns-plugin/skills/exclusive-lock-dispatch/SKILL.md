@@ -1,6 +1,6 @@
 ---
 name: exclusive-lock-dispatch
-description: Pre-dump-then-dispatch pattern for tools holding an exclusive lock (Ghidra, migrations, single-writer caches). Use when fanning out parallel agents that need a non-concurrent resource.
+description: Pre-dump-then-dispatch for tools holding an exclusive lock (Ghidra, migrations, single-writer caches). Use when fanning out parallel agents needing a non-concurrent resource.
 user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus

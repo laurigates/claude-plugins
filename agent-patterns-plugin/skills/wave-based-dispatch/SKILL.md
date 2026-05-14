@@ -1,6 +1,6 @@
 ---
 name: wave-based-dispatch
-description: Sequential-wave dispatch for WO chains that can't fan out — output of one WO feeds the next, shared locks, or shared files between waves. Use when planning dependent multi-WO landings.
+description: Sequential-wave dispatch for WO chains where output of one feeds the next, shared locks, or shared files prevent fan-out. Use when planning dependent multi-WO landings.
 user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus

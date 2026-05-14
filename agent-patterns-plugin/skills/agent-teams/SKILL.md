@@ -1,6 +1,6 @@
 ---
 name: agent-teams
-description: Configure Claude Code agent teams (TeamCreate, SendMessage, TaskUpdate). Use when running multiple agents in parallel, coordinating with messaging, or setting up a lead/teammate architecture.
+description: Configure Claude Code agent teams (TeamCreate, SendMessage, TaskUpdate). Use when running parallel agents, coordinating with messaging, or setting up a lead/teammate architecture.
 user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus

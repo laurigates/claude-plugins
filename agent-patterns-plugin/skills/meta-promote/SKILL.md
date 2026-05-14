@@ -4,7 +4,7 @@ modified: 2026-05-09
 reviewed: 2026-05-09
 allowed-tools: Glob, Read, Edit, Write, Bash(git status *), Bash(git diff *), Bash(git mv *), Bash(diff *), Bash(rm *), AskUserQuestion, TodoWrite
 model: opus
-description: Evaluate whether rules, skills, commands, or agents at one .claude scope should be promoted to a higher scope (parent or user-global), and execute approved promotions safely. Use when reorganizing nested .claude/ directories, when sibling repos hold near-duplicate rules, or when a portfolio root has overlapping configuration with its children.
+description: Promote rules, skills, or agents from project scope to parent or user-global scope. Use when reorganizing .claude/ directories or when sibling repos hold near-duplicate rules.
 args: "[scope-path]"
 argument-hint: "[scope-path]"
 name: meta-promote

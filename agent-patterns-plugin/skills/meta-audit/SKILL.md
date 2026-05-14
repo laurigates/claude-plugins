@@ -4,7 +4,7 @@ modified: 2026-05-04
 reviewed: 2026-04-25
 allowed-tools: Glob, Read, TodoWrite
 model: opus
-description: Audit Claude subagent configs for completeness, security, and best practices. Use when reviewing .claude/agents/ for missing frontmatter, overprivileged tools, or bad model choices.
+description: Audit Claude subagent configs for completeness, security, and best practices. Use when reviewing agents/ for missing frontmatter, overprivileged tools, or bad model choices.
 args: "[--verbose]"
 argument-hint: "[--verbose]"
 name: meta-audit
