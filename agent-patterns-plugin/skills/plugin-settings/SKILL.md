@@ -1,6 +1,6 @@
 ---
 name: plugin-settings
-description: Configure per-project plugin settings via .claude/plugin-name.local.md files. Use when building plugins with user-configurable behavior, storing agent state, or controlling hooks per-project.
+description: Configure per-project plugin settings via .claude/plugin-name.local.md files. Use when building plugins with user-configurable behavior, storing agent state, or controlling hooks.
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-03-06

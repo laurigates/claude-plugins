@@ -1,6 +1,6 @@
 ---
 name: parallel-agent-dispatch
-description: Dispatch contract for spawning multiple agents in parallel. Covers worktree collisions, scope overflow, and silent exits. Use when fanning out concurrent agents or authoring a lead prompt.
+description: Dispatch contract for spawning parallel agents covering worktree collisions, scope overflow, and silent exits. Use when fanning out concurrent agents or authoring a lead prompt.
 user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
