@@ -49,6 +49,7 @@ Claude Code plugin collection providing skills and agents for development workfl
 | `.claude/rules/workflow-naming.md` | `<Domain>: <Action>` naming for `.github/workflows/*.yml` and skill-generated workflow examples |
 | `.claude/rules/bash-tool-replacements.md` | `find`/`grep`/`rg`/`cat`/`head`/`tail` → dedicated tools; when the Bash form is genuinely fine |
 | `.claude/rules/gh-json-fields.md` | Correct `gh --json` field names (PR `state`/`mergedAt`, not `merged`); how to discover field lists |
+| `.claude/rules/structured-script-output.md` | `=== HEADER ===` / `KEY=VALUE` / `STATUS=` convention for diagnostic shell scripts |
 
 ## Creating New Skills
 
