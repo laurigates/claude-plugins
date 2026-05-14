@@ -1,5 +1,5 @@
 ---
-description: "Analyze test results and create a fix plan with subagent delegation. Use when triaging failing tests, analyzing JUnit XML or test-results dirs, planning fixes for accessibility/security findings, or categorizing flaky/perf/E2E failures."
+description: "Analyze test results and create a fix plan with subagents. Use when triaging failing tests, analyzing JUnit XML, planning fixes for accessibility/security, or categorizing flaky/E2E failures."
 args: "<results-path> [--type <test-type>] [--focus <area>]"
 argument-hint: "Path to test results (e.g., ./test-results/), optional --type and --focus filters"
 allowed-tools: Task, Read, Glob, Grep, TodoWrite

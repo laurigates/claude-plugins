@@ -5,7 +5,7 @@ reviewed: 2026-04-25
 allowed-tools: Task, TodoWrite
 args: "[test-pattern] [--coverage] [--watch]"
 argument-hint: "[test-pattern] [--coverage] [--watch]"
-description: "Universal test runner that auto-detects pytest, vitest, jest, cargo test, or go test. Use when running tests, testing a specific file or pattern, running with coverage, watch-mode dev loops, or running tests without specifying a framework."
+description: "Universal test runner auto-detecting pytest, vitest, jest, cargo, go test. Use when running tests, targeting a file/pattern, running with coverage, or watch-mode dev loops."
 name: test-run
 ---
 

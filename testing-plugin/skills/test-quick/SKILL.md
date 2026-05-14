@@ -5,7 +5,7 @@ reviewed: 2026-04-25
 allowed-tools: Task, TodoWrite
 args: "[path] [--watch] [--affected]"
 argument-hint: "[path] [--watch] [--affected]"
-description: "Run fast unit tests only, skipping slow/integration/E2E tiers. Use when checking unit tests after a change, running affected tests since last commit, watch mode for TDD, or sub-30s feedback while iterating."
+description: "Run fast unit tests only, skip slow/integration/E2E. Use when checking units after a change, running affected tests since last commit, watch mode TDD, or sub-30s feedback."
 name: test-quick
 ---
 

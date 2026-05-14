@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-04-25
 reviewed: 2026-04-25
 name: test-tier-selection
-description: Automatic selection of appropriate test tiers based on change scope. Guides unit tests for small changes, full suite for larger changes. Use when running tests, discussing testing strategy, or after code modifications.
+description: "Auto-select test tiers based on change scope — unit for small, full suite for large. Use when running tests, discussing testing strategy, or after code modifications."
 user-invocable: false
 allowed-tools: Bash, Read, Glob, Grep
 ---
