@@ -3,7 +3,7 @@ created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2025-12-16
 name: clippy-advanced
-description: "Advanced Clippy configuration for Rust linting with custom rules, categories, and IDE integration. Use when configuring lint rules, enforcing standards, setting up CI linting, or customizing clippy. Triggers: clippy, clippy.toml, pedantic, nursery."
+description: "Advanced Clippy configuration for Rust — custom rules, pedantic/nursery lints, clippy.toml, IDE and CI integration. Use when configuring or enforcing lint standards."
 user-invocable: false
 allowed-tools: Bash, Read, Grep, Glob
 ---
