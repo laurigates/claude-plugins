@@ -1,5 +1,5 @@
 ---
-description: "Add a package dependency with Bun. Use when the user wants to install a single package, add a dev dependency (`bun add --dev typescript`), pin an exact version, or target a workspace. Triggers: 'add express', 'install lodash', 'pin react exact'."
+description: "Bun add: install a package, add dev dependency, pin exact version, or target a workspace. Use when the user wants to add/install a specific package with bun."
 args: <package> [--dev] [--exact]
 allowed-tools: Bash, Read
 argument-hint: package-name [--dev] [--exact]

@@ -1,5 +1,5 @@
 ---
-description: Run tests using Bun's built-in test runner with compact, agent-friendly output. Use when running bun tests, targeting a file or pattern, collecting coverage with `--coverage`, enabling watch mode, or emitting JUnit XML for CI.
+description: "Bun test runner with compact agent-friendly output. Use when running bun tests, targeting a pattern, collecting --coverage, watching, or emitting JUnit XML for CI."
 args: "[pattern] [--coverage] [--bail] [--watch]"
 allowed-tools: Bash, BashOutput, Read
 argument-hint: "[test-pattern] [--coverage] [--bail] [--watch]"
