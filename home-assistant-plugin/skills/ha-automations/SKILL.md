@@ -3,7 +3,7 @@ created: 2025-02-01
 modified: 2026-02-14
 reviewed: 2026-02-08
 name: ha-automations
-description: Home Assistant automation creation and management. Use when creating automation rules, working with triggers, conditions, actions, scripts, scenes, or blueprints.
+description: Home Assistant automation creation and management. Use when working with HA triggers, conditions, actions, scripts, scenes, or blueprints.
 user-invocable: false
 allowed-tools: Read, Edit, Write, Grep, Glob, TodoWrite
 ---
