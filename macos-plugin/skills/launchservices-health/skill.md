@@ -1,6 +1,6 @@
 ---
 name: launchservices-health
-description: Diagnose macOS LaunchServices DB bloat and launchservicesd CPU issues. Use when launchservicesd is pegged at high CPU, the LS database feels bloated after long uptime, or you suspect LaunchServices is blocking WindowServer with XPC stalls.
+description: Diagnose macOS LaunchServices DB bloat and launchservicesd CPU spikes. Use when launchservicesd is pegged at high CPU, the LS DB feels bloated, or WindowServer XPC stalls are suspected.
 user-invocable: false
 allowed-tools: Bash(uname *), Bash(ps *), Bash(pgrep *), Bash(uptime *), Bash(awk *), Bash(grep *), Bash(wc *), Bash(ls *), Bash(stat *), Bash(mktemp *), Bash(rm *), Read, Write, Edit, Grep, Glob
 created: 2026-05-03
