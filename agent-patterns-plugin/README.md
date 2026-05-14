@@ -114,6 +114,20 @@ Dispatch contract for any workflow that spawns more than one agent in parallel â
 - Defining the mandatory Return Contract every parallel agent must emit on exit
 - Recovering from silent agent exits or worktree collisions
 
+#### `verify-before-plan`
+Verify orchestrator premises (file counts, build state, artefact presence) before dispatching parallel subagents. Sits before `parallel-agent-dispatch` in the dispatch sequence â€” bad premises propagate to every brief in the wave.
+
+**When to use:**
+- Planning a wave whose agent briefs cite a number, path, or "does X" claim not checked this session
+- Inheriting a premise from a prior agent's return contract or an earlier session
+- Patching from a user's symptom report ("the bug is X") before reading the failing repro
+- Allocating from a shared counter (ADR / WO / migration sequence) that other agents may have bumped
+
+**Features:**
+- Verifier return-contract: Premise / Evidence / Verdict / Implicit assumptions
+- Cheapest-verifier table mapping premise shape to the right tool (`Glob`, `Grep`, read-only agent)
+- Anti-patterns catalog: name-equals-behaviour, stale-counter, symptom-not-cause
+
 #### `plugin-settings`
 Configure per-project plugin settings using `.claude/plugin-name.local.md` files.
 
