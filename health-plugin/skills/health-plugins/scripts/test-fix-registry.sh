@@ -129,5 +129,84 @@ if ! grep -q '^RESTART_REQUIRED=true$' <<<"$output"; then
 fi
 pass "RESTART_REQUIRED=true emitted in dry-run"
 
+# -----------------------------------------------------------------------------
+# Guard 3: Windows CRLF regression for check-plugins.sh and check-registry.sh
+# (issue #1330) — simulate jq emitting CRLF line endings and verify the scripts
+# do NOT flag every-key-but-the-last as enabled_not_installed / stale.
+# -----------------------------------------------------------------------------
+crlf_dir="${tmp_dir}/crlf"
+mkdir -p "$crlf_dir/.claude/plugins"
+
+cat > "${crlf_dir}/.claude/plugins/installed_plugins.json" <<'JSON'
+{
+  "version": 2,
+  "plugins": {
+    "alpha-plugin@test-mp": [{"scope": "user", "version": "1.0.0"}],
+    "beta-plugin@test-mp": [{"scope": "user", "version": "1.0.0"}],
+    "gamma-plugin@test-mp": [{"scope": "user", "version": "1.0.0"}]
+  }
+}
+JSON
+
+cat > "${crlf_dir}/.claude/settings.json" <<'JSON'
+{
+  "enabledPlugins": {
+    "alpha-plugin@test-mp": true,
+    "beta-plugin@test-mp": true,
+    "gamma-plugin@test-mp": true
+  }
+}
+JSON
+
+# Wrap jq with a stub that appends \r to every output line, emulating Windows.
+jq_stub_dir="${tmp_dir}/jq-crlf-stub"
+mkdir -p "$jq_stub_dir"
+real_jq="$(command -v jq)"
+cat > "${jq_stub_dir}/jq" <<EOF
+#!/usr/bin/env bash
+# Test stub: forwards to real jq but rewrites LF -> CRLF on stdout
+# to reproduce Windows behaviour.
+"${real_jq}" "\$@" | sed 's/\$/\r/'
+EOF
+chmod +x "${jq_stub_dir}/jq"
+
+check_plugins="${script_dir}/../../health-check/scripts/check-plugins.sh"
+
+crlf_output=$(PATH="${jq_stub_dir}:$PATH" bash "$check_plugins" \
+  --home-dir "$crlf_dir" --project-dir "$crlf_dir")
+
+# With the fix, none of the three enabled plugins should be flagged.
+if grep -q 'TYPE=enabled_not_installed' <<<"$crlf_output"; then
+  echo "--- check-plugins.sh CRLF output ---" >&2
+  echo "$crlf_output" >&2
+  echo "------------------------------------" >&2
+  fail "check-plugins.sh produced enabled_not_installed false positives under CRLF jq output (issue #1330 regression)"
+fi
+if ! grep -q '^STATUS=OK$' <<<"$crlf_output"; then
+  echo "--- check-plugins.sh CRLF output ---" >&2
+  echo "$crlf_output" >&2
+  echo "------------------------------------" >&2
+  fail "check-plugins.sh did not report STATUS=OK under CRLF jq output (issue #1330 regression)"
+fi
+pass "check-plugins.sh survives CRLF jq output"
+
+check_registry="${script_dir}/check-registry.sh"
+crlf_reg_output=$(PATH="${jq_stub_dir}:$PATH" bash "$check_registry" \
+  --home-dir "$crlf_dir" --project-dir "$crlf_dir")
+
+if grep -qE 'TYPE=(enabled_not_installed|stale_enabled)' <<<"$crlf_reg_output"; then
+  echo "--- check-registry.sh CRLF output ---" >&2
+  echo "$crlf_reg_output" >&2
+  echo "-------------------------------------" >&2
+  fail "check-registry.sh produced stale/enabled-not-installed false positives under CRLF jq output (issue #1330 regression)"
+fi
+if ! grep -q '^STATUS=OK$' <<<"$crlf_reg_output"; then
+  echo "--- check-registry.sh CRLF output ---" >&2
+  echo "$crlf_reg_output" >&2
+  echo "-------------------------------------" >&2
+  fail "check-registry.sh did not report STATUS=OK under CRLF jq output (issue #1330 regression)"
+fi
+pass "check-registry.sh survives CRLF jq output"
+
 echo "ALL CHECKS PASSED"
 exit 0
