@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # Detect other Claude/agent processes working in the same repo clone.
 #
-# Combines four signals:
+# Combines five signals:
 #   1. Baseline drift     — optional snapshot from a prior session
 #   2. Session markers    — .git/.claude-session-<pid> files written by coworkers
 #   3. Process scan       — other claude/node processes whose cwd is this repo
 #   4. Taskwarrior claims — +ACTIVE tasks in this repo's project (best-effort)
+#   5. Worktree leak      — untracked file in parent matches a path committed
+#                           in a child worktree (issue #1319)
 #
 # Output is a block of KEY=value lines plus === SECTION === headers so the
 # invoking skill can parse results without re-running git.
@@ -69,6 +71,7 @@ stash_drift="unknown"
 marker_drift=0
 proc_drift=0
 tw_claim_drift=0
+worktree_leak_drift=0
 
 # =========================================================================
 # Signal 1: baseline drift
@@ -237,12 +240,86 @@ else
 fi
 
 # =========================================================================
+# Signal 5: worktree leak — issue #1319
+# =========================================================================
+# `Agent(isolation: "worktree")` can briefly leak a file the child wrote in
+# its worktree into the parent checkout at the same relative path. The orphan
+# vanishes once the child commits, but a naive `git status` response in the
+# parent would treat the file as user content and stash, restore, or commit
+# it onto the wrong branch.
+#
+# Detection: for every untracked file in the parent, walk the list of linked
+# worktrees and check whether the same relative path exists there (either as
+# a working-tree file or as a path mentioned in HEAD). When both sides hold
+# the path, the parent's copy is almost certainly a transient leak — leave
+# it alone and let the child's commit resolve it.
+echo "=== WORKTREE_LEAK_CHECK ==="
+
+worktree_paths=()
+while IFS= read -r wt_line; do
+  case "$wt_line" in
+    worktree\ *)
+      wt_path="${wt_line#worktree }"
+      # Skip the parent itself; we only care about linked worktrees.
+      if [ "$wt_path" != "$repo_root" ]; then
+        worktree_paths+=("$wt_path")
+      fi
+      ;;
+  esac
+done < <(git worktree list --porcelain 2>/dev/null)
+
+echo "LINKED_WORKTREE_COUNT=${#worktree_paths[@]}"
+
+if [ "${#worktree_paths[@]}" -gt 0 ]; then
+  # `git status --porcelain` "?? path" lines list untracked files. Iterate
+  # over them and probe each linked worktree.
+  while IFS= read -r untracked_line; do
+    case "$untracked_line" in
+      "?? "*)
+        rel_path="${untracked_line#?? }"
+        # Strip surrounding quotes that git emits when the path contains spaces.
+        case "$rel_path" in
+          \"*\")
+            rel_path="${rel_path#\"}"
+            rel_path="${rel_path%\"}"
+            ;;
+        esac
+        for wt in "${worktree_paths[@]}"; do
+          # `.claude/worktrees/agent-*` is the harness's canonical layout, but
+          # any linked worktree counts — the leak shape doesn't depend on it.
+          hit=""
+          if [ -e "$wt/$rel_path" ]; then
+            hit="working_tree"
+          elif git -C "$wt" cat-file -e "HEAD:$rel_path" 2>/dev/null; then
+            hit="head_commit"
+          fi
+          if [ -n "$hit" ]; then
+            worktree_leak_drift=$((worktree_leak_drift + 1))
+            echo "WORKTREE_LEAK_PATH=$rel_path"
+            echo "WORKTREE_LEAK_WORKTREE=$wt"
+            echo "WORKTREE_LEAK_MATCH=$hit"
+            break
+          fi
+        done
+        ;;
+    esac
+  done < <(git status --porcelain --untracked-files=all 2>/dev/null)
+fi
+
+echo "WORKTREE_LEAK_COUNT=$worktree_leak_drift"
+
+# =========================================================================
 # Summary verdict
 # =========================================================================
 echo "=== VERDICT ==="
 
 if [ "$marker_drift" -gt 0 ] || [ "$proc_drift" -gt 0 ] || [ "$tw_claim_drift" -gt 0 ]; then
   verdict="coworker_detected"
+elif [ "$worktree_leak_drift" -gt 0 ]; then
+  # A worktree leak (issue #1319) means the orchestrator must not clean the
+  # untracked file even though no foreground coworker is visible — the child
+  # agent's commit will reclaim it.
+  verdict="worktree_leak_suspected"
 elif [ "$status_drift" = "true" ] || [ "$stash_drift" = "true" ]; then
   verdict="drift_detected"
 else
@@ -254,3 +331,4 @@ echo "STASH_DRIFT=$stash_drift"
 echo "MARKER_COUNT=$marker_drift"
 echo "PROC_COUNT=$proc_drift"
 echo "TW_CLAIM_COUNT=$tw_claim_drift"
+echo "WORKTREE_LEAK_COUNT=$worktree_leak_drift"

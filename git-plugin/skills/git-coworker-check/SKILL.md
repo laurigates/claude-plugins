@@ -5,8 +5,8 @@ args: "[--check | --claim | --release]"
 argument-hint: "[--claim | --release | --check (default)]"
 allowed-tools: Bash(bash *), Bash(git status *), Bash(git stash *), Bash(git rev-parse *), Read, TodoWrite
 created: 2026-04-21
-modified: 2026-05-14
-reviewed: 2026-05-14
+modified: 2026-05-19
+reviewed: 2026-05-19
 ---
 
 # /git:coworker-check
@@ -38,6 +38,7 @@ The rule: **the orchestrator stops before fan-out if the playing field is conten
 |-----------------------------|-----------|
 | `clear` | Proceed with the bulk-edit / commit loop |
 | `drift_detected` | Inspect the new files. If they are yours from earlier in the session, proceed with explicit paths. If unknown, stop and ask. |
+| `worktree_leak_suspected` | A child worktree-isolated agent is leaking an untracked file into the parent (issue #1319). **Do not stage or stash the matching path.** Wait for the child's commit, then re-run the check before continuing. |
 | `coworker_detected` | **Stop.** Recommend `git worktree add ../<repo>-<task>` for a fresh isolated checkout, or wait for the other session to finish. Do not start the loop. |
 
 ### Worked example: detection enables defensive restoration (#1277)
@@ -118,9 +119,10 @@ Parse the `VERDICT=` line from the script's output:
 |---------|---------|--------|
 | `clear` | No coworker detected | Proceed; still prefer explicit `git add <paths>` over `git add -A` |
 | `drift_detected` | Files appeared since baseline but no other process/marker/claim found | Inspect `NEW_STATUS_LINES` — may be coworker or may be a forgotten earlier edit. Ask the user before stashing. |
+| `worktree_leak_suspected` | Untracked file in parent matches a path held by a linked worktree (issue #1319) | **Do not stash or commit** the matching path. Wait for the child worktree's commit to reclaim it. Avoid committing on the parent branch until child agents are done. |
 | `coworker_detected` | Another agent/process/taskwarrior claim is active in this clone | **Do not stash, restore, or reset.** Report the `MARKER_PID` / `PROC_PID` / `TW_CLAIM_*` entries. Recommend the user switch to a worktree. |
 
-The four signals are independent — any one of `MARKER_COUNT > 0`, `PROC_COUNT > 0`, or `TW_CLAIM_COUNT > 0` raises `coworker_detected`. `OWN_CLAIM_*` lines are this session's own taskwarrior claims and do not contribute to the count.
+The five signals are independent — any one of `MARKER_COUNT > 0`, `PROC_COUNT > 0`, or `TW_CLAIM_COUNT > 0` raises `coworker_detected`. A non-zero `WORKTREE_LEAK_COUNT` on its own raises `worktree_leak_suspected`. `OWN_CLAIM_*` lines are this session's own taskwarrior claims and do not contribute to the count.
 
 ### Step 5: Report findings
 
