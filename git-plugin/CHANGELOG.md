@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.39.4](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.39.3...git-plugin-v2.39.4) (2026-05-19)
+
+
+### Bug Fixes
+
+* **git-plugin:** detect transient worktree-isolation leaks in coworker check ([#1343](https://github.com/laurigates/claude-plugins/issues/1343)) ([7e7cb0c](https://github.com/laurigates/claude-plugins/commit/7e7cb0c9f002dc07237db45afd467f9c3610e672))
+
 ## [2.39.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.39.2...git-plugin-v2.39.3) (2026-05-14)
 
 
