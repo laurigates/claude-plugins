@@ -10,7 +10,7 @@ The root cause is missing coordination: each agent assumes it is the sole writer
 
 ## Detection Signals
 
-No single signal is reliable. Combine these four and treat any positive as "assume a coworker is present".
+No single signal is reliable. Combine these five and treat any positive as "assume a coworker is present".
 
 | Signal | Detects | Cost | Platform |
 |--------|---------|------|----------|
@@ -18,6 +18,7 @@ No single signal is reliable. Combine these four and treat any positive as "assu
 | **Session marker** — write `.git/.claude-session-<pid>` on start, delete on exit; scan siblings | Other agents that adopt the same convention | Free | All |
 | **Process scan** — find other `claude`/`node` processes whose `cwd` is the same repo | Ad-hoc agents that do not write markers | ~100ms | Linux/macOS differ |
 | **Taskwarrior `+ACTIVE` claims** — query `task project:<repo-basename> +ACTIVE export` for claims by other agent IDs | Coworkers that picked up coordination work via `/taskwarrior:task-claim`, even from a different process tree or host | ~50ms | Any host with `task` + `jq` |
+| **Worktree leak** — every untracked file in the parent is probed against the working tree and HEAD of each linked `git worktree` | Transient leaks where a child `Agent(isolation: "worktree")` writes a file that briefly appears in the parent checkout at the same relative path (issue #1319) | ~10ms per worktree | All |
 
 ### Baseline drift
 
@@ -87,6 +88,34 @@ This signal is the only one that survives:
 - **Worktrees in the same project.** Taskwarrior records the project basename — not the worktree path — so two agents in sibling worktrees of the same repo still see each other's claims.
 
 The cross-link cuts both ways: when one agent claims via `/taskwarrior:task-claim`, the next agent's `/git:coworker-check` sees the claim before its destructive op even if that agent never invoked taskwarrior itself. The four-signal verdict is only as strong as the weakest signal that fires, so opting in to taskwarrior coordination strengthens the guard for every clone of the project.
+
+### Worktree leak (issue #1319)
+
+`Agent(isolation: "worktree")` is supposed to give the child a sealed filesystem view: writes inside the worktree should not be visible in the parent checkout. In practice we have observed a transient leak where the child's brand-new file briefly appears in the **parent** at the same relative path as an **untracked file**, before vanishing when the child commits. From the issue:
+
+> The worktree's filesystem did **not** contain `check-runtime.sh`. The parent checkout's filesystem **did** contain `check-runtime.sh` as an untracked file. A few minutes later the agent committed and pushed; the file is correctly present in the agent's pushed branch. At that point, the orphan in the parent checkout had vanished.
+
+A naive parent session that saw the orphan would `git stash` or `git add -A; git commit` the file onto the wrong branch. The fifth signal exists to catch the leak shape before that happens.
+
+Detection walks `git worktree list --porcelain` for linked worktrees, then probes each untracked file in the parent against every linked worktree:
+
+```bash
+for wt in $(git worktree list --porcelain | awk '/^worktree / && $2 != repo_root {print $2}'); do
+  for path in $(git status --porcelain --untracked-files=all | awk '/^\?\? / {sub(/^\?\? /,""); print}'); do
+    # Match if the path exists in the linked worktree (working tree or HEAD).
+    if [ -e "$wt/$path" ] || git -C "$wt" cat-file -e "HEAD:$path" 2>/dev/null; then
+      echo "WORKTREE_LEAK_PATH=$path WORKTREE=$wt"
+    fi
+  done
+done
+```
+
+A leak match yields the dedicated verdict `worktree_leak_suspected`. The response is the same as for any coworker signal — **leave the working tree alone** — with one addition: do not commit on the parent branch while child worktree agents are running, because the parent's untracked entry will be reclaimed by the child's commit.
+
+Limitations:
+
+- Two agents writing genuinely independent files that happen to share a path will produce a false-positive leak match. Treat the verdict as a strong hint, not a proof.
+- A bare-clone style harness that doesn't use `git worktree` won't produce any `LINKED_WORKTREE_COUNT > 0`, so the signal silently degrades to a no-op there.
 
 ## Response Rules
 

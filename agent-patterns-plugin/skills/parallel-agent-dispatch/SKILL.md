@@ -5,8 +5,8 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-21
-modified: 2026-05-16
-reviewed: 2026-05-16
+modified: 2026-05-19
+reviewed: 2026-05-19
 ---
 
 # Parallel Agent Dispatch
@@ -61,6 +61,28 @@ Before spawning, the orchestrator must verify:
 
 If any check fails, **refuse to dispatch** and report the blocker. Do not
 "clean up" uncommitted user work — surface it and ask.
+
+#### Transient worktree leaks while a wave runs
+
+`Agent(isolation: "worktree")` is supposed to be a sealed filesystem view,
+but issue [#1319](https://github.com/laurigates/claude-plugins/issues/1319)
+documents a transient leak: a file the child wrote inside its worktree
+briefly appears in the **parent** as an untracked entry at the same
+relative path, then vanishes when the child commits. While a wave is
+running, the orchestrator must:
+
+- Treat untracked files in the parent checkout as **potentially leaked
+  from a child agent**. Do not stash, restore, or commit them.
+- Wait for the child's completion notification, then diff the parent's
+  orphan against the child's commit. Identical contents = leak; safe to
+  let the child's branch reclaim it.
+- Avoid `git commit` on the parent branch while child worktree agents
+  are still running — a leaked file caught by `git add -A` lands on the
+  wrong branch.
+
+`/git:coworker-check` raises the verdict `worktree_leak_suspected` when
+an untracked file in the parent matches a path in any linked worktree.
+Run it before every parent-side commit during a wave.
 
 See also: `agent-teams` Lead Preflight Checklist for file-scope and pin-budget
 checks that stack on top of these.
