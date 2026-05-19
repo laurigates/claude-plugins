@@ -23,7 +23,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.21.1",
+      "version": "2.21.2",
       "keywords": [
         "agents",
         "configuration",
@@ -275,7 +275,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.39.3",
+      "version": "2.39.4",
       "keywords": [
         "git",
         "github",
