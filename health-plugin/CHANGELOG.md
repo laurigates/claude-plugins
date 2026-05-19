@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.1](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.10.0...health-plugin-v1.10.1) (2026-05-19)
+
+
+### Bug Fixes
+
+* **health-plugin:** strip CRLF from jq output for Windows compatibility ([#1332](https://github.com/laurigates/claude-plugins/issues/1332)) ([d39b624](https://github.com/laurigates/claude-plugins/commit/d39b6244fa9f0a32a39f0da1f989580d7881d3e9))
+
 ## [1.10.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.9.3...health-plugin-v1.10.0) (2026-05-14)
 
 
