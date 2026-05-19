@@ -73,8 +73,8 @@ fi
 
 echo "REGISTRY_VALID=true"
 
-# Count plugins
-plugin_count=$(jq '.plugins | length' "$registry_file" 2>/dev/null || echo "0")
+# Count plugins (tr -d '\r' to strip Windows CR from jq output)
+plugin_count=$(jq '.plugins | length' "$registry_file" 2>/dev/null | tr -d '\r' || echo "0")
 echo "PLUGIN_COUNT=${plugin_count}"
 
 # Count by scope
@@ -82,13 +82,15 @@ project_scoped=0
 global_scoped=0
 orphaned_count=0
 
-# Extract plugin entries with project paths
-plugin_keys=$(jq -r '.plugins | keys[]' "$registry_file" 2>/dev/null)
+# Extract plugin entries with project paths.
+# tr -d '\r' strips CR line endings that jq emits on Windows; without it,
+# every key but the last carries a trailing \r and breaks subsequent lookups.
+plugin_keys=$(jq -r '.plugins | keys[]' "$registry_file" 2>/dev/null | tr -d '\r')
 
 while IFS= read -r plugin_key; do
   [ -z "$plugin_key" ] && continue
 
-  plugin_path=$(jq -r ".plugins[\"${plugin_key}\"][0].projectPath // \"\"" "$registry_file" 2>/dev/null)
+  plugin_path=$(jq -r ".plugins[\"${plugin_key}\"][0].projectPath // \"\"" "$registry_file" 2>/dev/null | tr -d '\r')
 
   if [ -n "$plugin_path" ]; then
     project_scoped=$((project_scoped + 1))
@@ -117,11 +119,11 @@ echo "ORPHANED_ENTRIES=${orphaned_count}"
 
 # Check enabled plugins vs installed plugins
 if [ -f "$user_settings" ]; then
-  enabled_count=$(jq '.enabledPlugins // {} | length' "$user_settings" 2>/dev/null || echo "0")
+  enabled_count=$(jq '.enabledPlugins // {} | length' "$user_settings" 2>/dev/null | tr -d '\r' || echo "0")
   echo "ENABLED_IN_SETTINGS=${enabled_count}"
 
-  # Find enabled but not installed
-  enabled_keys=$(jq -r '.enabledPlugins // {} | keys[]' "$user_settings" 2>/dev/null)
+  # Find enabled but not installed (tr -d '\r' for Windows CRLF, see comment above)
+  enabled_keys=$(jq -r '.enabledPlugins // {} | keys[]' "$user_settings" 2>/dev/null | tr -d '\r')
   while IFS= read -r enabled_key; do
     [ -z "$enabled_key" ] && continue
     if ! jq -e ".plugins[\"${enabled_key}\"]" "$registry_file" >/dev/null 2>&1; then
@@ -131,12 +133,12 @@ if [ -f "$user_settings" ]; then
     fi
   done <<< "$enabled_keys"
 
-  # Find disabled plugins
-  disabled_count=$(jq '[.enabledPlugins // {} | to_entries[] | select(.value == false)] | length' "$user_settings" 2>/dev/null || echo "0")
+  # Find disabled plugins (tr -d '\r' so the numeric compare below works on Windows)
+  disabled_count=$(jq '[.enabledPlugins // {} | to_entries[] | select(.value == false)] | length' "$user_settings" 2>/dev/null | tr -d '\r' || echo "0")
   if [ "$disabled_count" -gt 0 ]; then
     echo "DISABLED_PLUGINS=${disabled_count}"
     if [ "$verbose_mode" = true ]; then
-      jq -r '.enabledPlugins // {} | to_entries[] | select(.value == false) | .key' "$user_settings" 2>/dev/null | while IFS= read -r disabled_name; do
+      jq -r '.enabledPlugins // {} | to_entries[] | select(.value == false) | .key' "$user_settings" 2>/dev/null | tr -d '\r' | while IFS= read -r disabled_name; do
         echo "  DISABLED: ${disabled_name}"
       done
     fi
@@ -156,7 +158,7 @@ if [ "$fix_mode" = true ] && [ "$orphaned_count" -gt 0 ]; then
   jq_filter='.plugins'
   while IFS= read -r plugin_key; do
     [ -z "$plugin_key" ] && continue
-    plugin_path=$(jq -r ".plugins[\"${plugin_key}\"][0].projectPath // \"\"" "$registry_file" 2>/dev/null)
+    plugin_path=$(jq -r ".plugins[\"${plugin_key}\"][0].projectPath // \"\"" "$registry_file" 2>/dev/null | tr -d '\r')
     if [ -n "$plugin_path" ] && [ ! -d "$plugin_path" ]; then
       jq_filter="${jq_filter} | del(.\"${plugin_key}\")"
       echo "FIX_REMOVED=${plugin_key}"
