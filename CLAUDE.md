@@ -50,6 +50,7 @@ Claude Code plugin collection providing skills and agents for development workfl
 | `.claude/rules/bash-tool-replacements.md` | `find`/`grep`/`rg`/`cat`/`head`/`tail` → dedicated tools; when the Bash form is genuinely fine |
 | `.claude/rules/gh-json-fields.md` | Correct `gh --json` field names (PR `state`/`mergedAt`, not `merged`); how to discover field lists |
 | `.claude/rules/structured-script-output.md` | `=== HEADER ===` / `KEY=VALUE` / `STATUS=` convention for diagnostic shell scripts |
+| `.claude/rules/typer-cli-completion.md` | Bypass `shellingham` in Python/Typer CLIs by adding an explicit `completion <shell>` subcommand using Click's `get_completion_class` |
 
 ## Creating New Skills
 

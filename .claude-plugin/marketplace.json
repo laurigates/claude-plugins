@@ -23,7 +23,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.21.0",
+      "version": "2.21.1",
       "keywords": [
         "agents",
         "configuration",
@@ -317,7 +317,7 @@
       "name": "health-plugin",
       "source": "./health-plugin",
       "description": "Diagnose and fix Claude Code configuration issues - plugin registry, settings, hooks, MCP servers",
-      "version": "1.10.0",
+      "version": "1.10.1",
       "keywords": [
         "health",
         "diagnostics",

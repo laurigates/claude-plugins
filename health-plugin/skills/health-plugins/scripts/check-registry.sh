@@ -70,7 +70,7 @@ fi
 
 echo "REGISTRY_VALID=true"
 
-plugin_count=$(jq '.plugins | length' "$registry_file" 2>/dev/null || echo "0")
+plugin_count=$(jq '.plugins | length' "$registry_file" 2>/dev/null | tr -d '\r' || echo "0")
 echo "PLUGIN_COUNT=${plugin_count}"
 
 issue_count=0
@@ -81,17 +81,19 @@ global_scoped=0
 orphaned_count=0
 other_project_count=0
 
+# tr -d '\r' strips CR line endings that jq emits on Windows; without it,
+# every key but the last carries a trailing \r and breaks subsequent lookups.
 if [ -n "$target_plugin" ]; then
-  plugin_keys=$(jq -r --arg k "$target_plugin" '.plugins | keys[] | select(. == $k or startswith($k + "@"))' "$registry_file" 2>/dev/null)
+  plugin_keys=$(jq -r --arg k "$target_plugin" '.plugins | keys[] | select(. == $k or startswith($k + "@"))' "$registry_file" 2>/dev/null | tr -d '\r')
 else
-  plugin_keys=$(jq -r '.plugins | keys[]' "$registry_file" 2>/dev/null)
+  plugin_keys=$(jq -r '.plugins | keys[]' "$registry_file" 2>/dev/null | tr -d '\r')
 fi
 
 echo "=== PLUGINS ==="
 while IFS= read -r plugin_key; do
   [ -z "$plugin_key" ] && continue
 
-  plugin_path=$(jq -r --arg k "$plugin_key" '.plugins[$k][0].projectPath // ""' "$registry_file" 2>/dev/null)
+  plugin_path=$(jq -r --arg k "$plugin_key" '.plugins[$k][0].projectPath // ""' "$registry_file" 2>/dev/null | tr -d '\r')
   plugin_source=$(jq -r --arg k "$plugin_key" '.plugins[$k][0].source // "unknown"' "$registry_file" 2>/dev/null)
   plugin_scope=$(jq -r --arg k "$plugin_key" '.plugins[$k][0].scope // "user"' "$registry_file" 2>/dev/null)
   plugin_version=$(jq -r --arg k "$plugin_key" '.plugins[$k][0].version // "unknown"' "$registry_file" 2>/dev/null)
@@ -124,7 +126,7 @@ echo "OTHER_PROJECT_ENTRIES=${other_project_count}"
 
 stale_enabled_count=0
 if [ -f "$user_settings" ]; then
-  enabled_count=$(jq '.enabledPlugins // {} | length' "$user_settings" 2>/dev/null || echo "0")
+  enabled_count=$(jq '.enabledPlugins // {} | length' "$user_settings" 2>/dev/null | tr -d '\r' || echo "0")
   echo "ENABLED_IN_SETTINGS=${enabled_count}"
 
   # Collect marketplace plugin names (if any marketplaces are configured).
@@ -133,13 +135,14 @@ if [ -f "$user_settings" ]; then
   if [ -d "$marketplaces_dir" ]; then
     while IFS= read -r mp_file; do
       [ -z "$mp_file" ] && continue
-      mp_plugins=$(jq -r '.plugins[]?.name // empty' "$mp_file" 2>/dev/null)
+      # tr -d '\r' so the names match cleanly under grep -Fxq on Windows
+      mp_plugins=$(jq -r '.plugins[]?.name // empty' "$mp_file" 2>/dev/null | tr -d '\r')
       marketplace_names="${marketplace_names}
 ${mp_plugins}"
     done < <(find "$marketplaces_dir" -maxdepth 3 -name '*.json' -type f 2>/dev/null)
   fi
 
-  enabled_keys=$(jq -r '.enabledPlugins // {} | keys[]' "$user_settings" 2>/dev/null)
+  enabled_keys=$(jq -r '.enabledPlugins // {} | keys[]' "$user_settings" 2>/dev/null | tr -d '\r')
   while IFS= read -r enabled_key; do
     [ -z "$enabled_key" ] && continue
 

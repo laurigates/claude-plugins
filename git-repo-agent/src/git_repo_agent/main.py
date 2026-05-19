@@ -986,5 +986,42 @@ def blueprint_work_order(
     )
 
 
+@app.command()
+def completion(
+    shell: str = typer.Argument(
+        ...,
+        help="Shell type: bash, zsh, or fish.",
+    ),
+) -> None:
+    """Print a shell completion script to stdout.
+
+    Typer's ``--install-completion`` / ``--show-completion`` rely on
+    ``shellingham``, which walks the parent process tree to detect the shell
+    and fails when invoked from non-shell parents (Claude Code's node runtime,
+    CI runners, Docker entrypoints). Passing the shell explicitly here
+    bypasses ``shellingham``::
+
+        git-repo-agent completion zsh > ~/.zfunc/_git-repo-agent
+    """
+    from click.shell_completion import get_completion_class
+
+    cls = get_completion_class(shell)
+    if cls is None:
+        console.print(
+            f"[red]Shell '{shell}' is not supported.[/red] "
+            "Choose one of: bash, zsh, fish."
+        )
+        raise typer.Exit(code=EXIT_CONFIG_ERROR)
+
+    click_cmd = typer.main.get_command(app)
+    comp = cls(
+        cli=click_cmd,
+        ctx_args={},
+        prog_name="git-repo-agent",
+        complete_var="_GIT_REPO_AGENT_COMPLETE",
+    )
+    print(comp.source())
+
+
 if __name__ == "__main__":
     app()
