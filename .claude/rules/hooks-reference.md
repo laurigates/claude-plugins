@@ -9,6 +9,8 @@ paths:
 
 Comprehensive reference for Claude Code hook events, schemas, and patterns. This supplements `.claude/rules/handling-blocked-hooks.md` with full event coverage. For guidance on when to use `type: "prompt"`, `type: "agent"`, and `type: "http"` hooks instead of `type: "command"`, see `.claude/rules/prompt-agent-hooks.md`.
 
+> **Note (2.1.142)**: `SessionStart`, `Setup`, and `SubagentStart` accept only `type: "command"` hooks. Configuring a prompt- or agent-type hook for these events now surfaces a clear "use a command-type hook instead" error at load time, rather than silently ignoring the handler. See `.claude/rules/prompt-agent-hooks.md` for the events that do support prompt and agent hooks.
+
 ## Hook Events
 
 ### Core Session Events
@@ -44,6 +46,8 @@ Comprehensive reference for Claude Code hook events, schemas, and patterns. This
 |-------|--------------|-----------------|
 | `WorktreeCreate` | A new git worktree is created via `EnterWorktree` | none |
 | `WorktreeRemove` | A worktree is removed after a session exits | none |
+
+> **Note (2.1.141)**: Hooks fired after an `EnterWorktree` switch used to receive a `transcript_path` pointing at the pre-switch working directory, breaking transcript-reading helpers. The path now reflects the new worktree.
 
 ### Agent Teams Events (2.1.50+)
 
@@ -141,6 +145,27 @@ Set timeout explicitly even though the default is now 10 minutes — explicit ti
   }
 }
 ```
+
+---
+
+## Command Invocation Forms (2.1.139+)
+
+Command hooks support two invocation forms:
+
+| Form | Field | Shell? | Quoting | When to use |
+|------|-------|--------|---------|-------------|
+| Shell form | `command` (string) | Yes — runs via `sh -c` | Caller responsible for quoting | Pipes, redirects, shell builtins |
+| Exec form | `args` (string array) | No — spawns directly | Path placeholders never need quoting | Path arguments with spaces, untrusted input |
+
+```json
+{
+  "type": "command",
+  "args": ["bash", "${CLAUDE_PLUGIN_ROOT}/hooks/validate.sh", "${CLAUDE_PROJECT_DIR}"],
+  "timeout": 30
+}
+```
+
+The exec form (`args: string[]`) spawns the command directly without a shell, so path placeholders like `${CLAUDE_PROJECT_DIR}` are passed as a single argument even when they contain spaces. Prefer the exec form when the only reason to use a shell would be quoting paths.
 
 ---
 
@@ -363,6 +388,33 @@ Optionally modify the tool input before execution:
   }
 }
 ```
+
+### PostToolUse -- Continue After Block (2.1.139+)
+
+By default, a blocking `PostToolUse` hook (decision `"block"`) ends the turn with the reason shown to Claude. Set `continueOnBlock: true` on the hook handler to instead feed the rejection reason back to Claude and continue the turn — useful for soft validators that nudge a retry without aborting:
+
+```json
+{
+  "type": "command",
+  "command": "bash .claude/hooks/post-validate.sh",
+  "continueOnBlock": true,
+  "timeout": 30
+}
+```
+
+This is `PostToolUse`-specific. Other events do not accept the field.
+
+### Hook JSON Output — `terminalSequence` (2.1.141+)
+
+Any hook can emit a `terminalSequence` field to send a terminal control sequence to the user's display — desktop notifications (OSC 9), window titles (OSC 0/2), or bells (`\a`) — without a controlling terminal:
+
+```json
+{
+  "terminalSequence": "]9;Build finished"
+}
+```
+
+Useful for `Stop`, `SubagentStop`, and `TaskCompleted` hooks that want to surface completion to the user even when Claude Code is running in a daemonised or backgrounded process.
 
 ### PermissionRequest -- Auto Approve/Deny (2.1.50+)
 
@@ -719,6 +771,17 @@ if [ "$CLAUDE_CODE_REMOTE" != "true" ]; then
 fi
 # Remote-only setup here
 ```
+
+### `CLAUDE_CODE_STOP_HOOK_BLOCK_CAP` (2.1.143+)
+
+A `Stop` hook that repeatedly returns `{"decision": "block"}` used to loop forever — Claude would address the feedback, hit the hook again, get blocked again, and never end the turn. As of 2.1.143, the turn ends with a warning after **8 consecutive blocks**. Override via:
+
+```bash
+export CLAUDE_CODE_STOP_HOOK_BLOCK_CAP=16   # raise the ceiling
+export CLAUDE_CODE_STOP_HOOK_BLOCK_CAP=0    # disable the cap (not recommended)
+```
+
+The cap is a safety net, not a substitute for the `stop_hook_active` check documented in `.claude/rules/prompt-agent-hooks.md` — a well-written stop hook still short-circuits when `stop_hook_active` is true.
 
 ---
 

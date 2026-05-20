@@ -53,6 +53,10 @@ allowed-tools: Bash(git status *), Bash(gh pr *), Read, TodoWrite
 | `Bash(gh pr *)` | `gh pr view`, `gh pr checks`, `gh pr list --json` |
 | `Bash(gh run *)` | `gh run view`, `gh run list`, `gh run view --log-failed` |
 | `Bash(npm run *)` | `npm run test`, `npm run build`, `npm run lint` |
+| `Skill(git-*)` | `git-commit`, `git-rebase`, `git-pr-create` (2.1.139+) |
+| `Skill(*)` | Every skill (2.1.139+) |
+
+> **Note (2.1.139)**: `Skill(<name> *)` permission rules use prefix matching, just like `Bash(<command> *)`. Before 2.1.139, wildcards inside `Skill(...)` were treated as literal characters and silently failed to match.
 
 ## Shell Operator Protections
 
@@ -269,6 +273,24 @@ Rules in `autoMode.hard_deny` block unconditionally -- the classifier cannot ove
 ```
 
 Use `hard_deny` for security-critical operations that must never run in auto mode even when the user explicitly permits them. Contrast with `autoMode.soft_deny`, which the classifier can override for good reason.
+
+### Auto Mode Dialog Reasons (2.1.141+)
+
+When auto mode surfaces a permission prompt, the dialog now explains **why** — including when a `permissions.ask` rule triggered the prompt. Previously, users saw a generic "Claude wants permission" prompt and had to infer which rule fired. Authors writing `:ask` patterns can rely on the dialog to surface their rule:
+
+```yaml
+allowed-tools: Bash(git push *):ask, Bash(git status *), Read
+```
+
+The dialog now shows "Matched `Bash(git push *):ask` — confirm before push", giving the human the context to decide.
+
+### `permissions.defaultMode` in Background Sessions (2.1.143+)
+
+Background sessions launched from `claude agents` honor `permissions.defaultMode` from `settings.json`. Before 2.1.143, the background launcher overrode the configured default and started every session in `auto` mode — which silently expanded the permission surface for users who had deliberately chosen a stricter default. The fix means stricter modes (`default`, `dontAsk`) now apply consistently to both foreground and background sessions.
+
+### Remote Control Disabled by API Key (2.1.139+)
+
+Remote Control, `/schedule`, and claude.ai MCP connectors are disabled when any of `ANTHROPIC_API_KEY`, `apiKeyHelper`, or `ANTHROPIC_AUTH_TOKEN` is set. These features rely on the claude.ai session identity to route remote control commands and scheduled jobs; an API-key session has no such identity, so silently allowing the features would break in unintuitive ways. If you need remote control, sign in via the standard OAuth flow rather than configuring an API key.
 
 ## Context Section Patterns
 

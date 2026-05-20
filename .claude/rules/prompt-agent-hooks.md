@@ -57,6 +57,7 @@ Not all events support prompt/agent hooks.
 |-------|--------|
 | `SessionStart` | Environment setup is mechanical |
 | `SessionEnd` | Cleanup is mechanical |
+| `Setup` | Environment bootstrap is mechanical |
 | `PreCompact` | Context preservation is data extraction |
 | `SubagentStart` | Prompt injection is mechanical |
 | `TeammateIdle` | Task assignment is mechanical |
@@ -64,6 +65,8 @@ Not all events support prompt/agent hooks.
 | `WorktreeRemove` | Cleanup is mechanical |
 | `ConfigChange` | Audit logging is mechanical |
 | `Notification` | Notification routing is mechanical |
+
+> **Note (2.1.142)**: Attempting to register a prompt- or agent-type hook for `SessionStart`, `Setup`, or `SubagentStart` now fails fast with a clear "use a command-type hook instead" error. Previously these registrations were silently dropped, making misconfiguration hard to diagnose. If you need LLM judgment at session start, run a command hook that shells out to `claude --print` or another deterministic invocation.
 
 ## Configuration Schema
 

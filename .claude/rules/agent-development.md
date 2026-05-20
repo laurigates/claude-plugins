@@ -10,6 +10,12 @@ Patterns and standards for creating and configuring custom agents in Claude Code
 
 > **Note (2.1.63)**: The `Task` tool was renamed to `Agent` tool. Existing `Task(...)` references in settings and agent definitions still work as aliases, but new code should use `Agent`.
 
+> **Note (2.1.140)**: The `Agent` tool's `subagent_type` parameter accepts case- and separator-insensitive values. `"Code Reviewer"`, `"code_reviewer"`, and `"code-reviewer"` all resolve to the same agent. Prefer the canonical kebab-case form (`code-reviewer`) in plugin code so grep stays predictable.
+
+> **Note (2.1.143)**: `claude --agent <name>` finds plugin-contributed agents without the `plugin:` prefix. Previously, `claude --agent code-reviewer` only matched user/project agents and silently missed `my-plugin:code-reviewer` even when the plugin was enabled.
+
+> **Note (2.1.139)**: Subagent HTTP requests carry two correlation headers — `x-claude-code-agent-id` identifies the subagent, and `x-claude-code-parent-agent-id` identifies the spawning agent. Use these for tracing in HTTP hooks, MCP servers, and any proxy that wants to attribute traffic to specific agent chains.
+
 ## Agent vs Skill
 
 | Use Agent When... | Use Skill When... |
@@ -224,6 +230,33 @@ Agent tool with run_in_background: true
 - When you need the agent's output before proceeding
 - When the agent's work must complete before the next step
 - Research agents whose findings inform your next steps
+
+### Background Session Behavior (2.1.141+ / 2.1.142+ / 2.1.143+)
+
+| Version | Change |
+|---------|--------|
+| 2.1.141 | Background agents launched via `/bg` or `←←` preserve the current permission mode (no longer silently demoted to `default`) |
+| 2.1.142 | Background sessions recognize pre-existing git worktrees — previously `EnterWorktree` would refuse the duplicate and block `Edit` for the whole session |
+| 2.1.143 | `claude agents`-launched background sessions honor `permissions.defaultMode` from settings.json (was previously hard-overridden to auto mode) |
+| 2.1.143 | `/bg` preserves `--mcp-config`, `--settings`, `--add-dir`, `--plugin-dir`, and `--strict-mcp-config` across respawn |
+
+### `worktree.bgIsolation: "none"` (2.1.143+)
+
+By default, background sessions launch into a fresh `EnterWorktree`. For repositories where worktrees are impractical (submodule-heavy repos, repos with paths longer than the OS-permitted symlink depth, host machines that share the worktree directory with other tools), set:
+
+```json
+{
+  "worktree": {
+    "bgIsolation": "none"
+  }
+}
+```
+
+The background session then edits the working copy directly. Trade-off: concurrent edits between the foreground and background sessions are no longer isolated — see `.claude/rules/agent-coworker-detection.md` for how to detect and avoid clobbering a coworker's in-flight changes.
+
+### Worktree Cleanup Safety (2.1.143+)
+
+When `git worktree remove` fails (e.g., gitignored build artifacts or in-progress files in the worktree), the harness used to fall back to `rm -rf` — silently destroying any non-tracked work. As of 2.1.143, the fallback is gone: the cleanup logs the failure and leaves the worktree in place. Inspect manually with `git worktree list` and remove with `git worktree remove --force <path>` once you have rescued any wanted files.
 
 ## Persistent Agent Memory
 
@@ -518,10 +551,37 @@ has_changes = bool(result.stdout.strip())
 
 See `git-repo-agent/docs/adr/004` for full context.
 
+## `claude agents` CLI (2.1.139+, Research Preview)
+
+`claude agents` opens a dashboard listing all Claude Code sessions on the host — running, blocked on a permission prompt, or finished. Use it to attach to a background session, surface a blocked prompt, or list sessions per directory.
+
+```bash
+claude agents                              # full dashboard
+claude agents --cwd ~/projects/my-repo     # scope list to a single directory (2.1.141+)
+```
+
+### Launch Flags (2.1.142+ / 2.1.143+)
+
+The dashboard's "new session" launcher accepts the same flags as the top-level `claude` CLI, so a background session can match the foreground's configuration exactly:
+
+| Flag | Effect |
+|------|--------|
+| `--add-dir <path>` | Add an extra directory to the session's working set |
+| `--settings <file>` | Use a non-default settings.json |
+| `--mcp-config <file>` | Load an MCP server config file |
+| `--plugin-dir <path>` | Add a plugin directory (in addition to discovered ones) |
+| `--permission-mode <mode>` | Start in `default`, `acceptEdits`, `dontAsk`, `bypassPermissions`, or `plan` |
+| `--model <model>` | Pick the model (`opus`, `sonnet`, `haiku`, or full ID) |
+| `--effort <level>` | Set effort (`low`, `medium`, `high`, `max`) |
+| `--dangerously-skip-permissions` | Skip permission prompts — use only in trusted sandboxes |
+
+Pair `--cwd` with the launch flags to spin up isolated, per-directory background sessions without leaving the dashboard.
+
 ## Related Rules
 
 - `.claude/rules/agentic-permissions.md` — Granular tool permission patterns
 - `.claude/rules/skill-development.md` — Skill creation (use when agent is not needed)
 - `.claude/rules/agentic-optimization.md` — CLI output optimization for agent consumption
+- `.claude/rules/agent-coworker-detection.md` — Detecting in-flight coworker changes before destructive git ops (relevant when `worktree.bgIsolation: "none"`)
 
 
