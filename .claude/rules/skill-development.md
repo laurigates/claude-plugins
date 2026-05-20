@@ -46,6 +46,20 @@ This enables composable command workflows.
 
 Skills live in `<plugin-name>/skills/<skill-name>/SKILL.md` (or `skill.md`).
 
+### Root-Level `SKILL.md` Layout (2.1.142+)
+
+A plugin with a root-level `SKILL.md` and **no** `skills/` subdirectory is surfaced as a single skill. The plugin itself **is** the skill — useful for tiny single-purpose plugins where the directory overhead is noise:
+
+```
+my-singleton-plugin/
+├── .claude-plugin/
+│   └── plugin.json
+├── SKILL.md          # The plugin's one skill
+└── README.md
+```
+
+Prefer the standard `skills/<skill-name>/SKILL.md` layout when the plugin will grow to multiple skills, or when scripts/assets need to live next to a specific skill. The root-level layout has no advantage once a `skills/` subdirectory exists.
+
 ### Required YAML Frontmatter
 
 ```yaml
@@ -156,6 +170,8 @@ When listing `Bash` in `allowed-tools`, prefer narrow `Bash(<command> *)` permis
 
 - Narrow rules survive the transition into auto mode and skip the auto-classifier round-trip on each call.
 - Broad rules (`Bash(*)`, `Bash(python*)`) are dropped at runtime when auto mode is active.
+
+`Skill(<name> *)` permission rules also work as a **prefix match** (2.1.139+) — fixed to match `Bash(ls *)` behavior. `Skill(git-*)` matches `git-commit`, `git-rebase`, etc.; `Skill(*)` matches every skill. Before 2.1.139, wildcards in `Skill(...)` were treated as literals and silently failed to match.
 
 See `.claude/rules/agentic-permissions.md` for canonical patterns and `.claude/rules/auto-mode.md` for the full auto-mode model.
 

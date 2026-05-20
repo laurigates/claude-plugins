@@ -140,10 +140,12 @@ The web sandbox base image includes standard language runtimes and system tools 
 |----------|----------|---------|
 | `CLAUDE_CODE_REMOTE` | Web sessions only | `"true"` in remote sessions |
 | `CLAUDE_ENV_FILE` | Always (when hooks run) | File path for persisting env vars across hook calls |
-| `CLAUDE_PROJECT_DIR` | Always | Project root directory |
+| `CLAUDE_PROJECT_DIR` | Always (hooks, MCP stdio servers as of 2.1.139) | Project root directory; plugin configs can reference `${CLAUDE_PROJECT_DIR}` in commands |
 | `CLAUDE_PLUGIN_ROOT` | Frontmatter hooks only | Root of the loaded plugin |
 | `CLAUDE_CODE_DISABLE_CRON` | Set to stop scheduled cron jobs mid-session (2.1.72+) | Session cron management |
 | `CLAUDE_CODE_SESSION_ID` | Always | Session ID matching hook `session_id` -- available in Bash tool subprocesses (2.1.132+) |
+
+> **Note (2.1.139)**: `CLAUDE_PROJECT_DIR` is now passed to MCP stdio servers (matching the hook environment). Plugin `mcpServers` configs can reference `${CLAUDE_PROJECT_DIR}` in `command` / `args` / `env` without having to compute the path inside the server.
 
 ### Persisting Environment Variables
 
@@ -242,6 +244,26 @@ Use `matcher: "startup"` to run only on new sessions (not on `/clear` or context
 The default hook timeout is 600 seconds (10 minutes), but explicit timeouts document intent and prevent runaway scripts.
 
 ---
+
+## Auto-Allow in Sandbox
+
+### `autoAllowBashIfSandboxed` and Shell Expansions (2.1.139+)
+
+The `autoAllowBashIfSandboxed` setting auto-approves Bash tool calls when the harness is running in a sandboxed environment. Before 2.1.139, the auto-approval **skipped** commands containing shell expansions like `$VAR` or `$(cmd)` — those still surfaced a permission prompt even though they were sandbox-safe. The fix means a sandboxed session no longer prompts for routine `git diff $(git merge-base HEAD origin/main)`-style invocations.
+
+If you previously worked around the gap with explicit `Bash(... $VAR ...)` allow rules, you can remove them.
+
+### `NO_COLOR` / `FORCE_COLOR` Scoping (2.1.143+)
+
+Setting `NO_COLOR` or `FORCE_COLOR` under `env` in `settings.json` previously also stripped Claude Code's own UI colours, because the variable was exported into the harness process. As of 2.1.143, these two variables are passed only to **subprocesses** — the harness UI keeps its colours. Configure them for tools (linters, formatters) without losing CLI usability:
+
+```json
+{
+  "env": {
+    "NO_COLOR": "1"
+  }
+}
+```
 
 ## Multi-Agent Patterns in Sandbox
 
