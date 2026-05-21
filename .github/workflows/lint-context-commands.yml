@@ -38,5 +38,11 @@ jobs:
       - name: Audit skill descriptions for auto-invocation
         run: python3 scripts/audit-skill-descriptions.py --strict-all
 
+      - name: Audit skill descriptions for listing-budget verbosity
+        # Fails only on the >300 char ERROR band. The 201-300 char WARN band
+        # surfaces via plugin-compliance-check.sh recommendations.
+        # See .claude/rules/skill-quality.md "Description Length and the Listing Budget".
+        run: python3 scripts/audit-skill-descriptions.py --strict-length
+
       - name: Lint taskwarrior-plugin docs for hyphenated tag names
         run: ./scripts/lint-taskwarrior-tags.sh

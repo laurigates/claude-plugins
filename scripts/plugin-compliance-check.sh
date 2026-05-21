@@ -431,12 +431,18 @@ check_bash_patterns() {
   return 0
 }
 
-# Check 7: Skill description quality for auto-invocation
-# Regression: skills whose description lacks a "Use when..." trigger clause are
+# Check 7: Skill description quality for auto-invocation and listing-budget length
+# Regression A: skills whose description lacks a "Use when..." trigger clause are
 # not matched by Claude's auto-invocation heuristic, so they rarely fire without
 # explicit user instruction. See .claude/rules/skill-quality.md "Description
-# Quality" checklist. Delegates to scripts/audit-skill-descriptions.py which
-# handles multi-line YAML block scalars correctly.
+# Quality" checklist.
+# Regression B: overly verbose descriptions eat the listing budget faster than
+# they earn invocation accuracy. The May 2026 tightening pass brought every
+# description below 250 chars; this gate keeps new contributions inside the
+# target band (≤200 OK, 201-300 WARN, >300 ERROR). See .claude/rules/skill-quality.md
+# "Description Length and the Listing Budget".
+# Delegates to scripts/audit-skill-descriptions.py which handles multi-line YAML
+# block scalars correctly.
 check_skill_descriptions() {
   local plugin="$1"
   local skills_dir="${plugin}/skills"
@@ -458,6 +464,7 @@ check_skill_descriptions() {
   local has_errors=false
   local has_warnings=false
 
+  # Trigger axis: MISSING/EMPTY → error, NO_TRIGGER on auto-invokable → warn
   while IFS=$'\t' read -r category skill_path auto; do
     [ -z "$category" ] && continue
     local skill_slug
@@ -475,6 +482,23 @@ check_skill_descriptions() {
         ;;
     esac
   done < <(echo "$audit_json" | jq -r '.[] | select(.category != "OK") | [.category, .path, (.auto_invokable | tostring)] | @tsv')
+
+  # Length axis: WARN (201-300) → recommendation, ERROR (>300) → fail
+  while IFS=$'\t' read -r length_category length skill_path; do
+    [ -z "$length_category" ] && continue
+    local skill_slug
+    skill_slug=$(basename "$(dirname "$skill_path")")
+    case "$length_category" in
+      WARN)
+        recommendations+=("⚠️ ${plugin}/${skill_slug}: description is ${length} chars — over the 200-char target band (see .claude/rules/skill-quality.md)")
+        has_warnings=true
+        ;;
+      ERROR)
+        issues+=("❌ ${plugin}/${skill_slug}: description is ${length} chars — exceeds the 300-char hard limit; rewrite before merge (see .claude/rules/skill-quality.md)")
+        has_errors=true
+        ;;
+    esac
+  done < <(echo "$audit_json" | jq -r '.[] | select(.length_category == "WARN" or .length_category == "ERROR") | [.length_category, (.length | tostring), .path] | @tsv')
 
   if $has_errors; then
     return 2

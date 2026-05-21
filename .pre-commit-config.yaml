@@ -27,6 +27,12 @@ repos:
         language: system
         files: '(SKILL|skill)\.md$'
         pass_filenames: false
+      - id: audit-skill-description-length
+        name: audit skill descriptions for listing-budget verbosity (>300 chars)
+        entry: python3 ./scripts/audit-skill-descriptions.py --strict-length
+        language: system
+        files: '(SKILL|skill)\.md$'
+        pass_filenames: false
       - id: lint-taskwarrior-tags
         name: lint taskwarrior-plugin docs for hyphenated tag names
         entry: ./scripts/lint-taskwarrior-tags.sh
