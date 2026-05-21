@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.4](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.21.3...configure-plugin-v1.21.4) (2026-05-21)
+
+
+### Bug Fixes
+
+* **configure-plugin:** annotate two marketplace suffix forms inline ([#1348](https://github.com/laurigates/claude-plugins/issues/1348)) ([feae78c](https://github.com/laurigates/claude-plugins/commit/feae78c1c0eb34569afd179689cdb16a0ead41eb))
+
 ## [1.21.3](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.21.2...configure-plugin-v1.21.3) (2026-05-14)
 
 
