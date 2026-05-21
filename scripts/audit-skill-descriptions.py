@@ -1,17 +1,24 @@
 #!/usr/bin/env python3
 """
-Audit SKILL.md descriptions for auto-invocation quality.
+Audit SKILL.md descriptions for auto-invocation quality and listing-budget length.
 
 Claude auto-invokes a skill based on its `description` frontmatter field. A good
 description includes a "Use when..." trigger clause so Claude can match it to
-user intent. This script classifies every skill in the repo into:
+user intent, AND fits inside the per-skill share of the listing budget. This
+script classifies every skill on two axes:
 
+Trigger axis (`category`):
   MISSING     — no description field
   EMPTY       — description is empty / null / whitespace
   NO_TRIGGER  — description present but lacks a "Use when..." trigger clause
   OK          — description includes a trigger clause
 
-See .claude/rules/skill-quality.md for the Description Quality checklist.
+Length axis (`length_category`) — see .claude/rules/skill-quality.md
+"Description Length and the Listing Budget":
+  IDEAL  — ≤ 150 chars (survives any per-skill truncation)
+  OK     — 151–200 chars (within budget for typical plugin loadouts)
+  WARN   — 201–300 chars (eats budget faster than it earns invocation accuracy)
+  ERROR  — > 300 chars (almost always rewordable; rewrite before merge)
 
 Usage:
     python scripts/audit-skill-descriptions.py                       # Summary
@@ -19,6 +26,7 @@ Usage:
     python scripts/audit-skill-descriptions.py --category EMPTY      # Filter
     python scripts/audit-skill-descriptions.py --plugin git-plugin   # Filter
     python scripts/audit-skill-descriptions.py --json                # Machine-readable
+    python scripts/audit-skill-descriptions.py --strict-length       # Exit 1 if any description > 300 chars
 """
 
 from __future__ import annotations
@@ -47,6 +55,28 @@ TRIGGER_PATTERNS = [
 TRIGGER_RE = re.compile("|".join(TRIGGER_PATTERNS), re.IGNORECASE)
 
 CATEGORIES = ("MISSING", "EMPTY", "NO_TRIGGER", "OK")
+
+# Length budget thresholds — see .claude/rules/skill-quality.md
+LENGTH_IDEAL_MAX = 150
+LENGTH_OK_MAX = 200
+LENGTH_WARN_MAX = 300
+LENGTH_CATEGORIES = ("IDEAL", "OK", "WARN", "ERROR")
+
+
+def classify_length(description) -> tuple[str, int]:
+    """Return (length_category, char_count). Missing/empty → ("IDEAL", 0)."""
+    if not isinstance(description, str):
+        return "IDEAL", 0
+    n = len(description.strip())
+    if n == 0:
+        return "IDEAL", 0
+    if n <= LENGTH_IDEAL_MAX:
+        return "IDEAL", n
+    if n <= LENGTH_OK_MAX:
+        return "OK", n
+    if n <= LENGTH_WARN_MAX:
+        return "WARN", n
+    return "ERROR", n
 
 
 def find_skills(root: Path) -> list[Path]:
@@ -181,6 +211,7 @@ def audit(root: Path) -> list[dict]:
             desc = fm.get("description")
             auto_invokable = not (fm.get("disable-model-invocation") is True)
         category = classify(desc)
+        length_category, length = classify_length(desc)
         preview = ""
         if isinstance(desc, str):
             preview = " ".join(desc.split())
@@ -192,6 +223,8 @@ def audit(root: Path) -> list[dict]:
                 "skill": skill_slug(path),
                 "path": str(path.relative_to(REPO_ROOT)),
                 "category": category,
+                "length_category": length_category,
+                "length": length,
                 "description": preview,
                 "auto_invokable": auto_invokable,
                 "reason": reason,
@@ -203,6 +236,7 @@ def audit(root: Path) -> list[dict]:
 def print_summary(results: list[dict]) -> None:
     total = len(results)
     overall = Counter(r["category"] for r in results)
+    length_overall = Counter(r["length_category"] for r in results)
     per_plugin: dict[str, Counter] = defaultdict(Counter)
     for r in results:
         per_plugin[r["plugin"]][r["category"]] += 1
@@ -212,7 +246,7 @@ def print_summary(results: list[dict]) -> None:
 
     print(f"Audited {total} skills across {len(per_plugin)} plugins")
     print()
-    print("Overall:")
+    print("Trigger axis (auto-invocation matchability):")
     for cat in CATEGORIES:
         n = overall.get(cat, 0)
         pct = (n / total * 100) if total else 0.0
@@ -221,6 +255,19 @@ def print_summary(results: list[dict]) -> None:
     print(f"  {'NEEDS FIX':<11} {bad:>4}  ({(bad / total * 100) if total else 0:5.1f}%)")
     print(f"    auto-invokable: {auto_bad:>3}  (priority)")
     print(f"    explicit-only:  {explicit_only_bad:>3}  (disable-model-invocation: true)")
+    print()
+    print("Length axis (listing-budget consumption):")
+    length_labels = {
+        "IDEAL": f"≤{LENGTH_IDEAL_MAX} chars",
+        "OK": f"{LENGTH_IDEAL_MAX + 1}–{LENGTH_OK_MAX} chars",
+        "WARN": f"{LENGTH_OK_MAX + 1}–{LENGTH_WARN_MAX} chars",
+        "ERROR": f">{LENGTH_WARN_MAX} chars",
+    }
+    for cat in LENGTH_CATEGORIES:
+        n = length_overall.get(cat, 0)
+        pct = (n / total * 100) if total else 0.0
+        marker = "  ⚠️" if cat == "WARN" else "  ❌" if cat == "ERROR" else ""
+        print(f"  {cat:<6} ({length_labels[cat]:>13}) {n:>4}  ({pct:5.1f}%){marker}")
     print()
 
     # Per-plugin breakdown, sorted by worst-offender count
@@ -243,10 +290,15 @@ def print_summary(results: list[dict]) -> None:
 
 def print_list(results: list[dict], show_ok: bool) -> None:
     for r in results:
-        if not show_ok and r["category"] == "OK":
+        trigger_ok = r["category"] == "OK"
+        length_ok = r["length_category"] in ("IDEAL", "OK")
+        if not show_ok and trigger_ok and length_ok:
             continue
         desc = r["description"] or "(none)"
-        print(f"[{r['category']:<10}] {r['path']}")
+        length_tag = ""
+        if not length_ok:
+            length_tag = f" [LEN={r['length_category']}/{r['length']}c]"
+        print(f"[{r['category']:<10}]{length_tag} {r['path']}")
         print(f"             {desc}")
 
 
@@ -254,7 +306,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--list", action="store_true", help="List every offender (non-OK skills)")
     parser.add_argument("--all", action="store_true", help="With --list, include OK skills too")
-    parser.add_argument("--category", choices=CATEGORIES, help="Filter output to one category")
+    parser.add_argument("--category", choices=CATEGORIES, help="Filter output to one trigger category")
+    parser.add_argument(
+        "--length-category",
+        choices=LENGTH_CATEGORIES,
+        help="Filter output to one length category (IDEAL / OK / WARN / ERROR)",
+    )
     parser.add_argument("--plugin", help="Filter output to one plugin")
     parser.add_argument("--json", action="store_true", help="Emit JSON")
     parser.add_argument(
@@ -272,6 +329,16 @@ def main() -> int:
         action="store_true",
         help="Exit non-zero if any auto-invokable skill is not OK (stricter CI gate; fails on NO_TRIGGER)",
     )
+    parser.add_argument(
+        "--strict-length",
+        action="store_true",
+        help="Exit non-zero if any description exceeds the listing-budget WARN threshold (>300 chars by default; pass --warn-on-200 to fail on WARN+ERROR)",
+    )
+    parser.add_argument(
+        "--warn-on-200",
+        action="store_true",
+        help="With --strict-length, treat WARN (201-300 chars) as failure too (stricter gate)",
+    )
     args = parser.parse_args()
 
     results = audit(REPO_ROOT)
@@ -279,6 +346,8 @@ def main() -> int:
     filtered = results
     if args.category:
         filtered = [r for r in filtered if r["category"] == args.category]
+    if args.length_category:
+        filtered = [r for r in filtered if r["length_category"] == args.length_category]
     if args.plugin:
         filtered = [r for r in filtered if r["plugin"] == args.plugin]
     if args.auto_invokable:
@@ -287,7 +356,7 @@ def main() -> int:
     if args.json:
         json.dump(filtered, sys.stdout, indent=2)
         sys.stdout.write("\n")
-    elif args.list or args.category or args.plugin:
+    elif args.list or args.category or args.length_category or args.plugin:
         print_list(filtered, show_ok=args.all)
     else:
         print_summary(results)
@@ -296,6 +365,24 @@ def main() -> int:
         bad = [r for r in results if r["category"] != "OK" and r["auto_invokable"]]
         if bad:
             print(f"\n{len(bad)} auto-invokable skills need description fixes", file=sys.stderr)
+            return 1
+        return 0
+    if args.strict_length:
+        fail_set = {"ERROR"}
+        if args.warn_on_200:
+            fail_set.add("WARN")
+        bad = [r for r in results if r["length_category"] in fail_set]
+        if bad:
+            label = "exceed 300 chars" if not args.warn_on_200 else "exceed 200 chars"
+            print(
+                f"\n{len(bad)} skill descriptions {label} (see .claude/rules/skill-quality.md):",
+                file=sys.stderr,
+            )
+            for r in bad:
+                print(
+                    f"  {r['path']} ({r['length_category']}, {r['length']} chars)",
+                    file=sys.stderr,
+                )
             return 1
         return 0
     if args.strict:

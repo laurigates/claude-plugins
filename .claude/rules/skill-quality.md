@@ -122,6 +122,13 @@ On a 200K-token context that's ~2,000 tokens for **all** skill metadata combined
 
 The previous "intent-matching" guidance produced 220-char medians across this repo. **Target ~120–150 chars** with trigger keywords front-loaded.
 
+The length band is enforced automatically:
+
+- `scripts/audit-skill-descriptions.py --strict-length` fails on the ERROR band (>300 chars). Wired into `.pre-commit-config.yaml` and the `Plugin: Lint skills` GitHub workflow.
+- `scripts/plugin-compliance-check.sh` surfaces WARN (201-300) entries under "Recommendations" so they show up in the compliance review table.
+- For a stricter local sweep that fails on WARN too, run `python3 scripts/audit-skill-descriptions.py --strict-length --warn-on-200`.
+- To list current offenders without failing: `python3 scripts/audit-skill-descriptions.py --length-category WARN`.
+
 ### Front-loading trigger keywords
 
 `skillListingMaxDescChars` truncates from the **end**, so put the words Claude needs for selection at the **start**. Order:
