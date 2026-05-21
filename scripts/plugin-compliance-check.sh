@@ -279,6 +279,25 @@ check_skill_body() {
         has_errors=true
       fi
     fi
+
+    # Regression: configure-claude-plugins documents two suffix forms
+    # (`@claude-plugins` for settings.json enabledPlugins, `@laurigates-claude-plugins`
+    # for workflow plugins: blocks) that are visually similar but semantically distinct.
+    # See issue #1337: a reader copy-pasting between sections silently produced a
+    # non-functional config because the explanation lived 50 lines away in
+    # "Important Notes". The semantic invariant is that BOTH suffix forms must
+    # carry inline annotation strings near each use — not just a far-away footnote.
+    if [ "$skill_name" = "configure-claude-plugins" ]; then
+      # The annotations must both exist (proves the two forms are explained inline)
+      if ! grep -q "extraKnownMarketplaces key" "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must include inline note 'extraKnownMarketplaces key' near @claude-plugins usage (issue #1337)")
+        has_errors=true
+      fi
+      if ! grep -q "marketplace .name. in marketplace.json" "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must include inline note 'marketplace \`name\` in marketplace.json' near @laurigates-claude-plugins usage (issue #1337)")
+        has_errors=true
+      fi
+    fi
   done < <(find "$skills_dir" -type f \( -iname "SKILL.md" -o -iname "skill.md" \) -print0 2>/dev/null)
 
   if $has_errors; then
