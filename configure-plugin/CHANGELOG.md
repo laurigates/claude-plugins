@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.22.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.21.4...configure-plugin-v1.22.0) (2026-05-22)
+
+
+### Features
+
+* **configure-plugin:** add CMakeLists.txt row to recommended-plugins table ([#1360](https://github.com/laurigates/claude-plugins/issues/1360)) ([97fa1eb](https://github.com/laurigates/claude-plugins/commit/97fa1eb203573438c535adbacc1202321c01ec4e)), closes [#1334](https://github.com/laurigates/claude-plugins/issues/1334) [#1335](https://github.com/laurigates/claude-plugins/issues/1335)
+
 ## [1.21.4](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.21.3...configure-plugin-v1.21.4) (2026-05-21)
 
 
