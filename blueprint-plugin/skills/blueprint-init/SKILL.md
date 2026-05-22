@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
-reviewed: 2026-05-03
+modified: 2026-05-22
+reviewed: 2026-05-22
 description: Initialize Blueprint Development structure. Use when bootstrapping docs/blueprint/ with manifest, PRD/ADR/PRP directories, and feature tracking for the first time.
 allowed-tools: Bash, Write, Read, AskUserQuestion, Glob
 name: blueprint-init
@@ -167,7 +167,23 @@ Initialize Blueprint Development in this project.
 
 6. **Create directory structure**:
 
-   **Blueprint structure (in docs/blueprint/):**
+   **Canonical document paths** are at the **top level** of `docs/`, not under `docs/blueprint/`. `docs/blueprint/` holds blueprint machinery only (manifest, feature-tracker, work-orders, ai_docs); `docs/{adrs,prds,prps,trps}/` hold the documents themselves. Every `/blueprint:derive-*` skill writes to the top-level paths — keeping them consistent prevents the dual-corpus bug where init creates one layout and derive-* writes to another.
+
+   Execute the creation explicitly so the directories exist even when no document migration happened in Step 3:
+
+   ```bash
+   mkdir -p docs/blueprint/work-orders/completed
+   mkdir -p docs/blueprint/work-orders/archived
+   mkdir -p docs/blueprint/ai_docs/libraries
+   mkdir -p docs/blueprint/ai_docs/project
+   mkdir -p docs/adrs
+   mkdir -p docs/prds
+   mkdir -p docs/prps
+   ```
+
+   Note: `docs/trps/` is created on-demand by `/blueprint:derive-tests` only — init does not pre-create it.
+
+   The resulting tree:
    ```
    docs/
    ├── blueprint/
@@ -180,9 +196,10 @@ Initialize Blueprint Development in this project.
    │   │   ├── libraries/
    │   │   └── project/
    │   └── README.md                # Blueprint documentation
-   ├── prds/                        # Product Requirements Documents
-   ├── adrs/                        # Architecture Decision Records
-   └── prps/                        # Product Requirement Prompts
+   ├── prds/                        # Product Requirements Documents (canonical)
+   ├── adrs/                        # Architecture Decision Records (canonical)
+   ├── prps/                        # Product Requirement Prompts (canonical)
+   └── trps/                        # Test Regression Plans (created on-demand by /blueprint:derive-tests)
    ```
 
    **Claude configuration (in .claude/):**
@@ -366,10 +383,11 @@ Initialize Blueprint Development in this project.
    - docs/blueprint/README.md
    [- docs/blueprint/feature-tracker.json (if feature tracking enabled)]
 
-   Project documentation:
+   Project documentation (top-level — derive-* skills write here):
    - docs/prds/           (Product Requirements Documents)
    - docs/adrs/           (Architecture Decision Records)
    - docs/prps/           (Product Requirement Prompts)
+   - docs/trps/           (Test Regression Plans — created on first /blueprint:derive-tests run)
 
    Claude configuration:
    - .claude/rules/       (modular rules, including generated)

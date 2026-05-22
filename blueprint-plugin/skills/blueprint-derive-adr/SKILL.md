@@ -1,7 +1,7 @@
 ---
 created: 2025-12-22
-modified: 2026-05-09
-reviewed: 2026-04-25
+modified: 2026-05-22
+reviewed: 2026-05-22
 description: Derive ADRs from project structure, deps, and docs. Use when onboarding a project to capture implicit architecture, framework, or database decisions retroactively.
 allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion, Task
 model: opus
@@ -37,6 +37,9 @@ If blueprint not initialized → suggest `/blueprint:init`
 If no PRD → suggest `/blueprint:derive-prd` first (recommended, not required)
 
 ### 1.2 Create ADR Directory
+
+ADRs live at the **top level** under `docs/adrs/` — not `docs/blueprint/adrs/`. This matches `/blueprint:init`'s canonical layout and the `document-management-rule.md` template. Never write ADRs under `docs/blueprint/`; that path is reserved for blueprint machinery.
+
 ```bash
 mkdir -p docs/adrs
 ```
