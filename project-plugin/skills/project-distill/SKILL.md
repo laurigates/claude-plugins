@@ -5,7 +5,7 @@ allowed-tools: Bash(git diff *), Bash(git log *), Bash(git status *), Bash(just 
 argument-hint: "--rules | --skills | --recipes | --all | --dry-run"
 args: "[--rules] [--skills] [--recipes] [--all] [--dry-run]"
 created: 2026-02-11
-modified: 2026-05-09
+modified: 2026-05-22
 reviewed: 2026-02-26
 ---
 
@@ -78,6 +78,8 @@ If `--dry-run`: skip this step.
 **In auto mode**: apply proposals directly without per-category `AskUserQuestion`. All targets are reversible via `git restore` — rule files, skill files, and justfile recipes are tracked in git, so a wrong edit can be undone with one command. This matches auto mode's "prefer action over planning" directive. **Retain `AskUserQuestion` for destructive operations** (`[REDUNDANT]` proposals that remove a rule or recipe).
 
 **In manual / interactive mode**: use `AskUserQuestion` to confirm each category before applying. The user can multi-select which `[UPDATE]` / `[NEW]` proposals to accept.
+
+**In plan mode**: neither default applies — the harness disallows non-readonly tool calls (including `AskUserQuestion`-then-apply) except writes to the active plan file. Write the proposal set to the active plan file as a single coherent block (Context + per-category `[UPDATE]` / `[NEW]` / `[REDUNDANT]` sections + a brief verification section), then call `ExitPlanMode` to surface for user approval. Do not apply directly. After the user approves the plan, fall back to the auto-mode or manual-mode flow above depending on which is active.
 
 ### Step 5: Report summary
 

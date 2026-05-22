@@ -7,7 +7,7 @@ model: opus
 argument-hint: "--dry-run | --target-repo owner/repo | plugin-name"
 disable-model-invocation: true
 created: 2026-02-18
-modified: 2026-05-14
+modified: 2026-05-22
 reviewed: 2026-05-14
 ---
 
@@ -210,6 +210,8 @@ Let the user select which findings to file as issues (use multiSelect).
 If `--dry-run`, present findings and stop here.
 
 **Auto mode does not skip this step.** Filing a GitHub issue is not reversible via `git restore` — closing an issue leaves noise in the issue tracker and notifies subscribers. Always confirm the selection set before Step 5, regardless of mode. To skip the prompt entirely, the user can pass `--dry-run` and re-run after reviewing.
+
+**In plan mode**: neither `AskUserQuestion` nor the subsequent `gh issue create` call is permitted — the harness disallows non-readonly tool calls except writes to the active plan file. Write the categorized findings to the active plan file as a single coherent block (one section per finding with category, plugin/skill, description, evidence, and proposed title/body), then call `ExitPlanMode` to surface for user approval. Do not file issues directly. After the user approves the plan, fall back to the default flow: present the selection prompt via `AskUserQuestion` (Step 4) and create the approved issues (Step 5). The `--dry-run` flag remains the fastest way to preview findings without entering plan mode.
 
 ### Step 5: Create approved issues
 
