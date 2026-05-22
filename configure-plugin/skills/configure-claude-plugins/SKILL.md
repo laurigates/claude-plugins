@@ -1,7 +1,7 @@
 ---
 created: 2026-01-23
-modified: 2026-05-21
-reviewed: 2026-05-21
+modified: 2026-05-22
+reviewed: 2026-05-22
 description: "Claude plugins marketplace setup: .claude/settings.json, GitHub Actions, plugin sets. Use when onboarding to claude-plugins, setting up claude.yml, or pinning plugins."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash(mkdir *), Bash(test *), Bash(ls *), Bash(git remote *), Bash(gh api *), Bash(jq *), AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix] [--exhaustive] [--plugins <plugin1,plugin2,...>]"
@@ -67,6 +67,7 @@ If `--plugins` is not specified, select recommended plugins based on detected pr
 | `.github/workflows/` | Above + `github-actions-plugin` |
 | `idf_component.yml` / `sdkconfig` | `git-plugin`, `code-quality-plugin`, `testing-plugin`, `container-plugin` |
 | ESPHome yaml | `git-plugin`, `python-plugin`, `code-quality-plugin` |
+| `CMakeLists.txt` (without Dockerfile / ESP-IDF / ESPHome indicators) | `git-plugin`, `code-quality-plugin`, `testing-plugin`, `tools-plugin` + `clangd@claude-plugins-official` (LSP) |
 | Default (any) | `git-plugin`, `code-quality-plugin`, `testing-plugin`, `tools-plugin` |
 
 Always include: `configure-plugin`, `health-plugin`, `hooks-plugin`.
