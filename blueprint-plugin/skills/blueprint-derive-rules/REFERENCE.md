@@ -35,13 +35,19 @@ git log --format="%H|%ai|%s" | grep -i "{topic}" | sort -t'|' -k2 -r
 
 ## Rule Template
 
-Rules may include an optional `paths` frontmatter to scope them to specific file types or directories. Add `paths` when the rule only applies to certain parts of the codebase — this reduces context noise and keeps rules relevant.
+Every generated rule **MUST** include `paths:` frontmatter unless it genuinely applies to every file in the project. Rules without `paths:` load on every session — costing context budget for sessions that never touch the relevant files. Default to scoping; opt out only when the rule is truly universal (and document the choice in the rule body).
 
-**Global rule** (applies to all files — no frontmatter needed):
+**Path-scoped rule** (the default — always start here):
 ```markdown
+---
+paths:
+  - "{glob-pattern}"
+  - "{glob-pattern}"
+---
+
 # {Rule Title}
 
-{Rule description derived from commit message/body}
+{Rule description — applies only to matched paths}
 
 ## Source
 
@@ -74,17 +80,11 @@ Rules may include an optional `paths` frontmatter to scope them to specific file
 *Derived from git history via /blueprint:derive-rules*
 ```
 
-**Path-scoped rule** (add `paths` frontmatter when rule only applies to specific files):
+**Global rule** (no `paths:` — use only when the rule legitimately applies everywhere; document why):
 ```markdown
----
-paths:
-  - "{glob-pattern}"
-  - "{glob-pattern}"
----
-
 # {Rule Title}
 
-{Rule description — applies only to matched paths}
+*Global rule — applies to every file. Rationale: {one-line justification, e.g. "security mindset every contributor must follow regardless of language"}.*
 
 ## Source
 ...
@@ -92,18 +92,21 @@ paths:
 
 ## Rule Categories
 
-Generate separate rule files by category. Apply `paths` frontmatter where the rule is naturally scoped to specific file types or directories:
+Generate separate rule files by category. Every category has a default `paths:` derived from the detected stack — never omit `paths:` just because a category "feels global":
 
-| File | Content | Source Commits | Suggested `paths` |
+| File | Content | Source Commits | Default `paths:` |
 |------|---------|---|---|
-| `code-style.md` | Naming, formatting, structure rules | `refactor:`, `style:` | *(global — omit paths)* |
+| `code-style.md` | Naming, formatting, structure rules | `refactor:`, `style:` | Detected language Globs (`["**/*.{js,jsx,ts,tsx}"]`, `["**/*.py"]`, `["**/*.rs"]`, etc.) |
 | `testing-standards.md` | Testing approach, coverage, fixtures | `test:` | `["**/*.{test,spec}.*", "tests/**/*", "test/**/*"]` |
 | `api-conventions.md` | Endpoint patterns, error handling | `feat:` (api scope), `fix:` (api scope) | `["src/{api,routes}/**/*", "**/*controller*", "**/*handler*"]` |
-| `error-handling.md` | Exception patterns, fallbacks | `fix:` (error-related) | *(global — omit paths)* |
-| `dependencies.md` | Package management, version policies | `chore:` (deps), `build:` | `["package.json", "go.mod", "Cargo.toml", "pyproject.toml", "*.lock"]` |
-| `security-practices.md` | Auth, validation, secrets handling | `fix:` (security), `feat:` (security) | *(global — omit paths)* |
+| `error-handling.md` | Exception patterns, fallbacks | `fix:` (error-related) | Detected language Globs (matches the languages the rule body cites) |
+| `dependencies.md` | Package management, version policies | `chore:` (deps), `build:` | `["package.json", "go.mod", "Cargo.toml", "pyproject.toml", "*.lock", "biome.json", ".python-version"]` |
+| `security-practices.md` | Auth, validation, secrets handling | `fix:` (security), `feat:` (security) | Auth/handler Globs (`["**/auth/**", "**/security/**", "**/*token*", "**/*credential*"]`) or detected-language Globs when the rule is language-specific |
+| `development.md` (or similar) | Restatement of project context already in CLAUDE.md | _any_ | **Do not emit.** CLAUDE.md owns project context. |
 
-**Path scoping guidance**: Use `paths` when the rule only makes sense in context of specific files. Omit `paths` for rules that apply universally (e.g., error handling philosophy, security mindset). Use brace expansion for concise patterns: `*.{ts,tsx}`, `src/{api,routes}/**/*`.
+**Detecting "language Globs"**: Inspect the rule's code blocks (\`\`\`js, \`\`\`ts, \`\`\`py, etc.) and the file paths cited in the rule body. The set of language fences and the directory roots in those paths is the rule's natural scope. Use brace expansion for concise patterns: `*.{ts,tsx}`, `src/{api,routes}/**/*`.
+
+**When to omit `paths:` entirely**: Only when the rule explicitly says "applies to every file regardless of language" — universal philosophy statements about, e.g., security mindset that genuinely transcends language. Document the omission in the rule body with a one-line rationale.
 
 ## Conflict Resolution Strategy
 
