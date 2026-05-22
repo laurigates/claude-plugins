@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.33.2](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.33.1...blueprint-plugin-v3.33.2) (2026-05-22)
+
+
+### Bug Fixes
+
+* **blueprint-plugin:** infer feature status from working tree and git history ([#1368](https://github.com/laurigates/claude-plugins/issues/1368)) ([852ec61](https://github.com/laurigates/claude-plugins/commit/852ec613d12bf4587bf5729fce3e3a61a7876163))
+* **blueprint-plugin:** require paths frontmatter on derived rules ([#1371](https://github.com/laurigates/claude-plugins/issues/1371)) ([71bdb7f](https://github.com/laurigates/claude-plugins/commit/71bdb7f1dc95545091fcd17d029bd8c7e646dda0))
+
 ## [3.33.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.33.0...blueprint-plugin-v3.33.1) (2026-05-14)
 
 

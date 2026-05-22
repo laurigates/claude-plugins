@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.2](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.15.1...project-plugin-v1.15.2) (2026-05-22)
+
+
+### Documentation
+
+* **project-plugin:** document plan-mode flow in project-distill Step 4 ([#1364](https://github.com/laurigates/claude-plugins/issues/1364)) ([d345dfa](https://github.com/laurigates/claude-plugins/commit/d345dfaef5fe56617ebde5195fc4807fc704d8b2))
+
 ## [1.15.1](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.15.0...project-plugin-v1.15.1) (2026-05-14)
 
 

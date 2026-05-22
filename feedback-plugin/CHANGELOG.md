@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.6](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.6.5...feedback-plugin-v1.6.6) (2026-05-22)
+
+
+### Documentation
+
+* **project-plugin:** document plan-mode flow in project-distill Step 4 ([#1364](https://github.com/laurigates/claude-plugins/issues/1364)) ([d345dfa](https://github.com/laurigates/claude-plugins/commit/d345dfaef5fe56617ebde5195fc4807fc704d8b2))
+
 ## [1.6.5](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.6.4...feedback-plugin-v1.6.5) (2026-05-14)
 
 
