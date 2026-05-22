@@ -1,7 +1,7 @@
 ---
 created: 2026-01-02
-modified: 2026-05-09
-reviewed: 2026-05-09
+modified: 2026-05-22
+reviewed: 2026-05-22
 description: Sync feature tracker with TODO.md, taskwarrior sidecars, and PRDs. Use when reconciling TODO.md vs tracker, draining WO entries, or recalculating stats.
 allowed-tools: Read, Write, Bash, Glob, AskUserQuestion
 model: sonnet
@@ -154,10 +154,17 @@ a. **Verify status consistency**:
    - `not_started`: Check TODO.md has `[ ]`, not in completed
    - `blocked`: Note if blocking reason is documented
 
-b. **Check implementation evidence** (optional, for thorough sync):
-   - Look for files listed in `implementation.files`
-   - Check if tests exist in `implementation.tests`
-   - Verify commits in `implementation.commits`
+b. **Check implementation evidence** (REQUIRED — drives status inference for shipped code). For each feature with non-empty `implementation.files`: verify each file exists, backfill `implementation.commits` via `git log --follow --format="%H" -- <file>` (deduped, merged into existing array), and backfill `implementation.tests` via `Glob` on conventional patterns (`tests/**/*<slug>*`, `**/*<slug>*.test.*`, `**/test_*<slug>*.py`).
+
+   **Infer status from evidence** ONLY when current `status == "not_started"`:
+
+   | Evidence | Inferred status |
+   |---|---|
+   | All files exist AND ≥1 commit touches them | `complete` (pending Step 5 user confirmation) |
+   | Some files exist, others missing | `partial` |
+   | No listed files exist | leave as `not_started` |
+
+   Never silently downgrade an already-`complete`/`in_progress`/`partial` feature. List flipped features under "Inferred from evidence" in the Step 9 sync report. See [REFERENCE.md](REFERENCE.md#evidence-backfill-jq-recipe) for the canonical merge `jq`.
 
 ### Step 4: Detect discrepancies
 
@@ -166,6 +173,7 @@ Look for inconsistencies:
 - Feature checked in TODO.md but not `complete` in tracker
 - Feature in `tasks.in_progress` but tracker says `complete`
 - PRD status doesn't match feature implementation status
+- Feature marked `not_started` but Step 3b inferred shipped code (confirm via Step 5)
 
 ### Step 5: Ask user about discrepancies
 
@@ -252,40 +260,7 @@ feature-tracker contains any feature with a non-empty `implemented_by` array.
 
 ### Step 9: Output sync report
 
-```
-Feature Tracker Sync Report
-===========================
-Last Updated: {date}
-
-Statistics:
-- Total Features: {total}
-- Complete: {complete} ({percentage}%)
-- Partial: {partial}
-- In Progress: {in_progress}
-- Not Started: {not_started}
-- Blocked: {blocked}
-
-Current Phase: {current_phase}
-
-Phase Status:
-- Phase 0: {status}
-- Phase 1: {status}
-...
-
-Active Tasks:
-{tasks.in_progress | list}
-
-Changes Made:
-{If changes made:}
-- {feature}: {old_status} -> {new_status}
-- Updated TODO.md: checked {N} items
-{If no changes:}
-- No changes needed, all in sync
-
-{If discrepancies skipped:}
-Unresolved Discrepancies:
-- {feature}: tracker says {status}, TODO.md shows {checkbox_state}
-```
+Print: statistics block (total/complete/partial/in_progress/not_started/blocked + completion %), current phase, phase-status list, active tasks list, "Changes Made" (status flips, TODO checkboxes touched), "Inferred from evidence" (Step 3b flips with their commit SHAs), and "Unresolved Discrepancies" if any were skipped. See [REFERENCE.md](REFERENCE.md#sync-report-template) for the full report template.
 
 ### Step 10: Update task registry
 
