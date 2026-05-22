@@ -1,7 +1,7 @@
 ---
 created: 2026-01-30
-modified: 2026-05-09
-reviewed: 2026-02-14
+modified: 2026-05-22
+reviewed: 2026-05-22
 description: Derive Claude rules from git commit history. Use when extracting implicit decisions from commits or codifying code-style, testing, and API-design rules.
 args: "[--since DATE] [--scope SCOPE]"
 argument-hint: "--since 2024-01-01 for date range, --scope api for specific area"
@@ -102,12 +102,23 @@ For each decision, generate rule file using template from [REFERENCE.md](REFEREN
 3. Generate actionable rule statement
 4. Include code examples from commit diffs
 5. Reference any superseded earlier decisions
-6. Add `paths` frontmatter when the rule is naturally scoped to specific file types (see [REFERENCE.md](REFERENCE.md#rule-categories) for suggested patterns per category)
+6. **REQUIRED: scope every generated rule via `paths:` frontmatter unless the rule genuinely applies everywhere.** Rules without `paths:` load on every session and pollute context for unrelated work. Pick `paths:` from the source signal:
 
-Generate separate rule files by category (see [REFERENCE.md](REFERENCE.md#rule-categories)):
+   | Signal | Source | `paths:` value |
+   |---|---|---|
+   | Rule body cites a specific file via "patterns extracted from `<path>`" | Step 3 / 4 conflict resolution | Glob over that file's directory: `<dir>/**/*.<ext>` |
+   | Rule was derived from `chore(deps)` / `build:` commits | Tooling-decision agent | Lockfiles + manifests: `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`, `*.lock`, `biome.json`, etc. |
+   | Rule references a language (`refactor:` + JS-only code blocks) | Code-style agent | Language Glob: `**/*.{js,jsx,ts,tsx}`, `**/*.py`, `**/*.rs` |
+   | Rule is about tests | Test-strategy agent | `**/*.{test,spec}.*`, `tests/**/*`, `test/**/*` |
+   | Rule is about API endpoints | API-design agent | `src/{api,routes}/**/*`, `**/*controller*`, `**/*handler*` |
+   | Rule is about documentation | Docs agent | `docs/**`, `**/*.md` |
+   | Rule restates global project context (already in CLAUDE.md) | _any_ | **Do not emit** — that's CLAUDE.md's job; abort the rule |
+   | Rule genuinely applies to every file (e.g. universal error-handling philosophy, security mindset) | Rare | Omit `paths:` deliberately and note "global rule" in the rule body |
+
+   Default to scoping. The auto-derived starting point: take every code block in the rule body, collect the file extensions / directory roots they reference, and emit those as `paths:`. Verify the resulting glob set actually matches files in the working tree before writing — an empty match list means the inferred scope is wrong; re-derive.
+
+Generate separate rule files by category (see [REFERENCE.md](REFERENCE.md#rule-categories) for canonical filenames and default `paths:` per category):
 - `code-style.md`, `testing-standards.md`, `api-conventions.md`, `error-handling.md`, `dependencies.md`, `security-practices.md`
-
-Path-scope rules where appropriate — e.g., `testing-standards.md` scoped to test files reduces context noise when working on non-test code.
 
 ### Step 6: Handle conflicts with existing rules
 
