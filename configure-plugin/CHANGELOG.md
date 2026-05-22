@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.23.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.22.0...configure-plugin-v1.23.0) (2026-05-22)
+
+
+### Features
+
+* **configure-plugin:** add C/C++ row to stack-aware permissions ([#1363](https://github.com/laurigates/claude-plugins/issues/1363)) ([703af5f](https://github.com/laurigates/claude-plugins/commit/703af5f4b3eb926cfa85715be76259fddfe026a4))
+* **configure-plugin:** default-skip workflow scaffolding when no git remote ([#1365](https://github.com/laurigates/claude-plugins/issues/1365)) ([15fa8fb](https://github.com/laurigates/claude-plugins/commit/15fa8fbedade88ed59f46dc1d3cca97f7050fb79))
+
 ## [1.22.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.21.4...configure-plugin-v1.22.0) (2026-05-22)
 
 
