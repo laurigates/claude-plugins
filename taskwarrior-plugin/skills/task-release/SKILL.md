@@ -5,8 +5,8 @@ args: "<task-id> [<state-message>] [--clear-identity] [--no-coworker-marker]"
 allowed-tools: Bash(task *), Bash(git rev-parse *), Bash(git branch *), Bash(jq *), Bash(bash *), Read, TodoWrite
 argument-hint: task id (required) and optional state message
 created: 2026-05-09
-modified: 2026-05-09
-reviewed: 2026-05-09
+modified: 2026-05-22
+reviewed: 2026-05-22
 ---
 
 # /taskwarrior:task-release
@@ -24,8 +24,13 @@ Release an active claim without closing the task. Pairs with `/taskwarrior:task-
 ## Context
 
 - Task CLI available: !`task --version`
-- Git toplevel: !`git rev-parse --show-toplevel`
-- Current branch: !`git branch --show-current`
+- Git repo detected: !`find . -maxdepth 1 -name '.git' -print -quit`
+
+Git probes (`git rev-parse --show-toplevel`, `git branch --show-current`)
+write to stderr in a no-git cwd, and stderr from a Context backtick
+aborts the skill before its body runs. Git toplevel and current-branch
+resolution are done in the body via the Bash tool (where `2>/dev/null`
+and exit-code handling are tolerated).
 
 ## Parameters
 

@@ -5,8 +5,8 @@ args: "[--n=N] [--lock=<resource>] [--wave] [--project=<name>] [--all]"
 allowed-tools: Bash(task *), Bash(git rev-parse *), Bash(jq *), Read, TodoWrite
 argument-hint: optional count (default 3) and lock filter
 created: 2026-04-24
-modified: 2026-05-09
-reviewed: 2026-05-09
+modified: 2026-05-22
+reviewed: 2026-05-22
 ---
 
 # /taskwarrior:task-coordinate
@@ -24,8 +24,13 @@ Next-candidate-agent surfacing for parallel / wave dispatch. Pairs with `agent-p
 ## Context
 
 - Task CLI available: !`task --version`
-- Git toplevel: !`git rev-parse --show-toplevel`
+- Git repo detected: !`find . -maxdepth 1 -name '.git' -print -quit`
 - Known projects: !`task _projects`
+
+`git rev-parse --show-toplevel` writes to stderr in a no-git cwd, and
+stderr from a Context backtick aborts the skill before its body runs.
+Project resolution is done in the body (Step 1 below) via the Bash tool
+where `2>/dev/null` and exit-code handling are tolerated.
 
 ## Parameters
 
@@ -47,8 +52,9 @@ out by default. Resolve `$PROJECT` in this order:
 
 1. `--project=<name>` if provided.
 2. `--all` → no project filter (cross-project wave).
-3. Basename of the path reported as `Git toplevel` in Context.
-4. If no git repo, basename of cwd.
+3. Basename of `git rev-parse --show-toplevel 2>/dev/null`, run via the
+   Bash tool (where stderr suppression and non-zero exits are tolerated).
+4. If no git repo (Step 3 returned empty), basename of cwd.
 
 ## Execution
 

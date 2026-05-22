@@ -25,10 +25,15 @@ Close a task with full coordination hygiene: annotate with the landing commit, d
 ## Context
 
 - Task CLI available: !`task --version`
-- Git remote: !`git remote`
+- Git repo detected: !`find . -maxdepth 1 -name '.git' -print -quit`
 - GH auth: !`gh auth status`
-- HEAD commit: !`git rev-parse --short HEAD`
-- Current branch: !`git branch --show-current`
+
+Git probes (`git remote`, `git rev-parse --short HEAD`,
+`git branch --show-current`) write to stderr in a no-git cwd, and stderr
+from a Context backtick aborts the skill before its body runs. HEAD
+commit, current branch, and remote-presence checks happen in the body
+(Steps 2 and 5) via the Bash tool where `2>/dev/null` and exit-code
+handling are tolerated.
 
 ## Parameters
 

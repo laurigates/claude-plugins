@@ -21,6 +21,9 @@
 #     permission patterns; harness rejects with permission-approval prompt (issue #1205)
 # 15. git config --get <key> in context: exits 1 when key is unset, aborting the skill
 #     before its body runs (issue #1206)
+# 16. git rev-parse / git remote in context: write to stderr when invoked outside
+#     a git repository; stderr from a Context backtick aborts the skill before its
+#     body runs (issue #1351)
 #
 # Exit codes:
 #   0 - no issues
@@ -182,6 +185,44 @@ check_pattern ERROR \
   "git-config-get-in-context" \
   '^- .*!`[^`]*git config --get' \
   "replace 'git config --get <key>' with a non-failing alternative (e.g. 'git remote' for remote detection); --get exits 1 when the key is unset"
+
+# git rev-parse / git remote / git branch in context: write to stderr when invoked
+# outside a git repository ("fatal: not a git repository"). Stderr from a Context
+# backtick aborts the skill before its body runs. 2>/dev/null and || are also
+# blocked in Context commands, so there is no fallback form that survives the
+# no-git case.
+#
+# Scoped to taskwarrior-plugin/ — the canonical no-git-cwd use case (offline /
+# local-only queues). Other plugins (git-plugin, container-plugin, etc.) are
+# inherently git-scoped and Context probes are reasonable there.
+#
+# Regression: taskwarrior-plugin task-status/task-add/task-claim/task-coordinate/
+# task-done/task-release had these probes in Context, aborting in any cwd without
+# a git repo (issue #1351, incomplete fix of issue #1206 / PR #1210)
+check_taskwarrior_context_probe() {
+  local rule="$1" pattern="$2" fix="$3"
+  while IFS= read -r match; do
+    local probe_file probe_line probe_content
+    probe_file="${match%%:*}"; match="${match#*:}"
+    probe_line="${match%%:*}"; probe_content="${match#*:}"
+    report ERROR "$rule" "$probe_file" "$probe_line" "$probe_content" "$fix"
+  done < <(grep -rn "$pattern" --include='SKILL.md' --include='skill.md' ./taskwarrior-plugin 2>/dev/null || true)
+}
+
+check_taskwarrior_context_probe \
+  "git-rev-parse-in-context" \
+  '^- .*!`[^`]*git rev-parse' \
+  "move git rev-parse out of Context; run via the Bash tool in skill body where 2>/dev/null and non-zero exits are tolerated. For presence checks use: find . -maxdepth 1 -name '.git' -print -quit"
+
+check_taskwarrior_context_probe \
+  "git-remote-in-context" \
+  '^- .*!`[^`]*git remote[` ]' \
+  "move git remote out of Context; run via the Bash tool in skill body where stderr suppression is allowed. For repo-presence checks use: find . -maxdepth 1 -name '.git' -print -quit"
+
+check_taskwarrior_context_probe \
+  "git-branch-in-context" \
+  '^- .*!`[^`]*git branch --show-current' \
+  "move git branch --show-current out of Context; it writes to stderr in a no-git cwd. Run via the Bash tool in skill body where exit codes are tolerated"
 
 ##############################
 # WARNINGS - likely to break
