@@ -6,6 +6,7 @@ import logging
 import os
 import re
 import subprocess
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -124,6 +125,85 @@ def refresh_base(repo_path: Path, base_branch: str) -> bool:
     return True
 
 
+@dataclass(frozen=True)
+class BaseFreshness:
+    """Result of a base-branch freshness probe (issue #1358).
+
+    ``fetched`` is True when ``git fetch`` succeeded (so we know
+    ``origin/<base>`` reflects the remote). ``behind`` is the number of
+    commits local ``<base>`` is behind ``origin/<base>`` after the
+    fetch. ``has_remote`` is False for purely local repos (no origin),
+    in which case staleness isn't measurable.
+    """
+
+    fetched: bool
+    has_remote: bool
+    behind: int
+    base_branch: str
+
+
+def _has_origin(repo_path: Path) -> bool:
+    """True if the repo has an ``origin`` remote configured."""
+    result = subprocess.run(
+        ["git", "remote", "get-url", "origin"],
+        cwd=repo_path, capture_output=True, text=True,
+    )
+    return result.returncode == 0
+
+
+def _count_behind(repo_path: Path, local_ref: str, remote_ref: str) -> int:
+    """Count commits ``local_ref`` is behind ``remote_ref`` (``rev-list --count``).
+
+    Returns 0 when either ref is missing or git fails — callers should
+    treat that as "not measurably behind".
+    """
+    result = subprocess.run(
+        ["git", "rev-list", "--count", f"{local_ref}..{remote_ref}"],
+        cwd=repo_path, capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        return 0
+    try:
+        return int(result.stdout.strip() or "0")
+    except ValueError:
+        return 0
+
+
+def probe_base_freshness(repo_path: Path, base_branch: str) -> BaseFreshness:
+    """Fetch origin/<base> and report how far local <base> is behind.
+
+    Used by the maintain workflow to detect the failure mode in issue
+    #1358: maintain runs immediately after an onboard PR merges, sees
+    the local main that hasn't been pulled, and re-suggests every fix
+    the just-merged PR landed.
+
+    Always attempts to fetch (does not depend on ``--refresh-base``).
+    Failures are non-fatal — the caller decides whether to abort.
+    """
+    if not _has_origin(repo_path):
+        return BaseFreshness(
+            fetched=False, has_remote=False, behind=0, base_branch=base_branch,
+        )
+    fetch = subprocess.run(
+        ["git", "fetch", "origin", base_branch],
+        cwd=repo_path, capture_output=True, text=True,
+    )
+    if fetch.returncode != 0:
+        logger.warning(
+            "git fetch origin %s failed: %s",
+            base_branch, fetch.stderr.strip(),
+        )
+        return BaseFreshness(
+            fetched=False, has_remote=True, behind=0, base_branch=base_branch,
+        )
+    behind = _count_behind(
+        repo_path, base_branch, f"origin/{base_branch}",
+    )
+    return BaseFreshness(
+        fetched=True, has_remote=True, behind=behind, base_branch=base_branch,
+    )
+
+
 def find_existing_pr(
     repo_path: Path,
     branch_prefix: str,
@@ -201,12 +281,20 @@ def gh_auth_ok(repo_path: Path) -> bool:
     return result.returncode == 0
 
 
-def create_worktree(repo_path: Path, branch: str) -> Path:
+def create_worktree(
+    repo_path: Path,
+    branch: str,
+    base_ref: str | None = None,
+) -> Path:
     """Create a git worktree for isolated agent work.
 
     Args:
         repo_path: Path to the main repository.
         branch: Branch name to create in the worktree.
+        base_ref: Explicit base ref to branch from (e.g. ``origin/main``).
+            When ``None``, uses the current ``HEAD`` of ``repo_path``.
+            Use this to avoid the issue #1358 failure mode where the
+            local base branch is behind ``origin``.
 
     Returns:
         Path to the new worktree directory.
@@ -214,14 +302,15 @@ def create_worktree(repo_path: Path, branch: str) -> Path:
     worktree_path = repo_path / ".claude" / "worktrees" / branch.replace("/", "-")
     worktree_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Get current branch to use as base
-    base = subprocess.run(
-        ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-        cwd=repo_path,
-        capture_output=True,
-        text=True,
-        check=True,
-    ).stdout.strip()
+    if base_ref is None:
+        # Get current branch to use as base (legacy behavior).
+        base_ref = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            cwd=repo_path,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
 
     # Remove stale worktree if it exists
     if worktree_path.exists():
@@ -242,14 +331,17 @@ def create_worktree(repo_path: Path, branch: str) -> Path:
 
     # Create worktree with new branch
     subprocess.run(
-        ["git", "worktree", "add", "-b", branch, str(worktree_path), base],
+        ["git", "worktree", "add", "-b", branch, str(worktree_path), base_ref],
         cwd=repo_path,
         capture_output=True,
         text=True,
         check=True,
     )
 
-    logger.info("Created worktree at %s on branch %s (base: %s)", worktree_path, branch, base)
+    logger.info(
+        "Created worktree at %s on branch %s (base: %s)",
+        worktree_path, branch, base_ref,
+    )
     return worktree_path
 
 

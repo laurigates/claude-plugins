@@ -352,10 +352,21 @@ class TestRunMaintainHandoff:
         monkeypatch.setattr(
             orchestrator,
             "create_worktree",
-            lambda _repo, _branch: worktree,
+            lambda _repo, _branch, base_ref=None: worktree,
         )
         monkeypatch.setattr(
             orchestrator, "_snapshot_parent_sha", lambda _path: "deadbeef",
+        )
+
+        # The freshness probe shells out to git; stub it for this unit test.
+        from git_repo_agent.worktree import BaseFreshness
+
+        monkeypatch.setattr(
+            orchestrator,
+            "probe_base_freshness",
+            lambda _repo, _base: BaseFreshness(
+                fetched=False, has_remote=False, behind=0, base_branch=_base,
+            ),
         )
 
         # Track that the PR-creation prompt is never reached.
