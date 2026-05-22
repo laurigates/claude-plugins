@@ -108,6 +108,7 @@ from .worktree import (
     get_base_branch,
     gh_auth_ok,
     parse_report_only_findings,
+    probe_base_freshness,
     push_and_create_pr,
     refresh_base as refresh_base_branch,
     release_lock,
@@ -650,8 +651,39 @@ async def run_maintain(
         branch = f"maintain/{date.today().isoformat()}"
 
     if makes_changes:
-        console.print(f"[dim]Creating worktree on branch {branch}...[/dim]")
-        worktree_path = create_worktree(repo_path, branch)
+        # Freshness check (issue #1358). Maintain runs back-to-back with
+        # onboard PRs will see a local main that hasn't been pulled,
+        # then re-suggest every fix the just-merged PR landed. Always
+        # fetch origin/<base> before branching the worktree off it, so
+        # the analysis starts from the actual remote head.
+        freshness = probe_base_freshness(repo_path, base_branch)
+        worktree_base = base_branch
+        if freshness.has_remote and freshness.fetched:
+            worktree_base = f"origin/{base_branch}"
+            if freshness.behind > 0:
+                console.print(
+                    f"[yellow]Local {base_branch} is {freshness.behind} "
+                    f"commit(s) behind origin/{base_branch}. Branching "
+                    f"worktree off origin/{base_branch} so analysis "
+                    f"sees freshly-merged changes (issue #1358).[/yellow]"
+                )
+            else:
+                console.print(
+                    f"[dim]Fetched origin/{base_branch} — local base is up to date.[/dim]"
+                )
+        elif freshness.has_remote and not freshness.fetched:
+            console.print(
+                f"[yellow]Could not fetch origin/{base_branch}; "
+                f"analysis will run against possibly-stale local "
+                f"{base_branch}. (issue #1358)[/yellow]"
+            )
+        # else: no origin remote — local-only repo, nothing to refresh.
+
+        console.print(
+            f"[dim]Creating worktree on branch {branch} "
+            f"(base: {worktree_base})...[/dim]"
+        )
+        worktree_path = create_worktree(repo_path, branch, base_ref=worktree_base)
         work_dir = worktree_path
         console.print(f"[dim]Working in: {worktree_path}[/dim]")
 
