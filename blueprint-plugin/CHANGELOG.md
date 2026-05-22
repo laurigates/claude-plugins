@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.33.3](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.33.2...blueprint-plugin-v3.33.3) (2026-05-22)
+
+
+### Bug Fixes
+
+* **blueprint-plugin:** unify ADR/PRD/PRP/TRP layout at top-level docs/ ([#1373](https://github.com/laurigates/claude-plugins/issues/1373)) ([97cbbab](https://github.com/laurigates/claude-plugins/commit/97cbbab49dce3bc8ae94b15916e4ed1f88914441))
+
 ## [3.33.2](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.33.1...blueprint-plugin-v3.33.2) (2026-05-22)
 
 
