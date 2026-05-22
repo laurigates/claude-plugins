@@ -8,6 +8,8 @@ from typing import Any
 
 from claude_agent_sdk import tool
 
+from .stack_profile import StackProfile, profile_stack
+
 
 def _score_docs(repo: Path) -> tuple[int, list[str]]:
     """Score documentation health (0-20)."""
@@ -101,8 +103,16 @@ def _score_tests(repo: Path) -> tuple[int, list[str]]:
     return min(score, 20), findings
 
 
-def _score_security(repo: Path) -> tuple[int, list[str]]:
-    """Score security health (0-20)."""
+def _score_security(
+    repo: Path, profile: StackProfile | None = None,
+) -> tuple[int, list[str]]:
+    """Score security health (0-20).
+
+    Stack-aware (issue #1359): when CI already runs known security
+    tooling (gitleaks, trivy, codeql, etc.), credit the score and
+    omit the "no security scanning" finding even if the substring
+    heuristic below would have missed it.
+    """
     score = 0
     findings: list[str] = []
 
@@ -133,17 +143,22 @@ def _score_security(repo: Path) -> tuple[int, list[str]]:
 
     # Security-related CI checks
     workflows_dir = repo / ".github" / "workflows"
-    if workflows_dir.is_dir():
+    security_found = False
+    if profile is not None and profile.ci_has_security_scanning:
+        security_found = True
+        score += 4
+    elif workflows_dir.is_dir():
         for wf in workflows_dir.glob("*.yml"):
             try:
                 content = wf.read_text(encoding="utf-8", errors="replace").lower()
                 if any(kw in content for kw in ["security", "audit", "dependabot", "codeql", "snyk"]):
                     score += 4
+                    security_found = True
                     break
             except OSError:
                 pass
-        else:
-            findings.append("No security scanning in CI")
+    if not security_found and workflows_dir.is_dir():
+        findings.append("No security scanning in CI")
 
     # Dependabot
     if (repo / ".github" / "dependabot.yml").exists():
@@ -154,8 +169,26 @@ def _score_security(repo: Path) -> tuple[int, list[str]]:
     return min(score, 20), findings
 
 
-def _score_quality(repo: Path) -> tuple[int, list[str]]:
-    """Score code quality health (0-20)."""
+def _score_quality(
+    repo: Path, profile: StackProfile | None = None,
+) -> tuple[int, list[str]]:
+    """Score code quality health (0-20).
+
+    Stack-aware (issue #1359):
+
+      - When ``biome.json`` is present, both the linter and formatter
+        slots are credited (biome replaces both ESLint and Prettier).
+      - When ruff is configured, both linter and formatter are credited
+        (ruff's ``format`` subcommand works whenever ``[tool.ruff]`` is
+        present, even without ``[tool.ruff.format]``).
+      - The "No type checking" finding is suppressed for
+        Python-incidental projects (e.g. ComfyUI custom-node packs
+        with a 5-line ``__init__.py``) because there is nothing to
+        type-check.
+      - For Astral-aligned projects (uv + ruff) without a type
+        checker, the finding wording prefers Astral's ``ty`` over
+        mypy/pyright to match the project's tool family.
+    """
     score = 0
     findings: list[str] = []
 
@@ -180,7 +213,7 @@ def _score_quality(repo: Path) -> tuple[int, list[str]]:
         if score == 0:
             findings.append("No linter configured")
 
-    # Formatter config
+    # Formatter config — biome and ruff each cover the formatter slot.
     formatter_configs = [
         "biome.json", "biome.jsonc",
         ".prettierrc", ".prettierrc.json", ".prettierrc.yaml", ".prettierrc.yml",
@@ -194,7 +227,10 @@ def _score_quality(repo: Path) -> tuple[int, list[str]]:
         score += 5
     else:
         formatter_found = False
-        if (repo / "pyproject.toml").exists():
+        if profile is not None and profile.has_ruff_format:
+            score += 5
+            formatter_found = True
+        elif (repo / "pyproject.toml").exists():
             try:
                 content = (repo / "pyproject.toml").read_text(encoding="utf-8")
                 if "tool.ruff" in content or "tool.black" in content:
@@ -205,7 +241,7 @@ def _score_quality(repo: Path) -> tuple[int, list[str]]:
         if not formatter_found:
             findings.append("No formatter configured")
 
-    # Type checking
+    # Type checking — suppress finding for Python-incidental projects.
     type_configs = [
         "tsconfig.json",
         "pyrightconfig.json", "basedpyright",
@@ -215,8 +251,11 @@ def _score_quality(repo: Path) -> tuple[int, list[str]]:
         score += 5
     else:
         typechecker_found = False
+        if profile is not None and profile.has_python_type_checker:
+            score += 5
+            typechecker_found = True
         # Check pyproject.toml
-        if (repo / "pyproject.toml").exists():
+        if not typechecker_found and (repo / "pyproject.toml").exists():
             try:
                 content = (repo / "pyproject.toml").read_text(encoding="utf-8")
                 if any(t in content for t in ["tool.pyright", "tool.basedpyright", "tool.mypy", "tool.ty"]):
@@ -245,7 +284,25 @@ def _score_quality(repo: Path) -> tuple[int, list[str]]:
                 except OSError:
                     pass
         if not typechecker_found:
-            findings.append("No type checking configured")
+            # Stack-aware suppression: don't recommend type checking for
+            # projects that have essentially no Python to check.
+            if profile is not None and (
+                profile.is_comfyui_pack or profile.is_python_incidental
+            ):
+                # No finding emitted — but also no score credit.
+                pass
+            else:
+                # Stack-aware wording: for uv+ruff (Astral) projects,
+                # default the recommendation to ``ty``. Otherwise leave
+                # the generic message so a JS/TS project doesn't see a
+                # Python-specific suggestion.
+                if profile is not None and profile.uses_uv and profile.has_ruff_lint:
+                    findings.append(
+                        "No type checking configured (recommend `ty` — "
+                        "Astral's type checker, matches the uv+ruff stack)"
+                    )
+                else:
+                    findings.append("No type checking configured")
 
     # Editor config
     if (repo / ".editorconfig").exists():
@@ -315,8 +372,20 @@ def _grade(overall_score: int) -> str:
 
 
 def compute_health_score(repo_path: Path) -> dict[str, Any]:
-    """Compute repository health score with category breakdown."""
-    categories = {
+    """Compute repository health score with category breakdown.
+
+    Computes a :class:`StackProfile` once and passes it to scorers that
+    use it to skip findings that don't apply to the project's actual
+    stack (issue #1359). The profile is also surfaced under the
+    ``stack_profile`` key in the result so downstream consumers (and
+    the agent prompt) can see what was detected.
+    """
+    profile = profile_stack(repo_path)
+
+    # The profile-aware scorers accept an optional second argument; the
+    # plain ones ignore it. Pass the profile uniformly so future scorers
+    # can opt in without changing the dispatch.
+    profile_aware_scorers: dict[str, Any] = {
         "docs": _score_docs,
         "tests": _score_tests,
         "security": _score_security,
@@ -327,8 +396,15 @@ def compute_health_score(repo_path: Path) -> dict[str, Any]:
     category_scores: dict[str, int] = {}
     all_findings: dict[str, list[str]] = {}
 
-    for cat_name, scorer in categories.items():
-        cat_score, cat_findings = scorer(repo_path)
+    for cat_name, scorer in profile_aware_scorers.items():
+        # Use a parameter probe so we only forward the profile to
+        # scorers that accept it. Cheaper than introspection: every
+        # scorer here is called with profile as keyword arg when its
+        # signature supports it.
+        try:
+            cat_score, cat_findings = scorer(repo_path, profile=profile)  # type: ignore[call-arg]
+        except TypeError:
+            cat_score, cat_findings = scorer(repo_path)
         category_scores[cat_name] = cat_score
         if cat_findings:
             all_findings[cat_name] = cat_findings
@@ -341,6 +417,22 @@ def compute_health_score(repo_path: Path) -> dict[str, Any]:
         "category_scores": category_scores,
         "findings": all_findings,
         "max_score": 100,
+        "stack_profile": {
+            "has_biome": profile.has_biome,
+            "has_eslint": profile.has_eslint,
+            "has_prettier": profile.has_prettier,
+            "has_tsconfig": profile.has_tsconfig,
+            "has_ruff_lint": profile.has_ruff_lint,
+            "has_ruff_format": profile.has_ruff_format,
+            "has_python_type_checker": profile.has_python_type_checker,
+            "python_type_checker_kind": profile.python_type_checker_kind,
+            "uses_uv": profile.uses_uv,
+            "ci_has_security_scanning": profile.ci_has_security_scanning,
+            "ci_security_tools": list(profile.ci_security_tools),
+            "is_comfyui_pack": profile.is_comfyui_pack,
+            "is_python_incidental": profile.is_python_incidental,
+            "python_loc_outside_tests": profile.python_loc_outside_tests,
+        },
     }
 
 
