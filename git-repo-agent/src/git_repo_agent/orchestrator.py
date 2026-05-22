@@ -3,10 +3,13 @@
 import json
 import logging
 import signal
+import subprocess
 import sys
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from pathlib import Path
+from typing import Literal
 
 from claude_agent_sdk import (
     AssistantMessage,
@@ -540,19 +543,25 @@ async def run_onboard(
         prompt = " ".join(prompt_parts)
 
         if interactive:
-            agent_output = await _stream_interactive(
-                prompt,
-                options,
-                "Onboarding complete.",
-                user_input_label=(
-                    "[bold]Apply onboarding plan?[/bold] "
-                    "(comma-separated numbers, [green]all[/green], or "
-                    "[yellow]none[/yellow]): "
-                ),
-                build_phase2_prompt=_build_onboard_phase2_prompt,
-                worktree_branch=branch,
-                none_message="No onboarding actions selected.",
-            )
+            try:
+                agent_output = await _stream_interactive(
+                    prompt,
+                    options,
+                    "Onboarding complete.",
+                    user_input_label=(
+                        "[bold]Apply onboarding plan?[/bold] "
+                        "(comma-separated numbers, [green]all[/green], "
+                        "[yellow]none[/yellow], or [cyan]claude[/cyan] "
+                        "[optional feedback]): "
+                    ),
+                    build_phase2_prompt=_build_onboard_phase2_prompt,
+                    workflow="onboard",
+                    worktree_path=work_dir,
+                    worktree_branch=branch,
+                    none_message="No onboarding actions selected.",
+                )
+            except HandoffRequested:
+                return
         elif non_interactive is not None:
             agent_output = await _stream_messages_collecting(
                 prompt, options, "Onboarding complete.",
@@ -707,19 +716,25 @@ async def run_maintain(
         prompt = " ".join(prompt_parts)
 
         if interactive:
-            collected = await _stream_interactive(
-                prompt,
-                options,
-                "Maintenance complete.",
-                user_input_label=(
-                    "[bold]Select fixes to apply[/bold] "
-                    "(comma-separated numbers, [green]all[/green], or "
-                    "[yellow]none[/yellow]): "
-                ),
-                build_phase2_prompt=_build_maintain_phase2_prompt,
-                worktree_branch=branch,
-                none_message="No fixes selected.",
-            )
+            try:
+                collected = await _stream_interactive(
+                    prompt,
+                    options,
+                    "Maintenance complete.",
+                    user_input_label=(
+                        "[bold]Select fixes to apply[/bold] "
+                        "(comma-separated numbers, [green]all[/green], "
+                        "[yellow]none[/yellow], or [cyan]claude[/cyan] "
+                        "[optional feedback]): "
+                    ),
+                    build_phase2_prompt=_build_maintain_phase2_prompt,
+                    workflow="maintain",
+                    worktree_path=work_dir,
+                    worktree_branch=branch,
+                    none_message="No fixes selected.",
+                )
+            except HandoffRequested:
+                return
         else:
             collected = await _stream_messages_collecting(
                 prompt, options, "Maintenance complete.",
@@ -1020,6 +1035,141 @@ async def _stream_messages_collecting(
 
 
 _NONE_CHOICES = ("none", "n", "no", "")
+_HANDOFF_KEYWORDS = ("claude",)
+
+
+@dataclass(frozen=True)
+class UserChoice:
+    """Tagged selection-prompt result.
+
+    ``kind`` distinguishes the three branches the interlude can take:
+    ``"handoff"`` means the user wants to hand control to Claude Code in
+    the worktree; ``"none"`` means skip Phase 2 entirely; ``"select"``
+    means the LLM should parse ``raw`` as a selection list (numbers /
+    ``all`` / ``yes``).
+    """
+
+    kind: Literal["select", "none", "handoff"]
+    raw: str
+    feedback: str = ""
+
+
+def _parse_user_choice(raw: str) -> UserChoice:
+    """Parse the selection-prompt input into a tagged ``UserChoice``.
+
+    Recognises three kinds:
+
+    * ``"handoff"`` — first whitespace-delimited token is ``claude``
+      (case-insensitive). Anything after the first whitespace is treated
+      as free-text feedback for Claude Code.
+    * ``"none"`` — input matches ``_NONE_CHOICES`` after strip+lower.
+    * ``"select"`` — everything else; the LLM parses the actual numbers
+      in Phase 2.
+
+    The first-token check is deliberate: ``"1,2,claude"`` parses as
+    ``select`` (the leading ``1`` is not ``claude``); ``"claude"`` alone
+    is a clean handoff with empty feedback.
+    """
+    stripped = raw.strip()
+    tokens = stripped.split(maxsplit=1)
+    first = tokens[0].lower() if tokens else ""
+    if first in _HANDOFF_KEYWORDS:
+        feedback = tokens[1].strip() if len(tokens) > 1 else ""
+        return UserChoice(kind="handoff", raw=raw, feedback=feedback)
+    if stripped.lower() in _NONE_CHOICES:
+        return UserChoice(kind="none", raw=raw)
+    return UserChoice(kind="select", raw=raw)
+
+
+class HandoffRequested(Exception):
+    """Raised from ``_stream_interactive`` when the user hands off to Claude Code.
+
+    Callers in ``run_maintain`` / ``run_onboard`` catch this and return
+    cleanly, skipping the Phase 2 / push / PR pipeline. The worktree is
+    intentionally left intact for the Claude Code session to own.
+    """
+
+
+def _launch_claude_handoff(
+    *,
+    phase1_text: str,
+    feedback: str,
+    worktree_path: Path,
+    worktree_branch: str | None,
+    workflow: str,
+) -> None:
+    """Write a handoff file and launch interactive ``claude`` in the worktree.
+
+    The Phase 1 output and the user's free-text feedback are written to
+    ``<worktree>/.git/git-repo-agent-handoff.md`` (inside ``.git/`` so
+    it's never staged). A short initial prompt referencing that file via
+    ``@`` is passed to ``claude``, which is run with ``cwd`` set to the
+    worktree. The call blocks until the user exits Claude Code.
+
+    On ``FileNotFoundError`` (``claude`` not on PATH) we print a clear
+    message with the handoff file path so the user can run it manually.
+    """
+    handoff_path = worktree_path / ".git" / "git-repo-agent-handoff.md"
+    handoff_path.parent.mkdir(parents=True, exist_ok=True)
+
+    timestamp = datetime.now(timezone.utc).isoformat()
+    branch_line = f"- Branch: `{worktree_branch}`\n" if worktree_branch else ""
+    feedback_section = (
+        f"\n## User feedback\n\n{feedback}\n" if feedback else ""
+    )
+
+    handoff_path.write_text(
+        f"# git-repo-agent handoff\n\n"
+        f"- Workflow: `{workflow}`\n"
+        f"{branch_line}"
+        f"- Timestamp: {timestamp}\n"
+        f"- Worktree: `{worktree_path}`\n\n"
+        f"The git-repo-agent orchestrator handed control to you because the "
+        f"suggestions below were not quite right and the user wants to drive "
+        f"from here. The worktree is yours — edit, commit, push, and open a "
+        f"PR as needed. Run `git worktree remove` when done.\n\n"
+        f"## Suggested actions\n\n"
+        f"{phase1_text}\n"
+        f"{feedback_section}\n"
+        f"---\n\n"
+        f"You are now inside the worktree at `{worktree_path}`. "
+        f"All git operations should run from here.\n",
+        encoding="utf-8",
+    )
+
+    initial_prompt = (
+        f"You are taking over a git-repo-agent `{workflow}` run. "
+        f"Read `@.git/git-repo-agent-handoff.md` for the suggestions list "
+        f"and the user's feedback, then help them complete the work in this "
+        f"worktree."
+    )
+
+    console.print(
+        "[bold cyan]Handing off to Claude Code in the worktree...[/bold cyan]"
+    )
+    console.print(f"[dim]Handoff context: {handoff_path}[/dim]")
+    console.print(f"[dim]Worktree: {worktree_path}[/dim]\n")
+
+    try:
+        subprocess.run(
+            ["claude", initial_prompt],
+            cwd=worktree_path,
+            check=False,
+        )
+    except FileNotFoundError:
+        console.print(
+            "[red]`claude` not found on PATH.[/red] "
+            f"The handoff context is at [cyan]{handoff_path}[/cyan]. "
+            f"Run `claude` from [cyan]{worktree_path}[/cyan] manually."
+        )
+        return
+
+    console.print()
+    console.print(
+        f"[bold green]Orchestrator exiting cleanly.[/bold green] "
+        f"The worktree is still at [cyan]{worktree_path}[/cyan] — "
+        f"commit, push, and open a PR from there when ready."
+    )
 
 
 def _build_maintain_phase2_prompt(
@@ -1160,6 +1310,8 @@ async def _stream_interactive(
     completion_msg: str,
     user_input_label: str,
     build_phase2_prompt: Callable[[str, str, str | None], str],
+    workflow: str,
+    worktree_path: Path,
     worktree_branch: str | None = None,
     none_message: str = "No actions selected.",
 ) -> str:
@@ -1179,6 +1331,10 @@ async def _stream_interactive(
     The caller supplies ``build_phase2_prompt`` so that the same plumbing
     serves both maintain (findings → fixes) and onboard (plan → setup).
 
+    When the user's selection is ``claude [feedback]``, ``HandoffRequested``
+    is raised so the caller can skip Phase 2 / push / PR; the worktree is
+    left intact for the Claude Code session that was just launched.
+
     Returns concatenated agent text output from both phases for
     post-processing (PR body, issue creation).
     """
@@ -1193,8 +1349,19 @@ async def _stream_interactive(
     # --- Interlude: prompt user ---
     console.print()
     user_input = console.input(user_input_label)
-    choice = user_input.strip().lower()
-    if choice in _NONE_CHOICES:
+    choice = _parse_user_choice(user_input)
+
+    if choice.kind == "handoff":
+        _launch_claude_handoff(
+            phase1_text=phase1_text,
+            feedback=choice.feedback,
+            worktree_path=worktree_path,
+            worktree_branch=worktree_branch,
+            workflow=workflow,
+        )
+        raise HandoffRequested
+
+    if choice.kind == "none":
         console.print(f"[yellow]{none_message}[/yellow]")
 
     # --- Phase 2: Execution (fresh session) ---
