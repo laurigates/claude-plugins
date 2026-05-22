@@ -4,8 +4,8 @@ modified: 2026-05-22
 reviewed: 2026-05-22
 description: "Claude plugins marketplace setup: .claude/settings.json, GitHub Actions, plugin sets. Use when onboarding to claude-plugins, setting up claude.yml, or pinning plugins."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash(mkdir *), Bash(test *), Bash(ls *), Bash(git remote *), Bash(gh api *), Bash(jq *), AskUserQuestion, TodoWrite
-args: "[--check-only] [--fix] [--exhaustive] [--plugins <plugin1,plugin2,...>]"
-argument-hint: "[--check-only] [--fix] [--exhaustive] [--plugins <plugin1,plugin2,...>]"
+args: "[--check-only] [--fix] [--exhaustive] [--plugins <plugin1,plugin2,...>] [--workflows] [--no-workflows]"
+argument-hint: "[--check-only] [--fix] [--exhaustive] [--plugins <plugin1,plugin2,...>] [--workflows] [--no-workflows]"
 name: configure-claude-plugins
 ---
 
@@ -42,6 +42,8 @@ Parse from command arguments:
 | `--fix` | Apply configuration automatically |
 | `--plugins` | Comma-separated list of plugins to install (default: all recommended) |
 | `--exhaustive` | Enumerate every marketplace plugin in `enabledPlugins` — recommended ones as `true`, the rest as `false`. Pins the project's plugin set against global toggles. |
+| `--workflows` | Force-scaffold the `claude.yml` / `claude-code-review.yml` workflows even when no git remote is detected (default: scaffold only when a remote exists). |
+| `--no-workflows` | Skip workflow scaffolding even when a git remote is present. Useful for local-only or vendored projects. |
 
 ## Execution
 
@@ -53,6 +55,7 @@ Execute this Claude plugins configuration workflow:
 2. Check for existing `.github/workflows/claude.yml`
 3. Check for existing `.github/workflows/claude-code-review.yml`
 4. Detect project type (language, framework) from file indicators
+5. Check for a git remote with `git remote -v`. Capture `has_remote = true` when the output is non-empty, `has_remote = false` otherwise. This gates workflow scaffolding in Steps 4 and 5 — workflows that cannot run (no remote → no GitHub Actions) should not be scaffolded by default.
 
 ### Step 2: Select plugins
 
@@ -199,7 +202,19 @@ If `.claude/settings.json` already exists, **MERGE** without duplicating entries
 
 ### Step 4: Configure .github/workflows/claude.yml
 
-Create `.github/workflows/claude.yml` with the Claude Code action configured to use the plugin marketplace. Workflow `plugins:` entries use the `@laurigates-claude-plugins` suffix — the marketplace `name` from `marketplace.json`, NOT the `extraKnownMarketplaces` key used in Step 3:
+**Gate this step on a git remote being present.** Decide whether to scaffold using this table:
+
+| `has_remote` (from Step 1) | Flag | Behaviour |
+|---|---|---|
+| `true` | _(default)_ or `--workflows` | Scaffold `claude.yml` |
+| `true` | `--no-workflows` | Skip; record `STATUS=SKIPPED (--no-workflows)` |
+| `false` | _(default)_ | **Default-skip** — prompt the user via `AskUserQuestion`: *"No git remote detected. `claude.yml` cannot run without GitHub Actions. Scaffold anyway (will sit dormant until a remote is added), or skip?"* Default to skip on `--check-only` (no prompt). |
+| `false` | `--workflows` | Force-scaffold anyway (e.g. the user plans to add a remote later) |
+| `false` | `--no-workflows` | Skip without prompting |
+
+When the decision is **skip**, do not write the file, and surface `STATUS=SKIPPED (no git remote)` in the Step 6 report so the omission is visible.
+
+When the decision is **scaffold**, create `.github/workflows/claude.yml` with the Claude Code action configured to use the plugin marketplace. Workflow `plugins:` entries use the `@laurigates-claude-plugins` suffix — the marketplace `name` from `marketplace.json`, NOT the `extraKnownMarketplaces` key used in Step 3:
 
 ```yaml
 name: Claude Code
@@ -246,7 +261,9 @@ Replace `PLUGINS_LIST` with the selected plugins in the format `plugin-name@laur
 
 ### Step 5: Configure .github/workflows/claude-code-review.yml
 
-Create `.github/workflows/claude-code-review.yml` for automatic PR reviews:
+**Apply the same git-remote gate from Step 4.** Reuse the user's answer (or the `--workflows` / `--no-workflows` flag) — do not re-prompt. If Step 4 skipped, skip Step 5 as well and record `STATUS=SKIPPED (no git remote)`.
+
+When the decision is **scaffold**, create `.github/workflows/claude-code-review.yml` for automatic PR reviews:
 
 ```yaml
 name: Claude Code Review
@@ -305,13 +322,15 @@ Repository: <repo-name>
   Plugins pinned:      <N> total (<E> enabled, <D> disabled)   # exhaustive only
   Enabled plugins:     <list>
 
+Git remote:            <PRESENT|MISSING>
+
 .github/workflows/claude.yml:
-  Status:              <CREATED|UPDATED|EXISTS>
+  Status:              <CREATED|UPDATED|EXISTS|SKIPPED (no git remote)|SKIPPED (--no-workflows)>
   Marketplace:         laurigates/claude-plugins
   Plugins:             <list>
 
 .github/workflows/claude-code-review.yml:
-  Status:              <CREATED|UPDATED|EXISTS>
+  Status:              <CREATED|UPDATED|EXISTS|SKIPPED (no git remote)|SKIPPED (--no-workflows)>
   Trigger:             PR opened/synchronize/reopened
 
 Next Steps:
@@ -321,6 +340,8 @@ Next Steps:
   3. Test by mentioning @claude in a PR comment
   4. (exhaustive mode) Re-run when the marketplace adds new plugins so they
      get an explicit `false` rather than inheriting the global toggle
+  5. (no remote) When you add a GitHub remote later, re-run with `--workflows`
+     to scaffold the workflows that were skipped
 ```
 
 ## Agentic Optimizations
@@ -331,9 +352,12 @@ Next Steps:
 | Auto-configure all | `/configure:claude-plugins --fix` |
 | Specific plugins only | `/configure:claude-plugins --fix --plugins git-plugin,testing-plugin` |
 | Pin against global drift | `/configure:claude-plugins --fix --exhaustive` |
+| Settings only (local-only repo) | `/configure:claude-plugins --fix --no-workflows` |
+| Pre-stage workflows before remote exists | `/configure:claude-plugins --fix --workflows` |
 | List marketplace plugin names | `jq -r '.plugins[].name' .claude-plugin/marketplace.json` |
 | Verify settings exist | `find .claude -maxdepth 1 -name 'settings.json'` |
 | List Claude workflows | `find .github/workflows -name 'claude*.yml'` |
+| Check for git remote | `git remote -v` |
 
 ## Flags
 
@@ -343,11 +367,14 @@ Next Steps:
 | `--fix` | Apply all configuration automatically |
 | `--plugins` | Override automatic plugin selection |
 | `--exhaustive` | Enumerate every marketplace plugin (recommended ones `true`, the rest `false`). Pins the project's plugin set deterministically against global toggles. |
+| `--workflows` | Force-scaffold the `claude.yml` / `claude-code-review.yml` workflows even when no git remote is detected. By default, workflow scaffolding is skipped on remote-less repos to avoid dormant files. |
+| `--no-workflows` | Skip workflow scaffolding even when a git remote is present. Useful for local-only or vendored projects where settings should be configured but Actions should not. |
 
 ## Important Notes
 
 - The `CLAUDE_CODE_OAUTH_TOKEN` secret must be added manually to the repository
 - `extraKnownMarketplaces` in `.claude/settings.json` is the key to surviving ephemeral web sessions — without it, the marketplace is only enrolled via CI
+- **Workflow scaffolding is gated on a git remote.** A repo without a remote cannot run GitHub Actions, so `claude.yml` and `claude-code-review.yml` are skipped by default — writing them would create dormant files that confuse future readers. Override with `--workflows` to pre-stage them before adding a remote.
 - **Two distinct suffix forms** (see the callout at the top of Step 3 for the canonical table):
   - `enabledPlugins` entries use `<plugin>@claude-plugins` — the `extraKnownMarketplaces` *key*
   - Workflow `plugins:` blocks use `<plugin>@laurigates-claude-plugins` — the marketplace `name` field from `marketplace.json`
