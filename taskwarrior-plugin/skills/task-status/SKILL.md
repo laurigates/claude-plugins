@@ -5,8 +5,8 @@ args: "[--mine] [--blocked] [--stale=N] [--project=<name>] [--all]"
 allowed-tools: Bash(task *), Bash(git config *), Bash(git rev-parse *), Bash(gh auth *), Bash(gh pr *), Bash(jq *), Read, TodoWrite
 argument-hint: optional filters
 created: 2026-04-24
-modified: 2026-05-09
-reviewed: 2026-05-09
+modified: 2026-05-22
+reviewed: 2026-05-22
 ---
 
 # /taskwarrior:task-status
@@ -24,10 +24,14 @@ Read-only status report on the coordination queue. Strictly uses `export | jq` â
 ## Context
 
 - Task CLI available: !`task --version`
-- Git toplevel: !`git rev-parse --show-toplevel`
-- Git remote: !`git remote`
+- Git repo detected: !`find . -maxdepth 1 -name '.git' -print -quit`
 - GH auth: !`gh auth status`
 - Known projects: !`task _projects`
+
+Git probes (`git rev-parse --show-toplevel`, `git remote`) write to stderr
+in a no-git cwd, and stderr from a Context backtick aborts the skill
+before its body runs. Project resolution is done in the body (Step 1
+below), where `2>/dev/null` and exit-code handling are available.
 
 ## Parameters
 
@@ -50,8 +54,9 @@ project identifier in this order:
 
 1. `--project=<name>` if provided.
 2. `--all` â†’ no project filter.
-3. Basename of the path reported as `Git toplevel` in Context.
-4. If no git repo, basename of the cwd.
+3. Basename of `git rev-parse --show-toplevel 2>/dev/null`, run via the
+   Bash tool (where stderr suppression and non-zero exits are tolerated).
+4. If no git repo (Step 3 returned empty), basename of the cwd.
 
 Cross-check the resolved name against `Known projects`. If it is not in
 the list, note it (likely a fresh project or no tasks filed yet) but
