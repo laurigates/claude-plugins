@@ -27,6 +27,7 @@ Related:
 from __future__ import annotations
 
 import json
+import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -43,6 +44,117 @@ from rich.console import Console
 from .prompts.compiler import get_compiled_skill
 
 _console = Console()
+
+
+# --------------------------------------------------------------------------
+# Project-size sniff (issue #1355)
+# --------------------------------------------------------------------------
+#
+# Heavy derive-* phases produce process documentation that dwarfs tiny
+# projects. A 5-line Python loader stub with one feat commit does not need
+# 8 ADRs and a TRP — those are reverse-engineered from already-existing
+# CLAUDE.md content and pad the repo with hundreds of lines of ceremony.
+#
+# A "tiny single-feat project" is detected by two cheap signals:
+#
+#   - `git log --grep '^fix' | wc -l` == 0 (no bug-fix commits)
+#   - `git log --pretty=oneline | wc -l` < `_TINY_COMMIT_THRESHOLD`
+#
+# When tiny, the derive-tests phase is a no-op by definition (no fixes
+# means no regressions to capture). When also single-feat (`feat` count
+# == 1), derive-adr / derive-prd / derive-rules / feature-tracker-sync
+# add little signal — the CLAUDE.md + README already describe the project
+# and reverse-engineering a multi-option ADR table from one feat commit is
+# noise.
+
+_TINY_COMMIT_THRESHOLD = 10
+# Phases that are skipped when the repo has zero `fix:` commits — these
+# pure regression-capture phases have nothing to mine on a clean history.
+_SKIP_PHASES_NO_FIXES: frozenset[str] = frozenset({"derive_tests"})
+
+# Phases skipped when the project is tiny AND has one or zero `feat:`
+# commits. These produce reverse-engineered process docs from already-
+# existing CLAUDE.md/README content for projects that don't need them.
+_SKIP_PHASES_TINY_SINGLE_FEAT: frozenset[str] = frozenset(
+    {"derive_adr", "derive_prd", "derive_rules", "feature_tracker_sync"}
+)
+
+
+def _git_commit_count(repo_path: Path, *grep_args: str) -> int | None:
+    """Count git commits matching ``grep_args``. ``None`` on git failure.
+
+    Used to sniff project size without paying the cost of full ``git log``
+    parsing. Returns ``None`` (not 0) on failure so the caller can treat
+    "unknown" as "don't gate" — never silently strip phases because of a
+    broken git invocation.
+    """
+    try:
+        result = subprocess.run(
+            ["git", "log", "--pretty=oneline", *grep_args],
+            cwd=repo_path,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+    except (subprocess.SubprocessError, OSError):
+        return None
+    if result.returncode != 0:
+        return None
+    return sum(1 for line in result.stdout.splitlines() if line.strip())
+
+
+@dataclass(frozen=True)
+class ProjectSize:
+    """Result of the project-size sniff.
+
+    All counts are ``None`` when git failed (treat as "unknown — don't
+    gate"). When all three are populated, the booleans below reflect the
+    gating decisions for the issue #1355 heuristic.
+    """
+
+    total_commits: int | None
+    feat_commits: int | None
+    fix_commits: int | None
+
+    @property
+    def is_known(self) -> bool:
+        return (
+            self.total_commits is not None
+            and self.feat_commits is not None
+            and self.fix_commits is not None
+        )
+
+    @property
+    def has_no_fixes(self) -> bool:
+        """True when the repo has zero ``fix:`` commits (and we know it)."""
+        return self.is_known and self.fix_commits == 0
+
+    @property
+    def is_tiny_single_feat(self) -> bool:
+        """True for short-history single-feat projects (and we know it).
+
+        Tiny = fewer than ``_TINY_COMMIT_THRESHOLD`` commits total.
+        Single-feat = one or zero ``feat:`` commits.
+        """
+        return (
+            self.is_known
+            and self.total_commits < _TINY_COMMIT_THRESHOLD
+            and self.feat_commits is not None
+            and self.feat_commits <= 1
+        )
+
+
+def sniff_project_size(repo_path: Path) -> ProjectSize:
+    """Sniff a repo's git history to size the blueprint phase chain.
+
+    Returns a :class:`ProjectSize` with ``None`` fields if git is
+    unavailable or the repo has no commits yet — callers should treat
+    unknown as "don't gate" and run every phase.
+    """
+    total = _git_commit_count(repo_path)
+    feat = _git_commit_count(repo_path, "--grep=^feat", "-E")
+    fix = _git_commit_count(repo_path, "--grep=^fix", "-E")
+    return ProjectSize(total_commits=total, feat_commits=feat, fix_commits=fix)
 
 
 # --------------------------------------------------------------------------
@@ -446,12 +558,21 @@ def make_promote_phase(target: str) -> Phase:
 
 @dataclass
 class DriverOptions:
-    """Runtime flags for the blueprint driver."""
+    """Runtime flags for the blueprint driver.
+
+    ``size_aware`` enables the issue #1355 heuristic: derive-* phases
+    that would reverse-engineer process docs from already-existing
+    CLAUDE.md/README content are skipped when the repo is tiny and
+    has no bug-fix history to mine. Set to ``False`` to force the
+    full chain (useful for testing or when you really want the
+    docs).
+    """
 
     dry_run: bool = False
     skip: frozenset[str] = frozenset()  # phase names to skip by policy
     non_interactive: bool = False  # suppress AskUserQuestion tool
     max_turns_per_phase: int = 20
+    size_aware: bool = True
 
 
 @dataclass
@@ -485,6 +606,18 @@ class BlueprintDriver:
     def __init__(self, repo_path: Path, options: DriverOptions | None = None) -> None:
         self.repo_path = repo_path
         self.options = options or DriverOptions()
+        self._project_size: ProjectSize | None = None
+
+    @property
+    def project_size(self) -> ProjectSize:
+        """Lazily-sniffed project size used by ``_artifact_skip_reason``.
+
+        Cached on the driver so we run ``git log`` once per ``run()``
+        call rather than re-shelling per phase.
+        """
+        if self._project_size is None:
+            self._project_size = sniff_project_size(self.repo_path)
+        return self._project_size
 
     async def run(self, phases: tuple[Phase, ...] = ONBOARD_PHASES) -> DriverResult:
         result = DriverResult()
@@ -494,6 +627,14 @@ class BlueprintDriver:
         )
         if self.options.dry_run:
             _console.print("[yellow]DRY RUN — no filesystem writes[/yellow]")
+        if self.options.size_aware:
+            size = self.project_size
+            if size.is_known and (size.has_no_fixes or size.is_tiny_single_feat):
+                _console.print(
+                    f"[dim]Project sniff: total={size.total_commits} "
+                    f"feat={size.feat_commits} fix={size.fix_commits} — "
+                    f"size-aware gating active (issue #1355).[/dim]"
+                )
 
         for phase in phases:
             if self._should_skip(phase):
@@ -553,6 +694,24 @@ class BlueprintDriver:
         if phase.name == "workspace_scan":
             # Always run — the phase itself short-circuits if single-repo.
             return None
+
+        # Size-aware gating (issue #1355).
+        if self.options.size_aware:
+            size = self.project_size
+            if (
+                size.has_no_fixes
+                and phase.name in _SKIP_PHASES_NO_FIXES
+            ):
+                return "no fix: commits in history (size-aware)"
+            if (
+                size.is_tiny_single_feat
+                and phase.name in _SKIP_PHASES_TINY_SINGLE_FEAT
+            ):
+                return (
+                    f"tiny single-feat project "
+                    f"({size.total_commits} commits, "
+                    f"{size.feat_commits} feat) — size-aware"
+                )
 
         return None
 

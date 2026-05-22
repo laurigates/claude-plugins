@@ -24,10 +24,12 @@ from git_repo_agent.blueprint_driver import (
     SYNC_PHASES,
     UPGRADE_PHASES,
     Phase,
+    ProjectSize,
     make_promote_phase,
     make_prp_create_phase,
     make_prp_execute_phase,
     make_work_order_phase,
+    sniff_project_size,
 )
 from git_repo_agent.prompts.compiler import (
     DROP_HEADINGS,
@@ -266,6 +268,189 @@ class TestSkipPolicy:
         driver = BlueprintDriver(tmp_path, DriverOptions())
         phase = next(p for p in ONBOARD_PHASES if p.name == "workspace_scan")
         assert driver._artifact_skip_reason(phase) is None
+
+
+class TestProjectSizeSniff:
+    """Regression tests for issue #1355.
+
+    Verify that the project-size sniff correctly identifies tiny
+    single-feat projects so the heavy derive-* phases skip them.
+    """
+
+    @staticmethod
+    def _init_repo(repo: Path) -> None:
+        import subprocess as _sp
+
+        _sp.run(["git", "init", "-q"], cwd=repo, check=True)
+        _sp.run(
+            ["git", "config", "user.email", "test@example.com"],
+            cwd=repo, check=True,
+        )
+        _sp.run(
+            ["git", "config", "user.name", "Test"],
+            cwd=repo, check=True,
+        )
+
+    @staticmethod
+    def _commit(repo: Path, message: str) -> None:
+        import subprocess as _sp
+
+        # Touch a file then commit so each call creates a real commit.
+        marker = repo / "marker"
+        marker.write_text(message, encoding="utf-8")
+        _sp.run(["git", "add", "marker"], cwd=repo, check=True)
+        _sp.run(
+            ["git", "commit", "-q", "--allow-empty-message", "-m", message],
+            cwd=repo, check=True,
+        )
+
+    def test_unknown_when_not_a_git_repo(self, tmp_path: Path):
+        size = sniff_project_size(tmp_path)
+        assert not size.is_known
+        assert not size.has_no_fixes
+        assert not size.is_tiny_single_feat
+
+    def test_tiny_single_feat_detected(self, tmp_path: Path):
+        self._init_repo(tmp_path)
+        self._commit(tmp_path, "feat: ship everything in one go")
+        self._commit(tmp_path, "docs: add README")
+
+        size = sniff_project_size(tmp_path)
+        assert size.is_known
+        assert size.total_commits == 2
+        assert size.feat_commits == 1
+        assert size.fix_commits == 0
+        assert size.has_no_fixes
+        assert size.is_tiny_single_feat
+
+    def test_zero_feat_one_chore_still_tiny(self, tmp_path: Path):
+        self._init_repo(tmp_path)
+        self._commit(tmp_path, "chore: initial commit")
+
+        size = sniff_project_size(tmp_path)
+        assert size.feat_commits == 0
+        assert size.is_tiny_single_feat
+        assert size.has_no_fixes
+
+    def test_not_tiny_when_history_grows(self, tmp_path: Path):
+        self._init_repo(tmp_path)
+        for i in range(_TINY_BOUNDARY := 12):
+            self._commit(tmp_path, f"feat: thing {i}")
+
+        size = sniff_project_size(tmp_path)
+        assert size.total_commits == _TINY_BOUNDARY
+        assert not size.is_tiny_single_feat
+
+    def test_has_fixes_when_fix_commit_exists(self, tmp_path: Path):
+        self._init_repo(tmp_path)
+        self._commit(tmp_path, "feat: thing")
+        self._commit(tmp_path, "fix: handle null case")
+
+        size = sniff_project_size(tmp_path)
+        assert size.fix_commits == 1
+        assert not size.has_no_fixes
+
+
+class TestSizeAwareGating:
+    """Issue #1355: derive-* phases skip on tiny single-feat projects."""
+
+    def _init_with_commits(self, repo: Path, messages: list[str]) -> None:
+        import subprocess as _sp
+
+        _sp.run(["git", "init", "-q"], cwd=repo, check=True)
+        _sp.run(
+            ["git", "config", "user.email", "test@example.com"],
+            cwd=repo, check=True,
+        )
+        _sp.run(
+            ["git", "config", "user.name", "Test"],
+            cwd=repo, check=True,
+        )
+        for msg in messages:
+            marker = repo / "marker"
+            marker.write_text(msg, encoding="utf-8")
+            _sp.run(["git", "add", "marker"], cwd=repo, check=True)
+            _sp.run(
+                ["git", "commit", "-q", "-m", msg],
+                cwd=repo, check=True,
+            )
+
+    def test_derive_tests_skipped_when_no_fix_commits(self, tmp_path: Path):
+        self._init_with_commits(tmp_path, ["feat: ship it"])
+        driver = BlueprintDriver(tmp_path, DriverOptions())
+        phase = next(p for p in ONBOARD_PHASES if p.name == "derive_tests")
+        reason = driver._artifact_skip_reason(phase)
+        assert reason is not None
+        assert "no fix" in reason.lower()
+
+    def test_derive_tests_runs_when_fix_commits_exist(self, tmp_path: Path):
+        self._init_with_commits(
+            tmp_path,
+            ["feat: thing", "fix: bug"],
+        )
+        driver = BlueprintDriver(tmp_path, DriverOptions())
+        phase = next(p for p in ONBOARD_PHASES if p.name == "derive_tests")
+        assert driver._artifact_skip_reason(phase) is None
+
+    def test_derive_adr_skipped_on_tiny_single_feat(self, tmp_path: Path):
+        self._init_with_commits(
+            tmp_path,
+            ["feat: ship it", "docs: readme"],
+        )
+        driver = BlueprintDriver(tmp_path, DriverOptions())
+        phase = next(p for p in ONBOARD_PHASES if p.name == "derive_adr")
+        reason = driver._artifact_skip_reason(phase)
+        assert reason is not None
+        assert "tiny" in reason.lower()
+
+    def test_derive_prd_skipped_on_tiny_single_feat(self, tmp_path: Path):
+        self._init_with_commits(tmp_path, ["feat: ship it"])
+        driver = BlueprintDriver(tmp_path, DriverOptions())
+        phase = next(p for p in ONBOARD_PHASES if p.name == "derive_prd")
+        assert driver._artifact_skip_reason(phase) is not None
+
+    def test_feature_tracker_sync_skipped_on_tiny_single_feat(self, tmp_path: Path):
+        self._init_with_commits(tmp_path, ["feat: ship it"])
+        driver = BlueprintDriver(tmp_path, DriverOptions())
+        phase = next(
+            p for p in ONBOARD_PHASES if p.name == "feature_tracker_sync"
+        )
+        assert driver._artifact_skip_reason(phase) is not None
+
+    def test_init_not_skipped_by_size_gating(self, tmp_path: Path):
+        """`init` is always-on — a tiny project still needs the layout."""
+        self._init_with_commits(tmp_path, ["feat: ship it"])
+        driver = BlueprintDriver(tmp_path, DriverOptions())
+        phase = next(p for p in ONBOARD_PHASES if p.name == "init")
+        # Reason is None because no manifest exists yet, not because gating
+        # let it through — but the size-aware code path must not flag init.
+        assert driver._artifact_skip_reason(phase) is None
+
+    def test_size_aware_disabled_runs_all_phases(self, tmp_path: Path):
+        """``size_aware=False`` bypasses the gating entirely."""
+        self._init_with_commits(tmp_path, ["feat: ship it"])
+        driver = BlueprintDriver(
+            tmp_path, DriverOptions(size_aware=False),
+        )
+        for phase_name in (
+            "derive_tests", "derive_adr", "derive_prd",
+            "derive_rules", "feature_tracker_sync",
+        ):
+            phase = next(p for p in ONBOARD_PHASES if p.name == phase_name)
+            assert driver._artifact_skip_reason(phase) is None, phase_name
+
+    def test_large_repo_runs_all_derive_phases(self, tmp_path: Path):
+        """A repo with substantial history runs the full chain."""
+        messages = [f"feat: feature {i}" for i in range(12)]
+        messages.append("fix: edge case")
+        self._init_with_commits(tmp_path, messages)
+        driver = BlueprintDriver(tmp_path, DriverOptions())
+        for phase_name in (
+            "derive_tests", "derive_adr", "derive_prd",
+            "derive_rules", "feature_tracker_sync",
+        ):
+            phase = next(p for p in ONBOARD_PHASES if p.name == phase_name)
+            assert driver._artifact_skip_reason(phase) is None, phase_name
 
 
 class TestStateHint:
