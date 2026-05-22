@@ -18,6 +18,25 @@ Review the pre-computed `repo_analyze` and `health_score` results in your system
 - Technology stack and tooling
 - Overall health score with category breakdown
 - Specific findings per category
+- **`stack_profile`** — the project's actual installed tooling
+
+### Respect the existing stack (issue #1359)
+
+`health_score.stack_profile` tells you which tools are already
+installed. Treat it as authoritative when proposing fixes:
+
+| Existing tool | Don't recommend |
+|---|---|
+| `has_biome=true` | ESLint, Prettier, dprint — biome replaces all three |
+| `has_ruff_lint=true` and `has_ruff_format=true` | A separate formatter (black, autopep8) — ruff handles both |
+| `has_python_type_checker=true` | Switching to a different type checker family unless asked |
+| `ci_has_security_scanning=true` | Adding another security workflow (CodeQL, etc.) — list the existing tools as evidence |
+| `is_comfyui_pack=true` or `is_python_incidental=true` | Python library findings (type checking, py.typed, conftest.py, coverage) — the project has trivial Python by design |
+
+When the project uses **uv + ruff** (the Astral stack) and lacks a
+type checker, prefer recommending **`ty`** (Astral's beta type
+checker) over mypy or pyright. Don't mix tool families without a
+reason.
 
 ## Step 2: Triage Findings
 
