@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.2](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.3.1...taskwarrior-plugin-v1.3.2) (2026-05-22)
+
+
+### Documentation
+
+* **taskwarrior-plugin:** document bulk-close patterns in task-done ([#1370](https://github.com/laurigates/claude-plugins/issues/1370)) ([39321ac](https://github.com/laurigates/claude-plugins/commit/39321ac6d2fefcf21e28ba777ae6de0ca62faecb))
+
 ## [1.3.1](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.3.0...taskwarrior-plugin-v1.3.1) (2026-05-14)
 
 
