@@ -1,7 +1,7 @@
 ---
 created: 2025-12-22
-modified: 2026-05-09
-reviewed: 2026-04-25
+modified: 2026-05-22
+reviewed: 2026-05-22
 description: Derive a PRD from existing docs, README, and codebase. Use when onboarding a project to blueprint or extracting stakeholders, features, and personas into a PRD.
 allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion, Task
 model: opus
@@ -124,7 +124,9 @@ next_prd_id() {
 Store the generated ID for use in the document and manifest update.
 
 ### 3.2 Create PRD File
-Create the PRD in `docs/prds/`:
+
+PRDs live at the **top level** under `docs/prds/` — not `docs/blueprint/prds/`. This matches `/blueprint:init`'s canonical layout and the sibling derive-* skills. Never write PRDs under `docs/blueprint/`; that path is reserved for blueprint machinery.
+
 ```
 docs/prds/project-overview.md
 ```

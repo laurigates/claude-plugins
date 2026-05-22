@@ -1,7 +1,7 @@
 ---
 created: 2026-02-22
-modified: 2026-05-04
-reviewed: 2026-02-22
+modified: 2026-05-22
+reviewed: 2026-05-22
 description: Derive test regression plans from git history by finding commits lacking tests. Use when finding untested bug fixes, coverage gaps, or generating a test backlog.
 args: "[--since DATE] [--quick] [--scope AREA]"
 argument-hint: "--since 2024-06-01 for date range, --quick for last 50, --scope auth for specific area"
@@ -134,6 +134,8 @@ Classify each gap using the severity matrix from [REFERENCE.md](REFERENCE.md#sev
 | Low | `feat:` commit, no inline tests but nearby test commit exists |
 
 ### Step 6: Generate TRP document
+
+TRPs live at the **top level** under `docs/trps/` — not `docs/blueprint/trps/`. This matches the sibling derive-* skills' top-level layout. Never write TRPs under `docs/blueprint/`; that path is reserved for blueprint machinery.
 
 1. Create output directory: `mkdir -p docs/trps`
 2. Determine TRP ID:
