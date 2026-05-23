@@ -159,6 +159,20 @@ Documentation files (`*.md`, `*.mdx`, `*.rst`, `*.txt`) and vendor/generated pat
 
 **Toggle:** `CLAUDE_HOOKS_DISABLE_TASK_COMPLETENESS=1`
 
+### no-calendar-estimates.sh
+
+A Stop hook that nudges the agent to restate work in tokens, context-window share, or effort tier (low/medium/high/max) rather than human calendar time (hours, days, weeks, months). AI work doesn't map to human time units; quoting calendar estimates is consistently misleading.
+
+| Aspect | Detail |
+|--------|--------|
+| Type | `command` (deterministic regex on the last assistant message) |
+| Default | **Disabled** (opt-in) |
+| Toggle | `CLAUDE_HOOKS_ENABLE_CALENDAR_ESTIMATES=1` |
+| Detection | Future-modal + estimation verb + number + time unit (`will/would/should/'ll … take/require/need … N minutes/hours/…`); explicit markers (`ETA`, `estimated`, `approximately`, `roughly`, `expect … N minutes/hours/…`) |
+| Skips | Past-tense observations (`took 2 hours`), frequency (`every 3 hours`), config values (`30-second timeout`), unit-less numbers |
+| Shape | One nudge per response — the `stop_hook_active` guard accepts the agent's revised response silently |
+| Reason | Carries positive guidance inline so the rule ships self-contained with the plugin (no `.claude/rules/` dependency in consuming repos) |
+
 ### test-verification.sh
 
 A **TaskCompleted** hook (previously a Stop hook) that runs an explicitly-fast test recipe when an Agent Teams task is marked complete. Three independent constraints make this hook conservative — every constraint is a silent no-op when unmet:
@@ -349,6 +363,7 @@ Every hook can be individually enabled or disabled via environment variables. Se
 | test-verification.sh | `CLAUDE_HOOKS_DISABLE_TEST_VERIFICATION=1` | Enabled |
 | event-logger.sh | `CLAUDE_HOOKS_ENABLE_EVENT_LOGGER=1` | **Disabled** (opt-in) |
 | bash-antipatterns-teach.sh | `CLAUDE_HOOKS_ENABLE_BASH_ANTIPATTERNS_TEACH=1` | **Disabled** (opt-in) |
+| no-calendar-estimates.sh | `CLAUDE_HOOKS_ENABLE_CALENDAR_ESTIMATES=1` | **Disabled** (opt-in) |
 
 Example — disable branch protection for a session:
 
