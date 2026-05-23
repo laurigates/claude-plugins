@@ -38,6 +38,5 @@
   "typescript-plugin": "1.8.4",
   "workflow-orchestration-plugin": "1.5.2",
   "obsidian-plugin": "1.3.3",
-  "prompt-engineering-plugin": "1.1.3",
-  "upstream-pr-plugin": "1.1.2"
+  "prompt-engineering-plugin": "1.1.3"
 }
