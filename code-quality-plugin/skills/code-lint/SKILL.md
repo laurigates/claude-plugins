@@ -1,8 +1,8 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-05-23
 reviewed: 2026-04-25
-allowed-tools: Bash(ruff *), Bash(eslint *), Bash(rustfmt *), Bash(gofmt *), Bash(prettier *), Read, SlashCommand
+allowed-tools: Bash(ruff *), Bash(eslint *), Bash(rustfmt *), Bash(gofmt *), Bash(prettier *), Bash(bash *), Read, SlashCommand
 model: sonnet
 args: "[path] [--fix] [--format]"
 argument-hint: "[path] [--fix] [--format]"
@@ -14,10 +14,10 @@ name: code-lint
 
 | Use this skill when... | Use something else instead when... |
 |------------------------|------------------------------------|
-| Auto-detecting and running the correct linter for a polyglot repo | Looking up autofix patterns and exact commands → `code-lint-fix` |
-| Running ruff/eslint/clippy/gofmt with optional `--fix` and `--format` | Detecting structural anti-patterns linters miss → `code-antipatterns` |
-| Driving a one-shot lint pass before commit | Reviewing broader code quality and architecture → `code-review` |
-| Running language-aware lint over a path argument | Scanning specifically for swallowed errors → `code-error-swallowing` |
+| Auto-detecting and running the correct linter for a polyglot repo | Detecting structural anti-patterns linters miss → `code-antipatterns` |
+| Running ruff/eslint/clippy/gofmt with optional `--fix` and `--format` | Reviewing broader code quality and architecture → `code-review` |
+| Driving a one-shot lint pass before commit | Scanning specifically for swallowed errors → `code-error-swallowing` |
+| Looking up autofix commands or common fix patterns per language | (use this skill — autofix reference is now here) |
 
 ## Context
 
@@ -86,6 +86,52 @@ If no specific linters found:
 2. Check for npm scripts: `npm run lint`
 3. Suggest installing appropriate linters via `/deps:install --dev`
 4. Suggest configuring project linting standards via /configure:linting
+
+## Auto-fixing
+
+### Autofix Command Reference
+
+| Language | Linter | Autofix Command |
+|----------|--------|-----------------|
+| TypeScript/JS | biome | `npx @biomejs/biome check --write .` |
+| TypeScript/JS | biome format | `npx @biomejs/biome format --write .` |
+| Python | ruff | `ruff check --fix .` |
+| Python | ruff format | `ruff format .` |
+| Rust | clippy | `cargo clippy --fix --allow-dirty` |
+| Rust | rustfmt | `cargo fmt` |
+| Go | gofmt | `gofmt -w .` |
+| Go | go mod | `go mod tidy` |
+| Shell | shellcheck | No autofix (manual only) |
+
+### Detect-and-Fix Script
+
+Auto-detect project linters and run all appropriate fixers in one command:
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/skills/code-lint/scripts/detect-and-fix.sh"
+bash "${CLAUDE_PLUGIN_ROOT}/skills/code-lint/scripts/detect-and-fix.sh" --check-only
+```
+
+Detects biome, eslint, prettier, ruff, black, clippy, rustfmt, gofmt, golangci-lint, shellcheck. Reports which linters were found and shows modified files.
+
+### Common Fix Patterns
+
+**JavaScript/TypeScript (Biome)**: unused imports, prefer-const (`let x = 5` → `const x = 5`).
+
+**Python (Ruff)**: import sorting (I001), unused imports (F401), long lines auto-wrapped.
+
+**Rust (Clippy)**: redundant clone, `match` → `if let` for single-arm patterns.
+
+**Shell (ShellCheck — manual fixes)**: quote variables (`$var` → `"$var"`), use `$()` instead of backticks.
+
+### When to Escalate from Autofix
+
+Stop autofix and use a different approach when:
+- Fix requires understanding business logic
+- Multiple files need coordinated changes
+- Warning indicates a potential bug (not just style)
+- Security-related linter rule
+- Type error requires interface/API changes
 
 ## Post-lint Actions
 

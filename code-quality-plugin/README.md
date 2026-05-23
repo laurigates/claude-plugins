@@ -13,8 +13,7 @@ This plugin provides comprehensive code quality tools including automated code r
 | `/code:review` | Comprehensive code review with automated fixes |
 | `/code:refactor` | Refactor code applying functional programming principles - pure functions, immutability, and composition |
 | `/code:antipatterns` | Analyze codebase for anti-patterns and code smells using ast-grep |
-| `/code:lint` | Universal linter - auto-detects and runs appropriate linting tools |
-| `/code:lint-fix` | Cross-language linter autofix commands and common fix patterns |
+| `/code:lint` | Universal linter - auto-detects and runs appropriate linting tools (with `--fix` for autofix) |
 | `/code:dry-consolidation` | Find and extract duplicated code into shared, tested abstractions |
 | `/code:docs-quality` | Analyze documentation quality - PRDs, ADRs, PRPs, CLAUDE.md, and .claude/rules/ |
 | `/code:silent-degradation` | Detect silent degradation patterns where operations succeed with zero results |
@@ -96,17 +95,6 @@ Auto-detects project type and runs appropriate linters:
 - Biome/ESLint for JavaScript/TypeScript
 - Ruff for Python
 - Clippy for Rust
-
-### Linter Autofix
-
-```bash
-/code:lint-fix
-```
-
-Cross-language autofix with detect-and-fix script:
-- Biome, ESLint, Prettier for JS/TS
-- Ruff for Python
-- Clippy, rustfmt for Rust
 
 ### Documentation Quality Check
 
@@ -223,7 +211,7 @@ This plugin works reactively (analyze and fix). The **configure-plugin** works p
 | code-quality-plugin (reactive) | configure-plugin (proactive) |
 |---|---|
 | `/code:lint` — run linters | `/configure:linting` — set up linters |
-| `/code:lint-fix` — autofix lint issues | `/configure:formatting` — set up formatters |
+| `/code:lint --fix` — autofix lint issues | `/configure:formatting` — set up formatters |
 | `/code:dead-code` — find dead code | `/configure:dead-code` — set up detection tools |
 | `/code:dep-audit` — audit dependencies | `/configure:security` — set up security scanning |
 | `/code:test-quality` — analyze test quality | `/configure:tests` + `/configure:coverage` — set up frameworks |
