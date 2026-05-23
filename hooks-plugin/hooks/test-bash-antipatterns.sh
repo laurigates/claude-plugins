@@ -193,6 +193,88 @@ assert_exit_complex \
     "plain git add && git commit (outside heredoc) is still blocked" 2 \
     "git add file.txt && git commit -m msg"
 
+# ── substitution-format block messages ──────────────────────────────────────
+# Regression: block messages were "REMINDER: Use the X tool instead of Y" —
+# advisory prose without a concrete substitution. W21 friction analysis showed
+# grep/rg same-session repeat-block rate climbed from 21% to 29% even with
+# the rule landed; W20's gh-json-fields rule (concrete substitution format)
+# drove its target friction from 10/10 sessions to 0/0. This block asserts
+# the new messages carry the substitution markers so future bulk edits can't
+# silently revert to advisory prose. (Issue #1377)
+echo ""
+echo "substitution-format block messages (BLOCKED: ... → ...):"
+
+assert_stderr_contains() {
+    local desc="$1" needle="$2" cmd="$3"
+    local json
+    json=$(jq -nc --arg cmd "$cmd" '{tool_name:"Bash",tool_input:{command:$cmd}}')
+    local stderr_out
+    stderr_out=$(printf '%s' "$json" | bash "$HOOK" 2>&1 >/dev/null || true)
+    if echo "$stderr_out" | grep -qF "$needle"; then
+        printf "  PASS: %s\n" "$desc"
+        PASS=$((PASS + 1))
+    else
+        printf "  FAIL: %s (stderr missing literal: %s)\n" "$desc" "$needle"
+        printf "    got: %s\n" "$stderr_out"
+        FAIL=$((FAIL + 1))
+    fi
+}
+
+assert_stderr_contains \
+    "find block message names Glob substitution" \
+    'Glob(pattern="**/*.ts")' \
+    "find . -name '*.ts'"
+
+assert_stderr_contains \
+    "find block message uses BLOCKED: prefix" \
+    'BLOCKED:' \
+    "find . -name '*.ts'"
+
+assert_stderr_contains \
+    "find block message points at rule file" \
+    'bash-tool-replacements.md' \
+    "find . -name '*.ts'"
+
+assert_stderr_contains \
+    "grep block message names Grep substitution" \
+    'Grep(pattern="pattern", path="src", -r=true, -n=true)' \
+    "grep -rn pattern src/"
+
+assert_stderr_contains \
+    "rg block message also names Grep substitution" \
+    'Grep(pattern="pattern", glob="*.ts")' \
+    "rg pattern --type ts"
+
+assert_stderr_contains \
+    "grep block message points at rule file" \
+    'bash-tool-replacements.md' \
+    "grep -rn pattern src/"
+
+assert_stderr_contains \
+    "cat block message names Read substitution" \
+    'Read(file_path="/path/to/file.md")' \
+    "cat /home/user/file.md"
+
+assert_stderr_contains \
+    "cat block message points at rule file" \
+    'bash-tool-replacements.md' \
+    "cat /home/user/file.md"
+
+assert_stderr_contains \
+    "head block message names Read substitution with limit" \
+    'Read(file_path="/abs/path/to/file.md", limit=50)' \
+    "head -50 file.md"
+
+assert_stderr_contains \
+    "tail block message names Read substitution with offset" \
+    'Read(file_path="/abs/path/to/file.md", offset=<total_lines - 50>, limit=50)' \
+    "tail -50 file.md"
+
+assert_stderr_contains \
+    "head block message points at rule file" \
+    'bash-tool-replacements.md' \
+    "head -50 file.md"
+
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
