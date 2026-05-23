@@ -142,15 +142,6 @@ Configure per-project plugin settings using `.claude/plugin-name.local.md` files
 - Standard `extract_field` parsing pattern
 - Toggle-based hook activation, agent state management
 
-#### `claude-hooks-configuration`
-Configure Claude Code lifecycle hooks with proper timeout settings.
-
-**When to use:**
-- Fixing "Hook cancelled" errors during session management
-- Configuring SessionStart, SessionEnd, or Stop hooks
-- Optimizing hook scripts for faster execution
-- Setting custom timeout values for hooks
-
 ## Migration from Orchestration Patterns
 
 The following skills have been removed in favor of native agent teams:

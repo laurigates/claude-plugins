@@ -21,7 +21,7 @@ Analyze the plugin collection to identify where sub-agents would improve workflo
 |---|---|
 | Auditing the whole plugin collection for sub-agent opportunities (verbose-output skills, model mismatches, tool over-permissions) | Auditing a single agent's frontmatter, tool list, and prompt completeness — use `agent-patterns-plugin:meta-audit` |
 | Mapping delegation gaps and producing a list of proposed new agents | Authoring the new agent file from that proposal — use `agent-patterns-plugin:custom-agent-definitions` |
-| Reviewing haiku vs opus model selection across the plugin tree | Configuring an agent's hooks, permissions, or settings.json wiring — use `agent-patterns-plugin:claude-hooks-configuration` |
+| Reviewing haiku vs opus model selection across the plugin tree | Configuring an agent's hooks, permissions, or settings.json wiring — use `hooks-plugin:hooks-configuration` |
 | Focusing the analysis on a single plugin's skills (`--focus <plugin>`) | Coordinating multiple agents at runtime — use `agent-patterns-plugin:agent-teams` or `parallel-agent-dispatch` |
 
 ## Agentic Optimizations
