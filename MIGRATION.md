@@ -164,8 +164,7 @@ tools: Tool1, Tool2, mcp__server-name
 | Command | test/analyze           | [x]    | Added - analyze test results |
 | Skill   | test-tier-selection    | [x]    |                              |
 | Skill   | test-quality-analysis  | [x]    |                              |
-| Skill   | hypothesis-testing     | [x]    |                              |
-| Skill   | property-based-testing | [x]    |                              |
+| Skill   | property-based-testing | [x]    | hypothesis-testing merged in |
 | Skill   | mutation-testing       | [x]    |                              |
 | Skill   | vitest-testing         | [x]    |                              |
 | Agent   | test-runner            | [x]    |                              |
@@ -478,7 +477,6 @@ Place the skill in its primary plugin, reference it in related plugins' document
 
 | Skill                     | Primary Plugin | Referenced By     |
 | ------------------------- | -------------- | ----------------- |
-| hypothesis-testing        | testing-plugin | python-plugin     |
 | vitest-testing            | testing-plugin | typescript-plugin |
 | property-based-testing    | testing-plugin | python-plugin     |
 | release-please-protection | git-plugin     | configure-plugin  |

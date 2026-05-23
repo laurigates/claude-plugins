@@ -20,8 +20,7 @@ This plugin provides comprehensive testing support including test runners, TDD w
 | `test-analyze` | Analyze test results for patterns and improvements |
 | `test-tier-selection` | Determine appropriate test tier (unit, integration, e2e) |
 | `test-quality-analysis` | Analyze and improve test quality |
-| `hypothesis-testing` | Hypothesis-driven development patterns |
-| `property-based-testing` | Property-based testing frameworks |
+| `property-based-testing` | Property-based testing with fast-check (TS/JS) and Hypothesis (Python) |
 | `mutation-testing` | Mutation testing for quality validation |
 | `vitest-testing` | Vitest testing framework patterns |
 | `playwright-testing` | Playwright E2E testing framework patterns |
