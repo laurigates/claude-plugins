@@ -133,6 +133,11 @@
             "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/task-completeness.sh",
             "timeout": 10000,
             "statusMessage": "Checking task completeness..."
+          },
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/no-calendar-estimates.sh",
+            "timeout": 5000
           }
         ]
       }
