@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.3.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.2.1...hooks-plugin-v2.3.0) (2026-05-23)
+
+
+### Features
+
+* **hooks-plugin:** add no-calendar-estimates Stop hook (opt-in) ([#1379](https://github.com/laurigates/claude-plugins/issues/1379)) ([71d43ec](https://github.com/laurigates/claude-plugins/commit/71d43ec0fb3e26762288ca465623ca5df706c210))
+
+
+### Bug Fixes
+
+* **hooks-plugin:** upgrade bash-antipatterns block messages to substitution format ([#1378](https://github.com/laurigates/claude-plugins/issues/1378)) ([03b3021](https://github.com/laurigates/claude-plugins/commit/03b302132303dab2c795143e3f2d96649448063a))
+
 ## [2.2.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.2.0...hooks-plugin-v2.2.1) (2026-05-14)
 
 
