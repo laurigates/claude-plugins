@@ -55,13 +55,26 @@ block() {
 if echo "$COMMAND" | grep -Eq '^\s*cat\s+[^|><]' && \
    ! echo "$COMMAND" | grep -Eq '<<|cat\s*>' && \
    ! echo "$COMMAND" | grep -q '|'; then
-    block "REMINDER: Use the Read tool instead of 'cat' to read files. The Read tool provides better context with line numbers and handles large files appropriately."
+    block "BLOCKED: 'cat /path/to/file.md' →
+  Read(file_path=\"/path/to/file.md\")
+
+The Read tool returns line-numbered content and respects token budgets.
+Pipelines (cat file | jq) and heredocs (cat <<EOF) are still allowed.
+See .claude/rules/bash-tool-replacements.md for the full table."
 fi
 
 # Check for head/tail used to read files (not in pipelines)
 if echo "$COMMAND" | grep -Eq '^\s*(head|tail)\s+(-[0-9n]+\s+)?[^|]' && \
    ! echo "$COMMAND" | grep -q '|'; then
-    block "REMINDER: Use the Read tool with offset/limit parameters instead of 'head' or 'tail'. Example: Read with offset=100, limit=50 to read specific lines."
+    block "BLOCKED: 'head -50 file.md' →
+  Read(file_path=\"/abs/path/to/file.md\", limit=50)
+
+BLOCKED: 'tail -50 file.md' →
+  Read(file_path=\"/abs/path/to/file.md\", offset=<total_lines - 50>, limit=50)
+
+The Read tool with offset/limit reads the same byte range with
+line-numbered output. Pipelines (head file | …) are still allowed.
+See .claude/rules/bash-tool-replacements.md for the full table."
 fi
 
 # Check for sed used for editing (in-place edits)
@@ -124,8 +137,13 @@ fi
 # and any -exec usage (dangerous; runs arbitrary commands).
 if echo "$COMMAND" | grep -Eq '^\s*find\s+' && \
    ! echo "$COMMAND" | grep -Eq 'find\s+.*(-maxdepth|-mindepth|-type\s|-print0)'; then
-    block "REMINDER: Use the Glob tool instead of 'find' for file pattern matching. Glob is faster and optimized for codebase searches. Example: Glob with pattern '**/*.ts' instead of 'find . -name \"*.ts\"'
-If you need -maxdepth, -type d, or -print0 for directory discovery that Glob cannot do, use find with those flags directly."
+    block "BLOCKED: 'find . -name \"*.ts\"' →
+  Glob(pattern=\"**/*.ts\")
+
+The Glob tool is faster and optimized for codebase searches. If you
+need -maxdepth, -mindepth, -type d, or -print0 for directory discovery
+that Glob cannot do, keep find with those flags — the hook allows it.
+See .claude/rules/bash-tool-replacements.md for the full table."
 fi
 
 # Check for grep/rg command (should use Grep tool)
@@ -135,7 +153,16 @@ fi
 if echo "$COMMAND" | grep -Eq '^\s*(grep|rg)\s+' && \
    ! echo "$COMMAND" | grep -q '|' && \
    ! echo "$COMMAND" | grep -Eq '(grep|rg)[^|]*\s(-[a-zA-Z]*q[a-zA-Z]*(\s|$)|--quiet(\s|$))'; then
-    block "REMINDER: Use the Grep tool instead of 'grep' or 'rg' commands. The Grep tool is optimized for codebase searches with proper permissions and result formatting."
+    block "BLOCKED: 'grep -rn pattern src/' →
+  Grep(pattern=\"pattern\", path=\"src\", -r=true, -n=true)
+
+BLOCKED: 'rg pattern --type ts' →
+  Grep(pattern=\"pattern\", glob=\"*.ts\")
+
+The Grep tool is optimized for codebase searches with proper permissions
+and result formatting. Pipelines (… | grep …) and boolean checks
+(grep -q pattern file && do_thing) are still allowed.
+See .claude/rules/bash-tool-replacements.md for the full table."
 fi
 
 # Check for ls used for file listing (should often use Glob)
