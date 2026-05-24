@@ -70,7 +70,7 @@ Remove skills whose functionality is now native to agent teams:
 | `command-context-patterns` | Agent teams context handling | **Remove** |
 | `check-negative-examples` | Plan approval gates bad patterns | **Remove** |
 | `wip-todo` | Shared task list | **Remove** |
-| `claude-hooks-configuration` | Evaluate: may have non-orchestration value | **Evaluate** |
+| `claude-hooks-configuration` | Merged into `hooks-plugin:hooks-configuration` | **Done** |
 
 Keep these skills (unique value not replaced by agent teams):
 

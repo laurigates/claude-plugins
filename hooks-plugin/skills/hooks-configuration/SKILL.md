@@ -4,7 +4,7 @@ description: Claude Code hooks configuration and development. Use when the user 
 user-invocable: false
 allowed-tools: Bash(bash *), Bash(cat *), Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2025-12-16
-modified: 2026-05-11
+modified: 2026-05-23
 reviewed: 2026-04-10
 ---
 
@@ -227,6 +227,35 @@ When a PreToolUse hook blocks a command:
 3. Provide exact command for user to run manually
 4. Let user decide
 
+## Timeout Guidelines
+
+The default hook timeout is 600s (10 minutes) since Claude Code 2.1.50. Set explicit timeouts to document intent and prevent "Hook cancelled" errors:
+
+| Hook Type | Recommended Timeout | Use Case |
+|-----------|---------------------|----------|
+| SessionStart | 120–300s | Tests, linters, dependency checks |
+| SessionEnd | 60–120s | Logging, cleanup, state saving |
+| Stop / SubagentStop | 30–60s | Git status checks, quick validations |
+| PreToolUse | 10–30s | Quick validations |
+| PostToolUse | 30–120s | Logging, notifications |
+| PermissionRequest | 5–15s | Keep fast for good UX |
+
+### Background Subshell Pattern (Recommended for Slow Hooks)
+
+When a hook needs to do slow work (logging, API calls) without blocking, run it in a background subshell:
+
+```bash
+#!/bin/bash
+# Exits instantly; slow work continues in background
+(
+  echo "$(date): Session ended" >> ~/.claude/session.log
+  # Any other slow work...
+) &>/dev/null &
+exit 0
+```
+
+Why this works: `( )` creates a subshell, `&` runs it in background, `&>/dev/null` prevents stdout/stderr from blocking, `exit 0` returns success immediately.
+
 ## Best Practices
 
 | Area | Key Points |
@@ -236,5 +265,12 @@ When a PreToolUse hook blocks a command:
 | Security | Validate all inputs; use absolute paths; avoid `.env` / `.git/` directly; review before deploy |
 
 ## Debugging
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| Hook cancelled | Timeout exceeded | Add `"timeout"` field or use background subshell pattern |
+| Hook failed | Script error | Check exit code; add error handling |
+| Command not found | Missing script | Verify script path and permissions |
+| Permission denied | Script not executable | `chmod +x ~/.claude/script.sh` |
 
 Use `/hooks` to verify registration, `claude --debug` for verbose logging, and `echo '{"tool_input":{"command":"..."}}' | bash your-hook.sh` to test manually. Check `$?` for exit code. See `hooks/README.md` for plugin hook documentation.
