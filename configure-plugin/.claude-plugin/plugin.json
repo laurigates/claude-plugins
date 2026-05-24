@@ -8,6 +8,20 @@
   },
   "repository": "https://github.com/laurigates/claude-plugins",
   "license": "MIT",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/configure-drift-probe.sh",
+            "timeout": 3000
+          }
+        ]
+      }
+    ]
+  },
   "keywords": [
     "infrastructure",
     "standards",
