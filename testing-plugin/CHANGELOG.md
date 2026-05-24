@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.13.6](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.13.5...testing-plugin-v3.13.6) (2026-05-24)
+
+
+### Code Refactoring
+
+* **testing-plugin:** merge hypothesis-testing into property-based-testing ([#1382](https://github.com/laurigates/claude-plugins/issues/1382)) ([9fa799e](https://github.com/laurigates/claude-plugins/commit/9fa799e178f97ec334206bf31e20cf72599c815a))
+
 ## [3.13.5](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.13.4...testing-plugin-v3.13.5) (2026-05-14)
 
 

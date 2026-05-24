@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.39.5](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.39.4...git-plugin-v2.39.5) (2026-05-24)
+
+
+### Code Refactoring
+
+* **git-plugin:** merge git-resolve-conflicts into git-conflicts ([#1383](https://github.com/laurigates/claude-plugins/issues/1383)) ([9845a3e](https://github.com/laurigates/claude-plugins/commit/9845a3e44848ef0cc708463bb04c7a228e833e2b))
+
 ## [2.39.4](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.39.3...git-plugin-v2.39.4) (2026-05-19)
 
 
