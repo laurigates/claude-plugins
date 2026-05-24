@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.34.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.33.3...blueprint-plugin-v3.34.0) (2026-05-24)
+
+
+### Features
+
+* **hooks-plugin:** add SessionStart drift-nudge architecture ([#1401](https://github.com/laurigates/claude-plugins/issues/1401)) ([47815e2](https://github.com/laurigates/claude-plugins/commit/47815e2035923e9c714142597cd6ed4ad43e9f7e))
+
 ## [3.33.3](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.33.2...blueprint-plugin-v3.33.3) (2026-05-22)
 
 

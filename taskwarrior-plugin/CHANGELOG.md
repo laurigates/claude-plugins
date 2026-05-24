@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.3.2...taskwarrior-plugin-v1.4.0) (2026-05-24)
+
+
+### Features
+
+* **hooks-plugin:** add SessionStart drift-nudge architecture ([#1401](https://github.com/laurigates/claude-plugins/issues/1401)) ([47815e2](https://github.com/laurigates/claude-plugins/commit/47815e2035923e9c714142597cd6ed4ad43e9f7e))
+
 ## [1.3.2](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.3.1...taskwarrior-plugin-v1.3.2) (2026-05-22)
 
 
