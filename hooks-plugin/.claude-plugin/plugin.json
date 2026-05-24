@@ -40,6 +40,11 @@
             "type": "command",
             "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/git-stash-session-init.sh",
             "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/drift-aggregator.sh",
+            "timeout": 5000
           }
         ]
       }
