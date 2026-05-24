@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.4.3...evaluate-plugin-v1.5.0) (2026-05-24)
+
+
+### Features
+
+* **hooks-plugin:** add SessionStart drift-nudge architecture ([#1401](https://github.com/laurigates/claude-plugins/issues/1401)) ([47815e2](https://github.com/laurigates/claude-plugins/commit/47815e2035923e9c714142597cd6ed4ad43e9f7e))
+
 ## [1.4.3](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.4.2...evaluate-plugin-v1.4.3) (2026-05-14)
 
 
