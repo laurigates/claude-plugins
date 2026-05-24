@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.4](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.14.3...code-quality-plugin-v1.14.4) (2026-05-24)
+
+
+### Code Refactoring
+
+* **code-quality-plugin:** merge code-antipatterns-analysis into code-antipatterns ([#1381](https://github.com/laurigates/claude-plugins/issues/1381)) ([a0f240d](https://github.com/laurigates/claude-plugins/commit/a0f240d1bdaa656418a73ec0dd15158bcc9987da))
+
 ## [1.14.3](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.14.2...code-quality-plugin-v1.14.3) (2026-05-14)
 
 
