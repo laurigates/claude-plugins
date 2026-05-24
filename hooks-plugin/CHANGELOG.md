@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.3.1...hooks-plugin-v2.3.2) (2026-05-24)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** branch-protection parses git -C &lt;path&gt; for branch detection ([#1394](https://github.com/laurigates/claude-plugins/issues/1394)) ([b6b7c87](https://github.com/laurigates/claude-plugins/commit/b6b7c876518c66fadc288339222ebf1fd67b815d))
+
 ## [2.3.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.3.0...hooks-plugin-v2.3.1) (2026-05-24)
 
 
