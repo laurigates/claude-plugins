@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.5](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.14.4...code-quality-plugin-v1.14.5) (2026-05-24)
+
+
+### Code Refactoring
+
+* **code-quality-plugin:** merge code-lint-fix into code-lint ([#1386](https://github.com/laurigates/claude-plugins/issues/1386)) ([831a3d4](https://github.com/laurigates/claude-plugins/commit/831a3d4baec59d4946813093039c7b75f8d4b520))
+
 ## [1.14.4](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.14.3...code-quality-plugin-v1.14.4) (2026-05-24)
 
 
