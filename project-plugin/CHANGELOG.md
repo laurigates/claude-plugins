@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.0](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.15.2...project-plugin-v1.16.0) (2026-05-24)
+
+
+### Features
+
+* **project-plugin:** add Stop-hook nudge for /project:distill ([#1402](https://github.com/laurigates/claude-plugins/issues/1402)) ([abd823d](https://github.com/laurigates/claude-plugins/commit/abd823d1b68f1ffbf7ba0f2a1aa46726ebf896b1))
+
 ## [1.15.2](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.15.1...project-plugin-v1.15.2) (2026-05-22)
 
 
