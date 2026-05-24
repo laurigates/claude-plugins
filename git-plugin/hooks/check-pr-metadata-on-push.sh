@@ -84,12 +84,18 @@ PR_UPDATED_AT=$(echo "$PR_JSON" | jq -r '.updatedAt // empty')
 # Guard: couldn't parse PR data
 if [ -z "$PR_NUMBER" ] || [ -z "$PR_TITLE" ]; then exit 0; fi
 
-# Retry-aware bypass (issue #1041): if the PR was edited after the latest
-# local commit, metadata has demonstrably been reconciled for HEAD — let
-# the push proceed silently. The block only fires when there are commits
-# the PR has not been updated to reflect.
-HEAD_COMMIT_TIME=$(git -C "$CWD" log -1 --format=%cI HEAD 2>/dev/null || true)
-if [ -n "$PR_UPDATED_AT" ] && [ -n "$HEAD_COMMIT_TIME" ]; then
+# Retry-aware bypass (issue #1041, refined in #1400): if the PR was edited
+# after the latest local commit was authored, metadata has demonstrably
+# been reconciled for HEAD — let the push proceed silently.
+#
+# Use AUTHOR date (%aI), not committer date (%cI), because `git rebase`
+# refreshes committer time to "now" while preserving author time. Without
+# this, every rebase invalidates a previously-fired bypass and the agent
+# has to make a content-different `gh pr edit` to escape — but
+# `gh pr edit --body-file <file>` no-ops when the body is unchanged, so
+# the agent ends up trapped (issue #1400).
+HEAD_AUTHOR_TIME=$(git -C "$CWD" log -1 --format=%aI HEAD 2>/dev/null || true)
+if [ -n "$PR_UPDATED_AT" ] && [ -n "$HEAD_AUTHOR_TIME" ]; then
     iso_to_epoch() {
         # Convert ISO 8601 to epoch seconds. Handles both Z (UTC) and
         # offset (e.g. +03:00) suffixes on BSD date (macOS) and GNU date.
@@ -108,9 +114,9 @@ if [ -n "$PR_UPDATED_AT" ] && [ -n "$HEAD_COMMIT_TIME" ]; then
         return 1
     }
     PR_UPDATED_TS=$(iso_to_epoch "$PR_UPDATED_AT" || echo "")
-    HEAD_COMMIT_TS=$(iso_to_epoch "$HEAD_COMMIT_TIME" || echo "")
-    if [ -n "$PR_UPDATED_TS" ] && [ -n "$HEAD_COMMIT_TS" ] && \
-       [ "$PR_UPDATED_TS" -gt "$HEAD_COMMIT_TS" ]; then
+    HEAD_AUTHOR_TS=$(iso_to_epoch "$HEAD_AUTHOR_TIME" || echo "")
+    if [ -n "$PR_UPDATED_TS" ] && [ -n "$HEAD_AUTHOR_TS" ] && \
+       [ "$PR_UPDATED_TS" -gt "$HEAD_AUTHOR_TS" ]; then
         exit 0
     fi
 fi

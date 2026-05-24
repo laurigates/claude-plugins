@@ -194,6 +194,45 @@ MOCK_PR_JSON='{"number":42,"title":"feat: x","body":"body","url":"https://exampl
 PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
     assert_exit "missing updatedAt falls back to blocking" 2 "$PUSH_JSON"
 
+# ── Author-date bypass after rebase (issue #1400) ─────────────────────────
+# Regression test: `git rebase` updates committer time to "now" but
+# preserves author time. The bypass must use author time so it survives a
+# rebase that adds no new content. Without this, a post-rebase push
+# requires a content-changing `gh pr edit` to escape the block, which
+# `gh pr edit --body-file` no-ops when the body is unchanged (issue #1400).
+echo ""
+echo "author-date bypass (rebase preserves author date):"
+
+git -C "$TMPDIR" checkout -b rebased -q
+
+# Simulate a rebased commit: author date = when the agent originally wrote
+# the work (2h ago); committer date = when the rebase ran (now, default).
+PAST_AUTHOR_DATE=$(iso_offset "-7200")
+GIT_AUTHOR_DATE="$PAST_AUTHOR_DATE" git -C "$TMPDIR" commit --allow-empty \
+    -m "feat: rebased commit" -q
+
+REBASED_PUSH_JSON=$(make_json "git push origin rebased")
+
+# PR was edited 1h ago: AFTER the agent wrote the commit, BEFORE rebase ran.
+# With author-date semantics, bypass fires. With committer-date semantics,
+# bypass fails (committer time is "now", later than PR.updatedAt).
+PR_BETWEEN=$(iso_offset "-3600")
+MOCK_PR_JSON=$(jq -n --arg t "$PR_BETWEEN" \
+    '{number:42,title:"feat: rebased",body:"body",url:"https://example/42",updatedAt:$t}')
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
+    assert_exit "PR updated after author-date allows push post-rebase (#1400)" 0 "$REBASED_PUSH_JSON"
+
+# Counter-test: PR genuinely never reviewed (updatedAt before author date)
+# still blocks — so the bypass doesn't fire indiscriminately.
+PR_BEFORE_AUTHOR=$(iso_offset "-10800")  # 3h ago, before author wrote
+MOCK_PR_JSON=$(jq -n --arg t "$PR_BEFORE_AUTHOR" \
+    '{number:42,title:"feat: rebased",body:"body",url:"https://example/42",updatedAt:$t}')
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
+    assert_exit "PR not updated since author-date still blocks post-rebase" 2 "$REBASED_PUSH_JSON"
+
+# Return HEAD to feature for any subsequent tests
+git -C "$TMPDIR" checkout feature -q
+
 rm -rf "$MOCK_BIN"
 
 # ── Summary ────────────────────────────────────────────────────────────────
