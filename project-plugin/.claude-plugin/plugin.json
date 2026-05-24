@@ -20,5 +20,18 @@
     "distill",
     "insights",
     "knowledge-capture"
-  ]
+  ],
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "args": ["bash", "${CLAUDE_PLUGIN_ROOT}/hooks/project-distill-nudge.sh"],
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
 }
