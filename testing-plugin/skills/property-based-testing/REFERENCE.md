@@ -452,6 +452,250 @@ class ShoppingCartMachine(RuleBasedStateMachine):
 TestCart = ShoppingCartMachine.TestCase
 ```
 
+## Python (Hypothesis) - Advanced Reference
+
+### Recursive Data Structures
+
+```python
+from hypothesis import given
+import hypothesis.strategies as st
+
+# Recursive JSON-like structure
+json_values = st.recursive(
+    base=st.one_of(
+        st.none(),
+        st.booleans(),
+        st.integers(),
+        st.floats(allow_nan=False),
+        st.text()
+    ),
+    extend=lambda children: st.one_of(
+        st.lists(children),
+        st.dictionaries(st.text(), children)
+    ),
+    max_leaves=50
+)
+
+@given(json_values)
+def test_json_serialization(value):
+    assert json.loads(json.dumps(value)) == value
+```
+
+### Filtered and Mapped Strategies
+
+```python
+# filter: Remove unwanted values
+positive_ints = st.integers().filter(lambda x: x > 0)
+non_empty_text = st.text().filter(lambda s: len(s.strip()) > 0)
+
+# map: Transform generated values
+upper_text = st.text().map(str.upper)
+abs_ints = st.integers().map(abs)
+
+# fixed_dictionaries: different strategy per key
+st.fixed_dictionaries({
+    "name": st.text(min_size=1),
+    "age": st.integers(min_value=0, max_value=120),
+    "scores": st.lists(st.floats(min_value=0, max_value=100))
+})
+```
+
+### Type Annotation Strategies
+
+```python
+from hypothesis.strategies import from_type, register_type_strategy
+from dataclasses import dataclass
+
+@dataclass
+class Config:
+    name: str
+    port: int
+    debug: bool
+
+@given(from_type(Config))
+def test_config(config: Config):
+    assert isinstance(config.name, str)
+    assert isinstance(config.port, int)
+
+# Register custom strategy for a type
+register_type_strategy(MyCustomType, st.builds(
+    MyCustomType,
+    value=st.integers()
+))
+
+# From regex patterns
+st.from_regex(r"[a-z]+@[a-z]+\.[a-z]{2,3}", fullmatch=True)
+```
+
+### Stateful Testing with Preconditions
+
+```python
+from hypothesis.stateful import RuleBasedStateMachine, rule, precondition, invariant, Bundle
+import hypothesis.strategies as st
+
+class DatabaseStateMachine(RuleBasedStateMachine):
+    """Test database operations as a state machine."""
+
+    def __init__(self):
+        super().__init__()
+        self.db = Database()
+        self.model = {}  # Simple dict as oracle
+
+    @rule(key=st.text(min_size=1), value=st.integers())
+    def put(self, key, value):
+        self.db.put(key, value)
+        self.model[key] = value
+
+    @precondition(lambda self: len(self.model) > 0)
+    @rule(key=st.sampled_from(lambda self: list(self.model.keys())))
+    def get(self, key):
+        assert self.db.get(key) == self.model[key]
+
+    @precondition(lambda self: len(self.model) > 0)
+    @rule(key=st.sampled_from(lambda self: list(self.model.keys())))
+    def delete(self, key):
+        self.db.delete(key)
+        del self.model[key]
+
+    @invariant()
+    def size_matches(self):
+        assert self.db.size() == len(self.model)
+
+TestDatabase = DatabaseStateMachine.TestCase
+```
+
+### Bundle-Based State Machines
+
+```python
+from hypothesis.stateful import Bundle, RuleBasedStateMachine, rule
+
+class FileSystemMachine(RuleBasedStateMachine):
+    files = Bundle("files")
+    directories = Bundle("directories")
+
+    @rule(target=directories, name=st.text(min_size=1, max_size=10))
+    def create_directory(self, name):
+        self.fs.mkdir(name)
+        return name
+
+    @rule(target=files, directory=directories, name=st.text(min_size=1))
+    def create_file(self, directory, name):
+        path = f"{directory}/{name}"
+        self.fs.touch(path)
+        return path
+
+    @rule(path=files)
+    def read_file(self, path):
+        assert self.fs.exists(path)
+```
+
+### Advanced Settings
+
+```python
+from hypothesis import given, settings, HealthCheck, Phase, Verbosity
+
+@settings(
+    max_examples=1000,
+    deadline=5000,               # 5 second deadline per example
+    suppress_health_check=[
+        HealthCheck.too_slow,
+        HealthCheck.data_too_large,
+        HealthCheck.filter_too_much,
+    ],
+    phases=[
+        Phase.explicit,          # Run @example cases
+        Phase.reuse,             # Replay from database
+        Phase.generate,          # Generate new examples
+        Phase.shrink,            # Minimize failures
+    ],
+    verbosity=Verbosity.verbose,
+    derandomize=True,            # Deterministic for CI
+    database=None,               # Disable example database
+)
+@given(st.integers())
+def test_with_custom_settings(x):
+    assert process(x) is not None
+```
+
+### Profile Management (with environment variable)
+
+```python
+# conftest.py
+from hypothesis import settings, Verbosity
+import os
+
+settings.register_profile("dev", max_examples=50, deadline=1000)
+settings.register_profile("ci", max_examples=500, deadline=5000,
+                          verbosity=Verbosity.verbose)
+settings.register_profile("debug", max_examples=10, deadline=None,
+                          verbosity=Verbosity.debug)
+
+settings.load_profile(os.getenv("HYPOTHESIS_PROFILE", "dev"))
+```
+
+### Debugging Failing Tests
+
+```python
+# Verbose mode with debug output
+@given(st.lists(st.integers()))
+@settings(
+    verbosity=Verbosity.debug,
+    max_examples=10,
+    phases=[Phase.generate],  # Skip shrinking for speed
+    print_blob=True           # Print input data blob
+)
+def test_debug(items):
+    result = buggy_function(items)
+    assert result is not None
+
+# Add debug info visible on failure
+from hypothesis import note
+
+@given(st.dictionaries(st.text(), st.integers()))
+def test_with_notes(data):
+    note(f"Input size: {len(data)}")
+    note(f"Keys: {list(data.keys())[:5]}")
+    result = transform(data)
+    assert validate(result)
+
+# Reproduce specific failure from output
+@given(st.lists(st.integers()))
+@example([1, 2, -2147483648])  # Failing case from Hypothesis output
+def test_reproduce_failure(items):
+    result = process(items)
+    assert result is not None
+
+# Reset the Hypothesis example database
+# rm -rf .hypothesis/
+# Or disable per-test: @settings(database=None)
+```
+
+### Common Property Patterns (Python)
+
+```python
+# Testing collection invariants
+@given(st.lists(st.integers()))
+def test_list_properties(items):
+    sorted_items = sorted(items)
+    assert sorted(sorted_items) == sorted_items  # Idempotent
+    assert len(sorted_items) == len(items)        # Preserves length
+    assert set(sorted_items) == set(items)        # Preserves elements
+
+# Testing string invariants
+@given(st.text(), st.text())
+def test_string_operations(s1, s2):
+    assert (s1 + s2).startswith(s1)
+    assert (s1 + s2).endswith(s2)
+    assert len(s1 + s2) == len(s1) + len(s2)
+    assert s1.strip() == s1.strip().strip()  # strip is idempotent
+
+# Testing numeric properties
+@given(st.floats(allow_nan=False, allow_infinity=False,
+                 min_value=-1e10, max_value=1e10))
+def test_numeric_stability(x):
+    assert float(str(x)) == pytest.approx(x)
+```
+
 ## Real-World Examples
 
 ### TypeScript: URL Parser
