@@ -172,6 +172,8 @@ Distill session insights into reusable knowledge: rules, skills, and justfile re
 /project:distill --dry-run      # Preview without changes
 ```
 
+**Auto-nudge:** A `Stop` hook (`hooks/project-distill-nudge.sh`) suggests `/project:distill --dry-run` at most once per session, only when (a) the session has ≥8 user turns, (b) the cwd's repo has either a `.claude/rules/` directory or a `justfile`, and (c) a recent user turn carries a wind-down phrase (`wrap up`, `done for today`, `gotta go`, etc.). The nudge is an offer only — the agent never runs `/project:distill` without explicit confirmation. To pre-silence it for a session, `touch ~/.cache/claude-project-distill-nudge/<session_id>` (the hook treats an existing marker as "already nudged"). To turn the hook off entirely, disable the plugin via `/plugin`.
+
 ### `changelog-review`
 Analyze Claude Code changelog for impacts on plugin development.
 

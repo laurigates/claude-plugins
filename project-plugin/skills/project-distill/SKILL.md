@@ -23,6 +23,8 @@ Distill session insights into reusable project knowledge.
 | Want to update rules based on session experience | Need to check project infrastructure -> `/configure:status` |
 | Asked to "codify the workflow" or "analyze and promote session patterns to rules" | Need a one-off implementation, not a reusable rule -> implement directly |
 
+May also be auto-suggested at end-of-session when the cwd repo has `.claude/rules/` or a justfile and you signal wind-down — a Stop hook (`hooks/project-distill-nudge.sh`) injects a one-time offer to run `/project:distill --dry-run`.
+
 ## Core Principle: Update Over Add
 
 Before proposing any artifact, evaluate: Does it update an existing one? Does an existing one already cover this? Is this genuinely new and reusable? See [REFERENCE.md](REFERENCE.md) for detailed evaluation criteria.
