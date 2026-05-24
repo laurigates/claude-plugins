@@ -11,6 +11,7 @@
 #     honored (human-operator escape hatch).
 #   - `git push origin main:fix/foo` with explicit refspec is allowed.
 #   - Plain `git commit` / `git push` on main is denied.
+#   - `git -C <feature-worktree> commit` from a cwd on main is allowed (#1389).
 set -euo pipefail
 
 HOOK="$(cd "$(dirname "$0")" && pwd)/branch-protection.sh"
@@ -20,7 +21,12 @@ FAIL=0
 # Create a throwaway git repo on `main` so the hook's branch detection has
 # something to find. Cleaned up on exit.
 TEST_REPO=$(mktemp -d)
-trap 'rm -rf "$TEST_REPO"' EXIT
+# Sibling worktrees used by the `-C <worktree>` regression tests (#1389):
+#   FEATURE_WT — on `feature/probe`, writes should be allowed
+#   MASTER_WT  — on `master`, writes should still be denied (negative case)
+FEATURE_WT=$(mktemp -d)
+MASTER_WT=$(mktemp -d)
+trap 'rm -rf "$TEST_REPO" "$FEATURE_WT" "$MASTER_WT"' EXIT
 
 git -C "$TEST_REPO" init -q -b main
 git -C "$TEST_REPO" config user.email "test@example.com"
@@ -28,6 +34,15 @@ git -C "$TEST_REPO" config user.name "test"
 git -C "$TEST_REPO" config commit.gpgsign false
 git -C "$TEST_REPO" config tag.gpgsign false
 git -C "$TEST_REPO" commit -q --allow-empty -m "init"
+
+# Add linked worktrees. The TEST_REPO stays on `main`; tests then invoke
+# `git -C "$FEATURE_WT" ...` from inside TEST_REPO and the hook must read
+# the branch from the worktree, not the cwd. The MASTER_WT lets us assert
+# the parser correctly *denies* when the target worktree is on a protected
+# branch — proving it isn't a blanket bypass.
+rmdir "$FEATURE_WT" "$MASTER_WT"
+git -C "$TEST_REPO" worktree add -q -b feature/probe "$FEATURE_WT" >/dev/null
+git -C "$TEST_REPO" worktree add -q -b master "$MASTER_WT" >/dev/null
 
 # run_hook <command-string> [env-var-assignment...]
 # Returns the hook's stdout (the JSON decision body, or empty for silent allow).
@@ -39,7 +54,10 @@ run_hook() {
   (
     cd "$TEST_REPO"
     # Apply any extra env-var assignments passed as remaining args.
+    # `export "KEY=VALUE"` is the intentional form here (the literal
+    # KEY=VALUE string is the export arg, not the name of a variable).
     for assign in "$@"; do
+      # shellcheck disable=SC2163
       export "$assign"
     done
     printf '%s' "$input" | bash "$HOOK"
@@ -142,6 +160,39 @@ assert_allow \
   "git push allowed when CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1 is in the env" \
   "git push" \
   "CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1"
+
+# ── git -C <worktree> branch detection (#1389 regression) ──────────────────
+# When the orchestrator's cwd is on `main` but the command targets a
+# linked worktree via `git -C <path>`, the hook must read the branch from
+# the worktree path, not the cwd. Pre-fix, the hook ran
+# `git branch --show-current` in its own cwd and denied legitimate writes
+# against feature-branch worktrees.
+echo ""
+echo "git -C <worktree> branch detection (#1389):"
+
+assert_allow \
+  "git -C <feature-worktree> commit allowed from a main cwd" \
+  "git -C $FEATURE_WT commit -m foo"
+
+assert_allow \
+  "git -C <feature-worktree> add allowed from a main cwd" \
+  "git -C $FEATURE_WT add file.txt"
+
+assert_allow \
+  "git -C <feature-worktree> push allowed from a main cwd" \
+  "git -C $FEATURE_WT push -u origin feature/probe"
+
+# Negative: a `-C <worktree>` whose worktree is itself on a protected
+# branch (`master` here, since `main` is already checked out in TEST_REPO)
+# must still deny. This proves the parser isn't a blanket bypass — it
+# correctly resolves the branch from the target dir.
+assert_deny \
+  "git -C <master-worktree> commit is still denied" \
+  "git -C $MASTER_WT commit -m foo"
+
+assert_deny \
+  "git -C <master-worktree> push (no refspec) is still denied" \
+  "git -C $MASTER_WT push"
 
 # ── read-only operations remain silently allowed ────────────────────────────
 echo ""

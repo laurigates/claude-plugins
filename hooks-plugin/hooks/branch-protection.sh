@@ -63,8 +63,19 @@ EOF
   exit 0
 }
 
+# Detect `git -C <path>` and use that path for the branch check. The
+# orchestrator's cwd may differ from the worktree the command targets
+# (e.g. orchestrator on `main`, agent driving a `git -C <feature-worktree>`
+# from outside). Without this, the hook would misread the branch as `main`
+# and deny legitimate writes against a feature-branch worktree. See #1389.
+WORKING_DIR=$(echo "$COMMAND" | grep -oE 'git[[:space:]]+-C[[:space:]]+[^[:space:]]+' | head -1 | awk '{print $NF}' || true)
+
 # Get current branch (silently fail if not in a git repo)
-CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "")
+if [ -n "$WORKING_DIR" ]; then
+  CURRENT_BRANCH=$(git -C "$WORKING_DIR" branch --show-current 2>/dev/null || echo "")
+else
+  CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "")
+fi
 [ -z "$CURRENT_BRANCH" ] && exit 0
 
 # Only protect main and master
