@@ -16,7 +16,7 @@ name: git-fix-pr
 |---|---|
 | Fixing failing CI checks on an existing PR (lint, type, test) | Use `git-pr-feedback` to address reviewer comments rather than CI failures |
 | Reproducing red GitHub Actions runs locally before pushing corrections | Use `gh-workflow-monitoring` to passively watch a run rather than fix it |
-| Auto-applying lint/format/type fixes and pushing them to the PR branch | Use `git-resolve-conflicts` when the failure is a merge conflict, not a check |
+| Auto-applying lint/format/type fixes and pushing them to the PR branch | Use `git-conflicts` when the failure is a merge conflict, not a check |
 | Diagnosing why a pull request is red after a push | Use `git-triage` to sweep many PRs at once instead of fixing one |
 
 ## Context

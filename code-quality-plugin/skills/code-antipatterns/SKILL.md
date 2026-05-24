@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-05-23
 reviewed: 2026-04-25
 description: Analyze a codebase for anti-patterns using ast-grep. Use when finding magic numbers, console.logs, var usage, excessive any, eval/innerHTML security issues, or deep nesting.
 allowed-tools: Read, Bash(sg *), Bash(rg *), Glob, Grep, TodoWrite, Task, SlashCommand
@@ -13,7 +13,7 @@ name: code-antipatterns
 
 | Use this skill when... | Use something else instead when... |
 |------------------------|------------------------------------|
-| Running a parallel anti-pattern scan and producing a report | Looking up the catalog of anti-pattern queries → `code-antipatterns-analysis` |
+| Running a parallel anti-pattern scan and producing a report | Looking up the full YAML rule catalog → see [REFERENCE.md](REFERENCE.md) |
 | Specifically targeting empty catches, floating promises, or `\|\| true` | Use the dedicated scanner → `code-error-swallowing` |
 | Finding success-on-empty / silent degradation patterns | Use the dedicated scanner → `code-silent-degradation` |
 | Broad code-quality review across security, perf, and architecture | Run the full review delegate → `code-review` |
@@ -107,6 +107,8 @@ Detect project stack, identify file patterns, establish analysis scope
 
 ### ast-grep Pattern Examples
 
+For the full YAML rule catalog (with `id:`, `severity:`, `message:`, `fix:`, and `note:` fields), see [REFERENCE.md](REFERENCE.md).
+
 Use these patterns during analysis:
 
 ```bash
@@ -191,7 +193,7 @@ After consolidating findings:
 
 ## See Also
 
-- **Skill**: `code-antipatterns-analysis` - Pattern library and detailed guidance
+- **Reference**: [REFERENCE.md](REFERENCE.md) - Full YAML rule catalog with ast-grep pattern library
 - **Skill**: `ast-grep-search` - ast-grep usage reference
 - **Command**: `/code:review` - Comprehensive code review
 - **Agent**: `security-audit` - Deep security analysis

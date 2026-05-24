@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-05-23
 reviewed: 2025-12-16
 name: property-based-testing
 description: "Property-based testing with fast-check (TS/JS) and Hypothesis (Python). Use when generating test data, finding edge cases, testing properties, or writing QuickCheck-style tests."
@@ -122,21 +122,55 @@ fc.pre(b !== 0) // Skip cases where b is 0
 
 ```bash
 # Using uv
-uv add --dev hypothesis
+uv add --dev hypothesis pytest
 
-# Using pip
-pip install hypothesis
+# Optional extensions
+uv add --dev hypothesis[numpy]   # NumPy strategies
+uv add --dev hypothesis[django]  # Django model strategies
+```
+
+### Configuration
+
+```toml
+# pyproject.toml
+[tool.hypothesis]
+max_examples = 200
+deadline = 1000
+
+[tool.hypothesis.profiles.dev]
+max_examples = 50
+deadline = 1000
+
+[tool.hypothesis.profiles.ci]
+max_examples = 500
+deadline = 5000
+verbosity = "verbose"
+```
+
+```python
+# Activate profile in conftest.py
+from hypothesis import settings
+settings.load_profile("ci")
 ```
 
 ### Basic Example
 
 ```python
-from hypothesis import given, strategies as st
+from hypothesis import given, example, assume
+import hypothesis.strategies as st
 
-@given(st.lists(st.integers()))
-def test_reverse_twice_property(arr):
-    assert reverse(reverse(arr)) == arr
-    # Hypothesis automatically generates 100s of test cases!
+# Test a property
+@given(st.integers(), st.integers())
+def test_addition_commutative(a, b):
+    assert a + b == b + a
+
+# Add explicit edge cases with @example
+@given(st.integers())
+@example(0)
+@example(-1)
+@example(2**31 - 1)
+def test_with_explicit_examples(x):
+    assert process(x) is not None
 ```
 
 ### Key Strategies (Quick Reference)
@@ -154,10 +188,12 @@ def test_reverse_twice_property(arr):
 | `st.sampled_from(...)` | Pick from options |
 | `st.tuples(...)` | Fixed-size tuples |
 | `st.one_of(...)` | Union types |
+| `st.emails()` | Valid email addresses |
+| `st.uuids()` | UUID objects |
 | `st.dates()` / `st.datetimes()` | Date/time values |
 | `st.builds(Class, ...)` | Build objects from strategies |
 
-### Configuration
+### Configuration (Settings)
 
 ```python
 from hypothesis import given, settings, strategies as st
@@ -179,6 +215,39 @@ assume(b != 0)  # Skip cases where b is 0
 
 Hypothesis supports stateful testing via `RuleBasedStateMachine` for testing sequences of operations against invariants.
 
+### CI Integration
+
+```yaml
+# .github/workflows/test.yml
+- name: Run hypothesis tests
+  run: |
+    uv run pytest \
+      --hypothesis-show-statistics \
+      --hypothesis-profile=ci \
+      --hypothesis-seed=${{ github.run_number }}
+
+- name: Upload hypothesis database
+  uses: actions/upload-artifact@v4
+  if: failure()
+  with:
+    name: hypothesis-examples
+    path: .hypothesis/
+```
+
+### Quick Reference
+
+```python
+# Core decorators
+@given(strategy)              # Generate test inputs
+@example(value)               # Add explicit test case
+@settings(max_examples=500)   # Configure behavior
+
+# Key helpers
+assume(condition)             # Skip invalid inputs
+note(message)                 # Add debug info to failure output
+target(value)                 # Guide generation toward value
+```
+
 ## Agentic Optimizations
 
 | Context | Command |
@@ -186,9 +255,11 @@ Hypothesis supports stateful testing via `RuleBasedStateMachine` for testing seq
 | Quick TS test | `bunx vitest --dots --bail=1 --grep 'property'` |
 | Quick Python test | `uv run pytest -x -q --tb=short -k 'property'` |
 | CI TS test | `bunx vitest run --reporter=junit --grep 'property'` |
-| CI Python test | `uv run pytest --hypothesis-show-statistics -q` |
-| Reproducible | `fc.assert(prop, { seed: 42 })` or `@settings(derandomize=True)` |
-| Fast iteration | `fc.assert(prop, { numRuns: 50 })` or `@settings(max_examples=50)` |
+| CI Python test | `uv run pytest --hypothesis-profile=ci --hypothesis-show-statistics -q` |
+| Reproducible | `fc.assert(prop, { seed: 42 })` or `pytest --hypothesis-seed=42` |
+| Fast iteration | `fc.assert(prop, { numRuns: 50 })` or `pytest --hypothesis-profile=dev -x` |
+| Debug failing | `pytest -x -s --hypothesis-verbosity=debug` |
+| No shrinking | Add `phases=[Phase.generate]` to `@settings` |
 
 For detailed examples, advanced patterns, and best practices, see [REFERENCE.md](REFERENCE.md).
 

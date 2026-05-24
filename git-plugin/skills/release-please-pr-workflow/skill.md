@@ -15,7 +15,7 @@ allowed-tools: Bash, Read, TodoWrite
 | Use this skill when... | Use the alternative when... |
 |---|---|
 | Iteratively merging multiple release-please PRs in a monorepo | Use `release-please-configuration` to fix the upstream config that produced them |
-| Resolving conflicts between sibling release PRs by closure/recreation | Use `git-resolve-conflicts` for ordinary feature-PR merge conflicts |
+| Resolving conflicts between sibling release PRs by closure/recreation | Use `git-conflicts` for ordinary feature-PR merge conflicts |
 | Coordinating sequential merges when `separate-pull-requests: true` | Use `git-fix-pr` if individual release PRs have failing CI checks |
 | Reducing the open release PR queue after a burst of releasable commits | Use `release-please-protection` to detect manual edits to changelog/version files |
 
