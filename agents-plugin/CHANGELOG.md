@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.1](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.11.0...agents-plugin-v1.11.1) (2026-05-24)
+
+
+### Code Refactoring
+
+* **hooks-plugin:** merge claude-hooks-configuration into hooks-configuration ([#1384](https://github.com/laurigates/claude-plugins/issues/1384)) ([4ca1afd](https://github.com/laurigates/claude-plugins/commit/4ca1afdcd5af605b1c8e52d2a6ae55d44c83305d))
+
 ## [1.11.0](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.10.3...agents-plugin-v1.11.0) (2026-05-14)
 
 
