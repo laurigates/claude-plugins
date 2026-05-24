@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.39.6](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.39.5...git-plugin-v2.39.6) (2026-05-24)
+
+
+### Code Refactoring
+
+* move upstream-pr-plugin skill into git-plugin as git-upstream-pr-diverged ([#1388](https://github.com/laurigates/claude-plugins/issues/1388)) ([47856ea](https://github.com/laurigates/claude-plugins/commit/47856ea51c828d225dc867501dd2923fc2418879))
+
 ## [2.39.5](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.39.4...git-plugin-v2.39.5) (2026-05-24)
 
 
