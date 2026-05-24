@@ -16,11 +16,11 @@ Submit clean, atomic PRs to upstream repositories from fork work.
 
 ## When to Use This Skill
 
-| Use this skill when... | Use `/git:commit` instead when... |
-|------------------------|-----------------------------------|
-| Contributing changes back to the upstream repo | Committing to your own fork/repo |
-| Cherry-picking fork commits for upstream PR | Creating a PR within the same repo |
-| Fork's main has diverged from upstream | Fork and upstream are in sync |
+| Use this skill when... | Use something else instead when... |
+|------------------------|------------------------------------|
+| Contributing changes back to the upstream repo | Committing to your own fork/repo → `/git:commit` |
+| Cherry-picking fork commits for upstream PR (single or multi-commit, squashing) | Creating a PR within the same repo → `/git:pr` |
+| Fork and upstream are roughly aligned | Fork has substantially diverged from upstream → `/git:upstream-pr-diverged` (patch-id eligibility, re-derive fallback, scrubbing) |
 | Need a clean branch based on upstream/main | Working on a branch already tracking upstream |
 
 ## Context

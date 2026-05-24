@@ -1,5 +1,5 @@
 ---
-name: upstream-pr
+name: git-upstream-pr-diverged
 description: Submit a diverged-fork commit to upstream as a clean PR via cherry-pick with re-derive fallback, message scrubbing, and regression checks. Use when direct rebase fails.
 args: "<sha> [--topic <slug>]"
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git remote *), Bash(git fetch *), Bash(git switch *), Bash(git checkout *), Bash(git cherry-pick *), Bash(git reset *), Bash(git commit *), Bash(git push *), Bash(git stash *), Bash(git rev-list *), Bash(git rev-parse *), Bash(git branch *), Bash(git cat-file *), Bash(git patch-id *), Bash(gh pr *), Bash(gh repo *), Bash(bash *), Bash(uv *), Bash(pytest *), Bash(ruff *), Bash(python3 *), Read, Edit, Write, Grep, Glob, TodoWrite
@@ -9,9 +9,9 @@ modified: 2026-05-09
 reviewed: 2026-04-29
 ---
 
-# /upstream-pr
+# /git:upstream-pr-diverged
 
-Submit a single commit from a heavily-diverged fork back to upstream as a clean, regression-free PR.
+Submit a single commit from a heavily-diverged fork back to upstream as a clean, regression-free PR. The simpler `/git:upstream-pr` covers aligned-fork cherry-picks; this skill handles the case where direct rebase fails.
 
 ## When to Use This Skill
 
@@ -243,6 +243,6 @@ using the original commit's transformation rules.">
 
 ## Related Skills
 
-- [git-plugin: git-upstream-pr](../../../git-plugin/skills/git-upstream-pr/SKILL.md) — simpler cherry-pick path for low-divergence forks
-- [git-plugin: git-fork-workflow](../../../git-plugin/skills/git-fork-workflow/SKILL.md) — fork management and upstream sync
-- [git-plugin: git-conflicts](../../../git-plugin/skills/git-conflicts/SKILL.md) — conflict resolution patterns
+- [git-upstream-pr](../git-upstream-pr/SKILL.md) — simpler cherry-pick path for low-divergence forks
+- [git-fork-workflow](../git-fork-workflow/SKILL.md) — fork management and upstream sync
+- [git-conflicts](../git-conflicts/SKILL.md) — conflict resolution patterns
