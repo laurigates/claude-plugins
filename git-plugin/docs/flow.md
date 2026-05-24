@@ -12,7 +12,7 @@ flowchart TD
     PUSH --> PR[Stage 5: Pull Request<br/>git-pr / git-api-pr<br/>github-pr-title<br/>github-labels]
     PR --> MON[Stage 6: Monitor<br/>gh-workflow-monitoring<br/>git-fix-pr<br/>git-pr-feedback]
     MON --> CONF{conflicts?}
-    CONF -->|yes| RES[git-conflicts<br/>git-resolve-conflicts]
+    CONF -->|yes| RES[git-conflicts]
     CONF -->|no| DONE[Merged]
     RES --> PUSH
 
@@ -58,7 +58,7 @@ flowchart TD
 | Push | `git-push` |
 | Pull Request | `git-pr`, `git-api-pr`, `github-pr-title`, `github-labels` |
 | Monitor | `gh-workflow-monitoring`, `git-fix-pr`, `git-pr-feedback` |
-| Conflicts | `git-conflicts`, `git-resolve-conflicts` |
+| Conflicts | `git-conflicts` |
 | Issues (side) | `git-issue`, `git-issue-manage`, `git-issue-hierarchy`, `github-issue-writing`, `github-issue-autodetect` |
 | Release-please (side) | `release-please-configuration`, `release-please-protection`, `release-please-pr-workflow` |
 | Rebase / fork (side) | `git-rebase-patterns`, `git-fork-workflow`, `git-upstream-pr`, `git-maintain`, `git-derive-docs` |

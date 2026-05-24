@@ -6,8 +6,8 @@ args: "[file-or-pr] [--ours] [--theirs] [--push]"
 argument-hint: file path, PR number, --ours, --theirs, or --push
 disable-model-invocation: true
 created: 2026-03-01
-modified: 2026-03-01
-reviewed: 2026-03-01
+modified: 2026-05-23
+reviewed: 2026-05-23
 ---
 
 # /git:conflicts
@@ -52,8 +52,11 @@ Execute this conflict resolution workflow:
 2. If PR number provided and no active merge state:
    - Get PR details: `gh pr view <number> --json headRefName,baseRefName,mergeable`
    - Fetch base: `git fetch origin <base-branch>`
-   - Start merge: `git merge origin/<base-branch>`
+   - Start merge: `git merge origin/<base-branch> --no-ff`
    - If merge succeeds cleanly, report "No conflicts" and exit
+3. If no PR number and no active merge state, detect from current branch:
+   - `gh pr list --head $(git branch --show-current) --json number,baseRefName,mergeable`
+   - Use the detected PR number and base branch; proceed as above
 3. List conflicted files: `git diff --name-only --diff-filter=U`
 4. If no conflicted files found, report current status and exit
 
@@ -129,7 +132,15 @@ For each file from `git diff --name-only --diff-filter=U`:
 Summarize what was resolved:
 - List each file and how it was resolved (merged both sides, accepted ours/theirs, regenerated)
 - Note if rerere recorded new resolutions for future reuse
-- If PR number was provided, optionally comment: `gh pr comment <number> --body "Merge conflicts resolved."`
+- If PR number was provided (or detected from branch), comment on the PR:
+  ```
+  gh pr comment <number> --body "Merge conflicts with <base-branch> resolved automatically.
+
+  Resolved files:
+  - file1.json (merged entries from both sides)
+  - file2.md (combined changelog entries)
+  "
+  ```
 
 ## Conflict Resolution Patterns
 
