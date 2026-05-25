@@ -100,6 +100,41 @@ assert_exit \
     "helm version (safe subcommand) is allowed" 0 \
     '{"tool_name":"Bash","tool_input":{"command":"helm version"}}'
 
+# Regression: `helm pull`/`fetch` and other chart-only subcommands were
+# missing from the safe list, blocking chart downloads from a repo even
+# though the commands never touch a cluster.
+assert_exit \
+    "helm pull --repo is allowed (downloads chart, no cluster)" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"helm pull --repo https://example.com/charts mychart --version 1.0.0"}}'
+
+assert_exit \
+    "helm fetch is allowed (alias for pull)" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"helm fetch mychart"}}'
+
+assert_exit \
+    "helm search repo is allowed" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"helm search repo --repo https://example.com/charts mychart"}}'
+
+assert_exit \
+    "helm lint is allowed (local chart analysis)" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"helm lint ./mychart"}}'
+
+assert_exit \
+    "helm dependency update is allowed (local chart deps)" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"helm dependency update ./mychart"}}'
+
+assert_exit \
+    "helm registry login is allowed (registry, not cluster)" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"helm registry login registry.example.com"}}'
+
+assert_exit \
+    "helm push is allowed (pushes to registry, not cluster)" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"helm push mychart-1.0.0.tgz oci://registry.example.com/charts"}}'
+
+assert_exit \
+    "helm verify is allowed (local provenance check)" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"helm verify mychart-1.0.0.tgz"}}'
+
 # ── Edge cases ───────────────────────────────────────────────────────────────
 echo ""
 echo "Edge cases:"
