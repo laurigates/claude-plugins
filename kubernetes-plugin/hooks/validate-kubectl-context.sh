@@ -111,7 +111,10 @@ fi
 if echo "$COMMAND_CLEAN" | grep -Eq '(^|\s|;|&&|\|)helm\s+'; then
 
     # Helm commands that don't need context
-    SAFE_HELM_SUBCOMMANDS="version|completion|env|repo|search|show|plugin|create|package|template"
+    # These operate on charts, repos, or registries — never on a cluster.
+    # Regression: `helm pull` (and its alias `helm fetch`) was missing, blocking
+    # chart downloads from a repo.
+    SAFE_HELM_SUBCOMMANDS="version|completion|env|repo|search|show|inspect|plugin|create|package|template|pull|fetch|lint|verify|dependency|registry|push"
 
     # Allow safe commands
     if echo "$COMMAND_CLEAN" | grep -Eq "helm\s+($SAFE_HELM_SUBCOMMANDS)"; then
