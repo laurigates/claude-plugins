@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.6](https://github.com/laurigates/claude-plugins/compare/kubernetes-plugin-v1.7.5...kubernetes-plugin-v1.7.6) (2026-05-25)
+
+
+### Bug Fixes
+
+* **kubernetes-plugin:** allow chart-only helm subcommands without --kube-context ([#1409](https://github.com/laurigates/claude-plugins/issues/1409)) ([78ab1ae](https://github.com/laurigates/claude-plugins/commit/78ab1aecfba308fec9ae962f49eb27b553dcb554))
+
 ## [1.7.5](https://github.com/laurigates/claude-plugins/compare/kubernetes-plugin-v1.7.4...kubernetes-plugin-v1.7.5) (2026-05-14)
 
 
