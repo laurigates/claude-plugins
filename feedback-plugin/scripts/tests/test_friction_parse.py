@@ -44,6 +44,43 @@ def test_plan_mode_qa_is_emitted():
         assert ev["signature"] == "plan:entered-plan-mode", ev
 
 
+def test_bash_antipatterns_blocked_format_classifies_by_pattern():
+    """Regression: new BLOCKED-format hook output from PR #1378 must
+    classify into specific sub-signatures, not the generic
+    `hook:unclassified` bucket.
+
+    Before this fix the parser only knew the old REMINDER-format needle
+    table (branch-protection / pr metadata / conventional commit /
+    gitleaks / pre-commit), so 26 of 29 BLOCKED-format bash-antipatterns
+    events in the W22 friction window fell through to `hook:unclassified`.
+    See ~/.claude/rules/friction/2026-W22-frictions.md "Proposed changes"
+    #1 for the analysis.
+    """
+    events = run_parser(FIXTURES / "hook_block_bash_antipatterns")
+    by_sig: dict[str, int] = {}
+    for ev in events:
+        by_sig[ev["signature"]] = by_sig.get(ev["signature"], 0) + 1
+
+    # All 8 events should classify as hook_block kind with a specific signature.
+    hook_blocks = [e for e in events if e["kind"] == "hook_block"]
+    assert len(hook_blocks) == 8, f"expected 8 hook_block events, got {len(hook_blocks)}: {events}"
+
+    # No event should fall through to the generic unclassified bucket.
+    assert "hook:unclassified" not in by_sig, (
+        f"BLOCKED-format events leaked into hook:unclassified: {by_sig}"
+    )
+
+    # Specific sub-signatures from PR #1378 substitution-format upgrade.
+    assert by_sig.get("hook:bash-antipatterns:grep-rg") == 2, by_sig
+    assert by_sig.get("hook:bash-antipatterns:find") == 1, by_sig
+    assert by_sig.get("hook:bash-antipatterns:cat-head-tail") == 3, by_sig
+    # Forward-compat: unrecognized bash-antipatterns BLOCKED format goes
+    # to :other rather than disappearing into hook:unclassified.
+    assert by_sig.get("hook:bash-antipatterns:other") == 1, by_sig
+    # Sibling hook scripts classify by name, not bucketed as unclassified.
+    assert by_sig.get("hook:secret-protection") == 1, by_sig
+
+
 def test_tool_use_id_resolves_to_bash():
     """Regression: parser must resolve tool_use_id -> tool_name via assistant index.
 
