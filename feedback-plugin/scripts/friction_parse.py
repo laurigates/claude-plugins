@@ -86,6 +86,48 @@ def canonical_signature(kind: str, tool: str, evidence: str) -> str:
     """Collapse similar-looking evidence into a stable cluster key."""
     ev = evidence.lower()
     if kind == "hook_block":
+        # Sub-classify bash-antipatterns hook output. Match both the new
+        # BLOCKED: substitution-format messages introduced in PR #1378 and
+        # the older REMINDER: prose form for the same patterns, so the
+        # signature is stable across the format transition. The hook
+        # script name appears in the transcript record because the
+        # harness wraps the message as
+        # "PreToolUse:Bash hook error: [bash .../bash-antipatterns.sh]: ...".
+        # Substring matches are intentionally narrow (the exact prose the
+        # hook emits) to avoid false positives from incidental "blocked"
+        # phrasing in unrelated content.
+        if "bash-antipatterns" in ev:
+            if "blocked: 'grep" in ev or "blocked: 'rg" in ev:
+                return "hook:bash-antipatterns:grep-rg"
+            if "blocked: 'find" in ev:
+                return "hook:bash-antipatterns:find"
+            if (
+                "blocked: 'cat" in ev
+                or "blocked: 'head" in ev
+                or "blocked: 'tail" in ev
+            ):
+                return "hook:bash-antipatterns:cat-head-tail"
+            # git && chaining still uses REMINDER: prose, not BLOCKED:.
+            if "chaining git commands" in ev:
+                return "hook:bash-antipatterns:git-chain"
+            # Forward-compatible: future substitution-format upgrades
+            # (W22 watch-list candidates — see ~/.claude/rules/friction/
+            # 2026-W22-frictions.md "Other watch-list patterns").
+            if "ls" in ev and ("glob tool for pattern-based file listing" in ev
+                               or "blocked: 'ls" in ev):
+                return "hook:bash-antipatterns:ls-glob"
+            if "this command has " in ev and " pipes" in ev:
+                return "hook:bash-antipatterns:long-pipeline"
+            if "taskoutput tool" in ev:
+                return "hook:bash-antipatterns:taskoutput"
+            return "hook:bash-antipatterns:other"
+        # Other hook scripts produce identifiable script-name substrings
+        # via the same "[bash .../<name>.sh]" wrapper. Match those first
+        # so the legacy needle table doesn't false-positive on hook prose
+        # that mentions a sibling concept (e.g. a branch-protection
+        # message that references "pr metadata" in passing).
+        if "secret-protection" in ev:
+            return "hook:secret-protection"
         for needle, sig in [
             ("branch-protection", "hook:branch-protection"),
             ("pr metadata", "hook:pr-metadata"),
