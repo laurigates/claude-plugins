@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.7](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.6.6...feedback-plugin-v1.6.7) (2026-05-25)
+
+
+### Bug Fixes
+
+* **feedback-plugin:** classify new BLOCKED-format hook events into specific signatures ([#1412](https://github.com/laurigates/claude-plugins/issues/1412)) ([48cc787](https://github.com/laurigates/claude-plugins/commit/48cc787f73ddf5b938f060e25978830c2783fe1f))
+
 ## [1.6.6](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.6.5...feedback-plugin-v1.6.6) (2026-05-22)
 
 

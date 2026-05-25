@@ -245,7 +245,7 @@
       "name": "feedback-plugin",
       "source": "./feedback-plugin",
       "description": "Session feedback analysis - capture skill bugs as GitHub issues and learn from weekly friction across sessions",
-      "version": "1.6.6",
+      "version": "1.6.7",
       "keywords": [
         "feedback",
         "session-analysis",
