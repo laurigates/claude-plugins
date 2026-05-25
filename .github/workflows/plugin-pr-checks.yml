@@ -30,29 +30,42 @@ jobs:
         id: changed
         run: |
           FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- '*-plugin/**' '.claude-plugin/marketplace.json' '**/skills/**' | head -50)
-          echo "files<<EOF" >> $GITHUB_OUTPUT
-          echo "$FILES" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+            echo "files<<EOF"
+            echo "$FILES"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
-          # Extract unique plugin directories affected
-          PLUGINS=$(echo "$FILES" | grep -oP '^[a-z][^/]*-plugin' | sort -u)
-          echo "plugins<<EOF" >> $GITHUB_OUTPUT
-          echo "$PLUGINS" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-          echo "plugin_count=$(echo "$PLUGINS" | grep -c '.' || true)" >> $GITHUB_OUTPUT
+          # Extract unique plugin directories affected.
+          # Emit as a single space-separated line so downstream steps can
+          # interpolate the value without bash splitting it across multiple
+          # commands (see issue #1385).
+          PLUGINS=$(echo "$FILES" | grep -oP '^[a-z][^/]*-plugin' | sort -u | tr '\n' ' ')
+          PLUGINS=${PLUGINS% }
+          PLUGIN_COUNT=$(echo "$PLUGINS" | wc -w | tr -d ' ')
+          echo "plugins=$PLUGINS" >> "$GITHUB_OUTPUT"
+          echo "plugin_count=$PLUGIN_COUNT" >> "$GITHUB_OUTPUT"
 
           # Check if skill files changed
           SKILL_FILES=$(echo "$FILES" | grep -c 'skills/' || true)
-          echo "skill_count=$SKILL_FILES" >> $GITHUB_OUTPUT
+          echo "skill_count=$SKILL_FILES" >> "$GITHUB_OUTPUT"
 
       - name: Run plugin compliance checks
         id: compliance
         if: steps.changed.outputs.plugin_count != '0'
+        env:
+          PLUGINS: ${{ steps.changed.outputs.plugins }}
         run: |
-          RESULT=$(bash scripts/plugin-compliance-check.sh ${{ steps.changed.outputs.plugins }}) || true
-          echo "result<<EOF" >> $GITHUB_OUTPUT
-          echo "$RESULT" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          # Pass plugins via env var (not template interpolation) so a
+          # multi-plugin value cannot break the shell command. Word-split
+          # is intentional: the script takes plugin names as separate args.
+          # shellcheck disable=SC2086
+          RESULT=$(bash scripts/plugin-compliance-check.sh $PLUGINS) || true
+          {
+            echo "result<<COMPLIANCE_EOF"
+            echo "$RESULT"
+            echo "COMPLIANCE_EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Check blueprint-upgrade target version drift
         if: contains(steps.changed.outputs.plugins, 'blueprint-plugin')
@@ -62,9 +75,14 @@ jobs:
         if: steps.compliance.outputs.result
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          # Pass the multi-line comment body via env var so markdown
+          # special characters (backticks, quotes, parentheses) cannot
+          # corrupt the shell command and pollute the gh API call
+          # (see issue #1385: PR #1384 hit HTTP 401 on this step).
+          COMMENT_BODY: ${{ steps.compliance.outputs.result }}
         run: |
-          gh pr comment ${{ github.event.pull_request.number }} \
-            --body "${{ steps.compliance.outputs.result }}"
+          gh pr comment "$PR_NUMBER" --body "$COMMENT_BODY"
 
       - name: Claude Skill Quality Review
         if: steps.changed.outputs.skill_count != '0'
