@@ -22,7 +22,7 @@
   "health-plugin": "1.11.0",
   "home-assistant-plugin": "1.3.3",
   "hooks-plugin": "2.4.0",
-  "kubernetes-plugin": "1.7.5",
+  "kubernetes-plugin": "1.7.6",
   "langchain-plugin": "1.5.5",
   "macos-plugin": "1.1.2",
   "migration-patterns-plugin": "1.4.2",
