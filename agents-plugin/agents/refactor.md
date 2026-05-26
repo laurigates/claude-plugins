@@ -3,11 +3,11 @@ name: refactor
 model: sonnet
 color: "#7B1FA2"
 description: Code refactoring specialist. Restructures code for improved readability, maintainability, and SOLID adherence while preserving behavior. Use when code needs structural improvement without changing functionality.
-tools: Glob, Grep, LS, Read, Edit, Write, Bash(npm test *), Bash(npm run *), Bash(yarn test *), Bash(bun test *), Bash(pytest *), Bash(vitest *), Bash(cargo test *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(find *), Bash(ls *), Bash(wc *), Bash(rg *), Bash(python3 scripts/audit-skill-descriptions.py *), TodoWrite
+tools: Glob, Grep, LS, Read, Edit, Write, Bash(npm test *), Bash(npm run *), Bash(yarn test *), Bash(bun test *), Bash(pytest *), Bash(vitest *), Bash(cargo test *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(find *), Bash(ls *), Bash(wc *), Bash(rg *), Bash(python3 scripts/audit-skill-descriptions.py *), TodoWrite
 maxTurns: 20
 created: 2026-01-24
-modified: 2026-05-14
-reviewed: 2026-05-14
+modified: 2026-05-26
+reviewed: 2026-05-26
 ---
 
 # Refactor Agent
@@ -35,6 +35,25 @@ The harness blocks several common bash idioms — use the dedicated tool instead
 - **Output**: Refactored code with explanation of changes
 - **Steps**: 5-15, focused transformations
 - **Constraint**: Never change external behavior
+
+## Checkpoint Discipline
+
+Multi-file refactors can exhaust context mid-task (issue #1390). If you sense the response is getting long — many tool uses, large reads, complex edits across more than one file — commit work-in-progress before continuing:
+
+1. Stage what's done with explicit paths: `git add <path1> <path2>` (never `-A` or `.`)
+2. Commit as a separate Bash call: `git commit -m "wip: <description> — checkpoint"` (do not chain with `&&`)
+3. Continue with the next step
+
+A checkpoint commit makes partial work auditable and recoverable if context exhausts. The orchestrator can rebase or squash checkpoints into the final commit; better to land a series of small commits than abort with a dirty worktree.
+
+When to checkpoint:
+
+| Signal | Action |
+|--------|--------|
+| Touched 3+ files | Checkpoint before the next file |
+| Completed a logical sub-step (e.g. cross-ref updates done, merge work next) | Checkpoint before starting the next sub-step |
+| Source-skill deleted as part of a merge | Checkpoint before editing the target skill |
+| Tool-use count approaching 20 | Checkpoint immediately |
 
 ## Workflow
 

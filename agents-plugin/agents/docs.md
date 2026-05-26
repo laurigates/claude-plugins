@@ -3,11 +3,11 @@ name: docs
 model: haiku
 color: "#4A90E2"
 description: Generate documentation from code. Creates README files, API references, and inline documentation based on code analysis.
-tools: Glob, Grep, LS, Read, Edit, Write, TodoWrite
+tools: Glob, Grep, LS, Read, Edit, Write, Bash(git status *), Bash(git diff *), Bash(git add *), Bash(git commit *), TodoWrite
 maxTurns: 15
 created: 2025-12-27
-modified: 2026-05-07
-reviewed: 2026-04-18
+modified: 2026-05-26
+reviewed: 2026-05-26
 ---
 
 # Docs Agent
@@ -34,6 +34,16 @@ The harness blocks several common bash idioms — use the dedicated tool instead
 - **Input**: Code to document, documentation type needed
 - **Output**: Written documentation files
 - **Steps**: 5-10, focused output
+
+## Checkpoint Discipline
+
+Doc generation across multiple modules can exhaust context (issue #1390). If you sense the response is getting long — many reads, large generated files, multi-module coverage — commit work-in-progress before continuing:
+
+1. Stage what's done with explicit paths: `git add <path1> <path2>` (never `-A` or `.`)
+2. Commit as a separate Bash call: `git commit -m "wip: <description> — checkpoint"` (do not chain with `&&`)
+3. Continue with the next module
+
+A checkpoint commit makes partial docs recoverable if context exhausts. The orchestrator can rebase or squash checkpoints into the final commit. Checkpoint after each module's docs land, not in the middle of generating a single file.
 
 ## Workflow
 

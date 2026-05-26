@@ -3,11 +3,11 @@ name: debug
 model: opus
 color: "#FF7043"
 description: Diagnose and fix bugs. Finds root cause, implements fix, verifies solution. Handles errors, failures, and unexpected behavior.
-tools: Glob, Grep, LS, Read, Edit, Write, Bash(npm *), Bash(yarn *), Bash(bun *), Bash(pytest *), Bash(python *), Bash(node *), Bash(cargo *), Bash(go *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git show *), TaskOutput, TodoWrite
+tools: Glob, Grep, LS, Read, Edit, Write, Bash(npm *), Bash(yarn *), Bash(bun *), Bash(pytest *), Bash(python *), Bash(node *), Bash(cargo *), Bash(go *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git add *), Bash(git commit *), TaskOutput, TodoWrite
 maxTurns: 20
 created: 2025-12-27
-modified: 2026-05-07
-reviewed: 2026-04-22
+modified: 2026-05-26
+reviewed: 2026-05-26
 ---
 
 # Debug Agent
@@ -34,6 +34,22 @@ The harness blocks several common bash idioms — use the dedicated tool instead
 - **Input**: Bug description, error message, failing test, or unexpected behavior
 - **Output**: Fixed code, verification that issue is resolved
 - **Steps**: 5-15, completes the fix
+
+## Checkpoint Discipline
+
+Investigations that span multiple files or take many tool uses can exhaust context mid-task (issue #1390). If you sense the response is getting long — many reads, complex edits, repeated test runs — commit work-in-progress before continuing:
+
+1. Stage what's done with explicit paths: `git add <path1> <path2>` (never `-A` or `.`)
+2. Commit as a separate Bash call: `git commit -m "wip: <description> — checkpoint"` (do not chain with `&&`)
+3. Continue with the next step
+
+A checkpoint commit makes the investigation recoverable if context exhausts. The orchestrator can rebase or squash checkpoints into the final commit. Checkpoint after each of:
+
+| Signal | Action |
+|--------|--------|
+| Root cause located, fix in progress | Checkpoint the reproduction / instrumentation before applying the fix |
+| Fix applied, tests pending | Checkpoint the fix before running the verification step |
+| Tool-use count approaching 20 | Checkpoint immediately |
 
 ## Workflow
 
