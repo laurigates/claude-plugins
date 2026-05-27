@@ -27,10 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "args": [
-              "bash",
-              "${CLAUDE_PLUGIN_ROOT}/hooks/project-distill-nudge.sh"
-            ],
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/project-distill-nudge.sh",
             "timeout": 10
           }
         ]
