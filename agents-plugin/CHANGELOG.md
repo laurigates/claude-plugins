@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.0](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.11.1...agents-plugin-v1.12.0) (2026-05-27)
+
+
+### Features
+
+* **agents-plugin:** add checkpoint discipline to refactor/debug/docs ([#1418](https://github.com/laurigates/claude-plugins/issues/1418)) ([b2cc305](https://github.com/laurigates/claude-plugins/commit/b2cc305cdaf20be583fe64d8c87f3e7635b8265c))
+
 ## [1.11.1](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.11.0...agents-plugin-v1.11.1) (2026-05-24)
 
 
