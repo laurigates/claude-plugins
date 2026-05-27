@@ -5,7 +5,7 @@ args: "[--check | --claim | --release]"
 argument-hint: "[--claim | --release | --check (default)]"
 allowed-tools: Bash(bash *), Bash(git status *), Bash(git stash *), Bash(git rev-parse *), Read, TodoWrite
 created: 2026-04-21
-modified: 2026-05-19
+modified: 2026-05-27
 reviewed: 2026-05-19
 ---
 
@@ -22,6 +22,7 @@ destructive operations that could destroy its uncommitted changes.
 | About to run `git stash`, `git reset --hard`, `git checkout -- .` | You already know the working tree is yours alone |
 | `git status` shows files you don't remember touching | Baseline + markers are already confirming you are alone |
 | **Bulk-edit / commit-loop fan-out** about to start (per-plugin, per-package commits across many subdirectories) | Each iteration is already isolated in its own worktree |
+| A collision already happened and you need to recover | See [REFERENCE.md](REFERENCE.md) — Recovery section |
 
 See `.claude/rules/agent-coworker-detection.md` for the full rationale and
 signal design.
@@ -159,6 +160,26 @@ Hook-based enforcement (blocking `git stash` / `git reset --hard` when a coworke
 | Cheapest detection (no baseline) | `bash scripts/detect-coworkers.sh --project-dir "$(pwd)"` |
 | Full detection with drift | Add `--baseline-status` + `--baseline-stash` from a `--claim` run |
 | One-line verdict check | `... \| awk -F= '/^VERDICT=/ {print $2}'` |
+
+## Recovery
+
+Detection prevents corruption. When prevention fails — a coworker
+session moved HEAD between your steps, your commit landed on the
+wrong branch, your branch accumulated commits you didn't make — see
+[REFERENCE.md](REFERENCE.md) for procedural recovery.
+
+Quick triage:
+
+| Symptom | Action |
+|---|---|
+| Your commit is on a branch you didn't expect | REFERENCE.md § Scenario 1 (mixed-reset + `git branch -f` + cherry-pick) |
+| `git switch` carried unfamiliar WIP into the new branch | REFERENCE.md § Scenario 2 (selective `git checkout HEAD -- <paths>`) |
+| `git stash list` is shorter than you remember | REFERENCE.md § Scenario 3 (recover via `git fsck --unreachable`) |
+| You force-pushed the polluted branch already | REFERENCE.md § Scenario 4 (only `--force-with-lease` mitigations) |
+
+**Always run `git reflog -20` first.** The reflog is the ground truth
+for every HEAD move and ref update during the collision window —
+recovery procedures all begin from a clear reflog read.
 
 ## Related Skills
 
