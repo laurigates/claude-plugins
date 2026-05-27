@@ -60,6 +60,63 @@ assert_exit \
     "helm in heredoc body" 0 \
     '{"tool_name":"Bash","tool_input":{"command":"git commit -m \"$(cat <<'"'"'MSG'"'"'\nResolves helm --kube-context issue.\nMSG\n)\""}}'
 
+# ── Quoted-string false-positive regression tests ──────────────────────────
+# Regression (issue #1430): kubectl/helm mentioned inside a quoted grep
+# pattern, echo argument, awk regex, or find -name pattern was falsely
+# triggering this hook.
+echo ""
+echo "Quoted-string false-positive regression (#1430):"
+
+# grep with kubectl inside a double-quoted alternation pattern
+assert_exit \
+    "grep with kubectl in double-quoted pattern" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"grep -n \"pod-exec|pod-db|namespace|kubectl exec|skaffold\" justfile | head -40"}}'
+
+# grep with kubectl in a bare double-quoted pattern
+assert_exit \
+    "grep with bare kubectl pattern" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"grep -rn \"kubectl\" docs/"}}'
+
+# echo with kubectl in a double-quoted argument
+assert_exit \
+    "echo with kubectl in double-quoted arg" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"echo \"run kubectl get pods to list things\""}}'
+
+# awk with kubectl inside a single-quoted regex
+assert_exit \
+    "awk with kubectl in single-quoted regex" 0 \
+    "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"awk '/kubectl/ {print}' justfile\"}}"
+
+# find with kubectl in a quoted -name pattern
+assert_exit \
+    "find -name with kubectl in quoted pattern" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"find . -name \"kubectl*\" -type f"}}'
+
+# helm mentioned inside a quoted grep pattern
+assert_exit \
+    "grep with helm in double-quoted pattern" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"grep -n \"helm install\" justfile"}}'
+
+# Legitimate kubectl with quoted --context value (must still be allowed)
+assert_exit \
+    "kubectl with quoted --context value" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"kubectl --context=\"prod\" get pods"}}'
+
+# Legitimate kubectl with quoted argument after --context (must still be allowed)
+assert_exit \
+    "kubectl --context plus quoted positional arg" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"kubectl --context=staging get pods -l \"app=foo\""}}'
+
+# Pipe into kubectl (legitimate; must still be blocked without --context)
+assert_exit \
+    "pipe into kubectl without --context is blocked" 2 \
+    '{"tool_name":"Bash","tool_input":{"command":"cat manifest.yaml | kubectl apply -f -"}}'
+
+# Pipe into kubectl with --context (allowed)
+assert_exit \
+    "pipe into kubectl with --context is allowed" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"cat manifest.yaml | kubectl --context=staging apply -f -"}}'
+
 # ── kubectl enforcement tests ────────────────────────────────────────────────
 echo ""
 echo "kubectl enforcement:"
