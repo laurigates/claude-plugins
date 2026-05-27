@@ -70,8 +70,27 @@ strip_heredocs() {
     done
 }
 
-# Strip heredoc bodies before checking for kubectl/helm invocations
-COMMAND_CLEAN=$(printf '%s\n' "$COMMAND" | strip_heredocs)
+# Strip single- and double-quoted string contents so that kubectl/helm
+# mentioned inside a grep pattern, echo argument, awk regex, etc. does
+# not trigger validation. Only shell tokens outside quoted strings are
+# checked.
+#
+# Regression: `grep -n "kubectl exec|pod-db" justfile` falsely triggered
+# this hook because the substring "kubectl" inside the quoted grep
+# pattern matched the kubectl-detection regex. Legitimate kubectl
+# invocations like `kubectl --context="prod" get pods` are preserved
+# because the `kubectl` token sits outside the quoted string.
+#
+# Heuristic — escaped quotes (`"\""`) inside strings are not perfectly
+# handled, but the common case (grep patterns, echo/printf arguments,
+# awk regexes, find -name patterns) is covered.
+strip_quoted_strings() {
+    sed -E -e "s/'[^']*'//g" -e 's/"[^"]*"//g'
+}
+
+# Strip heredoc bodies, then quoted string contents, before checking
+# for kubectl/helm invocations.
+COMMAND_CLEAN=$(printf '%s\n' "$COMMAND" | strip_heredocs | strip_quoted_strings)
 
 # Commands that don't require --context (read-only info commands)
 # These are safe because they don't modify cluster state
