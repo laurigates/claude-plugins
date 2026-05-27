@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.1](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.16.0...project-plugin-v1.16.1) (2026-05-27)
+
+
+### Bug Fixes
+
+* **project-plugin:** use shell command form for Stop hook ([#1434](https://github.com/laurigates/claude-plugins/issues/1434)) ([f809551](https://github.com/laurigates/claude-plugins/commit/f8095510c3f3ba9511a9a54bd3b599686d21373c))
+
 ## [1.16.0](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.15.2...project-plugin-v1.16.0) (2026-05-24)
 
 
