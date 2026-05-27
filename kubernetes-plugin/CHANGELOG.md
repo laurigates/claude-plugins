@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.7](https://github.com/laurigates/claude-plugins/compare/kubernetes-plugin-v1.7.6...kubernetes-plugin-v1.7.7) (2026-05-27)
+
+
+### Bug Fixes
+
+* **kubernetes-plugin:** strip quoted strings before kubectl/helm detection ([#1433](https://github.com/laurigates/claude-plugins/issues/1433)) ([fb6dfae](https://github.com/laurigates/claude-plugins/commit/fb6dfaed0bdd3d1844fefeb1098f042ae4d9bb36)), closes [#1430](https://github.com/laurigates/claude-plugins/issues/1430)
+
 ## [1.7.6](https://github.com/laurigates/claude-plugins/compare/kubernetes-plugin-v1.7.5...kubernetes-plugin-v1.7.6) (2026-05-25)
 
 
