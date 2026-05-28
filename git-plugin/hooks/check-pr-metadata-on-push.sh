@@ -84,9 +84,26 @@ PR_UPDATED_AT=$(echo "$PR_JSON" | jq -r '.updatedAt // empty')
 # Guard: couldn't parse PR data
 if [ -z "$PR_NUMBER" ] || [ -z "$PR_TITLE" ]; then exit 0; fi
 
-# Retry-aware bypass (issue #1041, refined in #1400): if the PR was edited
-# after the latest local commit was authored, metadata has demonstrably
-# been reconciled for HEAD — let the push proceed silently.
+# Resolve the ref to inspect for commits and bypass-timestamp comparison.
+# When the push command names a branch other than the running shell's
+# current branch (e.g. `git push origin fix/A` from a `fix/B` checkout —
+# the default situation under `git-pr-feedback --all` where the
+# orchestrator drives multiple worktrees from a main-branch checkout),
+# inspecting HEAD shows the wrong commits in the block message and reads
+# the wrong author time for the bypass check. Use the pushed branch's
+# local ref when it exists; fall back to HEAD for first-time pushes and
+# `HEAD:new-branch` refspecs where the local ref hasn't been created yet.
+# Regression: see issue #1419.
+PUSH_REF="HEAD"
+if [ -n "$PUSH_BRANCH" ] && \
+   git -C "$CWD" rev-parse --verify --quiet "refs/heads/$PUSH_BRANCH" >/dev/null 2>&1; then
+    PUSH_REF="refs/heads/$PUSH_BRANCH"
+fi
+
+# Retry-aware bypass (issue #1041, refined in #1400, cross-branch fix in #1419):
+# if the PR was edited after the latest local commit on the pushed branch was
+# authored, metadata has demonstrably been reconciled for that branch — let
+# the push proceed silently.
 #
 # Use AUTHOR date (%aI), not committer date (%cI), because `git rebase`
 # refreshes committer time to "now" while preserving author time. Without
@@ -94,7 +111,7 @@ if [ -z "$PR_NUMBER" ] || [ -z "$PR_TITLE" ]; then exit 0; fi
 # has to make a content-different `gh pr edit` to escape — but
 # `gh pr edit --body-file <file>` no-ops when the body is unchanged, so
 # the agent ends up trapped (issue #1400).
-HEAD_AUTHOR_TIME=$(git -C "$CWD" log -1 --format=%aI HEAD 2>/dev/null || true)
+HEAD_AUTHOR_TIME=$(git -C "$CWD" log -1 --format=%aI "$PUSH_REF" 2>/dev/null || true)
 if [ -n "$PR_UPDATED_AT" ] && [ -n "$HEAD_AUTHOR_TIME" ]; then
     iso_to_epoch() {
         # Convert ISO 8601 to epoch seconds. Handles both Z (UTC) and
@@ -121,11 +138,14 @@ if [ -n "$PR_UPDATED_AT" ] && [ -n "$HEAD_AUTHOR_TIME" ]; then
     fi
 fi
 
-# Get recent commits on this branch (since divergence from default branch)
+# Get recent commits on the pushed branch (since divergence from default
+# branch). Uses PUSH_REF instead of HEAD so the block message shows the
+# commits actually being pushed when the current shell is on a different
+# branch (issue #1419).
 RECENT_COMMITS=""
-BASE=$(git -C "$CWD" merge-base HEAD origin/HEAD 2>/dev/null || true)
+BASE=$(git -C "$CWD" merge-base "$PUSH_REF" origin/HEAD 2>/dev/null || true)
 if [ -n "$BASE" ]; then
-    RECENT_COMMITS=$(git -C "$CWD" log --format='  - %s' "${BASE}..HEAD" 2>/dev/null | head -20 || true)
+    RECENT_COMMITS=$(git -C "$CWD" log --format='  - %s' "${BASE}..${PUSH_REF}" 2>/dev/null | head -20 || true)
 fi
 
 # Truncate body for display (first 5 non-empty lines)

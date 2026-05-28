@@ -233,6 +233,65 @@ PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
 # Return HEAD to feature for any subsequent tests
 git -C "$TMPDIR" checkout feature -q
 
+# ── Cross-branch push uses pushed branch's ref (issue #1419) ──────────────
+# Regression test: when `git push origin <branch>` is run from a checkout
+# whose HEAD is on a different branch (e.g. orchestrator on main pushing
+# a feature branch in a worktree), the hook must read commits and the
+# bypass author time from the PUSHED branch, not the running shell's HEAD.
+#
+# Without the fix, the hook reads HEAD (the current branch) — showing
+# wrong commits in the block message and reading the wrong author time,
+# which traps the agent in a re-block loop when the current branch happens
+# to have more recent author time than the pushed branch.
+echo ""
+echo "cross-branch push reads pushed branch ref (#1419):"
+
+# Build a fresh branch "older-target" with an old author date.
+# Then put HEAD on a separate "newer-current" branch with a recent author
+# date. From newer-current, push older-target. PR.updatedAt is set
+# between the two author dates: AFTER older-target's commit, BEFORE
+# newer-current's commit. With HEAD-based logic this fails to bypass
+# (uses newer-current's recent author date). With PUSH_REF-based logic
+# it bypasses correctly (uses older-target's older author date).
+git -C "$TMPDIR" checkout main -q
+git -C "$TMPDIR" checkout -b older-target -q
+OLDER_AUTHOR_DATE=$(iso_offset "-10800")  # 3h ago
+GIT_AUTHOR_DATE="$OLDER_AUTHOR_DATE" git -C "$TMPDIR" commit --allow-empty \
+    -m "feat: target branch work" -q
+
+git -C "$TMPDIR" checkout main -q
+git -C "$TMPDIR" checkout -b newer-current -q
+NEWER_AUTHOR_DATE=$(iso_offset "-60")  # 1m ago
+GIT_AUTHOR_DATE="$NEWER_AUTHOR_DATE" git -C "$TMPDIR" commit --allow-empty \
+    -m "feat: unrelated current-branch work" -q
+
+# PR last updated 1h ago — between the two author dates.
+PR_BETWEEN_BRANCHES=$(iso_offset "-3600")
+CROSS_PUSH_JSON=$(make_json "git push origin older-target")
+
+# Bypass MUST fire: pushed branch's author time (3h ago) < PR.updatedAt (1h ago).
+MOCK_PR_JSON=$(jq -n --arg t "$PR_BETWEEN_BRANCHES" \
+    '{number:42,title:"feat: target",body:"body",url:"https://example/42",updatedAt:$t}')
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
+    assert_exit "cross-branch push uses pushed branch's author date for bypass (#1419)" 0 "$CROSS_PUSH_JSON"
+
+# Counter-test: PR genuinely not updated since pushed branch's commit
+# (PR.updatedAt 4h ago, target branch authored 3h ago) → still blocks.
+PR_BEFORE_TARGET=$(iso_offset "-14400")  # 4h ago
+MOCK_PR_JSON=$(jq -n --arg t "$PR_BEFORE_TARGET" \
+    '{number:42,title:"feat: target",body:"body",url:"https://example/42",updatedAt:$t}')
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
+    assert_exit "cross-branch push still blocks when PR is older than pushed branch" 2 "$CROSS_PUSH_JSON"
+
+# First-push case: `git push -u origin brand-new-branch` when the local
+# ref doesn't yet exist must fall back to HEAD without erroring.
+NEW_PUSH_JSON=$(make_json "git push -u origin brand-new-branch")
+MOCK_PR_JSON='{"number":42,"title":"feat: new","body":"body","url":"https://example/42"}'
+PATH="$MOCK_BIN:$PATH" MOCK_PR_JSON="$MOCK_PR_JSON" \
+    assert_exit "missing local ref falls back to HEAD without error" 2 "$NEW_PUSH_JSON"
+
+git -C "$TMPDIR" checkout feature -q
+
 rm -rf "$MOCK_BIN"
 
 # ── Summary ────────────────────────────────────────────────────────────────
