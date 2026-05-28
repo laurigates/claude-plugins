@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.39.8](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.39.7...git-plugin-v2.39.8) (2026-05-28)
+
+
+### Bug Fixes
+
+* **git-plugin:** use pushed branch ref for PR-metadata bypass timestamp ([#1438](https://github.com/laurigates/claude-plugins/issues/1438)) ([e46aa13](https://github.com/laurigates/claude-plugins/commit/e46aa13825c0996d38634e4ed0c011a0a09f0153))
+
 ## [2.39.7](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.39.6...git-plugin-v2.39.7) (2026-05-24)
 
 
