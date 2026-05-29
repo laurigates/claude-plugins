@@ -15,7 +15,7 @@ Initialize Blueprint Development in this project.
 |---|---|
 | The project has no `docs/blueprint/manifest.json` yet | The project already has a manifest at an older format version |
 | You're bootstrapping a new project's PRD/ADR/PRP directories | You're migrating v1.x→v2, v2→v3, or v3.x→v3.y |
-| You want to enable feature tracking and decision detection from scratch | Use blueprint-derive-prd / blueprint-derive-adr to populate after init |
+| You want to enable feature tracking and decision detection from scratch | Use blueprint-derive-plans to populate PRDs/ADRs/PRPs after init |
 | You're configuring task scheduling for the first time | Use blueprint-execute instead when you want auto-detection of next step |
 
 ## Steps
@@ -153,7 +153,7 @@ Initialize Blueprint Development in this project.
      - label: "Yes - Detect decisions worth documenting"
        description: "Claude will notice when conversations contain architecture decisions, feature requirements, or implementation plans that should be captured as ADR/PRD/PRP documents"
      - label: "No - Manual commands only"
-       description: "Use /blueprint:derive-prd, /blueprint:derive-adr, /blueprint:prp-create explicitly when you want to create documents"
+       description: "Use /blueprint:derive-plans, /blueprint:prp-create explicitly when you want to create documents"
    ```
 
    Set `has_document_detection` in manifest based on response.
@@ -251,15 +251,6 @@ Initialize Blueprint Development in this project.
        "commands": []
      },
      "task_registry": {
-       "derive-prd": {
-         "enabled": true,
-         "auto_run": false,
-         "last_completed_at": null,
-         "last_result": null,
-         "schedule": "on-demand",
-         "stats": {},
-         "context": {}
-       },
        "derive-plans": {
          "enabled": true,
          "auto_run": false,
@@ -433,9 +424,7 @@ Initialize Blueprint Development in this project.
 Management commands:
 - /blueprint:status          - Check version and configuration
 - /blueprint:upgrade         - Upgrade to latest format version
-- /blueprint:derive-prd      - Derive PRD from existing documentation
-- /blueprint:derive-adr      - Derive ADRs from codebase analysis
-- /blueprint:derive-plans    - Derive docs from git history
+- /blueprint:derive-plans    - Derive PRDs, ADRs, and PRPs from git history
 - /blueprint:derive-rules    - Derive rules from git commit decisions
 - /blueprint:prp-create      - Create a Product Requirement Prompt
 - /blueprint:generate-rules  - Generate rules from PRDs

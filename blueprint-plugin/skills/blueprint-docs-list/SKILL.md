@@ -99,5 +99,5 @@ done
 ## Post-Actions
 
 After listing, suggest:
-- For empty directories: "Run `/blueprint:derive-adr` or `/blueprint:derive-prd` to generate documents"
+- For empty directories: "Run `/blueprint:derive-plans` to generate documents"
 - For stale documents: "Review documents with status 'draft' or 'Proposed'"

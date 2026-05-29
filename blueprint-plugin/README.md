@@ -30,8 +30,6 @@ PRD (Product Requirements) → PRP (Product Requirement Prompt) → Work-Order �
 | Skill | Description |
 |-------|-------------|
 | `blueprint-init` | Initialize Blueprint Development structure in a project |
-| `blueprint-derive-prd` | Derive PRD from existing project documentation |
-| `blueprint-derive-adr` | Derive Architecture Decision Records from existing codebase |
 | `blueprint-derive-plans` | Derive PRDs, ADRs, and PRPs from git history and existing code |
 | `blueprint-derive-rules` | Derive rules from git commit decisions (newer overrides older) |
 | `blueprint-derive-tests` | Derive test regression plans from git history by identifying untested fix/feature commits |
@@ -155,8 +153,7 @@ docs/
 For existing projects, derive documentation from codebase:
 
 ```bash
-/blueprint:derive-prd    # Derive PRD from README and docs
-/blueprint:derive-adr    # Derive ADRs from architecture analysis
+/blueprint:derive-plans  # Derive PRDs, ADRs, and PRPs from git history and docs
 ```
 
 These commands analyze existing documentation and code patterns, asking clarifying questions to fill gaps.
@@ -251,7 +248,7 @@ All blueprint documents are connected through a unified ID system, enabling full
 ### Automatic ID Assignment
 
 IDs are automatically generated when:
-- Creating documents via `/blueprint:derive-prd`, `/blueprint:derive-adr`, `/blueprint:prp-create`
+- Creating documents via `/blueprint:derive-plans`, `/blueprint:prp-create`
 - Running `/blueprint:sync-ids` to batch-assign IDs to existing documents
 - Accessing documents without IDs (auto-assigned on first access)
 

@@ -223,6 +223,6 @@ Rules are generated to the directory configured in `structure.generated_rules_pa
 - Rules should be actionable, not just documentation
 
 **Error Handling**:
-- If no PRDs found -> Guide user to derive PRDs first (`/blueprint:derive-prd`)
+- If no PRDs found -> Guide user to derive plans first (`/blueprint:derive-plans`)
 - If PRDs incomplete -> Generate rules with TODO markers for missing sections
 - If rules already exist and modified -> Offer to backup before overwriting

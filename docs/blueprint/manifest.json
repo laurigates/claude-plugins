@@ -29,17 +29,6 @@
     "commands": []
   },
   "task_registry": {
-    "derive-prd": {
-      "enabled": false,
-      "auto_run": false,
-      "last_completed_at": null,
-      "last_result": null,
-      "schedule": "on-demand",
-      "stats": {},
-      "context": {
-        "disabled_reason": "Constrained dogfooding: this repo authors PRDs by hand. derive-prd would mine plugin-feature commits as if they were project requirements."
-      }
-    },
     "derive-plans": {
       "enabled": false,
       "auto_run": false,
@@ -48,7 +37,7 @@
       "schedule": "on-demand",
       "stats": {},
       "context": {
-        "disabled_reason": "Constrained dogfooding: docs/plans/ is hand-authored. derive-plans writes to docs/prps/ and would conflict with that convention."
+        "disabled_reason": "Constrained dogfooding: docs/plans/ is hand-authored and this repo authors PRDs/ADRs by hand. derive-plans (which now subsumes the former derive-prd/derive-adr) would mine plugin-feature commits as if they were project requirements and writes to docs/prps/, conflicting with that convention."
       }
     },
     "derive-rules": {

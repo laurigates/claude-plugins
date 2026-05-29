@@ -19,7 +19,7 @@ Provides logic for domain analysis, conflict detection, and relationship trackin
 | You need domain tagging logic for grouping related ADRs | You're running a one-shot ADR validation report |
 | You need conflict detection between ADRs in the same domain | You're auditing all ADRs before a release |
 | You need bidirectional relationship validation between ADRs | Use blueprint-adr-list instead when you only need a flat ADR index |
-| You're authoring a new ADR and want to find related decisions | Use blueprint-derive-adr instead when generating ADRs from existing code |
+| You're authoring a new ADR and want to find related decisions | Use blueprint-derive-plans instead when generating ADRs from existing code |
 
 ## Core Capabilities
 
@@ -177,7 +177,7 @@ done
 
 ## Integration Points
 
-- **`/blueprint:derive-adr`**: Pre-creation conflict analysis
+- **`/blueprint:derive-plans`**: Pre-creation conflict analysis
 - **`/blueprint:adr-validate`**: Full validation report
 - **`/blueprint:status`**: ADR health summary
 - **document-detection skill**: Domain inference for auto-detected ADRs

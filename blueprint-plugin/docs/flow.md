@@ -8,9 +8,7 @@ flowchart TD
 
     subgraph DERIVE["Derive from existing code (optional side-path)"]
         direction TB
-        DP[blueprint-derive-prd]
-        DA[blueprint-derive-adr]
-        DPL[blueprint-derive-plans]
+        DPL[blueprint-derive-plans<br/>PRDs + ADRs + PRPs]
         DR[blueprint-derive-rules]
         DT[blueprint-derive-tests]
     end
@@ -76,7 +74,7 @@ flowchart TD
     classDef prompt fill:#dda0dd,stroke:#8b5a8b,color:#000
 
     class EX router
-    class DP,DA,DPL,DR,DT,LIST,VA,VP,CR,SA check
+    class DPL,DR,DT,LIST,VA,VP,CR,SA check
     class INIT,PRD,ADR,PRP,WO,RUN,TRACK,SID,SYNC,PROM,UPG,SR fix
 ```
 
@@ -97,7 +95,7 @@ Dotted arrows are optional side-paths and cross-cutting concerns.
 | Stage | Skills |
 |-------|--------|
 | Bootstrap | `blueprint-init`, `blueprint-execute` (router) |
-| Derive (brownfield) | `blueprint-derive-prd`, `blueprint-derive-adr`, `blueprint-derive-plans`, `blueprint-derive-rules`, `blueprint-derive-tests` |
+| Derive (brownfield) | `blueprint-derive-plans` (PRDs + ADRs + PRPs), `blueprint-derive-rules`, `blueprint-derive-tests` |
 | PRD | `blueprint-development`, `document-detection`, `document-linking` |
 | ADR | `blueprint-adr-validate`, `blueprint-adr-list`, `adr-relationships` |
 | PRP | `blueprint-prp-create`, `blueprint-curate-docs`, `confidence-scoring` |

@@ -21,7 +21,7 @@ Apply the drift findings from `/blueprint:story-audit` back to the PRDs. Adds st
 | Use this skill when... | Use alternative when... |
 |------------------------|-------------------------|
 | Marking PRD requirements as implemented / partial / missing after an audit | Producing the audit itself (`/blueprint:story-audit`) |
-| Adding a "Known Drift" section to a PRD | Generating PRDs from scratch (`/blueprint:derive-prd`) |
+| Adding a "Known Drift" section to a PRD | Generating PRDs from scratch (`/blueprint:derive-plans`) |
 | Promoting a single candidate story into the PRD with user consent | Bulk-rewriting PRDs (this skill is deliberately conservative) |
 
 This skill **only edits PRDs**. Code changes belong to `/blueprint:work-order`. Audit re-runs belong to `/blueprint:story-audit`.
@@ -73,7 +73,7 @@ For each non-`✅` drift entry, determine the target PRD:
 | Status | Target PRD |
 |--------|-----------|
 | ⚠️ partial / ❌ missing | The PRD whose `prd_ref` matches the entry (e.g. `FR-2.3` → `docs/prds/PRD-002.md`) |
-| 🆕 candidate | Ask the user which PRD to promote into; if no PRD covers the area, suggest creating a stub via `/blueprint:derive-prd` |
+| 🆕 candidate | Ask the user which PRD to promote into; if no PRD covers the area, suggest creating a stub via `/blueprint:derive-plans` |
 
 If `--prd <path>` is set, drop entries whose target PRD doesn't match.
 

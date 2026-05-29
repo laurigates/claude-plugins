@@ -14,10 +14,10 @@ Proactively identify when conversations should become structured documents (PRDs
 
 ## When to Use This Skill
 
-| Use this skill when... | Use blueprint-derive-prd instead when... |
+| Use this skill when... | Use blueprint-derive-plans instead when... |
 |---|---|
-| Mid-conversation cues suggest a PRD/ADR/PRP should be captured | You're explicitly extracting a PRD from existing README/docs |
-| The user says "I want to build...", "users should be able to..." | Use blueprint-derive-adr instead when the cue is a tech-choice decision |
+| Mid-conversation cues suggest a PRD/ADR/PRP should be captured | You're explicitly deriving plans (PRDs/ADRs/PRPs) from existing README/docs and git history |
+| The user says "I want to build...", "users should be able to..." | Use blueprint-derive-plans instead when the cue is a tech-choice decision worth an ADR |
 | The user compares trade-offs ("should we use X or Y?") | Use document-linking instead to wire IDs across already-created docs |
 | Implementation scope is being discussed and warrants a PRP | Use blueprint-prp-create instead when you've already decided to author a PRP |
 
@@ -162,7 +162,7 @@ For ADR opportunities, append the decision topic to the Proposed ADRs section in
    - [ ] {Decision topic} — {brief context from conversation} (identified {YYYY-MM-DD})
    ```
 3. Remove the `_No proposed ADRs at this time._` placeholder if present
-4. Confirm to user: "Added to proposed ADRs backlog. Run `/blueprint:derive-adr` when ready to document it fully."
+4. Confirm to user: "Added to proposed ADRs backlog. Run `/blueprint:derive-plans` when ready to document it fully."
 
 For PRD/PRP opportunities, note the topic in the conversation and suggest revisiting later. No persistent backlog file exists for these types yet.
 
@@ -240,7 +240,7 @@ Map discussion topics to ADR domains:
 | Docker, Kubernetes, Vercel, serverless, deploy | `deployment` |
 | Sentry, DataDog, logging, metrics, monitoring | `monitoring` |
 
-Include inferred domain in context package for `/blueprint:derive-adr`.
+Include inferred domain in context package for `/blueprint:derive-plans`.
 
 ### Step 4: Delegate to Documentation Agent
 
@@ -248,7 +248,7 @@ Launch appropriate documentation command:
 
 **For PRD**:
 ```
-Run /blueprint:derive-prd with context:
+Run /blueprint:derive-plans with context:
 - Feature description from conversation
 - User types identified
 - Requirements enumerated
@@ -257,7 +257,7 @@ Run /blueprint:derive-prd with context:
 
 **For ADR**:
 ```
-Run /blueprint:derive-adr with context:
+Run /blueprint:derive-plans with context:
 - Decision being made
 - Options compared
 - Constraints identified
@@ -300,8 +300,8 @@ Document detection integrates with existing commands:
 
 | Detection Type | Command Triggered | Document Location |
 |----------------|-------------------|-------------------|
-| PRD | `/blueprint:derive-prd` | `docs/prds/{feature-name}.md` |
-| ADR | `/blueprint:derive-adr` | `docs/adrs/{number}-{title}.md` |
+| PRD | `/blueprint:derive-plans` | `docs/prds/{feature-name}.md` |
+| ADR | `/blueprint:derive-plans` | `docs/adrs/{number}-{title}.md` |
 | PRP | `/blueprint:prp-create` | `docs/prps/{feature-name}.md` |
 
 ## Configuration
