@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.39.10](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.39.9...git-plugin-v2.39.10) (2026-05-29)
+
+
+### Bug Fixes
+
+* **git-plugin:** make resolving review threads the default after reply ([#1444](https://github.com/laurigates/claude-plugins/issues/1444)) ([a4e6450](https://github.com/laurigates/claude-plugins/commit/a4e645020489daa0699de992ff8589ca701205d0))
+
 ## [2.39.9](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.39.8...git-plugin-v2.39.9) (2026-05-29)
 
 
