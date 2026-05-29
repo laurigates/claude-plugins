@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.34.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.34.0...blueprint-plugin-v3.34.1) (2026-05-29)
+
+
+### Code Refactoring
+
+* **blueprint-plugin:** fold derive-prd + derive-adr into derive-plans ([#1453](https://github.com/laurigates/claude-plugins/issues/1453)) ([8777bcb](https://github.com/laurigates/claude-plugins/commit/8777bcbe072a0c0426b6cc38e941f2bb362bb6dd))
+
 ## [3.34.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.33.3...blueprint-plugin-v3.34.0) (2026-05-24)
 
 
