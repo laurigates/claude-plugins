@@ -14,8 +14,8 @@ name: code-antipatterns
 | Use this skill when... | Use something else instead when... |
 |------------------------|------------------------------------|
 | Running a parallel anti-pattern scan and producing a report | Looking up the full YAML rule catalog → see [REFERENCE.md](REFERENCE.md) |
-| Specifically targeting empty catches, floating promises, or `\|\| true` | Use the dedicated scanner → `code-error-swallowing` |
-| Finding success-on-empty / silent degradation patterns | Use the dedicated scanner → `code-silent-degradation` |
+| Specifically targeting empty catches, floating promises, or `\|\| true` | Use the dedicated scanner → `code-hidden-failures --track errors` |
+| Finding success-on-empty / silent degradation patterns | Use the dedicated scanner → `code-hidden-failures --track degradation` |
 | Broad code-quality review across security, perf, and architecture | Run the full review delegate → `code-review` |
 
 ## Context
@@ -36,11 +36,11 @@ Based on the detected languages, analyze for these categories:
 1. **JavaScript/TypeScript Anti-patterns**
    - Callbacks, magic values, console.logs
    - var usage, deprecated patterns
-   - Error swallowing (empty catch, floating promises) → **delegate** to `/code:error-swallowing`
+   - Error swallowing (empty catch, floating promises) → **delegate** to `/code:hidden-failures --track errors`
 
 2. **Async/Promise Patterns**
    - Nested callbacks, Promise constructor anti-pattern
-   - Error-handling coverage (unhandled/floating promises) → **delegate** to `/code:error-swallowing`
+   - Error-handling coverage (unhandled/floating promises) → **delegate** to `/code:hidden-failures --track errors`
 
 3. **Framework-Specific** (if detected)
    - **Vue 3**: Props mutation, reactivity issues, Options vs Composition API mixing
@@ -60,18 +60,18 @@ Based on the detected languages, analyze for these categories:
 
 8. **Python Anti-patterns** (if detected)
    - Mutable default arguments, global variables
-   - Bare except and suppression patterns → **delegate** to `/code:error-swallowing`
+   - Bare except and suppression patterns → **delegate** to `/code:hidden-failures --track errors`
 
 ### Delegated Category: Error Swallowing
 
 Do NOT re-implement empty-catch / bare-except / floating-promise detection
-here. Invoke `/code:error-swallowing` via the SlashCommand tool with the
+here. Invoke `/code:hidden-failures --track errors` via the SlashCommand tool with the
 same `PATH` and severity filter, then fold its findings into the
 consolidated report under a dedicated **Error Swallowing** section.
 
 Rationale: a single source of truth prevents drift between severity
 models, app-context surfacing recommendations, and privacy redaction
-policies. See `code-quality-plugin/skills/code-error-swallowing/SKILL.md`.
+policies. See `code-quality-plugin/skills/code-hidden-failures/SKILL.md`.
 
 ### Execution Strategy
 
@@ -86,11 +86,11 @@ Detect project stack, identify file patterns, establish analysis scope
 ## Agent 2: JavaScript/TypeScript Analysis (code-analysis)
 - Use ast-grep for structural pattern matching
 - Focus on: magic values, var usage, deprecated patterns
-- Error swallowing handled separately via `/code:error-swallowing`
+- Error swallowing handled separately via `/code:hidden-failures --track errors`
 
 ## Agent 3: Async/Promise Analysis (code-analysis)
 - Nested callbacks, Promise constructor anti-pattern
-- Floating promises / unhandled rejections handled via `/code:error-swallowing`
+- Floating promises / unhandled rejections handled via `/code:hidden-failures --track errors`
 
 ## Agent 4: Framework-Specific Analysis (code-analysis)
 - Vue: props mutation, reactivity issues
