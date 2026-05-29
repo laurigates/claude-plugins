@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
-reviewed: 2026-04-25
+modified: 2026-05-29
+reviewed: 2026-05-29
 name: python-code-quality
 description: Python code quality with ruff and ty. Use when the user mentions ruff, ty, linting, formatting, type checking, or Python code style.
 user-invocable: false
@@ -10,157 +10,59 @@ allowed-tools: Bash, Read, Grep, Glob
 
 # Python Code Quality
 
-Quick reference for Python code quality tools: ruff (linting & formatting), ty (type checking).
+Orchestration index for the Python quality stack. This skill **routes** to
+the focused skills that own each tool — it does not restate their commands.
+Reach for it when setting up or reasoning about the whole stack (lint +
+format + type-check + tests) at once; reach for a focused skill when tuning
+one tool.
 
 ## When to Use This Skill
 
 | Use this skill when... | Use a focused sibling instead when... |
 |---|---|
-| Setting up a complete quality stack (lint + format + type-check) for a new project | Tuning only ruff lint rule selection — use ruff-linting |
-| Wiring ruff and ty into pre-commit and CI together | Configuring only ruff formatter quirks — use ruff-formatting |
-| Comparing ruff/ty/basedpyright at a high level before choosing tools | Configuring strict basedpyright/ty type-checker rules — use basedpyright-type-checking or ty-type-checking |
+| Standing up a complete quality stack for a new project | Tuning only ruff lint rule selection — use `ruff-linting` |
+| Reasoning about how the tools fit together / comparing them | Configuring only ruff formatter quirks — use `ruff-formatting` |
+| Wiring lint + type-check into pre-commit and CI together | Configuring strict type-checker rules — use `ty-type-checking` or `basedpyright-type-checking` |
 
-## When This Skill Applies
+## Routing Table
 
-- Linting Python code
-- Code formatting
-- Type checking
-- Pre-commit hooks
-- CI/CD quality gates
-- Code style enforcement
+| Concern | Focused skill |
+|---------|---------------|
+| Lint rules, rule selection, auto-fix | `python-plugin:ruff-linting` |
+| Code formatting (quote style, line length) | `python-plugin:ruff-formatting` |
+| Editor / pre-commit / CI / Docker wiring for ruff | `python-plugin:ruff-linting` → its `REFERENCE.md` |
+| Type checking with ty | `python-plugin:ty-type-checking` |
+| Type checking with basedpyright | `python-plugin:basedpyright-type-checking` |
+| Dead-code detection | `python-plugin:vulture-dead-code` |
+| Test quality / coverage | `python-plugin:python-testing`, `python-plugin:pytest-advanced` |
+| Modern type-hint syntax and idioms | `python-plugin:python-development` |
+| Adding the tools to a project | `python-plugin:uv-project-management` |
 
-## Quick Reference
+## Full Stack at a Glance
 
-### Ruff (Linter & Formatter)
-
-```bash
-# Lint code
-uv run ruff check .
-
-# Auto-fix issues
-uv run ruff check --fix .
-
-# Format code
-uv run ruff format .
-
-# Check and format
-uv run ruff check --fix . && uv run ruff format .
-
-# Show specific rule
-uv run ruff check --select E501  # Line too long
-
-# Ignore specific rule
-uv run ruff check --ignore E501
-```
-
-### ty (Type Checking)
-
-```bash
-# Type check project
-uv run ty check
-
-# Type check specific file
-uv run ty check src/module.py
-
-# Check with explicit Python version
-uv run ty check --python 3.11
-
-# Verbose output
-uv run ty check --verbose
-```
-
-## pyproject.toml Configuration
-
-```toml
-[tool.ruff]
-line-length = 88
-target-version = "py311"
-
-[tool.ruff.lint]
-select = [
-    "E",   # pycodestyle errors
-    "W",   # pycodestyle warnings
-    "F",   # pyflakes
-    "I",   # isort
-    "N",   # pep8-naming
-    "UP",  # pyupgrade
-    "B",   # flake8-bugbear
-]
-ignore = [
-    "E501",  # line too long (handled by formatter)
-]
-
-[tool.ruff.lint.isort]
-known-first-party = ["myproject"]
-
-[tool.ty]
-python-version = "3.11"
-exclude = [
-    "**/__pycache__",
-    "**/.venv",
-    "tests",
-]
-
-[tool.ty.rules]
-possibly-unbound = "warn"
-```
-
-## Type Hints
-
-```python
-# Modern type hints (Python 3.10+)
-def process_data(
-    items: list[str],                    # Not List[str]
-    config: dict[str, int],              # Not Dict[str, int]
-    optional: str | None = None,         # Not Optional[str]
-) -> tuple[bool, str]:                   # Not Tuple[bool, str]
-    return True, "success"
-
-# Type aliases
-from typing import TypeAlias
-
-UserId: TypeAlias = int
-UserDict: TypeAlias = dict[str, str | int]
-
-def get_user(user_id: UserId) -> UserDict:
-    return {"id": user_id, "name": "Alice"}
-```
-
-## Pre-commit Configuration
+The one thing this index owns: the tools running **together** in pre-commit.
+For each tool's flags and config, follow the routing table above.
 
 ```yaml
-# .pre-commit-config.yaml
+# .pre-commit-config.yaml — ruff (lint + format) and ty together
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.9
+    rev: v0.14.0
     hooks:
-      - id: ruff
+      - id: ruff-check
         args: [--fix]
       - id: ruff-format
-
   - repo: https://github.com/astral-sh/ty
     rev: v0.0.10
     hooks:
       - id: ty
 ```
 
-## Common Ruff Rules
-
-- **E501**: Line too long
-- **F401**: Unused import
-- **F841**: Unused variable
-- **I001**: Import not sorted
-- **N806**: Variable should be lowercase
-- **B008**: Function call in argument defaults
-
-## See Also
-
-- `python-testing` - Testing code quality
-- `uv-project-management` - Adding quality tools to projects
-- `python-development` - Core Python patterns
+A typical CI quality gate runs the same three steps: `ruff check`,
+`ruff format --check`, `ty check`. See `ruff-linting` § CI/CD Integration and
+`ty-type-checking` for the runnable forms.
 
 ## References
 
-- Ruff: https://docs.astral.sh/ruff/
-- ty: https://docs.astral.sh/ty/
-- Detailed guide: See REFERENCE.md
+- Ruff: <https://docs.astral.sh/ruff/>
+- ty: <https://docs.astral.sh/ty/>
