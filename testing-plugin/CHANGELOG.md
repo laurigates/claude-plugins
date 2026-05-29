@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.14.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.13.6...testing-plugin-v3.14.0) (2026-05-29)
+
+
+### Features
+
+* **testing-plugin:** add odiff-image-diffing skill ([#1442](https://github.com/laurigates/claude-plugins/issues/1442)) ([a2c6904](https://github.com/laurigates/claude-plugins/commit/a2c6904143d7c3f7ac46ad93d7e60d9979a587d7))
+
 ## [3.13.6](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.13.5...testing-plugin-v3.13.6) (2026-05-24)
 
 
