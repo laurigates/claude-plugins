@@ -66,13 +66,9 @@ All skills are located in the `skills/` directory:
   - Auto-fixes common issues (linting, config, formatting)
   - Opens GitHub issues for complex or external failures
   - Safety guards against infinite loops and bot triggers
-
-- **ci-autofix-reusable** - Reusable CI auto-fix workflow (`workflow_call`)
-  - `workflow_call`-based reusable workflow template
-  - Customizable auto-fix criteria via inputs
-  - Fan-out support for fixing all failing PRs at once
-  - Caller workflow template with `workflow_run` and `workflow_dispatch` triggers
-  - Cross-repository usage support
+  - `--reusable` / `--caller` generate a `workflow_call` template (customizable
+    auto-fix criteria, fan-out across PRs, cross-repository usage) — see the
+    skill's `REFERENCE.md`
 
 - **github-social-preview** - Generate repository social preview images
   - Open Graph image creation for repositories

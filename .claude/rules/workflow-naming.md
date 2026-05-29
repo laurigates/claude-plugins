@@ -51,8 +51,7 @@ Any skill that emits a workflow YAML snippet must follow this convention in its 
 | `configure-plugin:configure-workflows` | Interactive workflow scaffolder |
 | `configure-plugin:configure-reusable-workflows` | Reusable-workflow caller files |
 | `github-actions-plugin:claude-code-github-workflows` | Claude Code workflow design patterns |
-| `github-actions-plugin:github-workflow-auto-fix` | `Auto-fix: CI failures` template |
-| `github-actions-plugin:ci-autofix-reusable` | Reusable CI auto-fix workflow |
+| `github-actions-plugin:github-workflow-auto-fix` | `Auto-fix: CI failures` (inline) and `Reusable: CI auto-fix` (`--reusable`) templates |
 | `agents-plugin/agents/ci.md` | CI agent's "Common Workflows" examples |
 
 When you add a new skill that scaffolds a workflow, register it here.
