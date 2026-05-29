@@ -17,8 +17,8 @@ Systematic approach to finding and fixing bugs.
 
 | Use this skill when... | Use something else instead when... |
 |------------------------|------------------------------------|
-| Diagnosing a live bug, memory leak, race, or perf regression | Bug is hidden by a swallowed error → `code-error-swallowing` |
-| Reasoning about reproduction, isolation, and root cause | Bug is hidden by silent success-on-empty → `code-silent-degradation` |
+| Diagnosing a live bug, memory leak, race, or perf regression | Bug is hidden by a swallowed error → `code-hidden-failures --track errors` |
+| Reasoning about reproduction, isolation, and root cause | Bug is hidden by silent success-on-empty → `code-hidden-failures --track degradation` |
 | Choosing strace/eBPF/perf for system-level investigation | Reviewing surrounding code quality once root cause is known → `code-review` |
 | Documenting hypotheses and binary-searching the failure | Refactoring the buggy module after the fix → `code-refactor` |
 

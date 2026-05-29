@@ -16,8 +16,7 @@ This plugin provides comprehensive code quality tools including automated code r
 | `/code:lint` | Universal linter - auto-detects and runs appropriate linting tools (with `--fix` for autofix) |
 | `/code:dry-consolidation` | Find and extract duplicated code into shared, tested abstractions |
 | `/code:docs-quality` | Analyze documentation quality - PRDs, ADRs, PRPs, CLAUDE.md, and .claude/rules/ |
-| `/code:silent-degradation` | Detect silent degradation patterns where operations succeed with zero results |
-| `/code:error-swallowing` | Detect syntactic error swallowing (empty catch, `\|\| true`, `2>/dev/null`, floating promises, ignored Go/Rust errors) with context-aware surfacing recommendations |
+| `/code:hidden-failures` | Detect hidden failures — swallowed errors (empty catch, `\|\| true`, `2>/dev/null`, floating promises, ignored Go/Rust errors) and silent degradation (ops succeed with zero results); `--track errors\|degradation\|both` |
 | `/code:dead-code` | Detect dead code, unused exports, unreachable branches, and orphaned files |
 | `/code:dep-audit` | Audit dependencies for security vulnerabilities, outdated packages, and license compliance |
 | `/code:test-quality` | Analyze test suite quality — detect test smells, empty assertions, flaky patterns |
@@ -111,37 +110,33 @@ Analyzes documentation quality and standards:
 - Freshness and git history alignment
 - Generates comprehensive quality report with actionable recommendations
 
-### Silent Degradation Scan
+### Hidden-Failure Scan
 
 ```bash
-/code:silent-degradation src/
+/code:hidden-failures src/
 ```
 
-Detects patterns where code silently degrades:
-- Missing config causing features to skip without warning
-- Success banners shown when nothing actually ran
-- Multi-step operations that silently skip steps
-- Missing precondition validation for data-dependent features
-- Degraded mode without user notification
+Detects code that fails without saying so, across two tracks:
 
-```bash
-/code:silent-degradation src/ --fix
-```
-
-Applies fixes: adds precondition checks, warning messages, and status indicators.
-
-### Error-Swallowing Scan
-
-```bash
-/code:error-swallowing src/ --severity high
-```
-
-Detects and classifies syntactic error suppression across shell, JS/TS,
-Python, Go, and Rust. Recommends a surfacing channel based on detected
+**errors** (syntactic error suppression) — empty `catch {}`, `|| true`,
+`2>/dev/null`, floating promises, ignored Go/Rust results — across shell,
+JS/TS, Python, Go, and Rust. Recommends a surfacing channel based on detected
 app context (CLI stderr, web toast + `console.error`, structured log,
-`Result` propagation) and applies a privacy redaction policy to any
-generated user-facing strings. Use `--emit-patch` to produce a
-reviewable diff without mutating files.
+`Result` propagation) and applies a privacy redaction policy to any generated
+user-facing strings. Use `--emit-patch` for a reviewable diff.
+
+**degradation** (logical silent failure) — missing config causing features to
+skip without warning, success banners when nothing ran, multi-step operations
+that silently skip steps, missing precondition validation, degraded mode
+without notification. Use `--fix` to add precondition checks, warning
+messages, and status indicators.
+
+```bash
+/code:hidden-failures src/ --track errors --severity high
+/code:hidden-failures src/ --track degradation --fix
+```
+
+Select a single track with `--track errors|degradation` (default `both`).
 
 ### Dead Code Detection
 

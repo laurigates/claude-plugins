@@ -19,7 +19,7 @@ Structured approach to reviewing code changes.
 |------------------------|------------------------------------|
 | Walking a priority-ordered manual review checklist | Running a full delegated review pass → `code-review` |
 | Hunting for hardcoded secrets, injection, or N+1 query patterns | Scanning specifically for anti-patterns → `code-antipatterns` |
-| Verifying error handling and edge cases in a PR diff | Targeting swallowed errors directly → `code-error-swallowing` |
+| Verifying error handling and edge cases in a PR diff | Targeting swallowed errors directly → `code-hidden-failures --track errors` |
 | Applying a deterministic checklist to a small change | Refactoring after the checklist surfaces issues → `code-refactor` |
 
 ## Review Priority Order

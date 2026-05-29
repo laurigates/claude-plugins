@@ -16,7 +16,7 @@ name: code-lint
 |------------------------|------------------------------------|
 | Auto-detecting and running the correct linter for a polyglot repo | Detecting structural anti-patterns linters miss → `code-antipatterns` |
 | Running ruff/eslint/clippy/gofmt with optional `--fix` and `--format` | Reviewing broader code quality and architecture → `code-review` |
-| Driving a one-shot lint pass before commit | Scanning specifically for swallowed errors → `code-error-swallowing` |
+| Driving a one-shot lint pass before commit | Scanning specifically for swallowed errors → `code-hidden-failures --track errors` |
 | Looking up autofix commands or common fix patterns per language | (use this skill — autofix reference is now here) |
 
 ## Context
