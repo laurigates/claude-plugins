@@ -136,7 +136,7 @@ Reached only when `--all` is passed. The orchestrator dispatches one subagent pe
    1. `git push origin <branch>` from the **main checkout** — worktrees share the underlying `.git/`, so commits made by the subagent are already visible by branch name. No `cd` into the subagent's worktree is required.
    2. Capture the resolving SHA (`git rev-parse origin/<branch>` after the push).
    3. For each `addressed[]` entry, post the reply via `mcp__github__add_reply_to_pull_request_comment`, substituting the resolving SHA into any `{{SHA}}` placeholder the subagent left in the reply text.
-   4. Resolve threads via the GraphQL `resolveReviewThread` mutation per Step 6's rules (only when `resolve: true` AND the resolution criteria in [REFERENCE.md](REFERENCE.md) hold):
+   4. Resolve threads via the GraphQL `resolveReviewThread` mutation per Step 6's rules. Resolution is the default after a reply — only skip when the subagent set `resolve: false` for a documented exception (follow-up question, partial fix, reviewer asked to keep open, or a third-party PR without user approval). Treat any `resolve: true` paired with a successful reply as a mandatory call. Use:
 
       ```bash
       gh api graphql -f query='mutation($id:ID!){resolveReviewThread(input:{threadId:$id}){thread{isResolved}}}' -F id="$THREAD_ID"
@@ -234,7 +234,9 @@ If `gh api` returns 422 ("Reviews may only be requested from collaborators"), th
 
 ### Step 6: Reply and Resolve Threads
 
-For every actionable thread tracked in Step 2, post a reply and resolve when appropriate. Owner/repo/PR are the same values used in Step 1.
+For every actionable thread tracked in Step 2, post a reply and then **resolve the thread by default**. Owner/repo/PR are the same values used in Step 1.
+
+Resolving is the default action after replying — leaving threads open is the exception, reserved for the explicit cases listed in step 3. A reply alone does **not** end the conversation in GitHub's UI: the thread stays in the reviewer's "unresolved" queue until someone clicks **Resolve conversation**. Without this step the PR will continue to show unresolved feedback even after every concern has been addressed.
 
 1. **Reply** with `mcp__github__add_reply_to_pull_request_comment` using the top-level comment's `databaseId` (a number, not the GraphQL node ID). Keep replies short — see [REFERENCE.md](REFERENCE.md) "Reply Templates".
    - Code change made → reference the commit SHA: `Fixed in <sha> by <one-line summary>.`
@@ -242,25 +244,30 @@ For every actionable thread tracked in Step 2, post a reply and resolve when app
    - Suggestion adapted → explain the deviation: `Applied a variant in <sha>: <reason>.`
    - Deferred / out of scope → reference the follow-up issue filed in Step 3a: `Deferred to #<issue> — <reason>.`
    - Question → answer it directly.
+   - Refuting a suggestion → state the reasoning: `Leaving as-is: <reason>.`
 
-2. **Resolve** with the GraphQL `resolveReviewThread` mutation using the thread `id` (a `PRRT_…` GraphQL node ID — the standard github MCP server does not ship a wrapper, so call the API directly):
+2. **Always resolve** with the GraphQL `resolveReviewThread` mutation using the thread `id` (a `PRRT_…` GraphQL node ID). Resolution is the default after a reply — only skip when one of step 3's "leave open" exceptions applies. Call:
 
    ```bash
    gh api graphql -f query='mutation($id:ID!){resolveReviewThread(input:{threadId:$id}){thread{isResolved}}}' -F id="$THREAD_ID"
    ```
 
-   Resolve when **all** of the following hold:
-   - The reviewer's concern is fully addressed by the pushed commit, OR the reviewer asked a question that has been answered, OR the comment is a nitpick you've explicitly declined with reasoning.
-   - The thread is not part of an unsubmitted `REQUEST_CHANGES` review where other concerns remain open.
-   - You authored or own-pushed the resolving change (do not resolve threads on PRs you don't own without explicit user approval).
+   Resolve when **any** of these completion conditions hold and none of step 3's "leave open" exceptions apply:
+   - You pushed a commit that addresses the concern (`Fixed in <sha>`, `Accepted in <sha>`, `Applied a variant in <sha>`).
+   - You answered the reviewer's question directly.
+   - You refuted or declined the suggestion with explicit reasoning in the reply (a written refutation — not silence — completes the thread).
+   - You deferred to a follow-up issue filed in Step 3a (the deferral and issue link are the resolution).
 
-3. **Do NOT resolve** when:
-   - The reply asks the reviewer a follow-up question.
-   - The fix is partial or deferred to another PR.
+   Resolving must happen in the **same turn** as the reply. Treat "reply posted but thread unresolved" as an incomplete step — re-run the resolve call before reporting Step 7.
+
+3. **Leave the thread open** only when one of these holds:
+   - Your reply asks the reviewer a follow-up question (you are waiting on them).
+   - The fix is partial — some of the concern still applies to this PR.
    - The reviewer explicitly asked to keep the thread open.
-   - You merely disagree without making a change — leave it for the reviewer.
+   - You haven't pushed yet (no resolving SHA exists) — finish Step 5, then resolve.
+   - You're acting on a PR you don't own and the user has not approved resolving on third-party PRs.
 
-If `--commit`/`--push` was not passed, still post replies for questions, but skip resolution (no resolving SHA exists yet) — note pending replies in the Step 7 summary instead.
+If `--commit`/`--push` was not passed, still post replies for questions and refutations, but defer resolution until a future invocation with `--push` lands the SHA. Note these pending resolutions in the Step 7 summary so they're not forgotten.
 
 ### Step 7: Summary Report
 
