@@ -30,6 +30,7 @@ Claude Code plugin collection providing skills and agents for development workfl
 | `.claude/rules/plugin-structure.md` | plugin.json schema and directory layout |
 | `.claude/rules/release-please.md` | Version management and changelog automation |
 | `.claude/rules/skill-development.md` | Skill creation patterns |
+| `.claude/rules/skill-consolidation.md` | Merging/deleting skills: verify the premise first, cross-plugin = name-reference (not shared REFERENCE.md), and the merge/delete checklist |
 | `.claude/rules/agentic-optimization.md` | CLI output optimization for AI |
 | `.claude/rules/skill-naming.md` | Skill namespace conventions |
 | `.claude/rules/shell-scripting.md` | Safe shell patterns and frontmatter extraction |
