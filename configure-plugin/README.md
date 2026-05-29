@@ -22,7 +22,7 @@ All commands support two modes:
 |-------|-------------|
 | `ci-workflows` | CI/CD workflow standards |
 | `pre-commit-standards` | Pre-commit hook standards |
-| `release-please-standards` | Release-please standards |
+| `release-please-standards` | Release-please single-repo standards + compliance (monorepo strategy lives in git-plugin) |
 | `skaffold-standards` | Skaffold configuration standards |
 | `claude-security-settings` | Claude Code security settings and wildcard permissions |
 
