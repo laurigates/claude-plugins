@@ -177,7 +177,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.24.0",
+      "version": "1.24.1",
       "keywords": [
         "infrastructure",
         "standards",
@@ -275,7 +275,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.39.8",
+      "version": "2.39.9",
       "keywords": [
         "git",
         "github",
@@ -302,7 +302,7 @@
       "name": "github-actions-plugin",
       "source": "./github-actions-plugin",
       "description": "GitHub Actions CI/CD - workflows, authentication, inspection, auto-fix",
-      "version": "1.7.7",
+      "version": "1.7.8",
       "keywords": [
         "github-actions",
         "ci-cd",
@@ -528,7 +528,7 @@
       "name": "python-plugin",
       "source": "./python-plugin",
       "description": "Python development ecosystem - uv, ruff, pytest, packaging",
-      "version": "1.5.4",
+      "version": "1.5.5",
       "keywords": [
         "python",
         "uv",
@@ -626,7 +626,7 @@
       "name": "workflow-orchestration-plugin",
       "source": "./workflow-orchestration-plugin",
       "description": "Workflow orchestration - parallel agents, CI pipelines, preflight checks, checkpoint refactoring",
-      "version": "1.5.2",
+      "version": "1.5.3",
       "keywords": [
         "workflow",
         "orchestration",

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.24.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.24.0...configure-plugin-v1.24.1) (2026-05-29)
+
+
+### Code Refactoring
+
+* **release-please:** dedupe config skills — git-plugin owns monorepo strategy ([#1447](https://github.com/laurigates/claude-plugins/issues/1447)) ([d40e8b5](https://github.com/laurigates/claude-plugins/commit/d40e8b52c548467efdc053aca5f9055f71466c29))
+
 ## [1.24.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.23.0...configure-plugin-v1.24.0) (2026-05-24)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.3](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.5.2...workflow-orchestration-plugin-v1.5.3) (2026-05-29)
+
+
+### Code Refactoring
+
+* **workflow-orchestration-plugin:** dedupe wave-dispatch against agent-patterns ([#1448](https://github.com/laurigates/claude-plugins/issues/1448)) ([f18d2c6](https://github.com/laurigates/claude-plugins/commit/f18d2c61d05a2e9069b353de313aa51c8727db17))
+
 ## [1.5.2](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.5.1...workflow-orchestration-plugin-v1.5.2) (2026-05-14)
 
 
