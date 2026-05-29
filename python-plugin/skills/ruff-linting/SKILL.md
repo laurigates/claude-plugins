@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
-reviewed: 2026-04-25
+modified: 2026-05-29
+reviewed: 2026-05-29
 name: ruff-linting
 description: Python linting with ruff. Fast linting, rule selection, auto-fixing, and config. Use when checking Python code quality, enforcing standards, or finding bugs.
 user-invocable: false
@@ -17,8 +17,9 @@ Expert knowledge for using `ruff check` as an extremely fast Python linter with 
 | Use this skill when... | Use a focused sibling instead when... |
 |---|---|
 | Running `ruff check`, selecting rule sets, or auto-fixing lint violations | Running `ruff format` to enforce code style — use ruff-formatting |
-| Configuring `[tool.ruff.lint]` rules and per-file ignores in pyproject.toml | Wiring ruff into pre-commit, editor, or CI — use ruff-integration |
-| Migrating from Flake8/pylint/isort/pyupgrade to ruff's combined rule set | Comparing ruff against type-checkers and formatters at a stack level — use python-code-quality |
+| Configuring `[tool.ruff.lint]` rules and per-file ignores in pyproject.toml | Comparing ruff against type-checkers and formatters at a stack level — use python-code-quality |
+| Wiring ruff into editors, pre-commit, CI/CD, Docker, or build systems | See the quick forms in [CI/CD Integration](#cicd-integration) below; full editor/CI/Docker/migration recipes in [REFERENCE.md](REFERENCE.md) |
+| Migrating from Flake8/pylint/isort/pyupgrade to ruff's combined rule set | Running `ruff format` to enforce code style — use ruff-formatting |
 
 ## Core Expertise
 
@@ -250,65 +251,36 @@ ruff check && pytest && ty check
 
 ## CI/CD Integration
 
-### Pre-commit Hook
+Quick form — lint with PR annotations on GitHub Actions:
+
+```yaml
+# .github/workflows/lint.yml
+name: Lint
+on: [push, pull_request]
+jobs:
+  ruff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/ruff-action@v3
+        with:
+          args: 'check --output-format github'
+```
+
+Quick form — pre-commit hook:
+
 ```yaml
 # .pre-commit-config.yaml
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.14.0
     hooks:
-      # Linter with auto-fix
       - id: ruff-check
         args: [--fix]
-
-      # Advanced configuration
-      - id: ruff-check
-        name: Ruff linter
-        args:
-          - --fix
-          - --config=pyproject.toml
-          - --select=E,F,B,I
-        types_or: [python, pyi, jupyter]
+      - id: ruff-format
 ```
 
-### GitHub Actions
-```yaml
-# .github/workflows/lint.yml
-name: Lint
-
-on: [push, pull_request]
-
-jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: astral-sh/ruff-action@v3
-        with:
-          args: 'check --output-format github'
-          changed-files: 'true'
-
-      # Or using pip
-      - name: Install ruff
-        run: pip install ruff
-
-      - name: Run linter
-        run: ruff check --output-format github
-```
-
-### GitLab CI
-```yaml
-# .gitlab-ci.yml
-Ruff Check:
-  stage: build
-  image: ghcr.io/astral-sh/ruff:0.14.0-alpine
-  script:
-    - ruff check --output-format=gitlab > code-quality-report.json
-  artifacts:
-    reports:
-      codequality: code-quality-report.json
-```
+For the full integration recipes — editor setup (VS Code, Neovim, Zed, Helix), the advanced pre-commit config, GitLab/CircleCI/Jenkins, Make/Just/Task/tox, Docker, LSP server settings, and Flake8/Black/pylint migration guides — see [REFERENCE.md](REFERENCE.md).
 
 ## Common Patterns
 

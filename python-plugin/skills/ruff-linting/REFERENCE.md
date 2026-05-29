@@ -1,8 +1,47 @@
 # ruff Integration Reference
 
-Detailed configurations for editors, CI/CD platforms, build systems, Docker, and migration guides.
+Wiring `ruff` into editors, pre-commit hooks, CI/CD platforms, build systems,
+Docker, and migration guides. This is the on-demand companion to the
+`ruff-linting` skill — the SKILL.md body covers linting rules and the quick
+pre-commit / GitHub Actions form; this file holds the comprehensive
+integration material (formerly the standalone `ruff-integration` skill).
+
+## When to reach for this file
+
+| Need | Section |
+|------|---------|
+| Editor format-on-save (VS Code, Neovim, Zed, Helix) | [Editor Integration](#editor-integration) |
+| Pre-commit hook setup | [Pre-commit Integration](#pre-commit-integration) |
+| CI on GitHub Actions / GitLab / CircleCI / Jenkins | [CI/CD Integration](#cicd-integration) |
+| Make / Just / Task / tox recipes | [Build System Integration](#build-system-integration) |
+| Docker / Docker Compose | [Docker Integration](#docker-integration) |
+| LSP server settings | [LSP Server Configuration](#lsp-server-configuration) |
+| Migrating from Flake8/Black/pylint | [Migration Guides](#migration-guides) |
 
 ## Editor Integration
+
+### VS Code
+
+```json
+// .vscode/settings.json
+{
+  "[python]": {
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit",
+      "source.organizeImports": "explicit"
+    },
+    "editor.defaultFormatter": "charliermarsh.ruff"
+  },
+  "ruff.lint.args": ["--select=E,F,B,I"],
+  "ruff.importStrategy": "fromEnvironment"
+}
+```
+
+```bash
+# Install extension
+code --install-extension charliermarsh.ruff
+```
 
 ### Neovim (nvim-lspconfig)
 
@@ -73,7 +112,81 @@ command = "ruff"
 args = ["server"]
 ```
 
+## Pre-commit Integration
+
+```yaml
+# .pre-commit-config.yaml
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.0
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+```
+
+**Advanced hook configuration** (explicit config + rule selection, Jupyter):
+```yaml
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.0
+    hooks:
+      - id: ruff-check
+        name: Ruff linter
+        args:
+          - --fix
+          - --config=pyproject.toml
+          - --select=E,F,B,I
+        types_or: [python, pyi, jupyter]
+      - id: ruff-format
+```
+
+```bash
+pre-commit install           # Install hooks
+pre-commit run --all-files   # Run manually
+pre-commit autoupdate        # Update versions
+```
+
+Run `ruff-check --fix` before `ruff-format` so import/lint fixes land before
+the formatter normalizes layout.
+
 ## CI/CD Integration
+
+### GitHub Actions
+
+```yaml
+# .github/workflows/lint.yml
+name: Lint
+on: [push, pull_request]
+
+jobs:
+  ruff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/ruff-action@v3
+        with:
+          args: 'check --output-format github'
+          changed-files: 'true'   # lint only changed files
+```
+
+**Separate lint + format checks:**
+```yaml
+jobs:
+  ruff-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install ruff
+      - run: ruff check --output-format github
+
+  ruff-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install ruff
+      - run: ruff format --check --diff
+```
 
 ### GitLab CI
 
@@ -241,6 +354,16 @@ services:
     command: ruff format --check
 ```
 
+## Configuration Hierarchy
+
+1. Command-line arguments (highest priority)
+2. Editor LSP settings
+3. `ruff.toml` in current directory
+4. `pyproject.toml` in current directory
+5. Parent directory configs (recursive)
+6. User config: `~/.config/ruff/ruff.toml`
+7. Ruff defaults (lowest priority)
+
 ## LSP Server Configuration
 
 ### Server Settings
@@ -310,3 +433,11 @@ max-branches = 15
 ```bash
 ruff check --select PL  # Test pylint-compatible rules
 ```
+
+## Best Practices
+
+- **Editor**: Enable format-on-save, use project-specific `.vscode/settings.json`
+- **Pre-commit**: Run `ruff-check --fix` first, then `ruff-format`
+- **CI/CD**: Use `--output-format github` for PR annotations
+- **Performance**: Cache ruff in CI, run on changed files only in pre-commit
+- **Team**: Commit editor/pre-commit configs to version control
