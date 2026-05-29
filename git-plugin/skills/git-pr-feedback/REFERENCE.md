@@ -63,19 +63,22 @@ Keep replies concise. Use these templates with `mcp__github__add_reply_to_pull_r
 
 ## Resolution Criteria
 
-Resolve a thread with `mcp__github__resolve_review_thread` (threadId is the `PRRT_…` GraphQL node ID) when **all** of these hold:
+**Resolving is the default action after replying.** A reply alone does not close the thread in GitHub's UI — the reviewer's "unresolved" queue still lists it until `mcp__github__resolve_review_thread` runs. Treat reply-without-resolve as an incomplete step.
 
-- [ ] The reviewer's concern is fully addressed by a pushed commit, OR a question has been answered, OR a nitpick was explicitly declined with reasoning.
-- [ ] No follow-up question to the reviewer is pending in your reply.
-- [ ] The reviewer has not asked for the thread to remain open.
-- [ ] You authored or own-pushed the change (or the user explicitly approved resolving on a PR you don't own).
+Resolve a thread with `mcp__github__resolve_review_thread` (threadId is the `PRRT_…` GraphQL node ID) when **any** of these completion conditions hold and no "leave open" exception applies:
 
-Leave the thread open when:
+- [ ] You pushed a commit that addresses the concern (fix, accepted suggestion, or adapted variant).
+- [ ] You answered the reviewer's question directly.
+- [ ] You refuted or declined the suggestion with explicit reasoning in the reply. A written refutation completes the thread; silent disagreement does not.
+- [ ] You deferred to a follow-up issue (the deferral and issue link are the resolution).
 
-- [ ] Your reply asks the reviewer something.
-- [ ] The fix is partial or deferred.
-- [ ] You disagree without making a change — let the reviewer decide.
-- [ ] No commit has been pushed yet (resolution should reference a SHA).
+Leave the thread open only when one of these holds:
+
+- [ ] Your reply asks the reviewer a follow-up question (you are waiting on them).
+- [ ] The fix is partial — some of the concern still applies to this PR.
+- [ ] The reviewer explicitly asked to keep the thread open.
+- [ ] No commit has been pushed yet (resolution should reference a SHA — finish the push first).
+- [ ] You don't own the PR and the user has not approved resolving on third-party PRs.
 
 ## Commit Message Format
 
@@ -256,8 +259,10 @@ Steps:
 
 Edge cases:
 - No actionable threads found: return an empty `addressed[]` and `commits[]` and exit cleanly — no error.
+- Default for every reply you draft: `"resolve": true`. Resolution is the default action after replying — see REFERENCE.md "Resolution Criteria".
 - A thread the reviewer asked to keep open: include it with `"resolve": false`.
-- A nitpick declined with reasoning: include it with `"action": "decline"`, `"resolve": true`, and the explanation in `reply`.
+- A suggestion declined with reasoning (nitpick or otherwise): include it with `"action": "decline"`, `"resolve": true`, and the explanation in `reply`.
+- A reply that asks the reviewer a follow-up question: include it with `"resolve": false` and note the open question in `blockers[]` so the orchestrator surfaces it.
 ```
 
 ### Orchestrator handling of subagent output
