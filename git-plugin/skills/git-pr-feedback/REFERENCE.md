@@ -63,7 +63,12 @@ Keep replies concise. Use these templates with `mcp__github__add_reply_to_pull_r
 
 ## Resolution Criteria
 
-Resolve a thread with `mcp__github__resolve_review_thread` (threadId is the `PRRT_…` GraphQL node ID) when **all** of these hold:
+Resolve a thread with the GraphQL `resolveReviewThread` mutation (threadId is the `PRRT_…` GraphQL node ID) when **all** of these hold:
+
+```bash
+gh api graphql -f query='mutation($id:ID!){resolveReviewThread(input:{threadId:$id}){thread{isResolved}}}' -F id="$THREAD_ID"
+```
+
 
 - [ ] The reviewer's concern is fully addressed by a pushed commit, OR a question has been answered, OR a nitpick was explicitly declined with reasoning.
 - [ ] No follow-up question to the reviewer is pending in your reply.
