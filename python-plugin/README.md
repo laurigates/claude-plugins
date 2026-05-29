@@ -23,9 +23,8 @@ Comprehensive Python development support with modern Astral tooling: uv for pack
 
 | Skill | Description |
 |-------|-------------|
-| `ruff-linting` | Python linting with ruff |
+| `ruff-linting` | Python linting with ruff; editor/pre-commit/CI/Docker integration in its `REFERENCE.md` |
 | `ruff-formatting` | Python formatting with ruff |
-| `ruff-integration` | Integrate ruff with editors and CI/CD |
 
 ### Testing
 

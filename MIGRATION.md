@@ -206,7 +206,7 @@ tools: Tool1, Tool2, mcp__server-name
 | Skill | pytest-advanced            | [x]    |       |
 | Skill | ruff-linting               | [x]    |       |
 | Skill | ruff-formatting            | [x]    |       |
-| Skill | ruff-integration           | [x]    |       |
+| Skill | ruff-integration           | [x]    | Folded into ruff-linting/REFERENCE.md (Wave 2 consolidation, #121) |
 | Skill | basedpyright-type-checking | [x]    |       |
 | Skill | vulture-dead-code          | [x]    |       |
 | Skill | uv-project-management      | [x]    |       |

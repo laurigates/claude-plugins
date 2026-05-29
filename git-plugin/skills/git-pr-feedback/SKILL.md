@@ -2,7 +2,7 @@
 created: 2026-01-30
 modified: 2026-05-29
 reviewed: 2026-05-29
-allowed-tools: Bash(gh pr checks *), Bash(gh pr view *), Bash(gh pr diff *), Bash(gh run view *), Bash(gh run list *), Bash(gh api *), Bash(gh repo view *), Bash(gh issue create *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git pull *), Bash(git fetch *), Bash(pre-commit *), Bash(npm run *), Bash(uv run *), Bash(bash *), Read, Edit, Write, Grep, Glob, TodoWrite, Task, mcp__github__pull_request_read, mcp__github__add_reply_to_pull_request_comment, mcp__github__resolve_review_thread, mcp__github__pull_request_review_write, mcp__github__issue_write
+allowed-tools: Bash(gh pr checks *), Bash(gh pr view *), Bash(gh pr diff *), Bash(gh run view *), Bash(gh run list *), Bash(gh api *), Bash(gh repo view *), Bash(gh issue create *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git pull *), Bash(git fetch *), Bash(pre-commit *), Bash(npm run *), Bash(uv run *), Bash(bash *), Read, Edit, Write, Grep, Glob, TodoWrite, Task, mcp__github__pull_request_read, mcp__github__add_reply_to_pull_request_comment, mcp__github__pull_request_review_write, mcp__github__issue_write
 args: "[pr-number] [--commit] [--push] [--all] [--dry-run] [--limit N]"
 argument-hint: "[pr-number | --all] [--commit] [--push] [--dry-run] [--limit N]"
 disable-model-invocation: true
@@ -136,7 +136,11 @@ Reached only when `--all` is passed. The orchestrator dispatches one subagent pe
    1. `git push origin <branch>` from the **main checkout** — worktrees share the underlying `.git/`, so commits made by the subagent are already visible by branch name. No `cd` into the subagent's worktree is required.
    2. Capture the resolving SHA (`git rev-parse origin/<branch>` after the push).
    3. For each `addressed[]` entry, post the reply via `mcp__github__add_reply_to_pull_request_comment`, substituting the resolving SHA into any `{{SHA}}` placeholder the subagent left in the reply text.
-   4. Resolve threads via `mcp__github__resolve_review_thread` per Step 6's rules. Resolution is the default after a reply — only skip when the subagent set `resolve: false` for a documented exception (follow-up question, partial fix, reviewer asked to keep open, or a third-party PR without user approval). Treat any `resolve: true` paired with a successful reply as a mandatory call.
+   4. Resolve threads via the GraphQL `resolveReviewThread` mutation per Step 6's rules. Resolution is the default after a reply — only skip when the subagent set `resolve: false` for a documented exception (follow-up question, partial fix, reviewer asked to keep open, or a third-party PR without user approval). Treat any `resolve: true` paired with a successful reply as a mandatory call. Use:
+
+      ```bash
+      gh api graphql -f query='mutation($id:ID!){resolveReviewThread(input:{threadId:$id}){thread{isResolved}}}' -F id="$THREAD_ID"
+      ```
    5. Re-request review per Step 5a's rules.
 
 8. **Skip Steps 2–6**. Go directly to **Step 7** with a combined summary that includes a per-PR section plus a top-level rollup: dispatched, succeeded, blocked, total threads resolved, total commits pushed.
@@ -242,7 +246,13 @@ Resolving is the default action after replying — leaving threads open is the e
    - Question → answer it directly.
    - Refuting a suggestion → state the reasoning: `Leaving as-is: <reason>.`
 
-2. **Always resolve** with `mcp__github__resolve_review_thread` (threadId is the `PRRT_…` GraphQL node ID) once any of these completion conditions hold and none of step 3's "leave open" exceptions apply:
+2. **Always resolve** with the GraphQL `resolveReviewThread` mutation using the thread `id` (a `PRRT_…` GraphQL node ID). Resolution is the default after a reply — only skip when one of step 3's "leave open" exceptions applies. Call:
+
+   ```bash
+   gh api graphql -f query='mutation($id:ID!){resolveReviewThread(input:{threadId:$id}){thread{isResolved}}}' -F id="$THREAD_ID"
+   ```
+
+   Resolve when **any** of these completion conditions hold and none of step 3's "leave open" exceptions apply:
    - You pushed a commit that addresses the concern (`Fixed in <sha>`, `Accepted in <sha>`, `Applied a variant in <sha>`).
    - You answered the reviewer's question directly.
    - You refuted or declined the suggestion with explicit reasoning in the reply (a written refutation — not silence — completes the thread).
@@ -275,7 +285,7 @@ Provide a summary table of feedback addressed, replies posted, threads resolved,
 | Failed check logs | `gh run view $ID --log-failed` |
 | Quick check status (fallback) | `gh pr checks $PR --json name,state,conclusion` |
 | Reply to a review comment | `mcp__github__add_reply_to_pull_request_comment` (commentId = `databaseId`) |
-| Resolve a review thread | `mcp__github__resolve_review_thread` (threadId = `PRRT_…` node ID) |
+| Resolve a review thread | `gh api graphql -f query='mutation($id:ID!){resolveReviewThread(input:{threadId:$id}){thread{isResolved}}}' -F id="$THREAD_ID"` (threadId = `PRRT_…` node ID) |
 | Re-request review after push | `gh api -X POST /repos/<owner>/<repo>/pulls/<pr>/requested_reviewers -f 'reviewers[]=<login>'` |
 | File follow-up issue for deferred feedback | `mcp__github__issue_write` (action `create`) or `gh issue create -R <owner>/<repo> --title <t> --body <b>` |
 

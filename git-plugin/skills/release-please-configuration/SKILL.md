@@ -1,33 +1,38 @@
 ---
 created: 2025-12-28
-modified: 2026-05-09
-reviewed: 2026-04-25
+modified: 2026-05-29
+reviewed: 2026-05-29
 name: release-please-configuration
-description: "Configure release-please — manifests, component tagging, changelog sections. Use when setting up automated releases, fixing release workflow issues, or configuring version bumps."
+description: "release-please monorepo config — component tags, per-package extra-files, tag migration. Use when adding packages or fixing duplicate-tag / no-bump failures."
 user-invocable: false
 allowed-tools: Read, Write, Edit, Bash, Grep, Glob, TodoWrite
 ---
 
-# Release-Please Configuration
+# Release-Please Monorepo Configuration
+
+Monorepo-specific release-please strategy: component tagging, per-package
+`extra-files`, linked versions, and the shared→component tag migration. For
+the single-repo workflow/manifest/config shape, the conventional-commit
+version-bump rules, and compliance auditing, use
+`configure-plugin:release-please-standards`.
 
 ## When to Use This Skill
 
 | Use this skill when... | Use the alternative when... |
 |---|---|
-| Setting up `release-please-config.json` and `.release-please-manifest.json` | Use `release-please-pr-workflow` to actually merge release-please PRs |
-| Configuring component tagging, changelog sections, or `extra-files` for a package | Use `release-please-protection` to detect manual edits to managed files |
-| Adding a new package to a monorepo's release-please config | Use `git-commit-trailers` for `Release-As:` trailer-based version overrides |
-| Fixing release-please workflow issues (missing component, no version bump) | Use `git-commit-workflow` to ensure commits use the conventional types release-please reads |
-
-Expert knowledge for configuring Google's release-please for automated releases.
+| Configuring `component`/`include-component-in-tag` for a multi-package repo | Setting up a **single-repo** release-please (workflow, manifest, config shape) — use `configure-plugin:release-please-standards` |
+| Adding a new package to a monorepo's release-please config | Auditing an existing setup against documented conventions — use `configure-plugin:release-please-standards` |
+| Fixing duplicate-tag, multiple-paths, or per-package no-bump failures | Actually merging release-please PRs — use `release-please-pr-workflow` |
+| Migrating from shared `v1.0.0` tags to `component-v1.0.0` tags | Detecting manual edits to managed files — use `release-please-protection` |
+| Setting per-package `extra-files` (JSON/YAML/TOML/XML version locations) | `Release-As:` trailer-based one-off overrides — use `git-commit-trailers` |
 
 ## Core Files
 
 | File | Purpose |
 |------|---------|
-| `release-please-config.json` | Package configuration, changelog sections, extra-files |
-| `.release-please-manifest.json` | Current versions for each package |
-| `.github/workflows/release-please.yml` | GitHub Actions workflow |
+| `release-please-config.json` | Per-package config, changelog sections, extra-files |
+| `.release-please-manifest.json` | Current version for each package/component |
+| `.github/workflows/release-please.yml` | GitHub Actions workflow (see `release-please-standards` for the shape) |
 
 ## Monorepo Configuration
 
@@ -55,6 +60,28 @@ Expert knowledge for configuring Google's release-please for automated releases.
 | `include-component-in-tag` | Yes (monorepo) | Creates `package-a-v1.0.0` tags instead of `v1.0.0` |
 | `component` | Yes (monorepo) | Unique identifier for each package; **must be set for every package** |
 | `separate-pull-requests` | Recommended | Creates per-package release PRs instead of combined |
+
+### Linked Versions
+
+To keep a set of components on the same version, use the `linked-versions`
+plugin:
+
+```json
+{
+  "packages": {
+    "packages/frontend": {"release-type": "node", "component": "frontend"},
+    "packages/backend": {"release-type": "node", "component": "backend"}
+  },
+  "plugins": [
+    "node-workspace",
+    {
+      "type": "linked-versions",
+      "groupName": "workspace",
+      "components": ["frontend", "backend"]
+    }
+  ]
+}
+```
 
 ### Common Failure: Duplicate Release Tags
 
@@ -85,17 +112,7 @@ Expert knowledge for configuring Google's release-please for automated releases.
 
 **Fix:** Ensure every package has `"component": "package-name"` set
 
-## Release Types
-
-| Type | Use Case | Version File |
-|------|----------|--------------|
-| `simple` | Generic projects | `version.txt` |
-| `node` | npm packages | `package.json` |
-| `python` | Python (pyproject.toml) | `pyproject.toml` |
-| `rust` | Rust crates | `Cargo.toml` |
-| `go` | Go modules | `version.go` or similar |
-
-### Extra Files for Custom Version Locations
+## Per-Package `extra-files` for Custom Version Locations
 
 For JSON files, you **must** use the object format with `type`, `path`, and `jsonpath`:
 
@@ -105,12 +122,16 @@ For JSON files, you **must** use the object format with `type`, `path`, and `jso
     "my-plugin": {
       "release-type": "simple",
       "extra-files": [
-        {"type": "json", "path": "my-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
+        {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
       ]
     }
   }
 }
 ```
+
+**Key insight:** For monorepo packages, `extra-files` paths are relative to the
+package directory, NOT the repo root. Release-please automatically prepends the
+package path.
 
 **Common Mistakes:**
 
@@ -125,9 +146,9 @@ For JSON files, you **must** use the object format with `type`, `path`, and `jso
 ]
 ```
 
-2. Using absolute paths instead of package-relative paths:
+2. Prepending the package path yourself (it gets doubled):
 ```json
-// WRONG - path gets doubled (package-name/package-name/.claude-plugin/...)
+// WRONG - path becomes my-plugin/my-plugin/.claude-plugin/...
 "extra-files": [
   {"type": "json", "path": "my-plugin/.claude-plugin/plugin.json", "jsonpath": "$.version"}
 ]
@@ -137,8 +158,6 @@ For JSON files, you **must** use the object format with `type`, `path`, and `jso
   {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
 ]
 ```
-
-**Key insight:** For monorepo packages, `extra-files` paths are relative to the package directory, NOT the repo root. Release-please automatically prepends the package path.
 
 **File Type Formats:**
 
@@ -150,86 +169,7 @@ For JSON files, you **must** use the object format with `type`, `path`, and `jso
 | XML | `{"type": "xml", "path": "...", "xpath": "//version"}` |
 | Plain text | `"path/to/version.txt"` (string is fine) |
 
-## Changelog Configuration
-
-### Standard Changelog Sections
-
-```json
-{
-  "changelog-sections": [
-    {"type": "feat", "section": "Features"},
-    {"type": "fix", "section": "Bug Fixes"},
-    {"type": "perf", "section": "Performance"},
-    {"type": "refactor", "section": "Code Refactoring"},
-    {"type": "docs", "section": "Documentation"}
-  ]
-}
-```
-
-### Commit Type to Version Bump
-
-| Commit Type | Version Bump | CHANGELOG Section |
-|-------------|--------------|-------------------|
-| `feat:` | Minor | Features |
-| `fix:` | Patch | Bug Fixes |
-| `feat!:` | Major | Features (with BREAKING CHANGE) |
-| `BREAKING CHANGE:` | Major | Breaking Changes |
-| `chore:` | None | (hidden) |
-| `docs:` | None | Documentation |
-| `refactor:` | None | Code Refactoring |
-| `perf:` | Patch | Performance |
-
-## Manifest File
-
-The `.release-please-manifest.json` tracks current versions:
-
-```json
-{
-  "package-a": "1.2.3",
-  "package-b": "2.0.0"
-}
-```
-
-**Important:** This file is auto-updated by release-please. Manual edits should only be done for:
-- Initial bootstrapping
-- Resetting after tag migration
-
-## GitHub Actions Workflow
-
-### Minimal Workflow
-
-```yaml
-name: Release Please
-
-on:
-  push:
-    branches:
-      - main
-
-permissions:
-  contents: write
-  pull-requests: write
-
-jobs:
-  release-please:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: googleapis/release-please-action@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-```
-
-### With Custom Token (Required for Triggering Other Workflows)
-
-```yaml
-- uses: googleapis/release-please-action@v4
-  with:
-    token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
-```
-
-Use a PAT if you need release PRs to trigger other workflows (e.g., CI checks).
-
-## Adding a New Package to Monorepo
+## Adding a New Package to a Monorepo
 
 1. **Update `release-please-config.json`:**
 ```json
@@ -238,7 +178,9 @@ Use a PAT if you need release PRs to trigger other workflows (e.g., CI checks).
     "new-package": {
       "component": "new-package",
       "release-type": "simple",
-      "extra-files": ["new-package/.version-file.json"],
+      "extra-files": [
+        {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
+      ],
       "changelog-sections": [...]
     }
   }
@@ -252,7 +194,10 @@ Use a PAT if you need release PRs to trigger other workflows (e.g., CI checks).
 }
 ```
 
-3. **Create initial version file** in the package if needed.
+3. **Create the initial version file** in the package if needed.
+
+For the standard `changelog-sections` set and release-type table, see
+`configure-plugin:release-please-standards`.
 
 ## Migrating from Shared Tags to Component Tags
 
@@ -264,84 +209,51 @@ When transitioning from `v1.0.0` style tags to `component-v1.0.0`:
 4. New releases will create component-specific tags
 5. Close any pending combined release PRs
 
-**Note:** Release-please will scan for component-specific tags. First run after migration will create release PRs for all packages with changes since the manifest version.
+**Note:** Release-please scans for component-specific tags. The first run after
+migration creates release PRs for all packages with changes since the manifest
+version.
 
-## Troubleshooting
+## Monorepo Troubleshooting
 
-### Workflow Succeeds but No PR Created
-
-Check:
-1. Are there releasable commits since last release tag?
-2. Do commits follow conventional format?
-3. Is the package path correct in config?
-
-### Version Not Bumping
+### One Package's PR Not Created (others fine)
 
 Check:
-1. Commit type (feat/fix vs chore/docs)
-2. Commit scope matches package path
-3. Conventional commit format is correct
+1. Are there releasable commits scoped to that package path since its last
+   component tag?
+2. Does the commit scope match the package path?
+3. Is the package's `component` set and unique?
 
-### Wrong Version in Extra Files
+### Wrong Version in a Package's Extra File
 
-Ensure `extra-files` paths are correct relative to repo root, not package root:
+Ensure the package's `extra-files` paths are relative to the **package
+directory**, not the repo root (release-please prepends the package path):
 ```json
-// Correct
-"extra-files": ["my-package/.claude-plugin/plugin.json"]
-
-// Wrong (if package path is "my-package")
-"extra-files": [".claude-plugin/plugin.json"]
+// Correct (package path is "my-package")
+"extra-files": [{"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}]
 ```
+
+For single-repo troubleshooting (no PR created at all, version not bumping,
+CI not running on the release PR), see `configure-plugin:release-please-standards`.
 
 ## Quick Reference
-
-### Conventional Commit Format
-
-```
-<type>(<scope>): <description>
-
-[optional body]
-
-[optional footer(s)]
-```
-
-**Examples:**
-```bash
-feat(auth): add OAuth2 support
-fix(api): handle timeout edge case
-feat(cli)!: redesign command interface
-
-BREAKING CHANGE: Commands now use subcommand syntax.
-```
-
-### Version Bump Rules
-
-| Pattern | Bump |
-|---------|------|
-| `feat:` | Minor (1.0.0 → 1.1.0) |
-| `fix:` | Patch (1.0.0 → 1.0.1) |
-| `!` suffix or `BREAKING CHANGE:` | Major (1.0.0 → 2.0.0) |
-| `chore:`, `docs:`, `style:`, `test:` | No bump |
-
-### Useful Commands
 
 ```bash
 # Check latest release-please-action version
 curl -s https://api.github.com/repos/googleapis/release-please-action/releases/latest | jq -r '.tag_name'
 
-# List pending release PRs
+# List pending release PRs (per-component in a monorepo)
 gh pr list --label "autorelease: pending"
 
 # View recent workflow runs
 gh run list --workflow=release-please.yml --limit=5
 
-# Check failed workflow logs
-gh run view <run-id> --log-failed
+# Inspect a package's current version in the manifest
+jq -r '."my-package"' .release-please-manifest.json
 ```
 
 ## Resources
 
+- [Manifest Releaser Guide](https://github.com/googleapis/release-please/blob/main/docs/manifest-releaser.md) — the canonical monorepo reference
 - [Release-Please Documentation](https://github.com/googleapis/release-please)
 - [Release-Please Action](https://github.com/googleapis/release-please-action)
-- [Conventional Commits](https://www.conventionalcommits.org/)
-- [Manifest Releaser Guide](https://github.com/googleapis/release-please/blob/main/docs/manifest-releaser.md)
+- `configure-plugin:release-please-standards` — single-repo standards, version-bump rules, compliance auditing

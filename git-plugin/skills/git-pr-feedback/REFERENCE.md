@@ -63,9 +63,13 @@ Keep replies concise. Use these templates with `mcp__github__add_reply_to_pull_r
 
 ## Resolution Criteria
 
-**Resolving is the default action after replying.** A reply alone does not close the thread in GitHub's UI — the reviewer's "unresolved" queue still lists it until `mcp__github__resolve_review_thread` runs. Treat reply-without-resolve as an incomplete step.
+**Resolving is the default action after replying.** A reply alone does not close the thread in GitHub's UI — the reviewer's "unresolved" queue still lists it until a resolution runs. Treat reply-without-resolve as an incomplete step.
 
-Resolve a thread with `mcp__github__resolve_review_thread` (threadId is the `PRRT_…` GraphQL node ID) when **any** of these completion conditions hold and no "leave open" exception applies:
+Resolve a thread with the GraphQL `resolveReviewThread` mutation (threadId is the `PRRT_…` GraphQL node ID) when **any** of these completion conditions hold and no "leave open" exception applies:
+
+```bash
+gh api graphql -f query='mutation($id:ID!){resolveReviewThread(input:{threadId:$id}){thread{isResolved}}}' -F id="$THREAD_ID"
+```
 
 - [ ] You pushed a commit that addresses the concern (fix, accepted suggestion, or adapted variant).
 - [ ] You answered the reviewer's question directly.

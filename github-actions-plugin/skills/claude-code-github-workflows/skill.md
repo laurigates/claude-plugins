@@ -17,7 +17,7 @@ allowed-tools: Bash, Read, Write, Edit, Grep, Glob, WebFetch, mcp__github
 | Designing a new `anthropics/claude-code-action@v1` workflow (PR review, issue triage, CI auto-fix) | Configuring the auth method or hardening permissions — see github-actions-auth-security |
 | Choosing trigger events (`issue_comment`, `pull_request`, `workflow_run`) and `if:` guards | Wiring MCP servers and `--allowedTools` patterns — see github-actions-mcp-config |
 | Adding path filters, custom trigger phrases, or external-contributor flows | Debugging a failing workflow run — see github-actions-inspection |
-| Authoring the `prompt:` block (review focus areas, triage labelling, auto-fix instructions) | Building a self-hosted reusable auto-fix workflow — see ci-autofix-reusable |
+| Authoring the `prompt:` block (review focus areas, triage labelling, auto-fix instructions) | Building a self-hosted reusable auto-fix workflow — see github-workflow-auto-fix `--reusable` |
 
 Expert knowledge for designing GitHub Actions workflows that integrate Claude Code for automated code assistance, PR reviews, and issue triage.
 
