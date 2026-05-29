@@ -590,7 +590,10 @@
         "tdd",
         "pytest",
         "vitest",
-        "coverage"
+        "coverage",
+        "odiff",
+        "image-diff",
+        "visual-regression"
       ],
       "category": "testing"
     },

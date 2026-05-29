@@ -25,6 +25,7 @@ This plugin provides comprehensive testing support including test runners, TDD w
 | `vitest-testing` | Vitest testing framework patterns |
 | `playwright-testing` | Playwright E2E testing framework patterns |
 | `playwright-cli` | Playwright CLI browser automation for AI agents |
+| `odiff-image-diffing` | Fast pixel-by-pixel image comparison for visual regression |
 
 ## Agents
 

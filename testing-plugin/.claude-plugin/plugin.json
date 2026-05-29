@@ -18,6 +18,9 @@
     "test-runner",
     "playwright",
     "playwright-cli",
-    "browser-automation"
+    "browser-automation",
+    "odiff",
+    "image-diff",
+    "visual-regression"
   ]
 }
