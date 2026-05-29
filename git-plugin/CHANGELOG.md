@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.39.9](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.39.8...git-plugin-v2.39.9) (2026-05-29)
+
+
+### Bug Fixes
+
+* **git-plugin:** replace unavailable mcp__github__resolve_review_thread ([#1443](https://github.com/laurigates/claude-plugins/issues/1443)) ([2c1eff2](https://github.com/laurigates/claude-plugins/commit/2c1eff24d27052aea509e055161f66ad3db99f16)), closes [#1429](https://github.com/laurigates/claude-plugins/issues/1429)
+
+
+### Code Refactoring
+
+* **release-please:** dedupe config skills — git-plugin owns monorepo strategy ([#1447](https://github.com/laurigates/claude-plugins/issues/1447)) ([d40e8b5](https://github.com/laurigates/claude-plugins/commit/d40e8b52c548467efdc053aca5f9055f71466c29))
+
 ## [2.39.8](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.39.7...git-plugin-v2.39.8) (2026-05-28)
 
 

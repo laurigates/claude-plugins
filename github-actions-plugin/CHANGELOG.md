@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.8](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.7.7...github-actions-plugin-v1.7.8) (2026-05-29)
+
+
+### Code Refactoring
+
+* **github-actions-plugin:** collapse ci-autofix-reusable into github-workflow-auto-fix ([#1445](https://github.com/laurigates/claude-plugins/issues/1445)) ([5d61f29](https://github.com/laurigates/claude-plugins/commit/5d61f29b83a487dadb5d9f87859c555da6f91cb8))
+
 ## [1.7.7](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.7.6...github-actions-plugin-v1.7.7) (2026-05-14)
 
 

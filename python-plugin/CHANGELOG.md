@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.5](https://github.com/laurigates/claude-plugins/compare/python-plugin-v1.5.4...python-plugin-v1.5.5) (2026-05-29)
+
+
+### Code Refactoring
+
+* **python-plugin:** fold ruff-integration into ruff-linting/REFERENCE.md ([#1446](https://github.com/laurigates/claude-plugins/issues/1446)) ([dafa0ad](https://github.com/laurigates/claude-plugins/commit/dafa0adff56bdcd6b04988e5387f49be4e485c61))
+
 ## [1.5.4](https://github.com/laurigates/claude-plugins/compare/python-plugin-v1.5.3...python-plugin-v1.5.4) (2026-05-14)
 
 
