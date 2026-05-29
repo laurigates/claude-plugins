@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.6](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.14.5...code-quality-plugin-v1.14.6) (2026-05-29)
+
+
+### Code Refactoring
+
+* **code-quality-plugin:** merge error-swallowing + silent-degradation into code-hidden-failures ([#1451](https://github.com/laurigates/claude-plugins/issues/1451)) ([d7db142](https://github.com/laurigates/claude-plugins/commit/d7db14221f39078e24244c1bf18897be6bd25f89))
+
 ## [1.14.5](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.14.4...code-quality-plugin-v1.14.5) (2026-05-24)
 
 

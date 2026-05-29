@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.6](https://github.com/laurigates/claude-plugins/compare/python-plugin-v1.5.5...python-plugin-v1.5.6) (2026-05-29)
+
+
+### Code Refactoring
+
+* **python-plugin:** shrink python-code-quality to an orchestration index ([#1450](https://github.com/laurigates/claude-plugins/issues/1450)) ([88af37e](https://github.com/laurigates/claude-plugins/commit/88af37ed5a78e75863b915c7da6d77190f8bd54b))
+
 ## [1.5.5](https://github.com/laurigates/claude-plugins/compare/python-plugin-v1.5.4...python-plugin-v1.5.5) (2026-05-29)
 
 
