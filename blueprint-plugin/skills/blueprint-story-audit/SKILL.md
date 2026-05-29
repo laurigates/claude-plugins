@@ -20,7 +20,7 @@ Reconcile what the codebase actually does against what the PRD says it should do
 
 | Use this skill when... | Use alternative when... |
 |------------------------|-------------------------|
-| Auditing PRD↔code drift before a release or planning round | Drafting a brand-new PRD from scratch (`/blueprint:derive-prd`) |
+| Auditing PRD↔code drift before a release or planning round | Drafting a brand-new PRD from scratch (`/blueprint:derive-plans`) |
 | Finding untested critical paths through the user-story lens | Mining commits for missing tests (`/blueprint:derive-tests`) |
 | Surfacing "implicit stories" — code-only features missing from PRD | Validating ADR relationships (`/blueprint:adr-validate`) |
 | Producing a single artifact the team can act on top-to-bottom | Listing existing blueprint docs (`/blueprint:docs-list`) |

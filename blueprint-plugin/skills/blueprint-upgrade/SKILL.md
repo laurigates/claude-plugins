@@ -159,7 +159,7 @@ If a migration step would require any prompt not listed above, **abort the upgra
       - `auto_run`: based on user choice (safe read-only tasks: `adr-validate`, `feature-tracker-sync`, `sync-ids`)
       - `last_completed_at: null`
       - `last_result: null`
-      - Default schedules: `derive-prd` → `on-demand`, `derive-plans` → `weekly`, `derive-rules` → `weekly`, `generate-rules` → `on-change`, `adr-validate` → `weekly`, `feature-tracker-sync` → `daily`, `sync-ids` → `on-change`, `claude-md` → `on-change`, `curate-docs` → `on-demand`
+      - Default schedules: `derive-plans` → `weekly`, `derive-rules` → `weekly`, `generate-rules` → `on-change`, `adr-validate` → `weekly`, `feature-tracker-sync` → `daily`, `sync-ids` → `on-change`, `claude-md` → `on-change`, `curate-docs` → `on-demand`
       - `stats: {}`
       - `context: {}`
 

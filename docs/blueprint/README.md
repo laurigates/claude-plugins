@@ -6,7 +6,7 @@ This directory contains [Blueprint Development](https://github.com/laurigates/cl
 
 `claude-plugins` is the upstream of `blueprint-plugin`. That makes naïve use of the derive/generate tasks dangerous:
 
-- **`derive-prd` / `derive-plans`** mine git history and `README.md` to invent PRDs/PRPs. Here, git history is dominated by plugin-feature commits (`feat(blueprint-plugin): ...`) and 39 `*-plugin/SKILL.md` files look like requirements documents to a naïve scanner. Synthesised PRDs would treat plugin work as project requirements.
+- **`derive-plans`** (which now subsumes the former `derive-prd` / `derive-adr`) mines git history and `README.md` to invent PRDs/ADRs/PRPs. Here, git history is dominated by plugin-feature commits (`feat(blueprint-plugin): ...`) and 39 `*-plugin/SKILL.md` files look like requirements documents to a naïve scanner. Synthesised PRDs would treat plugin work as project requirements.
 - **`derive-rules` / `generate-rules`** write into `.claude/rules/`, which already holds 18 hand-curated rules (the source of truth for plugin conventions, shared with every marketplace user). Generated content currently lands flat alongside hand-written files, so a hash-collision overwrite would clobber governance content.
 - **`claude-md`** offers a "regenerate completely" option that would discard 230+ lines of hand-curated convention guidance in `CLAUDE.md` if accepted by mistake.
 
@@ -23,8 +23,7 @@ See `manifest.json#task_registry` (each disabled task carries a `context.disable
 | `feature-tracker-sync` | ✓ | Read-leaning sync against `TODO.md` (no tracker enabled yet) |
 | `story-audit` | ✓ | Read-only audit: capability map ↔ PRD stories ↔ tests, tier-ranked. Writes one dated artifact under `docs/blueprint/audits/` |
 | `story-reconcile` | ✓ | Phase 2 of story-audit. Mutates PRDs only (idempotent inline markers + wholesale `## Known Drift` section); confirms each PRD before writing |
-| `derive-prd` | ✗ | Would invent PRDs from plugin-feature commits |
-| `derive-plans` | ✗ | Conflicts with hand-authored `docs/plans/` |
+| `derive-plans` | ✗ | Would invent PRDs/ADRs from plugin-feature commits; conflicts with hand-authored `docs/plans/`. Subsumes the former `derive-prd`/`derive-adr`. |
 | `derive-rules` | ✗ | Could overwrite the 18 hand-written rules |
 | `generate-rules` | ✗ | No subdirectory output path yet — re-enable once configurable ([#1043](https://github.com/laurigates/claude-plugins/issues/1043)) |
 | `claude-md` | ✗ | "Regenerate completely" prompt is too easy to mis-click |

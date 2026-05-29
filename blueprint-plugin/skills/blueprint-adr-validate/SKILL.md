@@ -19,7 +19,7 @@ Validate Architecture Decision Records for relationship consistency, reference i
 
 | Use this skill when... | Use alternative when... |
 |------------------------|-------------------------|
-| Maintaining ADR integrity before releases | Creating new ADRs (use `/blueprint:derive-adr`) |
+| Maintaining ADR integrity before releases | Creating new ADRs (use `/blueprint:derive-plans`) |
 | Auditing after refactoring or changes | Quick one-time documentation review |
 | Regular documentation review process | General ADR reading |
 

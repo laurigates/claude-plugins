@@ -63,9 +63,9 @@ _No proposed ADRs at this time._
 
 ## Creating ADRs
 
-Use `/blueprint:derive-adr` to generate ADRs from project analysis, or create manually following the [MADR template](https://adr.github.io/madr/).
+Use `/blueprint:derive-plans` to generate ADRs from project analysis, or create manually following the [MADR template](https://adr.github.io/madr/).
 
 ADR files follow the naming convention: `NNNN-short-title.md` (e.g., `0001-use-react.md`).
 
 ---
-*Generated via /blueprint:derive-adr*
+*Generated via /blueprint:derive-plans*

@@ -18,7 +18,7 @@ This skill provides systematic evaluation of PRPs (Product Requirement Prompts) 
 |---|---|
 | Scoring a draft PRP/work-order before execution or delegation | Authoring the PRP itself from research and context |
 | Deciding whether a work-order is ready for a subagent or needs refinement | Producing the work-order content (use `blueprint-work-order`) |
-| Reviewing existing PRPs/work-orders for context completeness and validation gates | Generating the PRD that the PRP derives from (use `blueprint-derive-prd`) |
+| Reviewing existing PRPs/work-orders for context completeness and validation gates | Generating the PRD that the PRP derives from (use `blueprint-derive-plans`) |
 
 ## Scoring Dimensions
 

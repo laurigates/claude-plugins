@@ -87,4 +87,4 @@ adr_supersedes=$(head -50 "$file" | grep -m1 "^supersedes:" | sed 's/^[^:]*:[[:s
 - Run after creating new ADRs
 - Domain conflicts indicate decisions needing reconciliation
 - Untagged ADRs are valid but harder to analyze
-- Use `/blueprint:derive-adr` to create ADRs with proper relationships
+- Use `/blueprint:derive-plans` to create ADRs with proper relationships

@@ -1,8 +1,8 @@
 ---
 created: 2026-01-15
-modified: 2026-05-09
-reviewed: 2026-02-14
-description: Derive PRDs, ADRs, PRPs from git history and codebase. Use when onboarding a project to blueprint or extracting features from conventional commits retroactively.
+modified: 2026-05-29
+reviewed: 2026-05-29
+description: Derive PRDs, ADRs, PRPs from git history, docs, and codebase. Use when onboarding a project to blueprint, generating a PRD or ADRs retroactively, or extracting features from conventional commits.
 args: "[--quick] [--since DATE]"
 argument-hint: "--quick for fast scan, --since 2024-01-01 for date range"
 allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion, Task
@@ -104,20 +104,24 @@ Collect findings in structured format for user confirmation.
 
 ### Step 6: Clarify project context with user
 
-Ask for clarifications on:
+Ask for clarifications via `AskUserQuestion`. For the full question templates
+(problem statement, target users, project phase, stakeholder scale), see
+[REFERENCE.md](REFERENCE.md#clarifying-questions).
 
-1. **Project purpose** (if not clear from README): Present inferred description for confirmation or ask user to provide
-2. **Target users**: Who are the primary users (developers, end users, both)?
-3. **Feature confirmation**: Present {N} features extracted from git for review/prioritization
-4. **Architecture rationale**: For each identified decision, ask what was the main driver
-5. **Generation confirmation**: Show summary with metrics and ask if ready to generate
+1. **Project purpose** (if not clear from README): present the inferred description for confirmation, or ask the user to provide one
+2. **Target users**: developers, end users, or both — steers the PRD's framing
+3. **Project phase**: MVP / active development / maintenance / planning major changes — sets feature-vs-stability emphasis
+4. **Stakeholders**: scale (solo / small team / larger org / OSS community) → drives the depth of the PRD's stakeholder matrix (see [REFERENCE.md](REFERENCE.md#stakeholders--personas))
+5. **Feature confirmation**: present {N} features extracted from git for review/prioritization
+6. **Architecture rationale**: for each identified decision, ask the main driver
+7. **Generation confirmation**: show the summary below and ask if ready to generate
 
-For confirmation step, present:
+For the confirmation step, present:
 - Git history quality: {score}/10
 - Features identified: {N}
 - Architecture decisions: {N}
 - Future work items: {N}
-- Proposed documents: PRD, {N} ADRs, {N} PRPs
+- Proposed documents: PRD (with stakeholder matrix), {N} ADRs, {N} PRPs
 
 ### Step 7: Generate documents
 
@@ -134,6 +138,10 @@ For each document type, use templates and patterns from [REFERENCE.md](REFERENCE
    - Use ADR template from REFERENCE.md
    - Include git evidence (commit SHA, date, files changed)
    - Mark with confidence score
+   - **Conflict & supersede check**: after writing the ADRs, run
+     `/blueprint:adr-relationships` to detect same-domain conflicts and
+     `/blueprint:adr-validate` to enforce bidirectional supersede consistency.
+     Do not re-implement conflict scoring here — those skills own it.
 
 3. **Create ADR index** at `docs/adrs/README.md`
    - Table of all ADRs with status and dates
@@ -147,6 +155,19 @@ For each document type, use templates and patterns from [REFERENCE.md](REFERENCE
 ### Step 8: Update manifest and report results
 
 1. Update `docs/blueprint/manifest.json` with import metadata: timestamp, commits analyzed, confidence scores, generated artifacts
+
+### Step 8.5: Offer GitHub issues for generated docs (optional)
+
+For the generated PRD (and optionally each PRP), prompt with `AskUserQuestion`
+whether to open a tracking GitHub issue. See
+[REFERENCE.md](REFERENCE.md#github-issue-tracking) for the prompt template and
+the `gh issue create` command. When the user accepts:
+
+1. Create the issue with title `[{PRD-NNN}] {Project Name}`.
+2. Add the issue number to the doc's `github-issues` frontmatter.
+3. Record it in the manifest `id_registry` (`documents[ID].github_issues` and the `github_issues` map).
+
+Skip silently when no `gh` remote is configured or the user declines.
 
 ### Step 9: Update task registry
 

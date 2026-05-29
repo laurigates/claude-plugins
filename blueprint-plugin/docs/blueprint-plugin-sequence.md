@@ -118,13 +118,12 @@ graph TB
     Start([Start New Project]) --> Init[/blueprint:init/]
 
     Init --> InitArtifacts{Setup Type?}
-    InitArtifacts -->|Existing Project| GenPRD[/blueprint:derive-prd/]
+    InitArtifacts -->|Existing Project| GenPlans[/blueprint:derive-plans/]
     InitArtifacts -->|New Project| WritePRD[Write PRDs manually]
-    InitArtifacts -->|Architecture| GenADR[/blueprint:derive-adr/]
 
-    GenPRD --> PRDs[(docs/prds/)]
+    GenPlans --> PRDs[(docs/prds/)]
     WritePRD --> PRDs
-    GenADR --> ADRs[(docs/adrs/)]
+    GenPlans --> ADRs[(docs/adrs/)]
 
     PRDs --> GenRules[/blueprint:generate-rules/]
 
@@ -182,8 +181,7 @@ graph TB
     MoreWork -->|No| Done([Complete])
 
     style Init fill:#a8d5e2
-    style GenPRD fill:#ffd966
-    style GenADR fill:#ffd966
+    style GenPlans fill:#ffd966
     style GenRules fill:#b4d7a8
     style CreatePRP fill:#b4d7a8
     style ExecutePRP fill:#ea9999
@@ -520,7 +518,7 @@ How the plugin, generated, and custom layers interact:
 graph TB
     subgraph "Layer 1: Plugin (Auto-updated)"
         P1["/blueprint:init"]
-        P2["/blueprint:derive-prd"]
+        P2["/blueprint:derive-plans"]
         P3["/blueprint:prp-create"]
         P4["/blueprint:prp-execute"]
         P5["/blueprint:work-order"]

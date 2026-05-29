@@ -9,12 +9,8 @@ Detailed reference material for the blueprint-execute meta command, including As
 ```
 question: "This project has git history but no PRDs/ADRs. How would you like to derive documentation?"
 options:
-  - label: "Derive all from git history (Recommended)"
-    description: "Run /blueprint:derive-plans for comprehensive analysis"
-  - label: "Derive PRD only"
-    description: "Run /blueprint:derive-prd from README and docs"
-  - label: "Derive ADRs only"
-    description: "Run /blueprint:derive-adr from codebase analysis"
+  - label: "Derive all (PRD/ADRs/PRPs) from git history (Recommended)"
+    description: "Run /blueprint:derive-plans for comprehensive analysis (PRDs, ADRs, and PRPs)"
   - label: "Skip derivation"
     description: "I'll create documentation manually"
 ```

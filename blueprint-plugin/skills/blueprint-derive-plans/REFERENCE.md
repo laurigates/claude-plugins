@@ -102,6 +102,17 @@ git log --oneline {tag1}..{tag2} | head -10
 
 {From user input or marked as "Needs clarification"}
 
+### Stakeholder Matrix
+
+Depth scales with the stakeholder answer from Step 6 (solo → simplified;
+larger org / OSS → full matrix):
+
+| Role | Name / Team | Responsibility | Contact |
+|------|-------------|----------------|---------|
+| {Owner} | {name/team} | {what they decide} | {channel} |
+| {Maintainer} | {name/team} | {what they own} | {channel} |
+| {Consumer} | {name/team} | {how they use it} | {channel} |
+
 ### User Personas
 
 #### Primary: {Persona from user input}
@@ -440,3 +451,88 @@ options:
 - **Review low-confidence sections**: Focus review effort on sections marked < 7/10
 - **Iterative refinement**: Run import once, then refine documents manually
 - **Combine with existing docs**: If some documentation exists, import will incorporate it
+
+## Clarifying Questions
+
+Step 6 uses `AskUserQuestion`. Templates (confirm the inferred option or pick
+an explicit one):
+
+**Problem statement**
+```
+question: "What is the primary problem this project solves?"
+options:
+  - "[Inferred from docs]: {description}"  → confirm inference
+  - "Let me describe it"                    → free-text input
+```
+
+**Target users**
+```
+question: "Who are the target users?"
+options:
+  - "Developers"                  → technical-documentation focus
+  - "End users"                   → user-experience focus
+  - "Both developers and end users" → balanced framing
+  - "Other"                       → custom description
+```
+
+**Project phase**
+```
+question: "What is the current project phase?"
+options:
+  - "Early development / MVP"   → focus on core features
+  - "Active development"        → feature expansion
+  - "Maintenance mode"          → stability and bug fixes
+  - "Planning major changes"    → architectural considerations
+```
+
+**Stakeholder scale** (drives the depth of the stakeholder matrix)
+```
+question: "Who are the key stakeholders for this project?"
+options:
+  - "Solo project (just me)"    → simplified RACI
+  - "Small team (2-5 people)"   → team collaboration
+  - "Larger organization"       → formal stakeholder matrix
+  - "Open source community"     → contributor-focused
+```
+
+## GitHub Issue Tracking
+
+Step 8.5 optionally opens a tracking issue per generated PRD (and, if the user
+wants, per PRP).
+
+```
+question: "Create a GitHub issue to track this PRD?"
+options:
+  - label: "Yes, create issue (Recommended)"
+    description: "Creates issue titled '[PRD-NNN] {Project Name}'"
+  - label: "No, skip for now"
+    description: "Can link later by editing github-issues in frontmatter"
+```
+
+If yes:
+
+```bash
+gh issue create \
+  --title "[{PRD-NNN}] {Project Name}" \
+  --body "## Product Requirements Document
+
+**Document**: \`docs/prds/{filename}.md\`
+**ID**: {PRD-NNN}
+
+### Summary
+{Executive summary from PRD}
+
+### Key Features
+{List of FR-* features}
+
+*Auto-generated from PRD. See linked document for full requirements.*" \
+  --label "prd,requirements"
+```
+
+Then capture the issue number and update:
+
+1. PRD frontmatter: add the number to `github-issues`.
+2. Manifest: add it to `id_registry.documents[PRD-NNN].github_issues`.
+3. Manifest: add the mapping to `id_registry.github_issues`.
+
+Skip silently when `gh` has no configured remote.

@@ -106,5 +106,5 @@ The scope is the PRD id when one PRD is touched; omit the scope when multiple PR
 
 - `/blueprint:story-audit` — produces the audit artifact this skill consumes
 - `/blueprint:work-order` — packages each `❌` entry as an isolated subagent task
-- `/blueprint:derive-prd` — used to bootstrap a PRD when no PRD covers a candidate story's area
+- `/blueprint:derive-plans` — used to bootstrap a PRD when no PRD covers a candidate story's area
 - `/blueprint:adr-validate` — orthogonal: ADR consistency, not story coverage

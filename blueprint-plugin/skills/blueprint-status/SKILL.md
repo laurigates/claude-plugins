@@ -145,7 +145,6 @@ Display the current blueprint configuration status with three-layer architecture
 
    {If task_registry exists:}
    Task Health:
-   - derive-prd          last: {age}  schedule: {schedule}  status: {status}
    - derive-plans        last: {age}  schedule: {schedule}  status: {status}
    - derive-rules        last: {age}  schedule: {schedule}  status: {status}
    - generate-rules      last: {age}  schedule: {schedule}  status: {status}
@@ -336,7 +335,6 @@ Feature Tracker:
 - Phases: 1 active, 2 complete
 
 Task Health:
-  derive-prd          last: 2d ago   schedule: on-demand   status: ok
   derive-plans        last: 5d ago   schedule: weekly      status: due
   derive-rules        last: 3d ago   schedule: weekly      status: ok
   generate-rules      last: 1d ago   schedule: on-change   status: ok
