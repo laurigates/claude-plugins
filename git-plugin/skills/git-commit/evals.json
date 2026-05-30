@@ -7,11 +7,11 @@
       "description": "Basic conventional commit with scope for a new feature",
       "prompt": "I just added a new OAuth login feature to the auth module. Please commit my staged changes.",
       "expectations": [
-        "Commit message starts with feat(",
-        "Commit message includes a scope related to auth or oauth",
+        { "assertion": "Commit message starts with feat(", "check": "regex", "pattern": "^feat\\(", "scope": "subject" },
+        { "assertion": "Commit message includes a scope related to auth or oauth", "check": "regex", "pattern": "^[a-z]+\\((auth|oauth|login)", "flags": "i", "scope": "subject" },
         "Subject line uses imperative mood",
-        "Subject line does not end with a period",
-        "Subject begins with lowercase after the colon"
+        { "assertion": "Subject line does not end with a period", "check": "regex", "pattern": "[^.]$", "scope": "subject" },
+        { "assertion": "Subject begins with lowercase after the colon", "check": "regex", "pattern": ":\\s+[a-z]", "scope": "subject" }
       ],
       "tags": ["conventional-commits", "feat", "basic"]
     },
@@ -20,9 +20,9 @@
       "description": "Bug fix commit with issue reference",
       "prompt": "I fixed the null pointer crash in the API serializer. This fixes issue #42. Please commit.",
       "expectations": [
-        "Commit message starts with fix(",
-        "Commit message references #42 in the body or footer",
-        "Uses Fixes or Closes keyword for the issue reference",
+        { "assertion": "Commit message starts with fix(", "check": "regex", "pattern": "^fix\\(", "scope": "subject" },
+        { "assertion": "Commit message references #42 in the body or footer", "check": "substring", "value": "#42" },
+        { "assertion": "Uses Fixes or Closes keyword for the issue reference", "check": "regex", "pattern": "(Fixes|Closes)\\s+#42", "flags": "i" },
         "Subject describes the fix, not just 'fix bug'"
       ],
       "tags": ["conventional-commits", "fix", "issue-ref"]
@@ -32,9 +32,9 @@
       "description": "Breaking change commit",
       "prompt": "I removed the deprecated /v1/users endpoint. This is a breaking change. Please commit.",
       "expectations": [
-        "Commit message includes ! before the colon OR includes BREAKING CHANGE in footer",
+        { "assertion": "Commit message includes ! before the colon OR includes BREAKING CHANGE in footer", "check": "regex", "pattern": "(^[a-z]+(\\([^)]*\\))?!:|BREAKING CHANGE)", "flags": "m" },
         "Commit message explains what was removed",
-        "Commit type is feat or fix or refactor"
+        { "assertion": "Commit type is feat or fix or refactor", "check": "regex", "pattern": "^(feat|fix|refactor)", "scope": "subject" }
       ],
       "tags": ["conventional-commits", "breaking-change"]
     },
@@ -43,9 +43,9 @@
       "description": "Documentation-only change",
       "prompt": "I updated the README with new installation instructions. Please commit.",
       "expectations": [
-        "Commit message starts with docs(",
-        "Subject mentions README or documentation or installation",
-        "Does not use feat or fix type"
+        { "assertion": "Commit message starts with docs(", "check": "regex", "pattern": "^docs\\(", "scope": "subject" },
+        { "assertion": "Subject mentions README or documentation or installation", "check": "regex", "pattern": "(README|documentation|install)", "flags": "i", "scope": "subject" },
+        { "assertion": "Does not use feat or fix type", "check": "absent_regex", "pattern": "^(feat|fix)\\(", "scope": "subject" }
       ],
       "tags": ["conventional-commits", "docs"]
     },
@@ -54,9 +54,9 @@
       "description": "Multi-issue commit with body",
       "prompt": "I refactored the database connection pooling to use async/await. This closes #100 and is related to #101. Please commit with a detailed message.",
       "expectations": [
-        "Commit message starts with refactor(",
-        "Commit message references both #100 and #101",
-        "Commit has a body (not just a subject line)",
+        { "assertion": "Commit message starts with refactor(", "check": "regex", "pattern": "^refactor\\(", "scope": "subject" },
+        { "assertion": "Commit message references both #100 and #101", "check": "substring_all", "values": ["#100", "#101"] },
+        { "assertion": "Commit has a body (not just a subject line)", "check": "regex", "pattern": "\\S\\n\\n\\S", "flags": "s" },
         "Body provides context about what changed"
       ],
       "tags": ["conventional-commits", "refactor", "multi-issue", "body"]
