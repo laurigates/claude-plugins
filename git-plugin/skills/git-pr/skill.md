@@ -1,6 +1,6 @@
 ---
 created: 2026-01-21
-modified: 2026-05-09
+modified: 2026-05-30
 reviewed: 2026-04-29
 name: git-pr
 description: Create pull requests with descriptions, labels, and issue references. Use when user says "create PR", "open pull request", or "submit for review". Creates PRs from pushed branches — see git-commit for commits and git-push for pushing.
@@ -156,6 +156,17 @@ gh pr create \
   --title "feat(scope): add feature" \
   --body-file /tmp/pr-body.md
 ```
+
+For a short body you can skip the tempfile and stream it over stdin with `--body-file -` and a **quoted** heredoc:
+
+```bash
+gh pr create --title "feat(scope): add feature" --body-file - <<'EOF'
+## Summary
+Use `code`, ${vars}, and $shell syntax freely — they render verbatim.
+EOF
+```
+
+**Inside `<<'EOF'` (quoted delimiter), backticks, `$`, and `\` are already literal — never backslash-escape them.** A reflexive `\`` survives into the rendered PR description and needs a follow-up `gh pr edit --body-file` to clean up. (The `Write` tool → `--body-file` path above sidesteps the question entirely and stays the default for non-trivial bodies.)
 
 Body content of `/tmp/pr-body.md`:
 
