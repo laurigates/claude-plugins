@@ -54,6 +54,9 @@ Claude Code plugin collection providing skills and agents for development workfl
 | `.claude/rules/structured-script-output.md` | `=== HEADER ===` / `KEY=VALUE` / `STATUS=` convention for diagnostic shell scripts |
 | `.claude/rules/typer-cli-completion.md` | Bypass `shellingham` in Python/Typer CLIs by adding an explicit `completion <shell>` subcommand using Click's `get_completion_class` |
 | `.claude/rules/terminology.md` | Glossary of development terms with strong intent (scoping, review, parallelism, work state, code ops, requirements) — positive definitions with *Use when* disambiguation |
+| `.claude/rules/parallel-safe-queries.md` | Query commands that exit non-zero on empty results silently cancel sibling parallel tool calls — use the machine-readable variant (`--json`/`export` + `jq`) |
+| `.claude/rules/docs-currency.md` | Code and the docs describing it land in the **same commit** (stub → `blueprint:blueprint-docs-currency`) |
+| `.claude/rules/agent-cli-worktree-safety.md` | Data-loss-prevention conventions for the sibling Python/Typer CLI projects (`git-repo-agent`, `vault-agent`); path-scoped, not repo-wide |
 
 ## Creating New Skills
 
