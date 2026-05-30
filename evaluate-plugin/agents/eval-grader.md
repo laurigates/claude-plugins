@@ -56,7 +56,14 @@ The harness blocks several common bash idioms — use the dedicated tool instead
 
 ### Assertion Checking
 
-For each assertion in the eval case:
+Each item in `expectations` is either a plain string or a typed object
+`{assertion, check, ...}` (see `references/schemas.md`). Read the human text from
+the string itself, or from the object's `assertion` field. Items with a `check`
+other than `judge` are graded deterministically upstream by
+`scripts/grade_deterministic.py` — focus your judgment on the `judge`/string
+items and reconcile any deterministic results passed to you.
+
+For each assertion you grade:
 
 1. **Search the transcript and output** for evidence that the assertion is satisfied
 2. **Determine confidence**: `high` (clear evidence), `medium` (indirect evidence), `low` (ambiguous)

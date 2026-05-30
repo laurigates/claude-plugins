@@ -52,6 +52,39 @@ Defines test cases for a skill. Lives alongside the SKILL.md it tests. **Version
 | Good | "Output includes issue reference #42" |
 | Good | "Created file contains at least 3 test cases" |
 
+### Typed Checks (deterministic grading)
+
+Each item in `expectations` is **either** a plain string (graded by the LLM
+`eval-grader` — the `judge` path) **or** a typed object that
+`scripts/grade_deterministic.py` grades with zero model tokens. Mixing both in
+one `expectations` array is supported and backward compatible.
+
+```json
+{
+  "assertion": "string — human-readable assertion (also shown to the judge)",
+  "check": "regex | substring | substring_all | absent_regex | judge",
+  "pattern": "string — regex (for regex / absent_regex)",
+  "value": "string — substring to find (for substring)",
+  "values": ["string — all must be present (for substring_all)"],
+  "scope": "full | subject | body  — default full",
+  "flags": "string — any of imsx, regex flags (for regex / absent_regex)"
+}
+```
+
+| `check` | Passes when | Required field |
+|---------|-------------|----------------|
+| `regex` | `pattern` matches within `scope` | `pattern` |
+| `substring` | `value` appears within `scope` | `value` |
+| `substring_all` | every entry in `values` appears within `scope` | `values` |
+| `absent_regex` | `pattern` does **not** match within `scope` | `pattern` |
+| `judge` | deferred to the LLM grader (default for bare strings) | — |
+
+`scope`: `subject` = first non-empty line, `body` = text after the first blank
+line, `full` = whole output. Prefer typed checks for anything mechanically
+verifiable; reserve `judge` for genuinely fuzzy expectations (tone, mood,
+"provides context"). See
+[`docs/cross-model-evaluation.md`](../docs/cross-model-evaluation.md).
+
 ## grading.json — Grading Output
 
 Produced by the `eval-grader` agent for each eval run. **Gitignored.**
@@ -226,6 +259,49 @@ Tracks skill improvements over evaluation cycles. **Gitignored.**
   ]
 }
 ```
+
+## model-matrix.json — Cross-Model Results
+
+Records with-skill and baseline pass rates for one skill across pinned models.
+Consumed by `scripts/render_matrix_report.py`. **Gitignored** (the rendered
+report and stored history are the durable artifacts). See
+[`docs/cross-model-evaluation.md`](../docs/cross-model-evaluation.md).
+
+```json
+{
+  "metadata": {
+    "skill_path": "string",
+    "generated_at": "string — ISO-8601",
+    "previous_run": "string | null — ISO-8601 of the last sweep, for Δ vs prev",
+    "models": [
+      { "alias": "string — opus | sonnet | haiku", "model_id": "string — pinned id, e.g. claude-opus-4-8" }
+    ]
+  },
+  "evals": [
+    {
+      "eval_id": "string",
+      "by_model": {
+        "<alias>": { "with_skill": "number 0.0-1.0", "baseline": "number 0.0-1.0" }
+      }
+    }
+  ],
+  "summary": {
+    "by_model": {
+      "<alias>": {
+        "with_skill": "number — mean pass rate across evals",
+        "baseline": "number — mean baseline pass rate",
+        "delta": "number — with_skill - baseline",
+        "prev_delta": "number | null — delta from previous_run, drives the ▲/▼ marker"
+      }
+    }
+  }
+}
+```
+
+The renderer derives per-model verdicts (`earns its keep`, `possibly redundant`,
+`fighting the model`, `ineffective`, `marginal`) from `with_skill`/`baseline`,
+and raises a portability flag when the opus−haiku with-skill spread is ≥20
+points.
 
 ## plugin-benchmark.json — Plugin-Level Aggregation
 

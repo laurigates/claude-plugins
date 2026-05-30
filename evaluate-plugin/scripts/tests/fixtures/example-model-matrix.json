@@ -1,0 +1,38 @@
+{
+  "_note": "ILLUSTRATIVE EXAMPLE DATA — not the result of a real run. Demonstrates the model-matrix.json shape consumed by render_matrix_report.py. Numbers are hand-authored to exercise every verdict branch.",
+  "metadata": {
+    "skill_path": "git-plugin/skills/git-commit/SKILL.md",
+    "generated_at": "2026-05-30T00:00:00Z",
+    "previous_run": "2026-04-30T00:00:00Z",
+    "models": [
+      { "alias": "opus", "model_id": "claude-opus-4-8" },
+      { "alias": "sonnet", "model_id": "claude-sonnet-4-6" },
+      { "alias": "haiku", "model_id": "claude-haiku-4-5" }
+    ]
+  },
+  "evals": [
+    {
+      "eval_id": "gc-001",
+      "by_model": {
+        "opus": { "with_skill": 1.0, "baseline": 0.6 },
+        "sonnet": { "with_skill": 1.0, "baseline": 0.6 },
+        "haiku": { "with_skill": 0.8, "baseline": 0.4 }
+      }
+    },
+    {
+      "eval_id": "gc-002",
+      "by_model": {
+        "opus": { "with_skill": 1.0, "baseline": 0.5 },
+        "sonnet": { "with_skill": 0.9, "baseline": 0.5 },
+        "haiku": { "with_skill": 0.6, "baseline": 0.3 }
+      }
+    }
+  ],
+  "summary": {
+    "by_model": {
+      "opus": { "with_skill": 1.0, "baseline": 0.55, "delta": 0.45, "prev_delta": 0.4 },
+      "sonnet": { "with_skill": 0.95, "baseline": 0.55, "delta": 0.4, "prev_delta": 0.42 },
+      "haiku": { "with_skill": 0.7, "baseline": 0.35, "delta": 0.35, "prev_delta": 0.2 }
+    }
+  }
+}
