@@ -5,7 +5,7 @@ allowed-tools: Bash(git *), Bash(gh *), Bash(fd *), Bash(rg *), Bash(diff *), Ba
 args: <mode> [options]
 argument-hint: "extract [repo]|diff <file-pattern>|apply <file-pattern> [--from repo] [--to repos|--all]"
 created: 2026-02-21
-modified: 2026-04-16
+modified: 2026-05-30
 reviewed: 2026-04-16
 ---
 
@@ -313,6 +313,15 @@ gh pr create --title "chore: sync claude.yml" --body "$(cat <<'EOF'
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 EOF
 )"
+```
+
+**Inside a quoted heredoc (`<<'EOF'`), backticks, `$`, and `\` are already literal — never backslash-escape them.** A stray `\`` lands in the rendered PR body and needs a follow-up `gh pr edit` to fix. To skip the `$(cat ...)` subshell entirely, feed the body straight to `gh` over stdin:
+
+```bash
+gh pr create --title "chore: sync claude.yml" --body-file - <<'EOF'
+## Summary
+- Synced `.github/workflows/claude.yml` to match canonical version
+EOF
 ```
 
 Report results:
