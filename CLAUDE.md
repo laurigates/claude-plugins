@@ -44,6 +44,7 @@ Claude Code plugin collection providing skills and agents for development workfl
 | `.claude/rules/agent-development.md` | Agent configuration, isolation, background execution, memory, and teams |
 | `.claude/rules/skill-fork-context.md` | When to set `context: fork` and `agent:` on skills |
 | `.claude/rules/regression-testing.md` | **Required**: add a script check for every skill bug fixed |
+| `.claude/rules/skill-evaluation.md` | How we measure skill *effectiveness*: tiered cost, deterministic-vs-judge grading, cross-model delta signal |
 | `.claude/rules/sandbox-guidance.md` | Sandbox constraints, `CLAUDE_CODE_REMOTE` detection, and remote/local skill patterns |
 | `.claude/rules/plugin-flow-diagrams.md` | When and how to add Mermaid flow diagrams |
 | `.claude/rules/agent-coworker-detection.md` | Detect other agents working in the same repo clone before destructive git ops |

@@ -143,6 +143,8 @@ be worth not eyeballing.
 
 ## Related
 
+- `.claude/rules/skill-evaluation.md` — the top-level methodology this design
+  implements (tiered cost, delta signal, golden set, cadence)
 - [`references/schemas.md`](../references/schemas.md) — evals.json (typed
   checks) and model-matrix.json schemas
 - [`skills/evaluate-skill/SKILL.md`](../skills/evaluate-skill/SKILL.md) —
