@@ -175,5 +175,11 @@ Before pushing, verify:
 2. PR description/summary reflects what the commits actually do
 3. Issue references (Closes/Fixes/Resolves #N) are still correct
 
-If the PR metadata is already accurate, re-run the push command.
-If updates are needed, update the PR title/description first, then push."
+Timestamps (why a bare re-run won't bypass this check):
+  Latest commit authored: ${HEAD_AUTHOR_TIME:-(unknown)}
+  PR last updated:        ${PR_UPDATED_AT:-(unknown)}
+
+To bypass: edit the PR title or body so it reflects the new commit, THEN push.
+Editing the PR bumps its updatedAt past your commit's author time, which the
+hook reads as 'metadata reconciled' and lets the push through on the next attempt.
+Re-running the push without editing the PR fires the same block again."
