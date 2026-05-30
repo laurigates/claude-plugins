@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.24.2](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.24.1...configure-plugin-v1.24.2) (2026-05-30)
+
+
+### Documentation
+
+* **skills:** stop escaping backticks/$ inside quoted heredoc examples ([#1457](https://github.com/laurigates/claude-plugins/issues/1457)) ([c15d81b](https://github.com/laurigates/claude-plugins/commit/c15d81b3df44db5bb1b2989e705cc2bc445f9ac1))
+
 ## [1.24.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.24.0...configure-plugin-v1.24.1) (2026-05-29)
 
 
