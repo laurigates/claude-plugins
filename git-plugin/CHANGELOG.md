@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.40.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.39.11...git-plugin-v2.40.0) (2026-05-30)
+
+
+### Features
+
+* **evaluate-plugin:** add cross-model skill evaluation framework ([#1459](https://github.com/laurigates/claude-plugins/issues/1459)) ([df6cb21](https://github.com/laurigates/claude-plugins/commit/df6cb21b570e6e19628958f112727c8cd0bd27ab))
+
 ## [2.39.11](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.39.10...git-plugin-v2.39.11) (2026-05-30)
 
 
