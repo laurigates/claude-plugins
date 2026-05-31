@@ -60,10 +60,6 @@ switch to the tool.
 
 ## Related
 
-- `.claude/rules/friction/2026-W16-frictions.md` — original `find` →
-  `Glob` rule and its W16 baseline
-- `.claude/rules/friction/2026-W20-frictions.md` — measured impact
-  data and same-session repeat-block analysis
 - `.claude/rules/parallel-safe-queries.md` — why the Bash form is
   doubly painful in parallel batches: it both fires the hook AND
   exits non-zero on empty results, cancelling sibling tool calls

@@ -99,8 +99,6 @@ gh pr view 42 --json mergedAt --jq '.mergedAt | length > 0'
 
 ## Related
 
-- `.claude/rules/friction/2026-W20-frictions.md` — measured impact
-  (10 events across 10 distinct sessions in the W20 window)
 - `.claude/rules/github-metadata-hygiene.md` (parent
   `laurigates/CLAUDE.md`) — when to query PR metadata at all
 - `gh pr help json-fields` — official field reference (when available)

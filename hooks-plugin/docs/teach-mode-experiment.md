@@ -7,8 +7,8 @@ PreToolUse `bash-antipatterns.sh` blocks are unchanged.
 
 ## Motivation
 
-The 2026-W20 friction analysis (`.claude/rules/friction/2026-W20-frictions.md`)
-showed `grep`/`rg` vs the `Grep` tool sitting at a **21% same-session
+The 2026-W20 friction analysis showed `grep`/`rg` vs the `Grep` tool
+sitting at a **21% same-session
 repeat-block rate** — about 2× the rate for established `bash-antipatterns`
 blocks like `git &&` chains (8%) or `find` vs `Glob` (12%).
 
@@ -147,8 +147,8 @@ noise and stop reading tool output).
   default `hooks.json`, strip the soft-teach blocks from
   `bash-antipatterns.sh` (keep the security-critical ones), document
   the new shape in `.claude/rules/bash-tool-replacements.md`.
-- **If not met**: revert. Document why in
-  `.claude/rules/friction/2026-W2X-frictions.md` and re-investigate.
+- **If not met**: revert. Document why in the W2X friction analysis
+  and re-investigate.
 
 ## Implementation notes
 
@@ -224,6 +224,5 @@ exit-2-blocking to model and reader).
 ## Related
 
 - `.claude/rules/hooks-reference.md` — `PostToolUse` / `updatedToolOutput` reference
-- `.claude/rules/friction/2026-W20-frictions.md` — motivating data
 - `.claude/rules/bash-tool-replacements.md` — current rule prose (no edits in phase 1)
 - `hooks-plugin/hooks/bash-antipatterns.sh` — existing PreToolUse hook
