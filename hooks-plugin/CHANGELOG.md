@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.4.0...hooks-plugin-v2.4.1) (2026-05-31)
+
+
+### Documentation
+
+* **repo:** remove dangling friction-file references ([#1467](https://github.com/laurigates/claude-plugins/issues/1467)) ([c89c621](https://github.com/laurigates/claude-plugins/commit/c89c621d8272844a0a041712c7eac37839e0d466))
+
 ## [2.4.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.3.2...hooks-plugin-v2.4.0) (2026-05-24)
 
 
