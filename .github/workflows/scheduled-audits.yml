@@ -227,3 +227,39 @@ jobs:
             --title "Monthly Agentic Quality Audit: $MONTH" \
             --label "agentic-audit,maintenance" \
             --body-file /tmp/issue-body.md
+
+  docs-index:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Check for existing open issue
+        id: check_issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EXISTING=$(gh issue list --label "docs-index" --state open --json number --jq 'length')
+          echo "exists=$([ "$EXISTING" -gt 0 ] && echo true || echo false)" >> $GITHUB_OUTPUT
+
+      - name: Run docs-index drift check
+        if: steps.check_issue.outputs.exists == 'false'
+        id: docs
+        run: |
+          RESULT=$(bash scripts/check-docs-index.sh --issue-body)
+          echo "result<<EOF" >> $GITHUB_OUTPUT
+          echo "$RESULT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create docs-index drift issue
+        if: steps.check_issue.outputs.exists == 'false' && steps.docs.outputs.result
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_BODY: ${{ steps.docs.outputs.result }}
+        run: |
+          MONTH=$(date +%Y-%m)
+          printf '%s' "$ISSUE_BODY" > /tmp/issue-body.md
+          gh issue create \
+            --title "Top-level docs drift (Layer 1): $MONTH" \
+            --label "docs-index,maintenance" \
+            --body-file /tmp/issue-body.md
