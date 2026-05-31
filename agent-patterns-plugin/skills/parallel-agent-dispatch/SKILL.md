@@ -5,8 +5,8 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-21
-modified: 2026-05-19
-reviewed: 2026-05-19
+modified: 2026-05-31
+reviewed: 2026-05-31
 ---
 
 # Parallel Agent Dispatch
@@ -312,6 +312,30 @@ The dominant cause of silent stalls is a **pre-commit hook blocking
 parked, no Return Contract fires. See
 [REFERENCE.md → Agent stalled at commit / push](REFERENCE.md#agent-stalled-at-commit--push--salvage-routine)
 for symptoms, the four-step salvage routine, and prevention briefs.
+
+## Killing a Thrashing Agent Preserves Its Worktree
+
+`TaskStop` does **not** discard the agent's work — its worktree stays on
+disk with every uncommitted change intact. This makes `TaskStop` a
+**recovery affordance**, not a last resort: when an agent is stuck or
+thrashing (e.g. repeatedly hitting a `PreToolUse` hook with a rising
+`is_error` rate and few Edits), killing it early and salvaging the
+worktree beats waiting for it to give up silently 80–200 tool calls
+later.
+
+After `TaskStop`, decide **salvage vs restart** from the worktree state:
+
+| Worktree state | Decision |
+|----------------|----------|
+| Substantive diff vs `origin/main` (the agent did the hard part) | **Salvage** — finish in the parent session, commit, push, open the PR |
+| Empty / trivial diff, or the design itself was wrong | **Restart** — `git worktree remove <path>` first, then re-dispatch |
+
+Quick triage inside the worktree: `git status`, `git diff origin/main
+--stat`, `git log --oneline -5`. The agent's exploration and partial
+implementation are not wasted even when the agent itself failed — which
+matters most for refactors with heavy design-time work. See
+[REFERENCE.md → Killed-agent worktree recovery](REFERENCE.md#killed-agent-worktree-recovery-taskstop)
+for the full recovery checklist and evidence.
 
 ## Concurrent rate-limit risk
 
