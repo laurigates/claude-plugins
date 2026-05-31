@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.40.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.40.0...git-plugin-v2.40.1) (2026-05-31)
+
+
+### Bug Fixes
+
+* **git-plugin:** clarify check-pr-metadata-on-push bypass message ([#1464](https://github.com/laurigates/claude-plugins/issues/1464)) ([f0b3403](https://github.com/laurigates/claude-plugins/commit/f0b3403f4eeed999d8f7a45949997ad34a6ca475))
+
 ## [2.40.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.39.11...git-plugin-v2.40.0) (2026-05-30)
 
 

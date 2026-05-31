@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.21.4](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.21.3...agent-patterns-plugin-v2.21.4) (2026-05-31)
+
+
+### Documentation
+
+* **agent-patterns-plugin:** document killed-agent worktree recovery ([#1465](https://github.com/laurigates/claude-plugins/issues/1465)) ([e8e82c3](https://github.com/laurigates/claude-plugins/commit/e8e82c34acc2ce3f54b8e87f04a21d0fcd3f52f8))
+
 ## [2.21.3](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.21.2...agent-patterns-plugin-v2.21.3) (2026-05-24)
 
 
