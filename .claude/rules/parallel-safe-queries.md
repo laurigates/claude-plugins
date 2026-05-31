@@ -59,8 +59,5 @@ earns dedicated reference from more than a handful of skills.
 
 ## Related
 
-- `.claude/rules/friction/2026-W16-frictions.md` — cancelled-parallel-call
-  friction pattern; the same class of failure manifests when `find` is
-  used instead of Glob
 - `agent-patterns-plugin:parallel-agent-dispatch` — the broader
   orchestrator contract that this rule slots into

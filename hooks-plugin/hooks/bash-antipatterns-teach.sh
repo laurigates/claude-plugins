@@ -10,7 +10,7 @@
 #
 # Why PostToolUse + updatedToolOutput instead of PreToolUse + exit 2?
 #
-# 2026-W20 friction analysis (.claude/rules/friction/2026-W20-frictions.md):
+# 2026-W20 friction analysis:
 # - grep/rg vs Grep tool: 41 events / 33 sessions / 24% per-session rate / 21%
 #   same-session repeat-block rate
 # - find vs Glob: 29 events / 25 sessions / 17% per-session / 12% repeat-block
