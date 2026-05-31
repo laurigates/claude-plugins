@@ -167,6 +167,55 @@ hangs, emit your Return Contract with `status: failed`,
 `worktree: dirty: <files>`, and `Orchestrator action needed: pre-commit
 hook X failed, fix and commit on my behalf."*
 
+## Killed-agent worktree recovery (TaskStop)
+
+Distinct from the silent commit-stall above: here the orchestrator
+**deliberately kills** a stuck or thrashing agent with `TaskStop` rather
+than waiting for it to fail on its own. The key affordance is that
+`TaskStop` preserves the agent's worktree on disk — every uncommitted
+change survives the kill — so the orchestrator can recover the work
+instead of re-implementing from scratch.
+
+**When to kill early.** An agent that is hook-thrashing emits a visible
+signature well before it gives up: a Bash-heavy tool mix with very few
+Edits and a rising rate of `is_error: true` results (typically
+`PreToolUse` hook blocks). Killing at that point and salvaging the
+worktree is cheaper than letting it run another 80–200 tool calls to a
+silent failure. (The leading-indicator heuristic itself is tracked
+separately in issue
+[#1424](https://github.com/laurigates/claude-plugins/issues/1424).)
+
+**Recovery checklist** — from the parent, after `TaskStop`:
+
+1. `cd .claude/worktrees/agent-<id>/`
+2. `git status` — see the uncommitted changes the agent left.
+3. `git diff origin/main --stat` — measure the scope of what landed.
+4. `git log --oneline -5` — check whether the agent committed anything
+   before it was killed.
+5. Decide **salvage vs restart**:
+   - **Salvage** (substantive diff): finish the work in the parent
+     session — complete any half-written files, fix tests that depend
+     on the agent's changes, run the quality gates, then commit and push
+     preserving the agent's intended branch, and open the PR.
+   - **Restart** (empty/trivial diff, or the design was wrong):
+     `git worktree remove .claude/worktrees/agent-<id>` to clear the
+     abandoned worktree before re-dispatching from scratch.
+
+This pattern pays off most for refactors with heavy design-time work:
+the agent's exploration and partial implementation are recoverable even
+when the agent itself fails to land them.
+
+> **Evidence.** During Wave B of a multi-wave refactor on
+> `pal-mcp-server`, a dispatched agent thrashed on `bash-antipatterns.sh`
+> (180 tool calls, 120 error signals, no PR pushed). Killing it via
+> `TaskStop` left its worktree intact with the bulk of the refactor
+> done (−791 lines net across five provider files, plus a
+> partially-written contract test). Salvaging in the parent session —
+> finishing the contract test, repairing three tests that depended on the
+> old API, running the gates, committing, pushing, opening the PR — took
+> ~30 min versus an estimated ~90 min for a fresh agent (which would have
+> re-discovered the refactor design before reimplementing).
+
 ## Concurrent rate-limit risk — recovery-dispatch routine
 
 When a subagent returns with the rate-limit signature (`API Error: Server
