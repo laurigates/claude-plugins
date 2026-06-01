@@ -5,8 +5,8 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-21
-modified: 2026-05-31
-reviewed: 2026-05-31
+modified: 2026-06-01
+reviewed: 2026-06-01
 ---
 
 # Parallel Agent Dispatch
@@ -216,6 +216,42 @@ update its slice requires. See
 [REFERENCE.md → Verbatim patches](REFERENCE.md#verbatim-patches--detail-and-rationale)
 for the worked-example detail and the multi-wave cadence evidence.
 
+#### Loud-failure contract (never surrender silently)
+
+A dispatched agent that hits a wall must say so **loudly**. The dominant
+failure shape (issue
+[#1422](https://github.com/laurigates/claude-plugins/issues/1422)) is an
+agent that runs 50–200 tool calls, thrashes against hooks, then emits a
+one-word final message — `Terminal.`, `Done.`, `Stopped.` — with no PR
+URL, no error explanation, and no list of what is blocked. The harness
+reads "no changes", cleans up the worktree, and the work is lost. A
+one-word summary is **indistinguishable from success** to the
+orchestrator, so it is treated as success and the failure is invisible.
+
+Every dispatched agent's prompt must mandate this escalation, tied to the
+Return Contract's `status` field:
+
+| Outcome | The agent must return |
+|---------|-----------------------|
+| **Success** | PR URL **plus one summary metric** (test-count delta, line delta) — `status: success`. |
+| **Partial blocker** | Commit and push the in-progress work to its branch, open a **draft PR**, and return its URL **plus an explicit "what's blocked" list** — `status: partial`. |
+| **Total blocker** | Explain *exactly* what blocked it, which tools were denied, and what it tried — `status: failed`. Never a bare `Terminal.` / `Done.` / `Stopped.` |
+
+The contract is one sentence the orchestrator pastes into every brief:
+**"Your final message is the only thing I can act on — a one-word summary
+loses all your work. On any blocker, push what you have, open a draft PR,
+and tell me exactly what stopped you."**
+
+Optional enforcement: a `SubagentStop` hook (see `hooks-plugin`) that
+inspects the final message and, when it is under ~20 characters or matches
+a bare-surrender pattern, injects a reminder asking the agent to elaborate
+before terminating. This catches the silent-surrender case the prompt
+contract alone can miss.
+
+This is the *negative*-case complement to the positive clean-stop report
+celebrated in issue #1393 — that issue covers an agent that stops cleanly
+with a useful report; this contract covers the agent that stops *badly*.
+
 ### 4. Agent self-verification in bulk-edit briefs
 
 When fanning out agents to bulk-edit content covered by a regression script,
@@ -374,6 +410,7 @@ protocol from `agent-teams` slots naturally into the `Issues encountered` and
 - [ ] Each agent has unique branch name and exclusive file scope
 - [ ] Each prompt includes file/read/output budgets
 - [ ] Each prompt includes the Return Contract schema verbatim
+- [ ] Each prompt mandates the loud-failure contract (no one-word surrenders on a blocker)
 - [ ] Agents authorized to push their own commits (unless sandbox/dependency exception)
 - [ ] Every returned summary parsed; missing returns treated as stalls
 
@@ -385,6 +422,7 @@ protocol from `agent-teams` slots naturally into the `Issues encountered` and
 | Scope described in prose, not glob | Explicit write-path list per agent |
 | "Report back when done" with no schema | Include Return Contract verbatim in every prompt |
 | Treating agent silence as success | No Return Contract = stall; investigate before reporting done |
+| Accepting a one-word final message (`Terminal.`/`Done.`) as success | Mandate the loud-failure contract: on any blocker, push work, open a draft PR, explain what stopped |
 | Centralizing pushes as a default | Agent pushes its own work; lead pushes only on sandbox/dependency exceptions |
 
 ## Related

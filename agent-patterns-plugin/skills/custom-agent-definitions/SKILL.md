@@ -4,8 +4,8 @@ description: Write and configure custom agent definitions in Claude Code agents/
 user-invocable: false
 allowed-tools: Bash(cat *), Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-01-20
-modified: 2026-05-09
-reviewed: 2026-04-25
+modified: 2026-06-01
+reviewed: 2026-06-01
 ---
 
 # Custom Agent Definitions
@@ -232,6 +232,17 @@ description: |
 | Simple/mechanical tasks | haiku | claude-haiku-4-5 |
 | Development workflows | sonnet | claude-sonnet-4-6 |
 | Deep reasoning/analysis | opus | claude-opus-4-7 |
+
+### 6. Report failures loudly
+A dispatched agent that hits a wall must say so in its final message — never
+a one-word summary like `Terminal.` / `Done.` / `Stopped.` On a blocker, the
+agent should commit and push its in-progress work, open a draft PR, and state
+exactly what stopped it and which tools were denied. A one-word surrender is
+indistinguishable from success to the orchestrator, so the work is silently
+cleaned up and lost (issue
+[#1422](https://github.com/laurigates/claude-plugins/issues/1422)). See
+`parallel-agent-dispatch` → "Loud-failure contract" for the dispatch-prompt
+form every brief should carry.
 
 ## Agent Configuration Fields Reference
 
