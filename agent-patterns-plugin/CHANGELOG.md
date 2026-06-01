@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.21.5](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.21.4...agent-patterns-plugin-v2.21.5) (2026-06-01)
+
+
+### Bug Fixes
+
+* **agent-patterns-plugin:** mandate loud-failure contract for dispatched agents ([#1471](https://github.com/laurigates/claude-plugins/issues/1471)) ([1e43509](https://github.com/laurigates/claude-plugins/commit/1e435092f166760fdbae7ac81d276688de64fb6b))
+
 ## [2.21.4](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.21.3...agent-patterns-plugin-v2.21.4) (2026-05-31)
 
 
