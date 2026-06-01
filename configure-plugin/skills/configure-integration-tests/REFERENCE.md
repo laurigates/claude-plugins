@@ -21,7 +21,7 @@ import { afterAll, beforeAll } from 'vitest';
 let postgresContainer: StartedPostgreSqlContainer;
 
 export async function setupTestDatabase(): Promise<string> {
-  postgresContainer = await new PostgreSqlContainer('postgres:16-alpine')
+  postgresContainer = await new PostgreSqlContainer('postgres:17-alpine')
     .withDatabase('test_db')
     .withUsername('test')
     .withPassword('test')
@@ -232,7 +232,7 @@ def event_loop():
 @pytest.fixture(scope="session")
 def postgres_container():
     """Start PostgreSQL container for integration tests."""
-    with PostgresContainer("postgres:16-alpine") as postgres:
+    with PostgresContainer("postgres:17-alpine") as postgres:
         yield postgres
 
 @pytest.fixture(scope="session")
@@ -336,7 +336,7 @@ version: '3.8'
 
 services:
   test-db:
-    image: postgres:16-alpine
+    image: postgres:17-alpine
     environment:
       POSTGRES_USER: test
       POSTGRES_PASSWORD: test
@@ -352,7 +352,7 @@ services:
       - /var/lib/postgresql/data  # Use tmpfs for faster tests
 
   test-redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     ports:
       - "6380:6379"
     healthcheck:
@@ -363,7 +363,7 @@ services:
 
   # Optional: Message queue for event-driven tests
   test-rabbitmq:
-    image: rabbitmq:3-alpine
+    image: rabbitmq:4-alpine
     ports:
       - "5673:5672"
     healthcheck:
@@ -384,7 +384,7 @@ jobs:
   unit-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       - run: bun test
@@ -395,7 +395,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:16-alpine
+        image: postgres:17-alpine
         env:
           POSTGRES_USER: test
           POSTGRES_PASSWORD: test
@@ -409,7 +409,7 @@ jobs:
           --health-retries 5
 
       redis:
-        image: redis:7-alpine
+        image: redis:8-alpine
         ports:
           - 6379:6379
         options: >-
@@ -419,7 +419,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: oven-sh/setup-bun@v2
 
@@ -438,7 +438,7 @@ jobs:
           REDIS_URL: redis://localhost:6379
 
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: integration-test-results

@@ -237,10 +237,10 @@ cargo clippy --all-targets --all-features -- -D warnings
 ```yaml
 repos:
   - repo: https://github.com/biomejs/pre-commit
-    rev: v0.4.0
+    rev: v2.4.16
     hooks:
       - id: biome-check
-        additional_dependencies: ["@biomejs/biome@1.9.4"]
+        additional_dependencies: ["@biomejs/biome@2.4.16"]
 ```
 
 ### Ruff
@@ -248,7 +248,7 @@ repos:
 ```yaml
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.4
+    rev: v0.15.15
     hooks:
       - id: ruff
         args: [--fix]

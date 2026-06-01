@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
-reviewed: 2026-01-19
+modified: 2026-06-01
+reviewed: 2026-06-01
 description: "Dockerfile standards: Alpine/slim base, non-root user, multi-stage builds. Use when creating a Dockerfile, hardening security, or auditing image size."
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--type <frontend|python|go|rust>]"
@@ -67,8 +67,8 @@ Check the Dockerfile against these standards:
 
 | Check | Standard | Severity |
 |-------|----------|----------|
-| Build base | `node:22-alpine` (LTS) | WARN if other |
-| Runtime base | `nginx:1.27-alpine` | WARN if other |
+| Build base | `node:24-alpine` (LTS) | WARN if other |
+| Runtime base | `nginx:1.30-alpine` | WARN if other |
 | Multi-stage | Required | FAIL if missing |
 | HEALTHCHECK | Required | FAIL if missing |
 | Non-root user | Required | FAIL if missing |
@@ -79,7 +79,7 @@ Check the Dockerfile against these standards:
 
 | Check | Standard | Severity |
 |-------|----------|----------|
-| Base image | `python:3.12-slim` | WARN if other |
+| Base image | `python:3.14-slim` | WARN if other |
 | Multi-stage | Required for production | FAIL if missing |
 | HEALTHCHECK | Required | FAIL if missing |
 | Non-root user | Required | FAIL if missing |
@@ -148,7 +148,7 @@ components:
 ### Frontend (Node/Vite/nginx)
 
 ```dockerfile
-FROM node:22-alpine AS build
+FROM node:24-alpine AS build
 
 ARG SENTRY_AUTH_TOKEN
 ARG VITE_SENTRY_DSN
@@ -163,7 +163,7 @@ RUN --mount=type=cache,target=/root/.npm \
     --mount=type=cache,target=/app/node_modules/.vite \
     npm run build
 
-FROM nginx:1.27-alpine
+FROM nginx:1.30-alpine
 
 # OCI labels for GHCR integration
 LABEL org.opencontainers.image.source="https://github.com/OWNER/REPO" \
@@ -191,13 +191,13 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 ### Python Service
 
 ```dockerfile
-FROM python:3.12-slim AS builder
+FROM python:3.14-slim AS builder
 
 WORKDIR /app
 COPY pyproject.toml uv.lock ./
 RUN pip install uv && uv sync --frozen --no-dev
 
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 # OCI labels for GHCR integration
 LABEL org.opencontainers.image.source="https://github.com/OWNER/REPO" \
@@ -249,8 +249,8 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 ## Notes
 
-- Node 22 is current LTS (recommended over 24)
-- nginx:1.27-alpine preferred over debian variant
+- Node 24 is current Active LTS (Node 22 in maintenance)
+- nginx:1.30-alpine preferred over debian variant
 - HEALTHCHECK is critical for Kubernetes liveness probes
 - Build caching significantly improves CI/CD speed
 - Non-root user is mandatory for production containers

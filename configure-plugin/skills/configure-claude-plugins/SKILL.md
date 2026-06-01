@@ -1,7 +1,7 @@
 ---
 created: 2026-01-23
-modified: 2026-05-22
-reviewed: 2026-05-22
+modified: 2026-06-01
+reviewed: 2026-06-01
 description: "Claude plugins marketplace setup: .claude/settings.json, GitHub Actions, plugin sets. Use when onboarding to claude-plugins, setting up claude.yml, or pinning plugins."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash(mkdir *), Bash(test *), Bash(ls *), Bash(git remote *), Bash(gh api *), Bash(jq *), AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix] [--exhaustive] [--plugins <plugin1,plugin2,...>] [--workflows] [--no-workflows]"
@@ -243,7 +243,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -283,7 +283,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 

@@ -510,7 +510,7 @@ Sentry.init({
 
 ```yaml
 - name: Create Sentry Release
-  uses: getsentry/action-release@v1
+  uses: getsentry/action-release@v3
   env:
     SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
     SENTRY_ORG: your-org

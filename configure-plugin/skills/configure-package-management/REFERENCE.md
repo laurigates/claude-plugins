@@ -248,7 +248,7 @@ rm -f poetry.lock
 ```yaml
 # GitHub Actions
 - name: Install uv
-  uses: astral-sh/setup-uv@v4
+  uses: astral-sh/setup-uv@v8
 
 - name: Install dependencies
   run: uv sync
@@ -310,7 +310,7 @@ bun install
 
 ```yaml
 - name: Install uv
-  uses: astral-sh/setup-uv@v4
+  uses: astral-sh/setup-uv@v8
   with:
     enable-cache: true
 

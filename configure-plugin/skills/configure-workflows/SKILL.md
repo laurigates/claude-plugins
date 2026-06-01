@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-29
-reviewed: 2026-04-29
+modified: 2026-06-01
+reviewed: 2026-06-01
 description: "GitHub Actions CI/CD workflows for container builds, tests, releases. Use when updating outdated action versions, adding multi-platform builds, or auditing workflows."
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix]"
@@ -82,8 +82,8 @@ Determine required workflows based on project type:
 
 | Check | Standard | Severity |
 |-------|----------|----------|
-| checkout action | v4 | WARN if older |
-| build-push action | v6 | WARN if older |
+| checkout action | v6 | WARN if older |
+| build-push action | v7 | WARN if older |
 | Multi-platform | amd64 + arm64 | WARN if missing |
 | Registry | GHCR (ghcr.io) | INFO |
 | Caching | GHA cache enabled | WARN if missing |

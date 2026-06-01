@@ -568,7 +568,7 @@ jobs:
   consumer-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: oven-sh/setup-bun@v2
 
@@ -579,7 +579,7 @@ jobs:
         run: bun run test:contract:consumer
 
       - name: Upload pacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: pacts
           path: pacts/
@@ -589,7 +589,7 @@ jobs:
     needs: consumer-tests
     services:
       postgres:
-        image: postgres:16-alpine
+        image: postgres:17-alpine
         env:
           POSTGRES_USER: test
           POSTGRES_PASSWORD: test
@@ -598,7 +598,7 @@ jobs:
           - 5432:5432
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: oven-sh/setup-bun@v2
 
@@ -606,7 +606,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Download pacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: pacts
           path: pacts/
@@ -619,7 +619,7 @@ jobs:
   openapi-validation:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -643,10 +643,10 @@ jobs:
     needs: [consumer-tests, provider-tests]
     if: github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Download pacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: pacts
           path: pacts/

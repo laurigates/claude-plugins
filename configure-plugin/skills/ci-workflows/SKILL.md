@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-29
-reviewed: 2026-04-29
+modified: 2026-06-01
+reviewed: 2026-06-01
 name: ci-workflows
 description: "GitHub Actions workflow standards. Use when checking CI/CD compliance, referencing canonical workflow shapes, or another skill needs workflow structure guidance."
 user-invocable: false
@@ -57,14 +57,14 @@ jobs:
       packages: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Log in to Container Registry
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -72,7 +72,7 @@ jobs:
 
       - name: Extract metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
@@ -82,7 +82,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
 
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           platforms: linux/amd64,linux/arm64
@@ -130,7 +130,7 @@ jobs:
   create-and-merge:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Create Pull Request
         id: create-pr
@@ -191,10 +191,10 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: 'npm'
@@ -212,7 +212,7 @@ jobs:
         run: npm run test:coverage
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v6
         with:
           files: ./coverage/lcov.info
 ```
@@ -264,13 +264,13 @@ For the full template, see the [Claude Auto-Fix Workflow Template](../configure-
 
 | Action | Version | Purpose |
 |--------|---------|---------|
-| actions/checkout | v4 | Repository checkout |
-| docker/setup-buildx-action | v3 | Multi-platform builds |
-| docker/login-action | v3 | Registry authentication |
-| docker/metadata-action | v5 | Image tagging |
-| docker/build-push-action | v6 | Container build/push |
-| actions/setup-node | v4 | Node.js setup |
-| googleapis/release-please-action | v4 | Release automation |
+| actions/checkout | v6 | Repository checkout |
+| docker/setup-buildx-action | v4 | Multi-platform builds |
+| docker/login-action | v4 | Registry authentication |
+| docker/metadata-action | v6 | Image tagging |
+| docker/build-push-action | v7 | Container build/push |
+| actions/setup-node | v6 | Node.js setup |
+| googleapis/release-please-action | v5 | Release automation |
 
 ### Permissions
 
@@ -334,8 +334,8 @@ platforms: linux/amd64,linux/arm64
 
 | Element | Requirement |
 |---------|-------------|
-| checkout action | v4 |
-| build-push action | v6 |
+| checkout action | v6 |
+| build-push action | v7 |
 | Multi-platform | amd64 + arm64 |
 | Caching | GHA cache enabled |
 | Permissions | Explicit and minimal |

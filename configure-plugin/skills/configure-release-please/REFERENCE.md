@@ -13,7 +13,7 @@ File Status:
   Manifest        .release-please-manifest.json         [PASS | MISSING]
 
 Configuration Checks:
-  Action version  v4                                    [PASS | OUTDATED]
+  Action version  v5                                    [PASS | OUTDATED]
   Token           MY_RELEASE_PLEASE_TOKEN               [PASS | WRONG TOKEN]
   Release type    node                                  [PASS | WRONG TYPE]
   Changelog       feat, fix sections                    [PASS | INCOMPLETE]
@@ -42,7 +42,7 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     steps:
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@v5
         with:
           token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
 ```

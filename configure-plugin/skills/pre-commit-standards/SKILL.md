@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
-reviewed: 2026-04-25
+modified: 2026-06-01
+reviewed: 2026-06-01
 name: pre-commit-standards
 description: Pre-commit hook standards and configuration. Use when configuring pre-commit hooks, checking hook compliance, or working with conventional commits.
 user-invocable: false
@@ -26,13 +26,13 @@ Standard pre-commit configuration for repository compliance.
 
 | Hook | Version | Purpose |
 |------|---------|---------|
-| pre-commit-hooks | v5.0.0 | Core hooks (trailing-whitespace, check-yaml, etc.) |
-| conventional-pre-commit | v4.3.0 | Conventional commit message validation |
-| biome | v0.4.0 | Code formatting and linting (JS, TS, JSON) |
-| gruntwork pre-commit | v0.1.29 | helmlint, tflint (infrastructure only) |
-| actionlint | v1.7.7 | GitHub Actions validation (infrastructure only) |
+| pre-commit-hooks | v6.0.0 | Core hooks (trailing-whitespace, check-yaml, etc.) |
+| conventional-pre-commit | v4.4.0 | Conventional commit message validation |
+| biome | v2.4.16 | Code formatting and linting (JS, TS, JSON) |
+| gruntwork pre-commit | v0.1.30 | helmlint, tflint (infrastructure only) |
+| actionlint | v1.7.12 | GitHub Actions validation (infrastructure only) |
 | helm-docs | v1.14.2 | Helm documentation (infrastructure only) |
-| gitleaks | v8.22.1 | Secret scanning (recommended) |
+| gitleaks | v8.30.1 | Secret scanning (recommended) |
 
 ## Project Type Configurations
 
@@ -47,7 +47,7 @@ default_install_hook_types:
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -61,20 +61,20 @@ repos:
       - id: detect-private-key
 
   - repo: https://github.com/compilerla/conventional-pre-commit
-    rev: v4.3.0
+    rev: v4.4.0
     hooks:
       - id: conventional-pre-commit
         stages: [commit-msg]
 
   - repo: https://github.com/biomejs/pre-commit
-    rev: v0.4.0
+    rev: v2.4.16
     hooks:
       - id: biome-check
-        additional_dependencies: ["@biomejs/biome@1.9.4"]
+        additional_dependencies: ["@biomejs/biome@2.4.16"]
 
   # Optional: If project has Helm charts
   - repo: https://github.com/gruntwork-io/pre-commit
-    rev: v0.1.29
+    rev: v0.1.30
     hooks:
       - id: helmlint
         files: ^helm/
@@ -91,7 +91,7 @@ default_install_hook_types:
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -105,19 +105,19 @@ repos:
       - id: check-added-large-files
 
   - repo: https://github.com/compilerla/conventional-pre-commit
-    rev: v4.3.0
+    rev: v4.4.0
     hooks:
       - id: conventional-pre-commit
         stages: [commit-msg]
 
   - repo: https://github.com/gruntwork-io/pre-commit
-    rev: v0.1.29
+    rev: v0.1.30
     hooks:
       - id: tflint
       - id: helmlint
 
   - repo: https://github.com/rhysd/actionlint
-    rev: v1.7.7
+    rev: v1.7.12
     hooks:
       - id: actionlint
 
@@ -129,7 +129,7 @@ repos:
           - --chart-search-root=helm
 
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.22.1
+    rev: v8.30.1
     hooks:
       - id: gitleaks
 ```
@@ -145,7 +145,7 @@ default_install_hook_types:
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -157,20 +157,20 @@ repos:
       - id: detect-private-key
 
   - repo: https://github.com/compilerla/conventional-pre-commit
-    rev: v4.3.0
+    rev: v4.4.0
     hooks:
       - id: conventional-pre-commit
         stages: [commit-msg]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.4
+    rev: v0.15.15
     hooks:
       - id: ruff
         args: [--fix]
       - id: ruff-format
 
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.22.1
+    rev: v8.30.1
     hooks:
       - id: gitleaks
 ```
@@ -181,7 +181,7 @@ repos:
 
 Every repository MUST have these hooks:
 
-1. **pre-commit-hooks** (v5.0.0+)
+1. **pre-commit-hooks** (v6.0.0+)
    - `trailing-whitespace`
    - `end-of-file-fixer`
    - `check-yaml`
@@ -189,7 +189,7 @@ Every repository MUST have these hooks:
    - `check-merge-conflict`
    - `check-added-large-files`
 
-2. **conventional-pre-commit** (v4.3.0+)
+2. **conventional-pre-commit** (v4.4.0+)
    - `conventional-pre-commit` in `commit-msg` stage
 
 ### Status Levels

@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
-reviewed: 2025-12-16
+modified: 2026-06-01
+reviewed: 2026-06-01
 description: "GitHub Pages deployment workflows for docs sites. Use when setting up Pages, migrating to actions/deploy-pages, or auditing Pages action versions."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix] [--source <docs|site|custom>]"
@@ -85,9 +85,9 @@ Validate GitHub Actions workflow against standards:
 
 | Check | Standard | Severity |
 |-------|----------|----------|
-| `actions/deploy-pages` | v4+ | WARN if older |
-| `actions/configure-pages` | v5+ | WARN if missing |
-| `actions/upload-pages-artifact` | v3+ | WARN if older |
+| `actions/deploy-pages` | v5+ | WARN if older |
+| `actions/configure-pages` | v6+ | WARN if missing |
+| `actions/upload-pages-artifact` | v5+ | WARN if older |
 | Permissions | `pages: write`, `id-token: write` | FAIL if missing |
 | Environment | `github-pages` | WARN if missing |
 | Concurrency | Group defined | INFO |
@@ -110,9 +110,9 @@ GitHub Pages Workflow:
   Workflow file       .github/workflows/docs.yml    [EXISTS | MISSING]
 
 Workflow Checks (if exists):
-  deploy-pages        v4                            [PASS | OUTDATED | MISSING]
-  configure-pages     v5                            [PASS | MISSING]
-  upload-artifact     v3                            [PASS | OUTDATED]
+  deploy-pages        v5                            [PASS | OUTDATED | MISSING]
+  configure-pages     v6                            [PASS | MISSING]
+  upload-artifact     v5                            [PASS | OUTDATED]
   Permissions         pages: write, id-token        [PASS | MISSING]
   Environment         github-pages                  [PASS | MISSING]
 
