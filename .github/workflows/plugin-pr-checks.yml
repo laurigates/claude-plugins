@@ -71,6 +71,10 @@ jobs:
         if: contains(steps.changed.outputs.plugins, 'blueprint-plugin')
         run: bash scripts/check-blueprint-upgrade-target.sh
 
+      - name: Check agent dispatch loud-failure contract (#1422)
+        if: contains(steps.changed.outputs.plugins, 'agent-patterns-plugin')
+        run: bash scripts/check-agent-failure-contract.sh
+
       - name: Post compliance results
         if: steps.compliance.outputs.result
         env:
