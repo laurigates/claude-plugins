@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.4.1...hooks-plugin-v2.4.2) (2026-06-02)
+
+
+### Performance
+
+* **hooks-plugin:** dedup bash-antipatterns-teach hints per session ([#1475](https://github.com/laurigates/claude-plugins/issues/1475)) ([6d3d1dc](https://github.com/laurigates/claude-plugins/commit/6d3d1dc28454b5c931459a2878e64c3ab768386b))
+
 ## [2.4.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.4.0...hooks-plugin-v2.4.1) (2026-05-31)
 
 
