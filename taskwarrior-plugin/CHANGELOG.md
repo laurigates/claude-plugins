@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.4.0...taskwarrior-plugin-v1.5.0) (2026-06-02)
+
+
+### Features
+
+* **taskwarrior-plugin:** emit stable UUID from task-add to prevent numeric-ID-shift footgun ([#1478](https://github.com/laurigates/claude-plugins/issues/1478)) ([4e40758](https://github.com/laurigates/claude-plugins/commit/4e40758d7f1deaa72c6d29f294ee5bfe74db0297))
+
 ## [1.4.0](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.3.2...taskwarrior-plugin-v1.4.0) (2026-05-24)
 
 
