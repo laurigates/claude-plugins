@@ -132,7 +132,13 @@ Measure on sessions running the teach config:
 
 - Same-session repeat-block rate for `grep`/`rg`/`find -name`/`cat`/`head`/`tail`/`ls *.glob`
 - Per-session attempt rate (does the count fall as agents learn?)
-- Cost: tokens added per teach event (the corrective hint is ~30 tokens)
+- Cost: tokens added per *distinct* teach event. The corrective hint is
+  ~30 tokens, and `updatedToolOutput` persists in the transcript — so an
+  un-capped hint would replay ~30 tokens **per matching call for the rest
+  of the session**, not once. The session-scoped dedup (see Implementation
+  notes) caps this at one hint per pattern per session: at most ~150 tokens
+  of replayed banner for a whole session, regardless of how many times the
+  agent reaches for `grep`/`cat`/etc.
 
 Compare against the W20 baseline (21% repeat-block on `grep`/`rg`).
 
@@ -178,13 +184,41 @@ from command output. The 💡 prefix mirrors the existing reminder hook's
 voice without re-using the "REMINDER:" prefix (which signals
 exit-2-blocking to model and reader).
 
+### Session-scoped dedup (transcript replay cost)
+
+`updatedToolOutput` is not a one-shot message — it becomes the tool
+result in the transcript and is **re-sent to the model on every
+subsequent turn**, the same as any blocked-command stderr or injected
+context. An un-capped hint on a high-frequency command (`grep`, `cat`)
+therefore accumulates one replayed copy per matching call. The lesson is
+byte-identical each time, so every copy past the first is pure transcript
+bloat — the "never bloats the replayed transcript" axis, distinct from
+the "never reaches a diff" axis the PreToolUse blocks cover.
+
+The hook caps this with a per-session seen-list: each distinct hint
+(`read-cat`, `read-headtail`, `glob-find`, `grep`, `glob-ls`) is emitted
+at most once per session. The state file lives at
+`${TMPDIR:-/tmp}/claude-bash-teach-seen/<session_id>` (same sanitised-id
+convention as `git-stash-session-init.sh`) and is removed by
+`git-session-cleanup.sh` at `SessionEnd`. When `session_id` is absent the
+hook skips dedup and falls through to the old always-emit behaviour rather
+than guess a key — so the change is backward compatible and the existing
+no-session tests still pass.
+
+This caps the replayed banner at ~150 tokens for an entire session
+(five patterns × ~30 tokens) regardless of call count, while still
+delivering the correction the first time the agent reaches for each idiom.
+
 ### What we don't try in phase 1
 
 - **Stripping the soft-teach blocks from `bash-antipatterns.sh`.** That
   changes the default for every existing user. Phase 1 is opt-in.
 - **Tracking per-session lesson decay inside the hook.** Tempting
-  ("after 2 hints, switch to exit-2 blocking"), but adds state to a
-  stateless hook and is best left to the friction analyser.
+  ("after 2 hints, switch to exit-2 blocking"), but adds escalation state
+  to the hook and is best left to the friction analyser. Note this is a
+  different mechanism from the dedup above: dedup *suppresses* repeat hints
+  to save replay tokens; decay would *escalate* to a hard block. We do the
+  former, not the latter.
 - **Augmenting the security-critical blocks.** They stay exit-2.
   No data benefit, real security cost.
 - **Updating `.claude/rules/bash-tool-replacements.md`.** The rule
@@ -197,7 +231,7 @@ exit-2-blocking to model and reader).
 |---|---|
 | Agent treats the augmented output as adversarial and stops reading tool results | Phase 1 is opt-in; W21 metric catches this |
 | `updatedToolOutput` not yet on the user's Claude Code version (<2.1.121) | Document the version requirement; teach hook degrades to silent passthrough on older versions |
-| Hint adds tokens to every soft-teach call | Tracked in phase 2 metric; ~30 tokens/call is small vs the typical Bash result, but real |
+| Hint replays in the transcript on every matching call for the rest of the session | Session-scoped dedup emits each distinct hint at most once per session (see Implementation notes), capping replayed banner at ~150 tokens/session |
 | The five soft-teach patterns drift between the two hooks | Phase 3 consolidates into a shared matcher; phase 1 documents the duplication |
 
 ## Open questions for review

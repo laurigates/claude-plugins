@@ -45,8 +45,10 @@ if [ -z "$COMMAND" ]; then
 fi
 
 # Compose the hint based on which soft-teach pattern (if any) the command matched.
-# A command can match at most one hint - we pick the most specific.
+# A command can match at most one hint - we pick the most specific. hint_key is a
+# stable identifier for the matched pattern, used below for session-scoped dedup.
 hint=""
+hint_key=""
 
 # cat file (not in pipeline, not heredoc)
 if [ -z "$hint" ] && \
@@ -54,6 +56,7 @@ if [ -z "$hint" ] && \
    ! echo "$COMMAND" | grep -Eq '<<|cat\s*>' && \
    ! echo "$COMMAND" | grep -q '|'; then
     hint="Use the Read tool instead of 'cat' to read files. Read returns line-numbered content and respects token budgets."
+    hint_key="read-cat"
 fi
 
 # head/tail file (not in pipeline)
@@ -61,6 +64,7 @@ if [ -z "$hint" ] && \
    echo "$COMMAND" | grep -Eq '^\s*(head|tail)\s+(-[0-9n]+\s+)?[^|]' && \
    ! echo "$COMMAND" | grep -q '|'; then
     hint="Use the Read tool with offset/limit parameters instead of 'head' or 'tail'. Example: Read with offset=100, limit=50."
+    hint_key="read-headtail"
 fi
 
 # find -name without directory-discovery flags
@@ -68,6 +72,7 @@ if [ -z "$hint" ] && \
    echo "$COMMAND" | grep -Eq '^\s*find\s+' && \
    ! echo "$COMMAND" | grep -Eq 'find\s+.*(-maxdepth|-mindepth|-type\s|-print0)'; then
     hint="Use the Glob tool for filename matching. Example: Glob(pattern=\"**/*.ts\") instead of 'find . -name \"*.ts\"'. Keep 'find' only when you need -maxdepth/-type d/-print0."
+    hint_key="glob-find"
 fi
 
 # grep/rg as standalone search (not piped, not -q)
@@ -76,17 +81,45 @@ if [ -z "$hint" ] && \
    ! echo "$COMMAND" | grep -q '|' && \
    ! echo "$COMMAND" | grep -Eq '(grep|rg)[^|]*\s(-[a-zA-Z]*q[a-zA-Z]*(\s|$)|--quiet(\s|$))'; then
     hint="Use the Grep tool for codebase searches. Example: Grep(pattern=\"foo\", path=\"src\", -n=true). Keep grep/rg for pipelines or boolean -q checks."
+    hint_key="grep"
 fi
 
 # ls with a glob
 if [ -z "$hint" ] && \
    echo "$COMMAND" | grep -Eq '^\s*ls\s+.*\*'; then
     hint="Use the Glob tool for pattern-based file listing - it returns paths sorted by modification time and handles large directories better."
+    hint_key="glob-ls"
 fi
 
 # No soft-teach pattern matched - leave tool output untouched.
 if [ -z "$hint" ]; then
     exit 0
+fi
+
+# Session-scoped dedup: emit each distinct hint at most once per session.
+#
+# updatedToolOutput is replayed on every subsequent turn (it persists in the
+# transcript like any tool result), so an un-capped hint on a high-frequency
+# command (grep, cat) accumulates one replayed copy per matching call for the
+# rest of the session. The lesson is identical each time, so the marginal copies
+# are pure transcript bloat. Teaching once per pattern caps the replay cost at
+# five hint banners for an entire session regardless of call count, while still
+# delivering the correction the first time the agent reaches for the idiom.
+#
+# State lives in a per-session file (sanitised session_id, same convention as
+# git-stash-session-init.sh) and is removed by git-session-cleanup.sh at
+# SessionEnd. When session_id is absent we skip dedup and fall through to the
+# old always-emit behaviour rather than guess at a key.
+SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // empty' | tr -cd 'a-zA-Z0-9_-')
+if [ -n "$SESSION_ID" ]; then
+    SEEN_DIR="${TMPDIR:-/tmp}/claude-bash-teach-seen"
+    SEEN_FILE="${SEEN_DIR}/${SESSION_ID}"
+    if [ -f "$SEEN_FILE" ] && grep -qxF "$hint_key" "$SEEN_FILE" 2>/dev/null; then
+        # Already taught this lesson this session - leave tool output untouched.
+        exit 0
+    fi
+    mkdir -p "$SEEN_DIR" 2>/dev/null || true
+    echo "$hint_key" >> "$SEEN_FILE" 2>/dev/null || true
 fi
 
 # Build the augmented tool output: original response first, then the hint banner.
