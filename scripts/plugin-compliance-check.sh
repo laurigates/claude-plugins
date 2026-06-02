@@ -298,6 +298,21 @@ check_skill_body() {
         has_errors=true
       fi
     fi
+
+    # Regression: task-add must emit the stable UUID alongside the numeric ID.
+    # Taskwarrior numeric IDs are a display index over pending tasks and shift
+    # down by one whenever any other task is completed. A session that created
+    # task 141 then annotated `task 141 ...` 30 min later silently landed the
+    # annotation on an unrelated task whose ID had drifted (issue #1417). The
+    # semantic invariant is that the skill resolves the immutable UUID via the
+    # `+LATEST` virtual tag so downstream annotate/modify/done address the
+    # right task. Guards against a bulk edit silently dropping the UUID emit.
+    if [ "$skill_name" = "task-add" ]; then
+      if ! grep -q "task +LATEST _get uuid" "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must emit the stable UUID via 'task +LATEST _get uuid' after create (issue #1417)")
+        has_errors=true
+      fi
+    fi
   done < <(find "$skills_dir" -type f \( -iname "SKILL.md" -o -iname "skill.md" \) -print0 2>/dev/null)
 
   if $has_errors; then
