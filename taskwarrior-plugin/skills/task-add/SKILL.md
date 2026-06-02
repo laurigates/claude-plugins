@@ -5,8 +5,8 @@ args: "[description] [project:<name>] [--no-project]"
 allowed-tools: Bash(task *), Bash(git config *), Bash(git rev-parse *), Bash(gh auth *), Bash(gh issue *), Bash(gh api *), Read, TodoWrite
 argument-hint: short task description
 created: 2026-04-24
-modified: 2026-05-22
-reviewed: 2026-05-22
+modified: 2026-06-02
+reviewed: 2026-06-02
 ---
 
 # /taskwarrior:task-add
@@ -167,6 +167,25 @@ task add "$DESCRIPTION" \
 
 Run with only the fields that were provided; omit empty UDAs entirely rather than passing `uda:""`.
 
+#### Capture the stable UUID
+
+After `task add` succeeds, resolve the new task's **UUID** via the
+`+LATEST` virtual tag as a *separate* Bash call — never chain it to
+`task add` with `&&`:
+
+```bash
+task +LATEST _get uuid
+# Created task 141.
+# d14a6e5e-1c60-4cfd-9dd0-8a9fe7659b74
+```
+
+> **Numeric IDs shift; UUIDs do not.** A numeric ID is a display index over
+> *pending* tasks — completing any other task (often in a parallel session)
+> shifts every higher ID down by one, so `task 141 annotate ...` run minutes
+> after the add can silently hit a *different* task. Capture the immutable
+> UUID at create time and address the task by UUID for later annotate /
+> modify / done. See the user-global rule `taskwarrior-bulk-operations.md`.
+
 #### Sequential WOs: use `depends:` for ordered chains
 
 For work orders that must land in sequence (e.g., WO-058 → 059 → 060),
@@ -187,7 +206,7 @@ task add "WO-060: ..." bpid:WO-060 +wo project:myrepo depends:51,52
 
 Print:
 
-- New task ID
+- New task ID **and UUID** (from Step 5; quote the UUID so future agents address the task by it, not the shift-prone numeric ID)
 - Project (auto-detected / overridden / `--no-project`)
 - bpid → bpdoc → bpms chain
 - ghid/ghpr if linked
@@ -198,6 +217,7 @@ Print:
 
 | Context | Command |
 |---------|---------|
+| Capture stable UUID after add | `task +LATEST _get uuid` |
 | Duplicate check by bpid | `task bpid:WO-012 export \| jq '.[] \| {id, status}'` |
 | Pre-fill from issue | `gh issue view 145 --json number,title,body,labels` |
 | Next unblocked | `task status:pending -BLOCKED export \| jq '.[:3]'` |
