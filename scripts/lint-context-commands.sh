@@ -224,6 +224,26 @@ check_taskwarrior_context_probe \
   '^- .*!`[^`]*git branch --show-current' \
   "move git branch --show-current out of Context; it writes to stderr in a no-git cwd. Run via the Bash tool in skill body where exit codes are tolerated"
 
+# find with .claude as the start path errors ("bfs: error: .claude: No such
+# file or directory" / "find: '.claude': No such file or directory") when the
+# project has no .claude/ dir, leaking the raw error text into the Context block.
+# The probe should start from '.' (always present) and match the .claude/ path:
+#   find . -maxdepth 2 -path '*/.claude/settings.json'
+#
+# Scoped to health-plugin/ — the health-check/health-audit skills exist precisely
+# to run in projects that may lack a .claude/ dir, so absence is the common case.
+# Other plugins probe .claude/ where its presence is a reasonable precondition.
+#
+# Regression: health-check/health-audit Context blocks rendered
+# "Project settings exists: bfs: error: .claude: No such file or directory."
+# in a workspace whose root had no .claude/ dir (issue #1482)
+while IFS= read -r match; do
+  hp_file="${match%%:*}"; match="${match#*:}"
+  hp_line="${match%%:*}"; hp_content="${match#*:}"
+  report ERROR "find-dotclaude-start-path" "$hp_file" "$hp_line" "$hp_content" \
+    "start the walk from '.' so it tolerates a missing .claude/: find . -maxdepth 2 -path '*/.claude/settings.json'"
+done < <(grep -rn '^- .*!`find \.claude' --include='SKILL.md' --include='skill.md' ./health-plugin 2>/dev/null || true)
+
 ##############################
 # WARNINGS - likely to break
 ##############################

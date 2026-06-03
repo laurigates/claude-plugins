@@ -26,8 +26,8 @@ Single entry point for Claude Code health diagnostics. Runs environment checks (
 ## Context
 
 - Current project: !`pwd`
-- Project settings exists: !`find .claude -maxdepth 1 -name 'settings.json'`
-- Local settings exists: !`find .claude -maxdepth 1 -name 'settings.local.json'`
+- Project settings exists: !`find . -maxdepth 2 -path '*/.claude/settings.json'`
+- Local settings exists: !`find . -maxdepth 2 -path '*/.claude/settings.local.json'`
 
 ## Parameters
 
