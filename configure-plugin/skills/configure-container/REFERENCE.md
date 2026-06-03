@@ -28,11 +28,11 @@ jobs:
       id-token: write  # Required for provenance/SBOM attestations
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         if: github.event_name != 'pull_request'
         with:
           registry: ${{ env.REGISTRY }}
@@ -40,7 +40,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           labels: |
@@ -59,7 +59,7 @@ jobs:
             type=match,pattern=.*-v(\d+),group=1
 
       - id: build-push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           platforms: linux/amd64,linux/arm64
@@ -73,7 +73,7 @@ jobs:
 
       # Pin Trivy by SHA — never use @master
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@c1824fd6edce30d7ab345a9989de00bbd46ef284 # 0.34.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
           format: 'sarif'
@@ -169,7 +169,7 @@ RUN --mount=type=cache,target=/root/.npm \
     npm run build
 
 # Runtime stage - minimal nginx Alpine
-FROM nginx:1.27-alpine
+FROM nginx:1.30-alpine
 
 LABEL org.opencontainers.image.source="https://github.com/OWNER/REPO" \
       org.opencontainers.image.description="Production frontend application" \
@@ -203,7 +203,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 ## Dockerfile Template (Python - Non-Root Slim)
 
 ```dockerfile
-FROM python:3.13-slim AS builder
+FROM python:3.14-slim AS builder
 
 WORKDIR /app
 
@@ -213,7 +213,7 @@ COPY pyproject.toml uv.lock ./
 
 RUN uv sync --frozen --no-dev
 
-FROM python:3.13-slim
+FROM python:3.14-slim
 
 LABEL org.opencontainers.image.source="https://github.com/OWNER/REPO" \
       org.opencontainers.image.description="Production Python API server" \
@@ -253,7 +253,7 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ## Dockerfile Template (Go - Scratch/Distroless)
 
 ```dockerfile
-FROM golang:1.23-alpine AS builder
+FROM golang:1.26-alpine AS builder
 
 WORKDIR /app
 
@@ -310,7 +310,7 @@ ENTRYPOINT ["/server"]
 ```json
 {
   "name": "Python Dev Container",
-  "image": "mcr.microsoft.com/devcontainers/python:3.13",
+  "image": "mcr.microsoft.com/devcontainers/python:3.14",
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {},
     "ghcr.io/devcontainers/features/github-cli:1": {}

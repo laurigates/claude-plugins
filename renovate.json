@@ -17,6 +17,52 @@
     "labels": ["security"],
     "minimumReleaseAge": "0 days"
   },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "GitHub Action refs in skill markdown examples (uses: owner/repo@ref). Matches both tag form (@v6) and SHA-pin-with-version-comment form (@<sha> # v6.0.2).",
+      "managerFilePatterns": ["/(^|/)[^/]+/skills/.+\\.md$/"],
+      "matchStrings": [
+        "uses:\\s+[\"']?(?<depName>[\\w.-]+/[\\w.-]+)(?:/[\\w.-]+)*@(?<currentDigest>[a-f0-9]{40})[\"']?\\s+#\\s*(?<currentValue>v?[0-9][\\w.+-]*)",
+        "uses:\\s+[\"']?(?<depName>[\\w.-]+/[\\w.-]+)(?:/[\\w.-]+)*@(?<currentValue>v[\\w.+-]*|[0-9][\\w+-]*\\.[\\w.+-]+)[\"']?"
+      ],
+      "matchStringsStrategy": "any",
+      "datasourceTemplate": "github-tags"
+    },
+    {
+      "customType": "regex",
+      "description": "Docker base images in skill markdown (FROM image:tag). Matches tag and tag@sha256 digest forms.",
+      "managerFilePatterns": ["/(^|/)[^/]+/skills/.+\\.md$/"],
+      "matchStrings": [
+        "FROM\\s+(?<depName>[\\w./-]+):(?<currentValue>[\\w][\\w.-]*)@(?<currentDigest>sha256:[a-f0-9]{64})",
+        "FROM\\s+(?<depName>[\\w./-]+):(?<currentValue>[\\w][\\w.-]*)"
+      ],
+      "matchStringsStrategy": "any",
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": "Service/container images in skill markdown (image: owner/img:tag) such as docker-compose services and GitHub Actions service containers.",
+      "managerFilePatterns": ["/(^|/)[^/]+/skills/.+\\.md$/"],
+      "matchStrings": [
+        "image:\\s+[\"']?(?<depName>[\\w./-]+):(?<currentValue>[\\w][\\w.-]*)@(?<currentDigest>sha256:[a-f0-9]{64})",
+        "image:\\s+[\"']?(?<depName>[\\w./-]+):(?<currentValue>[\\w][\\w.-]*)"
+      ],
+      "matchStringsStrategy": "any",
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": "pre-commit hook rev pins in skill markdown (repo: github.com/... + rev:).",
+      "managerFilePatterns": ["/(^|/)[^/]+/skills/.+\\.md$/"],
+      "matchStrings": [
+        "repo:\\s+https://github\\.com/(?<depName>[\\w.-]+/[\\w.-]+?)(?:\\.git)?\\s+rev:\\s+[\"']?(?<currentValue>[^\\s\"']+)"
+      ],
+      "datasourceTemplate": "github-tags"
+    }
+  ],
   "packageRules": [
     {
       "description": "Automerge minor/patch devDependencies",
@@ -29,6 +75,11 @@
       "description": "Require approval for major updates",
       "matchUpdateTypes": ["major"],
       "dependencyDashboardApproval": true
+    },
+    {
+      "description": "Pin to commit SHA / sha256 digests for the version pins inside skill markdown examples, with the human-readable version preserved as a trailing comment. Confined to skill markdown so the repo's own CI workflows keep their tag-form refs.",
+      "matchFileNames": ["**/skills/**/*.md"],
+      "pinDigests": true
     }
   ],
   "lockFileMaintenance": {

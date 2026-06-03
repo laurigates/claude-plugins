@@ -57,3 +57,9 @@ repos:
         language: script
         files: '(SKILL\.md|skill\.md|REFERENCE\.md)$'
         pass_filenames: false
+      - id: check-version-pin-coverage
+        name: skill version pins are a Renovate-managed shape (version-pinning.md)
+        entry: bash ./scripts/check-version-pin-coverage.sh --strict
+        language: system
+        files: '/skills/.*\.md$'
+        pass_filenames: false

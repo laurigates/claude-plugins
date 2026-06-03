@@ -1,7 +1,7 @@
 ---
 created: 2026-02-03
-modified: 2026-04-19
-reviewed: 2026-02-03
+modified: 2026-06-01
+reviewed: 2026-06-01
 description: "ArgoCD auto-merge: configure GitHub Actions for image-updater-** branches. Use when setting up argocd-automerge.yml or verifying PAT permissions."
 allowed-tools: Glob, Grep, Read, Write, Edit, TodoWrite
 args: "[--check-only] [--fix]"
@@ -54,7 +54,7 @@ Validate the workflow against these standards:
 | Check | Standard | Severity |
 |-------|----------|----------|
 | Workflow exists | argocd-automerge.yml | FAIL if missing |
-| checkout action | v4 | WARN if older |
+| checkout action | v6 | WARN if older |
 | Permissions | contents: write, pull-requests: write | FAIL if missing |
 | Branch pattern | `image-updater-**` | WARN if different |
 | Auto-merge | squash merge | INFO |
@@ -101,7 +101,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Create Pull Request
         id: create-pr

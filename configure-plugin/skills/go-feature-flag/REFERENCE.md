@@ -127,7 +127,7 @@ spec:
     spec:
       containers:
         - name: relay
-          image: gofeatureflag/go-feature-flag:v1.25.0
+          image: gofeatureflag/go-feature-flag:v1.53.0
           ports:
             - name: api
               containerPort: 1031
@@ -245,7 +245,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Validate flags
         run: goff lint --config flags/production.yaml
       - name: Sync to S3

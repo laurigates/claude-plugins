@@ -218,7 +218,7 @@ jobs:
 repos:
   # Python
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.2
+    rev: v0.15.15
     hooks:
       - id: ruff
         args: [--select, D, --fix]

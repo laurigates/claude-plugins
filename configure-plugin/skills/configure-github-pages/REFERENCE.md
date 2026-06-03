@@ -29,19 +29,19 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'npm'
 
       - run: npm ci
       - run: npm run docs:build
 
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: './docs'
 
@@ -53,7 +53,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 ```
 
 ## MkDocs (Python)
@@ -83,11 +83,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
-          python-version: '3.12'
+          python-version: '3.13'
 
       - name: Install dependencies
         run: |
@@ -95,9 +95,9 @@ jobs:
 
       - run: mkdocs build
 
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: './site'
 
@@ -109,7 +109,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 ```
 
 ## Sphinx (Python)
@@ -138,11 +138,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
-          python-version: '3.12'
+          python-version: '3.13'
 
       - name: Install dependencies
         run: |
@@ -152,9 +152,9 @@ jobs:
         run: |
           cd docs && make html
 
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: './docs/_build/html'
 
@@ -166,7 +166,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 ```
 
 ## rustdoc (Rust)
@@ -195,7 +195,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -206,9 +206,9 @@ jobs:
         run: |
           echo '<meta http-equiv="refresh" content="0; url=CRATE_NAME/index.html">' > target/doc/index.html
 
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: './target/doc'
 
@@ -220,7 +220,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 ```
 
 ## Static HTML (No Generator)
@@ -251,14 +251,14 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: './docs'
 
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 ```

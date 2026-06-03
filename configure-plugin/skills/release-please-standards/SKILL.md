@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-05-29
-reviewed: 2026-05-29
+modified: 2026-06-01
+reviewed: 2026-06-01
 name: release-please-standards
 description: "release-please standards and configuration reference. Use when configuring release workflows, checking automation compliance, or working with version bumps."
 user-invocable: false
@@ -44,7 +44,7 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     steps:
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@v5
         with:
           token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
 ```
@@ -125,7 +125,7 @@ and shared→component tag migration — see `git-plugin:release-please-configur
 ### Minimum Requirements
 
 1. **Workflow file**: `.github/workflows/release-please.yml`
-   - Uses `googleapis/release-please-action@v4`
+   - Uses `googleapis/release-please-action@v5`
    - Token: `MY_RELEASE_PLEASE_TOKEN` secret
    - Triggers on push to `main`
 
@@ -150,13 +150,13 @@ The workflow uses `MY_RELEASE_PLEASE_TOKEN` secret (not `GITHUB_TOKEN`) because:
 | Status | Condition |
 |--------|-----------|
 | PASS | All three files present with valid configuration |
-| WARN | Files present but using deprecated action version |
+| WARN | Files present but using deprecated action version (older than v5) |
 | FAIL | Missing required files or invalid configuration |
 
 ### Validation Rules
 
 1. **Workflow validation**:
-   - Action version: `v4` (warn if older)
+   - Action version: `v5` (warn if older)
    - Token: Must use secret, not hardcoded
    - Trigger: Must include `push` to `main`
 

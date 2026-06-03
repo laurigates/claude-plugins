@@ -296,7 +296,7 @@ tests/
   run: npm test -- --reporter=junit --reporter=default --coverage
 
 - name: Upload coverage
-  uses: codecov/codecov-action@v4
+  uses: codecov/codecov-action@v5
   with:
     files: ./coverage/lcov.info
 ```
@@ -309,7 +309,7 @@ tests/
     uv run pytest --junitxml=junit.xml --cov-report=xml
 
 - name: Upload coverage
-  uses: codecov/codecov-action@v4
+  uses: codecov/codecov-action@v5
   with:
     files: ./coverage.xml
 ```
@@ -324,7 +324,7 @@ tests/
   run: cargo nextest run --profile ci --no-fail-fast
 
 - name: Upload test results
-  uses: actions/upload-artifact@v4
+  uses: actions/upload-artifact@v7
   with:
     name: test-results
     path: target/nextest/ci/junit.xml

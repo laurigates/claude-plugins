@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
-reviewed: 2025-12-16
+modified: 2026-06-01
+reviewed: 2026-06-01
 description: "Package managers: uv (Python), bun (TypeScript). Use when setting up uv or bun, migrating from pip/npm/yarn/poetry/pipenv, or resolving lockfile conflicts."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--manager <uv|bun|npm|cargo>]"
@@ -172,7 +172,7 @@ Use migration templates from [REFERENCE.md](REFERENCE.md).
 
 Update GitHub Actions workflows to use modern package managers:
 
-- **Python**: Replace `pip install` with `astral-sh/setup-uv@v4` + `uv sync`
+- **Python**: Replace `pip install` with `astral-sh/setup-uv@v8` + `uv sync`
 - **JavaScript**: Replace `actions/setup-node` with `oven-sh/setup-bun@v2`
 
 Use CI workflow templates from [REFERENCE.md](REFERENCE.md).

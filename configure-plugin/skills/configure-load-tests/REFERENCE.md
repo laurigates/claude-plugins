@@ -392,7 +392,7 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install k6
         run: |
@@ -413,7 +413,7 @@ jobs:
           BASE_URL: http://localhost:3000
 
       - name: Upload results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: smoke-test-results
@@ -424,7 +424,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.environment || 'staging' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install k6
         run: |
@@ -443,7 +443,7 @@ jobs:
           BASE_URL: ${{ vars.LOAD_TEST_URL }}
 
       - name: Upload results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: load-test-results
@@ -489,7 +489,7 @@ Framework: k6
 
 Installation:
   k6 binary               /usr/local/bin/k6          [INSTALLED | MISSING]
-  k6 version              0.50+                      [CURRENT | OUTDATED]
+  k6 version              2.0+                       [CURRENT | OUTDATED]
   TypeScript support      @types/k6                  [INSTALLED | OPTIONAL]
 
 Test Scenarios:

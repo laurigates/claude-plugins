@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
-reviewed: 2026-01-19
+modified: 2026-06-01
+reviewed: 2026-06-01
 description: "Container infrastructure: GHCR builds, Trivy/Grype scanning, devcontainer. Use when setting up multi-platform GHCR workflows or adding container scanning to CI."
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite, SlashCommand, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--component <dockerfile|workflow|registry|scanning|devcontainer>]"
@@ -87,10 +87,10 @@ Check each component against standards:
 
 | Language | Build Image | Runtime Image | Size Target |
 |----------|-------------|---------------|-------------|
-| Node.js | `node:24-alpine` (LTS) | `nginx:1.27-alpine` | < 50MB |
-| Python | `python:3.13-slim` | `python:3.13-slim` | < 150MB |
-| Go | `golang:1.23-alpine` | `scratch` or `alpine:3.21` | < 20MB |
-| Rust | `rust:1.84-alpine` | `alpine:3.21` | < 20MB |
+| Node.js | `node:24-alpine` (LTS) | `nginx:1.30-alpine` | < 50MB |
+| Python | `python:3.14-slim` | `python:3.14-slim` | < 150MB |
+| Go | `golang:1.26-alpine` | `scratch` or `alpine:3.23` | < 20MB |
+| Rust | `rust:1.96-alpine` | `alpine:3.23` | < 20MB |
 
 **Security Hardening Standards:**
 
@@ -146,7 +146,7 @@ Component Status:
 Dockerfile Checks:
   Multi-stage             2 stages          PASS
   HEALTHCHECK             Present           PASS
-  Base images             node:22, nginx    PASS
+  Base images             node:24, nginx    PASS
 
 Build Workflow Checks:
   Workflow                container-build.yml PASS
