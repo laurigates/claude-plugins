@@ -51,6 +51,28 @@ if [ -n "$BODY" ] && echo "$BODY" | grep -qiE '\b(closes?|fixes?|resolves?)[: ]+
     exit 0
 fi
 
+# Safety net: the body may be supplied via a form we cannot resolve at
+# PreToolUse time —
+#   1. an ANSI-C quoted body:  --body $'## Summary\n\nCloses #42'
+#   2. a command substitution: --body "$(cat <<EOF ... Closes #42 ... EOF)"
+#   3. a heredoc that writes the --body-file in the SAME compound command, so
+#      the file does not exist on disk yet:
+#         cat > body.md <<EOF ... Closes #42 ... EOF; gh pr create --body-file body.md
+# In every one of these the closing keyword is present literally in the command
+# string itself. GitHub honours closing keywords in the PR title as well as the
+# body, so a keyword anywhere in the command means the linkage will exist once
+# the command runs — allow rather than emit a false-positive block.
+#
+# Translate literal \n \r \t escape sequences to spaces first: in an ANSI-C
+# ($'...') body the keyword can be written as "...\n\nCloses #42", where the
+# backslash-n sits directly against "Closes" with no word boundary, defeating
+# the \b anchor. Unescaping restores the boundary without weakening the regex
+# (which still guards against suffix words like "prefixes"/"discloses").
+COMMAND_UNESCAPED=$(printf '%s' "$COMMAND" | sed 's/\\[nrt]/ /g')
+if echo "$COMMAND_UNESCAPED" | grep -qiE '\b(closes?|fixes?|resolves?)[: ]+#[0-9]+'; then
+    exit 0
+fi
+
 # Check git log for issue closing keywords in commits being PR'd
 # Uses merge-base with origin/HEAD to find commits unique to this branch
 COMMIT_ISSUES=""

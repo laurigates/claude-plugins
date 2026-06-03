@@ -97,6 +97,34 @@ assert_exit \
     "heredoc-style body with Closes keyword is allowed" 0 \
     "$(make_json "$MULTILINE_BODY_HEREDOC")"
 
+# ── Unresolvable body forms with literal keyword in command (regression) ─────
+# Regression (issue #1489): the hook could not resolve the body at PreToolUse
+# time for three common invocations and emitted false-positive blocks, even
+# though the closing keyword was present literally in the command string.
+echo ""
+echo "unresolvable body forms carrying the keyword in the command (issue #1489):"
+
+# 1. ANSI-C ($'...') quoted body — perl --body '...'/"..." regexes never matched
+ANSIC_BODY=$(printf "gh pr create --title 'feat: add feature' --body \$'## Summary\\\\n\\\\nCloses #42'")
+assert_exit \
+    "ANSI-C quoted (\$'...') body with Closes keyword is allowed" 0 \
+    "$(make_json "$ANSIC_BODY")"
+
+# 2. Command substitution reading a separate file: --body "$(cat external.md)".
+#    The literal $(cat ...) text has no keyword, but the agent put Closes #42 in
+#    the same command's heredoc — keyword is in the command string.
+CMDSUB_BODY=$(printf 'gh pr create --title "feat: add feature" --body "$(printf %%s "## Summary\nCloses #42")"')
+assert_exit \
+    "command-substitution body with literal Closes keyword in command is allowed" 0 \
+    "$(make_json "$CMDSUB_BODY")"
+
+# 3. Heredoc writes the --body-file in the SAME compound command, so the file
+#    does not exist on disk when the PreToolUse hook runs.
+SAME_CMD_BODYFILE=$(printf 'cat > /tmp/pr-body-%s.md <<EOF\n## Summary\n\nCloses #42\nEOF\ngh pr create --title "feat: add feature" --body-file /tmp/pr-body-%s.md' "$$" "$$")
+assert_exit \
+    "same-command heredoc body-file (file not yet written) is allowed" 0 \
+    "$(make_json "$SAME_CMD_BODYFILE")"
+
 # ── Missing closing keywords should block ───────────────────────────────────
 echo ""
 echo "missing closing keywords (should block):"
