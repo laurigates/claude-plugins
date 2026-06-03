@@ -275,7 +275,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.40.1",
+      "version": "2.40.2",
       "keywords": [
         "git",
         "github",
@@ -317,7 +317,7 @@
       "name": "health-plugin",
       "source": "./health-plugin",
       "description": "Diagnose and fix Claude Code configuration issues - plugin registry, settings, hooks, MCP servers",
-      "version": "1.11.0",
+      "version": "1.11.1",
       "keywords": [
         "health",
         "diagnostics",
