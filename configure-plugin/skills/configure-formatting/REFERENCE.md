@@ -2,7 +2,7 @@
 
 Configuration templates, migration guides, and pre-commit configurations for code formatters.
 
-## Biome Configuration (Recommended for JS/TS)
+## Biome Configuration (JS/TS/JSON/CSS — the Prettier + ESLint replacement)
 
 ### Install
 
@@ -63,61 +63,6 @@ bun add --dev @biomejs/biome
     "format": "biome format --write .",
     "format:check": "biome format .",
     "lint:format": "biome check --write ."
-  }
-}
-```
-
-## Prettier Configuration (Alternative for JS/TS)
-
-### Install
-
-```bash
-npm install --save-dev prettier
-# or
-bun add --dev prettier
-```
-
-### `.prettierrc.json`
-
-```json
-{
-  "printWidth": 100,
-  "tabWidth": 2,
-  "useTabs": false,
-  "semi": true,
-  "singleQuote": true,
-  "quoteProps": "as-needed",
-  "jsxSingleQuote": false,
-  "trailingComma": "all",
-  "bracketSpacing": true,
-  "bracketSameLine": false,
-  "arrowParens": "always",
-  "endOfLine": "lf",
-  "embeddedLanguageFormatting": "auto"
-}
-```
-
-### `.prettierignore`
-
-```
-node_modules
-dist
-build
-.next
-coverage
-*.min.js
-*.min.css
-package-lock.json
-pnpm-lock.yaml
-```
-
-### package.json Scripts
-
-```json
-{
-  "scripts": {
-    "format": "prettier --write .",
-    "format:check": "prettier --check ."
   }
 }
 ```
@@ -301,19 +246,6 @@ repos:
         additional_dependencies: ["@biomejs/biome@2.4.16"]
 ```
 
-### Prettier
-
-```yaml
-repos:
-  # pre-commit/mirrors-prettier is archived (Apr 2024); use the
-  # maintained community fork, which tracks stable prettier 3.x.
-  - repo: https://github.com/rbubley/mirrors-prettier
-    rev: v3.8.3
-    hooks:
-      - id: prettier
-        types_or: [javascript, jsx, ts, tsx, json, yaml, markdown]
-```
-
 ### Ruff Format
 
 ```yaml
@@ -341,13 +273,6 @@ repos:
 ```yaml
 - name: Check formatting
   run: npx @biomejs/biome format .
-```
-
-### GitHub Actions - Prettier
-
-```yaml
-- name: Check formatting
-  run: npm run format:check
 ```
 
 ### GitHub Actions - Ruff

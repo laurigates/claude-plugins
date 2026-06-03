@@ -2,10 +2,10 @@
 created: 2025-12-16
 modified: 2026-06-03
 reviewed: 2026-06-03
-description: "Code formatters: Biome, Prettier, Ruff, rustfmt. Use when setting up formatting, migrating Prettier to Biome, or wiring CI format checks."
+description: "Biome formatter for JS/TS/JSON/CSS — the modern Prettier/ESLint replacement. Also Ruff (Python) and rustfmt. Use when setting up formatting, replacing Prettier, or wiring CI format checks."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
-args: "[--check-only] [--fix] [--formatter <biome|prettier|ruff|rustfmt>]"
-argument-hint: "[--check-only] [--fix] [--formatter <biome|prettier|ruff|rustfmt>]"
+args: "[--check-only] [--fix] [--formatter <biome|ruff|rustfmt>]"
+argument-hint: "[--check-only] [--fix] [--formatter <biome|ruff|rustfmt>]"
 name: configure-formatting
 ---
 
@@ -17,8 +17,8 @@ Check and configure code formatting tools against modern best practices.
 
 | Use this skill when... | Use another approach when... |
 |------------------------|------------------------------|
-| Setting up Biome, Prettier, Ruff format, or rustfmt for a project | Running an existing formatter (`biome format`, `ruff format`) |
-| Migrating from Prettier to Biome or Black to Ruff | Fixing individual formatting issues in specific files |
+| Setting up Biome, Ruff format, or rustfmt for a project | Running an existing formatter (`biome format`, `ruff format`) |
+| Migrating from Prettier or ESLint to Biome, or Black to Ruff | Fixing individual formatting issues in specific files |
 | Auditing formatter configuration for completeness and best practices | Configuring linting rules (`/configure:linting` instead) |
 | Adding format-on-save and CI format checks | Setting up pre-commit hooks only (`/configure:pre-commit` instead) |
 | Standardizing formatting settings across a monorepo | Editing `.editorconfig` or `.vscode/settings.json` manually |
@@ -43,16 +43,15 @@ Parse from `$ARGUMENTS`:
 
 - `--check-only`: Report compliance status without modifications
 - `--fix`: Apply all fixes automatically without prompting
-- `--formatter <formatter>`: Override formatter detection (biome, prettier, ruff, rustfmt)
+- `--formatter <formatter>`: Override formatter detection (biome, ruff, rustfmt)
 
 ## Version Checking
 
 **CRITICAL**: Before flagging outdated formatters, verify latest releases using WebSearch or WebFetch:
 
 1. **Biome**: Check [biomejs.dev](https://biomejs.dev/) or [GitHub releases](https://github.com/biomejs/biome/releases)
-2. **Prettier**: Check [prettier.io](https://prettier.io/) or [npm](https://www.npmjs.com/package/prettier)
-3. **Ruff**: Check [docs.astral.sh/ruff](https://docs.astral.sh/ruff/) or [GitHub releases](https://github.com/astral-sh/ruff/releases)
-4. **rustfmt**: Bundled with Rust toolchain - check [Rust releases](https://releases.rs/)
+2. **Ruff**: Check [docs.astral.sh/ruff](https://docs.astral.sh/ruff/) or [GitHub releases](https://github.com/astral-sh/ruff/releases)
+3. **rustfmt**: Bundled with Rust toolchain - check [Rust releases](https://releases.rs/)
 
 ## Execution
 
@@ -65,13 +64,13 @@ Check for language indicators and formatter configurations:
 | Indicator | Language | Detected Formatter |
 |-----------|----------|-------------------|
 | `biome.json` with formatter | JavaScript/TypeScript | Biome |
-| `.prettierrc.*` | JavaScript/TypeScript | Prettier |
+| `.prettierrc.*` | JavaScript/TypeScript | Prettier (legacy → migrate to Biome) |
 | `pyproject.toml` [tool.ruff.format] | Python | Ruff |
 | `pyproject.toml` [tool.black] | Python | Black (legacy) |
 | `rustfmt.toml` or `.rustfmt.toml` | Rust | rustfmt |
 
 **Modern formatting preferences:**
-- **JavaScript/TypeScript**: Biome (preferred) or Prettier
+- **JavaScript/TypeScript**: Biome (replaces Prettier + ESLint). If Prettier is detected, offer migration to Biome — do not configure Prettier as the target formatter.
 - **Python**: Ruff format (replaces Black)
 - **Rust**: rustfmt (standard)
 
@@ -111,9 +110,9 @@ If `--check-only`, stop here.
 Based on detected language and formatter preference, install and configure. Use configuration templates from [REFERENCE.md](REFERENCE.md).
 
 1. Install formatter package
-2. Create configuration file (biome.json, .prettierrc.json, pyproject.toml section, rustfmt.toml)
+2. Create configuration file (biome.json, pyproject.toml section, rustfmt.toml)
 3. Add format scripts to package.json or Makefile/justfile
-4. Create ignore file if needed (.prettierignore)
+4. Configure ignore patterns in the formatter config (e.g. `files.includes` in biome.json)
 
 ### Step 5: Create EditorConfig integration
 
@@ -149,7 +148,7 @@ Update `.project-standards.yaml`:
 ```yaml
 components:
   formatting: "2025.1"
-  formatting_tool: "[biome|prettier|ruff|rustfmt]"
+  formatting_tool: "[biome|ruff|rustfmt]"
   formatting_pre_commit: true
   formatting_ci: true
 ```
@@ -167,7 +166,6 @@ For detailed configuration templates, migration guides, and pre-commit configura
 | Quick compliance check | `/configure:formatting --check-only` |
 | Auto-fix all issues | `/configure:formatting --fix` |
 | Check Biome formatting | `biome format --check --reporter=github` |
-| Check Prettier formatting | `npx prettier --check . 2>&1 | tail -5` |
 | Check Ruff formatting | `ruff format --check --output-format=github` |
 | Check rustfmt formatting | `cargo fmt --check 2>&1 | head -20` |
 
@@ -177,7 +175,7 @@ For detailed configuration templates, migration guides, and pre-commit configura
 |------|-------------|
 | `--check-only` | Report status without offering fixes |
 | `--fix` | Apply all fixes automatically without prompting |
-| `--formatter <formatter>` | Override formatter detection (biome, prettier, ruff, rustfmt) |
+| `--formatter <formatter>` | Override formatter detection (biome, ruff, rustfmt) |
 
 ## Examples
 
