@@ -2,7 +2,7 @@
 
 Configuration templates, migration guides, and pre-commit configurations for code formatters.
 
-## Biome Configuration (Recommended for JS/TS)
+## Biome Configuration (JS/TS/JSON/CSS — the Prettier + ESLint replacement)
 
 ### Install
 
@@ -63,61 +63,6 @@ bun add --dev @biomejs/biome
     "format": "biome format --write .",
     "format:check": "biome format .",
     "lint:format": "biome check --write ."
-  }
-}
-```
-
-## Prettier Configuration (Alternative for JS/TS)
-
-### Install
-
-```bash
-npm install --save-dev prettier
-# or
-bun add --dev prettier
-```
-
-### `.prettierrc.json`
-
-```json
-{
-  "printWidth": 100,
-  "tabWidth": 2,
-  "useTabs": false,
-  "semi": true,
-  "singleQuote": true,
-  "quoteProps": "as-needed",
-  "jsxSingleQuote": false,
-  "trailingComma": "all",
-  "bracketSpacing": true,
-  "bracketSameLine": false,
-  "arrowParens": "always",
-  "endOfLine": "lf",
-  "embeddedLanguageFormatting": "auto"
-}
-```
-
-### `.prettierignore`
-
-```
-node_modules
-dist
-build
-.next
-coverage
-*.min.js
-*.min.css
-package-lock.json
-pnpm-lock.yaml
-```
-
-### package.json Scripts
-
-```json
-{
-  "scripts": {
-    "format": "prettier --write .",
-    "format:check": "prettier --check ."
   }
 }
 ```
@@ -295,21 +240,10 @@ uv remove black
 ```yaml
 repos:
   - repo: https://github.com/biomejs/pre-commit
-    rev: v0.4.0
+    rev: v2.4.16
     hooks:
       - id: biome-check
-        additional_dependencies: ["@biomejs/biome@1.9.4"]
-```
-
-### Prettier
-
-```yaml
-repos:
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v4.0.0-alpha.8
-    hooks:
-      - id: prettier
-        types_or: [javascript, jsx, ts, tsx, json, yaml, markdown]
+        additional_dependencies: ["@biomejs/biome@2.4.16"]
 ```
 
 ### Ruff Format
@@ -317,7 +251,7 @@ repos:
 ```yaml
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.4
+    rev: v0.15.15
     hooks:
       - id: ruff-format
 ```
@@ -339,13 +273,6 @@ repos:
 ```yaml
 - name: Check formatting
   run: npx @biomejs/biome format .
-```
-
-### GitHub Actions - Prettier
-
-```yaml
-- name: Check formatting
-  run: npm run format:check
 ```
 
 ### GitHub Actions - Ruff
