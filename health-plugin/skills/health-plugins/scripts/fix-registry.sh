@@ -32,6 +32,24 @@ registry_file="${FIX_REGISTRY_FILE:-${home_dir}/.claude/plugins/installed_plugin
 settings_file="${FIX_SETTINGS_FILE:-${home_dir}/.claude/settings.json}"
 marketplaces_dir="${FIX_MARKETPLACES_DIR:-${home_dir}/.claude/plugins/marketplaces}"
 backup_dir="$(dirname "$registry_file")"
+# chezmoi binary (overridable for tests via FIX_CHEZMOI_BIN).
+chezmoi_bin="${FIX_CHEZMOI_BIN:-chezmoi}"
+
+# Warn when a settings file we edit is managed by chezmoi: editing only the
+# target file is not durable, because the next `chezmoi apply` re-applies the
+# source and reverts the fix. `chezmoi source-path` exits non-zero for an
+# unmanaged path, so it doubles as the management test and the source locator.
+# (issue #1481)
+warn_if_chezmoi_managed() {
+  local file="$1" src
+  command -v "$chezmoi_bin" >/dev/null 2>&1 || return 0
+  if src="$("$chezmoi_bin" source-path "$file" 2>/dev/null)" && [ -n "$src" ]; then
+    echo "SETTINGS_CHEZMOI_MANAGED=true"
+    echo "SETTINGS_CHEZMOI_SOURCE=${src}"
+    echo "WARNING=${file} is chezmoi-managed — also apply this edit to the chezmoi source (${src}) or it reverts on the next 'chezmoi apply'."
+  fi
+  return 0
+}
 
 echo "=== PLUGIN REGISTRY FIX ==="
 echo "HOME_DIR=${home_dir}"
@@ -126,6 +144,7 @@ if [ "$dry_run" = true ]; then
   if [ "${#stale_enabled_keys[@]}" -gt 0 ]; then
     echo "MESSAGE=Would remove ${#stale_enabled_keys[@]} stale enabledPlugins entries"
     echo "RESTART_REQUIRED=true"
+    warn_if_chezmoi_managed "$settings_file"
   fi
   echo "=== END PLUGIN REGISTRY FIX ==="
   exit 0
@@ -217,6 +236,7 @@ if [ "${#stale_enabled_keys[@]}" -gt 0 ] && [ -f "$settings_file" ]; then
     echo "REMOVED_ENABLED=${enabled_key}"
   done
   echo "MESSAGE=Removed ${#stale_enabled_keys[@]} stale enabledPlugins entries"
+  warn_if_chezmoi_managed "$settings_file"
   restart_required=true
 fi
 

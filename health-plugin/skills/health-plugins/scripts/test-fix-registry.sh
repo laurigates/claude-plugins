@@ -208,5 +208,83 @@ if ! grep -q '^STATUS=OK$' <<<"$crlf_reg_output"; then
 fi
 pass "check-registry.sh survives CRLF jq output"
 
+# -----------------------------------------------------------------------------
+# Guard 4: chezmoi durability warning when settings.json is chezmoi-managed
+# (issue #1481) — editing only the target file is not durable; the next
+# `chezmoi apply` reverts it. The fix must warn and point at the source path.
+# -----------------------------------------------------------------------------
+chez_dir="${tmp_dir}/chezmoi-case"
+mkdir -p "$chez_dir/source"
+chez_registry="${chez_dir}/installed_plugins.json"
+chez_settings="${chez_dir}/settings.json"
+chez_marketplaces="${chez_dir}/marketplaces"
+mkdir -p "$chez_marketplaces"
+chez_source_path="${chez_dir}/source/dot_claude/settings.json"
+
+cat > "$chez_registry" <<'JSON'
+{ "version": 2, "plugins": {} }
+JSON
+
+cat > "$chez_settings" <<'JSON'
+{ "enabledPlugins": { "stale-plugin@dead-mp": true } }
+JSON
+
+# Fake chezmoi: `source-path <file>` echoes a source path and exits 0 only for
+# our managed settings file; exits non-zero for anything else (unmanaged).
+fake_chezmoi="${chez_dir}/chezmoi"
+cat > "$fake_chezmoi" <<EOF
+#!/usr/bin/env bash
+if [ "\$1" = "source-path" ] && [ "\$2" = "${chez_settings}" ]; then
+  echo "${chez_source_path}"
+  exit 0
+fi
+exit 1
+EOF
+chmod +x "$fake_chezmoi"
+
+chez_output=$(
+  FIX_REGISTRY_FILE="$chez_registry" \
+  FIX_SETTINGS_FILE="$chez_settings" \
+  FIX_MARKETPLACES_DIR="$chez_marketplaces" \
+  FIX_CHEZMOI_BIN="$fake_chezmoi" \
+  bash "$fix_script" --home-dir "$chez_dir" --project-dir "$chez_dir" --dry-run
+)
+
+if ! grep -q '^SETTINGS_CHEZMOI_MANAGED=true$' <<<"$chez_output"; then
+  echo "$chez_output" >&2
+  fail "chezmoi-managed settings.json did not emit SETTINGS_CHEZMOI_MANAGED=true"
+fi
+if ! grep -q "^SETTINGS_CHEZMOI_SOURCE=${chez_source_path}$" <<<"$chez_output"; then
+  echo "$chez_output" >&2
+  fail "chezmoi durability warning did not surface the source path"
+fi
+if ! grep -q '^WARNING=.*chezmoi-managed.*chezmoi apply' <<<"$chez_output"; then
+  echo "$chez_output" >&2
+  fail "chezmoi durability WARNING line missing or malformed"
+fi
+pass "chezmoi-managed settings.json emits durability warning with source path"
+
+# Counter-case: when settings.json is NOT chezmoi-managed, no warning leaks.
+unmanaged_chezmoi="${chez_dir}/chezmoi-unmanaged"
+cat > "$unmanaged_chezmoi" <<'EOF'
+#!/usr/bin/env bash
+exit 1
+EOF
+chmod +x "$unmanaged_chezmoi"
+
+unmanaged_output=$(
+  FIX_REGISTRY_FILE="$chez_registry" \
+  FIX_SETTINGS_FILE="$chez_settings" \
+  FIX_MARKETPLACES_DIR="$chez_marketplaces" \
+  FIX_CHEZMOI_BIN="$unmanaged_chezmoi" \
+  bash "$fix_script" --home-dir "$chez_dir" --project-dir "$chez_dir" --dry-run
+)
+
+if grep -q 'SETTINGS_CHEZMOI_MANAGED' <<<"$unmanaged_output"; then
+  echo "$unmanaged_output" >&2
+  fail "unmanaged settings.json incorrectly emitted a chezmoi warning"
+fi
+pass "unmanaged settings.json emits no chezmoi warning"
+
 echo "ALL CHECKS PASSED"
 exit 0
