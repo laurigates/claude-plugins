@@ -483,6 +483,51 @@ Exit code 2 also declines. Return nothing to show dialog to user.
 
 ---
 
+## Transcript Replay Cost
+
+A second cost axis sits alongside the timeout budget: **anything a hook
+makes the model *see* lands in the transcript and is re-sent on every
+subsequent turn.** A one-line hint that fires on a high-frequency tool
+call isn't a one-time ~30-token cost — it's ~30 tokens × every remaining
+turn in the session. Hook authors should design for "never bloats the
+replayed transcript" as deliberately as "never reaches a diff."
+
+### Which output the model sees (and replays)
+
+| Output mechanism | Reaches the model? | Replays each turn? |
+|---|---|---|
+| Exit 0, write to a log file / disk only | No | No — **free** |
+| PreToolUse exit-2 stderr (block message) | Yes (as the tool result) | Yes |
+| PostToolUse `updatedToolOutput` | Yes (replaces the tool result) | Yes |
+| SessionStart `additionalContext` | Yes (prepended to first turn) | Yes |
+| `Stop` / `SubagentStop` `{"decision":"block","reason":...}` | **Yes** — the `reason` is shown so the model keeps working | Yes |
+| `Stop` exit 0 (allow) | No | No — **free** |
+
+A common misconception is that "`Stop` output never reaches the model."
+It does: a blocking `Stop` hook's `reason` is precisely what tells the
+model to continue, and the `CLAUDE_CODE_STOP_HOOK_BLOCK_CAP` safety net
+(2.1.143+) exists *because* the model re-reads that reason and keeps
+addressing it. What actually makes our `Stop` checks
+(`task-completeness.sh`, `git-stash-reminder.sh`) cheap is **frequency and
+conditionality**, not invisibility:
+
+- they fire at most once per stop attempt, not per tool call;
+- they stay silent (exit 0) unless there is a concrete finding; and
+- they are self-extinguishing — once the agent fixes the TODO / stray
+  debug line / stash, the next stop passes clean and the reason stops
+  replaying.
+
+### Design guidance
+
+| If the hook output is… | Do |
+|---|---|
+| Pure observability (logging, metrics) | Write to disk, exit 0 — never emit to the model (`event-logger.sh`) |
+| A correction the model needs once | Emit once, then **dedup per session** so repeats don't accumulate (`bash-antipatterns-teach.sh` keys a per-session seen-list under `${TMPDIR:-/tmp}/claude-bash-teach-seen/<session_id>`) |
+| A blocking gate | Keep the message short; fire only on a real finding; make it self-extinguishing so it stops replaying once resolved |
+| High-frequency per-call feedback | Reconsider — this is the most expensive shape; cap, dedup, or move the check to `Stop` |
+
+---
+
 ## PermissionRequest Hook Pattern
 
 `PermissionRequest` hooks fire when Claude requests permission for an operation (e.g., in default permission mode). They allow automated approval/denial without user interaction.

@@ -1,8 +1,8 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "macos-plugin",
-  "version": "1.1.2",
-  "description": "macOS-specific dev environment tooling — kitty session persistence, LaunchServices health, incident postmortems for kernel panics, WindowServer hangs, and long-uptime drift",
+  "version": "1.2.0",
+  "description": "macOS-specific dev environment tooling — kitty session persistence, LaunchServices health, incident postmortems for kernel panics and WindowServer hangs, EndpointSecurity/EDR CPU diagnosis, and long-uptime drift",
   "author": {
     "name": "Lauri Gates",
     "url": "https://github.com/laurigates"
@@ -27,6 +27,15 @@
     "jetsam",
     "incident-postmortem",
     "uptime",
-    "kern-boottime"
+    "kern-boottime",
+    "endpoint-security",
+    "eslogger",
+    "powermetrics",
+    "kandji",
+    "xprotect",
+    "edr",
+    "exec-storm",
+    "battery-drain",
+    "systemextensionsctl"
   ]
 }

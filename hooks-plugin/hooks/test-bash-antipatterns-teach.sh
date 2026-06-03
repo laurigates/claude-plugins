@@ -16,13 +16,21 @@ FAIL=0
 
 # Build a minimal PostToolUse input. tool_response is a stand-in for whatever
 # the harness actually produces; the hook just stringifies it.
+# Optional second arg sets session_id (enables the once-per-session dedup path).
 _payload() {
-    local cmd="$1"
-    jq -nc --arg cmd "$cmd" '{
+    local cmd="$1" session="${2:-}"
+    jq -nc --arg cmd "$cmd" --arg session "$session" '{
         tool_name: "Bash",
         tool_input: {command: $cmd},
         tool_response: "sample stdout output\n"
-    }'
+    } + (if $session == "" then {} else {session_id: $session} end)'
+}
+
+# Run the hook for a command under a given session id; echo non-empty stdout.
+_run_session() {
+    local cmd="$1" session="$2"
+    _payload "$cmd" "$session" \
+        | CLAUDE_HOOKS_ENABLE_BASH_ANTIPATTERNS_TEACH=1 bash "$HOOK" 2>/dev/null || true
 }
 
 # With the env var set, the hook should emit JSON whose
@@ -116,6 +124,62 @@ echo "env-var guard (disabled by default):"
 assert_disabled "cat README.md is silent when env var unset" "cat README.md"
 assert_disabled "grep -rn foo src/ is silent when env var unset" "grep -rn foo src/"
 assert_disabled "find . -name '*.ts' is silent when env var unset" "find . -name '*.ts'"
+
+echo ""
+echo "session-scoped dedup (each hint emits at most once per session):"
+# Use a unique session id so the seen-file starts clean for this test run.
+SID="test-dedup-$$-$RANDOM"
+SEEN_FILE="${TMPDIR:-/tmp}/claude-bash-teach-seen/${SID}"
+rm -f "$SEEN_FILE" 2>/dev/null || true
+
+# First grep under this session emits the hint.
+if [ -n "$(_run_session 'grep -rn foo src/' "$SID")" ]; then
+    printf "  PASS: %s\n" "first grep in session emits hint"
+    PASS=$((PASS + 1))
+else
+    printf "  FAIL: %s\n" "first grep in session should emit hint"
+    FAIL=$((FAIL + 1))
+fi
+
+# Second grep under the same session is silent (already taught).
+if [ -z "$(_run_session 'grep -rn bar lib/' "$SID")" ]; then
+    printf "  PASS: %s\n" "repeat grep in same session is silent"
+    PASS=$((PASS + 1))
+else
+    printf "  FAIL: %s\n" "repeat grep in same session should be silent"
+    FAIL=$((FAIL + 1))
+fi
+
+# A different pattern in the same session still emits (dedup is per-pattern).
+if [ -n "$(_run_session 'cat README.md' "$SID")" ]; then
+    printf "  PASS: %s\n" "different pattern in same session still emits"
+    PASS=$((PASS + 1))
+else
+    printf "  FAIL: %s\n" "different pattern in same session should emit"
+    FAIL=$((FAIL + 1))
+fi
+
+# Same pattern under a fresh session emits again (dedup is per-session).
+SID2="test-dedup-$$-$RANDOM-b"
+rm -f "${TMPDIR:-/tmp}/claude-bash-teach-seen/${SID2}" 2>/dev/null || true
+if [ -n "$(_run_session 'grep -rn foo src/' "$SID2")" ]; then
+    printf "  PASS: %s\n" "same pattern in a new session emits again"
+    PASS=$((PASS + 1))
+else
+    printf "  FAIL: %s\n" "same pattern in a new session should emit again"
+    FAIL=$((FAIL + 1))
+fi
+
+# Without a session_id, dedup is skipped: both calls emit (backward compatible).
+if [ -n "$(_run_session 'grep -rn foo src/' '')" ] && [ -n "$(_run_session 'grep -rn foo src/' '')" ]; then
+    printf "  PASS: %s\n" "no session_id falls through to always-emit"
+    PASS=$((PASS + 1))
+else
+    printf "  FAIL: %s\n" "no session_id should always emit"
+    FAIL=$((FAIL + 1))
+fi
+
+rm -f "$SEEN_FILE" "${TMPDIR:-/tmp}/claude-bash-teach-seen/${SID2}" 2>/dev/null || true
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"

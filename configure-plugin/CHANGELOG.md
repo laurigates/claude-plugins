@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.24.3](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.24.2...configure-plugin-v1.24.3) (2026-06-03)
+
+
+### Documentation
+
+* **configure-plugin:** point pal MCP example at laurigates fork via uv tool ([#1485](https://github.com/laurigates/claude-plugins/issues/1485)) ([98a2b10](https://github.com/laurigates/claude-plugins/commit/98a2b103434291e4f31a9eef289952537f88f030))
+
 ## [1.24.2](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.24.1...configure-plugin-v1.24.2) (2026-05-30)
 
 
