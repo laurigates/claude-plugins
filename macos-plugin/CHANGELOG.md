@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/laurigates/claude-plugins/compare/macos-plugin-v1.1.2...macos-plugin-v1.2.0) (2026-06-03)
+
+
+### Features
+
+* **macos-plugin:** add endpoint-security-cpu skill ([#1486](https://github.com/laurigates/claude-plugins/issues/1486)) ([9b6293f](https://github.com/laurigates/claude-plugins/commit/9b6293f0cfe8c3431c0be918c82e9853659dbd2f))
+
 ## [1.1.2](https://github.com/laurigates/claude-plugins/compare/macos-plugin-v1.1.1...macos-plugin-v1.1.2) (2026-05-14)
 
 

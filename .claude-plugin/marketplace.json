@@ -177,7 +177,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.24.2",
+      "version": "1.24.3",
       "keywords": [
         "infrastructure",
         "standards",
@@ -402,7 +402,7 @@
       "name": "macos-plugin",
       "source": "./macos-plugin",
       "description": "macOS-specific dev environment tooling - kitty session persistence, LaunchServices health, incident postmortems for kernel panics, WindowServer hangs, and long-uptime drift",
-      "version": "1.1.2",
+      "version": "1.2.0",
       "keywords": [
         "macos",
         "darwin",
