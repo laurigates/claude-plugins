@@ -7,12 +7,7 @@ Use these JSON configurations when adding servers to `.mcp.json`:
 ```json
 {
   "pal": {
-    "command": "uvx",
-    "args": [
-      "--from",
-      "git+https://github.com/BeehiveInnovations/pal-mcp-server.git",
-      "pal-mcp-server"
-    ]
+    "command": "pal-mcp-server"
   },
   "playwright": {
     "command": "bunx",
@@ -77,7 +72,7 @@ Use `${VAR_NAME}` references in `.mcp.json` — never hardcode tokens.
 - `github` - GitHub API integration (requires `GITHUB_TOKEN`)
 
 **Productivity:**
-- `pal` - PAL (Provider Abstraction Layer) - Multi-provider LLM integration (no env vars)
+- `pal` - PAL (Provider Abstraction Layer) - Multi-provider LLM integration (no env vars). Install once with `uv tool install git+https://github.com/laurigates/pal-mcp-server`; the `.mcp.json` entry then invokes the bare `pal-mcp-server` command instead of re-resolving the git source via `uvx` on every launch.
 
 **Infrastructure & Monitoring:**
 - `argocd-mcp` - ArgoCD GitOps deployment management (requires `ARGOCD_SERVER`, `ARGOCD_AUTH_TOKEN`)
