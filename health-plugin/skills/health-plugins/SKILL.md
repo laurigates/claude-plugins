@@ -1,7 +1,7 @@
 ---
 created: 2026-02-04
-modified: 2026-05-09
-reviewed: 2026-04-15
+modified: 2026-06-03
+reviewed: 2026-06-03
 user-invocable: false
 description: "Diagnose and fix Claude Code plugin registry corruption — orphaned entries, stale keys, scope conflicts. Use when seeing plugin-already-installed errors or registry drift."
 allowed-tools: Bash(bash *), Read, Write, Edit, Glob, Grep, TodoWrite, AskUserQuestion
@@ -87,6 +87,7 @@ If `$ARGUMENTS` contains `--fix`:
 
    The script creates a timestamped backup at `~/.claude/plugins/installed_plugins.json.backup.<UTC-timestamp>` before modifying the registry, validates the resulting JSON, and aborts safely on any error.
 3. Parse `STATUS=`, `REMOVED=`, `REMOVED_COUNT=`, and `BACKUP_PATH=` lines to report what changed.
+4. **Surface durability warnings.** If the output includes `SETTINGS_CHEZMOI_MANAGED=true`, relay the `WARNING=` line to the user: the edited `~/.claude/settings.json` is chezmoi-managed, so the fix reverts on the next `chezmoi apply` unless the same key is also removed from the chezmoi source (printed as `SETTINGS_CHEZMOI_SOURCE=`).
 
 ### Step 4: Handle "plugin needed in current project"
 
