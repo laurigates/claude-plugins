@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.24.5](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.24.4...configure-plugin-v1.24.5) (2026-06-03)
+
+
+### Bug Fixes
+
+* **configure-plugin:** refresh stale version pins across configure skills ([#1476](https://github.com/laurigates/claude-plugins/issues/1476)) ([63bda34](https://github.com/laurigates/claude-plugins/commit/63bda34d51b0f2ca437ab3aaff530d574ea0ed24))
+
 ## [1.24.4](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.24.3...configure-plugin-v1.24.4) (2026-06-03)
 
 
