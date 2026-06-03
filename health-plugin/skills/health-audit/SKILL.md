@@ -27,7 +27,7 @@ Audit the project's enabled plugins against the actual technology stack. Identif
 ## Context
 
 - Current project: !`pwd`
-- Project settings exists: !`find .claude -maxdepth 1 -name 'settings.json'`
+- Project settings exists: !`find . -maxdepth 2 -path '*/.claude/settings.json'`
 - Package.json exists: !`find . -maxdepth 1 -name 'package.json'`
 - Cargo.toml exists: !`find . -maxdepth 1 -name 'Cargo.toml'`
 - pyproject.toml exists: !`find . -maxdepth 1 -name 'pyproject.toml'`
