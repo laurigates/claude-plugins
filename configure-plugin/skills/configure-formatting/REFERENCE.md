@@ -305,8 +305,10 @@ repos:
 
 ```yaml
 repos:
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v4.0.0-alpha.8
+  # pre-commit/mirrors-prettier is archived (Apr 2024); use the
+  # maintained community fork, which tracks stable prettier 3.x.
+  - repo: https://github.com/rbubley/mirrors-prettier
+    rev: v3.8.3
     hooks:
       - id: prettier
         types_or: [javascript, jsx, ts, tsx, json, yaml, markdown]

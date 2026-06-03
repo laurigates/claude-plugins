@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-06-01
-reviewed: 2026-06-01
+modified: 2026-06-03
+reviewed: 2026-06-03
 description: "GitHub Actions CI/CD workflows for container builds, tests, releases. Use when updating outdated action versions, adding multi-platform builds, or auditing workflows."
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix]"

@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
-reviewed: 2025-12-16
+modified: 2026-06-03
+reviewed: 2026-06-03
 description: "Code formatters: Biome, Prettier, Ruff, rustfmt. Use when setting up formatting, migrating Prettier to Biome, or wiring CI format checks."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--formatter <biome|prettier|ruff|rustfmt>]"
