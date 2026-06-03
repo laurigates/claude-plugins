@@ -1,10 +1,10 @@
 ---
 created: 2026-01-30
-modified: 2026-05-29
-reviewed: 2026-05-29
+modified: 2026-06-03
+reviewed: 2026-06-03
 allowed-tools: Bash(gh pr checks *), Bash(gh pr view *), Bash(gh pr diff *), Bash(gh run view *), Bash(gh run list *), Bash(gh api *), Bash(gh repo view *), Bash(gh issue create *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git pull *), Bash(git fetch *), Bash(pre-commit *), Bash(npm run *), Bash(uv run *), Bash(bash *), Read, Edit, Write, Grep, Glob, TodoWrite, Task, mcp__github__pull_request_read, mcp__github__add_reply_to_pull_request_comment, mcp__github__pull_request_review_write, mcp__github__issue_write
-args: "[pr-number] [--commit] [--push] [--all] [--dry-run] [--limit N]"
-argument-hint: "[pr-number | --all] [--commit] [--push] [--dry-run] [--limit N]"
+args: "[pr-number] [--commit] [--push] [--all] [--dry-run] [--limit N] [--include-automation]"
+argument-hint: "[pr-number | --all] [--commit] [--push] [--dry-run] [--limit N] [--include-automation]"
 disable-model-invocation: true
 description: "Address PR review comments and resolve threads. Use when CHANGES_REQUESTED is set, working through unresolved review threads, or replying to reviewer feedback."
 name: git-pr-feedback
@@ -29,6 +29,7 @@ Parse these parameters from the command (all optional):
 | `--all` | Address feedback on every actionable open PR. Dispatches one subagent per PR in an isolated worktree; the orchestrator pushes, replies, and resolves. Implies `--commit --push` unless `--dry-run` is set. Mutually exclusive with `$1`. |
 | `--dry-run` | With `--all`, print the dispatch plan and stop — no subagents spawned, no commits, no pushes. Ignored without `--all`. |
 | `--limit N` | Maximum concurrent subagents under `--all` (default `3`). Use a small number to stay under GitHub rate limits and avoid `[1m]`-model concurrency cascades (see [`skill-fork-context.md`](../../../.claude/rules/skill-fork-context.md)). |
+| `--include-automation` | With `--all`, also surface automation-authored PRs (release-please, dependabot, renovate, `*[bot]`, `*-bot`). Excluded by default because they carry no human review feedback and their CI failures are resolved by automation re-running, not hand edits. |
 
 **Mode selection**:
 
@@ -112,11 +113,11 @@ Reached only when `--all` is passed. The orchestrator dispatches one subagent pe
 
 1. **Parse owner/repo** from the git remote URL.
 
-2. **List actionable PRs** with the bundled selector:
+2. **List actionable PRs** with the bundled selector (append `--include-automation` if that flag was passed):
    ```bash
    bash ${CLAUDE_SKILL_DIR}/scripts/list-actionable-prs.sh <owner> <repo>
    ```
-   The script returns a JSON array of open, non-draft PRs with unresolved review threads, failing/errored CI, or `CHANGES_REQUESTED`. If the array is empty, report `No PRs need attention.` and stop.
+   The script returns a JSON array of open, non-draft PRs with unresolved review threads, failing/errored CI, or `CHANGES_REQUESTED`. Automation-authored PRs (release-please, dependabot, renovate, `*[bot]`, `*-bot`) are excluded by default — dispatching a subagent on one is almost always wrong (no review threads to act on, protected changelog/version files). Pass `--include-automation` to include them, or set `PR_FEEDBACK_AUTOMATION_AUTHORS` to extend the recognised author list. If the array is empty, report `No PRs need attention.` and stop.
 
 3. **Print a compact dispatch table** (number, author, ci, unresolved, reviewDecision, head, title) so the user can see what is about to be processed.
 
@@ -281,6 +282,7 @@ Provide a summary table of feedback addressed, replies posted, threads resolved,
 |---------|----------------|
 | All PR data (single query) | `bash ${CLAUDE_SKILL_DIR}/scripts/fetch-pr-data.sh <owner> <repo> <pr>` |
 | Actionable PRs (selector / `--all` source) | `bash ${CLAUDE_SKILL_DIR}/scripts/list-actionable-prs.sh <owner> <repo>` |
+| Actionable PRs incl. automation | `bash ${CLAUDE_SKILL_DIR}/scripts/list-actionable-prs.sh --include-automation <owner> <repo>` |
 | Dispatch a per-PR subagent (`--all`) | `Task({subagent_type: "general-purpose", isolation: "worktree", prompt: <REFERENCE.md template>})` |
 | Failed check logs | `gh run view $ID --log-failed` |
 | Quick check status (fallback) | `gh pr checks $PR --json name,state,conclusion` |
