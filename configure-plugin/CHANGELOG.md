@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.24.4](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.24.3...configure-plugin-v1.24.4) (2026-06-03)
+
+
+### Code Refactoring
+
+* **configure-plugin:** standardize configure-formatting on Biome, drop Prettier ([#1488](https://github.com/laurigates/claude-plugins/issues/1488)) ([2e46318](https://github.com/laurigates/claude-plugins/commit/2e4631890569a08935a6d17dc0ce5d6f09dca28c))
+
 ## [1.24.3](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.24.2...configure-plugin-v1.24.3) (2026-06-03)
 
 
