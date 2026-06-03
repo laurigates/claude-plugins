@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.11.1...health-plugin-v1.12.0) (2026-06-03)
+
+
+### Features
+
+* exclude automation PRs + warn on chezmoi-managed registry fixes ([#1498](https://github.com/laurigates/claude-plugins/issues/1498)) ([e302078](https://github.com/laurigates/claude-plugins/commit/e302078be87370f810b38102a36f18a3e98fbf10))
+
 ## [1.11.1](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.11.0...health-plugin-v1.11.1) (2026-06-03)
 
 
