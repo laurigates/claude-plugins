@@ -57,6 +57,7 @@ Claude Code plugin collection providing skills and agents for development workfl
 | `.claude/rules/parallel-safe-queries.md` | Query commands that exit non-zero on empty results silently cancel sibling parallel tool calls — use the machine-readable variant (`--json`/`export` + `jq`) |
 | `.claude/rules/docs-currency.md` | Code and the docs describing it land in the **same commit** (stub → `blueprint:blueprint-docs-currency`) |
 | `.claude/rules/agent-cli-worktree-safety.md` | Data-loss-prevention conventions for the sibling Python/Typer CLI projects (`git-repo-agent`, `vault-agent`); path-scoped, not repo-wide |
+| `.claude/rules/version-pinning.md` | Version pins in skill examples (`uses:`/`FROM`/`image:`/`rev:`) are a Renovate-managed surface — SHA+comment convention, the coverage guard, and what's illustrative vs. managed |
 
 ## Creating New Skills
 

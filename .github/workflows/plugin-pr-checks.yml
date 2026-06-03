@@ -75,6 +75,10 @@ jobs:
         if: contains(steps.changed.outputs.plugins, 'agent-patterns-plugin')
         run: bash scripts/check-agent-failure-contract.sh
 
+      - name: Check version-pin coverage (version-pinning.md)
+        if: steps.changed.outputs.skill_count != '0'
+        run: bash scripts/check-version-pin-coverage.sh --strict
+
       - name: Post compliance results
         if: steps.compliance.outputs.result
         env:
