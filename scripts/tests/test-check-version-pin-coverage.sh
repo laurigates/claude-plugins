@@ -104,6 +104,23 @@ echo "=== TEST E: floating @main not flagged ==="
 assert "trufflehog@main produces no issue" \
   "$([ "$(contains "$fx_out" "trufflehog")" = "false" ] && echo true || echo false)"
 
+echo "=== TEST F: .claude/worktrees/ copies are pruned, not scanned (#1492) ==="
+# A sibling agent's worktree checkout is a full repo copy under
+# .claude/worktrees/. Adding a skill file there must NOT change FILES_SCANNED
+# (the guard audits only the real tree) and must NOT re-flag its uncovered pin.
+before_scanned="$(field "$fx_out" FILES_SCANNED)"
+before_errors="$(printf '%s\n' "$fx_out" | grep -c 'SEVERITY=ERROR' || true)"
+mkdir -p "$fixture/.claude/worktrees/agent-deadbeef/demo-plugin/skills/demo"
+cp "$fixture/demo-plugin/skills/demo/SKILL.md" \
+   "$fixture/.claude/worktrees/agent-deadbeef/demo-plugin/skills/demo/SKILL.md"
+wt_out="$(bash "$checker" --project-dir "$fixture")"
+assert "FILES_SCANNED unchanged after adding a worktree copy" \
+  "$([ "$(field "$wt_out" FILES_SCANNED)" -eq "$before_scanned" ] && echo true || echo false)"
+assert "no extra ERROR from the worktree copy's uncovered pin" \
+  "$([ "$(printf '%s\n' "$wt_out" | grep -c 'SEVERITY=ERROR' || true)" -eq "$before_errors" ] && echo true || echo false)"
+assert "no WARN/ERROR issue references a .claude/worktrees/ path" \
+  "$([ "$(contains "$wt_out" '.claude/worktrees/')" = "false" ] && echo true || echo false)"
+
 echo ""
 echo "=== SUMMARY ==="
 echo "PASSED=$pass_count"

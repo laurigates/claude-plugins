@@ -90,8 +90,9 @@ while IFS= read -r -d '' file; do
   rel="${file#"$proj_dir"/}"
   while IFS= read -r line || [ -n "$line" ]; do
     # Toggle fenced-code-block state on ``` or ~~~ markers.
+    # Pure-bash toggle — avoid forking a subshell + two echos per fence marker.
     if [[ "$line" =~ ^[[:space:]]*(\`\`\`|~~~) ]]; then
-      in_fence=$([ "$in_fence" = true ] && echo false || echo true)
+      if [ "$in_fence" = true ]; then in_fence=false; else in_fence=true; fi
       continue
     fi
     [ "$in_fence" = true ] || continue
@@ -144,7 +145,12 @@ while IFS= read -r -d '' file; do
         "$rel: pinned npm dep in additional_dependencies is out of scope for v1 (see version-pinning.md)"
     fi
   done < "$file"
-done < <(find "$proj_dir" -path '*/skills/*' -name '*.md' -type f -print0 2>/dev/null)
+# Prune agent worktree copies (.claude/worktrees/*) — they are full repo
+# checkouts created by concurrently-running isolated agents, so descending into
+# them re-scans every skill file N× and litters WARN output with their paths.
+# The guard only ever audits the real tree, never sibling agents' checkouts.
+done < <(find "$proj_dir" -path '*/.claude/worktrees/*' -prune -o \
+           -path '*/skills/*' -name '*.md' -type f -print0 2>/dev/null)
 
 # --- Status -------------------------------------------------------------------
 overall_status="OK"
