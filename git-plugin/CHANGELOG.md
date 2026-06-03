@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.40.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.40.1...git-plugin-v2.40.2) (2026-06-03)
+
+
+### Bug Fixes
+
+* resolve actionable open issues (perf + Context-probe robustness) ([#1496](https://github.com/laurigates/claude-plugins/issues/1496)) ([73429d4](https://github.com/laurigates/claude-plugins/commit/73429d4021969914dce60f0f09756759cc44e380))
+
 ## [2.40.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.40.0...git-plugin-v2.40.1) (2026-05-31)
 
 

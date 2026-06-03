@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.1](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.11.0...health-plugin-v1.11.1) (2026-06-03)
+
+
+### Bug Fixes
+
+* resolve actionable open issues (perf + Context-probe robustness) ([#1496](https://github.com/laurigates/claude-plugins/issues/1496)) ([73429d4](https://github.com/laurigates/claude-plugins/commit/73429d4021969914dce60f0f09756759cc44e380))
+
 ## [1.11.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.10.1...health-plugin-v1.11.0) (2026-05-24)
 
 
