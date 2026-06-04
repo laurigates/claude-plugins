@@ -1,0 +1,70 @@
+direction: right
+
+# Two-speed session feedback architecture
+# Fast loop = per-session, in-context capture
+# Slow loop = weekly, autonomous aggregation
+# They meet at the claude-plugins issue tracker.
+
+fast: Fast loop — per-session · in context {
+  style.fill: "#eef7ee"
+  style.stroke: "#8fbc8f"
+
+  spinup: session-spinup\n(read · at session start) {
+    style.fill: "#8fbc8f"
+  }
+
+  end: /session:end\norchestrator {
+    style.fill: "#4a9eff"
+    style.font-color: "#ffffff"
+    style.bold: true
+  }
+
+  wrap: session-wrap\nwork state →\ntaskwarrior / journal / issues {
+    style.fill: "#ffffff"
+  }
+  distill: project-distill\nproject knowledge →\nrules / skills / recipes {
+    style.fill: "#ffffff"
+  }
+  feedback: feedback-session\nplugin signal →\nbug / enhancement / positive {
+    style.fill: "#ffffff"
+  }
+
+  end -> wrap: if qualifies
+  end -> distill: if qualifies
+  end -> feedback: if qualifies
+}
+
+slow: Slow loop — weekly · autonomous {
+  style.fill: "#fff3e0"
+  style.stroke: "#ffa500"
+
+  friction: friction-learner routine {
+    style.fill: "#ffa500"
+    style.bold: true
+  }
+  pipeline: |md
+    - parse transcripts (friction_parse.py)
+    - cluster + trend vs prior week
+    - classify PR-READY / RESEARCH / WATCH
+    - dispatch draft PRs + file issues
+  |
+  friction -> pipeline
+}
+
+tracker: claude-plugins issue tracker\nshared label taxonomy\n(session-feedback · friction-finding · positive-feedback) {
+  shape: cylinder
+  style.fill: "#dda0dd"
+}
+
+fast.feedback -> tracker: files (fast / one-off / positive)
+slow.pipeline -> tracker: files (aggregate / recurring)
+tracker -> slow.friction: reads open feedback issues →\ncorroborate · escalate {
+  style.stroke-dash: 4
+  style.stroke: "#a05fb0"
+}
+
+# Bookend note: spinup is the start-of-session read, not part of the wrap chain.
+fast.spinup -> fast.end: bookends the session {
+  style.stroke-dash: 2
+  style.opacity: 0.5
+}

@@ -48,6 +48,27 @@ layers: {
 }
 ```
 
+### Reserved board keywords cannot be node names
+
+`layers`, `scenarios`, and **`steps`** are reserved D2 **board keywords**. Naming
+a node any of these — even nested inside a container — fails to compile:
+
+```d2
+slow: {
+  steps: |md ... |   # ERROR: a node literally named `steps`
+}
+```
+
+```
+err: steps must be declared at a board root scope
+err: edge with board keyword alone doesn't make sense
+```
+
+The fix is to rename the node (`steps` → `pipeline`/`stages`, `layers` →
+`tiers`, etc.). The error is misleading — it points at board-scope rules, not
+at the name collision — so recognise the symptom: a compile failure on a node
+whose name happens to be `steps`/`layers`/`scenarios`.
+
 ## Additional Patterns
 
 ### Database ERD
