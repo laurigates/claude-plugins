@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.4](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.5.3...workflow-orchestration-plugin-v1.5.4) (2026-06-04)
+
+
+### Bug Fixes
+
+* resolve actionable open issues ([#1424](https://github.com/laurigates/claude-plugins/issues/1424), [#1425](https://github.com/laurigates/claude-plugins/issues/1425), [#1463](https://github.com/laurigates/claude-plugins/issues/1463)) ([#1500](https://github.com/laurigates/claude-plugins/issues/1500)) ([81afcee](https://github.com/laurigates/claude-plugins/commit/81afceeb292fed2feac4a0580f92501564c95866))
+
 ## [1.5.3](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.5.2...workflow-orchestration-plugin-v1.5.3) (2026-05-29)
 
 

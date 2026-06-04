@@ -23,7 +23,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.21.5",
+      "version": "2.21.6",
       "keywords": [
         "agents",
         "configuration",
@@ -260,7 +260,7 @@
       "name": "feedback-plugin",
       "source": "./feedback-plugin",
       "description": "Session feedback analysis - capture skill bugs as GitHub issues and learn from weekly friction across sessions",
-      "version": "1.6.7",
+      "version": "1.6.8",
       "keywords": [
         "feedback",
         "session-analysis",
@@ -644,7 +644,7 @@
       "name": "workflow-orchestration-plugin",
       "source": "./workflow-orchestration-plugin",
       "description": "Workflow orchestration - parallel agents, CI pipelines, preflight checks, checkpoint refactoring",
-      "version": "1.5.3",
+      "version": "1.5.4",
       "keywords": [
         "workflow",
         "orchestration",
