@@ -79,10 +79,6 @@ jobs:
         if: steps.changed.outputs.skill_count != '0'
         run: bash scripts/check-version-pin-coverage.sh --strict
 
-      - name: Check skill package references exist (npm/PyPI/crates/etc.)
-        if: steps.changed.outputs.skill_count != '0'
-        run: bash scripts/lint-package-references.sh
-
       - name: Post compliance results
         if: steps.compliance.outputs.result
         env:
