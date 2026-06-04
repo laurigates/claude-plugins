@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.6](https://github.com/laurigates/claude-plugins/compare/langchain-plugin-v1.5.5...langchain-plugin-v1.5.6) (2026-06-04)
+
+
+### Bug Fixes
+
+* **langchain-plugin:** correct nonexistent deep-agents npm package ([#1507](https://github.com/laurigates/claude-plugins/issues/1507)) ([b6eab08](https://github.com/laurigates/claude-plugins/commit/b6eab08194011ea1de851f80068631aedfa0b119))
+
 ## [1.5.5](https://github.com/laurigates/claude-plugins/compare/langchain-plugin-v1.5.4...langchain-plugin-v1.5.5) (2026-05-14)
 
 
