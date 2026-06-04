@@ -5,8 +5,8 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-21
-modified: 2026-06-01
-reviewed: 2026-06-01
+modified: 2026-06-04
+reviewed: 2026-06-04
 ---
 
 # Parallel Agent Dispatch
@@ -354,10 +354,13 @@ for symptoms, the four-step salvage routine, and prevention briefs.
 `TaskStop` does **not** discard the agent's work — its worktree stays on
 disk with every uncommitted change intact. This makes `TaskStop` a
 **recovery affordance**, not a last resort: when an agent is stuck or
-thrashing (e.g. repeatedly hitting a `PreToolUse` hook with a rising
-`is_error` rate and few Edits), killing it early and salvaging the
-worktree beats waiting for it to give up silently 80–200 tool calls
-later.
+thrashing — Bash:Edit ratio ≥ 9:1 **and** a rising `is_error` rate on
+those Bash calls, typically `PreToolUse` hook blocks — killing it early
+and salvaging the worktree beats waiting for it to give up silently
+80–200 tool calls later. See
+[REFERENCE.md → When to kill early](REFERENCE.md#killed-agent-worktree-recovery-taskstop)
+for the full quantitative thresholds and the rate-limit vs hook-block
+discriminator.
 
 After `TaskStop`, decide **salvage vs restart** from the worktree state:
 
