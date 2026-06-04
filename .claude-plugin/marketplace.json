@@ -399,7 +399,7 @@
       "name": "langchain-plugin",
       "source": "./langchain-plugin",
       "description": "LangChain JS/TS development - agents, chains, LangGraph workflows, and Deep Agents patterns",
-      "version": "1.5.5",
+      "version": "1.5.6",
       "keywords": [
         "langchain",
         "langgraph",
