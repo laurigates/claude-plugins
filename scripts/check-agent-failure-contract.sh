@@ -62,13 +62,26 @@ require_marker "$dispatch_skill" "#1422" "the issue reference"
 # custom-agent-definitions carries the cross-reference best practice.
 require_marker "$agentdef_skill" "#1422" "the issue reference / cross-link"
 
+# Regression #1424: REFERENCE.md must carry the QUANTITATIVE hook-thrashing
+# heuristic so an orchestrator can intervene programmatically.  A bulk edit
+# that "tightens" the prose may silently remove the threshold numbers, leaving
+# only qualitative guidance and restoring the deferral to "issue #1424".
+# Check for the specific numeric threshold strings that make the heuristic
+# actionable (9:1 ratio and the 30% / 3-consecutive-blocks is_error rate).
+reference_md="agent-patterns-plugin/skills/parallel-agent-dispatch/REFERENCE.md"
+require_marker "$reference_md" "9:1" "Bash:Edit ratio threshold (issue #1424)"
+require_marker "$reference_md" "is_error" "is_error rate signal (issue #1424)"
+require_marker "$reference_md" "30%" "30% is_error-rate threshold (issue #1424)"
+
 if [ "$errors" -ne 0 ]; then
   echo
-  echo "The loud-failure contract (issue #1422) must remain in the dispatch skills."
-  echo "See .claude/rules/regression-testing.md and the 'Loud-failure contract'"
-  echo "section in $dispatch_skill."
+  echo "The loud-failure contract (issue #1422) and the hook-thrashing heuristic"
+  echo "(issue #1424) must remain in the dispatch skills / REFERENCE.md."
+  echo "See .claude/rules/regression-testing.md and:"
+  echo "  - 'Loud-failure contract' section in $dispatch_skill"
+  echo "  - 'Killed-agent worktree recovery' section in $reference_md"
   exit 1
 fi
 
-echo "OK: loud-failure contract present in both agent-patterns dispatch skills"
+echo "OK: loud-failure contract and hook-thrashing heuristic present in agent-patterns dispatch skills"
 exit 0

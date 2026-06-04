@@ -176,14 +176,28 @@ than waiting for it to fail on its own. The key affordance is that
 change survives the kill — so the orchestrator can recover the work
 instead of re-implementing from scratch.
 
-**When to kill early.** An agent that is hook-thrashing emits a visible
-signature well before it gives up: a Bash-heavy tool mix with very few
-Edits and a rising rate of `is_error: true` results (typically
-`PreToolUse` hook blocks). Killing at that point and salvaging the
-worktree is cheaper than letting it run another 80–200 tool calls to a
-silent failure. (The leading-indicator heuristic itself is tracked
-separately in issue
-[#1424](https://github.com/laurigates/claude-plugins/issues/1424).)
+**When to kill early.** A hook-thrashing agent emits a quantifiable
+signature well before it gives up. Use these thresholds to intervene
+programmatically — don't wait for the silent failure 80–200 tool calls
+later:
+
+| Signal | Thrashing threshold | Meaning |
+|--------|--------------------|---------| 
+| **Bash:Edit ratio** | ≥ 9:1 (≥ ~90% Bash calls relative to Edit calls) | Agent is retrying blocked commands instead of making file progress |
+| **`is_error: true` rate on Bash calls** | Rising (≥ 3 consecutive `PreToolUse` blocks, or ≥ 30% of recent Bash calls) | Hook is repeatedly denying the same class of command |
+| **Combined signal** | Both thresholds met simultaneously | Strong indicator — kill and salvage now |
+
+The ratio threshold alone is not sufficient (a read-heavy research
+phase is legitimately Bash-heavy). The rising `is_error` rate on Bash
+calls is the key discriminator: it shows the agent is blocked, not just
+exploring. When both thresholds fire together, the agent is
+hook-thrashing and `TaskStop` is the right call.
+
+Killing at that point and salvaging the worktree is cheaper than
+waiting. Cross-reference the concurrency-cap and wave-splitting guidance
+in `SKILL.md § Concurrent rate-limit risk` — a Bash:Edit ratio spike
+during a rate-limit storm can mimic hook-thrashing; check `is_error`
+content for `Rate limited` vs `hook` keywords before killing.
 
 **Recovery checklist** — from the parent, after `TaskStop`:
 
