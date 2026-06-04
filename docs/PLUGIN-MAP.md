@@ -1,6 +1,6 @@
 # Plugin Navigation Map
 
-Navigation guide for 39 plugins and 300+ skills. Start here.
+Navigation guide for 41 plugins and 300+ skills. Start here.
 
 ## Quick Start
 
@@ -175,6 +175,7 @@ Install based on your project's tech stack and domain.
 | python-plugin | Project uses Python |
 | rust-plugin | Project uses Rust |
 | bevy-plugin | Game development with Bevy engine |
+| comfyui-plugin | Building ComfyUI custom-node packs — scaffold, create + seed repo, gitops adoption, Comfy Registry publish |
 | container-plugin | Project uses Docker containers |
 | kubernetes-plugin | Deploying to Kubernetes clusters |
 | terraform-plugin | Managing infrastructure as code |
