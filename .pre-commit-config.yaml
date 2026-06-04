@@ -57,6 +57,12 @@ repos:
         language: script
         files: '(SKILL\.md|skill\.md|REFERENCE\.md)$'
         pass_filenames: false
+      - id: lint-package-references
+        name: lint skill files for references to nonexistent packages (npm/PyPI/crates/etc.)
+        entry: ./scripts/lint-package-references.sh
+        language: script
+        files: '(SKILL\.md|skill\.md|REFERENCE\.md)$'
+        pass_filenames: false
       - id: check-version-pin-coverage
         name: skill version pins are a Renovate-managed shape (version-pinning.md)
         entry: bash ./scripts/check-version-pin-coverage.sh --strict
