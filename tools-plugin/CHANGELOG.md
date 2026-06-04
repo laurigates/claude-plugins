@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.8.4](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.8.3...tools-plugin-v2.8.4) (2026-06-04)
+
+
+### Documentation
+
+* add session-plugin workflow design, diagram, and project-plugin audit ([#1505](https://github.com/laurigates/claude-plugins/issues/1505)) ([f5dd11b](https://github.com/laurigates/claude-plugins/commit/f5dd11bca36fb3619aa2981b1a24618424067579))
+
 ## [2.8.3](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.8.2...tools-plugin-v2.8.3) (2026-05-14)
 
 
