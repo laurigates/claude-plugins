@@ -4,8 +4,8 @@ description: Sequential-wave dispatch for multi-agent work with cross-task depen
 user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 created: 2026-04-24
-modified: 2026-05-29
-reviewed: 2026-05-29
+modified: 2026-06-04
+reviewed: 2026-06-04
 ---
 
 # Workflow Wave Dispatch
@@ -69,6 +69,38 @@ do when a gate fails. The gate *set* itself is the six-gate table in
   waves.
 - Inside a single wave, fan out to the widest safe parallelism that
   `parallel-agent-dispatch` allows.
+
+## Schema-Constrained Agents Under Rate-Limit Storms
+
+Schema-constrained `agent()` calls — agents bound to a `StructuredOutput`
+schema — are **fragile under rate-limit storms** (issue
+[#1463](https://github.com/laurigates/claude-plugins/issues/1463)). A
+rate-limit hit that occurs *before* the agent emits its `StructuredOutput`
+is reported as a hard parse failure: the caller receives no partial output
+and the agent's work is unrecoverable from the schema path, even when
+substantial work was done inside the agent's context window.
+
+**Why this matters at the wave layer.** A wide wave of schema-bound agents
+(e.g. 8–10 concurrent structured-output extractors) creates a rate-limit
+storm risk. If the storm wipes half the wave, the gate fails and the
+orchestrator has no partial results to salvage — unlike a plain `agent()`
+call where the worktree holds the work.
+
+**Blast-radius containment** — apply at wave-scheduling time:
+
+| Heuristic | Guidance |
+|-----------|----------|
+| Wave size | Cap schema-bound waves at **≤ 5 concurrent agents** (same cap as `parallel-agent-dispatch` for Opus 4.7 parents) |
+| Stagger | Add **~30 s between launches** in the same wave to spread the token-request window |
+| Wave splits | If the fan-out genuinely needs >5 schema-bound calls, dispatch in sequential sub-waves of ≤ 5 — gate each sub-wave before launching the next |
+| Retry shape | On a rate-limit partial failure, recovery-dispatch only the failed agents (not the whole wave) — the successful siblings' outputs are valid |
+
+For concurrency caps, wave-splitting mechanics, and the recovery-dispatch
+routine for rate-limited agents, see
+`agent-patterns-plugin:parallel-agent-dispatch` § Concurrent rate-limit
+risk and
+[REFERENCE.md → Concurrent rate-limit recovery](../../agent-patterns-plugin/skills/parallel-agent-dispatch/REFERENCE.md).
+Do not duplicate that guidance here.
 
 ## Gate Failure: Roll Back, Don't Paper Over
 
