@@ -8,7 +8,7 @@
   "blueprint-plugin": "3.34.1",
   "codebase-attributes-plugin": "1.2.2",
   "code-quality-plugin": "1.14.6",
-  "comfyui-plugin": "1.0.0",
+  "comfyui-plugin": "1.1.0",
   "communication-plugin": "1.2.4",
   "component-patterns-plugin": "1.4.3",
   "configure-plugin": "1.24.5",
@@ -37,7 +37,7 @@
   "taskwarrior-plugin": "1.5.0",
   "terraform-plugin": "1.7.5",
   "testing-plugin": "3.14.0",
-  "tools-plugin": "2.8.3",
+  "tools-plugin": "2.8.4",
   "typescript-plugin": "1.8.4",
   "workflow-orchestration-plugin": "1.5.3"
 }
