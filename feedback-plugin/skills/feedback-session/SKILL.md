@@ -7,8 +7,8 @@ model: opus
 argument-hint: "--dry-run | --target-repo owner/repo | plugin-name"
 disable-model-invocation: true
 created: 2026-02-18
-modified: 2026-05-22
-reviewed: 2026-05-14
+modified: 2026-06-04
+reviewed: 2026-06-04
 ---
 
 # /feedback:session
@@ -32,7 +32,7 @@ Analyze the current session for skill feedback and create GitHub issues to track
 
 **Default target repo**: By default, this skill files issues against the repository in the current working directory. If you are giving feedback about a plugin skill itself rather than the application code in the session, use `--target-repo <owner/repo>` to point at the plugin source repo.
 
-**No-remote auto-suggest**: When the cwd has no git remote and `--target-repo` is not provided, this skill scans the session for plugin-skill references (e.g. `blueprint-plugin:blueprint-init`) and auto-suggests the dominant `<owner>/<repo>` from the plugin cache as the default — typically `laurigates/claude-plugins` for marketplace users. The user can accept the suggestion or override with a different `owner/repo`. See Step 1a.
+**Dominant-source mismatch**: When the cwd has a git remote but the session's tool calls were dominated by a *different* plugin/source repo, this skill detects the mismatch and asks you to confirm which repo to file against — the cwd repo or the plugin source. See Step 1a for the full four-combination decision table.
 
 ## Context
 
@@ -42,8 +42,9 @@ stderr when invoked outside a git repository — and stderr from a Context
 backtick aborts the skill before its body runs. `2>/dev/null` and `||` are
 also blocked in Context commands (see `.claude/rules/agentic-permissions.md`),
 so there is no fallback form that survives the no-git case. Step 1a's
-dominant-source auto-suggest fallback is the canonical handler for the
-no-remote scenario.
+dominant-source scan runs for both the cwd-with-remote and the no-remote
+cases, and surfaces a mismatch-confirmation prompt when the session's plugin
+activity points to a different repo than the cwd remote.
 
 Open feedback issues are fetched during Step 3 (deduplication), scoped to the
 resolved `$TARGET_REPO`. They are not pre-fetched in context because
@@ -74,28 +75,60 @@ Execute this session feedback workflow:
 
 **1a. Determine target repo**
 
+Use this four-combination decision table to resolve `$TARGET_REPO`:
+
+| `--target-repo` set? | cwd has remote? | Dominant source found? | Action |
+|----------------------|-----------------|------------------------|--------|
+| Yes | any | any | Use `--target-repo` value. Done. |
+| No | No | Yes (≥70%, ≥3 refs) | Prompt: accept dominant source or enter free-text. |
+| No | No | No | Prompt: free-text entry or abort. |
+| No | Yes | Agrees with cwd remote | Use cwd remote silently. |
+| No | Yes | Differs from cwd remote | Prompt: offer dominant source AND cwd remote as named choices. |
+
+Execute the steps below to implement this table.
+
+**Step A: Check for explicit `--target-repo` / `-R`.**
+
 If `--target-repo` or `-R` was passed in `$ARGUMENTS`, set `$TARGET_REPO` to that value and append `-R $TARGET_REPO` to every `gh` command in the remaining steps. Skip the rest of this sub-step.
 
-Otherwise, infer the repo from the cwd: `gh repo view --json nameWithOwner -q '.nameWithOwner'`. If this succeeds, use the returned `owner/repo` as the implicit target (no `-R` flag needed since `gh` defaults to cwd) and continue to Step 1b.
+**Step B: Run the dominant-source scan (always).**
 
-If `gh repo view` fails (typically with `no git remotes found` in a repo without a remote), execute this fallback in order:
+Walk the conversation transcript and tool-call history collecting every reference of the form `<plugin>:<skill>` (skill invocations like `/blueprint:init`, agent IDs like `agents-plugin:security-audit`, and plugin names mentioned in skill bodies). For each match, look up the owning `<owner>/<repo>` by enumerating directories under `~/.claude/plugins/cache/<owner>/<repo>/` and matching `<plugin>` against the cached plugin manifests. Tally references per `<owner>/<repo>`.
 
-1. **Scan the session for plugin-skill references.** Walk the conversation transcript and tool-call history collecting every reference of the form `<plugin>:<skill>` (skill invocations like `/blueprint:init`, agent IDs like `agents-plugin:security-audit`, and plugin names mentioned in skill bodies). For each match, look up the owning `<owner>/<repo>` by enumerating directories under `~/.claude/plugins/cache/<owner>/<repo>/` and matching `<plugin>` against the cached plugin manifests. Tally references per `<owner>/<repo>`.
+Compute the share per entry. If the top entry accounts for **more than ~70%** of total references **and** there are at least 3 references in total, treat it as dominant: record `$SUGGESTED_REPO` and `$N`.
 
-2. **Detect a dominant source.** Compute the share of references attributable to each `<owner>/<repo>`. If the top entry accounts for **more than ~70%** of total references **and** there are at least 3 references in total, treat it as dominant. Record the dominant `$SUGGESTED_REPO`, the reference count `$N`, and proceed to step 3. Otherwise, jump to step 4.
+**Step C: Attempt cwd remote detection.**
 
-3. **Prompt with the suggestion as the default.** Use AskUserQuestion to ask:
+Run `gh repo view --json nameWithOwner -q '.nameWithOwner'`. If it succeeds, record the result as `$CWD_REPO`.
 
-   > **No git remote found.** Suggested target: `$SUGGESTED_REPO` (derived from $N plugin skills referenced this session). Accept, or enter a different `owner/repo`?
+**Step D: Branch on the combination.**
 
-   Provide options:
-   1. **Accept `$SUGGESTED_REPO`** — set `$TARGET_REPO` to the suggestion and append `-R $TARGET_REPO` to every `gh` command in the remaining steps.
-   2. **Enter a different `owner/repo`** — open a free-text follow-up; validate the input matches `^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$` and set `$TARGET_REPO` accordingly.
-   3. **Abort** — exit the skill.
+- **No `$CWD_REPO` and no dominant source** — Use AskUserQuestion to ask the user to enter an `owner/repo` free-text. Validate against `^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$`, set `$TARGET_REPO`, and continue to Step 1b. If the user declines, exit the skill.
 
-   Continue to Step 1b once `$TARGET_REPO` is set.
+- **No `$CWD_REPO` and dominant source found** — Use AskUserQuestion to ask:
 
-4. **Fall back to free-text prompt (no dominant source detected).** Use AskUserQuestion to ask the user to enter an `owner/repo`. Validate the input matches `^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$`, set `$TARGET_REPO`, and continue to Step 1b. If the user declines to provide a target, exit the skill.
+  > **No git remote found.** Suggested target: `$SUGGESTED_REPO` (derived from $N plugin skills referenced this session). Accept, or enter a different `owner/repo`?
+
+  Options:
+  1. **Accept `$SUGGESTED_REPO`** — set `$TARGET_REPO` to the suggestion and append `-R $TARGET_REPO` to every remaining `gh` command.
+  2. **Enter a different `owner/repo`** — free-text follow-up; validate and set `$TARGET_REPO`.
+  3. **Abort** — exit the skill.
+
+  Continue to Step 1b once `$TARGET_REPO` is set.
+
+- **`$CWD_REPO` present, no dominant source OR dominant source == `$CWD_REPO`** — use `$CWD_REPO` silently as the implicit target (`gh` defaults to cwd; no `-R` needed). Continue to Step 1b.
+
+- **`$CWD_REPO` present AND dominant source differs from `$CWD_REPO`** — the session's plugin activity pointed mostly at a different repo than the cwd remote. Use AskUserQuestion to ask:
+
+  > **Mismatch detected.** The session's tool calls were dominated by **`$SUGGESTED_REPO`** ($N references), but the current directory's git remote points to **`$CWD_REPO`**. Which repo should receive the feedback?
+
+  Options:
+  1. **`$SUGGESTED_REPO`** (plugin/skill source — dominant this session) — set `$TARGET_REPO` to `$SUGGESTED_REPO` and append `-R $TARGET_REPO` to all remaining `gh` commands.
+  2. **`$CWD_REPO`** (cwd git remote — the application repo) — use `$CWD_REPO` silently (no `-R` needed).
+  3. **Enter a different `owner/repo`** — free-text follow-up; validate and set `$TARGET_REPO`.
+  4. **Abort** — exit the skill.
+
+  Continue to Step 1b once the choice is resolved.
 
 #### Dominant-source detection: parameters and tiering
 
@@ -106,8 +139,9 @@ The thresholds and prompt order above are deliberate. Keep them aligned when edi
 | Dominance threshold | **> 70%** of total references | Lower thresholds risk wrong defaults on mixed sessions; higher would suppress correct suggestions on small ones |
 | Minimum sample size | **≥ 3** references | Two references can both come from one stray skill mention; three is the smallest sample that survives one outlier |
 | Prompt tiering | suggestion → free-text → abort | The user can correct a wrong guess in one keystroke without redoing the scan, and `Abort` is always one selection away |
+| Mismatch prompt | named choices (dominant / cwd / free-text / abort) | Both repos are plausible; naming them saves the user a copy-paste and makes the choice explicit |
 
-Evidence: issue #1207 (positive feedback) reported the first end-to-end exercise of this fallback in a no-remote cwd. The 3/3 100%-dominant case auto-suggested `laurigates/claude-plugins`, the user accepted on the first prompt, and the free-text tier never fired — confirming the "Recommended" affordance lands the suggestion cleanly when the heuristic is well-tuned.
+Evidence: issue #1207 (positive feedback) reported the first end-to-end exercise of this fallback in a no-remote cwd. The 3/3 100%-dominant case auto-suggested `laurigates/claude-plugins`, the user accepted on the first prompt, and the free-text tier never fired — confirming the "Recommended" affordance lands the suggestion cleanly when the heuristic is well-tuned. Issue #1425 extended the dominant-source scan to the cwd-with-remote branch so the mismatch is surfaced rather than silently dropped.
 
 > **Bonus / future work**: when `$SUGGESTED_REPO` is also cloned at `~/.claude/plugins/cache/<owner>/<repo>/<version>/`, that path could be used by Step 1b's `labels.tf`/`labels.yaml` Glob detection instead of cwd, so IaC-managed labels are detected correctly even when the skill runs outside the plugin checkout. This Step 1b plumbing is intentionally out of scope for this PR — track as a separate issue. For now, Step 1b continues to scan the cwd.
 

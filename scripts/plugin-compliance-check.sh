@@ -313,6 +313,27 @@ check_skill_body() {
         has_errors=true
       fi
     fi
+
+    # Regression: feedback-session Step 1a silently filed against the cwd git
+    # remote even when the session's tool calls were dominated by a different
+    # plugin/source repo (issue #1425). The semantic invariant is that the
+    # dominant-source scan runs for BOTH the cwd-with-remote and the no-remote
+    # cases, and that a mismatch between the dominant source and the cwd remote
+    # surfaces a confirmation prompt rather than silently using the cwd repo.
+    # Two literal strings anchor the fix:
+    #   "Mismatch detected" — the mismatch-confirmation prompt heading
+    #   "SUGGESTED_REPO" in the cwd-remote-present branch — proves the dominant
+    #     source is compared against the cwd remote, not only used as fallback
+    if [ "$skill_name" = "feedback-session" ]; then
+      if ! grep -q "Mismatch detected" "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must include 'Mismatch detected' mismatch-confirmation prompt in Step 1a (issue #1425)")
+        has_errors=true
+      fi
+      if ! grep -q "dominant source differs from" "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must include the cwd-remote-vs-dominant-source branch ('dominant source differs from') in Step 1a decision table (issue #1425)")
+        has_errors=true
+      fi
+    fi
   done < <(find "$skills_dir" -type f \( -iname "SKILL.md" -o -iname "skill.md" \) -print0 2>/dev/null)
 
   if $has_errors; then
