@@ -104,6 +104,28 @@ echo "=== TEST E: floating @main not flagged ==="
 assert "trufflehog@main produces no issue" \
   "$([ "$(contains "$fx_out" "trufflehog")" = "false" ] && echo true || echo false)"
 
+# --- TEST F: .claude/worktrees/ copies are pruned from the walk (issue #1492) -
+# Worktree copies are full repo clones; without the prune every skill file is
+# scanned once per active worktree (499 real files became 12,768 with worktrees
+# present). Adding a skill under .claude/worktrees/<x>/ must NOT change the
+# files-scanned count, nor leak its uncovered pin into the report.
+echo "=== TEST F: .claude/worktrees/ copies are not scanned ==="
+files_before="$(field "$fx_out" FILES_SCANNED)"
+mkdir -p "$fixture/.claude/worktrees/agent-deadbeef/demo-plugin/skills/demo"
+cat > "$fixture/.claude/worktrees/agent-deadbeef/demo-plugin/skills/demo/SKILL.md" <<'EOF'
+# Leaked worktree copy
+
+```yaml
+- uses: leaked/from-worktree@1
+```
+EOF
+fx_out_wt="$(bash "$checker" --project-dir "$fixture")"
+files_after="$(field "$fx_out_wt" FILES_SCANNED)"
+assert "FILES_SCANNED unchanged when a worktree copy is added ($files_before == $files_after)" \
+  "$([ "$files_before" = "$files_after" ] && echo true || echo false)"
+assert "worktree-copy pin does not leak into the report" \
+  "$([ "$(contains "$fx_out_wt" "from-worktree")" = "false" ] && echo true || echo false)"
+
 echo ""
 echo "=== SUMMARY ==="
 echo "PASSED=$pass_count"
