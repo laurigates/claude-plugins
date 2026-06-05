@@ -20,6 +20,8 @@
 #     - contains the literal heading text "Loud-failure contract"
 #     - cites the banned bare-surrender example "Terminal."
 #     - references issue #1422
+#     - references issue #1480 with the absolute-path git idiom
+#       (`git -C "$WORKTREE"`) that defends against cwd-reset leaks
 #   custom-agent-definitions/SKILL.md
 #     - references issue #1422 (the cross-reference to the contract)
 #
@@ -72,6 +74,19 @@ reference_md="agent-patterns-plugin/skills/parallel-agent-dispatch/REFERENCE.md"
 require_marker "$reference_md" "9:1" "Bash:Edit ratio threshold (issue #1424)"
 require_marker "$reference_md" "is_error" "is_error rate signal (issue #1424)"
 require_marker "$reference_md" "30%" "30% is_error-rate threshold (issue #1424)"
+
+# Regression #1480: a git-write agent under isolation:worktree leaked its git
+# writes into the MAIN repo because the agent-thread cwd reset landed on the
+# session's primary cwd, not the worktree.  The dispatch contract must carry
+# the cwd-reset guardrail (use `git -C "$WORKTREE"` / pin show-toplevel, plus a
+# post-run main-repo integrity check) so a bulk edit can't tighten it away.
+# This is DISTINCT from the #1319 transient-leak section above — assert both the
+# #1480 reference and the absolute-path idiom that defends against the reset.
+require_marker "$dispatch_skill" "#1480" "the cwd-reset worktree-leak reference"
+# The single-quoted needle is a literal fixed string (grep -qF), not a shell
+# expansion — `$WORKTREE` must stay verbatim to match the SKILL.md marker.
+# shellcheck disable=SC2016
+require_marker "$dispatch_skill" 'git -C "$WORKTREE"' "the absolute-path git idiom (issue #1480)"
 
 if [ "$errors" -ne 0 ]; then
   echo

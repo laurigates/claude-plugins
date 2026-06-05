@@ -5,8 +5,8 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-21
-modified: 2026-06-04
-reviewed: 2026-06-04
+modified: 2026-06-05
+reviewed: 2026-06-05
 ---
 
 # Parallel Agent Dispatch
@@ -83,6 +83,42 @@ running, the orchestrator must:
 `/git:coworker-check` raises the verdict `worktree_leak_suspected` when
 an untracked file in the parent matches a path in any linked worktree.
 Run it before every parent-side commit during a wave.
+
+#### cwd-reset leaking git writes into the main repo
+
+Distinct from the transient-leak shape above: issue
+[#1480](https://github.com/laurigates/claude-plugins/issues/1480)
+documents a git-write agent under `isolation: "worktree"` whose bare
+`git` commands ran against the **main checkout**, not its worktree. Agent
+threads have their bash cwd reset between calls (documented behaviour),
+and the reset landed on the session's primary cwd (the main repo root)
+instead of the agent's worktree. Every `git fetch` / `git checkout -B` /
+`git rebase --autostash` mutated `main` — sweeping the user's uncommitted
+edits into an autostash that pop-conflicted, and leaving the main repo on
+a stray branch. The orchestrator believed the work was sandboxed.
+
+Brief every git-**write** agent dispatched under worktree isolation to be
+resilient to the cwd reset:
+
+- **Never assume `cwd == worktree`.** Capture the worktree root once and
+  reference it absolutely. Either prefix every git call with
+  `git -C "$WORKTREE" …`, or `cd "$WORKTREE"` and verify with `pwd` at the
+  top of **each** bash call — the cwd does not persist between calls.
+- **Pin the worktree path.** Run `git rev-parse --show-toplevel` on the
+  first call, store it as `$WORKTREE`, and use that value thereafter
+  rather than trusting the persisted cwd.
+- **Forbid bare branch-switching / autostash.** A git-write agent must
+  confirm it is inside its isolated worktree before any
+  `git checkout -B` / `git rebase --autostash`; in the main repo these
+  swallow the user's uncommitted work.
+
+After a git-write agent returns, the orchestrator runs a **post-run
+integrity check** on the main repo: `git -C <main-repo> branch
+--show-current` and `git -C <main-repo> status --porcelain` must be
+unchanged from before the dispatch. A changed branch or new dirty state
+is silent main-repo mutation — treat it the same as a missing Return
+Contract (see "Handling a Missing Return") and salvage before reporting
+the task complete.
 
 See also: `agent-teams` Lead Preflight Checklist for file-scope and pin-budget
 checks that stack on top of these.
