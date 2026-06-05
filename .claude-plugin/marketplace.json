@@ -147,7 +147,7 @@
     {
       "name": "comfyui-plugin",
       "source": "./comfyui-plugin",
-      "description": "ComfyUI custom-node pack lifecycle - scaffold a pack, create + seed the repo, open the gitops adoption PR, publish to the Comfy Registry",
+      "description": "ComfyUI custom-node pack lifecycle - scaffold a pack, create + seed the repo, open the gitops adoption PR, publish to the Comfy Registry, and add README screenshots",
       "version": "1.1.0",
       "keywords": [
         "comfyui",
@@ -155,7 +155,9 @@
         "scaffold",
         "litegraph",
         "comfy-registry",
-        "gitops"
+        "gitops",
+        "screenshots",
+        "playwright"
       ],
       "category": "development"
     },
