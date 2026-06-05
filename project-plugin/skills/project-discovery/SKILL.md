@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
-reviewed: 2026-05-09
+modified: 2026-06-05
+reviewed: 2026-06-05
 name: project-discovery
 description: Project orientation for unfamiliar codebases. Use when entering a new project, exploring unknown repos, or working on shaky assumptions about build, test, lint, or CI setup.
 user-invocable: false
-allowed-tools: Bash(ls *), Bash(find *), Bash(wc *), Read, Grep, Glob, TodoWrite
+allowed-tools: Bash(bash *), Read, Grep, Glob, TodoWrite
 ---
 
 # Project Discovery
@@ -113,24 +113,13 @@ git log --oneline -n 10                       # Recent commits
 git rev-list --count HEAD...@{u}              # Commits ahead/behind remote
 ```
 
-### Project Type Detection
-```bash
-ls -la | grep -E "(package\.json|Cargo\.toml|pyproject\.toml|go\.mod)"
-find . -maxdepth 3 -name "package.json"       # Monorepo detection
-```
+### Project type, tooling, and docs
 
-### Tooling Discovery
-```bash
-jq -r '.scripts | keys[]' package.json        # npm scripts
-grep "^[a-zA-Z0-9_-]*:" Makefile              # Make targets
-ls -la .github/workflows/                      # GitHub Actions
-```
-
-### Documentation Scan
-```bash
-head -50 README.md                            # Project description
-ls -la | grep -E "(README|CONTRIBUTING)"      # Key docs
-```
+`scripts/discover.sh` already detects project type (manifest files), tooling
+(npm scripts, Make targets, CI workflows), and documentation. Read those signals
+from the script's structured output, or use the `Glob`/`Grep`/`Read` tools
+directly rather than hand-coding `ls`/`find`/`head` shells — see
+[REFERENCE.md](REFERENCE.md) for the full manual command set.
 
 ---
 

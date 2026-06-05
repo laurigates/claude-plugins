@@ -314,6 +314,23 @@ check_skill_body() {
       fi
     fi
 
+    # Regression: project-continue read deprecated blueprint v1/v2 state paths
+    # `.claude/blueprints/prds/` and `.claude/blueprints/work-orders/`, so it
+    # never found PRDs or work-orders in a current-format (v3.x) blueprint repo
+    # where state lives under `docs/`. See issue #1503: the canonical paths are
+    # `docs/prds/` (blueprint-init) and `docs/blueprint/work-orders/`
+    # (blueprint-status). The semantic invariant is that the resume skill points
+    # at the live state directories — a bulk edit re-introducing the deprecated
+    # paths silently breaks task resumption again. (blueprint-migration/upgrade
+    # skills legitimately cite the old paths as historical move sources, so this
+    # guard is scoped to project-continue only.)
+    if [ "$skill_name" = "project-continue" ]; then
+      if grep -q '\.claude/blueprints/' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md references deprecated '.claude/blueprints/' state path — use canonical 'docs/prds/' and 'docs/blueprint/work-orders/' (issue #1503)")
+        has_errors=true
+      fi
+    fi
+
     # Regression: feedback-session Step 1a silently filed against the cwd git
     # remote even when the session's tool calls were dominated by a different
     # plugin/source repo (issue #1425). The semantic invariant is that the
