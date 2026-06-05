@@ -167,6 +167,68 @@ hangs, emit your Return Contract with `status: failed`,
 `worktree: dirty: <files>`, and `Orchestrator action needed: pre-commit
 hook X failed, fix and commit on my behalf."*
 
+## WIP salvage before re-dispatch (#1491)
+
+A schema-bound, worktree-isolated agent cut off by a rate limit (or other
+transport-layer interruption) *after* it implemented its change but *before*
+it emitted the final StructuredOutput call is reported as **failed** — yet the
+work is sitting fully intact as **uncommitted WIP in the agent's worktree**.
+The orchestrator's result array shows nothing; only the persisted worktree
+(which survives because it *did* change) hints anything happened. Without an
+explicit salvage step that work is invisible and easily discarded.
+
+> **Evidence.** A 7-agent run: 5/7 agents opened PRs; 2 were marked
+> *"subagent completed without calling StructuredOutput (after 2 in-conversation
+> nudges)"*. Inspecting their worktrees (`git -C <worktree> status --short`)
+> showed **complete, correct implementations** as uncommitted changes (new
+> files + edits). Both were salvaged manually — two trivial typecheck fixes in
+> one, then lint/typecheck/tests, commit/push/PR — with no re-run needed; the
+> work was already done. Salvaging cost minutes; re-dispatching would have
+> redone work that was already complete.
+
+**Empty-vs-dirty discrimination** — the first move when an agent is reported
+failed is to decide whether its worktree holds salvageable work. Do this
+*before* re-dispatching:
+
+| Probe (from the parent) | Result | Decision |
+|-------------------------|--------|----------|
+| `git -C <worktree> status --porcelain` | non-empty | **Dirty** — agent produced changes; salvage them |
+| `git -C <worktree> log --oneline origin/main..HEAD` | shows commits | **Committed** — push the branch, open the PR |
+| Both empty / trivial | nothing landed | **Empty** — re-dispatch or resume; nothing to lose |
+
+The distinction matters for the failure summary too: *"agent errored with
+empty worktree"* (genuinely needs a fresh run) is a different verdict than
+*"agent produced changes but didn't return structured output"* (salvage, do
+not re-run). Report the two cases separately so a re-dispatch decision is not
+made blind.
+
+**Salvage routine** for a dirty worktree:
+
+1. `git -C <worktree> status --short` — confirm the diff matches the agent's
+   declared scope (it should look like a complete implementation, not a
+   half-edit).
+2. Run the project's quality gates inside the worktree (lint, typecheck,
+   tests). Repair any trivial breakage — the implementation is done, but the
+   cut-off may have left a small loose end (a stale cast, an unran formatter).
+3. Commit on the agent's behalf preserving its intended commit message and
+   conventional-commit scope, then `git -C <worktree> push -u origin <branch>`.
+4. Open the PR. File a tracking note that the agent stalled at
+   StructuredOutput so the pattern is visible.
+
+**Defensive prevention — checkpoint WIP commits in the brief.** The salvage
+above is only possible because the worktree persisted. Make the work *also*
+survive on a branch by instructing every worktree-isolated agent to:
+
+> Commit WIP at checkpoints. After each substantive slice — and **before you
+> would otherwise terminate** — run `git add -A && git commit -m "wip:
+> <slice>"` so your partial work is captured on the branch even if your final
+> structured result is lost. The orchestrator can salvage a committed branch
+> far more cleanly than an uncommitted worktree.
+
+A checkpoint commit converts the dirty-worktree case into the
+committed-branch case (row 2 above) — the cleanest salvage, a plain
+`git push` with no commit-on-behalf step.
+
 ## Killed-agent worktree recovery (TaskStop)
 
 Distinct from the silent commit-stall above: here the orchestrator

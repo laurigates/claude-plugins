@@ -73,6 +73,20 @@ require_marker "$reference_md" "9:1" "Bash:Edit ratio threshold (issue #1424)"
 require_marker "$reference_md" "is_error" "is_error rate signal (issue #1424)"
 require_marker "$reference_md" "30%" "30% is_error-rate threshold (issue #1424)"
 
+# Regression #1491: an agent cut off (e.g. by a rate limit) AFTER implementing
+# its change but BEFORE emitting StructuredOutput is reported failed, yet the
+# work sits intact as uncommitted WIP in its worktree. The fix is twofold and
+# both halves are semantic invariants a bulk edit could silently drop:
+#   1) SKILL.md "Handling a Missing Return" must (a) tell the orchestrator to
+#      DISCRIMINATE an empty worktree from a dirty one before re-dispatching,
+#      and (b) instruct the brief to commit WIP at checkpoints.
+#   2) REFERENCE.md must carry the "WIP salvage before re-dispatch" subsection.
+require_marker "$dispatch_skill" "empty vs dirty" "empty-vs-dirty discrimination (issue #1491)"
+require_marker "$dispatch_skill" "WIP at checkpoints" "checkpoint-WIP-commit brief instruction (issue #1491)"
+require_marker "$dispatch_skill" "#1491" "the issue reference"
+require_marker "$reference_md" "WIP salvage before re-dispatch" "the salvage subsection heading (issue #1491)"
+require_marker "$reference_md" "#1491" "the issue reference"
+
 if [ "$errors" -ne 0 ]; then
   echo
   echo "The loud-failure contract (issue #1422) and the hook-thrashing heuristic"
@@ -80,8 +94,9 @@ if [ "$errors" -ne 0 ]; then
   echo "See .claude/rules/regression-testing.md and:"
   echo "  - 'Loud-failure contract' section in $dispatch_skill"
   echo "  - 'Killed-agent worktree recovery' section in $reference_md"
+  echo "  - 'WIP salvage before re-dispatch' section in $reference_md (issue #1491)"
   exit 1
 fi
 
-echo "OK: loud-failure contract and hook-thrashing heuristic present in agent-patterns dispatch skills"
+echo "OK: loud-failure contract, hook-thrashing heuristic, and WIP-salvage discrimination present in agent-patterns dispatch skills"
 exit 0
