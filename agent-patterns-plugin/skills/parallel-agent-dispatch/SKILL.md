@@ -5,8 +5,8 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-21
-modified: 2026-06-04
-reviewed: 2026-06-04
+modified: 2026-06-05
+reviewed: 2026-06-05
 ---
 
 # Parallel Agent Dispatch
@@ -336,18 +336,42 @@ reports the URL back in the Return Contract.
 If an agent exits without emitting the Return Contract:
 
 1. Treat as a **silent stall**, not a success.
-2. Check the agent's worktree for uncommitted work (`git status`) and
-   committed-but-unpushed branches (`git log --branches --not --remotes`).
+2. **Discriminate empty vs dirty worktree** before deciding what to do.
+   Run `git -C <worktree> status --porcelain` and
+   `git -C <worktree> log --oneline origin/main..HEAD`:
+   - **Dirty / commits present** → the agent did the work; **salvage** it
+     (commit/push the WIP, open the PR) rather than re-dispatching. The
+     work is already done; re-running redoes completed work.
+   - **Empty / trivial diff** → nothing to salvage; resume the agent or
+     re-dispatch from scratch.
 3. Either resume the agent with a message asking for the missing summary, or
    salvage the work yourself and file a tracking issue noting the stall.
 4. Do **not** report the parent task as complete until every spawned agent has
    produced a Return Contract (or been explicitly accounted for).
 
-The dominant cause of silent stalls is a **pre-commit hook blocking
-`git commit`** — the agent's diff sits intact in the worktree, the hook is
-parked, no Return Contract fires. See
+Two causes of a missing Return Contract, both leaving the work intact:
+
+- A **pre-commit hook blocking `git commit`** — the agent's diff sits intact
+  in the worktree, the hook is parked, no Return Contract fires.
+- A **rate limit (or other cut-off) after the implementation but before the
+  StructuredOutput call** — the agent finished the change and it is sitting as
+  uncommitted WIP in the worktree, but the schema-bound result was never
+  emitted, so the orchestrator's result array shows nothing. Only the
+  persisted worktree (it survives because it *did* change) hints anything
+  happened. See issue
+  [#1491](https://github.com/laurigates/claude-plugins/issues/1491).
+
+Defensive mitigation in the brief: instruct worktree-isolated agents to
+`git add -A && git commit` **WIP at checkpoints** — after each substantive
+slice and before they would otherwise terminate — so partial work is always
+captured on the branch even if the structured result is lost. A captured WIP
+commit turns the empty-vs-dirty discrimination above into a clean salvage.
+
+See
 [REFERENCE.md → Agent stalled at commit / push](REFERENCE.md#agent-stalled-at-commit--push--salvage-routine)
-for symptoms, the four-step salvage routine, and prevention briefs.
+for symptoms, the four-step salvage routine, and prevention briefs, and
+[REFERENCE.md → WIP salvage before re-dispatch](REFERENCE.md#wip-salvage-before-re-dispatch-1491)
+for the empty-vs-dirty triage and the checkpoint-commit brief.
 
 ## Killing a Thrashing Agent Preserves Its Worktree
 
