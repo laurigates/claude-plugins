@@ -143,6 +143,7 @@ When creating, modifying, or deleting a plugin, update these files:
 | `release-please-config.json` | Root | Add/remove plugin package config |
 | `.release-please-manifest.json` | Root | Add/remove plugin version entry |
 | `PLUGIN-MAP.md` | `docs/PLUGIN-MAP.md` | Add/remove plugin from navigation map |
+| `settings.json` | `.claude/settings.json` | Add/remove the plugin in `enabledPlugins` (`<plugin>@laurigates-claude-plugins`) — enforced by the `Plugin: Enablement drift` check |
 
 ### Creating a New Plugin
 
@@ -182,6 +183,11 @@ When creating, modifying, or deleting a plugin, update these files:
    ```json
    "new-plugin": "1.0.0"
    ```
+7. Enable it in `.claude/settings.json` so the repo dogfoods it:
+   ```json
+   "enabledPlugins": { "new-plugin@laurigates-claude-plugins": true }
+   ```
+   The `Plugin: Enablement drift` check (`scripts/check-enabled-plugins-drift.sh`) fails CI if a marketplace plugin is left disabled.
 
 ### Deleting a Plugin
 
@@ -189,6 +195,7 @@ When creating, modifying, or deleting a plugin, update these files:
 2. Remove entry from `.claude-plugin/marketplace.json`
 3. Remove package from `release-please-config.json`
 4. Remove version from `.release-please-manifest.json`
+5. Remove the `<plugin>@laurigates-claude-plugins` key from `.claude/settings.json` `enabledPlugins`
 
 ## Git Workflow
 

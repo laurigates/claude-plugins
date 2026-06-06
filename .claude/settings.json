@@ -64,6 +64,55 @@
     ]
   },
   "enableAllProjectMcpServers": true,
-  "enabledPlugins": {},
-  "extraKnownMarketplaces": {}
+  "enabledPlugins": {
+    "accessibility-plugin@laurigates-claude-plugins": true,
+    "agent-patterns-plugin@laurigates-claude-plugins": true,
+    "agents-plugin@laurigates-claude-plugins": true,
+    "api-plugin@laurigates-claude-plugins": true,
+    "bevy-plugin@laurigates-claude-plugins": true,
+    "blog-plugin@laurigates-claude-plugins": true,
+    "blueprint-plugin@laurigates-claude-plugins": true,
+    "code-quality-plugin@laurigates-claude-plugins": true,
+    "codebase-attributes-plugin@laurigates-claude-plugins": true,
+    "comfyui-plugin@laurigates-claude-plugins": true,
+    "communication-plugin@laurigates-claude-plugins": true,
+    "component-patterns-plugin@laurigates-claude-plugins": true,
+    "configure-plugin@laurigates-claude-plugins": true,
+    "container-plugin@laurigates-claude-plugins": true,
+    "css-plugin@laurigates-claude-plugins": true,
+    "documentation-plugin@laurigates-claude-plugins": true,
+    "evaluate-plugin@laurigates-claude-plugins": true,
+    "feedback-plugin@laurigates-claude-plugins": true,
+    "finops-plugin@laurigates-claude-plugins": true,
+    "git-plugin@laurigates-claude-plugins": true,
+    "github-actions-plugin@laurigates-claude-plugins": true,
+    "health-plugin@laurigates-claude-plugins": true,
+    "home-assistant-plugin@laurigates-claude-plugins": true,
+    "hooks-plugin@laurigates-claude-plugins": true,
+    "kubernetes-plugin@laurigates-claude-plugins": true,
+    "langchain-plugin@laurigates-claude-plugins": true,
+    "macos-plugin@laurigates-claude-plugins": true,
+    "migration-patterns-plugin@laurigates-claude-plugins": true,
+    "networking-plugin@laurigates-claude-plugins": true,
+    "obsidian-plugin@laurigates-claude-plugins": true,
+    "project-plugin@laurigates-claude-plugins": true,
+    "prompt-engineering-plugin@laurigates-claude-plugins": true,
+    "prose-plugin@laurigates-claude-plugins": true,
+    "python-plugin@laurigates-claude-plugins": true,
+    "rust-plugin@laurigates-claude-plugins": true,
+    "taskwarrior-plugin@laurigates-claude-plugins": true,
+    "terraform-plugin@laurigates-claude-plugins": true,
+    "testing-plugin@laurigates-claude-plugins": true,
+    "tools-plugin@laurigates-claude-plugins": true,
+    "typescript-plugin@laurigates-claude-plugins": true,
+    "workflow-orchestration-plugin@laurigates-claude-plugins": true
+  },
+  "extraKnownMarketplaces": {
+    "laurigates-claude-plugins": {
+      "source": {
+        "source": "github",
+        "repo": "laurigates/claude-plugins"
+      }
+    }
+  }
 }

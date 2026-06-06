@@ -34,6 +34,7 @@ Claude: Changelog review
 Claude: PR review
 PR: Auto-resolve conflicts
 PR: Enforce conventional commits
+Plugin: Enablement drift
 Plugin: Lint skills
 Plugin: Obsidian CLI changelog review
 Plugin: PR checks
