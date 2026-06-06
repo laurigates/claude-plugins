@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.12.0...health-plugin-v1.13.0) (2026-06-06)
+
+
+### Features
+
+* **health-plugin:** resolve nested .claude/ when workspace root lacks one ([#1519](https://github.com/laurigates/claude-plugins/issues/1519)) ([47d82e1](https://github.com/laurigates/claude-plugins/commit/47d82e1bdd19d06d7a4642052a4369884d4d60cb)), closes [#1483](https://github.com/laurigates/claude-plugins/issues/1483)
+
 ## [1.12.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.11.1...health-plugin-v1.12.0) (2026-06-03)
 
 
