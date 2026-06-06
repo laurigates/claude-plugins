@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.1.0...comfyui-plugin-v1.2.0) (2026-06-06)
+
+
+### Features
+
+* **comfyui-plugin:** add comfyui-screenshot-pipeline skill ([#1521](https://github.com/laurigates/claude-plugins/issues/1521)) ([9d10996](https://github.com/laurigates/claude-plugins/commit/9d109964da531044ba9ed48d1768e31fd54469cc))
+
 ## [1.1.0](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.0.0...comfyui-plugin-v1.1.0) (2026-06-04)
 
 
