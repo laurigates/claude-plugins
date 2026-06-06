@@ -39,6 +39,27 @@ fi
 
 echo "JQ_AVAILABLE=true"
 
+# Nested-config discovery: when the workspace root has no .claude/settings.json,
+# look one level down for a single */.claude/settings.json and resolve to it.
+# Handles parent-workspace / monorepo layouts where the root is not itself a
+# project and the real config lives in a subdirectory (issue #1483).
+if [ ! -f "${project_dir}/.claude/settings.json" ]; then
+  nested_dirs=()
+  for candidate in "${project_dir}"/*/.claude/settings.json; do
+    [ -f "$candidate" ] || continue
+    # Strip the trailing /.claude/settings.json to get the project dir
+    nested_dirs+=("${candidate%/.claude/settings.json}")
+  done
+
+  if [ "${#nested_dirs[@]}" -eq 1 ]; then
+    echo "PROJECT_DIR_RESOLVED=${nested_dirs[0]}"
+    project_dir="${nested_dirs[0]}"
+  elif [ "${#nested_dirs[@]}" -gt 1 ]; then
+    nested_list=$(printf '%s,' "${nested_dirs[@]}")
+    echo "PROJECT_DIR_HINT=no root .claude/ — multiple nested configs found (${nested_list%,}); pass --project-dir to target one"
+  fi
+fi
+
 # Define settings files to check
 declare -A settings_files=(
   ["USER_SETTINGS"]="${home_dir}/.claude/settings.json"
@@ -61,8 +82,7 @@ for settings_key in USER_SETTINGS USER_LOCAL_SETTINGS PROJECT_SETTINGS PROJECT_L
   fi
 
   # Validate JSON syntax
-  json_error=$(jq empty "$settings_file" 2>&1)
-  if [ $? -ne 0 ]; then
+  if ! json_error=$(jq empty "$settings_file" 2>&1); then
     echo "${settings_key}=INVALID"
     echo "${settings_key}_ERROR=${json_error}"
     issues_list="${issues_list}  - SEVERITY=ERROR TYPE=invalid_json FILE=${settings_file} MSG=${json_error}\n"
