@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.41.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.41.0...git-plugin-v2.41.1) (2026-06-06)
+
+
+### Bug Fixes
+
+* **agent-patterns:** guard worktree agents against cwd-reset leaking git writes into main repo ([#1480](https://github.com/laurigates/claude-plugins/issues/1480)) ([#1520](https://github.com/laurigates/claude-plugins/issues/1520)) ([156c334](https://github.com/laurigates/claude-plugins/commit/156c3342e0db2a4b24f4665e17c8adce04eb1e99))
+
 ## [2.41.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.40.2...git-plugin-v2.41.0) (2026-06-03)
 
 
