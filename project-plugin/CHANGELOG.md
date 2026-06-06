@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.2](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.16.1...project-plugin-v1.16.2) (2026-06-06)
+
+
+### Bug Fixes
+
+* **project-plugin:** remediate audit drift — broken blueprint paths, dead docs, broad Bash ([#1513](https://github.com/laurigates/claude-plugins/issues/1513)) ([b34bf7e](https://github.com/laurigates/claude-plugins/commit/b34bf7e0b0ca41dceb3b4f5cc288515320d51148))
+
 ## [1.16.1](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.16.0...project-plugin-v1.16.1) (2026-05-27)
 
 
