@@ -309,3 +309,45 @@ follow-up cleanly closed the gap left by a rate-limited cascade agent.
 | 6+ agents queued at dispatch time | Split into waves of ≤ 5 |
 | Wave returns with one or two `Rate limited` agents | Recovery-dispatch the missed slice; do not retry the whole wave |
 | Same agent rate-limits twice in a row | Smaller scope or staggered dispatch — the wave size is still too high |
+
+## Worktree cwd-reset guardrail (#1480)
+
+Issue [#1480](https://github.com/laurigates/claude-plugins/issues/1480)
+documents a git-**write** agent under `isolation: "worktree"` whose bare
+`git` commands silently ran against the **main checkout** instead of its
+worktree. Agent threads have their bash cwd reset between calls (documented
+behaviour), and the reset landed on the session's primary cwd (the main repo
+root) rather than the agent's worktree. Every `git fetch` / `git checkout -B`
+/ `git rebase --autostash` mutated `main` — sweeping the user's uncommitted
+edits into an autostash that pop-conflicted, and leaving the main repo on a
+stray branch. The orchestrator believed the work was sandboxed, so the
+corruption was invisible. This is **distinct** from the #1319 *transient*
+leak (see `agent-coworker-detection.md`).
+
+### Agent brief — absolute-path git
+
+| Rule | Why |
+|------|-----|
+| **Never assume `cwd == worktree`.** Capture the worktree root once and reference it absolutely: prefix every git call with `git -C "$WORKTREE" …`, or `cd "$WORKTREE"` and verify with `pwd` at the top of **each** bash call. | The cwd does not persist between agent bash calls; a reset can land on the main repo root. |
+| **Pin the worktree path.** Run `git rev-parse --show-toplevel` on the first call, store it as `$WORKTREE`, and use that value thereafter. | Trusting the persisted cwd is the root cause. |
+| **Forbid bare branch-switching / autostash.** Confirm the agent is inside its isolated worktree before any `git checkout -B` / `git rebase --autostash`. | In the main repo these swallow the user's uncommitted work. |
+
+### Orchestrator post-run integrity check
+
+After a git-write agent returns, snapshot the main repo before dispatch and
+re-check it afterward:
+
+```bash
+# Before dispatch
+main_branch_before=$(git -C "$MAIN_REPO" branch --show-current)
+main_dirty_before=$(git -C "$MAIN_REPO" status --porcelain)
+
+# After the agent returns
+[ "$(git -C "$MAIN_REPO" branch --show-current)" = "$main_branch_before" ] || echo "MAIN BRANCH MUTATED"
+[ "$(git -C "$MAIN_REPO" status --porcelain)" = "$main_dirty_before" ] || echo "MAIN TREE MUTATED"
+```
+
+A changed branch or new dirty state is silent main-repo mutation — treat it
+the same as a missing Return Contract (see SKILL.md "Handling a Missing
+Return") and salvage before reporting the task complete. `agent-teams` Lead
+Preflight Checklist adds file-scope and pin-budget checks that stack on top.

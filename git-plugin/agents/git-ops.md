@@ -12,8 +12,8 @@ skills:
   - git-commit
 maxTurns: 20
 created: 2026-01-24
-modified: 2026-05-07
-reviewed: 2026-03-09
+modified: 2026-06-05
+reviewed: 2026-06-05
 ---
 
 # Git Ops Agent
@@ -69,6 +69,33 @@ blocks shell operators (`&&`, `|`, `;`).
 git add <files>          # First Bash call
 git commit -m "message"  # Second Bash call
 git push origin <branch> # Third Bash call
+```
+
+## Important: Worktree Isolation and cwd Reset
+
+When this agent runs under `isolation: "worktree"`, the harness gives it
+its own worktree — but the agent thread's bash cwd is **reset between
+calls** and may land on the session's primary cwd (the main repo root),
+not the worktree. Bare `git` commands then mutate the **main checkout**,
+silently corrupting the user's working tree (issue #1480: a `git rebase
+--autostash` swept the user's uncommitted edits into a pop-conflict and
+left the main repo on a stray branch).
+
+Be resilient to the cwd reset on every git **write**:
+
+- **Never assume `cwd == worktree`.** Capture the worktree root once with
+  `git rev-parse --show-toplevel`, store it as `$WORKTREE`, and prefix
+  every git call with `git -C "$WORKTREE" …` (or `cd "$WORKTREE"` and
+  confirm with `pwd` at the top of **each** bash call — cwd does not
+  persist between calls).
+- **Forbid bare branch-switching / autostash.** Confirm you are inside the
+  isolated worktree before any `git checkout -B` / `git rebase
+  --autostash`; in the main repo these swallow uncommitted user work.
+
+```bash
+WORKTREE=$(git rev-parse --show-toplevel)   # First call: pin the path
+git -C "$WORKTREE" fetch origin              # Reference it absolutely
+git -C "$WORKTREE" rebase origin/main        # thereafter — never bare git
 ```
 
 ## Workflow

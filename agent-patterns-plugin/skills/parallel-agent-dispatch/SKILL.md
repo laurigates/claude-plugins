@@ -84,8 +84,26 @@ running, the orchestrator must:
 an untracked file in the parent matches a path in any linked worktree.
 Run it before every parent-side commit during a wave.
 
-See also: `agent-teams` Lead Preflight Checklist for file-scope and pin-budget
-checks that stack on top of these.
+#### cwd-reset leaking git writes into the main repo
+
+Distinct from the transient-leak shape above: issue
+[#1480](https://github.com/laurigates/claude-plugins/issues/1480)
+documents a git-write agent under `isolation: "worktree"` whose bare `git`
+commands ran against the **main checkout**, not its worktree — the agent
+thread's bash cwd reset between calls landed on the session's primary cwd
+(the main repo root), so every `git fetch` / `git checkout -B` /
+`git rebase --autostash` mutated `main`. Brief every git-**write** agent:
+
+- **Never assume `cwd == worktree`.** Pin the root once
+  (`git rev-parse --show-toplevel` → `$WORKTREE`) and prefix every git call with `git -C "$WORKTREE" …` — the cwd does not persist between calls.
+- **Forbid bare branch-switching / autostash.** Confirm the agent is inside
+  its worktree before any `git checkout -B` / `git rebase --autostash` — in
+  the main repo these swallow the user's uncommitted work.
+
+After the agent returns, run the **post-run main-repo integrity check** (see
+[REFERENCE.md](REFERENCE.md) "Worktree cwd-reset guardrail (#1480)"): a changed
+branch or new dirty state is silent main-repo mutation — salvage it like a
+missing Return Contract before reporting done.
 
 ### 2. Scope Budget (per-agent prompt rules)
 
