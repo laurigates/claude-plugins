@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.22.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.21.6...agent-patterns-plugin-v2.22.0) (2026-06-06)
+
+
+### Features
+
+* **agent-patterns-plugin:** salvage worktree WIP when an isolated agent exits before StructuredOutput ([#1517](https://github.com/laurigates/claude-plugins/issues/1517)) ([a40fdd8](https://github.com/laurigates/claude-plugins/commit/a40fdd804cc71e973346f494e5075c9a1eb1d9ba))
+
+
+### Documentation
+
+* **agent-patterns-plugin:** advise conservative concurrency and rate-limit backoff in parallel-agent-dispatch ([#1518](https://github.com/laurigates/claude-plugins/issues/1518)) ([716c859](https://github.com/laurigates/claude-plugins/commit/716c85952a27ea11d691483ba02497f0d66dc9ad)), closes [#1490](https://github.com/laurigates/claude-plugins/issues/1490)
+
 ## [2.21.6](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.21.5...agent-patterns-plugin-v2.21.6) (2026-06-04)
 
 

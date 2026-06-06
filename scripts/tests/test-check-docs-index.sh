@@ -7,6 +7,8 @@
 #   B. an unindexed rule is flagged (WARN rule_not_indexed)
 #   C. a plugin present in marketplace.json but missing on disk is flagged
 #      (ERROR plugin_map_drift) and --strict exits non-zero
+#   D. a README table row stating the wrong skill count is flagged
+#      (WARN doc_count_drift); a correct row is NOT flagged (zero false positive)
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -63,6 +65,25 @@ cat > "$fixture/.release-please-manifest.json" <<'EOF'
 EOF
 printf '# Map\nalpha-plugin, beta-plugin, gamma-plugin\n' > "$fixture/docs/PLUGIN-MAP.md"
 
+# alpha-plugin: 2 skills (mixed SKILL.md / skill.md) + 1 agent; beta-plugin: 1 skill, 0 agents
+mkdir -p "$fixture/alpha-plugin/skills/s1" "$fixture/alpha-plugin/skills/s2" \
+  "$fixture/alpha-plugin/agents" "$fixture/beta-plugin/skills/s1"
+printf '# s\n' > "$fixture/alpha-plugin/skills/s1/SKILL.md"
+printf '# s\n' > "$fixture/alpha-plugin/skills/s2/skill.md"
+printf '# a\n' > "$fixture/alpha-plugin/agents/a1.md"
+printf '# s\n' > "$fixture/beta-plugin/skills/s1/skill.md"
+
+# README states a wrong count for alpha (5, actual 2), a correct one for beta (1),
+# and wrong headline totals (2 plugins / 21 agents; actual 3 / 1).
+cat > "$fixture/README.md" <<'EOF'
+A curated collection of 2 Claude Code plugins providing 300+ skills and 21 agents for development workflows.
+
+| Plugin | Skills | Description |
+|--------|--------|-------------|
+| **alpha-plugin** | 5 | wrong skill count |
+| **beta-plugin** | 1 | correct skill count |
+EOF
+
 echo "=== TEST B: unindexed rule flagged ==="
 fx_out="$(bash "$checker" --project-dir "$fixture")"
 assert "orphan.md should be flagged rule_not_indexed" "$(contains "$fx_out" "rule_not_indexed.*orphan.md")"
@@ -78,6 +99,16 @@ assert "--strict should exit 1 on ERROR drift" "$([ "$strict_rc" -eq 1 ] && echo
 clean_rc=0
 bash "$checker" --project-dir "$repo_root" --strict >/dev/null || clean_rc=$?
 assert "--strict should exit 0 on clean repo" "$([ "$clean_rc" -eq 0 ] && echo true || echo false)"
+
+echo "=== TEST D: per-plugin count drift flagged, correct row not flagged ==="
+assert "alpha-plugin wrong skill count should be flagged doc_count_drift" \
+  "$(contains "$fx_out" "doc_count_drift.*alpha-plugin has 5 skills but 2")"
+assert "beta-plugin correct count should NOT be flagged" \
+  "$([ "$(contains "$fx_out" "doc_count_drift.*beta-plugin")" = "false" ] && echo true || echo false)"
+assert "README headline plugin-count drift should be flagged" \
+  "$(contains "$fx_out" "doc_count_drift.*headline states 2 plugins")"
+assert "README headline agent-count drift should be flagged" \
+  "$(contains "$fx_out" "doc_count_drift.*headline states 21 agents")"
 
 echo ""
 echo "=== SUMMARY ==="

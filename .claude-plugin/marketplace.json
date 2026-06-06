@@ -23,7 +23,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.21.6",
+      "version": "2.22.0",
       "keywords": [
         "agents",
         "configuration",
@@ -147,15 +147,17 @@
     {
       "name": "comfyui-plugin",
       "source": "./comfyui-plugin",
-      "description": "ComfyUI custom-node pack lifecycle - scaffold a pack, create + seed the repo, open the gitops adoption PR, publish to the Comfy Registry",
-      "version": "1.1.0",
+      "description": "ComfyUI custom-node pack lifecycle - scaffold a pack, create + seed the repo, open the gitops adoption PR, publish to the Comfy Registry, and add README screenshots",
+      "version": "1.2.0",
       "keywords": [
         "comfyui",
         "custom-node",
         "scaffold",
         "litegraph",
         "comfy-registry",
-        "gitops"
+        "gitops",
+        "screenshots",
+        "playwright"
       ],
       "category": "development"
     },
@@ -490,13 +492,12 @@
     {
       "name": "project-plugin",
       "source": "./project-plugin",
-      "description": "Project initialization, management, and maintenance - setup, modernization, changelog review, and continuous development workflows",
-      "version": "1.16.1",
+      "description": "Project initialization, management, and maintenance - setup, changelog review, and continuous development workflows",
+      "version": "1.16.2",
       "keywords": [
         "project",
         "initialization",
         "setup",
-        "modernization",
         "tdd",
         "workflow",
         "changelog",
