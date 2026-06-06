@@ -6,11 +6,11 @@ on the Comfy Registry.
 
 ## Overview
 
-This plugin packages the two skills that build and ship ComfyUI node packs:
-scaffolding a CI-green repository, and orchestrating the full path from idea to
-a live-on-registry pipeline (repo creation, seeding, and the gitops adoption PR
+This plugin packages the three skills that build and ship ComfyUI node packs:
+scaffolding a CI-green repository, orchestrating the full path from idea to a
+live-on-registry pipeline (repo creation, seeding, and the gitops adoption PR
 that wires branch protection + release-please credentials + the registry token
-via Scalr).
+via Scalr), and adding a reproducible README-screenshot pipeline to a pack.
 
 ## Skills
 
@@ -43,6 +43,22 @@ the Scalr apply), then finishes the import-block-removal follow-up.
 
 **Use when** releasing or spinning up a new comfyui node pack with minimal manual
 steps.
+
+### comfyui-screenshot-pipeline
+
+Add a reproducible, containerized README-screenshot generator to an existing
+pack — the piece `comfyui-node-scaffold` intentionally defers:
+
+- Docker image pins the ComfyUI release + Playwright/Chromium revision, boots
+  ComfyUI headless on CPU, drives the pack's real frontend, writes a PNG to
+  `docs/`
+- A `just screenshots` recipe and a `capture.mjs` driver matched to the pack
+  archetype — `modal` (widget → HTML dialog), `gesture-affordance` (painted
+  canvas hint), or `gesture-overlay` (synthetic-touch transient overlay)
+- `--seed-models` for backend model packs whose grid would otherwise render empty
+
+**Use when** generating README screenshots for a comfyui pack, or wiring up the
+screenshot pipeline like `comfyui-gallery-loader`.
 
 ## When to Use This Plugin
 
