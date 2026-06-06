@@ -167,6 +167,68 @@ hangs, emit your Return Contract with `status: failed`,
 `worktree: dirty: <files>`, and `Orchestrator action needed: pre-commit
 hook X failed, fix and commit on my behalf."*
 
+## WIP salvage before re-dispatch (#1491)
+
+A schema-bound, worktree-isolated agent cut off by a rate limit (or other
+transport-layer interruption) *after* it implemented its change but *before*
+it emitted the final StructuredOutput call is reported as **failed** — yet the
+work is sitting fully intact as **uncommitted WIP in the agent's worktree**.
+The orchestrator's result array shows nothing; only the persisted worktree
+(which survives because it *did* change) hints anything happened. Without an
+explicit salvage step that work is invisible and easily discarded.
+
+> **Evidence.** A 7-agent run: 5/7 agents opened PRs; 2 were marked
+> *"subagent completed without calling StructuredOutput (after 2 in-conversation
+> nudges)"*. Inspecting their worktrees (`git -C <worktree> status --short`)
+> showed **complete, correct implementations** as uncommitted changes (new
+> files + edits). Both were salvaged manually — two trivial typecheck fixes in
+> one, then lint/typecheck/tests, commit/push/PR — with no re-run needed; the
+> work was already done. Salvaging cost minutes; re-dispatching would have
+> redone work that was already complete.
+
+**Empty-vs-dirty discrimination** — the first move when an agent is reported
+failed is to decide whether its worktree holds salvageable work. Do this
+*before* re-dispatching:
+
+| Probe (from the parent) | Result | Decision |
+|-------------------------|--------|----------|
+| `git -C <worktree> status --porcelain` | non-empty | **Dirty** — agent produced changes; salvage them |
+| `git -C <worktree> log --oneline origin/main..HEAD` | shows commits | **Committed** — push the branch, open the PR |
+| Both empty / trivial | nothing landed | **Empty** — re-dispatch or resume; nothing to lose |
+
+The distinction matters for the failure summary too: *"agent errored with
+empty worktree"* (genuinely needs a fresh run) is a different verdict than
+*"agent produced changes but didn't return structured output"* (salvage, do
+not re-run). Report the two cases separately so a re-dispatch decision is not
+made blind.
+
+**Salvage routine** for a dirty worktree:
+
+1. `git -C <worktree> status --short` — confirm the diff matches the agent's
+   declared scope (it should look like a complete implementation, not a
+   half-edit).
+2. Run the project's quality gates inside the worktree (lint, typecheck,
+   tests). Repair any trivial breakage — the implementation is done, but the
+   cut-off may have left a small loose end (a stale cast, an unran formatter).
+3. Commit on the agent's behalf preserving its intended commit message and
+   conventional-commit scope, then `git -C <worktree> push -u origin <branch>`.
+4. Open the PR. File a tracking note that the agent stalled at
+   StructuredOutput so the pattern is visible.
+
+**Defensive prevention — checkpoint WIP commits in the brief.** The salvage
+above is only possible because the worktree persisted. Make the work *also*
+survive on a branch by instructing every worktree-isolated agent to:
+
+> Commit WIP at checkpoints. After each substantive slice — and **before you
+> would otherwise terminate** — run `git add -A && git commit -m "wip:
+> <slice>"` so your partial work is captured on the branch even if your final
+> structured result is lost. The orchestrator can salvage a committed branch
+> far more cleanly than an uncommitted worktree.
+
+A checkpoint commit converts the dirty-worktree case into the
+committed-branch case (row 2 above) — the cleanest salvage, a plain
+`git push` with no commit-on-behalf step.
+
 ## Killed-agent worktree recovery (TaskStop)
 
 Distinct from the silent commit-stall above: here the orchestrator
@@ -247,3 +309,45 @@ follow-up cleanly closed the gap left by a rate-limited cascade agent.
 | 6+ agents queued at dispatch time | Split into waves of ≤ 5 |
 | Wave returns with one or two `Rate limited` agents | Recovery-dispatch the missed slice; do not retry the whole wave |
 | Same agent rate-limits twice in a row | Smaller scope or staggered dispatch — the wave size is still too high |
+
+## Worktree cwd-reset guardrail (#1480)
+
+Issue [#1480](https://github.com/laurigates/claude-plugins/issues/1480)
+documents a git-**write** agent under `isolation: "worktree"` whose bare
+`git` commands silently ran against the **main checkout** instead of its
+worktree. Agent threads have their bash cwd reset between calls (documented
+behaviour), and the reset landed on the session's primary cwd (the main repo
+root) rather than the agent's worktree. Every `git fetch` / `git checkout -B`
+/ `git rebase --autostash` mutated `main` — sweeping the user's uncommitted
+edits into an autostash that pop-conflicted, and leaving the main repo on a
+stray branch. The orchestrator believed the work was sandboxed, so the
+corruption was invisible. This is **distinct** from the #1319 *transient*
+leak (see `agent-coworker-detection.md`).
+
+### Agent brief — absolute-path git
+
+| Rule | Why |
+|------|-----|
+| **Never assume `cwd == worktree`.** Capture the worktree root once and reference it absolutely: prefix every git call with `git -C "$WORKTREE" …`, or `cd "$WORKTREE"` and verify with `pwd` at the top of **each** bash call. | The cwd does not persist between agent bash calls; a reset can land on the main repo root. |
+| **Pin the worktree path.** Run `git rev-parse --show-toplevel` on the first call, store it as `$WORKTREE`, and use that value thereafter. | Trusting the persisted cwd is the root cause. |
+| **Forbid bare branch-switching / autostash.** Confirm the agent is inside its isolated worktree before any `git checkout -B` / `git rebase --autostash`. | In the main repo these swallow the user's uncommitted work. |
+
+### Orchestrator post-run integrity check
+
+After a git-write agent returns, snapshot the main repo before dispatch and
+re-check it afterward:
+
+```bash
+# Before dispatch
+main_branch_before=$(git -C "$MAIN_REPO" branch --show-current)
+main_dirty_before=$(git -C "$MAIN_REPO" status --porcelain)
+
+# After the agent returns
+[ "$(git -C "$MAIN_REPO" branch --show-current)" = "$main_branch_before" ] || echo "MAIN BRANCH MUTATED"
+[ "$(git -C "$MAIN_REPO" status --porcelain)" = "$main_dirty_before" ] || echo "MAIN TREE MUTATED"
+```
+
+A changed branch or new dirty state is silent main-repo mutation — treat it
+the same as a missing Return Contract (see SKILL.md "Handling a Missing
+Return") and salvage before reporting the task complete. `agent-teams` Lead
+Preflight Checklist adds file-scope and pin-budget checks that stack on top.

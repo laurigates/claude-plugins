@@ -1,6 +1,6 @@
 # Claude Plugins
 
-A curated collection of 38 Claude Code plugins providing 300+ skills and 14 agents for development workflows.
+A curated collection of 41 Claude Code plugins providing 300+ skills and 21 agents for development workflows.
 
 ## Install the Marketplace
 
@@ -10,7 +10,7 @@ Install the full plugin collection as a marketplace:
 claude plugin install laurigates/claude-plugins
 ```
 
-This registers all 38 plugins. You can then enable individual plugins as needed.
+This registers all 41 plugins. You can then enable individual plugins as needed.
 
 ### Install Individual Plugins
 
@@ -60,8 +60,8 @@ Alternatively, use the `/configure:mcp` skill for interactive configuration.
 
 | Plugin | Skills | Description |
 |--------|--------|-------------|
-| **agent-patterns-plugin** | 16 | Multi-agent coordination and orchestration patterns |
-| **agents-plugin** | 1 + 10 agents | Task-focused agents for test, review, debug, docs, and CI workflows |
+| **agent-patterns-plugin** | 12 | Multi-agent coordination and orchestration patterns |
+| **agents-plugin** | 1 + 12 agents | Task-focused agents for test, review, debug, docs, and CI workflows |
 | **langchain-plugin** | 4 | LangChain JS/TS development - agents, chains, LangGraph, Deep Agents |
 | **prompt-engineering-plugin** | 1 | Prompt engineering for accurate, grounded responses - anti-hallucination workflow |
 
@@ -70,17 +70,18 @@ Alternatively, use the `/configure:mcp` skill for interactive configuration.
 | Plugin | Skills | Description |
 |--------|--------|-------------|
 | **api-plugin** | 2 | API integration and testing - REST endpoints, client generation |
-| **blueprint-plugin** | 30 | Blueprint Development methodology - PRD/PRP workflow with version tracking |
+| **blueprint-plugin** | 33 | Blueprint Development methodology - PRD/PRP workflow with version tracking |
+| **comfyui-plugin** | 2 | ComfyUI custom-node pack lifecycle - scaffold, seed repo, gitops adoption, registry publish |
 | **home-assistant-plugin** | 4 | Home Assistant configuration - automations, scripts, scenes, entities |
-| **obsidian-plugin** | 6 | Obsidian CLI operations - vault management, search, properties, tasks |
-| **project-plugin** | 6 | Project initialization, management, maintenance, and continuous development |
+| **obsidian-plugin** | 21 | Obsidian CLI operations - vault management, search, properties, tasks |
+| **project-plugin** | 7 | Project initialization, management, maintenance, and continuous development |
 
 ### Languages
 
 | Plugin | Skills | Description |
 |--------|--------|-------------|
 | **css-plugin** | 2 | CSS tooling - Lightning CSS transpilation, UnoCSS atomic utilities |
-| **python-plugin** | 17 | Python ecosystem - uv, ruff, pytest, basedpyright, packaging |
+| **python-plugin** | 16 | Python ecosystem - uv, ruff, pytest, basedpyright, packaging |
 | **rust-plugin** | 5 | Rust development - cargo, clippy, nextest, memory safety |
 | **typescript-plugin** | 17 | TypeScript development - Bun, Biome, ESLint, strict types |
 
@@ -88,17 +89,17 @@ Alternatively, use the `/configure:mcp` skill for interactive configuration.
 
 | Plugin | Skills | Description |
 |--------|--------|-------------|
-| **code-quality-plugin** | 13 | Code review, refactoring, linting, static analysis, debugging methodology |
+| **code-quality-plugin** | 14 | Code review, refactoring, linting, static analysis, debugging methodology |
 | **evaluate-plugin** | 4 + 3 agents | Skill evaluation and benchmarking - test effectiveness, grade results |
 | **codebase-attributes-plugin** | 3 | Structured codebase health attributes with severity-based agent routing |
 | **feedback-plugin** | 1 | Session feedback analysis - capture skill bugs and enhancements as issues |
-| **testing-plugin** | 15 | Test execution, TDD workflow, Vitest, Playwright, mutation testing |
+| **testing-plugin** | 16 | Test execution, TDD workflow, Vitest, Playwright, mutation testing |
 
 ### Version Control
 
 | Plugin | Skills | Description |
 |--------|--------|-------------|
-| **git-plugin** | 27 + 1 agent | Git workflows - commits, branches, PRs, worktrees, release-please |
+| **git-plugin** | 35 + 1 agent | Git workflows - commits, branches, PRs, worktrees, release-please |
 
 ### CI/CD
 
@@ -111,10 +112,10 @@ Alternatively, use the `/configure:mcp` skill for interactive configuration.
 
 | Plugin | Skills | Description |
 |--------|--------|-------------|
-| **configure-plugin** | 42 | Project infrastructure standards - pre-commit, CI/CD, Docker, testing |
+| **configure-plugin** | 46 | Project infrastructure standards - pre-commit, CI/CD, Docker, testing |
 | **container-plugin** | 9 + 1 agent | Container development - Docker, registry, Skaffold, OrbStack |
 | **kubernetes-plugin** | 8 + 1 agent | Kubernetes and Helm - deployments, charts, releases, ArgoCD |
-| **migration-patterns-plugin** | 2 | Safe database and system migration - dual write, shadow mode |
+| **migration-patterns-plugin** | 6 | Safe database and system migration - dual write, shadow mode |
 | **networking-plugin** | 6 | Network diagnostics, discovery, monitoring, HTTP load testing |
 | **terraform-plugin** | 6 + 1 agent | Terraform and Terraform Cloud - infrastructure as code |
 
@@ -138,11 +139,12 @@ Alternatively, use the `/configure:mcp` skill for interactive configuration.
 
 | Plugin | Skills | Description |
 |--------|--------|-------------|
-| **command-analytics-plugin** | 4 | Track command and skill usage analytics across projects |
-| **health-plugin** | 6 | Diagnose and fix Claude Code configuration issues |
-| **hooks-plugin** | 1 | Claude Code hooks for enforcing best practices |
+| **health-plugin** | 7 | Diagnose and fix Claude Code configuration issues |
+| **hooks-plugin** | 4 | Claude Code hooks for enforcing best practices |
+| **macos-plugin** | 4 | macOS dev tooling - kitty session persistence, LaunchServices health, incident postmortems |
+| **taskwarrior-plugin** | 6 | Taskwarrior coordination for multi-agent work - parallel-safe queries, urgency scoring |
 | **tools-plugin** | 14 | General utilities - fd, rg, jq, shell, ImageMagick, d2 |
-| **workflow-orchestration-plugin** | 2 | Workflow orchestration - preflight checks, checkpoint refactoring |
+| **workflow-orchestration-plugin** | 3 | Workflow orchestration - preflight checks, checkpoint refactoring |
 
 ### Game Development
 

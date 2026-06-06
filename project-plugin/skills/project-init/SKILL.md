@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
-reviewed: 2026-04-25
+modified: 2026-06-05
+reviewed: 2026-06-05
 allowed-tools: Write, Bash(mkdir *), Bash(git init *), Bash(gh repo create *), Bash(pwd *), Bash(git config *), Bash(which *), SlashCommand, TodoWrite
 args: <project-name> [project-type] [--github] [--private]
 argument-hint: <project-name> [project-type] [--github] [--private]
@@ -171,26 +171,20 @@ clean:
 
 ## Language-Specific Setup
 
-Based on project type, delegate to specialized setup:
-
-{{ if $2 == "python" }}
-Use SlashCommand: `/setup:new-project python`
-{{ elif $2 == "node" }}
-Use SlashCommand: `/setup:new-project node`
-{{ elif $2 == "rust" }}
-Use SlashCommand: `/setup:new-project rust`
-{{ elif $2 == "go" }}
-Use SlashCommand: `/setup:new-project go`
-{{ else }}
-# Generic project - base structure only
-{{ endif }}
+Base init creates the universal structure only. Language-specific tooling
+(package manager, linters/formatters, test framework, Dockerfile) is applied
+afterwards with the `configure-plugin` skills — see that plugin's README for the
+current skill list. Do not rely on a single bootstrap command; layer the
+configure skills you actually need.
 
 ## GitHub Repository Creation
 
 {{ if $3 == "--github" }}
-Create GitHub repository:
+Create GitHub repository. `${4:---public}` expands to `--private` when `$4` is
+`--private`, otherwise to `--public` — so exactly one visibility flag is passed
+(never both):
 ```bash
-gh repo create $1 ${4:+--private} --public --clone
+gh repo create $1 "${4:---public}" --clone
 git remote add origin https://github.com/$(gh api user -q .login)/$1.git
 ```
 {{ endif }}
@@ -198,7 +192,7 @@ git remote add origin https://github.com/$(gh api user -q .login)/$1.git
 ## Final Steps
 
 1. Initialize git hooks: `pre-commit install`
-2. Make initial commit: Use SlashCommand: `/git:smartcommit "Initial project structure"`
+2. Make initial commit: Use SlashCommand: `/git:commit "Initial project structure"`
 3. Set up CI/CD: Configure based on project type
 4. Install dependencies: Use SlashCommand: `/deps:install`
 
@@ -206,6 +200,4 @@ git remote add origin https://github.com/$(gh api user -q .login)/$1.git
 
 Suggest relevant commands based on project type:
 - `/test:setup` - Set up testing infrastructure
-- `/docs:docs` - Generate documentation
-- `/lint:check` - Verify code quality
-- `/github:quickpr` - Create first PR
+- `/git:pr` - Create first PR

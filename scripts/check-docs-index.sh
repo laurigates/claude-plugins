@@ -105,6 +105,81 @@ done <<< "$mkt_set"
 
 mkt_count="$(printf '%s\n' "$mkt_set" | grep -c . || true)"
 
+# --- Check 3: per-plugin skill/agent counts in README + PLUGIN-MAP -------------
+# Each plugin's skill count = number of skill.md files (case-insensitive) under
+# <plugin>/skills/; agent count = *.md files under <plugin>/agents/. The README
+# and PLUGIN-MAP tables state these as `| **name** | N |` or `| name | N + M
+# agent(s) |`. Zero-false-positive: only a table row whose FIRST cell is exactly
+# the plugin name (optionally bold) and whose count cell starts with an integer
+# is compared. Rows a doc omits (PLUGIN-MAP only covers the tier plugins) are
+# skipped, not flagged.
+readme_md="$proj_dir/README.md"
+
+skill_count() { find "$proj_dir/$1/skills" -iname 'skill.md' 2>/dev/null | grep -c . || true; }
+agent_count() { find "$proj_dir/$1/agents" -name '*.md' -type f 2>/dev/null | grep -c . || true; }
+
+# stated_rows <file> <plugin-name> -> emits "<lineno> <skills> <agents|-1>" per
+# matching first-cell row (agents=-1 when the cell states no agent count).
+stated_rows() {
+  awk -v name="$2" -F'|' '
+    NF < 3 { next }
+    {
+      cell = $2
+      gsub(/^[ \t]+|[ \t]+$/, "", cell)
+      gsub(/\*\*/, "", cell)
+      if (cell != name) next
+      cnt = $3
+      gsub(/^[ \t]+|[ \t]+$/, "", cnt)
+      if (!match(cnt, /^[0-9]+/)) next
+      sk = substr(cnt, 1, RLENGTH)
+      ag = -1
+      if (match(cnt, /\+[ ]*[0-9]+[ ]*agent/)) {
+        a = substr(cnt, RSTART, RLENGTH); gsub(/[^0-9]/, "", a); ag = a
+      }
+      print FNR, sk, ag
+    }
+  ' "$1"
+}
+
+total_skills=0
+total_agents=0
+while IFS= read -r p; do
+  [ -n "$p" ] || continue
+  cs="$(skill_count "$p")"
+  ca="$(agent_count "$p")"
+  total_skills=$((total_skills + cs))
+  total_agents=$((total_agents + ca))
+  for doc in "$readme_md" "$plugin_map"; do
+    [ -f "$doc" ] || continue
+    docname="$(basename "$doc")"
+    while read -r lineno st_sk st_ag; do
+      [ -n "$st_sk" ] || continue
+      if [ "$st_sk" -ne "$cs" ]; then
+        add_issue WARN doc_count_drift "$docname:$lineno states $p has $st_sk skills but $cs exist on disk"
+      fi
+      if [ "$st_ag" -ne -1 ] && [ "$st_ag" -ne "$ca" ]; then
+        add_issue WARN doc_count_drift "$docname:$lineno states $p has $st_ag agents but $ca exist on disk"
+      fi
+    done <<< "$(stated_rows "$doc" "$p")"
+  done
+done <<< "$disk_set"
+
+# Headline totals in README intro ("N Claude Code plugins ... and M agents").
+if [ -f "$readme_md" ]; then
+  hp="$(grep -oE '[0-9]+ Claude Code plugins' "$readme_md" | head -1 | grep -oE '^[0-9]+' || true)"
+  if [ -n "$hp" ] && [ "$hp" -ne "$mkt_count" ]; then
+    add_issue WARN doc_count_drift "README.md headline states $hp plugins but marketplace lists $mkt_count"
+  fi
+  ha="$(grep -oE 'and [0-9]+ agents' "$readme_md" | head -1 | grep -oE '[0-9]+' || true)"
+  if [ -n "$ha" ] && [ "$ha" -ne "$total_agents" ]; then
+    add_issue WARN doc_count_drift "README.md headline states $ha agents but $total_agents exist on disk"
+  fi
+  hsfloor="$(grep -oE '[0-9]+\+ skills' "$readme_md" | head -1 | grep -oE '^[0-9]+' || true)"
+  if [ -n "$hsfloor" ] && [ "$total_skills" -lt "$hsfloor" ]; then
+    add_issue WARN doc_count_drift "README.md headline claims ${hsfloor}+ skills but only $total_skills exist on disk"
+  fi
+fi
+
 # --- Status -------------------------------------------------------------------
 overall_status="OK"
 exit_severity=0
@@ -140,6 +215,8 @@ else
   echo "RULES_ON_DISK=$rules_disk_count"
   echo "RULES_IN_TABLE=$rules_table_count"
   echo "MARKETPLACE_PLUGINS=$mkt_count"
+  echo "TOTAL_SKILLS=$total_skills"
+  echo "TOTAL_AGENTS=$total_agents"
   echo "STATUS=$overall_status"
   echo "ISSUE_COUNT=$issue_count"
   if [ "$issue_count" -gt 0 ]; then

@@ -88,40 +88,22 @@ Run it before every parent-side commit during a wave.
 
 Distinct from the transient-leak shape above: issue
 [#1480](https://github.com/laurigates/claude-plugins/issues/1480)
-documents a git-write agent under `isolation: "worktree"` whose bare
-`git` commands ran against the **main checkout**, not its worktree. Agent
-threads have their bash cwd reset between calls (documented behaviour),
-and the reset landed on the session's primary cwd (the main repo root)
-instead of the agent's worktree. Every `git fetch` / `git checkout -B` /
-`git rebase --autostash` mutated `main` — sweeping the user's uncommitted
-edits into an autostash that pop-conflicted, and leaving the main repo on
-a stray branch. The orchestrator believed the work was sandboxed.
+documents a git-write agent under `isolation: "worktree"` whose bare `git`
+commands ran against the **main checkout**, not its worktree — the agent
+thread's bash cwd reset between calls landed on the session's primary cwd
+(the main repo root), so every `git fetch` / `git checkout -B` /
+`git rebase --autostash` mutated `main`. Brief every git-**write** agent:
 
-Brief every git-**write** agent dispatched under worktree isolation to be
-resilient to the cwd reset:
+- **Never assume `cwd == worktree`.** Pin the root once
+  (`git rev-parse --show-toplevel` → `$WORKTREE`) and prefix every git call with `git -C "$WORKTREE" …` — the cwd does not persist between calls.
+- **Forbid bare branch-switching / autostash.** Confirm the agent is inside
+  its worktree before any `git checkout -B` / `git rebase --autostash` — in
+  the main repo these swallow the user's uncommitted work.
 
-- **Never assume `cwd == worktree`.** Capture the worktree root once and
-  reference it absolutely. Either prefix every git call with
-  `git -C "$WORKTREE" …`, or `cd "$WORKTREE"` and verify with `pwd` at the
-  top of **each** bash call — the cwd does not persist between calls.
-- **Pin the worktree path.** Run `git rev-parse --show-toplevel` on the
-  first call, store it as `$WORKTREE`, and use that value thereafter
-  rather than trusting the persisted cwd.
-- **Forbid bare branch-switching / autostash.** A git-write agent must
-  confirm it is inside its isolated worktree before any
-  `git checkout -B` / `git rebase --autostash`; in the main repo these
-  swallow the user's uncommitted work.
-
-After a git-write agent returns, the orchestrator runs a **post-run
-integrity check** on the main repo: `git -C <main-repo> branch
---show-current` and `git -C <main-repo> status --porcelain` must be
-unchanged from before the dispatch. A changed branch or new dirty state
-is silent main-repo mutation — treat it the same as a missing Return
-Contract (see "Handling a Missing Return") and salvage before reporting
-the task complete.
-
-See also: `agent-teams` Lead Preflight Checklist for file-scope and pin-budget
-checks that stack on top of these.
+After the agent returns, run the **post-run main-repo integrity check** (see
+[REFERENCE.md](REFERENCE.md) "Worktree cwd-reset guardrail (#1480)"): a changed
+branch or new dirty state is silent main-repo mutation — salvage it like a
+missing Return Contract before reporting done.
 
 ### 2. Scope Budget (per-agent prompt rules)
 
@@ -372,18 +354,42 @@ reports the URL back in the Return Contract.
 If an agent exits without emitting the Return Contract:
 
 1. Treat as a **silent stall**, not a success.
-2. Check the agent's worktree for uncommitted work (`git status`) and
-   committed-but-unpushed branches (`git log --branches --not --remotes`).
+2. **Discriminate empty vs dirty worktree** before deciding what to do.
+   Run `git -C <worktree> status --porcelain` and
+   `git -C <worktree> log --oneline origin/main..HEAD`:
+   - **Dirty / commits present** → the agent did the work; **salvage** it
+     (commit/push the WIP, open the PR) rather than re-dispatching. The
+     work is already done; re-running redoes completed work.
+   - **Empty / trivial diff** → nothing to salvage; resume the agent or
+     re-dispatch from scratch.
 3. Either resume the agent with a message asking for the missing summary, or
    salvage the work yourself and file a tracking issue noting the stall.
 4. Do **not** report the parent task as complete until every spawned agent has
    produced a Return Contract (or been explicitly accounted for).
 
-The dominant cause of silent stalls is a **pre-commit hook blocking
-`git commit`** — the agent's diff sits intact in the worktree, the hook is
-parked, no Return Contract fires. See
+Two causes of a missing Return Contract, both leaving the work intact:
+
+- A **pre-commit hook blocking `git commit`** — the agent's diff sits intact
+  in the worktree, the hook is parked, no Return Contract fires.
+- A **rate limit (or other cut-off) after the implementation but before the
+  StructuredOutput call** — the agent finished the change and it is sitting as
+  uncommitted WIP in the worktree, but the schema-bound result was never
+  emitted, so the orchestrator's result array shows nothing. Only the
+  persisted worktree (it survives because it *did* change) hints anything
+  happened. See issue
+  [#1491](https://github.com/laurigates/claude-plugins/issues/1491).
+
+Defensive mitigation in the brief: instruct worktree-isolated agents to
+`git add -A && git commit` **WIP at checkpoints** — after each substantive
+slice and before they would otherwise terminate — so partial work is always
+captured on the branch even if the structured result is lost. A captured WIP
+commit turns the empty-vs-dirty discrimination above into a clean salvage.
+
+See
 [REFERENCE.md → Agent stalled at commit / push](REFERENCE.md#agent-stalled-at-commit--push--salvage-routine)
-for symptoms, the four-step salvage routine, and prevention briefs.
+for symptoms, the four-step salvage routine, and prevention briefs, and
+[REFERENCE.md → WIP salvage before re-dispatch](REFERENCE.md#wip-salvage-before-re-dispatch-1491)
+for the empty-vs-dirty triage and the checkpoint-commit brief.
 
 ## Killing a Thrashing Agent Preserves Its Worktree
 
@@ -422,11 +428,31 @@ siblings finish cleanly while rate-limited agents return partial state with no
 Return Contract. Matches upstream
 [anthropics/claude-code#33154](https://github.com/anthropics/claude-code/issues/33154).
 
-**Mitigation**: cap concurrent agent dispatch at **≤ 5** for Opus 4.7 (1M)
-parents. When the fan-out genuinely needs more, dispatch in waves (five now,
-the next batch when the first reports) or stagger by ~30 seconds. For the
-**recovery-dispatch pattern** when a wave returns with one or two
-`Rate limited` agents, see
+This is **server-side request rate limiting** (`Server is temporarily limiting
+requests (not your usage limit) · Rate limited`), distinct from your account
+usage limit. It **varies by time of day and overall load** — a fan-out of 7+
+heavy agents can be killed instantly (0 subagent tokens, all marked failed
+within ~30s) at peak hours even when the same fan-out ran clean the day before.
+"It worked with N agents yesterday" is not a guarantee for today.
+
+**Start conservative, then scale up** rather than picking a fixed number:
+
+| Agent profile | Safe starting concurrency |
+|---|---|
+| Heavy (each runs installs / builds / long tool chains) | **2–3** |
+| Light (read-only analysis, single-file edits) | up to 5 for Opus 4.7 (1M) parents |
+
+Scale beyond the starting point only when the environment is known-good for the
+current session. Prefer **sequential waves of small batches** over one big
+fan-out whenever more than ~4 heavy agents are involved (e.g. four waves of two,
+each wave dispatched when the previous reports).
+
+**Treat the rate-limit signal as backoff-and-retry, not task failure.** When a
+wave returns with one or more `Rate limited` agents, the work is not lost — the
+agents were rejected before doing meaningful work. Re-dispatch them with backoff
+*and reduce concurrency* (e.g. drop from 4 to 2, or switch the retry wave to
+Sonnet) rather than recording them as failed. For the full
+**recovery-dispatch pattern**, see
 [REFERENCE.md → Concurrent rate-limit recovery](REFERENCE.md#concurrent-rate-limit-risk--recovery-dispatch-routine).
 
 Cross-reference `.claude/rules/skill-fork-context.md` for the underlying

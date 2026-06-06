@@ -1,0 +1,29 @@
+name: "Maintenance: clear autorelease labels"
+
+# Thin caller for the org reusable workflow. See
+# laurigates/.github/.github/workflows/reusable-clear-autorelease-labels.yml
+# for what this does and when to run it (manual escape hatch for a clogged
+# release-please pipeline).
+
+on:
+  workflow_dispatch:
+    inputs:
+      label:
+        description: "Label to strip from closed PRs"
+        default: "autorelease: pending"
+        required: false
+      dry_run:
+        description: "List matches without removing the label"
+        type: boolean
+        default: false
+
+jobs:
+  clear-labels:
+    uses: laurigates/.github/.github/workflows/reusable-clear-autorelease-labels.yml@main
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    with:
+      label: ${{ inputs.label }}
+      dry_run: ${{ inputs.dry_run }}
