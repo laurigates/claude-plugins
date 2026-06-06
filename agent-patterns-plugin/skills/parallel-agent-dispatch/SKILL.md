@@ -410,11 +410,31 @@ siblings finish cleanly while rate-limited agents return partial state with no
 Return Contract. Matches upstream
 [anthropics/claude-code#33154](https://github.com/anthropics/claude-code/issues/33154).
 
-**Mitigation**: cap concurrent agent dispatch at **≤ 5** for Opus 4.7 (1M)
-parents. When the fan-out genuinely needs more, dispatch in waves (five now,
-the next batch when the first reports) or stagger by ~30 seconds. For the
-**recovery-dispatch pattern** when a wave returns with one or two
-`Rate limited` agents, see
+This is **server-side request rate limiting** (`Server is temporarily limiting
+requests (not your usage limit) · Rate limited`), distinct from your account
+usage limit. It **varies by time of day and overall load** — a fan-out of 7+
+heavy agents can be killed instantly (0 subagent tokens, all marked failed
+within ~30s) at peak hours even when the same fan-out ran clean the day before.
+"It worked with N agents yesterday" is not a guarantee for today.
+
+**Start conservative, then scale up** rather than picking a fixed number:
+
+| Agent profile | Safe starting concurrency |
+|---|---|
+| Heavy (each runs installs / builds / long tool chains) | **2–3** |
+| Light (read-only analysis, single-file edits) | up to 5 for Opus 4.7 (1M) parents |
+
+Scale beyond the starting point only when the environment is known-good for the
+current session. Prefer **sequential waves of small batches** over one big
+fan-out whenever more than ~4 heavy agents are involved (e.g. four waves of two,
+each wave dispatched when the previous reports).
+
+**Treat the rate-limit signal as backoff-and-retry, not task failure.** When a
+wave returns with one or more `Rate limited` agents, the work is not lost — the
+agents were rejected before doing meaningful work. Re-dispatch them with backoff
+*and reduce concurrency* (e.g. drop from 4 to 2, or switch the retry wave to
+Sonnet) rather than recording them as failed. For the full
+**recovery-dispatch pattern**, see
 [REFERENCE.md → Concurrent rate-limit recovery](REFERENCE.md#concurrent-rate-limit-risk--recovery-dispatch-routine).
 
 Cross-reference `.claude/rules/skill-fork-context.md` for the underlying
