@@ -64,6 +64,7 @@ The audit script in this repo is the canonical example — it pairs a human repo
 | Skill body or `allowed-tools` references an MCP tool name that the server doesn't actually expose | `scripts/lint-mcp-tool-references.sh` — extend the `denylist=()` array with the unavailable tool name and the suggested fix |
 | Skill body documents an install/import for a package name that doesn't exist on its registry (npm/PyPI/crates/RubyGems/Go) — a dependency-confusion hazard | `scripts/lint-package-references.sh` — extend the `denylist=()` array with the `(ecosystem, wrong-name, fix)` triple |
 | Skill markdown ships a version pin (`uses:`/`FROM`/`image:`/`rev:`) in a shape Renovate's customManagers can't see, so it silently rots | `scripts/check-version-pin-coverage.sh` — extend the managed-form predicates **and** the matching `renovate.json` customManager together (see `.claude/rules/version-pinning.md`) |
+| `.claude/settings.json` `enabledPlugins` drifts from the plugins published in `.claude-plugin/marketplace.json` (a plugin is added to the marketplace but never enabled, or a removed plugin is left enabled) | `scripts/check-enabled-plugins-drift.sh --strict` (+ `scripts/tests/test-check-enabled-plugins-drift.sh`); wired into `.pre-commit-config.yaml` and the `Plugin: Enablement drift` workflow |
 
 ## Known Regressions (Documented Bugs)
 

@@ -1,0 +1,44 @@
+name: "Plugin: Enablement drift"
+
+# Keeps .claude/settings.json `enabledPlugins` in lockstep with the plugins
+# published in .claude-plugin/marketplace.json, so the repo always dogfoods its
+# full plugin set. Triggers whenever either file changes — adding a plugin to
+# the marketplace without enabling it (or leaving a removed plugin enabled)
+# fails the check.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.claude-plugin/marketplace.json'
+      - '.claude/settings.json'
+      - 'scripts/check-enabled-plugins-drift.sh'
+      - 'scripts/tests/test-check-enabled-plugins-drift.sh'
+      - '.github/workflows/plugin-enablement-drift.yml'
+  push:
+    branches: [main]
+    paths:
+      - '.claude-plugin/marketplace.json'
+      - '.claude/settings.json'
+
+concurrency:
+  group: plugin-enablement-drift-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Self-test the drift guard
+        run: bash scripts/tests/test-check-enabled-plugins-drift.sh
+
+      - name: Check plugin enablement drift
+        run: |
+          bash scripts/check-enabled-plugins-drift.sh
+          bash scripts/check-enabled-plugins-drift.sh --strict

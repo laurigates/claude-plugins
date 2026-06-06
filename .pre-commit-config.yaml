@@ -69,3 +69,9 @@ repos:
         language: system
         files: '/skills/.*\.md$'
         pass_filenames: false
+      - id: check-enabled-plugins-drift
+        name: enabledPlugins matches the marketplace (plugin-enablement-drift)
+        entry: bash ./scripts/check-enabled-plugins-drift.sh --strict
+        language: system
+        files: '^(\.claude-plugin/marketplace\.json|\.claude/settings\.json)$'
+        pass_filenames: false
