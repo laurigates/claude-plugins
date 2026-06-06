@@ -50,6 +50,19 @@ jobs:
           SKILL_FILES=$(echo "$FILES" | grep -c 'skills/' || true)
           echo "skill_count=$SKILL_FILES" >> "$GITHUB_OUTPUT"
 
+          # Detect whether this PR modifies this workflow file itself.
+          # When it does, claude-code-action's OIDC token exchange is
+          # blocked by GitHub (the workflow must match the default branch
+          # to prevent privilege escalation), so the Claude Skill Quality
+          # Review step is skipped to avoid a benign-but-red failure
+          # (see issues #1472, #1495, #1508).
+          if git diff --name-only "origin/${{ github.base_ref }}...HEAD" \
+            -- .github/workflows/plugin-pr-checks.yml | grep -q .; then
+            echo "workflow_changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "workflow_changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Run plugin compliance checks
         id: compliance
         if: steps.changed.outputs.plugin_count != '0'
@@ -93,7 +106,10 @@ jobs:
           gh pr comment "$PR_NUMBER" --body "$COMMENT_BODY"
 
       - name: Claude Skill Quality Review
-        if: steps.changed.outputs.skill_count != '0'
+        # Skip when this PR modifies plugin-pr-checks.yml: GitHub blocks the
+        # OIDC token exchange claude-code-action needs whenever the running
+        # workflow differs from the default branch (issues #1472, #1495, #1508).
+        if: steps.changed.outputs.skill_count != '0' && steps.changed.outputs.workflow_changed != 'true'
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
