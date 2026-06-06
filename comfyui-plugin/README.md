@@ -16,20 +16,32 @@ via Scalr), and adding a reproducible README-screenshot pipeline to a pack.
 
 ### comfyui-node-scaffold
 
-Scaffold a new ComfyUI custom-node repository ready for implementation:
+Scaffold a new ComfyUI custom-node repository ready for implementation, in the
+**TypeScript + bun build** architecture (source in `src/`, built to `web/dist/`):
 
-- `pyproject.toml` with Comfy Registry metadata
-- CI + release-please + publish GitHub Actions
-- ruff / biome / pre-commit config
-- vitest + pytest harness
-- `__init__.py`, `CLAUDE.md`, and a JS extension skeleton
+- `pyproject.toml` with Comfy Registry metadata (`[tool.comfy] includes =
+  ["web/dist"]` force-ships the built output)
+- CI + release-please + publish GitHub Actions (CI runs `tsc` + `bun build`;
+  `publish.yml` builds before publishing)
+- strict `tsconfig.json` + ruff / biome / knip / pre-commit config
+- vitest (imports the `.ts` source) + pytest harness
+- `src/index.ts` + `src/comfyui-shims.d.ts`, `__init__.py`
+  (`WEB_DIRECTORY = "./web/dist"`), `CLAUDE.md`, and a migration ADR
 - Three variants: `frontend` (per-widget modal), `backend` (adds a node +
   aiohttp endpoints), `gesture` (canvas pointer layer — pinch/drag)
+
+The `frontend`/`backend` (modal) variants consume the shared
+[`@laurigates/comfy-modal-kit`](https://www.npmjs.com/package/@laurigates/comfy-modal-kit)
+primitives via an `import` (inlined by `bun build`) — they no longer copy
+`modal-shell.js` / `modal-fuzzy.js` in. The `gesture` variant has no kit
+dependency.
 
 The generated `CLAUDE.md` teaches the pack to **verify the LiteGraph/canvas API
 against the frontend sourcemap** (the `api-*.js.map` chunk) before coding against
 the minified frontend — names are renamed in the bundle, so `instanceof` and
-guessed property names are unreliable.
+guessed property names are unreliable. Static types from
+`@comfyorg/comfyui-frontend-types` cover the seam `ComfyApp`; the un-exported
+internals are modelled with local structural interfaces.
 
 **Use when** bootstrapping / init-ing a new ComfyUI node pack repo.
 

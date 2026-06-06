@@ -331,6 +331,62 @@ check_skill_body() {
       fi
     fi
 
+    # Regression: comfyui-node-scaffold must emit a TypeScript + bun-build pack
+    # consuming @laurigates/comfy-modal-kit (NOT a vanilla-JS pack with copied-in
+    # modal primitives), and its biome pin must be consistent across biome.json,
+    # the pre-commit hook, and CI. The previous template pinned
+    # @biomejs/biome@1.9.4 in pre-commit while biome.json/CI were on 2.x — a
+    # silent mismatch the pre-commit hook surfaced as a config-parse failure.
+    # The templates live in the sibling scaffold.py (not the SKILL.md body), so
+    # this check reads that generator. Semantic invariants:
+    #   1. emits TypeScript (src/index.ts), not web/js/*.js vanilla
+    #   2. consumes the shared kit via import (no copied modal-shell/-fuzzy)
+    #   3. every biome pin is the same version (no 1.9.4 drift)
+    if [ "$skill_name" = "comfyui-node-scaffold" ]; then
+      local scaffold_py
+      scaffold_py="$(dirname "$skill_file")/scaffold.py"
+      if [ ! -f "$scaffold_py" ]; then
+        issues+=("❌ ${plugin}/${skill_name}: scaffold.py missing next to SKILL.md")
+        has_errors=true
+      else
+        # 1. TypeScript, not vanilla JS.
+        if ! grep -q '"src/index.ts":' "$scaffold_py"; then
+          issues+=("❌ ${plugin}/${skill_name}: scaffold.py must emit TypeScript 'src/index.ts' (TS+bun template, not vanilla web/js/*.js)")
+          has_errors=true
+        fi
+        if grep -q '"web/js/' "$scaffold_py"; then
+          issues+=("❌ ${plugin}/${skill_name}: scaffold.py must not emit vanilla 'web/js/*.js' — the TS source lives in src/ and builds to web/dist/")
+          has_errors=true
+        fi
+        # 2. Consume the shared kit; never copy the primitives in.
+        if ! grep -q 'comfy-modal-kit' "$scaffold_py"; then
+          issues+=("❌ ${plugin}/${skill_name}: scaffold.py modal variants must consume @laurigates/comfy-modal-kit (the dependency + import)")
+          has_errors=true
+        fi
+        if grep -Eq 'shutil\.copy|modal-shell\.js"|modal-fuzzy\.js"' "$scaffold_py"; then
+          issues+=("❌ ${plugin}/${skill_name}: scaffold.py must not copy modal-shell.js/modal-fuzzy.js into the pack — consume the kit instead")
+          has_errors=true
+        fi
+        # 3. biome pin consistency: every generated biome pin must flow from the
+        #    single @@BIOME_VERSION@@ token, never a hard-coded version. No stale
+        #    1.x literal pin (the original bug), and a single-source constant.
+        if grep -Eq '@biomejs/biome@1\.[0-9]' "$scaffold_py"; then
+          issues+=("❌ ${plugin}/${skill_name}: scaffold.py pins a stale 1.x @biomejs/biome — must use @@BIOME_VERSION@@ (2.x)")
+          has_errors=true
+        fi
+        if ! grep -q '^BIOME_VERSION = ' "$scaffold_py"; then
+          issues+=("❌ ${plugin}/${skill_name}: scaffold.py must single-source the biome pin in a BIOME_VERSION constant")
+          has_errors=true
+        fi
+        # Any hard-coded biome version pin in a template (a literal X.Y.Z next to
+        # 'biome', rather than the @@BIOME_VERSION@@ token) can drift — reject it.
+        if grep -Eq 'biome[^@]*@[0-9]+\.[0-9]+\.[0-9]+|biome/schemas/[0-9]+\.[0-9]+\.[0-9]+' "$scaffold_py"; then
+          issues+=("❌ ${plugin}/${skill_name}: scaffold.py hard-codes a biome version in a template — use the @@BIOME_VERSION@@ token so all pins stay in lockstep")
+          has_errors=true
+        fi
+      fi
+    fi
+
     # Regression: feedback-session Step 1a silently filed against the cwd git
     # remote even when the session's tool calls were dominated by a different
     # plugin/source repo (issue #1425). The semantic invariant is that the
