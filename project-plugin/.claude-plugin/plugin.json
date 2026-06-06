@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "project-plugin",
   "version": "1.16.1",
-  "description": "Project initialization and management - setup, modernization, and continuous development workflows",
+  "description": "Project initialization and management - setup, changelog review, and continuous development workflows",
   "author": {
     "name": "Lauri Gates"
   },
@@ -12,7 +12,6 @@
     "project",
     "initialization",
     "setup",
-    "modernization",
     "tdd",
     "workflow",
     "changelog",

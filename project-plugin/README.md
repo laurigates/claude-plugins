@@ -1,6 +1,6 @@
 # Project Plugin
 
-Project initialization and management plugin for Claude Code. Provides commands for project setup, modernization, and continuous development workflows.
+Project initialization and management plugin for Claude Code. Provides commands for project setup, changelog review, and continuous development workflows.
 
 ## Skills
 
@@ -22,52 +22,6 @@ Base project initialization that creates universal project structure for any pro
 /project:init my-project python --github --private
 ```
 
-### `/project:new`
-Comprehensive project initialization with language-specific configuration including pre-commit hooks, release workflows, Makefile, and Dockerfile.
-
-**Features:**
-- Detects or accepts project type (python, node, go, generic)
-- Creates Makefile with colored output
-- Generates Dockerfile with multi-stage builds
-- Sets up .gitignore for language-specific patterns
-- Configures release-please for automated releases
-- Sets up comprehensive pre-commit hooks
-- Creates pyproject.toml (Python projects)
-- Configures .claude/settings.json with post-tool hooks
-
-**Usage:**
-```bash
-/project:new python
-/project:new node
-/project:new  # Defaults to python
-```
-
-### `/project:modernize`
-Systematically modernize applications to current standards and best practices.
-
-**Features:**
-- **Phase 1**: Application analysis (detect stack, dependencies, security audit)
-- **Phase 2**: Package management modernization (uv for Python, bun/pnpm for Node.js)
-- **Phase 3**: Security hardening (fix secrets, environment variables)
-- **Phase 4**: Infrastructure modernization (Alpine Dockerfiles, docker-compose updates)
-- **Phase 5**: 12-factor app compliance
-- **Phase 6**: Documentation updates
-- **Phase 7**: Testing & validation
-- **Phase 8**: GitHub Actions workflows (CI/CD, release-please, security scanning)
-- **Phase 9**: Pre-commit hooks setup
-
-**Always uses Context7 MCP to fetch current best practices** before suggesting tool usage.
-
-**Usage:**
-```bash
-/project:modernize                 # Full modernization
-/project:modernize --security-only # Security fixes only
-/project:modernize --dry-run       # Show changes without applying
-```
-
-### `/project:modernize-exp`
-Experimental version of modernize with latest tooling recommendations. Same features as `/project:modernize` but may include bleeding-edge practices.
-
 ### `/project:continue`
 Analyze project state and continue development where you left off.
 
@@ -84,7 +38,7 @@ Analyze project state and continue development where you left off.
 /project:continue
 ```
 
-**Note:** Generic template that should be customized per project using `/blueprint:generate-commands`. Project-specific version is generated to `.claude/skills/project-continue/SKILL.md`.
+**Note:** Generic skill. For blueprint-driven projects, `/blueprint:execute` can pick and run the next logical action; `/project:continue` resumes hands-on TDD coding.
 
 ### `/project:test-loop`
 Run automated TDD cycle: test → fix → refactor.
@@ -101,7 +55,7 @@ Run automated TDD cycle: test → fix → refactor.
 /project:test-loop
 ```
 
-**Note:** Generic template that should be customized per project using `/blueprint:generate-commands`. Project-specific version is generated to `.claude/skills/project-test-loop/SKILL.md`.
+**Note:** Generic skill. Configure project-specific test commands in `CLAUDE.md` or `.claude/rules/` for automatic detection.
 
 ### `/changelog:review`
 Review Claude Code changelog for changes impacting plugin development.
@@ -214,12 +168,6 @@ This plugin is part of the claude-plugins repository. To use it:
 - `jq` - JSON parsing (for Node.js projects)
 - `pre-commit` - Git hook management
 
-### Modernization
-- **Context7 MCP** - Required for fetching current best practices (mandatory before tool suggestions)
-- `docker` - Container operations (optional)
-- `trufflehog` - Secret detection (optional)
-- Language-specific package managers (uv, npm, bun, cargo, etc.)
-
 ## Best Practices
 
 ### Documentation-First
@@ -237,11 +185,6 @@ Follow strict RED → GREEN → REFACTOR workflow:
 - Always pull before creating a branch
 - Run security checks before staging files
 
-### Modernization
-- **MANDATORY**: Use Context7 MCP for current best practices documentation before ANY tool usage
-- For all package managers (uv, npm, bun, cargo, etc.): Always verify current best practices
-- Never suggest package management commands without first checking Context7 documentation
-
 ## Project Types Supported
 
 - **Python**: pyproject.toml, uv, pytest, ruff, ty
@@ -253,12 +196,12 @@ Follow strict RED → GREEN → REFACTOR workflow:
 ## Integration
 
 ### With Blueprint Plugin
-- `/blueprint:generate-commands` - Creates project-specific versions of generic commands
+- `/blueprint:execute` - Determine and run the next logical blueprint action
 - `/blueprint:work-order` - Create work orders before starting features
 
 ### With Git Plugin
-- `/git:smartcommit` - Conventional commits integration
-- `/git:quickpr` - Pull request creation
+- `/git:commit` - Conventional commits integration
+- `/git:pr` - Pull request creation
 
 ### With Testing Plugin
 - `/test:quick` - Run unit tests after changes

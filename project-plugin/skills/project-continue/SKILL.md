@@ -2,10 +2,10 @@
 description: Resume development from current project state. Use when the user asks to continue work, pick up where we left off, find the next task, or resume a TDD cycle after a break.
 args: "[--task <id>] [--skip-status]"
 argument-hint: "--task to resume specific task, --skip-status to skip state analysis"
-allowed-tools: Read, Bash, Grep, Glob, Edit, Write
+allowed-tools: Read, Bash(git status *), Bash(git log *), Bash(git branch *), Grep, Glob, Edit, Write
 created: 2025-12-16
-modified: 2026-05-09
-reviewed: 2026-04-25
+modified: 2026-06-05
+reviewed: 2026-06-05
 name: project-continue
 ---
 
@@ -18,6 +18,7 @@ name: project-continue
 | Resuming work on a known project with PRDs and feature-tracker state | Entering an unfamiliar codebase needing orientation on tooling/structure |
 | Picking the next task off the feature tracker after a break | Use project-test-loop instead when the next step is iterating on failing tests |
 | Asking "what's next" in a project with established blueprint state | Use project-init instead when no project structure exists yet |
+| Resuming a TDD session and beginning implementation yourself | Use `/blueprint:execute` instead when you want blueprint to pick and run the next logical blueprint action (derive/sync/work-order) rather than continue coding |
 
 Continue project development by analyzing current state and resuming work.
 
@@ -38,13 +39,13 @@ Continue project development by analyzing current state and resuming work.
    ```
 
 2. **Read project context**:
-   - **PRDs**: Read all files in `.claude/blueprints/prds/`
+   - **PRDs**: Read all files in `docs/prds/`
      * Understand project goals and requirements
      * Identify features and phases
    - **Feature Tracker**: Read `docs/blueprint/feature-tracker.json` tasks section
      * Current phase and progress
      * Completed, in-progress, and pending tasks
-   - **Work Orders**: Check `.claude/blueprints/work-orders/`
+   - **Work Orders**: Check `docs/blueprint/work-orders/`
      * Recent work-orders (see what's been done)
      * Pending work-orders (see what's planned)
 
