@@ -12,6 +12,8 @@
 #   - `git push origin main:fix/foo` with explicit refspec is allowed.
 #   - Plain `git commit` / `git push` on main is denied.
 #   - `git -C <feature-worktree> commit` from a cwd on main is allowed (#1389).
+#   - The initial bootstrap push (single root commit) to main is allowed, and
+#     resumes denying once a second commit exists.
 set -euo pipefail
 
 HOOK="$(cd "$(dirname "$0")" && pwd)/branch-protection.sh"
@@ -26,7 +28,11 @@ TEST_REPO=$(mktemp -d)
 #   MASTER_WT  — on `master`, writes should still be denied (negative case)
 FEATURE_WT=$(mktemp -d)
 MASTER_WT=$(mktemp -d)
-trap 'rm -rf "$TEST_REPO" "$FEATURE_WT" "$MASTER_WT"' EXIT
+# INIT_REPO — a pristine repo with a single root commit on main, used to
+# assert the bootstrap-push exemption. Kept separate from TEST_REPO so the
+# baseline deny tests still run against a repo that has real history.
+INIT_REPO=$(mktemp -d)
+trap 'rm -rf "$TEST_REPO" "$FEATURE_WT" "$MASTER_WT" "$INIT_REPO"' EXIT
 
 git -C "$TEST_REPO" init -q -b main
 git -C "$TEST_REPO" config user.email "test@example.com"
@@ -34,6 +40,18 @@ git -C "$TEST_REPO" config user.name "test"
 git -C "$TEST_REPO" config commit.gpgsign false
 git -C "$TEST_REPO" config tag.gpgsign false
 git -C "$TEST_REPO" commit -q --allow-empty -m "init"
+# A second commit so TEST_REPO has real history — the baseline deny tests
+# must not be confused with the single-commit bootstrap exemption. Worktrees
+# below branch from this two-commit tip.
+git -C "$TEST_REPO" commit -q --allow-empty -m "second"
+
+# INIT_REPO has exactly one commit on main — the bootstrap case.
+git -C "$INIT_REPO" init -q -b main
+git -C "$INIT_REPO" config user.email "test@example.com"
+git -C "$INIT_REPO" config user.name "test"
+git -C "$INIT_REPO" config commit.gpgsign false
+git -C "$INIT_REPO" config tag.gpgsign false
+git -C "$INIT_REPO" commit -q --allow-empty -m "init"
 
 # Add linked worktrees. The TEST_REPO stays on `main`; tests then invoke
 # `git -C "$FEATURE_WT" ...` from inside TEST_REPO and the hook must read
@@ -143,6 +161,22 @@ assert_allow \
 assert_allow \
   "git push origin HEAD:feature/bar is allowed" \
   "git push origin HEAD:feature/bar"
+
+# ── bootstrap push (initial commit initializes the repo) ─────────────────────
+# Pushing the very first commit to main is how an empty GitHub repo gets
+# initialized. When the branch tip is the repo's only commit there is no PR-able
+# history, so a plain `git push` is allowed. Protection resumes once a second
+# commit exists (covered by the baseline deny on TEST_REPO, which has history).
+echo ""
+echo "bootstrap push (single root commit on main is allowed to initialize the repo):"
+
+assert_allow \
+  "git -C <single-commit-repo> push to main is allowed" \
+  "git -C $INIT_REPO push"
+
+assert_allow \
+  "git -C <single-commit-repo> push -u origin main is allowed" \
+  "git -C $INIT_REPO push -u origin main"
 
 # ── human-operator env-var escape hatch ─────────────────────────────────────
 # When the variable is exported in the *process environment* (not inline on

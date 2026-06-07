@@ -17,7 +17,8 @@
 #
 # Matches: Bash
 # Detects: git commit, git push, git rebase on main/master
-# Allows: read-only git operations, git merge (local, reversible)
+# Allows: read-only git operations, git merge (local, reversible), and the
+#         initial bootstrap push (a single root commit) that initializes a repo
 
 set -euo pipefail
 
@@ -118,6 +119,20 @@ case "$GIT_SUBCMD" in
   push)
     # Allow push to specific remote branch via explicit refspec
     if echo "$COMMAND" | grep -q ':'; then
+      exit 0
+    fi
+    # Allow the very first push that bootstraps a repo. When the branch tip is
+    # the repo's only commit (a single root commit), there is no prior history
+    # to open a PR against — pushing it to main is how an empty remote gets
+    # initialized. The normal protection resumes as soon as a second commit
+    # exists. Branch detection respects `git -C <path>` for the same reason as
+    # CURRENT_BRANCH above (#1389).
+    if [ -n "$WORKING_DIR" ]; then
+      COMMIT_COUNT=$(git -C "$WORKING_DIR" rev-list --count HEAD 2>/dev/null || echo "")
+    else
+      COMMIT_COUNT=$(git rev-list --count HEAD 2>/dev/null || echo "")
+    fi
+    if [ "$COMMIT_COUNT" = "1" ]; then
       exit 0
     fi
     deny "You're about to push directly to '${CURRENT_BRANCH}'. In collaborative repos, changes go through a PR on a feature branch. To push local ${CURRENT_BRANCH} to a remote feature branch, use an explicit refspec (allowed): git push origin ${CURRENT_BRANCH}:feature/your-change. If pushing to ${CURRENT_BRANCH} is genuinely intentional, delegate to the user per .claude/rules/handling-blocked-hooks.md."
