@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.5](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.8.4...typescript-plugin-v1.8.5) (2026-06-07)
+
+
+### Documentation
+
+* refresh stale plugin-relationships diagram and guard it ([#1523](https://github.com/laurigates/claude-plugins/issues/1523)) ([#1533](https://github.com/laurigates/claude-plugins/issues/1533)) ([924025e](https://github.com/laurigates/claude-plugins/commit/924025eb378c1519b044fb65bbbf7cec922dbbb8))
+
 ## [1.8.4](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.8.3...typescript-plugin-v1.8.4) (2026-05-14)
 
 
