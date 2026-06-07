@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.3](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.4.2...hooks-plugin-v2.4.3) (2026-06-07)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** allow initial bootstrap push to main ([#1535](https://github.com/laurigates/claude-plugins/issues/1535)) ([7ac0e32](https://github.com/laurigates/claude-plugins/commit/7ac0e32f95c10f2e6df902666f249b93e90bedb4))
+
 ## [2.4.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.4.1...hooks-plugin-v2.4.2) (2026-06-02)
 
 
