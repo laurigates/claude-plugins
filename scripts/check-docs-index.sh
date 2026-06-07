@@ -7,6 +7,11 @@
 #   2. PLUGIN MAPS  — the plugin set agrees across marketplace.json,
 #      release-please-config.json, .release-please-manifest.json, the *-plugin
 #      directories on disk, and docs/PLUGIN-MAP.md.
+#   3. DOC COUNTS   — per-plugin skill/agent counts stated in README.md and
+#      docs/PLUGIN-MAP.md match the files on disk.
+#   4. DIAGRAM      — node labels in docs/diagrams/plugin-relationships.d2 name a
+#      plugin that exists and state a count matching disk (the .svg is generated
+#      and not parsed). Guards the #1523 command-analytics / sync drift class.
 #
 # Emits the structured KEY=value / STATUS= convention
 # (.claude/rules/structured-script-output.md) so scheduled-audits can roll it up.
@@ -43,6 +48,7 @@ marketplace="$proj_dir/.claude-plugin/marketplace.json"
 rp_config="$proj_dir/release-please-config.json"
 rp_manifest="$proj_dir/.release-please-manifest.json"
 plugin_map="$proj_dir/docs/PLUGIN-MAP.md"
+diagram_d2="$proj_dir/docs/diagrams/plugin-relationships.d2"
 
 issue_count=0
 declare -a issues=()
@@ -180,6 +186,47 @@ if [ -f "$readme_md" ]; then
   fi
 fi
 
+# --- Check 4: plugin-relationships.d2 node labels vs disk ----------------------
+# The diagram source states each plugin's count as `label: "<name>\n<N> skills"`
+# or `label: "<name>\n<N> skills + <M> agent(s)"`. A node naming a plugin that no
+# longer exists on disk is dead (the #1523 command-analytics / sync drift); a node
+# whose stated count diverges from disk is stale. The rendered .svg is generated
+# and intentionally not parsed — guard the .d2 source only. Zero-false-positive:
+# only `label:` lines whose text matches `<name>\n<int> skill` are compared; the
+# title and tier-label nodes (no `\nN skill`) are skipped.
+diagram_nodes=0
+if [ -f "$diagram_d2" ]; then
+  while IFS='|' read -r dn_name dn_sk dn_ag; do
+    [ -n "$dn_name" ] || continue
+    diagram_nodes=$((diagram_nodes + 1))
+    dn_dir="${dn_name}-plugin"
+    if [ ! -d "$proj_dir/$dn_dir" ]; then
+      add_issue ERROR diagram_node_dangling "plugin-relationships.d2 has a '$dn_name' node but $dn_dir does not exist on disk"
+      continue
+    fi
+    cs="$(skill_count "$dn_dir")"
+    ca="$(agent_count "$dn_dir")"
+    if [ "$dn_sk" -ne "$cs" ]; then
+      add_issue WARN diagram_count_drift "plugin-relationships.d2 states $dn_name has $dn_sk skills but $cs exist on disk"
+    fi
+    if [ "$dn_ag" -ne -1 ] && [ "$dn_ag" -ne "$ca" ]; then
+      add_issue WARN diagram_count_drift "plugin-relationships.d2 states $dn_name has $dn_ag agents but $ca exist on disk"
+    fi
+  done <<< "$(awk '
+    match($0, /label: "[a-z0-9-]+\\n[0-9]+ skill/) {
+      seg = substr($0, RSTART + 8)            # drop label: "
+      q = index(seg, "\\n"); name = substr(seg, 1, q - 1)
+      rest = substr(seg, q + 2)               # after \n
+      match(rest, /^[0-9]+/); sk = substr(rest, 1, RLENGTH)
+      ag = -1
+      if (match(rest, /\+[ ]*[0-9]+[ ]*agent/)) {
+        a = substr(rest, RSTART, RLENGTH); gsub(/[^0-9]/, "", a); ag = a
+      }
+      print name "|" sk "|" ag
+    }
+  ' "$diagram_d2")"
+fi
+
 # --- Status -------------------------------------------------------------------
 overall_status="OK"
 exit_severity=0
@@ -217,6 +264,7 @@ else
   echo "MARKETPLACE_PLUGINS=$mkt_count"
   echo "TOTAL_SKILLS=$total_skills"
   echo "TOTAL_AGENTS=$total_agents"
+  echo "DIAGRAM_NODES=$diagram_nodes"
   echo "STATUS=$overall_status"
   echo "ISSUE_COUNT=$issue_count"
   if [ "$issue_count" -gt 0 ]; then

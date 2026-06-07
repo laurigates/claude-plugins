@@ -4,8 +4,8 @@ description: "Publish npm packages built with Bun: package.json config, CLI tool
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2025-12-21
-modified: 2026-05-09
-reviewed: 2025-12-21
+modified: 2026-06-06
+reviewed: 2026-06-06
 ---
 
 # Bun npm Publishing
@@ -390,3 +390,47 @@ npm pack --dry-run
 # Ensure chmod in build script
 chmod +x build/index.js
 ```
+
+**2FA publish (`EOTP`) is not automatable:**
+
+A non-interactive shell — a CI step, or an agent's Bash tool — cannot
+supply a one-time password. `npm publish` fails with:
+
+```
+npm error code EOTP
+npm error This operation requires a one-time password.
+```
+
+Two ways through:
+
+- **Human, interactive**: `npm publish --otp=<6-digit-code>` (the code
+  comes from the publisher's authenticator app, not from npm on demand).
+- **Automation token (CI / unattended)**: a Granular/Automation token
+  (npmjs.com → Access Tokens) **bypasses 2FA at publish time**. Put it in
+  `NODE_AUTH_TOKEN` / `NPM_TOKEN`. This is exactly why the release-please
+  workflow above publishes cleanly while a local `npm publish` prompts —
+  CI uses the token, the human uses the OTP.
+
+An agent that hits `EOTP` should hand the publish to the user or switch
+the repo to an automation token — it cannot mint or supply one itself
+(`npm token create` also requires a valid, OTP-satisfied session).
+
+**Fresh publish 404s for a few minutes (propagation lag):**
+
+Right after a first publish, *public / unauthenticated* reads can 404
+while the package is genuinely live — the access record updates instantly
+but the public metadata CDN lags. Don't conclude the publish failed.
+Confirm with authenticated, version-pinned checks:
+
+```bash
+npm access list packages              # shows it under your account immediately
+npm view @org/pkg@<version> _id       # version-pinned, authed — resolves once live
+npm pack @org/pkg@<version>           # actually fetches the tarball (definitive)
+```
+
+Signature of *propagation lag* (not a private/failed publish): a public
+404 **plus** `npm access list packages` shows the package **plus** an
+authed `npm pack @org/pkg@<version>` succeeds. (`npm config get
+//registry.npmjs.org/:_authToken` often returns empty even when logged
+in, so a hand-rolled `curl` with that "token" is an unauthenticated probe
+— use the `npm` CLI itself, which reads auth correctly, to test.)

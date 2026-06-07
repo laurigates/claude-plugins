@@ -71,7 +71,7 @@ Alternatively, use the `/configure:mcp` skill for interactive configuration.
 |--------|--------|-------------|
 | **api-plugin** | 2 | API integration and testing - REST endpoints, client generation |
 | **blueprint-plugin** | 33 | Blueprint Development methodology - PRD/PRP workflow with version tracking |
-| **comfyui-plugin** | 2 | ComfyUI custom-node pack lifecycle - scaffold, seed repo, gitops adoption, registry publish |
+| **comfyui-plugin** | 3 | ComfyUI custom-node pack lifecycle - scaffold, seed repo, gitops adoption, registry publish |
 | **home-assistant-plugin** | 4 | Home Assistant configuration - automations, scripts, scenes, entities |
 | **obsidian-plugin** | 21 | Obsidian CLI operations - vault management, search, properties, tasks |
 | **project-plugin** | 7 | Project initialization, management, maintenance, and continuous development |

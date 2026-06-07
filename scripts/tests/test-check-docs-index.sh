@@ -9,6 +9,9 @@
 #      (ERROR plugin_map_drift) and --strict exits non-zero
 #   D. a README table row stating the wrong skill count is flagged
 #      (WARN doc_count_drift); a correct row is NOT flagged (zero false positive)
+#   E. a plugin-relationships.d2 node naming a non-existent plugin is flagged
+#      (ERROR diagram_node_dangling) and a wrong stated count is flagged
+#      (WARN diagram_count_drift); a correct node is NOT flagged (#1523)
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -84,6 +87,24 @@ A curated collection of 2 Claude Code plugins providing 300+ skills and 21 agent
 | **beta-plugin** | 1 | correct skill count |
 EOF
 
+# Diagram: alpha node correct (2 skills + 1 agent), beta node wrong (5 skills),
+# and a command-analytics node naming a plugin dir that does not exist.
+mkdir -p "$fixture/docs/diagrams"
+cat > "$fixture/docs/diagrams/plugin-relationships.d2" <<'EOF'
+title: "Fixture" {
+  shape: text
+}
+alpha: {
+  label: "alpha\n2 skills + 1 agent"
+}
+beta: {
+  label: "beta\n5 skills"
+}
+analytics: {
+  label: "command-analytics\n4 skills"
+}
+EOF
+
 echo "=== TEST B: unindexed rule flagged ==="
 fx_out="$(bash "$checker" --project-dir "$fixture")"
 assert "orphan.md should be flagged rule_not_indexed" "$(contains "$fx_out" "rule_not_indexed.*orphan.md")"
@@ -109,6 +130,14 @@ assert "README headline plugin-count drift should be flagged" \
   "$(contains "$fx_out" "doc_count_drift.*headline states 2 plugins")"
 assert "README headline agent-count drift should be flagged" \
   "$(contains "$fx_out" "doc_count_drift.*headline states 21 agents")"
+
+echo "=== TEST E: diagram node drift flagged, correct node not flagged (#1523) ==="
+assert "command-analytics dangling node should be flagged diagram_node_dangling" \
+  "$(contains "$fx_out" "diagram_node_dangling.*command-analytics")"
+assert "beta diagram node wrong count should be flagged diagram_count_drift" \
+  "$(contains "$fx_out" "diagram_count_drift.*beta has 5 skills but 1")"
+assert "alpha diagram node correct count should NOT be flagged" \
+  "$([ "$(contains "$fx_out" "diagram_count_drift.*alpha")" = "false" ] && echo true || echo false)"
 
 echo ""
 echo "=== SUMMARY ==="
