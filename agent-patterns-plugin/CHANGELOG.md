@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.22.2](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.22.1...agent-patterns-plugin-v2.22.2) (2026-06-07)
+
+
+### Documentation
+
+* refresh stale plugin-relationships diagram and guard it ([#1523](https://github.com/laurigates/claude-plugins/issues/1523)) ([#1533](https://github.com/laurigates/claude-plugins/issues/1533)) ([924025e](https://github.com/laurigates/claude-plugins/commit/924025eb378c1519b044fb65bbbf7cec922dbbb8))
+
 ## [2.22.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.22.0...agent-patterns-plugin-v2.22.1) (2026-06-06)
 
 
