@@ -23,7 +23,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.22.2",
+      "version": "2.22.3",
       "keywords": [
         "agents",
         "configuration",
@@ -632,7 +632,7 @@
       "name": "typescript-plugin",
       "source": "./typescript-plugin",
       "description": "TypeScript development - strict types, ESLint, Biome",
-      "version": "1.8.5",
+      "version": "1.8.6",
       "keywords": [
         "typescript",
         "eslint",

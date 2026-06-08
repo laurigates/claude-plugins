@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.6](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.8.5...typescript-plugin-v1.8.6) (2026-06-08)
+
+
+### Documentation
+
+* **rules:** sync hook/agent/plugin rules for changelog 2.1.138→2.1.159 ([#1537](https://github.com/laurigates/claude-plugins/issues/1537)) ([f282a48](https://github.com/laurigates/claude-plugins/commit/f282a4813a01de59f94ef185a7bfdbe8adfffb06))
+
 ## [1.8.5](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.8.4...typescript-plugin-v1.8.5) (2026-06-07)
 
 

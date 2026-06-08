@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.22.3](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.22.2...agent-patterns-plugin-v2.22.3) (2026-06-08)
+
+
+### Documentation
+
+* **rules:** sync hook/agent/plugin rules for changelog 2.1.138→2.1.159 ([#1537](https://github.com/laurigates/claude-plugins/issues/1537)) ([f282a48](https://github.com/laurigates/claude-plugins/commit/f282a4813a01de59f94ef185a7bfdbe8adfffb06))
+
 ## [2.22.2](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.22.1...agent-patterns-plugin-v2.22.2) (2026-06-07)
 
 
