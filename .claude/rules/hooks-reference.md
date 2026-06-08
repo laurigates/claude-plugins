@@ -5,7 +5,7 @@ paths:
   - ".claude/settings*.json"
 ---
 
-# Hook System Reference (Claude Code 2.1.76+)
+# Hook System Reference (Claude Code 2.1.152+)
 
 Comprehensive reference for Claude Code hook events, schemas, and patterns. This supplements `.claude/rules/handling-blocked-hooks.md` with full event coverage. For guidance on when to use `type: "prompt"`, `type: "agent"`, and `type: "http"` hooks instead of `type: "command"`, see `.claude/rules/prompt-agent-hooks.md`.
 
@@ -69,6 +69,7 @@ Comprehensive reference for Claude Code hook events, schemas, and patterns. This
 |-------|--------------|-----------------|
 | `Notification` | Claude sends a desktop/system notification | none |
 | `ConfigChange` | Claude Code settings change at runtime (2.1.50+) | config key (regex) |
+| `MessageDisplay` | An assistant message is about to be displayed (2.1.152+) | none |
 
 ---
 
@@ -220,6 +221,18 @@ The exec form (`args: string[]`) spawns the command directly without a shell, so
   "subagent_model": "claude-sonnet-4-6"
 }
 ```
+
+### Stop / SubagentStop (2.1.145+)
+
+```json
+{
+  "stop_hook_active": false,
+  "background_tasks": [],
+  "session_crons": []
+}
+```
+
+`background_tasks` and `session_crons` were added in 2.1.145 — they let a `Stop` or `SubagentStop` hook see still-running background tasks and scheduled crons before deciding whether to block the turn (e.g. don't nag about "unfinished work" while a background build is mid-flight).
 
 ### WorktreeCreate (2.1.50+)
 
@@ -416,6 +429,21 @@ Any hook can emit a `terminalSequence` field to send a terminal control sequence
 
 Useful for `Stop`, `SubagentStop`, and `TaskCompleted` hooks that want to surface completion to the user even when Claude Code is running in a daemonised or backgrounded process.
 
+### MessageDisplay — Transform or Hide a Message (2.1.152+)
+
+`MessageDisplay` hooks fire as an assistant message is about to be rendered, letting a hook rewrite or suppress the displayed text via `hookSpecificOutput`:
+
+```json
+{
+  "hookSpecificOutput": {
+    "hookEventName": "MessageDisplay",
+    "updatedMessage": "Redacted summary shown to the user"
+  }
+}
+```
+
+Return nothing (exit 0) to display the message unchanged. This affects only what the user sees — it does not alter the message in the transcript or what the model later replays.
+
 ### PermissionRequest -- Auto Approve/Deny (2.1.50+)
 
 ```json
@@ -461,6 +489,23 @@ Return nothing (exit 0) to allow the stop.
   }
 }
 ```
+
+As of 2.1.152, `SessionStart` hooks accept two more `hookSpecificOutput` fields:
+
+```json
+{
+  "hookSpecificOutput": {
+    "hookEventName": "SessionStart",
+    "reloadSkills": true,
+    "sessionTitle": "Auth refactor — PR #482"
+  }
+}
+```
+
+| Field | Effect |
+|-------|--------|
+| `reloadSkills` | `true` re-scans skill directories in the same session — picks up skills installed or edited after the session began, without a restart |
+| `sessionTitle` | Sets the session title on startup and resume |
 
 ### TaskCompleted — Gate Completion (2.1.50+)
 
@@ -849,6 +894,8 @@ MCP tools use the naming pattern `mcp__<server>__<tool>`. Match them with regex 
 | `mcp__github__.*` | All tools from the `github` MCP server |
 | `mcp__github__create_pull_request` | Specific MCP tool |
 
+> **Note (2.1.147)**: Hook `if` conditions that scoped a command shape with arguments — e.g. `PowerShell(git push*)` — never matched; only the bare `PowerShell(*)` form worked. Argument-scoped `if` conditions now match as written.
+
 ---
 
 ## Exit Codes
@@ -972,4 +1019,5 @@ MCP tools use the naming pattern `mcp__<server>__<tool>`. Match them with regex 
 | `ElicitationResult` | MCP | 2.1.76 |
 | `Notification` | Misc | |
 | `ConfigChange` | Misc | 2.1.50 |
+| `MessageDisplay` | Misc | 2.1.152 |
 

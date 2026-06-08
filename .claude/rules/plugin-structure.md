@@ -1,7 +1,7 @@
 ---
 created: 2025-12-23
-modified: 2025-12-23
-reviewed: 2026-02-23
+modified: 2026-06-08
+reviewed: 2026-06-08
 paths:
   - "**/.claude-plugin/**"
 ---
@@ -39,6 +39,16 @@ my-singleton-plugin/
 
 Use this layout only for tiny single-purpose plugins. Once you need a second skill, scripts, or per-skill assets, switch back to the standard `skills/<skill-name>/SKILL.md` layout.
 
+### Local `.claude/skills` Plugins (2.1.157+)
+
+Plugins placed in a `.claude/skills` directory are loaded automatically — no marketplace entry is required. Scaffold one with:
+
+```bash
+claude plugin init <name>
+```
+
+This creates a new plugin under `.claude/skills` ready to edit.
+
 ## plugin.json Schema
 
 ### Required Fields
@@ -75,6 +85,7 @@ Use this layout only for tiny single-purpose plugins. Once you need a second ski
   "hooks": "./config/hooks.json",
   "mcpServers": "./.mcp.json",
   "lspServers": { ... },
+  "defaultEnabled": false,
   "experimental": {
     "themes": ["./themes"],
     "monitors": ["./monitors"]
@@ -83,6 +94,8 @@ Use this layout only for tiny single-purpose plugins. Once you need a second ski
 ```
 
 LSP servers declared via `lspServers` show up in `claude plugin details` and `/plugin` as of 2.1.142.
+
+> **`defaultEnabled` (2.1.154+)**: A plugin can declare `"defaultEnabled": false` in `plugin.json` (or in its marketplace entry) so it installs in a disabled state. Users opt in later via `/plugin` or `claude plugin enable <plugin>`. Use this for opt-in or heavyweight plugins that shouldn't activate on install.
 
 > **Note (2.1.136+)**: Adding a `skills` entry in `plugin.json` no longer hides the default `skills/` directory. Previously, specifying `skills` would hide auto-discovery of the default path.
 
@@ -151,6 +164,8 @@ By default, Claude discovers components in standard directories. Override with e
 }
 ```
 
+> **Note (2.1.141+)**: Plugin config commands can reference `${CLAUDE_PROJECT_DIR}` (the active project root), in addition to `${CLAUDE_PLUGIN_ROOT}`. Use it when a hook or command needs a path relative to the user's project rather than the plugin's own directory.
+
 ## MCP Server Configuration
 
 **Inline:**
@@ -191,6 +206,10 @@ The same information renders in `/plugin` (the installed-plugin details pane). A
 
 The `/plugin` marketplace browse pane shows projected context cost (per-turn and per-invocation token estimates) for each plugin. Use this signal to weigh a plugin's overhead against its value before installing.
 
+### `pluginSuggestionMarketplaces` Managed Setting (2.1.152+)
+
+Admins can set `pluginSuggestionMarketplaces` in managed settings to allowlist the org marketplaces whose plugins may be surfaced through context-aware tips. Only plugins from an allowlisted marketplace are suggested.
+
 ### MCP Server Config Errors (2.1.141+)
 
 A plugin MCP server with an unset config variable (e.g. `"args": ["--api-key", "${MY_API_KEY}"]` where `MY_API_KEY` is missing) now surfaces a "config issue" message with a copy-pasteable fix-it hint, instead of the generic "connection failed" error that obscured the root cause.
@@ -218,6 +237,10 @@ claude plugin install user/plugin-repo
 ```
 
 The override applies to clone operations only; existing SSH-cloned plugin checkouts keep their remote URL.
+
+### `skipLfs` Marketplace Source Option (2.1.153+)
+
+A `github` or `git` plugin marketplace source can set `"skipLfs": true` to skip Git LFS downloads during clone and update. Use it for plugins whose LFS assets aren't needed at runtime, to cut clone time and disk usage.
 
 ## Version Management
 

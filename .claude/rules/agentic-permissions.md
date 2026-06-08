@@ -1,7 +1,7 @@
 ---
 created: 2026-01-16
-modified: 2026-04-29
-reviewed: 2026-04-29
+modified: 2026-06-08
+reviewed: 2026-06-08
 paths:
   - "**/skills/**"
   - "**/SKILL.md"
@@ -56,7 +56,7 @@ allowed-tools: Bash(git status *), Bash(gh pr *), Read, TodoWrite
 | `Skill(git-*)` | `git-commit`, `git-rebase`, `git-pr-create` (2.1.139+) |
 | `Skill(*)` | Every skill (2.1.139+) |
 
-> **Note (2.1.139)**: `Skill(<name> *)` permission rules use prefix matching, just like `Bash(<command> *)`. Before 2.1.139, wildcards inside `Skill(...)` were treated as literal characters and silently failed to match.
+> **Note (2.1.139)**: `Skill(<name> *)` permission rules use prefix matching, just like `Bash(<command> *)` — matching `Bash(ls *)` behavior. Before 2.1.139, wildcards inside `Skill(...)` were treated as literal characters and silently failed to match (only the bare `Skill(*)` form worked).
 
 ## Shell Operator Protections
 
@@ -82,6 +82,15 @@ When a Bash command contains shell operators:
 1. The entire command is evaluated, not just the prefix
 2. Permission patterns like `Bash(git *)` won't match `git status && rm -rf`
 3. Users see a clear warning about the blocked operator
+
+### Working-Directory Bypass Hardening (2.1.149)
+
+The permission analyzer tracks the working directory so a command cannot quietly escape the workspace and read outside it. Two 2.1.149 fixes closed bypasses:
+
+- **PowerShell built-in `cd` forms.** `cd..`, `cd\`, `cd~`, and bare drive switches like `X:` changed the working directory undetected, letting a later command read outside the workspace. These now register as directory changes.
+- **Stale variable tracking across `cd`/`pushd`/`popd`.** The analyzer previously trusted stale values for `PWD`, `OLDPWD`, and `DIRSTACK` after a directory change, leaving a gap where a path check used the wrong working directory. The tracking is now refreshed on each `cd`/`pushd`/`popd`.
+
+These are harness-level guards, not skill-authoring concerns — but they mean a skill can rely on the workspace boundary holding even when its scripts navigate directories.
 
 ### Safe Patterns
 
@@ -287,6 +296,10 @@ The dialog now shows "Matched `Bash(git push *):ask` — confirm before push", g
 ### `permissions.defaultMode` in Background Sessions (2.1.143+)
 
 Background sessions launched from `claude agents` honor `permissions.defaultMode` from `settings.json`. Before 2.1.143, the background launcher overrode the configured default and started every session in `auto` mode — which silently expanded the permission surface for users who had deliberately chosen a stricter default. The fix means stricter modes (`default`, `dontAsk`) now apply consistently to both foreground and background sessions.
+
+### Hook `if` Condition Matching (2.1.147+)
+
+`if`-gated permission rules whose condition targeted PowerShell commands — e.g. `PowerShell(git push*)` — never matched, so the gate silently never fired. 2.1.147 fixed the condition matching. If a skill or settings file relies on an `if`-conditioned rule against a PowerShell command to allow or prompt, that gate now evaluates correctly rather than being a no-op.
 
 ### Remote Control Disabled by API Key (2.1.139+)
 

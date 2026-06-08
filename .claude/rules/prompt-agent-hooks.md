@@ -70,6 +70,12 @@ Not all events support prompt/agent hooks.
 
 ## Configuration Schema
 
+> **Command-hook exec form (2.1.139)**: command-type hooks accept an `args: string[]`
+> field as an alternative to a `command` string. The exec form spawns the command
+> directly without a shell wrapper, so path placeholders (e.g. `${CLAUDE_PLUGIN_ROOT}`)
+> need no quoting and shell-metacharacter escaping is avoided. Prefer `args` when an
+> argument may contain spaces or special characters.
+
 ### Prompt Hook
 
 Single-turn LLM evaluation. Haiku by default, 30-second timeout.
@@ -126,6 +132,11 @@ Both prompt and agent hooks return the same JSON:
 
 - `ok: true` → action proceeds
 - `ok: false` → action is blocked; `reason` is fed back to Claude as feedback
+
+> **`continueOnBlock` for PostToolUse (2.1.139)**: by default an `ok: false` from a
+> PostToolUse hook halts the turn. Setting `"continueOnBlock": true` on a PostToolUse
+> hook instead feeds the rejection `reason` back to Claude and lets the turn continue —
+> Claude can react to the feedback without the turn being terminated.
 
 ## Stop Hook Loop Prevention
 
