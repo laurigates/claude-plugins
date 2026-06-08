@@ -148,10 +148,12 @@ Skills inherit the user's active model by default. Tag a skill with `model:` onl
 | Tag | Use for | Examples |
 |-----|---------|----------|
 | `model: opus` | Deep reasoning, multi-file orchestration, security review, architecture, long agentic chains | Skills that spawn many subagents, security audits, complex refactors, ADR/PRD synthesis |
-| `model: sonnet` | Mechanical / high-volume work where Opus's cost is unjustified | CLI tool wrappers (fd, rg, jq), formatters, status checks, single-file lookups |
+| `model: sonnet` | Mechanical / high-volume work that **Sonnet at low effort** can genuinely complete | CLI tool wrappers (fd, rg, jq), formatters, status checks, single-file lookups |
 | _(unset)_ | Everything in the middle | Default — inherits the user's active model |
 
-**Why both extremes?** A user defaulting to Opus saves cost when a mechanical skill self-selects Sonnet. A user defaulting to Sonnet (or Haiku) gets reliable results when a complex skill self-selects Opus.
+**Why both extremes?** A user defaulting to Opus saves cost when a *genuinely* mechanical skill self-selects Sonnet. A user defaulting to Sonnet (or Haiku) gets reliable results when a complex skill self-selects Opus.
+
+**Opus is often the cheaper default — `effort`, not `model`, is the main cost lever.** The per-token premium (Opus 4.8 output ≈ 1.7× Sonnet 4.6) is frequently outweighed by token *volume*: Opus at low effort tends to spend far fewer thinking + output tokens than Sonnet at high effort, so for reasoning-shaped work Opus-low can be both better *and* cheaper. The catch for this repo: that win rides on `effort`, which is a session/harness setting (e.g. Claude Code's default), **not** something a skill can express in frontmatter. So the practical translation is narrow — **don't reflexively reach for `model: sonnet`.** Tag it only when Sonnet at low effort genuinely suffices; when the task leans on reasoning, leave `model:` unset (or tag `opus`) and let the user's effort setting do the cost tuning. Treat the "Opus-low beats Sonnet-high" heuristic as workload-dependent, not dogma — confirm per-skill with the cross-model delta harness in [`.claude/rules/skill-evaluation.md`](skill-evaluation.md).
 
 **Hard constraints:**
 
