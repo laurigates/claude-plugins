@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.0](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.16.2...project-plugin-v1.17.0) (2026-06-08)
+
+
+### Features
+
+* **project-plugin:** add refocus skill for plan refresh ([#1538](https://github.com/laurigates/claude-plugins/issues/1538)) ([518de12](https://github.com/laurigates/claude-plugins/commit/518de12279eb4a83f4f819cf1690432bf76b8ea8))
+
 ## [1.16.2](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.16.1...project-plugin-v1.16.2) (2026-06-06)
 
 
