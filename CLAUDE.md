@@ -63,6 +63,8 @@ Claude Code plugin collection providing skills and agents for development workfl
 
 See `.claude/rules/skill-development.md` for detailed patterns.
 
+> **Note (Claude Code 2.1.157):** plugins placed in `.claude/skills` are now auto-loaded without a marketplace entry — handy for local or quick one-off plugins. This repo's *published* plugins still use the full marketplace + release-please lifecycle described in Plugin Lifecycle below.
+
 ### Quick Start
 
 1. Create skill directory: `mkdir -p <plugin>/skills/<skill-name>`
@@ -146,6 +148,8 @@ When creating, modifying, or deleting a plugin, update these files:
 | `settings.json` | `.claude/settings.json` | Add/remove the plugin in `enabledPlugins` (`<plugin>@laurigates-claude-plugins`) — enforced by the `Plugin: Enablement drift` check |
 
 ### Creating a New Plugin
+
+> **Quick scaffold (Claude Code 2.1.157):** `claude plugin init <name>` scaffolds a new plugin in `.claude/skills` (auto-loaded, no marketplace entry needed). Use it for local/quick plugins; for plugins published from this repo, follow the full marketplace + release-please steps below.
 
 1. Create plugin directory structure (see Project Structure above)
 2. Create `.claude-plugin/plugin.json` with required fields

@@ -1,7 +1,7 @@
 ---
 created: 2025-12-20
-modified: 2026-05-03
-reviewed: 2026-05-03
+modified: 2026-06-08
+reviewed: 2026-06-08
 paths:
   - "**/skills/**"
   - "**/SKILL.md"
@@ -26,6 +26,17 @@ Skills and commands are reloaded automatically when modified:
 - No need to restart Claude Code
 - Changes take effect on the next invocation
 - Useful for iterative development
+
+### Re-scanning Skill Directories (2.1.152+)
+
+Editing an existing skill hot-reloads, but **adding** a new skill directory needs a re-scan:
+
+| Trigger | Effect |
+|---------|--------|
+| `/reload-skills` command | Re-scans skill directories without restarting the session |
+| `SessionStart` hook returning `reloadSkills: true` | Makes newly installed skills available in the same session |
+
+Use `/reload-skills` after scaffolding a new skill so it becomes invocable immediately. The `SessionStart` hook form is the way an installer hook (e.g. one that drops skills into place on session start) surfaces those skills without a restart.
 
 ### SlashCommand Tool Invocation
 
@@ -82,6 +93,7 @@ reviewed: YYYY-MM-DD
 # ... required fields above ...
 language: <python|typescript|go|rust|etc>  # Specify primary language (optional)
 agent: <agent-name>                         # Specify custom agent to execute skill (optional)
+disallowed-tools: <Comma-separated list>    # Remove tools while skill is active (optional, 2.1.152+)
 disable-model-invocation: true              # Skill content is the complete prompt (optional)
 hooks:                                       # Skill-scoped hooks (optional)
   PreToolUse:
@@ -95,6 +107,7 @@ hooks:                                       # Skill-scoped hooks (optional)
 
 - **`language`**: Specify the primary programming language for the skill. Helps Claude Code select appropriate models/tools.
 - **`agent`**: Specify a custom agent for executing this skill. Overrides default model selection.
+- **`disallowed-tools`** (2.1.152+): Comma-separated list of tools to remove from the model while this skill is active. Complements `allowed-tools` (which grants tools) by subtracting tools — useful for keeping a focused skill from reaching for capabilities it shouldn't use. Also supported on slash commands.
 - **`disable-model-invocation`**: When `true`, the skill content is used as the complete prompt without additional model reasoning. The skill body is passed directly to the model as instructions.
 - **`hooks`**: Define hooks that are only active when this skill is loaded. Uses the same schema as settings.json hooks. Agent `Stop` hooks are converted to `SubagentStop` when the agent runs as a subagent.
 
@@ -172,6 +185,8 @@ When listing `Bash` in `allowed-tools`, prefer narrow `Bash(<command> *)` permis
 - Broad rules (`Bash(*)`, `Bash(python*)`) are dropped at runtime when auto mode is active.
 
 `Skill(<name> *)` permission rules also work as a **prefix match** (2.1.139+) — fixed to match `Bash(ls *)` behavior. `Skill(git-*)` matches `git-commit`, `git-rebase`, etc.; `Skill(*)` matches every skill. Before 2.1.139, wildcards in `Skill(...)` were treated as literals and silently failed to match.
+
+As of 2.1.147, auto mode no longer suppresses `AskUserQuestion` when a user or skill explicitly relies on it — a skill built around an `AskUserQuestion` prompt keeps working under auto mode.
 
 See `.claude/rules/agentic-permissions.md` for canonical patterns and `.claude/rules/auto-mode.md` for the full auto-mode model.
 

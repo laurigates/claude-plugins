@@ -16,6 +16,8 @@ Patterns and standards for creating and configuring custom agents in Claude Code
 
 > **Note (2.1.139)**: Subagent HTTP requests carry two correlation headers — `x-claude-code-agent-id` identifies the subagent, and `x-claude-code-parent-agent-id` identifies the spawning agent. Use these for tracing in HTTP hooks, MCP servers, and any proxy that wants to attribute traffic to specific agent chains.
 
+> **Note (2.1.157)**: An `agent` field in `settings.json` is honored for dispatched sessions, selecting the named agent definition by default. A `--agent <name>` flag at the call site overrides the settings value.
+
 ## Agent vs Skill
 
 | Use Agent When... | Use Skill When... |
@@ -114,6 +116,14 @@ tools: Agent(worker, researcher), Read, Bash
 This is an allowlist — only `worker` and `researcher` can be spawned. To allow any subagent without restriction, use `Agent` without parentheses. If `Agent` is omitted, the agent cannot spawn any subagents.
 > **Note (2.1.116+)**: Agent frontmatter `hooks:` and `mcpServers:` are active when the agent runs as a main-thread session via `claude --agent`, not just as subagents.
 
+### MCP Servers in Agent Definitions (2.1.147 / 2.1.153)
+
+| Version | Fix |
+|---------|-----|
+| 2.1.147 | A plugin agent that declares multiple `Agent(...)` types in its `tools:` frontmatter no longer drops all but the last entry — every declared subagent type is now honored |
+| 2.1.153 | Subagent-frontmatter MCP servers now respect `--strict-mcp-config`, `--bare`, remote mode, enterprise managed MCP config, and managed-settings MCP allow/deny policies (previously these constraints were ignored for servers declared in agent frontmatter) |
+| 2.1.153 | `--strict-mcp-config` no longer strips inline `mcpServers` from explicitly-passed agent definitions (`--agents` / SDK `agents`); when a subagent's MCP server is blocked by policy, a visible warning is now surfaced instead of failing silently |
+
 ## Model Selection for Agents
 
 | Model | Use For |
@@ -121,6 +131,8 @@ This is an allowlist — only `worker` and `researcher` can be spawned. To allow
 | `opus` | Deep reasoning, security analysis, code review, debugging, complex refactoring |
 | `sonnet` | Development workflows, moderate reasoning, multi-step implementation |
 | `haiku` | Structured/mechanical tasks, documentation generation, CI configuration |
+
+> **Note (2.1.142)**: Fast mode now uses Opus 4.7 by default (previously Opus 4.6). The `CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE` env var is deprecated (removal scheduled 2026-06-01) — drop it from agent launch scripts.
 
 ## Context Isolation
 
@@ -147,6 +159,8 @@ tools: Glob, Grep, LS, Read, WebFetch, WebSearch, TodoWrite
 ### Worktree Isolation
 
 For filesystem-level isolation, give agents their own git worktree so they work on an isolated copy of the repository. The worktree is automatically cleaned up if the agent makes no changes; if changes are made, the worktree path and branch are returned.
+
+> **Note (2.1.157)**: Claude-managed worktrees are left **unlocked** when the agent finishes, so `git worktree remove` / `git worktree prune` can clean them up directly (previously the lock blocked manual cleanup). `EnterWorktree` can also now switch between Claude-managed worktrees mid-session, rather than being a one-way entry.
 
 **Two ways to enable worktree isolation:**
 
@@ -231,7 +245,7 @@ Agent tool with run_in_background: true
 - When the agent's work must complete before the next step
 - Research agents whose findings inform your next steps
 
-### Background Session Behavior (2.1.141+ / 2.1.142+ / 2.1.143+)
+### Background Session Behavior (2.1.141+ / 2.1.142+ / 2.1.143+ / 2.1.154+)
 
 | Version | Change |
 |---------|--------|
@@ -239,6 +253,13 @@ Agent tool with run_in_background: true
 | 2.1.142 | Background sessions recognize pre-existing git worktrees — previously `EnterWorktree` would refuse the duplicate and block `Edit` for the whole session |
 | 2.1.143 | `claude agents`-launched background sessions honor `permissions.defaultMode` from settings.json (was previously hard-overridden to auto mode) |
 | 2.1.143 | `/bg` preserves `--mcp-config`, `--settings`, `--add-dir`, `--plugin-dir`, and `--strict-mcp-config` across respawn |
+| 2.1.154 | Subagents in background sessions no longer bypass the worktree-isolation guard — previously a background subagent could write to the shared checkout despite isolation being requested |
+
+> **Note (2.1.154)**: `claude agents` accepts `! <command>` to run a shell command as a background session (equivalently `claude --bg --exec '<command>'`). Use it to fire off a one-shot background job from the dashboard without a full interactive session.
+
+### Dynamic Workflows (`/workflows`, 2.1.154+)
+
+`/workflows` orchestrates work across tens to hundreds of background agents from a single session — a fan-out scale beyond manual `/bg` dispatch. Reach for it when a task decomposes into many independent units that each warrant their own background agent; the framework manages the dispatch and result collection.
 
 ### `worktree.bgIsolation: "none"` (2.1.143+)
 

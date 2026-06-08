@@ -1,7 +1,7 @@
 ---
 created: 2026-03-03
-modified: 2026-04-25
-reviewed: 2026-04-25
+modified: 2026-06-08
+reviewed: 2026-06-08
 paths:
   - "**/skills/**"
   - "**/SKILL.md"
@@ -92,6 +92,10 @@ Use to carve out exceptions from broad allow wildcards without restricting other
 
 The sandbox runs as **root**, so `sudo` is unnecessary for writes to `/usr/local/bin`.
 
+### Git Worktree Write Allowlist (2.1.149+)
+
+When working in a git worktree, the sandbox write allowlist previously covered the **entire main repo root**, letting sandboxed commands write anywhere in the primary checkout. As of 2.1.149 it is narrowed to only the shared `.git` directory — and even there, `hooks/` and `config` are denied. Sandboxed writes that relied on reaching back into the main repo from a worktree will now be blocked; scope writes to the worktree itself.
+
 ### Temp Directory Pattern
 
 ```bash
@@ -100,6 +104,10 @@ tmp_dir=$(mktemp -d)
 cp binary "$tmp_dir/binary" /usr/local/bin/
 rm -rf "$tmp_dir"
 ```
+
+### `$TMPDIR` Consistency (2.1.154+)
+
+Before 2.1.154, `$TMPDIR` could resolve to **different directories** in sandboxed vs unsandboxed Bash commands within the same session — a file written to `$TMPDIR` by one command was not necessarily visible to the next. As of 2.1.154 `$TMPDIR` resolves to the same path across both, so handing a temp path between sandboxed and unsandboxed steps is safe.
 
 ---
 
@@ -143,9 +151,12 @@ The web sandbox base image includes standard language runtimes and system tools 
 | `CLAUDE_PROJECT_DIR` | Always (hooks, MCP stdio servers as of 2.1.139) | Project root directory; plugin configs can reference `${CLAUDE_PROJECT_DIR}` in commands |
 | `CLAUDE_PLUGIN_ROOT` | Frontmatter hooks only | Root of the loaded plugin |
 | `CLAUDE_CODE_DISABLE_CRON` | Set to stop scheduled cron jobs mid-session (2.1.72+) | Session cron management |
-| `CLAUDE_CODE_SESSION_ID` | Always | Session ID matching hook `session_id` -- available in Bash tool subprocesses (2.1.132+) |
+| `CLAUDE_CODE_SESSION_ID` | Always (incl. stdio MCP server subprocesses as of 2.1.154) | Session ID matching hook `session_id` -- available in Bash tool subprocesses (2.1.132+) |
+| `CLAUDECODE` | Stdio MCP server subprocesses (2.1.154+) | Set to `1` so MCP servers can detect they were launched by Claude Code |
 
 > **Note (2.1.139)**: `CLAUDE_PROJECT_DIR` is now passed to MCP stdio servers (matching the hook environment). Plugin `mcpServers` configs can reference `${CLAUDE_PROJECT_DIR}` in `command` / `args` / `env` without having to compute the path inside the server.
+>
+> **Note (2.1.154)**: Stdio MCP server subprocesses also receive `CLAUDE_CODE_SESSION_ID` (the current session ID) and `CLAUDECODE=1` in their environment, so a server can correlate work with the session and detect that it was launched by Claude Code.
 
 ### Persisting Environment Variables
 
