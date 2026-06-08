@@ -128,6 +128,27 @@ Distill session insights into reusable knowledge: rules, skills, and justfile re
 
 **Auto-nudge:** A `Stop` hook (`hooks/project-distill-nudge.sh`) suggests `/project:distill --dry-run` at most once per session, only when (a) the session has ≥8 user turns, (b) the cwd's repo has either a `.claude/rules/` directory or a `justfile`, and (c) a recent user turn carries a wind-down phrase (`wrap up`, `done for today`, `gotta go`, etc.). The nudge is an offer only — the agent never runs `/project:distill` without explicit confirmation. To pre-silence it for a session, `touch ~/.cache/claude-project-distill-nudge/<session_id>` (the hook treats an existing marker as "already nudged"). To turn the hook off entirely, disable the plugin via `/plugin`.
 
+### `/project:refocus`
+Refresh the plan to focus on the task at hand when context has grown.
+
+**Features:**
+- Sorts the session into done / remaining / stale buckets
+- Extracts load-bearing decisions and active boundaries that would be lost on a context clear
+- Drafts a **self-contained** forward-only plan (restates files, decisions, and constraints — no back-references)
+- Surfaces it via `ExitPlanMode` so the approval dialog offers "clear context and continue in auto mode"
+- Prunes resolved tangents so the next stretch of work starts clean
+
+**Manual invocation:**
+- "refresh the plan"
+- "refocus on the task at hand"
+- "let's focus on what's left"
+- "trim the context and continue in auto mode"
+
+**Usage:**
+```bash
+/project:refocus
+```
+
 ### `changelog-review`
 Analyze Claude Code changelog for impacts on plugin development.
 

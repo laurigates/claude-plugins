@@ -18,7 +18,10 @@
     "maintenance",
     "distill",
     "insights",
-    "knowledge-capture"
+    "knowledge-capture",
+    "refocus",
+    "replan",
+    "context-management"
   ],
   "hooks": {
     "Stop": [
