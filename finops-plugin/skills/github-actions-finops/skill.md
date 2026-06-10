@@ -2,10 +2,10 @@
 name: github-actions-finops
 description: "GitHub Actions billing, workflow efficiency, and waste analysis at org or repo level. Use when investigating CI/CD costs, wasted runs, or optimizing triggers."
 user-invocable: false
-allowed-tools: Bash(gh api *), Bash(gh repo *), Bash(gh workflow *), Bash(gh run *), Read, Grep, Glob, TodoWrite
+allowed-tools: Bash(bash *), Bash(gh api *), Bash(gh repo *), Bash(gh workflow *), Bash(gh run *), Read, Grep, Glob, TodoWrite
 created: 2025-01-30
-modified: 2026-02-11
-reviewed: 2025-01-30
+modified: 2026-06-10
+reviewed: 2026-06-10
 ---
 
 # GitHub Actions FinOps
@@ -37,79 +37,25 @@ Read the Context values above. Parse `$OWNER` and `$REPO` from the current repo 
 
 If no repo context is available, ask the user for the target organization or repository.
 
-### Step 2: Fetch org-level billing (if org and admin access)
+### Step 2: Gather billing, run, and waste data
 
-Query the Actions billing API:
-
-```bash
-gh api /orgs/$GITHUB_ORG/settings/billing/actions \
-  --jq '{included_minutes, total_minutes_used, total_paid_minutes_used}'
-```
-
-If this returns a permissions error, note that admin access is required and skip to Step 3.
-
-Optionally also check packages and storage billing:
+Run the deterministic data-gathering script. It fetches org-level Actions
+billing, groups workflow runs and aggregates per-workflow durations, counts
+the waste indicators (skipped / bot-triggered / high-frequency), compares them
+against the red-flag thresholds, and emits a static fix suggestion per flagged
+pattern:
 
 ```bash
-gh api /orgs/$GITHUB_ORG/settings/billing/packages \
-  --jq '{included_gigabytes_bandwidth, total_gigabytes_bandwidth_used}'
-
-gh api /orgs/$GITHUB_ORG/settings/billing/shared-storage \
-  --jq '{days_left_in_billing_cycle, estimated_paid_storage_for_month}'
+bash "${CLAUDE_SKILL_DIR}/scripts/github-actions-finops.sh" --home-dir "$HOME" --project-dir "$(pwd)"
 ```
 
-### Step 3: Analyze workflow runs
+Pass `--repo $OWNER/$REPO` (and `--org $GITHUB_ORG`) when the script can't infer
+the target from the current checkout. Parse `STATUS=` and `ISSUES:` from the
+output — `STATUS=WARN` plus the `SEVERITY=WARN TYPE=...` rows are the flagged
+waste patterns with their suggested fixes. `BILLING_AVAILABLE=false` means org
+admin access was unavailable (not an error).
 
-Fetch recent runs and group by workflow:
-
-```bash
-gh api "/repos/$OWNER/$REPO/actions/runs?per_page=100" \
-  --jq '.workflow_runs | group_by(.name) |
-        map({workflow: .[0].name, runs: length,
-             conclusions: (group_by(.conclusion) | map({(.[0].conclusion // "unknown"): length}) | add)}) |
-        sort_by(-.runs)'
-```
-
-Calculate run durations:
-
-```bash
-gh api "/repos/$OWNER/$REPO/actions/runs?per_page=20&status=completed" \
-  --jq '.workflow_runs | group_by(.name) |
-        map({name: .[0].name, count: length,
-             total_seconds: (map(.run_started_at as $start | .updated_at as $end |
-                            (($end | fromdateiso8601) - ($start | fromdateiso8601))) | add)}) |
-        sort_by(-.count) | .[] | "\(.name): \(.count) runs, ~\(.total_seconds/60|floor)min total"'
-```
-
-### Step 4: Detect waste patterns
-
-Check each waste indicator:
-
-**Skipped runs:**
-
-```bash
-gh api "/repos/$OWNER/$REPO/actions/runs?per_page=100" \
-  --jq '[.workflow_runs[] | select(.conclusion == "skipped")] |
-        group_by(.name) | map({workflow: .[0].name, skipped: length}) |
-        sort_by(-.skipped)'
-```
-
-**Bot-triggered runs:**
-
-```bash
-gh api "/repos/$OWNER/$REPO/actions/runs?per_page=100" \
-  --jq '[.workflow_runs[] | select(.triggering_actor.type == "Bot")] | length'
-```
-
-**High-frequency workflows (candidates for path filters):**
-
-```bash
-gh api "/repos/$OWNER/$REPO/actions/runs?per_page=100" \
-  --jq '.workflow_runs | group_by(.name) | map(select(length > 50)) |
-        map({workflow: .[0].name, runs: length})'
-```
-
-### Step 5: Analyze workflow files
+### Step 3: Analyze workflow files
 
 Read each workflow file from `.github/workflows/` and check for:
 
@@ -117,35 +63,15 @@ Read each workflow file from `.github/workflows/` and check for:
 2. Missing `paths:` filters on push/PR triggers
 3. Missing bot-trigger guards (`if: github.event.sender.type != 'Bot'`)
 
-### Step 6: Report findings
+### Step 4: Report findings
 
-Print a summary with these sections:
+Synthesize a summary from the script output (Step 2) and the workflow-file
+findings (Step 3):
 
-1. **Billing summary** (if available): minutes used, paid minutes, days left in cycle
-2. **Workflow run counts**: table of workflows with run counts and conclusion breakdown
-3. **Waste indicators**: skipped runs, bot triggers, high-frequency workflows, missing concurrency groups
-4. **Recommendations**: specific fixes for each waste pattern detected
-
-Use these thresholds for flagging:
-
-| Metric | Red Flag Threshold |
-|--------|-------------------|
-| Skipped runs | >10% of total runs |
-| Bot triggers | Bot-to-bot chains detected |
-| Long durations | >10min average |
-| High frequency | >50 runs/month without path filters |
-| Duplicate runs | Same commit triggers multiple runs |
-
-### Step 7: Suggest fixes
-
-For each waste pattern found, recommend the specific fix:
-
-| Pattern | Fix |
-|---------|-----|
-| Bot-triggered waste | Add `if: github.event.sender.type != 'Bot'` to jobs |
-| Missing concurrency | Add `concurrency: { group: ${{ github.workflow }}-${{ github.ref }}, cancel-in-progress: true }` |
-| No path filters | Add `paths:` with relevant source directories |
-| Duplicate runs | Add concurrency groups with `cancel-in-progress: true` |
+1. **Billing summary** (if `BILLING_AVAILABLE=true`): minutes used, paid minutes
+2. **Workflow run counts**: from the `WORKFLOW_RUNS=` / `WORKFLOW_DURATION_SECONDS=` lines
+3. **Waste indicators**: the `SEVERITY=WARN TYPE=...` rows (skipped ratio, bot triggers, high-frequency) plus the workflow-file gaps from Step 3 (missing concurrency / path filters / bot guards)
+4. **Recommendations**: the script's per-pattern fix suggestions, plus the workflow-YAML fixes you identified by reading the files
 
 ## API Reference
 
