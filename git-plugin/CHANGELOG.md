@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.42.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.41.2...git-plugin-v2.42.0) (2026-06-10)
+
+
+### Features
+
+* **git-plugin:** add deadbranch stale-branch cleanup skill ([#1575](https://github.com/laurigates/claude-plugins/issues/1575)) ([e5d9f5a](https://github.com/laurigates/claude-plugins/commit/e5d9f5acc426d0b0db45127ba5edf2fdc6d60f1b))
+
 ## [2.41.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.41.1...git-plugin-v2.41.2) (2026-06-10)
 
 
