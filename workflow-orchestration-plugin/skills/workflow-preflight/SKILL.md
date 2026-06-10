@@ -2,11 +2,11 @@
 name: workflow-preflight
 description: Pre-work validation before implementation. Use when starting an issue or fix to verify remote state, check for existing PRs, and detect branch conflicts before coding.
 args: "[issue-number|branch-name]"
-allowed-tools: Bash(git fetch *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git remote *), Bash(git stash *), Bash(gh pr *), Bash(gh issue *), Read, Grep, Glob, TodoWrite
+allowed-tools: Bash(bash *), Bash(git fetch *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git remote *), Bash(git stash *), Bash(gh pr *), Bash(gh issue *), Read, Grep, Glob, TodoWrite
 argument-hint: optional issue number or branch name to check
 created: 2026-02-08
-modified: 2026-05-09
-reviewed: 2026-02-08
+modified: 2026-06-10
+reviewed: 2026-06-10
 ---
 
 # /workflow:preflight
@@ -32,73 +32,25 @@ Pre-work validation to prevent wasted effort from stale state, redundant work, o
 
 ## Execution
 
-### Step 1: Fetch Latest Remote State
+### Step 1: Run the deterministic preflight check
+
+Pass `--issue <n>` when an issue number was provided:
 
 ```bash
-git fetch origin --prune 2>/dev/null
+bash "${CLAUDE_SKILL_DIR}/scripts/workflow-preflight.sh" --home-dir "$HOME" --project-dir "$(pwd)"
 ```
 
-### Step 2: Check for Existing Work
+The script fetches the remote, computes ahead/behind counts, looks up an existing PR / issue / branch for the target, runs a `merge-tree` dry-run for conflicts, inspects uncommitted + stash state, and emits a `RECOMMENDATION=` from the fixed decision tree. Parse `STATUS=` and `ISSUES:` from the output, plus `RECOMMENDATION=`, `EXISTING_PR_STATE=`, `COMMITS_AHEAD=`/`COMMITS_BEHIND=`, `CONFLICTS_DETECTED=`, `UNCOMMITTED_CHANGES=`, and `STASH_COUNT=`.
 
-If an issue number was provided, check if it's already addressed:
+### Step 2: Decide on an existing open PR
 
-```bash
-# Check if issue exists and its state
-gh issue view $ISSUE --json number,title,state,labels 2>/dev/null
+The script reports `EXISTING_PR_STATE=MERGED|OPEN|NONE`:
 
-# Check for PRs that reference this issue
-gh pr list --search "fixes #$ISSUE OR closes #$ISSUE OR resolves #$ISSUE" --json number,title,state,headRefName 2>/dev/null
+- **`MERGED`**: the issue is already addressed — stop before duplicating.
+- **`OPEN`**: an existing PR already addresses this. Ask the user whether to continue on that branch or start fresh:
 
-# Check for branches that reference this issue
-git branch -a --list "*issue-$ISSUE*" --list "*fix/$ISSUE*" --list "*feat/$ISSUE*" 2>/dev/null
-```
-
-**If a merged PR exists**: Report that the issue is already addressed. Stop.
-**If an open PR exists**: Report the PR and ask if the user wants to continue on that branch or start fresh.
-
-### Step 3: Verify Branch State
-
-```bash
-# Check divergence from main/master
-git log --oneline origin/main..HEAD 2>/dev/null || git log --oneline origin/master..HEAD 2>/dev/null
-
-# Check if main has moved ahead
-git log --oneline HEAD..origin/main -5 2>/dev/null || git log --oneline HEAD..origin/master -5 2>/dev/null
-
-# Check for uncommitted changes
-git status --porcelain=v2 --branch 2>/dev/null
-```
-
-**Report**:
-- Commits ahead/behind remote
-- Uncommitted changes that might interfere
-- Whether a rebase is needed
-
-### Step 4: Check for Conflicts
-
-```bash
-# Dry-run merge to detect conflicts (without actually merging)
-git merge-tree $(git merge-base HEAD origin/main) HEAD origin/main 2>/dev/null | head -20
-```
-
-### Step 5: Summary Report
-
-Output a structured summary:
-
-| Check | Status | Detail |
-|-------|--------|--------|
-| Remote state | fresh/stale | Last fetch time |
-| Existing PRs | none/open/merged | PR numbers if any |
-| Branch state | clean/dirty/diverged | Ahead/behind counts |
-| Conflicts | none/detected | Conflicting files |
-| Stash | empty/N items | Stash contents |
-
-**Recommendations**:
-- If behind remote: "Rebase recommended before starting work"
-- If existing PR found: "PR #N already addresses this - review before duplicating"
-- If dirty state: "Commit or stash changes before branching"
-- If conflicts detected: "Resolve conflicts with main before proceeding"
-- If clean: "Ready to proceed"
+  Use **AskUserQuestion** — "Continue on existing PR #N, or start fresh?" — before doing any work. This judgment call stays interactive; the script only surfaces the PR state.
+- **`NONE`**: proceed per the script's `RECOMMENDATION=`.
 
 ## Agentic Optimizations
 
