@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.3.0...comfyui-plugin-v1.3.1) (2026-06-10)
+
+
+### Bug Fixes
+
+* **comfyui-plugin:** sync scaffold publish.yml with live packs ([#1579](https://github.com/laurigates/claude-plugins/issues/1579)) ([a3da889](https://github.com/laurigates/claude-plugins/commit/a3da889d89f7804c404d2ab959ec3375026db70b))
+
 ## [1.3.0](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.2.0...comfyui-plugin-v1.3.0) (2026-06-06)
 
 
