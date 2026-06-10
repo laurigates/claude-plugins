@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
-reviewed: 2025-12-16
+modified: 2026-06-10
+reviewed: 2026-06-10
 description: "UX testing: Playwright E2E, axe-core a11y, visual regression. Use when setting up E2E testing, screenshot assertions, browser automation, or a11y CI workflows."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--a11y] [--visual]"
@@ -67,48 +67,20 @@ Use WebSearch or WebFetch to verify current versions.
 
 ### Step 2: Detect existing UX testing infrastructure
 
-Check for each component:
+Run the detection script to scan the project for Playwright / axe-core signals
+(package.json deps + config globs), the e2e dir / `__snapshots__` / e2e workflow,
+and the playwright MCP-server entry:
 
-| Indicator | Component | Status |
-|-----------|-----------|--------|
-| `playwright.config.*` | Playwright | Installed |
-| `@axe-core/playwright` in package.json | Accessibility testing | Configured |
-| `@playwright/test` in package.json | Playwright Test | Installed |
-| `tests/e2e/` or `e2e/` directory | E2E tests | Present |
-| `*.spec.ts` files with toHaveScreenshot | Visual regression | Configured |
-| `@playwright/cli` globally or in package.json | Playwright CLI | Installed |
-| `.mcp.json` with playwright server | Playwright MCP | Configured |
+```bash
+bash "${CLAUDE_SKILL_DIR}/scripts/configure-ux-testing.sh" --home-dir "$HOME" --project-dir "$(pwd)"
+```
 
-### Step 3: Analyze current testing state
+Parse `STATUS=` and the `ISSUES:` block from the output. The `KEY=VALUE` lines
+report `PLAYWRIGHT_CONFIG`, `PLAYWRIGHT_DEP`, `AXE_CORE_DEP`, `E2E_DIR`,
+`VISUAL_SNAPSHOTS`, `E2E_WORKFLOW`, `PLAYWRIGHT_MCP`, and the rollup
+`PLAYWRIGHT_DETECTED` / `UX_SIGNALS_PRESENT`.
 
-Check for complete UX testing setup across four areas:
-
-**Playwright Core:**
-- `@playwright/test` installed
-- `playwright.config.ts` exists
-- Browser projects configured (Chromium, Firefox, WebKit)
-- Mobile viewports configured (optional)
-- WebServer configuration for local dev
-- Trace/screenshot/video on failure
-
-**Accessibility Testing:**
-- `@axe-core/playwright` installed
-- Accessibility tests created
-- WCAG level configured (A, AA, AAA)
-- Custom rules/exceptions documented
-
-**Visual Regression:**
-- Screenshot assertions configured
-- Snapshot directory configured
-- Update workflow documented
-- CI snapshot handling configured
-
-**Browser Automation:**
-- Playwright CLI installed (preferred for agents with shell access)
-- Playwright MCP server in `.mcp.json` (fallback for sandboxed environments)
-- Browser automation available to Claude
-
-### Step 4: Generate compliance report
+### Step 3: Generate compliance report
 
 Print a formatted compliance report showing status for Playwright core, accessibility testing, visual regression, and MCP integration.
 
@@ -116,7 +88,7 @@ If `--check-only` is set, stop here.
 
 For the compliance report format, see [REFERENCE.md](REFERENCE.md).
 
-### Step 5: Install dependencies (if --fix or user confirms)
+### Step 4: Install dependencies (if --fix or user confirms)
 
 ```bash
 # Core Playwright
@@ -129,7 +101,7 @@ bun add --dev @axe-core/playwright
 bunx playwright install
 ```
 
-### Step 6: Create Playwright configuration
+### Step 5: Create Playwright configuration
 
 Create `playwright.config.ts` with:
 - Desktop browser projects (Chromium, Firefox, WebKit)
@@ -141,7 +113,7 @@ Create `playwright.config.ts` with:
 
 For the complete `playwright.config.ts` template, see [REFERENCE.md](REFERENCE.md).
 
-### Step 7: Create accessibility test helper
+### Step 6: Create accessibility test helper
 
 Create `tests/e2e/helpers/a11y.ts` with:
 - `expectNoA11yViolations(page, options)` - Assert no WCAG violations
@@ -152,7 +124,7 @@ Create `tests/e2e/helpers/a11y.ts` with:
 
 For the complete a11y helper code, see [REFERENCE.md](REFERENCE.md).
 
-### Step 8: Create example test files
+### Step 7: Create example test files
 
 Create example tests:
 
@@ -161,7 +133,7 @@ Create example tests:
 
 For complete example test files, see [REFERENCE.md](REFERENCE.md).
 
-### Step 9: Add npm scripts
+### Step 8: Add npm scripts
 
 Update `package.json` with test scripts:
 
@@ -181,7 +153,7 @@ Update `package.json` with test scripts:
 }
 ```
 
-### Step 10: Configure browser automation (optional)
+### Step 9: Configure browser automation (optional)
 
 Choose the appropriate browser automation approach based on the agent's environment:
 
@@ -214,7 +186,7 @@ Use MCP when running in environments without shell access (Claude Desktop, brows
 }
 ```
 
-### Step 11: Create CI/CD workflow
+### Step 10: Create CI/CD workflow
 
 Create `.github/workflows/e2e.yml` with parallel jobs for:
 - E2E tests (all browsers)
@@ -223,7 +195,7 @@ Create `.github/workflows/e2e.yml` with parallel jobs for:
 
 For the complete CI workflow template, see [REFERENCE.md](REFERENCE.md).
 
-### Step 12: Update standards tracking
+### Step 11: Update standards tracking
 
 Update `.project-standards.yaml`:
 
@@ -238,7 +210,7 @@ components:
   ux_testing_mcp: false
 ```
 
-### Step 13: Report configuration results
+### Step 12: Report configuration results
 
 Print a summary of configuration applied, scripts added, and CI/CD setup. Include next steps for starting the dev server, running tests, updating snapshots, and opening the interactive UI.
 

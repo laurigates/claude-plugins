@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-06-03
-reviewed: 2026-06-03
+modified: 2026-06-10
+reviewed: 2026-06-10
 description: "Biome formatter for JS/TS/JSON/CSS — the modern Prettier/ESLint replacement. Also Ruff (Python) and rustfmt. Use when setting up formatting, replacing Prettier, or wiring CI format checks."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--formatter <biome|ruff|rustfmt>]"
@@ -57,33 +57,28 @@ Parse from `$ARGUMENTS`:
 
 Execute this code formatting configuration workflow:
 
-### Step 1: Detect project languages and existing formatters
+### Step 1: Detect formatters and integration state
 
-Check for language indicators and formatter configurations:
+Run the detection script to scan the project for formatter config files,
+script/hook/CI presence, and a recommendation over the detected booleans:
 
-| Indicator | Language | Detected Formatter |
-|-----------|----------|-------------------|
-| `biome.json` with formatter | JavaScript/TypeScript | Biome |
-| `.prettierrc.*` | JavaScript/TypeScript | Prettier (legacy → migrate to Biome) |
-| `pyproject.toml` [tool.ruff.format] | Python | Ruff |
-| `pyproject.toml` [tool.black] | Python | Black (legacy) |
-| `rustfmt.toml` or `.rustfmt.toml` | Rust | rustfmt |
+```bash
+bash "${CLAUDE_SKILL_DIR}/scripts/configure-formatting.sh" --home-dir "$HOME" --project-dir "$(pwd)"
+```
+
+Parse `STATUS=` and the `ISSUES:` block from the output. The `KEY=VALUE` lines
+report formatter detection (`BIOME`, `PRETTIER`, `RUFF_FORMAT`, `BLACK`,
+`RUSTFMT`, `EDITORCONFIG`), integration signals (`FORMAT_SCRIPT`,
+`PRE_COMMIT_FORMAT`, `CI_FORMAT`), and a `RECOMMENDATION` of `configured`
+(a modern formatter is set up), `migrate` (a legacy formatter wants migration to
+Biome/Ruff), or `setup` (no formatter detected).
 
 **Modern formatting preferences:**
-- **JavaScript/TypeScript**: Biome (replaces Prettier + ESLint). If Prettier is detected, offer migration to Biome — do not configure Prettier as the target formatter.
+- **JavaScript/TypeScript**: Biome (replaces Prettier + ESLint). On `RECOMMENDATION=migrate` with Prettier present, offer migration to Biome — do not configure Prettier as the target formatter.
 - **Python**: Ruff format (replaces Black)
 - **Rust**: rustfmt (standard)
 
-### Step 2: Analyze current formatter configuration
-
-For each detected formatter, check configuration completeness:
-1. Config file exists with required settings (indent, line width, quotes, etc.)
-2. Ignore patterns configured
-3. Format scripts defined in package.json / pyproject.toml
-4. Pre-commit hook configured
-5. CI/CD check configured
-
-### Step 3: Generate compliance report
+### Step 2: Generate compliance report
 
 Print a formatted compliance report:
 
@@ -105,7 +100,7 @@ Recommendations: [list specific fixes]
 
 If `--check-only`, stop here.
 
-### Step 4: Install and configure formatter (if --fix or user confirms)
+### Step 3: Install and configure formatter (if --fix or user confirms)
 
 Based on detected language and formatter preference, install and configure. Use configuration templates from [REFERENCE.md](REFERENCE.md).
 
@@ -114,11 +109,11 @@ Based on detected language and formatter preference, install and configure. Use 
 3. Add format scripts to package.json or Makefile/justfile
 4. Configure ignore patterns in the formatter config (e.g. `files.includes` in biome.json)
 
-### Step 5: Create EditorConfig integration
+### Step 4: Create EditorConfig integration
 
 Create or update `.editorconfig` with settings matching the formatter configuration.
 
-### Step 6: Handle migrations (if applicable)
+### Step 5: Handle migrations (if applicable)
 
 If legacy formatter detected (Prettier -> Biome, Black -> Ruff):
 1. Import existing configuration
@@ -129,19 +124,19 @@ If legacy formatter detected (Prettier -> Biome, Black -> Ruff):
 
 Use migration guides from [REFERENCE.md](REFERENCE.md).
 
-### Step 7: Configure pre-commit hooks
+### Step 6: Configure pre-commit hooks
 
 Add formatter to `.pre-commit-config.yaml` using the appropriate hook repository.
 
-### Step 8: Configure CI/CD integration
+### Step 7: Configure CI/CD integration
 
 Add format check step to GitHub Actions workflow.
 
-### Step 9: Configure editor integration
+### Step 8: Configure editor integration
 
 Create or update `.vscode/settings.json` with format-on-save and `.vscode/extensions.json` with formatter extension.
 
-### Step 10: Update standards tracking
+### Step 9: Update standards tracking
 
 Update `.project-standards.yaml`:
 
@@ -153,7 +148,7 @@ components:
   formatting_ci: true
 ```
 
-### Step 11: Print completion report
+### Step 10: Print completion report
 
 Print a summary of changes made, scripts added, and next steps (run format, verify CI, enable format-on-save).
 
