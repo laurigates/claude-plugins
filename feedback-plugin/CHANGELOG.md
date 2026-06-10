@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.6.8...feedback-plugin-v1.7.0) (2026-06-10)
+
+
+### Features
+
+* **session-plugin:** add session bookends plugin with end-of-session orchestrator ([#1561](https://github.com/laurigates/claude-plugins/issues/1561)) ([03e10f9](https://github.com/laurigates/claude-plugins/commit/03e10f9c081a0cff6dae306b47d9d514da3e3265))
+
 ## [1.6.8](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.6.7...feedback-plugin-v1.6.8) (2026-06-04)
 
 
