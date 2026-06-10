@@ -662,7 +662,7 @@
       "name": "workflow-orchestration-plugin",
       "source": "./workflow-orchestration-plugin",
       "description": "Workflow orchestration - parallel agents, CI pipelines, preflight checks, checkpoint refactoring",
-      "version": "1.5.5",
+      "version": "1.5.6",
       "keywords": [
         "workflow",
         "orchestration",
