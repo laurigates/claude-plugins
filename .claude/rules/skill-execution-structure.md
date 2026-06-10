@@ -172,6 +172,26 @@ Parse the JSON and validate:
 Print a summary table of findings and recommend fixes.
 ```
 
+## Confirmation Gates: AskUserQuestion, Not Freeform y/n
+
+When a skill pauses for user confirmation before writing, use
+**AskUserQuestion** — never end the turn on a freeform text question
+("Apply? (y/n)").
+
+Ending the turn to await a typed reply fires every `Stop` hook *between
+the question and the answer*. A blocking Stop hook (a nudge, a
+completeness gate) then injects content mid-confirmation, forcing the
+next agent turn to restate the pending question alongside the injected
+ask — observed live on 2026-06-10 when a distill nudge split
+`/session-wrap`'s apply gate into a tangled double-question.
+`AskUserQuestion` keeps the turn open: no Stop event fires, so the race
+is structurally impossible. The user can still adjust via the built-in
+"Other" option.
+
+Canonical examples: `session-plugin/skills/session-wrap` (Step 3) and
+`session-plugin/skills/session-end` (Step 3). Hook-side counterpart:
+`hooks-reference.md` § "Stop-Hook Nudges".
+
 ## Checklist
 
 - [ ] Has imperative opener ("Execute this...", "Run this...", "Perform this...")
@@ -181,3 +201,4 @@ Print a summary table of findings and recommend fixes.
 - [ ] Steps use imperative verbs ("Read", "Check", "Create", "Parse")
 - [ ] Reference data extracted to REFERENCE.md
 - [ ] Execution section is the first major section after Context/Parameters
+- [ ] Confirmation pauses use `AskUserQuestion`, never a turn-ending freeform "(y/n)" question

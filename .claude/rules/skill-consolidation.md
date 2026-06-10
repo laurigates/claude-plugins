@@ -85,6 +85,26 @@ Mechanics:
 - Land it as a conventional-commit `refactor(<plugin>): …` — merges/deletes are
   behaviour-preserving restructures, so no version bump.
 
+### Cross-plugin moves: split the commits along plugin paths
+
+release-please attributes commits **by the paths they touch**, not by the
+commit scope — a single commit moving a skill from plugin A to plugin B
+counts toward *both* packages, with the message's type/`!` applied to
+both. Removing a user-facing skill from A is breaking (`feat(A)!:` →
+major bump), but one mixed move commit would leak that major bump into
+the receiving plugin too.
+
+Split the move (precedent: PR #1561, `project-distill` →
+`session-plugin:session-distill`):
+
+1. `feat(B): …` — adds the skill at its new home (plus root metadata);
+   touches only B + root paths.
+2. `feat(A)!: remove <skill> (moved to B)` — deletions and A-side edits
+   only, with a `BREAKING CHANGE:` footer naming the new invocation.
+
+The rename loses git's R-detection across the commit split; the PR
+description carries the traceability instead.
+
 ## Related
 
 - `skill-development.md` — creating skills, granularity decision
