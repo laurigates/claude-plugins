@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.5](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.5.4...workflow-orchestration-plugin-v1.5.5) (2026-06-10)
+
+
+### Performance
+
+* **workflow-orchestration-plugin:** extract workflow-preflight state-gathering into preflight.sh ([#1562](https://github.com/laurigates/claude-plugins/issues/1562)) ([03abec0](https://github.com/laurigates/claude-plugins/commit/03abec0d396a0c503bb7c8697f5f6339996aa82f))
+
 ## [1.5.4](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.5.3...workflow-orchestration-plugin-v1.5.4) (2026-06-04)
 
 

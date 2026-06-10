@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.7](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.14.6...code-quality-plugin-v1.14.7) (2026-06-10)
+
+
+### Code Refactoring
+
+* **code-quality-plugin:** extract code-dep-audit procedure to scripts + regression test ([#1564](https://github.com/laurigates/claude-plugins/issues/1564)) ([3e37110](https://github.com/laurigates/claude-plugins/commit/3e371107f950c54a52e47d251f45711b62257038))
+
 ## [1.14.6](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.14.5...code-quality-plugin-v1.14.6) (2026-05-29)
 
 

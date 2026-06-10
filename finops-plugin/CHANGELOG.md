@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.6](https://github.com/laurigates/claude-plugins/compare/finops-plugin-v1.3.5...finops-plugin-v1.3.6) (2026-06-10)
+
+
+### Code Refactoring
+
+* **finops-plugin:** extract github-actions-finops procedure to scripts + regression test ([#1566](https://github.com/laurigates/claude-plugins/issues/1566)) ([bca4a36](https://github.com/laurigates/claude-plugins/commit/bca4a36ba81cd285014c703082ed8e62503b3bf8))
+
 ## [1.3.5](https://github.com/laurigates/claude-plugins/compare/finops-plugin-v1.3.4...finops-plugin-v1.3.5) (2026-05-14)
 
 
