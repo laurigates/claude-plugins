@@ -1181,8 +1181,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 """
 
-PUBLISH_YML = """\
-name: Publish to Comfy Registry
+# Raw string: the embedded changelog transform contains regex backslashes
+# (incl. \1 replacement refs) that a normal string literal would corrupt.
+PUBLISH_YML = r"""name: Publish to Comfy Registry
 
 on:
   workflow_dispatch:
@@ -1225,6 +1226,9 @@ jobs:
         # (fixed in Comfy-Org/registry-backend#168), so push the release-please
         # release notes there after publishing. The {versionId} path segment
         # must be the version's database UUID, not the semver string.
+        # The registry renders the changelog as PLAIN TEXT (line-clamp-2 card,
+        # bare <p> drawer; markdown shows raw and newlines collapse), so the
+        # release-please markdown is flattened to compact plain text first.
         # Best-effort: a failure here must not fail the publish itself.
         if: github.event_name == 'release' && github.event.release.body != ''
         env:
@@ -1237,16 +1241,53 @@ jobs:
           node_id=$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml","rb"))["project"]["name"])')
           publisher_id=$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml","rb"))["tool"]["comfy"]["PublisherId"])')
           version=$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml","rb"))["project"]["version"])')
+          changelog=$(python3 <<'PY'
+          import os, re
+
+          def clean(text):
+              text = re.sub(r"\(\[[0-9a-f]{6,40}\]\([^)]*\)\)", "", text)
+              text = re.sub(r"\[#([0-9]+)\]\([^)]*\)", r"#\1", text)
+              text = re.sub(r"\[([^\]]+)\]\([^)]*\)", r"\1", text)
+              text = text.replace("**", "")
+              return re.sub(r"\s+", " ", text).strip().rstrip(".")
+
+          sections, items, current = [], [], None
+
+          def flush():
+              if items:
+                  prefix = current + ": " if current else ""
+                  sections.append(prefix + "; ".join(items) + ".")
+
+          for raw in os.environ.get("RELEASE_BODY", "").splitlines():
+              line = raw.strip()
+              if not line:
+                  continue
+              if re.match(r"^#+\s*\[?[0-9]+\.[0-9]+\.[0-9]+", line):
+                  continue
+              m = re.match(r"^#+\s+(.*)", line)
+              if m:
+                  flush()
+                  items, current = [], clean(m.group(1))
+                  continue
+              m = re.match(r"^[*-]\s+(.*)", line)
+              cleaned = clean(m.group(1) if m else line)
+              if cleaned:
+                  items.append(cleaned)
+
+          flush()
+          print("\n".join(sections))
+          PY
+          )
+          if [ -z "$changelog" ]; then
+            echo "::warning::registry changelog: release notes empty after transform for ${node_id}@${version}; skipping"
+            exit 0
+          fi
           version_id=$(curl -sf "https://api.comfy.org/nodes/${node_id}/versions" | jq -r --arg v "$version" '.[] | select(.version == $v) | .id')
           if [ -z "$version_id" ] || [ "$version_id" = "null" ]; then
             echo "::warning::registry changelog: could not resolve UUID for ${node_id}@${version}; Updates section left empty"
             exit 0
           fi
-          if jq -n --arg c "$RELEASE_BODY" '{changelog: $c}' | curl -sf -X PUT \\
-              "https://api.comfy.org/publishers/${publisher_id}/nodes/${node_id}/versions/${version_id}" \\
-              -H "Authorization: Bearer ${REGISTRY_TOKEN}" \\
-              -H 'Content-Type: application/json' \\
-              --data-binary @- > /dev/null; then
+          if jq -n --arg c "$changelog" '{changelog: $c}' | curl -sf -X PUT "https://api.comfy.org/publishers/${publisher_id}/nodes/${node_id}/versions/${version_id}" -H "Authorization: Bearer ${REGISTRY_TOKEN}" -H 'Content-Type: application/json' --data-binary @- > /dev/null; then
             echo "registry changelog set for ${node_id}@${version} (${version_id})"
           else
             echo "::warning::registry changelog PUT failed for ${node_id}@${version}; Updates section left empty"
