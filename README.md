@@ -1,6 +1,6 @@
 # Claude Plugins
 
-A curated collection of 41 Claude Code plugins providing 300+ skills and 21 agents for development workflows.
+A curated collection of 42 Claude Code plugins providing 300+ skills and 21 agents for development workflows.
 
 ## Install the Marketplace
 
@@ -10,7 +10,7 @@ Install the full plugin collection as a marketplace:
 claude plugin install laurigates/claude-plugins
 ```
 
-This registers all 41 plugins. You can then enable individual plugins as needed.
+This registers all 42 plugins. You can then enable individual plugins as needed.
 
 ### Install Individual Plugins
 
@@ -74,7 +74,8 @@ Alternatively, use the `/configure:mcp` skill for interactive configuration.
 | **comfyui-plugin** | 3 | ComfyUI custom-node pack lifecycle - scaffold, seed repo, gitops adoption, registry publish |
 | **home-assistant-plugin** | 4 | Home Assistant configuration - automations, scripts, scenes, entities |
 | **obsidian-plugin** | 21 | Obsidian CLI operations - vault management, search, properties, tasks |
-| **project-plugin** | 8 | Project initialization, management, maintenance, and continuous development |
+| **project-plugin** | 7 | Project initialization, management, maintenance, and continuous development |
+| **session-plugin** | 4 | Session bookends - spinup briefing, wrap capture, end-of-session orchestration, distillation |
 
 ### Languages
 

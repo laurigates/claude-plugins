@@ -1,6 +1,6 @@
 # Plugin Navigation Map
 
-Navigation guide for 41 plugins and 300+ skills. Start here.
+Navigation guide for 42 plugins and 300+ skills. Start here.
 
 ## Quick Start
 
@@ -35,7 +35,8 @@ The development loop: plan, code, commit, ship.
 |--------|--------|---------|
 | blueprint-plugin | 33 | PRD/ADR/PRP/TRP methodology, `/blueprint:execute` auto-pilot, monorepo portfolio tracking, story-audit/reconcile |
 | git-plugin | 35 + 1 agent | Commits, branches, PRs, issues, forks, worktrees, release-please |
-| project-plugin | 8 | Project init, modernization, maintenance |
+| project-plugin | 7 | Project init, modernization, maintenance |
+| session-plugin | 4 | Session bookends: spinup briefing, wrap capture, end orchestrator, distill |
 | agents-plugin | 1 + 12 agents | Task delegation to specialized agents |
 
 ### Tier 2 - Quality Gates

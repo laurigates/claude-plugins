@@ -1,6 +1,13 @@
 # Workflow: session-plugin + two-speed feedback architecture
 
-Status: **Phase 0 (design locked)** — 2026-06-04
+Status: **Phases 0–3 done** — Phase 0 locked 2026-06-04; Phase 1 audit landed via
+[#1503](https://github.com/laurigates/claude-plugins/issues/1503); Phases 2–3
+landed 2026-06-10 (session-plugin created: generalized `session-spinup` /
+`session-wrap`, `project-distill` moved in as `session-distill` per D1,
+`session-end` orchestrator per D3, single collapsed Stop nudge per D4).
+Remaining: Phase 4 (fast↔slow label wiring via gitops) and the dotfiles-side
+cleanup (remove chezmoi copies of the user-level skills/hooks, add the user's
+FVH `session-plugin.local.md` to the chezmoi source).
 Tracking task: taskwarrior `project:claude-plugins.session-plugin` (172)
 Epic: [#1504](https://github.com/laurigates/claude-plugins/issues/1504) · Phase 1 remediation: [#1503](https://github.com/laurigates/claude-plugins/issues/1503)
 
