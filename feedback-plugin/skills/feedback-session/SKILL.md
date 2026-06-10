@@ -19,9 +19,9 @@ Analyze the current session for skill feedback and create GitHub issues to track
 
 | Use this skill when... | Use alternative when... |
 |------------------------|------------------------|
-| A skill gave wrong or outdated guidance | Want to update skills directly -> `/project:distill` |
+| A skill gave wrong or outdated guidance | Want to update skills directly -> `session-plugin:session-distill` |
 | A command failed due to skill advice | Need static skill quality analysis -> `/health:audit` |
-| Discovered a better flag or pattern | Want to capture general learnings -> `/project:distill` |
+| Discovered a better flag or pattern | Want to capture general learnings -> `session-plugin:session-distill` |
 | A skill worked particularly well | Want to track command usage stats -> `/analytics-report` |
 | End of session, want to file feedback | Need to fix a skill right now -> edit the SKILL.md directly |
 | Feedback is about the plugin itself | Use `--target-repo laurigates/claude-plugins` to file against the plugin source |
