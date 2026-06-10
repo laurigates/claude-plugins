@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.34.2](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.34.1...blueprint-plugin-v3.34.2) (2026-06-10)
+
+
+### Code Refactoring
+
+* **blueprint-plugin:** extract feature-tracker-sync, sync-ids, derive-tests procedures to scripts + regression tests ([#1568](https://github.com/laurigates/claude-plugins/issues/1568)) ([2b15d14](https://github.com/laurigates/claude-plugins/commit/2b15d14a2a1f6bdd70ad9286d22d517628ccc874))
+
 ## [3.34.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.34.0...blueprint-plugin-v3.34.1) (2026-05-29)
 
 

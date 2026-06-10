@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.41.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.41.1...git-plugin-v2.41.2) (2026-06-10)
+
+
+### Code Refactoring
+
+* **git-plugin:** extract triage, derive-docs, pr, fork-workflow data-gathering to scripts + regression tests ([#1571](https://github.com/laurigates/claude-plugins/issues/1571)) ([1f6612c](https://github.com/laurigates/claude-plugins/commit/1f6612cc876271224f0c113378c4ec16a8a3e6e7))
+
 ## [2.41.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.41.0...git-plugin-v2.41.1) (2026-06-06)
 
 

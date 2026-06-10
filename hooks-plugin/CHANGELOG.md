@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.4](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.4.3...hooks-plugin-v2.4.4) (2026-06-10)
+
+
+### Documentation
+
+* **rules:** distill session-end learnings (Stop-hook races, cross-plugin moves, hook tests in CI) ([#1570](https://github.com/laurigates/claude-plugins/issues/1570)) ([1d3b913](https://github.com/laurigates/claude-plugins/commit/1d3b91354ccd3e1d095c6d7c2c4c880b574c22e0))
+
 ## [2.4.3](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.4.2...hooks-plugin-v2.4.3) (2026-06-07)
 
 
