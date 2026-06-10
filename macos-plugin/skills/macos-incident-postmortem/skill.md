@@ -2,10 +2,10 @@
 name: macos-incident-postmortem
 description: Reconstruct macOS freeze, panic, or reboot from DiagnosticReports and shell history. Use when investigating hangs, panics, watchdog timeouts, jetsam, or thermal throttling.
 user-invocable: false
-allowed-tools: Bash(uname *), Bash(sysctl *), Bash(uptime *), Bash(last *), Bash(ls *), Bash(find *), Bash(stat *), Bash(awk *), Bash(grep *), Bash(wc *), Bash(date *), Bash(log *), Bash(pmset *), Read, Grep, Glob, TodoWrite
+allowed-tools: Bash(bash *), Bash(uname *), Bash(sysctl *), Bash(uptime *), Bash(last *), Bash(log *), Bash(pmset *), Read, Grep, Glob, TodoWrite
 created: 2026-05-03
-modified: 2026-05-09
-reviewed: 2026-05-03
+modified: 2026-06-10
+reviewed: 2026-06-10
 ---
 
 # macOS Incident Postmortem
@@ -42,41 +42,44 @@ The first job in a postmortem is **distinguishing between actual reboots and GUI
 
 The second job is **timeline reconstruction**: cross-reference Diagnostic Reports, `kern.boottime`, `last reboot`, `last shutdown`, and shell history to answer "what happened around time T?".
 
-## Did the Machine Actually Reboot?
+## Gather the deterministic signals
 
-Three signals, evaluated together:
+Run the bundled script to gather every mechanical signal in one pass —
+reboot-vs-hang detection, per-category DiagnosticReports counts, the CPU-event
+offender histogram, the jetsam victim list, and the fixed reboot/hang
+classifier:
 
 ```bash
-# Current boot time as a unix timestamp
-sysctl -n kern.boottime
-# → { sec = 1714723200, usec = 0 } Tue Apr 22 ...
-
-# Boot history (most recent first)
-last reboot | head -5
-
-# Shutdown history
-last shutdown | head -5
+bash "${CLAUDE_SKILL_DIR}/scripts/macos-incident-postmortem.sh" --home-dir "$HOME"
 ```
 
-Decision rules:
+Parse `STATUS=` and `ISSUES:` from the output. The script emits
+`CLASSIFICATION=` (REBOOT_PANIC / REBOOT_CLEAN / HANG_UI / HANG_CPU /
+HANG_JETSAM / HANG_OR_POWERCYCLE / UNKNOWN) with a `CLASSIFICATION_REASON=`,
+plus `PANIC_COUNT=` / `HANG_COUNT=` / `JETSAM_COUNT=` / `CPU_RESOURCE_COUNT=`
+etc., `LATEST_PANIC=` / `LATEST_HANG=` paths, and `CPU_OFFENDERS:` /
+`JETSAM_VICTIMS:` histograms.
+
+Pass the incident time T as an epoch to enable the classifier
+(`MACOS_PM_INCIDENT_EPOCH=<epoch> bash …`), or supply an alternate report
+source with `--reports-dir <path>`. With no incident time the classifier
+reports `UNKNOWN` rather than guessing — feed it T once you know it.
+
+The reboot/hang decision tree the script encodes:
 
 | Pattern | Interpretation |
 |---------|----------------|
-| `last reboot` shows a new entry near time T | True reboot — kernel was reset |
-| `last reboot` unchanged, `kern.boottime` matches the older boot | GUI hang — machine did not reboot |
-| `last shutdown` shows an "abrupt" entry near time T | Power loss or hard hold-down — kernel did not write a clean shutdown |
-| `last shutdown` shows a clean entry, then `last reboot` | User-initiated shutdown/restart |
+| Boot at/after T with a `.panic` report | True reboot from a kernel panic |
+| Boot at/after T, no panic | Clean restart (user-initiated or watchdog) |
+| Boot before T with a `.hang`/`.spindump.txt` | GUI hang — machine did not reboot |
+| Boot before T with a `.cpu_resource.diag` | Daemon CPU storm |
+| Boot before T with a `JetsamEvent-*` | Memory-pressure kill |
+| Boot before T, none of the above | Power loss or hard power-cycle |
 
-`last reboot` reads `/var/log/wtmp.X` rotated logs. On modern macOS, also check the unified log:
+### Diagnostic report category reference
 
-```bash
-log show --predicate 'eventType == "stateEvent" AND (event == "boot" OR event == "shutdown")' \
-  --last 7d --style syslog
-```
-
-## Diagnostic Report Categories
-
-`/Library/Logs/DiagnosticReports/` collects everything macOS thinks is worth keeping. The filename pattern identifies the category:
+`/Library/Logs/DiagnosticReports/` collects everything macOS thinks is worth
+keeping; the script classifies each by filename suffix:
 
 | Pattern | Category | Severity |
 |---------|----------|----------|
@@ -90,37 +93,25 @@ log show --predicate 'eventType == "stateEvent" AND (event == "boot" OR event ==
 | `*.spindump.txt` | Spindump capture from a hang | GUI freeze |
 | `JetsamEvent-*.ips` | Kernel killed processes for memory pressure | RAM exhaustion |
 
-Note: Apple migrated most categories to the `.ips` extension circa Monterey. Older systems and some categories still produce legacy extensions. Match by suffix, not by exact filename.
+Note: Apple migrated most categories to the `.ips` extension circa Monterey.
+Older systems and some categories still produce legacy extensions. The script
+matches by suffix, not by exact filename.
 
-## Timeline Reconstruction
-
-### Step 1: List recent events
-
-```bash
-find /Library/Logs/DiagnosticReports -type f -mtime -2 \
-  -exec stat -f '%Sm  %N' -t '%Y-%m-%d %H:%M:%S' {} \; \
-  | sort
-```
-
-This produces a chronological list of every diagnostic report from the last 48 hours. Filter further by category if needed:
+`last reboot` reads `/var/log/wtmp.X` rotated logs. On modern macOS, also check
+the unified log when `wtmp` has rotated past the incident:
 
 ```bash
-find /Library/Logs/DiagnosticReports -type f -mtime -2 \
-  \( -name '*.panic' -o -name '*.hang' -o -name 'JetsamEvent-*' \) \
-  -exec stat -f '%Sm  %N' -t '%Y-%m-%d %H:%M:%S' {} \; | sort
+log show --predicate 'eventType == "stateEvent" AND (event == "boot" OR event == "shutdown")' \
+  --last 7d --style syslog
 ```
 
-### Step 2: Cross-reference with boot history
+## Timeline Reconstruction (judgment)
 
-```bash
-last reboot | head -5
-last shutdown | head -5
-sysctl -n kern.boottime
-```
+With the deterministic classification and counts in hand, the remaining steps
+are the agent's job: read the panic backtrace, name suspect kexts, correlate
+with logs and shell activity, and write the narrative.
 
-Mark the incident time T. Determine: was T before or after the most recent boot? If after, the machine never rebooted — it was a hang.
-
-### Step 3: Inspect the unified log around T
+### Step 1: Inspect the unified log around T
 
 ```bash
 # Adjust the time window to bracket T
@@ -140,17 +131,10 @@ Common signatures to grep for:
 | `_dispatch_*_timeout` | Daemon stuck on a synchronous IPC call |
 | `Thermal pressure` | CPU thermal-throttled |
 
-### Step 4: Inspect the panic / hang report
+### Step 2: Inspect the panic / hang report
 
-```bash
-# Most recent panic
-ls -1t /Library/Logs/DiagnosticReports/*.panic 2>/dev/null | head -1
-
-# Most recent hang
-ls -1t /Library/Logs/DiagnosticReports/*.hang* 2>/dev/null | head -1
-```
-
-Read the file. Key fields in a panic report:
+The script's `LATEST_PANIC=` / `LATEST_HANG=` lines give you the file to read.
+Key fields in a panic report:
 
 | Field | Meaning |
 |-------|---------|
@@ -162,7 +146,7 @@ Read the file. Key fields in a panic report:
 
 Hang reports are spindump-style: one column per thread of the hung process (typically WindowServer or the offender daemon), with stack traces at sample intervals.
 
-### Step 5: Correlate with shell activity
+### Step 3: Correlate with shell activity
 
 ```bash
 # Most recent zsh history entries (assumes default zsh)
@@ -174,7 +158,7 @@ tail -50 ~/.zsh_history
 
 The zsh `EXTENDED_HISTORY` format `: <epoch>:<elapsed>;<cmd>` lets you grep for commands run within the incident window.
 
-### Step 6: Synthesize
+### Step 4: Synthesize
 
 Write a one-paragraph timeline including:
 
@@ -185,47 +169,14 @@ Write a one-paragraph timeline including:
 
 ## Common Patterns
 
-### "Was that a reboot or a hang?" one-liner
-
-```bash
-last reboot | awk 'NR<=3' && \
-  echo "kern.boottime: $(sysctl -n kern.boottime)" && \
-  echo "uptime: $(uptime)"
-```
-
-If the most recent `last reboot` line is older than the incident, the machine never rebooted — it was a userspace hang.
-
-### Count diag reports by category, last 7 days
-
-```bash
-find /Library/Logs/DiagnosticReports -type f -mtime -7 -name '*.panic' | wc -l
-find /Library/Logs/DiagnosticReports -type f -mtime -7 -name '*.hang*' | wc -l
-find /Library/Logs/DiagnosticReports -type f -mtime -7 -name '*.cpu_resource.diag' | wc -l
-find /Library/Logs/DiagnosticReports -type f -mtime -7 -name 'JetsamEvent-*' | wc -l
-```
-
-A sudden rise in any category is a leading indicator before a major hang or panic.
-
-### Find the dominant CPU-event offender
-
-```bash
-ls /Library/Logs/DiagnosticReports/*.cpu_resource.diag 2>/dev/null \
-  | awk -F/ '{print $NF}' \
-  | awk -F- '{print $1}' \
-  | sort | uniq -c | sort -rn
-```
-
-The first column is event count; the second is the offender process name.
-
-### Jetsam victim list
-
-```bash
-grep -lE 'killed' /Library/Logs/DiagnosticReports/JetsamEvent-*.ips 2>/dev/null \
-  | xargs -r grep -hE '"name":' \
-  | sort | uniq -c | sort -rn | head -20
-```
-
-Apps that show up here repeatedly are running near their memory budget.
+The reboot-vs-hang one-liner, per-category report counts, the CPU-event
+offender histogram, and the jetsam victim list are all produced in one pass by
+the bundled script (`scripts/macos-incident-postmortem.sh` — see "Gather the
+deterministic signals" above). Read `CLASSIFICATION=`, the `*_COUNT=` keys,
+`CPU_OFFENDERS:`, and `JETSAM_VICTIMS:` from its output rather than re-running
+the equivalent shell pipelines. A sudden rise in any category count is a
+leading indicator before a major hang or panic; offenders/victims that recur
+are running near their CPU/memory budget.
 
 ### Correlate with sleep/wake history
 
@@ -251,14 +202,11 @@ If one of these is the only thing visible in your timeline, look harder — the 
 
 | Context | Command |
 |---------|---------|
+| All deterministic signals + classifier | `bash "${CLAUDE_SKILL_DIR}/scripts/macos-incident-postmortem.sh" --home-dir "$HOME"` |
+| Classify against a known T | `MACOS_PM_INCIDENT_EPOCH=<epoch> bash "${CLAUDE_SKILL_DIR}/scripts/macos-incident-postmortem.sh"` |
 | Last 5 boots | `last reboot \| head -5` |
 | Last 5 shutdowns | `last shutdown \| head -5` |
-| Did we reboot since T? | `last reboot \| awk '$0 ~ /YYYY-MM-DD/'` |
-| Recent diag reports (48h) | `find /Library/Logs/DiagnosticReports -type f -mtime -2 -exec stat -f '%Sm  %N' -t '%F %T' {} \;` |
-| Last panic file | `ls -1t /Library/Logs/DiagnosticReports/*.panic 2>/dev/null \| head -1` |
-| First panic line | `head -1 "$(ls -1t /Library/Logs/DiagnosticReports/*.panic \| head -1)"` |
 | WindowServer log slice | `log show --predicate 'subsystem == "com.apple.WindowServer"' --last 1h --style syslog \| head -200` |
-| CPU offender histogram | `ls /Library/Logs/DiagnosticReports/*.cpu_resource.diag \| awk -F/ '{print $NF}' \| awk -F- '{print $1}' \| sort \| uniq -c \| sort -rn` |
 
 ## Quick Reference
 
