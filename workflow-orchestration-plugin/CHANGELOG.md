@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.6](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.5.5...workflow-orchestration-plugin-v1.5.6) (2026-06-10)
+
+
+### Code Refactoring
+
+* **workflow-orchestration-plugin:** extract workflow-preflight procedure to scripts + regression test ([#1567](https://github.com/laurigates/claude-plugins/issues/1567)) ([0cbe02a](https://github.com/laurigates/claude-plugins/commit/0cbe02aff2ba37c793dce4820bc0af5b784b378b))
+
 ## [1.5.5](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.5.4...workflow-orchestration-plugin-v1.5.5) (2026-06-10)
 
 
