@@ -3,10 +3,10 @@ name: code-dep-audit
 description: Audit dependencies for security vulnerabilities, outdated packages, and license compliance. Use when checking supply chain security, preparing releases, or responding to CVEs.
 args: "[--type <security|outdated|licenses|all>] [--fix]"
 argument-hint: --type security to check vulnerabilities, --type outdated for updates
-allowed-tools: Bash(npm audit *), Bash(npx *), Bash(pip-audit *), Bash(cargo audit *), Bash(pip *), Bash(uv *), Bash(cargo *), Read, Grep, Glob, TodoWrite
+allowed-tools: Bash(bash *), Bash(npm audit *), Bash(npx *), Bash(pip-audit *), Bash(cargo audit *), Bash(pip *), Bash(uv *), Bash(cargo *), Read, Grep, Glob, TodoWrite
 created: 2026-04-10
-modified: 2026-05-09
-reviewed: 2026-04-10
+modified: 2026-06-10
+reviewed: 2026-06-10
 ---
 
 # /code:dep-audit
@@ -35,89 +35,24 @@ Audit project dependencies for vulnerabilities and freshness.
 
 Execute this dependency audit workflow:
 
-### Step 1: Detect package ecosystem
+### Step 1: Gather audit data
 
-Identify all package manifests and lock files present. Determine which audit tools are available for each ecosystem.
+Run the extracted audit script — it detects the package ecosystem, dispatches the matching audit tool, and parses severity / outdated / license-denylist counts into a structured rollup:
 
-### Step 2: Run security audit
-
-**JavaScript/TypeScript:**
 ```bash
-npm audit --json
+bash "${CLAUDE_SKILL_DIR}/scripts/code-dep-audit.sh" --home-dir "$HOME" --project-dir "$(pwd)"
 ```
 
-For bun projects:
-```bash
-bun pm ls
-```
+Parse `STATUS=` and `ISSUES:` from the output. The script emits `ECOSYSTEM=`, `AUDIT_TOOL=`, `VULN_CRITICAL/HIGH/MEDIUM/LOW`, `OUTDATED_COUNT=`, `LICENSE_ISSUES=`, and an `ISSUES:` block flagging GPL/AGPL licenses (problematic in proprietary projects). When `AUDIT_TOOL_AVAILABLE=false`, the ecosystem's audit tool is missing — run it via the command in `AUDIT_TOOL=` if installed, otherwise suggest `/configure:security`.
 
-**Python:**
-```bash
-pip-audit --format json
-```
-
-Or with uv:
-```bash
-uv pip audit
-```
-
-**Rust:**
-```bash
-cargo audit --json
-```
-
-**Go:**
-```bash
-go list -m -json all
-govulncheck ./...
-```
-
-If the audit tool is not installed, report which tool is needed and suggest `/configure:security` to set up the project.
-
-### Step 3: Check outdated packages (if --type outdated or all)
-
-**JavaScript/TypeScript:**
-```bash
-npm outdated --json
-```
-
-**Python:**
-```bash
-pip list --outdated --format json
-```
-
-**Rust:**
-```bash
-cargo outdated --format json
-```
-
-### Step 4: Check license compliance (if --type licenses or all)
-
-**JavaScript/TypeScript:**
-```bash
-npx license-checker --json --summary
-```
-
-**Python:**
-```bash
-pip-licenses --format json
-```
-
-**Rust:**
-```bash
-cargo license --json
-```
-
-Flag problematic licenses: GPL (in proprietary projects), AGPL, unlicensed, or unknown.
-
-### Step 5: Apply fixes (if --fix)
+### Step 2: Apply fixes (if --fix)
 
 For security vulnerabilities:
 1. Run `npm audit fix` / `cargo update` / `pip install --upgrade` for safe updates
 2. Report which vulnerabilities were fixed and which require manual intervention
 3. Run project tests to verify nothing broke
 
-### Step 6: Report results
+### Step 3: Report results
 
 Print summary:
 ```

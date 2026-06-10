@@ -1,7 +1,7 @@
 ---
 created: 2026-01-02
-modified: 2026-05-22
-reviewed: 2026-05-22
+modified: 2026-06-10
+reviewed: 2026-06-10
 description: Sync feature tracker with TODO.md, taskwarrior sidecars, and PRDs. Use when reconciling TODO.md vs tracker, draining WO entries, or recalculating stats.
 allowed-tools: Read, Write, Bash, Glob, AskUserQuestion
 model: sonnet
@@ -95,76 +95,33 @@ Output example:
 
 ## Mode: Full Sync (Default)
 
-### Step 0: Detect taskwarrior sidecar
+### Step 0: Run the deterministic core
 
-Determine whether this project uses the taskwarrior-sidecar convention
-(taskwarrior is the authoritative pending/completed queue, linked to blueprint
-via the `bpid`/`bpdoc` UDAs). Either signal is sufficient:
-
-1. **Marker rule file**: `test -f .claude/rules/task-tracking.md`.
-2. **Live taskwarrior linkage**: any task carries a `bpid` matching one of the
-   project's blueprint IDs.
-
-   Use the parallel-safe `export | jq` idiom (see
-   `.claude/rules/parallel-safe-queries.md`) — never `task list`, which exits
-   1 on empty results and silently cancels sibling tool calls in a parallel
-   Bash batch:
-
-   ```bash
-   task bpid.any: status:any export | jq 'length'
-   ```
-
-   Treat any non-zero count as "sidecar present".
-
-If a sidecar is detected, set `SIDECAR=true` and:
-
-- Skip the `TODO.md` reconciliation steps (Steps 4–5, 8) — there is no
-  authoritative TODO file to align against.
-- Continue with statistics recalculation (Step 6) and tracker write (Step 7),
-  using taskwarrior `status:completed` as the truth signal for WO entries.
-- When the user is closing one or more WOs, route them to **Mode: Taskwarrior
-  Sidecar Drain** instead of editing `TODO.md`.
-
-### Step 1: Check if feature tracking is enabled
+Run the helper. It owns the mechanical core: taskwarrior-sidecar marker
+detection (`SIDECAR=`), tracker existence/validity, the implementation-evidence
+backfill (file-existence + `git log` commit dedupe), status inference via the
+fixed decision table WITH the never-downgrade guard (`EVIDENCE_FLIPPED=`,
+`status_inferred` issues), and the statistics rollup (`STAT_*`,
+`COMPLETION_PERCENTAGE=`). It writes the backfilled tracker in place:
 
 ```bash
-test -f docs/blueprint/feature-tracker.json
+bash "${CLAUDE_SKILL_DIR}/scripts/blueprint-feature-tracker-sync.sh" --home-dir "$HOME" --project-dir "$(pwd)"
 ```
 
-**If not found**, report:
-```
-Feature tracking not enabled in this project.
-Run `/blueprint:init` and enable feature tracking to get started.
-```
+Parse `STATUS=` and `ISSUES:` from the output. `STATUS=ERROR` means the tracker
+is missing (`tracker_missing` → report "Feature tracking not enabled; run
+`/blueprint:init`") or invalid JSON. `SIDECAR=true` means the taskwarrior-sidecar
+convention is in use — also probe for live taskwarrior linkage (any task with a
+`bpid` matching a project blueprint ID) via the parallel-safe `export | jq`
+idiom (`task bpid.any: status:any export | jq 'length'`, never `task list`; see
+`.claude/rules/parallel-safe-queries.md`). When a sidecar is in play, skip the
+`TODO.md` reconciliation steps (Steps 4–5, 8) — there is no authoritative TODO
+file — and route any WO closures to **Mode: Taskwarrior Sidecar Drain**.
 
-### Step 2: Load current state
-
-- Read `docs/blueprint/feature-tracker.json` for current feature and task status
-- Read `TODO.md` for checkbox states (if exists)
-- Read manifest for configuration
-
-### Step 3: Analyze each feature
-
-For each feature in the tracker:
-
-a. **Verify status consistency**:
-   - `complete`: Check TODO.md has `[x]` (if tracked there)
-   - `partial`: Some checkboxes checked, some not
-   - `in_progress`: Should have entry in `tasks.in_progress`
-   - `not_started`: Check TODO.md has `[ ]`, not in completed
-   - `blocked`: Note if blocking reason is documented
-
-b. **Check implementation evidence** (REQUIRED — drives status inference for shipped code). For each feature with non-empty `implementation.files`: verify each file exists, backfill `implementation.commits` via `git log --follow --format="%H" -- <file>` (deduped, merged into existing array), and backfill `implementation.tests` via `Glob` on conventional patterns (`tests/**/*<slug>*`, `**/*<slug>*.test.*`, `**/test_*<slug>*.py`).
-
-   **Infer status from evidence** ONLY when current `status == "not_started"`:
-
-   | Evidence | Inferred status |
-   |---|---|
-   | All files exist AND ≥1 commit touches them | `complete` (pending Step 5 user confirmation) |
-   | Some files exist, others missing | `partial` |
-   | No listed files exist | leave as `not_started` |
-
-   Never silently downgrade an already-`complete`/`in_progress`/`partial` feature. List flipped features under "Inferred from evidence" in the Step 9 sync report. See [REFERENCE.md](REFERENCE.md#evidence-backfill-jq-recipe) for the canonical merge `jq`.
+Each `status_inferred` issue is a feature the evidence flipped up from
+`not_started` (the guard never lowers a higher status); surface these under
+"Inferred from evidence" in the Step 9 report. For the canonical merge `jq` and
+test-evidence patterns, see [REFERENCE.md](REFERENCE.md#evidence-backfill-jq-recipe).
 
 ### Step 4: Detect discrepancies
 
@@ -193,9 +150,10 @@ options:
 
 ### Step 6: Recalculate statistics
 
-- Count features by status across all nested levels
-- Calculate completion percentage: `(complete / total) * 100`
-- Update phase status based on contained features:
+The feature-level counts and completion percentage are already in the Step 0
+script output (`STAT_COMPLETE`/`STAT_PARTIAL`/`STAT_IN_PROGRESS`/`STAT_NOT_STARTED`/`STAT_BLOCKED`,
+`COMPLETION_PERCENTAGE`). After any discrepancy resolutions from Step 5 change a
+status, re-derive phase status from the contained features:
   - `complete` if all features complete
   - `in_progress` if any feature in_progress
   - `partial` if some complete, some not

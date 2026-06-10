@@ -32,36 +32,75 @@ Pre-work validation to prevent wasted effort from stale state, redundant work, o
 
 ## Execution
 
-### Step 1: Run the deterministic preflight check
+Run the preflight check, then apply judgment to its results.
 
-Pass `--issue <n>` when an issue number was provided:
+### Step 1: Gather preflight state
+
+Invoke the gatherer. Pass `--issue <n>` or `--branch <name>` when the argument
+is a GitHub issue number or branch:
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/scripts/workflow-preflight.sh" --home-dir "$HOME" --project-dir "$(pwd)"
+bash "${CLAUDE_SKILL_DIR}/scripts/preflight.sh" --project-dir "$(pwd)" [--issue N] [--branch NAME]
 ```
 
-The script fetches the remote, computes ahead/behind counts, looks up an existing PR / issue / branch for the target, runs a `merge-tree` dry-run for conflicts, inspects uncommitted + stash state, and emits a `RECOMMENDATION=` from the fixed decision tree. Parse `STATUS=` and `ISSUES:` from the output, plus `RECOMMENDATION=`, `EXISTING_PR_STATE=`, `COMMITS_AHEAD=`/`COMMITS_BEHIND=`, `CONFLICTS_DETECTED=`, `UNCOMMITTED_CHANGES=`, and `STASH_COUNT=`.
+The script fetches `origin --prune`, resolves the base ref (`origin/main` →
+`origin/master` → `main` → `master`), and emits a structured `KEY=VALUE` block:
+`AHEAD` / `BEHIND` divergence, `UNCOMMITTED` / `STASH_COUNT`, `CONFLICTS`
+(+ `CONFLICT_FILES`), existing-work lookups (`ISSUE_STATE`, `EXISTING_PRS`,
+`BRANCH_MATCHES`), and a fixed `RECOMMENDATION`. It degrades gracefully when
+`gh` is unavailable (`GH_AVAILABLE=false`) and never fails on network errors.
+Pass `--base <ref>` to override the comparison ref, `--no-fetch` to skip the
+network round-trip.
 
-### Step 2: Decide on an existing open PR
+### Step 2: Act on existing work (judgment)
 
-The script reports `EXISTING_PR_STATE=MERGED|OPEN|NONE`:
+Read `EXISTING_PRS` (`#N:STATE:headRef` entries) and `RECOMMENDATION`:
 
-- **`MERGED`**: the issue is already addressed — stop before duplicating.
-- **`OPEN`**: an existing PR already addresses this. Ask the user whether to continue on that branch or start fresh:
+- **`RECOMMENDATION=already-addressed`** (a `:MERGED:` PR exists): report that
+  the issue is already addressed and **stop** — do not duplicate the work.
+- **`RECOMMENDATION=existing-pr`** (an `:OPEN:` PR exists): report the PR and
+  **ask the user** whether to continue on that branch or start fresh
+  (`AskUserQuestion`). Do not pick for them.
+- Otherwise continue to the summary.
 
-  Use **AskUserQuestion** — "Continue on existing PR #N, or start fresh?" — before doing any work. This judgment call stays interactive; the script only surfaces the PR state.
-- **`NONE`**: proceed per the script's `RECOMMENDATION=`.
+### Step 3: Summary report
+
+Translate the `KEY=VALUE` block into a summary the user can act on:
+
+| Check | Source key | Detail |
+|-------|-----------|--------|
+| Remote state | `FETCH` | `ok` / `skipped` / `no-remote` |
+| Existing PRs | `EXISTING_PRS` | PR numbers + state, if any |
+| Branch state | `AHEAD` / `BEHIND` / `UNCOMMITTED` | ahead/behind counts, dirty tree |
+| Conflicts | `CONFLICTS` / `CONFLICT_FILES` | conflicting files |
+| Stash | `STASH_COUNT` | number of stash entries |
+
+Lead with the headline `RECOMMENDATION`, then surface every relevant note —
+the recommendation is a single first-match headline, but multiple conditions
+can be worth mentioning:
+
+| `RECOMMENDATION` | Tell the user |
+|------------------|---------------|
+| `resolve-conflicts` | Resolve conflicts with the base ref before proceeding |
+| `commit-or-stash` | Commit or stash changes before branching |
+| `rebase` | Rebase on the base ref before starting work |
+| `existing-pr` | A PR already addresses this — review before duplicating |
+| `already-addressed` | A merged PR already addresses this — stop |
+| `ready` | Ready to proceed |
 
 ## Agentic Optimizations
 
 | Context | Command |
 |---------|---------|
-| Quick remote sync | `git fetch origin --prune 2>/dev/null` |
-| Check existing PRs | `gh pr list --search "fixes #N" --json number,state,headRefName` |
-| Branch divergence | `git log --oneline origin/main..HEAD` |
-| Conflict detection | `git merge-tree $(git merge-base HEAD origin/main) HEAD origin/main` |
-| Compact status | `git status --porcelain=v2 --branch` |
-| Remote tracking | `git branch -vv --format='%(refname:short) %(upstream:track)'` |
+| Full preflight (default) | `bash "${CLAUDE_SKILL_DIR}/scripts/preflight.sh" --project-dir "$(pwd)"` |
+| Preflight for an issue | `bash "${CLAUDE_SKILL_DIR}/scripts/preflight.sh" --issue N` |
+| Offline / no network | `bash "${CLAUDE_SKILL_DIR}/scripts/preflight.sh" --no-fetch` |
+| Override base ref | `bash "${CLAUDE_SKILL_DIR}/scripts/preflight.sh" --base origin/develop` |
+
+The script wraps `git fetch --prune`, `git rev-list --left-right --count`,
+`git merge-tree --write-tree`, `git stash list`, and the `gh` existing-work
+lookups behind one structured-output call. See
+[`scripts/preflight.sh`](scripts/preflight.sh).
 
 ## Quick Reference
 
