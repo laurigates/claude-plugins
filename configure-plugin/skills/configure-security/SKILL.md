@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
-reviewed: 2025-12-16
+modified: 2026-06-10
+reviewed: 2026-06-10
 description: "Security scanning: dependency audits, SAST, secrets detection. Use when setting up Dependabot, CodeQL, or TruffleHog in CI, or creating a SECURITY.md policy."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--type <dependencies|sast|secrets|all>]"
@@ -62,42 +62,22 @@ Verify latest versions before configuring:
 
 Use WebSearch or WebFetch to verify current versions.
 
-### Step 2: Detect project languages and tools
+### Step 2: Detect project languages and security posture
 
-Identify project languages and existing security tools:
+Run the detection script to scan the project for language signals and the
+three security layers (dependency auditing / SAST / secret detection) plus a
+SECURITY.md policy:
 
-| Indicator | Language/Tool | Security Tools |
-|-----------|---------------|----------------|
-| `package.json` | JavaScript/TypeScript | npm audit, Snyk |
-| `pyproject.toml` | Python | pip-audit, safety, bandit |
-| `Cargo.toml` | Rust | cargo-audit, cargo-deny |
-| `.gitleaks.toml` | gitleaks | Secret scanning |
-| `.github/workflows/` | GitHub Actions | CodeQL, Dependabot |
+```bash
+bash "${CLAUDE_SKILL_DIR}/scripts/configure-security.sh" --home-dir "$HOME" --project-dir "$(pwd)"
+```
 
-### Step 3: Analyze current security state
+Parse `STATUS=` and the `ISSUES:` block from the output. The `KEY=VALUE` lines
+report language detection (`LANG_JS`, `LANG_PYTHON`, `LANG_RUST`, `LANG_GO`) and
+the presence matrix (`DEPENDABOT`, `CODEQL`, `GITLEAKS_CONFIG`, `SECURITY_POLICY`,
+`TRUFFLEHOG`, `DEPENDENCY_REVIEW`, `SECURITY_LAYERS_PRESENT`).
 
-Check existing security configuration across three areas:
-
-**Dependency Auditing:**
-- Package manager audit configured
-- Audit scripts in package.json/Makefile
-- Dependabot enabled
-- Dependency review action in CI
-- Auto-merge for minor updates configured
-
-**SAST Scanning:**
-- CodeQL workflow exists
-- Semgrep configured
-- Bandit configured (Python)
-- SAST in CI pipeline
-
-**Secret Detection:**
-- Gitleaks configured with `.gitleaks.toml`
-- Pre-commit hook configured
-- Git history scanned
-- TruffleHog configured (optional complement)
-
-### Step 4: Generate compliance report
+### Step 3: Generate compliance report
 
 Print a formatted compliance report showing status for each security component across dependency auditing, SAST scanning, secret detection, and security policies.
 
@@ -105,7 +85,7 @@ If `--check-only` is set, stop here.
 
 For the compliance report format, see [REFERENCE.md](REFERENCE.md).
 
-### Step 5: Configure dependency auditing (if --fix or user confirms)
+### Step 4: Configure dependency auditing (if --fix or user confirms)
 
 Based on detected language:
 
@@ -124,7 +104,7 @@ Based on detected language:
 
 For complete configuration templates, see [REFERENCE.md](REFERENCE.md).
 
-### Step 6: Configure SAST scanning (if --fix or user confirms)
+### Step 5: Configure SAST scanning (if --fix or user confirms)
 
 1. Create CodeQL workflow `.github/workflows/codeql.yml` with detected languages
 2. For Python projects, install and configure Bandit
@@ -132,7 +112,7 @@ For complete configuration templates, see [REFERENCE.md](REFERENCE.md).
 
 For CodeQL workflow and Bandit configuration templates, see [REFERENCE.md](REFERENCE.md).
 
-### Step 7: Configure secret detection (if --fix or user confirms)
+### Step 6: Configure secret detection (if --fix or user confirms)
 
 1. Install gitleaks: `brew install gitleaks` (or `go install github.com/gitleaks/gitleaks/v8@latest`)
 2. Create `.gitleaks.toml` with project-specific allowlists
@@ -142,7 +122,7 @@ For CodeQL workflow and Bandit configuration templates, see [REFERENCE.md](REFER
 
 For gitleaks, TruffleHog, and CI workflow configuration templates, see [REFERENCE.md](REFERENCE.md).
 
-### Step 8: Create security policy
+### Step 7: Create security policy
 
 Create `SECURITY.md` with:
 - Supported versions table
@@ -153,7 +133,7 @@ Create `SECURITY.md` with:
 
 For the SECURITY.md template, see [REFERENCE.md](REFERENCE.md).
 
-### Step 9: Configure CI/CD integration
+### Step 8: Configure CI/CD integration
 
 Create comprehensive security workflow `.github/workflows/security.yml` with jobs for:
 - Dependency audit
@@ -164,7 +144,7 @@ Schedule weekly scans in addition to push/PR triggers.
 
 For the CI security workflow template, see [REFERENCE.md](REFERENCE.md).
 
-### Step 10: Update standards tracking
+### Step 9: Update standards tracking
 
 Update `.project-standards.yaml`:
 
@@ -178,7 +158,7 @@ components:
   security_dependabot: true
 ```
 
-### Step 11: Report configuration results
+### Step 10: Report configuration results
 
 Print a summary of all changes made across dependency auditing, SAST scanning, secret detection, security policy, and CI/CD integration. Include next steps for reviewing Dependabot PRs, CodeQL findings, and enabling private vulnerability reporting.
 
