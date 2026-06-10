@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.25.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.24.6...configure-plugin-v1.25.0) (2026-06-10)
+
+
+### Features
+
+* **configure-plugin:** absorb pin-plugins exhaustive pinning mode into configure-claude-plugins ([#1576](https://github.com/laurigates/claude-plugins/issues/1576)) ([480786d](https://github.com/laurigates/claude-plugins/commit/480786d08d729710fdeeec872012ed561391eb2f))
+
 ## [1.24.6](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.24.5...configure-plugin-v1.24.6) (2026-06-10)
 
 
