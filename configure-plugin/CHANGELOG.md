@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.24.6](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.24.5...configure-plugin-v1.24.6) (2026-06-10)
+
+
+### Code Refactoring
+
+* **configure-plugin:** extract security, formatting, ux-testing detection to scripts + regression tests ([#1569](https://github.com/laurigates/claude-plugins/issues/1569)) ([395acfb](https://github.com/laurigates/claude-plugins/commit/395acfbc3f73b04d5bdb5b0b095026e03486ff8b))
+
 ## [1.24.5](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.24.4...configure-plugin-v1.24.5) (2026-06-03)
 
 
