@@ -75,10 +75,13 @@ assert_silent() {
 }
 
 # With the env var unset, the hook should always produce empty stdout.
+# Unset it explicitly: the developer's shell may export the opt-in var
+# (e.g. via ~/.api_tokens / .zshrc), which made this block fail locally
+# while passing in clean CI.
 assert_disabled() {
     local desc="$1" cmd="$2"
     local out
-    out=$(_payload "$cmd" | bash "$HOOK" 2>/dev/null || true)
+    out=$(_payload "$cmd" | env -u CLAUDE_HOOKS_ENABLE_BASH_ANTIPATTERNS_TEACH bash "$HOOK" 2>/dev/null || true)
     if [ -z "$out" ]; then
         printf "  PASS: %s\n" "$desc"
         PASS=$((PASS + 1))

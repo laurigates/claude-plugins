@@ -41,8 +41,10 @@ run_hook_output() {
 # Run the hook without the opt-in env var set.
 run_hook_optout() {
     local transcript="$1"
+    # Unset explicitly: the developer's shell may export the opt-in var,
+    # which made this test fail locally while passing in clean CI.
     printf '{"transcript_path":"%s"}' "$transcript" \
-        | bash "$HOOK" 2>/dev/null || true
+        | env -u CLAUDE_HOOKS_ENABLE_CALENDAR_ESTIMATES bash "$HOOK" 2>/dev/null || true
 }
 
 assert_blocks() {
