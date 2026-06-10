@@ -810,10 +810,12 @@ zoom during a gesture, intercept `wheel` (capture, `passive:false`,
 
 ## Releases
 
-Bump `version` in `pyproject.toml` and push to `main` → `publish.yml` runs
-`bun run build` then `Comfy-Org/publish-node-action` publishes to the Comfy
-Registry. Requires the `REGISTRY_ACCESS_TOKEN` repo secret. Use conventional
-commits; release-please maintains `CHANGELOG.md` and the version bump PR.
+Merge the release-please PR → the published GitHub release triggers
+`publish.yml`, which runs `bun run build`, publishes via
+`Comfy-Org/publish-node-action`, and pushes the release notes to the registry
+version changelog (the "Updates" section). Requires the
+`REGISTRY_ACCESS_TOKEN` repo secret. Use conventional commits; release-please
+maintains `CHANGELOG.md` and the version bump PR.
 """
 
 JUSTFILE = """\
@@ -1179,16 +1181,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 """
 
-PUBLISH_YML = """\
-name: Publish to Comfy Registry
+# Raw string: the embedded changelog transform contains regex backslashes
+# (incl. \1 replacement refs) that a normal string literal would corrupt.
+PUBLISH_YML = r"""name: Publish to Comfy Registry
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - pyproject.toml
+  release:
+    types: [published]
 
 jobs:
   publish-node:
@@ -1206,11 +1206,92 @@ jobs:
           bun install --frozen-lockfile
           bun run build
       - name: Publish Custom Node
-        uses: Comfy-Org/publish-node-action@v1
+        # Pinned to the main SHA that supports `skip_checkout`. The `@v1` and
+        # tagged releases predate that input: they run an unconditional
+        # actions/checkout that wipes the git-ignored web/dist built above, so
+        # the registry tarball ships an EMPTY web/dist and the extension never
+        # loads.
+        uses: Comfy-Org/publish-node-action@d2366e7abb6ab16f3bb03e3520ae25c8cf749bc9 # main: skip_checkout support
         with:
           # PAT issued at https://registry.comfy.org/, stored as the
           # REGISTRY_ACCESS_TOKEN repo secret.
           personal_access_token: ${{ secrets.REGISTRY_ACCESS_TOKEN }}
+          # Reuse the workspace the prior step already built (see pin comment).
+          skip_checkout: 'true'
+
+      - name: Set registry changelog from release notes
+        # `comfy node publish` cannot send a changelog (Comfy-Org/comfy-cli#467),
+        # so the registry's per-version "Updates" section stays empty. The
+        # registry does accept the publisher PAT on the version-update endpoint
+        # (fixed in Comfy-Org/registry-backend#168), so push the release-please
+        # release notes there after publishing. The {versionId} path segment
+        # must be the version's database UUID, not the semver string.
+        # The registry renders the changelog as PLAIN TEXT (line-clamp-2 card,
+        # bare <p> drawer; markdown shows raw and newlines collapse), so the
+        # release-please markdown is flattened to compact plain text first.
+        # Best-effort: a failure here must not fail the publish itself.
+        if: github.event_name == 'release' && github.event.release.body != ''
+        env:
+          REGISTRY_TOKEN: ${{ secrets.REGISTRY_ACCESS_TOKEN }}
+          # Passed via env (not inline interpolation) so markdown/quotes in the
+          # release notes cannot inject into the shell.
+          RELEASE_BODY: ${{ github.event.release.body }}
+        run: |
+          set -u
+          node_id=$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml","rb"))["project"]["name"])')
+          publisher_id=$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml","rb"))["tool"]["comfy"]["PublisherId"])')
+          version=$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml","rb"))["project"]["version"])')
+          changelog=$(python3 <<'PY'
+          import os, re
+
+          def clean(text):
+              text = re.sub(r"\(\[[0-9a-f]{6,40}\]\([^)]*\)\)", "", text)
+              text = re.sub(r"\[#([0-9]+)\]\([^)]*\)", r"#\1", text)
+              text = re.sub(r"\[([^\]]+)\]\([^)]*\)", r"\1", text)
+              text = text.replace("**", "")
+              return re.sub(r"\s+", " ", text).strip().rstrip(".")
+
+          sections, items, current = [], [], None
+
+          def flush():
+              if items:
+                  prefix = current + ": " if current else ""
+                  sections.append(prefix + "; ".join(items) + ".")
+
+          for raw in os.environ.get("RELEASE_BODY", "").splitlines():
+              line = raw.strip()
+              if not line:
+                  continue
+              if re.match(r"^#+\s*\[?[0-9]+\.[0-9]+\.[0-9]+", line):
+                  continue
+              m = re.match(r"^#+\s+(.*)", line)
+              if m:
+                  flush()
+                  items, current = [], clean(m.group(1))
+                  continue
+              m = re.match(r"^[*-]\s+(.*)", line)
+              cleaned = clean(m.group(1) if m else line)
+              if cleaned:
+                  items.append(cleaned)
+
+          flush()
+          print("\n".join(sections))
+          PY
+          )
+          if [ -z "$changelog" ]; then
+            echo "::warning::registry changelog: release notes empty after transform for ${node_id}@${version}; skipping"
+            exit 0
+          fi
+          version_id=$(curl -sf "https://api.comfy.org/nodes/${node_id}/versions" | jq -r --arg v "$version" '.[] | select(.version == $v) | .id')
+          if [ -z "$version_id" ] || [ "$version_id" = "null" ]; then
+            echo "::warning::registry changelog: could not resolve UUID for ${node_id}@${version}; Updates section left empty"
+            exit 0
+          fi
+          if jq -n --arg c "$changelog" '{changelog: $c}' | curl -sf -X PUT "https://api.comfy.org/publishers/${publisher_id}/nodes/${node_id}/versions/${version_id}" -H "Authorization: Bearer ${REGISTRY_TOKEN}" -H 'Content-Type: application/json' --data-binary @- > /dev/null; then
+            echo "registry changelog set for ${node_id}@${version} (${version_id})"
+          else
+            echo "::warning::registry changelog PUT failed for ${node_id}@${version}; Updates section left empty"
+          fi
 """
 
 RELEASE_PLEASE_YML = """\
@@ -1396,9 +1477,11 @@ RELEASE_CHECKLIST = """\
 
 - [ ] Land work via conventional commits on feature branches → PRs to `main`.
 - [ ] Merge the release-please PR (it bumps `version` + updates `CHANGELOG.md`).
-- [ ] The version bump on `main` triggers `publish.yml`, which runs
-      `bun install && bun run build` before `publish-node-action` so the built
-      `web/dist/` exists at publish time → Comfy Registry.
+- [ ] Publishing the GitHub release (release-please does this on merge)
+      triggers `publish.yml`, which runs `bun install && bun run build` before
+      `publish-node-action` so the built `web/dist/` exists at publish time →
+      Comfy Registry. A follow-up step sets the registry version changelog
+      ("Updates" section) from the release notes.
 - [ ] Verify the new version appears on registry.comfy.org.
 """
 
