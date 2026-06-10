@@ -82,6 +82,15 @@ lint-taskwarrior-tags:
 [group: "lint"]
 lint-all: lint-context-commands lint-compliance lint-health lint-infra lint-taskwarrior-tags
 
+####################
+# Testing
+####################
+
+# Run every skill-local regression test (**/skills/**/scripts/tests/test-*.sh)
+[group: "test"]
+test-skill-scripts:
+    ./scripts/run-skill-script-tests.sh
+
 # Add all MCP servers and set up cclsp
 [group: "claude"]
 claude-setup: mcp-sentry mcp-github mcp-context7 mcp-playwright mcp-sequential-thinking mcp-chrome-devtools cclsp
