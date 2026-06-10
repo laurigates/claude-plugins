@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/laurigates/claude-plugins/compare/macos-plugin-v1.2.0...macos-plugin-v1.2.1) (2026-06-10)
+
+
+### Code Refactoring
+
+* **macos-plugin:** extract macos-incident-postmortem procedure to scripts + regression test ([#1565](https://github.com/laurigates/claude-plugins/issues/1565)) ([25f54f6](https://github.com/laurigates/claude-plugins/commit/25f54f600981bc76ce8cad1de9d5350d79c83633))
+
 ## [1.2.0](https://github.com/laurigates/claude-plugins/compare/macos-plugin-v1.1.2...macos-plugin-v1.2.0) (2026-06-03)
 
 
