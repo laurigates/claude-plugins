@@ -29,6 +29,7 @@ This repository was created by migrating Claude Code plugin configurations from 
 | [0013](0013-project-and-blueprint-plugin-separation.md) | Project and Blueprint Plugin Separation | Accepted | 2026-01 |
 | [0014](0014-reusable-workflows-in-repository.md) | Reusable GitHub Workflows in Plugin Repository | Superseded | 2026-01 |
 | [0015](0015-agent-teams-adoption.md) | Adopt Agent Teams and Deprecate Manual Orchestration | Accepted | 2026-02 |
+| [0016](0016-deterministic-script-extraction-for-token-efficiency.md) | Extract Deterministic Skill Procedure into Structured-Output Scripts | Accepted | 2026-06 |
 
 ## Categories
 
@@ -58,6 +59,9 @@ This repository was created by migrating Claude Code plugin configurations from 
 
 ### Architecture Evolution
 - ADR-0015: Adopt Agent Teams and Deprecate Manual Orchestration
+
+### Performance & Optimization
+- ADR-0016: Extract Deterministic Skill Procedure into Structured-Output Scripts
 
 ## ADR Format
 
