@@ -1,0 +1,38 @@
+name: "Test: Skill scripts"
+
+# Runs the skill-local regression tests that ship next to a skill's extracted
+# scripts (**/skills/**/scripts/tests/test-*.sh). Mirrors the per-path-trigger
+# shape of plugin-enablement-drift.yml so it fires only when skill scripts (or
+# the runner itself) change — independent of plugin-pr-checks.yml, which gates
+# the SKILL.md / compliance surface.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '**/skills/**/scripts/**'
+      - 'scripts/run-skill-script-tests.sh'
+      - 'justfile'
+      - '.github/workflows/test-skill-scripts.yml'
+  push:
+    branches: [main]
+    paths:
+      - '**/skills/**/scripts/**'
+      - 'scripts/run-skill-script-tests.sh'
+
+concurrency:
+  group: test-skill-scripts-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Run skill-local regression tests
+        run: bash scripts/run-skill-script-tests.sh

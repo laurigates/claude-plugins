@@ -262,7 +262,7 @@
       "name": "feedback-plugin",
       "source": "./feedback-plugin",
       "description": "Session feedback analysis - capture skill bugs as GitHub issues and learn from weekly friction across sessions",
-      "version": "1.6.8",
+      "version": "1.7.0",
       "keywords": [
         "feedback",
         "session-analysis",
@@ -493,7 +493,7 @@
       "name": "project-plugin",
       "source": "./project-plugin",
       "description": "Project initialization, management, and maintenance - setup, changelog review, and continuous development workflows",
-      "version": "1.17.0",
+      "version": "1.18.0",
       "keywords": [
         "project",
         "initialization",
@@ -566,6 +566,23 @@
         "memory-safety"
       ],
       "category": "language"
+    },
+    {
+      "name": "session-plugin",
+      "source": "./session-plugin",
+      "description": "Session bookends - spinup briefing, wrap-up capture, end-of-session orchestration, and knowledge distillation",
+      "version": "1.1.0",
+      "keywords": [
+        "session",
+        "spinup",
+        "wrap",
+        "taskwarrior",
+        "journal",
+        "distill",
+        "knowledge-capture",
+        "orchestrator"
+      ],
+      "category": "development"
     },
     {
       "name": "taskwarrior-plugin",

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.0](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.17.0...project-plugin-v1.18.0) (2026-06-10)
+
+
+### Features
+
+* **session-plugin:** add session bookends plugin with end-of-session orchestrator ([#1561](https://github.com/laurigates/claude-plugins/issues/1561)) ([03e10f9](https://github.com/laurigates/claude-plugins/commit/03e10f9c081a0cff6dae306b47d9d514da3e3265))
+
 ## [1.17.0](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.16.2...project-plugin-v1.17.0) (2026-06-08)
 
 
