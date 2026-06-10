@@ -573,6 +573,56 @@ conditionality**, not invisibility:
 
 ---
 
+## Stop-Hook Nudges: Transcript Parsing and Confirmation Races
+
+Stop hooks that read the transcript to decide whether to nudge (offer a
+skill, remind about a wrap-up) have two failure modes observed live on
+2026-06-10, when a distill nudge fired mid-`/session-wrap` and split the
+skill's pending confirmation into a two-part question.
+
+### `"role":"user"` lines are not user prompts
+
+In the transcript JSONL, three very different things carry
+`"role":"user"`:
+
+| Line shape | Actually is | Identify by |
+|---|---|---|
+| Plain content string | A genuine user prompt | Neither marker below |
+| Content array with `tool_use_id` | A **tool result** (harness-generated) | `"tool_use_id"` |
+| Content containing `<command-name>` | A **slash-command expansion** — the skill's own markdown | `command-name>` |
+
+Any gate on "the user said X" or "N user turns" must filter the latter
+two first, or the hook will trigger on skill prose (a wind-down regex
+matching "Wrap up a working session…" in an expansion) and tool-heavy
+sessions will trivially pass turn floors:
+
+```bash
+user_lines=$(grep '"role":"user"' "$transcript" 2>/dev/null \
+    | grep -v '"tool_use_id"' \
+    | grep -v 'command-name>' || true)
+```
+
+### Stop fires while a typed confirmation is pending
+
+`Stop` fires when the agent **ends its turn** — including ending it to
+wait for a typed reply. A skill that asks a freeform "Apply? (y/n)" has
+ended its turn, so every Stop hook runs *between the question and the
+answer*; a `decision: block` nudge then forces an extra agent turn that
+must re-stitch the pending question. Two defences, use both:
+
+1. **Hook side** — skip when the skill the nudge feeds (or any wrap-up
+   flow) is already in the transcript, via the `<command-name>` tag or
+   the Skill tool's `"skill":"…"` input.
+2. **Skill side** — gate confirmations with `AskUserQuestion`, which
+   keeps the turn open: no Stop event, no race (see
+   `skill-execution-structure.md` § Confirmation gates).
+
+Canonical implementation with regression tests:
+`session-plugin/hooks/session-end-nudge.sh` +
+`session-plugin/hooks/test-session-end-nudge.sh`.
+
+---
+
 ## PermissionRequest Hook Pattern
 
 `PermissionRequest` hooks fire when Claude requests permission for an operation (e.g., in default permission mode). They allow automated approval/denial without user interaction.
