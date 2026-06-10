@@ -32,6 +32,8 @@
     "documentation-derivation",
     "git-log-analysis",
     "version-control",
+    "stale-branches",
+    "deadbranch",
     "merge-conflicts",
     "conflict-resolution",
     "api-pr",
