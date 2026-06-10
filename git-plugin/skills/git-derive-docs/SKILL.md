@@ -1,8 +1,8 @@
 ---
 created: 2026-01-24
-modified: 2026-05-09
-reviewed: 2026-04-25
-allowed-tools: Bash(git log *), Bash(git shortlog *), Bash(git diff *), Bash(git branch *),
+modified: 2026-06-10
+reviewed: 2026-06-10
+allowed-tools: Bash(bash *), Bash(git log *), Bash(git shortlog *), Bash(git diff *), Bash(git branch *),
                Bash(git show *), Bash(git rev-list *), Bash(git diff-tree *),
                Bash(git status *), Read, Grep, Glob, Edit, Write, TodoWrite
 args: "[--rules] [--prd] [--adr] [--prp] [--all] [--since=<date>] [--depth=<N>]"
@@ -46,35 +46,31 @@ name: git-derive-docs
 
 Analyze git commit history to identify documentation gaps.
 
-### Step 1: Determine Scope
+### Step 1: Determine Scope and gather history signals
 
 Parse flags to determine which categories to analyze. Default to `--all` if no category flags provided.
 
-Set analysis depth:
+Run the data-gathering script once. It aggregates file-naming patterns
+(top directories + added-file extensions), tallies commit-convention frequency
+(`CONV_<type>=<count>`), and detects dependency/migration signals
+(`DEP_MANIFEST_COMMITS`, `MIGRATION_COMMITS`, `REFACTOR_COMMITS`), plus existing
+doc coverage (`DOCS_*`):
+
 ```bash
-# Use --since if provided, otherwise --depth (default 200)
-git log --format='%H %s' --since="$SINCE" 2>/dev/null || git log --format='%H %s' -$DEPTH
+bash "${CLAUDE_SKILL_DIR}/scripts/git-derive-docs.sh" --home-dir "$HOME" --project-dir "$(pwd)" --depth "$DEPTH" --since "$SINCE"
 ```
+
+Parse `STATUS=` and `ISSUES:` from the output. Pass `--since` (precedence) or
+`--depth` (default 200). The structured rollup replaces the raw `git log`
+pipes the rest of this skill used to run inline.
 
 ### Step 2: Rules Detection (if --rules or --all)
 
-Analyze commit patterns for implicit conventions:
-
-```bash
-# File naming patterns
-git log --diff-filter=A --name-only --format='' -$DEPTH | sort | uniq -c | sort -rn | head -20
-
-# Commit message conventions
-git log --format='%s' -$DEPTH | grep -oP '^\w+(\([^)]+\))?' | sort | uniq -c | sort -rn
-
-# Tool/config patterns
-git log --oneline -$DEPTH -- '*.config.*' 'tsconfig*' 'biome.json' '.eslintrc*' 'pyproject.toml' 'Cargo.toml'
-
-# Test file conventions
-git log --diff-filter=A --name-only --format='' -$DEPTH -- '*.test.*' '*.spec.*' '*_test.*' | head -20
-```
-
-Cross-reference with existing `.claude/rules/` to avoid duplicates.
+The script already aggregated the convention signals: read the `CONV_<type>`
+frequency tally (commit-message conventions), the `DIR_<n>=<path>` /
+`EXT_<name>=<count>` entries (file-naming patterns), and `DOCS_*` (existing
+coverage). Cross-reference with existing `.claude/rules/` to avoid duplicates —
+the script reports current rule-file counts under `DOCS__CLAUDE_RULES`.
 
 ### Step 3: PRD Detection (if --prd or --all)
 
@@ -95,23 +91,21 @@ Cross-reference with existing `docs/prds/` to avoid duplicates.
 
 ### Step 4: ADR Detection (if --adr or --all)
 
-Find architecture decisions without documentation:
+Find architecture decisions without documentation. The script already detected
+the deterministic dependency/migration signals — read `DEP_MANIFEST_COMMITS`
+(commits touching dependency manifests), `MIGRATION_COMMITS` (migrate/switch/
+replace/upgrade language), and `REFACTOR_COMMITS` (restructure/reorganize/
+redesign language) from Step 1's output. For the specific commit subjects behind
+a non-zero count, drill in with a targeted log:
 
 ```bash
-# Dependency changes
-git log --oneline -$DEPTH -- 'package.json' 'Cargo.toml' 'pyproject.toml' 'go.mod'
-
-# Migration/replacement commits
-git log --format='%H %s' -$DEPTH | grep -iE 'migrate|switch|replace|upgrade|from .+ to'
-
-# Infrastructure changes
+# Infrastructure-change commits (for context behind the signal counts)
 git log --oneline -$DEPTH -- 'docker*' 'Dockerfile*' '.github/workflows/*' 'terraform/*' 'k8s/*'
-
-# Refactors indicating architectural shifts
-git log --format='%H %s' -$DEPTH | grep -iE 'refactor.*to|restructure|reorganize|redesign'
 ```
 
-Cross-reference with existing `docs/adrs/` to avoid duplicates.
+Cross-reference with existing `docs/adrs/` (the script reports the count under
+`DOCS__DOCS_ADRS`) to avoid duplicates. Judging whether a flagged commit
+represents a real architectural decision worth an ADR stays with you.
 
 ### Step 5: PRP Detection (if --prp or --all)
 

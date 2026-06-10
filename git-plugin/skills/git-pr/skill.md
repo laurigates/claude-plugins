@@ -1,11 +1,11 @@
 ---
 created: 2026-01-21
-modified: 2026-05-30
-reviewed: 2026-04-29
+modified: 2026-06-10
+reviewed: 2026-06-10
 name: git-pr
-description: Create pull requests with descriptions, labels, and issue references. Use when user says "create PR", "open pull request", or "submit for review". Creates PRs from pushed branches — see git-commit for commits and git-push for pushing.
+description: Create pull requests with descriptions, labels, and issue references. Use when user says "create PR", "open pull request", or "submit for review". From pushed branches.
 user-invocable: false
-allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git remote *), Bash(git push *), Bash(git fetch *), Bash(git rev-list *), Bash(gh pr *), Bash(gh issue *), Bash(gh repo *), Read, Grep, Glob, TodoWrite
+allowed-tools: Bash(bash *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git remote *), Bash(git push *), Bash(git fetch *), Bash(git rev-list *), Bash(gh pr *), Bash(gh issue *), Bash(gh repo *), Read, Grep, Glob, TodoWrite
 ---
 
 # Git PR
@@ -93,23 +93,19 @@ Related: #124, #125     <!-- Links without closing -->
 
 ### 1. Assess PR Readiness
 
+Run the data-gathering script. It fetches the base ref, computes the ahead-count
+against `origin/main`, probes for an existing PR (via the `state` field — never
+`merged`), scans for stacked dependents, and audits closing keywords:
+
 ```bash
-# Check current branch
-git branch --show-current
-
-# Fetch latest remote state for accurate comparison
-git fetch origin main
-
-# Check commits ahead of origin/main (always compare against remote)
-ahead=$(git rev-list --count origin/main..HEAD 2>/dev/null || echo "0")
-if [ "$ahead" = "0" ]; then
-  echo "No commits ahead of origin/main - nothing to create PR for"
-  exit 1
-fi
-
-# Check for existing PR
-gh pr view --json number,state 2>/dev/null || echo "no existing PR"
+bash "${CLAUDE_SKILL_DIR}/scripts/git-pr.sh" --home-dir "$HOME" --project-dir "$(pwd)" --base origin/main
 ```
+
+Parse `STATUS=` and `ISSUES:` from the output. Read `PR_READY` (false when
+`AHEAD_COUNT=0` — nothing to PR), `EXISTING_PR` (a number means `gh pr view` /
+`gh pr edit` instead of creating), `CURRENT_BRANCH`, `STACK_PARENT` /
+`DEPENDENT_PR=<n>` (see Stacked PRs below), and `BODY_NOT_AUTOCLOSING` (see
+Step 5). Authoring the PR body remains your job.
 
 ### 2. Analyze Commits
 
@@ -196,21 +192,20 @@ Related: #456
 
 ### 5. Verify Closing Keywords
 
-After the PR is created, fetch the body back and confirm every issue
-referenced by number has a matching `Fixes` / `Closes` / `Resolves`
-keyword. Issues mentioned only in a markdown table or prose will not
-auto-close on merge.
+After the PR is created, audit the body: every issue referenced by number must
+have a matching `Fixes` / `Closes` / `Resolves` keyword. Issues mentioned only
+in a markdown table or prose will not auto-close on merge.
+
+Re-run the data-gathering script against the just-created PR's body (write it to
+a tempfile first, or pass the fetched body) — it emits `BODY_REFERENCED`,
+`BODY_CLOSING`, and `BODY_NOT_AUTOCLOSING`:
 
 ```bash
-PR_NUM=$(gh pr view --json number --jq .number)
-pr_body=$(gh pr view "$PR_NUM" --json body --jq .body)
-referenced=$(echo "$pr_body" | grep -oE '#[0-9]+' | sort -u)
-closing=$(echo "$pr_body" | grep -oiE '(closes|fixes|resolves)[[:space:]]+#[0-9]+' | grep -oE '#[0-9]+' | sort -u)
-missing=$(comm -23 <(echo "$referenced") <(echo "$closing"))
-[ -n "$missing" ] && echo "WARN: referenced but not auto-closing: $missing"
+gh pr view --json body --jq .body > /tmp/pr-body-check.md
+bash "${CLAUDE_SKILL_DIR}/scripts/git-pr.sh" --home-dir "$HOME" --project-dir "$(pwd)" --body-file /tmp/pr-body-check.md
 ```
 
-If `missing` is non-empty, edit the PR body with `gh pr edit <num> --body-file ...`
+If `BODY_NOT_AUTOCLOSING` is non-empty, edit the PR body with `gh pr edit <num> --body-file ...`
 to add `Fixes #N` / `Closes #N` lines for any issue this PR is meant to close.
 `Related: #N` is correct for issues the PR references but does not close —
 those should not appear in the warning if you re-run the check.
@@ -259,16 +254,14 @@ the head branch — safe for leaf PRs, destructive for stack parents.
 
 ### Pre-merge check
 
-Before merging, query for any open PR that targets the current branch as
-its base:
+The data-gathering script (Step 1) already scanned for open PRs targeting the
+current branch as their base — read `STACK_PARENT` and the `DEPENDENT_PR=<n>
+HEAD=<branch>` lines from its output. If `STACK_PARENT=true`, this PR is the
+parent of a stack. To re-probe on demand:
 
 ```bash
-HEAD_BRANCH=$(gh pr view --json headRefName --jq .headRefName)
-dependents=$(gh pr list --base "$HEAD_BRANCH" --state open --json number,title,headRefName)
-echo "$dependents" | jq -e 'length > 0' >/dev/null && echo "WARN: $dependents"
+bash "${CLAUDE_SKILL_DIR}/scripts/git-pr.sh" --home-dir "$HOME" --project-dir "$(pwd)" --base origin/main
 ```
-
-If `dependents` is a non-empty array, this PR is the parent of a stack.
 
 ### Merge rules for stacked PRs
 

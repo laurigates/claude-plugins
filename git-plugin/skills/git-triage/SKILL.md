@@ -3,10 +3,10 @@ name: git-triage
 description: "Triage GitHub issues and PRs — cross-link, flag stale items, recommend actions. Use when grooming the backlog, pre-release cleanup, or asked to triage issues/PRs."
 args: "[--type issues|prs|both] [--batch N] [--repo owner/name] [--days-stale-issue N] [--days-stale-pr N] [--auto-close] [--auto-merge] [--oldest-first]"
 argument-hint: "--type both --batch 10 (defaults: days-stale-issue=90, days-stale-pr=30, current repo)"
-allowed-tools: Bash(gh issue *), Bash(gh pr *), Bash(gh api *), Bash(gh repo *), Bash(git log *), Bash(rg *), Read, Grep, Glob, AskUserQuestion, TodoWrite
+allowed-tools: Bash(bash *), Bash(gh issue *), Bash(gh pr *), Bash(gh api *), Bash(gh repo *), Bash(git log *), Bash(rg *), Read, Grep, Glob, AskUserQuestion, TodoWrite
 created: 2026-04-22
-modified: 2026-05-09
-reviewed: 2026-04-22
+modified: 2026-06-10
+reviewed: 2026-06-10
 ---
 
 # /git:triage
@@ -51,20 +51,23 @@ Writes are **disabled by default**. `--auto-close` and `--auto-merge` still requ
 
 Execute this triage workflow:
 
-### Step 1: Resolve target repo and fetch batches
+### Step 1: Resolve target repo and gather batches
 
-1. If `--repo` was not provided, parse `owner/name` from the git remote URL (context).
-2. Fetch issues (unless `--type prs`):
-   ```bash
-   gh issue list --repo $REPO --state open --limit $BATCH \
-     --json number,title,body,labels,createdAt,updatedAt,comments,assignees,author
-   ```
-3. Fetch PRs (unless `--type issues`):
-   ```bash
-   gh pr list --repo $REPO --state open --limit $BATCH \
-     --json number,title,createdAt,updatedAt,mergeable,mergeStateStatus,reviewDecision,statusCheckRollup,isDraft,baseRefName,headRefName,author,labels,body
-   ```
-4. Sort each set by `updatedAt` ascending if `--oldest-first` (default). Build a TodoWrite list with one entry per item.
+Run the data-gathering script. It fetches issue/PR batches, computes age in days
+per item, categorizes each PR via the pure first-match table (over `isDraft`,
+`mergeable`, `mergeStateStatus`, `reviewDecision`, and `statusCheckRollup[].conclusion`),
+flags stale-candidate issues, and extracts each PR's closing keywords:
+
+```bash
+bash "${CLAUDE_SKILL_DIR}/scripts/git-triage.sh" --home-dir "$HOME" --project-dir "$(pwd)" --type "$TYPE" --batch "$BATCH" --days-stale-issue "$STALE_ISSUE" --days-stale-pr "$STALE_PR"
+```
+
+Parse `STATUS=` and `ISSUES:` from the output. Per item it emits
+`ISSUE_<n>_AGE_DAYS` / `ISSUE_<n>_REFS` / `ISSUE_<n>_STALE_CANDIDATE` and
+`PR_<n>_CATEGORY` / `PR_<n>_AGE_DAYS` / `PR_<n>_CLOSES` (plus the underlying
+enum fields). If `--repo` was provided, pass it through; the script reads the
+current repo from `origin` otherwise. Sort each set by age (oldest first if
+`--oldest-first`) and build a TodoWrite list with one entry per item.
 
 ### Step 2: Investigate each issue (skip if `--type prs`)
 
@@ -89,47 +92,36 @@ For each open issue in parallel (batch reads), gather evidence:
 
 Record the winning PR number (if any) with each `implemented` entry.
 
-### Step 4: Evaluate each PR (skip if `--type issues`)
+### Step 4: Read each PR's category (skip if `--type issues`)
 
-For each open PR, read the already-fetched JSON fields. If `statusCheckRollup` is empty or looks stale, optionally re-fetch:
-```bash
-gh pr checks <n> --repo $REPO --json name,state,conclusion,bucket
-```
-
-Decision inputs:
-- `isDraft` — draft PRs never qualify as `ready-to-merge`
-- `mergeable` — `MERGEABLE` / `CONFLICTING` / `UNKNOWN`
-- `mergeStateStatus` — `CLEAN` / `BEHIND` / `DIRTY` / `BLOCKED` / `HAS_HOOKS` / `UNSTABLE` / `UNKNOWN`
-- `reviewDecision` — `APPROVED` / `CHANGES_REQUESTED` / `REVIEW_REQUIRED` / null
-- `statusCheckRollup[].conclusion` — `SUCCESS` / `FAILURE` / `CANCELLED` / null
-- Age from `updatedAt`
-
-If `mergeStateStatus` is `UNKNOWN` and `mergeable` is `UNKNOWN`, trigger a fresh view:
-```bash
-gh pr view <n> --repo $REPO --json mergeable,mergeStateStatus
-```
-
-### Step 5: Categorize each PR
-
-Apply the first matching rule (top to bottom):
+The script already categorized every PR in Step 1 — read `PR_<n>_CATEGORY`
+straight from its output. The category is a **pure first-match** over the enum
+fields (the script owns this deterministic table, top to bottom):
 
 | Category | Criteria |
 |----------|----------|
 | `draft` | `isDraft` is true |
 | `needs-fix` | Any check in `statusCheckRollup` has `conclusion: FAILURE` |
 | `needs-rebase` | `mergeStateStatus` in `BEHIND`, `DIRTY`; OR `mergeable` is `CONFLICTING` |
-| `awaiting-review` | `reviewDecision` is `REVIEW_REQUIRED` or null AND checks are SUCCESS/none |
 | `changes-requested` | `reviewDecision` is `CHANGES_REQUESTED` |
-| `ready-to-merge` | `mergeable: MERGEABLE` AND `mergeStateStatus: CLEAN` (or `HAS_HOOKS`/`UNSTABLE` with all checks green) AND `reviewDecision: APPROVED` AND not draft |
+| `ready-to-merge` | `mergeable: MERGEABLE` AND `mergeStateStatus` in `CLEAN`/`HAS_HOOKS`/`UNSTABLE` AND `reviewDecision: APPROVED` AND not draft |
+| `awaiting-review` | `reviewDecision` is `REVIEW_REQUIRED` or null AND no failing check |
 | `stale` | `age > --days-stale-pr` AND none of the above trigger |
 
-### Step 6: Cross-link issues and PRs
+If a PR comes back as `uncategorized` (e.g. `mergeStateStatus`/`mergeable`
+both `UNKNOWN`), trigger a fresh view and re-run the script, or inspect:
+```bash
+gh pr view <n> --repo $REPO --json mergeable,mergeStateStatus
+```
 
-- For each `implemented` issue, attach the merged PR number.
-- For each `ready-to-merge` PR, extract closing keywords from body (`closes #N`, `fixes #N`, `resolves #N`) and attach those issue numbers.
+### Step 5: Cross-link issues and PRs
+
+- For each `implemented` issue (from Step 3's judgment), attach the merged PR number.
+- For each `ready-to-merge` PR, read the closing keywords the script extracted
+  in `PR_<n>_CLOSES` and attach those issue numbers.
 - For each `needs-fix` / `needs-rebase` / `changes-requested` PR, note the referenced issues so the report can suggest which issues remain blocked.
 
-### Step 7: Present the prioritized queue
+### Step 6: Present the prioritized queue
 
 Ordering: quick wins first. Use AskUserQuestion only when the user will need to pick what to act on next.
 
@@ -153,7 +145,7 @@ Print a status table (one row per item) grouped by category:
 | 103 | 45d | refactor(ui) | stale | — |
 ```
 
-### Step 8: Optional writes (guarded)
+### Step 7: Optional writes (guarded)
 
 If `--auto-close` was set and any issue is `implemented` or `stale`, ask before acting:
 
@@ -181,7 +173,7 @@ gh pr merge <n> --repo $REPO --squash --auto
 ```
 (`--squash` is the repo default for this project; for other repos, read `gh repo view --json squashMergeAllowed,mergeCommitAllowed,rebaseMergeAllowed` and pick the first allowed strategy.)
 
-### Step 9: Synthesize the backlog report
+### Step 8: Synthesize the backlog report
 
 After per-item actions, emit a structured summary:
 

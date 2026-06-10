@@ -1,15 +1,33 @@
 ---
 created: 2026-03-02
-modified: 2026-05-09
-reviewed: 2026-03-02
+modified: 2026-06-10
+reviewed: 2026-06-10
 name: git-fork-workflow
 description: "Fork management and upstream sync. Use when working with forks, syncing with upstream, detecting divergence, or preparing commits for contribution."
-allowed-tools: Bash(git remote *), Bash(git fetch *), Bash(git log *), Bash(git status *), Bash(git diff *), Bash(git rev-list *), Bash(gh repo *), Read, Grep, Glob
+allowed-tools: Bash(bash *), Bash(git remote *), Bash(git fetch *), Bash(git log *), Bash(git status *), Bash(git diff *), Bash(git rev-list *), Bash(gh repo *), Read, Grep, Glob
 ---
 
 # Git Fork Workflow
 
 Expert guidance for managing forked repositories, synchronizing with upstream, and contributing back cleanly.
+
+## Data-Gathering Script
+
+Run this first to detect the upstream remote, compute ahead/behind via
+`git rev-list`, and get a **recommended** sync strategy (a pure function — it
+runs no mutations):
+
+```bash
+bash "${CLAUDE_SKILL_DIR}/scripts/git-fork-workflow.sh" --home-dir "$HOME" --project-dir "$(pwd)"
+```
+
+Parse `STATUS=` and `ISSUES:` from the output. It emits `IS_FORK`,
+`UPSTREAM` / `ORIGIN`, `BEHIND` / `AHEAD` (from
+`git rev-list --left-right --count upstream/main...origin/main`), and
+`RECOMMENDED_STRATEGY` (one of `in-sync`, `fast-forward`, `ahead-only`,
+`rebase`, `not-a-fork`). The strategy is a recommendation only — **executing
+any destructive sync (reset, rebase, force-push) stays your call**, per the
+strategy prose below.
 
 ## When to Use This Skill
 
@@ -62,24 +80,22 @@ When you squash-merge branches into your fork's main, the commit SHAs differ fro
 
 ### Detecting Divergence
 
+The data-gathering script (above) fetches both remotes and computes the
+ahead/behind counts — read `BEHIND` and `AHEAD` from its output. To view the
+specific divergent commits behind those counts:
+
 ```bash
-# Fetch latest from both remotes
-git fetch origin
-git fetch upstream
-
-# Count ahead/behind
-git rev-list --left-right --count upstream/main...origin/main
-
 # Show divergent commits
 git log --oneline upstream/main..origin/main   # Commits on fork not on upstream
 git log --oneline origin/main..upstream/main   # Commits on upstream not on fork
 ```
 
-### Reading the Output
+### Reading the Counts
 
-`git rev-list --left-right --count upstream/main...origin/main` returns two numbers:
+The script's `BEHIND` / `AHEAD` come from
+`git rev-list --left-right --count upstream/main...origin/main`:
 
-| Output | Meaning |
+| `BEHIND` `AHEAD` | Meaning |
 |--------|---------|
 | `0  0` | Perfectly in sync |
 | `5  0` | Fork is 5 behind upstream (upstream has 5 new commits) |
@@ -131,13 +147,21 @@ Best when: fork has unique commits on main that should sit on top of upstream's 
 
 ### Strategy Selection
 
-| Situation | Strategy |
-|-----------|----------|
-| Fork main is clean, no unique commits | Fast-forward or `gh repo sync` |
-| Fork main diverged, unique work expendable | Hard reset |
-| Fork main diverged, unique work worth keeping | Rebase |
-| Just want to match upstream exactly | Hard reset |
-| Not sure | Try fast-forward first; it fails safely if diverged |
+The script's `RECOMMENDED_STRATEGY` maps the `BEHIND`/`AHEAD` counts to a
+strategy keyword via a pure function; use it as the starting point and confirm
+against this table before running any destructive command:
+
+| `RECOMMENDED_STRATEGY` | Situation | Strategy |
+|---|-----------|----------|
+| `in-sync` | 0 behind, 0 ahead | Nothing to do |
+| `fast-forward` | Behind only, fork main clean | Fast-forward or `gh repo sync` |
+| `ahead-only` | Ahead only, nothing to pull | No sync needed; fork leads upstream |
+| `rebase` | Diverged, unique work worth keeping | Rebase (Strategy 4) |
+| _(diverged, work expendable)_ | Unique work expendable / match upstream exactly | Hard reset (Strategy 3) |
+| _(unsure)_ | Not sure | Try fast-forward first; it fails safely if diverged |
+
+The recommendation never executes a sync — picking and running Strategy 3
+(hard reset) or 4 (rebase + force-push) stays your decision.
 
 ## Golden Rule for Upstream PRs
 
