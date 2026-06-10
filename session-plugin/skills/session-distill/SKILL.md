@@ -1,15 +1,15 @@
 ---
-name: project-distill
+name: session-distill
 description: "Distill session insights into rules, skill improvements, and justfile recipes. Use when capturing learnings, extracting reusable patterns, or codifying workflow into .claude/rules."
 allowed-tools: Bash(git diff *), Bash(git log *), Bash(git status *), Bash(just *), Read, Grep, Glob, Edit, Write, AskUserQuestion, TodoWrite
 argument-hint: "--rules | --skills | --recipes | --all | --dry-run"
 args: "[--rules] [--skills] [--recipes] [--all] [--dry-run]"
 created: 2026-02-11
-modified: 2026-05-22
+modified: 2026-06-10
 reviewed: 2026-02-26
 ---
 
-# /project:distill
+# session-distill
 
 Distill session insights into reusable project knowledge.
 
@@ -17,13 +17,15 @@ Distill session insights into reusable project knowledge.
 
 | Use this skill when... | Use alternative when... |
 |------------------------|------------------------|
-| End of session, want to capture learnings | Need to write a blog post -> `/blog:post` |
+| End of session, want to capture learnings | Full end-of-session pass (wrap + distill + feedback) -> `session-plugin:session-end` |
+| Discovered a project pattern worth codifying | Capturing loose threads to taskwarrior -> `session-plugin:session-wrap` |
+| Want learnings as rules/recipes in *this* repo | Need to write a blog post -> `/blog:post` |
 | Discovered a pattern worth reusing | Need to analyze git history for docs gaps -> `/git:log-documentation` |
 | Found a CLI workflow worth saving as a recipe | Need to configure a justfile from scratch -> `/configure:justfile` |
 | Want to update rules based on session experience | Need to check project infrastructure -> `/configure:status` |
 | Asked to "codify the workflow" or "analyze and promote session patterns to rules" | Need a one-off implementation, not a reusable rule -> implement directly |
 
-May also be auto-suggested at end-of-session when the cwd repo has `.claude/rules/` or a justfile and you signal wind-down — a Stop hook (`hooks/project-distill-nudge.sh`) injects a one-time offer to run `/project:distill --dry-run`.
+May also be reached via the end-of-session flow: the plugin's Stop hook (`hooks/session-end-nudge.sh`) offers `session-plugin:session-end` once per session on user wind-down, and the orchestrator runs this skill when a durable learning qualifies.
 
 ## Core Principle: Update Over Add
 

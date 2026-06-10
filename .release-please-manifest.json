@@ -39,5 +39,6 @@
   "testing-plugin": "3.14.0",
   "tools-plugin": "2.8.4",
   "typescript-plugin": "1.8.6",
-  "workflow-orchestration-plugin": "1.5.4"
+  "workflow-orchestration-plugin": "1.5.4",
+  "session-plugin": "1.0.0"
 }

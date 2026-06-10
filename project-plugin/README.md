@@ -107,27 +107,6 @@ See `skills/project-discovery/` for:
 - `discovery-commands.md` - Command reference
 - `examples.md` - Example discovery outputs
 
-### `/project:distill`
-Distill session insights into reusable knowledge: rules, skills, and justfile recipes.
-
-**Features:**
-- Reviews session git activity to identify learnings worth capturing
-- Proposes updates to Claude rules, skill improvements, and justfile recipes
-- Prioritizes updating existing artifacts over creating new ones
-- Checks for redundancy before proposing additions
-- Supports `--dry-run` to preview proposals without applying
-
-**Usage:**
-```bash
-/project:distill                # Analyze all categories
-/project:distill --recipes      # Justfile recipes only
-/project:distill --rules        # Claude rules only
-/project:distill --skills       # Skill improvements only
-/project:distill --dry-run      # Preview without changes
-```
-
-**Auto-nudge:** A `Stop` hook (`hooks/project-distill-nudge.sh`) suggests `/project:distill --dry-run` at most once per session, only when (a) the session has ≥8 user turns, (b) the cwd's repo has either a `.claude/rules/` directory or a `justfile`, and (c) a recent user turn carries a wind-down phrase (`wrap up`, `done for today`, `gotta go`, etc.). The nudge is an offer only — the agent never runs `/project:distill` without explicit confirmation. To pre-silence it for a session, `touch ~/.cache/claude-project-distill-nudge/<session_id>` (the hook treats an existing marker as "already nudged"). To turn the hook off entirely, disable the plugin via `/plugin`.
-
 ### `/project:refocus`
 Refresh the plan to focus on the task at hand when context has grown.
 

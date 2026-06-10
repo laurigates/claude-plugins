@@ -97,7 +97,7 @@ This integrates with the project's conventional commit workflow.
 3. Review categorized findings
 4. Select which to file as issues
 5. Issues are created with appropriate labels and body
-6. Use `/project:distill` to actually update the skills based on filed issues
+6. Use `session-plugin:session-distill` to actually update the skills based on filed issues
 
 ## Known Limitations
 

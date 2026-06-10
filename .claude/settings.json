@@ -105,7 +105,8 @@
     "testing-plugin@laurigates-claude-plugins": true,
     "tools-plugin@laurigates-claude-plugins": true,
     "typescript-plugin@laurigates-claude-plugins": true,
-    "workflow-orchestration-plugin@laurigates-claude-plugins": true
+    "workflow-orchestration-plugin@laurigates-claude-plugins": true,
+    "session-plugin@laurigates-claude-plugins": true
   },
   "extraKnownMarketplaces": {
     "laurigates-claude-plugins": {

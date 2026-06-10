@@ -16,24 +16,8 @@
     "workflow",
     "changelog",
     "maintenance",
-    "distill",
-    "insights",
-    "knowledge-capture",
     "refocus",
     "replan",
     "context-management"
-  ],
-  "hooks": {
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/project-distill-nudge.sh",
-            "timeout": 10
-          }
-        ]
-      }
-    ]
-  }
+  ]
 }
