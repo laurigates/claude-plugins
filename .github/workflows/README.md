@@ -23,6 +23,7 @@ When adding a workflow, pick the existing domain that fits or extend the table b
 | `Release:` | release-please ecosystem — version bumps, changelog, release-PR doc audit, conflict repair |
 | `PR:` | Cross-cutting PR governance — conflict resolution, conventional-commit enforcement |
 | `Auto-fix:` | Autonomous CI failure remediation triggered by `workflow_run` |
+| `Test:` | Repo test suites — skill-local regression tests |
 | _(none)_ | One-off standalones with no obvious domain peer (e.g. `Renovate`) |
 
 ### Sorted name list
@@ -45,6 +46,7 @@ Release: Fix release-please conflicts
 Release: PR documentation audit
 Release: release-please
 Renovate
+Test: Skill scripts
 ```
 
 ## Cross-workflow references
