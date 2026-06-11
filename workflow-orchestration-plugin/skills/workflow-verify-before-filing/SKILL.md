@@ -1,6 +1,6 @@
 ---
 name: workflow-verify-before-filing
-description: Verify accumulated bug claims against upstream HEAD and dedup against trackers before filing issues - verify, draft, cold-read, paced filing, bookkeeping. Use when filing upstream reports from backlogs, audit docs, or git-history findings.
+description: Verify accumulated bug claims at upstream HEAD and dedup against trackers before filing issues. Use when filing upstream reports from backlogs, audit docs, or git-history findings.
 allowed-tools: Agent, Read, Write, Edit, Bash(glab *), Bash(gh *), TodoWrite
 model: opus
 created: 2026-06-11
