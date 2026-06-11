@@ -117,6 +117,54 @@ assert_exit \
     "pipe into kubectl with --context is allowed" 0 \
     '{"tool_name":"Bash","tool_input":{"command":"cat manifest.yaml | kubectl --context=staging apply -f -"}}'
 
+# ── Prose-substring false-positive regression tests ────────────────────────
+# Regression (issue #1544): the detection anchor allowed ANY whitespace before
+# the tool name, so a bare mention of "helm"/"kubectl" in prose that leaked past
+# heredoc/quote stripping (e.g. a commit message with an escaped quote) was
+# blocked as if it were a real invocation. Detection now anchors on command
+# position (start, after a separator, or after env/sudo prefixes), so mid-prose
+# mentions are allowed while genuine invocations are still enforced.
+echo ""
+echo "Prose-substring false-positive regression (#1544):"
+
+# helm mentioned mid-sentence in an unquoted command (prose, not an invocation)
+assert_exit \
+    "helm mid-prose after a non-command word is allowed" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"echo please install helm soon"}}'
+
+# kubectl mentioned mid-sentence in an unquoted command
+assert_exit \
+    "kubectl mid-prose after a non-command word is allowed" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"echo run kubectl later to inspect pods"}}'
+
+# Commit message whose escaped quote defeats naive quote-stripping, leaking the
+# word "helm" into the cleaned command — must NOT be treated as an invocation
+assert_exit \
+    "helm in commit message with escaped quote is allowed" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"git commit -m \"rename the \\\"fix\\\" fork to a helm hook name\""}}'
+
+# Same shape for kubectl
+assert_exit \
+    "kubectl in commit message with escaped quote is allowed" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"git commit -m \"document the \\\"new\\\" kubectl context flow\""}}'
+
+# Protection preserved: sudo/env-prefixed invocations are still real invocations
+assert_exit \
+    "sudo helm install without --kube-context is still blocked" 2 \
+    '{"tool_name":"Bash","tool_input":{"command":"sudo helm install myapp ./chart"}}'
+
+assert_exit \
+    "env-prefixed kubectl without --context is still blocked" 2 \
+    '{"tool_name":"Bash","tool_input":{"command":"KUBECONFIG=/tmp/kc kubectl get pods"}}'
+
+assert_exit \
+    "sudo helm with --kube-context is allowed" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"sudo helm --kube-context=prod install myapp ./chart"}}'
+
+assert_exit \
+    "env-prefixed kubectl with --context is allowed" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"KUBECONFIG=/tmp/kc kubectl --context=prod get pods"}}'
+
 # ── kubectl enforcement tests ────────────────────────────────────────────────
 echo ""
 echo "kubectl enforcement:"
