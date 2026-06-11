@@ -12,7 +12,7 @@ Session feedback analysis — capture per-session skill bugs as GitHub issues, a
 
 | Agent | Description |
 |-------|-------------|
-| `friction-learner` | Parse last week of transcripts, cluster interruptions/hook-blocks/rejections, propose rule/skill/hook fixes, open one PR per target repo |
+| `friction-learner` | Parse last week of transcripts, cluster interruptions/hook-blocks/rejections, propose rule/skill/hook fixes, reproduce-and-verify each fix where safe, open one PR per target repo |
 
 ### Friction learner
 
@@ -37,6 +37,14 @@ python3 feedback-plugin/scripts/friction_open_prs.py \
 ```
 
 Signatures currently recognized: `plan:entered-plan-mode`, `push:branch-has-open-pr`, `hook:pr-metadata`, `hook:branch-protection`, `hook:conventional-commit`, `hook:gitleaks`, `hook:pre-commit`, `error:<tool>:<class>`, `reject:<tool>`, `interrupt:user`.
+
+Before opening a PR, the agent reproduces each actionable failure and runs the
+proposed fix's prescribed substitution where it is safe and read-only (hook
+blocks are safe by construction — the blocked command never executes). Clusters
+that no longer reproduce are downgraded to watch items, and each PR body
+carries a `## Verification` table with one verdict per cluster
+(`REPRODUCED_FIX_VERIFIED` / `REPRODUCED_FIX_UNVERIFIED` / `NOT_REPRODUCED` /
+`NOT_REPRODUCIBLE`).
 
 ## Hooks
 

@@ -4,8 +4,9 @@ description: |
   Analyze a week of Claude Code session transcripts to surface recurring friction
   (interruptions, hook blocks, tool-result errors, user rejections) and propose
   concrete rule, skill, or hook changes. Use when you want to convert lived
-  session pain into durable rules — typically on a weekly cadence. Opens one PR
-  per target repo summarizing evidence and proposed edits.
+  session pain into durable rules — typically on a weekly cadence. Reproduces
+  each failure and verifies the prescribed fix where safe before opening one PR
+  per target repo summarizing evidence, verdicts, and proposed edits.
 model: opus
 color: "#E53E3E"
 tools: Bash(python3 *), Bash(jq *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(gh pr *), Bash(find *), Read, Write, Edit, Glob, Grep, TodoWrite
@@ -13,7 +14,7 @@ context: fork
 maxTurns: 40
 memory: user
 created: 2026-04-16
-modified: 2026-05-07
+modified: 2026-06-11
 reviewed: 2026-04-28
 ---
 
@@ -43,8 +44,8 @@ The harness blocks several common bash idioms — use the dedicated tool instead
 ## Scope
 
 - **Input**: A time window (default: last 7 days) and a list of target rulesync repos
-- **Output**: One PR per repo with a proposed-rules diff and an evidence summary
-- **Steps**: 6-15 (parse → classify → cluster → propose → render → PR)
+- **Output**: One PR per repo with a proposed-rules diff, an evidence summary, and per-cluster verification verdicts
+- **Steps**: 8-20 (parse → classify → cluster → propose → verify → render → PR)
 - **Value**: Converts recurring session pain into durable guardrails without manual log-reading
 
 ## When to Use
@@ -126,13 +127,62 @@ The same gate applies to any new cluster signature whose underlying cause
 cannot be determined from the cluster shape alone — when in doubt, surface
 samples rather than prescribe.
 
-### Step 4: Render proposed diffs per target repo
+### Step 4: Reproduce and verify (actionable clusters only)
+
+Transcript evidence proves the friction *was* live; it does not prove the
+friction is *still* live, nor that the proposed fix works. Before rendering,
+run a reproduce → verify pass per actionable cluster. Skip `classify-required`
+clusters — they carry no prescribed fix to verify.
+
+**Reproduce** — confirm the failure still fires:
+
+| Cluster kind | Reproduction | Safety |
+|---|---|---|
+| Hook block | Re-issue one representative command shape from the evidence | Safe by construction — a PreToolUse exit-2 block means the command never executes |
+| Tool error on a read-only command (e.g. a `gh pr view --json` field error) | Re-run the failing command | Read-only |
+| Tool error on a mutating command, push failures | Skip — rely on transcript evidence | Mark `NOT_REPRODUCIBLE` |
+
+A cluster that no longer reproduces (hook updated mid-week, CLI fixed, rule
+already landed) is **stale**: downgrade it to a watch item rather than
+proposing a fix for a failure that no longer exists.
+
+**Verify the fix** — confirm the proposal's prescribed substitution works:
+
+1. Extract the exact substitution the draft rule prescribes (the corrected
+   flag, the allowed command form, the replacement tool call).
+2. If it is a read-only command (or a hook-checked git form), run it: it must
+   exit 0 and pass the hook. If the substitution *also* fails, the proposal is
+   wrong — fix the proposal before rendering, or downgrade to watch.
+3. If the fix landed as a regression-check script (see
+   `.claude/rules/regression-testing.md`), running that script **is** the
+   verification.
+4. Verify mutating substitutions by inspection only — record `FIX_UNVERIFIED`.
+
+Only run reproductions and verifications whose command shape matches your tool
+allowlist (`python3`, `jq`, `git status/diff/log/branch`, `gh pr`, `find`).
+Anything else is `NOT_REPRODUCIBLE` — never request broader permissions for
+verification.
+
+Record one verdict per cluster:
+
+| Verdict | Meaning | Effect |
+|---|---|---|
+| `REPRODUCED_FIX_VERIFIED` | Failure re-fired; substitution ran clean | Strongest proposal — render as-is |
+| `REPRODUCED_FIX_UNVERIFIED` | Failure re-fired; fix verified by inspection only | Render; note in PR body |
+| `NOT_REPRODUCED` | Failure no longer fires | Downgrade to watch item |
+| `NOT_REPRODUCIBLE` | Unsafe or outside allowlist to re-run | Render on transcript evidence alone |
+
+### Step 5: Render proposed diffs per target repo
 
 Cluster output (`/tmp/clusters.json`) already carries one `path` + `body` per
 actionable cluster, produced by `friction_cluster.py`. Evidence blocks are
 redacted at parse time.
 
-### Step 5: Open one PR per repo
+Append a `## Verification` section to the PR body (`/tmp/pr-body.md`): one row
+per cluster with its signature, verdict, and the reproduction/verification
+command that was run (redacted per the Guardrails).
+
+### Step 6: Open one PR per repo
 
 Delegate to the shipped helper, which clones each target repo, writes the
 proposals, branches, commits, pushes, and opens a draft PR:
@@ -151,20 +201,20 @@ updates the existing PR instead of opening a new one. It also enforces the
 quiet-window guardrail (`--min-total-events`, default 5) and always creates
 drafts — PRs are never auto-merged.
 
-### Step 6: Report summary to main session
+### Step 7: Report summary to main session
 
-Print a table: cluster → count → deliverable → PR URL.
+Print a table: cluster → count → verdict → deliverable → PR URL.
 
 ## Output Format
 
 ```
 ## Friction Report: 2026-W15 (last 7 days)
 
-| Cluster | Count | Deliverable | PR |
-|---|---|---|---|
-| plan-mode-on-qa | 5 | rule edit | #123 |
-| push-to-branch-with-open-pr | 4 | hook + rule | #124 |
-| gh-api-in-context | 3 | skill patch | #125 |
+| Cluster | Count | Verdict | Deliverable | PR |
+|---|---|---|---|---|
+| plan-mode-on-qa | 5 | classify-required | needs human classification | #123 |
+| push-to-branch-with-open-pr | 4 | NOT_REPRODUCIBLE | hook + rule | #124 |
+| gh-api-in-context | 3 | REPRODUCED_FIX_VERIFIED | skill patch | #125 |
 
 Sessions analyzed: 14
 Friction events: 42
@@ -174,6 +224,7 @@ Clusters found: 7 (3 actionable)
 ## Guardrails
 
 - **Never auto-merge**. The agent only opens the PR; a human reviews evidence.
+- **Verification is read-only**. Never execute a mutating command to reproduce or verify a fix; hook-block reproductions rely on the hook's exit-2 preventing execution. Stay within the tool allowlist — outside it, record `NOT_REPRODUCIBLE`.
 - **Redact**. Strip absolute paths from `$HOME` downwards, and any token-looking strings matching `[A-Za-z0-9_-]{32,}`, before embedding evidence in PR bodies.
 - **Quiet windows**. If fewer than 5 friction events total, print the report to stdout and do NOT open a PR.
 - **Min-count gate**. Default `--min-count 3`. Clusters below the threshold are listed as "watch" items only.
