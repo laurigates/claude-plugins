@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.3.1...comfyui-plugin-v1.4.0) (2026-06-11)
+
+
+### Features
+
+* cold-read-gate + workflow-verify-before-filing skills ([#1588](https://github.com/laurigates/claude-plugins/issues/1588)) ([cec93b3](https://github.com/laurigates/claude-plugins/commit/cec93b3e4024cb02d29c962e6e809f82bfa08d60))
+
 ## [1.3.1](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.3.0...comfyui-plugin-v1.3.1) (2026-06-10)
 
 

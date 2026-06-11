@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.5.6...workflow-orchestration-plugin-v1.6.0) (2026-06-11)
+
+
+### Features
+
+* cold-read-gate + workflow-verify-before-filing skills ([#1588](https://github.com/laurigates/claude-plugins/issues/1588)) ([cec93b3](https://github.com/laurigates/claude-plugins/commit/cec93b3e4024cb02d29c962e6e809f82bfa08d60))
+
 ## [1.5.6](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.5.5...workflow-orchestration-plugin-v1.5.6) (2026-06-10)
 
 
