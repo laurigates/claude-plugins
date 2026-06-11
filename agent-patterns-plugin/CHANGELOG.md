@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.23.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.22.3...agent-patterns-plugin-v2.23.0) (2026-06-11)
+
+
+### Features
+
+* cold-read-gate + workflow-verify-before-filing skills ([#1588](https://github.com/laurigates/claude-plugins/issues/1588)) ([cec93b3](https://github.com/laurigates/claude-plugins/commit/cec93b3e4024cb02d29c962e6e809f82bfa08d60))
+
 ## [2.22.3](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.22.2...agent-patterns-plugin-v2.22.3) (2026-06-08)
 
 
