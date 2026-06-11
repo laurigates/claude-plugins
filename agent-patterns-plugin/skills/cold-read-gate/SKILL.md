@@ -27,6 +27,9 @@ easier question. If haiku can act on it, a busy maintainer can.
 
 ## When to Use This Skill
 
+"Outward-bound" means any audience that lacks your session context — external
+maintainers *and* future teammates reading internal docs cold both qualify.
+
 | Use this skill when... | Skip when... |
 |---|---|
 | Filing issues/MRs on an upstream tracker (external maintainers) | Internal scratch notes, commit messages, chat replies |
@@ -60,9 +63,12 @@ prompt: |
      before acting. Quote the exact phrase that confused you.
   2. HESITATIONS — claims you can't verify from the text alone, confusing
      structure, anything that would make you deprioritize it.
-  3. Verdict: clear-and-actionable as written, or needs-revision.
+  3. Verdict: exactly one of `clear` | `needs-revision`.
 
-  Ignore: <known artifacts of the test — see Step 3>.
+  Ignore: <known artifacts of the test — see Step 3. Example:
+  "Ignore the HTML comments at the top (they are stripped by the filing
+  script before publishing) and do not ask which repository this is —
+  the issue is filed on the target project's own tracker.">
   Concise bullets. Your final message is the deliverable.
 ```
 
@@ -90,8 +96,8 @@ artifacts of the test, not defects. Triage before revising:
 
 Apply the genuine gaps with a revise pass (the orchestrator or a revise
 agent). Re-dispatch a fresh cold reader **only if the first verdict was
-needs-revision**; a "clear" verdict with minor notes doesn't need a second
-opinion. Do not loop more than twice — a third round means the artifact has a
+`needs-revision`**; a `clear` verdict with minor notes means apply the
+genuine ones and publish without a second opinion. Do not loop more than twice — a third round means the artifact has a
 structural problem the gate can't fix.
 
 ## Workflow-Script Integration

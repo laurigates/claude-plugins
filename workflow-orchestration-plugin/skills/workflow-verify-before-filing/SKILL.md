@@ -10,6 +10,10 @@ reviewed: 2026-06-11
 
 # Verify Before Filing
 
+> Operational scaffolding — the complete Workflow script skeleton (agent
+> prompts, schemas, gate logic), the paced filing script, and the data flow —
+> lives in [REFERENCE.md](REFERENCE.md). This file is the decision layer.
+
 A backlog of upstream bug candidates — audit docs, "file this later" notes,
 workaround commits — is a list of **hypotheses dated to when they were
 observed**, not a filing queue. Upstream moved since: versions shipped, files
@@ -41,7 +45,22 @@ One JSON/table entry per candidate: id, the **claim** (precise, falsifiable),
 target upstream project, version observed, source refs (your commits/PRs that
 hold real error output), and known-filed prior reports to dedup against.
 Merge all sources first — audit docs, strategy docs, and git sweeps usually
-overlap.
+overlap. Shape:
+
+```json
+{
+  "id": "W2-13",
+  "slug": "notification-smtp-ec-defaults",
+  "claim": "Chart defaults SMTP to dev@simpl-europe.eu via ssl0.ovh.net (vendor dev infra) as live default values; should be placeholder/required.",
+  "targets": ["group/subgroup/notification-service"],
+  "observed_version": "2.1.1 (Apr 2026)",
+  "sources": ["audit-doc item 6"],
+  "evidence_prs": [1826]
+}
+```
+
+Keep prior-filed report URLs (with issue iids) in the same manifest so search
+agents can fetch their bodies.
 
 ### Phase 1 — Verify + dedup (two agents per candidate, parallel)
 
@@ -57,7 +76,29 @@ still-present | partially-fixed | fixed-upstream | obsolete-version
 plus `targetProject`, quoted `evidence`, `checkedRefs`, and `notes` (files
 moved, versions drifted, framing corrections). Hard rule: **agents are
 read-only upstream** — GET requests only; nothing writes until the filing
-phase.
+phase. State that rule verbatim in every agent prompt.
+
+Verify-agent prompt essentials (condensed):
+
+```
+You verify a candidate upstream bug against <forge>. READ-ONLY — GET only;
+never create/edit/comment upstream.
+Tooling: GITLAB_HOST=<instance> glab api "projects/<id>" (.default_branch),
+".../repository/files/<URL-ENCODED-PATH>/raw?ref=<ref>", ".../repository/tags",
+".../packages" for chart/package versions.
+Baseline: observed at <version, date>. Determine whether the flaw is STILL
+PRESENT at default-branch HEAD and the latest tag. Quote exact current
+content. Superseded version line => obsolete-version. Claim wrong on
+inspection => claim-invalid. Output is raw data for a machine (schema above).
+```
+
+Search-agent prompt adds: issue+MR search (state=all, several phrasings
+including exact error strings), group-wide search fallback, and "fetch the
+full bodies of our prior reports <list> and judge overlap including their
+by-catch findings".
+
+**Gate precedence**: any duplicate kills the filing regardless of verdict;
+`could-not-verify` never files (record a human follow-up task instead).
 
 **Search agent**: tracker search (issues + MRs, all states, several
 phrasings including exact error strings) on the target project and group-wide
@@ -70,24 +111,42 @@ not waste (see Phase 4).
 
 ### Phase 2 — Draft to a house template
 
-Per surviving candidate: symptom-first title; evidence as clickable blob
-links **pinned to the verified refs** (not bare paths, not `main` if HEAD
-drifts); the *real* error signature mined from your own incident PRs/logs;
-**exactly one recommended fix** (alternatives get one trailing sentence);
-"happy to open the MR" only when trivial; a one-line context footer naming
-the deployment and verification date. Never leak internal PR numbers or repo
-paths into the body — use them only to mine evidence.
+Per surviving candidate, one markdown file per issue:
 
-Then gate every draft through
-`agent-patterns-plugin:cold-read-gate` (isolated haiku maintainer cold-read,
-one revise round).
+```markdown
+# <symptom-first title — becomes the issue title>
+<!-- target: <project path>  (stripped by the filing script) -->
+
+## Summary
+<claim, with evidence as blob links PINNED to the verified refs
+(https://<forge>/<path>/-/blob/<ref>/<file>#L<n>) — not bare paths,
+not `main` if HEAD drifts>
+
+<real error signature mined from your own incident PRs/logs>
+
+## Suggested fix
+<EXACTLY ONE recommended fix; alternatives get one trailing sentence;
+"happy to open the MR" only when trivial>
+
+---
+Observed while <one-line deployment context>; verified against <refs> on <date>.
+```
+
+Never leak internal PR numbers or repo paths into the body — use them only to
+mine evidence. Then gate every draft through
+`agent-patterns-plugin:cold-read-gate` (isolated haiku maintainer cold-read;
+one revise round, re-gate only if the verdict was `needs-revision`).
 
 ### Phase 3 — Paced filing
 
-Issue-creation endpoints rate-limit aggressively (observed: GitLab 429 after
-~1 create). File from a script with ≥70 s pacing and retry-with-backoff
-(~130 s × 4) on failure; append every created URL to a `filed-urls.txt`
-manifest; cross-link related new issues afterwards (also paced).
+Issue-creation endpoints rate-limit aggressively (observed: a GitLab
+instance returning 429 after a single create; treat the numbers below as a
+starting point, not a spec). File from a script with ≥70 s pacing between
+creates and, on failure, up to 4 retries with ~130 s backoff each; append
+every created URL to a `filed-urls.txt` manifest, and record `FAILED` lines
+for anything that exhausts retries — continue past failures and report them
+at the end rather than aborting the batch. Cross-link related new issues
+afterwards (also paced).
 `GITLAB_HOST=<instance> glab issue create -R <project> ...` for GitLab
 instances; `gh` for GitHub. Created GitLab issues may surface as
 `/-/work_items/` URLs.
