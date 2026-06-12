@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.8](https://github.com/laurigates/claude-plugins/compare/kubernetes-plugin-v1.7.7...kubernetes-plugin-v1.7.8) (2026-06-12)
+
+
+### Bug Fixes
+
+* **kubernetes-plugin:** anchor kubectl/helm hook on command position ([#1583](https://github.com/laurigates/claude-plugins/issues/1583)) ([3770104](https://github.com/laurigates/claude-plugins/commit/3770104d345f7985eee55a5b9fb0ee8cc67ca557))
+
 ## [1.7.7](https://github.com/laurigates/claude-plugins/compare/kubernetes-plugin-v1.7.6...kubernetes-plugin-v1.7.7) (2026-05-27)
 
 

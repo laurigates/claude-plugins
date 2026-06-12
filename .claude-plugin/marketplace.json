@@ -148,7 +148,7 @@
       "name": "comfyui-plugin",
       "source": "./comfyui-plugin",
       "description": "ComfyUI custom-node pack lifecycle - scaffold a pack, create + seed the repo, open the gitops adoption PR, publish to the Comfy Registry, and add README screenshots",
-      "version": "1.4.0",
+      "version": "1.4.1",
       "keywords": [
         "comfyui",
         "custom-node",
@@ -388,7 +388,7 @@
       "name": "kubernetes-plugin",
       "source": "./kubernetes-plugin",
       "description": "Kubernetes and Helm operations - deployments, charts, releases",
-      "version": "1.7.7",
+      "version": "1.7.8",
       "keywords": [
         "kubernetes",
         "helm",
