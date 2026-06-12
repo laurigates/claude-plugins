@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.5](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.4.4...hooks-plugin-v2.4.5) (2026-06-12)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** scope git-commit heredoc reminder to actual git commit/tag ([#1596](https://github.com/laurigates/claude-plugins/issues/1596)) ([229d4a3](https://github.com/laurigates/claude-plugins/commit/229d4a36c5b4798c855a3162ba69ecab02bb516f))
+
 ## [2.4.4](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.4.3...hooks-plugin-v2.4.4) (2026-06-10)
 
 
