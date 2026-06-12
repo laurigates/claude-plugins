@@ -248,7 +248,7 @@
       "name": "evaluate-plugin",
       "source": "./evaluate-plugin",
       "description": "Skill evaluation and benchmarking - test skill effectiveness with behavioral eval cases, grade results, and track quality improvements",
-      "version": "1.6.0",
+      "version": "1.7.0",
       "keywords": [
         "evaluation",
         "benchmarking",
@@ -262,7 +262,7 @@
       "name": "feedback-plugin",
       "source": "./feedback-plugin",
       "description": "Session feedback analysis - capture skill bugs as GitHub issues and learn from weekly friction across sessions",
-      "version": "1.7.0",
+      "version": "1.8.0",
       "keywords": [
         "feedback",
         "session-analysis",

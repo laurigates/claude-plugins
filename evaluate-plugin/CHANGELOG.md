@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.6.0...evaluate-plugin-v1.7.0) (2026-06-12)
+
+
+### Features
+
+* **evaluate-plugin:** adopt RHO verify and best-of-N patterns ([#1593](https://github.com/laurigates/claude-plugins/issues/1593)) ([777755c](https://github.com/laurigates/claude-plugins/commit/777755c64326ab5f55422a0cb5ec5ef69bd11a13))
+
 ## [1.6.0](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.5.0...evaluate-plugin-v1.6.0) (2026-05-30)
 
 
