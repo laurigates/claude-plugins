@@ -78,6 +78,7 @@ Tier 0/1.
 | Situation | Tier to run |
 |-----------|-------------|
 | Authoring or editing a skill | Tier 0 (always) + Tier 1 if it has `evals.json` |
+| Improving a skill that has `evals.json` | Tier 1 best-of-N: `/evaluate:improve --apply --best-of 3` ranks candidate edits by re-running the deterministic evals and applies the winner |
 | Adding a skill to the golden set | Write its `evals.json` with typed checks |
 | A new Claude model is released | Tier 2 sweep of the golden set; diff deltas vs last run |
 | A skill feels redundant or noisy | Tier 2 with `--baseline` to see if it beats the model alone |

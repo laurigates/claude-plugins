@@ -64,7 +64,14 @@ Static compliance checks (`plugin-compliance-check.sh`) verify structure — thi
 ```
 /evaluate:improve git-plugin/git-commit
 /evaluate:improve git-plugin/git-commit --apply
+/evaluate:improve git-plugin/git-commit --apply --best-of 3
 ```
+
+With `--best-of N`, the skill drafts N alternative revisions instead of one,
+ranks them by re-running the skill's evals against each candidate (deterministic
+grading via `grade_deterministic.py`; `eval-comparator` blind pairwise as
+tie-break or as the fallback when no `evals.json` exists), and applies the
+winner. The ranking is recorded in `history.json`.
 
 ## Data Layout
 
@@ -75,6 +82,8 @@ Static compliance checks (`plugin-compliance-check.sh`) verify structure — thi
 └── eval-results/           # Gitignored: run outputs
     ├── benchmark.json
     ├── history.json
+    ├── candidates/         # --best-of candidate revisions
+    │   └── candidate-<i>.md
     └── runs/
         └── <eval-id>-<run-id>/
             ├── grading.json
