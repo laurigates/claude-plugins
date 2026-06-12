@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.4.0...comfyui-plugin-v1.4.1) (2026-06-12)
+
+
+### Bug Fixes
+
+* **kubernetes-plugin:** anchor kubectl/helm hook on command position ([#1583](https://github.com/laurigates/claude-plugins/issues/1583)) ([3770104](https://github.com/laurigates/claude-plugins/commit/3770104d345f7985eee55a5b9fb0ee8cc67ca557))
+
 ## [1.4.0](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.3.1...comfyui-plugin-v1.4.0) (2026-06-11)
 
 
