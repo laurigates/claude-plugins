@@ -193,6 +193,66 @@ assert_exit_complex \
     "plain git add && git commit (outside heredoc) is still blocked" 2 \
     "git add file.txt && git commit -m msg"
 
+# ── heredoc-write-then-feed-CLI regression (issue #1584, #1587) ───────────────
+# Regression: `cat > /tmp/body.md <<EOF ... EOF; gh pr create --body-file ...`
+# was blocked with the git-commit heredoc reminder even though the command runs
+# no git commit at all — the commit-message-to-temp-file detector fired on any
+# heredoc-to-/tmp write containing conventional-commit-shaped text, and the
+# `cat > file` Write-tool block fired on the heredoc write itself. Writing a
+# body file via heredoc and passing it to `gh pr create --body-file` /
+# `gh issue edit --body-file` is the recommended multi-line pattern and must pass.
+echo ""
+echo "heredoc-write-then-feed-CLI is allowed; git-commit message file still nudged:"
+
+prbody_cmd=$(cat <<'OUTER'
+cat > /tmp/pr-body.md <<'EOF'
+## Summary
+
+fix(api): handle timeout edge case
+
+Closes #123
+EOF
+gh pr create --draft --title "fix: x" --body-file /tmp/pr-body.md -a laurigates
+OUTER
+)
+
+assert_exit_complex \
+    "cat > /tmp/body.md heredoc fed to gh pr create --body-file is allowed" 0 \
+    "$prbody_cmd"
+
+issuebody_cmd=$(cat <<'OUTER'
+cat > /tmp/issue-body.md <<'EOF'
+chore(scope): something
+
+docs note here.
+EOF
+gh issue edit 2001 --body-file /tmp/issue-body.md
+OUTER
+)
+
+assert_exit_complex \
+    "cat > /tmp/body.md heredoc fed to gh issue edit --body-file is allowed" 0 \
+    "$issuebody_cmd"
+
+# True positive preserved: a heredoc commit message to /tmp passed to git commit -F
+# still earns the reminder, because the command actually composes a git commit.
+gitcommit_cmd=$(cat <<'OUTER'
+cat > /tmp/commit_msg.txt <<'EOF'
+feat(auth): add OAuth2 support
+EOF
+git commit -F /tmp/commit_msg.txt
+OUTER
+)
+
+assert_exit_complex \
+    "heredoc commit message to /tmp fed to git commit -F is still blocked" 2 \
+    "$gitcommit_cmd"
+
+# Plain `cat > file` with no heredoc is still nudged toward the Write tool.
+assert_exit \
+    "plain cat > file (no heredoc) is still blocked" 2 \
+    "cat > /tmp/scratch.txt"
+
 # ── substitution-format block messages ──────────────────────────────────────
 # Regression: block messages were "REMINDER: Use the X tool instead of Y" —
 # advisory prose without a concrete substitution. W21 friction analysis showed

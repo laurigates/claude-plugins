@@ -105,9 +105,17 @@ fi
 
 # Check for commit message being written to temp file
 # Pattern: cat > /tmp/commit_msg.txt or similar, often with heredoc containing conventional commit
-if echo "$COMMAND" | grep -Eq 'cat\s*>\s*[^|]*commit' || \
-   echo "$COMMAND" | grep -Eq "(cat|echo|printf)\s*>\s*/tmp/.*<<.*EOF" && \
-   echo "$COMMAND" | grep -Eq '(feat|fix|docs|refactor|test|chore|perf|ci)(\(.+\))?[!:]'; then
+#
+# Gate on an actual `git commit` / `git tag` in the command. Otherwise a PR or
+# issue body written to a temp file and passed to `gh pr create --body-file` /
+# `gh issue edit --body-file` — the recommended multi-line-body pattern — falsely
+# triggered this git-commit-specific reminder, which is irrelevant to the blocked
+# command (issue #1584, #1587). The reminder only makes sense when the command
+# is in fact composing a git commit/tag message.
+if echo "$COMMAND" | grep -Eq 'git\s+(commit|tag)\b' && \
+   echo "$COMMAND" | grep -Eq '(feat|fix|docs|refactor|test|chore|perf|ci)(\(.+\))?[!:]' && \
+   { echo "$COMMAND" | grep -Eq 'cat\s*>\s*[^|]*commit' || \
+     echo "$COMMAND" | grep -Eq "(cat|echo|printf)\s*>\s*/tmp/.*<<.*EOF"; }; then
     block "REMINDER: Use HEREDOC directly in git commit:
 
 git commit -m \"\$(cat <<'EOF'
@@ -120,8 +128,14 @@ EOF
 )\""
 fi
 
-# Check for cat > file (writing files)
-if echo "$COMMAND" | grep -Eq 'cat\s*>\s*[^|]'; then
+# Check for cat > file (writing files).
+# Exempt heredoc writes (cat > file <<EOF ... EOF): writing a temp file via a
+# heredoc and feeding it to a later command (e.g. gh pr create --body-file) is
+# the recommended multi-line pattern (copy-paste-commands.md), and the hook's own
+# cat-read message above already states heredocs are allowed (issue #1584, #1587).
+# A plain `cat > file` with no heredoc is still blocked in favour of the Write tool.
+if echo "$COMMAND" | grep -Eq 'cat\s*>\s*[^|]' && \
+   ! echo "$COMMAND" | grep -Eq 'cat\s*>\s*\S.*<<'; then
     block "REMINDER: Use the Write tool instead of 'cat > file' to create files. The Write tool is the proper way to write file contents."
 fi
 
