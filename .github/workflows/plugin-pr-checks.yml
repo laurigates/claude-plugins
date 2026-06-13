@@ -92,6 +92,13 @@ jobs:
         if: steps.changed.outputs.skill_count != '0'
         run: bash scripts/check-version-pin-coverage.sh --strict
 
+      - name: Check docs-index drift (README/PLUGIN-MAP/diagram counts)
+        # Whole-repo invariant. The workflow path filter already scopes this to
+        # PRs that add/remove plugins or skills — exactly what drifts the
+        # per-plugin counts in README.md, docs/PLUGIN-MAP.md, and the d2
+        # diagram. Refresh on demand with the /docs-refresh project skill.
+        run: bash scripts/check-docs-index.sh --strict
+
       - name: Post compliance results
         if: steps.compliance.outputs.result
         env:
