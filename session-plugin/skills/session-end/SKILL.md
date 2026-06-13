@@ -1,10 +1,10 @@
 ---
 name: session-end
-description: End-of-session orchestrator. Previews which of wrap/distill/feedback qualify, single confirm, then sequence. Use when winding down a session.
+description: End-of-session orchestrator. Previews which of wrap/distill/feedback/taskwarrior-sync qualify, single confirm, then sequence. Use when winding down a session.
 allowed-tools: Bash(task *), Bash(git *), Bash(gh *), Read, Skill, AskUserQuestion, TodoWrite
 created: 2026-06-10
-modified: 2026-06-10
-reviewed: 2026-06-10
+modified: 2026-06-13
+reviewed: 2026-06-13
 ---
 
 # session-end
@@ -19,6 +19,7 @@ over three capture skills that used to compete for the wind-down moment
 | Wrap | `session-plugin:session-wrap` | Loose threads → taskwarrior, optional journal, GitHub issues |
 | Distill | `session-plugin:session-distill` | Durable learnings → rules, skill updates, justfile recipes |
 | Feedback | `feedback-plugin:feedback-session` | Notable plugin/skill interactions → GitHub issues on claude-plugins |
+| Taskwarrior sync | (inline, no sub-skill) | Close done tasks, update statuses, add follow-ups; uses stable UUIDs |
 
 ## When to Use This Skill
 
@@ -59,6 +60,7 @@ failure mode.
 | Wrap | ≥1 genuine loose thread per session-wrap's LOG IT filter |
 | Distill | A durable, generalizable learning emerged AND the repo has a distillable surface (`.claude/rules/` or a justfile) |
 | Feedback | A plugin/skill behaved notably well or badly — bug, enhancement, or positive worth filing |
+| Taskwarrior sync | Taskwarrior is on PATH AND ≥1 pending/active task for the project (`task project:<name> '(status:pending or +ACTIVE)' export \| jq 'length'`) |
 
 If **nothing** qualifies, say so in one line and end — no preview, no
 question.
@@ -67,10 +69,10 @@ question.
 
 Present a single compact preview: each qualifying pass with a one-line
 reason and its concrete payload (the wrap items; the distill proposal
-sketch; the feedback finding). Then **one AskUserQuestion**
-(multiSelect) listing the qualifying passes as options, qualifying ones
-described with their reasons. The user picks any subset; "Other" covers
-adjustments.
+sketch; the feedback finding; the open taskwarrior items with their UUIDs).
+Then **one AskUserQuestion** (multiSelect) listing the qualifying passes
+as options, qualifying ones described with their reasons. The user picks
+any subset; "Other" covers adjustments.
 
 Never end the turn on a freeform "y/n" text question — ending the turn
 fires Stop hooks mid-confirmation (the race that motivated this
@@ -78,21 +80,27 @@ orchestrator). AskUserQuestion keeps the turn open.
 
 ### Step 4: Sequence the confirmed passes
 
-Run in this order, each via the Skill tool, passing along the Step 1
-survey so they don't re-do it:
+Run in this order, each via the Skill tool (or inline for taskwarrior
+sync), passing along the Step 1 survey so they don't re-do it:
 
-1. `session-plugin:session-wrap` — closes/annotates/adds tasks first so
-   later passes see the final queue state
-2. `session-plugin:session-distill` — apply mode per its own flow; the
+1. **Taskwarrior sync** (if confirmed) — run inline before Wrap so Wrap
+   sees the updated queue state. For each open/active task: ask the user
+   (via AskUserQuestion) whether to mark done, update, or leave. Address
+   tasks by stable UUID (`task +LATEST _get uuid` after creation;
+   `task <uuid> done` / `task <uuid> modify` for existing tasks). Never
+   use volatile numeric IDs — they shift when other tasks complete.
+2. `session-plugin:session-wrap` — closes/annotates/adds tasks so later
+   passes see the final queue state
+3. `session-plugin:session-distill` — apply mode per its own flow; the
    user already confirmed the pass, so skip a second blanket prompt but
    keep distill's per-category destructive-change prompts
-3. `feedback-plugin:feedback-session` — cross-plugin; if the feedback
+4. `feedback-plugin:feedback-session` — cross-plugin; if the feedback
    plugin isn't installed, note it and skip
 
 ### Step 5: Report
 
-One short block: what each executed pass wrote (tasks touched, files
-edited, issues filed) and which passes were skipped as not qualifying.
+One short block: what each executed pass wrote (tasks touched / closed,
+files edited, issues filed) and which passes were skipped as not qualifying.
 
 ## Seam: distill vs feedback
 
@@ -114,5 +122,7 @@ already in the transcript. Pre-silence:
 | Context | Command |
 |---|---|
 | Queue state (exit-0 on empty) | `task project:<name> '(status:pending or +ACTIVE)' export \| jq '.[]'` |
+| Stable UUID for latest task | `task +LATEST _get uuid` |
+| Mark task done by UUID | `task <uuid> done` |
 | Distillable surface check | `find . -maxdepth 2 -path '*/.claude/rules' -o -maxdepth 1 -name 'justfile' -o -maxdepth 1 -name 'Justfile'` |
 | Branch PRs | `gh pr list --head <branch> --json number,title,url,state --jq '.[]'` |
