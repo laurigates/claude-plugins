@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.8.5](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.8.4...tools-plugin-v2.8.5) (2026-06-13)
+
+
+### Bug Fixes
+
+* **skills:** rename 45 skill.md files to canonical SKILL.md ([#1608](https://github.com/laurigates/claude-plugins/issues/1608)) ([786b701](https://github.com/laurigates/claude-plugins/commit/786b701ee78134e31251f8c69dc58c34e4ccbb14))
+
 ## [2.8.4](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.8.3...tools-plugin-v2.8.4) (2026-06-04)
 
 
