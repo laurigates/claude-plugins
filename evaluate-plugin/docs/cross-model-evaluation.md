@@ -138,7 +138,8 @@ be worth not eyeballing.
 | `scripts/tests/test_grade_deterministic.sh` | done — 14 assertions, wired for CI |
 | `model-matrix.json` schema | done — documented; example fixture renders |
 | `/evaluate:matrix` orchestration skill | done — runs the matrix, grades deterministic-first, renders the executability flag |
-| Golden set definition (`golden-set.json`) | follow-up |
+| Golden set definition (`golden-set.json`) | done — 16 canaries across 6 patterns |
+| Fixture / scaffolding layer (`evals[].fixture`, `apply_fixture.sh`) | done — opt-in, isolated temp workdir, golden-set scope |
 | Cron / model-release trigger | follow-up |
 
 ## Related

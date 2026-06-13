@@ -1,0 +1,29 @@
+{
+  "_note": "The cross-model (Tier-2) canary set. ~15-25 representative, high-traffic, or high-risk skills covering distinct patterns. /evaluate:matrix runs the full sweep against these; the long tail stays on Tier 0/1. See .claude/rules/skill-evaluation.md (Principle 3) and docs/cross-model-evaluation.md. Only golden-set skills should carry fixture blocks (references/schemas.md).",
+  "patterns": [
+    "cli-wrapper",
+    "multi-step-orchestrator",
+    "ask-user-question",
+    "file-generator",
+    "convention-enforcer",
+    "weak-model-gate"
+  ],
+  "canaries": [
+    { "skill": "tools-plugin/rg-code-search", "pattern": "cli-wrapper" },
+    { "skill": "tools-plugin/jq-json-processing", "pattern": "cli-wrapper" },
+    { "skill": "tools-plugin/fd-file-finding", "pattern": "cli-wrapper" },
+    { "skill": "git-plugin/git-cli-agentic", "pattern": "cli-wrapper" },
+    { "skill": "blueprint-plugin/blueprint-execute", "pattern": "multi-step-orchestrator" },
+    { "skill": "blueprint-plugin/blueprint-prp-create", "pattern": "multi-step-orchestrator" },
+    { "skill": "agent-patterns-plugin/parallel-agent-dispatch", "pattern": "multi-step-orchestrator" },
+    { "skill": "session-plugin/session-wrap", "pattern": "ask-user-question" },
+    { "skill": "session-plugin/session-end", "pattern": "ask-user-question" },
+    { "skill": "configure-plugin/configure-readme", "pattern": "file-generator" },
+    { "skill": "documentation-plugin/docs-generate", "pattern": "file-generator" },
+    { "skill": "git-plugin/git-commit", "pattern": "convention-enforcer" },
+    { "skill": "git-plugin/github-pr-title", "pattern": "convention-enforcer" },
+    { "skill": "code-quality-plugin/code-review", "pattern": "convention-enforcer" },
+    { "skill": "evaluate-plugin/evaluate-legibility", "pattern": "weak-model-gate" },
+    { "skill": "evaluate-plugin/evaluate-matrix", "pattern": "weak-model-gate" }
+  ]
+}

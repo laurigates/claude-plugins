@@ -105,6 +105,7 @@ winner. The ranking is recorded in `history.json`.
 | `scripts/eval_report.sh` | Generate formatted markdown report from benchmark data |
 | `scripts/grade_deterministic.py` | Grade machine-checkable (regex/substring) assertions with zero judge tokens; defers fuzzy ones to `eval-grader` |
 | `scripts/render_matrix_report.py` | Render the cross-model delta report from a `model-matrix.json` (delta verdict, portability flag, `executable_on_haiku` executability flag) |
+| `scripts/apply_fixture.sh` | Apply/tear down an eval's opt-in `fixture` block in an isolated temp workdir so context-needing skills can honestly execute |
 
 ## Cross-Model Evaluation
 

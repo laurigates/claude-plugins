@@ -21,6 +21,12 @@ Defines test cases for a skill. Lives alongside the SKILL.md it tests. **Version
       "context_files": [
         "string — optional files to make available during evaluation"
       ],
+      "fixture": {
+        "dir": "string — optional fixture template dir (relative to the evals.json) copied into the temp workdir",
+        "setup": ["string — shell commands run in the temp workdir after the copy"],
+        "teardown": ["string — optional commands run before the temp dir is discarded"],
+        "workdir": "string — optional; where the eval subagent runs (default: the temp dir)"
+      },
       "tags": [
         "string — categorization tags for filtering"
       ]
@@ -40,7 +46,49 @@ Defines test cases for a skill. Lives alongside the SKILL.md it tests. **Version
 | `evals[].prompt` | Yes | The simulated user request |
 | `evals[].expectations` | Yes | List of assertion strings (grader checks these) |
 | `evals[].context_files` | No | Files to include in evaluation context |
+| `evals[].fixture` | No | Opt-in execution scaffold (see below). Evals without it run unchanged |
 | `evals[].tags` | No | Tags for filtering (e.g., `basic`, `edge-case`) |
+
+### Fixtures (opt-in execution scaffold)
+
+A context-needing skill cannot honestly execute in eval without a real
+workdir — without one it fails on a weak model purely for lack of fixtures, a
+false negative that poisons the executability gate (`/evaluate:matrix`). The
+optional `fixture` block gives such an eval an isolated, throwaway workdir.
+
+`fixture` is **additive and back-compatible**: evals without it run exactly as
+today, and `grade_deterministic.py` is unaffected (it reads only
+`expectations`). `scripts/apply_fixture.sh` applies it — `mktemp -d` a workdir
+**outside the repo**, copy `dir`, run `setup`, emit `WORKDIR=`; teardown runs
+`teardown` then `rm -rf`s the dir (refusing any path outside the temp root,
+since `setup` is arbitrary shell — see `.claude/rules/sandbox-guidance.md`).
+Fixture templates live beside `evals.json`. Scope `fixture` blocks to the
+golden-set canaries (`golden-set.json`).
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `fixture.dir` | No | Template dir (relative to `evals.json`) copied into the workdir |
+| `fixture.setup` | No | Shell commands run in the workdir after the copy |
+| `fixture.teardown` | No | Commands run before the workdir is discarded (dir removed by default) |
+| `fixture.workdir` | No | Where the eval subagent runs (default: the temp dir) |
+
+Worked example — `git-commit`'s gc-001 in a real staged repo:
+
+```json
+{
+  "id": "gc-001",
+  "prompt": "I just added a new OAuth login feature to the auth module. Please commit my staged changes.",
+  "fixture": {
+    "setup": ["git init -q", "printf 'oauth code' > auth.py", "git add auth.py"]
+  },
+  "expectations": [
+    { "assertion": "Commit message starts with feat(", "check": "regex", "pattern": "^feat\\(", "scope": "subject" }
+  ]
+}
+```
+
+The subagent runs `git-commit` in the staged-repo `WORKDIR`; the produced
+commit message is graded exactly as before.
 
 ### Writing Good Assertions
 

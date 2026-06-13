@@ -76,6 +76,15 @@ combination:
      --skill-dir <plugin-name>/skills/<skill-name> \
      --eval-id <eval-id> --run <N>
    ```
+   If the eval carries a `fixture` block, apply it for an honest execution
+   context — without one a context-needing skill fails on haiku purely for lack
+   of fixtures, a false negative that poisons this gate:
+   ```
+   bash ${CLAUDE_PLUGIN_ROOT}/scripts/apply_fixture.sh \
+     --fixture '<eval.fixture JSON>' --repo-root "$(pwd)"
+   ```
+   Parse `WORKDIR=`; the subagent operates there. Tear it down after the
+   transcript is copied out (`--teardown "$WORKDIR"`).
 2. Dispatch **one `Task` subagent with the `model` field set to the loop
    model** (full `Bash`/`Edit` — it does real tool execution, not just reading):
    ```
