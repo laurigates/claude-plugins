@@ -6,6 +6,7 @@
   "author": {
     "name": "Lauri Gates"
   },
+  "hooks": "./hooks.json",
   "keywords": [
     "attributes",
     "health",
