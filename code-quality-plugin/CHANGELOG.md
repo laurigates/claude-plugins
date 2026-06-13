@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.14.7...code-quality-plugin-v1.15.0) (2026-06-13)
+
+
+### Features
+
+* **code-quality-plugin:** add PostToolUse pre-flight cue for structural edits ([#1623](https://github.com/laurigates/claude-plugins/issues/1623)) ([2264975](https://github.com/laurigates/claude-plugins/commit/2264975aa377bb4db00593a24be9a5a0893dc07b))
+
 ## [1.14.7](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.14.6...code-quality-plugin-v1.14.7) (2026-06-10)
 
 
