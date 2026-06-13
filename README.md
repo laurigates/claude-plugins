@@ -1,6 +1,6 @@
 # Claude Plugins
 
-A curated collection of 42 Claude Code plugins providing 300+ skills and 21 agents for development workflows.
+A curated collection of 42 Claude Code plugins providing 360+ skills and 21 agents for development workflows.
 
 ## Install the Marketplace
 
@@ -60,7 +60,7 @@ Alternatively, use the `/configure:mcp` skill for interactive configuration.
 
 | Plugin | Skills | Description |
 |--------|--------|-------------|
-| **agent-patterns-plugin** | 12 | Multi-agent coordination and orchestration patterns |
+| **agent-patterns-plugin** | 13 | Multi-agent coordination and orchestration patterns |
 | **agents-plugin** | 1 + 12 agents | Task-focused agents for test, review, debug, docs, and CI workflows |
 | **langchain-plugin** | 4 | LangChain JS/TS development - agents, chains, LangGraph, Deep Agents |
 | **prompt-engineering-plugin** | 1 | Prompt engineering for accurate, grounded responses - anti-hallucination workflow |
@@ -91,7 +91,7 @@ Alternatively, use the `/configure:mcp` skill for interactive configuration.
 | Plugin | Skills | Description |
 |--------|--------|-------------|
 | **code-quality-plugin** | 14 | Code review, refactoring, linting, static analysis, debugging methodology |
-| **evaluate-plugin** | 4 + 3 agents | Skill evaluation and benchmarking - test effectiveness, grade results |
+| **evaluate-plugin** | 6 + 3 agents | Skill evaluation and benchmarking - test effectiveness, grade results |
 | **codebase-attributes-plugin** | 3 | Structured codebase health attributes with severity-based agent routing |
 | **feedback-plugin** | 1 | Session feedback analysis - capture skill bugs and enhancements as issues |
 | **testing-plugin** | 16 | Test execution, TDD workflow, Vitest, Playwright, mutation testing |
@@ -100,7 +100,7 @@ Alternatively, use the `/configure:mcp` skill for interactive configuration.
 
 | Plugin | Skills | Description |
 |--------|--------|-------------|
-| **git-plugin** | 35 + 1 agent | Git workflows - commits, branches, PRs, worktrees, release-please |
+| **git-plugin** | 36 + 1 agent | Git workflows - commits, branches, PRs, worktrees, release-please |
 
 ### CI/CD
 
@@ -145,7 +145,7 @@ Alternatively, use the `/configure:mcp` skill for interactive configuration.
 | **macos-plugin** | 4 | macOS dev tooling - kitty session persistence, LaunchServices health, incident postmortems |
 | **taskwarrior-plugin** | 6 | Taskwarrior coordination for multi-agent work - parallel-safe queries, urgency scoring |
 | **tools-plugin** | 14 | General utilities - fd, rg, jq, shell, ImageMagick, d2 |
-| **workflow-orchestration-plugin** | 3 | Workflow orchestration - preflight checks, checkpoint refactoring |
+| **workflow-orchestration-plugin** | 4 | Workflow orchestration - preflight checks, checkpoint refactoring |
 
 ### Game Development
 
