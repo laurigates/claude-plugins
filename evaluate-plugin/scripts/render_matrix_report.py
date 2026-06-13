@@ -25,6 +25,14 @@ EARNS_KEEP_DELTA = 0.15   # with-skill clearly beats baseline
 REDUNDANT_BASELINE = 0.85  # baseline already strong; skill may be redundant
 FIGHTING_DELTA = -0.05    # with-skill underperforms baseline
 
+# Executability floor (absolute with-skill pass rate, not a delta). The
+# executability gate asks "can a weak model actually DO the task" — distinct
+# from the delta verdict (does the skill beat the baseline) and the portability
+# flag (opus−haiku spread). When haiku's absolute with-skill rate sits below
+# this floor while opus clears it, the skill is effectively not executable on
+# haiku. See evaluate-matrix/SKILL.md and docs/cross-model-evaluation.md.
+HAIKU_EXEC_FLOOR = 0.5
+
 
 def _pct(x) -> str:
     return "—" if x is None else f"{round(x * 100)}%"
@@ -112,6 +120,26 @@ def render(matrix: dict) -> str:
             f"> **Portability flag:** opus with-skill ({_pct(opus)}) exceeds haiku "
             f"({_pct(haiku)}) by ≥20 points — the skill leans on reasoning the cheaper "
             f"model lacks. Consider simplifying the skill or pinning `model:` in frontmatter."
+        )
+        out.append("")
+
+    # Executability flag (Slice 2): absolute haiku capability, not spread. When
+    # haiku's with-skill rate is below the floor while opus clears it, a weak
+    # model cannot actually *do* the task even with the skill loaded. Additive
+    # and backward compatible — emits nothing when haiku is at/above the floor
+    # (or either model is missing).
+    if (
+        opus is not None
+        and haiku is not None
+        and haiku < HAIKU_EXEC_FLOOR <= opus
+    ):
+        out.append(
+            f"> **Executability flag:** `executable_on_haiku=false` — haiku with-skill "
+            f"pass rate ({_pct(haiku)}) is below the {round(HAIKU_EXEC_FLOOR * 100)}% "
+            f"floor while opus reaches {_pct(opus)}. A weak model cannot carry out the "
+            f"task even with the skill loaded; this poisons the executability gate until "
+            f"the skill is simplified or the eval gains an honest execution context "
+            f"(see Slice 3 fixtures)."
         )
         out.append("")
 

@@ -18,7 +18,7 @@ tiers always; reserve the expensive tier for a small golden set.
 |------|------|-------|---------|---------|
 | 0 — static | free | all skills | every PR | `scripts/plugin-compliance-check.sh`, the lints |
 | 1 — deterministic evals | ~free (no judge) | skills with an `evals.json` | CI on changed skill | `evaluate-plugin/scripts/grade_deterministic.py` |
-| 2 — cross-model matrix | budgeted | **golden set only**, opus/sonnet/haiku | monthly + on model release | `/evaluate:skill`, `render_matrix_report.py` |
+| 2 — cross-model matrix | budgeted | **golden set only**, opus/sonnet/haiku | monthly + on model release | `/evaluate:matrix`, `render_matrix_report.py` |
 
 Tier 0 catches structural rot for free. Tier 2 is the only thing that costs
 tokens, and it is bounded to the canary set.

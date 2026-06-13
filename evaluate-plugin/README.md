@@ -27,6 +27,7 @@ Static compliance checks (`plugin-compliance-check.sh`) verify structure — thi
 | `/evaluate:report` | View evaluation results and benchmark reports |
 | `/evaluate:improve` | Suggest improvements based on eval results |
 | `/evaluate:legibility` | Cold-read a SKILL.md with a zero-context agent reader to check its intent is legible (comprehension gate) |
+| `/evaluate:matrix` | Run a skill's evals across pinned models with real execution and grade the artifact (executability gate) |
 
 ## Agents
 
@@ -103,12 +104,16 @@ winner. The ranking is recorded in `history.json`.
 | `scripts/aggregate_benchmark.sh` | Aggregate benchmark results across a plugin's skills |
 | `scripts/eval_report.sh` | Generate formatted markdown report from benchmark data |
 | `scripts/grade_deterministic.py` | Grade machine-checkable (regex/substring) assertions with zero judge tokens; defers fuzzy ones to `eval-grader` |
-| `scripts/render_matrix_report.py` | Render the cross-model delta report from a `model-matrix.json` |
+| `scripts/render_matrix_report.py` | Render the cross-model delta report from a `model-matrix.json` (delta verdict, portability flag, `executable_on_haiku` executability flag) |
 
 ## Cross-Model Evaluation
 
 Measuring skill effectiveness reproducibly across opus / sonnet / haiku — to
 catch when a skill needs adjusting after a new model ships — is designed in
-[`docs/cross-model-evaluation.md`](docs/cross-model-evaluation.md). The
-token-frugal grader and report format prototyped there run against
-`git-plugin/skills/git-commit/evals.json` today.
+[`docs/cross-model-evaluation.md`](docs/cross-model-evaluation.md) and driven by
+**`/evaluate:matrix`** (the executability gate). The token-frugal grader and
+report format run against `git-plugin/skills/git-commit/evals.json` today.
+
+The two weak-model gates are complementary: `/evaluate:legibility` reads a
+SKILL.md cold (comprehension), while `/evaluate:matrix` runs it on a weak model
+with real tool execution and grades the artifact (executability).
