@@ -25,7 +25,7 @@ Install these first. They configure the environment other plugins rely on.
 | health-plugin | 7 | Diagnose config issues, audit plugin selection |
 | hooks-plugin | 4 | Enforce best practices via lifecycle hooks |
 | configure-plugin | 46 | Infrastructure standards (CI, linting, testing, Docker, repo onboarding) |
-| agent-patterns-plugin | 12 | Agent orchestration, MCP management, delegation |
+| agent-patterns-plugin | 13 | Agent orchestration, MCP management, delegation |
 
 ### Tier 1 - Core Workflow
 
@@ -34,7 +34,7 @@ The development loop: plan, code, commit, ship.
 | Plugin | Skills | Purpose |
 |--------|--------|---------|
 | blueprint-plugin | 33 | PRD/ADR/PRP/TRP methodology, `/blueprint:execute` auto-pilot, monorepo portfolio tracking, story-audit/reconcile |
-| git-plugin | 35 + 1 agent | Commits, branches, PRs, issues, forks, worktrees, release-please |
+| git-plugin | 36 + 1 agent | Commits, branches, PRs, issues, forks, worktrees, release-please |
 | project-plugin | 7 | Project init, modernization, maintenance |
 | session-plugin | 4 | Session bookends: spinup briefing, wrap capture, end orchestrator, distill |
 | agents-plugin | 1 + 12 agents | Task delegation to specialized agents |
@@ -48,7 +48,7 @@ Automated quality enforcement.
 | testing-plugin | 16 | Test execution, TDD, Vitest, Playwright, Playwright CLI, mutation testing |
 | code-quality-plugin | 14 | Review, refactoring, linting, ast-grep, debugging, silent degradation, dead code, dep audit, test quality, complexity |
 | documentation-plugin | 5 | API docs, README generation, knowledge graphs |
-| evaluate-plugin | 4 + 3 agents | Skill evaluation, benchmarking, quality improvement |
+| evaluate-plugin | 6 + 3 agents | Skill evaluation, benchmarking, quality improvement |
 
 ### Tier 3+ - Pick What Applies
 
