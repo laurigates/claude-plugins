@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "code-quality-plugin PostToolUse pre-flight cue hook (ADR-0017 behavioral cue)",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/code-quality-preflight-cue.sh",
+            "continueOnBlock": true,
+            "timeout": 5000
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/code-quality-preflight-cue.sh",
+            "continueOnBlock": true,
+            "timeout": 5000
+          }
+        ]
+      }
+    ]
+  }
+}
