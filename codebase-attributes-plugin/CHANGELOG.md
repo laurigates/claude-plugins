@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/laurigates/claude-plugins/compare/codebase-attributes-plugin-v1.2.2...codebase-attributes-plugin-v1.3.0) (2026-06-13)
+
+
+### Features
+
+* **codebase-attributes-plugin:** add SessionStart routing cue from health severity ([#1619](https://github.com/laurigates/claude-plugins/issues/1619)) ([c6bdcf6](https://github.com/laurigates/claude-plugins/commit/c6bdcf63eccadeed419ad810bb381fa3b641ef6a))
+
 ## [1.2.2](https://github.com/laurigates/claude-plugins/compare/codebase-attributes-plugin-v1.2.1...codebase-attributes-plugin-v1.2.2) (2026-05-14)
 
 
