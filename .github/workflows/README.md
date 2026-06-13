@@ -33,6 +33,7 @@ Auto-fix: CI failures
 Claude: @mentions
 Claude: Changelog review
 Claude: PR review
+Claude: Research radar
 PR: Auto-resolve conflicts
 PR: Enforce conventional commits
 Plugin: Enablement drift

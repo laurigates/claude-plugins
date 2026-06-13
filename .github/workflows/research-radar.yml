@@ -1,0 +1,258 @@
+name: "Claude: Research radar"
+
+on:
+  schedule:
+    # Weekly on Wednesdays at 09:00 UTC
+    - cron: '0 9 * * 3'
+  workflow_dispatch:
+    inputs:
+      since_days:
+        description: 'Look back this many days when gathering papers'
+        required: false
+        default: '8'
+        type: string
+      force:
+        description: 'Assess even if a research-radar issue for the current week already exists'
+        required: false
+        default: 'false'
+        type: boolean
+
+permissions:
+  contents: read
+  issues: write
+  id-token: write
+
+jobs:
+  gather:
+    runs-on: ubuntu-latest
+    outputs:
+      candidate_count: ${{ steps.fetch.outputs.candidate_count }}
+      should_skip: ${{ steps.existing.outputs.should_skip }}
+      iso_week: ${{ steps.week.outputs.iso_week }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Compute ISO week
+        id: week
+        run: echo "iso_week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure research-radar label exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create research-radar \
+            --repo "$GITHUB_REPOSITORY" \
+            --color 1d76db \
+            --description "Surfaced research papers worth considering for the plugins" \
+            2>/dev/null || true
+
+      # Gather IDs already surfaced in prior research-radar issues so the same
+      # paper is never written up twice. The assess job embeds a machine-readable
+      # block (<!-- research-radar-ids: ... -->) in every issue it opens; we parse
+      # those back out here. --json | jq keeps the empty case exit-0
+      # (.claude/rules/parallel-safe-queries.md).
+      - name: Collect already-surfaced paper IDs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          gh issue list \
+            --repo "$GITHUB_REPOSITORY" \
+            --label research-radar \
+            --state all \
+            --limit 30 \
+            --json body \
+            --jq '.[].body' > "$RUNNER_TEMP/prior-bodies.txt" || true
+          grep -oE '<!-- research-radar-ids:[^>]*-->' "$RUNNER_TEMP/prior-bodies.txt" 2>/dev/null \
+            | sed -E 's/<!-- research-radar-ids:[[:space:]]*//; s/[[:space:]]*-->//' \
+            | tr ' ' '\n' \
+            | grep -v '^$' \
+            | sort -u > "$RUNNER_TEMP/seen-ids.txt" || true
+          echo "Already-surfaced IDs: $(wc -l < "$RUNNER_TEMP/seen-ids.txt")"
+
+      - name: Fetch and normalize candidate papers
+        id: fetch
+        run: |
+          set -uo pipefail
+          SINCE="${{ inputs.since_days || '8' }}"
+          bash scripts/fetch-research-papers.sh \
+            --since-days "$SINCE" \
+            --seen-file "$RUNNER_TEMP/seen-ids.txt" \
+            --out research-candidates.json | tee "$RUNNER_TEMP/radar-summary.txt"
+          COUNT="$(grep -m1 '^CANDIDATE_COUNT=' "$RUNNER_TEMP/radar-summary.txt" | cut -d= -f2)"
+          echo "candidate_count=${COUNT:-0}" >> "$GITHUB_OUTPUT"
+
+      # Idempotency: one research-radar issue per ISO week. force=true bypasses.
+      - name: Check for existing issue this week
+        id: existing
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FORCE: ${{ inputs.force }}
+          WEEK: ${{ steps.week.outputs.iso_week }}
+        run: |
+          set -uo pipefail
+          if [ "$FORCE" = "true" ]; then
+            echo "Force flag set — bypassing skip-if-exists"
+            echo "should_skip=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          ISSUE=$(gh issue list \
+            --repo "$GITHUB_REPOSITORY" \
+            --label research-radar \
+            --state open \
+            --json number,title \
+            --jq ".[] | select(.title | test(\"$WEEK\")) | .number" \
+            | head -1)
+          if [ -n "$ISSUE" ]; then
+            echo "Open research-radar issue #$ISSUE already covers $WEEK — skipping"
+            echo "should_skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No open research-radar issue for $WEEK — assessment will run"
+            echo "should_skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload candidate set for assess job
+        if: steps.fetch.outputs.candidate_count != '0' && steps.existing.outputs.should_skip != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: research-candidates
+          path: research-candidates.json
+          retention-days: 7
+
+  claude-assess:
+    needs: gather
+    if: needs.gather.outputs.candidate_count != '0' && needs.gather.outputs.should_skip != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download candidate set
+        uses: actions/download-artifact@v4
+        with:
+          name: research-candidates
+          path: .
+
+      - name: Assess papers and open an issue when relevant
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ github.token }}
+          # Bounded read-assess-write: read the candidate JSON, judge relevance,
+          # open at most one issue. 20 turns is ample; if it can't finish, the
+          # prompt is wrong and we want to fail fast.
+          claude_args: "--model sonnet --max-turns 20"
+          prompt: |
+            You are the RESEARCH RADAR for the `laurigates/claude-plugins` repository — a
+            collection of Claude Code plugins (skills, agents, rules) for development
+            workflows. Your job: scan recent AI/agent research and open ONE GitHub issue
+            summarizing only the papers that suggest a *specific, actionable* improvement to
+            an existing plugin or rule. If nothing clears that bar, open NO issue.
+
+            ## Pre-computed input (use this — do not re-fetch)
+
+            - `research-candidates.json` in the repo root: a JSON array of recent papers,
+              each `{id, title, url, source, published, abstract, upvotes}`, already
+              deduplicated against papers surfaced in prior research-radar issues. Read it
+              once with `Read` (or `jq` via Bash). Do NOT use WebFetch/WebSearch — the
+              candidate set is the authoritative input.
+            - ISO week: ${{ needs.gather.outputs.iso_week }}
+            - Candidate count: ${{ needs.gather.outputs.candidate_count }}
+
+            ## Efficiency rules
+
+            - `TodoWrite` once at the start to plan, then minimal narration.
+            - Read `research-candidates.json` once. You may `jq` it to pre-filter by keyword.
+            - Do not read plugin source files — you are mapping ideas to plugin *names*, not
+              editing them. Follow-up application is human/`@claude`-driven work.
+
+            ## Step 1: Read and triage the candidates
+
+            Read `research-candidates.json`. For each paper, judge relevance to THIS plugin
+            collection. A paper CLEARS THE BAR only if it implies a concrete change to one of
+            these areas — not mere topical interest:
+
+            | Area | Plugin / rules |
+            |------|----------------|
+            | Agent orchestration, multi-agent, delegation | `agent-patterns-plugin`, `agents-plugin` |
+            | Skill / capability evaluation, self-improvement, best-of-N | `evaluate-plugin`, `feedback-plugin` |
+            | Prompting techniques, grounding, citations | `prompt-engineering-plugin` |
+            | Skill design, context management, memory, tool use | `.claude/rules/skill-*.md`, `CLAUDE.md` |
+            | Verification, adversarial review, test generation | `agent-patterns-plugin`, `testing-plugin` |
+
+            Reference point: PR #1593 adopted "RHO verify + best-of-N" (arXiv:2606.05922) into
+            `evaluate-plugin` and `feedback-plugin`. That is the calibre of match worth
+            surfacing — a paper with a technique we could actually adopt.
+
+            Be selective. Most papers will NOT clear the bar. Aim for the few highest-signal
+            matches (typically 0–5). Prefer higher `upvotes` as a weak tie-breaker, not a
+            criterion.
+
+            ## Step 2: Decide
+
+            - **If zero papers clear the bar:** open no issue. Print one line explaining that
+              nothing was actionable this week, and finish. This is a valid, common outcome.
+            - **If one or more clear the bar:** open exactly ONE issue (Step 3).
+
+            ## Step 3: Open one issue
+
+            Use the What / Why / How framing (concise, positive — see
+            `communication-plugin:ticket-drafting-guidelines`). Group findings by target
+            plugin/rule. For each paper: title (linked to its `url`), the `id`, a one-line
+            takeaway, and a concrete "consider applying to X" suggestion.
+
+            End the body with a machine-readable block listing the `id` of every paper you
+            included — the next run parses this to avoid re-surfacing the same papers:
+
+                <!-- research-radar-ids: <id1> <id2> ... -->
+
+            ```bash
+            gh issue create \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "Research radar: ${{ needs.gather.outputs.iso_week }}" \
+              --label "research-radar" \
+              --assignee laurigates \
+              --body "$(cat <<'EOF'
+            ## What
+
+            Recent AI/agent research that may be worth applying to the plugins (week ${{ needs.gather.outputs.iso_week }}).
+
+            ## Why
+
+            Surfaced automatically so adoptable techniques (cf. PR #1593, RHO + best-of-N) don't depend on someone happening to read the right paper.
+
+            ## How — candidates
+
+            ### <target plugin or rule>
+            - **[<paper title>](<url>)** (`<id>`) — <one-line takeaway>. Consider: <concrete suggestion>.
+
+            (Group additional findings under their target plugin/rule. Omit areas with no match.)
+
+            ---
+            Sources: HuggingFace daily papers, arXiv (cs.AI/CL/LG/SE/HC), lab blogs. Triaged from ${{ needs.gather.outputs.candidate_count }} candidates.
+
+            🤖 Surfaced by the Research radar workflow
+
+            <!-- research-radar-ids: <id1> <id2> -->
+            EOF
+            )"
+            ```
+
+            ## Step 4: Sanity check
+
+            Confirm at most one issue was created and that the `<!-- research-radar-ids: -->`
+            block lists exactly the papers you wrote up. Do not edit any repo files.
+          additional_permissions: |
+            Read
+            Grep
+            Glob
+            TodoWrite
+            Bash(gh issue *)
+            Bash(gh label *)
+            Bash(cat *)
+            Bash(jq *)
+          plugin_marketplaces: |
+            https://github.com/laurigates/claude-plugins.git
+          plugins: |
+            evaluate-plugin@laurigates-claude-plugins
+            agent-patterns-plugin@laurigates-claude-plugins
+            communication-plugin@laurigates-claude-plugins
