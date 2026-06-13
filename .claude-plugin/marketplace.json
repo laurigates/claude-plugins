@@ -133,7 +133,7 @@
       "name": "codebase-attributes-plugin",
       "source": "./codebase-attributes-plugin",
       "description": "Structured codebase health attributes with severity-based agent routing and dashboard",
-      "version": "1.2.2",
+      "version": "1.3.0",
       "keywords": [
         "attributes",
         "health",
@@ -571,7 +571,7 @@
       "name": "session-plugin",
       "source": "./session-plugin",
       "description": "Session bookends - spinup briefing, wrap-up capture, end-of-session orchestration, and knowledge distillation",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "keywords": [
         "session",
         "spinup",
