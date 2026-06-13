@@ -68,9 +68,18 @@ fi
 
 # Check Bash commands for sensitive file access and credential exposure
 if [ "$TOOL_NAME" = "Bash" ] && [ -n "$COMMAND" ]; then
-  # Block printing environment variables that likely contain secrets
-  # shellcheck disable=SC2016  # $(...) is a grep pattern, not shell expansion
-  if echo "$COMMAND" | grep -Eq '(echo|printf|cat|env|printenv|export).*\$(.*_(KEY|SECRET|TOKEN|PASSWORD|CREDENTIAL|AUTH)s?)'; then
+  # Block printing environment variables that likely contain secrets.
+  # Match an actual variable *reference* whose name ends in a secret-ish suffix:
+  # `$VAR_KEY`, `${VAR_TOKEN}`, etc. The name is a contiguous identifier
+  # ([A-Za-z0-9_]*) — NOT `.*` — so the match cannot bridge a `$(date …)` command
+  # substitution to a distant unrelated `_KEY` elsewhere on the line. That `.*`
+  # greediness false-blocked routine config echoes like
+  # `echo "$(date) KC_HOSTNAME=$kch FE_KEYCLOAK_URL=$feu"`, where `FE_KEYCLOAK`
+  # contains `_KEY` but is an assignment LHS, not a secret variable reference
+  # (issue #1580). Public config names ($..._HOST, $..._URL, $..._ENDPOINT) are
+  # no longer caught; genuine $..._KEY/_SECRET/_TOKEN/_PASSWORD references are.
+  # shellcheck disable=SC2016  # $... is a grep pattern, not shell expansion
+  if echo "$COMMAND" | grep -Eq '(echo|printf|cat|env|printenv|export)[^|]*\$\{?[A-Za-z0-9_]*_(KEY|SECRET|TOKEN|PASSWORD|CREDENTIAL|AUTH)[Ss]?\b'; then
     block "BLOCKED: Command may expose secret environment variables.
 Use the application's configuration system instead of echoing secrets.
 Set CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION=1 to override."

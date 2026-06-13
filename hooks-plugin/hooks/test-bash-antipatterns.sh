@@ -335,6 +335,147 @@ assert_stderr_contains \
     'bash-tool-replacements.md' \
     "head -50 file.md"
 
+# ── grep -l/-c/-L filter-mode exemption (issue #1592) ────────────────────────
+# Regression: grep -l (files-with-matches) and grep -c (count) over a known
+# file set are filters, not codebase searches the Grep tool replaces, but they
+# were blocked by the grep/rg detector. The uppercase context flag -C (a real
+# search) must still be blocked.
+echo ""
+echo "grep -l/-c/-L filter modes are exempt (-C context is not):"
+
+assert_exit \
+    "grep -lE over explicit files is allowed (files-with-matches)" 0 \
+    "grep -lE NOTARY /tmp/a.js /tmp/b.js"
+
+assert_exit \
+    "grep -c count mode is allowed" 0 \
+    "grep -c pattern /tmp/file.js"
+
+assert_exit \
+    "grep -rl (recursive files-with-matches) is allowed" 0 \
+    "grep -rl pattern src/"
+
+assert_exit \
+    "grep -L (files-without-match) is allowed" 0 \
+    "grep -L pattern file1 file2"
+
+assert_exit \
+    "grep --count long form is allowed" 0 \
+    "grep --count pattern file"
+
+assert_exit \
+    "grep -C3 (uppercase context) is still blocked (it's a real search)" 2 \
+    "grep -C3 pattern file"
+
+# ── task-output read → Read tool, not deprecated TaskOutput (issue #1591) ─────
+# Regression: the task-output detector recommended the deprecated TaskOutput
+# tool, fired on quoted/heredoc string content that merely *mentions* a
+# task-output path, and blocked extraction pipelines over large output files.
+echo ""
+echo "task-output reads nudge toward Read, allow extraction pipelines, ignore quoted mentions:"
+
+assert_exit \
+    "standalone cat of a task-output file is nudged toward Read" 2 \
+    "cat /tmp/claude/x/tasks/run.output"
+
+assert_exit \
+    "extraction pipeline over a task-output file is allowed" 0 \
+    "cat /tmp/claude/x/tasks/run.output | jq .results"
+
+assert_exit \
+    "gh issue body merely mentioning a .output path is allowed (quoted string)" 0 \
+    "gh issue create --body 'then tail the run.output file for results'"
+
+# The sleep-then-cat polling form reaches the task-output detector specifically
+# (a bare `cat`/`tail` read is caught by the generic cat/head-tail detectors
+# first). Assert that detector's message recommends Read, not TaskOutput.
+assert_stderr_contains \
+    "task-output block recommends the Read tool, not TaskOutput" \
+    'Use the Read tool' \
+    "sleep 5 && cat /tmp/claude/x/tasks/run.output"
+
+assert_stderr_contains \
+    "task-output block no longer names the deprecated TaskOutput tool as the fix" \
+    'TaskOutput tool is deprecated' \
+    "sleep 5 && cat /tmp/claude/x/tasks/run.output"
+
+# ── pipe-count gates on discouraged head stage, not raw count (issue #1603) ───
+# Regression: a long pipeline of legitimate transforms (jq | sort | uniq -c |
+# sort | …) was hard-blocked purely on pipe count. The block must fire only
+# when a discouraged head stage (cat/echo/printf, or a redundant grep | grep)
+# feeds the pipeline.
+echo ""
+echo "long pipelines of legit transforms pass; cat/echo-headed scrapes still blocked:"
+
+assert_exit \
+    "jq|sort|uniq|sort|head|tail analysis pipeline is allowed (6 pipes, jq head)" 0 \
+    "jq -r '[.a,.b]|@tsv' r.jsonl | sort | uniq -c | sort -k2 | head | tail"
+
+assert_exit \
+    "cat-headed 5+ pipe text-scrape is still blocked" 2 \
+    "cat f.txt | grep x | grep y | sed s/a/b/ | cut -f1 | sort"
+
+assert_exit \
+    "redundant grep | grep | sed | cut | sort chain is still blocked" 2 \
+    "ps aux | grep proc | grep -v grep | awk '{print \$2}' | sort | uniq"
+
+# ── grep block message offers the pipe fallback (issue #1602) ─────────────────
+# Regression: when the Grep tool is unavailable in a session, the block message
+# pointed only at Grep(...). It must also offer the always-allowed pipe form.
+echo ""
+echo "grep block message offers the pipe fallback for sessions without the Grep tool:"
+
+assert_stderr_contains \
+    "grep block message mentions the pipe fallback" \
+    'pipe instead' \
+    "grep -rn pattern src/"
+
+# ── git push -u colon-refspec footgun, no-colon form allowed (issue #1600) ────
+# Regression: the push -u detector blocked the legitimate no-colon form
+# `git push -u origin feat/x` (which pushes feat/x, never touching main) on a
+# false premise. It must instead catch only the real footgun: -u on a colon
+# refspec whose source is the protected branch (git push -u origin main:feat).
+# Run against a throwaway repo on `main` so branch detection has a branch.
+echo ""
+echo "git push -u: no-colon feature push allowed, colon main:feat footgun blocked (#1600):"
+
+PUSH_REPO=$(mktemp -d)
+git -C "$PUSH_REPO" init -q -b main
+git -C "$PUSH_REPO" config user.email t@e.com
+git -C "$PUSH_REPO" config user.name t
+git -C "$PUSH_REPO" config commit.gpgsign false
+git -C "$PUSH_REPO" commit -q --allow-empty -m init
+
+# $HOOK is a relative path in this suite; resolve it to absolute so the
+# subshell `cd "$PUSH_REPO"` below doesn't break the lookup (would exit 127).
+HOOK_ABS="$(cd "$(dirname "$HOOK")" && pwd)/$(basename "$HOOK")"
+
+assert_push_exit() {
+    local desc="$1" expected="$2" cmd="$3"
+    local json exit_code=0
+    json=$(jq -nc --arg cmd "$cmd" '{tool_name:"Bash",tool_input:{command:$cmd}}')
+    ( cd "$PUSH_REPO" && printf '%s' "$json" | bash "$HOOK_ABS" >/dev/null 2>&1 ) || exit_code=$?
+    if [ "$exit_code" -eq "$expected" ]; then
+        printf "  PASS: %s\n" "$desc"; PASS=$((PASS + 1))
+    else
+        printf "  FAIL: %s (expected exit %d, got %d)\n" "$desc" "$expected" "$exit_code"; FAIL=$((FAIL + 1))
+    fi
+}
+
+assert_push_exit \
+    "git push -u origin feat/x (no colon) is allowed from main" 0 \
+    "git push -u origin feat/x"
+
+assert_push_exit \
+    "git push -u origin main:feat/x (colon, source=main) is blocked" 2 \
+    "git push -u origin main:feat/x"
+
+assert_push_exit \
+    "git push origin main:feat/x without -u is allowed" 0 \
+    "git push origin main:feat/x"
+
+rm -rf "$PUSH_REPO"
+
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo ""
 echo "Results: $PASS passed, $FAIL failed"

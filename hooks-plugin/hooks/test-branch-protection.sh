@@ -228,6 +228,77 @@ assert_deny \
   "git -C <master-worktree> push (no refspec) is still denied" \
   "git -C $MASTER_WT push"
 
+# ── push to an explicit non-protected ref from a main checkout (#1600) ───────
+# Regression: `git push -u origin feat/x` while parked on main was denied
+# because only colon refspecs were allowed — but that command pushes feat/x,
+# not main. An explicitly-named non-protected target must be allowed; HEAD and
+# the protected branch itself must still be denied.
+echo ""
+echo "explicit non-protected push target from main is allowed (#1600):"
+
+assert_allow \
+  "git push -u origin feat/x (explicit feature ref) is allowed from main" \
+  "git push -u origin feat/x"
+
+assert_allow \
+  "git push origin feat/x (no -u) is allowed from main" \
+  "git push origin feat/x"
+
+assert_deny \
+  "git push origin main (explicit protected target) is still denied" \
+  "git push origin main"
+
+assert_deny \
+  "git push origin HEAD (resolves to main on a main checkout) is still denied" \
+  "git push origin HEAD"
+
+# ── GitHub wiki checkout exemption (#1586) ───────────────────────────────────
+# Wikis render only `master` and support no PRs, so branch protection would
+# force every wiki edit into full user delegation. A *.wiki checkout (detected
+# by directory name or *.wiki.git remote) is exempt. Built in its own repo
+# whose top-level dir ends in `.wiki`.
+echo ""
+echo "GitHub wiki checkouts are exempt from branch protection (#1586):"
+
+WIKI_PARENT=$(mktemp -d)
+WIKI_REPO="$WIKI_PARENT/myproject.wiki"
+mkdir -p "$WIKI_REPO"
+git -C "$WIKI_REPO" init -q -b master
+git -C "$WIKI_REPO" config user.email "test@example.com"
+git -C "$WIKI_REPO" config user.name "test"
+git -C "$WIKI_REPO" config commit.gpgsign false
+git -C "$WIKI_REPO" commit -q --allow-empty -m init
+git -C "$WIKI_REPO" commit -q --allow-empty -m second
+
+assert_wiki_allow() {
+  local desc="$1" cmd_str="$2"
+  local json out
+  json=$(jq -nc --arg cmd "$cmd_str" '{tool_name:"Bash",tool_input:{command:$cmd}}')
+  out=$( cd "$WIKI_REPO" && printf '%s' "$json" | bash "$HOOK" )
+  if [ -z "$out" ]; then
+    printf "  PASS: %s\n" "$desc"; PASS=$((PASS + 1))
+  else
+    printf "  FAIL: %s\n        expected silent allow, got: %s\n" "$desc" "$out"; FAIL=$((FAIL + 1))
+  fi
+}
+
+assert_wiki_allow \
+  "git add in a *.wiki checkout (by dir name) is allowed on master" \
+  "git add Home.md"
+
+assert_wiki_allow \
+  "git commit in a *.wiki checkout (by dir name) is allowed on master" \
+  "git commit -m 'docs: add page'"
+
+# Now add a *.wiki.git remote and confirm the remote-URL detection path too.
+git -C "$WIKI_REPO" remote add origin "https://github.com/owner/myproject.wiki.git"
+
+assert_wiki_allow \
+  "git add in a checkout with a *.wiki.git remote is allowed" \
+  "git add Home.md"
+
+rm -rf "$WIKI_PARENT"
+
 # ── read-only operations remain silently allowed ────────────────────────────
 echo ""
 echo "read-only git operations remain allowed:"

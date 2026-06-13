@@ -44,7 +44,7 @@ explicit do/don't table style that worked for `find` in W16.
 
 ## When to keep `find` / `grep` / `rg` in Bash
 
-The hook allows the Bash form in three scenarios:
+The hook allows the Bash form in four scenarios:
 
 1. **Pipelines.** `gh pr list --json title --jq '.[].title' | rg 'feat'`
    is fine — the `|` short-circuits the hook check.
@@ -53,8 +53,13 @@ The hook allows the Bash form in three scenarios:
 3. **Boolean exit-code checks.** `grep -q pattern file && do_thing`
    is fine. The `Grep` tool returns content; it doesn't give you a
    clean shell-conditional exit code.
+4. **File-list / count filter modes.** `grep -l pattern f1 f2`
+   (files-with-matches), `grep -c pattern file` (count), and
+   `grep -L …` (files-without-match) are filters over a known file set,
+   not codebase searches the `Grep` tool replaces. (The uppercase
+   context flag `-C` is *not* exempt — it's a real search.)
 
-In all three cases the hook silently passes the command through. If
+In all four cases the hook silently passes the command through. If
 you're getting blocked anyway, you're not in one of these cases —
 switch to the tool.
 
