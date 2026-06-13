@@ -32,5 +32,6 @@
     "test-quality",
     "complexity",
     "supply-chain"
-  ]
+  ],
+  "hooks": "./hooks.json"
 }
