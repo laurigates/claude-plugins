@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.36.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.35.0...blueprint-plugin-v3.36.0) (2026-06-13)
+
+
+### Features
+
+* **blueprint-plugin:** widen structural-cue detection beyond manifests + export lines ([#1617](https://github.com/laurigates/claude-plugins/issues/1617)) ([98677a5](https://github.com/laurigates/claude-plugins/commit/98677a5c5990d066cb17eb96e472fa020664d1db))
+
 ## [3.35.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.34.3...blueprint-plugin-v3.35.0) (2026-06-13)
 
 
