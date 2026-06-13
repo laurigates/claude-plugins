@@ -6,6 +6,8 @@ Blueprint Development methodology for Claude Code - structured feature developme
 
 See [`docs/flow.md`](docs/flow.md) for a diagram of how the skills fit together.
 
+See [`docs/behavioral-cue-registry.md`](docs/behavioral-cue-registry.md) for the registry of all behavioral-cue hooks (events, matchers, channels, dedup keys) mandated by ADR-0017.
+
 ## Overview
 
 This plugin provides a documentation-first development workflow:
