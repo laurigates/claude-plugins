@@ -36,3 +36,6 @@ secrets.json
 
 # Blueprint work-orders (per-task scratch; may contain sensitive details)
 docs/blueprint/work-orders/
+
+# OpenCode export — reproducible build artifact (run `just export-opencode`)
+dist/

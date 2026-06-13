@@ -95,3 +95,12 @@ pr-rebase-all:
             echo "FAILED"
         fi
     done
+
+####################
+# OpenCode export
+####################
+
+# Project skills + subagents to OpenCode format via rulesync (output: dist/opencode)
+[group: "opencode"]
+export-opencode *args:
+    ./scripts/export-opencode.sh {{args}}
