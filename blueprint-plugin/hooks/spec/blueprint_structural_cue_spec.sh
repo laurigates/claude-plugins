@@ -46,6 +46,97 @@ Describe "blueprint-structural-cue.sh"
       The status should equal 0
       The output should include "ORIGINAL-OUTPUT-XYZ"
     End
+
+    It "fires on a TypeScript exported interface declaration"
+      input='{"tool_name":"Edit","session_id":"s10","tool_input":{"file_path":"src/types.ts","new_string":"export interface MyConfig { host: string; }"},"tool_response":"ok"}'
+      When call bash -c "echo '$input' | bash '$HOOK_SCRIPT'"
+      The status should equal 0
+      The output should include "Structural change detected"
+    End
+
+    It "fires on a TypeScript exported type alias"
+      input='{"tool_name":"Write","session_id":"s11","tool_input":{"file_path":"src/api.ts","content":"export type RequestId = string;"},"tool_response":"ok"}'
+      When call bash -c "echo '$input' | bash '$HOOK_SCRIPT'"
+      The status should equal 0
+      The output should include "Structural change detected"
+    End
+
+    It "fires on a Go exported struct declaration"
+      input='{"tool_name":"Edit","session_id":"s12","tool_input":{"file_path":"pkg/server.go","new_string":"type Server struct { addr string }"},"tool_response":"ok"}'
+      When call bash -c "echo '$input' | bash '$HOOK_SCRIPT'"
+      The status should equal 0
+      The output should include "Structural change detected"
+    End
+
+    It "fires on a Go exported interface declaration"
+      input='{"tool_name":"Edit","session_id":"s13","tool_input":{"file_path":"pkg/handler.go","new_string":"type Handler interface { ServeHTTP() }"},"tool_response":"ok"}'
+      When call bash -c "echo '$input' | bash '$HOOK_SCRIPT'"
+      The status should equal 0
+      The output should include "Structural change detected"
+    End
+
+    It "fires on a Rust pub struct declaration"
+      input='{"tool_name":"Edit","session_id":"s14","tool_input":{"file_path":"src/lib.rs","new_string":"pub struct Config { pub host: String }"},"tool_response":"ok"}'
+      When call bash -c "echo '$input' | bash '$HOOK_SCRIPT'"
+      The status should equal 0
+      The output should include "Structural change detected"
+    End
+
+    It "fires on a Rust pub enum declaration"
+      input='{"tool_name":"Edit","session_id":"s15","tool_input":{"file_path":"src/error.rs","new_string":"pub enum AppError { NotFound, BadRequest }"},"tool_response":"ok"}'
+      When call bash -c "echo '$input' | bash '$HOOK_SCRIPT'"
+      The status should equal 0
+      The output should include "Structural change detected"
+    End
+
+    It "fires on a Rust pub trait declaration"
+      input='{"tool_name":"Edit","session_id":"s16","tool_input":{"file_path":"src/traits.rs","new_string":"pub trait Processor { fn process(&self); }"},"tool_response":"ok"}'
+      When call bash -c "echo '$input' | bash '$HOOK_SCRIPT'"
+      The status should equal 0
+      The output should include "Structural change detected"
+    End
+
+    It "fires on an Express route registration"
+      input='{"tool_name":"Edit","session_id":"s17","tool_input":{"file_path":"src/routes.js","new_string":"app.get(\"/health\", handler);"},"tool_response":"ok"}'
+      When call bash -c "echo '$input' | bash '$HOOK_SCRIPT'"
+      The status should equal 0
+      The output should include "Structural change detected"
+    End
+
+    It "fires on a Flask route decorator"
+      input='{"tool_name":"Edit","session_id":"s18","tool_input":{"file_path":"app.py","new_string":"@app.route(\"/users\")"},"tool_response":"ok"}'
+      When call bash -c "echo '$input' | bash '$HOOK_SCRIPT'"
+      The status should equal 0
+      The output should include "Structural change detected"
+    End
+
+    It "fires on a .proto schema file write"
+      input='{"tool_name":"Write","session_id":"s19","tool_input":{"file_path":"proto/service.proto","content":"syntax = \"proto3\";"},"tool_response":"ok"}'
+      When call bash -c "echo '$input' | bash '$HOOK_SCRIPT'"
+      The status should equal 0
+      The output should include "Structural change detected"
+    End
+
+    It "fires on a .graphql schema file write"
+      input='{"tool_name":"Write","session_id":"s20","tool_input":{"file_path":"schema/api.graphql","content":"type Query { users: [User] }"},"tool_response":"ok"}'
+      When call bash -c "echo '$input' | bash '$HOOK_SCRIPT'"
+      The status should equal 0
+      The output should include "Structural change detected"
+    End
+
+    It "fires on a Prisma schema file write"
+      input='{"tool_name":"Write","session_id":"s21","tool_input":{"file_path":"prisma/schema.prisma","content":"model User { id Int }"},"tool_response":"ok"}'
+      When call bash -c "echo '$input' | bash '$HOOK_SCRIPT'"
+      The status should equal 0
+      The output should include "Structural change detected"
+    End
+
+    It "fires on an openapi.yaml write"
+      input='{"tool_name":"Write","session_id":"s22","tool_input":{"file_path":"docs/openapi.yaml","content":"openapi: 3.0.0"},"tool_response":"ok"}'
+      When call bash -c "echo '$input' | bash '$HOOK_SCRIPT'"
+      The status should equal 0
+      The output should include "Structural change detected"
+    End
   End
 
   Describe "non-structural edits stay silent"
@@ -65,6 +156,27 @@ Describe "blueprint-structural-cue.sh"
 
     It "ignores non-Edit/Write tools"
       input='{"tool_name":"Bash","session_id":"s7","tool_input":{"command":"export FOO=1"},"tool_response":"ok"}'
+      When call bash -c "echo '$input' | bash '$HOOK_SCRIPT'"
+      The status should equal 0
+      The output should equal ""
+    End
+
+    It "is silent on a lowercase Go struct (unexported)"
+      input='{"tool_name":"Edit","session_id":"s30","tool_input":{"file_path":"internal/server.go","new_string":"type server struct { addr string }"},"tool_response":"ok"}'
+      When call bash -c "echo '$input' | bash '$HOOK_SCRIPT'"
+      The status should equal 0
+      The output should equal ""
+    End
+
+    It "is silent on a TypeScript non-exported interface"
+      input='{"tool_name":"Edit","session_id":"s31","tool_input":{"file_path":"src/internal.ts","new_string":"interface internalConfig { debug: boolean }"},"tool_response":"ok"}'
+      When call bash -c "echo '$input' | bash '$HOOK_SCRIPT'"
+      The status should equal 0
+      The output should equal ""
+    End
+
+    It "is silent on a plain YAML config file (not openapi)"
+      input='{"tool_name":"Edit","session_id":"s32","tool_input":{"file_path":"config/settings.yaml","new_string":"debug: true"},"tool_response":"ok"}'
       When call bash -c "echo '$input' | bash '$HOOK_SCRIPT'"
       The status should equal 0
       The output should equal ""
