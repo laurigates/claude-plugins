@@ -218,3 +218,4 @@ check blueprint context. This ADR specifies it; implementation is a follow-up PR
 - [ADR-0003: Auto-Discovery Component Pattern](0003-auto-discovery-component-pattern.md)
 - [ADR-0015: Adopt Agent Teams and Deprecate Manual Orchestration](0015-agent-teams-adoption.md)
 - [ADR-0016: Extract Deterministic Skill Procedure into Structured-Output Scripts](0016-deterministic-script-extraction-for-token-efficiency.md)
+- `blueprint-plugin/docs/behavioral-cue-registry.md` — registry of all cue hooks: events, matchers, channels, dedup keys
