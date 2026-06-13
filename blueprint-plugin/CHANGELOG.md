@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.36.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.36.0...blueprint-plugin-v3.36.1) (2026-06-13)
+
+
+### Documentation
+
+* **blueprint-plugin:** add behavioral-cue registry ([#1624](https://github.com/laurigates/claude-plugins/issues/1624)) ([e967986](https://github.com/laurigates/claude-plugins/commit/e9679862677f3932c6fd4925e5847ccdf1225a6b))
+
 ## [3.36.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.35.0...blueprint-plugin-v3.36.0) (2026-06-13)
 
 
