@@ -81,3 +81,9 @@ repos:
         language: system
         files: '^(\.claude-plugin/marketplace\.json|\.claude/settings\.json)$'
         pass_filenames: false
+      - id: test-fetch-research-papers
+        name: research-radar fetcher parse/dedup/date-filter regression
+        entry: bash ./scripts/tests/test-fetch-research-papers.sh
+        language: system
+        files: '^scripts/(fetch-research-papers\.sh|tests/test-fetch-research-papers\.sh)$'
+        pass_filenames: false
