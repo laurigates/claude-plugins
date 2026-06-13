@@ -6,6 +6,10 @@ Structured codebase health attributes with severity-based agent routing.
 
 See [`docs/flow.md`](docs/flow.md) for a diagram of how the skills fit together.
 
+## SessionStart Cue
+
+When `.claude/attributes.json` exists in a repo, the plugin injects a one-line `additionalContext` cue at session startup/resume offering to run `/attributes:route` or `/attributes:dashboard`. The cue fires at most once per session and names the highest severity and category found. It never blocks — it is purely informational.
+
 ## Skills
 
 | Skill | Description |

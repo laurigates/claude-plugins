@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "codebase-attributes-plugin hooks — SessionStart cue routes work by health severity",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/attributes-health-cue.sh",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}
