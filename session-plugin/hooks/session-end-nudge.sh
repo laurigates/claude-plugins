@@ -67,8 +67,18 @@ user_turns=${user_turns:-0}
 # test seam — point it at a nonexistent path to simulate "no taskwarrior".
 task_bin="${SESSION_NUDGE_TASK_BIN:-task}"
 has_surface=0
+has_open_tasks=0
 if command -v "$task_bin" >/dev/null 2>&1; then
     has_surface=1
+    # Read-only query for open/active tasks in the current project.
+    # Uses 'export' (not 'list') so it exits 0 on empty — parallel-safe.
+    if [ -n "$cwd" ]; then
+        repo_root_tw=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null || echo "$cwd")
+        proj=$(basename "$repo_root_tw")
+        task_count=$("$task_bin" project:"$proj" '(status:pending or +ACTIVE)' export 2>/dev/null \
+            | jq 'length' 2>/dev/null || echo 0)
+        [ "${task_count:-0}" -gt 0 ] && has_open_tasks=1
+    fi
 elif [ -n "$cwd" ] && [ -d "$cwd" ]; then
     repo_root=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null || echo "$cwd")
     if [ -d "$repo_root/.claude/rules" ] \
@@ -88,6 +98,11 @@ fi
 # the agent produces one more response — an offer, never an execution.
 touch "$state_file"
 
-reason="The user is winding down the session. Briefly offer to run the session-plugin:session-end orchestrator — it surveys the session once, previews which end-of-session passes qualify (session-wrap loose-thread capture, session-distill durable learnings, /feedback:session plugin feedback) and runs only what the user confirms in a single prompt. Offer only — never run it without explicit user confirmation. If nothing follow-up-worthy surfaced this session, acknowledge the wind-down and end."
+task_cue=""
+if [ "$has_open_tasks" = 1 ]; then
+    task_cue=" Also mention a taskwarrior state-sync pass: check which tasks are still open or active (task project:<name> '(status:pending or +ACTIVE)' export | jq '.[]'), offer to mark done / update statuses / add follow-up tasks — use stable UUIDs from 'task +LATEST _get uuid' when referencing specific tasks."
+fi
+
+reason="The user is winding down the session. Briefly offer to run the session-plugin:session-end orchestrator — it surveys the session once, previews which end-of-session passes qualify (session-wrap loose-thread capture, session-distill durable learnings, /feedback:session plugin feedback) and runs only what the user confirms in a single prompt.${task_cue} Offer only — never run it without explicit user confirmation. If nothing follow-up-worthy surfaced this session, acknowledge the wind-down and end."
 
 jq -nc --arg r "$reason" '{decision: "block", reason: $r}'

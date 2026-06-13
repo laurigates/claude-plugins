@@ -180,6 +180,68 @@ output=$(run_hook_output "sess-happy" "$REPO_WITH_RULES" "$TRANSCRIPT")
 assert_silent "second call in same session is silent" "$output"
 rm -f "$TRANSCRIPT"
 
+# ── taskwarrior state-sync cue ───────────────────────────────────────────────
+echo ""
+echo "taskwarrior state-sync cue (open tasks → sync cue in reason):"
+
+# run_hook_output always injects SESSION_NUDGE_TASK_BIN from the NO_TASK seam;
+# for taskwarrior-specific tests we call the hook directly so we can set our
+# own SESSION_NUDGE_TASK_BIN without interference.
+run_hook_with_task_bin() {
+    local task_bin="$1" session_id="$2" cwd="$3" transcript="$4"
+    local json
+    json=$(jq -nc --arg sid "$session_id" --arg cwd "$cwd" --arg tp "$transcript" \
+        '{session_id: $sid, cwd: $cwd, transcript_path: $tp}')
+    printf '%s' "$json" \
+        | HOME="$TEST_HOME" SESSION_NUDGE_TASK_BIN="$task_bin" \
+          bash "$HOOK" 2>/dev/null || true
+}
+
+# Create a mock task binary that returns a non-empty task list when queried.
+MOCK_TASK_DIR=$(mktemp -d)
+cat > "$MOCK_TASK_DIR/task" <<'MOCK'
+#!/bin/sh
+# Minimal task stub: 'export' returns one pending task; all other calls are no-ops.
+case "$*" in
+  *export*) printf '[{"id":1,"description":"open task","status":"pending","uuid":"00000000-0000-0000-0000-000000000001"}]\n' ;;
+  *) exit 0 ;;
+esac
+MOCK
+chmod +x "$MOCK_TASK_DIR/task"
+
+TRANSCRIPT=$(make_transcript 10 "im done for now")
+output=$(run_hook_with_task_bin "$MOCK_TASK_DIR/task" "sess-tw-tasks" "$REPO_WITH_RULES" "$TRANSCRIPT")
+assert_contains "open tasks → reason mentions taskwarrior sync cue" 'taskwarrior' "$output"
+assert_contains "open tasks → reason still references session-plugin:session-end" 'session-plugin:session-end' "$output"
+assert_contains "open tasks → reason still instructs offer-only" 'never run it without explicit user confirmation' "$output"
+assert_contains "open tasks → reason mentions stable UUID pattern" 'task +LATEST _get uuid' "$output"
+
+# When the task stub returns an empty list, the sync cue must NOT appear.
+MOCK_TASK_EMPTY_DIR=$(mktemp -d)
+cat > "$MOCK_TASK_EMPTY_DIR/task" <<'MOCK'
+#!/bin/sh
+# Task stub: returns empty list for all calls.
+case "$*" in
+  *export*) printf '[]\n' ;;
+  *) exit 0 ;;
+esac
+MOCK
+chmod +x "$MOCK_TASK_EMPTY_DIR/task"
+
+# Use a fresh session ID so the once-per-session marker doesn't suppress.
+output=$(run_hook_with_task_bin "$MOCK_TASK_EMPTY_DIR/task" "sess-tw-empty" "$REPO_WITH_RULES" "$TRANSCRIPT")
+# Hook must still fire (tasks stub means taskwarrior is "present" → has_surface=1)
+assert_contains "empty task list → hook still fires" '"decision":"block"' "$output"
+# But the taskwarrior sync cue text must not appear in the reason
+if echo "$output" | grep -q 'task +LATEST _get uuid'; then
+    printf "  FAIL: empty task list should NOT include UUID sync cue\n"; FAIL=$((FAIL + 1))
+else
+    printf "  PASS: empty task list does NOT include UUID sync cue\n"; PASS=$((PASS + 1))
+fi
+
+rm -rf "$MOCK_TASK_DIR" "$MOCK_TASK_EMPTY_DIR"
+rm -f "$TRANSCRIPT"
+
 echo ""
 echo "=== Results: ${PASS} passed, ${FAIL} failed ==="
 [ "$FAIL" -gt 0 ] && exit 1
