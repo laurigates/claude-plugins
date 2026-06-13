@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.7.0...evaluate-plugin-v1.8.0) (2026-06-13)
+
+
+### Features
+
+* **evaluate-plugin:** weak-model skill validation — legibility + matrix gates + fixtures ([#1625](https://github.com/laurigates/claude-plugins/issues/1625)) ([ce4e27a](https://github.com/laurigates/claude-plugins/commit/ce4e27ad21737d660f07636cb5838d3aa3f0c7c4))
+
 ## [1.7.0](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.6.0...evaluate-plugin-v1.7.0) (2026-06-12)
 
 
