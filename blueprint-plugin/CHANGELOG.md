@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.35.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.34.3...blueprint-plugin-v3.35.0) (2026-06-13)
+
+
+### Features
+
+* **blueprint-plugin:** add structural-change cue PostToolUse hook ([#1611](https://github.com/laurigates/claude-plugins/issues/1611)) ([293a27a](https://github.com/laurigates/claude-plugins/commit/293a27a6341fa5cef24723f8c84abbca9be98bf6))
+
 ## [3.34.3](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.34.2...blueprint-plugin-v3.34.3) (2026-06-13)
 
 

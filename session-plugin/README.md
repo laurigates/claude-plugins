@@ -15,7 +15,7 @@ Design background: [`docs/session-plugin-workflow.md`](../docs/session-plugin-wo
 |---|---|
 | `session-spinup` | Read-only session-start briefing: open taskwarrior tasks, git state (uncommitted / unpushed / open PRs), optional journal todos |
 | `session-wrap` | End-of-session capture of loose threads to taskwarrior, an optional journal, and GitHub follow-up issues |
-| `session-end` | Orchestrator: one survey, preview which of wrap / distill / feedback qualify, **single confirmation**, then sequence them |
+| `session-end` | Orchestrator: one survey, preview which of wrap / distill / feedback / taskwarrior-sync qualify, **single confirmation**, then sequence them |
 | `session-distill` | Distill session insights into `.claude/rules/`, skill improvements, and justfile recipes (moved from `project-plugin`) |
 
 `session-end` also references `feedback-plugin:feedback-session` by name
@@ -44,7 +44,7 @@ user-local by convention (`agent-patterns-plugin:plugin-settings`).
 | Hook | Event | Behavior |
 |---|---|---|
 | `session-spinup-nudge.sh` | SessionStart (startup/resume) | Injects a one-time context note when open threads exist (dirty tree, unpushed commits, open tasks for the cwd project). Informational only — never blocks |
-| `session-end-nudge.sh` | Stop | Offers `session-plugin:session-end` at most once per session when the user's own messages carry a wind-down phrase. Collapses the former separate wrap + distill nudges (design D4) |
+| `session-end-nudge.sh` | Stop | Offers `session-plugin:session-end` at most once per session when the user's own messages carry a wind-down phrase. Collapses the former separate wrap + distill nudges (design D4). When taskwarrior is on PATH and the project has open/active tasks, the offer also mentions a taskwarrior state-sync pass |
 
 The Stop nudge is deliberately conservative:
 
@@ -57,6 +57,8 @@ The Stop nudge is deliberately conservative:
   races a pending confirmation
 - requires something to capture into (taskwarrior on PATH, or a
   `.claude/rules/` / justfile surface)
+- the taskwarrior open-task query uses `export` (not `list`) so it exits 0
+  on empty and is safe in parallel batches (see `.claude/rules/parallel-safe-queries.md`)
 
 Pre-silence either nudge for a session:
 

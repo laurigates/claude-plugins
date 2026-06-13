@@ -172,6 +172,26 @@
           "timeout": 5000
         }
       ]
+    },
+    {
+      "matcher": "Write",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/blueprint-structural-cue.sh",
+          "timeout": 5000
+        }
+      ]
+    },
+    {
+      "matcher": "Edit",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/blueprint-structural-cue.sh",
+          "timeout": 5000
+        }
+      ]
     }
   ],
   "PreCompact": [
