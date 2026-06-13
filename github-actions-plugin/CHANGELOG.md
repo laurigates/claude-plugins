@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.9](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.7.8...github-actions-plugin-v1.7.9) (2026-06-13)
+
+
+### Bug Fixes
+
+* **skills:** rename 45 skill.md files to canonical SKILL.md ([#1608](https://github.com/laurigates/claude-plugins/issues/1608)) ([786b701](https://github.com/laurigates/claude-plugins/commit/786b701ee78134e31251f8c69dc58c34e4ccbb14))
+
 ## [1.7.8](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.7.7...github-actions-plugin-v1.7.8) (2026-05-29)
 
 

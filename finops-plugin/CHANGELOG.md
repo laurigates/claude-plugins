@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.7](https://github.com/laurigates/claude-plugins/compare/finops-plugin-v1.3.6...finops-plugin-v1.3.7) (2026-06-13)
+
+
+### Bug Fixes
+
+* **skills:** rename 45 skill.md files to canonical SKILL.md ([#1608](https://github.com/laurigates/claude-plugins/issues/1608)) ([786b701](https://github.com/laurigates/claude-plugins/commit/786b701ee78134e31251f8c69dc58c34e4ccbb14))
+
 ## [1.3.6](https://github.com/laurigates/claude-plugins/compare/finops-plugin-v1.3.5...finops-plugin-v1.3.6) (2026-06-10)
 
 

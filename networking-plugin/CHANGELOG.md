@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.5](https://github.com/laurigates/claude-plugins/compare/networking-plugin-v1.3.4...networking-plugin-v1.3.5) (2026-06-13)
+
+
+### Bug Fixes
+
+* **skills:** rename 45 skill.md files to canonical SKILL.md ([#1608](https://github.com/laurigates/claude-plugins/issues/1608)) ([786b701](https://github.com/laurigates/claude-plugins/commit/786b701ee78134e31251f8c69dc58c34e4ccbb14))
+
 ## [1.3.4](https://github.com/laurigates/claude-plugins/compare/networking-plugin-v1.3.3...networking-plugin-v1.3.4) (2026-05-14)
 
 

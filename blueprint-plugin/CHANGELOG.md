@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.34.3](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.34.2...blueprint-plugin-v3.34.3) (2026-06-13)
+
+
+### Bug Fixes
+
+* **skills:** rename 45 skill.md files to canonical SKILL.md ([#1608](https://github.com/laurigates/claude-plugins/issues/1608)) ([786b701](https://github.com/laurigates/claude-plugins/commit/786b701ee78134e31251f8c69dc58c34e4ccbb14))
+
 ## [3.34.2](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.34.1...blueprint-plugin-v3.34.2) (2026-06-10)
 
 
