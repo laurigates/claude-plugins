@@ -441,6 +441,14 @@ renamed, or deleted.
 
 The PRP content quality agent hook runs alongside the structural command hook. The command hook validates structure (confidence >= 7/10, required sections, file references). The agent hook evaluates content quality (specificity of requirements, testability of acceptance criteria, edge case coverage).
 
+### Behavioral Cues (command)
+
+| Hook | Event | Target | Purpose |
+|------|-------|--------|---------|
+| `blueprint-structural-cue.sh` | PostToolUse | `Write` / `Edit` | Once-per-session cue to check blueprint context after an architecture-affecting edit |
+
+Implements the first worked example from [ADR-0017](../docs/adrs/0017-hook-based-behavioral-cues-for-plugin-utilization.md). When an `Edit`/`Write` touches a plugin/marketplace manifest or adds a public-API (`export`/`pub`) line, the hook appends a one-line cue to the tool result suggesting `/blueprint:derive-plans` or `/blueprint:adr-validate`. It is a non-blocking cue, not a gate: it never blocks an edit, and to bound transcript-replay cost it fires **at most once per session** (keyed on `~/.cache/blueprint-structural-cue/<session_id>`). Edits under `docs/adrs/**` and `docs/prds/**` are excluded — the validation hooks above already cover those. Active by default; set `BLUEPRINT_SKIP_HOOKS=1` to disable. Regression test: `hooks/spec/blueprint_structural_cue_spec.sh` (run with `shellspec hooks/spec/`).
+
 ## Installation
 
 ```bash
