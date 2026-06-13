@@ -51,6 +51,12 @@ repos:
         language: script
         files: '^agent-patterns-plugin/skills/(parallel-agent-dispatch|custom-agent-definitions)/SKILL\.md$'
         pass_filenames: false
+      - id: check-skill-filename-case
+        name: skill files are named SKILL.md (case-sensitive; #1606)
+        entry: ./scripts/check-skill-filename-case.sh
+        language: script
+        files: '(?i)/skills/.*/skill\.md$'
+        pass_filenames: false
       - id: lint-mcp-tool-references
         name: lint skill files for references to unavailable MCP tools
         entry: ./scripts/lint-mcp-tool-references.sh
