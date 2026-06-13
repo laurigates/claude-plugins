@@ -30,6 +30,7 @@ This repository was created by migrating Claude Code plugin configurations from 
 | [0014](0014-reusable-workflows-in-repository.md) | Reusable GitHub Workflows in Plugin Repository | Superseded | 2026-01 |
 | [0015](0015-agent-teams-adoption.md) | Adopt Agent Teams and Deprecate Manual Orchestration | Accepted | 2026-02 |
 | [0016](0016-deterministic-script-extraction-for-token-efficiency.md) | Extract Deterministic Skill Procedure into Structured-Output Scripts | Accepted | 2026-06 |
+| [0017](0017-hook-based-behavioral-cues-for-plugin-utilization.md) | Hook-Based Behavioral Cues for Multi-Plugin Utilization | Proposed | 2026-06 |
 
 ## Categories
 
@@ -62,6 +63,7 @@ This repository was created by migrating Claude Code plugin configurations from 
 
 ### Performance & Optimization
 - ADR-0016: Extract Deterministic Skill Procedure into Structured-Output Scripts
+- ADR-0017: Hook-Based Behavioral Cues for Multi-Plugin Utilization
 
 ## ADR Format
 
