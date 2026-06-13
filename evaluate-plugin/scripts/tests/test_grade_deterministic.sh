@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+# Test assertions use the `cmd && pass++ || fail` idiom deliberately (pass++ is
+# arithmetic that always exits 0 here, so the || branch only runs on real
+# failure) and pipe fixtures through cat for readability. Suppress the style
+# nags rather than rewrite every assertion.
+# shellcheck disable=SC2015,SC2002
+#
 # Regression test for grade_deterministic.py and render_matrix_report.py.
 #
 # Per .claude/rules/regression-testing.md, the deterministic grader (the
@@ -70,6 +76,20 @@ printf '%s\n' "$report" | grep -q "claude-opus-4-8" \
 printf '%s\n' "$report" | grep -q "Portability flag" \
   && pass_count=$((pass_count + 1)) \
   || { echo "FAIL: report missing portability flag (opus-haiku spread = 30pts)" >&2; fail_count=$((fail_count + 1)); }
+
+# Executability flag (Slice 2): absent when haiku (0.7) is above the 0.5 floor.
+printf '%s\n' "$report" | grep -q "executable_on_haiku=false" \
+  && { echo "FAIL: example report should NOT fire executability flag (haiku 0.7 >= floor)" >&2; fail_count=$((fail_count + 1)); } \
+  || pass_count=$((pass_count + 1))
+
+echo "=== TEST: executability callout fires when haiku < floor < opus ==="
+low_report="$(python3 "$renderer" "$fixtures/low-haiku-model-matrix.json")"
+printf '%s\n' "$low_report" | grep -q "executable_on_haiku=false" \
+  && pass_count=$((pass_count + 1)) \
+  || { echo "FAIL: low-haiku report missing executability flag (haiku 0.3 < 0.5 <= opus 0.9)" >&2; fail_count=$((fail_count + 1)); }
+printf '%s\n' "$low_report" | grep -q "Executability flag" \
+  && pass_count=$((pass_count + 1)) \
+  || { echo "FAIL: low-haiku report missing 'Executability flag' heading" >&2; fail_count=$((fail_count + 1)); }
 
 echo ""
 echo "=== SUMMARY ==="

@@ -1,0 +1,27 @@
+{
+  "_note": "ILLUSTRATIVE EXAMPLE DATA — not a real run. Haiku with-skill sits below the 0.5 executability floor while opus clears it, so render_matrix_report.py must emit the `executable_on_haiku=false` callout. Distinct from example-model-matrix.json, where haiku (0.7) is above the floor and the callout is absent.",
+  "metadata": {
+    "skill_path": "some-plugin/skills/context-heavy-skill/SKILL.md",
+    "generated_at": "2026-06-13T00:00:00Z",
+    "previous_run": null,
+    "models": [
+      { "alias": "opus", "model_id": "claude-opus-4-8" },
+      { "alias": "haiku", "model_id": "claude-haiku-4-5" }
+    ]
+  },
+  "evals": [
+    {
+      "eval_id": "ch-001",
+      "by_model": {
+        "opus": { "with_skill": 0.9, "baseline": 0.5 },
+        "haiku": { "with_skill": 0.3, "baseline": 0.1 }
+      }
+    }
+  ],
+  "summary": {
+    "by_model": {
+      "opus": { "with_skill": 0.9, "baseline": 0.5, "delta": 0.4, "prev_delta": null },
+      "haiku": { "with_skill": 0.3, "baseline": 0.1, "delta": 0.2, "prev_delta": null }
+    }
+  }
+}

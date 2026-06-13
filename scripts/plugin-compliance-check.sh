@@ -314,6 +314,21 @@ check_skill_body() {
       fi
     fi
 
+    # Regression: evaluate-legibility's Step-3 triage and the cold-reader prompt
+    # depend on the verdict vocabulary (`clear` / `needs-revision`) and the
+    # QUESTIONS / HESITATIONS critique headings reused from cold-read-gate. A
+    # bulk edit that "tightens" the prose and drops those literal tokens would
+    # silently sever the gate from its consumer (Slice 2 triage reads them).
+    # Guards the semantic invariant, scoped to this skill only.
+    if [ "$skill_name" = "evaluate-legibility" ]; then
+      for token in "clear" "needs-revision" "QUESTIONS" "HESITATIONS"; do
+        if ! grep -q "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain the cold-reader token '${token}' (verdict/critique schema reused from cold-read-gate)")
+          has_errors=true
+        fi
+      done
+    fi
+
     # Regression: project-continue read deprecated blueprint v1/v2 state paths
     # `.claude/blueprints/prds/` and `.claude/blueprints/work-orders/`, so it
     # never found PRDs or work-orders in a current-format (v3.x) blueprint repo

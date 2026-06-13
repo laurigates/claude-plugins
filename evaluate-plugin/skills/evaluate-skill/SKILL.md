@@ -62,7 +62,7 @@ If structural issues are found, report them and stop. Behavioral evaluation on a
 
 Look for `<plugin-name>/skills/<skill-name>/evals.json`.
 
-**If the file exists**: read and validate it against the evals.json schema (see `evaluate-plugin/references/schemas.md`).
+**If the file exists**: read and validate it against the evals.json schema (see `evaluate-plugin/references/schemas.md`). Accept the optional, back-compatible `evals[].fixture` block (`dir` / `setup` / `teardown` / `workdir`) — an eval without it is unchanged; an eval with it needs an isolated execution context (Step 4).
 
 **If the file does not exist AND `--create-evals` is set**: Analyze the SKILL.md and generate eval cases:
 
@@ -92,13 +92,22 @@ For each eval case, for each run (up to `--runs N`):
      --eval-id <eval-id> --run <N>
    ```
    Parse `RUN_DIR=`, `MANIFEST=`, and `STARTED_AT=` from output.
-2. Spawn a Task subagent (`subagent_type: general-purpose`) that:
+2. If the eval carries a `fixture` block, apply it to get an isolated workdir:
+   ```
+   bash ${CLAUDE_PLUGIN_ROOT}/scripts/apply_fixture.sh \
+     --fixture '<eval.fixture JSON>' --repo-root "$(pwd)"
+   ```
+   Parse `WORKDIR=` (the subagent then operates there). Skip this for evals
+   without a `fixture` — they run in the repo as before.
+3. Spawn a Task subagent (`subagent_type: general-purpose`) that:
    - Receives the skill content as context
    - Executes the eval prompt
-   - Works in the repository as if it were a real user request
-3. Capture the subagent output.
-4. Record timing data (duration) and write to `$RUN_DIR/timing.json`.
-5. Write the transcript to `$RUN_DIR/transcript.md`.
+   - Works in `$WORKDIR` if a fixture was applied, else in the repository
+4. Capture the subagent output.
+5. Record timing data (duration) and write to `$RUN_DIR/timing.json`.
+6. Write the transcript to `$RUN_DIR/transcript.md`.
+7. If a fixture was applied, tear it down after the transcript is copied out:
+   `bash ${CLAUDE_PLUGIN_ROOT}/scripts/apply_fixture.sh --teardown "$WORKDIR" --fixture '<eval.fixture JSON>'`.
 
 ### Step 5: Run baseline (if --baseline)
 
