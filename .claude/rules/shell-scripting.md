@@ -132,6 +132,27 @@ TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty')
 
 Run `bash scripts/lint-shell-scripts.sh` to validate all scripts comply with these conventions. Use `--fix` to auto-fix shebang issues.
 
+### Suppressing shellcheck findings
+
+A **file-level** `# shellcheck disable=SCxxxx` directive must appear immediately after the shebang and **before the first command** — including before `set -uo pipefail`. Placed after any command, it degrades to a *next-statement* directive and silently scopes only the following line:
+
+```bash
+#!/usr/bin/env bash
+# shellcheck disable=SC2015,SC2002   # file-level: must precede the first command
+set -uo pipefail
+# ... rest of the script ...
+```
+
+```bash
+#!/usr/bin/env bash
+set -uo pipefail
+# shellcheck disable=SC2015          # WRONG: now only scopes the next line
+```
+
+Two findings worth suppressing rather than rewriting in **test scripts** (where the idiom is deliberate): `SC2015` (`cmd && pass++ || fail` — the `++` is arithmetic that exits 0 here, so the `|| fail` branch only runs on real failure) and `SC2002` (piping a fixture through `cat` for readability). Prefer a justified file-level disable with a comment over churning every assertion.
+
+**Meta-gotcha — pre-commit only shellchecks *staged* files.** Editing a script that "passed" before can surface pre-existing findings that were never actually checked (the hook never re-ran on that file since they were introduced). Don't assume an untouched-looking lint failure is something your edit caused; the whole file is being linted, possibly for the first time in a while. Run `shellcheck <file>` directly to see the full picture before committing.
+
 ## Error Handling
 
 ### Standard Fallback Pattern
