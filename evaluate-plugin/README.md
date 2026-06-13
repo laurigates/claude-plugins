@@ -26,6 +26,7 @@ Static compliance checks (`plugin-compliance-check.sh`) verify structure — thi
 | `/evaluate:plugin` | Batch evaluate all skills in a plugin |
 | `/evaluate:report` | View evaluation results and benchmark reports |
 | `/evaluate:improve` | Suggest improvements based on eval results |
+| `/evaluate:legibility` | Cold-read a SKILL.md with a zero-context agent reader to check its intent is legible (comprehension gate) |
 
 ## Agents
 
