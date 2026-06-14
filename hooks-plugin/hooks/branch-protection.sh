@@ -17,8 +17,12 @@
 #
 # Matches: Bash
 # Detects: git commit, git push, git rebase on main/master
-# Allows: read-only git operations, git merge (local, reversible), and the
-#         initial bootstrap push (a single root commit) that initializes a repo
+# Allows: read-only git operations, git merge (local, reversible), the initial
+#         bootstrap push (a single root commit) that initializes a repo, a push
+#         that explicitly names a non-protected target branch (e.g. git push -u
+#         origin feat/x while parked on main — pushes feat/x, not main; #1600),
+#         and any write in a GitHub wiki checkout (*.wiki, which renders only
+#         master and supports no PRs; #1586)
 
 set -euo pipefail
 
@@ -79,6 +83,22 @@ else
 fi
 [ -z "$CURRENT_BRANCH" ] && exit 0
 
+# Exempt GitHub wiki checkouts. A wiki renders only its `master` branch and
+# supports no pull requests, so "switch to a feature branch" is a dead end and
+# every wiki edit would degrade to full user delegation. Detect via the remote
+# URL (*.wiki.git — robust, survives directory renames) or the working-tree
+# top-level directory name (*.wiki — cheap fallback when there's no remote).
+# (#1586)
+if [ -n "$WORKING_DIR" ]; then
+  WIKI_REMOTE=$(git -C "$WORKING_DIR" remote get-url origin 2>/dev/null || echo "")
+  WIKI_TOPLEVEL=$(git -C "$WORKING_DIR" rev-parse --show-toplevel 2>/dev/null || echo "")
+else
+  WIKI_REMOTE=$(git remote get-url origin 2>/dev/null || echo "")
+  WIKI_TOPLEVEL=$(git rev-parse --show-toplevel 2>/dev/null || echo "")
+fi
+case "$WIKI_REMOTE" in *.wiki.git|*.wiki) exit 0 ;; esac
+case "$WIKI_TOPLEVEL" in *.wiki) exit 0 ;; esac
+
 # Only protect main and master
 if [ "$CURRENT_BRANCH" != "main" ] && [ "$CURRENT_BRANCH" != "master" ]; then
   exit 0
@@ -119,6 +139,26 @@ case "$GIT_SUBCMD" in
   push)
     # Allow push to specific remote branch via explicit refspec
     if echo "$COMMAND" | grep -q ':'; then
+      exit 0
+    fi
+    # Allow a push that explicitly names a non-protected branch as its target,
+    # even without a colon refspec. `git push -u origin feat/x` pushes the local
+    # `feat/x` ref (refs/heads/feat/x:refs/heads/feat/x) — the current branch
+    # being main is irrelevant to what gets pushed. Pre-fix this fell through to
+    # deny because only colon refspecs were allowed, even though the push never
+    # touches the protected branch (#1600). PUSH_TARGET is the 2nd positional
+    # (non-flag) token after `push` — i.e. the refspec following the remote.
+    # HEAD/@ are excluded because on a protected checkout they resolve back to
+    # the protected branch, so they must still be denied.
+    PUSH_TARGET=$(echo "$COMMAND" | awk '
+      { for (i = 1; i <= NF; i++) {
+          if ($i == "push") { seen = 1; continue }
+          if (seen && $i !~ /^-/) { n++; if (n == 2) { print $i; exit } }
+      } }')
+    if [ -n "$PUSH_TARGET" ] && \
+       [ "$PUSH_TARGET" != "$CURRENT_BRANCH" ] && \
+       [ "$PUSH_TARGET" != "main" ] && [ "$PUSH_TARGET" != "master" ] && \
+       [ "$PUSH_TARGET" != "HEAD" ] && [ "$PUSH_TARGET" != "@" ]; then
       exit 0
     fi
     # Allow the very first push that bootstraps a repo. When the branch tip is

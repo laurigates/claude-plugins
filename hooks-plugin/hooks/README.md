@@ -17,10 +17,10 @@ A PreToolUse hook that intercepts Bash commands and blocks those that should use
 | `cat > file` | Use **Write** tool instead |
 | `timeout cmd` | Remove timeout (Bash tool has its own, human approval time exceeds it anyway) |
 | `find` | Use **Glob** tool instead |
-| `grep`/`rg` | Use **Grep** tool instead |
+| `grep`/`rg` | Use **Grep** tool instead (allows `-q`, `-l`/`-c`/`-L` filter modes, and pipelines) |
 | `ls *pattern*` | Consider **Glob** tool |
-| `cat/tail ...tasks/*.output` | Use **TaskOutput** tool instead |
-| `sleep && cat/tail` | Use **TaskOutput** tool with block parameter |
+| `cat/tail ...tasks/*.output` | Use **Read** tool on the output path (or pipe an extraction for large files) |
+| `sleep && cat/tail ...output` | Use **Read** tool on the output path |
 | `git add -A` / `git add .` | Stage specific files by name instead of broad staging |
 | `git X && git Y` | Run git commands as separate Bash calls (avoids index.lock race condition) |
 | `git reset --hard` | Use safer alternatives; if truly needed, ask user to run manually |

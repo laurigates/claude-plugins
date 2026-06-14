@@ -43,6 +43,15 @@ COMMAND_SHELL_ONLY=$(echo "$COMMAND" | awk '
     }
 ')
 
+# A further-stripped view with quoted-string literals removed (on top of the
+# heredoc stripping above). Detectors that key off *content tokens* an agent
+# would only ever read (e.g. task-output file paths like `.../tasks/x.output`)
+# must scan this view, not raw $COMMAND — otherwise a `gh issue create --body
+# "... see run.output ..."` whose prose merely *mentions* such a path triggers
+# the read-task-output block even though no read happens (issue #1591).
+# shellcheck disable=SC2001  # bash pattern substitution can't do `[^']*` char class
+COMMAND_NO_STRINGS=$(echo "$COMMAND_SHELL_ONLY" | sed "s/'[^']*'//g; s/\"[^\"]*\"//g")
+
 # Function to output a blocking message (exit code 2 = blocking error)
 block() {
     echo "$1" >&2
@@ -163,10 +172,15 @@ fi
 # Check for grep/rg command (should use Grep tool)
 # Allow grep -q / grep --quiet: these are boolean exit-code checks the Grep tool
 # cannot replicate (e.g. grep -q pattern file && do_thing).
+# Allow grep -l / -c / -L (and the rg/long-form equivalents): file-list and
+# count modes are filters over a known file set, not codebase searches the Grep
+# tool replaces (issue #1592). The char class is [lcL] (lowercase) so the
+# uppercase context flag -C (grep -C3, a real search) is NOT exempted.
 # Also allow piped grep (already excluded by the '|' check above).
 if echo "$COMMAND" | grep -Eq '^\s*(grep|rg)\s+' && \
    ! echo "$COMMAND" | grep -q '|' && \
-   ! echo "$COMMAND" | grep -Eq '(grep|rg)[^|]*\s(-[a-zA-Z]*q[a-zA-Z]*(\s|$)|--quiet(\s|$))'; then
+   ! echo "$COMMAND" | grep -Eq '(grep|rg)[^|]*\s(-[a-zA-Z]*q[a-zA-Z]*(\s|$)|--quiet(\s|$))' && \
+   ! echo "$COMMAND" | grep -Eq '(grep|rg)[^|]*\s(-[a-zA-Z]*[lcL][a-zA-Z]*(\s|$)|--count(\s|$)|--files-with-matches(\s|$)|--files-without-match(\s|$))'; then
     block "BLOCKED: 'grep -rn pattern src/' →
   Grep(pattern=\"pattern\", path=\"src\", -r=true, -n=true)
 
@@ -175,7 +189,10 @@ BLOCKED: 'rg pattern --type ts' →
 
 The Grep tool is optimized for codebase searches with proper permissions
 and result formatting. Pipelines (… | grep …) and boolean checks
-(grep -q pattern file && do_thing) are still allowed.
+(grep -q pattern file && do_thing) are still allowed; so are the
+file-list/count filter modes (grep -l, grep -c, grep -L).
+If the Grep tool is unavailable in this session, pipe instead — pipelines
+are allowed: rg --files <dir> | rg pattern  (or  … | grep pattern).
 See .claude/rules/bash-tool-replacements.md for the full table."
 fi
 
@@ -184,27 +201,56 @@ if echo "$COMMAND" | grep -Eq '^\s*ls\s+.*\*'; then
     block "REMINDER: Consider using the Glob tool for pattern-based file listing. Glob provides sorted results by modification time and handles large directories better."
 fi
 
-# Check for reading task output files (should use TaskOutput tool)
+# Check for reading task output files (should use the Read tool)
 # Detects patterns like: cat /tmp/claude/*/tasks/*.output, tail ...tasks/...output, sleep && cat ...output
-if echo "$COMMAND" | grep -Eq '(cat|tail|head).*(/tasks/|\.output)' || \
-   echo "$COMMAND" | grep -Eq 'sleep.*&&.*(cat|tail)'; then
-    block "REMINDER: Use the TaskOutput tool instead of Bash commands to read task output. The TaskOutput tool is designed for checking on background tasks - use it with the task_id parameter. Example: TaskOutput with task_id and block=false for non-blocking status checks."
+#
+# Scans COMMAND_NO_STRINGS (heredoc bodies and quoted literals stripped) so that
+# a `gh issue create --body "...mentions run.output..."` whose prose merely names
+# a task-output path is not mistaken for an actual read (issue #1591).
+#
+# TaskOutput is deprecated — its own tool guidance now says to Read the output
+# file path from the task notification. For large structured outputs, an
+# extraction pipeline (`cat … | jq`/`python3`) to a compact summary is allowed
+# and is the context-efficient path; only a *standalone* cat/tail/head read of a
+# task-output file (no pipe) is nudged toward Read here (issue #1591).
+if { echo "$COMMAND_NO_STRINGS" | grep -Eq '(cat|tail|head)\s[^|]*(/tasks/|\.output)' || \
+     echo "$COMMAND_NO_STRINGS" | grep -Eq 'sleep[^|]*&&[^|]*(cat|tail)\s[^|]*(/tasks/|\.output)'; } && \
+   ! echo "$COMMAND_NO_STRINGS" | grep -q '|'; then
+    block "REMINDER: Use the Read tool on the task-output file path from the task
+notification instead of cat/tail/head. (The TaskOutput tool is deprecated.)
+
+For a large structured output file, Read'ing the whole thing is wasteful — pipe
+an extraction to a compact summary instead (pipelines are allowed):
+  cat <output-file> | jq '<filter>'    or    cat <output-file> | python3 …"
 fi
 
-# Check for excessive pipe chains (5+ pipes suggest over-complexity)
-# Uses COMMAND_SHELL_ONLY (heredoc body already stripped above) to avoid
-# counting markdown table pipes or other literal content as shell pipe operators.
-# Strip quoted strings and || operators before counting actual shell pipes
-# - Single-quoted strings contain regex alternation (grep -E '(a|b|c)')
-# - Double-quoted strings may contain literal pipe characters
-# - || is logical OR, not a pipe operator
-PIPE_COUNT=$(echo "$COMMAND_SHELL_ONLY" | sed "s/'[^']*'//g; s/\"[^\"]*\"//g; s/||//g" | tr -cd '|' | wc -c)
-if [ "$PIPE_COUNT" -ge 5 ]; then
-    block "REMINDER: This command has $PIPE_COUNT pipes - consider simplifying. Options:
+# Check for excessive pipe chains (5+ pipes) — but only when a *discouraged head
+# stage* feeds the pipeline. Counting `|` alone false-blocked idiomatic
+# multi-stage analysis pipelines (jq | sort | uniq -c | sort, awk transforms,
+# etc.) over data a prior command produced — there is no shorter form and jq
+# *is* the right tool (issue #1603). A long pipeline whose stages are all
+# legitimate transforms is allowed regardless of length; the block fires only
+# when the data source is a discouraged `cat file |` / `echo |` / `printf |`
+# head, or a redundant `grep … | … grep` text-scrape.
+#
+# Uses COMMAND_SHELL_ONLY (heredoc body stripped) and strips quoted strings and
+# || operators first so regex-alternation literals (grep -E '(a|b|c)') and
+# format-string pipes (curl -w '… | …') are not counted as shell pipes (the
+# bogus "8 pipes" miscount in issue #1592).
+PIPE_BODY=$(echo "$COMMAND_SHELL_ONLY" | sed "s/'[^']*'//g; s/\"[^\"]*\"//g; s/||//g")
+PIPE_COUNT=$(echo "$PIPE_BODY" | tr -cd '|' | wc -c)
+if [ "$PIPE_COUNT" -ge 5 ] && \
+   echo "$PIPE_BODY" | grep -Eq '\b(cat|echo|printf)[[:space:]][^|]*\||grep\b[^|]*\|[^|]*grep\b'; then
+    block "REMINDER: This command has $PIPE_COUNT pipes fed from a discouraged head
+stage (cat/echo/printf, or a redundant grep | grep) - consider simplifying:
 - Use JSON output from the source (--reporter=json, --format=json) and parse with jq
 - Use awk for multi-step text processing in one command
 - Break into multiple steps with intermediate analysis
-- For test failures: use test runner's built-in summary/grouping features"
+- For test failures: use test runner's built-in summary/grouping features
+
+A long pipeline of legitimate transforms (jq | sort | uniq -c | sort, awk, sed)
+over a prior command's output is fine — this block only fires on a cat/echo
+text-scrape head."
 fi
 
 # Check for multi-grep chains parsing test/task output
@@ -281,27 +327,32 @@ Ask the user to run it manually with:
 3. What alternatives you tried"
 fi
 
-# Check for git push -u that would set main/master tracking to a feature branch.
-# Pattern: git push -u origin <branch> (no colon refspec) while on main/master
-# but pushing to a differently-named branch — this sets main's upstream to
-# origin/<feature-branch>, which is wrong.
-# Correct form: git push origin main:<feature-branch> (explicit refspec, no -u)
+# Check for git push -u with a COLON refspec whose source is the protected
+# current branch — `git push -u origin main:feature/x` sets main's upstream to
+# origin/feature/x, which is wrong. The recommended main-branch-dev push
+# (git push origin main:feature/x) should carry NO -u.
+#
+# The no-colon form `git push -u origin feat/x` is intentionally NOT matched:
+# it pushes the local feat/x ref and sets feat/x's upstream, never touching the
+# current branch — the old detector wrongly blocked it on a false "sets main's
+# tracking" premise, the same legitimate pattern as issue #1600.
 if echo "$COMMAND" | grep -Eq '^\s*git\s+push\b' && \
-   echo "$COMMAND" | grep -Eq '\s-u\b' && \
-   echo "$COMMAND" | grep -Eq '\sorigin\s+[a-zA-Z0-9._/-]+\s*$' && \
-   ! echo "$COMMAND" | grep -q ':'; then
-    PUSH_BRANCH=$(echo "$COMMAND" | grep -oE 'origin\s+[a-zA-Z0-9._/-]+' | awk '{print $2}')
+   echo "$COMMAND" | grep -Eq '(\s-[a-zA-Z]*u[a-zA-Z]*\b|--set-upstream\b)' && \
+   echo "$COMMAND" | grep -Eq '\sorigin\s+[a-zA-Z0-9._/@-]+:[a-zA-Z0-9._/-]+'; then
+    PUSH_REFSPEC=$(echo "$COMMAND" | grep -oE 'origin\s+[a-zA-Z0-9._/@-]+:[a-zA-Z0-9._/-]+' | awk '{print $2}')
+    PUSH_SRC=${PUSH_REFSPEC%%:*}
+    PUSH_DST=${PUSH_REFSPEC#*:}
     CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "")
-    if [ -n "$CURRENT_BRANCH" ] && [ -n "$PUSH_BRANCH" ] && \
-       [ "$CURRENT_BRANCH" != "$PUSH_BRANCH" ] && \
+    if [ -n "$CURRENT_BRANCH" ] && [ "$PUSH_SRC" = "$CURRENT_BRANCH" ] && \
+       [ "$PUSH_SRC" != "$PUSH_DST" ] && \
        { [ "$CURRENT_BRANCH" = "main" ] || [ "$CURRENT_BRANCH" = "master" ]; }; then
-        block "REMINDER: 'git push -u origin $PUSH_BRANCH' while on '$CURRENT_BRANCH' will set $CURRENT_BRANCH to track origin/$PUSH_BRANCH instead of origin/$CURRENT_BRANCH.
+        block "REMINDER: 'git push -u origin $PUSH_SRC:$PUSH_DST' will set $CURRENT_BRANCH to track origin/$PUSH_DST instead of origin/$CURRENT_BRANCH.
 
 This is the main-branch development pattern: push to a remote feature branch WITHOUT -u:
-  git push origin $CURRENT_BRANCH:$PUSH_BRANCH
+  git push origin $CURRENT_BRANCH:$PUSH_DST
 
 The -u flag is only correct when local and remote branch names match:
-  git push -u origin $CURRENT_BRANCH  (pushes main to origin/main)"
+  git push -u origin $CURRENT_BRANCH  (pushes $CURRENT_BRANCH to origin/$CURRENT_BRANCH)"
     fi
 fi
 

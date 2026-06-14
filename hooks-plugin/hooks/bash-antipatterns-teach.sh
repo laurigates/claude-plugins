@@ -75,12 +75,15 @@ if [ -z "$hint" ] && \
     hint_key="glob-find"
 fi
 
-# grep/rg as standalone search (not piped, not -q)
+# grep/rg as standalone search (not piped, not -q, not -l/-c/-L filter modes)
+# Mirrors bash-antipatterns.sh: file-list/count modes (-l, -c, -L) are filters,
+# not codebase searches the Grep tool replaces (issue #1592).
 if [ -z "$hint" ] && \
    echo "$COMMAND" | grep -Eq '^\s*(grep|rg)\s+' && \
    ! echo "$COMMAND" | grep -q '|' && \
-   ! echo "$COMMAND" | grep -Eq '(grep|rg)[^|]*\s(-[a-zA-Z]*q[a-zA-Z]*(\s|$)|--quiet(\s|$))'; then
-    hint="Use the Grep tool for codebase searches. Example: Grep(pattern=\"foo\", path=\"src\", -n=true). Keep grep/rg for pipelines or boolean -q checks."
+   ! echo "$COMMAND" | grep -Eq '(grep|rg)[^|]*\s(-[a-zA-Z]*q[a-zA-Z]*(\s|$)|--quiet(\s|$))' && \
+   ! echo "$COMMAND" | grep -Eq '(grep|rg)[^|]*\s(-[a-zA-Z]*[lcL][a-zA-Z]*(\s|$)|--count(\s|$)|--files-with-matches(\s|$)|--files-without-match(\s|$))'; then
+    hint="Use the Grep tool for codebase searches. Example: Grep(pattern=\"foo\", path=\"src\", -n=true). Keep grep/rg for pipelines, boolean -q checks, or -l/-c filter modes."
     hint_key="grep"
 fi
 
