@@ -4,32 +4,33 @@ description: Write and configure custom agent definitions in Claude Code agents/
 user-invocable: false
 allowed-tools: Bash(cat *), Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-01-20
-modified: 2026-06-01
-reviewed: 2026-06-01
+modified: 2026-06-14
+reviewed: 2026-06-14
 ---
 
 # Custom Agent Definitions
 
 Expert knowledge for defining and configuring custom agents in Claude Code.
 
+For full worked YAML examples (isolated research agent, read-only explorer,
+complete security auditor, plugin layout, common patterns), see
+[REFERENCE.md](REFERENCE.md).
+
 ## When to Use This Skill
 
 | Use this skill when... | Use agent-teams instead when... |
 |---|---|
-| Authoring a new `.md` agent definition file in `.claude/agents/` | Spawning multiple already-defined agents that need to coordinate via TeamCreate |
+| Authoring a new `.md` agent definition file in `.claude/agents/` | Spawning multiple already-defined agents that coordinate via TeamCreate |
 | Configuring a single agent's `model`, `allowed-tools`, or `context: fork` | Setting up a lead/teammate architecture with a shared task list |
 | Constraining tool access for a specialised read-only or write-restricted agent | Sequencing parallel work across worktrees (see parallel-agent-dispatch) |
-| Writing the system prompt that defines what one agent does | Auditing existing agent definitions for security or completeness (see meta-audit) |
+| Writing the system prompt that defines what one agent does | Auditing existing agent definitions for security (see meta-audit) |
 
 ## Core Concepts
 
-**Custom Agents** allow you to define specialized agent types beyond the built-in ones (Explore, Plan, Bash, etc.). Each custom agent can have its own model, tools, and context configuration.
-
-## Agent Definition Schema
-
-Custom agents are defined in `.claude/agents/` or via plugin agent directories.
-
-### Basic Structure
+**Custom agents** let you define specialized agent types beyond the built-in
+ones (Explore, Plan, Bash, etc.). Each can have its own model, tools, and
+context configuration. They are defined in `.claude/agents/` or via plugin
+`agents/` directories, with YAML frontmatter + a markdown system prompt:
 
 ```yaml
 ---
@@ -44,205 +45,37 @@ allowed-tools: Bash, Read, Grep, Glob
 Instructions and context for the agent...
 ```
 
-### Context Forking
+## Key Fields
 
-The `context` field controls how the agent's context relates to the parent conversation:
+### Context Forking
 
 | Value | Behavior |
 |-------|----------|
-| `fork` | Creates an independent context copy - agent sees parent history but changes don't affect parent |
+| `fork` | Independent context copy — agent sees parent history but changes don't affect parent |
 | (default) | Agent shares context with parent and can see/modify conversation state |
 
-**Example: Isolated Research Agent**
+Use `fork` for exploratory research, parallel investigations, and isolated
+experiments. See [REFERENCE.md → Isolated research agent](REFERENCE.md#isolated-research-agent-context-fork).
 
-```yaml
----
-name: research-agent
-description: Research questions without modifying main context
-model: sonnet
-context: fork
-allowed-tools: WebSearch, WebFetch, Read
----
-
-# Research Agent
-
-You are a research specialist. Search for information and provide findings.
-Your research doesn't affect the main conversation context.
-```
-
-**When to use `context: fork`:**
-- Exploratory research that shouldn't pollute main context
-- Parallel investigations with potentially conflicting approaches
-- Isolated experiments or testing
-- Background tasks that run independently
-
-### Agent Field for Delegation
-
-The `agent` field specifies which agent type to use when delegating via the Agent tool:
-
-```yaml
----
-name: code-review-workflow
-description: Comprehensive code review
-agent: security-auditor
-allowed-tools: Read, Grep, Glob, TodoWrite
----
-```
-
-This allows commands and skills to specify a preferred agent type for delegation.
-
-### Disallowed Tools (Restrictions)
-
-The `disallowedTools` field explicitly prevents an agent from using certain tools:
-
-```yaml
----
-name: read-only-explorer
-description: Explore codebase without modifications
-model: haiku
-allowed-tools: Bash, Read, Grep, Glob
-disallowedTools: Write, Edit, NotebookEdit
----
-
-# Read-Only Explorer
-
-Explore and analyze code. Do not make any modifications.
-```
-
-**Disallowed Tools vs Allowed Tools:**
+### Tool Access (allowed vs disallowed)
 
 | Field | Purpose | Behavior |
 |-------|---------|----------|
 | `allowed-tools` | Whitelist of permitted tools | Agent can ONLY use these tools |
 | `disallowedTools` | Blacklist of forbidden tools | Agent can use all tools EXCEPT these |
 
-**When to use `disallowedTools`:**
-- Creating read-only agents that can explore but not modify
-- Restricting dangerous capabilities (Bash execution)
-- Sandboxing agents for specific tasks
-- Security-sensitive contexts
+Use `disallowedTools` for read-only agents, restricting dangerous capabilities,
+and sandboxing. The two combine — an explicit whitelist plus a safety blacklist.
+See [REFERENCE.md → Read-only explorer](REFERENCE.md#read-only-explorer-disallowedtools).
 
-### Complete Example
+### Agent Field for Delegation
+
+The `agent` field specifies which agent type to use when delegating via the Agent
+tool, letting commands and skills name a preferred agent type:
 
 ```yaml
----
-name: security-auditor
-description: Security-focused code review agent
-model: sonnet
-context: fork
-allowed-tools: Read, Grep, Glob, WebSearch, TodoWrite
-disallowedTools: Bash, Write, Edit
-created: 2026-01-20
-modified: 2026-01-20
-reviewed: 2026-01-20
----
-
-# Security Auditor Agent
-
-You are a security auditor. Analyze code for vulnerabilities.
-
-## Capabilities
-- Read and analyze source code
-- Search for security patterns
-- Research known vulnerabilities
-- Track findings in todo list
-
-## Restrictions
-- Cannot execute code (no Bash)
-- Cannot modify files (no Write/Edit)
-- Work in isolated context
-
-## Focus Areas
-1. SQL injection vulnerabilities
-2. XSS vulnerabilities
-3. Authentication/authorization flaws
-4. Secrets/credentials in code
-5. Insecure dependencies
+agent: security-auditor
 ```
-
-## Defining Agents in Plugins
-
-Plugins can define custom agents in their `agents/` directory:
-
-```
-my-plugin/
-├── .claude-plugin/
-│   └── plugin.json
-├── agents/
-│   ├── security-auditor.md
-│   ├── performance-analyzer.md
-│   └── accessibility-checker.md
-└── skills/
-    └── ...
-```
-
-Each agent file follows the same YAML frontmatter + markdown body structure.
-
-## Using Custom Agents
-
-### Via Task Tool
-
-```
-Agent tool with subagent_type="security-auditor" for security analysis.
-```
-
-### Via Delegation
-
-```bash
-/delegate Audit auth module for security issues
-```
-
-The delegation system matches tasks to appropriate custom agents.
-
-## Best Practices
-
-### 1. Principle of Least Privilege
-Only grant tools the agent actually needs:
-```yaml
-# Good: Minimal tools for the task
-allowed-tools: Read, Grep, Glob
-
-# Avoid: Overly permissive
-allowed-tools: Bash, Read, Write, Edit, Grep, Glob, WebSearch, WebFetch
-```
-
-### 2. Use Context Forking for Isolation
-```yaml
-# Good: Isolated exploratory work
-context: fork
-```
-
-### 3. Combine Allowed and Disallowed
-```yaml
-# Explicit whitelist with safety blacklist
-allowed-tools: Bash, Read, Grep
-disallowedTools: Write, Edit
-```
-
-### 4. Clear Agent Descriptions
-```yaml
-description: |
-  Security auditor for identifying vulnerabilities in authentication
-  and authorization code. Reports findings without modifying code.
-```
-
-### 5. Model Selection
-| Use Case | Model | Model ID |
-|----------|-------|----------|
-| Simple/mechanical tasks | haiku | claude-haiku-4-5 |
-| Development workflows | sonnet | claude-sonnet-4-6 |
-| Deep reasoning/analysis | opus | claude-opus-4-7 |
-
-### 6. Report failures loudly
-A dispatched agent that hits a wall must say so in its final message — never
-a one-word summary like `Terminal.` / `Done.` / `Stopped.` On a blocker, the
-agent should commit and push its in-progress work, open a draft PR, and state
-exactly what stopped it and which tools were denied. A one-word surrender is
-indistinguishable from success to the orchestrator, so the work is silently
-cleaned up and lost (issue
-[#1422](https://github.com/laurigates/claude-plugins/issues/1422)). See
-`parallel-agent-dispatch` → "Loud-failure contract" for the dispatch-prompt
-form every brief should carry.
 
 ## Agent Configuration Fields Reference
 
@@ -250,7 +83,7 @@ form every brief should carry.
 |-------|------|-------------|
 | `name` | string | Agent identifier |
 | `description` | string | What the agent does |
-| `model` | string | Model to use (haiku, sonnet, opus) |
+| `model` | string | Model to use (sonnet, opus) |
 | `context` | string | Context mode: `fork` or default |
 | `permissionMode` | string | `default`, `acceptEdits`, `dontAsk`, `bypassPermissions`, or `plan` |
 | `maxTurns` | number | Maximum agentic turns before agent stops |
@@ -260,56 +93,59 @@ form every brief should carry.
 | `mcpServers` | list | MCP server names available to this agent |
 | `tools` | list | Tools the agent can use (in agents/ dir; use `allowed-tools` in skills) |
 | `disallowedTools` | list | Tools the agent cannot use |
-| `created` | date | Creation date |
-| `modified` | date | Last modification date |
-| `reviewed` | date | Last review date |
+| `created` / `modified` / `reviewed` | date | Lifecycle dates |
 
-## Common Patterns
+## Best Practices
 
-### Read-Only Research Agent
-```yaml
-context: fork
-allowed-tools: Read, Grep, Glob, WebSearch, WebFetch
-disallowedTools: Bash, Write, Edit
-```
+1. **Principle of least privilege** — grant only the tools the agent needs.
+2. **Use `context: fork` for isolation** — exploratory work shouldn't pollute main context.
+3. **Combine allowed + disallowed** — explicit whitelist with a safety blacklist.
+4. **Clear descriptions** — describe what the agent does and its boundaries.
+5. **Model selection** — `sonnet` for development workflows, `opus` for deep
+   reasoning/analysis. (See `.claude/rules/agent-and-tool-selection.md` for the
+   repo's Opus-for-subagents guidance.)
+6. **Report failures loudly** — a dispatched agent that hits a wall must say so
+   in its final message, never a one-word summary like `Terminal.` / `Done.` /
+   `Stopped.` On a blocker it should commit and push its in-progress work, open a
+   draft PR, and state exactly what stopped it and which tools were denied. A
+   one-word surrender is indistinguishable from success to the orchestrator, so
+   the work is silently cleaned up and lost (issue
+   [#1422](https://github.com/laurigates/claude-plugins/issues/1422)). See
+   `parallel-agent-dispatch` → "Loud-failure contract" for the dispatch-prompt
+   form every brief should carry.
 
-### Safe Code Executor
-```yaml
-allowed-tools: Bash, Read
-disallowedTools: Write, Edit
-```
-
-### Documentation Writer
-```yaml
-allowed-tools: Read, Write, Edit, Grep, Glob
-disallowedTools: Bash
-```
-
-### Full-Power Developer
-```yaml
-allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
-```
+Worked YAML for each practice is in [REFERENCE.md → Best-practice snippets](REFERENCE.md#best-practice-snippets).
 
 ## Agentic Optimizations
 
 | Context | Configuration |
 |---------|---------------|
-| Exploratory research | `context: fork`, `model: haiku` |
+| Exploratory research | `context: fork`, minimal read-only tools |
 | Security analysis | `context: fork`, `disallowedTools: Bash, Write, Edit` |
-| Quick lookups | `model: haiku`, minimal tools |
+| Quick lookups | minimal tools |
 | Complex implementation | `model: sonnet`, full tools |
 
 ## Quick Reference
 
 ### Context Modes
+
 | Mode | Isolation | Use Case |
 |------|-----------|----------|
 | (default) | Shared | Normal workflows |
 | `fork` | Isolated | Research, experiments |
 
 ### Tool Restriction Patterns
+
 | Pattern | Fields |
 |---------|--------|
 | Whitelist only | `allowed-tools: Tool1, Tool2` |
 | Blacklist only | `disallowedTools: Tool1, Tool2` |
 | Combined | Both fields specified |
+
+## Related
+
+- [REFERENCE.md](REFERENCE.md) — full worked YAML examples and snippets
+- `agent-teams` — multi-agent coordination via TeamCreate
+- `parallel-agent-dispatch` — worktree preflight, scope budgets, loud-failure contract
+- `meta-audit` — auditing existing agent definitions for security/completeness
+- `.claude/rules/agent-development.md` — agent lifecycle and field semantics

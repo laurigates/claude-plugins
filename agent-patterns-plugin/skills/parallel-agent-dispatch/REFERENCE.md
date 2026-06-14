@@ -4,6 +4,34 @@ Supporting material for [`parallel-agent-dispatch`](SKILL.md). Loaded on demand.
 The operational workflow lives in `SKILL.md`; this file carries the lookup
 tables, worked examples, and detailed salvage / recovery routines.
 
+## Return Contract schema
+
+Include this verbatim in every dispatched agent's prompt under a heading like
+`### Return contract (mandatory)` — agents follow concrete schemas more reliably
+than prose.
+
+```markdown
+## Result
+- status: success | partial | failed
+- branch: <branch-name>
+- pr: <url> | not opened: <reason>
+- commits: <N> (<short-sha-range>)
+- worktree: <path> (clean | dirty: <file list>)
+
+## Scope delivered
+- 2–4 bullets on what actually landed
+
+## Deferred / skipped
+- Anything explicitly out of scope or punted (empty is fine — section must exist)
+
+## Issues encountered
+- Hook fires, retries, test flakes, manual workarounds, unexpected findings
+  (empty is fine — section must exist)
+
+## Orchestrator action needed
+- none | <one line: what the lead must do before next phase>
+```
+
 ## Failure modes → schema field
 
 Why each Return Contract field exists — the observed failure mode it catches.
