@@ -130,3 +130,44 @@ room to expand. The probe is tonally calibrated for sonnet, not opus.
   opus, either stick with default or work on a v3 that adds
   opus-specific brevity scaffolding without re-introducing the bulk
   of the default prompt.
+
+## Harness migration — 2026-06-14 (model axis → effort axis)
+
+### What changed
+
+The condition matrix collapsed its **model** axis to a single model,
+`claude-opus-4-8`, and expanded its **effort** axis from two levels
+(`medium`, `xhigh`) to a four-level sweep (`low`, `medium`, `high`,
+`xhigh`). `max` is opt-in only (`just run-max`), never in the automated
+default. Eight conditions (4 efforts × 2 prompts) replace the previous
+eight (2 models × 2 efforts × 2 prompts).
+
+Recipe changes: `run` is now opus-low default+probe (cheapest meaningful
+A/B); `run-full` sweeps all four efforts; `run-max` is the manual heavy
+check. The old model-tier recipes (`run-sonnet`, `run-opus`, `run-all`)
+are removed. The Python aggregation scripts and `run-one.sh` /
+`run-suite.sh` needed no change — they resolve conditions generically.
+
+### Why
+
+Opus 4.8 on *low* effort beats Sonnet on both cost and quality (codified
+in `~/.claude/rules/agent-and-tool-selection.md`), so the original
+"sonnet=cheap iteration, opus=confirmation" model tiering is obsolete.
+Effort is now the cost lever on a single, best-available model.
+
+### Status of prior measurements
+
+The v2 numbers above were taken on `claude-opus-4-7` and
+`claude-sonnet-4-6` — they are now **historical baselines**. The next
+`run-full` re-establishes the v2 probe baseline on Opus 4.8.
+
+### Open hypothesis to re-check
+
+The v2 finding was that the probe *saved* output tokens on sonnet but
+*cost* tokens on opus-4-7 under extended thinking (cost grew with
+effort). On Opus 4.8 across `low → xhigh`:
+
+- Does the "cost grows with effort" pattern reproduce — i.e. does the
+  probe's token premium over default widen as effort rises?
+- Is the probe still at **capability parity** with the default prompt
+  across all four efforts?

@@ -10,8 +10,8 @@ Runs the same small prompts against `claude -p` in two configurations:
 - **probe** — `--system-prompt "$(cat prompts/probe.md)"` (a minimal
   replacement; our global rules + plugin infrastructure do the rest)
 
-Both configurations run across multiple model / thinking combinations
-(see `conditions.yaml`). Transcripts are captured as stream-JSON, then
+Both configurations run across multiple effort levels on a single model
+(`claude-opus-4-8`; see `conditions.yaml`). Transcripts are captured as stream-JSON, then
 scored deterministically (tool selection, turn count, output budget)
 and with an LLM judge (fuzzy quality criteria).
 
@@ -27,29 +27,31 @@ either the repo root (`just claude-probe::run …`) or from this
 directory (`just run …`).
 
 ```sh
-# Day-to-day (sonnet, cheap): 4 conditions × tests × runs.
+# Day-to-day (opus-low, cheap): default+probe × tests × runs.
 just claude-probe::run
 
 # Narrow to one test.
 just claude-probe::run 01-glob-vs-find
 
-# Confirmation pass on opus (expensive — reserve for stable probe versions).
-just claude-probe::run-opus
+# Confirmation pass — all 8 conditions (4 efforts × 2 prompts). Expensive.
+just claude-probe::run-full
+
+# Opt-in heavy check on `max` effort (manual only — needs opus-max-* conditions).
+just claude-probe::run-max
 
 # Single invocation for fast iteration.
-just claude-probe::run-one 01-glob-vs-find sonnet-medium-probe
+just claude-probe::run-one 01-glob-vs-find opus-low-probe
 
 # Score and aggregate the last run (LLM judge on Haiku).
 just claude-probe::compare
 just claude-probe::compare-fast   # skip LLM judge
-
-# Full 8-condition sweep across both tiers (very expensive).
-just claude-probe::run-all
 ```
 
-The model tier split (`run-sonnet` vs `run-opus`) exists because a full
-8-test Opus sweep burns through a monthly quota fast. Iterate on sonnet
-until a probe version looks stable, then confirm on opus.
+The effort tier (`run` = opus-low vs `run-full` = all four efforts) is the
+cost lever: a full 8-test sweep across four efforts burns through a monthly
+quota fast. Iterate on opus-low until a probe version looks stable, then
+confirm with `run-full`. `max` effort is opt-in only (`run-max`) for the
+occasional heavy check.
 
 See `docs/methodology.md` for the scoring rubric and why each variable
 is what it is. `docs/decision-analysis.md` has the original motivation
@@ -61,7 +63,7 @@ default prompt).
 | Path | Contents |
 |---|---|
 | `prompts/probe.md` | The minimal system-prompt override under test |
-| `conditions.yaml` | Model × thinking × prompt matrix |
+| `conditions.yaml` | Effort × prompt matrix (model fixed to opus-4-8) |
 | `tests/*.yaml` | One test case per file |
 | `scripts/run-one.sh` | One (test, condition, run) invocation |
 | `scripts/run-suite.sh` | Cartesian sweep |
@@ -74,9 +76,10 @@ default prompt).
 
 ## Cost notes
 
-A full run is 96 Opus invocations (8 tests × 4 conditions × 3 runs).
-The LLM judge adds one Haiku invocation per `llm_judge` check. When
-iterating on a single test, prefer `just run-one` over `just run`.
+A full sweep (`run-full`) is 192 Opus invocations (8 tests × 8
+conditions × 3 runs). The LLM judge adds one Haiku invocation per
+`llm_judge` check. When iterating on a single test, prefer
+`just run-one` over `just run`.
 
 ## Not a plugin
 

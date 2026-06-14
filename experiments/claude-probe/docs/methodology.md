@@ -16,12 +16,12 @@ harm* and *may reduce token waste and friction*.
 
 | Axis | Values | Notes |
 |---|---|---|
-| Model / thinking | `opus-xhigh`, `opus-medium` | Fixed via `conditions.yaml` |
+| Effort | `low`, `medium`, `high`, `xhigh` | Model fixed to `claude-opus-4-8`; `max` opt-in only |
 | System prompt | `default` (none) vs `probe` (`prompts/probe.md`) | `--system-prompt` replaces |
 | Tests | `tests/*.yaml` | Start with 8 seeds |
 | Runs | 3 per cell | Samples the model's stochasticity |
 
-Four conditions × 8 tests × 3 runs = 96 invocations per full suite.
+Eight conditions × 8 tests × 3 runs = 192 invocations per full suite.
 
 ## Invocation
 

@@ -13,26 +13,24 @@ help:
 # Running
 ##########
 
-# Default: iterate on sonnet (4 conditions × filter × runs). Cheap.
+# Default: cheapest meaningful A/B — opus-low, default+probe only.
 [group: "run"]
-run filter="*" runs="3": (run-sonnet filter runs)
-
-# Sonnet-only sweep — 4 conditions, recommended for day-to-day iteration.
-[group: "run"]
-run-sonnet filter="*" runs="3":
+run filter="*" runs="3":
     bash scripts/run-suite.sh --filter "{{filter}}" --runs "{{runs}}" \
-        --conditions sonnet-xhigh-default,sonnet-xhigh-probe,sonnet-medium-default,sonnet-medium-probe
+        --conditions opus-low-default,opus-low-probe
 
-# Opus-only sweep — 4 conditions, reserve for confirmation runs. Expensive.
+# Confirmation pass — all 8 conditions (4 efforts × 2 prompts). Expensive.
 [group: "run"]
-run-opus filter="*" runs="3":
-    bash scripts/run-suite.sh --filter "{{filter}}" --runs "{{runs}}" \
-        --conditions opus-xhigh-default,opus-xhigh-probe,opus-medium-default,opus-medium-probe
-
-# Full 8-condition sweep (sonnet + opus). Expensive — think before running.
-[group: "run"]
-run-all filter="*" runs="3":
+run-full filter="*" runs="3":
     bash scripts/run-suite.sh --filter "{{filter}}" --runs "{{runs}}"
+
+# Requires opus-max-{default,probe} in conditions.yaml — intentionally absent
+# from the default sweep, so add them when you actually need this run.
+# Opt-in `max`-effort heavy check (manual only; needs opus-max-* conditions).
+[group: "run"]
+run-max filter="*" runs="3":
+    bash scripts/run-suite.sh --filter "{{filter}}" --runs "{{runs}}" \
+        --conditions opus-max-default,opus-max-probe
 
 # Run a single (test, condition, run_n) triple for fast iteration.
 [group: "run"]
