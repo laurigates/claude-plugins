@@ -194,4 +194,73 @@ if echo "$rout" | grep -q "Bumps foo from"; then
 fi
 pass "#1627: PR body never leaks into KEY=VALUE output"
 
+# -----------------------------------------------------------------------------
+# Enhancement #1628: when ≥2 bot-authored needs-fix PRs share an identical
+# failing-check signature, they almost always have ONE shared root cause (e.g.
+# Dependabot can't update bun.lock → every npm-bump PR fails the frozen-lockfile
+# step before lint/typecheck run). The script rolls them into a single
+# SYSTEMATIC_FAILURE_* hint. The fixture below mixes:
+#   #1202,#1203,#1204  bot PRs, identical signature (orders vary)  → grouped
+#   #1300              human PR, same signature                    → excluded (not a bot)
+#   #1301              bot PR, solo "E2E" signature                → excluded (count 1)
+# Signature names are sorted by `unique`, so input order does not matter.
+# -----------------------------------------------------------------------------
+prs1628_fixture="${work_dir}/prs-1628.json"
+cat > "$prs1628_fixture" <<'JSON'
+[
+  {"number":1202,"title":"chore(deps): bump a","updatedAt":"2026-06-09T00:00:00Z","isDraft":false,
+   "mergeable":"MERGEABLE","mergeStateStatus":"CLEAN","reviewDecision":"",
+   "author":{"login":"dependabot[bot]","is_bot":true},
+   "statusCheckRollup":[{"name":"Lint","conclusion":"FAILURE"},{"name":"Type Check","conclusion":"FAILURE"},{"name":"Unit Tests","conclusion":"FAILURE"}],"body":""},
+  {"number":1203,"title":"chore(deps): bump b","updatedAt":"2026-06-09T00:00:00Z","isDraft":false,
+   "mergeable":"MERGEABLE","mergeStateStatus":"CLEAN","reviewDecision":"",
+   "author":{"login":"dependabot[bot]","is_bot":true},
+   "statusCheckRollup":[{"name":"Type Check","conclusion":"FAILURE"},{"name":"Lint","conclusion":"FAILURE"},{"name":"Unit Tests","conclusion":"FAILURE"}],"body":""},
+  {"number":1204,"title":"chore(deps): bump c","updatedAt":"2026-06-09T00:00:00Z","isDraft":false,
+   "mergeable":"MERGEABLE","mergeStateStatus":"CLEAN","reviewDecision":"",
+   "author":{"login":"renovate[bot]"},
+   "statusCheckRollup":[{"name":"Unit Tests","conclusion":"FAILURE"},{"name":"Lint","conclusion":"FAILURE"},{"name":"Type Check","conclusion":"FAILURE"}],"body":""},
+  {"number":1300,"title":"human fix","updatedAt":"2026-06-09T00:00:00Z","isDraft":false,
+   "mergeable":"MERGEABLE","mergeStateStatus":"CLEAN","reviewDecision":"REVIEW_REQUIRED",
+   "author":{"login":"alice"},
+   "statusCheckRollup":[{"name":"Lint","conclusion":"FAILURE"},{"name":"Type Check","conclusion":"FAILURE"},{"name":"Unit Tests","conclusion":"FAILURE"}],"body":""},
+  {"number":1301,"title":"chore(deps): solo","updatedAt":"2026-06-09T00:00:00Z","isDraft":false,
+   "mergeable":"MERGEABLE","mergeStateStatus":"CLEAN","reviewDecision":"",
+   "author":{"login":"dependabot[bot]","is_bot":true},
+   "statusCheckRollup":[{"name":"E2E","conclusion":"FAILURE"}],"body":""}
+]
+JSON
+
+unset GIT_TRIAGE_ISSUES_FIXTURE
+export GIT_TRIAGE_PRS_FIXTURE="$prs1628_fixture"
+
+sout="$(bash "$triage_script" --type prs --days-stale-pr 30)"
+
+# Exactly one systematic-failure group is emitted.
+echo "$sout" | grep -q "^SYSTEMATIC_FAILURE_COUNT=1$" \
+  || fail "#1628 expected SYSTEMATIC_FAILURE_COUNT=1, got:\n$(echo "$sout" | grep '^SYSTEMATIC_FAILURE_COUNT=')"
+pass "#1628: exactly one systematic-failure group emitted"
+
+# The group lists the three bot PRs with the shared signature.
+echo "$sout" | grep -q "^SYSTEMATIC_FAILURE_1_PRS=#1202,#1203,#1204$" \
+  || fail "#1628 expected grouped PRs '#1202,#1203,#1204', got:\n$(echo "$sout" | grep '^SYSTEMATIC_FAILURE_1_PRS=')"
+pass "#1628: the three bot PRs sharing a signature are grouped (order-independent)"
+
+# The signature is the sorted, |-joined failing-check names.
+echo "$sout" | grep -q "^SYSTEMATIC_FAILURE_1_SIGNATURE=Lint|Type Check|Unit Tests$" \
+  || fail "#1628 expected signature 'Lint|Type Check|Unit Tests', got:\n$(echo "$sout" | grep '^SYSTEMATIC_FAILURE_1_SIGNATURE=')"
+pass "#1628: signature is the sorted |-joined failing-check names"
+
+# A human-authored PR with the SAME signature is not folded into the bot group.
+if echo "$sout" | grep -q "#1300"; then
+  fail "#1628: human-authored PR #1300 must not be grouped as a systematic bot failure"
+fi
+pass "#1628: human-authored PR with the same signature is excluded"
+
+# A bot PR whose signature is unique (count 1) is not grouped.
+if echo "$sout" | grep -q "#1301"; then
+  fail "#1628: solo-signature bot PR #1301 must not be grouped (count 1)"
+fi
+pass "#1628: solo-signature bot PR is excluded (needs >=2 to be systematic)"
+
 echo "ALL TESTS PASSED"
