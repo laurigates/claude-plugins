@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.1](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.18.0...project-plugin-v1.18.1) (2026-06-14)
+
+
+### Bug Fixes
+
+* **project-plugin:** catch tool deprecations in changelog-review + drift-proof skip guard ([#1639](https://github.com/laurigates/claude-plugins/issues/1639)) ([8bdc485](https://github.com/laurigates/claude-plugins/commit/8bdc4859e4dcfab92250da53cb5b19ce2111798a))
+
 ## [1.18.0](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.17.0...project-plugin-v1.18.0) (2026-06-10)
 
 
