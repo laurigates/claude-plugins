@@ -44,6 +44,8 @@
     "onboarding",
     "repo-setup",
     "stack-aware",
-    "driver"
+    "driver",
+    "docs-drift",
+    "surface"
   ]
 }

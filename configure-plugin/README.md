@@ -77,6 +77,7 @@ All commands support two modes:
 | `configure-formatting` | Code formatting (Biome, Prettier, Ruff, rustfmt) |
 | `configure-dead-code` | Dead code detection (Knip, Vulture, cargo-machete) |
 | `configure-docs` | Documentation standards and generators |
+| `configure-surface` | Surface doc↔code drift gate (deterministic, SHA-pinned) |
 | `configure-security` | Security scanning (dependency audits, SAST, secrets) |
 
 ### Infrastructure
