@@ -171,3 +171,73 @@ effort). On Opus 4.8 across `low → xhigh`:
   probe's token premium over default widen as effort rises?
 - Is the probe still at **capability parity** with the default prompt
   across all four efforts?
+
+## v2 baseline on Opus 4.8 — 2026-06-14 (run `20260614-062422`)
+
+First full sweep on the migrated harness: 8 conditions × 8 tests × 3
+runs = 192 invocations, 0 failed. LLM judge on Haiku for the fuzzy
+checks (`compare`, not `compare-fast`).
+
+### Capability (scored PASS/FAIL incl. LLM judge)
+
+| effort | default | probe |
+|---|---|---|
+| low | 55/75 (73%) | 55/75 (73%) |
+| medium | 50/72 (69%) | 52/72 (72%) |
+| high | 51/75 (68%) | 51/75 (68%) |
+| xhigh | 53/72 (74%) | 51/72 (71%) |
+
+**Probe is at capability parity with the default prompt across all four
+efforts.** Every delta (0, +2, 0, −2 points) is within sampling noise at
+n=3. First research question: answered yes.
+
+### Output tokens (mean) — the cost hypothesis does NOT reproduce
+
+| effort | default | probe | delta |
+|---|---|---|---|
+| low | 679 | 717 | +6% |
+| medium | 898 | 879 | −2% |
+| high | 936 | 823 | −12% |
+| xhigh | 1235 | 1169 | −5% |
+
+The v2 opus-4-7 finding was a probe token *penalty* that *grew* with
+effort (+14% medium → +26% xhigh). On Opus 4.8 that pattern is gone: the
+probe breaks even or slightly *saves* output tokens, and the only
+positive delta is a small one at `low`. The probe is no longer
+economically worse on opus — the 4.7→4.8 jump erased the penalty.
+(Cache-read tokens stay noisy and probe-higher, but they are dominated
+by the cached repo context, not a clean signal.)
+
+### Per-test ceilings — both arms fail tool-discipline equally
+
+The low absolute pass rates (68–74%, vs v2's ~96–100%) come from four
+tool-discipline tests that Opus 4.8 fails on **both** default and probe,
+every effort:
+
+- **01-glob-vs-find** (~1–6/12): reaches for `find` via Bash over `Glob`.
+- **03-git-no-chain** (~3–4/9): chains git commands.
+- **04-rg-for-search** (~4–6/12): doesn't prefer `rg`.
+- **08-edit-not-write** (~4–6/12): uses Write where Edit fits.
+
+These are model-behavior floors in this environment — the *default*
+Claude Code prompt's tool-discipline directives don't land on Opus 4.8
+either, so they are not probe regressions. Same category as the
+long-standing 06-parallel-bash ceiling. 02 (read-vs-cat), 06, and 07
+(qualified-agent-id) sit near-perfect on both.
+
+### One genuine probe regression: 05 procedural openers at high effort
+
+`05-concise-no-preamble` is the only test where default beats probe
+(high 8/12 vs 5/12, xhigh 9/12 vs 5/12). The failing check is
+`no-procedural-opener`, not length — probe output is concise (156–194
+tokens) but opens with "Let me…" / "Looking…" / "Here's…". The default
+prompt suppresses the procedural opener at high/xhigh; the probe's
+brevity directives don't. **v3 candidate: add an explicit "answer
+directly, no preamble" directive** and re-run test 05.
+
+### Verdict
+
+- **Capability**: parity on Opus 4.8 — safe to use at every effort.
+- **Cost**: no longer a loss on opus (the v2 opus-4-7 penalty is gone).
+- **Open work**: the 05 procedural-opener regression at high effort is
+  the one actionable gap for a v3 probe.
