@@ -4,8 +4,8 @@ description: Claude Code changelog analysis for plugin impact. Use when checking
 user-invocable: false
 allowed-tools: Bash(git log *), Bash(git diff *), Read, Write, Edit, Glob, Grep, WebFetch, TodoWrite
 created: 2026-01-14
-modified: 2026-04-25
-reviewed: 2026-04-25
+modified: 2026-06-14
+reviewed: 2026-06-14
 ---
 
 # Claude Code Changelog Review
@@ -176,58 +176,38 @@ Look for:
 
 ## Report Format
 
-```markdown
-# Claude Code Changelog Review
-
-**Review Date**: YYYY-MM-DD
-**Versions Reviewed**: X.X.X to Y.Y.Y
-**Previous Check**: YYYY-MM-DD (vX.X.X)
-
-## Summary
-
-- **New versions**: N
-- **High-impact changes**: N
-- **Medium-impact changes**: N
-- **Action items**: N
-
-## High-Impact Changes
-
-### [Version] - Change Title
-
-**Impact**: Breaking/Security/Deprecation
-**Affected plugins**: plugin1, plugin2
-**Required action**: Description of what needs to be done
-
-## Medium-Impact Changes
-
-### [Version] - Change Title
-
-**Impact**: New feature/Enhancement
-**Opportunity**: How plugins could benefit
-**Suggested plugins**: plugin1, plugin2
-
-## Action Items
-
-- [ ] Item 1 (high priority)
-- [ ] Item 2 (medium priority)
-
-## Next Steps
-
-1. Create issues for high-priority items
-2. Schedule review of medium-impact changes
-3. Update version tracking file
-```
+For the human-readable review report template (Summary / High-Impact /
+Medium-Impact / Action Items / Next Steps), see [REFERENCE.md](REFERENCE.md).
+The CI path opens a triage issue instead — see Automation Integration below.
 
 ## Automation Integration
 
-For GitHub Actions workflow:
+The `.github/workflows/changelog-review.yml` workflow runs this review weekly.
+Its analysis is delegated to a unit-tested script so the logic is reviewable
+outside the YAML:
+
+```bash
+bash scripts/analyze-changelog.sh --excerpt <slice> --repo-dir . \
+  --tracked <ver> --latest <ver>
+```
+
+The script (`scripts/analyze-changelog.sh`, tested by
+`scripts/tests/test-analyze-changelog.sh`) emits structured `KEY=VALUE` output
+and, beyond keyword counts, carries a **deprecation → plugin-code bridge**: for
+any tool/setting/command named in a `deprecat|removed|renamed|unshipped` line,
+it greps this repo's skills/hooks/agents/rules and surfaces the files that still
+reference it as triage candidates. This is the miss class from #1638 — a
+deprecated identifier (e.g. `TaskOutput`) that stayed referenced in a hook
+script because the old keyword map only ever pointed at `.claude/rules/*.md`.
+
+Workflow flow:
 
 1. Run weekly on schedule
-2. Fetch changelog and compare versions
-3. If new versions found:
-   - Generate analysis report
-   - Create GitHub issue with findings
-   - Update version tracking file
+2. Fetch changelog and compare versions (skip-if-exists is drift-aware: an open
+   but unactioned tracking issue no longer suppresses *newer* versions)
+3. If new versions found: run the analyzer, open ONE tracking issue (highest
+   priority = deprecated identifiers still referenced in our code), ratchet the
+   version JSON via a tiny PR
 4. Label issues appropriately
 
 ## Quick Reference
