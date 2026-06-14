@@ -135,14 +135,13 @@ jobs:
           args: check
 ```
 
-> **Residual supply-chain caveat (track upstream).** Even when the Action is SHA-pinned, Surface's
-> `action.yml` currently pipes `install.sh` from the **`main`** branch
-> (`raw.githubusercontent.com/.../main/install.sh`) rather than the pinned ref — so a compromised
-> `main` reaches pinned consumers. The download is checksum-verified (fail-closed), which bounds the
-> risk, but the *installer script* itself is unpinned. Until the upstream fix (use
-> `${{ github.action_path }}/install.sh`) lands, the maximally-cautious option is to **vendor**
-> `install.sh` at the pinned ref into your repo and run that. See the issue/PR this skill links in
-> "Upstream contributions".
+> **Installer-pin caveat (version-dependent).** Surface's `action.yml` historically piped
+> `install.sh` from the mutable **`main`** branch, so even a SHA-pinned `uses:` did not pin the
+> installer. This is **fixed upstream**: `action.yml` now runs the bundled
+> `${{ github.action_path }}/install.sh` at the pinned ref. The fix is merged to `main` but ships in
+> the **first release after v0.6.2** — pinning the current latest tag (v0.6.2) or earlier still
+> carries the gap. Pin a ref at or after the fixed release and the installer is pinned automatically;
+> for an older ref, **vendor** `install.sh` at that ref and run it. See "Upstream contributions".
 
 ### Step 6: Document the JSON → reviewer handoff
 
@@ -189,11 +188,11 @@ and the hardening checklist below with each item ✓/✗.
 
 ## Upstream contributions
 
-This skill tracks two improvements we proposed upstream (the repo is third-party; we cannot file
-directly from this marketplace, so the artifacts live with the adopting team):
+The installer-pin gap was reported and **fixed upstream**:
 
-- **Issue**: `action.yml` fetches `install.sh` from `main`, defeating SHA-pinning for the installer.
-- **PR**: run the bundled `${{ github.action_path }}/install.sh` so the installer matches the pinned ref.
+- **PR (merged)**: `action.yml` now runs the bundled `${{ github.action_path }}/install.sh`, so a
+  SHA-pinned `uses:` also pins the installer. Lands in the first tagged release after v0.6.2 — until
+  then, the version-dependent caveat in Step 5 applies to v0.6.2 and earlier.
 
 ## See Also
 
