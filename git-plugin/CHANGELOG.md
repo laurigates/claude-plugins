@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.43.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.42.2...git-plugin-v2.43.0) (2026-06-14)
+
+
+### Features
+
+* **git-plugin:** document fork-main upstream staging workflow ([#1644](https://github.com/laurigates/claude-plugins/issues/1644)) ([f57f2cf](https://github.com/laurigates/claude-plugins/commit/f57f2cf9a187f8c0013e9e37925c1a17565760a9))
+
 ## [2.42.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.42.1...git-plugin-v2.42.2) (2026-06-14)
 
 
