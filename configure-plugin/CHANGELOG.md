@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.26.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.25.0...configure-plugin-v1.26.0) (2026-06-14)
+
+
+### Features
+
+* **configure-plugin:** add configure-surface doc-drift gate skill ([#1641](https://github.com/laurigates/claude-plugins/issues/1641)) ([da77d9b](https://github.com/laurigates/claude-plugins/commit/da77d9b0eb3c8a59766980ba6a58b2eb7b228fce))
+
 ## [1.25.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.24.6...configure-plugin-v1.25.0) (2026-06-10)
 
 
