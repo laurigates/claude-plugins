@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.44.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.43.0...git-plugin-v2.44.0) (2026-06-14)
+
+
+### Features
+
+* **git-plugin:** surface systematic CI failure across bot PRs in git-triage ([#1647](https://github.com/laurigates/claude-plugins/issues/1647)) ([1e8ba84](https://github.com/laurigates/claude-plugins/commit/1e8ba848668f816908c55197f043f94fdb09d00a))
+
 ## [2.43.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.42.2...git-plugin-v2.43.0) (2026-06-14)
 
 
