@@ -1,6 +1,6 @@
 ---
 created: 2026-03-02
-modified: 2026-06-10
+modified: 2026-06-14
 reviewed: 2026-06-10
 name: git-fork-workflow
 description: "Fork management and upstream sync. Use when working with forks, syncing with upstream, detecting divergence, or preparing commits for contribution."
@@ -37,6 +37,7 @@ strategy prose below.
 | Diagnosing fork divergence from upstream | Need step-by-step PR creation workflow |
 | Syncing fork's main with upstream | Cherry-picking specific commits for upstream |
 | Deciding on a sync strategy | Creating a cross-fork PR via `gh` CLI |
+| Contributing from an environment that can't reach upstream | Upstream is directly reachable for a normal cross-fork PR |
 
 ## Remote Architecture
 
@@ -176,6 +177,33 @@ git push -u origin feat/my-contribution
 ```
 
 See [git-upstream-pr](../git-upstream-pr/SKILL.md) for the complete workflow.
+
+## Fork-Main as an Upstream Staging Area
+
+When the environment **cannot reach upstream directly** — e.g. a Claude Code session whose repository scope only includes your fork, so issues/PRs against `owner/repo` are denied — don't let that block development. Stage the contribution in your fork's `main`, then resubmit upstream from a session that can reach it.
+
+### The pattern
+
+1. **Stage in the fork.** Branch (ideally from `upstream/main`), implement, open a PR into your **fork's** `main`, self-review, and merge. The change is now landed and usable immediately, independent of upstream reachability.
+2. **Contain the divergence.** Merging into fork `main` diverges it from `upstream/main` (different SHAs — the [Divergence Problem](#the-divergence-problem) above). That is the accepted cost of staging. Keep it bounded by periodically pulling `upstream/main` back in (rebase or merge) so the fork doesn't rot.
+3. **Resubmit cleanly — never PR `fork:main → upstream:main`.** That drags every staged commit plus the divergence into one PR. Instead, from a session that can reach upstream, branch fresh from `upstream/main` and **cherry-pick only the one contribution's commit(s)**, then open the cross-fork PR (syntax below). Each upstream PR stays atomic and reviewable — what maintainers actually accept.
+4. **Track upstream status.** Stamp staged commits so a later session knows what still needs a PR:
+
+   ```
+   Upstream-status: pending          # staged in fork, not yet submitted
+   Upstream-PR: https://github.com/owner/repo/pull/NN   # once submitted
+   ```
+
+   List what's still pending with `git log --grep='Upstream-status: pending' upstream/main..origin/main`.
+
+### When to use vs. the Golden Rule
+
+| Situation | Approach |
+|-----------|----------|
+| You can reach upstream now | Branch from `upstream/main`, open the cross-fork PR directly (Golden Rule above) |
+| You cannot reach upstream from this environment | Stage in fork `main` now; cherry-pick onto an `upstream/main` branch and PR later |
+
+The staging pattern is the Golden Rule deferred — it still ends with a clean `upstream/main`-based branch; it just buys you an unblocked checkpoint in between.
 
 ## Cross-Fork PR Syntax
 
