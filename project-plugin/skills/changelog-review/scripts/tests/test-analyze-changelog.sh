@@ -29,6 +29,13 @@ cat > "$REPO/fake-plugin/hooks/bash-antipatterns.sh" <<'EOF'
 # REMINDER: Use the Read tool on the task-output file path.
 # (The TaskOutput tool is deprecated.)
 EOF
+# Identifiers that appear NEAR deprecation keywords in the changelog but are not
+# themselves being deprecated (the #1638 sweep false positives). Referenced here
+# so that a too-loose extractor WOULD surface them — making the negative
+# assertions below meaningful.
+cat > "$REPO/fake-plugin/hooks/coexist.sh" <<'EOF'
+# uses SendMessage between agents; reads enabledPlugins and mcpServers config
+EOF
 : > "$REPO/.claude/rules/skill-development.md"
 
 run() {
@@ -93,6 +100,29 @@ run "## 2.1.99
 assert_eq "DEPRECATION still counted" "1" "$(field DEPRECATION)"
 assert_eq "ACTIONABLE_DEPRECATION stays 0 (token not in repo)" "0" "$(field ACTIONABLE_DEPRECATION)"
 assert_absent "no fake-plugin candidate surfaced" "fake-plugin/hooks"
+
+# ── verb-anchored extraction rejects co-located non-deprecations (#1638 sweep) ─
+# Real shapes from the 2.1.138→2.1.176 sweep where a deprecation keyword sat on
+# the same line as a live identifier that was NOT being deprecated.
+echo ""
+echo "co-located identifiers (not the deprecation subject) do not raise the flag:"
+run "## 2.1.166
+- Hardened cross-session messaging: messages relayed via \`SendMessage\` from other Claude sessions no longer carry user authority
+## 2.1.153
+- \`--strict-mcp-config\` no longer strips inline \`mcpServers\` from explicitly-passed agent definitions
+## 2.1.152
+- Fixed /doctor reporting for stale \`enabledPlugins\` entries referencing removed marketplaces or dropped plugins"
+
+assert_eq "DEPRECATION count still fires on the coarse keywords" "3" "$(field DEPRECATION)"
+assert_eq "ACTIONABLE_DEPRECATION stays 0 (none is the deprecation subject)" "0" "$(field ACTIONABLE_DEPRECATION)"
+assert_absent "SendMessage not surfaced as a candidate" "coexist.sh"
+
+# Counterpart true positive: the same verb-first shape that the sweep correctly
+# caught (an env var that was genuinely removed) still surfaces.
+run "## 2.1.160
+- Removed \`TaskOutput\`; it is now a no-op"
+assert_eq "verb-first 'Removed \`X\`' still raises the flag" "1" "$(field ACTIONABLE_DEPRECATION)"
+assert_contains "the removed identifier is surfaced" "DEPRECATED_TOKENS=TaskOutput"
 
 # ── oversized batch (review stall) flags WARN ────────────────────────────────
 echo ""

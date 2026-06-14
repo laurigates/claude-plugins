@@ -132,7 +132,7 @@ This is an allowlist — only `worker` and `researcher` can be spawned. To allow
 | `sonnet` | Development workflows, moderate reasoning, multi-step implementation |
 | `haiku` | Structured/mechanical tasks, documentation generation, CI configuration |
 
-> **Note (2.1.142)**: Fast mode now uses Opus 4.7 by default (previously Opus 4.6). The `CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE` env var is deprecated (removal scheduled 2026-06-01) — drop it from agent launch scripts.
+> **Note (2.1.142)**: Fast mode now uses Opus 4.7 by default (previously Opus 4.6). The `CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE` env var was deprecated in 2.1.154 and **removed in 2.1.160** (now a no-op) — drop it from agent launch scripts. To use fast mode on Opus 4.6, switch with `/model claude-opus-4-6[1m]` then `/fast on`.
 
 ## Context Isolation
 

@@ -96,13 +96,26 @@ if [ "$DEPRECATION" -gt 0 ]; then
   # AgentOutputTool). This deliberately skips lowercase prose words and
   # command-style `/output-style` tokens; the DEPRECATION count still surfaces
   # those for human review in the issue body.
-  # Chop the replacement clause first ("…in favor of `Read`", "…use X instead")
-  # so we extract the *deprecated* subject, not its replacement — otherwise a
-  # common replacement name like `Read` would over-match across the repo.
+  # Tokens: identifiers that are the *subject* of a deprecation, not merely
+  # co-located with a deprecation keyword. Anchoring to the verb is what keeps
+  # the bridge precise — the looser "any backtick token on a line containing
+  # 'removed'/'no longer'" form produced false positives like `SendMessage`
+  # ("messages relayed via `SendMessage` … no longer carry authority" — a
+  # hardening, not a deprecation), `enabledPlugins` ("stale `enabledPlugins`
+  # entries referencing removed marketplaces"), and `mcpServers` ("no longer
+  # strips inline `mcpServers`"). Two grammatical shapes are matched:
+  #   verb-first  — "Deprecated/Removed/Renamed/Unshipped … `Token`"
+  #   token-first — "`Token` … is/are/now/been deprecated/removed/renamed"
+  # `[^`]{0,40}` can't cross a backtick, so verb-first always grabs the first
+  # backticked identifier after the verb (the subject), never a replacement
+  # named later in an "in favor of `Other`" clause.
   mapfile -t tokens < <(
-    grep -iE 'deprecat|removed|renamed|unshipped|no longer' "$excerpt" 2>/dev/null \
-      | sed -E 's/ (in favor of|instead of|replaced by|→|, use | use ).*$//' \
-      | grep -oE '`[^`]+`' 2>/dev/null \
+    {
+      grep -oE '(Deprecated|Removed|Renamed|Unshipped|Un-shipped)[^`]{0,40}`[^`]+`' "$excerpt" 2>/dev/null \
+        | grep -oE '`[^`]+`$'
+      grep -oE '`[^`]+`[^`]{0,40}(is|are|now|been)[[:space:]]+(deprecated|removed|renamed)' "$excerpt" 2>/dev/null \
+        | grep -oE '^`[^`]+`'
+    } 2>/dev/null \
       | tr -d '`' \
       | grep -E '[A-Z]' 2>/dev/null \
       | grep -E '^[A-Za-z][A-Za-z0-9_]{2,}$' 2>/dev/null \
