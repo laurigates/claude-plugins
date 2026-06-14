@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.2](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.18.1...project-plugin-v1.18.2) (2026-06-14)
+
+
+### Bug Fixes
+
+* **project-plugin:** anchor changelog deprecation extraction to the verb; refresh removed env-var note ([#1651](https://github.com/laurigates/claude-plugins/issues/1651)) ([8338987](https://github.com/laurigates/claude-plugins/commit/8338987c38e378b77315d5e7a08f317ce6863c1e))
+
 ## [1.18.1](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.18.0...project-plugin-v1.18.1) (2026-06-14)
 
 
