@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.36.2](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.36.1...blueprint-plugin-v3.36.2) (2026-06-14)
+
+
+### Documentation
+
+* **blueprint-plugin:** mark merged cues live in registry ([#1635](https://github.com/laurigates/claude-plugins/issues/1635)) ([a0e1e61](https://github.com/laurigates/claude-plugins/commit/a0e1e6175ac720fc3d2ebd512c86f9601e978df5))
+
 ## [3.36.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.36.0...blueprint-plugin-v3.36.1) (2026-06-13)
 
 
