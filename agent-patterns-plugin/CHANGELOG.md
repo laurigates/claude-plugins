@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.23.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.23.0...agent-patterns-plugin-v2.23.1) (2026-06-14)
+
+
+### Code Refactoring
+
+* **agent-patterns-plugin:** extract oversized SKILL.md bodies to REFERENCE.md ([#1654](https://github.com/laurigates/claude-plugins/issues/1654)) ([d0f6a4f](https://github.com/laurigates/claude-plugins/commit/d0f6a4fb9be6bb9ca9f5d9750b982c70de2be5bc))
+
 ## [2.23.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.22.3...agent-patterns-plugin-v2.23.0) (2026-06-11)
 
 
