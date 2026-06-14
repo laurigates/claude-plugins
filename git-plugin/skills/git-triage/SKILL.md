@@ -5,8 +5,8 @@ args: "[--type issues|prs|both] [--batch N] [--repo owner/name] [--days-stale-is
 argument-hint: "--type both --batch 10 (defaults: days-stale-issue=90, days-stale-pr=30, current repo)"
 allowed-tools: Bash(bash *), Bash(gh issue *), Bash(gh pr *), Bash(gh api *), Bash(gh repo *), Bash(git log *), Bash(rg *), Read, Grep, Glob, AskUserQuestion, TodoWrite
 created: 2026-04-22
-modified: 2026-06-10
-reviewed: 2026-06-10
+modified: 2026-06-14
+reviewed: 2026-06-14
 ---
 
 # /git:triage
@@ -65,7 +65,8 @@ bash "${CLAUDE_SKILL_DIR}/scripts/git-triage.sh" --home-dir "$HOME" --project-di
 Parse `STATUS=` and `ISSUES:` from the output. Per item it emits
 `ISSUE_<n>_AGE_DAYS` / `ISSUE_<n>_REFS` / `ISSUE_<n>_STALE_CANDIDATE` and
 `PR_<n>_CATEGORY` / `PR_<n>_AGE_DAYS` / `PR_<n>_CLOSES` (plus the underlying
-enum fields). If `--repo` was provided, pass it through; the script reads the
+enum fields). It also rolls up `SYSTEMATIC_FAILURE_*` groups (see Step 4).
+If `--repo` was provided, pass it through; the script reads the
 current repo from `origin` otherwise. Sort each set by age (oldest first if
 `--oldest-first`) and build a TodoWrite list with one entry per item.
 
@@ -113,6 +114,22 @@ both `UNKNOWN`), trigger a fresh view and re-run the script, or inspect:
 ```bash
 gh pr view <n> --repo $REPO --json mergeable,mergeStateStatus
 ```
+
+**Systematic failures.** When ≥2 bot-authored `needs-fix` PRs share an
+identical failing-check signature, the script groups them under
+`SYSTEMATIC_FAILURE_<k>_SIGNATURE` (the sorted `|`-joined failed check names)
+and `SYSTEMATIC_FAILURE_<k>_PRS` (the PR list); `SYSTEMATIC_FAILURE_COUNT`
+holds the number of groups. These almost always have **one** shared root
+cause — e.g. Dependabot can't update `bun.lock`, so every npm-bump PR fails
+the `bun install --frozen-lockfile` step *before* lint/typecheck/tests run, and
+"Lint FAILURE / Type Check FAILURE" is misleading (nothing was linted). For
+each group, read the install step's log once before assuming code defects:
+```bash
+gh pr checks <n> --repo $REPO --json name,state,conclusion,detailsUrl
+gh run view <run-id> --repo $REPO --log-failed
+```
+Diagnose the shared cause once and present a single grouped row (Step 6) /
+blocker (Step 8) instead of N independent `needs-fix` PRs.
 
 ### Step 5: Cross-link issues and PRs
 
@@ -179,7 +196,7 @@ After per-item actions, emit a structured summary:
 
 1. **Actions taken** — count of issues closed, PRs merged, with numbers.
 2. **Quick wins** — `still-valid` issues whose body suggests <30 min of work (single file, doc edit, config tweak).
-3. **Blockers** — `changes-requested` PRs and issues blocked on external factors.
+3. **Blockers** — `changes-requested` PRs and issues blocked on external factors. For each `SYSTEMATIC_FAILURE_*` group, emit one "systematic failure — likely shared root cause" line naming the PRs and the shared check signature, rather than N independent `needs-fix` entries.
 4. **Decisions needed** — `still-valid` issues whose body ends in a question or "how should we…".
 5. **Handoff recommendations** per category:
 

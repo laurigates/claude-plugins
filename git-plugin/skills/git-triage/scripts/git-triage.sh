@@ -193,22 +193,48 @@ if [ "$triage_type" != "issues" ]; then
   pr_total=$(echo "$prs_json" | jq 'length')
   echo "PRS_FETCHED=${pr_total}"
 
-  # Closing-keyword extraction runs in its OWN jq pass keyed by PR number, so a
-  # multi-line bot PR body (embedded tabs/newlines) can never shift the
-  # categorization enum columns. Packing `body` into the enum @tsv row used to
-  # do exactly that — every column slid right, WORST_CHECK held the whole body,
-  # and every PR fell through to `uncategorized` (issue #1627). The closing
-  # refs are single tokens (`#NNN`), so they stay TSV-safe on their own line.
+  # Per-PR metadata runs in its OWN jq pass keyed by PR number, so a multi-line
+  # bot PR body (embedded tabs/newlines) can never shift the categorization enum
+  # columns. Packing `body` into the enum @tsv row used to do exactly that —
+  # every column slid right, WORST_CHECK held the whole body, and every PR fell
+  # through to `uncategorized` (issue #1627). This pass emits three TSV-safe
+  # fields: closing refs (single `#NNN` tokens), a bot-author flag, and the
+  # failing-check signature (sorted FAILURE check names joined by `|`, no tabs).
+  #
+  # Bot detection mirrors git-pr-feedback's automation-author convention (#1420):
+  # author.is_bot, the well-known automation logins, or a *[bot]/*-bot login.
+  # The signature feeds the systematic-failure roll-up below (issue #1628).
+  # Empty fields are emitted as the literal `none` because `read` with a
+  # tab IFS collapses consecutive tabs (tab is IFS-whitespace) — an empty
+  # closes/signature field would otherwise shift every later column. The
+  # script translates `none` back to empty after the split.
   declare -A pr_closes_map=()
-  while IFS=$'\t' read -r ck_num ck_closes; do
-    [ -z "$ck_num" ] && continue
-    pr_closes_map["$ck_num"]="$ck_closes"
+  declare -A pr_isbot_map=()
+  declare -A pr_sig_map=()
+  while IFS=$'\t' read -r meta_num meta_closes meta_isbot meta_sig; do
+    [ -z "$meta_num" ] && continue
+    pr_closes_map["$meta_num"]="$meta_closes"
+    pr_isbot_map["$meta_num"]="$meta_isbot"
+    [ "$meta_sig" = "none" ] && meta_sig=""
+    pr_sig_map["$meta_num"]="$meta_sig"
   done < <(echo "$prs_json" | jq -r '
-    .[] | [
-      (.number|tostring),
-      ([ (.body // "") | scan("(?i)(?:closes|fixes|resolves)[[:space:]]+#[0-9]+") ]
-        | map(sub("^[^#]*";"")) | unique | join(","))
-    ] | @tsv' 2>/dev/null)
+    ["dependabot[bot]","renovate[bot]","release-please[bot]","github-actions[bot]","fvh-buildbot"] as $automation
+    | .[]
+    | (.author.login // "") as $login
+    | [
+        (.number|tostring),
+        (([ (.body // "") | scan("(?i)(?:closes|fixes|resolves)[[:space:]]+#[0-9]+") ]
+          | map(sub("^[^#]*";"")) | unique | join(",")) | if . == "" then "none" else . end),
+        (( (.author.is_bot // false)
+          or (($automation | index($login)) != null)
+          or ($login | test("(?i)(\\[bot\\]$|-bot$)")) ) | tostring),
+        (([ .statusCheckRollup[]? | select(.conclusion == "FAILURE") | (.name // .context // "check") ]
+          | unique | join("|")) | if . == "" then "none" else . end)
+      ] | @tsv' 2>/dev/null)
+
+  # Accumulator for the systematic-failure roll-up (#1628): failing-check
+  # signature → comma-joined list of the bot-authored needs-fix PRs sharing it.
+  declare -A sys_prs=()
 
   # Per-PR: pull the enum fields + worst CI conclusion, then categorize purely.
   # worst conclusion: FAILURE > CANCELLED > SUCCESS; null/empty → none.
@@ -228,6 +254,13 @@ if [ "$triage_type" != "issues" ]; then
     echo "PR_${pr_num}_CATEGORY=${pr_category}"
     pr_closes="${pr_closes_map[$pr_num]:-}"
     echo "PR_${pr_num}_CLOSES=${pr_closes:-none}"
+    # Group bot-authored needs-fix PRs by their failing-check signature (#1628).
+    if [ "$pr_category" = "needs-fix" ] && [ "${pr_isbot_map[$pr_num]:-false}" = "true" ]; then
+      pr_sig="${pr_sig_map[$pr_num]:-}"
+      if [ -n "$pr_sig" ]; then
+        sys_prs["$pr_sig"]="${sys_prs[$pr_sig]:+${sys_prs[$pr_sig]},}#${pr_num}"
+      fi
+    fi
   done < <(echo "$prs_json" | jq -r '
     def worst(rollup):
       ([rollup[]?.conclusion]) as $c
@@ -244,6 +277,28 @@ if [ "$triage_type" != "issues" ]; then
       (if (.reviewDecision // "") == "" then "null" else .reviewDecision end),
       worst(.statusCheckRollup // [])
     ] | @tsv' 2>/dev/null)
+
+  # Systematic-failure roll-up (#1628): when ≥2 bot-authored PRs share an
+  # identical failing-check signature, they almost always have ONE shared root
+  # cause (e.g. Dependabot can't update bun.lock → every npm-bump PR fails the
+  # frozen-lockfile step before lint/typecheck/tests even run). Surface a single
+  # grouped hint so triage diagnoses the shared cause once — and reads
+  # `--log-failed` for the install step — instead of treating N PRs as N
+  # independent code defects. Iterate keys in sorted order for deterministic
+  # output; only signatures shared by ≥2 PRs are emitted.
+  sys_idx=0
+  if [ "${#sys_prs[@]}" -gt 0 ]; then
+    while IFS= read -r sys_sig; do
+      [ -z "$sys_sig" ] && continue
+      sys_csv="${sys_prs[$sys_sig]}"
+      sys_commas=$(printf '%s' "$sys_csv" | tr -cd ',' | wc -c)
+      [ $((sys_commas + 1)) -ge 2 ] || continue
+      sys_idx=$((sys_idx + 1))
+      echo "SYSTEMATIC_FAILURE_${sys_idx}_SIGNATURE=${sys_sig}"
+      echo "SYSTEMATIC_FAILURE_${sys_idx}_PRS=${sys_csv}"
+    done < <(printf '%s\n' "${!sys_prs[@]}" | sort)
+  fi
+  echo "SYSTEMATIC_FAILURE_COUNT=${sys_idx}"
 fi
 
 echo "STATUS=${triage_status}"
