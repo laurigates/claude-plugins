@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.42.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.42.1...git-plugin-v2.42.2) (2026-06-14)
+
+
+### Bug Fixes
+
+* **git-plugin:** stop git-triage packing PR body into categorization TSV ([#1640](https://github.com/laurigates/claude-plugins/issues/1640)) ([9c2ee9a](https://github.com/laurigates/claude-plugins/commit/9c2ee9ace401036cae93e49a9c506554960485a1))
+
 ## [2.42.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.42.0...git-plugin-v2.42.1) (2026-06-13)
 
 
