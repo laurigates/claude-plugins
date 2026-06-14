@@ -143,4 +143,55 @@ echo "$iout" | grep -q "^ISSUE_42_REFS=#99$" \
   || fail "issue #42 expected REFS=#99, got:\n$(echo "$iout" | grep '^ISSUE_42_REFS')"
 pass "issue referenced-PR extraction finds #99"
 
+# -----------------------------------------------------------------------------
+# Regression for #1627: a bot PR with a large multi-line body (embedded tabs +
+# newlines) and an empty-string reviewDecision. Before the fix, the body was
+# packed into the categorization @tsv row as the 8th field; embedded tabs slid
+# every column right, so WORST_CHECK held the body, REVIEW held the worst-check
+# conclusion, and the PR fell through to `uncategorized`. The body now travels
+# in its own jq pass keyed by PR number, and empty-string reviewDecision is
+# normalized to null — so a passing, no-review bot PR lands in awaiting-review
+# and its enum columns stay clean.
+# -----------------------------------------------------------------------------
+prs1627_fixture="${work_dir}/prs-1627.json"
+cat > "$prs1627_fixture" <<'JSON'
+[
+  {"number":1202,"title":"chore(deps): bump foo","updatedAt":"2026-06-09T00:00:00Z","isDraft":false,
+   "mergeable":"MERGEABLE","mergeStateStatus":"CLEAN","reviewDecision":"",
+   "statusCheckRollup":[{"conclusion":"SUCCESS"}],
+   "body":"Bumps foo from 1.0 to 2.0.\n\n| Package\tOld\tNew |\n|---|---|---|\n| foo\t1.0\t2.0 |\n\nThis closes #4242 and also Fixes #4243.\n\n<details>\n<summary>Commits</summary>\n- abc\tdef\tghi\n</details>"}
+]
+JSON
+
+unset GIT_TRIAGE_ISSUES_FIXTURE
+export GIT_TRIAGE_PRS_FIXTURE="$prs1627_fixture"
+
+rout="$(bash "$triage_script" --type prs --days-stale-pr 30)"
+
+# WORST_CHECK must hold a real conclusion enum, never PR body text.
+echo "$rout" | grep -q "^PR_1202_WORST_CHECK=SUCCESS$" \
+  || fail "PR #1202 WORST_CHECK expected SUCCESS (body must not bleed into the enum), got:\n$(echo "$rout" | grep '^PR_1202_WORST_CHECK=')"
+pass "#1627: multi-line body does not shift WORST_CHECK column"
+
+# REVIEW must be the normalized null, never the worst-check conclusion.
+echo "$rout" | grep -q "^PR_1202_REVIEW=null$" \
+  || fail "PR #1202 REVIEW expected null (empty-string normalized), got:\n$(echo "$rout" | grep '^PR_1202_REVIEW=')"
+pass "#1627: empty-string reviewDecision normalized to null"
+
+# With clean columns the PR categorizes correctly instead of uncategorized.
+echo "$rout" | grep -q "^PR_1202_CATEGORY=awaiting-review$" \
+  || fail "PR #1202 expected category=awaiting-review, got:\n$(echo "$rout" | grep '^PR_1202_CATEGORY=')"
+pass "#1627: passing no-review bot PR categorizes as awaiting-review (not uncategorized)"
+
+# Closing keywords still extracted from the multi-line body, in its own pass.
+echo "$rout" | grep -q "^PR_1202_CLOSES=#4242,#4243$" \
+  || fail "PR #1202 CLOSES expected '#4242,#4243', got:\n$(echo "$rout" | grep '^PR_1202_CLOSES=')"
+pass "#1627: closing-keyword extraction survives the separate-pass refactor"
+
+# The body itself must never appear verbatim in the KEY=VALUE output.
+if echo "$rout" | grep -q "Bumps foo from"; then
+  fail "#1627: PR body leaked into the structured output"
+fi
+pass "#1627: PR body never leaks into KEY=VALUE output"
+
 echo "ALL TESTS PASSED"

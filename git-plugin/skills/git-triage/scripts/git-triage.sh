@@ -193,9 +193,29 @@ if [ "$triage_type" != "issues" ]; then
   pr_total=$(echo "$prs_json" | jq 'length')
   echo "PRS_FETCHED=${pr_total}"
 
+  # Closing-keyword extraction runs in its OWN jq pass keyed by PR number, so a
+  # multi-line bot PR body (embedded tabs/newlines) can never shift the
+  # categorization enum columns. Packing `body` into the enum @tsv row used to
+  # do exactly that — every column slid right, WORST_CHECK held the whole body,
+  # and every PR fell through to `uncategorized` (issue #1627). The closing
+  # refs are single tokens (`#NNN`), so they stay TSV-safe on their own line.
+  declare -A pr_closes_map=()
+  while IFS=$'\t' read -r ck_num ck_closes; do
+    [ -z "$ck_num" ] && continue
+    pr_closes_map["$ck_num"]="$ck_closes"
+  done < <(echo "$prs_json" | jq -r '
+    .[] | [
+      (.number|tostring),
+      ([ (.body // "") | scan("(?i)(?:closes|fixes|resolves)[[:space:]]+#[0-9]+") ]
+        | map(sub("^[^#]*";"")) | unique | join(","))
+    ] | @tsv' 2>/dev/null)
+
   # Per-PR: pull the enum fields + worst CI conclusion, then categorize purely.
   # worst conclusion: FAILURE > CANCELLED > SUCCESS; null/empty → none.
-  while IFS=$'\t' read -r pr_num pr_updated pr_draft pr_mergeable pr_state pr_review pr_worst pr_body; do
+  # reviewDecision is normalized so empty-string ("" — returned by bot PRs with
+  # no review requested) is treated the same as null, since jq `//` only catches
+  # null/false and would otherwise let the awaiting-review branch misfire (#1627).
+  while IFS=$'\t' read -r pr_num pr_updated pr_draft pr_mergeable pr_state pr_review pr_worst; do
     [ -z "$pr_num" ] && continue
     pr_age=$(age_days "$pr_updated")
     pr_category=$(categorize_pr "$pr_draft" "$pr_mergeable" "$pr_state" "$pr_review" "$pr_worst" "$pr_age")
@@ -206,8 +226,7 @@ if [ "$triage_type" != "issues" ]; then
     echo "PR_${pr_num}_REVIEW=${pr_review}"
     echo "PR_${pr_num}_WORST_CHECK=${pr_worst}"
     echo "PR_${pr_num}_CATEGORY=${pr_category}"
-    # Closing-keyword extraction from the PR body (audit candidates).
-    pr_closes=$(printf '%s' "$pr_body" | grep -oiE '(closes|fixes|resolves)[[:space:]]+#[0-9]+' | grep -oE '#[0-9]+' | sort -u | tr '\n' ',' | sed 's/,$//')
+    pr_closes="${pr_closes_map[$pr_num]:-}"
     echo "PR_${pr_num}_CLOSES=${pr_closes:-none}"
   done < <(echo "$prs_json" | jq -r '
     def worst(rollup):
@@ -222,9 +241,8 @@ if [ "$triage_type" != "issues" ]; then
       (.isDraft|tostring),
       (.mergeable // "UNKNOWN"),
       (.mergeStateStatus // "UNKNOWN"),
-      (.reviewDecision // "null"),
-      worst(.statusCheckRollup // []),
-      (.body // "")
+      (if (.reviewDecision // "") == "" then "null" else .reviewDecision end),
+      worst(.statusCheckRollup // [])
     ] | @tsv' 2>/dev/null)
 fi
 
