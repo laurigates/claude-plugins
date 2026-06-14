@@ -5,8 +5,8 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-21
-modified: 2026-06-05
-reviewed: 2026-06-05
+modified: 2026-06-14
+reviewed: 2026-06-14
 ---
 
 # Parallel Agent Dispatch
@@ -33,18 +33,14 @@ salvage / recovery routines, see [REFERENCE.md](REFERENCE.md).
 `Agent`, `TeamCreate`, and other parallel-spawn tools may not be present in a
 sub-agent's sandbox even when they are available in the main conversation.
 Designing a fan-out from inside a coordinating sub-agent risks silent
-degradation to sequential single-thread execution — the wall-clock cost of a
-5-way design landing in a 5× slower sequential mode.
+degradation to sequential single-thread execution.
 
-When planning a parallel dispatch:
-
-- **Default**: dispatch from the main conversation. The full tool surface is
+- **Default**: dispatch from the main conversation — the full tool surface is
   guaranteed.
 - **Sub-agent orchestrator**: only when the team's outputs do not need to feed
-  back into the main thread. Brief the sub-agent to verify tool availability up
-  front and report sequential fallback as a first-class outcome (see
-  `agent-teams` → "Sub-Agent Caveat: Spawn Teams from the Main Thread" for the
-  detection contract).
+  back into the main thread. Brief it to verify tool availability up front and
+  report sequential fallback as a first-class outcome (see `agent-teams` →
+  "Sub-Agent Caveat").
 
 ## The Three Pillars
 
@@ -62,227 +58,107 @@ Before spawning, the orchestrator must verify:
 If any check fails, **refuse to dispatch** and report the blocker. Do not
 "clean up" uncommitted user work — surface it and ask.
 
-#### Transient worktree leaks while a wave runs
+**Transient worktree leaks (#1319).** While a wave runs, a file a child wrote
+inside its worktree can briefly appear in the **parent** as an untracked entry
+at the same relative path, then vanish when the child commits. Do not stash,
+restore, or commit untracked parent files during a wave; wait for the child's
+completion, then let its branch reclaim the file. `/git:coworker-check` raises
+`worktree_leak_suspected` for this — run it before every parent-side commit.
 
-`Agent(isolation: "worktree")` is supposed to be a sealed filesystem view,
-but issue [#1319](https://github.com/laurigates/claude-plugins/issues/1319)
-documents a transient leak: a file the child wrote inside its worktree
-briefly appears in the **parent** as an untracked entry at the same
-relative path, then vanishes when the child commits. While a wave is
-running, the orchestrator must:
-
-- Treat untracked files in the parent checkout as **potentially leaked
-  from a child agent**. Do not stash, restore, or commit them.
-- Wait for the child's completion notification, then diff the parent's
-  orphan against the child's commit. Identical contents = leak; safe to
-  let the child's branch reclaim it.
-- Avoid `git commit` on the parent branch while child worktree agents
-  are still running — a leaked file caught by `git add -A` lands on the
-  wrong branch.
-
-`/git:coworker-check` raises the verdict `worktree_leak_suspected` when
-an untracked file in the parent matches a path in any linked worktree.
-Run it before every parent-side commit during a wave.
-
-#### cwd-reset leaking git writes into the main repo
-
-Distinct from the transient-leak shape above: issue
-[#1480](https://github.com/laurigates/claude-plugins/issues/1480)
-documents a git-write agent under `isolation: "worktree"` whose bare `git`
-commands ran against the **main checkout**, not its worktree — the agent
-thread's bash cwd reset between calls landed on the session's primary cwd
-(the main repo root), so every `git fetch` / `git checkout -B` /
-`git rebase --autostash` mutated `main`. Brief every git-**write** agent:
-
-- **Never assume `cwd == worktree`.** Pin the root once
-  (`git rev-parse --show-toplevel` → `$WORKTREE`) and prefix every git call with `git -C "$WORKTREE" …` — the cwd does not persist between calls.
-- **Forbid bare branch-switching / autostash.** Confirm the agent is inside
-  its worktree before any `git checkout -B` / `git rebase --autostash` — in
-  the main repo these swallow the user's uncommitted work.
-
-After the agent returns, run the **post-run main-repo integrity check** (see
-[REFERENCE.md](REFERENCE.md) "Worktree cwd-reset guardrail (#1480)"): a changed
-branch or new dirty state is silent main-repo mutation — salvage it like a
-missing Return Contract before reporting done.
+**cwd-reset leaking git writes (#1480).** Distinct from the transient leak: an
+agent thread's bash cwd resets between calls and can land on the main repo root,
+so a git-**write** agent's bare commands mutate `main` instead of its worktree.
+Brief every git-write agent: pin the root once
+(`git rev-parse --show-toplevel` → `$WORKTREE`) and prefix every call with
+`git -C "$WORKTREE" …`; forbid bare `git checkout -B` / `git rebase --autostash`
+until inside the worktree. After the agent returns, run the post-run main-repo
+integrity check (see [REFERENCE.md](REFERENCE.md) "Worktree cwd-reset guardrail
+(#1480)") — a changed branch or new dirty state is silent main-repo mutation.
 
 ### 2. Scope Budget (per-agent prompt rules)
 
 Every agent prompt must declare:
 
-- **File scope**: exclusive write paths (glob or explicit list). No agent may
-  write outside its declared scope. Out-of-scope discovery → stop and report
-  (see `agent-teams`).
-- **Read budget**: soft cap on files examined before producing output. A
-  reasonable default is "≤10 files per exploration hop, ≤3 hops before
-  returning a result."
-- **Output budget**: expected length of the return summary. Discourages agents
-  from echoing full file contents when a diff or line reference will do.
+- **File scope**: exclusive write paths (glob or explicit list). Out-of-scope
+  discovery → stop and report (see `agent-teams`).
+- **Read budget**: soft cap on files examined (default "≤10 files per hop, ≤3
+  hops before returning").
+- **Output budget**: expected length of the return summary — discourages echoing
+  full file contents when a diff or line reference will do.
 
-These budgets are what prevents the "security audit agent hit context limits"
-and "prompt is too long" failure modes — without them, a well-intentioned
-agent exhausts its window on exploration and truncates its actual deliverable.
+These budgets prevent the "agent hit context limits" and "prompt too long"
+failure modes — without them an agent exhausts its window on exploration and
+truncates its deliverable.
 
-#### Shared-File Exclusion List
+**Orchestrator-only files.** Even with disjoint write scopes, a second list of
+shared files must be excluded from every agent's write-path under a
+`### Orchestrator-only files` heading in the brief: the blueprint manifest
+(ID registry), the feature tracker, top-level plan/roadmap docs, build manifests
+(`pyproject.toml`/`package.json`/`Cargo.toml`/`go.mod`), `justfile`/`Makefile`,
+and local task-queue stores. Last-writer-wins silently destroys earlier work on
+these. See [REFERENCE.md](REFERENCE.md) for the full template and evidence.
 
-Even when each agent's declared file scope is disjoint, a second list of
-**orchestrator-only files** must be excluded from every agent's write-path.
-These are the files that many agents are tempted to touch because their work
-"relates to" them, and where last-writer-wins silently destroys earlier work.
+**Pre-allocated IDs.** The shared-counter snapshot must expand into **explicit
+per-agent ID assignment** in each brief ("Use WO-012; others claim WO-013/014").
+"Pick the next free ID" is a race under parallelism. Applies to any shared
+monotonic identifier (ADR, migration, PRP).
 
-Adapt this template to the repository's stack:
+**Wave splits for exclusive locks.** An agent needing an exclusive lock (Ghidra
+project lock, shared git index, migration lock, taskwarrior bulk ops,
+single-writer caches) cannot share a wave with another lock-contender. Dispatch
+it alone, or pre-compute its artefacts so downstream agents are read-only. See
+`exclusive-lock-dispatch`.
 
-- Blueprint manifest (`docs/blueprint/manifest.json`) — ID registry, agents
-  risk clobbering each other's pre-allocated IDs
-- Per-project feature tracker (stats, phases, notes) — touched by every slab
-- Top-level plan / roadmap docs — agents cite these, they do not edit them
-- Build manifests (`CMakeLists.txt`, `pyproject.toml`, `package.json`,
-  `Cargo.toml`, `go.mod`) — added-dependency edits are cross-cutting
-- `justfile` / `Makefile` — new recipes land through the orchestrator so
-  conflicting recipe names surface at review time
-- Local task-queue stores (e.g. `~/.task/` for taskwarrior) — serialised
-  writes, never concurrent
-
-Every dispatched agent brief must call these out explicitly as **not in
-scope**, regardless of what the agent's declared write-paths say. The
-exclusion list belongs under a `### Orchestrator-only files` heading in the
-brief, not buried in prose.
-
-> Evidence: five-agent parallel dispatch, zero merge conflicts (2026-04-23).
-> Before this discipline, informal dispatches suffered silent manifest clobbers
-> because each agent independently "also" updated the manifest.
-
-#### Pre-Allocated Blueprint IDs
-
-The Worktree Preflight table's **shared counter snapshot** must expand into
-**explicit per-agent ID assignment** in each brief — "Use WO-012 for this
-slice. Other agents claim WO-013 and WO-014."
-
-"Pick the next free ID" is a race condition under parallelism: two agents read
-the same counter, both allocate the same number, the second commit silently
-overwrites the first's manifest entry. Pre-allocation eliminates the race —
-the orchestrator, running alone, is the only writer. The same discipline
-applies to any shared monotonic identifier: ADR numbers, migration sequences,
-feature-request codes, PRP slugs.
-
-#### Wave Splits for Exclusive Locks
-
-At dispatch time, check every candidate agent for resources with an
-**exclusive lock** — Ghidra project locks, the git index on a shared checkout,
-database migration locks, taskwarrior bulk `task modify` / `task done` across
-many IDs, single-writer build/decompilation caches.
-
-An agent that needs an exclusive lock **cannot share a wave** with another
-lock-contender. Either dispatch the lock-holder alone and parallelise the
-siblings afterwards, or pre-compute the locked tool's artefacts to gitignored
-scratch so all downstream agents are read-only siblings. See
-`exclusive-lock-dispatch` for the full pattern.
-
-#### Refactor-brief template
-
-For bulk content rewrites (description tightening, naming sweeps), use the
-per-step / PRECIOUS / per-file-cap brief shape. The full template and the
-six-agent evidence (issue
-[#1279](https://github.com/laurigates/claude-plugins/issues/1279)) live in
-[REFERENCE.md → Refactor-brief template](REFERENCE.md#refactor-brief-template).
+**Refactor briefs.** For bulk content rewrites, use the per-step / PRECIOUS /
+per-file-cap shape — see [REFERENCE.md → Refactor-brief template](REFERENCE.md#refactor-brief-template).
 
 ### 3. Return Contract (mandatory structured summary)
 
-Every parallel agent must end its run with this schema as its final message,
-regardless of success or failure:
+Every parallel agent must end its run with a structured `## Result` summary as
+its final message, regardless of success or failure (status / branch / pr /
+commits / worktree, plus Scope delivered, Deferred, Issues encountered, and
+Orchestrator action needed). Include the schema **verbatim** in every dispatched
+agent's prompt under a heading like `### Return contract (mandatory)` — agents
+follow concrete schemas more reliably than prose. Copy the full schema from
+[REFERENCE.md → Return Contract schema](REFERENCE.md#return-contract-schema); for
+the failure-mode → schema-field rationale, see
+[REFERENCE.md → Failure modes](REFERENCE.md#failure-modes--schema-field).
 
-```markdown
-## Result
-- status: success | partial | failed
-- branch: <branch-name>
-- pr: <url> | not opened: <reason>
-- commits: <N> (<short-sha-range>)
-- worktree: <path> (clean | dirty: <file list>)
-
-## Scope delivered
-- 2–4 bullets on what actually landed
-
-## Deferred / skipped
-- Anything explicitly out of scope or punted
-- Empty is fine — the section must exist
-
-## Issues encountered
-- Hook fires, retries, test flakes, manual workarounds
-- Unexpected findings worth surfacing (e.g. second root cause)
-- Empty is fine — the section must exist
-
-## Orchestrator action needed
-- none | <one line: what the lead must do before next phase>
-```
-
-Include the schema verbatim in every dispatched agent's prompt under a heading
-like `### Return contract (mandatory)`. Do not paraphrase — agents follow
-concrete schemas more reliably than prose instructions.
-
-For the failure-mode → schema-field rationale (what each field catches and
-why), see [REFERENCE.md → Failure modes](REFERENCE.md#failure-modes--schema-field).
-
-#### Verbatim patches, not prose
-
-**Orchestrator edits needed must be verbatim patches, not prose.** Provide the
-literal text the orchestrator will paste — complete CMake blocks with
-surrounding context, full justfile recipes including shebang, literal prose
-paragraphs for docs updates. Prose-style "add X to Y" descriptions force the
-orchestrator to re-derive the exact insertion point.
-
-The paired discipline: **the agent writes the final prose** for any docs
-update its slice requires. See
-[REFERENCE.md → Verbatim patches](REFERENCE.md#verbatim-patches--detail-and-rationale)
-for the worked-example detail and the multi-wave cadence evidence.
+Orchestrator edits needed must be **verbatim patches, not prose** (literal CMake
+blocks, full justfile recipes, literal doc paragraphs) — and the agent writes
+the final prose for any docs update its slice requires. See
+[REFERENCE.md → Verbatim patches](REFERENCE.md#verbatim-patches--detail-and-rationale).
 
 #### Loud-failure contract (never surrender silently)
 
-A dispatched agent that hits a wall must say so **loudly**. The dominant
-failure shape (issue
-[#1422](https://github.com/laurigates/claude-plugins/issues/1422)) is an
-agent that runs 50–200 tool calls, thrashes against hooks, then emits a
-one-word final message — `Terminal.`, `Done.`, `Stopped.` — with no PR
-URL, no error explanation, and no list of what is blocked. The harness
-reads "no changes", cleans up the worktree, and the work is lost. A
-one-word summary is **indistinguishable from success** to the
-orchestrator, so it is treated as success and the failure is invisible.
+A dispatched agent that hits a wall must say so **loudly**. The dominant failure
+shape (issue [#1422](https://github.com/laurigates/claude-plugins/issues/1422))
+is an agent that runs 50–200 tool calls, thrashes against hooks, then emits a
+one-word final message — `Terminal.`, `Done.`, `Stopped.` — with no PR URL, no
+error, no blocked list. A one-word summary is **indistinguishable from success**
+to the orchestrator, so the harness reads "no changes", cleans up the worktree,
+and the work is lost.
 
-Every dispatched agent's prompt must mandate this escalation, tied to the
-Return Contract's `status` field:
+Tie the escalation to the Return Contract's `status` field:
 
 | Outcome | The agent must return |
 |---------|-----------------------|
-| **Success** | PR URL **plus one summary metric** (test-count delta, line delta) — `status: success`. |
-| **Partial blocker** | Commit and push the in-progress work to its branch, open a **draft PR**, and return its URL **plus an explicit "what's blocked" list** — `status: partial`. |
-| **Total blocker** | Explain *exactly* what blocked it, which tools were denied, and what it tried — `status: failed`. Never a bare `Terminal.` / `Done.` / `Stopped.` |
+| **Success** | PR URL **plus one summary metric** (test/line delta) — `status: success` |
+| **Partial blocker** | Push the WIP, open a **draft PR**, return its URL **plus an explicit "what's blocked" list** — `status: partial` |
+| **Total blocker** | Explain *exactly* what blocked it, which tools were denied, what it tried — `status: failed`. Never a bare `Terminal.` / `Done.` / `Stopped.` |
 
-The contract is one sentence the orchestrator pastes into every brief:
-**"Your final message is the only thing I can act on — a one-word summary
-loses all your work. On any blocker, push what you have, open a draft PR,
-and tell me exactly what stopped you."**
-
-Optional enforcement: a `SubagentStop` hook (see `hooks-plugin`) that
-inspects the final message and, when it is under ~20 characters or matches
-a bare-surrender pattern, injects a reminder asking the agent to elaborate
-before terminating. This catches the silent-surrender case the prompt
-contract alone can miss.
-
-This is the *negative*-case complement to the positive clean-stop report
-celebrated in issue #1393 — that issue covers an agent that stops cleanly
-with a useful report; this contract covers the agent that stops *badly*.
+The one-sentence contract to paste into every brief: **"Your final message is
+the only thing I can act on — a one-word summary loses all your work. On any
+blocker, push what you have, open a draft PR, and tell me exactly what stopped
+you."** Optional enforcement: a `SubagentStop` hook that flags sub-~20-char or
+bare-surrender final messages (see `hooks-plugin`).
 
 ### 4. Agent self-verification in bulk-edit briefs
 
-When fanning out agents to bulk-edit content covered by a regression script,
-the brief **must** include the script as the agent's own final verification
-step before it reports completion. Exit 0 means ship; non-zero means
-fix-and-re-run inside the same agent's budget.
-
-This shifts validation from commit-time (orchestrator pre-commit) to edit-time
-(per-agent). A regression that only one of six agents introduces is cheap for
-that one agent to repair; the same regression multiplied across all six and
-surfaced at the merge-wave pre-commit is an aggregate fixer-pass.
-
-Repository regression scripts to wire into briefs:
+When fanning out agents to bulk-edit content covered by a regression script, the
+brief **must** include the script as the agent's own final verification step.
+Exit 0 means ship; non-zero means fix-and-re-run inside the same agent's budget —
+shifting validation from commit-time to edit-time.
 
 | Bulk edit | Agent's final verification step |
 |-----------|--------------------------------|
@@ -290,182 +166,105 @@ Repository regression scripts to wire into briefs:
 | Context-command edits in skill bodies | `bash scripts/lint-context-commands.sh` |
 | `allowed-tools` / bash-permission edits | `bash scripts/plugin-compliance-check.sh` |
 
-The brief must instruct: **run the script, read the output, and if non-zero,
-re-edit and re-run before emitting the Return Contract.** Treating the script
-as advisory ("flag any issues for the orchestrator") defeats the purpose — the
-regression lands in the agent's diff and the agent already has the context to
-fix it.
-
-See [REFERENCE.md → Bulk-edit self-verification](REFERENCE.md#bulk-edit-self-verification--worked-example)
-for the 2026-05-09 cascade evidence and the PR #1314 canonical example.
-Cross-reference `.claude/rules/regression-testing.md` for the catalogue of
-regression scripts and the rule that every fixed bug ships with a matching
-script check.
+Treating the script as advisory defeats the purpose — the regression lands in
+the agent's diff and the agent already has the context to fix it. See
+[REFERENCE.md → Bulk-edit self-verification](REFERENCE.md#bulk-edit-self-verification--worked-example)
+and `.claude/rules/regression-testing.md`.
 
 ### 5. Reviewer-agent verification (verify-then-fix)
 
-Self-attestation is unreliable: an agent can return `status: success` with a
-half-written file or claim "tests pass" without running them. For high-stakes
-dispatches (PR "ready to merge", security audits, shared-state mutations),
-spawn a **separate reviewer agent** *after* the worker reports done and
-*before* the orchestrator trusts it.
+Self-attestation is unreliable. For high-stakes dispatches (PR "ready to merge",
+security audits, shared-state mutations), spawn a **separate reviewer agent**
+*after* the worker reports done and *before* trusting it. The reviewer runs in
+its own worktree, ideally a different model, receives the claim and branch (not
+the reasoning trace), and re-derives a verdict from the diff. On a flag, fix
+inline or dispatch a follow-up worker — do not close on the worker's self-claim.
 
-The reviewer:
-
-- Runs in its **own worktree** (different cwd than the worker).
-- Ideally uses a **different model** so the same blind spot does not pass.
-- Receives the worker's claim and branch — not the reasoning trace — and
-  re-derives a verdict from the diff.
-- Returns the Return Contract: `success` = claim holds; `failed` = claim does
-  not hold.
-
-**Verify-then-fix loop**: on a reviewer flag, the orchestrator fixes inline or
-dispatches a follow-up worker scoped to the regression. Do **not** close on
-the worker's self-claim alone.
-
-**Self-author guard for `gh pr` flows**: `gh pr review --reviewer <user>`
-returns HTTP 422 when the target is the PR author. Brief reviewers: *"Do not
-pass `--reviewer <author>`; if the dispatch lead is the PR author, post inline
-comments instead."*
-
-See [REFERENCE.md → Reviewer-agent verification](REFERENCE.md#reviewer-agent-verification--evidence)
-for the three-round verify-then-fix evidence (issue #1239).
+**Self-author guard for `gh pr` flows**: `gh pr review --reviewer <user>` returns
+HTTP 422 when the target is the PR author; brief reviewers to post inline
+comments instead. See [REFERENCE.md → Reviewer-agent verification](REFERENCE.md#reviewer-agent-verification--evidence).
 
 ## Who Pushes?
 
 Agents push their own commits in the normal case — worktree isolation plus
-per-agent branches makes this safe and keeps the main orchestrator context
-lean. Centralizing pushes through the lead collapses the isolation benefit and
-bloats the lead's transcript with N agents' worth of diffs.
-
-Exceptions where the lead should push instead:
+per-agent branches makes this safe and keeps the lead context lean. Exceptions
+where the lead pushes instead:
 
 - **Web sandbox sessions** (`CLAUDE_CODE_REMOTE=true`) — teammates may hit TLS
-  errors on push. See `agent-teams` Sandbox Considerations.
-- **Cross-agent dependencies** where Phase 1 agents' commits must land
-  together as a single merge base for Phase 2.
-- **Explicit user instruction** ("I'll push manually, just commit").
-
-Default remains: agent commits, agent pushes, agent opens its own PR, agent
-reports the URL back in the Return Contract.
+  errors on push (see `agent-teams`).
+- **Cross-agent dependencies** where Phase 1 commits must land as a single merge
+  base for Phase 2.
+- **Explicit user instruction** ("I'll push manually").
 
 ## Handling a Missing Return
 
-If an agent exits without emitting the Return Contract:
+If an agent exits without emitting the Return Contract, treat it as a **silent
+stall, not a success**. Before deciding, **discriminate empty vs dirty
+worktree**:
 
-1. Treat as a **silent stall**, not a success.
-2. **Discriminate empty vs dirty worktree** before deciding what to do.
-   Run `git -C <worktree> status --porcelain` and
-   `git -C <worktree> log --oneline origin/main..HEAD`:
-   - **Dirty / commits present** → the agent did the work; **salvage** it
-     (commit/push the WIP, open the PR) rather than re-dispatching. The
-     work is already done; re-running redoes completed work.
-   - **Empty / trivial diff** → nothing to salvage; resume the agent or
-     re-dispatch from scratch.
-3. Either resume the agent with a message asking for the missing summary, or
-   salvage the work yourself and file a tracking issue noting the stall.
-4. Do **not** report the parent task as complete until every spawned agent has
-   produced a Return Contract (or been explicitly accounted for).
+```bash
+git -C <worktree> status --porcelain
+git -C <worktree> log --oneline origin/main..HEAD
+```
 
-Two causes of a missing Return Contract, both leaving the work intact:
+- **Dirty / commits present** → the agent did the work; **salvage** it
+  (commit/push the WIP, open the PR) rather than re-dispatching.
+- **Empty / trivial diff** → nothing to salvage; resume or re-dispatch.
 
-- A **pre-commit hook blocking `git commit`** — the agent's diff sits intact
-  in the worktree, the hook is parked, no Return Contract fires.
-- A **rate limit (or other cut-off) after the implementation but before the
-  StructuredOutput call** — the agent finished the change and it is sitting as
-  uncommitted WIP in the worktree, but the schema-bound result was never
-  emitted, so the orchestrator's result array shows nothing. Only the
-  persisted worktree (it survives because it *did* change) hints anything
-  happened. See issue
-  [#1491](https://github.com/laurigates/claude-plugins/issues/1491).
+Do **not** report the parent task complete until every spawned agent has produced
+a Return Contract (or been explicitly accounted for). Two causes leave the work
+intact: a pre-commit hook blocking `git commit`, or a rate-limit cut-off after
+the implementation but before the StructuredOutput call (issue
+[#1491](https://github.com/laurigates/claude-plugins/issues/1491)).
 
-Defensive mitigation in the brief: instruct worktree-isolated agents to
-`git add -A && git commit` **WIP at checkpoints** — after each substantive
-slice and before they would otherwise terminate — so partial work is always
-captured on the branch even if the structured result is lost. A captured WIP
-commit turns the empty-vs-dirty discrimination above into a clean salvage.
-
-See
+Defensive mitigation: instruct worktree-isolated agents to `git add -A &&
+git commit` **WIP at checkpoints** — after each substantive slice and before
+they would terminate — so partial work is always captured even if the structured
+result is lost. See
 [REFERENCE.md → Agent stalled at commit / push](REFERENCE.md#agent-stalled-at-commit--push--salvage-routine)
-for symptoms, the four-step salvage routine, and prevention briefs, and
-[REFERENCE.md → WIP salvage before re-dispatch](REFERENCE.md#wip-salvage-before-re-dispatch-1491)
-for the empty-vs-dirty triage and the checkpoint-commit brief.
+and [REFERENCE.md → WIP salvage before re-dispatch](REFERENCE.md#wip-salvage-before-re-dispatch-1491).
 
 ## Killing a Thrashing Agent Preserves Its Worktree
 
-`TaskStop` does **not** discard the agent's work — its worktree stays on
-disk with every uncommitted change intact. This makes `TaskStop` a
-**recovery affordance**, not a last resort: when an agent is stuck or
-thrashing — Bash:Edit ratio ≥ 9:1 **and** a rising `is_error` rate on
-those Bash calls, typically `PreToolUse` hook blocks — killing it early
-and salvaging the worktree beats waiting for it to give up silently
-80–200 tool calls later. See
-[REFERENCE.md → When to kill early](REFERENCE.md#killed-agent-worktree-recovery-taskstop)
-for the full quantitative thresholds and the rate-limit vs hook-block
-discriminator.
-
-After `TaskStop`, decide **salvage vs restart** from the worktree state:
+`TaskStop` does **not** discard the agent's work — its worktree stays on disk
+with every uncommitted change intact, making `TaskStop` a **recovery
+affordance**. When an agent is thrashing (high Bash:Edit ratio with a rising
+error rate on hook-blocked Bash calls), killing it early and salvaging beats
+waiting for a silent give-up. After `TaskStop`, decide salvage vs restart from
+the worktree state:
 
 | Worktree state | Decision |
 |----------------|----------|
-| Substantive diff vs `origin/main` (the agent did the hard part) | **Salvage** — finish in the parent session, commit, push, open the PR |
-| Empty / trivial diff, or the design itself was wrong | **Restart** — `git worktree remove <path>` first, then re-dispatch |
+| Substantive diff vs `origin/main` | **Salvage** — finish in the parent session, commit, push, open the PR |
+| Empty / trivial diff, or wrong design | **Restart** — `git worktree remove <path>` first, then re-dispatch |
 
-Quick triage inside the worktree: `git status`, `git diff origin/main
---stat`, `git log --oneline -5`. The agent's exploration and partial
-implementation are not wasted even when the agent itself failed — which
-matters most for refactors with heavy design-time work. See
-[REFERENCE.md → Killed-agent worktree recovery](REFERENCE.md#killed-agent-worktree-recovery-taskstop)
-for the full recovery checklist and evidence.
+For the quantitative kill thresholds and the rate-limit vs hook-block
+discriminator, see [REFERENCE.md → Killed-agent worktree recovery](REFERENCE.md#killed-agent-worktree-recovery-taskstop).
 
-## Concurrent rate-limit risk
+## Concurrent Rate-Limit Risk
 
-Opus 4.7 (1M) parents running **six or more** concurrent subagents can hit
-`Server is temporarily limiting requests` partway through a wave. Each `[1m]`
-request counts independently against the rate-limit window; the cascade tends
-to strike agents that have already completed substantial work, so surviving
-siblings finish cleanly while rate-limited agents return partial state with no
-Return Contract. Matches upstream
-[anthropics/claude-code#33154](https://github.com/anthropics/claude-code/issues/33154).
-
-This is **server-side request rate limiting** (`Server is temporarily limiting
-requests (not your usage limit) · Rate limited`), distinct from your account
-usage limit. It **varies by time of day and overall load** — a fan-out of 7+
-heavy agents can be killed instantly (0 subagent tokens, all marked failed
-within ~30s) at peak hours even when the same fan-out ran clean the day before.
-"It worked with N agents yesterday" is not a guarantee for today.
-
-**Start conservative, then scale up** rather than picking a fixed number:
+`[1m]` parents running **six or more** concurrent subagents can hit `Server is
+temporarily limiting requests` partway through a wave (distinct from your account
+usage limit; varies by time of day). "It worked with N agents yesterday" is not
+a guarantee. **Start conservative, then scale up:**
 
 | Agent profile | Safe starting concurrency |
 |---|---|
-| Heavy (each runs installs / builds / long tool chains) | **2–3** |
-| Light (read-only analysis, single-file edits) | up to 5 for Opus 4.7 (1M) parents |
+| Heavy (installs / builds / long tool chains) | **2–3** |
+| Light (read-only analysis, single-file edits) | up to 5 |
 
-Scale beyond the starting point only when the environment is known-good for the
-current session. Prefer **sequential waves of small batches** over one big
-fan-out whenever more than ~4 heavy agents are involved (e.g. four waves of two,
-each wave dispatched when the previous reports).
-
-**Treat the rate-limit signal as backoff-and-retry, not task failure.** When a
-wave returns with one or more `Rate limited` agents, the work is not lost — the
-agents were rejected before doing meaningful work. Re-dispatch them with backoff
-*and reduce concurrency* (e.g. drop from 4 to 2, or switch the retry wave to
-Sonnet) rather than recording them as failed. For the full
-**recovery-dispatch pattern**, see
-[REFERENCE.md → Concurrent rate-limit recovery](REFERENCE.md#concurrent-rate-limit-risk--recovery-dispatch-routine).
-
-Cross-reference `.claude/rules/skill-fork-context.md` for the underlying
-`[1m]` rate-limit issue and the upstream tickets (#16803, #27053, #33154,
-#6594) to track for fixes.
+Prefer **sequential waves of small batches** over one big fan-out beyond ~4
+heavy agents. **Treat the rate-limit signal as backoff-and-retry, not task
+failure** — re-dispatch rejected agents with backoff *and reduced concurrency*.
+See [REFERENCE.md → Concurrent rate-limit recovery](REFERENCE.md#concurrent-rate-limit-risk--recovery-dispatch-routine)
+and `.claude/rules/skill-fork-context.md` for the upstream tickets.
 
 ## Composition with agent-teams
 
-`agent-teams` covers the TeamCreate / SendMessage / TaskUpdate mechanics.
-This skill adds the dispatch-time contract that applies to both team and
-non-team parallel fan-out. When both apply, follow both — the out-of-scope
-protocol from `agent-teams` slots naturally into the `Issues encountered` and
-`Deferred / skipped` sections of the Return Contract here.
+`agent-teams` covers the TeamCreate / SendMessage / TaskUpdate mechanics; this
+skill adds the dispatch-time contract that applies to both team and non-team
+fan-out. When both apply, follow both — the out-of-scope protocol from
+`agent-teams` slots into the `Issues encountered` / `Deferred` sections here.
 
 ## Quick Reference
 
@@ -475,7 +274,7 @@ protocol from `agent-teams` slots naturally into the `Issues encountered` and
 - [ ] Each agent has unique branch name and exclusive file scope
 - [ ] Each prompt includes file/read/output budgets
 - [ ] Each prompt includes the Return Contract schema verbatim
-- [ ] Each prompt mandates the loud-failure contract (no one-word surrenders on a blocker)
+- [ ] Each prompt mandates the loud-failure contract (no one-word surrenders)
 - [ ] Agents authorized to push their own commits (unless sandbox/dependency exception)
 - [ ] Every returned summary parsed; missing returns treated as stalls
 
@@ -487,7 +286,7 @@ protocol from `agent-teams` slots naturally into the `Issues encountered` and
 | Scope described in prose, not glob | Explicit write-path list per agent |
 | "Report back when done" with no schema | Include Return Contract verbatim in every prompt |
 | Treating agent silence as success | No Return Contract = stall; investigate before reporting done |
-| Accepting a one-word final message (`Terminal.`/`Done.`) as success | Mandate the loud-failure contract: on any blocker, push work, open a draft PR, explain what stopped |
+| Accepting a one-word final message (`Terminal.`/`Done.`) | Mandate the loud-failure contract: push work, open a draft PR, explain |
 | Centralizing pushes as a default | Agent pushes its own work; lead pushes only on sandbox/dependency exceptions |
 
 ## Related

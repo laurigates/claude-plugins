@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
-reviewed: 2026-02-26
+modified: 2026-06-14
+reviewed: 2026-06-14
 name: mcp-management
 description: Install and configure MCP servers for Claude Code. Use when adding/enabling servers, updating .mcp.json, managing OAuth remote servers, or troubleshooting connections.
 user-invocable: false
@@ -11,6 +11,10 @@ allowed-tools: Bash(jq *), Bash(find *), Read, Write, Edit, Grep, Glob, AskUserQ
 # MCP Server Management
 
 Expert knowledge for managing Model Context Protocol (MCP) servers on a project-by-project basis, with support for runtime management, OAuth remote servers, and dynamic server discovery.
+
+For server config examples, the OAuth deep-dive, dynamic-discovery detail,
+troubleshooting scripts, and full configuration-pattern examples, see
+[REFERENCE.md](REFERENCE.md).
 
 ## When to Use This Skill
 
@@ -31,39 +35,15 @@ MCP connects Claude Code to external tools and data sources via two transport ty
 | **Stdio** (local) | Command-based servers via `npx`, `bunx`, `uvx`, `go run` | None needed | `.mcp.json` |
 | **HTTP+SSE** (remote) | URL-based servers hosted externally | OAuth 2.1 | `.mcp.json` with `url` field |
 
-### Local Server (Stdio)
-
-```json
-{
-  "mcpServers": {
-    "context7": {
-      "command": "bunx",
-      "args": ["-y", "@upstash/context7-mcp"]
-    }
-  }
-}
-```
-
-### Remote Server (HTTP+SSE with OAuth)
-
-```json
-{
-  "mcpServers": {
-    "my-remote-server": {
-      "url": "https://mcp.example.com/sse",
-      "headers": {
-        "Authorization": "Bearer ${MY_API_TOKEN}"
-      }
-    }
-  }
-}
-```
+Local servers declare a `command` + `args`; remote servers declare a `url` +
+`headers` (with `${VAR_NAME}` token references, never hardcoded). See
+[REFERENCE.md → Server configuration examples](REFERENCE.md#server-configuration-examples).
 
 ## Runtime Server Management
 
 ### `/mcp` Commands (Claude Code 2.1.50+)
 
-Use these slash commands to manage servers without editing configuration files:
+Manage servers without editing configuration files:
 
 | Command | Description |
 |---------|-------------|
@@ -76,108 +56,34 @@ Use these slash commands to manage servers without editing configuration files:
 ### Check Server Status
 
 ```bash
-# List configured servers
-jq -r '.mcpServers | keys[]' .mcp.json
-
-# Verify server config
-jq '.mcpServers.context7' .mcp.json
+jq -r '.mcpServers | keys[]' .mcp.json   # List configured servers
+jq '.mcpServers.context7' .mcp.json      # Verify a server's config
 ```
 
-## OAuth Support for Remote MCP Servers
+## OAuth Remote Servers (2.1.50+)
 
-Claude Code 2.1.50+ includes improved OAuth handling for remote MCP servers:
-
-### OAuth Flow Overview
-
-Remote MCP servers using HTTP+SSE transport use OAuth 2.1:
-
-1. Claude Code discovers OAuth metadata from `/.well-known/oauth-authorization-server`
-2. Discovery metadata is **cached** to avoid repeated HTTP round-trips on session start
-3. User authorizes in the browser; token is stored and reused across sessions
-4. If additional permissions are needed mid-session, **step-up auth** is triggered
-
-### Step-Up Auth
-
-Step-up auth occurs when a tool requires elevated permissions not granted in the initial OAuth flow:
-
-1. Server signals that additional scope is required
-2. Claude Code prompts the user to re-authorize with the expanded scope
-3. After re-authorization, the original tool call is retried automatically
-
-### OAuth Discovery Caching
-
-Metadata from `/.well-known/oauth-authorization-server` is cached per server URL. If a remote server changes its OAuth configuration, force a refresh by:
-
-1. Using `/mcp disable <server>` then `/mcp enable <server>` in the session
-2. Or restarting Claude Code to clear the cache
-
-### Remote Server Configuration
-
-```json
-{
-  "mcpServers": {
-    "my-service": {
-      "url": "https://api.example.com/mcp/sse",
-      "headers": {
-        "Authorization": "Bearer ${MY_SERVICE_TOKEN}"
-      }
-    }
-  }
-}
-```
-
-Use `${VAR_NAME}` syntax for environment variable references — never hardcode tokens.
+Remote HTTP+SSE servers use OAuth 2.1: Claude Code discovers metadata from
+`/.well-known/oauth-authorization-server` (cached per URL), the user authorizes
+in-browser once, and **step-up auth** re-prompts when a tool needs elevated
+scope. To refresh stale OAuth config, `/mcp disable` then `/mcp enable` the
+server. Full flow, step-up detail, and caching behavior in
+[REFERENCE.md → OAuth support](REFERENCE.md#oauth-support-for-remote-mcp-servers).
 
 ## Dynamic Tool Discovery (`list_changed`)
 
-MCP servers that support the `list_changed` capability can update their tool list dynamically without requiring a session restart.
-
-### How It Works
-
-1. Server declares `{"tools": {"listChanged": true}}` in its capabilities response
-2. When the server's tool set changes, it sends `notifications/tools/list_changed`
-3. Claude Code refreshes its tool list from that server automatically
-4. New tools become available immediately in the current session
-
-### Practical Implications
-
-- **No session restart required** when a server adds or removes tools dynamically
-- Useful for servers that expose project-context-specific tools
-- For `resources/list_changed` and `prompts/list_changed` — same pattern applies
-
-### Checking Capabilities
-
-The capabilities are declared by the server during initialization. Claude Code subscribes automatically when the server declares support. No client-side configuration is required.
+Servers declaring `{"tools": {"listChanged": true}}` push
+`notifications/tools/list_changed` when their tool set changes, and Claude Code
+refreshes that server's tools **without a session restart** — useful for servers
+exposing project-context-specific tools. Same pattern for `resources` and
+`prompts`. Subscription is automatic; no client config needed. See
+[REFERENCE.md → Dynamic tool discovery](REFERENCE.md#dynamic-tool-discovery-list_changed).
 
 ## Troubleshooting
 
-### Server Won't Connect
-
-```bash
-# Verify server command is available
-which bunx  # or npx, uvx, go
-
-# Test server manually
-bunx -y @upstash/context7-mcp  # Should start without error
-
-# Validate JSON syntax
-jq empty .mcp.json && echo "JSON is valid" || echo "JSON syntax error"
-```
-
-### Missing Environment Variables
-
-```bash
-# List all env vars referenced in .mcp.json
-jq -r '.mcpServers[] | .env // {} | to_entries[] | "\(.key)=\(.value)"' .mcp.json
-
-# Check which are set
-jq -r '.mcpServers[] | .env // {} | keys[]' .mcp.json | while read var; do
-  clean_var=$(echo "$var" | sed 's/\${//;s/}//')
-  [ -z "${!clean_var}" ] && echo "MISSING: $clean_var" || echo "SET: $clean_var"
-done
-```
-
-### OAuth Remote Server Issues
+Common failure modes and the diagnostic scripts for each (server won't connect,
+missing env vars, OAuth issues, the SDK MCP race condition) are in
+[REFERENCE.md → Troubleshooting scripts](REFERENCE.md#troubleshooting-scripts).
+Quick OAuth triage:
 
 | Symptom | Likely Cause | Action |
 |---------|-------------|--------|
@@ -186,62 +92,14 @@ done
 | Discovery fails | Server down or URL wrong | Verify server URL and connectivity |
 | Cache stale | Server changed OAuth config | Disable/enable server to refresh |
 
-### SDK MCP Server Race Condition (2.1.49/2.1.50)
-
-When using `claude-agent-sdk` 0.1.39 with MCP servers, a known race condition in SDK-based MCP servers causes `CLIConnectionError: ProcessTransport is not ready for writing`. Workaround: use pre-computed context or static stdio servers instead of SDK MCP servers.
-
 ## Configuration Patterns
 
-### Project-Scoped (Recommended)
+Three scopes, each with a worked `.mcp.json` / `settings.json` / `plugin.json`
+example in [REFERENCE.md → Configuration patterns](REFERENCE.md#configuration-patterns):
 
-Store in `.mcp.json` at project root. Add to `.gitignore` for personal configs or track for team configs.
-
-```json
-{
-  "mcpServers": {
-    "context7": {
-      "command": "bunx",
-      "args": ["-y", "@upstash/context7-mcp"]
-    },
-    "sequential-thinking": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
-    }
-  }
-}
-```
-
-### User-Scoped (Personal)
-
-For servers you want available everywhere, add to `~/.claude/settings.json`:
-
-```json
-{
-  "mcpServers": {
-    "my-personal-tool": {
-      "command": "npx",
-      "args": ["-y", "my-personal-mcp"]
-    }
-  }
-}
-```
-
-### Plugin-Scoped
-
-Plugins can declare MCP servers in `plugin.json`:
-
-```json
-{
-  "mcpServers": {
-    "plugin-api": {
-      "command": "${CLAUDE_PLUGIN_ROOT}/servers/api-server",
-      "args": ["--port", "8080"]
-    }
-  }
-}
-```
-
-Or via external file: `"mcpServers": "./.mcp.json"`
+- **Project-scoped** (recommended) — `.mcp.json` at project root; `.gitignore` it for personal configs or track for team configs.
+- **User-scoped** (personal) — `~/.claude/settings.json` for servers available everywhere.
+- **Plugin-scoped** — declared in `plugin.json` (or referenced via `"mcpServers": "./.mcp.json"`).
 
 ## Agentic Optimizations
 
