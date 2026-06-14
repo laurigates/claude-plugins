@@ -65,7 +65,9 @@ claude_args=(
 if [ "$PROBE_SYSTEM_PROMPT" = "probe" ]; then
   probe_file="$prompts_dir/probe.md"
   [ -f "$probe_file" ] || { echo "ERROR: prompt not found: $probe_file" >&2; exit 1; }
-  claude_args+=(--system-prompt "$(cat "$probe_file")")
+  # --system-prompt-file replaces the built-in prompt (incl. dynamic sections)
+  # from a file — cleaner than inlining via $(cat) and immune to arg-length limits.
+  claude_args+=(--system-prompt-file "$probe_file")
 fi
 
 started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)

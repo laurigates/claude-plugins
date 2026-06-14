@@ -52,8 +52,15 @@ Two layers, composable per test case:
 | `tool_not_used` | A specific tool was *not* called |
 | `max_turns` | Assistant turn count ≤ N |
 | `max_output_tokens` | Output-token total ≤ N |
-| `output_matches` | Final assistant text matches a regex |
-| `output_not_matches` | Final assistant text does not match a regex |
+| `output_matches` | Final *answer* text block matches a regex |
+| `output_not_matches` | Final *answer* text block does not match a regex |
+
+> Both output checks score `final_answer_text()` — the last assistant text turn
+> (the answer) — not interim pre-tool-call status updates. A prompt that
+> mandates a tool call makes the model emit a "what I'm about to do" update
+> first; scoring concatenated text with a `^`-anchored regex would grade that
+> update instead of the answer and turn the check into noise (see the v3 entry
+> in `iteration-log.md`).
 
 ### 2. LLM-as-judge (`llm-judge.py`)
 
