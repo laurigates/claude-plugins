@@ -305,11 +305,13 @@ a tool-free prompt:
 **Replacing the whole system prompt saves ~595 tokens (−0.5%).** `--system-prompt`
 swaps only Claude Code's built-in base; CLAUDE.md, the ~30 rules files, and the
 tool/MCP definitions load identically in both arms and dominate the ~129k total.
-The dynamic sections are ~109 tokens here, so `--exclude-dynamic` barely moves
-raw size (its value is cross-user cache reuse). **Bare prompt-size savings are
-therefore a non-signal in this environment** — any real efficiency win has to
-come from the probe making the model *work* better (fewer turns, fewer wrong
-tool calls), not from a shorter prompt.
+`--exclude-dynamic` barely moves raw size (~109 tokens) because it *relocates*
+the dynamic sections into the first user message rather than removing them — its
+value is cross-user cache reuse, not size. (That ~109 is relocation noise, *not*
+the dynamic weight, which is measured directly in the next section: ~640 tokens.)
+**Bare prompt-size savings are therefore a non-signal in this environment** — any
+real efficiency win has to come from the probe making the model *work* better
+(fewer turns, fewer wrong tool calls), not from a shorter prompt.
 
 ### Status
 
@@ -317,3 +319,79 @@ tool calls), not from a shorter prompt.
 - v3 is a prompt-quality + measurement-correctness release, not a behavior fix.
 - A full v3 sweep would re-baseline with the corrected scorer; deferred as
   optional since parity is established and v3 is framing-level.
+
+## Dynamic system-prompt weight — 2026-06-14
+
+### The number: ~640 tokens
+
+The dynamic per-machine sections (`<env>`: cwd, additional dirs, platform, OS,
+date, model; `gitStatus`: branch + status + 5 recent commits; memory **pointers**:
+the CLAUDE.md paths) weigh **~642 tokens** for this repo.
+
+| config | total input tokens |
+|---|---|
+| probe alone (no dynamic) | 128,927 |
+| probe + reconstructed dynamic block | 129,569 |
+| **dynamic block weight** | **~642** |
+
+### Method
+
+Claude does not expose its rendered prompt: `--debug-file` logs only internals
+(MCP handshakes, hook events), and `--output-format stream-json --verbose` does
+not echo the input messages. `--exclude-dynamic-system-prompt-sections`
+*relocates* the dynamic sections into the first user message rather than removing
+them, so default-vs-exclude totals are equal (the ~109 delta is relocation noise).
+
+So the weight was measured by the **append trick**: reconstruct the repo's dynamic
+sections into a file, then diff `--system-prompt-file probe.md` against
+`--system-prompt-file probe.md --append-system-prompt-file dynamic.txt`. The total
+input-token delta is exactly Anthropic's token count of the appended block. This
+measures a faithful *reconstruction* (right order of magnitude, ±formatting), not
+Claude's verbatim text — which can't be dumped.
+
+### Implication: the built-in static base is roughly probe-sized
+
+Cross-checking the two deltas:
+
+- full system-prompt swap (default − probe total): **~595–660 tokens**
+- dynamic block weight: **~642 tokens**
+
+The probe drops the dynamic sections entirely, yet the whole swap saves only
+~600 tokens. The arithmetic (`static_base + dynamic − probe.md ≈ 600`, with
+`dynamic ≈ 640`) puts the default's **static base prose within ~50 tokens of
+probe.md** in headless `claude -p` mode. The "huge default system prompt"
+intuition does not hold here: the static base is small, the dynamic sections are
+a comparable-or-larger chunk, and the real ~129k weight is tool/MCP definitions +
+CLAUDE.md + the ~30 rules — all identical in both arms.
+
+### Caveats & scaling
+
+- The dynamic weight **scales with git state**: the `gitStatus` block (5 recent
+  commits + working-tree status) is the heaviest part. A long dirty-file list or
+  verbose commit subjects push it up; a non-git cwd drops the section entirely.
+- ~640 tokens is ~0.5% of the ~129k input — the same order as the entire
+  prompt-swap saving. Neither is where token efficiency lives.
+
+## Session insights — 2026-06-14 (carry-forward)
+
+Durable lessons from the migration + v3 + measurement session, for whoever picks
+this up next:
+
+1. **The harness measures the wrong lever if you chase prompt size.** System
+   prompt (static base + dynamic) is ~1% of input here; CLAUDE.md + rules +
+   tool/MCP defs dominate and are constant across arms. Judge the probe on *work
+   quality* (turns, tool discipline, correctness), not byte count.
+2. **n=3 is too coarse for bimodal checks.** The 05 procedural-opener check
+   swung 3/3↔0/3 on an unchanged condition. Before calling any single-check
+   default-vs-probe delta a "regression", confirm it survives a resample or
+   raise runs to ≥10.
+3. **Score the artifact the test is actually about.** `output_(not_)matches`
+   was grading pre-tool-call status updates, not answers. When a prompt mandates
+   a tool call, the first text block is an update both prompts emit — score
+   `final_answer_text()` (the last turn), not concatenated text.
+4. **Tool-discipline ceilings are model behavior, not prompt gaps.** Tests
+   01/03/04/06/08 fail on the default prompt too at every effort on Opus 4.8 —
+   the model reaches for `find`/git-chains/`Write`/serial-bash regardless of
+   system prompt. Probe iteration can't fix these; only the model can.
+5. **You can re-grade for free.** Scorer fixes can be validated by re-running
+   `compare` over existing transcripts — no new `claude -p` invocations.
