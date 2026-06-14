@@ -70,6 +70,7 @@ default prompt).
 | `scripts/score-run.py` | Deterministic checks → TSV |
 | `scripts/llm-judge.py` | Fuzzy checks via judge model |
 | `scripts/compare.py` | Aggregates + markdown table |
+| `scripts/measure-prompt-tokens.sh` | Per-invocation input-token cost: default vs probe (`just measure-tokens`) |
 | `results/` | Per-run-id transcripts + scores (gitignored) |
 | `docs/methodology.md` | How scoring works |
 | `docs/decision-analysis.md` | Why this experiment exists |

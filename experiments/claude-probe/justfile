@@ -63,6 +63,15 @@ compare-fast run_id="latest":
     scripts/compare.py "{{run_id}}" --no-judge
 
 ##########
+# Measurement
+##########
+
+# Measure per-invocation input-token cost: default vs default-exclude-dynamic vs probe.
+[group: "score"]
+measure-tokens reps="3" effort="low":
+    bash scripts/measure-prompt-tokens.sh --reps "{{reps}}" --effort "{{effort}}"
+
+##########
 # Housekeeping
 ##########
 

@@ -227,6 +227,14 @@ long-standing 06-parallel-bash ceiling. 02 (read-vs-cat), 06, and 07
 
 ### One genuine probe regression: 05 procedural openers at high effort
 
+> **Retracted 2026-06-14 (see the v3 entry).** This was a measurement
+> artifact, not a regression. The `no-procedural-opener` check scored
+> concatenated assistant text `^`-anchored, so it caught the *pre-tool-call
+> status update* ("Looking at…") that both prompts legitimately emit for a
+> prompt that mandates a Read — not the answer, which never had preamble.
+> Re-grading these same transcripts with the answer-scoped scorer yields
+> 3/3 on both arms at every effort.
+
 `05-concise-no-preamble` is the only test where default beats probe
 (high 8/12 vs 5/12, xhigh 9/12 vs 5/12). The failing check is
 `no-procedural-opener`, not length — probe output is concise (156–194
@@ -239,5 +247,73 @@ directly, no preamble" directive** and re-run test 05.
 
 - **Capability**: parity on Opus 4.8 — safe to use at every effort.
 - **Cost**: no longer a loss on opus (the v2 opus-4-7 penalty is gone).
-- **Open work**: the 05 procedural-opener regression at high effort is
-  the one actionable gap for a v3 probe.
+- **Open work**: ~~the 05 procedural-opener regression~~ — retracted; it
+  was a scoring artifact (see v3 entry). No capability gap remains.
+
+## v3 — 2026-06-14 (positive-framing rewrite + scorer fix + token measurement)
+
+### What changed
+
+1. **Probe rewritten in positive framing.** Every directive now states the
+   target behavior; the prohibitions the v1/v2 probe carried ("Never open
+   with…", "Don't narrate…", "Do not add…", "Nothing else") are gone. Also
+   deduped the comment rule (it appeared in both Text-output and Working-style)
+   and reconciled the line-14 / line-20 tension: the probe told the model to
+   pre-announce before its first tool call *and* to answer simple questions
+   directly. v3 carves out the single-short-turn case to lead with the answer.
+   Rationale: positive guidance is the house style (`.claude/rules/terminology.md`,
+   conventional-commits) and reads as instruction rather than a blocklist.
+
+2. **Scorer fix — score the answer, not interim updates.** `output_matches` /
+   `output_not_matches` scored `final_text()` (all assistant text concatenated)
+   with a `^`-anchored regex, so for a tool-requiring prompt they graded the
+   pre-tool-call status update, not the answer. Added `final_answer_text()` (the
+   last assistant text turn) and routed both checks to it. Test 05 is the only
+   consumer, so the change is contained.
+
+3. **Harness cleanup.** `run-one.sh` now injects the probe via
+   `--system-prompt-file` instead of `--system-prompt "$(cat …)"` (cleaner,
+   immune to arg-length limits). Confirmed via `claude --help` that
+   `--exclude-dynamic-system-prompt-sections` is *ignored* with `--system-prompt`
+   — so the probe condition already drops the dynamic sections (cwd, git, env,
+   memory) entirely, yet capability held at parity, so that loss isn't hurting.
+
+### The 05 "regression" was a measurement artifact
+
+The `no-procedural-opener` check fires on whichever text block comes first.
+For the 05 prompt ("Read marketplace.json. In one sentence, answer…") the model
+emits a pre-tool-call update first ("Looking at the config…"), then the answer
+("This repository publishes…"). The check caught the update. Proof it was noise,
+not signal: the **unchanged default condition** swung high-effort pass 3/3 → 0/3
+between two resamples (runs `…062422` and `…112358`) with no probe change at all.
+
+Re-grading both runs' existing transcripts with `final_answer_text()` (zero new
+invocations) gives **3/3 pass on default and probe at every effort** — the
+answers never had preamble. No regression existed.
+
+### Token measurement (`just measure-tokens`, opus-low, n=3)
+
+Built `scripts/measure-prompt-tokens.sh` to isolate per-invocation input cost on
+a tool-free prompt:
+
+| config | mean total input tokens |
+|---|---|
+| default | 129,591 |
+| default + exclude-dynamic | 129,482 |
+| probe | 128,996 |
+
+**Replacing the whole system prompt saves ~595 tokens (−0.5%).** `--system-prompt`
+swaps only Claude Code's built-in base; CLAUDE.md, the ~30 rules files, and the
+tool/MCP definitions load identically in both arms and dominate the ~129k total.
+The dynamic sections are ~109 tokens here, so `--exclude-dynamic` barely moves
+raw size (its value is cross-user cache reuse). **Bare prompt-size savings are
+therefore a non-signal in this environment** — any real efficiency win has to
+come from the probe making the model *work* better (fewer turns, fewer wrong
+tool calls), not from a shorter prompt.
+
+### Status
+
+- Capability parity stands (corrected scorer only raises 05, equally for both).
+- v3 is a prompt-quality + measurement-correctness release, not a behavior fix.
+- A full v3 sweep would re-baseline with the corrected scorer; deferred as
+  optional since parity is established and v3 is framing-level.

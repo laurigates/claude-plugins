@@ -81,6 +81,35 @@ def final_text(events: list[dict[str, Any]]) -> str:
     return "\n".join(out)
 
 
+def final_answer_text(events: list[dict[str, Any]]) -> str:
+    """Text of the *final* assistant turn that produced user-facing prose.
+
+    For a prompt that requires a tool call, the first assistant text block is a
+    pre-tool-call status update ("Looking at the config…") that both the default
+    and probe prompts legitimately emit. The answer is the last assistant text
+    turn. Preamble/format checks must score the answer, not the interim update —
+    scoring concatenated-all-text with a `^`-anchored regex catches the status
+    update and turns the check into noise (see docs/iteration-log.md, v3 entry).
+    """
+    last = ""
+    for ev in events:
+        msg = ev.get("message") or ev
+        if msg.get("role") != "assistant":
+            continue
+        content = msg.get("content")
+        if not isinstance(content, list):
+            continue
+        parts = [
+            block.get("text", "")
+            for block in content
+            if isinstance(block, dict) and block.get("type") == "text"
+        ]
+        joined = "\n".join(p for p in parts if p)
+        if joined.strip():
+            last = joined
+    return last
+
+
 def usage_totals(events: list[dict[str, Any]]) -> dict[str, int]:
     """Sum input/output tokens from usage blocks if present."""
     totals = {"input_tokens": 0, "output_tokens": 0, "cache_read_input_tokens": 0}
@@ -140,13 +169,13 @@ def check_max_output_tokens(events, n) -> tuple[bool, str]:
 
 
 def check_output_matches(events, pattern) -> tuple[bool, str]:
-    text = final_text(events)
+    text = final_answer_text(events)
     ok = re.search(pattern, text) is not None
     return ok, f"/{pattern}/ {'matched' if ok else 'NOT matched'}"
 
 
 def check_output_not_matches(events, pattern) -> tuple[bool, str]:
-    text = final_text(events)
+    text = final_answer_text(events)
     ok = re.search(pattern, text) is None
     return ok, f"/{pattern}/ {'absent' if ok else 'unexpectedly matched'}"
 
