@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.6](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.4.5...hooks-plugin-v2.4.6) (2026-06-14)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** reduce false positives across bash-antipatterns, branch-protection, and secret-protection hooks ([#1633](https://github.com/laurigates/claude-plugins/issues/1633)) ([c000f9e](https://github.com/laurigates/claude-plugins/commit/c000f9eaae4c7ada611b1d1e25cc8e6a4016bc4b))
+
 ## [2.4.5](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.4.4...hooks-plugin-v2.4.5) (2026-06-12)
 
 
