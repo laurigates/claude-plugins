@@ -9,38 +9,41 @@ paths:
 
 When to set `context: fork` and `agent:` in skill frontmatter.
 
-## Current Status: Do NOT Use `context: fork` in Plugin Skills
+## Current Status: `context: fork` Usable Again — Canary in Progress
 
-**As of April 2026, `context: fork` has two blocking issues for plugin-based skills:**
+**As of June 2026, the hard blocker is resolved and a canary rollout is underway** (tracked in [laurigates/claude-plugins#980](https://github.com/laurigates/claude-plugins/issues/980)):
 
-1. **Broken for plugins** ([anthropics/claude-code#16803](https://github.com/anthropics/claude-code/issues/16803), OPEN) — `context: fork` is silently ignored for plugin-installed skills. It only works for skills in the user's `~/.claude/` folder.
+1. **Plugin support fixed** ([anthropics/claude-code#16803](https://github.com/anthropics/claude-code/issues/16803), **CLOSED — COMPLETED 2026-04-18**) — `context: fork` is now honoured for plugin-installed skills. Previously it was silently ignored outside the user's `~/.claude/` folder; that was the real blocker, and it is gone.
 
-2. **Triggers rate limits with 1M context models** ([#27053](https://github.com/anthropics/claude-code/issues/27053), [#33154](https://github.com/anthropics/claude-code/issues/33154)) — Forking from an Opus 4.7 (1M) session spawns a second concurrent `[1m]` request, immediately hitting rate limits (`total_tokens: 0` rejection). This affects the default recommended model.
+2. **The `[1m]` rate-limit concern is narrower than first feared** ([#33154](https://github.com/anthropics/claude-code/issues/33154) **CLOSED — not planned / stale**, [#27053](https://github.com/anthropics/claude-code/issues/27053) stale-closed) — #33154 was a **Claude Cowork (Desktop) product** regression (`area:cowork`), never a CLI-specific tracker, and it was abandoned as stale rather than fixed. The underlying hazard — a `[1m]`-context session spawning **many concurrent** subagents and hitting cascading rate limits — is real but bites **parallel fan-out**, not a single fork. One `context: fork` spawns **one** subagent, which is not the cascade scenario.
 
-**Use `agent: general-purpose` without `context: fork`** to get subagent isolation without triggering these issues.
+**Guidance:** `context: fork` is appropriate again for a **single-subagent, verbose-output** skill. Keep avoiding it on skills that fan out **parallel** subagents while on a `[1m]` model (see the `skill-argument-handling.md` sweep caveat). The blocking gate in #980 ("revisit when both #16803 and #33154 resolved") has effectively expired — #33154 will never resolve cleanly — so the decision is now **empirical**: canary on one skill and verify on an Opus `[1m]` session before rolling out to the rest.
 
-> **Follow-up issue**: Track upstream fixes at [#PENDING](https://github.com/laurigates/claude-plugins/issues) — revisit when #16803 and #33154 are resolved.
+> **Canary**: `code-quality-plugin/skills/code-review` carries `context: fork` as the first restoration. Verify no rate-limit errors on an Opus `[1m]` session, then restore the remaining skills listed in #980. Its optional **Agent Teams** path still fans out parallel subagents — use that path cautiously on `[1m]`.
 
 ## What These Fields Do
 
 | Field | Value | Effect |
 |-------|-------|--------|
-| `context: fork` | `fork` | **BROKEN for plugins.** Intended to run the skill in an isolated subagent context. |
-| `agent` | subagent type name | Which subagent type to launch. Use `general-purpose` for most skills. Works without `context: fork`. |
+| `context: fork` | `fork` | Runs the skill in an isolated forked context — its verbose output never reaches the main window. Works for plugin skills again (#16803 fixed). Safe for single-subagent skills; avoid pairing with parallel fan-out on `[1m]`. |
+| `agent` | subagent type name | Which subagent type to launch. Use `general-purpose` for most skills. Works with or without `context: fork`. |
 
 ## Recommended Pattern
+
+For a **verbose, single-subagent** skill whose output should stay out of the main context:
 
 ```yaml
 ---
 name: my-skill
 model: opus
 agent: general-purpose
+context: fork
 allowed-tools: Task, Read, Glob, Grep, TodoWrite
 description: ...
 ---
 ```
 
-Use `agent: general-purpose` for skills that need subagent isolation. Omit `context: fork` until upstream issues are resolved.
+For a skill that fans out **parallel** subagents while a `[1m]` model is active, keep `agent: general-purpose` and **omit** `context: fork` — the rate-limit cascade hazard applies to concurrent subagents, not to the single fork.
 
 ## Model Constraint
 
@@ -59,25 +62,32 @@ Does the skill spawn Task subagents OR read many files OR do multiple web fetche
 
 Is the final output a self-contained artifact (report, analysis, generated files)?
   NO  → No agent needed (user needs to follow along)
-  YES → ADD agent: general-purpose (do NOT add context: fork)
+  YES ↓
+
+Does the skill fan out PARALLEL subagents (batch/per-PR/per-file waves)?
+  YES → ADD agent: general-purpose; OMIT context: fork ([1m] cascade hazard)
+  NO  → ADD agent: general-purpose AND context: fork (verbose output stays isolated)
 ```
 
 ## Checklist for New Skills
 
 - [ ] Does the skill use `AskUserQuestion`? If yes, **omit** `agent:` (runs inline).
 - [ ] Does the skill use `Task`, multi-file reads, or web research? If yes, **add** `agent: general-purpose`.
-- [ ] **Do NOT** add `context: fork` — it is broken for plugin skills and triggers rate limits.
+- [ ] Does the skill produce a self-contained verbose artifact **without** parallel fan-out? If yes, **add** `context: fork` (now works for plugins per #16803).
+- [ ] Does the skill fan out **parallel** subagents? If yes, **omit** `context: fork` — the `[1m]` concurrent-subagent rate-limit cascade still applies.
 - [ ] Set `model:` only at the extremes (`opus` for deep reasoning, `sonnet` for mechanical work). Never `haiku`.
 - [ ] Update `modified:` date when adding these fields.
 
 ## Upstream Issues to Track
 
-| Issue | Status | Impact |
+| Issue | Status (2026-06-15) | Impact |
 |-------|--------|--------|
-| [#16803](https://github.com/anthropics/claude-code/issues/16803) | OPEN | `context: fork` silently ignored for plugin skills |
-| [#33154](https://github.com/anthropics/claude-code/issues/33154) | OPEN | `[1m]` models hit cascading rate limits with concurrent subagents |
-| [#27053](https://github.com/anthropics/claude-code/issues/27053) | NOT_PLANNED | Subagents return rate limit with 0 tokens |
-| [#6594](https://github.com/anthropics/claude-code/issues/6594) | NOT_PLANNED | One rate-limited subagent kills all parallel siblings |
+| [#16803](https://github.com/anthropics/claude-code/issues/16803) | **CLOSED — COMPLETED** | `context: fork` now honoured for plugin skills (was the hard blocker) |
+| [#33154](https://github.com/anthropics/claude-code/issues/33154) | **CLOSED — not planned / stale** | Cowork (Desktop) `[1m]` rate-limit regression; abandoned, never a CLI tracker |
+| [#27053](https://github.com/anthropics/claude-code/issues/27053) | CLOSED — stale | Subagents return rate limit with 0 tokens (parallel fan-out) |
+| [#6594](https://github.com/anthropics/claude-code/issues/6594) | CLOSED — stale | One rate-limited subagent kills all parallel siblings |
+
+The remaining `[1m]` cascade hazard (#33154/#27053/#6594) is empirical platform behaviour that bites **parallel** subagents; it has no clean upstream "resolved" signal and will not get one. Treat it as a constraint on parallel fan-out, not on a single fork.
 
 ## Related Rules
 

@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-06-15
 reviewed: 2026-04-25
 allowed-tools: Task, TodoWrite, Glob, Read
 model: opus
@@ -9,6 +9,7 @@ args: "[PATH]"
 argument-hint: "[PATH]"
 name: code-review
 agent: general-purpose
+context: fork
 ---
 
 ## When to Use This Skill
