@@ -118,7 +118,7 @@ items = ["apple", "banana", "cherry"]
 # .pre-commit-config.yaml
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.0
+    rev: v0.15.17
     hooks:
       # Formatter
       - id: ruff-format
@@ -143,7 +143,7 @@ jobs:
   format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.3.1
 
       - name: Install ruff
         run: pip install ruff

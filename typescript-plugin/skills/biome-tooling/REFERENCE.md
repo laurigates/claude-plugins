@@ -181,7 +181,7 @@ bunx lint-staged
 # .pre-commit-config.yaml
 repos:
   - repo: https://github.com/biomejs/pre-commit
-    rev: v0.1.0
+    rev: v0.6.1
     hooks:
       - id: biome-check
         additional_dependencies: ["@biomejs/biome@1.9.4"]
@@ -203,9 +203,9 @@ jobs:
     name: Format & Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.3.1
 
-      - uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@v2.2.0
         with:
           bun-version: latest
 

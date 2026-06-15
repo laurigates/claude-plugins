@@ -583,9 +583,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.3.1
 
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v5.4.2
 
       - name: Install dependencies
         run: uv sync --all-packages --frozen

@@ -38,7 +38,7 @@ Expert knowledge for configuring MCP (Model Context Protocol) servers in GitHub 
 
 ### Single MCP Server (Node.js)
 ```yaml
-- uses: anthropics/claude-code-action@v1
+- uses: anthropics/claude-code-action@v1.0.146
   with:
     anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
     claude_args: |
@@ -47,7 +47,7 @@ Expert knowledge for configuring MCP (Model Context Protocol) servers in GitHub 
 
 ### Multiple MCP Servers with Secrets
 ```yaml
-- uses: anthropics/claude-code-action@v1
+- uses: anthropics/claude-code-action@v1.0.146
   with:
     anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
     claude_args: |
@@ -68,7 +68,7 @@ Expert knowledge for configuring MCP (Model Context Protocol) servers in GitHub 
 
 ### Python MCP Server with uv
 ```yaml
-- uses: anthropics/claude-code-action@v1
+- uses: anthropics/claude-code-action@v1.0.146
   with:
     anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
     claude_args: |
@@ -187,7 +187,7 @@ claude_args: |
 ### Development Environment
 ```yaml
 # development.yml
-- uses: anthropics/claude-code-action@v1
+- uses: anthropics/claude-code-action@v1.0.146
   with:
     anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
     claude_args: |
@@ -198,7 +198,7 @@ claude_args: |
 ### Production Environment
 ```yaml
 # production.yml
-- uses: anthropics/claude-code-action@v1
+- uses: anthropics/claude-code-action@v1.0.146
   with:
     anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
     claude_args: |
@@ -230,8 +230,8 @@ jobs:
       pull-requests: write
       issues: write
     steps:
-      - uses: actions/checkout@v5
-      - uses: anthropics/claude-code-action@v1
+      - uses: actions/checkout@v5.0.1
+      - uses: anthropics/claude-code-action@v1.0.146
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: |

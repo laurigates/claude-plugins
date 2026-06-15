@@ -131,7 +131,7 @@ jobs:
   surface:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
       - uses: Connorrmcd6/surface@004c9169f182fb5e577d389749e6447521e6e6aa # v0.6.2
         with:
           args: check

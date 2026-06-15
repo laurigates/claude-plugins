@@ -923,8 +923,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v1
+      - uses: actions/checkout@v4.3.1
+      - uses: astral-sh/setup-uv@v1.0.7
       - run: uv sync
       - run: uv run pytest --hypothesis-show-statistics
 ```

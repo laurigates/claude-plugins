@@ -248,7 +248,7 @@ repos:
 ```yaml
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.15
+    rev: v0.15.17
     hooks:
       - id: ruff
         args: [--fix]

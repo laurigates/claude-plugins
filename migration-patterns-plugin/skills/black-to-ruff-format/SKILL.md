@@ -60,7 +60,7 @@ Remove the `psf/black` repo block. If `ruff-pre-commit` is already present, add 
 
 ```yaml
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.9.1  # use latest stable ruff version
+  rev: v0.15.17  # use latest stable ruff version
   hooks:
     - id: ruff
       args: [--fix]

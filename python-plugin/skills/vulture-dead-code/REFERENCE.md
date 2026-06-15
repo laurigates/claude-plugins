@@ -294,10 +294,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.3.1
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v2
+        uses: astral-sh/setup-uv@v2.1.2
 
       - name: Set up Python
         run: uv python install 3.12
@@ -312,7 +312,7 @@ jobs:
             vulture_whitelist.py
 
       - name: Upload results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.6.2
         if: failure()
         with:
           name: vulture-results
@@ -332,10 +332,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.3.1
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v2
+        uses: astral-sh/setup-uv@v2.1.2
 
       - name: Set up Python
         run: uv python install 3.12
@@ -357,7 +357,7 @@ jobs:
 repos:
   # Vulture
   - repo: https://github.com/jendrikseipp/vulture
-    rev: v2.11
+    rev: v2.16
     hooks:
       - id: vulture
         args: ['--min-confidence', '80']
@@ -365,7 +365,7 @@ repos:
 
   # deadcode
   - repo: https://github.com/albertas/deadcode
-    rev: v2.0.0
+    rev: 2.4.1
     hooks:
       - id: deadcode
         args: ['.']
