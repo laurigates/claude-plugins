@@ -87,3 +87,9 @@ repos:
         language: system
         files: '^scripts/(fetch-research-papers\.sh|tests/test-fetch-research-papers\.sh)$'
         pass_filenames: false
+      - id: test-plugin-compliance-skill-size
+        name: skill-size gate measures chars/tokens, not lines (skill-line-count-validity)
+        entry: bash ./scripts/tests/test-plugin-compliance-skill-size.sh
+        language: system
+        files: '^scripts/(plugin-compliance-check\.sh|tests/test-plugin-compliance-skill-size\.sh)$'
+        pass_filenames: false

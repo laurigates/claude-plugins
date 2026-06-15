@@ -13,17 +13,21 @@ Quality standards for maintaining effective, discoverable skills.
 
 ## Size Limits
 
-| Lines | Severity | Action |
-|-------|----------|--------|
-| ≤ 200 | OK | Anthropic's ideal — silent |
-| 201 – 250 | OK (advisory) | Within target band — no warning |
-| 251 – 500 | WARN | ⚠️ in compliance table; review for `REFERENCE.md` / `scripts/` extraction |
-| > 500 | ERROR | ❌ blocks commit; must extract before merge |
+The cost a `SKILL.md` body imposes once it loads is **tokens**, not lines. Lines are a poor proxy: across this repo `chars/line` ranges ~19–69 (a 3.6× spread), so two skills at the same line count can differ 2–3× in tokens — a 416-line file of dense tables (`configure-claude-plugins`, ~5,970 tokens) outweighs a 491-line file of prose. We therefore gate on **characters** (`wc -c`), the cheapest tight proxy for tokens (~4 chars/token for English prose), and report an estimated token count (chars / 4 — the same convention used for the description budget below).
 
-**Anthropic's official guideline**: Keep `SKILL.md` under 200 lines.
-**Local hard ceiling**: 500 lines (enforced by `scripts/plugin-compliance-check.sh` `check_skill_size()`).
+| Characters | ~Tokens | Severity | Action |
+|------------|---------|----------|--------|
+| ≤ 10,000 | ≤ 2,500 | OK | silent |
+| 10,001 – 26,000 | 2,500 – 6,500 | WARN | ⚠️ in compliance table; review for `REFERENCE.md` / `scripts/` extraction |
+| > 26,000 | > 6,500 | ERROR | ❌ blocks commit; must extract before merge |
+
+**Anthropic's published guideline** ([skill-authoring best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices)): *"Keep SKILL.md body under 500 lines for optimal performance"* — stated under a heading literally titled **"Token budgets,"** confirming lines are Anthropic's human-graspable stand-in for the real token cost. Our **26,000-char ceiling** ≈ that 500-line guidance at this repo's median line density (~34 chars/line), expressed in the tighter proxy.
+
+**Local hard ceiling**: 26,000 chars / ~6,500 tokens (enforced by `scripts/plugin-compliance-check.sh` `check_skill_size()`).
 
 `REFERENCE.md` has no size limit — it is a supporting file loaded on demand.
+
+> **Why not gate on tokens directly?** Tokens are the real cost, but counting them needs Claude's tokenizer (the `count_tokens` API = network + per-file calls), too heavy for a pre-commit/CI lint. Characters track tokens tightly at `wc -c` cost. Lines are kept only as a human reference (they map to scroll length and to `head -N` partial reads), not as the gate.
 
 ## Required Sections
 
@@ -165,7 +169,7 @@ Skills inherit the user's active model by default. Set `model:` only at the **ex
 
 ```
 my-skill/
-├── SKILL.md           # Core instructions (<500 lines)
+├── SKILL.md           # Core instructions (≤ 26,000 chars / ~6,500 tokens)
 ├── REFERENCE.md       # Detailed reference (loaded on demand)
 ├── examples.md        # Usage examples (optional)
 └── scripts/           # Helper scripts (optional)
@@ -186,7 +190,7 @@ my-skill/
 
 When reviewing skill/command changes:
 
-- [ ] SKILL.md is under 500 lines (target: ≤ 250; ideal: ≤ 200)
+- [ ] SKILL.md body is under 26,000 chars / ~6,500 tokens (target: ≤ 10,000 chars / ~2,500 tokens)
 - [ ] Has "When to Use" decision table
 - [ ] Has "Agentic Optimizations" table (for CLI/tool skills)
 - [ ] Description matches user intents (not just tool jargon)
