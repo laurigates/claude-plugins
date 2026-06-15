@@ -37,6 +37,7 @@ Claude Code plugin collection providing skills and agents for development workfl
 | `.claude/rules/agentic-permissions.md` | Granular tool permissions for skills |
 | `.claude/rules/auto-mode.md` | Auto mode availability, classifier rules, allow-rule fate, and authoring guidance |
 | `.claude/rules/skill-quality.md` | Skill size limits, required sections, and quality checklist |
+| `.claude/rules/skill-argument-handling.md` | 9-axis rubric for `args`/`argument-hint`/parsing-vs-intent fit; the haiku+opus cold-read **sweep** that finds mismatches and the model delta that calibrates it |
 | `.claude/rules/skill-execution-structure.md` | Imperative execution patterns for user-invocable skills |
 | `.claude/rules/handling-blocked-hooks.md` | How to respond when hooks block commands |
 | `.claude/rules/hooks-reference.md` | Complete hook event reference (2.1.50+): all events, schemas, timeouts, PermissionRequest |
