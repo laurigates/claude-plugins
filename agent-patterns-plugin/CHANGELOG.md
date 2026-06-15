@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.23.2](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.23.1...agent-patterns-plugin-v2.23.2) (2026-06-15)
+
+
+### Bug Fixes
+
+* **project-plugin:** prune .claude/worktrees/ in analyze-skills.sh ([#1658](https://github.com/laurigates/claude-plugins/issues/1658)) ([56d2425](https://github.com/laurigates/claude-plugins/commit/56d2425362becee180ceb84ebde0206258f89d8f))
+
 ## [2.23.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.23.0...agent-patterns-plugin-v2.23.1) (2026-06-14)
 
 
