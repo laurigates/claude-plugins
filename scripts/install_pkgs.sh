@@ -23,8 +23,9 @@ else
   echo "[install_pkgs] pre-commit already installed, skipping."
 fi
 
-# --- gitleaks 8.24.0 (pinned to .pre-commit-config.yaml) ---
-GITLEAKS_VERSION="8.24.0"
+# --- gitleaks (keep in lockstep with .pre-commit-config.yaml rev) ---
+# renovate: datasource=github-releases depName=gitleaks/gitleaks extractVersion=^v(?<version>.+)$
+GITLEAKS_VERSION="8.30.1"
 if ! has gitleaks; then
   echo "[install_pkgs] Installing gitleaks ${GITLEAKS_VERSION}..."
   tmpdir=$(mktemp -d)
@@ -36,8 +37,9 @@ else
   echo "[install_pkgs] gitleaks already installed, skipping."
 fi
 
-# --- just 1.40.0 ---
-JUST_VERSION="1.40.0"
+# --- just (latest stable) ---
+# renovate: datasource=github-releases depName=casey/just
+JUST_VERSION="1.52.0"
 if ! has just; then
   echo "[install_pkgs] Installing just ${JUST_VERSION}..."
   tmpdir=$(mktemp -d)

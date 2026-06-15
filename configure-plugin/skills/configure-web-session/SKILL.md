@@ -5,8 +5,8 @@ allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix] [--tools <list>]"
 argument-hint: "[--check-only] [--fix] [--tools <list>]"
 created: 2026-02-25
-modified: 2026-05-09
-reviewed: 2026-02-25
+modified: 2026-06-15
+reviewed: 2026-06-15
 ---
 
 # /configure:web-session
@@ -95,6 +95,8 @@ For each tool that needs to be installed, pin versions to match `.pre-commit-con
 
 All download sources are compatible with the "Limited" network allowlist (github.com, releases.hashicorp.com, raw.githubusercontent.com, pypi.org).
 
+**Keep the pins fresh, not hand-maintained.** Annotate each `<TOOL>_VERSION="x.y.z"` line with a `# renovate: datasource=... depName=...` comment and add a matching `customManager` to `renovate.json` so the pins are auto-updated rather than rotting (see `.claude/rules/version-pinning.md`). Where a tool's version is also pinned in `.pre-commit-config.yaml` (e.g. `gitleaks`), enable Renovate's `pre-commit` manager and group the dep so both bump in lockstep.
+
 ### Step 4: Create or update `scripts/install_pkgs.sh`
 
 Create `scripts/install_pkgs.sh` with:
@@ -113,7 +115,7 @@ Create `scripts/install_pkgs.sh` with:
    fi
    ```
 
-3. **Install to `/usr/local/bin`** — writable without sudo in the base image (runs as root).
+3. **Install to `~/.local/bin`** — writable without sudo regardless of whether the session runs as root. Ensure this directory is on the PATH that *agent subshells* inherit: add it to a `path-bootstrap.sh` SessionStart hook (see this repo's `scripts/path-bootstrap.sh`) or append it to `$CLAUDE_ENV_FILE`. A bare `export PATH=...` inside the install script does **not** persist to later tool calls (see `.claude/rules/sandbox-guidance.md`).
 
 4. **Temp directory cleanup** — use a temp dir per download, remove it after:
    ```bash
