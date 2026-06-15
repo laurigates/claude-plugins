@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-29
-reviewed: 2026-04-29
+modified: 2026-06-15
+reviewed: 2026-06-15
 name: claude-code-github-workflows
 description: "Claude Code GitHub Actions workflow patterns — PR reviews, issue triage, CI/CD integration. Use when creating or modifying workflows that integrate Claude Code."
 user-invocable: false
@@ -220,6 +220,14 @@ jobs:
 ```
 
 ### External Contributor Handling
+
+> **Security:** `pull_request_target` runs in the **base** repo context with
+> access to secrets and a write-capable token, even for fork PRs. The job below
+> checks out untrusted head code (`head.sha`) for review only — do **not** add
+> build/test steps that execute that code, and treat the PR title/body/comments
+> as untrusted input in the prompt. See `github-actions-auth-security` and
+> `.claude/rules/github-actions-security.md`.
+
 ```yaml
 name: "Claude: Review external contributions"
 
@@ -342,4 +350,4 @@ Follow Conventional Commits:
 - Check branch protection rules
 - Verify repository access
 
-For advanced configuration including MCP servers, tool permissions, and authentication methods, see the github-actions-mcp-config and github-actions-auth-security skills.
+For advanced configuration including MCP servers, tool permissions, and authentication methods, see the github-actions-mcp-config and github-actions-auth-security skills. For the secure-use baseline these templates follow (least-privilege permissions, script-injection indirection, `pull_request_target` hazards), see `.claude/rules/github-actions-security.md`.

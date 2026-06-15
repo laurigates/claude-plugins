@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
-reviewed: 2026-04-25
+modified: 2026-06-15
+reviewed: 2026-06-15
 name: github-actions-auth-security
 description: "GitHub Actions auth and security for Claude Code — OIDC, AWS Bedrock, Vertex AI, secrets, permission scoping. Use when setting up workflow authentication or security."
 user-invocable: false
@@ -159,6 +159,26 @@ gh secret set ANTHROPIC_API_KEY
 
 ### Permission Scoping
 
+**Always include an explicit `permissions:` block.** Without one, the
+`GITHUB_TOKEN` inherits the repository's default scope. With one, anything
+unlisted is `none`. Set a read-only default at the top level and escalate only
+in the jobs that need write:
+
+```yaml
+permissions:
+  contents: read           # Top-level read-only default
+
+jobs:
+  fix:
+    permissions:
+      contents: write       # Escalate only where the job needs it
+      pull-requests: write
+```
+
+Also set the repository default `GITHUB_TOKEN` permission to read-only
+(Settings → Actions → General → Workflow permissions) so a workflow that forgets
+its block still starts from least privilege.
+
 **Minimal Permissions Example**:
 ```yaml
 permissions:
@@ -212,6 +232,28 @@ git verify-commit <commit-sha>
 git log --format='%an <%ae>' HEAD^..HEAD
 ```
 
+### Script Injection (Untrusted Workflow Input)
+
+Distinct from *prompt* injection below. Any run-context value an external user
+controls — issue/PR titles and bodies, comment bodies, branch and base ref
+names, author and label names — is attacker-controlled. Interpolating it
+directly into a `run:` script via `${{ … }}` hands shell execution to anyone who
+can open a PR or comment.
+
+```yaml
+# WRONG — `a"; rm -rf / #` in the PR title runs as shell
+- run: echo "Reviewing: ${{ github.event.pull_request.title }}"
+
+# CORRECT — bind to an env var, reference the quoted shell variable (data, not code)
+- env:
+    PR_TITLE: ${{ github.event.pull_request.title }}
+  run: echo "Reviewing: $PR_TITLE"
+```
+
+For anything beyond a trivial echo, prefer a JavaScript action that receives the
+context value as an argument over building a shell string. See
+`.claude/rules/github-actions-security.md` for the full secure-use checklist.
+
 ### Prompt Injection Prevention
 
 **Sanitize External Content**:
@@ -261,8 +303,15 @@ if: |
 - Enable security scanning
 
 **External Contributors**:
+
+`pull_request_target` runs in the **base** repository context — it has access to
+secrets and a write-capable token even for a PR from a fork. The hazard: if the
+same job checks out and then **builds or executes** untrusted PR head code, that
+code can exfiltrate the secrets. Keep secrets away from any step that touches PR
+content, and never run untrusted build/test steps in a `pull_request_target` job.
+
 ```yaml
-# Use pull_request_target carefully
+# Use pull_request_target carefully — base-repo context has secrets
 on:
   pull_request_target:
     types: [opened]
@@ -276,13 +325,23 @@ jobs:
     permissions:
       contents: read  # Read-only for safety
       pull-requests: write
+    # Do NOT add untrusted build/test steps here, and do not expose secrets
+    # to steps that check out github.event.pull_request.head.sha.
 ```
+
+See `.claude/rules/github-actions-security.md` for the full `pull_request_target`
+guidance and the rest of the secure-use checklist.
 
 ## Security Checklist
 
 ### Pre-Deployment
 - [ ] All credentials use GitHub secrets
-- [ ] Minimal permissions configured
+- [ ] Explicit `permissions:` block, read-only default + per-job escalation
+- [ ] Repo default `GITHUB_TOKEN` permission set to read-only
+- [ ] Untrusted run-context values pass through an `env:` var (no `${{ … }}` in `run:`)
+- [ ] Third-party actions SHA-pinned (Renovate-managed — see `version-pinning.md`)
+- [ ] `/.github/workflows/` listed in `.github/CODEOWNERS`
+- [ ] Actions blocked from creating/approving PRs unless a workflow needs it
 - [ ] Input validation implemented
 - [ ] Branch protection rules enabled
 - [ ] Security scanning enabled

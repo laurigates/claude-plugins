@@ -376,6 +376,24 @@ check_skill_body() {
       done
     fi
 
+    # Regression: github-actions-auth-security must document the GitHub Actions
+    # script-injection mitigation (distinct from Claude *prompt* injection):
+    # untrusted run-context values bound to an intermediate `env:` variable and
+    # referenced as a quoted shell variable, never interpolated `${{ … }}`
+    # directly into a `run:` script. This is GitHub's single most-missed
+    # secure-use item (see .claude/rules/github-actions-security.md). A bulk edit
+    # that "tightens" the security section and drops the env-var indirection
+    # example would silently restore the injection footgun, so assert both the
+    # section heading and the concrete corrected-pattern token survive.
+    if [ "$skill_name" = "github-actions-auth-security" ]; then
+      for token in "Script Injection" "PR_TITLE"; do
+        if ! grep -qF "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain script-injection token '${token}' (env-var indirection for untrusted workflow input — see .claude/rules/github-actions-security.md)")
+          has_errors=true
+        fi
+      done
+    fi
+
     # Regression: comfyui-node-scaffold must emit a TypeScript + bun-build pack
     # consuming @laurigates/comfy-modal-kit (NOT a vanilla-JS pack with copied-in
     # modal primitives), and its biome pin must be consistent across biome.json,
