@@ -1,11 +1,11 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
-reviewed: 2026-04-21
+modified: 2026-06-15
+reviewed: 2026-06-15
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git pull *), Bash(git stash *), Bash(gh issue *), Bash(gh pr *), Bash(gh repo *), Bash(gh label *), Bash(gh api *), Bash(pre-commit *), Read, Edit, Write, Grep, Glob, TodoWrite, AskUserQuestion, Task, mcp__github__create_pull_request, mcp__github__issue_read, mcp__github__list_issues
 description: "Process GitHub issues end-to-end with TDD and parallel work. Use when asked to work on an issue, fix issue #N, pick issues to tackle, or batch-process several."
-args: "[issue-numbers...] [--auto] [--filter <label>] [--limit <n>] [--parallel]"
-argument-hint: "[issue-numbers...] [--auto] [--filter <label>] [--limit <n>] [--parallel]"
+args: "[issues... (number | #N | URL)] [--auto] [--filter <label>] [--limit <n>] [--parallel] [--labels <l1,l2>]"
+argument-hint: "[issues... (number | #N | URL)] [--auto] [--filter <label>] [--limit <n>] [--parallel] [--labels <l1,l2>]"
 disable-model-invocation: true
 name: git-issue
 ---
@@ -32,7 +32,7 @@ Parse these parameters from the command:
 
 | Parameter | Description |
 |-----------|-------------|
-| `<issue-numbers...>` | One or more issue numbers to process |
+| `<issues...>` | One or more issues as bare numbers, `#N`, or full GitHub issue URLs (`https://github.com/<owner>/<repo>/issues/<N>`), in any space- or comma-separated mix (see Step 0) |
 | `--auto` | Claude selects and prioritizes issues |
 | `--filter <label>` | Filter issues by label |
 | `--limit <n>` | Maximum number of issues to process |
@@ -46,6 +46,38 @@ Process GitHub issues using a TDD workflow with the **main-branch development pa
 ---
 
 ## Mode Detection
+
+### Step 0: Normalize issue references
+
+Before counting tokens or detecting mode, normalize every non-flag token in
+`$ARGUMENTS` into a `(number, repo)` pair. Accept these forms, in any space- or
+comma-separated mix:
+
+| Input form | Extract |
+|------------|---------|
+| `123` | number `123`, repo = current remote |
+| `#123` | number `123`, repo = current remote |
+| `https://github.com/<owner>/<repo>/issues/123` | number `123`, repo = `<owner>/<repo>` |
+| `.../issues/123#issuecomment-...` | number `123` (drop the `#...` fragment), repo = `<owner>/<repo>` |
+
+Rules:
+
+1. Split on whitespace **and** commas; strip a leading `#`; strip a URL
+   `#...` fragment after the number.
+2. A token is an issue ref only if, after stripping, it is all digits **or**
+   matches the `/issues/<digits>` URL shape (require trailing digits — a
+   `/pull/<N>`, `/discussions/<N>`, or bare `/issues` list URL is **not** a
+   ref). Leave `--flag` tokens and their values (e.g. `--filter bug,enhancement`)
+   untouched — never split a flag's comma-separated value into refs.
+3. For a URL whose `<owner>/<repo>` differs from the current remote (Context
+   `git remote -v`), record it as **cross-repo** and carry `-R <owner>/<repo>`
+   on every `gh` call for that issue (`gh issue view <N> -R …`,
+   `gh api repos/<owner>/<repo>/…`, `gh pr edit … -R …`). PR creation for a
+   cross-repo issue needs a branch in that repo — if the current checkout is not
+   that repo, surface it with `AskUserQuestion` rather than pushing to the wrong
+   remote.
+4. After normalization, dedupe and count refs: 0 → No-Arguments interactive;
+   1 → Single; ≥2 → Multiple.
 
 ### No Arguments → Interactive Mode
 

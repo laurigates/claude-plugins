@@ -1,7 +1,7 @@
 ---
 created: 2026-03-19
-modified: 2026-04-25
-reviewed: 2026-04-25
+modified: 2026-06-15
+reviewed: 2026-06-15
 name: git-issue-manage
 description: "GitHub issue admin operations. Use when transferring issues, pinning, locking discussions, creating dev branches from issues, bulk ops, or managing custom fields."
 args: "<operation> <issue-numbers...> [options]"
@@ -28,6 +28,12 @@ Open issues are fetched during execution (requires a configured git remote).
 ## Parameters
 
 Parse `$ARGUMENTS[0]` as the operation, remaining args as issue numbers and options.
+
+Issue references accept bare numbers, `#N`, or full GitHub issue URLs
+(`https://github.com/<owner>/<repo>/issues/<N>`): strip a leading `#`, and for a
+URL extract the trailing `/issues/<N>` number (require trailing digits — a
+`/pull/<N>` is not an issue). When a URL's `<owner>/<repo>` differs from the
+current remote, pass `-R <owner>/<repo>` to the `gh` calls for that issue.
 
 | Operation | Syntax | Description |
 |-----------|--------|-------------|

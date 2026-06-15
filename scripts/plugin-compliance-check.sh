@@ -346,6 +346,36 @@ check_skill_body() {
       fi
     fi
 
+    # Regression: git-issue / git-issue-manage advertised bare issue numbers only,
+    # so a pasted GitHub issue URL or `#N` was silently ignored, and cross-repo
+    # URLs had no `-R owner/repo` plumbing. The semantic invariant is that the
+    # advertised URL/#N form is actually NORMALIZED in the body (`/issues/` URL
+    # shape) AND that cross-repo refs carry `-R`. A bulk edit that re-tightens the
+    # args back to "issue numbers" must not drop the normalization step.
+    if [ "$skill_name" = "git-issue" ] || [ "$skill_name" = "git-issue-manage" ]; then
+      if ! grep -qF "/issues/" "$skill_file" || ! grep -qF -- "-R " "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must normalize issue-URL/#N refs ('/issues/' shape) and carry '-R <owner>/<repo>' for cross-repo URLs")
+        has_errors=true
+      fi
+    fi
+
+    # Regression: project-refocus accepted no focus directive (args: ""), so a
+    # user's "/project:refocus focus on X, ignore Y" was dropped. The fix parses
+    # $ARGUMENTS as an optional steering directive that biases Remaining-vs-Stale
+    # bucketing. The load-bearing semantic invariant is that the directive is
+    # STEERING, not OVERRIDE: it must not cancel a live user boundary. A bulk edit
+    # that adds directive support but drops the boundary guard would re-introduce
+    # the auto-mode.md Conversation-Stated-Boundaries hazard — so assert all four
+    # tokens. (Scoped on the directory name 'project-refocus', not name: refocus.)
+    if [ "$skill_name" = "project-refocus" ]; then
+      for token in '$ARGUMENTS' 'focus directive' 'Stale-eligible' 'boundary'; do
+        if ! grep -qF "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain focus-directive token '${token}' (steering-not-override invariant)")
+          has_errors=true
+        fi
+      done
+    fi
+
     # Regression: comfyui-node-scaffold must emit a TypeScript + bun-build pack
     # consuming @laurigates/comfy-modal-kit (NOT a vanilla-JS pack with copied-in
     # modal primitives), and its biome pin must be consistent across biome.json,
