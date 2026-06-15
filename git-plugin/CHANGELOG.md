@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.44.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.44.0...git-plugin-v2.44.1) (2026-06-15)
+
+
+### Bug Fixes
+
+* **git-plugin:** accept issue URLs and #N refs; add arg-handling sweep rule ([#1661](https://github.com/laurigates/claude-plugins/issues/1661)) ([22a9b9c](https://github.com/laurigates/claude-plugins/commit/22a9b9c83c82c3b20483225f7795960e030cbf07))
+
 ## [2.44.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.43.0...git-plugin-v2.44.0) (2026-06-14)
 
 
