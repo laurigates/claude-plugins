@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.4](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.18.3...project-plugin-v1.18.4) (2026-06-15)
+
+
+### Bug Fixes
+
+* **git-plugin:** accept issue URLs and #N refs; add arg-handling sweep rule ([#1661](https://github.com/laurigates/claude-plugins/issues/1661)) ([22a9b9c](https://github.com/laurigates/claude-plugins/commit/22a9b9c83c82c3b20483225f7795960e030cbf07))
+
 ## [1.18.3](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.18.2...project-plugin-v1.18.3) (2026-06-15)
 
 
