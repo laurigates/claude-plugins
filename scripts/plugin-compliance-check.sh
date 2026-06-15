@@ -712,12 +712,17 @@ check_skill_when_to_use() {
 }
 
 # Check 9: Skill body size
-# Anthropic's guidance is 200 lines; the local rule (.claude/rules/skill-quality.md)
-# documents 500 as the hard ceiling. Threshold table:
-#   ≤ 250 lines → OK (silent — within Anthropic's ideal + small advisory band)
-#   251 – 500   → WARN (review for REFERENCE.md / scripts/ extraction)
-#   > 500       → ERROR (exceeds documented ceiling — must extract before merge)
-# See .claude/rules/skill-quality.md "Size Limits".
+# The cost a SKILL.md body imposes once loaded is *tokens*, not lines — and
+# lines are a poor token proxy (chars/line varies ~3.6x across this repo, so
+# equal line counts can differ 2-3x in tokens). We gate on bytes (≈ characters
+# via `wc -c`), the cheapest tight proxy for tokens (~4 chars/token for English
+# prose), and surface an estimated token count (chars/4, matching the
+# description-budget convention in .claude/rules/skill-quality.md). Thresholds:
+#   ≤ 10000 chars (~2500 tok)        → OK (silent)
+#   10001 – 26000 (~2500-6500 tok)   → WARN (review for REFERENCE.md / scripts/ extraction)
+#   > 26000 chars (~6500 tok)        → ERROR (exceeds ceiling — must extract before merge)
+# 26000 chars ≈ Anthropic's published 500-line body guidance at this repo's
+# median line density. See .claude/rules/skill-quality.md "Size Limits".
 check_skill_size() {
   local plugin="$1"
   local skills_dir="${plugin}/skills"
@@ -733,14 +738,15 @@ check_skill_size() {
     local skill_name
     skill_name=$(basename "$(dirname "$skill_file")")
 
-    local line_count
-    line_count=$(wc -l < "$skill_file" | tr -d ' ')
+    local char_count est_tokens
+    char_count=$(wc -c < "$skill_file" | tr -d ' ')
+    est_tokens=$(( char_count / 4 ))
 
-    if [ "$line_count" -gt 500 ]; then
-      issues+=("❌ ${plugin}/${skill_name}: SKILL.md is ${line_count} lines (>500 ceiling) — extract content to REFERENCE.md or scripts/ (see .claude/rules/skill-quality.md)")
+    if [ "$char_count" -gt 26000 ]; then
+      issues+=("❌ ${plugin}/${skill_name}: SKILL.md is ${char_count} chars (~${est_tokens} tokens, >26000 ceiling) — extract content to REFERENCE.md or scripts/ (see .claude/rules/skill-quality.md)")
       has_errors=true
-    elif [ "$line_count" -gt 250 ]; then
-      recommendations+=("⚠️ ${plugin}/${skill_name}: SKILL.md is ${line_count} lines (>250) — consider extracting to REFERENCE.md or scripts/ (Anthropic ideal: 200, ceiling: 500)")
+    elif [ "$char_count" -gt 10000 ]; then
+      recommendations+=("⚠️ ${plugin}/${skill_name}: SKILL.md is ${char_count} chars (~${est_tokens} tokens, >10000) — consider extracting to REFERENCE.md or scripts/ (ceiling: 26000 chars / ~6500 tokens)")
       has_warnings=true
     fi
   done < <(find "$skills_dir" -type f \( -iname "SKILL.md" -o -iname "skill.md" \) -print0 2>/dev/null)
