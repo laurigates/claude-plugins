@@ -394,6 +394,25 @@ check_skill_body() {
       done
     fi
 
+    # Regression: code-review is the canary for restoring `context: fork` after
+    # the plugin-skill blocker (anthropics/claude-code#16803) was fixed
+    # 2026-04-18. See laurigates/claude-plugins#980 and
+    # .claude/rules/skill-fork-context.md: the gate "revisit when both #16803 and
+    # #33154 resolved" expired degenerately — #33154 was a Cowork product bug
+    # closed as stale, never a CLI tracker — so the decision moved to an
+    # empirical canary. The semantic invariant is that this single-subagent,
+    # verbose-output skill carries `context: fork` so its output stays out of the
+    # main context. A bulk edit silently dropping it would erase the canary and
+    # the only on-disk signal that the restoration is in flight; if the [1m]
+    # verification fails, removing it is a deliberate edit that updates this guard
+    # and the rule together.
+    if [ "$skill_name" = "code-review" ] && [ "$plugin" = "code-quality-plugin" ]; then
+      if ! grep -q '^context: fork' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain 'context: fork' (canary for the #16803 fix — see .claude/rules/skill-fork-context.md and issue #980)")
+        has_errors=true
+      fi
+    fi
+
     # Regression: comfyui-node-scaffold must emit a TypeScript + bun-build pack
     # consuming @laurigates/comfy-modal-kit (NOT a vanilla-JS pack with copied-in
     # modal primitives), and its biome pin must be consistent across biome.json,
