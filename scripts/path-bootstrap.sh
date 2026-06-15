@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # scripts/path-bootstrap.sh
 #
-# SessionStart hook: prepend Homebrew bin directories to PATH so that agent
-# subshells inherit the same `head`, `jq`, `gh`, etc. that the parent
-# interactive shell sees. Without this, agents spawned via non-login shells
-# end up with a `/usr/bin:/bin`-only PATH and report `command not found:
-# head` / `command not found: jq` despite the parent having both.
+# SessionStart hook: prepend Homebrew and ~/.local/bin directories to PATH so
+# that agent subshells inherit the same `head`, `jq`, `gh`, `gitleaks`, `just`,
+# etc. that the parent interactive shell sees. Without this, agents spawned via
+# non-login shells end up with a `/usr/bin:/bin`-only PATH and report
+# `command not found: head` / `command not found: jq` despite the parent having
+# both — and tools that install_pkgs.sh drops in ~/.local/bin go unseen.
 #
 # This script is idempotent and safe in remote sandboxes:
 #   - Only writes to $CLAUDE_ENV_FILE when the harness sets it.
@@ -21,9 +22,17 @@ if [ -z "${CLAUDE_ENV_FILE:-}" ]; then
   exit 0
 fi
 
+# ~/.local/bin is where scripts/install_pkgs.sh drops gitleaks/just/pre-commit
+# in remote web sessions. Ensure it exists before the candidate check below so
+# the [ -d ] guard passes even when path-bootstrap runs before install_pkgs in
+# the SessionStart hook order — otherwise agent subshells never see those tools.
+mkdir -p "${HOME}/.local/bin" 2>/dev/null || true
+
 # Candidate directories, in priority order. /opt/homebrew is Apple Silicon;
-# /usr/local is Intel macOS / older installs / many Linux Homebrew layouts.
+# /usr/local is Intel macOS / older installs / many Linux Homebrew layouts;
+# ~/.local/bin is the no-sudo install target used by install_pkgs.sh.
 candidates=(
+  "${HOME}/.local/bin"
   /opt/homebrew/bin
   /opt/homebrew/sbin
   /usr/local/bin

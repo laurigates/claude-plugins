@@ -61,8 +61,20 @@
         "repo:\\s+https://github\\.com/(?<depName>[\\w.-]+/[\\w.-]+?)(?:\\.git)?\\s+rev:\\s+[\"']?(?<currentValue>[^\\s\"']+)"
       ],
       "datasourceTemplate": "github-tags"
+    },
+    {
+      "customType": "regex",
+      "description": "Tool version pins in scripts/install_pkgs.sh, annotated with `# renovate: datasource=... depName=... [extractVersion=...]` above each <TOOL>_VERSION=\"x.y.z\" line.",
+      "managerFilePatterns": ["/(^|/)scripts/install_pkgs\\.sh$/"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: extractVersion=(?<extractVersion>\\S+))?\\s+\\w+_VERSION=\"(?<currentValue>[^\"]+)\""
+      ],
+      "datasourceTemplate": "github-releases"
     }
   ],
+  "pre-commit": {
+    "enabled": true
+  },
   "packageRules": [
     {
       "description": "Automerge minor/patch devDependencies",
@@ -80,6 +92,11 @@
       "description": "Pin to commit SHA / sha256 digests for the version pins inside skill markdown examples, with the human-readable version preserved as a trailing comment. Confined to skill markdown so the repo's own CI workflows keep their tag-form refs.",
       "matchFileNames": ["**/skills/**/*.md"],
       "pinDigests": true
+    },
+    {
+      "description": "Keep gitleaks in lockstep across scripts/install_pkgs.sh (github-releases) and .pre-commit-config.yaml (pre-commit manager) — they must bump together or install_pkgs.sh's pin drifts from the hook rev.",
+      "matchDepNames": ["gitleaks/gitleaks"],
+      "groupName": "gitleaks"
     }
   ],
   "lockFileMaintenance": {
