@@ -298,10 +298,10 @@ jobs:
   type-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.3.1
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v2
+        uses: astral-sh/setup-uv@v2.1.2
         with:
           enable-cache: true
 
@@ -321,7 +321,7 @@ jobs:
 # .pre-commit-config.yaml
 repos:
   - repo: https://github.com/DetachHead/basedpyright
-    rev: v1.18.3
+    rev: v1.39.7
     hooks:
       - id: basedpyright
         additional_dependencies: []  # Add runtime dependencies if needed

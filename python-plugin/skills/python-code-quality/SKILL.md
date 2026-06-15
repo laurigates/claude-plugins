@@ -47,13 +47,13 @@ For each tool's flags and config, follow the routing table above.
 # .pre-commit-config.yaml — ruff (lint + format) and ty together
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.0
+    rev: v0.15.17
     hooks:
       - id: ruff-check
         args: [--fix]
       - id: ruff-format
   - repo: https://github.com/astral-sh/ty
-    rev: v0.0.10
+    rev: 0.0.49
     hooks:
       - id: ty
 ```

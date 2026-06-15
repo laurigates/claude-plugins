@@ -236,7 +236,7 @@ cargo coverage-lcov
   run: npm run test:coverage
 
 - name: Upload coverage to Codecov
-  uses: codecov/codecov-action@v4
+  uses: codecov/codecov-action@v4.6.0
   with:
     token: ${{ secrets.CODECOV_TOKEN }}
     files: ./coverage/lcov.info
@@ -245,7 +245,7 @@ cargo coverage-lcov
     fail_ci_if_error: true
 
 - name: Upload coverage artifacts
-  uses: actions/upload-artifact@v4
+  uses: actions/upload-artifact@v4.6.2
   if: always()
   with:
     name: coverage-report
@@ -259,7 +259,7 @@ cargo coverage-lcov
   run: uv run pytest --cov --cov-report=xml --cov-report=html
 
 - name: Upload coverage to Codecov
-  uses: codecov/codecov-action@v4
+  uses: codecov/codecov-action@v4.6.0
   with:
     token: ${{ secrets.CODECOV_TOKEN }}
     files: ./coverage/coverage.xml
@@ -268,7 +268,7 @@ cargo coverage-lcov
     fail_ci_if_error: true
 
 - name: Upload coverage artifacts
-  uses: actions/upload-artifact@v4
+  uses: actions/upload-artifact@v4.6.2
   if: always()
   with:
     name: coverage-report
@@ -285,7 +285,7 @@ cargo coverage-lcov
   run: cargo llvm-cov --all-features --lcov --output-path lcov.info
 
 - name: Upload coverage to Codecov
-  uses: codecov/codecov-action@v4
+  uses: codecov/codecov-action@v4.6.0
   with:
     token: ${{ secrets.CODECOV_TOKEN }}
     files: ./lcov.info

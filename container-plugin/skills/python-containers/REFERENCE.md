@@ -8,7 +8,7 @@ Detailed reference material for Python container optimization patterns.
 
 ```dockerfile
 # Full Debian with all dev packages
-FROM python:3.11
+FROM python:3.14
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install -r requirements.txt

@@ -330,7 +330,7 @@ deploy:
 With Air in Dockerfile:
 
 ```dockerfile
-FROM golang:1.22-alpine
+FROM golang:1.26-alpine
 RUN go install github.com/cosmtrek/air@latest
 WORKDIR /app
 COPY . .

@@ -246,7 +246,7 @@ The `docker/metadata-action` automatically generates OCI labels from repository 
 
 ```yaml
 - id: meta
-  uses: docker/metadata-action@v5
+  uses: docker/metadata-action@v5.10.0
   with:
     images: ghcr.io/${{ github.repository }}
     labels: |
@@ -254,7 +254,7 @@ The `docker/metadata-action` automatically generates OCI labels from repository 
       org.opencontainers.image.description=Production API server
       org.opencontainers.image.vendor=Forum Virium Helsinki
 
-- uses: docker/build-push-action@v6
+- uses: docker/build-push-action@v6.19.2
   with:
     labels: ${{ steps.meta.outputs.labels }}
 ```

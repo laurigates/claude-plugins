@@ -39,7 +39,7 @@ Expert knowledge for securing GitHub Actions workflows with Claude Code, includi
 
 ### Anthropic Direct API
 ```yaml
-- uses: anthropics/claude-code-action@v1
+- uses: anthropics/claude-code-action@v1.0.146
   with:
     anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
@@ -52,12 +52,12 @@ Expert knowledge for securing GitHub Actions workflows with Claude Code, includi
 
 ### AWS Bedrock
 ```yaml
-- uses: aws-actions/configure-aws-credentials@v4
+- uses: aws-actions/configure-aws-credentials@v4.3.1
   with:
     role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
     aws-region: us-east-1
 
-- uses: anthropics/claude-code-action@v1
+- uses: anthropics/claude-code-action@v1.0.146
   with:
     claude_args: --bedrock-region us-east-1
 ```
@@ -87,11 +87,11 @@ Expert knowledge for securing GitHub Actions workflows with Claude Code, includi
 
 ### Google Vertex AI
 ```yaml
-- uses: google-github-actions/auth@v2
+- uses: google-github-actions/auth@v2.1.13
   with:
     credentials_json: ${{ secrets.GCP_CREDENTIALS }}
 
-- uses: anthropics/claude-code-action@v1
+- uses: anthropics/claude-code-action@v1.0.146
   with:
     claude_args: |
       --vertex-project-id ${{ secrets.GCP_PROJECT_ID }}
@@ -130,12 +130,12 @@ roles/aiplatform.user
 **Secure Configuration**:
 ```yaml
 # WRONG - Never hardcode!
-- uses: anthropics/claude-code-action@v1
+- uses: anthropics/claude-code-action@v1.0.146
   with:
     anthropic_api_key: "sk-ant-api03-..."  # gitleaks:allow
 
 # CORRECT - Always use secrets
-- uses: anthropics/claude-code-action@v1
+- uses: anthropics/claude-code-action@v1.0.146
   with:
     anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
