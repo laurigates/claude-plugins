@@ -1,12 +1,12 @@
 ---
 name: refocus
 description: "Refresh the plan to focus on the task at hand. Use when context grew, completed steps muddy it, or you want to clear context and continue in auto mode."
-args: ""
-argument-hint: "invoke mid-session when context is bloated and you want a tightened, self-contained plan"
+args: "[focus directive (optional free text)]"
+argument-hint: "[optional: what to focus on, e.g. 'the API layer, ignore docs work']"
 allowed-tools: Read, Grep, Glob, Bash(git status *), Bash(git log *), Bash(git diff *), TodoWrite, ExitPlanMode
 created: 2026-06-08
-modified: 2026-06-08
-reviewed: 2026-06-08
+modified: 2026-06-15
+reviewed: 2026-06-15
 ---
 
 # /project:refocus
@@ -31,6 +31,15 @@ The output is deliberately **self-contained**: it must survive a context clear. 
 - Recent commits: !`git log --format='%h %s' --max-count=8`
 - Active todos: review the current TodoWrite list (if any) for done-vs-remaining state
 
+## Parameters
+
+Parse `$ARGUMENTS` as an **optional free-text focus directive** that biases what
+counts as Remaining vs Stale and what the Objective emphasizes (e.g. "focus on
+the API layer, ignore the docs work").
+
+- **No directive** → behave deterministically from conversation + git as today; do not invent a focus.
+- **Directive given** → treat it as *steering*, not *override*. It re-weights the bucketing and phrasing; it does **not** cancel a genuine in-flight boundary the user set earlier ("don't push until I review", "keep the old endpoint"). When a directive appears to contradict a live boundary, keep the boundary and note the tension in the plan rather than silently dropping it.
+
 ## Execution
 
 Execute this plan-refresh workflow. Reason over the **live conversation**, not just git — git grounds what landed on disk; the conversation holds the decisions and the remaining intent.
@@ -44,6 +53,13 @@ Scan the session so far and sort everything into three buckets:
 3. **Stale** — exploration, abandoned approaches, and resolved tangents that now only add noise.
 
 Ground "Done" against `git log` / `git status` from Context so you don't trust a claim that never reached disk.
+
+**If a focus directive was given** (see Parameters): bias the bucketing toward
+it. Work the directive names becomes Remaining-weighted; areas it de-emphasizes
+("ignore the docs work") become **Stale-eligible** — moved to Stale unless the
+conversation shows them as a still-active user boundary or an unfinished
+dependency of the focused work. A directive cannot promote to Done something
+git/conversation shows unfinished, nor demote to Stale a boundary the user still holds.
 
 ### Step 2: Extract the load-bearing decisions
 
@@ -78,6 +94,10 @@ Write a plan that reads as a **standalone brief** — assume the reader has none
 
 Drop the Stale bucket entirely — that pruning is the point.
 
+When a focus directive was given, the Objective leads with the focused task and
+explicitly scopes out the de-emphasized areas, so the cleared-context reader
+inherits the narrowing.
+
 ### Step 4: Surface it via ExitPlanMode
 
 Call `ExitPlanMode` with the plan from Step 3 as its content. This presents the refreshed plan for approval and surfaces the continuation options — including **clear context and continue in auto mode**. Do not start executing the remaining steps before approval.
@@ -100,6 +120,7 @@ Before calling `ExitPlanMode`, confirm the plan:
 - [ ] Lists what is already done so it is not redone
 - [ ] Ends with a concrete verification step
 - [ ] Contains nothing from the Stale bucket
+- [ ] If a focus directive narrowed scope, the de-emphasized work is in Stale (not silently dropped from an active boundary)
 
 ## Agentic Optimizations
 
