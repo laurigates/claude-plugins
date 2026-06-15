@@ -18,7 +18,11 @@ echo ""
 if [ -n "$SPECIFIC_PLUGIN" ]; then
   skill_dirs=$(find "$REPO_ROOT/$SPECIFIC_PLUGIN/skills" -name "SKILL.md" -o -name "skill.md" 2>/dev/null)
 else
-  skill_dirs=$(find "$REPO_ROOT" -path "*-plugin/skills/*/SKILL.md" -o -path "*-plugin/skills/*/skill.md" 2>/dev/null | sort)
+  # Prune .claude/worktrees/ — each linked worktree is a full repo clone, so an
+  # unpruned walk enumerates the skill tree N+1 times (slow + inflated counts).
+  # Mirrors the #1492 fix in scripts/check-version-pin-coverage.sh (issue #1548).
+  skill_dirs=$(find "$REPO_ROOT" -path '*/.claude/worktrees/*' -prune -o \
+    \( -path "*-plugin/skills/*/SKILL.md" -o -path "*-plugin/skills/*/skill.md" \) -print 2>/dev/null | sort)
 fi
 
 total_skills=0
