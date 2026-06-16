@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.15.0...code-quality-plugin-v1.16.0) (2026-06-16)
+
+
+### Features
+
+* **code-quality-plugin:** canary context: fork restoration after [#16803](https://github.com/laurigates/claude-plugins/issues/16803) fix ([#1666](https://github.com/laurigates/claude-plugins/issues/1666)) ([c2271a2](https://github.com/laurigates/claude-plugins/commit/c2271a2c17d204c26b13820e1ecb32900b47c81a))
+
 ## [1.15.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.14.7...code-quality-plugin-v1.15.0) (2026-06-13)
 
 
