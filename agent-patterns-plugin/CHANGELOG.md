@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.24.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.23.2...agent-patterns-plugin-v2.24.0) (2026-06-16)
+
+
+### Features
+
+* **agent-patterns-plugin:** add meta-context-diet skill ([#1672](https://github.com/laurigates/claude-plugins/issues/1672)) ([efc8c9f](https://github.com/laurigates/claude-plugins/commit/efc8c9f43992b0e5701081973b0c9da9ebbc7bfb))
+
 ## [2.23.2](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.23.1...agent-patterns-plugin-v2.23.2) (2026-06-15)
 
 
