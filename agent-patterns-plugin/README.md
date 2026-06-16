@@ -57,6 +57,21 @@ Evaluate whether rules, skills, commands, or agents at one `.claude/` scope shou
 - Per-candidate `AskUserQuestion` confirmation — no bundled approvals
 - Read-broad / write-narrow: only approved files are touched, no auto-commit
 
+#### `/meta:context-diet`
+Audit always-loaded context (`CLAUDE.md` and `.claude/rules/`) for material that should become an on-demand skill, and migrate approved candidates one at a time.
+
+**Usage:**
+```bash
+/meta:context-diet [scope-path]
+```
+
+**Features:**
+- Inventories the every-turn surface and estimates each unit's token cost
+- Classifies each rule/section: keep invariant, lean, path-scope, promote-to-skill, consolidate, drop
+- Drafts an auto-triggering description before promoting (the gate that prevents lossy moves)
+- Per-candidate `AskUserQuestion` confirmation, largest-impact first — no bundled approvals
+- Inverse of `session-distill` (creates rules), orthogonal to `meta-promote` (moves between scopes)
+
 #### `custom-agent-definitions`
 Define and configure custom agents and teammate templates with context forking and tool restrictions.
 
