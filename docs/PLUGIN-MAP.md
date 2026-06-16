@@ -25,7 +25,7 @@ Install these first. They configure the environment other plugins rely on.
 | health-plugin | 7 | Diagnose config issues, audit plugin selection |
 | hooks-plugin | 4 | Enforce best practices via lifecycle hooks |
 | configure-plugin | 46 | Infrastructure standards (CI, linting, testing, Docker, repo onboarding) |
-| agent-patterns-plugin | 13 | Agent orchestration, MCP management, delegation |
+| agent-patterns-plugin | 14 | Agent orchestration, MCP management, delegation |
 
 ### Tier 1 - Core Workflow
 
