@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.7.9...github-actions-plugin-v1.8.0) (2026-06-16)
+
+
+### Features
+
+* **github-actions-plugin:** align workflow skills with GitHub secure-use baseline ([#1665](https://github.com/laurigates/claude-plugins/issues/1665)) ([5f742b2](https://github.com/laurigates/claude-plugins/commit/5f742b2e33005b3b64ac7dd03651fe071aec2871))
+
 ## [1.7.9](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.7.8...github-actions-plugin-v1.7.9) (2026-06-13)
 
 
