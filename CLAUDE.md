@@ -49,6 +49,7 @@ Claude Code plugin collection providing skills and agents for development workfl
 | `.claude/rules/sandbox-guidance.md` | Sandbox constraints, `CLAUDE_CODE_REMOTE` detection, and remote/local skill patterns |
 | `.claude/rules/plugin-flow-diagrams.md` | When and how to add Mermaid flow diagrams |
 | `.claude/rules/agent-coworker-detection.md` | Detect other agents working in the same repo clone before destructive git ops |
+| `.claude/rules/pr-branch-sync.md` | **Before building further on a PR branch**, confirm it's live and in sync (remote sibling of coworker-detection) — the `/git:pr-sync-check` skill + `check-branch-sync-on-push.sh` hook + `git-drift-probe.sh` trio |
 | `.claude/rules/workflow-naming.md` | `<Domain>: <Action>` naming for `.github/workflows/*.yml` and skill-generated workflow examples |
 | `.claude/rules/github-actions-security.md` | **GitHub Actions secure-use baseline** — least-privilege `GITHUB_TOKEN`, script-injection env-var indirection, `pull_request_target` hazards, CODEOWNERS on workflows; the checklist every workflow-scaffolding skill follows |
 | `.claude/rules/bash-tool-replacements.md` | `find`/`grep`/`rg`/`cat`/`head`/`tail` → dedicated tools; when the Bash form is genuinely fine |

@@ -349,8 +349,17 @@ After processing, report:
 
 ---
 
+## Resuming work on an existing PR branch
+
+When a follow-up request continues an issue whose branch already has a PR, invoke
+`/git:pr-sync-check` before adding commits. A `pr_merged` verdict means the PR
+already landed — start a fresh branch off the updated default rather than building
+on the merged branch; a `behind` verdict means a teammate / agent / CI auto-fix
+pushed under you, so reconcile first. See `.claude/rules/pr-branch-sync.md`.
+
 ## See Also
 
+- **git-pr-sync-check** skill to confirm a PR branch is live and in sync before building on it
 - **git-branch-pr-workflow** skill for workflow patterns
 - **test-tier-selection** skill for test strategy
 - **git-cli-agentic** skill for optimized git commands

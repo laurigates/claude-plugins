@@ -30,6 +30,8 @@ See [`docs/flow.md`](docs/flow.md) for a diagram of how the skills fit together.
 | `/git:upstream-pr` | Submit clean PRs to upstream repositories from fork work |
 | `/git:upstream-pr-diverged` | Heavy-divergence fork-to-upstream PR workflow — patch-id eligibility, re-derive fallback, commit-message scrubbing, pre-flight regression check |
 | `/git:coworker-check` | Detect another agent working in the same repo clone before destructive git ops |
+| `/git:pr-sync-check` | Check whether the current PR branch is still live and in sync (merged / behind / changes-requested) before building on it |
+| `/git:pr-watch` | Subscribe to a PR's activity and react to review comments and CI as they arrive (delegates reactions to `/git:pr-feedback` / `/git:fix-pr`) |
 
 ## Layered Skills (Composable Git Workflows)
 
@@ -79,6 +81,18 @@ Three composable skills that can be invoked individually or combined based on us
 | Agent | Description |
 |-------|-------------|
 | `commit-review` | Commit message review and validation |
+
+## Hooks
+
+| Hook | Event | Purpose |
+|------|-------|---------|
+| `validate-pr-issue-links.sh` | PreToolUse (Bash) | Enforce issue-closing links on PR creation |
+| `check-pr-metadata-on-push.sh` | PreToolUse (Bash) | Remind to align PR title/body with commits before push |
+| `check-branch-sync-on-push.sh` | PreToolUse (Bash) | Nudge (`ask`) before `commit`/`push` when the branch is behind origin or its PR is merged/closed. Cached per session+branch; opt out with `CLAUDE_HOOKS_DISABLE_BRANCH_SYNC=1`, tune TTL with `CLAUDE_HOOKS_BRANCH_SYNC_TTL` |
+| `git-drift-probe.sh` | SessionStart | Surface `pr_merged` / `branch_behind` / `changes_requested` drift on the current branch via the consolidated drift nudge |
+
+The branch-sync hook + probe pair with the `/git:pr-sync-check` skill as the
+PR-branch-sync guard trio — see [`.claude/rules/pr-branch-sync.md`](../.claude/rules/pr-branch-sync.md).
 
 ## Workflow Examples
 

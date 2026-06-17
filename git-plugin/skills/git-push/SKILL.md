@@ -146,6 +146,12 @@ git push --force-with-lease
 2. **Commit count** - Reasonable number of commits
 3. **No uncommitted changes** - Clean working tree
 4. **Remote reachable** - Network connectivity
+5. **Branch is live and in sync** - When continuing work on a branch that already
+   has a PR, invoke `/git:pr-sync-check` first. A `pr_merged` verdict means the
+   work belongs on a fresh branch off the updated default, not here; a `behind`
+   verdict means reconcile (`git pull --rebase`) before pushing. The
+   `check-branch-sync-on-push.sh` hook also nudges automatically. See
+   `.claude/rules/pr-branch-sync.md`.
 
 ### Main Branch Push Behavior
 
