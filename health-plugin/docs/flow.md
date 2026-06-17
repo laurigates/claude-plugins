@@ -15,8 +15,10 @@ flowchart TD
     SCOPE -->|registry<br/>or all| REG[check-registry.sh<br/>• orphaned projectPath<br/>• stale enabledPlugins<br/>• marketplace drift]
     SCOPE -->|stack<br/>or all| STK[health-audit<br/>enabled plugins vs.<br/>project tech stack]
     SCOPE -->|agentic<br/>or all| AGT[health-agentic-audit<br/>skill optimisation<br/>compliance]
+    SCOPE -->|runtime<br/>or all| RUN[check-runtime.sh<br/>~/.claude.json bloat<br/>read-only]
+    SCOPE -->|usage<br/>or all| USG[check-usage.sh<br/>never-fired / dormant skills<br/>read-only · local-leaning]
 
-    CP & CS & CH & CM & REG & STK & AGT --> RPT[Step 3: Consolidated report<br/>grouped by scope]
+    CP & CS & CH & CM & REG & STK & AGT & RUN & USG --> RPT[Step 3: Consolidated report<br/>grouped by scope]
 
     RPT --> FIX{--fix?}
     FIX -->|no| DONE[Done]
@@ -37,7 +39,7 @@ flowchart TD
     classDef prompt fill:#dda0dd,stroke:#8b5a8b,color:#000
 
     class R router
-    class CP,CS,CH,CM,REG,STK,AGT,SA check
+    class CP,CS,CH,CM,REG,STK,AGT,RUN,USG,SA check
     class FR,FS,FA fix
     class ASK prompt
 ```
@@ -58,6 +60,8 @@ flowchart TD
 | `registry` | `health-plugins/scripts/check-registry.sh` | `health-plugins/scripts/fix-registry.sh` |
 | `stack` | `health-audit/` workflow | `health-audit/` `--fix` flow |
 | `agentic` | `health-agentic-audit/` workflow | `health-agentic-audit/` `--fix` flow |
+| `runtime` | `health-check/scripts/check-runtime.sh` | read-only (no fix) |
+| `usage` | `health-check/scripts/check-usage.sh` | read-only (no fix) |
 | `all` | All of the above + environment checks | `AskUserQuestion` to pick scopes |
 
 ## Sibling skills (not scoped under `/health:check`)
