@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.7](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.4.6...hooks-plugin-v2.4.7) (2026-06-17)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** allow `find … -delete` in bash-antipatterns hook ([#1677](https://github.com/laurigates/claude-plugins/issues/1677)) ([9a05b49](https://github.com/laurigates/claude-plugins/commit/9a05b49b159e16bc96a64dfd5c09274e7bb59f51))
+
 ## [2.4.6](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.4.5...hooks-plugin-v2.4.6) (2026-06-14)
 
 
