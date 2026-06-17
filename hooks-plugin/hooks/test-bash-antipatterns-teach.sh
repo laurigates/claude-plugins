@@ -104,6 +104,9 @@ echo "find without directory-discovery flags:"
 assert_emits "find -name only emits Glob hint" "find . -name '*.ts'" "Glob tool"
 assert_silent "find -maxdepth -type d is exempt" "find . -maxdepth 1 -type d"
 assert_silent "find -type f -print0 is exempt" "find . -type f -print0"
+# issue #1671: -delete is exempt (Glob cannot delete); -exec is not (arbitrary exec)
+assert_silent "find -name -delete is exempt (Glob cannot delete)" "find . -name '*.tmp' -delete"
+assert_emits "find -name -exec still emits Glob hint" "find . -name '*.log' -exec rm {} +" "Glob tool"
 
 echo ""
 echo "grep / rg standalone searches:"
