@@ -25,7 +25,7 @@ Diagnose and fix Claude Code configuration issues including plugin registry, set
 | `stack` | Enabled plugins vs project tech stack | `health-audit` |
 | `agentic` | Skill/command/agent agentic-optimisation compliance | `health-agentic-audit` |
 | `runtime` | `~/.claude.json` bloat (dead projects/githubRepoPaths, orphaned MCP). Read-only | `check-runtime.sh` |
-| `usage` | Never-fired and dormant skills mined from session telemetry. Read-only, local-leaning ([ADR-0018](../docs/adrs/0018-health-usage-scope-from-session-telemetry.md)) | `check-usage.sh` |
+| `usage` | Never-fired and dormant skills *and* plugin agents mined from session telemetry. Read-only, local-leaning ([ADR-0018](../docs/adrs/0018-health-usage-scope-from-session-telemetry.md)) | `check-usage.sh` |
 | `all` | All of the above (default) | — |
 
 These internal skills are auto-discoverable but not user-invocable — use `/health:check` instead.
@@ -85,10 +85,10 @@ Surface skills you have enabled but rarely or never invoke, mined from local
 session transcripts (`~/.claude/projects/*/*.jsonl`):
 
 ```bash
-# Never-fired + dormant (last invoked 30+ days ago) skills
+# Never-fired + dormant (last invoked 30+ days ago) skills and plugin agents
 /health:check --scope=usage
 
-# List the offending skill names, custom dormancy window
+# List the offending skill/agent names, custom dormancy window
 bash health-plugin/skills/health-check/scripts/check-usage.sh \
   --home-dir "$HOME" --project-dir "$(pwd)" --window-days 60 --verbose
 ```

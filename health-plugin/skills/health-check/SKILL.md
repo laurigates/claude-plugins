@@ -1,7 +1,7 @@
 ---
 created: 2026-02-04
-modified: 2026-06-16
-reviewed: 2026-06-16
+modified: 2026-06-17
+reviewed: 2026-06-17
 description: "Claude Code health check — scans plugins, settings, hooks, MCP, runtime state, usage telemetry, permissions, marketplace with optional fixes. Use when checking project health or troubleshooting setup."
 allowed-tools: Bash(bash *), Bash(pre-commit *), Read, Glob, Grep, TodoWrite, AskUserQuestion
 args: "[--scope=all|registry|stack|agentic|runtime|usage] [--fix] [--dry-run] [--verbose]"
@@ -48,7 +48,7 @@ Parse these from `$ARGUMENTS`:
 | `stack` | Enabled plugins vs detected project tech stack |
 | `agentic` | Skill/command/agent agentic-optimisation compliance |
 | `runtime` | `~/.claude.json` bloat (dead `projects[]`, dead `githubRepoPaths[*]`, orphaned `disabledMcpServers`, duplicate MCP naming). Read-only audit. |
-| `usage` | Session-telemetry mining of `~/.claude/projects/*/*.jsonl` for never-fired and dormant skills. Read-only, local-leaning (SKIPs when history is insufficient). |
+| `usage` | Session-telemetry mining of `~/.claude/projects/*/*.jsonl` for never-fired and dormant skills *and* plugin agents. Read-only, local-leaning (SKIPs when history is insufficient). |
 | `all` | Environment checks + all five audits |
 
 ## Execution
@@ -183,9 +183,9 @@ For `--scope=usage` or `all`:
 bash "${CLAUDE_SKILL_DIR}/scripts/check-usage.sh" --home-dir "$HOME" --project-dir "$(pwd)"
 ```
 
-Parse `STATUS=`, `HISTORY_AVAILABLE=`, `TRANSCRIPTS_SCANNED=`, `SKILLS_ENABLED=`, `SKILLS_FIRED=`, `SKILLS_NEVER_FIRED=`, `SKILLS_DORMANT=`, `SCHEMA_DRIFT_SUSPECTED=`, and `ISSUES:`. Pass `--verbose` to list every never-fired / dormant skill (default rolls each category into one issue line). Pass `--window-days N` to change the dormancy threshold (default 30).
+Parse `STATUS=`, `HISTORY_AVAILABLE=`, `TRANSCRIPTS_SCANNED=`, `SKILLS_ENABLED=`, `SKILLS_FIRED=`, `SKILLS_NEVER_FIRED=`, `SKILLS_DORMANT=`, `AGENTS_ENABLED=`, `AGENTS_FIRED=`, `AGENTS_NEVER_FIRED=`, `AGENTS_DORMANT=`, `SCHEMA_DRIFT_SUSPECTED=`, and `ISSUES:`. Pass `--verbose` to list every never-fired / dormant skill and agent (default rolls each category into one issue line). Pass `--window-days N` to change the dormancy threshold (default 30).
 
-The usage scope mines local session transcripts (`~/.claude/projects/*/*.jsonl`) for skill-invocation recency: **never-fired** skills (enabled but zero invocations in history) and **dormant** skills (last invoked more than the window ago). Findings are **advisory review candidates**, not a delete list — a skill can be correct yet rarely needed. The audit is **read-only** (no `--fix` path).
+The usage scope mines local session transcripts (`~/.claude/projects/*/*.jsonl`) for skill- and agent-invocation recency: **never-fired** skills/agents (installed but zero invocations in history) and **dormant** skills/agents (last invoked more than the window ago). Agent invocations are read from `Agent`/`Task` `tool_use` events keyed by `subagent_type`. Findings are **advisory review candidates**, not a delete list — a skill or agent can be correct yet rarely needed (recovery, migration, on-demand subagents gated behind a parent skill). The audit is **read-only** (no `--fix` path).
 
 > **Local-leaning.** Session history is local and long-lived, so this scope is near-useless in a remote/web sandbox (a fresh clone has ≤1 transcript). It emits `STATUS=SKIP` with `HISTORY_AVAILABLE=false` when there are fewer than two transcripts rather than reporting every skill as never-fired. If `TRANSCRIPTS_SCANNED>0` but zero tool calls parse, it emits `STATUS=WARN TYPE=schema_drift` (the transcript JSON shape changed) instead of a bogus all-never-fired result.
 

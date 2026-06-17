@@ -69,6 +69,16 @@ enough to compute, with `jq` over the JSONL set:
 - **Dormant**: skills whose most-recent invocation is older than N days.
 - **Hot/cold ranking**: invocation counts per skill, per tool.
 
+The same mechanism extends to **plugin agents**: a subagent dispatch is a
+`tool_use` with `.name == "Agent"` (or the `"Task"` alias) and
+`.input.subagent_type` naming the agent in `plugin:agent` form. Matched against
+the installed agent inventory (`<plugin>/agents/<name>.md`), this yields
+`AGENTS_NEVER_FIRED` / `AGENTS_DORMANT` alongside the skill rollups. Agents are
+the harder blind spot — they are not auto-invoked from a description the way
+skills are, but are chosen explicitly by an orchestrator, so a never-fired agent
+is a signal that the orchestrator never reaches for it (discoverability, or
+genuine redundancy with a skill).
+
 ### The constraint the data imposes
 
 The investigation also surfaced the load-bearing design constraint: this data is
@@ -118,11 +128,16 @@ SKILLS_ENABLED=210
 SKILLS_FIRED=63
 SKILLS_NEVER_FIRED=147
 SKILLS_DORMANT=12
+AGENTS_ENABLED=20
+AGENTS_FIRED=12
+AGENTS_NEVER_FIRED=8
+AGENTS_DORMANT=0
 STATUS=WARN
-ISSUE_COUNT=2
+ISSUE_COUNT=3
 ISSUES:
   - SEVERITY=WARN TYPE=never_fired COUNT=147 MSG=enabled skills with zero invocations in window (use --verbose to list)
   - SEVERITY=WARN TYPE=dormant COUNT=12 MSG=skills not invoked in 30+ days (use --verbose to list)
+  - SEVERITY=WARN TYPE=agent_never_fired COUNT=8 MSG=installed plugin agents never spawned in history (use --verbose to list)
 === END USAGE TELEMETRY ===
 ```
 
