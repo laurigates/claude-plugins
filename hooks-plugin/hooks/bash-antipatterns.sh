@@ -156,16 +156,25 @@ fi
 # Check for find command (should use Glob for simple patterns)
 # Allow find when using directory-discovery flags that Glob cannot replicate:
 # -maxdepth, -mindepth, -type, -print0. These are recommended in agentic-permissions.md
-# and shell-scripting.md for context commands. Block simple name-pattern searches
-# and any -exec usage (dangerous; runs arbitrary commands).
+# and shell-scripting.md for context commands.
+#
+# Also allow the -delete action: it performs a filesystem mutation Glob
+# structurally cannot do (Glob only lists), so nudging toward Glob is useless and
+# the agent has no built-in alternative — blocking it is pure friction (issue #1671).
+#
+# -exec/-execdir/-ok/-okdir stay blocked deliberately: they run arbitrary commands,
+# so the agent should compose explicit, reviewable steps rather than execute through
+# find. Block simple name-pattern searches (pure listing Glob can do).
 if echo "$COMMAND" | grep -Eq '^\s*find\s+' && \
-   ! echo "$COMMAND" | grep -Eq 'find\s+.*(-maxdepth|-mindepth|-type\s|-print0)'; then
+   ! echo "$COMMAND" | grep -Eq 'find\s+.*(-maxdepth|-mindepth|-type\s|-print0|-delete\b)'; then
     block "BLOCKED: 'find . -name \"*.ts\"' →
   Glob(pattern=\"**/*.ts\")
 
 The Glob tool is faster and optimized for codebase searches. If you
 need -maxdepth, -mindepth, -type d, or -print0 for directory discovery
 that Glob cannot do, keep find with those flags — the hook allows it.
+Glob can only list, not act: for 'find … -delete' keep find — the hook
+allows it too. (-exec/-ok stay blocked: run explicit steps instead.)
 See .claude/rules/bash-tool-replacements.md for the full table."
 fi
 

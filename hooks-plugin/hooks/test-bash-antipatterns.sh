@@ -58,6 +58,22 @@ assert_exit \
     "find -exec (dangerous, no discovery flags) is blocked" 2 \
     "find . -exec ls {}"
 
+# Regression (issue #1671): find with a -delete action must be allowed even with
+# no directory-discovery flag — Glob can only list, it cannot delete, so the
+# Glob nudge is useless and blocking is pure friction. -exec/-ok stay blocked
+# (arbitrary command execution) — the agent should run explicit steps instead.
+assert_exit \
+    "find -name -delete is allowed (Glob cannot delete; issue #1671)" 0 \
+    "find . -name '*.tmp' -delete"
+
+assert_exit \
+    "find -maxdepth -type -delete is allowed (issue #1671 exact repro)" 0 \
+    "find /tmp/x -maxdepth 2 -name claude -type l -delete"
+
+assert_exit \
+    "find -name -exec rm (arbitrary execution) stays blocked" 2 \
+    "find . -name '*.log' -exec rm {} +"
+
 # ── cat pipeline regression ──────────────────────────────────────────────────
 # Regression: cat file | command was blocked even though cat is feeding a
 # pipeline — the Read tool cannot replace cat in pipelines where data flows

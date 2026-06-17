@@ -68,10 +68,13 @@ if [ -z "$hint" ] && \
 fi
 
 # find -name without directory-discovery flags
+# Mirrors bash-antipatterns.sh: -delete is exempt because Glob can only list, not
+# delete, so the Glob hint is useless for a delete action (issue #1671). -exec/-ok
+# are intentionally not exempt (arbitrary command execution).
 if [ -z "$hint" ] && \
    echo "$COMMAND" | grep -Eq '^\s*find\s+' && \
-   ! echo "$COMMAND" | grep -Eq 'find\s+.*(-maxdepth|-mindepth|-type\s|-print0)'; then
-    hint="Use the Glob tool for filename matching. Example: Glob(pattern=\"**/*.ts\") instead of 'find . -name \"*.ts\"'. Keep 'find' only when you need -maxdepth/-type d/-print0."
+   ! echo "$COMMAND" | grep -Eq 'find\s+.*(-maxdepth|-mindepth|-type\s|-print0|-delete\b)'; then
+    hint="Use the Glob tool for filename matching. Example: Glob(pattern=\"**/*.ts\") instead of 'find . -name \"*.ts\"'. Keep 'find' only when you need -maxdepth/-type d/-print0, or a -delete action."
     hint_key="glob-find"
 fi
 
