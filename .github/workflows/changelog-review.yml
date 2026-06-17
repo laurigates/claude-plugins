@@ -47,7 +47,10 @@ jobs:
         run: |
           # Extract first version number from changelog
           # Handles both "## 2.1.50" and "## [2.1.50]" formats
-          LATEST=$(grep -oP '## \[?\K[0-9]+\.[0-9]+\.[0-9]+' /tmp/changelog.md | head -1)
+          # `|| true` so an unexpectedly version-less changelog reaches the
+          # explicit error guard below instead of dying opaquely on pipefail
+          # (GitHub Actions runs steps with `bash -eo pipefail` by default).
+          LATEST=$(grep -oP '## \[?\K[0-9]+\.[0-9]+\.[0-9]+' /tmp/changelog.md | head -1 || true)
           if [ -z "$LATEST" ]; then
             echo "::error::Failed to extract version from changelog"
             exit 1
@@ -135,7 +138,11 @@ jobs:
             [ -z "$num" ] && continue
             # The version after the arrow is the range's upper bound; fall back
             # to the last version token in the title.
-            upper=$(printf '%s' "$title" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | tail -1)
+            # `|| true`: a version-less issue title makes grep match nothing,
+            # which under `set -euo pipefail` would fail this bare assignment
+            # BEFORE the line below can skip it (the #1638 freeze cause). The
+            # guard then handles the empty case.
+            upper=$(printf '%s' "$title" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | tail -1 || true)
             [ -z "$upper" ] && continue
             # Covered iff LATEST is not newer than this issue's upper bound.
             highest=$(printf '%s\n%s\n' "$LATEST" "$upper" | sort -V | tail -1)
@@ -204,9 +211,12 @@ jobs:
             --excerpt /tmp/excerpt.md --repo-dir "$PWD" --tracked "$TRACKED" --latest "$LATEST")
           echo "$ANALYSIS"
 
-          SUMMARY=$(echo "$ANALYSIS" | grep -E '^SUMMARY=' | head -1 | cut -d= -f2-)
-          ANALYSIS_STATUS=$(echo "$ANALYSIS" | grep -E '^STATUS=' | head -1 | cut -d= -f2-)
-          DEPRECATED_TOKENS=$(echo "$ANALYSIS" | grep -E '^DEPRECATED_TOKENS=' | head -1 | cut -d= -f2-)
+          # `|| true` on each: a field the analyzer doesn't emit makes grep
+          # match nothing, which would fail the bare assignment under
+          # `set -euo pipefail`. Empty values degrade gracefully downstream.
+          SUMMARY=$(echo "$ANALYSIS" | grep -E '^SUMMARY=' | head -1 | cut -d= -f2- || true)
+          ANALYSIS_STATUS=$(echo "$ANALYSIS" | grep -E '^STATUS=' | head -1 | cut -d= -f2- || true)
+          DEPRECATED_TOKENS=$(echo "$ANALYSIS" | grep -E '^DEPRECATED_TOKENS=' | head -1 | cut -d= -f2- || true)
           # Candidate files: the indented lines between CANDIDATES: and the footer.
           CANDIDATE_LIST=$(echo "$ANALYSIS" | awk '
             /^CANDIDATES:/ { f = 1; next }
