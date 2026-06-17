@@ -18,10 +18,14 @@ stale_skills=0
 missing_plugin_json_fields=0
 missing_frontmatter_fields=0
 
-# Temporary storage for results
-declare -a stale_skills_list
-declare -a plugin_compliance_list
-declare -a frontmatter_issues_list
+# Temporary storage for results.
+# Use empty-assignment (arr=()) rather than `declare -a arr`: a `declare`d
+# array with no element assigned is treated as unset under `set -u`, so a later
+# "${#arr[@]}" / "${arr[@]}" on a still-empty array aborts the script (the
+# frontmatter_issues_list case when a run has zero frontmatter issues).
+stale_skills_list=()
+plugin_compliance_list=()
+frontmatter_issues_list=()
 
 # Helper function: Extract YAML frontmatter field
 extract_field() {
@@ -56,7 +60,7 @@ days_since_date() {
 cd "$REPO_ROOT" || exit 1
 while IFS= read -r -d '' plugin_dir; do
   plugin_name=$(basename "$plugin_dir")
-  ((total_plugins++))
+  total_plugins=$((total_plugins+1))
 
   # Check plugin.json existence and validation
   plugin_json="$plugin_dir/.claude-plugin/plugin.json"
@@ -68,7 +72,7 @@ while IFS= read -r -d '' plugin_dir; do
     json_name=$(jq -r '.name // ""' "$plugin_json" 2>/dev/null || echo "")
     if [ -z "$json_name" ]; then
       plugin_json_issues+="Missing 'name'. "
-      ((missing_plugin_json_fields++))
+      missing_plugin_json_fields=$((missing_plugin_json_fields+1))
     elif [ "$json_name" != "$plugin_name" ]; then
       plugin_json_issues+="Name mismatch ('$json_name' vs '$plugin_name'). "
     fi
@@ -83,13 +87,13 @@ while IFS= read -r -d '' plugin_dir; do
       value=$(jq -r ".$field // \"\"" "$plugin_json" 2>/dev/null || echo "")
       if [ -z "$value" ] || [ "$value" = "null" ]; then
         plugin_json_issues+="Missing '$field'. "
-        ((missing_plugin_json_fields++))
+        missing_plugin_json_fields=$((missing_plugin_json_fields+1))
       fi
     done
   else
     has_plugin_json="✗"
     plugin_json_issues="File missing"
-    ((missing_plugin_json_fields++))
+    missing_plugin_json_fields=$((missing_plugin_json_fields+1))
   fi
 
   # Check README.md existence
@@ -102,8 +106,8 @@ while IFS= read -r -d '' plugin_dir; do
   # 2. Find all skills in this plugin
   plugin_skill_count=0
   while IFS= read -r -d '' skill_file; do
-    ((total_skills++))
-    ((plugin_skill_count++))
+    total_skills=$((total_skills+1))
+    plugin_skill_count=$((plugin_skill_count+1))
 
     skill_name=$(basename "$(dirname "$skill_file")")
 
@@ -132,7 +136,7 @@ while IFS= read -r -d '' plugin_dir; do
     if [ -n "$missing_required" ]; then
       missing_required="${missing_required%, }"
       frontmatter_issues_list+=("$plugin_name | $skill_name | Required: $missing_required")
-      ((missing_frontmatter_fields++))
+      missing_frontmatter_fields=$((missing_frontmatter_fields+1))
     fi
 
     if [ -n "$missing_recommended" ]; then
@@ -145,7 +149,7 @@ while IFS= read -r -d '' plugin_dir; do
       days_stale=$(days_since_date "$skill_modified")
       if [ "$days_stale" != "N/A" ] && [ "$days_stale" -gt "$STALE_THRESHOLD_DAYS" ]; then
         stale_skills_list+=("$plugin_name | $skill_name | $skill_modified | $days_stale")
-        ((stale_skills++))
+        stale_skills=$((stale_skills+1))
       fi
     fi
   done < <(find "$plugin_dir/skills" -type f \( -iname "SKILL.md" -o -iname "skill.md" \) -print0 2>/dev/null || true)

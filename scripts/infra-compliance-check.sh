@@ -62,11 +62,11 @@ for plugin in "${plugin_dirs[@]}"; do
     [ "$rm_entry" != "null" ] && [ -n "$rm_entry" ] && has_manifest="✅"
   fi
 
-  ((registry_total += 4))
-  [ "$has_json" = "✅" ] && ((registry_pass++)) || true
-  [ "$has_market" = "✅" ] && ((registry_pass++)) || true
-  [ "$has_config" = "✅" ] && ((registry_pass++)) || true
-  [ "$has_manifest" = "✅" ] && ((registry_pass++)) || true
+  registry_total=$((registry_total+4))
+  [ "$has_json" = "✅" ] && registry_pass=$((registry_pass+1)) || true
+  [ "$has_market" = "✅" ] && registry_pass=$((registry_pass+1)) || true
+  [ "$has_config" = "✅" ] && registry_pass=$((registry_pass+1)) || true
+  [ "$has_manifest" = "✅" ] && registry_pass=$((registry_pass+1)) || true
 
   row_status="✅"
   for s in "$has_json" "$has_market" "$has_config" "$has_manifest"; do
@@ -131,8 +131,8 @@ while IFS= read -r -d '' wf; do
   # Count checks
   checks=("$checkout_ok" "$claude_ok" "$perms_ok" "$filters_ok")
   for c in "${checks[@]}"; do
-    [ "$c" != "N/A" ] && ((workflow_total++)) || true
-    [ "$c" = "✅" ] && ((workflow_pass++)) || true
+    [ "$c" != "N/A" ] && workflow_total=$((workflow_total+1)) || true
+    [ "$c" = "✅" ] && workflow_pass=$((workflow_pass+1)) || true
   done
 
   row_status="✅"
@@ -149,7 +149,7 @@ done < <(find .github/workflows -maxdepth 1 -name '*.yml' -print0 2>/dev/null | 
 ##########
 
 for plugin in "${plugin_dirs[@]}"; do
-  ((version_total++))
+  version_total=$((version_total+1))
 
   pj_ver="N/A"; mf_ver="N/A"; mp_ver="N/A"
 
@@ -173,7 +173,7 @@ for plugin in "${plugin_dirs[@]}"; do
     done
   fi
 
-  [ "$match" = "✅" ] && ((version_pass++)) || true
+  [ "$match" = "✅" ] && version_pass=$((version_pass+1)) || true
   version_rows+=("$plugin | $pj_ver | $mf_ver | $mp_ver | $match")
 done
 
@@ -182,7 +182,7 @@ done
 ##########
 
 for plugin in "${plugin_dirs[@]}"; do
-  ((skill_total++))
+  skill_total=$((skill_total+1))
 
   sc=0
   [ -d "${plugin}/skills" ] && \
@@ -191,7 +191,7 @@ for plugin in "${plugin_dirs[@]}"; do
   total_skills_count=$((total_skills_count + sc))
   has_skills="✅"
   [ "$sc" -eq 0 ] && has_skills="❌"
-  [ "$has_skills" = "✅" ] && ((skill_pass++)) || true
+  [ "$has_skills" = "✅" ] && skill_pass=$((skill_pass+1)) || true
 
   skill_rows+=("$plugin | $sc | $has_skills")
 done
@@ -205,14 +205,14 @@ avg_skills="N/A"
 
 while IFS= read -r -d '' wf; do
   wf_name=$(basename "$wf")
-  ((security_total++))
+  security_total=$((security_total+1))
 
   if grep -qiE '(ghp_|gho_|github_pat_|sk-|Bearer [A-Za-z0-9])' "$wf" 2>/dev/null; then
     security_rows+=("🔴 | $wf_name | Token pattern detected")
   elif grep -qiE '(token|key|secret|password)[[:space:]]*[:=][[:space:]]*["'"'"'][A-Za-z0-9+/=]{20,}' "$wf" 2>/dev/null; then
     security_rows+=("🔴 | $wf_name | Potential hardcoded secret")
   else
-    ((security_pass++)) || true
+    security_pass=$((security_pass+1)) || true
   fi
 done < <(find .github/workflows -maxdepth 1 -name '*.yml' -print0 2>/dev/null | sort -z)
 
@@ -220,7 +220,7 @@ done < <(find .github/workflows -maxdepth 1 -name '*.yml' -print0 2>/dev/null | 
 while IFS= read -r -d '' skill_file; do
   at_field=$(head -50 "$skill_file" 2>/dev/null | grep -m1 "^allowed-tools:" | sed 's/^[^:]*:[[:space:]]*//' || echo "")
   if echo "$at_field" | grep -qE '(^|,\s*)Bash(\s*,|$)' 2>/dev/null; then
-    ((security_total++))
+    security_total=$((security_total+1))
     security_rows+=("🟡 | ${skill_file#./} | Broad Bash permission (no command pattern)")
   fi
 done < <(find . -path '*/skills/*' \( -iname "SKILL.md" -o -iname "skill.md" \) -print0 2>/dev/null)
