@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.13.0...health-plugin-v1.14.0) (2026-06-17)
+
+
+### Features
+
+* **health-plugin:** add --scope=usage session-telemetry audit ([#1676](https://github.com/laurigates/claude-plugins/issues/1676)) ([10e60d5](https://github.com/laurigates/claude-plugins/commit/10e60d58713ea9c46fb46956e3ce4ebf794189f5))
+
 ## [1.13.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.12.0...health-plugin-v1.13.0) (2026-06-06)
 
 
