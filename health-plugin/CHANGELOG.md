@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.14.0...health-plugin-v1.15.0) (2026-06-17)
+
+
+### Features
+
+* **health-plugin:** extend usage telemetry to plugin agents ([#1684](https://github.com/laurigates/claude-plugins/issues/1684)) ([dd7f1ab](https://github.com/laurigates/claude-plugins/commit/dd7f1abfe244977d261566706054de1388c13048))
+
 ## [1.14.0](https://github.com/laurigates/claude-plugins/compare/health-plugin-v1.13.0...health-plugin-v1.14.0) (2026-06-17)
 
 
