@@ -334,7 +334,7 @@
       "name": "health-plugin",
       "source": "./health-plugin",
       "description": "Diagnose and fix Claude Code configuration issues - plugin registry, settings, hooks, MCP servers",
-      "version": "1.14.0",
+      "version": "1.15.0",
       "keywords": [
         "health",
         "diagnostics",
