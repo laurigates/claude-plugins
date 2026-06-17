@@ -126,11 +126,12 @@ This is an allowlist — only `worker` and `researcher` can be spawned. To allow
 
 ## Model Selection for Agents
 
+**Default to `model: opus` for every plugin agent.** A subagent's output feeds back into the main loop as a tool result, so a weaker delegate quietly degrades everything downstream. Opus 4.8 at *low* effort beats Sonnet 4.6 at *high* effort on both quality and token efficiency, so **`effort`, not `model`, is the cost lever** for delegated work — dial effort down for mechanical agents, keep the model on Opus. This matches the user-global standard in `~/.claude/rules/agent-and-tool-selection.md` ("Always Use Opus for Subagents").
+
 | Model | Use For |
 |-------|---------|
-| `opus` | Deep reasoning, security analysis, code review, debugging, complex refactoring |
-| `sonnet` | Development workflows, moderate reasoning, multi-step implementation |
-| `haiku` | Structured/mechanical tasks, documentation generation, CI configuration |
+| `opus` | **Default for all subagents** — reasoning, review, debugging, refactoring, *and* mechanical/high-volume work (dial `effort` down for the latter rather than downgrading the model) |
+| `sonnet` / `haiku` | Avoid for subagents. The one sanctioned exception is the `agent-patterns-plugin:cold-read-gate` haiku reader, where a low-capability model is the *measurement instrument*, not a delegate. |
 
 > **Note (2.1.142)**: Fast mode now uses Opus 4.7 by default (previously Opus 4.6). The `CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE` env var was deprecated in 2.1.154 and **removed in 2.1.160** (now a no-op) — drop it from agent launch scripts. To use fast mode on Opus 4.6, switch with `/model claude-opus-4-6[1m]` then `/fast on`.
 
@@ -144,7 +145,7 @@ Creates an independent context copy. The agent sees parent history but its chang
 ---
 name: research-agent
 description: Research without polluting main context
-model: sonnet
+model: opus
 context: fork
 tools: Glob, Grep, LS, Read, WebFetch, WebSearch, TodoWrite
 ---
@@ -409,7 +410,7 @@ Explicitly block specific tools while allowing everything else:
 ---
 name: read-only-explorer
 description: Explore codebase without modifications
-model: haiku
+model: opus
 tools: Bash, Read, Grep, Glob
 disallowedTools: Write, Edit, NotebookEdit
 ---
@@ -462,7 +463,7 @@ claude --agents '{"my-agent": {"description": "...", "prompt": "...", "tools": [
 
 - [ ] Agent name is kebab-case
 - [ ] `description` matches real user intents (not just tool jargon)
-- [ ] `model` is appropriate (`haiku` for mechanical, `sonnet` for development, `opus` for deep reasoning)
+- [ ] `model: opus` (the default for all subagents — `effort` is the cost lever, not the model; see Model Selection for Agents). The only sanctioned non-Opus subagent is the cold-read-gate haiku reader.
 - [ ] `tools` uses principle of least privilege
 - [ ] Granular `Bash(command *)` patterns used instead of bare `Bash`
 - [ ] `context: fork` added if agent needs isolated context window
