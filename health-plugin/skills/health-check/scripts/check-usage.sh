@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Check Usage Telemetry (~/.claude/projects/*/*.jsonl)
-# Mines local session transcripts for skill-invocation recency to surface:
+# Mines local session transcripts for skill- and agent-invocation recency to surface:
 #   - never-fired skills : enabled skills with zero invocations in any transcript
 #   - dormant skills     : skills whose most-recent invocation is older than the window
+#   - never-fired agents : installed plugin agents never spawned via the Agent/Task tool
+#   - dormant agents     : agents whose most-recent invocation is older than the window
 #
 # Read-only audit. Local-leaning by design: session history is local and
 # long-lived, so a fresh clone (remote/web sandbox) has little or no history.
@@ -94,6 +96,11 @@ window_cutoff=$((now_epoch - window_days * 86400))
 declare -A fired_last_seen=()
 declare -A fired_count=()
 declare -a fired_tokens=()   # raw tokens for loose substring fallback
+# Agent invocations mirror the skill maps: agent_last_seen[token]=max_mtime,
+# agent_count[token]=N, agent_tokens=raw tokens for the loose fallback.
+declare -A agent_last_seen=()
+declare -A agent_count=()
+declare -a agent_tokens=()
 total_tool_use=0
 
 file_mtime() {
@@ -130,6 +137,22 @@ for tfile in "${transcript_files[@]}"; do
         *" ${key} "*) ;;
         *) fired_tokens+=("$key") ;;
       esac
+    elif [ "$kind" = "AGENT" ]; then
+      total_tool_use=$((total_tool_use + 1))
+      # subagent_type is namespaced (e.g. agents-plugin:security-audit);
+      # normalize_token reduces it to the last segment, which matches the
+      # agent's filename basename in the inventory below.
+      key=$(normalize_token "$token")
+      [ -z "$key" ] && continue
+      agent_count["$key"]=$(( ${agent_count["$key"]:-0} + 1 ))
+      prev=${agent_last_seen["$key"]:-0}
+      if [ "$mtime" -gt "$prev" ]; then
+        agent_last_seen["$key"]=$mtime
+      fi
+      case " ${agent_tokens[*]-} " in
+        *" ${key} "*) ;;
+        *) agent_tokens+=("$key") ;;
+      esac
     fi
   done < <(jq -rc '
     select(.type=="assistant")
@@ -137,6 +160,8 @@ for tfile in "${transcript_files[@]}"; do
     | select(.type=="tool_use")
     | if .name=="Skill"
       then "SKILL\t" + ((.input.skill // .input.command // .input.name // "") | tostring)
+      elif (.name=="Agent" or .name=="Task")
+      then "AGENT\t" + ((.input.subagent_type // "") | tostring)
       else "TOOL\t" + (.name | tostring)
       end
   ' "$tfile" 2>/dev/null)
@@ -218,6 +243,66 @@ echo "SKILLS_FIRED=${skills_fired}"
 echo "SKILLS_NEVER_FIRED=${skills_never}"
 echo "SKILLS_DORMANT=${skills_dormant}"
 
+# --- Discover installed plugin agent inventory --------------------------------
+# Plugin agents live at <plugin>/agents/<name>.md; the filename basename is the
+# agent's name and matches the normalized subagent_type recorded above.
+declare -a enabled_agents=()
+declare -A agent_seen=()
+if [ -d "$skills_dir" ]; then
+  while IFS= read -r amd; do
+    [ -n "$amd" ] || continue
+    aname=$(basename "$amd" .md)
+    # Dedup: the plugin cache can hold multiple versions of the same plugin.
+    [ -n "${agent_seen[$aname]+x}" ] && continue
+    agent_seen["$aname"]=1
+    enabled_agents+=("$aname")
+  done < <(find "$skills_dir" -path '*/.claude/worktrees/*' -prune -o \
+             -path '*/agents/*.md' -type f -print 2>/dev/null)
+fi
+
+agents_enabled=${#enabled_agents[@]}
+echo "AGENTS_ENABLED=${agents_enabled}"
+
+# Mirror skill_is_fired() against the agent maps (exact key then loose substring).
+agent_is_fired() {
+  local ag="$1"
+  if [ -n "${agent_last_seen[$ag]+x}" ]; then
+    printf '%s' "${agent_last_seen[$ag]}"
+    return 0
+  fi
+  local tok
+  for tok in "${agent_tokens[@]}"; do
+    case "$ag" in *"$tok"*) printf '%s' "${agent_last_seen[$tok]}"; return 0 ;; esac
+    case "$tok" in *"$ag"*) printf '%s' "${agent_last_seen[$tok]}"; return 0 ;; esac
+  done
+  return 1
+}
+
+agents_fired=0
+agents_never=0
+agents_dormant=0
+agent_never_list=""
+agent_dormant_list=""
+
+if [ "$agents_enabled" -gt 0 ]; then
+  for ag in "${enabled_agents[@]}"; do
+    if agent_last_hit=$(agent_is_fired "$ag"); then
+      agents_fired=$((agents_fired + 1))
+      if [ "${agent_last_hit:-0}" -lt "$window_cutoff" ]; then
+        agents_dormant=$((agents_dormant + 1))
+        agent_dormant_list="${agent_dormant_list}${ag} "
+      fi
+    else
+      agents_never=$((agents_never + 1))
+      agent_never_list="${agent_never_list}${ag} "
+    fi
+  done
+fi
+
+echo "AGENTS_FIRED=${agents_fired}"
+echo "AGENTS_NEVER_FIRED=${agents_never}"
+echo "AGENTS_DORMANT=${agents_dormant}"
+
 # --- Roll up issues (advisory; read-only audit) -------------------------------
 if [ "$skills_enabled" -eq 0 ]; then
   usage_issues="${usage_issues}  - SEVERITY=INFO TYPE=no_skill_inventory MSG=no SKILL.md files found under ${skills_dir} (cannot compute never-fired without an inventory)\n"
@@ -242,6 +327,26 @@ if [ "$skills_dormant" -gt 0 ]; then
     usage_issues="${usage_issues}  - SEVERITY=WARN TYPE=dormant COUNT=${skills_dormant} SKILLS=${dormant_list% }\n"
   else
     usage_issues="${usage_issues}  - SEVERITY=WARN TYPE=dormant COUNT=${skills_dormant} MSG=skills not invoked in ${window_days}+ days (advisory; use --verbose to list)\n"
+  fi
+fi
+
+if [ "$agents_never" -gt 0 ]; then
+  usage_issue_count=$((usage_issue_count + 1))
+  [ "$usage_status" = "OK" ] && usage_status="WARN"
+  if [ "$verbose_mode" = true ]; then
+    usage_issues="${usage_issues}  - SEVERITY=WARN TYPE=agent_never_fired COUNT=${agents_never} AGENTS=${agent_never_list% }\n"
+  else
+    usage_issues="${usage_issues}  - SEVERITY=WARN TYPE=agent_never_fired COUNT=${agents_never} MSG=installed plugin agents never spawned in history (advisory review candidates; use --verbose to list)\n"
+  fi
+fi
+
+if [ "$agents_dormant" -gt 0 ]; then
+  usage_issue_count=$((usage_issue_count + 1))
+  [ "$usage_status" = "OK" ] && usage_status="WARN"
+  if [ "$verbose_mode" = true ]; then
+    usage_issues="${usage_issues}  - SEVERITY=WARN TYPE=agent_dormant COUNT=${agents_dormant} AGENTS=${agent_dormant_list% }\n"
+  else
+    usage_issues="${usage_issues}  - SEVERITY=WARN TYPE=agent_dormant COUNT=${agents_dormant} MSG=agents not invoked in ${window_days}+ days (advisory; use --verbose to list)\n"
   fi
 fi
 

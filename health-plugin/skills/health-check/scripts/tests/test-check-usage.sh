@@ -34,6 +34,10 @@ tool_event() {   # $1 = tool name
 chat_event() {
   jq -nc '{type:"assistant",message:{content:[{type:"text",text:"hello"}]}}'
 }
+# Emit one assistant-event JSONL line containing an Agent tool_use.
+agent_event() {  # $1 = subagent_type token (may be namespaced, e.g. plug:agent)
+  jq -nc --arg s "$1" '{type:"assistant",message:{content:[{type:"tool_use",name:"Agent",input:{subagent_type:$s}}]}}'
+}
 
 make_home() { mkdir -p "$1/.claude/projects/proj"; }
 make_skills() {  # $1 = skills root, remaining = skill dir names
@@ -42,6 +46,14 @@ make_skills() {  # $1 = skills root, remaining = skill dir names
   for s in "$@"; do
     mkdir -p "${root}/plug-plugin/skills/${s}"
     printf -- '---\nname: %s\n---\nbody\n' "$s" > "${root}/plug-plugin/skills/${s}/SKILL.md"
+  done
+}
+make_agents() {  # $1 = inventory root, remaining = agent names (file <name>.md)
+  local root="$1"; shift
+  local a
+  mkdir -p "${root}/plug-plugin/agents"
+  for a in "$@"; do
+    printf -- '---\nname: %s\n---\nbody\n' "$a" > "${root}/plug-plugin/agents/${a}.md"
   done
 }
 
@@ -122,5 +134,37 @@ echo "$out5" | grep -q "^TRANSCRIPTS_SCANNED=2$" || fail "Case5 expected TRANSCR
 echo "$out5" | grep -q "worktrees" && fail "Case5 must not leak a worktrees path:\n$out5"
 pass "worktree clones pruned from transcript scan"
 rm -rf "$home5" "$skills5"
+
+# -----------------------------------------------------------------------------
+# Case 6: agent never-fired + dormant classification from namespaced subagent_type
+#   security-audit: fired recently (active)
+#   git-ops:        fired long ago (dormant)
+#   ci:             never fired
+# Guards the AGENT-track extension: subagent_type is namespaced in transcripts
+# (plug:agent) and must normalize to the agent's filename basename in inventory.
+# -----------------------------------------------------------------------------
+home6="$(mktemp -d)"; make_home "$home6"
+inv6="$(mktemp -d)"; make_skills "$inv6" health-check; make_agents "$inv6" security-audit git-ops ci
+
+recent6="$home6/.claude/projects/proj/recent.jsonl"
+old6="$home6/.claude/projects/proj/old.jsonl"
+{ agent_event "agents-plugin:security-audit"; tool_event "Bash"; } > "$recent6"
+agent_event "git-plugin:git-ops" > "$old6"
+old6_ts=$(( $(date +%s) - 60*86400 ))
+touch -d "@${old6_ts}" "$old6" 2>/dev/null || touch -t "$(date -r "$old6_ts" +%Y%m%d%H%M 2>/dev/null || echo 202001010000)" "$old6"
+
+out6="$(bash "$check_script" --home-dir "$home6" --skills-dir "$inv6" --project-dir /tmp --window-days 30)"
+echo "$out6" | grep -q "^AGENTS_ENABLED=3$" || fail "Case6 expected AGENTS_ENABLED=3:\n$out6"
+echo "$out6" | grep -q "^AGENTS_FIRED=2$" || fail "Case6 expected AGENTS_FIRED=2:\n$out6"
+echo "$out6" | grep -q "^AGENTS_NEVER_FIRED=1$" || fail "Case6 expected AGENTS_NEVER_FIRED=1 (ci):\n$out6"
+echo "$out6" | grep -q "^AGENTS_DORMANT=1$" || fail "Case6 expected AGENTS_DORMANT=1 (git-ops):\n$out6"
+pass "agent never-fired + dormant classified from namespaced subagent_type"
+
+# Case 6b: --verbose lists the offending agent names
+out6b="$(bash "$check_script" --home-dir "$home6" --skills-dir "$inv6" --project-dir /tmp --window-days 30 --verbose)"
+echo "$out6b" | grep -q "TYPE=agent_never_fired .*AGENTS=.*ci" || fail "Case6b expected ci in verbose agent_never_fired list:\n$out6b"
+echo "$out6b" | grep -q "TYPE=agent_dormant .*AGENTS=.*git-ops" || fail "Case6b expected git-ops in verbose agent_dormant list:\n$out6b"
+pass "--verbose lists offending agent names"
+rm -rf "$home6" "$inv6"
 
 echo "ALL TESTS PASSED"
