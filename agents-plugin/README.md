@@ -14,7 +14,7 @@ See [`docs/flow.md`](docs/flow.md) for a diagram of how `attribute-router` deleg
 | `review` | opus | Code review, commit review, PR review | Teammate preferred — parallel security/performance/correctness review |
 | `debug` | opus | Diagnose and fix bugs | Either — parallel investigation as teammate, single fix as subagent |
 | `docs` | haiku | Generate documentation | Teammate preferred — parallel doc generation across modules |
-| `ci` | haiku | Pipeline configuration | Either — parallel setup as teammate, single workflow as subagent |
+| `ci` | opus | Full CI/CD scaffold (multi-workflow buildout) | Subagent — delegate a from-scratch pipeline; edit single workflows inline |
 | `security-audit` | opus | Vulnerability scanning, OWASP analysis | Teammate preferred — continuous audit alongside development |
 | `refactor` | opus | Code restructuring, SOLID improvements | Either — parallel refactoring with file-locking as teammate |
 | `dependency-audit` | haiku | CVE scanning, outdated packages, licenses | Subagent preferred — quick focused audit |
@@ -35,7 +35,7 @@ Each agent includes a `## Team Configuration` section documenting when to use it
 
 | Best as Teammate | Best as Subagent | Either |
 |------------------|------------------|--------|
-| review, security-audit, research, docs | dependency-audit, performance, search-replace | test, debug, ci, refactor |
+| review, security-audit, research, docs | dependency-audit, performance, search-replace, ci | test, debug, refactor |
 
 ## Design Principles
 
@@ -50,8 +50,8 @@ Each agent includes a `## Team Configuration` section documenting when to use it
 
 | Model | When Used | Agents |
 |-------|-----------|--------|
-| haiku | Structured operations, mechanical tasks | test, docs, ci, dependency-audit, search-replace |
-| opus | Deep reasoning, complex analysis, code restructuring | review, debug, security-audit, performance, refactor, research |
+| haiku | Structured operations, mechanical tasks | test, docs, dependency-audit, search-replace |
+| opus | Deep reasoning, complex analysis, code restructuring | review, debug, security-audit, performance, refactor, research, ci |
 
 ## Usage
 
@@ -64,7 +64,7 @@ Agents are invoked automatically based on task context or explicitly via agent r
 "Review this PR" → review agent
 "This endpoint is returning 500" → debug agent
 "Document the API" → docs agent
-"Set up GitHub Actions" → ci agent
+"Scaffold a full CI/CD pipeline from scratch" → ci agent
 "Check for security vulnerabilities" → security-audit agent
 "Clean up this class, it's too complex" → refactor agent
 "Check for vulnerable dependencies" → dependency-audit agent
