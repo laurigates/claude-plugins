@@ -20,7 +20,7 @@
   "finops-plugin": "1.3.7",
   "git-plugin": "2.44.1",
   "github-actions-plugin": "1.8.0",
-  "health-plugin": "1.13.0",
+  "health-plugin": "1.14.0",
   "home-assistant-plugin": "1.3.3",
   "hooks-plugin": "2.4.6",
   "kubernetes-plugin": "1.7.8",
