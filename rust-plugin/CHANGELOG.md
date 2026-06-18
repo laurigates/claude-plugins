@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.3.4...rust-plugin-v1.4.0) (2026-06-18)
+
+
+### Features
+
+* **scripts:** context-command execution harness + sweep 122 fragile Context commands ([#1690](https://github.com/laurigates/claude-plugins/issues/1690)) ([609342f](https://github.com/laurigates/claude-plugins/commit/609342f2c5b6b5f2ee555f83dbac1f5f3dd1f93d))
+
 ## [1.3.4](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.3.3...rust-plugin-v1.3.4) (2026-05-14)
 
 
