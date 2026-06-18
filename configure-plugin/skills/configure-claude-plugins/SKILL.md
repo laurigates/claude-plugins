@@ -1,6 +1,6 @@
 ---
 created: 2026-01-23
-modified: 2026-06-10
+modified: 2026-06-18
 reviewed: 2026-06-10
 description: "Claude plugins marketplace setup: .claude/settings.json, GitHub Actions, plugin pinning. Use when onboarding to claude-plugins, setting up claude.yml, pinning plugins, or overriding global plugins."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash(mkdir *), Bash(test *), Bash(ls *), Bash(git remote *), Bash(gh api *), Bash(jq *), AskUserQuestion, TodoWrite
@@ -26,7 +26,7 @@ Configure a project to use the `laurigates/claude-plugins` Claude Code plugin ma
 ## Context
 
 - Settings file exists: !`find . -maxdepth 3 -name 'settings.json' -path '*/.claude/*'`
-- Workflows: !`find .github/workflows -maxdepth 1 -name 'claude*.yml'`
+- Workflows: !`find . -path '*/.github/workflows/*' -maxdepth 3 -name 'claude*.yml'`
 - Git remotes: !`git remote -v`
 - Project type indicators: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' -o -name 'Dockerfile' -o -name 'justfile' -o -name 'Justfile' \)`
 - ESP/embedded indicators: !`find . -maxdepth 2 \( -name 'idf_component.yml' -o -name 'sdkconfig' -o -name 'CMakeLists.txt' \)`

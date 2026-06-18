@@ -4,7 +4,7 @@ args: "[repo|org:orgname]"
 allowed-tools: Bash(gh api *), Bash(gh repo *), Bash(bash *), Read, TodoWrite
 argument-hint: Repo (owner/name), org:orgname for org-wide, or empty for current repo
 created: 2025-01-30
-modified: 2026-04-25
+modified: 2026-06-18
 reviewed: 2026-04-25
 name: finops-caches
 ---
@@ -24,7 +24,7 @@ Analyze GitHub Actions cache usage - size breakdown, cache key patterns, branch 
 
 ## Context
 
-- Current repo URL: !`git remote get-url origin`
+- Current repo URL: !`git remote -v`
 
 ## Parameters
 

@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-04-25
+modified: 2026-06-18
 reviewed: 2026-04-25
 allowed-tools: Bash(gh pr checks *), Bash(gh pr view *), Bash(gh run view *), Bash(gh run list *), Bash(gh repo view *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(pre-commit *), Bash(npm run *), Bash(uv run *), Read, Edit, Grep, Glob, TodoWrite, mcp__github__pull_request_read
 args: "[pr-number] [--auto-fix] [--push]"
@@ -21,7 +21,7 @@ name: git-fix-pr
 
 ## Context
 
-- Repo: !`git remote get-url origin`
+- Repo: !`git remote -v`
 - Current branch: !`git branch --show-current`
 - Git status: !`git status --porcelain=v2 --branch`
 - Staged changes: !`git diff --cached --numstat`

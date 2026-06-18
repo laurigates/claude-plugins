@@ -5,7 +5,7 @@ args: "<sha> [--topic <slug>]"
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git show *), Bash(git remote *), Bash(git fetch *), Bash(git switch *), Bash(git checkout *), Bash(git cherry-pick *), Bash(git reset *), Bash(git commit *), Bash(git push *), Bash(git stash *), Bash(git rev-list *), Bash(git rev-parse *), Bash(git branch *), Bash(git cat-file *), Bash(git patch-id *), Bash(gh pr *), Bash(gh repo *), Bash(bash *), Bash(uv *), Bash(pytest *), Bash(ruff *), Bash(python3 *), Read, Edit, Write, Grep, Glob, TodoWrite
 argument-hint: "<sha-to-send-upstream>"
 created: 2026-04-29
-modified: 2026-05-09
+modified: 2026-06-18
 reviewed: 2026-04-29
 ---
 
@@ -59,7 +59,7 @@ Add `.claude/*.local.md` to `.gitignore`.
 - Current branch: !`git branch --show-current`
 - Working tree: !`git status --porcelain=v2 --branch`
 - Remotes: !`git remote -v`
-- Config file: !`find .claude -maxdepth 1 -name 'upstream-pr.local.md'`
+- Config file: !`find . -path '*/.claude/*' -maxdepth 2 -name 'upstream-pr.local.md'`
 
 ## Parameters
 

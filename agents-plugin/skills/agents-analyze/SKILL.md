@@ -38,7 +38,7 @@ Analyze the plugin collection to identify where sub-agents would improve workflo
 ## Context
 
 - Plugin directories: !`find . -maxdepth 1 -type d -name '*-plugin'`
-- Existing agents: !`find agents-plugin/agents -maxdepth 1 -name '*.md'`
+- Existing agents: !`find . -path '*/agents-plugin/agents/*' -maxdepth 3 -name '*.md'`
 - Skills: !`find . -path '*/skills/*/skill.md'`
 - Skills (user-invocable): !`find . -path '*/skills/*/SKILL.md' -not -path './agents-plugin/*'`
 

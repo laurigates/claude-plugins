@@ -1,6 +1,6 @@
 ---
 created: 2026-01-15
-modified: 2026-05-29
+modified: 2026-06-18
 reviewed: 2026-05-29
 description: Derive PRDs, ADRs, PRPs from git history, docs, and codebase. Use when onboarding a project to blueprint, generating a PRD or ADRs retroactively, or extracting features from conventional commits.
 args: "[--quick] [--since DATE]"
@@ -28,7 +28,7 @@ Retroactively generate Blueprint documentation (PRDs, ADRs, PRPs) from an existi
 ## Context
 
 - Git repository: !`git rev-parse --git-dir`
-- Blueprint initialized: !`find docs/blueprint -maxdepth 1 -name 'manifest.json' -type f`
+- Blueprint initialized: !`find . -path '*/docs/blueprint/*' -maxdepth 3 -name 'manifest.json' -type f`
 - Total commits: !`git rev-list --count HEAD`
 - First commit: !`git log --reverse --format=%ai --max-count=1`
 - Latest commit: !`git log --max-count=1 --format=%ai`

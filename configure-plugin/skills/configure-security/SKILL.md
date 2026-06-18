@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-06-10
+modified: 2026-06-18
 reviewed: 2026-06-10
 description: "Security scanning: dependency audits, SAST, secrets detection. Use when setting up Dependabot, CodeQL, or TruffleHog in CI, or creating a SECURITY.md policy."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -30,7 +30,7 @@ Check and configure security scanning tools for dependency audits, SAST, and sec
 - Pre-commit config: !`find . -maxdepth 1 -name \'.pre-commit-config.yaml\'`
 - Workflows dir: !`find . -maxdepth 1 -type d -name \'.github/workflows\'`
 - Dependabot config: !`find . -maxdepth 1 -name \'.github/dependabot.yml\'`
-- CodeQL workflow: !`find .github/workflows -maxdepth 1 -name 'codeql*'`
+- CodeQL workflow: !`find . -path '*/.github/workflows/*' -maxdepth 3 -name 'codeql*'`
 - Security policy: !`find . -maxdepth 1 -name \'SECURITY.md\'`
 **Security scanning layers:**
 1. **Dependency auditing** - Check for known vulnerabilities in dependencies

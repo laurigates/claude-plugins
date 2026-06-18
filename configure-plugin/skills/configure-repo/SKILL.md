@@ -5,8 +5,8 @@ allowed-tools: Glob, Grep, Read, Write, Edit, Bash(git add *), Bash(git status *
 args: "[--check-only] [--skip-health] [--skip-migrations]"
 argument-hint: "[--check-only] [--skip-health] [--skip-migrations]"
 created: 2026-04-14
-modified: 2026-04-14
-reviewed: 2026-06-17
+modified: 2026-06-18
+reviewed: 2026-06-18
 ---
 
 # /configure:repo
@@ -26,9 +26,9 @@ End-to-end driver that brings any repo's Claude Code configuration to a healthy 
 
 Detect current state and project stack:
 
-- Existing settings: !`find .claude -maxdepth 1 -name 'settings.json' -type f`
+- Existing settings: !`find . -path '*/.claude/*' -maxdepth 2 -name 'settings.json' -type f`
 - Install script: !`find . -name 'install_pkgs.sh' -path '*/scripts/*'`
-- Workflows: !`find .github/workflows -maxdepth 1 -name 'claude*.yml'`
+- Workflows: !`find . -path '*/.github/workflows/*' -maxdepth 3 -name 'claude*.yml'`
 - Project files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' -o -name 'justfile' -o -name 'Justfile' \)`
 - ESP indicators: !`find . -maxdepth 2 \( -name 'idf_component.yml' -o -name 'sdkconfig' \)`
 - Pre-commit config: !`find . -maxdepth 1 -name '.pre-commit-config.yaml'`

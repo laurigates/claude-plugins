@@ -1,6 +1,6 @@
 ---
 created: 2026-04-24
-modified: 2026-05-09
+modified: 2026-06-18
 reviewed: 2026-04-24
 description: "Audit skill tree for overlap, split-pressure, and consolidation candidates. Use when finding confusing skill clusters or surfacing REFERENCE.md extraction candidates."
 allowed-tools: Bash(python3 *), Read, TodoWrite
@@ -26,10 +26,10 @@ Complements the other skill audits — this skill assumes frontmatter hygiene is
 
 ## Context
 
-- Analyzer: !`find scripts -maxdepth 1 -name audit-skill-structure.py -type f`
-- Prior output: !`find tmp/skill-audit -maxdepth 1 -type f`
-- Compliance pre-check: !`find scripts -maxdepth 1 -name plugin-compliance-check.sh -type f`
-- Description pre-check: !`find scripts -maxdepth 1 -name audit-skill-descriptions.py -type f`
+- Analyzer: !`find . -path '*/scripts/*' -maxdepth 3 -name audit-skill-structure.py -type f`
+- Prior output: !`find . -path '*/tmp/skill-audit/*' -maxdepth 3 -type f`
+- Compliance pre-check: !`find . -path '*/scripts/*' -maxdepth 3 -name plugin-compliance-check.sh -type f`
+- Description pre-check: !`find . -path '*/scripts/*' -maxdepth 3 -name audit-skill-descriptions.py -type f`
 
 ## Parameters
 

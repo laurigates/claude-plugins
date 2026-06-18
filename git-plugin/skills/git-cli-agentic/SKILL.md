@@ -4,7 +4,7 @@ description: Git commands with porcelain and machine-readable output for agent w
 user-invocable: false
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git remote *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git restore *), Read
 created: 2025-01-16
-modified: 2026-05-30
+modified: 2026-06-18
 reviewed: 2026-04-25
 ---
 
@@ -306,7 +306,7 @@ Use `2>/dev/null` to suppress errors in context expressions (do NOT use `||` fal
 ```markdown
 - Git status: !`git status --porcelain=v2 --branch`
 - Current branch: !`git branch --show-current`
-- Remote URL: !`git remote get-url origin`
+- Remote URL: !`git remote -v`
 ```
 
 ## Combining with GH CLI

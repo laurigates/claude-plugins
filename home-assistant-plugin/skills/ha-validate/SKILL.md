@@ -4,7 +4,7 @@ args: "[path]"
 allowed-tools: Bash(python3 *), Bash(docker exec *), Bash(ha *), Read, Grep, Glob
 argument-hint: "Optional path to config directory (defaults to current directory)"
 created: 2025-02-01
-modified: 2026-05-09
+modified: 2026-06-18
 reviewed: 2026-04-25
 name: ha-validate
 ---
@@ -25,7 +25,7 @@ Validate Home Assistant configuration files for YAML syntax errors and common is
 ## Context
 
 - Config path: `{{ path or '.' }}`
-- YAML files: !`find {{ path or '.' }} -name "*.yaml" -type f`
+- YAML files: !`find . -name "*.yaml" -type f`
 
 ## Validation Steps
 

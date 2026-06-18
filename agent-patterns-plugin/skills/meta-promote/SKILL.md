@@ -1,6 +1,6 @@
 ---
 created: 2026-05-09
-modified: 2026-05-09
+modified: 2026-06-18
 reviewed: 2026-05-09
 allowed-tools: Glob, Read, Edit, Write, Bash(git status *), Bash(git diff *), Bash(git mv *), Bash(diff *), Bash(rm *), AskUserQuestion, TodoWrite
 model: opus
@@ -23,7 +23,7 @@ name: meta-promote
 ## Context
 
 - Current directory: !`pwd`
-- Local `.claude/` tree: !`find .claude -maxdepth 3 -type f -name '*.md' -not -path '*/node_modules/*'`
+- Local `.claude/` tree: !`find . -path '*/.claude/*' -maxdepth 4 -type f -name '*.md' -not -path '*/node_modules/*' -not -path '*/.claude/worktrees/*'`
 - Child `.claude/` trees (one level down): !`find . -mindepth 2 -maxdepth 4 -type d -name '.claude' -not -path '*/node_modules/*'`
 
 ## Parameters

@@ -1,6 +1,6 @@
 ---
 created: 2026-01-30
-modified: 2026-05-22
+modified: 2026-06-18
 reviewed: 2026-05-22
 description: Derive Claude rules from git commit history. Use when extracting implicit decisions from commits or codifying code-style, testing, and API-design rules.
 args: "[--since DATE] [--scope SCOPE]"
@@ -29,11 +29,11 @@ Extract project decisions from git commit history and codify them as Claude rule
 ## Context
 
 - Git repository: !`git rev-parse --git-dir`
-- Blueprint initialized: !`find docs/blueprint -maxdepth 1 -name 'manifest.json' -type f`
+- Blueprint initialized: !`find . -path '*/docs/blueprint/*' -maxdepth 3 -name 'manifest.json' -type f`
 - Total commits: !`git rev-list --count HEAD`
 - Conventional commits %: !`git log --format="%s"`
-- Existing rules in default location: !`find .claude/rules -maxdepth 1 -name "*.md" -type f`
-- Existing rules in blueprint subdir: !`find .claude/rules/blueprint -maxdepth 1 -name "*.md" -type f`
+- Existing rules in default location: !`find . -path '*/.claude/rules/*' -maxdepth 3 -name "*.md" -type f`
+- Existing rules in blueprint subdir: !`find . -path '*/.claude/rules/blueprint/*' -maxdepth 4 -name "*.md" -type f`
 
 ## Parameters
 

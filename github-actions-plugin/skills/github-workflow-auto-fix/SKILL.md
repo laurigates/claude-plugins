@@ -6,7 +6,7 @@ args: "[--setup] [--reusable] [--caller] [--workflows <names>] [--dry-run]"
 argument-hint: --setup for single-repo inline, --reusable for a workflow_call template
 disable-model-invocation: true
 created: 2026-02-18
-modified: 2026-05-29
+modified: 2026-06-18
 reviewed: 2026-05-29
 ---
 
@@ -31,10 +31,10 @@ Two shapes, selected by flag:
 
 ## Context
 
-- Inline workflow exists: !`find .github/workflows -maxdepth 1 -name 'github-workflow-auto-fix.yml'`
-- Reusable workflow exists: !`find .github/workflows -maxdepth 1 -name 'reusable-ci-autofix.yml' -type f`
-- Caller workflow exists: !`find .github/workflows -maxdepth 1 -name 'auto-fix.yml' -type f`
-- Current workflows: !`find .github/workflows -maxdepth 1 -name '*.yml' -type f`
+- Inline workflow exists: !`find . -path '*/.github/workflows/*' -maxdepth 3 -name 'github-workflow-auto-fix.yml'`
+- Reusable workflow exists: !`find . -path '*/.github/workflows/*' -maxdepth 3 -name 'reusable-ci-autofix.yml' -type f`
+- Caller workflow exists: !`find . -path '*/.github/workflows/*' -maxdepth 3 -name 'auto-fix.yml' -type f`
+- Current workflows: !`find . -path '*/.github/workflows/*' -maxdepth 3 -name '*.yml' -type f`
 - Claude secrets configured: !`gh secret list`
 
 ## Parameters

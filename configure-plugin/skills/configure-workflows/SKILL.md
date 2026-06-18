@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-06-03
+modified: 2026-06-18
 reviewed: 2026-06-03
 description: "GitHub Actions CI/CD workflows for container builds, tests, releases. Use when updating outdated action versions, adding multi-platform builds, or auditing workflows."
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -26,7 +26,7 @@ Check and configure GitHub Actions CI/CD workflows against project standards.
 ## Context
 
 - Workflows dir: !`find . -maxdepth 1 -type d -name \'.github/workflows\'`
-- Workflow files: !`find .github/workflows -maxdepth 1 \( -name '*.yml' -o -name '*.yaml' \)`
+- Workflow files: !`find . -path '*/.github/workflows/*' -maxdepth 3 \( -name '*.yml' -o -name '*.yaml' \)`
 - Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \)`
 - Dockerfile: !`find . -maxdepth 1 -name 'Dockerfile*'`
 - Release-please config: !`find . -maxdepth 1 -name \'release-please-config.json\'`

@@ -1,6 +1,6 @@
 ---
 created: 2026-03-19
-modified: 2026-05-09
+modified: 2026-06-18
 reviewed: 2026-04-25
 name: git-issue-hierarchy
 description: "Manage GitHub sub-issues and dependencies (blocked_by/blocking). Use when breaking issues into sub-tasks, checking progress, or viewing a dependency graph."
@@ -21,7 +21,7 @@ allowed-tools: Bash(gh api *), Bash(gh issue *), Bash(git remote *), Read, Grep,
 
 ## Context
 
-- Repo: !`git remote get-url origin`
+- Repo: !`git remote -v`
 - Parent issue: (parsed from arguments)
 
 ## Parameters

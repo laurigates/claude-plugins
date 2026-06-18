@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-03-01
+modified: 2026-06-18
 reviewed: 2026-02-14
 name: blueprint-development
 description: Generate project-specific rules from PRDs for Blueprint Development. Use when generating architecture, testing, or quality rules from requirements documents.
@@ -25,10 +25,10 @@ For detailed rule templates, command templates, and generation guidelines, see [
 
 ## Context
 
-- Blueprint initialized: !`find docs/blueprint -maxdepth 1 -name 'manifest.json' -type f`
-- PRDs present: !`find docs/prds -name "*.md" -type f`
-- Rules directory: !`find .claude -maxdepth 1 -name 'rules' -type d`
-- Existing rules: !`find .claude/rules -maxdepth 1 -name "*.md"`
+- Blueprint initialized: !`find . -path '*/docs/blueprint/*' -maxdepth 3 -name 'manifest.json' -type f`
+- PRDs present: !`find . -path '*/docs/prds/*' -name "*.md" -type f`
+- Rules directory: !`find . -path '*/.claude/rules' -maxdepth 2 -type d`
+- Existing rules: !`find . -path '*/.claude/rules/*' -maxdepth 3 -name "*.md"`
 - Project type: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) -type f -print -quit`
 
 ## Execution
