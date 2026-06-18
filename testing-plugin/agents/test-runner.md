@@ -1,6 +1,6 @@
 ---
 name: test-runner
-model: haiku
+model: opus
 color: "#4CAF50"
 description: |
   Run tests and report results. Detects the project's test framework, executes tests with
@@ -8,8 +8,8 @@ description: |
 tools: Glob, Grep, Read, Bash(npm test *), Bash(npm run test *), Bash(npx vitest *), Bash(npx jest *), Bash(yarn test *), Bash(bun test *), Bash(pytest *), Bash(python -m pytest *), Bash(cargo test *), Bash(go test *), Bash(just *), TodoWrite
 maxTurns: 12
 created: 2026-02-12
-modified: 2026-05-07
-reviewed: 2026-03-09
+modified: 2026-06-18
+reviewed: 2026-06-18
 ---
 
 # Test Runner Agent

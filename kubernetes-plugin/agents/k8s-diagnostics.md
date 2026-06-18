@@ -1,6 +1,6 @@
 ---
 name: k8s-diagnostics
-model: haiku
+model: opus
 color: "#326CE5"
 description: Kubernetes cluster diagnostics. Investigates pod failures, analyzes logs, checks resource status, and troubleshoots deployments. Use when debugging Kubernetes issues.
 tools: Glob, Grep, LS, Read, Bash(kubectl *), Bash(helm *), Bash(kustomize *), Bash(git status *), Bash(git diff *), TodoWrite
@@ -9,8 +9,8 @@ skills:
   - kubernetes-debugging
 maxTurns: 20
 created: 2026-01-24
-modified: 2026-05-07
-reviewed: 2026-03-09
+modified: 2026-06-18
+reviewed: 2026-06-18
 ---
 
 # Kubernetes Diagnostics Agent

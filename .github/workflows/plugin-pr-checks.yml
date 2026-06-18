@@ -88,6 +88,15 @@ jobs:
         if: contains(steps.changed.outputs.plugins, 'agent-patterns-plugin')
         run: bash scripts/check-agent-failure-contract.sh
 
+      - name: Self-test the agent-model guard
+        # Whole-repo invariant (every plugin agent must run on opus). Runs
+        # unconditionally like the docs-index check below — the lint is cheap
+        # and the self-test proves the guard before it gates the tree.
+        run: bash scripts/tests/test-check-agent-model.sh
+
+      - name: Check every plugin agent runs on opus
+        run: bash scripts/check-agent-model.sh
+
       - name: Check version-pin coverage (version-pinning.md)
         if: steps.changed.outputs.skill_count != '0'
         run: bash scripts/check-version-pin-coverage.sh --strict

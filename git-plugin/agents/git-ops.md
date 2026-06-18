@@ -1,6 +1,6 @@
 ---
 name: git-ops
-model: haiku
+model: opus
 color: "#F05032"
 description: |
   Specialized agent for complex git write operations. Handles merge conflicts, rebases, cherry-picks,
@@ -12,8 +12,8 @@ skills:
   - git-commit
 maxTurns: 20
 created: 2026-01-24
-modified: 2026-06-05
-reviewed: 2026-06-05
+modified: 2026-06-18
+reviewed: 2026-06-18
 ---
 
 # Git Ops Agent

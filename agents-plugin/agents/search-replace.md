@@ -1,13 +1,13 @@
 ---
 name: search-replace
-model: haiku
+model: opus
 color: "#F59E0B"
 description: Cross-platform search and replace across codebases using built-in tools. No sed, no shell commands, no permission prompts. Use when replacing text patterns across multiple files.
 tools: Glob, Grep, LS, Read, Edit, Write, TodoWrite
 maxTurns: 15
 created: 2026-03-11
-modified: 2026-05-07
-reviewed: 2026-03-11
+modified: 2026-06-18
+reviewed: 2026-06-18
 ---
 
 # Search & Replace Agent
