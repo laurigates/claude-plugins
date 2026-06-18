@@ -10,7 +10,7 @@ Given an audit's `links` section (broken targets + ambiguous collisions), apply 
 
 These have explicit rule-table entries and are already applied by the deterministic fixer before you start:
 
-- `[[AnsibleFVH]]` → `[[Ansible]]` (FVH/z/Ansible.md is canonical)
+- `[[OldTopic]]` → `[[Topic]]` (work/z/Topic.md is canonical)
 - `[[Development MOC]]` → `[[Development Workflows and Tools MOC]]` (renamed)
 - `[[Kanban/X]]` → `[[X]]` when `X` is a unique basename
 
@@ -55,7 +55,7 @@ Then act per tier:
 
 Report these without editing:
 
-- **Cross-namespace ambiguity** — e.g. `[[Docker]]` when both `Zettelkasten/Docker.md` and `FVH/z/Docker.md` exist. User picks canonical.
+- **Cross-namespace ambiguity** — e.g. `[[Docker]]` when both `Zettelkasten/Docker.md` and `work/z/Docker.md` exist. User picks canonical.
 - **Broken targets with <3 references** — low leverage, high risk of wrong guess. List them under "deferred".
 - **Inline-tag syntax broken targets** (handled by the `skip` tier). Suggest stripping the brackets rather than linking anywhere.
 

@@ -1,6 +1,6 @@
 """Frontmatter & tag analyzers.
 
-Detects the pain points found by the LakuVault audit:
+Detects the pain points found by an Obsidian vault audit:
   * bare placeholder tags (``📝``, ``🌱``, ``📝/🌱``)
   * legacy ``id:`` fields
   * ``null`` tag values
@@ -8,7 +8,7 @@ Detects the pain points found by the LakuVault audit:
   * over/under-tagging
   * taxonomy duplicates (e.g. ``🔍/security`` vs ``🔒/security``)
   * Templater leakage (``<% tp.file.cursor(1) %>``, ``{{title}}``)
-  * FVH notes missing ``context: fvh``
+  * work-namespace notes missing ``context: <value>``
   * corrupted emoji bytes (``\\ufffd``)
 """
 
@@ -18,6 +18,7 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from vault_agent.config import DEFAULT_CONFIG, VaultConfig
 from vault_agent.analyzers.vault_index import Note, VaultIndex
 
 # Tag value treated as a no-op placeholder when it appears alone (no /subcategory).
@@ -63,7 +64,7 @@ class FrontmatterReport:
     notes_over_tagged: list[Path] = field(default_factory=list)  # > 5 tags
     notes_with_templater_leak: list[Path] = field(default_factory=list)
     notes_with_corrupt_emoji: list[Path] = field(default_factory=list)
-    fvh_notes_missing_context: list[Path] = field(default_factory=list)
+    ns_notes_missing_context: list[Path] = field(default_factory=list)
     # Tag string → count of notes using it (across whole vault)
     tag_frequency: dict[str, int] = field(default_factory=dict)
     # Candidate duplicate tag groups: canonical → variants
@@ -86,17 +87,17 @@ class FrontmatterReport:
             "notes_with_corrupt_emoji": [
                 str(p) for p in self.notes_with_corrupt_emoji
             ],
-            "fvh_notes_missing_context": [
-                str(p) for p in self.fvh_notes_missing_context
+            "ns_notes_missing_context": [
+                str(p) for p in self.ns_notes_missing_context
             ],
             "tag_frequency": self.tag_frequency,
             "tag_duplicate_candidates": self.tag_duplicate_candidates,
         }
 
 
-def _is_fvh_note(note: Note) -> bool:
-    """A note lives under FVH/ if its relative path starts with that segment."""
-    return note.rel_path.parts and note.rel_path.parts[0] == "FVH"
+def _is_work_ns_note(note: Note, config: VaultConfig) -> bool:
+    """A note lives in the work namespace if its first path part is the namespace root."""
+    return bool(note.rel_path.parts) and note.rel_path.parts[0] == config.namespace_root
 
 
 def _normalize_for_dupe_detection(tag: str) -> str:
@@ -109,7 +110,9 @@ def _normalize_for_dupe_detection(tag: str) -> str:
     return lower
 
 
-def analyze_frontmatter(index: VaultIndex) -> FrontmatterReport:
+def analyze_frontmatter(
+    index: VaultIndex, config: VaultConfig = DEFAULT_CONFIG
+) -> FrontmatterReport:
     """Run every frontmatter/tag check over the index in one pass."""
     report = FrontmatterReport(total_notes=len(index.notes))
     dupe_groups: dict[str, set[str]] = {}
@@ -125,9 +128,9 @@ def analyze_frontmatter(index: VaultIndex) -> FrontmatterReport:
         if "id" in fm:
             report.notes_with_legacy_id.append(note.path)
 
-        # FVH notes: require context: fvh
-        if _is_fvh_note(note) and fm.get("context") != "fvh":
-            report.fvh_notes_missing_context.append(note.path)
+        # Work-namespace notes: require the configured context value.
+        if _is_work_ns_note(note, config) and fm.get("context") != config.context_value:
+            report.ns_notes_missing_context.append(note.path)
 
         # Tags
         tags = note.tags

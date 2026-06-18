@@ -5,7 +5,7 @@ Five equally-weighted sub-scores (each 0–20):
   * tags        — % of notes with clean tags (no bare placeholder, no legacy id:)
   * links       — 1 − (broken_links / total_links)
   * orphans     — 1 − (meaningful_orphans / total_meaningful_notes)
-  * stubs       — % of FVH/z files classified as CLEAN_REDIRECT or FVH_ORIGINAL
+  * stubs       — % of work-namespace files classified as CLEAN_REDIRECT or NS_ORIGINAL
   * mocs        — 1 − (unlinked_category_notes / total_category_notes)
 
 Missing sub-scores contribute 0. An empty vault (0 notes) scores 100.
@@ -62,7 +62,7 @@ def compute_health(
     link_score = _ratio_score(links.broken_count, links.total_wikilinks)
     orphan_score = _ratio_score(len(graph.meaningful_orphans), total_notes)
 
-    # Stubs: CLEAN_REDIRECT or FVH_ORIGINAL are "good". BROKEN_REDIRECT and
+    # Stubs: CLEAN_REDIRECT or NS_ORIGINAL are "good". BROKEN_REDIRECT and
     # STALE_DUPLICATE count against the score.
     bad_stubs = sum(
         1

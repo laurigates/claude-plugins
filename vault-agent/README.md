@@ -63,10 +63,43 @@ Skill prompts live in [`../obsidian-plugin/skills/vault-*`](../obsidian-plugin/s
 | `health` | 0–100 health score | No |
 | `report` | Formatted audit | No |
 | `lint` | Bare 📝/🌱 tags, legacy `id:`, Templater leakage, `🗺️ → 📝/moc`, null tags | No |
-| `links` | Rule-table rewrites (e.g. `[[AnsibleFVH]] → [[Ansible]]`), `[[Kanban/X]] → [[X]]` | No |
+| `links` | Rule-table rewrites (e.g. `[[OldTopic]] → [[Topic]]`), `[[Kanban/X]] → [[X]]` | No |
 | `stubs` | Rewrite `broken_redirect` stubs; report `stale_duplicate` for user review | Partially — merging requires LLM |
 | `mocs` | Inventory, coverage, missing-MOC candidates | Proposing new MOCs requires LLM |
 | `maintain` | Runs all deterministic modes in one worktree | No for deterministic path |
+
+## Configuration
+
+vault-agent ships generic defaults that work on any Obsidian vault. A vault
+that uses a dedicated "work" namespace subtree, a custom daily-notes layout, or
+a known broken-link rewrite table can override the defaults with a
+`.vault-agent.toml` file in the vault root (or the path named by
+`$VAULT_AGENT_CONFIG`):
+
+```toml
+[vault]
+# Subtree holding redirect stubs (default ["work", "z"] → work/z/)
+work_namespace = ["work", "z"]
+# Frontmatter `context:` value required on work-namespace notes (default "work")
+context_value = "work"
+# Directories whose notes are daily notes — few backlinks expected
+# (default [["Notes"], ["work", "notes"]])
+daily_dirs = [["Notes"], ["work", "notes"]]
+
+# Broken-wikilink rewrite table: old target → canonical target (default empty)
+[vault.broken_link_rewrites]
+OldTopic = "Topic"
+```
+
+| Key | Controls | Default |
+|-----|----------|---------|
+| `work_namespace` | Stub-subtree dir classified by the `stubs` mode | `["work", "z"]` |
+| `context_value` | `context:` value the `lint`/audit expects on namespace notes | `"work"` |
+| `daily_dirs` | Dirs treated as daily notes (expected orphans) | `["Notes"], ["work", "notes"]` |
+| `broken_link_rewrites` | Rule-table rewrites applied by the `links` mode | `{}` (empty) |
+
+Omitted keys keep their default, so a partial config is fine. Without a config
+file, every value falls back to the generic defaults above.
 
 ## Subagent tiers
 
@@ -110,7 +143,7 @@ uv run pytest
 Full audit against a real vault:
 
 ```bash
-uv run vault-agent analyze ~/Documents/LakuVault
+uv run vault-agent analyze ~/Documents/YourVault
 ```
 
 ## Status

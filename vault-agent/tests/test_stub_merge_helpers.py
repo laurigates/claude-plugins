@@ -20,7 +20,7 @@ from vault_agent.fixers.stub_rewriter import (
 )
 
 
-SAMPLE_FVH = textwrap.dedent(
+SAMPLE_WORK = textwrap.dedent(
     """
     ---
     tags:
@@ -33,9 +33,9 @@ SAMPLE_FVH = textwrap.dedent(
 
     Install ArgoCD with helm. Pin the chart version.
 
-    ## FVH-specific notes
+    ## Namespace-specific notes
 
-    On our cluster the ingress host is argocd.forum.fi.
+    On our cluster the ingress host is argocd.internal.example.
 
     ## Troubleshooting
 
@@ -76,9 +76,9 @@ class TestSectionHeadings:
 
 
 class TestUniqueSections:
-    def test_flags_fvh_specific_section(self) -> None:
-        uniq = unique_sections(SAMPLE_FVH, SAMPLE_ZETTEL)
-        assert uniq == ["FVH-specific notes"]
+    def test_flags_namespace_specific_section(self) -> None:
+        uniq = unique_sections(SAMPLE_WORK, SAMPLE_ZETTEL)
+        assert uniq == ["Namespace-specific notes"]
 
     def test_empty_when_full_subset(self) -> None:
         # Source is a strict subset of the destination.
@@ -89,12 +89,12 @@ class TestUniqueSections:
 
 class TestVerifyCanonicalPhrase:
     def test_passes_when_source_phrases_in_destination(self) -> None:
-        assert verify_canonical_phrase_present(SAMPLE_FVH, SAMPLE_ZETTEL) is True
+        assert verify_canonical_phrase_present(SAMPLE_WORK, SAMPLE_ZETTEL) is True
 
     def test_fails_when_destination_has_no_shared_phrase(self) -> None:
-        fvh = "## Installation\n\nInstall via apt-get. Works on Debian."
+        work = "## Installation\n\nInstall via apt-get. Works on Debian."
         zettel = "## Basics\n\nCompletely different topic about Kafka streams."
-        assert verify_canonical_phrase_present(fvh, zettel) is False
+        assert verify_canonical_phrase_present(work, zettel) is False
 
     def test_near_empty_source_passes_vacuously(self) -> None:
         # A 1-word source has no distinguishable phrase; we return True
@@ -117,6 +117,7 @@ class TestBodyDigest:
 
 class TestCanonicalRedirectTemplate:
     def test_renders_basename(self, tmp_path: Path) -> None:
-        rendered = CANONICAL_REDIRECT_TEMPLATE.format(basename="Kafka")
+        rendered = CANONICAL_REDIRECT_TEMPLATE.format(basename="Kafka", context="work")
         assert "[[Zettelkasten/Kafka|Kafka]]" in rendered
         assert "tags: [redirect]" in rendered
+        assert "context: work" in rendered

@@ -3,7 +3,7 @@
 Detects:
   * broken wikilinks (target has no matching ``.md`` anywhere)
   * ambiguous targets (same basename in multiple paths, e.g.
-    ``Zettelkasten/Docker.md`` and ``FVH/z/Docker.md``)
+    ``Zettelkasten/Docker.md`` and ``work/z/Docker.md``)
   * path-qualified links that happen to resolve (e.g. ``[[Kanban/X]]``
     — obsidian resolves these, but they are an anti-pattern in this
     vault because Kanban boards also appear by basename)

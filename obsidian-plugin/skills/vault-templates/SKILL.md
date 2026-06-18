@@ -61,7 +61,7 @@ Use `Edit` with `old_string='\n\n<% tp.file.cursor(1) %>'` and `new_string=''` (
 
 ## Fixing `{{title}}` in daily notes
 
-Before (file `FVH/notes/2025-03-26.md`):
+Before (file `work/notes/2025-03-26.md`):
 ```markdown
 # {{title}}
 
@@ -86,7 +86,7 @@ The templates themselves live in `Templates/` and should contain raw Templater s
 | `Daily.md` | `Notes/YYYY-MM-DD.md` | Quick Links, Today's Focus, Work, Personal, Tomorrow's Prep, Navigation |
 | `MOC.md` | `Zettelkasten/{Subject} MOC.md` | Title heading + sections |
 | `New.md` | general Zettelkasten notes | Frontmatter + body stub |
-| `FVH Daily.md` | `FVH/notes/YYYY-MM-DD.md` | Log, Thoughts, Discoveries, Todo, Recurring reminders |
+| `Work Daily.md` | `work/notes/YYYY-MM-DD.md` | Log, Thoughts, Discoveries, Todo, Recurring reminders |
 
 ## Daily Note Structure Drift
 
@@ -97,9 +97,9 @@ Personal daily notes created before 2025 usually lack `## Navigation` and `## To
 
 Default to #2 unless the user specifically asks for retrofit.
 
-## FVH Daily Note Drift
+## Work Daily Note Drift
 
-7 FVH daily notes contain literal `{{title}}` in the heading — fix these.
+Work-namespace daily notes that contain literal `{{title}}` in the heading — fix these.
 
 ## Safety
 

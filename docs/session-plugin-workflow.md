@@ -7,7 +7,7 @@ landed 2026-06-10 (session-plugin created: generalized `session-spinup` /
 `session-end` orchestrator per D3, single collapsed Stop nudge per D4).
 Remaining: Phase 4 (fast↔slow label wiring via gitops) and the dotfiles-side
 cleanup (remove chezmoi copies of the user-level skills/hooks, add the user's
-FVH `session-plugin.local.md` to the chezmoi source).
+vault-specific `session-plugin.local.md` to the chezmoi source).
 Tracking task: taskwarrior `project:claude-plugins.session-plugin` (172)
 Epic: [#1504](https://github.com/laurigates/claude-plugins/issues/1504) · Phase 1 remediation: [#1503](https://github.com/laurigates/claude-plugins/issues/1503)
 
@@ -79,9 +79,9 @@ Reuse `scripts/plugin-compliance-check.sh`, `scripts/audit-skill-descriptions.py
   skills are blueprint-independent (`init`, `discovery`, `test-loop`,
   `skill-scripts`) vs blueprint-coupled (`continue` ↔ `blueprint-execute`).
 
-### Phase 2 — Generalize + promote `session-spinup` / `session-wrap` → `session-plugin` (de-FVH)
-- Extract FVH/LakuVault specifics (vault path `~/Documents/LakuVault/FVH/notes/`,
-  `## Log`/`## Todo` section targets, `fvh.*` project-naming map, scope-detection
+### Phase 2 — Generalize + promote `session-spinup` / `session-wrap` → `session-plugin` (generalize the journaling backend)
+- Extract vault-specific journaling config (vault path `~/Documents/YourVault/Journal/notes/`,
+  `## Log`/`## Todo` section targets, `<scope>.*` project-naming map, scope-detection
   heuristics) into per-user config via `agent-patterns-plugin:plugin-settings`
   (`.claude/session-plugin.local.md`).
 - Generalize the second destination to an optional **journal/notes** integration
@@ -91,7 +91,7 @@ Reuse `scripts/plugin-compliance-check.sh`, `scripts/audit-skill-descriptions.py
   marketplace.json, release-please-config.json, .release-please-manifest.json,
   docs/PLUGIN-MAP.md).
 - Migrate the two nudge hooks into the plugin.
-- **Write the user's actual FVH config to `.local.md` so nothing breaks for them.**
+- **Write the user's actual vault config to `.local.md` so nothing breaks for them.**
 - Remove the chezmoi `exact_dot_claude/skills/{session-wrap,session-spinup}` copies.
 - Add regression checks (`.claude/rules/regression-testing.md`).
 

@@ -12,7 +12,6 @@ from vault_agent.analyzers.audit import run_audit
 from vault_agent.analyzers.vault_index import scan
 from vault_agent.fixers.link_patcher import (
     BasenameMatch,
-    BROKEN_LINK_REWRITES,
     ConfidenceTier,
     classify_match,
     fuzzy_basename_candidates,
@@ -68,8 +67,8 @@ class TestFuzzyBasenameCandidates:
 
 class TestClassifyMatch:
     def test_auto_when_ratio_above_0_9(self) -> None:
-        candidates = [BasenameMatch("Ansible", 0.95)]
-        assert classify_match("AnsibleFVH", candidates) == ConfidenceTier.AUTO
+        candidates = [BasenameMatch("Topic", 0.95)]
+        assert classify_match("Topc", candidates) == ConfidenceTier.AUTO
 
     def test_confirm_when_between(self) -> None:
         candidates = [BasenameMatch("Kafka", 0.78)]
@@ -106,17 +105,19 @@ class TestProposeRewrites:
 
     def test_skips_rule_table_entries(self, tmp_path: Path) -> None:
         # Build a vault where a rule-table target appears as broken.
-        # Rule table entry "AnsibleFVH" → "Ansible" — create several broken refs.
-        files = {"Zettelkasten/Ansible.md": "# ansible\n"}
+        # Rule table entry "OldTopic" → "Topic" — create several broken refs.
+        rewrites = {"OldTopic": "Topic"}
+        files = {"Zettelkasten/Topic.md": "# topic\n"}
         for i in range(5):
-            files[f"Zettelkasten/Other{i}.md"] = "[[AnsibleFVH]]\n"
+            files[f"Zettelkasten/Other{i}.md"] = "[[OldTopic]]\n"
         vault = _make_vault(tmp_path, files)
         audit = run_audit(vault)
-        proposals = propose_rewrites(audit.links.top_broken(20), audit.index)
+        proposals = propose_rewrites(
+            audit.links.top_broken(20), audit.index, rewrites=rewrites
+        )
         targets = {p.target for p in proposals}
-        assert "AnsibleFVH" not in targets
-        # Assumption: at least one rule-table entry exists to skip.
-        assert "AnsibleFVH" in BROKEN_LINK_REWRITES
+        # The rule-table target is skipped (covered by the deterministic rewrite).
+        assert "OldTopic" not in targets
 
     def test_produces_tier_for_each(self, tmp_path: Path) -> None:
         # Build a vault with at least 3 refs to "Pythn" (close to "Python").

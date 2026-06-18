@@ -16,7 +16,7 @@ allowed-tools: Read, Edit, Grep, Glob
 |---|---|
 | Triaging orphan notes (zero incoming, zero outgoing wikilinks) for archive vs. reconnect | Building a new MOC hub the orphans should link into — use `vault-mocs` |
 | Distinguishing expected orphans (inbox, daily notes) from meaningful ones | Discovering the orphan list itself via the running CLI — use `search-discovery` |
-| Suggesting archival paths for stale isolated Zettelkasten notes | Classifying or consolidating FVH/z redirect stubs — use `vault-stubs` |
+| Suggesting archival paths for stale isolated Zettelkasten notes | Classifying or consolidating work-namespace redirect stubs — use `vault-stubs` |
 
 An "orphan" is a note with no incoming wikilinks AND no outgoing wikilinks — disconnected from the knowledge graph. Some orphans are expected; others are the most productive places to add structure.
 
@@ -25,7 +25,7 @@ An "orphan" is a note with no incoming wikilinks AND no outgoing wikilinks — d
 | Class | Where | Treat as |
 |-------|-------|----------|
 | Inbox items | `Inbox/*.md` | Expected; process via `/process-inbox` |
-| Daily notes | `Notes/YYYY-MM-DD.md`, `FVH/notes/…` | Expected; they link out but rarely in |
+| Daily notes | `Notes/YYYY-MM-DD.md`, `work/notes/…` | Expected; they link out but rarely in |
 | Standalone references | `Zettelkasten/*.md` with 0↔0 | **Meaningful** — add linkage |
 | Kanban board notes | `Kanban/*.md` | Usually acceptable; boards are self-contained |
 | Archive / logs | under `Archive/` subfolders | Expected; stale by design |

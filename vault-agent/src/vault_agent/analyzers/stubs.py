@@ -1,12 +1,14 @@
-"""FVH/z redirect-stub classifier.
+"""Work-namespace redirect-stub classifier.
 
-Convention: ``FVH/z/Foo.md`` is a redirect stub pointing to
+Convention: ``work/z/Foo.md`` is a redirect stub pointing to
 ``Zettelkasten/Foo.md``. Proper stubs are tiny (<200 bytes), tagged
 ``redirect``, and contain only ``See [[Zettelkasten/Foo|Foo]] in the
 main knowledge base.``
 
-Stale stubs: files under ``FVH/z/`` that were never converted — they
-contain full article content and duplicate what's in Zettelkasten.
+Stale stubs: files under the work namespace (``work/z/`` by default)
+that were never converted — they contain full article content and
+duplicate what's in Zettelkasten. The namespace subtree is configurable
+via :class:`vault_agent.config.VaultConfig`.
 """
 
 from __future__ import annotations
@@ -15,22 +17,22 @@ from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 
+from vault_agent.config import DEFAULT_CONFIG, VaultConfig
 from vault_agent.analyzers.vault_index import Note, VaultIndex
 
-_FVH_STUB_DIR: tuple[str, ...] = ("FVH", "z")
 _CLEAN_STUB_MAX_BYTES = 200
 
 
 class StubClass(str, Enum):
-    """Classification of a FVH/z file."""
+    """Classification of a work-namespace file."""
 
     CLEAN_REDIRECT = "clean_redirect"
     # Has redirect tag but body is suspiciously large, or missing zettelkasten target
     BROKEN_REDIRECT = "broken_redirect"
     # Stale full article; no redirect tag; basename exists in Zettelkasten
     STALE_DUPLICATE = "stale_duplicate"
-    # Original FVH/z content with no canonical version elsewhere
-    FVH_ORIGINAL = "fvh_original"
+    # Original namespace content with no canonical version elsewhere
+    NS_ORIGINAL = "ns_original"
 
 
 @dataclass
@@ -68,8 +70,9 @@ class StubReport:
         }
 
 
-def _is_fvh_z(note: Note) -> bool:
-    return note.rel_path.parts[: len(_FVH_STUB_DIR)] == _FVH_STUB_DIR
+def _is_work_ns(note: Note, config: VaultConfig) -> bool:
+    ns = config.work_namespace
+    return note.rel_path.parts[: len(ns)] == ns
 
 
 def _has_redirect_tag(note: Note) -> bool:
@@ -83,11 +86,13 @@ def _canonical_in_zettelkasten(index: VaultIndex, basename: str) -> Path | None:
     return None
 
 
-def analyze_stubs(index: VaultIndex) -> StubReport:
+def analyze_stubs(
+    index: VaultIndex, config: VaultConfig = DEFAULT_CONFIG
+) -> StubReport:
     report = StubReport()
 
     for note in index.notes:
-        if not _is_fvh_z(note):
+        if not _is_work_ns(note, config):
             continue
         report.total_stubs += 1
         canonical = _canonical_in_zettelkasten(index, note.basename)
@@ -101,7 +106,7 @@ def analyze_stubs(index: VaultIndex) -> StubReport:
             if canonical is not None:
                 cls = StubClass.STALE_DUPLICATE
             else:
-                cls = StubClass.FVH_ORIGINAL
+                cls = StubClass.NS_ORIGINAL
 
         report.classifications.append(
             StubClassification(

@@ -1,35 +1,35 @@
 # vault-stubs subagent
 
-You classify and consolidate FVH/z files. This mode requires per-file content judgment; a bulk-rewrite is unsafe.
+You classify and consolidate work-namespace files. This mode requires per-file content judgment; a bulk-rewrite is unsafe.
 
 ## Role
 
-For each file under `FVH/z/`, decide whether it should be:
+For each file under the work namespace (`work/z/` by default), decide whether it should be:
 
 1. A clean redirect stub (≤200 B, `tags: [redirect]`, pointing to `Zettelkasten/<same-basename>`)
-2. Promoted to `Zettelkasten/` (if general-interest content with no FVH specifics)
-3. Left as FVH-original content (if FVH-specific)
+2. Promoted to `Zettelkasten/` (if general-interest content with no namespace specifics)
+3. Left as namespace-original content (if namespace-specific)
 
 ## Input
 
-The audit's `stubs` section classifies every FVH/z file into one of:
+The audit's `stubs` section classifies every work-namespace file into one of:
 
 - `clean_redirect` — no action needed
 - `broken_redirect` — has `redirect` tag but wrong body; the deterministic Python fixer has already rewritten these before you started
 - `stale_duplicate` — full article, basename exists in Zettelkasten; **this is your primary work**
-- `fvh_original` — no Zettelkasten counterpart, leave alone
+- `ns_original` — no Zettelkasten counterpart, leave alone
 
 ## Per-File Decision Flow (stale_duplicate)
 
 For each file the audit reports as `stale_duplicate`:
 
-1. **Read both files**: `FVH/z/Foo.md` and `Zettelkasten/Foo.md`.
-2. **Diff by heading.** Call the Python helper to list sections that exist in FVH/z but not in Zettelkasten:
+1. **Read both files**: `work/z/Foo.md` and `Zettelkasten/Foo.md`.
+2. **Diff by heading.** Call the Python helper to list sections that exist in the work namespace but not in Zettelkasten:
 
    ```bash
    uv run python -c "
    from vault_agent.fixers.stub_rewriter import unique_sections
-   src = open('FVH/z/Foo.md').read()
+   src = open('work/z/Foo.md').read()
    dst = open('Zettelkasten/Foo.md').read()
    for h in unique_sections(src, dst):
        print(h)
@@ -40,17 +40,17 @@ For each file the audit reports as `stale_duplicate`:
 
    | Outcome | When | Action |
    |---------|------|--------|
-   | **Pure subset** | `unique_sections` returns `[]` | Overwrite FVH/z with canonical redirect body |
-   | **Merge-then-redirect** | One or more unique sections with substantive content | Edit the Zettelkasten file to append each unique section, commit the merge, **then** overwrite FVH/z |
-   | **Coincidental collision** | Basenames match but topics differ (e.g. `FVH/z/Kafka.md` is an FVH Slack-integration note, `Zettelkasten/Kafka.md` is about Apache Kafka) | Flag for user. Report as "likely coincidental collision, not a stub". Do NOT redirect |
-   | **FVH/z is better** | Rare — FVH/z has a fuller canonical version | Flag for user review, don't auto-merge |
+   | **Pure subset** | `unique_sections` returns `[]` | Overwrite the work-namespace file with canonical redirect body |
+   | **Merge-then-redirect** | One or more unique sections with substantive content | Edit the Zettelkasten file to append each unique section, commit the merge, **then** overwrite the work-namespace file |
+   | **Coincidental collision** | Basenames match but topics differ (e.g. `work/z/Kafka.md` is a work-specific Slack-integration note, `Zettelkasten/Kafka.md` is about Apache Kafka) | Flag for user. Report as "likely coincidental collision, not a stub". Do NOT redirect |
+   | **Work-namespace copy is better** | Rare — the work-namespace file has a fuller canonical version | Flag for user review, don't auto-merge |
 
-4. **Never delete content that doesn't appear in Zettelkasten.** Before calling `Write` to overwrite the FVH/z file with the canonical redirect, verify the merge landed:
+4. **Never delete content that doesn't appear in Zettelkasten.** Before calling `Write` to overwrite the work-namespace file with the canonical redirect, verify the merge landed:
 
    ```bash
    uv run python -c "
    from vault_agent.fixers.stub_rewriter import verify_canonical_phrase_present
-   src = open('FVH/z/Foo.md').read()
+   src = open('work/z/Foo.md').read()
    dst = open('Zettelkasten/Foo.md').read()
    assert verify_canonical_phrase_present(src, dst), 'Merge check FAILED — abort overwrite'
    "
@@ -60,12 +60,13 @@ For each file the audit reports as `stale_duplicate`:
 
 ## Canonical Redirect Body
 
-Use the template from `vault_agent.fixers.stub_rewriter.CANONICAL_REDIRECT_TEMPLATE`:
+Use the template from `vault_agent.fixers.stub_rewriter.CANONICAL_REDIRECT_TEMPLATE`
+(the `context:` value comes from the vault config, defaulting to `work`):
 
 ```yaml
 ---
 tags: [redirect]
-context: fvh
+context: work
 ---
 See [[Zettelkasten/Foo|Foo]] in the main knowledge base.
 ```
@@ -75,13 +76,13 @@ See [[Zettelkasten/Foo|Foo]] in the main knowledge base.
 One commit per file for `stale_duplicate` that required a merge:
 
 ```
-refactor(stubs): merge FVH/z/Foo.md into Zettelkasten, convert stub
+refactor(stubs): merge work/z/Foo.md into Zettelkasten, convert stub
 ```
 
 One batch commit for pure-subset conversions:
 
 ```
-refactor(stubs): convert N FVH/z files to redirect stubs
+refactor(stubs): convert N work-namespace files to redirect stubs
 ```
 
 Flagged coincidental collisions get **no commit**. Report them in the summary.
@@ -92,8 +93,8 @@ If the stale_duplicate classification is ambiguous — e.g., basename collision 
 
 ## Never Do
 
-- **Don't bulk-rewrite** all FVH/z files — content judgment is required per file.
-- **Don't promote** `fvh_original` to Zettelkasten without explicit user input.
+- **Don't bulk-rewrite** all work-namespace files — content judgment is required per file.
+- **Don't promote** `ns_original` to Zettelkasten without explicit user input.
 - **Don't delete** content that doesn't appear verbatim in the Zettelkasten copy; always merge first.
 - **Don't `git push`** — vault-agent has no remote.
 - **Don't skip the `verify_canonical_phrase_present` check**; if it fails, abort.

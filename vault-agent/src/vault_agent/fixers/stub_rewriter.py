@@ -1,4 +1,4 @@
-"""Rewrite FVH/z stubs to the canonical redirect-body shape.
+"""Rewrite work-namespace stubs to the canonical redirect-body shape.
 
 Deterministic functions in this module:
 
@@ -32,11 +32,12 @@ from pathlib import Path
 
 from vault_agent.analyzers.stubs import StubClass, analyze_stubs
 from vault_agent.analyzers.vault_index import VaultIndex
+from vault_agent.config import DEFAULT_CONFIG, VaultConfig
 
 
 CANONICAL_REDIRECT_TEMPLATE = """---
 tags: [redirect]
-context: fvh
+context: {context}
 ---
 See [[Zettelkasten/{basename}|{basename}]] in the main knowledge base.
 """
@@ -166,9 +167,11 @@ class StubRewriteResult:
     previous_size: int
 
 
-def rewrite_broken_redirects(index: VaultIndex) -> list[StubRewriteResult]:
+def rewrite_broken_redirects(
+    index: VaultIndex, config: VaultConfig = DEFAULT_CONFIG
+) -> list[StubRewriteResult]:
     """Rewrite ``broken_redirect`` files to canonical redirect shape."""
-    report = analyze_stubs(index)
+    report = analyze_stubs(index, config)
     results: list[StubRewriteResult] = []
     for cls in report.classifications:
         if cls.cls != StubClass.BROKEN_REDIRECT:
@@ -179,7 +182,9 @@ def rewrite_broken_redirects(index: VaultIndex) -> list[StubRewriteResult]:
             continue
         basename = cls.canonical_path.stem
         previous_size = cls.size_bytes
-        new_body = CANONICAL_REDIRECT_TEMPLATE.format(basename=basename)
+        new_body = CANONICAL_REDIRECT_TEMPLATE.format(
+            basename=basename, context=config.context_value
+        )
         cls.path.write_text(new_body, encoding="utf-8")
         results.append(
             StubRewriteResult(

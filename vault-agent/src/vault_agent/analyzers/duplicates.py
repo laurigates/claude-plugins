@@ -1,7 +1,7 @@
 """Duplicate-note detector.
 
   * Same basename in multiple paths (e.g. ``Zettelkasten/Docker.md`` and
-    ``FVH/z/Docker.md``). Some are legitimate redirect stubs — the stubs
+    ``work/z/Docker.md``). Some are legitimate redirect stubs — the stubs
     analyzer classifies those separately. This one emits the raw list.
   * ``Untitled``, ``Untitled 1``, ``Untitled 2`` style placeholders.
 """

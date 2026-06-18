@@ -31,21 +31,17 @@ from __future__ import annotations
 
 import difflib
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 
 from vault_agent.analyzers.vault_index import VaultIndex
 
-# Rule table: broken target → canonical target.
-# Sourced from the LakuVault audit; extend as new patterns emerge.
-BROKEN_LINK_REWRITES: dict[str, str] = {
-    # Top broken target in LakuVault — 44 references
-    "AnsibleFVH": "Ansible",
-    # Renamed MOC
-    "Development MOC": "Development Workflows and Tools MOC",
-    "Development Workflows": "Development Workflows and Tools MOC",
-}
+# Rule table: broken target → canonical target (e.g. ``{"OldTopic": "Topic"}``).
+# Empty by default — populate it per vault via ``VaultConfig.broken_link_rewrites``
+# (see ``vault_agent.config``) as known-broken patterns emerge from an audit.
+BROKEN_LINK_REWRITES: dict[str, str] = {}
 
 
 @dataclass
@@ -300,19 +296,23 @@ def propose_rewrites(
     index: VaultIndex,
     *,
     min_references: int = 3,
+    rewrites: Mapping[str, str] | None = None,
 ) -> list[RewriteProposal]:
     """Compute per-target :class:`RewriteProposal`s for LLM-tier triage.
 
     ``audit_broken`` is the ``(target, reference_count)`` list from
     ``VaultAudit.links.top_broken(...)``. We filter to targets with at
     least ``min_references`` references (per #1073's threshold) and
-    compute candidates + tier for each.
+    compute candidates + tier for each. Targets already covered by the
+    rule table (``rewrites``, defaulting to :data:`BROKEN_LINK_REWRITES`)
+    are skipped.
     """
+    table = rewrites if rewrites is not None else BROKEN_LINK_REWRITES
     proposals: list[RewriteProposal] = []
     for target, count in audit_broken:
         if count < min_references:
             continue
-        if target in BROKEN_LINK_REWRITES:
+        if target in table:
             continue  # rule table covers this; skip LLM pass
         candidates = fuzzy_basename_candidates(target, index)
         tier = classify_match(target, candidates)

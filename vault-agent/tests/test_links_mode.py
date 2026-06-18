@@ -10,20 +10,20 @@ class TestRenderDryRun:
         # Regression for #1075: a target that will be auto-rewritten by the
         # rule-table must not also appear under "not auto-fixed".
         plan = LinksPlan(
-            rewrites_available={"AnsibleFVH": "Ansible"},
+            rewrites_available={"OldTopic": "Topic"},
             kanban_candidates=0,
             ambiguous_basenames=[],
-            low_leverage_broken=[("AnsibleFVH", 44), ("Nuuka REST API 2.0", 10)],
+            low_leverage_broken=[("OldTopic", 44), ("Some REST API 2.0", 10)],
         )
         output = render_dry_run(plan)
         # The rule-table entry stays in the top section.
-        assert "[[AnsibleFVH]] → [[Ansible]]" in output
+        assert "[[OldTopic]] → [[Topic]]" in output
         # But is filtered out of the bottom section.
         low_leverage_section = output.split(
             "Low-leverage broken targets (for reference — not auto-fixed):"
         )[1]
-        assert "AnsibleFVH" not in low_leverage_section
-        assert "Nuuka REST API 2.0" in low_leverage_section
+        assert "OldTopic" not in low_leverage_section
+        assert "Some REST API 2.0" in low_leverage_section
 
     def test_no_rule_table_matches_still_renders(self) -> None:
         plan = LinksPlan(

@@ -49,7 +49,7 @@ Central hub for Neovim configuration, plugins, and workflows.
 
 Rules:
 1. Tag is **exactly** `📝/moc` — not `🗺️` (legacy), not `MOC` (flat), not `📝/MOC` (wrong case).
-2. File lives in `Zettelkasten/` (personal) or `FVH/MOC/` (work).
+2. File lives in `Zettelkasten/` (personal) or `work/MOC/` (work).
 3. Filename is `{Subject} MOC.md` — suffix, not prefix.
 4. Body has a one-paragraph description, then `##` section headings, then bullet-list wikilinks.
 5. Never has `id:` or other legacy frontmatter.
@@ -60,7 +60,7 @@ Rules:
 |-------|-----|
 | `tags: 🗺️` | Rewrite to `tags: [📝/moc]` |
 | `tags: [🗺, 📝/moc]` | Deduplicate to `tags: [📝/moc]` |
-| MOC in `FVH/z/` instead of `FVH/MOC/` | Move file |
+| MOC in `work/z/` instead of `work/MOC/` | Move file |
 | Uses `[[Kanban/Foo]]` path-qualified links | Rewrite to `[[Foo]]` when basename unique |
 
 ## Coverage Analysis
@@ -119,7 +119,7 @@ Don't add a "See also" or "Random" section as a dumping ground. If a note doesn'
 | Action | Commit |
 |--------|--------|
 | New MOC | `feat(mocs): add {Category} MOC covering N notes` |
-| Fixup tag | `fix(mocs): 🗺️ → 📝/moc on FVH MOCs` |
+| Fixup tag | `fix(mocs): 🗺️ → 📝/moc on work MOCs` |
 | Add orphans | `feat(mocs): link 12 notes into Neovim MOC` |
 | Rewrite path-qualified link | `fix(mocs): unqualify [[Kanban/X]] → [[X]] across 6 MOCs` |
 

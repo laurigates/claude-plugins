@@ -14,9 +14,9 @@ from pathlib import Path
 
 from vault_agent.analyzers.audit import run_audit
 from vault_agent.analyzers.vault_index import scan
+from vault_agent.config import DEFAULT_CONFIG, VaultConfig
 from vault_agent.fixers.id_stripper import strip_legacy_id
 from vault_agent.fixers.link_patcher import (
-    BROKEN_LINK_REWRITES,
     apply_rewrites,
     summarize_rewrites,
     unqualify_kanban_links,
@@ -99,12 +99,14 @@ def _run_lint_in(handle: WorktreeHandle, vault: Path) -> list[str]:
     return commits
 
 
-def _run_links_in(handle: WorktreeHandle) -> list[str]:
+def _run_links_in(
+    handle: WorktreeHandle, config: VaultConfig = DEFAULT_CONFIG
+) -> list[str]:
     commits: list[str] = []
     wt_index = scan(handle.worktree_path)
     applicable = {
         old: new
-        for old, new in BROKEN_LINK_REWRITES.items()
+        for old, new in config.broken_link_rewrites.items()
         if len(wt_index.resolve(new)) == 1
     }
     results = apply_rewrites(wt_index, applicable)
@@ -125,13 +127,18 @@ def _run_links_in(handle: WorktreeHandle) -> list[str]:
     return commits
 
 
-def _run_stubs_in(handle: WorktreeHandle) -> list[str]:
+def _run_stubs_in(
+    handle: WorktreeHandle, config: VaultConfig = DEFAULT_CONFIG
+) -> list[str]:
     commits: list[str] = []
     wt_index = scan(handle.worktree_path)
-    results = rewrite_broken_redirects(wt_index)
+    results = rewrite_broken_redirects(wt_index, config)
     c = sum(1 for r in results if r.changed)
     if c:
-        msg = f"fix(stubs): restore canonical redirect body in {c} FVH/z files"
+        msg = (
+            f"fix(stubs): restore canonical redirect body in "
+            f"{c} work-namespace files"
+        )
         if commit_all(handle, msg):
             commits.append(msg)
     return commits
@@ -173,9 +180,9 @@ def run_maintain(
     if "lint" in modes:
         all_commits.extend(_run_lint_in(handle, vault))
     if "links" in modes:
-        all_commits.extend(_run_links_in(handle))
+        all_commits.extend(_run_links_in(handle, audit.config))
     if "stubs" in modes:
-        all_commits.extend(_run_stubs_in(handle))
+        all_commits.extend(_run_stubs_in(handle, audit.config))
     # mocs writes are deferred to the LLM-backed subagent.
 
     return MaintainResult(

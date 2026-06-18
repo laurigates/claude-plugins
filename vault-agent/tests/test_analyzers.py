@@ -116,7 +116,7 @@ class TestVaultIndex:
             tmp_path,
             {
                 "Zettelkasten/Docker.md": "main\n",
-                "FVH/z/Docker.md": "stub\n",
+                "work/z/Docker.md": "stub\n",
                 "Kanban/Main.md": "# kanban\n",
             },
         )
@@ -189,19 +189,19 @@ class TestFrontmatter:
         report = analyze_frontmatter(scan(vault))
         assert len(report.notes_with_templater_leak) == 2
 
-    def test_detects_missing_fvh_context(self, tmp_path: Path) -> None:
+    def test_detects_missing_ns_context(self, tmp_path: Path) -> None:
         vault = _make_vault(
             tmp_path,
             {
-                "FVH/z/Ansible.md": """
+                "work/z/Ansible.md": """
                     ---
                     tags: [🛠️/ansible]
                     ---
                     body
                 """,
-                "FVH/z/Proper.md": """
+                "work/z/Proper.md": """
                     ---
-                    context: fvh
+                    context: work
                     tags: [🛠️/proper]
                     ---
                     body
@@ -209,7 +209,7 @@ class TestFrontmatter:
             },
         )
         report = analyze_frontmatter(scan(vault))
-        assert len(report.fvh_notes_missing_context) == 1
+        assert len(report.ns_notes_missing_context) == 1
 
     def test_tag_duplicate_candidates(self, tmp_path: Path) -> None:
         vault = _make_vault(
@@ -255,7 +255,7 @@ class TestLinks:
             tmp_path,
             {
                 "Zettelkasten/Docker.md": "# main\n",
-                "FVH/z/Docker.md": "# stub\n",
+                "work/z/Docker.md": "# stub\n",
                 "Zettelkasten/Note.md": "See [[Docker]].\n",
             },
         )
@@ -330,10 +330,10 @@ class TestStubs:
             tmp_path,
             {
                 "Zettelkasten/Docker.md": "# Main\n",
-                "FVH/z/Docker.md": """
+                "work/z/Docker.md": """
                     ---
                     tags: [redirect]
-                    context: fvh
+                    context: work
                     ---
                     See [[Zettelkasten/Docker|Docker]] in the main knowledge base.
                 """,
@@ -348,10 +348,10 @@ class TestStubs:
             tmp_path,
             {
                 "Zettelkasten/Docker.md": "# Main\n",
-                "FVH/z/Docker.md": """
+                "work/z/Docker.md": """
                     ---
                     tags: [🌱]
-                    context: fvh
+                    context: work
                     ---
                     Lots and lots of duplicated docker content here. """ + ("x" * 300),
             },
@@ -359,21 +359,21 @@ class TestStubs:
         report = analyze_stubs(scan(vault))
         assert report.classifications[0].cls == StubClass.STALE_DUPLICATE
 
-    def test_fvh_original(self, tmp_path: Path) -> None:
+    def test_ns_original(self, tmp_path: Path) -> None:
         vault = _make_vault(
             tmp_path,
             {
-                "FVH/z/FvhOnly.md": """
+                "work/z/NsOnly.md": """
                     ---
                     tags: [🛠️/internal]
-                    context: fvh
+                    context: work
                     ---
-                    FVH-only content, no zettelkasten counterpart.
+                    Namespace-only content, no zettelkasten counterpart.
                 """,
             },
         )
         report = analyze_stubs(scan(vault))
-        assert report.classifications[0].cls == StubClass.FVH_ORIGINAL
+        assert report.classifications[0].cls == StubClass.NS_ORIGINAL
 
 
 # ---------------------------------------------------------------------------
@@ -404,17 +404,17 @@ class TestMocs:
         vault = _make_vault(
             tmp_path,
             {
-                "FVH/z/Data MOC.md": """
+                "work/z/Data MOC.md": """
                     ---
                     tags: [🗺️]
-                    context: fvh
+                    context: work
                     ---
                     [[Thing]]
                 """,
-                "FVH/z/Thing.md": """
+                "work/z/Thing.md": """
                     ---
                     tags: [☁️/data]
-                    context: fvh
+                    context: work
                     ---
                 """,
             },
@@ -434,7 +434,7 @@ class TestDuplicates:
             tmp_path,
             {
                 "Zettelkasten/Docker.md": "# A\n",
-                "FVH/z/Docker.md": "# B\n",
+                "work/z/Docker.md": "# B\n",
                 "Inbox/Untitled.md": "\n",
                 "Inbox/Untitled 1.md": "\n",
             },

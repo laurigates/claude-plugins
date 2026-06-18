@@ -26,7 +26,7 @@ Offline, file-level repair of YAML frontmatter. Complements the `properties` ski
 - Removing unrendered Templater markers (`<% tp.file.cursor() %>`, `{{title}}`)
 - Cleaning up `null` entries inside `tags:` lists
 - Adding missing frontmatter blocks to notes that lack one
-- Ensuring FVH notes carry `context: fvh`
+- Ensuring work-namespace notes carry `context: work`
 - Normalizing tag case / pluralization drift
 
 ## Canonical Frontmatter Shape
@@ -36,7 +36,7 @@ Offline, file-level repair of YAML frontmatter. Complements the `properties` ski
 tags:
   - 🛠️/neovim       # emoji-prefixed category tag
   - 📝/notes         # note-type tag
-context: fvh         # FVH notes only
+context: work        # work-namespace notes only
 ---
 ```
 
@@ -45,7 +45,7 @@ Rules:
 2. 2–3 tags per note; every tag either `emoji/subcategory` or a bare note-type like `📝/moc`.
 3. No bare emoji placeholders (`📝`, `🌱`, `📝/🌱`) — they indicate the tag was never specified.
 4. No `null` tag values — YAML must be valid.
-5. FVH/* notes carry `context: fvh`; personal notes omit the field.
+5. Work-namespace notes (e.g. under `work/`) carry `context: work`; personal notes omit the field.
 
 ## Detection Patterns
 
@@ -56,7 +56,7 @@ Rules:
 | Null tag | YAML tag value literally `null` | Remove list entry |
 | Templater leak | `<% tp\.` or `\{\{title\}\}` or `\{\{date\}\}` | Replace `{{title}}` with filename stem; strip `<% tp.* %>` |
 | Corrupt emoji | Tag contains Unicode replacement char `\ufffd` | Flag for manual fix — don't guess |
-| Missing FVH context | File under `FVH/` without `context: fvh` | Add the line |
+| Missing work context | File under the work namespace (e.g. `work/`) without `context: work` | Add the line |
 
 ## Edit Recipes
 
@@ -109,7 +109,7 @@ For bulk fixes across many files, drive from a script that emits one `Edit` call
 ## Safety
 
 - Never write to `.obsidian/`, `.claude/`, `.git/`, `Files/`. The safety hook enforces this.
-- Never add frontmatter to daily notes in `Notes/` or `FVH/notes/` without verifying — they often don't need any.
+- Never add frontmatter to daily notes in `Notes/` or `work/notes/` without verifying — they often don't need any.
 - When in doubt about what a placeholder tag meant, leave the note unchanged and report it rather than guess.
 
 ## Related Skills

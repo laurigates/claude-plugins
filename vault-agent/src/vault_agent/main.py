@@ -503,7 +503,7 @@ def stubs(
         help="Output format: text, json, plain. Default: plain when not a TTY.",
     ),
 ) -> None:
-    """Classify FVH/z stubs; fix broken_redirects; report stale_duplicates."""
+    """Classify work-namespace stubs; fix broken_redirects; report stale_duplicates."""
     _ensure_vault(vault)
     if not dry_run:
         _ensure_git_repo(vault)
