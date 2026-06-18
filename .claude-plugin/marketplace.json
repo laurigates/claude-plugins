@@ -38,7 +38,7 @@
       "name": "agents-plugin",
       "source": "./agents-plugin",
       "description": "Task-focused agents with teammate and subagent role guidance for test, review, debug, docs, CI, security, refactoring, research, and performance",
-      "version": "1.12.0",
+      "version": "1.12.1",
       "keywords": [
         "agents",
         "teammates",
