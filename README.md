@@ -100,7 +100,7 @@ Alternatively, use the `/configure:mcp` skill for interactive configuration.
 
 | Plugin | Skills | Description |
 |--------|--------|-------------|
-| **git-plugin** | 36 + 1 agent | Git workflows - commits, branches, PRs, worktrees, release-please |
+| **git-plugin** | 38 + 1 agent | Git workflows - commits, branches, PRs, worktrees, release-please |
 
 ### CI/CD
 

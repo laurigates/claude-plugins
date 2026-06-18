@@ -394,6 +394,32 @@ check_skill_body() {
       done
     fi
 
+    # Regression: git-pr-sync-check is the advisory layer of the PR-branch-sync
+    # guard trio (see .claude/rules/pr-branch-sync.md). Its body must keep the
+    # verdict contract that the SessionStart probe, the PreToolUse hook, and the
+    # precondition cross-refs in git-commit/git-push/git-issue all speak: a single
+    # `VERDICT=` line, the load-bearing `pr_merged` verdict (the stale-merged-branch
+    # case the whole feature exists to catch), and `mergedAt` (the gh-json-fields.md
+    # field — proves it reads merge state correctly, not a phantom `merged` field).
+    if [ "$skill_name" = "git-pr-sync-check" ]; then
+      for token in 'VERDICT=' 'pr_merged' 'mergedAt'; do
+        if ! grep -qF "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain PR-sync verdict token '${token}' (see .claude/rules/pr-branch-sync.md)")
+          has_errors=true
+        fi
+      done
+    fi
+
+    # Regression: git-pr-watch wraps the native PR-activity subscription. Its body
+    # must name `subscribe_pr_activity` (the MCP tool that makes the watch real);
+    # dropping it would leave a skill that documents watching without the call.
+    if [ "$skill_name" = "git-pr-watch" ]; then
+      if ! grep -qF "subscribe_pr_activity" "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain 'subscribe_pr_activity' (the native PR-watch MCP tool — see .claude/rules/pr-branch-sync.md)")
+        has_errors=true
+      fi
+    fi
+
     # Regression: code-review is the canary for restoring `context: fork` after
     # the plugin-skill blocker (anthropics/claude-code#16803) was fixed
     # 2026-04-18. See laurigates/claude-plugins#980 and

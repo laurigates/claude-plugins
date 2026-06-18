@@ -157,6 +157,12 @@ Common compositions:
 - "commit and push" → git-commit → git-push
 - "commit and create PR" → git-commit → git-push → git-pr
 
+**Before building further on an existing PR branch** (an additional in-session
+request continuing earlier work), invoke `/git:pr-sync-check` first. If the
+verdict is anything other than `in_sync` / `no_pr` / `no_remote` — e.g.
+`pr_merged` or `behind` — stop and reconcile (branch off the updated default, or
+`git pull --rebase`) before committing. See `.claude/rules/pr-branch-sync.md`.
+
 ## Error Handling
 
 **No changes to commit:**
