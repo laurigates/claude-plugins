@@ -292,12 +292,17 @@ fi
 # Index-modifying commands: add, commit, rm, mv, reset (not read-only commands like status/diff/log).
 # The fix is to run git commands as separate Bash calls, not chained.
 #
-# Uses COMMAND_SHELL_ONLY (heredoc body stripped) so that example shell
-# snippets inside `gh pr create --body "$(cat <<EOF ... EOF)"` do not trigger
-# a false positive when the body mentions `git add && git commit`.
+# Uses COMMAND_NO_STRINGS (heredoc body AND quoted-string literals stripped) so
+# that example shell snippets inside a `gh` body/title do not trigger a false
+# positive. A heredoc body (`gh pr create --body "$(cat <<EOF ... EOF)"`) OR a
+# plain quoted argument (`gh issue create --body "...git add && git commit..."`)
+# that merely *documents* a git chain is data, not an executed command, and must
+# pass — issue #1587's "patterns matched inside quoted strings" false positive.
+# This is a reminder about index.lock races, not a security control, so stripping
+# quoted strings cannot create a dangerous bypass.
 INDEX_MODIFYING='(add|commit|rm|mv|reset)'
-if echo "$COMMAND_SHELL_ONLY" | grep -Eq "git\\s+${INDEX_MODIFYING}\\b.*&&.*git\\s+\\S+" || \
-   echo "$COMMAND_SHELL_ONLY" | grep -Eq "git\\s+\\S+.*&&.*git\\s+${INDEX_MODIFYING}\\b"; then
+if echo "$COMMAND_NO_STRINGS" | grep -Eq "git\\s+${INDEX_MODIFYING}\\b.*&&.*git\\s+\\S+" || \
+   echo "$COMMAND_NO_STRINGS" | grep -Eq "git\\s+\\S+.*&&.*git\\s+${INDEX_MODIFYING}\\b"; then
     block "REMINDER: Chaining git commands with '&&' can cause index.lock race conditions.
 The lock file from an index-modifying command (add, commit, rm, mv, reset) may not be
 released before the next command tries to acquire it.
