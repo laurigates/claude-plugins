@@ -23,7 +23,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.25.0",
+      "version": "2.26.0",
       "keywords": [
         "agents",
         "configuration",
@@ -469,7 +469,7 @@
       "name": "obsidian-plugin",
       "source": "./obsidian-plugin",
       "description": "Obsidian CLI operations - vault files, search, properties, tasks, plugins/themes, publish/sync, bases, command palette, file history, dev tools, workspaces, multi-vault, templates, and bookmarks",
-      "version": "1.3.3",
+      "version": "1.3.4",
       "keywords": [
         "obsidian",
         "vault",
@@ -571,7 +571,7 @@
       "name": "session-plugin",
       "source": "./session-plugin",
       "description": "Session bookends - spinup briefing, wrap-up capture, end-of-session orchestration, and knowledge distillation",
-      "version": "1.3.0",
+      "version": "1.3.1",
       "keywords": [
         "session",
         "spinup",
