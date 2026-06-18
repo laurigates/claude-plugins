@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.5.0...hooks-plugin-v2.5.1) (2026-06-18)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** stop bash-antipatterns blocking git chains quoted in gh bodies ([#1693](https://github.com/laurigates/claude-plugins/issues/1693)) ([96ed6b0](https://github.com/laurigates/claude-plugins/commit/96ed6b0d440e63cda0be47b8ca8e0880b3381590))
+
 ## [2.5.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.4.7...hooks-plugin-v2.5.0) (2026-06-18)
 
 

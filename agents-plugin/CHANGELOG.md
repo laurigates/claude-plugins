@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.13.1](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.13.0...agents-plugin-v1.13.1) (2026-06-18)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** stop bash-antipatterns blocking git chains quoted in gh bodies ([#1693](https://github.com/laurigates/claude-plugins/issues/1693)) ([96ed6b0](https://github.com/laurigates/claude-plugins/commit/96ed6b0d440e63cda0be47b8ca8e0880b3381590))
+
+
+### Code Refactoring
+
+* enforce always-Opus for all plugin agents ([#1691](https://github.com/laurigates/claude-plugins/issues/1691)) ([529397d](https://github.com/laurigates/claude-plugins/commit/529397da8aa6207b86ed96c083b55a1cdfacc641))
+
 ## [1.13.0](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.12.1...agents-plugin-v1.13.0) (2026-06-18)
 
 
