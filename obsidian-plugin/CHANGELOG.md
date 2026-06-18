@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.4](https://github.com/laurigates/claude-plugins/compare/obsidian-plugin-v1.3.3...obsidian-plugin-v1.3.4) (2026-06-18)
+
+
+### Code Refactoring
+
+* make Obsidian vault skills and vault-agent vault-agnostic ([#1698](https://github.com/laurigates/claude-plugins/issues/1698)) ([1e95452](https://github.com/laurigates/claude-plugins/commit/1e95452d966cbe8dcedb807a0717d2d1778c86af))
+
 ## [1.3.3](https://github.com/laurigates/claude-plugins/compare/obsidian-plugin-v1.3.2...obsidian-plugin-v1.3.3) (2026-05-14)
 
 

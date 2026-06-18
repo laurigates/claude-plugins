@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.26.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.25.0...agent-patterns-plugin-v2.26.0) (2026-06-18)
+
+
+### Features
+
+* **agent-patterns-plugin:** add mcp-server-authoring skill ([#1697](https://github.com/laurigates/claude-plugins/issues/1697)) ([481704e](https://github.com/laurigates/claude-plugins/commit/481704e05e3fc9e4b18bc49085d57dc77134f492))
+
 ## [2.25.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.24.0...agent-patterns-plugin-v2.25.0) (2026-06-18)
 
 
