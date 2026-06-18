@@ -8,7 +8,7 @@
 Vault maintenance has a wide complexity spectrum:
 
 - Stripping `id:` from frontmatter is mechanical — any model size works.
-- Classifying a FVH/z stub as "redirect vs. promote" requires reading two full notes and judging overlap.
+- Classifying a work-namespace stub as "redirect vs. promote" requires reading two full notes and judging overlap.
 - Proposing a new MOC with curated section structure over 17 orphaned notes requires holding the whole cluster in context and recognizing natural groupings.
 
 Using one model tier for everything means overpaying on the easy cases or underperforming on the hard ones.

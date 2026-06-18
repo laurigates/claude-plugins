@@ -1,4 +1,4 @@
-"""vault-stubs subagent — FVH/z redirect stub consolidation."""
+"""vault-stubs subagent — work-namespace redirect stub consolidation."""
 
 from __future__ import annotations
 
@@ -11,8 +11,8 @@ except ImportError:  # pragma: no cover
 
 
 _DESCRIPTION = (
-    "Classify FVH/z/ files (clean_redirect / broken_redirect / "
-    "stale_duplicate / fvh_original) and consolidate stale duplicates "
+    "Classify work-namespace files (clean_redirect / broken_redirect / "
+    "stale_duplicate / ns_original) and consolidate stale duplicates "
     "into redirect stubs pointing to Zettelkasten canonical notes, "
     "merging unique content first."
 )

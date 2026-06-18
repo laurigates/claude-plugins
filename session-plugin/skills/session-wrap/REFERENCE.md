@@ -28,36 +28,36 @@ Markdown body sections the skills read as context:
 - **Project naming map** — context → `project:` slug table so wraps land
   under consistent taskwarrior projects.
 
-### Worked example (FVH/Obsidian user config)
+### Worked example (Obsidian journal config)
 
 ```markdown
 ---
 journal: obsidian
-journal_path: ~/Documents/LakuVault/FVH/notes
-journal_template: ~/Documents/LakuVault/Templates/FVH Daily.md
+journal_path: ~/Documents/YourVault/Journal/notes
+journal_template: ~/Documents/YourVault/Templates/Daily.md
 journal_log_heading: "## Log"
 journal_todo_heading: "## Todo"
 journal_todo_stop: "### Recurring reminders"
-journal_scopes: [fvh, infrastructure]
+journal_scopes: [work, infrastructure]
 ---
 
 # Scope detection
 
 The session is in journal scope if ANY of: the taskwarrior project is
-`fvh.*` or `infrastructure*`; the cwd contains `ForumViriumHelsinki` or
-`repos/ForumVirium`; the user says so ("this is FVH work"); the
-conversation references FVH repos, Podio items, Hetzner, GKE, fvh.fi.
-Default to out-of-scope when in doubt.
+`work.*` or `infrastructure*`; the cwd contains the work-org directory
+(e.g. `repos/<org>`); the user says so ("this is work"); the
+conversation references work repos, ticket items, or internal
+infrastructure. Default to out-of-scope when in doubt.
 
 # Project naming map
 
 | Context | project: |
 |---|---|
-| FVH infrastructure work | `fvh.<area>` (e.g. `fvh.cost-attribution`) |
-| FVH simpl-eval | `infrastructure.simpl-eval` |
+| Work infrastructure | `work.<area>` (e.g. `work.cost-attribution`) |
+| A work sub-project | `infrastructure.<name>` |
 | claude-plugins work | `claude-plugins`, `claude-plugins.friction` |
 | Dotfiles / chezmoi | `dotfiles` |
-| Immeral D&D vault | `immeral` |
+| Personal vault | `immeral` |
 ```
 
 ## Journal append mechanics

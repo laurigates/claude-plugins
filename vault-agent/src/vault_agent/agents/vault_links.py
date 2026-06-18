@@ -12,7 +12,7 @@ except ImportError:  # pragma: no cover
 
 _DESCRIPTION = (
     "Repair broken wikilinks. Applies rule-table rewrites (e.g. "
-    "[[AnsibleFVH]] → [[Ansible]]), unqualifies [[Kanban/X]] → [[X]], "
+    "[[OldTopic]] → [[Topic]]), unqualifies [[Kanban/X]] → [[X]], "
     "and reports cross-namespace ambiguous targets for user decision."
 )
 

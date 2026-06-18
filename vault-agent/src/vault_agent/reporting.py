@@ -39,7 +39,7 @@ def render_terminal(audit: VaultAudit, console: Console | None = None) -> None:
     t.add_row("> 5 tags", str(len(fm.notes_over_tagged)))
     t.add_row("Templater leakage", str(len(fm.notes_with_templater_leak)))
     t.add_row("Corrupt emoji bytes", str(len(fm.notes_with_corrupt_emoji)))
-    t.add_row("FVH missing context", str(len(fm.fvh_notes_missing_context)))
+    t.add_row("Namespace notes missing context", str(len(fm.ns_notes_missing_context)))
     console.print(t)
 
     t = Table(title="Links", show_edge=False)
@@ -66,7 +66,7 @@ def render_terminal(audit: VaultAudit, console: Console | None = None) -> None:
     t.add_row("Expected orphans (Inbox, daily)", str(len(graph.expected_orphans)))
     console.print(t)
 
-    t = Table(title="Stubs (FVH/z)", show_edge=False)
+    t = Table(title="Stubs (work namespace)", show_edge=False)
     t.add_column("Class", justify="left")
     t.add_column("Count", justify="right")
     for cls, count in stubs.count_by_class().items():
@@ -128,7 +128,7 @@ def render_markdown(audit: VaultAudit) -> str:
     lines.append(f"- Null tags: {len(fm.notes_with_null_tags)}")
     lines.append(f"- Templater leakage: {len(fm.notes_with_templater_leak)}")
     lines.append(f"- Corrupt emoji: {len(fm.notes_with_corrupt_emoji)}")
-    lines.append(f"- FVH missing context: {len(fm.fvh_notes_missing_context)}")
+    lines.append(f"- Namespace notes missing context: {len(fm.ns_notes_missing_context)}")
     lines.append("")
 
     lines.append("## Links\n")
@@ -148,7 +148,7 @@ def render_markdown(audit: VaultAudit) -> str:
     lines.append(f"- Expected orphans: {len(graph.expected_orphans)}")
     lines.append("")
 
-    lines.append("## Stubs (FVH/z)\n")
+    lines.append("## Stubs (work namespace)\n")
     for cls, count in stubs.count_by_class().items():
         lines.append(f"- {cls}: {count}")
     lines.append("")

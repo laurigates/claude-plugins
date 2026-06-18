@@ -28,32 +28,32 @@ class TestApplyRewrites:
         vault = _make_vault(
             tmp_path,
             {
-                "FVH/z/Ansible.md": "# Ansible\n",
-                "FVH/notes/2024-01-01.md": "See [[AnsibleFVH]] and [[AnsibleFVH|ansible stuff]].\n",
+                "work/z/Topic.md": "# Topic\n",
+                "work/notes/2024-01-01.md": "See [[OldTopic]] and [[OldTopic|topic stuff]].\n",
             },
         )
         index = scan(vault)
-        results = apply_rewrites(index)
+        results = apply_rewrites(index, {"OldTopic": "Topic"})
         changed = [r for r in results if r.changed]
         assert len(changed) == 1
-        assert changed[0].per_rule_counts == {"AnsibleFVH": 2}
-        content = (vault / "FVH/notes/2024-01-01.md").read_text()
-        assert "[[Ansible]]" in content
-        assert "[[Ansible|ansible stuff]]" in content
-        assert "AnsibleFVH" not in content
+        assert changed[0].per_rule_counts == {"OldTopic": 2}
+        content = (vault / "work/notes/2024-01-01.md").read_text()
+        assert "[[Topic]]" in content
+        assert "[[Topic|topic stuff]]" in content
+        assert "OldTopic" not in content
 
     def test_skips_rule_when_target_not_unique(self, tmp_path: Path) -> None:
-        # If Ansible resolves to two notes, the rule is skipped.
+        # If Topic resolves to two notes, the rule is skipped.
         vault = _make_vault(
             tmp_path,
             {
-                "A/Ansible.md": "# a\n",
-                "B/Ansible.md": "# b\n",
-                "Notes.md": "See [[AnsibleFVH]]\n",
+                "A/Topic.md": "# a\n",
+                "B/Topic.md": "# b\n",
+                "Notes.md": "See [[OldTopic]]\n",
             },
         )
         index = scan(vault)
-        results = apply_rewrites(index)
+        results = apply_rewrites(index, {"OldTopic": "Topic"})
         assert all(not r.changed for r in results)
 
     def test_preserves_alias_and_section(self, tmp_path: Path) -> None:
@@ -84,15 +84,15 @@ class TestSummarize:
         vault = _make_vault(
             tmp_path,
             {
-                "FVH/z/Ansible.md": "# a\n",
-                "A.md": "[[AnsibleFVH]]\n",
-                "B.md": "[[AnsibleFVH]] [[AnsibleFVH]]\n",
+                "work/z/Topic.md": "# a\n",
+                "A.md": "[[OldTopic]]\n",
+                "B.md": "[[OldTopic]] [[OldTopic]]\n",
             },
         )
         index = scan(vault)
-        results = apply_rewrites(index)
+        results = apply_rewrites(index, {"OldTopic": "Topic"})
         totals = summarize_rewrites(results)
-        assert totals["AnsibleFVH"] == 3
+        assert totals["OldTopic"] == 3
 
 
 class TestUnqualifyKanban:

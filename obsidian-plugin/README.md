@@ -246,7 +246,7 @@ The skills above wrap the Obsidian CLI and require a running Obsidian instance. 
 **File**: `skills/vault-orphans/SKILL.md` — Orphan note triage heuristics.
 
 ### Vault Stubs
-**File**: `skills/vault-stubs/SKILL.md` — FVH/z redirect-stub pattern (for vaults using the LakuVault work-namespace convention).
+**File**: `skills/vault-stubs/SKILL.md` — Work-namespace redirect-stub pattern (for vaults using a work-namespace convention).
 
 ### Vault MOCs
 **File**: `skills/vault-mocs/SKILL.md` — Map-of-Content curation, convention drift repair.

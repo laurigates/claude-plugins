@@ -13,6 +13,7 @@ from vault_agent.analyzers.links import LinkReport, analyze_links
 from vault_agent.analyzers.mocs import MocReport, analyze_mocs
 from vault_agent.analyzers.stubs import StubReport, analyze_stubs
 from vault_agent.analyzers.vault_index import VaultIndex, scan
+from vault_agent.config import VaultConfig, load_config
 
 
 @dataclass
@@ -26,6 +27,7 @@ class VaultAudit:
     mocs: MocReport
     duplicates: DuplicateReport
     health: HealthScore
+    config: VaultConfig
 
     def to_dict(self) -> dict:
         return {
@@ -41,12 +43,16 @@ class VaultAudit:
         }
 
 
-def run_audit(vault_root: Path | str) -> VaultAudit:
+def run_audit(
+    vault_root: Path | str, config: VaultConfig | None = None
+) -> VaultAudit:
+    if config is None:
+        config = load_config(vault_root)
     index = scan(vault_root)
-    fm = analyze_frontmatter(index)
+    fm = analyze_frontmatter(index, config)
     lnk = analyze_links(index)
-    graph = analyze_graph(index)
-    stubs = analyze_stubs(index)
+    graph = analyze_graph(index, config=config)
+    stubs = analyze_stubs(index, config)
     mocs = analyze_mocs(index)
     dups = analyze_duplicates(index)
     health = compute_health(
@@ -62,4 +68,5 @@ def run_audit(vault_root: Path | str) -> VaultAudit:
         mocs=mocs,
         duplicates=dups,
         health=health,
+        config=config,
     )

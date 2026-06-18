@@ -1,8 +1,9 @@
 """Knowledge-graph analyzer: orphans, hubs, incoming-link counts.
 
 "Orphan" = note with zero incoming wikilinks AND zero outgoing wikilinks.
-Daily notes (files under ``Notes/`` or ``FVH/notes/``) and inbox files
-are listed separately because they are expected to have few links.
+Daily notes (files under the configured daily-note dirs, e.g. ``Notes/``
+or ``work/notes/``) and inbox files are listed separately because they
+are expected to have few links.
 """
 
 from __future__ import annotations
@@ -11,6 +12,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from vault_agent.config import DEFAULT_CONFIG, VaultConfig
 from vault_agent.analyzers.vault_index import Note, VaultIndex
 
 # Top-level directories whose notes are expected to be weakly connected.
@@ -19,15 +21,9 @@ _EXPECTED_ORPHAN_DIRS: frozenset[str] = frozenset(
     {"Inbox", "Notes", "truecharts-migration", "radio-hacking"}
 )
 
-# Daily-note directories (expected to have few backlinks).
-_DAILY_DIRS: tuple[tuple[str, ...], ...] = (
-    ("Notes",),
-    ("FVH", "notes"),
-)
 
-
-def _is_daily_note(note: Note) -> bool:
-    for prefix in _DAILY_DIRS:
+def _is_daily_note(note: Note, config: VaultConfig) -> bool:
+    for prefix in config.daily_dirs:
         if note.rel_path.parts[: len(prefix)] == prefix:
             return True
     return False
@@ -59,7 +55,9 @@ class GraphReport:
         }
 
 
-def analyze_graph(index: VaultIndex, *, hub_limit: int = 20) -> GraphReport:
+def analyze_graph(
+    index: VaultIndex, *, hub_limit: int = 20, config: VaultConfig = DEFAULT_CONFIG
+) -> GraphReport:
     # Incoming counts via resolved targets.
     incoming = Counter()
     for note in index.notes:
@@ -74,7 +72,7 @@ def analyze_graph(index: VaultIndex, *, hub_limit: int = 20) -> GraphReport:
         has_incoming = incoming.get(note.path, 0) > 0
         has_outgoing = len(note.wikilinks) > 0
         if not has_incoming and not has_outgoing:
-            if _is_expected_orphan(note) or _is_daily_note(note):
+            if _is_expected_orphan(note) or _is_daily_note(note, config):
                 report.expected_orphans.append(note.path)
             else:
                 report.meaningful_orphans.append(note.path)

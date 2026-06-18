@@ -5,7 +5,7 @@
 
 ## Context
 
-The target vault (LakuVault) is an Obsidian vault that the user actively edits in the Obsidian desktop app. The vault IS a git repository, but there is no remote. We still want:
+The target vault is an Obsidian vault that the user actively edits in the Obsidian desktop app. The vault IS a git repository, but there is no remote. We still want:
 
 - Diff visibility when the agent mass-edits hundreds of files
 - Cheap rollback if the agent misbehaves

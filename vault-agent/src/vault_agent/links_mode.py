@@ -2,7 +2,7 @@
 
 Two deterministic passes:
 
-  1. Rule-table rewrites (e.g. ``[[AnsibleFVH]]`` → ``[[Ansible]]``)
+  1. Rule-table rewrites (e.g. ``[[OldTopic]]`` → ``[[Topic]]``)
   2. Path-qualified Kanban link unqualification
 
 Ambiguous cross-namespace targets are reported for user decision —
@@ -18,7 +18,6 @@ from pathlib import Path
 from vault_agent.analyzers.audit import VaultAudit, run_audit
 from vault_agent.analyzers.vault_index import VaultIndex, scan
 from vault_agent.fixers.link_patcher import (
-    BROKEN_LINK_REWRITES,
     apply_rewrites,
     summarize_rewrites,
     unqualify_kanban_links,
@@ -61,7 +60,7 @@ def plan_links(audit: VaultAudit) -> LinksPlan:
     # Only rules with a unique resolvable target.
     available = {
         old: new
-        for old, new in BROKEN_LINK_REWRITES.items()
+        for old, new in audit.config.broken_link_rewrites.items()
         if len(index.resolve(new)) == 1
     }
     # Count Kanban-qualified links that could be unqualified

@@ -1,4 +1,4 @@
-"""vault-agent stubs — FVH/z classification and redirect repair.
+"""vault-agent stubs — work-namespace classification and redirect repair.
 
 Deterministic: rewrite ``broken_redirect`` files to the canonical
 redirect body.
@@ -26,7 +26,7 @@ class StubsPlan:
     broken_redirects: list[Path]
     stale_duplicates: list[Path]  # reported, not auto-fixed
     clean_redirects: int
-    fvh_originals: int
+    ns_originals: int
 
 
 @dataclass
@@ -50,13 +50,13 @@ def plan_stubs(audit: VaultAudit) -> StubsPlan:
             stale.append(c.path)
         elif c.cls == StubClass.CLEAN_REDIRECT:
             clean += 1
-        elif c.cls == StubClass.FVH_ORIGINAL:
+        elif c.cls == StubClass.NS_ORIGINAL:
             original += 1
     return StubsPlan(
         broken_redirects=sorted(broken),
         stale_duplicates=sorted(stale),
         clean_redirects=clean,
-        fvh_originals=original,
+        ns_originals=original,
     )
 
 
@@ -75,10 +75,13 @@ def run_stubs(vault: Path, *, apply: bool = False) -> StubsResult:
 
     # Rewrite broken redirects inside the worktree.
     wt_index = scan(handle.worktree_path)
-    results = rewrite_broken_redirects(wt_index)
+    results = rewrite_broken_redirects(wt_index, audit.config)
     changed = sum(1 for r in results if r.changed)
     if changed:
-        msg = f"fix(stubs): restore canonical redirect body in {changed} FVH/z files"
+        msg = (
+            f"fix(stubs): restore canonical redirect body in "
+            f"{changed} work-namespace files"
+        )
         if commit_all(handle, msg):
             commits.append(msg)
 
@@ -92,7 +95,7 @@ def render_dry_run(plan: StubsPlan) -> str:
         "Dry run — no files touched.",
         "",
         f"  clean_redirect  : {plan.clean_redirects} (OK, no action)",
-        f"  fvh_original    : {plan.fvh_originals} (OK, no action)",
+        f"  ns_original     : {plan.ns_originals} (OK, no action)",
         f"  broken_redirect : {len(plan.broken_redirects)} (will rewrite to canonical body)",
         f"  stale_duplicate : {len(plan.stale_duplicates)} (needs LLM-backed content merge — not auto-fixed)",
         "",

@@ -50,7 +50,7 @@ terminal-only view can't see.
 ## Example briefing
 
 ```
-Spin-up — project: fvh.cost-attribution (cwd: repos/ForumViriumHelsinki/infrastructure)
+Spin-up — project: work.cost-attribution (cwd: repos/<org>/infrastructure)
 
   taskwarrior (3 pending)
     +ACTIVE  #237 "Cluster fallback rules"
