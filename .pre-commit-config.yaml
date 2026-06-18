@@ -93,3 +93,9 @@ repos:
         language: system
         files: '^scripts/(plugin-compliance-check\.sh|tests/test-plugin-compliance-skill-size\.sh)$'
         pass_filenames: false
+      - id: test-audit-scripts-exit
+        name: scheduled-audits scripts exit 0 under set -euo pipefail (scheduled-audits)
+        entry: bash ./scripts/tests/test-audit-scripts-exit.sh
+        language: system
+        files: '^scripts/(blueprint-health-check\.sh|infra-compliance-check\.sh|tests/test-audit-scripts-exit\.sh)$'
+        pass_filenames: false
