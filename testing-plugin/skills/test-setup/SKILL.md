@@ -1,8 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
-reviewed: 2026-04-25
 modified: 2026-06-18
+reviewed: 2026-04-25
 allowed-tools: Read, Write, Edit, MultiEdit, Bash(pip install *), Bash(npm install *), Bash(pre-commit *), Bash(pytest *), Bash(npm test *), Bash(git *), TodoWrite, SlashCommand
 description: "Configure testing infrastructure with CI/CD. Use when setting up tests, scaffolding test dirs, adding pre-commit hooks, GitHub Actions workflows, Codecov, or coverage badges."
 args: "[--coverage] [--ci <github|gitlab|circleci>]"
