@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.15.2](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.15.1...testing-plugin-v3.15.2) (2026-06-18)
+
+
+### Bug Fixes
+
+* **testing-plugin:** remove duplicate modified key blocking opencode export ([#1702](https://github.com/laurigates/claude-plugins/issues/1702)) ([bab0e1f](https://github.com/laurigates/claude-plugins/commit/bab0e1f8b06fe5cc48ef2169713d48107cc62d08))
+
 ## [3.15.1](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.15.0...testing-plugin-v3.15.1) (2026-06-18)
 
 
