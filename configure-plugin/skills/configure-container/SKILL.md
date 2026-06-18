@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-06-01
+modified: 2026-06-18
 reviewed: 2026-06-01
 description: "Container infrastructure: GHCR builds, Trivy/Grype scanning, devcontainer. Use when setting up multi-platform GHCR workflows or adding container scanning to CI."
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite, SlashCommand, WebSearch, WebFetch
@@ -27,8 +27,8 @@ Check and configure comprehensive container infrastructure against project stand
 
 - Dockerfiles: !`find . -maxdepth 2 \( -name 'Dockerfile' -o -name 'Dockerfile.*' -o -name '*.Dockerfile' \)`
 - Docker ignore: !`find . -maxdepth 1 -name '.dockerignore'`
-- Container workflows: !`find .github/workflows -maxdepth 1 \( -name '*container*' -o -name '*docker*' -o -name '*build*' \)`
-- Devcontainer: !`find .devcontainer -maxdepth 1 -name 'devcontainer.json'`
+- Container workflows: !`find . -path '*/.github/workflows/*' -maxdepth 3 \( -name '*container*' -o -name '*docker*' -o -name '*build*' \)`
+- Devcontainer: !`find . -path '*/.devcontainer/*' -maxdepth 2 -name 'devcontainer.json'`
 - Skaffold: !`find . -maxdepth 1 -name 'skaffold.yaml'`
 - Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \)`
 - Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml'`

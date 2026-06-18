@@ -27,7 +27,7 @@ Check and configure integration testing infrastructure for testing service inter
 
 - Project root: !`pwd`
 - Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \)`
-- Integration tests dir: !`find tests -maxdepth 1 -type d -name 'integration'`
+- Integration tests dir: !`find . -path '*/tests/*' -maxdepth 2 -type d -name 'integration'`
 - Docker compose test: !`find . -maxdepth 1 -name 'docker-compose.test.yml'`
 - Vitest integration config: !`find . -maxdepth 1 -name 'vitest.integration.config.*'`
 - Supertest dep: !`find . -maxdepth 1 -name 'package.json' -exec grep -l 'supertest' {} +`

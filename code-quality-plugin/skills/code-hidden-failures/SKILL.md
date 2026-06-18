@@ -1,6 +1,6 @@
 ---
 created: 2026-04-14
-modified: 2026-05-29
+modified: 2026-06-18
 reviewed: 2026-05-29
 allowed-tools: Bash(bash *), Bash(sg *), Bash(grep *), Read, Grep, Glob, Edit, Write, TodoWrite
 args: "[PATH] [--track <errors|degradation|both>] [--lang <shell|js|py|go|rust|auto>] [--severity <low|med|high>] [--emit-patch] [--fix]"
@@ -42,7 +42,7 @@ with a `--track` selector.
 - App-type signals (CLI): !`find . -maxdepth 2 \( -name 'bin' -type d -o -name 'Makefile' -o -name 'justfile' \)`
 - App-type signals (service): !`find . -maxdepth 2 \( -name 'Dockerfile' -o -name '*.service' -o -name 'pyproject.toml' \) -type f`
 - Config signals: !`find . -maxdepth 2 \( -name '.env*' -o -name 'config.*' -o -name 'settings.*' \) -type f`
-- Workflows: !`find .github/workflows -maxdepth 1 -name '*.yml' -type f`
+- Workflows: !`find . -path '*/.github/workflows/*' -maxdepth 3 -name '*.yml' -type f`
 
 ## Parameters
 

@@ -32,7 +32,7 @@ Check and configure UX testing infrastructure with Playwright as the primary too
 - E2E test dir: !`find . -maxdepth 2 -type d \( -name 'e2e' -o -name 'tests' \)`
 - Visual snapshots: !`find . -maxdepth 4 -type d -name '__snapshots__'`
 - MCP config: !`find . -maxdepth 1 -name '.mcp.json'`
-- CI workflow: !`find .github/workflows -maxdepth 1 -name 'e2e*'`
+- CI workflow: !`find . -path '*/.github/workflows/*' -maxdepth 3 -name 'e2e*'`
 
 **UX Testing Stack:**
 - **Playwright** - Cross-browser E2E testing (primary tool)

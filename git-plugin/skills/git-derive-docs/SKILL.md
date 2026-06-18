@@ -1,6 +1,6 @@
 ---
 created: 2026-01-24
-modified: 2026-06-10
+modified: 2026-06-18
 reviewed: 2026-06-10
 allowed-tools: Bash(bash *), Bash(git log *), Bash(git shortlog *), Bash(git diff *), Bash(git branch *),
                Bash(git show *), Bash(git rev-list *), Bash(git diff-tree *),
@@ -26,8 +26,8 @@ name: git-derive-docs
 - Current branch: !`git branch --show-current`
 - Commit count: !`git rev-list --count HEAD`
 - Latest commit: !`git log --format='%ai' --max-count=1`
-- Existing rules: !`find .claude/rules/ -maxdepth 1 -type f`
-- Existing docs: !`find docs/prds/ docs/adrs/ docs/prps/ -maxdepth 1 -type f`
+- Existing rules: !`find . -path '*/.claude/rules/*' -maxdepth 3 -type f`
+- Existing docs: !`find . -maxdepth 3 \( -path '*/docs/prds/*' -o -path '*/docs/adrs/*' -o -path '*/docs/prps/*' \) -type f`
 - Commit conventions sample: !`git log --format='%s' --max-count=20`
 
 ## Parameters

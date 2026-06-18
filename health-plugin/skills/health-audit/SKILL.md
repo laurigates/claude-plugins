@@ -1,6 +1,6 @@
 ---
 created: 2026-02-05
-modified: 2026-05-09
+modified: 2026-06-18
 reviewed: 2026-04-15
 user-invocable: false
 description: "Plugin audit against detected stack (Python, Node, Rust, Go, Terraform, Docker, K8s). Use when cleaning up unused plugins or discovering stack-relevant ones for a project."
@@ -35,7 +35,7 @@ Audit the project's enabled plugins against the actual technology stack. Identif
 - go.mod exists: !`find . -maxdepth 1 -name 'go.mod'`
 - Dockerfile exists: !`find . -maxdepth 1 -name 'Dockerfile'`
 - docker-compose exists: !`find . -maxdepth 1 \( -name 'docker-compose.yml' -o -name 'docker-compose.yaml' -o -name 'compose.yml' -o -name 'compose.yaml' \)`
-- GitHub workflows: !`find .github/workflows -maxdepth 1 -name '*.yml' -quit -print`
+- GitHub workflows: !`find . -path '*/.github/workflows/*' -maxdepth 3 -name '*.yml' -quit -print`
 - Terraform files: !`find . -maxdepth 2 -name '*.tf' -quit -print`
 - Kubernetes manifests: !`find . -maxdepth 3 \( -path '*/k8s/*' -o -path '*/kubernetes/*' \) -name '*.yaml' -quit -print`
 

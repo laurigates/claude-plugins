@@ -6,7 +6,7 @@ allowed-tools: Bash(gh api *), Bash(gh pr *), Bash(gh repo *), Bash(base64 *), B
 argument-hint: '<files...> --title "type(scope): description"'
 disable-model-invocation: true
 created: 2026-02-15
-modified: 2026-04-29
+modified: 2026-06-18
 reviewed: 2026-04-29
 ---
 
@@ -22,8 +22,8 @@ reviewed: 2026-04-29
 
 ## Context
 
-- Repo: !`git remote get-url origin`
-- Default branch: !`git symbolic-ref refs/remotes/origin/HEAD`
+- Repo: !`git remote -v`
+- Default branch (configured): !`git config --default '' --get init.defaultBranch`
 - Auth: !`gh auth status`
 - Working dir: !`pwd`
 

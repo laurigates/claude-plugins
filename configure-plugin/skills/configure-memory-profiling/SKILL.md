@@ -29,10 +29,10 @@ Check and configure memory profiling infrastructure for Python projects using py
 - Python project: !`find . -maxdepth 1 \( -name 'pyproject.toml' -o -name 'setup.py' \)`
 - pytest-memray installed: !`find . -maxdepth 1 \( -name 'pyproject.toml' -o -name 'requirements*.txt' \) -exec grep 'pytest-memray' {} +`
 - memray installed: !`find . -maxdepth 1 \( -name 'pyproject.toml' -o -name 'requirements*.txt' \) -exec grep 'memray' {} +`
-- Conftest fixtures: !`find tests -maxdepth 1 -name 'conftest.py' -exec grep -l 'memray' {} +`
-- Memory test files: !`find tests -maxdepth 2 -name '*memory*' -o -name '*memray*'`
-- Benchmark tests: !`find tests -maxdepth 2 -type d -name 'benchmarks'`
-- CI workflows: !`find .github/workflows -maxdepth 1 -name '*memory*'`
+- Conftest fixtures: !`find . -path '*/tests/*' -maxdepth 2 -name 'conftest.py' -exec grep -l 'memray' {} +`
+- Memory test files: !`find . -path '*/tests/*' -maxdepth 3 -name '*memory*' -o -name '*memray*'`
+- Benchmark tests: !`find . -path '*/tests/*' -maxdepth 3 -type d -name 'benchmarks'`
+- CI workflows: !`find . -path '*/.github/workflows/*' -maxdepth 3 -name '*memory*'`
 - Memory reports dir: !`find . -maxdepth 1 -type d -name 'memory-reports'`
 
 ## Parameters

@@ -6,7 +6,7 @@ allowed-tools: Task, Read, Write, Edit, Glob, Grep, Bash(bash *), TodoWrite
 argument-hint: "git-plugin/git-commit [--create-evals] [--runs 3] [--baseline]"
 agent: general-purpose
 created: 2026-03-04
-modified: 2026-04-12
+modified: 2026-06-18
 reviewed: 2026-03-04
 ---
 
@@ -25,7 +25,7 @@ Evaluate a skill's effectiveness by running behavioral test cases and grading th
 
 ## Context
 
-- Skill files: !`bash ${CLAUDE_PLUGIN_ROOT}/scripts/inspect_eval.sh --plugin-dir $1`
+- Available skills: !`find . -path '*/skills/*' -name 'SKILL.md' -not -path '*/.claude/worktrees/*'`
 
 ## Parameters
 

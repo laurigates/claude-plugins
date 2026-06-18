@@ -1,6 +1,6 @@
 ---
 created: 2026-06-14
-modified: 2026-06-14
+modified: 2026-06-18
 reviewed: 2026-06-14
 description: "Surface doc-drift gate: scaffold surf.toml + hubs, wire the SHA-pinned pre-commit/Action. Use when adding a docs-governed-like-code CI gate."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebFetch
@@ -37,7 +37,7 @@ relaxed comparisons, and dropped `await`.
 - surf.toml: !`find . -maxdepth 2 -name 'surf.toml'`
 - Hubs dir: !`find . -maxdepth 2 -type d -name 'hubs'`
 - Pre-commit config: !`find . -maxdepth 1 -name '.pre-commit-config.yaml'`
-- Workflows: !`find .github/workflows -maxdepth 1 -name '*.yml'`
+- Workflows: !`find . -path '*/.github/workflows/*' -maxdepth 3 -name '*.yml'`
 - Language markers: !`find . -maxdepth 1 \( -name 'Cargo.toml' -o -name 'package.json' -o -name 'pyproject.toml' -o -name 'go.mod' \)`
 
 ## Parameters

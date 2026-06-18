@@ -5,7 +5,7 @@ args: "[--max-depth N] [--dry-run]"
 argument-hint: "--dry-run to preview without writing; --max-depth sets search depth (default 4)"
 allowed-tools: Bash(bash *), Read, Glob
 created: 2026-04-12
-modified: 2026-05-09
+modified: 2026-06-18
 reviewed: 2026-04-12
 ---
 
@@ -26,7 +26,7 @@ root manifest.
 
 ## Context
 
-- Root manifest: !`find docs/blueprint -maxdepth 1 -name manifest.json`
+- Root manifest: !`find . -path '*/docs/blueprint/*' -maxdepth 3 -name manifest.json`
 - Candidate child manifests: !`find . -maxdepth 6 -type d \( -name node_modules -o -name .git -o -name dist -o -name build \) -prune -o -type f -path '*/docs/blueprint/manifest.json' -print`
 - Current scan time: !`date -u +%Y-%m-%dT%H:%M:%SZ`
 

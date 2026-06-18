@@ -30,7 +30,7 @@ Display infrastructure standards compliance status without making changes.
 - Standards version: !`find . -maxdepth 1 -name '.project-standards.yaml' -exec grep -m1 "^standards_version:" {} +`
 - Last configured: !`find . -maxdepth 1 -name '.project-standards.yaml' -exec grep -m1 "^last_configured:" {} +`
 - Pre-commit config: !`find . -maxdepth 1 -name \'.pre-commit-config.yaml\'`
-- Workflows: !`find .github/workflows -maxdepth 1 -name '*.yml'`
+- Workflows: !`find . -path '*/.github/workflows/*' -maxdepth 3 -name '*.yml'`
 - Has Dockerfile: !`find . -maxdepth 1 -name 'Dockerfile*' -print -quit`
 - Has skaffold: !`find . -maxdepth 1 -name \'skaffold.yaml\'`
 - Has helm: !`find . -maxdepth 2 -type d -name 'helm' -print -quit`

@@ -25,9 +25,9 @@ Validate Architecture Decision Records for relationship consistency, reference i
 
 ## Context
 
-- ADR directory exists: !`find docs -maxdepth 1 -name 'adrs' -type d`
-- ADR count: !`find docs/adrs -name "*.md" -type f`
-- Domain-tagged ADRs: !`find docs/adrs -maxdepth 1 -name '*.md' -exec grep -l "^domain:" {} +`
+- ADR directory exists: !`find . -path '*/docs/adrs' -maxdepth 2 -type d`
+- ADR count: !`find . -path '*/docs/adrs/*' -name "*.md" -type f`
+- Domain-tagged ADRs: !`find . -path '*/docs/adrs/*' -maxdepth 3 -name '*.md' -exec grep -l "^domain:" {} +`
 - Flag: !`echo "${1:---}"`
 
 ## Parameters

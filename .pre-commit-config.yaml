@@ -15,6 +15,13 @@ repos:
         language: script
         files: '(SKILL|skill)\.md$'
         pass_filenames: false
+      - id: check-context-command-execution
+        name: execute context commands in a bare sandbox (must not abort)
+        entry: ./scripts/check-context-command-execution.sh --strict
+        language: script
+        files: '(SKILL|skill)\.md$'
+        exclude: '^\.claude/'
+        pass_filenames: true
       - id: check-driver-freshness
         name: check configure-repo driver freshness
         entry: bash ./scripts/check-driver-freshness.sh
@@ -98,4 +105,10 @@ repos:
         entry: bash ./scripts/tests/test-audit-scripts-exit.sh
         language: system
         files: '^scripts/(blueprint-health-check\.sh|infra-compliance-check\.sh|tests/test-audit-scripts-exit\.sh)$'
+        pass_filenames: false
+      - id: test-check-context-command-execution
+        name: context-command execution harness regression
+        entry: bash ./scripts/tests/test-check-context-command-execution.sh
+        language: system
+        files: '^scripts/(check-context-command-execution\.sh|tests/test-check-context-command-execution\.sh)$'
         pass_filenames: false

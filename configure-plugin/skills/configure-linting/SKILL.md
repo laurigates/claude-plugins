@@ -32,7 +32,7 @@ Check and configure linting tools against modern best practices.
 - Legacy linters: !`find . -maxdepth 1 \( -name '.eslintrc*' -o -name '.flake8' -o -name '.pylintrc' \)`
 - Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' \)`
 - Pre-commit config: !`find . -maxdepth 1 -name '.pre-commit-config.yaml'`
-- CI workflows: !`find .github/workflows -maxdepth 1 -name '*.yml'`
+- CI workflows: !`find . -path '*/.github/workflows/*' -maxdepth 3 -name '*.yml'`
 
 ## Parameters
 

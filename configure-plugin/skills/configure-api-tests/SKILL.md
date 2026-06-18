@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
+modified: 2026-06-18
 reviewed: 2025-12-16
 description: "API contract testing: Pact, OpenAPI validation, JSON Schema/Zod. Use when adding consumer/provider contract tests or detecting breaking API changes in CI."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
@@ -30,7 +30,7 @@ Check and configure API contract testing infrastructure for validating API contr
 - Pact deps: !`find . -maxdepth 1 \( -name package.json -o -name pyproject.toml \) -exec grep -l 'pact' {} +`
 - OpenAPI spec: !`find . -maxdepth 1 \( -name 'openapi.yaml' -o -name 'openapi.json' -o -name 'swagger.json' \)`
 - Pact dir: !`find . -maxdepth 1 -type d -name 'pacts'`
-- Contract tests: !`find tests -maxdepth 2 -type d -name 'contract'`
+- Contract tests: !`find . -path '*/tests/*' -maxdepth 3 -type d -name 'contract'`
 - Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml'`
 
 ## Parameters

@@ -34,9 +34,9 @@ Check and configure Sentry error tracking integration against project standards.
 - Sentry in pyproject.toml: !`find . -maxdepth 1 -name 'pyproject.toml' -exec grep 'sentry' {} +`
 - Sentry init files: !`find . -maxdepth 3 -name "*sentry*" -type f`
 - Next.js config: !`find . -maxdepth 1 -name 'next.config.*'`
-- Instrumentation files: !`find src -maxdepth 1 -name 'instrumentation*' -type f`
+- Instrumentation files: !`find . -path '*/src/*' -maxdepth 2 -name 'instrumentation*' -type f`
 - Env files referencing DSN: !`find . \( -name '.env*' -o -path '*/.github/workflows/*' \) -type f -exec grep -l 'SENTRY_DSN' {} +`
-- CI workflows: !`find .github/workflows -maxdepth 1 -name '*.yml'`
+- CI workflows: !`find . -path '*/.github/workflows/*' -maxdepth 3 -name '*.yml'`
 
 **Skills referenced**: `sentry` (MCP server for Sentry API)
 

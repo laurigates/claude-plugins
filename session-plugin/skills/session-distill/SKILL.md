@@ -5,7 +5,7 @@ allowed-tools: Bash(git diff *), Bash(git log *), Bash(git status *), Bash(just 
 argument-hint: "--rules | --skills | --recipes | --all | --dry-run"
 args: "[--rules] [--skills] [--recipes] [--all] [--dry-run]"
 created: 2026-02-11
-modified: 2026-06-10
+modified: 2026-06-18
 reviewed: 2026-02-26
 ---
 
@@ -35,7 +35,7 @@ Before proposing any artifact, evaluate: Does it update an existing one? Does an
 
 - Git repo detected: !`find . -maxdepth 1 -name '.git' -type d`
 - Justfile: !`find . -maxdepth 1 \( -name 'justfile' -o -name 'Justfile' \) -print -quit`
-- Rules directory: !`find .claude/rules -name '*.md' -type f`
+- Rules directory: !`find . -path '*/.claude/rules/*' -name '*.md' -type f -not -path '*/.claude/worktrees/*'`
 
 ## Parameters
 

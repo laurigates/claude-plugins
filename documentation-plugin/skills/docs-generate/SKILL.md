@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-06-18
 reviewed: 2026-04-25
 allowed-tools: Task, TodoWrite
 args: "[--api] [--readme] [--changelog]"
@@ -24,7 +24,7 @@ agent: general-purpose
 - Project files: !`find . -maxdepth 1 \( -name 'pyproject.toml' -o -name 'package.json' -o -name 'Cargo.toml' -o -name 'go.mod' \)`
 - Existing docs: !`find . -maxdepth 1 \( -name 'README.md' -o -type d -name 'docs' \)`
 - Source files: !`find . -type f \( -name "*.py" -o -name "*.ts" -o -name "*.js" \)`
-- Python with docstrings: !`grep -r "\"\"\"" --include="*.py" -l`
+- Python files: !`find . -type f -name "*.py" -not -path '*/node_modules/*' -not -path '*/.claude/worktrees/*'`
 
 ## Parameters
 

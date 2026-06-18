@@ -8,6 +8,7 @@ on:
       - '**/skills/**/REFERENCE.md'
       - 'taskwarrior-plugin/**/*.md'
       - 'scripts/lint-context-commands.sh'
+      - 'scripts/check-context-command-execution.sh'
       - 'scripts/audit-skill-descriptions.py'
       - 'scripts/lint-taskwarrior-tags.sh'
       - 'scripts/lint-package-references.sh'
@@ -20,6 +21,7 @@ on:
       - '**/skills/**/REFERENCE.md'
       - 'taskwarrior-plugin/**/*.md'
       - 'scripts/lint-context-commands.sh'
+      - 'scripts/check-context-command-execution.sh'
       - 'scripts/audit-skill-descriptions.py'
       - 'scripts/lint-taskwarrior-tags.sh'
       - 'scripts/lint-package-references.sh'
@@ -35,6 +37,13 @@ jobs:
 
       - name: Lint context commands
         run: ./scripts/lint-context-commands.sh
+
+      - name: Execute context commands in a bare sandbox (must not abort)
+        # Semantic backstop to the regex lint above: actually runs every
+        # published skill's `## Context` backtick command in a one-commit
+        # sandbox and fails if any writes to stderr or exits non-zero (the
+        # skill-abort class). See scripts/check-context-command-execution.sh.
+        run: ./scripts/check-context-command-execution.sh --strict
 
       - name: Install Python deps for skill-description audit
         run: pip install --quiet pyyaml

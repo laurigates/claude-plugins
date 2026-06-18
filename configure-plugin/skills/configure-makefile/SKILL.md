@@ -30,7 +30,7 @@ Check and configure project Makefile against project standards.
 - Makefile targets: !`find . -maxdepth 1 -name 'Makefile' -exec grep -E '^[a-zA-Z_-]+:' {} +`
 - Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \)`
 - Docker files: !`find . -maxdepth 1 \( -name 'Dockerfile' -o -name 'docker-compose.yml' -o -name 'compose.yml' \)`
-- Server files: !`find src -maxdepth 1 \( -name 'server.*' -o -name 'main.*' \)`
+- Server files: !`find . -path '*/src/*' -maxdepth 2 \( -name 'server.*' -o -name 'main.*' \)`
 
 ## Parameters
 

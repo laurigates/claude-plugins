@@ -1,6 +1,6 @@
 ---
 created: 2026-06-16
-modified: 2026-06-16
+modified: 2026-06-18
 reviewed: 2026-06-16
 allowed-tools: Glob, Read, Edit, Write, Bash(git status *), Bash(git diff *), Bash(wc *), Bash(ls *), AskUserQuestion, TodoWrite
 model: opus
@@ -29,7 +29,7 @@ The premise: `CLAUDE.md` and unscoped rules are paid for on **every** turn. A sk
 
 - Current directory: !`pwd`
 - CLAUDE.md files in tree: !`find . -maxdepth 3 -name 'CLAUDE.md' -not -path '*/node_modules/*' -not -path '*/.claude/worktrees/*'`
-- Local rules: !`find .claude/rules -maxdepth 1 -name '*.md' -not -path '*/.claude/worktrees/*'`
+- Local rules: !`find . -path '*/.claude/rules/*' -maxdepth 3 -name '*.md' -not -path '*/.claude/worktrees/*'`
 - User-global rules are resolved during execution (Step 1), not here — `$HOME` paths and error redirection are disallowed in Context commands.
 
 ## Parameters

@@ -5,7 +5,7 @@ args: "[issue-number|branch-name]"
 allowed-tools: Bash(bash *), Bash(git fetch *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git remote *), Bash(git stash *), Bash(gh pr *), Bash(gh issue *), Read, Grep, Glob, TodoWrite
 argument-hint: optional issue number or branch name to check
 created: 2026-02-08
-modified: 2026-06-10
+modified: 2026-06-18
 reviewed: 2026-06-10
 ---
 
@@ -24,7 +24,7 @@ Pre-work validation to prevent wasted effort from stale state, redundant work, o
 
 ## Context
 
-- Repo: !`git remote get-url origin`
+- Repo: !`git remote -v`
 - Current branch: !`git branch --show-current`
 - Remote tracking: !`git branch -vv --format='%(refname:short) %(upstream:short) %(upstream:track)'`
 - Uncommitted changes: !`git status --porcelain`

@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-06-18
 reviewed: 2026-04-25
 allowed-tools: Task, TodoWrite
 args: "[path] [--watch] [--affected]"
@@ -22,7 +22,7 @@ name: test-quick
 
 - Project type: !`find . -maxdepth 1 \( -name 'pyproject.toml' -o -name 'package.json' -o -name 'Cargo.toml' -o -name 'go.mod' \)`
 - Test directories: !`find . -maxdepth 2 -type d \( -path '*/tests/unit' -o -path '*/test/unit' -o -path '*/__tests__/unit' \)`
-- Last test run: !`find .pytest_cache/v/cache -maxdepth 1 -name 'lastfailed'`
+- Last test run: !`find . -path '*/.pytest_cache/v/cache/*' -maxdepth 4 -name 'lastfailed'`
 
 ## Parameters
 

@@ -1,6 +1,6 @@
 ---
 created: 2026-04-25
-modified: 2026-05-09
+modified: 2026-06-18
 reviewed: 2026-04-25
 description: Reconcile PRD requirements with a story-audit drift report. Use when marking PRD entries implemented/partial/missing, or promoting code-only stories into the PRD.
 args: "[--audit <path>] [--prd <path>] [--apply-all] [--dry-run]"
@@ -28,10 +28,10 @@ This skill **only edits PRDs**. Code changes belong to `/blueprint:work-order`. 
 
 ## Context
 
-- Latest audit: !`find docs/blueprint/audits -maxdepth 1 -name '*-story-audit.md'`
-- PRD directory: !`find docs -maxdepth 1 -name 'prds' -type d`
-- PRD files: !`find docs/prds -maxdepth 1 -name '*.md'`
-- Manifest: !`find docs/blueprint -maxdepth 1 -name 'manifest.json'`
+- Latest audit: !`find . -path '*/docs/blueprint/audits/*' -maxdepth 4 -name '*-story-audit.md'`
+- PRD directory: !`find . -path '*/docs/prds' -maxdepth 2 -type d`
+- PRD files: !`find . -path '*/docs/prds/*' -maxdepth 3 -name '*.md'`
+- Manifest: !`find . -path '*/docs/blueprint/*' -maxdepth 3 -name 'manifest.json'`
 - Branch: !`git branch --show-current`
 - Repo status: !`git status --porcelain=v2 --branch`
 

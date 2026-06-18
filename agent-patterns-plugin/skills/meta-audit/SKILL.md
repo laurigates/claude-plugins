@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-04
+modified: 2026-06-18
 reviewed: 2026-04-25
 allowed-tools: Glob, Read, TodoWrite
 model: opus
@@ -22,8 +22,8 @@ name: meta-audit
 
 ## Context
 
-- Agent definitions: !`find .claude/agents -name "*.md" -not -name "settings*"`
-- Settings file: !`find .claude/agents -maxdepth 1 -name "settings.local.json" -type f`
+- Agent definitions: !`find . -path '*/.claude/agents/*' -name "*.md" -not -name "settings*"`
+- Settings file: !`find . -path '*/.claude/agents/*' -maxdepth 3 -name "settings.local.json" -type f`
 
 ## Your task
 

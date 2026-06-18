@@ -34,8 +34,8 @@ For detailed report templates, deferred items workflow, feature tracker sync, an
 ## Context
 
 - PRP file path: !`find . -maxdepth 1 -name \'docs/prps/${1:-unknown}.md\'`
-- PRP confidence score: !`find docs/prps -maxdepth 1 -name "${1:-unknown}.md" -exec grep -m1 "^confidence:" {} +`
-- Feature tracker enabled: !`find docs/blueprint -maxdepth 1 -name 'feature-tracker.json' -type f`
+- PRP confidence score: !`find . -path '*/docs/prps/*' -maxdepth 3 -name "${1:-unknown}.md" -exec grep -m1 "^confidence:" {} +`
+- Feature tracker enabled: !`find . -path '*/docs/blueprint/*' -maxdepth 3 -name 'feature-tracker.json' -type f`
 - Current branch: !`git rev-parse --abbrev-ref HEAD`
 - Uncommitted changes: !`git status --porcelain`
 

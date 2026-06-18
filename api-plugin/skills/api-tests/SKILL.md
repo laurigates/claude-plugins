@@ -34,7 +34,7 @@ Check and configure API contract testing infrastructure for validating API contr
 - Pact contracts dir: !`find . -maxdepth 1 -type d -name \'pacts\'`
 - Contract tests: !`find . -maxdepth 3 -type d -name 'contract'`
 - API test files: !`find . -maxdepth 4 \( -name '*.pact.*' -o -name '*.openapi.*' -o -name '*.contract.*' \)`
-- CI workflows: !`find .github/workflows -maxdepth 1 \( -name '*api*' -o -name '*contract*' -o -name '*pact*' \)`
+- CI workflows: !`find . -path '*/.github/workflows/*' -maxdepth 3 \( -name '*api*' -o -name '*contract*' -o -name '*pact*' \)`
 
 ## Parameters
 

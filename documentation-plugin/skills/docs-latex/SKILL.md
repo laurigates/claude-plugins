@@ -6,7 +6,7 @@ allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 argument-hint: path/to/document.md
 disable-model-invocation: true
 created: 2026-02-08
-modified: 2026-05-09
+modified: 2026-06-18
 reviewed: 2026-02-08
 ---
 
@@ -25,7 +25,6 @@ Convert Markdown documents to professional LaTeX with advanced typesetting, TikZ
 
 ## Context
 
-- LaTeX installed: !`which pdflatex`
 - Current directory: !`pwd`
 - Available .md files: !`find . -maxdepth 2 -name '*.md' -not -name 'CHANGELOG.md' -not -name 'README.md'`
 

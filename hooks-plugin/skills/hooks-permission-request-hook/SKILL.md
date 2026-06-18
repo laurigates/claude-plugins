@@ -6,7 +6,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash, TodoWrite
 argument-hint: "--strict to deny unknown commands, --category git|test|lint|build|gh|deny"
 disable-model-invocation: true
 created: 2026-03-13
-modified: 2026-05-11
+modified: 2026-06-18
 reviewed: 2026-04-29
 ---
 
@@ -40,10 +40,10 @@ Detect project stack:
 
 - Lockfiles: !`find . -maxdepth 1 \( -name 'package-lock.json' -o -name 'yarn.lock' -o -name 'pnpm-lock.yaml' -o -name 'bun.lockb' -o -name 'poetry.lock' -o -name 'uv.lock' -o -name 'Cargo.lock' -o -name 'go.sum' -o -name 'Gemfile.lock' \)`
 - Project files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'requirements.txt' -o -name 'Cargo.toml' -o -name 'go.mod' -o -name 'Gemfile' \)`
-- Existing settings: !`find .claude -maxdepth 1 -name 'settings.json' -type f`
+- Existing settings: !`find . -path '*/.claude/settings.json' -maxdepth 3 -type f`
 - Existing hooks dir: !`find . -maxdepth 2 -type d -name 'scripts'`
 - jq available: !`jq --version`
-- Existing PermissionRequest hooks: !`jq -r '.hooks.PermissionRequest // empty' .claude/settings.json`
+- Existing PermissionRequest hooks: !`find . -path '*/.claude/settings.json' -maxdepth 3 -exec jq -r '.hooks.PermissionRequest // empty' {} +`
 
 ## Parameters
 

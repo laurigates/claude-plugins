@@ -6,7 +6,7 @@ allowed-tools: Task, Read, Write, Glob, Grep, Bash(bash *), SlashCommand, TodoWr
 argument-hint: "git-plugin [--create-missing-evals]"
 agent: general-purpose
 created: 2026-03-04
-modified: 2026-04-12
+modified: 2026-06-18
 reviewed: 2026-03-04
 ---
 
@@ -24,7 +24,7 @@ Batch evaluate all skills in a plugin. Runs `/evaluate:skill` for each skill, th
 
 ## Context
 
-- Plugin inventory: !`bash ${CLAUDE_PLUGIN_ROOT}/scripts/inspect_eval.sh --plugin-dir $1`
+- Available plugins: !`find . -maxdepth 2 -type d -name '*-plugin' -not -name '.claude-plugin'`
 
 ## Parameters
 
