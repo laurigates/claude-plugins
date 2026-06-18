@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.45.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.44.1...git-plugin-v2.45.0) (2026-06-18)
+
+
+### Features
+
+* **git-plugin:** add PR-branch-sync guards and PR-watch ([#1687](https://github.com/laurigates/claude-plugins/issues/1687)) ([e53ac7e](https://github.com/laurigates/claude-plugins/commit/e53ac7ee32355bd098ba490b0afbf88b7e6cb6b8))
+
 ## [2.44.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.44.0...git-plugin-v2.44.1) (2026-06-15)
 
 
