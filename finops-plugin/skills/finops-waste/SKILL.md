@@ -4,7 +4,7 @@ args: "[repo]"
 allowed-tools: Bash(gh api *), Bash(gh workflow *), Bash(gh repo *), Bash(bash *), Read, Grep, Glob, Edit, TodoWrite
 argument-hint: Optional repo (owner/name format, defaults to current repo)
 created: 2025-01-30
-modified: 2026-04-25
+modified: 2026-06-18
 reviewed: 2026-04-25
 name: finops-waste
 ---
@@ -24,8 +24,8 @@ Identify GitHub Actions waste patterns and provide actionable fix suggestions. A
 
 ## Context
 
-- Current repo URL: !`git remote get-url origin`
-- Workflow files: !`find .github/workflows -maxdepth 1 \( -name '*.yml' -o -name '*.yaml' \)`
+- Current repo URL: !`git remote -v`
+- Workflow files: !`find . -path '*/.github/workflows/*' -maxdepth 3 \( -name '*.yml' -o -name '*.yaml' \)`
 
 ## Parameters
 

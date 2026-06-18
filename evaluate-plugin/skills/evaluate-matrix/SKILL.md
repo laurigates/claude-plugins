@@ -7,7 +7,7 @@ argument-hint: "git-plugin/git-commit --models opus,haiku --with-skill-only"
 model: opus
 agent: general-purpose
 created: 2026-06-13
-modified: 2026-06-13
+modified: 2026-06-18
 reviewed: 2026-06-13
 ---
 
@@ -37,7 +37,7 @@ calls a follow-up. It reuses, without duplicating: `prepare_run.sh`,
 
 ## Context
 
-- Skill eval setup: !`bash ${CLAUDE_PLUGIN_ROOT}/scripts/inspect_eval.sh --plugin-dir $1`
+- Available plugins: !`find . -maxdepth 2 -type d -name '*-plugin' -not -name '.claude-plugin'`
 
 ## Parameters
 

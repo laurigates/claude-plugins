@@ -6,7 +6,7 @@ allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git r
 argument-hint: --commits abc123,def456 or --branch feat/my-upstream-pr
 disable-model-invocation: true
 created: 2026-03-02
-modified: 2026-05-09
+modified: 2026-06-18
 reviewed: 2026-03-02
 ---
 
@@ -28,9 +28,9 @@ Submit clean, atomic PRs to upstream repositories from fork work.
 - Current branch: !`git branch --show-current`
 - Git status: !`git status --porcelain=v2 --branch`
 - Remotes: !`git remote -v`
-- Has upstream: !`git remote get-url upstream`
-- Origin URL: !`git remote get-url origin`
-- Upstream URL: !`git remote get-url upstream`
+- Has upstream: !`git remote -v`
+- Origin URL: !`git remote -v`
+- Upstream URL: !`git remote -v`
 - Recent commits: !`git log --oneline --max-count=20`
 - Stash list: !`git stash list`
 

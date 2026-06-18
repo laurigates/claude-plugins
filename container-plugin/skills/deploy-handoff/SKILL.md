@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-06-18
 reviewed: 2026-04-25
 allowed-tools: Read, Bash(git *), mcp__github__get_pull_request, mcp__github__list_issues, TodoWrite
 args: "[resource-name] [deployment-type]"
@@ -30,7 +30,7 @@ Generate professional handoff messages for deployed resources and services with 
 - Last commit: !`git log --oneline --max-count=1`
 - README: !`find . -maxdepth 1 -name \'README.md\'`
 - Docker: !`find . -maxdepth 1 \( -name "Dockerfile" -o -name "docker-compose*.yml" \)`
-- CI/CD: !`find .github/workflows -maxdepth 1 -name '*.yml'`
+- CI/CD: !`find . -path '*/.github/workflows/*' -maxdepth 3 -name '*.yml'`
 - Config files: !`find . -maxdepth 1 \( -name ".env.example" -o -name "*.config.*" \)`
 
 ## Parameters

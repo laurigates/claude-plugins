@@ -1,6 +1,6 @@
 ---
 created: 2025-02-03
-modified: 2026-05-09
+modified: 2026-06-18
 reviewed: 2026-04-25
 description: Version badge with build-info tooltip (version, commit, changelog). Use when adding version display to app header/footer for Next.js, Nuxt, SvelteKit, Vite, React, Vue, or Svelte.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
@@ -28,7 +28,7 @@ Implement a version badge component that displays version number, git commit, an
 - Styling: !`find . -maxdepth 1 \( -name "tailwind.config.*" -o -name "postcss.config.*" \)`
 - UI library: !`find . -maxdepth 1 -name "components.json"`
 - Changelog: !`find . -maxdepth 1 -name \'CHANGELOG.md\'`
-- Version: !`jq -r '.version // "unknown"' package.json`
+- Version: !`find . -path '*/package.json' -maxdepth 2 -exec jq -r '.version // "unknown"' {} +`
 
 ## Parameters
 

@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-06-18
 reviewed: 2025-12-16
 description: "Infrastructure compliance status (read-only). Use when checking overall compliance, generating a report, or reviewing project health without making changes."
 allowed-tools: Glob, Grep, Read, TodoWrite
@@ -26,11 +26,11 @@ Display infrastructure standards compliance status without making changes.
 ## Context
 
 - Project standards: !`find . -maxdepth 1 -name \'.project-standards.yaml\'`
-- Project type: !`grep -m1 "^project_type:" .project-standards.yaml`
-- Standards version: !`grep -m1 "^standards_version:" .project-standards.yaml`
-- Last configured: !`grep -m1 "^last_configured:" .project-standards.yaml`
+- Project type: !`find . -maxdepth 1 -name '.project-standards.yaml' -exec grep -m1 "^project_type:" {} +`
+- Standards version: !`find . -maxdepth 1 -name '.project-standards.yaml' -exec grep -m1 "^standards_version:" {} +`
+- Last configured: !`find . -maxdepth 1 -name '.project-standards.yaml' -exec grep -m1 "^last_configured:" {} +`
 - Pre-commit config: !`find . -maxdepth 1 -name \'.pre-commit-config.yaml\'`
-- Workflows: !`find .github/workflows -maxdepth 1 -name '*.yml'`
+- Workflows: !`find . -path '*/.github/workflows/*' -maxdepth 3 -name '*.yml'`
 - Has Dockerfile: !`find . -maxdepth 1 -name 'Dockerfile*' -print -quit`
 - Has skaffold: !`find . -maxdepth 1 -name \'skaffold.yaml\'`
 - Has helm: !`find . -maxdepth 2 -type d -name 'helm' -print -quit`

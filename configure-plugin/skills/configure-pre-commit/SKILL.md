@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-06-18
 reviewed: 2025-12-16
 description: "pre-commit hooks setup and validation. Use when installing hooks, configuring frontend/infrastructure/python project types, or migrating to pre-commit."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -27,7 +27,7 @@ Check and configure pre-commit hooks against project standards.
 
 - Pre-commit config: !`find . -maxdepth 1 -name \'.pre-commit-config.yaml\'`
 - Project standards: !`find . -maxdepth 1 -name \'.project-standards.yaml\'`
-- Project type in standards: !`grep -m1 "^project_type:" .project-standards.yaml`
+- Project type in standards: !`find . -maxdepth 1 -name '.project-standards.yaml' -exec grep -m1 "^project_type:" {} +`
 - Has terraform: !`find . -maxdepth 2 \( -name '*.tf' -o -type d -name 'terraform' \) -print -quit`
 - Has helm: !`find . -maxdepth 2 -type d -name 'helm' -print -quit`
 - Has package.json: !`find . -maxdepth 1 -name \'package.json\'`

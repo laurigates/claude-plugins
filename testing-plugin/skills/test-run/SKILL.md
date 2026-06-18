@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-06-18
 reviewed: 2026-04-25
 allowed-tools: Task, TodoWrite
 args: "[test-pattern] [--coverage] [--watch]"
@@ -22,8 +22,8 @@ name: test-run
 
 - Project indicators: !`find . -maxdepth 1 \( -name 'pyproject.toml' -o -name 'package.json' -o -name 'Cargo.toml' -o -name 'go.mod' \)`
 - Test directories: !`find . -maxdepth 1 -type d \( -name 'tests' -o -name 'test' -o -name '__tests__' -o -name 'spec' \)`
-- Package.json test script: !`grep -A2 '"test"' package.json`
-- Pytest config: !`grep -A5 '\[tool.pytest' pyproject.toml`
+- Package.json test script: !`find . -maxdepth 1 -name 'package.json' -exec grep -A2 '"test"' {} +`
+- Pytest config: !`find . -maxdepth 1 -name 'pyproject.toml' -exec grep -A5 '\[tool.pytest' {} +`
 
 ## Parameters
 

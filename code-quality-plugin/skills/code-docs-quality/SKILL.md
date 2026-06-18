@@ -1,6 +1,6 @@
 ---
 created: 2026-01-08
-modified: 2026-05-09
+modified: 2026-06-18
 reviewed: 2026-04-25
 description: "Analyze docs quality across PRDs, ADRs, PRPs, CLAUDE.md, .claude/rules/. Use when auditing documentation, checking for stale ADRs/PRDs, or validating rule frontmatter structure."
 allowed-tools: Read, Glob, Grep, Bash(markdownlint *), Bash(vale *), TodoWrite, Task
@@ -23,15 +23,15 @@ Analyze and validate documentation quality for a codebase, ensuring PRDs, ADRs, 
 ## Context
 
 - Target path: `$1` (defaults to current directory if not specified)
-- Blueprint dir exists: !`find .claude -maxdepth 1 -name 'blueprints' -type d`
+- Blueprint dir exists: !`find . -path '*/.claude/blueprints' -maxdepth 2 -type d`
 - CLAUDE.md exists: !`find . -maxdepth 1 -name 'CLAUDE.md' -type f`
-- Rules directory: !`find .claude/rules -maxdepth 1 -name '*.md'`
-- ADRs (docs/adr): !`find docs/adr -maxdepth 1 -name '*.md'`
-- ADRs (docs/adrs): !`find docs/adrs -maxdepth 1 -name '*.md'`
-- PRDs (docs/prds): !`find docs/prds -maxdepth 1 -name '*.md'`
-- PRDs (blueprints): !`find .claude/blueprints/prds -maxdepth 1 -name '*.md'`
-- PRPs (docs/prps): !`find docs/prps -maxdepth 1 -name '*.md'`
-- PRPs (blueprints): !`find .claude/blueprints/prps -maxdepth 1 -name '*.md'`
+- Rules directory: !`find . -path '*/.claude/rules/*' -maxdepth 3 -name '*.md'`
+- ADRs (docs/adr): !`find . -path '*/docs/adr/*' -maxdepth 3 -name '*.md'`
+- ADRs (docs/adrs): !`find . -path '*/docs/adrs/*' -maxdepth 3 -name '*.md'`
+- PRDs (docs/prds): !`find . -path '*/docs/prds/*' -maxdepth 3 -name '*.md'`
+- PRDs (blueprints): !`find . -path '*/.claude/blueprints/prds/*' -maxdepth 4 -name '*.md'`
+- PRPs (docs/prps): !`find . -path '*/docs/prps/*' -maxdepth 3 -name '*.md'`
+- PRPs (blueprints): !`find . -path '*/.claude/blueprints/prps/*' -maxdepth 4 -name '*.md'`
 
 ## Parameters
 

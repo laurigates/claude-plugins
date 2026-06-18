@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-06-01
+modified: 2026-06-18
 reviewed: 2026-06-01
 description: "GitHub Pages deployment workflows for docs sites. Use when setting up Pages, migrating to actions/deploy-pages, or auditing Pages action versions."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
@@ -25,7 +25,7 @@ Check and configure GitHub Pages deployment.
 
 ## Context
 
-- GitHub workflows: !`find .github/workflows -maxdepth 1 \( -name '*doc*.yml' -o -name '*pages*.yml' \)`
+- GitHub workflows: !`find . -path '*/.github/workflows/*' -maxdepth 3 \( -name '*doc*.yml' -o -name '*pages*.yml' \)`
 - Documentation config: !`find . -maxdepth 1 \( -name 'mkdocs.yml' -o -name 'typedoc.json' -o -name 'docusaurus.config.*' \)`
 - Docs directory: !`find . -maxdepth 1 -type d \( -name 'docs' -o -name 'site' \)`
 - CNAME file: !`find . -maxdepth 1 -name 'CNAME'`

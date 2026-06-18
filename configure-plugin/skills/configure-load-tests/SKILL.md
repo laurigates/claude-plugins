@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-06-18
 reviewed: 2026-04-29
 description: "Load testing: k6, Artillery, Locust. Use when setting up load tests, auditing smoke/stress/spike/soak coverage, or adding CI performance regression detection."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
@@ -31,7 +31,7 @@ Check and configure load and performance testing infrastructure for stress testi
 - Artillery config: !`find . -maxdepth 2 -name 'artillery.yml' -o -name 'artillery.yaml'`
 - Locust files: !`find . -maxdepth 2 -name 'locustfile.py'`
 - Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' \)`
-- CI workflows: !`find .github/workflows -maxdepth 1 -name '*load*' -o -name '*perf*'`
+- CI workflows: !`find . -path '*/.github/workflows/*' -maxdepth 3 -name '*load*' -o -name '*perf*'`
 - k6 binary: !`k6 version`
 
 ## Parameters

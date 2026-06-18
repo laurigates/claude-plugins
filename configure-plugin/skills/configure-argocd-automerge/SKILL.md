@@ -1,6 +1,6 @@
 ---
 created: 2026-02-03
-modified: 2026-06-01
+modified: 2026-06-18
 reviewed: 2026-06-01
 description: "ArgoCD auto-merge: configure GitHub Actions for image-updater-** branches. Use when setting up argocd-automerge.yml or verifying PAT permissions."
 allowed-tools: Glob, Grep, Read, Write, Edit, TodoWrite
@@ -26,9 +26,9 @@ Configure GitHub Actions workflow to automatically create and merge PRs from Arg
 ## Context
 
 - Workflows dir: !`find . -maxdepth 1 -type d -name \'.github/workflows\'`
-- Existing automerge workflow: !`find .github/workflows -maxdepth 1 \( -name '*argocd*automerge*' -o -name '*automerge*argocd*' \)`
+- Existing automerge workflow: !`find . -path '*/.github/workflows/*' -maxdepth 3 \( -name '*argocd*automerge*' -o -name '*automerge*argocd*' \)`
 - Image updater branches: !`git branch -r --list 'origin/image-updater-*'`
-- Auto-merge workflow: !`find .github/workflows -maxdepth 1 -name 'argocd-automerge.yml'`
+- Auto-merge workflow: !`find . -path '*/.github/workflows/*' -maxdepth 3 -name 'argocd-automerge.yml'`
 
 ## Parameters
 

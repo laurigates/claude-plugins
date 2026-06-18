@@ -6,7 +6,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash, TodoWrite
 argument-hint: "--no-verify to skip gh auth verification"
 disable-model-invocation: true
 created: 2026-02-27
-modified: 2026-03-30
+modified: 2026-06-18
 reviewed: 2026-03-30
 ---
 
@@ -27,8 +27,8 @@ Configure a `Stop` hook that checks for unfinished `TodoWrite` todos at the end 
 
 Detect current state:
 
-- Settings file: !`find .claude -maxdepth 1 -name 'settings.json'`
-- Existing Stop hooks: !`jq -r '.hooks.Stop // empty' .claude/settings.json`
+- Settings file: !`find . -path '*/.claude/settings.json' -maxdepth 3`
+- Existing Stop hooks: !`find . -path '*/.claude/settings.json' -maxdepth 3 -exec jq -r '.hooks.Stop // empty' {} +`
 - gh auth: !`gh auth status`
 - jq available: !`jq --version`
 

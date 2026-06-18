@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-06-10
+modified: 2026-06-18
 reviewed: 2026-06-10
 description: "Biome formatter for JS/TS/JSON/CSS — the modern Prettier/ESLint replacement. Also Ruff (Python) and rustfmt. Use when setting up formatting, replacing Prettier, or wiring CI format checks."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -27,8 +27,8 @@ Check and configure code formatting tools against modern best practices.
 
 - Biome config: !`find . -maxdepth 1 -name \'biome.json\'`
 - Prettier config: !`find . -maxdepth 1 \( -name '.prettierrc*' -o -name 'prettier.config.*' \)`
-- Ruff config: !`grep -l 'tool.ruff.format' pyproject.toml`
-- Black config: !`grep -l 'tool.black' pyproject.toml`
+- Ruff config: !`find . -maxdepth 1 -name 'pyproject.toml' -exec grep -l 'tool.ruff.format' {} +`
+- Black config: !`find . -maxdepth 1 -name 'pyproject.toml' -exec grep -l 'tool.black' {} +`
 - Rustfmt config: !`find . -maxdepth 1 \( -name 'rustfmt.toml' -o -name '.rustfmt.toml' \)`
 - EditorConfig: !`find . -maxdepth 1 -name \'.editorconfig\'`
 - Package JSON: !`find . -maxdepth 1 -name \'package.json\'`

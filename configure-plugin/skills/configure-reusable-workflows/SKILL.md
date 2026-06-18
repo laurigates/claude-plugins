@@ -1,6 +1,6 @@
 ---
 created: 2026-02-02
-modified: 2026-04-29
+modified: 2026-06-18
 reviewed: 2026-04-29
 description: "Reusable GitHub Actions workflows for security, quality, accessibility. Use when adding OWASP/secret/code-smell scans or WCAG checks to PR pipelines."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash(mkdir *), Bash(ls *), AskUserQuestion, TodoWrite
@@ -26,7 +26,7 @@ Install Claude-powered reusable GitHub Actions workflows from claude-plugins int
 ## Context
 
 - Workflows dir: !`find . -maxdepth 1 -type d -name \'.github/workflows\'`
-- Existing callers: !`find .github/workflows -maxdepth 1 -name 'claude-*'`
+- Existing callers: !`find . -path '*/.github/workflows/*' -maxdepth 3 -name 'claude-*'`
 - Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \) -print -quit`
 - TypeScript files: !`find . -maxdepth 2 \( -name '*.ts' -o -name '*.tsx' \) -print -quit`
 - Component files: !`find . -maxdepth 3 \( -name '*.jsx' -o -name '*.vue' -o -name '*.svelte' \) -print -quit`

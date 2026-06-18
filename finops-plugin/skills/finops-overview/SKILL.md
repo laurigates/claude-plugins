@@ -4,7 +4,7 @@ args: "[org]"
 allowed-tools: Bash(gh api *), Bash(gh repo *), Bash(gh workflow *), Bash(bash *), Read, TodoWrite
 argument-hint: Optional org name (defaults to current repo's org)
 created: 2025-01-30
-modified: 2026-04-25
+modified: 2026-06-18
 reviewed: 2026-04-25
 name: finops-overview
 ---
@@ -24,7 +24,7 @@ Display a quick FinOps summary including org-level billing (if admin) and curren
 
 ## Context
 
-- Current repo URL: !`git remote get-url origin`
+- Current repo URL: !`git remote -v`
 
 ## Parameters
 

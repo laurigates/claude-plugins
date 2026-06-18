@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-06-10
+modified: 2026-06-18
 reviewed: 2026-06-10
 description: "UX testing: Playwright E2E, axe-core a11y, visual regression. Use when setting up E2E testing, screenshot assertions, browser automation, or a11y CI workflows."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -27,12 +27,12 @@ Check and configure UX testing infrastructure with Playwright as the primary too
 
 - Package manager: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'bun.lockb' \)`
 - Playwright config: !`find . -maxdepth 1 -name 'playwright.config.*'`
-- Playwright installed: !`grep -l '@playwright/test' package.json`
-- Axe-core installed: !`grep -l '@axe-core/playwright' package.json`
+- Playwright installed: !`find . -maxdepth 1 -name 'package.json' -exec grep -l '@playwright/test' {} +`
+- Axe-core installed: !`find . -maxdepth 1 -name 'package.json' -exec grep -l '@axe-core/playwright' {} +`
 - E2E test dir: !`find . -maxdepth 2 -type d \( -name 'e2e' -o -name 'tests' \)`
 - Visual snapshots: !`find . -maxdepth 4 -type d -name '__snapshots__'`
 - MCP config: !`find . -maxdepth 1 -name '.mcp.json'`
-- CI workflow: !`find .github/workflows -maxdepth 1 -name 'e2e*'`
+- CI workflow: !`find . -path '*/.github/workflows/*' -maxdepth 3 -name 'e2e*'`
 
 **UX Testing Stack:**
 - **Playwright** - Cross-browser E2E testing (primary tool)

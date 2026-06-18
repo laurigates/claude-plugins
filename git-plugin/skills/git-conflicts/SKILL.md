@@ -6,7 +6,7 @@ args: "[file-or-pr] [--ours] [--theirs] [--push]"
 argument-hint: file path, PR number, --ours, --theirs, or --push
 disable-model-invocation: true
 created: 2026-03-01
-modified: 2026-05-23
+modified: 2026-06-18
 reviewed: 2026-05-23
 ---
 
@@ -29,8 +29,8 @@ Resolve merge conflicts using modern git features.
 - Git status: !`git status --porcelain=v2 --branch`
 - Merge state: !`find .git -maxdepth 1 -name 'MERGE_HEAD' -o -name 'REBASE_HEAD' -o -name 'rebase-merge' -o -name 'rebase-apply'`
 - Conflicted files: !`git diff --name-only --diff-filter=U`
-- Conflict style: !`git config merge.conflictStyle`
-- Rerere enabled: !`git config rerere.enabled`
+- Conflict style: !`git config --default '' merge.conflictStyle`
+- Rerere enabled: !`git config --default '' rerere.enabled`
 - Git version: !`git version`
 
 ## Parameters

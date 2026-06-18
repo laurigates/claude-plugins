@@ -15,6 +15,8 @@
 # 9. gh repo view uses GitHub GraphQL API (TLS-sensitive, fails in proxy/offline envs)
 # 10. test -f / test -d require Bash permission not granted to context commands (use find)
 # 11. grep with multiple hardcoded filenames fails when files don't exist (use find -exec grep)
+# 11b. grep against a single hardcoded file/path aborts the skill when the file is absent
+#      (ugrep/grep warn to stderr on missing file); use find -exec grep (find-exec ends in {} +)
 # 12. find/jq on home-directory paths (~/, $HOME) blocked by sandbox security restrictions
 # 13. gh issue/pr list without -R fails in repos without remotes ("no git remotes found")
 # 14. command -v <tool> in context: 'command' is a builtin, not covered by Bash(<tool> *)
@@ -56,7 +58,7 @@ check_pattern() {
     file="${match%%:*}"; match="${match#*:}"
     line="${match%%:*}"; content="${match#*:}"
     report "$level" "$rule" "$file" "$line" "$content" "$fix"
-  done < <(grep -rn "$pattern" --include='SKILL.md' --include='skill.md' --exclude-dir='worktrees' --exclude-dir='node_modules' . 2>/dev/null || true)
+  done < <(grep -rn "$pattern" --include='SKILL.md' --include='skill.md' --exclude-dir='worktrees' --exclude-dir='node_modules' --exclude-dir='dist' . 2>/dev/null || true)
 }
 
 ##############################
@@ -128,6 +130,22 @@ check_pattern ERROR \
   "grep-hardcoded-multi-file" \
   '^- .*!`[^`]*grep [^`]* [a-zA-Z_-]*\.\(json\|toml\|txt\|yaml\|yml\|cfg\|ini\) [a-zA-Z_-]*\.\(json\|toml\|txt\|yaml\|yml\|cfg\|ini\)' \
   "replace with find -exec grep: 'find . -maxdepth 1 \\( -name f1 -o -name f2 \\) -exec grep pattern {} +'"
+
+# grep against a single hardcoded file/path writes to stderr when the file is absent,
+# which aborts the skill before its body runs. (The user's grep is often ugrep, which
+# warns to stderr even for -l/-q.) Use find -exec grep so a missing file yields empty
+# output + exit 0. The find -exec form ends in `{} +`, so it does not match this rule.
+# Regression: configure-all used `grep -m1 "^standards_version:" .project-standards.yaml`
+# and ~30 sibling context greps across ~17 skills did the same (issue: configure-all abort)
+check_pattern ERROR \
+  "grep-hardcoded-single-file" \
+  '^- .*!`[^`]*grep [^`]*[A-Za-z0-9_./*-]+\.\(json\|toml\|txt\|yaml\|yml\|cfg\|ini\|md\|lock\|xml\|gitignore\)[^`{]*`' \
+  "use find -exec grep: 'find DIR -maxdepth 1 -name FILE -exec grep PATTERN {} +' (empty output, exit 0 when missing)"
+
+check_pattern ERROR \
+  "grep-hardcoded-bare-file" \
+  '^- .*!`[^`]*grep [^`]*[[:space:]]\(Makefile\|Dockerfile\|Gemfile\|Rakefile\)[^`{]*`' \
+  "use find -exec grep: 'find . -maxdepth 1 -name Makefile -exec grep PATTERN {} +' (empty output, exit 0 when missing)"
 
 # test -f / test -d require Bash permission that context commands don't have
 # Regression: ci-autofix-reusable used `test -f path && echo "EXISTS" || echo "MISSING"` (issue #899)

@@ -2,6 +2,7 @@
 created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2026-04-25
+modified: 2026-06-18
 allowed-tools: Read, Write, Edit, MultiEdit, Bash(pip install *), Bash(npm install *), Bash(pre-commit *), Bash(pytest *), Bash(npm test *), Bash(git *), TodoWrite, SlashCommand
 description: "Configure testing infrastructure with CI/CD. Use when setting up tests, scaffolding test dirs, adding pre-commit hooks, GitHub Actions workflows, Codecov, or coverage badges."
 args: "[--coverage] [--ci <github|gitlab|circleci>]"
@@ -23,7 +24,7 @@ name: test-setup
 - Package files: !`find . -maxdepth 1 \( -name "package.json" -o -name "pyproject.toml" -o -name "setup.py" -o -name "go.mod" -o -name "Cargo.toml" \) -type f`
 - Test config: !`find . -maxdepth 1 \( -name "pytest.ini" -o -name "jest.config.*" -o -name "vitest.config.*" -o -name ".mocharc.*" \) -type f`
 - Pre-commit config: !`find . -maxdepth 1 -name ".pre-commit-config.yaml" -type f`
-- GitHub Actions: !`find .github/workflows -maxdepth 1 -type f -name "*.yml" -o -name "*.yaml"`
+- GitHub Actions: !`find . -path '*/.github/workflows/*' -maxdepth 3 -type f -name "*.yml" -o -name "*.yaml"`
 
 ## Your task
 

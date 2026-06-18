@@ -1,6 +1,6 @@
 ---
 created: 2026-04-25
-modified: 2026-05-09
+modified: 2026-06-18
 reviewed: 2026-04-25
 description: Audit user stories against codebase and tests for tier-ranked coverage gaps. Use when running story audit, PRD reconciliation, or surfacing PRD-code drift.
 args: "[--scope <area>] [--prd <path>] [--no-write] [--report-only]"
@@ -29,11 +29,11 @@ This skill is **read-only** apart from the audit artifact. PRD edits live in `/b
 
 ## Context
 
-- Blueprint manifest: !`find docs/blueprint -maxdepth 1 -name 'manifest.json'`
-- PRD directory: !`find docs -maxdepth 1 -name 'prds' -type d`
-- PRD files: !`find docs/prds -maxdepth 1 -name '*.md'`
-- Audits directory: !`find docs/blueprint -maxdepth 1 -name 'audits' -type d`
-- Existing audits: !`find docs/blueprint/audits -maxdepth 1 -name '*.md'`
+- Blueprint manifest: !`find . -path '*/docs/blueprint/*' -maxdepth 3 -name 'manifest.json'`
+- PRD directory: !`find . -path '*/docs/prds' -maxdepth 2 -type d`
+- PRD files: !`find . -path '*/docs/prds/*' -maxdepth 3 -name '*.md'`
+- Audits directory: !`find . -path '*/docs/blueprint/audits' -maxdepth 3 -type d`
+- Existing audits: !`find . -path '*/docs/blueprint/audits/*' -maxdepth 4 -name '*.md'`
 - Test directories: !`find . -maxdepth 3 -type d \( -name tests -o -name __tests__ -o -name test -o -name spec \) -not -path '*/node_modules/*'`
 - Repo root: !`git rev-parse --show-toplevel`
 - Today: !`date -u +%Y-%m-%d`

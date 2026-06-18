@@ -5,7 +5,7 @@ args: "[--type issues|prs|both] [--batch N] [--repo owner/name] [--days-stale-is
 argument-hint: "--type both --batch 10 (defaults: days-stale-issue=90, days-stale-pr=30, current repo)"
 allowed-tools: Bash(bash *), Bash(gh issue *), Bash(gh pr *), Bash(gh api *), Bash(gh repo *), Bash(git log *), Bash(rg *), Read, Grep, Glob, AskUserQuestion, TodoWrite
 created: 2026-04-22
-modified: 2026-06-14
+modified: 2026-06-18
 reviewed: 2026-06-14
 ---
 
@@ -25,7 +25,7 @@ Unified issue and PR triage: scan, categorize, cross-link, and optionally act.
 
 ## Context
 
-- Repo remote: !`git remote get-url origin`
+- Repo remote: !`git remote -v`
 - Repo toplevel: !`git rev-parse --show-toplevel`
 - Current branch: !`git branch --show-current`
 - Recent merged PRs: !`git log --merges --format='%h %s' --max-count=15`

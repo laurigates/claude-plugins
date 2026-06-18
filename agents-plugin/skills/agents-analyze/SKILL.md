@@ -5,7 +5,7 @@ allowed-tools: Glob, Grep, Read, Bash(ls *), Bash(wc *), TodoWrite
 model: opus
 argument-hint: "analyze all plugins or --focus <plugin-name>"
 created: 2026-01-24
-modified: 2026-05-09
+modified: 2026-06-18
 reviewed: 2026-04-25
 name: agents-analyze
 agent: general-purpose
@@ -38,7 +38,7 @@ Analyze the plugin collection to identify where sub-agents would improve workflo
 ## Context
 
 - Plugin directories: !`find . -maxdepth 1 -type d -name '*-plugin'`
-- Existing agents: !`find agents-plugin/agents -maxdepth 1 -name '*.md'`
+- Existing agents: !`find . -path '*/agents-plugin/agents/*' -maxdepth 3 -name '*.md'`
 - Skills: !`find . -path '*/skills/*/skill.md'`
 - Skills (user-invocable): !`find . -path '*/skills/*/SKILL.md' -not -path './agents-plugin/*'`
 

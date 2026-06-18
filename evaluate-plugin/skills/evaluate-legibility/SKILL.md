@@ -7,7 +7,7 @@ argument-hint: "git-plugin/git-commit"
 model: opus
 agent: general-purpose
 created: 2026-06-13
-modified: 2026-06-13
+modified: 2026-06-18
 reviewed: 2026-06-13
 ---
 
@@ -42,7 +42,7 @@ The verdict is **advisory, not a CI gate**: haiku is non-deterministic, so a
 
 ## Context
 
-- Legibility prompt: !`bash ${CLAUDE_SKILL_DIR}/scripts/emit-legibility-prompt.sh --plugin-skill $1 --repo-root "$(pwd)"`
+- Available skills: !`find . -path '*/skills/*' -name 'SKILL.md' -not -path '*/.claude/worktrees/*'`
 
 ## Parameters
 
