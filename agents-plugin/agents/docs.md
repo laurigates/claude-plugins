@@ -1,13 +1,13 @@
 ---
 name: docs
-model: haiku
+model: opus
 color: "#4A90E2"
 description: Generate documentation from code. Creates README files, API references, and inline documentation based on code analysis.
 tools: Glob, Grep, LS, Read, Edit, Write, Bash(git status *), Bash(git diff *), Bash(git add *), Bash(git commit *), TodoWrite
 maxTurns: 15
 created: 2025-12-27
-modified: 2026-05-26
-reviewed: 2026-05-26
+modified: 2026-06-18
+reviewed: 2026-06-18
 ---
 
 # Docs Agent

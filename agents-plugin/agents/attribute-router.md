@@ -1,14 +1,14 @@
 ---
 name: attribute-router
-model: sonnet
+model: opus
 color: "#1565C0"
 description: Route to specialized agents based on codebase health attributes. Reads attribute data and delegates to appropriate agents by severity and category.
 tools: Read, Glob, Grep, Agent(security-audit, test, refactor, debug, performance, review, docs), TodoWrite
 context: fork
 maxTurns: 30
 created: 2026-03-15
-modified: 2026-05-07
-reviewed: 2026-03-15
+modified: 2026-06-18
+reviewed: 2026-06-18
 ---
 
 # Attribute Router Agent

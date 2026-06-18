@@ -8,19 +8,22 @@ See [`docs/flow.md`](docs/flow.md) for a diagram of how `attribute-router` deleg
 
 ## Agents
 
+All agents run on **opus** — see [Model Selection](#model-selection).
+
 | Agent | Model | Purpose | Team Role |
 |-------|-------|---------|-----------|
-| `test` | haiku | Write and run tests | Either — parallel test suites as teammate, focused testing as subagent |
+| `attribute-router` | opus | Route to domain agents by codebase-health attributes | Subagent — delegates to specialists by severity |
+| `test` | opus | Write and run tests | Either — parallel test suites as teammate, focused testing as subagent |
 | `review` | opus | Code review, commit review, PR review | Teammate preferred — parallel security/performance/correctness review |
 | `debug` | opus | Diagnose and fix bugs | Either — parallel investigation as teammate, single fix as subagent |
-| `docs` | haiku | Generate documentation | Teammate preferred — parallel doc generation across modules |
+| `docs` | opus | Generate documentation | Teammate preferred — parallel doc generation across modules |
 | `ci` | opus | Full CI/CD scaffold (multi-workflow buildout) | Subagent — delegate a from-scratch pipeline; edit single workflows inline |
 | `security-audit` | opus | Vulnerability scanning, OWASP analysis | Teammate preferred — continuous audit alongside development |
 | `refactor` | opus | Code restructuring, SOLID improvements | Either — parallel refactoring with file-locking as teammate |
-| `dependency-audit` | haiku | CVE scanning, outdated packages, licenses | Subagent preferred — quick focused audit |
+| `dependency-audit` | opus | CVE scanning, outdated packages, licenses | Subagent preferred — quick focused audit |
 | `research` | opus | API docs, framework evaluation, best practices | Teammate preferred — parallel research alongside implementation |
 | `performance` | opus | Profiling, bottleneck identification, benchmarks | Subagent preferred — verbose profiling isolated |
-| `search-replace` | haiku | Cross-platform search and replace | Subagent preferred — focused bounded replacement task |
+| `search-replace` | opus | Cross-platform search and replace | Subagent preferred — focused bounded replacement task |
 
 ## Team Roles
 
@@ -48,10 +51,7 @@ Each agent includes a `## Team Configuration` section documenting when to use it
 
 ## Model Selection
 
-| Model | When Used | Agents |
-|-------|-----------|--------|
-| haiku | Structured operations, mechanical tasks | test, docs, dependency-audit, search-replace |
-| opus | Deep reasoning, complex analysis, code restructuring | review, debug, security-audit, performance, refactor, research, ci |
+Every agent runs on **opus**. A subagent's output re-enters the main loop as a tool result, so a weaker delegate quietly degrades everything downstream — and Opus-low beats Sonnet-high on both quality and tokens. So **`effort` (a session setting), not `model`, is the cost lever**: dial effort down for mechanical agents instead of downgrading the model. The lint `scripts/check-agent-model.sh` enforces this. The sole sanctioned non-Opus subagent is the `agent-patterns-plugin:cold-read-gate` haiku reader, which is a skill-inline dispatch rather than an agent file. See `.claude/rules/agent-development.md` § "Model Selection for Agents".
 
 ## Usage
 
