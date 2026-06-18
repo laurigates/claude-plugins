@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-06-18
 reviewed: 2025-12-16
 description: "Makefile with standard targets (help, test, build, clean, lint). Use when setting up a Makefile, auditing missing targets, or adding language-specific targets."
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite
@@ -27,7 +27,7 @@ Check and configure project Makefile against project standards.
 
 - Project root: !`pwd`
 - Makefile exists: !`find . -maxdepth 1 -name 'Makefile'`
-- Makefile targets: !`grep -E '^[a-zA-Z_-]+:' Makefile`
+- Makefile targets: !`find . -maxdepth 1 -name 'Makefile' -exec grep -E '^[a-zA-Z_-]+:' {} +`
 - Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \)`
 - Docker files: !`find . -maxdepth 1 \( -name 'Dockerfile' -o -name 'docker-compose.yml' -o -name 'compose.yml' \)`
 - Server files: !`find src -maxdepth 1 \( -name 'server.*' -o -name 'main.*' \)`

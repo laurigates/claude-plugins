@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-06-18
 reviewed: 2025-12-16
 description: API contract testing with Pact, OpenAPI validation, and Zod/AJV schemas. Use when setting up contract tests, validating OpenAPI compliance, or adding breaking-change CI checks.
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash(curl *), Bash(http *), Bash(jq *), AskUserQuestion, TodoWrite
@@ -29,8 +29,8 @@ Check and configure API contract testing infrastructure for validating API contr
 - Project files: !`find . -maxdepth 1 \( -name 'tsconfig.json' -o -name 'pyproject.toml' -o -name 'package.json' \)`
 - Pact installed: !`find . -maxdepth 1 \( -name package.json -o -name 'requirements*.txt' -o -name pyproject.toml \) -exec grep -l "pact-foundation/pact\|pact-python" {} +`
 - OpenAPI spec: !`find . -maxdepth 2 \( -name 'openapi.yaml' -o -name 'openapi.yml' -o -name 'openapi.json' -o -name 'swagger.json' -o -name 'swagger.yaml' \)`
-- Schema validator: !`grep -l '"ajv"\|"zod"' package.json`
-- OpenAPI validation lib: !`grep -l "swagger-parser\|@apidevtools" package.json`
+- Schema validator: !`find . -maxdepth 1 -name 'package.json' -exec grep -l '"ajv"\|"zod"' {} +`
+- OpenAPI validation lib: !`find . -maxdepth 1 -name 'package.json' -exec grep -l "swagger-parser\|@apidevtools" {} +`
 - Pact contracts dir: !`find . -maxdepth 1 -type d -name \'pacts\'`
 - Contract tests: !`find . -maxdepth 3 -type d -name 'contract'`
 - API test files: !`find . -maxdepth 4 \( -name '*.pact.*' -o -name '*.openapi.*' -o -name '*.contract.*' \)`

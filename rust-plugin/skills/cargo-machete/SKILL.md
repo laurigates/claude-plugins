@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-06-18
 reviewed: 2025-12-16
 name: cargo-machete
 description: "cargo-machete: detect unused Rust dependencies. Use when auditing Cargo.toml, optimizing build times, or cleaning up dependency bloat."
@@ -24,10 +24,10 @@ Detect and remove unused dependencies in Rust projects using cargo-machete.
 ## Context
 
 - Cargo.toml: !`find . -maxdepth 1 -name \'Cargo.toml\'`
-- Workspace: !`grep -q '\[workspace\]' Cargo.toml`
+- Workspace: !`find . -maxdepth 1 -name 'Cargo.toml' -exec grep -q '\[workspace\]' {} +`
 - cargo-machete installed: !`cargo machete --version`
 - Machete config: !`find . -maxdepth 1 -name \'.cargo-machete.toml\'`
-- Workspace members: !`grep -A 20 '^\[workspace\]' Cargo.toml`
+- Workspace members: !`find . -maxdepth 1 -name 'Cargo.toml' -exec grep -A 20 '^\[workspace\]' {} +`
 
 ## Execution
 

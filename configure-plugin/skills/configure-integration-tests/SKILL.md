@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-06-18
 reviewed: 2025-12-16
 description: "Integration testing: Supertest, pytest, Testcontainers. Use when setting up integration tests, creating docker-compose.test.yml, or separating from unit tests."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
@@ -30,7 +30,7 @@ Check and configure integration testing infrastructure for testing service inter
 - Integration tests dir: !`find tests -maxdepth 1 -type d -name 'integration'`
 - Docker compose test: !`find . -maxdepth 1 -name 'docker-compose.test.yml'`
 - Vitest integration config: !`find . -maxdepth 1 -name 'vitest.integration.config.*'`
-- Supertest dep: !`grep -l 'supertest' package.json`
+- Supertest dep: !`find . -maxdepth 1 -name 'package.json' -exec grep -l 'supertest' {} +`
 - Testcontainers dep: !`find . -maxdepth 1 \( -name package.json -o -name pyproject.toml \) -exec grep -l 'testcontainers' {} +`
 - Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml'`
 

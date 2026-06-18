@@ -1,6 +1,6 @@
 ---
 created: 2025-12-22
-modified: 2026-05-09
+modified: 2026-06-18
 reviewed: 2025-12-22
 description: "Interactive selector for infrastructure standards. Use when setting up specific components or building infrastructure incrementally instead of running /configure:all."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, SlashCommand
@@ -26,7 +26,7 @@ Interactively select which infrastructure standards checks to run.
 ## Context
 
 - Project standards: !`find . -maxdepth 1 -name \'.project-standards.yaml\'`
-- Project type: !`grep -m1 "^project_type:" .project-standards.yaml`
+- Project type: !`find . -maxdepth 1 -name '.project-standards.yaml' -exec grep -m1 "^project_type:" {} +`
 - Has terraform: !`find . -maxdepth 2 \( -name '*.tf' -o -type d -name 'terraform' \) -print -quit`
 - Has package.json: !`find . -maxdepth 1 -name \'package.json\'`
 - Has pyproject.toml: !`find . -maxdepth 1 -name \'pyproject.toml\'`

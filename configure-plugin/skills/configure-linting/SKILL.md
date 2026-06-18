@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
+modified: 2026-06-18
 reviewed: 2025-12-16
 description: "Modern linters: Biome, Ruff, Clippy. Use when setting up linting, migrating ESLint/Prettier to Biome, or wiring lint into pre-commit and CI."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -27,8 +27,8 @@ Check and configure linting tools against modern best practices.
 
 - Project root: !`pwd`
 - Biome config: !`find . -maxdepth 1 -name 'biome.json' -o -name 'biome.jsonc'`
-- Ruff config: !`grep -l 'tool.ruff' pyproject.toml`
-- Clippy config: !`grep -l 'lints.clippy' Cargo.toml`
+- Ruff config: !`find . -maxdepth 1 -name 'pyproject.toml' -exec grep -l 'tool.ruff' {} +`
+- Clippy config: !`find . -maxdepth 1 -name 'Cargo.toml' -exec grep -l 'lints.clippy' {} +`
 - Legacy linters: !`find . -maxdepth 1 \( -name '.eslintrc*' -o -name '.flake8' -o -name '.pylintrc' \)`
 - Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' \)`
 - Pre-commit config: !`find . -maxdepth 1 -name '.pre-commit-config.yaml'`

@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-06-18
 reviewed: 2025-12-16
 description: "Sentry error tracking setup. Use when installing the Sentry SDK, fixing hardcoded DSNs, or adding source map upload for frontend, Next.js, Node, or Python."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -30,12 +30,12 @@ Check and configure Sentry error tracking integration against project standards.
 - Pyproject.toml: !`find . -maxdepth 1 -name \'pyproject.toml\'`
 - Requirements.txt: !`find . -maxdepth 1 -name \'requirements.txt\'`
 - Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml' -type f`
-- Sentry in package.json: !`grep -o '"@sentry/[^"]*"' package.json`
-- Sentry in pyproject.toml: !`grep 'sentry' pyproject.toml`
+- Sentry in package.json: !`find . -maxdepth 1 -name 'package.json' -exec grep -o '"@sentry/[^"]*"' {} +`
+- Sentry in pyproject.toml: !`find . -maxdepth 1 -name 'pyproject.toml' -exec grep 'sentry' {} +`
 - Sentry init files: !`find . -maxdepth 3 -name "*sentry*" -type f`
 - Next.js config: !`find . -maxdepth 1 -name 'next.config.*'`
 - Instrumentation files: !`find src -maxdepth 1 -name 'instrumentation*' -type f`
-- Env files referencing DSN: !`grep -rl 'SENTRY_DSN' .env* .github/workflows/`
+- Env files referencing DSN: !`find . \( -name '.env*' -o -path '*/.github/workflows/*' \) -type f -exec grep -l 'SENTRY_DSN' {} +`
 - CI workflows: !`find .github/workflows -maxdepth 1 -name '*.yml'`
 
 **Skills referenced**: `sentry` (MCP server for Sentry API)

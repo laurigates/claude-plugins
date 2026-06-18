@@ -1,6 +1,6 @@
 ---
 created: 2026-01-15
-modified: 2026-04-19
+modified: 2026-06-18
 reviewed: 2026-04-12
 description: Validate ADR relationships and domain consistency. Use when auditing ADRs before release, finding broken supersedes/extends links, or detecting cycles.
 args: "[--report-only]"
@@ -27,7 +27,7 @@ Validate Architecture Decision Records for relationship consistency, reference i
 
 - ADR directory exists: !`find docs -maxdepth 1 -name 'adrs' -type d`
 - ADR count: !`find docs/adrs -name "*.md" -type f`
-- Domain-tagged ADRs: !`grep -l "^domain:" docs/adrs/*.md`
+- Domain-tagged ADRs: !`find docs/adrs -maxdepth 1 -name '*.md' -exec grep -l "^domain:" {} +`
 - Flag: !`echo "${1:---}"`
 
 ## Parameters

@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-04-19
+modified: 2026-06-18
 reviewed: 2025-12-16
 description: "Run all infrastructure standards checks and fixes. Use when onboarding a new project, doing a full compliance audit, or batch-fixing with --fix."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, SlashCommand
@@ -28,7 +28,7 @@ Run all infrastructure standards compliance checks.
 - Project standards: !`find . -maxdepth 1 -name \'.project-standards.yaml\'`
 - Project type indicators: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name '*.tf' \)`
 - Infrastructure dirs: !`find . -maxdepth 1 -type d \( -name 'terraform' -o -name 'helm' -o -name 'argocd' \)`
-- Current standards version: !`grep -m1 "^standards_version:" .project-standards.yaml`
+- Current standards version: !`find . -maxdepth 1 -name '.project-standards.yaml' -exec grep -m1 "^standards_version:" {} +`
 
 ## Parameters
 

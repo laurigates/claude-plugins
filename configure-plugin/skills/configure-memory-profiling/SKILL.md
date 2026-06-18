@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-06-18
 reviewed: 2025-12-16
 description: "Memory profiling with pytest-memray for Python. Use when setting up memory profiling, adding CI memory regression detection, or setting memory thresholds."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -27,9 +27,9 @@ Check and configure memory profiling infrastructure for Python projects using py
 
 - Project root: !`pwd`
 - Python project: !`find . -maxdepth 1 \( -name 'pyproject.toml' -o -name 'setup.py' \)`
-- pytest-memray installed: !`grep -r 'pytest-memray' pyproject.toml requirements*.txt`
-- memray installed: !`grep -r 'memray' pyproject.toml requirements*.txt`
-- Conftest fixtures: !`grep -l 'memray' tests/conftest.py`
+- pytest-memray installed: !`find . -maxdepth 1 \( -name 'pyproject.toml' -o -name 'requirements*.txt' \) -exec grep 'pytest-memray' {} +`
+- memray installed: !`find . -maxdepth 1 \( -name 'pyproject.toml' -o -name 'requirements*.txt' \) -exec grep 'memray' {} +`
+- Conftest fixtures: !`find tests -maxdepth 1 -name 'conftest.py' -exec grep -l 'memray' {} +`
 - Memory test files: !`find tests -maxdepth 2 -name '*memory*' -o -name '*memray*'`
 - Benchmark tests: !`find tests -maxdepth 2 -type d -name 'benchmarks'`
 - CI workflows: !`find .github/workflows -maxdepth 1 -name '*memory*'`
