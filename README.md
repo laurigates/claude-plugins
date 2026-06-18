@@ -1,5 +1,7 @@
 # Claude Plugins
 
+> Experimental testing harness lives under experiments/claude-probe/.
+
 A curated collection of 42 Claude Code plugins providing 360+ skills and 21 agents for development workflows.
 
 ## Install the Marketplace
