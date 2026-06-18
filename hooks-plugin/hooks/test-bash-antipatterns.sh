@@ -209,6 +209,20 @@ assert_exit_complex \
     "plain git add && git commit (outside heredoc) is still blocked" 2 \
     "git add file.txt && git commit -m msg"
 
+# ── quoted-string body false-positive regression (issue #1587) ────────────────
+# Regression: a git chain documented inside a plain quoted argument (no heredoc)
+# — e.g. a gh issue/PR body that *mentions* `git add && git commit` as prose —
+# falsely fired the index.lock detector. The detector now scans the
+# quoted-string-stripped view, so literal data in --body/--title passes while a
+# real chained command still blocks.
+assert_exit_complex \
+    "gh issue body mentioning 'git add && git commit' (quoted, no heredoc) is allowed" 0 \
+    'gh issue create -R o/r --title "bug" --body "the hook blocked git add . && git commit -m x"'
+
+assert_exit_complex \
+    "git chain with single-quoted commit message is still blocked" 2 \
+    "git add . && git commit -m 'fix: thing'"
+
 # ── heredoc-write-then-feed-CLI regression (issue #1584, #1587) ───────────────
 # Regression: `cat > /tmp/body.md <<EOF ... EOF; gh pr create --body-file ...`
 # was blocked with the git-commit heredoc reminder even though the command runs
