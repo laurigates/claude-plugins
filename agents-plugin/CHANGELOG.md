@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.1](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.12.0...agents-plugin-v1.12.1) (2026-06-18)
+
+
+### Code Refactoring
+
+* **agents-plugin:** reposition ci agent to full-scaffold scope + reconcile model rules ([#1685](https://github.com/laurigates/claude-plugins/issues/1685)) ([b72679c](https://github.com/laurigates/claude-plugins/commit/b72679ce74c030ffe29455e5ec5003bb00c27827))
+
 ## [1.12.0](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.11.1...agents-plugin-v1.12.0) (2026-05-27)
 
 
