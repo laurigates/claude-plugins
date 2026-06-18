@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.37.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.36.2...blueprint-plugin-v3.37.0) (2026-06-18)
+
+
+### Features
+
+* **scripts:** context-command execution harness + sweep 122 fragile Context commands ([#1690](https://github.com/laurigates/claude-plugins/issues/1690)) ([609342f](https://github.com/laurigates/claude-plugins/commit/609342f2c5b6b5f2ee555f83dbac1f5f3dd1f93d))
+
 ## [3.36.2](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.36.1...blueprint-plugin-v3.36.2) (2026-06-14)
 
 

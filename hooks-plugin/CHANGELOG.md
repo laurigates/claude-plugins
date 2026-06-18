@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.4.7...hooks-plugin-v2.5.0) (2026-06-18)
+
+
+### Features
+
+* **scripts:** context-command execution harness + sweep 122 fragile Context commands ([#1690](https://github.com/laurigates/claude-plugins/issues/1690)) ([609342f](https://github.com/laurigates/claude-plugins/commit/609342f2c5b6b5f2ee555f83dbac1f5f3dd1f93d))
+
 ## [2.4.7](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.4.6...hooks-plugin-v2.4.7) (2026-06-17)
 
 
