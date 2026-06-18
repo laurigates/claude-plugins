@@ -11,6 +11,8 @@
     "audit",
     "mcp",
     "mcp-code-execution",
+    "mcp-server-authoring",
+    "fastmcp",
     "hooks",
     "custom-agents",
     "teammate-definitions",

@@ -111,6 +111,21 @@ Design and scaffold the MCP code execution pattern for agent systems.
 - Key patterns: progressive discovery, data filtering, PII tokenization, skill accumulation
 - Security checklist for sandboxed execution environments
 
+#### `mcp-server-authoring`
+Producer-side patterns for **building** a Python MCP server with FastMCP — the shared conventions behind `kicad-mcp`, `silverbucket-mcp`, and `pal-mcp-server`.
+
+**When to use:**
+- Building or scaffolding a new MCP server
+- Adding a tool, resource, or prompt to an existing server
+- Wiring a server's tests (TDD), lint, and release-please
+- Choosing transport (stdio vs HTTP) for a server you own
+
+**Features:**
+- FastMCP server skeleton (SDK-bundled and standalone `fastmcp`)
+- Tool / resource / prompt decorators with type-hint-driven schemas
+- Portfolio toolchain conventions (uv, ruff, pytest, release-please)
+- TDD pattern testing the underlying function, not the decorator
+
 #### `agent-teams`
 Configure and orchestrate Claude Code agent teams with TeamCreate, SendMessage, and shared task list workflows.
 
