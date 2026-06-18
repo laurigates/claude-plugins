@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "container-plugin",
-  "version": "2.9.0",
+  "version": "2.9.1",
   "description": "Container development and deployment - Docker, registry, Skaffold",
   "keywords": [
     "container",
