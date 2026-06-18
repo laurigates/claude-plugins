@@ -4,6 +4,18 @@
 
 Accepted
 
+> **Superseded in part (2026-06):** The "Three-tier model palette" below (opus /
+> sonnet / haiku, § "Model Selection Rationale") is no longer the standard. Every
+> plugin agent now runs on **`model: opus`**; `effort` (a session setting), not
+> `model`, is the cost lever for mechanical agents. A weak subagent's output
+> re-enters the main loop as a tool result and degrades everything downstream,
+> and Opus-low beats Sonnet-high on both quality and tokens. The task-focused
+> *consolidation* decision (5 + domain agents, no handoffs) still stands — only
+> the per-agent model assignments are replaced. See
+> `.claude/rules/agent-development.md` § "Model Selection for Agents" and the
+> user-global `~/.claude/rules/agent-and-tool-selection.md` ("Always Use Opus for
+> Subagents"); enforced by `scripts/check-agent-model.sh`.
+
 ## Date
 
 2025-12-27
