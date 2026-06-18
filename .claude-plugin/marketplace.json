@@ -38,7 +38,7 @@
       "name": "agents-plugin",
       "source": "./agents-plugin",
       "description": "Task-focused agents with teammate and subagent role guidance for test, review, debug, docs, CI, security, refactoring, research, and performance",
-      "version": "1.13.0",
+      "version": "1.13.1",
       "keywords": [
         "agents",
         "teammates",
@@ -206,7 +206,7 @@
       "name": "container-plugin",
       "source": "./container-plugin",
       "description": "Container development and deployment - Docker, registry, Skaffold",
-      "version": "2.9.0",
+      "version": "2.9.1",
       "keywords": [
         "container",
         "docker",
@@ -292,7 +292,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.46.0",
+      "version": "2.46.1",
       "keywords": [
         "git",
         "github",
@@ -372,7 +372,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.5.0",
+      "version": "2.5.1",
       "keywords": [
         "hooks",
         "automation",
@@ -388,7 +388,7 @@
       "name": "kubernetes-plugin",
       "source": "./kubernetes-plugin",
       "description": "Kubernetes and Helm operations - deployments, charts, releases",
-      "version": "1.7.8",
+      "version": "1.7.9",
       "keywords": [
         "kubernetes",
         "helm",
@@ -604,7 +604,7 @@
       "name": "terraform-plugin",
       "source": "./terraform-plugin",
       "description": "Terraform and Terraform Cloud - infrastructure as code",
-      "version": "1.7.5",
+      "version": "1.7.6",
       "keywords": [
         "terraform",
         "infrastructure",
@@ -617,7 +617,7 @@
       "name": "testing-plugin",
       "source": "./testing-plugin",
       "description": "Test execution, TDD workflow, and testing strategies",
-      "version": "3.15.0",
+      "version": "3.15.1",
       "keywords": [
         "testing",
         "tdd",
