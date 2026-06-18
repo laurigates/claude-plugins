@@ -189,6 +189,12 @@ check_skill_frontmatter() {
     # skill autocompletes under its namespace prefix instead of the short form
     # (16 skills affected before this fix). A single unquoted `[foo]` parses
     # but yields a list instead of a string, also wrong.
+    # Regression: a duplicated top-level frontmatter key (e.g. two `modified:`
+    # lines from a date-stamping script that appends instead of replacing)
+    # aborts the OpenCode/rulesync export with "duplicated mapping key".
+    # PyYAML's safe_load silently keeps the last value, so the parse check
+    # below cannot catch it — a SafeLoader subclass that rejects duplicates is
+    # required to match rulesync's (js-yaml) strictness. (just export-opencode)
     local yaml_err
     yaml_err=$(python3 - "$skill_file" <<'PY' 2>&1 || true)
 import sys, yaml
@@ -200,8 +206,25 @@ if not content.startswith('---'):
 parts = content.split('---', 2)
 if len(parts) < 3:
     sys.exit(0)
+
+class DupKeyLoader(yaml.SafeLoader):
+    pass
+
+def _no_duplicates(loader, node, deep=False):
+    seen = set()
+    for key_node, _ in node.value:
+        key = loader.construct_object(key_node, deep=deep)
+        if key in seen:
+            raise yaml.constructor.ConstructorError(
+                None, None, f"duplicated mapping key: {key!r}", key_node.start_mark)
+        seen.add(key)
+    return yaml.SafeLoader.construct_mapping(loader, node, deep)
+
+DupKeyLoader.add_constructor(
+    yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _no_duplicates)
+
 try:
-    fm = yaml.safe_load(parts[1]) or {}
+    fm = yaml.load(parts[1], Loader=DupKeyLoader) or {}
 except Exception as e:
     print(f"PARSE_ERROR: {str(e).splitlines()[0]}")
     sys.exit(0)

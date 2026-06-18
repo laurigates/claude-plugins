@@ -106,6 +106,12 @@ repos:
         language: system
         files: '^scripts/(plugin-compliance-check\.sh|tests/test-plugin-compliance-skill-size\.sh)$'
         pass_filenames: false
+      - id: test-plugin-compliance-frontmatter-dupkey
+        name: skill frontmatter rejects duplicated mapping keys (export-opencode)
+        entry: bash ./scripts/tests/test-plugin-compliance-frontmatter-dupkey.sh
+        language: system
+        files: '^scripts/(plugin-compliance-check\.sh|tests/test-plugin-compliance-frontmatter-dupkey\.sh)$'
+        pass_filenames: false
       - id: test-audit-scripts-exit
         name: scheduled-audits scripts exit 0 under set -euo pipefail (scheduled-audits)
         entry: bash ./scripts/tests/test-audit-scripts-exit.sh
