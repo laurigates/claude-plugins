@@ -1,13 +1,13 @@
 ---
 name: test
-model: haiku
+model: opus
 color: "#4CAF50"
 description: Write and run tests. Analyzes code, writes appropriate tests, executes them, and reports results. Completes the full testing cycle.
 tools: Glob, Grep, LS, Read, Edit, Write, Bash(npm test *), Bash(npm run test *), Bash(yarn test *), Bash(bun test *), Bash(pytest *), Bash(vitest *), Bash(jest *), Bash(cargo test *), Bash(go test *), Bash(git status *), Bash(git diff *), Bash(git log *), TaskOutput, TodoWrite
 maxTurns: 20
 created: 2025-12-27
-modified: 2026-05-07
-reviewed: 2026-04-22
+modified: 2026-06-18
+reviewed: 2026-06-18
 ---
 
 # Test Agent
