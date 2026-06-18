@@ -1,18 +1,22 @@
 ---
 name: ci
-model: haiku
+model: opus
 color: "#20BF6B"
-description: Configure CI/CD pipelines. Creates and updates GitHub Actions workflows, build configurations, and deployment automation.
+description: Scaffold a complete CI/CD setup for a repo — multiple GitHub Actions workflows (test, build, release, deploy) in one isolated pass. Use when delegating a full from-scratch pipeline buildout; edit single workflows inline instead.
 tools: Glob, Grep, LS, Read, Edit, Write, Bash(gh pr *), Bash(gh run *), Bash(gh workflow *), Bash(npm *), Bash(yarn *), Bash(bun *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), TodoWrite
 maxTurns: 15
 created: 2025-12-27
-modified: 2026-05-07
-reviewed: 2026-04-29
+modified: 2026-06-17
+reviewed: 2026-06-17
 ---
 
 # CI Agent
 
-Configure CI/CD pipelines. Creates GitHub Actions workflows and deployment automation.
+Scaffold a complete CI/CD setup — multiple GitHub Actions workflows and deployment automation — in one isolated pass.
+
+## When to delegate to this agent
+
+Reach for this agent to **scaffold a complete CI/CD setup from scratch** — several workflows (test, build, release, deploy) generated together in one isolated buildout. For a single-workflow edit or a one-file tweak, edit `.github/workflows/` directly in the main session: spawning a subagent for a surgical change costs more context than it saves. (Usage telemetry through 2026-06 showed CI work is almost always small inline edits — 175 inline workflow edits vs zero agent dispatches over 37 days — which is why this agent is scoped to the full-buildout case rather than general "configure CI" work.)
 
 ## Tool Selection
 
