@@ -12,6 +12,8 @@ on:
     paths:
       - '**/skills/**/scripts/**'
       - 'scripts/run-skill-script-tests.sh'
+      - 'scripts/configure-opencode.sh'
+      - 'scripts/tests/test-configure-opencode.sh'
       - 'justfile'
       - '.github/workflows/test-skill-scripts.yml'
   push:
@@ -19,6 +21,7 @@ on:
     paths:
       - '**/skills/**/scripts/**'
       - 'scripts/run-skill-script-tests.sh'
+      - 'scripts/configure-opencode.sh'
 
 concurrency:
   group: test-skill-scripts-${{ github.event.pull_request.number || github.ref }}
@@ -36,3 +39,6 @@ jobs:
 
       - name: Run skill-local regression tests
         run: bash scripts/run-skill-script-tests.sh
+
+      - name: Smoke-test the OpenCode config generator
+        run: bash scripts/tests/test-configure-opencode.sh
