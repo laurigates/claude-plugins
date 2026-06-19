@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.2](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.3.1...session-plugin-v1.3.2) (2026-06-19)
+
+
+### Bug Fixes
+
+* **session-plugin:** prevent cross-project bleed in session-spinup ([#1705](https://github.com/laurigates/claude-plugins/issues/1705)) ([8d7312c](https://github.com/laurigates/claude-plugins/commit/8d7312ce6405692122f5ead89212e1968e91811a))
+
 ## [1.3.1](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.3.0...session-plugin-v1.3.1) (2026-06-18)
 
 
