@@ -67,6 +67,14 @@ echo "STAGED_AGENTS=$export_agent_count"
 python3 "$export_script_dir/normalize-skill-allowed-tools.py" \
     "$export_staging/.claude/skills"/*/SKILL.md >/dev/null
 
+# 3b. Rewrite each skill's `name` to its directory basename. OpenCode requires
+#     name to be [a-z0-9-]+ AND to equal the directory name; a few source skills
+#     carry display-style names (UnoCSS) or unprefixed invocation names (refocus
+#     in dir project-refocus) that are valid Claude Code but rejected by OpenCode.
+#     Staging-only — the source tree keeps its house-style names.
+python3 "$export_script_dir/rewrite-skill-name-to-dir.py" \
+    "$export_staging/.claude/skills"/*/SKILL.md
+
 # 4. Convert claudecode -> opencode.
 ( cd "$export_staging" && bunx "rulesync@${export_rulesync_version}" convert \
     --from claudecode --to opencode --features skills,subagents --silent )

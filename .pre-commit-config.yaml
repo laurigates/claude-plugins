@@ -124,3 +124,9 @@ repos:
         language: system
         files: '^scripts/(check-context-command-execution\.sh|tests/test-check-context-command-execution\.sh)$'
         pass_filenames: false
+      - id: test-rewrite-skill-name-to-dir
+        name: opencode skill-name rewrite regression
+        entry: bash ./scripts/tests/test-rewrite-skill-name-to-dir.sh
+        language: system
+        files: '^scripts/(rewrite-skill-name-to-dir\.py|export-opencode\.sh|install-opencode\.sh|tests/test-rewrite-skill-name-to-dir\.sh)$'
+        pass_filenames: false

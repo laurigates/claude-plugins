@@ -14,7 +14,11 @@ on:
       - 'scripts/run-skill-script-tests.sh'
       - 'scripts/configure-opencode.sh'
       - 'scripts/install-opencode-ocx.sh'
+      - 'scripts/install-opencode.sh'
+      - 'scripts/export-opencode.sh'
+      - 'scripts/rewrite-skill-name-to-dir.py'
       - 'scripts/tests/test-configure-opencode.sh'
+      - 'scripts/tests/test-rewrite-skill-name-to-dir.sh'
       - 'justfile'
       - '.github/workflows/test-skill-scripts.yml'
   push:
@@ -43,3 +47,6 @@ jobs:
 
       - name: Smoke-test the OpenCode config generator
         run: bash scripts/tests/test-configure-opencode.sh
+
+      - name: Regression-test the OpenCode skill-name rewrite
+        run: bash scripts/tests/test-rewrite-skill-name-to-dir.sh
