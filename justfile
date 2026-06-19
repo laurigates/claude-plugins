@@ -105,6 +105,10 @@ opencode_config := env_var_or_default("OPENCODE_CONFIG", "~/.config/opencode")
 opencode_model := env_var_or_default("OPENCODE_MODEL", "Qwen3-30B-A3B")
 opencode_port := env_var_or_default("OPENCODE_PORT", "8080")
 opencode_provider := "mlx-local"
+# Default ecosystem plugins baked into the generated config (verified npm packages,
+# no API key, self-host-friendly). Override with OPENCODE_PLUGINS or `just opencode_plugins=…`.
+# Full verified menu (incl. opt-in + OCX plugins) in docs/opencode-export.md.
+opencode_plugins := env_var_or_default("OPENCODE_PLUGINS", "@openspoon/subtask2 opencode-pty")
 
 # Project skills + subagents to OpenCode format via rulesync (output: dist/opencode)
 [group: "opencode"]
@@ -123,7 +127,8 @@ configure-opencode target=opencode_config:
     ./scripts/configure-opencode.sh "{{target}}" \
         --provider "{{opencode_provider}}" \
         --model "{{opencode_model}}" \
-        --port "{{opencode_port}}"
+        --port "{{opencode_port}}" \
+        --plugins "{{opencode_plugins}}"
 
 # Install + configure, then print the serve + run next steps
 [group: "opencode"]
@@ -140,3 +145,8 @@ setup-opencode target=opencode_config: (install-opencode target) (configure-open
 [group: "opencode"]
 serve-opencode-model:
     mlx_lm.server --model {{opencode_model}} --port {{opencode_port}}
+
+# Opt-in: install OCX orchestration plugins (worktree + background-agents; excludes workspace)
+[group: "opencode"]
+install-opencode-ocx target=opencode_config:
+    ./scripts/install-opencode-ocx.sh "{{target}}"

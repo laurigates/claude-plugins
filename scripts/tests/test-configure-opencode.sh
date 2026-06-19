@@ -81,6 +81,39 @@ assert "original opencode.json preserved" \
 assert "second run writes opencode.json.opencode-sample" \
   "$([ -f "$fixture/opencode.json.opencode-sample" ] && echo true || echo false)"
 
+echo "=== TEST D: default plugin array (no redundant dcp) ==="
+# Fresh fixture so we assert against the primary opencode.json, not a .sample.
+plugfix="$(mktemp -d)"
+bash "$configure" "$plugfix" >/dev/null   # no --plugins → script default
+assert "default plugin array contains @openspoon/subtask2 + opencode-pty, valid JSON, no redundant dcp" \
+  "$(python3 - "$plugfix/opencode.json" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+p = d.get("plugin")
+ok = (
+    isinstance(p, list)
+    and "@openspoon/subtask2" in p
+    and "opencode-pty" in p
+    # @tarquinen/opencode-dcp IS dynamic context pruning; never bake a second copy.
+    and not any("dynamic-context-pruning" in x or "opencode-dcp" in x for x in p)
+)
+print("true" if ok else "false")
+PY
+)"
+rm -rf "$plugfix"
+
+echo "=== TEST E: empty plugin list → valid empty array ==="
+emptyfix="$(mktemp -d)"
+bash "$configure" "$emptyfix" --plugins "" >/dev/null
+assert "--plugins '' yields a valid empty plugin array" \
+  "$(python3 - "$emptyfix/opencode.json" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+print("true" if d.get("plugin") == [] else "false")
+PY
+)"
+rm -rf "$emptyfix"
+
 echo ""
 echo "=== SUMMARY ==="
 echo "PASSED=$pass_count"

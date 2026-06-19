@@ -154,6 +154,90 @@ opencode
 - Switch agents with **Tab** or the `/agents` picker — reach `orchestrator` there
   (and it's the `default_agent`, so it's selected on launch).
 
+## 6. Recommended ecosystem plugins
+
+OpenCode has a community plugin ecosystem that can sharpen the orchestrated
+local-model workflow. Every plugin below was **verified against npm / GitHub /
+opencode.ai/docs** — AI-suggested OpenCode plugin lists have a high fabrication
+rate, so names and install mechanisms here are the real ones, not the
+brainstormed forms.
+
+### How plugins load
+
+A plugin is a JS/TS module. Two load paths:
+
+- **npm package** listed in the `"plugin": [...]` array of `opencode.json` —
+  bare (`opencode-pty`), scoped (`@openspoon/subtask2`), or version-pinned
+  (`opencode-vibeguard@0.1.0`). OpenCode auto-installs them with Bun on startup.
+- **Local file** under `.opencode/plugins/` (project) or
+  `~/.config/opencode/plugins/` (global).
+
+There is **no `github:user/repo` shorthand** and **no central registry** —
+discover plugins by searching npm for the `opencode-plugin` keyword.
+
+### Baked-in defaults
+
+`just configure-opencode` writes a small, curated `plugin:` array (overridable
+via `OPENCODE_PLUGINS` or `just opencode_plugins="…" configure-opencode`):
+
+| Plugin (npm) | Why it's a default |
+|--------------|--------------------|
+| `@openspoon/subtask2` | The only orchestration plugin installable via the npm `plugin:` array. Adds flow-control over `/commands` and **verifies a subtask's output against the codebase before merging it back** — directly strengthens the orchestrator's fan-out. |
+| `opencode-pty` | Runs background/interactive processes (dev servers, test watchers, REPLs) in a pseudo-terminal and can send input (e.g. answer a `y/n` prompt), so a subagent doesn't hang on the synchronous built-in `bash` tool. |
+
+Both are npm, no API key, self-host-friendly.
+
+### Opt-in npm plugins
+
+Add these to your own `plugin:` array (or `OPENCODE_PLUGINS`) if they fit:
+
+| Plugin (real npm name) | What it does | Caveat |
+|------------------------|--------------|--------|
+| `@nick-vi/opencode-type-inject` | Injects TS/Svelte type signatures into file reads so the model skips whole source files (token saver). | TypeScript/Svelte only. Note the scoped name — bare `opencode-type-inject` is **not** the install string. |
+| `opencode-scheduler` | Schedules `opencode run` jobs on the OS-native scheduler (launchd / systemd timers / Task Scheduler, cron as fallback) for overnight maintenance. | Cross-platform — **not** macOS/launchd-only as sometimes claimed. |
+| `opencode-vibeguard` | Redacts secrets/PII to placeholders before context reaches the model, restores locally. | Early `v0.1.0`. Mainly valuable when mixing local + an **external** API; low value for a pure-local setup. Alternative: `opencode-secret-redactor`. |
+| `@f97/opencode-morph-fast-apply` / `@morphllm/opencode-morph-plugin` | Morph "fast apply": lazy edit markers (`// ... existing code ...`) for ~10× faster code patching. | **Requires an external Morph API key** — this breaks a fully-self-hosted-via-mlx setup. Opt in only if you accept an external apply service. Bare `opencode-morph-fast-apply` is a GitHub repo name, not the npm install string. |
+
+### Already covered — do not double-install
+
+The user's existing config lists **`@tarquinen/opencode-dcp`**, which *is*
+"dynamic context pruning" (dedupes repeated tool outputs + a model-invokable
+`compress` tool). The frequently-suggested `opencode-dynamic-context-pruning` is
+the **same package** (that's the GitHub repo name; `@tarquinen/opencode-dcp` is
+its npm name). Do not add a second copy.
+
+### OCX plugins (third-party CLI/registry)
+
+Three real orchestration plugins by `kdcokenny` are distributed via the
+third-party **OCX** CLI + registry (`registry.kdco.dev`), **not** the npm
+`plugin:` array — so they're a separate, explicitly opt-in path with a
+third-party trust dependency. They write into `.opencode/plugin/`.
+
+```
+just install-opencode-ocx        # installs worktree + background-agents via OCX
+```
+
+| OCX plugin | Recipe installs it? | Notes |
+|------------|---------------------|-------|
+| `worktree` | ✅ | Per-session git worktrees so parallel agents avoid branch collisions. Complements our `agent-coworker-detection` discipline. |
+| `background-agents` | ✅ | Async task delegation; persists sub-agent results to disk so they survive context compaction. |
+| `opencode-workspace` | ❌ **excluded by design** | Bundles its own researcher/coder/scribe/reviewer agents + DCP + worktrees (16 components). **Overlaps and competes with the agents + orchestrator we already export** — prefer ours. Documented here for awareness; `install-opencode-ocx` deliberately skips it. |
+
+`install-opencode-ocx` requires the OCX CLI on `PATH` (it does not install OCX
+itself); without it the recipe prints a prerequisite hint and exits cleanly.
+
+### Verified-vs-claimed corrections
+
+So the fabrication-prone forms aren't re-adopted:
+
+| Suggested form | Reality |
+|----------------|---------|
+| `opencode-dynamic-context-pruning` as a *new* install | Same package as the already-installed `@tarquinen/opencode-dcp` — redundant. |
+| bare `opencode-type-inject` | Scoped: `@nick-vi/opencode-type-inject`. |
+| bare `opencode-morph-fast-apply` | `@f97/opencode-morph-fast-apply` or `@morphllm/opencode-morph-plugin`; **needs a Morph API key**. |
+| `opencode-scheduler` = macOS/launchd-only | Cross-platform (launchd/systemd/cron fallback). |
+| `background-agents` / `workspace` / `worktree` via npm `plugin:` array | OCX-distributed (`registry.kdco.dev`), not npm; `workspace` overlaps our exported agents. |
+
 ## Gotchas — common-but-wrong config
 
 A plausible-looking config that does **not** work in OpenCode. If you're adapting
