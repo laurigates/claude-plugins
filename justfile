@@ -100,7 +100,43 @@ pr-rebase-all:
 # OpenCode export
 ####################
 
+# Defaults are overridable via environment or `just opencode_model=… <recipe>`.
+opencode_config := env_var_or_default("OPENCODE_CONFIG", "~/.config/opencode")
+opencode_model := env_var_or_default("OPENCODE_MODEL", "Qwen3-30B-A3B")
+opencode_port := env_var_or_default("OPENCODE_PORT", "8080")
+opencode_provider := "mlx-local"
+
 # Project skills + subagents to OpenCode format via rulesync (output: dist/opencode)
 [group: "opencode"]
 export-opencode *args:
     ./scripts/export-opencode.sh {{args}}
+
+# Install exported agents + skills additively into an OpenCode config dir
+# (default: global ~/.config/opencode; pass `.opencode` for a project install)
+[group: "opencode"]
+install-opencode target=opencode_config:
+    ./scripts/install-opencode.sh "{{target}}"
+
+# Generate opencode.json + agents/orchestrator.md (non-destructive to existing config)
+[group: "opencode"]
+configure-opencode target=opencode_config:
+    ./scripts/configure-opencode.sh "{{target}}" \
+        --provider "{{opencode_provider}}" \
+        --model "{{opencode_model}}" \
+        --port "{{opencode_port}}"
+
+# Install + configure, then print the serve + run next steps
+[group: "opencode"]
+setup-opencode target=opencode_config: (install-opencode target) (configure-opencode target)
+    @echo ""
+    @echo "Next steps:"
+    @echo "  1. Install the server:  uv tool install mlx-lm"
+    @echo "  2. Serve the model:     just serve-opencode-model"
+    @echo "     (or: mlx_lm.server --model {{opencode_model}} --port {{opencode_port}})"
+    @echo "  3. Verify it is up:     curl -s localhost:{{opencode_port}}/v1/models"
+    @echo "  4. Run OpenCode:        cd <project> && opencode   (Tab or /agents to reach orchestrator)"
+
+# Serve the local model via mlx-lm (OpenAI-compatible /v1 on the configured port)
+[group: "opencode"]
+serve-opencode-model:
+    mlx_lm.server --model {{opencode_model}} --port {{opencode_port}}
