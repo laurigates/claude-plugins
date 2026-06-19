@@ -16,21 +16,25 @@
 # NOT the common-but-wrong shape (`providers`/`api_base`/`tools:` list). See
 # docs/opencode-export.md "Gotchas".
 #
-# Usage: ./scripts/configure-opencode.sh <target> [--provider P] [--model M] [--port N]
+# Usage: ./scripts/configure-opencode.sh <target> [--provider P] [--model M] [--port N] [--plugins "a b c"]
 set -euo pipefail
 
-config_target="${1:?usage: configure-opencode.sh <target> [--provider P] [--model M] [--port N]}"
+config_target="${1:?usage: configure-opencode.sh <target> [--provider P] [--model M] [--port N] [--plugins LIST]}"
 shift || true
 
 config_provider="mlx-local"
 config_model="Qwen3-30B-A3B"
 config_port="8080"
+# Default ecosystem plugins (verified npm packages, no API key, self-host-friendly).
+# See docs/opencode-export.md "Recommended ecosystem plugins".
+config_plugins="@openspoon/subtask2 opencode-pty"
 
 while [ $# -gt 0 ]; do
     case "$1" in
         --provider) config_provider="$2"; shift 2 ;;
         --model)    config_model="$2";    shift 2 ;;
         --port)     config_port="$2";     shift 2 ;;
+        --plugins)  config_plugins="$2";  shift 2 ;;
         *) echo "unknown argument: $1" >&2; exit 2 ;;
     esac
 done
@@ -42,11 +46,23 @@ fi
 
 config_baseurl="http://127.0.0.1:${config_port}/v1"
 
+# Build the JSON array fragment from the space-separated plugin list. Manual
+# quoting is safe — plugin names are @/scope/-/alnum only, no JSON metacharacters.
+config_plugins_json=""
+for config_plugin in $config_plugins; do
+    if [ -z "$config_plugins_json" ]; then
+        config_plugins_json="\"$config_plugin\""
+    else
+        config_plugins_json="$config_plugins_json, \"$config_plugin\""
+    fi
+done
+
 echo "=== OPENCODE CONFIGURE ==="
 echo "TARGET=$config_target"
 echo "PROVIDER=$config_provider"
 echo "MODEL=$config_model"
 echo "BASEURL=$config_baseurl"
+echo "PLUGINS=$config_plugins"
 
 mkdir -p "$config_target/agents"
 
@@ -71,13 +87,14 @@ cat > "$config_json" <<JSON
       "models": { "$config_model": { "name": "$config_model" } }
     }
   },
+  "plugin": [$config_plugins_json],
   "model": "$config_provider/$config_model",
   "default_agent": "orchestrator"
 }
 JSON
 echo "CONFIG_WRITTEN=$config_json"
 if [ "$config_json" != "$config_target/opencode.json" ]; then
-    echo "MERGE_HINT=existing opencode.json kept; merge provider/model/default_agent from the .opencode-sample by hand"
+    echo "MERGE_HINT=existing opencode.json kept; merge provider/model/default_agent and APPEND the plugin entries to your existing plugin array (do not replace it) from the .opencode-sample"
 fi
 
 # --- agents/orchestrator.md (generated artifact, always rewritten) -----------
