@@ -10,17 +10,9 @@ from rich.table import Table
 from vault_agent.analyzers.audit import VaultAudit
 
 
-def render_terminal(audit: VaultAudit, console: Console | None = None) -> None:
-    """Pretty-print the audit summary to the given console."""
-    console = console or Console()
+def _render_terminal_summary(audit: VaultAudit, console: Console) -> None:
     fm = audit.frontmatter
-    lnk = audit.links
-    graph = audit.graph
-    stubs = audit.stubs
-    mocs = audit.mocs
-    dups = audit.duplicates
     h = audit.health
-
     console.rule(f"[bold]Vault audit — {audit.vault_root}[/bold]")
     console.print(
         f"Total notes: [bold]{fm.total_notes}[/bold]   "
@@ -28,6 +20,9 @@ def render_terminal(audit: VaultAudit, console: Console | None = None) -> None:
         f"(tags={h.tags} links={h.links} orphans={h.orphans} stubs={h.stubs} mocs={h.mocs})"
     )
 
+
+def _render_terminal_frontmatter(audit: VaultAudit, console: Console) -> None:
+    fm = audit.frontmatter
     t = Table(title="Frontmatter & tag findings", show_edge=False)
     t.add_column("Issue", justify="left")
     t.add_column("Count", justify="right")
@@ -42,6 +37,9 @@ def render_terminal(audit: VaultAudit, console: Console | None = None) -> None:
     t.add_row("Namespace notes missing context", str(len(fm.ns_notes_missing_context)))
     console.print(t)
 
+
+def _render_terminal_links(audit: VaultAudit, console: Console) -> None:
+    lnk = audit.links
     t = Table(title="Links", show_edge=False)
     t.add_column("Issue", justify="left")
     t.add_column("Count", justify="right")
@@ -59,6 +57,9 @@ def render_terminal(audit: VaultAudit, console: Console | None = None) -> None:
             t.add_row(target, str(count))
         console.print(t)
 
+
+def _render_terminal_graph(audit: VaultAudit, console: Console) -> None:
+    graph = audit.graph
     t = Table(title="Graph", show_edge=False)
     t.add_column("Issue", justify="left")
     t.add_column("Count", justify="right")
@@ -66,6 +67,9 @@ def render_terminal(audit: VaultAudit, console: Console | None = None) -> None:
     t.add_row("Expected orphans (Inbox, daily)", str(len(graph.expected_orphans)))
     console.print(t)
 
+
+def _render_terminal_stubs(audit: VaultAudit, console: Console) -> None:
+    stubs = audit.stubs
     t = Table(title="Stubs (work namespace)", show_edge=False)
     t.add_column("Class", justify="left")
     t.add_column("Count", justify="right")
@@ -73,6 +77,9 @@ def render_terminal(audit: VaultAudit, console: Console | None = None) -> None:
         t.add_row(cls, str(count))
     console.print(t)
 
+
+def _render_terminal_mocs(audit: VaultAudit, console: Console) -> None:
+    mocs = audit.mocs
     t = Table(title="MOCs", show_edge=False)
     t.add_column("Metric", justify="left")
     t.add_column("Value", justify="right")
@@ -92,6 +99,9 @@ def render_terminal(audit: VaultAudit, console: Console | None = None) -> None:
             )
         console.print(t)
 
+
+def _render_terminal_duplicates(audit: VaultAudit, console: Console) -> None:
+    dups = audit.duplicates
     t = Table(title="Duplicates", show_edge=False)
     t.add_column("Issue", justify="left")
     t.add_column("Count", justify="right")
@@ -100,19 +110,25 @@ def render_terminal(audit: VaultAudit, console: Console | None = None) -> None:
     console.print(t)
 
 
+def render_terminal(audit: VaultAudit, console: Console | None = None) -> None:
+    """Pretty-print the audit summary to the given console."""
+    console = console or Console()
+    _render_terminal_summary(audit, console)
+    _render_terminal_frontmatter(audit, console)
+    _render_terminal_links(audit, console)
+    _render_terminal_graph(audit, console)
+    _render_terminal_stubs(audit, console)
+    _render_terminal_mocs(audit, console)
+    _render_terminal_duplicates(audit, console)
+
+
 def render_json(audit: VaultAudit) -> str:
     return json.dumps(audit.to_dict(), indent=2, default=str)
 
 
-def render_markdown(audit: VaultAudit) -> str:
+def _render_markdown_summary(audit: VaultAudit) -> list[str]:
     fm = audit.frontmatter
-    lnk = audit.links
-    graph = audit.graph
-    stubs = audit.stubs
-    mocs = audit.mocs
-    dups = audit.duplicates
     h = audit.health
-
     lines: list[str] = []
     lines.append(f"# Vault audit — {audit.vault_root}\n")
     lines.append(
@@ -120,7 +136,12 @@ def render_markdown(audit: VaultAudit) -> str:
         f"**Health:** {h.total}/100 "
         f"(tags={h.tags}, links={h.links}, orphans={h.orphans}, stubs={h.stubs}, mocs={h.mocs})\n"
     )
+    return lines
 
+
+def _render_markdown_frontmatter(audit: VaultAudit) -> list[str]:
+    fm = audit.frontmatter
+    lines: list[str] = []
     lines.append("## Frontmatter\n")
     lines.append(f"- No frontmatter: {len(fm.notes_without_frontmatter)}")
     lines.append(f"- Legacy `id:` field: {len(fm.notes_with_legacy_id)}")
@@ -128,9 +149,16 @@ def render_markdown(audit: VaultAudit) -> str:
     lines.append(f"- Null tags: {len(fm.notes_with_null_tags)}")
     lines.append(f"- Templater leakage: {len(fm.notes_with_templater_leak)}")
     lines.append(f"- Corrupt emoji: {len(fm.notes_with_corrupt_emoji)}")
-    lines.append(f"- Namespace notes missing context: {len(fm.ns_notes_missing_context)}")
+    lines.append(
+        f"- Namespace notes missing context: {len(fm.ns_notes_missing_context)}"
+    )
     lines.append("")
+    return lines
 
+
+def _render_markdown_links(audit: VaultAudit) -> list[str]:
+    lnk = audit.links
+    lines: list[str] = []
     lines.append("## Links\n")
     lines.append(f"- Total wikilinks: {lnk.total_wikilinks}")
     lines.append(f"- Broken: {lnk.broken_count}")
@@ -142,25 +170,56 @@ def render_markdown(audit: VaultAudit) -> str:
         for target, count in lnk.top_broken(10):
             lines.append(f"| `[[{target}]]` | {count} |")
     lines.append("")
+    return lines
 
+
+def _render_markdown_graph(audit: VaultAudit) -> list[str]:
+    graph = audit.graph
+    lines: list[str] = []
     lines.append("## Graph\n")
     lines.append(f"- Meaningful orphans: {len(graph.meaningful_orphans)}")
     lines.append(f"- Expected orphans: {len(graph.expected_orphans)}")
     lines.append("")
+    return lines
 
+
+def _render_markdown_stubs(audit: VaultAudit) -> list[str]:
+    stubs = audit.stubs
+    lines: list[str] = []
     lines.append("## Stubs (work namespace)\n")
     for cls, count in stubs.count_by_class().items():
         lines.append(f"- {cls}: {count}")
     lines.append("")
+    return lines
 
+
+def _render_markdown_mocs(audit: VaultAudit) -> list[str]:
+    mocs = audit.mocs
+    lines: list[str] = []
     lines.append("## MOCs\n")
     lines.append(f"- Total MOCs: {len(mocs.mocs)}")
     lines.append(f"- Legacy-tagged MOCs: {len(mocs.legacy_tagged_mocs)}")
     lines.append(f"- Missing MOC candidates: {len(mocs.missing_moc_candidates)}")
     lines.append("")
+    return lines
 
+
+def _render_markdown_duplicates(audit: VaultAudit) -> list[str]:
+    dups = audit.duplicates
+    lines: list[str] = []
     lines.append("## Duplicates\n")
     lines.append(f"- Basename collisions: {len(dups.basename_collisions)}")
     lines.append(f"- Untitled placeholders: {len(dups.untitled_placeholders)}")
+    return lines
 
+
+def render_markdown(audit: VaultAudit) -> str:
+    lines: list[str] = []
+    lines.extend(_render_markdown_summary(audit))
+    lines.extend(_render_markdown_frontmatter(audit))
+    lines.extend(_render_markdown_links(audit))
+    lines.extend(_render_markdown_graph(audit))
+    lines.extend(_render_markdown_stubs(audit))
+    lines.extend(_render_markdown_mocs(audit))
+    lines.extend(_render_markdown_duplicates(audit))
     return "\n".join(lines) + "\n"
