@@ -34,6 +34,11 @@ INPUT=$(cat)
 
 TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty')
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
+# The directory the Bash command actually runs in. In a git worktree this is
+# the worktree path (with its own per-worktree HEAD), not the main checkout —
+# so the branch lookup must run here, not in the hook's own process cwd, or a
+# correctly-branched worktree gets misread as `main`. See #1695.
+HOOK_CWD=$(echo "$INPUT" | jq -r '.cwd // empty')
 
 # Only applies to Bash tool
 [ "$TOOL_NAME" != "Bash" ] && exit 0
@@ -75,9 +80,18 @@ EOF
 # and deny legitimate writes against a feature-branch worktree. See #1389.
 WORKING_DIR=$(echo "$COMMAND" | grep -oE 'git[[:space:]]+-C[[:space:]]+[^[:space:]]+' | head -1 | awk '{print $NF}' || true)
 
+# Resolve the directory all branch/repo lookups run in, in precedence order:
+#   1. `git -C <path>` — the command explicitly targets that dir (#1389)
+#   2. the hook-input cwd — the worktree the Bash command runs in (#1695)
+#   3. (empty) — fall back to the hook's own process cwd
+# Without (2), a plain `git add`/`git rm` (no -C) issued from a feature-branch
+# worktree resolved its branch in the hook process's cwd (the main checkout)
+# and was wrongly denied as if on `main`.
+EFFECTIVE_DIR="${WORKING_DIR:-${HOOK_CWD:-}}"
+
 # Get current branch (silently fail if not in a git repo)
-if [ -n "$WORKING_DIR" ]; then
-  CURRENT_BRANCH=$(git -C "$WORKING_DIR" branch --show-current 2>/dev/null || echo "")
+if [ -n "$EFFECTIVE_DIR" ]; then
+  CURRENT_BRANCH=$(git -C "$EFFECTIVE_DIR" branch --show-current 2>/dev/null || echo "")
 else
   CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "")
 fi
@@ -89,9 +103,9 @@ fi
 # URL (*.wiki.git — robust, survives directory renames) or the working-tree
 # top-level directory name (*.wiki — cheap fallback when there's no remote).
 # (#1586)
-if [ -n "$WORKING_DIR" ]; then
-  WIKI_REMOTE=$(git -C "$WORKING_DIR" remote get-url origin 2>/dev/null || echo "")
-  WIKI_TOPLEVEL=$(git -C "$WORKING_DIR" rev-parse --show-toplevel 2>/dev/null || echo "")
+if [ -n "$EFFECTIVE_DIR" ]; then
+  WIKI_REMOTE=$(git -C "$EFFECTIVE_DIR" remote get-url origin 2>/dev/null || echo "")
+  WIKI_TOPLEVEL=$(git -C "$EFFECTIVE_DIR" rev-parse --show-toplevel 2>/dev/null || echo "")
 else
   WIKI_REMOTE=$(git remote get-url origin 2>/dev/null || echo "")
   WIKI_TOPLEVEL=$(git rev-parse --show-toplevel 2>/dev/null || echo "")
@@ -165,10 +179,10 @@ case "$GIT_SUBCMD" in
     # the repo's only commit (a single root commit), there is no prior history
     # to open a PR against — pushing it to main is how an empty remote gets
     # initialized. The normal protection resumes as soon as a second commit
-    # exists. Branch detection respects `git -C <path>` for the same reason as
-    # CURRENT_BRANCH above (#1389).
-    if [ -n "$WORKING_DIR" ]; then
-      COMMIT_COUNT=$(git -C "$WORKING_DIR" rev-list --count HEAD 2>/dev/null || echo "")
+    # exists. Branch detection respects `git -C <path>` and the hook-input cwd
+    # for the same reason as CURRENT_BRANCH above (#1389, #1695).
+    if [ -n "$EFFECTIVE_DIR" ]; then
+      COMMIT_COUNT=$(git -C "$EFFECTIVE_DIR" rev-list --count HEAD 2>/dev/null || echo "")
     else
       COMMIT_COUNT=$(git rev-list --count HEAD 2>/dev/null || echo "")
     fi

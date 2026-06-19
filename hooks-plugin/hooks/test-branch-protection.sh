@@ -12,6 +12,8 @@
 #   - `git push origin main:fix/foo` with explicit refspec is allowed.
 #   - Plain `git commit` / `git push` on main is denied.
 #   - `git -C <feature-worktree> commit` from a cwd on main is allowed (#1389).
+#   - A plain write (no `-C`) from a feature-worktree input `cwd` is allowed,
+#     while the same from a master-worktree `cwd` is denied (#1695).
 #   - The initial bootstrap push (single root commit) to main is allowed, and
 #     resumes denying once a second commit exists.
 set -euo pipefail
@@ -68,7 +70,10 @@ run_hook() {
   local cmd_str="$1"
   shift
   local input
-  input=$(jq -nc --arg cmd "$cmd_str" '{tool_name:"Bash",tool_input:{command:$cmd}}')
+  # Mirror the hook's real input: `cwd` is the directory the Bash command runs
+  # in (here, the TEST_REPO checkout on main). #1695's fix reads this field.
+  input=$(jq -nc --arg cmd "$cmd_str" --arg cwd "$TEST_REPO" \
+    '{tool_name:"Bash",cwd:$cwd,tool_input:{command:$cmd}}')
   (
     cd "$TEST_REPO"
     # Apply any extra env-var assignments passed as remaining args.
@@ -227,6 +232,71 @@ assert_deny \
 assert_deny \
   "git -C <master-worktree> push (no refspec) is still denied" \
   "git -C $MASTER_WT push"
+
+# ── worktree cwd branch detection (#1695 regression) ────────────────────────
+# A plain `git add`/`git rm` (NO `-C`) issued from inside a feature-branch
+# worktree must read the branch from that worktree, not the hook's own process
+# cwd. Pre-fix the hook ran `git branch --show-current` in its process cwd (the
+# main checkout) and wrongly denied writes on a correctly-branched worktree.
+# Here the hook process cwd is TEST_REPO (on main) while the input `cwd` points
+# at the worktree — exactly the shape the hook receives in practice.
+echo ""
+echo "worktree cwd branch detection (#1695):"
+
+# run_hook_cwd <command-string> <cwd> — like run_hook but with an explicit
+# input `cwd` and a hook process cwd pinned to TEST_REPO (main).
+run_hook_cwd() {
+  local cmd_str="$1" cwd_val="$2"
+  local input
+  input=$(jq -nc --arg cmd "$cmd_str" --arg cwd "$cwd_val" \
+    '{tool_name:"Bash",cwd:$cwd,tool_input:{command:$cmd}}')
+  ( cd "$TEST_REPO" && printf '%s' "$input" | bash "$HOOK" )
+}
+
+assert_cwd_allow() {
+  local desc="$1" cmd_str="$2" cwd_val="$3"
+  local out
+  out=$(run_hook_cwd "$cmd_str" "$cwd_val")
+  if [ -z "$out" ]; then
+    printf "  PASS: %s\n" "$desc"; PASS=$((PASS + 1))
+  else
+    printf "  FAIL: %s\n        expected silent allow, got: %s\n" "$desc" "$out"; FAIL=$((FAIL + 1))
+  fi
+}
+
+assert_cwd_deny() {
+  local desc="$1" cmd_str="$2" cwd_val="$3"
+  local out
+  out=$(run_hook_cwd "$cmd_str" "$cwd_val")
+  if echo "$out" | grep -q '"permissionDecision":"deny"'; then
+    printf "  PASS: %s\n" "$desc"; PASS=$((PASS + 1))
+  else
+    printf "  FAIL: %s\n        expected deny, got: %s\n" "$desc" "${out:-<empty>}"; FAIL=$((FAIL + 1))
+  fi
+}
+
+assert_cwd_allow \
+  "plain git add from a feature-worktree cwd is allowed (no -C)" \
+  "git add file.txt" "$FEATURE_WT"
+
+assert_cwd_allow \
+  "plain git rm from a feature-worktree cwd is allowed (no -C)" \
+  "git rm file.txt" "$FEATURE_WT"
+
+assert_cwd_allow \
+  "plain git commit from a feature-worktree cwd is allowed (no -C)" \
+  "git commit -m foo" "$FEATURE_WT"
+
+# Negative: when the input cwd is a worktree on a protected branch, a plain
+# write must still be denied — proving the cwd path resolves the real branch,
+# not a blanket allow.
+assert_cwd_deny \
+  "plain git add from a master-worktree cwd is still denied (no -C)" \
+  "git add file.txt" "$MASTER_WT"
+
+assert_cwd_deny \
+  "plain git commit from a master-worktree cwd is still denied (no -C)" \
+  "git commit -m foo" "$MASTER_WT"
 
 # ── push to an explicit non-protected ref from a main checkout (#1600) ───────
 # Regression: `git push -u origin feat/x` while parked on main was denied
