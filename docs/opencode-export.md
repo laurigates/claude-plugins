@@ -46,6 +46,19 @@ OpenCode reads **plural** `agents/` and `skills/` directories (singular is
 accepted for back-compat); the export already emits plural, so no rename is
 needed.
 
+### Skill `name` normalization
+
+OpenCode validates skill frontmatter more strictly than Claude Code: `name` must
+match `[a-z0-9-]+` **and** equal the skill's directory name. A handful of source
+skills are valid Claude Code but violate this — display-style names (`UnoCSS`,
+`Lightning CSS`) and unprefixed invocation names (`refocus` in dir
+`project-refocus`, `ground-response` in dir `prompt-engineering-ground-response`).
+The export's staging step (`rewrite-skill-name-to-dir.py`) rewrites each skill's
+`name` to its directory basename, which is always unique and pattern-clean. This
+runs on the disposable staging copy only — **the source tree keeps its house-style
+names.** Without it, OpenCode aborts those skills at launch with `Invalid
+frontmatter … name` / `Name mismatch`.
+
 ## 2. Serve the model
 
 OpenCode talks to any OpenAI-compatible `/v1` endpoint. Serve a local model with
@@ -142,6 +155,15 @@ just setup-opencode .opencode     # project → ./.opencode
 `setup-opencode` = `install-opencode` (copies `agents/` + `skills/` **additively**
 — your own agents/skills are preserved) + `configure-opencode`, then prints the
 serve + run next steps.
+
+> **Install into ONE scope only.** OpenCode *merges* global
+> (`~/.config/opencode`) and project (`./.opencode`) skills, so installing this
+> marketplace into both loads every skill twice and OpenCode reports
+> `Duplicate tool names detected` at launch. `install-opencode` drops a
+> `.claude-plugins-opencode-receipt` marker in each scope it installs into and
+> emits `STATUS=WARN` + a `FIX=` remediation line if the complementary scope
+> already carries one. Pick global *or* project; to switch, remove the other
+> scope's `skills/`, `agents/`, and receipt first.
 
 Then:
 
