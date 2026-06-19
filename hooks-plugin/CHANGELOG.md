@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.5.1...hooks-plugin-v2.5.2) (2026-06-19)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** resolve branch-protection branch from hook-input cwd in worktrees ([#1708](https://github.com/laurigates/claude-plugins/issues/1708)) ([ce8b518](https://github.com/laurigates/claude-plugins/commit/ce8b518e8bb8cbae5090660257c19b005b3dcc82))
+
 ## [2.5.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.5.0...hooks-plugin-v2.5.1) (2026-06-18)
 
 
