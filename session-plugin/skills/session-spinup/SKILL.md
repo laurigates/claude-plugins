@@ -53,7 +53,7 @@ where X may now be unblocked.
 dataview machinery in the journal · weeks-stale tasks with no recent
 annotation (that's `task-status`'s job) · `+ACTIVE` tasks from a
 *different* project than the cwd — those are stale locks; at most one
-footnote line, never a scope hijack.
+footnote line ("Stale +ACTIVE elsewhere" at the end of the briefing), never a scope hijack.
 
 ## Execution
 
@@ -67,7 +67,7 @@ Tiered precedence — full table in [REFERENCE.md](REFERENCE.md):
 2. `+ACTIVE` task's project, only when cwd is ambiguous
 3. git remote name as last resort
 
-A cross-project `+ACTIVE` task never overrides an unambiguous cwd.
+A cross-project `+ACTIVE` task never overrides an unambiguous cwd. When cwd unambiguously maps to a project, all subsequent queries must be scoped *only* to that project.
 
 ### Step 2: Survey (parallel-safe)
 
@@ -85,9 +85,12 @@ extraction snippet in [REFERENCE.md](REFERENCE.md).
 ### Step 3: Present
 
 Compact briefing, one section per source, then 2-4 concrete "next moves".
+The spin-up sections (taskwarrior / daily note / git) must reflect *only* the cwd project.
 Say "git state: clean" / "nothing pending under `project:<name>`"
 explicitly rather than omitting sections. Example briefing in
 [REFERENCE.md](REFERENCE.md).
+
+If a `+ACTIVE` task exists in a different project than the cwd-mapped one, do NOT include it in the cwd project's sections. Append a single line under a clearly separate "Stale +ACTIVE elsewhere" notice at the very end of the briefing.
 
 ### Step 4: Offer next moves
 

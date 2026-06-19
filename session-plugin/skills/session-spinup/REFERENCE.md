@@ -15,8 +15,7 @@ schema lives in [session-wrap/REFERENCE.md](../session-wrap/REFERENCE.md).
 The cross-project `+ACTIVE` footnote shape:
 
 ```
-note: +ACTIVE lock on project:claude-plugins from a previous session —
-run session-wrap to close it if done.
+Stale +ACTIVE elsewhere: task #123 in project:claude-plugins is still +ACTIVE — release with /task-release if you've moved on.
 ```
 
 If multiple projects are detectable (monorepo, multi-package), survey
@@ -69,6 +68,8 @@ Next moves:
   • Resume #237 — check PR #1774 review state
   • Tackle yesterday's todo: nudge PR #1607 reviewers
   • Confirm Hetzner shutdown date (#240)
+
+Stale +ACTIVE elsewhere: task #5 in bluepad32.own is still +ACTIVE — release with /task-release if you've moved on.
 ```
 
 ## Edge cases
