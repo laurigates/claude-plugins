@@ -1327,21 +1327,58 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
 """
 
-DEPENDABOT_YML = """\
-version: 2
-updates:
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "pip"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "npm"
-    directory: "/"
-    schedule:
-      interval: "weekly"
+RENOVATE_JSON = """\
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "pre-commit": {
+    "enabled": true
+  }
+}
+"""
+
+RENOVATE_YML = """\
+name: Renovate
+
+on:
+  schedule:
+    - cron: '17 */2 * * *'
+  workflow_dispatch:
+    inputs:
+      dryRun:
+        description: 'Dry run mode'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'full'
+          - 'lookup'
+      logLevel:
+        description: 'Log level'
+        required: false
+        default: 'info'
+        type: choice
+        options:
+          - info
+          - debug
+          - warn
+
+# Explicit grant so the run works even when the repo's default workflow
+# permissions are read-only (the reusable workflow needs write to open
+# dependency PRs and the Dependency Dashboard issue).
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  packages: read
+
+jobs:
+  renovate:
+    uses: laurigates/.github/.github/workflows/reusable-renovate.yml@main
+    with:
+      dry-run: ${{ inputs.dryRun || 'false' }}
+      log-level: ${{ inputs.logLevel || 'info' }}
 """
 
 RP_CONFIG = """\
@@ -1471,6 +1508,7 @@ pylock.toml
 .pre-commit-config.yaml
 release-please-config.json
 .release-please-manifest.json
+renovate.json
 .gitattributes
 .gitignore
 justfile
@@ -1821,10 +1859,11 @@ def build_file_map(
         ".gitattributes": GITATTRIBUTES,
         "release-please-config.json": RP_CONFIG,
         ".release-please-manifest.json": RP_MANIFEST,
+        "renovate.json": RENOVATE_JSON,
         ".github/workflows/ci.yml": CI_YML,
         ".github/workflows/publish.yml": PUBLISH_YML,
         ".github/workflows/release-please.yml": RELEASE_PLEASE_YML,
-        ".github/dependabot.yml": DEPENDABOT_YML,
+        ".github/workflows/renovate.yml": RENOVATE_YML,
         "docs/blueprint/adrs/0001-adopt-typescript-bun-build.md": ADR_0001,
         "src/index.ts": INDEX_TS_GESTURE if gesture else INDEX_TS_MODAL,
         "src/comfyui-shims.d.ts": COMFYUI_SHIMS,
