@@ -337,6 +337,42 @@ check_skill_body() {
       fi
     fi
 
+    # Regression: task-reconcile is the only skill that ACTS on the stale-task
+    # drift task-status detects. Its load-bearing invariants are (1) a bulk
+    # `task import` round-trip for leaf tasks, (2) a default-safe dry-run with an
+    # explicit --apply to mutate. A bulk edit that drops either silently turns
+    # off the safety preview or the JSON close path. Scoped to this skill.
+    if [ "$skill_name" = "task-reconcile" ]; then
+      for token in "task import" "--apply" "dry-run"; do
+        if ! grep -q -- "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain '${token}' (reconcile JSON-close path / dry-run safety)")
+          has_errors=true
+        fi
+      done
+    fi
+
+    # Regression: task-coordinate / task-status select dispatch candidates from
+    # taskwarrior's native +READY virtual tag (subsumes -BLOCKED, respects
+    # wait:/scheduled:). A bulk edit reverting to the hand-rolled
+    # `-BLOCKED -ACTIVE` filter would silently re-surface waiting/future-scheduled
+    # work as candidates. Guard that +READY survives.
+    if [ "$skill_name" = "task-coordinate" ] || [ "$skill_name" = "task-status" ]; then
+      if ! grep -q "+READY" "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must use the native '+READY' tag for ready-candidate selection (native scheduling adoption)")
+        has_errors=true
+      fi
+    fi
+
+    # Regression: install-native-hooks must document that `task import` bypasses
+    # taskwarrior native hooks — the caveat that keeps reconcile's bulk path and
+    # the opt-in hooks from being mistaken for overlapping enforcement. Scoped.
+    if [ "$skill_name" = "install-native-hooks" ]; then
+      if ! grep -q "task import" "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must document that 'task import' bypasses native hooks")
+        has_errors=true
+      fi
+    fi
+
     # Regression: evaluate-legibility's Step-3 triage and the cold-reader prompt
     # depend on the verdict vocabulary (`clear` / `needs-revision`) and the
     # QUESTIONS / HESITATIONS critique headings reused from cold-read-gate. A

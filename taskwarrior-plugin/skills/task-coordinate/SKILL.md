@@ -63,17 +63,21 @@ Execute this workflow:
 ### Step 1: Load unblocked pending tasks
 
 Substitute the literal project name into the filter (no `$()` command
-substitution — shell-operator protections will reject it). Default
-behaviour excludes both `+BLOCKED` (depends-blocked) and `+ACTIVE`
-(already claimed via `/taskwarrior:task-claim`):
+substitution — shell-operator protections will reject it). Use taskwarrior's
+native `+READY` virtual tag, which means *pending, unblocked, not waiting, and
+either unscheduled or scheduled before now* — so it subsumes the old
+`-BLOCKED` clause AND respects `scheduled:` / `wait:` dates. Add `-ACTIVE` to
+exclude tasks already claimed via `/taskwarrior:task-claim`:
 
 ```bash
-task project:myrepo status:pending -BLOCKED -ACTIVE export \
-  | jq 'sort_by(-.urgency) | .[] | {id, description, urgency, tags, bpid, depends}'
+task project:myrepo status:pending +READY -ACTIVE export \
+  | jq 'sort_by(-.urgency) | .[] | {id, description, urgency, tags, bpid, depends, due, scheduled}'
 ```
 
 With `--include-active`, drop the `-ACTIVE` clause so already-claimed
 tasks compete for ranking. With `--all`, drop the `project:` clause.
+`+READY` automatically hides `wait:`-deferred and future-`scheduled:` tasks,
+so a task parked with `wait:` until a PR merges never appears as a candidate.
 Never use `task next` — exits 1 on empty.
 
 ### Step 1b: Snapshot in-flight claims
@@ -188,11 +192,12 @@ report only, per the v1 design.
 
 | Context | Command |
 |---------|---------|
-| Project unclaimed + unblocked | `task project:myrepo status:pending -BLOCKED -ACTIVE export \| jq 'sort_by(-.urgency)'` |
+| Project ready + unclaimed | `task project:myrepo status:pending +READY -ACTIVE export \| jq 'sort_by(-.urgency)'` |
 | Include claimed (rare) | drop `-ACTIVE` clause |
+| Overdue candidates | `task project:myrepo status:pending +OVERDUE export \| jq 'sort_by(-.urgency)'` |
 | In-flight snapshot | `task project:myrepo +ACTIVE export \| jq '.[] \| {id, agent, branch, start}'` |
 | Stale claims | `task project:myrepo +ACTIVE start.before:now-4h export \| jq` |
-| Cross-project (`--all`) | `task status:pending -BLOCKED -ACTIVE export \| jq 'sort_by(-.urgency)'` |
+| Cross-project (`--all`) | `task status:pending +READY -ACTIVE export \| jq 'sort_by(-.urgency)'` |
 | Same-lock siblings | Filter on `tags` / bpid prefix locally, not via `task` filter |
 | Wave brief | `--wave` flag emits table with exclusion column |
 | Skip failing-filter variants | Never `task next`, always `export \| jq` |

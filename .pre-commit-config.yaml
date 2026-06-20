@@ -136,3 +136,9 @@ repos:
         language: system
         files: '^scripts/(check-driver-freshness\.sh|tests/test-check-driver-freshness\.sh)$'
         pass_filenames: false
+      - id: test-bash-antipatterns
+        name: bash-antipatterns hook detection regression
+        entry: bash ./hooks-plugin/hooks/test-bash-antipatterns.sh
+        language: system
+        files: '^hooks-plugin/hooks/(bash-antipatterns\.sh|test-bash-antipatterns\.sh)$'
+        pass_filenames: false

@@ -23,7 +23,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.26.0",
+      "version": "2.26.1",
       "keywords": [
         "agents",
         "configuration",
@@ -148,7 +148,7 @@
       "name": "comfyui-plugin",
       "source": "./comfyui-plugin",
       "description": "ComfyUI custom-node pack lifecycle - scaffold a pack, create + seed the repo, open the gitops adoption PR, publish to the Comfy Registry, and add README screenshots",
-      "version": "1.4.1",
+      "version": "1.4.2",
       "keywords": [
         "comfyui",
         "custom-node",
@@ -372,7 +372,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.5.2",
+      "version": "2.5.3",
       "keywords": [
         "hooks",
         "automation",
@@ -588,7 +588,7 @@
       "name": "taskwarrior-plugin",
       "source": "./taskwarrior-plugin",
       "description": "Coordination layer for multi-agent work using taskwarrior - parallel-safe queries, urgency scoring, and optional GitHub linkage via ghid/ghpr UDAs",
-      "version": "1.5.0",
+      "version": "1.6.0",
       "keywords": [
         "taskwarrior",
         "coordination",

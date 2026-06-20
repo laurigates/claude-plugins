@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.2](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.4.1...comfyui-plugin-v1.4.2) (2026-06-20)
+
+
+### Bug Fixes
+
+* **comfyui-plugin:** scaffold ships .comfyignore + 3-part frontend-package pin ([#1714](https://github.com/laurigates/claude-plugins/issues/1714)) ([9a69849](https://github.com/laurigates/claude-plugins/commit/9a698490ce19d8e69bde63f943725b091aa50588))
+
 ## [1.4.1](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.4.0...comfyui-plugin-v1.4.1) (2026-06-12)
 
 

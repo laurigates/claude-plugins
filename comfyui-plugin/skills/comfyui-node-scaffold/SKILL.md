@@ -182,6 +182,26 @@ chains scaffold → `gh repo create` → seed `main` → the gitops PR.
   **passes green unit tests** because modal builders are DOM-uncovered. The stub
   does it right.
 
+## Registry publishing
+
+The generated `publish.yml` builds `web/dist/` then publishes via
+`Comfy-Org/publish-node-action`. Three registry facts worth knowing:
+
+- **Active vs Flagged is a pointer.** The registry serves one *Active* version
+  per node; publishing moves that pointer to the new version. A version that gets
+  **Flagged** (review) stays in the registry but is no longer the Active target —
+  installs fall back to the last Active version. Publishing a fresh good version
+  re-points Active forward.
+- **Flags are content-independent.** A version can be Flagged for reasons
+  unrelated to its file contents (publisher / automated review state), so a
+  byte-identical re-publish can flip status. A Flag does not by itself mean the
+  tarball is bad — check the registry version page.
+- **`.comfyignore` trims the tarball.** comfy-cli builds the published `node.zip`
+  as *git-tracked files − `.comfyignore` matches + `[tool.comfy] includes`*. The
+  scaffold ships a default `.comfyignore` so only the runtime backend, the built
+  `web/dist`, and metadata ship — CI, tests, docs, build inputs, and the TS source
+  stay out. Tarball trimming requires **comfy-cli >= 1.10.3**.
+
 ## Agentic Optimizations
 
 | Context | Command |

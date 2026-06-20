@@ -122,7 +122,7 @@ classifiers = [
 
 # @@DEP_FLOOR_NOTE@@ @@BACKEND_DEP_NOTE@@
 dependencies = [
-    "comfyui-frontend-package>=1.40",
+    "comfyui-frontend-package>=1.40.0",
 ]
 
 [project.urls]
@@ -1327,21 +1327,58 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
 """
 
-DEPENDABOT_YML = """\
-version: 2
-updates:
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "pip"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "npm"
-    directory: "/"
-    schedule:
-      interval: "weekly"
+RENOVATE_JSON = """\
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "pre-commit": {
+    "enabled": true
+  }
+}
+"""
+
+RENOVATE_YML = """\
+name: Renovate
+
+on:
+  schedule:
+    - cron: '17 */2 * * *'
+  workflow_dispatch:
+    inputs:
+      dryRun:
+        description: 'Dry run mode'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'full'
+          - 'lookup'
+      logLevel:
+        description: 'Log level'
+        required: false
+        default: 'info'
+        type: choice
+        options:
+          - info
+          - debug
+          - warn
+
+# Explicit grant so the run works even when the repo's default workflow
+# permissions are read-only (the reusable workflow needs write to open
+# dependency PRs and the Dependency Dashboard issue).
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  packages: read
+
+jobs:
+  renovate:
+    uses: laurigates/.github/.github/workflows/reusable-renovate.yml@main
+    with:
+      dry-run: ${{ inputs.dryRun || 'false' }}
+      log-level: ${{ inputs.logLevel || 'info' }}
 """
 
 RP_CONFIG = """\
@@ -1432,6 +1469,54 @@ Thumbs.db
 # Local notes / scratch
 TODO.local.md
 NOTES.local.md
+"""
+
+# Trims the Comfy Registry tarball to runtime-only files. Fully static (no
+# template tokens). Requires comfy-cli >= 1.10.3 to be honored at publish time.
+COMFYIGNORE = """\
+# .comfyignore — trims the Comfy Registry tarball to runtime-only files.
+#
+# comfy-cli builds node.zip as:  git-tracked files − .comfyignore matches
+# + [tool.comfy] includes.  Patterns use gitignore (gitwildmatch) syntax.
+# web/dist is force-shipped via `includes`, so it always survives these rules.
+#
+# Goal: ship only what ComfyUI loads at runtime (the Python backend, the
+# built web/dist bundle, pyproject metadata, README/LICENSE) and keep CI,
+# build inputs, tests, docs, and the screenshot pipeline out of the tarball.
+
+# Build inputs — only the built web/dist is served, never the TS source
+/src/
+tsconfig.json
+biome.json
+knip.json
+vitest.config.js
+package.json
+bun.lock
+uv.lock
+pylock.toml
+
+# Tests
+/tests/
+
+# Docs + screenshot pipeline (Dockerfile, shell scripts, large PNGs)
+/docs/
+/screenshots/
+
+# CI, release automation, repo + agent tooling
+/.github/
+/.claude/
+.pre-commit-config.yaml
+release-please-config.json
+.release-please-manifest.json
+renovate.json
+.gitattributes
+.gitignore
+justfile
+CLAUDE.md
+RELEASE-CHECKLIST.md
+
+# Source-form icon (PNG icon + banner display assets are kept)
+icon.svg
 """
 
 GITATTRIBUTES = "* text=auto eol=lf\n*.png binary\n*.jpg binary\n*.webp binary\nuv.lock linguist-generated=true\nbun.lock linguist-generated=true\n"
@@ -1770,13 +1855,15 @@ def build_file_map(
         "vitest.config.js": VITEST_CONFIG,
         ".pre-commit-config.yaml": PRE_COMMIT,
         ".gitignore": GITIGNORE,
+        ".comfyignore": COMFYIGNORE,
         ".gitattributes": GITATTRIBUTES,
         "release-please-config.json": RP_CONFIG,
         ".release-please-manifest.json": RP_MANIFEST,
+        "renovate.json": RENOVATE_JSON,
         ".github/workflows/ci.yml": CI_YML,
         ".github/workflows/publish.yml": PUBLISH_YML,
         ".github/workflows/release-please.yml": RELEASE_PLEASE_YML,
-        ".github/dependabot.yml": DEPENDABOT_YML,
+        ".github/workflows/renovate.yml": RENOVATE_YML,
         "docs/blueprint/adrs/0001-adopt-typescript-bun-build.md": ADR_0001,
         "src/index.ts": INDEX_TS_GESTURE if gesture else INDEX_TS_MODAL,
         "src/comfyui-shims.d.ts": COMFYUI_SHIMS,
