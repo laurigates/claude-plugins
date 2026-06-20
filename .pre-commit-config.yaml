@@ -130,3 +130,9 @@ repos:
         language: system
         files: '^scripts/(rewrite-skill-name-to-dir\.py|export-opencode\.sh|install-opencode\.sh|tests/test-rewrite-skill-name-to-dir\.sh)$'
         pass_filenames: false
+      - id: test-check-driver-freshness
+        name: driver-freshness equal-date invariant + epoch diagnostics (#1704)
+        entry: bash ./scripts/tests/test-check-driver-freshness.sh
+        language: system
+        files: '^scripts/(check-driver-freshness\.sh|tests/test-check-driver-freshness\.sh)$'
+        pass_filenames: false
