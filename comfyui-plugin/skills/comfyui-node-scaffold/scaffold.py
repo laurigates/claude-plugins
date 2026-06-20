@@ -122,7 +122,7 @@ classifiers = [
 
 # @@DEP_FLOOR_NOTE@@ @@BACKEND_DEP_NOTE@@
 dependencies = [
-    "comfyui-frontend-package>=1.40",
+    "comfyui-frontend-package>=1.40.0",
 ]
 
 [project.urls]
@@ -1434,6 +1434,53 @@ TODO.local.md
 NOTES.local.md
 """
 
+# Trims the Comfy Registry tarball to runtime-only files. Fully static (no
+# template tokens). Requires comfy-cli >= 1.10.3 to be honored at publish time.
+COMFYIGNORE = """\
+# .comfyignore — trims the Comfy Registry tarball to runtime-only files.
+#
+# comfy-cli builds node.zip as:  git-tracked files − .comfyignore matches
+# + [tool.comfy] includes.  Patterns use gitignore (gitwildmatch) syntax.
+# web/dist is force-shipped via `includes`, so it always survives these rules.
+#
+# Goal: ship only what ComfyUI loads at runtime (the Python backend, the
+# built web/dist bundle, pyproject metadata, README/LICENSE) and keep CI,
+# build inputs, tests, docs, and the screenshot pipeline out of the tarball.
+
+# Build inputs — only the built web/dist is served, never the TS source
+/src/
+tsconfig.json
+biome.json
+knip.json
+vitest.config.js
+package.json
+bun.lock
+uv.lock
+pylock.toml
+
+# Tests
+/tests/
+
+# Docs + screenshot pipeline (Dockerfile, shell scripts, large PNGs)
+/docs/
+/screenshots/
+
+# CI, release automation, repo + agent tooling
+/.github/
+/.claude/
+.pre-commit-config.yaml
+release-please-config.json
+.release-please-manifest.json
+.gitattributes
+.gitignore
+justfile
+CLAUDE.md
+RELEASE-CHECKLIST.md
+
+# Source-form icon (PNG icon + banner display assets are kept)
+icon.svg
+"""
+
 GITATTRIBUTES = "* text=auto eol=lf\n*.png binary\n*.jpg binary\n*.webp binary\nuv.lock linguist-generated=true\nbun.lock linguist-generated=true\n"
 
 LICENSE = """\
@@ -1770,6 +1817,7 @@ def build_file_map(
         "vitest.config.js": VITEST_CONFIG,
         ".pre-commit-config.yaml": PRE_COMMIT,
         ".gitignore": GITIGNORE,
+        ".comfyignore": COMFYIGNORE,
         ".gitattributes": GITATTRIBUTES,
         "release-please-config.json": RP_CONFIG,
         ".release-please-manifest.json": RP_MANIFEST,
