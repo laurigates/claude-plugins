@@ -48,22 +48,20 @@ Execute this claim workflow:
 
 ### Step 1: Ensure identity UDAs exist
 
-If `task _udas` output lacks `agent`, `pid`, `host`, `branch`, or `worktree`, install them on first run per host:
+The identity UDAs (`agent` / `pid` / `host` / `branch` / `worktree`) are part of
+the canonical set in the shared `ensure-udas.sh` script. Check for missing UDAs:
 
 ```bash
-task config uda.agent.type string
-task config uda.agent.label "Agent ID"
-task config uda.pid.type numeric
-task config uda.pid.label "Agent PID"
-task config uda.host.type string
-task config uda.host.label "Host"
-task config uda.branch.type string
-task config uda.branch.label "Git branch"
-task config uda.worktree.type string
-task config uda.worktree.label "Worktree path"
+bash "${CLAUDE_SKILL_DIR}/../../scripts/ensure-udas.sh" --check
 ```
 
-Confirm with the user before installing — UDA declarations live in `~/.taskrc` and persist across sessions.
+If it reports `UDAS_MISSING` greater than 0, confirm with the user (declarations
+persist in `~/.taskrc`) and install — the script is idempotent and installs the
+full linkage + identity set in one pass:
+
+```bash
+bash "${CLAUDE_SKILL_DIR}/../../scripts/ensure-udas.sh"
+```
 
 ### Step 2: Load the task and check active state
 

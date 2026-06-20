@@ -15,7 +15,7 @@ GitHub issues are the system of record for work the team should see. Taskwarrior
 | Cost to read 50 items | 50 API calls or rate limit | Single `task export \| jq` |
 | Discovery surface | GitHub UI | Agent-queryable shell |
 
-Both systems stay in sync via UDAs (`ghid`, `ghpr`) and tags (`+gh`, `+pr_ready`, `+blocked_on_merge`). This plugin's skills detect GitHub remotes automatically and offer the linkage; repositories without a remote operate in local-only mode.
+Both systems stay in sync via UDAs (`ghid`, `ghpr`) and tags (`+gh`, `+pr_ready`). This plugin's skills detect GitHub remotes automatically and offer the linkage; repositories without a remote operate in local-only mode. `/taskwarrior:task-reconcile` closes the loop the other way — when an issue or PR closes, it retires the local task that mirrored it, so the queue never silently accumulates stale trackers.
 
 ## Skills
 
@@ -25,8 +25,10 @@ Both systems stay in sync via UDAs (`ghid`, `ghpr`) and tags (`+gh`, `+pr_ready`
 | `/taskwarrior:task-claim` | Claim a pending task as in-flight: marks it `+ACTIVE` (`task start`), stamps identity UDAs (`agent` / `pid` / `host` / `branch` / `worktree`), and writes a `/git:coworker-check` session marker so destructive git ops in the clone are guarded |
 | `/taskwarrior:task-release` | Release an active claim without closing: stops the `+ACTIVE` clock, annotates the handoff state, drains `pid`, and drops the coworker-check marker. Pairs with `task-claim` for pause / handoff |
 | `/taskwarrior:task-done` | Close a task, annotate with commit hash, drain the linked feature-tracker entry; auto-stops the `+ACTIVE` claim and offers to close the linked GitHub issue |
-| `/taskwarrior:task-status` | Read-only consolidated queue + drift report scoped to the current project; surfaces in-flight claims and stale claims (>N hours); folds in `gh pr status` when GitHub is present |
-| `/taskwarrior:task-coordinate` | Surface the next N unblocked **and unclaimed** tasks (in the current project) sorted by urgency that do not contend on an exclusive lock — input for parallel / wave dispatch. Excludes `+ACTIVE` by default so dispatch waves never overlap with another agent's claim |
+| `/taskwarrior:task-status` | Read-only consolidated queue + drift report scoped to the current project; surfaces in-flight claims, stale claims (>N hours), and `+OVERDUE` tasks; folds in `gh pr status` when GitHub is present |
+| `/taskwarrior:task-coordinate` | Surface the next N **`+READY` and unclaimed** tasks (in the current project) sorted by urgency that do not contend on an exclusive lock — input for parallel / wave dispatch. Uses taskwarrior's native `+READY` set so `wait:`-deferred and future-`scheduled:` work never appears |
+| `/taskwarrior:task-reconcile` | Close tasks whose linked GitHub issue/PR has closed or merged, so the queue does not accumulate stale trackers. Dry-run preview by default; `--apply` closes (bulk `task import` for leaf tasks, per-task `task done` for tasks that block others) |
+| `/taskwarrior:install-native-hooks` | **Opt-in** installer for taskwarrior native `on-add` / `on-modify` hooks that auto-stamp `project` and warn on mis-parsed hyphenated tags. Writes to the user's global `<data>/hooks/` only on explicit invocation |
 
 ### Identity / claim lifecycle
 
@@ -102,8 +104,12 @@ The identity UDAs power `task-coordinate`'s "In flight" / "Stale claims" section
 | `+gh` | Linked to a GitHub issue or PR |
 | `+pr_ready` | Implementation done, open PR, waiting on merge |
 | `+needs_review` | Ready for review |
-| `+blocked_on_merge` | Waiting on another PR to merge |
+| `+blocked_on_merge` | Waiting on another PR to merge (prefer `wait:<date>` — it auto-unhides) |
 | `+blocked` | Blocked on external factor |
+
+> Prefer the native scheduling fields (`wait:` / `scheduled:` / `due:`) over
+> hand-managed `+blocked*` tags where a date is known — see **Native scheduling
+> fields** below. The tags remain for genuinely date-less blockers.
 
 > **Tag naming gotcha.** Taskwarrior parses `-` mid-token as exclude-filter
 > syntax even inside a `+tag` argument, so `+blocked-on-merge` is parsed as
@@ -122,6 +128,51 @@ Both pass → GitHub mode: `ghid` / `ghpr` fields are offered, PR status is fold
 Either fails → local-only mode: taskwarrior operates standalone, GitHub-specific prompts are skipped.
 
 Override via `.claude/taskwarrior-plugin.local.md` (see `agent-patterns-plugin:plugin-settings`).
+
+## Keeping the queue in sync
+
+GitHub issues and PRs close; the local tasks that mirror them do not, unless
+something retires them. `/taskwarrior:task-reconcile` is that something:
+
+1. Snapshots pending tasks carrying `ghid` / `ghpr`.
+2. Batch-checks upstream state via `gh` (cached per number).
+3. Closes the stale set — **leaf** tasks via a bulk `task export | jq | task import`
+   round-trip, tasks that **block others** via per-task `task done` so
+   taskwarrior's dependency auto-unblock fires (`task import` skips that pass).
+
+It defaults to a **dry-run preview** and never closes a task whose upstream
+state could not be read. `task-status` already *detects* this drift; reconcile
+*acts* on it. See the skill's `REFERENCE.md` for the bulk-vs-done routing and
+`task import` round-trip caveats.
+
+## Native scheduling fields
+
+Prefer taskwarrior's native date fields over hand-managed `+blocked*` tags —
+`task-add` accepts them and `task-coordinate` / `task-status` read them:
+
+| Field | Effect | Replaces |
+|-------|--------|----------|
+| `wait:<date>` | Hides the task until the date (auto-unhides) | `+blocked_on_merge` bookkeeping |
+| `scheduled:<date>` | Task becomes `+READY` only once the date passes | manual deferral |
+| `due:<date>` | Feeds urgency; surfaces as `+DUE` / `+OVERDUE` | manual priority bumps |
+| `recur:<freq>` (+ `due:`) | Repeating maintenance chores | re-filing by hand |
+| `until:<date>` | Auto-deletes the task on the date | stale short-lived trackers |
+
+`task-coordinate` and `task-status` rank candidates from taskwarrior's native
+`+READY` virtual tag (pending, unblocked, not waiting, scheduled-due), which
+subsumes the old `-BLOCKED` filter and automatically respects `wait:` /
+`scheduled:`.
+
+## Shared scripts
+
+Logic shared across skills lives in `taskwarrior-plugin/scripts/` and is invoked
+from skill bodies as `${CLAUDE_SKILL_DIR}/../../scripts/<name>.sh`:
+
+| Script | Used by | Purpose |
+|--------|---------|---------|
+| `ensure-udas.sh` | `task-add`, `task-claim`, drift-probe hook | Single source of the 10-UDA set; idempotent install + `--check` |
+| `resolve-project.sh` | `task-add`, `task-coordinate`, `task-status`, `task-reconcile` | The `--project` > `--all` > git-toplevel > cwd ladder |
+| `detect-gh-mode.sh` | GitHub-mode skills | Remote + `gh auth` probe (no stderr-emitting Context probes) |
 
 ## Flow
 

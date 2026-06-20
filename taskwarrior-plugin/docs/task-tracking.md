@@ -25,8 +25,28 @@ Declared in `~/.taskrc`. `task-add` installs them on first use (with confirmatio
 | `+gh` | Linked to a GitHub issue or PR |
 | `+pr_ready` | Implementation done, open PR, waiting on merge |
 | `+needs_review` | Ready for review |
-| `+blocked_on_merge` | Waiting on another PR to merge |
+| `+blocked_on_merge` | Waiting on another PR to merge (prefer `wait:` — see below) |
 | `+blocked` | Blocked on external factor |
+
+## Native scheduling fields
+
+Taskwarrior's built-in date fields express deferral and deadlines more precisely
+than tags, and the read skills understand them natively. Prefer them over
+hand-managed `+blocked*` tags whenever a date is known:
+
+| Field | Meaning | Virtual tag it drives |
+|-------|---------|-----------------------|
+| `wait:<date>` | Hide the task until the date, then auto-unhide | `+WAITING` (hidden from default reports) |
+| `scheduled:<date>` | Earliest sensible start; gates readiness | `+READY` only once passed |
+| `due:<date>` | Deadline; feeds urgency | `+DUE` (≤7d), `+OVERDUE` (past) |
+| `recur:<freq>` (+ `due:`) | Repeat the task on a cadence | `+PARENT` / `+CHILD` instances |
+| `until:<date>` | Auto-delete the task on the date | — |
+
+`task-coordinate` and `task-status` select dispatch candidates from the native
+`+READY` set (pending, unblocked, not waiting, scheduled-due) rather than a
+hand-rolled `-BLOCKED -ACTIVE` filter — so a task parked with `wait:` until a PR
+merges, or `scheduled:` for next week, stays out of the candidate pool until it
+is genuinely actionable.
 
 ## Lifecycle
 
@@ -52,7 +72,9 @@ task add "WO-060: document format spec" bpid:WO-060 +wo project:myrepo depends:5
 # → taskwarrior assigns ID 53
 ```
 
-The `-BLOCKED` virtual attribute in `task-coordinate` and `task-status` automatically hides depends-blocked tasks from dispatch candidates — no manual filtering needed.
+The native `+READY` virtual tag in `task-coordinate` and `task-status`
+automatically hides depends-blocked tasks (and `wait:`-deferred / future-`scheduled:`
+tasks) from dispatch candidates — no manual filtering needed.
 
 ### 3. ★ KEY: `depends:` + `task done` auto-unblocks the chain
 
@@ -93,6 +115,17 @@ task depends:"$TASKID" export | jq '.[] | {id, description, urgency}'
 
 Include these in the close-out report so the orchestrator knows the next ready task immediately.
 
+### 6. Reconcile linked tasks against GitHub
+
+Tasks that mirror a GitHub issue (`ghid`) or PR (`ghpr`) go stale when the
+upstream item closes or merges — and nothing closes them automatically.
+`/taskwarrior:task-reconcile` retires that drift: it batch-checks upstream state
+and closes the stale set (leaf tasks via a bulk `task export | jq | task import`
+round-trip; tasks that block others via per-task `task done` so the auto-unblock
+in step 3 still fires). It defaults to a dry-run preview and never closes a task
+whose upstream state could not be read. Run it after a batch of PRs merge, or
+when `task-status` flags `drift: stale-open`.
+
 ## Parallel-Safe Queries
 
 All taskwarrior queries use `export | jq` — never bare `list`, `next`, or similar commands — because these exit 1 on an empty result and cancel sibling Bash calls in parallel batches.
@@ -116,7 +149,8 @@ When urgency rankings feel wrong, the common culprits are missing `project:` tag
 
 - `/taskwarrior:task-add` — file tasks with UDA linkage and `depends:` ordering
 - `/taskwarrior:task-done` — close + annotate + check unblocked siblings
-- `/taskwarrior:task-coordinate` — surface next unblocked candidates for a wave
+- `/taskwarrior:task-coordinate` — surface next `+READY` candidates for a wave
 - `/taskwarrior:task-status` — full queue audit with drift detection
+- `/taskwarrior:task-reconcile` — close tasks whose linked issue/PR closed/merged
 - `.claude/rules/parallel-safe-queries.md` — the `export | jq` idiom (zero parallel-batch errors)
 - `blueprint-plugin:feature-tracking` — blueprint IDs that `bpid` links to

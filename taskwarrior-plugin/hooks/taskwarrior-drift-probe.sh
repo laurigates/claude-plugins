@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # taskwarrior-drift-probe.sh — SessionStart probe for taskwarrior-plugin drift.
 #
-# The plugin's task-add skill references custom UDAs (bpid, bpdoc, bpms, ghid,
-# ghpr, agent, pid, host, branch, worktree). If those UDAs are not declared in
+# The plugin's skills reference custom UDAs (bpid, bpdoc, bpms, ghid, ghpr,
+# agent, pid, host, branch, worktree). If those UDAs are not declared in
 # ~/.taskrc, `task add` silently drops the field. This probe surfaces that gap
 # at session start so the user can install the UDAs via `/taskwarrior:task-add`
-# (which offers the install).
+# (which offers the install). The canonical UDA list lives in the shared
+# scripts/ensure-udas.sh — this probe calls it in --check mode so the list is
+# single-sourced and never mutates ~/.taskrc from a SessionStart hook.
 #
 # No-ops when ~/.taskrc is absent OR the task binary is missing.
 
@@ -44,28 +46,21 @@ if ! command -v task >/dev/null 2>&1; then
     exit 0
 fi
 
-# UDAs the plugin's task-add skill emits.
-required_udas=(bpid bpdoc bpms ghid ghpr agent pid host branch worktree)
-
-missing=()
-for uda in "${required_udas[@]}"; do
-    # Match either inline taskrc form (uda.<name>.type=...) or include-based.
-    # `task _udas` is the authoritative list; fall back to grep on taskrc.
-    if task _udas 2>/dev/null | grep -qx "$uda"; then
-        continue
+# Single-source the required-UDA list: ask the shared ensure-udas.sh script
+# (which task-add / task-claim also use) what is missing, in --check mode so it
+# never mutates ~/.taskrc from a SessionStart probe.
+ENSURE_UDAS="${SCRIPT_DIR}/../scripts/ensure-udas.sh"
+if [ -f "$ENSURE_UDAS" ]; then
+    uda_report=$(bash "$ENSURE_UDAS" --check 2>/dev/null || true)
+    missing_count=$(printf '%s\n' "$uda_report" | grep -m1 '^UDAS_MISSING=' | cut -d= -f2)
+    missing_count="${missing_count:-0}"
+    if [ "$missing_count" -gt 0 ] 2>/dev/null; then
+        list=$(printf '%s\n' "$uda_report" | grep -m1 '^MISSING_NAMES=' | cut -d= -f2)
+        drift_add_finding warn \
+            udas_missing \
+            "${missing_count} UDA(s) missing from ~/.taskrc: ${list}" \
+            "/taskwarrior:task-add"
     fi
-    if grep -qE "^uda\.${uda}\.type" "$TASKRC" 2>/dev/null; then
-        continue
-    fi
-    missing+=("$uda")
-done
-
-if [ "${#missing[@]}" -gt 0 ]; then
-    list=$(IFS=, ; printf '%s' "${missing[*]}")
-    drift_add_finding warn \
-        udas_missing \
-        "${#missing[@]} UDA(s) missing from ~/.taskrc: ${list}" \
-        "/taskwarrior:task-add"
 fi
 
 drift_emit

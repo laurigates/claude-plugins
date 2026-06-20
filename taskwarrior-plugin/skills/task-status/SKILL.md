@@ -76,7 +76,7 @@ project name into the filter — do **not** use `$()` command substitution
 in the inline command (shell-operator protections will reject it).
 
 ```bash
-task project:myrepo status:pending export | jq '.[] | {id, description, urgency, tags, bpid, bpdoc, ghid, ghpr, agent, pid, host, branch, worktree, start, modified, depends}'
+task project:myrepo status:pending export | jq '.[] | {id, description, urgency, tags, bpid, bpdoc, ghid, ghpr, agent, pid, host, branch, worktree, start, modified, depends, due, scheduled, wait}'
 ```
 
 For completeness also pull recently-completed in the same project:
@@ -144,10 +144,10 @@ Pass --all for cross-project view, --project=<name> to override.
 
 Output these sections, in order:
 
-1. **Summary**: pending count, in-flight count, ready count (unblocked + unclaimed), blocked count, stale count, stale-claim count
+1. **Summary**: pending count, in-flight count, ready count (`+READY` + unclaimed), blocked count, overdue count, stale count, stale-claim count
 2. **In flight**: `+ACTIVE` tasks with `agent` / `branch` / `host` / `worktree` and time since `start`. Sorted by `start` ascending (oldest first). Section header notes `--mine` / `--all` scope.
 3. **Stale claims** (>4h or `--stale-claim-after`): subset of "In flight" with `start.before:now-Nh`. Recommend `/taskwarrior:task-release <id>` per row — the report never auto-stops.
-4. **Ready for dispatch**: top 5 by urgency with no `depends:`, no `+blocked*` tags, and not `+ACTIVE`. These are what `/taskwarrior:task-coordinate` would emit.
+4. **Ready for dispatch**: top 5 by urgency from `+READY -ACTIVE` (taskwarrior's native ready set — unblocked, not waiting, scheduled-due). These are what `/taskwarrior:task-coordinate` would emit. Flag any `+OVERDUE` rows (past `due:`) at the top.
 5. **By milestone**: table of pending tasks per `bpms`
 6. **Blocked**: tasks waiting on dependencies or external factors
 7. **PR-ready** (GitHub mode): tasks with green PRs ready to close
@@ -162,7 +162,8 @@ Each row cites the command to act on it (`/taskwarrior:task-done 7`,
 |---------|---------|
 | Project queue JSON | `task project:myrepo status:pending export \| jq` |
 | Cross-project queue (`--all`) | `task status:pending export \| jq` |
-| Ready-for-dispatch (excludes claimed) | `task project:myrepo status:pending -BLOCKED -ACTIVE export \| jq 'sort_by(-.urgency) \| .[:5]'` |
+| Ready-for-dispatch (excludes claimed) | `task project:myrepo status:pending +READY -ACTIVE export \| jq 'sort_by(-.urgency) \| .[:5]'` |
+| Overdue tasks | `task project:myrepo status:pending +OVERDUE export \| jq 'sort_by(-.urgency)'` |
 | In flight | `task project:myrepo +ACTIVE export \| jq '.[] \| {id, agent, branch, host, start}'` |
 | Stale claims (>4h) | `task project:myrepo +ACTIVE start.before:now-4h export \| jq` |
 | Mine (claimed by this agent) | `task project:myrepo +ACTIVE agent:claude-${CLAUDE_SESSION_ID:0:8} export \| jq` |
@@ -176,7 +177,9 @@ Each row cites the command to act on it (`/taskwarrior:task-done 7`,
 |--------|-----------|
 | `project:<name>` | Single project (default scope) |
 | `status:pending` | Open tasks |
-| `-BLOCKED` | Exclude `depends:`-blocked |
+| `+READY` | Native ready set: unblocked, not waiting, scheduled-due |
+| `-BLOCKED` | Exclude `depends:`-blocked (subsumed by `+READY`) |
+| `+DUE` / `+OVERDUE` | Due within 7 days / past `due:` |
 | `+ACTIVE` / `-ACTIVE` | Tasks with `task start` time set / not set |
 | `start.before:now-4h` | Stale claims |
 | `agent:claude-<sid>` | Mine (UDA-based) |
