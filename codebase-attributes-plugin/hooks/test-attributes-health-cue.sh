@@ -22,13 +22,13 @@ PASS=0
 FAIL=0
 
 # All temp directories use the test seam ATTRIBUTES_HEALTH_CUE_CACHE_DIR
-TEST_HOME=$(mktemp -d)
-CACHE_DIR=$(mktemp -d)
+TEST_HOME=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
+CACHE_DIR=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
 
 # Repo with .claude/attributes.json containing a high-severity finding
-REPO_WITH_ATTRS=$(mktemp -d)
+REPO_WITH_ATTRS=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
 # Repo without attributes data
-REPO_NO_ATTRS=$(mktemp -d)
+REPO_NO_ATTRS=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
 
 trap 'rm -rf "$TEST_HOME" "$CACHE_DIR" "$REPO_WITH_ATTRS" "$REPO_NO_ATTRS"' EXIT
 

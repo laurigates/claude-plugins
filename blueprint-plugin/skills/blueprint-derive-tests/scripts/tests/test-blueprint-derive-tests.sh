@@ -22,8 +22,8 @@ fi
 
 [ -f "$analyze_script" ] || fail "blueprint-derive-tests.sh not found at $analyze_script"
 
-proj="$(mktemp -d)"
-home="$(mktemp -d)"
+proj="$(mktemp -d)" || { echo "mktemp -d failed" >&2; exit 1; }
+home="$(mktemp -d)" || { echo "mktemp -d failed" >&2; exit 1; }
 trap 'rm -rf "$proj" "$home"' EXIT
 
 git -C "$proj" init -q
@@ -77,7 +77,7 @@ echo "$out" | grep -q "^STATUS=ERROR$" \
 pass "commit classification counts and STATUS reflect the single critical gap"
 
 # Counter-case: a repo whose only commit is a fully-tested fix -> no gaps, STATUS=OK.
-proj2="$(mktemp -d)"
+proj2="$(mktemp -d)" || { echo "mktemp -d failed" >&2; exit 1; }
 git -C "$proj2" init -q
 git -C "$proj2" config user.email "test@example.com"
 git -C "$proj2" config user.name "Test"

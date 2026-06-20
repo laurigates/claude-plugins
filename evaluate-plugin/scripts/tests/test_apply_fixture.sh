@@ -79,7 +79,7 @@ else
 fi
 
 echo "=== TEST: teardown refuses a path outside the temp root ==="
-guard_dir="$(mktemp -d)"
+guard_dir="$(mktemp -d)" || { echo "mktemp -d failed" >&2; exit 1; }
 mkdir -p "$repo_root/.git-fixture-probe-DO-NOT-REMOVE" 2>/dev/null || true
 unsafe="$repo_root/.git-fixture-probe-DO-NOT-REMOVE"
 guard_out="$("$apply" --teardown "$unsafe")"

@@ -24,16 +24,16 @@ FAIL=0
 
 # Create a throwaway git repo on `main` so the hook's branch detection has
 # something to find. Cleaned up on exit.
-TEST_REPO=$(mktemp -d)
+TEST_REPO=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
 # Sibling worktrees used by the `-C <worktree>` regression tests (#1389):
 #   FEATURE_WT — on `feature/probe`, writes should be allowed
 #   MASTER_WT  — on `master`, writes should still be denied (negative case)
-FEATURE_WT=$(mktemp -d)
-MASTER_WT=$(mktemp -d)
+FEATURE_WT=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
+MASTER_WT=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
 # INIT_REPO — a pristine repo with a single root commit on main, used to
 # assert the bootstrap-push exemption. Kept separate from TEST_REPO so the
 # baseline deny tests still run against a repo that has real history.
-INIT_REPO=$(mktemp -d)
+INIT_REPO=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
 trap 'rm -rf "$TEST_REPO" "$FEATURE_WT" "$MASTER_WT" "$INIT_REPO"' EXIT
 
 git -C "$TEST_REPO" init -q -b main
@@ -330,7 +330,7 @@ assert_deny \
 echo ""
 echo "GitHub wiki checkouts are exempt from branch protection (#1586):"
 
-WIKI_PARENT=$(mktemp -d)
+WIKI_PARENT=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
 WIKI_REPO="$WIKI_PARENT/myproject.wiki"
 mkdir -p "$WIKI_REPO"
 git -C "$WIKI_REPO" init -q -b master

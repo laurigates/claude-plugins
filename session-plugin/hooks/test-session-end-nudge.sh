@@ -24,9 +24,9 @@ HOOK="$(dirname "$0")/session-end-nudge.sh"
 PASS=0
 FAIL=0
 
-TEST_HOME=$(mktemp -d)
-REPO_WITH_RULES=$(mktemp -d)
-REPO_PLAIN=$(mktemp -d)
+TEST_HOME=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
+REPO_WITH_RULES=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
+REPO_PLAIN=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
 trap 'rm -rf "$TEST_HOME" "$REPO_WITH_RULES" "$REPO_PLAIN"' EXIT
 
 git -C "$REPO_WITH_RULES" init -q
@@ -198,7 +198,7 @@ run_hook_with_task_bin() {
 }
 
 # Create a mock task binary that returns a non-empty task list when queried.
-MOCK_TASK_DIR=$(mktemp -d)
+MOCK_TASK_DIR=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
 cat > "$MOCK_TASK_DIR/task" <<'MOCK'
 #!/bin/sh
 # Minimal task stub: 'export' returns one pending task; all other calls are no-ops.
@@ -217,7 +217,7 @@ assert_contains "open tasks → reason still instructs offer-only" 'never run it
 assert_contains "open tasks → reason mentions stable UUID pattern" 'task +LATEST _get uuid' "$output"
 
 # When the task stub returns an empty list, the sync cue must NOT appear.
-MOCK_TASK_EMPTY_DIR=$(mktemp -d)
+MOCK_TASK_EMPTY_DIR=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
 cat > "$MOCK_TASK_EMPTY_DIR/task" <<'MOCK'
 #!/bin/sh
 # Task stub: returns empty list for all calls.

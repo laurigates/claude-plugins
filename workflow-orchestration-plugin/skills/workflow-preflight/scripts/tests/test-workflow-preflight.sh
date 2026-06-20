@@ -29,14 +29,14 @@ fi
 
 [ -f "$preflight_script" ] || fail "workflow-preflight.sh not found at $preflight_script"
 
-home_dir="$(mktemp -d)"
+home_dir="$(mktemp -d)" || { echo "mktemp -d failed" >&2; exit 1; }
 trap 'rm -rf "$home_dir"' EXIT
 
 # Build a planted git repo with origin/main, a feature branch one commit ahead,
 # and return its path. Isolated env so global git config can't interfere.
 make_repo() {
   local root remote work
-  root="$(mktemp -d)"
+  root="$(mktemp -d)" || { echo "mktemp -d failed" >&2; exit 1; }
   remote="${root}/remote.git"
   work="${root}/work"
 
@@ -70,7 +70,7 @@ make_repo() {
 # ---------------------------------------------------------------------------
 root_a="$(make_repo)"
 work_a="${root_a}/work"
-fix_a="$(mktemp -d)"
+fix_a="$(mktemp -d)" || { echo "mktemp -d failed" >&2; exit 1; }
 cat > "${fix_a}/issue.json" <<'JSON'
 {"number":42,"title":"Fix the thing","state":"OPEN","labels":[]}
 JSON

@@ -23,7 +23,7 @@ pass() { echo "PASS: $1"; }
 # Fresh fixture repo on branch main with a configured identity.
 make_repo() {
   local dir
-  dir="$(mktemp -d)"
+  dir="$(mktemp -d)" || { echo "mktemp -d failed" >&2; exit 1; }
   git -C "$dir" init -q -b main
   git -C "$dir" config user.email "test@example.com"
   git -C "$dir" config user.name "Test"
@@ -39,7 +39,7 @@ run() { bash "$preflight" --no-fetch --base main --project-dir "$1"; }
 # -----------------------------------------------------------------------------
 # Case 0: not a git repository -> STATUS=ERROR, exit 1
 # -----------------------------------------------------------------------------
-notrepo="$(mktemp -d)"
+notrepo="$(mktemp -d)" || { echo "mktemp -d failed" >&2; exit 1; }
 out0="$(bash "$preflight" --no-fetch --project-dir "$notrepo")"; rc0=$?
 [ "$rc0" -eq 1 ] || fail "expected exit 1 outside a repo, got $rc0"
 echo "$out0" | grep -q "^STATUS=ERROR$" || fail "expected STATUS=ERROR outside a repo:\n$out0"

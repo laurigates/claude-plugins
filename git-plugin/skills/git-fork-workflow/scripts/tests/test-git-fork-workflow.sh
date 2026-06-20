@@ -47,7 +47,7 @@ set_ref() { git -C "$1" update-ref "refs/remotes/$2" HEAD; }
 # -----------------------------------------------------------------------------
 # Case 1: in-sync — upstream/main == origin/main
 # -----------------------------------------------------------------------------
-r1="$(mktemp -d)"; make_repo "$r1"
+r1="$(mktemp -d)" || { echo "mktemp -d failed" >&2; exit 1; }; make_repo "$r1"
 set_ref "$r1" upstream/main
 set_ref "$r1" origin/main
 out1="$(bash "$fork_script" --project-dir "$r1")"
@@ -61,7 +61,7 @@ rm -rf "$r1"
 # -----------------------------------------------------------------------------
 # Case 2: ahead-only — origin has a commit upstream lacks, upstream unchanged
 # -----------------------------------------------------------------------------
-r2="$(mktemp -d)"; make_repo "$r2"
+r2="$(mktemp -d)" || { echo "mktemp -d failed" >&2; exit 1; }; make_repo "$r2"
 set_ref "$r2" upstream/main   # upstream pinned at base
 echo "fork-work" > "$r2/fork.txt"; git -C "$r2" add fork.txt; git -C "$r2" commit -q -m "feat: fork only"
 set_ref "$r2" origin/main     # origin one ahead of upstream
@@ -76,7 +76,7 @@ rm -rf "$r2"
 # -----------------------------------------------------------------------------
 # Case 3: fast-forward — upstream moved ahead, fork clean (behind only)
 # -----------------------------------------------------------------------------
-r3="$(mktemp -d)"; make_repo "$r3"
+r3="$(mktemp -d)" || { echo "mktemp -d failed" >&2; exit 1; }; make_repo "$r3"
 set_ref "$r3" origin/main     # origin pinned at base
 echo "up-work" > "$r3/up.txt"; git -C "$r3" add up.txt; git -C "$r3" commit -q -m "upstream new"
 set_ref "$r3" upstream/main   # upstream one ahead of origin
@@ -91,7 +91,7 @@ rm -rf "$r3"
 # -----------------------------------------------------------------------------
 # Case 4: diverged — both sides have unique commits → rebase
 # -----------------------------------------------------------------------------
-r4="$(mktemp -d)"; make_repo "$r4"
+r4="$(mktemp -d)" || { echo "mktemp -d failed" >&2; exit 1; }; make_repo "$r4"
 # upstream branch: base + upstream commit
 echo "up" > "$r4/up.txt"; git -C "$r4" add up.txt; git -C "$r4" commit -q -m "upstream new"
 set_ref "$r4" upstream/main
@@ -110,7 +110,7 @@ rm -rf "$r4"
 # -----------------------------------------------------------------------------
 # Case 5: not a fork — no upstream remote
 # -----------------------------------------------------------------------------
-r5="$(mktemp -d)"
+r5="$(mktemp -d)" || { echo "mktemp -d failed" >&2; exit 1; }
 git -C "$r5" init -q -b main
 git -C "$r5" config user.email "t@e.com"; git -C "$r5" config user.name "T"
 git -C "$r5" config commit.gpgsign false

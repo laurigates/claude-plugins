@@ -26,7 +26,7 @@ fi
 
 [ -f "$derive_script" ] || fail "git-derive-docs.sh not found at $derive_script"
 
-repo="$(mktemp -d)"
+repo="$(mktemp -d)" || { echo "mktemp -d failed" >&2; exit 1; }
 trap 'rm -rf "$repo"' EXIT
 
 git -C "$repo" init -q
@@ -101,7 +101,7 @@ echo "$out" | grep -q "^ISSUE_COUNT=0$" || fail "expected ISSUE_COUNT=0"
 pass "structured-output trailers present, STATUS=OK"
 
 # Non-repo path errors cleanly.
-nonrepo="$(mktemp -d)"
+nonrepo="$(mktemp -d)" || { echo "mktemp -d failed" >&2; exit 1; }
 nrout="$(bash "$derive_script" --project-dir "$nonrepo" 2>&1)"
 nrcode=$?
 rm -rf "$nonrepo"

@@ -49,7 +49,7 @@ assert_not_contains() {
 
 init_test_repo() {
   local dir="$1"
-  cd "$dir"
+  cd "$dir" || return 1
   git init -q -b main
   # Test-only fixture config: throwaway repo in a temp dir, no upstream, no
   # need (and no way) to satisfy the harness's commit-signing server.
@@ -61,7 +61,7 @@ init_test_repo() {
 
 setup_parent_with_worktree_leak() {
   local tmp leaked_path
-  tmp=$(mktemp -d)
+  tmp=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
   leaked_path="health-plugin/skills/health-check/scripts/check-runtime.sh"
 
   # Parent repo with an initial commit so the worktree has a valid HEAD to branch from.
@@ -75,9 +75,9 @@ setup_parent_with_worktree_leak() {
 
   # Child worktree under .claude/worktrees/ mirroring the real harness layout.
   (
-    cd "$tmp"
+    cd "$tmp" || exit 1
     git worktree add -q -b worktree-agent-test .claude/worktrees/agent-test >/dev/null
-    cd .claude/worktrees/agent-test
+    cd .claude/worktrees/agent-test || exit 1
     git config user.email "test@example.com"
     git config user.name "Test"
     git config commit.gpgsign false
@@ -111,7 +111,7 @@ rm -rf "$parent_dir"
 
 # Case 2: clean parent with no leak — the section still appears but reports zero
 # entries, so the skill can rely on the section's presence as a contract.
-clean_dir=$(mktemp -d)
+clean_dir=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
 (
   init_test_repo "$clean_dir"
   : > .gitignore

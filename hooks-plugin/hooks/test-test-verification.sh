@@ -18,8 +18,8 @@ HOOK="$(dirname "$0")/test-verification.sh"
 PASS=0
 FAIL=0
 
-TMPDIR=$(mktemp -d)
-NON_GIT_DIR=$(mktemp -d)
+TMPDIR=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
+NON_GIT_DIR=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
 TEST_BASELINE_DIR="/tmp/claude-test-baselines"
 mkdir -p "$TEST_BASELINE_DIR"
 

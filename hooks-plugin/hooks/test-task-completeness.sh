@@ -18,8 +18,8 @@ PASS=0
 FAIL=0
 
 # Create temporary directories for testing
-TMPDIR=$(mktemp -d)
-NON_GIT_DIR=$(mktemp -d)
+TMPDIR=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
+NON_GIT_DIR=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
 trap 'rm -rf "$TMPDIR" "$NON_GIT_DIR"' EXIT
 
 # Initialize git repo for tests

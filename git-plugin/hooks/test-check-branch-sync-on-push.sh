@@ -13,8 +13,8 @@ HOOK="$(dirname "$0")/check-branch-sync-on-push.sh"
 PASS=0
 FAIL=0
 
-TMPDIR=$(mktemp -d)
-MOCK_BIN=$(mktemp -d)
+TMPDIR=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
+MOCK_BIN=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
 trap 'rm -rf "$TMPDIR" "$MOCK_BIN"' EXIT
 
 # ── Repo with a feature branch tracking origin ────────────────────────────────
@@ -110,7 +110,7 @@ assert_decision "closed PR → ask before push" ask "$(make_json "git push origi
 echo ""
 echo "behind upstream (ask):"
 # Push an extra commit to origin/feature from a second clone so local is behind.
-CLONE2=$(mktemp -d)
+CLONE2=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
 git clone -q "$ORIGIN" "$CLONE2" 2>/dev/null
 git -C "$CLONE2" config user.email "o@o.com"; git -C "$CLONE2" config user.name "Other"
 git -C "$CLONE2" checkout -q feature 2>/dev/null || git -C "$CLONE2" checkout -q -b feature origin/feature

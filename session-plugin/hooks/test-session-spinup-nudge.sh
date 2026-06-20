@@ -15,9 +15,9 @@ HOOK="$(dirname "$0")/session-spinup-nudge.sh"
 PASS=0
 FAIL=0
 
-TEST_HOME=$(mktemp -d)
-REPO_CLEAN=$(mktemp -d)
-REPO_DIRTY=$(mktemp -d)
+TEST_HOME=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
+REPO_CLEAN=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
+REPO_DIRTY=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
 trap 'rm -rf "$TEST_HOME" "$REPO_CLEAN" "$REPO_DIRTY"' EXIT
 
 for repo in "$REPO_CLEAN" "$REPO_DIRTY"; do
