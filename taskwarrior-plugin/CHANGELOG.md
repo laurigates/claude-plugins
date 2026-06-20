@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.5.0...taskwarrior-plugin-v1.6.0) (2026-06-20)
+
+
+### Features
+
+* **taskwarrior-plugin:** reconcile issue/PR drift, adopt native scheduling, dedup shared logic ([#1720](https://github.com/laurigates/claude-plugins/issues/1720)) ([78fc1bf](https://github.com/laurigates/claude-plugins/commit/78fc1bf378a7aeb52e58074f6199e1eef02dce21))
+
 ## [1.5.0](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.4.0...taskwarrior-plugin-v1.5.0) (2026-06-02)
 
 
