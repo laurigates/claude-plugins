@@ -558,6 +558,37 @@ assert_push_exit \
 
 rm -rf "$PUSH_REPO"
 
+# ── stdout echo/printf headers are not blocked (issue #1701) ──────────────────
+# Regression: the echo/printf→file detector gates on an actual `>` redirection,
+# so display-only headers (echo/printf to stdout with `;` separators) and a
+# transform pipeline headed by grep (not cat/echo/printf) must pass. The guard
+# integrity counter-tests confirm a genuine `echo/printf > file` still blocks —
+# the allowances must not weaken the file-write nudge.
+echo ""
+echo "stdout echo/printf headers + grep-headed pipeline are allowed; real > file still blocked (#1701):"
+
+# These cases embed double quotes (echo "..."), so they use assert_exit_complex
+# (jq-built JSON) to escape safely — assert_exit's printf-based JSON cannot.
+assert_exit_complex \
+    "echo headers to stdout with ; separators (no >) is allowed (#1701)" 0 \
+    'echo "=== claude-plugins ==="; git branch --show-current; echo "remote:"; git remote -v'
+
+assert_exit_complex \
+    "printf formatting to stdout (no >) is allowed (#1701)" 0 \
+    'printf "=== %s ===\n" "$r"'
+
+assert_exit \
+    "grep-headed transform pipeline (not cat/echo/printf) is allowed (#1701)" 0 \
+    "grep -rin foo . | grep -v bar | sort | uniq -c | sort -rn"
+
+assert_exit_complex \
+    "GUARD INTEGRITY: echo text > file still blocked (#1701)" 2 \
+    'echo "text" > somefile.txt'
+
+assert_exit \
+    "GUARD INTEGRITY: printf x > file still blocked (#1701)" 2 \
+    "printf 'x' > out.md"
+
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
