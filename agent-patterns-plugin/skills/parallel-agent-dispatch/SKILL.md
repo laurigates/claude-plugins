@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-21
-modified: 2026-06-14
+modified: 2026-06-20
 reviewed: 2026-06-14
 ---
 
@@ -265,6 +265,25 @@ and `.claude/rules/skill-fork-context.md` for the upstream tickets.
 skill adds the dispatch-time contract that applies to both team and non-team
 fan-out. When both apply, follow both — the out-of-scope protocol from
 `agent-teams` slots into the `Issues encountered` / `Deferred` sections here.
+
+### Resuming agents: SendMessage loses worktree isolation
+
+`SendMessage`-resume of a **completed** worktree-isolated agent (one spawned via
+`Agent` with `isolation: "worktree"`) does **not** re-enter that agent's
+worktree — the resumed run executes in the **orchestrator's main checkout**. A
+resume therefore **loses worktree isolation**: resuming several file-mutating
+agents this way runs them concurrently in the main checkout, tangling branch
+state (issue [#1546](https://github.com/laurigates/claude-plugins/issues/1546)).
+
+| Continuation | Safe to `SendMessage`-resume? | Do instead |
+|---|---|---|
+| Read-only / single-checkout follow-up | Yes — no worktree to re-enter | Resume freely |
+| Parallel **file-mutating** agent that must stay in its worktree | No — resume runs in the main checkout | **Re-dispatch a fresh `Agent` with `isolation: "worktree"`** for the remaining work |
+
+The rule: for parallel file-mutating work, never resume a finished
+worktree-isolated agent via `SendMessage` — re-dispatch a new
+`isolation: "worktree"` agent instead. Reserve `SendMessage`-resume for
+read-only or single-checkout continuations.
 
 ## Quick Reference
 

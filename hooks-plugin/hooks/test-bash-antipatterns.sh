@@ -163,6 +163,21 @@ assert_exit \
     "echo in compound command before git 2>/dev/null is allowed" 0 \
     "cd /some/repo && git log --oneline -10 -- infra/ 2>/dev/null | head -20; echo '---'; git log --oneline 2>/dev/null | head -20"
 
+# ── echo/printf stream-target & quoted-`>` false-positive regression (issue #1701) ──
+# The block must only fire on a redirect to a real FILE. These check that:
+#   1. a single `> /dev/null` (not just `>>`) is exempt — the comment always
+#      claimed echo-to-/dev/null was allowed, but the old exemption matched only
+#      `>>`, so `echo x > /dev/null` was wrongly blocked;
+#   2. a real file write whose *stderr* is sent to /dev/null still blocks — the
+#      `2>/dev/null` must not exempt the genuine `> realfile.txt` write.
+assert_exit \
+    "echo > /dev/null (single >) is allowed (issue #1701)" 0 \
+    "echo x > /dev/null"
+
+assert_exit \
+    "real file write with unrelated 2>/dev/null still blocks (issue #1701)" 2 \
+    "echo data > realfile.txt 2>/dev/null"
+
 # ── heredoc body false-positive regression ───────────────────────────────────
 # Regression: `gh pr create --body "$(cat <<EOF ... EOF)"` bodies containing
 # example shell commands (e.g. "git add && git commit" shown as documentation
@@ -263,6 +278,38 @@ OUTER
 assert_exit_complex \
     "cat > /tmp/body.md heredoc fed to gh issue edit --body-file is allowed" 0 \
     "$issuebody_cmd"
+
+# ── echo/printf double-quoted-`>` & /dev-stream regression (issue #1701) ──────
+# These cases carry double quotes, so they need jq-based JSON (assert_exit's
+# printf cannot escape them). The block scans the quoted-string-stripped view, so
+# a `>` inside a double-quoted argument is text, not a redirection; and a stdout
+# redirect to a /dev/* stream target is stream handling, not file creation.
+echo ""
+echo "echo/printf with double-quoted '>' or /dev stream target is allowed (issue #1701):"
+
+assert_exit_complex \
+    "echo with literal '>' inside double quotes (no redirection) is allowed" 0 \
+    'echo "use foo > bar.txt to write"'
+
+assert_exit_complex \
+    "echo section header containing '>' is allowed" 0 \
+    'echo "=== build > test ==="; git status'
+
+assert_exit_complex \
+    "echo redirected to /dev/stderr is allowed (stream, not a file)" 0 \
+    'echo "error happened" > /dev/stderr'
+
+assert_exit_complex \
+    "printf redirected to /dev/stderr is allowed (stream, not a file)" 0 \
+    'printf "%s\n" "warning" > /dev/stderr'
+
+assert_exit_complex \
+    "echo redirected to /dev/tty is allowed (stream, not a file)" 0 \
+    'echo hi > /dev/tty'
+
+assert_exit_complex \
+    "echo to a real double-quoted-content file still blocks" 2 \
+    'echo "content" > realfile.txt'
 
 # True positive preserved: a heredoc commit message to /tmp passed to git commit -F
 # still earns the reminder, because the command actually composes a git commit.
@@ -510,6 +557,37 @@ assert_push_exit \
     "git push origin main:feat/x"
 
 rm -rf "$PUSH_REPO"
+
+# ── stdout echo/printf headers are not blocked (issue #1701) ──────────────────
+# Regression: the echo/printf→file detector gates on an actual `>` redirection,
+# so display-only headers (echo/printf to stdout with `;` separators) and a
+# transform pipeline headed by grep (not cat/echo/printf) must pass. The guard
+# integrity counter-tests confirm a genuine `echo/printf > file` still blocks —
+# the allowances must not weaken the file-write nudge.
+echo ""
+echo "stdout echo/printf headers + grep-headed pipeline are allowed; real > file still blocked (#1701):"
+
+# These cases embed double quotes (echo "..."), so they use assert_exit_complex
+# (jq-built JSON) to escape safely — assert_exit's printf-based JSON cannot.
+assert_exit_complex \
+    "echo headers to stdout with ; separators (no >) is allowed (#1701)" 0 \
+    'echo "=== claude-plugins ==="; git branch --show-current; echo "remote:"; git remote -v'
+
+assert_exit_complex \
+    "printf formatting to stdout (no >) is allowed (#1701)" 0 \
+    'printf "=== %s ===\n" "$r"'
+
+assert_exit \
+    "grep-headed transform pipeline (not cat/echo/printf) is allowed (#1701)" 0 \
+    "grep -rin foo . | grep -v bar | sort | uniq -c | sort -rn"
+
+assert_exit_complex \
+    "GUARD INTEGRITY: echo text > file still blocked (#1701)" 2 \
+    'echo "text" > somefile.txt'
+
+assert_exit \
+    "GUARD INTEGRITY: printf x > file still blocked (#1701)" 2 \
+    "printf 'x' > out.md"
 
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo ""

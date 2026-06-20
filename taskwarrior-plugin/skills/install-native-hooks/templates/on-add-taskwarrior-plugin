@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# on-add-taskwarrior-plugin — taskwarrior NATIVE hook (lives in <data>/hooks/).
+#
+# Installed opt-in by /taskwarrior:install-native-hooks. Runs inside `task add`,
+# AFTER the CLI parses the task but BEFORE it is saved. Receives ONE line of
+# JSON on stdin (the task) and must echo the task JSON back as the first line
+# of stdout; later stdout lines are shown as feedback. Exit 0 allows, non-zero
+# rejects the add.
+#
+# Behaviour:
+#   1. Auto-stamp `project` from the git toplevel / cwd basename when unset, so
+#      tasks added outside the plugin skills still get scoped.
+#   2. Warn (feedback only — never rejects) when the description carries a
+#      hyphenated `+word-word` substring, the symptom of a tag the CLI
+#      mis-parsed as `+word` AND `-word` (it never became a real tag).
+#
+# SAFETY: a broken on-add hook breaks EVERY `task add`. This hook therefore
+# fails OPEN — on any error (missing jq, bad JSON) it echoes stdin unchanged
+# and exits 0.
+
+set -uo pipefail
+
+read -r task_json || exit 0
+
+# Fail open if jq is unavailable.
+if ! command -v jq >/dev/null 2>&1; then
+  printf '%s\n' "$task_json"
+  exit 0
+fi
+
+out_json="$task_json"
+
+# 1. Stamp project from repo/cwd when missing.
+current_project=$(printf '%s' "$task_json" | jq -r '.project // empty' 2>/dev/null || true)
+if [ -z "$current_project" ]; then
+  repo_top=$(git rev-parse --show-toplevel 2>/dev/null || true)
+  proj_base=$(basename "${repo_top:-$PWD}")
+  if [ -n "$proj_base" ] && [ "$proj_base" != "/" ]; then
+    stamped=$(printf '%s' "$out_json" | jq -c --arg p "$proj_base" '.project = $p' 2>/dev/null || true)
+    [ -n "$stamped" ] && out_json="$stamped"
+  fi
+fi
+
+# Echo the (possibly modified) task back — this is the contract.
+printf '%s\n' "$out_json"
+
+# 2. Hyphenated-tag warning (feedback only).
+desc=$(printf '%s' "$task_json" | jq -r '.description // ""' 2>/dev/null || true)
+if printf '%s' "$desc" | grep -qE '\+[a-z][a-z0-9_]*-[a-z]'; then
+  echo "taskwarrior-plugin: description contains a hyphenated +tag, which taskwarrior mis-parses (it never lands). Use underscores or camelCase, e.g. +blocked_on_merge."
+fi
+
+exit 0

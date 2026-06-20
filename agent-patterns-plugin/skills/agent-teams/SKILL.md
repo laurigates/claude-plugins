@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-03-03
-modified: 2026-06-14
+modified: 2026-06-20
 reviewed: 2026-06-14
 ---
 
@@ -127,6 +127,10 @@ post-flight check (`git diff origin/main..HEAD` + `git status --porcelain` from
 the parent), and use the cherry-pick + rebase recovery — all in
 [REFERENCE.md → Worktree path resolution](REFERENCE.md#worktree-isolated-editwrite-path-resolution-1091).
 See also `.claude/rules/agent-coworker-detection.md`.
+
+## Resuming Worktree-Isolated Agents
+
+`SendMessage`-resume of a completed worktree-isolated agent (`Agent` with `isolation: "worktree"`) **loses worktree isolation** — the resumed run executes in the orchestrator's main checkout, not the worktree. For parallel file-mutating work, re-dispatch a fresh `isolation: "worktree"` agent instead of resuming; reserve `SendMessage`-resume for read-only / single-checkout continuations. See `parallel-agent-dispatch` → "Resuming agents: SendMessage loses worktree isolation" (issue [#1546](https://github.com/laurigates/claude-plugins/issues/1546)).
 
 ## Sandbox Considerations
 

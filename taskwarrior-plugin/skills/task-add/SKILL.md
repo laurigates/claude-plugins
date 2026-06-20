@@ -1,12 +1,12 @@
 ---
 name: task-add
 description: Add a taskwarrior task with blueprint linkage and optional GitHub issue. Use when adding coordination tasks, linking a blueprint WO, or mirroring a GitHub issue locally.
-args: "[description] [project:<name>] [--no-project]"
-allowed-tools: Bash(task *), Bash(git config *), Bash(git rev-parse *), Bash(gh auth *), Bash(gh issue *), Bash(gh api *), Read, TodoWrite
+args: "[description] [project:<name>] [--no-project] [due:<date>] [scheduled:<date>] [wait:<date>] [recur:<freq>] [until:<date>]"
+allowed-tools: Bash(task *), Bash(git config *), Bash(git rev-parse *), Bash(gh auth *), Bash(gh issue *), Bash(gh api *), Bash(bash *), Read, TodoWrite
 argument-hint: short task description
 created: 2026-04-24
-modified: 2026-06-02
-reviewed: 2026-06-02
+modified: 2026-06-20
+reviewed: 2026-06-20
 ---
 
 # /taskwarrior:task-add
@@ -42,6 +42,13 @@ Parse `$ARGUMENTS`:
 - Optional inline `project:<name>` to override the auto-detected project.
 - Optional `--no-project` to file the task without any project (cross-cutting work).
 - Optional inline `bpid:WO-012` / `bpdoc:docs/wo/012.md` / `bpms:M6` / `ghid:145` / `ghpr:99` fields.
+- Optional native scheduling fields (prefer these over manual `+blocked*` bookkeeping):
+  - `due:<date>` — deadline. Feeds urgency and surfaces the task as `+DUE` / `+OVERDUE` in `task-coordinate` / `task-status`.
+  - `scheduled:<date>` — earliest start. The task only becomes `+READY` once this date passes, so future work stays out of dispatch candidates.
+  - `wait:<date>` — hide the task entirely until the date. Use for "blocked on merge until X" instead of a hand-managed `+blocked_on_merge` tag — taskwarrior auto-unhides it.
+  - `recur:<freq>` (e.g. `weekly`, `monthly`) with a `due:` — repeating maintenance chores. Requires `due:`.
+  - `until:<date>` — auto-delete the task on that date. Use for short-lived trackers that should expire if not actioned.
+  - Dates accept taskwarrior synonyms (`today`, `eow`, `eom`, `monday`, `due-4d`, ISO `2026-07-01`).
 - Optional tags: `+wo`, `+prp`, `+fr`, `+re`, `+gh`, `+pr_ready`, `+needs_review`, `+blocked_on_merge`, `+blocked`.
 
 > **Tag naming gotcha — hyphens silently break tags.** Taskwarrior parses
@@ -77,35 +84,24 @@ Execute this workflow:
 
 ### Step 1: Ensure UDAs exist
 
-If `task _udas` output lacks any of `bpid`, `bpdoc`, `bpms`, `ghid`, `ghpr` (linkage UDAs) or `agent`, `pid`, `host`, `branch`, `worktree` (identity UDAs populated by `/taskwarrior:task-claim`), offer to install them:
+The canonical 10-UDA set (5 linkage: `bpid` / `bpdoc` / `bpms` / `ghid` /
+`ghpr`; 5 identity: `agent` / `pid` / `host` / `branch` / `worktree`) lives in
+one place — the shared `ensure-udas.sh` script. Check for missing UDAs:
 
 ```bash
-# Linkage UDAs
-task config uda.bpid.type string
-task config uda.bpid.label "Blueprint ID"
-task config uda.bpdoc.type string
-task config uda.bpdoc.label "Blueprint doc"
-task config uda.bpms.type string
-task config uda.bpms.label "Milestone"
-task config uda.ghid.type numeric
-task config uda.ghid.label "GH Issue"
-task config uda.ghpr.type numeric
-task config uda.ghpr.label "GH PR"
-
-# Identity UDAs (populated by task-claim, drained by task-release / task-done)
-task config uda.agent.type string
-task config uda.agent.label "Agent ID"
-task config uda.pid.type numeric
-task config uda.pid.label "Agent PID"
-task config uda.host.type string
-task config uda.host.label "Host"
-task config uda.branch.type string
-task config uda.branch.label "Git branch"
-task config uda.worktree.type string
-task config uda.worktree.label "Worktree path"
+bash "${CLAUDE_SKILL_DIR}/../../scripts/ensure-udas.sh" --check
 ```
 
-Install only with user confirmation on first run per host. Identity UDAs are not set by `task-add` itself — `/taskwarrior:task-claim` stamps them when an agent picks the task up.
+If it reports `UDAS_MISSING` greater than 0, confirm with the user (declarations
+persist in `~/.taskrc`), then install them on first run per host:
+
+```bash
+bash "${CLAUDE_SKILL_DIR}/../../scripts/ensure-udas.sh"
+```
+
+Identity UDAs are not set by `task-add` itself — `/taskwarrior:task-claim`
+stamps them when an agent picks the task up. The same script backs the
+SessionStart drift-probe, so the install logic is single-sourced.
 
 ### Step 2: Detect GitHub mode
 
@@ -162,10 +158,16 @@ task add "$DESCRIPTION" \
   bpms:"$BPMS" \
   ghid:"$GHID" \
   ghpr:"$GHPR" \
+  due:"$DUE" \
+  scheduled:"$SCHEDULED" \
+  wait:"$WAIT" \
   +wo +gh
 ```
 
-Run with only the fields that were provided; omit empty UDAs entirely rather than passing `uda:""`.
+Run with only the fields that were provided; omit empty UDAs and empty date
+fields entirely rather than passing `uda:""` / `due:""`. For a recurring chore,
+pass `recur:weekly due:monday` (recurrence requires a `due:`); for a
+self-expiring tracker, add `until:eom`.
 
 #### Capture the stable UUID
 
@@ -220,7 +222,7 @@ Print:
 | Capture stable UUID after add | `task +LATEST _get uuid` |
 | Duplicate check by bpid | `task bpid:WO-012 export \| jq '.[] \| {id, status}'` |
 | Pre-fill from issue | `gh issue view 145 --json number,title,body,labels` |
-| Next unblocked | `task status:pending -BLOCKED export \| jq '.[:3]'` |
+| Next ready (unblocked + scheduled-due) | `task status:pending +READY export \| jq '.[:3]'` |
 | Skip empty filter exit | Always use `export \| jq`, never `list` |
 
 ## Quick Reference
@@ -234,6 +236,11 @@ Print:
 | `bpms:` | Milestone |
 | `ghid:` | GitHub issue number |
 | `ghpr:` | GitHub PR number |
+| `due:` | Deadline — feeds urgency, surfaces `+DUE`/`+OVERDUE` |
+| `scheduled:` | Earliest start — gates `+READY` |
+| `wait:` | Hide until date (auto-unhides) — prefer over `+blocked_on_merge` |
+| `recur:` | Repeat frequency (needs `due:`) |
+| `until:` | Auto-delete date |
 | `+wo` | Work order |
 | `+prp` | PRP |
 | `+fr` | Feature request |

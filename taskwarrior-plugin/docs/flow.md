@@ -10,6 +10,7 @@ flowchart TD
     CLAIM[/taskwarrior:task-claim/]:::fix
     RELEASE[/taskwarrior:task-release/]:::fix
     DONE[/taskwarrior:task-done/]:::fix
+    RECONCILE[/taskwarrior:task-reconcile/]:::fix
 
     GH{{GitHub remote?}}:::prompt
     STORE[(~/.task/)]
@@ -38,7 +39,14 @@ flowchart TD
     DONE -->|annotate commit, auto-stop| STORE
     DONE -->|optional| CLOSEGH[gh issue close / gh pr comment]:::fix
 
-    COORD -->|wave of unclaimed| DISPATCH[parallel-agent-dispatch / workflow-wave-dispatch]:::router
+    STORE -->|ghid/ghpr tasks| RECONCILE
+    GHSTATE{{issue/PR closed?}}:::prompt
+    RECONCILE --> GHSTATE
+    GHSTATE -->|yes| RCLOSE[bulk import / task done + annotate]:::fix
+    GHSTATE -->|no| RKEEP[keep live]:::check
+    RCLOSE --> STORE
+
+    COORD -->|+READY wave of unclaimed| DISPATCH[parallel-agent-dispatch / workflow-wave-dispatch]:::router
 
     classDef router fill:#4a9eff,stroke:#222,color:#fff
     classDef check fill:#8fbc8f,stroke:#222,color:#000
@@ -63,8 +71,10 @@ flowchart TD
 | `task-claim` | Claim a pending task (sets `+ACTIVE` + identity UDAs + session marker) |
 | `task-release` | Release an active claim without closing (handoff) |
 | `task-done` | Close / annotate tasks (auto-stops `+ACTIVE`) |
-| `task-status` | Read queue state, including in-flight + stale claims |
-| `task-coordinate` | Query unblocked + unclaimed candidates for a dispatch wave |
+| `task-status` | Read queue state, including in-flight + stale claims and `+OVERDUE` |
+| `task-coordinate` | Query `+READY` + unclaimed candidates for a dispatch wave |
+| `task-reconcile` | Close tasks whose linked GitHub issue/PR closed or merged (dry-run by default) |
+| `install-native-hooks` | Opt-in installer for taskwarrior native on-add/on-modify hooks (not in the diagram — a one-off setup action, not part of the task lifecycle) |
 
 ## Claim lifecycle
 
