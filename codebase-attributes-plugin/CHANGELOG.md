@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/laurigates/claude-plugins/compare/codebase-attributes-plugin-v1.3.0...codebase-attributes-plugin-v1.3.1) (2026-06-20)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** guard test/hook mktemp -d sandboxes against shared-checkout git leak ([#1719](https://github.com/laurigates/claude-plugins/issues/1719)) ([448b212](https://github.com/laurigates/claude-plugins/commit/448b2127a7240136dffd721ad1309c2375cc0814))
+
 ## [1.3.0](https://github.com/laurigates/claude-plugins/compare/codebase-attributes-plugin-v1.2.2...codebase-attributes-plugin-v1.3.0) (2026-06-13)
 
 
