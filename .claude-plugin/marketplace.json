@@ -148,7 +148,7 @@
       "name": "comfyui-plugin",
       "source": "./comfyui-plugin",
       "description": "ComfyUI custom-node pack lifecycle - scaffold a pack, create + seed the repo, open the gitops adoption PR, publish to the Comfy Registry, and add README screenshots",
-      "version": "1.4.1",
+      "version": "1.4.2",
       "keywords": [
         "comfyui",
         "custom-node",
@@ -372,7 +372,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.5.2",
+      "version": "2.5.3",
       "keywords": [
         "hooks",
         "automation",
