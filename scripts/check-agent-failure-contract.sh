@@ -102,6 +102,17 @@ require_marker "$dispatch_skill" "#1480" "the cwd-reset worktree-leak reference"
 # shellcheck disable=SC2016
 require_marker "$dispatch_skill" 'git -C "$WORKTREE"' "the absolute-path git idiom (issue #1480)"
 
+# Regression #1546: SendMessage-resume of a COMPLETED worktree-isolated agent
+# does NOT re-enter its worktree — the resumed run executes in the orchestrator's
+# MAIN checkout, silently losing worktree isolation. Resuming several parallel
+# file-mutating agents this way runs them concurrently in the main checkout and
+# tangles branch state. The fix documents the caveat in parallel-agent-dispatch
+# (and cross-references it from agent-teams) and directs re-dispatch of a fresh
+# isolation:worktree agent for parallel file-mutating continuations. Assert BOTH
+# the literal phrase and the issue reference survive future bulk edits.
+require_marker "$dispatch_skill" "loses worktree isolation" "the SendMessage-resume isolation-loss caveat (issue #1546)"
+require_marker "$dispatch_skill" "#1546" "the issue reference"
+
 if [ "$errors" -ne 0 ]; then
   echo
   echo "The loud-failure contract (issue #1422) and the hook-thrashing heuristic"
