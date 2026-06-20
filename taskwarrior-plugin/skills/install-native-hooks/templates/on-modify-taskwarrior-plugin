@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# on-modify-taskwarrior-plugin — taskwarrior NATIVE hook (lives in <data>/hooks/).
+#
+# Installed opt-in by /taskwarrior:install-native-hooks. Runs inside any task
+# modification (modify, annotate, done, start, stop), AFTER processing but
+# BEFORE save. Receives TWO lines of JSON on stdin (the ORIGINAL task, then the
+# MODIFIED task) and must echo the modified task JSON back as the first line of
+# stdout; later stdout lines are feedback. Exit 0 allows, non-zero rejects.
+#
+# Behaviour: warns (feedback only — never rejects) when the modified
+# description carries a hyphenated `+word-word` substring (a mis-parsed tag).
+# This is the modify-time counterpart of the on-add warning. Extend here for
+# project-specific convention enforcement.
+#
+# SAFETY: fails OPEN — on any error it echoes the modified task unchanged and
+# exits 0, so a broken hook never blocks legitimate task edits.
+#
+# NOTE: native hooks do NOT fire on `task import`, so bulk reconciliation
+# (/taskwarrior:task-reconcile --apply, bulk path) bypasses this hook by design.
+
+set -uo pipefail
+
+read -r _original_json || exit 0
+read -r modified_json || { printf '%s\n' "$_original_json"; exit 0; }
+
+if ! command -v jq >/dev/null 2>&1; then
+  printf '%s\n' "$modified_json"
+  exit 0
+fi
+
+# Echo the modified task back unchanged — this hook only advises.
+printf '%s\n' "$modified_json"
+
+desc=$(printf '%s' "$modified_json" | jq -r '.description // ""' 2>/dev/null || true)
+if printf '%s' "$desc" | grep -qE '\+[a-z][a-z0-9_]*-[a-z]'; then
+  echo "taskwarrior-plugin: description contains a hyphenated +tag, which taskwarrior mis-parses (it never lands). Use underscores or camelCase, e.g. +blocked_on_merge."
+fi
+
+exit 0
