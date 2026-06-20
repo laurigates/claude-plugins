@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.26.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.26.0...agent-patterns-plugin-v2.26.1) (2026-06-20)
+
+
+### Documentation
+
+* **agent-patterns-plugin:** warn SendMessage-resume loses worktree isolation ([#1715](https://github.com/laurigates/claude-plugins/issues/1715)) ([020a31b](https://github.com/laurigates/claude-plugins/commit/020a31b94e7751693a6752a11b29ae4d88b70d35))
+
 ## [2.26.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.25.0...agent-patterns-plugin-v2.26.0) (2026-06-18)
 
 
