@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.3](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.5.2...hooks-plugin-v2.5.3) (2026-06-20)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** stop bash-antipatterns blocking echo/printf to stdout and /dev streams ([#1713](https://github.com/laurigates/claude-plugins/issues/1713)) ([b6e8f4a](https://github.com/laurigates/claude-plugins/commit/b6e8f4afc64f4c7d3c3fbeb8b90a8008a732f179))
+
 ## [2.5.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.5.1...hooks-plugin-v2.5.2) (2026-06-19)
 
 
