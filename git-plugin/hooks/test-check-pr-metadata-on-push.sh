@@ -15,7 +15,7 @@ FAIL=0
 SKIP=0
 
 # Create a temporary git repo
-TMPDIR=$(mktemp -d)
+TMPDIR=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
 trap 'rm -rf "$TMPDIR"' EXIT
 
 git -C "$TMPDIR" init -q
@@ -148,7 +148,7 @@ echo ""
 echo "retry-aware bypass (PR updatedAt vs HEAD commit time):"
 
 # Mock gh CLI: writes canned PR JSON from $MOCK_PR_JSON
-MOCK_BIN=$(mktemp -d)
+MOCK_BIN=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
 cat >"$MOCK_BIN/gh" <<'MOCK_EOF'
 #!/usr/bin/env bash
 # Mock: only handles `gh pr view ...` for these tests.

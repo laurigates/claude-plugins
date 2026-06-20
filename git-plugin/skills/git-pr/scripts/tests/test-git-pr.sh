@@ -27,8 +27,8 @@ fi
 
 [ -f "$pr_script" ] || fail "git-pr.sh not found at $pr_script"
 
-repo="$(mktemp -d)"
-work="$(mktemp -d)"
+repo="$(mktemp -d)" || { echo "mktemp -d failed" >&2; exit 1; }
+work="$(mktemp -d)" || { echo "mktemp -d failed" >&2; exit 1; }
 trap 'rm -rf "$repo" "$work"' EXIT
 
 git -C "$repo" init -q -b main

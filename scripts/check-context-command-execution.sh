@@ -114,7 +114,8 @@ else
 fi
 
 # One sandbox for the whole run (commands are read-only by contract).
-sandbox="$(mktemp -d)"
+sandbox="$(mktemp -d)" || { echo "mktemp -d failed" >&2; exit 1; }
+[ -n "$sandbox" ] && [ -d "$sandbox" ] || { echo "invalid sandbox dir: '$sandbox'" >&2; exit 1; }
 trap 'rm -rf "$sandbox"' EXIT
 git -C "$sandbox" init -q 2>/dev/null
 git -C "$sandbox" config user.email "harness@example.com" 2>/dev/null

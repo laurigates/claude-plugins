@@ -9,8 +9,8 @@ SCRIPT="$(cd "$(dirname "$0")/.." && pwd)/check-pr-sync.sh"
 PASS=0
 FAIL=0
 
-TMPDIR=$(mktemp -d)
-MOCK_BIN=$(mktemp -d)
+TMPDIR=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
+MOCK_BIN=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
 trap 'rm -rf "$TMPDIR" "$MOCK_BIN"' EXIT
 
 # Feature branch tracking a real bare origin.
@@ -83,7 +83,7 @@ assert_verdict "open PR + changes requested → changes_requested" changes_reque
 # behind: push drift to origin/feature from a second clone
 echo ""
 echo "behind upstream:"
-CLONE2=$(mktemp -d); git clone -q "$ORIGIN" "$CLONE2" 2>/dev/null
+CLONE2=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }; git clone -q "$ORIGIN" "$CLONE2" 2>/dev/null
 git -C "$CLONE2" config user.email o@o; git -C "$CLONE2" config user.name O
 git -C "$CLONE2" checkout -q feature 2>/dev/null || git -C "$CLONE2" checkout -q -b feature origin/feature
 git -C "$CLONE2" commit --allow-empty -m "other: drift" -q

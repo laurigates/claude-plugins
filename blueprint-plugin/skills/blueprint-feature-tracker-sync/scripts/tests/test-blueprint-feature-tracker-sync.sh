@@ -29,8 +29,8 @@ fi
 
 [ -f "$sync_script" ] || fail "blueprint-feature-tracker-sync.sh not found at $sync_script"
 
-proj="$(mktemp -d)"
-home="$(mktemp -d)"
+proj="$(mktemp -d)" || { echo "mktemp -d failed" >&2; exit 1; }
+home="$(mktemp -d)" || { echo "mktemp -d failed" >&2; exit 1; }
 trap 'rm -rf "$proj" "$home"' EXIT
 
 git -C "$proj" init -q

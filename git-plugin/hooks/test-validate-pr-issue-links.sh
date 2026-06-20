@@ -10,7 +10,7 @@ PASS=0
 FAIL=0
 
 # Create a temporary git repo with a commit referencing an issue
-TMPDIR=$(mktemp -d)
+TMPDIR=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
 trap 'rm -rf "$TMPDIR"' EXIT
 
 git -C "$TMPDIR" init -q
@@ -92,6 +92,7 @@ assert_exit \
     "multi-line single-quoted body with Closes keyword is allowed" 0 \
     "$(make_json "$MULTILINE_BODY_SQ")"
 
+# shellcheck disable=SC2016  # literal $(...) is intentional test-fixture data, not an expansion
 MULTILINE_BODY_HEREDOC=$(printf 'gh pr create --title "feat: add feature" --body "$(cat <<'"'"'EOF'"'"'\n## Summary\nAdd feature.\n\nCloses #42\nEOF\n)"')
 assert_exit \
     "heredoc-style body with Closes keyword is allowed" 0 \
@@ -113,6 +114,7 @@ assert_exit \
 # 2. Command substitution reading a separate file: --body "$(cat external.md)".
 #    The literal $(cat ...) text has no keyword, but the agent put Closes #42 in
 #    the same command's heredoc — keyword is in the command string.
+# shellcheck disable=SC2016  # literal $(...) is intentional test-fixture data, not an expansion
 CMDSUB_BODY=$(printf 'gh pr create --title "feat: add feature" --body "$(printf %%s "## Summary\nCloses #42")"')
 assert_exit \
     "command-substitution body with literal Closes keyword in command is allowed" 0 \

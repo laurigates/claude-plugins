@@ -130,3 +130,15 @@ repos:
         language: system
         files: '^scripts/(rewrite-skill-name-to-dir\.py|export-opencode\.sh|install-opencode\.sh|tests/test-rewrite-skill-name-to-dir\.sh)$'
         pass_filenames: false
+      - id: check-git-sandbox-guards
+        name: shell test sandboxes guard mktemp against shared-checkout leak (#1692)
+        entry: bash ./scripts/check-git-sandbox-guards.sh --strict
+        language: system
+        files: '\.sh$'
+        pass_filenames: false
+      - id: test-check-git-sandbox-guards
+        name: git-sandbox-guard linter regression
+        entry: bash ./scripts/tests/test-check-git-sandbox-guards.sh
+        language: system
+        files: '^scripts/(check-git-sandbox-guards\.sh|tests/test-check-git-sandbox-guards\.sh)$'
+        pass_filenames: false

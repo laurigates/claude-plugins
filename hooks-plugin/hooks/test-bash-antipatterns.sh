@@ -469,7 +469,12 @@ assert_stderr_contains \
 echo ""
 echo "git push -u: no-colon feature push allowed, colon main:feat footgun blocked (#1600):"
 
-PUSH_REPO=$(mktemp -d)
+# Guard the sandbox dir before any `git -C "$PUSH_REPO" …`. If mktemp fails and
+# PUSH_REPO is empty, `git -C "" init` silently falls back to the CWD — which, in
+# a shared checkout, re-inits the real repo and writes a junk identity into its
+# config (the issue #1692 shared-checkout leak; observed once here). Fail fast.
+PUSH_REPO=$(mktemp -d) || { echo "FATAL: mktemp -d failed" >&2; exit 1; }
+[ -n "$PUSH_REPO" ] && [ -d "$PUSH_REPO" ] || { echo "FATAL: invalid sandbox dir '$PUSH_REPO'" >&2; exit 1; }
 git -C "$PUSH_REPO" init -q -b main
 git -C "$PUSH_REPO" config user.email t@e.com
 git -C "$PUSH_REPO" config user.name t
