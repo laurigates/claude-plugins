@@ -97,17 +97,30 @@ if echo "$COMMAND" | grep -Eq "awk\s+.*>\s*['\"]?[^|]+" && \
     block "REMINDER: Use the Edit tool instead of 'awk' for file modifications. The Edit tool is safer and more precise."
 fi
 
-# Check for cat/echo writing to files (not heredocs in valid bash scripts)
+# Check for echo/printf writing to a FILE (not stdout, a pipe, or a /dev stream).
+#
 # Use [^;&|]* instead of .* to avoid crossing command separators (;, &&, ||, |)
-# which would cause false positives when echo "text" is followed by an unrelated 2>/dev/null
-# Strip single-quoted strings first: content inside single quotes is literal bash text
-# (e.g., kubectl exec -- php -r 'echo "$c->id"') and cannot contain shell redirections.
-# shellcheck disable=SC2001  # bash pattern substitution can't do regex char class `[^']*`
-COMMAND_NO_SQUOTES=$(echo "$COMMAND" | sed "s/'[^']*'//g")
-if echo "$COMMAND_NO_SQUOTES" | grep -Eq '(^|\s)(echo|printf)\s+[^;&|]*>\s*[^&]' && \
-   ! echo "$COMMAND_NO_SQUOTES" | grep -Eq '(echo|printf).*>>\s*/dev/null'; then
-    # Allow echo to /dev/null, but warn about file writes
-    if echo "$COMMAND_NO_SQUOTES" | grep -Eq '(echo|printf)\s+[^;&|>]+>\s*[a-zA-Z/\.]'; then
+# which would cause false positives when echo "text" is followed by an unrelated
+# 2>/dev/null.
+#
+# Scan COMMAND_NO_STRINGS (heredoc bodies AND quoted-string literals stripped) so
+# a `>` that is merely text inside a quoted argument — a section header, prose, or
+# a documented redirect example like `echo "use foo > out.txt"` — is not mistaken
+# for a real shell redirection. Only a `>` that survives quote stripping is an
+# actual redirection operator (issue #1701). Stripping single quotes alone left
+# double-quoted `>` content (the common section-header case) firing this block.
+#
+# Exempt stream targets, mirroring the cat/head/tail /dev exemptions: stdout and
+# pipes leave no surviving `>`, `>&N` fd-duplication is excluded by the `[^&]`
+# after `>`, and a stdout redirect to a `/dev/*` device/stream target (/dev/null,
+# /dev/stderr, /dev/stdout, /dev/tty, /dev/fd/N) is stream handling, not file
+# creation (issue #1701). The exemption requires a non-digit before `>` so a
+# stderr redirect (`2>/dev/null`) accompanying a real file write does not exempt
+# the whole command.
+if echo "$COMMAND_NO_STRINGS" | grep -Eq '(^|\s)(echo|printf)\s+[^;&|]*>\s*[^&]' && \
+   ! echo "$COMMAND_NO_STRINGS" | grep -Eq '[^0-9]>\s*/dev/'; then
+    # Block only when the redirect target is a real file path.
+    if echo "$COMMAND_NO_STRINGS" | grep -Eq '(echo|printf)\s+[^;&|>]*>\s*[a-zA-Z/.]'; then
         block "REMINDER: Use the Write tool instead of 'echo/printf > file' to create files. The Write tool properly handles file creation and provides better error handling."
     fi
 fi
