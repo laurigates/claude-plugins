@@ -142,6 +142,12 @@ repos:
         language: system
         files: '^scripts/(check-git-sandbox-guards\.sh|tests/test-check-git-sandbox-guards\.sh)$'
         pass_filenames: false
+      - id: test-check-driver-freshness
+        name: driver-freshness equal-date invariant + epoch diagnostics (#1704)
+        entry: bash ./scripts/tests/test-check-driver-freshness.sh
+        language: system
+        files: '^scripts/(check-driver-freshness\.sh|tests/test-check-driver-freshness\.sh)$'
+        pass_filenames: false
       - id: test-bash-antipatterns
         name: bash-antipatterns hook detection regression
         entry: bash ./hooks-plugin/hooks/test-bash-antipatterns.sh

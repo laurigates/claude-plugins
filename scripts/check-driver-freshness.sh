@@ -147,7 +147,11 @@ for dep_file in "${dependency_paths[@]}"; do
   verbose "Checking: $dep_file  modified=$dep_modified  driver-reviewed=$driver_reviewed"
 
   if [ "$dep_epoch" -gt "$driver_epoch" ]; then
-    stale_deps+=("$dep_file (modified: $dep_modified, driver reviewed: $driver_reviewed)")
+    # Surface the raw epochs compared (issue #1704): equal dates were once
+    # misreported as "newer" and could not be reproduced. The -gt comparison
+    # is correct (equal is not stale); emitting the integers makes any future
+    # recurrence diagnosable instead of relying on re-derived human dates.
+    stale_deps+=("$dep_file (modified: $dep_modified [epoch $dep_epoch], driver reviewed: $driver_reviewed [epoch $driver_epoch])")
     failed=true
   fi
 done
