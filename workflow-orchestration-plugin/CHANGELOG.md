@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.1](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.7.0...workflow-orchestration-plugin-v1.7.1) (2026-06-20)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** guard test/hook mktemp -d sandboxes against shared-checkout git leak ([#1719](https://github.com/laurigates/claude-plugins/issues/1719)) ([448b212](https://github.com/laurigates/claude-plugins/commit/448b2127a7240136dffd721ad1309c2375cc0814))
+
 ## [1.7.0](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.6.0...workflow-orchestration-plugin-v1.7.0) (2026-06-18)
 
 

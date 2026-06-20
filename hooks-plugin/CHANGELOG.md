@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.4](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.5.3...hooks-plugin-v2.5.4) (2026-06-20)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** guard test/hook mktemp -d sandboxes against shared-checkout git leak ([#1719](https://github.com/laurigates/claude-plugins/issues/1719)) ([448b212](https://github.com/laurigates/claude-plugins/commit/448b2127a7240136dffd721ad1309c2375cc0814))
+
 ## [2.5.3](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.5.2...hooks-plugin-v2.5.3) (2026-06-20)
 
 
