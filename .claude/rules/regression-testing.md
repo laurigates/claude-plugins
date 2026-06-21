@@ -59,6 +59,7 @@ The audit script in this repo is the canonical example — it pairs a human repo
 | Blueprint upgrade target drift (migrations added without updating `blueprint-upgrade`) | `scripts/check-blueprint-upgrade-target.sh` |
 | Hyphenated taskwarrior tag names in plugin docs (parser silently swallows them) | `scripts/lint-taskwarrior-tags.sh` |
 | Plugin agent body missing `## Tool Selection` section (agents re-discover hook-blocked idioms) | `scripts/check-agent-tool-selection.sh` |
+| A looping skill loses its independent stop condition or compact-state-packet fields (checkpoint plan drops `Verifier result`/`Changed since last run`/`Exit condition`/the independent-verifier step, or a sibling skill loses its `loop-integrity.md` cross-reference) | `scripts/check-loop-integrity.sh --strict` (+ `scripts/tests/test-check-loop-integrity.sh`); wired into `.pre-commit-config.yaml`. See `.claude/rules/loop-integrity.md` |
 | Plugin agent `model:` drifts off `opus` (a weaker delegate's output re-enters the main loop and degrades downstream work; `effort`, not `model`, is the cost lever) | `scripts/check-agent-model.sh` |
 | Agent-dispatch skills lose the loud-failure contract (dispatched agents may surrender with one-word summaries) | `scripts/check-agent-failure-contract.sh` |
 | Skill description exceeds listing-budget length band (>200 WARN, >300 ERROR) | `scripts/plugin-compliance-check.sh` → `check_skill_descriptions()` (length axis); `audit-skill-descriptions.py --strict-length` in pre-commit + CI |
