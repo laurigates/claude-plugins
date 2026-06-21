@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2317   # file-level: cq_invoke/cq_invoke_sid helpers are defined for reuse but not all called
 # Regression tests for code-quality-preflight-cue.sh
 # Run: bash code-quality-plugin/hooks/test-code-quality-preflight-cue.sh
 set -uo pipefail
@@ -125,6 +126,28 @@ if [ -z "$CQ_OUT_D3" ]; then
   cq_pass "(d) lockfile edit is silent"
 else
   cq_fail "(d) lockfile edit should be silent; got: $CQ_OUT_D3"
+fi
+
+# --- (i) diagram/binary files are silent even for large payloads (issue #1730) ---
+echo "--- Test (i): 60-line .d2 diagram edit is silent ---"
+CQ_SID_I1="test-sid-i1-$(date +%s%N)"
+CQ_60LINES="$(printf 'line\n%.0s' {1..60})"
+CQ_PAYLOAD_I1="$(cq_payload Write /repo/docs/diagrams/flow.d2 '' "$CQ_60LINES" "$CQ_SID_I1")"
+CQ_OUT_I1="$(CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_TEST_CACHE_DIR" bash "$CQ_SCRIPT" <<< "$CQ_PAYLOAD_I1")"
+if [ -z "$CQ_OUT_I1" ]; then
+  cq_pass "(i) 60-line .d2 edit is silent"
+else
+  cq_fail "(i) 60-line .d2 edit should be silent; got: $CQ_OUT_I1"
+fi
+
+echo "--- Test (i): .svg artifact edit is silent ---"
+CQ_SID_I2="test-sid-i2-$(date +%s%N)"
+CQ_PAYLOAD_I2="$(cq_payload Edit /repo/docs/diagrams/flow.svg '' "$CQ_60LINES" "$CQ_SID_I2")"
+CQ_OUT_I2="$(CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_TEST_CACHE_DIR" bash "$CQ_SCRIPT" <<< "$CQ_PAYLOAD_I2")"
+if [ -z "$CQ_OUT_I2" ]; then
+  cq_pass "(i) .svg edit is silent"
+else
+  cq_fail "(i) .svg edit should be silent; got: $CQ_OUT_I2"
 fi
 
 # --- (e) fire-once dedup: second structural edit with marker present is silent ---
