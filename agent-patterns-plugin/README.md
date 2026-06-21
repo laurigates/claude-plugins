@@ -158,6 +158,20 @@ Verify orchestrator premises (file counts, build state, artefact presence) befor
 - Cheapest-verifier table mapping premise shape to the right tool (`Glob`, `Grep`, read-only agent)
 - Anti-patterns catalog: name-equals-behaviour, stale-counter, symptom-not-cause
 
+#### `adversarial-review`
+Adversarial second-pass review that tries to break code, designs, plans, or ADRs — a thin posture (isolation, inverted objective, triage gate, bounded loop) layered on top of the existing domain review skills.
+
+**When to use:**
+- Stakes are high **and** a normal review already ran, but residual risk remains
+- Red-teaming an architecture decision, ADR, or migration plan before commit
+- Stress-testing a design's failure modes and invariants
+
+**Features:**
+- Precondition gate — refuses low-stakes/first-pass use (the common waste case)
+- Lens table delegating domain checklists to `code-review`, security-audit, `verify-before-plan`, `cold-read-gate`
+- Isolated opus reviewer with an inverted "find the fault" objective
+- Triage gate separating genuine faults from manufactured objections before acting
+
 #### `plugin-settings`
 Configure per-project plugin settings using `.claude/plugin-name.local.md` files.
 

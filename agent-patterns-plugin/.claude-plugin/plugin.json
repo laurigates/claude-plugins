@@ -19,6 +19,9 @@
     "agent-teams",
     "teams",
     "multi-agent",
-    "plugin-settings"
+    "plugin-settings",
+    "adversarial-review",
+    "red-team",
+    "code-review"
   ]
 }
