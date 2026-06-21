@@ -144,7 +144,7 @@ Alternatively, use the `/configure:mcp` skill for interactive configuration.
 |--------|--------|-------------|
 | **health-plugin** | 7 | Diagnose and fix Claude Code configuration issues |
 | **hooks-plugin** | 4 | Claude Code hooks for enforcing best practices |
-| **macos-plugin** | 4 | macOS dev tooling - kitty session persistence, LaunchServices health, incident postmortems |
+| **macos-plugin** | 5 | macOS dev tooling - kitty session persistence, LaunchServices health, incident postmortems, APFS disk-usage / space recovery |
 | **taskwarrior-plugin** | 6 | Taskwarrior coordination for multi-agent work - parallel-safe queries, urgency scoring |
 | **tools-plugin** | 14 | General utilities - fd, rg, jq, shell, ImageMagick, d2 |
 | **workflow-orchestration-plugin** | 4 | Workflow orchestration - preflight checks, checkpoint refactoring |
