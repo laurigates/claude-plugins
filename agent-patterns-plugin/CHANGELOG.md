@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.27.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.26.1...agent-patterns-plugin-v2.27.0) (2026-06-21)
+
+
+### Features
+
+* **agent-patterns-plugin:** add adversarial-review posture skill ([#1731](https://github.com/laurigates/claude-plugins/issues/1731)) ([a4a5f97](https://github.com/laurigates/claude-plugins/commit/a4a5f9710d3511310646e9e027ad61f30bd603c4))
+
 ## [2.26.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.26.0...agent-patterns-plugin-v2.26.1) (2026-06-20)
 
 
