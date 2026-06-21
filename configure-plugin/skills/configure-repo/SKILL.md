@@ -6,7 +6,7 @@ args: "[--check-only] [--skip-health] [--skip-migrations]"
 argument-hint: "[--check-only] [--skip-health] [--skip-migrations]"
 created: 2026-04-14
 modified: 2026-06-18
-reviewed: 2026-06-18
+reviewed: 2026-06-21
 ---
 
 # /configure:repo

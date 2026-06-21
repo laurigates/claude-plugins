@@ -5,8 +5,8 @@ allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
 args: "[--check-only] [--fix] [--tools <list>]"
 argument-hint: "[--check-only] [--fix] [--tools <list>]"
 created: 2026-02-25
-modified: 2026-06-15
-reviewed: 2026-06-15
+modified: 2026-06-21
+reviewed: 2026-06-21
 ---
 
 # /configure:web-session
@@ -22,6 +22,7 @@ Claude Code runs on the web.
 | `just` recipes fail because `just`, `helm`, `terraform`, or similar are absent | Tools are already available in the base image (check with `check-tools`) |
 | Setting up a new repo for unattended Claude Code on the web tasks | Only need to set env vars — use environment variables in the web UI instead |
 | Auditing whether `scripts/install_pkgs.sh` is current and idempotent | Debugging a specific hook failure — fix the hook itself first |
+| Re-auditing already-onboarded repos for spec drift after the spec changed | The repo was never onboarded — run the full setup instead |
 | Onboarding a repo to Claude Code on the web for the first time | Project uses only standard language runtimes (python, node, go, rust) |
 
 ## Context
@@ -76,7 +77,35 @@ Report current status:
 | `SessionStart` hook configured | CONFIGURED / MISSING |
 | Tools covered in install script | List each: PRESENT / ABSENT |
 
-If `--check-only` is set, stop here and print the report.
+### Step 2b: Detect spec drift in an already-onboarded repo
+
+An `install_pkgs.sh` that merely **exists** reads as compliant even when the
+canonical spec has moved on — the gap is invisible until a manual audit (see
+issue #1670). When the repo is already onboarded, compare the existing files
+against the **current** spec and report each item as PRESENT / DRIFT / ABSENT.
+Treat any DRIFT or ABSENT as a re-apply trigger, not a no-op:
+
+| Spec item | Drift signal to check |
+|-----------|----------------------|
+| Renovate-managed pins | Each `<TOOL>_VERSION="x.y.z"` line carries a `# renovate: datasource=... depName=...` annotation (Step 3). A bare pin is DRIFT. |
+| Pinned versions current | Each pinned version matches the Step 3 reference. A pin behind reference (e.g. `gitleaks 8.30.0` vs `8.30.1`, `just 1.40.0` vs `1.52.0`) is DRIFT. |
+| `scripts/path-bootstrap.sh` wired first | `path-bootstrap.sh` exists **and** runs as the first `SessionStart` hook before `install_pkgs.sh` (Step 5). Missing or out-of-order is DRIFT. |
+| Allowlist-safe downloads | No runtime `api.github.com/.../releases/latest` lookups — `api.github.com` is outside the web "Limited" allowlist and breaks the install. A `latest` lookup is DRIFT; replace with a pinned `github.com/.../releases/download/<tag>` URL. |
+| Remote + idempotency guards | The `CLAUDE_CODE_REMOTE` guard and per-tool `command -v` guards are present (Step 4). |
+
+Report drift as a positive signal:
+
+| Spec item | Status |
+|-----------|--------|
+| Renovate pin annotations | PRESENT / DRIFT / ABSENT |
+| Pinned versions vs reference | CURRENT / STALE (list each stale tool) |
+| `path-bootstrap.sh` wired first | PRESENT / DRIFT / ABSENT |
+| Allowlist-safe downloads | OK / USES api.github.com |
+
+If `--check-only` is set, stop here and print the status + drift report. Otherwise,
+re-apply the drifted items in Steps 3-5 (update pins, add Renovate annotations,
+wire `path-bootstrap.sh` first, replace `latest` lookups with pinned URLs) so the
+repo returns to spec.
 
 ### Step 3: Build tool inventory
 
@@ -172,6 +201,36 @@ Next steps:
 4. Start a remote session on claude.ai/code and confirm tools are available
 ```
 
+### Step 7: Re-audit onboarded repos after a spec change (portfolio sweep)
+
+When the canonical spec itself changes (new pinned tool, a wired-first
+`path-bootstrap.sh`, a download-source fix), every previously-onboarded repo
+silently falls out of spec — `install_pkgs.sh` still "exists", so nothing flags
+the drift (issue #1670). Make drift a positive signal: re-audit the whole
+portfolio rather than waiting for a manual cross-repo check.
+
+Run `/configure:web-session --check-only` in each repo that already has
+`scripts/install_pkgs.sh` and collect the Step 2b drift reports. A thin sweep
+helper over the onboarded repos turns the silent non-event into an explicit
+PRESENT/DRIFT/ABSENT list — find the onboarded repos, then re-audit each:
+
+```bash
+# Discover onboarded repos under a portfolio root (each has scripts/install_pkgs.sh)
+find . -maxdepth 3 -path '*/scripts/install_pkgs.sh' -print | while read -r script; do
+  repo_dir=$(dirname "$(dirname "$script")")
+  echo "=== ${repo_dir} ==="
+  # Re-audit against the current spec (Step 2b drift checks)
+  grep -q 'renovate:' "$script" && echo "renovate-pins: PRESENT" || echo "renovate-pins: DRIFT"
+  find "${repo_dir}/scripts" -maxdepth 1 -name 'path-bootstrap.sh' -print -quit | grep -q . \
+    && echo "path-bootstrap: PRESENT" || echo "path-bootstrap: ABSENT"
+  grep -q 'api.github.com' "$script" && echo "allowlist: USES api.github.com (DRIFT)" || echo "allowlist: OK"
+done
+```
+
+For each repo that reports DRIFT/ABSENT, run the full `/configure:web-session`
+(no `--check-only`) so Steps 3-5 re-apply the current spec, then open one PR per
+repo. Surface the deltas as a table so the sweep result is reviewable at a glance.
+
 ## Agentic Optimizations
 
 | Context | Command |
@@ -181,3 +240,5 @@ Next steps:
 | Override tool list | `/configure:web-session --fix --tools helm,terraform,gitleaks` |
 | Smoke-test install script | `CLAUDE_CODE_REMOTE=true bash scripts/install_pkgs.sh` |
 | Verify idempotency | `CLAUDE_CODE_REMOTE=true bash scripts/install_pkgs.sh` (run twice) |
+| Drift re-audit (onboarded repo) | `/configure:web-session --check-only` |
+| Portfolio sweep for spec drift | `find . -maxdepth 3 -path '*/scripts/install_pkgs.sh'` then re-audit each |
