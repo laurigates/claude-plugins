@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 # Detect other Claude/agent processes working in the same repo clone.
 #
-# Combines five signals:
+# Combines six signals:
 #   1. Baseline drift     — optional snapshot from a prior session
 #   2. Session markers    — .git/.claude-session-<pid> files written by coworkers
 #   3. Process scan       — other claude/node processes whose cwd is this repo
 #   4. Taskwarrior claims — +ACTIVE tasks in this repo's project (best-effort)
 #   5. Worktree leak      — untracked file in parent matches a path committed
 #                           in a child worktree (issue #1319)
+#   6. Bare flip          — shared checkout unexpectedly has core.bare=true, or a
+#                           leaked GIT_DIR / GIT_WORK_TREE env points away from the
+#                           repo (issue #1692)
 #
 # Output is a block of KEY=value lines plus === SECTION === headers so the
 # invoking skill can parse results without re-running git.
@@ -42,8 +45,13 @@ if ! git rev-parse --git-dir >/dev/null 2>&1; then
   exit 0
 fi
 
-repo_root="$(git rev-parse --show-toplevel)"
-git_dir="$(git rev-parse --git-dir)"
+# A bare-flipped repo (issue #1692) has no working tree, so --show-toplevel
+# errors and would leave repo_root empty — which makes the later
+# "$repo_root"/* patterns degenerate to /* and match every absolute path.
+# Fall back to the project dir so the other signals stay sound.
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+[ -n "$repo_root" ] || repo_root="$project_dir"
+git_dir="$(git rev-parse --git-dir 2>/dev/null || true)"
 self_pid="$$"
 
 # Build an exclusion set of ancestor PIDs — the Claude process that invoked
@@ -72,6 +80,7 @@ marker_drift=0
 proc_drift=0
 tw_claim_drift=0
 worktree_leak_drift=0
+bare_flip_drift=0
 
 # =========================================================================
 # Signal 1: baseline drift
@@ -149,7 +158,7 @@ if [ -d /proc ]; then
     cwd="$(readlink "$pid_dir/cwd" 2>/dev/null)" || continue
     case "$cwd" in
       "$repo_root"|"$repo_root"/*)
-        comm="$(cat "$pid_dir/comm" 2>/dev/null | tr -d '\n' | head -c 80)"
+        comm="$(tr -d '\n' < "$pid_dir/comm" 2>/dev/null | head -c 80)"
         case "$comm" in
           claude|node|Claude|"claude code"|claude-code)
             proc_drift=$((proc_drift + 1))
@@ -309,11 +318,60 @@ fi
 echo "WORKTREE_LEAK_COUNT=$worktree_leak_drift"
 
 # =========================================================================
+# Signal 6: bare flip — issue #1692
+# =========================================================================
+# A concurrent agent fleet sharing one checkout can flip the shared repo to
+# `core.bare = true` (or leave a leaked GIT_DIR / GIT_WORK_TREE pointing away
+# from the repo). When that happens every `git status` / `git commit` in every
+# linked worktree fails with "fatal: this operation must be run in a work tree".
+# Recovery means flipping core.bare back to false and/or unsetting the leaked
+# env (see SKILL.md / REFERENCE.md). Detecting it here lets a session notice the
+# corruption instead of misreading the cascade of git failures as its own fault.
+echo "=== BARE_FLIP_CHECK ==="
+
+is_bare="$(git rev-parse --is-bare-repository 2>/dev/null || echo unknown)"
+echo "CORE_BARE=$is_bare"
+if [ "$is_bare" = "true" ]; then
+  bare_flip_drift=$((bare_flip_drift + 1))
+  echo "BARE_FLIP_DETECTED=true"
+  echo "BARE_FLIP_REASON=core.bare is true; a shared working checkout was flipped to bare (issue #1692)"
+else
+  echo "BARE_FLIP_DETECTED=false"
+fi
+
+# A leaked GIT_DIR / GIT_WORK_TREE env var pointing away from this repo redirects
+# every git op to another tree — the same recovery surface as a bare flip.
+if [ -n "${GIT_DIR:-}" ]; then
+  case "$GIT_DIR" in
+    "$repo_root"|"$repo_root"/*|"$git_dir"|"$git_dir"/*) ;;
+    *)
+      bare_flip_drift=$((bare_flip_drift + 1))
+      echo "LEAKED_GIT_DIR=$GIT_DIR"
+      ;;
+  esac
+fi
+if [ -n "${GIT_WORK_TREE:-}" ]; then
+  case "$GIT_WORK_TREE" in
+    "$repo_root"|"$repo_root"/*) ;;
+    *)
+      bare_flip_drift=$((bare_flip_drift + 1))
+      echo "LEAKED_GIT_WORK_TREE=$GIT_WORK_TREE"
+      ;;
+  esac
+fi
+echo "BARE_FLIP_COUNT=$bare_flip_drift"
+echo "=== END BARE_FLIP_CHECK ==="
+
+# =========================================================================
 # Summary verdict
 # =========================================================================
 echo "=== VERDICT ==="
 
-if [ "$marker_drift" -gt 0 ] || [ "$proc_drift" -gt 0 ] || [ "$tw_claim_drift" -gt 0 ]; then
+if [ "$bare_flip_drift" -gt 0 ]; then
+  # A bare flip / leaked GIT_DIR (issue #1692) breaks git for every linked
+  # worktree and needs distinct recovery; rank it ahead of the other signals.
+  verdict="bare_flip_suspected"
+elif [ "$marker_drift" -gt 0 ] || [ "$proc_drift" -gt 0 ] || [ "$tw_claim_drift" -gt 0 ]; then
   verdict="coworker_detected"
 elif [ "$worktree_leak_drift" -gt 0 ]; then
   # A worktree leak (issue #1319) means the orchestrator must not clean the
@@ -332,3 +390,4 @@ echo "MARKER_COUNT=$marker_drift"
 echo "PROC_COUNT=$proc_drift"
 echo "TW_CLAIM_COUNT=$tw_claim_drift"
 echo "WORKTREE_LEAK_COUNT=$worktree_leak_drift"
+echo "BARE_FLIP_COUNT=$bare_flip_drift"
