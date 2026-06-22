@@ -175,3 +175,4 @@ review can't resolve.
 - `agents-plugin` security-audit / `/security-review` — the security lens
 - `.claude/rules/terminology.md` — defines *Adversarial review* and *Red-team*
 - `.claude/rules/skill-fork-context.md` — the `[1m]` parallel-dispatch caveat
+- `.claude/rules/loop-integrity.md` — looping skills delegate their stop-condition judgement to an isolated reviewer like this one (Pillar 1)
