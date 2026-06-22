@@ -27,7 +27,7 @@ jobs:
           # Without allow-listing it, claude-code-action's human-actor guard
           # rejects the run with "non-human actor", failing every release PR audit.
           allowed_bots: "claude[bot],claude,laurigates-release-please[bot],laurigates-release-please"
-          claude_args: "--model haiku --max-turns 50"
+          claude_args: "--model opus --effort low --max-turns 50"
           additional_permissions: |
             Read
             Glob

@@ -140,7 +140,7 @@ jobs:
           # Bounded read-assess-write: read the candidate JSON, judge relevance,
           # open at most one issue. 20 turns is ample; if it can't finish, the
           # prompt is wrong and we want to fail fast.
-          claude_args: "--model sonnet --max-turns 20"
+          claude_args: "--model opus --effort medium --max-turns 20"
           prompt: |
             You are the RESEARCH RADAR for the `laurigates/claude-plugins` repository — a
             collection of Claude Code plugins (skills, agents, rules) for development

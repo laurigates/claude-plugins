@@ -106,7 +106,7 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           allowed_bots: "claude[bot],claude"
-          claude_args: "--model sonnet --max-turns 30"
+          claude_args: "--model opus --effort medium --max-turns 30"
           prompt: |
             A GitHub Actions workflow has failed on branch `${{ steps.context.outputs.branch }}`.
             Your job is to analyze the failure, determine if it can be auto-fixed, and either fix it or open an issue.

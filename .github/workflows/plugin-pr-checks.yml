@@ -7,6 +7,9 @@ on:
       - '*-plugin/**'
       - '.claude-plugin/marketplace.json'
       - '**/skills/**'
+      # Workflow changes must trigger the agent-model and workflow-model guards
+      # (both run unconditionally below) — workflow model/effort drift lives here.
+      - '.github/workflows/**'
 
 concurrency:
   group: plugin-pr-checks-${{ github.event.pull_request.number }}
@@ -97,6 +100,15 @@ jobs:
       - name: Check every plugin agent runs on opus
         run: bash scripts/check-agent-model.sh
 
+      - name: Self-test the workflow-model guard
+        # Whole-repo invariant (every Claude workflow must pin opus + explicit
+        # effort). Runs unconditionally like the agent-model pair above — the
+        # self-test proves the guard before it gates the tree.
+        run: bash scripts/tests/test-check-workflow-model.sh
+
+      - name: Check every Claude workflow pins opus + effort
+        run: bash scripts/check-workflow-model.sh
+
       - name: Check version-pin coverage (version-pinning.md)
         if: steps.changed.outputs.skill_count != '0'
         run: bash scripts/check-version-pin-coverage.sh --strict
@@ -130,7 +142,7 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           allowed_bots: "claude[bot],claude"
-          claude_args: "--model haiku --max-turns 25"
+          claude_args: "--model opus --effort low --max-turns 25"
           prompt: |
             Review the changed skill files in this PR for quality compliance.
             Read the rules at .claude/rules/skill-quality.md for the full checklist.
@@ -143,7 +155,7 @@ jobs:
             1. **"When to Use" table**: Does it have a decision table helping Claude choose this skill?
             2. **Agentic Optimizations**: Does it have a compact commands table? (required for CLI/tool skills)
             3. **Description quality**: Does the description match user intents, not just tool jargon?
-            4. **Model selection**: Is `haiku` used for CLI tools, `sonnet` for development workflows, and `opus` only for deep reasoning?
+            4. **Model selection**: Default is `opus` with `effort` as the cost lever; flag any `model: haiku` (banned) or unjustified `model: sonnet`. See `.claude/rules/skill-development.md`.
             5. **Supporting file links**: If REFERENCE.md exists, is it linked with `[REFERENCE.md](REFERENCE.md)`?
 
             For each issue found, leave a specific, actionable review comment on the relevant file.

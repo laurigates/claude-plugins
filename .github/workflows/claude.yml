@@ -42,6 +42,10 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # Interactive @mention work — pin opus explicitly (effort is the cost
+          # lever, see .claude/rules/workflow-model-effort.md). No --max-turns:
+          # interactive conversations must stay open-ended.
+          claude_args: "--model opus --effort medium"
           additional_permissions: |
             Read
             Write

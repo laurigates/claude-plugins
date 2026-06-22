@@ -277,7 +277,7 @@ jobs:
           # categorize changes, open one issue, ratchet the JSON, open one
           # PR. If it can't finish in 25 turns, the prompt is wrong and we
           # want to fail fast rather than burn $60 on a misdiagnosis loop.
-          claude_args: "--model sonnet --max-turns 25"
+          claude_args: "--model opus --effort medium --max-turns 25"
           prompt: |
             You are TRIAGING Claude Code changelog changes from ${{ needs.check-changelog.outputs.previous_version }} to ${{ needs.check-changelog.outputs.latest_version }}.
 

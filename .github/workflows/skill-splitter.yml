@@ -130,7 +130,7 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           allowed_bots: "claude[bot],claude"
-          claude_args: "--model haiku --max-turns 60"
+          claude_args: "--model opus --effort low --max-turns 60"
           prompt: |
             You are a skill content organizer. Your job is to split SKILL.md files that contain
             too much inline reference material by extracting that content into REFERENCE.md files.
