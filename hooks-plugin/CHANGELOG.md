@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.5](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.5.4...hooks-plugin-v2.5.5) (2026-06-22)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** stop blocking echo/printf fd-redirect to /dev/null ([#1736](https://github.com/laurigates/claude-plugins/issues/1736)) ([b936a4e](https://github.com/laurigates/claude-plugins/commit/b936a4eca5c6414a2ce456727e28a30f8ff6b1bb)), closes [#1722](https://github.com/laurigates/claude-plugins/issues/1722) [#1721](https://github.com/laurigates/claude-plugins/issues/1721)
+
 ## [2.5.4](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.5.3...hooks-plugin-v2.5.4) (2026-06-20)
 
 

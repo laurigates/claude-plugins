@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.7.1...workflow-orchestration-plugin-v1.8.0) (2026-06-22)
+
+
+### Features
+
+* **workflow-orchestration-plugin:** gate checkpoint phases on an independent verifier ([#1737](https://github.com/laurigates/claude-plugins/issues/1737)) ([165d048](https://github.com/laurigates/claude-plugins/commit/165d0486225ef1d58587ef5547611562eaefd2db))
+
 ## [1.7.1](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.7.0...workflow-orchestration-plugin-v1.7.1) (2026-06-20)
 
 

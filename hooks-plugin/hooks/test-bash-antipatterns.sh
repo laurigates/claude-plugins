@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2015,SC2016   # file-level (must precede first command): SC2015 is the intentional `cmd && pass++ || fail` test idiom; SC2016 single-quoted `$x`/`$(...)` are deliberate literal command strings fed to the hook
 # Regression tests for bash-antipatterns.sh
 #
 # Run: bash hooks-plugin/hooks/test-bash-antipatterns.sh
@@ -588,6 +589,60 @@ assert_exit_complex \
 assert_exit \
     "GUARD INTEGRITY: printf x > file still blocked (#1701)" 2 \
     "printf 'x' > out.md"
+
+# ── fd-redirect-to-/dev/null is not a file write (issues #1722, #1721) ────────
+# Regression: `echo "hi" 2>/dev/null` / `printf ... 2>/dev/null` were falsely
+# blocked as echo/printf-to-file writes — the `2` in `2>/dev/null` defeated the
+# old `[^0-9]>\s*/dev/` exemption when the fd redirect was the ONLY redirect, and
+# a redirect inside a sibling command's `$(...)` was attributed to the outer echo.
+# The 5-row repro from #1722 (plus the #1721 command-substitution shape) must now
+# be ALLOWED; genuine real-file writes (including the #1701 mixed-write case)
+# must STILL block.
+echo ""
+echo "fd-redirect to /dev/null on echo/printf is allowed; real file writes still block (#1722, #1721):"
+
+assert_exit_complex \
+    "echo \"hi\" 2>/dev/null is allowed (fd redirect, not a file; #1722 row 1)" 0 \
+    'echo "hi" 2>/dev/null'
+
+assert_exit_complex \
+    "printf \"%s\\n\" \"\$x\" 2>/dev/null is allowed (fd redirect; #1722 row 2)" 0 \
+    'printf "%s\n" "$x" 2>/dev/null'
+
+assert_exit_complex \
+    "echo \"hi\" (no redirect) is allowed (#1722 row 3)" 0 \
+    'echo "hi"'
+
+assert_exit \
+    "echo hi > /dev/null is allowed (stdout to /dev/null; #1722 row 4)" 0 \
+    "echo hi > /dev/null"
+
+assert_exit \
+    "echo foo > out.txt is blocked (real file write; #1722 row 5)" 2 \
+    "echo foo > out.txt"
+
+# #1721: an echo label whose only redirect is a 2>/dev/null inside a sibling
+# command's $(...) must not be read as the outer echo writing a file.
+assert_exit_complex \
+    "echo label with 2>/dev/null inside \$(...) is allowed (#1721)" 0 \
+    'echo "State:" $(gh pr view 42 --json state --jq .state 2>/dev/null)'
+
+assert_exit_complex \
+    "echo separator then 1>/dev/null fd redirect is allowed (#1722)" 0 \
+    'echo "---"; some-cmd 1>/dev/null'
+
+# Guard integrity: the /dev/null strip must NOT weaken genuine file-write nudges.
+assert_exit_complex \
+    "GUARD INTEGRITY: echo \"text\" > file still blocked (#1722)" 2 \
+    'echo "text" > file.md'
+
+assert_exit \
+    "GUARD INTEGRITY: printf ... > out.md still blocked (#1722)" 2 \
+    "printf 'x' > out.md"
+
+assert_exit_complex \
+    "GUARD INTEGRITY: #1701 mixed write echo x > realfile.txt 2>/dev/null still blocks" 2 \
+    'echo data > realfile.txt 2>/dev/null'
 
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo ""

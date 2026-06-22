@@ -23,7 +23,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.27.0",
+      "version": "2.28.0",
       "keywords": [
         "agents",
         "configuration",
@@ -116,7 +116,7 @@
       "name": "code-quality-plugin",
       "source": "./code-quality-plugin",
       "description": "Code review, refactoring, linting, dependency auditing, dead code detection, test quality, complexity metrics, and static analysis",
-      "version": "1.17.0",
+      "version": "1.17.1",
       "keywords": [
         "code-review",
         "refactoring",
@@ -292,7 +292,7 @@
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",
-      "version": "2.46.2",
+      "version": "2.47.0",
       "keywords": [
         "git",
         "github",
@@ -372,7 +372,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.5.4",
+      "version": "2.5.5",
       "keywords": [
         "hooks",
         "automation",
@@ -419,7 +419,7 @@
       "name": "macos-plugin",
       "source": "./macos-plugin",
       "description": "macOS-specific dev environment tooling - kitty session persistence, LaunchServices health, incident postmortems for kernel panics, WindowServer hangs, and long-uptime drift",
-      "version": "1.2.2",
+      "version": "1.3.0",
       "keywords": [
         "macos",
         "darwin",
@@ -493,7 +493,7 @@
       "name": "project-plugin",
       "source": "./project-plugin",
       "description": "Project initialization, management, and maintenance - setup, changelog review, and continuous development workflows",
-      "version": "1.18.4",
+      "version": "1.19.0",
       "keywords": [
         "project",
         "initialization",
@@ -662,7 +662,7 @@
       "name": "workflow-orchestration-plugin",
       "source": "./workflow-orchestration-plugin",
       "description": "Workflow orchestration - parallel agents, CI pipelines, preflight checks, checkpoint refactoring",
-      "version": "1.7.1",
+      "version": "1.8.0",
       "keywords": [
         "workflow",
         "orchestration",

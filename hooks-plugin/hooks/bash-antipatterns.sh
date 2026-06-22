@@ -112,15 +112,24 @@ fi
 #
 # Exempt stream targets, mirroring the cat/head/tail /dev exemptions: stdout and
 # pipes leave no surviving `>`, `>&N` fd-duplication is excluded by the `[^&]`
-# after `>`, and a stdout redirect to a `/dev/*` device/stream target (/dev/null,
+# after `>`, and any redirect to a `/dev/*` device/stream target (/dev/null,
 # /dev/stderr, /dev/stdout, /dev/tty, /dev/fd/N) is stream handling, not file
-# creation (issue #1701). The exemption requires a non-digit before `>` so a
-# stderr redirect (`2>/dev/null`) accompanying a real file write does not exempt
-# the whole command.
-if echo "$COMMAND_NO_STRINGS" | grep -Eq '(^|\s)(echo|printf)\s+[^;&|]*>\s*[^&]' && \
-   ! echo "$COMMAND_NO_STRINGS" | grep -Eq '[^0-9]>\s*/dev/'; then
+# creation (issue #1701).
+#
+# An fd-prefixed redirect to /dev/* (`2>/dev/null`, `1>/dev/null`, bare
+# `>/dev/null`) is stream handling too, not a file write (issues #1722, #1721).
+# The previous `[^0-9]>\s*/dev/` exemption did not fire when `2>/dev/null` was
+# the ONLY redirect (the leading `2` is a digit), so a stderr-only redirect on an
+# `echo`/`printf` was falsely blocked as a file write — including when the
+# redirect lived inside a `$(...)` belonging to a sibling command. Instead of an
+# exemption, strip every `[0-9]*>\s*/dev/<target>` from the scanned view first;
+# a `>` to a real (non-/dev) file is then the only signal left. This preserves
+# the #1701 mixed-write case: `echo x > out.txt 2>/dev/null` keeps `> out.txt`
+# after the strip and still blocks.
+COMMAND_NO_DEVNULL=$(echo "$COMMAND_NO_STRINGS" | sed -E 's#[0-9]*>[[:space:]]*/dev/[^[:space:];&|]*##g')
+if echo "$COMMAND_NO_DEVNULL" | grep -Eq '(^|\s)(echo|printf)\s+[^;&|]*>\s*[^&]'; then
     # Block only when the redirect target is a real file path.
-    if echo "$COMMAND_NO_STRINGS" | grep -Eq '(echo|printf)\s+[^;&|>]*>\s*[a-zA-Z/.]'; then
+    if echo "$COMMAND_NO_DEVNULL" | grep -Eq '(echo|printf)\s+[^;&|>]*>\s*[a-zA-Z/.]'; then
         block "REMINDER: Use the Write tool instead of 'echo/printf > file' to create files. The Write tool properly handles file creation and provides better error handling."
     fi
 fi

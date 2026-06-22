@@ -142,6 +142,18 @@ repos:
         language: system
         files: '^scripts/(check-git-sandbox-guards\.sh|tests/test-check-git-sandbox-guards\.sh)$'
         pass_filenames: false
+      - id: check-loop-integrity
+        name: looping skills keep an independent stop condition + state packet (loop-integrity.md)
+        entry: bash ./scripts/check-loop-integrity.sh --strict
+        language: system
+        files: '(loop-integrity\.md|workflow-checkpoint-refactor/SKILL\.md|project-test-loop/SKILL\.md|adversarial-review/SKILL\.md|check-loop-integrity\.sh)$'
+        pass_filenames: false
+      - id: test-check-loop-integrity
+        name: loop-integrity guard regression
+        entry: bash ./scripts/tests/test-check-loop-integrity.sh
+        language: system
+        files: '^scripts/(check-loop-integrity\.sh|tests/test-check-loop-integrity\.sh)$'
+        pass_filenames: false
       - id: test-check-driver-freshness
         name: driver-freshness equal-date invariant + epoch diagnostics (#1704)
         entry: bash ./scripts/tests/test-check-driver-freshness.sh
