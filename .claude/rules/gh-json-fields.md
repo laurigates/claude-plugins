@@ -130,6 +130,27 @@ gh pr view 42 --json mergedAt --jq '.mergedAt != null'
 gh pr view 42 --json mergedAt --jq '.mergedAt | length > 0'
 ```
 
+## Default list cap: pass `--limit` when counting or verifying state
+
+`gh issue list` / `gh pr list` default to **30 items**. When the intent is to
+*count* or *verify the state of* a known set (not just eyeball the top of the
+queue), the default silently truncates: a repo with 39 open issues returns only
+30, so issues numbered beyond the page read as "absent" and look closed. Pass an
+explicit `--limit` above the expected count (with `--json` for machine reads):
+
+```bash
+# Wrong — default 30; items 31+ silently missing, look "closed"
+gh issue list --state open --json number --jq 'map(select(.number == 1392))'
+
+# Right — explicit limit above the expected count
+gh issue list --state open --limit 100 --json number,state
+```
+
+Symptom signature: a state check reports an issue closed/missing, but
+`gh issue view <N>` shows it OPEN — the list was paginated, the direct view is
+authoritative. (Observed 2026-06-21: a 39-issue repo's open-state check missed
+two issues that were genuinely open.)
+
 ## Related
 
 - `.claude/rules/github-metadata-hygiene.md` (parent
