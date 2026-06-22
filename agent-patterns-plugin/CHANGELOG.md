@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.29.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.28.0...agent-patterns-plugin-v2.29.0) (2026-06-22)
+
+
+### Features
+
+* **agent-patterns-plugin:** document Skill-less agentType for read-only fan-out ([#1740](https://github.com/laurigates/claude-plugins/issues/1740)) ([7f918c1](https://github.com/laurigates/claude-plugins/commit/7f918c1b7a0f754260f5d34d2969c693bb704e0b))
+
 ## [2.28.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.27.0...agent-patterns-plugin-v2.28.0) (2026-06-22)
 
 
