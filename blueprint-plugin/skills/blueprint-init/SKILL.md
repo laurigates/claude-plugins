@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-05-22
-reviewed: 2026-05-22
+modified: 2026-06-21
+reviewed: 2026-06-21
 description: Initialize Blueprint Development structure. Use when bootstrapping docs/blueprint/ with manifest, PRD/ADR/PRP directories, and feature tracking for the first time.
 allowed-tools: Bash, Write, Read, AskUserQuestion, Glob
 name: blueprint-init
@@ -77,15 +77,43 @@ Initialize Blueprint Development in this project.
    find . -name '*.md' -not -path '*/node_modules/*' -not -path '*/.git/*' | grep -viE '(README|CHANGELOG|CONTRIBUTING|LICENSE|CODE_OF_CONDUCT|SECURITY)\.md$'
    ```
 
+   **Before recommending migration, measure cross-reference density.** Migrating
+   a doc into `docs/{prds,adrs,prps}/` rewrites its path, breaking every
+   reference to it. For each candidate doc, grep the repo for references to its
+   path **from outside `docs/`** (README, scripts, CI, `.rulesync/`) and inter-doc
+   links:
+
+   ```bash
+   # Count references to each candidate doc path (skip the doc itself)
+   for doc in $candidate_docs; do
+     base=$(basename "$doc")
+     refs=$(grep -rIl --exclude-dir=.git --exclude-dir=node_modules "$base" . | grep -v "^./$doc$" | wc -l | tr -d ' ')
+     ext=$(grep -rIl --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=docs "$base" . | wc -l | tr -d ' ')
+     echo "$doc total=$refs outside_docs=$ext"
+   done
+   ```
+
+   A doc whose path is **referenced outside `docs/`** (build scripts, CI, README,
+   `.rulesync/`) is expensive to migrate — every reference must be rewritten,
+   including build-critical files. Blueprint only needs the **empty**
+   `docs/{prds,adrs,prps}/` for *future* derived docs, so "leave in place" is a
+   safe default when migration is expensive.
+
    **If documentation files found** (e.g., REQUIREMENTS.md, ARCHITECTURE.md, DESIGN.md, docs in non-standard locations):
+
+   - **Default to recommending migration** (`label: "Yes, migrate documents (Recommended)"`) **only when no candidate doc is referenced outside `docs/`**.
+   - **When one or more candidate docs are referenced outside `docs/`**, DROP the "(Recommended)" marker from the migrate option and surface the reference count so the user judges the cost. Prefer steering toward "leave in place".
+
    ```
    Use AskUserQuestion:
-   question: "Found existing documentation: {file_list}. Migrate these to Blueprint-managed paths? (Strongly recommended)"
+   question: "Found existing documentation: {file_list}. {N} of these are referenced outside docs/ ({ref_summary}). Migrate to Blueprint-managed paths?"
    options:
-     - label: "Yes, migrate documents (Recommended)"
-       description: "Move docs into docs/prds/, docs/adrs/, docs/prps/ based on content type. Prevents stale and orphaned documents."
+     # When NO candidate is referenced outside docs/: keep "(Recommended)" on migrate.
+     # When ANY candidate IS referenced outside docs/: drop "(Recommended)" and show counts.
+     - label: "Yes, migrate documents"
+       description: "Move docs into docs/prds/, docs/adrs/, docs/prps/ based on content type. Rewrites all {total_refs} references — including build-critical files when referenced outside docs/."
      - label: "No, leave them in place"
-       description: "Warning: unmigrated docs may become stale or duplicated as Blueprint creates its own documents"
+       description: "Blueprint creates new docs under docs/{prds,adrs,prps}/; existing docs stay where build tooling and READMEs already point. Safe default when docs are referenced outside docs/."
    ```
 
    **If "Yes" selected:**
@@ -159,7 +187,19 @@ Initialize Blueprint Development in this project.
    Set `has_document_detection` in manifest based on response.
 
    **If enabled:**
-   Copy `document-management-rule.md` template to `.claude/rules/document-management.md`.
+   Resolve the rules output directory before writing — honour the path chosen in
+   Step 4a (default `.claude/rules/`) rather than hardcoding it, so blueprint
+   does not collide with rulesync-managed or hand-authored rules (issue #1675):
+
+   ```bash
+   RULES_DIR=$(jq -r '.structure.generated_rules_path // ".claude/rules/"' docs/blueprint/manifest.json)
+   mkdir -p "$RULES_DIR"
+   ```
+
+   When the manifest is not yet written, use the Step 4a selection directly
+   (default `.claude/rules/`).
+
+   Copy `document-management-rule.md` template to `$RULES_DIR/document-management.md`.
    This rule instructs Claude to watch for:
    - Architecture decisions being made during discussion → prompt to create ADR
    - Feature requirements being discussed or refined → prompt to create/update PRD
@@ -202,10 +242,13 @@ Initialize Blueprint Development in this project.
    └── trps/                        # Test Regression Plans (created on-demand by /blueprint:derive-tests)
    ```
 
-   **Claude configuration (in .claude/):**
+   **Claude configuration (in .claude/):** — initial rules are written under
+   `structure.generated_rules_path` (default `.claude/rules/`; an isolated
+   subdirectory like `.claude/rules/blueprint/` when Step 4a detected existing
+   content), shown here at the default location:
    ```
    .claude/
-   ├── rules/                       # Modular rules (including generated)
+   ├── rules/                       # $RULES_DIR — generated_rules_path (default .claude/rules/)
    │   ├── development.md           # Development workflow rules
    │   ├── testing.md               # Testing requirements
    │   └── document-management.md   # Document organization rules (if detection enabled)
@@ -353,10 +396,19 @@ Initialize Blueprint Development in this project.
      populate `children[]`.
    - **Standalone**: omit the `workspaces` block entirely.
 
-8. **Create initial rules**:
-   - `development.md`: TDD workflow, commit conventions
-   - `testing.md`: Test requirements, coverage expectations
-   - `document-management.md`: Document organization rules (if decision detection enabled)
+8. **Create initial rules** under the resolved `$RULES_DIR` (the Step 4a
+   `generated_rules_path`, default `.claude/rules/`) — never a hardcoded
+   `.claude/rules/` — so they sit alongside, not on top of, rulesync-managed or
+   hand-authored rules (issue #1675):
+
+   ```bash
+   RULES_DIR=$(jq -r '.structure.generated_rules_path // ".claude/rules/"' docs/blueprint/manifest.json)
+   mkdir -p "$RULES_DIR"
+   ```
+
+   - `$RULES_DIR/development.md`: TDD workflow, commit conventions
+   - `$RULES_DIR/testing.md`: Test requirements, coverage expectations
+   - `$RULES_DIR/document-management.md`: Document organization rules (if decision detection enabled)
 
 9. **Handle `.gitignore`**:
    - Always commit `CLAUDE.md` and `.claude/rules/` (shared project instructions)
