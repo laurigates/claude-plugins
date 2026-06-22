@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.3.3...session-plugin-v1.4.0) (2026-06-22)
+
+
+### Features
+
+* **session-plugin:** surface untracked assigned GitHub issues in spinup ([#1761](https://github.com/laurigates/claude-plugins/issues/1761)) ([6066c14](https://github.com/laurigates/claude-plugins/commit/6066c148512fdde1bb8411b26426e448690fc744))
+
 ## [1.3.3](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.3.2...session-plugin-v1.3.3) (2026-06-20)
 
 
