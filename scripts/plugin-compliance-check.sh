@@ -525,6 +525,24 @@ check_skill_body() {
       done
     fi
 
+    # Regression: execution-grounded-review is the execution-grounded verifier in
+    # the agent-patterns review family — the one thing that distinguishes it from
+    # adversarial-review (which reads a design) is that it RUNS the suite first
+    # and grounds each acceptance criterion in EXECUTION EVIDENCE, marking a
+    # criterion with no execution backing as UNVERIFIED rather than passing it on
+    # appearance. A bulk edit that "tightens" the skill into another read-the-diff
+    # reviewer would silently erase exactly that property, so assert the three
+    # load-bearing tokens: the execute-first step, the evidence principle, and the
+    # no-silent-pass coverage verdict. (See .claude/rules/loop-integrity.md.)
+    if [ "$skill_name" = "execution-grounded-review" ]; then
+      for token in 'Run the suite first' 'execution evidence' 'UNVERIFIED'; do
+        if ! grep -qF "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain execution-grounded token '${token}' (execute-first / evidence-grounded / no-silent-pass — see .claude/rules/loop-integrity.md)")
+          has_errors=true
+        fi
+      done
+    fi
+
     # Regression: code-review is the canary for restoring `context: fork` after
     # the plugin-skill blocker (anthropics/claude-code#16803) was fixed
     # 2026-04-18. See laurigates/claude-plugins#980 and

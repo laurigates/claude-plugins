@@ -36,6 +36,7 @@ RULE="$ROOT_DIR/.claude/rules/loop-integrity.md"
 CHECKPOINT="$ROOT_DIR/workflow-orchestration-plugin/skills/workflow-checkpoint-refactor/SKILL.md"
 TEST_LOOP="$ROOT_DIR/project-plugin/skills/project-test-loop/SKILL.md"
 ADVERSARIAL="$ROOT_DIR/agent-patterns-plugin/skills/adversarial-review/SKILL.md"
+EXEC_REVIEW="$ROOT_DIR/agent-patterns-plugin/skills/execution-grounded-review/SKILL.md"
 
 issue_count=0
 declare -a issues=()
@@ -70,6 +71,7 @@ require "$CHECKPOINT" "loop-integrity.md" "checkpoint skill lost its loop-integr
 # Sibling skills — keep the cross-reference so the convention stays discoverable.
 require "$TEST_LOOP" "loop-integrity.md" "project-test-loop lost its loop-integrity cross-reference"
 require "$ADVERSARIAL" "loop-integrity.md" "adversarial-review lost its loop-integrity (Pillar 1) cross-reference"
+require "$EXEC_REVIEW" "loop-integrity.md" "execution-grounded-review lost its loop-integrity (Pillar 1) cross-reference"
 
 status="OK"
 [ "$issue_count" -gt 0 ] && status="ERROR"

@@ -171,6 +171,9 @@ review can't resolve.
   bounded-loop pattern this skill generalises (legibility lens; uses haiku)
 - [`verify-before-plan`](../verify-before-plan/SKILL.md) — adversarial review
   of *premises*; the plan/wave lens delegates here
+- [`execution-grounded-review`](../execution-grounded-review/SKILL.md) — the
+  sibling verifier for *running behaviour* against acceptance criteria (this
+  skill attacks a design; that one grounds each criterion in execution evidence)
 - `code-quality-plugin:code-review` — the first-pass review this layers on top of
 - `agents-plugin` security-audit / `/security-review` — the security lens
 - `.claude/rules/terminology.md` — defines *Adversarial review* and *Red-team*

@@ -22,6 +22,7 @@
     "plugin-settings",
     "adversarial-review",
     "red-team",
-    "code-review"
+    "code-review",
+    "execution-grounded-review"
   ]
 }

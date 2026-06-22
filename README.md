@@ -62,7 +62,7 @@ Alternatively, use the `/configure:mcp` skill for interactive configuration.
 
 | Plugin | Skills | Description |
 |--------|--------|-------------|
-| **agent-patterns-plugin** | 15 | Multi-agent coordination and orchestration patterns |
+| **agent-patterns-plugin** | 17 | Multi-agent coordination and orchestration patterns |
 | **agents-plugin** | 1 + 12 agents | Task-focused agents for test, review, debug, docs, and CI workflows |
 | **langchain-plugin** | 4 | LangChain JS/TS development - agents, chains, LangGraph, Deep Agents |
 | **prompt-engineering-plugin** | 1 | Prompt engineering for accurate, grounded responses - anti-hallucination workflow |
