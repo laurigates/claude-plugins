@@ -42,8 +42,9 @@ issue_count=0
 declare -a issues=()
 
 # Collect candidate shell scripts (skip vendored / .git / nested agent worktree
-# clones — the worktrees prune mirrors #1492/#1548 so we scan only the real tree,
-# not N copies of it). The worktrees prune is anchored to "$ROOT_DIR/.claude/…"
+# clones / the gitignored dist/ rulesync build output — the worktrees + dist
+# prune mirrors #1492/#1548 so we scan only the real tree, not N copies of it
+# nor generated exports). The worktrees/dist prunes are anchored to "$ROOT_DIR/…"
 # rather than a bare `*/.claude/worktrees/*`: when the linter itself runs from
 # inside a worktree (ROOT_DIR is under .claude/worktrees/), the bare glob would
 # prune the entire scan root and find nothing. Anchoring matches only worktrees
@@ -55,7 +56,8 @@ SELF_TEST="$ROOT_DIR/scripts/tests/test-check-git-sandbox-guards.sh"
 mapfile -d '' scripts < <(
     find "$ROOT_DIR" \
         \( -path '*/.git/*' -o -path '*/node_modules/*' \
-           -o -path "$ROOT_DIR/.claude/worktrees/*" -o -path "$SELF_TEST" \) -prune \
+           -o -path "$ROOT_DIR/.claude/worktrees/*" -o -path "$ROOT_DIR/dist/*" \
+           -o -path "$SELF_TEST" \) -prune \
         -o -type f -name '*.sh' -print0 2>/dev/null
 )
 
