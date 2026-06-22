@@ -5,8 +5,8 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-21
-modified: 2026-06-20
-reviewed: 2026-06-14
+modified: 2026-06-22
+reviewed: 2026-06-22
 ---
 
 # Parallel Agent Dispatch
@@ -74,6 +74,21 @@ Brief every git-write agent: pin the root once
 until inside the worktree. After the agent returns, run the post-run main-repo
 integrity check (see [REFERENCE.md](REFERENCE.md) "Worktree cwd-reset guardrail
 (#1480)") — a changed branch or new dirty state is silent main-repo mutation.
+
+**`GIT_DIR`/`GIT_WORK_TREE` export leak (#1692 sibling).** A sharper worktree-git
+leak. If an agent meets a corrupted worktree (`core.bare = true`, or `fatal: this
+operation must be run in a work tree`) and "works around" it by **exporting**
+`GIT_DIR`/`GIT_WORK_TREE`, those vars **override `git -C`** — so every later `git`
+call, *and any test/hook subprocess that shells to `git`*, targets that gitdir's
+**common config**, flipping the **shared** checkout to bare and breaking **all**
+sibling worktrees at once. This is the env-var sibling of the empty-`mktemp -d`
+vector guarded by `check-git-sandbox-guards.sh` (#1692) — the mktemp guard does
+not catch it, because the sandbox path is correct; the exported env is the hijack.
+So: a bare / `must-be-run-in-a-work-tree` worktree **is** shared-checkout
+corruption — STOP and report it, repair `core.bare`, and never paper over it with
+exported git env. When a subprocess genuinely must run git in a sandbox,
+neutralize inherited env first: `env -u GIT_DIR -u GIT_WORK_TREE git -C "$dir" …`.
+See [REFERENCE.md](REFERENCE.md) "Worktree GIT_DIR-export leak (#1692)".
 
 ### 2. Scope Budget (per-agent prompt rules)
 
@@ -256,6 +271,10 @@ a guarantee. **Start conservative, then scale up:**
 Prefer **sequential waves of small batches** over one big fan-out beyond ~4
 heavy agents. **Treat the rate-limit signal as backoff-and-retry, not task
 failure** — re-dispatch rejected agents with backoff *and reduced concurrency*.
+When the burst **killed agents at startup** (an `isolation: "worktree"` fan-out
+that all died before committing), the dead worktrees leave **empty branch refs**
+behind: `git worktree prune` and delete those branches before the retry, or each
+agent's `git switch -c <branch>` collides with the leftover ref.
 See [REFERENCE.md → Concurrent rate-limit recovery](REFERENCE.md#concurrent-rate-limit-risk--recovery-dispatch-routine)
 and `.claude/rules/skill-fork-context.md` for the upstream tickets.
 
