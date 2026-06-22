@@ -12,6 +12,7 @@ All skills are **Darwin-only** — they detect non-macOS systems and refuse to a
 | [launchservices-health](skills/launchservices-health/skill.md) | Quantify the LaunchServices DB, `launchservicesd` RSS/uptime, and surface the safe rebuild command |
 | [macos-incident-postmortem](skills/macos-incident-postmortem/skill.md) | Reconstruct what happened from `/Library/Logs/DiagnosticReports/`, `kern.boottime`, and shell history after a hang or panic |
 | [endpoint-security-cpu](skills/endpoint-security-cpu/skill.md) | Diagnose an EndpointSecurity/EDR extension (Kandji ESF, XProtect) hot from a process-spawn storm; trace the source with `powermetrics` + `eslogger` |
+| [macos-disk-usage](skills/macos-disk-usage/skill.md) | Disk-usage forensics and space recovery on APFS — trust `df` `Avail` not `Capacity %`, reclaim OrbStack/Docker, thin `tmutil` snapshots, tiered cache cleanup |
 
 ## When to Use
 
@@ -22,6 +23,7 @@ All skills are **Darwin-only** — they detect non-macOS systems and refuse to a
 | GUI froze and you're not sure if the machine actually rebooted | `macos-incident-postmortem` |
 | Investigating recent kernel panics, watchdog timeouts, jetsam events | `macos-incident-postmortem` |
 | A security extension (Kandji ESF, XProtect, an EDR) is pegged at high CPU; battery drains | `endpoint-security-cpu` |
+| A disk reads near-full, or you're hunting what's eating space / reclaiming OrbStack-Docker | `macos-disk-usage` |
 | `syspolicyd`/`trustd`/`tccd`/`auditd` are all elevated together — an exec storm | `endpoint-security-cpu` |
 | Auditing whether the machine is "due for a reboot" after weeks of uptime | `macos-incident-postmortem` + `launchservices-health` |
 
