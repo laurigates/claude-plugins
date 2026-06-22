@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # SessionStart hook — offers session-plugin:session-spinup when a fresh
 # session opens with open threads worth surfacing: pending or +ACTIVE
-# taskwarrior tasks for the cwd's project, uncommitted changes, or unpushed
-# commits. Injects context (additionalContext) instead of blocking — a
-# SessionStart nudge should inform, not force a turn.
+# taskwarrior tasks for the cwd's project, uncommitted changes, unpushed
+# commits, or open GitHub issues assigned to the user in the cwd repo.
+# Injects context (additionalContext) instead of blocking — a SessionStart
+# nudge should inform, not force a turn.
 #
 # Fires only on source=startup|resume (silent on clear/compact — those are
 # mid-session continuations), at most once per session_id.
@@ -52,6 +53,21 @@ if command -v "$task_bin" >/dev/null 2>&1; then
         | jq 'length' 2>/dev/null || echo 0)
     if [ "${open_count:-0}" -gt 0 ] 2>/dev/null; then
         threads="${threads}${open_count} open taskwarrior task(s) under project:${project}; "
+    fi
+fi
+
+# GitHub issues: open issues assigned to the user in the cwd repo. Gated on a
+# fast `gh auth status` so an unauthenticated machine pays no network cost.
+# Coarse count only — the skill does precise dedup against taskwarrior, but a
+# tracked issue already trips the taskwarrior signal above, so over-counting
+# here at worst restates an existing reason, never invents a false one.
+# SESSION_NUDGE_GH_BIN is a test seam — see test-session-spinup-nudge.sh.
+gh_bin="${SESSION_NUDGE_GH_BIN:-gh}"
+if command -v "$gh_bin" >/dev/null 2>&1 && "$gh_bin" auth status >/dev/null 2>&1; then
+    issue_count=$( (cd "$cwd" && "$gh_bin" issue list --assignee @me --state open \
+        --json number --jq 'length' 2>/dev/null) || echo 0)
+    if [ "${issue_count:-0}" -gt 0 ] 2>/dev/null; then
+        threads="${threads}${issue_count} assigned GitHub issue(s); "
     fi
 fi
 

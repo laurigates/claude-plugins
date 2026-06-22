@@ -22,6 +22,37 @@ If multiple projects are detectable (monorepo, multi-package), survey
 each in its own section. If the cwd maps to no known project, list
 options with `task _projects` and ask once.
 
+## GitHub issue dedup against taskwarrior
+
+Surface an assigned open issue only when no surveyed task already tracks
+it. Build the set of already-tracked issue numbers from the tasks, then
+filter the `gh issue list` output:
+
+```sh
+# Issue numbers already represented in taskwarrior: the ghid UDA, plus any
+# #N or .../issues/N reference in a description or annotation.
+tracked=$(task project:<name> '(status:pending or +ACTIVE)' export | jq -r '
+    .[] | (.ghid // empty),
+          (.description, (.annotations[]?.description // "")
+           | scan("(?:#|issues/)([0-9]+)") | .[0])
+' | sort -u)
+
+# Assigned, open, in the cwd repo, minus the tracked set.
+gh issue list --assignee @me --state open \
+    --json number,title,url,updatedAt --jq '.[]' \
+| jq -c --argjson tracked "$(printf '%s\n' $tracked | jq -R . | jq -s 'map(tonumber)')" '
+    select(.number as $n | ($tracked | index($n)) | not)'
+```
+
+A simpler inline alternative when the task set is small: read the issue
+numbers from the surveyed tasks by eye and skip any `gh issue list` row
+whose `number` appears among them. The point is the same — show the task,
+not a duplicate issue line.
+
+When the cwd has no GitHub remote (`gh repo view` fails), skip the issue
+source entirely; it is the only source scoped to a GitHub repo rather than
+a taskwarrior project.
+
 ## Journal todo extraction
 
 Walk back from today (first existing note wins), extract unchecked
@@ -58,6 +89,9 @@ Spin-up — project: work.cost-attribution (cwd: repos/<org>/infrastructure)
     pending  #240 "Confirm Hetzner db01-03 shutdown date with Aapo (#838)"
     pending  #243 "OpenCost re-evaluation date (ADR-0029 deferred)"
 
+  github issues (1 assigned, untracked)
+    #851 "OpenCost pods OOMKilled on >2k namespaces" — filed 2d ago, no task
+
   journal 2026-05-12.md (yesterday)
     - [ ] Nudge production GKE Standard PR #1607 reviewers (stale 7d)
 
@@ -66,6 +100,7 @@ Spin-up — project: work.cost-attribution (cwd: repos/<org>/infrastructure)
 
 Next moves:
   • Resume #237 — check PR #1774 review state
+  • Triage assigned issue #851 (filed since last session, not yet tracked)
   • Tackle yesterday's todo: nudge PR #1607 reviewers
   • Confirm Hetzner shutdown date (#240)
 
@@ -76,6 +111,9 @@ Stale +ACTIVE elsewhere: task #5 in bluepad32.own is still +ACTIVE — release w
 
 - **No journal note in the last 7 days** — silently skip that source;
   still show taskwarrior + git state.
+- **No GitHub remote, or every assigned issue is already tracked** — skip
+  the GitHub-issues section silently; it earns a line only when there is a
+  genuinely untracked assigned issue.
 - **No tasks for the project** — say `nothing pending under
   project:<name>` explicitly rather than an empty-looking section.
 - **Clean tree, no PRs** — one line: `git state: clean`.

@@ -27,12 +27,27 @@ done
 echo "wip" > "$REPO_DIRTY/wip.txt"
 
 run_hook_output() {
-    local session_id="$1" cwd="$2" source_kind="$3"
+    local session_id="$1" cwd="$2" source_kind="$3" gh_bin="${4:-/nonexistent/gh}"
     jq -nc --arg sid "$session_id" --arg cwd "$cwd" --arg src "$source_kind" \
         '{session_id: $sid, cwd: $cwd, source: $src}' \
         | HOME="$TEST_HOME" SESSION_NUDGE_TASK_BIN=/nonexistent/task \
+          SESSION_NUDGE_GH_BIN="$gh_bin" \
           bash "$HOOK" 2>/dev/null || true
 }
+
+# Stub gh: `auth status` succeeds; `issue list` reports a fixed count via the
+# GH_STUB_ISSUE_COUNT env var (0 = none, so the issue signal stays silent).
+GH_STUB_DIR=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
+trap 'rm -rf "$TEST_HOME" "$REPO_CLEAN" "$REPO_DIRTY" "$GH_STUB_DIR"' EXIT
+cat > "$GH_STUB_DIR/gh" <<'STUB'
+#!/usr/bin/env bash
+case "$1" in
+    auth) exit 0 ;;
+    issue) echo "${GH_STUB_ISSUE_COUNT:-0}" ;;
+    *) exit 1 ;;
+esac
+STUB
+chmod +x "$GH_STUB_DIR/gh"
 
 assert_contains() {
     local desc="$1" pattern="$2" actual="$3"
@@ -77,6 +92,24 @@ if echo "$output" | grep -q '"decision"'; then
 else
     printf "  PASS: spinup nudge does not block\n"; PASS=$((PASS + 1))
 fi
+
+echo ""
+echo "GitHub issues signal (gh-auth-gated):"
+export GH_STUB_ISSUE_COUNT=0
+output=$(run_hook_output "sp-gh-zero" "$REPO_CLEAN" "startup" "$GH_STUB_DIR/gh")
+assert_silent "clean repo + zero assigned issues stays silent" "$output"
+export GH_STUB_ISSUE_COUNT=2
+output=$(run_hook_output "sp-gh-two" "$REPO_CLEAN" "startup" "$GH_STUB_DIR/gh")
+assert_contains "assigned issues emit additionalContext" 'additionalContext' "$output"
+assert_contains "context mentions assigned GitHub issue(s)" 'assigned GitHub issue' "$output"
+assert_contains "issue-only nudge still references the skill" 'session-plugin:session-spinup' "$output"
+unset GH_STUB_ISSUE_COUNT
+
+echo ""
+echo "unauthenticated gh adds no thread (gate holds):"
+# /nonexistent/gh fails `command -v`, so the issue block is skipped entirely.
+output=$(run_hook_output "sp-gh-noauth" "$REPO_CLEAN" "startup" "/nonexistent/gh")
+assert_silent "clean repo + no gh binary stays silent" "$output"
 
 echo ""
 echo "once-per-session marker:"
