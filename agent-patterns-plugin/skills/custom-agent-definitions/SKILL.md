@@ -114,6 +114,17 @@ agent: security-auditor
    `parallel-agent-dispatch` → "Loud-failure contract" for the dispatch-prompt
    form every brief should carry.
 
+7. **Prefer a Skill-less agentType for read-only fan-out** — an agent that
+   only reads files and emits structured output should NOT carry the `Skill`
+   tool. Every `Skill`-bearing agent pays a ~25k-token `skill_listing` +
+   `deferred_tools_delta` context tax before its first tool call, which can push
+   read-heavy fan-out subagents over their context window. Use a lean read-only
+   agent (e.g. `agents-plugin:review`) instead. See
+   `parallel-agent-dispatch` → "Skill-less agentType for Read-Only Fan-Out"
+   (issues
+   [#1549](https://github.com/laurigates/claude-plugins/issues/1549) /
+   [#1550](https://github.com/laurigates/claude-plugins/issues/1550)).
+
 Worked YAML for each practice is in [REFERENCE.md → Best-practice snippets](REFERENCE.md#best-practice-snippets).
 
 ## Agentic Optimizations

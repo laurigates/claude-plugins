@@ -373,6 +373,22 @@ check_skill_body() {
       fi
     fi
 
+    # Regression: parallel-agent-dispatch must document dispatching a Skill-less
+    # agentType for read-only fan-out. A general-purpose subagent carries the
+    # Skill tool, which injects the ~88k-char skill_listing attachment up front;
+    # combined with file reads + a forced StructuredOutput schema it overflows
+    # the context window (40-100% batch failures). The fix recommends a
+    # Skill-less agentType (no skill_listing tax) for read-only fan-out
+    # (issue #1549, folds #1550). Guards a bulk edit dropping the guidance.
+    if [ "$skill_name" = "parallel-agent-dispatch" ]; then
+      for token in "skill_listing" "Skill-less agentType"; do
+        if ! grep -q -- "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain '${token}' (Skill-less read-only fan-out guidance, issue #1549)")
+          has_errors=true
+        fi
+      done
+    fi
+
     # Regression: evaluate-legibility's Step-3 triage and the cold-reader prompt
     # depend on the verdict vocabulary (`clear` / `needs-revision`) and the
     # QUESTIONS / HESITATIONS critique headings reused from cold-read-gate. A

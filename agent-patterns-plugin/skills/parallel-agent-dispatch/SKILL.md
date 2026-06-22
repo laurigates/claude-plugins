@@ -259,6 +259,38 @@ failure** — re-dispatch rejected agents with backoff *and reduced concurrency*
 See [REFERENCE.md → Concurrent rate-limit recovery](REFERENCE.md#concurrent-rate-limit-risk--recovery-dispatch-routine)
 and `.claude/rules/skill-fork-context.md` for the upstream tickets.
 
+## Skill-less agentType for Read-Only Fan-Out
+
+For read-only / structured-output fan-out — classification, verification, audit
+sweeps where each agent **reads files and emits a result, nothing more** —
+dispatch a **Skill-less agentType** rather than `general-purpose`. A
+`general-purpose` subagent carries the `Skill` tool, and every `Skill`-bearing
+agent pays a large fixed context tax *before it runs a single tool call*: the
+**`skill_listing` attachment (~88k chars / ~22k tokens)** plus a
+**`deferred_tools_delta` (~12k chars / ~3k tokens)** are injected up front. Add
+~10 file reads and a forced `StructuredOutput` schema on top and that ~25k fixed
+overhead pushes the subagent over its context window — observed as
+`Prompt is too long` and **40–100% batch-failure rates** in a real fan-out
+(issue [#1549](https://github.com/laurigates/claude-plugins/issues/1549)).
+
+Agents without the `Skill` tool receive **no `skill_listing` injection at all**,
+so the same workload fits comfortably.
+
+| Fan-out need | agentType | Why |
+|---|---|---|
+| Read-only classify / verify / audit | `agents-plugin:review` | Read/Glob/Grep, no `Skill` tool → no `skill_listing` tax; its review system prompt does not interfere given an explicit rubric + schema |
+| Read **plus** `Write` (e.g. emit a report file) | `agents-plugin:docs` | Same Skill-less lean tool set, with write capability |
+| Genuinely needs the skill catalog or broad `Bash` (`gh`/`task` filing) | `general-purpose` | Reserve `general-purpose` for agents that actually use `Skill` / broad Bash — the ~25k tax is only worth paying when the catalog is used |
+
+`agents-plugin:review` doubles as a **token-lean structured-output classifier**:
+given a procedure-vs-judgment rubric and a forced `StructuredOutput` schema it
+cleanly classified a 10-file batch where identical `general-purpose` agents
+failed with `Prompt is too long` (issue
+[#1550](https://github.com/laurigates/claude-plugins/issues/1550)). Preserve its
+lean, no-`Skill` tool set when reaching for it as a fan-out building block.
+
+Sibling guidance for writing such agents lives in `custom-agent-definitions`.
+
 ## Composition with agent-teams
 
 `agent-teams` covers the TeamCreate / SendMessage / TaskUpdate mechanics; this
