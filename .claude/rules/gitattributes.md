@@ -30,8 +30,32 @@ entry is self-contained on one line. Apply the test before marking a file:
 For one-line append tables not marked `merge=union`,
 `scripts/resolve-additive-conflicts.py` (the deterministic pre-pass in
 `auto-resolve-conflicts.yml`) still union-merges them generically — so the
-`.gitattributes` allowlist is an optimization (clears the conflict at merge
-time, including the GitHub merge button), not the only safety net.
+`.gitattributes` allowlist is an optimization (clears the conflict in local
+and CI merges), not the only safety net.
+
+## GitHub does not honor `merge=union` server-side
+
+**Empirically confirmed (PR #1759, 2026-06):** GitHub's mergeability check and
+the **merge button** do NOT apply `.gitattributes merge=union`. A PR whose only
+conflict is a union-marked file will still show `CONFLICTING` / `mergeStateStatus
+DIRTY`, even though every *real* git merge (local, rebase, the
+`auto-resolve-conflicts.yml` workflow) resolves it cleanly with zero markers.
+The driver works everywhere git actually runs the merge — just not in GitHub's
+server-side computation.
+
+Fix to make such a PR mergeable: bring the base into the branch **locally**,
+where the driver is active, so the base becomes an ancestor and GitHub has
+nothing left to merge:
+
+```sh
+git fetch origin
+git merge --no-ff origin/main      # union driver resolves the marked file here
+git push                            # PR flips to MERGEABLE
+```
+
+(`--no-ff` because a divergent merge can't fast-forward, and a global
+`merge.ff=only` would otherwise abort it.) This also doubles as a live proof the
+driver works — the marked file gains both sides' rows with no hand-editing.
 
 ## `linguist-generated` is the safe default for generated trees
 
