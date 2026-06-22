@@ -148,6 +148,12 @@ repos:
         language: system
         files: '^scripts/(check-git-sandbox-guards\.sh|tests/test-check-git-sandbox-guards\.sh)$'
         pass_filenames: false
+      - id: test-resolve-additive-conflicts
+        name: additive-conflict union resolver regression (no-LLM pre-pass)
+        entry: bash ./scripts/tests/test-resolve-additive-conflicts.sh
+        language: system
+        files: '^scripts/(resolve-additive-conflicts\.py|tests/test-resolve-additive-conflicts\.sh)$'
+        pass_filenames: false
       - id: check-loop-integrity
         name: looping skills keep an independent stop condition + state packet (loop-integrity.md)
         entry: bash ./scripts/check-loop-integrity.sh --strict
