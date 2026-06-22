@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/laurigates/claude-plugins/compare/macos-plugin-v1.2.2...macos-plugin-v1.3.0) (2026-06-22)
+
+
+### Features
+
+* **macos-plugin:** add disk-usage / space-recovery skill ([#1741](https://github.com/laurigates/claude-plugins/issues/1741)) ([4578f57](https://github.com/laurigates/claude-plugins/commit/4578f578c74fdbed55094bacfbc0ef348e47da84))
+
 ## [1.2.2](https://github.com/laurigates/claude-plugins/compare/macos-plugin-v1.2.1...macos-plugin-v1.2.2) (2026-06-13)
 
 
