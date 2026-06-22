@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.47.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.46.2...git-plugin-v2.47.0) (2026-06-22)
+
+
+### Features
+
+* **git-plugin:** verify automated-reviewer claims in git-pr-feedback ([#1738](https://github.com/laurigates/claude-plugins/issues/1738)) ([5396fd8](https://github.com/laurigates/claude-plugins/commit/5396fd8adda2bf6f3a08a30c94df5b1318a6e996))
+
 ## [2.46.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.46.1...git-plugin-v2.46.2) (2026-06-20)
 
 
