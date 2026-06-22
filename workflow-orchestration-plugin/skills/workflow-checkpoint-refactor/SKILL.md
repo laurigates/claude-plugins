@@ -5,7 +5,7 @@ args: "[--init|--continue|--status|--phase=N]"
 allowed-tools: Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(npm run *), Bash(npx *), Bash(uv run *), Bash(cargo *), Read, Write, Edit, Grep, Glob, Task, TodoWrite
 argument-hint: "--init to create plan, --continue to resume, --status to check progress"
 created: 2026-02-08
-modified: 2026-05-09
+modified: 2026-06-21
 reviewed: 2026-02-14
 ---
 
@@ -39,7 +39,12 @@ Multi-phase refactoring with persistent state that survives context limits and s
 
 ## Plan File Format
 
-The plan file (`REFACTOR_PLAN.md`) serves as persistent state:
+The plan file (`REFACTOR_PLAN.md`) serves as persistent state. It is the loop's
+**compact state packet** (`.claude/rules/loop-integrity.md`): a fresh session,
+or a sub-agent with no memory of prior phases, must be able to re-enter from this
+file alone. Every phase therefore carries not just *what to do* but *what was
+verified* and *what changed* — without those, resuming across a context limit
+silently redoes or undoes work.
 
 ```markdown
 # Refactor Plan: {description}
@@ -47,6 +52,7 @@ The plan file (`REFACTOR_PLAN.md`) serves as persistent state:
 Created: {date}
 Last updated: {date}
 Base commit: {hash}
+Exit condition: {the literal criterion that ends the whole refactor — e.g. "all phases done, full suite + tsc green on base"}
 
 ## Overview
 {What is being refactored and why}
@@ -55,7 +61,9 @@ Base commit: {hash}
 - **Status**: done | in-progress | pending | needs-review
 - **Files**: file1.ts, file2.ts, file3.ts
 - **Description**: {what this phase does}
-- **Acceptance criteria**: {how to verify success}
+- **Acceptance criteria**: {how to verify success — the phase's exit condition}
+- **Verifier result**: {what the independent check returned — PASS/FAIL + the criterion it judged; filled in at the phase boundary}
+- **Changed since last run**: {what this phase actually touched, so a successor doesn't redo or undo it}
 - **Result**: {summary of changes made, filled in after completion}
 
 ## Phase 2: {phase name}
@@ -63,6 +71,8 @@ Base commit: {hash}
 - **Files**: file4.ts, file5.ts
 - **Description**: {what this phase does}
 - **Acceptance criteria**: {how to verify success}
+- **Verifier result**: {empty until verified}
+- **Changed since last run**: {empty until completed}
 - **Result**: {empty until completed}
 
 ...
@@ -116,10 +126,23 @@ For each phase:
    - Fix errors if straightforward
    - If complex, mark phase as `needs-review` with error details
    - Commit partial work with `WIP:` prefix
-6. If validation passes:
-   - Update plan file: set status to `done`, write result summary
-   - Commit: `git add -u && git commit -m "refactor phase N: {description}"`
-7. If more phases remain, proceed to next phase or suggest `--continue`
+6. If validation passes, **gate `done` on an independent verifier** when the
+   acceptance criteria are a judgement (e.g. "the class is now single-purpose"),
+   not a purely mechanical check (a green suite / clean `tsc` is already
+   independent — a failing test does not care how hard you worked):
+   - Dispatch a fresh `Task` sub-agent that reads **only** this phase's
+     acceptance criteria and the resulting diff — not the worker's reasoning —
+     and judges whether the criteria are met. The worker is biased toward
+     declaring completion; the loop's stop condition must come from outside it
+     (`.claude/rules/loop-integrity.md`, Pillar 1).
+   - Record the verdict in the phase's **Verifier result** field (PASS/FAIL +
+     the criterion judged).
+   - If the verifier returns FAIL, leave status `in-progress`/`needs-review`
+     and address the gap before marking `done`.
+7. Once verified, update the plan file: set status to `done`, fill **Verifier
+   result**, **Changed since last run**, and **Result**, then commit:
+   `git add -u && git commit -m "refactor phase N: {description}"`
+8. If more phases remain, proceed to next phase or suggest `--continue`
 
 ### Step 5: Sub-agent delegation (for large phases)
 
@@ -165,3 +188,5 @@ For phases with 7+ files, delegate to Task sub-agent with:
 
 - [code-review-checklist](../../../code-quality-plugin/skills/code-review-checklist/SKILL.md) - Review refactored code
 - [refactoring-patterns](../../../code-quality-plugin/skills/refactoring-patterns/SKILL.md) - Refactoring techniques
+- [adversarial-review](../../../agent-patterns-plugin/skills/adversarial-review/SKILL.md) - The isolated verifier a judgement-based phase gate delegates to
+- `.claude/rules/loop-integrity.md` - Why the plan file is a state packet and why `done` is judged independently

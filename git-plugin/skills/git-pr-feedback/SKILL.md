@@ -1,7 +1,7 @@
 ---
 created: 2026-01-30
-modified: 2026-06-03
-reviewed: 2026-06-03
+modified: 2026-06-21
+reviewed: 2026-06-21
 allowed-tools: Bash(gh pr checks *), Bash(gh pr view *), Bash(gh pr diff *), Bash(gh run view *), Bash(gh run list *), Bash(gh api *), Bash(gh repo view *), Bash(gh issue create *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(git switch *), Bash(git pull *), Bash(git fetch *), Bash(pre-commit *), Bash(npm run *), Bash(uv run *), Bash(bash *), Read, Edit, Write, Grep, Glob, TodoWrite, Task, mcp__github__pull_request_read, mcp__github__add_reply_to_pull_request_comment, mcp__github__pull_request_review_write, mcp__github__issue_write
 args: "[pr-number] [--commit] [--push] [--all] [--dry-run] [--limit N] [--include-automation]"
 argument-hint: "[pr-number | --all] [--commit] [--push] [--dry-run] [--limit N] [--include-automation]"
@@ -173,6 +173,8 @@ Categorize all comments from the GraphQL response (see [REFERENCE.md](REFERENCE.
 
 ### Step 3: Address Feedback
 
+**Verify before accepting — especially claims from an automated reviewer.** Before accepting or acting on any suggestion, independently verify the claim against the actual source, the live system, or upstream documentation. This matters most for automated reviewers (Gemini Code Assist, Copilot, and other bot authors), whose suggestions are frequently confidently-wrong: read the code/config the claim is about, check the rendered/live behaviour, and confirm against docs rather than applying a bot suggestion on trust. A claim that fails verification is **refuted** — reply with the refutation and the supporting evidence, and do **not** change the code. A written refutation with evidence is a legitimate way to resolve a thread (see Step 6).
+
 Work through actionable items systematically. For each thread, decide using the table below — see [REFERENCE.md](REFERENCE.md) for the full decision tree.
 
 | Comment shape | Action |
@@ -180,6 +182,7 @@ Work through actionable items systematically. For each thread, decide using the 
 | Contains a ` ```suggestion ` block, fix is correct | **Accept the suggestion**: apply the suggestion's exact replacement to the file (see [REFERENCE.md](REFERENCE.md) "Accepting Suggestions"). Record the comment author's `login` and `name`/`email` for co-author attribution in Step 4. |
 | Contains a ` ```suggestion ` block, fix needs adjustment | Implement an improved variant; explain the deviation in the reply. Record the suggester for co-author attribution. |
 | Inline code comment without suggestion | Read context, implement fix, verify no regressions |
+| Claim that verification refutes (wrong on the facts) | **Refuted**: do not change the code. Reply with the refutation and the evidence that disproves it (the source line, rendered config, live behaviour, or doc that contradicts the claim), then resolve. Apply this whenever a bot/automated-reviewer suggestion does not survive verification. |
 | Question / clarification | Skip code change; draft an inline reply for Step 4 |
 | Blocking review (`REQUEST_CHANGES`) | Address every concern before resolving any thread |
 | Failed CI check | Identify failure type (lint/type/test/build), fix locally, run to verify |
@@ -245,7 +248,7 @@ Resolving is the default action after replying — leaving threads open is the e
    - Suggestion adapted → explain the deviation: `Applied a variant in <sha>: <reason>.`
    - Deferred / out of scope → reference the follow-up issue filed in Step 3a: `Deferred to #<issue> — <reason>.`
    - Question → answer it directly.
-   - Refuting a suggestion → state the reasoning: `Leaving as-is: <reason>.`
+   - Refuting a suggestion (claim verification disproved) → state the reasoning **with evidence**: `Leaving as-is: <reason> — <evidence that disproves the claim>.`
 
 2. **Always resolve** with the GraphQL `resolveReviewThread` mutation using the thread `id` (a `PRRT_…` GraphQL node ID). Resolution is the default after a reply — only skip when one of step 3's "leave open" exceptions applies. Call:
 

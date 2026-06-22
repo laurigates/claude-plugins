@@ -38,9 +38,12 @@ esac
 # --- Exclusions: silence early, before detection ---
 cq_base_name="${cq_file_path##*/}"
 
-# .md and .txt files — always silent.
+# .md/.txt prose and diagram/binary assets — always silent.
+# Diagram sources (.d2) and rendered/binary artifacts (.svg/.png/.jpg/.jpeg/.pdf)
+# are not lintable by /code-quality:code-lint, so a large diagram edit should not
+# trip the structural cue (issue #1730).
 case "$cq_file_path" in
-    *.md|*.txt) exit 0 ;;
+    *.md|*.txt|*.d2|*.svg|*.png|*.jpg|*.jpeg|*.pdf) exit 0 ;;
 esac
 
 # CHANGELOG.md explicitly (belt-and-suspenders).
