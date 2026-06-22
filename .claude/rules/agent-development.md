@@ -114,6 +114,19 @@ tools: Agent(worker, researcher), Read, Bash
 ```
 
 This is an allowlist — only `worker` and `researcher` can be spawned. To allow any subagent without restriction, use `Agent` without parentheses. If `Agent` is omitted, the agent cannot spawn any subagents.
+
+#### Pin a deliberate roster with the allowlist, not prose
+
+When you have designed a fixed set of domain agents (frontend, database, security, …) and want the orchestrator to delegate **only** to them, encode that intent as the `Agent(name1, name2, …)` allowlist above — not as a prose instruction like "please only use my agents." The allowlist is harness-enforced and non-negotiable; a prose preference is a wish the model can override the moment it decides an ad-hoc agent fits the task better. This is the difference between an **invariant** (a boundary stated as a rule) and a **heuristic** (a suggestion the model weighs): models adhere to the former far more reliably, so the roster you actually depend on belongs in frontmatter.
+
+| You want… | Express it as | Why |
+|-----------|---------------|-----|
+| Delegation pinned to a known roster | `tools: Agent(frontend, database, security)` | Harness-enforced; ad-hoc agents outside the set cannot be spawned |
+| Roster plus a deterministic fan-out | The allowlist **and** an orchestration skill that spawns one declared agent per domain | Removes roster choice from the model entirely (see `agent-patterns-plugin:parallel-agent-dispatch`) |
+| Truly open-ended delegation | `Agent` without parentheses | Intentional — only when no fixed roster exists |
+
+The failure this prevents: an orchestrator that "used to respect my agents" starts inventing its own the moment the roster lives only in prose. If the model is spawning agents you didn't intend, the fix is to move the roster from instruction into the `Agent(...)` allowlist.
+
 > **Note (2.1.116+)**: Agent frontmatter `hooks:` and `mcpServers:` are active when the agent runs as a main-thread session via `claude --agent`, not just as subagents.
 
 ### MCP Servers in Agent Definitions (2.1.147 / 2.1.153)
