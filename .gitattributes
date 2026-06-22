@@ -18,7 +18,16 @@
 .claude/rules/regression-testing.md merge=union
 
 # --- Generated files (GitHub linguist) -------------------------------------
-# Collapse in PR diffs and exclude from language stats. release-please owns
-# these; reviewers should not wade through their churn.
+# Collapse in PR diffs and exclude from language stats. These are build output
+# or tool-owned — reviewers should not wade through their churn, and a conflict
+# in them is resolved by regenerating, not by hand-merging. (linguist-generated
+# only affects GitHub's display; it changes no merge behavior — so it is safe
+# even where `merge=union` would be wrong.)
 **/CHANGELOG.md linguist-generated=true
 .release-please-manifest.json linguist-generated=true
+# Compiled from each SKILL.md by git-repo-agent's prompts/compiler.py.
+git-repo-agent/src/git_repo_agent/prompts/generated/** linguist-generated=true
+# Rendered from the committed .d2 sources (the .d2 is the reviewable artifact).
+docs/diagrams/*.svg linguist-generated=true
+# uv-managed lockfile (never union-merge a lockfile — regenerate on conflict).
+vault-agent/uv.lock linguist-generated=true

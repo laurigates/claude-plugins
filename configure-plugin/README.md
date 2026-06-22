@@ -43,6 +43,7 @@ All commands support two modes:
 |-------|-------------|
 | `configure-argocd-automerge` | Auto-merge workflow for ArgoCD Image Updater branches |
 | `configure-claude-plugins` | Configure Claude Code plugin marketplace and GitHub Actions workflows |
+| `configure-gitattributes` | `.gitattributes`: union-merge append-only tables, linguist-generated build output, LF normalization |
 | `configure-pre-commit` | Pre-commit hooks for project standards |
 | `configure-release-please` | Release-please workflow configuration |
 | `configure-reusable-workflows` | Install Claude-powered reusable workflows (security, quality, a11y) |

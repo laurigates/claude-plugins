@@ -5,8 +5,8 @@ allowed-tools: Glob, Grep, Read, Write, Edit, Bash(git add *), Bash(git status *
 args: "[--check-only] [--skip-health] [--skip-migrations]"
 argument-hint: "[--check-only] [--skip-health] [--skip-migrations]"
 created: 2026-04-14
-modified: 2026-06-18
-reviewed: 2026-06-21
+modified: 2026-06-22
+reviewed: 2026-06-22
 ---
 
 # /configure:repo
@@ -77,6 +77,10 @@ This step generates `scripts/install_pkgs.sh` with idempotent tool installs gate
 
 If the project uses language-level deps (Python, Node, Rust, Go), also invoke `/hooks:session-start-hook --remote-only` using the SlashCommand tool to add dependency installation to the hook script.
 
+### Step 3b: Configure .gitattributes
+
+Invoke `/configure:gitattributes --fix` using the SlashCommand tool. This applies the zero-risk baseline (LF normalization for shell scripts, `linguist-generated` for build output) and surfaces any append-only-table `merge=union` candidates as recommendations. See `.claude/rules/gitattributes.md`.
+
 ### Step 4: Offer migrations (unless --skip-migrations)
 
 Detect these migratable patterns and ask whether to run each migration via `AskUserQuestion`:
@@ -108,6 +112,7 @@ Run `git status` to list all created/modified files. Stage the relevant files:
 ```bash
 git add .claude/settings.json
 git add scripts/install_pkgs.sh        # if created
+git add .gitattributes                 # if created/updated
 git add .github/workflows/claude.yml   # if created
 git add .github/workflows/claude-code-review.yml  # if created
 ```
@@ -166,6 +171,7 @@ This skill orchestrates these dependencies. If any dependency's `modified:` date
 |------------|------|
 | `/configure:claude-plugins` | `configure-plugin/skills/configure-claude-plugins/SKILL.md` |
 | `/configure:web-session` | `configure-plugin/skills/configure-web-session/SKILL.md` |
+| `/configure:gitattributes` | `configure-plugin/skills/configure-gitattributes/SKILL.md` |
 | `/hooks:session-start-hook` | `hooks-plugin/skills/hooks-session-start-hook/SKILL.md` |
 | `/health:check` | `health-plugin/skills/health-check/SKILL.md` |
 | `/migration-patterns:mypy-to-ty` | `migration-patterns-plugin/skills/mypy-to-ty/SKILL.md` |
@@ -177,5 +183,6 @@ This skill orchestrates these dependencies. If any dependency's `modified:` date
 
 - `/configure:claude-plugins` — Configure plugins, permissions, and marketplace enrollment
 - `/configure:web-session` — SessionStart hook for infrastructure tools
+- `/configure:gitattributes` — `.gitattributes` merge/diff hygiene (union merge, linguist-generated, LF)
 - `/health:check` — Claude Code configuration health check
 - `scripts/check-driver-freshness.sh` — Detect when this driver is out of sync with its dependencies
