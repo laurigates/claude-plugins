@@ -11,6 +11,11 @@
 #   D. a find against a missing subdir is FAIL (the #1482 fragility class)
 #   E. git history commands PASS in the sandbox (it has one commit) — no
 #      false positive from a bare repo
+#   F. a `!`backtick`` inside a fenced code block, and a markdown table row
+#      whose cell ends in `!` abutting the next cell's backtick, are NOT
+#      extracted/executed (#1744 false-positive class)
+#   G. no `printf: write error: Broken pipe` noise on harness stderr — the
+#      classification greps use here-strings, not `printf | grep` (#1744 race)
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -32,7 +37,7 @@ workdir="$(mktemp -d)"
 trap 'rm -rf "$workdir"' EXIT
 mkdir -p "$workdir/skills/bad-grep" "$workdir/skills/good-find" \
          "$workdir/skills/env-tool" "$workdir/skills/missing-dir" \
-         "$workdir/skills/git-history"
+         "$workdir/skills/git-history" "$workdir/skills/fence-table"
 
 cat > "$workdir/skills/bad-grep/SKILL.md" <<'EOF'
 ---
@@ -75,6 +80,27 @@ name: git-history
 - Last commit: !`git log --max-count=1 --format='%h %ci'`
 EOF
 
+# F fixture: the only `!`backtick`` occurrences are inside a fenced code block
+# and inside a markdown table row — neither is a real Context command. A correct
+# harness extracts NOTHING here. A buggy one runs the fenced `gh` command
+# (ENV_MISSING) and the table row (UNPARSEABLE syntax error).
+cat > "$workdir/skills/fence-table/SKILL.md" <<'EOF'
+---
+name: fence-table
+---
+## Examples
+
+```markdown
+- Run status: !`gh run view $ID --json status,conclusion`
+```
+
+## File Signatures
+
+| Signature | Hex |
+|-----------|-----|
+| `Rar!` | `52 61 72 21` |
+EOF
+
 report() {
   bash "$harness" --repo-root "$workdir" --files "$workdir/$1" 2>/dev/null
 }
@@ -106,6 +132,21 @@ assert "D: find against a missing subdir is FAIL (#1482 class)" "$d_ok"
 erep="$(report skills/git-history/SKILL.md)"
 echo "$erep" | grep -q '^FAIL=0$' && echo "$erep" | grep -q '^PASS=2$' && e_ok=true || e_ok=false
 assert "E: git history commands PASS in the one-commit sandbox" "$e_ok"
+
+# F. fenced + table `!`backtick`` occurrences are NOT extracted (verbose so the
+#    non-FAIL kinds are visible in the report). A buggy harness yields
+#    UNPARSEABLE>=1 (table row) and/or ENV_MISSING>=1 (fenced gh command).
+frep="$(bash "$harness" --repo-root "$workdir" --files "$workdir/skills/fence-table/SKILL.md" --verbose 2>/dev/null)"
+echo "$frep" | grep -q '^PASS=0$' \
+  && echo "$frep" | grep -q '^FAIL=0$' \
+  && echo "$frep" | grep -q '^UNPARSEABLE=0$' \
+  && echo "$frep" | grep -q '^ENV_MISSING=0$' && f_ok=true || f_ok=false
+assert "F: fenced/table !\`backtick\` is skipped, not executed (#1744)" "$f_ok"
+
+# G. the classification path emits no broken-pipe noise on harness stderr.
+gerr="$(bash "$harness" --repo-root "$workdir" --files "$workdir/skills/bad-grep/SKILL.md" 2>&1 >/dev/null)"
+echo "$gerr" | grep -q 'Broken pipe' && g_ok=false || g_ok=true
+assert "G: no 'write error: Broken pipe' on harness stderr (#1744)" "$g_ok"
 
 echo "----"
 echo "PASS=$pass_count FAIL=$fail_count"

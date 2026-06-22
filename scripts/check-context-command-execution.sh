@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2016,SC2094  # skill commands contain $ literally; run_one executes in $sandbox, not the file being read
+# shellcheck disable=SC2016,SC2094,SC2015  # skill commands contain $ literally; run_one executes in $sandbox, not the file being read; SC2015 sandbox guard is intentional (either check failing is the error → exit)
 # Execution harness for SKILL.md `## Context` backtick commands.
 #
 # WHY THIS EXISTS
@@ -140,7 +140,12 @@ UNPARSEABLE_RE='unexpected EOF while looking for matching|syntax error near unex
 run_one() {
   local file="$1" lineno="$2" cmd="$3"
   # Refuse to execute mutating/network commands.
-  if printf '%s' "$cmd" | grep -Eq "$DENY_RE"; then
+  # Use a here-string (not `printf | grep`): under `set -o pipefail`, a
+  # `grep -q` that matches and closes the pipe early while printf is still
+  # writing a large string makes printf take SIGPIPE (141), and pipefail then
+  # reports the pipeline as non-zero — flipping the `if` result nondeterminably
+  # (the #1744 broken-pipe race). A here-string has no pipe, so it is exact.
+  if grep -Eq "$DENY_RE" <<<"$cmd"; then
     skipped=$((skipped + 1))
     return
   fi
@@ -164,10 +169,13 @@ run_one() {
     return
   fi
 
+  # Classify via here-strings, not `printf | grep` — see the DENY_RE note above
+  # (#1744): the pipefail/SIGPIPE race could misclassify a FAIL as
+  # UNPARSEABLE/ENV_MISSING (or vice versa) depending on a write timing race.
   local kind=""
-  if printf '%s' "$err" | grep -Eqi "$UNPARSEABLE_RE"; then
+  if grep -Eqi "$UNPARSEABLE_RE" <<<"$err"; then
     unparseable=$((unparseable + 1)); kind="UNPARSEABLE"
-  elif printf '%s' "$err" | grep -Eqi "$ENV_RE"; then
+  elif grep -Eqi "$ENV_RE" <<<"$err"; then
     env_missing=$((env_missing + 1)); kind="ENV_MISSING"
   else
     fail=$((fail + 1)); kind="FAIL"
@@ -183,8 +191,28 @@ run_one() {
 for file in "${files[@]}"; do
   [ -f "$file" ] || continue
   lineno=0
+  in_fence=0
   while IFS= read -r line; do
     lineno=$((lineno + 1))
+    # Strip leading whitespace for the structural (fence / table) checks.
+    trimmed="${line#"${line%%[![:space:]]*}"}"
+    # A real Context command is a list item (`- <label>: !`<cmd>``). Anything
+    # inside a fenced code block (``` / ~~~) is documentation, not a live
+    # command — toggle the fence flag and skip the whole block (#1744:
+    # gh-cli-agentic:299 had a `!`backtick`` example inside a ```markdown fence).
+    case "$trimmed" in
+      '```'*|'~~~'*)
+        in_fence=$((1 - in_fence))
+        continue ;;
+    esac
+    [ "$in_fence" -eq 1 ] && continue
+    # Skip markdown table rows (start with `|`). A literal-backtick cell that
+    # ends in `!` (e.g. `Rar!`) abuts the next cell's opening backtick and
+    # spuriously matches the `!`` pattern (#1744: binary-analysis:204). A real
+    # Context command line starts with `-`, never `|`, so this cannot drop one.
+    case "$trimmed" in
+      '|'*) continue ;;
+    esac
     # Match a Context backtick command:  - <label>: !`<cmd>`
     case "$line" in
       *'!`'*'`'*) : ;;

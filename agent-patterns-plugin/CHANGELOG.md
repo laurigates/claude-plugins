@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.29.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.29.0...agent-patterns-plugin-v2.29.1) (2026-06-22)
+
+
+### Documentation
+
+* **agent-patterns-plugin:** document GIT_DIR-export worktree leak + burst-retry cleanup ([#1746](https://github.com/laurigates/claude-plugins/issues/1746)) ([37c0972](https://github.com/laurigates/claude-plugins/commit/37c09721c5598f9667bf20b8fc4a17fafdcf9045))
+
 ## [2.29.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.28.0...agent-patterns-plugin-v2.29.0) (2026-06-22)
 
 

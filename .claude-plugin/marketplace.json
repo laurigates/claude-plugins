@@ -23,7 +23,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.29.0",
+      "version": "2.29.1",
       "keywords": [
         "agents",
         "configuration",
@@ -194,7 +194,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.27.0",
+      "version": "1.28.0",
       "keywords": [
         "infrastructure",
         "standards",
