@@ -381,6 +381,44 @@ assert_allow \
   "git log on main is allowed" \
   "git log --oneline"
 
+# ── auto mode: the hook defers to auto mode's own classifier ────────────────
+echo ""
+echo "auto mode defers to the classifier (no double-gating):"
+
+# run_hook_mode <command-string> <permission_mode> — like run_hook but stamps
+# the permission_mode field that real clients send.
+run_hook_mode() {
+  local cmd_str="$1" mode_val="$2"
+  local input
+  input=$(jq -nc --arg cmd "$cmd_str" --arg cwd "$TEST_REPO" --arg mode "$mode_val" \
+    '{tool_name:"Bash",cwd:$cwd,permission_mode:$mode,tool_input:{command:$cmd}}')
+  ( cd "$TEST_REPO"; printf '%s' "$input" | bash "$HOOK" )
+}
+
+# A bare `git commit` on main is denied in default mode but must be silently
+# allowed under permission_mode "auto" — auto mode's classifier owns the call.
+out=$(run_hook_mode "git commit -m 'feat: x'" "auto")
+if [ -z "$out" ]; then
+  printf "  PASS: %s\n" "git commit on main is allowed under permission_mode=auto"
+  PASS=$((PASS + 1))
+else
+  printf "  FAIL: %s\n        expected silent allow, got: %s\n" \
+    "git commit on main under auto" "$out"
+  FAIL=$((FAIL + 1))
+fi
+
+# The same command in default mode (explicit) must still be denied — the gate
+# is auto-specific, not a blanket disable.
+out=$(run_hook_mode "git commit -m 'feat: x'" "default")
+if echo "$out" | grep -q '"permissionDecision":"deny"'; then
+  printf "  PASS: %s\n" "git commit on main is still denied under permission_mode=default"
+  PASS=$((PASS + 1))
+else
+  printf "  FAIL: %s\n        expected deny, got: %s\n" \
+    "git commit on main under default" "${out:-<empty>}"
+  FAIL=$((FAIL + 1))
+fi
+
 # ── Summary ─────────────────────────────────────────────────────────────────
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
