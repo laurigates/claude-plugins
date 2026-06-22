@@ -100,6 +100,23 @@ git init -q --bare "$ORIGIN"
 EOF
 assert_count "unguarded mktemp -d + git init --bare is flagged" 1 "$d7"
 
+# 8. Unguarded `mktemp -d` + git op inside the gitignored dist/ rulesync build
+#    output → NOT flagged (pruned, mirroring the #1492/#1548 worktrees prune). A
+#    control copy OUTSIDE dist/ in the same root IS flagged, proving the prune is
+#    scoped (count == 1, not 0 or 2).
+d8="$WORK/dist-prune"; mkdir -p "$d8/dist/opencode/skills/x/scripts/tests"
+cat > "$d8/dist/opencode/skills/x/scripts/tests/test-leak.sh" <<'EOF'
+#!/usr/bin/env bash
+SBX=$(mktemp -d)
+git -C "$SBX" init -q
+EOF
+cat > "$d8/real-bad.sh" <<'EOF'
+#!/usr/bin/env bash
+SBX=$(mktemp -d)
+git -C "$SBX" init -q
+EOF
+assert_count "dist/ build output is pruned (only the non-dist script is flagged)" 1 "$d8"
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ] && exit 0 || exit 1

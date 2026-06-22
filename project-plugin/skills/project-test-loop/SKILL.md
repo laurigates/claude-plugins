@@ -4,7 +4,7 @@ args: "[test-pattern] [--max-cycles <N>]"
 argument-hint: "Test pattern to focus on, --max-cycles to limit iterations"
 allowed-tools: Read, Edit, Bash
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-06-21
 reviewed: 2026-04-25
 name: project-test-loop
 ---
@@ -173,6 +173,13 @@ Stop and report if:
 - Error in test command itself (TEST SETUP ISSUE)
 - External dependency unavailable (BLOCKED)
 - Unclear how to fix (NEEDS USER INPUT)
+
+**Loop integrity**: this loop's stop condition is the test suite itself — an
+*independent*, mechanical judge (a failing test does not care how hard you
+worked), which is exactly what `.claude/rules/loop-integrity.md` Pillar 1 asks
+for. The `--max-cycles` flag and the "same test fails 3×" rule are the runaway
+ceiling. Do **not** make tests pass by editing the tests — that converts the
+independent judge into a self-judged loop.
 
 **Integration with Blueprint Development**:
 

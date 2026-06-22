@@ -373,6 +373,22 @@ check_skill_body() {
       fi
     fi
 
+    # Regression: parallel-agent-dispatch must document dispatching a Skill-less
+    # agentType for read-only fan-out. A general-purpose subagent carries the
+    # Skill tool, which injects the ~88k-char skill_listing attachment up front;
+    # combined with file reads + a forced StructuredOutput schema it overflows
+    # the context window (40-100% batch failures). The fix recommends a
+    # Skill-less agentType (no skill_listing tax) for read-only fan-out
+    # (issue #1549, folds #1550). Guards a bulk edit dropping the guidance.
+    if [ "$skill_name" = "parallel-agent-dispatch" ]; then
+      for token in "skill_listing" "Skill-less agentType"; do
+        if ! grep -q -- "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain '${token}' (Skill-less read-only fan-out guidance, issue #1549)")
+          has_errors=true
+        fi
+      done
+    fi
+
     # Regression: evaluate-legibility's Step-3 triage and the cold-reader prompt
     # depend on the verdict vocabulary (`clear` / `needs-revision`) and the
     # QUESTIONS / HESITATIONS critique headings reused from cold-read-gate. A
@@ -477,6 +493,22 @@ check_skill_body() {
         issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain 'subscribe_pr_activity' (the native PR-watch MCP tool — see .claude/rules/pr-branch-sync.md)")
         has_errors=true
       fi
+    fi
+
+    # Regression: git-pr-feedback must foreground verifying automated-reviewer
+    # claims before accepting them — automated reviewers (Gemini Code Assist,
+    # Copilot) produce confidently-wrong suggestions, and the fix/refute/defer
+    # flow must carry a `Refuted` action (reply with the refutation + evidence,
+    # do not change code). A bulk edit dropping the verification prose or the
+    # Refuted row would silently restore "apply bot suggestions on trust"
+    # (issue #1545).
+    if [ "$skill_name" = "git-pr-feedback" ]; then
+      for token in 'automated reviewer' 'Refuted'; do
+        if ! grep -qF "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain verify-automated-reviewer-claims token '${token}' (issue #1545)")
+          has_errors=true
+        fi
+      done
     fi
 
     # Regression: code-review is the canary for restoring `context: fork` after
