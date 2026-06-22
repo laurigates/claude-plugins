@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.48.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.47.0...git-plugin-v2.48.0) (2026-06-22)
+
+
+### Features
+
+* **git-plugin:** detect bare-checkout flip + wiped-untracked recovery in coworker-check ([#1742](https://github.com/laurigates/claude-plugins/issues/1742)) ([7e1649b](https://github.com/laurigates/claude-plugins/commit/7e1649b2c9c1fbcb331cef5d3372f70ddc630d2f))
+
 ## [2.47.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.46.2...git-plugin-v2.47.0) (2026-06-22)
 
 
