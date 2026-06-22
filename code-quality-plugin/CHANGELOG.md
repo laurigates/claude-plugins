@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.1](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.17.0...code-quality-plugin-v1.17.1) (2026-06-22)
+
+
+### Bug Fixes
+
+* **code-quality-plugin:** skip preflight cue for diagram files ([#1735](https://github.com/laurigates/claude-plugins/issues/1735)) ([50f58ac](https://github.com/laurigates/claude-plugins/commit/50f58ac7aceba25c6ea9f118352135ac8b176aea)), closes [#1730](https://github.com/laurigates/claude-plugins/issues/1730)
+
 ## [1.17.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.16.0...code-quality-plugin-v1.17.0) (2026-06-18)
 
 
