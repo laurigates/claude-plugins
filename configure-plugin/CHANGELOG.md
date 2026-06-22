@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.29.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.28.0...configure-plugin-v1.29.0) (2026-06-22)
+
+
+### Features
+
+* **configure-plugin:** configure-gitattributes skill + additive-conflict auto-resolution ([#1759](https://github.com/laurigates/claude-plugins/issues/1759)) ([9f9a5e0](https://github.com/laurigates/claude-plugins/commit/9f9a5e01cac955330cec334711a7b646c878c758))
+
 ## [1.28.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.27.0...configure-plugin-v1.28.0) (2026-06-22)
 
 
