@@ -72,6 +72,21 @@ else
   shopt -u nullglob
 fi
 
+# extract_flag <file> <model|effort> — emit each flag value found at a genuine
+# invocation site, one per line. Two sites only, so prose that merely *mentions*
+# the flags (e.g. a prompt: block documenting `--model`/`--effort`) never counts:
+#   (a) inside a claude_args: "..." string (claude-code-action form)
+#   (b) a flag-only continuation line `--model <v>` / `--effort <v>` anchored at
+#       line start (the npx @anthropic-ai/claude-code CLI form)
+extract_flag() {
+  local f="$1" flag="$2"
+  {
+    grep -oE "claude_args:[[:space:]]*\"[^\"]*\"" "$f" 2>/dev/null \
+      | grep -oE -- "--${flag}[ =]+[a-zA-Z0-9._-]+" || true
+    grep -oE "^[[:space:]]*--${flag}[ =]+[a-zA-Z0-9._-]+" "$f" 2>/dev/null || true
+  } | sed -E "s/.*--${flag}[ =]+//" | tr -d '\r'
+}
+
 # is_allowlisted <file> — true if the file matches a WORKFLOW_MODEL_ALLOWLIST
 # entry (compared by trailing path so callers can pass relative or absolute).
 is_allowlisted() {
@@ -119,11 +134,10 @@ for wf in "${workflow_files[@]}"; do
 
   invoking=$((invoking + 1))
 
-  # Extract every --model / --effort value (claude_args string OR CLI flag).
-  models=$(grep -oE -- '--model[ =]+[a-zA-Z0-9._-]+' "$wf" 2>/dev/null \
-    | sed -E 's/^--model[ =]+//' | tr -d '\r' || true)
-  efforts=$(grep -oE -- '--effort[ =]+[a-zA-Z0-9._-]+' "$wf" 2>/dev/null \
-    | sed -E 's/^--effort[ =]+//' | tr -d '\r' || true)
+  # Extract --model / --effort values from genuine invocation sites only
+  # (claude_args string + CLI flag-only lines) — never from prose.
+  models=$(extract_flag "$wf" model)
+  efforts=$(extract_flag "$wf" effort)
 
   wf_rel="${wf#"$proj_dir"/}"
 

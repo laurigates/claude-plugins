@@ -16,6 +16,8 @@
 #   I. a reusable-only workflow is skipped, exit 0
 #   J. `--effort bogus` (invalid level) exits 1 (invalid_effort)
 #   K. an allowlisted file is honored (via the CHECK_WORKFLOW_MODEL_ALLOWLIST seam)
+#   L. a prompt: block that DOCUMENTS `--model`/`--effort` in prose does not
+#      false-positive (extraction is scoped to claude_args + CLI flag lines)
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -134,7 +136,7 @@ assert "real repo exits 0" "$([ "$RC" -eq 0 ] && echo true || echo false)"
 # --- TEST B: opus+effort claude_args fixture ---------------------------------
 echo "=== TEST B: opus+effort claude_args exits 0 ==="
 fx_b="$(mktemp -d)"
-trap 'rm -rf "$fx_b" "${fx_c:-}" "${fx_d:-}" "${fx_e:-}" "${fx_f:-}" "${fx_g:-}" "${fx_h:-}" "${fx_i:-}" "${fx_j:-}" "${fx_k:-}"' EXIT
+trap 'rm -rf "$fx_b" "${fx_c:-}" "${fx_d:-}" "${fx_e:-}" "${fx_f:-}" "${fx_g:-}" "${fx_h:-}" "${fx_i:-}" "${fx_j:-}" "${fx_k:-}" "${fx_l:-}"' EXIT
 make_action_workflow "$fx_b/.github/workflows/good.yml" "--model opus --effort low --max-turns 25"
 run "$fx_b"
 assert "opus+effort fixture exits 0" "$([ "$RC" -eq 0 ] && echo true || echo false)"
@@ -219,6 +221,29 @@ k_out="$(CHECK_WORKFLOW_MODEL_ALLOWLIST='.github/workflows/instrument.yml' \
 k_rc=$?
 assert "allowlisted haiku workflow exits 0" "$([ "$k_rc" -eq 0 ] && echo true || echo false)"
 assert "allowlisted file is not named as an error" "$([ "$(contains "$k_out" 'instrument.yml')" = "false" ] && echo true || echo false)"
+
+# --- TEST L: prompt prose mentioning the flags must not false-positive --------
+echo "=== TEST L: prompt prose documenting --model/--effort does not false-positive ==="
+fx_l="$(mktemp -d)"
+mkdir -p "$fx_l/.github/workflows"
+cat > "$fx_l/.github/workflows/audit.yml" <<'EOF'
+name: "Fixture: audit workflow"
+on: { workflow_dispatch: {} }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_args: "--model opus --effort medium --max-turns 25"
+          prompt: |
+            Audit whether each workflow uses the right --model/--effort for its
+            job. Recommend raising --effort to high, or lowering --effort to low.
+EOF
+run "$fx_l"
+assert "prose-mentioning fixture exits 0" "$([ "$RC" -eq 0 ] && echo true || echo false)"
+assert "prose-mentioning fixture STATUS=OK" "$(contains "$OUT" 'STATUS=OK')"
+assert "prose-mentioning fixture counts 1 invoking" "$(contains "$OUT" 'INVOKING_WORKFLOWS=1')"
 
 # --- Summary -----------------------------------------------------------------
 echo ""
