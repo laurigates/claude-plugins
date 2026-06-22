@@ -7,6 +7,9 @@ on:
       - '*-plugin/**'
       - '.claude-plugin/marketplace.json'
       - '**/skills/**'
+      # Workflow changes must trigger the agent-model and workflow-model guards
+      # (both run unconditionally below) — workflow model/effort drift lives here.
+      - '.github/workflows/**'
 
 concurrency:
   group: plugin-pr-checks-${{ github.event.pull_request.number }}
