@@ -337,6 +337,7 @@ follow-up cleanly closed the gap left by a rate-limited cascade agent.
 | 6+ agents queued at dispatch time | Split into waves of ≤ 5 |
 | Wave returns with one or two `Rate limited` agents | Recovery-dispatch the missed slice; do not retry the whole wave |
 | Same agent rate-limits twice in a row | Smaller scope or staggered dispatch — the wave size is still too high |
+| Burst killed agents at **startup** (worktree fan-out died before committing) | `git worktree prune` + delete the empty leftover branches before the reduced-concurrency retry — else each agent's `git switch -c <branch>` collides with the orphaned ref |
 
 ## Worktree cwd-reset guardrail (#1480)
 
@@ -379,3 +380,31 @@ A changed branch or new dirty state is silent main-repo mutation — treat it
 the same as a missing Return Contract (see SKILL.md "Handling a Missing
 Return") and salvage before reporting the task complete. `agent-teams` Lead
 Preflight Checklist adds file-scope and pin-budget checks that stack on top.
+
+## Worktree GIT_DIR-export leak (#1692)
+
+The empty-`mktemp -d` vector (`git -C ""` falling back to CWD) is guarded by
+`scripts/check-git-sandbox-guards.sh` (#1692). A **distinct** vector is not:
+**exporting `GIT_DIR` / `GIT_WORK_TREE`**. `GIT_DIR` takes precedence over
+`git -C <path>` gitdir discovery, so once it is exported pointing at a real
+repo's gitdir, *every* `git` command — including any test/hook subprocess that
+shells to `git` — operates on that gitdir's **common config**, regardless of
+`-C` or cwd. A `git config core.bare true` (common scope) then flips the
+**shared** checkout to bare, breaking the main checkout and every linked
+worktree simultaneously, often injecting a junk `[user]`/`[commit]` too.
+
+Observed (2026-06-21): an agent on a corrupted worktree exported `GIT_DIR` to
+force git to run; a regression test that shells `git init` / `git config` then
+wrote `core.bare = true` + a junk `[user]` into the shared `.git/config`,
+breaking ~35 sibling worktrees mid-run. The detection complement is
+`/git:coworker-check`'s `bare_flip_suspected` verdict; the test-suite cause is
+tracked separately.
+
+### Rules
+
+| Rule | Why |
+|------|-----|
+| A worktree showing `core.bare = true` / `fatal: this operation must be run in a work tree` **is shared-checkout corruption** — STOP and report it. | It is the #1692 class; "working around" it spreads the damage to every worktree. |
+| Never `export GIT_DIR` / `GIT_WORK_TREE` to make git work in a broken worktree. | The export redirects every later git op (and git-shelling subprocess) at the shared gitdir's common config. |
+| If a subprocess must run git in a sandbox, neutralize inherited env: `env -u GIT_DIR -u GIT_WORK_TREE git -C "$dir" …`. | Stops an inherited `GIT_DIR` from hijacking the sandbox op even when the path is correct. |
+| Repair, don't paper over: `git config core.bare false`; remove junk `[user]`/`[commit]`; verify `git rev-parse --is-bare-repository` = false. | Restores the shared checkout for the main repo and all worktrees. |
