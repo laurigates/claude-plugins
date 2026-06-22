@@ -44,8 +44,8 @@ jobs:
 
           # Recent run health per invoking workflow. gh output (conclusion
           # enums, repo-controlled file names) is kept in shell variables and
-          # never interpolated into run: via the ${{ }} template, per
-          # .claude/rules/github-actions-security.md.
+          # never interpolated into the run block via a GitHub Actions
+          # expression template, per .claude/rules/github-actions-security.md.
           {
             echo "## Config drift (scripts/check-workflow-model.sh)"
             echo ""
