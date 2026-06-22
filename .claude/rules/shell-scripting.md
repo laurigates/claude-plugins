@@ -304,16 +304,39 @@ Even with bash 5+, some CLI tools differ between macOS (BSD) and Linux (GNU). Us
 
 | Tool | macOS (BSD) | Linux (GNU) | Portable |
 |------|-------------|-------------|----------|
-| `date` | `date -j -f "%Y-%m-%d"` | `date -d "2024-01-01"` | Detect with fallback |
+| `date` | `date -j -f "%Y-%m-%d %H:%M:%S" "$d 00:00:00"` | `date -d "$d 00:00:00"` | Pin the time component (see below) |
 | `sed -i` | `sed -i ''` | `sed -i` | Use `sed -i.bak` + `rm` |
 | `grep -P` | Not available | PCRE support | Use `grep -E` (extended regex) |
 
+#### BSD `date` fills unspecified time fields with the *current* time
+
+`date -j -f "%Y-%m-%d" "$d" "+%s"` does **not** parse a bare date as
+midnight on BSD/macOS — it fills the unspecified hour/minute/second with
+the **current wall-clock time**. So the same date string parsed a second
+apart returns epochs that differ by one second:
+
 ```bash
-# Cross-platform date comparison
-if date -j -f "%Y-%m-%d" "$past_date" "+%s" >/dev/null 2>&1; then
-  past_ts=$(date -j -f "%Y-%m-%d" "$past_date" "+%s")
-elif date -d "$past_date" "+%s" >/dev/null 2>&1; then
-  past_ts=$(date -d "$past_date" "+%s")
+date -j -f "%Y-%m-%d" "2026-06-21" "+%s"   # 1782064565
+date -j -f "%Y-%m-%d" "2026-06-21" "+%s"   # 1782064566  ← same date, +1s
+```
+
+Any code that parses two dates separately and compares them (`-gt`, `-lt`)
+is then **non-deterministic**: an `equal` comparison flips to `newer`
+whenever the two `date` calls straddle a second boundary. This was the
+root cause of the `check-driver-freshness.sh` flake (#1704 / PR #1764),
+where a dependency date equal to the driver's review date intermittently
+compared as newer.
+
+Fix: parse an explicit `00:00:00` so the epoch is a pure function of the
+date on both platforms. (GNU `date -d "$d"` already parses a bare date as
+midnight, but pinning the time keeps both branches identical.)
+
+```bash
+# Cross-platform date → epoch — deterministic (time-of-day independent)
+if date -j -f "%Y-%m-%d %H:%M:%S" "$past_date 00:00:00" "+%s" >/dev/null 2>&1; then
+  past_ts=$(date -j -f "%Y-%m-%d %H:%M:%S" "$past_date 00:00:00" "+%s")  # BSD/macOS
+elif date -d "$past_date 00:00:00" "+%s" >/dev/null 2>&1; then
+  past_ts=$(date -d "$past_date 00:00:00" "+%s")                        # GNU/Linux
 fi
 ```
 ## Checklist for New Commands
