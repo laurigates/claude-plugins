@@ -43,6 +43,7 @@ Plugin: PR checks
 Plugin: Scheduled audits
 Plugin: Skill splitter
 Plugin: Validate configs
+Plugin: Workflow model audit
 Release: Fix release-please conflicts
 Release: PR documentation audit
 Release: release-please

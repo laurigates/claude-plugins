@@ -148,7 +148,8 @@ jobs:
           GH_TOKEN: ${{ secrets.MY_RELEASE_PLEASE_TOKEN || github.token }}
         run: |
           cat <<'PROMPT_EOF' | npx @anthropic-ai/claude-code --print \
-            --model haiku \
+            --model opus \
+            --effort medium \
             --max-turns 20 \
             --allowedTools "Read,Edit,Grep,Glob,TodoWrite,Bash(git status *),Bash(git diff *),Bash(git log *),Bash(git show *),Bash(git add *),Bash(git commit *),Bash(git push *),Bash(git merge *),Bash(gh pr *),Bash(jq *)" \
             -

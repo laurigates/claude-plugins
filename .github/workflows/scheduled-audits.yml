@@ -169,7 +169,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          claude_args: "--model haiku --max-turns 15"
+          claude_args: "--model opus --effort low --max-turns 15"
           prompt: |
             Perform a monthly agentic quality audit on skills in this plugin repository.
             Read .claude/rules/agentic-optimization.md and .claude/rules/skill-quality.md for standards.
@@ -187,8 +187,8 @@ jobs:
 
             ### 2. Model Appropriateness
             - Read `model` field from frontmatter of flagged skills
-            - `haiku` for CLI tools, `sonnet` for development workflows, `opus` for deep reasoning
-            - Flag potentially misassigned models
+            - Default to `opus`; `effort` (not `model`) is the cost lever. Never `haiku` (it can't format AskUserQuestion and supports no effort). See `.claude/rules/skill-development.md`.
+            - Flag any skill pinned to `haiku`, or to `sonnet` without a clear reason
 
             ### 3. Description Quality
             - Read `description` field from flagged skills

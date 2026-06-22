@@ -70,3 +70,4 @@ When you add a new skill that scaffolds a workflow, register it here.
 
 - `.github/workflows/README.md` — current name list and per-domain rationale
 - `.claude/rules/conventional-commits.md` — analogous Domain-style scope rule for commits and PR titles
+- `.claude/rules/workflow-model-effort.md` — sibling workflow-surface standard: the Claude `--model opus` + explicit `--effort` requirement for the same `.github/workflows` files

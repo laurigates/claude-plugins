@@ -52,6 +52,7 @@ Claude Code plugin collection providing skills and agents for development workfl
 | `.claude/rules/pr-branch-sync.md` | **Before building further on a PR branch**, confirm it's live and in sync (remote sibling of coworker-detection) — the `/git:pr-sync-check` skill + `check-branch-sync-on-push.sh` hook + `git-drift-probe.sh` trio |
 | `.claude/rules/workflow-naming.md` | `<Domain>: <Action>` naming for `.github/workflows/*.yml` and skill-generated workflow examples |
 | `.claude/rules/github-actions-security.md` | **GitHub Actions secure-use baseline** — least-privilege `GITHUB_TOKEN`, script-injection env-var indirection, `pull_request_target` hazards, CODEOWNERS on workflows; the checklist every workflow-scaffolding skill follows |
+| `.claude/rules/workflow-model-effort.md` | **Workflow Claude model/effort standard** — every `.github/workflows` invocation pins `--model opus` + explicit `--effort` (cost-economics, not the subagent-contamination argument); enforced by `check-workflow-model.sh` |
 | `.claude/rules/bash-tool-replacements.md` | `find`/`grep`/`rg`/`cat`/`head`/`tail` → dedicated tools; when the Bash form is genuinely fine |
 | `.claude/rules/gh-json-fields.md` | Correct `gh --json` field names (PR `state`/`mergedAt`, not `merged`); how to discover field lists |
 | `.claude/rules/structured-script-output.md` | `=== HEADER ===` / `KEY=VALUE` / `STATUS=` convention for diagnostic shell scripts |
