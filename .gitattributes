@@ -1,0 +1,24 @@
+# Git attributes — merge, diff, and checkout behavior by path.
+# See .claude/rules/ and docs; companion to scripts/resolve-additive-conflicts.py
+# and .github/workflows/auto-resolve-conflicts.yml.
+
+# --- Line endings -----------------------------------------------------------
+# Normalize all text to LF in the repo. Protects the ~200 shell hooks/check
+# scripts from CRLF corruption (a CRLF shebang line silently breaks execution).
+# No-op on the current tree (already 100% LF), so it adds safety without churn.
+* text=auto eol=lf
+*.sh text eol=lf
+
+# --- Append-only union merges ----------------------------------------------
+# These files are append-only logs/tables: every bug-fix PR adds a row, and
+# parallel PRs therefore conflict on the *same anchor* with disjoint additions.
+# The built-in `union` driver concatenates both sides' additions with no
+# conflict markers and no LLM. ONLY safe for genuinely append-only files —
+# never apply to code or JSON (union duplicates edited lines / breaks syntax).
+.claude/rules/regression-testing.md merge=union
+
+# --- Generated files (GitHub linguist) -------------------------------------
+# Collapse in PR diffs and exclude from language stats. release-please owns
+# these; reviewers should not wade through their churn.
+**/CHANGELOG.md linguist-generated=true
+.release-please-manifest.json linguist-generated=true
