@@ -479,6 +479,22 @@ check_skill_body() {
       fi
     fi
 
+    # Regression: git-pr-feedback must foreground verifying automated-reviewer
+    # claims before accepting them — automated reviewers (Gemini Code Assist,
+    # Copilot) produce confidently-wrong suggestions, and the fix/refute/defer
+    # flow must carry a `Refuted` action (reply with the refutation + evidence,
+    # do not change code). A bulk edit dropping the verification prose or the
+    # Refuted row would silently restore "apply bot suggestions on trust"
+    # (issue #1545).
+    if [ "$skill_name" = "git-pr-feedback" ]; then
+      for token in 'automated reviewer' 'Refuted'; do
+        if ! grep -qF "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain verify-automated-reviewer-claims token '${token}' (issue #1545)")
+          has_errors=true
+        fi
+      done
+    fi
+
     # Regression: code-review is the canary for restoring `context: fork` after
     # the plugin-skill blocker (anthropics/claude-code#16803) was fixed
     # 2026-04-18. See laurigates/claude-plugins#980 and
