@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.37.2](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.37.1...blueprint-plugin-v3.37.2) (2026-06-22)
+
+
+### Bug Fixes
+
+* **blueprint-plugin:** scope blueprint-init rules to generated_rules_path and gate migrate default ([#1739](https://github.com/laurigates/claude-plugins/issues/1739)) ([865601b](https://github.com/laurigates/claude-plugins/commit/865601bcc2ea072dea2f5a2f362d4a6cd30f7265))
+
 ## [3.37.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.37.0...blueprint-plugin-v3.37.1) (2026-06-20)
 
 

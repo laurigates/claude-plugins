@@ -295,10 +295,24 @@ check_skill_body() {
     # Regression: blueprint rule-writing skills must reference the configurable
     # output path (`generated_rules_path`) rather than hardcoding `.claude/rules/`.
     # See issue #1043: hardcoded paths collide with hand-authored rules in the
-    # parent .claude/rules/ directory.
-    if [ "$skill_name" = "blueprint-generate-rules" ] || [ "$skill_name" = "blueprint-derive-rules" ]; then
+    # parent .claude/rules/ directory. blueprint-init writes the initial rules
+    # (development.md / testing.md / document-management.md) and must honour the
+    # same configurable path it offers in Step 4a (issue #1675).
+    if [ "$skill_name" = "blueprint-generate-rules" ] || [ "$skill_name" = "blueprint-derive-rules" ] || [ "$skill_name" = "blueprint-init" ]; then
       if ! grep -q "generated_rules_path" "$skill_file"; then
-        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must reference 'generated_rules_path' to honour configurable output directory (issue #1043)")
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must reference 'generated_rules_path' to honour configurable output directory (issue #1043, #1675)")
+        has_errors=true
+      fi
+    fi
+
+    # Regression: blueprint-init Step 3 must gate the "migrate documents
+    # (Recommended)" default on cross-reference density — when a doc is
+    # referenced from OUTSIDE docs/, migration is expensive and the
+    # unconditional recommendation is wrong (issue #1674). The semantic
+    # invariant is that the cross-reference gating survives bulk edits.
+    if [ "$skill_name" = "blueprint-init" ]; then
+      if ! grep -q "referenced outside" "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md Step 3 must gate the migrate-documents recommendation on cross-reference density ('referenced outside' docs/) (issue #1674)")
         has_errors=true
       fi
     fi
