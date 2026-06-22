@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.28.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.27.0...agent-patterns-plugin-v2.28.0) (2026-06-22)
+
+
+### Features
+
+* **workflow-orchestration-plugin:** gate checkpoint phases on an independent verifier ([#1737](https://github.com/laurigates/claude-plugins/issues/1737)) ([165d048](https://github.com/laurigates/claude-plugins/commit/165d0486225ef1d58587ef5547611562eaefd2db))
+
 ## [2.27.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.26.1...agent-patterns-plugin-v2.27.0) (2026-06-21)
 
 

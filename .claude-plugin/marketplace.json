@@ -23,7 +23,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.27.0",
+      "version": "2.28.0",
       "keywords": [
         "agents",
         "configuration",
@@ -493,7 +493,7 @@
       "name": "project-plugin",
       "source": "./project-plugin",
       "description": "Project initialization, management, and maintenance - setup, changelog review, and continuous development workflows",
-      "version": "1.18.4",
+      "version": "1.19.0",
       "keywords": [
         "project",
         "initialization",
@@ -662,7 +662,7 @@
       "name": "workflow-orchestration-plugin",
       "source": "./workflow-orchestration-plugin",
       "description": "Workflow orchestration - parallel agents, CI pipelines, preflight checks, checkpoint refactoring",
-      "version": "1.7.1",
+      "version": "1.8.0",
       "keywords": [
         "workflow",
         "orchestration",
