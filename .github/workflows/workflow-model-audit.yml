@@ -79,12 +79,16 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ github.token }}
           # This workflow makes recommendations (judgment over run health and
           # output samples), so it runs at medium effort - and it must itself
           # satisfy scripts/check-workflow-model.sh.
           claude_args: "--model opus --effort medium --max-turns 25"
           # Read-only gh access so Claude can sample each workflow's actual
           # output (issues/PRs/comments it produced), not just its run status.
+          # Plus issue-create so Claude opens the audit issue itself
+          # (research-radar.yml pattern): the claude-code-action step exposes no
+          # `result` output, so the old downstream gh-create step never fired (#1774).
           additional_permissions: |
             Read
             Grep
@@ -93,6 +97,7 @@ jobs:
             Bash(gh run view *)
             Bash(gh issue list *)
             Bash(gh issue view *)
+            Bash(gh issue create *)
             Bash(gh pr list *)
             Bash(gh pr view *)
             Bash(gh api *)
@@ -100,8 +105,8 @@ jobs:
             You are auditing whether each Claude-invoking GitHub workflow in this
             repository uses the right --model/--effort for its job. Read
             .claude/rules/workflow-model-effort.md for the standard and the
-            canonical per-workflow table. Output ONLY the issue body in markdown.
-            Do NOT edit any files or workflows.
+            canonical per-workflow table. Do NOT edit any files or workflows —
+            your ONLY side effect is creating one GitHub issue (see the end).
 
             Pre-computed deterministic data:
 
@@ -127,20 +132,25 @@ jobs:
             is mechanical and over-spends). Justify each from the job shape plus
             the evidence you sampled.
 
-            Format the output as a GitHub issue body with a summary table
-            (columns: Workflow, Model/effort, Recent runs, Output-quality note,
-            Recommendation), a Config drift section (workflows the guard flagged
-            off-standard, or "none"), and a prioritized Recommendations list.
+            Format the issue body with a summary table (columns: Workflow,
+            Model/effort, Recent runs, Output-quality note, Recommendation), a
+            Config drift section (workflows the guard flagged off-standard, or
+            "none"), and a prioritized Recommendations list.
 
-      - name: Create audit issue
-        if: steps.check_issue.outputs.exists == 'false' && steps.audit.outputs.result
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ISSUE_BODY: ${{ steps.audit.outputs.result }}
-        run: |
-          MONTH=$(date +%Y-%m)
-          printf '%s' "$ISSUE_BODY" > /tmp/issue-body.md
-          gh issue create \
-            --title "Workflow model/effort audit: $MONTH" \
-            --label "workflow-model-audit,maintenance" \
-            --body-file /tmp/issue-body.md
+            Then create the issue yourself with `gh issue create` (your only
+            side effect — do not edit any repo files). Compute the month with
+            `date +%Y-%m` and reproduce this title/labels exactly:
+
+            ```bash
+            MONTH=$(date +%Y-%m)
+            gh issue create \
+              --title "Workflow model/effort audit: $MONTH" \
+              --label "workflow-model-audit,maintenance" \
+              --assignee laurigates \
+              --body "$(cat <<'EOF'
+            ## Workflow model/effort audit: <YYYY-MM>
+
+            (summary table, Config drift section, prioritized Recommendations)
+            EOF
+            )"
+            ```
