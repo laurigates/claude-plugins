@@ -23,7 +23,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.29.2",
+      "version": "2.30.0",
       "keywords": [
         "agents",
         "configuration",
@@ -372,7 +372,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.5.6",
+      "version": "2.5.7",
       "keywords": [
         "hooks",
         "automation",
@@ -585,6 +585,23 @@
       "category": "development"
     },
     {
+      "name": "software-design-plugin",
+      "source": "./software-design-plugin",
+      "description": "Software design methodology - deep modules, design by contract, GoF pattern selection, legacy code seams, and design by pseudocode",
+      "version": "1.1.0",
+      "keywords": [
+        "software-design",
+        "deep-modules",
+        "design-by-contract",
+        "design-patterns",
+        "gang-of-four",
+        "legacy-code",
+        "characterization-tests",
+        "pseudocode"
+      ],
+      "category": "development"
+    },
+    {
       "name": "taskwarrior-plugin",
       "source": "./taskwarrior-plugin",
       "description": "Coordination layer for multi-agent work using taskwarrior - parallel-safe queries, urgency scoring, and optional GitHub linkage via ghid/ghpr UDAs",
@@ -662,7 +679,7 @@
       "name": "workflow-orchestration-plugin",
       "source": "./workflow-orchestration-plugin",
       "description": "Workflow orchestration - parallel agents, CI pipelines, preflight checks, checkpoint refactoring",
-      "version": "1.8.1",
+      "version": "1.9.0",
       "keywords": [
         "workflow",
         "orchestration",
@@ -674,23 +691,6 @@
         "worktree"
       ],
       "category": "automation"
-    },
-    {
-      "name": "software-design-plugin",
-      "source": "./software-design-plugin",
-      "description": "Software design methodology - deep modules, design by contract, GoF pattern selection, legacy code seams, and design by pseudocode",
-      "version": "1.0.0",
-      "keywords": [
-        "software-design",
-        "deep-modules",
-        "design-by-contract",
-        "design-patterns",
-        "gang-of-four",
-        "legacy-code",
-        "characterization-tests",
-        "pseudocode"
-      ],
-      "category": "development"
     }
   ]
 }
