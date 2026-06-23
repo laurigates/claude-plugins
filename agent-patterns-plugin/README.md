@@ -127,7 +127,7 @@ Producer-side patterns for **building** a Python MCP server with FastMCP — the
 - TDD pattern testing the underlying function, not the decorator
 
 #### `agent-teams`
-Configure and orchestrate Claude Code agent teams with TeamCreate, SendMessage, and shared task list workflows.
+Configure and orchestrate Claude Code agent teams (implicit team, SendMessage, shared task list workflows).
 
 **When to use:**
 - Setting up multi-agent parallel workflows

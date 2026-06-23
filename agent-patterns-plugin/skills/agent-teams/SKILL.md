@@ -1,17 +1,19 @@
 ---
 name: agent-teams
-description: Configure Claude Code agent teams (TeamCreate, SendMessage, TaskUpdate). Use when running parallel agents, coordinating with messaging, or setting up a lead/teammate architecture.
+description: Configure Claude Code agent teams (implicit team, SendMessage, TaskUpdate). Use when running parallel agents, coordinating with messaging, or setting up a lead/teammate architecture.
 user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-03-03
-modified: 2026-06-20
-reviewed: 2026-06-14
+modified: 2026-06-23
+reviewed: 2026-06-23
 ---
 
 # Agent Teams
 
-> **Experimental**: Agent teams require the `--enable-teams` flag and may change between Claude Code versions.
+> **Experimental**: Agent teams require `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` and may change between Claude Code versions.
+
+> **BREAKING (Claude Code 2.1.178)**: The explicit `TeamCreate` / `TeamDelete` tools were **removed**. Every session now has **one implicit team** when `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is set — there is nothing to create or tear down. The `team_name` parameter is still **accepted but ignored** on the tools that took it (e.g. `Agent`), so older invocations don't error; omit it in new code. Coordination is otherwise unchanged: spawn teammates with the `Agent` tool, coordinate with `SendMessage`, and track work with `TaskCreate`/`TaskList`/`TaskUpdate`.
 
 For the worked setup examples, communication snippets, shutdown procedures, the
 worktree path-resolution recovery routine, and common dispatch patterns, see
@@ -29,39 +31,41 @@ worktree path-resolution recovery routine, and common dispatch patterns, see
 
 ## Sub-Agent Caveat: Spawn Teams from the Main Thread
 
-`TeamCreate`, `Agent`, and the related parallel-spawn tools may not be present in
-a **sub-agent's** tool surface, even if the parent conversation has them. A
+`Agent` and the related parallel-spawn tools may not be present in a
+**sub-agent's** tool surface, even if the parent conversation has them. A
 sub-agent designed to orchestrate its own team can silently degrade to sequential
 single-thread execution — same content, ~5× longer wall-clock — without surfacing
 the failure until its post-completion summary.
 
 | Situation | Recommended pattern |
 |-----------|---------------------|
-| Fan-out from the main conversation | Spawn the team / parallel `Agent` calls directly — full tool surface available |
+| Fan-out from the main conversation | Spawn parallel `Agent` calls directly — full tool surface available |
 | Sub-agent orchestrating its own team | Avoid by design: split the work so the main thread does the fan-out |
 | Sub-agent must orchestrate a team | Detect tool availability up front; report sequential fallback as a first-class outcome |
 
-**Detection contract** to brief into a coordinating sub-agent: confirm
-`Agent`/`TeamCreate` are callable; if not, do **not** silently fall back — report
+**Detection contract** to brief into a coordinating sub-agent: confirm the
+`Agent` tool is callable; if not, do **not** silently fall back — report
 "Parallel fan-out unavailable in this sandbox; executed sequentially." as the
 first line of the summary, then continue sequentially with the same input
 contract. Plan top-level orchestration in the main conversation when you can.
 
 ## Native Team Tools
 
+The implicit team (2.1.178) needs no create/delete step — these tools operate on
+the one team the session already has:
+
 | Tool | Purpose |
 |------|---------|
-| `TeamCreate` | Create team and shared task list directory |
-| `TeamDelete` | Clean up team when all work is complete (fails if teammates active) |
+| `Agent` | Spawn a teammate (give it a `name`; `team_name` is accepted but ignored) |
 | `SendMessage` | Send DMs, broadcasts, shutdown requests, plan approvals |
+| `TaskCreate` / `TaskList` / `TaskUpdate` | Create, discover, and assign/advance shared tasks |
 | `TaskOutput` | Get output from a background agent |
 | `TaskStop` | Stop a running background agent |
 
-The setup sequence — `TeamCreate` → `TaskCreate` → spawn teammates via the
-`Agent` tool (with `team_name` + `name`) → `TaskUpdate` to assign → receive
-results automatically — is shown with full code in
-[REFERENCE.md → Team setup workflow](REFERENCE.md#team-setup-workflow). Teammate
-messages are delivered to the lead's inbox between turns; no polling needed.
+The setup sequence — `TaskCreate` → spawn teammates via the `Agent` tool (with a
+`name`) → `TaskUpdate` to assign → receive results automatically — is shown with
+full code in [REFERENCE.md → Team setup workflow](REFERENCE.md#team-setup-workflow).
+Teammate messages are delivered to the lead's inbox between turns; no polling needed.
 
 ## Task Management
 
@@ -148,37 +152,40 @@ In web sessions (`CLAUDE_CODE_REMOTE=true`):
 | Large codebase split | Assign directory subsets as separate tasks |
 | Long-running work | Background teammates, poll via TaskList |
 | Minimize API cost | Prefer `message` over `broadcast` |
-| Fast shutdown | Send shutdown_request to each teammate, then TeamDelete |
+| Fast shutdown | Send a `shutdown_request` to each teammate (no team teardown needed) |
 
 ## Quick Reference
 
 ### Workflow Checklist
 
-- [ ] `TeamCreate` with team name and description
+- [ ] `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` set (the implicit team exists; no create step)
 - [ ] `TaskCreate` for each work unit
-- [ ] Spawn teammates via Agent tool with `team_name` and `name`
+- [ ] Spawn teammates via the `Agent` tool with a `name` (no `team_name` needed)
 - [ ] `TaskUpdate` to assign tasks (or let teammates self-assign)
 - [ ] Receive messages automatically; respond via `SendMessage`
-- [ ] `SendMessage shutdown_request` to each teammate when done
-- [ ] `TeamDelete` after all teammates shut down
+- [ ] `SendMessage shutdown_request` to each teammate when done (no `TeamDelete`)
 
 ### Key Paths
 
 | Path | Contents |
 |------|----------|
-| `~/.claude/teams/<name>/config.json` | Team members (name, agentId, agentType) |
-| `~/.claude/tasks/<name>/` | Shared task list directory |
+| `~/.claude/teams/` | Implicit-team state (members: name, agentId, agentType) |
+| `~/.claude/tasks/` | Shared task list state |
+
+Address teammates by the `name` you gave them at spawn — that is the reliable
+handle, independent of any on-disk layout.
 
 ### Common Mistakes
 
 | Mistake | Correct Approach |
 |---------|-----------------|
-| Using agentId as recipient | Use `name` field from config.json |
+| Using agentId as recipient | Use the `name` given at spawn |
+| Calling the removed `TeamCreate`/`TeamDelete` | The team is implicit (2.1.178); spawn with `Agent`, shut down with `shutdown_request` |
+| Passing `team_name` and expecting routing | It is accepted but ignored — there is one implicit team |
 | Sending broadcast for every update | Use `message` for single-recipient comms |
 | Polling for messages | Messages delivered automatically — just wait |
 | Sending JSON status messages | Use `TaskUpdate` for status, plain text for messages |
 | Sub-agent pushes to remote | Delegate push to lead orchestrator |
-| TeamDelete before shutdown | Shutdown all teammates first |
 
 ## Related Skills and Rules
 

@@ -5,64 +5,60 @@ operational workflow and decision tables live in `SKILL.md`; this file carries
 the worked setup examples, communication snippets, shutdown procedures, the
 worktree path-resolution recovery routine, and common dispatch patterns.
 
+> **BREAKING (Claude Code 2.1.178)**: `TeamCreate` / `TeamDelete` were removed.
+> Every session has **one implicit team** when `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`
+> is set — there is no team to create, name, or delete. `team_name` is accepted
+> but ignored on the tools that took it; omit it. The examples below use the
+> implicit team.
+
 ## Team architecture
 
 ```
-Lead Agent (orchestrator)
-    ├── TeamCreate — creates team + shared task list
-    ├── Agent tool — spawns teammate agents
+Lead Agent (orchestrator)        [implicit team — CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1]
+    ├── Agent tool — spawns teammate agents (give each a `name`)
     ├── SendMessage — communicates with teammates
-    ├── TaskUpdate — assigns tasks to teammates
+    ├── TaskCreate/TaskUpdate — creates and assigns shared tasks
     └── Teammates (run in parallel)
-            ├── Read team config from ~/.claude/teams/<name>/config.json
             ├── TaskList/TaskUpdate — claim and complete tasks
-            └── SendMessage — report back to lead
+            └── SendMessage — report back to lead (by `name`)
 ```
 
 ## Team setup workflow
 
-### 1. Create the team
+### 1. Create initial tasks
 
-```
-TeamCreate({ team_name: "my-project", description: "Working on feature X" })
-```
-
-Creates `~/.claude/teams/<team-name>/` (config) and
-`~/.claude/tasks/<team-name>/` (shared task list).
-
-### 2. Create initial tasks
+The team is implicit — start by creating work, not a team:
 
 ```
 TaskCreate({
-  team_name: "my-project",
   title: "Implement security review",
   description: "Audit auth module for vulnerabilities",
   status: "pending"
 })
 ```
 
-### 3. Spawn teammates
+### 2. Spawn teammates
 
 ```
 Agent tool with:
   subagent_type: "agents-plugin:security-audit"
-  team_name: "my-project"
   name: "security-reviewer"
-  prompt: "Join team my-project and work on security review task..."
+  prompt: "Work on the security review task in the shared task list..."
 ```
 
-### 4. Assign tasks
+(`team_name` is accepted but ignored — there is one implicit team. Omit it.)
+
+### 3. Assign tasks
 
 ```
 TaskUpdate({
-  team_name: "my-project",
   task_id: "task-1",
   owner: "security-reviewer",
   status: "in_progress"
 })
 ```
 
-### 5. Receive results
+### 4. Receive results
 
 Teammates send messages automatically — delivered to the lead's inbox between
 turns. No polling needed.
@@ -73,8 +69,8 @@ Teammates check `TaskList` after completing each task to find available work,
 claiming tasks in **ID order** (lowest first — earlier tasks set up context):
 
 ```
-TaskList({ team_name: "my-project" })
-TaskUpdate({ team_name: "my-project", task_id: "N", owner: "my-name" })
+TaskList()
+TaskUpdate({ task_id: "N", owner: "my-name" })
 ```
 
 ## Communication (SendMessage)
@@ -105,10 +101,11 @@ round-trips. Reserve for genuine team-wide blockers.
 
 ### Discovering team members
 
-```
-Read ~/.claude/teams/<team-name>/config.json
-→ members array with name, agentId, agentType
-```
+The reliable handle is the `name` you assign each teammate at spawn — use it
+directly as the `recipient`. Implicit-team membership state lives under
+`~/.claude/teams/` (members carry name, agentId, agentType) if you need to
+enumerate peers, but you should rarely need to read it: spawn with a known
+`name` and address by that `name`.
 
 Always use the **name** field (not agentId) for `recipient` in SendMessage.
 
@@ -136,12 +133,11 @@ SendMessage({
 
 ### Cleanup (lead)
 
-```
-TeamDelete()
-→ Removes ~/.claude/teams/<name>/ and ~/.claude/tasks/<name>/
-```
-
-`TeamDelete` fails if teammates are still active.
+There is no team to delete (2.1.178 removed `TeamDelete`). Cleanup **is** the
+shutdown handshake: once every teammate has approved its `shutdown_request`, the
+team is wound down. Confirm no teammate is still active before ending the
+session; use `TaskStop` to halt a background teammate that is not responding to a
+shutdown request.
 
 ## Out-of-scope discovery protocol
 
@@ -230,24 +226,23 @@ For the broader concurrency context, see `.claude/rules/agent-coworker-detection
 ### Parallel code review
 
 ```
-TeamCreate: "code-review"
-Tasks: security-audit, performance-review, correctness-check
-Teammates: security-agent, performance-agent, correctness-agent (all parallel)
+Tasks: security-audit, performance-review, correctness-check (TaskCreate)
+Teammates: security-agent, performance-agent, correctness-agent (Agent, all parallel)
 Lead: collects results, synthesizes findings
 ```
 
 ### Parallel implementation with worktrees
 
 ```
-TeamCreate: "feature-impl"
-Tasks: backend-api, frontend-ui, tests
-Teammates: each spawned with isolation: "worktree"
+Tasks: backend-api, frontend-ui, tests (TaskCreate)
+Teammates: each spawned via Agent with isolation: "worktree"
 Lead: delegates git push (sub-agents must not push independently in sandbox)
 ```
 
 ### Multi-phase architecture refactor
 
 ```
+(implicit team — CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1)
 Phase 1 (3 parallel):  Framework upgrade + new module scaffolding + ADR draft
 Phase 2 (1 serialized): Reactive executor — depends on Phase 1 contracts
 Phase 3 (1 serialized): Wire-up + legacy deletion — exclusive main.c owner

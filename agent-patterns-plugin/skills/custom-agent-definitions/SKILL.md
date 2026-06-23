@@ -20,7 +20,7 @@ complete security auditor, plugin layout, common patterns), see
 
 | Use this skill when... | Use agent-teams instead when... |
 |---|---|
-| Authoring a new `.md` agent definition file in `.claude/agents/` | Spawning multiple already-defined agents that coordinate via TeamCreate |
+| Authoring a new `.md` agent definition file in `.claude/agents/` | Spawning multiple already-defined agents that coordinate as a team |
 | Configuring a single agent's `model`, `allowed-tools`, or `context: fork` | Setting up a lead/teammate architecture with a shared task list |
 | Constraining tool access for a specialised read-only or write-restricted agent | Sequencing parallel work across worktrees (see parallel-agent-dispatch) |
 | Writing the system prompt that defines what one agent does | Auditing existing agent definitions for security (see meta-audit) |
@@ -156,7 +156,7 @@ Worked YAML for each practice is in [REFERENCE.md → Best-practice snippets](RE
 ## Related
 
 - [REFERENCE.md](REFERENCE.md) — full worked YAML examples and snippets
-- `agent-teams` — multi-agent coordination via TeamCreate
+- `agent-teams` — multi-agent coordination via the implicit team
 - `parallel-agent-dispatch` — worktree preflight, scope budgets, loud-failure contract
 - `meta-audit` — auditing existing agent definitions for security/completeness
 - `.claude/rules/agent-development.md` — agent lifecycle and field semantics
