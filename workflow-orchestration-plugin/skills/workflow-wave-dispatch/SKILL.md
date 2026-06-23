@@ -156,7 +156,7 @@ referenced — never restated — when scheduling waves:
 - `agent-patterns-plugin:wave-based-dispatch` — the dispatch discipline and the shared between-wave gate set this skill schedules around
 - `agent-patterns-plugin:parallel-agent-dispatch` — intra-wave dispatch contract
 - `agent-patterns-plugin:exclusive-lock-dispatch` — pre-dump pattern for lock-contending waves
-- `agent-patterns-plugin:agent-teams` — TeamCreate mechanics that waves sit on top of
+- `agent-patterns-plugin:agent-teams` — implicit-team / SendMessage mechanics that waves sit on top of
 - `tools-plugin:cli-smoke-recipes` — smoke-gate mechanics between waves
 - `.claude/rules/parallel-safe-queries.md` — empty-result exit codes inside gates
 
