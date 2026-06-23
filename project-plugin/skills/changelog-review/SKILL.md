@@ -12,7 +12,7 @@ reviewed: 2026-06-23
 
 ## When to Use This Skill
 
-| Use this skill when... | Use project-distill instead when... |
+| Use this skill when... | Use another skill instead when... |
 |---|---|
 | Reviewing Claude Code releases for breaking changes that affect plugins | Distilling project session learnings into rules and recipes |
 | Discovering new Claude Code features that plugins can leverage | Use project-skill-scripts instead when auditing skills for script-extraction wins |
@@ -223,6 +223,16 @@ Workflow flow:
    priority = deprecated identifiers still referenced in our code), ratchet the
    version JSON via a tiny PR
 4. Label issues appropriately
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Analyze a changelog slice (structured `KEY=VALUE`) | `bash scripts/analyze-changelog.sh --excerpt <slice> --repo-dir . --tracked <ver> --latest <ver>` |
+| Triage filter — code-compliance candidates only | `… analyze-changelog.sh … \| grep -E '^(ACTIONABLE_DEPRECATION\|DEPRECATED_TOKENS)='` |
+| List the surfaced candidate files | `… analyze-changelog.sh … \| sed -n '/^CANDIDATES:/,/^=== END/p'` |
+| Roll-up status only | `… analyze-changelog.sh … \| grep -E '^(STATUS\|ISSUE_COUNT)='` |
+| Run the analyzer regression tests | `bash project-plugin/skills/changelog-review/scripts/tests/test-analyze-changelog.sh` |
 
 ## Quick Reference
 
