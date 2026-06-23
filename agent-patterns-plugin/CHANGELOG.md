@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.29.2](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.29.1...agent-patterns-plugin-v2.29.2) (2026-06-23)
+
+
+### Bug Fixes
+
+* **agent-patterns-plugin:** rework agent-teams for implicit-team model ([#1772](https://github.com/laurigates/claude-plugins/issues/1772)) ([be9a44e](https://github.com/laurigates/claude-plugins/commit/be9a44ef6d2f83ec7e583fa4a882b37a2cd8b824))
+
 ## [2.29.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.29.0...agent-patterns-plugin-v2.29.1) (2026-06-22)
 
 

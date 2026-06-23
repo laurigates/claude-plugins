@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.1](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.8.0...workflow-orchestration-plugin-v1.8.1) (2026-06-23)
+
+
+### Bug Fixes
+
+* **agent-patterns-plugin:** rework agent-teams for implicit-team model ([#1772](https://github.com/laurigates/claude-plugins/issues/1772)) ([be9a44e](https://github.com/laurigates/claude-plugins/commit/be9a44ef6d2f83ec7e583fa4a882b37a2cd8b824))
+
 ## [1.8.0](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.7.1...workflow-orchestration-plugin-v1.8.0) (2026-06-22)
 
 
