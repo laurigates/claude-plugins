@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.7](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.5.6...hooks-plugin-v2.5.7) (2026-06-23)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** neutralize inherited git context in test-bash-antipatterns sandboxes ([#1773](https://github.com/laurigates/claude-plugins/issues/1773)) ([4667840](https://github.com/laurigates/claude-plugins/commit/4667840a35e2d459fd6ce19dad47b9bd6b07d049))
+
 ## [2.5.6](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.5.5...hooks-plugin-v2.5.6) (2026-06-22)
 
 

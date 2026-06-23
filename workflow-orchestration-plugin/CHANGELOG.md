@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.8.1...workflow-orchestration-plugin-v1.9.0) (2026-06-23)
+
+
+### Features
+
+* add execution-grounded-review skill and software-design-plugin ([#1770](https://github.com/laurigates/claude-plugins/issues/1770)) ([9df5a28](https://github.com/laurigates/claude-plugins/commit/9df5a28bc766593340699118a5b57de42a558c08))
+
 ## [1.8.1](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.8.0...workflow-orchestration-plugin-v1.8.1) (2026-06-23)
 
 

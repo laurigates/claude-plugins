@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "software-design-plugin",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Software design methodology - deep modules, design by contract, GoF pattern selection, legacy code seams, and design by pseudocode",
   "keywords": [
     "software-design",
