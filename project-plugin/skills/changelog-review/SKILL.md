@@ -4,8 +4,8 @@ description: Claude Code changelog analysis for plugin impact. Use when checking
 user-invocable: false
 allowed-tools: Bash(git log *), Bash(git diff *), Read, Write, Edit, Glob, Grep, WebFetch, TodoWrite
 created: 2026-01-14
-modified: 2026-06-14
-reviewed: 2026-06-14
+modified: 2026-06-23
+reviewed: 2026-06-23
 ---
 
 # Claude Code Changelog Review
@@ -193,12 +193,26 @@ bash scripts/analyze-changelog.sh --excerpt <slice> --repo-dir . \
 
 The script (`scripts/analyze-changelog.sh`, tested by
 `scripts/tests/test-analyze-changelog.sh`) emits structured `KEY=VALUE` output
-and, beyond keyword counts, carries a **deprecation → plugin-code bridge**: for
-any tool/setting/command named in a `deprecat|removed|renamed|unshipped` line,
-it greps this repo's skills/hooks/agents/rules and surfaces the files that still
-reference it as triage candidates. This is the miss class from #1638 — a
-deprecated identifier (e.g. `TaskOutput`) that stayed referenced in a hook
-script because the old keyword map only ever pointed at `.claude/rules/*.md`.
+and, beyond keyword counts, carries a **deprecation/removal → plugin-code
+bridge**: for any tool/setting/command named in a deprecation **or BREAKING
+removal** line, it greps this repo's skills/hooks/agents/rules and surfaces the
+files that still reference it as triage candidates. Two miss classes drive this:
+
+- **#1638** — a deprecated identifier (e.g. `TaskOutput`) that stayed referenced
+  in a hook script because the old keyword map only ever pointed at
+  `.claude/rules/*.md`. Caught by the `deprecat|removed|renamed|unshipped` forms.
+- **#1733** — a BREAKING tool removal phrased verb-after with a `/`-separated
+  pair (`BREAKING: `TeamCreate`/`TeamDelete` tools removed`, 2.1.178) that the
+  deprecation-grammar forms missed, leaving the `agent-patterns-plugin:agent-teams`
+  skill referencing removed tools unflagged. Caught by the BREAKING-line
+  extractor.
+
+**Reviewing the changelog is never doc-only.** Every run treats updating rule
+docs *and* fixing plugin **code** that references a removed/renamed
+tool/setting/env-var as part of the same task — the `ACTIONABLE_DEPRECATION`
+candidates are the highest-priority section of the tracking issue, and a
+referenced removed identifier is a correctness bug (the skill would instruct
+Claude to call a tool that no longer exists), not just stale prose.
 
 Workflow flow:
 
