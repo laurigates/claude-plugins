@@ -50,6 +50,9 @@ Not all events support prompt/agent hooks.
 | `UserPromptSubmit` | Prompt classification, context injection |
 | `Elicitation` | Auto-accept/decline MCP input requests |
 | `ElicitationResult` | Override MCP input results before sending |
+| `MessageDisplay` (2.1.152+) | Judgment-based redaction or rewriting of assistant message text before it is displayed |
+
+> **Note (2.1.152)**: `MessageDisplay` fires as an assistant message is about to be rendered and can transform or hide the displayed text (see `hooks-reference.md` § MessageDisplay). Because deciding *what* to redact or rewrite is often a judgment call, it belongs with the judgment-capable events above rather than the command-only list — though a deterministic redaction (regex over the text) is still a `type: "command"` job. Follow the decision tree: deterministic rule → `command`; needs judgment on the message text alone → `prompt`.
 
 ### Events supporting only `type: "command"`
 
@@ -67,6 +70,8 @@ Not all events support prompt/agent hooks.
 | `Notification` | Notification routing is mechanical |
 
 > **Note (2.1.142)**: Attempting to register a prompt- or agent-type hook for `SessionStart`, `Setup`, or `SubagentStart` now fails fast with a clear "use a command-type hook instead" error. Previously these registrations were silently dropped, making misconfiguration hard to diagnose. If you need LLM judgment at session start, run a command hook that shells out to `claude --print` or another deterministic invocation.
+
+> **Note (2.1.152)**: Although `SessionStart` is command-only, its command hooks gained two `hookSpecificOutput` fields — `reloadSkills: true` (re-scan skill directories mid-session) and `sessionTitle` (set the session title on startup/resume). See `hooks-reference.md` § SessionStart for the schema.
 
 ## Configuration Schema
 
@@ -137,6 +142,13 @@ Both prompt and agent hooks return the same JSON:
 > PostToolUse hook halts the turn. Setting `"continueOnBlock": true` on a PostToolUse
 > hook instead feeds the rejection `reason` back to Claude and lets the turn continue —
 > Claude can react to the feedback without the turn being terminated.
+
+> **`additionalContext` for Stop/SubagentStop (2.1.163)**: instead of `ok: false`
+> (which surfaces as a hook block), a `Stop` or `SubagentStop` hook can return
+> `hookSpecificOutput.additionalContext` to feed Claude feedback and keep the turn
+> going **without being labeled a hook error**. Reach for it for soft nudges that
+> should steer the next turn but shouldn't read as a failure; reserve `ok: false`
+> for genuine gates. See `hooks-reference.md` § Stop / SubagentStop for the schema.
 
 ## Stop Hook Loop Prevention
 

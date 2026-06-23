@@ -127,6 +127,12 @@ When you have designed a fixed set of domain agents (frontend, database, securit
 
 The failure this prevents: an orchestrator that "used to respect my agents" starts inventing its own the moment the roster lives only in prose. If the model is spawning agents you didn't intend, the fix is to move the roster from instruction into the `Agent(...)` allowlist.
 
+### Subagent Nesting Depth (2.1.172+ / 2.1.181+)
+
+Sub-agents can spawn their own sub-agents, **up to 5 levels deep** (2.1.172). As of 2.1.181, foreground subagents respect the same 5-level depth limit as background subagents (previously only background subagents were capped). Design deep delegation chains with this ceiling in mind — a spawn beyond five levels is refused.
+
+> **Note (2.1.178)**: Under auto mode, subagent spawns are now evaluated by the classifier **before launch** — an `Agent(...)` call that auto mode would not permit is blocked up front rather than after the subagent starts. Pair with the `Agent(model:opus)`-style parameter rules in `.claude/rules/agentic-permissions.md` to constrain which subagents may be spawned.
+
 > **Note (2.1.116+)**: Agent frontmatter `hooks:` and `mcpServers:` are active when the agent runs as a main-thread session via `claude --agent`, not just as subagents.
 
 ### MCP Servers in Agent Definitions (2.1.147 / 2.1.153)
@@ -146,7 +152,7 @@ The failure this prevents: an orchestrator that "used to respect my agents" star
 | `opus` | **Default for all subagents** — reasoning, review, debugging, refactoring, *and* mechanical/high-volume work (dial `effort` down for the latter rather than downgrading the model) |
 | `sonnet` / `haiku` | Avoid for subagents. The one sanctioned exception is the `agent-patterns-plugin:cold-read-gate` haiku reader, where a low-capability model is the *measurement instrument*, not a delegate. |
 
-> **Note (2.1.142)**: Fast mode now uses Opus 4.7 by default (previously Opus 4.6). The `CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE` env var was deprecated in 2.1.154 and **removed in 2.1.160** (now a no-op) — drop it from agent launch scripts. To use fast mode on Opus 4.6, switch with `/model claude-opus-4-6[1m]` then `/fast on`.
+> **Note (2.1.142 / 2.1.160)**: Fast mode now uses Opus 4.7 by default (previously Opus 4.6). The legacy fast-mode override env var was deprecated in 2.1.154 and is a **no-op as of 2.1.160** — remove any such override from agent launch scripts. To keep fast mode on Opus 4.6, switch with `/model claude-opus-4-6[1m]` then `/fast on`; omit it to get the default Opus 4.7 fast mode.
 
 ## Context Isolation
 
@@ -268,6 +274,7 @@ Agent tool with run_in_background: true
 | 2.1.143 | `claude agents`-launched background sessions honor `permissions.defaultMode` from settings.json (was previously hard-overridden to auto mode) |
 | 2.1.143 | `/bg` preserves `--mcp-config`, `--settings`, `--add-dir`, `--plugin-dir`, and `--strict-mcp-config` across respawn |
 | 2.1.154 | Subagents in background sessions no longer bypass the worktree-isolation guard — previously a background subagent could write to the shared checkout despite isolation being requested |
+| 2.1.169 | Background sessions are now told that edits to the shared checkout are blocked until `EnterWorktree` is called — the session gets explicit guidance to enter a worktree before writing, instead of silently failing edits |
 
 > **Note (2.1.154)**: `claude agents` accepts `! <command>` to run a shell command as a background session (equivalently `claude --bg --exec '<command>'`). Use it to fire off a one-shot background job from the dashboard without a full interactive session.
 
@@ -352,7 +359,9 @@ Agents can read and write to auto memory files to build on knowledge across sess
 
 ## Agent Teams (Multi-Agent Collaboration)
 
-> **Experimental**: Agent teams are disabled by default. Enable with the `--enable-teams` flag or via settings. The API and behavior may change between versions.
+> **Experimental**: Agent teams are disabled by default. Enable by setting `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. The API and behavior may change between versions.
+
+> **BREAKING (2.1.178)**: The explicit `TeamCreate` / `TeamDelete` tools were **removed**. Every session now has **one implicit team** when `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is set — there is no team to create or tear down. The `team_name` parameter is still **accepted but ignored** on the tools that took it (e.g. `Agent`), so older agent definitions and skills don't error; drop it from new code. References to `~/.claude/teams/<team-name>/config.json` and a per-team lifecycle no longer apply.
 
 Agent teams enable multiple agents to collaborate on complex tasks with a shared task list and messaging.
 
@@ -360,12 +369,10 @@ Agent teams enable multiple agents to collaborate on complex tasks with a shared
 
 ```
 Lead Agent (orchestrator)
-    ├── TeamCreate — creates team and task list
     ├── Agent tool — spawns teammate agents (previously Task tool)
-    ├── SendMessage — communicates with teammates
-    ├── TaskUpdate — assigns tasks to teammates
+    ├── SendMessage — communicates with teammates (by agent ID or name)
+    ├── TaskUpdate — assigns tasks within the implicit shared task list
     └── Teammate Agents
-            ├── Read team config from ~/.claude/teams/<team-name>/config.json
             ├── Use TaskList/TaskUpdate — claim and complete tasks
             └── Use SendMessage — report back to lead
 ```
@@ -374,11 +381,11 @@ Lead Agent (orchestrator)
 
 | Tool | Purpose |
 |------|---------|
-| `TeamCreate` | Create a team with shared task list |
-| `TeamDelete` | Clean up team when work is complete |
-| `SendMessage` | Send messages between agents (DM, broadcast, shutdown) |
+| `SendMessage` | Send messages between agents (DM, broadcast, shutdown); address by agent ID or name |
 | `TaskOutput` | Get output from background agent |
 | `TaskStop` | Stop a running background agent |
+
+> **Security (2.1.166)**: Cross-session messaging is hardened — messages relayed via `SendMessage` **no longer carry user authority**, and auto mode blocks them. A teammate cannot use a relayed message to escalate privileges or auto-approve actions that the receiving session's own permission mode would otherwise gate.
 
 ### When to Use Teams
 
@@ -466,6 +473,8 @@ When multiple agents share the same name, higher-priority location wins:
 | `.claude/agents/` | Current project | 2 |
 | `~/.claude/agents/` | All projects | 3 |
 | Plugin `agents/` directory | Where plugin is enabled | 4 (lowest) |
+
+> **Note (2.1.178)**: With **nested** `.claude/` directories, the agent (and workflow / output-style) **closest to the working directory wins** on a name collision. A repo-root `.claude/agents/reviewer.md` is shadowed by a `subdir/.claude/agents/reviewer.md` when working inside `subdir/`. Project-scope workflow saves now target the closest existing `.claude/workflows/`.
 
 CLI-defined agents use `--agents` flag with JSON (same frontmatter fields, use `prompt` for body):
 ```bash
