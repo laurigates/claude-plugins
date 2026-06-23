@@ -178,3 +178,9 @@ repos:
         language: system
         files: '^hooks-plugin/hooks/(bash-antipatterns\.sh|test-bash-antipatterns\.sh)$'
         pass_filenames: false
+      - id: test-bash-antipatterns-git-env-isolation
+        name: bash-antipatterns suite does not leak sandbox git ops via injected GIT_DIR (#1745)
+        entry: bash ./hooks-plugin/hooks/test-bash-antipatterns-git-env-isolation.sh
+        language: system
+        files: '^hooks-plugin/hooks/(test-bash-antipatterns\.sh|test-bash-antipatterns-git-env-isolation\.sh)$'
+        pass_filenames: false

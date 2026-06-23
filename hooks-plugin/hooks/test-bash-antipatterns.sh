@@ -6,6 +6,21 @@
 # Exit 0 = all tests pass, Exit 1 = failures
 set -euo pipefail
 
+# Neutralize any inherited git context before building sandbox repos (#1745).
+# This suite runs `git init` / `git config` / `git commit` against `$(mktemp -d)`
+# sandboxes. Any inherited git-context env var — an absolute GIT_DIR / GIT_WORK_TREE
+# exported by an agent papering over a `core.bare=true` worktree, or the
+# GIT_DIR / GIT_INDEX_FILE that the pre-commit hook's own environment carries —
+# OVERRIDES `git -C "$sandbox"`, so those ops target the real shared repo instead
+# of the throwaway dir: writing `core.bare=true` / a junk `[user]` into the shared
+# config (the #1692 corruption class via the injected-env vector), or hitting
+# "invalid object" / "index file smaller than expected" when a real GIT_INDEX_FILE
+# is paired with a sandbox object DB. Unsetting the FULL family here protects every
+# git op in the suite AND the hook subprocesses it spawns (which inherit this
+# cleaned env), for current and future ops alike. The suite's sandboxes are always
+# self-contained and never need an externally-pointed git context.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_COMMON_DIR GIT_NAMESPACE GIT_PREFIX
+
 HOOK="$(dirname "$0")/bash-antipatterns.sh"
 PASS=0
 FAIL=0
