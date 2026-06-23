@@ -7,14 +7,24 @@
 # 3. Block function: hook scripts using exit 2 should use block() function
 # 4. Variable naming: TOOL_NAME not TOOL for tool name extraction
 #
-# Usage: bash scripts/lint-shell-scripts.sh [--fix]
-#        --fix  auto-fix shebang issues (other issues require manual fixes)
+# Usage: bash scripts/lint-shell-scripts.sh [--fix] [ROOT_DIR]
+#        --fix      auto-fix shebang issues (other issues require manual fixes)
+#        ROOT_DIR   optional directory to scan (default: repo root). Used by the
+#                   regression test to point the linter at fixture trees.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-FIX_MODE="${1:-}"
+
+FIX_MODE=""
+ROOT_OVERRIDE=""
+for arg in "$@"; do
+    case "$arg" in
+        --fix) FIX_MODE="--fix" ;;
+        *) ROOT_OVERRIDE="$arg" ;;
+    esac
+done
+ROOT_DIR="${ROOT_OVERRIDE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 
 ERRORS=0
 WARNINGS=0
@@ -33,11 +43,23 @@ info() {
     echo "INFO:  $1"
 }
 
-# Find all .sh files, excluding node_modules, .git, vendor
-SCRIPTS=$(find "$ROOT_DIR" -name "*.sh" \
-    -not -path "*/.git/*" \
-    -not -path "*/node_modules/*" \
-    -not -path "*/vendor/*" \
+# Find all .sh files. Prune (don't descend into) .git, node_modules, vendor,
+# the gitignored dist/ rulesync build output, and .claude/worktrees/ agent
+# clones — scanning those re-lints generated output and sibling checkouts
+# (the #1492/#1548 worktrees-prune lesson) and bloats a repo-wide gate. The
+# dist/worktrees prunes are anchored to "$ROOT_DIR/…" (not a bare glob) so the
+# linter still works when run from inside a worktree, mirroring
+# check-git-sandbox-guards.sh.
+#
+# This linter's own regression test embeds deliberately-bad fixtures (a #!/bin/bash
+# shebang, a TOOL= line) inside `cat <<EOF` heredoc bodies; scanning it would flag
+# its own fixtures. Exclude it — a linter does not lint its own fixtures.
+SELF_TEST="$ROOT_DIR/scripts/tests/test-lint-shell-scripts.sh"
+SCRIPTS=$(find "$ROOT_DIR" \
+    \( -path "*/.git/*" -o -path "*/node_modules/*" -o -path "*/vendor/*" \
+       -o -path "$ROOT_DIR/dist/*" -o -path "$ROOT_DIR/.claude/worktrees/*" \
+       -o -path "$SELF_TEST" \) -prune \
+    -o -name "*.sh" -print \
     | sort)
 
 for script in $SCRIPTS; do

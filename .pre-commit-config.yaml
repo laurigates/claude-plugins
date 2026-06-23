@@ -7,8 +7,24 @@ repos:
     rev: v8.30.1
     hooks:
       - id: gitleaks
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
+        # Keep in sync with the actionlint CI step in plugin-pr-checks.yml.
+        # -shellcheck=  disables noisy run-block shellcheck (58 pre-existing
+        #               info/style findings; cleanup is a follow-up).
+        # -ignore       suppresses the tracked outputs.result latent-bug findings
+        #               in the audit workflows (fixed separately).
+        args: ['-shellcheck=', '-ignore', 'property "result" is not defined']
   - repo: local
     hooks:
+      - id: lint-shell-scripts
+        name: shell scripts follow shell-scripting.md (shebang, set flags, block())
+        entry: bash ./scripts/lint-shell-scripts.sh
+        language: system
+        files: '\.sh$'
+        pass_filenames: false
       - id: lint-context-commands
         name: lint context commands
         entry: ./scripts/lint-context-commands.sh

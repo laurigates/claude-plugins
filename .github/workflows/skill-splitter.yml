@@ -41,10 +41,15 @@ jobs:
 
       - name: Restore branch ref for PRs
         if: github.event_name == 'pull_request'
+        env:
+          # Bind the untrusted head ref to an env var rather than interpolating
+          # ${{ github.head_ref }} into the script directly (script-injection
+          # mitigation — see .claude/rules/github-actions-security.md).
+          HEAD_REF: ${{ github.head_ref }}
         run: |
           # SHA checkout survives branch deletion but leaves detached HEAD.
           # Re-create the local branch so git push origin HEAD works.
-          git checkout -B "${{ github.head_ref }}"
+          git checkout -B "$HEAD_REF"
 
       - name: Configure git identity
         run: |

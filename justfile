@@ -39,9 +39,14 @@ lint-infra:
 lint-taskwarrior-tags:
     ./scripts/lint-taskwarrior-tags.sh
 
+# Lint all shell scripts for shell-scripting.md compliance (shebang, set flags, block())
+[group: "lint"]
+lint-shell *args:
+    ./scripts/lint-shell-scripts.sh {{args}}
+
 # Run all lint checks
 [group: "lint"]
-lint-all: lint-context-commands lint-compliance lint-health lint-infra lint-taskwarrior-tags
+lint-all: lint-context-commands lint-compliance lint-health lint-infra lint-taskwarrior-tags lint-shell
 
 ####################
 # Testing

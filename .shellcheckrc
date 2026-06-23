@@ -1,0 +1,13 @@
+# shellcheck configuration — makes dialect and policy explicit rather than
+# relying on per-invocation defaults. Consumed by the shellcheck-py pre-commit
+# hook and any direct `shellcheck <file>` run.
+#
+# Policy: keep this file minimal. Repo-wide `disable=` directives mask findings
+# everywhere and are hard to audit, so suppressions live at file scope instead
+# (a `# shellcheck disable=SCxxxx` directly after the shebang, before the first
+# command — see .claude/rules/shell-scripting.md "Suppressing shellcheck
+# findings"). Only add a global disable here with a written rationale.
+
+# All scripts use a `#!/usr/bin/env bash` shebang; pin the dialect so files
+# sourced or analyzed without a shebang are still checked as bash.
+shell=bash
