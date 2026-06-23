@@ -50,9 +50,11 @@ jobs:
           WORKFLOW_NAME="${{ github.event.workflow_run.name }}"
           BRANCH="${{ github.event.workflow_run.head_branch }}"
 
-          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
-          echo "workflow_name=$WORKFLOW_NAME" >> "$GITHUB_OUTPUT"
-          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          {
+            echo "run_id=$RUN_ID"
+            echo "workflow_name=$WORKFLOW_NAME"
+            echo "branch=$BRANCH"
+          } >> "$GITHUB_OUTPUT"
 
           # Save failure context to runner temp dir (auto-cleaned by GitHub)
           mkdir -p "${CI_CONTEXT_DIR}"

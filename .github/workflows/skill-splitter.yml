@@ -61,10 +61,10 @@ jobs:
         run: |
           LAST_MSG=$(git log -1 --format='%s')
           if echo "$LAST_MSG" | grep -qE '^refactor\(split\):'; then
-            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "skip=true" >> "$GITHUB_OUTPUT"
             echo "::notice::Skipping - last commit was a skill splitter commit (loop prevention)"
           else
-            echo "skip=false" >> $GITHUB_OUTPUT
+            echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Detect skills to process
@@ -117,10 +117,12 @@ jobs:
           SKILLS=$(echo "$SKILLS" | grep -v '^[[:space:]]*$' || true)
           COUNT=$(echo "$SKILLS" | grep -c '[^[:space:]]' || echo "0")
 
-          echo "skills_list<<EOF" >> $GITHUB_OUTPUT
-          echo "$SKILLS" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-          echo "skills_count=$COUNT" >> $GITHUB_OUTPUT
+          {
+            echo "skills_list<<EOF"
+            echo "$SKILLS"
+            echo "EOF"
+            echo "skills_count=$COUNT"
+          } >> "$GITHUB_OUTPUT"
 
           if [ "$COUNT" = "0" ]; then
             echo "::notice::No skills to process"
