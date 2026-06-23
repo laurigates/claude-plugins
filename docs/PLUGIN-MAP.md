@@ -47,6 +47,7 @@ Automated quality enforcement.
 |--------|--------|---------|
 | testing-plugin | 16 | Test execution, TDD, Vitest, Playwright, Playwright CLI, mutation testing |
 | code-quality-plugin | 14 | Review, refactoring, linting, ast-grep, debugging, silent degradation, dead code, dep audit, test quality, complexity |
+| software-design-plugin | 5 | Deep modules, design by contract, GoF pattern selection, legacy seams, design by pseudocode |
 | documentation-plugin | 5 | API docs, README generation, knowledge graphs |
 | evaluate-plugin | 6 + 3 agents | Skill evaluation, benchmarking, quality improvement |
 
@@ -171,6 +172,7 @@ Install based on your project's tech stack and domain.
 |--------|-----------------|
 | codebase-attributes-plugin | You want structured health attributes, severity-based agent routing, or a health dashboard |
 | code-quality-plugin | You want code review, refactoring, linting, dead code detection, dependency auditing, test quality analysis, or complexity metrics |
+| software-design-plugin | You're designing a module/API, placing contracts, selecting a design pattern, taming legacy code, or refining a routine before coding |
 | documentation-plugin | You need generated docs, knowledge graphs |
 | typescript-plugin | Project uses TypeScript or JavaScript |
 | python-plugin | Project uses Python |

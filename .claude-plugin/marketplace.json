@@ -674,6 +674,23 @@
         "worktree"
       ],
       "category": "automation"
+    },
+    {
+      "name": "software-design-plugin",
+      "source": "./software-design-plugin",
+      "description": "Software design methodology - deep modules, design by contract, GoF pattern selection, legacy code seams, and design by pseudocode",
+      "version": "1.0.0",
+      "keywords": [
+        "software-design",
+        "deep-modules",
+        "design-by-contract",
+        "design-patterns",
+        "gang-of-four",
+        "legacy-code",
+        "characterization-tests",
+        "pseudocode"
+      ],
+      "category": "development"
     }
   ]
 }

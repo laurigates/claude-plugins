@@ -2,7 +2,7 @@
 
 > Experimental testing harness lives under experiments/claude-probe/.
 
-A curated collection of 42 Claude Code plugins providing 360+ skills and 21 agents for development workflows.
+A curated collection of 43 Claude Code plugins providing 360+ skills and 21 agents for development workflows.
 
 ## Install the Marketplace
 
@@ -12,7 +12,7 @@ Install the full plugin collection as a marketplace:
 claude plugin install laurigates/claude-plugins
 ```
 
-This registers all 42 plugins. You can then enable individual plugins as needed.
+This registers all 43 plugins. You can then enable individual plugins as needed.
 
 ### Install Individual Plugins
 
@@ -93,6 +93,7 @@ Alternatively, use the `/configure:mcp` skill for interactive configuration.
 | Plugin | Skills | Description |
 |--------|--------|-------------|
 | **code-quality-plugin** | 14 | Code review, refactoring, linting, static analysis, debugging methodology |
+| **software-design-plugin** | 5 | Software design methodology - deep modules, design by contract, GoF pattern selection, legacy seams, pseudocode |
 | **evaluate-plugin** | 6 + 3 agents | Skill evaluation and benchmarking - test effectiveness, grade results |
 | **codebase-attributes-plugin** | 3 | Structured codebase health attributes with severity-based agent routing |
 | **feedback-plugin** | 1 | Session feedback analysis - capture skill bugs and enhancements as issues |
