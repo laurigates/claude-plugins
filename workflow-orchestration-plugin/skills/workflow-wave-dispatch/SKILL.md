@@ -4,8 +4,8 @@ description: Sequential-wave dispatch for multi-agent work with cross-task depen
 user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 created: 2026-04-24
-modified: 2026-06-04
-reviewed: 2026-06-04
+modified: 2026-06-23
+reviewed: 2026-06-23
 ---
 
 # Workflow Wave Dispatch
