@@ -5,7 +5,7 @@ args: <plugin/skill-name> [--apply] [--description-only] [--best-of N]
 allowed-tools: Task, Read, Write, Edit, Glob, Grep, Bash(bash *), Bash(python3 *), Bash(cat *), Bash(jq *), Bash(find *), Bash(diff *), AskUserQuestion, TodoWrite
 argument-hint: "git-plugin/git-commit [--apply] [--best-of 3]"
 created: 2026-03-04
-modified: 2026-06-11
+modified: 2026-06-23
 reviewed: 2026-03-04
 ---
 
@@ -32,6 +32,7 @@ Parse these from `$ARGUMENTS`:
 | `--apply` | false | Apply approved changes to SKILL.md |
 | `--description-only` | false | Focus on description improvements only |
 | `--best-of N` | 1 | Generate N candidate revisions and apply the eval-ranked winner (requires `--apply`) |
+| `--force-apply` | false | Apply even when the delta-verify gate shows the edit does not shrink the source-failure set (override; requires `--apply`) |
 
 ## Execution
 
@@ -45,6 +46,22 @@ Read the most recent benchmark from:
 If no results exist, suggest running `/evaluate:skill` first and stop.
 
 Also read the current SKILL.md to understand the skill.
+
+**Capture the source-failure set.** From the benchmark, record the set of
+eval-case IDs that *failed* with the skill active — these are the cases the
+forthcoming edit is meant to fix, and they are the input to the delta-verify
+gate below:
+
+```
+cat <plugin>/skills/<skill>/eval-results/benchmark.json \
+  | jq -r '[.cases[] | select(.with_skill.passed == false) | .id]'
+```
+
+This set is distinct from the golden `evals.json` suite as a whole: the golden
+set measures overall pass rate, the source-failure set measures whether the
+edit fixed *the specific failures that motivated it* (AEGIS delta-verify). If
+the set is empty (a clean benchmark, or no per-case data), there is nothing for
+the gate to verify — skip it and proceed.
 
 ### Step 2: Analyze results
 
@@ -102,6 +119,33 @@ Current pass rate: 72%
 
 If `--apply` is NOT set, stop here.
 
+### Delta-verify gate (AEGIS source-cases — required before any apply)
+
+Before *any* edit is written to the live SKILL.md — both the plain `--apply`
+path (Step 5) and the `--best-of` path (Step 5a) — confirm the edit actually
+**shrinks the source-failure set** captured in Step 1, not merely that the
+overall golden-set pass rate is higher. Ranking by aggregate pass rate can
+reward a candidate that fixes unrelated cases while leaving the motivating
+failures broken; this gate closes that gap (HarnessX/AEGIS: re-run on the
+source cases, confirm the failure count shrinks before applying).
+
+Run the gate against the **drafted candidate** (a candidate file under
+`eval-results/candidates/`, or for plain `--apply` a draft written there
+first), never the live SKILL.md:
+
+1. Re-run **only the source-failure cases** against the candidate — spawn one
+   Task subagent (`subagent_type: general-purpose`) per case with the candidate
+   content as the skill context (the same rollout machinery as Step 5a; use
+   `prepare_run.sh`), and grade each transcript with
+   `python3 evaluate-plugin/scripts/grade_deterministic.py`.
+2. Compute `delta = (source failures before) − (source failures after)`.
+3. **Gate:** apply only when `delta > 0` (the candidate fixes at least one
+   motivating failure and regresses none of the others). When `delta <= 0`, do
+   **not** write the edit — report which source cases still fail and suggest
+   revising the suggestions. `--force-apply` overrides the gate (records the
+   override in history). When the source-failure set is empty, the gate is a
+   no-op and the apply proceeds.
+
 ### Step 5: Apply changes (if --apply)
 
 Use AskUserQuestion to let the user select which suggestions to apply:
@@ -117,7 +161,9 @@ Which improvements should I apply?
 If `--best-of N` with N > 1, follow Step 5a to pick the winning revision
 first, then continue with the apply flow below using the winner's content.
 
-For each approved suggestion:
+Draft the approved edits into a candidate file and run them through the
+**Delta-verify gate** above. Only proceed to write the live SKILL.md when the
+gate passes (or `--force-apply` is set). For each approved suggestion:
 1. Read the current SKILL.md
 2. Apply the change using Edit
 3. Update the `modified` date in frontmatter
@@ -143,8 +189,13 @@ let evaluation pick the winner.
      `python3 evaluate-plugin/scripts/grade_deterministic.py` — typed checks
      grade for zero judge tokens; defer fuzzy assertions to the `eval-grader`
      agent.
-   - Rank candidates by mean pass rate. Break ties with the `eval-comparator`
-     agent: blind pairwise comparison of the tied candidates' transcripts.
+   - Rank candidates by **source-failure delta first** (how many of the Step 1
+     source-failure cases each candidate fixes — the Delta-verify gate signal),
+     then by mean golden-set pass rate, so a candidate that lifts the aggregate
+     while leaving the motivating failures broken never wins. Break remaining
+     ties with the `eval-comparator` agent: blind pairwise comparison of the
+     tied candidates' transcripts. Discard any candidate with `delta <= 0`
+     unless `--force-apply` is set.
 
 3. **Fall back to blind self-preference when no evals exist.** Without
    `evals.json` there are no prompts to roll out. Rank via the
@@ -174,7 +225,8 @@ Add a new iteration entry recording:
 - Timestamp
 - Pass rate from current benchmark
 - Summary of changes made
-- Candidate ranking when `--best-of` was used: a `candidates` array of `{id, pass_rate, selected}` (use `comparison_score` instead of `pass_rate` for the no-evals fallback)
+- Delta-verify result: `source_failures_before`, `source_failures_after`, and the resulting `source_failure_delta` (and whether `--force-apply` overrode a non-positive delta)
+- Candidate ranking when `--best-of` was used: a `candidates` array of `{id, pass_rate, source_failure_delta, selected}` (use `comparison_score` instead of `pass_rate` for the no-evals fallback)
 
 ### Step 6: Suggest re-evaluation
 
@@ -192,6 +244,7 @@ Changes applied. Run `/evaluate:skill <plugin/skill-name>` to measure improvemen
 | Read skill | `cat <plugin>/skills/<skill>/SKILL.md` |
 | Read history | `cat <plugin>/skills/<skill>/eval-results/history.json \| jq '.iterations[-1]'` |
 | Check pass rate | `cat <plugin>/skills/<skill>/eval-results/benchmark.json \| jq '.summary.with_skill.mean_pass_rate'` |
+| Source-failure set | `cat <plugin>/skills/<skill>/eval-results/benchmark.json \| jq -r '[.cases[] \| select(.with_skill.passed == false) \| .id]'` |
 
 ## Quick Reference
 
@@ -199,4 +252,5 @@ Changes applied. Run `/evaluate:skill <plugin/skill-name>` to measure improvemen
 |------|-------------|
 | `--apply` | Apply approved changes to SKILL.md |
 | `--description-only` | Focus on description improvements only |
-| `--best-of N` | Generate N candidate revisions, rank by eval pass rate, apply winner |
+| `--best-of N` | Generate N candidate revisions, rank by source-failure delta then pass rate, apply winner |
+| `--force-apply` | Apply even when the delta-verify gate shows the edit does not shrink the source-failure set |

@@ -581,6 +581,24 @@ check_skill_body() {
       done
     fi
 
+    # Regression: evaluate-improve must gate any --apply on the AEGIS source-cases
+    # DELTA-VERIFY: re-run the source-failure set (the eval cases that motivated
+    # the edit, captured in Step 1) against the drafted candidate and confirm the
+    # failure count SHRINKS before writing the live SKILL.md — not merely that the
+    # aggregate golden-set pass rate rose (HarnessX/AEGIS, issue #1662). The
+    # pre-existing --best-of ranked only by golden-set pass rate, which can reward
+    # a candidate that lifts unrelated cases while leaving the motivating failures
+    # broken. A bulk edit that drops the gate or reverts ranking to pass-rate-only
+    # would silently restore that gap, so assert the three load-bearing tokens.
+    if [ "$skill_name" = "evaluate-improve" ] && [ "$plugin" = "evaluate-plugin" ]; then
+      for token in 'Delta-verify gate' 'source-failure set' 'shrink'; do
+        if ! grep -qF "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain delta-verify token '${token}' (re-run source-failure cases, confirm the count shrinks before apply — issue #1662)")
+          has_errors=true
+        fi
+      done
+    fi
+
     # Regression: comfyui-node-scaffold must emit a TypeScript + bun-build pack
     # consuming @laurigates/comfy-modal-kit (NOT a vanilla-JS pack with copied-in
     # modal primitives), and its biome pin must be consistent across biome.json,
