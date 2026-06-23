@@ -39,6 +39,7 @@
   "testing-plugin": "3.15.2",
   "tools-plugin": "2.8.5",
   "typescript-plugin": "1.8.7",
-  "workflow-orchestration-plugin": "1.8.1",
-  "session-plugin": "1.4.0"
+  "session-plugin": "1.4.0",
+  "software-design-plugin": "1.0.0",
+  "workflow-orchestration-plugin": "1.8.1"
 }

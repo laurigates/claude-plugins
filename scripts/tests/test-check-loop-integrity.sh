@@ -21,6 +21,7 @@ seed_clean() {
   mkdir -p "$root/workflow-orchestration-plugin/skills/workflow-checkpoint-refactor"
   mkdir -p "$root/project-plugin/skills/project-test-loop"
   mkdir -p "$root/agent-patterns-plugin/skills/adversarial-review"
+  mkdir -p "$root/agent-patterns-plugin/skills/execution-grounded-review"
 
   cat > "$root/.claude/rules/loop-integrity.md" <<'EOF'
 The stop condition is judged independently.
@@ -41,6 +42,10 @@ See .claude/rules/loop-integrity.md
 EOF
 
   cat > "$root/agent-patterns-plugin/skills/adversarial-review/SKILL.md" <<'EOF'
+See .claude/rules/loop-integrity.md
+EOF
+
+  cat > "$root/agent-patterns-plugin/skills/execution-grounded-review/SKILL.md" <<'EOF'
 See .claude/rules/loop-integrity.md
 EOF
 }
@@ -83,6 +88,12 @@ no_xref="$WORK/no_xref"; seed_clean "$no_xref"
 tl="$no_xref/project-plugin/skills/project-test-loop/SKILL.md"
 : > "$tl"   # empty out the cross-reference
 assert_count "test-loop missing cross-reference is flagged" 1 "$no_xref"
+
+# 4b. execution-grounded-review (behaviour verifier sibling) loses its xref → flagged.
+no_egr="$WORK/no_egr"; seed_clean "$no_egr"
+egr="$no_egr/agent-patterns-plugin/skills/execution-grounded-review/SKILL.md"
+: > "$egr"   # empty out the cross-reference
+assert_count "execution-grounded-review missing cross-reference is flagged" 1 "$no_egr"
 
 # 5. --strict exits non-zero on issues, zero when clean.
 if bash "$GUARD" --strict "$clean" >/dev/null 2>&1; then
