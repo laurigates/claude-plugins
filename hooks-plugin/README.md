@@ -91,6 +91,8 @@ A PreToolUse hook that blocks access to sensitive files and prevents credential 
 
 A PreToolUse hook that blocks write operations on protected branches (main, master).
 
+**Defers to auto mode.** Under permission mode `"auto"`, Claude Code routes the actual tool call through its own classifier with full environment context, which already covers force-push and protected-branch pushes. This hook would only double-gate that (and re-introduce blunt false positives), so it exits early when `permission_mode == "auto"`. It still enforces in `default`/`plan`/`acceptEdits` and — crucially — in web/remote/CI and non-Opus sessions where auto mode is unavailable.
+
 | Operation | Behavior |
 |-----------|----------|
 | Read-only git (status, diff, log, show) | Allowed |
@@ -223,16 +225,6 @@ A `type: "agent"` hook that verifies task implementation quality when a team tas
 | Type | `agent` (multi-turn with tool access) |
 | Timeout | 60s |
 | Checks | TODO/FIXME comments, debug artifacts, test presence |
-
-### UserPromptSubmit — Prompt Safety Classification (prompt)
-
-A `type: "prompt"` hook that classifies user prompts for safety before Claude processes them. Flags destructive operations (force push, rm -rf, production deployments).
-
-| Aspect | Detail |
-|--------|--------|
-| Type | `prompt` (single-turn LLM call) |
-| Timeout | 15s |
-| Scope | Only flags explicitly destructive requests |
 
 ## Installation
 

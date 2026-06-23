@@ -113,6 +113,17 @@ require_marker "$dispatch_skill" 'git -C "$WORKTREE"' "the absolute-path git idi
 require_marker "$dispatch_skill" "loses worktree isolation" "the SendMessage-resume isolation-loss caveat (issue #1546)"
 require_marker "$dispatch_skill" "#1546" "the issue reference"
 
+# Regression (#1692 sibling): the GIT_DIR/GIT_WORK_TREE export leak — exporting
+# git env to paper over a bare worktree redirects every git op (and any
+# git-shelling test/hook subprocess) at the shared common config, corrupting all
+# worktrees. DISTINCT from the empty-mktemp vector guarded by
+# check-git-sandbox-guards.sh (#1692): there the path is empty; here the path is
+# correct and the exported env is the hijack. Assert the SKILL.md carries the
+# hazard reference + the env-neutralizing idiom, and REFERENCE.md the section.
+require_marker "$dispatch_skill" "#1692" "the GIT_DIR-export worktree-leak reference (#1692 sibling)"
+require_marker "$dispatch_skill" "env -u GIT_DIR" "the env-neutralizing git idiom (#1692 sibling)"
+require_marker "$reference_md" "Worktree GIT_DIR-export leak" "the REFERENCE.md GIT_DIR-export section (#1692 sibling)"
+
 if [ "$errors" -ne 0 ]; then
   echo
   echo "The loud-failure contract (issue #1422) and the hook-thrashing heuristic"

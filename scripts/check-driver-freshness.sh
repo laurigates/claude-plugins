@@ -55,13 +55,23 @@ extract_date_field() {
   head -20 "$skill_file" | grep -m1 "^${field_name}:" | sed 's/^[^:]*:[[:space:]]*//' | tr -d '\r '
 }
 
-# Cross-platform date → epoch seconds
+# Cross-platform date → epoch seconds.
+#
+# Pin the time component to 00:00:00. BSD `date -j -f "%Y-%m-%d"` fills the
+# UNSPECIFIED time fields with the *current* wall-clock time-of-day, so two
+# parses of the same date string a second apart return epochs that differ by
+# one second. Because driver_epoch is computed once up front and each
+# dep_epoch later inside the loop, an equal dep/driver date compares as
+# `-gt` (newer) whenever the two `date` calls straddle a second boundary —
+# the non-deterministic #1704 failure (its diagnostics revealed the 1s gap).
+# Parsing an explicit `00:00:00` makes the epoch a pure function of the date
+# on both BSD (`%Y-%m-%d %H:%M:%S`) and GNU (`-d "<date> 00:00:00"`).
 date_to_epoch() {
   local date_str="$1"
-  if date -j -f "%Y-%m-%d" "$date_str" "+%s" >/dev/null 2>&1; then
-    date -j -f "%Y-%m-%d" "$date_str" "+%s"
-  elif date -d "$date_str" "+%s" >/dev/null 2>&1; then
-    date -d "$date_str" "+%s"
+  if date -j -f "%Y-%m-%d %H:%M:%S" "$date_str 00:00:00" "+%s" >/dev/null 2>&1; then
+    date -j -f "%Y-%m-%d %H:%M:%S" "$date_str 00:00:00" "+%s"
+  elif date -d "$date_str 00:00:00" "+%s" >/dev/null 2>&1; then
+    date -d "$date_str 00:00:00" "+%s"
   else
     echo "0"
   fi

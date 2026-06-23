@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.29.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.28.0...configure-plugin-v1.29.0) (2026-06-22)
+
+
+### Features
+
+* **configure-plugin:** configure-gitattributes skill + additive-conflict auto-resolution ([#1759](https://github.com/laurigates/claude-plugins/issues/1759)) ([9f9a5e0](https://github.com/laurigates/claude-plugins/commit/9f9a5e01cac955330cec334711a7b646c878c758))
+
+## [1.28.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.27.0...configure-plugin-v1.28.0) (2026-06-22)
+
+
+### Features
+
+* **configure-plugin:** add drift signal to configure-web-session ([#1743](https://github.com/laurigates/claude-plugins/issues/1743)) ([cb62667](https://github.com/laurigates/claude-plugins/commit/cb626671bb65bc07b5ff668432df7427cc86b961))
+
 ## [1.27.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.26.0...configure-plugin-v1.27.0) (2026-06-18)
 
 

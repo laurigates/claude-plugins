@@ -38,6 +38,14 @@ Editing an existing skill hot-reloads, but **adding** a new skill directory need
 
 Use `/reload-skills` after scaffolding a new skill so it becomes invocable immediately. The `SessionStart` hook form is the way an installer hook (e.g. one that drops skills into place on session start) surfaces those skills without a restart.
 
+### Nested `.claude/skills` Directories (2.1.178+)
+
+Skills in **nested** `.claude/skills` directories (not just the project root) now load. When two skills collide on name across scopes, the skill is surfaced in disambiguated `plugin:name` form so both remain addressable. Combine with the project-root auto-load behavior in `.claude/rules/plugin-structure.md` (§ Local `.claude/skills` Plugins).
+
+### Hiding Bundled Skills (2.1.169+)
+
+The `disableBundledSkills` setting and the `CLAUDE_CODE_DISABLE_BUNDLED_SKILLS` environment variable hide **bundled** skills, workflows, and built-in slash commands from the model. Use it to slim the model's tool surface to only project/plugin/user skills — e.g. when a curated plugin set should fully replace the built-ins, or to cut per-turn context cost. It hides the built-ins only; your own skills are unaffected.
+
 ### SlashCommand Tool Invocation
 
 Commands can invoke other commands programmatically:
@@ -140,6 +148,8 @@ Log to logs/${CLAUDE_SESSION_ID}.log.
 
 Run helper: !`bash ${CLAUDE_SKILL_DIR}/scripts/helper.sh`
 ```
+
+> **Escaping a literal `$` (2.1.163+)**: a `$` immediately before a digit is treated as a positional substitution (`$0`, `$1`, …). To emit a **literal** `$` before a digit in a skill/command body, escape it as `\$` — e.g. write `\$5.00` to render `$5.00` instead of substituting argument 5. Only `$` followed by a digit needs escaping; a `$` before a letter or space is left alone.
 
 ### Model Selection
 

@@ -7,6 +7,9 @@
 #     per .claude/rules/handling-blocked-hooks.md.
 #   - Destructive operations (reset, rebase): prompts user to approve via "ask"
 #   - Read-only operations: always allowed silently
+#   - Under permission mode "auto": defers entirely to auto mode's classifier
+#     (exits early) to avoid double-gating; still enforces in every other mode
+#     and in surfaces where auto mode is unavailable (web/remote/CI, non-Opus).
 #
 # Toggle: a human operator can export CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1
 # in their shell environment (e.g. in a personal repo / dotfiles / main-branch-
@@ -39,6 +42,17 @@ COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 # so the branch lookup must run here, not in the hook's own process cwd, or a
 # correctly-branched worktree gets misread as `main`. See #1695.
 HOOK_CWD=$(echo "$INPUT" | jq -r '.cwd // empty')
+
+# Defer to auto mode. Under permission mode "auto", Claude Code routes the
+# actual tool call through its own classifier with full environment context
+# (CLAUDE.md, trusted-repo config, force-push / protected-branch soft_deny).
+# This deterministic guard would only double-gate that and re-introduce the
+# blunt false positives auto mode avoids. So enforce ONLY outside auto mode —
+# which still covers default/plan/acceptEdits and, crucially, web/remote/CI and
+# non-Opus sessions where auto mode is unavailable. permission_mode is a common
+# hook input field; absent (older clients) it's empty and enforcement proceeds.
+PERMISSION_MODE=$(echo "$INPUT" | jq -r '.permission_mode // empty')
+[ "$PERMISSION_MODE" = "auto" ] && exit 0
 
 # Only applies to Bash tool
 [ "$TOOL_NAME" != "Bash" ] && exit 0

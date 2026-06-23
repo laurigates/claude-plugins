@@ -562,6 +562,25 @@ check_skill_body() {
       fi
     fi
 
+    # Regression: agent-teams must document the post-2.1.178 implicit-team model,
+    # not the removed TeamCreate/TeamDelete tools. Claude Code 2.1.178 removed
+    # those tools — every session has one implicit team gated on
+    # CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1, and team_name is accepted-but-ignored.
+    # The skill was built entirely around the removed tools, so it would have
+    # instructed Claude to call tools that no longer exist (issue #1733). Anchor on
+    # the two markers of the current model; a bulk edit reverting to a
+    # TeamCreate-setup flow drops both. (The literal strings TeamCreate/TeamDelete
+    # legitimately remain in the BREAKING note and the Common Mistakes row, so we
+    # assert the *presence* of the new model rather than the absence of the words.)
+    if [ "$skill_name" = "agent-teams" ] && [ "$plugin" = "agent-patterns-plugin" ]; then
+      for token in 'CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS' 'implicit team'; do
+        if ! grep -qF "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must document the implicit-team model token '${token}' (TeamCreate/TeamDelete removed in 2.1.178 — issue #1733)")
+          has_errors=true
+        fi
+      done
+    fi
+
     # Regression: comfyui-node-scaffold must emit a TypeScript + bun-build pack
     # consuming @laurigates/comfy-modal-kit (NOT a vanilla-JS pack with copied-in
     # modal primitives), and its biome pin must be consistent across biome.json,
@@ -637,6 +656,22 @@ check_skill_body() {
         issues+=("❌ ${plugin}/${skill_name}: SKILL.md must include the cwd-remote-vs-dominant-source branch ('dominant source differs from') in Step 1a decision table (issue #1425)")
         has_errors=true
       fi
+    fi
+
+    # Regression: configure-web-session had no drift signal for already-onboarded
+    # repos — an existing install_pkgs.sh read as compliant even after the canonical
+    # spec moved on (Renovate pins, path-bootstrap.sh wired first, allowlist-safe
+    # download URLs), so 7/7 repos silently fell out of spec (issue #1670). The
+    # semantic invariant is that the skill carries a drift-detection step for the
+    # already-onboarded case plus a portfolio re-audit sweep. Two literals anchor
+    # the fix; dropping either erases the drift signal.
+    if [ "$skill_name" = "configure-web-session" ]; then
+      for token in 'spec drift' 're-audit'; do
+        if ! grep -qiF "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain drift/re-audit token '${token}' for already-onboarded repos (issue #1670)")
+          has_errors=true
+        fi
+      done
     fi
   done < <(find "$skills_dir" -type f \( -iname "SKILL.md" -o -iname "skill.md" \) -print0 2>/dev/null)
 

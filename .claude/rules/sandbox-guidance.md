@@ -96,6 +96,32 @@ The sandbox runs as **root**, so `sudo` is unnecessary for writes to `/usr/local
 
 When working in a git worktree, the sandbox write allowlist previously covered the **entire main repo root**, letting sandboxed commands write anywhere in the primary checkout. As of 2.1.149 it is narrowed to only the shared `.git` directory — and even there, `hooks/` and `config` are denied. Sandboxed writes that relied on reaching back into the main repo from a worktree will now be blocked; scope writes to the worktree itself.
 
+### Sandbox Startup Robustness (2.1.176+ / 2.1.178+ / 2.1.179+)
+
+A run of fixes made the Linux sandbox tolerate common repo shapes that previously broke startup or bloated the Bash tool description:
+
+| Version | Fix |
+|---------|-----|
+| 2.1.176 | Linux sandbox no longer fails to start when `.claude/settings.json` is a **symlink with an absolute target** (common in dotfile/chezmoi setups where settings are symlinked from a managed location). |
+| 2.1.178 | Linux sandbox no longer fails to start when `.claude/skills` or `.claude/hooks` is a **symlink** (e.g. shared skill/hook directories linked into a repo). |
+| 2.1.179 | A `sandbox.denyRead`/`allowRead` glob spanning a **large directory tree** no longer expands into an enormous Bash tool description — the glob is kept compact instead of enumerating every matched path, which had been inflating per-turn context. |
+
+If a sandboxed session previously failed to start in a repo that symlinks `.claude/` paths, that should now work without unlinking them.
+
+### Apple Events on macOS — `sandbox.allowAppleEvents` (2.1.181+)
+
+`sandbox.allowAppleEvents` is an **opt-in** setting that lets sandboxed commands send Apple Events on macOS (e.g. to script Finder, Terminal, or another app via `osascript`). It is off by default because Apple Events cross the app-isolation boundary; enable it only for commands that genuinely need to drive another macOS app:
+
+```json
+{
+  "sandbox": {
+    "allowAppleEvents": true
+  }
+}
+```
+
+macOS-only — the setting has no effect in the Linux web sandbox.
+
 ### Temp Directory Pattern
 
 ```bash
@@ -153,6 +179,9 @@ The web sandbox base image includes standard language runtimes and system tools 
 | `CLAUDE_CODE_DISABLE_CRON` | Set to stop scheduled cron jobs mid-session (2.1.72+) | Session cron management |
 | `CLAUDE_CODE_SESSION_ID` | Always (incl. stdio MCP server subprocesses as of 2.1.154) | Session ID matching hook `session_id` -- available in Bash tool subprocesses (2.1.132+) |
 | `CLAUDECODE` | Stdio MCP server subprocesses (2.1.154+) | Set to `1` so MCP servers can detect they were launched by Claude Code |
+| `CLAUDE_CODE_SAFE_MODE` | Troubleshooting (2.1.169+) | Equivalent to the `--safe-mode` flag — starts Claude Code with **all customizations disabled** (CLAUDE.md, plugins, skills, hooks, MCP servers) |
+
+> **Note (2.1.169) — Safe mode for troubleshooting**: the `--safe-mode` flag (and the `CLAUDE_CODE_SAFE_MODE` env var) starts a session with every customization disabled — CLAUDE.md, plugins, skills, hooks, and MCP servers all off. Use it to bisect whether a misbehaviour comes from the harness itself or from a custom skill/hook/plugin: if the problem vanishes in safe mode, it's in your customizations. Because skills and hooks are inert in safe mode, do not rely on a SessionStart install hook in a safe-mode session — install tools manually.
 
 > **Note (2.1.139)**: `CLAUDE_PROJECT_DIR` is now passed to MCP stdio servers (matching the hook environment). Plugin `mcpServers` configs can reference `${CLAUDE_PROJECT_DIR}` in `command` / `args` / `env` without having to compute the path inside the server.
 >

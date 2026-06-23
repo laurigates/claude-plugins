@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.6](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.5.5...hooks-plugin-v2.5.6) (2026-06-22)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** defer safety gating to auto mode, drop prompt classifier ([#1765](https://github.com/laurigates/claude-plugins/issues/1765)) ([19ecb00](https://github.com/laurigates/claude-plugins/commit/19ecb0091dcb1e0585d147a06cfe0ef8c8f86e4d))
+
 ## [2.5.5](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.5.4...hooks-plugin-v2.5.5) (2026-06-22)
 
 

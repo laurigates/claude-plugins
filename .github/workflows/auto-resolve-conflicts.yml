@@ -117,7 +117,7 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN || github.token }}
 
-      - name: Attempt merge to surface conflicts
+      - name: Merge base and resolve additive conflicts
         if: steps.stale_check.outputs.is_stale_automated != 'true'
         id: merge
         run: |
@@ -125,24 +125,52 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git fetch origin "${{ steps.pr.outputs.base_branch }}"
 
-          if git merge "origin/${{ steps.pr.outputs.base_branch }}" --no-commit --no-ff 2>/dev/null; then
-            echo "has_conflicts=false" >> "$GITHUB_OUTPUT"
-            # No conflicts — abort the merge, nothing to do
-            git merge --abort 2>/dev/null || git reset --hard HEAD
-            echo "::notice::PR #${{ matrix.pr_number }} has no actual conflicts"
-          else
-            echo "has_conflicts=true" >> "$GITHUB_OUTPUT"
+          # Start the merge. Files marked `merge=union` in .gitattributes
+          # (append-only logs/tables) auto-resolve here with no markers.
+          git merge "origin/${{ steps.pr.outputs.base_branch }}" --no-commit --no-ff || true
 
-            # Capture conflicted files for context
-            CONFLICTED=$(git diff --name-only --diff-filter=U)
-            echo "conflicted_files<<EOF" >> "$GITHUB_OUTPUT"
-            echo "$CONFLICTED" >> "$GITHUB_OUTPUT"
-            echo "EOF" >> "$GITHUB_OUTPUT"
-            echo "::warning::PR #${{ matrix.pr_number }} has conflicts in: $CONFLICTED"
+          # Deterministic pre-pass: union-merge any *additive* conflicts — both
+          # sides only inserted lines — with no LLM. Genuine semantic conflicts
+          # are left staged-as-conflicted for the Claude step below.
+          if [ -f scripts/resolve-additive-conflicts.py ]; then
+            python3 scripts/resolve-additive-conflicts.py || true
           fi
 
+          # What still conflicts after the deterministic pass?
+          REMAINING=$(git diff --name-only --diff-filter=U)
+          if [ -n "$REMAINING" ]; then
+            echo "needs_llm=true" >> "$GITHUB_OUTPUT"
+            echo "outcome=llm" >> "$GITHUB_OUTPUT"
+            echo "conflicted_files<<EOF" >> "$GITHUB_OUTPUT"
+            echo "$REMAINING" >> "$GITHUB_OUTPUT"
+            echo "EOF" >> "$GITHUB_OUTPUT"
+            echo "::warning::PR #${{ matrix.pr_number }} has semantic conflicts needing the LLM: $REMAINING"
+          else
+            echo "needs_llm=false" >> "$GITHUB_OUTPUT"
+            # Nothing left conflicted. Is there a real merge/resolution to commit,
+            # or was the merge a genuine no-op (base already merged)?
+            if git diff --cached --quiet && git diff --quiet; then
+              echo "outcome=noop" >> "$GITHUB_OUTPUT"
+              git merge --abort 2>/dev/null || git reset --hard HEAD
+              echo "::notice::PR #${{ matrix.pr_number }} has no actual conflicts (nothing to resolve)"
+            else
+              echo "outcome=clean" >> "$GITHUB_OUTPUT"
+              echo "::notice::PR #${{ matrix.pr_number }} resolved deterministically (additive/union merge — no LLM)"
+            fi
+          fi
+
+      - name: Commit deterministic resolution
+        if: steps.stale_check.outputs.is_stale_automated != 'true' && steps.merge.outputs.outcome == 'clean'
+        env:
+          GH_TOKEN: ${{ secrets.MY_RELEASE_PLEASE_TOKEN || github.token }}
+        run: |
+          git commit --no-edit
+          git push origin "${{ steps.pr.outputs.head_branch }}"
+          gh pr comment "${{ matrix.pr_number }}" --repo "${{ github.repository }}" \
+            --body "Merge conflicts with \`${{ steps.pr.outputs.base_branch }}\` were resolved deterministically (additive/union merge — no LLM needed)."
+
       - name: Resolve conflicts with Claude
-        if: steps.merge.outputs.has_conflicts == 'true' && steps.stale_check.outputs.is_stale_automated != 'true'
+        if: steps.merge.outputs.needs_llm == 'true' && steps.stale_check.outputs.is_stale_automated != 'true'
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           GH_TOKEN: ${{ secrets.MY_RELEASE_PLEASE_TOKEN || github.token }}
@@ -158,6 +186,8 @@ jobs:
           Branch `${{ steps.pr.outputs.head_branch }}` has conflicts when merging `${{ steps.pr.outputs.base_branch }}`.
 
           A `git merge origin/${{ steps.pr.outputs.base_branch }}` has already been started and left in a conflicted state.
+
+          Note: purely *additive* conflicts (append-only tables, changelogs — both sides only inserted lines) have already been resolved automatically and staged. Only the files listed below still need you. Do NOT undo the staged resolutions; your `git commit --no-edit` at the end will include them.
 
           ## Conflicted Files
 

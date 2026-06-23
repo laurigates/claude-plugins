@@ -10,7 +10,7 @@ The root cause is missing coordination: each agent assumes it is the sole writer
 
 ## Detection Signals
 
-No single signal is reliable. Combine these five and treat any positive as "assume a coworker is present".
+No single signal is reliable. Combine these six and treat any positive as "assume a coworker is present".
 
 | Signal | Detects | Cost | Platform |
 |--------|---------|------|----------|
@@ -19,6 +19,7 @@ No single signal is reliable. Combine these five and treat any positive as "assu
 | **Process scan** — find other `claude`/`node` processes whose `cwd` is the same repo | Ad-hoc agents that do not write markers | ~100ms | Linux/macOS differ |
 | **Taskwarrior `+ACTIVE` claims** — query `task project:<repo-basename> +ACTIVE export` for claims by other agent IDs | Coworkers that picked up coordination work via `/taskwarrior:task-claim`, even from a different process tree or host | ~50ms | Any host with `task` + `jq` |
 | **Worktree leak** — every untracked file in the parent is probed against the working tree and HEAD of each linked `git worktree` | Transient leaks where a child `Agent(isolation: "worktree")` writes a file that briefly appears in the parent checkout at the same relative path (issue #1319) | ~10ms per worktree | All |
+| **Bare flip** — the shared checkout reports `core.bare=true` via `git rev-parse --is-bare-repository`, or a leaked `GIT_DIR` / `GIT_WORK_TREE` env points away from the repo | A concurrent agent fleet flipping the shared repo to bare (every `git status`/`commit` then fails with "fatal: this operation must be run in a work tree") or redirecting git at another tree (issue #1692) | Free | All |
 
 ### Baseline drift
 
@@ -116,6 +117,32 @@ Limitations:
 
 - Two agents writing genuinely independent files that happen to share a path will produce a false-positive leak match. Treat the verdict as a strong hint, not a proof.
 - A bare-clone style harness that doesn't use `git worktree` won't produce any `LINKED_WORKTREE_COUNT > 0`, so the signal silently degrades to a no-op there.
+
+### Bare flip (issue #1692)
+
+A concurrent agent fleet sharing one checkout can flip the shared repo to `core.bare = true` (observed alongside a junk `[user]` identity injected into `.git/config`). Once bare, every `git status` / `git commit` in every linked worktree fails with `fatal: this operation must be run in a work tree`. The sibling failure mode is a leaked `GIT_DIR` / `GIT_WORK_TREE` env that silently redirects git at another tree.
+
+The prevention side already landed: `scripts/check-git-sandbox-guards.sh` blocks the root cause — a test/hook running `git -C "$VAR"` against an unguarded `VAR=$(mktemp -d)` that resolves empty and falls back to the CWD. This sixth signal is the **detection + recovery** complement, so a session can notice the corruption instead of misreading the cascade of git failures as its own fault.
+
+Detection is cheap and worktree-independent:
+
+```bash
+is_bare="$(git rev-parse --is-bare-repository 2>/dev/null || echo unknown)"
+[ "$is_bare" = "true" ] && echo "BARE_FLIP_DETECTED=true"
+# Plus: GIT_DIR / GIT_WORK_TREE set and pointing outside the repo root.
+```
+
+A positive yields the dedicated verdict `bare_flip_suspected`, ranked ahead of the other signals because a bare flip breaks git for every linked worktree.
+
+#### Recovery and commit-early
+
+| Step | Action |
+|------|--------|
+| Restore the working tree | `git config core.bare false`; if that refuses, `GIT_DIR=.git GIT_WORK_TREE=. git -c core.bare=false status` |
+| Clear leaked env | `unset GIT_DIR GIT_WORK_TREE` (whatever the signal reported as `LEAKED_GIT_DIR` / `LEAKED_GIT_WORK_TREE`) |
+| Recover wiped untracked work | `git reflog -20`, `git fsck --unreachable`, and check the agent worktree branches (`git worktree list`, `git branch -a`) — a file an agent committed survives on its branch even when the parent's untracked copy was wiped |
+
+**Commit early.** Untracked files are the only work a concurrent branch switch / reset can destroy with no recovery path — committed work survives in the reflog, untracked work does not. When many sibling worktrees are active in one clone, commit or stash new files promptly and prefer working in your own `git worktree` so a flip in the shared checkout cannot reach your tree.
 
 ## Response Rules
 
