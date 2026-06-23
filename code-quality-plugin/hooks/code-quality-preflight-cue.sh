@@ -78,8 +78,17 @@ case "$cq_base_name" in
 esac
 
 # Signal 2: a public-symbol / export line in the edit payload.
+# Shell scripts are special-cased: `export FOO=bar` is a builtin variable
+# assignment, not a public-API symbol, so it must NOT count as structural —
+# otherwise a small shell wrapper (e.g. a ~25-line LaunchAgent script) trips
+# the cue on its env exports (issue #1766). Shell scripts still fire on
+# Signal 3 (>= 50 lines), where a shellcheck pre-flight is genuinely warranted.
+case "$cq_base_name" in
+    *.sh|*.bash|*.zsh) cq_symbol_re='^[+-]?[[:space:]]*(pub |public |def |class |func )' ;;
+    *)                 cq_symbol_re='^[+-]?[[:space:]]*(export |export default|module\.exports|pub |public |def |class |func )' ;;
+esac
 if [ "$cq_is_structural" -eq 0 ] && \
-    printf '%s' "$cq_payload" | grep -Eq '^[+-]?[[:space:]]*(export |export default|module\.exports|pub |public |def |class |func )'; then
+    printf '%s' "$cq_payload" | grep -Eq "$cq_symbol_re"; then
     cq_is_structural=1
 fi
 
@@ -103,7 +112,14 @@ if [ -n "$cq_session_id" ]; then
     touch "$cq_marker" 2>/dev/null || true
 fi
 
-cq_cue="[code-quality] Large/structural edit detected. Run /code-quality:code-lint (and /evaluate:evaluate-skill if a skill changed) as a pre-flight before continuing."
+# The /evaluate:evaluate-skill half is only relevant when a skill file changed;
+# mention it exclusively for paths under a skills/ tree so it doesn't read as a
+# no-op suggestion on ordinary code edits (issue #1766). SKILL.md itself is .md
+# (excluded above), so in practice this fires for non-.md files under skills/.
+case "$cq_file_path" in
+    */skills/*|skills/*) cq_cue="[code-quality] Large/structural edit detected. Run /code-quality:code-lint as a pre-flight, and /evaluate:evaluate-skill since a skill changed, before continuing." ;;
+    *)                   cq_cue="[code-quality] Large/structural edit detected. Run /code-quality:code-lint as a pre-flight before continuing." ;;
+esac
 
 jq -n --arg reason "$cq_cue" '{"decision":"block","reason":$reason}'
 
