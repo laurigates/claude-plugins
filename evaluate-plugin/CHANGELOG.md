@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.9.1...evaluate-plugin-v1.10.0) (2026-06-23)
+
+
+### Features
+
+* **evaluate-plugin:** add source-cases delta-verify gate to evaluate-improve ([#1781](https://github.com/laurigates/claude-plugins/issues/1781)) ([c601880](https://github.com/laurigates/claude-plugins/commit/c6018803b079a68d133519ae24ca53b155fa7367))
+
 ## [1.9.1](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.9.0...evaluate-plugin-v1.9.1) (2026-06-20)
 
 
