@@ -121,9 +121,12 @@ jobs:
 
       - name: Install actionlint
         # GitHub Actions YAML schema/best-practice lint — the one workflow gate
-        # check-workflow-model.sh does not cover. ubuntu-latest ships Go and
-        # adds $HOME/go/bin to PATH.
-        run: go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+        # check-workflow-model.sh does not cover. ubuntu-latest ships Go but does
+        # NOT put $(go env GOPATH)/bin on PATH, so the installed binary is invisible
+        # to the next (fresh-shell) step unless we add it to $GITHUB_PATH here.
+        run: |
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
       - name: Lint workflows with actionlint
         # Embedded run-block shellcheck is ON (the 58 pre-existing SC2086/SC2129
