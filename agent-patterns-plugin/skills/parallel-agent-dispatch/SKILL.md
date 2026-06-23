@@ -24,13 +24,13 @@ salvage / recovery routines, see [REFERENCE.md](REFERENCE.md).
 | Use this skill when... | Use `agent-teams` instead when... |
 |---|---|
 | Spawning >1 agent via plain `Agent` tool fan-out (N concurrent invocations) | Single-agent delegation or one-off subagent spawn |
-| Using `TeamCreate` + teammate spawn for coordinated parallel work | A simple background task with no parallel siblings |
+| Using the implicit team + teammate spawn for coordinated parallel work | A simple background task with no parallel siblings |
 | Running worktree-isolated parallel implementation across repos/features | A read-only inline subagent that does not write to disk |
 | Coordinating parallel investigation or audit swarms | The work fits in the current session without forking |
 
 ## Dispatch from the Main Thread When Possible
 
-`Agent`, `TeamCreate`, and other parallel-spawn tools may not be present in a
+`Agent` and other parallel-spawn tools may not be present in a
 sub-agent's sandbox even when they are available in the main conversation.
 Designing a fan-out from inside a coordinating sub-agent risks silent
 degradation to sequential single-thread execution.
@@ -312,7 +312,7 @@ Sibling guidance for writing such agents lives in `custom-agent-definitions`.
 
 ## Composition with agent-teams
 
-`agent-teams` covers the TeamCreate / SendMessage / TaskUpdate mechanics; this
+`agent-teams` covers the implicit-team / SendMessage / TaskUpdate mechanics; this
 skill adds the dispatch-time contract that applies to both team and non-team
 fan-out. When both apply, follow both — the out-of-scope protocol from
 `agent-teams` slots into the `Issues encountered` / `Deferred` sections here.
@@ -362,7 +362,7 @@ read-only or single-checkout continuations.
 ## Related
 
 - [REFERENCE.md](REFERENCE.md) — failure-mode table, refactor-brief template, salvage routines, evidence trails
-- `agent-teams` — TeamCreate/SendMessage mechanics, out-of-scope discovery protocol
+- `agent-teams` — implicit-team / SendMessage mechanics, out-of-scope discovery protocol
 - `custom-agent-definitions` — agent file structure, tool restrictions, context forking
 - `.claude/rules/agent-development.md` — agent authoring conventions
 - `.claude/rules/sandbox-guidance.md` — when sandbox constraints override push defaults

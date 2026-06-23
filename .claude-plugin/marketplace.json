@@ -23,7 +23,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.29.1",
+      "version": "2.29.2",
       "keywords": [
         "agents",
         "configuration",
@@ -493,7 +493,7 @@
       "name": "project-plugin",
       "source": "./project-plugin",
       "description": "Project initialization, management, and maintenance - setup, changelog review, and continuous development workflows",
-      "version": "1.19.0",
+      "version": "1.19.1",
       "keywords": [
         "project",
         "initialization",
@@ -662,7 +662,7 @@
       "name": "workflow-orchestration-plugin",
       "source": "./workflow-orchestration-plugin",
       "description": "Workflow orchestration - parallel agents, CI pipelines, preflight checks, checkpoint refactoring",
-      "version": "1.8.0",
+      "version": "1.8.1",
       "keywords": [
         "workflow",
         "orchestration",
@@ -674,6 +674,23 @@
         "worktree"
       ],
       "category": "automation"
+    },
+    {
+      "name": "software-design-plugin",
+      "source": "./software-design-plugin",
+      "description": "Software design methodology - deep modules, design by contract, GoF pattern selection, legacy code seams, and design by pseudocode",
+      "version": "1.0.0",
+      "keywords": [
+        "software-design",
+        "deep-modules",
+        "design-by-contract",
+        "design-patterns",
+        "gang-of-four",
+        "legacy-code",
+        "characterization-tests",
+        "pseudocode"
+      ],
+      "category": "development"
     }
   ]
 }

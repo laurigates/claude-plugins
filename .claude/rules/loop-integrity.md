@@ -69,6 +69,7 @@ forever; bound it and surface the stuck state for a human.
 | `project-plugin:project-test-loop` | Mechanical stop (green suite) is already independent; the ceiling is `--max-cycles` and the "same test fails 3×" stop |
 | `workflow-orchestration-plugin:workflow-checkpoint-refactor` | Phase acceptance gets an independent verifier before `done`; the plan file *is* the state packet (carries verifier result + changed-since fields) |
 | `project-plugin:project-continue` | Reads the state packet to re-enter; never assumes the prior session's reasoning |
+| `agent-patterns-plugin:execution-grounded-review` | The reusable independent verifier a behaviour-based stop condition delegates to — runs the suite first, grounds each criterion in execution evidence |
 | Any self-mutating "treadmill" plan | Write the packet before rewriting the goal toward the next phase |
 
 ## Origin
@@ -85,6 +86,7 @@ verbatim shape.
 ## Related
 
 - `agent-patterns-plugin:adversarial-review` — the isolated second-pass reviewer that a judgement-based stop condition delegates to
+- `agent-patterns-plugin:execution-grounded-review` — the execution-grounded verifier a *behaviour*-based stop condition delegates to (Pillar 1)
 - `agent-patterns-plugin:cold-read-gate` — the isolation pattern both pillars reuse
 - `agent-patterns-plugin:verify-before-plan` — independent review of the loop's *premises* before it starts
 - `.claude/rules/agent-coworker-detection.md` — baseline-drift snapshots, the local-state sibling of the state packet

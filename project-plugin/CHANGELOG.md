@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.19.1](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.19.0...project-plugin-v1.19.1) (2026-06-23)
+
+
+### Documentation
+
+* **rules:** review Claude Code changelog 2.1.138 → 2.1.185 ([#1771](https://github.com/laurigates/claude-plugins/issues/1771)) ([d53bfdd](https://github.com/laurigates/claude-plugins/commit/d53bfddeaa132a8326f33edf69b37d542f00d926))
+
 ## [1.19.0](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.18.4...project-plugin-v1.19.0) (2026-06-22)
 
 

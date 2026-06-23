@@ -26,6 +26,10 @@ Claude Code now ships several permission modes. The relevant ones for skill auth
 
 See `.claude/rules/auto-mode.md` for the full auto-mode model (decision order, dropped-rule list, conversation boundaries, subagent behaviour, deny-and-continue thresholds).
 
+> **Note (2.1.160)**: `acceptEdits` mode now **prompts before writing build-tool config files** — `.npmrc`, `.yarnrc*`, `bunfig.toml`, `.bazelrc`, `.pre-commit-config.yaml`, `.devcontainer/`, and similar — even though it auto-accepts ordinary edits. These files can execute code or alter the toolchain on the next build, so they are gated like a privileged write. A skill that legitimately edits one of them under `acceptEdits` should expect the prompt (or carry an explicit `Edit(<path>)` allow rule).
+
+> **Note (2.1.152)**: Skills and slash commands can set `disallowed-tools` in frontmatter to **remove** tools while the skill is active — the subtractive complement to `allowed-tools`. Use it to keep a focused skill from reaching for capabilities it shouldn't (see `.claude/rules/skill-development.md` § Optional Frontmatter Fields).
+
 **Bottom line for skill authors**: write narrow `Bash(<command> *)` patterns. They reduce prompts in `default`/`acceptEdits`, survive transition into `auto`, and are required by `dontAsk`.
 
 ## Permission Syntax
@@ -57,6 +61,28 @@ allowed-tools: Bash(git status *), Bash(gh pr *), Read, TodoWrite
 | `Skill(*)` | Every skill (2.1.139+) |
 
 > **Note (2.1.139)**: `Skill(<name> *)` permission rules use prefix matching, just like `Bash(<command> *)` — matching `Bash(ls *)` behavior. Before 2.1.139, wildcards inside `Skill(...)` were treated as literal characters and silently failed to match (only the bare `Skill(*)` form worked).
+
+### Parameter-Matching Rules — `Tool(param:value)` (2.1.178+)
+
+Permission rules can match a tool's **input parameters**, not just its name, with the `Tool(param:value)` syntax (the value supports a `*` wildcard):
+
+| Rule | Matches |
+|------|---------|
+| `Agent(model:opus)` | Any `Agent` (subagent) call requesting the Opus model — put it in `deny` to block Opus subagents |
+| `Agent(model:*)` | Any `Agent` call that sets a model parameter |
+| `WebFetch(domain:*.example.com)` | A `WebFetch` to any subdomain of `example.com` (see wildcard note below) |
+
+Pair `Agent(model:...)` deny rules with the pre-launch classifier check (`.claude/rules/agent-development.md` § Subagent Nesting Depth) to govern which subagents a session may spawn.
+
+### Wildcard and Glob Matching (2.1.166+ / 2.1.172+ / 2.1.178+)
+
+A run of fixes made wildcard/glob handling in permission rules behave as written:
+
+| Version | Fix |
+|---------|-----|
+| 2.1.166 | Glob patterns are supported in the **deny** rule tool-name position — `"*"` denies **all** tools. Allow rules **reject** non-MCP globs (a glob tool-name in an allow rule is an error), and **unknown tool names in deny rules warn at startup** instead of silently never matching. |
+| 2.1.172 | `WebFetch(domain:*.example.com)` wildcard domain rules now match **subdomains** (previously the leading `*.` failed to match). `Read(secrets-*/config.json)` and other **mid-pattern** wildcards are no longer rejected at startup. |
+| 2.1.178 | MCP **server-level** specs (`mcp__server`, `mcp__server__*`, `mcp__*`) in a subagent's `disallowedTools` now work — previously only fully-qualified `mcp__server__tool` names matched, so server-wide denials silently let MCP tools through. |
 
 ## Shell Operator Protections
 

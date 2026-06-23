@@ -13,6 +13,10 @@
 #     that reference it as triage candidates — the missing "changelog → plugin
 #     code" bridge. A rule-doc-only candidate map would never have routed the
 #     TaskOutput deprecation to hooks-plugin/hooks/bash-antipatterns.sh.
+#   - Extends that bridge to BREAKING *tool removals* phrased verb-after with a
+#     `/`-separated pair ("BREAKING: `TeamCreate`/`TeamDelete` tools removed",
+#     2.1.178) — the shape the deprecation-grammar forms missed, which left the
+#     agent-teams skill referencing removed tools unflagged (issue #1733).
 #   - Flags an oversized excerpt (a review stall) as STATUS=WARN so a 60-version
 #     mega-batch is visible rather than silently lossy.
 #
@@ -22,6 +26,7 @@
 #
 # Output: one `=== CHANGELOG ANALYSIS ===` section on stdout. Candidate files
 # are listed one-per-line between `CANDIDATES:` and the section footer.
+# shellcheck disable=SC2016   # file-level: regex literals use single quotes intentionally ($ anchors, backtick char-classes, awk programs — no shell expansion wanted)
 set -uo pipefail
 
 excerpt=""
@@ -115,6 +120,28 @@ if [ "$DEPRECATION" -gt 0 ]; then
         | grep -oE '`[^`]+`$'
       grep -oE '`[^`]+`[^`]{0,40}(is|are|now|been)[[:space:]]+(deprecated|removed|renamed)' "$excerpt" 2>/dev/null \
         | grep -oE '^`[^`]+`'
+      # BREAKING tool removals (#1733): the verb-after shape with a `/`-separated
+      # pair — "BREAKING: `TeamCreate`/`TeamDelete` tools removed" — that neither
+      # form above catches (verb-first wants the verb before the token; token-first
+      # wants an is/are/now/been auxiliary). The TeamCreate/TeamDelete removal in
+      # 2.1.178 slipped through exactly here, so a removed-tool reference in
+      # agent-patterns-plugin's agent-teams skill was never surfaced as a
+      # code-compliance candidate. Gated on a line carrying BOTH "BREAKING" and a
+      # strong removal verb, then every backticked token *before* the verb is the
+      # subject — this deliberately stays narrower than "any token near a removal
+      # word" so it cannot reintroduce the SendMessage / enabledPlugins / mcpServers
+      # false positives the deprecation forms above were tuned to avoid.
+      grep -iE 'breaking' "$excerpt" 2>/dev/null \
+        | awk '{
+            low = tolower($0)
+            if (match(low, /removed|deleted|dropped|unshipped|gone/)) {
+              head = substr($0, 1, RSTART - 1)
+              while (match(head, /`[^`]+`/)) {
+                print substr(head, RSTART + 1, RLENGTH - 2)
+                head = substr(head, RSTART + RLENGTH)
+              }
+            }
+          }'
     } 2>/dev/null \
       | tr -d '`' \
       | grep -E '[A-Z]' 2>/dev/null \

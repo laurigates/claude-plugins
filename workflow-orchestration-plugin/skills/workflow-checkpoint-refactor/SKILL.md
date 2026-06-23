@@ -134,7 +134,11 @@ For each phase:
      acceptance criteria and the resulting diff — not the worker's reasoning —
      and judges whether the criteria are met. The worker is biased toward
      declaring completion; the loop's stop condition must come from outside it
-     (`.claude/rules/loop-integrity.md`, Pillar 1).
+     (`.claude/rules/loop-integrity.md`, Pillar 1). When the criteria are about
+     **behaviour** ("endpoint returns X", "the bug no longer reproduces"),
+     delegate this to `agent-patterns-plugin:execution-grounded-review`, which
+     runs the suite first and grounds each criterion in execution evidence
+     rather than appearance.
    - Record the verdict in the phase's **Verifier result** field (PASS/FAIL +
      the criterion judged).
    - If the verifier returns FAIL, leave status `in-progress`/`needs-review`
@@ -189,4 +193,5 @@ For phases with 7+ files, delegate to Task sub-agent with:
 - [code-review-checklist](../../../code-quality-plugin/skills/code-review-checklist/SKILL.md) - Review refactored code
 - [refactoring-patterns](../../../code-quality-plugin/skills/refactoring-patterns/SKILL.md) - Refactoring techniques
 - [adversarial-review](../../../agent-patterns-plugin/skills/adversarial-review/SKILL.md) - The isolated verifier a judgement-based phase gate delegates to
+- [execution-grounded-review](../../../agent-patterns-plugin/skills/execution-grounded-review/SKILL.md) - The execution-grounded verifier for behaviour-based phase acceptance criteria
 - `.claude/rules/loop-integrity.md` - Why the plan file is a state packet and why `done` is judged independently

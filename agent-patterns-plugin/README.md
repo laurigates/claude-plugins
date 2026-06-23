@@ -127,7 +127,7 @@ Producer-side patterns for **building** a Python MCP server with FastMCP — the
 - TDD pattern testing the underlying function, not the decorator
 
 #### `agent-teams`
-Configure and orchestrate Claude Code agent teams with TeamCreate, SendMessage, and shared task list workflows.
+Configure and orchestrate Claude Code agent teams (implicit team, SendMessage, shared task list workflows).
 
 **When to use:**
 - Setting up multi-agent parallel workflows
@@ -171,6 +171,21 @@ Adversarial second-pass review that tries to break code, designs, plans, or ADRs
 - Lens table delegating domain checklists to `code-review`, security-audit, `verify-before-plan`, `cold-read-gate`
 - Isolated opus reviewer with an inverted "find the fault" objective
 - Triage gate separating genuine faults from manufactured objections before acting
+
+#### `execution-grounded-review`
+Verify an implementation meets its acceptance criteria by running the suite first, then tracing each criterion to execution evidence — the execution-grounded sibling of `adversarial-review`.
+
+**When to use:**
+- Verifying an implementation meets explicit acceptance criteria, proven by running it
+- Gating a loop/phase `done` on an independent check of behaviour
+- Confirming a fix actually fixes the reported failure (not just compiles)
+- Closing the loop on "is every requirement actually covered by a test?"
+
+**Features:**
+- Execute-first: runs suite + typecheck + lint before any verdict
+- Per-criterion ledger grounding each requirement in execution evidence (PASS/FAIL/PARTIAL/UNVERIFIED)
+- Intent-starved isolated opus verifier — grades behaviour, not the author's rationale
+- Over-correction triage guarding both "pass broken code" and "fail correct code"
 
 #### `plugin-settings`
 Configure per-project plugin settings using `.claude/plugin-name.local.md` files.

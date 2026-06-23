@@ -525,6 +525,24 @@ check_skill_body() {
       done
     fi
 
+    # Regression: execution-grounded-review is the execution-grounded verifier in
+    # the agent-patterns review family — the one thing that distinguishes it from
+    # adversarial-review (which reads a design) is that it RUNS the suite first
+    # and grounds each acceptance criterion in EXECUTION EVIDENCE, marking a
+    # criterion with no execution backing as UNVERIFIED rather than passing it on
+    # appearance. A bulk edit that "tightens" the skill into another read-the-diff
+    # reviewer would silently erase exactly that property, so assert the three
+    # load-bearing tokens: the execute-first step, the evidence principle, and the
+    # no-silent-pass coverage verdict. (See .claude/rules/loop-integrity.md.)
+    if [ "$skill_name" = "execution-grounded-review" ]; then
+      for token in 'Run the suite first' 'execution evidence' 'UNVERIFIED'; do
+        if ! grep -qF "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain execution-grounded token '${token}' (execute-first / evidence-grounded / no-silent-pass — see .claude/rules/loop-integrity.md)")
+          has_errors=true
+        fi
+      done
+    fi
+
     # Regression: code-review is the canary for restoring `context: fork` after
     # the plugin-skill blocker (anthropics/claude-code#16803) was fixed
     # 2026-04-18. See laurigates/claude-plugins#980 and
@@ -542,6 +560,25 @@ check_skill_body() {
         issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain 'context: fork' (canary for the #16803 fix — see .claude/rules/skill-fork-context.md and issue #980)")
         has_errors=true
       fi
+    fi
+
+    # Regression: agent-teams must document the post-2.1.178 implicit-team model,
+    # not the removed TeamCreate/TeamDelete tools. Claude Code 2.1.178 removed
+    # those tools — every session has one implicit team gated on
+    # CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1, and team_name is accepted-but-ignored.
+    # The skill was built entirely around the removed tools, so it would have
+    # instructed Claude to call tools that no longer exist (issue #1733). Anchor on
+    # the two markers of the current model; a bulk edit reverting to a
+    # TeamCreate-setup flow drops both. (The literal strings TeamCreate/TeamDelete
+    # legitimately remain in the BREAKING note and the Common Mistakes row, so we
+    # assert the *presence* of the new model rather than the absence of the words.)
+    if [ "$skill_name" = "agent-teams" ] && [ "$plugin" = "agent-patterns-plugin" ]; then
+      for token in 'CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS' 'implicit team'; do
+        if ! grep -qF "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must document the implicit-team model token '${token}' (TeamCreate/TeamDelete removed in 2.1.178 — issue #1733)")
+          has_errors=true
+        fi
+      done
     fi
 
     # Regression: comfyui-node-scaffold must emit a TypeScript + bun-build pack
