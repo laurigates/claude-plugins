@@ -471,6 +471,21 @@ Return nothing (exit 0) to display the message unchanged. This affects only what
 
 Return nothing (exit 0) to allow the stop.
 
+#### `additionalContext` — Feedback Without a Hook Error (2.1.163+)
+
+As of 2.1.163, `Stop` and `SubagentStop` hooks can return `hookSpecificOutput.additionalContext` to give Claude feedback and **keep the turn going without being labeled a hook error**. Unlike `{"decision":"block","reason":...}` — which surfaces as a hook block — this feeds context back as ordinary guidance:
+
+```json
+{
+  "hookSpecificOutput": {
+    "hookEventName": "Stop",
+    "additionalContext": "Reminder: the CHANGELOG still needs an entry for this change."
+  }
+}
+```
+
+Use it for soft nudges that should steer the next turn without the friction (and the `CLAUDE_CODE_STOP_HOOK_BLOCK_CAP` accounting) of a blocking decision. Like any model-visible output it replays each turn — keep it short and self-extinguishing (see Transcript Replay Cost).
+
 ### SubagentStart — Modify Prompt
 
 ```json
@@ -925,6 +940,14 @@ The cap is a safety net, not a substitute for the `stop_hook_active` check docum
 
 ---
 
+## Self-Hosted Runner Lifecycle (2.1.169+)
+
+Self-hosted runners gained a `post-session` lifecycle hook that runs **after the session ends and before the workspace is deleted**. Use it to snapshot uncommitted work or export logs before the ephemeral workspace is torn down — the last chance to rescue anything not already committed/pushed.
+
+This is a runner lifecycle hook (configured in the runner's lifecycle config), distinct from the in-session `SessionEnd` hook event above: `post-session` fires in the runner harness around the whole session, whereas `SessionEnd` fires inside the session.
+
+---
+
 ## Matcher Patterns
 
 ### MCP Tool Matching
@@ -945,6 +968,10 @@ MCP tools use the naming pattern `mcp__<server>__<tool>`. Match them with regex 
 | `mcp__github__create_pull_request` | Specific MCP tool |
 
 > **Note (2.1.147)**: Hook `if` conditions that scoped a command shape with arguments — e.g. `PowerShell(git push*)` — never matched; only the bare `PowerShell(*)` form worked. Argument-scoped `if` conditions now match as written.
+
+> **Note (2.1.163)**: Fixed hook `if: "Bash(...)"` conditions that fired on **every** Bash command containing `$()` or `$VAR` — command substitutions and variable expansions were over-matching. The condition now also matches commands inside subshells and backticks correctly, so `if: "Bash(git push*)"` fires for `$(git push ...)` and `` `git push ...` `` without falsely matching unrelated commands that merely contain a `$`.
+
+> **Note (2.1.176)**: Fixed hook `if` conditions for Read/Edit/Write tool **paths**. Patterns like `Edit(src/**)`, `Read(~/.ssh/**)`, and `Read(.env)` now match correctly — previously these path-scoped conditions silently failed to fire.
 
 ---
 

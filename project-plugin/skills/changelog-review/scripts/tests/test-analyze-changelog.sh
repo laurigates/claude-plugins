@@ -124,6 +124,35 @@ run "## 2.1.160
 assert_eq "verb-first 'Removed \`X\`' still raises the flag" "1" "$(field ACTIONABLE_DEPRECATION)"
 assert_contains "the removed identifier is surfaced" "DEPRECATED_TOKENS=TaskOutput"
 
+# ── BREAKING tool removal, verb-after `/`-separated pair (#1733) ──────────────
+# "BREAKING: `A`/`B` tools removed" is verb-after with no is/are/now/been
+# auxiliary, so neither the verb-first nor the token-first form catches it. This
+# is the exact 2.1.178 TeamCreate/TeamDelete shape that left the agent-teams
+# skill referencing removed tools unflagged. A fake skill references both tokens
+# so the code bridge has something to surface.
+mkdir -p "$REPO/agentish-plugin/skills/agent-teams"
+cat > "$REPO/agentish-plugin/skills/agent-teams/SKILL.md" <<'EOF'
+# Agent Teams
+Use TeamCreate to make a team and TeamDelete to tear it down.
+EOF
+echo ""
+echo "BREAKING verb-after tool removal (\`A\`/\`B\` ... removed) surfaces both tokens:"
+run "## 2.1.178
+- BREAKING: \`TeamCreate\`/\`TeamDelete\` tools removed; every session now has one implicit team"
+
+assert_eq "ACTIONABLE_DEPRECATION raised for the BREAKING removal" "1" "$(field ACTIONABLE_DEPRECATION)"
+assert_contains "first paired token surfaced" "TeamCreate"
+assert_contains "second paired token surfaced" "TeamDelete"
+assert_contains "the referencing skill is surfaced as a candidate" "agentish-plugin/skills/agent-teams/SKILL.md"
+
+# Guard: a *replacement* named after the removal verb (in favor of `X`) is NOT
+# the subject and must not be surfaced — keeps the BREAKING shape from grabbing
+# tokens that merely follow the verb.
+run "## 2.1.178
+- BREAKING: \`TeamCreate\` removed in favor of \`SendMessage\` between agents"
+assert_contains "the removed subject is surfaced" "TeamCreate"
+assert_absent "the replacement named after the verb is not surfaced" "DEPRECATED_TOKENS=SendMessage"
+
 # ── oversized batch (review stall) flags WARN ────────────────────────────────
 echo ""
 echo "oversized excerpt (review stall) flags STATUS=WARN:"

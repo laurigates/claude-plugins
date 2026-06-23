@@ -4,15 +4,15 @@ description: Claude Code changelog analysis for plugin impact. Use when checking
 user-invocable: false
 allowed-tools: Bash(git log *), Bash(git diff *), Read, Write, Edit, Glob, Grep, WebFetch, TodoWrite
 created: 2026-01-14
-modified: 2026-06-14
-reviewed: 2026-06-14
+modified: 2026-06-23
+reviewed: 2026-06-23
 ---
 
 # Claude Code Changelog Review
 
 ## When to Use This Skill
 
-| Use this skill when... | Use project-distill instead when... |
+| Use this skill when... | Use another skill instead when... |
 |---|---|
 | Reviewing Claude Code releases for breaking changes that affect plugins | Distilling project session learnings into rules and recipes |
 | Discovering new Claude Code features that plugins can leverage | Use project-skill-scripts instead when auditing skills for script-extraction wins |
@@ -193,12 +193,26 @@ bash scripts/analyze-changelog.sh --excerpt <slice> --repo-dir . \
 
 The script (`scripts/analyze-changelog.sh`, tested by
 `scripts/tests/test-analyze-changelog.sh`) emits structured `KEY=VALUE` output
-and, beyond keyword counts, carries a **deprecation → plugin-code bridge**: for
-any tool/setting/command named in a `deprecat|removed|renamed|unshipped` line,
-it greps this repo's skills/hooks/agents/rules and surfaces the files that still
-reference it as triage candidates. This is the miss class from #1638 — a
-deprecated identifier (e.g. `TaskOutput`) that stayed referenced in a hook
-script because the old keyword map only ever pointed at `.claude/rules/*.md`.
+and, beyond keyword counts, carries a **deprecation/removal → plugin-code
+bridge**: for any tool/setting/command named in a deprecation **or BREAKING
+removal** line, it greps this repo's skills/hooks/agents/rules and surfaces the
+files that still reference it as triage candidates. Two miss classes drive this:
+
+- **#1638** — a deprecated identifier (e.g. `TaskOutput`) that stayed referenced
+  in a hook script because the old keyword map only ever pointed at
+  `.claude/rules/*.md`. Caught by the `deprecat|removed|renamed|unshipped` forms.
+- **#1733** — a BREAKING tool removal phrased verb-after with a `/`-separated
+  pair (`BREAKING: `TeamCreate`/`TeamDelete` tools removed`, 2.1.178) that the
+  deprecation-grammar forms missed, leaving the `agent-patterns-plugin:agent-teams`
+  skill referencing removed tools unflagged. Caught by the BREAKING-line
+  extractor.
+
+**Reviewing the changelog is never doc-only.** Every run treats updating rule
+docs *and* fixing plugin **code** that references a removed/renamed
+tool/setting/env-var as part of the same task — the `ACTIONABLE_DEPRECATION`
+candidates are the highest-priority section of the tracking issue, and a
+referenced removed identifier is a correctness bug (the skill would instruct
+Claude to call a tool that no longer exists), not just stale prose.
 
 Workflow flow:
 
@@ -209,6 +223,16 @@ Workflow flow:
    priority = deprecated identifiers still referenced in our code), ratchet the
    version JSON via a tiny PR
 4. Label issues appropriately
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Analyze a changelog slice (structured `KEY=VALUE`) | `bash scripts/analyze-changelog.sh --excerpt <slice> --repo-dir . --tracked <ver> --latest <ver>` |
+| Triage filter — code-compliance candidates only | `… analyze-changelog.sh … \| grep -E '^(ACTIONABLE_DEPRECATION\|DEPRECATED_TOKENS)='` |
+| List the surfaced candidate files | `… analyze-changelog.sh … \| sed -n '/^CANDIDATES:/,/^=== END/p'` |
+| Roll-up status only | `… analyze-changelog.sh … \| grep -E '^(STATUS\|ISSUE_COUNT)='` |
+| Run the analyzer regression tests | `bash project-plugin/skills/changelog-review/scripts/tests/test-analyze-changelog.sh` |
 
 ## Quick Reference
 
