@@ -1,10 +1,10 @@
 ---
 name: session-end
 description: End-of-session orchestrator. Previews which of wrap/distill/feedback/taskwarrior-sync qualify, single confirm, then sequence. Use when winding down a session.
-allowed-tools: Bash(task *), Bash(git *), Bash(gh *), Read, Skill, AskUserQuestion, TodoWrite
+allowed-tools: Bash(bash *), Bash(task *), Bash(git *), Bash(gh *), Read, Skill, AskUserQuestion, TodoWrite
 created: 2026-06-10
-modified: 2026-06-13
-reviewed: 2026-06-13
+modified: 2026-06-24
+reviewed: 2026-06-24
 ---
 
 # session-end
@@ -37,17 +37,19 @@ single confirmation gate below is mandatory.
 
 ### Step 1: Survey once
 
-One shared decision pass — do not let each sub-skill re-survey:
+One shared decision pass — do not let each sub-skill re-survey. Run the
+shared collector (the same one the wrap/spinup skills and the nudge hook
+use); it emits detection, git state, PRs, taskwarrior tasks **with stable
+UUIDs**, and recent commits in one parallel-safe pass:
 
 ```sh
-git log --oneline -20
-git status --porcelain
-gh pr list --head "$(git branch --show-current)" --json number,title,url,state --jq '.[]'
-task project:<name> '(status:pending or +ACTIVE)' export | jq '.[]'
+bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-commits
 ```
 
-Plus the conversation: what finished, what's hanging, what was learned,
-what plugin/skill friction or wins occurred.
+Pass `--project <name>` to override the detected project. Hand the digest
+to the confirmed passes in Step 4 so they don't re-survey. Plus the
+conversation: what finished, what's hanging, what was learned, what
+plugin/skill friction or wins occurred.
 
 ### Step 2: Qualify each pass
 
@@ -60,7 +62,7 @@ failure mode.
 | Wrap | ≥1 genuine loose thread per session-wrap's LOG IT filter |
 | Distill | A durable, generalizable learning emerged AND the repo has a distillable surface (`.claude/rules/` or a justfile) |
 | Feedback | A plugin/skill behaved notably well or badly — bug, enhancement, or positive worth filing |
-| Taskwarrior sync | Taskwarrior is on PATH AND ≥1 pending/active task for the project (`task project:<name> '(status:pending or +ACTIVE)' export \| jq 'length'`) |
+| Taskwarrior sync | `TASK_AVAILABLE=true` AND `OPEN_TASKS` ≥ 1 in the Step 1 digest |
 
 If **nothing** qualifies, say so in one line and end — no preview, no
 question.
@@ -121,8 +123,7 @@ already in the transcript. Pre-silence:
 
 | Context | Command |
 |---|---|
-| Queue state (exit-0 on empty) | `task project:<name> '(status:pending or +ACTIVE)' export \| jq '.[]'` |
+| One-pass survey (detection + git + PRs + tasks-with-UUIDs + commits) | `bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-commits` |
 | Stable UUID for latest task | `task +LATEST _get uuid` |
 | Mark task done by UUID | `task <uuid> done` |
 | Distillable surface check | `find . -maxdepth 2 -path '*/.claude/rules' -o -maxdepth 1 -name 'justfile' -o -maxdepth 1 -name 'Justfile'` |
-| Branch PRs | `gh pr list --head <branch> --json number,title,url,state --jq '.[]'` |
