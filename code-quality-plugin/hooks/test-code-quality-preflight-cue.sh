@@ -213,6 +213,50 @@ else
   cq_fail "(h) CODE_QUALITY_SKIP_HOOKS=1 should silence; got: $CQ_OUT_H"
 fi
 
+# --- (j) shell script with only an `export` line is silent (<50 lines) (issue #1766) ---
+echo "--- Test (j): small shell wrapper with export is silent ---"
+CQ_SID_J1="test-sid-j1-$(date +%s%N)"
+CQ_PAYLOAD_J1="$(cq_payload Write /home/user/.routines/fvh-triage.sh 'export EDITOR=nvim
+my-tool run --once' '' "$CQ_SID_J1")"
+CQ_OUT_J1="$(CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_TEST_CACHE_DIR" bash "$CQ_SCRIPT" <<< "$CQ_PAYLOAD_J1")"
+if [ -z "$CQ_OUT_J1" ]; then
+  cq_pass "(j) small shell wrapper with export is silent"
+else
+  cq_fail "(j) small shell wrapper should be silent; got: $CQ_OUT_J1"
+fi
+
+echo "--- Test (j): large (>=50 line) shell script still fires ---"
+CQ_SID_J2="test-sid-j2-$(date +%s%N)"
+CQ_SHELL_BIG="$(printf 'echo line\n%.0s' {1..55})"
+CQ_PAYLOAD_J2="$(cq_payload Write /home/user/scripts/big.sh '' "$CQ_SHELL_BIG" "$CQ_SID_J2")"
+CQ_OUT_J2="$(CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_TEST_CACHE_DIR" bash "$CQ_SCRIPT" <<< "$CQ_PAYLOAD_J2")"
+if echo "$CQ_OUT_J2" | jq -e '.decision == "block"' > /dev/null 2>&1; then
+  cq_pass "(j) large shell script fires on Signal 3"
+else
+  cq_fail "(j) large shell script should fire; got: $CQ_OUT_J2"
+fi
+
+# --- (k) evaluate-skill clause is conditional on a skills/ path (issue #1766) ---
+echo "--- Test (k): non-skill edit omits /evaluate:evaluate-skill ---"
+CQ_SID_K1="test-sid-k1-$(date +%s%N)"
+CQ_PAYLOAD_K1="$(cq_payload Edit /repo/src/app.ts 'export function doThing() { return 1; }' '' "$CQ_SID_K1")"
+CQ_OUT_K1="$(CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_TEST_CACHE_DIR" bash "$CQ_SCRIPT" <<< "$CQ_PAYLOAD_K1")"
+if echo "$CQ_OUT_K1" | jq -r '.reason' | grep -q "evaluate-skill"; then
+  cq_fail "(k) non-skill edit should NOT mention evaluate-skill; got: $CQ_OUT_K1"
+else
+  cq_pass "(k) non-skill edit omits evaluate-skill"
+fi
+
+echo "--- Test (k): skills/ path edit includes /evaluate:evaluate-skill ---"
+CQ_SID_K2="test-sid-k2-$(date +%s%N)"
+CQ_PAYLOAD_K2="$(cq_payload Write /repo/my-plugin/skills/foo/scripts/helper.py 'def run(): pass' '' "$CQ_SID_K2")"
+CQ_OUT_K2="$(CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_TEST_CACHE_DIR" bash "$CQ_SCRIPT" <<< "$CQ_PAYLOAD_K2")"
+if echo "$CQ_OUT_K2" | jq -r '.reason' | grep -q "evaluate-skill"; then
+  cq_pass "(k) skills/ path edit mentions evaluate-skill"
+else
+  cq_fail "(k) skills/ path edit should mention evaluate-skill; got: $CQ_OUT_K2"
+fi
+
 # --- Summary ---
 echo ""
 echo "=== RESULTS ==="
