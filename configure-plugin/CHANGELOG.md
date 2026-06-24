@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.30.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.29.0...configure-plugin-v1.30.0) (2026-06-24)
+
+
+### Features
+
+* **configure-plugin:** add configure-mise skill ([#1795](https://github.com/laurigates/claude-plugins/issues/1795)) ([b1fe258](https://github.com/laurigates/claude-plugins/commit/b1fe258ecfbc2f972c14aed4e4ee5663ed24aaff))
+
 ## [1.29.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.28.0...configure-plugin-v1.29.0) (2026-06-22)
 
 
