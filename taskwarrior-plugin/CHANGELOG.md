@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.6.0...taskwarrior-plugin-v1.7.0) (2026-06-24)
+
+
+### Features
+
+* **taskwarrior-plugin:** surface stale linked-task drift at session start ([#1794](https://github.com/laurigates/claude-plugins/issues/1794)) ([d51f874](https://github.com/laurigates/claude-plugins/commit/d51f8746d212795f05959e8d71d3dfe18d934407))
+
 ## [1.6.0](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.5.0...taskwarrior-plugin-v1.6.0) (2026-06-20)
 
 
