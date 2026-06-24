@@ -39,3 +39,8 @@ docs/blueprint/work-orders/
 
 # OpenCode export — reproducible build artifact (run `just export-opencode`)
 dist/
+
+# OpenCode project-local install — regenerate with `just setup-opencode .opencode`
+# (plus `just install-opencode-ocx .opencode` for the OCX orchestration plugins)
+.opencode/
+.ocx/

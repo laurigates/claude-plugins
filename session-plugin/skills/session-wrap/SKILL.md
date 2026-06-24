@@ -1,10 +1,10 @@
 ---
 name: session-wrap
 description: End-of-session capture to taskwarrior, optional journal, GitHub issues. Use when user says wrap up, session wrap, or done for now.
-allowed-tools: Bash(task *), Bash(git *), Bash(gh *), Read, Write, Edit, AskUserQuestion, TodoWrite
+allowed-tools: Bash(bash *), Bash(task *), Bash(git *), Bash(gh *), Read, Write, Edit, AskUserQuestion, TodoWrite
 created: 2026-05-12
-modified: 2026-06-10
-reviewed: 2026-06-10
+modified: 2026-06-24
+reviewed: 2026-06-24
 ---
 
 # session-wrap
@@ -72,18 +72,20 @@ Execute this wrap workflow:
 
 ### Step 1: Survey
 
-Enumerate what the session touched, in parallel-safe form:
+Run the shared read-only collector — it does project detection, the
+git/PR/taskwarrior survey, and recent commits in one parallel-safe pass,
+emitting each task with its **stable UUID** so Steps 2/4 never operate on
+a volatile numeric ID:
 
 ```sh
-git log --oneline -20
-gh pr list --head "$(git branch --show-current)" --json number,title,url,state --jq '.[]'
-task project:<name> '(status:pending or +ACTIVE)' export | jq '.[]'
+bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-commits
 ```
 
-Plus the conversation itself — what was kicked off but not finished,
-discussed but not done. Infer the taskwarrior project from the config
-body's naming map, else the repo-root basename; if unclear, list
-`task _projects` and ask once.
+Pass `--project <name>` when the config naming map maps the cwd to a
+project other than the repo basename; when detection is ambiguous
+(`DETECTION=ambiguous`) and unclear, list `task _projects` and ask once.
+Then read the conversation itself — what was kicked off but not finished,
+discussed but not done.
 
 ### Step 2: Categorise
 
@@ -137,8 +139,7 @@ running. Pre-silence for a session:
 
 | Context | Command |
 |---|---|
-| Pending tasks (exit-0 on empty) | `task project:<name> status:pending export \| jq '.[]'` |
-| Resolve ID → stable UUID | `task _get <id>.uuid` |
-| Batch close | `task rc.confirmation:no <uuid> done` |
-| Open PRs for branch | `gh pr list --head <branch> --json number,title,url --jq '.[]'` |
+| Survey (detection + git + PRs + tasks-with-UUIDs + commits) | `bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-commits` |
+| Batch close by UUID | `task rc.confirmation:no <uuid> done` |
+| Add a task | `task rc.confirmation:no add project:<name> +<tag> '<desc>'` |
 | Known projects | `task _projects` |

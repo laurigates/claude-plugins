@@ -145,6 +145,27 @@ state could not be read. `task-status` already *detects* this drift; reconcile
 *acts* on it. See the skill's `REFERENCE.md` for the bulk-vs-done routing and
 `task import` round-trip caveats.
 
+### Drift is surfaced automatically at session start
+
+The recurring failure is that linked tasks only get reconciled when someone
+*remembers* to sweep. The SessionStart drift probe
+(`hooks/taskwarrior-drift-probe.sh`) closes that gap: alongside its UDA check, it
+runs the **same** `reconcile.sh` in dry-run mode and surfaces a
+`stale_linked_tasks` finding (via the shared drift-aggregator nudge) whenever the
+current repo's queue carries tasks whose issue/PR has closed — pointing you at
+`/taskwarrior:task-reconcile` to retire them.
+
+Forge state is a poll, not a local event, so the probe debounces the `gh`
+round-trips behind a per-project TTL cache (default 4h) — most session starts hit
+the cache and cost nothing. It is **read-only** (never closes a task) and never
+warns when upstream state can't be read.
+
+| Env var | Default | Effect |
+|---------|---------|--------|
+| `CLAUDE_TASKWARRIOR_DRIFT_NO_RECONCILE` | unset | Set `1` to skip the `gh` poll entirely (UDA check still runs) |
+| `CLAUDE_TASKWARRIOR_DRIFT_STALE_TTL` | `14400` | Poll interval in seconds; `0` disables the stale check |
+| `CLAUDE_TASKWARRIOR_DRIFT_STALE_LIMIT` | `50` | Max linked tasks inspected per poll (the count is a floor above this) |
+
 ## Native scheduling fields
 
 Prefer taskwarrior's native date fields over hand-managed `+blocked*` tags —

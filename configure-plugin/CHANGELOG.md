@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.32.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.31.0...configure-plugin-v1.32.0) (2026-06-24)
+
+
+### Features
+
+* **configure-plugin:** add configure-gitignore skill ([#1802](https://github.com/laurigates/claude-plugins/issues/1802)) ([fc3ac2a](https://github.com/laurigates/claude-plugins/commit/fc3ac2a19fba588f2f3843736b28f024730728f1))
+
+## [1.31.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.30.0...configure-plugin-v1.31.0) (2026-06-24)
+
+
+### Features
+
+* **configure-plugin:** document GitHub App-token pattern for release-please ([#1790](https://github.com/laurigates/claude-plugins/issues/1790)) ([c51efae](https://github.com/laurigates/claude-plugins/commit/c51efaee28d6d5b39cc2b2ba40d2128db04fad12))
+
+## [1.30.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.29.0...configure-plugin-v1.30.0) (2026-06-24)
+
+
+### Features
+
+* **configure-plugin:** add configure-mise skill ([#1795](https://github.com/laurigates/claude-plugins/issues/1795)) ([b1fe258](https://github.com/laurigates/claude-plugins/commit/b1fe258ecfbc2f972c14aed4e4ee5663ed24aaff))
+
 ## [1.29.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.28.0...configure-plugin-v1.29.0) (2026-06-22)
 
 

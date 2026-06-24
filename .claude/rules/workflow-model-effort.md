@@ -1,3 +1,7 @@
+---
+paths:
+  - ".github/workflows/**"
+---
 # Workflow Model + Effort
 
 The model/effort standard for every Claude invocation in `.github/workflows/*.yml`.

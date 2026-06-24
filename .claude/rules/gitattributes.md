@@ -1,3 +1,7 @@
+---
+paths:
+  - "**/.gitattributes"
+---
 # .gitattributes Conventions
 
 A repo's `.gitattributes` is a path→attribute map git consults for **merge**,

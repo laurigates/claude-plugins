@@ -139,15 +139,14 @@ jobs:
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
       - name: Lint workflows with actionlint
-        # Embedded run-block shellcheck is ON (the 58 pre-existing SC2086/SC2129
-        # findings were cleaned in #1775); run-block shell linting is enforced.
-        # One documented, tracked suppression keeps this a green blocking gate
-        # that still catches NEW issues (the point of the gate):
-        #   -ignore result: the scheduled-audits / workflow-model-audit "Create
-        #                   issue" steps read steps.<id>.outputs.result from a
-        #                   claude-code-action step that has no such output — a real
-        #                   latent bug fixed separately (see #1774).
-        run: actionlint -color -ignore 'property "result" is not defined'
+        # No suppressions remain — this is a fully green blocking gate that
+        # catches NEW issues (the point of the gate):
+        #   - Embedded run-block shellcheck is ON: the 58 pre-existing
+        #     SC2086/SC2129 info/style findings were cleaned in #1775.
+        #   - The former -ignore 'property "result"…' suppression is gone: #1774
+        #     removed the audit workflows' outputs.result reads (Claude now opens
+        #     the issue itself), so actionlint no longer flags them.
+        run: actionlint -color
 
       - name: Check version-pin coverage (version-pinning.md)
         if: steps.changed.outputs.skill_count != '0'

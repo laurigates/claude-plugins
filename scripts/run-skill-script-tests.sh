@@ -5,6 +5,8 @@
 #   - `*/skills/*/scripts/tests/test-*.sh` — colocated tests next to a skill's
 #     extracted scripts (canonical reference:
 #     health-plugin/skills/health-check/scripts/tests/test-check-settings.sh)
+#   - `*-plugin/scripts/tests/test-*.sh` — plugin-level shared-script suites
+#     (e.g. session-plugin/scripts/tests/test-session-survey.sh)
 #   - `*/hooks/test-*.sh` — plugin hook regression suites (bash-antipatterns,
 #     branch-protection, pr-metadata, session-end-nudge, …). Before this glob
 #     was added the hook suites only ran when invoked by hand.
@@ -53,7 +55,7 @@ while IFS= read -r -d '' test_file; do
   rm -f "$log_file"
 done < <(find "$root_dir" \
   -path '*/.claude/worktrees/*' -prune -o \
-  \( -path '*/skills/*/scripts/tests/test-*.sh' -o -path '*/hooks/test-*.sh' \) \
+  \( -path '*/skills/*/scripts/tests/test-*.sh' -o -path '*-plugin/scripts/tests/test-*.sh' -o -path '*/hooks/test-*.sh' \) \
   -type f -print0 | sort -z)
 
 echo "TOTAL=${total}"

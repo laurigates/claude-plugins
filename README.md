@@ -116,7 +116,7 @@ Alternatively, use the `/configure:mcp` skill for interactive configuration.
 
 | Plugin | Skills | Description |
 |--------|--------|-------------|
-| **configure-plugin** | 46 | Project infrastructure standards - pre-commit, CI/CD, Docker, testing |
+| **configure-plugin** | 50 | Project infrastructure standards - pre-commit, CI/CD, Docker, testing |
 | **container-plugin** | 9 + 1 agent | Container development - Docker, registry, Skaffold, OrbStack |
 | **kubernetes-plugin** | 8 + 1 agent | Kubernetes and Helm - deployments, charts, releases, ArgoCD |
 | **migration-patterns-plugin** | 6 | Safe database and system migration - dual write, shadow mode |
