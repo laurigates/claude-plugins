@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.31.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.30.0...configure-plugin-v1.31.0) (2026-06-24)
+
+
+### Features
+
+* **configure-plugin:** document GitHub App-token pattern for release-please ([#1790](https://github.com/laurigates/claude-plugins/issues/1790)) ([c51efae](https://github.com/laurigates/claude-plugins/commit/c51efaee28d6d5b39cc2b2ba40d2128db04fad12))
+
 ## [1.30.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.29.0...configure-plugin-v1.30.0) (2026-06-24)
 
 
