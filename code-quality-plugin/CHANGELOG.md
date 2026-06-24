@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.2](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.17.1...code-quality-plugin-v1.17.2) (2026-06-24)
+
+
+### Bug Fixes
+
+* **code-quality-plugin:** stop preflight-cue over-firing on small shell scripts ([#1784](https://github.com/laurigates/claude-plugins/issues/1784)) ([720457b](https://github.com/laurigates/claude-plugins/commit/720457bd56e5b8292c2635dd968901f9d40bdbb6))
+
 ## [1.17.1](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.17.0...code-quality-plugin-v1.17.1) (2026-06-22)
 
 
