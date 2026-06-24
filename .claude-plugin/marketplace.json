@@ -194,7 +194,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.29.0",
+      "version": "1.32.0",
       "keywords": [
         "infrastructure",
         "standards",
@@ -571,7 +571,7 @@
       "name": "session-plugin",
       "source": "./session-plugin",
       "description": "Session bookends - spinup briefing, wrap-up capture, end-of-session orchestration, and knowledge distillation",
-      "version": "1.4.0",
+      "version": "1.4.1",
       "keywords": [
         "session",
         "spinup",

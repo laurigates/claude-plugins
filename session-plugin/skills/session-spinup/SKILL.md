@@ -1,10 +1,10 @@
 ---
 name: session-spinup
 description: Read-only session-start briefing of open tasks, git state, journal todos. Use when user says spin up, what was I doing, or pick up where I left off.
-allowed-tools: Bash(task *), Bash(git *), Bash(gh *), Read, TodoWrite
+allowed-tools: Bash(bash *), Read, TodoWrite
 created: 2026-05-13
-modified: 2026-06-22
-reviewed: 2026-06-22
+modified: 2026-06-24
+reviewed: 2026-06-24
 ---
 
 # session-spinup
@@ -14,6 +14,12 @@ Read-only orientation at session start — the inverse of
 reads them back. The failure mode this prevents: the user sits down,
 doesn't remember what was open, and starts fresh on something else while
 yesterday's PR sits stale.
+
+The deterministic work — project detection, the survey, GitHub-issue
+dedup against taskwarrior, staleness, journal extraction — is done by
+`scripts/session-survey.sh` (shared with session-wrap, session-end, and
+the spinup nudge hook). This skill runs that collector once, then applies
+**judgment**: filter the digest to what matters and suggest next moves.
 
 ## When to Use This Skill
 
@@ -28,110 +34,91 @@ yesterday's PR sits stale.
 Same file as the other session skills: `.claude/session-plugin.local.md`
 (project) → `~/.claude/session-plugin.local.md` (user-global) → none.
 When `journal` is configured and the session matches `journal_scopes`,
-the briefing includes unchecked todos from the most recent dated note.
-Schema: [session-wrap/REFERENCE.md](../session-wrap/REFERENCE.md).
-
-## Sources
-
-| Source | When | What comes from there |
-|---|---|---|
-| **taskwarrior** | Every spin-up | Pending tasks for the inferred project; `+ACTIVE` tasks; recently-annotated tasks |
-| **GitHub issues** | Every spin-up with a GitHub remote | Open issues assigned to you in the **cwd repo** that no surveyed task already references — the issues opened on GitHub but never mirrored into taskwarrior |
-| **Journal** | Only when configured + in scope | Unchecked `- [ ]` items under the todo heading, most recent note ≤7 days back |
-| **git state** | Every spin-up | Current branch, uncommitted changes, unpushed commits, open PRs from this branch |
-
-GitHub issues close a drift gap: opening an issue does **not** create a
-taskwarrior task, so without this source a freshly-filed assigned issue is
-invisible to spinup and the "pending work" picture is silently wrong.
+pass the journal flags to the collector so the briefing includes
+unchecked todos from the most recent dated note. Schema:
+[session-wrap/REFERENCE.md](../session-wrap/REFERENCE.md).
 
 ## The signal filter
 
-Surface only what the user would otherwise miss — same 3-6 item target
-as wrap; 10+ means trim.
+The collector gathers everything; **you** surface only what the user
+would otherwise miss — 3-6 item target, 10+ means trim.
 
 **SURFACE**: open PR from a recent branch (especially review/CI-stale) ·
 `+ACTIVE` task (work was mid-flight) · unchecked journal todo ·
-real uncommitted edits · unpushed commits · task annotated "blocked on X"
-where X may now be unblocked · **open assigned GitHub issue with no
-matching taskwarrior task** (the drift case — filed on GitHub, never
-mirrored locally).
+real uncommitted edits · unpushed commits · task whose annotation reads
+"blocked on X" where X may now be unblocked · GitHub drift issue (the
+`GITHUB_DRIFT` section — assigned, open, untracked locally).
 
 **DO NOT SURFACE**: completed tasks · merged PRs · closed issues ·
-issues assigned to someone else · **a GitHub issue already represented
-by a surfaced taskwarrior task** (dedup by issue number — show the task,
-not the issue) · recurring-reminder / dataview machinery in the journal ·
-weeks-stale tasks with no recent annotation (that's `task-status`'s job) ·
-`+ACTIVE` tasks from a *different* project than the cwd — those are stale
-locks; at most one footnote line ("Stale +ACTIVE elsewhere" at the end of
-the briefing), never a scope hijack.
+issues already represented by a surfaced task (the collector already
+dedups these out of `GITHUB_DRIFT`) · recurring-reminder / dataview
+machinery · weeks-stale tasks with no recent annotation (that's
+`task-status`'s job) · `+ACTIVE` tasks from a *different* project
+(the `STALE_ACTIVE_ELSEWHERE` section — at most one footnote line, never
+a scope hijack).
+
+## Context
+
+- Project config: !`find . -maxdepth 2 -path '*/.claude/session-plugin.local.md'`
 
 ## Execution
 
 Execute this read-only briefing:
 
-### Step 1: Detect the project
+### Step 1: Read config, then run the collector once
 
-Tiered precedence — full table in [REFERENCE.md](REFERENCE.md):
-
-1. cwd → unambiguous project (repo-root basename or config naming map)
-2. `+ACTIVE` task's project, only when cwd is ambiguous
-3. git remote name as last resort
-
-A cross-project `+ACTIVE` task never overrides an unambiguous cwd. When cwd unambiguously maps to a project, all subsequent queries must be scoped *only* to that project.
-
-### Step 2: Survey (parallel-safe)
+Read `.claude/session-plugin.local.md` (project, then `~/.claude/`
+fallback) for the taskwarrior project-naming map and journal settings.
+Then run the shared collector — it does detection, survey, dedup, and
+staleness in one pass and emits a structured digest:
 
 ```sh
-task project:<name> '(status:pending or +ACTIVE)' export | jq '.[]'
-git status --porcelain
-git log '@{u}..HEAD' --oneline
-gh pr list --head "$(git branch --show-current)" --json number,title,url,state,createdAt --jq '.[]'
-gh issue list --assignee @me --state open --json number,title,url,updatedAt --jq '.[]'
+bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-dedup
 ```
 
-`gh issue list` with no `-R` targets the cwd repo and `--json` returns
-`[]` (exit 0) on no matches, keeping the batch parallel-safe. Skip it when
-the cwd maps to no GitHub remote.
+Add `--project <name>` when the config naming map maps the cwd to a
+project other than the repo basename. When the session is in journal
+scope, add `--with-journal --journal-path <dir>` (plus
+`--journal-todo-heading` / `--journal-todo-stop` if the config overrides
+the defaults). The digest sections: `PROJECT`, `GIT`, `PRS`,
+`TASKWARRIOR` (each task with its stable UUID + `STALE_DAYS`),
+`GITHUB_DRIFT`, `JOURNAL`, `STALE_ACTIVE_ELSEWHERE`.
 
-**Dedup before surfacing issues.** Collect every issue number the surveyed
-tasks already reference (a `ghid` UDA, or a `#N` / `issues/N` token in any
-description or annotation) and drop those from the `gh issue list` result.
-What remains is the drift set — assigned, open, and untracked locally.
-Dedup snippet in [REFERENCE.md](REFERENCE.md).
+### Step 2: Apply the signal filter
 
-Journal source (only when configured + in scope): walk back from today
-up to 7 days, first existing note wins, extract unchecked todos —
-extraction snippet in [REFERENCE.md](REFERENCE.md).
+Cut the digest to the 3-6 things that matter, using the filter above.
+The collector has already done the mechanical drops (dedup, cross-project
+separation, staleness numbers); your job is the judgment calls — e.g. is
+a "blocked on X" annotation now unblocked, is an 11-day-stale PR worth a
+nudge.
 
 ### Step 3: Present
 
-Compact briefing, one section per source, then 2-4 concrete "next moves".
-The spin-up sections (taskwarrior / daily note / git) must reflect *only* the cwd project.
-Say "git state: clean" / "nothing pending under `project:<name>`"
-explicitly rather than omitting sections. Example briefing in
-[REFERENCE.md](REFERENCE.md).
-
-If a `+ACTIVE` task exists in a different project than the cwd-mapped one, do NOT include it in the cwd project's sections. Append a single line under a clearly separate "Stale +ACTIVE elsewhere" notice at the very end of the briefing.
+Compact briefing, one section per source, reflecting **only** the cwd
+project. Say "git state: clean" / "nothing pending under `project:<name>`"
+explicitly rather than omitting sections. A `STALE_ACTIVE_ELSEWHERE`
+entry gets a single footnote line at the very end, never its own scope.
+Example briefing: [REFERENCE.md](REFERENCE.md).
 
 ### Step 4: Offer next moves
 
-Let the user pick — never auto-resume a task or start a workflow. Spinup
-makes the open threads visible; the user decides.
+Suggest 2-4 concrete "next moves" and let the user pick — never
+auto-resume a task or start a workflow. Spinup makes the open threads
+visible; the user decides.
 
 ## Auto-surfacing
 
-A SessionStart hook (`hooks/session-spinup-nudge.sh`) injects a one-time
-context note when a fresh session opens with open threads (dirty tree,
-unpushed commits, or open tasks for the cwd project). It offers; it never
-runs the skill. Pre-silence:
+A SessionStart hook (`hooks/session-spinup-nudge.sh`) runs the same
+collector in `--summary` mode and injects a one-time context note when a
+fresh session opens with open threads. It offers; it never runs the
+skill. Pre-silence:
 `touch ~/.cache/claude-session-spinup-nudge/<session_id>`.
 
 ## Agentic Optimizations
 
 | Context | Command |
 |---|---|
-| Open + in-flight tasks (exit-0 on empty) | `task project:<name> '(status:pending or +ACTIVE)' export \| jq '.[]'` |
-| Unpushed commits | `git log '@{u}..HEAD' --oneline` |
-| Branch PRs | `gh pr list --head <branch> --json number,title,url,state --jq '.[]'` |
-| Assigned open issues (cwd repo, exit-0 on empty) | `gh issue list --assignee @me --state open --json number,title,url,updatedAt --jq '.[]'` |
-| Known projects | `task _projects` |
+| Full digest (detection + survey + dedup + staleness) | `bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-dedup` |
+| With journal todos | add `--with-journal --journal-path <dir>` |
+| Override detected project | add `--project <name>` |
+| Coarse counts only (hook shape) | add `--summary` |

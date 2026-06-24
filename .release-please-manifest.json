@@ -11,7 +11,7 @@
   "comfyui-plugin": "1.4.2",
   "communication-plugin": "1.2.4",
   "component-patterns-plugin": "1.5.0",
-  "configure-plugin": "1.29.0",
+  "configure-plugin": "1.32.0",
   "container-plugin": "2.9.1",
   "css-plugin": "1.2.3",
   "documentation-plugin": "1.9.0",
@@ -39,7 +39,7 @@
   "testing-plugin": "3.15.2",
   "tools-plugin": "2.8.5",
   "typescript-plugin": "1.8.7",
-  "session-plugin": "1.4.0",
+  "session-plugin": "1.4.1",
   "software-design-plugin": "1.1.0",
   "workflow-orchestration-plugin": "1.9.0"
 }

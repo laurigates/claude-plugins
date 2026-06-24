@@ -1,3 +1,9 @@
+---
+paths:
+  - "**/SKILL.md"
+  - "**/REFERENCE.md"
+  - "renovate.json"
+---
 # Version Pinning in Skill Examples
 
 Skill markdown ships copy-pasteable examples that pin tool versions — GitHub

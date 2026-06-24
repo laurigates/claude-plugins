@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 # SessionStart hook — offers session-plugin:session-spinup when a fresh
-# session opens with open threads worth surfacing: pending or +ACTIVE
-# taskwarrior tasks for the cwd's project, uncommitted changes, unpushed
-# commits, or open GitHub issues assigned to the user in the cwd repo.
-# Injects context (additionalContext) instead of blocking — a SessionStart
-# nudge should inform, not force a turn.
+# session opens with open threads worth surfacing: pending/+ACTIVE taskwarrior
+# tasks for the cwd's project, uncommitted changes, unpushed commits, or open
+# GitHub issues assigned to the user in the cwd repo.
+#
+# Detection is delegated to the shared collector (scripts/session-survey.sh)
+# in --summary mode, so the hook and the skill agree on what an "open thread"
+# is — single source of truth. Injects context (additionalContext) instead of
+# blocking — a SessionStart nudge should inform, not force a turn.
 #
 # Fires only on source=startup|resume (silent on clear/compact — those are
 # mid-session continuations), at most once per session_id.
@@ -31,45 +34,30 @@ mkdir -p "$state_dir"
 state_file="$state_dir/$session_id"
 [ -f "$state_file" ] && exit 0
 
+# Run the shared collector. The SESSION_NUDGE_* seams (used by the hook test)
+# map onto the collector's SESSION_SURVEY_* seams so both stay stubable.
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+collector="$script_dir/../scripts/session-survey.sh"
+[ -f "$collector" ] || exit 0
+
+summary=$(SESSION_SURVEY_TASK_BIN="${SESSION_NUDGE_TASK_BIN:-task}" \
+          SESSION_SURVEY_GH_BIN="${SESSION_NUDGE_GH_BIN:-gh}" \
+          SESSION_SURVEY_GIT_BIN="${SESSION_NUDGE_GIT_BIN:-git}" \
+          bash "$collector" --summary --with-dedup --project-dir "$cwd" 2>/dev/null || echo "")
+
+get() { printf '%s\n' "$summary" | grep -m1 "^$1=" | cut -d= -f2- || echo ""; }
+
+project=$(get PROJECT)
+dirty=$(get DIRTY)
+unpushed=$(get UNPUSHED)
+open_tasks=$(get OPEN_TASKS)
+assigned_issues=$(get ASSIGNED_ISSUES)
+
 threads=""
-
-# Git state: uncommitted changes or unpushed commits on the current branch
-if git -C "$cwd" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    dirty=$(git -C "$cwd" status --porcelain 2>/dev/null | head -1 || true)
-    [ -n "$dirty" ] && threads="${threads}uncommitted changes; "
-
-    unpushed=$(git -C "$cwd" log '@{u}..HEAD' --oneline 2>/dev/null | head -1 || true)
-    [ -n "$unpushed" ] && threads="${threads}unpushed commits; "
-fi
-
-# Taskwarrior: pending or in-flight tasks for the project inferred from the
-# repo root basename. `export` is exit-0 on empty (parallel-safe-queries.md).
-# SESSION_NUDGE_TASK_BIN is a test seam — see test-session-spinup-nudge.sh.
-task_bin="${SESSION_NUDGE_TASK_BIN:-task}"
-if command -v "$task_bin" >/dev/null 2>&1; then
-    repo_root=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null || echo "$cwd")
-    project=$(basename "$repo_root")
-    open_count=$("$task_bin" "project:$project" '(status:pending or +ACTIVE)' export 2>/dev/null \
-        | jq 'length' 2>/dev/null || echo 0)
-    if [ "${open_count:-0}" -gt 0 ] 2>/dev/null; then
-        threads="${threads}${open_count} open taskwarrior task(s) under project:${project}; "
-    fi
-fi
-
-# GitHub issues: open issues assigned to the user in the cwd repo. Gated on a
-# fast `gh auth status` so an unauthenticated machine pays no network cost.
-# Coarse count only — the skill does precise dedup against taskwarrior, but a
-# tracked issue already trips the taskwarrior signal above, so over-counting
-# here at worst restates an existing reason, never invents a false one.
-# SESSION_NUDGE_GH_BIN is a test seam — see test-session-spinup-nudge.sh.
-gh_bin="${SESSION_NUDGE_GH_BIN:-gh}"
-if command -v "$gh_bin" >/dev/null 2>&1 && "$gh_bin" auth status >/dev/null 2>&1; then
-    issue_count=$( (cd "$cwd" && "$gh_bin" issue list --assignee @me --state open \
-        --json number --jq 'length' 2>/dev/null) || echo 0)
-    if [ "${issue_count:-0}" -gt 0 ] 2>/dev/null; then
-        threads="${threads}${issue_count} assigned GitHub issue(s); "
-    fi
-fi
+[ "$dirty" = "true" ] && threads="${threads}uncommitted changes; "
+[ "${unpushed:-0}" -gt 0 ] 2>/dev/null && threads="${threads}unpushed commits; "
+[ "${open_tasks:-0}" -gt 0 ] 2>/dev/null && threads="${threads}${open_tasks} open taskwarrior task(s) under project:${project}; "
+[ "${assigned_issues:-0}" -gt 0 ] 2>/dev/null && threads="${threads}${assigned_issues} assigned GitHub issue(s); "
 
 # Nothing open — stay silent; spinup doesn't nudge for nothing
 [ -z "$threads" ] && exit 0

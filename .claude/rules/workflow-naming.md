@@ -1,3 +1,7 @@
+---
+paths:
+  - ".github/workflows/**"
+---
 # GitHub Actions Workflow Naming
 
 A `<Domain>: <Action> [<target>]` convention for the `name:` field of every GitHub Actions workflow this repo authors — and for the example snippets in any skill that scaffolds workflows.
