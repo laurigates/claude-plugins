@@ -691,6 +691,24 @@ check_skill_body() {
         fi
       done
     fi
+
+    # Regression: configure-release-please documented only the legacy
+    # MY_RELEASE_PLEASE_TOKEN PAT as the canonical release token, with no mention
+    # of the GitHub App-token pattern that is the laurigates org standard
+    # (gitops provisions RELEASE_PLEASE_APP_ID / RELEASE_PLEASE_PRIVATE_KEY on
+    # release_please=true repos). Following the skill verbatim produced a PAT
+    # workflow that diverges from every other repo and never consumes the
+    # gitops credentials (issue #1789). The semantic invariant is that the
+    # SKILL.md body advertises the App-token pattern as a (preferred) option.
+    # Two literals anchor the fix; dropping either erases the App-token guidance.
+    if [ "$skill_name" = "configure-release-please" ]; then
+      for token in 'create-github-app-token' 'RELEASE_PLEASE_APP_ID'; do
+        if ! grep -qF "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must document the GitHub App-token pattern token '${token}' alongside the PAT (issue #1789)")
+          has_errors=true
+        fi
+      done
+    fi
   done < <(find "$skills_dir" -type f \( -iname "SKILL.md" -o -iname "skill.md" \) -print0 2>/dev/null)
 
   if $has_errors; then

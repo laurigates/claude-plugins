@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-06-01
-reviewed: 2026-06-01
+modified: 2026-06-24
+reviewed: 2026-06-24
 name: release-please-standards
 description: "release-please standards and configuration reference. Use when configuring release workflows, checking automation compliance, or working with version bumps."
 user-invocable: false
@@ -28,6 +28,14 @@ Standard release-please configuration for automated semantic versioning and chan
 
 **File**: `.github/workflows/release-please.yml`
 
+The release PR needs a token that can trigger other workflows. Two patterns;
+the **GitHub App token is preferred** (the laurigates org standard), with the
+`MY_RELEASE_PLEASE_TOKEN` PAT kept as a legacy fallback.
+
+**GitHub App token (preferred)** — `create-github-app-token` mints a token from
+`RELEASE_PLEASE_APP_ID` (variable) and `RELEASE_PLEASE_PRIVATE_KEY` (secret),
+which gitops provisions on repos flagged `release_please = true`:
+
 ```yaml
 name: Release Please
 
@@ -44,6 +52,19 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          app-id: ${{ vars.RELEASE_PLEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_PLEASE_PRIVATE_KEY }}
+      - uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+```
+
+**PAT (legacy)** — a `MY_RELEASE_PLEASE_TOKEN` secret in repository settings:
+
+```yaml
       - uses: googleapis/release-please-action@v5
         with:
           token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
@@ -126,7 +147,7 @@ and shared→component tag migration — see `git-plugin:release-please-configur
 
 1. **Workflow file**: `.github/workflows/release-please.yml`
    - Uses `googleapis/release-please-action@v5`
-   - Token: `MY_RELEASE_PLEASE_TOKEN` secret
+   - Token: GitHub App token (preferred) or `MY_RELEASE_PLEASE_TOKEN` secret
    - Triggers on push to `main`
 
 2. **Config file**: `release-please-config.json`
@@ -138,10 +159,20 @@ and shared→component tag migration — see `git-plugin:release-please-configur
 
 ### Token Configuration
 
-The workflow uses `MY_RELEASE_PLEASE_TOKEN` secret (not `GITHUB_TOKEN`) because:
+The workflow uses a dedicated release token (not `GITHUB_TOKEN`) because:
 - Allows release PRs to trigger other workflows
 - Enables CI checks on release PRs
 - Maintains proper audit trail
+
+Two token patterns are accepted:
+
+| Pattern | How | When |
+|---------|-----|------|
+| **GitHub App token (preferred)** | `actions/create-github-app-token` → `app-id: ${{ vars.RELEASE_PLEASE_APP_ID }}`, `private-key: ${{ secrets.RELEASE_PLEASE_PRIVATE_KEY }}`, passed as `token: ${{ steps.app-token.outputs.token }}` | laurigates org standard — credentials are gitops-provisioned on `release_please = true` repos |
+| **PAT (legacy)** | `token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}` | Where the GitHub App isn't set up |
+
+A workflow already using the App-token pattern is compliant — do not flag it to
+switch to `MY_RELEASE_PLEASE_TOKEN`.
 
 ## Compliance Checking
 
@@ -193,7 +224,10 @@ Release-please requires conventional commit messages:
 1. Create workflow file
 2. Create config file
 3. Create manifest file
-4. Add `MY_RELEASE_PLEASE_TOKEN` to repository secrets
+4. Provide the release token — preferred: set the `RELEASE_PLEASE_APP_ID`
+   variable + `RELEASE_PLEASE_PRIVATE_KEY` secret (gitops provisions these on
+   `release_please = true` repos); legacy: add `MY_RELEASE_PLEASE_TOKEN` to
+   repository secrets
 5. Ensure pre-commit has conventional-pre-commit hook
 
 ## Troubleshooting
@@ -212,5 +246,5 @@ Release-please requires conventional commit messages:
 
 ### CI Not Running on Release PR
 
-- Token must be PAT, not GITHUB_TOKEN
+- Token must be a dedicated release token (GitHub App token or PAT), not `GITHUB_TOKEN`
 - Verify workflow trigger includes pull_request
