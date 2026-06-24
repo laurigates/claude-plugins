@@ -1,3 +1,8 @@
+---
+paths:
+  - "**/skills/**"
+  - "**/SKILL.md"
+---
 # Skill Effectiveness Measurement
 
 How we know our skills actually work — and keep working as new Claude models

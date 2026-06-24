@@ -1,3 +1,7 @@
+---
+paths:
+  - ".github/workflows/**"
+---
 # GitHub Actions Security
 
 The secure-use baseline for every workflow this repo authors and for the example

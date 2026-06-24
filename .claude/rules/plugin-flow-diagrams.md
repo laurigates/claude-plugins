@@ -1,3 +1,7 @@
+---
+paths:
+  - "**/docs/flow.md"
+---
 # Plugin Flow Diagrams
 
 Codifies when a plugin earns a Mermaid flow diagram, where it lives, and what conventions to follow.
