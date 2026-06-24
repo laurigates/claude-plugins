@@ -51,7 +51,7 @@ jobs:
         id: check
         run: |
           python3 scripts/sync-plugin-configs.py 2>&1 | tee /tmp/sync-output.txt
-          exit ${PIPESTATUS[0]}
+          exit "${PIPESTATUS[0]}"
         continue-on-error: true
 
       - name: Auto-fix and push (pull_request)
@@ -68,12 +68,12 @@ jobs:
 
           # Check if there are changes to commit
           if git diff --quiet; then
-            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
             echo "No changes to commit - validation failed but --fix produced no diff"
             exit 0
           fi
 
-          echo "has_changes=true" >> $GITHUB_OUTPUT
+          echo "has_changes=true" >> "$GITHUB_OUTPUT"
 
           # Commit and push the fix
           git config user.name "github-actions[bot]"
@@ -133,9 +133,9 @@ jobs:
         id: changes
         run: |
           if git diff --quiet; then
-            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "changed=false" >> "$GITHUB_OUTPUT"
           else
-            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Commit and push fixes

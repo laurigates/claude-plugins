@@ -12,11 +12,11 @@ repos:
     hooks:
       - id: actionlint
         # Keep in sync with the actionlint CI step in plugin-pr-checks.yml.
-        # -shellcheck=  disables noisy run-block shellcheck (58 pre-existing
-        #               info/style findings; cleanup is a follow-up).
+        # Embedded run-block shellcheck is ON (the 58 pre-existing findings
+        # were cleaned in #1775); run-block shell linting is enforced.
         # -ignore       suppresses the tracked outputs.result latent-bug findings
-        #               in the audit workflows (fixed separately).
-        args: ['-shellcheck=', '-ignore', 'property "result" is not defined']
+        #               in the audit workflows (fixed separately, see #1774).
+        args: ['-ignore', 'property "result" is not defined']
   - repo: local
     hooks:
       - id: lint-shell-scripts

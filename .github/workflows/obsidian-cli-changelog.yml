@@ -46,7 +46,7 @@ jobs:
             echo "::error::Failed to hash Obsidian CLI doc"
             exit 1
           fi
-          echo "latest_sha=$SHA" >> $GITHUB_OUTPUT
+          echo "latest_sha=$SHA" >> "$GITHUB_OUTPUT"
           echo "Fetched CLI doc, sha256=$SHA"
 
       - name: Fetch latest Obsidian desktop version
@@ -57,7 +57,7 @@ jobs:
           if [ -z "$VERSION" ]; then
             VERSION="unknown"
           fi
-          echo "latest_version=$VERSION" >> $GITHUB_OUTPUT
+          echo "latest_version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Latest Obsidian desktop: $VERSION"
 
       - name: Read tracked state
@@ -70,8 +70,8 @@ jobs:
             PREV_SHA=""
             PREV_VER="unknown"
           fi
-          echo "previous_sha=$PREV_SHA" >> $GITHUB_OUTPUT
-          echo "previous_version=$PREV_VER" >> $GITHUB_OUTPUT
+          echo "previous_sha=$PREV_SHA" >> "$GITHUB_OUTPUT"
+          echo "previous_version=$PREV_VER" >> "$GITHUB_OUTPUT"
           echo "Tracked sha=$PREV_SHA version=$PREV_VER"
 
       - name: Compare hashes
@@ -83,16 +83,16 @@ jobs:
 
           if [ "$FORCE" = "true" ]; then
             echo "Forced full review requested"
-            echo "has_updates=true" >> $GITHUB_OUTPUT
+            echo "has_updates=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           if [ "$LATEST" != "$TRACKED" ]; then
             echo "CLI doc changed: $TRACKED -> $LATEST"
-            echo "has_updates=true" >> $GITHUB_OUTPUT
+            echo "has_updates=true" >> "$GITHUB_OUTPUT"
           else
             echo "No changes since $TRACKED"
-            echo "has_updates=false" >> $GITHUB_OUTPUT
+            echo "has_updates=false" >> "$GITHUB_OUTPUT"
           fi
 
   claude-review:
