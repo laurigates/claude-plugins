@@ -1,3 +1,8 @@
+---
+paths:
+  - "**/skills/**"
+  - "**/SKILL.md"
+---
 # Skill Argument-Handling Audit
 
 A skill's argument surface — its `args` / `argument-hint` frontmatter and the
