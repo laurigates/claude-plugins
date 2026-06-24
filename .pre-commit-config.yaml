@@ -79,6 +79,12 @@ repos:
         language: script
         files: '^\.github/workflows/.*\.ya?ml$'
         pass_filenames: false
+      - id: check-auto-resolve-mergeability-poll
+        name: auto-resolve-conflicts polls until mergeability settles (#1786)
+        entry: ./scripts/check-auto-resolve-mergeability-poll.sh
+        language: script
+        files: '^\.github/workflows/auto-resolve-conflicts\.ya?ml$'
+        pass_filenames: false
       - id: check-agent-failure-contract
         name: dispatch skills carry the loud-failure contract (#1422)
         entry: ./scripts/check-agent-failure-contract.sh

@@ -109,6 +109,16 @@ jobs:
       - name: Check every Claude workflow pins opus + effort
         run: bash scripts/check-workflow-model.sh
 
+      - name: Self-test the auto-resolve mergeability-poll guard
+        # The #1786 race: auto-resolve-conflicts read `mergeable` once, seconds
+        # after the push, while GitHub was still recomputing it — so a freshly
+        # conflicting PR read UNKNOWN and was skipped. The guard asserts the
+        # workflow polls until mergeability settles; self-test proves it first.
+        run: bash scripts/tests/test-check-auto-resolve-mergeability-poll.sh
+
+      - name: Check auto-resolve-conflicts polls for mergeability
+        run: bash scripts/check-auto-resolve-mergeability-poll.sh
+
       - name: Self-test the shell-script lint guard
         # Whole-repo invariant (every shell script follows shell-scripting.md:
         # #!/usr/bin/env bash shebang, set flags, block()). Runs unconditionally
