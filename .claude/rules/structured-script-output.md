@@ -1,3 +1,8 @@
+---
+paths:
+  - "**/*.sh"
+  - "scripts/**"
+---
 # Structured Script Output
 
 Diagnostic shell scripts invoked by skills should emit a Bash-friendly

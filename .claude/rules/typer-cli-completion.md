@@ -1,3 +1,8 @@
+---
+paths:
+  - "git-repo-agent/**"
+  - "vault-agent/**"
+---
 # Typer/Click CLI Completion: Bypass shellingham
 
 Python CLIs built on [Typer] (and [Click] under it) ship `--install-completion`

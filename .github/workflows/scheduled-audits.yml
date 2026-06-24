@@ -23,16 +23,18 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           EXISTING=$(gh issue list --label "blueprint-health" --state open --json number --jq 'length')
-          echo "exists=$([ "$EXISTING" -gt 0 ] && echo true || echo false)" >> $GITHUB_OUTPUT
+          echo "exists=$([ "$EXISTING" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
       - name: Run blueprint health check
         if: steps.check_issue.outputs.exists == 'false'
         id: health
         run: |
           RESULT=$(bash scripts/blueprint-health-check.sh)
-          echo "result<<EOF" >> $GITHUB_OUTPUT
-          echo "$RESULT" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+            echo "result<<EOF"
+            echo "$RESULT"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create health check issue
         if: steps.check_issue.outputs.exists == 'false' && steps.health.outputs.result
@@ -59,16 +61,18 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           EXISTING=$(gh issue list --label "infra-compliance" --state open --json number --jq 'length')
-          echo "exists=$([ "$EXISTING" -gt 0 ] && echo true || echo false)" >> $GITHUB_OUTPUT
+          echo "exists=$([ "$EXISTING" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
       - name: Run infra compliance check
         if: steps.check_issue.outputs.exists == 'false'
         id: compliance
         run: |
           RESULT=$(bash scripts/infra-compliance-check.sh)
-          echo "result<<EOF" >> $GITHUB_OUTPUT
-          echo "$RESULT" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+            echo "result<<EOF"
+            echo "$RESULT"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create compliance dashboard issue
         if: steps.check_issue.outputs.exists == 'false' && steps.compliance.outputs.result
@@ -97,14 +101,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           EXISTING=$(gh issue list --label "agentic-audit" --state open --json number --jq 'length')
-          echo "exists=$([ "$EXISTING" -gt 0 ] && echo true || echo false)" >> $GITHUB_OUTPUT
+          echo "exists=$([ "$EXISTING" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
       - name: Pre-compute deterministic data
         if: steps.check_issue.outputs.exists == 'false'
         id: precompute
         run: |
           TODAY=$(date +%s)
-          SUMMARY=""
 
           # Find skills missing Agentic Optimizations table
           MISSING_AGENTIC=""
@@ -159,9 +162,11 @@ jobs:
           } > /tmp/precomputed.md
 
           RESULT=$(cat /tmp/precomputed.md)
-          echo "result<<EOF" >> $GITHUB_OUTPUT
-          echo "$RESULT" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+            echo "result<<EOF"
+            echo "$RESULT"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Claude Agentic Quality Audit
         if: steps.check_issue.outputs.exists == 'false'
@@ -247,16 +252,18 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           EXISTING=$(gh issue list --label "docs-index" --state open --json number --jq 'length')
-          echo "exists=$([ "$EXISTING" -gt 0 ] && echo true || echo false)" >> $GITHUB_OUTPUT
+          echo "exists=$([ "$EXISTING" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
       - name: Run docs-index drift check
         if: steps.check_issue.outputs.exists == 'false'
         id: docs
         run: |
           RESULT=$(bash scripts/check-docs-index.sh --issue-body)
-          echo "result<<EOF" >> $GITHUB_OUTPUT
-          echo "$RESULT" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+            echo "result<<EOF"
+            echo "$RESULT"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create docs-index drift issue
         if: steps.check_issue.outputs.exists == 'false' && steps.docs.outputs.result

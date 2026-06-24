@@ -112,11 +112,13 @@ jobs:
           if [ -n "$PR_DATA" ]; then
             PR_NUMBER=$(echo "$PR_DATA" | jq -r '.number')
             PR_BRANCH=$(echo "$PR_DATA" | jq -r '.branch')
-            echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
-            echo "pr_branch=$PR_BRANCH" >> $GITHUB_OUTPUT
-            echo "found=true" >> $GITHUB_OUTPUT
+            {
+              echo "pr_number=$PR_NUMBER"
+              echo "pr_branch=$PR_BRANCH"
+              echo "found=true"
+            } >> "$GITHUB_OUTPUT"
           else
-            echo "found=false" >> $GITHUB_OUTPUT
+            echo "found=false" >> "$GITHUB_OUTPUT"
           fi
 
       - uses: actions/checkout@v6
@@ -135,9 +137,9 @@ jobs:
         id: check
         run: |
           if git diff --quiet; then
-            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "changed=false" >> "$GITHUB_OUTPUT"
           else
-            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Commit and push to release PR

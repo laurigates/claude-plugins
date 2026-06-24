@@ -465,6 +465,22 @@ check_skill_body() {
       done
     fi
 
+    # Regression: configure-gitignore exists to guarantee the Claude Code
+    # runtime-state block lands in every onboarded repo's .gitignore — above all
+    # `.claude/worktrees/` (an agent worktree is a full repo clone; committing one
+    # is a large accidental diff). The block is delimited by a header carrying
+    # 'managed by /configure:gitignore' so the skill can stay additive/idempotent.
+    # A bulk edit that "tightens" the skill must not drop the load-bearing entry
+    # or the managed-block marker, so assert both survive.
+    if [ "$skill_name" = "configure-gitignore" ]; then
+      for token in '.claude/worktrees/' 'managed by /configure:gitignore'; do
+        if ! grep -qF "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain managed-block token '${token}' (Claude runtime-state .gitignore guarantee)")
+          has_errors=true
+        fi
+      done
+    fi
+
     # Regression: github-actions-auth-security must document the GitHub Actions
     # script-injection mitigation (distinct from Claude *prompt* injection):
     # untrusted run-context values bound to an intermediate `env:` variable and
@@ -687,6 +703,24 @@ check_skill_body() {
       for token in 'spec drift' 're-audit'; do
         if ! grep -qiF "$token" "$skill_file"; then
           issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain drift/re-audit token '${token}' for already-onboarded repos (issue #1670)")
+          has_errors=true
+        fi
+      done
+    fi
+
+    # Regression: configure-release-please documented only the legacy
+    # MY_RELEASE_PLEASE_TOKEN PAT as the canonical release token, with no mention
+    # of the GitHub App-token pattern that is the laurigates org standard
+    # (gitops provisions RELEASE_PLEASE_APP_ID / RELEASE_PLEASE_PRIVATE_KEY on
+    # release_please=true repos). Following the skill verbatim produced a PAT
+    # workflow that diverges from every other repo and never consumes the
+    # gitops credentials (issue #1789). The semantic invariant is that the
+    # SKILL.md body advertises the App-token pattern as a (preferred) option.
+    # Two literals anchor the fix; dropping either erases the App-token guidance.
+    if [ "$skill_name" = "configure-release-please" ]; then
+      for token in 'create-github-app-token' 'RELEASE_PLEASE_APP_ID'; do
+        if ! grep -qF "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must document the GitHub App-token pattern token '${token}' alongside the PAT (issue #1789)")
           has_errors=true
         fi
       done

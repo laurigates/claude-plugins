@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-06-18
-reviewed: 2025-12-16
+modified: 2026-06-24
+reviewed: 2026-06-24
 description: "release-please workflow setup and auditing. Use when configuring release-please, upgrading release-please-action, or adding a package to a monorepo config."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix]"
@@ -20,7 +20,7 @@ Check and configure release-please against project standards.
 | Setting up release-please for a new project from scratch | Manually editing CHANGELOG.md or version fields — use conventional commits instead |
 | Auditing existing release-please configuration for compliance | Creating a one-off release — use `gh release create` directly |
 | Upgrading release-please-action to the latest version | Debugging a failed release PR — check GitHub Actions logs directly |
-| Ensuring workflow uses correct token (MY_RELEASE_PLEASE_TOKEN) | Managing npm/PyPI publishing — configure separate publish workflows |
+| Ensuring the workflow uses a correct release token (GitHub App token, preferred; or `MY_RELEASE_PLEASE_TOKEN`) | Managing npm/PyPI publishing — configure separate publish workflows |
 | Adding a new package to a monorepo release-please configuration | Writing conventional commit messages — use `/git:commit` skill |
 
 ## Context
@@ -69,7 +69,13 @@ Determine appropriate release-type from detected package files:
 
 **Workflow file checks**:
 - Action version: `googleapis/release-please-action@v4`
-- Token: Uses `MY_RELEASE_PLEASE_TOKEN` secret (not GITHUB_TOKEN)
+- Token: Uses a non-`GITHUB_TOKEN` release token. Accept **either** pattern:
+  - **GitHub App token (preferred)** — `actions/create-github-app-token` mints
+    a token from `app-id: ${{ vars.RELEASE_PLEASE_APP_ID }}` /
+    `private-key: ${{ secrets.RELEASE_PLEASE_PRIVATE_KEY }}`, passed as
+    `token: ${{ steps.app-token.outputs.token }}`. Treat this as compliant —
+    do **not** flag it to switch to `MY_RELEASE_PLEASE_TOKEN`.
+  - **PAT (legacy)** — `token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}`.
 - Trigger: Push to `main` branch
 - Permissions: `contents: write`, `pull-requests: write`
 
@@ -94,9 +100,11 @@ For the report format, see [REFERENCE.md](REFERENCE.md).
 2. **Missing config**: Create with detected release-type
 3. **Missing manifest**: Create with initial version `0.0.0`
 4. **Outdated action**: Update to v4
-5. **Wrong token**: Update to use MY_RELEASE_PLEASE_TOKEN
+5. **Wrong token**: Use the GitHub App-token pattern (preferred) or
+   `MY_RELEASE_PLEASE_TOKEN` — never `GITHUB_TOKEN`. A workflow already on
+   `create-github-app-token` is compliant; leave it as-is.
 
-For standard templates, see [REFERENCE.md](REFERENCE.md).
+For both token templates (App-token preferred, PAT legacy), see [REFERENCE.md](REFERENCE.md).
 
 ### Step 6: Update standards tracking
 
@@ -120,7 +128,15 @@ components:
 
 ## Important Notes
 
-- Requires `MY_RELEASE_PLEASE_TOKEN` secret in repository settings
+- **Release token (not `GITHUB_TOKEN`)** — a release PR needs a token that can
+  trigger other workflows. Two patterns, App-token preferred:
+  - **GitHub App token (preferred)** — `actions/create-github-app-token` reads
+    `RELEASE_PLEASE_APP_ID` (a repo/org **variable**) and
+    `RELEASE_PLEASE_PRIVATE_KEY` (a **secret**). For the laurigates org these
+    credentials are pushed by gitops to repos flagged `release_please = true`,
+    so this is the standard that matches every other repo.
+  - **`MY_RELEASE_PLEASE_TOKEN` PAT (legacy)** — a personal-access-token secret
+    in repository settings. Still valid, but diverges from the org standard.
 - CHANGELOG.md is managed by release-please - never edit manually
 - Version fields in package.json/pyproject.toml are managed automatically
 - Works with `conventional-pre-commit` hook for commit validation

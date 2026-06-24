@@ -35,16 +35,27 @@ run_hook_output() {
           bash "$HOOK" 2>/dev/null || true
 }
 
-# Stub gh: `auth status` succeeds; `issue list` reports a fixed count via the
-# GH_STUB_ISSUE_COUNT env var (0 = none, so the issue signal stays silent).
+# Stub gh: `auth status` succeeds; `issue list` emits a JSON array sized by
+# GH_STUB_ISSUE_COUNT (0 = empty, so the issue signal stays silent). The hook
+# now delegates to the collector, which calls `gh issue list --json ...`, so
+# the stub must emit JSON, not a bare integer.
 GH_STUB_DIR=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
 trap 'rm -rf "$TEST_HOME" "$REPO_CLEAN" "$REPO_DIRTY" "$GH_STUB_DIR"' EXIT
 cat > "$GH_STUB_DIR/gh" <<'STUB'
 #!/usr/bin/env bash
-case "$1" in
-    auth) exit 0 ;;
-    issue) echo "${GH_STUB_ISSUE_COUNT:-0}" ;;
-    *) exit 1 ;;
+case "$1 $2" in
+    "auth status") exit 0 ;;
+    "issue list")
+        n="${GH_STUB_ISSUE_COUNT:-0}"
+        printf '['
+        for i in $(seq 1 "$n" 2>/dev/null); do
+            [ "$i" -gt 1 ] && printf ','
+            printf '{"number":%d,"title":"issue %d","url":"http://x/%d","updatedAt":"2026-06-22T10:00:00Z"}' "$i" "$i" "$i"
+        done
+        printf ']'
+        ;;
+    "pr list") echo "[]" ;;
+    *) echo "[]" ;;
 esac
 STUB
 chmod +x "$GH_STUB_DIR/gh"

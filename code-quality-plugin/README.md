@@ -228,15 +228,16 @@ Works well with:
 
 ## PostToolUse Pre-flight Cue
 
-The plugin ships a PostToolUse behavioral cue hook (ADR-0017) that fires **once per session** when an Edit or Write touches a file with structural signals. When it fires, it feeds back a short reminder to run `/code-quality:code-lint` (and `/evaluate:evaluate-skill` if a skill file changed) before continuing.
+The plugin ships a PostToolUse behavioral cue hook (ADR-0017) that fires **once per session** when an Edit or Write touches a file with structural signals. When it fires, it feeds back a short reminder to run `/code-quality:code-lint` before continuing — and, **only when a skill file under a `skills/` tree changed**, to also run `/evaluate:evaluate-skill`.
 
 ### How it works
 
 - **Fires on**: Edit and Write tool completions
 - **Structural signals** (any one is enough to fire):
-  - The diff contains a public-symbol line: `export`, `export default`, `module.exports`, `pub`, `public`, `def`, `class`, `func`
+  - The diff contains a public-symbol line: `export`, `export default`, `module.exports`, `pub`, `public`, `def`, `class`, `func` — for shell scripts (`.sh`/`.bash`/`.zsh`), `export` is excluded since `export FOO=bar` is a builtin assignment, not a public-API symbol (issue #1766)
   - The edited file is a manifest: `plugin.json`, `marketplace.json`, `package.json`, `Cargo.toml`, `pyproject.toml`
   - The payload (new_string + content) is >= 50 lines
+- **`/evaluate:evaluate-skill` reminder**: appended only for paths under a `skills/` tree, so the cue points at a real action rather than a no-op on ordinary code edits (issue #1766)
 - **Silenced for**: `.md`/`.txt` files, `CHANGELOG.md`, test/spec files, lockfiles, docs under `docs/adrs/` or `docs/prds/`
 - **Once per session**: after firing, a marker file under `~/.cache/code-quality-preflight-cue/<session_id>` prevents re-firing in the same session
 - **ADR-0017 compliance**: uses `{"decision":"block","reason":"..."}` with `continueOnBlock: true` — the reason is fed back to the model and the turn continues

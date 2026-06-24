@@ -81,6 +81,10 @@ If the project uses language-level deps (Python, Node, Rust, Go), also invoke `/
 
 Invoke `/configure:gitattributes --fix` using the SlashCommand tool. This applies the zero-risk baseline (LF normalization for shell scripts, `linguist-generated` for build output) and surfaces any append-only-table `merge=union` candidates as recommendations. See `.claude/rules/gitattributes.md`.
 
+### Step 3c: Configure .gitignore
+
+Invoke `/configure:gitignore --fix` using the SlashCommand tool. This appends the managed Claude Code runtime-state block (`.claude/worktrees/`, `/worktrees/`, `.claude/scheduled_tasks.lock`, `.claude/settings.local.json`) so session-generated files never get committed. Additive only — existing `.gitignore` lines are left untouched.
+
 ### Step 4: Offer migrations (unless --skip-migrations)
 
 Detect these migratable patterns and ask whether to run each migration via `AskUserQuestion`:
