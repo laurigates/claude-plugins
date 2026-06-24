@@ -32,12 +32,44 @@ jobs:
         id: find
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Untrusted run-context value routed through env, never interpolated
+          # into the script body (.claude/rules/github-actions-security.md).
+          PR_NUMBER_INPUT: ${{ inputs.pr_number }}
+          REPO: ${{ github.repository }}
+          # Wall-clock budget for the mergeability poll below (seconds).
+          POLL_DEADLINE_SECONDS: '120'
+          POLL_INTERVAL_SECONDS: '8'
         run: |
-          if [ -n "${{ inputs.pr_number }}" ]; then
-            MATRIX='{"include":[{"pr_number":"${{ inputs.pr_number }}"}]}'
+          if [ -n "$PR_NUMBER_INPUT" ]; then
+            MATRIX="{\"include\":[{\"pr_number\":\"$PR_NUMBER_INPUT\"}]}"
           else
-            PRS=$(gh pr list --repo "${{ github.repository }}" --state open --json number,mergeable \
-              --jq '[.[] | select(.mergeable == "CONFLICTING") | {"pr_number": (.number | tostring)}]')
+            # GitHub recomputes a PR's mergeability ASYNCHRONOUSLY after the base
+            # branch moves. This workflow fires within seconds of a push to main,
+            # so a PR made conflicting by *that* push still reads `UNKNOWN` (not
+            # `CONFLICTING`) at first — the race that left PR #1786 unresolved
+            # while every run logged "No PRs with merge conflicts found".
+            #
+            # Poll the open-PR list until no PR is left `UNKNOWN` (GitHub settles
+            # within a few seconds), bounded by a wall-clock deadline so the job
+            # can never hang. One `gh pr list` per round keeps API cost flat
+            # regardless of how many PRs are open.
+            DEADLINE=$(( $(date +%s) + POLL_DEADLINE_SECONDS ))
+            while :; do
+              LIST=$(gh pr list --repo "$REPO" --state open --json number,mergeable)
+              UNKNOWN_COUNT=$(echo "$LIST" | jq '[.[] | select(.mergeable == "UNKNOWN")] | length')
+              if [ "$UNKNOWN_COUNT" -eq 0 ] || [ "$(date +%s)" -ge "$DEADLINE" ]; then
+                break
+              fi
+              echo "::notice::$UNKNOWN_COUNT PR(s) still computing mergeability; waiting ${POLL_INTERVAL_SECONDS}s…"
+              sleep "$POLL_INTERVAL_SECONDS"
+            done
+
+            STILL_UNKNOWN=$(echo "$LIST" | jq '[.[] | select(.mergeable == "UNKNOWN")] | length')
+            if [ "$STILL_UNKNOWN" -gt 0 ]; then
+              echo "::warning::$STILL_UNKNOWN PR(s) still UNKNOWN after ${POLL_DEADLINE_SECONDS}s; they may be missed this run"
+            fi
+
+            PRS=$(echo "$LIST" | jq -c '[.[] | select(.mergeable == "CONFLICTING") | {"pr_number": (.number | tostring)}]')
 
             if [ -z "$PRS" ] || [ "$PRS" = "[]" ]; then
               echo "has_conflicts=false" >> "$GITHUB_OUTPUT"
