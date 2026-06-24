@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.4.0...session-plugin-v1.4.1) (2026-06-24)
+
+
+### Code Refactoring
+
+* **session-plugin:** extract shared read-only survey collector ([#1799](https://github.com/laurigates/claude-plugins/issues/1799)) ([57a10c2](https://github.com/laurigates/claude-plugins/commit/57a10c277d9666cfc8306be5803952705a9d6856))
+
 ## [1.4.0](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.3.3...session-plugin-v1.4.0) (2026-06-22)
 
 
