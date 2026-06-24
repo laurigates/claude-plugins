@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.32.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.31.0...configure-plugin-v1.32.0) (2026-06-24)
+
+
+### Features
+
+* **configure-plugin:** add configure-gitignore skill ([#1802](https://github.com/laurigates/claude-plugins/issues/1802)) ([fc3ac2a](https://github.com/laurigates/claude-plugins/commit/fc3ac2a19fba588f2f3843736b28f024730728f1))
+
 ## [1.31.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.30.0...configure-plugin-v1.31.0) (2026-06-24)
 
 
