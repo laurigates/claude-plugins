@@ -44,6 +44,7 @@ All commands support two modes:
 | `configure-argocd-automerge` | Auto-merge workflow for ArgoCD Image Updater branches |
 | `configure-claude-plugins` | Configure Claude Code plugin marketplace and GitHub Actions workflows |
 | `configure-gitattributes` | `.gitattributes`: union-merge append-only tables, linguist-generated build output, LF normalization |
+| `configure-gitignore` | `.gitignore`: append a managed Claude Code runtime-state block (worktrees, scheduled-task lock, local settings) |
 | `configure-pre-commit` | Pre-commit hooks for project standards |
 | `configure-release-please` | Release-please workflow configuration |
 | `configure-reusable-workflows` | Install Claude-powered reusable workflows (security, quality, a11y) |
@@ -93,6 +94,7 @@ All commands support two modes:
 | `configure-makefile` | Makefile with standard targets |
 | `configure-justfile` | Justfile with standard recipes (simpler alternative to Make) |
 | `configure-package-management` | Modern package managers (uv for Python, bun for TypeScript) |
+| `configure-mise` | mise tool/runtime version manager — mise.toml, backends, tasks, env, lockfile, migrations |
 | `configure-web-session` | SessionStart hook + install script for Claude Code on the web |
 
 ## Usage
