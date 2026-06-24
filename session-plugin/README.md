@@ -70,6 +70,32 @@ touch ~/.cache/claude-session-spinup-nudge/<session_id>
 Regression tests: `hooks/test-session-end-nudge.sh`,
 `hooks/test-session-spinup-nudge.sh` (run directly with bash).
 
+## Shared collector (`scripts/session-survey.sh`)
+
+The read-only survey that `session-spinup`, `session-wrap`, `session-end`,
+and the spinup nudge hook all need — project detection, git state, branch
+PRs, taskwarrior tasks (each with its **stable UUID**), GitHub-issue dedup
+against taskwarrior, staleness, journal-todo extraction, and recent
+commits — lives in one place instead of being re-implemented inline four
+times. It emits `structured-script-output.md`-style `=== SECTION ===` /
+`KEY=VALUE` blocks so the skills consume a compact digest rather than
+re-parsing raw JSON, and every section is exit-0 on empty (parallel-safe).
+
+The script is **read-only by contract**: detection and collection only.
+All writes and judgment stay in the invoking skill.
+
+| Flag | Adds |
+|---|---|
+| (none) | PROJECT, GIT, PRS, TASKWARRIOR, STALE_ACTIVE_ELSEWHERE |
+| `--with-dedup` | GITHUB_DRIFT (assigned-open issues minus those tracked in taskwarrior) |
+| `--with-journal --journal-path <dir>` | JOURNAL (unchecked todos from the most recent dated note) |
+| `--with-commits` | COMMITS (recent commit subjects) |
+| `--summary` | coarse counts only (used by the nudge hook) |
+| `--project <name>` | override the detected project |
+
+Regression test: `scripts/tests/test-session-survey.sh` (run directly
+with bash).
+
 ## Confirmation-gate convention
 
 All write paths in this plugin confirm via **AskUserQuestion**, never a
