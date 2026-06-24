@@ -174,11 +174,21 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ github.token }}
           claude_args: "--model opus --effort low --max-turns 15"
+          # Claude opens the issue itself (research-radar.yml pattern). The
+          # claude-code-action step exposes no `result` output, so a downstream
+          # gh-create step keyed on steps.<id>.outputs.result never fired (#1774).
+          additional_permissions: |
+            Read
+            Grep
+            Glob
+            TodoWrite
+            Bash(gh issue create *)
           prompt: |
             Perform a monthly agentic quality audit on skills in this plugin repository.
             Read .claude/rules/agentic-optimization.md and .claude/rules/skill-quality.md for standards.
-            Output ONLY the issue body in markdown format. Do not create files or make changes.
+            Do NOT edit any files or workflows — your ONLY side effect is creating one GitHub issue (see the end of this prompt).
 
             Here is pre-computed deterministic data to save you time:
 
@@ -200,10 +210,18 @@ jobs:
             - Good: describes user intent, includes "Use when..." scenarios
             - Flag descriptions that could be improved
 
-            Format output as a GitHub issue body:
+            Then create the issue yourself with `gh issue create` (your only
+            side effect — do not edit any repo files). Compute the month with
+            `date +%Y-%m` and reproduce this title/labels exactly:
 
-            ```markdown
-            ## Monthly Agentic Quality Audit: YYYY-MM
+            ```bash
+            MONTH=$(date +%Y-%m)
+            gh issue create \
+              --title "Monthly Agentic Quality Audit: $MONTH" \
+              --label "agentic-audit,maintenance" \
+              --assignee laurigates \
+              --body "$(cat <<'EOF'
+            ## Monthly Agentic Quality Audit: <YYYY-MM>
 
             ### Summary
             | Metric | Value |
@@ -218,20 +236,9 @@ jobs:
 
             ### Recommendations
             - (prioritized actionable items)
+            EOF
+            )"
             ```
-
-      - name: Create audit issue
-        if: steps.check_issue.outputs.exists == 'false' && steps.audit.outputs.result
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ISSUE_BODY: ${{ steps.audit.outputs.result }}
-        run: |
-          MONTH=$(date +%Y-%m)
-          printf '%s' "$ISSUE_BODY" > /tmp/issue-body.md
-          gh issue create \
-            --title "Monthly Agentic Quality Audit: $MONTH" \
-            --label "agentic-audit,maintenance" \
-            --body-file /tmp/issue-body.md
 
   docs-index:
     runs-on: ubuntu-latest
