@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.33.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.32.0...configure-plugin-v1.33.0) (2026-06-25)
+
+
+### Features
+
+* **configure-plugin:** add configure-worktreeinclude skill ([#1818](https://github.com/laurigates/claude-plugins/issues/1818)) ([96a3939](https://github.com/laurigates/claude-plugins/commit/96a3939fa428dea6a2bfb9d94f0207024e5121a1))
+
 ## [1.32.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.31.0...configure-plugin-v1.32.0) (2026-06-24)
 
 
