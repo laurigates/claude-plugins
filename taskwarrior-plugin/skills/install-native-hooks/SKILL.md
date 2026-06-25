@@ -5,8 +5,8 @@ args: "[--check] [--uninstall]"
 allowed-tools: Bash(task *), Bash(bash *), Read, TodoWrite
 argument-hint: optional --check (preview) or --uninstall
 created: 2026-06-20
-modified: 2026-06-20
-reviewed: 2026-06-20
+modified: 2026-06-25
+reviewed: 2026-06-25
 ---
 
 # /taskwarrior:install-native-hooks
@@ -33,10 +33,23 @@ plugin (no SessionStart hook, no `chezmoi apply`) installs these.
 | Hook | Fires on | Behaviour |
 |------|----------|-----------|
 | `on-add-taskwarrior-plugin` | `task add` | Auto-stamps `project` from the git toplevel / cwd basename when unset; warns (never rejects) on a hyphenated `+tag` in the description (the form taskwarrior mis-parses) |
-| `on-modify-taskwarrior-plugin` | `modify` / `annotate` / `done` / `start` / `stop` | Warns on a hyphenated tag in the modified description; extension point for convention enforcement |
+| `on-modify-taskwarrior-plugin` | `modify` / `annotate` / `done` / `start` / `stop` | Stamps claim identity (`agent`/`host`/`branch`/`worktree`) when a task goes `+ACTIVE` without it (so a bare `task start` still carries the UDAs `/git:coworker-check` reads); warns on a claim takeover (`agent` change); expires a stale claim (drops `+ACTIVE` + drains identity when `start` exceeds the TTL); warns on a hyphenated tag in the modified description |
 
 Both **fail open** — on any error (missing `jq`, bad JSON) they pass the task
 through unchanged and exit 0, so a broken hook never blocks `task add`.
+
+The on-modify stale-claim expiry is tunable from the environment (native hooks
+inherit the caller's shell):
+
+| Variable | Default | Effect |
+|----------|---------|--------|
+| `CLAUDE_TASKWARRIOR_CLAIM_TTL_HOURS` | `4` | Age (hours) past which a still-`+ACTIVE` task is expired on next touch |
+| `CLAUDE_TASKWARRIOR_NO_CLAIM_EXPIRY` | _(unset)_ | Set to `1` to disable stale-claim expiry entirely (stamping + warnings stay on) |
+
+Expiry is **opportunistic** — it fires when a stale claim is touched by any
+modify, not as a guaranteed background sweep. The deterministic dead-PID release
+(laurigates/claude-plugins#1792) and scheduled reconcile (#1793) cover the
+not-touched case.
 
 > **`task import` bypasses native hooks.** Taskwarrior does **not** run
 > `on-add`/`on-modify` hooks during `task import`. So `/taskwarrior:task-reconcile`'s
