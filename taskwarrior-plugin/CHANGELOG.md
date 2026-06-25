@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.7.0...taskwarrior-plugin-v1.8.0) (2026-06-25)
+
+
+### Features
+
+* **taskwarrior-plugin:** on-modify native hook enforces claim invariant + auto-expires stale claims ([#1814](https://github.com/laurigates/claude-plugins/issues/1814)) ([052089a](https://github.com/laurigates/claude-plugins/commit/052089af0c0ff182c417d11827b2fcedeb0bdce5))
+
 ## [1.7.0](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.6.0...taskwarrior-plugin-v1.7.0) (2026-06-24)
 
 
