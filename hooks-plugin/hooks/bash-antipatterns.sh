@@ -180,6 +180,11 @@ fi
 # -maxdepth, -mindepth, -type, -print0. These are recommended in agentic-permissions.md
 # and shell-scripting.md for context commands.
 #
+# Also allow -path: a `find … -path '<glob>'` filters on the full path structure
+# (e.g. '*/hooks/test-*.sh'), which is a directory-structure query, not the
+# `-name '*.ext'` codebase search Glob replaces. Without this exemption a
+# -path-only find got redirected to Glob even though it is structural (issue #1800).
+#
 # Also allow the -delete action: it performs a filesystem mutation Glob
 # structurally cannot do (Glob only lists), so nudging toward Glob is useless and
 # the agent has no built-in alternative — blocking it is pure friction (issue #1671).
@@ -188,15 +193,17 @@ fi
 # so the agent should compose explicit, reviewable steps rather than execute through
 # find. Block simple name-pattern searches (pure listing Glob can do).
 if echo "$COMMAND" | grep -Eq '^\s*find\s+' && \
-   ! echo "$COMMAND" | grep -Eq 'find\s+.*(-maxdepth|-mindepth|-type\s|-print0|-delete\b)'; then
+   ! echo "$COMMAND" | grep -Eq 'find\s+.*(-maxdepth|-mindepth|-type\s|-path\s|-print0|-delete\b)'; then
     block "BLOCKED: 'find . -name \"*.ts\"' →
   Glob(pattern=\"**/*.ts\")
 
 The Glob tool is faster and optimized for codebase searches. If you
-need -maxdepth, -mindepth, -type d, or -print0 for directory discovery
-that Glob cannot do, keep find with those flags — the hook allows it.
-Glob can only list, not act: for 'find … -delete' keep find — the hook
-allows it too. (-exec/-ok stay blocked: run explicit steps instead.)
+need -maxdepth, -mindepth, -type d, -path, or -print0 for directory
+discovery that Glob cannot do, keep find with those flags — the hook
+allows it. Glob can only list, not act: for 'find … -delete' keep find —
+the hook allows it too. (-exec/-ok stay blocked: run explicit steps instead.)
+If the Glob tool is unavailable in this session, keep find but add a
+directory-discovery flag so the hook allows it: find . -type f -name '*.ts'
 See .claude/rules/bash-tool-replacements.md for the full table."
 fi
 

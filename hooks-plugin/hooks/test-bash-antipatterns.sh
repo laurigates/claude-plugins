@@ -90,6 +90,18 @@ assert_exit \
     "find -name -exec rm (arbitrary execution) stays blocked" 2 \
     "find . -name '*.log' -exec rm {} +"
 
+# Regression (issue #1800): find with a -path glob is a directory-structure query,
+# not a `-name '*.ext'` codebase search Glob replaces, so it must be allowed.
+# The dead-end this prevents: hook redirects to Glob, but Glob is unavailable in
+# the session, leaving no working path forward.
+assert_exit \
+    "find -path glob is allowed (structural query; issue #1800)" 0 \
+    "find taskwarrior-plugin -path '*/hooks/test-*.sh'"
+
+assert_exit \
+    "find -path with -type is allowed (issue #1800)" 0 \
+    "find . -path '*/hooks/*' -type f"
+
 # ── cat pipeline regression ──────────────────────────────────────────────────
 # Regression: cat file | command was blocked even though cat is feeding a
 # pipeline — the Read tool cannot replace cat in pipelines where data flows
@@ -386,6 +398,14 @@ assert_stderr_contains \
 assert_stderr_contains \
     "find block message points at rule file" \
     'bash-tool-replacements.md' \
+    "find . -name '*.ts'"
+
+# Regression (issue #1800): when Glob is unavailable in the session, the redirect
+# to Glob is a dead-end. The block message must offer a find-with-flag fallback so
+# the agent has a working path forward rather than looping on an absent tool.
+assert_stderr_contains \
+    "find block message offers a Glob-unavailable fallback" \
+    'If the Glob tool is unavailable in this session' \
     "find . -name '*.ts'"
 
 assert_stderr_contains \
