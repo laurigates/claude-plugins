@@ -32,7 +32,7 @@ plugin (no SessionStart hook, no `chezmoi apply`) installs these.
 
 | Hook | Fires on | Behaviour |
 |------|----------|-----------|
-| `on-add-taskwarrior-plugin` | `task add` | Auto-stamps `project` from the git toplevel / cwd basename when unset; warns (never rejects) on a hyphenated `+tag` in the description (the form taskwarrior mis-parses) |
+| `on-add-taskwarrior-plugin` | `task add` | Auto-stamps `project` from the git toplevel / cwd basename when unset; auto-links the `ghid` UDA from a trailing `#N` in the description when unset (pure text, no network); warns (never rejects) on a hyphenated `+tag` in the description (the form taskwarrior mis-parses) |
 | `on-modify-taskwarrior-plugin` | `modify` / `annotate` / `done` / `start` / `stop` | Warns on a hyphenated tag in the modified description; extension point for convention enforcement |
 
 Both **fail open** — on any error (missing `jq`, bad JSON) they pass the task
