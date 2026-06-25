@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.1](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.9.0...taskwarrior-plugin-v1.9.1) (2026-06-25)
+
+
+### Bug Fixes
+
+* **taskwarrior-plugin:** task-add captures UUID via working command ([#1819](https://github.com/laurigates/claude-plugins/issues/1819)) ([3f7ca1b](https://github.com/laurigates/claude-plugins/commit/3f7ca1b1d022c42d4b27ba67624f0ee14d58ac84))
+
 ## [1.9.0](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.8.0...taskwarrior-plugin-v1.9.0) (2026-06-25)
 
 
