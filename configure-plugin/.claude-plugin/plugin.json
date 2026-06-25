@@ -43,6 +43,8 @@
     "remote",
     "onboarding",
     "repo-setup",
+    "worktree",
+    "worktreeinclude",
     "stack-aware",
     "driver",
     "docs-drift",

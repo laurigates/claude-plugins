@@ -45,6 +45,7 @@ All commands support two modes:
 | `configure-claude-plugins` | Configure Claude Code plugin marketplace and GitHub Actions workflows |
 | `configure-gitattributes` | `.gitattributes`: union-merge append-only tables, linguist-generated build output, LF normalization |
 | `configure-gitignore` | `.gitignore`: append a managed Claude Code runtime-state block (worktrees, scheduled-task lock, local settings) |
+| `configure-worktreeinclude` | `.worktreeinclude`: copy gitignored env/secret/config inputs into new worktrees, built from the repo's actual ignored files |
 | `configure-pre-commit` | Pre-commit hooks for project standards |
 | `configure-release-please` | Release-please workflow configuration |
 | `configure-reusable-workflows` | Install Claude-powered reusable workflows (security, quality, a11y) |

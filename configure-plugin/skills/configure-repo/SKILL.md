@@ -85,6 +85,10 @@ Invoke `/configure:gitattributes --fix` using the SlashCommand tool. This applie
 
 Invoke `/configure:gitignore --fix` using the SlashCommand tool. This appends the managed Claude Code runtime-state block (`.claude/worktrees/`, `/worktrees/`, `.claude/scheduled_tasks.lock`, `.claude/settings.local.json`) so session-generated files never get committed. Additive only — existing `.gitignore` lines are left untouched.
 
+### Step 3d: Configure .worktreeinclude
+
+Invoke `/configure:worktreeinclude` using the SlashCommand tool. This inspects the gitignored files actually present in the repo and proposes a `.worktreeinclude` so Claude Code copies per-environment inputs (`.env`, local secrets, local config) into new worktrees. It confirms the include set interactively, so run it without `--fix` on the happy path; skip it silently if the repo has no gitignored inputs worth copying.
+
 ### Step 4: Offer migrations (unless --skip-migrations)
 
 Detect these migratable patterns and ask whether to run each migration via `AskUserQuestion`:
@@ -176,6 +180,7 @@ This skill orchestrates these dependencies. If any dependency's `modified:` date
 | `/configure:claude-plugins` | `configure-plugin/skills/configure-claude-plugins/SKILL.md` |
 | `/configure:web-session` | `configure-plugin/skills/configure-web-session/SKILL.md` |
 | `/configure:gitattributes` | `configure-plugin/skills/configure-gitattributes/SKILL.md` |
+| `/configure:worktreeinclude` | `configure-plugin/skills/configure-worktreeinclude/SKILL.md` |
 | `/hooks:session-start-hook` | `hooks-plugin/skills/hooks-session-start-hook/SKILL.md` |
 | `/health:check` | `health-plugin/skills/health-check/SKILL.md` |
 | `/migration-patterns:mypy-to-ty` | `migration-patterns-plugin/skills/mypy-to-ty/SKILL.md` |
@@ -188,5 +193,6 @@ This skill orchestrates these dependencies. If any dependency's `modified:` date
 - `/configure:claude-plugins` — Configure plugins, permissions, and marketplace enrollment
 - `/configure:web-session` — SessionStart hook for infrastructure tools
 - `/configure:gitattributes` — `.gitattributes` merge/diff hygiene (union merge, linguist-generated, LF)
+- `/configure:worktreeinclude` — `.worktreeinclude` so worktrees inherit gitignored env/secret/config inputs
 - `/health:check` — Claude Code configuration health check
 - `scripts/check-driver-freshness.sh` — Detect when this driver is out of sync with its dependencies

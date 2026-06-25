@@ -481,6 +481,22 @@ check_skill_body() {
       done
     fi
 
+    # Regression: configure-worktreeinclude generates a .worktreeinclude whose
+    # patterns copy gitignored inputs into new worktrees. Its load-bearing
+    # invariants are (a) the include list is built from the repo's *actual*
+    # gitignored files (not a generic template) — proven by the
+    # 'git status --ignored' detection step — and (b) it stays additive: only
+    # gitignored files are ever copied, so each pattern is verified against
+    # 'git check-ignore'. A bulk edit must not drop either, so assert both.
+    if [ "$skill_name" = "configure-worktreeinclude" ]; then
+      for token in 'git status --ignored' 'git check-ignore'; do
+        if ! grep -qF "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain token '${token}' (repo-derived include list + gitignored-only invariant)")
+          has_errors=true
+        fi
+      done
+    fi
+
     # Regression: github-actions-auth-security must document the GitHub Actions
     # script-injection mitigation (distinct from Claude *prompt* injection):
     # untrusted run-context values bound to an intermediate `env:` variable and
