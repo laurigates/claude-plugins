@@ -52,6 +52,13 @@ just mcp-context7
 
 Alternatively, use the `/configure:mcp` skill for interactive configuration.
 
+## Design Principles
+
+The methodology behind these plugins — what a probabilistic agent should decide
+versus what a deterministic substrate should verify and remember. See
+[**docs/PRINCIPLES.md**](docs/PRINCIPLES.md) for the full set, each grounded in
+the rules, skills, and hooks that embody it.
+
 ## Prerequisites
 
 - **Bash 5+** — Required for shell scripts. macOS ships Bash 3.2; install via `brew install bash`.
