@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.8](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.5.7...hooks-plugin-v2.5.8) (2026-06-25)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** allow find -path and offer Glob-unavailable fallback ([#1807](https://github.com/laurigates/claude-plugins/issues/1807)) ([6d3ed23](https://github.com/laurigates/claude-plugins/commit/6d3ed2345886984ac78b0ddf01a5c62d6b35da9c))
+
 ## [2.5.7](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.5.6...hooks-plugin-v2.5.7) (2026-06-23)
 
 
