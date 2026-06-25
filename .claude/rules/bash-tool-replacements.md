@@ -12,7 +12,7 @@ replacement.
 
 | Wrong (Bash) | Right (tool) | When the Bash form is genuinely fine |
 |---|---|---|
-| `find . -name '*.ts'` | `Glob(pattern="**/*.ts")` | Need `-maxdepth`, `-mindepth`, `-type d`, `-print0`, or `-mtime` — Glob can't do directory-discovery flags |
+| `find . -name '*.ts'` | `Glob(pattern="**/*.ts")` | Need `-maxdepth`, `-mindepth`, `-type d`, `-path`, `-print0`, or `-mtime` — Glob can't do directory-discovery flags |
 | `find . -name '*.md' -type d` | `find . -name '*.md' -type d` | Already correct — `-type d` is the directory-discovery flag the hook explicitly allows |
 | `grep -rn 'foo' src/` | `Grep(pattern="foo", path="src", -r=true, -n=true)` | Piped into another command (`gh pr list \| rg 'foo'`), or you need `-q` for an exit-code boolean check |
 | `rg 'foo' --type ts` | `Grep(pattern="foo", glob="*.ts")` | Same exceptions as `grep` |
@@ -23,7 +23,7 @@ replacement.
 
 The hook's allowed-exception logic for each:
 
-- **`find`** — passes through `-maxdepth`, `-mindepth`, `-type` (with a space after), `-print0`. Use these when Glob genuinely can't replace `find`.
+- **`find`** — passes through `-maxdepth`, `-mindepth`, `-type` (with a space after), `-path` (a full-path glob like `'*/hooks/test-*.sh'` — a structural query, not a `-name '*.ext'` search), `-print0`. Use these when Glob genuinely can't replace `find`. When Glob is unavailable in the session, keep `find` but add a directory-discovery flag (e.g. `-type f`) so the hook allows it.
 - **`grep` / `rg`** — passes through any pipeline (anything with `|`), and `-q` / `--quiet` (boolean exit-code checks like `grep -q pattern file && do_thing`).
 - **`cat` / `head` / `tail`** — passes through when the file path is `/dev/stdin`, `/dev/null`, or a here-doc target. The hook is checking for *file reads*, not stream handling.
 
@@ -49,7 +49,9 @@ The hook allows the Bash form in four scenarios:
 1. **Pipelines.** `gh pr list --json title --jq '.[].title' | rg 'feat'`
    is fine — the `|` short-circuits the hook check.
 2. **Directory-discovery flags.** `find . -maxdepth 2 -type d` is the
-   right form. `Glob` doesn't expose directory-type filters.
+   right form. `Glob` doesn't expose directory-type filters. `-path`
+   (a full-path glob, `find . -path '*/hooks/test-*.sh'`) is allowed
+   too — it's a structural query, not a `-name '*.ext'` search.
 3. **Boolean exit-code checks.** `grep -q pattern file && do_thing`
    is fine. The `Grep` tool returns content; it doesn't give you a
    clean shell-conditional exit code.
