@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.8.0...taskwarrior-plugin-v1.9.0) (2026-06-25)
+
+
+### Features
+
+* **taskwarrior-plugin:** on-add hook auto-links ghid from trailing #N ([#1816](https://github.com/laurigates/claude-plugins/issues/1816)) ([fb2b14c](https://github.com/laurigates/claude-plugins/commit/fb2b14c8a8d96318290baed2f2aed5c121f13c61))
+
 ## [1.8.0](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.7.0...taskwarrior-plugin-v1.8.0) (2026-06-25)
 
 
