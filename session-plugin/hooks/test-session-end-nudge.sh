@@ -214,7 +214,7 @@ output=$(run_hook_with_task_bin "$MOCK_TASK_DIR/task" "sess-tw-tasks" "$REPO_WIT
 assert_contains "open tasks → reason mentions taskwarrior sync cue" 'taskwarrior' "$output"
 assert_contains "open tasks → reason still references session-plugin:session-end" 'session-plugin:session-end' "$output"
 assert_contains "open tasks → reason still instructs offer-only" 'never run it without explicit user confirmation' "$output"
-assert_contains "open tasks → reason mentions stable UUID pattern" 'task +LATEST _get uuid' "$output"
+assert_contains "open tasks → reason mentions stable UUID pattern" 'task +LATEST uuids' "$output"
 
 # When the task stub returns an empty list, the sync cue must NOT appear.
 MOCK_TASK_EMPTY_DIR=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 1; }
@@ -233,7 +233,7 @@ output=$(run_hook_with_task_bin "$MOCK_TASK_EMPTY_DIR/task" "sess-tw-empty" "$RE
 # Hook must still fire (tasks stub means taskwarrior is "present" → has_surface=1)
 assert_contains "empty task list → hook still fires" '"decision":"block"' "$output"
 # But the taskwarrior sync cue text must not appear in the reason
-if echo "$output" | grep -q 'task +LATEST _get uuid'; then
+if echo "$output" | grep -q 'task +LATEST uuids'; then
     printf "  FAIL: empty task list should NOT include UUID sync cue\n"; FAIL=$((FAIL + 1))
 else
     printf "  PASS: empty task list does NOT include UUID sync cue\n"; PASS=$((PASS + 1))

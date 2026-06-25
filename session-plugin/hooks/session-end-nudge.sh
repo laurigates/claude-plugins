@@ -100,7 +100,7 @@ touch "$state_file"
 
 task_cue=""
 if [ "$has_open_tasks" = 1 ]; then
-    task_cue=" Also mention a taskwarrior state-sync pass: check which tasks are still open or active (task project:<name> '(status:pending or +ACTIVE)' export | jq '.[]'), offer to mark done / update statuses / add follow-up tasks — use stable UUIDs from 'task +LATEST _get uuid' when referencing specific tasks."
+    task_cue=" Also mention a taskwarrior state-sync pass: check which tasks are still open or active (task project:<name> '(status:pending or +ACTIVE)' export | jq '.[]'), offer to mark done / update statuses / add follow-up tasks — use stable UUIDs from 'task +LATEST uuids' when referencing specific tasks."
 fi
 
 reason="The user is winding down the session. Briefly offer to run the session-plugin:session-end orchestrator — it surveys the session once, previews which end-of-session passes qualify (session-wrap loose-thread capture, session-distill durable learnings, /feedback:session plugin feedback) and runs only what the user confirms in a single prompt.${task_cue} Offer only — never run it without explicit user confirmation. If nothing follow-up-worthy surfaced this session, acknowledge the wind-down and end."

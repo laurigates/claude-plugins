@@ -88,7 +88,7 @@ sync), passing along the Step 1 survey so they don't re-do it:
 1. **Taskwarrior sync** (if confirmed) — run inline before Wrap so Wrap
    sees the updated queue state. For each open/active task: ask the user
    (via AskUserQuestion) whether to mark done, update, or leave. Address
-   tasks by stable UUID (`task +LATEST _get uuid` after creation;
+   tasks by stable UUID (`task +LATEST uuids` after creation;
    `task <uuid> done` / `task <uuid> modify` for existing tasks). Never
    use volatile numeric IDs — they shift when other tasks complete.
 2. `session-plugin:session-wrap` — closes/annotates/adds tasks so later
@@ -124,6 +124,6 @@ already in the transcript. Pre-silence:
 | Context | Command |
 |---|---|
 | One-pass survey (detection + git + PRs + tasks-with-UUIDs + commits) | `bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-commits` |
-| Stable UUID for latest task | `task +LATEST _get uuid` |
+| Stable UUID for latest task | `task +LATEST uuids` |
 | Mark task done by UUID | `task <uuid> done` |
 | Distillable surface check | `find . -maxdepth 2 -path '*/.claude/rules' -o -maxdepth 1 -name 'justfile' -o -maxdepth 1 -name 'Justfile'` |

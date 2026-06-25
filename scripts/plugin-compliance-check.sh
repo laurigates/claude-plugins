@@ -355,12 +355,16 @@ check_skill_body() {
         issues+=("❌ ${plugin}/${skill_name}: SKILL.md must emit the stable UUID via 'task +LATEST uuids' after create (issue #1417)")
         has_errors=true
       fi
-      # The broken DOM-accessor form must not reappear as a recommended command.
-      # Blockquote lines (gotcha callouts) may cite it; non-quoted lines may not.
-      if grep -v '^[[:space:]]*>' "$skill_file" | grep -q "task +LATEST _get uuid"; then
-        issues+=("❌ ${plugin}/${skill_name}: SKILL.md ships the broken 'task +LATEST _get uuid' (returns empty); use 'task +LATEST uuids'")
-        has_errors=true
-      fi
+    fi
+
+    # The broken DOM-accessor form must not reappear as a recommended command in
+    # ANY skill. Scoping this ban to task-add (the original fix) let it silently
+    # propagate to session-plugin:session-end; a non-working command is wrong
+    # everywhere. Blockquote lines (gotcha callouts) may cite it; non-quoted
+    # lines may not.
+    if grep -v '^[[:space:]]*>' "$skill_file" | grep -q "task +LATEST _get uuid"; then
+      issues+=("❌ ${plugin}/${skill_name}: SKILL.md ships the broken 'task +LATEST _get uuid' (returns empty); use 'task +LATEST uuids'")
+      has_errors=true
     fi
 
     # Regression: task-reconcile is the only skill that ACTS on the stale-task
