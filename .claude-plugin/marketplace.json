@@ -372,7 +372,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.5.7",
+      "version": "2.5.8",
       "keywords": [
         "hooks",
         "automation",
