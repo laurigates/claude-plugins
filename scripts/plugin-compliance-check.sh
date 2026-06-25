@@ -344,9 +344,21 @@ check_skill_body() {
     # semantic invariant is that the skill resolves the immutable UUID via the
     # `+LATEST` virtual tag so downstream annotate/modify/done address the
     # right task. Guards against a bulk edit silently dropping the UUID emit.
+    #
+    # The #1417 fix first shipped `task +LATEST _get uuid`, but `_get` is a DOM
+    # accessor (`<id>.<attribute>`) — given a tag filter it returns empty (exit
+    # 0), so the skill captured NO uuid. This syntactic guard only checked the
+    # literal string, never that it ran; the executable check now lives in
+    # skills/task-add/scripts/tests/test-uuid-capture.sh. Pin the WORKING form.
     if [ "$skill_name" = "task-add" ]; then
-      if ! grep -q "task +LATEST _get uuid" "$skill_file"; then
-        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must emit the stable UUID via 'task +LATEST _get uuid' after create (issue #1417)")
+      if ! grep -q "task +LATEST uuids" "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must emit the stable UUID via 'task +LATEST uuids' after create (issue #1417)")
+        has_errors=true
+      fi
+      # The broken DOM-accessor form must not reappear as a recommended command.
+      # Blockquote lines (gotcha callouts) may cite it; non-quoted lines may not.
+      if grep -v '^[[:space:]]*>' "$skill_file" | grep -q "task +LATEST _get uuid"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md ships the broken 'task +LATEST _get uuid' (returns empty); use 'task +LATEST uuids'")
         has_errors=true
       fi
     fi

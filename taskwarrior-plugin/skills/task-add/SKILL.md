@@ -176,10 +176,15 @@ After `task add` succeeds, resolve the new task's **UUID** via the
 `task add` with `&&`:
 
 ```bash
-task +LATEST _get uuid
-# Created task 141.
+task +LATEST uuids
 # d14a6e5e-1c60-4cfd-9dd0-8a9fe7659b74
 ```
+
+> Use `task +LATEST uuids` (or `task +LATEST export | jq -r '.[0].uuid'`),
+> **not** `task +LATEST _get uuid`. `_get` is a DOM accessor that takes an
+> `<id>.<attribute>` reference (`task _get 141.uuid`); given a tag filter it
+> silently returns empty (exit 0), capturing no UUID — which silently
+> reverted the #1417 drift fix until corrected.
 
 > **Numeric IDs shift; UUIDs do not.** A numeric ID is a display index over
 > *pending* tasks — completing any other task (often in a parallel session)
@@ -219,7 +224,7 @@ Print:
 
 | Context | Command |
 |---------|---------|
-| Capture stable UUID after add | `task +LATEST _get uuid` |
+| Capture stable UUID after add | `task +LATEST uuids` |
 | Duplicate check by bpid | `task bpid:WO-012 export \| jq '.[] \| {id, status}'` |
 | Pre-fill from issue | `gh issue view 145 --json number,title,body,labels` |
 | Next ready (unblocked + scheduled-due) | `task status:pending +READY export \| jq '.[:3]'` |
