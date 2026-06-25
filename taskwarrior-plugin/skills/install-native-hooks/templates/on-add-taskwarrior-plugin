@@ -10,7 +10,9 @@
 # Behaviour:
 #   1. Auto-stamp `project` from the git toplevel / cwd basename when unset, so
 #      tasks added outside the plugin skills still get scoped.
-#   2. Warn (feedback only — never rejects) when the description carries a
+#   2. Auto-link the `ghid` numeric UDA from a trailing `#N` GitHub reference in
+#      the description when `ghid` is unset (pure text extraction — no network).
+#   3. Warn (feedback only — never rejects) when the description carries a
 #      hyphenated `+word-word` substring, the symptom of a tag the CLI
 #      mis-parsed as `+word` AND `-word` (it never became a real tag).
 #
@@ -41,10 +43,23 @@ if [ -z "$current_project" ]; then
   fi
 fi
 
+# 2. Auto-link `ghid` from a trailing `#N` in the description (pure text — NO
+#    network; validation that the issue exists stays the task-add skill's job).
+current_ghid=$(printf '%s' "$out_json" | jq -r '.ghid // empty' 2>/dev/null || true)
+if [ -z "$current_ghid" ]; then
+  desc_for_ghid=$(printf '%s' "$out_json" | jq -r '.description // ""' 2>/dev/null || true)
+  # Trailing #<digits>, optionally followed by whitespace.
+  if [[ "$desc_for_ghid" =~ \#([0-9]+)[[:space:]]*$ ]]; then
+    ghid_n="${BASH_REMATCH[1]}"
+    linked=$(printf '%s' "$out_json" | jq -c --argjson g "$ghid_n" '.ghid = $g' 2>/dev/null || true)
+    [ -n "$linked" ] && out_json="$linked"
+  fi
+fi
+
 # Echo the (possibly modified) task back — this is the contract.
 printf '%s\n' "$out_json"
 
-# 2. Hyphenated-tag warning (feedback only).
+# 3. Hyphenated-tag warning (feedback only).
 desc=$(printf '%s' "$task_json" | jq -r '.description // ""' 2>/dev/null || true)
 if printf '%s' "$desc" | grep -qE '\+[a-z][a-z0-9_]*-[a-z]'; then
   echo "taskwarrior-plugin: description contains a hyphenated +tag, which taskwarrior mis-parses (it never lands). Use underscores or camelCase, e.g. +blocked_on_merge."
