@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.2](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.4.1...session-plugin-v1.4.2) (2026-06-25)
+
+
+### Bug Fixes
+
+* **session-plugin:** session-end uses working UUID-capture command ([#1822](https://github.com/laurigates/claude-plugins/issues/1822)) ([18a5d24](https://github.com/laurigates/claude-plugins/commit/18a5d2495b50cf3511cc65276a04fa83f05d25ac))
+
 ## [1.4.1](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.4.0...session-plugin-v1.4.1) (2026-06-24)
 
 
