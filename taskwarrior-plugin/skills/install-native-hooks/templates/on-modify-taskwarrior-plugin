@@ -7,10 +7,28 @@
 # MODIFIED task) and must echo the modified task JSON back as the first line of
 # stdout; later stdout lines are feedback. Exit 0 allows, non-zero rejects.
 #
-# Behaviour: warns (feedback only — never rejects) when the modified
-# description carries a hyphenated `+word-word` substring (a mis-parsed tag).
-# This is the modify-time counterpart of the on-add warning. Extend here for
-# project-specific convention enforcement.
+# The `+ACTIVE` virtual tag is not serialized in the JSON — it is derived from
+# the built-in `start` field. So "newly +ACTIVE" == `start` present in the
+# modified task but absent in the original; "drop +ACTIVE" == delete `start`.
+#
+# Behaviour (all advisory or auto-repairing — never rejects):
+#   1. Claim invariant — when a task becomes +ACTIVE (start newly set) with no
+#      `agent` identity, stamp identity (agent/host/branch/worktree) from the
+#      environment so a bare `task start` that bypassed /taskwarrior:task-claim
+#      still carries the UDAs /git:coworker-check reads. `pid` is best-effort:
+#      the hook's own PID is not the claiming agent's, so it is left to
+#      task-claim's explicit modify rather than stamped with a misleading value.
+#   2. Claim-stomp detection — when `agent` changes from another agent's
+#      non-empty value, emit a feedback warning (never rejects).
+#   3. Stale-claim expiry — when a modify touches a task whose `start` exceeds
+#      a TTL (default 4h), drain identity UDAs and drop `+ACTIVE` (delete
+#      `start`). Opportunistic: it fires on touch, not as a guaranteed sweep.
+#   4. Hyphenated-tag warning — the modify-time counterpart of the on-add
+#      warning; feedback only.
+#
+# Tunables (read from the environment; native hooks inherit the caller's shell):
+#   CLAUDE_TASKWARRIOR_CLAIM_TTL_HOURS  stale-claim TTL in hours (default 4)
+#   CLAUDE_TASKWARRIOR_NO_CLAIM_EXPIRY  set to 1 to disable stale-claim expiry
 #
 # SAFETY: fails OPEN — on any error it echoes the modified task unchanged and
 # exits 0, so a broken hook never blocks legitimate task edits.
@@ -20,20 +38,95 @@
 
 set -uo pipefail
 
-read -r _original_json || exit 0
-read -r modified_json || { printf '%s\n' "$_original_json"; exit 0; }
+read -r original_json || exit 0
+read -r modified_json || { printf '%s\n' "$original_json"; exit 0; }
 
 if ! command -v jq >/dev/null 2>&1; then
   printf '%s\n' "$modified_json"
   exit 0
 fi
 
-# Echo the modified task back unchanged — this hook only advises.
-printf '%s\n' "$modified_json"
+# tw_to_epoch — taskwarrior compact UTC stamp (YYYYMMDDTHHMMSSZ) → epoch seconds.
+# Tries BSD then GNU date; prints nothing on failure.
+tw_to_epoch() {
+  local ts="$1"
+  [ -n "$ts" ] || return 0
+  if date -j -u -f "%Y%m%dT%H%M%SZ" "$ts" +%s 2>/dev/null; then return 0; fi
+  local g="${ts:0:4}-${ts:4:2}-${ts:6:2}T${ts:9:2}:${ts:11:2}:${ts:13:2}Z"
+  date -u -d "$g" +%s 2>/dev/null || true
+}
 
+out_json="$modified_json"
+feedback=()
+
+orig_start=$(printf '%s' "$original_json" | jq -r '.start // ""' 2>/dev/null || true)
+orig_agent=$(printf '%s' "$original_json" | jq -r '.agent // ""' 2>/dev/null || true)
+mod_start=$(printf '%s' "$modified_json" | jq -r '.start // ""' 2>/dev/null || true)
+mod_agent=$(printf '%s' "$modified_json" | jq -r '.agent // ""' 2>/dev/null || true)
+
+# 1. Claim invariant — newly +ACTIVE with no identity → stamp from the env.
+if [ -n "$mod_start" ] && [ -z "$orig_start" ] && [ -z "$mod_agent" ]; then
+  sid="${CLAUDE_SESSION_ID:-${CLAUDE_CODE_SESSION_ID:-}}"
+  agent_val=""
+  [ -n "$sid" ] && agent_val="claude-${sid:0:8}"
+  host_val=$(hostname 2>/dev/null || true)
+  branch_val=$(git branch --show-current 2>/dev/null || true)
+  worktree_val=$(git rev-parse --show-toplevel 2>/dev/null || true)
+
+  stamped=$(printf '%s' "$out_json" | jq -c \
+    --arg agent "$agent_val" \
+    --arg host "$host_val" \
+    --arg branch "$branch_val" \
+    --arg worktree "$worktree_val" '
+      (if $agent    != "" then .agent    = $agent    else . end)
+      | (if $host     != "" then .host     = $host     else . end)
+      | (if $branch   != "" then .branch   = $branch   else . end)
+      | (if $worktree != "" then .worktree = $worktree else . end)
+    ' 2>/dev/null || true)
+  if [ -n "$stamped" ]; then
+    out_json="$stamped"
+    feedback+=("taskwarrior-plugin: stamped claim identity on +ACTIVE task (agent=${agent_val:-unset} host=${host_val:-unset}). Use /taskwarrior:task-claim to also record pid.")
+  fi
+fi
+
+# 2. Claim-stomp detection (warn only) — agent changed between two real owners.
+if [ -n "$orig_agent" ] && [ -n "$mod_agent" ] && [ "$orig_agent" != "$mod_agent" ]; then
+  feedback+=("taskwarrior-plugin: claim taken over — agent changed from '$orig_agent' to '$mod_agent'. Verify the previous owner is no longer working this task.")
+fi
+
+# 3. Stale-claim expiry — active task whose start exceeds the TTL → drain + stop.
+if [ "${CLAUDE_TASKWARRIOR_NO_CLAIM_EXPIRY:-}" != "1" ] && [ -n "$mod_start" ]; then
+  ttl_hours="${CLAUDE_TASKWARRIOR_CLAIM_TTL_HOURS:-4}"
+  case "$ttl_hours" in
+    ''|*[!0-9]*) ttl_hours=4 ;;
+  esac
+  start_epoch=$(tw_to_epoch "$mod_start")
+  now_epoch=$(date -u +%s 2>/dev/null || true)
+  if [ -n "$start_epoch" ] && [ -n "$now_epoch" ]; then
+    age=$((now_epoch - start_epoch))
+    ttl_secs=$((ttl_hours * 3600))
+    if [ "$age" -gt "$ttl_secs" ]; then
+      drained=$(printf '%s' "$out_json" | jq -c \
+        'del(.start, .agent, .pid, .host, .branch, .worktree)' 2>/dev/null || true)
+      if [ -n "$drained" ]; then
+        out_json="$drained"
+        feedback+=("taskwarrior-plugin: expired stale claim (start was >${ttl_hours}h old) — dropped +ACTIVE and drained identity UDAs. Re-claim with /taskwarrior:task-claim if still working it.")
+      fi
+    fi
+  fi
+fi
+
+# Echo the (possibly modified) task back — this is the contract, first line only.
+printf '%s\n' "$out_json"
+
+# 4. Hyphenated-tag warning (feedback only).
 desc=$(printf '%s' "$modified_json" | jq -r '.description // ""' 2>/dev/null || true)
 if printf '%s' "$desc" | grep -qE '\+[a-z][a-z0-9_]*-[a-z]'; then
-  echo "taskwarrior-plugin: description contains a hyphenated +tag, which taskwarrior mis-parses (it never lands). Use underscores or camelCase, e.g. +blocked_on_merge."
+  feedback+=("taskwarrior-plugin: description contains a hyphenated +tag, which taskwarrior mis-parses (it never lands). Use underscores or camelCase, e.g. +blocked_on_merge.")
 fi
+
+for line in "${feedback[@]:-}"; do
+  [ -n "$line" ] && echo "$line"
+done
 
 exit 0
