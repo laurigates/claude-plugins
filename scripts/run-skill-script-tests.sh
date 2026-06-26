@@ -55,7 +55,7 @@ while IFS= read -r -d '' test_file; do
   rm -f "$log_file"
 done < <(find "$root_dir" \
   -path '*/.claude/worktrees/*' -prune -o \
-  \( -path '*/skills/*/scripts/tests/test-*.sh' -o -path '*-plugin/scripts/tests/test-*.sh' -o -path '*/hooks/test-*.sh' \) \
+  \( -path '*/skills/*/scripts/tests/test-*.sh' -o -path '*-plugin/scripts/tests/test-*.sh' -o -path '*/hooks/test-*.sh' -o -path '*/scripts/tests/test-*.sh' \) \
   -type f -print0 | sort -z)
 
 echo "TOTAL=${total}"
