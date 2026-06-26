@@ -11,6 +11,7 @@ Issue #1359.
 
 from __future__ import annotations
 
+import itertools
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -154,7 +155,7 @@ def _detect_ci_security(repo: Path) -> dict[str, object]:
     if not workflows.is_dir():
         return {"ci_has_security_scanning": False, "ci_security_tools": ()}
 
-    tools: list[str] = []
+    tools: set[str] = set()
     # The substring sniff is conservative — it under-counts if the
     # workflow references a tool only by uses: <action> path. That's
     # fine: a false negative produces a more verbose recommendation, a
@@ -170,7 +171,7 @@ def _detect_ci_security(repo: Path) -> dict[str, object]:
         "dependency-review": ("dependency-review",),
         "osv-scanner": ("osv-scanner",),
     }
-    for wf in workflows.glob("*.yml"):
+    for wf in itertools.chain(workflows.glob("*.yml"), workflows.glob("*.yaml")):
         content = _read_text(wf).lower()
         if not content:
             continue
@@ -178,16 +179,7 @@ def _detect_ci_security(repo: Path) -> dict[str, object]:
             if name in tools:
                 continue
             if any(p in content for p in patterns):
-                tools.append(name)
-    for wf in workflows.glob("*.yaml"):
-        content = _read_text(wf).lower()
-        if not content:
-            continue
-        for name, patterns in detectors.items():
-            if name in tools:
-                continue
-            if any(p in content for p in patterns):
-                tools.append(name)
+                tools.add(name)
 
     return {
         "ci_has_security_scanning": bool(tools),

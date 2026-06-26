@@ -13,7 +13,6 @@ from dataclasses import dataclass
 
 import pytest
 
-from git_repo_agent.creator import NewProjectSpec
 from git_repo_agent.intent import (
     IntentParseError,
     _parse_model_response,
