@@ -173,7 +173,7 @@ def _print_new_plan(result, *, spec, remote_target: str | None) -> None:
     console.print()
     console.print(f"[bold]Repo created:[/bold] {remote_target or '(local only)'}")
     console.print(f"[bold]Local path:[/bold]   {result.path}")
-    console.print(f"[bold]Marketplace:[/bold]  laurigates/claude-plugins")
+    console.print("[bold]Marketplace:[/bold]  laurigates/claude-plugins")
     plugin_lines = ", ".join(result.plugins)
     console.print(f"[bold]Plugins:[/bold]      {plugin_lines}")
     if spec.stack_indicators:

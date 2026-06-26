@@ -127,6 +127,22 @@ class TestStackProfileCISecurity:
         assert profile.ci_has_security_scanning
         assert "trivy" in profile.ci_security_tools
 
+    def test_multiple_workflows_yaml_and_yml_with_duplicate_tools(self, tmp_path: Path):
+        # Issue 1359 perf test / regression check:
+        # Ensures that using both .yml and .yaml files doesn't duplicate tools,
+        # and tests that multiple matching tools are all returned sorted.
+        _write(
+            tmp_path / ".github" / "workflows" / "security.yml",
+            "name: scan\nuses: aquasecurity/trivy-action@v0\nuses: gitleaks/gitleaks-action@v2\n",
+        )
+        _write(
+            tmp_path / ".github" / "workflows" / "security2.yaml",
+            "name: scan2\nuses: gitleaks/gitleaks-action@v2\nuses: returntocorp/semgrep-action@v1\n",
+        )
+        profile = profile_stack(tmp_path)
+        assert profile.ci_has_security_scanning
+        assert profile.ci_security_tools == ("gitleaks", "semgrep", "trivy")
+
 
 class TestStackProfileProjectShape:
     def test_comfyui_pack_detected_top_level(self, tmp_path: Path):

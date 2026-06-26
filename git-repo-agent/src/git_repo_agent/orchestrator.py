@@ -15,7 +15,6 @@ from claude_agent_sdk import (
     AssistantMessage,
     ClaudeAgentOptions,
     ClaudeSDKClient,
-    ProcessError,
     ResultMessage,
     SystemMessage,
     TextBlock,
