@@ -282,3 +282,5 @@ The `blueprint` scope (no `-plugin` suffix) intentionally does **not** match any
 - Plugin names: suffix with `-plugin` (`typescript-plugin`)
 - Use tables for quick reference (flags, options)
 - Include both short and long flag forms where applicable
+| `.claude/rules/drift-detection-triggering.md` | drift detection triggering |
+| `.claude/rules/offload-to-deterministic-substrate.md` | offload to deterministic substrate |
