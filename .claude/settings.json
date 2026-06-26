@@ -84,6 +84,7 @@
     "evaluate-plugin@laurigates-claude-plugins": true,
     "feedback-plugin@laurigates-claude-plugins": true,
     "finops-plugin@laurigates-claude-plugins": true,
+    "foundryvtt-plugin@laurigates-claude-plugins": true,
     "git-plugin@laurigates-claude-plugins": true,
     "github-actions-plugin@laurigates-claude-plugins": true,
     "health-plugin@laurigates-claude-plugins": true,
