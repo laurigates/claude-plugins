@@ -208,10 +208,8 @@ def _count_python_loc_outside_tests(repo: Path) -> int:
         if py.name.startswith("test_") or py.name.endswith("_test.py"):
             continue
         try:
-            total += sum(
-                1 for line in py.read_text(encoding="utf-8", errors="replace").splitlines()
-                if line.strip()  # non-blank
-            )
+            with open(py, "r", encoding="utf-8", errors="replace") as f:
+                total += sum(1 for line in f if line.strip())
         except OSError:
             continue
         if total >= _PYTHON_INCIDENTAL_LOC_THRESHOLD * 10:
