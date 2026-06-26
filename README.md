@@ -12,7 +12,7 @@ Install the full plugin collection as a marketplace:
 claude plugin install laurigates/claude-plugins
 ```
 
-This registers all 43 plugins. You can then enable individual plugins as needed.
+This registers all 44 plugins. You can then enable individual plugins as needed.
 
 ### Install Individual Plugins
 

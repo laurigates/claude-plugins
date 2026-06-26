@@ -289,6 +289,23 @@
       "category": "ci-cd"
     },
     {
+      "name": "foundryvtt-plugin",
+      "source": "./foundryvtt-plugin",
+      "description": "FoundryVTT module lifecycle - scaffold a v13 module (Vite + TS + bun), create + seed the repo, open the gitops adoption PR",
+      "version": "1.0.0",
+      "keywords": [
+        "foundryvtt",
+        "foundry-vtt",
+        "module",
+        "scaffold",
+        "vite",
+        "applicationv2",
+        "libwrapper",
+        "gitops"
+      ],
+      "category": "development"
+    },
+    {
       "name": "git-plugin",
       "source": "./git-plugin",
       "description": "Git workflows - commits, branches, PRs, issue processing, conflict resolution, and repository management",

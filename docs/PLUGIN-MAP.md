@@ -179,6 +179,7 @@ Install based on your project's tech stack and domain.
 | rust-plugin | Project uses Rust |
 | bevy-plugin | Game development with Bevy engine |
 | comfyui-plugin | Building ComfyUI custom-node packs — scaffold, create + seed repo, gitops adoption, Comfy Registry publish |
+| foundryvtt-plugin | Building FoundryVTT v13 modules — scaffold (Vite + TS + bun), create + seed repo, gitops adoption |
 | container-plugin | Project uses Docker containers |
 | kubernetes-plugin | Deploying to Kubernetes clusters |
 | terraform-plugin | Managing infrastructure as code |
