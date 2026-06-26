@@ -26,7 +26,15 @@ DEFAULT_CHANGELOG_SECTIONS = [
 
 # Category mapping based on keywords (used when creating marketplace entries)
 CATEGORY_KEYWORDS = {
-    "infrastructure": ["kubernetes", "terraform", "docker", "container", "helm", "k8s", "iac"],
+    "infrastructure": [
+        "kubernetes",
+        "terraform",
+        "docker",
+        "container",
+        "helm",
+        "k8s",
+        "iac",
+    ],
     "language": ["python", "typescript", "rust", "javascript"],
     "version-control": ["git", "github", "commits", "branches"],
     "testing": ["testing", "tdd", "pytest", "vitest", "test"],
@@ -113,7 +121,11 @@ def create_release_please_package_config(plugin_name: str) -> dict:
         "component": plugin_name,
         "release-type": "simple",
         "extra-files": [
-            {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
+            {
+                "type": "json",
+                "path": ".claude-plugin/plugin.json",
+                "jsonpath": "$.version",
+            }
         ],
         "changelog-sections": DEFAULT_CHANGELOG_SECTIONS,
     }
@@ -168,7 +180,9 @@ def check_sync(repo_root: Path) -> tuple[list[str], dict]:
     # Check for orphaned entries in release-please-config.json
     orphaned_in_config = release_config_packages - plugin_names
     for name in sorted(orphaned_in_config):
-        issues.append(f"Orphaned entry '{name}' in release-please-config.json (plugin directory not found)")
+        issues.append(
+            f"Orphaned entry '{name}' in release-please-config.json (plugin directory not found)"
+        )
         fixes["remove_from_release_config"].append(name)
 
     # Check for plugins missing from .release-please-manifest.json
@@ -180,7 +194,9 @@ def check_sync(repo_root: Path) -> tuple[list[str], dict]:
     # Check for orphaned entries in .release-please-manifest.json
     orphaned_in_manifest = manifest_plugins - plugin_names
     for name in sorted(orphaned_in_manifest):
-        issues.append(f"Orphaned entry '{name}' in .release-please-manifest.json (plugin directory not found)")
+        issues.append(
+            f"Orphaned entry '{name}' in .release-please-manifest.json (plugin directory not found)"
+        )
         fixes["remove_from_manifest"].append(name)
 
     # Check for plugins missing from marketplace.json
@@ -192,11 +208,15 @@ def check_sync(repo_root: Path) -> tuple[list[str], dict]:
     # Check for orphaned entries in marketplace.json
     orphaned_in_marketplace = marketplace_plugins - plugin_names
     for name in sorted(orphaned_in_marketplace):
-        issues.append(f"Orphaned entry '{name}' in .claude-plugin/marketplace.json (plugin directory not found)")
+        issues.append(
+            f"Orphaned entry '{name}' in .claude-plugin/marketplace.json (plugin directory not found)"
+        )
         fixes["remove_from_marketplace"].append(name)
 
     # Check version sync between manifest and marketplace
-    marketplace_versions = {p["name"]: p["version"] for p in marketplace.get("plugins", [])}
+    marketplace_versions = {
+        p["name"]: p["version"] for p in marketplace.get("plugins", [])
+    }
     for name in plugin_names & manifest_plugins & marketplace_plugins:
         manifest_version = manifest[name]
         marketplace_version = marketplace_versions.get(name)
@@ -290,11 +310,15 @@ def apply_fixes(repo_root: Path, fixes: dict) -> None:
         if name in marketplace_by_name:
             marketplace_by_name[name]["version"] = version
             marketplace_modified = True
-            print(f"  Updated '{name}' version to {version} in .claude-plugin/marketplace.json")
+            print(
+                f"  Updated '{name}' version to {version} in .claude-plugin/marketplace.json"
+            )
 
     if marketplace_modified:
         # Sort plugins by name for consistent ordering
-        marketplace["plugins"] = sorted(marketplace_by_name.values(), key=lambda p: p["name"])
+        marketplace["plugins"] = sorted(
+            marketplace_by_name.values(), key=lambda p: p["name"]
+        )
         save_json(repo_root / ".claude-plugin" / "marketplace.json", marketplace)
         modified_files.append(".claude-plugin/marketplace.json")
 
@@ -319,9 +343,14 @@ def main():
         action="store_true",
         help="Only output errors (for CI)",
     )
+    parser.add_argument(
+        "--repo-root",
+        type=Path,
+        help="Override the repository root directory (for testing)",
+    )
     args = parser.parse_args()
 
-    repo_root = get_repo_root()
+    repo_root = args.repo_root if args.repo_root else get_repo_root()
 
     if not args.quiet:
         print("Checking plugin configuration sync...")
