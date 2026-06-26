@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.3](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.17.2...code-quality-plugin-v1.17.3) (2026-06-26)
+
+
+### Bug Fixes
+
+* **code-quality-plugin:** gate preflight-cue Signal 3 on lintable source extensions ([#1829](https://github.com/laurigates/claude-plugins/issues/1829)) ([66498f5](https://github.com/laurigates/claude-plugins/commit/66498f547035d25894363dab6420836064ec70f5))
+
 ## [1.17.2](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.17.1...code-quality-plugin-v1.17.2) (2026-06-24)
 
 
