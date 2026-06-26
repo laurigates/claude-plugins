@@ -74,11 +74,15 @@ else
 fi
 
 # --- (c) >=50 lines fires, <50 lines trivial edit is silent ---
+# Fixtures use a lintable source extension (.py) — Signal 3 only fires for file
+# types /code-quality:code-lint can act on (issue #1825). The payload is plain
+# "line" repeats with no public symbols, so Signal 2 stays quiet and this isolates
+# the line-count threshold itself.
 echo "--- Test (c): 50-line payload fires ---"
 CQ_SID_C1="test-sid-c1-$(date +%s%N)"
 # Generate 50 lines of content (no public symbols, not a manifest)
 CQ_50LINES="$(printf 'line\n%.0s' {1..50})"
-CQ_PAYLOAD_C1="$(cq_payload Edit /repo/src/helpers.rb '' "$CQ_50LINES" "$CQ_SID_C1")"
+CQ_PAYLOAD_C1="$(cq_payload Edit /repo/src/helpers.py '' "$CQ_50LINES" "$CQ_SID_C1")"
 CQ_OUT_C1="$(CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_TEST_CACHE_DIR" bash "$CQ_SCRIPT" <<< "$CQ_PAYLOAD_C1")"
 if echo "$CQ_OUT_C1" | jq -e '.decision == "block"' > /dev/null 2>&1; then
   cq_pass "(c) 50-line payload fires"
@@ -89,7 +93,7 @@ fi
 echo "--- Test (c): <50 lines trivial edit is silent ---"
 CQ_SID_C2="test-sid-c2-$(date +%s%N)"
 CQ_SMALL="$(printf 'line\n%.0s' {1..10})"
-CQ_PAYLOAD_C2="$(cq_payload Edit /repo/src/helpers.rb '' "$CQ_SMALL" "$CQ_SID_C2")"
+CQ_PAYLOAD_C2="$(cq_payload Edit /repo/src/helpers.py '' "$CQ_SMALL" "$CQ_SID_C2")"
 CQ_OUT_C2="$(CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_TEST_CACHE_DIR" bash "$CQ_SCRIPT" <<< "$CQ_PAYLOAD_C2")"
 if [ -z "$CQ_OUT_C2" ]; then
   cq_pass "(c) trivial small edit is silent"
@@ -255,6 +259,63 @@ if echo "$CQ_OUT_K2" | jq -r '.reason' | grep -q "evaluate-skill"; then
   cq_pass "(k) skills/ path edit mentions evaluate-skill"
 else
   cq_fail "(k) skills/ path edit should mention evaluate-skill; got: $CQ_OUT_K2"
+fi
+
+# --- (l) config/data/IaC files >=50 lines are silent (issue #1825) ---
+# /code-quality:code-lint has no linter for YAML/JSON/TOML/HCL/Terraform, so a
+# large config write must NOT trip Signal 3 (the large-payload signal) — the cue
+# would point at a skill that does nothing for the file. Signals 1 (manifest
+# basenames) and 2 (code symbols) are unaffected and still fire.
+CQ_60LINES_L="$(printf 'key: value\n%.0s' {1..60})"
+
+echo "--- Test (l): 60-line ArgoCD-style .yaml is silent ---"
+CQ_SID_L1="test-sid-l1-$(date +%s%N)"
+CQ_PAYLOAD_L1="$(cq_payload Write /repo/argocd/applicationsets/fe-app.yaml '' "$CQ_60LINES_L" "$CQ_SID_L1")"
+CQ_OUT_L1="$(CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_TEST_CACHE_DIR" bash "$CQ_SCRIPT" <<< "$CQ_PAYLOAD_L1")"
+if [ -z "$CQ_OUT_L1" ]; then
+  cq_pass "(l) large .yaml config edit is silent"
+else
+  cq_fail "(l) large .yaml config edit should be silent; got: $CQ_OUT_L1"
+fi
+
+echo "--- Test (l): 60-line Terraform .tf is silent ---"
+CQ_SID_L2="test-sid-l2-$(date +%s%N)"
+CQ_PAYLOAD_L2="$(cq_payload Write /repo/infra/main.tf '' "$CQ_60LINES_L" "$CQ_SID_L2")"
+CQ_OUT_L2="$(CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_TEST_CACHE_DIR" bash "$CQ_SCRIPT" <<< "$CQ_PAYLOAD_L2")"
+if [ -z "$CQ_OUT_L2" ]; then
+  cq_pass "(l) large .tf config edit is silent"
+else
+  cq_fail "(l) large .tf config edit should be silent; got: $CQ_OUT_L2"
+fi
+
+echo "--- Test (l): large non-manifest .json data file is silent ---"
+CQ_SID_L3="test-sid-l3-$(date +%s%N)"
+CQ_PAYLOAD_L3="$(cq_payload Write /repo/data/fixtures.json '' "$CQ_60LINES_L" "$CQ_SID_L3")"
+CQ_OUT_L3="$(CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_TEST_CACHE_DIR" bash "$CQ_SCRIPT" <<< "$CQ_PAYLOAD_L3")"
+if [ -z "$CQ_OUT_L3" ]; then
+  cq_pass "(l) large .json data file is silent"
+else
+  cq_fail "(l) large .json data file should be silent; got: $CQ_OUT_L3"
+fi
+
+echo "--- Test (l): manifest .json (package.json) still fires via Signal 1 ---"
+CQ_SID_L4="test-sid-l4-$(date +%s%N)"
+CQ_PAYLOAD_L4="$(cq_payload Write /repo/package.json '' "$CQ_60LINES_L" "$CQ_SID_L4")"
+CQ_OUT_L4="$(CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_TEST_CACHE_DIR" bash "$CQ_SCRIPT" <<< "$CQ_PAYLOAD_L4")"
+if echo "$CQ_OUT_L4" | jq -e '.decision == "block"' > /dev/null 2>&1; then
+  cq_pass "(l) package.json still fires via Signal 1"
+else
+  cq_fail "(l) package.json should still fire via Signal 1; got: $CQ_OUT_L4"
+fi
+
+echo "--- Test (l): .yaml with a code symbol still fires via Signal 2 ---"
+CQ_SID_L5="test-sid-l5-$(date +%s%N)"
+CQ_PAYLOAD_L5="$(cq_payload Write /repo/config/app.yaml 'export default config' '' "$CQ_SID_L5")"
+CQ_OUT_L5="$(CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_TEST_CACHE_DIR" bash "$CQ_SCRIPT" <<< "$CQ_PAYLOAD_L5")"
+if echo "$CQ_OUT_L5" | jq -e '.decision == "block"' > /dev/null 2>&1; then
+  cq_pass "(l) .yaml with code symbol still fires via Signal 2"
+else
+  cq_fail "(l) .yaml with code symbol should fire via Signal 2; got: $CQ_OUT_L5"
 fi
 
 # --- Summary ---

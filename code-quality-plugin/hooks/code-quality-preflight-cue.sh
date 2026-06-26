@@ -92,12 +92,26 @@ if [ "$cq_is_structural" -eq 0 ] && \
     cq_is_structural=1
 fi
 
-# Signal 3: large payload (>= 50 lines).
+# Signal 3: large payload (>= 50 lines) — but ONLY for source types that
+# /code-quality:code-lint can actually act on. code-lint auto-detects
+# ruff/eslint/biome/clippy/gofmt/shellcheck (see skills/code-lint/SKILL.md); it has
+# no linter for config/data/IaC files (.yaml/.yml/.json/.toml/.tf/.tfvars/.hcl, …),
+# which routinely exceed 50 lines. Firing the cue there points at a skill that does
+# nothing for the file just written — an alarming, non-actionable "blocking error"
+# on routine multi-line config writes (issue #1825). So gate the large-payload signal
+# on the lintable source extensions; Signals 1 (key manifests) and 2 (code symbols)
+# still fire for the structural cases that DO warrant a pre-flight. This generalizes
+# the earlier narrow per-type skips for .d2/.svg (#1730) and small shell wrappers
+# (#1766) into one rule: large payload only counts when the file has a code-lint linter.
 if [ "$cq_is_structural" -eq 0 ]; then
-    cq_line_count=$(printf '%s' "$cq_payload" | wc -l)
-    if [ "$cq_line_count" -ge 50 ]; then
-        cq_is_structural=1
-    fi
+    case "$cq_base_name" in
+        *.py|*.pyi|*.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs|*.rs|*.go|*.sh|*.bash|*.zsh)
+            cq_line_count=$(printf '%s' "$cq_payload" | wc -l)
+            if [ "$cq_line_count" -ge 50 ]; then
+                cq_is_structural=1
+            fi
+            ;;
+    esac
 fi
 
 [ "$cq_is_structural" -eq 0 ] && exit 0
