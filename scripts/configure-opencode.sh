@@ -4,7 +4,9 @@
 # exported subagents.
 #
 # Generates two artifacts into <target>:
-#   - opencode.json       (provider + model + default_agent)
+#   - opencode.json       (provider + model + default_agent + build-agent
+#                          bash allowlist so test/status commands skip the
+#                          permission prompt during fan-out)
 #   - agents/orchestrator.md  (read-only primary agent that delegates via `task`)
 #
 # Non-destructive: if <target>/opencode.json already exists it writes
@@ -23,11 +25,11 @@ config_target="${1:?usage: configure-opencode.sh <target> [--provider P] [--mode
 shift || true
 
 config_provider="mlx-local"
-config_model="Qwen3-30B-A3B"
+config_model="mlx-community/Qwen3.6-35B-A3B-4bit"
 config_port="8080"
 # Default ecosystem plugins (verified npm packages, no API key, self-host-friendly).
 # See docs/opencode-export.md "Recommended ecosystem plugins".
-config_plugins="@openspoon/subtask2 opencode-pty"
+config_plugins="@openspoon/subtask2 opencode-pty @tarquinen/opencode-dcp"
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -89,7 +91,27 @@ cat > "$config_json" <<JSON
   },
   "plugin": [$config_plugins_json],
   "model": "$config_provider/$config_model",
-  "default_agent": "orchestrator"
+  "default_agent": "orchestrator",
+  "lsp": true,
+  "agent": {
+    "build": {
+      "permission": {
+        "bash": {
+          "go test *": "allow",
+          "npm test": "allow",
+          "npm run test*": "allow",
+          "bun test*": "allow",
+          "pytest*": "allow",
+          "cargo test*": "allow",
+          "just test*": "allow",
+          "git status*": "allow",
+          "git diff*": "allow",
+          "git log*": "allow",
+          "*": "ask"
+        }
+      }
+    }
+  }
 }
 JSON
 echo "CONFIG_WRITTEN=$config_json"

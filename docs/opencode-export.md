@@ -102,9 +102,28 @@ community quant, etc.). It is a recipe variable, not a fixed value.
     }
   },
   "model": "mlx-local/<model-id>",
-  "default_agent": "orchestrator"
+  "default_agent": "orchestrator",
+  "lsp": true,
+  "agent": {
+    "build": {
+      "permission": {
+        "bash": {
+          "go test *": "allow", "npm test": "allow", "pytest*": "allow",
+          "cargo test*": "allow", "just test*": "allow",
+          "git status*": "allow", "git diff*": "allow", "git log*": "allow",
+          "*": "ask"
+        }
+      }
+    }
+  }
 }
 ```
+
+The `agent.build.permission.bash` block is a `{pattern: allow|ask|deny}` map
+(OpenCode's real shape — **not** `permissions`/`file_edits`/`{allow:[]}`, see
+Gotchas). It lets the built-in `build` agent run test/status commands without a
+permission prompt during the orchestrator's fan-out, while everything else still
+falls through to `"*": "ask"`. Tune the patterns via the generated config.
 
 `<model-id>` and the port come from the `opencode_model` / `opencode_port`
 recipe variables. The generator is **non-destructive**: if `opencode.json`
@@ -206,8 +225,15 @@ via `OPENCODE_PLUGINS` or `just opencode_plugins="…" configure-opencode`):
 |--------------|--------------------|
 | `@openspoon/subtask2` | The only orchestration plugin installable via the npm `plugin:` array. Adds flow-control over `/commands` and **verifies a subtask's output against the codebase before merging it back** — directly strengthens the orchestrator's fan-out. |
 | `opencode-pty` | Runs background/interactive processes (dev servers, test watchers, REPLs) in a pseudo-terminal and can send input (e.g. answer a `y/n` prompt), so a subagent doesn't hang on the synchronous built-in `bash` tool. |
+| `@tarquinen/opencode-dcp` | **Dynamic context pruning** — dedupes repeated tool outputs and exposes a model-invokable `compress` tool, stretching a local model's smaller context window. The GitHub repo name `opencode-dynamic-context-pruning` is the **same package**; never list a second copy. |
 
-Both are npm, no API key, self-host-friendly.
+All three are npm, no API key required, self-host-friendly.
+
+> **Note on `opencode-skills` / `opencode-gemini-auth`:** these are **not** defaults.
+> OpenCode discovers and runs `skills/` natively via its built-in `skill` tool, so
+> `opencode-skills` is redundant (and risks a `Duplicate tool names` clash);
+> `opencode-gemini-auth` is a Gemini *auth* plugin with no value in a pure-local
+> MLX setup unless you also configure a Gemini provider.
 
 ### Opt-in npm plugins
 
@@ -222,11 +248,11 @@ Add these to your own `plugin:` array (or `OPENCODE_PLUGINS`) if they fit:
 
 ### Already covered — do not double-install
 
-The user's existing config lists **`@tarquinen/opencode-dcp`**, which *is*
-"dynamic context pruning" (dedupes repeated tool outputs + a model-invokable
-`compress` tool). The frequently-suggested `opencode-dynamic-context-pruning` is
-the **same package** (that's the GitHub repo name; `@tarquinen/opencode-dcp` is
-its npm name). Do not add a second copy.
+`@tarquinen/opencode-dcp` (dynamic context pruning) is now a **baked-in default**
+(see the defaults table above). The frequently-suggested
+`opencode-dynamic-context-pruning` is the **same package** — that's the GitHub
+repo name; `@tarquinen/opencode-dcp` is its npm name. Do not add a second copy to
+`OPENCODE_PLUGINS` or a hand-tuned `plugin:` array.
 
 ### OCX plugins (third-party CLI/registry)
 
@@ -270,9 +296,11 @@ a brainstorm or an older snippet, check it against this table:
 | `"providers": { id: { api_base, api_key }}` | No such keys | `"provider": { id: { "npm", "options": { "baseURL" }, "models" }}` |
 | `"attention": { enabled }` in `opencode.json` | Lives in `tui.json` | Omit from `opencode.json` |
 | `tools:` as a YAML list in agent frontmatter | `tools:` is a deprecated `name: bool` map | `permission:` map (`allow`/`ask`/`deny`) |
+| `"permissions": { "file_edits": ..., "bash": { "allow": [...], "default": ... }}` | No such keys; this is a brainstorm shape | `"permission": { "edit": ..., "bash": { "go test *": "allow", "*": "ask" }}` (singular key, `edit` not `file_edits`, bash is a pattern→verdict map) |
+| Config-level `"agents": { ... }` (plural) | The opencode.json key is singular | `"agent": { "build": { ... }}` (directories are plural `agents/`; the JSON key is singular `agent`) |
 | `get_symbols_overview` builtin tool | Not a builtin | Builtins: `read, write, edit, glob, grep, list, bash, task, skill` |
 | `Leader+Down` / arrow keys to switch subagents | Unverified keybinds | **Tab** or `/agents` |
-| A fixed garbled model id (e.g. `Qwen3.6-35B-A3B`) | Not a real id | Set your own MLX model id via `opencode_model` |
+| Hardcoding *any* model id as if it's universal | The id must match what *your* `mlx_lm.server` exposes | Set your own MLX model id via `opencode_model` (verify with `curl localhost:8080/v1/models`) |
 
 ## Limitations
 
