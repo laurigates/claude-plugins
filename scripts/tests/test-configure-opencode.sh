@@ -81,11 +81,11 @@ assert "original opencode.json preserved" \
 assert "second run writes opencode.json.opencode-sample" \
   "$([ -f "$fixture/opencode.json.opencode-sample" ] && echo true || echo false)"
 
-echo "=== TEST D: default plugin array (no redundant dcp) ==="
+echo "=== TEST D: default plugin array (subtask2 + pty + dcp) ==="
 # Fresh fixture so we assert against the primary opencode.json, not a .sample.
 plugfix="$(mktemp -d)"
 bash "$configure" "$plugfix" >/dev/null   # no --plugins → script default
-assert "default plugin array contains @openspoon/subtask2 + opencode-pty, valid JSON, no redundant dcp" \
+assert "default plugin array contains @openspoon/subtask2 + opencode-pty + @tarquinen/opencode-dcp, valid JSON, no double dcp" \
   "$(python3 - "$plugfix/opencode.json" <<'PY'
 import json, sys
 d = json.load(open(sys.argv[1]))
@@ -94,13 +94,39 @@ ok = (
     isinstance(p, list)
     and "@openspoon/subtask2" in p
     and "opencode-pty" in p
-    # @tarquinen/opencode-dcp IS dynamic context pruning; never bake a second copy.
-    and not any("dynamic-context-pruning" in x or "opencode-dcp" in x for x in p)
+    and "@tarquinen/opencode-dcp" in p
+    # dcp is a default now, but never list TWO copies of it
+    # (the GitHub repo name opencode-dynamic-context-pruning is the same package).
+    and sum(1 for x in p if "dynamic-context-pruning" in x or "opencode-dcp" in x) == 1
 )
 print("true" if ok else "false")
 PY
 )"
 rm -rf "$plugfix"
+
+echo "=== TEST F: build-agent bash allowlist (real schema, not the brainstorm shape) ==="
+# Regression: the GLM-5.2 brainstorm proposed "permissions": { "file_edits": ...,
+# "bash": { "allow": [...], "default": ... }} — wrong on every key. The real schema
+# is agent.<name>.permission.bash as a {pattern: allow|ask|deny} map.
+agentfix="$(mktemp -d)"
+bash "$configure" "$agentfix" >/dev/null
+assert "opencode.json has agent.build.permission.bash as a pattern map (no permissions/file_edits)" \
+  "$(python3 - "$agentfix/opencode.json" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+blob = json.dumps(d)
+bash_perm = d.get("agent", {}).get("build", {}).get("permission", {}).get("bash")
+ok = (
+    "permissions" not in d          # wrong (plural) top-level key
+    and "file_edits" not in blob    # wrong permission key name
+    and isinstance(bash_perm, dict) # pattern -> verdict map, not {allow:[]}
+    and "allow" not in bash_perm    # the brainstorm's {bash:{allow:[]}} shape
+    and any(v == "allow" for v in bash_perm.values())
+)
+print("true" if ok else "false")
+PY
+)"
+rm -rf "$agentfix"
 
 echo "=== TEST E: empty plugin list → valid empty array ==="
 emptyfix="$(mktemp -d)"

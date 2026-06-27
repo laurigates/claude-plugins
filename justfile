@@ -107,13 +107,13 @@ pr-rebase-all:
 
 # Defaults are overridable via environment or `just opencode_model=… <recipe>`.
 opencode_config := env_var_or_default("OPENCODE_CONFIG", "~/.config/opencode")
-opencode_model := env_var_or_default("OPENCODE_MODEL", "Qwen3-30B-A3B")
+opencode_model := env_var_or_default("OPENCODE_MODEL", "mlx-community/Qwen3.6-35B-A3B-4bit")
 opencode_port := env_var_or_default("OPENCODE_PORT", "8080")
 opencode_provider := "mlx-local"
 # Default ecosystem plugins baked into the generated config (verified npm packages,
 # no API key, self-host-friendly). Override with OPENCODE_PLUGINS or `just opencode_plugins=…`.
 # Full verified menu (incl. opt-in + OCX plugins) in docs/opencode-export.md.
-opencode_plugins := env_var_or_default("OPENCODE_PLUGINS", "@openspoon/subtask2 opencode-pty")
+opencode_plugins := env_var_or_default("OPENCODE_PLUGINS", "@openspoon/subtask2 opencode-pty @tarquinen/opencode-dcp")
 
 # Project skills + subagents to OpenCode format via rulesync (output: dist/opencode)
 [group: "opencode"]
