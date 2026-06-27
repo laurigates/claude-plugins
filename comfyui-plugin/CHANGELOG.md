@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.3](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.4.2...comfyui-plugin-v1.4.3) (2026-06-27)
+
+
+### Bug Fixes
+
+* **comfyui-node-scaffold:** track web/dist instead of gitignoring it ([#1834](https://github.com/laurigates/claude-plugins/issues/1834)) ([4f943b3](https://github.com/laurigates/claude-plugins/commit/4f943b3e82a7e32b44f34355c4b7a4287f7fdc50))
+
 ## [1.4.2](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.4.1...comfyui-plugin-v1.4.2) (2026-06-20)
 
 
