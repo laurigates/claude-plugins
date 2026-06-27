@@ -39,8 +39,9 @@ recording the decision, mirroring sampler-info's ADR-0010.
   append `&& cp -R web/data web/dist/data`.
 - **Serve**: `__init__.py` sets `WEB_DIRECTORY = "./web/dist"`; ComfyUI serves
   that tree at `/extensions/<name>/`.
-- **Distribute**: `web/dist/` is git-ignored; `[tool.comfy] includes =
-  ["web/dist"]` force-ships it, and `publish.yml` runs `bun run build` first.
+- **Distribute**: `web/dist/` is committed (tracked) so git clone/update
+  carries the served bundle; `[tool.comfy] includes = ["web/dist"]` also
+  force-ships it to the registry, and `publish.yml` runs `bun run build` first.
 - **The `/scripts/app.js` type shim**: a `paths` mapping in `tsconfig.json`
   points the rooted import at `src/comfyui-shims.d.ts` (TypeScript will not
   match an ambient `declare module` against a `/…` specifier). The emitted
@@ -163,7 +164,7 @@ chains scaffold → `gh repo create` → seed `main` → the gitops PR.
 
 - **TypeScript source, bun build.** Author in `src/`; build to `web/dist/`.
   `tsc --noEmit` checks, `bun build` emits — decoupled. Never hand-edit
-  `web/dist/` (it is generated and git-ignored).
+  `web/dist/` (it is generated; rebuild with `bun run build` and commit).
 - **Modal primitives come from `@laurigates/comfy-modal-kit`** (modal variants)
   — import them; never copy `modal-shell.js`/`modal-fuzzy.js` into the pack.
   `bun build` inlines the imported code. The gesture variant has no kit.

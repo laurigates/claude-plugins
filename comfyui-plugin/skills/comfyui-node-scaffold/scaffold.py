@@ -154,7 +154,7 @@ pythonpath = ["."]
 PublisherId = "@@PUBLISHER@@"
 DisplayName = "@@DISPLAY@@"
 Icon = ""
-# The built frontend (web/dist/) is git-ignored — emitted by `bun run build`.
+# The built frontend (web/dist/) is committed (tracked) — emitted by `bun run build`.
 # publish-node-action honors [tool.comfy] includes to force-add otherwise-
 # ignored paths into the published tarball. See ADR-0001.
 includes = ["web/dist"]
@@ -731,7 +731,7 @@ CLAUDE_MD = """\
 | `src/index.ts` | @@EXT_ROW_DESC@@ |
 | `src/comfyui-shims.d.ts` | Types the `/scripts/app.js` runtime import (via the `paths` mapping in `tsconfig.json`). |
 | `__init__.py` | Loader stub. @@INIT_DESC@@ |
-@@BACKEND_LAYOUT_ROW@@| `web/dist/` | **Generated** by `bun run build` (git-ignored). ComfyUI serves it at `/extensions/@@NAME@@/`. |
+@@BACKEND_LAYOUT_ROW@@| `web/dist/` | **Generated** by `bun run build`, committed (tracked) so git clone/update carries it. ComfyUI serves it at `/extensions/@@NAME@@/`. |
 | `pyproject.toml` | Comfy Registry metadata. `PublisherId` + `version` are the fields you touch; `[tool.comfy] includes = ["web/dist"]` force-ships the built output. |
 | `tsconfig.json` / `biome.json` / `knip.json` | Strict TS config, Biome lint/format, knip dead-code. |
 | `.github/workflows/` | `ci.yml` (tsc+build/biome/vitest/ruff/pytest/gitleaks), `publish.yml` (builds then publishes on version bump), `release-please.yml`. |
@@ -1141,6 +1141,12 @@ jobs:
         run: bun run typecheck
       - name: Build
         run: bun run build
+      - name: Verify committed web/dist is up to date
+        run: |
+          if ! git diff --exit-code -- web/dist; then
+            echo "::error::web/dist is stale vs src/. Run 'bun run build' and commit web/dist."
+            exit 1
+          fi
 
   test:
     name: Tests (Python)
@@ -1206,11 +1212,11 @@ jobs:
           bun install --frozen-lockfile
           bun run build
       - name: Publish Custom Node
-        # Pinned to the main SHA that supports `skip_checkout`. The `@v1` and
-        # tagged releases predate that input: they run an unconditional
-        # actions/checkout that wipes the git-ignored web/dist built above, so
-        # the registry tarball ships an EMPTY web/dist and the extension never
-        # loads.
+        # Pinned to the main SHA that supports `skip_checkout`. web/dist is now
+        # tracked (committed), so a checkout would restore it — but the `@v1` and
+        # tagged releases run an unconditional actions/checkout that would discard
+        # the freshly built workspace and ship whatever bundle is committed.
+        # skip_checkout reuses the just-built web/dist directly.
         uses: Comfy-Org/publish-node-action@d2366e7abb6ab16f3bb03e3520ae25c8cf749bc9 # main: skip_checkout support
         with:
           # PAT issued at https://registry.comfy.org/, stored as the
@@ -1452,10 +1458,6 @@ __pycache__/
 node_modules/
 coverage/
 
-# Built frontend output — emitted by `bun run build`, force-shipped to the
-# Comfy Registry via [tool.comfy] includes in pyproject.toml.
-web/dist/
-
 # Editor
 .vscode/
 .idea/
@@ -1519,7 +1521,21 @@ RELEASE-CHECKLIST.md
 icon.svg
 """
 
-GITATTRIBUTES = "* text=auto eol=lf\n*.png binary\n*.jpg binary\n*.webp binary\nuv.lock linguist-generated=true\nbun.lock linguist-generated=true\n"
+GITATTRIBUTES = (
+    "* text=auto eol=lf\n"
+    "*.png binary\n"
+    "*.jpg binary\n"
+    "*.webp binary\n"
+    "uv.lock linguist-generated=true\n"
+    "bun.lock linguist-generated=true\n"
+    "\n"
+    "# Built frontend bundle — committed (not gitignored) so git clone / a\n"
+    "# touch-manager git update carries the real served artifact, and force-shipped\n"
+    "# to the Comfy Registry via [tool.comfy] includes in pyproject.toml. Treat as\n"
+    "# generated: collapse/exclude in GitHub diffs+stats, suppress the noisy minified\n"
+    "# textual diff, keep current-branch copy on merge (regenerated, never hand-merged).\n"
+    "web/dist/** linguist-generated=true -diff -merge\n"
+)
 
 LICENSE = """\
 MIT License
@@ -1610,9 +1626,10 @@ bun build ./src/index.ts --target browser --format esm --outdir web/dist --exter
 - **Serve**: `__init__.py` sets `WEB_DIRECTORY = "./web/dist"`. ComfyUI serves
   that tree at `/extensions/@@NAME@@/`, so the built JS is at
   `/extensions/@@NAME@@/index.js`.
-- **Distribution**: `web/dist/` is git-ignored (generated). The Comfy Registry
-  tarball includes it via `[tool.comfy] includes = ["web/dist"]`, and
-  `publish.yml` runs `bun run build` before `publish-node-action`.
+- **Distribution**: `web/dist/` is committed (tracked, generated) so a git
+  clone / update carries the served bundle. The Comfy Registry tarball also
+  includes it via `[tool.comfy] includes = ["web/dist"]`, and `publish.yml`
+  runs `bun run build` before `publish-node-action`.
 
 @@ADR_KIT_SECTION@@## Type-seam notes (for future maintainers)
 
