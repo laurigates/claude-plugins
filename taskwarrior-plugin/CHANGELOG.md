@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.9.1...taskwarrior-plugin-v1.10.0) (2026-06-28)
+
+
+### Features
+
+* **taskwarrior-plugin:** add on-exit native hook for batch gh-sync + marker upkeep ([#1841](https://github.com/laurigates/claude-plugins/issues/1841)) ([88054de](https://github.com/laurigates/claude-plugins/commit/88054de528ef33842e1348d4716177cb3c3c7072))
+
 ## [1.9.1](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.9.0...taskwarrior-plugin-v1.9.1) (2026-06-25)
 
 
