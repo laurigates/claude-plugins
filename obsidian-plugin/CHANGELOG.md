@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.5](https://github.com/laurigates/claude-plugins/compare/obsidian-plugin-v1.3.4...obsidian-plugin-v1.3.5) (2026-06-28)
+
+
+### Documentation
+
+* **obsidian-plugin:** document offline fallback for vault-* audit skills ([#1854](https://github.com/laurigates/claude-plugins/issues/1854)) ([91af70e](https://github.com/laurigates/claude-plugins/commit/91af70e747fd01306bfe7bece5b8536e96c347b6))
+
 ## [1.3.4](https://github.com/laurigates/claude-plugins/compare/obsidian-plugin-v1.3.3...obsidian-plugin-v1.3.4) (2026-06-18)
 
 
