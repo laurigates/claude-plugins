@@ -722,6 +722,13 @@ check_skill_body() {
         issues+=("❌ ${plugin}/${skill_name}: SKILL.md must include the cwd-remote-vs-dominant-source branch ('dominant source differs from') in Step 1a decision table (issue #1425)")
         has_errors=true
       fi
+      # Regression: freeform feedback prose was only handled incidentally (args
+      # interpolated into the body) — not a documented, first-class input, so its
+      # behavior was undefined and could regress (issue #1844). The semantic
+      # invariant is that non-flag prose is captured as explicit seed findings and
+      # fed into the analysis step. The literal token SEED_FINDINGS anchors the fix.
+      if ! grep -q "SEED_FINDINGS" "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must document freeform prose as first-class input via the 'SEED_FINDINGS' seed-findings contract (issue #1844)")
       # Regression: feedback-session carried `disable-model-invocation: true`, so
       # it could not be invoked via the Skill tool — yet session-plugin:session-end
       # (Step 4) orchestrates it through the Skill tool. The two were in direct
