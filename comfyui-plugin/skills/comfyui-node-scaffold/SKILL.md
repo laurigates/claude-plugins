@@ -1,7 +1,7 @@
 ---
 created: 2026-06-04
-modified: 2026-06-06
-reviewed: 2026-06-06
+modified: 2026-06-28
+reviewed: 2026-06-28
 name: comfyui-node-scaffold
 description: >-
   Scaffold a new ComfyUI custom-node repo (TypeScript + bun build, CI,
@@ -67,11 +67,26 @@ inputs, big tap targets, momentum scroll). The modal primitives come from
 | `backend` | Needs to read disk / serve thumbnails / add a node (model thumbnails, file listings). | Adds `<module>.py` (node + aiohttp endpoints, ComfyUI-bundled libs only) + a `tests/conftest.py` that stubs aiohttp/server so pytest is green. Like gallery-loader. | **imports** the kit |
 | `gesture` | The UX is a **canvas interaction**, not a widget — pinch/drag/long-press on nodes or groups (resize, move, region-box). | Empty `NODE_CLASS_MAPPINGS`; a canvas pointer layer in `src/index.ts` with exported pure geometry helpers. Like touch-resize. | **no kit** |
 
-**Decision rule:** `frontend` for a per-widget modal; `gesture` when the
-interaction is on the canvas/node frame itself (no widget to hook); `backend`
-only when the feature genuinely needs the server to read files or serve data. A
-non-bundled Python dependency is never allowed — if you reach for one, it
-belongs in a separate companion pack.
+**The `--widgets` switch picks the modal shape.** On a modal variant
+(`frontend` / `backend`), passing `--widgets a,b` emits the **widget-intercept**
+`src/index.ts` (`TARGET_WIDGETS` + `openPicker` + `widget.onPointerDown`).
+**Omitting `--widgets`** emits a **standalone-modal** `src/index.ts` instead — a
+`registerExtension` skeleton with an `actionBarButtons` entry + a
+`command`/`menuCommand` that calls an exported `openShell()` (no `TARGET_WIDGETS`,
+no per-widget hook). Use the standalone skeleton for a manager / dashboard /
+gallery-actions panel whose modal is launched from the app chrome rather than a
+node widget (e.g. comfyui-touch-manager). It still imports the modal kit, and it
+ships a **jsdom modal-mount smoke test** (`jsdom` added to `devDependencies`)
+that asserts `openShell()` populates the modal body — the empty-modal gap that
+otherwise passes pure-helper unit tests.
+
+**Decision rule:** `frontend`/`backend` **with** `--widgets` for a per-widget
+modal; `frontend`/`backend` **without** `--widgets` for a standalone modal opened
+from the toolbar/command palette; `gesture` when the interaction is on the
+canvas/node frame itself (no widget to hook). Add `backend` only when the feature
+genuinely needs the server to read files or serve data. A non-bundled Python
+dependency is never allowed — if you reach for one, it belongs in a separate
+companion pack.
 
 The `gesture` variant intercepts the **canvas pointer stream** (capture-phase
 `pointerdown`/`move`/`up` on `app.canvas.canvas`), hit-tests against selected
@@ -98,6 +113,13 @@ Pack with a Python backend:
 python3 ${CLAUDE_SKILL_DIR}/scaffold.py --name comfyui-model-gallery --display "Model Gallery" --desc "Touch-first card-grid picker for the folder-backed model combos." --variant backend --widgets lora_name,ckpt_name,vae_name,control_net_name
 ```
 
+Standalone-modal pack (manager/dashboard launched from a toolbar button — modal
+variant, **no** `--widgets`):
+
+```sh
+python3 ${CLAUDE_SKILL_DIR}/scaffold.py --name comfyui-touch-manager --display "Touch Manager" --desc "Touch-first node/extension manager modal opened from the toolbar." --variant backend
+```
+
 Canvas-gesture pack (resize/move/region — no widget, no modal, no kit):
 
 ```sh
@@ -106,8 +128,9 @@ python3 ${CLAUDE_SKILL_DIR}/scaffold.py --name comfyui-touch-resize --display "T
 
 Flags: `--name` (repo + served URL segment), `--display` (Comfy DisplayName),
 `--desc`, `--variant {frontend,backend,gesture}`, `--widgets` (CSV → the TS
-stub's `TARGET_WIDGETS`; modal variants only), `--publisher` (default
-`laurigates`), `--dir` (parent dir, default cwd).
+stub's `TARGET_WIDGETS`; on a modal variant, **omitting** it emits the
+standalone-modal skeleton instead of the widget-intercept one), `--publisher`
+(default `laurigates`), `--dir` (parent dir, default cwd).
 
 It refuses to overwrite an existing directory.
 

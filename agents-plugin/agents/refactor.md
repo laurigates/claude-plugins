@@ -6,8 +6,8 @@ description: Code refactoring specialist. Restructures code for improved readabi
 tools: Glob, Grep, LS, Read, Edit, Write, Bash(npm test *), Bash(npm run *), Bash(yarn test *), Bash(bun test *), Bash(pytest *), Bash(vitest *), Bash(cargo test *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git add *), Bash(git commit *), Bash(find *), Bash(ls *), Bash(wc *), Bash(rg *), Bash(python3 scripts/audit-skill-descriptions.py *), TodoWrite
 maxTurns: 20
 created: 2026-01-24
-modified: 2026-06-18
-reviewed: 2026-06-18
+modified: 2026-06-28
+reviewed: 2026-06-28
 ---
 
 # Refactor Agent
@@ -35,6 +35,15 @@ The harness blocks several common bash idioms — use the dedicated tool instead
 - **Output**: Refactored code with explanation of changes
 - **Steps**: 5-15, focused transformations
 - **Constraint**: Never change external behavior
+- **Batch size**: For mechanical-deletion assignments (a closed list of dead
+  symbols / files to delete), keep each assignment small — **≤ ~10 symbols and
+  ≤ ~6 files**. Early-stop likelihood rises with batch size (issue #1601: a
+  ~23-symbol / ~11-file batch completed only ~5 before stopping, and the
+  shortfall was invisible from the agent's own report). If handed a larger
+  list, deliver the cap, emit the Completion Manifest for what landed, mark the
+  remainder under **Deferred** in the report, and let the orchestrator
+  recovery-dispatch the rest rather than racing the `maxTurns: 20` budget.
+  Smaller batches are safer than fewer agents.
 
 ## Checkpoint Discipline
 
@@ -185,6 +194,43 @@ already shipped.
 - Existing tests: PASSED
 - New tests needed: [list if applicable]
 ```
+
+### Completion Manifest (required for closed-list assignments)
+
+When the assignment is a **closed list of items** — specific symbols to delete,
+a fixed set of files to touch — your final message **MUST** end with a
+machine-checkable manifest enumerating each item you actually completed, one per
+line, so the orchestrator can diff it against the assignment without re-deriving
+it. A plausible-looking prose summary is *not* enough: a truncated or
+optimistic summary reads as success even when the batch fell short (issue
+#1601). The manifest makes a silent under-delivery detectable regardless of why
+the run stopped.
+
+Format — one `VERB: <item> (<location>)` line per completed item, wrapped in a
+delimited block:
+
+```
+### Completion Manifest
+DELETED: getCacheKey (cache-loader.ts)
+DELETED: SyncStatus (cache-loader.ts)
+DELETED: parseLegacyEntry (legacy.ts)
+ASSIGNED: 3
+COMPLETED: 3
+=== END MANIFEST ===
+```
+
+Rules:
+
+- List **only** items genuinely completed and verified (the symbol no longer
+  resolves / the file no longer exists). Do not list intended-but-unfinished
+  items here — those go under **Deferred / skipped**.
+- `ASSIGNED` is the count you were given; `COMPLETED` is the manifest line
+  count. When `COMPLETED < ASSIGNED`, set `status: partial` and list the
+  remainder under Deferred so the orchestrator can recovery-dispatch it.
+- The orchestrator never trusts this manifest alone — it re-runs the
+  authoritative checker (`knip` / build / test) and diffs the result against
+  the assignment. The manifest exists so that diff is mechanical, not so it can
+  be skipped.
 
 ## What This Agent Does
 
