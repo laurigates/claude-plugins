@@ -32,6 +32,7 @@ This repository was created by migrating Claude Code plugin configurations from 
 | [0016](0016-deterministic-script-extraction-for-token-efficiency.md) | Extract Deterministic Skill Procedure into Structured-Output Scripts | Accepted | 2026-06 |
 | [0017](0017-hook-based-behavioral-cues-for-plugin-utilization.md) | Hook-Based Behavioral Cues for Multi-Plugin Utilization | Proposed | 2026-06 |
 | [0018](0018-health-usage-scope-from-session-telemetry.md) | Usage-Telemetry Scope for health-plugin | Proposed | 2026-06 |
+| [0019](0019-skill-dry-via-library-templating-rejected.md) | Reject Shared-Library / @-Imports / Build-Time Templating for Skill DRY | Accepted | 2026-06 |
 
 ## Categories
 
@@ -66,6 +67,7 @@ This repository was created by migrating Claude Code plugin configurations from 
 - ADR-0016: Extract Deterministic Skill Procedure into Structured-Output Scripts
 - ADR-0017: Hook-Based Behavioral Cues for Multi-Plugin Utilization
 - ADR-0018: Usage-Telemetry Scope for health-plugin
+- ADR-0019: Reject Shared-Library / @-Imports / Build-Time Templating for Skill DRY
 
 ## ADR Format
 
