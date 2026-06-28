@@ -1,7 +1,7 @@
 ---
 created: 2026-04-17
 modified: 2026-06-28
-reviewed: 2026-04-25
+reviewed: 2026-06-28
 name: vault-stubs
 description: "Work-namespace redirect-stub classification in an Obsidian vault. Use when cleaning stubs, converting duplicates to redirects, or merging content into Zettelkasten."
 user-invocable: false
@@ -112,7 +112,7 @@ The detection methodology above is unchanged — only the **data source** change
 Parse the corpus directly:
 
 - **Frontmatter** — read each note's YAML block between the leading `---` fences; extract `tags`, `aliases`, `context`. See `vault-frontmatter` for YAML-block mechanics.
-- **Wikilinks** — match `[[Target]]`, `[[Target|Alias]]`, `[[Target#Heading]]`, `[[folder/Target]]`, and `![[embed]]`. Resolve each target to a note by **basename**, then **relative path**, then **alias** (from frontmatter), all **case-insensitive**. Resolve `![[embed]]` against attachments (e.g. under `Files/`) as well as notes.
+- **Wikilinks** — match `[[Target]]`, `[[Target|Alias]]`, `[[Target#Heading]]`, `[[folder/Target]]`, and `![[embed]]`. Resolve each target to a note by **basename**, then **relative path**, then **alias** (from frontmatter), all **case-insensitive**. Resolve `![[embed]]` against attachments as well as notes — the attachment folder is per-vault configurable, so read it from `.obsidian/app.json` (`attachmentFolderPath`) and fall back to the vault root / `Files/` only when that key is unset.
 
 Classify each stub from parsed inputs only: file size (`wc -c`), the `redirect` frontmatter tag, and a **basename** match against `Zettelkasten/` — the same inputs `analyze_stubs` uses. The redirect body's `[[Zettelkasten/Foo|Foo]]` target is verified with the resolution cascade above.
 

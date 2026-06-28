@@ -1,7 +1,7 @@
 ---
 created: 2026-04-17
 modified: 2026-06-28
-reviewed: 2026-04-25
+reviewed: 2026-06-28
 name: vault-orphans
 description: "Triage orphaned notes (zero in/out wikilinks) in an Obsidian vault. Use when finding orphans, linking them into a MOC, or reconnecting Zettelkasten notes."
 user-invocable: false
@@ -39,7 +39,7 @@ The detection methodology above is unchanged — only the **data source** change
 Parse the corpus directly:
 
 - **Frontmatter** — read each note's YAML block between the leading `---` fences; extract `tags`, `aliases`, `context`. See `vault-frontmatter` for YAML-block mechanics.
-- **Wikilinks** — match `[[Target]]`, `[[Target|Alias]]`, `[[Target#Heading]]`, `[[folder/Target]]`, and `![[embed]]`. Resolve each target to a note by **basename**, then **relative path**, then **alias** (from frontmatter), all **case-insensitive**. Resolve `![[embed]]` against attachments (e.g. under `Files/`) as well as notes.
+- **Wikilinks** — match `[[Target]]`, `[[Target|Alias]]`, `[[Target#Heading]]`, `[[folder/Target]]`, and `![[embed]]`. Resolve each target to a note by **basename**, then **relative path**, then **alias** (from frontmatter), all **case-insensitive**. Resolve `![[embed]]` against attachments as well as notes — the attachment folder is per-vault configurable, so read it from `.obsidian/app.json` (`attachmentFolderPath`) and fall back to the vault root / `Files/` only when that key is unset.
 
 Build the link graph from the resolved wikilinks: a note is an orphan when no resolved link targets it (zero incoming) **and** it emits no link that resolves (zero outgoing). The class table above (Inbox / daily / Archive) is path-derived and works identically offline.
 

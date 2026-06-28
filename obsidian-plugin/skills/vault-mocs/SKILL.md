@@ -1,7 +1,7 @@
 ---
 created: 2026-04-17
 modified: 2026-06-28
-reviewed: 2026-04-25
+reviewed: 2026-06-28
 name: vault-mocs
 description: "Map-of-Content (MOC) curation for Obsidian vaults. Use when creating a MOC for a tag, extending with orphans, fixing legacy MOC tags, or analyzing coverage."
 user-invocable: false
@@ -78,7 +78,7 @@ The detection methodology above is unchanged — only the **data source** change
 Parse the corpus directly:
 
 - **Frontmatter** — read each note's YAML block between the leading `---` fences; extract `tags`, `aliases`, `context`. See `vault-frontmatter` for YAML-block mechanics.
-- **Wikilinks** — match `[[Target]]`, `[[Target|Alias]]`, `[[Target#Heading]]`, `[[folder/Target]]`, and `![[embed]]`. Resolve each target to a note by **basename**, then **relative path**, then **alias** (from frontmatter), all **case-insensitive**. Resolve `![[embed]]` against attachments (e.g. under `Files/`) as well as notes.
+- **Wikilinks** — match `[[Target]]`, `[[Target|Alias]]`, `[[Target#Heading]]`, `[[folder/Target]]`, and `![[embed]]`. Resolve each target to a note by **basename**, then **relative path**, then **alias** (from frontmatter), all **case-insensitive**. Resolve `![[embed]]` against attachments as well as notes — the attachment folder is per-vault configurable, so read it from `.obsidian/app.json` (`attachmentFolderPath`) and fall back to the vault root / `Files/` only when that key is unset.
 
 Coverage analysis offline: for each tag category, count notes whose parsed frontmatter `tags` place them in the category but which no `📝/moc`-tagged note links to (via the resolution cascade). That is the same uncovered count `mocs.analyze_mocs` produces from the live index.
 

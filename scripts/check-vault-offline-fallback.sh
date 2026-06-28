@@ -19,9 +19,11 @@
 # What counts as compliant:
 #   - Each of the five audit skills contains a literal
 #     `## Offline Fallback (App Closed)` heading whose body names the
-#     `.md`-parsing source (mentions `live-index` and `headless`, the
+#     `.md`-parsing source (mentions `live-index` AND `headless`, the
 #     framing that distinguishes the two data sources — catches a stub
-#     heading).
+#     heading). The tokens must co-occur WITHIN the offline section body
+#     (extracted from the heading to the next `## `), not merely anywhere
+#     in the file, so a refactor that scatters them elsewhere is caught.
 #   - search-discovery (CLI-bound) contains an `## Offline Limitation`
 #     heading and points at the vault-* audit skills.
 #
@@ -53,6 +55,29 @@ require() {
   return 0
 }
 
+# extract_section <file> <heading>
+# Print the body of the markdown section beginning at <heading> up to (but not
+# including) the next `## ` heading. Empty output if the heading is absent.
+extract_section() {
+  local file="$1" heading="$2"
+  awk -v h="$heading" '
+    index($0, h) == 1 { inside = 1; next }
+    inside && /^## / { inside = 0 }
+    inside { print }
+  ' "$file"
+}
+
+# require_in_section <file> <section-body> <grep-pattern> <human-description>
+require_in_section() {
+  local file="$1" body="$2" pattern="$3" desc="$4"
+  if ! printf '%s\n' "$body" | grep -qF -- "$pattern"; then
+    echo "❌ $file: missing $desc" >&2
+    errors=$((errors + 1))
+    return 1
+  fi
+  return 0
+}
+
 for skill in "${audit_skills[@]}"; do
   file="$skill_dir/$skill/SKILL.md"
   if [ ! -f "$file" ]; then
@@ -63,10 +88,18 @@ for skill in "${audit_skills[@]}"; do
   checked=$((checked + 1))
 
   require "$file" "## Offline Fallback (App Closed)" "the 'Offline Fallback (App Closed)' section (#1727)" || continue
-  # Coarse content sniff: the section must frame the two data sources, not be
-  # a stub heading.
-  require "$file" "live-index" "the live-index vs headless framing in the offline section" || continue
-  require "$file" "headless" "the 'headless' default framing in the offline section" || continue
+
+  # Extract the offline-section body and assert the load-bearing tokens
+  # co-occur WITHIN it (not merely anywhere in the file) — a refactor that
+  # scatters them would still be caught.
+  section="$(extract_section "$file" "## Offline Fallback (App Closed)")"
+  if [ -z "${section//[[:space:]]/}" ]; then
+    echo "❌ $file: the 'Offline Fallback (App Closed)' section has an empty body (stub heading)" >&2
+    errors=$((errors + 1))
+    continue
+  fi
+  require_in_section "$file" "$section" "live-index" "the live-index framing inside the offline section" || continue
+  require_in_section "$file" "$section" "headless" "the 'headless' default framing inside the offline section" || continue
 done
 
 # search-discovery is CLI-bound: it must document the limitation and point at

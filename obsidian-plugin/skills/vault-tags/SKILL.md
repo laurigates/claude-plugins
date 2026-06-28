@@ -1,7 +1,7 @@
 ---
 created: 2026-04-17
 modified: 2026-06-28
-reviewed: 2026-04-25
+reviewed: 2026-06-28
 name: vault-tags
 description: "Emoji-prefixed tag taxonomy for Obsidian vaults. Use when consolidating drifted tags, collapsing bare emoji placeholders, or reducing over-tagging."
 user-invocable: false

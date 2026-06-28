@@ -1,7 +1,7 @@
 ---
 created: 2026-03-04
 modified: 2026-06-28
-reviewed: 2026-04-30
+reviewed: 2026-06-28
 name: search-discovery
 description: "Obsidian vault search: full-text/grep, tag listing, link traversal, outline, orphan/dead-end detection, broken wikilink audit. Use when exploring backlinks."
 user-invocable: false
