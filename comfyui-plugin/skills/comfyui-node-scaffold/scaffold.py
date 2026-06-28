@@ -812,8 +812,7 @@ zoom during a gesture, intercept `wheel` (capture, `passive:false`,
 
 Merge the release-please PR → the published GitHub release triggers
 `publish.yml`, which runs `bun run build`, publishes via
-`Comfy-Org/publish-node-action`, and pushes the release notes to the registry
-version changelog (the "Updates" section). Requires the
+`Comfy-Org/publish-node-action`, attaching the release notes as the per-version registry changelog (the "Updates" section). Requires the
 `REGISTRY_ACCESS_TOKEN` repo secret. Use conventional commits; release-please
 maintains `CHANGELOG.md` and the version bump PR.
 """
@@ -1211,42 +1210,21 @@ jobs:
         run: |
           bun install --frozen-lockfile
           bun run build
-      - name: Publish Custom Node
-        # Pinned to the main SHA that supports `skip_checkout`. web/dist is now
-        # tracked (committed), so a checkout would restore it — but the `@v1` and
-        # tagged releases run an unconditional actions/checkout that would discard
-        # the freshly built workspace and ship whatever bundle is committed.
-        # skip_checkout reuses the just-built web/dist directly.
-        uses: Comfy-Org/publish-node-action@d2366e7abb6ab16f3bb03e3520ae25c8cf749bc9 # main: skip_checkout support
-        with:
-          # PAT issued at https://registry.comfy.org/, stored as the
-          # REGISTRY_ACCESS_TOKEN repo secret.
-          personal_access_token: ${{ secrets.REGISTRY_ACCESS_TOKEN }}
-          # Reuse the workspace the prior step already built (see pin comment).
-          skip_checkout: 'true'
-
-      - name: Set registry changelog from release notes
-        # `comfy node publish` cannot send a changelog (Comfy-Org/comfy-cli#467),
-        # so the registry's per-version "Updates" section stays empty. The
-        # registry does accept the publisher PAT on the version-update endpoint
-        # (fixed in Comfy-Org/registry-backend#168), so push the release-please
-        # release notes there after publishing. The {versionId} path segment
-        # must be the version's database UUID, not the semver string.
-        # The registry renders the changelog as PLAIN TEXT (line-clamp-2 card,
-        # bare <p> drawer; markdown shows raw and newlines collapse), so the
-        # release-please markdown is flattened to compact plain text first.
-        # Best-effort: a failure here must not fail the publish itself.
+      - name: Compute registry changelog from release notes
+        # `comfy node publish` now sends the per-version changelog natively via
+        # the COMFY_NODE_CHANGELOG env var (Comfy-Org/comfy-cli#467, released in
+        # comfy-cli 1.11+), so the registry "Updates" section is populated
+        # atomically at publish time — no post-publish PUT, no version-UUID
+        # lookup, and no TOML parsing on the runner. Flatten the release-please markdown to compact
+        # plain text (the registry renders Updates as plain text) and export it
+        # for the Publish step below, which reads COMFY_NODE_CHANGELOG from the
+        # job environment. No-op on workflow_dispatch.
         if: github.event_name == 'release' && github.event.release.body != ''
         env:
-          REGISTRY_TOKEN: ${{ secrets.REGISTRY_ACCESS_TOKEN }}
           # Passed via env (not inline interpolation) so markdown/quotes in the
           # release notes cannot inject into the shell.
           RELEASE_BODY: ${{ github.event.release.body }}
         run: |
-          set -u
-          node_id=$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml","rb"))["project"]["name"])')
-          publisher_id=$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml","rb"))["tool"]["comfy"]["PublisherId"])')
-          version=$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml","rb"))["project"]["version"])')
           changelog=$(python3 <<'PY'
           import os, re
 
@@ -1284,20 +1262,29 @@ jobs:
           print("\n".join(sections))
           PY
           )
-          if [ -z "$changelog" ]; then
-            echo "::warning::registry changelog: release notes empty after transform for ${node_id}@${version}; skipping"
-            exit 0
-          fi
-          version_id=$(curl -sf "https://api.comfy.org/nodes/${node_id}/versions" | jq -r --arg v "$version" '.[] | select(.version == $v) | .id')
-          if [ -z "$version_id" ] || [ "$version_id" = "null" ]; then
-            echo "::warning::registry changelog: could not resolve UUID for ${node_id}@${version}; Updates section left empty"
-            exit 0
-          fi
-          if jq -n --arg c "$changelog" '{changelog: $c}' | curl -sf -X PUT "https://api.comfy.org/publishers/${publisher_id}/nodes/${node_id}/versions/${version_id}" -H "Authorization: Bearer ${REGISTRY_TOKEN}" -H 'Content-Type: application/json' --data-binary @- > /dev/null; then
-            echo "registry changelog set for ${node_id}@${version} (${version_id})"
+          {
+            echo "COMFY_NODE_CHANGELOG<<__CHANGELOG_EOF__"
+            echo "$changelog"
+            echo "__CHANGELOG_EOF__"
+          } >> "$GITHUB_ENV"
+          if [ -n "$changelog" ]; then
+            echo "registry changelog computed (${#changelog} chars)"
           else
-            echo "::warning::registry changelog PUT failed for ${node_id}@${version}; Updates section left empty"
+            echo "::warning::registry changelog empty after transform; Updates left empty"
           fi
+      - name: Publish Custom Node
+        # Pinned to the main SHA that supports `skip_checkout`. web/dist is now
+        # tracked (committed), so a checkout would restore it — but the `@v1` and
+        # tagged releases run an unconditional actions/checkout that would discard
+        # the freshly built workspace and ship whatever bundle is committed.
+        # skip_checkout reuses the just-built web/dist directly.
+        uses: Comfy-Org/publish-node-action@d2366e7abb6ab16f3bb03e3520ae25c8cf749bc9 # main: skip_checkout support
+        with:
+          # PAT issued at https://registry.comfy.org/, stored as the
+          # REGISTRY_ACCESS_TOKEN repo secret.
+          personal_access_token: ${{ secrets.REGISTRY_ACCESS_TOKEN }}
+          # Reuse the workspace the prior step already built (see pin comment).
+          skip_checkout: 'true'
 """
 
 RELEASE_PLEASE_YML = """\
