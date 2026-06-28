@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.9.0...feedback-plugin-v1.10.0) (2026-06-28)
+
+
+### Features
+
+* **feedback-plugin:** support freeform feedback prose as first-class input ([#1860](https://github.com/laurigates/claude-plugins/issues/1860)) ([9bd3805](https://github.com/laurigates/claude-plugins/commit/9bd38051f69bc4a0a3244cfedcae799e9e1d9dd2))
+
 ## [1.9.0](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.8.0...feedback-plugin-v1.9.0) (2026-06-28)
 
 
