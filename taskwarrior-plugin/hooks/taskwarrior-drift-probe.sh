@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # taskwarrior-drift-probe.sh — SessionStart probe for taskwarrior-plugin drift.
 #
-# Surfaces two kinds of drift at session start (via the shared drift-aggregator
+# Surfaces three kinds of drift at session start (via the shared drift-aggregator
 # nudge) so they no longer accumulate silently until a manual sweep:
 #
 #   1. udas_missing       — the plugin's custom UDAs (bpid, bpdoc, bpms, ghid,
@@ -14,10 +14,15 @@
 #                           reconcile.sh that /taskwarrior:task-reconcile uses, in
 #                           DRY-RUN mode, debounced behind a per-project TTL cache
 #                           (forge state is a poll, not a local event).
+#   3. stale_claims       — +ACTIVE claims whose claiming process is dead ON THIS
+#                           host. Classified by scripts/release-stale-claims.sh in
+#                           DRY-RUN mode. A dead PID is a LOCAL event (`kill -0`),
+#                           so this needs no network poll and no TTL debounce.
 #
-# No-ops when ~/.taskrc is absent OR the task binary is missing. The stale check
-# additionally requires an authenticated `gh`; it is read-only and mutates no
-# tasks. Opt out of the gh poll with CLAUDE_TASKWARRIOR_DRIFT_NO_RECONCILE=1.
+# No-ops when ~/.taskrc is absent OR the task binary is missing. The stale-linked
+# check additionally requires an authenticated `gh`; all checks are read-only and
+# mutate no tasks. Opt out of the gh poll with CLAUDE_TASKWARRIOR_DRIFT_NO_RECONCILE=1
+# and the dead-PID check with CLAUDE_TASKWARRIOR_DRIFT_NO_STALE_CLAIMS=1.
 
 set -uo pipefail
 
@@ -170,6 +175,32 @@ if [ "${CLAUDE_TASKWARRIOR_DRIFT_NO_RECONCILE:-0}" != "1" ] \
             stale_linked_tasks \
             "${stale} linked task(s)${scope_label} mirror a closed/merged GitHub issue or PR — reconcile to retire them" \
             "/taskwarrior:task-reconcile"
+    fi
+fi
+
+# --- Stale (dead-PID) claim drift --------------------------------------------
+# Surface +ACTIVE claims whose claiming process is dead ON THIS HOST, so an
+# abandoned claim (crashed/exited agent) does not linger and pollute
+# /git:coworker-check and task-coordinate's "in flight" view.
+#
+# Unlike the linked-task check above, a dead PID is a LOCAL event (`kill -0`), so
+# no network poll and no TTL debounce are needed — the check is cheap and runs
+# every session (see .claude/rules/drift-detection-triggering.md: local event ⇒
+# event/hook, no poll). release-stale-claims.sh is run in DRY-RUN (no --apply), so
+# nothing is mutated here; the finding points at the script to actually drain them.
+# Opt out with CLAUDE_TASKWARRIOR_DRIFT_NO_STALE_CLAIMS=1.
+STALE_CLAIMS_SH="${TW_DRIFT_STALE_CLAIMS_SCRIPT:-${SCRIPT_DIR}/../scripts/release-stale-claims.sh}"
+if [ "${CLAUDE_TASKWARRIOR_DRIFT_NO_STALE_CLAIMS:-0}" != "1" ] \
+    && [ -f "$STALE_CLAIMS_SH" ] \
+    && command -v jq >/dev/null 2>&1; then
+    sc_out=$(bash "$STALE_CLAIMS_SH" 2>/dev/null || true)
+    stale_claims=$(printf '%s\n' "$sc_out" | grep -m1 '^STALE_CLAIMS=' | cut -d= -f2-)
+    case "$stale_claims" in ''|*[!0-9]*) stale_claims=0 ;; esac
+    if [ "$stale_claims" -gt 0 ] 2>/dev/null; then
+        drift_add_finding warn \
+            stale_claims \
+            "${stale_claims} +ACTIVE claim(s) on this host whose claiming process is gone — run scripts/release-stale-claims.sh --apply to drain them" \
+            "/taskwarrior:task-status"
     fi
 fi
 
