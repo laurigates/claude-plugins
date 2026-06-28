@@ -9,12 +9,12 @@ description: |
   per target repo summarizing evidence, verdicts, and proposed edits.
 model: opus
 color: "#E53E3E"
-tools: Bash(python3 *), Bash(jq *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(gh pr *), Bash(find *), Read, Write, Edit, Glob, Grep, TodoWrite
+tools: Bash(python3 *), Bash(jq *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(gh pr *), Bash(gh issue *), Bash(find *), Read, Write, Edit, Glob, Grep, TodoWrite
 context: fork
 maxTurns: 40
 memory: user
 created: 2026-04-16
-modified: 2026-06-11
+modified: 2026-06-28
 reviewed: 2026-04-28
 ---
 
@@ -45,7 +45,7 @@ The harness blocks several common bash idioms — use the dedicated tool instead
 
 - **Input**: A time window (default: last 7 days) and a list of target rulesync repos
 - **Output**: One PR per repo with a proposed-rules diff, an evidence summary, and per-cluster verification verdicts
-- **Steps**: 8-20 (parse → classify → cluster → propose → verify → render → PR)
+- **Steps**: 8-20 (read fast-loop signal → parse → classify → cluster → corroborate → propose → verify → render → PR)
 - **Value**: Converts recurring session pain into durable guardrails without manual log-reading
 
 ## When to Use
@@ -71,6 +71,33 @@ a JSON record. Friction signals come from these record shapes:
 | Push-to-PR-branch failure | `git push` tool_result mentioning `open pull request` or `protected branch` |
 
 ## Workflow
+
+### Step 0: Read pre-registered fast-loop signal (`session-feedback`)
+
+This agent is the **slow loop** of a two-speed feedback architecture (see
+`docs/session-plugin-workflow.md`). The **fast loop** is
+`feedback-plugin/skills/feedback-session` (`/feedback:session`), which files
+per-session, qualitative, human-authored issues — including positive ones —
+under the shared `session-feedback` / `positive-feedback` labels. Those issues
+are **pre-registered hypotheses** about where friction lives: a human already
+noticed the pain in-context, which is exactly the signal the quantitative
+transcript clustering is structurally blind to.
+
+Before parsing transcripts, fetch the open fast-loop issues per target repo so
+they can corroborate and steer the clustering that follows:
+
+```bash
+gh issue list -R "$TARGET_REPO" --state open --label session-feedback \
+  --limit 100 --json number,title,labels,body \
+  --jq '.[] | {number, title}'
+```
+
+(Omit `-R "$TARGET_REPO"` for the current repo.) Use `--json` so an empty
+result is `[]` and exits 0 — never the bare `gh issue list`, which exits 1 on
+no matches and would abort. Record each issue's `number` and the
+`<plugin>/<skill>` it names; this is the corroboration set used in Step 3 and
+the cross-link set used in Step 5. If no `session-feedback` issues are open,
+proceed normally — the slow loop still runs on transcript evidence alone.
 
 ### Step 1: Enumerate transcripts in window
 
@@ -109,6 +136,22 @@ For each cluster with ≥3 occurrences, map to a concrete deliverable:
 | Tool error with a known flag-fix | Skill SKILL.md edit adding the correct flag |
 | Plan-mode entry / `ExitPlanMode` rejection | **Classify-required**: surface samples in the PR body, do NOT auto-prescribe a rule (see "Evidence gate" below) |
 | Push-to-PR-branch repeats | Hook adjustment: pre-push check for open PR on target branch |
+
+#### Corroborate and escalate against the fast loop (Step 0 set)
+
+Cross-reference each cluster against the open `session-feedback` issues fetched
+in Step 0. The two loops see different things, so reconcile them rather than
+treating either as ground truth:
+
+| Cluster ↔ fast-loop relationship | Action |
+|---|---|
+| A cluster matches an open `session-feedback` issue (same skill + symptom) | **Corroborated** — the human-noticed pain is now quantitatively confirmed. Strengthen the proposal and note the corroboration; this is the highest-confidence deliverable. |
+| An open `session-feedback` issue names a skill/symptom **below** the `--min-count` cluster threshold (or absent from clusters entirely) | **Escalate as a watch item** — one human report plus weak quantitative signal is worth surfacing even when the count gate alone would drop it. Do not auto-prescribe a fix; list it for human classification. |
+| A cluster has **no** matching fast-loop issue | Proceed on transcript evidence alone, as today. |
+
+A corroborated cluster carries more evidential weight than transcript counts
+alone — record the matching issue number(s) on the cluster so Step 5 can
+cross-link them.
 
 #### Evidence gate (issue #1110)
 
@@ -181,6 +224,15 @@ redacted at parse time.
 Append a `## Verification` section to the PR body (`/tmp/pr-body.md`): one row
 per cluster with its signature, verdict, and the reproduction/verification
 command that was run (redacted per the Guardrails).
+
+**Cross-link the fast loop.** For every cluster that corroborated or escalated
+a `session-feedback` issue in Step 3, include the issue number(s) in the
+findings file — both in the per-cluster row (a `Refs #<n>` / `Corroborates
+#<n>` column) and as a `## Fast-loop signal` section listing each open
+`session-feedback` issue, whether the slow loop corroborated it, and the
+cluster/verdict it maps to. This closes the loop in both directions: the
+weekly PR references the human-filed issues, and a reader of either can trace
+from a per-session hypothesis to its cross-session confirmation.
 
 ### Step 6: Open one PR per repo
 
