@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.30.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.30.0...agent-patterns-plugin-v2.30.1) (2026-06-28)
+
+
+### Bug Fixes
+
+* **agents-plugin:** add completion manifest + batch cap to refactor agent ([#1853](https://github.com/laurigates/claude-plugins/issues/1853)) ([9b690bd](https://github.com/laurigates/claude-plugins/commit/9b690bd0430530eefe7d1224c2f2c1ae853a620e))
+
 ## [2.30.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.29.2...agent-patterns-plugin-v2.30.0) (2026-06-23)
 
 
