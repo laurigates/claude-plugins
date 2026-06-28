@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.4](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.4.3...comfyui-plugin-v1.4.4) (2026-06-28)
+
+
+### Bug Fixes
+
+* **comfyui-plugin:** scaffold publish.yml uses native comfy-cli changelog ([#1846](https://github.com/laurigates/claude-plugins/issues/1846)) ([7554d66](https://github.com/laurigates/claude-plugins/commit/7554d6658e63da6f9a987ff3705d6b69669b2381))
+
 ## [1.4.3](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.4.2...comfyui-plugin-v1.4.3) (2026-06-27)
 
 
