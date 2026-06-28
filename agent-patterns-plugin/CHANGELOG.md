@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.30.2](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.30.1...agent-patterns-plugin-v2.30.2) (2026-06-28)
+
+
+### Documentation
+
+* **agent-patterns-plugin:** document nested-repo worktree-isolation pitfall ([#1861](https://github.com/laurigates/claude-plugins/issues/1861)) ([c360e6f](https://github.com/laurigates/claude-plugins/commit/c360e6f0b883273c11f1569cbcfaa08a55d5b1e0))
+
 ## [2.30.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.30.0...agent-patterns-plugin-v2.30.1) (2026-06-28)
 
 
