@@ -1,6 +1,6 @@
 ---
 created: 2026-04-17
-modified: 2026-05-09
+modified: 2026-06-28
 reviewed: 2026-04-25
 name: vault-stubs
 description: "Work-namespace redirect-stub classification in an Obsidian vault. Use when cleaning stubs, converting duplicates to redirects, or merging content into Zettelkasten."
@@ -104,6 +104,17 @@ rg -L -l '^tags:.*\bredirect\b' work/z/ --glob '*.md'
 ```
 
 Vault-agent's `analyze_stubs` gives the full classification.
+
+## Offline Fallback (App Closed)
+
+The detection methodology above is unchanged — only the **data source** changes when Obsidian (and its `obsidian` CLI / live link index) is closed. The `obsidian` CLI and `vault-agent` analyzers are the **live-index** path; parsing the `.md` corpus directly with the `fd`/`rg` Detection snippet above is the **deterministic headless default**, and for batch/scheduled audits it is often the better choice (reproducible, free of app/index state). `vault-frontmatter` already operates this way.
+
+Parse the corpus directly:
+
+- **Frontmatter** — read each note's YAML block between the leading `---` fences; extract `tags`, `aliases`, `context`. See `vault-frontmatter` for YAML-block mechanics.
+- **Wikilinks** — match `[[Target]]`, `[[Target|Alias]]`, `[[Target#Heading]]`, `[[folder/Target]]`, and `![[embed]]`. Resolve each target to a note by **basename**, then **relative path**, then **alias** (from frontmatter), all **case-insensitive**. Resolve `![[embed]]` against attachments (e.g. under `Files/`) as well as notes.
+
+Classify each stub from parsed inputs only: file size (`wc -c`), the `redirect` frontmatter tag, and a **basename** match against `Zettelkasten/` — the same inputs `analyze_stubs` uses. The redirect body's `[[Zettelkasten/Foo|Foo]]` target is verified with the resolution cascade above.
 
 ## Safety
 

@@ -1,6 +1,6 @@
 ---
 created: 2026-04-17
-modified: 2026-05-09
+modified: 2026-06-28
 reviewed: 2026-04-25
 name: vault-tags
 description: "Emoji-prefixed tag taxonomy for Obsidian vaults. Use when consolidating drifted tags, collapsing bare emoji placeholders, or reducing over-tagging."
@@ -83,6 +83,12 @@ rg -l '🔍/security' --glob '*.md'
 # Flat (non-emoji-prefix) tags
 rg '^\s*-\s+[a-z][a-z0-9_-]+\s*$' --glob '*.md'
 ```
+
+## Offline Fallback (App Closed)
+
+The detection methodology above is unchanged — only the **data source** changes when Obsidian (and its `obsidian` CLI / live tag index) is closed. The `obsidian tags`/`tag` queries in `search-discovery` are the **live-index** path; parsing the `.md` corpus directly with the `rg` Detection snippets above is the **deterministic headless default**, and for batch/scheduled audits it is often the better choice (reproducible, free of app/index state). `vault-frontmatter` already operates this way.
+
+Tag taxonomy is pure frontmatter — read each note's YAML block between the leading `---` fences and extract `tags` (and `aliases` / `context` where relevant); see `vault-frontmatter` for YAML-block mechanics. The consolidation and bare-placeholder passes need no running app: the `rg` snippets above read tags straight from the files.
 
 ## Edit Pattern
 

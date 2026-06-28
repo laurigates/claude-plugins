@@ -103,6 +103,12 @@ repos:
         language: script
         files: '(?i)/skills/.*/skill\.md$'
         pass_filenames: false
+      - id: check-vault-offline-fallback
+        name: obsidian vault-* audit skills document an offline path (#1727)
+        entry: ./scripts/check-vault-offline-fallback.sh
+        language: script
+        files: '^obsidian-plugin/skills/(vault-orphans|vault-wikilinks|vault-mocs|vault-tags|vault-stubs|search-discovery)/SKILL\.md$'
+        pass_filenames: false
       - id: lint-mcp-tool-references
         name: lint skill files for references to unavailable MCP tools
         entry: ./scripts/lint-mcp-tool-references.sh

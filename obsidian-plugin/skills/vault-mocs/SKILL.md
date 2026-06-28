@@ -1,6 +1,6 @@
 ---
 created: 2026-04-17
-modified: 2026-05-09
+modified: 2026-06-28
 reviewed: 2026-04-25
 name: vault-mocs
 description: "Map-of-Content (MOC) curation for Obsidian vaults. Use when creating a MOC for a tag, extending with orphans, fixing legacy MOC tags, or analyzing coverage."
@@ -70,6 +70,17 @@ For each tag category (`🛠️/`, `🔌/`, `💻/`, etc.), the vault-agent `moc
 - **Missing MOC** — the category has 10+ notes but no MOC exists.
 - **Stale MOC** — the MOC exists but hasn't been updated with recent additions.
 - **Tag mismatch** — notes are tagged but don't belong in the relevant MOC.
+
+## Offline Fallback (App Closed)
+
+The detection methodology above is unchanged — only the **data source** changes when Obsidian (and its `obsidian` CLI / live link index) is closed. The `obsidian` CLI and `vault-agent` analyzers are the **live-index** path; parsing the `.md` corpus directly with Glob/Grep is the **deterministic headless default**, and for batch/scheduled audits it is often the better choice (reproducible, free of app/index state). `vault-frontmatter` already operates this way.
+
+Parse the corpus directly:
+
+- **Frontmatter** — read each note's YAML block between the leading `---` fences; extract `tags`, `aliases`, `context`. See `vault-frontmatter` for YAML-block mechanics.
+- **Wikilinks** — match `[[Target]]`, `[[Target|Alias]]`, `[[Target#Heading]]`, `[[folder/Target]]`, and `![[embed]]`. Resolve each target to a note by **basename**, then **relative path**, then **alias** (from frontmatter), all **case-insensitive**. Resolve `![[embed]]` against attachments (e.g. under `Files/`) as well as notes.
+
+Coverage analysis offline: for each tag category, count notes whose parsed frontmatter `tags` place them in the category but which no `📝/moc`-tagged note links to (via the resolution cascade). That is the same uncovered count `mocs.analyze_mocs` produces from the live index.
 
 ## Creating a New MOC
 
