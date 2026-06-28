@@ -729,6 +729,16 @@ check_skill_body() {
       # fed into the analysis step. The literal token SEED_FINDINGS anchors the fix.
       if ! grep -q "SEED_FINDINGS" "$skill_file"; then
         issues+=("❌ ${plugin}/${skill_name}: SKILL.md must document freeform prose as first-class input via the 'SEED_FINDINGS' seed-findings contract (issue #1844)")
+      # Regression: feedback-session carried `disable-model-invocation: true`, so
+      # it could not be invoked via the Skill tool — yet session-plugin:session-end
+      # (Step 4) orchestrates it through the Skill tool. The two were in direct
+      # conflict; the orchestrated feedback pass failed and had to be filed by hand
+      # (issue #1843). The semantic invariant is that feedback-session stays
+      # agent-invocable: it must NOT declare disable-model-invocation in frontmatter.
+      # The skill already gates issue creation behind an AskUserQuestion confirmation,
+      # so model invocation does not bypass user review.
+      if grep -Eq '^disable-model-invocation:[[:space:]]*true' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must NOT set 'disable-model-invocation: true' — session-end invokes it via the Skill tool (issue #1843)")
         has_errors=true
       fi
     fi

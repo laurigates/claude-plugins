@@ -86,10 +86,16 @@ repos:
         files: '^\.github/workflows/auto-resolve-conflicts\.ya?ml$'
         pass_filenames: false
       - id: check-agent-failure-contract
-        name: dispatch skills carry the loud-failure contract (#1422)
+        name: dispatch skills carry the loud-failure / completion-manifest contract (#1422, #1601)
         entry: ./scripts/check-agent-failure-contract.sh
         language: script
-        files: '^agent-patterns-plugin/skills/(parallel-agent-dispatch|custom-agent-definitions)/SKILL\.md$'
+        files: '^(agent-patterns-plugin/skills/(parallel-agent-dispatch|custom-agent-definitions)/(SKILL|REFERENCE)\.md|agents-plugin/agents/refactor\.md|scripts/check-agent-failure-contract\.sh)$'
+        pass_filenames: false
+      - id: test-check-agent-failure-contract
+        name: completion-manifest contract regression (#1601)
+        entry: bash ./scripts/tests/test-check-agent-failure-contract.sh
+        language: system
+        files: '^scripts/(check-agent-failure-contract\.sh|tests/test-check-agent-failure-contract\.sh)$'
         pass_filenames: false
       - id: check-skill-filename-case
         name: skill files are named SKILL.md (case-sensitive; #1606)
