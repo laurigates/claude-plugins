@@ -132,6 +132,24 @@ require_marker "$reference_md" "Worktree GIT_DIR-export leak" "the REFERENCE.md 
 # section survives bulk edits.
 require_marker "$dispatch_skill" "#1838" "the nested-repo worktree-isolation reference (#1838)"
 require_marker "$reference_md" "Nested-repo worktree isolation" "the REFERENCE.md nested-repo isolation section (#1838)"
+# Regression #1601: a refactor subagent assigned a large CLOSED LIST of
+# mechanical deletions (symbols/files) stops early but returns a plausible
+# (often truncated) self-report, so the under-delivery is invisible unless the
+# orchestrator re-runs the authoritative checker. The fix is twofold and both
+# halves are semantic invariants a bulk edit could silently drop:
+#   1) agents-plugin/agents/refactor.md must carry the Completion Manifest
+#      requirement (a machine-checkable list of what actually landed) AND the
+#      batch-size cap referencing #1601.
+#   2) parallel-agent-dispatch SKILL.md + REFERENCE.md must reference #1601 and
+#      carry the manifest / never-trust-self-report-alone language alongside the
+#      existing Pillar 4/5 verification guidance.
+refactor_agent="agents-plugin/agents/refactor.md"
+require_marker "$refactor_agent" "Completion Manifest" "the completion-manifest section (issue #1601)"
+require_marker "$refactor_agent" "#1601" "the issue reference in the refactor agent (batch-size cap)"
+require_marker "$dispatch_skill" "#1601" "the completion-manifest reference (issue #1601)"
+require_marker "$dispatch_skill" "completion manifest" "the manifest language in the dispatch skill (issue #1601)"
+require_marker "$reference_md" "#1601" "the completion-manifest reference (issue #1601)"
+require_marker "$reference_md" "Completion manifest" "the manifest line in the refactor-brief template (issue #1601)"
 
 if [ "$errors" -ne 0 ]; then
   echo

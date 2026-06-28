@@ -212,6 +212,19 @@ the agent's diff and the agent already has the context to fix it. See
 [REFERENCE.md → Bulk-edit self-verification](REFERENCE.md#bulk-edit-self-verification--worked-example)
 and `.claude/rules/regression-testing.md`.
 
+**Closed-list mechanical batches need a completion manifest, not just a
+self-report.** When a `refactor` agent is assigned a fixed list (symbols to
+delete, files to touch), brief it to emit a machine-checkable manifest of what
+it actually completed, and **never** trust that manifest alone — re-run the
+authoritative checker (`knip` / build / test) after it returns and diff the
+result against the assignment. A truncated or optimistic summary reads as
+success even when the batch fell short (issue
+[#1601](https://github.com/laurigates/claude-plugins/issues/1601): a ~23-symbol
+batch completed only ~5, invisible until the orchestrator re-ran `knip`). Cap
+the per-agent batch so an early stop costs little. See
+[REFERENCE.md → Refactor-brief template](REFERENCE.md#refactor-brief-template)
+and the refactor agent's batch-size guidance.
+
 ### 5. Reviewer-agent verification (verify-then-fix)
 
 Self-attestation is unreliable. For high-stakes dispatches (PR "ready to merge",

@@ -12,7 +12,7 @@ Session feedback analysis — capture per-session skill bugs as GitHub issues, a
 
 | Agent | Description |
 |-------|-------------|
-| `friction-learner` | Parse last week of transcripts, cluster interruptions/hook-blocks/rejections, propose rule/skill/hook fixes, reproduce-and-verify each fix where safe, open one PR per target repo |
+| `friction-learner` | The **slow loop**: read open `session-feedback` issues as pre-registered signal, parse last week of transcripts, cluster interruptions/hook-blocks/rejections, corroborate/escalate clusters against the fast-loop issues, propose rule/skill/hook fixes, reproduce-and-verify each fix where safe, open one PR per target repo cross-linking the fast-loop issues |
 
 ### Friction learner
 
@@ -45,6 +45,17 @@ that no longer reproduce are downgraded to watch items, and each PR body
 carries a `## Verification` table with one verdict per cluster
 (`REPRODUCED_FIX_VERIFIED` / `REPRODUCED_FIX_UNVERIFIED` / `NOT_REPRODUCED` /
 `NOT_REPRODUCIBLE`).
+
+**Two-speed feedback (fast ↔ slow).** `friction-learner` is the *slow loop*; the
+*fast loop* is the `/feedback:session` skill, which files per-session,
+human-authored issues under the shared `session-feedback` / `positive-feedback`
+labels. At the start of its weekly run the agent reads the open `session-feedback`
+issues as **pre-registered signal**, corroborates or escalates them against its
+quantitative transcript clusters (a human-noticed pain confirmed by the data is
+the highest-confidence deliverable; a reported pain below the count threshold is
+escalated as a watch item), and cross-links the issue numbers in the PR body's
+`## Fast-loop signal` section. See `docs/session-plugin-workflow.md` for the full
+architecture.
 
 ## Hooks
 

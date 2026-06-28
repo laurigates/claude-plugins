@@ -65,6 +65,12 @@ sibling-skill cross-references, tool names, negative-scope clauses.
 
 **Cut**: marketing prose, redundant restatement, adjective stacking.
 
+**Completion manifest** (closed-list assignments — symbols to delete,
+files to touch): end your final message with a machine-checkable
+manifest enumerating each item you actually completed, one
+`VERB: <item> (<location>)` line per item, plus `ASSIGNED: N` /
+`COMPLETED: M`. The orchestrator diffs it against the assignment.
+
 **Final step**: run `<repo regression script>`; loop until exit 0
 before emitting the Return Contract.
 ```
@@ -72,6 +78,24 @@ before emitting the Return Contract.
 > Evidence: issue [#1279](https://github.com/laurigates/claude-plugins/issues/1279)
 > — six agents, 41 plugins, cleanest batch hit 28.9% reduction with zero
 > >250-char outliers. PR #1314 productizes the post-pass.
+
+**Mechanical-batch self-reports are never trusted alone.** For a
+closed-list deletion/rewrite batch, the agent's own report — manifest
+included — is a *claim*, not a verification. The orchestrator runs the
+**authoritative checker** (`knip` / build / test) after the agent
+returns and diffs the manifest against the assignment; an item on the
+manifest that the checker still finds present is a silent
+under-delivery. This complements Pillar 4 (the agent's own final
+verification step) and Pillar 5 (a separate reviewer agent): the
+manifest makes the orchestrator's post-run diff mechanical instead of a
+re-derivation. Cap the per-agent batch so an early stop costs little —
+see the refactor agent's batch-size guidance.
+
+> Evidence: issue [#1601](https://github.com/laurigates/claude-plugins/issues/1601)
+> — a `refactor` agent assigned ~23 symbols across ~11 files completed
+> only ~5 before stopping; the shortfall was invisible from its
+> (truncated) self-report and surfaced only when the orchestrator re-ran
+> `knip` and saw ~18 assigned symbols still present.
 
 ## Verbatim patches — detail and rationale
 

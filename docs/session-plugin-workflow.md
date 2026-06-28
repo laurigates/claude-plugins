@@ -5,9 +5,13 @@ Status: **Phases 0–3 done** — Phase 0 locked 2026-06-04; Phase 1 audit lande
 landed 2026-06-10 (session-plugin created: generalized `session-spinup` /
 `session-wrap`, `project-distill` moved in as `session-distill` per D1,
 `session-end` orchestrator per D3, single collapsed Stop nudge per D4).
-Remaining: Phase 4 (fast↔slow label wiring via gitops) and the dotfiles-side
-cleanup (remove chezmoi copies of the user-level skills/hooks, add the user's
-vault-specific `session-plugin.local.md` to the chezmoi source).
+Phase 4's in-repo deliverables landed 2026-06-28 (`feedback-session` emits the
+shared `session-feedback`/`positive-feedback` labels; the `friction-learner`
+slow loop reads + corroborates/escalates open `session-feedback` issues and
+cross-links them). Remaining: the `gitops/labels.tf` label declaration (Phase 4,
+user-owned/external) and the dotfiles-side cleanup (remove chezmoi copies of the
+user-level skills/hooks, add the user's vault-specific `session-plugin.local.md`
+to the chezmoi source).
 Tracking task: taskwarrior `project:claude-plugins.session-plugin` (172)
 Epic: [#1504](https://github.com/laurigates/claude-plugins/issues/1504) · Phase 1 remediation: [#1503](https://github.com/laurigates/claude-plugins/issues/1503)
 
@@ -103,11 +107,16 @@ Reuse `scripts/plugin-compliance-check.sh`, `scripts/audit-skill-descriptions.py
   reusable project pattern/workflow" → `project-distill` rule/recipe.
 
 ### Phase 4 — Wire fast ↔ slow integration
-- Shared labels via `gitops/labels.tf` (user merges the gitops PR).
-- Update `feedback-session` to emit the shared labels.
-- Update the `friction-learner` routine contract to read open `feedback-session`
+- Shared labels via `gitops/labels.tf` (user merges the gitops PR). **Pending — user-owned/external.**
+- Update `feedback-session` to emit the shared labels. **Done** — emits
+  `session-feedback` / `positive-feedback` with a graceful `gh label create`
+  fallback when labels are IaC-managed.
+- Update the `friction-learner` routine contract to read open `session-feedback`
   issues as pre-registered signal and corroborate/escalate, cross-linking the
-  issue number in the findings file.
+  issue numbers in the findings file. **Done** — `friction-learner` Step 0
+  fetches open `session-feedback` issues; Step 3 corroborates/escalates them
+  against the quantitative clusters; Step 5 cross-links the issue numbers in the
+  PR body / findings file.
 
 ### Phase 5 — Verify + document
 - Run `plugin-compliance-check.sh`, `audit-skill-descriptions.py`, regression scripts.
