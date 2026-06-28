@@ -87,8 +87,13 @@ jobs:
         if: contains(steps.changed.outputs.plugins, 'blueprint-plugin')
         run: bash scripts/check-blueprint-upgrade-target.sh
 
-      - name: Check agent dispatch loud-failure contract (#1422)
-        if: contains(steps.changed.outputs.plugins, 'agent-patterns-plugin')
+      - name: Self-test the agent-failure / completion-manifest contract guard (#1601)
+        # Whole-repo invariant (the dispatch skills + refactor agent carry the
+        # loud-failure and completion-manifest contracts). The self-test proves
+        # the guard before it gates the tree.
+        run: bash scripts/tests/test-check-agent-failure-contract.sh
+
+      - name: Check agent dispatch loud-failure / completion-manifest contract (#1422, #1601)
         run: bash scripts/check-agent-failure-contract.sh
 
       - name: Self-test the agent-model guard
