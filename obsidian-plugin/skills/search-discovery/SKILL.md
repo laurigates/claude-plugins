@@ -1,7 +1,7 @@
 ---
 created: 2026-03-04
-modified: 2026-05-09
-reviewed: 2026-04-30
+modified: 2026-06-28
+reviewed: 2026-06-28
 name: search-discovery
 description: "Obsidian vault search: full-text/grep, tag listing, link traversal, outline, orphan/dead-end detection, broken wikilink audit. Use when exploring backlinks."
 user-invocable: false
@@ -25,6 +25,14 @@ Search, navigate, and audit the vault link graph using the official Obsidian CLI
 
 - Obsidian desktop v1.12.4+ with CLI enabled
 - Obsidian must be running
+
+## Offline Limitation (App Closed)
+
+Every command here talks to the **running** Obsidian instance over the CLI; with the app closed they error:
+
+> The CLI is unable to find Obsidian. Please make sure Obsidian is running and try again.
+
+For headless / batch link, orphan, dead-end, tag, and broken-wikilink audits with the app closed, use the **offline file-parsing path** documented in the `vault-*` audit skills — `vault-wikilinks`, `vault-orphans`, `vault-mocs`, `vault-tags`, and `vault-stubs` parse the `.md` corpus directly with Grep/Glob (frontmatter + `[[wikilink]]` resolution). The `obsidian` CLI here is the **live-index** path; direct parsing is the **deterministic headless default** for bulk audits.
 
 ## Search
 
