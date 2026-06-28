@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.0](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.10.0...taskwarrior-plugin-v1.11.0) (2026-06-28)
+
+
+### Features
+
+* **taskwarrior-plugin:** deterministic stale-claim auto-release (dead-PID +ACTIVE) ([#1855](https://github.com/laurigates/claude-plugins/issues/1855)) ([0c3b60f](https://github.com/laurigates/claude-plugins/commit/0c3b60f74ba9d25d3b19ca8125bebf83669f9993))
+
 ## [1.10.0](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.9.1...taskwarrior-plugin-v1.10.0) (2026-06-28)
 
 

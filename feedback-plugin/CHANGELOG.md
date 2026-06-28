@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.9.0](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.8.0...feedback-plugin-v1.9.0) (2026-06-28)
+
+
+### Features
+
+* **feedback-plugin:** wire friction-learner to fast-loop session-feedback signal ([#1852](https://github.com/laurigates/claude-plugins/issues/1852)) ([019907a](https://github.com/laurigates/claude-plugins/commit/019907a005bc13ded06c2fc880e04f06fb48360c))
+
+
+### Bug Fixes
+
+* **feedback-plugin:** make feedback-session agent-invocable for session-end ([#1859](https://github.com/laurigates/claude-plugins/issues/1859)) ([d6b78a1](https://github.com/laurigates/claude-plugins/commit/d6b78a1d8d9e4adac2ac754a81af3dc1fba50c8f))
+
 ## [1.8.0](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.7.0...feedback-plugin-v1.8.0) (2026-06-12)
 
 

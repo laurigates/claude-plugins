@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.4.4...comfyui-plugin-v1.5.0) (2026-06-28)
+
+
+### Features
+
+* **comfyui-plugin:** add standalone-modal scaffold variant for no-widgets packs ([#1857](https://github.com/laurigates/claude-plugins/issues/1857)) ([729d24b](https://github.com/laurigates/claude-plugins/commit/729d24b30ca1a95910dee711378f5dc4c9f22488))
+
 ## [1.4.4](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.4.3...comfyui-plugin-v1.4.4) (2026-06-28)
 
 
