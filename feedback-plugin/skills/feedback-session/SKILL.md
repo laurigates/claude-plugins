@@ -7,8 +7,8 @@ model: opus
 argument-hint: "--dry-run | --target-repo owner/repo | plugin-name"
 disable-model-invocation: true
 created: 2026-02-18
-modified: 2026-06-04
-reviewed: 2026-06-04
+modified: 2026-06-28
+reviewed: 2026-06-28
 ---
 
 # /feedback:session
@@ -64,8 +64,17 @@ Parse these from `$ARGUMENTS`:
 | `--target-repo <owner/repo>` | File issues against this repo instead of the cwd repo |
 | `-R <owner/repo>` | Alias for `--target-repo` |
 | `[plugin-name]` | Scope analysis to a specific plugin |
+| `<freeform prose>` | Any non-flag, non-plugin-name text is treated as one or more **explicit seed findings** to file (see below) |
 
 After parsing, set `$TARGET_REPO` to the value of `--target-repo`/`-R` if provided. Append `-R $TARGET_REPO` to all `gh` commands below when `$TARGET_REPO` is set.
+
+**Freeform feedback prose is a first-class input.** After removing the
+recognized flags and any leading `[plugin-name]` token from `$ARGUMENTS`, treat
+whatever prose remains as one or more explicit findings the user wants filed —
+not as a transcript to scan. Record this remainder as `$SEED_FINDINGS` and feed
+it into Step 2. Flags and prose coexist: `--target-repo X "the skill should do
+Y"` files finding "the skill should do Y" against repo `X`. A bare invocation
+with no prose falls back to the transcript scan as before.
 
 ## Execution
 
@@ -181,7 +190,21 @@ Skip this step if `$SKIP_SESSION_LABELS=true`.
 3. Check if `positive-feedback` exists similarly.
 4. If missing: `gh label create positive-feedback --description "Skills that worked well" --color "0e8a16"`
 
-### Step 2: Analyze conversation history
+### Step 2: Collect findings (seed prose first, then conversation history)
+
+**2a. Seed findings from freeform prose.** If `$SEED_FINDINGS` is non-empty
+(see Parameters), each distinct statement in it is an **explicit finding** the
+user asked to file. Split it into one finding per concern (the user may pass
+several, e.g. "two things. firstly… also…"). For each, infer the category
+(bug / enhancement / positive) from the wording; if a finding's category is
+ambiguous, ask via AskUserQuestion rather than guessing. These seed findings
+flow through dedup (Step 3), the confirmation prompt (Step 4), and issue
+creation (Step 5) exactly like scanned findings. When `$SEED_FINDINGS` is
+present, the transcript scan in 2b is **optional context**, not the primary
+source — do not let inference override what the user explicitly stated.
+
+**2b. Scan the conversation history.** When `$SEED_FINDINGS` is empty (a bare
+invocation), this scan is the primary source of findings.
 
 Review the entire conversation for feedback signals. Look for these categories:
 
@@ -330,3 +353,4 @@ List created issue numbers with links. If `$SKIP_SESSION_LABELS=true`, remind th
 | `--target-repo <owner/repo>` | File issues against a different repo (e.g. plugin source) |
 | `-R <owner/repo>` | Alias for `--target-repo` |
 | `[plugin-name]` | Scope to specific plugin |
+| `<freeform prose>` | Explicit seed finding(s) to file; coexists with flags |
