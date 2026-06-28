@@ -225,6 +225,59 @@ CLAUDE_TASKWARRIOR_NO_GHSYNC_QUEUE=1 DRAIN_RAN_MARKER="$DRAIN_RAN" \
 check "opt-out env suppresses the drain" "skipped" \
     "$([ -f "$DRAIN_RAN" ] && echo ran || echo skipped)"
 
+# --- Test 9: dead-PID stale_claims finding (local event, no cache) -----------
+# A fake release-stale-claims.sh emits a controlled STALE_CLAIMS count. The probe
+# runs it in dry-run and surfaces a `stale_claims` finding when >0, with no TTL.
+FAKE_STALE_CLAIMS="${WORK}/fake-stale-claims.sh"
+cat > "$FAKE_STALE_CLAIMS" <<'SH'
+#!/usr/bin/env bash
+: > "${STALE_CLAIMS_RAN_MARKER:-/dev/null}"
+echo "=== TASKWARRIOR STALE CLAIMS ==="
+echo "STALE_CLAIMS=${FAKE_STALE_CLAIMS_COUNT:-0}"
+echo "STATUS=OK"
+echo "ISSUE_COUNT=${FAKE_STALE_CLAIMS_COUNT:-0}"
+echo "=== END TASKWARRIOR STALE CLAIMS ==="
+SH
+chmod +x "$FAKE_STALE_CLAIMS"
+
+run_probe_claims() {
+    rm -rf "${SIGNALS:?}"/* 2>/dev/null || true
+    printf '{"session_id":"testsess","cwd":"%s"}' "$PROJ" \
+        | HOME="$FAKE_HOME" \
+          CLAUDE_DRIFT_SIGNALS_DIR="$SIGNALS" \
+          CLAUDE_TASKWARRIOR_DRIFT_CACHE_DIR="$CACHE" \
+          TW_DRIFT_RECONCILE_SCRIPT="$FAKE_RECONCILE" \
+          TW_DRIFT_RESOLVE_SCRIPT="$FAKE_RESOLVE" \
+          TW_DRIFT_ENSURE_UDAS="$FAKE_UDAS" \
+          TW_DRIFT_STALE_CLAIMS_SCRIPT="$FAKE_STALE_CLAIMS" \
+          bash "$PROBE" >/dev/null 2>&1
+    local sig="${SIGNALS}/testsess/taskwarrior-plugin.json"
+    [ -f "$sig" ] || { echo "__NO_SIGNAL_FILE__"; return; }
+    jq -r '[.findings[].kind] | join(" ")' "$sig" 2>/dev/null
+}
+
+rm -f "$CACHE_FILE"
+CLAIMS_RAN="${WORK}/claimsran9"; rm -f "$CLAIMS_RAN"
+out=$(STALE_CLAIMS_RAN_MARKER="$CLAIMS_RAN" FAKE_STALE_CLAIMS_COUNT=2 \
+    FAKE_STALE=0 FAKE_UDAS_MISSING=0 run_probe_claims)
+case " $out " in *" stale_claims "*) got=yes ;; *) got=no ;; esac
+check "stale_claims>0 emits stale_claims finding" "yes" "$got"
+check "stale_claims script ran" "ran" "$([ -f "$CLAIMS_RAN" ] && echo ran || echo no)"
+
+rm -f "$CACHE_FILE"
+out=$(FAKE_STALE_CLAIMS_COUNT=0 FAKE_STALE=0 FAKE_UDAS_MISSING=0 run_probe_claims)
+case " $out " in *" stale_claims "*) got=yes ;; *) got=no ;; esac
+check "stale_claims=0 emits no stale_claims finding" "no" "$got"
+
+rm -f "$CACHE_FILE"
+CLAIMS_RAN="${WORK}/claimsran9b"; rm -f "$CLAIMS_RAN"
+out=$(CLAUDE_TASKWARRIOR_DRIFT_NO_STALE_CLAIMS=1 STALE_CLAIMS_RAN_MARKER="$CLAIMS_RAN" \
+    FAKE_STALE_CLAIMS_COUNT=3 FAKE_STALE=0 FAKE_UDAS_MISSING=0 run_probe_claims)
+case " $out " in *" stale_claims "*) got=yes ;; *) got=no ;; esac
+check "opt-out: no stale_claims finding" "no" "$got"
+check "opt-out: stale_claims script never runs" "skipped" \
+    "$([ -f "$CLAIMS_RAN" ] && echo ran || echo skipped)"
+
 # --- Summary -----------------------------------------------------------------
 echo "=== TASKWARRIOR DRIFT PROBE TEST ==="
 echo "PASS=${pass}"
