@@ -155,6 +155,30 @@ When any signal reports a coworker:
 
 When no signal reports a coworker, still prefer explicit paths over bulk staging — the detection is best-effort, not a guarantee.
 
+### Cleanup: never force-remove worktrees you don't own (issue: 2026-06-28)
+
+A tempting end-of-task "tidy up" is to prune the worktree pool. The footgun is
+the scoping predicate. A prune that removes **every worktree whose branch is not
+on origin** sweeps up *other sessions'* in-flight worktrees — local-only branches
+are exactly what an active peer is mid-work on (`refactor/*`, `claude/*`,
+`feat/*` not yet pushed). `git worktree remove --force` then **discards any
+uncommitted changes** in those trees, destroying peer work with no recovery path
+(committed refs survive — uncommitted does not, same asymmetry as the bare-flip
+recovery above).
+
+Real break: a sweep's cleanup force-removed ~24 peer worktrees (the
+`refactor/*-skill-scripts-155x` set and several `claude/*` sessions) on the
+"branch not on origin" predicate. Branch refs survived, so committed work was
+safe, but any peer's staged-but-uncommitted edits were unrecoverable.
+
+**The rule:** scope worktree pruning to **your own session's** worktrees by name
+(e.g. only `wf_<this-run-id>-*`, or paths you created this session). Never
+`--force`-remove a worktree whose branch you did not create. To reclaim space
+safely, prefer `git worktree prune` (removes only entries whose directory is
+already gone) over enumerating-and-force-removing live ones. When unsure who owns
+a worktree, leave it — a stale worktree costs disk; a force-removed one can cost a
+coworker their afternoon.
+
 ## Integration Points
 
 | Where | How |
@@ -174,8 +198,25 @@ The skill is the primary surface; hooks are an enforcement layer that users can 
 | `git stash` on "unexpected" changes | Compare against baseline first |
 | `git add -A` / `git add .` | Stage explicit paths you know you touched |
 | `git clean -fd` as cleanup | Never auto-clean in a shared checkout |
+| `git worktree remove --force` on "branch not on origin" | Scope prune to your own `wf_<run>-*`; never force-remove a branch you didn't create |
+| Resume a `Workflow` to recover a few failed worktree agents | Re-dispatch the failed ones fresh/sequentially (see below) |
 | Trust `git status` as "my changes" | Treat it as "everyone's changes" until proven otherwise |
 | Block on the process scan alone | Treat it as a hint; the baseline + markers are authoritative |
+
+### `Workflow` resume re-runs already-succeeded worktree agents (issue: 2026-06-28)
+
+`Workflow({resumeFromRunId})` caches completed `agent()` calls by `(prompt, opts)`
+— but `isolation: "worktree"` agents do **not** cache cleanly across a resume. A
+resume intended to recover a *few* rate-limited worktree agents **re-executed
+agents that had already succeeded**, opening a **duplicate PR** (#1858 dup of
+#1857). The failure is invisible until you spot two PRs for one issue.
+
+**The rule:** do not resume a whole workflow to retry a handful of failed
+worktree agents. Recover them with a **fresh, sequential dispatch** (one Opus
+agent doing the remainder one-at-a-time, or a small re-run waved ≤3) — which also
+dodges the burst rate-limit that caused the original failures
+(`~/.claude/rules/tool-use-patterns.md`). Before any recovery dispatch, check
+`gh pr list --search "issue-<N>"` so you don't open a duplicate.
 
 ## Limitations
 
