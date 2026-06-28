@@ -41,9 +41,20 @@ missing is **autonomous triggering**. Separate the two before building.
 `taskwarrior-plugin/hooks/taskwarrior-drift-probe.sh` — extends a UDA-check
 SessionStart probe to also run `task-reconcile`'s `reconcile.sh` in dry-run,
 debounced behind a per-project TTL cache, emitting a `stale_linked_tasks`
-finding. The locally-observable sibling (dead-PID claim release) and the
-scheduled-poll sibling are tracked as follow-ups (laurigates/claude-plugins
-#1792, #1793).
+finding (the SessionStart sibling, #1792).
+
+The **scheduled-poll** sibling (#1793) is
+`taskwarrior-plugin/scripts/scheduled-reconcile.sh` — a cadence wrapper (macOS
+LaunchAgent per `~/repos/.routines/`) around the *same* `reconcile.sh`, for
+drift in queues spanning repos you don't open daily. It is the canonical
+two-tier surfacer: **notify-only by default** (`reconcile.sh --all` dry-run →
+`telegram-notify` / desktop notification on `STALE_COUNT>0`, mutating nothing)
+and **bounded auto-apply opt-in** (`--apply` → `reconcile.sh --all --apply
+--only-verdicts=pr-merged,issue-closed`, auto-closing only the unambiguous
+facts; `pr-closed`-unmerged and UNKNOWN are left for a human). The
+`--only-verdicts=<csv>` flag on `reconcile.sh` is the bounded-auto-apply lever
+named in the safety rails above. The locally-observable sibling (dead-PID claim
+release) remains a follow-up.
 
 The TTL debounce is itself sharpened by a *local* event where one exists: the
 opt-in `on-exit` native hook (issue #1810) knows exactly which linked tasks a

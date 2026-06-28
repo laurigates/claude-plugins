@@ -121,6 +121,7 @@ uncertainty). Suggest `/taskwarrior:task-status` to confirm the queue is clean.
 | `--project=<name>` | repo basename | Override the project filter |
 | `--all` | off | Reconcile across every project |
 | `--limit=N` | 200 | Max linked tasks to inspect |
+| `--only-verdicts=<csv>` | unset (all stale closeable) | Restrict the apply set to these verdicts (e.g. `pr-merged,issue-closed`); other stale verdicts (notably `pr-closed`) are reported `method=keep` but never closed. Used by the scheduled bounded auto-apply (`scripts/scheduled-reconcile.sh --apply`) |
 
 | Verdict | Meaning | Close method |
 |---------|---------|--------------|
