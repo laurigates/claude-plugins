@@ -160,6 +160,16 @@ round-trips behind a per-project TTL cache (default 4h) — most session starts 
 the cache and cost nothing. It is **read-only** (never closes a task) and never
 warns when upstream state can't be read.
 
+The probe also surfaces a `stale_claims` finding: `+ACTIVE` claims whose claiming
+process is **dead on this host**, which otherwise linger and pollute
+`/git:coworker-check` (its 4th signal reads `+ACTIVE` claims) and
+`task-coordinate`'s "in flight" view. Unlike linked-task drift, a dead PID is a
+**local** event (`kill -0`), so this check needs no network poll and no TTL
+debounce — it runs every session via `scripts/release-stale-claims.sh` in dry-run
+and points you at `release-stale-claims.sh --apply` to drain them. The release is
+deterministic (a dead PID on the claim's own `host` is a fact, not a judgment), so
+no LLM is in the loop.
+
 When the opt-in `on-exit` native hook is installed, it queues the UUID of every
 task whose `ghid`/`ghpr` linkage changed to `<data>/claude-plugin-ghsync.queue`.
 The probe **drains** that queue (`scripts/drain-ghsync-queue.sh`) before its
@@ -173,6 +183,7 @@ network I/O itself and fails open on a stale/corrupt queue.
 | `CLAUDE_TASKWARRIOR_DRIFT_NO_RECONCILE` | unset | Set `1` to skip the `gh` poll entirely (UDA check still runs) |
 | `CLAUDE_TASKWARRIOR_DRIFT_STALE_TTL` | `14400` | Poll interval in seconds; `0` disables the stale check |
 | `CLAUDE_TASKWARRIOR_DRIFT_STALE_LIMIT` | `50` | Max linked tasks inspected per poll (the count is a floor above this) |
+| `CLAUDE_TASKWARRIOR_DRIFT_NO_STALE_CLAIMS` | unset | Set `1` to skip the dead-PID `+ACTIVE` claim check |
 
 ## Native scheduling fields
 
@@ -203,6 +214,7 @@ from skill bodies as `${CLAUDE_SKILL_DIR}/../../scripts/<name>.sh`:
 | `resolve-project.sh` | `task-add`, `task-coordinate`, `task-status`, `task-reconcile` | The `--project` > `--all` > git-toplevel > cwd ladder |
 | `detect-gh-mode.sh` | GitHub-mode skills | Remote + `gh auth` probe (no stderr-emitting Context probes) |
 | `drain-ghsync-queue.sh` | drift-probe hook | Drains the `on-exit` gh-sync queue: resolves queued UUIDs → projects and busts their drift TTL cache (no network; fails open) |
+| `release-stale-claims.sh` | drift-probe hook | Auto-releases `+ACTIVE` claims whose claiming PID is dead on this host: `stop` + drain `pid` + annotate. Dry-run by default; `--apply` to mutate (UUID-keyed, `rc.confirmation=no`) |
 
 ## Flow
 
