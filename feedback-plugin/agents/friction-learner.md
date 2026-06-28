@@ -84,7 +84,14 @@ noticed the pain in-context, which is exactly the signal the quantitative
 transcript clustering is structurally blind to.
 
 Before parsing transcripts, fetch the open fast-loop issues per target repo so
-they can corroborate and steer the clustering that follows:
+they can corroborate and steer the clustering that follows.
+
+`$TARGET_REPO` is each repo from the run's target list — the repos the user
+named when invoking the agent (see the "Scope per user instruction" guardrail).
+When the user named no repos, the target defaults to the **current** repo's
+upstream; in that case `$TARGET_REPO` is unset and you omit the `-R` flag
+entirely (the bare form below), letting `gh` resolve the current repo. Loop the
+fetch once per named repo.
 
 ```bash
 gh issue list -R "$TARGET_REPO" --state open --label session-feedback \
@@ -146,7 +153,8 @@ treating either as ground truth:
 | Cluster ↔ fast-loop relationship | Action |
 |---|---|
 | A cluster matches an open `session-feedback` issue (same skill + symptom) | **Corroborated** — the human-noticed pain is now quantitatively confirmed. Strengthen the proposal and note the corroboration; this is the highest-confidence deliverable. |
-| An open `session-feedback` issue names a skill/symptom **below** the `--min-count` cluster threshold (or absent from clusters entirely) | **Escalate as a watch item** — one human report plus weak quantitative signal is worth surfacing even when the count gate alone would drop it. Do not auto-prescribe a fix; list it for human classification. |
+| An open `session-feedback` issue names a skill/symptom **below** the `--min-count` cluster threshold (a small but present cluster) | **Escalate as a watch item** — one human report plus weak quantitative signal is worth surfacing even when the count gate alone would drop it. Do not auto-prescribe a fix; list it for human classification. |
+| An open `session-feedback` issue matches **no** transcript cluster at all (zero quantitative signal) | **Carry it forward as a standalone candidate finding — never drop it.** Surface it in the PR body's "Needs human classification" / watch section with its issue number and the human-reported symptom, explicitly marked as having no quantitative corroboration. A human report with no transcript echo is still a real signal: the clustering is structurally blind to qualitative pain that left no hook-block / tool-error trace. Do not auto-prescribe a fix. |
 | A cluster has **no** matching fast-loop issue | Proceed on transcript evidence alone, as today. |
 
 A corroborated cluster carries more evidential weight than transcript counts
