@@ -532,6 +532,47 @@ assert_exit \
     "redundant grep | grep | sed | cut | sort chain is still blocked" 2 \
     "ps aux | grep proc | grep -v grep | awk '{print \$2}' | sort | uniq"
 
+# ── log-stream sources exempt from grep-chain scrape detectors (issue #1833) ──
+# Regression: read-only log-diagnostic pipelines — `kubectl logs … | grep <inc>
+# | grep -v <exc> | tail`, `journalctl … | grep | grep -v | sed`, `docker logs …`
+# — fired the grep-chain scrape detectors (the pipe-count "redundant grep | grep"
+# block and the multi-grep chain block) during incident diagnosis. A log stream
+# is unstructured text with no --json/jq alternative, so filter+exclude+tail is
+# the idiomatic read path, not a data-processing antipattern. These must pass;
+# the cat/echo/printf scrape head and the `ps … | grep | grep -v grep` process
+# scrape (above) must STILL block.
+echo ""
+echo "log-stream pipelines (kubectl logs/journalctl/docker logs) are exempt; non-log scrapes still block (#1833):"
+
+assert_exit_complex \
+    "kubectl logs | grep -iE | grep -ivE | tail (issue exact repro) is allowed" 0 \
+    'kubectl logs -n ns pod --since=6m 2>&1 | grep -iE "ephemeral|proof|403|Forbidden" | grep -ivE "git/config|HTTP 401 error at path" | tail -15'
+
+assert_exit_complex \
+    "kubectl logs grep|grep|sed chain with 'Error' is allowed (multi-grep block exempt)" 0 \
+    'kubectl logs -n ns pod --since=6m 2>&1 | grep -iE "Error|Forbidden" | grep -ivE "git/config" | sed s/x/y/ | tail -15'
+
+assert_exit_complex \
+    "kubectl logs 5-pipe grep|grep is allowed (pipe-count block exempt)" 0 \
+    'kubectl logs -n ns pod 2>&1 | grep -iE "ephemeral|403" | grep -ivE "noise" | grep -v other | cut -f1 | tail -15'
+
+assert_exit_complex \
+    "journalctl | grep | grep -v | sed chain is allowed" 0 \
+    'journalctl -u svc --since "6 min ago" | grep -i fail | grep -v ignore | sed s/a/b/ | tail'
+
+assert_exit_complex \
+    "docker logs | grep | grep -v | sed chain is allowed" 0 \
+    'docker logs mycontainer 2>&1 | grep -i error | grep -v healthcheck | sed s/a/b/ | tail'
+
+# Guard integrity: the log-stream exemption must NOT weaken the non-log scrapes.
+assert_exit \
+    "GUARD: ps aux | grep | grep -v grep process scrape still blocks (#1833)" 2 \
+    "ps aux | grep proc | grep -v grep | sed s/a/b/ | cut -f1 | sort"
+
+assert_exit \
+    "GUARD: cat-headed grep|grep|sed scrape over a file still blocks (#1833)" 2 \
+    "cat r.txt | grep Error | grep -v warn | sed s/a/b/ | tail"
+
 # ── grep block message offers the pipe fallback (issue #1602) ─────────────────
 # Regression: when the Grep tool is unavailable in a session, the block message
 # pointed only at Grep(...). It must also offer the always-allowed pipe form.

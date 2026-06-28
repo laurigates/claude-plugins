@@ -275,10 +275,40 @@ fi
 # || operators first so regex-alternation literals (grep -E '(a|b|c)') and
 # format-string pipes (curl -w '… | …') are not counted as shell pipes (the
 # bogus "8 pipes" miscount in issue #1592).
+#
+# Log-stream sources — `kubectl logs`, `journalctl`, `docker logs`, `stern`, … —
+# emit an unstructured text stream with no --json/jq alternative, so
+# `… | grep <inc> | grep -v <exc> | tail` is the *idiomatic* read path during
+# incident diagnosis, not a data-processing scrape to nudge away from. Detect the
+# log-stream head once and exempt these pipelines from the grep-chain scrape
+# detectors (this block's `grep | grep` clause and the multi-grep chain block
+# below) — issue #1833. The `<tool> logs` arm requires the `logs` subcommand to
+# sit in the same pipe segment as a known log-producing CLI (`[^|]*[[:space:]]logs`)
+# so an unrelated `ls logs/` does not match. The cat/echo/printf scrape head and
+# the `ps … | grep … | grep -v grep` process-scrape (issue #1603) are NOT
+# log streams, so they keep firing.
+LOG_STREAM_RE='\b(journalctl|stern)\b|\b(kubectl|oc|docker|podman|nerdctl|nomad|heroku|gcloud|crictl|flyctl|fly|k)\b[^|]*[[:space:]]logs\b'
+IS_LOG_STREAM=false
+if echo "$COMMAND_SHELL_ONLY" | grep -Eq "$LOG_STREAM_RE"; then
+    IS_LOG_STREAM=true
+fi
+
 PIPE_BODY=$(echo "$COMMAND_SHELL_ONLY" | sed "s/'[^']*'//g; s/\"[^\"]*\"//g; s/||//g")
 PIPE_COUNT=$(echo "$PIPE_BODY" | tr -cd '|' | wc -c)
-if [ "$PIPE_COUNT" -ge 5 ] && \
-   echo "$PIPE_BODY" | grep -Eq '\b(cat|echo|printf)[[:space:]][^|]*\||grep\b[^|]*\|[^|]*grep\b'; then
+
+# A discouraged head is a cat/echo/printf source OR a redundant `grep | grep`
+# text-scrape. A log-stream-sourced pipeline is neither — its grep stages filter
+# an unstructured stream that has no structured alternative — so the grep | grep
+# clause is suppressed for log streams (issue #1833). The cat/echo/printf head
+# still fires regardless (a log stream never has one).
+DISCOURAGED_HEAD=false
+if echo "$PIPE_BODY" | grep -Eq '\b(cat|echo|printf)[[:space:]][^|]*\|'; then
+    DISCOURAGED_HEAD=true
+elif [ "$IS_LOG_STREAM" = false ] && echo "$PIPE_BODY" | grep -Eq 'grep\b[^|]*\|[^|]*grep\b'; then
+    DISCOURAGED_HEAD=true
+fi
+
+if [ "$PIPE_COUNT" -ge 5 ] && [ "$DISCOURAGED_HEAD" = true ]; then
     block "REMINDER: This command has $PIPE_COUNT pipes fed from a discouraged head
 stage (cat/echo/printf, or a redundant grep | grep) - consider simplifying:
 - Use JSON output from the source (--reporter=json, --format=json) and parse with jq
@@ -293,7 +323,14 @@ fi
 
 # Check for multi-grep chains parsing test/task output
 # Pattern: grep ... | grep ... with sed/cut suggests parsing structured output as text
-if echo "$COMMAND" | grep -Eq 'grep.*\|.*grep.*\|.*(sed|cut|awk)' && \
+#
+# Exempt log-stream sources (kubectl logs / journalctl / docker logs / …): an
+# unstructured log stream has no structured-output alternative, so a
+# `grep | grep -v | sed | tail` over it is the idiomatic incident-diagnosis read,
+# and the Error/fail tokens this keys on are exactly what log diagnostics search
+# for (issue #1833). IS_LOG_STREAM is computed in the pipe-count block above.
+if [ "$IS_LOG_STREAM" = false ] && \
+   echo "$COMMAND" | grep -Eq 'grep.*\|.*grep.*\|.*(sed|cut|awk)' && \
    echo "$COMMAND" | grep -Eq '(\.output|/tasks/|Error|fail|FAIL)'; then
     block "REMINDER: Parsing test output with grep chains is fragile. Better alternatives:
 - Use --reporter=json (Bun, Vitest, Jest) and parse with jq
