@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.9](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.5.8...hooks-plugin-v2.5.9) (2026-06-28)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** exempt log-stream pipelines from grep-chain scrape detectors ([#1839](https://github.com/laurigates/claude-plugins/issues/1839)) ([8352d35](https://github.com/laurigates/claude-plugins/commit/8352d35bcdc1aa27f8653f2ca18f445eae6ec175))
+
 ## [2.5.8](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.5.7...hooks-plugin-v2.5.8) (2026-06-25)
 
 
