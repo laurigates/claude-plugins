@@ -174,6 +174,86 @@ network I/O itself and fails open on a stale/corrupt queue.
 | `CLAUDE_TASKWARRIOR_DRIFT_STALE_TTL` | `14400` | Poll interval in seconds; `0` disables the stale check |
 | `CLAUDE_TASKWARRIOR_DRIFT_STALE_LIMIT` | `50` | Max linked tasks inspected per poll (the count is a floor above this) |
 
+### Drift is also swept on a cadence (scheduled poll)
+
+The SessionStart probe only surfaces drift in repos you actually open. Forge
+state changes whether or not you're in a session, and some queues span repos you
+don't open daily — so `scripts/scheduled-reconcile.sh` is the **scheduled-poll**
+sibling. It wraps the same `reconcile.sh` with two safety tiers:
+
+| Tier | Invocation | Behaviour |
+|------|------------|-----------|
+| **Notify-only (default)** | `scheduled-reconcile.sh` | Runs `reconcile.sh --all` in **dry-run**; on `STALE_COUNT>0` fires `telegram-notify` and/or a desktop notification with a per-project breakdown. **Mutates nothing.** |
+| **Bounded auto-apply (opt-in)** | `scheduled-reconcile.sh --apply` | Delegates to `reconcile.sh --all --apply --only-verdicts=pr-merged,issue-closed` — auto-closes only the unambiguous verdicts. |
+
+**Verdict-safety tiers** — what each tier may close:
+
+| Verdict | Meaning | Auto-apply closes it? |
+|---------|---------|------------------------|
+| `pr-merged` | linked PR merged (the work landed) | ✅ fact |
+| `issue-closed` | linked issue closed | ✅ fact |
+| `pr-closed` | linked PR closed **unmerged** (abandoned? superseded?) | ❌ left for a human |
+| UNKNOWN | upstream state unreadable | ❌ never closed (it stays `verdict=live`) |
+
+The `--only-verdicts=<csv>` flag on `reconcile.sh` is the lever: it restricts the
+*apply set* to the listed verdicts; everything else stale is reported
+(`method=keep`) but never closed. Because UNKNOWN is never stale, the flag only
+ever *narrows* the apply set. Honors the same guards as the probe —
+`GH_AVAILABLE=false` surfaces **nothing** (never a false "0 drift"), and the
+wrapper always exits 0 to stay parallel-safe.
+
+| Env / flag | Effect |
+|------------|--------|
+| `CLAUDE_TASKWARRIOR_NO_SCHEDULED_RECONCILE=1` | Opt out entirely (the wrapper no-ops) |
+| `--no-telegram` / `CLAUDE_TASKWARRIOR_RECONCILE_NO_TELEGRAM=1` | Skip the Telegram channel |
+| `--no-desktop` / `CLAUDE_TASKWARRIOR_RECONCILE_NO_DESKTOP=1` | Skip the desktop-notification channel |
+
+#### Scheduling substrate (macOS LaunchAgent)
+
+A LaunchAgent is the right substrate per `~/repos/.routines/README.md`:
+deterministic shell, free, fires whenever the machine is awake, no Claude session
+needed. Copy this wrapper to `~/repos/.routines/taskwarrior-reconcile.sh` (adjust
+the plugin path), then install the plist below with `launchctl`:
+
+```bash
+#!/usr/bin/env bash
+# DESC: taskwarrior linked-task reconcile (notify-only sweep)
+set -euo pipefail
+export PATH="$HOME/.local/share/mise/shims:$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
+PLUGIN="$HOME/.claude/plugins/taskwarrior-plugin"  # adjust to your install path
+LOG="$HOME/Library/Logs/taskwarrior-reconcile.log"
+{ echo "===== reconcile $(date '+%F %T %Z') ====="; bash "$PLUGIN/scripts/scheduled-reconcile.sh"; } >>"$LOG" 2>&1
+# For bounded auto-apply instead of notify-only, append: --apply
+```
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.lgates.taskwarrior-reconcile</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-lc</string>
+    <string>"$HOME/repos/.routines/taskwarrior-reconcile.sh"</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict><key>Hour</key><integer>8</integer><key>Minute</key><integer>17</integer></dict>
+  <key>RunAtLoad</key><false/>
+  <key>StandardOutPath</key><string>/Users/lgates/Library/Logs/taskwarrior-reconcile.run.log</string>
+  <key>StandardErrorPath</key><string>/Users/lgates/Library/Logs/taskwarrior-reconcile.run.log</string>
+</dict>
+</plist>
+```
+
+```bash
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.lgates.taskwarrior-reconcile.plist
+launchctl kickstart gui/$(id -u)/com.lgates.taskwarrior-reconcile   # run now
+```
+
+Promote to a cloud routine / CI later if it earns it.
+
 ## Native scheduling fields
 
 Prefer taskwarrior's native date fields over hand-managed `+blocked*` tags —
@@ -203,6 +283,7 @@ from skill bodies as `${CLAUDE_SKILL_DIR}/../../scripts/<name>.sh`:
 | `resolve-project.sh` | `task-add`, `task-coordinate`, `task-status`, `task-reconcile` | The `--project` > `--all` > git-toplevel > cwd ladder |
 | `detect-gh-mode.sh` | GitHub-mode skills | Remote + `gh auth` probe (no stderr-emitting Context probes) |
 | `drain-ghsync-queue.sh` | drift-probe hook | Drains the `on-exit` gh-sync queue: resolves queued UUIDs → projects and busts their drift TTL cache (no network; fails open) |
+| `scheduled-reconcile.sh` | LaunchAgent / cron | Cadence wrapper around `reconcile.sh`: notify-only by default, opt-in bounded auto-apply (`--apply` → `--only-verdicts=pr-merged,issue-closed`) |
 
 ## Flow
 

@@ -17,11 +17,18 @@
 # Default is DRY-RUN: classify and print, mutate nothing. Pass --apply to close.
 #
 # Flags:
-#   --apply              Perform the close (default: dry-run, no mutation)
-#   --project=<name>     Scope to one project (default: resolved by caller)
-#   --all                Cross-project scope (no project filter)
-#   --project-dir=<dir>  Directory for gh/git probes (default: cwd)
-#   --limit=<n>          Max linked tasks to inspect (default 200)
+#   --apply                  Perform the close (default: dry-run, no mutation)
+#   --project=<name>         Scope to one project (default: resolved by caller)
+#   --all                    Cross-project scope (no project filter)
+#   --project-dir=<dir>      Directory for gh/git probes (default: cwd)
+#   --limit=<n>              Max linked tasks to inspect (default 200)
+#   --only-verdicts=<csv>    Restrict the APPLY set to these verdicts
+#                            (e.g. pr-merged,issue-closed). Stale tasks whose
+#                            verdict is not listed (notably pr-closed) stay
+#                            reported (method=keep) but are never closed. Unset
+#                            = every stale verdict is closeable (back-compat).
+#                            UNKNOWN upstream is never stale, so this only ever
+#                            narrows the apply set, never widens it.
 #
 # Output: structured KEY=VALUE block (.claude/rules/structured-script-output.md),
 # one TASK line per linked task, then a summary. Always exit 0 on a clean run so
@@ -38,6 +45,7 @@ rc_project=""
 rc_all=false
 rc_dir="$PWD"
 rc_limit=200
+rc_only_verdicts=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -49,10 +57,22 @@ while [ $# -gt 0 ]; do
     --project-dir) shift; rc_dir="${1:-$PWD}" ;;
     --limit=*) rc_limit="${1#*=}" ;;
     --limit) shift; rc_limit="${1:-200}" ;;
+    --only-verdicts=*) rc_only_verdicts="${1#*=}" ;;
+    --only-verdicts) shift; rc_only_verdicts="${1:-}" ;;
     *) ;;
   esac
   shift
 done
+
+# verdict_allowed <verdict> — is this stale verdict in the apply allowlist?
+# An empty allowlist means every stale verdict is closeable (back-compat).
+verdict_allowed() {
+  [ -z "$rc_only_verdicts" ] && return 0
+  case ",${rc_only_verdicts}," in
+    *",$1,"*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
 
 echo "=== TASK RECONCILE ==="
 
@@ -89,6 +109,7 @@ if [ "$rc_all" != true ] && [ -n "$rc_project" ]; then
 fi
 echo "SCOPE=${rc_project:-ALL}"
 echo "MODE=$([ "$rc_apply" = true ] && echo apply || echo dry-run)"
+echo "ONLY_VERDICTS=${rc_only_verdicts}"
 
 # --- Snapshot linked pending tasks (parallel-safe export | jq) -------------
 linked_json=$(task "${proj_filter[@]}" status:pending export 2>/dev/null \
@@ -153,6 +174,9 @@ while [ "$i" -lt "$task_count" ]; do
   t_uuid=$(printf '%s' "$row" | jq -r '.uuid')
   t_ghid=$(printf '%s' "$row" | jq -r '.ghid // empty')
   t_ghpr=$(printf '%s' "$row" | jq -r '.ghpr // empty')
+  # Project as a single token (taskwarrior projects are dotted slugs, no spaces)
+  # so the per-project breakdown in scheduled-reconcile.sh can group TASK lines.
+  t_project=$(printf '%s' "$row" | jq -r '.project // empty' | tr -d ' ')
 
   verdict="live"
   reason=""
@@ -181,19 +205,26 @@ while [ "$i" -lt "$task_count" ]; do
   method="keep"
   if [ "$verdict" != "live" ]; then
     stale_count=$((stale_count + 1))
-    if is_blocking "$t_uuid"; then
-      method="done"
-      done_uuids+=("$t_uuid")
+    if verdict_allowed "$verdict"; then
+      # In the apply allowlist (or no allowlist) — route to the close path.
+      if is_blocking "$t_uuid"; then
+        method="done"
+        done_uuids+=("$t_uuid")
+      else
+        method="bulk"
+        bulk_uuids+=("$t_uuid")
+      fi
+      reason_for[$t_uuid]="$reason"
     else
-      method="bulk"
-      bulk_uuids+=("$t_uuid")
+      # Stale but outside the allowlist (e.g. pr-closed under
+      # --only-verdicts=pr-merged,issue-closed): report it, never close it.
+      method="keep"
     fi
-    reason_for[$t_uuid]="$reason"
   else
     live_count=$((live_count + 1))
   fi
 
-  echo "TASK id=${t_id} uuid=${t_uuid} ghid=${t_ghid:--} ghpr=${t_ghpr:--} upstream=${upstream} verdict=${verdict} method=${method}"
+  echo "TASK id=${t_id} project=${t_project:--} uuid=${t_uuid} ghid=${t_ghid:--} ghpr=${t_ghpr:--} upstream=${upstream} verdict=${verdict} method=${method}"
   i=$((i + 1))
 done
 
