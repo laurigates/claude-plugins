@@ -5,8 +5,8 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-21
-modified: 2026-06-22
-reviewed: 2026-06-22
+modified: 2026-06-28
+reviewed: 2026-06-28
 ---
 
 # Parallel Agent Dispatch
@@ -89,6 +89,32 @@ corruption — STOP and report it, repair `core.bare`, and never paper over it w
 exported git env. When a subprocess genuinely must run git in a sandbox,
 neutralize inherited env first: `env -u GIT_DIR -u GIT_WORK_TREE git -C "$dir" …`.
 See [REFERENCE.md](REFERENCE.md) "Worktree GIT_DIR-export leak (#1692)".
+
+**Nested-repo workspaces — `isolation: "worktree"` isolates the *outer* repo (#1838).**
+`isolation: "worktree"` resolves against the **session's** git repo, not the
+repo the agent is told to edit. In a nested-repo / portfolio layout (the
+`repos/<org>/<repo>` shape — see `shared-checkout-branch-isolation.md`,
+`concurrent-session-pr-check.md`), where the target files live in an
+**independent nested git repo** untracked by the outer session repo, the harness
+worktrees the **outer** repo. The nested repo isn't present in that worktree, so
+the agent's only path to the target files is the **shared checkout** — which the
+Edit-tool isolation guard correctly blocks. The isolation guarantee silently
+didn't apply to the repo that mattered, and the agent must hand-roll its own
+worktree to make progress.
+
+Detect it before dispatch: the target path's enclosing repo
+(`git -C <target-dir> rev-parse --show-toplevel`) differs from the session repo
+(`git rev-parse --show-toplevel`). When they differ, do **not** assume
+`isolation: "worktree"` isolated the target. Instead, the lead should either:
+
+- **(a)** create the **nested repo's** worktree explicitly off its own
+  `origin/main` and point the agent at that path, or
+- **(b)** brief the agent that its *first* step is
+  `git -C <nested-repo> fetch && git -C <nested-repo> worktree add <path> origin/main`
+  for the **specific nested repo** — never assuming it is already isolated — and
+  to do all work in that dedicated worktree.
+
+See [REFERENCE.md](REFERENCE.md) "Nested-repo worktree isolation (#1838)".
 
 ### 2. Scope Budget (per-agent prompt rules)
 

@@ -408,3 +408,40 @@ tracked separately.
 | Never `export GIT_DIR` / `GIT_WORK_TREE` to make git work in a broken worktree. | The export redirects every later git op (and git-shelling subprocess) at the shared gitdir's common config. |
 | If a subprocess must run git in a sandbox, neutralize inherited env: `env -u GIT_DIR -u GIT_WORK_TREE git -C "$dir" …`. | Stops an inherited `GIT_DIR` from hijacking the sandbox op even when the path is correct. |
 | Repair, don't paper over: `git config core.bare false`; remove junk `[user]`/`[commit]`; verify `git rev-parse --is-bare-repository` = false. | Restores the shared checkout for the main repo and all worktrees. |
+
+## Nested-repo worktree isolation (#1838)
+
+`isolation: "worktree"` worktrees the **session's** git repo — the one whose
+`.git` encloses the cwd — not the repo the agent was told to edit. In a
+nested-repo / portfolio layout the two differ: the session repo is an outer
+`repos`/config repo, but the target files live in an **independent nested git
+repo** (its own `.git`, untracked/gitignored by the outer one).
+
+Observed (laurigates/comfyui-model-gallery#32): a subagent dispatched to fix a
+build script in `comfyui-nodes/comfyui-model-gallery` got a worktree of the
+**outer** `repos` config repo. The nested repo was absent from that worktree, so
+the agent's only path to the target files was the shared checkout — which the
+Edit-tool isolation guard blocked (correctly; that is the point of isolation).
+The agent had to hand-roll a dedicated worktree of the nested repo off
+`origin/main` and do all work there. The isolation guarantee silently did not
+apply to the repo that mattered.
+
+This is harness worktree-resolution behavior; the dispatch-side mitigation is to
+detect the nesting and isolate the **nested** repo explicitly.
+
+### Detection (before dispatch)
+
+```sh
+session_root=$(git rev-parse --show-toplevel)
+target_root=$(git -C "<target-dir>" rev-parse --show-toplevel)
+# If they differ, isolation: "worktree" will NOT isolate <target-dir>.
+[ "$session_root" != "$target_root" ] && echo "nested repo — isolate target explicitly"
+```
+
+### Rules
+
+| Rule | Why |
+|------|-----|
+| When the target's enclosing repo ≠ the session repo, do not assume `isolation: "worktree"` isolated the target. | The harness worktrees the session repo; the nested repo is absent from it. |
+| (a) Create the **nested repo's** worktree explicitly off its own `origin/main` and point the agent at that path; **or** (b) brief the agent to `git -C <nested-repo> fetch && git -C <nested-repo> worktree add <path> origin/main` as its first step. | Both give the agent a real isolated checkout of the repo it edits, instead of the blocked shared checkout. |
+| Have the agent operate inside that nested-repo worktree (prefix `git -C "$WORKTREE"`, per the #1480 cwd-reset rule) and open its PR from there. | Keeps the work isolated and avoids the shared-checkout collisions `shared-checkout-branch-isolation.md` guards against. |

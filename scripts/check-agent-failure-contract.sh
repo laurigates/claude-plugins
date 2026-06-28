@@ -124,6 +124,15 @@ require_marker "$dispatch_skill" "#1692" "the GIT_DIR-export worktree-leak refer
 require_marker "$dispatch_skill" "env -u GIT_DIR" "the env-neutralizing git idiom (#1692 sibling)"
 require_marker "$reference_md" "Worktree GIT_DIR-export leak" "the REFERENCE.md GIT_DIR-export section (#1692 sibling)"
 
+# Regression #1838: in a nested-repo workspace, isolation:"worktree" worktrees
+# the OUTER session repo, not the nested independent repo the agent was told to
+# edit — so the nested repo is absent and the agent must hand-roll its own
+# worktree. The fix documents detecting the nesting and isolating the nested repo
+# explicitly. Assert the SKILL.md carries the #1838 reference and the REFERENCE.md
+# section survives bulk edits.
+require_marker "$dispatch_skill" "#1838" "the nested-repo worktree-isolation reference (#1838)"
+require_marker "$reference_md" "Nested-repo worktree isolation" "the REFERENCE.md nested-repo isolation section (#1838)"
+
 if [ "$errors" -ne 0 ]; then
   echo
   echo "The loud-failure contract (issue #1422) and the hook-thrashing heuristic"
