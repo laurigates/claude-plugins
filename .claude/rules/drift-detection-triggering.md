@@ -45,6 +45,14 @@ finding. The locally-observable sibling (dead-PID claim release) and the
 scheduled-poll sibling are tracked as follow-ups (laurigates/claude-plugins
 #1792, #1793).
 
+The TTL debounce is itself sharpened by a *local* event where one exists: the
+opt-in `on-exit` native hook (issue #1810) knows exactly which linked tasks a
+`task` invocation just touched, so it queues their UUIDs and the probe drains
+that queue (`scripts/drain-ghsync-queue.sh`) to **bust the cache** for the
+affected projects before the stale-check — turning "re-poll everything on a
+timer" into "re-poll only what changed, promptly". The poll itself stays a poll
+(forge state is still remote); the queue just sharpens *when* it fires.
+
 ## Related
 
 - `.claude/rules/agent-coworker-detection.md` — local-event drift signals (the hook/event side)

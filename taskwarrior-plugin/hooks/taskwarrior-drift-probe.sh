@@ -71,6 +71,18 @@ if [ -f "$ENSURE_UDAS" ]; then
     fi
 fi
 
+# --- Drain the on-exit GitHub-sync queue -------------------------------------
+# The on-exit-taskwarrior-plugin native hook (issue #1810) queues the UUIDs of
+# tasks whose GitHub linkage changed. Drain it BEFORE the stale-check below so a
+# busted drift cache forces the affected projects to re-poll in THIS run rather
+# than waiting out the TTL. The drain does no network I/O (it only resolves
+# UUIDs→projects via one batched `task export` and invalidates the matching
+# cache files), so it is cheap to run every session start. Fails open.
+DRAIN_SH="${TW_DRIFT_DRAIN_SCRIPT:-${SCRIPT_DIR}/../scripts/drain-ghsync-queue.sh}"
+if [ "${CLAUDE_TASKWARRIOR_NO_GHSYNC_QUEUE:-0}" != "1" ] && [ -f "$DRAIN_SH" ]; then
+    bash "$DRAIN_SH" >/dev/null 2>&1 || true
+fi
+
 # --- Stale linked-task drift -------------------------------------------------
 # Surface tasks whose linked GitHub issue/PR has closed or merged, so the queue
 # does not silently accumulate stale trackers between manual reconcile sweeps.

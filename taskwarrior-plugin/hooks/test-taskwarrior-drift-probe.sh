@@ -180,6 +180,51 @@ case " $out " in *" udas_missing "*) u=yes ;; *) u=no ;; esac
 check "coexist: stale finding present" "yes" "$s"
 check "coexist: uda finding present" "yes" "$u"
 
+# --- Test 8: the on-exit gh-sync queue is drained before the stale-check ------
+# A fresh cache would normally skip the reconcile poll. The drain busts the
+# cache for the queued task's project FIRST, so the stale-check re-polls in the
+# same run (issue #1810). Inject a drain script that removes the cache file, and
+# confirm a fresh-cache run still re-invokes reconcile.
+FAKE_DRAIN="${WORK}/fake-drain.sh"
+cat > "$FAKE_DRAIN" <<'SH'
+#!/usr/bin/env bash
+# Stand-in drain: bust the project cache so the stale-check re-polls this run.
+: > "${DRAIN_RAN_MARKER:-/dev/null}"
+rm -f "${CLAUDE_TASKWARRIOR_DRIFT_CACHE_DIR}/testproj.stale" 2>/dev/null || true
+SH
+chmod +x "$FAKE_DRAIN"
+
+run_probe_drain() {
+    rm -rf "${SIGNALS:?}"/* 2>/dev/null || true
+    printf '{"session_id":"testsess","cwd":"%s"}' "$PROJ" \
+        | HOME="$FAKE_HOME" \
+          CLAUDE_DRIFT_SIGNALS_DIR="$SIGNALS" \
+          CLAUDE_TASKWARRIOR_DRIFT_CACHE_DIR="$CACHE" \
+          TW_DRIFT_RECONCILE_SCRIPT="$FAKE_RECONCILE" \
+          TW_DRIFT_RESOLVE_SCRIPT="$FAKE_RESOLVE" \
+          TW_DRIFT_ENSURE_UDAS="$FAKE_UDAS" \
+          TW_DRIFT_DRAIN_SCRIPT="$FAKE_DRAIN" \
+          bash "$PROBE" >/dev/null 2>&1
+}
+
+seed_cache "$(now)" 0          # fresh cache → would normally skip reconcile
+DRAIN_RAN="${WORK}/drainran"; rm -f "$DRAIN_RAN"
+RECONCILE_RAN="${WORK}/ran8"; rm -f "$RECONCILE_RAN"
+DRAIN_RAN_MARKER="$DRAIN_RAN" RECONCILE_RAN_MARKER="$RECONCILE_RAN" \
+    FAKE_STALE=1 FAKE_UDAS_MISSING=0 run_probe_drain
+check "drain runs at session start" "ran" \
+    "$([ -f "$DRAIN_RAN" ] && echo ran || echo no)"
+check "drain busting the cache forces reconcile despite a fresh cache" "ran" \
+    "$([ -f "$RECONCILE_RAN" ] && echo ran || echo no)"
+
+# Opt-out suppresses the drain.
+seed_cache "$(now)" 0
+DRAIN_RAN="${WORK}/drainran2"; rm -f "$DRAIN_RAN"
+CLAUDE_TASKWARRIOR_NO_GHSYNC_QUEUE=1 DRAIN_RAN_MARKER="$DRAIN_RAN" \
+    RECONCILE_RAN_MARKER="${WORK}/ran8b" FAKE_STALE=1 FAKE_UDAS_MISSING=0 run_probe_drain
+check "opt-out env suppresses the drain" "skipped" \
+    "$([ -f "$DRAIN_RAN" ] && echo ran || echo skipped)"
+
 # --- Summary -----------------------------------------------------------------
 echo "=== TASKWARRIOR DRIFT PROBE TEST ==="
 echo "PASS=${pass}"

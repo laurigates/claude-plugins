@@ -28,7 +28,7 @@ Both systems stay in sync via UDAs (`ghid`, `ghpr`) and tags (`+gh`, `+pr_ready`
 | `/taskwarrior:task-status` | Read-only consolidated queue + drift report scoped to the current project; surfaces in-flight claims, stale claims (>N hours), and `+OVERDUE` tasks; folds in `gh pr status` when GitHub is present |
 | `/taskwarrior:task-coordinate` | Surface the next N **`+READY` and unclaimed** tasks (in the current project) sorted by urgency that do not contend on an exclusive lock — input for parallel / wave dispatch. Uses taskwarrior's native `+READY` set so `wait:`-deferred and future-`scheduled:` work never appears |
 | `/taskwarrior:task-reconcile` | Close tasks whose linked GitHub issue/PR has closed or merged, so the queue does not accumulate stale trackers. Dry-run preview by default; `--apply` closes (bulk `task import` for leaf tasks, per-task `task done` for tasks that block others) |
-| `/taskwarrior:install-native-hooks` | **Opt-in** installer for taskwarrior native `on-add` / `on-modify` hooks that auto-stamp `project` and warn on mis-parsed hyphenated tags. Writes to the user's global `<data>/hooks/` only on explicit invocation |
+| `/taskwarrior:install-native-hooks` | **Opt-in** installer for taskwarrior native `on-add` / `on-modify` / `on-exit` hooks that auto-stamp `project`, enforce claim identity, batch GitHub sync, and maintain coworker markers. Writes to the user's global `<data>/hooks/` only on explicit invocation |
 
 ### Identity / claim lifecycle
 
@@ -160,6 +160,14 @@ round-trips behind a per-project TTL cache (default 4h) — most session starts 
 the cache and cost nothing. It is **read-only** (never closes a task) and never
 warns when upstream state can't be read.
 
+When the opt-in `on-exit` native hook is installed, it queues the UUID of every
+task whose `ghid`/`ghpr` linkage changed to `<data>/claude-plugin-ghsync.queue`.
+The probe **drains** that queue (`scripts/drain-ghsync-queue.sh`) before its
+stale-check: the drain resolves the queued UUIDs to their projects in one batched
+`task export` and busts those projects' TTL cache, so the stale-check re-polls
+them promptly in the same run instead of waiting out the TTL. The drain does no
+network I/O itself and fails open on a stale/corrupt queue.
+
 | Env var | Default | Effect |
 |---------|---------|--------|
 | `CLAUDE_TASKWARRIOR_DRIFT_NO_RECONCILE` | unset | Set `1` to skip the `gh` poll entirely (UDA check still runs) |
@@ -194,6 +202,7 @@ from skill bodies as `${CLAUDE_SKILL_DIR}/../../scripts/<name>.sh`:
 | `ensure-udas.sh` | `task-add`, `task-claim`, drift-probe hook | Single source of the 10-UDA set; idempotent install + `--check` |
 | `resolve-project.sh` | `task-add`, `task-coordinate`, `task-status`, `task-reconcile` | The `--project` > `--all` > git-toplevel > cwd ladder |
 | `detect-gh-mode.sh` | GitHub-mode skills | Remote + `gh auth` probe (no stderr-emitting Context probes) |
+| `drain-ghsync-queue.sh` | drift-probe hook | Drains the `on-exit` gh-sync queue: resolves queued UUIDs → projects and busts their drift TTL cache (no network; fails open) |
 
 ## Flow
 
