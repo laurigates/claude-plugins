@@ -112,7 +112,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout failed branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.3.1
         with:
           ref: ${{ github.event.workflow_run.head_branch }}
           fetch-depth: 0
@@ -137,7 +137,7 @@ jobs:
 
       - name: Analyze and fix with Claude
         if: steps.context.outputs.recent_fix_count == '0'
-        uses: anthropics/claude-code-action@v1
+        uses: anthropics/claude-code-action@v1.0.157
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           direct_prompt: |

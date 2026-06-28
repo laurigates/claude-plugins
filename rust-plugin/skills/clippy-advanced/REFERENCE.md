@@ -231,13 +231,13 @@ jobs:
   clippy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.3.1
 
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
 
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@v2.9.1
 
       - name: Run clippy
         run: |
@@ -262,15 +262,15 @@ jobs:
   clippy-review:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.3.1
 
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
 
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@v2.9.1
 
-      - uses: giraffate/clippy-action@v1
+      - uses: giraffate/clippy-action@v1.0.1
         with:
           reporter: 'github-pr-review'
           github_token: ${{ secrets.GITHUB_TOKEN }}

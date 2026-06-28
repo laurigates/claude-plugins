@@ -327,9 +327,9 @@ jobs:
     timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.3
 
-      - uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@v2.2.0
         with:
           bun-version: latest
 
@@ -343,7 +343,7 @@ jobs:
         run: bunx playwright test
 
       - name: Upload test results
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v7.0.1
         if: always()
         with:
           name: playwright-report
@@ -351,7 +351,7 @@ jobs:
           retention-days: 30
 
       - name: Upload screenshots
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v7.0.1
         if: failure()
         with:
           name: test-screenshots
@@ -362,9 +362,9 @@ jobs:
     timeout-minutes: 30
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.3
 
-      - uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@v2.2.0
         with:
           bun-version: latest
 
@@ -378,7 +378,7 @@ jobs:
         run: bunx playwright test --project=a11y
 
       - name: Upload a11y report
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v7.0.1
         if: always()
         with:
           name: a11y-report

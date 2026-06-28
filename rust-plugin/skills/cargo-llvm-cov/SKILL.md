@@ -184,14 +184,14 @@ jobs:
   coverage:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.3.1
 
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: llvm-tools-preview
 
       - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@v2
+        uses: taiki-e/install-action@v2.82.4
         with:
           tool: cargo-llvm-cov
 
@@ -199,7 +199,7 @@ jobs:
         run: cargo llvm-cov --all-features --lcov --output-path lcov.info
 
       - name: Upload to codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v4.6.0
         with:
           files: lcov.info
           fail_ci_if_error: true
@@ -218,14 +218,14 @@ jobs:
   coverage:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.3.1
 
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: llvm-tools-preview
 
       - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@v2
+        uses: taiki-e/install-action@v2.82.4
         with:
           tool: cargo-llvm-cov
 
@@ -233,7 +233,7 @@ jobs:
         run: cargo llvm-cov --all-features --lcov --output-path lcov.info
 
       - name: Upload to Coveralls
-        uses: coverallsapp/github-action@v2
+        uses: coverallsapp/github-action@v2.3.6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: lcov.info
@@ -301,21 +301,21 @@ jobs:
   coverage:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.3.1
 
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: llvm-tools-preview
 
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@v2.9.1
 
       - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@v2
+        uses: taiki-e/install-action@v2.82.4
         with:
           tool: cargo-llvm-cov
 
       - name: Install cargo-nextest
-        uses: taiki-e/install-action@v2
+        uses: taiki-e/install-action@v2.82.4
         with:
           tool: nextest
 
@@ -328,14 +328,14 @@ jobs:
             --html
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v4.6.0
         with:
           files: lcov.info
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload HTML report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.6.2
         if: always()
         with:
           name: coverage-report
@@ -400,7 +400,7 @@ cargo llvm-cov --workspace --doc --html
 
 5. **Cache coverage dependencies in CI**:
    ```yaml
-   - uses: Swatinem/rust-cache@v2
+   - uses: Swatinem/rust-cache@v2.9.1
    ```
 
 6. **Use branch coverage on nightly for critical code**:

@@ -403,7 +403,7 @@ kubectl --context=my-context debug mypod -it \
 ### Building Custom Debug Image
 
 ```dockerfile
-FROM alpine:3.19
+FROM alpine:3.24
 
 # Common debugging tools
 RUN apk add --no-cache \

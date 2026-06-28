@@ -541,10 +541,10 @@ jobs:
         python-version: ["3.10", "3.11", "3.12"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.3.1
 
       - name: Install UV
-        uses: astral-sh/setup-uv@v1
+        uses: astral-sh/setup-uv@v1.0.7
 
       - name: Install Python ${{ matrix.python-version }}
         run: uv python install ${{ matrix.python-version }}
@@ -815,7 +815,7 @@ uv python find 3.11
 
 ```yaml
 - name: Cache Python installations
-  uses: actions/cache@v3
+  uses: actions/cache@v3.5.0
   with:
     path: ~/.local/share/uv/python
     key: uv-python-${{ runner.os }}-${{ hashFiles('.python-version') }}

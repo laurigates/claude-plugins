@@ -118,7 +118,7 @@ args = ["server"]
 # .pre-commit-config.yaml
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.0
+    rev: v0.15.20
     hooks:
       - id: ruff-check
         args: [--fix]
@@ -129,7 +129,7 @@ repos:
 ```yaml
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.0
+    rev: v0.15.20
     hooks:
       - id: ruff-check
         name: Ruff linter
@@ -163,8 +163,8 @@ jobs:
   ruff:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/ruff-action@v3
+      - uses: actions/checkout@v4.3.1
+      - uses: astral-sh/ruff-action@v3.6.1
         with:
           args: 'check --output-format github'
           changed-files: 'true'   # lint only changed files
@@ -176,14 +176,14 @@ jobs:
   ruff-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.3.1
       - run: pip install ruff
       - run: ruff check --output-format github
 
   ruff-format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.3.1
       - run: pip install ruff
       - run: ruff format --check --diff
 ```
@@ -217,7 +217,7 @@ version: 2.1
 jobs:
   lint:
     docker:
-      - image: cimg/python:3.11
+      - image: cimg/python:3.14
     steps:
       - checkout
       - run: pip install ruff
@@ -327,13 +327,13 @@ commands = ruff format
 ### Dockerfile
 
 ```dockerfile
-FROM python:3.11-slim as development
+FROM python:3.14-slim as development
 RUN pip install --no-cache-dir ruff
 COPY . /app
 WORKDIR /app
 RUN ruff check && ruff format --check
 
-FROM python:3.11-slim as production
+FROM python:3.14-slim as production
 # ... production setup
 ```
 

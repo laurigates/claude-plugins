@@ -384,8 +384,8 @@ jobs:
   unit-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: oven-sh/setup-bun@v2
+      - uses: actions/checkout@v6.0.3
+      - uses: oven-sh/setup-bun@v2.2.0
       - run: bun install --frozen-lockfile
       - run: bun test
 
@@ -419,9 +419,9 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.3
 
-      - uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@v2.2.0
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -438,7 +438,7 @@ jobs:
           REDIS_URL: redis://localhost:6379
 
       - name: Upload test results
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v7.0.1
         if: always()
         with:
           name: integration-test-results

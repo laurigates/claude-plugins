@@ -592,9 +592,9 @@ jobs:
   consumer-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.3.1
 
-      - uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@v2.2.0
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -603,7 +603,7 @@ jobs:
         run: bun run test:contract:consumer
 
       - name: Upload pacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: pacts
           path: pacts/
@@ -622,15 +622,15 @@ jobs:
           - 5432:5432
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.3.1
 
-      - uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@v2.2.0
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
       - name: Download pacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v4.3.0
         with:
           name: pacts
           path: pacts/
@@ -643,7 +643,7 @@ jobs:
   openapi-validation:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.3.1
         with:
           fetch-depth: 0
 
@@ -667,10 +667,10 @@ jobs:
     needs: [consumer-tests, provider-tests]
     if: github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.3.1
 
       - name: Download pacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v4.3.0
         with:
           name: pacts
           path: pacts/
