@@ -206,19 +206,19 @@ os.environ['WERKZEUG_DEBUG_PIN'] = 'off'  # Disable PIN in development
 # .pre-commit-config.yaml
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.9
+    rev: v0.15.20
     hooks:
       - id: ruff
         args: [--fix]
       - id: ruff-format
 
   - repo: https://github.com/astral-sh/ty
-    rev: v0.0.10
+    rev: 0.0.54
     hooks:
       - id: ty
 
   - repo: https://github.com/PyCQA/bandit
-    rev: 1.7.5
+    rev: 1.9.4
     hooks:
       - id: bandit
         args: ["-c", "pyproject.toml"]
@@ -240,10 +240,10 @@ jobs:
         python-version: ["3.10", "3.11", "3.12"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.3.1
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@v3.2.4
         with:
           version: "latest"
 
@@ -263,7 +263,7 @@ jobs:
         run: uv run pytest --cov --cov-report=xml
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v3.1.6
 ```
 
 ## Migration from Poetry
