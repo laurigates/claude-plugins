@@ -398,6 +398,103 @@ export function clampToTargets(name: string): boolean {
 """
 
 # --------------------------------------------------------------------------- #
+# TypeScript source — standalone-modal variant (backend pack, no target widget)
+# --------------------------------------------------------------------------- #
+INDEX_TS_STANDALONE = """\
+// @@DISPLAY@@ — ComfyUI frontend extension (standalone-modal pack).
+//
+// TypeScript source in `src/`, built to ESM via `bun build` and emitted to
+// `web/dist/` (served at /extensions/@@NAME@@/index.js — the pack directory
+// name IS the URL segment). Do not rename the pack dir without syncing
+// EXT_NAME below (used for log prefixes and any /@@PY_MODULE@@/ fetches).
+// See ADR-0001.
+//
+// Pattern ("the standalone vein"): this pack has NO target widget to intercept.
+// Its UI is a standalone HTML modal opened from a top-menu command / action-bar
+// button — a node manager, dashboard, gallery-actions panel, etc. — usually
+// backed by aiohttp endpoints under /@@PY_MODULE@@/. There is no
+// TARGET_WIDGETS / enhanceNode / widget.onPointerDown wrapping here: register a
+// command, open the modal shell, fill its body. Additive + mobile-first.
+//
+// The shared modal primitives come from @@MODAL_KIT_PKG@@. They are NOT copied
+// into this pack — `bun build` INLINES the imported code into web/dist. To add
+// fuzzy search to the modal, import the matcher from the same package:
+//   import { fuzzyRank, highlightMatches } from "@@MODAL_KIT_PKG@@";
+//   fuzzyRank(query, [primaryField, ...otherFields]) -> { score, primaryMatches } | null
+import { openModalShell } from "@@MODAL_KIT_PKG@@";
+// ComfyUI serves its frontend API at runtime from `/scripts/app.js`. The
+// emitted import string stays `/scripts/app.js` (bun's `--external '/scripts/*'`
+// keeps it unbundled); the type is supplied via a `paths` mapping in
+// tsconfig.json that points the import at `src/comfyui-shims.d.ts`. See ADR-0001.
+import { app } from "/scripts/app.js";
+
+const EXT_NAME = "@@NAME@@";
+
+// ============================================================
+// Modal
+// ============================================================
+
+// CONTRACT: openModalShell has NO `body` option — it returns a controller
+// ({ bodyEl, close, setBusy, setStatus, ... }) with an EMPTY bodyEl that you
+// fill AFTER opening. Passing `body:` is silently ignored and the dialog
+// renders empty (a bug that passes green unit tests — only a jsdom/browser
+// check catches it). Always: open, then modal.bodyEl.appendChild(...). The
+// jsdom smoke test in tests/js/index.test.js guards exactly this.
+//
+// Exported so the Vitest suite can mount it under jsdom and assert the body is
+// populated. Replace the placeholder body with the real panel.
+export function openShell() {
+  const modal = openModalShell({
+    title: "@@DISPLAY@@",
+    onClose: () => {},
+  });
+
+  // TODO: build the real modal body. This skeleton proves the command ->
+  // modal-shell wiring works end to end. Fetch your data (e.g. from
+  // /@@PY_MODULE@@/list on the backend) and render it here; use fuzzyRank for
+  // search.
+  const body = document.createElement("div");
+  body.className = "@@SHORT@@-body";
+  body.textContent = "@@DISPLAY@@: standalone modal — implement me.";
+  modal.bodyEl.appendChild(body);
+
+  return modal;
+}
+
+// ============================================================
+// Wiring — register a command, surface it on the menu / action bar
+// ============================================================
+
+app.registerExtension({
+  name: "comfy.@@SHORT@@",
+  // The command the modal opens from. ComfyUI surfaces registered commands in
+  // the command palette; bind a keybinding, place it on the top menu via
+  // menuCommands below, or add an action-bar button that invokes this id.
+  commands: [
+    {
+      id: "@@SHORT@@.open",
+      label: "Open @@DISPLAY@@",
+      function: () => {
+        try {
+          openShell();
+        } catch (e) {
+          console.warn(`[${EXT_NAME}] failed to open modal`, e);
+        }
+      },
+    },
+  ],
+  // Place the command on the top menu bar. Tune the path to taste; an action-bar
+  // button would reference the same `@@SHORT@@.open` command id.
+  menuCommands: [
+    {
+      path: ["Extensions", "@@DISPLAY@@"],
+      commands: ["@@SHORT@@.open"],
+    },
+  ],
+});
+"""
+
+# --------------------------------------------------------------------------- #
 # TypeScript source — gesture variant (no modal-kit dependency)
 # --------------------------------------------------------------------------- #
 INDEX_TS_GESTURE = """\
@@ -977,6 +1074,30 @@ describe("@@NAME@@ harness", () => {
   it("recognises a target widget name and rejects a non-target", () => {
     expect(clampToTargets("@@FIRST_WIDGET@@")).toBe(@@FIRST_WIDGET_EXPECT@@);
     expect(clampToTargets("definitely-not-a-target-widget")).toBe(false);
+  });
+});
+"""
+
+JS_TEST_STANDALONE = """\
+// @vitest-environment jsdom
+import { describe, expect, it } from "vitest";
+// Vitest transpiles TypeScript, so the test imports the `.ts` source directly
+// (no build step). Importing the module also confirms the registerExtension
+// wiring loads cleanly against tests/js/__mocks__/app.js.
+import { openShell } from "../../src/index.ts";
+
+// jsdom modal-mount smoke test so `bun run test` is green from the first commit
+// AND guards the empty-modal trap: openModalShell ignores a `body:` option, so
+// the body MUST be appended to modal.bodyEl after opening. This test mounts the
+// modal under jsdom and asserts the body is actually populated — a regression
+// that reverts to passing `body:` (leaving bodyEl empty) fails here. Replace
+// with real tests of the panel's contents as they land.
+describe("@@NAME@@ standalone modal", () => {
+  it("mounts content into the modal body (not an empty dialog)", () => {
+    const modal = openShell();
+    expect(modal.bodyEl.children.length).toBeGreaterThan(0);
+    expect(modal.bodyEl.textContent).toContain("@@DISPLAY@@");
+    modal.close();
   });
 });
 """
@@ -1667,6 +1788,12 @@ def build_file_map(
     backend = variant == "backend"
     gesture = variant == "gesture"
     modal = not gesture  # frontend or backend → consumes the kit
+    # No-widgets heuristic: a modal variant with no --widgets has nothing to
+    # intercept, so the per-widget vein is provably inapplicable. Emit a
+    # standalone-modal skeleton (a command/action-bar button that opens an
+    # HTML modal) instead of the widget-intercept one. Still a modal variant —
+    # it depends on the modal kit exactly like the widget-intercept form.
+    standalone = modal and not widgets
 
     # Shared pinned versions injected into every templated config.
     ctx["BIOME_VERSION"] = BIOME_VERSION
@@ -1813,6 +1940,39 @@ def build_file_map(
             "- ComfyUI: modern Vue frontend (`comfyui-frontend-package >= 1.40`) for\n"
             "  the canvas pointer-event model (`app.canvas`, `ds.scale`/`ds.offset`)."
         )
+    elif standalone:
+        ctx["DEP_FLOOR_NOTE"] = "Floor tied to the command / extension API."
+        ctx["WHAT_DESC"] = "the standalone modal it opens and the command that opens it"
+        ctx["VEIN"] = (
+            "A mobile-first ComfyUI usability pack in the *standalone-modal* vein: "
+            "this pack has no target widget to intercept. A frontend extension "
+            "registers a command (surfaced on the top menu / action bar) that opens "
+            "a touch-friendly HTML modal — a node manager, dashboard, or "
+            "gallery-actions panel, typically backed by aiohttp endpoints under "
+            f"`/{ctx['PY_MODULE']}/`. The modal is **additive** (a no-op if the "
+            "frontend API is absent) and **touch-first** (16px inputs to avoid iOS "
+            "zoom, big tap targets, momentum scroll). The modal primitives come from "
+            f"`{MODAL_KIT_PKG}` (`openModalShell` / `fuzzyRank` / `highlightMatches`), "
+            "imported and inlined by `bun build` — not copied into the pack."
+        )
+        ctx["EXT_ROW_DESC"] = (
+            "The extension: a command that opens a standalone modal "
+            "(consumes the modal kit)."
+        )
+        ctx["HOOK_RULE"] = (
+            "**Fill the modal body AFTER opening.** `openModalShell` returns a "
+            "controller with an EMPTY `bodyEl`; a `body:` option is silently "
+            "ignored. Always `modal.bodyEl.appendChild(...)` after opening — the "
+            "jsdom smoke test in `tests/js` guards this empty-modal trap."
+        )
+        ctx["FAMILY_BLURB"] = (
+            "> touch-friendly HTML modals that replace clunky native LiteGraph\n"
+            "> interactions, additive and non-clobbering."
+        )
+        ctx["COMPAT_BULLET"] = (
+            "- ComfyUI: modern Vue frontend (`comfyui-frontend-package >= 1.40`) for\n"
+            "  the command / extension registration API."
+        )
     else:
         ctx["DEP_FLOOR_NOTE"] = "Floor tied to widget.onPointerDown availability."
         ctx["WHAT_DESC"] = "the widgets it enhances and the modal it opens"
@@ -1869,11 +2029,23 @@ def build_file_map(
         ".github/workflows/release-please.yml": RELEASE_PLEASE_YML,
         ".github/workflows/renovate.yml": RENOVATE_YML,
         "docs/blueprint/adrs/0001-adopt-typescript-bun-build.md": ADR_0001,
-        "src/index.ts": INDEX_TS_GESTURE if gesture else INDEX_TS_MODAL,
+        "src/index.ts": (
+            INDEX_TS_GESTURE
+            if gesture
+            else INDEX_TS_STANDALONE
+            if standalone
+            else INDEX_TS_MODAL
+        ),
         "src/comfyui-shims.d.ts": COMFYUI_SHIMS,
         "tests/test_init.py": TEST_INIT,
         "tests/js/__mocks__/app.js": APP_MOCK,
-        "tests/js/index.test.js": JS_TEST_GESTURE if gesture else JS_TEST_MODAL,
+        "tests/js/index.test.js": (
+            JS_TEST_GESTURE
+            if gesture
+            else JS_TEST_STANDALONE
+            if standalone
+            else JS_TEST_MODAL
+        ),
     }
     if backend:
         files["__init__.py"] = INIT_BACKEND
@@ -1955,6 +2127,9 @@ def main() -> int:
             "  - tune the pinch layer in src/index.ts "
             "(selectedNodes/nodeScreenRect/scaledSize; groups + affordance TODOs)\n"
             if args.variant == "gesture"
+            else "  - implement the standalone modal in src/index.ts (openShell fills "
+            "modal.bodyEl; wire the command to the action bar)\n"
+            if not widgets
             else "  - implement the modal in src/index.ts (TARGET_WIDGETS + openPicker; "
             "import fuzzyRank from @laurigates/comfy-modal-kit for search)\n"
         )

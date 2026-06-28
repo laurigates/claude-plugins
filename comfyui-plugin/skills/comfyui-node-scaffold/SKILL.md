@@ -67,11 +67,24 @@ inputs, big tap targets, momentum scroll). The modal primitives come from
 | `backend` | Needs to read disk / serve thumbnails / add a node (model thumbnails, file listings). | Adds `<module>.py` (node + aiohttp endpoints, ComfyUI-bundled libs only) + a `tests/conftest.py` that stubs aiohttp/server so pytest is green. Like gallery-loader. | **imports** the kit |
 | `gesture` | The UX is a **canvas interaction**, not a widget — pinch/drag/long-press on nodes or groups (resize, move, region-box). | Empty `NODE_CLASS_MAPPINGS`; a canvas pointer layer in `src/index.ts` with exported pure geometry helpers. Like touch-resize. | **no kit** |
 
-**Decision rule:** `frontend` for a per-widget modal; `gesture` when the
-interaction is on the canvas/node frame itself (no widget to hook); `backend`
-only when the feature genuinely needs the server to read files or serve data. A
-non-bundled Python dependency is never allowed — if you reach for one, it
-belongs in a separate companion pack.
+**`--widgets` controls the frontend shape (no-widgets heuristic).** A `frontend`
+or `backend` variant scaffolded **without** `--widgets` has no widget to
+intercept, so it emits a **standalone-modal** `src/index.ts` instead of the
+per-widget intercept vein: `registerExtension` + a `commands`/`menuCommands`
+entry whose command opens an `openModalShell(...)` stub via an exported
+`openShell()` — no `TARGET_WIDGETS` / `openPicker` / `enhanceNode` /
+`widget.onPointerDown`. This is the right shape for a node/extension manager,
+dashboard, or gallery-actions panel opened from the action bar (e.g.
+`comfyui-touch-manager --variant backend`). It ships a jsdom modal-mount smoke
+test (asserts `modal.bodyEl` is populated) — the empty-modal trap is exactly
+where standalone bugs hide. Pass `--widgets` to get the widget-intercept stub.
+
+**Decision rule:** `frontend` for a per-widget modal (pass `--widgets`);
+`frontend`/`backend` with **no** `--widgets` for a standalone modal opened from
+the action bar; `gesture` when the interaction is on the canvas/node frame
+itself (no widget to hook); add `backend` only when the feature genuinely needs
+the server to read files or serve data. A non-bundled Python dependency is never
+allowed — if you reach for one, it belongs in a separate companion pack.
 
 The `gesture` variant intercepts the **canvas pointer stream** (capture-phase
 `pointerdown`/`move`/`up` on `app.canvas.canvas`), hit-tests against selected
