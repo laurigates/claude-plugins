@@ -1,0 +1,169 @@
+#!/usr/bin/env bash
+# on-exit-taskwarrior-plugin — taskwarrior NATIVE hook (lives in <data>/hooks/).
+#
+# Installed opt-in by /taskwarrior:install-native-hooks. Runs ONCE when the task
+# command exits, AFTER all other processing. Receives the WHOLE changeset on
+# stdin: one line of JSON per task added or modified by this `task` invocation
+# (zero lines when nothing changed). Its stdout is advisory feedback only and its
+# exit code is ignored — but it still always exits 0 and never errors, so a
+# broken hook can never disrupt a `task` command.
+#
+# on-exit is the only native hook with whole-changeset visibility, which buys two
+# things on-add / on-modify can't:
+#
+#   #4 BATCH GH-SYNC QUEUE — for each touched task carrying a GitHub linkage UDA
+#      (`ghid` issue or `ghpr` PR), append its UUID to a queue file under the
+#      taskwarrior data dir. A SessionStart drain (taskwarrior-drift-probe.sh →
+#      drain-ghsync-queue.sh) collects the queued UUIDs in one batched `task
+#      export`, busts the drift-probe TTL cache for the affected projects so the
+#      next stale-check re-polls them in one batched `gh` pass, and clears the
+#      queue. Tasks NOT touched this invocation are never queued — that is the
+#      win over the old per-session poll of every linked task.
+#
+#      on-exit has no before-image (unlike on-modify's original+modified pair),
+#      so "linkage changed" is approximated as "a touched task carries a linkage
+#      UDA". This over-approximates safely: the drain dedups and the batched poll
+#      is cheap; a task with no `ghid`/`ghpr` is never queued.
+#
+#   #5 COWORKER-MARKER UPKEEP — task-claim writes the git-side session marker
+#      (<git-dir>/.claude-session-<pid>) and task-release/task-done drop it, but a
+#      raw `task start`/`stop` that bypasses those skills leaves the marker out of
+#      sync. on-exit reconciles it for any touched task that carries the identity
+#      UDAs (`pid` numeric + `worktree`): a now-+ACTIVE task with no marker gets
+#      one written; a now-inactive task whose stale marker lingers gets it
+#      removed. It NEVER clobbers a skill-written marker (write is skip-if-exists,
+#      so task-claim's marker + baseline snapshots are untouched) and never
+#      removes a marker still needed by another active claim in this changeset.
+#
+# Identity note: a taskwarrior subprocess has no live agent PID of its own (its
+# own PID dies the moment `task` exits, so a marker keyed by it would always read
+# stale to /git:coworker-check's `kill -0` liveness check). The agent's real PID
+# lives in the task's `pid` UDA, recorded by /taskwarrior:task-claim. So marker
+# upkeep covers identity-bearing claims (any task ever claimed, or otherwise
+# stamped with `pid`); a pure raw `task start` on a never-claimed task carries no
+# `pid` (on-modify stamps agent/host/branch/worktree but deliberately not pid),
+# so there is no recognizable marker to maintain and the hook leaves it alone.
+#
+# CONSTRAINTS (inherited from the sibling templates):
+#   - Fail OPEN: any jq/JSON/IO error is swallowed; the hook always exits 0.
+#   - Global: fires for every project; repo-specific marker logic is gated on a
+#     resolvable `worktree` + git dir, so it no-ops outside a known checkout.
+#   - `task import` does NOT run native hooks, so bulk reconcile is unaffected.
+#   - The queue file is the only net-new state; a stale/corrupt queue is handled
+#     by the drain (it filters to UUID-shaped tokens and always clears the file).
+#
+# Tunables (read from the environment; native hooks inherit the caller's shell):
+#   CLAUDE_TASKWARRIOR_GHSYNC_QUEUE   override the queue-file path (default
+#                                     <data.location>/claude-plugin-ghsync.queue)
+#   CLAUDE_TASKWARRIOR_NO_GHSYNC_QUEUE  set to 1 to disable queueing entirely
+#   CLAUDE_TASKWARRIOR_NO_MARKER_UPKEEP set to 1 to disable marker upkeep entirely
+
+set -uo pipefail
+
+# Fail open if jq is unavailable — drain queueing and marker upkeep both need it.
+if ! command -v jq >/dev/null 2>&1; then
+  exit 0
+fi
+
+# --- Resolve the queue path --------------------------------------------------
+# The hook lives at <data>/hooks/on-exit-taskwarrior-plugin, so <data> is the
+# parent of its own directory. An env override wins (used by the tests and by a
+# non-standard data layout).
+queue_file="${CLAUDE_TASKWARRIOR_GHSYNC_QUEUE:-}"
+if [ -z "$queue_file" ]; then
+  self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd || true)"
+  data_dir=""
+  [ -n "$self_dir" ] && data_dir="$(cd "$self_dir/.." 2>/dev/null && pwd || true)"
+  [ -n "$data_dir" ] && queue_file="${data_dir}/claude-plugin-ghsync.queue"
+fi
+
+# --- Read the whole changeset ------------------------------------------------
+changeset=()
+while IFS= read -r line; do
+  [ -n "$line" ] && changeset+=("$line")
+done
+
+# Nothing changed → nothing to do.
+[ "${#changeset[@]}" -eq 0 ] && exit 0
+
+# First pass: collect the set of "<pid>|<worktree>" keys that remain +ACTIVE in
+# this changeset, so the marker-removal pass never drops a marker still needed by
+# another active claim sharing the same pid+worktree.
+active_keys=$'\n'
+for line in "${changeset[@]}"; do
+  ak_start=$(printf '%s' "$line" | jq -r '.start // ""' 2>/dev/null || true)
+  [ -n "$ak_start" ] || continue
+  ak_pid=$(printf '%s' "$line" | jq -r '.pid // ""' 2>/dev/null || true)
+  ak_wt=$(printf '%s' "$line" | jq -r '.worktree // ""' 2>/dev/null || true)
+  [ -n "$ak_pid" ] && [ -n "$ak_wt" ] && active_keys+="${ak_pid}|${ak_wt}"$'\n'
+done
+
+queue_disabled="${CLAUDE_TASKWARRIOR_NO_GHSYNC_QUEUE:-0}"
+marker_disabled="${CLAUDE_TASKWARRIOR_NO_MARKER_UPKEEP:-0}"
+feedback=()
+queued=0
+
+for line in "${changeset[@]}"; do
+  uuid=$(printf '%s' "$line" | jq -r '.uuid // ""' 2>/dev/null || true)
+
+  # --- #4: queue tasks carrying a GitHub linkage UDA -------------------------
+  if [ "$queue_disabled" != "1" ] && [ -n "$queue_file" ] && [ -n "$uuid" ]; then
+    has_link=$(printf '%s' "$line" \
+      | jq -r 'if ((.ghid // "") != "" and (.ghid != null)) or ((.ghpr // "") != "" and (.ghpr != null)) then "yes" else "no" end' \
+      2>/dev/null || true)
+    if [ "$has_link" = "yes" ]; then
+      # Best-effort, append-only; a failed write must not abort the hook.
+      if printf '%s\n' "$uuid" >> "$queue_file" 2>/dev/null; then
+        queued=$((queued + 1))
+      fi
+    fi
+  fi
+
+  # --- #5: coworker-marker upkeep --------------------------------------------
+  [ "$marker_disabled" = "1" ] && continue
+
+  pid=$(printf '%s' "$line" | jq -r '.pid // ""' 2>/dev/null || true)
+  worktree=$(printf '%s' "$line" | jq -r '.worktree // ""' 2>/dev/null || true)
+  # Gate repo-specific logic on a resolvable identity + checkout.
+  [ -n "$worktree" ] || continue
+  case "$pid" in ''|*[!0-9]*) continue ;; esac
+  [ -d "$worktree" ] || continue
+
+  git_dir=$(git -C "$worktree" rev-parse --absolute-git-dir 2>/dev/null || true)
+  [ -n "$git_dir" ] && [ -d "$git_dir" ] || continue
+  marker="${git_dir}/.claude-session-${pid}"
+
+  start=$(printf '%s' "$line" | jq -r '.start // ""' 2>/dev/null || true)
+
+  if [ -n "$start" ]; then
+    # Now +ACTIVE: ensure a marker exists. Skip-if-exists so a skill-written
+    # marker (and its baseline snapshots) is never clobbered.
+    if [ ! -e "$marker" ]; then
+      if printf 'pid=%s\nstarted=%s\nhost=%s\ncwd=%s\nsource=taskwarrior-on-exit\n' \
+        "$pid" "$(date -Iseconds 2>/dev/null || true)" "$(hostname 2>/dev/null || true)" \
+        "$worktree" > "$marker" 2>/dev/null; then
+        feedback+=("taskwarrior-plugin: wrote coworker session marker for a raw +ACTIVE claim (pid=${pid}). /git:coworker-check will now see this session.")
+      fi
+    fi
+  else
+    # Now inactive: remove the stale marker, unless another active claim in this
+    # changeset still needs the same pid+worktree.
+    case "$active_keys" in
+      *$'\n'"${pid}|${worktree}"$'\n'*) : ;;  # still needed — leave it
+      *)
+        if [ -e "$marker" ]; then
+          rm -f "$marker" \
+            "${git_dir}/.claude-baseline-${pid}.status" \
+            "${git_dir}/.claude-baseline-${pid}.stash" 2>/dev/null || true
+          feedback+=("taskwarrior-plugin: removed a stale coworker session marker after a raw stop/done (pid=${pid}).")
+        fi
+        ;;
+    esac
+  fi
+done
+
+for fb in "${feedback[@]:-}"; do
+  [ -n "$fb" ] && echo "$fb"
+done
+
+exit 0

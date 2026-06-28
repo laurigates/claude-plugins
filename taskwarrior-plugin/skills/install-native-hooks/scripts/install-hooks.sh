@@ -49,7 +49,7 @@ esac
 hooks_dir="${data_loc}/hooks"
 echo "HOOKS_DIR=${hooks_dir}"
 
-hook_names=(on-add-taskwarrior-plugin on-modify-taskwarrior-plugin)
+hook_names=(on-add-taskwarrior-plugin on-modify-taskwarrior-plugin on-exit-taskwarrior-plugin)
 
 if [ "$mode" = "uninstall" ]; then
   removed=0
