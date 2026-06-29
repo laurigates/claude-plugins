@@ -127,6 +127,27 @@ A gate failure rolls back to **fix in place, retry the gate** — never to
 "dispatch wave N+1 and paper over it." If the wave is unrecoverable,
 revert it and re-brief.
 
+### Gating on a green PR vs a landed merge
+
+The six gates assume wave N **landed on `main`** (Gate 6: clean tree). That
+holds when the orchestrator merges each wave itself. But when **a human reviews
+and merges** — so waves can't land before wave N+1 is due — don't stall the
+pipeline waiting for the merge. Gate wave N+1 on wave N's foundation **PR being
+green** (CI passing on the open PR) and **stack wave N+1 on wave N's branch**
+(`gh pr create --base <wave-N-branch>`), so it builds on wave N's content
+without waiting on the merge. Two adjustments:
+
+- **Gate 6 becomes "wave N's PR is green," not "merged."** Gates 1–5 (build,
+  tests, smoke, task/tracker drain) still apply — run them on wave N's branch.
+- **CI scoped to `pull_request: [main]` does not run on the stacked children**
+  (their base is a feature branch), so their gate is a **local** build/test
+  until they're retargeted to `main`.
+- **Honor stacked-PR merge order at landing time:** retarget children to `main`
+  *before* the base PR merges and deletes its branch, then rebase
+  `--onto origin/main <old-base-tip>` to drop the squashed base commits. See
+  `git-plugin:git-pr` (Stacked PRs) and `git-plugin:git-conflicts` (rerere can
+  replay the resolution across the base merge and each child rebase).
+
 ## The ~10-Line Inline-Fix Threshold
 
 When a wave returns and a small bug surfaces during the orchestrator's
@@ -217,6 +238,8 @@ between-wave gates buy you.
 - `agent-patterns-plugin:parallel-agent-dispatch` — intra-wave contract; the §Worktree Preflight, §Scope Budget, §Return Contract, and §Shared-File Exclusion List sections apply unchanged inside every wave
 - `agent-patterns-plugin:exclusive-lock-dispatch` — pre-dump mechanics for lock-contending waves; this skill cites it as the right shape for the research wave's brief
 - `workflow-orchestration-plugin:workflow-wave-dispatch` — workflow-side scheduling view: enumerating waves, gate-failure rollback, scheduling heuristics
+- `git-plugin:git-pr` / `git-plugin:git-conflicts` — stacked-PR merge order (retarget children before deleting the base, `--onto` squash cleanup) and pre-merge trial integration for landing a wave's PRs
+- `rust-plugin:cargo-worktree-builds` — when the waves are Rust worktrees, share one pre-warmed `CARGO_TARGET_DIR` so deps compile once across all worktrees
 - `taskwarrior-plugin:task-coordinate` — where wave candidates come from: surfaces the next N unblocked tasks while excluding lock-contenders
 - `.claude/rules/parallel-safe-queries.md` — empty-result exit codes that bite inside automated gate checks
 
