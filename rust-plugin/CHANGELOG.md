@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.4.0...rust-plugin-v1.5.0) (2026-06-29)
+
+
+### Features
+
+* **rust-plugin:** add cargo-worktree-builds skill ([#1878](https://github.com/laurigates/claude-plugins/issues/1878)) ([ae77b6f](https://github.com/laurigates/claude-plugins/commit/ae77b6f635f4f22571eeb49cb4da8257152541c8))
+
 ## [1.4.0](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.3.4...rust-plugin-v1.4.0) (2026-06-18)
 
 

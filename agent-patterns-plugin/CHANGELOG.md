@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.30.3](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.30.2...agent-patterns-plugin-v2.30.3) (2026-06-29)
+
+
+### Documentation
+
+* **agent-patterns-plugin:** gate waves on a green PR, not just a landed merge ([#1880](https://github.com/laurigates/claude-plugins/issues/1880)) ([cd6a31f](https://github.com/laurigates/claude-plugins/commit/cd6a31f96cf394e4e117a08538c2abaaf6ffb6fb))
+
 ## [2.30.2](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.30.1...agent-patterns-plugin-v2.30.2) (2026-06-28)
 
 
