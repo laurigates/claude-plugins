@@ -1,13 +1,22 @@
 # Reusable GitHub Action Workflows Plan
 
-Targeted, focused Claude workflows using the haiku model for efficient CI/CD automation.
+> **⚠️ Superseded plan (2026-06-29).** This is a historical design document. The
+> reusable workflows it describes shipped on **`--model opus`** with explicit
+> `--effort`, per [`workflow-model-effort.md`](../.claude/rules/workflow-model-effort.md) —
+> the opus cost-economics standard (Opus-low beats Sonnet/Haiku-high on quality *and*
+> token efficiency; dial **effort**, not the model, for cost) replaced this plan's
+> original haiku-for-cost premise. The `haiku` references below are kept for historical
+> accuracy and do **not** reflect current practice. Resolves #1849.
+
+Targeted, focused Claude workflows for efficient CI/CD automation (shipped on
+`--model opus` — see the superseded banner above).
 
 ## Design Principles
 
 | Principle | Description |
 |-----------|-------------|
 | **Focused scope** | Each workflow does one thing well |
-| **Haiku model** | Cost-efficient, fast execution |
+| **Opus model, tuned effort** | `--model opus` with explicit `--effort` — effort is the cost lever (see [`workflow-model-effort.md`](../.claude/rules/workflow-model-effort.md)) |
 | **Low turn count** | `--max-turns 5-10` for focused analysis |
 | **Actionable output** | PR comments with file:line references |
 | **Plugin leverage** | Use existing skills where available |
