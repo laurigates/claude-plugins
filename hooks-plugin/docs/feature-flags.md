@@ -83,17 +83,23 @@ explicit action, not an env flag. Their own opt-out knobs are listed below.
 
 ## Keeping this current
 
-This table is a hand-maintained index, so it can drift from the sources. To
-re-derive the full flag set (the authoritative truth) and spot anything missing:
+This table is a hand-maintained index, so it could drift from the sources — but
+the drift is **enforced deterministically**, not left to memory. A pre-commit
+guard fails the commit when any flag read in a plugin source is missing a row
+here:
 
 ```
-rg -oN --no-filename 'CLAUDE_HOOKS_[A-Z_]+|CLAUDE_TASKWARRIOR_[A-Z_]+' -g '*.sh' -g 'templates/*' */ | sort -u
+scripts/check-feature-flags-catalog.sh --strict
 ```
 
-Any flag that one-liner prints which is absent from the tables above is a gap to
-backfill. (A pre-commit coverage guard that fails when a source flag is missing
-from this catalog would make the drift deterministic rather than relying on the
-grep — a reasonable follow-up.)
+It runs automatically (pre-commit id `check-feature-flags-catalog`) whenever a
+plugin `*.sh`, a native-hook template, or this file changes. So adding a flag to
+a hook without documenting it here is a red commit, not a silent gap. To re-derive
+the raw flag set by hand:
+
+```
+rg -oN --no-filename 'CLAUDE_HOOKS_[A-Z_]+|CLAUDE_TASKWARRIOR_[A-Z_]+' -g '*.sh' -g '**/templates/*' -g '!**/tests/**' */ | sort -u
+```
 
 ## Related
 

@@ -133,6 +133,18 @@ repos:
         language: system
         files: '^(\.claude-plugin/marketplace\.json|\.claude/settings\.json)$'
         pass_filenames: false
+      - id: check-feature-flags-catalog
+        name: every plugin env flag is documented (feature-flags-catalog)
+        entry: bash ./scripts/check-feature-flags-catalog.sh --strict
+        language: system
+        files: '^((hooks-plugin|git-plugin|taskwarrior-plugin)/.*\.sh|taskwarrior-plugin/skills/install-native-hooks/templates/.*|hooks-plugin/docs/feature-flags\.md|scripts/check-feature-flags-catalog\.sh|scripts/tests/test-check-feature-flags-catalog\.sh)$'
+        pass_filenames: false
+      - id: test-check-feature-flags-catalog
+        name: feature-flags catalog guard regression
+        entry: bash ./scripts/tests/test-check-feature-flags-catalog.sh
+        language: system
+        files: '^scripts/(check-feature-flags-catalog\.sh|tests/test-check-feature-flags-catalog\.sh)$'
+        pass_filenames: false
       - id: test-fetch-research-papers
         name: research-radar fetcher parse/dedup/date-filter regression
         entry: bash ./scripts/tests/test-fetch-research-papers.sh
