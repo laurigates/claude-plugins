@@ -284,6 +284,39 @@ gh pr edit <dep-pr-num> --base "$(gh pr view --json baseRefName --jq .baseRefNam
 Once every dependent has been re-targeted (or you have explicitly chosen
 not to), it is safe to merge the parent with `--delete-branch`.
 
+### After a squash-merge: rebase dependents off the squashed commits
+
+Re-targeting alone keeps the dependent **open**, but its diff is still wrong.
+When the parent is **squash-merged** (the release-please / conventional-commit
+default), its commits collapse into one new commit on the base with a fresh
+SHA — so a re-targeted dependent still carries the parent's *original* commits
+in its history and now double-counts the parent's work. Drop them by replaying
+only the dependent's own commits onto the updated base:
+
+```bash
+git fetch origin
+git rebase --onto origin/main <old-parent-tip> <dependent-branch>
+git push --force-with-lease origin <dependent-branch>
+git log --oneline origin/main..HEAD   # verify: only the dependent's own commits
+```
+
+Capture `<old-parent-tip>` with `git rev-parse <parent-branch>` **before**
+merging the parent (the branch is deleted on merge, so grab the SHA first). A
+*merge*-merged parent keeps its patch-ids, so a plain `git rebase origin/main`
+auto-skips the duplicates instead — but squash is the common default, so assume
+the `--onto` form. If the dependent and the parent edited the same lines, expect
+a conflict here: resolve it once and let `git rerere` replay it across this and
+any sibling dependent (see the git-conflicts skill).
+
+### Stacked PRs get no CI until retargeted
+
+CI configured with `on: pull_request: branches: [main]` only runs for PRs
+**targeting `main`**. A dependent PR based on a feature branch therefore shows
+**no checks at all** until it is re-targeted — its pre-merge verification falls
+to a local build/test run in the meantime. Retarget early (or verify locally);
+don't wait on a green check that will never appear while the PR's base is a
+feature branch.
+
 ## Pre-merge Checklist Guidelines
 
 Include only actions **before** merging:
