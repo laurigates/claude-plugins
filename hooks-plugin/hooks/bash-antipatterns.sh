@@ -73,8 +73,16 @@ See .claude/rules/bash-tool-replacements.md for the full table."
 fi
 
 # Check for head/tail used to read files (not in pipelines)
-if echo "$COMMAND" | grep -Eq '^\s*(head|tail)\s+(-[0-9n]+\s+)?[^|]' && \
-   ! echo "$COMMAND" | grep -q '|'; then
+#
+# Scan COMMAND_SHELL_ONLY (heredoc bodies stripped) so a `head`/`tail` token that
+# is an identifier inside a quoted heredoc payload handed to another interpreter
+# — e.g. `python3 - <<'PY' … head = txt[:idx] … PY` — is not mistaken for a
+# `head <file>` invocation (issue #1848). The `[^|=]` (was `[^|]`) also excludes
+# the assignment form `head = "x"` / `tail = …` at line start (a Python/awk
+# variable in a single-quoted multi-line script the heredoc strip does not cover);
+# a real `head`/`tail` file argument never begins with `=`.
+if echo "$COMMAND_SHELL_ONLY" | grep -Eq '^\s*(head|tail)\s+(-[0-9n]+\s+)?[^|=]' && \
+   ! echo "$COMMAND_SHELL_ONLY" | grep -q '|'; then
     block "BLOCKED: 'head -50 file.md' →
   Read(file_path=\"/abs/path/to/file.md\", limit=50)
 
