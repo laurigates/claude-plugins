@@ -510,7 +510,7 @@
       "name": "project-plugin",
       "source": "./project-plugin",
       "description": "Project initialization, management, and maintenance - setup, changelog review, and continuous development workflows",
-      "version": "1.19.1",
+      "version": "1.20.0",
       "keywords": [
         "project",
         "initialization",
