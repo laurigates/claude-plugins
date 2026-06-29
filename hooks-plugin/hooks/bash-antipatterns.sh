@@ -175,37 +175,21 @@ if echo "$COMMAND" | grep -Eq '^\s*timeout\s+'; then
     block "REMINDER: The 'timeout' command is usually unnecessary - the Bash tool has its own timeout parameter. Human approval time typically exceeds any timeout value anyway. Remove the timeout wrapper and use the command directly."
 fi
 
-# Check for find command (should use Glob for simple patterns)
-# Allow find when using directory-discovery flags that Glob cannot replicate:
-# -maxdepth, -mindepth, -type, -print0. These are recommended in agentic-permissions.md
-# and shell-scripting.md for context commands.
+# NOTE: `find` is intentionally NOT blocked here.
 #
-# Also allow -path: a `find … -path '<glob>'` filters on the full path structure
-# (e.g. '*/hooks/test-*.sh'), which is a directory-structure query, not the
-# `-name '*.ext'` codebase search Glob replaces. Without this exemption a
-# -path-only find got redirected to Glob even though it is structural (issue #1800).
-#
-# Also allow the -delete action: it performs a filesystem mutation Glob
-# structurally cannot do (Glob only lists), so nudging toward Glob is useless and
-# the agent has no built-in alternative — blocking it is pure friction (issue #1671).
-#
-# -exec/-execdir/-ok/-okdir stay blocked deliberately: they run arbitrary commands,
-# so the agent should compose explicit, reviewable steps rather than execute through
-# find. Block simple name-pattern searches (pure listing Glob can do).
-if echo "$COMMAND" | grep -Eq '^\s*find\s+' && \
-   ! echo "$COMMAND" | grep -Eq 'find\s+.*(-maxdepth|-mindepth|-type\s|-path\s|-print0|-delete\b)'; then
-    block "BLOCKED: 'find . -name \"*.ts\"' →
-  Glob(pattern=\"**/*.ts\")
-
-The Glob tool is faster and optimized for codebase searches. If you
-need -maxdepth, -mindepth, -type d, -path, or -print0 for directory
-discovery that Glob cannot do, keep find with those flags — the hook
-allows it. Glob can only list, not act: for 'find … -delete' keep find —
-the hook allows it too. (-exec/-ok stay blocked: run explicit steps instead.)
-If the Glob tool is unavailable in this session, keep find but add a
-directory-discovery flag so the hook allows it: find . -type f -name '*.ts'
-See .claude/rules/bash-tool-replacements.md for the full table."
-fi
+# The find→Glob redirect was demoted from a hard block to a non-blocking teach
+# nudge (bash-antipatterns-teach.sh, opt-in via CLAUDE_HOOKS_ENABLE_BASH_ANTIPATTERNS_TEACH=1).
+# History: the block shipped in the original 2026-01 "use built-in tools instead
+# of shell" sweep purely for workflow consistency + context efficiency on broad
+# `**/*.ext` sweeps — never for safety (it always EXEMPTED the dangerous `-exec`
+# form and only blocked simple `-name` searches). Against that thin benefit it
+# cost: a recurring false-positive treadmill (#845, #1378, #1671, #1800/#1807) and
+# — decisively — a hard dead-end inside subagents whose toolset doesn't grant Glob
+# (PreToolUse Bash hooks fire in every context, but Glob is not always available).
+# The model is fluent in `find`; blocking a tool it writes reliably to force one
+# that is sometimes absent is a bad trade. Context efficiency is preserved by the
+# opt-in teach nudge, which steers toward Glob without dead-ending anyone.
+# See .claude/rules/bash-tool-replacements.md for the find/Glob/fd guidance.
 
 # Check for grep/rg command (should use Grep tool)
 # Allow grep -q / grep --quiet: these are boolean exit-code checks the Grep tool

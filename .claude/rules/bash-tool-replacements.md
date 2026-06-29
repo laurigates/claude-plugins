@@ -1,19 +1,28 @@
 # Bash → Tool Replacements
 
-Three search/list patterns in Bash are blocked by the `bash-antipatterns`
-hook because dedicated Claude Code tools cover the same ground faster,
-with structured output, and without paying the parallel-batch cost.
+Two search/list patterns in Bash — `grep`/`rg` and `cat`/`head`/`tail` — are
+blocked by the `bash-antipatterns` hook because dedicated Claude Code tools
+cover the same ground faster, with structured output, and without paying the
+parallel-batch cost.
 
-The hook is already a soft-block (exit 2) — by the time you read this,
-you've probably already been blocked. Use this table to pick the right
-replacement.
+The hook is a soft-block (exit 2) — by the time you read this, you've probably
+already been blocked. Use this table to pick the right replacement.
+
+> **`find` is no longer blocked.** The `find→Glob` redirect was demoted from a
+> hard block to an **opt-in teach nudge** (`bash-antipatterns-teach.sh`, enabled
+> via `CLAUDE_HOOKS_ENABLE_BASH_ANTIPATTERNS_TEACH=1`). It never did safety work
+> — it always exempted the dangerous `-exec` form and only blocked simple `-name`
+> searches — and it hard-dead-ended subagents whose toolset doesn't grant Glob
+> (PreToolUse hooks fire in every context; Glob is not always available). `find`
+> in any form now passes. Glob is still the most *context-efficient* choice for a
+> broad `**/*.ext` sweep in the main session, and `fd` is the more ergonomic
+> shell alternative (`fd -e ts`, gitignore-aware by default) — prefer either over
+> a naive recursive `find` dump, but neither is enforced.
 
 ## The replacement table
 
 | Wrong (Bash) | Right (tool) | When the Bash form is genuinely fine |
 |---|---|---|
-| `find . -name '*.ts'` | `Glob(pattern="**/*.ts")` | Need `-maxdepth`, `-mindepth`, `-type d`, `-path`, `-print0`, or `-mtime` — Glob can't do directory-discovery flags |
-| `find . -name '*.md' -type d` | `find . -name '*.md' -type d` | Already correct — `-type d` is the directory-discovery flag the hook explicitly allows |
 | `grep -rn 'foo' src/` | `Grep(pattern="foo", path="src", -r=true, -n=true)` | Piped into another command (`gh pr list \| rg 'foo'`), or you need `-q` for an exit-code boolean check |
 | `rg 'foo' --type ts` | `Grep(pattern="foo", glob="*.ts")` | Same exceptions as `grep` |
 | `cat /abs/path/file.md` | `Read(file_path="/abs/path/file.md")` | Piping a *here-doc* into a command — that's a `cat <<EOF` heredoc, not a file read |
@@ -23,7 +32,6 @@ replacement.
 
 The hook's allowed-exception logic for each:
 
-- **`find`** — passes through `-maxdepth`, `-mindepth`, `-type` (with a space after), `-path` (a full-path glob like `'*/hooks/test-*.sh'` — a structural query, not a `-name '*.ext'` search), `-print0`. Use these when Glob genuinely can't replace `find`. When Glob is unavailable in the session, keep `find` but add a directory-discovery flag (e.g. `-type f`) so the hook allows it.
 - **`grep` / `rg`** — passes through any pipeline (anything with `|`), and `-q` / `--quiet` (boolean exit-code checks like `grep -q pattern file && do_thing`).
 - **`cat` / `head` / `tail`** — passes through when the file path is `/dev/stdin`, `/dev/null`, or a here-doc target. The hook is checking for *file reads*, not stream handling.
 
@@ -42,28 +50,28 @@ the hook is teaching less effectively for this pattern than for `find`
 or `git &&` (both at 8-12%). This rule fills the gap with the same
 explicit do/don't table style that worked for `find` in W16.
 
-## When to keep `find` / `grep` / `rg` in Bash
+## When to keep `grep` / `rg` in Bash
 
-The hook allows the Bash form in four scenarios:
+The hook allows the `grep`/`rg` Bash form in three scenarios:
 
 1. **Pipelines.** `gh pr list --json title --jq '.[].title' | rg 'feat'`
    is fine — the `|` short-circuits the hook check.
-2. **Directory-discovery flags.** `find . -maxdepth 2 -type d` is the
-   right form. `Glob` doesn't expose directory-type filters. `-path`
-   (a full-path glob, `find . -path '*/hooks/test-*.sh'`) is allowed
-   too — it's a structural query, not a `-name '*.ext'` search.
-3. **Boolean exit-code checks.** `grep -q pattern file && do_thing`
+2. **Boolean exit-code checks.** `grep -q pattern file && do_thing`
    is fine. The `Grep` tool returns content; it doesn't give you a
    clean shell-conditional exit code.
-4. **File-list / count filter modes.** `grep -l pattern f1 f2`
+3. **File-list / count filter modes.** `grep -l pattern f1 f2`
    (files-with-matches), `grep -c pattern file` (count), and
    `grep -L …` (files-without-match) are filters over a known file set,
    not codebase searches the `Grep` tool replaces. (The uppercase
    context flag `-C` is *not* exempt — it's a real search.)
 
-In all four cases the hook silently passes the command through. If
+In all three cases the hook silently passes the command through. If
 you're getting blocked anyway, you're not in one of these cases —
 switch to the tool.
+
+`find` needs no exception list — it is never blocked. Reach for `Glob`
+or `fd` when you want the context-efficient / ergonomic option, but the
+hook won't stop a plain `find`.
 
 ## Related
 
@@ -71,4 +79,7 @@ switch to the tool.
   doubly painful in parallel batches: it both fires the hook AND
   exits non-zero on empty results, cancelling sibling tool calls
 - `hooks-plugin/hooks/bash-antipatterns.sh` — the hook that
-  implements all three blocks
+  implements the `grep`/`rg` and `cat`/`head`/`tail` blocks (and a
+  comment explaining why `find` is no longer among them)
+- `hooks-plugin/hooks/bash-antipatterns-teach.sh` — the opt-in teach
+  hook that carries the non-blocking `find→Glob` nudge
