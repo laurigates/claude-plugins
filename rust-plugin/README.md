@@ -68,6 +68,14 @@ This plugin provides expert knowledge for Rust development with a focus on:
 - Workspace support
 - Dependency audit workflows
 
+**cargo-worktree-builds** - Shared target dir for parallel worktree agents
+- One pre-warmed `CARGO_TARGET_DIR` across N git worktrees
+- Dependencies compile once instead of N times
+- Disk stays ≈ 1× instead of N× copies of `target/`
+- Cargo build-lock serialization (safety + thrash cap)
+- The transient stale-rlib "method not found" gotcha and its fix
+- Companion to agent-patterns-plugin worktree fan-out
+
 ## Quick Start
 
 ### Using the Agent
