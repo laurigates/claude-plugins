@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.5.10](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.5.9...hooks-plugin-v2.5.10) (2026-06-29)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** stop bash-antipatterns blocking head/tail identifiers in heredocs ([#1874](https://github.com/laurigates/claude-plugins/issues/1874)) ([14c855f](https://github.com/laurigates/claude-plugins/commit/14c855f04b06f4fe00960ecdb8f65b961b159725)), closes [#1848](https://github.com/laurigates/claude-plugins/issues/1848)
+
+
+### Code Refactoring
+
+* **hooks-plugin:** demote find→Glob from hard block to opt-in teach nudge ([#1871](https://github.com/laurigates/claude-plugins/issues/1871)) ([21c1b5f](https://github.com/laurigates/claude-plugins/commit/21c1b5fa44498507433e0d73b6106bb70ff4975a))
+
+
+### Documentation
+
+* **hooks-plugin:** catalog plugin feature flags + coverage guard ([#1872](https://github.com/laurigates/claude-plugins/issues/1872)) ([40f80e1](https://github.com/laurigates/claude-plugins/commit/40f80e192762847bb16bbf9fd315454755fe2c60))
+
 ## [2.5.9](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.5.8...hooks-plugin-v2.5.9) (2026-06-28)
 
 
