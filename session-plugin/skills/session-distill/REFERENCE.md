@@ -8,6 +8,7 @@
 | Does this improve an existing one? | Update in place |
 | Does an existing one already cover this? | Skip it |
 | Is this genuinely new and reusable? | Add it |
+| Is this reusable **beyond this repo** / would other repos benefit? | `[PROMOTE]` it to the owning plugin (PR), don't bury it in one repo's `.claude/` |
 | Is this a one-off that won't be needed again? | Skip it |
 
 ## Evaluation Criteria
@@ -39,6 +40,19 @@
 | Existing guidance was misleading | Niche use case |
 | New tool version changed behavior | Temporary workaround |
 
+### Promotion Candidates ([PROMOTE] — additive, cross-repo)
+
+These do not require anything to have gone wrong; a smooth session is a valid
+source. Distinct from "Skill Improvements" because the target is a **named
+plugin in another repo**, applied as a PR.
+
+| Promote when... | Skip when... |
+|-----------------|--------------|
+| Session invented a reusable technique with **no home skill** anywhere | Pattern is specific to this repo -> local `[NEW]` rule instead |
+| A **named plugin's skill is missing** a capability the session needed | The skill already covers it (just under-discovered) -> no change |
+| The same technique would help **other repos**, not just this one | One-off, won't recur -> skip |
+| A focusing fix: "this belongs in `<plugin>/skills/<skill>`" | You can't identify a plausible owner and it isn't clearly reusable |
+
 ## Proposal Format Examples
 
 ```
@@ -48,4 +62,6 @@
 [NEW] Genuinely new and reusable artifact (only if justified)
 [UPDATE] `recipe-name` - Better flags discovered (before/after)
 [REDUNDANT] `old-recipe` - Superseded by new approach
+[PROMOTE] -> rust-plugin/skills/cargo-worktree-builds (new) - shared CARGO_TARGET_DIR across worktree agents; reusable beyond this repo, no home skill -> PR
+[PROMOTE] -> git-plugin/skills/git-pr (edit) - stacked-PR --onto squash cleanup the skill is missing -> PR
 ```

@@ -1,7 +1,7 @@
 ---
 name: session-distill
-description: "Distill session insights into rules, skill improvements, and justfile recipes. Use when capturing learnings, extracting reusable patterns, or codifying workflow into .claude/rules."
-allowed-tools: Bash(git diff *), Bash(git log *), Bash(git status *), Bash(just *), Read, Grep, Glob, Edit, Write, AskUserQuestion, TodoWrite
+description: "Distill session insights into rules, skill improvements, recipes, and cross-repo promotions to marketplace plugins. Use when capturing learnings, codifying workflow into .claude/rules, or promoting a session-invented pattern into a specific plugin/skill as a PR."
+allowed-tools: Bash(git diff *), Bash(git log *), Bash(git status *), Bash(git fetch *), Bash(git switch *), Bash(git checkout *), Bash(git add *), Bash(git commit *), Bash(git branch *), Bash(git push *), Bash(just *), Bash(gh pr *), Bash(gh label *), Read, Grep, Glob, Edit, Write, AskUserQuestion, TodoWrite
 argument-hint: "--rules | --skills | --recipes | --all | --dry-run"
 args: "[--rules] [--skills] [--recipes] [--all] [--dry-run]"
 created: 2026-02-11
@@ -24,6 +24,8 @@ Distill session insights into reusable project knowledge.
 | Found a CLI workflow worth saving as a recipe | Need to configure a justfile from scratch -> `/configure:justfile` |
 | Want to update rules based on session experience | Need to check project infrastructure -> `/configure:status` |
 | Asked to "codify the workflow" or "analyze and promote session patterns to rules" | Need a one-off implementation, not a reusable rule -> implement directly |
+| A pattern is reusable **beyond this repo** and belongs in a shared plugin/skill | The learning is project-specific -> keep it in this repo's `.claude/rules` |
+| The session **invented a technique** with no home skill yet, or one a named plugin's skill is missing | Reporting friction/errors for triage -> `feedback-plugin:feedback-session` (the error loop) |
 
 May also be reached via the end-of-session flow: the plugin's Stop hook (`hooks/session-end-nudge.sh`) offers `session-plugin:session-end` once per session on user wind-down, and the orchestrator runs this skill when a durable learning qualifies.
 
@@ -73,7 +75,18 @@ When `--all`: complete rules -> skills -> recipes. Do not interleave.
 
 ### Step 3: Present proposals
 
-Categorize as: `[UPDATE]`, `[SKIP]`, `[NEW]`, or `[REDUNDANT]` with file paths and reasons.
+Categorize as: `[UPDATE]`, `[SKIP]`, `[NEW]`, `[REDUNDANT]`, or `[PROMOTE]` with file paths and reasons.
+
+`[PROMOTE]` is the **additive, cross-repo** category — distinct from the others,
+which all write *this* repo's `.claude/`. Use it when the insight is reusable
+**beyond this repo** and belongs in a marketplace plugin: either a pattern the
+session invented that has **no home skill yet** (→ propose a new skill), or a
+capability an **existing named skill is missing** (→ propose an edit to it). A
+`[PROMOTE]` does not require anything to have gone wrong — a smooth session that
+produced a strong reusable technique is exactly its trigger. Each `[PROMOTE]`
+names a target `<plugin>/skills/<skill>` (new or existing) and is applied as a
+**PR against the plugin repo**, never an edit to the current repo (see
+[Cross-Repo Promotion](#cross-repo-promotion-promote)).
 
 ### Step 4: Apply changes
 
@@ -85,9 +98,66 @@ If `--dry-run`: skip this step.
 
 **In plan mode**: neither default applies — the harness disallows non-readonly tool calls (including `AskUserQuestion`-then-apply) except writes to the active plan file. Write the proposal set to the active plan file as a single coherent block (Context + per-category `[UPDATE]` / `[NEW]` / `[REDUNDANT]` sections + a brief verification section), then call `ExitPlanMode` to surface for user approval. Do not apply directly. After the user approves the plan, fall back to the auto-mode or manual-mode flow above depending on which is active.
 
+For `[PROMOTE]` proposals, do **not** edit the current repo. Apply them via the
+cross-repo PR hand-off below — gate it behind `AskUserQuestion` in every mode
+(opening a PR against another repo is outward-facing), and never push to that
+repo's default branch.
+
 ### Step 5: Report summary
 
-Output concise summary of changes made.
+Output concise summary of changes made, including any `[PROMOTE]` PRs opened
+(with their URLs) so the promotion is traceable.
+
+## Cross-Repo Promotion ([PROMOTE])
+
+The other categories keep knowledge in *this* repo. `[PROMOTE]` is how a
+session-invented pattern reaches the **shared plugin marketplace** so every repo
+benefits — the additive complement to `feedback-plugin`'s error loop (which only
+fires on friction). A near-zero-friction session can still produce several
+`[PROMOTE]` candidates.
+
+### Routing: which plugin/skill should own it
+
+Pick the target by the pattern's domain, most specific first:
+
+| Pattern is about… | Likely owner |
+|-------------------|--------------|
+| A language/tool's build/test/lint (cargo, uv, biome…) | that language plugin (`rust-plugin`, `python-plugin`, …) |
+| Multi-agent orchestration, waves, worktrees, dispatch | `agent-patterns-plugin` / `workflow-orchestration-plugin` |
+| Git, PRs, merges, rebases, conflicts | `git-plugin` |
+| CI/infra/repo configuration | `configure-plugin` / `github-actions-plugin` |
+| Nothing fits, but it's clearly reusable | propose a new skill in the closest plugin and flag the routing choice for review |
+
+Then decide **new skill vs. edit existing**: glob the owner plugin's `skills/`,
+read the closest few, and prefer extending an existing skill (a new section +
+cross-link) over a new skill unless the pattern is genuinely its own topic
+(`Update Over Add` still applies — across repos now).
+
+### The PR hand-off (never edit cwd, never push to default)
+
+The plugin source lives in its own repo (`PLUGINS_REPO` below). Open a PR there;
+the human reviews and merges. Match the repo's conventions: skills are
+auto-discovered (add `skills/<name>/SKILL.md` with dated frontmatter +
+`user-invocable`/`allowed-tools`), update the plugin README's skill catalog,
+keep `!`-context commands free of pipes/redirects, use a conventional commit
+(`feat(<plugin>):` for a new skill, `docs(<plugin>):` for an edit — release-please
+versions from it), and apply the `<plugin>` routing label (create it if missing).
+
+```bash
+PLUGINS_REPO="$HOME/repos/laurigates/claude-plugins"     # the plugin source repo
+git -C "$PLUGINS_REPO" fetch origin
+git -C "$PLUGINS_REPO" switch -c <type>/<short-slug> origin/main
+# ... Write/Edit the SKILL.md + README under "$PLUGINS_REPO" (absolute paths) ...
+git -C "$PLUGINS_REPO" add <paths>
+git -C "$PLUGINS_REPO" commit -m "<conventional message>"
+git -C "$PLUGINS_REPO" push -u origin <branch>
+gh pr create -R laurigates/claude-plugins --base main --head <branch> \
+  --title "<conventional title>" --body-file /tmp/promote-body.md -l <plugin>
+```
+
+The PR body should cite the session as evidence (what the pattern is, why it's
+reusable, where it was used) — the additive analogue of the friction loop's
+evidence summary.
 
 ## Agentic Optimizations
 
