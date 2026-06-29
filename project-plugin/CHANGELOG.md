@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.20.0](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.19.1...project-plugin-v1.20.0) (2026-06-29)
+
+
+### Features
+
+* **project-plugin:** add deterministic --funnel pre-filter to analyze-skills ([#1884](https://github.com/laurigates/claude-plugins/issues/1884)) ([d091d53](https://github.com/laurigates/claude-plugins/commit/d091d53a259112f9a1ab7ca156b9992021260316))
+
 ## [1.19.1](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.19.0...project-plugin-v1.19.1) (2026-06-23)
 
 
