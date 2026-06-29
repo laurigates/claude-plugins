@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.48.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.48.0...git-plugin-v2.48.1) (2026-06-29)
+
+
+### Documentation
+
+* **git-plugin:** complete stacked-PR choreography + trial-integration ([#1879](https://github.com/laurigates/claude-plugins/issues/1879)) ([4c1561f](https://github.com/laurigates/claude-plugins/commit/4c1561f3e8e49ab58ca6c17a220d2081b949c2b6))
+
 ## [2.48.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.47.0...git-plugin-v2.48.0) (2026-06-22)
 
 

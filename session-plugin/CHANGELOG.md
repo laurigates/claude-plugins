@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.4.2...session-plugin-v1.5.0) (2026-06-29)
+
+
+### Features
+
+* **session-plugin:** add [PROMOTE] cross-repo promotion to session-distill ([#1881](https://github.com/laurigates/claude-plugins/issues/1881)) ([5b277cc](https://github.com/laurigates/claude-plugins/commit/5b277ccb76ed6ab2f26e753cccd3807adb4849d9))
+
 ## [1.4.2](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.4.1...session-plugin-v1.4.2) (2026-06-25)
 
 
