@@ -40,6 +40,7 @@ Claude Code plugin collection providing skills and agents for development workfl
 | `.claude/rules/skill-argument-handling.md` | 9-axis rubric for `args`/`argument-hint`/parsing-vs-intent fit; the haiku+opus cold-read **sweep** that finds mismatches and the model delta that calibrates it |
 | `.claude/rules/skill-execution-structure.md` | Imperative execution patterns for user-invocable skills |
 | `.claude/rules/handling-blocked-hooks.md` | How to respond when hooks block commands |
+| `.claude/rules/hook-block-vs-nudge.md` | **Block (exit 2) only for safety; nudge for style** — why a hard block on a tool-substitution dead-ends subagents lacking the tool, and the "what does it exempt?" litigation test |
 | `.claude/rules/hooks-reference.md` | Complete hook event reference (2.1.50+): all events, schemas, timeouts, PermissionRequest |
 | `.claude/rules/prompt-agent-hooks.md` | **When to use prompt/agent hooks** — decision tree, config schema, prompts guide |
 | `.claude/rules/agent-development.md` | Agent configuration, isolation, background execution, memory, and teams |
