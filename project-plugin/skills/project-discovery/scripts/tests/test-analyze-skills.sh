@@ -54,6 +54,63 @@ else
 fi
 
 echo ""
+echo "=== TEST: --funnel bins script-less skills; STRONG wins over interactive (#1551) ==="
+# ADR-0016 deterministic pre-filter. The load-bearing invariant (the thing the
+# naive precedence got wrong): a skill carrying an AskUserQuestion confirmation
+# step is NOT skipped when it also shows a strong procedural signal — every v1
+# candidate had a descoped interactive step. STRONG must win over SKIP_INTERACTIVE.
+FREPO=$(mktemp -d)
+trap 'rm -rf "$REPO" "$FREPO"' EXIT
+
+# (a) Strong + interactive: AskUserQuestion present AND >=2 data-processing pipes.
+#     Must classify LLM_STRONG, never SKIP_INTERACTIVE.
+mkdir -p "$FREPO/demo-plugin/skills/strong-interactive"
+cat > "$FREPO/demo-plugin/skills/strong-interactive/SKILL.md" <<'EOF'
+---
+name: strong-interactive
+description: Do a thing. Use when doing the thing.
+---
+# Strong interactive
+Confirm with AskUserQuestion before applying.
+```bash
+gh pr list --json number | jq '.[].number'
+git log --oneline | grep feat
+```
+EOF
+
+# (b) Already extracted: ships scripts/ -> HAS_SCRIPTS (audit-only, not a candidate).
+mkdir -p "$FREPO/demo-plugin/skills/has-scripts/scripts"
+printf '# has-scripts\n' > "$FREPO/demo-plugin/skills/has-scripts/SKILL.md"
+printf '#!/usr/bin/env bash\necho hi\n' > "$FREPO/demo-plugin/skills/has-scripts/scripts/run.sh"
+
+# (c) Interactive, no procedure: AskUserQuestion, <3 shell blocks -> SKIP_INTERACTIVE.
+mkdir -p "$FREPO/demo-plugin/skills/judgment"
+cat > "$FREPO/demo-plugin/skills/judgment/SKILL.md" <<'EOF'
+---
+name: judgment
+description: Decide something subjective. Use when choosing an approach.
+---
+# Judgment
+Ask the user with AskUserQuestion and synthesize a recommendation.
+EOF
+
+FOUT=$(bash "$SCRIPT" "$FREPO" --funnel)
+# Match the VERDICT row by exact skill name (field 4); awk is portable (BSD grep
+# lacks -P). Row shape: VERDICT<TAB>verdict<TAB>plugin<TAB>skill<TAB>...
+fverdict() { echo "$FOUT" | awk -F'\t' -v s="$1" '$1=="VERDICT" && $4==s {print $2; exit}'; }
+
+assert_eq "strong+interactive skill is LLM_STRONG (not SKIP_INTERACTIVE)" \
+  "LLM_STRONG" "$(fverdict strong-interactive)"
+assert_eq "scripts/-bearing skill is HAS_SCRIPTS (audit-only)" \
+  "HAS_SCRIPTS" "$(fverdict has-scripts)"
+assert_eq "interactive no-procedure skill is SKIP_INTERACTIVE" \
+  "SKIP_INTERACTIVE" "$(fverdict judgment)"
+assert_eq "rollup STATUS is OK" "OK" "$(echo "$FOUT" | grep -E '^STATUS=' | cut -d= -f2)"
+# ISSUE_COUNT is the LLM residue (STRONG+WEAK); here exactly the one STRONG skill.
+assert_eq "rollup ISSUE_COUNT equals the residue (1 STRONG, 0 WEAK)" \
+  "1" "$(echo "$FOUT" | grep -E '^ISSUE_COUNT=' | cut -d= -f2)"
+
+echo ""
 echo "PASS=$PASS"
 echo "FAIL=$FAIL"
 [ "$FAIL" -eq 0 ]

@@ -3,7 +3,7 @@
 ---
 date: 2026-06-09
 created: 2026-06-09
-modified: 2026-06-09
+modified: 2026-06-29
 status: Accepted
 deciders: claude-plugins team
 domain: architecture
@@ -138,6 +138,47 @@ are filed as GitHub issues (the implementation backlog) and mirrored as
 taskwarrior tasks (the personal cross-session queue). Actual extraction remains
 the job of `project-skill-scripts`, one skill at a time, with the
 `regression-testing.md` requirement of a test per extracted behaviour.
+
+#### Deterministic pre-filter front-end (2026-06-29 refinement, issue #1551)
+
+The v1 sweep filed and shipped the top-50-ranked candidates (issues #1552–#1558,
+extraction PRs #1564–#1571). Re-running the full ~8M-token LLM sweep over the
+long tail (ranks 50–337) repeatedly failed under sustained-load server
+throttling. The refinement: a **deterministic funnel front-end** reserves the
+LLM for the residue instead of fanning out over every script-less skill.
+
+`project-discovery/scripts/analyze-skills.sh --funnel` bins every script-less
+skill — free, ~40s, byte-identical every run (`offload-to-deterministic-substrate.md`)
+— emitting the `structured-script-output.md` `KEY=VALUE` / `STATUS=` /
+`ISSUE_COUNT=` contract:
+
+| Verdict | Rule | LLM needed? |
+|---------|------|-------------|
+| `HAS_SCRIPTS` | ships a `scripts/` dir | no — audit-only (the gate above) |
+| `SKIP_REFERENCE` | "Use when mentioning/referencing X" knowledge prose | no |
+| `SKIP_INTERACTIVE` | `AskUserQuestion`/`multiSelect` and no procedure (<3 shell blocks) | no |
+| `SKIP_NOPROC` | <3 shell blocks | no |
+| `LLM_WEAK` | has procedure (≥3 shell blocks), weak signal | optional classify pass |
+| `LLM_STRONG` | ≥2 data-processing pipes, an extraction verb **in the skill name**, or analyzer_score ≥ 24 | verify pass |
+
+Two calibration findings (the funnel is a *pre-filter*, not an LLM replacement):
+
+- **Strong signals must win over skip signals.** Every v1 candidate carried a
+  *descoped* `AskUserQuestion` confirmation step, so a naive "interactive ⇒ skip"
+  precedence false-skips real candidates. The funnel ranks `LLM_STRONG` first and
+  `LLM_WEAK` (any procedural skill) above the SKIP bands, so an
+  interactive-but-procedural skill is routed to the LLM, never silently dropped.
+- **The extraction-verb signal is name-scoped, not description-scoped.** Scanning
+  descriptions fires on ~200 skills (nearly every description says "check",
+  "validate", "detect"); the skill *name* (`*-audit`, `*-validate`) is the precise
+  signal.
+
+The irreducible gap: a few low-mechanical-signal candidates (e.g. v1's
+`github-actions-finops`, score 8) were genuine LLM judgment calls no cheap signal
+reproduces. The funnel rules out the obvious SKIPs and bounds the residue; the LLM
+still owns the residue. Run the funnel first (free); only escalate the
+`LLM_STRONG`/`LLM_WEAK` residue to a bounded-team LLM pass when its estimated
+savings warrant the token cost.
 
 ## Consequences
 
