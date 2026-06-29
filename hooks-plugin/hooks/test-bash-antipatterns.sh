@@ -42,65 +42,39 @@ assert_exit() {
 
 echo "=== bash-antipatterns hook tests ==="
 
-# ── find exemption regression ────────────────────────────────────────────────
-# Regression: find with -exec was allowed while find with -maxdepth/-type was
-# blocked — the exact opposite of the project rules in agentic-permissions.md
-# and shell-scripting.md, which recommend find with those flags for directory
-# discovery that Glob cannot replicate.
+# ── find is no longer blocked ────────────────────────────────────────────────
+# The find→Glob redirect was demoted from a hard block to an opt-in teach nudge
+# (bash-antipatterns-teach.sh). The block never did safety work — it always
+# EXEMPTED the dangerous -exec form and only blocked simple -name searches — and
+# it hard-dead-ended subagents lacking the Glob tool. So `find` in EVERY form is
+# now allowed by this hook. The Glob steer survives as a non-blocking nudge in the
+# companion teach hook (see test-bash-antipatterns-teach.sh).
 echo ""
-echo "find exemption (directory-discovery flags allowed, -exec blocked):"
+echo "find is no longer blocked (demoted to opt-in teach nudge):"
+
+assert_exit \
+    "find -name only is allowed (was blocked; now teach-only)" 0 \
+    "find . -name '*.ts'"
+
+assert_exit \
+    "find -exec is allowed (this hook does no safety work)" 0 \
+    "find . -exec ls {}"
+
+assert_exit \
+    "find -name -exec rm is allowed (not this hook's concern)" 0 \
+    "find . -name '*.log' -exec rm {} +"
 
 assert_exit \
     "find -maxdepth -type d is allowed" 0 \
     "find . -maxdepth 1 -type d"
 
 assert_exit \
-    "find -maxdepth -name is allowed" 0 \
-    "find . -maxdepth 1 -name '*.yml'"
-
-assert_exit \
-    "find -type f -print0 is allowed" 0 \
-    "find . -type f -print0"
-
-assert_exit \
-    "find -mindepth -maxdepth is allowed" 0 \
-    "find . -mindepth 1 -maxdepth 2 -name '*.md'"
-
-assert_exit \
-    "find -name only (Glob can do this) is blocked" 2 \
-    "find . -name '*.ts'"
-
-assert_exit \
-    "find -exec (dangerous, no discovery flags) is blocked" 2 \
-    "find . -exec ls {}"
-
-# Regression (issue #1671): find with a -delete action must be allowed even with
-# no directory-discovery flag — Glob can only list, it cannot delete, so the
-# Glob nudge is useless and blocking is pure friction. -exec/-ok stay blocked
-# (arbitrary command execution) — the agent should run explicit steps instead.
-assert_exit \
-    "find -name -delete is allowed (Glob cannot delete; issue #1671)" 0 \
+    "find -name -delete is allowed" 0 \
     "find . -name '*.tmp' -delete"
 
 assert_exit \
-    "find -maxdepth -type -delete is allowed (issue #1671 exact repro)" 0 \
-    "find /tmp/x -maxdepth 2 -name claude -type l -delete"
-
-assert_exit \
-    "find -name -exec rm (arbitrary execution) stays blocked" 2 \
-    "find . -name '*.log' -exec rm {} +"
-
-# Regression (issue #1800): find with a -path glob is a directory-structure query,
-# not a `-name '*.ext'` codebase search Glob replaces, so it must be allowed.
-# The dead-end this prevents: hook redirects to Glob, but Glob is unavailable in
-# the session, leaving no working path forward.
-assert_exit \
-    "find -path glob is allowed (structural query; issue #1800)" 0 \
+    "find -path glob is allowed" 0 \
     "find taskwarrior-plugin -path '*/hooks/test-*.sh'"
-
-assert_exit \
-    "find -path with -type is allowed (issue #1800)" 0 \
-    "find . -path '*/hooks/*' -type f"
 
 # ── cat pipeline regression ──────────────────────────────────────────────────
 # Regression: cat file | command was blocked even though cat is feeding a
@@ -384,29 +358,6 @@ assert_stderr_contains() {
         FAIL=$((FAIL + 1))
     fi
 }
-
-assert_stderr_contains \
-    "find block message names Glob substitution" \
-    'Glob(pattern="**/*.ts")' \
-    "find . -name '*.ts'"
-
-assert_stderr_contains \
-    "find block message uses BLOCKED: prefix" \
-    'BLOCKED:' \
-    "find . -name '*.ts'"
-
-assert_stderr_contains \
-    "find block message points at rule file" \
-    'bash-tool-replacements.md' \
-    "find . -name '*.ts'"
-
-# Regression (issue #1800): when Glob is unavailable in the session, the redirect
-# to Glob is a dead-end. The block message must offer a find-with-flag fallback so
-# the agent has a working path forward rather than looping on an absent tool.
-assert_stderr_contains \
-    "find block message offers a Glob-unavailable fallback" \
-    'If the Glob tool is unavailable in this session' \
-    "find . -name '*.ts'"
 
 assert_stderr_contains \
     "grep block message names Grep substitution" \
