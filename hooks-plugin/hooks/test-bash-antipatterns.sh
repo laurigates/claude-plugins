@@ -671,6 +671,58 @@ assert_exit_complex \
     "GUARD INTEGRITY: #1701 mixed write echo x > realfile.txt 2>/dev/null still blocks" 2 \
     'echo data > realfile.txt 2>/dev/null'
 
+# ── head/tail as an identifier, not a file read (issue #1848) ─────────────────
+# Regression: a `head`/`tail` token that is a *variable* — inside a quoted
+# heredoc payload handed to python3/jq/awk (`python3 - <<'PY' … head = … PY`),
+# or an assignment `head = …` at the start of a line in an inline script — was
+# matched as the `head <file>` antipattern and blocked. The detector now scans
+# the heredoc-stripped view and excludes the `= ` assignment form (`[^|=]`).
+echo ""
+echo "head/tail as an identifier (heredoc body / assignment) is not the file-read antipattern (#1848):"
+
+heredoc_head_var_cmd=$(cat <<'OUTER'
+python3 - <<'PY'
+head = "x"
+print(head)
+PY
+OUTER
+)
+assert_exit_complex \
+    "head as a python var inside a single-quoted heredoc is allowed (#1848 repro)" 0 \
+    "$heredoc_head_var_cmd"
+
+heredoc_tail_var_cmd=$(cat <<'OUTER'
+python3 - <<'PY'
+tail = txt[idx:]
+print(tail)
+PY
+OUTER
+)
+assert_exit_complex \
+    "tail as a python var inside a single-quoted heredoc is allowed (#1848)" 0 \
+    "$heredoc_tail_var_cmd"
+
+inline_head_assign_cmd=$(cat <<'OUTER'
+python3 -c '
+head = data[:n]
+print(head)
+'
+OUTER
+)
+assert_exit_complex \
+    "head = assignment at line start in inline python is allowed (#1848 [^|=] guard)" 0 \
+    "$inline_head_assign_cmd"
+
+# GUARD INTEGRITY: switching to the heredoc-stripped view must NOT weaken the
+# genuine head/tail file-read nudge.
+assert_exit \
+    "GUARD INTEGRITY: head -50 file.md still blocked (#1848)" 2 \
+    "head -50 file.md"
+
+assert_exit \
+    "GUARD INTEGRITY: tail README.md (no flag) still blocked (#1848)" 2 \
+    "tail README.md"
+
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
