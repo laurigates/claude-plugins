@@ -6,6 +6,11 @@ Claude Code hooks for enforcing best practices and workflow automation.
 
 This plugin provides pre-built hooks that can be installed in any project to enforce consistent behavior and remind Claude to use the correct tools.
 
+> **Toggling behavior:** every env var that turns a hook on/off or tunes it —
+> across hooks-plugin, git-plugin, and taskwarrior-plugin — is indexed in
+> [`docs/feature-flags.md`](docs/feature-flags.md) (opt-in / opt-out / tunable,
+> with source pointers). The per-hook `Toggle:` lines below are the deep detail.
+
 ## Available Hooks
 
 ### bash-antipatterns.sh
