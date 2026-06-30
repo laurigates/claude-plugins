@@ -3,10 +3,10 @@ name: deadbranch
 description: deadbranch CLI for stale-branch cleanup — dry-run preview, TUI or non-interactive delete, protects main/develop/WIP. Use when asked to clean up branches, prune branches, or remove stale branches.
 args: "[--days N] [--local] [--remote] [--force] [--interactive] [--dry-run] [--yes] [--stats-only]"
 argument-hint: "--days 30 --dry-run (default: survey + dry-run preview, then ask before deleting)"
-allowed-tools: Bash(deadbranch *), Bash(git branch *), Bash(git log *), Bash(git remote *), AskUserQuestion, TodoWrite
+allowed-tools: Bash(deadbranch *), Bash(git branch *), Bash(git log *), Bash(git remote *), Bash(git rev-parse *), Bash(git merge-tree *), Bash(gh pr list *), AskUserQuestion, TodoWrite
 created: 2026-05-07
-modified: 2026-06-10
-reviewed: 2026-06-10
+modified: 2026-06-30
+reviewed: 2026-06-30
 ---
 
 # /git:deadbranch
@@ -59,6 +59,52 @@ If `--local` or `--remote` was provided, pass the flag to `list`.
 
 If no stale branches are found, stop here and report the repo is clean.
 If `--stats-only` was provided, stop here after reporting.
+
+### Step 1.5: Reclassify squash-merged branches
+
+`deadbranch` classifies "merged" via **commit ancestry** (`git branch
+--merged`-style). On repos that **squash-merge** — the release-please /
+conventional-commit default — the squash collapses a branch into a single new
+commit on the base with a fresh SHA, so the branch's own commits are never
+ancestors and it reads as **unmerged**. The "safe to delete" count is therefore
+a **lower bound** on squash-merge repos (in one real cleanup, only 4 of 28
+actually-merged branches were flagged safe).
+
+After the survey, reclassify each branch `deadbranch` marked **unmerged** using
+two deterministic signals that survive squash-merge **and** later file drift on
+the base. A branch matching **either** is safe to delete:
+
+1. **`merge-tree` no-op** — merging the branch into the base changes nothing,
+   proving its content is already present (git ≥ 2.38):
+
+   ```bash
+   base_tree=$(git rev-parse <base>^{tree})
+   merged=$(git merge-tree --write-tree <base> <branch>)
+   [ "$merged" = "$base_tree" ] && echo "MERGED (contained in base)"
+   ```
+
+   A clean result whose tree equals the base's tree means the branch
+   contributes nothing not already in the base. A different tree / non-zero exit
+   is **not** proof of "unmerged" — treat it as "review", not "delete".
+
+2. **A MERGED PR for the branch head** — GitHub is authoritative; the squash
+   landed the work at merge time regardless of later drift:
+
+   ```bash
+   gh pr list --state all --head <branch> --json state --jq '.[0].state'
+   ```
+
+   A `MERGED` result means the branch's work landed (read `state` /
+   `mergedAt`, never a `merged` field — see `.claude/rules/gh-json-fields.md`).
+
+Report a "squash-merged (reclassified safe)" group alongside `deadbranch`'s own
+merged set so the user sees the true safe-to-delete count. Branches matching
+neither signal stay in the keep/review group — do **not** sweep them with
+`--force`, which also deletes genuinely-unmerged work.
+
+> This reclassification is read-only — it never deletes. Deletion still flows
+> through the Step 2 dry-run and Step 3 confirmation below, with the
+> squash-merged branches included in the set the user approves.
 
 ### Step 2: Dry-run preview
 
