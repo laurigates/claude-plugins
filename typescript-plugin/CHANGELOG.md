@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.8](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.8.7...typescript-plugin-v1.8.8) (2026-06-30)
+
+
+### Documentation
+
+* **typescript:** modernize bun-lockfile-update (text bun.lock + Renovate consolidation) ([#1886](https://github.com/laurigates/claude-plugins/issues/1886)) ([de62523](https://github.com/laurigates/claude-plugins/commit/de625239e485363b6df2cbd509ce5de9fb7b20eb))
+
 ## [1.8.7](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.8.6...typescript-plugin-v1.8.7) (2026-06-13)
 
 
