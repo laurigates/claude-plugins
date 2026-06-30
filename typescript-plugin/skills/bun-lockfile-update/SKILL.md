@@ -3,20 +3,20 @@ created: 2025-12-16
 modified: 2026-05-09
 reviewed: 2026-04-25
 name: bun-lockfile-update
-description: "Bun lockfile update (bun.lockb): bun update, regeneration, security audits. Use when updating dependencies, resolving lockfile conflicts, or regenerating bun.lockb."
+description: "Bun lockfile update (bun.lock): bun update, regeneration, security audits. Use when updating dependencies, resolving lockfile conflicts, or regenerating bun.lock."
 allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # Bun Lockfile Update
 
-Comprehensive guidance for updating Bun lockfiles (`bun.lockb`) with proper dependency management practices.
+Comprehensive guidance for updating Bun lockfiles (`bun.lock`) with proper dependency management practices.
 
 ## When to Use This Skill
 
 | Use this skill when... | Use bun-outdated instead when... |
 |---|---|
 | Running `bun update` to refresh dependencies | Auditing what is outdated without changing anything |
-| Resolving a `bun.lockb` merge conflict by regenerating | Reviewing major version gaps before deciding to upgrade |
+| Resolving a `bun.lock` merge conflict by regenerating | Reviewing major version gaps before deciding to upgrade |
 | Patching a security vulnerability in a specific package | Listing newer versions for a single package |
 | Performing a major version upgrade workflow | Use bun-install when bootstrapping a fresh checkout |
 
@@ -53,7 +53,7 @@ bun update --latest <package-name>
 ### Regenerate Lockfile
 ```bash
 # Regenerate lockfile from package.json (clean install)
-rm bun.lockb
+rm bun.lock
 bun install
 
 # Or force regeneration
@@ -70,7 +70,7 @@ Respects semver ranges in `package.json`:
 bun update
 
 # Review changes
-git diff bun.lockb package.json
+git diff bun.lock package.json
 
 # Test thoroughly
 bun test
@@ -91,7 +91,7 @@ Updates to absolute latest versions:
 bun update --latest
 
 # Review ALL changes carefully
-git diff bun.lockb package.json
+git diff bun.lock package.json
 
 # Test exhaustively (breaking changes likely)
 bun test
@@ -150,7 +150,7 @@ bun update --latest typescript
 2. **Execute update command**
 3. **Review changes:**
    ```bash
-   git diff bun.lockb package.json
+   git diff bun.lock package.json
    ```
 
 ### Post-Update Validation
@@ -188,14 +188,14 @@ bun update --latest typescript
 ### Commit Changes
 ```bash
 # For safe updates
-git add bun.lockb
+git add bun.lock
 git commit -m "chore(deps): update dependencies
 
 Updates all dependencies to latest compatible versions.
 All tests passing."
 
 # For aggressive updates
-git add bun.lockb package.json
+git add bun.lock package.json
 git commit -m "chore(deps): upgrade dependencies to latest
 
 BREAKING CHANGES:
@@ -216,7 +216,7 @@ All tests passing."
 # Weekly/monthly routine
 bun update
 bun test
-git add bun.lockb
+git add bun.lock
 git commit -m "chore(deps): update dependencies"
 ```
 
@@ -235,7 +235,7 @@ bun audit
 
 # Test and commit
 bun test
-git add bun.lockb package.json
+git add bun.lock package.json
 git commit -m "fix(deps): patch security vulnerability in <package>
 
 Fixes: CVE-XXXX-XXXXX"
@@ -281,21 +281,21 @@ See docs/migration/react-18.md for details."
 ```
 
 ### Scenario 4: Lockfile Conflict Resolution
-**Goal:** Resolve merge conflict in `bun.lockb`
+**Goal:** Resolve merge conflict in `bun.lock`
 
 ```bash
 # 1. Accept either version (doesn't matter which)
-git checkout --theirs bun.lockb  # Or --ours
+git checkout --theirs bun.lock  # Or --ours
 
 # 2. Regenerate lockfile from package.json
-rm bun.lockb
+rm bun.lock
 bun install
 
 # 3. Verify installation
 bun test
 
 # 4. Commit resolution
-git add bun.lockb
+git add bun.lock
 git commit -m "chore: resolve lockfile merge conflict"
 ```
 
@@ -322,10 +322,16 @@ bun run build
 
 ## Bun-Specific Features
 
-### Binary Lockfile
-- Bun uses binary lockfile format (`bun.lockb`)
-- Much faster to parse than `package-lock.json` or `yarn.lock`
-- Not human-readable (use `bun pm ls` to inspect)
+### Lockfile Format (`bun.lock`)
+- Since **Bun 1.2** the default lockfile is the text-based `bun.lock` (JSONC) —
+  human-readable and reviewable in `git diff` / PRs.
+- The legacy binary `bun.lockb` is still supported but no longer the default;
+  `bun install` under Bun ≥ 1.2 migrates an existing `bun.lockb` to `bun.lock`
+  (force it with `bun install --save-text-lockfile`).
+- Because it is text, `bun.lock` merge conflicts can be reviewed and often
+  resolved directly — though regenerating (below) is still the simplest fix.
+- Commit exactly one lockfile: keep `bun.lock` and delete any stale `bun.lockb`
+  once migrated.
 
 ### Workspaces
 ```bash
@@ -351,7 +357,7 @@ bun install --lockfile-only
 ```bash
 # Symptoms: Install errors, checksum mismatches
 # Solution: Regenerate lockfile
-rm bun.lockb
+rm bun.lock
 bun install
 ```
 
@@ -370,7 +376,7 @@ bun install --force
 rm -rf ~/.bun/install/cache
 
 # Reinstall
-rm -rf node_modules bun.lockb
+rm -rf node_modules bun.lock
 bun install
 ```
 
@@ -379,7 +385,7 @@ bun install
 # Symptoms: Package version doesn't match expectations
 # Solution: Verify package.json and regenerate lockfile
 cat package.json  # Check version ranges
-rm bun.lockb
+rm bun.lock
 bun install
 ```
 
