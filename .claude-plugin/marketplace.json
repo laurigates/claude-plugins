@@ -436,7 +436,7 @@
       "name": "macos-plugin",
       "source": "./macos-plugin",
       "description": "macOS-specific dev environment tooling - kitty session persistence, LaunchServices health, incident postmortems for kernel panics, WindowServer hangs, and long-uptime drift",
-      "version": "1.3.0",
+      "version": "1.4.0",
       "keywords": [
         "macos",
         "darwin",
