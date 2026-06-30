@@ -367,6 +367,26 @@ check_skill_body() {
       has_errors=true
     fi
 
+    # Regression: deadbranch must reclassify squash-merged branches. The
+    # underlying `deadbranch` CLI detects "merged" via commit ancestry, which
+    # under-reports badly on squash-merge repos (the release-please default) — a
+    # squash creates a fresh-SHA commit on the base, so the branch's own
+    # commits are never ancestors and it reads as unmerged (issue #1869). The
+    # skill adds a read-only reclassification pass using two deterministic
+    # signals that survive squash-merge AND later base drift: a `merge-tree`
+    # no-op (tree equals base's tree) OR a MERGED PR for the branch head. The
+    # semantic invariant is that both signals survive bulk edits.
+    if [ "$skill_name" = "deadbranch" ]; then
+      if ! grep -q "merge-tree" "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must reclassify squash-merged branches via 'git merge-tree' no-op (issue #1869)")
+        has_errors=true
+      fi
+      if ! grep -q "gh pr list --state all --head" "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must reclassify squash-merged branches via a MERGED PR check ('gh pr list --state all --head') (issue #1869)")
+        has_errors=true
+      fi
+    fi
+
     # Regression: task-reconcile is the only skill that ACTS on the stale-task
     # drift task-status detects. Its load-bearing invariants are (1) a bulk
     # `task import` round-trip for leaf tasks, (2) a default-safe dry-run with an
