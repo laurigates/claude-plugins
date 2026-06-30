@@ -36,6 +36,15 @@
     "edr",
     "exec-storm",
     "battery-drain",
-    "systemextensionsctl"
+    "systemextensionsctl",
+    "performance-triage",
+    "apple-silicon",
+    "macmon",
+    "samply",
+    "bottom",
+    "flamegraph",
+    "gpu-attribution",
+    "use-method",
+    "instruments"
   ]
 }

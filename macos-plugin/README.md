@@ -13,6 +13,7 @@ All skills are **Darwin-only** — they detect non-macOS systems and refuse to a
 | [macos-incident-postmortem](skills/macos-incident-postmortem/skill.md) | Reconstruct what happened from `/Library/Logs/DiagnosticReports/`, `kern.boottime`, and shell history after a hang or panic |
 | [endpoint-security-cpu](skills/endpoint-security-cpu/skill.md) | Diagnose an EndpointSecurity/EDR extension (Kandji ESF, XProtect) hot from a process-spawn storm; trace the source with `powermetrics` + `eslogger` |
 | [macos-disk-usage](skills/macos-disk-usage/skill.md) | Disk-usage forensics and space recovery on APFS — trust `df` `Avail` not `Capacity %`, reclaim OrbStack/Docker, thin `tmutil` snapshots, tiered cache cleanup |
+| [macos-performance-triage](skills/macos-performance-triage/skill.md) | Live CPU/GPU triage on Apple Silicon — `macmon`-first USE-method snapshot, attribute a hot `WindowServer` to the driving app via `powermetrics --show-process-gpu`, flame-graph a process with `samply`; Rust-forward, sudo-free toolkit |
 
 ## When to Use
 
@@ -24,6 +25,9 @@ All skills are **Darwin-only** — they detect non-macOS systems and refuse to a
 | Investigating recent kernel panics, watchdog timeouts, jetsam events | `macos-incident-postmortem` |
 | A security extension (Kandji ESF, XProtect, an EDR) is pegged at high CPU; battery drains | `endpoint-security-cpu` |
 | A disk reads near-full, or you're hunting what's eating space / reclaiming OrbStack-Docker | `macos-disk-usage` |
+| The Mac is hot/loud/slow and you need to find what's driving it | `macos-performance-triage` |
+| `WindowServer` is hot and you need to attribute it to a client app (GPU compositing) | `macos-performance-triage` |
+| You want a flame graph of a CPU-heavy process on Apple Silicon | `macos-performance-triage` |
 | `syspolicyd`/`trustd`/`tccd`/`auditd` are all elevated together — an exec storm | `endpoint-security-cpu` |
 | Auditing whether the machine is "due for a reboot" after weeks of uptime | `macos-incident-postmortem` + `launchservices-health` |
 
