@@ -395,9 +395,29 @@ bun audit --json > audit-report.json
 ```
 
 ### Automated Updates
-```bash
-# Use Renovate or Dependabot for automated PRs
-# Configure in .github/renovate.json or .github/dependabot.yml
+
+Use **Renovate** for automated dependency PRs — it regenerates and commits
+`bun.lock` natively when it patches `package.json`, so update/pin PRs ship a
+synchronized lockfile with no extra configuration.
+
+- **Do not use Dependabot for bun projects.** Dependabot does not maintain
+  `bun.lock`, so its PRs leave the lockfile out of sync. Consolidate on
+  Renovate (remove `.github/dependabot.yml`).
+- **There is no bun value for `postUpdateOptions`.** The allowed values are
+  npm/pnpm/yarn/bundler/go/nuget only; an invented value (e.g. `bunDedupe`)
+  fails Renovate's `allowedValues` validation and breaks the **entire**
+  config. No option is needed to get a matching lockfile on update.
+- **Enable `lockFileMaintenance`** for the periodic full-lockfile refresh
+  (its `enabled` defaults to `false`, so set it explicitly). Bun support for
+  this was a regression fixed in Renovate PR #38694 (Oct 2025).
+
+```json
+// renovate.json
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "lockFileMaintenance": { "enabled": true }
+}
 ```
 
 ### Review Dependencies
