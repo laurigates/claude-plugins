@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/laurigates/claude-plugins/compare/macos-plugin-v1.3.0...macos-plugin-v1.4.0) (2026-06-30)
+
+
+### Features
+
+* **macos-plugin:** add macos-performance-triage skill ([#1888](https://github.com/laurigates/claude-plugins/issues/1888)) ([8973142](https://github.com/laurigates/claude-plugins/commit/89731423ecb0df7962af3fc7544896d778751ffa))
+
 ## [1.3.0](https://github.com/laurigates/claude-plugins/compare/macos-plugin-v1.2.2...macos-plugin-v1.3.0) (2026-06-22)
 
 
