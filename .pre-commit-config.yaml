@@ -43,6 +43,19 @@ repos:
         language: system
         files: '(SKILL|skill)\.md$'
         pass_filenames: false
+      - id: nudge-plugin-readme-currency
+        name: nudge to update a changed plugin's README.md (advisory, never blocks)
+        entry: bash ./scripts/check-plugin-readme-currency.sh
+        language: system
+        files: '^[^/]+-plugin/(skills|agents|\.claude-plugin)/'
+        pass_filenames: false
+        verbose: true
+      - id: test-check-plugin-readme-currency
+        name: plugin-README-currency nudge regression
+        entry: bash ./scripts/tests/test-check-plugin-readme-currency.sh
+        language: system
+        files: '^scripts/(check-plugin-readme-currency\.sh|tests/test-check-plugin-readme-currency\.sh)$'
+        pass_filenames: false
       - id: audit-skill-descriptions
         name: audit skill descriptions for auto-invocation
         entry: python3 ./scripts/audit-skill-descriptions.py --strict-all
