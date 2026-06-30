@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.49.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.48.1...git-plugin-v2.49.0) (2026-06-30)
+
+
+### Features
+
+* **git-plugin:** add squash-merge awareness to deadbranch skill ([#1891](https://github.com/laurigates/claude-plugins/issues/1891)) ([946aaf8](https://github.com/laurigates/claude-plugins/commit/946aaf8e3c468fbe3c099b1b7fa3cad404ec969b))
+
 ## [2.48.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.48.0...git-plugin-v2.48.1) (2026-06-29)
 
 
