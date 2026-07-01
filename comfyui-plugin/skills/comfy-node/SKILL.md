@@ -1,7 +1,7 @@
 ---
 created: 2026-06-04
-modified: 2026-06-04
-reviewed: 2026-06-04
+modified: 2026-07-01
+reviewed: 2026-07-01
 model: opus
 name: comfy-node
 description: >-
@@ -122,6 +122,14 @@ just check
 
 `just check` must pass before anything is pushed. If it fails, fix locally and
 re-run — do not create the remote repo on a red pack.
+
+The scaffold prints a **finishing-pass audit** (issue #1877): it emits the
+registry icon/banner SVGs + `Icon`/`Banner` wiring and the renovate /
+registry-health / clear-autorelease workflows, and flags the follow-ups it can't
+do itself. Before the first release, run `just assets` (rasterizes `icon.svg` /
+`banner.svg` → the PNGs the registry serves; needs `rsvg-convert`) and commit the
+PNGs. The screenshot pipeline stays deferred to the `comfyui-screenshot-pipeline`
+skill (`just screenshots`) — surface it as a Phase 6 follow-up.
 
 ## Phase 3 — Create the GitHub repo and seed `main`
 
@@ -298,5 +306,10 @@ DOM test gap) to `project:comfyui-nodes` per `taskwarrior-cross-session`.
 
 - The orchestrator never runs `tofu apply` — all applies go through Scalr on
   merge (see `gitops/CLAUDE.md`). Local gitops work is `plan`/`validate` only.
+- The scaffold now emits the registry finishing-pass pieces (icon/banner SVGs +
+  wiring, renovate + registry-health + clear-autorelease workflows) and audits
+  for the rest; `just assets` (rsvg-convert) produces the served PNGs. See the
+  finishing-pass note in Phase 2 (issue #1877).
 - Screenshots pipeline + `docs/blueprint/` PRD/ADR set are not scaffolded; add
-  them later from a reference pack if the pack warrants them.
+  them later from a reference pack (the `comfyui-screenshot-pipeline` skill) if
+  the pack warrants them.

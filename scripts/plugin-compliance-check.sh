@@ -720,6 +720,34 @@ check_skill_body() {
           issues+=("❌ ${plugin}/${skill_name}: scaffold.py hard-codes a biome version in a template — use the @@BIOME_VERSION@@ token so all pins stay in lockstep")
           has_errors=true
         fi
+        # 4. Finishing pass (issue #1877): the generator must emit the
+        #    registry-ready / fleet-consistent pieces that used to be applied by
+        #    hand pack-by-pack after scaffold, and wire Icon/Banner (never the
+        #    old empty `Icon = ""`). Semantic invariants:
+        #      - icon.svg + banner.svg emitted
+        #      - [tool.comfy] Icon/Banner wired to a non-empty URL
+        #      - registry-health + clear-autorelease workflows emitted
+        #      - a finishing-pass audit runs at the end of a scaffold
+        for fp_file in '"icon.svg":' '"banner.svg":' \
+          '"\.github/workflows/registry-health\.yml":' \
+          '"\.github/workflows/clear-autorelease-labels\.yml":'; do
+          if ! grep -Eq "$fp_file" "$scaffold_py"; then
+            issues+=("❌ ${plugin}/${skill_name}: scaffold.py must emit the finishing-pass file matching ${fp_file} (issue #1877)")
+            has_errors=true
+          fi
+        done
+        if grep -Eq '^Icon = ""' "$scaffold_py"; then
+          issues+=("❌ ${plugin}/${skill_name}: scaffold.py must wire a non-empty [tool.comfy] Icon (not the empty stub) — issue #1877")
+          has_errors=true
+        fi
+        if ! grep -q 'Banner = "https://raw.githubusercontent.com' "$scaffold_py"; then
+          issues+=("❌ ${plugin}/${skill_name}: scaffold.py must wire [tool.comfy] Banner to the raw-GitHub PNG URL (issue #1877)")
+          has_errors=true
+        fi
+        if ! grep -q 'print_finishing_pass_audit' "$scaffold_py"; then
+          issues+=("❌ ${plugin}/${skill_name}: scaffold.py must run print_finishing_pass_audit at the end of a scaffold (issue #1877)")
+          has_errors=true
+        fi
       fi
     fi
 
