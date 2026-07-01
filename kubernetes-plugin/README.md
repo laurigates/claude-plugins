@@ -228,12 +228,20 @@ Skills are automatically activated based on user queries:
 ### Context Safety
 All skills emphasize **explicit context specification**:
 ```bash
-# Always use --context
+# Always use --context / --kube-context
 kubectl --context=prod-cluster get pods
 helm --kube-context=prod-cluster status myapp
+skaffold --kube-context=prod-cluster deploy
 ```
 
 Never rely on current context to prevent accidental operations on wrong clusters.
+
+The `validate-kubectl-context.sh` PreToolUse hook enforces this for **all three
+tools**: it blocks cluster-mutating `kubectl`, `helm`, and `skaffold` commands
+that omit an explicit context flag. `skaffold` is included because
+`skaffold deploy/run/dev/delete` write to the *current* kubectl context by
+default and would otherwise bypass the guard (see issue #1870). Pin the context
+per-command with `--kube-context`, or in `skaffold.yaml` via `deploy.kubeContext`.
 
 ### Atomic Deployments
 Use atomic flags for production:

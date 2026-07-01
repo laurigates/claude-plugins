@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# PreToolUse hook for Bash tool - validates kubectl/helm commands include --context
+# PreToolUse hook for Bash tool - validates kubectl/helm/skaffold commands include a context
 #
 # This hook enforces explicit Kubernetes context selection to prevent accidental
-# operations on the wrong cluster. It blocks kubectl and helm commands that don't
-# specify a --context flag.
+# operations on the wrong cluster. It blocks kubectl, helm, and skaffold commands
+# that perform cluster writes without specifying a context flag
+# (kubectl --context, helm/skaffold --kube-context).
 #
 # Configuration (add to .claude/settings.json or plugin.json):
 # {
@@ -176,6 +177,49 @@ Available contexts can be listed with:
   kubectl config get-contexts
 
 Using explicit --kube-context prevents accidental deployments to production or other critical clusters."
+    fi
+fi
+
+# Check if this is a skaffold command
+#
+# skaffold performs cluster writes (deploy/delete/run/dev/debug/apply) using the
+# *current* kubectl context, so it can silently mutate the wrong cluster exactly
+# like kubectl/helm. Issue #1870: `skaffold deploy` deployed a dev stack into a
+# production GKE cluster because the current context was prod and skaffold was
+# unguarded. skaffold accepts the same `--kube-context` flag as helm.
+if is_invocation skaffold; then
+
+    # skaffold subcommands that never touch a cluster — safe without a context.
+    # Everything not listed here (deploy, delete, run, dev, debug, apply, verify)
+    # falls through to the --kube-context requirement, failing safe on unknown
+    # subcommands.
+    SAFE_SKAFFOLD_SUBCOMMANDS="build|render|diagnose|init|fix|schema|config|completion|version|filter|inspect|credits|survey|test|options|help|lsp|apiserver"
+
+    # Allow safe commands
+    if echo "$COMMAND_CLEAN" | grep -Eq "skaffold\s+($SAFE_SKAFFOLD_SUBCOMMANDS)"; then
+        exit 0
+    fi
+
+    # Check if --kube-context is specified (skaffold uses --kube-context, like helm)
+    if ! echo "$COMMAND_CLEAN" | grep -Eq '\s--kube-context[= ]'; then
+        block "SKAFFOLD SAFETY: Missing --kube-context flag.
+
+skaffold deploys to the CURRENT kubectl context by default, which can silently
+push a dev stack into production. Always pin the context explicitly:
+
+  skaffold --kube-context=CONTEXT_NAME deploy
+  skaffold --kube-context=staging run
+
+Alternatively, pin the context in skaffold.yaml so every run is safe:
+
+  deploy:
+    kubeContext: staging
+
+Available contexts can be listed with:
+  kubectl config get-contexts
+
+Using an explicit --kube-context (or a pinned deploy.kubeContext) prevents
+accidental deploys to production or other critical clusters."
     fi
 fi
 

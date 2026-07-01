@@ -240,6 +240,66 @@ assert_exit \
     "helm verify is allowed (local provenance check)" 0 \
     '{"tool_name":"Bash","tool_input":{"command":"helm verify mychart-1.0.0.tgz"}}'
 
+# ── skaffold enforcement tests (issue #1870) ────────────────────────────────
+# skaffold deploys to the current kubectl context by default, so context-less
+# cluster writes must be blocked exactly like kubectl/helm.
+echo ""
+echo "skaffold enforcement (#1870):"
+
+assert_exit \
+    "skaffold deploy without --kube-context is blocked" 2 \
+    '{"tool_name":"Bash","tool_input":{"command":"skaffold deploy"}}'
+
+assert_exit \
+    "skaffold run without --kube-context is blocked" 2 \
+    '{"tool_name":"Bash","tool_input":{"command":"skaffold run"}}'
+
+assert_exit \
+    "skaffold delete without --kube-context is blocked" 2 \
+    '{"tool_name":"Bash","tool_input":{"command":"skaffold delete"}}'
+
+assert_exit \
+    "skaffold dev without --kube-context is blocked" 2 \
+    '{"tool_name":"Bash","tool_input":{"command":"skaffold dev"}}'
+
+assert_exit \
+    "skaffold deploy with --kube-context=NAME is allowed" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"skaffold --kube-context=staging deploy"}}'
+
+assert_exit \
+    "skaffold run with --kube-context NAME is allowed" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"skaffold run --kube-context kind-dev"}}'
+
+assert_exit \
+    "skaffold build (safe subcommand) is allowed" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"skaffold build"}}'
+
+assert_exit \
+    "skaffold render (safe subcommand, no cluster write) is allowed" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"skaffold render"}}'
+
+assert_exit \
+    "skaffold diagnose (safe subcommand) is allowed" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"skaffold diagnose"}}'
+
+assert_exit \
+    "skaffold version (safe subcommand) is allowed" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"skaffold version"}}'
+
+# Prose/quote false-positive guards for skaffold (same class as kubectl/helm)
+assert_exit \
+    "skaffold in double-quoted grep pattern is allowed" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"grep -n \"skaffold deploy\" justfile"}}'
+
+assert_exit \
+    "skaffold mid-prose in echo is allowed" 0 \
+    '{"tool_name":"Bash","tool_input":{"command":"echo remember to run skaffold later"}}'
+
+# env-prefixed skaffold deploy is still a real invocation → blocked
+assert_exit \
+    "env-prefixed skaffold deploy without --kube-context is still blocked" 2 \
+    '{"tool_name":"Bash","tool_input":{"command":"SKAFFOLD_DEFAULT_REPO=reg.example.com skaffold deploy"}}'
+
 # ── Edge cases ───────────────────────────────────────────────────────────────
 echo ""
 echo "Edge cases:"
