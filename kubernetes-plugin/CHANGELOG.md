@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/laurigates/claude-plugins/compare/kubernetes-plugin-v1.7.9...kubernetes-plugin-v1.8.0) (2026-07-01)
+
+
+### Features
+
+* **kubernetes-plugin:** guard skaffold cluster writes in validate-kubectl-context hook ([#1894](https://github.com/laurigates/claude-plugins/issues/1894)) ([e0e3fbb](https://github.com/laurigates/claude-plugins/commit/e0e3fbbbbacd771a59f77f51a8354537361d27c4))
+
 ## [1.7.9](https://github.com/laurigates/claude-plugins/compare/kubernetes-plugin-v1.7.8...kubernetes-plugin-v1.7.9) (2026-06-18)
 
 
