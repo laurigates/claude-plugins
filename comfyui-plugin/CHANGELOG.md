@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.5.0...comfyui-plugin-v1.6.0) (2026-07-01)
+
+
+### Features
+
+* **comfyui-plugin:** emit registry finishing pass in node scaffold ([#1896](https://github.com/laurigates/claude-plugins/issues/1896)) ([7b82106](https://github.com/laurigates/claude-plugins/commit/7b82106d5e3fa7894bea081f5e4c60f14aca3301))
+
 ## [1.5.0](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.4.4...comfyui-plugin-v1.5.0) (2026-06-28)
 
 
