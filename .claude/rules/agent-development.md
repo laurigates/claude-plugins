@@ -282,6 +282,8 @@ Agent tool with run_in_background: true
 
 `/workflows` orchestrates work across tens to hundreds of background agents from a single session — a fan-out scale beyond manual `/bg` dispatch. Reach for it when a task decomposes into many independent units that each warrant their own background agent; the framework manages the dispatch and result collection.
 
+> **Resume caveat — worktree agents are not resume-cacheable.** `Workflow({resumeFromRunId})` caches completed `agent()` calls by `(prompt, opts)`, but an `isolation: "worktree"` agent that **already succeeded** is **re-executed** on resume rather than served from cache — re-running its outward side effects and opening a **duplicate PR / branch** (issue [#1868](https://github.com/laurigates/claude-plugins/issues/1868)). Do not resume a whole workflow to retry a few failed worktree agents; re-dispatch only the failed ones with a fresh sequential pass. See `agent-patterns-plugin:parallel-agent-dispatch` → "Resuming a workflow: `resumeFromRunId` re-runs succeeded worktree agents" and `.claude/rules/agent-coworker-detection.md`.
+
 ### `worktree.bgIsolation: "none"` (2.1.143+)
 
 By default, background sessions launch into a fresh `EnterWorktree`. For repositories where worktrees are impractical (submodule-heavy repos, repos with paths longer than the OS-permitted symlink depth, host machines that share the worktree directory with other tools), set:

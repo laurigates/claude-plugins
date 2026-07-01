@@ -113,6 +113,17 @@ require_marker "$dispatch_skill" 'git -C "$WORKTREE"' "the absolute-path git idi
 require_marker "$dispatch_skill" "loses worktree isolation" "the SendMessage-resume isolation-loss caveat (issue #1546)"
 require_marker "$dispatch_skill" "#1546" "the issue reference"
 
+# Regression #1868: Workflow({resumeFromRunId}) does NOT cache a succeeded
+# isolation:"worktree" agent — it RE-RUNS it on resume, re-firing its outward
+# side effects and opening a DUPLICATE PR (#1858 dup of #1857). This is the
+# opposite failure to the #1546 SendMessage-resume case (which loses isolation).
+# The fix documents the caveat in parallel-agent-dispatch (subsection "Resuming
+# a workflow: resumeFromRunId re-runs succeeded worktree agents") and directs
+# fresh sequential re-dispatch of only the failed agents. Assert BOTH the
+# load-bearing phrase and the issue reference survive future bulk edits.
+require_marker "$dispatch_skill" "re-runs succeeded worktree agents" "the resumeFromRunId re-run caveat heading (issue #1868)"
+require_marker "$dispatch_skill" "#1868" "the issue reference"
+
 # Regression (#1692 sibling): the GIT_DIR/GIT_WORK_TREE export leak — exporting
 # git env to paper over a bare worktree redirects every git op (and any
 # git-shelling test/hook subprocess) at the shared common config, corrupting all

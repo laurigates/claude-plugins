@@ -5,8 +5,8 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-21
-modified: 2026-06-28
-reviewed: 2026-06-28
+modified: 2026-07-01
+reviewed: 2026-07-01
 ---
 
 # Parallel Agent Dispatch
@@ -374,6 +374,26 @@ The rule: for parallel file-mutating work, never resume a finished
 worktree-isolated agent via `SendMessage` — re-dispatch a new
 `isolation: "worktree"` agent instead. Reserve `SendMessage`-resume for
 read-only or single-checkout continuations.
+
+### Resuming a workflow: `resumeFromRunId` re-runs succeeded worktree agents
+
+`Workflow({resumeFromRunId})`'s resume contract — "completed `agent()` calls
+return cached results" — holds for ordinary `agent()` calls but **not** for
+`isolation: "worktree"` agents: on resume a worktree agent that **already
+succeeded** is **re-executed**, not served from cache. Opposite failure to the
+`SendMessage` case above (there the resume loses its worktree; here it re-runs
+the whole agent, side effects and all). The damage is outward and
+non-idempotent — an agent that opened a PR opens a **duplicate** one on resume
+(PR #1858 dup of #1857), needing manual cleanup (issue
+[#1868](https://github.com/laurigates/claude-plugins/issues/1868)).
+
+So to retry a few rate-limited/failed worktree agents from a finished workflow,
+do **not** resume the whole run — the succeeded ones re-run and duplicate their
+PRs. **Re-dispatch only the failed agents** with a fresh **sequential** pass
+(which also dodges the burst rate limit). Check for an already-open PR first
+(`gh pr list --state all --search …`, reading `state`/`mergedAt` per
+`.claude/rules/gh-json-fields.md`). Non-worktree stages cache correctly — the
+hazard is worktree-specific. See `.claude/rules/agent-coworker-detection.md`.
 
 ## Quick Reference
 

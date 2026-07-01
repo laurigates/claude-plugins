@@ -17,6 +17,13 @@
 #   D. refactor.md missing the "#1601" reference → exit 1
 #   E. parallel-agent-dispatch SKILL.md missing "#1601" → exit 1
 #   F. parallel-agent-dispatch REFERENCE.md missing "Completion manifest" → exit 1
+#   G. parallel-agent-dispatch SKILL.md missing the #1868 resume-hazard caveat → exit 1
+#   H. parallel-agent-dispatch SKILL.md missing "#1868" → exit 1
+#
+# Issue #1868: Workflow({resumeFromRunId}) re-runs an already-succeeded
+# isolation:"worktree" agent instead of returning its cached result, re-firing
+# its outward side effects (a duplicate PR). Guards G/H keep the documented
+# caveat from being silently dropped by a future bulk edit.
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -116,5 +123,24 @@ assert "F: REFERENCE.md missing 'Completion manifest' fails (exit 1)" \
   "$([ "$(run_fixture "$fx_f")" -eq 1 ] && echo true || echo false)"
 rm -rf "$fx_f"
 
-echo "check-agent-failure-contract (#1601): ${pass_count} passed, ${fail_count} failed"
+# --- Guard G: SKILL.md missing the #1868 resumeFromRunId re-run caveat ---
+# Issue #1868: Workflow({resumeFromRunId}) re-runs succeeded worktree agents,
+# opening duplicate PRs. Strip the caveat heading phrase and confirm the check
+# fails, so a bulk edit can't silently drop the resume-hazard documentation.
+fx_g="$(mktemp -d)"
+build_fixture "$fx_g"
+strip_marker "$fx_g/agent-patterns-plugin/skills/parallel-agent-dispatch/SKILL.md" "re-runs succeeded worktree agents"
+assert "G: dispatch SKILL.md missing the #1868 caveat heading fails (exit 1)" \
+  "$([ "$(run_fixture "$fx_g")" -eq 1 ] && echo true || echo false)"
+rm -rf "$fx_g"
+
+# --- Guard H: SKILL.md missing the #1868 issue reference ---
+fx_h="$(mktemp -d)"
+build_fixture "$fx_h"
+strip_marker "$fx_h/agent-patterns-plugin/skills/parallel-agent-dispatch/SKILL.md" "#1868"
+assert "H: dispatch SKILL.md missing #1868 fails (exit 1)" \
+  "$([ "$(run_fixture "$fx_h")" -eq 1 ] && echo true || echo false)"
+rm -rf "$fx_h"
+
+echo "check-agent-failure-contract (#1601/#1868): ${pass_count} passed, ${fail_count} failed"
 [ "$fail_count" -eq 0 ]
