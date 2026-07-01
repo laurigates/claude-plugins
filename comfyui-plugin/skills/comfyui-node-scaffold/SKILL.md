@@ -1,7 +1,7 @@
 ---
 created: 2026-06-04
-modified: 2026-06-28
-reviewed: 2026-06-28
+modified: 2026-07-01
+reviewed: 2026-07-01
 name: comfyui-node-scaffold
 description: >-
   Scaffold a new ComfyUI custom-node repo (TypeScript + bun build, CI,
@@ -138,16 +138,37 @@ It refuses to overwrite an existing directory.
 
 A repo where `just check` (typecheck + build + lint + test) passes from the
 first commit: `pyproject.toml` (`[tool.comfy]` metadata with `includes =
-["web/dist"]`, ruff config, dev deps), `.github/workflows/` (`ci.yml`,
-`publish.yml`, `release-please.yml`), `dependabot.yml`, strict `tsconfig.json`,
+["web/dist"]` and `Icon`/`Banner` wired to the raw-GitHub PNG URLs, ruff config,
+dev deps), `.github/workflows/` (`ci.yml`, `publish.yml`, `release-please.yml`,
+`renovate.yml`, `registry-health.yml`, `clear-autorelease-labels.yml`),
+`renovate.json` (Renovate, **not** dependabot), strict `tsconfig.json`,
 `biome.json`, `knip.json`, `.pre-commit-config.yaml`,
 `release-please-config.json` + manifest, `vitest.config.js`, `package.json`
 (bun scripts; modal variants add `@laurigates/comfy-modal-kit`), `tests/` (a
 green pytest + vitest smoke test), `src/index.ts` + `src/comfyui-shims.d.ts`,
-`__init__.py` (`WEB_DIRECTORY = "./web/dist"`), `CLAUDE.md`, the migration ADR,
-`README`, `LICENSE`, and `RELEASE-CHECKLIST.md`. The `backend` variant
-additionally gets `<module>.py` (node + endpoint + whitelist gate) and
-`tests/conftest.py` (stubs aiohttp/server).
+`__init__.py` (`WEB_DIRECTORY = "./web/dist"`), `icon.svg` + `banner.svg`
+(family-style placeholders — `just assets` rasterizes them to the PNGs the
+registry serves), `CLAUDE.md`, the migration ADR, `README`, `LICENSE`, and
+`RELEASE-CHECKLIST.md`. The `backend` variant additionally gets `<module>.py`
+(node + endpoint + whitelist gate) and `tests/conftest.py` (stubs aiohttp/server).
+
+## The finishing pass
+
+A CI-green pack is not yet a registry-ready, fleet-consistent one. The scaffold
+**emits** the deterministic finishing-pass pieces and **audits + warns** (at the
+end of every run) for the two it can't do from stdlib alone (issue #1877):
+
+| Piece | Status | Follow-up |
+|-------|--------|-----------|
+| Registry icon | emitted `icon.svg` + `Icon = …/main/icon.png` | `just assets` (needs `rsvg-convert`) → commit `icon.png` |
+| Registry banner | emitted `banner.svg` + `Banner = …/main/banner.png` | `just assets` → commit `banner.png` |
+| Renovate (not dependabot) | emitted `renovate.json` + `renovate.yml` + `registry-health.yml` + `clear-autorelease-labels.yml` | — |
+| Screenshot pipeline | **deferred** (heavy, pack-specific) | run `comfyui-screenshot-pipeline`, then `just screenshots` + embed the README hero |
+
+The final audit also diffs the new pack's top-level entries against a mature
+sibling (`comfyui-gallery-loader` / `comfyui-sampler-info` / …) and reports the
+gap — the drift this fixes was `comfyui-touch-manager` silently missing all four
+for weeks while CI stayed green.
 
 ## After scaffolding
 
@@ -239,7 +260,12 @@ The generated `publish.yml` builds `web/dist/` then publishes via
 - The screenshot pipeline (`screenshots/` Docker + Playwright) and the full
   `docs/blueprint/` PRD/ADR set (beyond the single migration ADR) are **not**
   generated — they are heavy and pack-specific. Add them later (the
-  `comfyui-screenshot-pipeline` skill wires the screenshots).
+  `comfyui-screenshot-pipeline` skill wires the screenshots). The
+  finishing-pass audit at the end of a scaffold flags this so it isn't silently
+  forgotten (issue #1877).
+- Icon/banner ship as **source SVGs**; the PNGs the registry serves are produced
+  by `just assets` (rsvg-convert), not at scaffold time (stdlib-only generator).
+  Edit the SVG and re-run `just assets` to keep the PNG in sync.
 - Action/tool versions in the generated workflows mirror the reference packs as
   of scaffolding; Dependabot/Renovate will bump them. The biome pin is
   single-sourced in `scaffold.py`'s `BIOME_VERSION` constant so biome.json,

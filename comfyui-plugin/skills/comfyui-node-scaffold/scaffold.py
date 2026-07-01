@@ -158,7 +158,12 @@ pythonpath = ["."]
 [tool.comfy]
 PublisherId = "@@PUBLISHER@@"
 DisplayName = "@@DISPLAY@@"
-Icon = ""
+# Registry display assets. The registry fetches these by URL from the repo's
+# default branch, so the PNGs must exist at the repo root on `main`. The scaffold
+# ships icon.svg / banner.svg (source form); run `just assets` (rsvg-convert) to
+# rasterize them to icon.png / banner.png and commit those before publishing.
+Icon = "https://raw.githubusercontent.com/@@PUBLISHER@@/@@NAME@@/main/icon.png"
+Banner = "https://raw.githubusercontent.com/@@PUBLISHER@@/@@NAME@@/main/banner.png"
 # The built frontend (web/dist/) is committed (tracked) — emitted by `bun run build`.
 # publish-node-action honors [tool.comfy] includes to force-add otherwise-
 # ignored paths into the published tarball. See ADR-0001.
@@ -815,7 +820,15 @@ Restart ComfyUI; hard-refresh the browser tab (Ctrl+Shift+R / Cmd+Shift+R).
 
 ## What it does
 
-TODO — describe @@WHAT_DESC@@.
+@@DESC@@
+
+It enhances @@WHAT_DESC@@ — additive and mobile-first, always falling back to the
+native control so serialized workflows never break. Expand this section with the
+concrete before/after once the pack logic lands.
+
+<!-- Hero screenshot: add the containerized screenshot pipeline with the
+     `comfyui-screenshot-pipeline` skill (`just screenshots`), then embed the
+     committed docs/*.png here with an italic caption, like the sibling packs. -->
 
 ## Compatibility
 
@@ -975,6 +988,20 @@ test:
 # Typecheck + build + lint + test in one shot — the local CI gate.
 [group: "quality"]
 check: typecheck build lint test
+
+##########
+# Assets
+##########
+
+# Requires rsvg-convert (librsvg): `brew install librsvg` / `apt-get install librsvg2-bin`.
+# pyproject [tool.comfy] Icon/Banner point at the raw GitHub PNG URLs, so the
+# registry shows a broken image until you rasterize and commit the PNGs.
+#
+# Rasterize icon.svg + banner.svg to the PNGs the registry serves (commit them).
+[group: "assets"]
+assets:
+    rsvg-convert -w 512 -h 512 icon.svg -o icon.png
+    rsvg-convert -w 1400 -h 400 banner.svg -o banner.png
 """
 
 BIOME_JSON = """\
@@ -1643,8 +1670,9 @@ justfile
 CLAUDE.md
 RELEASE-CHECKLIST.md
 
-# Source-form icon (PNG icon + banner display assets are kept)
+# Source-form display assets (the rasterized icon.png + banner.png are kept)
 icon.svg
+banner.svg
 """
 
 GITATTRIBUTES = (
@@ -1796,6 +1824,121 @@ the primitives that were previously copied byte-identically across packs.
 
 """
 
+# --------------------------------------------------------------------------- #
+# Registry display assets — the "finishing pass" (issue #1877)
+#
+# The scaffold ships SOURCE-FORM SVGs (icon.svg / banner.svg) styled to the
+# mobile-first family palette. `just assets` rasterizes them to icon.png /
+# banner.png via rsvg-convert; the registry fetches those PNGs by the raw
+# GitHub URL wired into pyproject.toml `[tool.comfy]`. Editing the SVG and
+# re-running `just assets` keeps the two in sync — no hand-drawn PNG to drift.
+# --------------------------------------------------------------------------- #
+ICON_SVG = """\
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="@@DISPLAY@@">
+  <title>@@DISPLAY@@</title>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2d6a4f"/>
+      <stop offset="1" stop-color="#1b4332"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="512" height="512" rx="96" fill="url(#g)"/>
+  <text x="256" y="256" fill="#ffffff" font-family="Inter, Segoe UI, system-ui, sans-serif"
+        font-size="248" font-weight="700" text-anchor="middle" dominant-baseline="central">@@INITIAL@@</text>
+</svg>
+"""
+
+BANNER_SVG = """\
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="400" viewBox="0 0 1400 400" role="img" aria-label="@@DISPLAY@@">
+  <title>@@DISPLAY@@</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#1b4332"/>
+      <stop offset="1" stop-color="#2d6a4f"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="1400" height="400" fill="url(#bg)"/>
+  <text x="80" y="188" fill="#ffffff" font-family="Inter, Segoe UI, system-ui, sans-serif"
+        font-size="104" font-weight="700" dominant-baseline="middle">@@DISPLAY@@</text>
+  <text x="84" y="272" fill="#95d5b2" font-family="Inter, Segoe UI, system-ui, sans-serif"
+        font-size="40" font-weight="400" dominant-baseline="middle">@@DESC@@</text>
+</svg>
+"""
+
+# Registry health monitor — flags a pack whose Active registry version has been
+# Flagged (falls back to the previous Active version on install). Mirrors the
+# sibling packs' registry-health.yml.
+REGISTRY_HEALTH_YML = """\
+name: "Registry: health check"
+
+on:
+  schedule:
+    - cron: '23 6 * * 1'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  registry-health:
+    name: Check Comfy Registry status
+    runs-on: ubuntu-latest
+    steps:
+      - name: Query the registry for the Active version status
+        env:
+          NODE_ID: "@@NAME@@"
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          status=$(curl -fsSL "https://api.comfy.org/nodes/${NODE_ID}" \\
+            | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("status",""))' \\
+            2>/dev/null || echo "")
+          echo "registry status: ${status:-unknown}"
+          if [ "$status" = "NodeStatusBanned" ] || [ "$status" = "NodeVersionStatusFlagged" ]; then
+            title="Registry health: ${NODE_ID} is ${status}"
+            existing=$(gh issue list -R "$REPO" --state open --search "$title" --json number --jq '.[].number')
+            if [ -z "$existing" ]; then
+              gh issue create -R "$REPO" --title "$title" \\
+                --body "The Comfy Registry reports \\`${status}\\` for the Active version. Installs fall back to the last Active version until a fresh good version re-points Active forward. See https://registry.comfy.org/nodes/${NODE_ID}."
+            fi
+          fi
+"""
+
+# Housekeeping: clear the transient release-please `autorelease: pending` /
+# `autorelease: tagged` labels once a release PR is merged and published, so the
+# label list stays readable. Mirrors the sibling packs' clear-autorelease-labels.yml.
+CLEAR_AUTORELEASE_YML = """\
+name: "Release: clear autorelease labels"
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  clear-labels:
+    name: Remove stale autorelease labels
+    runs-on: ubuntu-latest
+    steps:
+      - name: Remove autorelease:pending / autorelease:tagged from merged PRs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          for label in "autorelease: pending" "autorelease: tagged"; do
+            prs=$(gh pr list -R "$REPO" --state all --label "$label" --json number --jq '.[].number')
+            for pr in $prs; do
+              echo "clearing '$label' from PR #$pr"
+              gh pr edit -R "$REPO" "$pr" --remove-label "$label" || true
+            done
+          done
+"""
+
 
 # --------------------------------------------------------------------------- #
 # Generation
@@ -1816,6 +1959,11 @@ def build_file_map(
     ctx["BIOME_VERSION"] = BIOME_VERSION
     ctx["COMFY_FRONTEND_TYPES_VERSION"] = COMFY_FRONTEND_TYPES_VERSION
     ctx["MODAL_KIT_PKG"] = MODAL_KIT_PKG
+
+    # Single glyph for the placeholder icon.svg — first alphanumeric of the
+    # DisplayName, uppercased (falls back to "C" for comfyui).
+    initial = next((c for c in ctx["DISPLAY"] if c.isalnum()), "C")
+    ctx["INITIAL"] = initial.upper()
 
     # Variant-conditional pyproject bits.
     ctx["BACKEND_DEP_NOTE"] = (
@@ -2049,10 +2197,14 @@ def build_file_map(
         "release-please-config.json": RP_CONFIG,
         ".release-please-manifest.json": RP_MANIFEST,
         "renovate.json": RENOVATE_JSON,
+        "icon.svg": ICON_SVG,
+        "banner.svg": BANNER_SVG,
         ".github/workflows/ci.yml": CI_YML,
         ".github/workflows/publish.yml": PUBLISH_YML,
         ".github/workflows/release-please.yml": RELEASE_PLEASE_YML,
         ".github/workflows/renovate.yml": RENOVATE_YML,
+        ".github/workflows/registry-health.yml": REGISTRY_HEALTH_YML,
+        ".github/workflows/clear-autorelease-labels.yml": CLEAR_AUTORELEASE_YML,
         "docs/blueprint/adrs/0001-adopt-typescript-bun-build.md": ADR_0001,
         "src/index.ts": (
             INDEX_TS_GESTURE
@@ -2081,6 +2233,76 @@ def build_file_map(
         files["__init__.py"] = INIT_FRONTEND
 
     return {path: subst(body, ctx) for path, body in files.items()}
+
+
+REFERENCE_SIBLINGS = (
+    "comfyui-gallery-loader",
+    "comfyui-sampler-info",
+    "comfyui-touch-numeric",
+    "comfyui-touch-resize",
+)
+
+
+def print_finishing_pass_audit(
+    target: Path, parent: Path, variant: str
+) -> None:
+    """Report the registry-ready / fleet-consistent 'finishing pass'.
+
+    The scaffold now EMITS the deterministic pieces (icon.svg + banner.svg with
+    Icon/Banner wired into pyproject, the renovate + registry-health +
+    clear-autorelease workflows). Two pieces still need a follow-up the
+    generator can't do from stdlib alone — rasterizing the PNGs (rsvg-convert)
+    and the heavy, pack-specific screenshot pipeline — so they are flagged, not
+    silently absent (issue #1877).
+    """
+    emitted = [
+        "icon.svg + banner.svg emitted; Icon/Banner wired in pyproject [tool.comfy]",
+        "renovate.json + renovate.yml (no dependabot.yml)",
+        "registry-health.yml + clear-autorelease-labels.yml workflows",
+    ]
+    todo = [
+        "rasterize the PNGs the registry serves:  just assets  "
+        "(needs rsvg-convert; commit icon.png + banner.png)",
+        "add the screenshot pipeline + README hero:  run the "
+        "comfyui-screenshot-pipeline skill, then  just screenshots",
+        "flesh out README '## What it does' (currently a family placeholder)",
+    ]
+
+    print("\nFinishing pass (registry-ready / fleet-consistent):")
+    for item in emitted:
+        print(f"  [x] {item}")
+    for item in todo:
+        print(f"  [ ] {item}")
+
+    # Diff top-level entries against the first mature sibling present in the
+    # parent dir — the `comm -23 <(ls sibling) <(ls newpack)` gap check, done in
+    # stdlib so it works anywhere the scaffold runs.
+    sibling = next(
+        (parent / s for s in REFERENCE_SIBLINGS if (parent / s).is_dir()),
+        None,
+    )
+    if sibling is not None and sibling.resolve() != target.resolve():
+        sib_entries = {p.name for p in sibling.iterdir()}
+        new_entries = {p.name for p in target.iterdir()}
+        missing = sorted(sib_entries - new_entries)
+        # Ignore repo-local artifacts a fresh scaffold legitimately lacks.
+        ignore = {
+            ".git",
+            ".venv",
+            "node_modules",
+            "bun.lock",
+            "uv.lock",
+            "pylock.toml",
+            "web",
+            "CHANGELOG.md",
+        }
+        missing = [m for m in missing if m not in ignore]
+        print(f"\n  Gap vs sibling {sibling.name}/ (top-level entries):")
+        if missing:
+            for m in missing:
+                print(f"    - missing: {m}")
+        else:
+            print("    - none (matches the mature sibling)")
 
 
 def main() -> int:
@@ -2171,6 +2393,8 @@ def main() -> int:
         "    (do NOT create via the GitHub UI; gitops auto-pushes REGISTRY_ACCESS_TOKEN)\n"
         "  - or run the /comfy-node orchestrator, which does the gitops wiring for you\n"
     )
+
+    print_finishing_pass_audit(target, parent, args.variant)
     return 0
 
 
