@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.30.4](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.30.3...agent-patterns-plugin-v2.30.4) (2026-07-01)
+
+
+### Documentation
+
+* **agent-patterns-plugin:** document Workflow resumeFromRunId worktree re-run hazard ([#1898](https://github.com/laurigates/claude-plugins/issues/1898)) ([e87515b](https://github.com/laurigates/claude-plugins/commit/e87515bac666ca3932857c871a5f3024dd048f17))
+
 ## [2.30.3](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.30.2...agent-patterns-plugin-v2.30.3) (2026-06-29)
 
 
