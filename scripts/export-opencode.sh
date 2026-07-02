@@ -4,9 +4,11 @@
 #
 # Source is read-only; output is fully reproducible. Skills convert near-losslessly;
 # subagents convert structurally (rulesync drops model/tools/maxTurns — see
-# docs/opencode-export.md). Hooks are intentionally NOT exported: Claude Code plugin
-# hooks reference ${CLAUDE_PLUGIN_ROOT} scripts that rulesync cannot resolve, and
-# OpenCode has no model-evaluation (prompt) hook. Hooks are hand-ported per-plugin.
+# docs/opencode-export.md). Hooks bypass rulesync entirely (it reads the consumer
+# .claude/settings.json surface, not plugin marketplaces — issue #1605): command-type
+# PreToolUse/PostToolUse hooks are projected into OpenCode JS plugins by
+# generate-opencode-hook-plugins.py; prompt/agent hooks and SessionStart/PreCompact
+# have no OpenCode equivalent and are skipped with a per-plugin report.
 #
 # Source skills keep the compact comma-string `allowed-tools` form; this script
 # normalizes them to YAML lists in its disposable staging copy only (rulesync aborts
@@ -83,6 +85,12 @@ python3 "$export_script_dir/rewrite-skill-name-to-dir.py" \
 rm -rf "$export_out_dir"
 mkdir -p "$export_out_dir"
 cp -R "$export_staging/.opencode/." "$export_out_dir/"
+
+# 6. Generate OpenCode hook plugins straight from each plugin's hooks.json
+#    (no rulesync involvement — see the header and issue #1605). Emits
+#    plugins/<plugin>-hooks.js + hook-scripts/<plugin>/hooks/*.sh.
+python3 "$export_script_dir/generate-opencode-hook-plugins.py" \
+    "$export_repo_root" "$export_out_dir"
 
 export_out_skills="$(find "$export_out_dir/skills" -name SKILL.md 2>/dev/null | wc -l | tr -d ' ')"
 export_out_agents="$(find "$export_out_dir/agents" -name '*.md' 2>/dev/null | wc -l | tr -d ' ')"

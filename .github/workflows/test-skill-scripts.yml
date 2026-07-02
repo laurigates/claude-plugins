@@ -17,8 +17,11 @@ on:
       - 'scripts/install-opencode.sh'
       - 'scripts/export-opencode.sh'
       - 'scripts/rewrite-skill-name-to-dir.py'
+      - 'scripts/generate-opencode-hook-plugins.py'
       - 'scripts/tests/test-configure-opencode.sh'
       - 'scripts/tests/test-rewrite-skill-name-to-dir.sh'
+      - 'scripts/tests/test-export-opencode-hooks.sh'
+      - '*-plugin/hooks.json'
       - 'justfile'
       - '.github/workflows/test-skill-scripts.yml'
   push:
@@ -50,3 +53,6 @@ jobs:
 
       - name: Regression-test the OpenCode skill-name rewrite
         run: bash scripts/tests/test-rewrite-skill-name-to-dir.sh
+
+      - name: Regression-test the OpenCode hook-plugin export
+        run: bash scripts/tests/test-export-opencode-hooks.sh
