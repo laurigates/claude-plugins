@@ -194,6 +194,12 @@ repos:
         language: system
         files: '^scripts/(rewrite-skill-name-to-dir\.py|export-opencode\.sh|install-opencode\.sh|tests/test-rewrite-skill-name-to-dir\.sh)$'
         pass_filenames: false
+      - id: test-export-opencode-hooks
+        name: opencode hook-plugin export regression (#1605)
+        entry: bash ./scripts/tests/test-export-opencode-hooks.sh
+        language: system
+        files: '^(scripts/(generate-opencode-hook-plugins\.py|export-opencode\.sh|install-opencode\.sh|tests/test-export-opencode-hooks\.sh)|[^/]+-plugin/hooks\.json)$'
+        pass_filenames: false
       - id: check-git-sandbox-guards
         name: shell test sandboxes guard mktemp against shared-checkout leak (#1692)
         entry: bash ./scripts/check-git-sandbox-guards.sh --strict

@@ -40,7 +40,7 @@ Produces `dist/opencode/{agents,skills}/`. What converts:
 |---------|----------|
 | **Skills** | Near-lossless — `SKILL.md`, `REFERENCE.md`, and `scripts/` travel together. |
 | **Subagents** | Structural — rulesync drops `model`, `tools`, and `maxTurns` from the frontmatter (OpenCode's agent schema differs). The prompt body and `description` survive. |
-| **Hooks** | Intentionally **not** exported. Claude Code plugin hooks reference `${CLAUDE_PLUGIN_ROOT}` scripts rulesync can't resolve, and OpenCode has no model-evaluation (prompt) hook. Hand-port per plugin (see the `export-opencode.sh` header). |
+| **Hooks** | `command`-type **PreToolUse / PostToolUse** hooks export via our own generator (`generate-opencode-hook-plugins.py`, not rulesync — see [Hooks](#hooks)). `prompt`/`agent` hooks and SessionStart / PreCompact have no OpenCode equivalent and are skipped with a per-plugin report. |
 
 OpenCode reads **plural** `agents/` and `skills/` directories (singular is
 accepted for back-compat); the export already emits plural, so no rename is
@@ -58,6 +58,46 @@ The export's staging step (`rewrite-skill-name-to-dir.py`) rewrites each skill's
 runs on the disposable staging copy only — **the source tree keeps its house-style
 names.** Without it, OpenCode aborts those skills at launch with `Invalid
 frontmatter … name` / `Name mismatch`.
+
+### Hooks
+
+Hooks bypass rulesync entirely: rulesync reads the consumer `.claude/settings.json`
+surface, passes `${CLAUDE_PLUGIN_ROOT}` through literally, and never copies the
+referenced scripts ([dyoshikawa/rulesync#1317](https://github.com/dyoshikawa/rulesync/issues/1317)) —
+so its output threw `ENOENT` on every matched tool call. Instead,
+[`scripts/generate-opencode-hook-plugins.py`](../scripts/generate-opencode-hook-plugins.py)
+(issue [#1605](https://github.com/laurigates/claude-plugins/issues/1605)) projects
+each plugin's `hooks.json` directly:
+
+```
+dist/opencode/
+  plugins/<plugin>-hooks.js            # one OpenCode plugin per hook-bearing plugin
+  hook-scripts/<plugin>/hooks/*.sh     # the referenced scripts, copied
+```
+
+The generated JS resolves its scripts relative to itself
+(`../hook-scripts/<plugin>/`) and exports `CLAUDE_PLUGIN_ROOT` at that root, so
+the scripts run unmodified. The two trees must travel together —
+`install-opencode.sh` copies both.
+
+| Claude Code | OpenCode | Semantics |
+|-------------|----------|-----------|
+| `PreToolUse` command hook | `tool.execute.before` | exit 2 or JSON `permissionDecision: "deny"` → **throw** (blocks the call); `"ask"` → `console.warn` + allow (OpenCode has no prompt-from-hook) |
+| `PostToolUse` command hook | `tool.execute.after` | exit-2 stderr / JSON `decision: "block"` reason / `additionalContext` appended to the model-visible tool output |
+| `prompt` / `agent` hooks | — | skipped: OpenCode has no model-evaluation hook (by design) |
+| `SessionStart` / `PreCompact` | — | skipped: no context-injection equivalent |
+
+Matchers translate too: bare tool names (`Bash` → `bash`), path-scoped forms
+(`Write(docs/prds/**)` → `write` + glob on `filePath`), and `Skill(name)`
+(→ the `skill` tool). Everything that cannot export is reported per plugin on
+the export output **and** in the generated file's header comment. A script
+that goes missing at runtime **fails open** (`console.error` + allow) rather
+than blocking every matched call.
+
+Regression guard: [`scripts/tests/test-export-opencode-hooks.sh`](../scripts/tests/test-export-opencode-hooks.sh)
+asserts every referenced script resolves, blocking semantics survive, no
+literal `${CLAUDE_PLUGIN_ROOT}` reaches generated code, and prompt hooks stay
+skipped.
 
 ## 2. Serve the model
 
@@ -308,14 +348,18 @@ a brainstorm or an older snippet, check it against this table:
   `maxTurns` don't survive rulesync's `claudecode → opencode` conversion. The
   generated `orchestrator.md` re-establishes a primary agent by hand; exported
   subagents keep only their prompt + description.
-- **Hooks are not exported** — hand-port per plugin (see the
-  `export-opencode.sh` header).
+- **Hook export is partial by platform design** — `prompt`/`agent` hooks and
+  SessionStart / PreCompact command hooks have no OpenCode equivalent and are
+  skipped with a per-plugin report; PreToolUse `permissionDecision: "ask"`
+  degrades to a non-blocking warning (see [Hooks](#hooks)).
 - **Local-model capability** — a local MLX model is smaller than a frontier
   model; complex orchestration may need a larger quant or a stronger model id.
 
 ## Related
 
 - [`scripts/export-opencode.sh`](../scripts/export-opencode.sh) — conversion engine
+- [`scripts/generate-opencode-hook-plugins.py`](../scripts/generate-opencode-hook-plugins.py) — hooks.json → OpenCode JS plugin generator
+- [`scripts/tests/test-export-opencode-hooks.sh`](../scripts/tests/test-export-opencode-hooks.sh) — hooks-export regression guard
 - [`scripts/install-opencode.sh`](../scripts/install-opencode.sh) — additive installer
 - [`scripts/configure-opencode.sh`](../scripts/configure-opencode.sh) — config + orchestrator generator
 - [`scripts/tests/test-configure-opencode.sh`](../scripts/tests/test-configure-opencode.sh) — schema regression guard

@@ -2,9 +2,10 @@
 # install-opencode.sh — export this marketplace's skills + subagents to OpenCode
 # format and install them additively into an OpenCode config directory.
 #
-# Runs export-opencode.sh into a disposable temp dir, then copies agents/ and
-# skills/ into <target>/{agents,skills}. The copy is ADDITIVE: the user's own
-# agents/skills under <target> are preserved (no rm -rf of the target trees).
+# Runs export-opencode.sh into a disposable temp dir, then copies agents/,
+# skills/, plugins/ (generated hook plugins), and hook-scripts/ into <target>.
+# The copy is ADDITIVE: the user's own agents/skills/plugins under <target>
+# are preserved (no rm -rf of the target trees).
 #
 # Usage: ./scripts/install-opencode.sh <target>
 set -euo pipefail
@@ -43,7 +44,7 @@ if [ -n "$install_other" ] && [ -f "$install_other/$install_receipt" ]; then
     install_dup_warned=1
     echo "DUPLICATE_SCOPE_DETECTED=$install_other"
     echo "WARNING=this marketplace is already installed in the complementary scope; OpenCode merges global + project skills, so launching there will report duplicate tool names"
-    echo "FIX=install into ONE scope only — remove the other with: rm -f \"$install_other/$install_receipt\" && rm -rf \"$install_other/skills\" \"$install_other/agents\""
+    echo "FIX=install into ONE scope only — remove the other with: rm -f \"$install_other/$install_receipt\" && rm -rf \"$install_other/skills\" \"$install_other/agents\" \"$install_other/hook-scripts\" && rm -f \"$install_other\"/plugins/*-plugin-hooks.js"
 fi
 
 install_tmp="$(mktemp -d)"
@@ -55,8 +56,17 @@ mkdir -p "$install_target/agents" "$install_target/skills"
 cp -R "$install_tmp/agents/." "$install_target/agents/"
 cp -R "$install_tmp/skills/." "$install_target/skills/"
 
+# Generated hook plugins (plugins/<plugin>-hooks.js) resolve their scripts via
+# ../hook-scripts/<plugin>/, so the two trees must travel together.
+if [ -d "$install_tmp/plugins" ]; then
+    mkdir -p "$install_target/plugins" "$install_target/hook-scripts"
+    cp -R "$install_tmp/plugins/." "$install_target/plugins/"
+    cp -R "$install_tmp/hook-scripts/." "$install_target/hook-scripts/"
+fi
+
 install_agents="$(find "$install_target/agents" -name '*.md' 2>/dev/null | wc -l | tr -d ' ')"
 install_skills="$(find "$install_target/skills" -name 'SKILL.md' 2>/dev/null | wc -l | tr -d ' ')"
+install_hook_plugins="$(find "$install_target/plugins" -name '*-plugin-hooks.js' 2>/dev/null | wc -l | tr -d ' ')"
 
 # Drop a receipt so a later install into the complementary scope can detect us.
 printf 'installed_at_count=%s\nskills=%s\nagents=%s\n' \
@@ -64,6 +74,7 @@ printf 'installed_at_count=%s\nskills=%s\nagents=%s\n' \
 
 echo "INSTALLED_AGENTS=$install_agents"
 echo "INSTALLED_SKILLS=$install_skills"
+echo "INSTALLED_HOOK_PLUGINS=$install_hook_plugins"
 echo "RECEIPT=$install_target/$install_receipt"
 if [ "$install_dup_warned" -eq 1 ]; then
     echo "STATUS=WARN"

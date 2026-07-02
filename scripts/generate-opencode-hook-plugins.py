@@ -1,0 +1,421 @@
+#!/usr/bin/env python3
+"""Generate OpenCode JS plugins from Claude Code plugin hooks.json manifests.
+
+Part of the OpenCode export pipeline (scripts/export-opencode.sh, issue #1605).
+rulesync cannot export marketplace plugin hooks — it reads the consumer
+.claude/settings.json surface, passes ${CLAUDE_PLUGIN_ROOT} through literally,
+and never copies the referenced scripts (dyoshikawa/rulesync#1317) — so this
+generator projects them directly:
+
+  <plugin>/hooks.json  ->  <out>/plugins/<plugin>-hooks.js
+  <plugin>/hooks/*.sh  ->  <out>/hook-scripts/<plugin>/hooks/*.sh  (referenced scripts only)
+
+Fidelity contract (what exports and how):
+  - PreToolUse  command hooks -> "tool.execute.before": exit code 2 or JSON
+    permissionDecision "deny" -> throw (OpenCode's blocking mechanism); JSON
+    permissionDecision "ask" -> console.warn + allow (OpenCode cannot prompt
+    from a hook).
+  - PostToolUse command hooks -> "tool.execute.after": exit-2 stderr / JSON
+    decision "block" reason / additionalContext appended to the model-visible
+    tool output string.
+
+Skipped, loudly (reported on stdout and in the generated JS header):
+  - prompt / agent hooks — OpenCode has no model-evaluation hook (by design).
+  - SessionStart / PreCompact / other events — no context-injection equivalent.
+  - command strings not shaped `bash ${CLAUDE_PLUGIN_ROOT}/hooks/<script>.sh`.
+
+A missing script at runtime FAILS OPEN (console.error + allow) — deliberately
+NOT the rulesync skeleton's throw-ENOENT-on-every-matched-call failure mode.
+
+Usage: generate-opencode-hook-plugins.py <repo_root> <out_dir>
+"""
+
+import json
+import re
+import shutil
+import sys
+from pathlib import Path
+
+EXPORTABLE_EVENTS = {"PreToolUse": "before", "PostToolUse": "after"}
+
+# Claude Code tool name -> OpenCode built-in tool name.
+CLAUDE_TO_OPENCODE_TOOL = {
+    "Bash": "bash",
+    "Write": "write",
+    "Edit": "edit",
+    "Read": "read",
+    "Glob": "glob",
+    "Grep": "grep",
+    "LS": "list",
+    "Task": "task",
+    "Skill": "skill",
+    "WebFetch": "webfetch",
+    "TodoWrite": "todowrite",
+}
+
+COMMAND_RE = re.compile(
+    r"^bash \$\{CLAUDE_PLUGIN_ROOT\}/hooks/([A-Za-z0-9._-]+\.sh)$"
+)
+MATCHER_WITH_ARG_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)\((.*)\)$")
+
+
+def glob_to_regex(pattern):
+    """Translate a Claude Code matcher glob (docs/prds/**) to a JS regex source.
+
+    `**` crosses path separators; `*` and `?` stay within one component.
+    """
+    out = []
+    i = 0
+    while i < len(pattern):
+        if pattern[i : i + 2] == "**":
+            out.append(".*")
+            i += 2
+        elif pattern[i] == "*":
+            out.append("[^/]*")
+            i += 1
+        elif pattern[i] == "?":
+            out.append("[^/]")
+            i += 1
+        else:
+            out.append(re.escape(pattern[i]))
+            i += 1
+    return "^" + "".join(out) + "$"
+
+
+def normalize_timeout(value):
+    """hooks.json timeouts are seconds, but several manifests carry
+    millisecond-intended values (3000, 5000). Claude Code caps hook timeouts
+    at 600s, so anything above that is treated as milliseconds."""
+    if not isinstance(value, (int, float)) or value <= 0:
+        return 60
+    if value > 600:
+        return max(1, int(value / 1000))
+    return int(value)
+
+
+def parse_matcher(matcher):
+    """Return a list of {tool, path_re, skill_name} dicts (one per `|` alternative),
+    or None when the matcher cannot be translated."""
+    matcher = (matcher or "").strip()
+    if matcher == "":
+        return [{"tool": None, "path_re": None, "skill_name": None}]
+    results = []
+    # Only split alternation when no parenthesised argument is present.
+    alternatives = matcher.split("|") if "(" not in matcher else [matcher]
+    for alt in alternatives:
+        alt = alt.strip()
+        m = MATCHER_WITH_ARG_RE.match(alt)
+        if m:
+            tool_name, arg = m.group(1), m.group(2)
+            opencode_tool = CLAUDE_TO_OPENCODE_TOOL.get(tool_name)
+            if opencode_tool is None:
+                return None
+            if tool_name in ("Write", "Edit", "Read"):
+                results.append(
+                    {"tool": opencode_tool, "path_re": glob_to_regex(arg), "skill_name": None}
+                )
+            elif tool_name == "Skill":
+                results.append(
+                    {"tool": opencode_tool, "path_re": None, "skill_name": arg}
+                )
+            else:
+                return None
+        else:
+            # Bare tool name; MCP tool matchers (mcp__*) pass through verbatim.
+            opencode_tool = CLAUDE_TO_OPENCODE_TOOL.get(alt, alt)
+            results.append({"tool": opencode_tool, "path_re": None, "skill_name": None})
+    return results
+
+
+def js_export_name(plugin_name):
+    return "".join(p.capitalize() for p in re.split(r"[^A-Za-z0-9]+", plugin_name) if p) + "Hooks"
+
+
+JS_TEMPLATE = """// Generated by scripts/generate-opencode-hook-plugins.py — DO NOT EDIT.
+// Source: {plugin}/hooks.json (Claude Code plugin hooks -> OpenCode plugin).
+// Layout: this file lives in <scope>/plugins/; its scripts live in
+// <scope>/hook-scripts/{plugin}/hooks/, and CLAUDE_PLUGIN_ROOT is exported at
+// that root so the scripts' own plugin-root references keep resolving.
+//
+// Semantics:
+//   PreToolUse  -> tool.execute.before  (exit 2 / JSON deny -> throw = block;
+//                                        JSON "ask" -> warn + allow: no prompt hook)
+//   PostToolUse -> tool.execute.after   (block reason / additionalContext appended
+//                                        to the model-visible tool output)
+//   Missing or crashing scripts FAIL OPEN (console.error + allow).
+{skip_report}
+import {{ fileURLToPath }} from "node:url";
+
+const PLUGIN_ROOT = fileURLToPath(new URL("../hook-scripts/{plugin}", import.meta.url));
+
+const BEFORE = {before_json};
+
+const AFTER = {after_json};
+
+// OpenCode tool name -> Claude Code tool name (what the scripts expect on stdin).
+const CLAUDE_TOOL_NAMES = {{
+  bash: "Bash", write: "Write", edit: "Edit", read: "Read", glob: "Glob",
+  grep: "Grep", list: "LS", task: "Task", skill: "Skill",
+  webfetch: "WebFetch", todowrite: "TodoWrite",
+}};
+
+function claudeToolName(tool) {{
+  return CLAUDE_TOOL_NAMES[tool] ?? tool.charAt(0).toUpperCase() + tool.slice(1);
+}}
+
+// OpenCode args are camelCase (filePath); Claude hook payloads are snake_case.
+function toToolInput(args) {{
+  const out = {{}};
+  for (const [k, v] of Object.entries(args ?? {{}}))
+    out[k.replace(/([A-Z])/g, "_$1").toLowerCase()] = v;
+  return out;
+}}
+
+function matches(entry, tool, args, directory) {{
+  if (entry.tool !== null && entry.tool !== tool) return false;
+  if (entry.pathRe) {{
+    let p = args?.filePath ?? args?.file_path ?? "";
+    if (typeof p !== "string" || p === "") return false;
+    if (directory && p.startsWith(directory + "/")) p = p.slice(directory.length + 1);
+    if (!new RegExp(entry.pathRe).test(p)) return false;
+  }}
+  if (entry.skillName) {{
+    const candidates = [args?.name, args?.skill, args?.skillName, args?.id];
+    if (!candidates.includes(entry.skillName)) return false;
+  }}
+  return true;
+}}
+
+function parseDecision(stdout) {{
+  const t = (stdout ?? "").trim();
+  if (!t.startsWith("{{")) return {{}};
+  try {{
+    const j = JSON.parse(t);
+    const hso = j.hookSpecificOutput ?? {{}};
+    return {{
+      deny: hso.permissionDecision === "deny" || j.decision === "block",
+      ask: hso.permissionDecision === "ask",
+      reason: hso.permissionDecisionReason ?? j.reason ?? "",
+      context: hso.additionalContext ?? "",
+    }};
+  }} catch {{
+    return {{}};
+  }}
+}}
+
+async function runHook(entry, payload, directory) {{
+  const script = PLUGIN_ROOT + "/hooks/" + entry.script;
+  try {{
+    const proc = Bun.spawn(["bash", script], {{
+      cwd: directory,
+      stdin: new TextEncoder().encode(JSON.stringify(payload)),
+      stdout: "pipe",
+      stderr: "pipe",
+      env: {{
+        ...process.env,
+        CLAUDE_PLUGIN_ROOT: PLUGIN_ROOT,
+        CLAUDE_PROJECT_DIR: directory ?? "",
+      }},
+    }});
+    const killTimer = setTimeout(() => proc.kill(), (entry.timeout ?? 60) * 1000);
+    const exitCode = await proc.exited;
+    clearTimeout(killTimer);
+    return {{
+      exitCode,
+      stdout: await new Response(proc.stdout).text(),
+      stderr: await new Response(proc.stderr).text(),
+    }};
+  }} catch (err) {{
+    // Fail open: a missing/broken hook script must never block tool calls.
+    console.error(`[{plugin}-hooks] ${{entry.script}}: ${{err}}`);
+    return null;
+  }}
+}}
+
+export const {export_name} = async ({{ directory }}) => {{
+  // tool.execute.after does not carry args; capture them per call in before.
+  const argsByCall = new Map();
+  return {{
+    "tool.execute.before": async (input, output) => {{
+      if (input.callID !== undefined) {{
+        if (argsByCall.size > 1000)
+          argsByCall.delete(argsByCall.keys().next().value);
+        argsByCall.set(input.callID, output.args);
+      }}
+      for (const entry of BEFORE) {{
+        if (!matches(entry, input.tool, output.args, directory)) continue;
+        const res = await runHook(entry, {{
+          hook_event_name: "PreToolUse",
+          tool_name: claudeToolName(input.tool),
+          tool_input: toToolInput(output.args),
+          session_id: input.sessionID ?? "",
+          cwd: directory ?? "",
+          transcript_path: "",
+        }}, directory);
+        if (!res) continue;
+        if (res.exitCode === 2)
+          throw new Error(res.stderr.trim() || `Blocked by ${{entry.script}}`);
+        if (res.exitCode !== 0) {{
+          console.error(`[{plugin}-hooks] ${{entry.script}} exited ${{res.exitCode}}: ${{res.stderr.trim()}}`);
+          continue;
+        }}
+        const d = parseDecision(res.stdout);
+        if (d.deny) throw new Error(d.reason || `Blocked by ${{entry.script}}`);
+        if (d.ask)
+          console.warn(`[{plugin}-hooks] ${{entry.script}} requested confirmation (OpenCode cannot prompt; allowing): ${{d.reason}}`);
+      }}
+    }},
+    "tool.execute.after": async (input, output) => {{
+      const args = argsByCall.get(input.callID);
+      argsByCall.delete(input.callID);
+      for (const entry of AFTER) {{
+        if (!matches(entry, input.tool, args, directory)) continue;
+        const res = await runHook(entry, {{
+          hook_event_name: "PostToolUse",
+          tool_name: claudeToolName(input.tool),
+          tool_input: toToolInput(args),
+          tool_response: {{ output: typeof output.output === "string" ? output.output : "" }},
+          session_id: input.sessionID ?? "",
+          cwd: directory ?? "",
+          transcript_path: "",
+        }}, directory);
+        if (!res) continue;
+        const notes = [];
+        if (res.exitCode === 2) {{
+          if (res.stderr.trim()) notes.push(res.stderr.trim());
+        }} else if (res.exitCode === 0) {{
+          const d = parseDecision(res.stdout);
+          if (d.deny && d.reason) notes.push(d.reason);
+          if (d.context) notes.push(d.context);
+        }} else {{
+          console.error(`[{plugin}-hooks] ${{entry.script}} exited ${{res.exitCode}}: ${{res.stderr.trim()}}`);
+        }}
+        if (notes.length && typeof output.output === "string")
+          output.output += `\\n\\n[${{entry.script}}] ` + notes.join("\\n");
+      }}
+    }},
+  }};
+}};
+"""
+
+
+def process_plugin(plugin_dir, out_dir):
+    """Returns (exported_count, skipped list of (event, matcher, kind, reason),
+    copied script names)."""
+    hooks_json = plugin_dir / "hooks.json"
+    manifest = json.loads(hooks_json.read_text())
+    plugin = plugin_dir.name
+
+    entries = {"before": [], "after": []}
+    skipped = []
+    scripts = set()
+
+    for event, groups in (manifest.get("hooks") or {}).items():
+        slot = EXPORTABLE_EVENTS.get(event)
+        for group in groups:
+            matcher = group.get("matcher", "")
+            for hook in group.get("hooks", []):
+                kind = hook.get("type", "command")
+                if slot is None:
+                    skipped.append((event, matcher, kind, "no OpenCode equivalent for this event"))
+                    continue
+                if kind != "command":
+                    skipped.append((event, matcher, kind, "OpenCode has no model-evaluation hook"))
+                    continue
+                cmd = (hook.get("command") or "").strip()
+                m = COMMAND_RE.match(cmd)
+                if not m:
+                    skipped.append((event, matcher, kind, f"unparseable command: {cmd}"))
+                    continue
+                script = m.group(1)
+                parsed = parse_matcher(matcher)
+                if parsed is None:
+                    skipped.append((event, matcher, kind, "untranslatable matcher"))
+                    continue
+                if not (plugin_dir / "hooks" / script).is_file():
+                    skipped.append((event, matcher, kind, f"referenced script missing: hooks/{script}"))
+                    continue
+                timeout = normalize_timeout(hook.get("timeout", 60))
+                for alt in parsed:
+                    entries[slot].append(
+                        {
+                            "tool": alt["tool"],
+                            "pathRe": alt["path_re"],
+                            "skillName": alt["skill_name"],
+                            "script": script,
+                            "timeout": timeout,
+                        }
+                    )
+                scripts.add(script)
+
+    exported = len(entries["before"]) + len(entries["after"])
+    if exported == 0:
+        return 0, skipped, []
+
+    scripts_dst = out_dir / "hook-scripts" / plugin / "hooks"
+    scripts_dst.mkdir(parents=True, exist_ok=True)
+    for script in sorted(scripts):
+        shutil.copy2(plugin_dir / "hooks" / script, scripts_dst / script)
+
+    if skipped:
+        lines = ["//", "// Skipped (not exportable to OpenCode):"]
+        for event, matcher, kind, reason in skipped:
+            shown = matcher or '""'
+            lines.append(f"//   - {event} [{shown}] type={kind}: {reason}")
+        skip_report = "\n".join(lines)
+    else:
+        skip_report = "//"
+
+    js = JS_TEMPLATE.format(
+        plugin=plugin,
+        export_name=js_export_name(plugin),
+        skip_report=skip_report,
+        before_json=json.dumps(entries["before"], indent=2),
+        after_json=json.dumps(entries["after"], indent=2),
+    )
+    plugins_dst = out_dir / "plugins"
+    plugins_dst.mkdir(parents=True, exist_ok=True)
+    (plugins_dst / f"{plugin}-hooks.js").write_text(js)
+    return exported, skipped, sorted(scripts)
+
+
+def main():
+    if len(sys.argv) != 3:
+        print(__doc__.strip().splitlines()[-1], file=sys.stderr)
+        return 2
+    repo_root = Path(sys.argv[1]).resolve()
+    out_dir = Path(sys.argv[2]).resolve()
+
+    print("=== OPENCODE HOOK EXPORT ===")
+    generated = total_exported = total_skipped = total_scripts = 0
+    plugin_dirs = sorted(
+        p.parent for p in repo_root.glob("*-plugin/hooks.json")
+    )
+    for plugin_dir in plugin_dirs:
+        exported, skipped, scripts = process_plugin(plugin_dir, out_dir)
+        js_path = f"plugins/{plugin_dir.name}-hooks.js" if exported else "-"
+        print(
+            f"PLUGIN={plugin_dir.name} JS={js_path} "
+            f"EXPORTED={exported} SKIPPED={len(skipped)}"
+        )
+        for event, matcher, kind, reason in skipped:
+            shown = matcher if matcher else '""'
+            print(f"  SKIP event={event} matcher={shown} type={kind} reason={reason}")
+        if exported:
+            generated += 1
+        total_exported += exported
+        total_skipped += len(skipped)
+        total_scripts += len(scripts)
+
+    print(f"HOOK_PLUGINS_SCANNED={len(plugin_dirs)}")
+    print(f"HOOK_PLUGINS_GENERATED={generated}")
+    print(f"EXPORTED_HOOKS={total_exported}")
+    print(f"SKIPPED_HOOKS={total_skipped}")
+    print(f"COPIED_SCRIPTS={total_scripts}")
+    print("STATUS=OK")
+    print("=== END OPENCODE HOOK EXPORT ===")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
