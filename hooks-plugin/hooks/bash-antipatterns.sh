@@ -58,10 +58,39 @@ block() {
     exit 2
 }
 
+# Remote-exec guard (issue #1900).
+#
+# When the TOP-LEVEL command runs on another host or container — ssh/rsh/slogin,
+# `kubectl exec`, `docker exec`, dokku — every filesystem path inside its payload
+# (a quoted remote command, a heredoc fed over stdin, or bare args) targets the
+# REMOTE side. The local-filesystem tools the read/list reminders point to (Read,
+# Grep, Glob) run on the LOCAL machine and cannot reach that target, so the
+# suggested substitution is inapplicable and the reminder is pure friction.
+#
+# The heredoc form is the concrete false positive:
+#   ssh host <<EOF ... ls /remote/*.json ... EOF
+# puts the `ls`/`cat`/`grep` on its own line, which the (line-anchored) read/list
+# detectors match — and block — even though it runs on the remote host.
+#
+# Only the read/list *style* reminders (cat/head/tail→Read, grep/rg→Grep,
+# ls→Glob) are suppressed for these commands. Safety blocks (curl|bash,
+# chmod 777, git add -A, reset --hard, block-device writes, fork bombs) are NOT
+# suppressed — those hazards apply on the remote host too, and per
+# hook-block-vs-nudge.md a safety exit-2 is earned regardless of where the
+# command runs. The guard is anchored to the FIRST token (after optional env
+# assignments) so a local `cat x && ssh host …` still blocks the local `cat`.
+IS_REMOTE_EXEC=false
+if echo "$COMMAND" | grep -Eq '^\s*([A-Za-z_][A-Za-z0-9_]*=\S*\s+)*(ssh|rsh|slogin|dokku)\s' || \
+   echo "$COMMAND" | grep -Eq '^\s*(kubectl|oc)\s[^|]*\bexec\b' || \
+   echo "$COMMAND" | grep -Eq '^\s*(docker|podman|nerdctl)\s[^|]*\bexec\b'; then
+    IS_REMOTE_EXEC=true
+fi
+
 # Check for cat used to read files (but allow cat in pipelines and heredocs)
 # Patterns: cat file, cat /path/file, cat "./file"
 # Allow cat as first command in a pipeline (cat file | ...) since the data flows to other tools
-if echo "$COMMAND" | grep -Eq '^\s*cat\s+[^|><]' && \
+if [ "$IS_REMOTE_EXEC" = false ] && \
+   echo "$COMMAND" | grep -Eq '^\s*cat\s+[^|><]' && \
    ! echo "$COMMAND" | grep -Eq '<<|cat\s*>' && \
    ! echo "$COMMAND" | grep -q '|'; then
     block "BLOCKED: 'cat /path/to/file.md' →
@@ -81,7 +110,8 @@ fi
 # the assignment form `head = "x"` / `tail = …` at line start (a Python/awk
 # variable in a single-quoted multi-line script the heredoc strip does not cover);
 # a real `head`/`tail` file argument never begins with `=`.
-if echo "$COMMAND_SHELL_ONLY" | grep -Eq '^\s*(head|tail)\s+(-[0-9n]+\s+)?[^|=]' && \
+if [ "$IS_REMOTE_EXEC" = false ] && \
+   echo "$COMMAND_SHELL_ONLY" | grep -Eq '^\s*(head|tail)\s+(-[0-9n]+\s+)?[^|=]' && \
    ! echo "$COMMAND_SHELL_ONLY" | grep -q '|'; then
     block "BLOCKED: 'head -50 file.md' →
   Read(file_path=\"/abs/path/to/file.md\", limit=50)
@@ -207,7 +237,8 @@ fi
 # tool replaces (issue #1592). The char class is [lcL] (lowercase) so the
 # uppercase context flag -C (grep -C3, a real search) is NOT exempted.
 # Also allow piped grep (already excluded by the '|' check above).
-if echo "$COMMAND" | grep -Eq '^\s*(grep|rg)\s+' && \
+if [ "$IS_REMOTE_EXEC" = false ] && \
+   echo "$COMMAND" | grep -Eq '^\s*(grep|rg)\s+' && \
    ! echo "$COMMAND" | grep -q '|' && \
    ! echo "$COMMAND" | grep -Eq '(grep|rg)[^|]*\s(-[a-zA-Z]*q[a-zA-Z]*(\s|$)|--quiet(\s|$))' && \
    ! echo "$COMMAND" | grep -Eq '(grep|rg)[^|]*\s(-[a-zA-Z]*[lcL][a-zA-Z]*(\s|$)|--count(\s|$)|--files-with-matches(\s|$)|--files-without-match(\s|$))'; then
@@ -227,7 +258,7 @@ See .claude/rules/bash-tool-replacements.md for the full table."
 fi
 
 # Check for ls used for file listing (should often use Glob)
-if echo "$COMMAND" | grep -Eq '^\s*ls\s+.*\*'; then
+if [ "$IS_REMOTE_EXEC" = false ] && echo "$COMMAND" | grep -Eq '^\s*ls\s+.*\*'; then
     block "REMINDER: Consider using the Glob tool for pattern-based file listing. Glob provides sorted results by modification time and handles large directories better."
 fi
 

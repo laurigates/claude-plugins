@@ -35,6 +35,21 @@ The hook's allowed-exception logic for each:
 - **`grep` / `rg`** — passes through any pipeline (anything with `|`), and `-q` / `--quiet` (boolean exit-code checks like `grep -q pattern file && do_thing`).
 - **`cat` / `head` / `tail`** — passes through when the file path is `/dev/stdin`, `/dev/null`, or a here-doc target. The hook is checking for *file reads*, not stream handling.
 
+### Remote-exec commands are exempt (issue #1900)
+
+When the command's **first token** is a remote-exec launcher — `ssh`, `rsh`,
+`slogin`, `dokku`, `kubectl exec`, `docker exec` (and `podman`/`nerdctl`/`oc`
+equivalents) — the read/list nudges (`ls`→Glob, `cat`/`head`/`tail`→Read,
+`grep`/`rg`→Grep) are **suppressed** for the whole command. The Read/Grep/Glob
+tools operate on the **local** filesystem via the harness; they cannot reach a
+path on the remote host or inside a container, so the suggested substitution is
+inapplicable. This covers both the quoted form (`ssh host 'ls /r/*'`) and the
+heredoc form (`ssh host <<EOF … ls /r/*.json … EOF`), which was the concrete
+false positive. Only *style* nudges are suppressed — **safety** blocks
+(`curl | bash`, `chmod 777`, `git add -A`, block-device writes) still fire, since
+those hazards apply on the remote host too. The guard is anchored to the first
+token, so a local `cat x.txt && ssh host …` still nudges the local `cat`.
+
 ## Why this exists
 
 Three signals from the W20 friction analysis (2026-05-11):
