@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-06-15
+modified: 2026-07-02
 reviewed: 2026-06-15
 name: claude-code-github-workflows
 description: "Claude Code GitHub Actions workflow patterns — PR reviews, issue triage, CI/CD integration. Use when creating or modifying workflows that integrate Claude Code."
@@ -259,6 +259,68 @@ jobs:
 
             Provide helpful, constructive feedback.
 ```
+
+## claude-code-action v1 Gotchas
+
+Hard-won facts that produce silently-broken workflows (each cost real
+debugging in production; see laurigates/.github#17–#19):
+
+### Outputs are fixed — counts need `--json-schema`
+
+The action exposes **only** `execution_file`, `branch_name`, `github_token`,
+`structured_output`, and `session_id`. Referencing anything else
+(`steps.scan.outputs.total`) evaluates to empty with no error — and prompting
+Claude to print `TOTAL: <n>` in a comment does **not** create a step output.
+Any metric a workflow needs out of a Claude step goes through structured
+output:
+
+```yaml
+- id: scan
+  uses: anthropics/claude-code-action@v1
+  with:
+    claude_args: >-
+      --json-schema '{"type":"object","properties":{"total_issues":{"type":"integer"}},"required":["total_issues"]}'
+    prompt: |
+      ...analysis instructions...
+      Report the count in the structured output field total_issues.
+
+# Read it back — the || '{}' guard is REQUIRED: job outputs evaluate even
+# when the step was skipped, and fromJSON('') errors.
+outputs:
+  issues: ${{ fromJSON(steps.scan.outputs.structured_output || '{}').total_issues }}
+```
+
+The same guarded expression works in `if:` gates
+(`fromJSON(... || '{}').critical > 0`) — an unguarded comparison against a
+missing output silently never fires.
+
+### Bots are blocked by default
+
+`allowed_bots` defaults to empty — **no** bot may trigger the action, so
+bot-authored PRs (Renovate, release-please, Dependabot) fail with "Workflow
+initiated by non-human actor". Pass `allowed_bots: "renovate[bot]"` (or a
+comma-separated list) on workflows where bot PRs are the point, e.g.
+dependency audits triggered by lockfile changes. Re-running a failed run does
+not help: the replay keeps the original bot `sender`.
+
+### Deprecated inputs (removed in a future version)
+
+`direct_prompt`, `override_prompt`, `custom_instructions`, `max_turns`,
+`model`, `fallback_model`, `allowed_tools`, `disallowed_tools`, `mcp_config`,
+`claude_env`, `mode` are all deprecated. Use `prompt` plus `claude_args`
+(`--model`, `--max-turns`, `--allowedTools`, `--disallowedTools`,
+`--mcp-config`, `--system-prompt`) and `settings` (env). A deprecated input
+may be silently ignored — a workflow using `direct_prompt` can run with no
+prompt at all.
+
+### Budget levers
+
+`claude_args` supports `--max-turns` (turn count) and `--max-budget-usd`
+(run-level spend cap); there is **no token-count budget**. Both fail the run
+mid-flight when exhausted — they bound waste but don't prevent doomed runs on
+oversized diffs; pre-gate on diff size for that. Turn-budget exhaustion is
+recognizable by `error_max_turns` in the `execution_file` and by a *rotating*
+set of failing AI jobs across re-runs of the same commit.
 
 ## Performance Optimization
 
