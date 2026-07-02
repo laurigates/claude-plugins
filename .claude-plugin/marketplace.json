@@ -23,7 +23,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.30.4",
+      "version": "2.30.5",
       "keywords": [
         "agents",
         "configuration",
@@ -148,7 +148,7 @@
       "name": "comfyui-plugin",
       "source": "./comfyui-plugin",
       "description": "ComfyUI custom-node pack lifecycle - scaffold a pack, create + seed the repo, open the gitops adoption PR, publish to the Comfy Registry, and add README screenshots",
-      "version": "1.6.0",
+      "version": "1.6.1",
       "keywords": [
         "comfyui",
         "custom-node",
@@ -292,7 +292,7 @@
       "name": "foundryvtt-plugin",
       "source": "./foundryvtt-plugin",
       "description": "FoundryVTT module lifecycle - scaffold a v13 module (Vite + TS + bun), create + seed the repo, open the gitops adoption PR",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "keywords": [
         "foundryvtt",
         "foundry-vtt",
