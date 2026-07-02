@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.11](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.5.10...hooks-plugin-v2.5.11) (2026-07-02)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** exempt remote-exec commands from read/list nudges ([#1901](https://github.com/laurigates/claude-plugins/issues/1901)) ([31565ed](https://github.com/laurigates/claude-plugins/commit/31565ed23b70e2ec5c4a27dc7489d0458a1de349))
+
 ## [2.5.10](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.5.9...hooks-plugin-v2.5.10) (2026-06-29)
 
 

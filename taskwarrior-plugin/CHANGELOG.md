@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.0](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.11.0...taskwarrior-plugin-v1.12.0) (2026-07-02)
+
+
+### Features
+
+* **taskwarrior-plugin:** reconcile description-text and cross-repo refs ([#1902](https://github.com/laurigates/claude-plugins/issues/1902)) ([a9f8cc7](https://github.com/laurigates/claude-plugins/commit/a9f8cc785c494aaffa8cdbe50c6cc672917388c6))
+
 ## [1.11.0](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.10.0...taskwarrior-plugin-v1.11.0) (2026-06-28)
 
 
