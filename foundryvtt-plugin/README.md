@@ -9,7 +9,8 @@ TypeScript + bun + biome** toolchain.
 This plugin packages the two skills that build and ship FoundryVTT modules:
 scaffolding a CI-green module repository, and orchestrating the full path from
 idea to a release pipeline (repo creation, seeding, and the gitops adoption PR
-that wires branch protection + release-please credentials via Scalr).
+that wires branch protection + release-please credentials via the gitops repo's
+tofu GitHub Actions workflows).
 
 FoundryVTT modules distribute by **GitHub release manifest URL** — `manifest`
 points at `releases/latest/download/module.json` and `download` at
@@ -50,9 +51,9 @@ Three variants:
 Orchestrate a module from idea to release-ready: scaffold (via
 `foundryvtt-module-scaffold`), create + seed the GitHub repo, then open the
 gitops PR that adds the `release_please = true` entry and a transient import
-block so Scalr adopts the repo. Stops at the single human gate (merging the
-gitops PR triggers the Scalr apply), then finishes the import-block-removal
-follow-up.
+block so gitops adopts the repo. Stops at the single human gate (merging the
+gitops PR feeds the release-please → `tofu-apply.yml` chain), then finishes the
+import-block-removal follow-up.
 
 **Use when** releasing or spinning up a new FoundryVTT module with minimal
 manual steps.
@@ -61,5 +62,5 @@ manual steps.
 
 Install when you build FoundryVTT modules and want a repeatable path from idea to
 a release-pipeline-ready, gitops-adopted repository. The skills are specific to
-the laurigates module family and its gitops/Scalr adoption flow, and target the
-local `foundryvtt-harness` as the run/test environment.
+the laurigates module family and its gitops (tofu-in-GitHub-Actions) adoption
+flow, and target the local `foundryvtt-harness` as the run/test environment.

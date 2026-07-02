@@ -66,7 +66,7 @@ For each candidate group, read every file and apply this checklist. Every "yes" 
 
 | Signal | What to look for |
 |---|---|
-| Owner-specific identifiers | Org names (`ForumViriumHelsinki`, `laurigates`), GH repo URLs, container registry paths (`ghcr.io/<org>/...`), GitHub App IDs, secret names, named workspaces (Terraform Cloud, Scalr) |
+| Owner-specific identifiers | Org names (`ForumViriumHelsinki`, `laurigates`), GH repo URLs, container registry paths (`ghcr.io/<org>/...`), GitHub App IDs, secret names, named workspaces (Terraform Cloud, Spacelift) |
 | Owner-specific conventions | Label sets (`docs` vs `documentation`), reviewer usernames (`@user` vs bare `user`), project-routing tables, CI tool choices (Renovate vs Dependabot) |
 | Path-scoped frontmatter that differs | A `paths:` glob that genuinely targets a different directory shape per source |
 | Tooling assumptions | Helm chart names, image-updater configurations, deploy-values schemas tied to one stack |

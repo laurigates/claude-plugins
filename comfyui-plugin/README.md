@@ -10,7 +10,8 @@ This plugin packages the three skills that build and ship ComfyUI node packs:
 scaffolding a CI-green repository, orchestrating the full path from idea to a
 live-on-registry pipeline (repo creation, seeding, and the gitops adoption PR
 that wires branch protection + release-please credentials + the registry token
-via Scalr), and adding a reproducible README-screenshot pipeline to a pack.
+via the gitops repo's tofu GitHub Actions workflows), and adding a reproducible
+README-screenshot pipeline to a pack.
 
 ## Skills
 
@@ -49,9 +50,10 @@ internals are modelled with local structural interfaces.
 
 Orchestrate a pack from idea to live-on-registry: scaffold (via
 `comfyui-node-scaffold`), create + seed the GitHub repo, then open the gitops PR
-that adds the `comfy_registry = true` entry and a transient import block so Scalr
-adopts the repo. Stops at the single human gate (merging the gitops PR triggers
-the Scalr apply), then finishes the import-block-removal follow-up.
+that adds the `comfy_registry = true` entry and a transient import block so
+gitops adopts the repo. Stops at the single human gate (merging the gitops PR
+feeds the release-please → `tofu-apply.yml` chain), then finishes the
+import-block-removal follow-up.
 
 **Use when** releasing or spinning up a new comfyui node pack with minimal manual
 steps.
@@ -76,4 +78,4 @@ screenshot pipeline like `comfyui-gallery-loader`.
 
 Install when you build ComfyUI custom-node packs and want a repeatable path from
 idea to a published, registry-adopted repository. The skills are specific to the
-laurigates pack family and its gitops/Scalr adoption flow.
+laurigates pack family and its gitops (tofu-in-GitHub-Actions) adoption flow.
