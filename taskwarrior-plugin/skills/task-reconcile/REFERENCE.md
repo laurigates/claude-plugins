@@ -13,24 +13,73 @@ detected). The optional native hooks installed by
 `/taskwarrior:install-native-hooks` are for *enforcement on add/modify*, a
 separate concern.
 
+## Ref extraction — what counts as "linked"
+
+A task is reconciled if it references a GitHub issue/PR by **either** a UDA or
+its text. The `refs` jq function in `reconcile.sh` extracts a deduped list of
+`{repo, kind, num}` per task, in this precedence:
+
+| Source | Form | Repo | Kind |
+|--------|------|------|------|
+| UDA | `ghpr` | CWD default | `pr` |
+| UDA | `ghid` | CWD default | `issue` |
+| Text | `github.com/<owner>/<repo>/(issues\|pull)/<N>` | `<owner>/<repo>` | known (`pr`/`issue`) |
+| Text | `<owner>/<repo>#<N>` | `<owner>/<repo>` | unknown → resolved |
+| Text | `#<N>` (not preceded by a word char or `/`) | CWD default | unknown → resolved |
+
+`description` + every annotation `description` are scanned. Matched spans are
+removed before the next (looser) pattern runs, so `owner/repo#N` is not also
+counted as a bare `#N`. **Shorthand without an `owner/` slash — `prompt-editor#42`
+— deliberately does NOT match** (the negative-lookbehind on bare `#N` rejects a
+`#` preceded by a word char), so such a task stays `live`/kept rather than
+resolving `#42` against the wrong repo. This is a safe false-negative: the skill
+errs toward *keeping* an ambiguous task, never toward a wrong-repo close.
+
+**Cross-repo:** a ref that names `<owner>/<repo>` is resolved with `gh … -R
+owner/repo`; a bare `#N` and the UDAs use the CWD-resolved repo. So a task in
+project A whose description says `owner/B#N` is checked against repo B.
+
+**Kind resolution:** a text ref of unknown kind (`#N`, `owner/repo#N`) is tried
+as a PR first (a merged PR is the common "done" signal); if `gh pr view` returns
+nothing (the number is an issue) it falls back to `gh issue view`.
+
 ## Classification authority
 
-A task can carry both `ghid` (issue) and `ghpr` (PR). The PR signal wins:
+Each ref resolves to a per-ref state; the PR signal wins over issue for the same
+number. Single-ref verdicts:
 
-| Task has | Upstream state | Verdict |
+| Ref | Upstream state | Verdict |
 |----------|----------------|---------|
-| `ghpr` | `MERGED` | `pr-merged` (stale — work landed) |
-| `ghpr` | `CLOSED` | `pr-closed` (stale — abandoned PR) |
-| `ghpr` | `OPEN` | `live` (keep — work lives in the PR, even if a linked issue closed) |
-| `ghid` only | `CLOSED` | `issue-closed` (stale) |
-| `ghid` only | `OPEN` | `live` |
-| either | `UNKNOWN` (fetch failed) | `live` — never close on uncertainty |
+| PR | `MERGED` | `pr-merged` (stale — work landed) |
+| PR | `CLOSED` | `pr-closed` (stale — abandoned PR) |
+| PR | `OPEN` | `live` (keep — work lives in the PR, even if a linked issue closed) |
+| issue | `CLOSED` | `issue-closed` (stale) |
+| issue | `OPEN` | `live` |
+| any | `UNKNOWN` (fetch failed) | `live` — never close on uncertainty |
 
 Upstream state is read with `gh issue view N --json state` / `gh pr view N
---json state`, cached per number so a queue with many tasks pointing at the same
-issue/PR makes one call each. PR state uses the `state` enum
-(`MERGED`/`OPEN`/`CLOSED`) per `.claude/rules/gh-json-fields.md` — never a
-`merged` field.
+--json state` (with `-R owner/repo` for a cross-repo ref), cached per
+`repo|kind|num` so a queue with many tasks pointing at the same issue/PR makes
+one call each. PR state uses the `state` enum (`MERGED`/`OPEN`/`CLOSED`) per
+`.claude/rules/gh-json-fields.md` — never a `merged` field.
+
+### Multi-ref aggregation
+
+A task referencing several items (e.g. `Monitor #142, #143, #144`) is stale
+**only when every ref resolves done** — this prevents closing a monitor task
+when only some of the items have closed:
+
+| Any ref is… | Task verdict |
+|-------------|--------------|
+| open (PR/issue `OPEN`) | `live` (keep) |
+| `UNKNOWN` (unreadable) | `live` (keep, counts toward `UNKNOWN_UPSTREAM`) |
+| all stale, some `pr-closed` | `pr-closed` (ambiguous — kept out of the bounded `--only-verdicts` auto-apply set) |
+| all stale, some `pr-merged` (rest `issue-closed`) | `pr-merged` |
+| all stale, all `issue-closed` | `issue-closed` |
+
+The `pr-closed`-dominates rule keeps an ambiguous abandoned-vs-superseded PR from
+being auto-closed in the bounded scheduled apply even when it sits alongside
+merged/closed siblings.
 
 ## The two close paths — and why
 

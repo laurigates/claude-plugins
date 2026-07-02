@@ -3,9 +3,29 @@
 # closed or merged, so the queue does not silently accumulate stale trackers.
 #
 # task-status DETECTS this drift (drift: stale-open) but never acts on it.
-# This script is the action: it snapshots pending tasks carrying ghid/ghpr,
-# batch-checks upstream state via gh (few calls, cached per number), classifies
-# each task live/stale, and — with --apply — closes the stale set.
+# This script is the action: it snapshots pending tasks that reference a
+# GitHub issue/PR — via a ghid/ghpr UDA, OR a ref in the description/annotation
+# text — batch-checks upstream state via gh (few calls, cached per ref),
+# classifies each task live/stale, and — with --apply — closes the stale set.
+#
+# Ref sources (per task), in precedence order:
+#   * ghpr / ghid UDA        → same-repo PR / issue (the original behaviour).
+#   * description + annotations text, in three UNAMBIGUOUS forms:
+#       - github.com/<owner>/<repo>/(issues|pull)/<N>   (repo + kind known)
+#       - <owner>/<repo>#<N>                            (repo known, kind resolved)
+#       - #<N>                                          (CWD repo, kind resolved)
+#     Shorthand like "prompt-editor#42" (no owner/ slash) deliberately does NOT
+#     match, so such a task stays KEEP rather than risk a wrong-repo close.
+#
+# Cross-repo: a ref naming <owner>/<repo> is checked with `gh … -R owner/repo`,
+# not the CWD default — so a task in project A referencing owner/B#N resolves
+# against B. Bare #N (and UDAs) use the CWD-resolved repo, as before.
+#
+# Multi-ref safety: a task with several refs is stale ONLY when EVERY ref is
+# resolved done. Any open ref → live; any unreadable ref → kept (uncertain);
+# any pr-closed among them → the aggregate is pr-closed (ambiguous, never in the
+# bounded --only-verdicts auto-apply set). This prevents closing a
+# "monitor #142, #143, #144" task when only some of them have closed.
 #
 # Close routing (the load-bearing nuance):
 #   * Leaf stale tasks (no dependents)  → bulk `task import` round-trip
@@ -111,9 +131,40 @@ echo "SCOPE=${rc_project:-ALL}"
 echo "MODE=$([ "$rc_apply" = true ] && echo apply || echo dry-run)"
 echo "ONLY_VERDICTS=${rc_only_verdicts}"
 
+# --- Ref extraction --------------------------------------------------------
+# `refs`: from a task object, emit a deduped array of {repo,kind,num} refs.
+# repo="" means "use the CWD-resolved default repo"; kind is pr|issue|unknown.
+# Precedence: a ghpr/ghid UDA wins (same-repo); otherwise scan description +
+# annotation text for the three unambiguous forms, removing each matched span
+# before the next (looser) pattern so an owner/repo#N is not also counted as a
+# bare #N. group_by folds duplicate (repo,num) refs, preferring a known kind.
+read -r -d '' REF_JQ <<'JQ' || true
+def refs:
+  . as $t
+  | (([$t.description // ""] + [ ($t.annotations // [])[].description // "" ]) | join("\n")) as $txt
+  | if $t.ghpr != null then [ {repo:"", kind:"pr", num:($t.ghpr|tostring|sub("\\..*$";""))} ]
+    elif $t.ghid != null then [ {repo:"", kind:"issue", num:($t.ghid|tostring|sub("\\..*$";""))} ]
+    else
+      ( [ $txt | match("github\\.com/([A-Za-z0-9._-]+/[A-Za-z0-9._-]+)/(issues|pull)/([0-9]+)"; "g")
+          | {repo:.captures[0].string, kind:(if .captures[1].string=="pull" then "pr" else "issue" end), num:.captures[2].string} ] ) as $urls
+      | ( $txt | gsub("github\\.com/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+/(issues|pull)/[0-9]+"; " ") ) as $t2
+      | ( [ $t2 | match("([A-Za-z0-9._-]+/[A-Za-z0-9._-]+)#([0-9]+)"; "g")
+          | {repo:.captures[0].string, kind:"unknown", num:.captures[1].string} ] ) as $slash
+      | ( $t2 | gsub("[A-Za-z0-9._-]+/[A-Za-z0-9._-]+#[0-9]+"; " ") ) as $t3
+      | ( [ $t3 | match("(?<![A-Za-z0-9_/-])#([0-9]+)"; "g") | {repo:"", kind:"unknown", num:.captures[0].string} ] ) as $bare
+      | ($urls + $slash + $bare)
+      | group_by(.repo + "#" + .num)
+      | map( { repo: .[0].repo, num: .[0].num,
+               kind: ( if any(.[]; .kind=="pr") then "pr"
+                       elif any(.[]; .kind=="issue") then "issue"
+                       else "unknown" end ) } )
+    end;
+JQ
+
 # --- Snapshot linked pending tasks (parallel-safe export | jq) -------------
+# Select any task carrying a ghid/ghpr UDA OR a description/annotation ref.
 linked_json=$(task "${proj_filter[@]}" status:pending export 2>/dev/null \
-  | jq -c "[.[] | select(.ghid != null or .ghpr != null)] | .[:${rc_limit}]" 2>/dev/null || echo "[]")
+  | jq -c "${REF_JQ} [ .[] | select((refs | length) > 0) ] | .[:${rc_limit}]" 2>/dev/null || echo "[]")
 linked_count=$(printf '%s' "$linked_json" | jq 'length' 2>/dev/null || echo 0)
 echo "TOTAL_LINKED=${linked_count}"
 
@@ -134,28 +185,37 @@ is_blocking() {
   printf '%s\n' "$blocking_uuids" | grep -qx "$1"
 }
 
-# --- Cache upstream state per number --------------------------------------
-declare -A issue_state
-declare -A pr_state
+# --- Cache upstream state per ref -----------------------------------------
+# Keyed by "repo|kind|num" (repo "" = CWD default). Value is a normalized
+# token: PR:MERGED / PR:CLOSED / PR:OPEN / ISSUE:CLOSED / ISSUE:OPEN / UNKNOWN.
+declare -A ref_cache
 
-issue_state_for() {
-  local n="$1"
-  if [ -n "${issue_state[$n]:-}" ]; then printf '%s' "${issue_state[$n]}"; return; fi
-  local s
-  s=$(gh issue view "$n" --json state --jq '.state' 2>/dev/null || echo "UNKNOWN")
-  [ -z "$s" ] && s="UNKNOWN"
-  issue_state[$n]="$s"
-  printf '%s' "$s"
-}
-
-pr_state_for() {
-  local n="$1"
-  if [ -n "${pr_state[$n]:-}" ]; then printf '%s' "${pr_state[$n]}"; return; fi
-  local s
-  s=$(gh pr view "$n" --json state --jq '.state' 2>/dev/null || echo "UNKNOWN")
-  [ -z "$s" ] && s="UNKNOWN"
-  pr_state[$n]="$s"
-  printf '%s' "$s"
+ref_state() {
+  local repo="$1" kind="$2" num="$3"
+  local key="${repo}|${kind}|${num}"
+  if [ -n "${ref_cache[$key]:-}" ]; then printf '%s' "${ref_cache[$key]}"; return; fi
+  local rflag=() s out="UNKNOWN"
+  [ -n "$repo" ] && rflag=(-R "$repo")
+  case "$kind" in
+    pr)
+      s=$(gh pr view "$num" "${rflag[@]}" --json state --jq '.state' 2>/dev/null)
+      [ -n "$s" ] && out="PR:${s}" ;;
+    issue)
+      s=$(gh issue view "$num" "${rflag[@]}" --json state --jq '.state' 2>/dev/null)
+      [ -n "$s" ] && out="ISSUE:${s}" ;;
+    *)
+      # Unknown kind (bare #N or owner/repo#N): try PR first (a merged PR is the
+      # common "done" signal), fall back to issue. A number that is an issue
+      # makes `gh pr view` error → empty → we resolve it via the issue API.
+      s=$(gh pr view "$num" "${rflag[@]}" --json state --jq '.state' 2>/dev/null)
+      if [ -n "$s" ]; then out="PR:${s}"
+      else
+        s=$(gh issue view "$num" "${rflag[@]}" --json state --jq '.state' 2>/dev/null)
+        [ -n "$s" ] && out="ISSUE:${s}"
+      fi ;;
+  esac
+  ref_cache[$key]="$out"
+  printf '%s' "$out"
 }
 
 # --- Classify each task ----------------------------------------------------
@@ -178,28 +238,58 @@ while [ "$i" -lt "$task_count" ]; do
   # so the per-project breakdown in scheduled-reconcile.sh can group TASK lines.
   t_project=$(printf '%s' "$row" | jq -r '.project // empty' | tr -d ' ')
 
+  refs_json=$(printf '%s' "$row" | jq -c "${REF_JQ} refs" 2>/dev/null || echo "[]")
+  nrefs=$(printf '%s' "$refs_json" | jq 'length' 2>/dev/null || echo 0)
+
+  # Resolve every ref, then aggregate. A multi-ref task is stale ONLY when every
+  # ref resolved done; any open ref → live; any unreadable ref → keep.
+  components=()   # per-ref stale verdicts (pr-merged/pr-closed/issue-closed)
+  reasons=()
+  bare_states=()  # per-ref bare state (MERGED/CLOSED/OPEN/UNKNOWN) for upstream=
+  has_open=false
+  has_unknown=false
+  r=0
+  while [ "$r" -lt "$nrefs" ]; do
+    rr=$(printf '%s' "$refs_json" | jq -c ".[$r]")
+    r_repo=$(printf '%s' "$rr" | jq -r '.repo')
+    r_kind=$(printf '%s' "$rr" | jq -r '.kind')
+    r_num=$(printf '%s' "$rr" | jq -r '.num')
+    st=$(ref_state "$r_repo" "$r_kind" "$r_num")
+    bare_states+=("${st##*:}")
+    ref_label="${r_repo}#${r_num}"
+    case "$st" in
+      PR:MERGED)    components+=("pr-merged");    reasons+=("PR ${ref_label} merged") ;;
+      PR:CLOSED)    components+=("pr-closed");    reasons+=("PR ${ref_label} closed unmerged") ;;
+      ISSUE:CLOSED) components+=("issue-closed"); reasons+=("issue ${ref_label} closed") ;;
+      PR:OPEN|ISSUE:OPEN) has_open=true ;;
+      *)            has_unknown=true ;;
+    esac
+    r=$((r + 1))
+  done
+
   verdict="live"
   reason=""
   upstream="-"
+  [ "${#bare_states[@]}" -gt 0 ] && upstream=$(IFS=,; printf '%s' "${bare_states[*]}")
 
-  # PR signal takes authority over issue when both are present: a merged PR
-  # means the work landed; an open PR means keep the task even if a linked
-  # issue closed (the work lives in the PR).
-  if [ -n "$t_ghpr" ]; then
-    upstream=$(pr_state_for "$t_ghpr")
-    case "$upstream" in
-      MERGED) verdict="pr-merged"; reason="PR #${t_ghpr} merged" ;;
-      CLOSED) verdict="pr-closed"; reason="PR #${t_ghpr} closed unmerged" ;;
-      OPEN) verdict="live" ;;
-      *) verdict="live"; unknown_count=$((unknown_count + 1)) ;;
-    esac
-  elif [ -n "$t_ghid" ]; then
-    upstream=$(issue_state_for "$t_ghid")
-    case "$upstream" in
-      CLOSED) verdict="issue-closed"; reason="issue #${t_ghid} closed" ;;
-      OPEN) verdict="live" ;;
-      *) verdict="live"; unknown_count=$((unknown_count + 1)) ;;
-    esac
+  if [ "$nrefs" -eq 0 ] || [ "$has_open" = true ]; then
+    verdict="live"
+  elif [ "$has_unknown" = true ]; then
+    # A ref could not be confirmed done — never close on uncertainty.
+    verdict="live"
+    unknown_count=$((unknown_count + 1))
+  else
+    # Every ref resolved stale. Aggregate: an ambiguous pr-closed dominates
+    # (kept out of the bounded auto-apply set); else pr-merged if any PR merged;
+    # else issue-closed.
+    if printf '%s\n' "${components[@]}" | grep -qx 'pr-closed'; then verdict="pr-closed"
+    elif printf '%s\n' "${components[@]}" | grep -qx 'pr-merged'; then verdict="pr-merged"
+    else verdict="issue-closed"; fi
+    if [ "${#reasons[@]}" -eq 1 ]; then
+      reason="${reasons[0]}"
+    else
+      reason=$(printf '%s; ' "${reasons[@]}"); reason="${reason%; }"
+    fi
   fi
 
   method="keep"
@@ -224,7 +314,7 @@ while [ "$i" -lt "$task_count" ]; do
     live_count=$((live_count + 1))
   fi
 
-  echo "TASK id=${t_id} project=${t_project:--} uuid=${t_uuid} ghid=${t_ghid:--} ghpr=${t_ghpr:--} upstream=${upstream} verdict=${verdict} method=${method}"
+  echo "TASK id=${t_id} project=${t_project:--} uuid=${t_uuid} ghid=${t_ghid:--} ghpr=${t_ghpr:--} refs=${nrefs} upstream=${upstream} verdict=${verdict} method=${method}"
   i=$((i + 1))
 done
 
