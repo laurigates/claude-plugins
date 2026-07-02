@@ -37,7 +37,7 @@ Do **not** use it to add a node to an existing pack, or to publish a release
 ```mermaid
 flowchart LR
   idea["idea"] --> sc["scaffold.py"] --> gh["gh repo create<br/>+ seed main"] --> gop["gitops PR<br/>(entry + import block)"]
-  gop --> gate["👤 merge gitops PR"] --> apply["Scalr apply:<br/>adopt + secrets + protection"] --> rm["remove import block"] --> impl["implement + release"]
+  gop --> gate["👤 merge gitops PR"] --> apply["tofu-apply on release:<br/>adopt + secrets + protection"] --> rm["remove import block"] --> impl["implement + release"]
   classDef g fill:#1b4332,stroke:#2d6a4f,color:#fff
   classDef m fill:#6a040f,stroke:#9d0208,color:#fff
   class sc,gh,gop,apply,rm g
@@ -46,8 +46,10 @@ flowchart LR
 
 Everything left of the gate is one orchestrated pass. There is **no scaffold
 PR** — the seed goes straight to `main` (see Phase 3 for why). The single gate
-(merging the gitops PR) is intentionally human — it triggers an infra `apply`
-on shared state. Never merge it on the user's behalf.
+(merging the gitops PR) is intentionally human — it feeds the apply pipeline on
+shared infra state (release-please cuts a gitops release, whose publication
+triggers the `tofu-apply.yml` GitHub Actions workflow). Never merge it on the
+user's behalf.
 
 ## Preconditions
 
@@ -235,18 +237,20 @@ labels `chore` + `opentofu` (both exist in the gitops repo; check
 `gh label list -R laurigates/gitops` if unsure).
 
 Set metadata per `github-metadata-hygiene` (assignee `laurigates`; skip
-self-reviewer — the author is the running user). Scalr posts a `plan` check on
-the PR; the expected plan **imports** the repo and **creates** the
+self-reviewer — the author is the running user). The `tofu-plan.yml` workflow
+posts the plan as a comment on the PR; the expected plan **imports** the repo
+and **creates** the
 `REGISTRY_ACCESS_TOKEN` secret + release-please var/secret + branch-protection
 ruleset.
 
 ## Phase 5 — Human gate, then finish
 
 Hand the user the new repo URL and the **gitops PR** URL. **The user merges the
-gitops PR** — that is the Scalr `apply` trigger on shared infra state. Do not
-merge it for them.
+gitops PR** — that starts the apply chain on shared infra state (release-please
+cuts a gitops release PR; merging that publishes a release, which triggers
+`tofu-apply.yml`). Do not merge it for them.
 
-After the user confirms the Scalr apply landed, verify the wiring and remove the
+After the user confirms the tofu apply landed, verify the wiring and remove the
 now-dead import block:
 
 ```sh
@@ -296,16 +300,18 @@ DOM test gap) to `project:comfyui-nodes` per `taskwarrior-cross-session`.
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| `publish.yml` fails `Option '--token' requires an argument` | `comfy_registry` flag not yet applied | Confirm the Scalr apply landed; `gh secret list` shows `REGISTRY_ACCESS_TOKEN`; re-run `gh workflow run publish.yml -R laurigates/<name>` |
+| `publish.yml` fails `Option '--token' requires an argument` | `comfy_registry` flag not yet applied | Confirm the tofu apply landed; `gh secret list` shows `REGISTRY_ACCESS_TOKEN`; re-run `gh workflow run publish.yml -R laurigates/<name>` |
 | release-please job fails on empty `app-id` | `release_please` credentials not applied, or repo on the legacy PAT workflow | The scaffold ships the App-token `release-please.yml`; confirm apply landed, re-run via `workflow_dispatch` |
 | `403 Resource not accessible by integration` on repo create | Tried to create via the gitops App, not a personal token | Create with personal `gh auth`; the App only adopts via import |
-| Scalr plan shows a *create* (not *import*) for the repo | Import block missing or `id` wrong | The `id` is the bare repo name, not `owner/name`; add/fix the import block |
+| The tofu plan shows a *create* (not *import*) for the repo | Import block missing or `id` wrong | The `id` is the bare repo name, not `owner/name`; add/fix the import block |
 | `just check` red in gitops | `tofu fmt`/`validate` failure | `just format` then re-check before pushing |
 
 ## Notes
 
-- The orchestrator never runs `tofu apply` — all applies go through Scalr on
-  merge (see `gitops/CLAUDE.md`). Local gitops work is `plan`/`validate` only.
+- The orchestrator never runs `tofu apply` — all applies go through the gitops
+  repo's `tofu-apply.yml` GitHub Actions workflow, triggered by publishing the
+  release-please release (see `gitops/CLAUDE.md`). Local gitops work is
+  `plan`/`validate` only.
 - The scaffold now emits the registry finishing-pass pieces (icon/banner SVGs +
   wiring, renovate + registry-health + clear-autorelease workflows) and audits
   for the rest; `just assets` (rsvg-convert) produces the served PNGs. See the

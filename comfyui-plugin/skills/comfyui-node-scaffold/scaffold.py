@@ -1722,8 +1722,9 @@ RELEASE_CHECKLIST = """\
 
 - [ ] Register the publisher / confirm `PublisherId` in `pyproject.toml` `[tool.comfy]`.
 - [ ] Add the repo to `gitops/repositories.tf` with `comfy_registry = true` and
-      `release_please = true` (do not configure via the GitHub UI). On the Scalr
-      apply, gitops pushes `REGISTRY_ACCESS_TOKEN`, `RELEASE_PLEASE_APP_ID` (var),
+      `release_please = true` (do not configure via the GitHub UI). On the gitops
+      apply (the `tofu-apply.yml` workflow, triggered by the gitops release),
+      gitops pushes `REGISTRY_ACCESS_TOKEN`, `RELEASE_PLEASE_APP_ID` (var),
       and `RELEASE_PLEASE_PRIVATE_KEY` (secret) automatically — no manual secret
       creation. The `/comfy-node` orchestrator does this wiring for you.
 - [ ] Verify the secrets landed: `gh secret list -R laurigates/<name>`.
