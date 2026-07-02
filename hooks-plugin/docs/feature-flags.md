@@ -47,6 +47,7 @@ explicit action, not an env flag. Their own opt-out knobs are listed below.
 | `CLAUDE_HOOKS_DISABLE_TASK_COMPLETENESS` | Stop-hook heuristics for incomplete work (TODO/conflict markers/debug artifacts) | `hooks/task-completeness.sh` |
 | `CLAUDE_HOOKS_DISABLE_TEST_VERIFICATION` | Stop-hook reminder to run tests when code changed | `hooks/test-verification.sh` |
 | `CLAUDE_HOOKS_DISABLE_DRIFT_NUDGE` | The consolidated drift-aggregator SessionStart nudge | `hooks/drift-aggregator.sh` |
+| `CLAUDE_HOOKS_DISABLE_README_CURRENCY` | Advisory nudge to update a changed plugin's README.md | `scripts/check-plugin-readme-currency.sh` |
 
 ### git-plugin
 
