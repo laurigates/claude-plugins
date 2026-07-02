@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.1](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.6.0...comfyui-plugin-v1.6.1) (2026-07-02)
+
+
+### Documentation
+
+* replace Scalr references with the tofu-in-GitHub-Actions gitops flow ([#1907](https://github.com/laurigates/claude-plugins/issues/1907)) ([be6d80c](https://github.com/laurigates/claude-plugins/commit/be6d80cafeaf29de2ce18cebb1a67819a2f3a2b9))
+
 ## [1.6.0](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.5.0...comfyui-plugin-v1.6.0) (2026-07-01)
 
 

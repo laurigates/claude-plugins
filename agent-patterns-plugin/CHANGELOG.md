@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.30.5](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.30.4...agent-patterns-plugin-v2.30.5) (2026-07-02)
+
+
+### Documentation
+
+* replace Scalr references with the tofu-in-GitHub-Actions gitops flow ([#1907](https://github.com/laurigates/claude-plugins/issues/1907)) ([be6d80c](https://github.com/laurigates/claude-plugins/commit/be6d80cafeaf29de2ce18cebb1a67819a2f3a2b9))
+
 ## [2.30.4](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.30.3...agent-patterns-plugin-v2.30.4) (2026-07-01)
 
 
