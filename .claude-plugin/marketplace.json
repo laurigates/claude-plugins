@@ -389,7 +389,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.5.10",
+      "version": "2.5.11",
       "keywords": [
         "hooks",
         "automation",
@@ -622,7 +622,7 @@
       "name": "taskwarrior-plugin",
       "source": "./taskwarrior-plugin",
       "description": "Coordination layer for multi-agent work using taskwarrior - parallel-safe queries, urgency scoring, and optional GitHub linkage via ghid/ghpr UDAs",
-      "version": "1.11.0",
+      "version": "1.12.0",
       "keywords": [
         "taskwarrior",
         "coordination",
