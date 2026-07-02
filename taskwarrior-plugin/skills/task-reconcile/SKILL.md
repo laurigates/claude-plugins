@@ -5,8 +5,8 @@ args: "[--apply] [--project=<name>] [--all]"
 allowed-tools: Bash(task *), Bash(gh issue *), Bash(gh pr *), Bash(jq *), Bash(bash *), Bash(git rev-parse *), Read, TodoWrite
 argument-hint: optional --apply to close (default dry-run preview)
 created: 2026-06-20
-modified: 2026-06-20
-reviewed: 2026-06-20
+modified: 2026-07-02
+reviewed: 2026-07-02
 ---
 
 # /taskwarrior:task-reconcile
@@ -16,11 +16,17 @@ mirror has closed or merged. `task-status` *detects* this drift; this skill
 *acts* on it, so the queue does not silently fill with trackers for work that
 already shipped.
 
+A task is "linked" whether it carries a `ghid`/`ghpr` UDA **or** references an
+issue/PR in its description/annotation text (a `#N`, an `owner/repo#N`, or a
+`github.com/owner/repo/(issues|pull)/N` URL) — so tasks filed with a plain
+`#N` in the description are reconciled too, and a cross-repo `owner/repo#N` is
+checked against *that* repo, not the current one.
+
 ## When to Use This Skill
 
 | Use this skill when... | Use a sibling skill instead when... |
 |---|---|
-| Stale `ghid`/`ghpr` tasks have piled up after issues/PRs closed | Auditing queue health without mutating it — use `task-status` |
+| Stale tasks (`ghid`/`ghpr` UDA **or** a `#N`/`owner/repo#N`/URL in the description) have piled up after issues/PRs closed | Auditing queue health without mutating it — use `task-status` |
 | Sweeping the queue after a batch of PRs merged | Closing one specific task by ID with a landing commit — use `task-done` |
 | Reconciling the local queue against GitHub as the source of record | Filing a new linked task — use `task-add` |
 
@@ -69,11 +75,14 @@ Run the reconcile script **without** `--apply` to classify every linked task:
 bash "${CLAUDE_SKILL_DIR}/scripts/reconcile.sh" --project=PROJECT --project-dir "$(pwd)"
 ```
 
-It emits one `TASK ...` line per linked task with its `upstream` state, a
-`verdict` (`live` / `issue-closed` / `pr-merged` / `pr-closed`), and the
-close `method` it would use (`bulk` / `done` / `keep`). Render the stale set as
-a table for the user, and read the `STALE_COUNT` / `BULK_COUNT` / `DONE_COUNT`
-summary.
+It emits one `TASK ...` line per linked task with its `refs` count, `upstream`
+state(s), a `verdict` (`live` / `issue-closed` / `pr-merged` / `pr-closed`), and
+the close `method` it would use (`bulk` / `done` / `keep`). A task with several
+refs is stale only when **every** ref is done — any open ref keeps it `live`,
+any unreadable ref keeps it (uncertain), and a `pr-closed` among them makes the
+aggregate `pr-closed` (kept out of the bounded auto-apply set). Render the stale
+set as a table for the user, and read the `STALE_COUNT` / `BULK_COUNT` /
+`DONE_COUNT` summary.
 
 ### Step 3: Confirm and apply
 
@@ -108,9 +117,10 @@ uncertainty). Suggest `/taskwarrior:task-status` to confirm the queue is clean.
 | Dry-run classify | `bash scripts/reconcile.sh --project=PROJECT` |
 | Apply the close | `bash scripts/reconcile.sh --apply --project=PROJECT` |
 | Cross-project sweep | `bash scripts/reconcile.sh --all` |
-| Linked-task snapshot | `task project:PROJECT status:pending export \| jq '[.[] \| select(.ghid != null or .ghpr != null)]'` |
+| UDA-linked snapshot (description refs also matched by the script) | `task project:PROJECT status:pending export \| jq '[.[] \| select(.ghid != null or .ghpr != null)]'` |
 | Issue state | `gh issue view N --json state --jq '.state'` |
 | PR state (per gh-json-fields) | `gh pr view N --json state --jq '.state'` |
+| Cross-repo ref state | `gh pr view N -R owner/repo --json state --jq '.state'` |
 | Skip empty-filter failures | Always `export \| jq`, never `list` |
 
 ## Quick Reference
@@ -125,10 +135,10 @@ uncertainty). Suggest `/taskwarrior:task-status` to confirm the queue is clean.
 
 | Verdict | Meaning | Close method |
 |---------|---------|--------------|
-| `live` | Issue/PR still open | keep |
-| `issue-closed` | `ghid` issue is CLOSED | bulk / done |
-| `pr-merged` | `ghpr` PR is MERGED | bulk / done |
-| `pr-closed` | `ghpr` PR closed unmerged | bulk / done |
+| `live` | A referenced issue/PR is still open (or a ref was unreadable) | keep |
+| `issue-closed` | Every referenced issue is CLOSED (no merged/closed PR among them) | bulk / done |
+| `pr-merged` | A referenced PR is MERGED and no referenced item is still open | bulk / done |
+| `pr-closed` | A referenced PR is CLOSED unmerged (ambiguous — abandoned vs superseded) | bulk / done |
 
 ## Related
 
