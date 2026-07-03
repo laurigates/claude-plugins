@@ -51,6 +51,8 @@ Parse `$ARGUMENTS` for the run **mode** (default `full`):
 | `bench-cpu` / `bench-memory` / `bench-disk` | one benchmark | ~1 min | no |
 | `report` | regenerate the latest run's report | instant | no |
 | `report-list` | list saved runs with PASS/WARN/FAIL counts | instant | no |
+| `baseline-show` | print this machine's recorded benchmark baseline | instant | no |
+| `baseline-reset` | clear the baseline (next bench run re-establishes it) | instant | no |
 
 Add `sudo` in front for thermal-pressure data (`powermetrics`); everything else,
 including CPU power via `macmon`, runs **without** sudo.
@@ -89,17 +91,30 @@ bash "${CLAUDE_SKILL_DIR}/scripts/run.sh" report-list
 Each saved run keeps its `summary.tsv` (one status row per check) and per-script
 logs, so before/after comparisons and regressions over time are trivial.
 
-## Thresholds & calibration
+## Scoring model
 
-Defaults are calibrated for an **M4 Pro** but the suite is **not machine-locked**.
-Every threshold is env-overridable — see
-[`scripts/config.sh`](scripts/config.sh) for the full `MACOS_PERF_*` list. To
-retune for a different Mac, export the relevant variables before running, or drop
-a `thresholds.local.sh` beside `config.sh`:
+**Benchmarks are self-calibrating — no fixed thresholds ship in the repo** (they'd
+be wrong on every machine but the author's). The **first** benchmark run records
+each score as this machine's baseline (best-seen), stored in
+`~/.cache/macos-perf/baseline.env`. Later runs compare against it:
+
+- a score that **beats** the baseline **ratchets it up** ("new best");
+- a score **10%+ below** best → **WARN**, **30%+ below** → **FAIL** (degradation
+  from the machine's own peak — catches SSD wear, thermal-paste aging, a runaway
+  background process, etc.).
+
+The degrade bands are env-overridable (`MACOS_PERF_BENCH_WARN_DEGRADE`,
+`MACOS_PERF_BENCH_FAIL_DEGRADE`). Inspect or clear the baseline with the
+`baseline-show` / `baseline-reset` modes.
+
+**Diagnostics keep absolute thresholds** — disk-free %, RAM, memory pressure,
+launch-item counts are health/hygiene checks, not performance scores, so they
+don't self-calibrate. Those defaults suit a modern Mac and are individually
+`MACOS_PERF_*`-overridable — see [`scripts/config.sh`](scripts/config.sh) for the
+full list, or drop a `thresholds.local.sh` beside it:
 
 ```bash
-MACOS_PERF_AES_WARN_MBS=1800 MACOS_PERF_RAM_MIN_GB=16 \
-  bash "${CLAUDE_SKILL_DIR}/scripts/run.sh" bench
+MACOS_PERF_RAM_MIN_GB=16 bash "${CLAUDE_SKILL_DIR}/scripts/run.sh" diagnose
 ```
 
 Results default to `~/.cache/macos-perf/`; override with `MACOS_PERF_RESULTS_DIR`.
@@ -122,7 +137,8 @@ brew install macmon jq
 | Full benchmark baseline | `bash "${CLAUDE_SKILL_DIR}/scripts/run.sh" bench` |
 | Machine-readable verdicts | `awk -F'\t' '$1~/^(PASS|WARN|FAIL)$/' ~/.cache/macos-perf/*/summary.tsv` |
 | List runs + counts | `bash "${CLAUDE_SKILL_DIR}/scripts/run.sh" report-list` |
-| Retune a threshold | `MACOS_PERF_<KEY>=<value> bash "${CLAUDE_SKILL_DIR}/scripts/run.sh" <mode>` |
+| Show / reset baseline | `bash "${CLAUDE_SKILL_DIR}/scripts/run.sh" baseline-show` |
+| Retune a diagnostic threshold | `MACOS_PERF_<KEY>=<value> bash "${CLAUDE_SKILL_DIR}/scripts/run.sh" <mode>` |
 
 ## Related
 

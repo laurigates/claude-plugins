@@ -22,9 +22,9 @@ if require_tool dd && require_tool iostat; then
   IOSTAT_PID=$!
 
   info "Writing ${TEST_SIZE_MB} MB via dd…"
-  WRITE_START="$(date +%s%3N)"  # ms
+  WRITE_START="$(now_ms)"
   dd if=/dev/zero of="$TESTFILE" bs=1m count="$TEST_SIZE_MB" conv=sync 2>&1
-  WRITE_END="$(date +%s%3N)"
+  WRITE_END="$(now_ms)"
 
   kill "$IOSTAT_PID" 2>/dev/null || true
   info "iostat during write:"
@@ -32,17 +32,9 @@ if require_tool dd && require_tool iostat; then
 
   write_ms=$(( WRITE_END - WRITE_START ))
   write_ms=$(( write_ms > 0 ? write_ms : 1 ))
-  write_gbs_x10=$(( TEST_SIZE_MB * 10000 / write_ms ))  # 10x GB/s to avoid float
-  write_gbs="${write_gbs_x10::-1}.${write_gbs_x10: -1}"
-
-  info "Write: ${TEST_SIZE_MB} MB in ${write_ms}ms -> ~${write_gbs} GB/s"
-  if (( write_gbs_x10 < DISK_WRITE_FAIL_GBS_X10 )); then
-    fail "Sequential write: ~${write_gbs} GB/s (below fail threshold)"
-  elif (( write_gbs_x10 < DISK_WRITE_WARN_GBS_X10 )); then
-    warn "Sequential write: ~${write_gbs} GB/s (below warn threshold)"
-  else
-    pass "Sequential write: ~${write_gbs} GB/s"
-  fi
+  write_mbs=$(( TEST_SIZE_MB * 1000 / write_ms ))
+  info "Write: ${TEST_SIZE_MB} MB in ${write_ms}ms"
+  score_hib bench_nvme_write_mbs "Sequential write" "$write_mbs" " MB/s"
 else
   warn "dd or iostat not available — skipping write benchmark"
 fi
@@ -52,23 +44,15 @@ section "Sequential Read (${TEST_SIZE_MB} MB)"
 if [[ -f "$TESTFILE" ]] && require_tool dd; then
   sync
   info "Reading ${TEST_SIZE_MB} MB via dd…"
-  READ_START="$(date +%s%3N)"
+  READ_START="$(now_ms)"
   dd if="$TESTFILE" of=/dev/null bs=1m 2>&1
-  READ_END="$(date +%s%3N)"
+  READ_END="$(now_ms)"
 
   read_ms=$(( READ_END - READ_START ))
   read_ms=$(( read_ms < 1 ? 1 : read_ms ))
-  read_gbs_x10=$(( TEST_SIZE_MB * 10000 / read_ms ))
-  read_gbs="${read_gbs_x10::-1}.${read_gbs_x10: -1}"
-
-  info "Read: ${TEST_SIZE_MB} MB in ${read_ms}ms -> ~${read_gbs} GB/s"
-  if (( read_gbs_x10 < DISK_READ_FAIL_GBS_X10 )); then
-    fail "Sequential read: ~${read_gbs} GB/s (below fail threshold)"
-  elif (( read_gbs_x10 < DISK_READ_WARN_GBS_X10 )); then
-    warn "Sequential read: ~${read_gbs} GB/s (below warn threshold)"
-  else
-    pass "Sequential read: ~${read_gbs} GB/s"
-  fi
+  read_mbs=$(( TEST_SIZE_MB * 1000 / read_ms ))
+  info "Read: ${TEST_SIZE_MB} MB in ${read_ms}ms"
+  score_hib bench_nvme_read_mbs "Sequential read" "$read_mbs" " MB/s"
 else
   warn "Test file not available — skipping read benchmark"
 fi

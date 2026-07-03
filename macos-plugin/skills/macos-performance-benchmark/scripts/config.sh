@@ -39,25 +39,21 @@ LAUNCH_ITEMS_WARN="${MACOS_PERF_LAUNCH_ITEMS_WARN:-15}"
 LAUNCHCTL_FAIL="${MACOS_PERF_LAUNCHCTL_FAIL:-60}"
 LAUNCHCTL_WARN="${MACOS_PERF_LAUNCHCTL_WARN:-30}"
 
-# ── Benchmark thresholds (M4 Pro baselines) ───────────────────────────────────
-# OpenSSL throughput (MB/s @16KB block)
-AES_FAIL_MBS="${MACOS_PERF_AES_FAIL_MBS:-1019}"
-AES_WARN_MBS="${MACOS_PERF_AES_WARN_MBS:-1426}"
-SHA_FAIL_MBS="${MACOS_PERF_SHA_FAIL_MBS:-1497}"
-SHA_WARN_MBS="${MACOS_PERF_SHA_WARN_MBS:-2096}"
-# Python single-core wall time (seconds)
-PY_SINGLE_FAIL_S="${MACOS_PERF_PY_SINGLE_FAIL_S:-8}"
-PY_SINGLE_WARN_S="${MACOS_PERF_PY_SINGLE_WARN_S:-5}"
-# Multi-core scaling efficiency (%)
+# ── Benchmark scoring: self-calibrating per-machine baseline ──────────────────
+# Benchmarks ship NO fixed thresholds — those would be wrong on every machine
+# but the author's. Instead the first run records each score as this machine's
+# baseline (best-seen, in ${RESULTS_BASE}/baseline.env); later runs compare
+# against it and ratchet the baseline up whenever a score improves. The verdict
+# is relative degradation from best:
+BENCH_WARN_DEGRADE="${MACOS_PERF_BENCH_WARN_DEGRADE:-10}"  # % below best -> WARN
+BENCH_FAIL_DEGRADE="${MACOS_PERF_BENCH_FAIL_DEGRADE:-30}"  # % below best -> FAIL
+
+# Multi-core scaling efficiency keeps an absolute architectural floor (%) —
+# it's a quality ratio, not a raw score, so it doesn't self-calibrate.
 SCALING_WARN_PCT="${MACOS_PERF_SCALING_WARN_PCT:-70}"
-# Memory dd read-back (GB/s)
-DD_READ_WARN_GBS="${MACOS_PERF_DD_READ_WARN_GBS:-2}"
+# 16 GB allocation pressure drop (health signal, absolute, percentage points):
 MEM_PRESSURE_DROP_WARN_PP="${MACOS_PERF_MEM_PRESSURE_DROP_WARN_PP:-10}"
-# NVMe sequential throughput (GB/s ×10 to stay in integer math)
-DISK_WRITE_FAIL_GBS_X10="${MACOS_PERF_DISK_WRITE_FAIL_GBS_X10:-15}"
-DISK_WRITE_WARN_GBS_X10="${MACOS_PERF_DISK_WRITE_WARN_GBS_X10:-25}"
-DISK_READ_FAIL_GBS_X10="${MACOS_PERF_DISK_READ_FAIL_GBS_X10:-20}"
-DISK_READ_WARN_GBS_X10="${MACOS_PERF_DISK_READ_WARN_GBS_X10:-40}"
+# NVMe benchmark test-file size (MB):
 DISK_TEST_SIZE_MB="${MACOS_PERF_DISK_TEST_SIZE_MB:-4096}"
 
 # Optional local override file (gitignored / per-machine calibration)

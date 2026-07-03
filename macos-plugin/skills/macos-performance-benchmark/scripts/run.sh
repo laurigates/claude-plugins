@@ -11,6 +11,8 @@
 #   bench-cpu | bench-memory | bench-disk               single benchmark
 #   report       (re)generate report.md for the most recent run
 #   report-list  list saved runs with PASS/WARN/FAIL counts
+#   baseline-show   print this machine's recorded benchmark baseline
+#   baseline-reset  clear the baseline (next bench run re-establishes it)
 #
 # `set -u` only (no -e / pipefail): a single failed diagnostic section must not
 # abort the sequence — every mode still reaches report generation.
@@ -75,6 +77,14 @@ case "$mode" in
   report)
     bash "${SCRIPTS_ROOT}/report/generate.sh"
     ;;
+  baseline-show)
+    bf="${RESULTS_BASE}/baseline.env"
+    if [[ -f "$bf" ]]; then echo "Benchmark baseline ($bf):"; sort "$bf"; else echo "No baseline yet — run 'bench' to establish one."; fi
+    ;;
+  baseline-reset)
+    rm -f "${RESULTS_BASE}/baseline.env"
+    echo "Baseline cleared — the next bench run will re-establish it."
+    ;;
   report-list)
     echo "Saved runs in ${RESULTS_BASE}/"
     find "${RESULTS_BASE}" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort | while read -r d; do
@@ -87,7 +97,7 @@ case "$mode" in
     ;;
   *)
     echo "Unknown mode: $mode" >&2
-    echo "Modes: diagnose bench full diag-cpu diag-memory diag-disk diag-startup bench-cpu bench-memory bench-disk report report-list" >&2
+    echo "Modes: diagnose bench full diag-cpu diag-memory diag-disk diag-startup bench-cpu bench-memory bench-disk report report-list baseline-show baseline-reset" >&2
     exit 2
     ;;
 esac

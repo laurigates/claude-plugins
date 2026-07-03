@@ -17,6 +17,12 @@ export MACOS_PERF_LIB_DIR SCRIPTS_ROOT
 # shellcheck disable=SC1091
 source "${SCRIPTS_ROOT}/config.sh"
 
+# Per-machine benchmark baseline store + scorers (score_hib / score_lob).
+BASELINE_FILE="${RESULTS_BASE}/baseline.env"
+export BASELINE_FILE
+# shellcheck disable=SC1091
+source "${MACOS_PERF_LIB_DIR}/baseline.sh"
+
 # ── Run directory ─────────────────────────────────────────────────────────────
 if [[ -z "${RUN_DIR:-}" ]]; then
   RUN_DIR="${RESULTS_BASE}/$(date +%Y%m%d_%H%M%S)"
@@ -77,6 +83,19 @@ run_bounded() {
   wait "$killer" 2>/dev/null
   return "$rc"
 }
+
+# ── Timing & unit helpers ─────────────────────────────────────────────────────
+# BSD `date` has no %N (sub-second), so millisecond timing goes through
+# python3/perl (both present on macOS), falling back to whole-second date.
+now_ms() {
+  if command -v python3 &>/dev/null; then python3 -c 'import time; print(int(time.time()*1000))'
+  elif command -v perl &>/dev/null; then perl -MTime::HiRes=time -e 'print int(time()*1000)'
+  else echo $(( $(date +%s) * 1000 )); fi
+}
+
+# openssl `speed` prints throughput in 1000s of bytes/s with a trailing 'k'
+# (e.g. 1869895.00k). Convert that field to decimal MB/s (value_k * 1000 / 1e6).
+ossl_mbs() { awk -v s="$1" 'BEGIN{ sub(/k$/,"",s); printf "%.0f", s*1000/1000000 }'; }
 
 # ── Benchmark helper: keep the machine awake for the duration ─────────────────
 caffeinate_start() { caffeinate -i & CAFF_PID=$!; }

@@ -9,7 +9,7 @@ fails=0
 check() { if eval "$2"; then echo "PASS: $1"; else echo "FAIL: $1"; fails=$((fails+1)); fi; }
 
 # 1. Every script parses.
-for f in "$DIR"/run.sh "$DIR"/config.sh "$DIR"/lib/common.sh "$DIR"/report/generate.sh "$DIR"/diag/*.sh "$DIR"/bench/*.sh; do
+for f in "$DIR"/run.sh "$DIR"/config.sh "$DIR"/lib/common.sh "$DIR"/lib/baseline.sh "$DIR"/report/generate.sh "$DIR"/diag/*.sh "$DIR"/bench/*.sh; do
   check "syntax: ${f##*/}" "bash -n '$f'"
 done
 
@@ -32,8 +32,20 @@ check "LPM detection uses lowpowermode" "grep -q 'lowpowermode' '$DIR/diag/cpu.s
 # 7. macmon-first sudo-free power path is present.
 check "macmon-first power path" "grep -q 'macmon pipe' '$DIR/diag/cpu.sh'"
 
-# 8. Thresholds are env-overridable (not machine-locked).
-check "thresholds are MACOS_PERF_* overridable" "grep -q 'MACOS_PERF_AES_WARN_MBS' '$DIR/config.sh'"
+# 8. Diagnostic thresholds are env-overridable (not machine-locked).
+check "diag thresholds are MACOS_PERF_* overridable" "grep -q 'MACOS_PERF_RAM_MIN_GB' '$DIR/config.sh'"
+
+# 9. Benchmarks are self-calibrating (baseline, not fixed thresholds).
+check "baseline scorers exist" "grep -q 'score_hib' '$DIR/lib/baseline.sh' && grep -q 'score_lob' '$DIR/lib/baseline.sh'"
+check "benches call the baseline scorer" "grep -q 'score_hib' '$DIR/bench/cpu.sh'"
+check "no fixed bench MB/s thresholds remain" "! grep -q 'AES_FAIL_MBS' '$DIR/config.sh'"
+check "degrade fractions configurable" "grep -q 'MACOS_PERF_BENCH_WARN_DEGRADE' '$DIR/config.sh'"
+check "run.sh exposes baseline-show/reset" "grep -q 'baseline-show' '$DIR/run.sh' && grep -q 'baseline-reset' '$DIR/run.sh'"
+
+# 10. Sub-second timing avoids BSD date %N; multiprocessing forces fork.
+check "ms timing via now_ms (not date %N)" "grep -q 'now_ms' '$DIR/lib/common.sh' && ! grep -q 'date +%s%3N' '$DIR/bench/disk.sh'"
+check "openssl unit helper present" "grep -q 'ossl_mbs' '$DIR/lib/common.sh'"
+check "all-core pool forces fork start method" "grep -q \"get_context('fork')\" '$DIR/bench/cpu.sh'"
 
 echo "---"
 if (( fails == 0 )); then echo "ALL PASS"; exit 0; else echo "$fails FAILED"; exit 1; fi

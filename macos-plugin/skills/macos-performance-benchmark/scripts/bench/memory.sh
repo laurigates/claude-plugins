@@ -61,12 +61,8 @@ if require_tool dd; then
   read_s=$(( read_s < 1 ? 1 : read_s ))
 
   read_gbs=$(( 1024 / read_s ))
-  info "Read back: ~${read_gbs} GB/s (${read_s}s for 1 GB)"
-  if (( read_gbs >= DD_READ_WARN_GBS )); then
-    pass "dd read-back: ~${read_gbs} GB/s"
-  else
-    warn "dd read-back: ~${read_gbs} GB/s < ${DD_READ_WARN_GBS} GB/s"
-  fi
+  info "Read back: ${read_s}s for 1 GB"
+  score_hib bench_dd_read_gbs "dd read-back" "$read_gbs" " GB/s"
 fi
 
 # ── 16 GB allocation pressure test ────────────────────────────────────────────

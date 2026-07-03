@@ -14,7 +14,7 @@ All skills are **Darwin-only** — they detect non-macOS systems and refuse to a
 | [endpoint-security-cpu](skills/endpoint-security-cpu/skill.md) | Diagnose an EndpointSecurity/EDR extension (Kandji ESF, XProtect) hot from a process-spawn storm; trace the source with `powermetrics` + `eslogger` |
 | [macos-disk-usage](skills/macos-disk-usage/skill.md) | Disk-usage forensics and space recovery on APFS — trust `df` `Avail` not `Capacity %`, reclaim OrbStack/Docker, thin `tmutil` snapshots, tiered cache cleanup |
 | [macos-performance-triage](skills/macos-performance-triage/skill.md) | Live CPU/GPU triage on Apple Silicon — `macmon`-first USE-method snapshot, attribute a hot `WindowServer` to the driving app via `powermetrics --show-process-gpu`, flame-graph a process with `samply`; Rust-forward, sudo-free toolkit |
-| [macos-performance-benchmark](skills/macos-performance-benchmark/skill.md) | Repeatable, threshold-scored benchmark + diagnostic suite (CPU/thermals, memory/swap, disk, startup) — PASS/WARN/FAIL reports saved under `~/.cache/macos-perf/`, tunable `MACOS_PERF_*` thresholds, `macmon`-first sudo-free power/thermals |
+| [macos-performance-benchmark](skills/macos-performance-benchmark/skill.md) | Repeatable benchmark + diagnostic suite (CPU/thermals, memory/swap, disk, startup) — PASS/WARN/FAIL reports saved under `~/.cache/macos-perf/`; benchmarks self-calibrate to a per-machine baseline (WARN/FAIL on degradation from peak), diagnostics keep `MACOS_PERF_*`-tunable absolute thresholds, `macmon`-first sudo-free power/thermals |
 
 ## When to Use
 
