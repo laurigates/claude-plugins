@@ -1,0 +1,132 @@
+[
+  {
+    "corrected": [
+      3,
+      3,
+      "tie"
+    ],
+    "dim": "A5",
+    "pair": "tier-a",
+    "reason": "inter-judge disagreement (gap 1, opposite verdicts)",
+    "reasoning": "Verified facts. OURS (A): marketplace.json has NO top-level description (the documented warning class named in the A5 anchor text) but has $schema and description+keywords+category on all 44 entries; all 44 plugins have READMEs; README.md line 5 says '43 Claude Code plugins' while line 15 says 'registers all 44 plugins' (44 on disk \u2014 self-contradiction on one page); docs/PLUGIN-MAP.md header says ",
+    "symmetric_violation": true,
+    "verdict": "adjusted"
+  },
+  {
+    "corrected": [
+      2,
+      4,
+      "B"
+    ],
+    "dim": "B1",
+    "pair": "code-review",
+    "reason": "load-bearing decisive margin (3.0 pts, both judges agree)",
+    "reasoning": "Evidence quotes verified on both sides. A=2 upheld: the sole command's description (\"Code review a pull request\") concretely states what it does (above anchor-1 vague/absent) but gives no trigger conditions or user contexts and is imperative, not third-person \u2014 squarely between anchors 1 and 3; the README's when-to-use sections are not the frontmatter/description triggering surface B1 scores. B=5 ",
+    "symmetric_violation": true,
+    "verdict": "adjusted"
+  },
+  {
+    "corrected": [
+      5,
+      2,
+      "A"
+    ],
+    "dim": "B1",
+    "pair": "session-reporting",
+    "reason": "load-bearing decisive margin (3.0 pts, both judges agree)",
+    "reasoning": "All cited quotes verified against the files. Side A's four skill descriptions are third-person, front-loaded, carry concrete user phrasings (\"spin up\", \"what was I doing\", \"wrap up\", \"done for now\", \"winding down a session\"), and each skill explicitly disambiguates from its siblings and near-miss cross-plugin skills \u2014 meeting every anchor-5 element (phrasings, near-miss coverage, front-loading, si",
+    "symmetric_violation": false,
+    "verdict": "upheld"
+  },
+  {
+    "corrected": [
+      5,
+      2,
+      "A"
+    ],
+    "dim": "B4",
+    "pair": "autonomous-loop",
+    "reason": "load-bearing decisive margin (2.5 pts, both judges agree)",
+    "reasoning": "Both judges' evidence quotes verified verbatim in side-A/plugins/ralph-loop/hooks/stop-hook.sh (lines 37, 96) and side-B SKILL.md (line 28). Side A delegates every mechanical step (arg parsing, state-file lifecycle, iteration counting, bounded transcript parsing, promise matching) to two bundled scripts that are robust under attack: numeric validation before arithmetic, jq-failure branch, session ",
+    "symmetric_violation": false,
+    "verdict": "upheld"
+  },
+  {
+    "corrected": [
+      4,
+      2,
+      "A"
+    ],
+    "dim": "B6",
+    "pair": "skill-authoring",
+    "reason": "load-bearing decisive margin (2.5 pts, both judges agree)",
+    "reasoning": "Every cited defect verified by direct reading and execution. Side B: (1) hook-development/SKILL.md flatly contradicts itself on plugin hooks.json format (wrapper mandated L64-119, direct format shown L340-381); (2) its bundled validate-hook-schema.sh crashes (jq error, exit 5) on the wrapper format the same doc mandates and instructs users to validate with; (3) plugin-validator.md ends with a stra",
+    "symmetric_violation": false,
+    "verdict": "upheld"
+  },
+  {
+    "corrected": [
+      3,
+      5,
+      "B"
+    ],
+    "dim": "B1",
+    "pair": "autonomous-loop",
+    "reason": "load-bearing decisive margin (2.0 pts, both judges agree)",
+    "reasoning": "Both cited quotes exist verbatim in side-B's SKILL.md. B meets every anchor-5 element: front-loaded key use case surviving truncation, third-person description with three realistic trigger phrasings, and explicit in-artifact disambiguation from three named siblings (project-continue/project-distill/project-discovery). Side A's command descriptions (\"Start Ralph Loop in current session\", \"Cancel ac",
+    "symmetric_violation": false,
+    "verdict": "upheld"
+  },
+  {
+    "corrected": [
+      5,
+      3,
+      "A"
+    ],
+    "dim": "B2",
+    "pair": "code-review",
+    "reason": "load-bearing decisive margin (2.0 pts, both judges agree)",
+    "reasoning": "All cited quotes verified verbatim in side-A/plugins/code-review/commands/code-review.md. Side A meets every anchor-5 element: 8 ordered steps with per-agent tasks, a verbatim 0-100 confidence rubric, an 8-item false-positive taxonomy, two exact output templates with a worked link example, and stated reasoning (why bash substitution in links fails, why not to run builds, why CLAUDE.md may not appl",
+    "symmetric_violation": false,
+    "verdict": "upheld"
+  },
+  {
+    "corrected": [
+      5,
+      3,
+      "A"
+    ],
+    "dim": "B3",
+    "pair": "hooks",
+    "reason": "load-bearing decisive margin (2.0 pts, both judges agree)",
+    "reasoning": "Cited evidence verified: the REFERENCE.md deferral quote exists at side-A hooks-configuration/SKILL.md:133, and the pattern is systemic \u2014 3 of 4 side-A skills pair a lean body (276/193/179 lines) with a per-skill REFERENCE.md (370/258/117 lines) holding schemas, script templates, and extra patterns, plus executable hook scripts that run without being read and disable-model-invocation path splittin",
+    "symmetric_violation": false,
+    "verdict": "upheld"
+  },
+  {
+    "corrected": [
+      5,
+      3,
+      "A"
+    ],
+    "dim": "B1",
+    "pair": "pr-commit-workflow",
+    "reason": "load-bearing decisive margin (2.0 pts, both judges agree)",
+    "reasoning": "All cited quotes verified verbatim. Side A's 12 skill descriptions uniformly state what + concrete third-person trigger phrasings (\"commit\"/\"save changes\"; \"push\"/\"send to remote\"), front-load the key use case, and explicitly cross-disambiguate the collision-prone commit/push/PR cluster (git-commit \u2192 \"see git-push for remote\"; git-push \u2192 \"see git-commit... and git-pr\") \u2014 the literal anchor-5 featu",
+    "symmetric_violation": false,
+    "verdict": "upheld"
+  },
+  {
+    "corrected": [
+      5,
+      3,
+      "A"
+    ],
+    "dim": "B4",
+    "pair": "pr-commit-workflow",
+    "reason": "load-bearing decisive margin (2.0 pts, both judges agree)",
+    "reasoning": "Both judges' evidence checks out verbatim. Side A's git-pr.sh (line 3: \"DATA-ONLY: detects PR readiness (fetch + ahead-count + existing-PR probe)\") and list-actionable-prs.sh (line 19: \"Testing: set PR_FEEDBACK_FIXTURE=<path> to read a captured GraphQL response\") exist as quoted. Attacking the A=5: the scripts genuinely meet anchor 5 \u2014 they are robust (git-pr.sh guards missing jq and not-a-repo wi",
+    "symmetric_violation": false,
+    "verdict": "upheld"
+  }
+]

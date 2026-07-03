@@ -1,0 +1,76 @@
+{
+  "pair_id": "skill-authoring",
+  "judge_id": "j2",
+  "dimensions": {
+    "B1": {
+      "score_a": 5,
+      "score_b": 4,
+      "verdict": "A",
+      "rationale": "Side A's descriptions front-load the key use case, state concrete 'Use when' conditions, and disambiguate sibling gates inside the description itself (executability vs comprehension vs effectiveness). Side B's trigger-phrase lists are exemplary per-artifact, but skill-creator and skill-development both trigger on 'create a skill' with no cross-disambiguation, so Claude cannot reliably tell which to load.",
+      "evidence": [
+        {"side": "A", "file": "side-A/evaluate-plugin/skills/evaluate-legibility/SKILL.md", "quote": "Use when validating whether a skill says clearly when to invoke it and how to start."},
+        {"side": "A", "file": "side-A/evaluate-plugin/skills/evaluate-matrix/SKILL.md", "quote": "the executability gate. Use when checking whether a weak model can actually do a skill"},
+        {"side": "B", "file": "side-B/plugins/plugin-dev/skills/hook-development/SKILL.md", "quote": "asks to \"create a hook\", \"add a PreToolUse/PostToolUse/Stop hook\""},
+        {"side": "B", "file": "side-B/plugins/skill-creator/skills/skill-creator/SKILL.md", "quote": "Create new skills, modify and improve existing skills"}
+      ]
+    },
+    "B2": {
+      "score_a": 5,
+      "score_b": 4,
+      "verdict": "A",
+      "rationale": "Side A gives ordered imperative steps with exact runnable script invocations, output templates, a worked input->output example, and the 'why' behind each constraint (fixtures, serialization). Side B's skill-creator excels at explaining the why, but hook-development contradicts itself on the plugin hooks.json format (wrapper required earlier, direct format shown later for plugins), which would leave a zero-context agent guessing which shape to emit.",
+      "evidence": [
+        {"side": "A", "file": "side-A/evaluate-plugin/skills/evaluate-matrix/SKILL.md", "quote": "without one a context-needing skill fails on haiku purely for lack of fixtures, a false negative that poisons this gate"},
+        {"side": "B", "file": "side-B/plugins/plugin-dev/skills/hook-development/SKILL.md", "quote": "hooks` field is required wrapper containing actual hook events"},
+        {"side": "B", "file": "side-B/plugins/plugin-dev/skills/hook-development/SKILL.md", "quote": "In plugins, define hooks in"}
+      ]
+    },
+    "B3": {
+      "score_a": 5,
+      "score_b": 4,
+      "verdict": "A",
+      "rationale": "Side A's bodies are lean (511-1564 words), push schemas to references/, design rationale to docs/, and prompt assembly into an executable script that runs without being read. Side B implements textbook three-level disclosure in plugin-dev, but skill-creator's ~4,600-word body inlines Claude.ai/Cowork variants and repeats its core loop, and skill-development duplicates skill-creator content it also ships as a reference file.",
+      "evidence": [
+        {"side": "A", "file": "side-A/evaluate-plugin/skills/evaluate-legibility/scripts/emit-legibility-prompt.sh", "quote": "The body of evaluate-legibility/SKILL.md stays declarative: it invokes this"},
+        {"side": "B", "file": "side-B/plugins/skill-creator/skills/skill-creator/SKILL.md", "quote": "Repeating one more time the core loop here for emphasis"}
+      ]
+    },
+    "B4": {
+      "score_a": 5,
+      "score_b": 4,
+      "verdict": "A",
+      "rationale": "Both sides offload heavily to scripts. Side A's grader is explicitly token-frugal, scripts emit structured KEY=value output, validate arguments, and ship their own test suite with fixtures; skills state exactly when to run each script. Side B's tooling is broad and documented, but validate-hook-schema.sh cannot parse the wrapper format its own SKILL.md tells plugin authors to validate with it, and hook-linter's unquoted-variable regex is noise-prone.",
+      "evidence": [
+        {"side": "A", "file": "side-A/evaluate-plugin/scripts/grade_deterministic.py", "quote": "WITHOUT spending LLM judge tokens"},
+        {"side": "B", "file": "side-B/plugins/skill-creator/skills/skill-creator/SKILL.md", "quote": "write and run a script rather than eyeballing it"}
+      ]
+    },
+    "B5": {
+      "score_a": 5,
+      "score_b": 4,
+      "verdict": "A",
+      "rationale": "Side A scopes allowed-tools per skill and agent, documents the untrusted-shell blast radius of eval fixtures, guards teardown against poisoned paths, and gates the only destructive action (writing a live SKILL.md) behind AskUserQuestion plus a delta-verify gate with an explicit recorded override. Side B teaches injection safety and validation well and its agents are narrowly tooled, but its create-plugin command grants unscoped Bash and no comparable gates exist.",
+      "evidence": [
+        {"side": "A", "file": "side-A/evaluate-plugin/scripts/apply_fixture.sh", "quote": "Refuse to remove anything outside the temp root — the setup commands are"},
+        {"side": "B", "file": "side-B/plugins/plugin-dev/agents/plugin-validator.md", "quote": "No hardcoded credentials in any files"}
+      ]
+    },
+    "B6": {
+      "score_a": 5,
+      "score_b": 2,
+      "verdict": "A",
+      "rationale": "Side A's references resolve, error paths are explicit (STATUS=ERROR stop conditions), scripts have regression tests, and a SessionStart drift probe detects stale eval results — maintained as a coherent whole. Side B ships all three plugin-dev agent files with leftover conversational transcript debris after a stray code fence, an internal contradiction on the plugin hooks.json format, and a validator that rejects the format its docs mandate.",
+      "evidence": [
+        {"side": "A", "file": "side-A/evaluate-plugin/hooks/evaluate-drift-probe.sh", "quote": "Detects eval-results that are older than the SKILL.md they evaluate"},
+        {"side": "B", "file": "side-B/plugins/plugin-dev/agents/plugin-validator.md", "quote": "Excellent work! The agent-development skill is now complete and all 6 skills are documented in the README"}
+      ]
+    }
+  },
+  "identity_leakage": {
+    "recognized": true,
+    "side_a_guess": "laurigates/claude-plugins — the evaluate-plugin (author 'Lauri Gates', repository https://github.com/laurigates/claude-plugins in plugin.json, house rules like skill-quality.md)",
+    "side_b_guess": "Anthropic's official claude-code plugins marketplace — plugin-dev and skill-creator (author 'Anthropic', support@anthropic.com in both plugin.json files)",
+    "leak_evidence": "side-A/evaluate-plugin/.claude-plugin/plugin.json carries \"author\": {\"name\": \"Lauri Gates\"} and repository laurigates/claude-plugins; side-B plugin.json files carry \"author\": {\"name\": \"Anthropic\", \"email\": \"support@anthropic.com\"}. Scores were anchored to the rubric text only; recognition was not used to adjust them."
+  },
+  "overall_comment": "Side A is tighter on every dimension judged: lean imperative skills, token-frugal deterministic grading with its own tests, safety gates on the one destructive path, and drift detection. Side B contains genuinely excellent teaching content and a rich script toolkit, but is dragged down by concrete maintenance defects: transcript debris left in all three plugin-dev agent definitions, a wrapper-vs-direct hooks.json contradiction, a validator that cannot parse the documented plugin format, and a bloated, self-repeating skill-creator body."
+}

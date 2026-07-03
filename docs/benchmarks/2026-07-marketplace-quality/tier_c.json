@@ -1,0 +1,83 @@
+{
+  "official": {
+    "categories": {
+      "(none)": 14,
+      "automation": 1,
+      "database": 34,
+      "deployment": 8,
+      "design": 6,
+      "development": 109,
+      "learning": 3,
+      "location": 2,
+      "math": 1,
+      "migration": 1,
+      "monitoring": 17,
+      "productivity": 45,
+      "security": 13,
+      "testing": 1
+    },
+    "entries": 255,
+    "external_plugins_vendored": [
+      "asana",
+      "context7",
+      "discord",
+      "fakechat",
+      "firebase",
+      "github",
+      "gitlab",
+      "greptile",
+      "imessage",
+      "laravel-boost",
+      "linear",
+      "playwright",
+      "serena",
+      "telegram",
+      "terraform"
+    ],
+    "lsp_config_plugins": {
+      "count": 12,
+      "names": [
+        "clangd-lsp",
+        "csharp-lsp",
+        "gopls-lsp",
+        "jdtls-lsp",
+        "kotlin-lsp",
+        "lua-lsp",
+        "php-lsp",
+        "pyright-lsp",
+        "ruby-lsp",
+        "rust-analyzer-lsp",
+        "swift-lsp",
+        "typescript-lsp"
+      ]
+    },
+    "source_types": {
+      "git-subdir": 71,
+      "github": 2,
+      "in-repo": 51,
+      "url": 131
+    },
+    "unique_external_repos": 179
+  },
+  "ours": {
+    "categories": {
+      "ai": 4,
+      "automation": 3,
+      "ci-cd": 2,
+      "communication": 2,
+      "development": 10,
+      "documentation": 2,
+      "gamedev": 1,
+      "infrastructure": 6,
+      "language": 4,
+      "quality": 4,
+      "testing": 1,
+      "utilities": 3,
+      "ux": 2
+    },
+    "entries": 44,
+    "source_types": {
+      "in-repo": 44
+    }
+  }
+}

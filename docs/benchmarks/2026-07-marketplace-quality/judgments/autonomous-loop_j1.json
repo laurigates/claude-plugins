@@ -1,0 +1,116 @@
+{
+  "pair_id": "autonomous-loop",
+  "judge_id": "j1",
+  "dimensions": {
+    "B1": {
+      "score_a": 3,
+      "score_b": 5,
+      "verdict": "B",
+      "rationale": "A's command descriptions state what they do with distinct names but carry no trigger conditions (when-to-use lives only in README/help). B's description front-loads the use case, states concrete trigger phrasings, and its body table explicitly disambiguates from three sibling skills.",
+      "evidence": [
+        {
+          "side": "B",
+          "file": "side-B/project-plugin/skills/project-test-loop/SKILL.md",
+          "quote": "Automated TDD test-fix-refactor cycle until tests pass. Use when looping on failing tests, running a TDD cycle, or driving RED/GREEN/REFACTOR until green."
+        },
+        {
+          "side": "B",
+          "file": "side-B/project-plugin/skills/project-test-loop/SKILL.md",
+          "quote": "| Use this skill when... | Use project-continue instead when... |"
+        }
+      ]
+    },
+    "B2": {
+      "score_a": 4,
+      "score_b": 4,
+      "verdict": "tie",
+      "rationale": "A gives exact runnable commands, explicit ordered cancel steps, and explains the self-reference mechanism; B gives a thorough ordered procedure with decision trees, a specified report format, and explicit stop conditions. Each has one gap: A's help text cites a wrong state-file path; B declares args (--max-cycles, test-pattern) that no step ever parses or applies.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/plugins/ralph-loop/commands/cancel-ralph.md",
+          "quote": "1. Check if `.claude/ralph-loop.local.md` exists using Bash: `test -f .claude/ralph-loop.local.md && echo \"EXISTS\" || echo \"NOT_FOUND\"`"
+        },
+        {
+          "side": "B",
+          "file": "side-B/project-plugin/skills/project-test-loop/SKILL.md",
+          "quote": "- Same test fails 3 times in a row (STUCK)"
+        }
+      ]
+    },
+    "B3": {
+      "score_a": 4,
+      "score_b": 3,
+      "verdict": "A",
+      "rationale": "A's always-loaded command bodies are a few lines each; all mechanics run as executable scripts never read into context, and long-form explanation sits in an on-demand help command and README. B inlines its entire ~190-line procedure plus failure-pattern catalog in one SKILL.md — within lean limits but with no supporting-file split.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/plugins/ralph-loop/commands/ralph-loop.md",
+          "quote": "\"${CLAUDE_PLUGIN_ROOT}/scripts/setup-ralph-loop.sh\" $ARGUMENTS"
+        }
+      ]
+    },
+    "B4": {
+      "score_a": 5,
+      "score_b": 2,
+      "verdict": "A",
+      "rationale": "A pushes all deterministic work (arg parsing, iteration counting, promise detection, transcript parsing) into robust standalone scripts with input validation, bounded parsing, and atomic state updates, and the command explicitly runs them. B leaves mechanical work — test-command detection, cycle counting, stuck-tracking — as prose the model re-derives each run, with no bundled script.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/plugins/ralph-loop/hooks/stop-hook.sh",
+          "quote": "# Capped at the last 100 assistant lines to keep jq's slurp input bounded"
+        },
+        {
+          "side": "B",
+          "file": "side-B/project-plugin/skills/project-test-loop/SKILL.md",
+          "quote": "1. **Detect test command** (if not already configured):"
+        }
+      ]
+    },
+    "B5": {
+      "score_a": 4,
+      "score_b": 3,
+      "verdict": "A",
+      "rationale": "A applies least-privilege consistently — each command's allowed-tools scoped to exact script paths/commands — uses injection-safe jq --arg construction, hides commands from model invocation, and provides a cancel escape hatch; the infinite-by-default loop is the one risky default, mitigated only by warnings. B's Read/Edit/unscoped-Bash grant is broad but plausibly what a test-fix loop needs, with a guard against gaming tests.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/plugins/ralph-loop/commands/ralph-loop.md",
+          "quote": "allowed-tools: [\"Bash(${CLAUDE_PLUGIN_ROOT}/scripts/setup-ralph-loop.sh:*)\"]"
+        },
+        {
+          "side": "A",
+          "file": "side-A/plugins/ralph-loop/scripts/setup-ralph-loop.sh",
+          "quote": "⚠️  WARNING: This loop cannot be stopped manually! It will run infinitely"
+        }
+      ]
+    },
+    "B6": {
+      "score_a": 3,
+      "score_b": 4,
+      "verdict": "B",
+      "rationale": "A's hook has excellent error paths and self-cleanup, but cross-file duplication has visibly drifted: help.md cites the wrong state-file name (.ralph-loop.local.md), the setup warning ('cannot be stopped manually') contradicts the /cancel-ralph command, and the README references a differently-named plugin's cache path. B is internally coherent with an explicit auto-stop taxonomy, verification after every fix/refactor, and a single-source governance rule the skill points to rather than duplicates.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/plugins/ralph-loop/commands/help.md",
+          "quote": "1. Creates `.claude/.ralph-loop.local.md` state file"
+        },
+        {
+          "side": "B",
+          "file": "side-B/project-plugin/skills/project-test-loop/SKILL.md",
+          "quote": "- Error in test command itself (TEST SETUP ISSUE)"
+        }
+      ]
+    }
+  },
+  "identity_leakage": {
+    "recognized": true,
+    "side_a_guess": "Anthropic's official plugins marketplace ralph-wiggum/ralph-loop plugin (README's Windows workaround cites ~/.claude/plugins/cache/claude-plugins-official/ralph-wiggum/, and plugin.json author is Anthropic).",
+    "side_b_guess": "laurigates/claude-plugins (project-plugin:project-test-loop plus its .claude/rules/loop-integrity.md, which I have seen in this environment's project rules).",
+    "leak_evidence": "Side A: 'claude-plugins-official/ralph-wiggum' cache path and author 'Anthropic' in plugin.json. Side B: verbatim match with the loop-integrity.md rule present in this session's loaded project context. Scores were anchored to rubric text only; recognition did not enter the per-dimension judgments."
+  },
+  "overall_comment": "Complementary strengths: A is an engineering-first artifact — deterministic scripts, tight permissions, lean always-loaded surface — weakened by drifted duplicated docs; B is a documentation-first artifact — outstanding triggering, coherent governance and stop conditions — weakened by zero determinism offload and declared-but-unused arguments. A wins B3/B4/B5, B wins B1/B6, B2 ties."
+}

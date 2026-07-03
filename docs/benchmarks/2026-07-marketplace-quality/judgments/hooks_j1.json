@@ -1,0 +1,111 @@
+{
+  "pair_id": "hooks",
+  "judge_id": "j1",
+  "dimensions": {
+    "B1": {
+      "score_a": 5,
+      "score_b": 4,
+      "verdict": "A",
+      "rationale": "Side A descriptions are third-person, front-load the key use case, enumerate concrete trigger events, and every sibling skill carries an explicit 'Use X instead when...' disambiguation table. Side B's descriptions state concrete trigger phrasings (skill and agent both) but have a minor name inconsistency (frontmatter 'writing-hookify-rules' vs directory 'writing-rules' vs 'hookify:writing-rules' references) and less systematic sibling disambiguation.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/hooks-plugin/skills/hooks-configuration/SKILL.md",
+          "quote": "Use when the user mentions hooks, PreToolUse, PostToolUse, SessionStart, SubagentStart, PermissionRequest, or TaskCompleted."
+        },
+        {
+          "side": "B",
+          "file": "side-B/plugins/hookify/skills/writing-rules/SKILL.md",
+          "quote": "This skill should be used when the user asks to \"create a hookify rule\", \"write a hook rule\", \"configure hookify\""
+        }
+      ]
+    },
+    "B2": {
+      "score_a": 5,
+      "score_b": 4,
+      "verdict": "A",
+      "rationale": "Side A gives ordered imperative steps with detection tables, exact merge/ask-user branches, output formats, and the 'why' behind patterns (e.g. subshell rationale, timeout guidance), enabling generalization. Side B's commands are also concrete and stepwise with worked examples, but the /hookify command says to launch the conversation-analyzer agent while its JSON actually uses subagent_type general-purpose with an inline prompt, a small ambiguity a fresh agent must resolve.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/hooks-plugin/skills/hooks-configuration/SKILL.md",
+          "quote": "Why this works: `( )` creates a subshell, `&` runs it in background"
+        },
+        {
+          "side": "B",
+          "file": "side-B/plugins/hookify/commands/hookify.md",
+          "quote": "Rule files must be created in the current working directory's `.claude/` folder, NOT the plugin directory."
+        }
+      ]
+    },
+    "B3": {
+      "score_a": 5,
+      "score_b": 3,
+      "verdict": "A",
+      "rationale": "Side A shows deliberate multi-level disclosure: lean SKILL.md summaries that push schemas, templates, and advanced patterns to per-skill REFERENCE.md files, plus executable hook scripts that run without being read. Side B keeps the engine out of context via Python scripts, but its 375-line writing-rules skill inlines all reference material (operators, event guide, regex tutorial) with no supporting-file split, and the README repeats much of it.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/hooks-plugin/skills/hooks-configuration/SKILL.md",
+          "quote": "For detailed hook schemas and examples, see [REFERENCE.md](REFERENCE.md)."
+        }
+      ]
+    },
+    "B4": {
+      "score_a": 5,
+      "score_b": 4,
+      "verdict": "A",
+      "rationale": "Side A delegates every mechanical check to documented, toggleable shell scripts with bundled regression test scripts (823-line test suite for bash-antipatterns alone) and even converted an LLM prompt hook to a deterministic command hook with recorded rationale. Side B correctly offloads all rule matching to standalone Python with good error handling and lru-cached regexes, but hand-rolls a fragile YAML parser and ships no test harness.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/hooks-plugin/hooks/task-completeness.sh",
+          "quote": "Uses deterministic heuristics instead of LLM judgment."
+        },
+        {
+          "side": "B",
+          "file": "side-B/plugins/hookify/core/rule_engine.py",
+          "quote": "Cache compiled regexes (max 128 patterns)"
+        }
+      ]
+    },
+    "B5": {
+      "score_a": 5,
+      "score_b": 4,
+      "verdict": "A",
+      "rationale": "Side A gates destructive git ops behind 'ask' decisions, marks side-effecting generator skills disable-model-invocation, JSON-encodes hook reasons via jq -Rs, defers to auto mode to avoid double-gating, and hardens its own bypass so agents cannot self-serve it. Side B is safely fail-open with non-destructive warn defaults and user-confirmed block actions, but its PostToolUse blocking emits a PreToolUse-style permissionDecision payload (effect not matching the documented block semantics) and its catch-all PreToolUse matcher runs Python on every tool call.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/hooks-plugin/hooks/branch-protection.sh",
+          "quote": "on the command line are intentionally NOT honored so that agents cannot"
+        },
+        {
+          "side": "B",
+          "file": "side-B/plugins/hookify/hooks/pretooluse.py",
+          "quote": "ALWAYS exit 0 - never block operations due to hook errors"
+        }
+      ]
+    },
+    "B6": {
+      "score_a": 4,
+      "score_b": 3,
+      "verdict": "A",
+      "rationale": "Side A has an exceptional verification culture (nine bundled test scripts, issue-referenced regressions, a feature-flags catalog built to prevent drift) but also visible staleness: the README describes git-session-cleanup as committing staged changes and switching/pulling main while the script only deletes temp files, plus duplicated antipattern tables that drift and skill links to rules files outside the plugin. Side B's references resolve and error handling is thorough, but it carries empty stub modules, a stale '(future)' comment on an implemented feature, heavy README/skill duplication, and no verification/tests.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/hooks-plugin/README.md",
+          "quote": "commits any staged changes, switches to the main/master branch, and pulls the latest changes"
+        }
+      ]
+    }
+  },
+  "identity_leakage": {
+    "recognized": true,
+    "side_a_guess": "laurigates/claude-plugins hooks-plugin (matches the marketplace conventions, env-flag naming, and issue references like #1009/#1600 of that repo)",
+    "side_b_guess": "Anthropic's official claude-code plugins example 'hookify' (plugin.json author is Anthropic <support@anthropic.com>)",
+    "leak_evidence": "Side A: repository https://github.com/laurigates/claude-plugins in plugin.json and CLAUDE_HOOKS_* conventions; Side B: author field 'Anthropic', 'support@anthropic.com', and the well-known hookify plugin structure. Recognition did not influence scoring; both sides were scored against the anchors on staged content only."
+  },
+  "overall_comment": "Side A is a mature, defense-in-depth hooks plugin with strong disclosure architecture, deterministic offload backed by real test suites, and exemplary safety gating; its main weakness is documentation drift (a README section contradicting its script). Side B is a clean, well-designed meta-plugin whose engine offload and fail-open safety are solid, but it is thinner on progressive disclosure, has no tests, and shows several small consistency defects."
+}

@@ -1,0 +1,111 @@
+{
+  "pair_id": "session-reporting",
+  "judge_id": "j2",
+  "dimensions": {
+    "B1": {
+      "score_a": 5,
+      "score_b": 2,
+      "verdict": "A",
+      "rationale": "Side A's descriptions are third-person, front-load the key use case, list concrete user phrasings, and disambiguate the four sibling skills from each other (wrap vs end vs distill vs spinup). Side B's description states what the skill does and its data source but gives no trigger conditions or user contexts, falling short of the anchor-3 'what AND when' bar.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/session-plugin/skills/session-spinup/SKILL.md",
+          "quote": "Use when user says spin up, what was I doing, or pick up where I left off."
+        },
+        {
+          "side": "B",
+          "file": "side-B/plugins/session-report/skills/session-report/SKILL.md",
+          "quote": "Generate an explorable HTML report of Claude Code session usage (tokens, cache, subagents, skills, expensive prompts)"
+        }
+      ]
+    },
+    "B2": {
+      "score_a": 5,
+      "score_b": 5,
+      "verdict": "tie",
+      "rationale": "Both sides give concrete ordered steps with runnable commands, exact output formats, and the reasoning behind constraints. Side A explains why AskUserQuestion replaces freeform y/n confirmation (Stop-hook race); side B gives exact HTML markup examples, class semantics, and concrete anomaly thresholds so a fresh agent generalizes correctly.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/session-plugin/skills/session-end/SKILL.md",
+          "quote": "Never end the turn on a freeform \"y/n\" text question — ending the turn"
+        },
+        {
+          "side": "B",
+          "file": "side-B/plugins/session-report/skills/session-report/SKILL.md",
+          "quote": "The `.fig` is one short number (a %, a count, or a multiplier like `12×`)."
+        }
+      ]
+    },
+    "B3": {
+      "score_a": 5,
+      "score_b": 5,
+      "verdict": "tie",
+      "rationale": "Side A keeps SKILL.md bodies focused and pushes schema, examples, and mechanics to per-skill REFERENCE.md files, with deterministic collection in a script never read into context. Side B's 43-line body delegates all parsing to a script and all presentation to a template that is copied and edited only at marked blocks — textbook multi-level disclosure.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/session-plugin/skills/session-spinup/SKILL.md",
+          "quote": "Example briefing: [REFERENCE.md](REFERENCE.md)."
+        },
+        {
+          "side": "B",
+          "file": "side-B/plugins/session-report/skills/session-report/SKILL.md",
+          "quote": "The template is the source of interactivity (sorting, expand/collapse, block-char bars). Your job is data + narrative, not markup."
+        }
+      ]
+    },
+    "B4": {
+      "score_a": 5,
+      "score_b": 5,
+      "verdict": "tie",
+      "rationale": "Side A's shared collector handles all mechanical survey/dedup/staleness work, is documented, degrades cleanly without git/task/gh, carries test seams and a regression suite, and is explicitly run-not-read. Side B's analyzer offloads all transcript parsing/aggregation with documented empirical dedupe logic, per-line error tolerance, and CLI flags; the skill explicitly runs it.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/session-plugin/scripts/session-survey.sh",
+          "quote": "READ-ONLY by contract: detection + survey + dedup + staleness only. All writes"
+        },
+        {
+          "side": "B",
+          "file": "side-B/plugins/session-report/skills/session-report/analyze-sessions.mjs",
+          "quote": "LAST one carries the final `output_tokens`. We dedupe by requestId and keep"
+        }
+      ]
+    },
+    "B5": {
+      "score_a": 4,
+      "score_b": 3,
+      "verdict": "A",
+      "rationale": "Side A gates every write path behind AskUserQuestion, keeps the collector read-only by contract, parses hook input safely via jq, and makes nudges offer-only — but the recurring Bash(bash *) grant is effectively arbitrary shell execution, a real least-privilege gap that keeps it off 5. Side B is competently safe (read-only analysis, non-destructive output, no injection surface) with nothing exceptional and no note on embedding potentially sensitive prompt text into a file written to the cwd.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/session-plugin/skills/session-wrap/SKILL.md",
+          "quote": "allowed-tools: Bash(bash *), Bash(task *), Bash(git *), Bash(gh *), Read, Write, Edit, AskUserQuestion, TodoWrite"
+        }
+      ]
+    },
+    "B6": {
+      "score_a": 4,
+      "score_b": 3,
+      "verdict": "A",
+      "rationale": "Side A has regression tests for both hooks and the collector with documented semantic invariants, single-sourced config schema, and resolving cross-references — but shows staleness (session-distill's REFERENCE.md is still titled 'project-distill Reference' after the move, and the README links to docs outside the plugin). Side B's references resolve and it handles empty data and oversized JSON gracefully, but carries stale internal comments (script header/usage still say scripts/analyze-sessions.js) and has no verification step or tests.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/session-plugin/hooks/test-session-end-nudge.sh",
+          "quote": "Semantic invariant (per .claude/rules/regression-testing.md): when the"
+        }
+      ]
+    }
+  },
+  "identity_leakage": {
+    "recognized": true,
+    "side_a_guess": "laurigates/claude-plugins session-plugin (self-referencing repo paths like laurigates/claude-plugins in session-distill, .claude/rules/* citations, author 'Lauri Gates' in plugin.json)",
+    "side_b_guess": "Unknown — a personal Claude Code usage-analytics plugin; no self-identifying strings recognized",
+    "leak_evidence": "side-A/session-plugin/skills/session-distill/SKILL.md contains 'gh pr create -R laurigates/claude-plugins' and plugin.json lists author Lauri Gates; scoring was done against the anchors regardless"
+  },
+  "overall_comment": "Both sides are strong plugin-authoring work with excellent determinism offload and progressive disclosure. Side A wins on triggering (explicit user phrasings + sibling disambiguation across four skills), gating of destructive writes, and a regression-test culture; its weaknesses are a broad Bash(bash *) grant and minor post-refactor staleness. Side B is a tight, well-engineered single-skill artifact whose description lacks trigger conditions and which carries stale internal path comments."
+}

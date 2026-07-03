@@ -1,0 +1,131 @@
+{
+  "pair_id": "session-reporting",
+  "judge_id": "j1",
+  "dimensions": {
+    "B1": {
+      "score_a": 5,
+      "score_b": 2,
+      "verdict": "A",
+      "rationale": "Side A descriptions front-load the action, state third-person trigger phrasings, and every skill carries sibling-disambiguation ('Use alternative when...') covering near-miss contexts. Side B's description is specific about what it produces but states no invocation conditions or user contexts at all.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/session-plugin/skills/session-spinup/SKILL.md",
+          "quote": "Use when user says spin up, what was I doing, or pick up where I left off."
+        },
+        {
+          "side": "A",
+          "file": "side-A/session-plugin/skills/session-wrap/SKILL.md",
+          "quote": "| User says \"wrap up\", \"session wrap\", \"done for now\" | Full end-of-session pass incl. distill/feedback"
+        },
+        {
+          "side": "B",
+          "file": "side-B/plugins/session-report/skills/session-report/SKILL.md",
+          "quote": "description: Generate an explorable HTML report of Claude Code session usage (tokens, cache, subagents, skills, expensive prompts) from ~/.claude/projects transcripts."
+        }
+      ]
+    },
+    "B2": {
+      "score_a": 5,
+      "score_b": 4,
+      "verdict": "A",
+      "rationale": "Side A gives concrete ordered steps with runnable commands, explains the why throughout (UUID-vs-numeric-ID rationale, the Stop-hook race behind the AskUserQuestion rule), and branches for auto/manual/plan modes. Side B's steps are also concrete with an exact input->output markup example, but rely on a <skill-dir> placeholder and carry less generalizing rationale.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/session-plugin/skills/session-wrap/SKILL.md",
+          "quote": "\"Apply? (y/n)\" text question: ending the turn fires Stop hooks, which can"
+        },
+        {
+          "side": "B",
+          "file": "side-B/plugins/session-report/skills/session-report/SKILL.md",
+          "quote": "<div class=\"take bad\"><div class=\"fig\">41.2%</div><div class=\"txt\"><b>cc-monitor</b> consumed 41% of the week across just 3 sessions</div></div>"
+        }
+      ]
+    },
+    "B3": {
+      "score_a": 5,
+      "score_b": 4,
+      "verdict": "A",
+      "rationale": "Side A shows clean three-level disclosure: lean skill bodies, per-skill REFERENCE.md loaded on demand (with the shared config schema single-sourced in one of them), and an executable collector that runs without being read. Side B's body is lean and its script/template are on-demand artifacts, but the agent must partially read the 569-line template to edit it.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/session-plugin/skills/session-spinup/REFERENCE.md",
+          "quote": "*interpret* its output, not how to reproduce it."
+        },
+        {
+          "side": "B",
+          "file": "side-B/plugins/session-report/skills/session-report/SKILL.md",
+          "quote": "The template is the source of interactivity (sorting, expand/collapse, block-char bars). Your job is data + narrative, not markup."
+        }
+      ]
+    },
+    "B4": {
+      "score_a": 5,
+      "score_b": 5,
+      "verdict": "tie",
+      "rationale": "Both sides push all mechanical work into robust standalone scripts with explicit run-don't-reimplement contracts. Side A's shared collector has a stated read-only contract, test seams, and its own regression test; side B's analyzer documents empirically-discovered JSONL semantics, dedupes by requestId/uuid, and degrades gracefully on parse errors.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/session-plugin/scripts/session-survey.sh",
+          "quote": "READ-ONLY by contract: detection + survey + dedup + staleness only. All writes"
+        },
+        {
+          "side": "B",
+          "file": "side-B/plugins/session-report/skills/session-report/analyze-sessions.mjs",
+          "quote": "LAST one carries the final `output_tokens`. We dedupe by requestId and keep"
+        }
+      ]
+    },
+    "B5": {
+      "score_a": 4,
+      "score_b": 3,
+      "verdict": "A",
+      "rationale": "Side A gates every destructive path (AskUserQuestion for all writes, cross-repo PRs gated in every mode, never-push-to-default, injection-safe jq hook parsing), but its allowed-tools include Bash(bash *), which is close to arbitrary execution on nominally read-only skills. Side B has essentially no dangerous surface and controls what little it has - competent for its risk profile, nothing exceptional.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/session-plugin/skills/session-distill/SKILL.md",
+          "quote": "gate it behind `AskUserQuestion` in every mode"
+        },
+        {
+          "side": "A",
+          "file": "side-A/session-plugin/skills/session-spinup/SKILL.md",
+          "quote": "allowed-tools: Bash(bash *), Read, TodoWrite"
+        }
+      ]
+    },
+    "B6": {
+      "score_a": 5,
+      "score_b": 3,
+      "verdict": "A",
+      "rationale": "Side A has regression tests with documented semantic invariants, idempotent once-per-session hook markers, explicit edge-case and failure-path tables, and single-source-of-truth config docs; only minor staleness (the distill REFERENCE.md still titled 'project-distill'). Side B's references resolve and errors are tolerated, but the script header still names 'analyze-sessions.js' at a 'scripts/' path and there is no verification step or test.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/session-plugin/hooks/test-session-end-nudge.sh",
+          "quote": "the emitted JSON must mention session-plugin:session-end"
+        },
+        {
+          "side": "A",
+          "file": "side-A/session-plugin/skills/session-distill/REFERENCE.md",
+          "quote": "# project-distill Reference"
+        },
+        {
+          "side": "B",
+          "file": "side-B/plugins/session-report/skills/session-report/analyze-sessions.mjs",
+          "quote": " *   node scripts/analyze-sessions.js [--dir <projects-dir>] [--json] [--since <ISO|7d|24h>] [--top N]"
+        }
+      ]
+    }
+  },
+  "overall_comment": "Side A is a mature multi-skill plugin: exemplary triggering and disambiguation, shared deterministic collector with tests, gated writes, and progressive disclosure - its only real blemish is the broad Bash(bash *) grant and a couple of stale doc fragments. Side B is a well-engineered single-purpose skill whose analyzer script is genuinely excellent, but its frontmatter states no trigger conditions, it has no manifest/README/tests, and maintainability signals are thinner. A wins on 5 of 6 dimensions; determinism offload is a tie at the top anchor.",
+  "identity_leakage": {
+    "recognized": true,
+    "side_a_guess": "laurigates/claude-plugins session-plugin (plugin.json author 'Lauri Gates', repository laurigates/claude-plugins; matches session-plugin skills visible in my environment)",
+    "side_b_guess": "Unknown - reads like a personal Claude Code usage-analytics plugin from another marketplace; no identifying strings",
+    "leak_evidence": "side-A/session-plugin/.claude-plugin/plugin.json contains \"repository\": \"https://github.com/laurigates/claude-plugins\" and author name; recognition did not influence scores, which were anchored per-dimension before comparison."
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "pair_id": "security-guidance",
+  "judge_id": "j1",
+  "dimensions": {
+    "B1": {
+      "score_a": 4,
+      "score_b": 4,
+      "verdict": "tie",
+      "rationale": "Side A's plugin description states what fires and when with the key use case front-loaded, and deterministic hook matchers make triggering exact. Side B's descriptions are third-person with concrete triggers plus explicit disambiguation tables, but its two skills overlap on gitleaks/pre-commit setup and neither description disambiguates from the other.",
+      "evidence": [
+        {"side": "A", "file": "side-A/plugins/security-guidance/.claude-plugin/plugin.json", "quote": "Pattern-based warnings on edits, LLM-powered diff review on Stop, and an agentic commit reviewer that catches injection, XSS, SSRF, hardcoded secrets, and 25+ other vulnerability classes."},
+        {"side": "B", "file": "side-B/configure-plugin/skills/configure-security/SKILL.md", "quote": "Security scanning: dependency audits, SAST, secrets detection. Use when setting up Dependabot, CodeQL, or TruffleHog in CI, or creating a SECURITY.md policy."},
+        {"side": "B", "file": "side-B/git-plugin/skills/git-security-checks/SKILL.md", "quote": "Use when scanning for secrets, setting up gitleaks, or configuring .gitleaks.toml pre-commit security."}
+      ]
+    },
+    "B2": {
+      "score_a": 5,
+      "score_b": 4,
+      "verdict": "A",
+      "rationale": "Side A's user-facing instructions are concrete and provider-specific (exact model-id forms per provider, exact troubleshooting commands, an example org-policy file), and rewake messages tell the model precisely what to do with findings. Side B has ordered imperative steps with a runnable detection script and named output keys, but its dynamic Context commands are broken (find -name with a slash under -maxdepth 1 and stray escaped quotes can never match), leaving a fresh agent with misleading context.",
+      "evidence": [
+        {"side": "A", "file": "side-A/plugins/security-guidance/README.md", "quote": "On 3P providers, check `SECURITY_REVIEW_MODEL` is set to a provider-specific id (not a bare `claude-opus-4-7`)."},
+        {"side": "B", "file": "side-B/configure-plugin/skills/configure-security/SKILL.md", "quote": "Workflows dir: !`find . -maxdepth 1 -type d -name \\'.github/workflows\\'`"}
+      ]
+    },
+    "B3": {
+      "score_a": 5,
+      "score_b": 3,
+      "verdict": "A",
+      "rationale": "Side A's always-loaded surface is essentially just hooks.json; all logic lives in executable scripts that never enter context — the ideal disclosure profile for its architecture. Side B's configure-security is well layered (lean SKILL.md, REFERENCE.md, script), but git-security-checks inlines 469 lines of reference material with internally duplicated sections (two 'Managing False Positives' blocks, a Tools Reference repeating earlier commands), all loaded on trigger.",
+      "evidence": [
+        {"side": "A", "file": "side-A/plugins/security-guidance/hooks/hooks.json", "quote": "Security guidance plugin — pattern-based warnings on edits, git-diff-based LLM review on stop"}
+      ]
+    },
+    "B4": {
+      "score_a": 5,
+      "score_b": 4,
+      "verdict": "A",
+      "rationale": "Side A delegates everything mechanical to scripts of unusual robustness — cross-platform interpreter shim, ReDoS validation of user regexes, race/fallback logic, rate limits, sentinel GC. Side B properly offloads detection to structured-output scripts and even ships a regression test, but the scripts have minor logic quirks (findings counter interaction makes the sensitive-files section's 'none' line wrong after a gitleaks hit) and less hardening.",
+      "evidence": [
+        {"side": "A", "file": "side-A/plugins/security-guidance/hooks/security_reminder_hook.py", "quote": "Race the agentic reviewer against a delayed single-shot fallback."},
+        {"side": "A", "file": "side-A/plugins/security-guidance/hooks/extensibility.py", "quote": "Custom regexes are validated at load for catastrophic-backtracking"},
+        {"side": "B", "file": "side-B/configure-plugin/skills/configure-security/scripts/tests/test-configure-security.sh", "quote": "# Regression test for configure-security.sh detection."}
+      ]
+    },
+    "B5": {
+      "score_a": 4,
+      "score_b": 3,
+      "verdict": "A",
+      "rationale": "Side A is injection-safe throughout (quoted plugin-root paths, argv subprocess calls, size caps, an explicit trust model preventing repo-controlled config from suppressing findings) with exemplary privacy disclosure, but its SessionStart hook auto-installs a PyPI package without a user gate and the README does not surface that behavior. Side B is competent — quoted shell, set -uo pipefail, --fix as an explicit opt-in — but grants broad unscoped Bash/Write/WebFetch where narrower rules would do.",
+      "evidence": [
+        {"side": "A", "file": "side-A/plugins/security-guidance/hooks/ensure_agent_sdk.py", "quote": "Otherwise it creates a venv at ~/.claude/security/agent-sdk-venv and installs"}
+      ]
+    },
+    "B6": {
+      "score_a": 5,
+      "score_b": 3,
+      "verdict": "A",
+      "rationale": "Side A shows heavy maintained-as-a-whole evidence: telemetry-driven fixes with issue references, append-only metric codes, documented fail-open postures, dedup and TTL state handling. Side B's references resolve and it has a regression test, but the duplicated false-positive sections and the broken always-run Context commands are exactly the internal-consistency defects the anchor penalizes.",
+      "evidence": [
+        {"side": "A", "file": "side-A/plugins/security-guidance/hooks/security_reminder_hook.py", "quote": "Reflog fallback for hidden stdout. Analysis of skip_reason=21 emissions"}
+      ]
+    }
+  },
+  "identity_leakage": {
+    "recognized": true,
+    "side_a_guess": "Anthropic's official security-guidance plugin from anthropics/claude-plugins-official (author field 'David Dworken, dworken@anthropic.com', homepage points at anthropics/claude-plugins-official, issue refs like #2043/#2159).",
+    "side_b_guess": "laurigates/claude-plugins (configure-plugin's configure-security and git-plugin's git-security-checks; house conventions like created/modified/reviewed frontmatter, .project-standards.yaml, structured KEY=VALUE script output).",
+    "leak_evidence": "side-A plugin.json: author email dworken@anthropic.com and homepage github.com/anthropics/claude-plugins-official; side-B SKILL.md frontmatter carries the house-only created/modified/reviewed fields and references /configure:all and .project-standards.yaml. Recognition did not influence scores; both sides were scored against the anchors on content."
+  },
+  "overall_comment": "Side A is a production-hardened hooks plugin: near-zero context cost, deterministic offload with exceptional robustness, documented trust model and privacy disclosure — its one soft spot is an ungated SessionStart pip install not surfaced in user docs. Side B is competent skill authoring with genuine strengths (disambiguation tables, structured-output scripts, a regression test) but is dragged down by broken dynamic-context commands, in-file duplication, and one bloated always-loaded skill body."
+}

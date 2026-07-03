@@ -1,0 +1,99 @@
+{
+  "pair_id": "claude-md",
+  "judge_id": "j1",
+  "dimensions": {
+    "B1": {
+      "score_a": 4,
+      "score_b": 5,
+      "verdict": "B",
+      "rationale": "Both sides have third-person, trigger-rich, front-loaded descriptions. Side B additionally disambiguates explicitly against near-miss sibling skills (meta-promote, session-distill, health-skill-audit, blueprint:rules) so an agent can route between overlapping artifacts; side A's skill/command split is disambiguated only in the README, not in the artifacts themselves.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/plugins/claude-md-management/skills/claude-md-improver/SKILL.md",
+          "quote": "Use when user asks to check, audit, update, improve, or fix CLAUDE.md files."
+        },
+        {
+          "side": "B",
+          "file": "side-B/agent-patterns-plugin/skills/meta-context-diet/SKILL.md",
+          "quote": "Use when CLAUDE.md feels bloated, trimming context, or promoting a rule into a skill."
+        },
+        {
+          "side": "B",
+          "file": "side-B/agent-patterns-plugin/skills/meta-context-diet/SKILL.md",
+          "quote": "You want to move rules/skills *between scopes* (project → user-global) — use `meta-promote`"
+        }
+      ]
+    },
+    "B2": {
+      "score_a": 4,
+      "score_b": 4,
+      "verdict": "tie",
+      "rationale": "Both give concrete ordered steps, runnable commands, specified output formats, and the reasoning behind rules (side A's good/bad examples with 'why'; side B's litmus tests and dispositions-with-signals). Side B's meta-context-diet leans on external house artifacts (skill-naming.md, /reload-skills) a zero-context agent cannot resolve, and blueprint-claude-md has messy step numbering (6/6b/6c, best-practices interposed before step 12), offsetting its richer reasoning.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/plugins/claude-md-management/skills/claude-md-improver/SKILL.md",
+          "quote": "**Why:** Build command was missing, causing confusion about how to run the project."
+        },
+        {
+          "side": "B",
+          "file": "side-B/agent-patterns-plugin/skills/meta-context-diet/SKILL.md",
+          "quote": "The litmus test — *if the user never raises this topic, does the guidance still need to be in context?* If no, it is a skill."
+        }
+      ]
+    },
+    "B3": {
+      "score_a": 4,
+      "score_b": 3,
+      "verdict": "A",
+      "rationale": "Side A keeps a ~6KB body and pushes rubrics and templates into references/ loaded on demand — clear two-level disclosure. Side B's skills are ~11KB each with everything inline (templates, report formats, disposition mechanics) and no supporting files at all; lean enough not to be deficient, but no progressive disclosure.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/plugins/claude-md-management/skills/claude-md-improver/SKILL.md",
+          "quote": "See [references/quality-criteria.md](references/quality-criteria.md) for detailed rubrics."
+        }
+      ]
+    },
+    "B4": {
+      "score_a": 3,
+      "score_b": 3,
+      "verdict": "tie",
+      "rationale": "Both domains are mostly judgment work (quality assessment, classification) with the small mechanical parts delegated to inline commands (side A's find discovery; side B's find/wc inventory and a jq manifest update). Neither bundles scripts, and neither has mechanical work substantial enough to plainly demand one.",
+      "evidence": []
+    },
+    "B5": {
+      "score_a": 4,
+      "score_b": 4,
+      "verdict": "tie",
+      "rationale": "Both gate the destructive act (editing CLAUDE.md) behind explicit user approval with diffs shown first, and both state intent up front. Side B's meta-context-diet has exemplary scoped Bash allowances and per-candidate confirmation, but its sibling blueprint-claude-md grants bare Bash; side A grants bare Bash on the skill and uses the nonstandard 'tools:' frontmatter key, so neither is consistently least-privilege across every component.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/plugins/claude-md-management/skills/claude-md-improver/SKILL.md",
+          "quote": "**This skill can write to CLAUDE.md files.** After presenting a quality report and getting user approval, it updates CLAUDE.md files with targeted improvements."
+        },
+        {
+          "side": "B",
+          "file": "side-B/agent-patterns-plugin/skills/meta-context-diet/SKILL.md",
+          "quote": "allowed-tools: Glob, Read, Edit, Write, Bash(git status *), Bash(git diff *), Bash(wc *), Bash(ls *), AskUserQuestion, TodoWrite"
+        }
+      ]
+    },
+    "B6": {
+      "score_a": 3,
+      "score_b": 3,
+      "verdict": "tie",
+      "rationale": "Side A's two cited reference files resolve and content is coherent, but references/update-guidelines.md is orphaned (never referenced from SKILL.md) and duplicates the body's Phase 4 guidance — a two-homes-for-one-fact flaw. Side B is internally coherent with verification steps (git status after writes, diff-before-apply) but references many out-of-artifact house files and has duplicate/irregular step numbering in blueprint-claude-md. Comparable competent-with-blemishes on both sides.",
+      "evidence": []
+    }
+  },
+  "identity_leakage": {
+    "recognized": true,
+    "side_a_guess": "Anthropic's official claude-code plugins repo — the claude-md-management plugin (plugin.json author 'Anthropic', README credits an anthropic.com email).",
+    "side_b_guess": "laurigates/claude-plugins — meta-context-diet (agent-patterns-plugin) and blueprint-claude-md (blueprint-plugin) match skills listed in this session's own environment catalog.",
+    "leak_evidence": "Side A plugin.json: \"author\": {\"name\": \"Anthropic\"...}; Side B skill names/plugins (agent-patterns-plugin:meta-context-diet, blueprint-plugin:blueprint-claude-md) and house-rule references (skill-quality.md, skill-consolidation.md) match the host repo's conventions visible in my system context. Recognition did not influence scores; anchors were applied to staged content only."
+  },
+  "overall_comment": "Two competent takes on CLAUDE.md maintenance. Side A is a small, clean, well-disclosed plugin (lean body, on-demand references, explicit approval gating) marred by an orphaned duplicate reference file and a nonstandard 'tools:' frontmatter key. Side B is denser and more reasoning-rich, with exemplary trigger disambiguation and scoped permissions in one skill, but everything inline (no progressive disclosure), out-of-artifact house references, and untidy step numbering in the other. Net: B edges triggering, A edges context economy, everything else is a wash."
+}

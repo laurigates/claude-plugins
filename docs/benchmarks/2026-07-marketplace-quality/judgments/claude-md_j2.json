@@ -1,0 +1,92 @@
+{
+  "pair_id": "claude-md",
+  "judge_id": "j2",
+  "dimensions": {
+    "B1": {
+      "score_a": 4,
+      "score_b": 4,
+      "verdict": "tie",
+      "rationale": "Both sides state what the artifact does plus concrete third-person trigger conditions. A front-loads realistic phrasings and near-miss mentions in the description itself; B's descriptions are competent and both B skills add body-level 'When to Use This Skill' disambiguation tables against sibling skills.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/plugins/claude-md-management/skills/claude-md-improver/SKILL.md",
+          "quote": "Use when user asks to check, audit, update, improve, or fix CLAUDE.md files."
+        },
+        {
+          "side": "B",
+          "file": "side-B/agent-patterns-plugin/skills/meta-context-diet/SKILL.md",
+          "quote": "Use when CLAUDE.md feels bloated, trimming context, or promoting a rule into a skill."
+        }
+      ]
+    },
+    "B2": {
+      "score_a": 4,
+      "score_b": 4,
+      "verdict": "tie",
+      "rationale": "A gives phased, imperative steps with fully specified report and diff output formats and explains why each addition helps. B's meta-context-diet gives a disposition rubric with litmus tests and reasoning that generalizes; blueprint-claude-md is thorough but has step-numbering oddities and leans on ecosystem context (manifest.json, blueprint modes) a zero-context agent may lack.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/plugins/claude-md-management/skills/claude-md-improver/SKILL.md",
+          "quote": "**ALWAYS output the quality report BEFORE making any updates.**"
+        },
+        {
+          "side": "B",
+          "file": "side-B/agent-patterns-plugin/skills/meta-context-diet/SKILL.md",
+          "quote": "The litmus test — *if the user never raises this topic, does the guidance still need to be in context?* If no, it is a skill."
+        }
+      ]
+    },
+    "B3": {
+      "score_a": 4,
+      "score_b": 3,
+      "verdict": "A",
+      "rationale": "A demonstrates real progressive disclosure: a lean SKILL.md that defers detailed rubrics and templates to on-demand reference files. B is single-file on both skills; meta-context-diet is acceptably lean, but blueprint-claude-md inlines ~318 lines of templates, mutually exclusive mode branches, and full report formats that are always loaded when it triggers.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/plugins/claude-md-management/skills/claude-md-improver/SKILL.md",
+          "quote": "See [references/quality-criteria.md](references/quality-criteria.md) for detailed rubrics."
+        }
+      ]
+    },
+    "B4": {
+      "score_a": 3,
+      "score_b": 3,
+      "verdict": "tie",
+      "rationale": "Neither side bundles scripts, but the mechanical work is thin on both: discovery/counting is delegated to concrete CLI one-liners (find on A; find/wc/jq on B), and the core work (quality judgment, classification) is genuinely non-mechanical. Judged relative to the mechanical work that actually exists, both meet the competent anchor."
+    },
+    "B5": {
+      "score_a": 4,
+      "score_b": 4,
+      "verdict": "tie",
+      "rationale": "Both explicitly gate writes behind user approval (A: report-then-approve before Edit; B: per-candidate AskUserQuestion, never bundling approvals, no commits). Neither is consistently least-privilege across every component: A's skill grants unscoped Bash (and uses a 'tools:' key), B's blueprint skill grants unscoped Bash+Write, though meta-context-diet's scoped Bash patterns are exemplary.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/plugins/claude-md-management/skills/claude-md-improver/SKILL.md",
+          "quote": "After user approval, apply changes using the Edit tool. Preserve existing content structure."
+        },
+        {
+          "side": "B",
+          "file": "side-B/agent-patterns-plugin/skills/meta-context-diet/SKILL.md",
+          "quote": "Bash(git status *), Bash(git diff *), Bash(wc *), Bash(ls *)"
+        }
+      ]
+    },
+    "B6": {
+      "score_a": 3,
+      "score_b": 3,
+      "verdict": "tie",
+      "rationale": "Both are internally coherent with verification steps (A: validation checklist and report-before-write; B: git status after writes, diff before applying), but each has resolution defects: A ships an orphaned reference file (update-guidelines.md never linked from SKILL.md) and a command that instructs a bash find without Bash in allowed-tools; B references house files and slash-commands that do not resolve within the staged content, and meta-context-diet's Context find commands are not covered by its scoped Bash grants."
+    }
+  },
+  "identity_leakage": {
+    "recognized": true,
+    "side_a_guess": "Anthropic's official claude-code plugins repo (claude-md-management example plugin; README credits an anthropic.com author).",
+    "side_b_guess": "laurigates/claude-plugins marketplace (blueprint-plugin and agent-patterns-plugin skills; meta-context-diet matches a skill available in my own session catalog).",
+    "leak_evidence": "Side A: plugin.json author 'Anthropic' / 'support@anthropic.com' and README 'Isabella He (isabella@anthropic.com)'. Side B: directory names blueprint-plugin/agent-patterns-plugin, house frontmatter fields (created/modified/reviewed), and references to skill-quality.md / skill-consolidation.md / /reload-skills, which match the laurigates house conventions. Recognition did not influence scoring; all scores anchored to staged content only."
+  },
+  "overall_comment": "Close pair. A is the cleaner authoring exemplar: lean body plus on-demand references, fully specified outputs, gated writes — its edge is B3. B's meta-context-diet is individually the strongest artifact in the pair (scoped Bash, disciplined approval flow, reasoning-rich rubric), but blueprint-claude-md drags B on context economy with a long inlined monolith, and both B skills carry unresolved house references within the staged content."
+}

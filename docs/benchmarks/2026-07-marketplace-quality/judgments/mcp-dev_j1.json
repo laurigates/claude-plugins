@@ -1,0 +1,70 @@
+{
+  "pair_id": "mcp-dev",
+  "judge_id": "j1",
+  "dimensions": {
+    "B1": {
+      "score_a": 5,
+      "score_b": 4,
+      "verdict": "A",
+      "rationale": "Side A descriptions enumerate realistic user phrasings, front-load the key use case, and explicitly disambiguate siblings (build-mcp-app defers to build-mcp-server). Side B descriptions are third-person with concrete triggers and distinct names, but phrasings are thinner and sibling disambiguation lives mostly in the body tables rather than the description.",
+      "evidence": [
+        {"side": "A", "file": "side-A/plugins/mcp-server-dev/skills/build-mcp-server/SKILL.md", "quote": "This skill should be used when the user asks to \"build an MCP server\", \"create an MCP\", \"make an MCP integration\""},
+        {"side": "A", "file": "side-A/plugins/mcp-server-dev/skills/build-mcp-app/SKILL.md", "quote": "Use AFTER the build-mcp-server skill has settled the deployment model, or when the user already knows they want UI widgets."},
+        {"side": "B", "file": "side-B/agent-patterns-plugin/skills/mcp-management/SKILL.md", "quote": "Use when adding/enabling servers, updating .mcp.json, managing OAuth remote servers, or troubleshooting connections."}
+      ]
+    },
+    "B2": {
+      "score_a": 5,
+      "score_b": 3,
+      "verdict": "A",
+      "rationale": "Side A gives a phased, ordered procedure with runnable commands, complete scaffolds, capability-check fallbacks, and pervasive reasoning so an agent generalizes (why remote wins, why tool count matters). Side B is competent pattern knowledge with correct commands, but the scaffolding steps are partly hand-wavy (\"create a directory with typed wrappers\") and lean on portfolio-specific context a zero-context agent lacks.",
+      "evidence": [
+        {"side": "A", "file": "side-A/plugins/mcp-server-dev/skills/build-mcp-server/SKILL.md", "quote": "When handing off, restate the design brief in one paragraph so the next skill doesn't re-ask."},
+        {"side": "A", "file": "side-A/plugins/mcp-server-dev/skills/build-mcp-server/references/tool-design.md", "quote": "Every tool schema is tokens Claude spends *every turn*."}
+      ]
+    },
+    "B3": {
+      "score_a": 4,
+      "score_b": 4,
+      "verdict": "tie",
+      "rationale": "Both apply real progressive disclosure: A routes to 15 on-demand reference files but the build-mcp-app body is heavy (~19KB) and duplicates the picker scaffold found in widget-templates.md; B keeps bodies lean (~6KB) with explicit on-demand REFERENCE splits but duplicates its OAuth troubleshooting table verbatim into the body. Equal-magnitude virtue and defect on each side.",
+      "evidence": [
+        {"side": "A", "file": "side-A/plugins/mcp-server-dev/skills/build-mcp-app/SKILL.md", "quote": "See `references/widget-templates.md` for more widget shapes."},
+        {"side": "B", "file": "side-B/agent-patterns-plugin/skills/mcp-management/REFERENCE.md", "quote": "Supporting material for [`mcp-management`](SKILL.md). Loaded on demand."}
+      ]
+    },
+    "B4": {
+      "score_a": 3,
+      "score_b": 3,
+      "verdict": "tie",
+      "rationale": "Neither side bundles scripts, but neither has much genuinely mechanical work to offload: both are guidance/scaffolding artifacts whose deterministic bits are delegated to existing tools (inspector, mcpb validate/pack, jq one-liners, versions.md verification commands). Judged relative to actual need, both sit at competent."
+    },
+    "B5": {
+      "score_a": 3,
+      "score_b": 4,
+      "verdict": "B",
+      "rationale": "Side B declares explicit least-privilege allowed-tools on two of three skills (scoped Bash patterns), a concrete artifact-level control, docked only for mcp-code-execution's bare Bash grant. Side A declares no tool allowances (not penalized per rubric) and its content is safety-sound with gating advice, but shows no artifact-level permission scoping beyond competent.",
+      "evidence": [
+        {"side": "B", "file": "side-B/agent-patterns-plugin/skills/mcp-server-authoring/SKILL.md", "quote": "allowed-tools: Read, Write, Edit, Grep, Glob, Bash(uv *), Bash(pytest *)"},
+        {"side": "B", "file": "side-B/agent-patterns-plugin/skills/mcp-code-execution/SKILL.md", "quote": "allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite"}
+      ]
+    },
+    "B6": {
+      "score_a": 4,
+      "score_b": 3,
+      "verdict": "A",
+      "rationale": "Side A has explicit maintenance infrastructure (a versions.md ledger with verification commands), shipping checklists, and failure paths everywhere, though one ledger entry is stale (claims an ext-apps@1.2.2 CDN pin that no longer exists in the cited files) and the picker scaffold is duplicated. Side B is coherent with resolving references and troubleshooting paths, but duplicates its OAuth table across SKILL/REFERENCE and cites a bare blog-root URL as a source.",
+      "evidence": [
+        {"side": "A", "file": "side-A/plugins/mcp-server-dev/skills/build-mcp-server/references/versions.md", "quote": "Every version-sensitive claim in this skill, in one place. When updating the skill, check these first."},
+        {"side": "A", "file": "side-A/plugins/mcp-server-dev/skills/build-mcp-server/references/versions.md", "quote": "`@modelcontextprotocol/ext-apps@1.2.2` CDN pin"}
+      ]
+    }
+  },
+  "identity_leakage": {
+    "recognized": true,
+    "side_a_guess": "Looks like an Anthropic-authored plugin (plugin.json author is Anthropic; style matches official skill-creator conventions), possibly from the official plugins marketplace.",
+    "side_b_guess": "Strongly suspect laurigates/claude-plugins agent-patterns-plugin — the skill names (mcp-server-authoring, mcp-management, mcp-code-execution), portfolio server names (kicad-mcp, pal-mcp-server), and house conventions (created/modified/reviewed frontmatter, Agentic Optimizations tables) match that repo.",
+    "leak_evidence": "side-B plugin.json name 'agent-patterns-plugin' and SKILL.md references to 'pal-mcp-server', 'silverbucket-mcp', 'kicad-mcp' and cross-plugin names like 'configure-plugin:configure-mcp'; side-A plugin.json author block 'Anthropic / support@anthropic.com'. Recognition did not influence scoring; both were judged against the anchors on staged content only."
+  },
+  "overall_comment": "Side A is a deep, procedure-first build path: exceptional triggering and instruction quality with reasoning throughout, at the cost of one bloated body, a duplicated scaffold, and a stale entry in its otherwise-exemplary versions ledger. Side B is disciplined and lean with textbook SKILL/REFERENCE splits and explicit least-privilege tool scoping, but its instructions are shallower, partly portfolio-bound, and it carries its own body/reference duplication. Net: A leads on the substance dimensions (B1, B2, B6); B leads on permissions (B5); B3/B4 tie."
+}

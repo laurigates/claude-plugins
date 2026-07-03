@@ -1,0 +1,101 @@
+{
+  "pair_id": "security-guidance",
+  "judge_id": "j2",
+  "dimensions": {
+    "B1": {
+      "score_a": 4,
+      "score_b": 4,
+      "verdict": "tie",
+      "rationale": "A's plugin description is third-person, front-loaded, and precise about what fires when, with deterministic hook matchers as trigger conditions; B's two skill descriptions state concrete trigger contexts and add explicit sibling-disambiguation tables. Neither fully covers near-miss phrasings to the 5 anchor.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/plugins/security-guidance/.claude-plugin/plugin.json",
+          "quote": "Pattern-based warnings on edits, LLM-powered diff review on Stop, and an agentic commit reviewer that catches injection, XSS, SSRF"
+        },
+        {
+          "side": "B",
+          "file": "side-B/git-plugin/skills/git-security-checks/SKILL.md",
+          "quote": "Use when scanning for secrets, setting up gitleaks, or configuring .gitleaks.toml pre-commit security."
+        }
+      ]
+    },
+    "B2": {
+      "score_a": 5,
+      "score_b": 3,
+      "verdict": "A",
+      "rationale": "A's README gives exact, runnable, provider-specific configuration and troubleshooting with the reasoning behind each knob, and hook rewake messages constrain the agent precisely. B's configure-security has concrete ordered steps but its Context commands are broken (escaped quotes inside find -name, path components under -maxdepth 1) and it invokes an undocumented ${CLAUDE_SKILL_DIR} variable, so a zero-context agent would hit dead commands.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/plugins/security-guidance/README.md",
+          "quote": "On 3P providers, check `SECURITY_REVIEW_MODEL` is set to a provider-specific id (not a bare `claude-opus-4-7`)."
+        }
+      ]
+    },
+    "B3": {
+      "score_a": 5,
+      "score_b": 3,
+      "verdict": "A",
+      "rationale": "A loads nothing into context: all behavior lives in executable hooks that run without being read, the ideal disclosure profile. B is mixed — configure-security properly offloads templates to REFERENCE.md, but git-security-checks inlines a 469-line command catalog with repeated sections that loads on every trigger.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/plugins/security-guidance/hooks/hooks.json",
+          "quote": "Security guidance plugin — pattern-based warnings on edits, git-diff-based LLM review on stop"
+        }
+      ]
+    },
+    "B4": {
+      "score_a": 5,
+      "score_b": 4,
+      "verdict": "A",
+      "rationale": "A pushes every mechanical operation into robust standalone code: regex rules as pure data with an import-time sync assert, ReDoS validation of user regexes, atomic log rotation, and interpreter fallback. B also delegates well — both skills bundle structured-output scripts with explicit run instructions and a regression test — but the scripts are simpler and one skill still carries much re-derivable command prose.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/plugins/security-guidance/hooks/extensibility.py",
+          "quote": "Custom regexes are validated at load for catastrophic-backtracking"
+        },
+        {
+          "side": "B",
+          "file": "side-B/configure-plugin/skills/configure-security/scripts/tests/test-configure-security.sh",
+          "quote": "Regression test for configure-security.sh detection."
+        }
+      ]
+    },
+    "B5": {
+      "score_a": 5,
+      "score_b": 3,
+      "verdict": "A",
+      "rationale": "A is exceptional: quoted plugin-root paths, an additive-only trust model so repo-controlled guidance cannot suppress findings, provenance banners against prompt-injection confusion, restrictive file modes, kill switches, and explicit privacy documentation. B is competently scoped (git-security-checks limits to Bash+Read, scripts are quoted and non-destructive) but grants broad tool lists and documents history-rewrite/force-push flows without a stronger gate.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/plugins/security-guidance/hooks/_base.py",
+          "quote": "0600 on creation; existing files keep their mode."
+        }
+      ]
+    },
+    "B6": {
+      "score_a": 5,
+      "score_b": 3,
+      "verdict": "A",
+      "rationale": "A shows heavy maintenance evidence — import-time desync asserts run in CI, append-only telemetry codes, categorized failure paths, cooldowns, and graceful degradation — with only a trivially stale docstring. B has resolving references and a real regression test, but duplicates its 'Managing False Positives' section within one skill, pins conflicting gitleaks revs across the two skills (v8.22.1 vs v8.30.1), and ships broken Context commands.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/plugins/security-guidance/hooks/patterns.py",
+          "quote": "Fail loudly at import time if a pattern is added without a RuleId."
+        }
+      ]
+    }
+  },
+  "overall_comment": "Side A is production-grade defensive engineering: zero context cost, deterministic triggering, injection-aware trust modeling, and pervasive failure-path telemetry. Side B is competent skill authoring with genuine strengths (progressive disclosure in one skill, structured-output scripts, a regression test) but is dragged down by broken context commands, an inconsistent plugin-root variable, intra-file duplication, and conflicting version pins. A wins every dimension except trigger/discoverability, which ties.",
+  "identity_leakage": {
+    "recognized": true,
+    "side_a_guess": "Anthropic's official security-guidance plugin (claude-plugins-official; author email dworken@anthropic.com and anthropics/claude-plugins-official URLs appear verbatim).",
+    "side_b_guess": "laurigates/claude-plugins (configure-plugin and git-plugin layout, house frontmatter fields created/modified/reviewed, 'When to Use This Skill' tables, .api_tokens references).",
+    "leak_evidence": "side-A plugin.json: \"homepage\": \"https://github.com/anthropics/claude-plugins-official/tree/main/plugins/security-guidance\" and author dworken@anthropic.com; side-B skills use the house 'When to Use This Skill' table convention and .api_tokens gitignore pattern matching the judge's environment context. Recognition did not affect scoring — anchors were applied to content only."
+  }
+}

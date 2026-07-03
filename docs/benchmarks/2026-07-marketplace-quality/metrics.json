@@ -1,0 +1,261 @@
+{
+  "official": {
+    "agents": {
+      "models": {
+        "(unset)": 10,
+        "inherit": 7,
+        "opus": 3,
+        "sonnet": 6
+      }
+    },
+    "house_convention_supplementary": {
+      "_note": "House conventions of laurigates/claude-plugins; NOT scored, context only.",
+      "argument_hint_rate": 0.034,
+      "created_modified_dates_rate": 0.0,
+      "sh_scripts_with_section_headers": 0,
+      "use_when_literal_rate": 0.414
+    },
+    "links": {
+      "_note": "Unresolved relative md links after placeholder filtering; residual may include illustrative example paths, not only genuine breakage.",
+      "broken": 7,
+      "broken_rate": 0.3333,
+      "broken_sample": [
+        "plugins/claude-code-setup/skills/claude-automation-recommender/references/skills-reference.md -> openapi-template.yaml",
+        "plugins/claude-code-setup/skills/claude-automation-recommender/references/skills-reference.md -> examples/unit-test.ts",
+        "plugins/claude-code-setup/skills/claude-automation-recommender/references/skills-reference.md -> examples/integration-test.ts",
+        "plugins/claude-code-setup/skills/claude-automation-recommender/references/skills-reference.md -> templates/",
+        "plugins/claude-code-setup/skills/claude-automation-recommender/references/skills-reference.md -> checklist.md",
+        "plugins/plugin-dev/skills/command-development/references/documentation-patterns.md -> CONTRIBUTING.md",
+        "plugins/plugin-dev/skills/command-development/references/documentation-patterns.md -> LICENSE"
+      ],
+      "relative_links_checked": 21
+    },
+    "manifest": {
+      "entries": 255,
+      "entry_field_presence": {
+        "author": 170,
+        "category": 241,
+        "description": 255,
+        "keywords": 1,
+        "license": 0,
+        "version": 14
+      },
+      "in_repo_entries": 51,
+      "in_repo_missing_dir": [],
+      "plugin_dirs_not_in_manifest": [
+        "plugins/example-plugin"
+      ],
+      "plugin_dirs_on_disk": 39,
+      "source_types": {
+        "git-subdir": 71,
+        "github": 2,
+        "in-repo-path": 51,
+        "url": 131
+      }
+    },
+    "plugin_json": {
+      "count": 39,
+      "field_presence": {
+        "author": 35,
+        "description": 39,
+        "keywords": 6,
+        "license": 1,
+        "name": 39,
+        "repository": 1,
+        "version": 12
+      },
+      "version_mismatches": []
+    },
+    "root": "/private/tmp/claude-502/-Users-lgates-repos-laurigates-claude-plugins/22f8c419-8c63-4f08-a9e5-70dc268bb07c/scratchpad/bench/official",
+    "skills_scored": {
+      "allowed_tools_classes": {
+        "no-bash": 6,
+        "scoped-bash": 1,
+        "unrestricted(absent)": 22
+      },
+      "desc_len_dist": {
+        "count": 29,
+        "max": 906,
+        "mean": 347.2,
+        "median": 329,
+        "p90": 525
+      },
+      "frontmatter_description_rate": 1.0,
+      "frontmatter_name_rate": 1.0,
+      "skills_over_5k_tokens": 3,
+      "skills_with_reference_mds": 16,
+      "skills_with_scripts": 5,
+      "token_estimate_dist": {
+        "count": 29,
+        "max": 8246,
+        "mean": 2701.1,
+        "median": 2103,
+        "p90": 5633
+      },
+      "trigger_clause_rate": 0.862
+    },
+    "totals": {
+      "agents": 26,
+      "changelogs": 0,
+      "check_scripts": 0,
+      "commands": 29,
+      "files": 407,
+      "hook_scripts": 17,
+      "hooks_json": 5,
+      "lint_scripts": 0,
+      "md_files": 205,
+      "skills": 29,
+      "workflow_names": [
+        "bump-plugin-shas.yml",
+        "check-mcp-urls.yml",
+        "close-external-prs.yml",
+        "external-pr-scope-guard.yml",
+        "revert-failed-bumps.yml",
+        "scan-plugins.yml",
+        "validate-frontmatter.yml",
+        "validate-licenses.yml",
+        "validate-plugins.yml"
+      ],
+      "workflows": 9,
+      "workflows_pr_triggered": 8
+    }
+  },
+  "ours": {
+    "agents": {
+      "models": {
+        "opus": 21
+      }
+    },
+    "house_convention_supplementary": {
+      "_note": "House conventions of laurigates/claude-plugins; NOT scored, context only.",
+      "argument_hint_rate": 0.456,
+      "created_modified_dates_rate": 1.0,
+      "sh_scripts_with_section_headers": 129,
+      "use_when_literal_rate": 1.0
+    },
+    "links": {
+      "_note": "Unresolved relative md links after placeholder filtering; residual may include illustrative example paths, not only genuine breakage.",
+      "broken": 78,
+      "broken_rate": 0.1429,
+      "broken_sample": [
+        "agent-patterns-plugin/README.md -> docs/adrs/0015-agent-teams-adoption.md",
+        "blueprint-plugin/skills/blueprint-adr-list/SKILL.md -> docs/adrs/0001-use-react.md",
+        "blueprint-plugin/skills/blueprint-adr-list/SKILL.md -> docs/adrs/0002-use-postgres.md",
+        "blueprint-plugin/skills/blueprint-adr-list/SKILL.md -> docs/adrs/0003-migrate-to-vite.md",
+        "blueprint-plugin/skills/blueprint-curate-docs/REFERENCE.md -> src/path/file.ts",
+        "blueprint-plugin/skills/blueprint-development/templates/implementation-skill-template.md -> '[endpoint]'",
+        "blueprint-plugin/skills/blueprint-development/templates/implementation-skill-template.md -> [input]",
+        "blueprint-plugin/skills/blueprint-development/templates/implementation-skill-template.md -> [params]",
+        "blueprint-plugin/skills/blueprint-development/templates/quality-skill-template.md -> [scope]",
+        "blueprint-plugin/templates/blueprint-readme.md -> ../adrs/0005-blueprint-development-methodology.md",
+        "blueprint-plugin/templates/blueprint-readme.md -> ../adrs/0011-blueprint-state-in-docs-directory.md",
+        "blueprint-plugin/templates/document-management-rule.md -> ../adrs/0001-database-choice.md",
+        "blueprint-plugin/templates/document-management-rule.md -> ../prds/user-authentication.md",
+        "blueprint-plugin/templates/document-management-rule.md -> ../prds/user-authentication.md",
+        "blueprint-plugin/templates/document-management-rule.md -> ../prds/payment-processing.md",
+        "communication-plugin/skills/google-chat-formatting/REFERENCE.md -> url",
+        "communication-plugin/skills/ticket-drafting-guidelines/SKILL.md -> URL",
+        "configure-plugin/skills/configure-memory-profiling/SKILL.md -> REFERENCE.md",
+        "configure-plugin/skills/configure-memory-profiling/SKILL.md -> REFERENCE.md",
+        "configure-plugin/skills/configure-memory-profiling/SKILL.md -> REFERENCE.md"
+      ],
+      "relative_links_checked": 546
+    },
+    "manifest": {
+      "entries": 44,
+      "entry_field_presence": {
+        "author": 0,
+        "category": 44,
+        "description": 44,
+        "keywords": 44,
+        "license": 0,
+        "version": 44
+      },
+      "in_repo_entries": 44,
+      "in_repo_missing_dir": [],
+      "plugin_dirs_not_in_manifest": [],
+      "plugin_dirs_on_disk": 44,
+      "source_types": {
+        "in-repo-path": 44
+      }
+    },
+    "plugin_json": {
+      "count": 44,
+      "field_presence": {
+        "author": 25,
+        "description": 44,
+        "keywords": 44,
+        "license": 24,
+        "name": 44,
+        "repository": 23,
+        "version": 44
+      },
+      "version_mismatches": []
+    },
+    "root": "/Users/lgates/repos/laurigates/claude-plugins",
+    "skills_scored": {
+      "allowed_tools_classes": {
+        "bare-bash": 175,
+        "no-bash": 44,
+        "scoped-bash": 165
+      },
+      "desc_len_dist": {
+        "count": 384,
+        "max": 275,
+        "mean": 166.6,
+        "median": 163.0,
+        "p90": 186
+      },
+      "frontmatter_description_rate": 1.0,
+      "frontmatter_name_rate": 1.0,
+      "skills_over_5k_tokens": 4,
+      "skills_with_reference_mds": 125,
+      "skills_with_scripts": 40,
+      "token_estimate_dist": {
+        "count": 384,
+        "max": 6080,
+        "mean": 1874.8,
+        "median": 1766.5,
+        "p90": 2800
+      },
+      "trigger_clause_rate": 1.0
+    },
+    "totals": {
+      "agents": 21,
+      "changelogs": 44,
+      "check_scripts": 30,
+      "commands": 0,
+      "files": 8722,
+      "hook_scripts": 69,
+      "hooks_json": 6,
+      "lint_scripts": 5,
+      "md_files": 809,
+      "skills": 384,
+      "workflow_names": [
+        "auto-resolve-conflicts.yml",
+        "changelog-review.yml",
+        "claude-code-review.yml",
+        "claude.yml",
+        "clear-autorelease-labels.yml",
+        "enforce-conventional-commits.yml",
+        "fix-release-conflicts.yml",
+        "github-workflow-auto-fix.yml",
+        "lint-context-commands.yml",
+        "obsidian-cli-changelog.yml",
+        "plugin-enablement-drift.yml",
+        "plugin-pr-checks.yml",
+        "release-please.yml",
+        "release-pr-doc-audit.yml",
+        "renovate.yml",
+        "research-radar.yml",
+        "scheduled-audits.yml",
+        "skill-splitter.yml",
+        "test-skill-scripts.yml",
+        "validate-plugin-configs.yml",
+        "workflow-model-audit.yml"
+      ],
+      "workflows": 21,
+      "workflows_pr_triggered": 10
+    }
+  }
+}
