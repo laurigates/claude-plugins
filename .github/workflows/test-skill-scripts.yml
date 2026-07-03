@@ -1,16 +1,19 @@
 name: "Test: Skill scripts"
 
 # Runs the skill-local regression tests that ship next to a skill's extracted
-# scripts (**/skills/**/scripts/tests/test-*.sh). Mirrors the per-path-trigger
-# shape of plugin-enablement-drift.yml so it fires only when skill scripts (or
-# the runner itself) change — independent of plugin-pr-checks.yml, which gates
-# the SKILL.md / compliance surface.
+# scripts (**/skills/**/scripts/tests/test-*.sh) AND the plugin hook regression
+# suites (*/hooks/test-*.sh — bash-antipatterns, branch-protection, …), matching
+# what scripts/run-skill-script-tests.sh discovers. Mirrors the per-path-trigger
+# shape of plugin-enablement-drift.yml so it fires only when skill scripts, hook
+# scripts, or the runner itself change — independent of plugin-pr-checks.yml,
+# which gates the SKILL.md / compliance surface.
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
       - '**/skills/**/scripts/**'
+      - '*-plugin/hooks/**'
       - 'scripts/run-skill-script-tests.sh'
       - 'scripts/configure-opencode.sh'
       - 'scripts/install-opencode-ocx.sh'
@@ -28,6 +31,7 @@ on:
     branches: [main]
     paths:
       - '**/skills/**/scripts/**'
+      - '*-plugin/hooks/**'
       - 'scripts/run-skill-script-tests.sh'
       - 'scripts/configure-opencode.sh'
 

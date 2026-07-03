@@ -352,9 +352,24 @@ fi
 # `grep | grep -v | sed | tail` over it is the idiomatic incident-diagnosis read,
 # and the Error/fail tokens this keys on are exactly what log diagnostics search
 # for (issue #1833). IS_LOG_STREAM is computed in the pipe-count block above.
+#
+# Require a POSITIVE test/task-output signal — a task-output file (.output or
+# /tasks/) OR a known test-runner invocation — instead of the bare
+# Error/fail/FAIL tokens (issue #1914). Those tokens matched incidentally and
+# turned a legitimate verification command into a false positive: a multi-pattern
+# grep spot-checking GitHub Actions YAML (`grep -n 'app-id|timeout-minutes|
+# skip-on-release' reusable-release-please.yml | …`) trips both clauses — the
+# quoted alternation `|` inflate the grep-chain match, and workflow fields like
+# `fail-fast` / `continue-on-error` / `on-failure` match `fail`. A grep chain is
+# "parsing test output" only when its data source is actually a task-output file
+# or the stdout of a test runner; a scrape over *.yml / *.md / source files has
+# neither signal and is left alone. Runners covered: pytest/vitest/jest/mocha/
+# ava/rspec/phpunit by name, and `<toolchain> test` (cargo/go/npm/pnpm/yarn/bun/
+# deno/dotnet/mvn/gradle) in the same pipe segment.
+TEST_OUTPUT_SOURCE_RE='\.output|/tasks/|\b(pytest|vitest|jest|mocha|ava|rspec|phpunit)\b|\b(cargo|go|npm|pnpm|yarn|bun|deno|dotnet|mvn|gradle)\b[^|]*[[:space:]]test\b'
 if [ "$IS_LOG_STREAM" = false ] && \
    echo "$COMMAND" | grep -Eq 'grep.*\|.*grep.*\|.*(sed|cut|awk)' && \
-   echo "$COMMAND" | grep -Eq '(\.output|/tasks/|Error|fail|FAIL)'; then
+   echo "$COMMAND" | grep -Eq "$TEST_OUTPUT_SOURCE_RE"; then
     block "REMINDER: Parsing test output with grep chains is fragile. Better alternatives:
 - Use --reporter=json (Bun, Vitest, Jest) and parse with jq
 - Use --reporter=junit for CI-style XML output
