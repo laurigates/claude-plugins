@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.1](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.9.0...github-actions-plugin-v1.9.1) (2026-07-03)
+
+
+### Documentation
+
+* **github-actions-plugin:** claude-code-action v1 gotchas in claude-code-github-workflows ([#1910](https://github.com/laurigates/claude-plugins/issues/1910)) ([72e2b6c](https://github.com/laurigates/claude-plugins/commit/72e2b6cba4dd620e850195049b6458478de0d1d4))
+
 ## [1.9.0](https://github.com/laurigates/claude-plugins/compare/github-actions-plugin-v1.8.0...github-actions-plugin-v1.9.0) (2026-06-18)
 
 

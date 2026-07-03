@@ -336,7 +336,7 @@
       "name": "github-actions-plugin",
       "source": "./github-actions-plugin",
       "description": "GitHub Actions CI/CD - workflows, authentication, inspection, auto-fix",
-      "version": "1.9.0",
+      "version": "1.9.1",
       "keywords": [
         "github-actions",
         "ci-cd",
@@ -436,7 +436,7 @@
       "name": "macos-plugin",
       "source": "./macos-plugin",
       "description": "macOS-specific dev environment tooling - kitty session persistence, LaunchServices health, incident postmortems for kernel panics, WindowServer hangs, and long-uptime drift",
-      "version": "1.4.0",
+      "version": "1.5.0",
       "keywords": [
         "macos",
         "darwin",
@@ -575,7 +575,7 @@
       "name": "rust-plugin",
       "source": "./rust-plugin",
       "description": "Rust development - cargo, clippy, testing, memory safety",
-      "version": "1.5.0",
+      "version": "1.6.0",
       "keywords": [
         "rust",
         "cargo",

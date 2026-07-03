@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/laurigates/claude-plugins/compare/macos-plugin-v1.4.0...macos-plugin-v1.5.0) (2026-07-03)
+
+
+### Features
+
+* **macos-plugin:** add macos-performance-benchmark skill ([#1912](https://github.com/laurigates/claude-plugins/issues/1912)) ([bf165ed](https://github.com/laurigates/claude-plugins/commit/bf165ed79ad2c9423b77e96a5fe0d66d179605fa))
+
 ## [1.4.0](https://github.com/laurigates/claude-plugins/compare/macos-plugin-v1.3.0...macos-plugin-v1.4.0) (2026-06-30)
 
 
