@@ -14,6 +14,7 @@ All skills are **Darwin-only** — they detect non-macOS systems and refuse to a
 | [endpoint-security-cpu](skills/endpoint-security-cpu/skill.md) | Diagnose an EndpointSecurity/EDR extension (Kandji ESF, XProtect) hot from a process-spawn storm; trace the source with `powermetrics` + `eslogger` |
 | [macos-disk-usage](skills/macos-disk-usage/skill.md) | Disk-usage forensics and space recovery on APFS — trust `df` `Avail` not `Capacity %`, reclaim OrbStack/Docker, thin `tmutil` snapshots, tiered cache cleanup |
 | [macos-performance-triage](skills/macos-performance-triage/skill.md) | Live CPU/GPU triage on Apple Silicon — `macmon`-first USE-method snapshot, attribute a hot `WindowServer` to the driving app via `powermetrics --show-process-gpu`, flame-graph a process with `samply`; Rust-forward, sudo-free toolkit |
+| [macos-performance-benchmark](skills/macos-performance-benchmark/skill.md) | Repeatable, threshold-scored benchmark + diagnostic suite (CPU/thermals, memory/swap, disk, startup) — PASS/WARN/FAIL reports saved under `~/.cache/macos-perf/`, tunable `MACOS_PERF_*` thresholds, `macmon`-first sudo-free power/thermals |
 
 ## When to Use
 
@@ -28,6 +29,8 @@ All skills are **Darwin-only** — they detect non-macOS systems and refuse to a
 | The Mac is hot/loud/slow and you need to find what's driving it | `macos-performance-triage` |
 | `WindowServer` is hot and you need to attribute it to a client app (GPU compositing) | `macos-performance-triage` |
 | You want a flame graph of a CPU-heavy process on Apple Silicon | `macos-performance-triage` |
+| You want a repeatable baseline — "is this Mac performing to spec?" scored PASS/WARN/FAIL | `macos-performance-benchmark` |
+| Benchmarking NVMe/AES/SHA/memory throughput, or tracking health across runs | `macos-performance-benchmark` |
 | `syspolicyd`/`trustd`/`tccd`/`auditd` are all elevated together — an exec storm | `endpoint-security-cpu` |
 | Auditing whether the machine is "due for a reboot" after weeks of uptime | `macos-incident-postmortem` + `launchservices-health` |
 
