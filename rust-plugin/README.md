@@ -52,6 +52,12 @@ This plugin provides expert knowledge for Rust development with a focus on:
 - GitHub Actions integration
 - Test groups and timeouts
 
+**mockito-http-mocking** - HTTP API mocking in integration tests
+- Expectation semantics (`matched()` equals-count trap, `expect_at_least`)
+- Mock matching order (first created wins; specific before catch-all)
+- Taming polling clients against instant mock servers (error backoff, `task.abort()`)
+- teloxide long-poll specifics and a diagnosis checklist
+
 **cargo-llvm-cov** - Code coverage with LLVM
 - LLVM-based coverage instrumentation
 - Multiple output formats (HTML, LCOV, JSON, Cobertura)
