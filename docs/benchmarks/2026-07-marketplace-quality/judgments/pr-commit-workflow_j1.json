@@ -1,0 +1,121 @@
+{
+  "pair_id": "pr-commit-workflow",
+  "judge_id": "j1",
+  "dimensions": {
+    "B1": {
+      "score_a": 5,
+      "score_b": 3,
+      "verdict": "A",
+      "rationale": "Side A's descriptions uniformly state what + concrete trigger phrasings, front-load the key use case, and explicitly disambiguate from sibling skills (git-commit vs git-push vs git-pr vs the macro). Side B is split: the pr-review-toolkit agents have excellent trigger coverage with worked scenarios, but the commit-commands descriptions ('Create a git commit') state no trigger conditions at all, averaging to competent.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/git-plugin/skills/git-commit/SKILL.md",
+          "quote": "Use when user says \"commit\", \"save changes\", or \"stage and commit\". Local commits only — see git-push for remote."
+        },
+        {
+          "side": "B",
+          "file": "side-B/plugins/commit-commands/commands/commit.md",
+          "quote": "description: Create a git commit"
+        }
+      ]
+    },
+    "B2": {
+      "score_a": 4,
+      "score_b": 3,
+      "verdict": "A",
+      "rationale": "Side A gives ordered, runnable steps with the reasoning behind non-obvious moves (quoted-heredoc escaping, comparing against origin/main, stacked-PR retarget/rebase), plus output formats and error tables; heavy ALWAYS/CRITICAL directive density keeps it just below the top anchor. Side B's commands are concrete but minimal, and commit-push-pr mandates branch creation while its allowed-tools pattern is for a nonexistent 'git checkout --branch' invocation, so the required step is not actually permitted as scoped.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/git-plugin/skills/git-commit/SKILL.md",
+          "quote": "Inside a quoted heredoc (`<<'EOF'`), backticks, `$`, and `\\` are already literal"
+        },
+        {
+          "side": "B",
+          "file": "side-B/plugins/commit-commands/commands/commit-push-pr.md",
+          "quote": "Bash(git checkout --branch:*)"
+        }
+      ]
+    },
+    "B3": {
+      "score_a": 4,
+      "score_b": 3,
+      "verdict": "A",
+      "rationale": "Side A shows genuine multi-level disclosure — lean-ish bodies delegating to REFERENCE.md files and executable scripts — though several bodies still inline sizable reference material and the conventional-commit/issue-keyword tables repeat across skills. Side B's bodies are short, but there is no supporting-file structure and two agent descriptions embed multiple full examples in always-loaded frontmatter, taxing the listing budget.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/git-plugin/skills/git-pr-feedback/SKILL.md",
+          "quote": "For feedback categorization, decision trees, commit format, and report templates, see"
+        }
+      ]
+    },
+    "B4": {
+      "score_a": 5,
+      "score_b": 3,
+      "verdict": "A",
+      "rationale": "Side A offloads the mechanical work (PR readiness probing, closing-keyword audits, sync verdicts, GraphQL data fetch, actionable-PR selection) to bundled scripts with test fixtures, structured KEY=VALUE output, error handling, and explicit run-this instructions. Side B has little mechanical surface — review agents do judgment work — and what mechanical work exists (the clean_gone loop) is at least given as a concrete runnable block, meeting but not exceeding the competent anchor.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/git-plugin/skills/git-pr/scripts/git-pr.sh",
+          "quote": "DATA-ONLY: detects PR readiness (fetch + ahead-count + existing-PR probe),"
+        }
+      ]
+    },
+    "B5": {
+      "score_a": 4,
+      "score_b": 2,
+      "verdict": "A",
+      "rationale": "Side A scopes allowed-tools per skill, gates force-push behind explicit confirmation, marks side-effecting macros disable-model-invocation, and its hooks parse input safely with jq and nudge via 'ask' rather than hard-deny — though several skills grant the effectively-broad 'Bash(bash *)'. Side B's clean_gone runs 'git worktree remove --force' and 'git branch -D' in an unconditional loop with no allowed-tools scoping and no confirmation gate, while its README asserts it is safe — a destructive default that can discard unpushed local commits and uncommitted worktree changes.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/git-plugin/skills/git-pr/SKILL.md",
+          "quote": "Bash(bash *), Bash(git status *)"
+        },
+        {
+          "side": "B",
+          "file": "side-B/plugins/commit-commands/commands/clean_gone.md",
+          "quote": "git worktree remove --force \"$worktree\""
+        },
+        {
+          "side": "B",
+          "file": "side-B/plugins/commit-commands/README.md",
+          "quote": "Safe to run - only removes branches already deleted remotely"
+        }
+      ]
+    },
+    "B6": {
+      "score_a": 4,
+      "score_b": 2,
+      "verdict": "A",
+      "rationale": "Side A is internally coherent with verification steps (closing-keyword re-audit, push verification), error-handling tables, and tested scripts, but repeats the same commit-type/issue-keyword content across several skills and links out of the plugin via '../../.claude/rules/' paths that will not resolve for an installed plugin. Side B carries visibly stale internal leftovers — an agent hardcoding another project's 'constants/errorIds.ts' and logging functions, a README pointing contributors at 'claude-cli-internal' and claiming an MIT license/version absent from the manifest, and the invalid 'git checkout --branch' tool pattern.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/git-plugin/skills/git-commit/SKILL.md",
+          "quote": "(../../.claude/rules/conventional-commits.md) for complete reference"
+        },
+        {
+          "side": "B",
+          "file": "side-B/plugins/pr-review-toolkit/agents/silent-failure-hunter.md",
+          "quote": "Is there an error ID from constants/errorIds.ts for Sentry tracking?"
+        },
+        {
+          "side": "B",
+          "file": "side-B/plugins/pr-review-toolkit/README.md",
+          "quote": "in claude-cli-internal"
+        }
+      ]
+    }
+  },
+  "identity_leakage": {
+    "recognized": true,
+    "side_a_guess": "laurigates/claude-plugins git-plugin (author 'Lauri Gates', repository URL, house .claude/rules cross-references)",
+    "side_b_guess": "Anthropic's official Claude Code example plugins (commit-commands and pr-review-toolkit; author 'Anthropic', README references claude-cli-internal)",
+    "leak_evidence": "side-A plugin.json: \"author\": {\"name\": \"Lauri Gates\"}, \"repository\": \"https://github.com/laurigates/claude-plugins\"; side-B plugin.json: \"author\": {\"name\": \"Anthropic\", \"email\": \"support@anthropic.com\"} and README 'Project agents: .claude/agents/ in claude-cli-internal'. Scores were assigned against the anchors before considering identity."
+  },
+  "overall_comment": "Side A is a mature, deeply engineered PR/commit workflow suite: strong triggering with sibling disambiguation, reasoned instructions, tested deterministic scripts, and safety-conscious hooks; its main debts are content duplication, out-of-plugin rule references, and some broad Bash grants. Side B pairs excellent review-agent prompt craft with very thin commit commands and shows distribution-hygiene problems: an unusable tool pattern, ungated destructive cleanup, and internal-project leftovers that would misdirect consumers."
+}

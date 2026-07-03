@@ -1,0 +1,1012 @@
+{
+  "bias_audit": {
+    "judgments_total": 18,
+    "judgments_with_leakage": 18,
+    "leakage_rate": 1.0,
+    "mean_margin_ours_minus_official_clean": null,
+    "mean_margin_ours_minus_official_leaked": 0.37,
+    "position_bias": {
+      "mean_margin_when_ours_is_A": 1.333,
+      "mean_margin_when_ours_is_B": -0.4,
+      "mean_score_side_a": 4.287,
+      "mean_score_side_b": 3.472
+    },
+    "quote_check": {
+      "counts": {
+        "exact": 230,
+        "normalized": 1
+      },
+      "findings_dropped": [],
+      "total_evidence": 231
+    }
+  },
+  "blinding": {
+    "autonomous-loop": {
+      "A": "official",
+      "B": "ours",
+      "file_counts": {
+        "A": 8,
+        "B": 2
+      },
+      "official_sources": [
+        "plugins/ralph-loop"
+      ],
+      "ours_sources": [
+        "project-plugin/skills/project-test-loop",
+        ".claude/rules/loop-integrity.md"
+      ],
+      "task": "Run autonomous iterate-until-done loops (e.g. test-fix cycles) safely and effectively."
+    },
+    "claude-md": {
+      "A": "official",
+      "B": "ours",
+      "file_counts": {
+        "A": 9,
+        "B": 2
+      },
+      "official_sources": [
+        "plugins/claude-md-management"
+      ],
+      "ours_sources": [
+        "blueprint-plugin/skills/blueprint-claude-md",
+        "agent-patterns-plugin/skills/meta-context-diet"
+      ],
+      "task": "Help users create, maintain, and optimize CLAUDE.md / project memory and context files."
+    },
+    "code-review": {
+      "A": "official",
+      "B": "ours",
+      "file_counts": {
+        "A": 3,
+        "B": 5
+      },
+      "official_sources": [
+        "plugins/code-review"
+      ],
+      "ours_sources": [
+        "code-quality-plugin/skills/code-review",
+        "code-quality-plugin/skills/code-review-checklist",
+        "agents-plugin/agents/review.md",
+        "code-quality-plugin/.claude-plugin/plugin.json",
+        "code-quality-plugin/README.md"
+      ],
+      "task": "Enable high-quality code review (quality, security, performance, architecture) of diffs/PRs."
+    },
+    "hooks": {
+      "A": "ours",
+      "B": "official",
+      "file_counts": {
+        "A": 36,
+        "B": 23
+      },
+      "official_sources": [
+        "plugins/hookify"
+      ],
+      "ours_sources": [
+        "hooks-plugin"
+      ],
+      "task": "Help users create, configure, and manage Claude Code hooks (safety, automation, event handling)."
+    },
+    "mcp-dev": {
+      "A": "official",
+      "B": "ours",
+      "file_counts": {
+        "A": 21,
+        "B": 6
+      },
+      "official_sources": [
+        "plugins/mcp-server-dev"
+      ],
+      "ours_sources": [
+        "agent-patterns-plugin/skills/mcp-server-authoring",
+        "agent-patterns-plugin/skills/mcp-management",
+        "agent-patterns-plugin/skills/mcp-code-execution",
+        "agent-patterns-plugin/.claude-plugin/plugin.json"
+      ],
+      "task": "Help users build, configure, and manage MCP servers and MCP-based agent integrations."
+    },
+    "pr-commit-workflow": {
+      "A": "ours",
+      "B": "official",
+      "file_counts": {
+        "A": 35,
+        "B": 14
+      },
+      "official_sources": [
+        "plugins/pr-review-toolkit",
+        "plugins/commit-commands"
+      ],
+      "ours_sources": [
+        "git-plugin/skills/git-commit",
+        "git-plugin/skills/git-commit-workflow",
+        "git-plugin/skills/git-commit-trailers",
+        "git-plugin/skills/git-commit-push-pr",
+        "git-plugin/skills/git-pr",
+        "git-plugin/skills/git-pr-feedback",
+        "git-plugin/skills/git-pr-sync-check",
+        "git-plugin/skills/git-pr-watch",
+        "git-plugin/skills/git-push",
+        "git-plugin/skills/git-fix-pr",
+        "git-plugin/skills/git-api-pr",
+        "git-plugin/skills/git-branch-pr-workflow",
+        "git-plugin/skills/github-pr-title",
+        "git-plugin/.claude-plugin/plugin.json",
+        "git-plugin/README.md",
+        "git-plugin/hooks"
+      ],
+      "task": "Support commit creation and pull-request lifecycle workflows (commit messages, PR creation, review response, CI follow-up)."
+    },
+    "security-guidance": {
+      "A": "official",
+      "B": "ours",
+      "file_counts": {
+        "A": 14,
+        "B": 6
+      },
+      "official_sources": [
+        "plugins/security-guidance"
+      ],
+      "ours_sources": [
+        "configure-plugin/skills/configure-security",
+        "git-plugin/skills/git-security-checks"
+      ],
+      "task": "Provide security guidance and scanning for codebases (secrets, dependencies, SAST, security policy)."
+    },
+    "session-reporting": {
+      "A": "ours",
+      "B": "official",
+      "file_counts": {
+        "A": 15,
+        "B": 3
+      },
+      "official_sources": [
+        "plugins/session-report"
+      ],
+      "ours_sources": [
+        "session-plugin"
+      ],
+      "task": "Summarize, report on, and wrap up Claude Code work sessions."
+    },
+    "skill-authoring": {
+      "A": "ours",
+      "B": "official",
+      "file_counts": {
+        "A": 37,
+        "B": 79
+      },
+      "official_sources": [
+        "plugins/skill-creator",
+        "plugins/plugin-dev"
+      ],
+      "ours_sources": [
+        ".claude/rules/skill-development.md",
+        ".claude/rules/skill-quality.md",
+        ".claude/rules/skill-naming.md",
+        ".claude/rules/skill-argument-handling.md",
+        ".claude/rules/skill-execution-structure.md",
+        "evaluate-plugin",
+        "project-plugin/skills/project-skill-scripts"
+      ],
+      "task": "Help users author, validate, and evaluate high-quality skills and plugins for Claude Code."
+    }
+  },
+  "dim_rollup": {
+    "B1": {
+      "mean_median_official": 3.44,
+      "mean_median_ours": 4.72,
+      "pair_wins": {
+        "official": 1,
+        "ours": 7,
+        "tie": 1
+      }
+    },
+    "B2": {
+      "mean_median_official": 4.28,
+      "mean_median_ours": 4.17,
+      "pair_wins": {
+        "official": 3,
+        "ours": 4,
+        "tie": 2
+      }
+    },
+    "B3": {
+      "mean_median_official": 3.89,
+      "mean_median_ours": 4.0,
+      "pair_wins": {
+        "official": 3,
+        "ours": 6,
+        "tie": 0
+      }
+    },
+    "B4": {
+      "mean_median_official": 3.89,
+      "mean_median_ours": 3.94,
+      "pair_wins": {
+        "official": 2,
+        "ours": 3,
+        "tie": 4
+      }
+    },
+    "B5": {
+      "mean_median_official": 3.67,
+      "mean_median_ours": 3.89,
+      "pair_wins": {
+        "official": 3,
+        "ours": 5,
+        "tie": 1
+      }
+    },
+    "B6": {
+      "mean_median_official": 3.0,
+      "mean_median_ours": 3.67,
+      "pair_wins": {
+        "official": 2,
+        "ours": 6,
+        "tie": 1
+      }
+    }
+  },
+  "pair_table": {
+    "autonomous-loop": {
+      "B1": {
+        "confidence": "verified",
+        "judge_verdicts": [
+          "ours",
+          "ours"
+        ],
+        "margin_ours_minus_official": 2.0,
+        "median_official": 3.0,
+        "median_ours": 5.0,
+        "refuter": {
+          "corrected_official": 3,
+          "corrected_ours": 5,
+          "corrected_winner": "ours",
+          "reason_selected": "load-bearing decisive margin (2.0 pts, both judges agree)",
+          "symmetric_violation": false,
+          "verdict": "upheld"
+        },
+        "verdict": "ours"
+      },
+      "B2": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "tie",
+          "tie"
+        ],
+        "margin_ours_minus_official": 0.0,
+        "median_official": 4.0,
+        "median_ours": 4.0,
+        "verdict": "tie"
+      },
+      "B3": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "official",
+          "official"
+        ],
+        "margin_ours_minus_official": -1.5,
+        "median_official": 4.5,
+        "median_ours": 3.0,
+        "verdict": "official"
+      },
+      "B4": {
+        "confidence": "verified",
+        "judge_verdicts": [
+          "official",
+          "official"
+        ],
+        "margin_ours_minus_official": -2.5,
+        "median_official": 5.0,
+        "median_ours": 2.5,
+        "refuter": {
+          "corrected_official": 5,
+          "corrected_ours": 2,
+          "corrected_winner": "official",
+          "reason_selected": "load-bearing decisive margin (2.5 pts, both judges agree)",
+          "symmetric_violation": false,
+          "verdict": "upheld"
+        },
+        "verdict": "official"
+      },
+      "B5": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "official",
+          "official"
+        ],
+        "margin_ours_minus_official": -1.0,
+        "median_official": 4.0,
+        "median_ours": 3.0,
+        "verdict": "official"
+      },
+      "B6": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "ours",
+          "ours"
+        ],
+        "margin_ours_minus_official": 1.0,
+        "median_official": 3.0,
+        "median_ours": 4.0,
+        "verdict": "ours"
+      }
+    },
+    "claude-md": {
+      "B1": {
+        "confidence": "split",
+        "judge_verdicts": [
+          "ours",
+          "tie"
+        ],
+        "margin_ours_minus_official": 0.5,
+        "median_official": 4.0,
+        "median_ours": 4.5,
+        "verdict": "ours"
+      },
+      "B2": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "tie",
+          "tie"
+        ],
+        "margin_ours_minus_official": 0.0,
+        "median_official": 4.0,
+        "median_ours": 4.0,
+        "verdict": "tie"
+      },
+      "B3": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "official",
+          "official"
+        ],
+        "margin_ours_minus_official": -1.0,
+        "median_official": 4.0,
+        "median_ours": 3.0,
+        "verdict": "official"
+      },
+      "B4": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "tie",
+          "tie"
+        ],
+        "margin_ours_minus_official": 0.0,
+        "median_official": 3.0,
+        "median_ours": 3.0,
+        "verdict": "tie"
+      },
+      "B5": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "tie",
+          "tie"
+        ],
+        "margin_ours_minus_official": 0.0,
+        "median_official": 4.0,
+        "median_ours": 4.0,
+        "verdict": "tie"
+      },
+      "B6": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "tie",
+          "tie"
+        ],
+        "margin_ours_minus_official": 0.0,
+        "median_official": 3.0,
+        "median_ours": 3.0,
+        "verdict": "tie"
+      }
+    },
+    "code-review": {
+      "B1": {
+        "confidence": "refuter-adjusted",
+        "judge_verdicts": [
+          "ours",
+          "ours"
+        ],
+        "margin_ours_minus_official": 3.0,
+        "median_official": 2.0,
+        "median_official_adjusted": 2,
+        "median_ours": 5.0,
+        "median_ours_adjusted": 4,
+        "refuter": {
+          "corrected_official": 2,
+          "corrected_ours": 4,
+          "corrected_winner": "ours",
+          "reason_selected": "load-bearing decisive margin (3.0 pts, both judges agree)",
+          "symmetric_violation": true,
+          "verdict": "adjusted"
+        },
+        "verdict": "ours"
+      },
+      "B2": {
+        "confidence": "verified",
+        "judge_verdicts": [
+          "official",
+          "official"
+        ],
+        "margin_ours_minus_official": -2.0,
+        "median_official": 5.0,
+        "median_ours": 3.0,
+        "refuter": {
+          "corrected_official": 5,
+          "corrected_ours": 3,
+          "corrected_winner": "official",
+          "reason_selected": "load-bearing decisive margin (2.0 pts, both judges agree)",
+          "symmetric_violation": false,
+          "verdict": "upheld"
+        },
+        "verdict": "official"
+      },
+      "B3": {
+        "confidence": "split",
+        "judge_verdicts": [
+          "tie",
+          "ours"
+        ],
+        "margin_ours_minus_official": 0.5,
+        "median_official": 3.0,
+        "median_ours": 3.5,
+        "verdict": "ours"
+      },
+      "B4": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "tie",
+          "tie"
+        ],
+        "margin_ours_minus_official": 0.0,
+        "median_official": 3.0,
+        "median_ours": 3.0,
+        "verdict": "tie"
+      },
+      "B5": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "official",
+          "official"
+        ],
+        "margin_ours_minus_official": -1.0,
+        "median_official": 4.0,
+        "median_ours": 3.0,
+        "verdict": "official"
+      },
+      "B6": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "ours",
+          "ours"
+        ],
+        "margin_ours_minus_official": 1.0,
+        "median_official": 2.0,
+        "median_ours": 3.0,
+        "verdict": "ours"
+      }
+    },
+    "hooks": {
+      "B1": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "ours",
+          "ours"
+        ],
+        "margin_ours_minus_official": 1.0,
+        "median_official": 4.0,
+        "median_ours": 5.0,
+        "verdict": "ours"
+      },
+      "B2": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "ours",
+          "ours"
+        ],
+        "margin_ours_minus_official": 1.0,
+        "median_official": 4.0,
+        "median_ours": 5.0,
+        "verdict": "ours"
+      },
+      "B3": {
+        "confidence": "verified",
+        "judge_verdicts": [
+          "ours",
+          "ours"
+        ],
+        "margin_ours_minus_official": 2.0,
+        "median_official": 3.0,
+        "median_ours": 5.0,
+        "refuter": {
+          "corrected_official": 3,
+          "corrected_ours": 5,
+          "corrected_winner": "ours",
+          "reason_selected": "load-bearing decisive margin (2.0 pts, both judges agree)",
+          "symmetric_violation": false,
+          "verdict": "upheld"
+        },
+        "verdict": "ours"
+      },
+      "B4": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "ours",
+          "ours"
+        ],
+        "margin_ours_minus_official": 1.0,
+        "median_official": 4.0,
+        "median_ours": 5.0,
+        "verdict": "ours"
+      },
+      "B5": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "ours",
+          "ours"
+        ],
+        "margin_ours_minus_official": 1.0,
+        "median_official": 4.0,
+        "median_ours": 5.0,
+        "verdict": "ours"
+      },
+      "B6": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "ours",
+          "ours"
+        ],
+        "margin_ours_minus_official": 1.5,
+        "median_official": 2.5,
+        "median_ours": 4.0,
+        "verdict": "ours"
+      }
+    },
+    "mcp-dev": {
+      "B1": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "official",
+          "official"
+        ],
+        "margin_ours_minus_official": -1.0,
+        "median_official": 5.0,
+        "median_ours": 4.0,
+        "verdict": "official"
+      },
+      "B2": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "official",
+          "official"
+        ],
+        "margin_ours_minus_official": -1.5,
+        "median_official": 5.0,
+        "median_ours": 3.5,
+        "verdict": "official"
+      },
+      "B3": {
+        "confidence": "split",
+        "judge_verdicts": [
+          "tie",
+          "ours"
+        ],
+        "margin_ours_minus_official": 0.5,
+        "median_official": 4.0,
+        "median_ours": 4.5,
+        "verdict": "ours"
+      },
+      "B4": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "tie",
+          "tie"
+        ],
+        "margin_ours_minus_official": 0.0,
+        "median_official": 3.0,
+        "median_ours": 3.0,
+        "verdict": "tie"
+      },
+      "B5": {
+        "confidence": "split",
+        "judge_verdicts": [
+          "ours",
+          "tie"
+        ],
+        "margin_ours_minus_official": 0.5,
+        "median_official": 3.5,
+        "median_ours": 4.0,
+        "verdict": "ours"
+      },
+      "B6": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "official",
+          "official"
+        ],
+        "margin_ours_minus_official": -1.5,
+        "median_official": 4.5,
+        "median_ours": 3.0,
+        "verdict": "official"
+      }
+    },
+    "pr-commit-workflow": {
+      "B1": {
+        "confidence": "verified",
+        "judge_verdicts": [
+          "ours",
+          "ours"
+        ],
+        "margin_ours_minus_official": 2.0,
+        "median_official": 3.0,
+        "median_ours": 5.0,
+        "refuter": {
+          "corrected_official": 3,
+          "corrected_ours": 5,
+          "corrected_winner": "ours",
+          "reason_selected": "load-bearing decisive margin (2.0 pts, both judges agree)",
+          "symmetric_violation": false,
+          "verdict": "upheld"
+        },
+        "verdict": "ours"
+      },
+      "B2": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "ours",
+          "ours"
+        ],
+        "margin_ours_minus_official": 1.5,
+        "median_official": 3.0,
+        "median_ours": 4.5,
+        "verdict": "ours"
+      },
+      "B3": {
+        "confidence": "split",
+        "judge_verdicts": [
+          "ours",
+          "tie"
+        ],
+        "margin_ours_minus_official": 0.5,
+        "median_official": 3.5,
+        "median_ours": 4.0,
+        "verdict": "ours"
+      },
+      "B4": {
+        "confidence": "verified",
+        "judge_verdicts": [
+          "ours",
+          "ours"
+        ],
+        "margin_ours_minus_official": 2.0,
+        "median_official": 3.0,
+        "median_ours": 5.0,
+        "refuter": {
+          "corrected_official": 3,
+          "corrected_ours": 5,
+          "corrected_winner": "ours",
+          "reason_selected": "load-bearing decisive margin (2.0 pts, both judges agree)",
+          "symmetric_violation": false,
+          "verdict": "upheld"
+        },
+        "verdict": "ours"
+      },
+      "B5": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "ours",
+          "ours"
+        ],
+        "margin_ours_minus_official": 1.5,
+        "median_official": 2.5,
+        "median_ours": 4.0,
+        "verdict": "ours"
+      },
+      "B6": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "ours",
+          "ours"
+        ],
+        "margin_ours_minus_official": 2.0,
+        "median_official": 2.0,
+        "median_ours": 4.0,
+        "verdict": "ours"
+      }
+    },
+    "security-guidance": {
+      "B1": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "tie",
+          "tie"
+        ],
+        "margin_ours_minus_official": 0.0,
+        "median_official": 4.0,
+        "median_ours": 4.0,
+        "verdict": "tie"
+      },
+      "B2": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "official",
+          "official"
+        ],
+        "margin_ours_minus_official": -1.5,
+        "median_official": 5.0,
+        "median_ours": 3.5,
+        "verdict": "official"
+      },
+      "B3": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "official",
+          "official"
+        ],
+        "margin_ours_minus_official": -2.0,
+        "median_official": 5.0,
+        "median_ours": 3.0,
+        "verdict": "official"
+      },
+      "B4": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "official",
+          "official"
+        ],
+        "margin_ours_minus_official": -1.0,
+        "median_official": 5.0,
+        "median_ours": 4.0,
+        "verdict": "official"
+      },
+      "B5": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "official",
+          "official"
+        ],
+        "margin_ours_minus_official": -1.5,
+        "median_official": 4.5,
+        "median_ours": 3.0,
+        "verdict": "official"
+      },
+      "B6": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "official",
+          "official"
+        ],
+        "margin_ours_minus_official": -2.0,
+        "median_official": 5.0,
+        "median_ours": 3.0,
+        "verdict": "official"
+      }
+    },
+    "session-reporting": {
+      "B1": {
+        "confidence": "verified",
+        "judge_verdicts": [
+          "ours",
+          "ours"
+        ],
+        "margin_ours_minus_official": 3.0,
+        "median_official": 2.0,
+        "median_ours": 5.0,
+        "refuter": {
+          "corrected_official": 2,
+          "corrected_ours": 5,
+          "corrected_winner": "ours",
+          "reason_selected": "load-bearing decisive margin (3.0 pts, both judges agree)",
+          "symmetric_violation": false,
+          "verdict": "upheld"
+        },
+        "verdict": "ours"
+      },
+      "B2": {
+        "confidence": "split",
+        "judge_verdicts": [
+          "ours",
+          "tie"
+        ],
+        "margin_ours_minus_official": 0.5,
+        "median_official": 4.5,
+        "median_ours": 5.0,
+        "verdict": "ours"
+      },
+      "B3": {
+        "confidence": "split",
+        "judge_verdicts": [
+          "ours",
+          "tie"
+        ],
+        "margin_ours_minus_official": 0.5,
+        "median_official": 4.5,
+        "median_ours": 5.0,
+        "verdict": "ours"
+      },
+      "B4": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "tie",
+          "tie"
+        ],
+        "margin_ours_minus_official": 0.0,
+        "median_official": 5.0,
+        "median_ours": 5.0,
+        "verdict": "tie"
+      },
+      "B5": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "ours",
+          "ours"
+        ],
+        "margin_ours_minus_official": 1.0,
+        "median_official": 3.0,
+        "median_ours": 4.0,
+        "verdict": "ours"
+      },
+      "B6": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "ours",
+          "ours"
+        ],
+        "margin_ours_minus_official": 1.5,
+        "median_official": 3.0,
+        "median_ours": 4.5,
+        "verdict": "ours"
+      }
+    },
+    "skill-authoring": {
+      "B1": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "ours",
+          "ours"
+        ],
+        "margin_ours_minus_official": 1.0,
+        "median_official": 4.0,
+        "median_ours": 5.0,
+        "verdict": "ours"
+      },
+      "B2": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "ours",
+          "ours"
+        ],
+        "margin_ours_minus_official": 1.0,
+        "median_official": 4.0,
+        "median_ours": 5.0,
+        "verdict": "ours"
+      },
+      "B3": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "ours",
+          "ours"
+        ],
+        "margin_ours_minus_official": 1.5,
+        "median_official": 3.5,
+        "median_ours": 5.0,
+        "verdict": "ours"
+      },
+      "B4": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "ours",
+          "ours"
+        ],
+        "margin_ours_minus_official": 1.0,
+        "median_official": 4.0,
+        "median_ours": 5.0,
+        "verdict": "ours"
+      },
+      "B5": {
+        "confidence": "high",
+        "judge_verdicts": [
+          "ours",
+          "ours"
+        ],
+        "margin_ours_minus_official": 1.5,
+        "median_official": 3.5,
+        "median_ours": 5.0,
+        "verdict": "ours"
+      },
+      "B6": {
+        "confidence": "verified",
+        "judge_verdicts": [
+          "ours",
+          "ours"
+        ],
+        "margin_ours_minus_official": 2.5,
+        "median_official": 2.0,
+        "median_ours": 4.5,
+        "refuter": {
+          "corrected_official": 2,
+          "corrected_ours": 4,
+          "corrected_winner": "ours",
+          "reason_selected": "load-bearing decisive margin (2.5 pts, both judges agree)",
+          "symmetric_violation": false,
+          "verdict": "upheld"
+        },
+        "verdict": "ours"
+      }
+    }
+  },
+  "tier_a": {
+    "A1": {
+      "confidence": "split",
+      "judge_verdicts": [
+        "tie",
+        "ours"
+      ],
+      "margin_ours_minus_official": 0.5,
+      "median_official": 3.5,
+      "median_ours": 4.0,
+      "verdict": "ours"
+    },
+    "A2": {
+      "confidence": "split",
+      "judge_verdicts": [
+        "ours",
+        "tie"
+      ],
+      "margin_ours_minus_official": 0.5,
+      "median_official": 4.5,
+      "median_ours": 5.0,
+      "verdict": "ours"
+    },
+    "A3": {
+      "confidence": "high",
+      "judge_verdicts": [
+        "ours",
+        "ours"
+      ],
+      "margin_ours_minus_official": 1.5,
+      "median_official": 3.5,
+      "median_ours": 5.0,
+      "verdict": "ours"
+    },
+    "A4": {
+      "confidence": "high",
+      "judge_verdicts": [
+        "official",
+        "official"
+      ],
+      "margin_ours_minus_official": -1.0,
+      "median_official": 5.0,
+      "median_ours": 4.0,
+      "verdict": "official"
+    },
+    "A5": {
+      "confidence": "refuter-adjusted",
+      "judge_verdicts": [
+        "official",
+        "ours"
+      ],
+      "margin_ours_minus_official": 0.0,
+      "median_official": 3.5,
+      "median_ours": 3.5,
+      "refuter": {
+        "corrected_official": 3,
+        "corrected_ours": 3,
+        "corrected_winner": "tie",
+        "symmetric_violation": true,
+        "verdict": "adjusted"
+      },
+      "verdict": "tie"
+    },
+    "A6": {
+      "confidence": "high",
+      "judge_verdicts": [
+        "ours",
+        "ours"
+      ],
+      "margin_ours_minus_official": 1.0,
+      "median_official": 4.0,
+      "median_ours": 5.0,
+      "verdict": "ours"
+    }
+  }
+}

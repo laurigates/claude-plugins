@@ -1,0 +1,77 @@
+{
+  "pair_id": "mcp-dev",
+  "judge_id": "j2",
+  "dimensions": {
+    "B1": {
+      "score_a": 5,
+      "score_b": 4,
+      "verdict": "A",
+      "rationale": "Side A's descriptions front-load the key use case, enumerate many realistic user phrasings, and explicitly sequence/disambiguate siblings (build-mcp-app says 'Use AFTER the build-mcp-server skill'). Side B's descriptions are third-person with concrete 'Use when' triggers and distinct names, but near-miss coverage lives mostly in in-body tables rather than the triggering description.",
+      "evidence": [
+        {"side": "A", "file": "side-A/plugins/mcp-server-dev/skills/build-mcp-server/SKILL.md", "quote": "This skill should be used when the user asks to \"build an MCP server\", \"create an MCP\", \"make an MCP integration\""},
+        {"side": "A", "file": "side-A/plugins/mcp-server-dev/skills/build-mcp-app/SKILL.md", "quote": "Use AFTER the build-mcp-server skill has settled the deployment model, or when the user already knows they want UI widgets."},
+        {"side": "B", "file": "side-B/agent-patterns-plugin/skills/mcp-server-authoring/SKILL.md", "quote": "Use when building or extending an MCP server, adding a tool/resource, or scaffolding a new server."}
+      ]
+    },
+    "B2": {
+      "score_a": 5,
+      "score_b": 4,
+      "verdict": "A",
+      "rationale": "Side A gives ordered phases, runnable commands, good/bad input-output examples, and explains the why throughout (context-window economics, 'Why it wins'), plus a handoff protocol so downstream skills don't re-ask. Side B is concrete and runnable (TDD steps, jq/uv commands) with some reasoning, but the code-execution scaffold leaves wrapper generation as thin prose a fresh agent must fill in.",
+      "evidence": [
+        {"side": "A", "file": "side-A/plugins/mcp-server-dev/skills/build-mcp-server/SKILL.md", "quote": "When handing off, restate the design brief in one paragraph so the next skill doesn't re-ask."},
+        {"side": "A", "file": "side-A/plugins/mcp-server-dev/skills/build-mcp-server/references/tool-design.md", "quote": "The ceiling isn't a hard protocol limit — it's context-window economics. Every tool schema is tokens Claude spends *every turn*."},
+        {"side": "B", "file": "side-B/agent-patterns-plugin/skills/mcp-server-authoring/SKILL.md", "quote": "Write the failing test against the plain function."},
+        {"side": "B", "file": "side-B/agent-patterns-plugin/skills/mcp-code-execution/REFERENCE.md", "quote": "For each MCP server, create a directory with typed wrappers. Each tool gets its\nown file with an input interface, output interface, JSDoc comment"}
+      ]
+    },
+    "B3": {
+      "score_a": 4,
+      "score_b": 5,
+      "verdict": "B",
+      "rationale": "Side B is textbook progressive disclosure: lean bodies with explicit 'loaded on demand' REFERENCE.md offload and anchored section links. Side A splits detail into 17 topical references along mutually-exclusive deployment paths, but the build-mcp-app body inlines ~200 lines of always-loaded scaffold/testing code (server, widget HTML, preview shim) that could live in references.",
+      "evidence": [
+        {"side": "B", "file": "side-B/agent-patterns-plugin/skills/mcp-code-execution/REFERENCE.md", "quote": "Supporting material for [`mcp-code-execution`](SKILL.md). Loaded on demand."},
+        {"side": "A", "file": "side-A/plugins/mcp-server-dev/skills/build-mcp-app/SKILL.md", "quote": "Open `http://localhost:3000/widget-preview?payload={\"rows\":[...]}` in a normal browser tab and iterate with ordinary devtools."},
+        {"side": "A", "file": "side-A/plugins/mcp-server-dev/skills/build-mcp-app/SKILL.md", "quote": "- `references/iframe-sandbox.md` — CSP/sandbox constraints, the bundle-inlining pattern, image handling, host theming"}
+      ]
+    },
+    "B4": {
+      "score_a": 3,
+      "score_b": 3,
+      "verdict": "tie",
+      "rationale": "Both are guidance/scaffolding artifacts with limited mechanical work of their own; both delegate the deterministic operations they do have to dedicated tools (side A: mcpb validate/pack, MCP Inspector, headless JSON-RPC loop; side B: jq validation one-liners, uv/pytest gates) and point to them clearly. Neither bundles robust standalone scripts with run-vs-read guidance, so neither exceeds the 3 anchor.",
+      "evidence": []
+    },
+    "B5": {
+      "score_a": 4,
+      "score_b": 4,
+      "verdict": "tie",
+      "rationale": "Side A carries pervasive, correct safety guidance — destructive actions gated via elicitation confirmation and destructiveHint, path-containment and no-shell-spawn patterns, secrets never in tool results — and nothing injection-prone. Side B demonstrates least-privilege directly with scoped allowed-tools grants and never-hardcode-secrets ${VAR} guidance, though mcp-code-execution grants bare Bash. Both solidly above competent, neither shows consistent gating across every component.",
+      "evidence": [
+        {"side": "A", "file": "side-A/plugins/mcp-server-dev/skills/build-mcpb/references/local-security.md", "quote": "If you ship write/delete, consider requiring explicit confirmation via elicitation"},
+        {"side": "B", "file": "side-B/agent-patterns-plugin/skills/mcp-server-authoring/SKILL.md", "quote": "allowed-tools: Read, Write, Edit, Grep, Glob, Bash(uv *), Bash(pytest *)"},
+        {"side": "B", "file": "side-B/agent-patterns-plugin/skills/mcp-code-execution/SKILL.md", "quote": "allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite"}
+      ]
+    },
+    "B6": {
+      "score_a": 5,
+      "score_b": 3,
+      "verdict": "A",
+      "rationale": "Side A maintains a dedicated version-sensitive-claims ledger with verification commands, cross-skill references that resolve, capability-check fallbacks, and per-skill debugging/failure sections. Side B's references resolve and it has troubleshooting paths, but the OAuth triage table is duplicated verbatim in both SKILL.md and REFERENCE.md, and its plugin.json points at a hooks.json absent from the artifact set.",
+      "evidence": [
+        {"side": "A", "file": "side-A/plugins/mcp-server-dev/skills/build-mcp-server/references/versions.md", "quote": "Every version-sensitive claim in this skill, in one place. When updating the skill, check these first."},
+        {"side": "B", "file": "side-B/agent-patterns-plugin/skills/mcp-management/SKILL.md", "quote": "| Authorization prompt repeats | Token not persisted | Check token storage permissions |"},
+        {"side": "B", "file": "side-B/agent-patterns-plugin/skills/mcp-management/REFERENCE.md", "quote": "| Authorization prompt repeats | Token not persisted | Check token storage permissions |"},
+        {"side": "B", "file": "side-B/agent-patterns-plugin/.claude-plugin/plugin.json", "quote": "\"hooks\": \"./hooks.json\""}
+      ]
+    }
+  },
+  "identity_leakage": {
+    "recognized": true,
+    "side_a_guess": "Anthropic's official mcp-server-dev plugin (plugin.json author 'Anthropic', support@anthropic.com)",
+    "side_b_guess": "laurigates/claude-plugins agent-patterns-plugin (skill names mcp-management/mcp-code-execution/mcp-server-authoring and portfolio references like kicad-mcp, silverbucket-mcp, pal-mcp-server match that repo)",
+    "leak_evidence": "Side A's plugin.json declares author Anthropic; side B's mcp-server-authoring names 'the portfolio's MCP servers — kicad-mcp, silverbucket-mcp, pal-mcp-server (and the FVH sibling podio-mcp)' and cross-references agent-patterns-plugin/configure-plugin skills. Scores were assigned against the anchors before considering identity."
+  },
+  "overall_comment": "Side A is a deep, purpose-built MCP-server-development suite: exceptional triggering, why-laden instructions with input/output examples, strong safety content, and a rare maintainability artifact (versions ledger). Side B is disciplined plugin authoring — best-in-class progressive disclosure and explicit least-privilege tool scoping — but shallower instructionally, with duplicated content between SKILL.md and REFERENCE.md and a dangling hooks.json reference. A wins on B1/B2/B6; B wins B3; B4/B5 tie."
+}

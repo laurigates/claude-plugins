@@ -1,0 +1,126 @@
+{
+  "pair_id": "pr-commit-workflow",
+  "judge_id": "j2",
+  "dimensions": {
+    "B1": {
+      "score_a": 5,
+      "score_b": 3,
+      "verdict": "A",
+      "rationale": "Side A descriptions front-load the use case, state concrete trigger phrasings, and explicitly disambiguate sibling skills (git-commit vs git-push vs git-commit-push-pr). Side B's agents have excellent trigger-rich descriptions with worked scenarios, but its command descriptions are bare ('Create a git commit') with no trigger conditions, so it averages to competent.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/git-plugin/skills/git-commit/SKILL.md",
+          "quote": "Use when user says \"commit\", \"save changes\", or \"stage and commit\". Local commits only — see git-push for remote."
+        },
+        {
+          "side": "A",
+          "file": "side-A/git-plugin/skills/git-pr-sync-check/SKILL.md",
+          "quote": "Use when continuing work on a PR branch before adding commits."
+        }
+      ]
+    },
+    "B2": {
+      "score_a": 5,
+      "score_b": 3,
+      "verdict": "A",
+      "rationale": "Side A gives ordered imperative steps with correct runnable commands, specified output formats, and consistently explains the why (origin/main vs local main, quoted-heredoc escaping, stacked-PR squash mechanics), so an agent generalizes beyond the literal steps. Side B's commands are clear and minimal but carry a defect: commit-push-pr instructs branch creation while its allowed-tools pattern uses a nonexistent 'git checkout --branch' flag that will not match the real command.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/git-plugin/skills/git-pr/SKILL.md",
+          "quote": "Always compare against `origin/main` (not local `main`) to avoid including commits that haven't been merged to the remote."
+        },
+        {
+          "side": "B",
+          "file": "side-B/plugins/commit-commands/commands/commit-push-pr.md",
+          "quote": "Bash(git checkout --branch:*)"
+        }
+      ]
+    },
+    "B3": {
+      "score_a": 4,
+      "score_b": 4,
+      "verdict": "tie",
+      "rationale": "Side A shows genuine multi-level disclosure (SKILL.md -> REFERENCE.md -> executable scripts) but several always-loaded bodies are long, inlining rarely-needed detail like the full stacked-PR essay. Side B's command bodies are exemplary in leanness and its agents are single-file at appropriate size, but there is no deeper disclosure structure. Both land between competent and exceptional.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/git-plugin/skills/git-pr-feedback/SKILL.md",
+          "quote": "For feedback categorization, decision trees, commit format, and report templates, see [REFERENCE.md](REFERENCE.md)."
+        },
+        {
+          "side": "B",
+          "file": "side-B/plugins/commit-commands/commands/commit.md",
+          "quote": "- Current git diff (staged and unstaged changes): !`git diff HEAD`"
+        }
+      ]
+    },
+    "B4": {
+      "score_a": 5,
+      "score_b": 3,
+      "verdict": "A",
+      "rationale": "Side A pushes mechanical work (ahead-count, existing-PR probe, closing-keyword audit, actionable-PR selection, sync verdicts) into bundled scripts with structured KEY=VALUE output, offline test seams, and companion test scripts, and the skills say explicitly to run them and parse named fields. Side B has little mechanical work by design; the one deterministic pipeline (clean_gone) is given verbatim rather than re-derived, which is adequate relative to its risk.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/git-plugin/skills/git-pr/scripts/git-pr.sh",
+          "quote": "DATA-ONLY: detects PR readiness (fetch + ahead-count + existing-PR probe),"
+        },
+        {
+          "side": "A",
+          "file": "side-A/git-plugin/skills/git-pr-feedback/scripts/list-actionable-prs.sh",
+          "quote": "Testing: set PR_FEEDBACK_FIXTURE=<path> to read a captured GraphQL response"
+        }
+      ]
+    },
+    "B5": {
+      "score_a": 4,
+      "score_b": 3,
+      "verdict": "A",
+      "rationale": "Side A scopes allowed-tools narrowly per skill, gates force-push behind explicit user confirmation, uses disable-model-invocation on side-effecting workflows, and its hook nudges with permissionDecision ask rather than hard-denying — but the 'Bash(bash *)' grant in git-pr and git-pr-feedback is effectively arbitrary script execution, breaking consistent least-privilege. Side B's commit commands are tightly scoped, but clean_gone runs 'git worktree remove --force' and 'git branch -D' unconditionally while its README overclaims it is safe, since -D discards local-only commits on gone branches.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/git-plugin/skills/git-push/SKILL.md",
+          "quote": "# CAUTION: Only after explicit user confirmation\ngit push --force-with-lease"
+        },
+        {
+          "side": "A",
+          "file": "side-A/git-plugin/skills/git-pr/SKILL.md",
+          "quote": "allowed-tools: Bash(bash *), Bash(git status *)"
+        }
+      ]
+    },
+    "B6": {
+      "score_a": 4,
+      "score_b": 2,
+      "verdict": "A",
+      "rationale": "Side A has explicit verification steps (post-create closing-keyword audit, push verification), rich error-handling tables, script tests and an evals.json, but duplicates the conventional-commit type tables and heredoc rule across several skills and references repo-level rule files outside the plugin. Side B carries visibly stale, project-specific material in a distributed plugin (errorIds.ts/Statsig logging conventions, a claude-cli-internal maintenance pointer), an author mismatch between README (Daisy) and manifest (Anthropic), a README version claim absent from the manifest, and the invalid checkout flag.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/git-plugin/skills/git-pr/SKILL.md",
+          "quote": "After the PR is created, audit the body: every issue referenced by number must"
+        },
+        {
+          "side": "B",
+          "file": "side-B/plugins/pr-review-toolkit/agents/silent-failure-hunter.md",
+          "quote": "Error IDs should come from constants/errorIds.ts"
+        },
+        {
+          "side": "B",
+          "file": "side-B/plugins/pr-review-toolkit/README.md",
+          "quote": "Project agents: `.claude/agents/` in claude-cli-internal"
+        }
+      ]
+    }
+  },
+  "identity_leakage": {
+    "recognized": true,
+    "side_a_guess": "laurigates/claude-plugins git-plugin (install command references laurigates-claude-plugins marketplace; author Lauri Gates; repository URL github.com/laurigates/claude-plugins)",
+    "side_b_guess": "Anthropic's official claude-code repo plugins (commit-commands and pr-review-toolkit; author Anthropic support@anthropic.com; README references claude-cli-internal and daisy@anthropic.com)",
+    "leak_evidence": "Side A plugin.json: repository https://github.com/laurigates/claude-plugins and README install line '/plugin install git-plugin@laurigates-claude-plugins'. Side B plugin.json author 'Anthropic <support@anthropic.com>'; pr-review-toolkit README 'Project agents: .claude/agents/ in claude-cli-internal' and author 'Daisy (daisy@anthropic.com)'. Scores were assigned against the anchors before considering origin."
+  },
+  "overall_comment": "Side A is a mature, engineered plugin: trigger-rich descriptions, why-laden instructions, deterministic scripts with offline test seams and structured output, gated destructive actions, and verification loops — its main debits are some over-long always-loaded bodies, the broad Bash(bash *) grant, and duplicated convention tables. Side B pairs admirably lean commands and well-described review agents with distribution-hygiene defects: stale project-internal conventions baked into an agent, author/version inconsistencies, an invalid tool-permission pattern, and an ungated force-delete cleanup command marketed as safe."
+}

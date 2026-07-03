@@ -1,0 +1,109 @@
+{
+  "pair_id": "code-review",
+  "judge_id": "j2",
+  "dimensions": {
+    "B1": {
+      "score_a": 2,
+      "score_b": 5,
+      "verdict": "B",
+      "rationale": "Side A's command description is a bare five-word label with no trigger conditions. Side B's descriptions state what and concrete when-to-use conditions, front-load the key use case, and explicitly disambiguate sibling artifacts via use-this/use-that tables.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/plugins/code-review/commands/code-review.md",
+          "quote": "description: Code review a pull request"
+        },
+        {
+          "side": "B",
+          "file": "side-B/code-quality-plugin/skills/code-review/SKILL.md",
+          "quote": "Use when reviewing code, auditing OWASP, checking SOLID, or finding perf bottlenecks and test gaps."
+        },
+        {
+          "side": "B",
+          "file": "side-B/code-quality-plugin/skills/code-review/SKILL.md",
+          "quote": "| Running an end-to-end review across quality, security, perf, and tests | Walking a manual security/correctness checklist → `code-review-checklist` |"
+        }
+      ]
+    },
+    "B2": {
+      "score_a": 5,
+      "score_b": 3,
+      "verdict": "A",
+      "rationale": "Side A gives numbered, zero-context-executable steps with a verbatim confidence rubric, a false-positive taxonomy, exact output and link formats, and the reasoning behind constraints (e.g. why bash substitution in links fails). Side B's steps are competent but abstract category headings ('Analyze code quality') and 'apply fixes where appropriate and safe' leaves a fresh agent guessing.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/plugins/code-review/commands/code-review.md",
+          "quote": "For issues that were flagged due to CLAUDE.md instructions, the agent should double check that the CLAUDE.md actually calls out that issue specifically."
+        },
+        {
+          "side": "A",
+          "file": "side-A/plugins/code-review/commands/code-review.md",
+          "quote": "You must provide the full sha. Commands like `https://github.com/owner/repo/blob/$(git rev-parse HEAD)/foo/bar` will not work, since your comment will be directly rendered in Markdown."
+        }
+      ]
+    },
+    "B3": {
+      "score_a": 3,
+      "score_b": 4,
+      "verdict": "B",
+      "rationale": "Both bodies are lean. Side B additionally splits mutually-exclusive paths into separate lean artifacts (delegated full review vs manual checklist) and pushes execution out via fork/agent delegation, approaching the multi-level disclosure anchor; neither side bundles reference files or scripts.",
+      "evidence": [
+        {
+          "side": "B",
+          "file": "side-B/code-quality-plugin/skills/code-review/SKILL.md",
+          "quote": "**Delegate this task to the `code-review` agent.**"
+        }
+      ]
+    },
+    "B4": {
+      "score_a": 3,
+      "score_b": 3,
+      "verdict": "tie",
+      "rationale": "Code review is judgment-heavy on both sides; each delegates the mechanical parts to dedicated tools (gh CLI on A; linters/ast-grep/agents on B) rather than bundled scripts, and neither leaves clearly script-able work as re-derived prose. Competent on both, exceptional on neither."
+    },
+    "B5": {
+      "score_a": 4,
+      "score_b": 3,
+      "verdict": "A",
+      "rationale": "Side A scopes allowed-tools to narrow gh subcommands with the single side effect (pr comment) matching stated intent, plus a re-eligibility gate before posting. Side B's skills are scoped, but the review agent grants broad `Bash(gh pr *)` (covers merge/close) and test-run tools while stating it does not run tests — effect exceeding stated intent.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/plugins/code-review/commands/code-review.md",
+          "quote": "allowed-tools: Bash(gh issue view:*), Bash(gh search:*), Bash(gh issue list:*), Bash(gh pr comment:*), Bash(gh pr diff:*), Bash(gh pr view:*), Bash(gh pr list:*)"
+        },
+        {
+          "side": "A",
+          "file": "side-A/plugins/code-review/commands/code-review.md",
+          "quote": "Use a Haiku agent to repeat the eligibility check from #1, to make sure that the pull request is still eligible for code review."
+        }
+      ]
+    },
+    "B6": {
+      "score_a": 2,
+      "score_b": 3,
+      "verdict": "B",
+      "rationale": "Side A's README contradicts its command file (4 vs 5 agents, different agent roster) and its author/version metadata conflicts with plugin.json — duplicated information that has drifted, the anchor-1 defect. Side B is internally coherent with maintained metadata, though it references a hooks.json/agent not included and repeats review categories across three artifacts.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/plugins/code-review/README.md",
+          "quote": "Launches 4 parallel agents to independently review"
+        },
+        {
+          "side": "A",
+          "file": "side-A/plugins/code-review/commands/code-review.md",
+          "quote": "launch 5 parallel Sonnet agents to independently code review the change"
+        }
+      ]
+    }
+  },
+  "identity_leakage": {
+    "recognized": true,
+    "side_a_guess": "Anthropic's official claude-code repo code-review plugin (author 'Boris Cherny (boris@anthropic.com)', Anthropic author block, 'Generated with Claude Code' footer).",
+    "side_b_guess": "laurigates/claude-plugins code-quality-plugin (author 'Lauri Gates', repository https://github.com/laurigates/claude-plugins, house frontmatter fields created/modified/reviewed).",
+    "leak_evidence": "side-A plugin.json author 'Anthropic' + README 'Boris Cherny (boris@anthropic.com)'; side-B plugin.json 'repository': 'https://github.com/laurigates/claude-plugins'. Scores were assigned against anchors before considering origin."
+  },
+  "overall_comment": "Side A is a single deeply-engineered command: exceptional instruction quality and tight least-privilege tool scoping, undermined by README/command drift and inconsistent metadata. Side B is a broader, better-maintained plugin surface with exemplary triggering and disambiguation but abstract instructions and an over-broad agent tool grant. Roughly complementary strengths: A wins on execution precision and safety scoping, B on discoverability, disclosure, and coherence."
+}

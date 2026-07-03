@@ -1,0 +1,125 @@
+{
+  "pair_id": "tier-a",
+  "judge_id": "j2",
+  "dimensions": {
+    "A1": {
+      "score_ours": 4,
+      "score_official": 3,
+      "verdict": "ours",
+      "rationale": "Ours: all 44 marketplace entries carry name/source/description/version/keywords/category, a $schema for editor validation, every source resolves, zero orphans/dupes, and plugin.json versions are mechanically kept identical to marketplace entries (version_mismatches: []). Falls short of 5 because recommended metadata is incomplete in plugin.json (license 24/44, repository 23/44, author 25/44) and no rename history. Official: all required fields valid, no dupes or orphaned entries, $schema present, rich homepage/author/category on external entries — solidly competent — but recommended metadata is largely absent from in-repo plugin.json files (version 12/39, license 1/39, repository 1/39, keywords 6/39) and only 14/255 entries declare a version, so entry-vs-plugin.json metadata completeness/consistency is well below the 5 anchor.",
+      "evidence": [
+        {
+          "side": "ours",
+          "file": ".claude-plugin/marketplace.json",
+          "quote": "\"$schema\": \"https://json.schemastore.org/claude-code-marketplace.json\""
+        }
+      ]
+    },
+    "A2": {
+      "score_ours": 5,
+      "score_official": 5,
+      "verdict": "tie",
+      "rationale": "Both repos run semantic gates well beyond syntax, each scaled to its actual surface. Ours (44 first-party plugins, 384 skills): plugin-pr-checks compliance script + Claude skill-quality review, validate-plugin-configs with auto-fix sync of release-please/marketplace/PLUGIN-MAP, 30 check-* regression scripts, and a dedicated workflow running skill-local regression tests — an explicit fixed-defect-gains-a-check culture. Official (curation of ~204 external SHA-pinned refs): the real `claude plugin validate` with a tiered invariant system, frontmatter validation, per-plugin license enforcement, MCP URL liveness probes, and a schema-constrained Claude security/privacy policy scan as a required check, plus revert-on-failure automation. Same depth relative to what could actually break on each side.",
+      "evidence": [
+        {
+          "side": "ours",
+          "file": ".github/workflows/test-skill-scripts.yml",
+          "quote": "Runs the skill-local regression tests that ship next to a skill's extracted"
+        },
+        {
+          "side": "official",
+          "file": ".github/workflows/scan-plugins.yml",
+          "quote": "Claude policy scan of changed external marketplace entries."
+        },
+        {
+          "side": "official",
+          "file": ".github/workflows/validate-plugins.yml",
+          "quote": "Official curated marketplace: SHA-pin (I5) is a HARD error."
+        }
+      ]
+    },
+    "A3": {
+      "score_ours": 5,
+      "score_official": 4,
+      "verdict": "ours",
+      "rationale": "Ours: full release-please monorepo automation — per-plugin semver in a single manifest, 44 generated CHANGELOGs, conventional-commit-driven bumps, extra-files jsonpath writing the version into each plugin.json so marketplace/plugin.json never conflict (mismatches: 0), and a CI sync check guarding the whole scheme. Version does appear in both plugin.json and marketplace entry (docs advise against), but automation keeps them provably consistent. Official: for the 204 external entries the deliberate commit-SHA scheme is exemplary and automated (nightly validated SHA bumps with per-entry PRs and revert-on-failure) — but the 51 in-repo plugins mostly declare no version (12/39), have zero changelogs anywhere in the repo, and no bump discipline, so users of in-repo plugins track the git SHA implicitly with no release notes.",
+      "evidence": [
+        {
+          "side": "ours",
+          "file": "release-please-config.json",
+          "quote": "\"$schema\": \"https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json\""
+        },
+        {
+          "side": "official",
+          "file": ".github/workflows/bump-plugin-shas.yml",
+          "quote": "Nightly sweep: for each external entry whose upstream HEAD has moved past"
+        }
+      ]
+    },
+    "A4": {
+      "score_ours": 4,
+      "score_official": 5,
+      "verdict": "official",
+      "rationale": "Official carries the far larger supply-chain surface (204 external vendor refs) and controls it exceptionally: exact 40-char SHA pins enforced as a hard validation error, nightly validated bump automation with GitHub-signed commits and tamper-abort revert logic, a derived-allowlist scope guard on non-member PRs, auto-close of out-of-scope external PRs, per-plugin Apache LICENSE enforcement in CI, and MCP endpoint liveness checks — a textbook 5 for its risk profile. Ours is self-contained (44 in-repo sources, no external pinning risk), uses ${CLAUDE_PLUGIN_ROOT} for hook paths, ships a root MIT LICENSE, and has Renovate managing pinned versions in skill examples with a pin-coverage check — its actual risks are controlled — but license declaration is incomplete (24/44 plugin.json) and workflow actions are tag-pinned (checkout@v6) rather than full-SHA-pinned, so it sits at 4 rather than 5 on provenance rigor.",
+      "evidence": [
+        {
+          "side": "official",
+          "file": ".github/workflows/external-pr-scope-guard.yml",
+          "quote": "a non-member PR may only ADD marketplace.json entries whose source repo already backs a live plugin here"
+        },
+        {
+          "side": "official",
+          "file": ".github/workflows/validate-licenses.yml",
+          "quote": "Check every plugin has an Apache 2.0 LICENSE file"
+        },
+        {
+          "side": "ours",
+          "file": "hooks-plugin/.claude-plugin/plugin.json",
+          "quote": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/bash-antipatterns.sh"
+        }
+      ]
+    },
+    "A5": {
+      "score_ours": 4,
+      "score_official": 3,
+      "verdict": "ours",
+      "rationale": "Ours: 44/44 plugins have READMEs, every entry carries description/keywords/category, and docs/PLUGIN-MAP.md provides a tiered install-order navigation layer plus decision trees — well past the 3 anchor. It misses 5 on the exact criterion the anchor names: counts do not match disk — README claims '43 Claude Code plugins' (44 exist, and even contradicts itself two paragraphs later with 'all 44 plugins') and PLUGIN-MAP claims '42 plugins and 300+ skills' against 44 plugins/384 skills, despite the repo shipping docs-refresh tooling meant to prevent exactly this. Official: top-level marketplace description present, a clear README covering structure/install/submission, and per-entry descriptions with homepages — competent — but per-plugin README coverage is partial in external_plugins (5/16) and there is no navigable catalog/index of the 255 entries.",
+      "evidence": [
+        {
+          "side": "ours",
+          "file": "docs/PLUGIN-MAP.md",
+          "quote": "Navigation guide for 42 plugins and 300+ skills. Start here."
+        },
+        {
+          "side": "ours",
+          "file": "README.md",
+          "quote": "A curated collection of 43 Claude Code plugins providing 360+ skills and 21 agents"
+        }
+      ]
+    },
+    "A6": {
+      "score_ours": 5,
+      "score_official": 4,
+      "verdict": "ours",
+      "rationale": "Ours: ownership signals present (MIT LICENSE, author/repository fields, CLAUDE.md contribution/lifecycle guidance) plus systematic, in-repo eval infrastructure that is demonstrably used — evaluate-plugin ships eval-case running, deterministic grading scripts, cross-model matrix evals, cold-read legibility gating, a golden-set, and batch plugin reports, backed by house rules requiring regression checks for fixed skill bugs. That is measured skill quality, the 5 anchor. Official: strong documented governance — Anthropic ownership, per-entry authors, a public submission process, and an enforced security/privacy policy review with a JSON verdict schema running as a required CI check (evidence of actual use) — but skill *effectiveness* of the marketplace's own plugins is not measured; the skill-creator eval harness is shipped as a product rather than applied to the catalog, so it lands at 4.",
+      "evidence": [
+        {
+          "side": "ours",
+          "file": "evaluate-plugin/.claude-plugin/plugin.json",
+          "quote": "Skill evaluation and benchmarking - test skill effectiveness with behavioral eval cases, grade results, and track quality improvements"
+        },
+        {
+          "side": "official",
+          "file": ".github/policy/prompt.md",
+          "quote": "You are a security and privacy reviewer evaluating a Claude Code plugin for the"
+        },
+        {
+          "side": "official",
+          "file": "README.md",
+          "quote": "Third-party partners can submit plugins for inclusion in the marketplace."
+        }
+      ]
+    }
+  },
+  "overall_comment": "Two strong repos optimized for different jobs. Ours is a first-party monorepo with exemplary release discipline (release-please semver + 44 changelogs), complete manifest metadata kept in sync mechanically, deep regression-test/check-script culture, and genuinely used eval infrastructure — its weakest spots are stale plugin/skill counts in README/PLUGIN-MAP and incomplete license/repository fields in half the plugin.json files. Official is a curation platform whose supply-chain controls (hard SHA-pin enforcement, nightly validated bumps with signed commits and auto-revert, external-PR scope guards, per-plugin license CI, Claude policy scans) are the best-in-class reference for its distribution model, but its in-repo plugins are thin on versioning, changelogs, and recommended metadata. Net: ours wins on manifest integrity, release discipline, docs, and eval governance; official wins decisively on supply-chain safety; validation CI depth is a tie relative to each surface."
+}

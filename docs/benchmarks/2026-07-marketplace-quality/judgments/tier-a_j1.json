@@ -1,0 +1,67 @@
+{
+  "pair_id": "tier-a",
+  "judge_id": "j1",
+  "dimensions": {
+    "A1": {
+      "score_ours": 4,
+      "score_official": 4,
+      "verdict": "tie",
+      "rationale": "Both manifests carry all required fields with valid values, kebab-case names, fully-resolving sources, zero orphan entries, zero entry-vs-plugin.json version mismatches, and a $schema for editor validation. Neither reaches 5 on 'complete recommended metadata': ours' marketplace entries omit author/license entirely (license in only 24/44 plugin.json, author 25/44, repository 23/44); official's entries omit license (0/255) and version (14/255, deliberate for SHA-pinned externals) and author on 85/255, and in-repo plugin.json mostly lack version (12/39) and license (1/39). Ours compensates with automated entry↔plugin.json sync (validate-plugin-configs.yml); official compensates with homepage on 239/255 entries and structured pinned sources. Same partial-metadata defect on both sides — tie at 4.",
+      "evidence": [
+        {"side": "ours", "file": ".claude-plugin/marketplace.json", "quote": "\"$schema\": \"https://json.schemastore.org/claude-code-marketplace.json\""},
+        {"side": "official", "file": ".claude-plugin/marketplace.json", "quote": "\"$schema\": \"https://anthropic.com/claude-code/marketplace.schema.json\""}
+      ]
+    },
+    "A2": {
+      "score_ours": 5,
+      "score_official": 4,
+      "verdict": "ours",
+      "rationale": "Ours: 21 workflows, 10 PR-triggered, covering schema/structure compliance (plugin-compliance-check.sh), config sync (validate-plugin-configs), frontmatter/case checks, workflow-model audit, enablement-drift, plus a genuine regression culture — 30 check-*.sh guards each pinning a fixed defect (check-loop-integrity, check-git-sandbox-guards, check-version-pin-coverage) and a dedicated CI job running skill-local regression tests (test-skill-scripts.yml). That is semantic gates plus regression culture: 5. Official: 9 workflows with an invariant-based composite validator (I1–I11, SHA-pin as hard error), frontmatter validation, per-plugin license enforcement, MCP URL liveness, and an AI policy scan of external entries with verdict caching — deep semantic gates scaled to its curation model. But check_scripts=0 and no test harness for its own automation scripts; the regression culture leg of anchor 5 is thinner (defects are encoded in workflow comments, not guarding checks), so 4.",
+      "evidence": [
+        {"side": "ours", "file": ".github/workflows/test-skill-scripts.yml", "quote": "Runs the skill-local regression tests that ship next to a skill's extracted"},
+        {"side": "official", "file": ".github/workflows/scan-plugins.yml", "quote": "Claude policy scan of changed external marketplace entries."}
+      ]
+    },
+    "A3": {
+      "score_ours": 5,
+      "score_official": 3,
+      "verdict": "ours",
+      "rationale": "Ours: valid semver on all 44 plugins, bumped by release-please per package with the version authoritative in the marketplace/manifest and synced into plugin.json via extra-files jsonpath (no conflicting duplicate — sync is automated and CI-guarded), 44 per-plugin CHANGELOGs, and the strategy documented in .claude/rules/release-please.md. Fully automated release+changelog generation applied in practice: 5. Official: external entries use a deliberate, coherent commit-SHA scheme with nightly automated bumps (bump-plugin-shas.yml) — that satisfies anchor 3's 'deliberate commit-SHA versioning' — but in-repo plugins mostly have no version (12/39), zero changelogs anywhere, and no release automation for its own plugins, so it does not reach the automated-changelog bar of 5. Competent-but-mixed: 3.",
+      "evidence": [
+        {"side": "ours", "file": "release-please-config.json", "quote": "\"$schema\": \"https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json\""}
+      ]
+    },
+    "A4": {
+      "score_ours": 4,
+      "score_official": 5,
+      "verdict": "official",
+      "rationale": "Official's distribution model carries the maximum supply-chain risk (204 external vendor refs) and controls it exceptionally: every external source pinned to a full 40-char SHA alongside a human-readable ref, a nightly validated bump pipeline with per-entry isolation and a revert workflow, MCP URL liveness checks, per-plugin Apache LICENSE enforcement in CI, an external-PR scope guard whose allowlist is derived from the live marketplace, an AI policy scan for credential-exfiltration/cross-service hops, and SHA-pinned third-party actions: 5. Ours is self-contained (44 in-repo sources — no external-pin risk, per the symmetry rule), declares MIT at root and in 24/44 plugin.json, uses ${CLAUDE_PLUGIN_ROOT}/relative paths, and adds Renovate plus a version-pin coverage guard for executable pins inside skill content. Residual gaps for a repo that distributes to others: GitHub Actions in its own workflows are tag-pinned (actions/checkout@v6) rather than SHA-pinned, and license metadata is inconsistent across plugins: 4.",
+      "evidence": [
+        {"side": "official", "file": ".claude-plugin/marketplace.json", "quote": "\"sha\": \"0f325999a7106eadb2d0ecbcccabf6c12dc06aef\""},
+        {"side": "official", "file": ".github/workflows/bump-plugin-shas.yml", "quote": "Nightly sweep: for each external entry whose upstream HEAD has moved past"},
+        {"side": "ours", "file": "scripts/check-version-pin-coverage.sh", "quote": "Every executable version pin in skill markdown"}
+      ]
+    },
+    "A5": {
+      "score_ours": 3,
+      "score_official": 4,
+      "verdict": "official",
+      "rationale": "Ours has rich navigability — per-plugin READMEs, a tiered PLUGIN-MAP with install order and presets, keywords/category on every entry — but fails the accuracy leg: marketplace.json has NO top-level description (the documented 'No marketplace description provided' warning class), README says '43 Claude Code plugins' then 'registers all 44 plugins' in the same page, and PLUGIN-MAP claims '42 plugins and 300+ skills' against 44 plugins / 384 skills on disk, plus 78 unresolved relative links. Anchor 5 explicitly requires counts/claims kept in sync with source; ours' drift caps it at 3 despite the depth. Official: top-level marketplace description present, README accurately documents structure/install/contribution with no count claims to drift, description on all 255 entries, homepage on 239, category on 241, READMEs on in-repo plugins; only 7 broken relative links. Not 5 — external vendored entries lack in-repo per-plugin docs and there is no catalog index beyond the manifest — but a solid 4.",
+      "evidence": [
+        {"side": "ours", "file": "docs/PLUGIN-MAP.md", "quote": "Navigation guide for 42 plugins and 300+ skills. Start here."},
+        {"side": "official", "file": ".claude-plugin/marketplace.json", "quote": "Directory of popular Claude Code extensions including development tools, productivity plugins, and MCP integrations"}
+      ]
+    },
+    "A6": {
+      "score_ours": 5,
+      "score_official": 4,
+      "verdict": "ours",
+      "rationale": "Ours: MIT license, author/repository attribution, contribution guidance (CLAUDE.md plugin lifecycle + conventional-commit rules), and — decisive for anchor 5 — systematic skill-effectiveness measurement that is demonstrably used: a dedicated evaluate-plugin (eval cases, grading, cross-model matrix, legibility cold-reads, benchmark reports), a maintained golden-set.json canary tier wired to house rules, and scheduled audit workflows filing issues. That is measured-not-asserted quality: 5. Official: Apache-2.0 license, clear ownership, a documented external-submission process with quality/security standards, and a governance mechanism that is actually enforced in CI (policy prompt + schema + scan workflow + scope guard) — strong governance. But skill *effectiveness* of the cataloged plugins is not measured by the marketplace itself (the scan is security/policy review; the eval harness it ships lives inside the skill-creator plugin as a product, with no evidence it gates the catalog): 4.",
+      "evidence": [
+        {"side": "ours", "file": "evaluate-plugin/golden-set.json", "quote": "The cross-model (Tier-2) canary set. ~15-25 representative, high-traffic, or high-risk skills"},
+        {"side": "official", "file": "README.md", "quote": "External plugins must meet quality and security standards for approval."}
+      ]
+    }
+  },
+  "overall_comment": "Two strong repos optimized for different models. Ours (first-party monorepo) leads on release discipline (full release-please semver + 44 changelogs vs. no changelogs), validation depth with a genuine regression culture (30 defect-pinning check scripts + skill-script test CI), and measured skill quality (evaluate-plugin + golden set). Official (curated directory) leads exactly where its model's risks live: exemplary supply-chain control of 204 external SHA-pinned sources (nightly validated bumps, revert path, liveness checks, scope guard, AI policy scan) and accurate, description-complete catalog docs. Ours' most fixable defects are catalog-claim drift (42/43/44 plugin counts across PLUGIN-MAP/README/manifest), the missing top-level marketplace description, and inconsistent per-plugin license/author metadata; official's are the absence of versioning/changelogs for its in-repo plugins and zero test coverage of its own automation scripts. Net: 3 dimensions to ours, 2 to official, 1 tie."
+}

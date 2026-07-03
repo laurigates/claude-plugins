@@ -1,0 +1,75 @@
+{
+  "pair_id": "hooks",
+  "judge_id": "j2",
+  "dimensions": {
+    "B1": {
+      "score_a": 5,
+      "score_b": 4,
+      "verdict": "A",
+      "rationale": "Side A's skill descriptions front-load the key use case, are third-person, enumerate concrete trigger terms, and each sibling skill carries an explicit 'use X instead' disambiguation; side B's skill quotes realistic trigger phrasings but its command descriptions are thinner and less disambiguated.",
+      "evidence": [
+        {"side": "A", "file": "side-A/hooks-plugin/skills/hooks-configuration/SKILL.md", "quote": "Use when the user mentions hooks, PreToolUse, PostToolUse, SessionStart, SubagentStart, PermissionRequest, or TaskCompleted."},
+        {"side": "B", "file": "side-B/plugins/hookify/skills/writing-rules/SKILL.md", "quote": "This skill should be used when the user asks to \"create a hookify rule\", \"write a hook rule\", \"configure hookify\""}
+      ]
+    },
+    "B2": {
+      "score_a": 5,
+      "score_b": 4,
+      "verdict": "A",
+      "rationale": "Side A gives ordered, runnable steps with merge/ask decision flows plus the reasoning behind choices (e.g. when a deterministic hook beats the auto-mode classifier), so an agent can generalize; side B is concrete and imperative with good examples, but its main command inlines a general-purpose Task prompt instead of the shipped agent, leaving a fresh agent to reconcile the two.",
+      "evidence": [
+        {"side": "A", "file": "side-A/hooks-plugin/skills/hooks-permission-request-hook/SKILL.md", "quote": "**Deterministic, auditable rules** — the classifier's probabilistic answer is unsuitable for compliance contexts"},
+        {"side": "B", "file": "side-B/plugins/hookify/commands/hookify.md", "quote": "**FIRST: Load the hookify:writing-rules skill** using the Skill tool to understand rule file format and syntax."},
+        {"side": "B", "file": "side-B/plugins/hookify/commands/hookify.md", "quote": "subagent_type\": \"general-purpose"}
+      ]
+    },
+    "B3": {
+      "score_a": 5,
+      "score_b": 3,
+      "verdict": "A",
+      "rationale": "Side A shows clear multi-level disclosure: lean SKILL.md bodies that defer schemas and advanced patterns to REFERENCE.md files and executable hook scripts that run without being read; side B's single 375-line SKILL.md inlines a full regex tutorial, operator reference, and examples with no on-demand reference layer.",
+      "evidence": [
+        {"side": "A", "file": "side-A/hooks-plugin/skills/hooks-configuration/SKILL.md", "quote": "For detailed hook schemas and examples, see [REFERENCE.md](REFERENCE.md)."}
+      ]
+    },
+    "B4": {
+      "score_a": 5,
+      "score_b": 4,
+      "verdict": "A",
+      "rationale": "Side A offloads every mechanical check to 14 robust bash hooks with per-hook regression test scripts and deliberately replaced an LLM prompt hook with a deterministic command hook; side B's Python rule engine is a genuine deterministic substrate with good error handling, but rests on a fragile hand-rolled YAML parser and ships no test suite beyond __main__ smoke blocks.",
+      "evidence": [
+        {"side": "A", "file": "side-A/hooks-plugin/README.md", "quote": "task-completeness hook to avoid leaking the full LLM prompt in error output"},
+        {"side": "B", "file": "side-B/plugins/hookify/hooks/pretooluse.py", "quote": "ALWAYS exit 0 - never block operations due to hook errors"}
+      ]
+    },
+    "B5": {
+      "score_a": 5,
+      "score_b": 4,
+      "verdict": "A",
+      "rationale": "Side A gates destructive ops (auto-checkpoint before reset/rm, deny/ask tiers on protected branches), designs the bypass so agents cannot self-serve it, scopes allowed-tools, and marks side-effecting skills disable-model-invocation; side B is injection-safe with scoped tool lists and a warn-by-default fail-open design, competent-plus but without comparable gating depth.",
+      "evidence": [
+        {"side": "A", "file": "side-A/hooks-plugin/hooks/branch-protection.sh", "quote": "intentionally NOT honored so that agents cannot"},
+        {"side": "B", "file": "side-B/plugins/hookify/commands/list.md", "quote": "allowed-tools: [\"Glob\", \"Read\", \"Skill\"]"}
+      ]
+    },
+    "B6": {
+      "score_a": 4,
+      "score_b": 2,
+      "verdict": "A",
+      "rationale": "Side A has an exceptional verification culture (seven test scripts, issue-referenced regression fixes, a signpost-not-copy flags catalog) but carries real staleness — the README describes git-session-cleanup as committing/switching/pulling while the script only deletes temp files, and skill links point outside the plugin. Side B's flagship shipped example is broken twice over (not_contains is defined as a substring check, so the pipe-separated pattern can never appear in a transcript and the rule always fires; the documented stop-event `pattern: .*` form maps to a field the engine never resolves), plus a Python 3.7+ claim its `tuple[...]` annotation violates.",
+      "evidence": [
+        {"side": "A", "file": "side-A/hooks-plugin/README.md", "quote": "commits any staged changes, switches to the main/master branch, and pulls the latest changes"},
+        {"side": "A", "file": "side-A/hooks-plugin/hooks/git-session-cleanup.sh", "quote": "SessionEnd hook - cleans up session temp files"},
+        {"side": "B", "file": "side-B/plugins/hookify/examples/require-tests-stop.local.md", "quote": "pattern: npm test|pytest|cargo test"},
+        {"side": "B", "file": "side-B/plugins/hookify/skills/writing-rules/SKILL.md", "quote": "`not_contains`: Substring must NOT be present"}
+      ]
+    }
+  },
+  "identity_leakage": {
+    "recognized": true,
+    "side_a_guess": "laurigates/claude-plugins hooks-plugin (author 'Lauri Gates', repository URL, issue numbers, and house conventions like CLAUDE_HOOKS_* flags are visible in the artifacts)",
+    "side_b_guess": "Anthropic's official 'hookify' plugin from the claude-code plugins marketplace (author block names Anthropic, support@anthropic.com)",
+    "leak_evidence": "side-A plugin.json: \"repository\": \"https://github.com/laurigates/claude-plugins\"; side-B plugin.json: \"author\": {\"name\": \"Anthropic\", \"email\": \"support@anthropic.com\"}. Recognition did not alter anchor-based scoring; defects and virtues were verified in the staged files themselves."
+  },
+  "overall_comment": "Side A is a mature safety/automation hook suite with deterministic offload, regression tests, and gated destructive actions, weakened mainly by doc staleness (README vs actual cleanup script) and out-of-plugin references. Side B is a well-conceived user-configurable rule engine with clean fail-open error handling, but a bloated single-file skill and multiple shipped examples that contradict its own engine semantics."
+}

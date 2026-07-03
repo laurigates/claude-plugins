@@ -1,0 +1,107 @@
+{
+  "pair_id": "code-review",
+  "judge_id": "j1",
+  "dimensions": {
+    "B1": {
+      "score_a": 2,
+      "score_b": 5,
+      "verdict": "B",
+      "rationale": "Side A's command description is a bare 5-word phrase with no trigger conditions or contexts. Side B's descriptions state what each artifact does plus concrete third-person triggers front-loaded, and both skills carry explicit sibling-disambiguation tables so overlapping artifacts route correctly.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/plugins/code-review/commands/code-review.md",
+          "quote": "description: Code review a pull request"
+        },
+        {
+          "side": "B",
+          "file": "side-B/code-quality-plugin/skills/code-review/SKILL.md",
+          "quote": "description: Code review for quality, security, performance, and architecture. Use when reviewing code, auditing OWASP, checking SOLID, or finding perf bottlenecks and test gaps."
+        },
+        {
+          "side": "B",
+          "file": "side-B/code-quality-plugin/skills/code-review/SKILL.md",
+          "quote": "| Running an end-to-end review across quality, security, perf, and tests | Walking a manual security/correctness checklist → `code-review-checklist` |"
+        }
+      ]
+    },
+    "B2": {
+      "score_a": 5,
+      "score_b": 3,
+      "verdict": "A",
+      "rationale": "Side A gives a precisely ordered, executable procedure: agent-by-agent tasks, a verbatim 0-100 confidence rubric, an exhaustive false-positive taxonomy, exact output/link formats, and the reasoning behind constraints (why bash substitution in links fails). Side B's steps are competent but high-level category lists with more degrees of freedom left to the executing agent.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/plugins/code-review/commands/code-review.md",
+          "quote": "You must provide the full sha. Commands like `https://github.com/owner/repo/blob/$(git rev-parse HEAD)/foo/bar` will not work, since your comment will be directly rendered in Markdown."
+        },
+        {
+          "side": "A",
+          "file": "side-A/plugins/code-review/commands/code-review.md",
+          "quote": "The scale is (give this rubric to the agent verbatim):"
+        }
+      ]
+    },
+    "B3": {
+      "score_a": 3,
+      "score_b": 3,
+      "verdict": "tie",
+      "rationale": "Both sides keep their always-loaded bodies lean (~90-140 lines) and focused on the core procedure; neither inlines bulky reference material, and neither uses multi-level progressive disclosure (nor clearly needs it at this size)."
+    },
+    "B4": {
+      "score_a": 3,
+      "score_b": 3,
+      "verdict": "tie",
+      "rationale": "Code review is judgment-heavy on both sides; both delegate deterministic retrieval to dedicated tools (gh CLI on A; Glob/Grep/gh/git and named external analyzers on B) and neither leaves an obviously scriptable mechanical step as re-derived prose, so neither is penalized for lacking bundled scripts."
+    },
+    "B5": {
+      "score_a": 4,
+      "score_b": 3,
+      "verdict": "A",
+      "rationale": "Side A scopes Bash to exact gh subcommands and gates the side-effecting comment post behind a repeated eligibility check plus skip-if-already-reviewed. Side B is mostly least-privilege (read-only checklist, no write tools) but the agent's `Bash(gh pr *)` wildcard exceeds review needs (includes merge/close) and the skill's stated 'apply fixes' intent doesn't match its granted toolset.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/plugins/code-review/commands/code-review.md",
+          "quote": "allowed-tools: Bash(gh issue view:*), Bash(gh search:*), Bash(gh issue list:*), Bash(gh pr comment:*), Bash(gh pr diff:*), Bash(gh pr view:*), Bash(gh pr list:*)"
+        },
+        {
+          "side": "A",
+          "file": "side-A/plugins/code-review/commands/code-review.md",
+          "quote": "Use a Haiku agent to repeat the eligibility check from #1, to make sure that the pull request is still eligible for code review."
+        },
+        {
+          "side": "B",
+          "file": "side-B/agents-plugin/agents/review.md",
+          "quote": "Bash(gh pr *), Bash(npm test *), Bash(yarn test *)"
+        }
+      ]
+    },
+    "B6": {
+      "score_a": 2,
+      "score_b": 3,
+      "verdict": "B",
+      "rationale": "Side A's README re-documents the whole command and has visibly drifted: it claims 4 parallel agents with stale roles while the command specifies 5 Sonnet agents with different tasks — duplication plus a direct contradiction across files. Side B has one milder doc mismatch ('automated fixes' vs a read-only toolset and a no-fix agent) but its staged references and cross-skill routing are otherwise coherent, and A's strong in-workflow verification does not offset the stale duplicated README.",
+      "evidence": [
+        {
+          "side": "A",
+          "file": "side-A/plugins/code-review/README.md",
+          "quote": "Launches 4 parallel agents to independently review"
+        },
+        {
+          "side": "A",
+          "file": "side-A/plugins/code-review/commands/code-review.md",
+          "quote": "launch 5 parallel Sonnet agents to independently code review the change"
+        }
+      ]
+    }
+  },
+  "identity_leakage": {
+    "recognized": true,
+    "side_a_guess": "Anthropic's official claude-code repo code-review plugin (plugin.json author Anthropic; README credits Boris Cherny, boris@anthropic.com)",
+    "side_b_guess": "laurigates/claude-plugins code-quality-plugin + agents-plugin (author Lauri Gates, repository https://github.com/laurigates/claude-plugins)",
+    "leak_evidence": "side-A plugin.json: \"author\": {\"name\": \"Anthropic\"...} and README 'Boris Cherny (boris@anthropic.com)'; side-B plugin.json: \"author\": {\"name\": \"Lauri Gates\"}, \"repository\": \"https://github.com/laurigates/claude-plugins\". Recognition did not affect scoring; each side was scored against anchors before comparison."
+  },
+  "overall_comment": "A split verdict: Side A is the stronger executable artifact (exceptional procedural instructions, verbatim scoring rubric, narrowly scoped permissions, re-verification gate) but is undermined by a near-empty trigger description and a stale, contradiction-bearing README. Side B is the stronger catalog citizen (rich triggering descriptions, sibling disambiguation, complete manifest metadata) with competent but looser instructions and a mild docs/toolset mismatch."
+}
