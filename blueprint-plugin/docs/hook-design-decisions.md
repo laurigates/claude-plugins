@@ -77,7 +77,7 @@ PRPs MUST contain these sections:
 | Section | Purpose |
 |---------|---------|
 | `## Context Framing` | Background and problem statement |
-| `## AI Documentation` | References to ai_docs |
+| `## AI Documentation` | References to curated AI context (`.claude/rules/` entries; formerly ai_docs) |
 | `## Implementation Blueprint` | Technical implementation plan |
 | `## Test Strategy` | Testing approach |
 | `## Validation Gates` | Quality checkpoints |
@@ -129,7 +129,7 @@ Extended status set:
 
 - Check that referenced files exist
 - BLOCK if files are missing
-- Applies to: `ai_docs/`, `docs/`, relative paths
+- Applies to: `.claude/rules/`, legacy `ai_docs/`, `docs/`, relative paths
 
 ### URL References
 

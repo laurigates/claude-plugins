@@ -17,13 +17,12 @@ docs/blueprint/
 ├── README.md            # This file
 ├── manifest.json        # Version tracking, project configuration
 ├── feature-tracker.json # FR code tracking and progress (optional)
-├── work-orders/         # Task packages for subagent execution
-│   ├── completed/
-│   └── archived/
-└── ai_docs/             # Curated documentation for AI context
-    ├── libraries/       # External library docs
-    └── project/         # Project-specific patterns
+└── work-orders/         # Task packages for subagent execution
+    ├── completed/
+    └── archived/
 ```
+
+Curated AI context (library gotchas, project patterns) lives in `.claude/rules/` — see `/blueprint:curate-docs`.
 
 ## Key Files
 

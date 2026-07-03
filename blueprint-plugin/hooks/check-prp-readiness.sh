@@ -110,20 +110,26 @@ check_section "Test Strategy"
 check_section "Validation Gates"
 check_section "Success Criteria"
 
-# Extract and validate ai_docs references
-# Look for patterns like: ai_docs/libraries/*.md, ai_docs/project/*.md
+# Extract and validate curated AI-context references
+# Current form: .claude/rules/*.md (curated rules); legacy form: ai_docs/**/*.md
+RULE_REFS=$(echo "$PRP_CONTENT" | grep -oE '\.claude/rules/[a-zA-Z0-9_/-]+\.md' | sort -u || true)
 AI_DOC_REFS=$(echo "$PRP_CONTENT" | grep -oE 'ai_docs/[a-zA-Z0-9_/-]+\.md' | sort -u || true)
 
 MISSING_FILES=()
+for ref in $RULE_REFS; do
+    if [ ! -f "${ref}" ]; then
+        MISSING_FILES+=("$ref")
+    fi
+done
 for ref in $AI_DOC_REFS; do
-    # Check relative to docs/blueprint/ (common location)
+    # Legacy location: check relative to docs/blueprint/ (common location)
     if [ ! -f "docs/blueprint/${ref}" ] && [ ! -f "${ref}" ]; then
         MISSING_FILES+=("$ref")
     fi
 done
 
 if [ ${#MISSING_FILES[@]} -gt 0 ]; then
-    block "ERROR: PRP references missing ai_docs files: ${MISSING_FILES[*]}"
+    block "ERROR: PRP references missing curated context files: ${MISSING_FILES[*]}"
 fi
 
 # Extract and validate URL references (markdown links)

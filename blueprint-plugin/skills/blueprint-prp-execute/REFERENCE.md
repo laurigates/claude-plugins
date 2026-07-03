@@ -244,7 +244,7 @@ Consider adding FR code references to Implementation Blueprint tasks.
 
 ### Recommendations
 - [Any follow-up work suggested]
-- [Updates to ai_docs recommended]
+- [Updates to curated rules recommended]
 
 ### Ready for:
 - [ ] Code review
@@ -265,7 +265,7 @@ Consider adding FR code references to Implementation Blueprint tasks.
 When test fails repeatedly:
 
 1. **Review Known Gotchas** from PRP - gotcha might explain failure
-2. **Check ai_docs** - similar patterns might exist
+2. **Check curated rules** (`.claude/rules/`) - similar patterns might exist
 3. **Search codebase** - find similar implementations
 4. **Debug test** - add console.logs, run in isolation
 5. **Ask for clarification** - if stuck, ask user
@@ -275,10 +275,10 @@ When test fails repeatedly:
 When PRP doesn't cover something encountered:
 
 1. Document the gap: "PRP doesn't specify pattern for X"
-2. Research: Check ai_docs, codebase, project patterns
+2. Research: Check curated rules, codebase, project patterns
 3. Make decision: Follow closest existing pattern
 4. Document decision: Add to "New Gotchas Discovered" section
-5. Update ai_docs: Document new pattern for future reference
+5. Update curated rules: Document new pattern for future reference
 
 ### Blocked Progress
 
@@ -407,7 +407,7 @@ Mark PRP as executed:
 ### Execution Notes
 - Completed all Phase 1 tasks, deferred Phase 2 cosmetics
 - Discovered new gotcha: OAuth token refresh timing
-- Updated ai_docs with token refresh pattern
+- Updated curated rules with token refresh pattern
 - All success criteria verified
 - GitHub issues created for deferred work
 ```
@@ -423,7 +423,7 @@ options:
     description: "Create a commit with conventional message for this feature"
   - label: "Create work-order for follow-up"
     description: "Package remaining work or enhancements"
-  - label: "Update ai_docs"
+  - label: "Update curated rules"
     description: "Document new patterns or gotchas discovered"
   - label: "Continue to next PRP"
     description: "If there are more PRPs to execute"
@@ -434,6 +434,6 @@ options:
 **Based on selection:**
 - "Commit changes" - Run `/git:commit` or guide through commit
 - "Create work-order" - Run `/blueprint:work-order`
-- "Update ai_docs" - Run `/blueprint:curate-docs` for relevant patterns
+- "Update curated rules" - Run `/blueprint:curate-docs` for relevant patterns
 - "Continue to next PRP" - List available PRPs and run `/blueprint:prp-execute [next]`
 - "I'm done" - Exit

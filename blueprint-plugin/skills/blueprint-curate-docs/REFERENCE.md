@@ -1,6 +1,8 @@
 # blueprint-curate-docs REFERENCE
 
-## ai_docs Template
+## Template
+
+Curated entries live in the project's rules directory (`structure.generated_rules_path`, default `.claude/rules/`) — `lib-[library-name].md` for libraries, `[pattern-name].md` for project patterns.
 
 ```markdown
 # [Library/Pattern Name]

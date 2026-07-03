@@ -1,18 +1,20 @@
 ---
-description: Curate docs into ai_docs entries for AI context. Use when documenting library gotchas for PRP reuse or building a knowledge base under docs/blueprint/ai_docs/.
+description: Curate library gotchas and project patterns into .claude/rules/ entries for AI context. Use when documenting library knowledge for PRP reuse.
 args: "[library-name|project:pattern-name]"
 argument-hint: "Library name (e.g., redis, pydantic) or project:pattern-name"
 allowed-tools: Read, Write, Glob, Bash, WebFetch, WebSearch, AskUserQuestion
 model: opus
 created: 2025-12-16
-modified: 2026-06-18
+modified: 2026-07-03
 reviewed: 2026-02-14
 name: blueprint-curate-docs
 ---
 
 # /blueprint:curate-docs
 
-Curate library or project documentation into ai_docs entries optimized for AI agents - concise, actionable, gotcha-aware context that fits in PRPs.
+Curate library or project documentation into `.claude/rules/` entries optimized for AI agents — concise, actionable, gotcha-aware context that is auto-loaded into sessions and referenceable from PRPs.
+
+> **Note:** earlier blueprint versions wrote these entries to `docs/blueprint/ai_docs/`. That location is deprecated — `.claude/rules/` is the canonical home for curated AI context, since rules are loaded by Claude Code natively and shared with every contributor.
 
 **Usage**: `/blueprint:curate-docs [library-name]` or `/blueprint:curate-docs project:[pattern-name]`
 
@@ -20,15 +22,15 @@ Curate library or project documentation into ai_docs entries optimized for AI ag
 
 | Use this skill when... | Use alternative when... |
 |------------------------|-------------------------|
-| Creating ai_docs for PRP context | Reading raw documentation for ad-hoc tasks |
-| Documenting library patterns for reuse | One-time library usage |
-| Building knowledge base for project | General library research |
+| Documenting library gotchas for PRP/context reuse | Reading raw documentation for ad-hoc tasks |
+| Codifying project patterns as rules | One-time library usage |
+| Building a knowledge base under `.claude/rules/` | General library research |
 
 ## Context
 
-- ai_docs directory: !`find . -path '*/docs/blueprint/ai_docs' -maxdepth 3 -type d`
-- Existing library docs: !`find . -path '*/docs/blueprint/ai_docs/libraries/*' -name "*.md" -type f`
-- Existing project patterns: !`find . -path '*/docs/blueprint/ai_docs/project/*' -name "*.md" -type f`
+- Rules directory: !`find . -maxdepth 2 -type d -name rules -path '*/.claude/*'`
+- Existing rules: !`find . -maxdepth 3 -path '*/.claude/rules/*' -name "*.md" -type f`
+- Rules path override: !`find . -maxdepth 3 -path '*/docs/blueprint/manifest.json' -exec jq -r '.structure.generated_rules_path // ".claude/rules/"' {} +`
 - Library in dependencies: !`find . -maxdepth 1 \( -name package.json -o -name pyproject.toml -o -name requirements.txt \) -exec grep -m1 "^$1[\":@=]" {} +`
 
 ## Parameters
@@ -36,20 +38,23 @@ Curate library or project documentation into ai_docs entries optimized for AI ag
 Parse `$ARGUMENTS`:
 
 - `library-name`: Name of library to document (e.g., `redis`, `pydantic`)
-  - Location: `docs/blueprint/ai_docs/libraries/[library-name].md`
+  - Location: `$RULES_DIR/lib-[library-name].md`
   - OR `project:[pattern-name]` for project patterns
-  - Location: `docs/blueprint/ai_docs/project/[pattern-name].md`
+  - Location: `$RULES_DIR/[pattern-name].md`
+
+`$RULES_DIR` is `structure.generated_rules_path` from `docs/blueprint/manifest.json` when set, otherwise `.claude/rules/`.
 
 ## Execution
 
 Execute complete documentation curation workflow:
 
-### Step 1: Determine target and check existing docs
+### Step 1: Determine target and check existing rules
 
 1. Parse argument to determine if library or project pattern
-2. Check if ai_docs entry already exists
-3. If exists → Ask: Update or create new version?
-4. Check project dependencies for library version
+2. Resolve `$RULES_DIR` (manifest `structure.generated_rules_path`, default `.claude/rules/`)
+3. Check if a rule for this library/pattern already exists in `$RULES_DIR`
+4. If exists → Ask: Update in place or skip?
+5. Check project dependencies for library version
 
 ### Step 2: Research and gather documentation
 
@@ -75,11 +80,11 @@ For **project patterns**:
 
 Sources for gotchas: GitHub issues, Stack Overflow, team experience, official docs warnings.
 
-### Step 4: Create ai_docs entry
+### Step 4: Create the rule entry
 
-Generate file at appropriate location (see [REFERENCE.md](REFERENCE.md#template)):
-- `docs/blueprint/ai_docs/libraries/[library-name].md` OR
-- `docs/blueprint/ai_docs/project/[pattern-name].md`
+Generate the file at `$RULES_DIR/lib-[library-name].md` or `$RULES_DIR/[pattern-name].md` (see [REFERENCE.md](REFERENCE.md#template)).
+
+**Never overwrite a hand-authored rule.** If a file with the target name exists and was not produced by this skill, pick a distinct name (e.g. `lib-[library-name]-gotchas.md`) or ask.
 
 Include all sections from template: Quick Reference, Patterns We Use, Configuration, Gotchas, Testing, Examples.
 
@@ -115,18 +120,18 @@ jq --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
 2. Verify all code examples are accurate
 3. Verify gotchas include solutions
 4. Save file
-5. Report completion
+5. Report completion, including the rule path so PRPs can reference it
 
 ## Agentic Optimizations
 
 | Context | Command |
 |---------|---------|
-| Check ai_docs exists | `test -d docs/blueprint/ai_docs && echo "YES" \|\| echo "NO"` |
-| List library docs | `ls docs/blueprint/ai_docs/libraries/ 2>/dev/null` |
+| Resolve rules dir | `jq -r '.structure.generated_rules_path // ".claude/rules/"' docs/blueprint/manifest.json` |
+| List existing rules | `ls .claude/rules/ 2>/dev/null` |
 | Check library version | `grep "{library}" package.json pyproject.toml 2>/dev/null \| head -1` |
 | Search for patterns | Use grep on src/ for project patterns |
 | Fast research | Use WebSearch for common issues instead of fetching docs |
 
 ---
 
-For ai_docs template, section guidelines, and example entries, see [REFERENCE.md](REFERENCE.md).
+For the rule template, section guidelines, and example entries, see [REFERENCE.md](REFERENCE.md).

@@ -35,7 +35,7 @@ Create a comprehensive PRP (Product Requirement Prompt) - a self-contained packe
 
 - Blueprint initialized: !`find . -path '*/docs/blueprint/*' -maxdepth 3 -name 'manifest.json' -type f`
 - Last PRP ID: !`find . -path '*/docs/blueprint/manifest.json' -maxdepth 3 -exec jq -r '.id_registry.last_prp // 0' {} +`
-- ai_docs available: !`find . -path '*/docs/blueprint/ai_docs/*' -type f -name "*.md"`
+- Curated rules available: !`find . -maxdepth 3 -path '*/.claude/rules/*' -type f -name "*.md"`
 - Existing PRDs: !`find . -path '*/docs/prds/*' -name "*.md" -type f`
 
 ## Parameters
@@ -78,7 +78,7 @@ For relevant libraries/frameworks, gather:
 3. Best practices from documentation
 4. Common implementation patterns
 
-Use WebSearch/WebFetch as needed. Create or update ai_docs entries if needed (see [REFERENCE.md](REFERENCE.md#creating-ai-docs)).
+Use WebSearch/WebFetch as needed. Create or update curated rule entries if needed (see [REFERENCE.md](REFERENCE.md#creating-curated-rules)).
 
 ### Step 4: Generate PRP document ID and structure
 
@@ -96,7 +96,7 @@ Fill all required sections (see [REFERENCE.md](REFERENCE.md#prp-sections)):
 2. **Success Criteria**: Specific, testable acceptance criteria with metrics
 3. **Context**:
    - Documentation references (URLs with specific sections)
-   - ai_docs references (links to curated library docs)
+   - Curated rule references (links to `.claude/rules/` library/pattern entries)
    - **Codebase Intelligence**: File paths, code snippets with line numbers, patterns to follow
    - **Known Gotchas**: Critical warnings with mitigations
 4. **Implementation Blueprint**:
@@ -141,7 +141,7 @@ Update `docs/blueprint/manifest.json` ID registry with new PRP entry.
 Display summary showing:
 - PRP ID and location
 - Feature summary and approach
-- Context collected (ai_docs, patterns, documentation)
+- Context collected (curated rules, patterns, documentation)
 - Linked documents (source PRD if applicable)
 - Confidence score with breakdown
 - Any gaps if score < 7
@@ -154,7 +154,7 @@ Display summary showing:
 
 **If confidence < 7**, offer user choices:
 - Research more context → Use Explore agent for gaps
-- Create ai_docs entries → `/blueprint:curate-docs`
+- Create curated rule entries → `/blueprint:curate-docs`
 - Execute anyway (risky) → Proceed with warning
 - Done for now → Save incomplete PRP
 
@@ -166,8 +166,8 @@ Display summary showing:
 | Next PRP ID | `jq -r '.id_registry.last_prp // 0' docs/blueprint/manifest.json \| awk '{print $1+1}'` |
 | List existing PRPs | `ls -1 docs/prps/ 2>/dev/null \| wc -l` |
 | Search for patterns | Use Explore agent instead of manual grep |
-| Fast research | Use existing ai_docs rather than fetching docs again |
+| Fast research | Use existing curated rules rather than fetching docs again |
 
 ---
 
-For PRP document structure, task categorization, review checklists, and ai_docs creation guidance, see [REFERENCE.md](REFERENCE.md).
+For PRP document structure, task categorization, review checklists, and curated-rule creation guidance, see [REFERENCE.md](REFERENCE.md).

@@ -38,11 +38,10 @@ docs/blueprint/
 ├── work-orders/         # Gitignored; per-task scratch
 │   ├── completed/
 │   └── archived/
-├── audits/              # Dated story-audit artifacts (one file per run)
-└── ai_docs/             # On-demand curated docs (curate-docs is disabled)
-    ├── libraries/
-    └── project/
+└── audits/              # Dated story-audit artifacts (one file per run)
 ```
+
+Curated AI context lives in `.claude/rules/` (hand-written here); the former `ai_docs/` store was removed after sitting empty across every repo — see `/blueprint:curate-docs`, which now targets rules.
 
 ## Related locations
 

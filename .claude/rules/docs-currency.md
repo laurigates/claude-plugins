@@ -36,6 +36,6 @@ pointer rather than a 404.
 ## Related
 
 - `blueprint-plugin:blueprint-docs-currency` — the reusable skill (canonical content)
-- `blueprint-plugin:blueprint-curate-docs` — mechanics of promoting research to ai_docs
+- `blueprint-plugin:blueprint-curate-docs` — mechanics of promoting research to curated `.claude/rules/` entries
 - `blueprint-plugin:blueprint-sync` — detects stale generated content
 - `.claude/rules/conventional-commits.md` — commit-type scopes that co-evolve with doc edits

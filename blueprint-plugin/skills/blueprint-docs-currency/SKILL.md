@@ -41,7 +41,7 @@ refined for blueprint-driven projects.
 | New CLI flag or subcommand | README + relevant `docs/cli/` page |
 
 Forward-reference `blueprint-plugin:blueprint-curate-docs` for how to
-produce the prose that goes into `docs/ai_docs/` when the code change
+produce the curated `.claude/rules/` entry when the code change
 surfaces an AI-context gotcha worth capturing.
 
 ## Research promotion workflow
@@ -117,7 +117,7 @@ stop and write the spec now.
 ## Related
 
 - `.claude/rules/docs-currency.md` — claude-plugins' dogfood version of this rule
-- `blueprint-plugin:blueprint-curate-docs` — mechanics of producing ai_docs prose
+- `blueprint-plugin:blueprint-curate-docs` — mechanics of producing curated rule entries
 - `blueprint-plugin:blueprint-sync` — drift detection for generated docs
 - `blueprint-plugin:feature-tracking` — tracker entry mechanics
 - `.claude/rules/conventional-commits.md` — commit types that co-evolve with docs
