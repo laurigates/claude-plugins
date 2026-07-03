@@ -19,6 +19,7 @@ reviewed: 2026-06-30
 | One ordinary app (Chrome/Electron, a renderer, a game) is pegging CPU or GPU | `launchservicesd` is the hot process — use `launchservices-health` |
 | You want a flame graph / deep profile of a specific process | A disk reads near-full or you're reclaiming space — use `macos-disk-usage` |
 | You want a repeatable "what's hot right now" snapshot | `syspolicyd`/`trustd`/`tccd`/`auditd` are *all* elevated together (exec storm) — use `endpoint-security-cpu` |
+| You need to attribute a live thermal/CPU/GPU load right now | You want a **repeatable baseline** scored PASS/WARN/FAIL against thresholds — use `macos-performance-benchmark` |
 
 ## Platform Guard
 
@@ -183,3 +184,9 @@ the attributed client app and *why* (animation/video/software-render); the
 recommended action (close/stop the driver, lower its settings, or profile it); and
 which tier of tool produced the verdict. Distinguish a genuine workload floor (a
 live video call) from a fixable runaway (an orphaned VM, a stuck animation).
+
+## Related
+
+- `macos-performance-benchmark` — the proactive baseline companion: run a
+  repeatable, threshold-scored benchmark + diagnostic suite (`macmon`-first, same
+  toolkit) to establish what "normal" is before triaging a deviation from it.
