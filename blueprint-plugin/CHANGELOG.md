@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.38.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.37.2...blueprint-plugin-v3.38.0) (2026-07-03)
+
+
+### Features
+
+* **blueprint-plugin:** retarget curated AI context from ai_docs to .claude/rules/ ([#1927](https://github.com/laurigates/claude-plugins/issues/1927)) ([6e47edd](https://github.com/laurigates/claude-plugins/commit/6e47eddbe5a26f938cb5aae51638c07c5266fc09))
+
 ## [3.37.2](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.37.1...blueprint-plugin-v3.37.2) (2026-06-22)
 
 
