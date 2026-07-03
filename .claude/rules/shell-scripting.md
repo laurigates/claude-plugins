@@ -107,6 +107,31 @@ related_items=$(get_array_field "$file" "related")
 
 All hook scripts must include `set -euo pipefail` after the shebang and comment block. Exception: logging/observability hooks may use `set -uo pipefail` (omit `-e`) with a comment explaining why.
 
+#### `pipefail` + `producer | head` aborts on SIGPIPE (exit 141)
+
+A multi-section diagnostic/collector script (each section runs a check, emits a
+result, and the script must reach the *next* section regardless) should use
+`set -u` alone — **not** `set -euo pipefail`. Under `pipefail`, any
+`producer | head -N` pipeline where `head` closes the pipe early sends the
+producer `SIGPIPE`; `pipefail` then reports the pipeline as exit **141**
+(128 + 13), and `set -e` aborts the whole script mid-run. `ps -Aeo … | head -21`
+is the canonical trigger — `ps` keeps writing after `head` has its 21 lines.
+
+```bash
+# Wrong for a run-every-section collector: first `| head` SIGPIPE kills the run
+set -euo pipefail
+top="$(ps -Aeo pid,pcpu,comm -r | head -21)"   # ps → SIGPIPE → pipefail 141 → abort
+
+# Right: -u only; a single failing section can't abort the rest
+set -u
+top="$(ps -Aeo pid,pcpu,comm -r | head -21)"   # pipeline returns head's 0
+```
+
+This is distinct from hook scripts, which *should* fail fast — the rule is
+**match the flags to the script's job**: fail-fast tools want `-e`; a diagnostic
+that emits its own PASS/WARN/FAIL per section wants to run every section, so drop
+`-e`/`pipefail` and guard only unset vars.
+
 ### Block Function
 
 Hook scripts that block tool use (exit code 2) must use a standard `block()` function:
@@ -339,6 +364,38 @@ elif date -d "$past_date 00:00:00" "+%s" >/dev/null 2>&1; then
   past_ts=$(date -d "$past_date 00:00:00" "+%s")                        # GNU/Linux
 fi
 ```
+
+#### BSD `date` has no `%N` — millisecond timing needs python/perl
+
+GNU `date +%s%3N` (Unix seconds + zero-padded milliseconds) is a common way to
+time a command to sub-second precision. **BSD/macOS `date` does not support
+`%N`** — it emits the literal character `N`, so `date +%s%3N` returns garbage
+like `17830708663N` (a valid-looking integer with a trailing `N`), not
+milliseconds. The failure is silent: the string is truncated/parsed into a
+number and the elapsed math is nonsense (or a whole-second `date +%s` reads `0`
+for anything sub-second — an M4 finishes a 10M-iteration loop in <1s).
+
+```bash
+# Wrong on macOS: %N is literal, and whole-second %s reads 0 for fast ops
+start=$(date +%s%3N)   # → 17830708663N  (BSD emits a literal 'N')
+```
+
+Portable millisecond timestamp — python3 or perl (both present on macOS),
+falling back to whole-second `date`:
+
+```bash
+now_ms() {
+  if command -v python3 &>/dev/null; then python3 -c 'import time; print(int(time.time()*1000))'
+  elif command -v perl &>/dev/null; then perl -MTime::HiRes=time -e 'print int(time()*1000)'
+  else echo $(( $(date +%s) * 1000 )); fi
+}
+start=$(now_ms); some_command; echo "$(( $(now_ms) - start )) ms"
+```
+
+For timing a script *you* invoke (a benchmark), prefer measuring inside the
+interpreter it already runs — e.g. have the Python step print
+`int((time.perf_counter()-t)*1000)` itself — over wrapping it in shell `date`.
+
 ## Checklist for New Commands
 
 - [ ] Variable names use prefixed form (e.g., `doc_status` instead of `status`)
