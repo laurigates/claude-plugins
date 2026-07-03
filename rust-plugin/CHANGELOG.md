@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.5.0...rust-plugin-v1.6.0) (2026-07-03)
+
+
+### Features
+
+* **rust-plugin:** add mockito-http-mocking skill ([#1923](https://github.com/laurigates/claude-plugins/issues/1923)) ([ea01521](https://github.com/laurigates/claude-plugins/commit/ea01521d3063d313f1a5d9b0dd337be8d77ead40))
+
 ## [1.5.0](https://github.com/laurigates/claude-plugins/compare/rust-plugin-v1.4.0...rust-plugin-v1.5.0) (2026-06-29)
 
 
