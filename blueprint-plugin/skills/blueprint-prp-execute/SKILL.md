@@ -59,7 +59,7 @@ Execute the complete PRP implementation workflow:
    - If work-order chosen → Run `/blueprint:work-order --from-prp {prp-name}` and exit
    - If delegation to multiple subagents chosen → Create focused work-orders per module from Implementation Blueprint and exit
 5. Continue to Step 2 if executing now OR confidence 7-8
-6. Load all referenced ai_docs entries for context
+6. Load all referenced curated rule entries (`.claude/rules/`) for context
 7. Parse Implementation Blueprint and create TodoWrite entries ordered by dependencies
 
 ### Step 2: Establish baseline with validation gates
@@ -84,7 +84,7 @@ For each task in Implementation Blueprint:
 
 2. **GREEN phase**: Implement minimal code to pass test
    - Follow Codebase Intelligence patterns from PRP
-   - Apply patterns from ai_docs references
+   - Apply patterns from curated rule references
    - Watch for Known Gotchas
    - Run tests → Confirm SUCCESS
 
@@ -150,12 +150,12 @@ Generate comprehensive execution summary report:
 - **Deferred items summary**: Count and GitHub issue numbers
 - **Feature tracker updates**: Features updated and percentages
 - **New gotchas discovered**: [documented for future reference]
-- **Recommendations**: Follow-up work or ai_docs updates
+- **Recommendations**: Follow-up work or curated rule updates
 
 Prompt user for next action:
 - Commit changes (Recommended) → Run `/git:commit`
 - Create work-order for follow-up → Run `/blueprint:work-order`
-- Update ai_docs with patterns → Run `/blueprint:curate-docs`
+- Capture patterns as curated rules → Run `/blueprint:curate-docs`
 - Continue to next PRP → Run `/blueprint:prp-execute [next]`
 - Done for now → Exit
 

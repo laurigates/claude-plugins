@@ -135,11 +135,11 @@ graph TB
     FeatureWork -->|Isolated Task| CreateWO[/blueprint:work-order/]
 
     CreatePRP --> ResearchPhase[Research Phase]
-    ResearchPhase --> CurateAIDocs[Curate ai_docs]
+    ResearchPhase --> CurateRules[Curate rules]
     ResearchPhase --> AnalyzeCodebase[Analyze Codebase]
     ResearchPhase --> FetchDocs[Fetch External Docs]
 
-    CurateAIDocs --> PRP[(PRP Document)]
+    CurateRules --> PRP[(PRP Document)]
     AnalyzeCodebase --> PRP
     FetchDocs --> PRP
 
@@ -220,7 +220,7 @@ sequenceDiagram
     CMD->>WebSearch: Search for library docs
     WebSearch-->>CMD: Documentation, gotchas
 
-    CMD->>CMD: Create/update ai_docs entries
+    CMD->>CMD: Create/update curated rule entries
 
     Note over CMD,PRP: HOW: Draft Implementation Plan
     CMD->>PRP: Write Goal & Why section
@@ -263,7 +263,7 @@ sequenceDiagram
     participant Gates as Validation Gates
 
     User->>CMD: Execute PRP
-    CMD->>PRP: Load PRP and ai_docs
+    CMD->>PRP: Load PRP and curated rules
 
     Note over CMD,PRP: Verify Readiness
     CMD->>PRP: Check confidence score >= 7

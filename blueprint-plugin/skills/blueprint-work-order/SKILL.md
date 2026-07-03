@@ -54,7 +54,7 @@ When `--from-prp NAME` is provided:
    - Extract Implementation Blueprint tasks
    - Extract TDD Requirements
    - Extract Success Criteria
-   - Note ai_docs references
+   - Note curated-rule references (`.claude/rules/` entries)
 
 3. **Verify confidence**:
    - If confidence < 9: Warn that PRP may not be ready for delegation
@@ -62,7 +62,7 @@ When `--from-prp NAME` is provided:
 
 4. **Generate work-order**:
    - Pre-populate from PRP content
-   - Include relevant ai_docs as inline context (not references)
+   - Include relevant curated rules as inline context (not references)
    - Copy TDD requirements verbatim
    - Include file list from PRP's Codebase Intelligence section
 

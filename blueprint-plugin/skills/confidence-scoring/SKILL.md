@@ -240,7 +240,7 @@ Overall = (Context + Gotchas + TestCoverage + Validation) / 4
 - [ ] Add linting and type checking commands
 
 **Next Steps:**
-1. Run `/prp:curate-docs jsonwebtoken` to create ai_docs entry
+1. Run `/blueprint:curate-docs jsonwebtoken` to create a curated rule entry
 2. Use Explore agent to find exact file locations
 3. Add validation gate commands from project's package.json
 ```
@@ -262,7 +262,7 @@ The confidence score determines:
 ### Context Completeness
 - Use `grep` to find exact file locations
 - Include actual line numbers in code snippets
-- Reference ai_docs entries for library patterns
+- Reference curated `.claude/rules/` entries for library patterns
 
 ### Implementation Clarity
 - Write pseudocode before describing approach

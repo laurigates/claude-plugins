@@ -207,15 +207,13 @@ Initialize Blueprint Development in this project.
 
 6. **Create directory structure**:
 
-   **Canonical document paths** are at the **top level** of `docs/`, not under `docs/blueprint/`. `docs/blueprint/` holds blueprint machinery only (manifest, feature-tracker, work-orders, ai_docs); `docs/{adrs,prds,prps,trps}/` hold the documents themselves. Every `/blueprint:derive-*` skill writes to the top-level paths — keeping them consistent prevents the dual-corpus bug where init creates one layout and derive-* writes to another.
+   **Canonical document paths** are at the **top level** of `docs/`, not under `docs/blueprint/`. `docs/blueprint/` holds blueprint machinery only (manifest, feature-tracker, work-orders); `docs/{adrs,prds,prps,trps}/` hold the documents themselves. Every `/blueprint:derive-*` skill writes to the top-level paths — keeping them consistent prevents the dual-corpus bug where init creates one layout and derive-* writes to another.
 
    Execute the creation explicitly so the directories exist even when no document migration happened in Step 3:
 
    ```bash
    mkdir -p docs/blueprint/work-orders/completed
    mkdir -p docs/blueprint/work-orders/archived
-   mkdir -p docs/blueprint/ai_docs/libraries
-   mkdir -p docs/blueprint/ai_docs/project
    mkdir -p docs/adrs
    mkdir -p docs/prds
    mkdir -p docs/prps
@@ -232,9 +230,6 @@ Initialize Blueprint Development in this project.
    │   ├── work-orders/             # Task packages for subagents
    │   │   ├── completed/
    │   │   └── archived/
-   │   ├── ai_docs/                 # Curated documentation (on-demand)
-   │   │   ├── libraries/
-   │   │   └── project/
    │   └── README.md                # Blueprint documentation
    ├── prds/                        # Product Requirements Documents (canonical)
    ├── adrs/                        # Architecture Decision Records (canonical)
@@ -273,7 +268,6 @@ Initialize Blueprint Development in this project.
        "has_adrs": true,
        "has_prps": true,
        "has_work_orders": true,
-       "has_ai_docs": false,
        "has_modular_rules": true,
        "has_feature_tracker": "[based on user choice]",
        "has_document_detection": "[based on user choice]",
@@ -422,7 +416,6 @@ Initialize Blueprint Development in this project.
    Blueprint structure created:
    - docs/blueprint/manifest.json
    - docs/blueprint/work-orders/
-   - docs/blueprint/ai_docs/
    - docs/blueprint/README.md
    [- docs/blueprint/feature-tracker.json (if feature tracking enabled)]
 

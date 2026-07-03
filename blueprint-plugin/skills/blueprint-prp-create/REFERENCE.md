@@ -44,9 +44,9 @@ confidence: X/10
 - [Library Name](https://docs.example.com/section) - Specific section explaining [what]
 - [Framework Name](https://docs.example.com/api) - API endpoint for [feature]
 
-### ai_docs References
-- `ai_docs/libraries/[library-name].md` - Patterns for [feature type]
-- `ai_docs/project/patterns.md` - Integration pattern [X]
+### Curated Rule References
+- `.claude/rules/lib-[library-name].md` - Patterns for [feature type]
+- `.claude/rules/[pattern-name].md` - Integration pattern [X]
 
 ### Codebase Intelligence
 
@@ -259,11 +259,11 @@ Average of all 4 dimensions.
 - **7-8**: Ready for execution, some discovery expected
 - **< 7**: Not ready, needs more research/context
 
-## Creating ai_docs
+## Creating Curated Rules
 
-If you discover new patterns during research, create ai_docs entries:
+If you discover new patterns during research, create curated rule entries (via `/blueprint:curate-docs` or directly):
 
-**Location**: `docs/blueprint/ai_docs/libraries/[library-name].md` or `docs/blueprint/ai_docs/project/patterns.md`
+**Location**: `$RULES_DIR/lib-[library-name].md` or `$RULES_DIR/[pattern-name].md`, where `$RULES_DIR` is `structure.generated_rules_path` from the manifest (default `.claude/rules/`)
 
 **Format**:
 ```markdown

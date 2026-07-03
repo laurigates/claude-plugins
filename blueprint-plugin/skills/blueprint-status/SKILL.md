@@ -177,7 +177,6 @@ Display the current blueprint configuration status with three-layer architecture
    {✅|❌} docs/adrs/
    {✅|❌} docs/prps/
    {✅|❌} docs/blueprint/work-orders/
-   {✅|❌} docs/blueprint/ai_docs/
    {✅|❌} docs/blueprint/feature-tracker.json
    {✅|❌} .claude/rules/
    {✅|❌} CLAUDE.md
@@ -358,7 +357,6 @@ Structure:
 ✅ docs/adrs/
 ✅ docs/prps/
 ✅ docs/blueprint/work-orders/
-✅ docs/blueprint/ai_docs/
 ✅ docs/blueprint/feature-tracker.json
 ✅ .claude/rules/
 ✅ CLAUDE.md

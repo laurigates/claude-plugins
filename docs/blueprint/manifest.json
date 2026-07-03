@@ -14,7 +14,6 @@
     "has_adrs": true,
     "has_prps": true,
     "has_work_orders": true,
-    "has_ai_docs": true,
     "has_modular_rules": true,
     "has_feature_tracker": false,
     "has_document_detection": false,

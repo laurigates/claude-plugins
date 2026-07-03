@@ -44,7 +44,7 @@ PRD (Product Requirements) → PRP (Product Requirement Prompt) → Work-Order �
 | `blueprint-work-order` | Create work-order with minimal context for subagent execution |
 | `blueprint-prp-create` | Create a PRP with systematic research and validation gates |
 | `blueprint-prp-execute` | Execute a PRP with validation loop, TDD workflow, and quality gates |
-| `blueprint-curate-docs` | Curate documentation for ai_docs to optimize AI context |
+| `blueprint-curate-docs` | Curate library gotchas and project patterns into `.claude/rules/` entries for AI context |
 | `blueprint-adr-validate` | Validate ADR cross-references, detect domain conflicts, and update superseded ADRs |
 | `blueprint-promote` | Promote a child workspace's status into the root monorepo's portfolio tracker |
 | `blueprint-sync` | Sync generated rules / CLAUDE.md back from PRDs after edits |
