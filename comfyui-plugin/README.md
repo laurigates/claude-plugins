@@ -28,14 +28,16 @@ Scaffold a new ComfyUI custom-node repository ready for implementation, in the
 - vitest (imports the `.ts` source) + pytest harness
 - `src/index.ts` + `src/comfyui-shims.d.ts`, `__init__.py`
   (`WEB_DIRECTORY = "./web/dist"`), `CLAUDE.md`, and a migration ADR
-- Three variants: `frontend` (per-widget modal), `backend` (adds a node +
-  aiohttp endpoints), `gesture` (canvas pointer layer — pinch/drag)
+- Four variants: `frontend` (per-widget modal), `backend` (adds a node +
+  aiohttp endpoints), `gesture` (canvas pointer layer — pinch/drag), `shim`
+  (scoped CSS injection + commands — no modal, for papering over upstream
+  frontend bugs)
 
 The `frontend`/`backend` (modal) variants consume the shared
 [`@laurigates/comfy-modal-kit`](https://www.npmjs.com/package/@laurigates/comfy-modal-kit)
 primitives via an `import` (inlined by `bun build`) — they no longer copy
-`modal-shell.js` / `modal-fuzzy.js` in. The `gesture` variant has no kit
-dependency.
+`modal-shell.js` / `modal-fuzzy.js` in. The `gesture` and `shim` variants have
+no kit dependency.
 
 The generated `CLAUDE.md` teaches the pack to **verify the LiteGraph/canvas API
 against the frontend sourcemap** (the `api-*.js.map` chunk) before coding against
