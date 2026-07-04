@@ -2,7 +2,7 @@
 
 > Experimental testing harness lives under experiments/claude-probe/.
 
-A curated collection of 43 Claude Code plugins providing 360+ skills and 21 agents for development workflows.
+A curated collection of 44 Claude Code plugins providing 380+ skills and 21 agents for development workflows.
 
 ## Install the Marketplace
 
@@ -92,7 +92,7 @@ the rules, skills, and hooks that embody it.
 |--------|--------|-------------|
 | **css-plugin** | 2 | CSS tooling - Lightning CSS transpilation, UnoCSS atomic utilities |
 | **python-plugin** | 16 | Python ecosystem - uv, ruff, pytest, basedpyright, packaging |
-| **rust-plugin** | 5 | Rust development - cargo, clippy, nextest, memory safety |
+| **rust-plugin** | 7 | Rust development - cargo, clippy, nextest, memory safety |
 | **typescript-plugin** | 17 | TypeScript development - Bun, Biome, ESLint, strict types |
 
 ### Quality & Testing

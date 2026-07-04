@@ -4,6 +4,7 @@
   "owner": {
     "name": "Lauri Gates"
   },
+  "description": "A curated collection of 44 Claude Code plugins providing 380+ skills and 21 agents for development workflows — git, testing, CI/CD, configuration, infrastructure, and language ecosystems.",
   "plugins": [
     {
       "name": "accessibility-plugin",
