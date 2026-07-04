@@ -127,6 +127,46 @@ assert_exit \
     "same-command heredoc body-file (file not yet written) is allowed" 0 \
     "$(make_json "$SAME_CMD_BODYFILE")"
 
+# ── -F / --body-file resolvable at hook time (regression: issue #1913) ──────
+# Regression (issue #1913): a compliant PR created with the -F short alias for
+# --body-file — where the body file contains Closes #N — was false-blocked
+# because the guard/extraction only recognized the long --body-file form. All
+# resolvable -F forms whose file carries the keyword must be allowed.
+echo ""
+echo "-F / --body-file alias with keyword in the file (issue #1913):"
+
+BODYFILE=$(mktemp)
+printf '## Summary\n\nCloses #42\n' > "$BODYFILE"
+# shellcheck disable=SC2064  # expand BODYFILE now so the trap removes this exact file
+trap "rm -rf '$TMPDIR' '$BODYFILE'" EXIT
+
+assert_exit \
+    "-F <file> (space form) with Closes in the file is allowed" 0 \
+    "$(make_json "gh pr create --title 'feat: add feature' -F $BODYFILE")"
+
+assert_exit \
+    "-F<file> (attached form) with Closes in the file is allowed" 0 \
+    "$(make_json "gh pr create --title 'feat: add feature' -F$BODYFILE")"
+
+assert_exit \
+    "-F=<file> (equals form) with Closes in the file is allowed" 0 \
+    "$(make_json "gh pr create --title 'feat: add feature' -F=$BODYFILE")"
+
+# ── Unresolvable body-file/-F paths defer, not block (issue #1913) ──────────
+# When a body-file/-F path cannot be read at PreToolUse time (missing file or
+# stdin sentinel), the keyword may live inside it — defer (exit 0) rather than
+# emit a false-positive block.
+echo ""
+echo "unresolvable body-file/-F paths defer instead of blocking (issue #1913):"
+
+assert_exit \
+    "--body-file <missing> defers (file unreadable at hook time)" 0 \
+    "$(make_json "gh pr create --title 'feat: add feature' --body-file /nonexistent/pr-body-$$.md")"
+
+assert_exit \
+    "-F - (stdin) defers (cannot resolve stdin at hook time)" 0 \
+    "$(make_json "gh pr create --title 'feat: add feature' -F -")"
+
 # ── Missing closing keywords should block ───────────────────────────────────
 echo ""
 echo "missing closing keywords (should block):"
@@ -139,6 +179,16 @@ MULTILINE_NO_CLOSE=$(printf 'gh pr create --title "feat: add feature" --body "##
 assert_exit \
     "multi-line body without closing keywords is blocked" 2 \
     "$(make_json "$MULTILINE_NO_CLOSE")"
+
+# A readable -F body file that genuinely lacks a closing keyword must still
+# block when commits reference an issue — the #1913 fix must not defer here.
+BODYFILE_NOKEY=$(mktemp)
+printf '## Summary\n\nNo closing keyword here.\n' > "$BODYFILE_NOKEY"
+# shellcheck disable=SC2064  # expand the filenames now so the trap removes these exact files
+trap "rm -rf '$TMPDIR' '$BODYFILE' '$BODYFILE_NOKEY'" EXIT
+assert_exit \
+    "-F <file> whose readable content lacks closing keywords is blocked" 2 \
+    "$(make_json "gh pr create --title 'feat: add feature' -F $BODYFILE_NOKEY")"
 
 # ── Summary ─────────────────────────────────────────────────────────────────
 echo ""

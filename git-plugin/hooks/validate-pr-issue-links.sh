@@ -27,12 +27,19 @@ CWD=$(echo "$INPUT" | jq -r '.cwd // empty')
 if [ -z "$COMMAND" ]; then exit 0; fi
 if ! echo "$COMMAND" | grep -qE '(^|\s)gh\s+pr\s+create'; then exit 0; fi
 
-# Extract body content from --body-file (preferred pattern for multi-line bodies)
-# Uses perl instead of grep -P for macOS BSD grep compatibility
+# Extract body content from --body-file / -F (preferred pattern for multi-line
+# bodies). gh accepts the long form (--body-file <path> or --body-file=<path>)
+# and its documented short alias -F, in space (-F <path>), attached (-F<path>),
+# and equals (-F=<path>) forms. Uses perl instead of grep -P for macOS BSD grep
+# compatibility.
 BODY=""
-if echo "$COMMAND" | grep -qE '\-\-body-file'; then
-    BODY_FILE=$(echo "$COMMAND" | perl -ne 'if (/--body-file[= ](\S+)/) { print $1; }' 2>/dev/null || true)
-    if [ -n "$BODY_FILE" ] && [ -f "$BODY_FILE" ]; then
+BODY_FILE=""
+BODY_FILE_SPECIFIED=false
+if echo "$COMMAND" | grep -qE '(^|[[:space:]])(--body-file([= ]|$)|-F)'; then
+    BODY_FILE_SPECIFIED=true
+    BODY_FILE=$(echo "$COMMAND" | perl -ne 'if (/(?:--body-file[= ]|-F[= ]?)(\S+)/) { print $1; exit; }' 2>/dev/null || true)
+    # "-" is the stdin sentinel and cannot be resolved at PreToolUse time.
+    if [ -n "$BODY_FILE" ] && [ "$BODY_FILE" != "-" ] && [ -f "$BODY_FILE" ] && [ -r "$BODY_FILE" ]; then
         BODY=$(cat "$BODY_FILE")
     fi
 fi
@@ -70,6 +77,16 @@ fi
 # (which still guards against suffix words like "prefixes"/"discloses").
 COMMAND_UNESCAPED=$(printf '%s' "$COMMAND" | sed 's/\\[nrt]/ /g')
 if echo "$COMMAND_UNESCAPED" | grep -qiE '\b(closes?|fixes?|resolves?)[: ]+#[0-9]+'; then
+    exit 0
+fi
+
+# A body-file/-F path was specified but could not be resolved at PreToolUse
+# time — the path is the stdin sentinel "-", the file does not exist yet, or it
+# is unreadable. We cannot inspect its contents, so the closing keyword may well
+# be inside that unresolved file. Defer (exit 0) rather than emit a
+# false-positive block (see .claude/rules/hook-block-vs-nudge.md: never
+# hard-block on unresolvable input).
+if [ "$BODY_FILE_SPECIFIED" = true ] && [ -z "$BODY" ]; then
     exit 0
 fi
 
