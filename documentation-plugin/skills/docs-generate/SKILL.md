@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-06-18
+modified: 2026-07-04
 reviewed: 2026-04-25
 allowed-tools: Task, TodoWrite
 args: "[--api] [--readme] [--changelog]"
@@ -8,6 +8,7 @@ argument-hint: "[--api] [--readme] [--changelog]"
 description: Generate or update docs from code annotations, docstrings, and git history. Use when wanting API reference, README from code, or CHANGELOG from conventional commits.
 name: docs-generate
 agent: general-purpose
+context: fork
 ---
 
 ## When to Use This Skill
