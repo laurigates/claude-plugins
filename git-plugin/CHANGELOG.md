@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.49.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.49.1...git-plugin-v2.49.2) (2026-07-04)
+
+
+### Bug Fixes
+
+* **git-plugin:** normalize issue refs in git-issue-hierarchy ([#1942](https://github.com/laurigates/claude-plugins/issues/1942)) ([fd92664](https://github.com/laurigates/claude-plugins/commit/fd926647fc9b89308d7cfdc19caed491366bc64c)), closes [#1660](https://github.com/laurigates/claude-plugins/issues/1660)
+
 ## [2.49.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.49.0...git-plugin-v2.49.1) (2026-07-04)
 
 

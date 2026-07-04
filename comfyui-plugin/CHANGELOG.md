@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.6.1...comfyui-plugin-v1.7.0) (2026-07-04)
+
+
+### Features
+
+* **comfyui-plugin:** add shim variant to comfyui-node-scaffold ([#1944](https://github.com/laurigates/claude-plugins/issues/1944)) ([d00f061](https://github.com/laurigates/claude-plugins/commit/d00f06174f2b410ae2d395a4cb9355666eeb96b2))
+
 ## [1.6.1](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.6.0...comfyui-plugin-v1.6.1) (2026-07-02)
 
 
