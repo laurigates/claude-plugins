@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-06-18
-reviewed: 2026-06-10
+modified: 2026-07-04
+reviewed: 2026-07-04
 description: "Security scanning: dependency audits, SAST, secrets detection. Use when setting up Dependabot, CodeQL, or TruffleHog in CI, or creating a SECURITY.md policy."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--type <dependencies|sast|secrets|all>]"
@@ -26,12 +26,13 @@ Check and configure security scanning tools for dependency audits, SAST, and sec
 ## Context
 
 - Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \)`
-- Gitleaks config: !`find . -maxdepth 1 -name \'.gitleaks.toml\'`
-- Pre-commit config: !`find . -maxdepth 1 -name \'.pre-commit-config.yaml\'`
-- Workflows dir: !`find . -maxdepth 1 -type d -name \'.github/workflows\'`
-- Dependabot config: !`find . -maxdepth 1 -name \'.github/dependabot.yml\'`
-- CodeQL workflow: !`find . -path '*/.github/workflows/*' -maxdepth 3 -name 'codeql*'`
-- Security policy: !`find . -maxdepth 1 -name \'SECURITY.md\'`
+- Gitleaks config: !`find . -maxdepth 1 -name '.gitleaks.toml'`
+- Pre-commit config: !`find . -maxdepth 1 -name '.pre-commit-config.yaml'`
+- Workflows dir: !`find . -maxdepth 2 -type d -path '*/.github/workflows'`
+- Dependabot config: !`find . -maxdepth 2 -path '*/.github/dependabot.yml'`
+- CodeQL workflow: !`find . -maxdepth 3 -path '*/.github/workflows/codeql*'`
+- Security policy: !`find . -maxdepth 1 -name 'SECURITY.md'`
+
 **Security scanning layers:**
 1. **Dependency auditing** - Check for known vulnerabilities in dependencies
 2. **SAST (Static Application Security Testing)** - Analyze code for security issues
@@ -124,14 +125,9 @@ For gitleaks, TruffleHog, and CI workflow configuration templates, see [REFERENC
 
 ### Step 7: Create security policy
 
-Create `SECURITY.md` with:
-- Supported versions table
-- Vulnerability reporting process (email, expected response time, disclosure policy)
-- Information to include in reports
-- Security best practices for users and contributors
-- Automated security tools list
-
-For the SECURITY.md template, see [REFERENCE.md](REFERENCE.md).
+Create `SECURITY.md` from the template (supported-versions table, vulnerability
+reporting process, report contents, best practices, automated-tools list) in
+[REFERENCE.md](REFERENCE.md).
 
 ### Step 8: Configure CI/CD integration
 
@@ -146,17 +142,8 @@ For the CI security workflow template, see [REFERENCE.md](REFERENCE.md).
 
 ### Step 9: Update standards tracking
 
-Update `.project-standards.yaml`:
-
-```yaml
-components:
-  security: "2025.1"
-  security_dependency_audit: true
-  security_sast: true
-  security_secret_detection: true
-  security_policy: true
-  security_dependabot: true
-```
+Update `.project-standards.yaml` with the `security` component keys. For the
+exact block, see [REFERENCE.md](REFERENCE.md).
 
 ### Step 10: Report configuration results
 
@@ -174,14 +161,6 @@ For the results report format, see [REFERENCE.md](REFERENCE.md).
 | Secret detection only | `/configure:security --type secrets` |
 | SAST scanning only | `/configure:security --type sast` |
 | Verify secrets scan | `gitleaks detect --source . --verbose` |
-
-## Flags
-
-| Flag | Description |
-|------|-------------|
-| `--check-only` | Report status without offering fixes |
-| `--fix` | Apply all fixes automatically without prompting |
-| `--type <type>` | Focus on specific security type (dependencies, sast, secrets, all) |
 
 ## Error Handling
 
