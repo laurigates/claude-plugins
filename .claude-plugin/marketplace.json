@@ -4,7 +4,7 @@
   "owner": {
     "name": "Lauri Gates"
   },
-  "description": "A curated collection of 44 Claude Code plugins providing 380+ skills and 21 agents for development workflows — git, testing, CI/CD, configuration, infrastructure, and language ecosystems.",
+  "description": "A curated collection of 44 Claude Code plugins providing 380+ skills and 21 agents for development workflows \u2014 git, testing, CI/CD, configuration, infrastructure, and language ecosystems.",
   "plugins": [
     {
       "name": "accessibility-plugin",
@@ -24,7 +24,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.30.5",
+      "version": "2.31.0",
       "keywords": [
         "agents",
         "configuration",
