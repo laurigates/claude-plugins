@@ -54,7 +54,7 @@ issues as **pre-registered signal**, corroborates or escalates them against its
 quantitative transcript clusters (a human-noticed pain confirmed by the data is
 the highest-confidence deliverable; a reported pain below the count threshold is
 escalated as a watch item), and cross-links the issue numbers in the PR body's
-`## Fast-loop signal` section. See `docs/session-plugin-workflow.md` for the full
+`## Fast-loop signal` section. See `docs/archive/session-plugin-workflow.md` for the full
 architecture.
 
 ## Hooks
