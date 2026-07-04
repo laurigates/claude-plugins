@@ -24,6 +24,12 @@ run filter="*" runs="3":
 run-full filter="*" runs="3":
     bash scripts/run-suite.sh --filter "{{filter}}" --runs "{{runs}}"
 
+# Config-isolation sweep: clean-slate vs plugins-only vs full.
+# Needs CLAUDE_CODE_OAUTH_TOKEN in ~/.api_tokens (run `claude setup-token` once).
+[group: "run"]
+run-config filter="*" runs="3":
+    bash scripts/run-config.sh --filter "{{filter}}" --runs "{{runs}}"
+
 # Requires opus-max-{default,probe} in conditions.yaml — intentionally absent
 # from the default sweep, so add them when you actually need this run.
 # Opt-in `max`-effort heavy check (manual only; needs opus-max-* conditions).

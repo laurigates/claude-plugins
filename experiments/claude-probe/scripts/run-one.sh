@@ -42,6 +42,8 @@ if not cond:
     sys.exit("ERROR: unknown condition: " + os.environ["PY_COND_ID"])
 for k in ("model", "thinking", "system_prompt"):
     print(f"PROBE_{k.upper()}={shlex.quote(str(cond[k]))}")
+# config is optional; absent => "full" so pre-existing conditions are unchanged.
+print(f"PROBE_CONFIG={shlex.quote(str(cond.get(\"config\", \"full\")))}")
 '
 )"
 
@@ -70,6 +72,32 @@ if [ "$PROBE_SYSTEM_PROMPT" = "probe" ]; then
   claude_args+=(--system-prompt-file "$probe_file")
 fi
 
+# Config-isolation arm: vary what GLOBAL config Claude Code loads, via $HOME.
+# Claude discovers ~/.claude (memory, skills, hooks) from $HOME, so a per-arm
+# HOME is what actually strips the global config. (--bare refuses the
+# subscription token; CLAUDE_CONFIG_DIR does not relocate memory discovery —
+# see docs/config-arms.md.) --strict-mcp-config drops cwd-discovered project
+# MCP servers so their ~90k of tool schemas don't swamp and confound the arms.
+claude_args+=(--strict-mcp-config)
+case "$PROBE_CONFIG" in
+  full) : ;;  # real $HOME
+  clean)       export HOME="$root/.arm-configs/fh-clean" ;;
+  plugins-only) export HOME="$root/.arm-configs/fh-plugins" ;;
+  *) echo "ERROR: unknown config arm: $PROBE_CONFIG" >&2; exit 1 ;;
+esac
+if [ "$PROBE_CONFIG" != "full" ] && [ ! -d "$HOME/.claude" ]; then
+  echo "ERROR: missing fake HOME $HOME/.claude — run scripts/arm-prep.sh first" >&2
+  exit 1
+fi
+
+if [ "$PROBE_CONFIG" != "full" ] \
+   && [ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" ] \
+   && [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+  echo "ERROR: config=$PROBE_CONFIG needs CLAUDE_CODE_OAUTH_TOKEN (or ANTHROPIC_API_KEY) in env" >&2
+  echo "       run: claude setup-token   (then export CLAUDE_CODE_OAUTH_TOKEN=...)" >&2
+  exit 1
+fi
+
 started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 set +e
 claude "${claude_args[@]}" >"$transcript" 2>"$stderr_log"
@@ -85,6 +113,7 @@ PY_RUN_N="$run_n" \
 PY_MODEL="$PROBE_MODEL" \
 PY_THINKING="$PROBE_THINKING" \
 PY_SYSPROMPT="$PROBE_SYSTEM_PROMPT" \
+PY_CONFIG="$PROBE_CONFIG" \
 PY_STARTED="$started_at" \
 PY_ENDED="$ended_at" \
 PY_EXIT="$exit_code" \
@@ -97,6 +126,7 @@ meta = {
     "model": os.environ["PY_MODEL"],
     "thinking": os.environ["PY_THINKING"],
     "system_prompt": os.environ["PY_SYSPROMPT"],
+    "config": os.environ["PY_CONFIG"],
     "started_at": os.environ["PY_STARTED"],
     "ended_at": os.environ["PY_ENDED"],
     "exit_code": int(os.environ["PY_EXIT"]),
