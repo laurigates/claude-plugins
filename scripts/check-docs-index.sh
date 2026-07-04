@@ -8,7 +8,8 @@
 #      release-please-config.json, .release-please-manifest.json, the *-plugin
 #      directories on disk, and docs/PLUGIN-MAP.md.
 #   3. DOC COUNTS   — per-plugin skill/agent counts stated in README.md and
-#      docs/PLUGIN-MAP.md match the files on disk.
+#      docs/PLUGIN-MAP.md match the files on disk, plus the headline totals in
+#      the README intro and the PLUGIN-MAP.md header ("N plugins and M+ skills").
 #   4. DIAGRAM      — node labels in docs/diagrams/plugin-relationships.d2 name a
 #      plugin that exists and state a count matching disk (the .svg is generated
 #      and not parsed). Guards the #1523 command-analytics / sync drift class.
@@ -183,6 +184,22 @@ if [ -f "$readme_md" ]; then
   hsfloor="$(grep -oE '[0-9]+\+ skills' "$readme_md" | head -1 | grep -oE '^[0-9]+' || true)"
   if [ -n "$hsfloor" ] && [ "$total_skills" -lt "$hsfloor" ]; then
     add_issue WARN doc_count_drift "README.md headline claims ${hsfloor}+ skills but only $total_skills exist on disk"
+  fi
+fi
+
+# Headline totals in the PLUGIN-MAP.md header ("N plugins and M+ skills").
+# The plugin count is exact (must equal marketplace); the skill count is a
+# floor ("M+ skills") so disk only has to be >= M. This header line drifted
+# silently (42 plugins / 300+ skills) because nothing parsed it — Check 3 above
+# only guarded the README headline.
+if [ -f "$plugin_map" ]; then
+  mp="$(grep -oE '[0-9]+ plugins' "$plugin_map" | head -1 | grep -oE '^[0-9]+' || true)"
+  if [ -n "$mp" ] && [ "$mp" -ne "$mkt_count" ]; then
+    add_issue WARN doc_count_drift "PLUGIN-MAP.md header states $mp plugins but marketplace lists $mkt_count"
+  fi
+  mpsfloor="$(grep -oE '[0-9]+\+ skills' "$plugin_map" | head -1 | grep -oE '^[0-9]+' || true)"
+  if [ -n "$mpsfloor" ] && [ "$total_skills" -lt "$mpsfloor" ]; then
+    add_issue WARN doc_count_drift "PLUGIN-MAP.md header claims ${mpsfloor}+ skills but only $total_skills exist on disk"
   fi
 fi
 

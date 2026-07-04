@@ -4,6 +4,7 @@
   "owner": {
     "name": "Lauri Gates"
   },
+  "description": "Curated collection of Claude Code plugins — skills and agents for development, infrastructure, and workflow automation.",
   "plugins": [
     {
       "name": "accessibility-plugin",

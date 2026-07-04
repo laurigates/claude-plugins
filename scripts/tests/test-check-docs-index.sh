@@ -8,7 +8,9 @@
 #   C. a plugin present in marketplace.json but missing on disk is flagged
 #      (ERROR plugin_map_drift) and --strict exits non-zero
 #   D. a README table row stating the wrong skill count is flagged
-#      (WARN doc_count_drift); a correct row is NOT flagged (zero false positive)
+#      (WARN doc_count_drift); a correct row is NOT flagged (zero false positive).
+#      Also the PLUGIN-MAP.md header plugin count is drift-guarded (a wrong count
+#      is flagged, a passing skills floor is not) — the leg that let 42/300+ rot.
 #   E. a plugin-relationships.d2 node naming a non-existent plugin is flagged
 #      (ERROR diagram_node_dangling) and a wrong stated count is flagged
 #      (WARN diagram_count_drift); a correct node is NOT flagged (#1523)
@@ -66,7 +68,16 @@ EOF
 cat > "$fixture/.release-please-manifest.json" <<'EOF'
 { "alpha-plugin": "1.0.0", "beta-plugin": "1.0.0", "gamma-plugin": "1.0.0" }
 EOF
-printf '# Map\nalpha-plugin, beta-plugin, gamma-plugin\n' > "$fixture/docs/PLUGIN-MAP.md"
+# PLUGIN-MAP header states a wrong plugin count (2, actual marketplace = 3) and a
+# passing skills floor (1+, actual disk = 3): the plugin count must be flagged,
+# the skills floor must NOT be (it is a floor, disk >= claim).
+cat > "$fixture/docs/PLUGIN-MAP.md" <<'EOF'
+# Plugin Navigation Map
+
+Navigation guide for 2 plugins and 1+ skills. Start here.
+
+alpha-plugin, beta-plugin, gamma-plugin
+EOF
 
 # alpha-plugin: 2 skills (mixed SKILL.md / skill.md) + 1 agent; beta-plugin: 1 skill, 0 agents
 mkdir -p "$fixture/alpha-plugin/skills/s1" "$fixture/alpha-plugin/skills/s2" \
@@ -130,6 +141,10 @@ assert "README headline plugin-count drift should be flagged" \
   "$(contains "$fx_out" "doc_count_drift.*headline states 2 plugins")"
 assert "README headline agent-count drift should be flagged" \
   "$(contains "$fx_out" "doc_count_drift.*headline states 21 agents")"
+assert "PLUGIN-MAP header plugin-count drift should be flagged" \
+  "$(contains "$fx_out" "doc_count_drift.*PLUGIN-MAP.md header states 2 plugins")"
+assert "PLUGIN-MAP header passing skill floor should NOT be flagged" \
+  "$([ "$(contains "$fx_out" "PLUGIN-MAP.md header claims")" = "false" ] && echo true || echo false)"
 
 echo "=== TEST E: diagram node drift flagged, correct node not flagged (#1523) ==="
 assert "command-analytics dangling node should be flagged diagram_node_dangling" \
