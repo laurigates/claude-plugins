@@ -79,15 +79,23 @@ fi
 # see docs/config-arms.md.) --strict-mcp-config drops cwd-discovered project
 # MCP servers so their ~90k of tool schemas don't swamp and confound the arms.
 claude_args+=(--strict-mcp-config)
+real_home="$HOME"
 case "$PROBE_CONFIG" in
   full) : ;;  # real $HOME
   clean)       export HOME="$root/.arm-configs/fh-clean" ;;
   plugins-only) export HOME="$root/.arm-configs/fh-plugins" ;;
   *) echo "ERROR: unknown config arm: $PROBE_CONFIG" >&2; exit 1 ;;
 esac
-if [ "$PROBE_CONFIG" != "full" ] && [ ! -d "$HOME/.claude" ]; then
-  echo "ERROR: missing fake HOME $HOME/.claude — run scripts/arm-prep.sh first" >&2
-  exit 1
+if [ "$PROBE_CONFIG" != "full" ]; then
+  [ -d "$HOME/.claude" ] || { echo "ERROR: missing fake HOME $HOME/.claude — run scripts/arm-prep.sh first" >&2; exit 1; }
+  # The HOME override strips ~/.claude memory but also unroots HOME-defaulting
+  # tools. mise stays correct via the inherited absolute XDG_* dirs (precedence
+  # MISE_*_DIR > XDG_*_HOME > $HOME). Go is only partly XDG-aware, so pin its
+  # paths at the real HOME and disable toolchain auto-download — otherwise it
+  # re-downloads a toolchain into the fake HOME. See docs/config-arms.md.
+  export GOTOOLCHAIN=local
+  export GOPATH="${GOPATH:-$real_home/go}"
+  export GOMODCACHE="${GOMODCACHE:-$real_home/go/pkg/mod}"
 fi
 
 if [ "$PROBE_CONFIG" != "full" ] \

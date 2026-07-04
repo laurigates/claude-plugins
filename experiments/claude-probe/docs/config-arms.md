@@ -43,18 +43,24 @@ Note this corrects the interactive `/context` figures: eager **skills cost ~5k,
 not ~22k**, and **global memory is the ~67k lever**. Memory is where the
 slimmer/fatter question lives; skills are nearly free eagerly.
 
-### Known caveat: HOME override re-triggers tool init (outcome sweep is WIP)
+### HOME override and the tool sandbox
 
-For *context measurement* (trivial prompts) HOME override is clean. For real
-*task* runs it is fragile: pointing `$HOME` at an empty dir makes mise/go and
-other `$HOME`-rooted tooling re-initialise and download into the fake HOME (a
-Go toolchain landed in `fh-clean/go`, whose read-only module cache then broke
-`arm-prep`'s cleanup). Hardening options (not yet chosen): symlink the
-tool-cache dirs (`go`, `.cache`, `.config`, `.local`) from the real HOME into
-each fake HOME so only `~/.claude` differs; pin `GOTOOLCHAIN=local` and cache
-env vars; or run each arm in a container. Until then the **outcome sweep**
-(`run-config.sh`) should be treated as WIP; the **cost decomposition** above is
-solid.
+Pointing `$HOME` at a fake dir strips `~/.claude` memory but also unroots
+`$HOME`-defaulting tools. The split is XDG-compliance:
+
+- **XDG-compliant tools (mise, ruff, …) are fine** — mise resolves its dirs by
+  precedence `MISE_*_DIR` > `XDG_*_HOME` > `$HOME` default, and the `XDG_*` vars
+  here are absolute, so mise finds the real installed tools under any `$HOME`.
+  The isolated arms just need to inherit `XDG_*` (they do).
+- **HOME-defaulters break** — Go's `GOPATH` defaults to `$HOME/go` and
+  `GOTOOLCHAIN=auto` auto-downloads a toolchain into the fake HOME. `run-one.sh`
+  pins `GOTOOLCHAIN=local` + `GOPATH`/`GOMODCACHE` at the real HOME for the
+  isolated arms. Other HOME-rooted config (`~/.gitconfig`, `~/.npmrc`, `~/.ssh`)
+  would need the same treatment if a probe depends on it; the fixture sets its
+  own local git config so the read-only probes don't.
+
+Verified: a clean-arm task run lists the fixture files correctly with zero
+toolchain download.
 
 ## Auth (one-time)
 
