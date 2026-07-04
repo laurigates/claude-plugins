@@ -1,5 +1,9 @@
 # Migration Plan: Commands to Skills
 
+> **✅ Done (archived).** This migration is complete — no `commands/` directories
+> remain (`find . -type d -name commands` returns 0). Retained for historical
+> context.
+
 Since Claude Code 2.1.7+ unified commands and skills, we can consolidate all `commands/*.md` files into `skills/<name>/SKILL.md`. This simplifies the plugin structure: one mechanism instead of two.
 
 ## Why Migrate
