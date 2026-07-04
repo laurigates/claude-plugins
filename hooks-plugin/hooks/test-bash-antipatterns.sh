@@ -516,8 +516,48 @@ assert_exit \
     "ps aux | grep proc | grep -v grep | sed s/a/b/ | cut -f1 | sort"
 
 assert_exit \
-    "GUARD: cat-headed grep|grep|sed scrape over a file still blocks (#1833)" 2 \
-    "cat r.txt | grep Error | grep -v warn | sed s/a/b/ | tail"
+    "GUARD: cat-headed grep|grep|sed scrape over a .output file still blocks (#1833/#1914)" 2 \
+    "cat r.output | grep Error | grep -v warn | sed s/a/b/ | tail"
+
+# ── test-output block requires a positive test/task-output signal (issue #1914) ─
+# Regression: the "Parsing test output with grep chains" block keyed on the bare
+# Error/fail/FAIL tokens, so a multi-pattern grep spot-checking GitHub Actions
+# workflow YAML — `grep -n 'app-id|timeout-minutes|skip-on-release' file.yml | …`
+# — false-fired (the quoted alternation `|` inflate the grep-chain match, and
+# workflow fields like fail-fast / on-failure match `fail`). The block must now
+# require a task-output path (.output / /tasks/) OR a known test-runner
+# invocation before classifying a grep chain as test-output parsing.
+echo ""
+echo "test-output block requires a positive test/task-output signal, not bare Error/fail (#1914):"
+
+assert_exit_complex \
+    "multi-pattern grep over workflow YAML with a 'fail' field is allowed (#1914 exact repro)" 0 \
+    'grep -n "app-id|timeout-minutes|skip-on-release|fail-fast" reusable-release-please.yml | head; echo ...; grep -n "context-tree|secret-build-args" reusable-container-build.yml | sed s/x/y/'
+
+assert_exit_complex \
+    "grep chain over *.yml with unquoted continue-on-error field is allowed (#1914)" 0 \
+    'grep -n on-failure a.yml | grep -v Error | sed s/x/y/'
+
+assert_exit_complex \
+    "grep chain over *.md files containing the word fail is allowed (#1914)" 0 \
+    'grep -rn fallback docs/ | grep -v draft | cut -d: -f1'
+
+# Guard integrity: genuine test-output scrapes MUST still block.
+assert_exit_complex \
+    "GUARD: bun test stdout scrape still blocks (test-runner signal, #1914)" 2 \
+    'bun test 2>&1 | grep FAIL | grep -v skip | sed s/x/y/'
+
+assert_exit_complex \
+    "GUARD: pytest stdout scrape still blocks (test-runner signal, #1914)" 2 \
+    'pytest 2>&1 | grep -A2 FAILED | grep test_ | awk "{print \$1}"'
+
+assert_exit \
+    "GUARD: cargo test scrape still blocks (toolchain-plus-test signal, #1914)" 2 \
+    "cargo test 2>&1 | grep error | grep -v warning | cut -f1"
+
+assert_exit \
+    "GUARD: task-output (.output) scrape still blocks (#1914)" 2 \
+    "cat run.output | grep Error | grep -v warn | sed s/a/b/"
 
 # ── multi-grep test-output heuristic exempts source/config file greps (#1914) ──
 # Regression: the "Parsing test output with grep chains is fragile" heuristic
