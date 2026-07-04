@@ -318,6 +318,54 @@ else
   cq_fail "(l) .yaml with code symbol should fire via Signal 2; got: $CQ_OUT_L5"
 fi
 
+# --- (m) session-scratchpad / harness-temp throwaways are silent (issue #1905) ---
+# One-off analysis scripts the harness writes under a per-session scratchpad
+# (or its temp root) are never committed, so the cue is pure noise there. Cover
+# the `*/scratchpad/*` segment, both harness session-temp roots (/tmp and the
+# macOS /private/tmp symlink), and confirm a genuine repo path still fires so the
+# exclusion is not over-broad.
+CQ_60LINES_M="$(printf 'x = 1\n%.0s' {1..60})"
+
+echo "--- Test (m): 60-line .py under a scratchpad segment is silent ---"
+CQ_SID_M1="test-sid-m1-$(date +%s%N)"
+CQ_PAYLOAD_M1="$(cq_payload Write /private/tmp/claude-502/abc-uid/scratchpad/survey.py '' "$CQ_60LINES_M" "$CQ_SID_M1")"
+CQ_OUT_M1="$(CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_TEST_CACHE_DIR" bash "$CQ_SCRIPT" <<< "$CQ_PAYLOAD_M1")"
+if [ -z "$CQ_OUT_M1" ]; then
+  cq_pass "(m) large .py under scratchpad/ is silent"
+else
+  cq_fail "(m) large .py under scratchpad/ should be silent; got: $CQ_OUT_M1"
+fi
+
+echo "--- Test (m): .py with a public symbol under scratchpad/ is silent ---"
+CQ_SID_M2="test-sid-m2-$(date +%s%N)"
+CQ_PAYLOAD_M2="$(cq_payload Write /private/tmp/claude-502/x/scratchpad/bench/scripts/stage_pairs.py 'def stage(): pass' '' "$CQ_SID_M2")"
+CQ_OUT_M2="$(CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_TEST_CACHE_DIR" bash "$CQ_SCRIPT" <<< "$CQ_PAYLOAD_M2")"
+if [ -z "$CQ_OUT_M2" ]; then
+  cq_pass "(m) scratchpad .py with public symbol is silent"
+else
+  cq_fail "(m) scratchpad .py with public symbol should be silent; got: $CQ_OUT_M2"
+fi
+
+echo "--- Test (m): .py directly under the /tmp/claude-<uid> harness root is silent ---"
+CQ_SID_M3="test-sid-m3-$(date +%s%N)"
+CQ_PAYLOAD_M3="$(cq_payload Write /tmp/claude-502/tasks/probe.py 'def run(): pass' '' "$CQ_SID_M3")"
+CQ_OUT_M3="$(CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_TEST_CACHE_DIR" bash "$CQ_SCRIPT" <<< "$CQ_PAYLOAD_M3")"
+if [ -z "$CQ_OUT_M3" ]; then
+  cq_pass "(m) .py under /tmp/claude-<uid> root is silent"
+else
+  cq_fail "(m) .py under /tmp/claude-<uid> root should be silent; got: $CQ_OUT_M3"
+fi
+
+echo "--- Test (m): genuine repo .py at a normal path still fires (not over-broad) ---"
+CQ_SID_M4="test-sid-m4-$(date +%s%N)"
+CQ_PAYLOAD_M4="$(cq_payload Write /repo/src/service.py '' "$CQ_60LINES_M" "$CQ_SID_M4")"
+CQ_OUT_M4="$(CODE_QUALITY_PREFLIGHT_CUE_CACHE_DIR="$CQ_TEST_CACHE_DIR" bash "$CQ_SCRIPT" <<< "$CQ_PAYLOAD_M4")"
+if echo "$CQ_OUT_M4" | jq -e '.decision == "block"' > /dev/null 2>&1; then
+  cq_pass "(m) genuine repo .py still fires"
+else
+  cq_fail "(m) genuine repo .py should still fire; got: $CQ_OUT_M4"
+fi
+
 # --- Summary ---
 echo ""
 echo "=== RESULTS ==="
