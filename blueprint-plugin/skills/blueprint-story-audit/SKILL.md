@@ -1,6 +1,6 @@
 ---
 created: 2026-04-25
-modified: 2026-06-18
+modified: 2026-07-04
 reviewed: 2026-04-25
 description: Audit user stories against codebase and tests for tier-ranked coverage gaps. Use when running story audit, PRD reconciliation, or surfacing PRD-code drift.
 args: "[--scope <area>] [--prd <path>] [--no-write] [--report-only]"
@@ -179,7 +179,7 @@ Skip this step if `--report-only` is set.
 Use AskUserQuestion to offer the three downstream paths the audit unlocks:
 
 - **Reconcile drift in the PRD** → run `/blueprint:story-reconcile` against this audit
-- **Dispatch a work-order for a Tier-1 gap** → run `/blueprint:work-order` per row
+- **Dispatch a work-order for a Tier-1 gap** → recommend the user run `/blueprint:work-order` per row (a user-invocable command — surface it for the user to run, don't invoke it via the Skill tool)
 - **I'll act on the artifact later** → exit; the artifact is the durable output
 
 Don't loop. The audit is the durable artifact; the user owns the next step.
