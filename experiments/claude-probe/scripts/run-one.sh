@@ -31,6 +31,17 @@ sys.stdout.write(t["prompt"])
 '
 )"
 
+# Optional per-task fixture: a trap task names a fixtures/<name>/setup.sh that
+# builds a throwaway scenario repo the task runs in (a squash-merged branch, a
+# chezmoi exact_ tree, etc.). Read-only probes omit it and share run-config's cwd.
+probe_fixture="$(
+  PY_TEST_FILE="$test_file" python3 -c '
+import os, yaml
+t = yaml.safe_load(open(os.environ["PY_TEST_FILE"]))
+print(t.get("fixture") or "")
+'
+)"
+
 # Extract condition fields.
 eval "$(
   PY_COND_FILE="$conditions_file" PY_COND_ID="$condition_id" python3 -c '
@@ -108,12 +119,26 @@ if [ "$PROBE_CONFIG" != "full" ] \
   exit 1
 fi
 
+# Per-task fixture: build a fresh scenario repo and run the task inside it, so
+# each run gets clean state (trap tasks mutate). Read-only probes skip this and
+# keep run-config's shared fixture cwd.
+probe_workdir=""
+if [ -n "$probe_fixture" ]; then
+  fx_setup="$root/fixtures/$probe_fixture/setup.sh"
+  [ -f "$fx_setup" ] || { echo "ERROR: missing fixture setup: $fx_setup" >&2; exit 1; }
+  probe_workdir="$(mktemp -d)"
+  bash "$fx_setup" "$probe_workdir" >/dev/null 2>&1 \
+    || { echo "ERROR: fixture setup failed for $probe_fixture" >&2; rm -rf "$probe_workdir"; exit 1; }
+  cd "$probe_workdir"
+fi
+
 started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 set +e
 claude "${claude_args[@]}" >"$transcript" 2>"$stderr_log"
 exit_code=$?
 set -e
 ended_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+[ -n "$probe_workdir" ] && rm -rf "$probe_workdir"
 
 # Write meta sidecar.
 PY_META_OUT="$meta" \

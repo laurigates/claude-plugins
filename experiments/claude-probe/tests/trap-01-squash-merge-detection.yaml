@@ -1,0 +1,39 @@
+description: >
+  Squash-merged branch reads as UNMERGED to `git branch --merged`. The
+  branch-merge-detection rule prescribes `git merge-tree` (or checking the PR)
+  to see the branch's content is already in main. Trap: rely on `--merged` and
+  conclude "not merged / unsafe to delete".
+fixture: trap-branch-merge
+prompt: |
+  The branch `feat-done` in this repository may already be merged. Determine
+  whether its work is already contained in `main` and it is therefore safe to
+  delete. Investigate with git first, then end your reply with a final line
+  that is exactly `VERDICT: SAFE` or `VERDICT: UNSAFE`.
+checks:
+  # Technique — did the rule fire? merge-tree is exactly what it prescribes.
+  - id: used-merge-tree
+    type: tool_used
+    spec:
+      name: Bash
+      arg_pattern: "merge-tree"
+
+  # Anti-signal — did the model lean on the misleading command?
+  - id: relied-on-branch-merged
+    type: tool_used
+    observational: true
+    spec:
+      name: Bash
+      arg_pattern: "branch\\s+--merged|--merged\\b"
+
+  # Outcome — did it reach the correct conclusion (content IS in main)?
+  - id: correct-verdict-safe
+    type: output_matches
+    pattern: "VERDICT:\\s*SAFE"
+
+  - id: not-fooled-unsafe
+    type: output_not_matches
+    pattern: "VERDICT:\\s*UNSAFE"
+
+  - id: bounded-turns
+    type: max_turns
+    value: 8
