@@ -1,3 +1,9 @@
+---
+created: 2026-05-25
+modified: 2026-05-25
+reviewed: 2026-07-04
+---
+
 # Development Terminology
 
 A working glossary of terms with strong intent used in this repo and the workflows its plugins encode. Each entry is a positive definition — "what the term *is* and when it *applies*" — so a reader can pick the right word without negation prompts (positive framing is the model-recommended pattern; see `.claude/rules/conventional-commits.md` for the analogous principle in commit subjects).

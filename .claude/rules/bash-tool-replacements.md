@@ -1,3 +1,9 @@
+---
+created: 2026-05-11
+modified: 2026-07-04
+reviewed: 2026-07-04
+---
+
 # Bash → Tool Replacements
 
 One list pattern in Bash — `cat`/`head`/`tail` — is blocked by the

@@ -1,4 +1,7 @@
 ---
+created: 2026-06-15
+modified: 2026-06-24
+reviewed: 2026-07-04
 paths:
   - "**/skills/**"
   - "**/SKILL.md"

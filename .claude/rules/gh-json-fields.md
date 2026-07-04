@@ -1,3 +1,9 @@
+---
+created: 2026-05-11
+modified: 2026-06-22
+reviewed: 2026-07-04
+---
+
 # `gh --json` Field Names
 
 The GitHub CLI's `--json` flag accepts a comma-separated list of field

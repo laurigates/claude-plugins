@@ -1,3 +1,9 @@
+---
+created: 2026-06-22
+modified: 2026-06-23
+reviewed: 2026-07-04
+---
+
 # Loop Integrity
 
 Long-running and self-continuing loops — TDD `test → fix` cycles, multi-phase

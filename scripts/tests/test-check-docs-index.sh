@@ -12,6 +12,10 @@
 #   E. a plugin-relationships.d2 node naming a non-existent plugin is flagged
 #      (ERROR diagram_node_dangling) and a wrong stated count is flagged
 #      (WARN diagram_count_drift); a correct node is NOT flagged (#1523)
+#   F. a rule file missing `reviewed:` is flagged (WARN rule_reviewed_missing);
+#      a rule file whose `reviewed:` is the `YYYY-MM-DD` placeholder is flagged
+#      (WARN rule_reviewed_placeholder); a rule with a real reviewed: date is NOT
+#      flagged, and a `YYYY-MM-DD` in a body example is NOT flagged (#1851)
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -48,11 +52,45 @@ mkdir -p "$fixture/.claude/rules" "$fixture/.claude-plugin" "$fixture/docs" \
 printf '# Indexed rule\n' > "$fixture/.claude/rules/indexed.md"
 printf '# Orphan rule (intentionally not in the table)\n' > "$fixture/.claude/rules/orphan.md"
 
+# reviewed: frontmatter fixtures (#1851). All three are indexed in CLAUDE.md so
+# they add no rule_not_indexed noise; TEST F asserts only the reviewed checks.
+#   - rev-missing.md: no reviewed: field       → rule_reviewed_missing
+#   - rev-placeholder.md: reviewed: YYYY-MM-DD  → rule_reviewed_placeholder
+#   - rev-ok.md: real reviewed: date + a body YYYY-MM-DD example → NOT flagged
+printf '# Rule missing reviewed\n' > "$fixture/.claude/rules/rev-missing.md"
+cat > "$fixture/.claude/rules/rev-placeholder.md" <<'EOF'
+---
+created: 2026-07-04
+modified: 2026-07-04
+reviewed: YYYY-MM-DD
+---
+
+# Rule with placeholder reviewed
+EOF
+cat > "$fixture/.claude/rules/rev-ok.md" <<'EOF'
+---
+created: 2026-07-04
+modified: 2026-07-04
+reviewed: 2026-07-04
+---
+
+# Rule with a real reviewed date
+
+A body example that documents the template placeholder must NOT be flagged:
+
+```yaml
+reviewed: YYYY-MM-DD
+```
+EOF
+
 cat > "$fixture/CLAUDE.md" <<'EOF'
 # Rules
 | Rule | Purpose |
 |------|---------|
 | `.claude/rules/indexed.md` | listed |
+| `.claude/rules/rev-missing.md` | reviewed fixture |
+| `.claude/rules/rev-placeholder.md` | reviewed fixture |
+| `.claude/rules/rev-ok.md` | reviewed fixture |
 EOF
 
 # marketplace has a ghost plugin (gamma) that has no dir on disk
@@ -138,6 +176,16 @@ assert "beta diagram node wrong count should be flagged diagram_count_drift" \
   "$(contains "$fx_out" "diagram_count_drift.*beta has 5 skills but 1")"
 assert "alpha diagram node correct count should NOT be flagged" \
   "$([ "$(contains "$fx_out" "diagram_count_drift.*alpha")" = "false" ] && echo true || echo false)"
+
+echo "=== TEST F: rule reviewed: frontmatter presence + placeholder (#1851) ==="
+assert "rev-missing.md should be flagged rule_reviewed_missing" \
+  "$(contains "$fx_out" "rule_reviewed_missing.*rev-missing.md")"
+assert "rev-placeholder.md should be flagged rule_reviewed_placeholder" \
+  "$(contains "$fx_out" "rule_reviewed_placeholder.*rev-placeholder.md")"
+assert "rev-ok.md (real date) should NOT be flagged missing" \
+  "$([ "$(contains "$fx_out" "rule_reviewed_missing.*rev-ok.md")" = "false" ] && echo true || echo false)"
+assert "rev-ok.md (body YYYY example) should NOT be flagged placeholder" \
+  "$([ "$(contains "$fx_out" "rule_reviewed_placeholder.*rev-ok.md")" = "false" ] && echo true || echo false)"
 
 echo ""
 echo "=== SUMMARY ==="
