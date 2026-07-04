@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.50.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.49.3...git-plugin-v2.50.0) (2026-07-04)
+
+
+### Features
+
+* **git-plugin:** modernize git-maintain with git maintenance and geometric repacking ([#1943](https://github.com/laurigates/claude-plugins/issues/1943)) ([f29f852](https://github.com/laurigates/claude-plugins/commit/f29f852c31e7f0a6e35d67fbea4e5febcce20537))
+
 ## [2.49.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.49.2...git-plugin-v2.49.3) (2026-07-04)
 
 
