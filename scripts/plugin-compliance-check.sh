@@ -593,6 +593,22 @@ check_skill_body() {
       done
     fi
 
+    # Regression: git-maintain must prefer modern incremental maintenance over
+    # the legacy blocking `git gc --aggressive` / `git repack -ad` pass. Git 2.31+
+    # introduced `git maintenance` and geometric repacking (default for manual
+    # maintenance in 2.52+), which organizes packfiles in logarithmic layers and
+    # avoids the destructive all-in-one repack. A bulk edit reverting to
+    # `gc --aggressive` as the default would silently restore the slow path, so
+    # assert the two load-bearing modern commands survive.
+    if [ "$skill_name" = "git-maintain" ]; then
+      for token in 'git repack --geometric' 'git maintenance'; do
+        if ! grep -qF "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must prefer modern incremental maintenance token '${token}' over 'gc --aggressive'")
+          has_errors=true
+        fi
+      done
+    fi
+
     # Regression: execution-grounded-review is the execution-grounded verifier in
     # the agent-patterns review family — the one thing that distinguishes it from
     # adversarial-review (which reads a design) is that it RUNS the suite first

@@ -1,12 +1,12 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
-reviewed: 2026-04-25
-allowed-tools: Bash(git status *), Bash(git branch *), Bash(git stash *), Bash(git prune *), Bash(git gc *), Bash(git repack *), Bash(git fsck *), Bash(git rm *), Bash(du *), Read, Glob, TodoWrite
-args: "[--prune] [--gc] [--verify] [--branches] [--stash] [--all]"
-argument-hint: "[--prune] [--gc] [--verify] [--branches] [--stash] [--all]"
+modified: 2026-07-04
+reviewed: 2026-07-04
+allowed-tools: Bash(git status *), Bash(git branch *), Bash(git stash *), Bash(git prune *), Bash(git gc *), Bash(git repack *), Bash(git maintenance *), Bash(git fsck *), Bash(git rm *), Bash(du *), Read, Glob, TodoWrite
+args: "[--prune] [--gc] [--background] [--verify] [--branches] [--stash] [--all]"
+argument-hint: "[--prune] [--gc] [--background] [--verify] [--branches] [--stash] [--all]"
 disable-model-invocation: true
-description: "Repo maintenance — gc, branch pruning, stash cleanup, fsck. Use when asked to clean up the repo, run git gc, delete merged branches, prune stashes, or shrink .git."
+description: "Repo maintenance — incremental repack, gc, branch pruning, stash cleanup, fsck. Use when asked to clean up the repo, run git maintenance/gc, delete merged branches, prune stashes, or shrink .git."
 name: git-maintain
 ---
 
@@ -31,8 +31,9 @@ name: git-maintain
 
 Parse these parameters from the command (all optional):
 
-- `--prune`: Remove unreachable objects and optimize repository
-- `--gc`: Run git garbage collection (aggressive)
+- `--prune`: Remove unreachable objects and run an incremental geometric repack
+- `--gc`: Force a full `git gc` consolidation (only when a repo has degraded badly — prefer the incremental repack)
+- `--background`: Register the repo for hourly background maintenance (`git maintenance start`) instead of a blocking one-shot pass
 - `--verify`: Verify integrity of git objects
 - `--branches`: Clean up merged branches only
 - `--stash`: Clean up stashes only
@@ -66,20 +67,45 @@ Perform repository maintenance and cleanup based on the flags provided.
 - Drop stashes from deleted branches
 - **Require user confirmation** before dropping stashes
 
-### Step 5: Repository optimization (if --prune, --gc, or --all)
+### Step 5: Repository optimization (if --prune, --gc, --background, or --all)
+
+**Prefer incremental maintenance over `gc --aggressive`.** Modern Git (2.31+)
+replaced the blocking, rewrite-everything `git gc --aggressive` pass with
+`git maintenance` and **geometric repacking**, which organizes packfiles in
+logarithmic layers by object count. Geometric repacking is the default for
+manual maintenance in recent Git (2.52+) and avoids the destructive,
+time-consuming "all-in-one" repack. Default to it.
 
 ```bash
-# Prune unreachable objects
-git prune
+# Incremental geometric repack — logarithmic pack layering + on-disk
+# multi-pack index; far cheaper than `gc --aggressive`, safe to run often
+git repack --geometric=2 -d --write-midx
 
-# Run garbage collection
-git gc --aggressive
-
-# Repack objects
-git repack -ad
+# Prune unreachable objects older than the default grace window
+git prune --expire=2.weeks.ago
 
 # Show size improvement
 du -sh .git
+```
+
+For hands-off upkeep (`--background`), register the repo so Git quietly
+pre-fetches, optimizes the commit-graph, and repacks loose objects on a
+schedule instead of blocking on a manual pass:
+
+```bash
+# Register hourly background maintenance (one-time, per repo)
+git maintenance start
+
+# Or run the standard task set once, on demand (non-blocking, incremental)
+git maintenance run --task=commit-graph --task=incremental-repack --task=loose-objects
+```
+
+Reserve a full `git gc` for a repo that has genuinely degraded (only with
+`--gc`); skip `--aggressive` unless a one-off deep repack is explicitly needed:
+
+```bash
+# Full consolidation — only when --gc is requested and the repo is degraded
+git gc
 ```
 
 ### Step 6: Verify repository integrity (if --verify or --all)
@@ -98,13 +124,25 @@ Report any issues found.
 ## Safe Operations
 
 These operations are safe and non-destructive:
-- `git gc` - Garbage collection
+- `git repack --geometric=2 -d --write-midx` - Incremental geometric repack (preferred)
+- `git maintenance run` / `git maintenance start` - Incremental background upkeep
+- `git gc` - Full garbage collection (reserve for degraded repos)
 - `git prune` - Prune unreachable objects
 - `git fsck` - Verify integrity
 
 These require user confirmation:
 - `git branch -d` - Delete branches
 - `git stash drop` - Drop stashes
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Routine optimize | `git repack --geometric=2 -d --write-midx` |
+| Hands-off upkeep | `git maintenance start` |
+| One-shot incremental pass | `git maintenance run --task=incremental-repack --task=commit-graph` |
+| Integrity check | `git fsck --full --strict` |
+| Size before/after | `du -sh .git` |
 
 ## See Also
 

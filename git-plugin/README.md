@@ -24,7 +24,7 @@ See [`docs/flow.md`](docs/flow.md) for a diagram of how the skills fit together.
 | `/git:pr-feedback` | Review PR workflow results and comments, address substantive feedback from reviewers |
 | `/git:conflicts` | Resolve merge conflicts with zdiff3, rerere, and modern git tooling |
 | `/git:resolve-conflicts` | Resolve merge conflicts in PRs automatically |
-| `/git:maintain` | Repository maintenance and cleanup (prune, gc, verify, branches, stash) |
+| `/git:maintain` | Repository maintenance and cleanup (incremental repack, gc, prune, verify, branches, stash) |
 | `/git:deadbranch` | Survey and clean up stale branches via the deadbranch CLI — dry-run preview, TUI or non-interactive delete, recoverable backups |
 | `/git:derive-docs` | Analyze git history to derive undocumented rules, PRDs, ADRs, and PRPs |
 | `/git:upstream-pr` | Submit clean PRs to upstream repositories from fork work |
