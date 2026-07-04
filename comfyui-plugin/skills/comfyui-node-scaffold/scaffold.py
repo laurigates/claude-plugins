@@ -748,6 +748,141 @@ app.registerExtension({
 });
 """
 
+# --------------------------------------------------------------------------- #
+# TypeScript source — shim variant (CSS-injection + command, no modal-kit dep)
+# --------------------------------------------------------------------------- #
+INDEX_TS_SHIM = """\
+// @@DISPLAY@@ — ComfyUI frontend extension (CSS/shim pack).
+//
+// TypeScript source in `src/`, built to ESM via `bun build` and emitted to
+// `web/dist/` (served at /extensions/@@NAME@@/index.js — the pack directory
+// name IS the URL segment). Do not rename the pack dir without syncing
+// EXT_NAME below. See ADR-0001.
+//
+// Pattern ("the shim vein"): a home for SMALL, individually-toggleable stopgap
+// fixes that paper over upstream ComfyUI-frontend bugs. Unlike the sibling
+// packs there is NO modal and NO widget hook — each shim injects a scoped,
+// managed `<style>` tag (driven by a boolean setting) and the pack registers
+// commands. Every shim links the upstream issue it papers over (in `upstream`
+// + the settings tooltip) and is deleted the release the upstream fix ships.
+//
+// CSS selectors should target stable `data-testid` hooks where the frontend
+// provides them; anything keyed on compiled Tailwind class chains is brittle
+// across frontend releases and is expected to rot — each shim must FAIL SOFT
+// (a dead selector styles nothing, never throws).
+//
+// This variant has NO @@MODAL_KIT_PKG@@ dependency — there is no widget to
+// hook and no modal to open. The CSS-shim lifecycle helpers are exported and
+// unit-tested (tests/js); the registerExtension wiring below is exercised in
+// the manual browser matrix.
+//
+// ComfyUI serves its frontend API at runtime from `/scripts/app.js`. The
+// emitted import string stays `/scripts/app.js` (bun's `--external '/scripts/*'`
+// keeps it unbundled); the type is supplied via a `paths` mapping in
+// tsconfig.json that points the import at `src/comfyui-shims.d.ts`. See ADR-0001.
+import type { ComfyApp } from "@comfyorg/comfyui-frontend-types";
+import { app } from "/scripts/app.js";
+
+const EXT_NAME = "@@NAME@@";
+
+// ============================================================
+// Shim registry
+// ============================================================
+
+export interface CssShim {
+  /** PascalCase suffix of the `@@DISPLAY_NOSPACE@@.<Id>` boolean setting. */
+  id: string;
+  /** Settings-UI label. */
+  name: string;
+  /** Upstream issue this shim papers over. Delete the shim when it closes. */
+  upstream: string;
+  /** One-line settings tooltip (the upstream URL is appended). */
+  tooltip: string;
+  css: string;
+}
+
+// Placeholder shim — replace with a real stopgap. Every shim MUST link an
+// upstream issue and carry non-empty css/tooltip (asserted in tests/js). The
+// selector below is inert (nothing matches `[data-testid="@@SHORT@@-example"]`),
+// so it fails soft until you point it at a real hook.
+const exampleShim: CssShim = {
+  id: "Example",
+  name: "@@DISPLAY@@ example shim",
+  upstream: "https://github.com/Comfy-Org/ComfyUI_frontend/issues",
+  tooltip: "Replace this placeholder with a real stopgap for an upstream frontend bug.",
+  css: `
+[data-testid="@@SHORT@@-example"] {
+  outline: 1px solid transparent;
+}
+`,
+};
+
+export const SHIMS: CssShim[] = [exampleShim];
+
+// ============================================================
+// CSS shim lifecycle — one managed <style> per shim, idempotent
+// ============================================================
+
+export function styleElementId(shim: Pick<CssShim, "id">): string {
+  return `${EXT_NAME}-${shim.id}`;
+}
+
+export function applyCssShim(shim: CssShim, doc: Document = document): void {
+  if (doc.getElementById(styleElementId(shim))) return;
+  const style = doc.createElement("style");
+  style.id = styleElementId(shim);
+  style.textContent = `/* ${EXT_NAME}: ${shim.name} — stopgap for ${shim.upstream} */${shim.css}`;
+  doc.head.appendChild(style);
+}
+
+export function removeCssShim(shim: Pick<CssShim, "id">, doc: Document = document): void {
+  doc.getElementById(styleElementId(shim))?.remove();
+}
+
+// ============================================================
+// Wiring — a boolean setting per shim (apply/remove on change) + a command
+// ============================================================
+
+type ExtensionSettings = NonNullable<Parameters<ComfyApp["registerExtension"]>[0]["settings"]>;
+
+function shimSettings(): ExtensionSettings {
+  return SHIMS.map((shim) => ({
+    id: `@@DISPLAY_NOSPACE@@.${shim.id}`,
+    name: shim.name,
+    type: "boolean",
+    defaultValue: true,
+    tooltip: `${shim.tooltip} Stopgap for ${shim.upstream}`,
+    // Fires once at registration with the stored value, then on every toggle.
+    onChange: (value: unknown) => {
+      if (value) applyCssShim(shim);
+      else removeCssShim(shim);
+    },
+  })) as ExtensionSettings;
+}
+
+app.registerExtension({
+  name: "comfy.@@SHORT@@",
+  settings: shimSettings(),
+  commands: [
+    {
+      id: "@@SHORT@@.reapply-shims",
+      label: "Re-apply @@DISPLAY@@ CSS shims",
+      // TODO: replace with a real command, or drop `commands`/`menuCommands`
+      // entirely if this pack is settings-only.
+      function: () => {
+        for (const shim of SHIMS) applyCssShim(shim);
+      },
+    },
+  ],
+  menuCommands: [
+    {
+      path: ["Extensions", "@@DISPLAY@@"],
+      commands: ["@@SHORT@@.reapply-shims"],
+    },
+  ],
+});
+"""
+
 COMFYUI_SHIMS = """\
 // ComfyUI serves its frontend API at runtime from `/scripts/app.js`. The
 // `@comfyorg/comfyui-frontend-types` package only types the bare-package
@@ -1171,6 +1306,52 @@ describe("@@NAME@@ standalone modal", () => {
     expect(modal.bodyEl.querySelector(".@@SHORT@@-body")).not.toBeNull();
     expect(modal.bodyEl.textContent).toContain("@@DISPLAY@@");
     modal.close();
+  });
+});
+"""
+
+JS_TEST_SHIM = """\
+// @vitest-environment jsdom
+import { describe, expect, it } from "vitest";
+// Vitest transpiles TypeScript, so the test imports the `.ts` source directly
+// (no build step). Importing the module also runs the registerExtension wiring
+// against tests/js/__mocks__/app.js. There is no modal in this pack — the
+// meaningful smoke is the CSS-shim lifecycle (inject / idempotent / remove),
+// which is jsdom-checkable. The `@vitest-environment jsdom` docblock above
+// gives this one file a DOM; the rest of the suite stays on the node
+// environment.
+import { applyCssShim, removeCssShim, SHIMS, styleElementId } from "../../src/index.ts";
+
+describe("@@NAME@@ shim registry", () => {
+  it("every shim links its upstream issue and carries non-empty CSS + tooltip", () => {
+    for (const shim of SHIMS) {
+      expect(shim.upstream).toMatch(/^https:\\/\\//);
+      expect(shim.css.trim()).not.toBe("");
+      expect(shim.tooltip.trim()).not.toBe("");
+    }
+  });
+
+  it("shim ids are unique", () => {
+    const ids = SHIMS.map((s) => s.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+describe("@@NAME@@ CSS shim lifecycle", () => {
+  const shim = SHIMS[0];
+
+  it("apply injects one managed <style>, idempotently", () => {
+    applyCssShim(shim);
+    applyCssShim(shim);
+    const styles = document.querySelectorAll(`#${styleElementId(shim)}`);
+    expect(styles.length).toBe(1);
+    expect(styles[0].textContent).toContain(shim.upstream);
+  });
+
+  it("remove deletes the managed <style> and tolerates absence", () => {
+    removeCssShim(shim);
+    expect(document.getElementById(styleElementId(shim))).toBeNull();
+    removeCssShim(shim); // second remove is a no-op, not a throw
   });
 });
 """
@@ -1949,11 +2130,13 @@ def build_file_map(
 ) -> dict[str, str]:
     backend = variant == "backend"
     gesture = variant == "gesture"
-    modal = not gesture  # frontend or backend → consumes the kit
+    shim = variant == "shim"
+    modal = variant in ("frontend", "backend")  # consumes the modal kit
     # A modal variant scaffolded with NO target widgets has nothing to hook, so
     # the per-widget intercept vein is provably inapplicable. Emit a
     # standalone-modal skeleton (toolbar button + command opening a modal)
     # instead. Still depends on the modal kit (modal == True). See issue #1806.
+    # The gesture and shim variants are NOT modal, so they never take this path.
     standalone = modal and not widgets
 
     # Shared pinned versions injected into every templated config.
@@ -2002,10 +2185,11 @@ def build_file_map(
         ctx["DEPENDENCIES_BLOCK"] = ""
         ctx["KIT_PKG_NOTE"] = ""
 
-    # The standalone-modal smoke test mounts the modal under jsdom; only that
-    # variant needs jsdom in devDependencies. See issue #1806.
+    # The standalone-modal smoke test mounts the modal under jsdom (issue #1806);
+    # the shim smoke test asserts the CSS-shim <style> lifecycle under jsdom too.
+    # Both need jsdom in devDependencies.
     ctx["JSDOM_DEV_DEP"] = (
-        f'\n    "jsdom": "{JSDOM_VERSION}",' if standalone else ""
+        f'\n    "jsdom": "{JSDOM_VERSION}",' if (standalone or shim) else ""
     )
 
     # CLAUDE.md conditional fragments.
@@ -2020,6 +2204,13 @@ def build_file_map(
             "Frontend-only ComfyUI custom-node pack in the canvas-gesture vein. "
             "`__init__.py` is a loader stub; the whole extension is TypeScript in "
             "`src/`, built to `web/dist/` via bun. See ADR-0001."
+        )
+    elif shim:
+        ctx["CLAUDE_INTRO"] = (
+            "Frontend-only ComfyUI custom-node pack in the CSS/shim vein — "
+            "scoped `<style>` injection + commands, no modal. `__init__.py` is a "
+            "loader stub; the whole extension is TypeScript in `src/`, built to "
+            "`web/dist/` via bun. See ADR-0001."
         )
     else:
         ctx["CLAUDE_INTRO"] = (
@@ -2051,19 +2242,26 @@ def build_file_map(
         else "No Python dependencies. The pack is frontend-only; a feature "
         "genuinely needing Python belongs in a separate companion pack."
     )
-    ctx["KIT_RULE"] = (
-        f"**Modal primitives come from `{MODAL_KIT_PKG}`** — import them, do NOT "
-        "copy `modal-shell.js`/`modal-fuzzy.js` into the pack. `bun build` inlines "
-        "the imported code into `web/dist`."
-        if modal
-        else "**No modal kit.** This gesture pack has no widget to hook and no "
-        "modal; it adds a canvas pointer layer with self-contained pure helpers."
-    )
-    ctx["KIT_DEV_NOTE"] = (
-        f"{MODAL_KIT_PKG} (inlined at build)"
-        if modal
-        else "(no modal kit — gesture pack)"
-    )
+    if modal:
+        ctx["KIT_RULE"] = (
+            f"**Modal primitives come from `{MODAL_KIT_PKG}`** — import them, do NOT "
+            "copy `modal-shell.js`/`modal-fuzzy.js` into the pack. `bun build` inlines "
+            "the imported code into `web/dist`."
+        )
+        ctx["KIT_DEV_NOTE"] = f"{MODAL_KIT_PKG} (inlined at build)"
+    elif shim:
+        ctx["KIT_RULE"] = (
+            "**No modal kit.** This shim pack has no widget to hook and no modal; it "
+            "injects scoped, managed `<style>` tags (one per shim, driven by a boolean "
+            "setting) and registers commands."
+        )
+        ctx["KIT_DEV_NOTE"] = "(no modal kit — CSS/shim pack)"
+    else:
+        ctx["KIT_RULE"] = (
+            "**No modal kit.** This gesture pack has no widget to hook and no "
+            "modal; it adds a canvas pointer layer with self-contained pure helpers."
+        )
+        ctx["KIT_DEV_NOTE"] = "(no modal kit — gesture pack)"
     ctx["RESTART_NOTE"] = (
         f" Changes to `{ctx['PY_MODULE']}.py` (backend) DO require a ComfyUI restart."
         if backend
@@ -2147,6 +2345,42 @@ def build_file_map(
             "- ComfyUI: modern Vue frontend (`comfyui-frontend-package >= 1.40`) for the\n"
             "  `registerExtension` action-bar/command launcher API."
         )
+    elif shim:
+        ctx["DEP_FLOOR_NOTE"] = (
+            "Floor tied to the registerExtension boolean-settings API."
+        )
+        ctx["WHAT_DESC"] = "the CSS shims it injects and the upstream bugs they paper over"
+        ctx["VEIN"] = (
+            "A home for SMALL, individually-toggleable stopgap fixes in the *CSS/shim* "
+            "vein: a frontend extension that papers over upstream ComfyUI-frontend bugs "
+            "by injecting scoped, managed `<style>` tags — one per shim, driven by a "
+            "boolean setting — and registers commands. There are **no target widgets to "
+            "hook** and **no modal**, so there is no `TARGET_WIDGETS` / `onPointerDown` "
+            "wrapping and **no `" + MODAL_KIT_PKG + "` dependency**. Every shim links the "
+            "upstream issue it papers over (in `upstream` + the settings tooltip) and is "
+            "deleted the release the upstream fix ships. Selectors target stable "
+            "`data-testid` hooks where the frontend provides them; anything keyed on "
+            "compiled Tailwind class chains is brittle and expected to rot, so each shim "
+            "**fails soft** (a dead selector styles nothing, never throws). The CSS-shim "
+            "lifecycle helpers are exported so the jsdom smoke test can prove inject / "
+            "idempotent / remove."
+        )
+        ctx["EXT_ROW_DESC"] = (
+            "The extension: CSS-shim registry + boolean-setting lifecycle (no kit)."
+        )
+        ctx["HOOK_RULE"] = (
+            "**Selectors are version-sensitive.** Each shim injects CSS keyed on "
+            "frontend DOM. Prefer stable `data-testid` hooks; keep every shim FAIL-SOFT "
+            "(a dead selector styles nothing) so a frontend change never breaks the pack."
+        )
+        ctx["FAMILY_BLURB"] = (
+            "> small, individually-toggleable CSS shims that paper over upstream\n"
+            "> frontend bugs, additive and self-contained — each deleted when its fix ships."
+        )
+        ctx["COMPAT_BULLET"] = (
+            "- ComfyUI: modern Vue frontend (`comfyui-frontend-package >= 1.40`) for the\n"
+            "  `registerExtension` boolean-settings + command API."
+        )
     else:
         ctx["DEP_FLOOR_NOTE"] = "Floor tied to widget.onPointerDown availability."
         ctx["WHAT_DESC"] = "the widgets it enhances and the modal it opens"
@@ -2208,7 +2442,9 @@ def build_file_map(
         ".github/workflows/clear-autorelease-labels.yml": CLEAR_AUTORELEASE_YML,
         "docs/blueprint/adrs/0001-adopt-typescript-bun-build.md": ADR_0001,
         "src/index.ts": (
-            INDEX_TS_GESTURE
+            INDEX_TS_SHIM
+            if shim
+            else INDEX_TS_GESTURE
             if gesture
             else INDEX_TS_STANDALONE
             if standalone
@@ -2218,7 +2454,9 @@ def build_file_map(
         "tests/test_init.py": TEST_INIT,
         "tests/js/__mocks__/app.js": APP_MOCK,
         "tests/js/index.test.js": (
-            JS_TEST_GESTURE
+            JS_TEST_SHIM
+            if shim
+            else JS_TEST_GESTURE
             if gesture
             else JS_TEST_STANDALONE
             if standalone
@@ -2318,7 +2556,9 @@ def main() -> int:
     )
     p.add_argument("--desc", required=True, help="one-line description")
     p.add_argument(
-        "--variant", choices=["frontend", "backend", "gesture"], default="frontend"
+        "--variant",
+        choices=["frontend", "backend", "gesture", "shim"],
+        default="frontend",
     )
     p.add_argument(
         "--widgets",
@@ -2346,7 +2586,8 @@ def main() -> int:
     widgets = [w.strip() for w in args.widgets.split(",") if w.strip()]
     # A modal variant (frontend/backend) with no --widgets gets the
     # standalone-modal skeleton instead of the per-widget intercept. See #1806.
-    standalone = args.variant != "gesture" and not widgets
+    # gesture and shim are NOT modal, so they never take the standalone path.
+    standalone = args.variant in ("frontend", "backend") and not widgets
 
     parent = Path(args.dir).resolve()
     target = parent / args.name
@@ -2370,7 +2611,11 @@ def main() -> int:
         "  git init -b main                       # seed main directly (no branch juggling)\n"
         "  uv sync --group dev\n"
         "  bun install                            # TypeScript, Biome, Vitest, knip"
-        + (", comfy-modal-kit\n" if args.variant != "gesture" else "\n")
+        + (
+            ", comfy-modal-kit\n"
+            if args.variant in ("frontend", "backend")
+            else "\n"
+        )
         + "  pre-commit install\n"
         "  just check                              # typecheck + build + lint + test should pass green\n"
         "\nThen:\n"
@@ -2378,6 +2623,10 @@ def main() -> int:
             "  - tune the pinch layer in src/index.ts "
             "(selectedNodes/nodeScreenRect/scaledSize; groups + affordance TODOs)\n"
             if args.variant == "gesture"
+            else "  - implement the CSS shims in src/index.ts (replace the placeholder "
+            "SHIMS entry; link the upstream issue, keep each shim fail-soft — no "
+            "comfy-modal-kit)\n"
+            if args.variant == "shim"
             else "  - implement the modal in src/index.ts (openShell body via "
             "openModalShell; tune the action-bar/command launcher; import fuzzyRank "
             "from @laurigates/comfy-modal-kit for search)\n"
