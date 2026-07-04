@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.38.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.38.0...blueprint-plugin-v3.38.1) (2026-07-04)
+
+
+### Bug Fixes
+
+* **blueprint-plugin:** clarify work-order handoff is user-invocable ([#1946](https://github.com/laurigates/claude-plugins/issues/1946)) ([8d1f86b](https://github.com/laurigates/claude-plugins/commit/8d1f86be516e6c17099fe39e6226da5a3571fd8d)), closes [#1906](https://github.com/laurigates/claude-plugins/issues/1906)
+
 ## [3.38.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.37.2...blueprint-plugin-v3.38.0) (2026-07-03)
 
 
