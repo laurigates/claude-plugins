@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.13](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.5.12...hooks-plugin-v2.5.13) (2026-07-04)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** require positive test signal before test-output grep-chain block ([#1929](https://github.com/laurigates/claude-plugins/issues/1929)) ([ece84e5](https://github.com/laurigates/claude-plugins/commit/ece84e5ad898e24da2a6bb8c23ab63fdd15eac4a))
+
 ## [2.5.12](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.5.11...hooks-plugin-v2.5.12) (2026-07-04)
 
 
