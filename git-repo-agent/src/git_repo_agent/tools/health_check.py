@@ -68,9 +68,12 @@ def _score_tests(repo: Path) -> tuple[int, list[str]]:
 
     # Check for test config
     test_configs = [
-        "vitest.config.ts", "vitest.config.js",
-        "jest.config.js", "jest.config.ts",
-        "pytest.ini", "conftest.py",
+        "vitest.config.ts",
+        "vitest.config.js",
+        "jest.config.js",
+        "jest.config.ts",
+        "pytest.ini",
+        "conftest.py",
         "playwright.config.ts",
     ]
     if any((repo / cfg).exists() for cfg in test_configs):
@@ -94,8 +97,10 @@ def _score_tests(repo: Path) -> tuple[int, list[str]]:
 
     # Coverage config
     coverage_indicators = [
-        ".coveragerc", "coverage.config.js",
-        "codecov.yml", ".codecov.yml",
+        ".coveragerc",
+        "coverage.config.js",
+        "codecov.yml",
+        ".codecov.yml",
     ]
     if any((repo / f).exists() for f in coverage_indicators):
         score += 3
@@ -104,7 +109,8 @@ def _score_tests(repo: Path) -> tuple[int, list[str]]:
 
 
 def _score_security(
-    repo: Path, profile: StackProfile | None = None,
+    repo: Path,
+    profile: StackProfile | None = None,
 ) -> tuple[int, list[str]]:
     """Score security health (0-20).
 
@@ -151,7 +157,10 @@ def _score_security(
         for wf in workflows_dir.glob("*.yml"):
             try:
                 content = wf.read_text(encoding="utf-8", errors="replace").lower()
-                if any(kw in content for kw in ["security", "audit", "dependabot", "codeql", "snyk"]):
+                if any(
+                    kw in content
+                    for kw in ["security", "audit", "dependabot", "codeql", "snyk"]
+                ):
                     score += 4
                     security_found = True
                     break
@@ -170,7 +179,8 @@ def _score_security(
 
 
 def _score_quality(
-    repo: Path, profile: StackProfile | None = None,
+    repo: Path,
+    profile: StackProfile | None = None,
 ) -> tuple[int, list[str]]:
     """Score code quality health (0-20).
 
@@ -194,9 +204,14 @@ def _score_quality(
 
     # Linter config
     linter_configs = [
-        "biome.json", "biome.jsonc",
-        ".eslintrc.json", ".eslintrc.js", "eslint.config.js", "eslint.config.mjs",
-        ".ruff.toml", "ruff.toml",
+        "biome.json",
+        "biome.jsonc",
+        ".eslintrc.json",
+        ".eslintrc.js",
+        "eslint.config.js",
+        "eslint.config.mjs",
+        ".ruff.toml",
+        "ruff.toml",
     ]
     if any((repo / f).exists() for f in linter_configs):
         score += 6
@@ -215,12 +230,20 @@ def _score_quality(
 
     # Formatter config — biome and ruff each cover the formatter slot.
     formatter_configs = [
-        "biome.json", "biome.jsonc",
-        ".prettierrc", ".prettierrc.json", ".prettierrc.yaml", ".prettierrc.yml",
-        "prettier.config.js", "prettier.config.mjs", "prettier.config.cjs",
+        "biome.json",
+        "biome.jsonc",
+        ".prettierrc",
+        ".prettierrc.json",
+        ".prettierrc.yaml",
+        ".prettierrc.yml",
+        "prettier.config.js",
+        "prettier.config.mjs",
+        "prettier.config.cjs",
         ".clang-format",
-        "ruff.toml", ".ruff.toml",
-        ".rustfmt.toml", "rustfmt.toml",
+        "ruff.toml",
+        ".ruff.toml",
+        ".rustfmt.toml",
+        "rustfmt.toml",
         ".scalafmt.conf",
     ]
     if any((repo / f).exists() for f in formatter_configs):
@@ -244,8 +267,10 @@ def _score_quality(
     # Type checking — suppress finding for Python-incidental projects.
     type_configs = [
         "tsconfig.json",
-        "pyrightconfig.json", "basedpyright",
-        "mypy.ini", ".mypy.ini",
+        "pyrightconfig.json",
+        "basedpyright",
+        "mypy.ini",
+        ".mypy.ini",
     ]
     if any((repo / f).exists() for f in type_configs):
         score += 5
@@ -258,7 +283,15 @@ def _score_quality(
         if not typechecker_found and (repo / "pyproject.toml").exists():
             try:
                 content = (repo / "pyproject.toml").read_text(encoding="utf-8")
-                if any(t in content for t in ["tool.pyright", "tool.basedpyright", "tool.mypy", "tool.ty"]):
+                if any(
+                    t in content
+                    for t in [
+                        "tool.pyright",
+                        "tool.basedpyright",
+                        "tool.mypy",
+                        "tool.ty",
+                    ]
+                ):
                     score += 5
                     typechecker_found = True
             except OSError:
@@ -336,21 +369,42 @@ def _score_ci(repo: Path) -> tuple[int, list[str]]:
         if workflow_files:
             score += 8
 
-            # Check for specific CI features
-            all_content = ""
+            # Check for specific CI features across files without accumulating
+            found_pr = False
+            found_push = False
+            found_release = False
+            found_cache = False
+
             for wf in workflow_files:
                 try:
-                    all_content += wf.read_text(encoding="utf-8", errors="replace").lower()
+                    content = wf.read_text(encoding="utf-8", errors="replace").lower()
+
+                    if not found_pr and "pull_request" in content:
+                        found_pr = True
+                    if (
+                        not found_push
+                        and "push" in content
+                        and ("main" in content or "master" in content)
+                    ):
+                        found_push = True
+                    if not found_release and "release" in content:
+                        found_release = True
+                    if not found_cache and "cache" in content:
+                        found_cache = True
+
+                    # Early exit if all features found
+                    if found_pr and found_push and found_release and found_cache:
+                        break
                 except OSError:
                     pass
 
-            if "pull_request" in all_content:
+            if found_pr:
                 score += 3
-            if "push" in all_content and ("main" in all_content or "master" in all_content):
+            if found_push:
                 score += 3
-            if "release" in all_content:
+            if found_release:
                 score += 3
-            if "cache" in all_content:
+            if found_cache:
                 score += 3
         else:
             findings.append(".github/workflows/ exists but has no workflow files")
