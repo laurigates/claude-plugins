@@ -1,11 +1,11 @@
 ---
 description: Automated TDD test-fix-refactor cycle until tests pass. Use when looping on failing tests, running a TDD cycle, or driving RED/GREEN/REFACTOR until green.
 args: "[test-pattern] [--max-cycles <N>]"
-argument-hint: "Test pattern to focus on, --max-cycles to limit iterations"
-allowed-tools: Read, Edit, Bash
+argument-hint: "Optional test pattern to focus on; --max-cycles <N> to cap iterations (default 10)"
+allowed-tools: Read, Edit, Bash, Bash(bash *)
 created: 2025-12-16
-modified: 2026-06-21
-reviewed: 2026-04-25
+modified: 2026-07-04
+reviewed: 2026-07-04
 name: project-test-loop
 ---
 
@@ -19,172 +19,113 @@ name: project-test-loop
 | Iterating on failing tests with auto fix-and-retry behavior | Use project-distill instead when capturing patterns from a finished session |
 | Bounding TDD iterations with `--max-cycles` to avoid runaway loops | Use project-discovery instead when the test command itself is unknown |
 
-Run automated TDD cycle: test → fix → refactor.
+Run an automated TDD cycle — test -> fix -> refactor — where a deterministic
+driver script (`scripts/run-test-cycle.sh`) does the mechanical work each
+iteration and you make the minimal fix between invocations.
 
-**Note**: Configure project-specific test/build commands in `CLAUDE.md` or `.claude/rules/` for automatic detection.
+## Context
 
-**Steps**:
+- Project markers: !`find . -maxdepth 1 \( -name package.json -o -name pyproject.toml -o -name pytest.ini -o -name Cargo.toml -o -name go.mod -o -name Makefile \) -print`
 
-1. **Detect test command** (if not already configured):
-   - Check `package.json` for `scripts.test` (Node.js)
-   - Check for `pytest` or `python -m unittest` (Python)
-   - Check for `cargo test` (Rust)
-   - Check for `go test ./...` (Go)
-   - Check `Makefile` for test target
-   - If not found, ask user how to run tests
+## Parameters
 
-2. **Run test suite**:
-   ```bash
-   # Run detected test command
-   [test_command]
-   ```
+Parse these from `$ARGUMENTS`:
 
-3. **Analyze results**:
+- **`test-pattern`** (positional, optional) — a pattern passed through to the
+  detected test command to focus the run (e.g. a file, a test-name filter).
+- **`--max-cycles <N>`** (optional, default `10`) — the runaway ceiling; the
+  driver returns `CAP_REACHED` once the cycle count reaches `N`.
 
-   **If tests FAIL**:
-   - Parse failure output
-   - Identify failing tests:
-     * Which tests failed?
-     * What assertions failed?
-     * What was expected vs actual?
-   - Identify root cause:
-     * Bug in implementation?
-     * Missing implementation?
-     * Incorrect test?
-   - Make minimal fix:
-     * Fix only what's needed to pass the failing test
-     * Don't add extra functionality
-     * Don't fix tests (fix code instead)
-   - Re-run tests to confirm fix
-   - Loop back to step 2
+Also pass `--test-cmd "<command>"` to the driver to override auto-detection when
+the project's test command is configured in `CLAUDE.md` / `.claude/rules/` and
+not one of the auto-detected shapes.
 
-   **If tests PASS**:
-   - Check for refactoring opportunities:
-     * Code duplication?
-     * Unclear naming?
-     * Long functions?
-     * Complex logic that can be simplified?
-     * Magic numbers/strings to extract?
-   - If refactoring identified:
-     * Refactor while keeping tests green
-     * Re-run tests after each refactoring
-     * Ensure tests still pass
-   - If no refactoring needed:
-     * Report success
-     * Stop loop
+## Execution
 
-4. **Repeat until**:
-   - All tests pass AND
-   - No obvious refactoring opportunities
+Execute this TDD loop. Each iteration runs the deterministic driver, then you act
+on its `VERDICT`.
 
-   **OR stop if**:
-   - User intervention needed
-   - Blocked by external dependency
-   - Unclear how to fix failure
+### Step 1: Run one test cycle
 
-5. **Report results**:
-   ```
-   🧪 Test Loop Results:
+Invoke the driver (auto-detects the test command from the project markers above:
+`package.json` test script, `pytest`/`pyproject.toml`, `cargo test`, `go test`,
+or a `Makefile` `test:` target):
 
-   Cycles: [N] iterations
+```bash
+bash "${CLAUDE_SKILL_DIR}/scripts/run-test-cycle.sh" --pattern "$0" --max-cycles 10
+```
 
-   Fixes Applied:
-   - [Fix 1]: [Brief description]
-   - [Fix 2]: [Brief description]
+Substitute the parsed `test-pattern` for `--pattern` (omit it if none) and the
+parsed `--max-cycles` value. Read the `VERDICT=` line from the structured output
+and the bounded `=== TEST OUTPUT ===` tail.
 
-   Refactorings Performed:
-   - [Refactor 1]: [Brief description]
-   - [Refactor 2]: [Brief description]
+### Step 2: Branch on the verdict
 
-   Current Status:
-   ✅ All tests pass
-   ✅ Code refactored
-   📝 Ready for commit
+| `VERDICT` | Meaning | Do |
+|---|---|---|
+| `GREEN` | Test command exited 0 — suite passes | Go to Step 3 (refactor), then stop |
+| `CONTINUE` | Suite failing, ceiling not reached | Make a minimal fix (Step 2a), then repeat Step 1 |
+| `STUCK` | Same failing signature 3 cycles running — no progress | Stop; report the blocker and ask for input |
+| `CAP_REACHED` | Cycle count hit `--max-cycles` | Stop; report remaining failures |
+| `SETUP_ERROR` | No test command could be detected/run | Stop; ask how to run tests, or re-invoke with `--test-cmd` |
 
-   OR
+### Step 2a: Make the minimal fix (on `CONTINUE`)
 
-   ⚠️ Blocked: [Reason]
-   📝 Next steps: [Recommendation]
-   ```
+Read the `=== TEST OUTPUT ===` tail and identify the failure:
 
-**TDD Cycle Details**:
+1. Which tests failed, expected vs actual.
+2. Root cause: missing implementation, wrong return value, missing edge case,
+   integration issue.
+3. Apply the **minimal** fix to the code — fix only what the failing test needs.
+   Do **not** edit the tests to make them pass; that converts the suite's
+   independent judge into a self-judged loop (see Loop integrity below).
 
-### RED Phase (If starting new feature)
-1. Write failing test describing desired behavior
-2. Run tests → Should FAIL (expected)
-3. This command picks up from here
+Then repeat Step 1. The driver increments the cycle counter and re-checks.
 
-### GREEN Phase (This command handles)
-1. Run tests
-2. If fail → Make minimal fix
-3. Re-run tests → Should PASS
-4. Loop until all pass
+### Step 3: Refactor while green (on `GREEN`)
 
-### REFACTOR Phase (This command handles)
-1. Tests pass
-2. Look for improvements
-3. Refactor
-4. Re-run tests → Should STILL PASS
-5. Loop until no improvements
+With the suite passing, look for improvements — duplicated code, magic numbers,
+long functions, unclear names, complex conditionals — and refactor **without
+changing behavior**. Re-run Step 1 after each refactoring to confirm the suite
+stays green. When no improvement remains, report success and stop.
 
-**Common Failure Patterns**:
+### Step 4: Report
 
-**Pattern: Missing Implementation**
-- **Symptom**: `undefined is not a function`, `NameError`, etc.
-- **Fix**: Implement the missing function/class/method
-- **Minimal**: Just the signature, return dummy value
+Summarize cycles run, fixes applied, refactorings performed, and the final
+status (all green / blocked with reason + recommended next step).
 
-**Pattern: Wrong Return Value**
-- **Symptom**: `Expected X but got Y`
-- **Fix**: Update implementation to return correct value
-- **Minimal**: Don't add extra logic, just fix the return
+## Loop integrity
 
-**Pattern: Missing Edge Case**
-- **Symptom**: Test fails for specific input
-- **Fix**: Handle the edge case
-- **Minimal**: Add condition for this case only
+This loop's stop condition is the test suite itself — an **independent**,
+mechanical judge (a failing test does not care how hard you worked), which is
+exactly what `.claude/rules/loop-integrity.md` Pillar 1 asks for. The driver
+script makes that judge deterministic: `GREEN` is the suite's own exit 0, not
+your opinion. The `--max-cycles` ceiling (`CAP_REACHED`) and the same-failure-3x
+rule (`STUCK`) are the runaway bound. Do **not** make tests pass by editing the
+tests — that converts the independent judge into a self-judged loop.
 
-**Pattern: Integration Issue**
-- **Symptom**: Test fails when components interact
-- **Fix**: Fix the integration point
-- **Minimal**: Fix just the integration, not entire components
+## Common failure patterns
 
-**Refactoring Opportunities**:
+| Symptom | Fix (minimal) |
+|---|---|
+| `undefined is not a function`, `NameError` | Implement the missing function/class; just the signature + a dummy return |
+| `Expected X but got Y` | Correct the return value only — no extra logic |
+| Fails for a specific input | Handle that edge case with a single condition |
+| Fails when components interact | Fix the integration point, not the whole component |
 
-**Look for**:
-- Duplicated code → Extract to function
-- Magic numbers → Extract to constants
-- Long functions → Break into smaller functions
-- Complex conditionals → Extract to well-named functions
-- Unclear names → Rename to be descriptive
-- Comments explaining code → Refactor code to be self-explanatory
+## Auto-stop conditions
 
-**Don't**:
-- Change behavior
-- Add new functionality
-- Skip test runs
-- Make tests pass by changing tests
+Stop and report if: all tests pass with no refactoring left (SUCCESS, `GREEN`);
+`STUCK` (same failure 3× — the driver's no-progress signal); `CAP_REACHED`
+(`--max-cycles`); `SETUP_ERROR` (test command itself broken / undetectable); or
+the fix is unclear (NEEDS USER INPUT).
 
-**Auto-Stop Conditions**:
+## Agentic Optimizations
 
-Stop and report if:
-- All tests pass + no refactoring needed (SUCCESS)
-- Same test fails 3 times in a row (STUCK)
-- Error in test command itself (TEST SETUP ISSUE)
-- External dependency unavailable (BLOCKED)
-- Unclear how to fix (NEEDS USER INPUT)
-
-**Loop integrity**: this loop's stop condition is the test suite itself — an
-*independent*, mechanical judge (a failing test does not care how hard you
-worked), which is exactly what `.claude/rules/loop-integrity.md` Pillar 1 asks
-for. The `--max-cycles` flag and the "same test fails 3×" rule are the runaway
-ceiling. Do **not** make tests pass by editing the tests — that converts the
-independent judge into a self-judged loop.
-
-**Integration with Blueprint Development**:
-
-This command applies project-specific skills:
-- **Testing strategies**: Knows how to structure tests
-- **Implementation guides**: Knows how to implement fixes
-- **Quality standards**: Knows what to refactor
-- **Architecture patterns**: Knows where code should go
+| Context | Command |
+|---------|---------|
+| One cycle, auto-detect | `bash "${CLAUDE_SKILL_DIR}/scripts/run-test-cycle.sh" --max-cycles 10` |
+| Focus a pattern | `bash "${CLAUDE_SKILL_DIR}/scripts/run-test-cycle.sh" --pattern "$0"` |
+| Override the test command | `bash "${CLAUDE_SKILL_DIR}/scripts/run-test-cycle.sh" --test-cmd "pytest -x -q"` |
+| Start a fresh loop (reset cycle state) | `bash "${CLAUDE_SKILL_DIR}/scripts/run-test-cycle.sh" --reset` |
+| Read the verdict | `bash "${CLAUDE_SKILL_DIR}/scripts/run-test-cycle.sh" --max-cycles 10 \| grep -E '^VERDICT='` |
