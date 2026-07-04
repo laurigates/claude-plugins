@@ -263,7 +263,7 @@
       "name": "feedback-plugin",
       "source": "./feedback-plugin",
       "description": "Session feedback analysis - capture skill bugs as GitHub issues and learn from weekly friction across sessions",
-      "version": "1.10.0",
+      "version": "1.10.1",
       "keywords": [
         "feedback",
         "session-analysis",
@@ -589,7 +589,7 @@
       "name": "session-plugin",
       "source": "./session-plugin",
       "description": "Session bookends - spinup briefing, wrap-up capture, end-of-session orchestration, and knowledge distillation",
-      "version": "1.5.0",
+      "version": "1.5.1",
       "keywords": [
         "session",
         "spinup",

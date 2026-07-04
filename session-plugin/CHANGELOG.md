@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.5.0...session-plugin-v1.5.1) (2026-07-04)
+
+
+### Documentation
+
+* archive completed/superseded planning docs under docs/archive/ ([#1940](https://github.com/laurigates/claude-plugins/issues/1940)) ([fe24f13](https://github.com/laurigates/claude-plugins/commit/fe24f1342e5f9370ed75729a86707bc5b66b7052)), closes [#1850](https://github.com/laurigates/claude-plugins/issues/1850) [#1460](https://github.com/laurigates/claude-plugins/issues/1460)
+
 ## [1.5.0](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.4.2...session-plugin-v1.5.0) (2026-06-29)
 
 
