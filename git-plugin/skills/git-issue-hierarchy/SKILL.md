@@ -4,8 +4,8 @@ modified: 2026-06-18
 reviewed: 2026-04-25
 name: git-issue-hierarchy
 description: "Manage GitHub sub-issues and dependencies (blocked_by/blocking). Use when breaking issues into sub-tasks, checking progress, or viewing a dependency graph."
-args: "<parent-issue> [--add <N...>] [--remove <N...>] [--create \"title\"] [--status] [--deps] [--blocking] [--block <N>] [--blocked-by <N>] [--unblock <N>]"
-argument-hint: <parent-issue> [--add N] [--status] [--deps] [--blocked-by N]
+args: "<parent-issue (number | #N | URL)> [--add <N...>] [--remove <N...>] [--create \"title\"] [--status] [--deps] [--blocking] [--block <N>] [--blocked-by <N>] [--unblock <N>]"
+argument-hint: "<parent-issue (number|#N|URL)> [--add N] [--status] [--deps] [--blocked-by N]"
 user-invocable: true
 allowed-tools: Bash(gh api *), Bash(gh issue *), Bash(git remote *), Read, Grep, Glob, TodoWrite
 ---
@@ -28,19 +28,23 @@ allowed-tools: Bash(gh api *), Bash(gh issue *), Bash(git remote *), Read, Grep,
 
 Parse these parameters from the command:
 
+Every issue argument — `<parent-issue>` and each `<N>` flag value below — is
+accepted as a bare number, `#N`, or a full GitHub issue URL, and normalized to a
+`(number, repo)` pair in Step 0.
+
 | Parameter | Description |
 |-----------|-------------|
-| `<parent-issue>` | Issue number to manage as parent |
-| `--add <N...>` | Add existing issues as sub-issues |
+| `<parent-issue>` | Parent issue as a bare number, `#N`, or full GitHub issue URL (`https://github.com/<owner>/<repo>/issues/<N>`) — see Step 0 |
+| `--add <N...>` | Add existing issues as sub-issues (each `N` as number, `#N`, or URL) |
 | `--create "<title>"` | Create a new issue and add it as sub-issue |
-| `--remove <N...>` | Remove sub-issues from parent |
+| `--remove <N...>` | Remove sub-issues from parent (each `N` as number, `#N`, or URL) |
 | `--status` | Show sub-issue completion progress |
 | `--list` | List all sub-issues of the parent |
 | `--deps` | Show dependency graph (blocked_by + blocking + sub-issues) for the issue |
 | `--blocking` | List issues the parent is blocking |
-| `--block <N>` | Mark issue N as blocked by the parent (parent blocks N) |
-| `--blocked-by <N>` | Mark the parent as blocked by issue N |
-| `--unblock <N>` | Remove blocking relationship with issue N in either direction |
+| `--block <N>` | Mark issue N as blocked by the parent (parent blocks N); `N` as number, `#N`, or URL |
+| `--blocked-by <N>` | Mark the parent as blocked by issue N; `N` as number, `#N`, or URL |
+| `--unblock <N>` | Remove blocking relationship with issue N in either direction; `N` as number, `#N`, or URL |
 
 ## When to Use
 
@@ -71,6 +75,39 @@ both — a sub-issue is implicitly ordered by its parent's scope.
 
 Execute the requested issue hierarchy operation.
 
+### Step 0: Normalize issue references
+
+Before any API call, normalize `<parent-issue>` **and every issue value passed
+to a flag** (`--add`, `--remove`, `--block`, `--blocked-by`, `--unblock`) into a
+`(number, repo)` pair. Accept these forms:
+
+| Input form | Extract |
+|------------|---------|
+| `123` | number `123`, repo = current remote |
+| `#123` | number `123`, repo = current remote |
+| `https://github.com/<owner>/<repo>/issues/123` | number `123`, repo = `<owner>/<repo>` |
+| `.../issues/123#issuecomment-...` | number `123` (drop the `#...` fragment), repo = `<owner>/<repo>` |
+
+Rules:
+
+1. Strip a leading `#`; strip a URL `#...` fragment after the number. A token is
+   an issue ref only if, after stripping, it is all digits **or** matches the
+   `/issues/<digits>` URL shape (require trailing digits — a `/pull/<N>`,
+   `/discussions/<N>`, or bare `/issues` list URL is **not** a ref).
+2. For the plural flags (`--add`/`--remove`, which take `<N...>`), normalize
+   each space-separated value independently; never split a single URL into two
+   refs.
+3. For a URL whose `<owner>/<repo>` differs from the current remote (Step 1
+   `REPO`), record it as **cross-repo** and carry `-R <owner>/<repo>` on every
+   `gh issue` call and target `repos/<owner>/<repo>/…` on every `gh api` call
+   for that issue. Sub-issue and dependency links require both endpoints to live
+   in the **same** repo — if a normalized ref points at a different repo than
+   the parent, surface that rather than issuing a mismatched cross-repo link.
+
+Downstream steps use the normalized `$PARENT`, `$N`, and `$CHILD` **numbers**;
+where a ref was cross-repo, substitute its `<owner>/<repo>` for `$OWNER`/`$REPO_NAME`
+and add `-R <owner>/<repo>` to the corresponding `gh issue` call.
+
 ### Step 1: Resolve Repository Context
 
 ```bash
@@ -78,6 +115,10 @@ REPO=$(gh repo view --json nameWithOwner --jq '.nameWithOwner')
 OWNER=$(echo "$REPO" | cut -d/ -f1)
 REPO_NAME=$(echo "$REPO" | cut -d/ -f2)
 ```
+
+If Step 0 normalized `<parent-issue>` to a **cross-repo** URL, use that URL's
+`<owner>/<repo>` as `$OWNER`/`$REPO_NAME` (and pass `-R <owner>/<repo>` to the
+`gh issue view` below) instead of the current remote.
 
 Verify the parent issue exists:
 
