@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.2](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.5.1...session-plugin-v1.5.2) (2026-07-04)
+
+
+### Bug Fixes
+
+* **session-plugin:** base session-survey PRS on --author, not local branch ([#1941](https://github.com/laurigates/claude-plugins/issues/1941)) ([378b34c](https://github.com/laurigates/claude-plugins/commit/378b34c4f7584da0dd82a84c69b7ec5f85777600)), closes [#1915](https://github.com/laurigates/claude-plugins/issues/1915)
+
 ## [1.5.1](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.5.0...session-plugin-v1.5.1) (2026-07-04)
 
 
