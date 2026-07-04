@@ -43,7 +43,9 @@ if not cond:
 for k in ("model", "thinking", "system_prompt"):
     print(f"PROBE_{k.upper()}={shlex.quote(str(cond[k]))}")
 # config is optional; absent => "full" so pre-existing conditions are unchanged.
-print(f"PROBE_CONFIG={shlex.quote(str(cond.get(\"config\", \"full\")))}")
+# (Assign first — an f-string expression cannot contain a backslash on py<3.12.)
+cfg = cond.get("config", "full")
+print(f"PROBE_CONFIG={shlex.quote(str(cfg))}")
 '
 )"
 
