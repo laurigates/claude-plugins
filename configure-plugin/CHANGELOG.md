@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.33.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.33.0...configure-plugin-v1.33.1) (2026-07-04)
+
+
+### Code Refactoring
+
+* **configure-plugin:** rebuild configure-security along security-guidance's shape ([#1934](https://github.com/laurigates/claude-plugins/issues/1934)) ([b5d897f](https://github.com/laurigates/claude-plugins/commit/b5d897fe1e64b213eeba23c6548f413663c896dd)), closes [#1919](https://github.com/laurigates/claude-plugins/issues/1919)
+
 ## [1.33.0](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.32.0...configure-plugin-v1.33.0) (2026-06-25)
 
 

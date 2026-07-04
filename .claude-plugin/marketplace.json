@@ -117,7 +117,7 @@
       "name": "code-quality-plugin",
       "source": "./code-quality-plugin",
       "description": "Code review, refactoring, linting, dependency auditing, dead code detection, test quality, complexity metrics, and static analysis",
-      "version": "1.17.3",
+      "version": "1.17.4",
       "keywords": [
         "code-review",
         "refactoring",
@@ -195,7 +195,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.33.0",
+      "version": "1.33.1",
       "keywords": [
         "infrastructure",
         "standards",
@@ -390,7 +390,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.5.11",
+      "version": "2.5.12",
       "keywords": [
         "hooks",
         "automation",
