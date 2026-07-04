@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.4](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.17.3...code-quality-plugin-v1.17.4) (2026-07-04)
+
+
+### Bug Fixes
+
+* **code-quality-plugin:** exempt session-scratchpad/tmp paths from preflight cue ([#1936](https://github.com/laurigates/claude-plugins/issues/1936)) ([3e3167e](https://github.com/laurigates/claude-plugins/commit/3e3167e1caaca9bb0859451121f2bd80e63d5ab7)), closes [#1905](https://github.com/laurigates/claude-plugins/issues/1905)
+
 ## [1.17.3](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.17.2...code-quality-plugin-v1.17.3) (2026-06-26)
 
 
