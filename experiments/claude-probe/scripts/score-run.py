@@ -112,7 +112,12 @@ def final_answer_text(events: list[dict[str, Any]]) -> str:
 
 def usage_totals(events: list[dict[str, Any]]) -> dict[str, int]:
     """Sum input/output tokens from usage blocks if present."""
-    totals = {"input_tokens": 0, "output_tokens": 0, "cache_read_input_tokens": 0}
+    totals = {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0,
+    }
     for ev in events:
         msg = ev.get("message") or ev
         usage = msg.get("usage") if isinstance(msg, dict) else None
@@ -269,7 +274,9 @@ def main() -> int:
                 str(meta["run_n"]),
                 "_stats",
                 "INFO",
-                f"turns={turns} in={totals['input_tokens']} out={totals['output_tokens']} cache_r={totals['cache_read_input_tokens']}",
+                f"turns={turns} in={totals['input_tokens']} out={totals['output_tokens']} "
+                f"cache_r={totals['cache_read_input_tokens']} cache_c={totals['cache_creation_input_tokens']} "
+                f"ctx={totals['cache_creation_input_tokens'] + totals['cache_read_input_tokens']}",
             ]
         )
     )

@@ -56,3 +56,30 @@ conditions:
     model: claude-opus-4-8
     thinking: xhigh
     system_prompt: probe
+
+  # --- config-isolation arms (Phase 0) -----------------------------------
+  # A separate axis from the system_prompt A/B above: hold model + effort +
+  # system_prompt fixed and vary ONLY which config surface Claude Code loads.
+  #   clean        = system prompt only            (claude --bare)
+  #   plugins-only = marketplace skills, NO global ~/.claude memory (cloud/CI parity)
+  #   full         = real ~/.claude: 75k rules + CLAUDE.md + skills + hooks
+  # The isolated arms lose the OAuth login, so they need CLAUDE_CODE_OAUTH_TOKEN
+  # in the environment — run them via `just run-config` (which sources it and
+  # preps the plugins-only config dir). Run `claude setup-token` once to mint it.
+  - id: cfg-clean
+    model: claude-opus-4-8
+    thinking: low
+    system_prompt: default
+    config: clean
+
+  - id: cfg-plugins
+    model: claude-opus-4-8
+    thinking: low
+    system_prompt: default
+    config: plugins-only
+
+  - id: cfg-full
+    model: claude-opus-4-8
+    thinking: low
+    system_prompt: default
+    config: full
