@@ -1,8 +1,8 @@
 ---
 created: 2026-01-15
-modified: 2026-06-18
-reviewed: 2026-04-12
-description: Validate ADR relationships and domain consistency. Use when auditing ADRs before release, finding broken supersedes/extends links, or detecting cycles.
+modified: 2026-07-04
+reviewed: 2026-07-04
+description: Validate ADR relationships, domain consistency, and duplicate ADR numbers. Use when auditing ADRs before release, finding broken supersedes/extends links, cycles, or number collisions.
 args: "[--report-only]"
 argument-hint: "--report-only to validate without prompting for fixes"
 allowed-tools: Read, Bash, Glob, Grep, Edit, AskUserQuestion
@@ -71,6 +71,28 @@ For each ADR, validate:
 
 See [REFERENCE.md](REFERENCE.md#validation-rules) for detailed checks.
 
+### Step 2b: Detect ADR-number collisions and index drift
+
+ADR numbers are chosen at branch time but only claimed at merge time, so two
+in-flight ADR PRs can pick the same number and both land (issue #1585 — the FVH
+infrastructure #2015 collision where two ADRs both claimed `0038`). Run the
+deterministic guard:
+
+```bash
+bash ${CLAUDE_SKILL_DIR}/scripts/check-adr-numbers.sh --project-dir "$(pwd)"
+```
+
+It emits the structured `STATUS=` / `ISSUE_COUNT=` convention and reports three
+classes (see [REFERENCE.md](REFERENCE.md#validation-rules)):
+
+- `duplicate_adr_number` (ERROR) — two files in the working tree claim the same number.
+- `adr_number_collision` (ERROR) — a working-tree ADR claims a number a **different** filename already holds on the base ref (`origin/main`). This is the pre-merge parallel-PR case, caught before the second PR merges.
+- `adr_missing_index_row` (WARN) — an ADR is not referenced from the ADR directory's README index (how the `0038` collision went unnoticed for a week).
+
+Fold any findings into the Step 4 report. A `STATUS=ERROR` is a blocking
+collision; resolve it by renumbering the newer ADR to the next free sequential
+number and backfilling the README index row.
+
 ### Step 3: Analyze domains
 
 1. Group ADRs by domain field
@@ -135,6 +157,7 @@ Report all changes made:
 | Extract frontmatter | `head -50 {file} \| grep -m1 "^field:" \| sed 's/^[^:]*:[[:space:]]*//'` |
 | Find by domain | `grep -l "^domain: {domain}" docs/adrs/*.md` |
 | Detect cycles | Build supersession graph and traverse |
+| Number collisions | `bash ${CLAUDE_SKILL_DIR}/scripts/check-adr-numbers.sh --project-dir "$(pwd)"` |
 
 ---
 
