@@ -67,6 +67,23 @@ case "$cq_file_path" in
     docs/adrs/*|docs/prds/*|*/docs/adrs/*|*/docs/prds/*) exit 0 ;;
 esac
 
+# Session-scratchpad / harness-temp throwaways — always silent (issue #1905).
+# The Claude Code harness writes one-off analysis scripts to a per-session
+# scratchpad under its temp root (`/tmp/claude-<uid>/…/scratchpad/`, with the
+# macOS symlink `/private/tmp/claude-<uid>/…`). These files are never committed
+# to any repo, so a lint pre-flight cue on them is pure noise (following
+# hook-block-vs-nudge: don't nudge where the redirect is inapplicable). Match a
+# `*/scratchpad/*` path segment and the harness session-temp roots (both the
+# `/tmp` and `/private/tmp` forms), plus a `$TMPDIR`-prefixed path for robustness.
+case "$cq_file_path" in
+    */scratchpad/*|/tmp/claude-*|/private/tmp/claude-*) exit 0 ;;
+esac
+if [ -n "${TMPDIR:-}" ]; then
+    case "$cq_file_path" in
+        "${TMPDIR%/}"/*) exit 0 ;;
+    esac
+fi
+
 # --- Detection: fire if ANY signal matches ---
 cq_payload="${cq_new_string}
 ${cq_content}"

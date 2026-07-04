@@ -58,12 +58,21 @@ TASKSTUB
 chmod +x "$STUB/task"
 
 # gh stub: auth ok; issue/pr lists from fixtures.
+# "pr list" branches on the query: --author and --head can serve distinct
+# fixtures (defaulting to GH_PR_FIXTURE) so tests can exercise the #1915 union.
 cat > "$STUB/gh" <<'GHSTUB'
 #!/usr/bin/env bash
+args="$*"
 case "$1 $2" in
   "auth status") exit 0 ;;
   "issue list")  cat "$GH_ISSUE_FIXTURE" 2>/dev/null || echo "[]" ;;
-  "pr list")     cat "$GH_PR_FIXTURE" 2>/dev/null || echo "[]" ;;
+  "pr list")
+    case "$args" in
+      *--author*) cat "${GH_PR_AUTHOR_FIXTURE:-$GH_PR_FIXTURE}" 2>/dev/null || echo "[]" ;;
+      *--head*)   cat "${GH_PR_HEAD_FIXTURE:-$GH_PR_FIXTURE}" 2>/dev/null || echo "[]" ;;
+      *)          cat "$GH_PR_FIXTURE" 2>/dev/null || echo "[]" ;;
+    esac
+    ;;
   *) echo "[]" ;;
 esac
 GHSTUB
@@ -121,6 +130,20 @@ check "G: commits section present" "$out" "=== COMMITS ==="
 check "G: recent commit subject surfaced" "$out" "second commit"
 out=$(run)
 check_absent "G: commits omitted without the flag" "$out" "=== COMMITS ==="
+
+# --- TEST H: authored PR with no matching local branch is surfaced (#1915) ---
+# Refspec-pushed PRs leave no local branch; --author @me must still find them.
+echo '[{"number":27,"title":"feat: refspec-pushed PR","url":"http://x/27","state":"OPEN","updatedAt":"2026-07-02T10:00:00Z"}]' > "$SANDBOX/author-prs.json"
+export GH_PR_AUTHOR_FIXTURE="$SANDBOX/author-prs.json" GH_PR_HEAD_FIXTURE=/dev/null
+out=$(run)
+check "H: authored PR counted despite no local branch" "$out" "PR_COUNT=1"
+check "H: authored PR number surfaced" "$out" "PR_1_NUMBER=27"
+
+# --- TEST I: author + head PRs are unioned and deduped by number (#1915) -----
+export GH_PR_HEAD_FIXTURE="$SANDBOX/author-prs.json"
+out=$(run)
+check "I: overlapping author/head PR deduped" "$out" "PR_COUNT=1"
+unset GH_PR_AUTHOR_FIXTURE GH_PR_HEAD_FIXTURE
 
 # --- TEST F: no-git / no-tools degrade cleanly ------------------------------
 out=$(SESSION_SURVEY_TASK_BIN=/nonexistent/task SESSION_SURVEY_GH_BIN=/nonexistent/gh \

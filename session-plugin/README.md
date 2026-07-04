@@ -5,7 +5,7 @@ session start, a **wrap** capture pass at session end, a **distill** pass
 for durable learnings, and a **session-end orchestrator** that previews
 which passes qualify and runs only what the user confirms.
 
-Design background: [`docs/session-plugin-workflow.md`](../docs/session-plugin-workflow.md)
+Design background: [`docs/archive/session-plugin-workflow.md`](../docs/archive/session-plugin-workflow.md)
 (two-speed feedback architecture, decisions D1–D5) and the flow diagram
 [`docs/diagrams/two-speed-feedback.d2`](../docs/diagrams/two-speed-feedback.d2).
 

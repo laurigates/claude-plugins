@@ -1,7 +1,7 @@
 ---
 created: 2026-06-04
-modified: 2026-07-01
-reviewed: 2026-07-01
+modified: 2026-07-04
+reviewed: 2026-07-04
 name: comfyui-node-scaffold
 description: >-
   Scaffold a new ComfyUI custom-node repo (TypeScript + bun build, CI,
@@ -59,13 +59,14 @@ inputs, big tap targets, momentum scroll). The modal primitives come from
 `@laurigates/comfy-modal-kit` (`openModalShell` / `fuzzyRank` /
 `highlightMatches`) — **imported, not copied** — and `bun build` inlines them.
 
-## Three variants
+## Four variants
 
 | Variant | Use when | Shape | Modal kit |
 |---------|----------|-------|-----------|
 | `frontend` (default) | No Python needed — pure widget UX (seed/numeric keypad, prompt editor, tooltips, enum recipes). | Empty `NODE_CLASS_MAPPINGS`; widget-intercept modal in `src/index.ts`. Like sampler-info / touch-numeric. | **imports** the kit |
 | `backend` | Needs to read disk / serve thumbnails / add a node (model thumbnails, file listings). | Adds `<module>.py` (node + aiohttp endpoints, ComfyUI-bundled libs only) + a `tests/conftest.py` that stubs aiohttp/server so pytest is green. Like gallery-loader. | **imports** the kit |
 | `gesture` | The UX is a **canvas interaction**, not a widget — pinch/drag/long-press on nodes or groups (resize, move, region-box). | Empty `NODE_CLASS_MAPPINGS`; a canvas pointer layer in `src/index.ts` with exported pure geometry helpers. Like touch-resize. | **no kit** |
+| `shim` | The pack's whole job is **injecting scoped CSS / registering commands** to paper over upstream frontend bugs — no modal, no widget hook. | Empty `NODE_CLASS_MAPPINGS`; a `SHIMS` registry in `src/index.ts` with `applyCssShim`/`removeCssShim`, one managed `<style>` per shim driven by a boolean setting, + a jsdom lifecycle smoke test. Like comfyui-touch-shim. | **no kit** |
 
 **The `--widgets` switch picks the modal shape.** On a modal variant
 (`frontend` / `backend`), passing `--widgets a,b` emits the **widget-intercept**
@@ -83,7 +84,9 @@ otherwise passes pure-helper unit tests.
 **Decision rule:** `frontend`/`backend` **with** `--widgets` for a per-widget
 modal; `frontend`/`backend` **without** `--widgets` for a standalone modal opened
 from the toolbar/command palette; `gesture` when the interaction is on the
-canvas/node frame itself (no widget to hook). Add `backend` only when the feature
+canvas/node frame itself (no widget to hook); `shim` when the pack only injects
+scoped CSS / registers commands to paper over an upstream frontend bug (no modal,
+no widget). Add `backend` only when the feature
 genuinely needs the server to read files or serve data. A non-bundled Python
 dependency is never allowed — if you reach for one, it belongs in a separate
 companion pack.
@@ -95,6 +98,19 @@ the gesture lands on a selected target. It is a no-op when `app.canvas` is
 absent, so the native control always survives. Pure math (distance, hit-test,
 scale-clamp) lives in exported, unit-tested helpers; DOM/canvas wiring stays
 below them. It has **no** `@laurigates/comfy-modal-kit` dependency.
+
+The `shim` variant is a home for **small, individually-toggleable stopgap
+fixes** that paper over upstream ComfyUI-frontend bugs. It has **no modal and no
+widget hook**: `src/index.ts` is a `SHIMS` registry where each entry injects a
+scoped, managed `<style>` tag (idempotent `applyCssShim`/`removeCssShim`, one
+`<style>` per shim) driven by a boolean setting, plus a command. Every shim
+links the upstream issue it papers over (in `upstream` + the settings tooltip)
+and is deleted the release the upstream fix ships; selectors should target
+stable `data-testid` hooks and every shim must **fail soft** (a dead selector
+styles nothing, never throws). The lifecycle helpers are exported and covered by
+a jsdom smoke test (inject / idempotent / remove; `jsdom` added to
+`devDependencies`). It has **no** `@laurigates/comfy-modal-kit` dependency. Like
+comfyui-touch-shim.
 
 ## How to run
 
@@ -126,11 +142,18 @@ Canvas-gesture pack (resize/move/region — no widget, no modal, no kit):
 python3 ${CLAUDE_SKILL_DIR}/scaffold.py --name comfyui-touch-resize --display "Touch Resize" --desc "Selection-gated pinch-to-resize for ComfyUI nodes and groups on touch devices." --variant gesture
 ```
 
+CSS/shim pack (scoped `<style>` injection + commands — no modal, no widget, no kit):
+
+```sh
+python3 ${CLAUDE_SKILL_DIR}/scaffold.py --name comfyui-touch-shim --display "Touch Shim" --desc "Stopgap mobile CSS shims for upstream ComfyUI frontend bugs." --variant shim
+```
+
 Flags: `--name` (repo + served URL segment), `--display` (Comfy DisplayName),
-`--desc`, `--variant {frontend,backend,gesture}`, `--widgets` (CSV → the TS
+`--desc`, `--variant {frontend,backend,gesture,shim}`, `--widgets` (CSV → the TS
 stub's `TARGET_WIDGETS`; on a modal variant, **omitting** it emits the
-standalone-modal skeleton instead of the widget-intercept one), `--publisher`
-(default `laurigates`), `--dir` (parent dir, default cwd).
+standalone-modal skeleton instead of the widget-intercept one; ignored by
+`gesture` and `shim`), `--publisher` (default `laurigates`), `--dir` (parent dir,
+default cwd).
 
 It refuses to overwrite an existing directory.
 
@@ -195,7 +218,9 @@ Then implement, and wire up infra:
    For the `backend` variant, fill in `<module>.py`'s node + endpoints; widen
    `ALLOWED_EXTENSIONS` explicitly for any new file type read off disk. For the
    `gesture` variant, tune the pinch layer
-   (`selectedNodes`/`nodeScreenRect`/`scaledSize`).
+   (`selectedNodes`/`nodeScreenRect`/`scaledSize`). For the `shim` variant,
+   replace the placeholder `SHIMS` entry — link the upstream issue, point the
+   selector at a stable `data-testid`, keep each shim fail-soft.
 2. **Add the repo to `gitops/repositories.tf`** with `comfy_registry = true`
    (and `release_please = true`). On apply, gitops pushes both the release-please
    App credentials **and** the `REGISTRY_ACCESS_TOKEN` secret. No per-repo secret
@@ -211,7 +236,8 @@ chains scaffold → `gh repo create` → seed `main` → the gitops PR.
   `web/dist/` (it is generated; rebuild with `bun run build` and commit).
 - **Modal primitives come from `@laurigates/comfy-modal-kit`** (modal variants)
   — import them; never copy `modal-shell.js`/`modal-fuzzy.js` into the pack.
-  `bun build` inlines the imported code. The gesture variant has no kit.
+  `bun build` inlines the imported code. The `gesture` and `shim` variants have
+  no kit (no modal at all).
 - **Pack directory name is part of the served URL** (`/extensions/<name>/index.js`).
 - **No non-bundled Python deps.** `dependencies` is `comfyui-frontend-package`
   only; the backend variant may use ComfyUI-bundled `aiohttp` / `folder_paths` /
@@ -253,6 +279,7 @@ The generated `publish.yml` builds `web/dist/` then publishes via
 |---------|---------|
 | Scaffold a frontend pack | `python3 ${CLAUDE_SKILL_DIR}/scaffold.py --name comfyui-X --display "X" --desc "…" --variant frontend --widgets a,b` |
 | Scaffold a gesture pack | `python3 ${CLAUDE_SKILL_DIR}/scaffold.py --name comfyui-X --display "X" --desc "…" --variant gesture` |
+| Scaffold a CSS/shim pack | `python3 ${CLAUDE_SKILL_DIR}/scaffold.py --name comfyui-X --display "X" --desc "…" --variant shim` |
 | Verify a generated pack | `cd comfyui-X && bun install && just check` |
 
 ## Notes & deferrals

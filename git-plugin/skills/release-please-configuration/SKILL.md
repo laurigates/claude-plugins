@@ -1,7 +1,7 @@
 ---
 created: 2025-12-28
-modified: 2026-05-29
-reviewed: 2026-05-29
+modified: 2026-07-04
+reviewed: 2026-07-04
 name: release-please-configuration
 description: "release-please monorepo config — component tags, per-package extra-files, tag migration. Use when adding packages or fixing duplicate-tag / no-bump failures."
 user-invocable: false
@@ -111,6 +111,71 @@ plugin:
 **Cause:** Empty `component` field (the `:` with nothing after it indicates empty string)
 
 **Fix:** Ensure every package has `"component": "package-name"` set
+
+### Common Failure: Merged Release PR Never Tagged
+
+**Symptom:** Every run after a grouped release PR merges aborts with:
+
+```
+There are untagged, merged release PRs outstanding - aborting
+```
+
+The workflow log also carries the tell:
+
+```
+pullRequestTitlePattern miss the part of '${component}'
+pullRequestTitlePattern miss the part of '${scope}'
+```
+
+**Cause:** A custom `pull-request-title-pattern` (or `group-pull-request-title-pattern`)
+containing `${version}` — or `${component}` / `${scope}` — on a **grouped** release
+PR (`separate-pull-requests: false`). Because a grouped PR spans many packages, there
+is no single version/component to substitute, so the pattern renders a **bare** title
+(e.g. `chore: release` with nothing after it). On the tagging pass release-please
+re-parses the merged PR's title back through that same pattern to recover which
+releases it represents; the bare title no longer matches the pattern, so the PR is
+never tagged. It stays `autorelease: pending`, and every subsequent run refuses to
+proceed while an untagged merged release PR is outstanding.
+
+**Fix:** Drop the custom title patterns. The release-please **defaults** round-trip
+correctly for grouped PRs — they render a parseable title and the tagging pass
+recovers the releases from it.
+
+```json
+// WRONG - ${version} on a grouped PR renders a bare, unparseable title
+{
+  "separate-pull-requests": false,
+  "pull-request-title-pattern": "chore: release ${version}"
+}
+
+// CORRECT - omit the custom pattern; the default round-trips
+{
+  "separate-pull-requests": false
+}
+```
+
+### Recovery: Unwedge an Already-Merged Untagged PR
+
+Once a grouped release PR has merged with a bare title, dropping the config fixes
+future runs but the **already-merged** PR is still stuck at `autorelease: pending`,
+so runs keep aborting. Relabel it to `autorelease: tagged` so release-please stops
+treating it as outstanding, then dispatch a fresh run to cut the releases:
+
+```bash
+# Create the label first if the repo lacks it — release-please only
+# auto-creates `autorelease: tagged` when it successfully tags a PR.
+gh label create "autorelease: tagged" --color 2A7A2A --description "release-please tagged"
+
+# Relabel the stuck merged PR
+gh pr edit $PR_NUMBER --add-label "autorelease: tagged" --remove-label "autorelease: pending"
+
+# Dispatch a fresh run — with no tags cut, it recomputes the same releases
+# into a new, parseable release PR (or tags directly on the next merge).
+gh workflow run release-please.yml
+```
+
+No tags were cut for the wedged PR, so release-please recomputes the identical set
+of releases on the next run; the relabel only removes the "outstanding" blocker.
 
 ## Per-Package `extra-files` for Custom Version Locations
 

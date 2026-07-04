@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016  # grep/sed patterns contain literal backticks/$, not expansions
 # Regression test for configure-security.sh detection.
 # A planted fixture WITH Dependabot + CodeQL + gitleaks + SECURITY.md must report
 # all four present; a bare fixture must report them missing with STATUS=WARN.
@@ -54,5 +55,64 @@ echo "$out2" | grep -q "^STATUS=WARN$" || fail "expected STATUS=WARN for bare pr
 echo "$out2" | grep -q "^ISSUE_COUNT=4$" || fail "expected ISSUE_COUNT=4 for bare project:\n$out2"
 pass "bare project reports all security layers missing and STATUS=WARN"
 rm -rf "$bare"
+
+# -----------------------------------------------------------------------------
+# Case 3: SKILL.md `## Context` find commands must actually DETECT present files
+#   (Regression, issue #1919): the commands shipped escaped single quotes
+#   (`-name \'.gitleaks.toml\'`) that make find match a literal quoted filename
+#   → always report MISSING even when the file exists, plus slash-in-`-name`
+#   (never matches basename) and `-maxdepth` after `-path` (GNU find warns to
+#   stderr → aborts the skill). This case extracts each Context find command
+#   from SKILL.md, runs it against a fully-configured fixture, and asserts:
+#     (a) exit 0 with EMPTY stderr (no abort), and
+#     (b) NON-EMPTY output (the file is actually detected).
+#   The escaped-quote / slash-in-name forms fail (b); the maxdepth-after-path
+#   form fails (a) on GNU find. Also asserts the antipattern shapes are absent.
+# -----------------------------------------------------------------------------
+skill_md="${script_dir}/../../SKILL.md"
+[ -f "$skill_md" ] || fail "SKILL.md not found at $skill_md"
+
+# Antipattern greps over Context command lines (`^- Label: !`...``). Patterns are
+# grep regexes containing literal backticks — SC2016 does not apply.
+# Escaped single quotes (\'): match a literal quoted filename → always MISSING.
+grep -nE "^- .*!\`[^\`]*\\\\'" "$skill_md" \
+  && fail "SKILL.md Context command contains an escaped single quote (\\') — matches a literal quoted filename"
+# Slash inside a -name argument: -name matches the basename only, so it never matches.
+grep -nE "^- .*!\`[^\`]*-name '[^']*/" "$skill_md" \
+  && fail "SKILL.md Context command uses a slash inside -name (never matches a basename)"
+# -maxdepth appearing AFTER -path on one command: GNU find warns to stderr → aborts the skill.
+grep -nE "^- .*!\`[^\`]*-path[^\`]*-maxdepth" "$skill_md" \
+  && fail "SKILL.md Context command places -maxdepth after -path (GNU find warns to stderr, aborting the skill)"
+
+# Fully-configured fixture — every file the Context commands probe for is present.
+ctx="$(mktemp -d)"
+mkdir -p "${ctx}/.github/workflows"
+printf '{}' > "${ctx}/package.json"
+printf 'version: 2\n' > "${ctx}/.github/dependabot.yml"
+printf 'name: CodeQL\n' > "${ctx}/.github/workflows/codeql.yml"
+printf '[allowlist]\n' > "${ctx}/.gitleaks.toml"
+printf 'repos: []\n' > "${ctx}/.pre-commit-config.yaml"
+printf '# Security Policy\n' > "${ctx}/SECURITY.md"
+
+# Extract each `- Label: !`<cmd>`` Context find command and execute it in the fixture.
+ctx_cmds="$(grep -oE '^- [^:]*: !`find[^`]*`' "$skill_md" | sed -E 's/^- [^:]*: !`//; s/`$//')"
+[ -n "$ctx_cmds" ] || fail "no Context find commands extracted from SKILL.md"
+
+ctx_count=0
+while IFS= read -r ctx_cmd; do
+  [ -n "$ctx_cmd" ] || continue
+  ctx_count=$((ctx_count + 1))
+  ctx_err="$(mktemp)"
+  ctx_out="$(cd "$ctx" && eval "$ctx_cmd" 2>"$ctx_err")"
+  ctx_rc=$?
+  [ "$ctx_rc" -eq 0 ] || fail "Context command exited non-zero ($ctx_rc): $ctx_cmd"
+  [ -s "$ctx_err" ] && fail "Context command wrote to stderr [$(cat "$ctx_err")]: $ctx_cmd"
+  [ -n "$ctx_out" ] || fail "Context command detected nothing in a fully-configured project: $ctx_cmd"
+  rm -f "$ctx_err"
+done <<< "$ctx_cmds"
+
+[ "$ctx_count" -ge 6 ] || fail "expected >=6 Context find commands, extracted $ctx_count"
+pass "all $ctx_count SKILL.md Context find commands detect present files (exit 0, no stderr, non-empty)"
+rm -rf "$ctx"
 
 echo "ALL TESTS PASSED"

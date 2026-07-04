@@ -1,5 +1,20 @@
 # configure-security Reference
 
+## Standards Tracking (`.project-standards.yaml`)
+
+Record the configured security components so `/configure:status` and
+`/configure:all` can track coverage:
+
+```yaml
+components:
+  security: "2025.1"
+  security_dependency_audit: true
+  security_sast: true
+  security_secret_detection: true
+  security_policy: true
+  security_dependabot: true
+```
+
 ## Compliance Report Format
 
 ```

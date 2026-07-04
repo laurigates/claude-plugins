@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.49.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.49.2...git-plugin-v2.49.3) (2026-07-04)
+
+
+### Bug Fixes
+
+* **git-plugin:** honor -F body-file alias and defer on unreadable body in pr-issue-link hook ([#1945](https://github.com/laurigates/claude-plugins/issues/1945)) ([25e8b6a](https://github.com/laurigates/claude-plugins/commit/25e8b6a5e0d9c36818a805acd7bf987b1e1d2914)), closes [#1913](https://github.com/laurigates/claude-plugins/issues/1913)
+
+## [2.49.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.49.1...git-plugin-v2.49.2) (2026-07-04)
+
+
+### Bug Fixes
+
+* **git-plugin:** normalize issue refs in git-issue-hierarchy ([#1942](https://github.com/laurigates/claude-plugins/issues/1942)) ([fd92664](https://github.com/laurigates/claude-plugins/commit/fd926647fc9b89308d7cfdc19caed491366bc64c)), closes [#1660](https://github.com/laurigates/claude-plugins/issues/1660)
+
+## [2.49.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.49.0...git-plugin-v2.49.1) (2026-07-04)
+
+
+### Documentation
+
+* **git-plugin:** document grouped-PR title-pattern tagging wedge + recovery ([#1933](https://github.com/laurigates/claude-plugins/issues/1933)) ([bba1965](https://github.com/laurigates/claude-plugins/commit/bba19654e7c3f2b094adb12208d3c5ec400b9928)), closes [#1911](https://github.com/laurigates/claude-plugins/issues/1911)
+
 ## [2.49.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.48.1...git-plugin-v2.49.0) (2026-06-30)
 
 

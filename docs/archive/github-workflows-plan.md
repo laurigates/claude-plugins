@@ -2,7 +2,7 @@
 
 > **⚠️ Superseded plan (2026-06-29).** This is a historical design document. The
 > reusable workflows it describes shipped on **`--model opus`** with explicit
-> `--effort`, per [`workflow-model-effort.md`](../.claude/rules/workflow-model-effort.md) —
+> `--effort`, per [`workflow-model-effort.md`](../../.claude/rules/workflow-model-effort.md) —
 > the opus cost-economics standard (Opus-low beats Sonnet/Haiku-high on quality *and*
 > token efficiency; dial **effort**, not the model, for cost) replaced this plan's
 > original haiku-for-cost premise. The `haiku` references below are kept for historical
@@ -16,7 +16,7 @@ Targeted, focused Claude workflows for efficient CI/CD automation (shipped on
 | Principle | Description |
 |-----------|-------------|
 | **Focused scope** | Each workflow does one thing well |
-| **Opus model, tuned effort** | `--model opus` with explicit `--effort` — effort is the cost lever (see [`workflow-model-effort.md`](../.claude/rules/workflow-model-effort.md)) |
+| **Opus model, tuned effort** | `--model opus` with explicit `--effort` — effort is the cost lever (see [`workflow-model-effort.md`](../../.claude/rules/workflow-model-effort.md)) |
 | **Low turn count** | `--max-turns 5-10` for focused analysis |
 | **Actionable output** | PR comments with file:line references |
 | **Plugin leverage** | Use existing skills where available |

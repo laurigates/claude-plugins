@@ -148,12 +148,31 @@ if have "$gh_bin" && "$gh_bin" auth status >/dev/null 2>&1; then
   gh_ready=true
 fi
 
+# Open PRs to surface as loose threads. Base this on the repo's actual open
+# PRs (--author @me), NOT the locally-checked-out branch: refspec pushes
+# (git push origin HEAD:refs/heads/<branch>) from parallel worktree agents
+# leave no local branch, so a branch-keyed lookup silently misses them (#1915).
+# The --head lookup is unioned in to also catch PRs authored by others on the
+# branch we happen to have checked out.
 prs_json="[]"
-if [ "$gh_ready" = true ] && [ -n "$git_branch" ]; then
-  prs_json=$( (cd "$project_dir" && "$gh_bin" pr list --head "$git_branch" \
+if [ "$gh_ready" = true ]; then
+  author_prs=$( (cd "$project_dir" && "$gh_bin" pr list --author @me --state open \
     --json number,title,url,state,updatedAt 2>/dev/null) || echo "[]")
-  [ -n "$prs_json" ] || prs_json="[]"
-  have jq && pr_count=$(printf '%s' "$prs_json" | jq 'length' 2>/dev/null || echo 0)
+  [ -n "$author_prs" ] || author_prs="[]"
+  head_prs="[]"
+  if [ -n "$git_branch" ]; then
+    head_prs=$( (cd "$project_dir" && "$gh_bin" pr list --head "$git_branch" \
+      --json number,title,url,state,updatedAt 2>/dev/null) || echo "[]")
+    [ -n "$head_prs" ] || head_prs="[]"
+  fi
+  if have jq; then
+    prs_json=$(printf '%s\n%s' "$author_prs" "$head_prs" \
+      | jq -s 'add | unique_by(.number)' 2>/dev/null || echo "[]")
+    [ -n "$prs_json" ] || prs_json="[]"
+    pr_count=$(printf '%s' "$prs_json" | jq 'length' 2>/dev/null || echo 0)
+  else
+    prs_json="$author_prs"
+  fi
 fi
 
 # GitHub drift (spinup): assigned-open issues minus those tracked in taskwarrior

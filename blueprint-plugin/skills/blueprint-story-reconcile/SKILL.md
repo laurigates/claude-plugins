@@ -1,6 +1,6 @@
 ---
 created: 2026-04-25
-modified: 2026-06-18
+modified: 2026-07-04
 reviewed: 2026-04-25
 description: Reconcile PRD requirements with a story-audit drift report. Use when marking PRD entries implemented/partial/missing, or promoting code-only stories into the PRD.
 args: "[--audit <path>] [--prd <path>] [--apply-all] [--dry-run]"
@@ -178,7 +178,7 @@ Choose `<scope>` as the PRD prefix shared by edits (e.g. `prd-001`) or omit if m
 
 Use AskUserQuestion to surface the obvious follow-on:
 
-- **Open work-orders for ❌ entries** → invoke `/blueprint:work-order` per Tier-3 row
+- **Open work-orders for ❌ entries** → recommend the user run `/blueprint:work-order` per Tier-3 row (a user-invocable command — surface it for the user to run, don't invoke it via the Skill tool)
 - **Re-run the audit to confirm green** → invoke `/blueprint:story-audit`
 - **I'm done** → exit
 
