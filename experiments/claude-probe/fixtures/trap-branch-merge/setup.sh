@@ -12,7 +12,10 @@ set -euo pipefail
 
 dest="${1:?usage: setup.sh <dir>}"
 cd "$dest"
-git init -q
+# -b main so the fixture is HOME-independent: a fake HOME has no
+# init.defaultBranch=main, so a bare `git init` would make `master` and every
+# `git ... main` below would fail (only the real-HOME/full arm would work).
+git init -q -b main
 git config user.email trap@example.com
 git config user.name Trap
 git config commit.gpgsign false
