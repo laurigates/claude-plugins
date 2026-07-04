@@ -117,7 +117,7 @@
       "name": "code-quality-plugin",
       "source": "./code-quality-plugin",
       "description": "Code review, refactoring, linting, dependency auditing, dead code detection, test quality, complexity metrics, and static analysis",
-      "version": "1.17.4",
+      "version": "1.18.0",
       "keywords": [
         "code-review",
         "refactoring",
@@ -511,7 +511,7 @@
       "name": "project-plugin",
       "source": "./project-plugin",
       "description": "Project initialization, management, and maintenance - setup, changelog review, and continuous development workflows",
-      "version": "1.20.0",
+      "version": "1.21.0",
       "keywords": [
         "project",
         "initialization",
