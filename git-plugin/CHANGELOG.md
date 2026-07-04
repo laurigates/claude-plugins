@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.49.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.49.2...git-plugin-v2.49.3) (2026-07-04)
+
+
+### Bug Fixes
+
+* **git-plugin:** honor -F body-file alias and defer on unreadable body in pr-issue-link hook ([#1945](https://github.com/laurigates/claude-plugins/issues/1945)) ([25e8b6a](https://github.com/laurigates/claude-plugins/commit/25e8b6a5e0d9c36818a805acd7bf987b1e1d2914)), closes [#1913](https://github.com/laurigates/claude-plugins/issues/1913)
+
 ## [2.49.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.49.1...git-plugin-v2.49.2) (2026-07-04)
 
 
