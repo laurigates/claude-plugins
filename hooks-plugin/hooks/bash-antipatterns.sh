@@ -229,33 +229,23 @@ fi
 # opt-in teach nudge, which steers toward Glob without dead-ending anyone.
 # See .claude/rules/bash-tool-replacements.md for the find/Glob/fd guidance.
 
-# Check for grep/rg command (should use Grep tool)
-# Allow grep -q / grep --quiet: these are boolean exit-code checks the Grep tool
-# cannot replicate (e.g. grep -q pattern file && do_thing).
-# Allow grep -l / -c / -L (and the rg/long-form equivalents): file-list and
-# count modes are filters over a known file set, not codebase searches the Grep
-# tool replaces (issue #1592). The char class is [lcL] (lowercase) so the
-# uppercase context flag -C (grep -C3, a real search) is NOT exempted.
-# Also allow piped grep (already excluded by the '|' check above).
-if [ "$IS_REMOTE_EXEC" = false ] && \
-   echo "$COMMAND" | grep -Eq '^\s*(grep|rg)\s+' && \
-   ! echo "$COMMAND" | grep -q '|' && \
-   ! echo "$COMMAND" | grep -Eq '(grep|rg)[^|]*\s(-[a-zA-Z]*q[a-zA-Z]*(\s|$)|--quiet(\s|$))' && \
-   ! echo "$COMMAND" | grep -Eq '(grep|rg)[^|]*\s(-[a-zA-Z]*[lcL][a-zA-Z]*(\s|$)|--count(\s|$)|--files-with-matches(\s|$)|--files-without-match(\s|$))'; then
-    block "BLOCKED: 'grep -rn pattern src/' →
-  Grep(pattern=\"pattern\", path=\"src\", -r=true, -n=true)
-
-BLOCKED: 'rg pattern --type ts' →
-  Grep(pattern=\"pattern\", glob=\"*.ts\")
-
-The Grep tool is optimized for codebase searches with proper permissions
-and result formatting. Pipelines (… | grep …) and boolean checks
-(grep -q pattern file && do_thing) are still allowed; so are the
-file-list/count filter modes (grep -l, grep -c, grep -L).
-If the Grep tool is unavailable in this session, pipe instead — pipelines
-are allowed: rg --files <dir> | rg pattern  (or  … | grep pattern).
-See .claude/rules/bash-tool-replacements.md for the full table."
-fi
+# NOTE: `grep`/`rg` are intentionally NOT blocked here.
+#
+# The grep/rg→Grep redirect was demoted from a hard block to a non-blocking teach
+# nudge (bash-antipatterns-teach.sh, opt-in via CLAUDE_HOOKS_ENABLE_BASH_ANTIPATTERNS_TEACH=1),
+# mirroring the find→Glob demotion (#1871). Same reasoning applies point-for-point
+# under hook-block-vs-nudge.md's litigation test: the block did NO safety work (it
+# always EXEMPTED the genuinely dangerous forms — pipelines, boolean -q checks,
+# -l/-c/-L filter modes — and only blocked benign line-numbered file reads); it
+# hard-DEAD-ENDED subagents whose toolset doesn't grant the Grep tool (PreToolUse
+# Bash hooks fire in every context, but Grep is not always available — #1909, where
+# `ToolSearch(select:Grep)` returned "No matching deferred tools found" and every
+# blocked search cost a retry cycle); and it carried the worst same-session
+# repeat-block rate of any pattern (21%, W20). The model writes grep/rg reliably;
+# blocking a tool it's fluent in to force one that is sometimes absent is a bad
+# trade. Context efficiency is preserved by the opt-in teach nudge, which steers
+# toward Grep without dead-ending anyone.
+# See .claude/rules/bash-tool-replacements.md for the grep/rg/Grep guidance.
 
 # Check for ls used for file listing (should often use Glob)
 if [ "$IS_REMOTE_EXEC" = false ] && echo "$COMMAND" | grep -Eq '^\s*ls\s+.*\*'; then
@@ -367,7 +357,29 @@ fi
 # ava/rspec/phpunit by name, and `<toolchain> test` (cargo/go/npm/pnpm/yarn/bun/
 # deno/dotnet/mvn/gradle) in the same pipe segment.
 TEST_OUTPUT_SOURCE_RE='\.output|/tasks/|\b(pytest|vitest|jest|mocha|ava|rspec|phpunit)\b|\b(cargo|go|npm|pnpm|yarn|bun|deno|dotnet|mvn|gradle)\b[^|]*[[:space:]]test\b'
+
+# Also exempt greps over explicit source/config FILE operands (issue #1914): the
+# generic case-sensitive tokens `Error`/`fail`/`FAIL` match substrings that appear
+# in ordinary workflow YAML and source — a `grep -n 'app-id|fail-fast|…'
+# reusable-release-please.yml | … | awk` spot-checking GitHub Actions files has
+# nothing to do with test output, but it fired this heuristic. A grep whose
+# operands name explicit `.yml`/`.md`/`.json`/source-file paths is reading source,
+# not scraping a test/task-output stream, so IS_SOURCE_FILE_GREP suppresses the
+# block. The stdin-scrape (`cat r.txt | grep Error | … | sed`) and `/tasks/*.output`
+# forms have no such source-file operand and keep firing.
+#
+# Scan COMMAND_NO_STRINGS (quoted literals stripped) so the extension match keys on
+# a real file OPERAND, not a source name that merely appears inside the search
+# pattern. This also lets the char class stop at pipes/separators without a quoted
+# pattern's own `|` (e.g. grep -n 'app-id|fail-fast' file.yml) cutting the scan
+# short before the file operand.
+IS_SOURCE_FILE_GREP=false
+if echo "$COMMAND_NO_STRINGS" | grep -Eq '(grep|rg)\b[^|;&]*\.(yml|yaml|md|json|ts|tsx|js|py|tf|toml|sh|rs|go)\b'; then
+    IS_SOURCE_FILE_GREP=true
+fi
+
 if [ "$IS_LOG_STREAM" = false ] && \
+   [ "$IS_SOURCE_FILE_GREP" = false ] && \
    echo "$COMMAND" | grep -Eq 'grep.*\|.*grep.*\|.*(sed|cut|awk)' && \
    echo "$COMMAND" | grep -Eq "$TEST_OUTPUT_SOURCE_RE"; then
     block "REMINDER: Parsing test output with grep chains is fragile. Better alternatives:

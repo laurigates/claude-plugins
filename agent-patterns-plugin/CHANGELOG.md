@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.31.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.30.5...agent-patterns-plugin-v2.31.0) (2026-07-04)
+
+
+### Features
+
+* **agent-patterns-plugin:** deepen mcp-server-authoring's build path ([#1932](https://github.com/laurigates/claude-plugins/issues/1932)) ([21c0b39](https://github.com/laurigates/claude-plugins/commit/21c0b399cb340476a8dc2e3980be85687d2fea4d)), closes [#1922](https://github.com/laurigates/claude-plugins/issues/1922)
+
 ## [2.30.5](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.30.4...agent-patterns-plugin-v2.30.5) (2026-07-02)
 
 

@@ -103,12 +103,17 @@ assert_exit \
     "cat file | command || echo fallback is allowed (pipeline)" 0 \
     "cat ~/.claude/settings.json 2>/dev/null | python3 -m json.tool 2>/dev/null | grep -A5 -i hook || echo not found"
 
-# ── grep -q exemption regression ─────────────────────────────────────────────
-# Regression: grep -q was blocked even though the Grep tool does not support
-# boolean exit-code checks. grep -q is the standard shell idiom for testing
-# whether a pattern exists (e.g. grep -q pattern file && do_thing).
+# ── grep/rg is no longer blocked ─────────────────────────────────────────────
+# The grep/rg→Grep redirect was demoted from a hard block to an opt-in teach
+# nudge (bash-antipatterns-teach.sh), mirroring the find→Glob demotion (#1871).
+# The block did no safety work — it always EXEMPTED pipelines, boolean -q checks,
+# and -l/-c/-L filter modes, blocking only benign line-numbered file reads — and
+# it hard-dead-ended subagents lacking the Grep tool (#1909: ToolSearch could not
+# find Grep, so every blocked search cost a retry). So grep/rg in EVERY form is
+# now allowed by this hook. The Grep steer survives as a non-blocking nudge in the
+# companion teach hook (see test-bash-antipatterns-teach.sh).
 echo ""
-echo "grep -q exemption (exit-code checks allowed, plain searches blocked):"
+echo "grep/rg is no longer blocked (demoted to opt-in teach nudge):"
 
 assert_exit \
     "grep -q is allowed (boolean check)" 0 \
@@ -131,12 +136,16 @@ assert_exit \
     "rg --quiet pattern file"
 
 assert_exit \
-    "grep pattern file (no -q, no pipe) is blocked" 2 \
+    "grep pattern file (plain search) is allowed (was blocked; now teach-only, #1909)" 0 \
     "grep pattern file"
 
 assert_exit \
-    "grep -n pattern file (no -q, no pipe) is blocked" 2 \
+    "grep -n pattern file (line-numbered file read) is allowed (was blocked; now teach-only, #1909)" 0 \
     "grep -n pattern file"
+
+assert_exit \
+    "rg pattern --type ts is allowed (was blocked; now teach-only, #1909)" 0 \
+    "rg pattern --type ts"
 
 assert_exit \
     "grep in pipeline is allowed (piped output has different semantics)" 0 \
@@ -360,21 +369,6 @@ assert_stderr_contains() {
 }
 
 assert_stderr_contains \
-    "grep block message names Grep substitution" \
-    'Grep(pattern="pattern", path="src", -r=true, -n=true)' \
-    "grep -rn pattern src/"
-
-assert_stderr_contains \
-    "rg block message also names Grep substitution" \
-    'Grep(pattern="pattern", glob="*.ts")' \
-    "rg pattern --type ts"
-
-assert_stderr_contains \
-    "grep block message points at rule file" \
-    'bash-tool-replacements.md' \
-    "grep -rn pattern src/"
-
-assert_stderr_contains \
     "cat block message names Read substitution" \
     'Read(file_path="/path/to/file.md")' \
     "cat /home/user/file.md"
@@ -399,13 +393,14 @@ assert_stderr_contains \
     'bash-tool-replacements.md' \
     "head -50 file.md"
 
-# ── grep -l/-c/-L filter-mode exemption (issue #1592) ────────────────────────
-# Regression: grep -l (files-with-matches) and grep -c (count) over a known
-# file set are filters, not codebase searches the Grep tool replaces, but they
-# were blocked by the grep/rg detector. The uppercase context flag -C (a real
-# search) must still be blocked.
+# ── grep flag forms all allowed post-demotion (issue #1592, #1909) ───────────
+# Regression: grep -l (files-with-matches), grep -c (count), grep -L, and even
+# the -C context search are all allowed now that the grep/rg block is demoted to
+# an opt-in teach nudge (#1909). Previously -l/-c/-L were exempted while -C stayed
+# blocked; the demotion removes the whole block, so every form passes. These
+# remain as regression guards that the block does not creep back in.
 echo ""
-echo "grep -l/-c/-L filter modes are exempt (-C context is not):"
+echo "grep flag forms are all allowed post-demotion (#1592, #1909):"
 
 assert_exit \
     "grep -lE over explicit files is allowed (files-with-matches)" 0 \
@@ -428,7 +423,7 @@ assert_exit \
     "grep --count pattern file"
 
 assert_exit \
-    "grep -C3 (uppercase context) is still blocked (it's a real search)" 2 \
+    "grep -C3 (uppercase context) is allowed post-demotion (#1909)" 0 \
     "grep -C3 pattern file"
 
 # ── task-output read → Read tool, not deprecated TaskOutput (issue #1591) ─────
@@ -564,16 +559,25 @@ assert_exit \
     "GUARD: task-output (.output) scrape still blocks (#1914)" 2 \
     "cat run.output | grep Error | grep -v warn | sed s/a/b/"
 
-# ── grep block message offers the pipe fallback (issue #1602) ─────────────────
-# Regression: when the Grep tool is unavailable in a session, the block message
-# pointed only at Grep(...). It must also offer the always-allowed pipe form.
+# ── multi-grep test-output heuristic exempts source/config file greps (#1914) ──
+# Regression: the "Parsing test output with grep chains is fragile" heuristic
+# fired on a multi-pattern `grep -n 'app-id|fail-fast|…' reusable-*.yml | … | awk`
+# spot-checking GitHub Actions workflow YAML — the generic case-sensitive tokens
+# Error/fail/FAIL match ordinary YAML substrings (fail-fast, failure) with no test
+# runner involved. A grep whose operands name explicit source/config file paths
+# (.yml/.md/.json/…) is reading source, not scraping a test/task-output stream, so
+# it must be ALLOWED. The stdin-scrape and /tasks/*.output forms (which have no
+# source-file operand) must STILL block.
 echo ""
-echo "grep block message offers the pipe fallback for sessions without the Grep tool:"
+echo "multi-grep over source/config YAML is exempt; genuine test-output scrapes still block (#1914):"
 
-assert_stderr_contains \
-    "grep block message mentions the pipe fallback" \
-    'pipe instead' \
-    "grep -rn pattern src/"
+assert_exit \
+    "multi-grep over reusable-*.yml workflow files (issue repro) is allowed" 0 \
+    "grep -n 'app-id|timeout-minutes|fail-fast' reusable-release-please.yml | head; echo '---'; grep -n 'skip-on-release' reusable-container-build.yml | awk '{print}'"
+
+assert_exit \
+    "GUARD: grep chain over a .output file (no source-file operand) still blocks" 2 \
+    "grep -n Error run.output | grep -v warn | sed s/a/b/"
 
 # ── git push -u colon-refspec footgun, no-colon form allowed (issue #1600) ────
 # Regression: the push -u detector blocked the legitimate no-colon form

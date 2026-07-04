@@ -112,7 +112,7 @@ Design and scaffold the MCP code execution pattern for agent systems.
 - Security checklist for sandboxed execution environments
 
 #### `mcp-server-authoring`
-Producer-side patterns for **building** a Python MCP server with FastMCP — the shared conventions behind `kicad-mcp`, `silverbucket-mcp`, and `pal-mcp-server`.
+Producer-side patterns for **building** a Python MCP server with FastMCP — an ordered, reasoned build path (scaffold → tools → resources → tests → release) for any server you own.
 
 **When to use:**
 - Building or scaffolding a new MCP server
@@ -123,7 +123,7 @@ Producer-side patterns for **building** a Python MCP server with FastMCP — the
 **Features:**
 - FastMCP server skeleton (SDK-bundled and standalone `fastmcp`)
 - Tool / resource / prompt decorators with type-hint-driven schemas
-- Portfolio toolchain conventions (uv, ruff, pytest, release-please)
+- Toolchain wiring (uv, ruff, pytest, release-please) with the reasoning at each step
 - TDD pattern testing the underlying function, not the decorator
 
 #### `agent-teams`
