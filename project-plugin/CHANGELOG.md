@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.0](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.20.0...project-plugin-v1.21.0) (2026-07-04)
+
+
+### Features
+
+* **project-plugin:** add a deterministic loop driver to project-test-loop ([#1937](https://github.com/laurigates/claude-plugins/issues/1937)) ([e4eb2d1](https://github.com/laurigates/claude-plugins/commit/e4eb2d195e3e4b8728def6f700a52ba57b1e864c)), closes [#1920](https://github.com/laurigates/claude-plugins/issues/1920)
+
 ## [1.20.0](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.19.1...project-plugin-v1.20.0) (2026-06-29)
 
 

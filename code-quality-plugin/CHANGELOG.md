@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.17.4...code-quality-plugin-v1.18.0) (2026-07-04)
+
+
+### Features
+
+* **code-quality-plugin:** adopt rubric-style instruction depth in code-review ([#1939](https://github.com/laurigates/claude-plugins/issues/1939)) ([82cd8cc](https://github.com/laurigates/claude-plugins/commit/82cd8cc5d9a684bd6044f0538b5a587b41989323)), closes [#1921](https://github.com/laurigates/claude-plugins/issues/1921)
+
 ## [1.17.4](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.17.3...code-quality-plugin-v1.17.4) (2026-07-04)
 
 
