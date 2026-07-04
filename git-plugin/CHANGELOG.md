@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.49.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.49.0...git-plugin-v2.49.1) (2026-07-04)
+
+
+### Documentation
+
+* **git-plugin:** document grouped-PR title-pattern tagging wedge + recovery ([#1933](https://github.com/laurigates/claude-plugins/issues/1933)) ([bba1965](https://github.com/laurigates/claude-plugins/commit/bba19654e7c3f2b094adb12208d3c5ec400b9928)), closes [#1911](https://github.com/laurigates/claude-plugins/issues/1911)
+
 ## [2.49.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.48.1...git-plugin-v2.49.0) (2026-06-30)
 
 
