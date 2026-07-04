@@ -12,7 +12,7 @@ reviewed: 2026-06-24
 One survey, one preview, one confirmation — then run only the
 end-of-session passes that actually qualify. This is the orchestrator
 over three capture skills that used to compete for the wind-down moment
-(design decisions D3/D4, `docs/session-plugin-workflow.md`):
+(design decisions D3/D4, `docs/archive/session-plugin-workflow.md`):
 
 | Pass | Skill | Captures |
 |---|---|---|

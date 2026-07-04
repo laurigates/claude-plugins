@@ -1,6 +1,6 @@
 # project-plugin Phase 1 audit — 2026-06-04
 
-Read-only audit deliverable for Phase 1 of `docs/session-plugin-workflow.md`.
+Read-only audit deliverable for Phase 1 of `docs/archive/session-plugin-workflow.md`.
 Source: general-purpose audit agent. No edits made; this is findings only.
 
 Remediation tracked in: https://github.com/laurigates/claude-plugins/issues/1503

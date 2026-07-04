@@ -75,7 +75,7 @@ a JSON record. Friction signals come from these record shapes:
 ### Step 0: Read pre-registered fast-loop signal (`session-feedback`)
 
 This agent is the **slow loop** of a two-speed feedback architecture (see
-`docs/session-plugin-workflow.md`). The **fast loop** is
+`docs/archive/session-plugin-workflow.md`). The **fast loop** is
 `feedback-plugin/skills/feedback-session` (`/feedback:session`), which files
 per-session, qualitative, human-authored issues — including positive ones —
 under the shared `session-feedback` / `positive-feedback` labels. Those issues
