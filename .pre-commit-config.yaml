@@ -158,6 +158,24 @@ repos:
         language: system
         files: '^scripts/(check-feature-flags-catalog\.sh|tests/test-check-feature-flags-catalog\.sh)$'
         pass_filenames: false
+      - id: check-configure-components
+        name: configure-plugin taxonomy matches components.yaml (manifest/flow/README drift)
+        entry: bash ./scripts/check-configure-components.sh --strict
+        language: system
+        files: '^(configure-plugin/(skills/[^/]+/SKILL\.md|skills/configure-all/components\.yaml|docs/flow\.md|README\.md)|scripts/check-configure-components\.sh)$'
+        pass_filenames: false
+      - id: test-check-configure-components
+        name: configure-components drift guard regression
+        entry: bash ./scripts/tests/test-check-configure-components.sh
+        language: system
+        files: '^(scripts/(check-configure-components\.sh|tests/test-check-configure-components\.sh)|configure-plugin/skills/configure-all/scripts/list-components\.sh)$'
+        pass_filenames: false
+      - id: test-list-components
+        name: configure-all component lister regression
+        entry: bash ./configure-plugin/skills/configure-all/scripts/tests/test-list-components.sh
+        language: system
+        files: '^configure-plugin/skills/configure-all/(scripts/(list-components\.sh|tests/test-list-components\.sh)|components\.yaml)$'
+        pass_filenames: false
       - id: test-fetch-research-papers
         name: research-radar fetcher parse/dedup/date-filter regression
         entry: bash ./scripts/tests/test-fetch-research-papers.sh

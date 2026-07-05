@@ -1,37 +1,41 @@
 # Configure Plugin Flow
 
+The component roster and domain grouping below are generated from the
+authoritative manifest
+[`skills/configure-all/components.yaml`](../skills/configure-all/components.yaml).
+`scripts/check-configure-components.sh` (repo root) fails CI when this file
+and the manifest disagree — update the manifest first.
+
 ```mermaid
 flowchart TD
     U[User] -->|/configure:all<br/>--check-only --fix| R["/configure:all<br/>(router)"]
     U -->|/configure:status| STATUS[configure-status<br/>read-only compliance report]
     U -->|/configure:select| SELECT[configure-select<br/>AskUserQuestion<br/>pick domains]
+    U -->|/configure:repo| REPO[configure-repo<br/>end-to-end onboarding driver]
 
-    R --> MODE{--fix or<br/>--check-only?}
-    SELECT --> MODE
+    R --> LIST[list-components.sh<br/>roster from components.yaml]
+    SELECT --> LIST
+    STATUS --> LIST
+    REPO --> R
 
-    MODE --> CI[CI / Workflows<br/>• configure-workflows<br/>• configure-reusable-workflows<br/>• configure-release-please<br/>• configure-argocd-automerge<br/>• configure-github-pages<br/>• configure-claude-plugins]
+    LIST --> MODE{--fix or<br/>--check-only?}
 
-    MODE --> CONT[Containers & Deploy<br/>• configure-dockerfile<br/>• configure-container<br/>• configure-skaffold]
+    MODE --> D1[CI/CD & Version Control]
+    MODE --> D2[Git Metadata]
+    MODE --> D3[Containers & Deploy]
+    MODE --> D4[Testing]
+    MODE --> D5[Code Quality]
+    MODE --> D6[Security]
+    MODE --> D7[Documentation]
+    MODE --> D8[Feature Flags]
+    MODE --> D9[Package Management]
+    MODE --> D10[Editor & Dev Environment]
 
-    MODE --> TEST[Testing<br/>• configure-tests<br/>• configure-coverage<br/>• configure-api-tests<br/>• configure-integration-tests<br/>• configure-load-tests<br/>• configure-memory-profiling<br/>• configure-ux-testing]
-
-    MODE --> QUAL[Lint / Format / Dead code<br/>• configure-linting<br/>• configure-formatting<br/>• configure-dead-code<br/>• configure-pre-commit]
-
-    MODE --> SEC[Security<br/>• configure-security<br/>• claude-security-settings]
-
-    MODE --> DOCS[Docs<br/>• configure-docs<br/>• configure-readme]
-
-    MODE --> FF[Feature flags<br/>• configure-feature-flags<br/>• openfeature<br/>• go-feature-flag]
-
-    MODE --> PKG[Package management<br/>• configure-package-management<br/>• configure-cache-busting]
-
-    MODE --> EDIT[Editor / Dev env<br/>• configure-editor<br/>• configure-mcp<br/>• configure-makefile<br/>• configure-justfile<br/>• configure-web-session<br/>• configure-sentry]
-
-    CI & CONT & TEST & QUAL & SEC & DOCS & FF & PKG & EDIT --> RPT[Consolidated report<br/>per-domain compliance]
+    D1 & D2 & D3 & D4 & D5 & D6 & D7 & D8 & D9 & D10 --> RPT[Consolidated report<br/>per-domain compliance]
 
     RPT --> FIXQ{--fix?}
     FIXQ -->|no| DONE[Done]
-    FIXQ -->|yes| APPLY[Each domain skill<br/>writes config files]
+    FIXQ -->|yes| APPLY[Each component skill<br/>writes config files]
     APPLY --> DONE
 
     SYNC[config-sync<br/>cross-repo propagation] -.->|reference<br/>implementation| MODE
@@ -41,8 +45,8 @@ flowchart TD
     classDef fix fill:#ffa500,stroke:#b37400,color:#000
     classDef prompt fill:#dda0dd,stroke:#8b5a8b,color:#000
 
-    class R router
-    class STATUS,CI,CONT,TEST,QUAL,SEC,DOCS,FF,PKG,EDIT,SYNC check
+    class R,REPO router
+    class STATUS,LIST,D1,D2,D3,D4,D5,D6,D7,D8,D9,D10,SYNC check
     class APPLY fix
     class SELECT prompt
 ```
@@ -51,22 +55,26 @@ flowchart TD
 
 | Node style | Meaning |
 |------------|---------|
-| Blue | Router skill (`/configure:all`) |
+| Blue | Router / driver skill (`/configure:all`, `/configure:repo`) |
 | Green | Read-only audit / domain group (`--check-only`) |
 | Orange | Fix application (`--fix` writes config files) |
 | Purple | Interactive `AskUserQuestion` prompt |
 
 ## Domain → Skill mapping
 
-| Domain | Skills |
-|--------|--------|
-| CI / Workflows | `configure-workflows`, `configure-reusable-workflows`, `configure-release-please`, `configure-argocd-automerge`, `configure-github-pages`, `configure-claude-plugins`, `ci-workflows`, `release-please-standards` |
-| Containers & Deploy | `configure-dockerfile`, `configure-container`, `configure-skaffold`, `skaffold-standards` |
-| Testing | `configure-tests`, `configure-coverage`, `configure-api-tests`, `configure-integration-tests`, `configure-load-tests`, `configure-memory-profiling`, `configure-ux-testing` |
-| Lint / Format / Dead code | `configure-linting`, `configure-formatting`, `configure-dead-code`, `configure-pre-commit`, `pre-commit-standards` |
-| Security | `configure-security`, `claude-security-settings` |
-| Docs | `configure-docs`, `configure-readme`, `readme-standards` |
-| Feature flags | `configure-feature-flags`, `openfeature`, `go-feature-flag` |
-| Package management | `configure-package-management`, `configure-cache-busting` |
-| Editor / Dev env | `configure-editor`, `configure-mcp`, `configure-makefile`, `configure-justfile`, `configure-web-session`, `configure-sentry` |
-| Orchestration | `configure-all` (router), `configure-select` (interactive), `configure-status` (read-only), `config-sync` (cross-repo) |
+Component columns mirror `components.yaml`; reference skills
+(`user-invocable: false` knowledge bases) are listed with their domain.
+
+| Domain | Component skills | Reference skills |
+|--------|------------------|------------------|
+| CI/CD & Version Control | `configure-workflows`, `configure-reusable-workflows`, `configure-release-please`, `configure-pre-commit`, `configure-github-pages`, `configure-argocd-automerge`, `configure-claude-plugins` | `ci-workflows`, `release-please-standards`, `pre-commit-standards` |
+| Git Metadata | `configure-gitattributes`, `configure-gitignore`, `configure-worktreeinclude` | |
+| Containers & Deploy | `configure-dockerfile`, `configure-container`, `configure-skaffold` | `skaffold-standards` |
+| Testing | `configure-tests`, `configure-coverage`, `configure-api-tests`, `configure-integration-tests`, `configure-load-tests`, `configure-memory-profiling`, `configure-ux-testing` | |
+| Code Quality | `configure-linting`, `configure-formatting`, `configure-dead-code` | |
+| Security | `configure-security` | `claude-security-settings` |
+| Documentation | `configure-docs`, `configure-readme`, `configure-surface` | `readme-standards` |
+| Feature Flags | `configure-feature-flags` | `openfeature`, `go-feature-flag` |
+| Package Management | `configure-package-management`, `configure-mise`, `configure-cache-busting` | |
+| Editor & Dev Environment | `configure-editor`, `configure-mcp`, `configure-makefile`, `configure-justfile`, `configure-web-session`, `configure-sentry` | |
+| Orchestration | `configure-all` (router), `configure-select` (interactive), `configure-status` (read-only), `configure-repo` (onboarding driver), `config-sync` (cross-repo) | `multi-repo-discipline` (advisory) |
