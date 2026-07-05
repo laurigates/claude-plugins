@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.9.0](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.8.5...tools-plugin-v2.9.0) (2026-07-05)
+
+
+### Features
+
+* **tools-plugin:** add hf-downloads skill ([#1982](https://github.com/laurigates/claude-plugins/issues/1982)) ([bdfe0e2](https://github.com/laurigates/claude-plugins/commit/bdfe0e211213bf2ed850da4f196b50259d0e01e8))
+
 ## [2.8.5](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.8.4...tools-plugin-v2.8.5) (2026-06-13)
 
 
