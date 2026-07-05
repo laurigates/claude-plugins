@@ -5,8 +5,8 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-21
-modified: 2026-07-01
-reviewed: 2026-07-01
+modified: 2026-07-05
+reviewed: 2026-07-05
 ---
 
 # Parallel Agent Dispatch
@@ -53,10 +53,34 @@ Before spawning, the orchestrator must verify:
 | Main working tree is clean (`git status --porcelain` empty) | Agents inherit cwd; uncommitted changes cross-contaminate worktrees |
 | No existing worktree at each planned path (`git worktree list`) | Nested or duplicate worktrees are the #1 source of salvage work |
 | Each agent gets a **unique** branch name | Prevents commits landing on the wrong branch when cwd resolution drifts |
+| **Fixed target branch name not already taken** (see Target-branch preflight below) | A conventional per-issue/milestone name is one two sessions pick identically; the collision otherwise surfaces only at end-of-task rename |
 | Shared counters snapshot (next ADR/PRP number, feature-tracker IDs) | Prevents numbering collisions in parallel doc writes |
 
 If any check fails, **refuse to dispatch** and report the blocker. Do not
 "clean up" uncommitted user work — surface it and ask.
+
+**Target-branch preflight (#1969).** `isolation: "worktree"` auto-names the fresh
+worktree's branch; when the agent is told to **rename** onto a **fixed**
+conventional target name (`feat/m4-…`), git refuses a name already checked out in
+another worktree — so a collision with a concurrent session that picked the same
+name surfaces only at that end-of-task rename, deep into the run (real case: two
+sessions both reached PR-open ~25 min / ~400K tokens in → duplicate-PR reconcile).
+Make it a **cheap up-front stop/merge decision** — before dispatching, or as the
+agent's *first* step:
+
+```bash
+target="feat/m4-sampling-adapter-io"
+git branch -a --list "$target"            # local + remote-tracking refs
+git worktree list | grep -F "[$target]"  # checked out elsewhere
+git ls-remote --heads origin "$target"   # a peer already pushed it
+```
+
+Any hit ⇒ another session may already own this task — **stop and reconcile**, not
+race to a duplicate PR (acute in shared multi-session portfolios —
+`.claude/rules/concurrent-session-pr-check.md`). **Mitigation:** push under the
+target name via explicit refspec (`git push origin HEAD:$target`) instead of
+renaming — sidesteps the "already checked out" refusal. See
+[REFERENCE.md](REFERENCE.md) "Target-branch preflight (#1969)".
 
 **Transient worktree leaks (#1319).** While a wave runs, a file a child wrote
 inside its worktree can briefly appear in the **parent** as an untracked entry

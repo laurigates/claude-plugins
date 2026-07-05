@@ -469,3 +469,45 @@ target_root=$(git -C "<target-dir>" rev-parse --show-toplevel)
 | When the target's enclosing repo ≠ the session repo, do not assume `isolation: "worktree"` isolated the target. | The harness worktrees the session repo; the nested repo is absent from it. |
 | (a) Create the **nested repo's** worktree explicitly off its own `origin/main` and point the agent at that path; **or** (b) brief the agent to `git -C <nested-repo> fetch && git -C <nested-repo> worktree add <path> origin/main` as its first step. | Both give the agent a real isolated checkout of the repo it edits, instead of the blocked shared checkout. |
 | Have the agent operate inside that nested-repo worktree (prefix `git -C "$WORKTREE"`, per the #1480 cwd-reset rule) and open its PR from there. | Keeps the work isolated and avoids the shared-checkout collisions `shared-checkout-branch-isolation.md` guards against. |
+
+## Target-branch preflight (#1969)
+
+`isolation: "worktree"` names the fresh worktree's branch **automatically** (an
+`agent-<hash>` name). When the project convention is a **fixed** per-issue /
+per-milestone name (`feat/m4-sampling-adapter-io`), the agent is told to
+**rename** onto it near the end of its run. Git refuses to check out — or rename
+onto — a branch **already checked out in another worktree**, so if a concurrent
+session picked the same conventional name for the same task, the refusal surfaces
+only at that end-of-task rename.
+
+Observed (laurigates/loractl M4): two sessions independently dispatched the same
+milestone task, both auto-named worktrees, both told to rename onto
+`feat/m4-sampling-adapter-io`. The second finished ~25 min / ~400K tokens in, hit
+the rename refusal (the first had already checked the name out and committed a
+complete duplicate implementation), fell back to a `-wip` suffix, and flagged the
+collision in its return notes. Both reached PR-open independently — two duplicate
+PRs for one issue, needing a full reconciliation pass (diff the two, keep the
+better, port the other's improvements, close the loser). A preflight would have
+stopped at least one session before it started.
+
+### Detection (before dispatch, or as the agent's first step)
+
+```sh
+target="feat/m4-sampling-adapter-io"
+git branch -a --list "$target"                 # local + remote-tracking refs
+git worktree list | grep -F "[$target]"        # same name checked out elsewhere
+git ls-remote --heads origin "$target"         # a peer already pushed it
+```
+
+Any hit ⇒ another session may already own this exact task. **Stop and reconcile**
+(compare/merge with the existing branch/PR — see
+`.claude/rules/concurrent-session-pr-check.md`) rather than racing to a duplicate.
+
+### Rules
+
+| Rule | Why |
+|------|-----|
+| Check the fixed target name against local refs, other worktrees, **and** the remote before substantive work. | The rename-time refusal is the most expensive place to discover the collision; the preflight is one cheap round of `git` reads. |
+| A hit is a **stop/merge decision**, not a rename-with-suffix workaround. | Two sessions on the same conventional name are almost always doing the same task; a `-wip` fallback just produces the duplicate PR. |
+| Prefer pushing under the target name via **explicit refspec** (`git push origin HEAD:$target`) over renaming the worktree branch. | A refspec push never touches the local branch, so it sidesteps the "already checked out in another worktree" refusal entirely; a genuine peer collision then still surfaces — cheaply — as a non-fast-forward reject at push time. |
+| Acute in shared multi-session portfolios (one clone, concurrent Claude Code sessions). | A conventional per-issue/milestone name is exactly what two independent sessions pick identically. |
