@@ -15,12 +15,14 @@ Design background: [`docs/archive/session-plugin-workflow.md`](../docs/archive/s
 |---|---|
 | `session-spinup` | Read-only session-start briefing: open taskwarrior tasks, git state (uncommitted / unpushed / open PRs), optional journal todos |
 | `session-wrap` | End-of-session capture of loose threads to taskwarrior, an optional journal, and GitHub follow-up issues |
-| `session-end` | Orchestrator: one survey, preview which of wrap / distill / feedback / taskwarrior-sync qualify, **single confirmation**, then sequence them |
+| `session-end` | Orchestrator: one survey, preview which of wrap / distill / feedback / taskwarrior-sync / blueprint tracker-sync qualify, **single confirmation**, then sequence them |
 | `session-distill` | Distill session insights into `.claude/rules/`, skill improvements, and justfile recipes (moved from `project-plugin`) |
 
-`session-end` also references `feedback-plugin:feedback-session` by name
-for the plugin-feedback pass; if that plugin isn't installed the pass is
-skipped.
+`session-end` also references `feedback-plugin:feedback-session` (the
+plugin-feedback pass) and `blueprint-plugin:blueprint-feature-tracker-sync`
+(the blueprint tracker-sync pass, offered when the session left closed
+WO-linked tasks undrained from the feature tracker) by name only; if the
+referenced plugin isn't installed the pass is skipped.
 
 ## Configuration (`session-plugin.local.md`)
 
@@ -90,6 +92,7 @@ All writes and judgment stay in the invoking skill.
 | `--with-dedup` | GITHUB_DRIFT (assigned-open issues minus those tracked in taskwarrior) |
 | `--with-journal --journal-path <dir>` | JOURNAL (unchecked todos from the most recent dated note) |
 | `--with-commits` | COMMITS (recent commit subjects) |
+| `--with-blueprint` | BLUEPRINT (manifest/tracker presence, ready/blocked/in-flight feature counts, closed-but-undrained WO-linked tasks). Degrades to `MANIFEST=false` + zeroed counts when the repo isn't blueprint-enabled |
 | `--summary` | coarse counts only (used by the nudge hook) |
 | `--project <name>` | override the detected project |
 

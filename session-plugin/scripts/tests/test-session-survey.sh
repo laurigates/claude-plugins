@@ -51,6 +51,7 @@ cat > "$STUB/task" <<'TASKSTUB'
 args="$*"
 case "$args" in
   *"+ACTIVE export"*) cat "$TASK_ACTIVE_FIXTURE" 2>/dev/null || echo "[]" ;;
+  *"bpid.any:"*)      cat "$TASK_BPID_FIXTURE" 2>/dev/null || echo "[]" ;;
   *"export"*)         cat "$TASK_PROJECT_FIXTURE" 2>/dev/null || echo "[]" ;;
   *) echo "[]" ;;
 esac
@@ -85,6 +86,7 @@ run() { bash "$COLLECTOR" --project-dir "$REPO" --project demo "$@"; }
 
 # --- TEST A: all empty -------------------------------------------------------
 export TASK_PROJECT_FIXTURE=/dev/null TASK_ACTIVE_FIXTURE=/dev/null
+export TASK_BPID_FIXTURE=/dev/null
 export GH_ISSUE_FIXTURE=/dev/null GH_PR_FIXTURE=/dev/null
 out=$(run)
 check "A: project section present" "$out" "PROJECT=demo"
@@ -144,6 +146,79 @@ export GH_PR_HEAD_FIXTURE="$SANDBOX/author-prs.json"
 out=$(run)
 check "I: overlapping author/head PR deduped" "$out" "PR_COUNT=1"
 unset GH_PR_AUTHOR_FIXTURE GH_PR_HEAD_FIXTURE
+
+# --- TEST J: --with-blueprint degrades to MANIFEST=false without a manifest --
+out=$(run --with-blueprint)
+check "J: manifest absent reported" "$out" "MANIFEST=false"
+check "J: undrained zero without manifest" "$out" "UNDRAINED_COUNT=0"
+check "J: blueprint section closes with STATUS=OK" "$out" "=== END BLUEPRINT ==="
+out=$(run)
+check_absent "J: blueprint section omitted without the flag" "$out" "=== BLUEPRINT ==="
+
+# --- TEST K: tracker feature counts via explicit-path union ------------------
+# The phase itself carries status "not_started"; a recursive `.. | objects`
+# jq would count it as a third ready feature. READY_COUNT must stay 2.
+mkdir -p "$REPO/docs/blueprint"
+echo '{}' > "$REPO/docs/blueprint/manifest.json"
+cat > "$REPO/docs/blueprint/feature-tracker.json" <<'TRACKER'
+{
+  "phases": [
+    {
+      "name": "phase-1",
+      "status": "not_started",
+      "features": [
+        {"id": "FR-1", "status": "not_started"},
+        {"id": "FR-2", "status": "not_started"},
+        {"id": "FR-3", "status": "blocked"}
+      ]
+    }
+  ],
+  "tasks": {
+    "pending": [],
+    "in_progress": [{"id": "WO-031", "description": "mid-flight WO"}],
+    "completed": []
+  }
+}
+TRACKER
+out=$(run --with-blueprint)
+check "K: manifest detected" "$out" "MANIFEST=true"
+check "K: tracker detected" "$out" "TRACKER=true"
+check "K: ready count skips the phase's own status" "$out" "READY_COUNT=2"
+check "K: blocked count" "$out" "BLOCKED_COUNT=1"
+check "K: in-flight WO surfaced" "$out" "INFLIGHT_WOS=WO-031"
+
+# --- TEST L: undrained = closed-bpid WOs ∩ tracker tasks.pending -------------
+echo '[{"uuid":"dddd-4444","description":"land WO-045","status":"completed","bpid":"WO-045"}]' > "$SANDBOX/bpid.json"
+export TASK_BPID_FIXTURE="$SANDBOX/bpid.json"
+cat > "$REPO/docs/blueprint/feature-tracker.json" <<'TRACKER'
+{
+  "features": [{"id": "FR-9", "status": "in_progress", "implementing_wos": ["WO-045"]}],
+  "tasks": {
+    "pending": [
+      {"id": "WO-045", "description": "closed in tw, not drained"},
+      {"id": "WO-099", "description": "still genuinely pending"}
+    ],
+    "in_progress": [],
+    "completed": []
+  }
+}
+TRACKER
+out=$(run --with-blueprint)
+check "L: closed bpid task counted" "$out" "CLOSED_BPID_COUNT=1"
+check "L: undrained intersection is 1" "$out" "UNDRAINED_COUNT=1"
+check "L: undrained WO surfaced" "$out" "UNDRAINED_WOS=WO-045"
+check_absent "L: still-pending WO-099 not surfaced as undrained" "$out" "WO-099"
+
+# --- TEST M: manifest-only (the dogfooding shape) degrades cleanly -----------
+rm "$REPO/docs/blueprint/feature-tracker.json"
+out=$(run --with-blueprint)
+rc=$?
+check "M: exits 0 with manifest but no tracker" "$rc" "0"
+check "M: tracker absence reported" "$out" "TRACKER=false"
+check "M: closed bpid still emitted as informational signal" "$out" "CLOSED_BPID_COUNT=1"
+check "M: undrained forced to 0 without a tracker" "$out" "UNDRAINED_COUNT=0"
+unset TASK_BPID_FIXTURE
+rm -rf "$REPO/docs"
 
 # --- TEST F: no-git / no-tools degrade cleanly ------------------------------
 out=$(SESSION_SURVEY_TASK_BIN=/nonexistent/task SESSION_SURVEY_GH_BIN=/nonexistent/gh \

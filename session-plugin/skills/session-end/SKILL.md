@@ -3,7 +3,7 @@ name: session-end
 description: End-of-session orchestrator. Previews which of wrap/distill/feedback/taskwarrior-sync qualify, single confirm, then sequence. Use when winding down a session.
 allowed-tools: Bash(bash *), Bash(task *), Bash(git *), Bash(gh *), Read, Skill, AskUserQuestion, TodoWrite
 created: 2026-06-10
-modified: 2026-06-24
+modified: 2026-07-05
 reviewed: 2026-06-24
 ---
 
@@ -20,6 +20,7 @@ over three capture skills that used to compete for the wind-down moment
 | Distill | `session-plugin:session-distill` | Durable learnings → rules, skill updates, justfile recipes |
 | Feedback | `feedback-plugin:feedback-session` | Notable plugin/skill interactions → GitHub issues on claude-plugins |
 | Taskwarrior sync | (inline, no sub-skill) | Close done tasks, update statuses, add follow-ups; uses stable UUIDs |
+| Blueprint tracker-sync | `blueprint-plugin:blueprint-feature-tracker-sync` | Drain closed WO-linked tasks from tracker `tasks.pending` → `tasks.completed` (`--drain-wave`) |
 
 ## When to Use This Skill
 
@@ -43,7 +44,7 @@ use); it emits detection, git state, PRs, taskwarrior tasks **with stable
 UUIDs**, and recent commits in one parallel-safe pass:
 
 ```sh
-bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-commits
+bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-commits --with-blueprint
 ```
 
 Pass `--project <name>` to override the detected project. Hand the digest
@@ -63,6 +64,7 @@ failure mode.
 | Distill | A durable, generalizable learning emerged AND the repo has a distillable surface (`.claude/rules/` or a justfile) |
 | Feedback | A plugin/skill behaved notably well or badly — bug, enhancement, or positive worth filing |
 | Taskwarrior sync | `TASK_AVAILABLE=true` AND `OPEN_TASKS` ≥ 1 in the Step 1 digest |
+| Blueprint tracker-sync | `UNDRAINED_COUNT` ≥ 1 in the Step 1 digest's `BLUEPRINT` section. Non-blueprint / tracker-missing repos auto-disqualify (count is 0) → silent skip. If `blueprint-plugin` isn't installed, note it and skip (as with Feedback) |
 
 If **nothing** qualifies, say so in one line and end — no preview, no
 question.
@@ -71,7 +73,9 @@ question.
 
 Present a single compact preview: each qualifying pass with a one-line
 reason and its concrete payload (the wrap items; the distill proposal
-sketch; the feedback finding; the open taskwarrior items with their UUIDs).
+sketch; the feedback finding; the open taskwarrior items with their UUIDs;
+for blueprint: `Blueprint tracker-sync — N closed WO task(s) not drained
+from the feature tracker: WO-…`).
 Then **one AskUserQuestion** (multiSelect) listing the qualifying passes
 as options, qualifying ones described with their reasons. The user picks
 any subset; "Other" covers adjustments.
@@ -93,10 +97,25 @@ sync), passing along the Step 1 survey so they don't re-do it:
    use volatile numeric IDs — they shift when other tasks complete.
 2. `session-plugin:session-wrap` — closes/annotates/adds tasks so later
    passes see the final queue state
-3. `session-plugin:session-distill` — apply mode per its own flow; the
+3. **Blueprint tracker-sync** (if confirmed) — runs after passes 1–2
+   because both mutate the taskwarrior queue and may close more WO-linked
+   tasks after the Step 1 survey. Re-derive the wave inline right before
+   delegating (never reuse the survey's `UNDRAINED_WOS` as the drain list):
+
+   ```sh
+   task bpid.any: status:completed export 2>/dev/null | jq -r --slurpfile t docs/blueprint/feature-tracker.json '([.[] | .bpid // empty] | unique) as $closed | (($t[0].tasks.pending // []) | map(.id)) as $pending | [$closed[] | select(. as $w | $pending | index($w))] | join(",")'
+   ```
+
+   Then invoke `/blueprint:blueprint-feature-tracker-sync --drain-wave <list>`
+   with **no** evidence flags — the sync skill sources evidence from
+   taskwarrior annotations itself (its priority order: files → inline →
+   annotation → ask). If the re-derived list is empty, report "already
+   drained" and move on. Cross-plugin: if `blueprint-plugin` isn't
+   installed, note it and skip
+4. `session-plugin:session-distill` — apply mode per its own flow; the
    user already confirmed the pass, so skip a second blanket prompt but
    keep distill's per-category destructive-change prompts
-4. `feedback-plugin:feedback-session` — cross-plugin; if the feedback
+5. `feedback-plugin:feedback-session` — cross-plugin; if the feedback
    plugin isn't installed, note it and skip
 
 ### Step 5: Report
@@ -123,7 +142,8 @@ already in the transcript. Pre-silence:
 
 | Context | Command |
 |---|---|
-| One-pass survey (detection + git + PRs + tasks-with-UUIDs + commits) | `bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-commits` |
+| One-pass survey (detection + git + PRs + tasks-with-UUIDs + commits + blueprint tracker state) | `bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-commits --with-blueprint` |
+| Re-derive the drain wave before delegating | `task bpid.any: status:completed export \| jq …` intersected with tracker `tasks.pending` (Step 4.3) |
 | Stable UUID for latest task | `task +LATEST uuids` |
 | Mark task done by UUID | `task <uuid> done` |
 | Distillable surface check | `find . -maxdepth 2 -path '*/.claude/rules' -o -maxdepth 1 -name 'justfile' -o -maxdepth 1 -name 'Justfile'` |

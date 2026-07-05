@@ -17,7 +17,8 @@
     "distill",
     "knowledge-capture",
     "loose-threads",
-    "orchestrator"
+    "orchestrator",
+    "blueprint"
   ],
   "hooks": {
     "SessionStart": [

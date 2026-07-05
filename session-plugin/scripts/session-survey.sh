@@ -11,7 +11,7 @@
 #   bash session-survey.sh [--project <name>] [--project-dir <path>]
 #       [--home-dir <path>] [--with-dedup] [--with-journal]
 #       [--journal-path <dir>] [--journal-todo-heading <h>]
-#       [--journal-todo-stop <h>] [--summary] [--verbose]
+#       [--journal-todo-stop <h>] [--with-blueprint] [--summary] [--verbose]
 #
 # Every section is exit-0 on empty (parallel-safe-queries.md). Each task carries
 # its stable UUID so callers never operate on a volatile numeric ID (#1417).
@@ -23,6 +23,7 @@ home_dir=""
 with_dedup=false
 with_journal=false
 with_commits=false
+with_blueprint=false
 commit_count=20
 journal_path=""
 journal_todo_heading="## Todo"
@@ -37,6 +38,7 @@ while [ $# -gt 0 ]; do
     --with-dedup) with_dedup=true; shift ;;
     --with-journal) with_journal=true; shift ;;
     --with-commits) with_commits=true; shift ;;
+    --with-blueprint) with_blueprint=true; shift ;;
     --commit-count) commit_count="$2"; shift 2 ;;
     --journal-path) journal_path="$2"; shift 2 ;;
     --journal-todo-heading) journal_todo_heading="$2"; shift 2 ;;
@@ -358,6 +360,69 @@ if [ "$with_commits" = true ]; then
   echo "COMMIT_COUNT=${c_count}"
   echo "STATUS=OK"
   echo "=== END COMMITS ==="
+fi
+
+# Blueprint tracker state (spinup briefing + session-end drain qualify).
+# Skills pass --with-blueprint unconditionally; detection lives here so
+# consumers get a parse-stable section (MANIFEST=false + zeroed counts when
+# the repo isn't blueprint-enabled) instead of a conditionally-absent one.
+if [ "$with_blueprint" = true ]; then
+  echo "=== BLUEPRINT ==="
+  bp_manifest="$project_dir/docs/blueprint/manifest.json"
+  bp_tracker="$project_dir/docs/blueprint/feature-tracker.json"
+  bp_manifest_present=false
+  bp_tracker_present=false
+  ready_count=0
+  blocked_count=0
+  inflight_count=0
+  inflight_wos=""
+  closed_bpid_count=0
+  undrained_count=0
+  undrained_wos=""
+  [ -f "$bp_manifest" ] && bp_manifest_present=true
+  [ -f "$bp_tracker" ] && bp_tracker_present=true
+
+  closed_bpid_json="[]"
+  if [ "$bp_manifest_present" = true ] && have "$task_bin"; then
+    # No project: filter — the tracker-pending intersection below is the real
+    # scoper. The || guard is required: an undeclared bpid UDA makes task
+    # error on the filter instead of returning [].
+    closed_bpid_json=$("$task_bin" bpid.any: status:completed export 2>/dev/null || echo "[]")
+    [ -n "$closed_bpid_json" ] || closed_bpid_json="[]"
+  fi
+
+  if [ "$bp_manifest_present" = true ] && have jq; then
+    closed_bpid_count=$(printf '%s' "$closed_bpid_json" | jq '[.[] | select(.bpid != null)] | length' 2>/dev/null || echo 0)
+    if [ "$bp_tracker_present" = true ]; then
+      # Feature counts via explicit-path union — NOT recursive `.. | objects`,
+      # which over-counts because phases[] carry their own `status`.
+      ready_count=$(jq '[(.features // []), [.phases[]?.features[]?]] | add | map(select(.status == "not_started")) | length' "$bp_tracker" 2>/dev/null || echo 0)
+      blocked_count=$(jq '[(.features // []), [.phases[]?.features[]?]] | add | map(select(.status == "blocked")) | length' "$bp_tracker" 2>/dev/null || echo 0)
+      inflight_count=$(jq '(.tasks.in_progress // []) | length' "$bp_tracker" 2>/dev/null || echo 0)
+      inflight_wos=$(jq -r '(.tasks.in_progress // []) | map(.id // empty) | join(",")' "$bp_tracker" 2>/dev/null || echo "")
+      # Undrained: closed-bpid WO ids ∩ tracker tasks.pending[].id — the
+      # session-end drain-pass qualify signal.
+      undrained_json=$(printf '%s' "$closed_bpid_json" | jq -c --slurpfile t "$bp_tracker" '
+        ([ .[] | .bpid // empty ] | unique) as $closed
+        | (($t[0].tasks.pending // []) | map(.id)) as $pending
+        | [ $closed[] | select(. as $w | $pending | index($w)) ]' 2>/dev/null || echo "[]")
+      [ -n "$undrained_json" ] || undrained_json="[]"
+      undrained_count=$(printf '%s' "$undrained_json" | jq 'length' 2>/dev/null || echo 0)
+      undrained_wos=$(printf '%s' "$undrained_json" | jq -r 'join(",")' 2>/dev/null || echo "")
+    fi
+  fi
+
+  echo "MANIFEST=${bp_manifest_present}"
+  echo "TRACKER=${bp_tracker_present}"
+  echo "READY_COUNT=${ready_count}"
+  echo "BLOCKED_COUNT=${blocked_count}"
+  echo "INFLIGHT_COUNT=${inflight_count}"
+  [ "${inflight_count:-0}" -gt 0 ] 2>/dev/null && echo "INFLIGHT_WOS=${inflight_wos}"
+  echo "CLOSED_BPID_COUNT=${closed_bpid_count}"
+  echo "UNDRAINED_COUNT=${undrained_count}"
+  [ "${undrained_count:-0}" -gt 0 ] 2>/dev/null && echo "UNDRAINED_WOS=${undrained_wos}"
+  echo "STATUS=OK"
+  echo "=== END BLUEPRINT ==="
 fi
 
 # Cross-project +ACTIVE tasks (the "stale +ACTIVE elsewhere" footnote)
