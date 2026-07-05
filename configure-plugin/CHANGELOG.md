@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.33.2](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.33.1...configure-plugin-v1.33.2) (2026-07-05)
+
+
+### Bug Fixes
+
+* **configure-plugin:** derive configure-all component list from components manifest ([#1976](https://github.com/laurigates/claude-plugins/issues/1976)) ([b0019b4](https://github.com/laurigates/claude-plugins/commit/b0019b400922eda9a60d94557fcddbb47d07a177))
+
 ## [1.33.1](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.33.0...configure-plugin-v1.33.1) (2026-07-04)
 
 

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "configure-plugin",
-  "version": "1.33.1",
+  "version": "1.33.2",
   "description": "Project infrastructure standards - comprehensive project configuration for pre-commit, CI/CD, Docker, testing, linting, formatting, and more",
   "author": {
     "name": "Lauri Gates"
@@ -48,13 +48,6 @@
     "stack-aware",
     "driver",
     "docs-drift",
-    "surface",
-    "instrumentation",
-    "observability",
-    "opentelemetry",
-    "otel",
-    "tracing",
-    "structured-logging",
-    "metrics"
+    "surface"
   ]
 }
