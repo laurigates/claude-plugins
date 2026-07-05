@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-07-04
 reviewed: 2026-04-25
 allowed-tools: Task, TodoWrite
 args: "[--coverage] [--parallel] [--report]"
@@ -8,6 +8,7 @@ argument-hint: "[--coverage] [--parallel] [--report]"
 description: "Run complete test suite in pyramid order — unit, integration, E2E. Use when running all tests before a PR, generating coverage reports, or doing pre-commit verification."
 name: test-full
 agent: general-purpose
+context: fork
 ---
 
 ## When to Use This Skill

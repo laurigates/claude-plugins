@@ -5,8 +5,9 @@ args: <plugin/skill-name> [--create-evals] [--runs N] [--baseline]
 allowed-tools: Task, Read, Write, Edit, Glob, Grep, Bash(bash *), TodoWrite
 argument-hint: "git-plugin/git-commit [--create-evals] [--runs 3] [--baseline]"
 agent: general-purpose
+context: fork
 created: 2026-03-04
-modified: 2026-06-18
+modified: 2026-07-04
 reviewed: 2026-03-04
 ---
 

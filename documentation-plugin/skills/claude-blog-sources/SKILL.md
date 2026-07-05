@@ -1,12 +1,13 @@
 ---
 created: 2025-12-16
-modified: 2026-02-27
+modified: 2026-07-04
 reviewed: 2026-02-09
 name: claude-blog-sources
 description: Fetch Claude Blog and official Claude Code docs. Use when researching Claude Code capabilities, CLAUDE.md optimization, memory hierarchy, or @import patterns.
 user-invocable: false
 allowed-tools: WebFetch, WebSearch, Task
 agent: general-purpose
+context: fork
 ---
 
 # Claude Blog Sources

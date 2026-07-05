@@ -657,24 +657,40 @@ check_skill_body() {
       done
     fi
 
-    # Regression: code-review is the canary for restoring `context: fork` after
-    # the plugin-skill blocker (anthropics/claude-code#16803) was fixed
-    # 2026-04-18. See laurigates/claude-plugins#980 and
-    # .claude/rules/skill-fork-context.md: the gate "revisit when both #16803 and
-    # #33154 resolved" expired degenerately — #33154 was a Cowork product bug
-    # closed as stale, never a CLI tracker — so the decision moved to an
-    # empirical canary. The semantic invariant is that this single-subagent,
-    # verbose-output skill carries `context: fork` so its output stays out of the
-    # main context. A bulk edit silently dropping it would erase the canary and
-    # the only on-disk signal that the restoration is in flight; if the [1m]
-    # verification fails, removing it is a deliberate edit that updates this guard
-    # and the rule together.
-    if [ "$skill_name" = "code-review" ] && [ "$plugin" = "code-quality-plugin" ]; then
-      if ! grep -q '^context: fork' "$skill_file"; then
-        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain 'context: fork' (canary for the #16803 fix — see .claude/rules/skill-fork-context.md and issue #980)")
-        has_errors=true
+    # Regression: the `context: fork` rollout to single-subagent verbose-output
+    # skills. code-review was the canary for restoring `context: fork` after the
+    # plugin-skill blocker (anthropics/claude-code#16803) was fixed 2026-04-18;
+    # it ran live and un-reverted for ~3 weeks (canary PR #1666, merged
+    # 2026-06-15) and was treated as PASSED, after which #1667 rolled the
+    # restoration out to the remaining single-subagent skills. See
+    # laurigates/claude-plugins#980 / #1667 and .claude/rules/skill-fork-context.md.
+    # The semantic invariant is that each of these single-subagent,
+    # verbose-output skills carries `context: fork` so its output stays out of the
+    # main context. A bulk edit silently dropping it would erase the rollout; a
+    # deliberate rollback (e.g. a [1m] verification failing) is an edit that
+    # updates this guard AND the rule together. Keyed by "plugin/skill-directory"
+    # so it never fires on an unrelated skill sharing a directory name.
+    # NOTE: the parallel-fan-out skills (git-plugin/git-pr-feedback,
+    # evaluate-plugin/evaluate-plugin-batch, code-quality-plugin/code-antipatterns)
+    # deliberately keep `context: fork` OFF (the [1m] concurrent-subagent cascade
+    # hazard) and are intentionally absent from this list.
+    local fork_skill
+    for fork_skill in \
+      "code-quality-plugin/code-review" \
+      "agents-plugin/agents-analyze" \
+      "testing-plugin/test-analyze" \
+      "testing-plugin/test-full" \
+      "documentation-plugin/claude-blog-sources" \
+      "documentation-plugin/docs-generate" \
+      "evaluate-plugin/evaluate-skill" \
+      "code-quality-plugin/dry-consolidation"; do
+      if [ "${plugin}/${skill_name}" = "$fork_skill" ]; then
+        if ! grep -q '^context: fork' "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain 'context: fork' (single-subagent context:fork rollout — see .claude/rules/skill-fork-context.md and issues #980, #1667)")
+          has_errors=true
+        fi
       fi
-    fi
+    done
 
     # Regression: agent-teams must document the post-2.1.178 implicit-team model,
     # not the removed TeamCreate/TeamDelete tools. Claude Code 2.1.178 removed

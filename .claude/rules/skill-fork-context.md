@@ -6,23 +6,27 @@ paths:
   - "**/skills/**"
   - "**/SKILL.md"
   - "**/agents/**"
+reviewed: 2026-07-04
+modified: 2026-07-04
 ---
 
 # Skill Fork Context
 
 When to set `context: fork` and `agent:` in skill frontmatter.
 
-## Current Status: `context: fork` Usable Again — Canary in Progress
+## Current Status: `context: fork` Rollout Complete
 
-**As of June 2026, the hard blocker is resolved and a canary rollout is underway** (tracked in [laurigates/claude-plugins#980](https://github.com/laurigates/claude-plugins/issues/980)):
+**As of July 2026, the hard blocker is resolved and the rollout to single-subagent skills is complete** (tracked in [laurigates/claude-plugins#980](https://github.com/laurigates/claude-plugins/issues/980), [#1667](https://github.com/laurigates/claude-plugins/issues/1667)):
 
 1. **Plugin support fixed** ([anthropics/claude-code#16803](https://github.com/anthropics/claude-code/issues/16803), **CLOSED — COMPLETED 2026-04-18**) — `context: fork` is now honoured for plugin-installed skills. Previously it was silently ignored outside the user's `~/.claude/` folder; that was the real blocker, and it is gone.
 
 2. **The `[1m]` rate-limit concern is narrower than first feared** ([#33154](https://github.com/anthropics/claude-code/issues/33154) **CLOSED — not planned / stale**, [#27053](https://github.com/anthropics/claude-code/issues/27053) stale-closed) — #33154 was a **Claude Cowork (Desktop) product** regression (`area:cowork`), never a CLI-specific tracker, and it was abandoned as stale rather than fixed. The underlying hazard — a `[1m]`-context session spawning **many concurrent** subagents and hitting cascading rate limits — is real but bites **parallel fan-out**, not a single fork. One `context: fork` spawns **one** subagent, which is not the cascade scenario.
 
-**Guidance:** `context: fork` is appropriate again for a **single-subagent, verbose-output** skill. Keep avoiding it on skills that fan out **parallel** subagents while on a `[1m]` model (see the `skill-argument-handling.md` sweep caveat). The blocking gate in #980 ("revisit when both #16803 and #33154 resolved") has effectively expired — #33154 will never resolve cleanly — so the decision is now **empirical**: canary on one skill and verify on an Opus `[1m]` session before rolling out to the rest.
+**Guidance:** `context: fork` is appropriate for a **single-subagent, verbose-output** skill. Keep avoiding it on skills that fan out **parallel** subagents while on a `[1m]` model (see the `skill-argument-handling.md` sweep caveat). The blocking gate in #980 ("revisit when both #16803 and #33154 resolved") expired — #33154 will never resolve cleanly — so the rollout was **empirical**: a canary was verified live, then the remaining single-subagent skills followed.
 
-> **Canary**: `code-quality-plugin/skills/code-review` carries `context: fork` as the first restoration. Verify no rate-limit errors on an Opus `[1m]` session, then restore the remaining skills listed in #980. Its optional **Agent Teams** path still fans out parallel subagents — use that path cautiously on `[1m]`.
+> **Canary passed → rolled out**: `code-quality-plugin/skills/code-review` carried `context: fork` as the first restoration (canary PR #1666, merged 2026-06-15). It ran live and un-reverted for ~3 weeks with no rate-limit regression reported — treated as PASSED on that evidence (a true `[1m]`-session verification can't be run from inside a subagent, so "no rollback over weeks of live use" is the standing signal, not a one-off `[1m]` test). Under #1667 the restoration then rolled out to the remaining **single-subagent** skills: `agents-plugin:agents-analyze`, `testing-plugin:test-analyze`, `testing-plugin:test-full`, `documentation-plugin:claude-blog-sources`, `documentation-plugin:docs-generate`, `evaluate-plugin:evaluate-skill`, `code-quality-plugin:dry-consolidation`.
+>
+> **Held OFF (parallel fan-out — the `[1m]` cascade hazard):** `git-plugin:git-pr-feedback` and `evaluate-plugin:evaluate-plugin-batch` fan out parallel subagents and keep `context: fork` **off**. `code-quality-plugin:code-antipatterns` was skipped for the same reason — its execution strategy is a **mandatory** parallel agent delegation ("Launch multiple specialized agents simultaneously"), not the optional Agent-Teams escape hatch that `test-full` / `docs-generate` / `code-review` carry. The optional **Agent Teams** path in the forked skills still fans out parallel subagents — use that path cautiously on `[1m]`.
 
 ## What These Fields Do
 

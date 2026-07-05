@@ -5,10 +5,11 @@ allowed-tools: Glob, Grep, Read, Bash(ls *), Bash(wc *), TodoWrite
 model: opus
 argument-hint: "analyze all plugins or --focus <plugin-name>"
 created: 2026-01-24
-modified: 2026-06-18
+modified: 2026-07-04
 reviewed: 2026-06-18
 name: agents-analyze
 agent: general-purpose
+context: fork
 ---
 
 # /agents:analyze
