@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.39.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.38.1...blueprint-plugin-v3.39.0) (2026-07-05)
+
+
+### Features
+
+* **blueprint-plugin:** guard ADR-number collisions in blueprint-adr-validate ([#1963](https://github.com/laurigates/claude-plugins/issues/1963)) ([52c6e78](https://github.com/laurigates/claude-plugins/commit/52c6e7831fee0027da201957b20dcff7f7fae019))
+
 ## [3.38.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.38.0...blueprint-plugin-v3.38.1) (2026-07-04)
 
 

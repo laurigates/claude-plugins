@@ -1,6 +1,6 @@
 ---
 created: 2025-12-28
-modified: 2026-07-04
+modified: 2026-07-05
 reviewed: 2026-07-04
 name: release-please-configuration
 description: "release-please monorepo config — component tags, per-package extra-files, tag migration. Use when adding packages or fixing duplicate-tag / no-bump failures."
@@ -14,14 +14,14 @@ Monorepo-specific release-please strategy: component tagging, per-package
 `extra-files`, linked versions, and the shared→component tag migration. For
 the single-repo workflow/manifest/config shape, the conventional-commit
 version-bump rules, and compliance auditing, use
-`configure-plugin:release-please-standards`.
+`configure-plugin:configure-release-please`.
 
 ## When to Use This Skill
 
 | Use this skill when... | Use the alternative when... |
 |---|---|
-| Configuring `component`/`include-component-in-tag` for a multi-package repo | Setting up a **single-repo** release-please (workflow, manifest, config shape) — use `configure-plugin:release-please-standards` |
-| Adding a new package to a monorepo's release-please config | Auditing an existing setup against documented conventions — use `configure-plugin:release-please-standards` |
+| Configuring `component`/`include-component-in-tag` for a multi-package repo | Setting up a **single-repo** release-please (workflow, manifest, config shape) — use `configure-plugin:configure-release-please` |
+| Adding a new package to a monorepo's release-please config | Auditing an existing setup against documented conventions — use `configure-plugin:configure-release-please` |
 | Fixing duplicate-tag, multiple-paths, or per-package no-bump failures | Actually merging release-please PRs — use `release-please-pr-workflow` |
 | Migrating from shared `v1.0.0` tags to `component-v1.0.0` tags | Detecting manual edits to managed files — use `release-please-protection` |
 | Setting per-package `extra-files` (JSON/YAML/TOML/XML version locations) | `Release-As:` trailer-based one-off overrides — use `git-commit-trailers` |
@@ -32,7 +32,7 @@ version-bump rules, and compliance auditing, use
 |------|---------|
 | `release-please-config.json` | Per-package config, changelog sections, extra-files |
 | `.release-please-manifest.json` | Current version for each package/component |
-| `.github/workflows/release-please.yml` | GitHub Actions workflow (see `release-please-standards` for the shape) |
+| `.github/workflows/release-please.yml` | GitHub Actions workflow (see `configure-plugin:configure-release-please` REFERENCE.md for the shape) |
 
 ## Monorepo Configuration
 
@@ -262,7 +262,7 @@ package path.
 3. **Create the initial version file** in the package if needed.
 
 For the standard `changelog-sections` set and release-type table, see
-`configure-plugin:release-please-standards`.
+`configure-plugin:configure-release-please`.
 
 ## Migrating from Shared Tags to Component Tags
 
@@ -298,7 +298,7 @@ directory**, not the repo root (release-please prepends the package path):
 ```
 
 For single-repo troubleshooting (no PR created at all, version not bumping,
-CI not running on the release PR), see `configure-plugin:release-please-standards`.
+CI not running on the release PR), see `configure-plugin:configure-release-please`.
 
 ## Quick Reference
 
@@ -321,4 +321,4 @@ jq -r '."my-package"' .release-please-manifest.json
 - [Manifest Releaser Guide](https://github.com/googleapis/release-please/blob/main/docs/manifest-releaser.md) — the canonical monorepo reference
 - [Release-Please Documentation](https://github.com/googleapis/release-please)
 - [Release-Please Action](https://github.com/googleapis/release-please-action)
-- `configure-plugin:release-please-standards` — single-repo standards, version-bump rules, compliance auditing
+- `configure-plugin:configure-release-please` — single-repo standards, version-bump rules, compliance auditing

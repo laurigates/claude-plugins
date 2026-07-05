@@ -1,6 +1,6 @@
 ---
 created: 2025-12-17
-modified: 2026-05-09
+modified: 2026-07-05
 reviewed: 2026-02-08
 description: "README.md with logo, badges, features, tech stack sections. Use when creating a README, auditing missing sections, or adding shields.io badges."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch
@@ -191,4 +191,4 @@ Provide:
 - `/configure:docs` - Configure code documentation standards
 - `/configure:github-pages` - Set up documentation hosting
 - `/configure:all` - Run all compliance checks
-- **readme-standards** skill for README templates and examples
+- [REFERENCE.md](REFERENCE.md) - README templates, badge reference, section standards, compliance checklists
