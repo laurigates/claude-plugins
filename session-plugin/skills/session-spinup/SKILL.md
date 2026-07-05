@@ -88,6 +88,23 @@ the defaults). The digest sections: `PROJECT`, `GIT`, `PRS`,
 `TASKWARRIOR` (each task with its stable UUID + `STALE_DAYS`),
 `GITHUB_DRIFT`, `JOURNAL`, `BLUEPRINT`, `STALE_ACTIVE_ELSEWHERE`.
 
+### Step 1b: If `GH_READY=false`, fetch GitHub state via MCP instead
+
+The `PRS` and `GITHUB_DRIFT` sections carry `GH_READY=`. When it is
+`false` (no `gh` CLI or unauthenticated — the normal state in Claude
+Code on the web), their zeros mean **not queried**, not "nothing open".
+Do not present them as a clean state. Instead:
+
+1. If GitHub MCP tools are available (`mcp__github__list_issues`,
+   `mcp__github__list_pull_requests` — load via ToolSearch if needed),
+   fetch the repo's open issues assigned to the user and open PRs
+   authored by them, then apply the same dedup the collector would
+   have: drop issues whose number appears as a task `ghid` UDA or as a
+   `#N` / `issues/N` token in the `TASKWARRIOR` section's descriptions
+   or annotations. Treat what survives as the `GITHUB_DRIFT` set.
+2. If no GitHub path exists at all, the briefing's github line must say
+   `github: not queried (gh unavailable)` — never omit it silently.
+
 ### Step 2: Apply the signal filter
 
 Cut the digest to the 3-6 things that matter, using the filter above.

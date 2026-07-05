@@ -144,7 +144,11 @@ if have jq; then
   active_tasks=$(printf '%s' "$project_tasks_json" | jq '[.[] | select((.tags // []) | index("ACTIVE"))] | length' 2>/dev/null || echo 0)
 fi
 
-# GitHub auth gate (PRs + assigned issues both need it)
+# GitHub auth gate (PRs + assigned issues both need it). GH_READY=false is
+# surfaced in every GitHub-backed section so consumers can tell "not queried"
+# (gh absent — e.g. Claude Code on the web — or unauthenticated) from a
+# genuine zero. Never let a false "0 issues" imply a clean state (see
+# .claude/rules/drift-detection-triggering.md: never act on uncertainty).
 gh_ready=false
 if have "$gh_bin" && "$gh_bin" auth status >/dev/null 2>&1; then
   gh_ready=true
@@ -241,6 +245,7 @@ if [ "$summary_mode" = true ]; then
   echo "DIRTY=${dirty}"
   echo "UNPUSHED=${unpushed}"
   echo "OPEN_TASKS=${open_tasks}"
+  echo "GH_READY=${gh_ready}"
   echo "ASSIGNED_ISSUES=${assigned_issues}"
   echo "THREADS=${threads}"
   echo "STATUS=OK"
@@ -268,6 +273,7 @@ echo "STATUS=OK"
 echo "=== END GIT ==="
 
 echo "=== PRS ==="
+echo "GH_READY=${gh_ready}"
 echo "PR_COUNT=${pr_count}"
 if have jq && [ "$pr_count" -gt 0 ] 2>/dev/null; then
   idx=0
@@ -313,6 +319,7 @@ echo "=== END TASKWARRIOR ==="
 
 if [ "$with_dedup" = true ]; then
   echo "=== GITHUB_DRIFT ==="
+  echo "GH_READY=${gh_ready}"
   echo "ASSIGNED_ISSUES=${assigned_issues}"
   echo "DRIFT_COUNT=${drift_issues}"
   if have jq && [ "$drift_issues" -gt 0 ] 2>/dev/null; then

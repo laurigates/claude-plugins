@@ -112,6 +112,7 @@ check "C: assigned counts both" "$out" "ASSIGNED_ISSUES=2"
 check "C: drift drops the tracked one" "$out" "DRIFT_COUNT=1"
 check "C: untracked issue surfaced" "$out" "ISSUE_1_NUMBER=851"
 check_absent "C: tracked issue #1774 not surfaced as drift" "$out" "ISSUE_1_NUMBER=1774"
+check "C: authed gh reported as ready" "$out" "GH_READY=true"
 
 # --- TEST D: summary mode (hook) --------------------------------------------
 out=$(run --with-dedup --summary)
@@ -227,6 +228,30 @@ rc=$?
 check "F: exits 0 with no tools" "$rc" "0"
 check "F: task unavailable reported" "$out" "TASK_AVAILABLE=false"
 check "F: not a git repo reported" "$out" "IN_GIT=false"
+
+# --- TEST N: gh unavailable is surfaced, never a silent false zero -----------
+# Claude Code on the web has no gh CLI; the digest must say GH_READY=false in
+# both GitHub-backed sections (and summary) so consumers can tell "not
+# queried" from "no issues" — the skill then falls back to the GitHub MCP
+# tools instead of presenting a clean state.
+out=$(SESSION_SURVEY_GH_BIN=/nonexistent/gh run --with-dedup)
+check "N: gh absent → GH_READY=false in PRS section" \
+  "$(printf '%s' "$out" | sed -n '/=== PRS ===/,/=== END PRS ===/p')" "GH_READY=false"
+check "N: gh absent → GH_READY=false in GITHUB_DRIFT section" \
+  "$(printf '%s' "$out" | sed -n '/=== GITHUB_DRIFT ===/,/=== END GITHUB_DRIFT ===/p')" "GH_READY=false"
+check "N: drift section still parse-stable when gh absent" "$out" "DRIFT_COUNT=0"
+out=$(SESSION_SURVEY_GH_BIN=/nonexistent/gh run --with-dedup --summary)
+check "N: summary carries GH_READY=false" "$out" "GH_READY=false"
+
+# gh present but unauthenticated must read the same as absent.
+cat > "$STUB/gh-noauth" <<'GHNOAUTH'
+#!/usr/bin/env bash
+[ "$1 $2" = "auth status" ] && exit 1
+echo "[]"
+GHNOAUTH
+chmod +x "$STUB/gh-noauth"
+out=$(SESSION_SURVEY_GH_BIN="$STUB/gh-noauth" run --with-dedup)
+check "N: unauthenticated gh → GH_READY=false" "$out" "GH_READY=false"
 
 echo "---"
 echo "PASS=$pass FAIL=$fail"

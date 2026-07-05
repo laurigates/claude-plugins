@@ -39,8 +39,14 @@ or as a `#N` / `issues/N` token in any task description or annotation for
 the project. What survives is the genuine drift set — filed on GitHub,
 never mirrored locally. Show the task, not a duplicate issue line.
 
-When the cwd has no GitHub remote or `gh` is unauthenticated, the section
-is empty (the collector gates on `gh auth status`); skip it silently.
+The section (and `PRS`) carries `GH_READY=`. `GH_READY=false` means the
+collector never reached GitHub — `gh` is absent (always the case in
+Claude Code on the web) or unauthenticated — so the zero counts are
+*unqueried*, not empty. In that case the skill fetches via the GitHub
+MCP tools and dedups in-skill (SKILL.md Step 1b), or states
+`github: not queried (gh unavailable)` in the briefing. Only with
+`GH_READY=true` does an empty drift set mean "everything assigned is
+already tracked" — then the source earns no line.
 
 ## Journal todos (how the collector decides)
 
@@ -89,8 +95,11 @@ gracefully rather than omitting:
 - **No journal note in the last 7 days** — `JOURNAL` section empty; skip
   it, still show taskwarrior + git state.
 - **No GitHub remote, or every assigned issue is already tracked** —
-  `GITHUB_DRIFT` empty; the source earns a line only on a genuinely
-  untracked assigned issue.
+  `GITHUB_DRIFT` empty with `GH_READY=true`; the source earns a line
+  only on a genuinely untracked assigned issue.
+- **`GH_READY=false`** — GitHub was never queried; fall back to the
+  GitHub MCP tools (SKILL.md Step 1b) or say `github: not queried (gh
+  unavailable)` — never present the zeros as a clean state.
 - **No tasks for the project** — `OPEN_TASKS=0`; say `nothing pending
   under project:<name>` explicitly rather than an empty-looking section.
 - **Clean tree, no PRs** — `DIRTY=false`, `PR_COUNT=0`; one line: `git
