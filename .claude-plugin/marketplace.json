@@ -117,7 +117,7 @@
       "name": "code-quality-plugin",
       "source": "./code-quality-plugin",
       "description": "Code review, refactoring, linting, dependency auditing, dead code detection, test quality, complexity metrics, and static analysis",
-      "version": "1.18.0",
+      "version": "1.19.0",
       "keywords": [
         "code-review",
         "refactoring",
@@ -437,7 +437,7 @@
       "name": "macos-plugin",
       "source": "./macos-plugin",
       "description": "macOS-specific dev environment tooling - kitty session persistence, LaunchServices health, incident postmortems for kernel panics, WindowServer hangs, and long-uptime drift",
-      "version": "1.5.0",
+      "version": "1.6.0",
       "keywords": [
         "macos",
         "darwin",
