@@ -162,6 +162,19 @@ require_marker "$dispatch_skill" "completion manifest" "the manifest language in
 require_marker "$reference_md" "#1601" "the completion-manifest reference (issue #1601)"
 require_marker "$reference_md" "Completion manifest" "the manifest line in the refactor-brief template (issue #1601)"
 
+# Regression #1969: an isolation:"worktree" dispatch creates a fresh worktree
+# with an AUTO-GENERATED branch name; when the agent later RENAMES onto a fixed
+# conventional target name already checked out by a concurrent session's
+# worktree, git refuses — and the collision surfaces only at end-of-task rename,
+# ~25 min / ~400K tokens deep, after both sessions reached PR-open (two duplicate
+# PRs). The fix adds a target-branch preflight to Pillar 1 (check the fixed name
+# is free via git branch -a --list / worktree list / ls-remote BEFORE work) plus
+# the refspec-push mitigation that sidesteps the "already checked out" refusal.
+# Assert BOTH the load-bearing preflight idiom and the issue reference survive.
+require_marker "$dispatch_skill" "Target-branch preflight" "the target-branch preflight subsection (issue #1969)"
+require_marker "$dispatch_skill" "git ls-remote --heads origin" "the remote target-name check (issue #1969)"
+require_marker "$dispatch_skill" "#1969" "the issue reference"
+
 if [ "$errors" -ne 0 ]; then
   echo
   echo "The loud-failure contract (issue #1422) and the hook-thrashing heuristic"
