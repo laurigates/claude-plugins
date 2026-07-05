@@ -134,6 +134,16 @@ jobs:
       - name: Check shell scripts follow shell-scripting.md
         run: bash scripts/lint-shell-scripts.sh
 
+      - name: Self-test the configure-components drift guard
+        # Whole-repo invariant: configure-plugin's skill taxonomy has one
+        # source of truth (skills/configure-all/components.yaml); configure-all
+        # /SKILL.md, docs/flow.md, and README.md must agree with it. The
+        # self-test proves the guard before it gates the tree.
+        run: bash scripts/tests/test-check-configure-components.sh
+
+      - name: Check configure-plugin taxonomy matches components.yaml
+        run: bash scripts/check-configure-components.sh --strict
+
       - name: Install actionlint
         # GitHub Actions YAML schema/best-practice lint — the one workflow gate
         # check-workflow-model.sh does not cover. ubuntu-latest ships Go but does

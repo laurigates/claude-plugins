@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-06-18
+modified: 2026-07-05
 reviewed: 2025-12-16
 description: "Integration testing: Supertest, pytest, Testcontainers. Use when setting up integration tests, creating docker-compose.test.yml, or separating from unit tests."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite
@@ -17,7 +17,7 @@ Check and configure integration testing infrastructure for testing service inter
 
 | Use this skill when... | Use another approach when... |
 |------------------------|------------------------------|
-| Setting up integration testing infrastructure with Supertest, pytest, or Testcontainers | Writing individual integration test cases for specific endpoints |
+| Setting up integration testing infrastructure with Supertest, pytest, or Testcontainers | Writing individual integration test cases for specific endpoints (use `api-plugin:api-testing`) |
 | Creating docker-compose.test.yml for local test service containers | Running existing integration tests (`bun test`, `pytest -m integration`) |
 | Auditing integration test setup for completeness (fixtures, factories, CI) | Configuring unit test runners (`/configure:tests` instead) |
 | Adding integration test jobs to GitHub Actions with service containers | Debugging a specific failing integration test |
@@ -242,6 +242,7 @@ For detailed templates and code examples, see [REFERENCE.md](REFERENCE.md).
 ## See Also
 
 - `/configure:tests` - Unit testing configuration
+- `api-plugin:api-testing` - Writing the Supertest / httpx+pytest tests this skill scaffolds infrastructure for
 - `/configure:api-tests` - API contract testing
 - `/configure:coverage` - Coverage configuration
 - `/configure:all` - Run all compliance checks

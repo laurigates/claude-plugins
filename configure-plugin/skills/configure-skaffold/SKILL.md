@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-06-18
+modified: 2026-07-05
 reviewed: 2026-04-29
 description: "Skaffold for Kubernetes: port forwarding, dotenvx hooks, API version. Use when fixing 0.0.0.0 binding, adding secret generation hooks, or creating skaffold.yaml."
 allowed-tools: Glob, Grep, Read, Write, Edit, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -34,7 +34,7 @@ Check and configure Skaffold against project standards.
 - Dotenvx available: !`dotenvx --version`
 - Project standards: !`find . -maxdepth 1 -name '.project-standards.yaml' -type f`
 
-**Skills referenced**: `skaffold-standards`, `container-development`, `skaffold-orbstack`
+**Skills referenced**: `container-plugin:container-development`, `container-plugin:skaffold-orbstack`; Skaffold standards tables live in [REFERENCE.md](REFERENCE.md)
 
 **Applicability**: Only for projects with Kubernetes deployment (k8s/, helm/ directories)
 
@@ -147,4 +147,4 @@ For the standard Skaffold template, dotenvx integration patterns, and generate-s
 
 - `/configure:dockerfile` - Container configuration
 - `/configure:all` - Run all compliance checks
-- `skaffold-standards` skill - Skaffold patterns
+- [REFERENCE.md](REFERENCE.md) - Skaffold standards, templates, and dotenvx patterns

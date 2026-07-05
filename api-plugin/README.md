@@ -54,21 +54,11 @@ Expert knowledge for HTTP API testing with Supertest (TypeScript/JavaScript) and
 - **TypeScript/JavaScript**: Supertest, Express, Vitest
 - **Python**: httpx, pytest, FastAPI
 
-#### `configure-api-tests`
-Check and configure API contract testing infrastructure.
-
-**Features:**
-- Detect existing API testing setup
-- Configure Pact contract testing
-- Set up OpenAPI validation
-- Configure schema testing with Zod or AJV
-- Add breaking change detection to CI
-- Generate comprehensive compliance reports
-
-**Flags:**
-- `--check-only` - Report status without offering fixes
-- `--fix` - Apply all fixes automatically
-- `--type <pact|openapi|schema>` - Focus on specific type
+> Setting up the contract-testing **infrastructure** (Pact, OpenAPI
+> validation, schema testing, breaking-change CI) is
+> `configure-plugin:configure-api-tests` (`/configure:api-tests`). This
+> plugin previously shipped a duplicate `api-tests` skill; it was removed in
+> favor of the canonical configure skill.
 
 ## Installation
 
@@ -111,23 +101,13 @@ Or explicitly:
 Using the api-testing skill, show me how to test file uploads in FastAPI
 ```
 
-### Using the Configure Command
+### Configuring Contract-Testing Infrastructure
 
-Check API testing compliance:
-
-```bash
-/configure:api-tests
-```
-
-Auto-fix all issues:
+Use the canonical configure skill (from `configure-plugin`):
 
 ```bash
+/configure:api-tests --check-only
 /configure:api-tests --fix
-```
-
-Configure only Pact contract testing:
-
-```bash
 /configure:api-tests --fix --type pact
 ```
 

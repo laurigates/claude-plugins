@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-06-18
-reviewed: 2025-12-16
+modified: 2026-07-05
+reviewed: 2026-07-05
 description: "Sentry error tracking setup. Use when installing the Sentry SDK, fixing hardcoded DSNs, or adding source map upload for frontend, Next.js, Node, or Python."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--type <frontend|nextjs|python|node>]"
@@ -18,11 +18,13 @@ Check and configure Sentry error tracking integration against project standards.
 | Use this skill when... | Use another approach when... |
 |------------------------|------------------------------|
 | Setting up Sentry error tracking for a new project | Debugging a specific Sentry issue or alert (use Sentry MCP server) |
+| Sentry-specific setup and compliance in depth | Wiring up the whole observability stack — OTel traces/metrics + logging (use `/configure:instrumentation`, which delegates Sentry gaps back here) |
 | Checking Sentry SDK installation and configuration compliance | Querying Sentry events or performance data (use Sentry API/MCP) |
 | Fixing hardcoded DSNs or missing environment variable references | Managing Sentry project settings in the Sentry dashboard |
 | Adding source map upload and release tracking to CI/CD | Configuring Sentry alerting rules or notification channels |
 | Verifying Sentry configuration across frontend, Next.js, Node.js, or Python projects | Installing a different error tracking tool (e.g., Bugsnag, Rollbar) |
 | Adding profiling, structured logging, or enrichment helpers | Configuring Sentry alerting rules or notification channels |
+| Project-level setup and compliance auditing | Day-to-day SDK usage patterns — spans, breadcrumbs, cron monitoring, replay (use `typescript-plugin:typescript-sentry`) |
 
 ## Context
 
@@ -208,7 +210,9 @@ For detailed configuration check tables, initialization templates, and CI/CD wor
 
 ## See Also
 
+- `/configure:instrumentation` - Whole observability stack (OTel traces/metrics, structured logging); delegates Sentry gaps to this skill
 - `/configure:all` - Run all compliance checks
 - `/configure:status` - Quick compliance overview
 - `/configure:workflows` - GitHub Actions integration
+- `typescript-plugin:typescript-sentry` - Day-to-day Sentry SDK usage for Bun/Node.js/Next.js (spans, breadcrumbs, cron monitoring, replay)
 - `sentry` MCP server - Sentry API access for project verification

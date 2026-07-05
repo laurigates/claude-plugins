@@ -78,7 +78,7 @@ the rules, skills, and hooks that embody it.
 
 | Plugin | Skills | Description |
 |--------|--------|-------------|
-| **api-plugin** | 2 | API integration and testing - REST endpoints, client generation |
+| **api-plugin** | 1 | API integration and testing - REST endpoints, client generation |
 | **blueprint-plugin** | 33 | Blueprint Development methodology - PRD/PRP workflow with version tracking |
 | **comfyui-plugin** | 3 | ComfyUI custom-node pack lifecycle - scaffold, seed repo, gitops adoption, registry publish |
 | **home-assistant-plugin** | 4 | Home Assistant configuration - automations, scripts, scenes, entities |
@@ -123,7 +123,7 @@ the rules, skills, and hooks that embody it.
 
 | Plugin | Skills | Description |
 |--------|--------|-------------|
-| **configure-plugin** | 51 | Project infrastructure standards - pre-commit, CI/CD, Docker, testing |
+| **configure-plugin** | 48 | Project infrastructure standards - pre-commit, CI/CD, Docker, testing |
 | **container-plugin** | 9 + 1 agent | Container development - Docker, registry, Skaffold, OrbStack |
 | **kubernetes-plugin** | 8 + 1 agent | Kubernetes and Helm - deployments, charts, releases, ArgoCD |
 | **migration-patterns-plugin** | 6 | Safe database and system migration - dual write, shadow mode |
@@ -153,7 +153,7 @@ the rules, skills, and hooks that embody it.
 | **health-plugin** | 7 | Diagnose and fix Claude Code configuration issues |
 | **hooks-plugin** | 4 | Claude Code hooks for enforcing best practices |
 | **macos-plugin** | 8 | macOS dev tooling - kitty session persistence, LaunchServices health, incident postmortems, APFS disk-usage / space recovery, performance triage and benchmark suite, dead-keybinding debug |
-| **taskwarrior-plugin** | 8 | Taskwarrior coordination for multi-agent work - parallel-safe queries, urgency scoring |
+| **taskwarrior-plugin** | 9 | Taskwarrior coordination for multi-agent work - parallel-safe queries, urgency scoring |
 | **tools-plugin** | 14 | General utilities - fd, rg, jq, shell, ImageMagick, d2 |
 | **workflow-orchestration-plugin** | 4 | Workflow orchestration - preflight checks, checkpoint refactoring |
 

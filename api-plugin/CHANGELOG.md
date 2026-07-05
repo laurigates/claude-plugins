@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.0.0](https://github.com/laurigates/claude-plugins/compare/api-plugin-v1.7.1...api-plugin-v2.0.0) (2026-07-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* **api-plugin:** remove api-tests (duplicate of configure-api-tests) ([#1980](https://github.com/laurigates/claude-plugins/issues/1980))
+
+### Features
+
+* **api-plugin:** remove api-tests (duplicate of configure-api-tests) ([#1980](https://github.com/laurigates/claude-plugins/issues/1980)) ([9806e7e](https://github.com/laurigates/claude-plugins/commit/9806e7ed7b2d4fbefc3f8c5a937ea1d0ff3bcfa9))
+
+## [1.7.1](https://github.com/laurigates/claude-plugins/compare/api-plugin-v1.7.0...api-plugin-v1.7.1) (2026-07-05)
+
+
+### Code Refactoring
+
+* **configure-plugin:** sharpen cross-plugin skill boundaries ([#1987](https://github.com/laurigates/claude-plugins/issues/1987)) ([3c68b74](https://github.com/laurigates/claude-plugins/commit/3c68b74a6507977f74414dff2e901e99d96db334))
+
 ## [1.7.0](https://github.com/laurigates/claude-plugins/compare/api-plugin-v1.6.3...api-plugin-v1.7.0) (2026-06-18)
 
 
