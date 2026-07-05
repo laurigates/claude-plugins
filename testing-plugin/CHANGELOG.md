@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.16.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.15.2...testing-plugin-v3.16.0) (2026-07-05)
+
+
+### Features
+
+* **repo:** roll out context: fork to single-subagent skills ([#1971](https://github.com/laurigates/claude-plugins/issues/1971)) ([2dfa3a2](https://github.com/laurigates/claude-plugins/commit/2dfa3a239656c688ad55e9b12bd2857bfad63a9b))
+
 ## [3.15.2](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.15.1...testing-plugin-v3.15.2) (2026-06-18)
 
 

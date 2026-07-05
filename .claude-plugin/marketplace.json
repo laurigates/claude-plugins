@@ -39,7 +39,7 @@
       "name": "agents-plugin",
       "source": "./agents-plugin",
       "description": "Task-focused agents with teammate and subagent role guidance for test, review, debug, docs, CI, security, refactoring, research, and performance",
-      "version": "1.13.2",
+      "version": "1.14.0",
       "keywords": [
         "agents",
         "teammates",
@@ -117,7 +117,7 @@
       "name": "code-quality-plugin",
       "source": "./code-quality-plugin",
       "description": "Code review, refactoring, linting, dependency auditing, dead code detection, test quality, complexity metrics, and static analysis",
-      "version": "1.19.0",
+      "version": "1.20.0",
       "keywords": [
         "code-review",
         "refactoring",
@@ -236,7 +236,7 @@
       "name": "documentation-plugin",
       "source": "./documentation-plugin",
       "description": "Documentation generation - API docs, README, knowledge graphs, LaTeX PDF conversion",
-      "version": "1.9.0",
+      "version": "1.10.0",
       "keywords": [
         "documentation",
         "docs",
@@ -249,7 +249,7 @@
       "name": "evaluate-plugin",
       "source": "./evaluate-plugin",
       "description": "Skill evaluation and benchmarking - test skill effectiveness with behavioral eval cases, grade results, and track quality improvements",
-      "version": "1.10.0",
+      "version": "1.11.0",
       "keywords": [
         "evaluation",
         "benchmarking",
@@ -652,7 +652,7 @@
       "name": "testing-plugin",
       "source": "./testing-plugin",
       "description": "Test execution, TDD workflow, and testing strategies",
-      "version": "3.15.2",
+      "version": "3.16.0",
       "keywords": [
         "testing",
         "tdd",
