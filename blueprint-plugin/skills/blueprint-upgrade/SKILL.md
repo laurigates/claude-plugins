@@ -20,7 +20,7 @@ Upgrade the blueprint structure to the latest format version.
 | You're adding the v3.2 task registry or v3.3 monorepo workspaces | Use blueprint-execute instead when you want auto-detection of next step |
 | You're running batch upgrades across repos with `--non-interactive`/`-y` | Use blueprint-status instead to first audit current version |
 
-**Current Format Version**: 3.3.0
+**Current Format Version**: 3.4.0
 
 This command delegates version-specific migration logic to the `blueprint-migration` skill.
 
@@ -73,7 +73,7 @@ If a migration step would require any prompt not listed above, **abort the upgra
      exit 1
    fi
    current=$(jq -r '.format_version // "1.0.0"' "$MANIFEST")
-   target="3.3.0"
+   target="3.4.0"
    ```
 
    **Important**: Store the resolved `$MANIFEST` path. Use it in every `jq` invocation throughout this skill and in all delegated migration steps. This avoids silent failures when the filename differs from what a command hard-codes.
@@ -87,7 +87,8 @@ If a migration step would require any prompt not listed above, **abort the upgra
    | 3.0.x        | 3.1.0      | `migrations/v3.0-to-v3.1.md` |
    | 3.1.x        | 3.2.0      | inline (step 3a) |
    | 3.2.x        | 3.3.0      | `migrations/v3.2-to-v3.3.md` |
-   | 3.3.0        | 3.3.0      | Already up to date |
+   | 3.3.x        | 3.4.0      | `migrations/v3.3-to-v3.4.md` |
+   | 3.4.0        | 3.4.0      | Already up to date |
 
 3. **Check for deprecated generated commands**:
 
@@ -179,12 +180,24 @@ If a migration step would require any prompt not listed above, **abort the upgra
 
    All changes are purely additive — standalone projects get no new top-level keys beyond `format_version` and `upgrade_history`.
 
+---
+
+3c. **v3.3 → v3.4 migration: Automation block (autonomy levels)**:
+
+   Delegate to `skills/blueprint-migration/migrations/v3.3-to-v3.4.md`. Summary of what it does:
+
+   a. Suggest an initial `autonomy_level` from existing `task_registry` state (any `auto_run: true` → suggest level 1; otherwise level 0). Confirm with the user; in `$NONINTERACTIVE` mode take the suggestion, never higher.
+   b. Add the `automation` block (`autonomy_level`, `interaction_mode: "normal"`, `work_orders: {auto_draft: false, auto_execute: false}`) to `$MANIFEST`.
+   c. Bump `format_version` to `3.4.0` and append an entry to `upgrade_history`.
+
+   Purely additive — a missing `automation` block already behaves as level 0, so the migration changes no behavior until the user raises the level. See ADR-0020 (claude-plugins) for the level model.
+
 4. **Display upgrade plan**:
    ```
    Blueprint Upgrade
 
    Current version: v{current}
-   Target version: v3.3.0
+   Target version: v3.4.0
 
    Major changes in v3.0:
    - Blueprint state moves from .claude/blueprints/ to docs/blueprint/
@@ -205,6 +218,12 @@ If a migration step would require any prompt not listed above, **abort the upgra
    - Cross-workspace references (`<path>/ADR-NNN`, `/ADR-NNN`)
    - Optional portfolio feature tracking via implemented_by links
 
+   Major changes in v3.4:
+   - `automation` block: autonomy_level (0 manual / 1 ambient bookkeeping /
+     2 quiet autopilot / 3 scheduled pipeline), interaction_mode, work_orders
+   - task_registry auto_run/schedule contract becomes executable
+     (scripts/blueprint-autorun.sh + SessionStart probe)
+
    (For v2.0 changes when upgrading from v1.x:)
    - PRDs, ADRs, PRPs move to docs/ (project documentation)
    - Custom overrides in .claude/skills/
@@ -217,7 +236,7 @@ If a migration step would require any prompt not listed above, **abort the upgra
 
    Otherwise, use AskUserQuestion:
    ```
-   question: "Ready to upgrade blueprint from v{current} to v3.3.0?"
+   question: "Ready to upgrade blueprint from v{current} to v3.4.0?"
    options:
      - "Yes, upgrade now" → proceed
      - "Show detailed migration steps" → display migration document
@@ -232,6 +251,7 @@ If a migration step would require any prompt not listed above, **abort the upgra
    - For v3.0 → v3.1: Load `migrations/v3.0-to-v3.1.md`
    - For v3.1 → v3.2: Execute inline step 3a above
    - For v3.2 → v3.3: Load `migrations/v3.2-to-v3.3.md` (see step 3b summary)
+   - For v3.3 → v3.4: Load `migrations/v3.3-to-v3.4.md` (see step 3c summary)
    - Execute each step with user confirmation for destructive operations
 
 7. **v1.x → v2.0 migration overview** (from migration document):

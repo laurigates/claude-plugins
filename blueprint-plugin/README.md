@@ -295,6 +295,46 @@ Run `/blueprint:status` to see:
 /blueprint:sync-ids --link-issues # Also create GitHub issues for orphans
 ```
 
+## Automation (Autonomy Levels)
+
+Blueprint operations can run ambiently instead of user-initiated, governed by
+the manifest `automation` block (format 3.4.0, ADR-0020 in claude-plugins):
+
+```json
+"automation": {
+  "autonomy_level": 0,
+  "interaction_mode": "normal",
+  "work_orders": { "auto_draft": false, "auto_execute": false }
+}
+```
+
+| Level | Name | What runs automatically |
+|-------|------|-------------------------|
+| 0 | manual | Nothing — today's fully interactive behavior (default; a missing block ≡ 0) |
+| 1 | ambient bookkeeping | `scripts/blueprint-autorun.sh` executes **deterministic** due tasks (the `sync-ids` id-registry sweep) via the SessionStart probe; due agent-judgment tasks surface as drift-aggregator findings |
+| 2 | quiet autopilot | + due agent-judgment tasks run in-session; `interaction_mode` defaults to `quiet`; work-order **drafts** may be filed when `work_orders.auto_draft` is true |
+| 3 | scheduled pipeline | Reserved (out-of-band scheduled runs + approved work-order execution; not yet implemented) |
+
+The runner implements the `task_registry` `auto_run`/`schedule` contract:
+a task runs only when `enabled: true` **and** `auto_run: true` **and** its
+schedule interval has elapsed since `last_completed_at` (written back with
+`last_result` and `stats.runs`). `on-change` tasks are event-driven
+(PostToolUse hooks) and `on-demand` tasks never auto-run. Work-order creation
+stays human-only at every level — automation may at most *draft* proposals
+(GitHub issues labeled `work-order-draft`) that a human promotes via
+`/blueprint:work-order --from-issue N`.
+
+```bash
+# Dry-run the due-ness computation (no execution, no writeback)
+bash <plugin-root>/scripts/blueprint-autorun.sh --report
+
+# Kill levels 1-2 locally regardless of manifest
+export BLUEPRINT_AUTORUN_DISABLE=1
+
+# Tune the SessionStart probe debounce (seconds, default 3600)
+export BLUEPRINT_AUTORUN_TTL=7200
+```
+
 ## Feature Tracking (Optional)
 
 Track implementation progress against requirements documents using hierarchical FR codes.

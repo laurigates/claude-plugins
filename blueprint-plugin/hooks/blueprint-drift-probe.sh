@@ -2,7 +2,7 @@
 # blueprint-drift-probe.sh — SessionStart probe for blueprint-plugin drift.
 #
 # Checks (when docs/blueprint/manifest.json is present):
-#   1. manifest.format_version vs the plugin's current format version (3.3.0)
+#   1. manifest.format_version vs the plugin's current format version (3.4.0)
 #   2. generated.rules[].content_hash vs current hash of the file on disk
 #   3. docs/blueprint/feature_tracker.json `last_updated` vs TODO.md mtime
 #
@@ -38,7 +38,7 @@ fi
 drift_init "blueprint-plugin"
 drift_no_op_if_missing "docs/blueprint/manifest.json"
 
-CURRENT_FORMAT_VERSION="3.3.0"
+CURRENT_FORMAT_VERSION="3.4.0"
 MANIFEST="${DRIFT_CWD}/docs/blueprint/manifest.json"
 
 # ---- check 1: format_version drift ----
@@ -97,7 +97,12 @@ if [ -f "$TRACKER" ] && [ -f "$TODO" ]; then
         elif date -d "$tracker_iso" "+%s" >/dev/null 2>&1; then
             tracker_epoch=$(date -d "$tracker_iso" "+%s" 2>/dev/null)
         fi
-        todo_epoch=$(stat -f %m "$TODO" 2>/dev/null || stat -c %Y "$TODO" 2>/dev/null || echo "")
+        # GNU form first: on GNU, `stat -f %m` succeeds but prints the MOUNT
+        # POINT (non-numeric); BSD lacks -c and falls through to -f %m (mtime).
+        todo_epoch=$(stat -c %Y "$TODO" 2>/dev/null || stat -f %m "$TODO" 2>/dev/null || echo "")
+        case "$todo_epoch" in
+            *[!0-9]*) todo_epoch="" ;;
+        esac
         if [ -n "$tracker_epoch" ] && [ -n "$todo_epoch" ] && [ "$todo_epoch" -gt "$tracker_epoch" ]; then
             drift_add_finding warn \
                 feature_tracker_stale \

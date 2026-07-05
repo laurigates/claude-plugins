@@ -153,6 +153,14 @@ Initialize Blueprint Development in this project.
    - **Fully automatic**: all tasks get `auto_run: true`, default schedules
    - **Manual only**: all `auto_run: false`, all schedules set to `on-demand`
 
+   The same selection sets `automation.autonomy_level` (the ADR-0020 level
+   model — what actually *executes* the auto_run contract):
+   - **Prompt** / **Manual only** → `autonomy_level: 0` (nothing runs unattended)
+   - **Auto-run safe** → `autonomy_level: 1` (deterministic due tasks run via
+     the SessionStart probe; due agent tasks surface as drift findings)
+   - **Fully automatic** → `autonomy_level: 2` (quiet autopilot also runs due
+     agent tasks in-session; `interaction_mode` defaults to `quiet`)
+
 4a. **Ask about generated-rules output path** (use AskUserQuestion):
 
    Only prompt when `.claude/rules/` already exists and contains files (i.e., hand-authored rules that pre-date blueprint). Skip silently in fresh repos and use the default.
@@ -250,10 +258,10 @@ Initialize Blueprint Development in this project.
    └── skills/                      # Custom skill overrides (optional)
    ```
 
-7. **Create `manifest.json`** (v3.3.0 schema — canonical filename is `docs/blueprint/manifest.json`, no dot prefix):
+7. **Create `manifest.json`** (v3.4.0 schema — canonical filename is `docs/blueprint/manifest.json`, no dot prefix):
    ```json
    {
-     "format_version": "3.3.0",
+     "format_version": "3.4.0",
      "created_at": "[ISO timestamp]",
      "updated_at": "[ISO timestamp]",
      "created_by": {
@@ -286,6 +294,14 @@ Initialize Blueprint Development in this project.
      "custom_overrides": {
        "skills": [],
        "commands": []
+     },
+     "automation": {
+       "autonomy_level": "[based on maintenance task choice: 0 for Prompt/Manual, 1 for Auto-run safe, 2 for Fully automatic]",
+       "interaction_mode": "normal",
+       "work_orders": {
+         "auto_draft": false,
+         "auto_execute": false
+       }
      },
      "task_registry": {
        "derive-plans": {
