@@ -179,6 +179,26 @@
       ]
     },
     {
+      "matcher": "Write(docs/**)",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/sync-feature-tracker.sh",
+          "timeout": 5000
+        }
+      ]
+    },
+    {
+      "matcher": "Edit(docs/**)",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/sync-feature-tracker.sh",
+          "timeout": 5000
+        }
+      ]
+    },
+    {
       "matcher": "Write",
       "hooks": [
         {

@@ -2,7 +2,7 @@
 
 **Priority**: P1 (Important)
 **Type**: PostToolUse
-**Status**: Planned
+**Status**: Implemented — `hooks/sync-feature-tracker.sh` (gated on `automation.autonomy_level >= 1`, ADR-0020; freshness/statistics refresh only, per Open Question 1's decision)
 
 ## Overview
 
