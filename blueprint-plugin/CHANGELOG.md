@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.40.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.39.1...blueprint-plugin-v3.40.0) (2026-07-05)
+
+
+### Features
+
+* **blueprint-plugin:** ambient blueprint operations via autonomy levels (ADR-0020) ([#2003](https://github.com/laurigates/claude-plugins/issues/2003)) ([f6ca4f7](https://github.com/laurigates/claude-plugins/commit/f6ca4f7f73003c9d0dcc8cedb46ae4967c7e3680))
+
 ## [3.39.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.39.0...blueprint-plugin-v3.39.1) (2026-07-05)
 
 
