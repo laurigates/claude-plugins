@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.0](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.13.2...agents-plugin-v1.14.0) (2026-07-05)
+
+
+### Features
+
+* **repo:** roll out context: fork to single-subagent skills ([#1971](https://github.com/laurigates/claude-plugins/issues/1971)) ([2dfa3a2](https://github.com/laurigates/claude-plugins/commit/2dfa3a239656c688ad55e9b12bd2857bfad63a9b))
+
 ## [1.13.2](https://github.com/laurigates/claude-plugins/compare/agents-plugin-v1.13.1...agents-plugin-v1.13.2) (2026-06-28)
 
 
