@@ -34,6 +34,7 @@ domains:
   feature-flags: Feature Flags
   package-management: Package Management
   dev-environment: Editor & Dev Environment
+  instrumentation-observability: Instrumentation & Observability
 
 components:
   - name: configure-workflows
@@ -180,8 +181,12 @@ components:
     domain: dev-environment
     has_script: false
     types: all
+  - name: configure-instrumentation
+    domain: instrumentation-observability
+    has_script: true
+    types: all
   - name: configure-sentry
-    domain: dev-environment
+    domain: instrumentation-observability
     has_script: false
     types: all
 

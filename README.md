@@ -123,7 +123,7 @@ the rules, skills, and hooks that embody it.
 
 | Plugin | Skills | Description |
 |--------|--------|-------------|
-| **configure-plugin** | 51 | Project infrastructure standards - pre-commit, CI/CD, Docker, testing |
+| **configure-plugin** | 52 | Project infrastructure standards - pre-commit, CI/CD, Docker, testing |
 | **container-plugin** | 9 + 1 agent | Container development - Docker, registry, Skaffold, OrbStack |
 | **kubernetes-plugin** | 8 + 1 agent | Kubernetes and Helm - deployments, charts, releases, ArgoCD |
 | **migration-patterns-plugin** | 6 | Safe database and system migration - dual write, shadow mode |

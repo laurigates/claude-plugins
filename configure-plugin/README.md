@@ -129,6 +129,12 @@ The domain grouping below mirrors the authoritative manifest
 | `configure-makefile` | Makefile with standard targets |
 | `configure-justfile` | Justfile with standard recipes (simpler alternative to Make) |
 | `configure-web-session` | SessionStart hook + install script for Claude Code on the web |
+
+### Instrumentation & Observability
+
+| Skill | Description |
+|-------|-------------|
+| `configure-instrumentation` | Observability instrumentation — OpenTelemetry traces/metrics, structured logging, OTLP env config; delegates error tracking to `configure-sentry` |
 | `configure-sentry` | Sentry error tracking |
 
 ## Usage
