@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.32.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.31.0...agent-patterns-plugin-v2.32.0) (2026-07-05)
+
+
+### Features
+
+* **agent-patterns-plugin:** add target-branch preflight to parallel-agent-dispatch ([#1991](https://github.com/laurigates/claude-plugins/issues/1991)) ([67d2651](https://github.com/laurigates/claude-plugins/commit/67d265153c406a09c330508961cdf17034af30cd)), closes [#1969](https://github.com/laurigates/claude-plugins/issues/1969)
+* **agent-patterns-plugin:** guard operation-sequence divergence in execution-grounded-review ([#1990](https://github.com/laurigates/claude-plugins/issues/1990)) ([86be589](https://github.com/laurigates/claude-plugins/commit/86be589dc226b2e231a500ecb37c7ae9d28e9053)), closes [#1968](https://github.com/laurigates/claude-plugins/issues/1968)
+
 ## [2.31.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.30.5...agent-patterns-plugin-v2.31.0) (2026-07-04)
 
 
