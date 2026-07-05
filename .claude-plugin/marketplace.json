@@ -56,7 +56,7 @@
       "name": "api-plugin",
       "source": "./api-plugin",
       "description": "API integration and testing - REST endpoints, client generation",
-      "version": "1.7.1",
+      "version": "2.0.0",
       "keywords": [
         "api",
         "rest",
