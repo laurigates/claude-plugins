@@ -1,4 +1,7 @@
 ---
+created: 2026-02-25
+modified: 2026-07-03
+reviewed: 2026-07-04
 paths:
   - "**/agents/**"
   - "**/git_repo_agent/**"

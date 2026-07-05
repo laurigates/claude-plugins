@@ -1,3 +1,9 @@
+---
+created: 2026-06-25
+modified: 2026-06-25
+reviewed: 2026-07-04
+---
+
 # Offload Mechanical Work to a Deterministic Substrate — plugin-authoring deltas
 
 The canonical statement of this principle is the global rule

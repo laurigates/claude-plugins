@@ -1,3 +1,9 @@
+---
+created: 2026-04-21
+modified: 2026-06-28
+reviewed: 2026-07-04
+---
+
 # Agent Coworker Detection
 
 How an agent detects that another agent is already working in the same repository clone, and how it avoids destroying that coworker's in-flight changes.

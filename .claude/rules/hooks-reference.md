@@ -1,4 +1,7 @@
 ---
+created: 2026-02-26
+modified: 2026-06-23
+reviewed: 2026-07-04
 paths:
   - ".claude/hooks/**"
   - "**/.claude-plugin/plugin.json"
