@@ -30,8 +30,9 @@ flowchart TD
     MODE --> D8[Feature Flags]
     MODE --> D9[Package Management]
     MODE --> D10[Editor & Dev Environment]
+    MODE --> D11[Instrumentation & Observability]
 
-    D1 & D2 & D3 & D4 & D5 & D6 & D7 & D8 & D9 & D10 --> RPT[Consolidated report<br/>per-domain compliance]
+    D1 & D2 & D3 & D4 & D5 & D6 & D7 & D8 & D9 & D10 & D11 --> RPT[Consolidated report<br/>per-domain compliance]
 
     RPT --> FIXQ{--fix?}
     FIXQ -->|no| DONE[Done]
@@ -46,7 +47,7 @@ flowchart TD
     classDef prompt fill:#dda0dd,stroke:#8b5a8b,color:#000
 
     class R,REPO router
-    class STATUS,LIST,D1,D2,D3,D4,D5,D6,D7,D8,D9,D10,SYNC check
+    class STATUS,LIST,D1,D2,D3,D4,D5,D6,D7,D8,D9,D10,D11,SYNC check
     class APPLY fix
     class SELECT prompt
 ```
@@ -76,5 +77,6 @@ Component columns mirror `components.yaml`; reference skills
 | Documentation | `configure-docs`, `configure-readme`, `configure-surface` | `readme-standards` |
 | Feature Flags | `configure-feature-flags` | `openfeature`, `go-feature-flag` |
 | Package Management | `configure-package-management`, `configure-mise`, `configure-cache-busting` | |
-| Editor & Dev Environment | `configure-editor`, `configure-mcp`, `configure-makefile`, `configure-justfile`, `configure-web-session`, `configure-sentry` | |
+| Editor & Dev Environment | `configure-editor`, `configure-mcp`, `configure-makefile`, `configure-justfile`, `configure-web-session` | |
+| Instrumentation & Observability | `configure-instrumentation`, `configure-sentry` | |
 | Orchestration | `configure-all` (router), `configure-select` (interactive), `configure-status` (read-only), `configure-repo` (onboarding driver), `config-sync` (cross-repo) | `multi-repo-discipline` (advisory) |

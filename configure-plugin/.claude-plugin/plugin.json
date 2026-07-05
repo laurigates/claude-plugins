@@ -48,6 +48,13 @@
     "stack-aware",
     "driver",
     "docs-drift",
-    "surface"
+    "surface",
+    "instrumentation",
+    "observability",
+    "opentelemetry",
+    "otel",
+    "tracing",
+    "structured-logging",
+    "metrics"
   ]
 }
