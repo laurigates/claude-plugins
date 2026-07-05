@@ -1,6 +1,6 @@
 ---
 created: 2026-01-02
-modified: 2026-06-10
+modified: 2026-07-05
 reviewed: 2026-06-10
 description: Sync feature tracker with TODO.md, taskwarrior sidecars, and PRDs. Use when reconciling TODO.md vs tracker, draining WO entries, or recalculating stats.
 allowed-tools: Read, Write, Bash, Glob, AskUserQuestion
@@ -422,6 +422,11 @@ For ad-hoc tracker surgery (`jq` recipes for adding to `in_progress`, completing
 - `taskwarrior-plugin:task-coordinate` — surface the next N unblocked tasks
   before starting a wave, so the WOs you eventually drain here line up with
   what the queue actually scheduled.
+- `session-plugin:session-end` — the session wind-down orchestrator offers a
+  `--drain-wave` pass when its survey finds closed WO-linked (`bpid`)
+  taskwarrior tasks still sitting in the tracker's `tasks.pending`, so the
+  drain happens at the session bookend instead of drifting until someone
+  remembers to run this sync by hand.
 - `.claude/rules/parallel-safe-queries.md` — the `task ... export | jq`
   idiom is mandatory whenever this skill queries taskwarrior. `task list`
   exits 1 on empty results and silently cancels sibling parallel tool calls.
