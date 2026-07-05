@@ -16,49 +16,63 @@ All commands support two modes:
 
 ## Skills
 
-### Core Skills
+The domain grouping below mirrors the authoritative manifest
+[`skills/configure-all/components.yaml`](skills/configure-all/components.yaml);
+`scripts/check-configure-components.sh` (repo root) fails CI when they drift.
 
-| Skill | Description |
-|-------|-------------|
-| `ci-workflows` | CI/CD workflow standards |
-| `pre-commit-standards` | Pre-commit hook standards |
-| `release-please-standards` | Release-please single-repo standards + compliance (monorepo strategy lives in git-plugin) |
-| `skaffold-standards` | Skaffold configuration standards |
-| `claude-security-settings` | Claude Code security settings and wildcard permissions |
-
-### Core Configuration
+### Orchestration
 
 | Skill | Description |
 |-------|-------------|
 | `configure-repo` | **End-to-end driver** — onboard any repo to Claude Code with marketplace enrollment, permissions, SessionStart hook, and health validation |
-| `configure-all` | Run all infrastructure standards checks |
-| `configure-select` | Interactively select which components to configure |
-| `configure-status` | Show compliance status (read-only) |
+| `configure-all` | Run every component check from the manifest roster |
+| `configure-select` | Interactively select which manifest domains to configure |
+| `configure-status` | Show compliance status (read-only), rolling up component detection scripts |
 | `config-sync` | Extract, compare, and propagate tooling improvements across repos |
 | `multi-repo-discipline` | Advisory discipline for multi-repo workspaces — read-only fixtures, upstream/downstream pairs, and when sibling-repo commits need user confirmation |
+
+### Reference Skills (loaded by other skills, not user-invoked)
+
+| Skill | Description |
+|-------|-------------|
+| `ci-workflows` | CI/CD workflow standards |
+| `claude-security-settings` | Claude Code security settings and wildcard permissions |
+| `openfeature` | OpenFeature vendor-agnostic feature-flag SDK reference |
+| `go-feature-flag` | GO Feature Flag (GOFF) provider reference |
+
+The former `pre-commit-standards`, `readme-standards`,
+`release-please-standards`, and `skaffold-standards` reference skills were
+merged into their configure siblings' `REFERENCE.md` files
+(`configure-pre-commit`, `configure-readme`, `configure-release-please`,
+`configure-skaffold`).
 
 ### CI/CD & Version Control
 
 | Skill | Description |
 |-------|-------------|
+| `configure-workflows` | GitHub Actions CI/CD workflows |
+| `configure-reusable-workflows` | Install Claude-powered reusable workflows (security, quality, a11y) |
+| `configure-release-please` | Release-please workflow configuration |
+| `configure-pre-commit` | Pre-commit hooks for project standards |
+| `configure-github-pages` | GitHub Pages deployment |
 | `configure-argocd-automerge` | Auto-merge workflow for ArgoCD Image Updater branches |
 | `configure-claude-plugins` | Configure Claude Code plugin marketplace and GitHub Actions workflows |
+
+### Git Metadata
+
+| Skill | Description |
+|-------|-------------|
 | `configure-gitattributes` | `.gitattributes`: union-merge append-only tables, linguist-generated build output, LF normalization |
 | `configure-gitignore` | `.gitignore`: append a managed Claude Code runtime-state block (worktrees, scheduled-task lock, local settings) |
 | `configure-worktreeinclude` | `.worktreeinclude`: copy gitignored env/secret/config inputs into new worktrees, built from the repo's actual ignored files |
-| `configure-pre-commit` | Pre-commit hooks for project standards |
-| `configure-release-please` | Release-please workflow configuration |
-| `configure-reusable-workflows` | Install Claude-powered reusable workflows (security, quality, a11y) |
-| `configure-workflows` | GitHub Actions CI/CD workflows |
-| `configure-github-pages` | GitHub Pages deployment |
 
-### Container & Deployment
+### Containers & Deploy
 
 | Skill | Description |
 |-------|-------------|
 | `configure-dockerfile` | Dockerfile for project standards (minimal Alpine/slim, non-root, multi-stage) |
-| `configure-skaffold` | Skaffold configuration |
 | `configure-container` | Container infrastructure (builds, registry, scanning, devcontainer) |
+| `configure-skaffold` | Skaffold configuration |
 
 ### Testing
 
@@ -79,24 +93,51 @@ All commands support two modes:
 | `configure-linting` | Linting tools (Biome, Ruff, Clippy) |
 | `configure-formatting` | Code formatting (Biome, Prettier, Ruff, rustfmt) |
 | `configure-dead-code` | Dead code detection (Knip, Vulture, cargo-machete) |
-| `configure-docs` | Documentation standards and generators |
-| `configure-surface` | Surface doc↔code drift gate (deterministic, SHA-pinned) |
+
+### Security
+
+| Skill | Description |
+|-------|-------------|
 | `configure-security` | Security scanning (dependency audits, SAST, secrets) |
 
-### Infrastructure
+### Documentation
+
+| Skill | Description |
+|-------|-------------|
+| `configure-docs` | Documentation standards and generators |
+| `configure-readme` | README.md with logo, badges, features, tech stack sections |
+| `configure-surface` | Surface doc↔code drift gate (deterministic, SHA-pinned) |
+
+### Feature Flags
+
+| Skill | Description |
+|-------|-------------|
+| `configure-feature-flags` | Feature flag infrastructure (OpenFeature + providers) |
+
+### Package Management
+
+| Skill | Description |
+|-------|-------------|
+| `configure-package-management` | Modern package managers (uv for Python, bun for TypeScript) |
+| `configure-mise` | mise tool/runtime version manager — mise.toml, backends, tasks, env, lockfile, migrations |
+| `configure-cache-busting` | Cache-busting strategies for Next.js and Vite |
+
+### Editor & Dev Environment
 
 | Skill | Description |
 |-------|-------------|
 | `configure-editor` | EditorConfig and VS Code workspace settings |
 | `configure-mcp` | MCP servers for project integration |
-| `configure-cache-busting` | Cache-busting strategies for Next.js and Vite |
-| `configure-feature-flags` | Feature flag infrastructure (OpenFeature + providers) |
-| `configure-sentry` | Sentry error tracking |
 | `configure-makefile` | Makefile with standard targets |
 | `configure-justfile` | Justfile with standard recipes (simpler alternative to Make) |
-| `configure-package-management` | Modern package managers (uv for Python, bun for TypeScript) |
-| `configure-mise` | mise tool/runtime version manager — mise.toml, backends, tasks, env, lockfile, migrations |
 | `configure-web-session` | SessionStart hook + install script for Claude Code on the web |
+
+### Instrumentation & Observability
+
+| Skill | Description |
+|-------|-------------|
+| `configure-instrumentation` | Observability instrumentation — OpenTelemetry traces/metrics, structured logging, OTLP env config; delegates error tracking to `configure-sentry` |
+| `configure-sentry` | Sentry error tracking |
 
 ## Usage
 

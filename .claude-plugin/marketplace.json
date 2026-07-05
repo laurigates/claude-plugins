@@ -98,7 +98,7 @@
       "name": "blueprint-plugin",
       "source": "./blueprint-plugin",
       "description": "Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, CLAUDE.md management, and monorepo portfolio tracking",
-      "version": "3.38.1",
+      "version": "3.39.0",
       "keywords": [
         "blueprint",
         "prd",
@@ -195,7 +195,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.33.1",
+      "version": "1.33.2",
       "keywords": [
         "infrastructure",
         "standards",
