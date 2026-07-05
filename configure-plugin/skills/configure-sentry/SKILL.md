@@ -24,6 +24,7 @@ Check and configure Sentry error tracking integration against project standards.
 | Adding source map upload and release tracking to CI/CD | Configuring Sentry alerting rules or notification channels |
 | Verifying Sentry configuration across frontend, Next.js, Node.js, or Python projects | Installing a different error tracking tool (e.g., Bugsnag, Rollbar) |
 | Adding profiling, structured logging, or enrichment helpers | Configuring Sentry alerting rules or notification channels |
+| Project-level setup and compliance auditing | Day-to-day SDK usage patterns — spans, breadcrumbs, cron monitoring, replay (use `typescript-plugin:typescript-sentry`) |
 
 ## Context
 
@@ -213,4 +214,5 @@ For detailed configuration check tables, initialization templates, and CI/CD wor
 - `/configure:all` - Run all compliance checks
 - `/configure:status` - Quick compliance overview
 - `/configure:workflows` - GitHub Actions integration
+- `typescript-plugin:typescript-sentry` - Day-to-day Sentry SDK usage for Bun/Node.js/Next.js (spans, breadcrumbs, cron monitoring, replay)
 - `sentry` MCP server - Sentry API access for project verification

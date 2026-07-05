@@ -1,4 +1,7 @@
 ---
+created: 2026-06-29
+modified: 2026-06-29
+reviewed: 2026-07-04
 paths:
   - "**/hooks/**"
   - "**/*hook*.sh"

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.33.3](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.33.2...configure-plugin-v1.33.3) (2026-07-05)
+
+
+### Code Refactoring
+
+* **configure-plugin:** sharpen cross-plugin skill boundaries ([#1987](https://github.com/laurigates/claude-plugins/issues/1987)) ([3c68b74](https://github.com/laurigates/claude-plugins/commit/3c68b74a6507977f74414dff2e901e99d96db334))
+
 ## [1.33.2](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.33.1...configure-plugin-v1.33.2) (2026-07-05)
 
 

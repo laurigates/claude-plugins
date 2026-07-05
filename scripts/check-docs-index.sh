@@ -12,6 +12,9 @@
 #   4. DIAGRAM      — node labels in docs/diagrams/plugin-relationships.d2 name a
 #      plugin that exists and state a count matching disk (the .svg is generated
 #      and not parsed). Guards the #1523 command-analytics / sync drift class.
+#   5. RULE REVIEWED — every .claude/rules/*.md carries a `reviewed:` frontmatter
+#      field with a real YYYY-MM-DD value (not the `YYYY-MM-DD` placeholder), so
+#      the stale-reviewed-date currency check is measurable (#1851).
 #
 # Emits the structured KEY=value / STATUS= convention
 # (.claude/rules/structured-script-output.md) so scheduled-audits can roll it up.
@@ -227,6 +230,42 @@ if [ -f "$diagram_d2" ]; then
   ' "$diagram_d2")"
 fi
 
+# --- Check 5: rule reviewed: frontmatter presence + placeholder ---------------
+# ENFORCE (#1851): every .claude/rules/*.md must carry a `reviewed:` frontmatter
+# field, and its value must be a real date, not the `YYYY-MM-DD` placeholder. A
+# missing or placeholder value makes the "stale reviewed date" currency check
+# unmeasurable. WARN, matching the sibling drift checks (weekly scheduled-audits
+# roll-up), never a hard ERROR. Only the file's OWN frontmatter block (leading
+# `---` … `---`) is inspected — `YYYY-MM-DD` in a documented body example is not
+# flagged.
+rules_checked=0
+while IFS= read -r rule_file; do
+  [ -n "$rule_file" ] || continue
+  rules_checked=$((rules_checked + 1))
+  rule_name="${rule_file##*/}"
+  # reviewed_state: MISSING (no field), PLACEHOLDER (value contains YYYY), or the
+  # value itself. awk `exit` always runs END, so carry state in a variable.
+  reviewed_state="$(awk '
+    NR==1 && $0!="---" { exit }
+    NR==1 { infm=1; next }
+    infm && /^---$/ { exit }
+    infm && /^reviewed:/ {
+      val=$0; sub(/^reviewed:[ \t]*/, "", val)
+      gsub(/[ \t\r]+$/, "", val)
+      found=1
+      if (val ~ /YYYY/) state="PLACEHOLDER"; else state=val
+      exit
+    }
+    END { if (!found) print "MISSING"; else print state }
+  ' "$rule_file")"
+
+  if [ "$reviewed_state" = "MISSING" ]; then
+    add_issue WARN rule_reviewed_missing "$rule_name lacks a reviewed: frontmatter field"
+  elif [ "$reviewed_state" = "PLACEHOLDER" ]; then
+    add_issue WARN rule_reviewed_placeholder "$rule_name has a reviewed: YYYY-MM-DD placeholder, not a real date"
+  fi
+done < <(find "$rules_dir" -maxdepth 1 -name '*.md' -type f 2>/dev/null | sort)
+
 # --- Status -------------------------------------------------------------------
 overall_status="OK"
 exit_severity=0
@@ -265,6 +304,7 @@ else
   echo "TOTAL_SKILLS=$total_skills"
   echo "TOTAL_AGENTS=$total_agents"
   echo "DIAGRAM_NODES=$diagram_nodes"
+  echo "RULES_CHECKED=$rules_checked"
   echo "STATUS=$overall_status"
   echo "ISSUE_COUNT=$issue_count"
   if [ "$issue_count" -gt 0 ]; then

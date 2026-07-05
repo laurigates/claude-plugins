@@ -1,4 +1,7 @@
 ---
+created: 2026-04-22
+modified: 2026-04-22
+reviewed: 2026-07-04
 paths:
   - "git-repo-agent/**"
   - "vault-agent/**"
