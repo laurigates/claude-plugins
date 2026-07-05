@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.19.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.18.0...code-quality-plugin-v1.19.0) (2026-07-05)
+
+
+### Features
+
+* **code-quality-plugin:** add bulk-sweep-classify skill ([#1986](https://github.com/laurigates/claude-plugins/issues/1986)) ([9403146](https://github.com/laurigates/claude-plugins/commit/94031462f3d157a10c6c6bba24d72c93f71a7ba2))
+
 ## [1.18.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.17.4...code-quality-plugin-v1.18.0) (2026-07-04)
 
 

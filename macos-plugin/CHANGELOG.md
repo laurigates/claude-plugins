@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/laurigates/claude-plugins/compare/macos-plugin-v1.5.0...macos-plugin-v1.6.0) (2026-07-05)
+
+
+### Features
+
+* **macos-plugin:** add tui-keybinding-debug skill ([#1984](https://github.com/laurigates/claude-plugins/issues/1984)) ([4c586d5](https://github.com/laurigates/claude-plugins/commit/4c586d56aa3ad40a6350251b0808558e869bce7d)), closes [#1965](https://github.com/laurigates/claude-plugins/issues/1965)
+
 ## [1.5.0](https://github.com/laurigates/claude-plugins/compare/macos-plugin-v1.4.0...macos-plugin-v1.5.0) (2026-07-03)
 
 
