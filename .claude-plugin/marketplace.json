@@ -56,7 +56,7 @@
       "name": "api-plugin",
       "source": "./api-plugin",
       "description": "API integration and testing - REST endpoints, client generation",
-      "version": "1.7.0",
+      "version": "1.7.1",
       "keywords": [
         "api",
         "rest",
@@ -195,7 +195,7 @@
       "name": "configure-plugin",
       "source": "./configure-plugin",
       "description": "Project infrastructure standards - pre-commit, CI/CD, Docker, testing configuration",
-      "version": "1.33.2",
+      "version": "1.33.3",
       "keywords": [
         "infrastructure",
         "standards",
