@@ -39,6 +39,7 @@ Collection of general-purpose development utilities for file finding, text searc
 | `justfile-expert` | Just command runner and recipe development |
 | `cli-smoke-recipes` | Advisory pattern for exposing transforming modules via CLI plus a bulk-smoke justfile recipe — decoders, codecs, parsers, formatters |
 | `imagemagick-conversion` | Image conversion and manipulation |
+| `hf-downloads` | Disk-safe Hugging Face model downloads — HF_HOME/xet cache redirection, gated-repo auth, staging pattern |
 
 ### Diagrams
 
@@ -124,6 +125,16 @@ d2 --sketch diagram.d2 out.svg        # Hand-drawn style
 ```bash
 /deps:install               # Auto-detects and uses npm/yarn/pnpm/uv/cargo
 /deps:install axios --dev   # Install as dev dependency
+```
+
+### Disk-Safe Hugging Face Downloads
+
+```bash
+# Redirect hub + xet cache to the same disk as the destination (avoids ENOSPC on root)
+HF_HOME=/big/disk/hf-cache hf download <repo> <file> --local-dir /big/disk/staging
+
+# Fix gated-repo 401s under HF_HOME (token read from $HF_HOME/token, not ~/.cache)
+export HF_TOKEN="$(cat ~/.cache/huggingface/token)"
 ```
 
 ## Installation
