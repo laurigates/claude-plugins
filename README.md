@@ -152,7 +152,7 @@ the rules, skills, and hooks that embody it.
 |--------|--------|-------------|
 | **health-plugin** | 7 | Diagnose and fix Claude Code configuration issues |
 | **hooks-plugin** | 4 | Claude Code hooks for enforcing best practices |
-| **macos-plugin** | 7 | macOS dev tooling - kitty session persistence, LaunchServices health, incident postmortems, APFS disk-usage / space recovery, performance triage and benchmark suite |
+| **macos-plugin** | 8 | macOS dev tooling - kitty session persistence, LaunchServices health, incident postmortems, APFS disk-usage / space recovery, performance triage and benchmark suite, dead-keybinding debug |
 | **taskwarrior-plugin** | 9 | Taskwarrior coordination for multi-agent work - parallel-safe queries, urgency scoring |
 | **tools-plugin** | 15 | General utilities - fd, rg, jq, shell, ImageMagick, d2 |
 | **workflow-orchestration-plugin** | 4 | Workflow orchestration - preflight checks, checkpoint refactoring |
