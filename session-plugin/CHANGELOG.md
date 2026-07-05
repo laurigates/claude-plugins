@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.1](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.6.0...session-plugin-v1.6.1) (2026-07-05)
+
+
+### Bug Fixes
+
+* **session-plugin:** surface gh availability so spinup retrieves GitHub issues ([#2001](https://github.com/laurigates/claude-plugins/issues/2001)) ([4a236f3](https://github.com/laurigates/claude-plugins/commit/4a236f3c196ea64a8abc26416b40de6cb0754dbe))
+
 ## [1.6.0](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.5.2...session-plugin-v1.6.0) (2026-07-05)
 
 
