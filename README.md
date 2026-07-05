@@ -99,7 +99,7 @@ the rules, skills, and hooks that embody it.
 
 | Plugin | Skills | Description |
 |--------|--------|-------------|
-| **code-quality-plugin** | 14 | Code review, refactoring, linting, static analysis, debugging methodology |
+| **code-quality-plugin** | 15 | Code review, refactoring, linting, static analysis, debugging methodology |
 | **software-design-plugin** | 5 | Software design methodology - deep modules, design by contract, GoF pattern selection, legacy seams, pseudocode |
 | **evaluate-plugin** | 6 + 3 agents | Skill evaluation and benchmarking - test effectiveness, grade results |
 | **codebase-attributes-plugin** | 3 | Structured codebase health attributes with severity-based agent routing |
