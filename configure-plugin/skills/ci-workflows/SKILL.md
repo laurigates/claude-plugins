@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-06-01
+modified: 2026-07-05
 reviewed: 2026-06-01
 name: ci-workflows
 description: "GitHub Actions workflow standards. Use when checking CI/CD compliance, referencing canonical workflow shapes, or another skill needs workflow structure guidance."
@@ -106,7 +106,7 @@ jobs:
 
 **File**: `.github/workflows/release-please.yml`
 
-See `release-please-standards` skill for details.
+See `configure-release-please` (its REFERENCE.md carries the standard workflow, token, and config templates) for details.
 
 ### 3. ArgoCD Auto-merge Workflow (Optional)
 

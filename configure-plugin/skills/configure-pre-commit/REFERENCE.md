@@ -1,22 +1,8 @@
----
-created: 2025-12-16
-modified: 2026-06-01
-reviewed: 2026-06-01
-name: pre-commit-standards
-description: Pre-commit hook standards and configuration. Use when configuring pre-commit hooks, checking hook compliance, or working with conventional commits.
-user-invocable: false
-allowed-tools: Bash, Read, Write, Edit, Grep, Glob
----
+# configure-pre-commit Reference
 
-# Pre-commit Standards
-
-## When to Use This Skill
-
-| Use this skill when... | Use `configure-pre-commit` instead when... |
-|---|---|
-| You need the canonical hook list, pinned versions, and conventional-commit conventions | You want to audit or install pre-commit hooks for a project end-to-end as an interactive workflow |
-| You are checking whether a `.pre-commit-config.yaml` matches the documented standard | You want runtime detection of project type (frontend, infra, python) before choosing hook sets |
-| Another skill needs to cite the standard hook versions or rule set | The user asked you to actually create or repair pre-commit configuration |
+Canonical hook list, pinned versions, per-project-type configurations, and
+compliance conventions. (Absorbed the former `pre-commit-standards`
+reference skill.)
 
 ## Version: 2025.1
 

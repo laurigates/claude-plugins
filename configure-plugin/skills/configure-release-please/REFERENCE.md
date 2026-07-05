@@ -1,5 +1,11 @@
 # configure-release-please Reference
 
+Standard release-please configuration (v2025.1) for automated semantic
+versioning and changelog generation. (Absorbed the former
+`release-please-standards` reference skill; the **monorepo** strategy —
+component tags, per-package `extra-files`, tag migration — lives in
+`git-plugin:release-please-configuration`.)
+
 ## Compliance Report Format
 
 ```
@@ -109,3 +115,74 @@ jobs:
   ".": "0.0.0"
 }
 ```
+
+Version `0.0.0` is a placeholder — release-please updates it automatically.
+
+## Project Type Variations
+
+| Project type | release-type | Updates |
+|--------------|--------------|---------|
+| Node.js frontend/backend | `node` (+ `node-workspace` plugin) | `package.json` version field |
+| Python service | `python` | `pyproject.toml` version field, `__version__` in code |
+| Infrastructure (Helm) | `helm` | `Chart.yaml` version field |
+| Multi-package repo | per-package `component` + root `include-component-in-tag: true` | See `git-plugin:release-please-configuration` for the full monorepo strategy |
+
+## Token Configuration
+
+The workflow uses a dedicated release token (not `GITHUB_TOKEN`) so release
+PRs can trigger other workflows, CI runs on release PRs, and the audit trail
+stays clean. Two accepted patterns:
+
+| Pattern | How | When |
+|---------|-----|------|
+| **GitHub App token (preferred)** | `actions/create-github-app-token` → `app-id: ${{ vars.RELEASE_PLEASE_APP_ID }}`, `private-key: ${{ secrets.RELEASE_PLEASE_PRIVATE_KEY }}`, passed as `token: ${{ steps.app-token.outputs.token }}` | laurigates org standard — credentials are gitops-provisioned on `release_please = true` repos |
+| **PAT (legacy)** | `token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}` | Where the GitHub App isn't set up |
+
+A workflow already using the App-token pattern is compliant — do not flag it
+to switch to `MY_RELEASE_PLEASE_TOKEN`.
+
+## Validation Rules
+
+| Status | Condition |
+|--------|-----------|
+| PASS | All three files present with valid configuration |
+| WARN | Files present but using a deprecated action version (older than v5) |
+| FAIL | Missing required files or invalid configuration |
+
+1. **Workflow**: action version v5 (warn if older); token from a secret,
+   never hardcoded; triggers on `push` to `main`
+2. **Config**: valid release-type (`node`, `python`, `helm`, `simple`);
+   changelog-sections include at least `feat` and `fix`
+3. **Manifest**: valid JSON; packages match the config
+
+## Protected Files
+
+Release-please manages these automatically — never edit them manually:
+`CHANGELOG.md`, version fields in `package.json` / `pyproject.toml` /
+`Chart.yaml`, and `.release-please-manifest.json` (initial setup only). See
+`git-plugin:release-please-protection` for enforcement.
+
+## Conventional Commits
+
+| Prefix | Release Type | Example |
+|--------|--------------|---------|
+| `feat:` | Minor | `feat: add user authentication` |
+| `fix:` | Patch | `fix: correct login timeout` |
+| `feat!:` | Major | `feat!: redesign API` |
+| `BREAKING CHANGE:` | Major | In commit body |
+
+## Installation Steps
+
+1. Create workflow, config, and manifest files (templates above)
+2. Provide the release token — preferred: `RELEASE_PLEASE_APP_ID` variable +
+   `RELEASE_PLEASE_PRIVATE_KEY` secret (gitops provisions these on
+   `release_please = true` repos); legacy: `MY_RELEASE_PLEASE_TOKEN` secret
+3. Ensure pre-commit has the conventional-pre-commit hook
+
+## Troubleshooting
+
+| Symptom | Check |
+|---------|-------|
+| Release PR not created | Conventional commit format; workflow permissions; token has write access |
+| Version not updated | Manifest is valid JSON; release-type matches project; release-please logs in Actions |
+| CI not running on release PR | Token must be a dedicated release token (App token or PAT), not `GITHUB_TOKEN` |

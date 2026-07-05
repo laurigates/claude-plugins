@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-06-18
-reviewed: 2025-12-16
+modified: 2026-07-05
+reviewed: 2026-07-05
 description: "Infrastructure compliance status (read-only). Use when checking overall compliance, generating a report, or reviewing project health without making changes."
-allowed-tools: Glob, Grep, Read, TodoWrite
+allowed-tools: Glob, Grep, Read, TodoWrite, Bash(bash *)
 args: "[--verbose]"
 argument-hint: "[--verbose]"
 name: configure-status
@@ -56,28 +56,27 @@ Execute this read-only compliance status check:
 2. Auto-detect project type from file structure
 3. Report discrepancy if detected type differs from tracked type
 
-### Step 2: Scan configuration files
+### Step 2: List components and run detection scripts
 
-Check for presence and validity of each configuration:
+List the component roster from the manifest (single source of truth —
+[configure-all/components.yaml](../configure-all/components.yaml)):
 
-| Component | Files Checked |
-|-----------|---------------|
-| Pre-commit | `.pre-commit-config.yaml` |
-| Release-please | `release-please-config.json`, `.release-please-manifest.json`, `.github/workflows/release-please.yml` |
-| Dockerfile | `Dockerfile`, `Dockerfile.*` |
-| Skaffold | `skaffold.yaml` |
-| CI Workflows | `.github/workflows/*.yml` |
-| Helm | `helm/*/Chart.yaml` |
-| Documentation | `tsdoc.json`, `typedoc.json`, `mkdocs.yml`, `docs/conf.py`, `pyproject.toml [tool.ruff.lint.pydocstyle]` |
-| GitHub Pages | `.github/workflows/docs.yml`, `.github/workflows/*pages*.yml` |
-| Cache Busting | `next.config.*`, `vite.config.*`, `vercel.json`, `_headers` |
-| Tests | `vitest.config.*`, `jest.config.*`, `pytest.ini`, `pyproject.toml [tool.pytest]`, `.cargo/config.toml` |
-| Coverage | `vitest.config.* [coverage]`, `pyproject.toml [tool.coverage]`, `.coveragerc` |
-| Linting | `biome.json`, `pyproject.toml [tool.ruff]`, `clippy.toml` |
-| Formatting | `.prettierrc*`, `biome.json`, `pyproject.toml [tool.ruff.format]`, `rustfmt.toml` |
-| Dead Code | `knip.json`, `knip.ts`, `pyproject.toml [tool.vulture]` |
-| Editor | `.editorconfig`, `.vscode/settings.json`, `.vscode/extensions.json` |
-| Security | `.github/workflows/*security*`, `.gitleaks.toml`, `pyproject.toml [tool.bandit]` |
+```bash
+bash "${CLAUDE_SKILL_DIR}/../configure-all/scripts/list-components.sh"
+```
+
+For each `COMPONENT=<name> ... HAS_SCRIPT=true` line, run that component's
+detection script (read-only) and collect only its `STATUS=` and `ISSUE_COUNT=`
+lines for the roll-up:
+
+```bash
+bash "${CLAUDE_SKILL_DIR}/../<name>/scripts/<name>.sh" --project-dir "$(pwd)"
+```
+
+For `HAS_SCRIPT=false` components, assess presence from the file-presence
+table in [REFERENCE.md](REFERENCE.md) using the Context probes above. Never
+re-derive the component list by hand — new detection scripts automatically
+improve this skill via the manifest.
 
 ### Step 3: Determine compliance status
 

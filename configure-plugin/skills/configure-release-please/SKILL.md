@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-06-24
+modified: 2026-07-05
 reviewed: 2026-06-24
 description: "release-please workflow setup and auditing. Use when configuring release-please, upgrading release-please-action, or adding a package to a monorepo config."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
@@ -31,7 +31,7 @@ Check and configure release-please against project standards.
 - Package files: !`find . -maxdepth 1 \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'Cargo.toml' -o -name 'go.mod' \)`
 - Workflows dir: !`find . -maxdepth 1 -type d -name \'.github/workflows\'`
 
-**Skills referenced**: `release-please-standards`, `release-please-protection`
+**Skills referenced**: `git-plugin:release-please-protection` (protected files), `git-plugin:release-please-configuration` (monorepo strategy); standards tables live in [REFERENCE.md](REFERENCE.md)
 
 ## Parameters
 

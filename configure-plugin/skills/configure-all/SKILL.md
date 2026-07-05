@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-06-18
-reviewed: 2025-12-16
+modified: 2026-07-05
+reviewed: 2026-07-05
 description: "Run all infrastructure standards checks and fixes. Use when onboarding a new project, doing a full compliance audit, or batch-fixing with --fix."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, SlashCommand
 args: "[--check-only] [--fix] [--type <frontend|infrastructure|python>]"
@@ -52,48 +52,47 @@ Execute this comprehensive infrastructure standards compliance check:
 3. Apply `--type` override if provided
 4. Report detected vs tracked type if different
 
-### Step 2: Run all checks
+### Step 2: List components from the manifest
 
-Execute each configure command in check-only mode using the SlashCommand tool:
+The component roster lives in [components.yaml](components.yaml) — the single
+source of truth. Never hand-maintain a component list here; run the lister:
+
+```bash
+bash "${CLAUDE_SKILL_DIR}/scripts/list-components.sh"
+```
+
+Each `COMPONENT=<name> DOMAIN=<domain> HAS_SCRIPT=<bool> TYPES=<types>` line is
+one component skill. If the lister reports `STATUS=ERROR`, stop and surface the
+`ISSUES:` block — the manifest and the skills on disk have drifted.
+
+### Step 3: Run all checks
+
+For each listed component whose `TYPES` includes the detected project type
+(`TYPES=all` always applies), invoke it in check-only mode using the
+SlashCommand tool — e.g. `COMPONENT=configure-tests` runs:
 
 ```
-/configure:makefile --check-only
-/configure:pre-commit --check-only
-/configure:release-please --check-only
-/configure:dockerfile --check-only
-/configure:container --check-only
-/configure:skaffold --check-only
-/configure:workflows --check-only
-/configure:sentry --check-only
-/configure:docs --check-only
-/configure:github-pages --check-only
-/configure:cache-busting --check-only
 /configure:tests --check-only
-/configure:coverage --check-only
-/configure:memory-profiling --check-only
-/configure:linting --check-only
-/configure:formatting --check-only
-/configure:dead-code --check-only
-/configure:editor --check-only
-/configure:security --check-only
 ```
 
-Skip components that do not apply to the detected project type. For component applicability by project type, see [REFERENCE.md](REFERENCE.md).
+Skip components whose `TYPES` excludes the detected project type, and report
+them as SKIP. For finer applicability judgment (e.g. Skaffold only when a
+`k8s/` dir exists), see [REFERENCE.md](REFERENCE.md).
 
 Collect results from each check.
 
-### Step 3: Generate compliance report
+### Step 4: Generate compliance report
 
 Print a summary table with each component's status (PASS/WARN/FAIL), overall counts, and a list of issues to fix. For report format template, see [REFERENCE.md](REFERENCE.md).
 
-### Step 4: Apply fixes (if requested)
+### Step 5: Apply fixes (if requested)
 
 If `--fix` flag is set or user confirms:
 
 1. Run each failing configure command with `--fix`
 2. Report what was fixed and what requires manual intervention
 
-### Step 5: Update standards tracking
+### Step 6: Update standards tracking
 
 Create or update `.project-standards.yaml` with the current standards version, project type, timestamp, and component versions. For template, see [REFERENCE.md](REFERENCE.md).
 
@@ -140,21 +139,4 @@ This is optional -- the skill works sequentially without agent teams.
 
 - `/configure:select` - Interactively select which components to configure
 - `/configure:status` - Quick read-only status overview
-- `/configure:pre-commit` - Pre-commit specific checks
-- `/configure:release-please` - Release automation checks
-- `/configure:dockerfile` - Dockerfile configuration checks
-- `/configure:container` - Comprehensive container infrastructure
-- `/configure:skaffold` - Kubernetes development checks
-- `/configure:workflows` - GitHub Actions checks
-- `/configure:sentry` - Sentry error tracking checks
-- `/configure:docs` - Documentation standards and generators
-- `/configure:github-pages` - GitHub Pages deployment
-- `/configure:cache-busting` - Cache-busting strategies
-- `/configure:tests` - Testing framework setup
-- `/configure:coverage` - Code coverage configuration
-- `/configure:memory-profiling` - Memory profiling with pytest-memray
-- `/configure:linting` - Linter configuration
-- `/configure:formatting` - Code formatter setup
-- `/configure:dead-code` - Dead code detection
-- `/configure:editor` - Editor/IDE configuration
-- `/configure:security` - Security scanning
+- [components.yaml](components.yaml) - The authoritative component roster (per-component `/configure:X` skills are listed there, not here)

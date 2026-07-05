@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.50.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.50.0...git-plugin-v2.50.1) (2026-07-05)
+
+
+### Code Refactoring
+
+* **configure-plugin:** merge standards reference skills into configure siblings ([#1978](https://github.com/laurigates/claude-plugins/issues/1978)) ([473de7b](https://github.com/laurigates/claude-plugins/commit/473de7ba9bc3ccf5f61610ac1088a763bfd48ae2))
+
 ## [2.50.0](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.49.3...git-plugin-v2.50.0) (2026-07-04)
 
 
