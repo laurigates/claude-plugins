@@ -387,6 +387,20 @@ check_skill_body() {
       fi
     fi
 
+    # Regression: blueprint-adr-validate must retain the ADR-number collision
+    # guard (issue #1585). ADR numbers are claimed at merge time, so two
+    # parallel ADR PRs can pick the same number and both land (the FVH #2015
+    # 0038 collision). The deterministic check-adr-numbers.sh detects
+    # within-tree duplicates, base-ref (origin/main) collisions, and index
+    # drift. A bulk edit dropping the script invocation silently removes the
+    # guard, so the semantic invariant is that the skill body still wires it in.
+    if [ "$skill_name" = "blueprint-adr-validate" ]; then
+      if ! grep -q "check-adr-numbers.sh" "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must wire in the ADR-number collision guard (check-adr-numbers.sh) (issue #1585)")
+        has_errors=true
+      fi
+    fi
+
     # Regression: task-reconcile is the only skill that ACTS on the stale-task
     # drift task-status detects. Its load-bearing invariants are (1) a bulk
     # `task import` round-trip for leaf tasks, (2) a default-safe dry-run with an

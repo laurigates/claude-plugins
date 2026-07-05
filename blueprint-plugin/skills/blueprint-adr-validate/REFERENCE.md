@@ -24,6 +24,31 @@
 - Broken reference: Target ADR doesn't exist
 - Inconsistent supersession: Supersedes but target not marked Superseded
 
+### ADR-Number Collisions (issue #1585)
+
+`scripts/check-adr-numbers.sh` guards the parallel-PR numbering race. ADR
+numbers are chosen at branch time but claimed at merge time, so two in-flight
+ADR PRs can pick the same number and both land (the FVH infrastructure #2015
+collision: two ADRs both numbered `0038`). The check is deterministic and
+emits the `=== ADR NUMBER AUDIT ===` / `STATUS=` / `ISSUE_COUNT=` convention.
+
+| Type | Severity | Meaning |
+|------|----------|---------|
+| `duplicate_adr_number` | ERROR | Two files in the working tree lead with the same `NNNN-`. |
+| `adr_number_collision` | ERROR | A working-tree ADR's number is already held by a **different** filename on the base ref (`origin/main`) — the pre-merge parallel-PR case. |
+| `adr_missing_index_row` | WARN | An ADR file is not referenced from the ADR directory's `README.md` index. |
+
+It resolves the ADR directory as `docs/adrs/` (blueprint canonical) or
+`docs/adr/`, degrades to `STATUS=OK` when neither exists, and skips the base-ref
+comparison (still checking duplicates + index) when `origin/main` is
+unavailable. Flags:
+
+- `--project-dir <path>` — repo root (default: cwd).
+- `--base-ref <ref>` — collision comparison ref (default: `origin/main`).
+
+Remediation for an ERROR: renumber the newer ADR to the next free sequential
+number, rewrite its `# ADR-NNNN:` title, and backfill the README index row.
+
 ## Report Format
 
 ```

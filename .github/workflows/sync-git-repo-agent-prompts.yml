@@ -1,0 +1,83 @@
+name: Sync git-repo-agent prompts
+
+# Regenerates git-repo-agent's pre-compiled subagent prompts from this repo's
+# plugin skills and opens a PR on laurigates/git-repo-agent (issue #1017).
+#
+# git-repo-agent was extracted into its own repo but its compiler reads plugin
+# SKILL.md files from this monorepo (ADR-009). The pre-compiled artifacts under
+# git-repo-agent/src/git_repo_agent/prompts/generated/ are shipped in the wheel,
+# so they must be refreshed here (where the plugin sources live) and pushed to
+# the standalone repo whenever an upstream skill changes.
+#
+# Cross-repo push needs a token with contents + pull-requests write on
+# laurigates/git-repo-agent, stored as the GIT_REPO_AGENT_SYNC_TOKEN secret
+# (a fine-scoped PAT or a GitHub App token). Until that secret is provisioned
+# this runs on manual dispatch only; uncomment the `push:` trigger below to make
+# it event-driven once the secret exists.
+
+on:
+  workflow_dispatch:
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - '*/skills/*/SKILL.md'
+  #     - 'git-repo-agent/scripts/compile_prompts.py'
+  #     - 'git-repo-agent/src/git_repo_agent/prompts/compiler.py'
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout claude-plugins
+        uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Regenerate compiled prompts
+        run: uv run --project git-repo-agent python git-repo-agent/scripts/compile_prompts.py
+
+      - name: Detect changes
+        id: diff
+        run: |
+          if git diff --quiet -- git-repo-agent/src/git_repo_agent/prompts/generated/; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout git-repo-agent
+        if: steps.diff.outputs.changed == 'true'
+        uses: actions/checkout@v6
+        with:
+          repository: laurigates/git-repo-agent
+          token: ${{ secrets.GIT_REPO_AGENT_SYNC_TOKEN }}
+          path: _standalone
+
+      - name: Copy regenerated prompts into the standalone checkout
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          rsync -a --delete \
+            git-repo-agent/src/git_repo_agent/prompts/generated/ \
+            _standalone/src/git_repo_agent/prompts/generated/
+
+      - name: Open sync PR on git-repo-agent
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          path: _standalone
+          token: ${{ secrets.GIT_REPO_AGENT_SYNC_TOKEN }}
+          branch: sync/generated-prompts
+          delete-branch: true
+          commit-message: "chore: sync compiled prompts from claude-plugins"
+          title: "chore: sync compiled prompts from claude-plugins"
+          body: |
+            Regenerated `src/git_repo_agent/prompts/generated/` from the upstream
+            plugin skills in laurigates/claude-plugins.
+
+            Automated by `.github/workflows/sync-git-repo-agent-prompts.yml`.
