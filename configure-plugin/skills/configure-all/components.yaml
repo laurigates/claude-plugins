@@ -1,0 +1,206 @@
+# Single source of truth for configure-plugin's skill taxonomy.
+#
+# Consumers:
+#   - configure-all      — iterates `components` to run every check (via scripts/list-components.sh)
+#   - configure-select   — builds its AskUserQuestion domain menus from this file
+#   - configure-status   — rolls up detection-script results for has_script components
+#   - docs/flow.md       — the Domain → Skill mapping table must match this file
+#   - README.md          — every skill listed here must appear in the README
+#
+# Drift guard: scripts/check-configure-components.sh (repo root) fails CI when
+# this file, the skills on disk, configure-all/SKILL.md, docs/flow.md, or
+# README.md disagree. Add new skills HERE first; the guard tells you what else
+# to update.
+#
+# Schema (kept flat and awk-parseable — no yq dependency):
+#   domains:        domain-key: Human Title
+#   components:     - name / domain / has_script / types
+#     types: "all" or a comma-separated subset of frontend,infrastructure,python,rust
+#     has_script: true when skills/<name>/scripts/<name>.sh exists (detection-only script)
+#   orchestrators:  driver skills that are not components themselves
+#   advisory:       guidance-only skills (no check+fix contract)
+#   reference_skills: user-invocable: false knowledge bases loaded by other skills
+
+version: 1
+
+domains:
+  ci-cd: CI/CD & Version Control
+  git-metadata: Git Metadata
+  containers-deploy: Containers & Deploy
+  testing: Testing
+  code-quality: Code Quality
+  security: Security
+  docs: Documentation
+  feature-flags: Feature Flags
+  package-management: Package Management
+  dev-environment: Editor & Dev Environment
+
+components:
+  - name: configure-workflows
+    domain: ci-cd
+    has_script: false
+    types: all
+  - name: configure-reusable-workflows
+    domain: ci-cd
+    has_script: false
+    types: all
+  - name: configure-release-please
+    domain: ci-cd
+    has_script: false
+    types: all
+  - name: configure-pre-commit
+    domain: ci-cd
+    has_script: false
+    types: all
+  - name: configure-github-pages
+    domain: ci-cd
+    has_script: false
+    types: all
+  - name: configure-argocd-automerge
+    domain: ci-cd
+    has_script: false
+    types: all
+  - name: configure-claude-plugins
+    domain: ci-cd
+    has_script: false
+    types: all
+  - name: configure-gitattributes
+    domain: git-metadata
+    has_script: false
+    types: all
+  - name: configure-gitignore
+    domain: git-metadata
+    has_script: false
+    types: all
+  - name: configure-worktreeinclude
+    domain: git-metadata
+    has_script: false
+    types: all
+  - name: configure-dockerfile
+    domain: containers-deploy
+    has_script: false
+    types: frontend,python,rust
+  - name: configure-container
+    domain: containers-deploy
+    has_script: false
+    types: frontend,python,rust
+  - name: configure-skaffold
+    domain: containers-deploy
+    has_script: false
+    types: all
+  - name: configure-tests
+    domain: testing
+    has_script: false
+    types: all
+  - name: configure-coverage
+    domain: testing
+    has_script: false
+    types: all
+  - name: configure-api-tests
+    domain: testing
+    has_script: false
+    types: all
+  - name: configure-integration-tests
+    domain: testing
+    has_script: false
+    types: all
+  - name: configure-load-tests
+    domain: testing
+    has_script: false
+    types: all
+  - name: configure-memory-profiling
+    domain: testing
+    has_script: false
+    types: python
+  - name: configure-ux-testing
+    domain: testing
+    has_script: true
+    types: frontend
+  - name: configure-linting
+    domain: code-quality
+    has_script: false
+    types: all
+  - name: configure-formatting
+    domain: code-quality
+    has_script: true
+    types: all
+  - name: configure-dead-code
+    domain: code-quality
+    has_script: false
+    types: all
+  - name: configure-security
+    domain: security
+    has_script: true
+    types: all
+  - name: configure-docs
+    domain: docs
+    has_script: false
+    types: all
+  - name: configure-readme
+    domain: docs
+    has_script: false
+    types: all
+  - name: configure-surface
+    domain: docs
+    has_script: false
+    types: all
+  - name: configure-feature-flags
+    domain: feature-flags
+    has_script: false
+    types: all
+  - name: configure-package-management
+    domain: package-management
+    has_script: false
+    types: all
+  - name: configure-mise
+    domain: package-management
+    has_script: false
+    types: all
+  - name: configure-cache-busting
+    domain: package-management
+    has_script: false
+    types: frontend,python
+  - name: configure-editor
+    domain: dev-environment
+    has_script: false
+    types: all
+  - name: configure-mcp
+    domain: dev-environment
+    has_script: false
+    types: all
+  - name: configure-makefile
+    domain: dev-environment
+    has_script: false
+    types: all
+  - name: configure-justfile
+    domain: dev-environment
+    has_script: false
+    types: all
+  - name: configure-web-session
+    domain: dev-environment
+    has_script: false
+    types: all
+  - name: configure-sentry
+    domain: dev-environment
+    has_script: false
+    types: all
+
+orchestrators:
+  - configure-all
+  - configure-select
+  - configure-status
+  - configure-repo
+  - config-sync
+
+advisory:
+  - multi-repo-discipline
+
+reference_skills:
+  - ci-workflows
+  - claude-security-settings
+  - openfeature
+  - go-feature-flag
+  - pre-commit-standards
+  - readme-standards
+  - release-please-standards
+  - skaffold-standards

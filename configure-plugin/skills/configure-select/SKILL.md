@@ -1,7 +1,7 @@
 ---
 created: 2025-12-22
-modified: 2026-06-18
-reviewed: 2025-12-22
+modified: 2026-07-05
+reviewed: 2026-07-05
 description: "Interactive selector for infrastructure standards. Use when setting up specific components or building infrastructure incrementally instead of running /configure:all."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, SlashCommand
 args: "[--check-only] [--fix]"
@@ -53,66 +53,37 @@ Execute this interactive component selection workflow:
    - **rust**: Has `Cargo.toml`
 3. Report detected type to user
 
-### Step 2: Present component selection
+### Step 2: List domains and components from the manifest
 
-Use AskUserQuestion with multiSelect to present four category-based questions:
+The component roster lives in the sibling manifest
+[configure-all/components.yaml](../configure-all/components.yaml). Run the
+lister to get the current domains and their components:
 
-**Question 1: CI/CD & Version Control**
+```bash
+bash "${CLAUDE_SKILL_DIR}/../configure-all/scripts/list-components.sh"
+```
 
-| Option | Description |
-|--------|-------------|
-| Pre-commit hooks | Git hooks for linting, formatting, commit messages |
-| Release automation | release-please workflow and changelog generation |
-| GitHub Actions | CI/CD workflows for testing and deployment |
-| All CI/CD | Includes: pre-commit, release-please, workflows, github-pages, makefile |
+`DOMAIN=<key> TITLE=<title>` lines are the selectable domains;
+`COMPONENT=<name> DOMAIN=<key> ...` lines are their members. Never
+hand-maintain a category table here — the manifest is the single source of
+truth.
 
-**Question 2: Container & Deployment**
+### Step 3: Present component selection
 
-| Option | Description |
-|--------|-------------|
-| Dockerfile | Alpine/slim base, non-root user, multi-stage builds |
-| Container infra | Registry, scanning, devcontainer setup |
-| Skaffold | Kubernetes development configuration |
-| All container | Includes: dockerfile, container, skaffold, sentry, justfile |
+Use AskUserQuestion with multiSelect, building the questions from the lister
+output:
 
-**Question 3: Testing**
+1. Group the manifest domains into at most 4 questions of 2–4 options each,
+   keeping related domains in the same question (e.g. CI/CD with Git Metadata,
+   Testing on its own, Code Quality with Security and Documentation, Containers
+   with Editor & Dev Environment and Package Management).
+2. Each option is one domain: label = the domain `TITLE`, description = that
+   domain's component names from the lister output.
+3. Selecting a domain selects all of its components. Skip components whose
+   `TYPES` excludes the detected project type.
 
-| Option | Description |
-|--------|-------------|
-| Test framework | Vitest, Jest, pytest, or cargo-nextest setup |
-| Code coverage | Coverage thresholds and reporting |
-| API testing | Pact contracts, OpenAPI validation |
-| All testing | Includes: tests, coverage, api-tests, integration-tests, load-tests, ux-testing, memory-profiling |
-
-**Question 4: Code Quality**
-
-| Option | Description |
-|--------|-------------|
-| Linting & Formatting | Biome, Ruff, Clippy configuration |
-| Security scanning | Dependency audits, SAST, secrets detection |
-| Documentation | TSDoc, JSDoc, pydoc, rustdoc generators |
-| All quality | Includes: linting, formatting, dead-code, docs, security, editor, package-management |
-
-### Step 3: Map selections to commands
-
-| Selection | Commands |
-|-----------|----------|
-| Pre-commit hooks | `/configure:pre-commit` |
-| Release automation | `/configure:release-please` |
-| GitHub Actions | `/configure:workflows` |
-| All CI/CD | pre-commit, release-please, workflows, github-pages, makefile |
-| Dockerfile | `/configure:dockerfile` |
-| Container infra | `/configure:container` |
-| Skaffold | `/configure:skaffold` |
-| All container | dockerfile, container, skaffold, sentry, justfile |
-| Test framework | `/configure:tests` |
-| Code coverage | `/configure:coverage` |
-| API testing | `/configure:api-tests` |
-| All testing | tests, coverage, api-tests, integration-tests, load-tests, ux-testing, memory-profiling |
-| Linting & Formatting | `/configure:linting`, `/configure:formatting` |
-| Security scanning | `/configure:security` |
-| Documentation | `/configure:docs` |
-| All quality | linting, formatting, dead-code, docs, security, editor, package-management |
+Map each selected domain to its components' `/configure:X` commands (a
+`COMPONENT=configure-tests` row runs `/configure:tests`).
 
 ### Step 4: Execute selected checks
 

@@ -103,26 +103,7 @@ deviations: []
 
 ## Fix Commands
 
-When `--fix` is requested, run each failing command with `--fix`:
-
-```
-/configure:makefile --fix
-/configure:pre-commit --fix
-/configure:release-please --fix
-/configure:dockerfile --fix
-/configure:container --fix
-/configure:skaffold --fix
-/configure:workflows --fix
-/configure:sentry --fix
-/configure:docs --fix
-/configure:github-pages --fix
-/configure:cache-busting --fix
-/configure:tests --fix
-/configure:coverage --fix
-/configure:memory-profiling --fix
-/configure:linting --fix
-/configure:formatting --fix
-/configure:dead-code --fix
-/configure:editor --fix
-/configure:security --fix
-```
+When `--fix` is requested, re-run each component that reported WARN or FAIL
+with `--fix` — e.g. a failing `COMPONENT=configure-tests` becomes
+`/configure:tests --fix`. The component roster comes from the Step 2 lister
+output (`components.yaml`), never from a hardcoded list.
