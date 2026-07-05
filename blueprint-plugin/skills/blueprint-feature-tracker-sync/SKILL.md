@@ -33,6 +33,22 @@ Synchronize the feature tracker JSON with TODO.md and manage task progress.
 
 ---
 
+## Interaction Mode
+
+Before any closing `AskUserQuestion` menu, resolve the automation config:
+
+```bash
+bash "${CLAUDE_SKILL_DIR}/../../scripts/get-automation-config.sh"
+```
+
+When `EFFECTIVE_INTERACTION_MODE=quiet` **and** this invocation was
+automation-initiated (autopilot, session bookend, drift-nudge follow-up — not
+a slash command the user typed), skip closing navigation menus ("what next?" /
+"create another?" style): apply the safe default and end with a one-line
+receipt instead. Quiet mode never skips confirmation gates that guard writes —
+only navigation menus. A direct user invocation always behaves fully
+interactively (explicit intent overrides quiet; see ADR-0020).
+
 ## Mode Selection (run first)
 
 Decide which mode applies before any work:

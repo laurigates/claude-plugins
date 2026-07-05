@@ -1,6 +1,6 @@
 ---
 created: 2026-01-20
-modified: 2026-06-10
+modified: 2026-07-05
 reviewed: 2026-06-10
 description: Scan blueprint docs and assign missing PRD/ADR/PRP/WO IDs. Use when assigning IDs to docs; --dry-run to preview, --link-issues to create GitHub issues for orphans.
 args: "[--dry-run] [--link-issues]"
@@ -26,6 +26,22 @@ Scan all PRDs, ADRs, PRPs, and work-orders, assign IDs to documents missing them
 |------|-------------|
 | `--dry-run` | Preview changes without modifying files |
 | `--link-issues` | Also create GitHub issues for orphan documents |
+
+## Interaction Mode
+
+Before any closing `AskUserQuestion` menu, resolve the automation config:
+
+```bash
+bash "${CLAUDE_SKILL_DIR}/../../scripts/get-automation-config.sh"
+```
+
+When `EFFECTIVE_INTERACTION_MODE=quiet` **and** this invocation was
+automation-initiated (autopilot, session bookend, drift-nudge follow-up — not
+a slash command the user typed), skip closing navigation menus ("what next?" /
+"create another?" style): apply the safe default and end with a one-line
+receipt instead. Quiet mode never skips confirmation gates that guard writes —
+only navigation menus. A direct user invocation always behaves fully
+interactively (explicit intent overrides quiet; see ADR-0020).
 
 ## Prerequisites
 

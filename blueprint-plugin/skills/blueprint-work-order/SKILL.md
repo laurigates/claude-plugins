@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-07-05
 reviewed: 2026-04-25
 description: Create a work-order for isolated subagent execution, optionally linked to a GitHub issue. Use when breaking a PRP into delegatable tasks or spawning from an issue.
 args: "[--no-publish] [--from-issue N]"
@@ -30,6 +30,22 @@ Generate a work-order document for isolated subagent execution with optional Git
 | `--from-prp NAME` | Create work-order from existing PRP (auto-populates context) |
 
 **Default behavior**: Creates both local work-order AND GitHub issue with `work-order` label.
+
+## Interaction Mode
+
+Before any closing `AskUserQuestion` menu, resolve the automation config:
+
+```bash
+bash "${CLAUDE_SKILL_DIR}/../../scripts/get-automation-config.sh"
+```
+
+When `EFFECTIVE_INTERACTION_MODE=quiet` **and** this invocation was
+automation-initiated (autopilot, session bookend, drift-nudge follow-up — not
+a slash command the user typed), skip closing navigation menus ("what next?" /
+"create another?" style): apply the safe default and end with a one-line
+receipt instead. Quiet mode never skips confirmation gates that guard writes —
+only navigation menus. A direct user invocation always behaves fully
+interactively (explicit intent overrides quiet; see ADR-0020).
 
 ## Prerequisites
 
