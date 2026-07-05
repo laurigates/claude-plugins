@@ -36,13 +36,15 @@ The domain grouping below mirrors the authoritative manifest
 | Skill | Description |
 |-------|-------------|
 | `ci-workflows` | CI/CD workflow standards |
-| `pre-commit-standards` | Pre-commit hook standards |
-| `release-please-standards` | Release-please single-repo standards + compliance (monorepo strategy lives in git-plugin) |
-| `skaffold-standards` | Skaffold configuration standards |
-| `readme-standards` | README templates and section standards |
 | `claude-security-settings` | Claude Code security settings and wildcard permissions |
 | `openfeature` | OpenFeature vendor-agnostic feature-flag SDK reference |
 | `go-feature-flag` | GO Feature Flag (GOFF) provider reference |
+
+The former `pre-commit-standards`, `readme-standards`,
+`release-please-standards`, and `skaffold-standards` reference skills were
+merged into their configure siblings' `REFERENCE.md` files
+(`configure-pre-commit`, `configure-readme`, `configure-release-please`,
+`configure-skaffold`).
 
 ### CI/CD & Version Control
 

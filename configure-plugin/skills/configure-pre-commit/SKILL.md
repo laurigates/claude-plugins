@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-06-18
-reviewed: 2025-12-16
+modified: 2026-07-05
+reviewed: 2026-07-05
 description: "pre-commit hooks setup and validation. Use when installing hooks, configuring frontend/infrastructure/python project types, or migrating to pre-commit."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebSearch, WebFetch
 args: "[--check-only] [--fix] [--type <frontend|infrastructure|python>]"
@@ -71,7 +71,7 @@ Execute this pre-commit compliance check:
 
 ### Step 4: Analyze compliance
 
-Compare existing configuration against project standards (from `pre-commit-standards` skill):
+Compare existing configuration against the project standards in [REFERENCE.md](REFERENCE.md):
 
 **Required Base Hooks (All Projects):**
 - `pre-commit-hooks` v5.0.0+ with: trailing-whitespace, end-of-file-fixer, check-yaml, check-json, check-merge-conflict, check-added-large-files
@@ -163,4 +163,4 @@ components:
 
 - `/configure:all` - Run all compliance checks
 - `/configure:status` - Quick compliance overview
-- `pre-commit-standards` skill - Standard definitions
+- [REFERENCE.md](REFERENCE.md) - Canonical hook list, pinned versions, per-project-type configurations

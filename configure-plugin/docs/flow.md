@@ -68,13 +68,13 @@ Component columns mirror `components.yaml`; reference skills
 
 | Domain | Component skills | Reference skills |
 |--------|------------------|------------------|
-| CI/CD & Version Control | `configure-workflows`, `configure-reusable-workflows`, `configure-release-please`, `configure-pre-commit`, `configure-github-pages`, `configure-argocd-automerge`, `configure-claude-plugins` | `ci-workflows`, `release-please-standards`, `pre-commit-standards` |
+| CI/CD & Version Control | `configure-workflows`, `configure-reusable-workflows`, `configure-release-please`, `configure-pre-commit`, `configure-github-pages`, `configure-argocd-automerge`, `configure-claude-plugins` | `ci-workflows` |
 | Git Metadata | `configure-gitattributes`, `configure-gitignore`, `configure-worktreeinclude` | |
-| Containers & Deploy | `configure-dockerfile`, `configure-container`, `configure-skaffold` | `skaffold-standards` |
+| Containers & Deploy | `configure-dockerfile`, `configure-container`, `configure-skaffold` | |
 | Testing | `configure-tests`, `configure-coverage`, `configure-api-tests`, `configure-integration-tests`, `configure-load-tests`, `configure-memory-profiling`, `configure-ux-testing` | |
 | Code Quality | `configure-linting`, `configure-formatting`, `configure-dead-code` | |
 | Security | `configure-security` | `claude-security-settings` |
-| Documentation | `configure-docs`, `configure-readme`, `configure-surface` | `readme-standards` |
+| Documentation | `configure-docs`, `configure-readme`, `configure-surface` | |
 | Feature Flags | `configure-feature-flags` | `openfeature`, `go-feature-flag` |
 | Package Management | `configure-package-management`, `configure-mise`, `configure-cache-busting` | |
 | Editor & Dev Environment | `configure-editor`, `configure-mcp`, `configure-makefile`, `configure-justfile`, `configure-web-session` | |
