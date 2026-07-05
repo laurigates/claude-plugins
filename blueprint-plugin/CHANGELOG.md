@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.39.1](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.39.0...blueprint-plugin-v3.39.1) (2026-07-05)
+
+
+### Documentation
+
+* **blueprint-plugin:** cross-reference session-end as a drain-wave trigger ([#1999](https://github.com/laurigates/claude-plugins/issues/1999)) ([85420ff](https://github.com/laurigates/claude-plugins/commit/85420ff15c9a6594ed2bec2ad72517a23b98fae6))
+
 ## [3.39.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.38.1...blueprint-plugin-v3.39.0) (2026-07-05)
 
 
