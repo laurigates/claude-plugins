@@ -200,12 +200,10 @@ orchestrators:
 advisory:
   - multi-repo-discipline
 
+# The former pre-commit/readme/release-please/skaffold-standards reference
+# skills were merged into their configure-* siblings' REFERENCE.md files.
 reference_skills:
   - ci-workflows
   - claude-security-settings
   - openfeature
   - go-feature-flag
-  - pre-commit-standards
-  - readme-standards
-  - release-please-standards
-  - skaffold-standards

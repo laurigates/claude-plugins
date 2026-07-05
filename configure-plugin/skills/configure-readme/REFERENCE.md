@@ -1,5 +1,39 @@
 # configure-readme Reference
 
+README templates, badge reference, section standards, and compliance
+checklists. (Absorbed the former `readme-standards` reference skill.)
+
+## Style Levels
+
+| Style | Best for |
+|-------|----------|
+| Minimal | Libraries, small utilities, internal tools |
+| Standard (recommended) | Most projects, applications, services |
+| Detailed | Open source projects, documentation-heavy projects, developer tools — everything in Standard plus architecture diagrams, API reference, configuration options, changelog link, security policy, code of conduct |
+
+## README Template (Minimal Style)
+
+```markdown
+# project-name
+
+[![License](https://img.shields.io/github/license/OWNER/REPO)](LICENSE)
+
+Brief description of what this project does.
+
+## Installation
+
+npm install package-name
+
+## Usage
+
+import { feature } from 'package-name';
+feature();
+
+## License
+
+MIT
+```
+
 ## Package File Format Examples
 
 ### package.json (JavaScript/TypeScript)
@@ -197,20 +231,114 @@ This project is licensed under the [LICENSE_TYPE](LICENSE) license.
 | Rust | `https://img.shields.io/badge/rust-1.75+-orange` |
 | Go | `https://img.shields.io/badge/go-1.22-00ADD8` |
 
-## Placeholder Logo
+## Logo Guidelines
 
-When no logo exists:
+- **Format**: PNG (with transparency) or SVG
+- **Size**: 128x128px to 512x512px
+- **Location**: `assets/logo.png` or `assets/icon.svg`
+- **Centering**: `<div align="center"><img src="assets/logo.png" alt="Project Name" width="128"></div>`
+
+### Placeholder Logo
+
+When no logo exists, use a centered title, optionally with a project-type emoji:
 
 ```markdown
 <div align="center">
-<h1>PROJECT_NAME</h1>
+
+# 🚀 PROJECT_NAME
+
 </div>
 ```
+
+| Emoji | Project type |
+|-------|--------------|
+| 🚀 | General/deployment tools |
+| 🛠️ | Developer tools |
+| 📊 | Data/analytics |
+| 🔒 | Security |
+| 🌐 | Web applications |
+| 📱 | Mobile apps |
+| 🤖 | AI/ML projects |
+| 📦 | Package/library |
 
 Tools for creating logos:
 - [Shields.io](https://shields.io) for custom badges
 - [Simple Icons](https://simpleicons.org) for technology icons
 - AI image generators for custom logos
+
+## Section Writing Standards
+
+### Features — write benefits, not implementation
+
+**Good:**
+```markdown
+- **Automatic Scanner Detection** - Discovers eSCL-compatible scanners via mDNS without manual configuration
+- **Smart Photo Separation** - Intelligently detects and crops multiple photos from a single scan using edge analysis
+```
+
+**Compare — implementation-focused (less effective):**
+```markdown
+- Uses mDNS for scanner discovery
+- Has edge detection algorithm
+```
+
+### Getting Started — always include
+
+1. Prerequisites with version requirements
+2. Clone instructions
+3. Install dependencies command
+4. Run command
+5. (Optional) Environment setup
+
+### Project Structure — keep it scannable
+
+- 2-3 levels deep, only meaningful directories, brief comments for
+  non-obvious folders
+
+## Project-Type-Specific Sections
+
+| Project type | Add to the template |
+|--------------|---------------------|
+| CLI tool | Global-install variants (`npm install -g` / `bun install -g` / `npx`), a `tool-name <command> [options]` usage block enumerating commands and flags |
+| Library/package | An `## API` section per exported function: signature, parameter table, return type |
+| Web application | `## Demo` (live link), `## Screenshots` (centered images), `## Environment Variables` (`.env` example) |
+
+## Compliance Checklists
+
+### Minimal
+- [ ] Title (h1)
+- [ ] Description (1-2 sentences)
+- [ ] License badge
+- [ ] Installation instructions
+- [ ] Basic usage example
+- [ ] License section
+
+### Standard (all of minimal plus)
+- [ ] Logo or emoji header
+- [ ] 3+ badges (license, stars, CI)
+- [ ] Features section (4+ items)
+- [ ] Tech stack table
+- [ ] Prerequisites
+- [ ] Development commands
+- [ ] Project structure
+- [ ] Contributing mention
+
+### Detailed (all of standard plus)
+- [ ] Architecture diagram
+- [ ] API reference or link
+- [ ] Configuration options
+- [ ] Changelog link
+- [ ] Security policy mention
+- [ ] Code of conduct mention
+
+## Cookiecutter Integration
+
+For creating entire new projects from templates, consider
+[cookiecutter](https://cookiecutter.readthedocs.io/) (`uv tool install
+cookiecutter`, then `cookiecutter <template-url>`). Cookiecutter is ideal for
+organization-wide templates and whole-project scaffolding; `/configure:readme`
+is better for updating existing projects and compliance-checking existing
+READMEs.
 
 ## Results Report Format
 
