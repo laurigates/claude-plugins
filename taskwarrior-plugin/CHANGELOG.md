@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.0](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.12.0...taskwarrior-plugin-v1.13.0) (2026-07-05)
+
+
+### Features
+
+* **taskwarrior-plugin:** add task-bulk-ops skill ([#1981](https://github.com/laurigates/claude-plugins/issues/1981)) ([e4e44d7](https://github.com/laurigates/claude-plugins/commit/e4e44d74b53ad4837f5c3e0ea6a53fafcf8e7d0e))
+
 ## [1.12.0](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.11.0...taskwarrior-plugin-v1.12.0) (2026-07-02)
 
 
