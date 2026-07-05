@@ -1,7 +1,7 @@
 {
-  "format_version": "3.3.0",
+  "format_version": "3.4.0",
   "created_at": "2026-04-16T00:00:00Z",
-  "updated_at": "2026-04-16T00:00:00Z",
+  "updated_at": "2026-07-05T00:00:00Z",
   "created_by": {
     "blueprint_plugin": "3.25.2"
   },
@@ -26,6 +26,17 @@
   "custom_overrides": {
     "skills": [],
     "commands": []
+  },
+  "automation": {
+    "autonomy_level": 1,
+    "interaction_mode": "normal",
+    "work_orders": {
+      "auto_draft": false,
+      "auto_execute": false
+    },
+    "context": {
+      "rationale": "Constrained dogfooding stays at level 1: deterministic bookkeeping (sync-ids sweep) may auto-run; agent-judgment tasks only surface as drift findings. Levels 2-3 are for consumer repos (ADR-0020)."
+    }
   },
   "task_registry": {
     "derive-plans": {
@@ -81,12 +92,14 @@
     },
     "sync-ids": {
       "enabled": true,
-      "auto_run": false,
+      "auto_run": true,
       "last_completed_at": null,
       "last_result": null,
-      "schedule": "on-change",
+      "schedule": "weekly",
       "stats": {},
-      "context": {}
+      "context": {
+        "rationale": "Deterministic id-registry sweep (blueprint-autorun.sh). The on-change registration is already handled by the auto-sync-id-registry.sh PostToolUse hook; the weekly runner sweep catches documents added outside Write/Edit (e.g. git operations)."
+      }
     },
     "claude-md": {
       "enabled": false,
@@ -130,5 +143,16 @@
         "rationale": "Phase 2 of the story-audit workflow. Mutates PRD files only (never code), with idempotent inline markers and a wholesale-replaced Known Drift section. Confirms each PRD's edits via AskUserQuestion before writing."
       }
     }
-  }
+  },
+  "upgrade_history": [
+    {
+      "from": "3.3.0",
+      "to": "3.4.0",
+      "date": "2026-07-05T00:00:00Z",
+      "changes": [
+        "Added automation block (autonomy_level 1: ambient bookkeeping)",
+        "sync-ids auto_run enabled as weekly deterministic sweep"
+      ]
+    }
+  ]
 }

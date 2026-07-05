@@ -1,6 +1,6 @@
 ---
 created: 2026-04-25
-modified: 2026-07-04
+modified: 2026-07-05
 reviewed: 2026-04-25
 description: Reconcile PRD requirements with a story-audit drift report. Use when marking PRD entries implemented/partial/missing, or promoting code-only stories into the PRD.
 args: "[--audit <path>] [--prd <path>] [--apply-all] [--dry-run]"
@@ -43,6 +43,22 @@ Parse `$ARGUMENTS`:
 - `--prd <path>`: Limit edits to a single PRD. Default: every PRD referenced by the audit's drift table.
 - `--apply-all`: Skip per-row prompts and apply every drift entry as an edit. Use only when the audit was reviewed elsewhere.
 - `--dry-run`: Show the planned edits as unified diffs without writing.
+
+## Interaction Mode
+
+Before any closing `AskUserQuestion` menu, resolve the automation config:
+
+```bash
+bash "${CLAUDE_SKILL_DIR}/../../scripts/get-automation-config.sh"
+```
+
+When `EFFECTIVE_INTERACTION_MODE=quiet` **and** this invocation was
+automation-initiated (autopilot, session bookend, drift-nudge follow-up — not
+a slash command the user typed), skip closing navigation menus ("what next?" /
+"create another?" style): apply the safe default and end with a one-line
+receipt instead. Quiet mode never skips confirmation gates that guard writes —
+only navigation menus. A direct user invocation always behaves fully
+interactively (explicit intent overrides quiet; see ADR-0020).
 
 ## Execution
 

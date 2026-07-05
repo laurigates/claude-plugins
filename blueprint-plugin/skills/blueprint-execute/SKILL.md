@@ -1,6 +1,6 @@
 ---
 created: 2026-01-14
-modified: 2026-05-09
+modified: 2026-07-05
 reviewed: 2026-04-25
 description: "Blueprint meta command: determine and execute the next logical action. Use when asked 'what's next?', 'continue blueprint', or 'run blueprint' without a subcommand."
 allowed-tools: Read, Glob, Bash, AskUserQuestion, SlashCommand, Task
@@ -27,6 +27,22 @@ Intelligent meta command that analyzes repository state and executes the appropr
 For detailed AskUserQuestion templates, examples, and common workflows, see [REFERENCE.md](REFERENCE.md).
 
 ---
+
+## Interaction Mode
+
+Before any closing `AskUserQuestion` menu, resolve the automation config:
+
+```bash
+bash "${CLAUDE_SKILL_DIR}/../../scripts/get-automation-config.sh"
+```
+
+When `EFFECTIVE_INTERACTION_MODE=quiet` **and** this invocation was
+automation-initiated (autopilot, session bookend, drift-nudge follow-up — not
+a slash command the user typed), skip closing navigation menus ("what next?" /
+"create another?" style): apply the safe default and end with a one-line
+receipt instead. Quiet mode never skips confirmation gates that guard writes —
+only navigation menus. A direct user invocation always behaves fully
+interactively (explicit intent overrides quiet; see ADR-0020).
 
 ## Phase 0: Parallel Context Gathering
 

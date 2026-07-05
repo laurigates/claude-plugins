@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-07-05
 reviewed: 2026-04-25
 description: Create a work-order for isolated subagent execution, optionally linked to a GitHub issue. Use when breaking a PRP into delegatable tasks or spawning from an issue.
 args: "[--no-publish] [--from-issue N]"
@@ -26,10 +26,26 @@ Generate a work-order document for isolated subagent execution with optional Git
 | Flag | Description |
 |------|-------------|
 | `--no-publish` | Create local work-order only, skip GitHub issue creation |
-| `--from-issue N` | Create work-order from existing GitHub issue #N |
+| `--from-issue N` | Create work-order from existing GitHub issue #N (a `work-order-draft` proposal issue is promoted: packet consumed, label swapped to `work-order`) |
 | `--from-prp NAME` | Create work-order from existing PRP (auto-populates context) |
 
 **Default behavior**: Creates both local work-order AND GitHub issue with `work-order` label.
+
+## Interaction Mode
+
+Before any closing `AskUserQuestion` menu, resolve the automation config:
+
+```bash
+bash "${CLAUDE_SKILL_DIR}/../../scripts/get-automation-config.sh"
+```
+
+When `EFFECTIVE_INTERACTION_MODE=quiet` **and** this invocation was
+automation-initiated (autopilot, session bookend, drift-nudge follow-up — not
+a slash command the user typed), skip closing navigation menus ("what next?" /
+"create another?" style): apply the safe default and end with a one-line
+receipt instead. Quiet mode never skips confirmation gates that guard writes —
+only navigation menus. A direct user invocation always behaves fully
+interactively (explicit intent overrides quiet; see ADR-0020).
 
 ## Prerequisites
 
@@ -81,6 +97,21 @@ When `--from-issue N` is provided:
    - Extract objective from title/body
    - Extract any TDD requirements or success criteria if present
    - Note existing labels
+
+2a. **Promote a `work-order-draft` proposal** (ADR-0020 auto-draft channel):
+
+   If the issue carries the `work-order-draft` label, it is an auto-drafted
+   proposal from `/blueprint:autopilot` — its body already IS the full
+   work-order packet (title form `[work-order-draft] PRP-NNN: <title>`).
+   Promotion is the human committing act the draft channel preserves:
+   - Consume the packet verbatim as the work-order content (the draft body
+     supersedes step 3's re-generation; still verify the referenced PRP exists
+     and its confidence is current — warn if it dropped below 9)
+   - In step 4, additionally swap the labels:
+     `gh issue edit N --remove-label "work-order-draft" --add-label "work-order"`
+   - Proceed with the normal save path (Step 6): the local WO file,
+     `feature-tracker.json` `tasks.pending`, and the manifest `id_registry`
+     mutate HERE, at promotion — never at draft time
 
 3. **Generate work-order**:
    - Number matches issue number (e.g., issue #42 → work-order `042-...`)

@@ -19,7 +19,7 @@ See `manifest.json#task_registry` (each disabled task carries a `context.disable
 | Task | Enabled | Why |
 |------|---------|-----|
 | `adr-validate` | ✓ | Detects orphans, broken `supersedes` chains, and missing domain tags across 16 ADRs |
-| `sync-ids` | ✓ | Reconciles document ID frontmatter; **always run with `--dry-run` first** |
+| `sync-ids` | ✓ | Reconciles document ID frontmatter; **always run with `--dry-run` first**. The deterministic id-registry *sweep* (never assigns IDs) additionally has `auto_run: true` — see Automation below |
 | `feature-tracker-sync` | ✓ | Read-leaning sync against `TODO.md` (no tracker enabled yet) |
 | `story-audit` | ✓ | Read-only audit: capability map ↔ PRD stories ↔ tests, tier-ranked. Writes one dated artifact under `docs/blueprint/audits/` |
 | `story-reconcile` | ✓ | Phase 2 of story-audit. Mutates PRDs only (idempotent inline markers + wholesale `## Known Drift` section); confirms each PRD before writing |
@@ -28,6 +28,18 @@ See `manifest.json#task_registry` (each disabled task carries a `context.disable
 | `generate-rules` | ✗ | No subdirectory output path yet — re-enable once configurable ([#1043](https://github.com/laurigates/claude-plugins/issues/1043)) |
 | `claude-md` | ✗ | "Regenerate completely" prompt is too easy to mis-click |
 | `curate-docs` | ✗ | Default off in blueprint init |
+
+## Automation (autonomy level 1)
+
+The manifest carries an `automation` block (format 3.4.0, ADR-0020) pinned at
+**level 1 — ambient bookkeeping**: the SessionStart probe may execute
+*deterministic* due tasks (currently only the `sync-ids` id-registry sweep,
+which registers existing document IDs and never assigns new ones) and surfaces
+due agent-judgment tasks as drift findings. Levels 2–3 (quiet autopilot,
+scheduled pipeline) stay off here — this repo is the plugin's upstream, and the
+constrained-dogfooding rationale in "Why constrained?" applies doubly to
+autonomous agent execution. `enabled: false` tasks never run at any level, and
+`BLUEPRINT_AUTORUN_DISABLE=1` switches the whole rail off locally.
 
 ## Directory structure
 

@@ -66,6 +66,18 @@ failure mode.
 | Taskwarrior sync | `TASK_AVAILABLE=true` AND `OPEN_TASKS` ≥ 1 in the Step 1 digest |
 | Blueprint tracker-sync | `UNDRAINED_COUNT` ≥ 1 in the Step 1 digest's `BLUEPRINT` section. Non-blueprint / tracker-missing repos auto-disqualify (count is 0) → silent skip. If `blueprint-plugin` isn't installed, note it and skip (as with Feedback) |
 
+**Blueprint auto-drain (ADR-0020 level 1):** when the qualifying repo's
+`docs/blueprint/manifest.json` has `automation.autonomy_level` ≥ 1 **and**
+`task_registry["feature-tracker-sync"].auto_run == true`, the Blueprint
+tracker-sync pass is **auto-confirmed**: leave it out of the Step 3 question,
+run it in Step 4 order without asking, and report a one-line receipt in Step 5
+(`Blueprint tracker-sync: drained N WO(s) automatically (auto_run)`). All other
+passes still go through the Step 3 confirmation. Check the gate with:
+
+```sh
+jq -r 'if ((.automation.autonomy_level // 0) >= 1) and (.task_registry["feature-tracker-sync"].auto_run == true) then "auto" else "ask" end' docs/blueprint/manifest.json 2>/dev/null
+```
+
 If **nothing** qualifies, say so in one line and end — no preview, no
 question.
 

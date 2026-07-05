@@ -33,6 +33,7 @@ This repository was created by migrating Claude Code plugin configurations from 
 | [0017](0017-hook-based-behavioral-cues-for-plugin-utilization.md) | Hook-Based Behavioral Cues for Multi-Plugin Utilization | Proposed | 2026-06 |
 | [0018](0018-health-usage-scope-from-session-telemetry.md) | Usage-Telemetry Scope for health-plugin | Proposed | 2026-06 |
 | [0019](0019-skill-dry-via-library-templating-rejected.md) | Reject Shared-Library / @-Imports / Build-Time Templating for Skill DRY | Accepted | 2026-06 |
+| [0020](0020-blueprint-autonomy-levels.md) | Blueprint Autonomy Levels — Ambient Operations via a Manifest-Gated Level Model | Proposed | 2026-07 |
 
 ## Categories
 
@@ -56,6 +57,7 @@ This repository was created by migrating Claude Code plugin configurations from 
 - ADR-0010: Proactive Document Detection
 - ADR-0011: Blueprint State in docs/ Directory
 - ADR-0012: Blog Plugin for Project Documentation
+- ADR-0020: Blueprint Autonomy Levels
 
 ### CI/CD & Infrastructure
 - ADR-0014: Reusable GitHub Workflows in Plugin Repository (Superseded)
