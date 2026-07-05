@@ -15,6 +15,7 @@ All skills are **Darwin-only** — they detect non-macOS systems and refuse to a
 | [macos-disk-usage](skills/macos-disk-usage/skill.md) | Disk-usage forensics and space recovery on APFS — trust `df` `Avail` not `Capacity %`, reclaim OrbStack/Docker, thin `tmutil` snapshots, tiered cache cleanup |
 | [macos-performance-triage](skills/macos-performance-triage/skill.md) | Live CPU/GPU triage on Apple Silicon — `macmon`-first USE-method snapshot, attribute a hot `WindowServer` to the driving app via `powermetrics --show-process-gpu`, flame-graph a process with `samply`; Rust-forward, sudo-free toolkit |
 | [macos-performance-benchmark](skills/macos-performance-benchmark/skill.md) | Repeatable benchmark + diagnostic suite (CPU/thermals, memory/swap, disk, startup) — PASS/WARN/FAIL reports saved under `~/.cache/macos-perf/`; benchmarks self-calibrate to a per-machine baseline (WARN/FAIL on degradation from peak), diagnostics keep `MACOS_PERF_*`-tunable absolute thresholds, `macmon`-first sudo-free power/thermals |
+| [tui-keybinding-debug](skills/tui-keybinding-debug/skill.md) | Debug a dead TUI/terminal keybinding — prove *where* the key dies (`kitty +kitten show_key`, `--debug-keyboard`), then fix terminal interception, layout-impossible chords, or crossterm legacy key aliasing |
 
 ## When to Use
 
@@ -33,6 +34,7 @@ All skills are **Darwin-only** — they detect non-macOS systems and refuse to a
 | Benchmarking NVMe/AES/SHA/memory throughput, or tracking health across runs | `macos-performance-benchmark` |
 | `syspolicyd`/`trustd`/`tccd`/`auditd` are all elevated together — an exec storm | `endpoint-security-cpu` |
 | Auditing whether the machine is "due for a reboot" after weeks of uptime | `macos-incident-postmortem` + `launchservices-health` |
+| A configured key does nothing in a TUI/fzf/shell app and you can't tell if it's the terminal or the app | `tui-keybinding-debug` |
 
 ## Scope
 
