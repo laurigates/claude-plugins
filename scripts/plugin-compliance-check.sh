@@ -387,6 +387,24 @@ check_skill_body() {
       fi
     fi
 
+    # Regression: session-end's blueprint tracker-sync pass delegates the WO
+    # drain to blueprint-plugin:blueprint-feature-tracker-sync (--drain-wave)
+    # and qualifies on the survey digest's UNDRAINED_COUNT. A bulk edit that
+    # drops either token silently severs the session-end ⇄ blueprint wiring:
+    # the feature tracker then drifts (closed WO-linked tasks never drained)
+    # until someone remembers to run the sync by hand — the exact gap the
+    # pass was added to close. The semantic invariant is that the delegation
+    # contract (--drain-wave) and the qualify condition (UNDRAINED_COUNT)
+    # both survive in the skill body.
+    if [ "$skill_name" = "session-end" ]; then
+      for token in "--drain-wave" "UNDRAINED_COUNT"; do
+        if ! grep -q -- "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain '${token}' (blueprint tracker-sync pass: drain delegation / qualify signal)")
+          has_errors=true
+        fi
+      done
+    fi
+
     # Regression: blueprint-adr-validate must retain the ADR-number collision
     # guard (issue #1585). ADR numbers are claimed at merge time, so two
     # parallel ADR PRs can pick the same number and both land (the FVH #2015

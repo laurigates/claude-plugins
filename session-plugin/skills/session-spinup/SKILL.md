@@ -3,7 +3,7 @@ name: session-spinup
 description: Read-only session-start briefing of open tasks, git state, journal todos. Use when user says spin up, what was I doing, or pick up where I left off.
 allowed-tools: Bash(bash *), Read, TodoWrite
 created: 2026-05-13
-modified: 2026-06-24
+modified: 2026-07-05
 reviewed: 2026-06-24
 ---
 
@@ -47,7 +47,10 @@ would otherwise miss — 3-6 item target, 10+ means trim.
 `+ACTIVE` task (work was mid-flight) · unchecked journal todo ·
 real uncommitted edits · unpushed commits · task whose annotation reads
 "blocked on X" where X may now be unblocked · GitHub drift issue (the
-`GITHUB_DRIFT` section — assigned, open, untracked locally).
+`GITHUB_DRIFT` section — assigned, open, untracked locally) · blueprint
+tracker state when a tracker exists (ready/blocked counts, in-flight WOs)
+· undrained closed WOs (`UNDRAINED_COUNT` ≥ 1 — the tracker lags reality;
+a wind-down `/session-end` reconciles).
 
 **DO NOT SURFACE**: completed tasks · merged PRs · closed issues ·
 issues already represented by a surfaced task (the collector already
@@ -55,7 +58,8 @@ dedups these out of `GITHUB_DRIFT`) · recurring-reminder / dataview
 machinery · weeks-stale tasks with no recent annotation (that's
 `task-status`'s job) · `+ACTIVE` tasks from a *different* project
 (the `STALE_ACTIVE_ELSEWHERE` section — at most one footnote line, never
-a scope hijack).
+a scope hijack) · the `BLUEPRINT` section when `MANIFEST=false` or
+`TRACKER=false`.
 
 ## Context
 
@@ -73,7 +77,7 @@ Then run the shared collector — it does detection, survey, dedup, and
 staleness in one pass and emits a structured digest:
 
 ```sh
-bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-dedup
+bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-dedup --with-blueprint
 ```
 
 Add `--project <name>` when the config naming map maps the cwd to a
@@ -82,7 +86,7 @@ scope, add `--with-journal --journal-path <dir>` (plus
 `--journal-todo-heading` / `--journal-todo-stop` if the config overrides
 the defaults). The digest sections: `PROJECT`, `GIT`, `PRS`,
 `TASKWARRIOR` (each task with its stable UUID + `STALE_DAYS`),
-`GITHUB_DRIFT`, `JOURNAL`, `STALE_ACTIVE_ELSEWHERE`.
+`GITHUB_DRIFT`, `JOURNAL`, `BLUEPRINT`, `STALE_ACTIVE_ELSEWHERE`.
 
 ### Step 2: Apply the signal filter
 
@@ -98,7 +102,10 @@ Compact briefing, one section per source, reflecting **only** the cwd
 project. Say "git state: clean" / "nothing pending under `project:<name>`"
 explicitly rather than omitting sections. A `STALE_ACTIVE_ELSEWHERE`
 entry gets a single footnote line at the very end, never its own scope.
-Example briefing: [REFERENCE.md](REFERENCE.md).
+When the repo has a feature tracker, add one blueprint line —
+`blueprint: 14 ready · 2 blocked · in flight: WO-031 · undrained: WO-045`
+— omitting empty fragments; omit the line entirely when the tracker is
+absent. Example briefing: [REFERENCE.md](REFERENCE.md).
 
 ### Step 4: Offer next moves
 
@@ -118,7 +125,7 @@ skill. Pre-silence:
 
 | Context | Command |
 |---|---|
-| Full digest (detection + survey + dedup + staleness) | `bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-dedup` |
+| Full digest (detection + survey + dedup + staleness + blueprint tracker state) | `bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-dedup --with-blueprint` |
 | With journal todos | add `--with-journal --journal-path <dir>` |
 | Override detected project | add `--project <name>` |
 | Coarse counts only (hook shape) | add `--summary` |
