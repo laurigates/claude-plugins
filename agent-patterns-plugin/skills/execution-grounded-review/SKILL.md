@@ -6,8 +6,8 @@ argument-hint: "diff|PR|files to verify; optional --criteria <file> of acceptanc
 allowed-tools: Agent, Read, Glob, Grep, Bash(git diff *), Bash(git log *), Bash(gh pr view *), Bash(npm *), Bash(npx *), Bash(uv run *), Bash(pytest *), Bash(cargo *), Bash(go test *), TodoWrite
 model: opus
 created: 2026-06-22
-modified: 2026-06-22
-reviewed: 2026-06-22
+modified: 2026-07-05
+reviewed: 2026-07-05
 ---
 
 # Execution-Grounded Review
@@ -41,6 +41,7 @@ verifier a judgement-based loop gate delegates to (`.claude/rules/loop-integrity
 | **Execute first** | Run the full suite + typecheck + lint *before* any verdict. A criterion is `PASS` only with execution evidence — never "the code looks like it does this". |
 | **Trace each criterion** | One ledger row per acceptance criterion: premise → evidence (file:line / test name / observed output) → verdict. |
 | **No silent pass** | A criterion with no execution backing is `UNVERIFIED` (a coverage gap to surface), not an assumed pass. |
+| **Match the production sequence** | For a round-trip / determinism / reproducibility / idempotence claim, a passing test is evidence only if its *operation sequence* reproduces the real production call path — not a convenient shorter one (see Step 3a). |
 | **Intent-starved verifier** | The isolated verifier reads the criteria, the diff, and the captured execution evidence — *not* the author's plan narrative or rationale, which would let it rationalise a pass. |
 | **Bounded loop** | One revise round on `fail`; a third means a structural problem the gate can't resolve. |
 
@@ -131,6 +132,32 @@ concurrent-subagent rate-limit caveat applies (`skill-fork-context.md`); run
 those sequentially. Do **not** set `context: fork` — the caller needs the ledger
 in the main context to act on it.
 
+### Step 3a: Match the test's operation sequence to production
+
+"A passing test exists for this claim" is **not** sufficient evidence for a
+round-trip, determinism, reproducibility, or idempotence claim. The test can
+pass while the design is broken, because a narrower hand-built repro silently
+avoids the exact *ordering* that would expose a divergence. The tell is when the
+test's sequence of operations differs from the real call path production uses.
+
+So for any such claim, add a step to the verifier's brief:
+
+> Identify what real call sequence exercises this claim in production, and
+> confirm the test under review reproduces that sequence — not just a convenient
+> shorter one.
+
+**Stateful / RNG-dependent code is the high-risk class** — lazy initialization,
+global mutable RNG state, and caching all defer or share observable state, so
+*when* an operation runs relative to its neighbours changes the result. A test
+of the shape `construct → forward immediately` and a production path of
+`construct → generate batches (consuming lazy RNG) → first forward` draw their
+deferred state at the *same relative point in each stream*, so the round-trip
+"works" with no error — while a real trained model's reload diverges. The
+passing test is real; it just exercises the one ordering that can't see the bug.
+
+Grade such a claim `UNVERIFIED` until the test reproduces the production
+sequence, even though a green test exists.
+
 ### Step 4: Triage against over-correction
 
 The verifier grades strictly, so guard **both** failure modes before acting —
@@ -142,6 +169,7 @@ neither talk yourself into passing broken code, nor into failing correct code:
 | An `UNVERIFIED` criterion → write/run the missing test, then re-grade | An `UNVERIFIED` on behaviour outside the change's responsibility |
 | A `PARTIAL` where a *stated* edge case is unhandled | Style/preference dressed up as a criterion failure |
 | A coverage gap on a load-bearing criterion | A hypothetical input the contract makes impossible |
+| A round-trip/determinism test whose sequence diverges from production (Step 3a) | A sequence difference that provably can't affect the claim's outcome |
 
 ### Step 5: Report and bound the loop
 
@@ -158,6 +186,7 @@ human, not to keep grinding.
 |---|---|
 | Grading the diff without running anything | Execute first (Step 1) — appearance is not evidence |
 | Passing a criterion because the code "looks like it does that" | No execution evidence → `UNVERIFIED`, not pass |
+| Passing a round-trip/determinism claim because "a test exists and passes" | Confirm the test's operation sequence matches the production call path (Step 3a) |
 | Feeding the verifier the author's plan/rationale | Intent-starved inputs — criteria + diff + execution evidence only |
 | Inventing requirements the spec never stated | Triage (Step 4) — FAIL only on listed criteria |
 | Looping until the verifier goes quiet | One revise round; persistent fail = structural problem |

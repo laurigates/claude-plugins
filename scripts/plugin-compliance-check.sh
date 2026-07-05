@@ -639,6 +639,22 @@ check_skill_body() {
           has_errors=true
         fi
       done
+      # Regression (#1968): a reviewer briefed to "trace claims to execution
+      # evidence" returned zero findings on an adapter save/load round-trip
+      # because it treated "a passing test exists" as sufficient — the test's
+      # operation SEQUENCE (construct → forward immediately) diverged from the
+      # production call path (construct → generate batches [lazy RNG] → first
+      # forward), so the narrower repro silently avoided the ordering that
+      # would expose the divergence. Step 3a teaches: for a round-trip /
+      # determinism / reproducibility claim, confirm the test reproduces the
+      # real production call sequence, not a convenient shorter one. Assert the
+      # section heading and the concrete verifier prompt survive bulk edits.
+      for token in 'Match the test'\''s operation sequence to production' 'not just a convenient'; do
+        if ! grep -qF "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain operation-sequence-divergence guidance token '${token}' (Step 3a — see issue #1968)")
+          has_errors=true
+        fi
+      done
     fi
 
     # Regression: code-review is the canary for restoring `context: fork` after
