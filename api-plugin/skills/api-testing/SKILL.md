@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-07-05
 reviewed: 2026-04-25
 name: api-testing
 description: HTTP API testing with Supertest (TS) and httpx/pytest (Python). Use when the user mentions API testing, Supertest, httpx, REST/GraphQL validation, or HTTP response errors.
@@ -14,7 +14,7 @@ Expert knowledge for testing HTTP APIs with Supertest (TypeScript/JavaScript) an
 
 ## When to Use This Skill
 
-| Use this skill when... | Use api-tests instead when... |
+| Use this skill when... | Use `configure-plugin:configure-api-tests` instead when... |
 |---|---|
 | Writing Supertest endpoint tests against an Express/Fastify app | Setting up Pact consumer/provider contract testing infrastructure |
 | Writing httpx + pytest tests for a Python REST/GraphQL API | Validating an OpenAPI specification or wiring schema (Zod/AJV) checks into CI |
