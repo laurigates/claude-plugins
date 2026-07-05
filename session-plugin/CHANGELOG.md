@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.5.2...session-plugin-v1.6.0) (2026-07-05)
+
+
+### Features
+
+* **session-plugin:** surface blueprint tracker state in survey and offer drain pass at session-end ([#1998](https://github.com/laurigates/claude-plugins/issues/1998)) ([9a4b7a9](https://github.com/laurigates/claude-plugins/commit/9a4b7a9fa413d4c5442c108786750e08f54fa4b1))
+
 ## [1.5.2](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.5.1...session-plugin-v1.5.2) (2026-07-04)
 
 

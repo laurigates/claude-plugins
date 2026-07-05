@@ -98,7 +98,7 @@
       "name": "blueprint-plugin",
       "source": "./blueprint-plugin",
       "description": "Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, CLAUDE.md management, and monorepo portfolio tracking",
-      "version": "3.39.0",
+      "version": "3.39.1",
       "keywords": [
         "blueprint",
         "prd",
@@ -589,7 +589,7 @@
       "name": "session-plugin",
       "source": "./session-plugin",
       "description": "Session bookends - spinup briefing, wrap-up capture, end-of-session orchestration, and knowledge distillation",
-      "version": "1.5.2",
+      "version": "1.6.0",
       "keywords": [
         "session",
         "spinup",
