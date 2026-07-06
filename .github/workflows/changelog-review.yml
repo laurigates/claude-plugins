@@ -1,3 +1,12 @@
+# Thin caller for the org reusable workflow. See
+# laurigates/.github/.github/workflows/reusable-changelog-review.yml for the
+# two-job triage pipeline (bash pre-check gate -> opus triage). The
+# repo-specific analyzer (keyword->rules mapping + deprecation->plugin-code
+# bridge) stays in this repo, next to its tests, and is passed via
+# analyzer-script; model/effort (opus/medium, per
+# .claude/rules/workflow-model-effort.md) are the reusable workflow's input
+# defaults and are pinned there.
+
 name: "Claude: Changelog review"
 
 on:
@@ -9,7 +18,7 @@ on:
       force_full_review:
         description: 'Force triage even if a tracking issue for the current range already exists'
         required: false
-        default: 'false'
+        default: false
         type: boolean
 
 permissions:
@@ -19,427 +28,27 @@ permissions:
   id-token: write
 
 jobs:
-  check-changelog:
-    runs-on: ubuntu-latest
-    outputs:
-      has_updates: ${{ steps.compare.outputs.has_updates }}
-      latest_version: ${{ steps.compare.outputs.latest_version }}
-      previous_version: ${{ steps.read_tracked.outputs.tracked_version }}
-      changes_summary: ${{ steps.analyze.outputs.summary }}
-      candidate_rules: ${{ steps.analyze.outputs.candidates }}
-      deprecated_tokens: ${{ steps.analyze.outputs.deprecated_tokens }}
-      analysis_status: ${{ steps.analyze.outputs.analysis_status }}
-      existing_issue: ${{ steps.existing.outputs.issue_number }}
-      should_skip: ${{ steps.existing.outputs.should_skip }}
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
-
-      - name: Fetch Claude Code changelog
-        id: fetch
-        run: |
-          curl -s https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md > /tmp/changelog.md
-          echo "Fetched changelog"
-
-      - name: Extract latest version
-        id: extract
-        run: |
-          # Extract first version number from changelog
-          # Handles both "## 2.1.50" and "## [2.1.50]" formats
-          # `|| true` so an unexpectedly version-less changelog reaches the
-          # explicit error guard below instead of dying opaquely on pipefail
-          # (GitHub Actions runs steps with `bash -eo pipefail` by default).
-          LATEST=$(grep -oP '## \[?\K[0-9]+\.[0-9]+\.[0-9]+' /tmp/changelog.md | head -1 || true)
-          if [ -z "$LATEST" ]; then
-            echo "::error::Failed to extract version from changelog"
-            exit 1
-          fi
-          echo "latest_version=$LATEST" >> "$GITHUB_OUTPUT"
-          echo "Latest Claude Code version: $LATEST"
-
-      - name: Read last checked version
-        id: read_tracked
-        run: |
-          if [ -f .claude-code-version-check.json ]; then
-            TRACKED=$(jq -r '.lastCheckedVersion' .claude-code-version-check.json)
-          else
-            TRACKED="0.0.0"
-          fi
-          echo "tracked_version=$TRACKED" >> "$GITHUB_OUTPUT"
-          echo "Last checked version: $TRACKED"
-
-      - name: Compare versions
-        id: compare
-        run: |
-          LATEST="${{ steps.extract.outputs.latest_version }}"
-          TRACKED="${{ steps.read_tracked.outputs.tracked_version }}"
-          FORCE="${{ inputs.force_full_review }}"
-
-          if [ "$FORCE" = "true" ]; then
-            echo "Forced full triage requested"
-            echo "has_updates=true" >> "$GITHUB_OUTPUT"
-            echo "latest_version=$LATEST" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          # Compare semantic versions
-          version_gt() {
-            test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$1"
-          }
-
-          if version_gt "$LATEST" "$TRACKED"; then
-            echo "New version detected: $TRACKED -> $LATEST"
-            echo "has_updates=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "No new versions since $TRACKED"
-            echo "has_updates=false" >> "$GITHUB_OUTPUT"
-          fi
-          echo "latest_version=$LATEST" >> "$GITHUB_OUTPUT"
-
-      # Skip-if-exists check: if a changelog-review issue already covers
-      # this range, don't re-triage. This makes the workflow idempotent and
-      # prevents the "next run on top of an open backlog" failure mode.
-      - name: Check for existing tracking issue
-        id: existing
-        if: steps.compare.outputs.has_updates == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
-          FORCE: ${{ inputs.force_full_review }}
-          TRACKED: ${{ steps.read_tracked.outputs.tracked_version }}
-          LATEST: ${{ steps.extract.outputs.latest_version }}
-        run: |
-          set -euo pipefail
-
-          if [ "$FORCE" = "true" ]; then
-            echo "Force flag set — bypassing skip-if-exists"
-            echo "should_skip=false" >> "$GITHUB_OUTPUT"
-            echo "issue_number=" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          # Skip only when an OPEN changelog-review issue already covers up to
-          # LATEST (its title's upper-bound version is >= LATEST). When LATEST
-          # has advanced *beyond* every open issue's range, re-triage — an
-          # open-but-unactioned issue must NOT suppress newer versions forever
-          # (the #1541 backlog trap that froze tracking at 2.1.138). --json +
-          # jq keeps the empty case exit-0 (parallel-safe-queries.md).
-          ROWS=$(gh issue list \
-            --repo "$GITHUB_REPOSITORY" \
-            --label changelog-review \
-            --state open \
-            --json number,title \
-            --jq '.[] | "\(.number)\t\(.title)"')
-
-          should_skip=false
-          issue_number=
-          covering=
-          while IFS=$'\t' read -r num title; do
-            [ -z "$num" ] && continue
-            # The version after the arrow is the range's upper bound; fall back
-            # to the last version token in the title.
-            # `|| true`: a version-less issue title makes grep match nothing,
-            # which under `set -euo pipefail` would fail this bare assignment
-            # BEFORE the line below can skip it (the #1638 freeze cause). The
-            # guard then handles the empty case.
-            upper=$(printf '%s' "$title" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | tail -1 || true)
-            [ -z "$upper" ] && continue
-            # Covered iff LATEST is not newer than this issue's upper bound.
-            highest=$(printf '%s\n%s\n' "$LATEST" "$upper" | sort -V | tail -1)
-            if [ "$highest" = "$upper" ]; then
-              should_skip=true
-              issue_number="$num"
-              covering="$upper"
-              break
-            fi
-          done <<< "$ROWS"
-
-          if [ "$should_skip" = "true" ]; then
-            echo "Open tracking issue #$issue_number covers up to $covering (>= $LATEST) — skipping triage"
-          elif [ -n "$ROWS" ]; then
-            echo "::warning::Open changelog-review issue(s) exist but none covers up to $LATEST — re-triaging the new range (avoids the unactioned-backlog trap, #1638)"
-          else
-            echo "No open tracking issue for $TRACKED → $LATEST — triage will run"
-          fi
-          echo "should_skip=$should_skip" >> "$GITHUB_OUTPUT"
-          echo "issue_number=$issue_number" >> "$GITHUB_OUTPUT"
-
-      - name: Slice changelog and identify candidate rules files
-        id: analyze
-        if: steps.compare.outputs.has_updates == 'true' && steps.existing.outputs.should_skip != 'true'
-        run: |
-          set -euo pipefail
-          TRACKED="${{ steps.read_tracked.outputs.tracked_version }}"
-          LATEST="${{ steps.extract.outputs.latest_version }}"
-
-          # Slice the changelog down to just the new versions. Keyword counts
-          # below run on the slice only — counting against the full file
-          # (hundreds of versions of history) inflates every number and made
-          # the summary useless as a prompt signal.
-          awk -v tracked="$TRACKED" '
-            /^## \[?[0-9]+\.[0-9]+\.[0-9]+/ {
-              if (match($0, /[0-9]+\.[0-9]+\.[0-9]+/)) {
-                v = substr($0, RSTART, RLENGTH)
-                if (v == tracked) exit
-              }
-            }
-            { print }
-          ' /tmp/changelog.md > /tmp/excerpt.md
-
-          if [ ! -s /tmp/excerpt.md ]; then
-            echo "::error::Excerpt is empty — tracked version $TRACKED not found in changelog"
-            exit 1
-          fi
-
-          # Cap the excerpt to keep the Claude phase bounded even when the
-          # gap is huge. A 200KB excerpt gives plenty of room for a year's
-          # worth of versions without overwhelming the prompt cache.
-          EXCERPT_BYTES=$(wc -c < /tmp/excerpt.md)
-          if [ "$EXCERPT_BYTES" -gt 204800 ]; then
-            echo "::warning::Excerpt is $EXCERPT_BYTES bytes — truncating to 200KB for triage"
-            head -c 204800 /tmp/excerpt.md > /tmp/excerpt-trimmed.md
-            mv /tmp/excerpt-trimmed.md /tmp/excerpt.md
-          fi
-
-          echo "Excerpt: $(wc -l < /tmp/excerpt.md) lines, $(wc -c < /tmp/excerpt.md) bytes ($TRACKED → $LATEST)"
-
-          # Delegate keyword counting, the deprecation dimension, and the
-          # deprecation→plugin-code candidate bridge to the extracted,
-          # unit-tested analyzer (issue #1638). Emits =/KEY=VALUE/STATUS= per
-          # .claude/rules/structured-script-output.md.
-          ANALYSIS=$(bash project-plugin/skills/changelog-review/scripts/analyze-changelog.sh \
-            --excerpt /tmp/excerpt.md --repo-dir "$PWD" --tracked "$TRACKED" --latest "$LATEST")
-          echo "$ANALYSIS"
-
-          # `|| true` on each: a field the analyzer doesn't emit makes grep
-          # match nothing, which would fail the bare assignment under
-          # `set -euo pipefail`. Empty values degrade gracefully downstream.
-          SUMMARY=$(echo "$ANALYSIS" | grep -E '^SUMMARY=' | head -1 | cut -d= -f2- || true)
-          ANALYSIS_STATUS=$(echo "$ANALYSIS" | grep -E '^STATUS=' | head -1 | cut -d= -f2- || true)
-          DEPRECATED_TOKENS=$(echo "$ANALYSIS" | grep -E '^DEPRECATED_TOKENS=' | head -1 | cut -d= -f2- || true)
-          # Candidate files: the indented lines between CANDIDATES: and the footer.
-          CANDIDATE_LIST=$(echo "$ANALYSIS" | awk '
-            /^CANDIDATES:/ { f = 1; next }
-            /^=== END/     { f = 0 }
-            f { gsub(/^[[:space:]]+/, ""); if (length) print }')
-          [ -z "$CANDIDATE_LIST" ] && CANDIDATE_LIST="(none — keyword counts are zero; only the tracking JSON likely needs an update)"
-
-          {
-            echo "summary=$SUMMARY"
-            echo "analysis_status=$ANALYSIS_STATUS"
-            echo "deprecated_tokens=$DEPRECATED_TOKENS"
-            echo "candidates<<__CHANGELOG_REVIEW_EOF__"
-            echo "$CANDIDATE_LIST"
-            echo "__CHANGELOG_REVIEW_EOF__"
-          } >> "$GITHUB_OUTPUT"
-
-          echo "Candidate files:"
-          echo "$CANDIDATE_LIST"
-
-      - name: Upload excerpt for triage job
-        if: steps.compare.outputs.has_updates == 'true' && steps.existing.outputs.should_skip != 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: changelog-excerpt
-          path: /tmp/excerpt.md
-          retention-days: 7
-
-      - name: Report skip
-        if: steps.existing.outputs.should_skip == 'true'
-        env:
-          ISSUE_NUMBER: ${{ steps.existing.outputs.issue_number }}
-        run: |
-          echo "::notice::Skipped triage — issue #$ISSUE_NUMBER already covers ${{ steps.read_tracked.outputs.tracked_version }} → ${{ steps.extract.outputs.latest_version }}"
-          echo "Re-run with workflow_dispatch + force_full_review=true to override."
-
-  claude-triage:
-    needs: check-changelog
-    if: needs.check-changelog.outputs.has_updates == 'true' && needs.check-changelog.outputs.should_skip != 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
-          fetch-depth: 0
-
-      - name: Download pre-sliced changelog excerpt
-        uses: actions/download-artifact@v4
-        with:
-          name: changelog-excerpt
-          path: .
-
-      - name: Triage changelog into a tracking issue
-        uses: anthropics/claude-code-action@v1
-        with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          # Triage is intentionally small-scope work — no rule edits, no
-          # multi-PR juggling. 25 turns is enough headroom for: read inputs,
-          # categorize changes, open one issue, ratchet the JSON, open one
-          # PR. If it can't finish in 25 turns, the prompt is wrong and we
-          # want to fail fast rather than burn $60 on a misdiagnosis loop.
-          claude_args: "--model opus --effort medium --max-turns 25"
-          prompt: |
-            You are TRIAGING Claude Code changelog changes from ${{ needs.check-changelog.outputs.previous_version }} to ${{ needs.check-changelog.outputs.latest_version }}.
-
-            **Triage means: open a tracking issue, ratchet the JSON state file, and open one tiny PR for the JSON change. DO NOT edit rule files. DO NOT open multiple PRs. Rule edits happen in follow-up work driven by the tracking issue.**
-
-            ## Pre-computed inputs (use these — do not re-fetch)
-
-            - **Changelog excerpt**: `excerpt.md` in the repo root contains *only* the new versions, already sliced for you. Read it once with `Read`. Do **not** WebFetch the full changelog.
-            - **Keyword counts on the excerpt**: ${{ needs.check-changelog.outputs.changes_summary }}
-            - **Candidate files** (rules AND plugin code likely to need follow-up edits — keyword hits plus any skill/hook/agent that references a deprecated identifier):
-
-              ```
-              ${{ needs.check-changelog.outputs.candidate_rules }}
-              ```
-
-            - **Deprecated identifiers referenced in this repo's plugin code**: `${{ needs.check-changelog.outputs.deprecated_tokens }}`
-              (empty = none). When non-empty, these are upstream tools/settings that were deprecated/removed/renamed AND are still named in our skills, hooks, or agents — treat each as a **High-impact** item and call out the referencing file(s) from the candidate list. This is the miss class from #1638 (TaskOutput stayed referenced in bash-antipatterns.sh).
-
-            ## Efficiency rules
-
-            - Use `TodoWrite` once at the start to plan, then minimal narration.
-            - Read `excerpt.md` once. Read `.claude-code-version-check.json` once. **Do not read rule files** — that's apply-phase work.
-            - Never use `WebFetch` for the changelog or for live docs — the excerpt is the authoritative input.
-            - If you misdiagnose your own work (e.g. think a branch is empty), STOP and re-check with `git diff` / `git log` before destructive recovery. The previous run wasted ~75 minutes self-correcting a false alarm.
-
-            ## Step 1: Read inputs in parallel
-
-            In one message, dispatch parallel `Read` calls for:
-            - `excerpt.md` (the changelog excerpt)
-            - `.claude-code-version-check.json` (current tracking state)
-
-            ## Step 2: Categorize changes
-
-            For each version in the excerpt, classify impact on this plugin collection:
-
-            - **High** — breaking changes, new hook events, permission model changes, skill/agent system changes, **deprecations/removals/renames of any tool, setting, command, or env var** (especially when the deprecated-identifiers list above is non-empty)
-            - **Medium** — new features worth documenting in rules, behavior changes affecting existing skills
-            - **Low** — bug fixes, perf, UI
-
-            Focus areas: hook system, skill/command system, agent/subagent system, permission model, MCP, plugin manifest/marketplace, sandbox, **and deprecations/removals** of tools/settings/commands we reference.
-
-            ## Step 3: Open a tracking issue
-
-            Open ONE issue summarizing the High and Medium changes. Group them by candidate rule file so follow-up apply work is clean.
-
-            ```bash
-            gh issue create \
-              --title "Review Claude Code changelog: ${{ needs.check-changelog.outputs.previous_version }} → ${{ needs.check-changelog.outputs.latest_version }}" \
-              --label "changelog-review,maintenance" \
-              --assignee laurigates \
-              --body "$(cat <<'EOF'
-            Triage of Claude Code changelog ${{ needs.check-changelog.outputs.previous_version }} → ${{ needs.check-changelog.outputs.latest_version }}.
-
-            **Keyword counts on excerpt:** ${{ needs.check-changelog.outputs.changes_summary }}
-            **Deprecated identifiers still referenced in plugin code:** ${{ needs.check-changelog.outputs.deprecated_tokens }}
-            **Upstream changelog:** https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md
-
-            ## Deprecations referenced in our plugin code (highest priority)
-
-            For each deprecated identifier listed above, cite the upstream version, the replacement, and the referencing file(s) from the candidate list. Leave this section out only when the list is empty. (Catching this class is why #1638 exists.)
-
-            - (e.g. `TaskOutput` deprecated in 2.1.83 → use `Read`; referenced in `hooks-plugin/hooks/bash-antipatterns.sh`)
-
-            ## Follow-up tasks
-
-            For each rule file below, the listed bullets are the relevant changes from the excerpt. To address: `@claude please update <file> for the bullets listed in this issue`.
-
-            ### .claude/rules/hooks-reference.md
-            - (list bullets here, citing version numbers)
-
-            ### .claude/rules/skill-development.md
-            - (...)
-
-            ### .claude/rules/agent-development.md
-            - (...)
-
-            ### .claude/rules/agentic-permissions.md
-            - (...)
-
-            ### .claude/rules/plugin-structure.md
-            - (...)
-
-            ### .claude/rules/sandbox-guidance.md
-            - (...)
-
-            (Omit sections with no relevant changes. Drop versions that are pure bug fixes / UI / perf.)
-
-            🤖 Triaged with [Claude Code](https://claude.com/claude-code)
-            EOF
-            )"
-            ```
-
-            Skip rule-file sections that have no relevant changes — empty sections are noise.
-
-            ## Step 4: Ratchet `.claude-code-version-check.json`
-
-            Edit in place:
-            - `lastCheckedVersion` = `${{ needs.check-changelog.outputs.latest_version }}`
-            - `lastCheckedDate` = today (YYYY-MM-DD)
-            - Prepend a new entry to `reviewedChanges` with `version`, `date`, `relevantChanges` (array of headline bullets), `actionsRequired` (array referencing the issue number from Step 3 — e.g. `"See issue #N for rule update plan"`)
-
-            ## Step 5: Branch, commit, push, JSON-only PR
-
-            ```bash
-            BR="chore/changelog-triage-${{ needs.check-changelog.outputs.latest_version }}"
-            git switch -c "$BR"
-            git add .claude-code-version-check.json
-            git status --short      # confirm only the JSON is staged
-            git commit -m "chore(project-plugin): ratchet changelog tracking to ${{ needs.check-changelog.outputs.latest_version }}"
-            git push -u origin "$BR"
-            gh pr create \
-              --title "chore(project-plugin): ratchet changelog tracking to ${{ needs.check-changelog.outputs.latest_version }}" \
-              --label "changelog-review,maintenance" \
-              --assignee laurigates \
-              --body "Ratchets \`.claude-code-version-check.json\` to ${{ needs.check-changelog.outputs.latest_version }}. Rule edits are tracked in the linked triage issue.
-
-            Refs the triage issue opened in Step 3."
-            ```
-
-            ## Step 6: Final sanity check
-
-            Before finishing, run `git log -1 --stat` and confirm:
-            - Exactly one commit on the branch
-            - Exactly one file changed (`.claude-code-version-check.json`)
-            - No rule-file edits
-
-            If anything looks wrong, **fix it before finishing the turn**. Do not try to "recover" by closing and re-opening PRs.
-
-            ## Conventions
-
-            - Read `.claude/rules/conventional-commits.md` only if you need to deviate from the commit format above.
-            - Create new commits — never amend.
-          additional_permissions: |
-            Read
-            Write
-            Edit
-            Grep
-            Glob
-            TodoWrite
-            Bash(git status *)
-            Bash(git diff *)
-            Bash(git log *)
-            Bash(git show *)
-            Bash(git add *)
-            Bash(git commit *)
-            Bash(git push *)
-            Bash(git switch *)
-            Bash(git branch *)
-            Bash(gh pr *)
-            Bash(gh issue *)
-            Bash(gh api *)
-            Bash(gh label *)
-            Bash(jq *)
-            Bash(cat *)
-            Bash(grep *)
-            Bash(wc *)
-            Bash(awk *)
-            Bash(date *)
-          plugin_marketplaces: |
-            https://github.com/laurigates/claude-plugins.git
-          plugins: |
-            project-plugin@laurigates-claude-plugins
-            hooks-plugin@laurigates-claude-plugins
-            agent-patterns-plugin@laurigates-claude-plugins
-            configure-plugin@laurigates-claude-plugins
+  changelog-review:
+    uses: laurigates/.github/.github/workflows/reusable-changelog-review.yml@main
+    with:
+      # inputs context is absent on schedule runs; coerce to false
+      force-full-review: ${{ inputs.force_full_review || false }}
+      analyzer-script: project-plugin/skills/changelog-review/scripts/analyze-changelog.sh
+      commit-type-scope: chore(project-plugin)
+      rule-file-sections: |
+        .claude/rules/hooks-reference.md
+        .claude/rules/skill-development.md
+        .claude/rules/agent-development.md
+        .claude/rules/agentic-permissions.md
+        .claude/rules/plugin-structure.md
+        .claude/rules/sandbox-guidance.md
+      plugin-marketplaces: |
+        https://github.com/laurigates/claude-plugins.git
+      plugins: |
+        project-plugin@laurigates-claude-plugins
+        hooks-plugin@laurigates-claude-plugins
+        agent-patterns-plugin@laurigates-claude-plugins
+        configure-plugin@laurigates-claude-plugins
+    secrets:
+      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+      RELEASE_PLEASE_TOKEN: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}

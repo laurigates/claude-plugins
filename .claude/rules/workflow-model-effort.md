@@ -68,7 +68,7 @@ migrating; effort is the depth/cost lever.
 | `release-pr-doc-audit.yml` | `opus` / `low` | Mechanical compliance; turns are for file reads |
 | `skill-splitter.yml` | `opus` / `low` | Mechanical content split |
 | `research-radar.yml` | `opus` / `medium` | Judging paper relevance is real reasoning |
-| `changelog-review.yml` | `opus` / `medium` | Severity triage (the #1638 deprecation-miss class) |
+| `changelog-review.yml` | — | **Out of scope**: invocation lives in the external `laurigates/.github` reusable workflow (`reusable-changelog-review.yml`), pinned there to opus/medium via input defaults (severity triage, the #1638 deprecation-miss class); the guard skips the thin caller (classification, not allowlist) |
 | `obsidian-cli-changelog.yml` | `opus` / `medium` | Structured doc-to-skill transformation |
 | `github-workflow-auto-fix.yml` | `opus` / `medium` | Diagnose + fix CI failures |
 | `auto-resolve-conflicts.yml` (CLI) | `opus` / `medium` | Merge must understand both intents |
