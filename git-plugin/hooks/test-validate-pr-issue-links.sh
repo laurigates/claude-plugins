@@ -24,6 +24,15 @@ git -C "$TMPDIR" commit --allow-empty -m "feat: add feature
 
 Closes #42" -q
 
+# A second branch off main whose OWN commits reference NO issue. Used to prove
+# the hook scans the --head branch's range, not the current checkout's HEAD.
+git -C "$TMPDIR" checkout -b clean-branch main -q
+git -C "$TMPDIR" commit --allow-empty -m "chore: unrelated work with no issue ref" -q
+
+# Leave the checkout on `feature` (HEAD carries the Closes #42 commit) so the
+# HEAD-vs-named-ref divergence the fix targets is exercised.
+git -C "$TMPDIR" checkout feature -q
+
 # Point origin/HEAD at main so merge-base works
 git -C "$TMPDIR" remote add origin "$TMPDIR" 2>/dev/null || true
 git -C "$TMPDIR" symbolic-ref refs/remotes/origin/HEAD refs/heads/main
@@ -189,6 +198,41 @@ trap "rm -rf '$TMPDIR' '$BODYFILE' '$BODYFILE_NOKEY'" EXIT
 assert_exit \
     "-F <file> whose readable content lacks closing keywords is blocked" 2 \
     "$(make_json "gh pr create --title 'feat: add feature' -F $BODYFILE_NOKEY")"
+
+# ── --head branch range resolution (regression: issue #1993) ────────────────
+# The hook hardcoded HEAD when scanning commits for issue keywords, so when the
+# checkout was on a different branch than the PR's --head branch it scanned an
+# unrelated range and attributed those commits' keywords to the PR being
+# created — a false-positive block. The fix resolves --head/-H before scanning.
+# Same HEAD-vs-named-ref bug class as check-pr-metadata-on-push.sh (#1419).
+echo ""
+echo "--head branch range resolution (issue #1993):"
+
+# The bug's failing scenario, now passing: checkout is on `feature` (HEAD carries
+# Closes #42), but the PR is for `clean-branch`, whose own commits reference no
+# issue and whose body has no closing keyword. Must NOT block — before the fix
+# the hook scanned feature's HEAD range and blocked on the unrelated Closes #42.
+assert_exit \
+    "--head <clean-branch> with no own issue refs is allowed (was false-blocked)" 0 \
+    "$(make_json "gh pr create --head clean-branch --base main --title 'chore: cleanup' --body 'Just a summary'")"
+
+assert_exit \
+    "-H <clean-branch> (short alias) with no own issue refs is allowed" 0 \
+    "$(make_json "gh pr create -H clean-branch --base main --title 'chore: cleanup' --body 'Just a summary'")"
+
+# Counter-test (the real guard still fires): a branch whose OWN commits reference
+# an issue, created via --head <that-branch>, with a body lacking closing
+# keywords → still blocks. Proves the fix scans the named branch, not that it
+# disabled the check.
+assert_exit \
+    "--head <feature> whose own commits reference an issue still blocks" 2 \
+    "$(make_json "gh pr create --head feature --base main --title 'feat: add feature' --body 'Just a summary'")"
+
+# A named --head branch that does not resolve locally must defer (exit 0), not
+# block — the head ref may be a branch we cannot inspect at PreToolUse time.
+assert_exit \
+    "--head <missing-branch> that doesn't resolve locally defers (not block)" 0 \
+    "$(make_json "gh pr create --head no-such-branch --base main --title 'feat: x' --body 'Just a summary'")"
 
 # ── Summary ─────────────────────────────────────────────────────────────────
 echo ""
