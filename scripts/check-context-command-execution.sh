@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2016,SC2094,SC2015  # skill commands contain $ literally; run_one executes in $sandbox, not the file being read; SC2015 sandbox guard is intentional (either check failing is the error → exit)
+# shellcheck disable=SC2016,SC2094,SC2015,SC2034  # skill commands contain $ literally; run_one executes in $sandbox, not the file being read; SC2015 sandbox guard is intentional (either check failing is the error → exit); SC2034: cc_in_bq is a positional read field required to reach cc_is_bang/cc_cmd
 # Execution harness for SKILL.md `## Context` backtick commands.
 #
 # WHY THIS EXISTS
@@ -44,6 +44,11 @@
 #   --json     emit a JSON array of findings instead of the KEY=VALUE report
 #   --files    space-separated explicit file list (default: tracked SKILL.md /
 #              skill.md via `git ls-files`); used by the regression test
+#
+# Context commands are extracted with a real markdown parse (tree-sitter) via the
+# shared scripts/lib/extract-md-elements.py helper — NOT a hand-rolled fence
+# toggle + table-row skip (that state machine shipped the #1744 false positives:
+# a fenced `!`cmd`` example and a table cell abutting a backtick, both executed).
 #
 # Output follows .claude/rules/structured-script-output.md.
 set -uo pipefail
@@ -188,43 +193,37 @@ run_one() {
   fi
 }
 
-for file in "${files[@]}"; do
-  [ -f "$file" ] || continue
-  lineno=0
-  in_fence=0
-  while IFS= read -r line; do
-    lineno=$((lineno + 1))
-    # Strip leading whitespace for the structural (fence / table) checks.
-    trimmed="${line#"${line%%[![:space:]]*}"}"
-    # A real Context command is a list item (`- <label>: !`<cmd>``). Anything
-    # inside a fenced code block (``` / ~~~) is documentation, not a live
-    # command — toggle the fence flag and skip the whole block (#1744:
-    # gh-cli-agentic:299 had a `!`backtick`` example inside a ```markdown fence).
-    case "$trimmed" in
-      '```'*|'~~~'*)
-        in_fence=$((1 - in_fence))
-        continue ;;
-    esac
-    [ "$in_fence" -eq 1 ] && continue
-    # Skip markdown table rows (start with `|`). A literal-backtick cell that
-    # ends in `!` (e.g. `Rar!`) abuts the next cell's opening backtick and
-    # spuriously matches the `!`` pattern (#1744: binary-analysis:204). A real
-    # Context command line starts with `-`, never `|`, so this cannot drop one.
-    case "$trimmed" in
-      '|'*) continue ;;
-    esac
-    # Match a Context backtick command:  - <label>: !`<cmd>`
-    case "$line" in
-      *'!`'*'`'*) : ;;
-      *) continue ;;
-    esac
-    # Extract between the first  !`  and the last  `  on the line.
-    cmd="${line#*'!`'}"
-    cmd="${cmd%'`'*}"
-    [ -n "$cmd" ] || continue
-    run_one "$file" "$lineno" "$cmd"
-  done < "$file"
-done
+# Extract Context commands via a real markdown parse (tree-sitter, through the
+# shared scripts/lib/extract-md-elements.py helper), replacing the hand-rolled
+# fence toggle + table-row skip that produced the #1744 false positives:
+#   - a fenced `!`cmd`` example executed as a live command (gh-cli-agentic:299,
+#     a `!`gh run view …`` inside a ```markdown fence)
+#   - a table cell ending in `!` abutting the next cell's backtick, misparsed as
+#     `!`` and executed (binary-analysis:204, `Rar!`)
+# The helper emits one `inline_code` record per code span with its container:
+#   inline_code<TAB>file<TAB>line<TAB>container<TAB>in_blockquote<TAB>is_bang<TAB>text
+# A real Context command is a `!`-prefixed inline code span (is_bang=1) in a list
+# item / paragraph / heading. Fenced content is NOT inline content in the markdown
+# grammar, so it never appears here at all; a table cell is excluded explicitly.
+if [ "${#files[@]}" -gt 0 ]; then
+  ccx_script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  helper="$ccx_script_dir/lib/extract-md-elements.py"
+  if ! command -v uv >/dev/null 2>&1; then
+    echo "check-context-command-execution: 'uv' not found on PATH; cannot parse markdown structure" >&2
+    echo "  (extraction uses scripts/lib/extract-md-elements.py via 'uv run')" >&2
+    exit 2
+  fi
+  # `< <(...)` keeps the loop body (and its counter mutations) in the current
+  # shell — a `cmd | while` would subshell and lose pass/fail/findings state.
+  while IFS=$'\t' read -r cc_type cc_file cc_line cc_container cc_in_bq cc_is_bang cc_cmd; do
+    [ "$cc_type" = "inline_code" ] || continue
+    [ "$cc_is_bang" = "1" ] || continue          # only `!`cmd`` Context commands
+    [ "$cc_container" != "table_cell" ] || continue
+    [ -n "$cc_cmd" ] || continue
+    run_one "$cc_file" "$cc_line" "$cc_cmd"
+  done < <(printf '%s\n' "${files[@]}" \
+             | uv run --quiet "$helper" --types inline_code --files-from - 2>/dev/null)
+fi
 
 issue_count=$fail
 
