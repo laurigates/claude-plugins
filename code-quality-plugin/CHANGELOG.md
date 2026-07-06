@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.20.0...code-quality-plugin-v1.21.0) (2026-07-06)
+
+
+### Features
+
+* **code-quality-plugin:** route code-targeted bulk sweeps through ast-grep ([#2016](https://github.com/laurigates/claude-plugins/issues/2016)) ([0ce56e8](https://github.com/laurigates/claude-plugins/commit/0ce56e8c28c8acd22f61c60f2a4f86cc0529d06f))
+
 ## [1.20.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.19.0...code-quality-plugin-v1.20.0) (2026-07-05)
 
 
