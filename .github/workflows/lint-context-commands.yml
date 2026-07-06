@@ -9,6 +9,7 @@ on:
       - 'taskwarrior-plugin/**/*.md'
       - 'scripts/lint-context-commands.sh'
       - 'scripts/check-context-command-execution.sh'
+      - 'scripts/lib/extract-md-elements.py'
       - 'scripts/audit-skill-descriptions.py'
       - 'scripts/lint-taskwarrior-tags.sh'
       - 'scripts/lint-package-references.sh'
@@ -22,6 +23,7 @@ on:
       - 'taskwarrior-plugin/**/*.md'
       - 'scripts/lint-context-commands.sh'
       - 'scripts/check-context-command-execution.sh'
+      - 'scripts/lib/extract-md-elements.py'
       - 'scripts/audit-skill-descriptions.py'
       - 'scripts/lint-taskwarrior-tags.sh'
       - 'scripts/lint-package-references.sh'
@@ -34,6 +36,12 @@ jobs:
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v6
+
+      - name: Set up uv
+        # check-context-command-execution.sh extracts Context commands via
+        # scripts/lib/extract-md-elements.py, a self-contained `uv run` PEP723
+        # script (tree-sitter + tree-sitter-markdown).
+        uses: astral-sh/setup-uv@v6
 
       - name: Lint context commands
         run: ./scripts/lint-context-commands.sh

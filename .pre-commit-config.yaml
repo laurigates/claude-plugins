@@ -200,11 +200,23 @@ repos:
         language: system
         files: '^scripts/(blueprint-health-check\.sh|infra-compliance-check\.sh|tests/test-audit-scripts-exit\.sh)$'
         pass_filenames: false
+      - id: test-extract-md-elements
+        name: tree-sitter markdown extraction helper regression
+        entry: bash ./scripts/tests/test-extract-md-elements.sh
+        language: system
+        files: '^scripts/(lib/extract-md-elements\.py|tests/test-extract-md-elements\.sh)$'
+        pass_filenames: false
       - id: test-check-context-command-execution
         name: context-command execution harness regression
         entry: bash ./scripts/tests/test-check-context-command-execution.sh
         language: system
-        files: '^scripts/(check-context-command-execution\.sh|tests/test-check-context-command-execution\.sh)$'
+        files: '^scripts/(check-context-command-execution\.sh|lib/extract-md-elements\.py|tests/test-check-context-command-execution\.sh)$'
+        pass_filenames: false
+      - id: test-check-version-pin-coverage
+        name: version-pin coverage guard regression
+        entry: bash ./scripts/tests/test-check-version-pin-coverage.sh
+        language: system
+        files: '^scripts/(check-version-pin-coverage\.sh|lib/extract-md-elements\.py|tests/test-check-version-pin-coverage\.sh)$'
         pass_filenames: false
       - id: test-rewrite-skill-name-to-dir
         name: opencode skill-name rewrite regression

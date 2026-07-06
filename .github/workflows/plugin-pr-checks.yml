@@ -29,6 +29,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up uv
+        # check-version-pin-coverage.sh and the markdown-extraction-helper tests
+        # parse markdown via scripts/lib/extract-md-elements.py, a self-contained
+        # `uv run` PEP723 script (tree-sitter + tree-sitter-markdown).
+        uses: astral-sh/setup-uv@v6
+
       - name: Get changed plugin files
         id: changed
         run: |
@@ -133,6 +139,16 @@ jobs:
 
       - name: Check shell scripts follow shell-scripting.md
         run: bash scripts/lint-shell-scripts.sh
+
+      - name: Self-test the markdown extraction helper + its consumers
+        # The shared tree-sitter-markdown helper (scripts/lib/extract-md-elements.py)
+        # backs the fence/table/blockquote awareness of check-version-pin-coverage
+        # (#1492) and check-context-command-execution (#1744). Prove the helper's
+        # structural invariants and both consumers' regressions before they gate.
+        run: |
+          bash scripts/tests/test-extract-md-elements.sh
+          bash scripts/tests/test-check-version-pin-coverage.sh
+          bash scripts/tests/test-check-context-command-execution.sh
 
       - name: Self-test the configure-components drift guard
         # Whole-repo invariant: configure-plugin's skill taxonomy has one
