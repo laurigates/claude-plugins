@@ -16,6 +16,9 @@
 #      a rule file whose `reviewed:` is the `YYYY-MM-DD` placeholder is flagged
 #      (WARN rule_reviewed_placeholder); a rule with a real reviewed: date is NOT
 #      flagged, and a `YYYY-MM-DD` in a body example is NOT flagged (#1851)
+#   G. a PLUGIN-MAP.md header stating the wrong plugin count vs marketplace, or a
+#      skill floor exceeding disk, is flagged (WARN doc_count_drift); a header
+#      matching disk is NOT flagged (zero false positive) (#1948)
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -104,7 +107,10 @@ EOF
 cat > "$fixture/.release-please-manifest.json" <<'EOF'
 { "alpha-plugin": "1.0.0", "beta-plugin": "1.0.0", "gamma-plugin": "1.0.0" }
 EOF
-printf '# Map\nalpha-plugin, beta-plugin, gamma-plugin\n' > "$fixture/docs/PLUGIN-MAP.md"
+# PLUGIN-MAP.md header states a WRONG plugin count (2, actual marketplace 3) and
+# a skill floor EXCEEDING disk (300+, actual 3). The body lists all plugins so
+# Check 2's presence check stays clean; TEST G asserts only the header checks.
+printf 'Navigation guide for 2 plugins and 300+ skills. Start here.\n\nalpha-plugin, beta-plugin, gamma-plugin\n' > "$fixture/docs/PLUGIN-MAP.md"
 
 # alpha-plugin: 2 skills (mixed SKILL.md / skill.md) + 1 agent; beta-plugin: 1 skill, 0 agents
 mkdir -p "$fixture/alpha-plugin/skills/s1" "$fixture/alpha-plugin/skills/s2" \
@@ -186,6 +192,21 @@ assert "rev-ok.md (real date) should NOT be flagged missing" \
   "$([ "$(contains "$fx_out" "rule_reviewed_missing.*rev-ok.md")" = "false" ] && echo true || echo false)"
 assert "rev-ok.md (body YYYY example) should NOT be flagged placeholder" \
   "$([ "$(contains "$fx_out" "rule_reviewed_placeholder.*rev-ok.md")" = "false" ] && echo true || echo false)"
+
+echo "=== TEST G: PLUGIN-MAP.md header total drift flagged, correct header not flagged (#1948) ==="
+assert "PLUGIN-MAP header wrong plugin-count should be flagged doc_count_drift" \
+  "$(contains "$fx_out" "doc_count_drift.*PLUGIN-MAP.md header states 2 plugins")"
+assert "PLUGIN-MAP header skill-floor exceeding disk should be flagged doc_count_drift" \
+  "$(contains "$fx_out" "doc_count_drift.*PLUGIN-MAP.md header claims 300+ skills")"
+
+# Correct-header sub-case: rewrite the header to match disk (3 plugins, floor 3)
+# and assert the PLUGIN-MAP header checks produce no drift.
+printf 'Navigation guide for 3 plugins and 3+ skills. Start here.\n\nalpha-plugin, beta-plugin, gamma-plugin\n' > "$fixture/docs/PLUGIN-MAP.md"
+fx_ok_out="$(bash "$checker" --project-dir "$fixture")"
+assert "PLUGIN-MAP correct header should NOT be flagged for plugin count" \
+  "$([ "$(contains "$fx_ok_out" "PLUGIN-MAP.md header states")" = "false" ] && echo true || echo false)"
+assert "PLUGIN-MAP correct header should NOT be flagged for skill floor" \
+  "$([ "$(contains "$fx_ok_out" "PLUGIN-MAP.md header claims")" = "false" ] && echo true || echo false)"
 
 echo ""
 echo "=== SUMMARY ==="
