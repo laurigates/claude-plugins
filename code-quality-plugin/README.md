@@ -80,6 +80,7 @@ Refactors code applying functional programming principles:
 ```
 
 Finds and extracts duplicated code into shared abstractions:
+- Discovers clones deterministically with `jscpd` (token-based, 150+ languages) plus `ast-grep` shape confirmation, falling back to Grep when `npx`/`jscpd` is unavailable
 - Utility functions (string helpers, formatters, validators)
 - UI components (dialogs, pagination, error states)
 - Custom hooks (delete confirmation, form state, mutations)

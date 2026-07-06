@@ -2,11 +2,11 @@
 name: dry-consolidation
 description: Find and extract duplicated code into shared abstractions. Use when seeing repeated utilities, copy-pasted components, duplicated hooks, or boilerplate repeated across files.
 args: "[PATH] [--scope <utilities|components|hooks|all>] [--dry-run]"
-allowed-tools: Read, Write, Edit, MultiEdit, Grep, Glob, Bash(npx tsc *), Bash(npm run *), Bash(npx *), Bash(bun *), Bash(pnpm *), Bash(yarn *), Bash(pytest *), Bash(cargo *), TodoWrite, Task
+allowed-tools: Read, Write, Edit, MultiEdit, Grep, Glob, Bash(npx tsc *), Bash(npm run *), Bash(npx *), Bash(bun *), Bash(pnpm *), Bash(yarn *), Bash(pytest *), Bash(cargo *), Bash(ast-grep *), Bash(sg *), TodoWrite, Task
 model: opus
 argument-hint: path or directory to scan for duplication
 created: 2026-02-06
-modified: 2026-07-04
+modified: 2026-07-06
 reviewed: 2026-02-06
 agent: general-purpose
 context: fork
@@ -24,6 +24,7 @@ Systematic extraction of duplicated code into shared, tested abstractions.
 | Copy-pasted utility functions across components | Looking for anti-patterns without fixing → `/code:antipatterns` |
 | Repeated UI patterns (dialogs, pagination, error states) | Functional refactoring of a file or directory → `/code:refactor` |
 | Duplicated hooks or state management boilerplate | Structural code search only → `ast-grep-search` |
+| Near-duplicate copy-paste with renamed vars needs enumerating (jscpd finds the clusters here) | Matching one known structural pattern → `ast-grep-search` |
 | Import blocks are bloated from repeated inline patterns | Linting/formatting issues → `/lint:check` |
 
 ## Context
@@ -44,27 +45,63 @@ Systematic extraction of duplicated code into shared, tested abstractions.
 
 Execute this 7-step consolidation workflow. Use TodoWrite to track each extraction as a separate task.
 
-### Step 1: Scan for duplicated patterns
+### Step 1: Discover duplicate clusters (deterministic clone detection)
 
-Scan the target path for duplicated patterns. Search for these duplication signals:
+Enumerate duplicate ranges with a deterministic clone detector, then read **only the reported ranges** — not whole candidate files. This keeps discovery reproducible and cheap. Token-based detection (jscpd) finds copy-paste independent of whitespace/formatting and of the enclosing symbol name — clone pairs a name-based Grep misses when the wrapping function is renamed. ast-grep (1b) then adds tolerance for variables renamed *inside* the block.
 
-**Identical function bodies:**
+#### 1a. Token-based near-duplicates with jscpd
+
+`jscpd` is a token-based copy/paste detector that supports 150+ languages despite the "js" in the name; `npx` runs it with no global install. Run it over the target path:
+
+```bash
+npx jscpd --reporters json --min-tokens 50 --output /tmp/jscpd-dry --silent <path>
 ```
-Grep for function/method signatures that appear in multiple files.
-Look for identical multi-line blocks (3+ lines) across files.
+
+It writes `/tmp/jscpd-dry/jscpd-report.json`. Read that report and parse its `duplicates` array — each entry gives the exact file/line ranges of a clone pair plus its size in tokens/lines:
+
+```json
+{
+  "duplicates": [
+    {
+      "format": "tsx",
+      "lines": 12,
+      "tokens": 84,
+      "firstFile":  { "name": "src/UserList.tsx",  "start": 20, "end": 32 },
+      "secondFile": { "name": "src/OrderList.tsx", "start": 15, "end": 27 }
+    }
+  ],
+  "statistics": { "total": { "clones": 3, "duplicatedLines": 40, "duplicatedTokens": 252, "percentage": 5.1 } }
+}
 ```
 
-**Repeated inline patterns:**
+For each reported clone, **Read only the line ranges** (`Read` with `offset`/`limit` around `start`/`end`) to confirm the duplication and classify it — do not Read whole candidate files. jscpd similarity is high by construction for a reported clone (a `--min-tokens` match); note the tokens/lines for the Extraction Plan.
+
+#### 1b. Structural confirmation with ast-grep
+
+Once jscpd surfaces a cluster, confirm it is the same *shape* — same call-shape / same block modulo captured variables — with ast-grep metavariables. `$VAR` / `$INIT` match any identifier/expression, so a block differing only in renamed captures still matches:
+
+```bash
+ast-grep -p 'const $VAR = useState($INIT)' --lang tsx <path>
+```
+
+Use this to separate a genuine extractable duplicate from a coincidental token overlap before planning the extraction. (For a standalone structural search without extraction, use the `ast-grep-search` skill.)
+
+#### 1c. Graceful fallback (Grep) when the detector is unavailable
+
+When `npx`/`jscpd` is unavailable, or the ecosystem has no `npx` on PATH, fall back to agent-driven text search:
+
+1. Use Grep to find repeated function names, variable patterns, and import clusters
+2. Use Glob to identify files with similar structure (e.g., all `*List.tsx`, all `*Detail.tsx`)
+3. Read candidate files to confirm duplication and measure scope
+
+This fallback has lower recall for near-duplicates (renamed variables, reordered params) — prefer the jscpd path when available, and reserve Grep for when it is not.
+
+**Duplication signals to classify** (both the jscpd and the Grep path feed the same categories in Step 2):
 - Utility functions defined identically in multiple files (string truncation, date formatting, validation)
 - Identical error handling blocks (try/catch patterns, error state JSX)
 - Copy-pasted UI fragments (pagination controls, confirmation dialogs, loading states)
 - Repeated hook/state management patterns (delete confirmation + mutation + handler)
 - Duplicated import blocks that signal repeated inline implementations
-
-**Search strategy:**
-1. Use Grep to find repeated function names, variable patterns, and import clusters
-2. Use Glob to identify files with similar structure (e.g., all `*List.tsx`, all `*Detail.tsx`)
-3. Read candidate files to confirm duplication and measure scope
 
 ### Step 2: Classify duplications
 
@@ -100,8 +137,12 @@ Present the plan to the user before proceeding (unless `--dry-run` was not speci
 - Replaces: [N] identical blocks across [M] files
 - Consumers: [list of files]
 - Parameters: [any variations that need to be parameterized]
+- Duplicated: [N] tokens / [N] lines (from jscpd; blank when the Grep fallback was used)
+- Similarity: [N]% (from jscpd; "exact" when ast-grep-confirmed as the same shape)
 - Estimated lines saved: [N]
 ```
+
+The `Duplicated` and `Similarity` fields come from jscpd's report (tokens/lines per clone, and the cluster's percentage) — a quantified `--dry-run` report instead of a best-effort narrative. When the Grep fallback (1c) supplied the cluster, leave them blank or note "grep-estimated".
 
 ### Step 4: Extract shared abstractions
 
@@ -192,6 +233,8 @@ After all phases complete, report:
 
 | Context | Approach |
 |---------|----------|
+| Deterministic clone scan | `npx jscpd --reporters json --min-tokens 50 --output /tmp/jscpd-dry --silent <path>` then parse `duplicates[]` for exact ranges |
+| Structural shape confirm | `ast-grep -p '<pattern with $METAVARS>' --lang <lang> <path>` |
 | Quick scan | Use `--dry-run` to see duplication report without changes |
 | Focused extraction | Use `--scope utilities` to extract only utility functions |
 | Large codebase | Scope to specific directory: `/code:dry-consolidation src/components/` |
