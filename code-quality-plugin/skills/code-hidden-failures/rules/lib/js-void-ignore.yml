@@ -1,0 +1,6 @@
+id: js-void-ignore
+language: tsx
+severity: info
+message: "`void`-ing a promise discards its rejection — confirm this is intentional fire-and-forget"
+rule:
+  pattern: void $EXPR($$$)

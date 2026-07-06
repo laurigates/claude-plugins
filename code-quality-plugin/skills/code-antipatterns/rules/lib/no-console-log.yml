@@ -1,0 +1,6 @@
+id: no-console-log
+language: tsx
+severity: info
+message: console.log left in code — use a logger or remove
+rule:
+  pattern: console.log($$$)

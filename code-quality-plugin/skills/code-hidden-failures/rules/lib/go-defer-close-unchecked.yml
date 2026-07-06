@@ -1,0 +1,6 @@
+id: go-defer-close-unchecked
+language: go
+severity: warning
+message: "`defer f.Close()` drops any write/close error — capture it into a named return on writers"
+rule:
+  pattern: defer $F.Close()

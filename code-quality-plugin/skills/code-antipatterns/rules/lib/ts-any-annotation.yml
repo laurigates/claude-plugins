@@ -1,0 +1,8 @@
+id: ts-any-annotation
+language: tsx
+severity: info
+message: "`: any` annotation weakens type safety — use a precise type or unknown"
+rule:
+  pattern:
+    context: "let $X: any = $Y"
+    selector: type_annotation

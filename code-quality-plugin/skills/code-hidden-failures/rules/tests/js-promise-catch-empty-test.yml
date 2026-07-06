@@ -1,0 +1,7 @@
+id: js-promise-catch-empty
+valid:
+  - "fetchUser(id).catch((err) => { logger.error(err); return null; });"
+invalid:
+  - "fetchUser(id).catch(() => {});"
+  - "fetchUser(id).catch((err) => {});"
+  - "fetchUser(id).catch(() => null);"

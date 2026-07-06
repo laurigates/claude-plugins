@@ -1,0 +1,6 @@
+id: rs-let-underscore-result
+language: rust
+severity: warning
+message: "`let _ = <expr>` discards a Result — propagate with ? or handle the error"
+rule:
+  pattern: let _ = $EXPR;

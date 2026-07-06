@@ -1,0 +1,12 @@
+id: py-bare-except
+language: python
+severity: warning
+message: Bare except catches everything, including KeyboardInterrupt — catch a specific type
+rule:
+  pattern:
+    context: |
+      try:
+          pass
+      except:
+          pass
+    selector: except_clause

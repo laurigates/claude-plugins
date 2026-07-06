@@ -1,0 +1,13 @@
+id: rs-ok-discard
+valid:
+  - |
+    fn f() {
+        if let Err(err) = writeln!(out, "x") {
+            eprintln!("{err}");
+        }
+    }
+invalid:
+  - |
+    fn f() {
+        writeln!(out, "x").ok();
+    }

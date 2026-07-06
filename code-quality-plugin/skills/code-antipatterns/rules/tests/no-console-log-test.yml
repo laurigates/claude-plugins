@@ -1,0 +1,5 @@
+id: no-console-log
+valid:
+  - "logger.info('hello');"
+invalid:
+  - "console.log('debug', value);"

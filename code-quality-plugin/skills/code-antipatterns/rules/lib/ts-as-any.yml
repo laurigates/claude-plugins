@@ -1,0 +1,6 @@
+id: ts-as-any
+language: tsx
+severity: info
+message: "`as any` defeats type checking — use a precise type or unknown"
+rule:
+  pattern: $EXPR as any

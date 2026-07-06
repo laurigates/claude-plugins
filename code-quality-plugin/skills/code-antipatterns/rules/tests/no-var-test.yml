@@ -1,0 +1,6 @@
+id: no-var
+valid:
+  - "const count = 0;"
+  - "let total = 1;"
+invalid:
+  - "var count = 0;"

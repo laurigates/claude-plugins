@@ -1,0 +1,13 @@
+id: py-bare-except-pass
+valid:
+  - |
+    try:
+        do_thing()
+    except ValueError:
+        handle()
+invalid:
+  - |
+    try:
+        do_thing()
+    except:
+        pass

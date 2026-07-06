@@ -1,0 +1,6 @@
+id: vue-props-mutation
+language: tsx
+severity: error
+message: Never mutate props directly — emit an update event or copy into local state
+rule:
+  pattern: props.$PROP = $VALUE

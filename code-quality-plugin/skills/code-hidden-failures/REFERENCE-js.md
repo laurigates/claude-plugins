@@ -1,5 +1,15 @@
 # Reference — JavaScript / TypeScript Error Swallowing
 
+> **Detection lives in the rule project, not here.** The structural patterns
+> (empty catch, empty `.catch`, `void`-ignore) are executable ast-grep rules —
+> [`js-empty-catch.yml`](rules/lib/js-empty-catch.yml),
+> [`js-promise-catch-empty.yml`](rules/lib/js-promise-catch-empty.yml),
+> [`js-void-ignore.yml`](rules/lib/js-void-ignore.yml) — run in one pass via
+> `ast-grep scan -c rules/sgconfig.yml`. This file is the **judgment reference**:
+> allowlist, severity promotion, and remediation templates. The heuristic
+> patterns below (floating promises, error-boundary silence) stay
+> toolchain-deferred / Grep-based.
+
 Detection rules for `.js`, `.jsx`, `.ts`, `.tsx`, `.mjs`, `.cjs`. Use
 `sg` (ast-grep) for structural matching where possible; fall back to Grep
 for the heuristic ones.
@@ -20,13 +30,13 @@ for the heuristic ones.
 
 ### ast-grep commands
 
-```bash
-sg -p 'try { $$$ } catch ($E) {}' --lang ts
-sg -p 'try { $$$ } catch ($E) { }' --lang tsx
-sg -p '$EXPR.catch(() => {})' --lang ts
-sg -p '$EXPR.catch(($E) => {})' --lang ts
-sg -p 'void $EXPR($$$)' --lang ts
-```
+The structural patterns above are the executable rules in
+[`rules/lib/`](rules/lib/) (`js-empty-catch`, `js-promise-catch-empty`,
+`js-void-ignore`) — run them as one pass with
+`ast-grep scan -c rules/sgconfig.yml --json=compact <path>`. As a per-pattern
+fallback when `ast-grep scan` is unavailable, the equivalent one-liners are
+`sg -p 'try { $$$ } catch ($E) { }' --lang ts`,
+`sg -p '$EXPR.catch(() => {})' --lang ts`, and `sg -p 'void $EXPR($$$)' --lang ts`.
 
 For floating promises the repo's own toolchain is authoritative — defer to
 `tsc --noImplicitAny` + `no-floating-promises` ESLint rule when configured;

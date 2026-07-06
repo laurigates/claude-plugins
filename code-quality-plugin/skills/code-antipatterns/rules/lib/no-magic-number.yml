@@ -1,0 +1,11 @@
+id: no-magic-number
+language: tsx
+severity: info
+message: Magic number in a timer — extract to a named constant
+rule:
+  any:
+    - pattern: setTimeout($FN, $N)
+    - pattern: setInterval($FN, $N)
+constraints:
+  N:
+    kind: number

@@ -1,0 +1,6 @@
+id: no-innerhtml
+valid:
+  - "el.textContent = userInput;"
+invalid:
+  - "el.innerHTML = userInput;"
+  - "el.outerHTML = markup;"

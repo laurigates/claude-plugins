@@ -1,0 +1,6 @@
+id: rs-ok-discard
+language: rust
+severity: warning
+message: "`.ok();` as a statement throws away the error arm of a Result"
+rule:
+  pattern: $EXPR.ok();

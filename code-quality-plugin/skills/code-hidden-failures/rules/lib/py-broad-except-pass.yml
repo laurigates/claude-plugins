@@ -1,0 +1,12 @@
+id: py-broad-except-pass
+language: python
+severity: warning
+message: "`except Exception: pass` swallows all errors — log and re-raise, or narrow the type"
+rule:
+  pattern:
+    context: |
+      try:
+          pass
+      except Exception:
+          pass
+    selector: except_clause

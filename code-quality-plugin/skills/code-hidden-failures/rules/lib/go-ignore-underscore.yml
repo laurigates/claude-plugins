@@ -1,0 +1,7 @@
+id: go-ignore-underscore
+language: go
+severity: warning
+message: Error result assigned to _ is discarded — check it or wrap it
+note: Prefer the project's errcheck / staticcheck (SA4006) when configured.
+rule:
+  pattern: _ = $CALL($$$)

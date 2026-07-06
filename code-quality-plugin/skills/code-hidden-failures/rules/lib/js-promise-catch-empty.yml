@@ -1,0 +1,9 @@
+id: js-promise-catch-empty
+language: tsx
+severity: warning
+message: Promise .catch handler discards the rejection
+rule:
+  any:
+    - pattern: $EXPR.catch(() => {})
+    - pattern: $EXPR.catch(($E) => {})
+    - pattern: $EXPR.catch(() => null)

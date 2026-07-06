@@ -1,0 +1,6 @@
+id: no-magic-number
+valid:
+  - "setTimeout(fn, RETRY_DELAY_MS);"
+invalid:
+  - "setTimeout(fn, 5000);"
+  - "setInterval(poll, 1000);"
