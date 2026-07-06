@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.50.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.50.1...git-plugin-v2.50.2) (2026-07-06)
+
+
+### Bug Fixes
+
+* **git-plugin:** resolve --head branch in validate-pr-issue-links hook range ([#2007](https://github.com/laurigates/claude-plugins/issues/2007)) ([ead06f3](https://github.com/laurigates/claude-plugins/commit/ead06f3c5d938db997e483a785a85c042e41fda4))
+
 ## [2.50.1](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.50.0...git-plugin-v2.50.1) (2026-07-05)
 
 
