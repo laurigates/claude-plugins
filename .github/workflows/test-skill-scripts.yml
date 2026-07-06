@@ -49,6 +49,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      # ast-grep powers the code-antipatterns / code-hidden-failures rule-project
+      # regression tests (issue #2010). Absent, those tests SKIP; installed, the
+      # `ast-grep test` fixture gate actually runs in CI. Pinned to match the
+      # version the fixtures were authored against.
+      - name: Install ast-grep
+        run: npm install -g @ast-grep/cli@0.43.0
+
       - name: Run skill-local regression tests
         run: bash scripts/run-skill-script-tests.sh
 

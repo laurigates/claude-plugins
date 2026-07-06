@@ -20,14 +20,19 @@ sgconfig="${rules_dir}/sgconfig.yml"
 fail() { echo "FAIL: $1" >&2; exit 1; }
 pass() { echo "PASS: $1"; }
 
-# Resolve the ast-grep binary (packaged as both `ast-grep` and `sg`).
+# Resolve the ast-grep binary. It ships as both `ast-grep` and `sg`, but `sg`
+# also collides with shadow-utils' set-group binary (present on Linux CI
+# runners), so require the resolved command to self-identify as ast-grep before
+# trusting it — otherwise SKIP cleanly rather than running the wrong binary.
 astgrep=""
-if command -v ast-grep >/dev/null 2>&1; then
-  astgrep="ast-grep"
-elif command -v sg >/dev/null 2>&1; then
-  astgrep="sg"
-else
-  echo "SKIP: ast-grep/sg not installed; cannot run code-antipatterns rule tests"
+for cand in ast-grep sg; do
+  if command -v "$cand" >/dev/null 2>&1 && "$cand" --version 2>/dev/null | grep -qiE '^ast[_-]?grep'; then
+    astgrep="$cand"
+    break
+  fi
+done
+if [ -z "$astgrep" ]; then
+  echo "SKIP: ast-grep not installed; cannot run code-antipatterns rule tests"
   exit 0
 fi
 
