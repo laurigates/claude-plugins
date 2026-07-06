@@ -1,0 +1,7 @@
+id: py-use-isinstance
+language: python
+severity: info
+message: Use isinstance() for type checking instead of type() == comparison
+fix: isinstance($VAR, $TYPE)
+rule:
+  pattern: type($VAR) == $TYPE

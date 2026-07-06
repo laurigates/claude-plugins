@@ -1,0 +1,7 @@
+id: no-empty-catch
+language: tsx
+severity: warning
+message: Empty catch block silently swallows errors
+note: Log the error and rethrow, or handle it explicitly. See code-hidden-failures --track errors.
+rule:
+  pattern: "try { $$$ } catch ($E) { }"

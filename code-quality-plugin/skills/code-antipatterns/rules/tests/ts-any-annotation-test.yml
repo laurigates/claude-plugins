@@ -1,0 +1,6 @@
+id: ts-any-annotation
+valid:
+  - "function handler(payload: number) { return payload; }"
+invalid:
+  - "function handler(payload: any) { return payload; }"
+  - "let value: any = 3;"

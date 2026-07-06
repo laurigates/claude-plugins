@@ -1,9 +1,9 @@
 ---
 created: 2025-12-16
-modified: 2026-05-23
-reviewed: 2026-04-25
+modified: 2026-07-06
+reviewed: 2026-07-06
 description: Analyze a codebase for anti-patterns using ast-grep. Use when finding magic numbers, console.logs, var usage, excessive any, eval/innerHTML security issues, or deep nesting.
-allowed-tools: Read, Bash(sg *), Bash(rg *), Glob, Grep, TodoWrite, Task, SlashCommand
+allowed-tools: Read, Bash(ast-grep *), Bash(sg *), Bash(rg *), Glob, Grep, TodoWrite, Task, SlashCommand
 args: "[PATH] [--focus <category>] [--severity <level>]"
 argument-hint: "[PATH] [--focus <category>] [--severity <level>]"
 name: code-antipatterns
@@ -27,7 +27,52 @@ name: code-antipatterns
 
 ## Your Task
 
-Perform comprehensive anti-pattern analysis using ast-grep and parallel agent delegation.
+Perform comprehensive anti-pattern analysis. The **mechanical detection** is one
+deterministic `ast-grep scan` over a shipped rule project — you do **not** re-type
+`sg -p '…'` patterns and do **not** fan out agents just to run them. Your job is
+the **judgment**: severity triage, recommendations, and fix planning on top of the
+scan's structured findings.
+
+### Step 1: Run the deterministic scan
+
+The detection catalog lives as an ast-grep **rule project** in
+[`rules/`](rules/) (one `*.yml` per pattern under `rules/lib/`, each with a
+valid/invalid test fixture in `rules/tests/`). Run the whole catalog in one pass:
+
+```bash
+ast-grep scan -c ${CLAUDE_SKILL_DIR}/rules/sgconfig.yml --json=compact <path>
+```
+
+Each JSON finding carries `ruleId`, `file`, `range` (line/column), `message`, and
+the matched `text`. Parse this — it is the raw finding set for every category
+below. The rules cover: empty catch, `console.log`, `var`, `eval`/`new Function`,
+`innerHTML`/`outerHTML`, `as any` / `: any` annotations, magic-number timers, Vue
+props mutation, Python mutable defaults, bare `except`, `global`, and
+`type() ==`.
+
+**Graceful degradation** — if `ast-grep` (packaged as `ast-grep` or `sg`) is not
+installed, fall back to the per-pattern flow: read [REFERENCE.md](REFERENCE.md),
+which links each rule to its source `.yml`, and run the individual
+`ast-grep -p '<pattern>' --lang <lang>` commands by hand. The rule project is the
+fast path; the reference is the fallback.
+
+### Step 2: Judgment (the agent's actual work)
+
+The scan is mechanical and reproducible; **triage, recommendation, and fix
+planning are the judgment work** — do them yourself on the scan output rather than
+spawning agents to re-run patterns:
+
+- **Severity triage** — promote/demote each finding using the context in the
+  Category tables below and the app type (frontend/backend/CLI/library).
+- **Error-swallowing findings** (empty catch, floating promises, bare except) →
+  **delegate** to `/code:hidden-failures --track errors` for its severity model,
+  surfacing recommendations, and privacy redaction. Do not re-classify them here.
+- **Recommendations & fix planning** — group systemic issues, note which findings
+  ast-grep can auto-`fix`, and recommend process changes (lint rules, pre-commit).
+
+Reserve any parallel `Task` fan-out for **genuinely independent reasoning** (e.g.
+a deep security review or a framework-specific architecture pass) — never for
+running the patterns, which Step 1 already did once, deterministically.
 
 ### Analysis Categories
 
@@ -73,70 +118,16 @@ Rationale: a single source of truth prevents drift between severity
 models, app-context surfacing recommendations, and privacy redaction
 policies. See `code-quality-plugin/skills/code-hidden-failures/SKILL.md`.
 
-### Execution Strategy
+### What the rule project does *not* cover (agent judgment)
 
-**CRITICAL: Use parallel agent delegation for efficiency.**
+Two catalog concerns are not structural single-node matches and stay as
+**agent-judgment** passes on the code, not rules:
 
-Launch multiple specialized agents simultaneously:
-
-```markdown
-## Agent 1: Language Detection & Setup (Explore - quick)
-Detect project stack, identify file patterns, establish analysis scope
-
-## Agent 2: JavaScript/TypeScript Analysis (code-analysis)
-- Use ast-grep for structural pattern matching
-- Focus on: magic values, var usage, deprecated patterns
-- Error swallowing handled separately via `/code:hidden-failures --track errors`
-
-## Agent 3: Async/Promise Analysis (code-analysis)
-- Nested callbacks, Promise constructor anti-pattern
-- Floating promises / unhandled rejections handled via `/code:hidden-failures --track errors`
-
-## Agent 4: Framework-Specific Analysis (code-analysis)
-- Vue: props mutation, reactivity issues
-- React: hooks dependencies, inline functions
-
-## Agent 5: Security Analysis (security-audit)
-- eval, innerHTML, hardcoded secrets, injection risks
-- Use OWASP context
-
-## Agent 6: Complexity Analysis (code-analysis)
-- Function length, nesting depth, parameter counts
-- Cyclomatic complexity indicators
-```
-
-### ast-grep Pattern Examples
-
-For the full YAML rule catalog (with `id:`, `severity:`, `message:`, `fix:`, and `note:` fields), see [REFERENCE.md](REFERENCE.md).
-
-Use these patterns during analysis:
-
-```bash
-# Magic numbers
-ast-grep -p 'if ($VAR > 100)' --lang js
-
-# Console statements
-ast-grep -p 'console.log($$$)' --lang js
-
-# var usage
-ast-grep -p 'var $VAR = $$$' --lang js
-
-# TypeScript any
-ast-grep -p ': any' --lang ts
-ast-grep -p 'as any' --lang ts
-
-# Vue props mutation
-ast-grep -p 'props.$PROP = $VALUE' --lang js
-
-# Security: eval
-ast-grep -p 'eval($$$)' --lang js
-
-# Security: innerHTML
-ast-grep -p '$ELEM.innerHTML = $$$' --lang js
-
-# Python: mutable defaults
-ast-grep -p 'def $FUNC($ARG=[])' --lang py
-```
+- **Deep nesting / long functions / cyclomatic complexity** — a metric over a
+  function body, not a pattern. Use `/code:complexity` or read the flagged files.
+- **Floating promises** — the repo's own toolchain is authoritative; defer to
+  `tsc` + the `no-floating-promises` ESLint rule, or `/code:hidden-failures
+  --track errors`, rather than a broad structural rule that would flag every call.
 
 ### Output Format
 
@@ -193,7 +184,8 @@ After consolidating findings:
 
 ## See Also
 
-- **Reference**: [REFERENCE.md](REFERENCE.md) - Full YAML rule catalog with ast-grep pattern library
+- **Rule project**: [`rules/`](rules/) — the executable ast-grep catalog (`sgconfig.yml` + `rules/lib/*.yml` + `rules/tests/*-test.yml`); run `ast-grep test -c rules/sgconfig.yml --skip-snapshot-tests` to verify every rule against its fixtures
+- **Reference**: [REFERENCE.md](REFERENCE.md) - narrative catalog linking each pattern to its rule file
 - **Skill**: `ast-grep-search` - ast-grep usage reference
 - **Command**: `/code:review` - Comprehensive code review
 - **Agent**: `security-audit` - Deep security analysis

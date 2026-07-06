@@ -1,0 +1,7 @@
+id: no-var
+language: tsx
+severity: info
+message: Use let or const instead of var
+fix: const $VAR = $INIT
+rule:
+  pattern: var $VAR = $INIT

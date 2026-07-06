@@ -1,8 +1,8 @@
 ---
 created: 2026-04-14
-modified: 2026-06-18
-reviewed: 2026-05-29
-allowed-tools: Bash(bash *), Bash(sg *), Bash(grep *), Read, Grep, Glob, Edit, Write, TodoWrite
+modified: 2026-07-06
+reviewed: 2026-07-06
+allowed-tools: Bash(bash *), Bash(ast-grep *), Bash(sg *), Bash(grep *), Read, Grep, Glob, Edit, Write, TodoWrite
 args: "[PATH] [--track <errors|degradation|both>] [--lang <shell|js|py|go|rust|auto>] [--severity <low|med|high>] [--emit-patch] [--fix]"
 argument-hint: "[PATH] [--track both] [--lang LANG] [--severity LEVEL] [--emit-patch|--fix]"
 description: "Scan for hidden failures: swallowed errors (empty catch, || true, 2>/dev/null) and silent degradation (success on zero results). Use when failures vanish or success masks empty output."
@@ -74,19 +74,40 @@ From the context commands above, determine which language matchers to run.
 For the app-context matrix (signals → surfacing channel), load
 [REFERENCE-surfacing.md](REFERENCE-surfacing.md).
 
-#### Step A2: Run language-specific matchers
+#### Step A2: Run the matchers
 
-Load only the REFERENCE files for languages actually present in the path:
+The **AST-shaped** swallowed-error patterns (js/ts, python, go, rust) live as an
+ast-grep **rule project** in [`rules/`](rules/) (one `*.yml` per pattern under
+`rules/lib/`, each with a valid/invalid fixture in `rules/tests/`). Run the whole
+catalog in one deterministic pass — do **not** re-type `sg -p '…'` per language:
 
-| Language | File | Tool |
-|----------|------|------|
-| Shell / bash | [REFERENCE-shell.md](REFERENCE-shell.md) | `bash ${CLAUDE_SKILL_DIR}/scripts/scan-shell.sh <path>` |
-| JavaScript / TypeScript | [REFERENCE-js.md](REFERENCE-js.md) | `sg` ast-grep with language-specific patterns |
-| Python | [REFERENCE-python.md](REFERENCE-python.md) | `sg` with `--lang py` |
-| Go | [REFERENCE-go.md](REFERENCE-go.md) | Prefer repo's `errcheck` if configured, else `sg --lang go` |
-| Rust | [REFERENCE-rust.md](REFERENCE-rust.md) | `sg --lang rust` + `clippy::let_underscore_must_use` hints |
+```bash
+ast-grep scan -c ${CLAUDE_SKILL_DIR}/rules/sgconfig.yml --json=compact <path>
+```
 
-For each matcher, capture: `file:line`, matched snippet, surrounding function
+Each finding carries `ruleId`, `file`, `range` (line/column), `message`, and the
+matched `text` — the raw finding set for Steps A3–A6.
+
+The **shell / bash** track stays grep-based — `|| true`, `2>/dev/null` in context,
+and xtrace suppression are line-shaped, not AST-shaped:
+
+```bash
+bash ${CLAUDE_SKILL_DIR}/scripts/scan-shell.sh <path>
+```
+
+| Track | Tool | Reference (linked from rule files) |
+|-------|------|------------------------------------|
+| JS / TS, Python, Go, Rust | `ast-grep scan -c rules/sgconfig.yml` (one pass) | [REFERENCE-js.md](REFERENCE-js.md), [REFERENCE-python.md](REFERENCE-python.md), [REFERENCE-go.md](REFERENCE-go.md), [REFERENCE-rust.md](REFERENCE-rust.md) |
+| Shell / bash | `scripts/scan-shell.sh` (grep-based) | [REFERENCE-shell.md](REFERENCE-shell.md) |
+
+**Graceful degradation** — if `ast-grep` (packaged as `ast-grep` or `sg`) is not
+installed, fall back to the per-pattern flow: read the `REFERENCE-{js,python,go,
+rust}.md` files (each links its patterns to the rule `.yml`) and run the
+individual `sg -p '<pattern>' --lang <lang>` commands by hand. Prefer the repo's
+own `errcheck`/`staticcheck` (Go) or `cargo clippy` (Rust) when configured — the
+rule project surfaces what those linters would catch, it does not replace them.
+
+For every finding, capture: `file:line`, matched snippet, surrounding function
 name if discoverable.
 
 #### Step A3: Classify severity
@@ -197,6 +218,7 @@ Totals: errors(high=N med=N low=N)  degradation(high=N med=N low=N)  across M fi
 
 ## See Also
 
+- [`rules/`](rules/) — the executable ast-grep catalog for the errors track (`sgconfig.yml` + `rules/lib/*.yml` + `rules/tests/*-test.yml`); run `ast-grep test -c rules/sgconfig.yml --skip-snapshot-tests` to verify every rule against its fixtures
 - `/code:antipatterns` — delegates here for the error-swallowing category
 - `/code:review` — prose code review
 - `.claude/rules/shell-scripting.md` — canonical allowlist for shell `\|\| true` / `2>/dev/null`

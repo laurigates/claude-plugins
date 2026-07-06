@@ -1,0 +1,6 @@
+id: py-global
+language: python
+severity: info
+message: Global mutable state makes code hard to test and reason about
+rule:
+  pattern: global $VAR

@@ -1,0 +1,8 @@
+id: no-innerhtml
+language: tsx
+severity: warning
+message: Assigning innerHTML/outerHTML can introduce XSS — use textContent or sanitize
+rule:
+  any:
+    - pattern: $EL.innerHTML = $$$
+    - pattern: $EL.outerHTML = $$$

@@ -1,0 +1,5 @@
+id: py-use-isinstance
+valid:
+  - "if isinstance(value, int): pass"
+invalid:
+  - "if type(value) == int: pass"

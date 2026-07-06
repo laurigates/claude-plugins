@@ -1,0 +1,17 @@
+id: go-defer-close-unchecked
+valid:
+  - |
+    package main
+    func f() {
+        defer func() {
+            if cerr := w.Close(); cerr != nil {
+                retErr = cerr
+            }
+        }()
+    }
+invalid:
+  - |
+    package main
+    func f() {
+        defer w.Close()
+    }

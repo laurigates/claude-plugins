@@ -1,0 +1,15 @@
+id: go-ignore-underscore
+valid:
+  - |
+    package main
+    func f() {
+        if err := doThing(); err != nil {
+            return
+        }
+    }
+invalid:
+  - |
+    package main
+    func f() {
+        _ = doThing()
+    }

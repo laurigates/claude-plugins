@@ -1,5 +1,14 @@
 # Reference — Go Error Swallowing
 
+> **Detection lives in the rule project, not here.** Discarded-error and
+> unchecked-`defer Close` are executable ast-grep rules —
+> [`go-ignore-underscore.yml`](rules/lib/go-ignore-underscore.yml),
+> [`go-defer-close-unchecked.yml`](rules/lib/go-defer-close-unchecked.yml) — run
+> via `ast-grep scan -c rules/sgconfig.yml`. This file is the **judgment
+> reference**: allowlist, severity promotion, remediation, and linter
+> integration. Prefer the project's own `errcheck` / `staticcheck` when
+> configured — the rules surface what those catch, they do not replace them.
+
 Go's error model makes error-swallowing especially easy to detect: any
 function returning `error` whose return is assigned to `_` or discarded is
 a candidate. Prefer the project's own `errcheck` / `staticcheck` (rules
@@ -26,12 +35,11 @@ errcheck ./...
 staticcheck -checks SA4006,SA5001 ./...
 ```
 
-Fall back to ast-grep:
-
-```bash
-sg -p '_ = $EXPR($$$)' --lang go
-sg -p 'defer $F.Close()' --lang go
-```
+Fall back to the rule project — `go-ignore-underscore` and
+`go-defer-close-unchecked` in [`rules/lib/`](rules/lib/), run via
+`ast-grep scan -c rules/sgconfig.yml --json=compact <path>` (per-pattern
+equivalents: `sg -p '_ = $CALL($$$)' --lang go`,
+`sg -p 'defer $F.Close()' --lang go`).
 
 ## Allowlist (classify as Low)
 

@@ -1,0 +1,6 @@
+id: no-eval
+valid:
+  - "const result = JSON.parse(input);"
+invalid:
+  - "const result = eval(input);"
+  - "const fn = new Function('a', 'return a');"

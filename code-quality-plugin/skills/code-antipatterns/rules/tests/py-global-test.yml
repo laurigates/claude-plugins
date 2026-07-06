@@ -1,0 +1,11 @@
+id: py-global
+valid:
+  - |
+    def f():
+        local = 1
+        return local
+invalid:
+  - |
+    def f():
+        global CONFIG
+        CONFIG = load()

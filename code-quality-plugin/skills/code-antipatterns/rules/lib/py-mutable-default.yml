@@ -1,0 +1,8 @@
+id: py-mutable-default
+language: python
+severity: warning
+message: Mutable default argument creates shared state between calls
+rule:
+  any:
+    - pattern: "def $FUNC($ARG=[]): $$$"
+    - pattern: "def $FUNC($ARG={}): $$$"

@@ -1,0 +1,8 @@
+id: no-eval
+language: tsx
+severity: error
+message: eval / new Function executes arbitrary code — a security risk
+rule:
+  any:
+    - pattern: eval($$$)
+    - pattern: new Function($$$)

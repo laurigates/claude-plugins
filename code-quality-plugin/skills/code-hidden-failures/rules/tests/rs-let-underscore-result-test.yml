@@ -1,0 +1,12 @@
+id: rs-let-underscore-result
+valid:
+  - |
+    fn f() -> Result<(), Error> {
+        do_thing()?;
+        Ok(())
+    }
+invalid:
+  - |
+    fn f() {
+        let _ = do_thing();
+    }

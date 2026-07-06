@@ -1,0 +1,12 @@
+id: py-bare-except-pass
+language: python
+severity: warning
+message: "Bare `except: pass` swallows every exception, including KeyboardInterrupt"
+rule:
+  pattern:
+    context: |
+      try:
+          pass
+      except:
+          pass
+    selector: except_clause

@@ -1,0 +1,5 @@
+id: vue-props-mutation
+valid:
+  - "emit('update:value', next);"
+invalid:
+  - "props.value = next;"

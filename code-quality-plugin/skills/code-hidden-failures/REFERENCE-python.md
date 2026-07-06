@@ -1,5 +1,14 @@
 # Reference — Python Error Swallowing
 
+> **Detection lives in the rule project, not here.** Bare and broad
+> `except … : pass` are executable ast-grep rules —
+> [`py-bare-except-pass.yml`](rules/lib/py-bare-except-pass.yml),
+> [`py-broad-except-pass.yml`](rules/lib/py-broad-except-pass.yml) — run via
+> `ast-grep scan -c rules/sgconfig.yml`. This file is the **judgment reference**:
+> allowlist, severity promotion, and remediation templates. The remaining
+> heuristic patterns (typed-except-pass, suppress-misuse, floating asyncio tasks)
+> stay Grep/`sg`-based per the commands below.
+
 Detection rules for `.py`. Use `sg --lang py` for structural matches.
 
 ## Patterns
@@ -18,9 +27,12 @@ Detection rules for `.py`. Use `sg --lang py` for structural matches.
 
 ### ast-grep commands
 
+`py-bare-except-pass` and `py-broad-except-pass` are executable rules in
+[`rules/lib/`](rules/lib/) — run them (and the rest of the errors catalog) with
+`ast-grep scan -c rules/sgconfig.yml --json=compact <path>`. The remaining
+patterns that are not yet rules stay as per-pattern `sg` commands:
+
 ```bash
-sg -p $'try:\n  $$$\nexcept:\n  pass' --lang py
-sg -p $'try:\n  $$$\nexcept Exception:\n  pass' --lang py
 sg -p $'with suppress($TYPE):\n  $$$' --lang py
 ```
 

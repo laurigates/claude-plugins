@@ -1,0 +1,6 @@
+id: js-empty-catch
+language: tsx
+severity: warning
+message: Empty catch block silently swallows the error
+rule:
+  pattern: "try { $$$ } catch ($E) { }"

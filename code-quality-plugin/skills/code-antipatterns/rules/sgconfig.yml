@@ -1,0 +1,21 @@
+# ast-grep rule project for the code-antipatterns catalog.
+# Invoke from the skill with:
+#   ast-grep scan -c ${CLAUDE_SKILL_DIR}/rules/sgconfig.yml --json=compact <path>
+# Test the rules (valid/invalid fixtures, no snapshot files needed):
+#   ast-grep test -c ${CLAUDE_SKILL_DIR}/rules/sgconfig.yml --skip-snapshot-tests
+#
+# JS/TS rules use `language: tsx` — the Tsx grammar parses plain TS/JS *and*
+# JSX, so one rule per pattern covers .ts/.tsx/.js/.jsx/.mjs/.cjs. The
+# languageGlobs mapping below routes those extensions to the tsx parser.
+ruleDirs:
+  - lib
+testConfigs:
+  - testDir: tests
+languageGlobs:
+  tsx:
+    - "*.ts"
+    - "*.tsx"
+    - "*.js"
+    - "*.jsx"
+    - "*.mjs"
+    - "*.cjs"

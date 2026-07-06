@@ -1,0 +1,14 @@
+id: py-broad-except-pass
+valid:
+  - |
+    try:
+        do_thing()
+    except Exception:
+        logger.exception("failed")
+        raise
+invalid:
+  - |
+    try:
+        do_thing()
+    except Exception:
+        pass

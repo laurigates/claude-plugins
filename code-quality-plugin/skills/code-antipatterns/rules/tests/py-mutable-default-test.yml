@@ -1,0 +1,12 @@
+id: py-mutable-default
+valid:
+  - |
+    def f(arg=None):
+        return arg
+invalid:
+  - |
+    def f(arg=[]):
+        return arg
+  - |
+    def g(arg={}):
+        return arg

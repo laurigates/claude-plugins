@@ -1,5 +1,14 @@
 # Reference — Rust Error Swallowing
 
+> **Detection lives in the rule project, not here.** `let _ = <Result>` and
+> `.ok();` discards are executable ast-grep rules —
+> [`rs-let-underscore-result.yml`](rules/lib/rs-let-underscore-result.yml),
+> [`rs-ok-discard.yml`](rules/lib/rs-ok-discard.yml) — run via
+> `ast-grep scan -c rules/sgconfig.yml`. This file is the **judgment reference**:
+> allowlist, severity promotion, remediation, and the clippy lints to recommend.
+> Prefer `cargo clippy` when available — the rules surface what it catches, they
+> do not replace it.
+
 Rust's `Result` and `#[must_use]` make the compiler a first line of defense.
 This skill's job is to find the *runtime* suppressions — the places where
 `.ok()`, `let _ =`, and friends discard errors deliberately. Prefer
@@ -19,9 +28,12 @@ This skill's job is to find the *runtime* suppressions — the places where
 
 ### ast-grep commands
 
+`rs-let-underscore-result` and `rs-ok-discard` are executable rules in
+[`rules/lib/`](rules/lib/) — run them (and the rest of the errors catalog) with
+`ast-grep scan -c rules/sgconfig.yml --json=compact <path>`. The remaining
+patterns that are not yet rules stay as per-pattern `sg` commands:
+
 ```bash
-sg -p 'let _ = $EXPR;' --lang rust
-sg -p '$EXPR.ok();' --lang rust
 sg -p '$EXPR.map_err(|_| $$)' --lang rust
 ```
 
