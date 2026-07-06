@@ -90,13 +90,37 @@ if [ "$BODY_FILE_SPECIFIED" = true ] && [ -z "$BODY" ]; then
     exit 0
 fi
 
+# Resolve the branch this PR is created FROM: gh pr create --head <branch> /
+# -H <branch> names the head branch, which may differ from the current checkout
+# (creating a PR for another branch, or local main ahead of origin/HEAD with a
+# coworker's unpushed commit). Hardcoding HEAD scans an unrelated commit range
+# and attributes those commits' keywords to this PR — a false-positive block
+# (same HEAD-vs-named-ref bug class as check-pr-metadata-on-push.sh, #1419).
+# gh accepts --head <branch>/--head=<branch> and short -H <branch>/-H=<branch>.
+# Uses perl instead of grep -P for macOS BSD grep compatibility, mirroring the
+# --body-file/-F parsing above.
+HEAD_REF="HEAD"
+HEAD_BRANCH=$(echo "$COMMAND" | perl -ne 'if (/(?:--head[= ]|-H[= ]?)(\S+)/) { print $1; exit; }' 2>/dev/null || true)
+
 # Check git log for issue closing keywords in commits being PR'd
-# Uses merge-base with origin/HEAD to find commits unique to this branch
+# Uses merge-base with origin/HEAD to find commits unique to the head branch
 COMMIT_ISSUES=""
 if [ -n "$CWD" ] && git -C "$CWD" rev-parse --git-dir >/dev/null 2>&1; then
-    BASE=$(git -C "$CWD" merge-base HEAD origin/HEAD 2>/dev/null || true)
+    # If a --head/-H branch was named, resolve the range against it. The branch
+    # may be a local ref not currently checked out; if it doesn't resolve
+    # locally, defer safely (exit 0) rather than block on unresolvable input
+    # (.claude/rules/hook-block-vs-nudge.md: never hard-block on input we can't
+    # inspect).
+    if [ -n "$HEAD_BRANCH" ]; then
+        if git -C "$CWD" rev-parse --verify --quiet "$HEAD_BRANCH" >/dev/null 2>&1; then
+            HEAD_REF="$HEAD_BRANCH"
+        else
+            exit 0
+        fi
+    fi
+    BASE=$(git -C "$CWD" merge-base "$HEAD_REF" origin/HEAD 2>/dev/null || true)
     if [ -n "$BASE" ]; then
-        COMMIT_ISSUES=$(git -C "$CWD" log --format='%s%n%b' "${BASE}..HEAD" 2>/dev/null \
+        COMMIT_ISSUES=$(git -C "$CWD" log --format='%s%n%b' "${BASE}..${HEAD_REF}" 2>/dev/null \
             | grep -oiE '\b(closes?|fixes?|resolves?)[: ]+#[0-9]+' \
             | sort -u | head -5 || true)
     fi
