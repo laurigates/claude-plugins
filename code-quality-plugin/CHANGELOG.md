@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.22.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.21.0...code-quality-plugin-v1.22.0) (2026-07-06)
+
+
+### Features
+
+* **code-quality-plugin:** offload code-complexity metrics to lizard ([#2018](https://github.com/laurigates/claude-plugins/issues/2018)) ([b3fe0ae](https://github.com/laurigates/claude-plugins/commit/b3fe0ae6ddbbc336cca3fb265f694e5917e53585)), closes [#2011](https://github.com/laurigates/claude-plugins/issues/2011)
+
 ## [1.21.0](https://github.com/laurigates/claude-plugins/compare/code-quality-plugin-v1.20.0...code-quality-plugin-v1.21.0) (2026-07-06)
 
 
