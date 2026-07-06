@@ -3,8 +3,8 @@ name: bulk-sweep-classify
 description: "Classify every regex match before a bulk find-replace/syntax-modernization sweep — four match categories, scoped transform, allowlist-aware verification. Use when bulk-renaming commands/tools/paths or migrating syntax across many files."
 allowed-tools: Bash, Read, Grep, Edit
 created: 2026-07-05
-modified: 2026-07-05
-reviewed: 2026-07-05
+modified: 2026-07-06
+reviewed: 2026-07-06
 ---
 
 # Bulk Sweep — Classify Every Match First
@@ -25,7 +25,7 @@ before editing.** The regex sees *text*; the transform needs *semantics*.
 
 | Use this skill when... | Use something else instead when... |
 |------------------------|------------------------------------|
-| A find-replace where the delimiter/token also appears in filenames, config keys, URLs, designs, or historical records | The pattern is structural (function shape, call form) → `ast-grep-search` |
+| A find-replace where the delimiter/token also appears in filenames, config keys, URLs, designs, or historical records | The pattern is structural (function shape, call form) → `code-quality-plugin:ast-grep-search`. **Also** when the rename is *textually simple but code-targeted* (an API rename, call-site migration, or import-path change in **source files**): route it through `ast-grep-search` first — structural matching won't touch strings/comments/URLs, so category-2 false positives shrink to near-zero (see the routing step below) |
 | Command-syntax migration (`/ns:cmd` → `/ns-cmd`), tool rename in docs, path/import migration, API-version bump in prose | A one-off literal string search with no look-alike risk → `tools-plugin:rg-code-search` |
 | Docs trees mixing live guidance with ADRs / changelogs / design PRDs, all matching the same regex | The whole match-set is genuinely uniform and you have verified it |
 
@@ -51,6 +51,31 @@ design.
 `Status: Superseded` plus a top-note, leave the body as a historical record.
 
 ## Execution
+
+### Step 0: Route by sweep target — code vs. prose/docs
+
+Before enumerating, decide **what** you are sweeping. This picks the transform
+engine and shrinks the classify workload:
+
+- **Sweep target is code** — an API rename, call-site migration, or import-path
+  change in **source files**. Do the transform *structurally* with
+  `ast-grep -p '<old>' -r '<new>' --lang <l>`, delegating the transform
+  mechanics to `code-quality-plugin:ast-grep-search`. An ast-grep pattern
+  matches **AST nodes**, so it inherently won't match inside strings, comments,
+  or URLs — the whole **category-2 false-positive bucket shrinks to near-zero**.
+  The classify pass then focuses on **categories 3 (designed filenames/paths)
+  and 4 (immutable records) only**, and Steps 1–2's false-positive tightening is
+  largely unnecessary. Proceed to Step 3 with the ast-grep result in hand.
+
+- **Sweep target is prose/docs/mixed** — command renames in markdown, tool names
+  in docs trees, an API-version bump in prose. Regex sees *text*, not semantics,
+  so the **four-category discipline below is unchanged and remains this skill's
+  core case.** Run the full Step 1 → Step 5 pipeline.
+
+The decision hinges on whether a structural matcher *can* see your target: code
+has an AST, prose does not. When in doubt (a rename that spans both source and
+its surrounding docs), split it — ast-grep the source, then run the
+four-category pass over the docs.
 
 Run this classify-then-transform sweep:
 
@@ -96,6 +121,12 @@ matches remain":
 
 Categories 3 and 4 are *supposed* to keep matching. Confirm the grep returns
 **only** the category 2–4 lines you identified in Step 3.
+
+For the **code route** (Step 0), the preserved set is whatever ast-grep's
+structural match legitimately leaves behind — the old form still cited inside
+**strings, comments, or URLs** that the AST matcher never touched. Verify it the
+same way: re-run the enumeration and confirm the only remaining matches are those
+non-code occurrences (plus any categories 3/4), not genuine call sites.
 
 ## The Verification Trap
 

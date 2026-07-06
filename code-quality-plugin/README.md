@@ -21,7 +21,7 @@ This plugin provides comprehensive code quality tools including automated code r
 | `/code:dep-audit` | Audit dependencies for security vulnerabilities, outdated packages, and license compliance |
 | `/code:test-quality` | Analyze test suite quality — detect test smells, empty assertions, flaky patterns |
 | `/code:complexity` | Analyze code complexity metrics — cyclomatic, cognitive, function length, coupling |
-| `/code-quality:bulk-sweep-classify` | Classify every regex match into four categories before a bulk find-replace/syntax-modernization sweep; scoped transform, allowlist-aware verification |
+| `/code-quality:bulk-sweep-classify` | Route a bulk sweep by target: code renames go through `ast-grep-search` structurally; prose/docs sweeps use the four-category classify-then-transform discipline with allowlist-aware verification |
 | `ast-grep-search` | AST-based code search for structural pattern matching |
 
 ## Agents
