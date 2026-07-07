@@ -18,6 +18,13 @@ failures below live in this flow (or the CI that gates it) and are easy to
 ship without noticing, because the pipeline reports green while the
 registry artifact is broken.
 
+## When to Use This Skill
+
+| Use this skill when... | Use instead when... |
+|---|---|
+| Setting up or debugging a pack's release-please -> publish.yml -> registry pipeline | Writing the pack's frontend/backend code itself -> `comfyui-node-authoring` |
+| A published node's frontend or artwork isn't showing up correctly | Smoke-testing the pack in a running instance -> `comfyui-pack-live-smoke` |
+
 ## 1. `uv.lock` self-version drifts — release-please has no native uv.lock support
 
 The lockfile records the **workspace package's own version** in its

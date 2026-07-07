@@ -1,7 +1,11 @@
 ---
+created: 2026-07-07
+modified: 2026-07-07
+reviewed: 2026-07-07
 name: comfy-image-utils
 description: >-
   ComfyUI non-inference image ops: resize/crop/pad/tile/batch/mask utilities, plus image-to-text captioners (Florence-2, WD14, BLIP, DeepDanbooru). Use when manipulating images or generating captions/tags in a workflow.
+allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # ComfyUI image utilities
@@ -28,6 +32,13 @@ The split:
 | `comfyui-florence2` | Florence-2 vision-language for captioning (PromptGen LoRAs) |
 | `comfyui-wd14-tagger` | WD14 ONNX booru-style tagger |
 | `comfyui-art-venture` | BLIP captioner, DeepDanbooru anime tagger |
+
+## When to Use This Skill
+
+| Use this skill when... | Use instead when... |
+|---|---|
+| Manipulating images/masks outside of model inference (resize, crop, tile, batch) | Running a diffusion/inference node on an image -> the relevant model-family skill |
+| Generating a caption/tag from an image (Florence-2, WD14, BLIP) | Extracting metadata already embedded in an output -> `comfy-metadata` |
 
 ## Sources of truth
 

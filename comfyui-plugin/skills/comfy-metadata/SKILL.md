@@ -1,7 +1,11 @@
 ---
+created: 2026-07-07
+modified: 2026-07-07
+reviewed: 2026-07-07
 name: comfy-metadata
 description: >-
   Extract/analyze ComfyUI metadata embedded in output files - PNG tEXt, WebP EXIF, MP4/WebM container, .latent safetensors. Use when figuring out what prompt/settings produced a file, or comparing runs.
+allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # ComfyUI output metadata
@@ -12,6 +16,13 @@ file format and by which save-node wrote it (core vs. kijai vs. VHS).
 This skill is the canonical reference for *where* the data lives, *how*
 to read it back, and a small Python toolkit to do it reliably across
 every format on disk in this install.
+
+## When to Use This Skill
+
+| Use this skill when... | Use instead when... |
+|---|---|
+| Figuring out what prompt/settings produced an existing output file | Inspecting a *live* in-graph value during a run -> `comfy-debug-preview` |
+| Scanning, organizing, or comparing a directory of outputs | Auto-arranging the layout of a workflow JSON -> `comfy-workflow-layout` |
 
 ## Quick reference
 

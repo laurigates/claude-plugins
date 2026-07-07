@@ -1,7 +1,11 @@
 ---
+created: 2026-07-07
+modified: 2026-07-07
+reviewed: 2026-07-07
 name: comfy-cli
 description: >-
   The `comfy` CLI for ComfyUI: install/update/bisect custom nodes, snapshot/restore state, publish to the registry, run workflows headlessly. Use when the user runs `comfy`, `comfy node`, or `comfy run`.
+allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # comfy CLI on this install
@@ -16,6 +20,13 @@ CLI's lifecycle commands assume *it* owns the process. Most don't apply here.
 The useful surface is **custom-node management**, **headless API execution**,
 and **snapshots**. Almost everything else is either a no-op or actively
 conflicts with the systemd unit.
+
+## When to Use This Skill
+
+| Use this skill when... | Use instead when... |
+|---|---|
+| The user asks to use the `comfy` CLI - install/update/bisect nodes, snapshot/restore, publish, run workflows headlessly | Managing custom nodes via the ComfyUI-Manager UI directly |
+| Running a workflow via `comfy run --workflow ... --port ...` | Running headlessly over the raw HTTP API -> `comfyui-pack-live-smoke` |
 
 ## What to use
 

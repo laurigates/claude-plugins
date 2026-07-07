@@ -1,7 +1,11 @@
 ---
+created: 2026-07-07
+modified: 2026-07-07
+reviewed: 2026-07-07
 name: comfy-debug-preview
 description: >-
   ComfyUI debug/preview nodes: show text/numbers/JSON/tensor shapes, image previews, counts, VRAM/CPU telemetry, timing. Use when inspecting a value mid-graph without changing it.
+allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # ComfyUI debug & preview
@@ -24,6 +28,13 @@ The split:
 | `comfyui_yvann-nodes` | `FloatsVisualizer` (render a float array as a histogram image) |
 | `comfyui-impact-pack` | `Preview Bridge (Image)` / `Preview Bridge (Latent)` — tee inspection while passing through |
 | `comfyui-easy-use` | `easy showAnything`, `easy showLoaderSettingsNames`, `imageCount`, `imagesCountInDirectory` |
+
+## When to Use This Skill
+
+| Use this skill when... | Use instead when... |
+|---|---|
+| Inspecting a value mid-graph without changing it (show/log/preview nodes) | Extracting metadata from a finished output file -> `comfy-metadata` |
+| Checking VRAM/CPU/timing during a run | Computing the value being displayed -> `comfy-math-strings` |
 
 ## Sources of truth
 

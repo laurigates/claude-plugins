@@ -16,6 +16,13 @@ shipped despite green tests. These apply to any custom-node pack regardless
 of build system — hand-authored `web/js/*.js`, or a TypeScript+bun-build pack
 (the layout `comfyui-node-scaffold` generates).
 
+## When to Use This Skill
+
+| Use this skill when... | Use instead when... |
+|---|---|
+| Writing or patching a custom node's frontend or backend code | Setting up the pack's release/publish pipeline -> `comfy-registry-lifecycle` |
+| Verifying an undocumented LiteGraph/Vue API shape | Smoke-testing the finished pack live -> `comfyui-pack-live-smoke` |
+
 ## Pack layout
 
 ```

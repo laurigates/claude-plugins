@@ -1,7 +1,11 @@
 ---
+created: 2026-07-07
+modified: 2026-07-07
+reviewed: 2026-07-07
 name: comfy-flow-control
 description: >-
   ComfyUI routing nodes: typed switches, index switches, broadcast (Anything Everywhere), pipe/context bundles, for/while loops, ExecutionBlocker gates. Use when wiring where a signal routes in a workflow.
+allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # ComfyUI flow control
@@ -12,6 +16,13 @@ the signal go* once the decision is made.
 Six packs on this install contribute flow-control primitives. Each has
 overlapping options and pack-specific quirks — the goal of this skill
 is to pick the right one in one decision, not browse a dropdown.
+
+## When to Use This Skill
+
+| Use this skill when... | Use instead when... |
+|---|---|
+| Wiring how a signal routes, switches, broadcasts, loops, or is gated | Forming the predicate that drives the route -> `comfy-conditionals` |
+| Picking a switch / index-switch / broadcast node | Debugging or inspecting a routed value -> `comfy-debug-preview` |
 
 ## Sources of truth
 

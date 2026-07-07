@@ -31,6 +31,12 @@ its internal link table) live in **`comfy-workflow-json`** — that skill is
 the authority for **programmatic** subgraph edits. This skill is about the
 **interactive** features and what they mean for reuse.
 
+## When to Use This Skill
+
+| Use this skill when... | Use instead when... |
+|---|---|
+| Deciding whether to package part of a workflow as a subgraph, Blueprint, or App Mode UI | Editing the JSON shape of a subgraph programmatically -> `comfy-workflow-json` |
+
 ## Subgraphs — the basics
 
 A subgraph packages selected nodes into a single collapsible "super node"

@@ -15,6 +15,13 @@ complex workflow can be 25k+ tokens). Don't chunk-read or hand-edit large
 workflow files — write a Python transform script that uses `json.load` /
 `json.dump`.
 
+## When to Use This Skill
+
+| Use this skill when... | Use instead when... |
+|---|---|
+| A workflow JSON is too large to hand-edit, or you're splicing/rewiring nodes programmatically | Auto-arranging node *positions* -> `comfy-workflow-layout` |
+| A round-trip transform is silently dropping App Mode or canvas state | Deciding whether to use a subgraph/Blueprint/App Mode at all -> `comfy-subgraphs-app-mode` |
+
 ## Edge-list rebuild — mutate links without hand-surgery
 
 In-place link surgery (patching the flat `links` array *and* every node's

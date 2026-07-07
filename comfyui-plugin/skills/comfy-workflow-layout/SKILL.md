@@ -1,7 +1,11 @@
 ---
+created: 2026-07-07
+modified: 2026-07-07
+reviewed: 2026-07-07
 name: comfy-workflow-layout
 description: >-
   Auto-layout a ComfyUI workflow JSON with a layered DAG algorithm. Use when a workflow's nodes overlap, are messy or cramped, or were imported and need tidying before use.
+allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # ComfyUI workflow auto-layout
@@ -21,6 +25,12 @@ In practice on Wan 2.2 workflows in this install, output bounding-box
 area ranges from −13% to +23% of a hand-arranged layout (typically
 within ±10%), with 0 node overlaps. Without median layering it would
 be 2× larger.
+
+## When to Use This Skill
+
+| Use this skill when... | Use instead when... |
+|---|---|
+| A workflow's nodes overlap, are messy/cramped, or were imported and need tidying | Editing the graph's wiring/links -> `comfy-workflow-json` |
 
 ## Pipeline (default mode)
 

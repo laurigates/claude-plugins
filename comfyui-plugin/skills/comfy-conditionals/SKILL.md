@@ -1,7 +1,11 @@
 ---
+created: 2026-07-07
+modified: 2026-07-07
+reviewed: 2026-07-07
 name: comfy-conditionals
 description: >-
   ComfyUI predicate/boolean nodes: compare, AND/OR/XOR/NOT, ternary, null/empty/type probes, ExecutionBlocker. Use when forming the boolean that drives a workflow switch or blocker.
+allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # ComfyUI conditionals
@@ -17,6 +21,13 @@ Four packs contribute predicate primitives. The split:
 | `comfyui-impact-pack` | `ImpactCompare` + `ImpactConditionalBranch` (lazy) + `ImpactIfNone` + `ImpactConditionalStopIteration` (Impact-iterator loop control) |
 | `comfyui_essentials` | `SimpleCondition` (ternary), `SimpleComparison` (typed, epsilon-aware), `SimpleMathCondition` (boolean from math) |
 | `comfyui-logicutils` | Bit-banging + regex-on-strings logic gates: `AContainsB`, bitwise And/Or/Xor/Not/Shift, generic Invert |
+
+## When to Use This Skill
+
+| Use this skill when... | Use instead when... |
+|---|---|
+| Forming the boolean/predicate that drives a switch or blocker in a workflow | Routing the signal after the decision is made -> `comfy-flow-control` |
+| Comparing values, combining booleans, detecting null/empty | Computing a numeric (non-boolean) value -> `comfy-math-strings` |
 
 ## Sources of truth
 

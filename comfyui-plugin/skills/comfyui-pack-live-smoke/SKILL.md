@@ -27,6 +27,13 @@ This is where bugs that ship green actually surface.
 > `is_loopback || override`. The headline feature was dead in the common
 > case; only a browser smoke caught it.
 
+## When to Use This Skill
+
+| Use this skill when... | Use instead when... |
+|---|---|
+| Verifying a pack end-to-end in a running ComfyUI instance before opening a PR | Writing the pack's code in the first place -> `comfyui-node-authoring` |
+| Confirming an edited/built workflow JSON actually runs | Editing the workflow JSON itself -> `comfy-workflow-json` |
+
 ## Target host — `COMFYUI_HOST`
 
 Every recipe below reads the target instance from the `COMFYUI_HOST`
