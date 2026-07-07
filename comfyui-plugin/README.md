@@ -6,12 +6,16 @@ on the Comfy Registry.
 
 ## Overview
 
-This plugin packages the three skills that build and ship ComfyUI node packs:
+This plugin packages the skills that build and ship ComfyUI node packs:
 scaffolding a CI-green repository, orchestrating the full path from idea to a
 live-on-registry pipeline (repo creation, seeding, and the gitops adoption PR
 that wires branch protection + release-please credentials + the registry token
-via the gitops repo's tofu GitHub Actions workflows), and adding a reproducible
-README-screenshot pipeline to a pack.
+via the gitops repo's tofu GitHub Actions workflows), adding a reproducible
+README-screenshot pipeline to a pack, plus a set of ComfyUI reference skills —
+frontend/backend authoring facts, the registry release pipeline, live-smoke
+testing, workflow-JSON editing, and workflow-graph node-selection reference —
+useful in **any** ComfyUI pack or install, not just this plugin's own scaffold
+output.
 
 ## Skills
 
@@ -76,8 +80,90 @@ pack — the piece `comfyui-node-scaffold` intentionally defers:
 **Use when** generating README screenshots for a comfyui pack, or wiring up the
 screenshot pipeline like `comfyui-gallery-loader`.
 
+### comfyui-node-authoring
+
+ComfyUI frontend/backend facts for writing or patching a custom node's code:
+pack layout (vanilla `web/js/` and TS+bun-build), hiding a widget correctly,
+the `widget.serialize = false` + append-last rule for non-persisted widgets,
+DOM event isolation on the canvas, endpoint/subfolder-safety patterns, the
+tooltip lookup chain, canvas hit-testing, and how to verify an undocumented
+LiteGraph/Vue API against the frontend's own sourcemap instead of guessing.
+
+**Use when** writing or patching a ComfyUI custom node's frontend or backend
+code.
+
+### comfy-registry-lifecycle
+
+The Comfy Registry release pipeline end to end: release-please +
+`uv.lock`/`bun.lock` drift traps, the empty-`web/dist` publish-action bug and
+how to verify a publish actually shipped the frontend, version status states
+(Pending/Active/Flagged), phantom versions, `Release-As` footers stripped by
+squash-merge, the `registry-health` workflow, and generating a registry
+icon/banner (with `scripts/registry_banner_bg.py` +
+`registry_banner_compose.py`).
+
+**Use when** setting up, debugging, or auditing a pack's release-please →
+`publish.yml` → registry.comfy.org pipeline, or when a published node's
+frontend or artwork isn't showing up correctly.
+
+### comfyui-pack-live-smoke
+
+Stand a pack up in a real running ComfyUI instance and exercise it end to
+end before publishing — both browser-driven (chrome-devtools MCP) and
+headless API-driven (queue a workflow JSON, poll for completion) variants.
+Catches frontend↔backend contract bugs (gating predicates, empty modals,
+route mismatches) that pytest/vitest miss because they test each half in
+isolation. Reads the target host from the `COMFYUI_HOST` environment
+variable (default `127.0.0.1:8188`) — set it per-machine in
+`.claude/settings.local.json`'s `env` block.
+
+**Use when** verifying a pack before opening a registry/gitops PR, or
+confirming an edited/built workflow JSON actually runs.
+
+### comfy-workflow-json
+
+Programmatically edit ComfyUI workflow JSON with a Python script instead of
+hand-editing: the edge-list rebuild pattern for mutating links without
+hand-surgery, the two link-encoding schemas (top-level array vs
+subgraph-internal dict), preserving the `extra` block (App Mode config
+lives there), and a JSON-only diagnostic for a swapped positive/negative
+wiring bug.
+
+**Use when** a workflow JSON exceeds a file-read size limit, when splicing
+or rewiring nodes programmatically, or when a round-trip transform is
+silently dropping App Mode or canvas state.
+
+### comfy-subgraphs-app-mode
+
+ComfyUI's interactive Subgraph, Subgraph Blueprint, and App Mode
+(linear-mode) features: creating/editing/publishing subgraphs, why a
+Blueprint instance is an isolated snapshot rather than a live reference, and
+how App Mode turns a finished workflow into a fill-the-form UI.
+
+**Use when** deciding whether to package part of a workflow as a subgraph, a
+reusable Blueprint, or an App Mode UI.
+
+### Workflow-graph node-selection reference
+
+`comfy-cli`, `comfy-conditionals`, `comfy-debug-preview`, `comfy-flow-control`,
+`comfy-image-utils`, `comfy-math-strings`, `comfy-metadata`, and
+`comfy-workflow-layout` are a set of "which node do I use for X" reference
+skills covering the `comfy` CLI and the wider node ecosystem (predicates and
+branching, debug/preview/telemetry nodes, flow-control/routing, image
+processing, math/string utilities, output-metadata extraction, and
+auto-layout). Each documents which installed custom-node pack owns a given
+primitive and the gotchas around it (type coercion, `ExecutionBlocker`
+propagation, save-node widget shapes, and so on).
+
+**Use when** building or debugging a workflow graph and unsure which node
+(or which of several similar nodes) is the right one.
+
 ## When to Use This Plugin
 
 Install when you build ComfyUI custom-node packs and want a repeatable path from
-idea to a published, registry-adopted repository. The skills are specific to the
-laurigates pack family and its gitops (tofu-in-GitHub-Actions) adoption flow.
+idea to a published, registry-adopted repository. `comfyui-node-scaffold`,
+`comfy-node`, and `comfyui-screenshot-pipeline` are specific to the laurigates
+pack family and its gitops (tofu-in-GitHub-Actions) adoption flow; the
+remaining skills (node authoring, registry lifecycle, live-smoke, workflow-JSON
+editing, subgraphs/App Mode, and the workflow-graph node-selection reference)
+are general ComfyUI knowledge useful in any pack repo or ComfyUI install.
