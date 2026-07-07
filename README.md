@@ -180,6 +180,50 @@ Each plugin follows the standard Claude Code plugin structure:
     └── <agent>.md
 ```
 
+## Ecosystem: consumed by dotfiles
+
+This marketplace's primary real-world consumer is
+[`laurigates/dotfiles`](https://github.com/laurigates/dotfiles), which installs,
+pins, and dogfoods the plugins via `just` recipes. The two repos form a
+provider ↔ consumer symbiosis:
+
+```mermaid
+flowchart LR
+    subgraph cp["claude-plugins (this repo — provider)"]
+        mkt["marketplace.json<br/>44 plugins"]
+        skill["/configure-claude-plugins"]
+        rules["shared .claude/rules/"]
+    end
+    subgraph df["dotfiles (consumer)"]
+        pj["just plugins-*<br/>(plugins.just)"]
+        pins["~/.claude/settings.json<br/>canonical pins"]
+    end
+    mkt -->|curl marketplace.json| pj
+    skill -->|plugins-setup-repo| pj
+    pj -->|install / enable| pins
+    pins -->|plugins-audit drift-check| pj
+    rules -.->|conventions mirrored| df
+
+    classDef prov fill:#f3e8ff,stroke:#a855f7;
+    classDef cons fill:#ffedd5,stroke:#f97316;
+    class mkt,skill,rules prov;
+    class pj,pins cons;
+```
+
+- **Provider → consumer:** `dotfiles`' `plugins-install` fetches this repo's
+  `marketplace.json`; `plugins-setup-repo` runs `/configure-claude-plugins` to
+  wire a target repo to the marketplace.
+- **Consumer → provider:** `plugins-audit` / `plugins-sync-repo` compare each
+  repo's committed `enabledPlugins` against the canonical pin set, exercising the
+  marketplace as a live consumer.
+- **Shared conventions:** `conventional-commits`, `parallel-safe-queries`,
+  `gh-json-fields`, and `bash-tool-replacements` rules exist in both repos.
+
+The authoritative diagram (with the full `just` module/group layout) lives in the
+consumer repo: [`dotfiles/docs/justfile-architecture.md`](https://github.com/laurigates/dotfiles/blob/main/docs/justfile-architecture.md).
+Justfile authoring/auditing for both repos is governed by this marketplace's
+`tools-plugin:justfile-expert` and `configure-plugin:configure-justfile`.
+
 ## Development
 
 Plugins use [release-please](https://github.com/googleapis/release-please) for automated versioning. Use conventional commits to trigger releases:
