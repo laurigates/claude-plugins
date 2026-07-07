@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.7.0...comfyui-plugin-v1.8.0) (2026-07-07)
+
+
+### Features
+
+* **comfyui-plugin:** add shared ComfyUI reference skills for authoring, registry lifecycle, and live-smoke ([#2025](https://github.com/laurigates/claude-plugins/issues/2025)) ([c887f6e](https://github.com/laurigates/claude-plugins/commit/c887f6e967a5f1954efea57848a2e0e973944274))
+
 ## [1.7.0](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.6.1...comfyui-plugin-v1.7.0) (2026-07-04)
 
 
