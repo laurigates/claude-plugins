@@ -2,7 +2,7 @@
 
 > Experimental testing harness lives under experiments/claude-probe/.
 
-A curated collection of 44 Claude Code plugins providing 380+ skills and 21 agents for development workflows.
+A curated collection of 44 Claude Code plugins providing 400+ skills and 21 agents for development workflows.
 
 ## Install the Marketplace
 
@@ -80,7 +80,7 @@ the rules, skills, and hooks that embody it.
 |--------|--------|-------------|
 | **api-plugin** | 1 | API integration and testing - REST endpoints, client generation |
 | **blueprint-plugin** | 34 | Blueprint Development methodology - PRD/PRP workflow with version tracking |
-| **comfyui-plugin** | 3 | ComfyUI custom-node pack lifecycle - scaffold, seed repo, gitops adoption, registry publish |
+| **comfyui-plugin** | 16 | ComfyUI custom-node pack lifecycle - scaffold, seed repo, gitops adoption, registry publish |
 | **home-assistant-plugin** | 4 | Home Assistant configuration - automations, scripts, scenes, entities |
 | **obsidian-plugin** | 21 | Obsidian CLI operations - vault management, search, properties, tasks |
 | **project-plugin** | 7 | Project initialization, management, maintenance, and continuous development |
