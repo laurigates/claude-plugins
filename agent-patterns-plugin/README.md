@@ -201,6 +201,19 @@ Configure per-project plugin settings using `.claude/plugin-name.local.md` files
 - Standard `extract_field` parsing pattern
 - Toggle-based hook activation, agent state management
 
+#### `expose-tunable-knob`
+Expose a live-adjustable control instead of guessing a magic constant for a parameter the agent cannot itself perceive (visual, audio, UX output).
+
+**When to use:**
+- Tuning a value judged by a sense the agent lacks — color, size, position, timing, gain
+- The user has already pushed back once on a guessed default ("that's better, but...")
+- The runtime already has (or can cheaply gain) a live control surface — a UI slider, hot-reloadable config, a `--watch` flag
+
+**Features:**
+- Four-step pattern: parameterize the mechanism, pick a reasoned starting default, expose a live control at the human's layer, stop guessing past that point
+- Anti-pattern catalog: silent precision theater, unreachable knobs, knob sprawl
+- Worked example from a live face-swap app's mouth-mask tuning
+
 ## Migration from Orchestration Patterns
 
 The following skills have been removed in favor of native agent teams:
