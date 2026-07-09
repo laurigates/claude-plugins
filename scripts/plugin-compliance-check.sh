@@ -729,6 +729,25 @@ check_skill_body() {
       done
     fi
 
+    # Regression: mcp-management must document the post-add approval gate for a
+    # newly-added project-scoped .mcp.json server. Claude Code gates a fresh
+    # project MCP server behind a one-time trust/approval step (via /mcp or a
+    # session restart, both user-only) before its tools are callable in the
+    # current session — the server reads as "Pending approval" until then. The
+    # skill's Configuration Patterns section previously guided the write but
+    # never mentioned the gate, so the agent discovered it via a status check
+    # mid-session and had to ask the user how to proceed (issue #2030). Anchor on
+    # the two markers of the gate documentation; a bulk edit dropping the gate
+    # note would remove both.
+    if [ "$skill_name" = "mcp-management" ] && [ "$plugin" = "agent-patterns-plugin" ]; then
+      for token in 'Pending approval' 'Post-add approval gate'; do
+        if ! grep -qF "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must document the post-add MCP approval gate marker '${token}' (newly-added project .mcp.json server needs one-time /mcp approval — issue #2030)")
+          has_errors=true
+        fi
+      done
+    fi
+
     # Regression: evaluate-improve must gate any --apply on the AEGIS source-cases
     # DELTA-VERIFY: re-run the source-failure set (the eval cases that motivated
     # the edit, captured in Step 1) against the drafted candidate and confirm the

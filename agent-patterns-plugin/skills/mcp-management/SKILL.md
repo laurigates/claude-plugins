@@ -1,7 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-06-14
-reviewed: 2026-06-14
+modified: 2026-07-09
+reviewed: 2026-07-09
 name: mcp-management
 description: Install and configure MCP servers for Claude Code. Use when adding/enabling servers, updating .mcp.json, managing OAuth remote servers, or troubleshooting connections.
 user-invocable: false
@@ -100,6 +100,10 @@ example in [REFERENCE.md → Configuration patterns](REFERENCE.md#configuration-
 - **Project-scoped** (recommended) — `.mcp.json` at project root; `.gitignore` it for personal configs or track for team configs.
 - **User-scoped** (personal) — `~/.claude/settings.json` for servers available everywhere.
 - **Plugin-scoped** — declared in `plugin.json` (or referenced via `"mcpServers": "./.mcp.json"`).
+
+### Post-add approval gate (project-scoped)
+
+A **newly-added project `.mcp.json` server requires one-time user approval before its tools are callable in the *current* session** — this is expected, not an error. Immediately after writing the config, `claude mcp list` shows the server as `⏸ Pending approval (run 'claude' to approve)` and it stays uncallable until the user approves it via the `/mcp` command or restarts the CLI session — both user-only actions the agent cannot perform for them. So after writing a project `.mcp.json` entry, **tell the user proactively** that a one-time approval (`/mcp` or a session restart) is needed for the new server's tools to become available, rather than discovering the gate via a status check and asking mid-flow.
 
 ## Agentic Optimizations
 
