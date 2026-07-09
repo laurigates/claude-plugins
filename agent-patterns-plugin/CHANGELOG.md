@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.33.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.32.0...agent-patterns-plugin-v2.33.0) (2026-07-09)
+
+
+### Features
+
+* **agent-patterns-plugin:** document post-add MCP approval gate in mcp-management ([#2031](https://github.com/laurigates/claude-plugins/issues/2031)) ([a54e0b6](https://github.com/laurigates/claude-plugins/commit/a54e0b6f4fbff11c2c0d8ffc8639aca6f3d9f85a))
+
 ## [2.32.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.31.0...agent-patterns-plugin-v2.32.0) (2026-07-05)
 
 
