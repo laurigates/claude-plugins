@@ -1,7 +1,7 @@
 ---
 created: 2026-06-16
-modified: 2026-06-18
-reviewed: 2026-06-16
+modified: 2026-07-08
+reviewed: 2026-07-08
 allowed-tools: Glob, Read, Edit, Write, Bash(git status *), Bash(git diff *), Bash(wc *), Bash(ls *), AskUserQuestion, TodoWrite
 model: opus
 description: Audit CLAUDE.md and .claude/rules for always-loaded content that should become an on-demand skill. Use when CLAUDE.md feels bloated, trimming context, or promoting a rule into a skill.
@@ -12,7 +12,7 @@ name: meta-context-diet
 
 # meta-context-diet
 
-Audit always-loaded context — `CLAUDE.md` files and `.claude/rules/*.md` — for material that would be cheaper and clearer as an **on-demand skill**, then migrate approved candidates one at a time.
+Audit always-loaded context — `CLAUDE.md` files and `.claude/rules/*.md` — for material that would be cheaper and clearer as an **on-demand skill**, then migrate approved candidates — per-candidate confirmation for lossy edits, batched approval for the safe ones.
 
 The premise: `CLAUDE.md` and unscoped rules are paid for on **every** turn. A skill costs only its `name` + `description` in the listing budget until its intent fires, then loads its body on demand. Anything that is *not* a hard, always-respected invariant is a candidate to move off the always-loaded surface.
 
@@ -40,7 +40,7 @@ Parse `$ARGUMENTS`:
 
 ## Your task
 
-Execute this audit and, **per approved candidate**, migrate it. **Do not edit any always-loaded file without explicit per-candidate confirmation** — `CLAUDE.md` and rules are shared, every-turn context and a lossy edit degrades every downstream turn.
+Execute this audit and, on approval, migrate each candidate. **Never make a lossy or destructive edit to an always-loaded file without explicit per-candidate confirmation** — `CLAUDE.md` and rules are shared, every-turn context and a lossy edit degrades every downstream turn. Non-destructive dispositions on a large surface may be batch-approved (Step 4).
 
 ### 1. Inventory the always-loaded surface
 
@@ -80,7 +80,7 @@ A rule only earns promotion if it can carry a **description good enough to auto-
 - **Body shape** — the procedure as imperative `## Execution` steps (`skill-execution-structure.md`); large tables go to `REFERENCE.md`.
 - **Residual stub** — typically a one-line pointer (`> For the X workflow, see the \`plugin:skill\` skill.`) so a reader at the old location is routed without re-paying the body cost.
 
-### 4. Confirm before writing — one candidate at a time
+### 4. Confirm before writing — per candidate, batch only the safe dispositions
 
 For each candidate, present:
 
@@ -89,7 +89,22 @@ For each candidate, present:
 3. For promote-to-skill: the drafted skill home, name, and description.
 4. The disposition menu via `AskUserQuestion` (Keep / Lean / Path-scope / Promote-to-skill / Consolidate / Drop / Skip).
 
-Only proceed on explicit approval. **Never bundle multiple candidates into one prompt** — the user may promote one and keep another. Order the prompts by impact (largest always-loaded char count first) so the biggest wins surface early.
+Only proceed on explicit approval. Order the prompts by impact (largest always-loaded char count first) so the biggest wins surface early.
+
+The confirmation shape depends on **how lossy the disposition is**, not on convenience:
+
+| Disposition class | Confirmation | Why |
+|---|---|---|
+| **Non-destructive** — Keep-invariant, Keep-but-lean, Path-scope | Batchable (see below) | The guidance survives in place — leaning trims explanation, path-scoping only narrows *when* it loads. Nothing is removed from the always-loaded surface's meaning. |
+| **Destructive / ambiguous** — Drop, Consolidate-that-deletes, Promote-to-skill | **One candidate, one `AskUserQuestion`** | Each removes guidance from an always-loaded file: Drop deletes it, Consolidate-that-deletes replaces it with a pointer, Promote-to-skill moves the body off the every-turn surface. A wrong call degrades every downstream turn, so the user confirms each individually. |
+
+#### Batch-approval mode for large surfaces
+
+For a **large audit** — roughly **~15+ candidates**, where the per-candidate loop is ~15+ round-trips — prompting individually for every non-destructive disposition is needless friction. In that case, group the non-destructive candidates by disposition tier and offer **one tier-grouped multi-select `AskUserQuestion`** per tier: the user checks the candidates to approve in a single round-trip (e.g. "Path-scope these 9 rules", "Keep-but-lean these 6"). Put each candidate's file, size, and one-sentence justification in its option so the user can deselect any to hold back.
+
+**Per-candidate confirmation stays mandatory for the destructive/ambiguous tier** — Drop, Consolidate-that-deletes, and Promote-to-skill are never batched, regardless of audit size. The invariant is unchanged: **no lossy or destructive edit to an always-loaded file lands without an explicit per-candidate confirmation.** Batch mode only fast-paths the dispositions that preserve the guidance in place.
+
+For a **small audit** (fewer than ~15 candidates) the per-item loop is cheap — prompt each candidate individually and skip batch mode.
 
 ### 5. Execute the approved disposition
 
@@ -122,7 +137,7 @@ End with: total tokens removed from the every-turn surface, the new skills creat
 |---|---|
 | Promote a hard invariant to a skill because it "looks like a procedure" | Keep anything whose violation is a bug even when the user never mentions it — a skill only fires on intent |
 | Move a rule to a skill with a weak description | The description must auto-trigger on the real intent; if you can't write one ≤150 chars that fires, it is not skill-shaped — lean it or path-scope it instead |
-| Bundle "promote A and B" into one approval | One candidate, one `AskUserQuestion` |
+| Bundle a **destructive** disposition (Drop / Consolidate-that-deletes / Promote-to-skill) into a batch approval | Per-candidate `AskUserQuestion` for anything lossy; batch only the non-destructive tier (Keep / Lean / Path-scope) on a large surface |
 | Delete the rule entirely after promotion when something still references it | Leave a one-line pointer stub; `grep -rn` the old rule name first |
 | Edit the chezmoi *target* (`~/.claude/...`) directly | Edit the chezmoi source (`chezmoi source-path`), then apply |
 | Commit the diet as part of the skill | Leave a clean working tree; the user commits per concern |
