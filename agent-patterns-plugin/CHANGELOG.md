@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.34.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.33.0...agent-patterns-plugin-v2.34.0) (2026-07-09)
+
+
+### Features
+
+* **agent-patterns-plugin:** add expose-tunable-knob skill ([#2029](https://github.com/laurigates/claude-plugins/issues/2029)) ([a2fbeac](https://github.com/laurigates/claude-plugins/commit/a2fbeac7c249a4abeb25f5a13dbbb54009f17d8f))
+
 ## [2.33.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.32.0...agent-patterns-plugin-v2.33.0) (2026-07-09)
 
 
