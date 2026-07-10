@@ -247,10 +247,26 @@ fi
 # toward Grep without dead-ending anyone.
 # See .claude/rules/bash-tool-replacements.md for the grep/rg/Grep guidance.
 
-# Check for ls used for file listing (should often use Glob)
-if [ "$IS_REMOTE_EXEC" = false ] && echo "$COMMAND" | grep -Eq '^\s*ls\s+.*\*'; then
-    block "REMINDER: Consider using the Glob tool for pattern-based file listing. Glob provides sorted results by modification time and handles large directories better."
-fi
+# NOTE: `ls` is intentionally NOT blocked here.
+#
+# The ls→Glob redirect was demoted from a hard block to a non-blocking teach
+# nudge (bash-antipatterns-teach.sh, opt-in via CLAUDE_HOOKS_ENABLE_BASH_ANTIPATTERNS_TEACH=1),
+# mirroring the find→Glob (#1871) and grep/rg→Grep (#1909) demotions. Same
+# reasoning applies point-for-point under hook-block-vs-nudge.md's litigation
+# test: the block did NO safety work (listing files destroys nothing; the only
+# justification was style/context-efficiency); it hard-DEAD-ENDED subagents
+# whose toolset doesn't grant the Glob tool (PreToolUse Bash hooks fire in every
+# context, but Glob is not always available — #1416); its regex
+# `^\s*ls\s+.*\*` was a compound-command false positive (it matched any command
+# that merely STARTS with ls and contains a `*` anywhere later, e.g.
+# `ls -1 dir | head; find . -name "*.jsonl"` — the `*` in the unrelated find
+# clause tripped the block); and it carried the highest same-session
+# repeat-block rate of any pattern (31.8% W28 re-run, 33.3% W28 — sustained
+# ≥30% over two consecutive readings, issue #2036). The model writes ls
+# reliably; blocking a tool it's fluent in to force one that is sometimes
+# absent is a bad trade. Context efficiency is preserved by the opt-in teach
+# nudge (`glob-ls`), which steers toward Glob without dead-ending anyone.
+# See .claude/rules/bash-tool-replacements.md for the ls/Glob guidance.
 
 # Check for reading task output files (should use the Read tool)
 # Detects patterns like: cat /tmp/claude/*/tasks/*.output, tail ...tasks/...output, sleep && cat ...output
