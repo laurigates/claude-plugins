@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.14](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.5.13...hooks-plugin-v2.5.14) (2026-07-12)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** demote ls→Glob exit-2 block to opt-in teach nudge ([#2037](https://github.com/laurigates/claude-plugins/issues/2037)) ([8cd679f](https://github.com/laurigates/claude-plugins/commit/8cd679fffa5cd95659d75a6154d2e0ff32aed9d0))
+
 ## [2.5.13](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.5.12...hooks-plugin-v2.5.13) (2026-07-04)
 
 
