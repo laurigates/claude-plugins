@@ -152,6 +152,32 @@ gh issue list --state open --json number --jq 'map(select(.number == 1392))'
 gh issue list --state open --limit 100 --json number,state
 ```
 
+### `--state closed` includes MERGED PRs — so a big `--limit` still may not reach
+
+The cap bites hardest where you least expect it, because **`gh pr list --state
+closed` returns merged PRs too** (merged *is* a closed state). On a busy repo the
+merged PRs vastly outnumber the closed-unmerged ones, so a generous-looking
+`--limit` is spent almost entirely on them:
+
+```bash
+# Looks thorough; on a 2000-PR repo this reaches back only ~3 weeks, because
+# nearly all 400 are merged PRs. Closed-unmerged PRs from months ago: invisible.
+gh pr list --state closed --limit 400 --json number,mergedAt --jq '[.[] | select(.mergedAt == null)]'
+```
+
+Observed (claude-plugins, 2026-07): this returned **4** closed-unmerged PRs;
+querying the same repo branch-by-branch found **11 more** that the page never
+reached. The result reads as a complete answer, not a truncated one.
+
+When you need closed-**unmerged** PRs specifically, don't paginate the closed
+list and filter — query the smaller set directly, or drive the query off
+something bounded (the branch list, `--search`):
+
+```bash
+gh pr list --head <branch> --state all --json number,state,mergedAt   # per-branch: exact
+gh search prs --repo <o>/<r> --state closed --merged=false --limit 100
+```
+
 Symptom signature: a state check reports an issue closed/missing, but
 `gh issue view <N>` shows it OPEN — the list was paginated, the direct view is
 authoritative. (Observed 2026-06-21: a 39-issue repo's open-state check missed
