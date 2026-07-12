@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.7.0...session-plugin-v1.8.0) (2026-07-12)
+
+
+### Features
+
+* **session-plugin:** add upstream issue/PR candidate pass to wrap/end ([#2045](https://github.com/laurigates/claude-plugins/issues/2045)) ([af78c00](https://github.com/laurigates/claude-plugins/commit/af78c00b25becd45cfd5f3d0847c9d39f524bb25))
+
 ## [1.7.0](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.6.1...session-plugin-v1.7.0) (2026-07-05)
 
 
