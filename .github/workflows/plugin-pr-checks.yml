@@ -169,6 +169,12 @@ jobs:
       - name: Check pi/tiers.yaml matches marketplace
         run: bash scripts/check-pi-tiers.sh --strict
 
+      - name: Self-test the pi tier-driven installer
+        # The installer resolves tiers to skill dirs (general->global,
+        # domain->project, exclude->never). Hermetic fixture test; runs
+        # unconditionally so the installer contract stays verified.
+        run: bash scripts/tests/test-install-pi.sh
+
       - name: Install actionlint
         # GitHub Actions YAML schema/best-practice lint — the one workflow gate
         # check-workflow-model.sh does not cover. ubuntu-latest ships Go but does
