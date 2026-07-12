@@ -3,7 +3,7 @@ name: session-end
 description: End-of-session orchestrator. Previews which of wrap/distill/feedback/taskwarrior-sync qualify, single confirm, then sequence. Use when winding down a session.
 allowed-tools: Bash(bash *), Bash(task *), Bash(git *), Bash(gh *), Read, Skill, AskUserQuestion, TodoWrite
 created: 2026-06-10
-modified: 2026-07-05
+modified: 2026-07-12
 reviewed: 2026-06-24
 ---
 
@@ -16,7 +16,7 @@ over three capture skills that used to compete for the wind-down moment
 
 | Pass | Skill | Captures |
 |---|---|---|
-| Wrap | `session-plugin:session-wrap` | Loose threads → taskwarrior, optional journal, GitHub issues |
+| Wrap | `session-plugin:session-wrap` | Loose threads → taskwarrior, optional journal, GitHub issues, upstream issue/PR candidates |
 | Distill | `session-plugin:session-distill` | Durable learnings → rules, skill updates, justfile recipes |
 | Feedback | `feedback-plugin:feedback-session` | Notable plugin/skill interactions → GitHub issues on claude-plugins |
 | Taskwarrior sync | (inline, no sub-skill) | Close done tasks, update statuses, add follow-ups; uses stable UUIDs |
@@ -108,7 +108,14 @@ sync), passing along the Step 1 survey so they don't re-do it:
    `task <uuid> done` / `task <uuid> modify` for existing tasks). Never
    use volatile numeric IDs — they shift when other tasks complete.
 2. `session-plugin:session-wrap` — closes/annotates/adds tasks so later
-   passes see the final queue state
+   passes see the final queue state. Any **upstream issue/PR candidates**
+   it surfaces appear in the Step 3 preview and route per-candidate in
+   Wrap's own Step 4 (track-for-later vs verify-then-file) under this
+   mandatory confirmation gate — filing an upstream issue is not
+   `git restore`-able, exactly what the gate exists for. A *File now*
+   candidate always routes through
+   `workflow-orchestration-plugin:workflow-verify-before-filing` →
+   `agent-patterns-plugin:cold-read-gate` → file; never blind
 3. **Blueprint tracker-sync** (if confirmed) — runs after passes 1–2
    because both mutate the taskwarrior queue and may close more WO-linked
    tasks after the Step 1 survey. Re-derive the wave inline right before

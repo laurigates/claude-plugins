@@ -405,6 +405,33 @@ check_skill_body() {
       done
     fi
 
+    # Regression: the upstream issue/PR candidate pass detects candidates at
+    # the session boundary and ROUTES each one — it never files blind. The
+    # two load-bearing invariants: (1) the track-for-later path survives
+    # (`+upstream` taskwarrior tag), and (2) the file-now path is always
+    # gated by workflow-verify-before-filing (upstream-HEAD verify + dedup)
+    # before anything is published. A bulk edit dropping either silently
+    # reverts the pass to "evaporate at session end" or "file unverified".
+    if [ "$skill_name" = "session-wrap" ]; then
+      for token in "+upstream" "workflow-verify-before-filing"; do
+        if ! grep -q -- "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain '${token}' (upstream candidate pass: track path / never-file-blind gate)")
+          has_errors=true
+        fi
+      done
+    fi
+
+    # Regression: session-end's Wrap-pass note wires the upstream candidate
+    # file-now path through workflow-verify-before-filing under the mandatory
+    # confirmation gate. A bulk edit dropping this token severs the
+    # never-file-blind guarantee at the orchestrated bookend.
+    if [ "$skill_name" = "session-end" ]; then
+      if ! grep -q -- "workflow-verify-before-filing" "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain 'workflow-verify-before-filing' (upstream candidate file-now gate survives at the orchestrated bookend)")
+        has_errors=true
+      fi
+    fi
+
     # Regression: blueprint-adr-validate must retain the ADR-number collision
     # guard (issue #1585). ADR numbers are claimed at merge time, so two
     # parallel ADR PRs can pick the same number and both land (the FVH #2015
