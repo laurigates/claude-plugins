@@ -24,6 +24,7 @@ allowed-tools: Bash(hey *), Bash(ab *), Bash(wrk *), Bash(curl *), Read, Grep, G
 | Scan for open ports on a host | | network-discovery (RustScan, nmap) |
 | See which process is consuming bandwidth | | network-monitoring (bandwhich) |
 | Map physical switch topology | | layer2-discovery (LLDP, ARP) |
+| Inspect or configure the host's own IPs, links, or routes | | interface-state (ip) |
 
 Expert knowledge for HTTP load testing using oha, a Rust-based load generator with real-time TUI visualization and proper latency measurement.
 

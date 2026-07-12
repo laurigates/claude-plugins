@@ -24,6 +24,7 @@ reviewed: 2026-04-25
 | Resolve DNS records for a domain | | dns-tools (dog, dig) |
 | Stress test an HTTP endpoint under load | | http-load-testing (oha) |
 | Monitor which process is using bandwidth | | network-monitoring (bandwhich) |
+| Inspect or configure the host's own IPs, links, or routes | | interface-state (ip) |
 
 ## Core Expertise
 

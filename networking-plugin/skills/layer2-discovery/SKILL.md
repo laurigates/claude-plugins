@@ -25,6 +25,7 @@ allowed-tools: Bash(arp *), Bash(ip *), Bash(bridge *), Bash(ethtool *), Read, W
 | Look up DNS records for a domain | | dns-tools (dog, dig) |
 | Load test an HTTP endpoint | | http-load-testing (oha) |
 | Monitor per-process bandwidth usage | | network-monitoring (bandwhich) |
+| Inspect or configure the host's own IPs, links, or routes | | interface-state (ip) |
 
 Expert knowledge for Layer 2 network topology discovery and neighbor detection, operating below the IP layer for direct link-level visibility.
 

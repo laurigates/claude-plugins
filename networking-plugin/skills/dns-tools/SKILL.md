@@ -24,6 +24,7 @@ reviewed: 2026-04-25
 | Discover devices on local L2 segment | | layer2-discovery (ARP/LLDP) |
 | Load test an HTTP endpoint | | http-load-testing (oha) |
 | Monitor real-time bandwidth per process | | network-monitoring (bandwhich) |
+| Inspect or configure the host's own IPs, links, or routes | | interface-state (ip) |
 
 ## Core Expertise
 
