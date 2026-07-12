@@ -11,6 +11,7 @@ Modern network discovery, diagnostics, monitoring, and load testing tools - prio
 | [network-monitoring](skills/network-monitoring/skill.md) | Real-time traffic monitoring with bandwhich and Sniffnet |
 | [dns-tools](skills/dns-tools/skill.md) | Modern DNS queries with dog (DoT/DoH support) |
 | [layer2-discovery](skills/layer2-discovery/skill.md) | Layer 2 topology mapping with LLDP/CDP and ARP scanning |
+| [interface-state](skills/interface-state/skill.md) | Local interface, address, route, and neighbor state with iproute2 (`ip`) |
 | [http-load-testing](skills/http-load-testing/skill.md) | HTTP load testing with oha (coordinated omission handling) |
 
 ## Tool Categories
@@ -36,6 +37,7 @@ Modern network discovery, diagnostics, monitoring, and load testing tools - prio
 | bandwhich | Per-process bandwidth monitoring | Rust |
 | Sniffnet | GUI traffic monitor with geo-location | Rust |
 | lldpd | LLDP/CDP neighbor discovery | C |
+| iproute2 (`ip`) | Local interface/address/route/neighbor state (net-tools replacement) | C |
 
 ### Load Testing
 | Tool | Purpose | Language |

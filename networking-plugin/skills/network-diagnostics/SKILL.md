@@ -23,6 +23,7 @@ allowed-tools: Bash(ping *), Bash(traceroute *), Bash(mtr *), Bash(netstat *), B
 | Scan all open ports on a remote host | | network-discovery (RustScan, nmap) |
 | Look up DNS records or check propagation | | dns-tools (dog, dig) |
 | Enumerate hosts on the local L2 segment | | layer2-discovery (ARP/LLDP) |
+| Inspect or configure the host's own IPs, links, or routes | | interface-state (ip) |
 | Benchmark HTTP endpoint throughput | | http-load-testing (oha) |
 | See real-time per-process bandwidth consumption | | network-monitoring (bandwhich) |
 

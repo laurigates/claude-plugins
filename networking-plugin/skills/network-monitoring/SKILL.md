@@ -24,6 +24,7 @@ allowed-tools: Bash(iftop *), Bash(nethogs *), Bash(tcpdump *), Bash(ss *), Bash
 | Look up DNS records for a domain | | dns-tools (dog, dig) |
 | Discover devices on the local L2 segment | | layer2-discovery (ARP/LLDP) |
 | Load test an HTTP endpoint | | http-load-testing (oha) |
+| Inspect or configure the host's own IPs, links, or routes | | interface-state (ip) |
 
 Expert knowledge for real-time network traffic monitoring using modern Rust-based tools: bandwhich for CLI-based per-process bandwidth analysis and Sniffnet for visual traffic inspection.
 
