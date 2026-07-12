@@ -176,6 +176,18 @@ repos:
         language: system
         files: '^configure-plugin/skills/configure-all/(scripts/(list-components\.sh|tests/test-list-components\.sh)|components\.yaml)$'
         pass_filenames: false
+      - id: check-pi-tiers
+        name: pi/tiers.yaml matches marketplace + resolves skill refs (pi-tiers-drift)
+        entry: bash ./scripts/check-pi-tiers.sh --strict
+        language: system
+        files: '^(pi/tiers\.yaml|\.claude-plugin/marketplace\.json|scripts/check-pi-tiers\.sh)$'
+        pass_filenames: false
+      - id: test-check-pi-tiers
+        name: pi-tiers drift guard regression
+        entry: bash ./scripts/tests/test-check-pi-tiers.sh
+        language: system
+        files: '^scripts/(check-pi-tiers\.sh|tests/test-check-pi-tiers\.sh)$'
+        pass_filenames: false
       - id: test-fetch-research-papers
         name: research-radar fetcher parse/dedup/date-filter regression
         entry: bash ./scripts/tests/test-fetch-research-papers.sh
