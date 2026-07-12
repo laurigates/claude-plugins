@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.1](https://github.com/laurigates/claude-plugins/compare/macos-plugin-v1.6.0...macos-plugin-v1.6.1) (2026-07-12)
+
+
+### Bug Fixes
+
+* **macos-plugin:** correct invalid du flags, document dust JSON output ([#2040](https://github.com/laurigates/claude-plugins/issues/2040)) ([14cf8ae](https://github.com/laurigates/claude-plugins/commit/14cf8ae75fcf609bccd07b42c83f4e38db47d219))
+
 ## [1.6.0](https://github.com/laurigates/claude-plugins/compare/macos-plugin-v1.5.0...macos-plugin-v1.6.0) (2026-07-05)
 
 
