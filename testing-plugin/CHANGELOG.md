@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.17.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.16.0...testing-plugin-v3.17.0) (2026-07-12)
+
+
+### Features
+
+* **testing-plugin:** add test-strategy-review skill ([#2050](https://github.com/laurigates/claude-plugins/issues/2050)) ([a6e5f76](https://github.com/laurigates/claude-plugins/commit/a6e5f764b69506daf94dca08180e125dc2bc2cb7))
+
 ## [3.16.0](https://github.com/laurigates/claude-plugins/compare/testing-plugin-v3.15.2...testing-plugin-v3.16.0) (2026-07-05)
 
 
