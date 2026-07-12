@@ -20,6 +20,7 @@ This plugin provides comprehensive testing support including test runners, TDD w
 | `test-analyze` | Analyze test results for patterns and improvements |
 | `test-tier-selection` | Determine appropriate test tier (unit, integration, e2e) |
 | `test-quality-analysis` | Analyze and improve test quality |
+| `test-strategy-review` | Audit whether a green suite actually tests what you aim for (adversarial + tests-hidden cold read, verified) |
 | `property-based-testing` | Property-based testing with fast-check (TS/JS) and Hypothesis (Python) |
 | `mutation-testing` | Mutation testing for quality validation |
 | `vitest-testing` | Vitest testing framework patterns |
