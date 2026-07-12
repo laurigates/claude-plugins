@@ -3,7 +3,7 @@ name: session-wrap
 description: End-of-session capture to taskwarrior, optional journal, GitHub issues. Use when user says wrap up, session wrap, or done for now.
 allowed-tools: Bash(bash *), Bash(task *), Bash(git *), Bash(gh *), Read, Write, Edit, AskUserQuestion, TodoWrite
 created: 2026-05-12
-modified: 2026-06-24
+modified: 2026-07-12
 reviewed: 2026-06-24
 ---
 
@@ -43,6 +43,7 @@ worked example: [REFERENCE.md](REFERENCE.md).
 | **taskwarrior** | Every wrap | Mark completed tasks done; annotate in-flight tasks with PR / blocker / state; add tasks for surfaced threads |
 | **Journal** (e.g. Obsidian daily note) | Only when configured AND the session matches `journal_scopes` | Narrative log entry; actionable todo items |
 | **GitHub issues** | Only when cwd has a `github.com` origin AND a PR merged (or is about to) with post-merge follow-ups | One issue per follow-up, linked from the PR description |
+| **Upstream issue/PR candidate** | A bug/gap noticed in a *third-party* `github.com` repo, or a local fix that belongs upstream | Track for later (`+upstream` task) OR a **verified** issue / local-fix backport — never filed blind (Step 4 routes each candidate) |
 
 Out-of-scope sessions get **only** the taskwarrior pass (plus GitHub
 issues if applicable). Default to *skipping* the journal when scope is
@@ -55,12 +56,15 @@ This is the whole point. Log only what the user would miss tomorrow.
 **LOG IT**: PR open and waiting (capture URL + gate) · task started but
 blocked · manual follow-up outside Claude Code · deferred decision ·
 untracked loose thread (bug noticed in passing, doc to write) ·
-investigation finding worth not losing.
+investigation finding worth not losing · upstream candidate
+(bug/docs-gap/feature-gap noticed in a dependency, or a local fix that
+belongs upstream — route it in Step 4, never file blind).
 
 **DO NOT LOG**: work that finished cleanly (mark the task done, don't
 narrate it) · anything already tracked that didn't change state · routine
 ops · self-resolving items ("CI still running") · conversational context
-· speculation ("might refactor X someday").
+· speculation ("might refactor X someday") · anything already tracked
+upstream (an existing third-party issue/PR that didn't change).
 
 Litmus: *"If I don't write this down, will the user notice the gap
 tomorrow?"* Yes → log. No → skip. 3-6 items per wrap is the right shape;
@@ -97,6 +101,7 @@ discussed but not done.
 | Loose thread, in journal scope | Journal log (narrative) or todo (action) |
 | Loose thread, out of scope | Taskwarrior only, with `project:<name>` |
 | Post-merge follow-up (GitHub repo) | One `gh issue create` per follow-up; link from the PR |
+| Upstream candidate (third-party repo) | Per-candidate routing in Step 4 (track for later **or** verify-then-file) |
 | Noise (per filter) | Skip silently |
 
 Resolve numeric task IDs to UUIDs at read time (`task _get <id>.uuid`)
@@ -121,6 +126,32 @@ Taskwarrior: `task <uuid> done` / `task <uuid> annotate "..."` /
 **before** closing. Journal: append per the configured headings —
 mechanics in [REFERENCE.md](REFERENCE.md). GitHub: one issue per
 follow-up, then edit the PR description to link them.
+
+**Upstream candidates**: route each one with an **AskUserQuestion** —
+two equal-weight options (no default lean):
+
+- *Track for later* → `task add project:<name> +upstream '<desc — name
+  the upstream repo + what/why>'`. No outward action; the `+upstream`
+  tag is where "file this upstream" work surfaces later
+  (`taskwarrior-tracking.md`).
+- *File now* → hand off, in order:
+  1. `workflow-orchestration-plugin:workflow-verify-before-filing` —
+     verify the bug still exists at upstream HEAD **and** dedup against
+     the tracker.
+  2. `agent-patterns-plugin:cold-read-gate` — body legibility +
+     internal-context-leak check before anything is published
+     (`public-export-sanitization.md`).
+  3. File the issue (`git-plugin:github-issue-writing`) or open the
+     local-fix backport. When commenting on an **existing** issue, read
+     the full thread first
+     (`~/.claude/rules/read-issue-thread-before-contributing.md`).
+
+  **Graceful degradation**: if `workflow-orchestration-plugin` is not
+  installed (mirrors the `feedback-plugin` / `blueprint-plugin`
+  cross-plugin fallback in `session-end`), fall back to
+  `git-plugin:github-issue-writing` + an explicit manual upstream-HEAD
+  verification, or route to *Track for later* instead — **never file
+  unverified**.
 
 ### Step 5: Report
 
