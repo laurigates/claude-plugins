@@ -45,8 +45,8 @@ df -h /
 diskutil apfs list
 
 # Top-level consumers, one level deep, staying on one filesystem (-x)
-du -shx -d1 / 2>/dev/null | sort -h
-du -shx -d1 ~ 2>/dev/null | sort -h
+du -hx -d1 / 2>/dev/null | sort -h
+du -hx -d1 ~ 2>/dev/null | sort -h
 ```
 
 BSD `du` counts **allocated blocks**, so it reports the real on-disk size of sparse files (e.g. OrbStack's `data.img.raw` reads its true 33 GB, not its apparent size). Trust the number.
@@ -99,7 +99,7 @@ mise use -g aqua:Byron/dua-cli   # `dua`  — interactive TUI via `dua i`
 
 | Tool | Install | Strength |
 |------|---------|----------|
-| `dust` | `aqua:bootandy/dust` | Fast visual tree; lead with this. `dust -r` reverse, `-d N` depth, `-X <glob>` exclude, `-s` apparent size |
+| `dust` | `aqua:bootandy/dust` | Fast visual tree; lead with this. `dust -r` reverse, `-d N` depth, `-X <glob>` exclude, `-s` apparent size, `-j` JSON to stdout |
 | `dua` | `aqua:Byron/dua-cli` | Interactive deletion TUI (`dua i`) |
 | `gdu` / `ncdu` | `aqua:dundee/gdu`, `ncdu` | TUI disk usage analyzers |
 | `diskonaut` | `aqua:imsnif/diskonaut` | Spatial treemap navigator |
@@ -128,10 +128,11 @@ Work top-down — exhaust the safe tier before touching anything that needs a de
 |---------|---------|
 | Honest free space | `df -h / \| awk 'NR==2{print $4" avail"}'` |
 | Container free space | `diskutil apfs list \| grep -i 'Capacity In Use\|Free'` |
-| Top home consumers | `du -shx -d1 ~ 2>/dev/null \| sort -h \| tail -15` |
+| Top home consumers | `du -hx -d1 ~ 2>/dev/null \| sort -h \| tail -15` |
 | Snapshot count | `tmutil listlocalsnapshots / \| grep -c com.apple` |
 | Docker reclaimable | `docker system df` |
 | Fast tree (dust) | `dust -d2 -r ~` |
+| Machine-readable sizes (dust) | `dust -j -o b -d1 <dir> \| jq -r '.children[] \| [(.size \| rtrimstr("B") \| tonumber), .name] \| @tsv' \| sort -rn` — `-j` emits a `{size, name, children}` tree to stdout; `-o b` makes sizes bytes (`"12345B"`) instead of human strings |
 
 ## Quick Reference
 
@@ -139,7 +140,7 @@ Work top-down — exhaust the safe tier before touching anything that needs a de
 |------|---------|
 | Honest free space | `df -h /` (read `Avail`, not `Capacity %`) |
 | APFS container truth | `diskutil apfs list` |
-| Disk hog scan | `du -shx -d1 <dir>` or `dust -d2 -r <dir>` |
+| Disk hog scan | `du -hx -d1 <dir>` or `dust -d2 -r <dir>` |
 | Purgeable snapshots | `tmutil listlocalsnapshots /` |
 | Thin snapshots | `sudo tmutil thinlocalsnapshots / 999999999999 4` |
 | Docker reclaim | `docker system df` then `docker system prune -a -f` |
