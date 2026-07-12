@@ -188,6 +188,12 @@ repos:
         language: system
         files: '^scripts/(check-pi-tiers\.sh|tests/test-check-pi-tiers\.sh)$'
         pass_filenames: false
+      - id: test-check-stranded-work
+        name: stranded-work audit classification regression
+        entry: bash ./scripts/tests/test-check-stranded-work.sh
+        language: system
+        files: '^scripts/(check-stranded-work\.sh|tests/test-check-stranded-work\.sh)$'
+        pass_filenames: false
       - id: test-fetch-research-papers
         name: research-radar fetcher parse/dedup/date-filter regression
         entry: bash ./scripts/tests/test-fetch-research-papers.sh
