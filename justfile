@@ -155,3 +155,13 @@ serve-opencode-model:
 [group: "opencode"]
 install-opencode-ocx target=opencode_config:
     ./scripts/install-opencode-ocx.sh "{{target}}"
+
+####################
+# pi (pi.dev) export
+####################
+
+# Verify pi/tiers.yaml matches the marketplace and its skill refs resolve
+# (local↔CI parity: the enforcement path is the script; this is a convenience alias)
+[group: "pi"]
+check-pi-tiers:
+    ./scripts/check-pi-tiers.sh --strict

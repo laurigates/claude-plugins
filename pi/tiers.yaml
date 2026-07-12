@@ -1,0 +1,106 @@
+# pi/tiers.yaml — canonical classification of claude-plugins skills into pi (pi.dev) install tiers.
+#
+# WHY THIS EXISTS
+#   pi (https://pi.dev) loads Claude Code SKILL.md files unmodified, but — unlike
+#   Claude Code — it does NOT budget the up-front skill-description listing
+#   (no `skillListingBudgetFraction`). Every installed skill costs ~111 tokens of
+#   standing per-turn context (measured, pi 0.80.6). Dumping all ~400 skills adds
+#   ~45K tokens/turn and wedges the agent on a local model's small context window.
+#   This manifest is the single source of truth for WHICH skills install WHERE, so
+#   the standing cost stays bounded. See docs/pi-export.md for the full rationale.
+#
+# TIERS
+#   general  -> ~/.pi/agent/skills/  (always-on, every project; keep this set lean)
+#   domain   -> .pi/skills/          (only in matching project types; per-repo opt-in)
+#   exclude  -> never installed      (Claude-Code-authoring meta; pure budget waste in pi)
+#
+# FIELDS
+#   tier      required. one of general | domain | exclude
+#   skills    optional cherry-pick. When present, ONLY these skill dirs install at this
+#             tier (the rest of the plugin's skills are dropped). Absence = whole plugin.
+#             Use for large plugins whose always-relevant core is a subset (e.g. git).
+#   category  domain plugins only. grouping hint for per-project selection.
+#   reason    exclude plugins only. why it doesn't belong in pi.
+#
+# INVARIANTS (enforced by scripts/check-pi-tiers.sh; pre-commit + CI)
+#   - every plugin in .claude-plugin/marketplace.json appears here exactly once
+#   - every name under `skills:` is a real dir under <plugin>/skills/
+#
+# Editing: move a plugin between tiers, or add/remove names under a `skills:`
+# cherry-pick list, freely — the guard only enforces the invariants above, not
+# any particular assignment. Keep the general tier lean (it is standing per-turn
+# context in EVERY project); prefer a domain category when in doubt.
+
+version: 1
+
+plugins:
+  # ── Tier 1: general (always-on, ~/.pi/agent/skills/) ───────────────────────
+  git-plugin:
+    tier: general
+    # Core "any project, any turn" set. The situational tail (release-please-*,
+    # git-triage, git-fork/upstream-*, git-rebase-patterns, git-issue-hierarchy,
+    # deadbranch, git-maintain, github-labels, ...) is intentionally dropped —
+    # promote individually if a project needs it.
+    skills:
+      - git-commit
+      - git-commit-workflow
+      - git-branch-pr-workflow
+      - git-push
+      - git-pr
+      - git-cli-agentic
+      - gh-cli-agentic
+      - git-coworker-check
+      - git-repo-detection
+      - git-security-checks
+  project-plugin:
+    tier: general
+    # Only the harness-agnostic orientation skill; the rest (project-continue,
+    # project-refocus, project-test-loop, changelog-review) are Claude-Code-workflow.
+    skills:
+      - project-discovery
+  tools-plugin: { tier: general }            # fd/rg/jq/yq/d2/mermaid/shell/... universal
+  code-quality-plugin: { tier: general }     # lint/review/complexity/dead-code/refactor
+  testing-plugin: { tier: general }          # framework-agnostic test runners + analysis
+  software-design-plugin: { tier: general }  # contracts, deep modules, patterns, legacy seams
+  documentation-plugin: { tier: general }
+  migration-patterns-plugin: { tier: general }
+  workflow-orchestration-plugin: { tier: general }
+  prose-plugin: { tier: general }
+  communication-plugin: { tier: general }
+  prompt-engineering-plugin: { tier: general }
+  codebase-attributes-plugin: { tier: general }
+  taskwarrior-plugin: { tier: general }      # cross-project personal workflow
+
+  # ── Tier 2: domain (per-project, .pi/skills/) ──────────────────────────────
+  python-plugin:            { tier: domain, category: lang }
+  typescript-plugin:        { tier: domain, category: lang }
+  rust-plugin:              { tier: domain, category: lang }
+  bevy-plugin:              { tier: domain, category: gamedev }
+  css-plugin:               { tier: domain, category: frontend }
+  component-patterns-plugin: { tier: domain, category: frontend }
+  accessibility-plugin:     { tier: domain, category: frontend }
+  api-plugin:               { tier: domain, category: backend }
+  langchain-plugin:         { tier: domain, category: ai }
+  container-plugin:         { tier: domain, category: infra }
+  kubernetes-plugin:        { tier: domain, category: infra }
+  terraform-plugin:         { tier: domain, category: infra }
+  github-actions-plugin:    { tier: domain, category: ci }
+  finops-plugin:            { tier: domain, category: ci }
+  networking-plugin:        { tier: domain, category: infra }
+  comfyui-plugin:           { tier: domain, category: comfyui }
+  foundryvtt-plugin:        { tier: domain, category: foundryvtt }
+  home-assistant-plugin:    { tier: domain, category: homeassistant }
+  obsidian-plugin:          { tier: domain, category: obsidian }
+  macos-plugin:             { tier: domain, category: host }
+  blog-plugin:              { tier: domain, category: content }
+
+  # ── Tier 0: exclude (never installed into pi) ──────────────────────────────
+  hooks-plugin:          { tier: exclude, reason: "Claude Code hook authoring; pi has no equivalent hook system" }
+  health-plugin:         { tier: exclude, reason: "Claude Code health/registry diagnostics; CC-specific" }
+  feedback-plugin:       { tier: exclude, reason: "Claude Code skill-feedback tooling; CC-specific" }
+  evaluate-plugin:       { tier: exclude, reason: "Claude Code skill-evaluation tooling; CC-specific" }
+  agents-plugin:         { tier: exclude, reason: "Claude Code subagent authoring/analysis; pi has its own sub-agents" }
+  agent-patterns-plugin: { tier: exclude, reason: "Claude Code agent-orchestration/worktree-dispatch/MCP authoring; harness-specific" }
+  configure-plugin:      { tier: exclude, reason: "Claude Code + repo onboarding config (settings.json, MCP, claude-plugins); CC-specific" }
+  blueprint-plugin:      { tier: exclude, reason: "PRD/ADR/PRP methodology, heavily CC-workflow-coupled (34 skills); promote individually if wanted" }
+  session-plugin:        { tier: exclude, reason: "Claude Code session wrap/spinup/distill; CC-specific" }

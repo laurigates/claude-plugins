@@ -160,6 +160,15 @@ jobs:
       - name: Check configure-plugin taxonomy matches components.yaml
         run: bash scripts/check-configure-components.sh --strict
 
+      - name: Self-test the pi-tiers drift guard
+        # Whole-repo invariant: pi/tiers.yaml classifies every marketplace
+        # plugin exactly once and its cherry-picked skill refs resolve. The
+        # self-test proves the guard before it gates the tree.
+        run: bash scripts/tests/test-check-pi-tiers.sh
+
+      - name: Check pi/tiers.yaml matches marketplace
+        run: bash scripts/check-pi-tiers.sh --strict
+
       - name: Install actionlint
         # GitHub Actions YAML schema/best-practice lint — the one workflow gate
         # check-workflow-model.sh does not cover. ubuntu-latest ships Go but does
