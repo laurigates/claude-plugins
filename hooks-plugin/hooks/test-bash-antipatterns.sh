@@ -151,6 +151,34 @@ assert_exit \
     "grep in pipeline is allowed (piped output has different semantics)" 0 \
     "git log --oneline | grep pattern"
 
+# ── ls is no longer blocked ──────────────────────────────────────────────────
+# The ls→Glob redirect was demoted from a hard block to an opt-in teach nudge
+# (bash-antipatterns-teach.sh), mirroring the find (#1871) and grep/rg (#1909)
+# demotions. The block did no safety work (listing files destroys nothing), it
+# hard-dead-ended subagents lacking the Glob tool (#1416), and its regex
+# `^\s*ls\s+.*\*` false-positived on compound commands that merely START with
+# ls and contain a `*` anywhere later (issue #2036). So `ls` in EVERY form is
+# now allowed by this hook. The Glob steer survives as a non-blocking nudge in
+# the companion teach hook (see test-bash-antipatterns-teach.sh, `glob-ls`).
+echo ""
+echo "ls is no longer blocked (demoted to opt-in teach nudge, #2036):"
+
+assert_exit \
+    "ls -1 foo/*.json is allowed (was blocked; now teach-only, #2036)" 0 \
+    "ls -1 foo/*.json"
+
+assert_exit \
+    "plain ls *.md is allowed (was blocked; now teach-only, #2036)" 0 \
+    "ls *.md"
+
+assert_exit \
+    "compound 'ls dir | head; find …' is allowed (regex crossed separators, #2036)" 0 \
+    "ls -1 ~/x | head; find . -name '*.jsonl'"
+
+assert_exit \
+    "ls -la /tmp/*.log is allowed" 0 \
+    "ls -la /tmp/*.log"
+
 # ── echo/printf file-write detection ─────────────────────────────────────────
 # Regression: echo "---"; git ... 2>/dev/null was falsely blocked because
 # the regex used .* which crossed the ; command separator and matched the

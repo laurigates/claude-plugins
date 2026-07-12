@@ -16,14 +16,22 @@ A PreToolUse hook that intercepts Bash commands and blocks those that should use
 | `echo > file` | Use **Write** tool instead |
 | `cat > file` | Use **Write** tool instead |
 | `timeout cmd` | Remove timeout (Bash tool has its own, human approval time exceeds it anyway) |
-| `find` | Use **Glob** tool instead |
-| `grep`/`rg` | Use **Grep** tool instead (allows `-q`, `-l`/`-c`/`-L` filter modes, and pipelines) |
-| `ls *pattern*` | Consider **Glob** tool |
 | `cat/tail ...tasks/*.output` | Use **Read** tool on the output path (or pipe an extraction for large files) |
 | `sleep && cat/tail ...output` | Use **Read** tool on the output path |
 | `git add -A` / `git add .` | Stage specific files by name instead of broad staging |
 | `git X && git Y` | Run git commands as separate Bash calls (avoids index.lock race condition) |
 | `git reset --hard` | Use safer alternatives; if truly needed, ask user to run manually |
+
+### Demoted to opt-in teach nudges (not blocked)
+
+`find` (→ **Glob**, #1871), `grep`/`rg` (→ **Grep**, #1909), and `ls <glob>`
+(→ **Glob**, #2036) are intentionally **not** blocked by this hook. None of
+those blocks did safety work, and each hard-dead-ended subagents whose toolset
+lacks the suggested tool. The steers survive as non-blocking hints in
+`bash-antipatterns-teach.sh`, opt-in via
+`CLAUDE_HOOKS_ENABLE_BASH_ANTIPATTERNS_TEACH=1`. See
+`.claude/rules/bash-tool-replacements.md` and
+`.claude/rules/hook-block-vs-nudge.md`.
 
 ### Handling Blocked Commands
 

@@ -27,7 +27,6 @@ A PreToolUse hook that intercepts Bash commands and blocks those that should use
 | `echo > file` | Use **Write** tool instead |
 | `cat > file` | Use **Write** tool instead |
 | `timeout cmd` | Remove timeout (human approval time exceeds it) |
-| `grep`/`rg` | Use **Grep** tool instead |
 | `git add -A` / `git add .` | Stage specific files by name instead |
 | 5+ pipe chain | Simplify with JSON output or awk |
 | Multi-grep test parsing | Use `--reporter=json` instead |
@@ -35,6 +34,11 @@ A PreToolUse hook that intercepts Bash commands and blocks those that should use
 | Fork bombs | Blocked unconditionally |
 | `chmod 777` | Use restrictive permissions (755, 644, 600) |
 | Write to block device | Blocked unconditionally |
+
+`find` (#1871), `grep`/`rg` (#1909), and `ls <glob>` (#2036) are **not**
+blocked — those redirects were demoted to non-blocking hints in the opt-in
+teach hook (`bash-antipatterns-teach.sh`). See
+`.claude/rules/hook-block-vs-nudge.md` for the block-vs-nudge litigation.
 
 ### git-stash-session-init.sh
 
@@ -372,15 +376,17 @@ CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1 claude
 
 `bash-antipatterns-teach.sh` is an opt-in PostToolUse companion to the existing
 PreToolUse `bash-antipatterns.sh`. Where the PreToolUse hook exits 2 to block
-soft-teach patterns (`cat`, `find -name`, `grep`/`rg`, `head`/`tail`, `ls *.glob`),
-the teach hook lets the command run and prepends a corrective hint to the
-tool result the agent sees via `hookSpecificOutput.updatedToolOutput` (Claude
-Code 2.1.121+). The goal is to drop the W20-measured 21% same-session
-repeat-block rate on `grep`/`rg` toward the ~10% floor of established blocks.
+the remaining soft-teach patterns (`cat`, `head`/`tail`), the teach hook lets
+the command run and prepends a corrective hint to the tool result the agent
+sees via `hookSpecificOutput.updatedToolOutput` (Claude Code 2.1.121+). The
+`find -name` (#1871), `grep`/`rg` (#1909), and `ls <glob>` (#2036) patterns
+have been fully demoted: the PreToolUse hook no longer blocks them at all, and
+their steers live only in this teach hook. The goal is to drop the measured
+same-session repeat-block rates (21% W20 for `grep`/`rg`, 31.8% W28 for
+`ls`→Glob) toward the ~10% floor of established blocks.
 
-Phase 1 is opt-in only — the hook is wired into `plugin.json` but no-ops
-unless `CLAUDE_HOOKS_ENABLE_BASH_ANTIPATTERNS_TEACH=1` is set. The existing
-PreToolUse blocks remain in place. See
+The hook is opt-in — it is wired into `plugin.json` but no-ops
+unless `CLAUDE_HOOKS_ENABLE_BASH_ANTIPATTERNS_TEACH=1` is set. See
 [`docs/teach-mode-experiment.md`](docs/teach-mode-experiment.md) for the full
 hypothesis, rollout plan, and W21 evaluation criteria.
 
