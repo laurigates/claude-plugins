@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/laurigates/claude-plugins/compare/networking-plugin-v1.3.5...networking-plugin-v1.4.0) (2026-07-12)
+
+
+### Features
+
+* **networking-plugin:** add interface-state skill for iproute2 (ip) ([#2044](https://github.com/laurigates/claude-plugins/issues/2044)) ([ddb31be](https://github.com/laurigates/claude-plugins/commit/ddb31be42ca6f51339162e25ef4cb57d37ae6a5f))
+
 ## [1.3.5](https://github.com/laurigates/claude-plugins/compare/networking-plugin-v1.3.4...networking-plugin-v1.3.5) (2026-06-13)
 
 
