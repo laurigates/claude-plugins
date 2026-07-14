@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.35.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.34.0...agent-patterns-plugin-v2.35.0) (2026-07-14)
+
+
+### Features
+
+* **agent-patterns:** teach mcp-server-authoring to report progress ([#2059](https://github.com/laurigates/claude-plugins/issues/2059)) ([882ded2](https://github.com/laurigates/claude-plugins/commit/882ded2305a848a1169e23691125bdba216f54da))
+
 ## [2.34.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.33.0...agent-patterns-plugin-v2.34.0) (2026-07-09)
 
 
