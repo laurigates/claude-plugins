@@ -1,12 +1,12 @@
 ---
 name: session-distill
 description: "Distill session insights into rules, skill improvements, recipes, and cross-repo promotions to marketplace plugins. Use when capturing learnings, codifying workflow into .claude/rules, or promoting a session-invented pattern into a specific plugin/skill as a PR."
-allowed-tools: Bash(git diff *), Bash(git log *), Bash(git status *), Bash(git fetch *), Bash(git switch *), Bash(git checkout *), Bash(git add *), Bash(git commit *), Bash(git branch *), Bash(git push *), Bash(just *), Bash(gh pr *), Bash(gh label *), Read, Grep, Glob, Edit, Write, AskUserQuestion, TodoWrite
-argument-hint: "--rules | --skills | --recipes | --all | --dry-run"
-args: "[--rules] [--skills] [--recipes] [--all] [--dry-run]"
+allowed-tools: Bash(bash *), Bash(mkdir *), Bash(git diff *), Bash(git log *), Bash(git status *), Bash(git fetch *), Bash(git switch *), Bash(git checkout *), Bash(git add *), Bash(git commit *), Bash(git branch *), Bash(git push *), Bash(just *), Bash(gh pr *), Bash(gh label *), Read, Grep, Glob, Edit, Write, AskUserQuestion, TodoWrite
+argument-hint: "--rules | --skills | --recipes | --process | --all | --dry-run"
+args: "[--rules] [--skills] [--recipes] [--process] [--all] [--dry-run]"
 created: 2026-02-11
-modified: 2026-06-18
-reviewed: 2026-02-26
+modified: 2026-07-14
+reviewed: 2026-07-14
 ---
 
 # session-distill
@@ -46,7 +46,8 @@ Before proposing any artifact, evaluate: Does it update an existing one? Does an
 | `--rules` | Only analyze potential rule updates |
 | `--skills` | Only analyze potential skill updates |
 | `--recipes` | Only analyze potential justfile recipe updates |
-| `--all` | Analyze all three categories (default) |
+| `--process` | Only analyze potential process/methodology captures (script+recipe or project-local `.claude/skills/` skill) |
+| `--all` | Analyze all categories (default) |
 | `--dry-run` | Show proposals without applying changes |
 
 ## Tool Call Efficiency
@@ -57,21 +58,59 @@ Minimize LLM round-trips: batch file reads in a single response, combine evaluat
 
 Execute this session distillation workflow:
 
-### Step 1: Analyze session activity
+### Step 1: Run the distill collector, then read conversation for rules
 
-1. Review **conversation history** — tool calls, file edits, commands run, results
-2. If in a git repo, run in parallel: `git log --oneline --max-count=20` and `git log --stat --oneline --max-count=10`
-3. Identify patterns, catalog tools used, note pain points
+Run the read-only collector — the distill-side analogue of `session-survey.sh`.
+It mines this session's transcript (and the cross-session window) for the
+mechanical signals, so you don't re-read the whole conversation for
+commands/edits or re-run `just --dump` from memory:
+
+```sh
+bash "${CLAUDE_SKILL_DIR}/../../scripts/distill-survey.sh" \
+  --session-id "${CLAUDE_SESSION_ID}" --window-sessions 10
+```
+
+Consume the digest:
+
+- `RECIPE_CANDIDATES` — normalized commands that recurred across **separate**
+  sessions or are commit-bracketed this session, and are NOT already a `just`
+  recipe or churn (`status`/`diff`/`log`/`test`/`build`/`ls`/…). Each carries a
+  concrete `_FIRST` example, `_SESSIONS` count, and `_NOVEL_TOKENS`.
+- `HOT_FILES` — the files this session edited/wrote most (exact paths) — where
+  rule/doc updates likely land.
+- `COMMIT_INTERVALS` + `COMMAND_DIGEST` — the mechanical grouping you use to
+  *name* a process or sequence. The script never infers a sequence itself
+  (sequence-naming is judgment); it hands you completed-work intervals.
+- `RULE_HINTS_FROM_TOOLING` — repeated permission/auth denials, the **only**
+  mechanical rule signal.
+
+When `TRANSCRIPT_AVAILABLE=false` / `STATUS=SKIP` (fresh clone, remote sandbox,
+mid-conversation flush, or no `--session-id`), fall back to reading the
+conversation history directly for commands and edits.
+
+**Durable rules live in conversation *reasoning*, not `tool_use` mining.** For
+the rules category always read the conversation's decisions, corrections, and
+constraints yourself — the collector deliberately does not pre-compute rules
+beyond the narrow `RULE_HINTS_FROM_TOOLING` denial signal.
 
 ### Step 2: Evaluate and check redundancy (single pass per category)
 
-When `--all`: complete rules -> skills -> recipes. Do not interleave.
+When `--all`: complete rules -> skills -> recipes/process. Do not interleave.
 
-**Rules** (`.claude/rules/*.md`): Glob all rule files, Read ALL in one response, evaluate each insight against existing rules in one pass (update/skip/remove/merge/add).
+**Rules** (`.claude/rules/*.md`): from the conversation reasoning (plus any
+`RULE_HINTS_FROM_TOOLING` signal), Glob rule files and Read only the *subset*
+the learning touches — the `HOT_FILES` paths and the rules adjacent to them —
+then evaluate each insight in one pass (update/skip/remove/merge/add). Do not
+glob-read every rule when the collector already narrowed the surface.
 
-**Skills**: Glob relevant skill files (target specific plugins from Step 1), Read in one response, evaluate in one pass.
+**Skills**: Glob relevant skill files (target specific plugins from Step 1),
+Read in one response, evaluate in one pass.
 
-**Recipes**: Run `just --dump --dump-format json`, evaluate session commands against loaded recipes in one pass.
+**Recipes / process**: the collector already ran `just --dump`, so
+`RECIPE_CANDIDATES` are already novel (not existing recipes). Route each per the
+[destination table](#routing-a-learning-to-a-destination) — a recurring single
+command → a `just` recipe; a multi-step workflow → a script or a project-local
+skill (see `--process`).
 
 ### Step 3: Present proposals
 
@@ -107,6 +146,27 @@ repo's default branch.
 
 Output concise summary of changes made, including any `[PROMOTE]` PRs opened
 (with their URLs) so the promotion is traceable.
+
+## Routing a learning to a destination
+
+Each surviving insight goes to exactly one home. Pick most-specific first — a
+new artifact type was deliberately **not** added (no `.claude/runbooks/`); a
+project-local process reuses the `.claude/skills/` convention CLAUDE.md
+documents as a first-class, auto-loaded home.
+
+| The learning is… | Destination | Proposal tag |
+|---|---|---|
+| A convention/constraint that prevents mistakes | `.claude/rules/<name>.md` | `[UPDATE]` / `[NEW]` |
+| A recurring single command with fixed flags (a `RECIPE_CANDIDATE`) | a `just` recipe | `[UPDATE]` / `[NEW]` |
+| A **deterministic** multi-step workflow (no decision points) | `scripts/<name>.sh` + a thin `just` recipe wrapping it | `[NEW]` |
+| A **multi-step process with decision points**, project-local | a project-local `.claude/skills/<name>/SKILL.md` (auto-loaded, no marketplace entry — see the repo's CLAUDE.md) | `[NEW]` |
+| Reusable **beyond this repo** | a marketplace plugin/skill via PR | `[PROMOTE]` |
+
+The `--process` category covers the two multi-step rows: a deterministic
+workflow becomes `scripts/*.sh` + a recipe (offload to a deterministic
+substrate); a judgment-bearing one becomes a project-local skill. Name the
+sequence yourself from `COMMIT_INTERVALS` / `COMMAND_DIGEST` — the collector
+gives you the grouping, not the name.
 
 ## Cross-Repo Promotion ([PROMOTE])
 
@@ -163,6 +223,8 @@ evidence summary.
 
 | Context | Command |
 |---------|---------|
+| Distill collector (recipe candidates + hot files + process groupings) | `bash "${CLAUDE_SKILL_DIR}/../../scripts/distill-survey.sh" --session-id "${CLAUDE_SESSION_ID}"` |
+| Distill qualify signal (counts only) | `bash "${CLAUDE_SKILL_DIR}/../../scripts/distill-survey.sh" --session-id "${CLAUDE_SESSION_ID}" --summary` |
 | Session diff summary | `git log --stat --oneline --max-count=10` |
 | Recent commits | `git log --oneline --max-count=20` |
 | List justfile recipes | `just --list` |

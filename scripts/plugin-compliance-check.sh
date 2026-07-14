@@ -432,6 +432,24 @@ check_skill_body() {
       fi
     fi
 
+    # Regression: session-distill's mechanical substrate is distill-survey.sh —
+    # the read-only collector that mines the session transcript for recipe
+    # candidates / hot files / process groupings so the skill judges instead of
+    # re-reading the whole conversation and re-running `just --dump` from memory.
+    # A bulk edit that drops the collector invocation reverts distill to its old
+    # LLM-re-read behaviour (recipe capture goes stale — the exact gap this
+    # closed); dropping the `--process` / `.claude/skills/` route tokens severs
+    # the process/methodology home. The semantic invariant is that both the
+    # substrate wiring and the process-routing survive in the body.
+    if [ "$skill_name" = "session-distill" ]; then
+      for token in "distill-survey.sh" "--process" ".claude/skills/"; do
+        if ! grep -q -- "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain '${token}' (distill collector wiring / process-to-local-skill route)")
+          has_errors=true
+        fi
+      done
+    fi
+
     # Regression: blueprint-adr-validate must retain the ADR-number collision
     # guard (issue #1585). ADR numbers are claimed at merge time, so two
     # parallel ADR PRs can pick the same number and both land (the FVH #2015
