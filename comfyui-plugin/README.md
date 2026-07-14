@@ -143,6 +143,18 @@ how App Mode turns a finished workflow into a fill-the-form UI.
 **Use when** deciding whether to package part of a workflow as a subgraph, a
 reusable Blueprint, or an App Mode UI.
 
+### comfy-corpus-validation
+
+The method for keeping a pack's *factual* corpus true: the source-of-truth
+ladder (executable ground truth > shipped vendor templates > secondary
+sources), measuring a scheduler's sigma curve instead of asserting what it
+does, escalating or staying silent when sources disagree, and treating
+coverage — what the live install offers that the corpus never describes — as
+a first-class check. Routes to `just corpus-check` in `comfyui-sampler-info`.
+
+**Use when** writing or auditing sampler/scheduler/model metadata, or deciding
+whether to believe a source that says "model M wants sampler S".
+
 ### Workflow-graph node-selection reference
 
 `comfy-cli`, `comfy-conditionals`, `comfy-debug-preview`, `comfy-flow-control`,
