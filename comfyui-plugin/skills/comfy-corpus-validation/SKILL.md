@@ -23,7 +23,8 @@ in one day, each caught by luck: a blog-sourced sampler recommendation that
 the vendor's own template contradicted, a schedule-behaviour claim written
 from model memory that computing the sigmas falsified, and a model family
 absent from the corpus entirely because nothing ever asked what the live
-install offers that we describe.
+install offers that we describe. The first real run of the tooling below
+immediately found a fourth nobody knew about.
 
 ## The core rule
 
@@ -71,7 +72,15 @@ This is the only thing that caught the `beta57` error: the corpus claimed it
 "spends steps in the mid-range rather than at the extremes". Measurement
 showed it does the exact opposite — it takes steps *out of* the mid range and
 spends them at the low-noise end. No amount of plausible reasoning would have
-found that; one computation did. Full numbers in `REFERENCE.md`.
+found that; one computation did.
+
+**Reading the source is not the same as executing it.** The first real run of
+`corpus-check` caught a *fourth* error: `linear_quadratic`'s prose was written
+by reading `comfy/samplers.py` — correctly — but missing the `1.0 - x`
+inversion one line down, so the claim came out exactly backwards (it spends 17
+of 20 steps at *high* noise, not low). Source-reading is Tier 1 and still
+produced a confident falsehood. Only running the function and looking at the
+numbers it returns catches this class. Full numbers in `REFERENCE.md`.
 
 ### 2. Disagreement means escalate or stay silent
 
@@ -159,9 +168,10 @@ entries where it can drift.
 
 ## See also
 
-`REFERENCE.md` — the three misses worked end to end with the real numbers:
-the `er_sde` disagreement and its Tier-2 resolution, the `beta57` sigma
-measurement that falsified our own prose (with the sigma lists and band
-table), the subgraph-hidden KSampler and its exact `widgets_values` vector,
-and how a Tier-1 `/object_info` diff mechanically proves which pack provides
-which scheduler.
+`REFERENCE.md` — the four misses worked end to end with the real numbers: the
+`er_sde` disagreement and its Tier-2 resolution, the `beta57` sigma
+measurement that falsified our own prose, the `linear_quadratic` inversion
+that survived a correct reading of the source (and had already propagated into
+another entry's reasoning), the subgraph-hidden KSampler and its exact
+`widgets_values` vector, and how a Tier-1 `/object_info` diff mechanically
+proves which pack provides which scheduler.

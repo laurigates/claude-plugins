@@ -147,8 +147,9 @@ reusable Blueprint, or an App Mode UI.
 
 The method for keeping a pack's *factual* corpus true: the source-of-truth
 ladder (executable ground truth > shipped vendor templates > secondary
-sources), measuring a scheduler's sigma curve instead of asserting what it
-does, escalating or staying silent when sources disagree, and treating
+sources), *executing* a scheduler to measure its sigma curve rather than
+asserting — or even source-reading — what it does, escalating or staying
+silent when sources disagree, and treating
 coverage — what the live install offers that the corpus never describes — as
 a first-class check. Routes to `just corpus-check` in `comfyui-sampler-info`.
 

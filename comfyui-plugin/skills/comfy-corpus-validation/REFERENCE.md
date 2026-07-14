@@ -113,7 +113,101 @@ reviewer's eye lands on the sentence and the numbers at the same time.
 
 ---
 
-## 3. The subgraph-hidden KSampler
+## 3. `linear_quadratic` — the method catching a bug in the corpus that motivated the method
+
+This one is the best evidence the method works, because nobody knew about it.
+It was found by the **first real run** of `corpus-check` against the live
+install — not by a human noticing something odd. It is also the sharpest form
+of the "measure, don't assert" protocol, because the author of the wrong claim
+had done the *right* thing and still got it backwards.
+
+### The claim we shipped
+
+`schedulers.json` said of `linear_quadratic`:
+
+> "Heavily weighted toward the low-noise end: the linear half of the steps all
+> sit below ~2.5% of max sigma, so most of the budget goes to detail refinement
+> rather than composition."
+
+Specific, mechanistic, and cites a real number. It reads like someone checked.
+
+### The measurement
+
+Against `comfy.model_sampling.ModelSamplingDiscrete()` (σ_max = 14.615), at 20
+steps. The first 11 sigmas barely move:
+
+```
+14.615, 14.578, 14.542, 14.505, 14.469, 14.432, 14.395, 14.359, 14.322, 14.286, 14.249, …
+```
+
+then it dives off a cliff:
+
+```
+…, 14.074, 13.621, 12.890, 11.882, 10.596, 9.032, 7.190, 5.071, 2.675, 0.0
+```
+
+Step allocation by band (fraction of σ_max: high > 0.5, mid 0.1–0.5, low < 0.1):
+
+| scheduler | high | mid | low |
+|---|---|---|---|
+| `simple` (baseline) | 3 | 8 | 9 |
+| `beta57` | 3 | 6 | **11** |
+| `linear_quadratic` | **17** | 3 | **0** |
+
+It spends **more than half its budget barely denoising at all** — 17 of 20
+steps in the high-noise/composition band — and crosses the low-noise detail end
+in a handful of enormous jumps. **Zero** steps in the low band. The corpus said
+"heavily weighted toward the low-noise end". It is the precise opposite.
+
+### Why the author got it wrong — the transferable lesson
+
+`linear_quadratic_schedule` in `comfy/samplers.py`:
+
+```python
+linear_sigma_schedule = [i * threshold_noise / linear_steps for i in range(linear_steps)]
+...
+sigma_schedule = linear_sigma_schedule + quadratic_sigma_schedule + [1.0]
+sigma_schedule = [1.0 - x for x in sigma_schedule]          # <-- THE INVERSION
+return torch.FloatTensor(sigma_schedule) * model_sampling.sigma_max.cpu()
+```
+
+`threshold_noise` defaults to 0.025. So the linear half really *is* built from
+values below 2.5% — the corpus sentence is **literally true of
+`linear_sigma_schedule`**. Then, one line down, `1.0 - x` inverts every value,
+and those 2.5%-of-max entries become **≥97.5% of σ_max**. The author read the
+source, read it correctly, and missed the inversion.
+
+That makes this a sharper case than `beta57`. `beta57` was a memory failure —
+the fix is "go look at the code". This one *was* someone going to look at the
+code. **Source-reading is Tier 1 and it still produced a confidently wrong,
+plausible-sounding, number-citing claim**, because a single line downstream
+inverted the meaning.
+
+> **Reading the source is not the same as computing the output.** The only
+> thing that catches this class is running the function and looking at the
+> numbers it returns.
+
+This is why Protocol 1 says *measure*, not *check the source*. A derivation has
+as many places to go wrong as it has lines; the returned array has none.
+
+### The error had already propagated
+
+Wrong mechanism claims do not stay put. `euler_ancestral_cfg_pp`'s `good_for`
+justified pairing it with `linear_quadratic` on the grounds that the scheduler
+"spends steps at the low-noise end… where an ancestral sampler's per-step noise
+injection gets resolved into detail" — reasoning built directly on top of the
+false premise, in a different file, for a different token.
+
+So a single unmeasured claim had become **load-bearing for other entries'
+recommendations**. That is the real cost of a wrong fact in a corpus: it is not
+one bad sentence, it is a foundation that later entries lean on, and every one
+of them inherits the error while looking independently reasoned.
+
+Both fixed in `comfyui-sampler-info#80`; the tooling that caught it is `#79`.
+
+---
+
+## 4. The subgraph-hidden KSampler
 
 ### The trap
 
@@ -162,7 +256,7 @@ what a field means before you believe what it says.**
 
 ---
 
-## 4. Provenance straight from Tier 1: which pack ships which scheduler
+## 5. Provenance straight from Tier 1: which pack ships which scheduler
 
 A live `/object_info/KSampler` on a RES4LYF-equipped install offers:
 
@@ -192,7 +286,7 @@ can flag a corpus entry that attributes a token to the wrong provider.
 
 ---
 
-## Why all three misses have the same shape
+## Why all four misses have the same shape
 
 Each was a claim written at a lower rung than the one that could settle it:
 
@@ -201,6 +295,11 @@ Each was a claim written at a lower rung than the one that could settle it:
 | Krea 2 wants `er_sde` | Tier 3 (a blog) | Tier 2 (the shipped template) |
 | `beta57` "spends steps in the mid-range" | memory | Tier 1 (compute the sigmas) |
 | Krea 2 absent from the corpus | nowhere — nobody asked | Tier 1 (what does the install offer?) |
+| `linear_quadratic` "weighted toward the low-noise end" | Tier 1 **read**, not run | Tier 1 **executed** (compute the sigmas) |
+
+The last row is the one to internalize. Tier 1 is not a *place you looked* — it
+is a *thing you ran*. Reading `samplers.py` and executing `samplers.py` are
+different rungs, and only one of them returns numbers that cannot argue back.
 
 Which is the whole rule, restated: **a claim about ComfyUI is only as good as
 the highest rung you verified it on.**
