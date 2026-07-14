@@ -1,0 +1,75 @@
+name: "Plugin: Stranded-work audit"
+
+# Finds commits that exist on a remote branch but never reached the default branch.
+#
+# Deliberately a scheduled sweep rather than a `pull_request: closed` workflow. Two
+# reasons, both learned the hard way (see scripts/check-stranded-work.sh):
+#
+#   1. Reacting to the auto-close is a race already lost — by the time the event
+#      fires GitHub has deleted the base ref, and a PR whose base is gone cannot be
+#      reopened. An event handler could only ever file a replacement, same as this.
+#   2. An event workflow needs a caller file in every repo, and it never fires at all
+#      for a branch that was pushed without a PR — the shape this sweep exists to catch.
+#
+# Runs on this repo by default; pass --repo to the script to sweep siblings from here.
+
+on:
+  schedule:
+    - cron: '0 8 * * 1'  # Mondays 08:00 UTC
+  workflow_dispatch:
+    inputs:
+      min_age_days:
+        description: "Grace period before a never-PR'd branch counts as stranded"
+        required: false
+        default: '7'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  stranded-work:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0  # `git cherry` needs full history to detect patch-equivalence
+
+      - name: Check for existing open issue
+        id: check_issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EXISTING=$(gh issue list --label "stranded-work" --state open --json number --jq 'length')
+          echo "exists=$([ "$EXISTING" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+      - name: Run stranded-work audit
+        if: steps.check_issue.outputs.exists == 'false'
+        id: audit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MIN_AGE_DAYS: ${{ inputs.min_age_days || '7' }}
+        run: |
+          RESULT=$(bash scripts/check-stranded-work.sh --issue-body --min-age-days "$MIN_AGE_DAYS")
+          {
+            echo "result<<STRANDED_EOF"
+            echo "$RESULT"
+            echo "STRANDED_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      # The script emits nothing when clean, so this step is skipped on a clean sweep
+      # and no issue is created.
+      - name: Create stranded-work issue
+        if: steps.check_issue.outputs.exists == 'false' && steps.audit.outputs.result
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_BODY: ${{ steps.audit.outputs.result }}
+        run: |
+          DATE=$(date +%Y-%m-%d)
+          printf '%s' "$ISSUE_BODY" > /tmp/issue-body.md
+          gh issue create \
+            --title "Stranded work: branches that never reached main ($DATE)" \
+            --label "stranded-work,maintenance" \
+            --assignee laurigates \
+            --body-file /tmp/issue-body.md

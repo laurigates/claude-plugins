@@ -188,6 +188,11 @@ repos:
         language: system
         files: '^scripts/(check-pi-tiers\.sh|tests/test-check-pi-tiers\.sh)$'
         pass_filenames: false
+      - id: test-check-stranded-work
+        name: stranded-work audit classification regression
+        entry: bash ./scripts/tests/test-check-stranded-work.sh
+        language: system
+        files: '^scripts/(check-stranded-work\.sh|tests/test-check-stranded-work\.sh)$'
       - id: test-install-pi
         name: pi tier-driven installer regression
         entry: bash ./scripts/tests/test-install-pi.sh

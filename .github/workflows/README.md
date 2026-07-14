@@ -42,6 +42,7 @@ Plugin: Obsidian CLI changelog review
 Plugin: PR checks
 Plugin: Scheduled audits
 Plugin: Skill splitter
+Plugin: Stranded-work audit
 Plugin: Validate configs
 Plugin: Workflow model audit
 Release: Fix release-please conflicts
