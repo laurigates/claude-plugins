@@ -160,8 +160,46 @@ install-opencode-ocx target=opencode_config:
 # pi (pi.dev) export
 ####################
 
+# Local-model defaults (overridable via environment or `just pi_model=… <recipe>`).
+pi_model := env_var_or_default("PI_MODEL", "mlx-community/Qwen3.6-35B-A3B-4bit")
+pi_port := env_var_or_default("PI_PORT", "8080")
+
 # Verify pi/tiers.yaml matches the marketplace and its skill refs resolve
 # (local↔CI parity: the enforcement path is the script; this is a convenience alias)
 [group: "pi"]
 check-pi-tiers:
     ./scripts/check-pi-tiers.sh --strict
+
+# Print the tier install plan (what lands where) without writing anything
+[group: "pi"]
+pi-tiers:
+    ./scripts/install-pi.sh --list
+
+# Install the general tier into pi's global skills dir (~/.pi/agent/skills)
+[group: "pi"]
+install-pi:
+    ./scripts/install-pi.sh --scope global
+
+# Install a domain category into the project skills dir (.pi/skills)
+[group: "pi"]
+install-pi-domain category:
+    ./scripts/install-pi.sh --category "{{category}}" --scope project
+
+# Serve the local model via mlx-lm (OpenAI-compatible /v1 on the configured port)
+[group: "pi"]
+serve-pi-model:
+    mlx_lm.server --model {{pi_model}} --port {{pi_port}}
+
+# Install the general tier globally, then print the models.json + run next steps
+[group: "pi"]
+setup-pi: install-pi
+    @echo ""
+    @echo "Next steps:"
+    @echo "  1. Install the server:  uv tool install mlx-lm"
+    @echo "  2. Serve the model:     just serve-pi-model"
+    @echo "     (or: mlx_lm.server --model {{pi_model}} --port {{pi_port}})"
+    @echo "  3. Add a local provider to ~/.pi/agent/models.json:"
+    @echo '     {"providers":{"mlx-local":{"baseUrl":"http://localhost:{{pi_port}}/v1","api":"openai-completions","apiKey":"mlx","compat":{"supportsDeveloperRole":false,"supportsReasoningEffort":false},"models":[{"id":"{{pi_model}}","name":"{{pi_model}} (local)","contextWindow":128000,"maxTokens":32000,"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0}}]}}}'
+    @echo "     (full block + rationale: docs/pi-export.md)"
+    @echo "  4. Run pi:              cd <project> && pi --model mlx-local/{{pi_model}}"
+    @echo "  5. Per-project domain:  just install-pi-domain <category>   (see: just pi-tiers)"
