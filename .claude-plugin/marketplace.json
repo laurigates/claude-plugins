@@ -589,7 +589,7 @@
       "name": "session-plugin",
       "source": "./session-plugin",
       "description": "Session bookends - spinup briefing, wrap-up capture, end-of-session orchestration, and knowledge distillation",
-      "version": "1.8.0",
+      "version": "1.9.0",
       "keywords": [
         "session",
         "spinup",
