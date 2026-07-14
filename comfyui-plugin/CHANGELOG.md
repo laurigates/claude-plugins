@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.8.0...comfyui-plugin-v1.9.0) (2026-07-14)
+
+
+### Features
+
+* **comfyui-plugin:** add comfy-corpus-validation skill ([#2062](https://github.com/laurigates/claude-plugins/issues/2062)) ([cb82302](https://github.com/laurigates/claude-plugins/commit/cb823022396ef160a5d5ce83b3ab5e7ecf085fca))
+
 ## [1.8.0](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.7.0...comfyui-plugin-v1.8.0) (2026-07-07)
 
 
