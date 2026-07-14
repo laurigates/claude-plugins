@@ -254,6 +254,17 @@ gh pr create --title "feat(git-plugin): add new workflow"
 6. **Test** - Verify skills load and work
 7. **Create PR** - Use conventional commit format for title (drives automation)
 
+## Local-model export
+
+Run this marketplace's skills inside local-model coding agents. Two targets, two docs:
+
+| Target | Source of truth | Doc | Recipes |
+|--------|-----------------|-----|---------|
+| **pi** (pi.dev) | `pi/tiers.yaml` (tier classification, enforced by `scripts/check-pi-tiers.sh`) | [`docs/pi-export.md`](docs/pi-export.md) | `just check-pi-tiers`, `pi-tiers`, `install-pi`, `install-pi-domain <cat>`, `serve-pi-model`, `setup-pi` (group `pi`) |
+| **OpenCode** | rulesync export | [`docs/opencode-export.md`](docs/opencode-export.md) | `just export-opencode`, `install-opencode`, `setup-opencode` (group `opencode`) |
+
+pi loads Claude Code `SKILL.md` unmodified but does **not** budget the skill listing (~111 tok/skill, uncapped), so `pi/tiers.yaml` curates which skills install where (`general` → `~/.pi/agent/skills/`, a `domain` category → `.pi/skills/`, `exclude` → never). See `docs/pi-export.md`.
+
 ## Blueprint (constrained dogfooding)
 
 This repo runs `blueprint-plugin` against itself in a deliberately constrained mode. State lives in `docs/blueprint/`; see `docs/blueprint/README.md` for the full rationale.

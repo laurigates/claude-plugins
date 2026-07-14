@@ -193,6 +193,11 @@ repos:
         entry: bash ./scripts/tests/test-check-stranded-work.sh
         language: system
         files: '^scripts/(check-stranded-work\.sh|tests/test-check-stranded-work\.sh)$'
+      - id: test-install-pi
+        name: pi tier-driven installer regression
+        entry: bash ./scripts/tests/test-install-pi.sh
+        language: system
+        files: '^scripts/(install-pi\.sh|tests/test-install-pi\.sh)$'
         pass_filenames: false
       - id: test-fetch-research-papers
         name: research-radar fetcher parse/dedup/date-filter regression
