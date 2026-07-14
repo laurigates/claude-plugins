@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.8.0...session-plugin-v1.9.0) (2026-07-14)
+
+
+### Features
+
+* **session-plugin:** add distill-survey.sh deterministic collector ([#2065](https://github.com/laurigates/claude-plugins/issues/2065)) ([e29353c](https://github.com/laurigates/claude-plugins/commit/e29353ca3e73ce0be47e13dfc99bcd80b99a373f))
+
 ## [1.8.0](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.7.0...session-plugin-v1.8.0) (2026-07-12)
 
 
