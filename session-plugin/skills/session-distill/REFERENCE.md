@@ -24,12 +24,32 @@
 
 ### Recipes Worth Capturing
 
-| Capture when... | Skip when... |
+Within-session repeat count is **not** the signal — it rewards TDD/debug thrash
+(`pytest -x` ×8), not durable workflows (a deploy sequence run once). The
+`distill-survey.sh` `RECIPE_CANDIDATES` section already encodes the real
+criteria; capture from it.
+
+| Capture when (a `RECIPE_CANDIDATE`)… | Skip when… |
 |-----------------|--------------|
-| Command was run 3+ times with same flags | One-off command |
-| Multi-step workflow that should be atomic | Single simple command |
-| Flags that are hard to remember | Common well-known flags |
-| Project-specific pipeline step | Standard `just` template recipe |
+| The normalized command **recurred across ≥2 separate sessions** (`_SESSIONS ≥ 2`) | It appears only this session and isn't commit-bracketed |
+| It is **commit-bracketed** — in an interval terminated by `git commit` (a completed unit of work) | It is churn (`status`/`diff`/`log`/`test`/`build`/`ls`/`cd`/`pwd`/`cat`) — excluded by the collector |
+| It is **novel** — not already covered by `just --dump` | It is already a `just` recipe (the collector drops these) |
+| Refine the collector's `_FIRST` example (normalization is lossy) | Common well-known flags with no project specifics |
+
+### Process / Methodology Worth Capturing (`--process`)
+
+A multi-step workflow the session invented that is worth repeating has no home
+in a single rule or recipe. Route it by whether it needs judgment:
+
+| Capture when… | Destination |
+|-----------------|--------------|
+| A **deterministic** multi-step sequence (no decision points) — you can name it from `COMMIT_INTERVALS` | `scripts/<name>.sh` + a thin `just` recipe (offload to a deterministic substrate) |
+| A **multi-step process with decision points**, project-local | a project-local `.claude/skills/<name>/SKILL.md` (auto-loaded — no marketplace entry) |
+| The same process would help **other repos** | `[PROMOTE]` to a marketplace plugin (PR) |
+
+Name the sequence yourself — the collector emits the grouping
+(`COMMIT_INTERVALS` / `COMMAND_DIGEST`), never the name (sequence inference is
+judgment, which stays in the skill).
 
 ### Skill Improvements Worth Proposing
 
@@ -53,14 +73,28 @@ plugin in another repo**, applied as a PR.
 | The same technique would help **other repos**, not just this one | One-off, won't recur -> skip |
 | A focusing fix: "this belongs in `<plugin>/skills/<skill>`" | You can't identify a plausible owner and it isn't clearly reusable |
 
+## Routing Decision Table
+
+Most-specific destination first. No new artifact type — a project-local process
+reuses `.claude/skills/`.
+
+| Learning | Destination | Tag |
+|---|---|---|
+| Convention/constraint | `.claude/rules/<name>.md` | `[UPDATE]` / `[NEW]` |
+| Recurring single command | `just` recipe | `[UPDATE]` / `[NEW]` |
+| Deterministic multi-step workflow | `scripts/<name>.sh` + `just` recipe | `[NEW]` |
+| Multi-step process w/ decision points, project-local | `.claude/skills/<name>/SKILL.md` | `[NEW]` |
+| Reusable beyond this repo | marketplace plugin (PR) | `[PROMOTE]` |
+
 ## Proposal Format Examples
 
 ```
 [UPDATE] `.claude/rules/X.md` - Reason for update (description of change)
 [SKIP] Considered rule Y, but Z already covers it
 [UPDATE] `plugin/skills/skill-name/SKILL.md` - Pattern discovered
-[NEW] Genuinely new and reusable artifact (only if justified)
-[UPDATE] `recipe-name` - Better flags discovered (before/after)
+[NEW] `just deploy-canary` - RECIPE_CANDIDATE recurred across 3 sessions, novel vs `just --dump`
+[NEW] `.claude/skills/canary-rollout/SKILL.md` - multi-step-with-judgment process named from COMMIT_INTERVALS (project-local)
+[NEW] `scripts/regen-fixtures.sh` + `just regen-fixtures` - deterministic multi-step workflow
 [REDUNDANT] `old-recipe` - Superseded by new approach
 [PROMOTE] -> rust-plugin/skills/cargo-worktree-builds (new) - shared CARGO_TARGET_DIR across worktree agents; reusable beyond this repo, no home skill -> PR
 [PROMOTE] -> git-plugin/skills/git-pr (edit) - stacked-PR --onto squash cleanup the skill is missing -> PR

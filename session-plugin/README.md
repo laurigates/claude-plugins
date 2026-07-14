@@ -16,7 +16,7 @@ Design background: [`docs/archive/session-plugin-workflow.md`](../docs/archive/s
 | `session-spinup` | Read-only session-start briefing: open taskwarrior tasks, git state (uncommitted / unpushed / open PRs), optional journal todos |
 | `session-wrap` | End-of-session capture of loose threads to taskwarrior, an optional journal, GitHub follow-up issues, and upstream issue/PR candidates (track-for-later or verify-then-file, never blind) |
 | `session-end` | Orchestrator: one survey, preview which of wrap / distill / feedback / taskwarrior-sync / blueprint tracker-sync qualify, **single confirmation**, then sequence them |
-| `session-distill` | Distill session insights into `.claude/rules/`, skill improvements, and justfile recipes (moved from `project-plugin`) |
+| `session-distill` | Distill session insights into `.claude/rules/`, skill improvements, justfile recipes, and process/methodology captures (project-local `.claude/skills/` or `scripts/`+recipe); driven by the read-only `distill-survey.sh` collector |
 
 `session-end` also references `feedback-plugin:feedback-session` (the
 plugin-feedback pass) and `blueprint-plugin:blueprint-feature-tracker-sync`
@@ -98,6 +98,44 @@ All writes and judgment stay in the invoking skill.
 
 Regression test: `scripts/tests/test-session-survey.sh` (run directly
 with bash).
+
+## Distill collector (`scripts/distill-survey.sh`)
+
+The distill-side analogue of `session-survey.sh`. Where the capture side
+surveys *repo/task state*, the distill side mines the local **session
+transcript** (`~/.claude/projects/<slug>/<session-id>.jsonl`) so
+`session-distill` judges instead of re-reading the whole conversation for
+commands/edits and re-running `just --dump` from memory. Same contract:
+**read-only** (extraction only — all writes and all *judgment*, including
+naming a sequence or a rule, stay in the skill), `=== SECTION ===` /
+`KEY=VALUE` output, exit-0 on empty.
+
+Signals are chosen to reward durable workflows over TDD/debug thrash:
+cross-session recurrence (a novel command recurring across **separate**
+sessions), commit-bracketing (commands in the interval a `git commit`
+terminates), and novelty vs `just --dump`. It emits a command *digest* and
+commit-interval groupings — it never infers a sequence (that is judgment).
+
+| Flag | Adds |
+|---|---|
+| `--session-id <id>` | which transcript is "this session" (required — without it the collector SKIPs) |
+| `--window-sessions N` | cross-session recurrence window, newest N transcripts (default 10) |
+| `--window-days N` | window by age instead of count |
+| `--min-sessions N` | SKIP below this many transcripts (default 1) |
+| `--project-dir <path>` / `--home-dir <path>` | project root / home (transcripts live under `<home>/.claude/projects`) |
+| `--summary` | coarse counts only (`RECIPE_CANDIDATE_COUNT`, `HOT_FILE_COUNT`, `PROCESS_SIGNAL`, `TRANSCRIPT_AVAILABLE`) — used by session-end's Distill qualify gate |
+
+Sections: `SESSION_META`, `RECIPE_CANDIDATES` (novel + recurring/bracketed
+commands with `_FIRST`/`_SESSIONS`/`_NOVEL_TOKENS`), `HOT_FILES` (files
+edited ≥3× this session, exact paths), `COMMIT_INTERVALS`, `COMMAND_DIGEST`,
+and `RULE_HINTS_FROM_TOOLING` (repeated permission/auth denials — the only
+mechanical rule signal). Degrades to `TRANSCRIPT_AVAILABLE=false` +
+`STATUS=SKIP` when no transcript is reachable, and `session-distill` falls
+back to its LLM-re-read behaviour.
+
+Test seams: `DISTILL_SURVEY_PROJECTS_DIR`, `DISTILL_SURVEY_JUST_BIN`.
+Regression test: `scripts/tests/test-distill-survey.sh` (run directly with
+bash).
 
 ## Confirmation-gate convention
 

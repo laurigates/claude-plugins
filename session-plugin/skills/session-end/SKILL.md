@@ -17,7 +17,7 @@ over three capture skills that used to compete for the wind-down moment
 | Pass | Skill | Captures |
 |---|---|---|
 | Wrap | `session-plugin:session-wrap` | Loose threads → taskwarrior, optional journal, GitHub issues, upstream issue/PR candidates |
-| Distill | `session-plugin:session-distill` | Durable learnings → rules, skill updates, justfile recipes |
+| Distill | `session-plugin:session-distill` | Durable learnings → rules, skill updates, justfile recipes, process/methodology (script+recipe or project-local `.claude/skills/`) |
 | Feedback | `feedback-plugin:feedback-session` | Notable plugin/skill interactions → GitHub issues on claude-plugins |
 | Taskwarrior sync | (inline, no sub-skill) | Close done tasks, update statuses, add follow-ups; uses stable UUIDs |
 | Blueprint tracker-sync | `blueprint-plugin:blueprint-feature-tracker-sync` | Drain closed WO-linked tasks from tracker `tasks.pending` → `tasks.completed` (`--drain-wave`) |
@@ -52,6 +52,16 @@ to the confirmed passes in Step 4 so they don't re-survey. Plus the
 conversation: what finished, what's hanging, what was learned, what
 plugin/skill friction or wins occurred.
 
+For the **Distill** qualify gate (Step 2), also run the distill collector's
+coarse summary — the mechanical half of the Distill signal (recipe candidates,
+hot files, process groupings). It degrades to `TRANSCRIPT_AVAILABLE=false` when
+no transcript is reachable, so treat a SKIP as "no mechanical signal, judge
+conceptually only":
+
+```sh
+bash "${CLAUDE_SKILL_DIR}/../../scripts/distill-survey.sh" --session-id "${CLAUDE_SESSION_ID}" --summary
+```
+
 ### Step 2: Qualify each pass
 
 Apply each skill's own signal filter strictly; **silently skip passes
@@ -61,7 +71,7 @@ failure mode.
 | Pass | Qualifies when |
 |---|---|
 | Wrap | ≥1 genuine loose thread per session-wrap's LOG IT filter |
-| Distill | A durable, generalizable learning emerged AND the repo has a distillable surface (`.claude/rules/` or a justfile) |
+| Distill | A durable, generalizable learning emerged AND the repo has a distillable surface (`.claude/rules/` or a justfile). Corroborate the mechanical half with the distill collector's `--summary` (below): `RECIPE_CANDIDATE_COUNT` / `HOT_FILE_COUNT` / `PROCESS_SIGNAL` > 0 means recipes/hot-files/process are worth a pass even if no conceptual rule emerged |
 | Feedback | A plugin/skill behaved notably well or badly — bug, enhancement, or positive worth filing |
 | Taskwarrior sync | `TASK_AVAILABLE=true` AND `OPEN_TASKS` ≥ 1 in the Step 1 digest |
 | Blueprint tracker-sync | `UNDRAINED_COUNT` ≥ 1 in the Step 1 digest's `BLUEPRINT` section. Non-blueprint / tracker-missing repos auto-disqualify (count is 0) → silent skip. If `blueprint-plugin` isn't installed, note it and skip (as with Feedback) |
@@ -162,6 +172,7 @@ already in the transcript. Pre-silence:
 | Context | Command |
 |---|---|
 | One-pass survey (detection + git + PRs + tasks-with-UUIDs + commits + blueprint tracker state) | `bash "${CLAUDE_SKILL_DIR}/../../scripts/session-survey.sh" --with-commits --with-blueprint` |
+| Distill qualify signal (recipe/hot-file/process counts) | `bash "${CLAUDE_SKILL_DIR}/../../scripts/distill-survey.sh" --session-id "${CLAUDE_SESSION_ID}" --summary` |
 | Re-derive the drain wave before delegating | `task bpid.any: status:completed export \| jq …` intersected with tracker `tasks.pending` (Step 4.3) |
 | Stable UUID for latest task | `task +LATEST uuids` |
 | Mark task done by UUID | `task <uuid> done` |
