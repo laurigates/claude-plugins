@@ -149,7 +149,7 @@
       "name": "comfyui-plugin",
       "source": "./comfyui-plugin",
       "description": "ComfyUI custom-node pack lifecycle - scaffold a pack, create + seed the repo, open the gitops adoption PR, publish to the Comfy Registry, and add README screenshots",
-      "version": "1.8.0",
+      "version": "1.9.0",
       "keywords": [
         "comfyui",
         "custom-node",
