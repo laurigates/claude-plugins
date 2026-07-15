@@ -182,15 +182,12 @@ state of the project queue, not just the dispatchable subset:
 
 | Task | UUID | Agent | Started | Action |
 |------|------|-------|---------|--------|
-| #2 (WO-005) | 44556677 | claude-44556677 | 6h ago | Investigate; release with `/taskwarrior:task-release 44556677...` (or `#2` — task-release resolves either form to the immutable UUID internally) if abandoned |
+| #2 (WO-005) | 44556677 | claude-44556677 | 6h ago | Investigate; release with `/taskwarrior:task-release 2` (or the UUID) if abandoned |
 ```
 
 Empty sections render as "(none)". Never auto-stop a stale claim —
-report only, per the v1 design. The `UUID` column (`.uuid[0:8]`) is a
-copy-pasteable immutable form offered as convenience — `task-release` /
-`task-claim` / `task-done` resolve and mutate by UUID internally regardless
-of which form is pasted, so it is not the safety mechanism (see
-`.claude/rules/task-id-stability.md`).
+report only, per the v1 design. `UUID` is convenience, not the safety
+mechanism (`.claude/rules/task-id-stability.md`).
 
 ## Agentic Optimizations
 
@@ -227,4 +224,4 @@ of which form is pasted, so it is not the safety mechanism (see
 - `agent-patterns-plugin:exclusive-lock-dispatch` — when to pre-dump instead of serialise
 - `workflow-orchestration-plugin:workflow-wave-dispatch` — wave scheduling that consumes the brief
 - `.claude/rules/parallel-safe-queries.md` — `export | jq` idiom
-- `.claude/rules/task-id-stability.md` — why the UUID column is convenience, not the safety mechanism
+- `.claude/rules/task-id-stability.md` — UUID column is convenience, not the mechanism
