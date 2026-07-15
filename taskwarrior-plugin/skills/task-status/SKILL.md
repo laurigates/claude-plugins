@@ -76,7 +76,7 @@ project name into the filter — do **not** use `$()` command substitution
 in the inline command (shell-operator protections will reject it).
 
 ```bash
-task project:myrepo status:pending export | jq '.[] | {id, description, urgency, tags, bpid, bpdoc, ghid, ghpr, agent, pid, host, branch, worktree, start, modified, depends, due, scheduled, wait}'
+task project:myrepo status:pending export | jq '.[] | {id, uuid, description, urgency, tags, bpid, bpdoc, ghid, ghpr, agent, pid, host, branch, worktree, start, modified, depends, due, scheduled, wait}'
 ```
 
 For completeness also pull recently-completed in the same project:
@@ -89,8 +89,8 @@ In parallel, pull the in-flight set so the "In flight" and "Stale
 claims" sections in Step 5 have data to render:
 
 ```bash
-task project:myrepo +ACTIVE export | jq '.[] | {id, description, agent, pid, host, branch, worktree, start, urgency}'
-task project:myrepo +ACTIVE start.before:now-4h export | jq '.[] | {id, agent, host, branch, start}'
+task project:myrepo +ACTIVE export | jq '.[] | {id, uuid, description, agent, pid, host, branch, worktree, start, urgency}'
+task project:myrepo +ACTIVE start.before:now-4h export | jq '.[] | {id, uuid, agent, host, branch, start}'
 ```
 
 These three reads are independent and parallel-safe — `export` returns
@@ -154,7 +154,11 @@ Output these sections, in order:
 8. **Drift**: tasks with stale links (issue closed, missing bpdoc, etc.)
 
 Each row cites the command to act on it (`/taskwarrior:task-done 7`,
-`/taskwarrior:task-release 4`, `/taskwarrior:task-claim 11`).
+`/taskwarrior:task-release 4`, `/taskwarrior:task-claim 11`), plus the task's
+short UUID (`.uuid[0:8]`) as a copy-pasteable immutable form — convenience
+only, not the safety mechanism (`/taskwarrior:task-claim` /
+`task-release` / `task-done` resolve and mutate by UUID internally
+regardless of which form is pasted; see `.claude/rules/task-id-stability.md`).
 
 ## Agentic Optimizations
 
@@ -195,3 +199,4 @@ Each row cites the command to act on it (`/taskwarrior:task-done 7`,
 - `/taskwarrior:task-add` — file something surfaced by drift detection
 - `/taskwarrior:task-done` — close PR-ready tasks
 - `.claude/rules/parallel-safe-queries.md` — `export | jq` idiom
+- `.claude/rules/task-id-stability.md` — why the report's UUID column is convenience, not the safety mechanism

@@ -87,7 +87,7 @@ of currently-claimed tasks for the report:
 
 ```bash
 task project:myrepo status:pending +ACTIVE export \
-  | jq '.[] | {id, description, agent, pid, host, branch, worktree, start, urgency}'
+  | jq '.[] | {id, uuid, description, agent, pid, host, branch, worktree, start, urgency}'
 ```
 
 Empty array is exit-0 from `task export` — safe in parallel batches.
@@ -98,7 +98,7 @@ Filter the in-flight set for claims older than `--stale-after` hours:
 
 ```bash
 task project:myrepo +ACTIVE start.before:now-4h export \
-  | jq '.[] | {id, agent, host, branch, start}'
+  | jq '.[] | {id, uuid, agent, host, branch, start}'
 ```
 
 Stale claims are surfaced in the report only; `task-coordinate` never
@@ -173,20 +173,24 @@ state of the project queue, not just the dispatchable subset:
 ```
 ## In flight (claimed)
 
-| Task | Agent | Branch | Host | Started |
-|------|-------|--------|------|---------|
-| #4 (WO-008) | claude-a1b2c3d4 | feature/parser | host-1 | 2h ago |
-| #9 (WO-011) | claude-9f8e7d6c | feature/api    | host-2 | 30m ago |
+| Task | UUID | Agent | Branch | Host | Started |
+|------|------|-------|--------|------|---------|
+| #4 (WO-008) | a1b2c3d4 | claude-a1b2c3d4 | feature/parser | host-1 | 2h ago |
+| #9 (WO-011) | 9f8e7d6c | claude-9f8e7d6c | feature/api    | host-2 | 30m ago |
 
 ## Stale claims (>4h)
 
-| Task | Agent | Started | Action |
-|------|-------|---------|--------|
-| #2 (WO-005) | claude-44556677 | 6h ago | Investigate; release with `/taskwarrior:task-release 2` if abandoned |
+| Task | UUID | Agent | Started | Action |
+|------|------|-------|---------|--------|
+| #2 (WO-005) | 44556677 | claude-44556677 | 6h ago | Investigate; release with `/taskwarrior:task-release 44556677...` (or `#2` — task-release resolves either form to the immutable UUID internally) if abandoned |
 ```
 
 Empty sections render as "(none)". Never auto-stop a stale claim —
-report only, per the v1 design.
+report only, per the v1 design. The `UUID` column (`.uuid[0:8]`) is a
+copy-pasteable immutable form offered as convenience — `task-release` /
+`task-claim` / `task-done` resolve and mutate by UUID internally regardless
+of which form is pasted, so it is not the safety mechanism (see
+`.claude/rules/task-id-stability.md`).
 
 ## Agentic Optimizations
 
@@ -223,3 +227,4 @@ report only, per the v1 design.
 - `agent-patterns-plugin:exclusive-lock-dispatch` — when to pre-dump instead of serialise
 - `workflow-orchestration-plugin:workflow-wave-dispatch` — wave scheduling that consumes the brief
 - `.claude/rules/parallel-safe-queries.md` — `export | jq` idiom
+- `.claude/rules/task-id-stability.md` — why the UUID column is convenience, not the safety mechanism

@@ -66,10 +66,16 @@ bash "${CLAUDE_SKILL_DIR}/../../scripts/ensure-udas.sh"
 ### Step 2: Load the task and check active state
 
 ```bash
-task "$TASKID" export | jq '.[0] | {id, description, status, start, agent, pid, host, branch, worktree}'
+task "$TASKID" export | jq '.[0] | {id, uuid, description, status, start, agent, pid, host, branch, worktree}'
 ```
 
 Use `export | jq` — never `task <id> info` or `task <id> list` (both exit 1 on empty / closed tasks and cancel parallel siblings; see `.claude/rules/parallel-safe-queries.md`).
+
+Capture the `uuid` field as `$TASK_UUID` — every mutating call from Step 3
+onward addresses the task by `$TASK_UUID`, never `$TASKID`. `$TASKID` may be a
+numeric ID that renumbers if another agent closes an unrelated task during the
+coworker-check pause in Step 3; `$TASK_UUID` does not (see
+`.claude/rules/task-id-stability.md`).
 
 Read the JSON. Decide:
 
@@ -113,8 +119,8 @@ Capture once and reuse across the next two steps:
 Two calls — start first so `+ACTIVE` is set even if the modify step fails:
 
 ```bash
-task "$TASKID" start
-task "$TASKID" modify \
+task "$TASK_UUID" start
+task "$TASK_UUID" modify \
   agent:"$AGENT" \
   pid:"$PID" \
   host:"$HOST" \
@@ -127,13 +133,13 @@ Omit `branch:` when `BRANCH` is empty (detached HEAD). Quote every value — `wo
 ### Step 6: Annotate the claim
 
 ```bash
-task "$TASKID" annotate "claimed by $AGENT (pid $PID) on $BRANCH from $HOST:$WORKTREE"
+task "$TASK_UUID" annotate "claimed by $AGENT (pid $PID) on $BRANCH from $HOST:$WORKTREE"
 ```
 
 When `--force` is used over an existing claim, annotate the takeover separately first so the previous owner's identity is preserved in the audit trail:
 
 ```bash
-task "$TASKID" annotate "force-claim by $AGENT — previous: agent=$PREV_AGENT pid=$PREV_PID host=$PREV_HOST"
+task "$TASK_UUID" annotate "force-claim by $AGENT — previous: agent=$PREV_AGENT pid=$PREV_PID host=$PREV_HOST"
 ```
 
 ### Step 7: Report
@@ -181,3 +187,4 @@ Print:
 - `/git:coworker-check` — sister signal: process-scan + session marker
 - `.claude/rules/agent-coworker-detection.md` — combined-signal rationale
 - `.claude/rules/parallel-safe-queries.md` — `export | jq` idiom
+- `.claude/rules/task-id-stability.md` — why this skill resolves `$TASK_UUID` once and mutates by UUID

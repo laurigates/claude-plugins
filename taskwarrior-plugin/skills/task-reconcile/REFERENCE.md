@@ -118,7 +118,7 @@ The bulk path round-trips JSON through `task import`. To keep it safe:
 The script addresses every mutation by **UUID**, never numeric ID. Numeric IDs
 are a display index over pending tasks and shift whenever any task completes —
 exactly what happens mid-reconciliation as the stale set closes. See
-`~/.claude/rules/taskwarrior-bulk-operations.md`.
+`.claude/rules/task-id-stability.md`.
 
 ## Parallel-safety
 

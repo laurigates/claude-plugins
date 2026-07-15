@@ -60,9 +60,13 @@ Never use `task $TASKID info` or `task $TASKID list` — both can exit 1 and
 cancel parallel siblings. `export | jq` returns valid JSON even when the
 task is already closed (treat empty as "no such open task" and abort).
 
-Capture: `bpid`, `bpdoc`, `ghid`, `ghpr`, `tags`, `description`, plus
+Capture: `uuid`, `bpid`, `bpdoc`, `ghid`, `ghpr`, `tags`, `description`, plus
 identity UDAs `agent`, `pid`, `host`, `branch`, `worktree`, and `start`
 (if the task was claimed via `/taskwarrior:task-claim`).
+
+Capture `uuid` as `$TASK_UUID` — every mutating call from Step 2 onward
+(including the post-close Step 6 query) addresses the task by `$TASK_UUID`,
+never `$TASKID` (see `.claude/rules/task-id-stability.md`).
 
 ### Step 2: Resolve commit hash
 
@@ -73,8 +77,8 @@ a common footgun.
 ### Step 3: Annotate and close
 
 ```bash
-task "$TASKID" annotate "landed: $COMMIT_SHORT $COMMIT_SUBJECT"
-task "$TASKID" done
+task "$TASK_UUID" annotate "landed: $COMMIT_SHORT $COMMIT_SUBJECT"
+task "$TASK_UUID" done
 ```
 
 Annotation first, then done — if close fails (e.g. dependencies), the
@@ -92,7 +96,7 @@ After the task is closed, optionally clear the identity stamp left by
 the original claim:
 
 ```bash
-task "$TASKID" modify agent: pid: host: branch: worktree:
+task "$TASK_UUID" modify agent: pid: host: branch: worktree:
 ```
 
 Default behaviour is to **leave** these set on closed tasks — the audit
@@ -148,25 +152,29 @@ Print:
 - Tracker drained: path + diff summary, or "skipped"
 - GitHub: "issue #N closed" / "PR #N commented" / "skipped"
 - Unblocked siblings: any tasks whose `depends:` pointed at this one now
-  free to start (query via `task depends:$TASKID export | jq`)
+  free to start (query via `task depends:"$TASK_UUID" export | jq`). Once
+  completed, this task's numeric `id` becomes `0` and may be reassigned to
+  an unrelated task — a query keyed on the stale `$TASKID` here would check
+  dependencies against the wrong task. `depends:` accepts UUIDs, so
+  `$TASK_UUID` is the only safe form for this **read**.
 
 ## Agentic Optimizations
 
 | Context | Command |
 |---------|---------|
-| Load task | `task "$TASKID" export \| jq '.[0]'` |
-| Annotate + close | Two separate calls (hook-friendly) |
-| Blocked children | `task depends:"$TASKID" export \| jq '.[]'` |
+| Load task | `task "$TASKID" export \| jq '.[0]'` (capture `.uuid` as `$TASK_UUID`) |
+| Annotate + close | Two separate calls (hook-friendly), both by `$TASK_UUID` |
+| Blocked children | `task depends:"$TASK_UUID" export \| jq '.[]'` |
 | Skip empty-result failures | Always `export \| jq` |
 
 ## Quick Reference
 
 | Step | Command |
 |------|---------|
-| Load | `task ID export \| jq` |
-| Annotate | `task ID annotate "msg"` |
-| Close | `task ID done` |
-| Check unblocked siblings | `task depends:ID export \| jq '.[]'` |
+| Load | `task TASKID export \| jq` (capture `uuid`) |
+| Annotate | `task UUID annotate "msg"` |
+| Close | `task UUID done` |
+| Check unblocked siblings | `task depends:UUID export \| jq '.[]'` |
 | GitHub close | `gh issue close N --comment "msg"` |
 | PR comment | `gh pr comment N --body "msg"` |
 
@@ -247,4 +255,5 @@ echo "$UUIDS" | xargs -I {} sh -c 'task rc.confirmation=no {} done'
 - `blueprint-plugin:feature-tracking` — tracker format that `bpdoc` points at
 - `blueprint-plugin:blueprint-docs-currency` — companion discipline for the `bpdoc` update
 - `.claude/rules/parallel-safe-queries.md` — the `export | jq` idiom
+- `.claude/rules/task-id-stability.md` — why this skill resolves `$TASK_UUID` once and mutates by UUID
 - `taskwarrior-plugin/docs/task-tracking.md` — full lifecycle: `depends:` + auto-unblock pattern

@@ -216,3 +216,4 @@ task status:pending count
 - `/taskwarrior:task-status` — read-only consolidated queue report
 - `/taskwarrior:task-add` — file a single linked task (the `+LATEST uuids` capture pattern originates here)
 - `.claude/rules/parallel-safe-queries.md` — the `export | jq` (exit-0-on-empty) idiom
+- `.claude/rules/task-id-stability.md` — central citation for numeric-ID-vs-UUID; this skill owns the full bulk/loop treatment
