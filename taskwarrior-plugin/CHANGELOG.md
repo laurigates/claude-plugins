@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.1](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.13.0...taskwarrior-plugin-v1.13.1) (2026-07-16)
+
+
+### Bug Fixes
+
+* **taskwarrior-plugin:** resolve UUID once, mutate by UUID within a single task's lifecycle ([#2068](https://github.com/laurigates/claude-plugins/issues/2068)) ([96dd37f](https://github.com/laurigates/claude-plugins/commit/96dd37f2ee27172733e75355bb5f1fd69180961a))
+
 ## [1.13.0](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.12.0...taskwarrior-plugin-v1.13.0) (2026-07-05)
 
 
