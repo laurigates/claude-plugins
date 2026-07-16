@@ -4,7 +4,7 @@ description: Monitor GitHub Actions runs with blocking watch commands instead of
 user-invocable: false
 allowed-tools: Bash(gh run *), Bash(gh workflow *), Bash(gh pr *), Read
 created: 2025-01-16
-modified: 2026-05-09
+modified: 2026-07-15
 reviewed: 2026-04-25
 ---
 
@@ -95,6 +95,38 @@ gh run view --job $JOB_ID
 gh run view $RUN_ID --web
 ```
 
+### Extract One Step's Bare Output from `--log`
+
+`gh run view --log` is **tab-delimited**: every line is
+`<job>\t<step>\t<timestamp> <log line>`. To scrape one step's stdout back to
+its bare form — dropping the job and step columns and the per-line
+timestamp — filter to the step name (field-2 substring) and strip the
+timestamp, which is the first space-delimited token of field 3:
+
+```bash
+# All lines from the step whose name contains "clean warm run", de-columned
+gh run view $RUN_ID --log \
+  | awk -F'\t' '/clean warm run/ { sub(/^[^ ]* /, "", $3); print $3 }'
+```
+
+This is the durable way to read a **succeeded** step's output for structured
+markers — `RESULT …`, a `PASS`/`FAIL` line, a JSON blob a job printed — when
+`--log-failed` doesn't apply (nothing failed; you just want the output). The
+whole job's log is one stream, so narrow to the step first, then grep the
+markers:
+
+```bash
+gh run view $RUN_ID --log \
+  | awk -F'\t' '/bench \(clean warm/ { sub(/^[^ ]* /, "", $3); print $3 }' \
+  | grep -E 'RESULT|SANITY'
+```
+
+Notes: match the step name as it appears in the workflow's `name:` (the awk
+`/pattern/` is a plain regex over the whole tab-joined line — anchor with a
+distinctive substring to avoid matching the same text inside a log line);
+`[^ ]*` matches the timestamp because it never contains a space, so a
+mangled first token can't over-strip the line.
+
 ## Workflow Patterns
 
 ### Trigger and Watch
@@ -165,6 +197,7 @@ gh run watch $RUN_ID --compact --exit-status
 | Find in-progress | `gh run list --status in_progress --json databaseId,name` |
 | Latest run ID | `gh run list -L 1 --json databaseId --jq '.[0].databaseId'` |
 | Failed logs | `gh run view $ID --log-failed` |
+| Scrape a succeeded step's stdout | `gh run view $ID --log \| awk -F'\t' '/STEP/{sub(/^[^ ]* /,"",$3);print $3}'` |
 | Trigger + watch | `gh workflow run "$NAME" && sleep 2 && gh run watch --compact` |
 | PR run status | `gh pr checks $PR --json name,state,conclusion` |
 
