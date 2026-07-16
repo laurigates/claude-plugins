@@ -216,7 +216,7 @@ Empty list ⇒ broken tarball. The `downloadUrl`
 |---|---|---|
 | `NodeVersionStatusPending` | held while the automated security scan runs | **auto-transitions** to Active, usually < a few hours — just wait |
 | `NodeVersionStatusActive` | scan passed; installable | none |
-| `NodeVersionStatusFlagged` | scan flagged it | **stuck** — does NOT auto-clear. Reason is only on `registry.comfy.org` (the public API exposes none). Republishing re-runs the scan; appeal via Comfy-Org if a false positive |
+| `NodeVersionStatusFlagged` | scan flagged it | **stuck** — does NOT auto-clear. Reasons arrive only by **email** to the publisher (see the security-scan section below); the public API exposes none and the publisher dashboard shows none. Republishing re-runs the scan; appeal via Comfy-Org if a false positive |
 
 `comfy node install` resolves to the **highest-semver Active** version. So
 while a fixed version is Pending, installs still serve the older (possibly
@@ -225,7 +225,53 @@ version directly.
 
 Flag false-positives are real: an identical commit can flag one pack but
 not a structurally-identical sibling. Don't assume your code is the
-problem — check the dashboard reason first.
+problem — get the scan reasons (email) first.
+
+## The security scan: what flags, what the reasons mean, how to shrink the surface
+
+Learned across an 11-pack flag epidemic (2026-06/07; appeal:
+Comfy-Org/registry-backend#180, third-party confirmations in
+Comfy-Org/ComfyUI-Manager#2927):
+
+- **Any finding flags the version — severity is irrelevant.** A single
+  `info`-severity yara match (e.g. `os.environ.get(...)` or a
+  `requests.get` in an API client) produces `Flagged`, which blocks
+  distribution. There is no self-service resolution path.
+- **Reasons are email-only.** The scan summary (issue types, file/line,
+  scanner names) is mailed to the publisher on flag. The
+  `registry.comfy.org/admin/nodeversions` links inside those mails are
+  **staff-only (403)**; the publisher dashboard and public API show no
+  reason. Archive the emails — they are the only ground truth.
+- **Known issue classes** (from received scan mails):
+  - `info_python_network_operations` (`yara_scan`) — any
+    `urllib`/`requests`/socket use in shipped `.py`, including dev
+    scripts that should never have shipped.
+  - `low_vendored_unknown` (`provenance_scan`) — bundled `web/dist`
+    content the scanner cannot attribute; it keys on bun's
+    `// node_modules/<pkg>/...` path comments. First-party npm packages
+    it doesn't know count as "unknown".
+- **Shrink the scan surface mechanically:**
+  - `.comfyignore` must exclude every dev-only path — and it silently
+    rots: a `scripts/` directory added *after* the ignore file was
+    written shipped a `urllib` dev tool and flagged the version. Pair
+    the ignore file with a `tests/test_publish_hygiene.py` that
+    simulates the comfy-cli tarball (git-tracked − `.comfyignore` +
+    `[tool.comfy] includes`, via `pathspec`) and fails on unclassified
+    shipped paths or scanner-tripwire patterns in shipped Python. The
+    scaffold now emits both.
+  - **Publish bundled first-party deps with real provenance**: the
+    shared kit must carry a `LICENSE` file and a `license` field in
+    `package.json` (an unlicensed npm package is unclassifiable — that
+    was true of comfy-modal-kit until comfy-modal-kit#17) plus npm
+    provenance attestation. Open the built bundle with a `bun build
+    --banner` comment attributing what is inlined.
+  - Runtime code whose *function* is scanner-hostile (a manager pack
+    doing registry lookups, installs, env feature-gates) cannot be
+    trimmed — allowlist it in the hygiene test with a justification and
+    cite it in the appeal.
+- **Appeal, then verify by publishing**: a republish re-runs the scan,
+  so the definitive test of any fix is the next release's verdict via
+  `api.comfy.org/nodes/<id>/versions`.
 
 ## Phantom versions (higher semver, ahead of git)
 
