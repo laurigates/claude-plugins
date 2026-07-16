@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.1](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.9.0...comfyui-plugin-v1.9.1) (2026-07-16)
+
+
+### Bug Fixes
+
+* **comfyui-plugin:** registry security-scan knowledge + scan-surface hardening in scaffold ([#2070](https://github.com/laurigates/claude-plugins/issues/2070)) ([bb5547d](https://github.com/laurigates/claude-plugins/commit/bb5547d3c347020e68e8b988b52e83071fc037ce))
+
 ## [1.9.0](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.8.0...comfyui-plugin-v1.9.0) (2026-07-14)
 
 
