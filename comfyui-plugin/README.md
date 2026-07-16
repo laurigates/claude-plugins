@@ -97,9 +97,10 @@ code.
 The Comfy Registry release pipeline end to end: release-please +
 `uv.lock`/`bun.lock` drift traps, the empty-`web/dist` publish-action bug and
 how to verify a publish actually shipped the frontend, version status states
-(Pending/Active/Flagged), the security scan (any-severity flagging, email-only
-reasons, `python_network_operations` / `vendored_unknown` issue classes, and
-the `.comfyignore` + publish-hygiene-test surface trimming), phantom versions,
+(Pending/Active/Flagged), the security scan (any-severity flagging, reasons
+via `?include_status_reason=true`, `python_network_operations` /
+`vendored_unknown` issue classes, and the `.comfyignore` +
+publish-hygiene-test surface trimming), phantom versions,
 `Release-As` footers stripped by squash-merge, the `registry-health` workflow,
 and generating a registry icon/banner (with `scripts/registry_banner_bg.py` +
 `registry_banner_compose.py`).

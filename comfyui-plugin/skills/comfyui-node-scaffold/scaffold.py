@@ -2218,41 +2218,118 @@ BANNER_SVG = """\
 # Registry health monitor — flags a pack whose Active registry version has been
 # Flagged (falls back to the previous Active version on install). Mirrors the
 # sibling packs' registry-health.yml.
-REGISTRY_HEALTH_YML = """\
-name: "Registry: health check"
+REGISTRY_HEALTH_YML = r"""name: Registry health
+
+# Feedback loop for Comfy Registry publishing. Checks that the version this
+# repo currently declares (pyproject.toml) is actually Active in the registry.
+# Fails (red X + notification) and opens/updates a tracking issue when that
+# version is Flagged, stuck Pending, or missing — and warns when a phantom
+# higher version sits ahead of it in the registry. Closes the issue once the
+# release is healthy.
 
 on:
+  workflow_dispatch:
   schedule:
-    - cron: '23 6 * * 1'
-  workflow_dispatch: {}
+    - cron: "17 7 * * *" # daily 07:17 UTC
+  workflow_run:
+    workflows: ["Publish to Comfy Registry"]
+    types: [completed]
 
 permissions:
   contents: read
   issues: write
 
 jobs:
-  registry-health:
-    name: Check Comfy Registry status
+  check:
+    name: Check registry release status
     runs-on: ubuntu-latest
     steps:
-      - name: Query the registry for the Active version status
+      - uses: actions/checkout@v6
+
+      - name: Evaluate registry status
         env:
-          NODE_ID: "@@NAME@@"
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          PENDING_GRACE_HOURS: "6" # scan normally completes well under this
+          ISSUE_LABEL: "registry-health"
         run: |
-          status=$(curl -fsSL "https://api.comfy.org/nodes/${NODE_ID}" \\
-            | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("status",""))' \\
-            2>/dev/null || echo "")
-          echo "registry status: ${status:-unknown}"
-          if [ "$status" = "NodeStatusBanned" ] || [ "$status" = "NodeVersionStatusFlagged" ]; then
-            title="Registry health: ${NODE_ID} is ${status}"
-            existing=$(gh issue list -R "$REPO" --state open --search "$title" --json number --jq '.[].number')
-            if [ -z "$existing" ]; then
-              gh issue create -R "$REPO" --title "$title" \\
-                --body "The Comfy Registry reports \\`${status}\\` for the Active version. Installs fall back to the last Active version until a fresh good version re-points Active forward. See https://registry.comfy.org/nodes/${NODE_ID}."
+          set -euo pipefail
+
+          node_id=$(grep -m1 -E '^name'    pyproject.toml | sed -E 's/.*"([^"]+)".*/\1/')
+          ver=$(grep    -m1 -E '^version' pyproject.toml | sed -E 's/.*"([^"]+)".*/\1/')
+          [ -n "$node_id" ] && [ -n "$ver" ] || { echo "::error::cannot read name/version from pyproject.toml"; exit 1; }
+          echo "Node: $node_id  declared version: $ver"
+
+          # include_status_reason=true returns the security-scan findings JSON
+          # (issue_type/file_path/description) — the closed feedback loop for
+          # Flagged versions (scanner notifications otherwise land only in the
+          # Comfy Org Discord #security-review-council channel).
+          curl -fsS "https://api.comfy.org/nodes/${node_id}/versions?include_status_reason=true" -o versions.json
+
+          status=$(jq -r --arg v "$ver" '.[] | select(.version==$v) | .status' versions.json)
+          created=$(jq -r --arg v "$ver" '.[] | select(.version==$v) | .createdAt' versions.json)
+          highest=$(jq -r '.[].version' versions.json | sort -V | tail -1)
+
+          body=$(mktemp); problem=""
+          dash="https://registry.comfy.org/nodes/${node_id}"
+
+          if [ -z "$status" ]; then
+            problem="missing"
+            printf '%s\n' \
+              "Declared version **\`${ver}\`** is **not present** in the registry." \
+              "" \
+              "The publish either failed, is still uploading, or release-please hasn't cut it yet." \
+              "Check the publish workflow and ${dash}." > "$body"
+          elif [ "$status" = "NodeVersionStatusFlagged" ]; then
+            problem="flagged"
+            findings=$(jq -r --arg v "$ver" '.[] | select(.version==$v) | .status_reason // ""
+              | (fromjson? // .)
+              | if type=="array" then
+                  map("  - `\(.issue_type // .error_type // .type // "?")` (\(.scanner // "?")) in `\(.file_path // .path // "?")`: \(.description // "" | tostring | .[0:200])")
+                  | join("\n")
+                else "  - \(tostring | .[0:400])" end' versions.json)
+            printf '%s\n' \
+              "Declared version **\`${ver}\`** is **Flagged** by Comfy-Org registry moderation." \
+              "" \
+              "- Clean installs resolve to an older version until this clears." \
+              "- Scan findings (\`include_status_reason=true\`):" \
+              "${findings:-  - (none reported)}" \
+              "- If a false positive, request re-review via Comfy-Org (registry-backend#180); a new publish re-runs the scan." > "$body"
+          elif [ "$status" = "NodeVersionStatusPending" ]; then
+            age_h=$(( ( $(date -u +%s) - $(date -u -d "$created" +%s) ) / 3600 ))
+            if [ "$age_h" -ge "${PENDING_GRACE_HOURS}" ]; then
+              problem="stuck-pending"
+              printf '%s\n' \
+                "Declared version **\`${ver}\`** has been **Pending** ~${age_h}h (grace ${PENDING_GRACE_HOURS}h)." \
+                "The security scan normally finishes in under a few hours. Check ${dash}." > "$body"
             fi
           fi
+
+          # Phantom-ahead: a higher version exists in the registry than we declare.
+          phantom=""
+          if [ "$highest" != "$ver" ] && [ "$(printf '%s\n%s\n' "$ver" "$highest" | sort -V | tail -1)" = "$highest" ]; then
+            phantom="$highest"
+          fi
+          if [ -n "$phantom" ]; then
+            { echo ""; echo "> ⚠️ Phantom version **\`${phantom}\`** outranks the declared \`${ver}\` in the registry — \`comfy node install\` resolves to \`${phantom}\`. Release a version **> ${phantom}** (e.g. \`Release-As\`) to supersede it."; } >> "$body"
+            [ -n "$problem" ] || problem="phantom-ahead"
+          fi
+
+          gh label create "$ISSUE_LABEL" --color FBCA04 --description "Comfy Registry publish health" --force >/dev/null 2>&1 || true
+          existing=$(gh issue list --label "$ISSUE_LABEL" --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
+
+          if [ -n "$problem" ]; then
+            echo "_Detected by the registry-health workflow on $(date -u +%FT%TZ)._" >> "$body"
+            if [ -n "$existing" ]; then gh issue comment "$existing" --body-file "$body"
+            else gh issue create --title "Registry: release ${ver} not healthy (${problem})" --label "$ISSUE_LABEL" --body-file "$body"; fi
+            echo "::error::release ${ver} is ${problem}"
+            exit 1
+          fi
+
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "Resolved: \`${ver}\` is **Active** and highest in the registry. Closing."
+            gh issue close "$existing"
+          fi
+          echo "OK: ${ver} is Active"
 """
 
 # Housekeeping: clear the transient release-please `autorelease: pending` /

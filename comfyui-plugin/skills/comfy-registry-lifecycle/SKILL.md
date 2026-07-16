@@ -216,7 +216,7 @@ Empty list ⇒ broken tarball. The `downloadUrl`
 |---|---|---|
 | `NodeVersionStatusPending` | held while the automated security scan runs | **auto-transitions** to Active, usually < a few hours — just wait |
 | `NodeVersionStatusActive` | scan passed; installable | none |
-| `NodeVersionStatusFlagged` | scan flagged it | **stuck** — does NOT auto-clear. Reasons arrive only by **email** to the publisher (see the security-scan section below); the public API exposes none and the publisher dashboard shows none. Republishing re-runs the scan; appeal via Comfy-Org if a false positive |
+| `NodeVersionStatusFlagged` | scan flagged it | **stuck** — does NOT auto-clear. Full reasons: `GET /nodes/<id>/versions?include_status_reason=true` (undocumented public param — see the security-scan section below). Republishing re-runs the scan; appeal via Comfy-Org if a false positive |
 
 `comfy node install` resolves to the **highest-semver Active** version. So
 while a fixed version is Pending, installs still serve the older (possibly
@@ -237,19 +237,29 @@ Comfy-Org/ComfyUI-Manager#2927):
   `info`-severity yara match (e.g. `os.environ.get(...)` or a
   `requests.get` in an API client) produces `Flagged`, which blocks
   distribution. There is no self-service resolution path.
-- **Reasons are email-only.** The scan summary (issue types, file/line,
-  scanner names) is mailed to the publisher on flag. The
-  `registry.comfy.org/admin/nodeversions` links inside those mails are
-  **staff-only (403)**; the publisher dashboard and public API show no
-  reason. Archive the emails — they are the only ground truth.
-- **Known issue classes** (from received scan mails):
-  - `info_python_network_operations` (`yara_scan`) — any
+- **Reasons are on the public API — behind an undocumented param.**
+  `GET api.comfy.org/nodes/<id>/versions?include_status_reason=true`
+  returns per-version `status_reason` JSON (issue_type, scanner,
+  file_path, line, description, admin_tags); without the param the field
+  is scrubbed. Scanner *notifications* post to the Comfy Org Discord
+  `SUPPORT/#security-review-council` channel; the
+  `registry.comfy.org/admin/nodeversions` links in them are **staff-only
+  (403)** and the publisher dashboard shows nothing. Poll the API — no
+  Discord access needed (the scaffold's `registry-health.yml` does this
+  and writes the findings into its tracking issue).
+- **Known issue classes** (from `status_reason` payloads):
+  - `python_network_operations` (`yara_scan`) — any
     `urllib`/`requests`/socket use in shipped `.py`, including dev
-    scripts that should never have shipped.
-  - `low_vendored_unknown` (`provenance_scan`) — bundled `web/dist`
-    content the scanner cannot attribute; it keys on bun's
-    `// node_modules/<pkg>/...` path comments. First-party npm packages
-    it doesn't know count as "unknown".
+    scripts that should never have shipped. Siblings:
+    `python_environment_manipulation` (`os.environ`),
+    `python_command_injection_risk` (`subprocess`).
+  - `vendored_unknown` (`provenance_scan`) — "Vendored file detected
+    but upstream origin could not be identified". Fires on **any
+    bundler-built `web/dist` file**, including bundles of the repo's
+    own `src/` with no third-party code at all (comfyui-touch-shim
+    evidence, 2026-07) — not just inlined `node_modules` deps. Every
+    TS-built pack hits this class on every publish until Comfy-Org can
+    attribute bundler output; only the appeal path clears it.
 - **Shrink the scan surface mechanically:**
   - `.comfyignore` must exclude every dev-only path — and it silently
     rots: a `scripts/` directory added *after* the ignore file was
@@ -311,7 +321,10 @@ on demand) that looks up the `pyproject.toml` version in the registry and
 **fails + opens a `registry-health` issue** when that version is Flagged,
 stuck Pending, missing, or outranked by a phantom — auto-closing when
 healthy — is the early-warning the publish pipeline lacks on its own.
-Worth adding to any new pack.
+On Flagged it queries `?include_status_reason=true` and writes the scan
+findings (issue type / scanner / file / description) into the issue body,
+so the security-scan verdict is readable without Discord. Worth adding to
+any new pack (the scaffold emits it).
 
 ## Backport to the scaffold
 

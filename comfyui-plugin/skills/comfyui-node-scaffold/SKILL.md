@@ -267,13 +267,15 @@ The generated `publish.yml` builds `web/dist/` then publishes via
   **Flagged** (review) stays in the registry but is no longer the Active target —
   installs fall back to the last Active version. Publishing a fresh good version
   re-points Active forward.
-- **Flags fire on ANY finding, even info severity.** The scan mails the
-  publisher concrete reasons (file/line + rule); the dashboard and public API
-  show none. Known classes: `python_network_operations` (yara) on any
-  urllib/requests use in shipped `.py`, and `vendored_unknown`
-  (provenance_scan) on bundled code it can't attribute. The scaffold's
-  `tests/test_publish_hygiene.py` + `.comfyignore` + `--banner` attribution
-  exist to keep the scan surface minimal — see the
+- **Flags fire on ANY finding, even info severity.** Full reasons are on the
+  public API via `GET /nodes/<id>/versions?include_status_reason=true`
+  (notifications otherwise post to the Comfy Org Discord
+  `#security-review-council`). Known classes: `python_network_operations`
+  (yara) on any urllib/requests use in shipped `.py`, and `vendored_unknown`
+  (provenance_scan) on **any bundler-built dist file** — even pure own-source
+  bundles. The scaffold's `tests/test_publish_hygiene.py` + `.comfyignore` +
+  `--banner` attribution keep the scan surface minimal, and its
+  `registry-health.yml` writes the findings into the tracking issue — see the
   `comfy-registry-lifecycle` skill's security-scan section.
 - **`.comfyignore` trims the tarball.** comfy-cli builds the published `node.zip`
   as *git-tracked files − `.comfyignore` matches + `[tool.comfy] includes`*. The
