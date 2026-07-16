@@ -279,9 +279,14 @@ Comfy-Org/ComfyUI-Manager#2927):
     doing registry lookups, installs, env feature-gates) cannot be
     trimmed — allowlist it in the hygiene test with a justification and
     cite it in the appeal.
-- **Appeal, then verify by publishing**: a republish re-runs the scan,
-  so the definitive test of any fix is the next release's verdict via
-  `api.comfy.org/nodes/<id>/versions`.
+- **Appeal via Discord first — it's processed faster.** Post the
+  re-review request as a message in the Comfy Org Discord
+  `SUPPORT/#security-review-council` channel (no markdown tables, keep
+  under the 2,000-char message limit); use a GitHub issue on
+  `Comfy-Org/registry-backend` as the durable record and link the two.
+- **Then verify by publishing**: a republish re-runs the scan, so the
+  definitive test of any fix is the next release's verdict via
+  `api.comfy.org/nodes/<id>/versions?include_status_reason=true`.
 
 ## Phantom versions (higher semver, ahead of git)
 
