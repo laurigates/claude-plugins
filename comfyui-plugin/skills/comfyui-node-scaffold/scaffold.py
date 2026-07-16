@@ -139,6 +139,8 @@ dev = [
     "ruff>=0.11",
     "pytest>=8",
     "pre-commit>=4",
+    # tests/test_publish_hygiene.py mirrors comfy-cli's .comfyignore matching
+    "pathspec>=0.12",
 ]
 
 [tool.ruff]
@@ -1185,7 +1187,7 @@ PACKAGE_JSON = """\
   "type": "module",
   "description": "@@DESC@@ TypeScript source in src/, built to web/dist/ via bun build.@@KIT_PKG_NOTE@@ See ADR-0001.",
   "scripts": {
-    "build": "bun build ./src/index.ts --target browser --format esm --outdir web/dist --external '/scripts/*'",
+    "build": "bun build ./src/index.ts --target browser --format esm --banner '@@BUNDLE_BANNER@@' --outdir web/dist --external '/scripts/*'",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -1369,6 +1371,164 @@ def test_web_directory_exported():
 def test_node_mappings_exported():
     assert isinstance(pack.NODE_CLASS_MAPPINGS, dict)
     assert isinstance(pack.NODE_DISPLAY_NAME_MAPPINGS, dict)
+'''
+
+# Kept byte-identical across all pack repos and this scaffold - sync
+# changes everywhere (the file says so in its docstring).
+TEST_PUBLISH_HYGIENE = r'''"""Registry-tarball hygiene guard.
+
+The Comfy Registry security scan flags a node version on ANY finding —
+even info severity — and a Flagged version is not served to installers
+(see Comfy-Org/registry-backend#180, Comfy-Org/ComfyUI-Manager#2927).
+Every shipped file is scan surface.
+
+comfy-cli builds node.zip as: git-tracked files - .comfyignore matches,
+with [tool.comfy] includes force-kept (see comfy_cli/file_utils.py
+zip_files). These tests recreate that file set and pin it:
+
+1. every top-level path in the tarball is a known runtime path — adding
+   a new dev-only directory (scripts/, tooling/, ...) fails this test
+   until .comfyignore excludes it. That is the regression that shipped
+   scripts/corpus_probe.py in comfyui-sampler-info 0.1.16 and got the
+   version flagged (info_python_network_operations);
+2. shipped Python contains no scanner-tripwire patterns (network, env,
+   subprocess, dynamic exec) unless explicitly allowlisted as intended
+   functionality;
+3. web/dist stays force-included via [tool.comfy] includes.
+
+This file is kept byte-identical across the comfyui-* pack repos —
+sync changes to all of them (and to the comfyui-node-scaffold skill).
+"""
+
+from __future__ import annotations
+
+import re
+import subprocess
+from pathlib import Path
+
+import pathspec
+
+REPO = Path(__file__).resolve().parents[1]
+
+# Top-level entries that are allowed to ship (directories end with "/").
+# Any top-level *.py is runtime node code and is also allowed.
+EXPECTED_RUNTIME = {
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "pyproject.toml",
+    "icon.png",
+    "banner.png",
+    "web/",
+}
+PY_TOPLEVEL = re.compile(r"^[a-z0-9_]+\.py$")
+
+# Patterns the registry scanner reacts to in shipped Python.
+TRIPWIRES = {
+    "network": re.compile(
+        r"urllib|urlopen|http\.client"
+        r"|\brequests\.(get|post|put|delete|head|patch|request|Session)\b"
+        r"|\bsocket\.\w"
+    ),
+    "environment": re.compile(r"os\.environ"),
+    "subprocess": re.compile(r"\bsubprocess\b|os\.system\("),
+    "dynamic-exec": re.compile(r"\beval\(|\bexec\(|__import__|pickle\.loads"),
+}
+
+# filename -> tripwire categories that are intended, reviewed functionality.
+# comfyui-touch-manager IS a node manager: registry lookups (network),
+# feature-gate env vars, git/pip subprocess — scanner-visible by design,
+# tracked for appeal in Comfy-Org/registry-backend#180.
+ALLOWED_TRIPWIRES: dict[str, set[str]] = {
+    "touch_manager.py": {"network", "environment", "subprocess"},
+}
+
+
+def _tracked_files() -> list[str]:
+    out = subprocess.check_output(["git", "ls-files"], cwd=REPO, text=True)
+    return [line for line in out.splitlines() if line]
+
+
+def _includes() -> list[str]:
+    text = (REPO / "pyproject.toml").read_text(encoding="utf-8")
+    match = re.search(r"^includes\s*=\s*\[(.*?)\]", text, re.M | re.S)
+    return re.findall(r'"([^"]+)"', match.group(1)) if match else []
+
+
+def _ignore_spec() -> pathspec.PathSpec | None:
+    # Mirrors comfy-cli's _load_comfyignore_spec.
+    path = REPO / ".comfyignore"
+    if not path.exists():
+        return None
+    patterns = [
+        line.strip()
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    ]
+    return pathspec.PathSpec.from_lines("gitwildmatch", patterns) if patterns else None
+
+
+def _force_included(rel_path: str, include_prefixes: list[str]) -> bool:
+    return any(
+        rel_path == prefix or rel_path.startswith(prefix + "/") for prefix in include_prefixes
+    )
+
+
+def shipped_files() -> list[str]:
+    """The file set comfy-cli would pack into node.zip."""
+    spec = _ignore_spec()
+    prefixes = [i.strip("/") for i in _includes()]
+
+    def keep(path: str) -> bool:
+        if _force_included(path, prefixes):
+            return True
+        return not (spec and spec.match_file(path))
+
+    return [f for f in _tracked_files() if keep(f)]
+
+
+def test_web_dist_is_force_included():
+    assert "web/dist" in _includes(), (
+        "[tool.comfy] includes must force-ship web/dist — without it a "
+        "checkout-wiped build publishes an empty frontend"
+    )
+
+
+def test_only_expected_runtime_paths_ship():
+    unexpected = []
+    for f in shipped_files():
+        top = f.split("/", 1)[0]
+        if "/" in f:
+            if top + "/" not in EXPECTED_RUNTIME:
+                unexpected.append(f)
+        elif f not in EXPECTED_RUNTIME and not PY_TOPLEVEL.match(f):
+            unexpected.append(f)
+    assert not unexpected, (
+        "Files would ship in the registry tarball that are not classified "
+        "as runtime content — either add them to .comfyignore (dev-only) "
+        f"or to EXPECTED_RUNTIME in this test (runtime): {sorted(unexpected)}"
+    )
+
+
+def test_no_unexpected_tripwires_in_shipped_python():
+    findings = []
+    for f in shipped_files():
+        if not f.endswith(".py"):
+            continue
+        text = (REPO / f).read_text(encoding="utf-8", errors="replace")
+        allowed = ALLOWED_TRIPWIRES.get(Path(f).name, set())
+        for category, rx in TRIPWIRES.items():
+            if category in allowed:
+                continue
+            match = rx.search(text)
+            if match:
+                findings.append(f"{f}: {category} ({match.group(0)!r})")
+    assert not findings, (
+        "Shipped Python matches registry-scanner tripwire patterns. Move "
+        "dev tooling out of the tarball via .comfyignore, or — if this is "
+        "intended runtime functionality — add an ALLOWED_TRIPWIRES entry "
+        f"with a justification comment: {findings}"
+    )
 '''
 
 # Backend variant only: the backend module does `from aiohttp import web` and
@@ -1819,6 +1979,9 @@ COMFYIGNORE = """\
 # Goal: ship only what ComfyUI loads at runtime (the Python backend, the
 # built web/dist bundle, pyproject metadata, README/LICENSE) and keep CI,
 # build inputs, tests, docs, and the screenshot pipeline out of the tarball.
+# The registry security scan flags a version on ANY finding, even info
+# severity — every shipped file is scan surface. tests/test_publish_hygiene.py
+# fails if a new top-level path ships unclassified; keep the two in sync.
 
 # Build inputs — only the built web/dist is served, never the TS source
 /src/
@@ -1830,6 +1993,10 @@ package.json
 bun.lock
 uv.lock
 pylock.toml
+
+# Dev/CI tooling scripts — never runtime code (a shipped scripts/ file with
+# urllib got comfyui-sampler-info 0.1.16 flagged: info_python_network_operations)
+/scripts/
 
 # Tests
 /tests/
@@ -1850,6 +2017,7 @@ renovate.json
 justfile
 CLAUDE.md
 RELEASE-CHECKLIST.md
+.comfyignore
 
 # Source-form display assets (the rasterized icon.png + banner.png are kept)
 icon.svg
@@ -2050,41 +2218,118 @@ BANNER_SVG = """\
 # Registry health monitor — flags a pack whose Active registry version has been
 # Flagged (falls back to the previous Active version on install). Mirrors the
 # sibling packs' registry-health.yml.
-REGISTRY_HEALTH_YML = """\
-name: "Registry: health check"
+REGISTRY_HEALTH_YML = r"""name: Registry health
+
+# Feedback loop for Comfy Registry publishing. Checks that the version this
+# repo currently declares (pyproject.toml) is actually Active in the registry.
+# Fails (red X + notification) and opens/updates a tracking issue when that
+# version is Flagged, stuck Pending, or missing — and warns when a phantom
+# higher version sits ahead of it in the registry. Closes the issue once the
+# release is healthy.
 
 on:
+  workflow_dispatch:
   schedule:
-    - cron: '23 6 * * 1'
-  workflow_dispatch: {}
+    - cron: "17 7 * * *" # daily 07:17 UTC
+  workflow_run:
+    workflows: ["Publish to Comfy Registry"]
+    types: [completed]
 
 permissions:
   contents: read
   issues: write
 
 jobs:
-  registry-health:
-    name: Check Comfy Registry status
+  check:
+    name: Check registry release status
     runs-on: ubuntu-latest
     steps:
-      - name: Query the registry for the Active version status
+      - uses: actions/checkout@v6
+
+      - name: Evaluate registry status
         env:
-          NODE_ID: "@@NAME@@"
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          PENDING_GRACE_HOURS: "6" # scan normally completes well under this
+          ISSUE_LABEL: "registry-health"
         run: |
-          status=$(curl -fsSL "https://api.comfy.org/nodes/${NODE_ID}" \\
-            | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("status",""))' \\
-            2>/dev/null || echo "")
-          echo "registry status: ${status:-unknown}"
-          if [ "$status" = "NodeStatusBanned" ] || [ "$status" = "NodeVersionStatusFlagged" ]; then
-            title="Registry health: ${NODE_ID} is ${status}"
-            existing=$(gh issue list -R "$REPO" --state open --search "$title" --json number --jq '.[].number')
-            if [ -z "$existing" ]; then
-              gh issue create -R "$REPO" --title "$title" \\
-                --body "The Comfy Registry reports \\`${status}\\` for the Active version. Installs fall back to the last Active version until a fresh good version re-points Active forward. See https://registry.comfy.org/nodes/${NODE_ID}."
+          set -euo pipefail
+
+          node_id=$(grep -m1 -E '^name'    pyproject.toml | sed -E 's/.*"([^"]+)".*/\1/')
+          ver=$(grep    -m1 -E '^version' pyproject.toml | sed -E 's/.*"([^"]+)".*/\1/')
+          [ -n "$node_id" ] && [ -n "$ver" ] || { echo "::error::cannot read name/version from pyproject.toml"; exit 1; }
+          echo "Node: $node_id  declared version: $ver"
+
+          # include_status_reason=true returns the security-scan findings JSON
+          # (issue_type/file_path/description) — the closed feedback loop for
+          # Flagged versions (scanner notifications otherwise land only in the
+          # Comfy Org Discord #security-review-council channel).
+          curl -fsS "https://api.comfy.org/nodes/${node_id}/versions?include_status_reason=true" -o versions.json
+
+          status=$(jq -r --arg v "$ver" '.[] | select(.version==$v) | .status' versions.json)
+          created=$(jq -r --arg v "$ver" '.[] | select(.version==$v) | .createdAt' versions.json)
+          highest=$(jq -r '.[].version' versions.json | sort -V | tail -1)
+
+          body=$(mktemp); problem=""
+          dash="https://registry.comfy.org/nodes/${node_id}"
+
+          if [ -z "$status" ]; then
+            problem="missing"
+            printf '%s\n' \
+              "Declared version **\`${ver}\`** is **not present** in the registry." \
+              "" \
+              "The publish either failed, is still uploading, or release-please hasn't cut it yet." \
+              "Check the publish workflow and ${dash}." > "$body"
+          elif [ "$status" = "NodeVersionStatusFlagged" ]; then
+            problem="flagged"
+            findings=$(jq -r --arg v "$ver" '.[] | select(.version==$v) | .status_reason // ""
+              | (fromjson? // .)
+              | if type=="array" then
+                  map("  - `\(.issue_type // .error_type // .type // "?")` (\(.scanner // "?")) in `\(.file_path // .path // "?")`: \(.description // "" | tostring | .[0:200])")
+                  | join("\n")
+                else "  - \(tostring | .[0:400])" end' versions.json)
+            printf '%s\n' \
+              "Declared version **\`${ver}\`** is **Flagged** by Comfy-Org registry moderation." \
+              "" \
+              "- Clean installs resolve to an older version until this clears." \
+              "- Scan findings (\`include_status_reason=true\`):" \
+              "${findings:-  - (none reported)}" \
+              "- If a false positive, request re-review via Comfy-Org (registry-backend#180); a new publish re-runs the scan." > "$body"
+          elif [ "$status" = "NodeVersionStatusPending" ]; then
+            age_h=$(( ( $(date -u +%s) - $(date -u -d "$created" +%s) ) / 3600 ))
+            if [ "$age_h" -ge "${PENDING_GRACE_HOURS}" ]; then
+              problem="stuck-pending"
+              printf '%s\n' \
+                "Declared version **\`${ver}\`** has been **Pending** ~${age_h}h (grace ${PENDING_GRACE_HOURS}h)." \
+                "The security scan normally finishes in under a few hours. Check ${dash}." > "$body"
             fi
           fi
+
+          # Phantom-ahead: a higher version exists in the registry than we declare.
+          phantom=""
+          if [ "$highest" != "$ver" ] && [ "$(printf '%s\n%s\n' "$ver" "$highest" | sort -V | tail -1)" = "$highest" ]; then
+            phantom="$highest"
+          fi
+          if [ -n "$phantom" ]; then
+            { echo ""; echo "> ⚠️ Phantom version **\`${phantom}\`** outranks the declared \`${ver}\` in the registry — \`comfy node install\` resolves to \`${phantom}\`. Release a version **> ${phantom}** (e.g. \`Release-As\`) to supersede it."; } >> "$body"
+            [ -n "$problem" ] || problem="phantom-ahead"
+          fi
+
+          gh label create "$ISSUE_LABEL" --color FBCA04 --description "Comfy Registry publish health" --force >/dev/null 2>&1 || true
+          existing=$(gh issue list --label "$ISSUE_LABEL" --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
+
+          if [ -n "$problem" ]; then
+            echo "_Detected by the registry-health workflow on $(date -u +%FT%TZ)._" >> "$body"
+            if [ -n "$existing" ]; then gh issue comment "$existing" --body-file "$body"
+            else gh issue create --title "Registry: release ${ver} not healthy (${problem})" --label "$ISSUE_LABEL" --body-file "$body"; fi
+            echo "::error::release ${ver} is ${problem}"
+            exit 1
+          fi
+
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "Resolved: \`${ver}\` is **Active** and highest in the registry. Closing."
+            gh issue close "$existing"
+          fi
+          echo "OK: ${ver} is Active"
 """
 
 # Housekeeping: clear the transient release-please `autorelease: pending` /
@@ -2184,6 +2429,25 @@ def build_file_map(
     else:
         ctx["DEPENDENCIES_BLOCK"] = ""
         ctx["KIT_PKG_NOTE"] = ""
+
+    # Provenance banner for the built bundle. The registry's provenance_scan
+    # reports bundled node_modules code it cannot attribute as
+    # low_vendored_unknown (any finding flags the version) — state up front
+    # what the bundle is built from and what it inlines. Must not contain
+    # single quotes: it is single-quoted inside the build script.
+    if modal:
+        ctx["BUNDLE_BANNER"] = (
+            "/* web/dist bundle built by bun from src/ in this repository "
+            f"(see package.json). Inlines {MODAL_KIT_PKG} (MIT) - a "
+            "first-party library by the same publisher, published to npm "
+            "with provenance attestation: "
+            f"https://www.npmjs.com/package/{MODAL_KIT_PKG} */"
+        )
+    else:
+        ctx["BUNDLE_BANNER"] = (
+            "/* web/dist bundle built by bun from src/ in this repository "
+            "(see package.json). No third-party code is bundled. */"
+        )
 
     # The standalone-modal smoke test mounts the modal under jsdom (issue #1806);
     # the shim smoke test asserts the CSS-shim <style> lifecycle under jsdom too.
@@ -2452,6 +2716,7 @@ def build_file_map(
         ),
         "src/comfyui-shims.d.ts": COMFYUI_SHIMS,
         "tests/test_init.py": TEST_INIT,
+        "tests/test_publish_hygiene.py": TEST_PUBLISH_HYGIENE,
         "tests/js/__mocks__/app.js": APP_MOCK,
         "tests/js/index.test.js": (
             JS_TEST_SHIM

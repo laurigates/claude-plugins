@@ -167,8 +167,12 @@ dev deps), `.github/workflows/` (`ci.yml`, `publish.yml`, `release-please.yml`,
 `renovate.json` (Renovate, **not** dependabot), strict `tsconfig.json`,
 `biome.json`, `knip.json`, `.pre-commit-config.yaml`,
 `release-please-config.json` + manifest, `vitest.config.js`, `package.json`
-(bun scripts; modal variants add `@laurigates/comfy-modal-kit`), `tests/` (a
-green pytest + vitest smoke test), `src/index.ts` + `src/comfyui-shims.d.ts`,
+(bun scripts; modal variants add `@laurigates/comfy-modal-kit`; the build
+carries a `--banner` provenance comment naming what the bundle inlines),
+`tests/` (a green pytest + vitest smoke test, plus
+`test_publish_hygiene.py` — simulates the comfy-cli tarball and pins the
+registry scan surface; kept byte-identical across all pack repos),
+`src/index.ts` + `src/comfyui-shims.d.ts`,
 `__init__.py` (`WEB_DIRECTORY = "./web/dist"`), `icon.svg` + `banner.svg`
 (family-style placeholders — `just assets` rasterizes them to the PNGs the
 registry serves), `CLAUDE.md`, the migration ADR, `README`, `LICENSE`, and
@@ -263,10 +267,16 @@ The generated `publish.yml` builds `web/dist/` then publishes via
   **Flagged** (review) stays in the registry but is no longer the Active target —
   installs fall back to the last Active version. Publishing a fresh good version
   re-points Active forward.
-- **Flags are content-independent.** A version can be Flagged for reasons
-  unrelated to its file contents (publisher / automated review state), so a
-  byte-identical re-publish can flip status. A Flag does not by itself mean the
-  tarball is bad — check the registry version page.
+- **Flags fire on ANY finding, even info severity.** Full reasons are on the
+  public API via `GET /nodes/<id>/versions?include_status_reason=true`
+  (notifications otherwise post to the Comfy Org Discord
+  `#security-review-council`). Known classes: `python_network_operations`
+  (yara) on any urllib/requests use in shipped `.py`, and `vendored_unknown`
+  (provenance_scan) on **any bundler-built dist file** — even pure own-source
+  bundles. The scaffold's `tests/test_publish_hygiene.py` + `.comfyignore` +
+  `--banner` attribution keep the scan surface minimal, and its
+  `registry-health.yml` writes the findings into the tracking issue — see the
+  `comfy-registry-lifecycle` skill's security-scan section.
 - **`.comfyignore` trims the tarball.** comfy-cli builds the published `node.zip`
   as *git-tracked files − `.comfyignore` matches + `[tool.comfy] includes`*. The
   scaffold ships a default `.comfyignore` so only the runtime backend, the built
