@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.50.3](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.50.2...git-plugin-v2.50.3) (2026-07-16)
+
+
+### Documentation
+
+* **git-plugin:** teach gh-workflow-monitoring to de-column a step's log output ([#2067](https://github.com/laurigates/claude-plugins/issues/2067)) ([a66ce89](https://github.com/laurigates/claude-plugins/commit/a66ce895f90151dfd7f99abc69ed6c1a3a6ff38e))
+
 ## [2.50.2](https://github.com/laurigates/claude-plugins/compare/git-plugin-v2.50.1...git-plugin-v2.50.2) (2026-07-06)
 
 
