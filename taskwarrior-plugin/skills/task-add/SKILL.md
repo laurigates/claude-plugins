@@ -191,7 +191,7 @@ task +LATEST uuids
 > shifts every higher ID down by one, so `task 141 annotate ...` run minutes
 > after the add can silently hit a *different* task. Capture the immutable
 > UUID at create time and address the task by UUID for later annotate /
-> modify / done. See the user-global rule `taskwarrior-bulk-operations.md`.
+> modify / done. See `.claude/rules/task-id-stability.md`.
 
 #### Sequential WOs: use `depends:` for ordered chains
 
@@ -261,5 +261,6 @@ Print:
 - `/taskwarrior:task-done` — close an open task (fires auto-unblock for `depends:` chains)
 - `/taskwarrior:task-coordinate` — next-agent candidates for a wave
 - `.claude/rules/parallel-safe-queries.md` — why `export | jq`, never `list`
+- `.claude/rules/task-id-stability.md` — why the captured UUID must be used for later annotate/modify/done
 - `blueprint-plugin:feature-tracking` — FR/WO IDs that `bpid` points at
 - `taskwarrior-plugin/docs/task-tracking.md` — full lifecycle including `depends:` + auto-unblock pattern

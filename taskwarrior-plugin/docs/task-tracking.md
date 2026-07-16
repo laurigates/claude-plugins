@@ -76,6 +76,14 @@ The native `+READY` virtual tag in `task-coordinate` and `task-status`
 automatically hides depends-blocked tasks (and `wait:`-deferred / future-`scheduled:`
 tasks) from dispatch candidates — no manual filtering needed.
 
+`depends:` accepts a UUID in place of a numeric ID. The numeric form above is
+fine when the whole chain is filed in one sitting (same-session risk is low),
+but across a longer session — or once other tasks may have closed in
+between — prefer the UUID captured via `task +LATEST uuids`
+(`.claude/rules/task-id-stability.md`): a numeric ID can renumber underneath a
+`depends:` reference set minutes or turns earlier, silently pointing the
+chain at the wrong predecessor.
+
 ### 3. ★ KEY: `depends:` + `task done` auto-unblocks the chain
 
 > **This is the single biggest productivity multiplier in multi-WO work.**

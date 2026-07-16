@@ -48,10 +48,14 @@ Execute this release workflow:
 ### Step 1: Load the task
 
 ```bash
-task "$TASKID" export | jq '.[0] | {id, description, status, start, agent, pid, host, branch, worktree, annotations}'
+task "$TASKID" export | jq '.[0] | {id, uuid, description, status, start, agent, pid, host, branch, worktree, annotations}'
 ```
 
-Use `export | jq` — never `info` / `list`. Decide:
+Use `export | jq` — never `info` / `list`. Capture the `uuid` field as
+`$TASK_UUID` — every mutating call from Step 3 onward addresses the task by
+`$TASK_UUID`, never `$TASKID`. Step 2's `AskUserQuestion` pause is a real gap
+during which another agent's concurrent `task done` can renumber `$TASKID`
+(see `.claude/rules/task-id-stability.md`). Decide:
 
 | Condition | Action |
 |---|---|
@@ -68,7 +72,7 @@ If the user did not pass a message, ask them for one with a single `AskUserQuest
 Annotate **before** stopping — if the stop fails (e.g. concurrent modify), the annotation is still captured:
 
 ```bash
-task "$TASKID" annotate "released by $AGENT — state: $MESSAGE"
+task "$TASK_UUID" annotate "released by $AGENT — state: $MESSAGE"
 ```
 
 `$AGENT` is read from the task's existing `agent` UDA (the claim stamped it); fall back to `claude-${CLAUDE_SESSION_ID:0:8}` if unset.
@@ -76,7 +80,7 @@ task "$TASKID" annotate "released by $AGENT — state: $MESSAGE"
 ### Step 4: Stop the active state
 
 ```bash
-task "$TASKID" stop
+task "$TASK_UUID" stop
 ```
 
 This clears the built-in `start` attribute and removes the `+ACTIVE` virtual tag. The task is back in the dispatch pool for `/taskwarrior:task-coordinate`.
@@ -86,13 +90,13 @@ This clears the built-in `start` attribute and removes the `+ACTIVE` virtual tag
 Always clear `pid` (the process is going away):
 
 ```bash
-task "$TASKID" modify pid:
+task "$TASK_UUID" modify pid:
 ```
 
 When `--clear-identity` is passed, also clear the rest:
 
 ```bash
-task "$TASKID" modify agent: host: branch: worktree:
+task "$TASK_UUID" modify agent: host: branch: worktree:
 ```
 
 The empty-value `field:` syntax removes a UDA in taskwarrior. Default behaviour keeps `agent` / `host` / `branch` / `worktree` so `task-status` "Recently touched" can attribute the work.
@@ -137,10 +141,10 @@ Print:
 
 | Step | Command |
 |---|---|
-| Annotate | `task ID annotate "released by AGENT — state: MSG"` |
-| Stop active | `task ID stop` |
-| Clear pid | `task ID modify pid:` |
-| Full identity drain | `task ID modify agent: host: branch: worktree: pid:` |
+| Annotate | `task UUID annotate "released by AGENT — state: MSG"` |
+| Stop active | `task UUID stop` |
+| Clear pid | `task UUID modify pid:` |
+| Full identity drain | `task UUID modify agent: host: branch: worktree: pid:` |
 | Drop git marker | `/git:coworker-check --release` |
 
 ## Related
@@ -150,3 +154,4 @@ Print:
 - `/taskwarrior:task-coordinate` — finds the next dispatch candidate
 - `/git:coworker-check` — sister marker that this skill drops on `--release`
 - `.claude/rules/agent-coworker-detection.md` — combined-signal rationale
+- `.claude/rules/task-id-stability.md` — why this skill resolves `$TASK_UUID` once and mutates by UUID

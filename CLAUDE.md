@@ -65,6 +65,7 @@ Claude Code plugin collection providing skills and agents for development workfl
 | `.claude/rules/version-pinning.md` | Version pins in skill examples (`uses:`/`FROM`/`image:`/`rev:`) are a Renovate-managed surface — SHA+comment convention, the coverage guard, and what's illustrative vs. managed |
 | `.claude/rules/loop-integrity.md` | Long-running/self-continuing loops need an **independent** stop condition (a fresh verifier judges "done", not the worker) and a **compact state packet** each iteration (objective/ref/files/verifier-result/changed-since/exit-condition) — else they optimize for completion over correctness or automate context drift |
 | `.claude/rules/gitattributes.md` | `.gitattributes` conventions — `merge=union` only for one-line-per-entry append-only files, `linguist-generated` for build output (always safe), LF normalization; the `configure-gitattributes` skill + `resolve-additive-conflicts.py` pre-pass |
+| `.claude/rules/task-id-stability.md` | Taskwarrior numeric IDs renumber after every close — resolve the immutable UUID once and mutate by UUID, including *within* a single skill's own multi-step lifecycle, not just across bulk loops |
 
 ## Creating New Skills
 

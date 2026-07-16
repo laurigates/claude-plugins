@@ -367,6 +367,25 @@ check_skill_body() {
       has_errors=true
     fi
 
+    # Regression: task-claim/task-release/task-done each resolve a task once
+    # early, then reuse that possibly-numeric id across several LATER,
+    # separately-issued mutating `task` commands — with a real gap between
+    # resolve and mutate (an AskUserQuestion pause in task-release, a
+    # SlashCommand coworker-check in task-claim). A concurrent agent's
+    # `task done` renumbering ids in that window makes a later step silently
+    # mutate the wrong task (the live incident that prompted
+    # .claude/rules/task-id-stability.md). This is a cheap syntactic pin only
+    # — the executable regression check that actually proves each mutating
+    # call (not just some of them) uses $TASK_UUID lives in
+    # taskwarrior-plugin/scripts/tests/test-task-id-stability.sh (see
+    # .claude/rules/regression-testing.md's syntactic-vs-semantic gate).
+    if [ "$skill_name" = "task-claim" ] || [ "$skill_name" = "task-release" ] || [ "$skill_name" = "task-done" ]; then
+      if ! grep -q '\$TASK_UUID' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must resolve \$TASK_UUID once and mutate by it (.claude/rules/task-id-stability.md)")
+        has_errors=true
+      fi
+    fi
+
     # Regression: deadbranch must reclassify squash-merged branches. The
     # underlying `deadbranch` CLI detects "merged" via commit ancestry, which
     # under-reports badly on squash-merge repos (the release-please default) — a

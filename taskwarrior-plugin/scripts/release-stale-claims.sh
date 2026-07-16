@@ -24,7 +24,7 @@
 # on immutable UUIDs (not numeric IDs, which renumber after every close) and every
 # taskwarrior mutation passes `rc.confirmation=no` + `</dev/null` so a batch close
 # is deterministic and never eats the caller's stdin
-# (see .claude/rules/taskwarrior-bulk-operations.md).
+# (see .claude/rules/task-id-stability.md).
 #
 # Output: structured KEY=VALUE block (see .claude/rules/structured-script-output.md)
 # so the SessionStart drift probe and other callers can roll it up. The probe reads
@@ -130,7 +130,7 @@ for row in "${claim_rows[@]:-}"; do
     ok=true
     # annotate first (records intent while the task is still addressable), then
     # drain the pid UDA, then stop (drops +ACTIVE). rc.confirmation=no + </dev/null
-    # keep the batch deterministic and stdin-safe (taskwarrior-bulk-operations.md).
+    # keep the batch deterministic and stdin-safe (.claude/rules/task-id-stability.md).
     task rc.confirmation=no "$uuid" annotate "auto-released: claiming PID gone" </dev/null >/dev/null 2>&1 || ok=false
     task rc.confirmation=no "$uuid" modify pid: </dev/null >/dev/null 2>&1 || ok=false
     task rc.confirmation=no "$uuid" stop </dev/null >/dev/null 2>&1 || ok=false
