@@ -4,7 +4,7 @@ description: Gate outward-bound text (upstream issues, docs, PR bodies) through 
 allowed-tools: Agent, Read, Write, Edit, TodoWrite
 model: opus
 created: 2026-06-11
-modified: 2026-06-11
+modified: 2026-07-17
 reviewed: 2026-06-11
 ---
 
@@ -45,13 +45,26 @@ maintainers *and* future teammates reading internal docs cold both qualify.
 The artifact must be a file. The reader gets a path, not pasted text — paste
 invites the orchestrator to "helpfully" add context, which defeats the test.
 
-### Step 2: Dispatch the cold reader
+### Step 2: Dispatch the cold reader — synchronously
 
-One `Agent` per artifact, all in a single message when batching. Template:
+One `Agent` per artifact, all in a single message when batching. Run each
+reader **synchronously** (`run_in_background: false`, the default) — the
+reader's entire job is a one-shot critique, and a synchronous run returns
+that critique directly as the `Agent` tool result. There is nothing to
+gain from backgrounding it.
+
+If a reader *was* spawned with `run_in_background: true`, read its critique
+from the **task-completion result** the harness returns when the task ends —
+never by `SendMessage`. A completed background agent only emits
+`idle_notification`s on the message channel, so asking it there for its
+output loops forever without ever returning the analysis (issue #2063).
+
+Template:
 
 ```
 subagent_type: general-purpose
 model: haiku
+run_in_background: false
 prompt: |
   You are <persona — see table>. You have NO context beyond the text itself.
   Read ONLY this file (no other files, no repository exploration, no web):
@@ -100,6 +113,14 @@ agent). Re-dispatch a fresh cold reader **only if the first verdict was
 genuine ones and publish without a second opinion. Do not loop more than twice — a third round means the artifact has a
 structural problem the gate can't fix.
 
+**Fallback when the reader can't deliver.** If the critique cannot be
+retrieved (reader died, harness hiccup, background-spawn confusion), do not
+block publication on the gate: perform the deterministic portion inline —
+scan the artifact yourself for internal references (PR/ticket numbers,
+codenames), unexplained jargon, and self-containment — and publish on that
+basis. The cold read is the better instrument, but a hand scan beats an
+abandoned gate.
+
 ## Workflow-Script Integration
 
 Inside a `Workflow` script the gate is one schema-enforced stage per item:
@@ -133,6 +154,8 @@ All 12 issues filed after the gate drew zero clarification round-trips.
 | Mistake | Correct approach |
 |---|---|
 | Using opus/sonnet as the reader "for better critique" | The weak reader is the point — it measures, not advises |
+| Spawning the reader with `run_in_background: true` | Run synchronously — the critique **is** the tool result of a synchronous run |
+| Polling a completed background reader via `SendMessage` | It only emits `idle_notification`s there; read the task-completion result instead (#2063) |
 | Pasting the artifact into the prompt | Give a path; pasted text tempts context smuggling |
 | Letting the reader explore the repo | "Read ONLY this file" — exploration restores the context the test removes |
 | Acting on every complaint | Triage first (Step 3); artifacts of the test produce busywork |
