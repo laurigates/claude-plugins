@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.6.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.5.15...hooks-plugin-v2.6.0) (2026-07-17)
+
+
+### Features
+
+* **hooks-plugin:** add # allow-timeout escape hatch to the timeout block ([#2078](https://github.com/laurigates/claude-plugins/issues/2078)) ([b11cd52](https://github.com/laurigates/claude-plugins/commit/b11cd52f7aade168ae3eaf091ed071b8cb767e31))
+
 ## [2.5.15](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.5.14...hooks-plugin-v2.5.15) (2026-07-17)
 
 
