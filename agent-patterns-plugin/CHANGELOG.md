@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.36.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.35.1...agent-patterns-plugin-v2.36.0) (2026-07-17)
+
+
+### Features
+
+* **agent-patterns-plugin:** add multi-model-delegation skill ([#2084](https://github.com/laurigates/claude-plugins/issues/2084)) ([b444da8](https://github.com/laurigates/claude-plugins/commit/b444da8c9dfc44555ff1951e806de8a71ff8837b))
+
 ## [2.35.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.35.0...agent-patterns-plugin-v2.35.1) (2026-07-17)
 
 
