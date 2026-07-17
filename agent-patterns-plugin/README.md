@@ -144,6 +144,20 @@ Dispatch contract for any workflow that spawns more than one agent in parallel �
 - Defining the mandatory Return Contract every parallel agent must emit on exit
 - Recovering from silent agent exits or worktree collisions
 
+#### `multi-model-delegation`
+Protocol for consulting *other* models (kimi, glm, gemini, gpt via the PAL MCP gateway) on design and judgment work — the complement of `parallel-agent-dispatch`, which delegates *work* to Claude subagents.
+
+**When to use:**
+- Brainstorming an open design decision with foreign models (PAL `chat`/`consensus`)
+- Reconciling two models' conflicting design proposals
+- Deciding whether a multi-model consult is worth the tokens
+
+**Features:**
+- The disagreement-is-the-signal protocol: identical briefs, independent round one, diff for the split
+- Adjudicate splits against the codebase (which usually already decided), never model confidence
+- Graft-never-adopt-wholesale synthesis guidance
+- PAL mechanics that bite: `listmodels` first, `absolute_file_paths` over pasting, the kimi `temperature` 400
+
 #### `verify-before-plan`
 Verify orchestrator premises (file counts, build state, artefact presence) before dispatching parallel subagents. Sits before `parallel-agent-dispatch` in the dispatch sequence — bad premises propagate to every brief in the wave.
 
