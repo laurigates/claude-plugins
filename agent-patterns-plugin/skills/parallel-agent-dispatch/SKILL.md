@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-21
-modified: 2026-07-05
+modified: 2026-07-17
 reviewed: 2026-07-05
 ---
 
@@ -59,27 +59,16 @@ Before spawning, the orchestrator must verify:
 If any check fails, **refuse to dispatch** and report the blocker. Do not
 "clean up" uncommitted user work — surface it and ask.
 
-**Target-branch preflight (#1969).** `isolation: "worktree"` auto-names the fresh
-worktree's branch; when the agent is told to **rename** onto a **fixed**
-conventional target name (`feat/m4-…`), git refuses a name already checked out in
-another worktree — so a collision with a concurrent session that picked the same
-name surfaces only at that end-of-task rename, deep into the run (real case: two
-sessions both reached PR-open ~25 min / ~400K tokens in → duplicate-PR reconcile).
-Make it a **cheap up-front stop/merge decision** — before dispatching, or as the
-agent's *first* step:
-
-```bash
-target="feat/m4-sampling-adapter-io"
-git branch -a --list "$target"            # local + remote-tracking refs
-git worktree list | grep -F "[$target]"  # checked out elsewhere
-git ls-remote --heads origin "$target"   # a peer already pushed it
-```
-
-Any hit ⇒ another session may already own this task — **stop and reconcile**, not
-race to a duplicate PR (acute in shared multi-session portfolios —
-`.claude/rules/concurrent-session-pr-check.md`). **Mitigation:** push under the
-target name via explicit refspec (`git push origin HEAD:$target`) instead of
-renaming — sidesteps the "already checked out" refusal. See
+**Target-branch preflight (#1969).** `isolation: "worktree"` auto-names the
+branch; renaming onto a **fixed** conventional target name another session's
+worktree already holds is refused only at the end-of-task rename, deep into
+the run (real case: two sessions both reached PR-open → duplicate-PR
+reconcile). Before dispatching — or as the agent's *first* step — check the
+name is free (`git branch -a --list "$target"`, `git worktree list`,
+`git ls-remote --heads origin "$target"`); any hit ⇒ another session may own
+this task — **stop and reconcile**, not race to a duplicate PR
+(`.claude/rules/concurrent-session-pr-check.md`). **Mitigation:** push via
+explicit refspec (`git push origin HEAD:$target`) instead of renaming. See
 [REFERENCE.md](REFERENCE.md) "Target-branch preflight (#1969)".
 
 **Transient worktree leaks (#1319).** While a wave runs, a file a child wrote
@@ -99,20 +88,17 @@ until inside the worktree. After the agent returns, run the post-run main-repo
 integrity check (see [REFERENCE.md](REFERENCE.md) "Worktree cwd-reset guardrail
 (#1480)") — a changed branch or new dirty state is silent main-repo mutation.
 
-**`GIT_DIR`/`GIT_WORK_TREE` export leak (#1692 sibling).** A sharper worktree-git
-leak. If an agent meets a corrupted worktree (`core.bare = true`, or `fatal: this
-operation must be run in a work tree`) and "works around" it by **exporting**
-`GIT_DIR`/`GIT_WORK_TREE`, those vars **override `git -C`** — so every later `git`
-call, *and any test/hook subprocess that shells to `git`*, targets that gitdir's
-**common config**, flipping the **shared** checkout to bare and breaking **all**
-sibling worktrees at once. This is the env-var sibling of the empty-`mktemp -d`
-vector guarded by `check-git-sandbox-guards.sh` (#1692) — the mktemp guard does
-not catch it, because the sandbox path is correct; the exported env is the hijack.
-So: a bare / `must-be-run-in-a-work-tree` worktree **is** shared-checkout
-corruption — STOP and report it, repair `core.bare`, and never paper over it with
-exported git env. When a subprocess genuinely must run git in a sandbox,
-neutralize inherited env first: `env -u GIT_DIR -u GIT_WORK_TREE git -C "$dir" …`.
-See [REFERENCE.md](REFERENCE.md) "Worktree GIT_DIR-export leak (#1692)".
+**`GIT_DIR`/`GIT_WORK_TREE` export leak (#1692 sibling).** An agent meeting a
+corrupted worktree (`core.bare = true` / `fatal: this operation must be run in
+a work tree`) must treat it as shared-checkout corruption — **STOP and report
+it**, repair `core.bare`, and never "work around" it by exporting
+`GIT_DIR`/`GIT_WORK_TREE`: those vars **override `git -C`**, so every later
+git call (and any test/hook subprocess that shells to git) targets the shared
+common config, flipping the whole checkout to bare and breaking **all**
+sibling worktrees at once. When a subprocess genuinely must run git in a
+sandbox, neutralize inherited env first:
+`env -u GIT_DIR -u GIT_WORK_TREE git -C "$dir" …`. See
+[REFERENCE.md](REFERENCE.md) "Worktree GIT_DIR-export leak (#1692)".
 
 **Nested-repo workspaces — `isolation: "worktree"` isolates the *outer* repo (#1838).**
 `isolation: "worktree"` resolves against the **session's** git repo, not the
@@ -302,6 +288,18 @@ result is lost. See
 [REFERENCE.md → Agent stalled at commit / push](REFERENCE.md#agent-stalled-at-commit--push--salvage-routine)
 and [REFERENCE.md → WIP salvage before re-dispatch](REFERENCE.md#wip-salvage-before-re-dispatch-1491).
 
+### Idle without report (#2039)
+
+An implementer can **finish its work** (clean commit + tree) then go
+idle emitting only an `idle_notification` — the report never arrives; the
+work isn't lost, the *communication* is (intermittent — siblings can deliver
+fine). Not a failure signal: run the empty-vs-dirty check above, then
+`SendMessage` the named agent to resend the Return Contract (a read-only
+continuation, so the #1546 caveat below does not apply). Never respawn — a
+fresh agent lacks context and can't take the branch. Prevention: implementers
+`SendMessage` the report to the lead as their final act. See
+[REFERENCE.md → Idle without report](REFERENCE.md#idle-without-report-2039).
+
 ## Killing a Thrashing Agent Preserves Its Worktree
 
 `TaskStop` does **not** discard the agent's work — its worktree stays on disk
@@ -439,6 +437,7 @@ hazard is worktree-specific. See `.claude/rules/agent-coworker-detection.md`.
 | Scope described in prose, not glob | Explicit write-path list per agent |
 | "Report back when done" with no schema | Include Return Contract verbatim in every prompt |
 | Treating agent silence as success | No Return Contract = stall; investigate before reporting done |
+| Respawning after an `idle_notification` with no report | Check the branch, then `SendMessage` the agent to resend the report (#2039) |
 | Accepting a one-word final message (`Terminal.`/`Done.`) | Mandate the loud-failure contract: push work, open a draft PR, explain |
 | Centralizing pushes as a default | Agent pushes its own work; lead pushes only on sandbox/dependency exceptions |
 
