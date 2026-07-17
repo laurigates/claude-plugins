@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.33.4](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.33.3...configure-plugin-v1.33.4) (2026-07-17)
+
+
+### Bug Fixes
+
+* **configure-plugin:** warn that colon-form deny rules widen to longer flags ([#2074](https://github.com/laurigates/claude-plugins/issues/2074)) ([e8f4c70](https://github.com/laurigates/claude-plugins/commit/e8f4c70ee6f1eb18a4f8f48a3c90756c0259613b))
+
 ## [1.33.3](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.33.2...configure-plugin-v1.33.3) (2026-07-05)
 
 
