@@ -300,8 +300,16 @@ The generated `publish.yml` builds `web/dist/` then publishes via
   `comfyui-screenshot-pipeline` skill wires the screenshots). The
   finishing-pass audit at the end of a scaffold flags this so it isn't silently
   forgotten (issue #1877).
-- Icon/banner ship as **source SVGs**; the PNGs the registry serves are produced
-  by `just assets` (rsvg-convert), not at scaffold time (stdlib-only generator).
+- Icon/banner ship as **source SVGs** in the pack-family spec (400×400 dark
+  inset tile `rect 28,28,344,344 rx76` + one accent glyph; 1344×576 family
+  banner) — canonical spec in `comfy-registry-lifecycle` "Icon design system".
+  The emitted glyph is a **placeholder letter**: replace it with a bespoke
+  pictogram (no sibling pack ships a letter) in the family accent (`#ffb02e`
+  touch / `#6ba6ff` info-gallery). The PNGs the registry serves are produced by
+  `just assets` (rsvg-convert), not at scaffold time (stdlib-only generator);
+  that recipe also **gates framing** — the tile must trim to `346×346+27+27` on
+  a 400×400 canvas, which catches an icon that drifted off-spec (the trap that
+  left `comfyui-touch-shim` shipping the raw 512×512 full-bleed placeholder).
   Edit the SVG and re-run `just assets` to keep the PNG in sync.
 - Action/tool versions in the generated workflows mirror the reference packs as
   of scaffolding; Dependabot/Renovate will bump them. The biome pin is

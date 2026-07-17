@@ -344,11 +344,40 @@ Without `[tool.comfy] Icon`, the registry shows a generic placeholder.
 
 ### Icon design system
 
-- **400×400 SVG**, dark squircle tile (`#12121a`→`#1f1f2a` gradient,
-  `rx≈76`), ~56 px inner padding, one bespoke glyph centred.
-- **Glyph colour encodes the sub-family** so a set of packs reads as a
-  family (e.g. amber for one facet, blue for another). Keep tile, corner
-  radius, and stroke weight uniform across packs.
+The exact spec every pack shares (canonical — the scaffold's `icon.svg`
+placeholder and every hand-drawn glyph target this):
+
+- **400×400 canvas**, `viewBox 0 0 400 400`.
+- **Dark inset tile**, verbatim:
+  `<rect x="28" y="28" width="344" height="344" rx="76" fill="url(#tile)" stroke="#2a2a36" stroke-width="2"/>`
+  where `#tile` is a **vertical** gradient `#1f1f2a`→`#12121a`
+  (`x1=0 y1=0 x2=0 y2=1`). The 28 px inset is the family margin — not
+  full-bleed.
+- **One bespoke pictographic glyph**, centred, filling the tile. **No
+  letters** in final art — every sibling uses a pictogram; a letter is a
+  placeholder only.
+- **Glyph colour encodes the sub-family**: **`#ffb02e` (orange)** for
+  touch/interaction packs, **`#6ba6ff` (blue)** for info/gallery packs.
+  Secondary accents (`#ffd866`, `#6bff8e`) appear sparingly. Keep tile,
+  radius, stroke, and gradient **identical** across packs.
+
+**Framing gate (the consistency check).** Because the tile is the outermost
+drawn element, a correctly-framed icon *always* trims to the same box —
+run it on every pack:
+
+```sh
+identify -format '%wx%h / %@\n' icon.png    # MUST be: 400x400 / 346x346+27+27
+```
+
+A `512x512 / 512x512+0+0` result is the classic drift: a full-bleed tile on
+the wrong canvas, which renders visibly larger and off-palette on the
+registry grid. This is exactly how `comfyui-touch-shim` shipped the raw
+512×512 green-letter scaffold placeholder while the other 10 packs matched —
+the trim box is the one-line audit that catches it across the fleet:
+
+```sh
+for d in comfyui-*/; do printf '%-28s %s\n' "$d" "$(identify -format '%wx%h/%@' "$d/icon.png" 2>/dev/null)"; done
+```
 
 ### Rasterize SVG with cairosvg — NOT ImageMagick
 
