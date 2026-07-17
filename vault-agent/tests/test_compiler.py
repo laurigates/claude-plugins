@@ -85,7 +85,11 @@ class TestCompileSkill:
             / "vault-frontmatter"
             / "SKILL.md"
         )
-        assert skill.exists(), f"missing {skill}"
+        if not skill.exists():
+            # Standalone checkout (no claude-plugins monorepo sibling): the
+            # live-compile path is exercised in the monorepo; standalone mode
+            # is covered by test_compiler_standalone.py (ADR-0006).
+            pytest.skip("monorepo skill source not present (standalone checkout)")
         out = compile_skill(skill)
         # Frontmatter is stripped
         assert "created:" not in out
