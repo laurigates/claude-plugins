@@ -812,6 +812,26 @@ check_skill_body() {
       done
     fi
 
+    # Regression: cold-read-gate must specify SYNCHRONOUS reader execution and
+    # how to retrieve the critique. A session spawned the haiku reader with
+    # run_in_background: true; the completed background agent only emitted
+    # idle_notifications, a SendMessage asking for the critique looped, and the
+    # gate was abandoned (issue #2063). The fix documents: run the reader
+    # synchronously (run_in_background: false — the critique IS the tool
+    # result), read a background reader's output from the task-completion
+    # result (never SendMessage), and fall back to an inline deterministic
+    # scan when the critique can't be retrieved. Anchor on the two
+    # load-bearing tokens; a bulk edit dropping the execution guidance would
+    # remove both.
+    if [ "$skill_name" = "cold-read-gate" ] && [ "$plugin" = "agent-patterns-plugin" ]; then
+      for token in 'run_in_background: false' 'task-completion result'; do
+        if ! grep -qF "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain reader-execution token '${token}' (synchronous dispatch + critique retrieval — issue #2063)")
+          has_errors=true
+        fi
+      done
+    fi
+
     # Regression: evaluate-improve must gate any --apply on the AEGIS source-cases
     # DELTA-VERIFY: re-run the source-failure set (the eval cases that motivated
     # the edit, captured in Step 1) against the drafted candidate and confirm the
