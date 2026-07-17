@@ -832,6 +832,23 @@ check_skill_body() {
       done
     fi
 
+    # Regression: claude-security-settings must warn that flag-scoped deny rules
+    # belong in the space form ("Bash(git push --force *)"), never the colon form
+    # ("Bash(git push --force:*)"). The colon form was observed prefix-matching
+    # longer flags sharing the prefix — "git push --force:*" also matched
+    # "git push --force-with-lease", silently hard-blocking the safe recovery
+    # form (deny rules cannot be overridden except via bypassPermissions).
+    # Evidence: laurigates/loractl#39, issue #2038. Anchor on the two markers of
+    # the warning; a bulk edit dropping the caveat would remove both.
+    if [ "$skill_name" = "claude-security-settings" ] && [ "$plugin" = "configure-plugin" ]; then
+      for token in '--force-with-lease' 'Bash(git push --force *)'; do
+        if ! grep -qF -- "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain the flag-scoped deny-rule warning marker '${token}' (colon-form :* deny rules widen to longer flags — issue #2038)")
+          has_errors=true
+        fi
+      done
+    fi
+
     # Regression: evaluate-improve must gate any --apply on the AEGIS source-cases
     # DELTA-VERIFY: re-run the source-failure set (the eval cases that motivated
     # the edit, captured in Step 1) against the drafted candidate and confirm the
