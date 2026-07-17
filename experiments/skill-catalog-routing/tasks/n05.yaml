@@ -1,0 +1,9 @@
+description: Pair 3 fd-file-finding vs rg-code-search — "locate files whose name matches, I want the paths not what's inside" is name-based file location, not in-file text search.
+prompt: |
+  I need to locate every file whose name matches a certain pattern across these
+  directories — say all the ones ending in a given extension. I want the list of
+  paths back, not anything about the contents inside them.
+gold: tools-plugin/fd-file-finding
+near_miss: tools-plugin/rg-code-search
+plugin: tools-plugin
+pair: 3

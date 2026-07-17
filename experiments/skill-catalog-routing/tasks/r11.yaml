@@ -1,0 +1,7 @@
+description: Figure out what prompt/settings produced an AI-generated PNG from embedded output metadata. Distinct from mid-graph value inspection.
+prompt: |
+  I have an AI-generated PNG sitting in my outputs folder and I can't remember how I made it. I want to pull out whatever prompt and generation settings are embedded in the file so I can reproduce or compare it.
+gold: comfyui-plugin/comfy-metadata
+plugin: comfyui-plugin
+name_transparency: opaque
+length_band: mid

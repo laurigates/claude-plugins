@@ -1,0 +1,9 @@
+description: Pair 6 macos-performance-triage vs macos-performance-benchmark — "fans roaring right now, find which process is driving the heat this instant" is live attribution, not a repeatable scored baseline.
+prompt: |
+  My Mac's fans are roaring right at this moment and it feels sluggish —
+  something is pegging the CPU or GPU this very instant. Help me figure out
+  which running process is driving the heat so I can quiet it down now.
+gold: macos-plugin/macos-performance-triage
+near_miss: macos-plugin/macos-performance-benchmark
+plugin: macos-plugin
+pair: 6

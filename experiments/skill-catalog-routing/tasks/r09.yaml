@@ -1,0 +1,7 @@
+description: Build a wheel + publish a finished Python library to PyPI. Distinct from project/dependency setup.
+prompt: |
+  My Python library is finally done and I want to turn it into a distributable wheel and push it up to PyPI so other people can install it.
+gold: python-plugin/python-packaging
+plugin: python-plugin
+name_transparency: transparent
+length_band: short

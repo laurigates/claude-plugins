@@ -1,0 +1,7 @@
+description: Retrieve the raw plan/apply console output of a failed Terraform Cloud run to debug. Distinct from run status/counts or listing runs.
+prompt: |
+  A Terraform Cloud apply just failed and I need to pull the full raw console output from that run — the actual error trace as it happened — so I can see exactly where it blew up.
+gold: terraform-plugin/tfc-run-logs
+plugin: terraform-plugin
+name_transparency: opaque
+length_band: mid

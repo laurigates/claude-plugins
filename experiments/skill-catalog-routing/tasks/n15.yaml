@@ -1,0 +1,9 @@
+description: Pair 8 tfc-run-status vs tfc-run-logs — "where does it stand, did it pass, how many resources will it add/change, ready to apply or cancel" is the status/counts view, not the detailed output logs.
+prompt: |
+  I've got a Terraform Cloud run in progress and I just want to know where it
+  stands — did it pass, how many resources will it add or change, and is it ready
+  to be applied or should I cancel it? Just the summary state, not the details.
+gold: terraform-plugin/tfc-run-status
+near_miss: terraform-plugin/tfc-run-logs
+plugin: terraform-plugin
+pair: 8

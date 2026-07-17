@@ -1,0 +1,7 @@
+description: Pure high-level architecture opinion; no catalog skill gives monolith-vs-microservices advice (software-design skills are code-level GoF/contract patterns).
+prompt: |
+  We're a startup with three engineers building an MVP. Should we go with a
+  monolith or microservices to start? I'm not asking you to write anything —
+  I just want your honest take on the tradeoffs given our size.
+gold: NONE
+kind: plain

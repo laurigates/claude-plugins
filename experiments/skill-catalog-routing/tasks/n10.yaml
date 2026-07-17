@@ -1,0 +1,9 @@
+description: Pair 5 helm-release-management vs helm-release-recovery — "deploy a new version, list what's installed, review revision history, everything healthy/routine" is normal lifecycle, not fixing a failure.
+prompt: |
+  I want to deploy a new version of our chart to the cluster and, while I'm at
+  it, list what's currently installed and review the revision history. Nothing's
+  broken — everything is healthy, this is just routine day-to-day upkeep.
+gold: kubernetes-plugin/helm-release-management
+near_miss: kubernetes-plugin/helm-release-recovery
+plugin: kubernetes-plugin
+pair: 5

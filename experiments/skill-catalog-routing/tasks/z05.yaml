@@ -1,0 +1,6 @@
+description: Travel itinerary planning; no travel skill in the catalog.
+prompt: |
+  We'll have four days in Lisbon in early October. Could you sketch a relaxed
+  itinerary that isn't too rushed and leaves room for good food?
+gold: NONE
+kind: plain

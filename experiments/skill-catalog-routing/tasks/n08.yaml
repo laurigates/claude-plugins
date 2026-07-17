@@ -1,0 +1,9 @@
+description: Pair 4 ruff-formatting vs ruff-linting — "reflow to consistent style, normalize indentation/spacing, not detecting bugs" is the reformatter, not the checker.
+prompt: |
+  I want my Python files reflowed to a consistent house style — indentation,
+  line length, and spacing normalized automatically so the layout is uniform.
+  I'm not looking to detect bugs or flag rule violations, just fix the shape.
+gold: python-plugin/ruff-formatting
+near_miss: python-plugin/ruff-linting
+plugin: python-plugin
+pair: 4

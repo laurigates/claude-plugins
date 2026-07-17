@@ -1,0 +1,7 @@
+description: Shrink an oversized Docker image for a compiled Go service via scratch/distroless + static binary. Distinct from Node/Python image optimization.
+prompt: |
+  My compiled Go service builds into an enormous Docker image — hundreds of megabytes. I want to slim it down dramatically using a minimal base and a static binary so it ends up tiny.
+gold: container-plugin/go-containers
+plugin: container-plugin
+name_transparency: transparent
+length_band: mid

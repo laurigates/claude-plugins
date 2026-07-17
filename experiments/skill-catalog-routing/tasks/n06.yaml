@@ -1,0 +1,9 @@
+description: Pair 3 rg-code-search vs fd-file-finding — "every place in the source a function is called, the matching lines" is text-inside-files, not locating files by name.
+prompt: |
+  I'm trying to track down every place in the source where a particular function
+  is invoked. I need the actual matching lines and their locations inside the
+  files, with regex support so I can match a few call variants at once.
+gold: tools-plugin/rg-code-search
+near_miss: tools-plugin/fd-file-finding
+plugin: tools-plugin
+pair: 3

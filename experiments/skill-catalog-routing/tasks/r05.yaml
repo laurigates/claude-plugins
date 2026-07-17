@@ -1,0 +1,7 @@
+description: Chart deploy stuck in pending-upgrade, needs rollback to a working revision. Distinct from ordinary install/upgrade management.
+prompt: |
+  My Kubernetes chart deploy got wedged partway through and is now frozen in a pending-upgrade state, so every new attempt is refused. I need to get it back to the last good revision and unstick it.
+gold: kubernetes-plugin/helm-release-recovery
+plugin: kubernetes-plugin
+name_transparency: transparent
+length_band: mid

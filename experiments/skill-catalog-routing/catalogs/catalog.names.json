@@ -1,0 +1,1627 @@
+{
+  "variant": "names",
+  "source_sha": "020bfd9049809681d21d5b6469696f079f249bd3",
+  "skill_count": 405,
+  "entries": [
+    {
+      "id": "accessibility-plugin/accessibility-implementation",
+      "line": "accessibility-plugin/accessibility-implementation"
+    },
+    {
+      "id": "accessibility-plugin/design-tokens",
+      "line": "accessibility-plugin/design-tokens"
+    },
+    {
+      "id": "agent-patterns-plugin/adversarial-review",
+      "line": "agent-patterns-plugin/adversarial-review"
+    },
+    {
+      "id": "agent-patterns-plugin/agent-teams",
+      "line": "agent-patterns-plugin/agent-teams"
+    },
+    {
+      "id": "agent-patterns-plugin/cold-read-gate",
+      "line": "agent-patterns-plugin/cold-read-gate"
+    },
+    {
+      "id": "agent-patterns-plugin/custom-agent-definitions",
+      "line": "agent-patterns-plugin/custom-agent-definitions"
+    },
+    {
+      "id": "agent-patterns-plugin/exclusive-lock-dispatch",
+      "line": "agent-patterns-plugin/exclusive-lock-dispatch"
+    },
+    {
+      "id": "agent-patterns-plugin/execution-grounded-review",
+      "line": "agent-patterns-plugin/execution-grounded-review"
+    },
+    {
+      "id": "agent-patterns-plugin/expose-tunable-knob",
+      "line": "agent-patterns-plugin/expose-tunable-knob"
+    },
+    {
+      "id": "agent-patterns-plugin/mcp-code-execution",
+      "line": "agent-patterns-plugin/mcp-code-execution"
+    },
+    {
+      "id": "agent-patterns-plugin/mcp-management",
+      "line": "agent-patterns-plugin/mcp-management"
+    },
+    {
+      "id": "agent-patterns-plugin/mcp-server-authoring",
+      "line": "agent-patterns-plugin/mcp-server-authoring"
+    },
+    {
+      "id": "agent-patterns-plugin/meta-assimilate",
+      "line": "agent-patterns-plugin/meta-assimilate"
+    },
+    {
+      "id": "agent-patterns-plugin/meta-audit",
+      "line": "agent-patterns-plugin/meta-audit"
+    },
+    {
+      "id": "agent-patterns-plugin/meta-context-diet",
+      "line": "agent-patterns-plugin/meta-context-diet"
+    },
+    {
+      "id": "agent-patterns-plugin/meta-promote",
+      "line": "agent-patterns-plugin/meta-promote"
+    },
+    {
+      "id": "agent-patterns-plugin/multi-model-delegation",
+      "line": "agent-patterns-plugin/multi-model-delegation"
+    },
+    {
+      "id": "agent-patterns-plugin/parallel-agent-dispatch",
+      "line": "agent-patterns-plugin/parallel-agent-dispatch"
+    },
+    {
+      "id": "agent-patterns-plugin/plugin-settings",
+      "line": "agent-patterns-plugin/plugin-settings"
+    },
+    {
+      "id": "agent-patterns-plugin/verify-before-plan",
+      "line": "agent-patterns-plugin/verify-before-plan"
+    },
+    {
+      "id": "agent-patterns-plugin/wave-based-dispatch",
+      "line": "agent-patterns-plugin/wave-based-dispatch"
+    },
+    {
+      "id": "agents-plugin/agents-analyze",
+      "line": "agents-plugin/agents-analyze"
+    },
+    {
+      "id": "api-plugin/api-testing",
+      "line": "api-plugin/api-testing"
+    },
+    {
+      "id": "bevy-plugin/bevy-ecs-patterns",
+      "line": "bevy-plugin/bevy-ecs-patterns"
+    },
+    {
+      "id": "bevy-plugin/bevy-game-engine",
+      "line": "bevy-plugin/bevy-game-engine"
+    },
+    {
+      "id": "blog-plugin/blog-post",
+      "line": "blog-plugin/blog-post"
+    },
+    {
+      "id": "blog-plugin/blog-post-writing",
+      "line": "blog-plugin/blog-post-writing"
+    },
+    {
+      "id": "blueprint-plugin/adr-relationships",
+      "line": "blueprint-plugin/adr-relationships"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-adr-list",
+      "line": "blueprint-plugin/blueprint-adr-list"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-adr-validate",
+      "line": "blueprint-plugin/blueprint-adr-validate"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-autopilot",
+      "line": "blueprint-plugin/blueprint-autopilot"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-claude-md",
+      "line": "blueprint-plugin/blueprint-claude-md"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-curate-docs",
+      "line": "blueprint-plugin/blueprint-curate-docs"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-derive-plans",
+      "line": "blueprint-plugin/blueprint-derive-plans"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-derive-rules",
+      "line": "blueprint-plugin/blueprint-derive-rules"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-derive-tests",
+      "line": "blueprint-plugin/blueprint-derive-tests"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-development",
+      "line": "blueprint-plugin/blueprint-development"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-docs-currency",
+      "line": "blueprint-plugin/blueprint-docs-currency"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-docs-list",
+      "line": "blueprint-plugin/blueprint-docs-list"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-execute",
+      "line": "blueprint-plugin/blueprint-execute"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-feature-tracker-status",
+      "line": "blueprint-plugin/blueprint-feature-tracker-status"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-feature-tracker-sync",
+      "line": "blueprint-plugin/blueprint-feature-tracker-sync"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-generate-rules",
+      "line": "blueprint-plugin/blueprint-generate-rules"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-init",
+      "line": "blueprint-plugin/blueprint-init"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-migration",
+      "line": "blueprint-plugin/blueprint-migration"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-promote",
+      "line": "blueprint-plugin/blueprint-promote"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-prp-create",
+      "line": "blueprint-plugin/blueprint-prp-create"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-prp-execute",
+      "line": "blueprint-plugin/blueprint-prp-execute"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-rules",
+      "line": "blueprint-plugin/blueprint-rules"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-status",
+      "line": "blueprint-plugin/blueprint-status"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-story-audit",
+      "line": "blueprint-plugin/blueprint-story-audit"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-story-reconcile",
+      "line": "blueprint-plugin/blueprint-story-reconcile"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-sync",
+      "line": "blueprint-plugin/blueprint-sync"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-sync-ids",
+      "line": "blueprint-plugin/blueprint-sync-ids"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-upgrade",
+      "line": "blueprint-plugin/blueprint-upgrade"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-work-order",
+      "line": "blueprint-plugin/blueprint-work-order"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-workspace-scan",
+      "line": "blueprint-plugin/blueprint-workspace-scan"
+    },
+    {
+      "id": "blueprint-plugin/confidence-scoring",
+      "line": "blueprint-plugin/confidence-scoring"
+    },
+    {
+      "id": "blueprint-plugin/document-detection",
+      "line": "blueprint-plugin/document-detection"
+    },
+    {
+      "id": "blueprint-plugin/document-linking",
+      "line": "blueprint-plugin/document-linking"
+    },
+    {
+      "id": "blueprint-plugin/feature-tracking",
+      "line": "blueprint-plugin/feature-tracking"
+    },
+    {
+      "id": "code-quality-plugin/ast-grep-search",
+      "line": "code-quality-plugin/ast-grep-search"
+    },
+    {
+      "id": "code-quality-plugin/bulk-sweep-classify",
+      "line": "code-quality-plugin/bulk-sweep-classify"
+    },
+    {
+      "id": "code-quality-plugin/code-antipatterns",
+      "line": "code-quality-plugin/code-antipatterns"
+    },
+    {
+      "id": "code-quality-plugin/code-complexity",
+      "line": "code-quality-plugin/code-complexity"
+    },
+    {
+      "id": "code-quality-plugin/code-dead-code",
+      "line": "code-quality-plugin/code-dead-code"
+    },
+    {
+      "id": "code-quality-plugin/code-dep-audit",
+      "line": "code-quality-plugin/code-dep-audit"
+    },
+    {
+      "id": "code-quality-plugin/code-docs-quality",
+      "line": "code-quality-plugin/code-docs-quality"
+    },
+    {
+      "id": "code-quality-plugin/code-hidden-failures",
+      "line": "code-quality-plugin/code-hidden-failures"
+    },
+    {
+      "id": "code-quality-plugin/code-lint",
+      "line": "code-quality-plugin/code-lint"
+    },
+    {
+      "id": "code-quality-plugin/code-refactor",
+      "line": "code-quality-plugin/code-refactor"
+    },
+    {
+      "id": "code-quality-plugin/code-review",
+      "line": "code-quality-plugin/code-review"
+    },
+    {
+      "id": "code-quality-plugin/code-review-checklist",
+      "line": "code-quality-plugin/code-review-checklist"
+    },
+    {
+      "id": "code-quality-plugin/code-test-quality",
+      "line": "code-quality-plugin/code-test-quality"
+    },
+    {
+      "id": "code-quality-plugin/debugging-methodology",
+      "line": "code-quality-plugin/debugging-methodology"
+    },
+    {
+      "id": "code-quality-plugin/dry-consolidation",
+      "line": "code-quality-plugin/dry-consolidation"
+    },
+    {
+      "id": "codebase-attributes-plugin/attributes-collect",
+      "line": "codebase-attributes-plugin/attributes-collect"
+    },
+    {
+      "id": "codebase-attributes-plugin/attributes-dashboard",
+      "line": "codebase-attributes-plugin/attributes-dashboard"
+    },
+    {
+      "id": "codebase-attributes-plugin/attributes-route",
+      "line": "codebase-attributes-plugin/attributes-route"
+    },
+    {
+      "id": "comfyui-plugin/comfy-cli",
+      "line": "comfyui-plugin/comfy-cli"
+    },
+    {
+      "id": "comfyui-plugin/comfy-conditionals",
+      "line": "comfyui-plugin/comfy-conditionals"
+    },
+    {
+      "id": "comfyui-plugin/comfy-corpus-validation",
+      "line": "comfyui-plugin/comfy-corpus-validation"
+    },
+    {
+      "id": "comfyui-plugin/comfy-debug-preview",
+      "line": "comfyui-plugin/comfy-debug-preview"
+    },
+    {
+      "id": "comfyui-plugin/comfy-flow-control",
+      "line": "comfyui-plugin/comfy-flow-control"
+    },
+    {
+      "id": "comfyui-plugin/comfy-image-utils",
+      "line": "comfyui-plugin/comfy-image-utils"
+    },
+    {
+      "id": "comfyui-plugin/comfy-math-strings",
+      "line": "comfyui-plugin/comfy-math-strings"
+    },
+    {
+      "id": "comfyui-plugin/comfy-metadata",
+      "line": "comfyui-plugin/comfy-metadata"
+    },
+    {
+      "id": "comfyui-plugin/comfy-node",
+      "line": "comfyui-plugin/comfy-node"
+    },
+    {
+      "id": "comfyui-plugin/comfy-registry-lifecycle",
+      "line": "comfyui-plugin/comfy-registry-lifecycle"
+    },
+    {
+      "id": "comfyui-plugin/comfy-subgraphs-app-mode",
+      "line": "comfyui-plugin/comfy-subgraphs-app-mode"
+    },
+    {
+      "id": "comfyui-plugin/comfy-workflow-json",
+      "line": "comfyui-plugin/comfy-workflow-json"
+    },
+    {
+      "id": "comfyui-plugin/comfy-workflow-layout",
+      "line": "comfyui-plugin/comfy-workflow-layout"
+    },
+    {
+      "id": "comfyui-plugin/comfyui-node-authoring",
+      "line": "comfyui-plugin/comfyui-node-authoring"
+    },
+    {
+      "id": "comfyui-plugin/comfyui-node-scaffold",
+      "line": "comfyui-plugin/comfyui-node-scaffold"
+    },
+    {
+      "id": "comfyui-plugin/comfyui-pack-live-smoke",
+      "line": "comfyui-plugin/comfyui-pack-live-smoke"
+    },
+    {
+      "id": "comfyui-plugin/comfyui-screenshot-pipeline",
+      "line": "comfyui-plugin/comfyui-screenshot-pipeline"
+    },
+    {
+      "id": "communication-plugin/google-chat-formatting",
+      "line": "communication-plugin/google-chat-formatting"
+    },
+    {
+      "id": "communication-plugin/ticket-drafting-guidelines",
+      "line": "communication-plugin/ticket-drafting-guidelines"
+    },
+    {
+      "id": "component-patterns-plugin/components-version-badge",
+      "line": "component-patterns-plugin/components-version-badge"
+    },
+    {
+      "id": "component-patterns-plugin/version-badge-pattern",
+      "line": "component-patterns-plugin/version-badge-pattern"
+    },
+    {
+      "id": "configure-plugin/ci-workflows",
+      "line": "configure-plugin/ci-workflows"
+    },
+    {
+      "id": "configure-plugin/claude-security-settings",
+      "line": "configure-plugin/claude-security-settings"
+    },
+    {
+      "id": "configure-plugin/config-sync",
+      "line": "configure-plugin/config-sync"
+    },
+    {
+      "id": "configure-plugin/configure-all",
+      "line": "configure-plugin/configure-all"
+    },
+    {
+      "id": "configure-plugin/configure-api-tests",
+      "line": "configure-plugin/configure-api-tests"
+    },
+    {
+      "id": "configure-plugin/configure-argocd-automerge",
+      "line": "configure-plugin/configure-argocd-automerge"
+    },
+    {
+      "id": "configure-plugin/configure-cache-busting",
+      "line": "configure-plugin/configure-cache-busting"
+    },
+    {
+      "id": "configure-plugin/configure-claude-plugins",
+      "line": "configure-plugin/configure-claude-plugins"
+    },
+    {
+      "id": "configure-plugin/configure-container",
+      "line": "configure-plugin/configure-container"
+    },
+    {
+      "id": "configure-plugin/configure-coverage",
+      "line": "configure-plugin/configure-coverage"
+    },
+    {
+      "id": "configure-plugin/configure-dead-code",
+      "line": "configure-plugin/configure-dead-code"
+    },
+    {
+      "id": "configure-plugin/configure-dockerfile",
+      "line": "configure-plugin/configure-dockerfile"
+    },
+    {
+      "id": "configure-plugin/configure-docs",
+      "line": "configure-plugin/configure-docs"
+    },
+    {
+      "id": "configure-plugin/configure-editor",
+      "line": "configure-plugin/configure-editor"
+    },
+    {
+      "id": "configure-plugin/configure-feature-flags",
+      "line": "configure-plugin/configure-feature-flags"
+    },
+    {
+      "id": "configure-plugin/configure-formatting",
+      "line": "configure-plugin/configure-formatting"
+    },
+    {
+      "id": "configure-plugin/configure-gitattributes",
+      "line": "configure-plugin/configure-gitattributes"
+    },
+    {
+      "id": "configure-plugin/configure-github-pages",
+      "line": "configure-plugin/configure-github-pages"
+    },
+    {
+      "id": "configure-plugin/configure-gitignore",
+      "line": "configure-plugin/configure-gitignore"
+    },
+    {
+      "id": "configure-plugin/configure-instrumentation",
+      "line": "configure-plugin/configure-instrumentation"
+    },
+    {
+      "id": "configure-plugin/configure-integration-tests",
+      "line": "configure-plugin/configure-integration-tests"
+    },
+    {
+      "id": "configure-plugin/configure-justfile",
+      "line": "configure-plugin/configure-justfile"
+    },
+    {
+      "id": "configure-plugin/configure-linting",
+      "line": "configure-plugin/configure-linting"
+    },
+    {
+      "id": "configure-plugin/configure-load-tests",
+      "line": "configure-plugin/configure-load-tests"
+    },
+    {
+      "id": "configure-plugin/configure-makefile",
+      "line": "configure-plugin/configure-makefile"
+    },
+    {
+      "id": "configure-plugin/configure-mcp",
+      "line": "configure-plugin/configure-mcp"
+    },
+    {
+      "id": "configure-plugin/configure-memory-profiling",
+      "line": "configure-plugin/configure-memory-profiling"
+    },
+    {
+      "id": "configure-plugin/configure-mise",
+      "line": "configure-plugin/configure-mise"
+    },
+    {
+      "id": "configure-plugin/configure-package-management",
+      "line": "configure-plugin/configure-package-management"
+    },
+    {
+      "id": "configure-plugin/configure-pre-commit",
+      "line": "configure-plugin/configure-pre-commit"
+    },
+    {
+      "id": "configure-plugin/configure-readme",
+      "line": "configure-plugin/configure-readme"
+    },
+    {
+      "id": "configure-plugin/configure-release-please",
+      "line": "configure-plugin/configure-release-please"
+    },
+    {
+      "id": "configure-plugin/configure-repo",
+      "line": "configure-plugin/configure-repo"
+    },
+    {
+      "id": "configure-plugin/configure-reusable-workflows",
+      "line": "configure-plugin/configure-reusable-workflows"
+    },
+    {
+      "id": "configure-plugin/configure-security",
+      "line": "configure-plugin/configure-security"
+    },
+    {
+      "id": "configure-plugin/configure-select",
+      "line": "configure-plugin/configure-select"
+    },
+    {
+      "id": "configure-plugin/configure-sentry",
+      "line": "configure-plugin/configure-sentry"
+    },
+    {
+      "id": "configure-plugin/configure-skaffold",
+      "line": "configure-plugin/configure-skaffold"
+    },
+    {
+      "id": "configure-plugin/configure-status",
+      "line": "configure-plugin/configure-status"
+    },
+    {
+      "id": "configure-plugin/configure-surface",
+      "line": "configure-plugin/configure-surface"
+    },
+    {
+      "id": "configure-plugin/configure-tests",
+      "line": "configure-plugin/configure-tests"
+    },
+    {
+      "id": "configure-plugin/configure-ux-testing",
+      "line": "configure-plugin/configure-ux-testing"
+    },
+    {
+      "id": "configure-plugin/configure-web-session",
+      "line": "configure-plugin/configure-web-session"
+    },
+    {
+      "id": "configure-plugin/configure-workflows",
+      "line": "configure-plugin/configure-workflows"
+    },
+    {
+      "id": "configure-plugin/configure-worktreeinclude",
+      "line": "configure-plugin/configure-worktreeinclude"
+    },
+    {
+      "id": "configure-plugin/go-feature-flag",
+      "line": "configure-plugin/go-feature-flag"
+    },
+    {
+      "id": "configure-plugin/multi-repo-discipline",
+      "line": "configure-plugin/multi-repo-discipline"
+    },
+    {
+      "id": "configure-plugin/openfeature",
+      "line": "configure-plugin/openfeature"
+    },
+    {
+      "id": "container-plugin/container-development",
+      "line": "container-plugin/container-development"
+    },
+    {
+      "id": "container-plugin/deploy-handoff",
+      "line": "container-plugin/deploy-handoff"
+    },
+    {
+      "id": "container-plugin/deploy-release",
+      "line": "container-plugin/deploy-release"
+    },
+    {
+      "id": "container-plugin/go-containers",
+      "line": "container-plugin/go-containers"
+    },
+    {
+      "id": "container-plugin/nodejs-containers",
+      "line": "container-plugin/nodejs-containers"
+    },
+    {
+      "id": "container-plugin/python-containers",
+      "line": "container-plugin/python-containers"
+    },
+    {
+      "id": "container-plugin/skaffold-filesync",
+      "line": "container-plugin/skaffold-filesync"
+    },
+    {
+      "id": "container-plugin/skaffold-orbstack",
+      "line": "container-plugin/skaffold-orbstack"
+    },
+    {
+      "id": "container-plugin/skaffold-testing",
+      "line": "container-plugin/skaffold-testing"
+    },
+    {
+      "id": "css-plugin/lightning-css",
+      "line": "css-plugin/lightning-css"
+    },
+    {
+      "id": "css-plugin/unocss",
+      "line": "css-plugin/unocss"
+    },
+    {
+      "id": "documentation-plugin/claude-blog-sources",
+      "line": "documentation-plugin/claude-blog-sources"
+    },
+    {
+      "id": "documentation-plugin/docs-decommission",
+      "line": "documentation-plugin/docs-decommission"
+    },
+    {
+      "id": "documentation-plugin/docs-generate",
+      "line": "documentation-plugin/docs-generate"
+    },
+    {
+      "id": "documentation-plugin/docs-latex",
+      "line": "documentation-plugin/docs-latex"
+    },
+    {
+      "id": "documentation-plugin/docs-sync",
+      "line": "documentation-plugin/docs-sync"
+    },
+    {
+      "id": "evaluate-plugin/evaluate-improve",
+      "line": "evaluate-plugin/evaluate-improve"
+    },
+    {
+      "id": "evaluate-plugin/evaluate-legibility",
+      "line": "evaluate-plugin/evaluate-legibility"
+    },
+    {
+      "id": "evaluate-plugin/evaluate-matrix",
+      "line": "evaluate-plugin/evaluate-matrix"
+    },
+    {
+      "id": "evaluate-plugin/evaluate-plugin-batch",
+      "line": "evaluate-plugin/evaluate-plugin-batch"
+    },
+    {
+      "id": "evaluate-plugin/evaluate-report",
+      "line": "evaluate-plugin/evaluate-report"
+    },
+    {
+      "id": "evaluate-plugin/evaluate-skill",
+      "line": "evaluate-plugin/evaluate-skill"
+    },
+    {
+      "id": "feedback-plugin/feedback-session",
+      "line": "feedback-plugin/feedback-session"
+    },
+    {
+      "id": "finops-plugin/finops-caches",
+      "line": "finops-plugin/finops-caches"
+    },
+    {
+      "id": "finops-plugin/finops-compare",
+      "line": "finops-plugin/finops-compare"
+    },
+    {
+      "id": "finops-plugin/finops-overview",
+      "line": "finops-plugin/finops-overview"
+    },
+    {
+      "id": "finops-plugin/finops-waste",
+      "line": "finops-plugin/finops-waste"
+    },
+    {
+      "id": "finops-plugin/finops-workflows",
+      "line": "finops-plugin/finops-workflows"
+    },
+    {
+      "id": "finops-plugin/github-actions-cache-optimization",
+      "line": "finops-plugin/github-actions-cache-optimization"
+    },
+    {
+      "id": "finops-plugin/github-actions-finops",
+      "line": "finops-plugin/github-actions-finops"
+    },
+    {
+      "id": "foundryvtt-plugin/foundryvtt-module",
+      "line": "foundryvtt-plugin/foundryvtt-module"
+    },
+    {
+      "id": "foundryvtt-plugin/foundryvtt-module-scaffold",
+      "line": "foundryvtt-plugin/foundryvtt-module-scaffold"
+    },
+    {
+      "id": "git-plugin/deadbranch",
+      "line": "git-plugin/deadbranch"
+    },
+    {
+      "id": "git-plugin/gh-cli-agentic",
+      "line": "git-plugin/gh-cli-agentic"
+    },
+    {
+      "id": "git-plugin/gh-workflow-monitoring",
+      "line": "git-plugin/gh-workflow-monitoring"
+    },
+    {
+      "id": "git-plugin/git-api-pr",
+      "line": "git-plugin/git-api-pr"
+    },
+    {
+      "id": "git-plugin/git-branch-naming",
+      "line": "git-plugin/git-branch-naming"
+    },
+    {
+      "id": "git-plugin/git-branch-pr-workflow",
+      "line": "git-plugin/git-branch-pr-workflow"
+    },
+    {
+      "id": "git-plugin/git-cli-agentic",
+      "line": "git-plugin/git-cli-agentic"
+    },
+    {
+      "id": "git-plugin/git-commit",
+      "line": "git-plugin/git-commit"
+    },
+    {
+      "id": "git-plugin/git-commit-push-pr",
+      "line": "git-plugin/git-commit-push-pr"
+    },
+    {
+      "id": "git-plugin/git-commit-trailers",
+      "line": "git-plugin/git-commit-trailers"
+    },
+    {
+      "id": "git-plugin/git-commit-workflow",
+      "line": "git-plugin/git-commit-workflow"
+    },
+    {
+      "id": "git-plugin/git-conflicts",
+      "line": "git-plugin/git-conflicts"
+    },
+    {
+      "id": "git-plugin/git-coworker-check",
+      "line": "git-plugin/git-coworker-check"
+    },
+    {
+      "id": "git-plugin/git-derive-docs",
+      "line": "git-plugin/git-derive-docs"
+    },
+    {
+      "id": "git-plugin/git-fix-pr",
+      "line": "git-plugin/git-fix-pr"
+    },
+    {
+      "id": "git-plugin/git-fork-workflow",
+      "line": "git-plugin/git-fork-workflow"
+    },
+    {
+      "id": "git-plugin/git-issue",
+      "line": "git-plugin/git-issue"
+    },
+    {
+      "id": "git-plugin/git-issue-hierarchy",
+      "line": "git-plugin/git-issue-hierarchy"
+    },
+    {
+      "id": "git-plugin/git-issue-manage",
+      "line": "git-plugin/git-issue-manage"
+    },
+    {
+      "id": "git-plugin/git-maintain",
+      "line": "git-plugin/git-maintain"
+    },
+    {
+      "id": "git-plugin/git-pr",
+      "line": "git-plugin/git-pr"
+    },
+    {
+      "id": "git-plugin/git-pr-feedback",
+      "line": "git-plugin/git-pr-feedback"
+    },
+    {
+      "id": "git-plugin/git-pr-sync-check",
+      "line": "git-plugin/git-pr-sync-check"
+    },
+    {
+      "id": "git-plugin/git-pr-watch",
+      "line": "git-plugin/git-pr-watch"
+    },
+    {
+      "id": "git-plugin/git-push",
+      "line": "git-plugin/git-push"
+    },
+    {
+      "id": "git-plugin/git-rebase-patterns",
+      "line": "git-plugin/git-rebase-patterns"
+    },
+    {
+      "id": "git-plugin/git-repo-detection",
+      "line": "git-plugin/git-repo-detection"
+    },
+    {
+      "id": "git-plugin/git-security-checks",
+      "line": "git-plugin/git-security-checks"
+    },
+    {
+      "id": "git-plugin/git-triage",
+      "line": "git-plugin/git-triage"
+    },
+    {
+      "id": "git-plugin/git-upstream-pr",
+      "line": "git-plugin/git-upstream-pr"
+    },
+    {
+      "id": "git-plugin/git-upstream-pr-diverged",
+      "line": "git-plugin/git-upstream-pr-diverged"
+    },
+    {
+      "id": "git-plugin/github-issue-autodetect",
+      "line": "git-plugin/github-issue-autodetect"
+    },
+    {
+      "id": "git-plugin/github-issue-writing",
+      "line": "git-plugin/github-issue-writing"
+    },
+    {
+      "id": "git-plugin/github-labels",
+      "line": "git-plugin/github-labels"
+    },
+    {
+      "id": "git-plugin/github-pr-title",
+      "line": "git-plugin/github-pr-title"
+    },
+    {
+      "id": "git-plugin/release-please-configuration",
+      "line": "git-plugin/release-please-configuration"
+    },
+    {
+      "id": "git-plugin/release-please-pr-workflow",
+      "line": "git-plugin/release-please-pr-workflow"
+    },
+    {
+      "id": "git-plugin/release-please-protection",
+      "line": "git-plugin/release-please-protection"
+    },
+    {
+      "id": "github-actions-plugin/claude-code-github-workflows",
+      "line": "github-actions-plugin/claude-code-github-workflows"
+    },
+    {
+      "id": "github-actions-plugin/github-actions-auth-security",
+      "line": "github-actions-plugin/github-actions-auth-security"
+    },
+    {
+      "id": "github-actions-plugin/github-actions-inspection",
+      "line": "github-actions-plugin/github-actions-inspection"
+    },
+    {
+      "id": "github-actions-plugin/github-actions-mcp-config",
+      "line": "github-actions-plugin/github-actions-mcp-config"
+    },
+    {
+      "id": "github-actions-plugin/github-issue-search",
+      "line": "github-actions-plugin/github-issue-search"
+    },
+    {
+      "id": "github-actions-plugin/github-social-preview",
+      "line": "github-actions-plugin/github-social-preview"
+    },
+    {
+      "id": "github-actions-plugin/github-workflow-auto-fix",
+      "line": "github-actions-plugin/github-workflow-auto-fix"
+    },
+    {
+      "id": "github-actions-plugin/workflow-dev",
+      "line": "github-actions-plugin/workflow-dev"
+    },
+    {
+      "id": "health-plugin/health-agentic-audit",
+      "line": "health-plugin/health-agentic-audit"
+    },
+    {
+      "id": "health-plugin/health-audit",
+      "line": "health-plugin/health-audit"
+    },
+    {
+      "id": "health-plugin/health-check",
+      "line": "health-plugin/health-check"
+    },
+    {
+      "id": "health-plugin/health-plugins",
+      "line": "health-plugin/health-plugins"
+    },
+    {
+      "id": "health-plugin/health-skill-audit",
+      "line": "health-plugin/health-skill-audit"
+    },
+    {
+      "id": "health-plugin/plugin-registry",
+      "line": "health-plugin/plugin-registry"
+    },
+    {
+      "id": "health-plugin/settings-configuration",
+      "line": "health-plugin/settings-configuration"
+    },
+    {
+      "id": "home-assistant-plugin/ha-automations",
+      "line": "home-assistant-plugin/ha-automations"
+    },
+    {
+      "id": "home-assistant-plugin/ha-configuration",
+      "line": "home-assistant-plugin/ha-configuration"
+    },
+    {
+      "id": "home-assistant-plugin/ha-entities",
+      "line": "home-assistant-plugin/ha-entities"
+    },
+    {
+      "id": "home-assistant-plugin/ha-validate",
+      "line": "home-assistant-plugin/ha-validate"
+    },
+    {
+      "id": "hooks-plugin/hooks-configuration",
+      "line": "hooks-plugin/hooks-configuration"
+    },
+    {
+      "id": "hooks-plugin/hooks-permission-request-hook",
+      "line": "hooks-plugin/hooks-permission-request-hook"
+    },
+    {
+      "id": "hooks-plugin/hooks-session-end-issue-hook",
+      "line": "hooks-plugin/hooks-session-end-issue-hook"
+    },
+    {
+      "id": "hooks-plugin/hooks-session-start-hook",
+      "line": "hooks-plugin/hooks-session-start-hook"
+    },
+    {
+      "id": "kubernetes-plugin/argocd-login",
+      "line": "kubernetes-plugin/argocd-login"
+    },
+    {
+      "id": "kubernetes-plugin/helm-chart-development",
+      "line": "kubernetes-plugin/helm-chart-development"
+    },
+    {
+      "id": "kubernetes-plugin/helm-debugging",
+      "line": "kubernetes-plugin/helm-debugging"
+    },
+    {
+      "id": "kubernetes-plugin/helm-release-management",
+      "line": "kubernetes-plugin/helm-release-management"
+    },
+    {
+      "id": "kubernetes-plugin/helm-release-recovery",
+      "line": "kubernetes-plugin/helm-release-recovery"
+    },
+    {
+      "id": "kubernetes-plugin/helm-values-management",
+      "line": "kubernetes-plugin/helm-values-management"
+    },
+    {
+      "id": "kubernetes-plugin/kubectl-debugging",
+      "line": "kubernetes-plugin/kubectl-debugging"
+    },
+    {
+      "id": "kubernetes-plugin/kubernetes-operations",
+      "line": "kubernetes-plugin/kubernetes-operations"
+    },
+    {
+      "id": "langchain-plugin/deep-agents",
+      "line": "langchain-plugin/deep-agents"
+    },
+    {
+      "id": "langchain-plugin/langchain-development",
+      "line": "langchain-plugin/langchain-development"
+    },
+    {
+      "id": "langchain-plugin/langchain-init",
+      "line": "langchain-plugin/langchain-init"
+    },
+    {
+      "id": "langchain-plugin/langgraph-agents",
+      "line": "langchain-plugin/langgraph-agents"
+    },
+    {
+      "id": "macos-plugin/endpoint-security-cpu",
+      "line": "macos-plugin/endpoint-security-cpu"
+    },
+    {
+      "id": "macos-plugin/kitty-session-persistence",
+      "line": "macos-plugin/kitty-session-persistence"
+    },
+    {
+      "id": "macos-plugin/launchservices-health",
+      "line": "macos-plugin/launchservices-health"
+    },
+    {
+      "id": "macos-plugin/macos-disk-usage",
+      "line": "macos-plugin/macos-disk-usage"
+    },
+    {
+      "id": "macos-plugin/macos-incident-postmortem",
+      "line": "macos-plugin/macos-incident-postmortem"
+    },
+    {
+      "id": "macos-plugin/macos-performance-benchmark",
+      "line": "macos-plugin/macos-performance-benchmark"
+    },
+    {
+      "id": "macos-plugin/macos-performance-triage",
+      "line": "macos-plugin/macos-performance-triage"
+    },
+    {
+      "id": "macos-plugin/tui-keybinding-debug",
+      "line": "macos-plugin/tui-keybinding-debug"
+    },
+    {
+      "id": "migration-patterns-plugin/black-to-ruff-format",
+      "line": "migration-patterns-plugin/black-to-ruff-format"
+    },
+    {
+      "id": "migration-patterns-plugin/dual-write",
+      "line": "migration-patterns-plugin/dual-write"
+    },
+    {
+      "id": "migration-patterns-plugin/eslint-to-biome",
+      "line": "migration-patterns-plugin/eslint-to-biome"
+    },
+    {
+      "id": "migration-patterns-plugin/flake8-to-ruff",
+      "line": "migration-patterns-plugin/flake8-to-ruff"
+    },
+    {
+      "id": "migration-patterns-plugin/mypy-to-ty",
+      "line": "migration-patterns-plugin/mypy-to-ty"
+    },
+    {
+      "id": "migration-patterns-plugin/shadow-mode",
+      "line": "migration-patterns-plugin/shadow-mode"
+    },
+    {
+      "id": "networking-plugin/dns-tools",
+      "line": "networking-plugin/dns-tools"
+    },
+    {
+      "id": "networking-plugin/http-load-testing",
+      "line": "networking-plugin/http-load-testing"
+    },
+    {
+      "id": "networking-plugin/interface-state",
+      "line": "networking-plugin/interface-state"
+    },
+    {
+      "id": "networking-plugin/layer2-discovery",
+      "line": "networking-plugin/layer2-discovery"
+    },
+    {
+      "id": "networking-plugin/network-diagnostics",
+      "line": "networking-plugin/network-diagnostics"
+    },
+    {
+      "id": "networking-plugin/network-discovery",
+      "line": "networking-plugin/network-discovery"
+    },
+    {
+      "id": "networking-plugin/network-monitoring",
+      "line": "networking-plugin/network-monitoring"
+    },
+    {
+      "id": "obsidian-plugin/bases",
+      "line": "obsidian-plugin/bases"
+    },
+    {
+      "id": "obsidian-plugin/bookmarks",
+      "line": "obsidian-plugin/bookmarks"
+    },
+    {
+      "id": "obsidian-plugin/command-palette",
+      "line": "obsidian-plugin/command-palette"
+    },
+    {
+      "id": "obsidian-plugin/dev-tools",
+      "line": "obsidian-plugin/dev-tools"
+    },
+    {
+      "id": "obsidian-plugin/file-history",
+      "line": "obsidian-plugin/file-history"
+    },
+    {
+      "id": "obsidian-plugin/plugins-themes",
+      "line": "obsidian-plugin/plugins-themes"
+    },
+    {
+      "id": "obsidian-plugin/properties",
+      "line": "obsidian-plugin/properties"
+    },
+    {
+      "id": "obsidian-plugin/publish-sync",
+      "line": "obsidian-plugin/publish-sync"
+    },
+    {
+      "id": "obsidian-plugin/search-discovery",
+      "line": "obsidian-plugin/search-discovery"
+    },
+    {
+      "id": "obsidian-plugin/tasks",
+      "line": "obsidian-plugin/tasks"
+    },
+    {
+      "id": "obsidian-plugin/templates",
+      "line": "obsidian-plugin/templates"
+    },
+    {
+      "id": "obsidian-plugin/vault-files",
+      "line": "obsidian-plugin/vault-files"
+    },
+    {
+      "id": "obsidian-plugin/vault-frontmatter",
+      "line": "obsidian-plugin/vault-frontmatter"
+    },
+    {
+      "id": "obsidian-plugin/vault-management",
+      "line": "obsidian-plugin/vault-management"
+    },
+    {
+      "id": "obsidian-plugin/vault-mocs",
+      "line": "obsidian-plugin/vault-mocs"
+    },
+    {
+      "id": "obsidian-plugin/vault-orphans",
+      "line": "obsidian-plugin/vault-orphans"
+    },
+    {
+      "id": "obsidian-plugin/vault-stubs",
+      "line": "obsidian-plugin/vault-stubs"
+    },
+    {
+      "id": "obsidian-plugin/vault-tags",
+      "line": "obsidian-plugin/vault-tags"
+    },
+    {
+      "id": "obsidian-plugin/vault-templates",
+      "line": "obsidian-plugin/vault-templates"
+    },
+    {
+      "id": "obsidian-plugin/vault-wikilinks",
+      "line": "obsidian-plugin/vault-wikilinks"
+    },
+    {
+      "id": "obsidian-plugin/workspaces",
+      "line": "obsidian-plugin/workspaces"
+    },
+    {
+      "id": "project-plugin/changelog-review",
+      "line": "project-plugin/changelog-review"
+    },
+    {
+      "id": "project-plugin/project-continue",
+      "line": "project-plugin/project-continue"
+    },
+    {
+      "id": "project-plugin/project-discovery",
+      "line": "project-plugin/project-discovery"
+    },
+    {
+      "id": "project-plugin/project-init",
+      "line": "project-plugin/project-init"
+    },
+    {
+      "id": "project-plugin/project-refocus",
+      "line": "project-plugin/project-refocus"
+    },
+    {
+      "id": "project-plugin/project-skill-scripts",
+      "line": "project-plugin/project-skill-scripts"
+    },
+    {
+      "id": "project-plugin/project-test-loop",
+      "line": "project-plugin/project-test-loop"
+    },
+    {
+      "id": "prompt-engineering-plugin/prompt-engineering-ground-response",
+      "line": "prompt-engineering-plugin/prompt-engineering-ground-response"
+    },
+    {
+      "id": "prose-plugin/prose-distill",
+      "line": "prose-plugin/prose-distill"
+    },
+    {
+      "id": "prose-plugin/prose-synthesize",
+      "line": "prose-plugin/prose-synthesize"
+    },
+    {
+      "id": "python-plugin/basedpyright-type-checking",
+      "line": "python-plugin/basedpyright-type-checking"
+    },
+    {
+      "id": "python-plugin/pytest-advanced",
+      "line": "python-plugin/pytest-advanced"
+    },
+    {
+      "id": "python-plugin/python-code-quality",
+      "line": "python-plugin/python-code-quality"
+    },
+    {
+      "id": "python-plugin/python-development",
+      "line": "python-plugin/python-development"
+    },
+    {
+      "id": "python-plugin/python-packaging",
+      "line": "python-plugin/python-packaging"
+    },
+    {
+      "id": "python-plugin/python-testing",
+      "line": "python-plugin/python-testing"
+    },
+    {
+      "id": "python-plugin/ruff-formatting",
+      "line": "python-plugin/ruff-formatting"
+    },
+    {
+      "id": "python-plugin/ruff-linting",
+      "line": "python-plugin/ruff-linting"
+    },
+    {
+      "id": "python-plugin/ty-type-checking",
+      "line": "python-plugin/ty-type-checking"
+    },
+    {
+      "id": "python-plugin/uv-advanced-dependencies",
+      "line": "python-plugin/uv-advanced-dependencies"
+    },
+    {
+      "id": "python-plugin/uv-project-management",
+      "line": "python-plugin/uv-project-management"
+    },
+    {
+      "id": "python-plugin/uv-python-versions",
+      "line": "python-plugin/uv-python-versions"
+    },
+    {
+      "id": "python-plugin/uv-run",
+      "line": "python-plugin/uv-run"
+    },
+    {
+      "id": "python-plugin/uv-tool-management",
+      "line": "python-plugin/uv-tool-management"
+    },
+    {
+      "id": "python-plugin/uv-workspaces",
+      "line": "python-plugin/uv-workspaces"
+    },
+    {
+      "id": "python-plugin/vulture-dead-code",
+      "line": "python-plugin/vulture-dead-code"
+    },
+    {
+      "id": "rust-plugin/cargo-llvm-cov",
+      "line": "rust-plugin/cargo-llvm-cov"
+    },
+    {
+      "id": "rust-plugin/cargo-machete",
+      "line": "rust-plugin/cargo-machete"
+    },
+    {
+      "id": "rust-plugin/cargo-nextest",
+      "line": "rust-plugin/cargo-nextest"
+    },
+    {
+      "id": "rust-plugin/cargo-worktree-builds",
+      "line": "rust-plugin/cargo-worktree-builds"
+    },
+    {
+      "id": "rust-plugin/clippy-advanced",
+      "line": "rust-plugin/clippy-advanced"
+    },
+    {
+      "id": "rust-plugin/mockito-http-mocking",
+      "line": "rust-plugin/mockito-http-mocking"
+    },
+    {
+      "id": "rust-plugin/rust-development",
+      "line": "rust-plugin/rust-development"
+    },
+    {
+      "id": "session-plugin/session-distill",
+      "line": "session-plugin/session-distill"
+    },
+    {
+      "id": "session-plugin/session-end",
+      "line": "session-plugin/session-end"
+    },
+    {
+      "id": "session-plugin/session-spinup",
+      "line": "session-plugin/session-spinup"
+    },
+    {
+      "id": "session-plugin/session-wrap",
+      "line": "session-plugin/session-wrap"
+    },
+    {
+      "id": "software-design-plugin/design-by-contract",
+      "line": "software-design-plugin/design-by-contract"
+    },
+    {
+      "id": "software-design-plugin/design-deep-modules",
+      "line": "software-design-plugin/design-deep-modules"
+    },
+    {
+      "id": "software-design-plugin/design-legacy-seams",
+      "line": "software-design-plugin/design-legacy-seams"
+    },
+    {
+      "id": "software-design-plugin/design-patterns",
+      "line": "software-design-plugin/design-patterns"
+    },
+    {
+      "id": "software-design-plugin/design-pseudocode",
+      "line": "software-design-plugin/design-pseudocode"
+    },
+    {
+      "id": "taskwarrior-plugin/install-native-hooks",
+      "line": "taskwarrior-plugin/install-native-hooks"
+    },
+    {
+      "id": "taskwarrior-plugin/task-add",
+      "line": "taskwarrior-plugin/task-add"
+    },
+    {
+      "id": "taskwarrior-plugin/task-bulk-ops",
+      "line": "taskwarrior-plugin/task-bulk-ops"
+    },
+    {
+      "id": "taskwarrior-plugin/task-claim",
+      "line": "taskwarrior-plugin/task-claim"
+    },
+    {
+      "id": "taskwarrior-plugin/task-coordinate",
+      "line": "taskwarrior-plugin/task-coordinate"
+    },
+    {
+      "id": "taskwarrior-plugin/task-done",
+      "line": "taskwarrior-plugin/task-done"
+    },
+    {
+      "id": "taskwarrior-plugin/task-reconcile",
+      "line": "taskwarrior-plugin/task-reconcile"
+    },
+    {
+      "id": "taskwarrior-plugin/task-release",
+      "line": "taskwarrior-plugin/task-release"
+    },
+    {
+      "id": "taskwarrior-plugin/task-status",
+      "line": "taskwarrior-plugin/task-status"
+    },
+    {
+      "id": "terraform-plugin/infrastructure-terraform",
+      "line": "terraform-plugin/infrastructure-terraform"
+    },
+    {
+      "id": "terraform-plugin/tfc-list-runs",
+      "line": "terraform-plugin/tfc-list-runs"
+    },
+    {
+      "id": "terraform-plugin/tfc-plan-json",
+      "line": "terraform-plugin/tfc-plan-json"
+    },
+    {
+      "id": "terraform-plugin/tfc-run-logs",
+      "line": "terraform-plugin/tfc-run-logs"
+    },
+    {
+      "id": "terraform-plugin/tfc-run-status",
+      "line": "terraform-plugin/tfc-run-status"
+    },
+    {
+      "id": "terraform-plugin/tfc-workspace-runs",
+      "line": "terraform-plugin/tfc-workspace-runs"
+    },
+    {
+      "id": "testing-plugin/mutation-testing",
+      "line": "testing-plugin/mutation-testing"
+    },
+    {
+      "id": "testing-plugin/odiff-image-diffing",
+      "line": "testing-plugin/odiff-image-diffing"
+    },
+    {
+      "id": "testing-plugin/playwright-cli",
+      "line": "testing-plugin/playwright-cli"
+    },
+    {
+      "id": "testing-plugin/playwright-testing",
+      "line": "testing-plugin/playwright-testing"
+    },
+    {
+      "id": "testing-plugin/property-based-testing",
+      "line": "testing-plugin/property-based-testing"
+    },
+    {
+      "id": "testing-plugin/test-analyze",
+      "line": "testing-plugin/test-analyze"
+    },
+    {
+      "id": "testing-plugin/test-consult",
+      "line": "testing-plugin/test-consult"
+    },
+    {
+      "id": "testing-plugin/test-focus",
+      "line": "testing-plugin/test-focus"
+    },
+    {
+      "id": "testing-plugin/test-full",
+      "line": "testing-plugin/test-full"
+    },
+    {
+      "id": "testing-plugin/test-quality-analysis",
+      "line": "testing-plugin/test-quality-analysis"
+    },
+    {
+      "id": "testing-plugin/test-quick",
+      "line": "testing-plugin/test-quick"
+    },
+    {
+      "id": "testing-plugin/test-report",
+      "line": "testing-plugin/test-report"
+    },
+    {
+      "id": "testing-plugin/test-run",
+      "line": "testing-plugin/test-run"
+    },
+    {
+      "id": "testing-plugin/test-setup",
+      "line": "testing-plugin/test-setup"
+    },
+    {
+      "id": "testing-plugin/test-strategy-review",
+      "line": "testing-plugin/test-strategy-review"
+    },
+    {
+      "id": "testing-plugin/test-tier-selection",
+      "line": "testing-plugin/test-tier-selection"
+    },
+    {
+      "id": "testing-plugin/vitest-testing",
+      "line": "testing-plugin/vitest-testing"
+    },
+    {
+      "id": "tools-plugin/binary-analysis",
+      "line": "tools-plugin/binary-analysis"
+    },
+    {
+      "id": "tools-plugin/cli-smoke-recipes",
+      "line": "tools-plugin/cli-smoke-recipes"
+    },
+    {
+      "id": "tools-plugin/d2-diagrams",
+      "line": "tools-plugin/d2-diagrams"
+    },
+    {
+      "id": "tools-plugin/deps-install",
+      "line": "tools-plugin/deps-install"
+    },
+    {
+      "id": "tools-plugin/fd-file-finding",
+      "line": "tools-plugin/fd-file-finding"
+    },
+    {
+      "id": "tools-plugin/generate-image",
+      "line": "tools-plugin/generate-image"
+    },
+    {
+      "id": "tools-plugin/hf-downloads",
+      "line": "tools-plugin/hf-downloads"
+    },
+    {
+      "id": "tools-plugin/imagemagick-conversion",
+      "line": "tools-plugin/imagemagick-conversion"
+    },
+    {
+      "id": "tools-plugin/jq-json-processing",
+      "line": "tools-plugin/jq-json-processing"
+    },
+    {
+      "id": "tools-plugin/justfile-expert",
+      "line": "tools-plugin/justfile-expert"
+    },
+    {
+      "id": "tools-plugin/mermaid-diagrams",
+      "line": "tools-plugin/mermaid-diagrams"
+    },
+    {
+      "id": "tools-plugin/nushell-data-processing",
+      "line": "tools-plugin/nushell-data-processing"
+    },
+    {
+      "id": "tools-plugin/rg-code-search",
+      "line": "tools-plugin/rg-code-search"
+    },
+    {
+      "id": "tools-plugin/shell-expert",
+      "line": "tools-plugin/shell-expert"
+    },
+    {
+      "id": "tools-plugin/yq-yaml-processing",
+      "line": "tools-plugin/yq-yaml-processing"
+    },
+    {
+      "id": "typescript-plugin/biome-tooling",
+      "line": "typescript-plugin/biome-tooling"
+    },
+    {
+      "id": "typescript-plugin/bun-add",
+      "line": "typescript-plugin/bun-add"
+    },
+    {
+      "id": "typescript-plugin/bun-build",
+      "line": "typescript-plugin/bun-build"
+    },
+    {
+      "id": "typescript-plugin/bun-debug",
+      "line": "typescript-plugin/bun-debug"
+    },
+    {
+      "id": "typescript-plugin/bun-development",
+      "line": "typescript-plugin/bun-development"
+    },
+    {
+      "id": "typescript-plugin/bun-install",
+      "line": "typescript-plugin/bun-install"
+    },
+    {
+      "id": "typescript-plugin/bun-lockfile-update",
+      "line": "typescript-plugin/bun-lockfile-update"
+    },
+    {
+      "id": "typescript-plugin/bun-outdated",
+      "line": "typescript-plugin/bun-outdated"
+    },
+    {
+      "id": "typescript-plugin/bun-package-manager",
+      "line": "typescript-plugin/bun-package-manager"
+    },
+    {
+      "id": "typescript-plugin/bun-publish",
+      "line": "typescript-plugin/bun-publish"
+    },
+    {
+      "id": "typescript-plugin/bun-publishing",
+      "line": "typescript-plugin/bun-publishing"
+    },
+    {
+      "id": "typescript-plugin/bun-test",
+      "line": "typescript-plugin/bun-test"
+    },
+    {
+      "id": "typescript-plugin/knip-dead-code",
+      "line": "typescript-plugin/knip-dead-code"
+    },
+    {
+      "id": "typescript-plugin/nodejs-development",
+      "line": "typescript-plugin/nodejs-development"
+    },
+    {
+      "id": "typescript-plugin/typescript-debugging",
+      "line": "typescript-plugin/typescript-debugging"
+    },
+    {
+      "id": "typescript-plugin/typescript-sentry",
+      "line": "typescript-plugin/typescript-sentry"
+    },
+    {
+      "id": "typescript-plugin/typescript-strict",
+      "line": "typescript-plugin/typescript-strict"
+    },
+    {
+      "id": "workflow-orchestration-plugin/workflow-checkpoint-refactor",
+      "line": "workflow-orchestration-plugin/workflow-checkpoint-refactor"
+    },
+    {
+      "id": "workflow-orchestration-plugin/workflow-preflight",
+      "line": "workflow-orchestration-plugin/workflow-preflight"
+    },
+    {
+      "id": "workflow-orchestration-plugin/workflow-verify-before-filing",
+      "line": "workflow-orchestration-plugin/workflow-verify-before-filing"
+    },
+    {
+      "id": "workflow-orchestration-plugin/workflow-wave-dispatch",
+      "line": "workflow-orchestration-plugin/workflow-wave-dispatch"
+    }
+  ]
+}

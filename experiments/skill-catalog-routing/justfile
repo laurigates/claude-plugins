@@ -1,0 +1,107 @@
+# skill-catalog-routing — does the skill catalog help an agent route, and how
+# short can descriptions be? Run `just` or `just help` for the recipe list.
+
+set positional-arguments
+
+default: help
+
+# List all recipes.
+help:
+    @just --list
+
+##########
+# Build
+##########
+
+# (Re)build the four catalog variants + manifest from SKILL.md frontmatter.
+[group: "build"]
+build-catalogs:
+    scripts/build-catalogs.py
+
+# Build + assert the invariants (Use-when preserved, band ceilings, monotone).
+[group: "build"]
+check-catalogs:
+    scripts/build-catalogs.py --validate
+
+##########
+# Running
+##########
+
+# PILOT GATE (~120 calls): haiku, C1 (names) vs C4 (full), 20-task subset, 3 runs.
+# The instrument MUST separate C1 from C4. If it doesn't, the task set is leaky.
+[group: "run"]
+run-pilot runs="3":
+    bash scripts/run-suite.sh \
+      --tasks r01,r02,r03,r04,r05,r06,r07,r08,r09,r10,n01,n02,n03,n04,n05,n06,z01,z02,z03,z04 \
+      --conditions haiku-C1,haiku-C4 --runs "{{runs}}"
+
+# Haiku full ladder (C0-C4) over all tasks — the next gate after the pilot.
+[group: "run"]
+run-haiku filter="*" runs="3":
+    bash scripts/run-suite.sh --filter "{{filter}}" --runs "{{runs}}" \
+      --conditions haiku-C0,haiku-C1,haiku-C2,haiku-C3,haiku-C4
+
+# Full cross-model sweep (all 15 conditions × all tasks). Expensive.
+[group: "run"]
+run-full filter="*" runs="3":
+    bash scripts/run-suite.sh --filter "{{filter}}" --runs "{{runs}}"
+
+# One (task, condition, run) triple for fast iteration.
+[group: "run"]
+run-one task condition run_n="1":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    run_id="adhoc-$(date -u +%Y%m%d-%H%M%S)"
+    mkdir -p "results/${run_id}"
+    bash scripts/run-one.sh "{{task}}" "{{condition}}" "{{run_n}}" "results/${run_id}"
+    printf '%s' "${run_id}" > results/LATEST
+    echo "run_id=${run_id}"
+
+##########
+# Scoring
+##########
+
+# Score one transcript to a TSV row.
+[group: "score"]
+score transcript:
+    scripts/score-run.py "{{transcript}}"
+
+# Aggregate + score a run (default: latest) into results.json + report.md.
+[group: "score"]
+compare run_id="latest":
+    scripts/compare.py "{{run_id}}"
+
+# Render the accuracy-vs-length frontier from a compared run.
+[group: "score"]
+frontier run_id="latest":
+    scripts/render-frontier.py "{{run_id}}"
+
+##########
+# Measurement
+##########
+
+# Measure real input tokens per catalog variant → catalogs/catalog_tokens.json.
+[group: "score"]
+measure-tokens reps="1" model="claude-haiku-4-5":
+    bash scripts/measure-catalog-tokens.sh --reps "{{reps}}" --model "{{model}}"
+
+##########
+# Housekeeping
+##########
+
+# List task ids.
+[group: "meta"]
+tasks:
+    @find tasks -maxdepth 1 -name '*.yaml' -exec basename {} .yaml \; | sort
+
+# List condition ids.
+[group: "meta"]
+conditions:
+    @python3 -c 'import yaml; [print(c["id"]) for c in yaml.safe_load(open("conditions.yaml"))["conditions"]]'
+
+# Delete all results (confirmed).
+[group: "meta"]
+[confirm("delete all results/?")]
+clean:
+    rm -rf results .arm-prompts
+    mkdir -p results

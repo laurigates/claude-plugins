@@ -1,0 +1,7 @@
+description: Recover an earlier version of an Obsidian note after an accidental overwrite. Distinct from publish/sync recovery.
+prompt: |
+  I accidentally clobbered a big section of text in one of my notes yesterday and saved over it. I want to look at earlier saved versions of that note and roll it back to how it was.
+gold: obsidian-plugin/file-history
+plugin: obsidian-plugin
+name_transparency: transparent
+length_band: short

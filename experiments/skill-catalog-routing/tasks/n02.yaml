@@ -1,0 +1,9 @@
+description: Pair 1 git-commit-push-pr vs git-commit — "take it all the way to an open pull request in one go" is the end-to-end flow, not a local-only save.
+prompt: |
+  My working tree has uncommitted changes and I want to take them all the way to
+  an open pull request in one go — get them recorded, sent up to the remote
+  branch, and a PR opened against main without me driving each step by hand.
+gold: git-plugin/git-commit-push-pr
+near_miss: git-plugin/git-commit
+plugin: git-plugin
+pair: 1

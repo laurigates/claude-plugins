@@ -1,0 +1,9 @@
+description: Pair 2 test-quick vs test-full — "just the fast unit-level checks, skip slow integration/browser, sub-minute feedback" points at the fast subset, not the whole suite.
+prompt: |
+  Before I record this change I just want the fast unit-level checks to run —
+  skip the slow integration and browser stuff. I only touched a couple of
+  modules and I need sub-minute feedback on whether I broke anything.
+gold: testing-plugin/test-quick
+near_miss: testing-plugin/test-full
+plugin: testing-plugin
+pair: 2

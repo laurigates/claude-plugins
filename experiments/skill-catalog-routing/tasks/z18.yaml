@@ -1,0 +1,8 @@
+description: "Baits networking-plugin via 'networking', but it's about social/professional networking at an event, not computer networks."
+prompt: |
+  I'm quite introverted and there's a big industry conference next month.
+  Any tips for networking with people there without it feeling forced or
+  draining?
+gold: NONE
+kind: near-miss-none
+baits: networking-plugin/network-diagnostics

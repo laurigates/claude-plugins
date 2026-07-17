@@ -1,0 +1,7 @@
+description: Stop needless conflicts on append-only files via union-merge, flag generated output. Distinct from ignore-file setup.
+prompt: |
+  Whenever two branches both add lines to the same append-only changelog table we get pointless merge clashes. I want git to auto-union those append-only files, and I also want generated build output marked so it stops cluttering diffs.
+gold: configure-plugin/configure-gitattributes
+plugin: configure-plugin
+name_transparency: opaque
+length_band: mid

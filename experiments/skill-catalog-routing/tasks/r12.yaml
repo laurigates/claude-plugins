@@ -1,0 +1,7 @@
+description: Condense wordy text down to its essence. Distinct from turning scattered notes into a structured plan.
+prompt: |
+  This paragraph I wrote is bloated and repetitive. Help me tighten it right down to its core meaning, cutting every needless word while keeping the substance intact.
+gold: prose-plugin/prose-distill
+plugin: prose-plugin
+name_transparency: transparent
+length_band: short

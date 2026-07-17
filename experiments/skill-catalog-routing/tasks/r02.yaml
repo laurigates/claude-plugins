@@ -1,0 +1,7 @@
+description: A configured shortcut does nothing inside a terminal app; points to terminal-interception/chord debugging, not general config.
+prompt: |
+  I mapped a key combination in my terminal-based editor, but pressing it does absolutely nothing — yet the same combo works fine in other apps. I need to figure out whether the terminal itself is eating the keystroke or the chord is impossible to send.
+gold: macos-plugin/tui-keybinding-debug
+plugin: macos-plugin
+name_transparency: opaque
+length_band: mid

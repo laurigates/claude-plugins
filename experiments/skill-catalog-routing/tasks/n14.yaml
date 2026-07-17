@@ -1,0 +1,9 @@
+description: Pair 7 finops-waste vs finops-caches — "workflows fire too often, redundant skipped runs, bot-triggered builds, jobs that don't cancel superseded runs" is the run-frequency inefficiency, not storage size.
+prompt: |
+  Our CI bill is high because workflows fire way too often — lots of redundant
+  runs that end up skipped, builds kicked off by bots, and jobs that never cancel
+  a superseded run. I want those inefficiencies pinpointed with fixes suggested.
+gold: finops-plugin/finops-waste
+near_miss: finops-plugin/finops-caches
+plugin: finops-plugin
+pair: 7

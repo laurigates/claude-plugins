@@ -1,0 +1,7 @@
+description: Batch resize + reformat many photos into thumbnails. Distinct from pixel diffing or AI image generation.
+prompt: |
+  I have a couple hundred pictures in a mix of formats and I need to shrink them all into small thumbnails and reformat them into one consistent output format in a single pass.
+gold: tools-plugin/imagemagick-conversion
+plugin: tools-plugin
+name_transparency: opaque
+length_band: short

@@ -1,0 +1,9 @@
+description: Pair 2 test-full vs test-quick — "entire suite end to end incl. browser-driven cases plus coverage before a release PR" is the complete suite, not the fast subset.
+prompt: |
+  I'm about to open a release pull request and want the entire suite exercised
+  end to end — the unit level, the integration level, and the browser-driven
+  cases — plus a coverage report. Take as long as it needs; I want everything.
+gold: testing-plugin/test-full
+near_miss: testing-plugin/test-quick
+plugin: testing-plugin
+pair: 2

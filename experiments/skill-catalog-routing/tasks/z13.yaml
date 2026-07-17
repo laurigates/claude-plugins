@@ -1,0 +1,8 @@
+description: "Baits git-commit via the word 'committed', but the intent is deadline realism / time-management advice, not version control."
+prompt: |
+  I've committed to shipping this whole feature by Friday and now I'm second-
+  guessing myself. Can you help me sanity-check whether that's actually a
+  realistic promise given how much is left?
+gold: NONE
+kind: near-miss-none
+baits: git-plugin/git-commit

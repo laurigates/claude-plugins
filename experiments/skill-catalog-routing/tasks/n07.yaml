@@ -1,0 +1,9 @@
+description: Pair 4 ruff-linting vs ruff-formatting — "catch likely bugs and rule violations, auto-fix them, not reflowing whitespace" is the checker, not the reformatter.
+prompt: |
+  My Python code needs a quality pass — I want to catch likely bugs, unused
+  imports, and violations of our chosen rule set, and auto-fix the ones that can
+  be. I'm not trying to reflow whitespace, just enforce the correctness rules.
+gold: python-plugin/ruff-linting
+near_miss: python-plugin/ruff-formatting
+plugin: python-plugin
+pair: 4

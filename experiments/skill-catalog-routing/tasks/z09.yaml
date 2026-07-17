@@ -1,0 +1,6 @@
+description: Natural-language translation; no translation skill in the catalog.
+prompt: |
+  How do you say "where is the nearest pharmacy?" in Portuguese? Travelling
+  next week and want to have a few phrases ready.
+gold: NONE
+kind: plain

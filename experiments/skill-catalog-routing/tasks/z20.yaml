@@ -1,0 +1,8 @@
+description: "Baits terraform-plugin via 'terraforming', but it's a sci-fi/planetary-science curiosity, not infrastructure-as-code."
+prompt: |
+  In science fiction they're always terraforming Mars to make it habitable.
+  How realistic is that actually, and what would be the hardest part to pull
+  off with anything like today's science?
+gold: NONE
+kind: near-miss-none
+baits: terraform-plugin/infrastructure-terraform

@@ -1,0 +1,8 @@
+description: "Baits python-plugin via 'python', but it's about a pet snake, not the language."
+prompt: |
+  My eleven-year-old is begging us for a pet python. Are they actually
+  manageable for a first-time reptile owner, and what would we need to set up
+  for one?
+gold: NONE
+kind: near-miss-none
+baits: python-plugin/python-development

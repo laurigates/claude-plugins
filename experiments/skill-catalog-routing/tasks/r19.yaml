@@ -1,0 +1,7 @@
+description: Turn Markdown into a typeset, print-ready PDF with diagrams. Distinct from API doc generation or plain diagram rendering.
+prompt: |
+  I've got a Markdown write-up and I want to turn it into a really polished, print-ready PDF — proper typesetting, page layout, and a few embedded technical diagrams.
+gold: documentation-plugin/docs-latex
+plugin: documentation-plugin
+name_transparency: opaque
+length_band: short

@@ -1,0 +1,7 @@
+description: Get untested old code safely under characterization tests before changing it. Distinct from contracts/patterns/pseudocode design skills.
+prompt: |
+  I have to modify a big chunk of old, untested code and I'm nervous about breaking behavior I don't fully understand. I want to pin its current behavior down with tests first — finding the right places to insert them — before I touch anything.
+gold: software-design-plugin/design-legacy-seams
+plugin: software-design-plugin
+name_transparency: opaque
+length_band: mid

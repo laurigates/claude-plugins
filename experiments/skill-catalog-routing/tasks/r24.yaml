@@ -1,0 +1,7 @@
+description: Starting a 2D interactive graphics app in Rust with ECS — wiring entities, rendering, input, assets. Distinct from advanced ECS perf tuning.
+prompt: |
+  I'm just starting a 2D real-time interactive graphics application in Rust built around an entity-component-system, and I need help wiring up the basics — spawning entities, the rendering pipeline, reading player input, and loading assets.
+gold: bevy-plugin/bevy-game-engine
+plugin: bevy-plugin
+name_transparency: transparent
+length_band: mid

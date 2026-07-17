@@ -1,0 +1,7 @@
+description: Make a web component usable by screen-reader/keyboard users and meet WCAG (ARIA, focus). Distinct from theming/design-tokens.
+prompt: |
+  An audit flagged that my custom dropdown component can't be operated by screen-reader or keyboard-only users and doesn't meet the web compliance standards. I need to fix the ARIA roles and focus handling so it passes.
+gold: accessibility-plugin/accessibility-implementation
+plugin: accessibility-plugin
+name_transparency: transparent
+length_band: mid

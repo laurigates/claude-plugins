@@ -1,0 +1,7 @@
+description: Flatten a merge-heavy branch into linear history and manage a stack of dependent PRs. Distinct from resolving active conflicts.
+prompt: |
+  My feature branch is a tangle of merge commits and I want to flatten it into clean linear history. On top of that I'm juggling a stack of dependent pull requests that all need their bases kept in order.
+gold: git-plugin/git-rebase-patterns
+plugin: git-plugin
+name_transparency: transparent
+length_band: mid

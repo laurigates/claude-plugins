@@ -1,0 +1,8 @@
+description: "Baits kubernetes-operations via 'Kubernetes', but it's a pure conceptual 'what is it / why popular' explainer with no cluster or operation to perform."
+prompt: |
+  I keep seeing Kubernetes in job postings but I've never touched it. In plain
+  language, what problem does it actually solve and why did everyone end up
+  adopting it? Just trying to understand the concept.
+gold: NONE
+kind: near-miss-none
+baits: kubernetes-plugin/kubernetes-operations

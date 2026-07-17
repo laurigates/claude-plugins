@@ -1,0 +1,9 @@
+description: Pair 9 search-discovery vs tasks — "notes with no incoming links, broken wikilinks, trace backlinks, map how things connect" is vault link/text exploration, not managing to-do items.
+prompt: |
+  In my Obsidian vault I want to find notes that nothing links to, audit the
+  broken wikilinks, and trace the backlinks between notes so I can see how
+  everything connects and what's dangling out on its own.
+gold: obsidian-plugin/search-discovery
+near_miss: obsidian-plugin/tasks
+plugin: obsidian-plugin
+pair: 9

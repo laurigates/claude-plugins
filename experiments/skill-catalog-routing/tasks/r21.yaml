@@ -1,0 +1,7 @@
+description: Scan for swallowed errors + silent degradation (empty catch, piped-to-null, success on zero results). Distinct from generic antipattern scan.
+prompt: |
+  I'm worried our codebase quietly eats errors — empty catch blocks, things routed to /dev/null, functions that report success even when they actually produced nothing. I want all those silent-swallow spots surfaced.
+gold: code-quality-plugin/code-hidden-failures
+plugin: code-quality-plugin
+name_transparency: transparent
+length_band: mid

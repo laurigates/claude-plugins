@@ -1,0 +1,7 @@
+description: Sweep local tracker entries still open even though their linked GitHub issues/PRs closed or merged. Distinct from read-only queue reports.
+prompt: |
+  A bunch of entries in my local to-do tracker are still showing as open, but the GitHub issues and pull requests they point to have already merged or been closed. I want to sweep those out and mark them finished.
+gold: taskwarrior-plugin/task-reconcile
+plugin: taskwarrior-plugin
+name_transparency: opaque
+length_band: mid
