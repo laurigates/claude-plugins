@@ -45,8 +45,11 @@ jobs:
 
       - name: Detect changes
         id: diff
+        # git status --porcelain, not git diff --quiet: a NEW skill added to
+        # SUBAGENT_SKILLS emits a new UNTRACKED per-skill fragment, which
+        # `git diff` cannot see — the sync would silently skip it.
         run: |
-          if git diff --quiet -- vault-agent/src/vault_agent/prompts/generated/; then
+          if [ -z "$(git status --porcelain -- vault-agent/src/vault_agent/prompts/generated/)" ]; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
