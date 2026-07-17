@@ -97,6 +97,46 @@ if [ -z "$hint" ] && \
     hint_key="glob-ls"
 fi
 
+# Long pipeline (5+ pipes) fed from a discouraged head stage — demoted here
+# from the bash-antipatterns.sh hard block (issues #1873, #2051, #2052).
+#
+# Pipes are counted PER PIPELINE, not per Bash invocation: the command is
+# split on statement separators (newlines, `;`, `&&`, `||`) after stripping
+# quoted strings, and the threshold applies to the longest single pipeline.
+# This fixes the aggregate-count defect (#2051): five independent 1-pipe
+# statements plus a printf | tee rollup no longer sum to a "6-pipe scrape".
+# A discouraged head is a cat/echo/printf source or a redundant grep | grep
+# text-scrape in the SAME pipeline; log-stream pipelines (kubectl logs /
+# journalctl / docker logs / …) are exempt from the grep | grep clause
+# (#1833). Command substitutions are not parsed — a `$( … | … )` counts
+# toward its host statement, which is conservative but acceptable for a
+# non-blocking nudge.
+if [ -z "$hint" ]; then
+    TEACH_LOG_STREAM_RE='\b(journalctl|stern)\b|\b(kubectl|oc|docker|podman|nerdctl|nomad|heroku|gcloud|crictl|flyctl|fly|k)\b[^|]*[[:space:]]logs\b'
+    PIPE_MAX=0
+    while IFS= read -r seg; do
+        [ -z "$seg" ] && continue
+        seg_pipes=$(printf '%s' "$seg" | tr -cd '|' | wc -c | tr -d ' ')
+        [ "$seg_pipes" -ge 5 ] || continue
+        seg_head=false
+        if printf '%s\n' "$seg" | grep -Eq '\b(cat|echo|printf)[[:space:]][^|]*\|'; then
+            seg_head=true
+        elif ! printf '%s\n' "$seg" | grep -Eq "$TEACH_LOG_STREAM_RE" && \
+             printf '%s\n' "$seg" | grep -Eq 'grep\b[^|]*\|[^|]*grep\b'; then
+            seg_head=true
+        fi
+        if [ "$seg_head" = true ] && [ "$seg_pipes" -gt "$PIPE_MAX" ]; then
+            PIPE_MAX=$seg_pipes
+        fi
+    done < <(echo "$COMMAND" \
+        | sed "s/'[^']*'//g; s/\"[^\"]*\"//g" \
+        | awk '{ gsub(/\|\|/, "\n"); gsub(/&&/, "\n"); gsub(/;/, "\n"); print }')
+    if [ "$PIPE_MAX" -ge 5 ]; then
+        hint="This pipeline has $PIPE_MAX pipes fed from a cat/echo/printf or redundant grep|grep head. Prefer JSON output from the source (--format=json) parsed with jq, a single awk program, or splitting into steps. A long pipeline of legitimate transforms (jq | sort | uniq -c | sort) is fine."
+        hint_key="long-pipeline"
+    fi
+fi
+
 # No soft-teach pattern matched - leave tool output untouched.
 if [ -z "$hint" ]; then
     exit 0
@@ -109,7 +149,7 @@ fi
 # command (grep, cat) accumulates one replayed copy per matching call for the
 # rest of the session. The lesson is identical each time, so the marginal copies
 # are pure transcript bloat. Teaching once per pattern caps the replay cost at
-# five hint banners for an entire session regardless of call count, while still
+# six hint banners for an entire session regardless of call count, while still
 # delivering the correction the first time the agent reaches for the idiom.
 #
 # State lives in a per-session file (sanitised session_id, same convention as

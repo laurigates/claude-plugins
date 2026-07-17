@@ -12,7 +12,7 @@ A PreToolUse hook that intercepts Bash commands and blocks those that should use
 |---------|----------|
 | `cat file` | Use **Read** tool instead |
 | `head`/`tail file` | Use **Read** tool with offset/limit |
-| `sed -i` | Use **Edit** tool instead |
+| `sed -i` on repo files (targets under `/tmp`, `/private/tmp`, `/var/folders`, `$TMPDIR` are exempt — #2052) | Use **Edit** tool instead |
 | `echo > file` | Use **Write** tool instead |
 | `cat > file` | Use **Write** tool instead |
 | `timeout cmd` | Remove timeout (Bash tool has its own, human approval time exceeds it anyway) |
@@ -24,13 +24,17 @@ A PreToolUse hook that intercepts Bash commands and blocks those that should use
 
 ### Demoted to opt-in teach nudges (not blocked)
 
-`find` (→ **Glob**, #1871), `grep`/`rg` (→ **Grep**, #1909), and `ls <glob>`
-(→ **Glob**, #2036) are intentionally **not** blocked by this hook. None of
-those blocks did safety work, and each hard-dead-ended subagents whose toolset
-lacks the suggested tool. The steers survive as non-blocking hints in
+`find` (→ **Glob**, #1871), `grep`/`rg` (→ **Grep**, #1909), `ls <glob>`
+(→ **Glob**, #2036), and **long pipelines** (5+ pipes fed from a
+cat/echo/printf or redundant grep|grep head, #1873/#2051/#2052) are
+intentionally **not** blocked by this hook. None of those blocks did safety
+work, and each hard-dead-ended subagents whose toolset lacks the suggested
+alternative. The steers survive as non-blocking hints in
 `bash-antipatterns-teach.sh`, opt-in via
-`CLAUDE_HOOKS_ENABLE_BASH_ANTIPATTERNS_TEACH=1`. See
-`.claude/rules/bash-tool-replacements.md` and
+`CLAUDE_HOOKS_ENABLE_BASH_ANTIPATTERNS_TEACH=1`. The long-pipeline nudge
+counts pipes **per pipeline** (statement-split on newlines/`;`/`&&`/`||`),
+not per Bash invocation, so independent single-pipe statements never sum past
+the threshold (#2051). See `.claude/rules/bash-tool-replacements.md` and
 `.claude/rules/hook-block-vs-nudge.md`.
 
 ### Handling Blocked Commands

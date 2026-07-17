@@ -486,25 +486,59 @@ assert_stderr_contains \
     'TaskOutput tool is deprecated' \
     "sleep 5 && cat /tmp/claude/x/tasks/run.output"
 
-# ── pipe-count gates on discouraged head stage, not raw count (issue #1603) ───
-# Regression: a long pipeline of legitimate transforms (jq | sort | uniq -c |
-# sort | …) was hard-blocked purely on pipe count. The block must fire only
-# when a discouraged head stage (cat/echo/printf, or a redundant grep | grep)
-# feeds the pipeline.
+# ── long-pipeline block is no longer blocked (demoted, #1873/#2051/#2052) ────
+# The 5+-pipe discouraged-head block was demoted from a hard block to the
+# opt-in teach nudge (bash-antipatterns-teach.sh `long-pipeline`), following
+# the find/grep/ls demotions. The block did no safety work (its own message
+# exempted every legitimate form), sat at a sustained mid-20s same-session
+# repeat-block rate across six friction-learner readings (#1873), and had two
+# counting defects: PIPE_COUNT summed across INDEPENDENT statements in one
+# Bash call, and a `printf … | tee <file>` writer counted as a scrape head
+# (#2051, #2052 item 2). Every form now passes this hook; the steer survives
+# in the companion teach hook (see test-bash-antipatterns-teach.sh).
 echo ""
-echo "long pipelines of legit transforms pass; cat/echo-headed scrapes still blocked:"
+echo "long pipelines are no longer blocked (demoted to opt-in teach nudge, #1873/#2051/#2052):"
 
 assert_exit \
     "jq|sort|uniq|sort|head|tail analysis pipeline is allowed (6 pipes, jq head)" 0 \
     "jq -r '[.a,.b]|@tsv' r.jsonl | sort | uniq -c | sort -k2 | head | tail"
 
 assert_exit \
-    "cat-headed 5+ pipe text-scrape is still blocked" 2 \
+    "cat-headed 5+ pipe text-scrape is allowed (was blocked; now teach-only, #1873)" 0 \
     "cat f.txt | grep x | grep y | sed s/a/b/ | cut -f1 | sort"
 
 assert_exit \
-    "redundant grep | grep | sed | cut | sort chain is still blocked" 2 \
+    "redundant grep | grep | sed | cut | sort chain is allowed (teach-only, #1873)" 0 \
     "ps aux | grep proc | grep -v grep | awk '{print \$2}' | sort | uniq"
+
+# #2051 exact repro: five independent 1-pipe statements + printf | tee rollup.
+# The old aggregate count summed these to "6 pipes" and blocked; nothing here
+# is a long pipeline, so it must pass.
+batch_pipe_cmd=$(cat <<'OUTER'
+i1=$(gh issue create -R o/r --title a --body b | tail -1)
+i2=$(gh issue create -R o/r --title c --body d | tail -1)
+i3=$(gh issue create -R o/r --title e --body f | tail -1)
+i4=$(gh issue create -R o/r --title g --body h | tail -1)
+i5=$(gh issue create -R o/r --title i --body j | tail -1)
+printf '%s\n%s\n%s\n%s\n%s\n' "$i1" "$i2" "$i3" "$i4" "$i5" | tee /tmp/created.txt
+OUTER
+)
+assert_exit_complex \
+    "five 1-pipe statements + printf | tee rollup is allowed (#2051 exact repro)" 0 \
+    "$batch_pipe_cmd"
+
+# #2052 item 2: independent short pipelines with echo progress headers must
+# not sum past the threshold.
+multi_stmt_cmd=$(cat <<'OUTER'
+gcloud secrets versions disable 1 --secret myid 2>&1 | cat
+newlen=$(gcloud secrets versions access latest --secret myid | wc -c | tr -d ' ')
+echo "=== section ==="
+grep -E '^Plan:' /tmp/x.log | cat
+OUTER
+)
+assert_exit_complex \
+    "independent short pipelines with echo headers are allowed (#2052 item 2)" 0 \
+    "$multi_stmt_cmd"
 
 # ── log-stream sources exempt from grep-chain scrape detectors (issue #1833) ──
 # Regression: read-only log-diagnostic pipelines — `kubectl logs … | grep <inc>
@@ -538,9 +572,11 @@ assert_exit_complex \
     "docker logs | grep | grep -v | sed chain is allowed" 0 \
     'docker logs mycontainer 2>&1 | grep -i error | grep -v healthcheck | sed s/a/b/ | tail'
 
-# Guard integrity: the log-stream exemption must NOT weaken the non-log scrapes.
+# The ps-aux process scrape was previously a pipe-count-block guard here; that
+# block is demoted (#1873), and the multi-grep chain block below requires a
+# positive test/task-output signal (#1914) which ps aux lacks — so it passes now.
 assert_exit \
-    "GUARD: ps aux | grep | grep -v grep process scrape still blocks (#1833)" 2 \
+    "ps aux | grep | grep -v grep process scrape is allowed (pipe-count block demoted, #1873)" 0 \
     "ps aux | grep proc | grep -v grep | sed s/a/b/ | cut -f1 | sort"
 
 assert_exit \
@@ -794,6 +830,105 @@ assert_exit \
 assert_exit \
     "GUARD INTEGRITY: tail README.md (no flag) still blocked (#1848)" 2 \
     "tail README.md"
+
+# ── heredoc body inside a command substitution (issue #2058) ─────────────────
+# Regression: `gh pr create --body "$(cat <<'EOF' … EOF)"` was blocked by the
+# cat-write detector when the heredoc BODY happened to contain a `cat > file`
+# mention (documentation, not an executed write). The detector now scans the
+# heredoc-stripped view; genuine plain `cat > file` writes must STILL block.
+echo ""
+echo "heredoc-in-command-substitution bodies are ignored by the cat-write detector (#2058):"
+
+cmdsub_body_cmd=$(cat <<'OUTER'
+gh pr create --title "feat(x): thing" --body "$(cat <<'EOF'
+## What
+...
+EOF
+)"
+OUTER
+)
+assert_exit_complex \
+    "gh pr create --body \"\$(cat <<'EOF' … EOF)\" is allowed (#2058 canonical form)" 0 \
+    "$cmdsub_body_cmd"
+
+cmdsub_catwrite_mention_cmd=$(cat <<'OUTER'
+gh pr create --title "feat(x): thing" --body "$(cat <<'EOF'
+## What
+Use cat > out.md to write the file.
+EOF
+)"
+OUTER
+)
+assert_exit_complex \
+    "heredoc body merely MENTIONING 'cat > file' is allowed (#2058 mechanism)" 0 \
+    "$cmdsub_catwrite_mention_cmd"
+
+assert_exit \
+    "GUARD INTEGRITY: plain cat > file (no heredoc) still blocked (#2058)" 2 \
+    "cat > /tmp/other.txt"
+
+# ── sed -i: scratch paths exempt; quoted/heredoc mentions ignored (#2052) ─────
+# Regression (issue #2052 items 3+4): (3) an in-place stream edit of a
+# throwaway file under /tmp or the session scratchpad was blocked in favour of
+# a Read + Edit round-trip — which pulled freshly generated secret material
+# into the transcript that the stream edit would not have; (4) an issue body
+# that merely DOCUMENTED `sed -i` (filing a bug about the rule itself) was
+# blocked because the detector scanned raw quoted/heredoc content. sed -i on a
+# repo file must STILL block.
+echo ""
+echo "sed -i: tmp/scratch targets exempt, quoted/heredoc mentions ignored, repo files still blocked (#2052):"
+
+assert_exit \
+    "sed -i on a /tmp file is allowed (#2052 item 3)" 0 \
+    "sed -i.bak 's/old/new/' /tmp/scratch/wg-config.txt"
+
+assert_exit_complex \
+    "sed -i '' on a /private/tmp scratchpad file is allowed (#2052 item 3)" 0 \
+    "sed -i '' 's/a/b/' /private/tmp/claude-502/x/scratchpad/gen.conf"
+
+assert_exit \
+    "sed -i on a /var/folders temp file is allowed (#2052 item 3)" 0 \
+    "sed -i '' 's/a/b/' /var/folders/ab/T/gen.conf"
+
+sedi_doc_body_cmd=$(cat <<'OUTER'
+gh issue create --title "hook fp" --body "$(cat <<'EOF'
+### 3. In-place stream edit blocked
+Editing with sed -i was blocked in favour of the Edit tool.
+EOF
+)"
+OUTER
+)
+assert_exit_complex \
+    "issue body documenting 'sed -i' inside a heredoc is allowed (#2052 item 4)" 0 \
+    "$sedi_doc_body_cmd"
+
+assert_exit_complex \
+    "quoted argument merely mentioning 'sed -i' is allowed (#2052 item 4)" 0 \
+    'gh issue comment 5 --body "the sed -i rule fired here"'
+
+assert_exit \
+    "GUARD INTEGRITY: sed -i on a repo file still blocked (#2052)" 2 \
+    "sed -i 's/a/b/' src/main.py"
+
+assert_exit \
+    "GUARD INTEGRITY: sed --in-place on a repo file still blocked (#2052)" 2 \
+    "sed --in-place 's/a/b/' hooks/thing.sh"
+
+# ── stdin secret write via printf | <cli> --data-file=- (#2052 item 1) ────────
+# Regression guard: piping a secret to a CLI over STDIN is the recommended,
+# safest write path (never touches disk or the process table). It must never
+# be nudged toward the Write tool — persisting a plaintext credential to a
+# file would be strictly worse.
+echo ""
+echo "printf-to-stdin secret writes are allowed (#2052 item 1):"
+
+assert_exit_complex \
+    "printf %s \"\$secret\" | gcloud secrets versions add --data-file=- is allowed" 0 \
+    'printf %s "$pass" | gcloud secrets versions add myid --project p --data-file=-'
+
+assert_exit_complex \
+    "echo -n \"\$secret\" | kubectl create secret from stdin is allowed" 0 \
+    'echo -n "$token" | kubectl create secret generic t --from-file=token=/dev/stdin'
 
 # ── remote-exec guard regression (issue #1900) ───────────────────────────────
 # A command that runs on ANOTHER host/container (ssh/rsh/kubectl exec/docker

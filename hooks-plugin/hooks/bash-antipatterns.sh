@@ -125,8 +125,25 @@ See .claude/rules/bash-tool-replacements.md for the full table."
 fi
 
 # Check for sed used for editing (in-place edits)
-if echo "$COMMAND" | grep -Eq "sed\s+(-i|--in-place)"; then
-    block "REMINDER: Use the Edit tool instead of 'sed -i' to modify files. The Edit tool provides safer, more precise string replacements with proper error handling."
+#
+# Scan COMMAND_NO_STRINGS (heredoc bodies AND quoted-string literals stripped)
+# so an issue/PR body that merely *documents* `sed -i` — filing a bug report
+# about this very rule, writing docs about the antipattern — does not fire
+# (issue #2052 item 4). Only a `sed -i` that survives quote/heredoc stripping
+# is an actual invocation.
+#
+# Exempt targets under scratch/temp paths (/tmp, /private/tmp, /var/folders,
+# $TMPDIR): an in-place stream edit of a throwaway generated file is fine —
+# the Edit tool's precision matters for repo files, and forcing a Read + Edit
+# round-trip on a generated scratch file can pull secret material (e.g. a
+# freshly generated private key) into the transcript that the stream edit
+# would not have (issue #2052 item 3). The tmp-path check runs on
+# COMMAND_SHELL_ONLY (quotes kept) so a quoted tmp path still exempts.
+# shellcheck disable=SC2016  # the \$TMPDIR is a literal regex token, not an expansion
+SED_TMP_TARGET_RE='sed[[:space:]]+(-i[^[:space:]]*|--in-place[^[:space:]]*)[^;&|]*[[:space:]]['"'"'"]?((/private)?/tmp/|/var/folders/|\$TMPDIR)'
+if echo "$COMMAND_NO_STRINGS" | grep -Eq "sed\s+(-i|--in-place)" && \
+   ! echo "$COMMAND_SHELL_ONLY" | grep -Eq "$SED_TMP_TARGET_RE"; then
+    block "REMINDER: Use the Edit tool instead of 'sed -i' to modify files. The Edit tool provides safer, more precise string replacements with proper error handling. (In-place edits of scratch files under /tmp are allowed.)"
 fi
 
 # Check for awk used for file modifications
@@ -203,8 +220,15 @@ fi
 # the recommended multi-line pattern (copy-paste-commands.md), and the hook's own
 # cat-read message above already states heredocs are allowed (issue #1584, #1587).
 # A plain `cat > file` with no heredoc is still blocked in favour of the Write tool.
-if echo "$COMMAND" | grep -Eq 'cat\s*>\s*[^|]' && \
-   ! echo "$COMMAND" | grep -Eq 'cat\s*>\s*\S.*<<'; then
+#
+# Scan COMMAND_SHELL_ONLY (heredoc bodies stripped) so a `cat > file` that is
+# merely *text inside a heredoc body* — e.g. a PR/issue body written via
+# `gh pr create --body "$(cat <<'EOF' … EOF)"` that documents the pattern —
+# does not fire (issue #2058). The heredoc-opening line itself is kept, so a
+# real `cat > file <<EOF` write is still visible to the exemption below, and
+# a real plain `cat > file` still blocks.
+if echo "$COMMAND_SHELL_ONLY" | grep -Eq 'cat\s*>\s*[^|]' && \
+   ! echo "$COMMAND_SHELL_ONLY" | grep -Eq 'cat\s*>\s*\S.*<<'; then
     block "REMINDER: Use the Write tool instead of 'cat > file' to create files. The Write tool is the proper way to write file contents."
 fi
 
@@ -291,63 +315,38 @@ an extraction to a compact summary instead (pipelines are allowed):
   cat <output-file> | jq '<filter>'    or    cat <output-file> | python3 …"
 fi
 
-# Check for excessive pipe chains (5+ pipes) — but only when a *discouraged head
-# stage* feeds the pipeline. Counting `|` alone false-blocked idiomatic
-# multi-stage analysis pipelines (jq | sort | uniq -c | sort, awk transforms,
-# etc.) over data a prior command produced — there is no shorter form and jq
-# *is* the right tool (issue #1603). A long pipeline whose stages are all
-# legitimate transforms is allowed regardless of length; the block fires only
-# when the data source is a discouraged `cat file |` / `echo |` / `printf |`
-# head, or a redundant `grep … | … grep` text-scrape.
+# NOTE: the long-pipeline (5+ pipes from a discouraged head) block was REMOVED.
 #
-# Uses COMMAND_SHELL_ONLY (heredoc body stripped) and strips quoted strings and
-# || operators first so regex-alternation literals (grep -E '(a|b|c)') and
-# format-string pipes (curl -w '… | …') are not counted as shell pipes (the
-# bogus "8 pipes" miscount in issue #1592).
+# The pipe-count block was demoted from a hard block to a non-blocking teach
+# nudge (bash-antipatterns-teach.sh `long-pipeline`, opt-in via
+# CLAUDE_HOOKS_ENABLE_BASH_ANTIPATTERNS_TEACH=1), following the same
+# hook-block-vs-nudge.md litigation as the find (#1871), grep/rg (#1909), and
+# ls (#2036) demotions. The block did NO safety work — its own message conceded
+# that "a long pipeline of legitimate transforms … is fine", i.e. it exempted
+# every genuinely-useful form and fired only on a cat/echo/printf text-scrape
+# head or a redundant grep | grep — a style/context-efficiency concern. It
+# dead-ended subagents lacking jq/Grep substitution paths, and it carried a
+# sustained mid-20s same-session repeat-block rate across six friction-learner
+# readings (37.5 → 24.0 → 27.3 → 17.4 → 28.1%, issue #1873), i.e. it was not
+# teaching. It also had two outright counting defects (issue #2051, #2052):
+# PIPE_COUNT summed pipes across INDEPENDENT statements in one Bash call, and
+# a `printf … | tee <file>` writer was treated as a scrape head — so a batch
+# of five 1-pipe `gh issue create | tail -1` statements plus one printf | tee
+# rollup was blocked as a "6-pipe scrape". The teach nudge counts pipes
+# per-pipeline (statement-split) and so has neither defect.
 #
+# LOG_STREAM_RE survives because the multi-grep chain block below still uses it.
 # Log-stream sources — `kubectl logs`, `journalctl`, `docker logs`, `stern`, … —
 # emit an unstructured text stream with no --json/jq alternative, so
 # `… | grep <inc> | grep -v <exc> | tail` is the *idiomatic* read path during
-# incident diagnosis, not a data-processing scrape to nudge away from. Detect the
-# log-stream head once and exempt these pipelines from the grep-chain scrape
-# detectors (this block's `grep | grep` clause and the multi-grep chain block
-# below) — issue #1833. The `<tool> logs` arm requires the `logs` subcommand to
-# sit in the same pipe segment as a known log-producing CLI (`[^|]*[[:space:]]logs`)
-# so an unrelated `ls logs/` does not match. The cat/echo/printf scrape head and
-# the `ps … | grep … | grep -v grep` process-scrape (issue #1603) are NOT
-# log streams, so they keep firing.
+# incident diagnosis, not a data-processing scrape to nudge away from (issue
+# #1833). The `<tool> logs` arm requires the `logs` subcommand to sit in the
+# same pipe segment as a known log-producing CLI (`[^|]*[[:space:]]logs`) so an
+# unrelated `ls logs/` does not match.
 LOG_STREAM_RE='\b(journalctl|stern)\b|\b(kubectl|oc|docker|podman|nerdctl|nomad|heroku|gcloud|crictl|flyctl|fly|k)\b[^|]*[[:space:]]logs\b'
 IS_LOG_STREAM=false
 if echo "$COMMAND_SHELL_ONLY" | grep -Eq "$LOG_STREAM_RE"; then
     IS_LOG_STREAM=true
-fi
-
-PIPE_BODY=$(echo "$COMMAND_SHELL_ONLY" | sed "s/'[^']*'//g; s/\"[^\"]*\"//g; s/||//g")
-PIPE_COUNT=$(echo "$PIPE_BODY" | tr -cd '|' | wc -c)
-
-# A discouraged head is a cat/echo/printf source OR a redundant `grep | grep`
-# text-scrape. A log-stream-sourced pipeline is neither — its grep stages filter
-# an unstructured stream that has no structured alternative — so the grep | grep
-# clause is suppressed for log streams (issue #1833). The cat/echo/printf head
-# still fires regardless (a log stream never has one).
-DISCOURAGED_HEAD=false
-if echo "$PIPE_BODY" | grep -Eq '\b(cat|echo|printf)[[:space:]][^|]*\|'; then
-    DISCOURAGED_HEAD=true
-elif [ "$IS_LOG_STREAM" = false ] && echo "$PIPE_BODY" | grep -Eq 'grep\b[^|]*\|[^|]*grep\b'; then
-    DISCOURAGED_HEAD=true
-fi
-
-if [ "$PIPE_COUNT" -ge 5 ] && [ "$DISCOURAGED_HEAD" = true ]; then
-    block "REMINDER: This command has $PIPE_COUNT pipes fed from a discouraged head
-stage (cat/echo/printf, or a redundant grep | grep) - consider simplifying:
-- Use JSON output from the source (--reporter=json, --format=json) and parse with jq
-- Use awk for multi-step text processing in one command
-- Break into multiple steps with intermediate analysis
-- For test failures: use test runner's built-in summary/grouping features
-
-A long pipeline of legitimate transforms (jq | sort | uniq -c | sort, awk, sed)
-over a prior command's output is fine — this block only fires on a cat/echo
-text-scrape head."
 fi
 
 # Check for multi-grep chains parsing test/task output
