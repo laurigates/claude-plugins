@@ -281,6 +281,44 @@ A checkpoint commit converts the dirty-worktree case into the
 committed-branch case (row 2 above) — the cleanest salvage, a plain
 `git push` with no commit-on-behalf step.
 
+## Idle without report (#2039)
+
+A distinct missing-return variant: the agent **completed its work fully** —
+one clean commit, clean tree — then went idle, and the orchestrator received
+only `{"type":"idle_notification","idleReason":"available"}`; the final
+report message was never delivered. The work isn't lost; the *communication*
+is. It is intermittent — sibling agents in the same wave can deliver their
+reports normally.
+
+> **Evidence (loractl post-M8 sweep, 2026-07-11).** The PR C implementer
+> committed `6ad2e13` on `docs/blueprint-sweep`, then the orchestrator
+> received only the idle notification. Two other agents in the same session
+> delivered their reports normally.
+
+**Discrimination** — an `idle_notification` with no preceding report is not a
+failure signal. Verify the branch state directly before assuming a silent
+exit (the same empty-vs-dirty probes as #1491):
+
+```bash
+git -C <worktree-or-checkout> log --oneline origin/main..HEAD   # commits present?
+git -C <worktree-or-checkout> status --porcelain                # clean tree?
+```
+
+Completed work on the agent's branch + a clean tree ⇒ communication loss, not
+a silent exit.
+
+**Recovery** — `SendMessage` the **named agent** requesting the report; it
+resumes from its transcript and delivers the full structured Return Contract,
+after which review/push proceed normally (worked first try in the evidence
+case). A report re-request is a **read-only continuation**, so the #1546
+SendMessage-resume isolation caveat does not apply. Do **not** respawn — a
+fresh agent lacks the context, and for worktree agents cannot take the branch
+(it is still checked out in the original agent's worktree).
+
+**Prevention** — lead briefs should tell implementers to deliver the report
+via an explicit `SendMessage` to the lead ("main") as their **final act**,
+not rely on the final-text return alone.
+
 ## Killed-agent worktree recovery (TaskStop)
 
 Distinct from the silent commit-stall above: here the orchestrator

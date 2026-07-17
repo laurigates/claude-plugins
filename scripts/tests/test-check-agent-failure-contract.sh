@@ -19,11 +19,18 @@
 #   F. parallel-agent-dispatch REFERENCE.md missing "Completion manifest" → exit 1
 #   G. parallel-agent-dispatch SKILL.md missing the #1868 resume-hazard caveat → exit 1
 #   H. parallel-agent-dispatch SKILL.md missing "#1868" → exit 1
+#   I. parallel-agent-dispatch SKILL.md missing "idle_notification" → exit 1
+#   J. parallel-agent-dispatch SKILL.md missing "#2039" → exit 1
 #
 # Issue #1868: Workflow({resumeFromRunId}) re-runs an already-succeeded
 # isolation:"worktree" agent instead of returning its cached result, re-firing
 # its outward side effects (a duplicate PR). Guards G/H keep the documented
 # caveat from being silently dropped by a future bulk edit.
+#
+# Issue #2039: an implementer agent completes its work, then goes idle emitting
+# only an idle_notification — the final report never reaches the orchestrator
+# (communication loss, not work loss; recovery is SendMessage-to-resend, never
+# respawn). Guards I/J keep the "Idle without report" variant documented.
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -142,5 +149,24 @@ assert "H: dispatch SKILL.md missing #1868 fails (exit 1)" \
   "$([ "$(run_fixture "$fx_h")" -eq 1 ] && echo true || echo false)"
 rm -rf "$fx_h"
 
-echo "check-agent-failure-contract (#1601/#1868): ${pass_count} passed, ${fail_count} failed"
+# --- Guard I: SKILL.md missing the #2039 idle_notification signal name ---
+# Issue #2039: an agent completes its work then goes idle with only an
+# idle_notification — the report never arrives. Strip the signal name and
+# confirm the check fails, so a bulk edit can't silently drop the variant.
+fx_i="$(mktemp -d)"
+build_fixture "$fx_i"
+strip_marker "$fx_i/agent-patterns-plugin/skills/parallel-agent-dispatch/SKILL.md" "idle_notification"
+assert "I: dispatch SKILL.md missing idle_notification fails (exit 1)" \
+  "$([ "$(run_fixture "$fx_i")" -eq 1 ] && echo true || echo false)"
+rm -rf "$fx_i"
+
+# --- Guard J: SKILL.md missing the #2039 issue reference ---
+fx_j="$(mktemp -d)"
+build_fixture "$fx_j"
+strip_marker "$fx_j/agent-patterns-plugin/skills/parallel-agent-dispatch/SKILL.md" "#2039"
+assert "J: dispatch SKILL.md missing #2039 fails (exit 1)" \
+  "$([ "$(run_fixture "$fx_j")" -eq 1 ] && echo true || echo false)"
+rm -rf "$fx_j"
+
+echo "check-agent-failure-contract (#1601/#1868/#2039): ${pass_count} passed, ${fail_count} failed"
 [ "$fail_count" -eq 0 ]

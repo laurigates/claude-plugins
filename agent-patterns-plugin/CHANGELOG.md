@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.35.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.35.0...agent-patterns-plugin-v2.35.1) (2026-07-17)
+
+
+### Bug Fixes
+
+* **agent-patterns-plugin:** specify synchronous cold-read-gate reader execution ([#2073](https://github.com/laurigates/claude-plugins/issues/2073)) ([936d378](https://github.com/laurigates/claude-plugins/commit/936d378080a2877af39b899fcdfe7ff53e4bf4e9))
+
 ## [2.35.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.34.0...agent-patterns-plugin-v2.35.0) (2026-07-14)
 
 

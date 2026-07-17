@@ -15,6 +15,11 @@
 #   E. the opt-out env var makes the wrapper a no-op (reconcile never invoked).
 #   F. scheduled-reconcile --apply delegates with --apply AND the bounded
 #      --only-verdicts=pr-merged,issue-closed allowlist.
+#   G. reconcile.sh REJECTS an unknown argument (exit 2, error on stderr,
+#      nothing mutated). Guards issue #2057: a silent `*) ;;` catch-all
+#      swallowed a misspelled/unsupported --only-verdicts under version skew,
+#      turning the bounded apply into an unbounded one that closed pr-closed
+#      tasks the flag exists to protect.
 #
 # `task` and `gh` are pure stubs; no network, no real taskwarrior store.
 
@@ -111,6 +116,21 @@ check "B: ONLY_VERDICTS empty (back-compat)" "" "$(field ONLY_VERDICTS "$out")"
 check "B: CLOSED_COUNT all 3 stale" "3" "$(field CLOSED_COUNT "$out")"
 check "B: pr-closed IS closed without allowlist" "1" "$(jq --arg u "$UB" '[.[]|select(.uuid==$u)]|length' "$IMPORT_CAPTURE" 2>/dev/null)"
 check "B: unknown→live still never closed" "0" "$(jq --arg u "$UD" '[.[]|select(.uuid==$u)]|length' "$IMPORT_CAPTURE" 2>/dev/null)"
+
+# --- G: unknown argument fails fast (issue #2057) ----------------------------
+# A caller passing a flag this version doesn't understand (e.g. --only-verdicts
+# to a pre-#1793 script, or a typo'd --only-verdictz) must get a loud non-zero
+# exit BEFORE any classification/apply — never a silently-unbounded apply.
+: > "$IMPORT_CAPTURE"
+g_err=$(PATH="${BIN}:$PATH" bash "$RECONCILE" --all --apply --only-verdictz=pr-merged,issue-closed 2>&1 >/dev/null)
+g_exit=$?
+check "G: unknown flag → exit 2" "2" "$g_exit"
+check "G: unknown flag named on stderr" "yes" \
+  "$(printf '%s\n' "$g_err" | grep -q 'unknown argument: --only-verdictz' && echo yes || echo no)"
+check "G: usage printed on stderr" "yes" \
+  "$(printf '%s\n' "$g_err" | grep -q '^usage: reconcile.sh' && echo yes || echo no)"
+check "G: nothing imported (no mutation before the reject)" "no" \
+  "$([ -s "$IMPORT_CAPTURE" ] && echo yes || echo no)"
 
 # --- Wrapper tests: stub reconcile (records args, emits canned output) -------
 RC_ARGS="${WORK}/rc.args"
