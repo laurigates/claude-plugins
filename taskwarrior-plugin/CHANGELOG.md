@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.2](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.13.1...taskwarrior-plugin-v1.13.2) (2026-07-17)
+
+
+### Bug Fixes
+
+* **taskwarrior-plugin:** reject unknown reconcile.sh arguments instead of silently ignoring them ([#2075](https://github.com/laurigates/claude-plugins/issues/2075)) ([8a0876c](https://github.com/laurigates/claude-plugins/commit/8a0876c55346e34c3a0163c462d670d49ad32645))
+
 ## [1.13.1](https://github.com/laurigates/claude-plugins/compare/taskwarrior-plugin-v1.13.0...taskwarrior-plugin-v1.13.1) (2026-07-16)
 
 
