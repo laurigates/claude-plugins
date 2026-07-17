@@ -629,6 +629,23 @@ check_skill_body() {
       done
     fi
 
+    # Regression: multi-model-delegation encodes the protocol for consulting
+    # foreign models (PAL chat/consensus) on design work. Its load-bearing
+    # inversions are (a) the DISAGREEMENT between identically-briefed models is
+    # the signal (never majority-vote the answers), (b) splits are adjudicated
+    # against the CODE, not against model confidence, and (c) the kimi
+    # `temperature` 400 gotcha (pal-mcp-server#67) whose opaque error otherwise
+    # costs failed calls + wrong theories. A bulk edit that "tightens" the prose
+    # must not drop any of the three, so assert all survive.
+    if [ "$skill_name" = "multi-model-delegation" ]; then
+      for token in 'disagreement, not the union' 'Adjudicate against the code' 'temperature` for kimi'; do
+        if ! grep -qF "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain token '${token}' (disagreement-is-the-signal protocol + kimi temperature gotcha)")
+          has_errors=true
+        fi
+      done
+    fi
+
     # Regression: github-actions-auth-security must document the GitHub Actions
     # script-injection mitigation (distinct from Claude *prompt* injection):
     # untrusted run-context values bound to an intermediate `env:` variable and

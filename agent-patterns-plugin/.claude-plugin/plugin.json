@@ -22,6 +22,8 @@
     "plugin-settings",
     "adversarial-review",
     "red-team",
+    "multi-model",
+    "pal",
     "code-review",
     "execution-grounded-review"
   ]
