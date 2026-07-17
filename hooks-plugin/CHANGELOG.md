@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.15](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.5.14...hooks-plugin-v2.5.15) (2026-07-17)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** resolve bash-antipatterns false-positive cluster ([#2077](https://github.com/laurigates/claude-plugins/issues/2077)) ([e1bf92d](https://github.com/laurigates/claude-plugins/commit/e1bf92de1e7960c6255aafd9a5336918be69e0c6))
+
 ## [2.5.14](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.5.13...hooks-plugin-v2.5.14) (2026-07-12)
 
 
