@@ -1,4 +1,4 @@
-name: Sync git-repo-agent prompts
+name: "Sync: git-repo-agent prompts"
 
 # Regenerates git-repo-agent's pre-compiled subagent prompts from this repo's
 # plugin skills and opens a PR on laurigates/git-repo-agent (issue #1017).
@@ -44,8 +44,11 @@ jobs:
 
       - name: Detect changes
         id: diff
+        # git status --porcelain, not git diff --quiet: a NEW skill added to
+        # the compiler's bundle map emits a new UNTRACKED per-skill fragment,
+        # which `git diff` cannot see — the sync would silently skip it.
         run: |
-          if git diff --quiet -- git-repo-agent/src/git_repo_agent/prompts/generated/; then
+          if [ -z "$(git status --porcelain -- git-repo-agent/src/git_repo_agent/prompts/generated/)" ]; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
