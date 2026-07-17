@@ -104,7 +104,7 @@ the rules, skills, and hooks that embody it.
 | **evaluate-plugin** | 6 + 3 agents | Skill evaluation and benchmarking - test effectiveness, grade results |
 | **codebase-attributes-plugin** | 3 | Structured codebase health attributes with severity-based agent routing |
 | **feedback-plugin** | 1 | Session feedback analysis - capture skill bugs and enhancements as issues |
-| **testing-plugin** | 16 | Test execution, TDD workflow, Vitest, Playwright, mutation testing |
+| **testing-plugin** | 17 | Test execution, TDD workflow, Vitest, Playwright, mutation testing |
 
 ### Version Control
 
@@ -127,7 +127,7 @@ the rules, skills, and hooks that embody it.
 | **container-plugin** | 9 + 1 agent | Container development - Docker, registry, Skaffold, OrbStack |
 | **kubernetes-plugin** | 8 + 1 agent | Kubernetes and Helm - deployments, charts, releases, ArgoCD |
 | **migration-patterns-plugin** | 6 | Safe database and system migration - dual write, shadow mode |
-| **networking-plugin** | 6 | Network diagnostics, discovery, monitoring, HTTP load testing |
+| **networking-plugin** | 7 | Network diagnostics, discovery, monitoring, HTTP load testing |
 | **terraform-plugin** | 6 + 1 agent | Terraform and Terraform Cloud - infrastructure as code |
 
 ### Documentation & Communication
