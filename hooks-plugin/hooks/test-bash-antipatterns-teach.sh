@@ -8,6 +8,7 @@
 # returns exit 0 always. The contract is the stdout JSON: presence of
 # `.hookSpecificOutput.updatedToolOutput` for matched antipatterns, empty
 # stdout for non-matches and when the env-var guard is off.
+# shellcheck disable=SC2016   # file-level: single-quoted `$(...)`/`$a` are deliberate literal command strings fed to the hook
 set -euo pipefail
 
 HOOK="$(dirname "$0")/bash-antipatterns-teach.sh"
@@ -118,6 +119,21 @@ assert_silent "rg --quiet boolean check is exempt" "rg --quiet pattern file"
 echo ""
 echo "ls with glob:"
 assert_emits "ls *.md emits Glob hint" "ls *.md" "Glob tool"
+
+echo ""
+echo "long pipeline nudge (demoted from the hard block, #1873/#2051/#2052):"
+assert_emits "6-pipe cat-headed text-scrape emits long-pipeline hint" \
+    "cat f.log | grep a | grep -v b | awk '{print}' | sort | uniq -c | sort -rn" \
+    "pipes fed from a cat/echo/printf"
+assert_emits "5-pipe redundant grep|grep scrape emits long-pipeline hint" \
+    "ps aux | grep proc | grep -v grep | sed s/a/b/ | cut -f1 | sort" \
+    "pipes fed from a cat/echo/printf"
+assert_silent "6-pipe jq-headed transform pipeline is silent (legit head)" \
+    "jq -r '[.a,.b]|@tsv' r.jsonl | sort | uniq -c | sort -k2 | head | tail"
+assert_silent "independent 1-pipe statements + printf | tee do not sum past threshold (#2051)" \
+    'a=$(gh issue create | tail -1); b=$(gh issue create | tail -1); c=$(gh issue create | tail -1); d=$(gh issue create | tail -1); e=$(gh issue create | tail -1); printf "%s\n" "$a" | tee /tmp/x.txt'
+assert_silent "kubectl logs grep|grep 5-pipe diagnosis is silent (log stream, #1833)" \
+    'kubectl logs -n ns pod | grep -iE "err|403" | grep -ivE "noise" | grep -v other | cut -f1 | tail -15'
 
 echo ""
 echo "pipelines and unrelated commands stay silent:"

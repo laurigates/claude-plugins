@@ -23,19 +23,19 @@ A PreToolUse hook that intercepts Bash commands and blocks those that should use
 |---------|----------|
 | `cat file` | Use **Read** tool instead |
 | `head`/`tail file` | Use **Read** tool with offset/limit |
-| `sed -i` | Use **Edit** tool instead |
+| `sed -i` (repo files; `/tmp`/scratch targets exempt, #2052) | Use **Edit** tool instead |
 | `echo > file` | Use **Write** tool instead |
 | `cat > file` | Use **Write** tool instead |
 | `timeout cmd` | Remove timeout (human approval time exceeds it) |
 | `git add -A` / `git add .` | Stage specific files by name instead |
-| 5+ pipe chain | Simplify with JSON output or awk |
 | Multi-grep test parsing | Use `--reporter=json` instead |
 | `curl \| sh` / `wget \| bash` | Download first, review, then execute |
 | Fork bombs | Blocked unconditionally |
 | `chmod 777` | Use restrictive permissions (755, 644, 600) |
 | Write to block device | Blocked unconditionally |
 
-`find` (#1871), `grep`/`rg` (#1909), and `ls <glob>` (#2036) are **not**
+`find` (#1871), `grep`/`rg` (#1909), `ls <glob>` (#2036), and long pipelines
+(5+ pipes from a cat/echo/printf or grep|grep head, #1873) are **not**
 blocked — those redirects were demoted to non-blocking hints in the opt-in
 teach hook (`bash-antipatterns-teach.sh`). See
 `.claude/rules/hook-block-vs-nudge.md` for the block-vs-nudge litigation.

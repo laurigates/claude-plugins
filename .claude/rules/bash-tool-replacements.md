@@ -30,6 +30,16 @@ already been blocked. Use this table to pick the right replacement.
 > for the `ls`→Glob branch). `find`, `grep`/`rg`, and `ls` in any form now
 > pass. `Glob`/`Grep`/`fd` remain the most *context-efficient* choices for a
 > broad sweep in the main session — prefer them, but none is enforced.
+>
+> **Long pipelines are no longer blocked either** (#1873). The 5+-pipe
+> discouraged-head block (a `cat`/`echo`/`printf` or redundant `grep | grep`
+> scrape head) followed the same demotion in W29: its own message exempted
+> every legitimate form (style, not safety), it plateaued in the mid-20s
+> same-session repeat-block rate across six friction-learner readings, and it
+> summed pipe counts across *independent* statements in one Bash call —
+> blocking a batch of five 1-pipe `gh issue create | tail -1` statements as a
+> "6-pipe scrape" (#2051, #2052). The steer survives as the `long-pipeline`
+> teach nudge, which counts pipes per pipeline, not per invocation.
 
 ## The replacement table
 
@@ -125,7 +135,7 @@ want the context-efficient / ergonomic option, but the hook won't stop a plain
   implements the `cat`/`head`/`tail` blocks (and comments explaining why
   `find`, `grep`/`rg`, and `ls` are no longer among them)
 - `hooks-plugin/hooks/bash-antipatterns-teach.sh` — the opt-in teach
-  hook that carries the non-blocking `find→Glob`, `grep`/`rg`→`Grep`, and
-  `ls`→`Glob` nudges
+  hook that carries the non-blocking `find→Glob`, `grep`/`rg`→`Grep`,
+  `ls`→`Glob`, and `long-pipeline` nudges
 - `.claude/rules/hook-block-vs-nudge.md` — the litigation test behind the
   `find`/`grep`/`ls` demotions (block for safety, nudge for style)
