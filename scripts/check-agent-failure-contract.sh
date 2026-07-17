@@ -175,6 +175,19 @@ require_marker "$dispatch_skill" "Target-branch preflight" "the target-branch pr
 require_marker "$dispatch_skill" "git ls-remote --heads origin" "the remote target-name check (issue #1969)"
 require_marker "$dispatch_skill" "#1969" "the issue reference"
 
+# Regression #2039: an implementer agent can COMPLETE its work (one clean
+# commit, clean tree) then go idle emitting only an idle_notification — the
+# final report message never reaches the orchestrator. This is a
+# COMMUNICATION loss, not a work loss: treating it as a silent exit and
+# respawning discards a done task. The fix documents the "Idle without
+# report" variant in "Handling a Missing Return" (check the branch first,
+# SendMessage the named agent to resend the report, never respawn; brief
+# implementers to SendMessage the report to the lead as their final act).
+# Assert the load-bearing tokens + the issue reference survive bulk edits.
+require_marker "$dispatch_skill" "Idle without report" "the idle-without-report subsection heading (issue #2039)"
+require_marker "$dispatch_skill" "idle_notification" "the idle-notification signal name (issue #2039)"
+require_marker "$dispatch_skill" "#2039" "the issue reference"
+
 if [ "$errors" -ne 0 ]; then
   echo
   echo "The loud-failure contract (issue #1422) and the hook-thrashing heuristic"
