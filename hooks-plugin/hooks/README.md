@@ -15,7 +15,7 @@ A PreToolUse hook that intercepts Bash commands and blocks those that should use
 | `sed -i` on repo files (targets under `/tmp`, `/private/tmp`, `/var/folders`, `$TMPDIR` are exempt — #2052) | Use **Edit** tool instead |
 | `echo > file` | Use **Write** tool instead |
 | `cat > file` | Use **Write** tool instead |
-| `timeout cmd` | Remove timeout (Bash tool has its own, human approval time exceeds it anyway) |
+| `timeout cmd` | Remove timeout (Bash tool has its own, human approval time exceeds it anyway); append a `# allow-timeout` comment to bound a genuinely-never-exiting process (REPL, stdio server) — #2041 |
 | `cat/tail ...tasks/*.output` | Use **Read** tool on the output path (or pipe an extraction for large files) |
 | `sleep && cat/tail ...output` | Use **Read** tool on the output path |
 | `git add -A` / `git add .` | Stage specific files by name instead of broad staging |
