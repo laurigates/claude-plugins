@@ -5,7 +5,7 @@ args: "[--apply] [--project=<name>] [--all]"
 allowed-tools: Bash(task *), Bash(gh issue *), Bash(gh pr *), Bash(jq *), Bash(bash *), Bash(git rev-parse *), Read, TodoWrite
 argument-hint: optional --apply to close (default dry-run preview)
 created: 2026-06-20
-modified: 2026-07-02
+modified: 2026-07-17
 reviewed: 2026-07-02
 ---
 

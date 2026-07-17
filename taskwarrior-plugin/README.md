@@ -212,7 +212,10 @@ The `--only-verdicts=<csv>` flag on `reconcile.sh` is the lever: it restricts th
 (`method=keep`) but never closed. Because UNKNOWN is never stale, the flag only
 ever *narrows* the apply set. Honors the same guards as the probe —
 `GH_AVAILABLE=false` surfaces **nothing** (never a false "0 drift"), and the
-wrapper always exits 0 to stay parallel-safe.
+wrapper always exits 0 to stay parallel-safe. `reconcile.sh` itself fails fast
+on any argument it does not recognise (error + usage on stderr, exit 2) — a
+version-skewed caller passing `--only-verdicts` to a script that cannot honour
+it errors loudly instead of silently performing an unbounded apply (#2057).
 
 | Env / flag | Effect |
 |------------|--------|

@@ -57,6 +57,8 @@
 # Exit codes:
 #   0 - clean run (dry-run or apply); see STATUS for OK/WARN/ERROR
 #   1 - task binary missing
+#   2 - unknown argument (fail fast: a swallowed flag must never silently
+#       widen a bounded --only-verdicts apply — issue #2057)
 
 set -uo pipefail
 
@@ -79,7 +81,15 @@ while [ $# -gt 0 ]; do
     --limit) shift; rc_limit="${1:-200}" ;;
     --only-verdicts=*) rc_only_verdicts="${1#*=}" ;;
     --only-verdicts) shift; rc_only_verdicts="${1:-}" ;;
-    *) ;;
+    # Fail fast on anything unrecognised. A silent catch-all here turned a
+    # bounded --only-verdicts apply into an unbounded one under caller/script
+    # version skew (the flag was swallowed, every stale verdict got closed,
+    # including pr-closed — the case the flag exists to protect). Issue #2057.
+    *)
+      echo "reconcile.sh: unknown argument: $1" >&2
+      echo "usage: reconcile.sh [--apply] [--project=<name>|--project <name>] [--all] [--project-dir=<dir>] [--limit=<n>] [--only-verdicts=<csv>]" >&2
+      exit 2
+      ;;
   esac
   shift
 done
