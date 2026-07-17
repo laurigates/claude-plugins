@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.2](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.9.1...comfyui-plugin-v1.9.2) (2026-07-17)
+
+
+### Bug Fixes
+
+* **comfyui:** scaffold family-spec icon/banner + document the framing gate ([#2096](https://github.com/laurigates/claude-plugins/issues/2096)) ([d5c92eb](https://github.com/laurigates/claude-plugins/commit/d5c92ebc9895c98778c22ff70066fc8221f32b16))
+
 ## [1.9.1](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.9.0...comfyui-plugin-v1.9.1) (2026-07-16)
 
 
