@@ -26,7 +26,7 @@ A PreToolUse hook that intercepts Bash commands and blocks those that should use
 | `sed -i` (repo files; `/tmp`/scratch targets exempt, #2052) | Use **Edit** tool instead |
 | `echo > file` | Use **Write** tool instead |
 | `cat > file` | Use **Write** tool instead |
-| `timeout cmd` | Remove timeout (human approval time exceeds it) |
+| `timeout cmd` | Remove timeout (human approval time exceeds it); append `# allow-timeout` for genuinely-unbounded processes (#2041) |
 | `git add -A` / `git add .` | Stage specific files by name instead |
 | Multi-grep test parsing | Use `--reporter=json` instead |
 | `curl \| sh` / `wget \| bash` | Download first, review, then execute |

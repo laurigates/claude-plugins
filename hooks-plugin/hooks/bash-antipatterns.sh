@@ -233,8 +233,23 @@ if echo "$COMMAND_SHELL_ONLY" | grep -Eq 'cat\s*>\s*[^|]' && \
 fi
 
 # Check for timeout command
-if echo "$COMMAND" | grep -Eq '^\s*timeout\s+'; then
-    block "REMINDER: The 'timeout' command is usually unnecessary - the Bash tool has its own timeout parameter. Human approval time typically exceeds any timeout value anyway. Remove the timeout wrapper and use the command directly."
+#
+# Escape hatch (issue #2041): a trailing `# allow-timeout` comment passes the
+# block. `timeout` is usually redundant (the Bash tool has its own timeout
+# parameter), but there is a legitimate minority case: bounding a process that
+# genuinely never exits on its own — an interactive REPL, or a stdio MCP
+# server launched to warm a build cache (`uvx --refresh --from git+… <srv>`).
+# For those, the Bash-tool timeout kills the whole tool call and returns an
+# error state, whereas `timeout N cmd` produces a clean exit 124 with the
+# captured output — a strictly better signal. The comment is a deliberate,
+# visible opt-in the agent must type per-command, so the default steer stays.
+if echo "$COMMAND" | grep -Eq '^\s*timeout\s+' && \
+   ! echo "$COMMAND" | grep -Eq '#[[:space:]]*allow-timeout\b'; then
+    block "REMINDER: The 'timeout' command is usually unnecessary - the Bash tool has its own timeout parameter. Human approval time typically exceeds any timeout value anyway. Remove the timeout wrapper and use the command directly.
+
+If the wrapped process genuinely never exits on its own (a REPL, a stdio
+server warming a cache) and you need a clean in-command bound with captured
+output, append a '# allow-timeout' comment to the command to pass this check."
 fi
 
 # NOTE: `find` is intentionally NOT blocked here.

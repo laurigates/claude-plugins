@@ -831,6 +831,32 @@ assert_exit \
     "GUARD INTEGRITY: tail README.md (no flag) still blocked (#1848)" 2 \
     "tail README.md"
 
+# ── timeout escape hatch (issue #2041) ───────────────────────────────────────
+# The timeout block stays (the Bash tool's own timeout parameter is usually
+# the right bound), but a trailing `# allow-timeout` comment passes it — the
+# escape hatch for processes that genuinely never exit on their own (REPLs,
+# stdio MCP servers warming a cache), where `timeout N cmd`'s clean exit 124
+# with captured output beats the Bash-tool timeout's error state.
+echo ""
+echo "timeout: blocked by default, '# allow-timeout' escape hatch passes (#2041):"
+
+assert_exit \
+    "bare timeout wrapper is still blocked" 2 \
+    "timeout 30 some-server --serve"
+
+assert_exit \
+    "timeout with '# allow-timeout' comment is allowed (#2041)" 0 \
+    "timeout 30 uvx --refresh --from git+https://x/y srv # allow-timeout"
+
+assert_exit \
+    "timeout with '#allow-timeout' (no space) is allowed (#2041)" 0 \
+    "timeout 10 python3 repl.py #allow-timeout"
+
+assert_stderr_contains \
+    "timeout block message documents the escape hatch" \
+    "# allow-timeout" \
+    "timeout 30 some-server --serve"
+
 # ── heredoc body inside a command substitution (issue #2058) ─────────────────
 # Regression: `gh pr create --body "$(cat <<'EOF' … EOF)"` was blocked by the
 # cat-write detector when the heredoc BODY happened to contain a `cat > file`
