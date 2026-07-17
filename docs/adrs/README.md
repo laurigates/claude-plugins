@@ -35,6 +35,7 @@ This repository was created by migrating Claude Code plugin configurations from 
 | [0019](0019-skill-dry-via-library-templating-rejected.md) | Reject Shared-Library / @-Imports / Build-Time Templating for Skill DRY | Accepted | 2026-06 |
 | [0020](0020-blueprint-autonomy-levels.md) | Blueprint Autonomy Levels — Ambient Operations via a Manifest-Gated Level Model | Proposed | 2026-07 |
 | [0021](0021-open-knowledge-format-mapping-not-adopted.md) | Do Not Adopt the Open Knowledge Format (OKF) for Skills; Record Substrate Convergence | Proposed | 2026-07 |
+| [0022](0022-adapter-over-export-for-foreign-harnesses.md) | Adapter over Export — Runtime Skill Discovery for Foreign Harnesses | Accepted | 2026-07 |
 
 ## Categories
 
@@ -66,6 +67,7 @@ This repository was created by migrating Claude Code plugin configurations from 
 ### Architecture Evolution
 - ADR-0015: Adopt Agent Teams and Deprecate Manual Orchestration
 - ADR-0021: Do Not Adopt the Open Knowledge Format (OKF) for Skills
+- ADR-0022: Adapter over Export — Runtime Skill Discovery for Foreign Harnesses
 
 ### Performance & Optimization
 - ADR-0016: Extract Deterministic Skill Procedure into Structured-Output Scripts

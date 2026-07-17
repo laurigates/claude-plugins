@@ -148,9 +148,13 @@ what makes this useful for local-model testing.
 ## Out of scope (deferred)
 
 - **A `skill-search` pi extension** (a `search_skills` tool + suppressed default
-  injection). Only worth building if the trimmed Tier-1 general set still feels
+  injection). ~~Only worth building if the trimmed Tier-1 general set still feels
   tight on the smallest local quant. The tier manifest is the cheaper,
-  deterministic answer — defer the extension.
+  deterministic answer — defer the extension.~~ **Un-deferred by
+  [ADR-0022](adrs/0022-adapter-over-export-for-foreign-harnesses.md)**: the
+  extension (now a binding over a harness-agnostic discovery core, #2090) is
+  slated to *supersede* the tier system entirely; the tier pipeline documented
+  here is removed once the adapter passes its eval gate (#2093).
 - **Agent / prompt / hook porting.** Hooks especially are selective: only the
   *safety* hooks would earn a pi `pi.on` port; the style nudges are noise on a
   different harness.
