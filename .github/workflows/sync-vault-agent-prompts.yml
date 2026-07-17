@@ -1,16 +1,17 @@
-name: "Sync: git-repo-agent prompts"
+name: "Sync: vault-agent prompts"
 
-# Regenerates git-repo-agent's pre-compiled subagent prompts from this repo's
-# plugin skills and opens a PR on laurigates/git-repo-agent (issue #1017).
+# Regenerates vault-agent's pre-compiled subagent prompts from this repo's
+# obsidian-plugin skills and opens a PR on laurigates/vault-agent (issue #1973).
 #
-# git-repo-agent was extracted into its own repo but its compiler reads plugin
-# SKILL.md files from this monorepo (ADR-009). The pre-compiled artifacts under
-# git-repo-agent/src/git_repo_agent/prompts/generated/ are shipped in the wheel,
-# so they must be refreshed here (where the plugin sources live) and pushed to
-# the standalone repo whenever an upstream skill changes.
+# vault-agent was extracted into its own repo but its compiler reads plugin
+# SKILL.md files from this monorepo (vault-agent ADR-0005/ADR-0006). The
+# pre-compiled artifacts under vault-agent/src/vault_agent/prompts/generated/
+# are shipped in the wheel, so they must be refreshed here (where the plugin
+# sources live) and pushed to the standalone repo whenever an upstream skill
+# changes.
 #
 # Cross-repo push needs a token with contents + pull-requests write on
-# laurigates/git-repo-agent, stored as the GIT_REPO_AGENT_SYNC_TOKEN secret
+# laurigates/vault-agent, stored as the VAULT_AGENT_SYNC_TOKEN secret
 # (a fine-scoped PAT or a GitHub App token). Until that secret is provisioned
 # this runs on manual dispatch only; uncomment the `push:` trigger below to make
 # it event-driven once the secret exists.
@@ -20,9 +21,9 @@ on:
   # push:
   #   branches: [main]
   #   paths:
-  #     - '*/skills/*/SKILL.md'
-  #     - 'git-repo-agent/scripts/compile_prompts.py'
-  #     - 'git-repo-agent/src/git_repo_agent/prompts/compiler.py'
+  #     - 'obsidian-plugin/skills/*/SKILL.md'
+  #     - 'vault-agent/scripts/compile_prompts.py'
+  #     - 'vault-agent/src/vault_agent/prompts/compiler.py'
 
 permissions:
   contents: read
@@ -40,44 +41,44 @@ jobs:
           enable-cache: true
 
       - name: Regenerate compiled prompts
-        run: uv run --project git-repo-agent python git-repo-agent/scripts/compile_prompts.py
+        run: uv run --project vault-agent python vault-agent/scripts/compile_prompts.py
 
       - name: Detect changes
         id: diff
         run: |
-          if git diff --quiet -- git-repo-agent/src/git_repo_agent/prompts/generated/; then
+          if git diff --quiet -- vault-agent/src/vault_agent/prompts/generated/; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Checkout git-repo-agent
+      - name: Checkout vault-agent
         if: steps.diff.outputs.changed == 'true'
         uses: actions/checkout@v6
         with:
-          repository: laurigates/git-repo-agent
-          token: ${{ secrets.GIT_REPO_AGENT_SYNC_TOKEN }}
+          repository: laurigates/vault-agent
+          token: ${{ secrets.VAULT_AGENT_SYNC_TOKEN }}
           path: _standalone
 
       - name: Copy regenerated prompts into the standalone checkout
         if: steps.diff.outputs.changed == 'true'
         run: |
           rsync -a --delete \
-            git-repo-agent/src/git_repo_agent/prompts/generated/ \
-            _standalone/src/git_repo_agent/prompts/generated/
+            vault-agent/src/vault_agent/prompts/generated/ \
+            _standalone/src/vault_agent/prompts/generated/
 
-      - name: Open sync PR on git-repo-agent
+      - name: Open sync PR on vault-agent
         if: steps.diff.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v7
         with:
           path: _standalone
-          token: ${{ secrets.GIT_REPO_AGENT_SYNC_TOKEN }}
+          token: ${{ secrets.VAULT_AGENT_SYNC_TOKEN }}
           branch: sync/generated-prompts
           delete-branch: true
           commit-message: "chore: sync compiled prompts from claude-plugins"
           title: "chore: sync compiled prompts from claude-plugins"
           body: |
-            Regenerated `src/git_repo_agent/prompts/generated/` from the upstream
+            Regenerated `src/vault_agent/prompts/generated/` from the upstream
             plugin skills in laurigates/claude-plugins.
 
-            Automated by `.github/workflows/sync-git-repo-agent-prompts.yml`.
+            Automated by `.github/workflows/sync-vault-agent-prompts.yml`.
