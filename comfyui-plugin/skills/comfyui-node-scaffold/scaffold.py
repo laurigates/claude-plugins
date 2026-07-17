@@ -1137,8 +1137,13 @@ check: typecheck build lint test
 # Rasterize icon.svg + banner.svg to the PNGs the registry serves (commit them).
 [group: "assets"]
 assets:
-    rsvg-convert -w 512 -h 512 icon.svg -o icon.png
-    rsvg-convert -w 1400 -h 400 banner.svg -o banner.png
+    rsvg-convert -w 400 -h 400 icon.svg -o icon.png
+    rsvg-convert -w 1344 -h 576 banner.svg -o banner.png
+    # Consistency gate: the family tile must trim to 346x346+27+27 on a 400x400
+    # canvas. A mismatch means the icon drifted off the family spec (wrong
+    # canvas size or a full-bleed tile) — see comfy-registry-lifecycle. Skipped
+    # when ImageMagick's `identify` is absent (rsvg-convert is the only hard dep).
+    command -v identify >/dev/null 2>&1 && { test "$(identify -format '%wx%h/%@' icon.png)" = "400x400/346x346+27+27" || { echo "icon.png off family spec (want 400x400/346x346+27+27)"; exit 1; }; } || true
 """
 
 BIOME_JSON = """\
@@ -2183,35 +2188,79 @@ the primitives that were previously copied byte-identically across packs.
 # GitHub URL wired into pyproject.toml `[tool.comfy]`. Editing the SVG and
 # re-running `just assets` keeps the two in sync — no hand-drawn PNG to drift.
 # --------------------------------------------------------------------------- #
+# The pack-family icon spec (canonical: comfy-registry-lifecycle "Icon design
+# system"). 400x400 canvas, dark inset tile `rect 28,28,344,344 rx76` with the
+# vertical `#1f1f2a->#12121a` gradient + `#2a2a36` stroke, and ONE glyph in the
+# family accent. The tile is the outermost drawn element, so a correctly-framed
+# icon always trims to `346x346+27+27` (`identify -format '%@' icon.png`) — that
+# invariant is the consistency gate (`just assets` checks it). The placeholder
+# renders the pack initial; REPLACE the <text> with a bespoke pictogram before
+# release (no sibling pack uses a letter in its final art). Accent: #ffb02e for
+# touch/interaction packs, #6ba6ff for info/gallery packs.
 ICON_SVG = """\
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="@@DISPLAY@@">
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400" role="img" aria-label="@@DISPLAY@@">
   <title>@@DISPLAY@@</title>
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#2d6a4f"/>
-      <stop offset="1" stop-color="#1b4332"/>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1f1f2a"/>
+      <stop offset="1" stop-color="#12121a"/>
     </linearGradient>
   </defs>
-  <rect x="0" y="0" width="512" height="512" rx="96" fill="url(#g)"/>
-  <text x="256" y="256" fill="#ffffff" font-family="Inter, Segoe UI, system-ui, sans-serif"
-        font-size="248" font-weight="700" text-anchor="middle" dominant-baseline="central">@@INITIAL@@</text>
+  <rect x="28" y="28" width="344" height="344" rx="76" fill="url(#tile)" stroke="#2a2a36" stroke-width="2"/>
+  <!-- PLACEHOLDER glyph — replace with a bespoke orange (#ffb02e) pictogram. -->
+  <text x="200" y="212" fill="#ffb02e" font-family="Inter, Segoe UI, system-ui, sans-serif"
+        font-size="210" font-weight="700" text-anchor="middle" dominant-baseline="central">@@INITIAL@@</text>
 </svg>
 """
 
+# 1344x576 (exact 21:9) family banner template: dark constellation backdrop,
+# warm glow + sweep arc, the icon tile scaled 0.5 on the left, wordmark +
+# tagline. Swap the placeholder <text> glyph for the same bespoke pictogram used
+# in icon.svg once it's drawn.
 BANNER_SVG = """\
-<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="400" viewBox="0 0 1400 400" role="img" aria-label="@@DISPLAY@@">
+<svg xmlns="http://www.w3.org/2000/svg" width="1344" height="576" viewBox="0 0 1344 576" role="img" aria-label="@@DISPLAY@@">
   <title>@@DISPLAY@@</title>
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#1b4332"/>
-      <stop offset="1" stop-color="#2d6a4f"/>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1f1f2a"/>
+      <stop offset="1" stop-color="#12121a"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="52%" cy="42%" r="55%">
+      <stop offset="0" stop-color="#ff8a00" stop-opacity="0.42"/>
+      <stop offset="0.45" stop-color="#b85e00" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="sweep" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff9a1f" stop-opacity="0"/>
+      <stop offset="0.55" stop-color="#ff9a1f" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#ff9a1f" stop-opacity="0"/>
     </linearGradient>
   </defs>
-  <rect x="0" y="0" width="1400" height="400" fill="url(#bg)"/>
-  <text x="80" y="188" fill="#ffffff" font-family="Inter, Segoe UI, system-ui, sans-serif"
-        font-size="104" font-weight="700" dominant-baseline="middle">@@DISPLAY@@</text>
-  <text x="84" y="272" fill="#95d5b2" font-family="Inter, Segoe UI, system-ui, sans-serif"
-        font-size="40" font-weight="400" dominant-baseline="middle">@@DESC@@</text>
+  <rect width="1344" height="576" fill="#000000"/>
+  <rect width="1344" height="576" fill="url(#glow)"/>
+  <g stroke="#ffb86b" stroke-opacity="0.13" stroke-width="1.5" fill="none">
+    <path d="M470 120 L640 250 L560 400 L760 470 L900 300 L1080 180"/>
+    <path d="M640 250 L900 300 M560 400 L900 300 M470 120 L560 400 M760 470 L1080 380 M900 300 L1180 250"/>
+    <path d="M430 470 L560 400 M1080 180 L1180 250 L1080 380"/>
+  </g>
+  <g fill="#ffce8a" fill-opacity="0.55">
+    <circle cx="470" cy="120" r="3"/><circle cx="640" cy="250" r="3.5"/>
+    <circle cx="560" cy="400" r="3"/><circle cx="760" cy="470" r="3"/>
+    <circle cx="900" cy="300" r="4"/><circle cx="1080" cy="180" r="3"/>
+    <circle cx="1180" cy="250" r="3"/><circle cx="1080" cy="380" r="3"/>
+    <circle cx="430" cy="470" r="2.5"/>
+  </g>
+  <path d="M0 520 C 360 420, 900 540, 1344 360" stroke="url(#sweep)" stroke-width="6" fill="none"/>
+  <g transform="translate(96,188) scale(0.5)">
+    <rect x="28" y="28" width="344" height="344" rx="76" fill="url(#tile)" stroke="#2a2a36" stroke-width="2"/>
+    <!-- PLACEHOLDER glyph — mirror icon.svg's bespoke pictogram here. -->
+    <text x="200" y="212" fill="#ffb02e" font-family="Inter, Segoe UI, system-ui, sans-serif"
+          font-size="210" font-weight="700" text-anchor="middle" dominant-baseline="central">@@INITIAL@@</text>
+  </g>
+  <text x="334" y="300" font-family="Helvetica, Arial, sans-serif" font-weight="bold"
+        font-size="120" fill="#f5f5f7" letter-spacing="-2">@@DISPLAY@@</text>
+  <text x="340" y="372" font-family="Helvetica, Arial, sans-serif" font-weight="500"
+        font-size="44" fill="#ffb02e">@@DESC@@</text>
 </svg>
 """
 
