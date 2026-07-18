@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/laurigates/claude-plugins/compare/macos-plugin-v1.6.1...macos-plugin-v1.7.0) (2026-07-18)
+
+
+### Features
+
+* **macos-disk-usage:** add usual-suspects fast-path scan ([#2100](https://github.com/laurigates/claude-plugins/issues/2100)) ([a6b03b2](https://github.com/laurigates/claude-plugins/commit/a6b03b2f7da1ea672dbd5ac40ad4c58f5ed66939))
+
 ## [1.6.1](https://github.com/laurigates/claude-plugins/compare/macos-plugin-v1.6.0...macos-plugin-v1.6.1) (2026-07-12)
 
 
