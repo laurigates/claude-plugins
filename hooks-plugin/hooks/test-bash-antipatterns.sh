@@ -1050,6 +1050,65 @@ assert_exit_complex \
     "GUARD INTEGRITY: ssh heredoc 'chmod 777' still blocked (safety, #1900)" 2 \
     "$ssh_chmod_777"
 
+# ── tool idioms inside `#` comments are ignored (issue #2106) ─────────────────
+# Regression: the detectors scan the command string, so a tool idiom appearing
+# only inside a trailing `# comment` — documentation prose, an explanatory aside
+# — was mistaken for an executed command. The hook now strips unquoted
+# word-boundary `#` comments from the heredoc-stripped view before matching, so
+# an idiom that lives only in a comment passes. Genuine executed idioms and
+# idioms inside QUOTES (which are literal text, not comments) must be unaffected.
+echo ""
+echo "tool idioms inside '#' comments are ignored (issue #2106):"
+
+# Primary repro from the issue: the only `sed -i` token is in a trailing comment.
+assert_exit_complex \
+    "sed -i only inside a trailing '# comment' is allowed (#2106 exact repro)" 0 \
+    "python3 -c \"open('/tmp/x','w').write('hi')\"  # /tmp is allowed for sed -i"
+
+assert_exit \
+    "cat > file only inside a trailing '# comment' is allowed (#2106)" 0 \
+    "echo hi  # example: cat > backup.txt"
+
+assert_exit \
+    "find token only inside a trailing '# comment' is allowed (#2106)" 0 \
+    "echo done  # then find . -name '*.log'"
+
+assert_exit \
+    "head -50 file only inside a trailing '# comment' is allowed (#2106)" 0 \
+    "echo hi  # remember head -50 notes.md"
+
+# Quote protection: a `#` INSIDE quotes is literal text, not a comment. The
+# quoted idiom must NOT be treated as a comment (i.e. the `#` must not truncate
+# the command), and the quoted-string strip then removes it — so this passes.
+assert_exit_complex \
+    "echo \"# has sed -i inside quotes\" is allowed (# inside quotes is not a comment, #2106)" 0 \
+    'echo "# has sed -i inside quotes"'
+
+# Word-boundary: a `#` glued to a preceding non-space char (URL fragment, token)
+# is part of the word, NOT a comment — behaviour is unchanged from a plain word.
+assert_exit_complex \
+    "URL fragment 'foo#sed' (# glued to a word char) is not a comment (#2106)" 0 \
+    'curl "http://example.com/x#sed" | cat'
+
+# GUARD INTEGRITY: a genuine executed `sed -i <file>` still blocks — the comment
+# strip must not weaken any real detection.
+assert_exit \
+    "GUARD INTEGRITY: real sed -i on a repo file still blocked (#2106)" 2 \
+    "sed -i 's/a/b/' src/main.py"
+
+# GUARD INTEGRITY: a real idiom followed by an unrelated trailing comment still
+# blocks — stripping the comment leaves the executed command intact.
+assert_exit \
+    "GUARD INTEGRITY: real sed -i with a trailing comment still blocked (#2106)" 2 \
+    "sed -i 's/a/b/' src/main.py  # fix the typo"
+
+# GUARD INTEGRITY: a `#` inside a double-quoted string must NOT be read as a
+# comment that truncates the command — the real `> script.sh` write after the
+# quoted string still fires the echo/printf → file block.
+assert_exit_complex \
+    "GUARD INTEGRITY: quoted '#' does not hide a real file write after it (#2106)" 2 \
+    'echo "#!/bin/sh" > script.sh'
+
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
