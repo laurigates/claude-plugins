@@ -31,6 +31,51 @@ if [ -z "$COMMAND" ]; then
     exit 0
 fi
 
+# Strip trailing shell comments (an unquoted `#` at a word boundary through end
+# of line) from the scanned view of the command, so a tool idiom that appears
+# only inside a `# comment` — documentation prose, an explanatory aside such as
+# `python3 … # /tmp is allowed for sed -i` — is not mistaken for an executed
+# command (issue #2106). The detectors below care about what the shell would
+# EXECUTE, and the shell discards comments before executing; this is the same
+# class as the echo/printf quoted-`>` false positives (#1701/#1721/#1722) and
+# the ls demotion (#2036).
+#
+# A `#` starts a comment ONLY when it is at the start of the line OR immediately
+# preceded by whitespace or a shell metacharacter (`;`, `|`, `&`, `(`), AND is
+# not inside single or double quotes. A `#` glued to a preceding word char
+# (`http://x#frag`, `foo#bar`) is part of a token, and a `#` inside quotes
+# (`echo "# not a comment"`) is literal text — neither is stripped. Quote state
+# is tracked per line (a shell comment is a per-line construct), so an unbalanced
+# quote on one line cannot swallow the next. The single-quote character is passed
+# in via -v SQ so the awk program can stay single-quoted for the shell.
+strip_trailing_comments() {
+    printf '%s\n' "$1" | awk -v SQ="'" '
+    {
+        line = $0
+        n = length(line)
+        in_s = 0   # inside single quotes
+        in_d = 0   # inside double quotes
+        cut = 0
+        for (i = 1; i <= n; i++) {
+            c = substr(line, i, 1)
+            if (in_s == 1) {
+                if (c == SQ) in_s = 0
+            } else if (in_d == 1) {
+                if (c == "\"") in_d = 0
+            } else if (c == SQ) {
+                in_s = 1
+            } else if (c == "\"") {
+                in_d = 1
+            } else if (c == "#") {
+                if (i == 1) { cut = i; break }
+                p = substr(line, i - 1, 1)
+                if (p == " " || p == "\t" || p == ";" || p == "|" || p == "&" || p == "(") { cut = i; break }
+            }
+        }
+        if (cut > 0) print substr(line, 1, cut - 1); else print line
+    }'
+}
+
 # Strip heredoc body content up front so the regex detectors below that scan the
 # whole command string don't false-positive on literal text inside a heredoc
 # body. The main offender is `gh pr create --body "$(cat <<'EOF' ... EOF)"` whose
@@ -60,6 +105,15 @@ COMMAND_SHELL_ONLY=$(echo "$COMMAND" | awk '
         if (t == delim) { ih = 0 }
     }
 ')
+
+# Strip trailing `#` comments from the heredoc-stripped view (issue #2106). Done
+# AFTER heredoc stripping (not before) so comment removal only ever touches the
+# executable command text that survives heredoc stripping — never a heredoc body
+# line (already gone) or its closing delimiter. Because COMMAND_NO_STRINGS and
+# COMMAND_NO_DEVNULL derive from COMMAND_SHELL_ONLY, every idiom detector keyed
+# off those views (head/tail, sed -i, echo/printf → file, cat > file,
+# task-output, git chains) becomes comment-immune in one place.
+COMMAND_SHELL_ONLY=$(strip_trailing_comments "$COMMAND_SHELL_ONLY")
 
 # A further-stripped view with quoted-string literals removed (on top of the
 # heredoc stripping above). The git index-lock chain detector and the
