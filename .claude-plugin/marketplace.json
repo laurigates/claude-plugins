@@ -669,7 +669,7 @@
       "name": "tools-plugin",
       "source": "./tools-plugin",
       "description": "General utilities - fd, rg, jq, shell, imagemagick",
-      "version": "2.9.0",
+      "version": "2.9.1",
       "keywords": [
         "tools",
         "utilities",

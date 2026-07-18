@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.9.1](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.9.0...tools-plugin-v2.9.1) (2026-07-18)
+
+
+### Bug Fixes
+
+* **tools-plugin:** correct d2-config keys in d2-diagrams in-file config example ([#2102](https://github.com/laurigates/claude-plugins/issues/2102)) ([e7444f7](https://github.com/laurigates/claude-plugins/commit/e7444f7b07e0ba6e5aefa4ad9fba64a2fe458afa))
+
 ## [2.9.0](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.8.5...tools-plugin-v2.9.0) (2026-07-05)
 
 
