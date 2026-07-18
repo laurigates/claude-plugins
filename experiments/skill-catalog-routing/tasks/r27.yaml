@@ -1,0 +1,7 @@
+description: Write automated checks that hit REST endpoints and assert on HTTP responses (Supertest/httpx). Distinct from contract testing (Pact/OpenAPI).
+prompt: |
+  I need to write automated checks that fire real requests at my REST endpoints and assert on the HTTP responses — status codes, bodies, error cases — for both a TypeScript service and a Python one.
+gold: api-plugin/api-testing
+plugin: api-plugin
+name_transparency: transparent
+length_band: short

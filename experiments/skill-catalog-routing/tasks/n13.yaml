@@ -1,0 +1,9 @@
+description: Pair 7 finops-caches vs finops-waste — "Actions storage ballooning, saved build artifacts keyed per branch are stale/bloated, breakdown of what's taking space" is the storage-size analysis, not run-frequency waste.
+prompt: |
+  Our GitHub Actions storage keeps ballooning and I suspect the saved build
+  artifacts keyed per branch are stale and bloated. I want a breakdown of what's
+  eating the space, split by prefix and branch, and which entries are old.
+gold: finops-plugin/finops-caches
+near_miss: finops-plugin/finops-waste
+plugin: finops-plugin
+pair: 7

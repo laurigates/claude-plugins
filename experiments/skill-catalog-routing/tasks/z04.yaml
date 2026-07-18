@@ -1,0 +1,6 @@
+description: Cooking suggestion from pantry items; no cooking/recipe skill exists in the catalog.
+prompt: |
+  I've got chicken thighs, a bag of spinach, and a can of coconut milk in the
+  fridge. What could I make for dinner tonight without a shop run?
+gold: NONE
+kind: plain

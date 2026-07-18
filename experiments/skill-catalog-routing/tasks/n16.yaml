@@ -1,0 +1,9 @@
+description: Pair 8 tfc-run-logs vs tfc-run-status — "apply failed, dig into the detailed plan and apply output, the full transcript to debug" is the log-retrieval path, not the pass/fail status.
+prompt: |
+  My Terraform Cloud apply just failed and I need to dig into the detailed plan
+  and apply output to figure out what went wrong — the full run transcript, line
+  by line, so I can debug the error. A pass/fail summary won't help me here.
+gold: terraform-plugin/tfc-run-logs
+near_miss: terraform-plugin/tfc-run-status
+plugin: terraform-plugin
+pair: 8

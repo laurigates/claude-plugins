@@ -1,0 +1,2044 @@
+{
+  "source_sha": "020bfd9049809681d21d5b6469696f079f249bd3",
+  "skill_count": 405,
+  "content_hashes": {
+    "names": "312a3f2906f4a5ef",
+    "short": "65adefebd659ef37",
+    "medium": "cd0c7b2d4fca78fe",
+    "full": "eb4eea1bd954bc97"
+  },
+  "provenance_counts": {
+    "mechanical": 405
+  },
+  "band_char_ceilings": {
+    "short": 40,
+    "medium": 80
+  },
+  "per_skill": [
+    {
+      "id": "accessibility-plugin/accessibility-implementation",
+      "provenance": "mechanical",
+      "full_len": 172
+    },
+    {
+      "id": "accessibility-plugin/design-tokens",
+      "provenance": "mechanical",
+      "full_len": 176
+    },
+    {
+      "id": "agent-patterns-plugin/adversarial-review",
+      "provenance": "mechanical",
+      "full_len": 139
+    },
+    {
+      "id": "agent-patterns-plugin/agent-teams",
+      "provenance": "mechanical",
+      "full_len": 182
+    },
+    {
+      "id": "agent-patterns-plugin/cold-read-gate",
+      "provenance": "mechanical",
+      "full_len": 192
+    },
+    {
+      "id": "agent-patterns-plugin/custom-agent-definitions",
+      "provenance": "mechanical",
+      "full_len": 173
+    },
+    {
+      "id": "agent-patterns-plugin/exclusive-lock-dispatch",
+      "provenance": "mechanical",
+      "full_len": 174
+    },
+    {
+      "id": "agent-patterns-plugin/execution-grounded-review",
+      "provenance": "mechanical",
+      "full_len": 147
+    },
+    {
+      "id": "agent-patterns-plugin/expose-tunable-knob",
+      "provenance": "mechanical",
+      "full_len": 233
+    },
+    {
+      "id": "agent-patterns-plugin/mcp-code-execution",
+      "provenance": "mechanical",
+      "full_len": 178
+    },
+    {
+      "id": "agent-patterns-plugin/mcp-management",
+      "provenance": "mechanical",
+      "full_len": 167
+    },
+    {
+      "id": "agent-patterns-plugin/mcp-server-authoring",
+      "provenance": "mechanical",
+      "full_len": 189
+    },
+    {
+      "id": "agent-patterns-plugin/meta-assimilate",
+      "provenance": "mechanical",
+      "full_len": 175
+    },
+    {
+      "id": "agent-patterns-plugin/meta-audit",
+      "provenance": "mechanical",
+      "full_len": 173
+    },
+    {
+      "id": "agent-patterns-plugin/meta-context-diet",
+      "provenance": "mechanical",
+      "full_len": 184
+    },
+    {
+      "id": "agent-patterns-plugin/meta-promote",
+      "provenance": "mechanical",
+      "full_len": 175
+    },
+    {
+      "id": "agent-patterns-plugin/multi-model-delegation",
+      "provenance": "mechanical",
+      "full_len": 149
+    },
+    {
+      "id": "agent-patterns-plugin/parallel-agent-dispatch",
+      "provenance": "mechanical",
+      "full_len": 177
+    },
+    {
+      "id": "agent-patterns-plugin/plugin-settings",
+      "provenance": "mechanical",
+      "full_len": 179
+    },
+    {
+      "id": "agent-patterns-plugin/verify-before-plan",
+      "provenance": "mechanical",
+      "full_len": 189
+    },
+    {
+      "id": "agent-patterns-plugin/wave-based-dispatch",
+      "provenance": "mechanical",
+      "full_len": 168
+    },
+    {
+      "id": "agents-plugin/agents-analyze",
+      "provenance": "mechanical",
+      "full_len": 192
+    },
+    {
+      "id": "api-plugin/api-testing",
+      "provenance": "mechanical",
+      "full_len": 171
+    },
+    {
+      "id": "bevy-plugin/bevy-ecs-patterns",
+      "provenance": "mechanical",
+      "full_len": 172
+    },
+    {
+      "id": "bevy-plugin/bevy-game-engine",
+      "provenance": "mechanical",
+      "full_len": 177
+    },
+    {
+      "id": "blog-plugin/blog-post",
+      "provenance": "mechanical",
+      "full_len": 156
+    },
+    {
+      "id": "blog-plugin/blog-post-writing",
+      "provenance": "mechanical",
+      "full_len": 175
+    },
+    {
+      "id": "blueprint-plugin/adr-relationships",
+      "provenance": "mechanical",
+      "full_len": 159
+    },
+    {
+      "id": "blueprint-plugin/blueprint-adr-list",
+      "provenance": "mechanical",
+      "full_len": 159
+    },
+    {
+      "id": "blueprint-plugin/blueprint-adr-validate",
+      "provenance": "mechanical",
+      "full_len": 184
+    },
+    {
+      "id": "blueprint-plugin/blueprint-autopilot",
+      "provenance": "mechanical",
+      "full_len": 146
+    },
+    {
+      "id": "blueprint-plugin/blueprint-claude-md",
+      "provenance": "mechanical",
+      "full_len": 159
+    },
+    {
+      "id": "blueprint-plugin/blueprint-curate-docs",
+      "provenance": "mechanical",
+      "full_len": 141
+    },
+    {
+      "id": "blueprint-plugin/blueprint-derive-plans",
+      "provenance": "mechanical",
+      "full_len": 195
+    },
+    {
+      "id": "blueprint-plugin/blueprint-derive-rules",
+      "provenance": "mechanical",
+      "full_len": 152
+    },
+    {
+      "id": "blueprint-plugin/blueprint-derive-tests",
+      "provenance": "mechanical",
+      "full_len": 161
+    },
+    {
+      "id": "blueprint-plugin/blueprint-development",
+      "provenance": "mechanical",
+      "full_len": 157
+    },
+    {
+      "id": "blueprint-plugin/blueprint-docs-currency",
+      "provenance": "mechanical",
+      "full_len": 164
+    },
+    {
+      "id": "blueprint-plugin/blueprint-docs-list",
+      "provenance": "mechanical",
+      "full_len": 162
+    },
+    {
+      "id": "blueprint-plugin/blueprint-execute",
+      "provenance": "mechanical",
+      "full_len": 164
+    },
+    {
+      "id": "blueprint-plugin/blueprint-feature-tracker-status",
+      "provenance": "mechanical",
+      "full_len": 161
+    },
+    {
+      "id": "blueprint-plugin/blueprint-feature-tracker-sync",
+      "provenance": "mechanical",
+      "full_len": 152
+    },
+    {
+      "id": "blueprint-plugin/blueprint-generate-rules",
+      "provenance": "mechanical",
+      "full_len": 151
+    },
+    {
+      "id": "blueprint-plugin/blueprint-init",
+      "provenance": "mechanical",
+      "full_len": 163
+    },
+    {
+      "id": "blueprint-plugin/blueprint-migration",
+      "provenance": "mechanical",
+      "full_len": 163
+    },
+    {
+      "id": "blueprint-plugin/blueprint-promote",
+      "provenance": "mechanical",
+      "full_len": 164
+    },
+    {
+      "id": "blueprint-plugin/blueprint-prp-create",
+      "provenance": "mechanical",
+      "full_len": 178
+    },
+    {
+      "id": "blueprint-plugin/blueprint-prp-execute",
+      "provenance": "mechanical",
+      "full_len": 163
+    },
+    {
+      "id": "blueprint-plugin/blueprint-rules",
+      "provenance": "mechanical",
+      "full_len": 154
+    },
+    {
+      "id": "blueprint-plugin/blueprint-status",
+      "provenance": "mechanical",
+      "full_len": 154
+    },
+    {
+      "id": "blueprint-plugin/blueprint-story-audit",
+      "provenance": "mechanical",
+      "full_len": 155
+    },
+    {
+      "id": "blueprint-plugin/blueprint-story-reconcile",
+      "provenance": "mechanical",
+      "full_len": 162
+    },
+    {
+      "id": "blueprint-plugin/blueprint-sync",
+      "provenance": "mechanical",
+      "full_len": 153
+    },
+    {
+      "id": "blueprint-plugin/blueprint-sync-ids",
+      "provenance": "mechanical",
+      "full_len": 163
+    },
+    {
+      "id": "blueprint-plugin/blueprint-upgrade",
+      "provenance": "mechanical",
+      "full_len": 157
+    },
+    {
+      "id": "blueprint-plugin/blueprint-work-order",
+      "provenance": "mechanical",
+      "full_len": 163
+    },
+    {
+      "id": "blueprint-plugin/blueprint-workspace-scan",
+      "provenance": "mechanical",
+      "full_len": 147
+    },
+    {
+      "id": "blueprint-plugin/confidence-scoring",
+      "provenance": "mechanical",
+      "full_len": 143
+    },
+    {
+      "id": "blueprint-plugin/document-detection",
+      "provenance": "mechanical",
+      "full_len": 175
+    },
+    {
+      "id": "blueprint-plugin/document-linking",
+      "provenance": "mechanical",
+      "full_len": 179
+    },
+    {
+      "id": "blueprint-plugin/feature-tracking",
+      "provenance": "mechanical",
+      "full_len": 163
+    },
+    {
+      "id": "code-quality-plugin/ast-grep-search",
+      "provenance": "mechanical",
+      "full_len": 190
+    },
+    {
+      "id": "code-quality-plugin/bulk-sweep-classify",
+      "provenance": "mechanical",
+      "full_len": 236
+    },
+    {
+      "id": "code-quality-plugin/code-antipatterns",
+      "provenance": "mechanical",
+      "full_len": 173
+    },
+    {
+      "id": "code-quality-plugin/code-complexity",
+      "provenance": "mechanical",
+      "full_len": 179
+    },
+    {
+      "id": "code-quality-plugin/code-dead-code",
+      "provenance": "mechanical",
+      "full_len": 171
+    },
+    {
+      "id": "code-quality-plugin/code-dep-audit",
+      "provenance": "mechanical",
+      "full_len": 175
+    },
+    {
+      "id": "code-quality-plugin/code-docs-quality",
+      "provenance": "mechanical",
+      "full_len": 177
+    },
+    {
+      "id": "code-quality-plugin/code-hidden-failures",
+      "provenance": "mechanical",
+      "full_len": 184
+    },
+    {
+      "id": "code-quality-plugin/code-lint",
+      "provenance": "mechanical",
+      "full_len": 163
+    },
+    {
+      "id": "code-quality-plugin/code-refactor",
+      "provenance": "mechanical",
+      "full_len": 176
+    },
+    {
+      "id": "code-quality-plugin/code-review",
+      "provenance": "mechanical",
+      "full_len": 165
+    },
+    {
+      "id": "code-quality-plugin/code-review-checklist",
+      "provenance": "mechanical",
+      "full_len": 167
+    },
+    {
+      "id": "code-quality-plugin/code-test-quality",
+      "provenance": "mechanical",
+      "full_len": 159
+    },
+    {
+      "id": "code-quality-plugin/debugging-methodology",
+      "provenance": "mechanical",
+      "full_len": 176
+    },
+    {
+      "id": "code-quality-plugin/dry-consolidation",
+      "provenance": "mechanical",
+      "full_len": 174
+    },
+    {
+      "id": "codebase-attributes-plugin/attributes-collect",
+      "provenance": "mechanical",
+      "full_len": 147
+    },
+    {
+      "id": "codebase-attributes-plugin/attributes-dashboard",
+      "provenance": "mechanical",
+      "full_len": 176
+    },
+    {
+      "id": "codebase-attributes-plugin/attributes-route",
+      "provenance": "mechanical",
+      "full_len": 179
+    },
+    {
+      "id": "comfyui-plugin/comfy-cli",
+      "provenance": "mechanical",
+      "full_len": 201
+    },
+    {
+      "id": "comfyui-plugin/comfy-conditionals",
+      "provenance": "mechanical",
+      "full_len": 179
+    },
+    {
+      "id": "comfyui-plugin/comfy-corpus-validation",
+      "provenance": "mechanical",
+      "full_len": 155
+    },
+    {
+      "id": "comfyui-plugin/comfy-debug-preview",
+      "provenance": "mechanical",
+      "full_len": 177
+    },
+    {
+      "id": "comfyui-plugin/comfy-flow-control",
+      "provenance": "mechanical",
+      "full_len": 203
+    },
+    {
+      "id": "comfyui-plugin/comfy-image-utils",
+      "provenance": "mechanical",
+      "full_len": 217
+    },
+    {
+      "id": "comfyui-plugin/comfy-math-strings",
+      "provenance": "mechanical",
+      "full_len": 205
+    },
+    {
+      "id": "comfyui-plugin/comfy-metadata",
+      "provenance": "mechanical",
+      "full_len": 200
+    },
+    {
+      "id": "comfyui-plugin/comfy-node",
+      "provenance": "mechanical",
+      "full_len": 176
+    },
+    {
+      "id": "comfyui-plugin/comfy-registry-lifecycle",
+      "provenance": "mechanical",
+      "full_len": 214
+    },
+    {
+      "id": "comfyui-plugin/comfy-subgraphs-app-mode",
+      "provenance": "mechanical",
+      "full_len": 223
+    },
+    {
+      "id": "comfyui-plugin/comfy-workflow-json",
+      "provenance": "mechanical",
+      "full_len": 217
+    },
+    {
+      "id": "comfyui-plugin/comfy-workflow-layout",
+      "provenance": "mechanical",
+      "full_len": 170
+    },
+    {
+      "id": "comfyui-plugin/comfyui-node-authoring",
+      "provenance": "mechanical",
+      "full_len": 212
+    },
+    {
+      "id": "comfyui-plugin/comfyui-node-scaffold",
+      "provenance": "mechanical",
+      "full_len": 194
+    },
+    {
+      "id": "comfyui-plugin/comfyui-pack-live-smoke",
+      "provenance": "mechanical",
+      "full_len": 195
+    },
+    {
+      "id": "comfyui-plugin/comfyui-screenshot-pipeline",
+      "provenance": "mechanical",
+      "full_len": 194
+    },
+    {
+      "id": "communication-plugin/google-chat-formatting",
+      "provenance": "mechanical",
+      "full_len": 144
+    },
+    {
+      "id": "communication-plugin/ticket-drafting-guidelines",
+      "provenance": "mechanical",
+      "full_len": 166
+    },
+    {
+      "id": "component-patterns-plugin/components-version-badge",
+      "provenance": "mechanical",
+      "full_len": 179
+    },
+    {
+      "id": "component-patterns-plugin/version-badge-pattern",
+      "provenance": "mechanical",
+      "full_len": 179
+    },
+    {
+      "id": "configure-plugin/ci-workflows",
+      "provenance": "mechanical",
+      "full_len": 161
+    },
+    {
+      "id": "configure-plugin/claude-security-settings",
+      "provenance": "mechanical",
+      "full_len": 172
+    },
+    {
+      "id": "configure-plugin/config-sync",
+      "provenance": "mechanical",
+      "full_len": 137
+    },
+    {
+      "id": "configure-plugin/configure-all",
+      "provenance": "mechanical",
+      "full_len": 144
+    },
+    {
+      "id": "configure-plugin/configure-api-tests",
+      "provenance": "mechanical",
+      "full_len": 154
+    },
+    {
+      "id": "configure-plugin/configure-argocd-automerge",
+      "provenance": "mechanical",
+      "full_len": 145
+    },
+    {
+      "id": "configure-plugin/configure-cache-busting",
+      "provenance": "mechanical",
+      "full_len": 153
+    },
+    {
+      "id": "configure-plugin/configure-claude-plugins",
+      "provenance": "mechanical",
+      "full_len": 197
+    },
+    {
+      "id": "configure-plugin/configure-container",
+      "provenance": "mechanical",
+      "full_len": 160
+    },
+    {
+      "id": "configure-plugin/configure-coverage",
+      "provenance": "mechanical",
+      "full_len": 155
+    },
+    {
+      "id": "configure-plugin/configure-dead-code",
+      "provenance": "mechanical",
+      "full_len": 150
+    },
+    {
+      "id": "configure-plugin/configure-dockerfile",
+      "provenance": "mechanical",
+      "full_len": 150
+    },
+    {
+      "id": "configure-plugin/configure-docs",
+      "provenance": "mechanical",
+      "full_len": 160
+    },
+    {
+      "id": "configure-plugin/configure-editor",
+      "provenance": "mechanical",
+      "full_len": 150
+    },
+    {
+      "id": "configure-plugin/configure-feature-flags",
+      "provenance": "mechanical",
+      "full_len": 158
+    },
+    {
+      "id": "configure-plugin/configure-formatting",
+      "provenance": "mechanical",
+      "full_len": 188
+    },
+    {
+      "id": "configure-plugin/configure-gitattributes",
+      "provenance": "mechanical",
+      "full_len": 190
+    },
+    {
+      "id": "configure-plugin/configure-github-pages",
+      "provenance": "mechanical",
+      "full_len": 146
+    },
+    {
+      "id": "configure-plugin/configure-gitignore",
+      "provenance": "mechanical",
+      "full_len": 150
+    },
+    {
+      "id": "configure-plugin/configure-instrumentation",
+      "provenance": "mechanical",
+      "full_len": 148
+    },
+    {
+      "id": "configure-plugin/configure-integration-tests",
+      "provenance": "mechanical",
+      "full_len": 159
+    },
+    {
+      "id": "configure-plugin/configure-justfile",
+      "provenance": "mechanical",
+      "full_len": 154
+    },
+    {
+      "id": "configure-plugin/configure-linting",
+      "provenance": "mechanical",
+      "full_len": 140
+    },
+    {
+      "id": "configure-plugin/configure-load-tests",
+      "provenance": "mechanical",
+      "full_len": 158
+    },
+    {
+      "id": "configure-plugin/configure-makefile",
+      "provenance": "mechanical",
+      "full_len": 159
+    },
+    {
+      "id": "configure-plugin/configure-mcp",
+      "provenance": "mechanical",
+      "full_len": 146
+    },
+    {
+      "id": "configure-plugin/configure-memory-profiling",
+      "provenance": "mechanical",
+      "full_len": 154
+    },
+    {
+      "id": "configure-plugin/configure-mise",
+      "provenance": "mechanical",
+      "full_len": 196
+    },
+    {
+      "id": "configure-plugin/configure-package-management",
+      "provenance": "mechanical",
+      "full_len": 155
+    },
+    {
+      "id": "configure-plugin/configure-pre-commit",
+      "provenance": "mechanical",
+      "full_len": 151
+    },
+    {
+      "id": "configure-plugin/configure-readme",
+      "provenance": "mechanical",
+      "full_len": 143
+    },
+    {
+      "id": "configure-plugin/configure-release-please",
+      "provenance": "mechanical",
+      "full_len": 155
+    },
+    {
+      "id": "configure-plugin/configure-repo",
+      "provenance": "mechanical",
+      "full_len": 160
+    },
+    {
+      "id": "configure-plugin/configure-reusable-workflows",
+      "provenance": "mechanical",
+      "full_len": 149
+    },
+    {
+      "id": "configure-plugin/configure-security",
+      "provenance": "mechanical",
+      "full_len": 157
+    },
+    {
+      "id": "configure-plugin/configure-select",
+      "provenance": "mechanical",
+      "full_len": 166
+    },
+    {
+      "id": "configure-plugin/configure-sentry",
+      "provenance": "mechanical",
+      "full_len": 155
+    },
+    {
+      "id": "configure-plugin/configure-skaffold",
+      "provenance": "mechanical",
+      "full_len": 161
+    },
+    {
+      "id": "configure-plugin/configure-status",
+      "provenance": "mechanical",
+      "full_len": 156
+    },
+    {
+      "id": "configure-plugin/configure-surface",
+      "provenance": "mechanical",
+      "full_len": 140
+    },
+    {
+      "id": "configure-plugin/configure-tests",
+      "provenance": "mechanical",
+      "full_len": 158
+    },
+    {
+      "id": "configure-plugin/configure-ux-testing",
+      "provenance": "mechanical",
+      "full_len": 159
+    },
+    {
+      "id": "configure-plugin/configure-web-session",
+      "provenance": "mechanical",
+      "full_len": 165
+    },
+    {
+      "id": "configure-plugin/configure-workflows",
+      "provenance": "mechanical",
+      "full_len": 166
+    },
+    {
+      "id": "configure-plugin/configure-worktreeinclude",
+      "provenance": "mechanical",
+      "full_len": 150
+    },
+    {
+      "id": "configure-plugin/go-feature-flag",
+      "provenance": "mechanical",
+      "full_len": 168
+    },
+    {
+      "id": "configure-plugin/multi-repo-discipline",
+      "provenance": "mechanical",
+      "full_len": 159
+    },
+    {
+      "id": "configure-plugin/openfeature",
+      "provenance": "mechanical",
+      "full_len": 157
+    },
+    {
+      "id": "container-plugin/container-development",
+      "provenance": "mechanical",
+      "full_len": 199
+    },
+    {
+      "id": "container-plugin/deploy-handoff",
+      "provenance": "mechanical",
+      "full_len": 188
+    },
+    {
+      "id": "container-plugin/deploy-release",
+      "provenance": "mechanical",
+      "full_len": 157
+    },
+    {
+      "id": "container-plugin/go-containers",
+      "provenance": "mechanical",
+      "full_len": 178
+    },
+    {
+      "id": "container-plugin/nodejs-containers",
+      "provenance": "mechanical",
+      "full_len": 185
+    },
+    {
+      "id": "container-plugin/python-containers",
+      "provenance": "mechanical",
+      "full_len": 194
+    },
+    {
+      "id": "container-plugin/skaffold-filesync",
+      "provenance": "mechanical",
+      "full_len": 182
+    },
+    {
+      "id": "container-plugin/skaffold-orbstack",
+      "provenance": "mechanical",
+      "full_len": 177
+    },
+    {
+      "id": "container-plugin/skaffold-testing",
+      "provenance": "mechanical",
+      "full_len": 176
+    },
+    {
+      "id": "css-plugin/lightning-css",
+      "provenance": "mechanical",
+      "full_len": 172
+    },
+    {
+      "id": "css-plugin/unocss",
+      "provenance": "mechanical",
+      "full_len": 174
+    },
+    {
+      "id": "documentation-plugin/claude-blog-sources",
+      "provenance": "mechanical",
+      "full_len": 158
+    },
+    {
+      "id": "documentation-plugin/docs-decommission",
+      "provenance": "mechanical",
+      "full_len": 157
+    },
+    {
+      "id": "documentation-plugin/docs-generate",
+      "provenance": "mechanical",
+      "full_len": 165
+    },
+    {
+      "id": "documentation-plugin/docs-latex",
+      "provenance": "mechanical",
+      "full_len": 167
+    },
+    {
+      "id": "documentation-plugin/docs-sync",
+      "provenance": "mechanical",
+      "full_len": 163
+    },
+    {
+      "id": "evaluate-plugin/evaluate-improve",
+      "provenance": "mechanical",
+      "full_len": 179
+    },
+    {
+      "id": "evaluate-plugin/evaluate-legibility",
+      "provenance": "mechanical",
+      "full_len": 170
+    },
+    {
+      "id": "evaluate-plugin/evaluate-matrix",
+      "provenance": "mechanical",
+      "full_len": 169
+    },
+    {
+      "id": "evaluate-plugin/evaluate-plugin-batch",
+      "provenance": "mechanical",
+      "full_len": 150
+    },
+    {
+      "id": "evaluate-plugin/evaluate-report",
+      "provenance": "mechanical",
+      "full_len": 160
+    },
+    {
+      "id": "evaluate-plugin/evaluate-skill",
+      "provenance": "mechanical",
+      "full_len": 176
+    },
+    {
+      "id": "feedback-plugin/feedback-session",
+      "provenance": "mechanical",
+      "full_len": 168
+    },
+    {
+      "id": "finops-plugin/finops-caches",
+      "provenance": "mechanical",
+      "full_len": 163
+    },
+    {
+      "id": "finops-plugin/finops-compare",
+      "provenance": "mechanical",
+      "full_len": 149
+    },
+    {
+      "id": "finops-plugin/finops-overview",
+      "provenance": "mechanical",
+      "full_len": 151
+    },
+    {
+      "id": "finops-plugin/finops-waste",
+      "provenance": "mechanical",
+      "full_len": 155
+    },
+    {
+      "id": "finops-plugin/finops-workflows",
+      "provenance": "mechanical",
+      "full_len": 150
+    },
+    {
+      "id": "finops-plugin/github-actions-cache-optimization",
+      "provenance": "mechanical",
+      "full_len": 161
+    },
+    {
+      "id": "finops-plugin/github-actions-finops",
+      "provenance": "mechanical",
+      "full_len": 158
+    },
+    {
+      "id": "foundryvtt-plugin/foundryvtt-module",
+      "provenance": "mechanical",
+      "full_len": 165
+    },
+    {
+      "id": "foundryvtt-plugin/foundryvtt-module-scaffold",
+      "provenance": "mechanical",
+      "full_len": 176
+    },
+    {
+      "id": "git-plugin/deadbranch",
+      "provenance": "mechanical",
+      "full_len": 195
+    },
+    {
+      "id": "git-plugin/gh-cli-agentic",
+      "provenance": "mechanical",
+      "full_len": 210
+    },
+    {
+      "id": "git-plugin/gh-workflow-monitoring",
+      "provenance": "mechanical",
+      "full_len": 199
+    },
+    {
+      "id": "git-plugin/git-api-pr",
+      "provenance": "mechanical",
+      "full_len": 172
+    },
+    {
+      "id": "git-plugin/git-branch-naming",
+      "provenance": "mechanical",
+      "full_len": 149
+    },
+    {
+      "id": "git-plugin/git-branch-pr-workflow",
+      "provenance": "mechanical",
+      "full_len": 143
+    },
+    {
+      "id": "git-plugin/git-cli-agentic",
+      "provenance": "mechanical",
+      "full_len": 199
+    },
+    {
+      "id": "git-plugin/git-commit",
+      "provenance": "mechanical",
+      "full_len": 177
+    },
+    {
+      "id": "git-plugin/git-commit-push-pr",
+      "provenance": "mechanical",
+      "full_len": 156
+    },
+    {
+      "id": "git-plugin/git-commit-trailers",
+      "provenance": "mechanical",
+      "full_len": 161
+    },
+    {
+      "id": "git-plugin/git-commit-workflow",
+      "provenance": "mechanical",
+      "full_len": 161
+    },
+    {
+      "id": "git-plugin/git-conflicts",
+      "provenance": "mechanical",
+      "full_len": 151
+    },
+    {
+      "id": "git-plugin/git-coworker-check",
+      "provenance": "mechanical",
+      "full_len": 196
+    },
+    {
+      "id": "git-plugin/git-derive-docs",
+      "provenance": "mechanical",
+      "full_len": 172
+    },
+    {
+      "id": "git-plugin/git-fix-pr",
+      "provenance": "mechanical",
+      "full_len": 161
+    },
+    {
+      "id": "git-plugin/git-fork-workflow",
+      "provenance": "mechanical",
+      "full_len": 147
+    },
+    {
+      "id": "git-plugin/git-issue",
+      "provenance": "mechanical",
+      "full_len": 159
+    },
+    {
+      "id": "git-plugin/git-issue-hierarchy",
+      "provenance": "mechanical",
+      "full_len": 155
+    },
+    {
+      "id": "git-plugin/git-issue-manage",
+      "provenance": "mechanical",
+      "full_len": 162
+    },
+    {
+      "id": "git-plugin/git-maintain",
+      "provenance": "mechanical",
+      "full_len": 195
+    },
+    {
+      "id": "git-plugin/git-pr",
+      "provenance": "mechanical",
+      "full_len": 168
+    },
+    {
+      "id": "git-plugin/git-pr-feedback",
+      "provenance": "mechanical",
+      "full_len": 159
+    },
+    {
+      "id": "git-plugin/git-pr-sync-check",
+      "provenance": "mechanical",
+      "full_len": 160
+    },
+    {
+      "id": "git-plugin/git-pr-watch",
+      "provenance": "mechanical",
+      "full_len": 173
+    },
+    {
+      "id": "git-plugin/git-push",
+      "provenance": "mechanical",
+      "full_len": 237
+    },
+    {
+      "id": "git-plugin/git-rebase-patterns",
+      "provenance": "mechanical",
+      "full_len": 171
+    },
+    {
+      "id": "git-plugin/git-repo-detection",
+      "provenance": "mechanical",
+      "full_len": 153
+    },
+    {
+      "id": "git-plugin/git-security-checks",
+      "provenance": "mechanical",
+      "full_len": 168
+    },
+    {
+      "id": "git-plugin/git-triage",
+      "provenance": "mechanical",
+      "full_len": 162
+    },
+    {
+      "id": "git-plugin/git-upstream-pr",
+      "provenance": "mechanical",
+      "full_len": 163
+    },
+    {
+      "id": "git-plugin/git-upstream-pr-diverged",
+      "provenance": "mechanical",
+      "full_len": 168
+    },
+    {
+      "id": "git-plugin/github-issue-autodetect",
+      "provenance": "mechanical",
+      "full_len": 230
+    },
+    {
+      "id": "git-plugin/github-issue-writing",
+      "provenance": "mechanical",
+      "full_len": 167
+    },
+    {
+      "id": "git-plugin/github-labels",
+      "provenance": "mechanical",
+      "full_len": 142
+    },
+    {
+      "id": "git-plugin/github-pr-title",
+      "provenance": "mechanical",
+      "full_len": 221
+    },
+    {
+      "id": "git-plugin/release-please-configuration",
+      "provenance": "mechanical",
+      "full_len": 157
+    },
+    {
+      "id": "git-plugin/release-please-pr-workflow",
+      "provenance": "mechanical",
+      "full_len": 230
+    },
+    {
+      "id": "git-plugin/release-please-protection",
+      "provenance": "mechanical",
+      "full_len": 169
+    },
+    {
+      "id": "github-actions-plugin/claude-code-github-workflows",
+      "provenance": "mechanical",
+      "full_len": 160
+    },
+    {
+      "id": "github-actions-plugin/github-actions-auth-security",
+      "provenance": "mechanical",
+      "full_len": 166
+    },
+    {
+      "id": "github-actions-plugin/github-actions-inspection",
+      "provenance": "mechanical",
+      "full_len": 159
+    },
+    {
+      "id": "github-actions-plugin/github-actions-mcp-config",
+      "provenance": "mechanical",
+      "full_len": 149
+    },
+    {
+      "id": "github-actions-plugin/github-issue-search",
+      "provenance": "mechanical",
+      "full_len": 163
+    },
+    {
+      "id": "github-actions-plugin/github-social-preview",
+      "provenance": "mechanical",
+      "full_len": 169
+    },
+    {
+      "id": "github-actions-plugin/github-workflow-auto-fix",
+      "provenance": "mechanical",
+      "full_len": 185
+    },
+    {
+      "id": "github-actions-plugin/workflow-dev",
+      "provenance": "mechanical",
+      "full_len": 173
+    },
+    {
+      "id": "health-plugin/health-agentic-audit",
+      "provenance": "mechanical",
+      "full_len": 159
+    },
+    {
+      "id": "health-plugin/health-audit",
+      "provenance": "mechanical",
+      "full_len": 171
+    },
+    {
+      "id": "health-plugin/health-check",
+      "provenance": "mechanical",
+      "full_len": 200
+    },
+    {
+      "id": "health-plugin/health-plugins",
+      "provenance": "mechanical",
+      "full_len": 171
+    },
+    {
+      "id": "health-plugin/health-skill-audit",
+      "provenance": "mechanical",
+      "full_len": 166
+    },
+    {
+      "id": "health-plugin/plugin-registry",
+      "provenance": "mechanical",
+      "full_len": 169
+    },
+    {
+      "id": "health-plugin/settings-configuration",
+      "provenance": "mechanical",
+      "full_len": 173
+    },
+    {
+      "id": "home-assistant-plugin/ha-automations",
+      "provenance": "mechanical",
+      "full_len": 138
+    },
+    {
+      "id": "home-assistant-plugin/ha-configuration",
+      "provenance": "mechanical",
+      "full_len": 165
+    },
+    {
+      "id": "home-assistant-plugin/ha-entities",
+      "provenance": "mechanical",
+      "full_len": 166
+    },
+    {
+      "id": "home-assistant-plugin/ha-validate",
+      "provenance": "mechanical",
+      "full_len": 171
+    },
+    {
+      "id": "hooks-plugin/hooks-configuration",
+      "provenance": "mechanical",
+      "full_len": 173
+    },
+    {
+      "id": "hooks-plugin/hooks-permission-request-hook",
+      "provenance": "mechanical",
+      "full_len": 164
+    },
+    {
+      "id": "hooks-plugin/hooks-session-end-issue-hook",
+      "provenance": "mechanical",
+      "full_len": 149
+    },
+    {
+      "id": "hooks-plugin/hooks-session-start-hook",
+      "provenance": "mechanical",
+      "full_len": 166
+    },
+    {
+      "id": "kubernetes-plugin/argocd-login",
+      "provenance": "mechanical",
+      "full_len": 159
+    },
+    {
+      "id": "kubernetes-plugin/helm-chart-development",
+      "provenance": "mechanical",
+      "full_len": 186
+    },
+    {
+      "id": "kubernetes-plugin/helm-debugging",
+      "provenance": "mechanical",
+      "full_len": 174
+    },
+    {
+      "id": "kubernetes-plugin/helm-release-management",
+      "provenance": "mechanical",
+      "full_len": 181
+    },
+    {
+      "id": "kubernetes-plugin/helm-release-recovery",
+      "provenance": "mechanical",
+      "full_len": 189
+    },
+    {
+      "id": "kubernetes-plugin/helm-values-management",
+      "provenance": "mechanical",
+      "full_len": 173
+    },
+    {
+      "id": "kubernetes-plugin/kubectl-debugging",
+      "provenance": "mechanical",
+      "full_len": 174
+    },
+    {
+      "id": "kubernetes-plugin/kubernetes-operations",
+      "provenance": "mechanical",
+      "full_len": 182
+    },
+    {
+      "id": "langchain-plugin/deep-agents",
+      "provenance": "mechanical",
+      "full_len": 178
+    },
+    {
+      "id": "langchain-plugin/langchain-development",
+      "provenance": "mechanical",
+      "full_len": 154
+    },
+    {
+      "id": "langchain-plugin/langchain-init",
+      "provenance": "mechanical",
+      "full_len": 155
+    },
+    {
+      "id": "langchain-plugin/langgraph-agents",
+      "provenance": "mechanical",
+      "full_len": 178
+    },
+    {
+      "id": "macos-plugin/endpoint-security-cpu",
+      "provenance": "mechanical",
+      "full_len": 146
+    },
+    {
+      "id": "macos-plugin/kitty-session-persistence",
+      "provenance": "mechanical",
+      "full_len": 171
+    },
+    {
+      "id": "macos-plugin/launchservices-health",
+      "provenance": "mechanical",
+      "full_len": 159
+    },
+    {
+      "id": "macos-plugin/macos-disk-usage",
+      "provenance": "mechanical",
+      "full_len": 188
+    },
+    {
+      "id": "macos-plugin/macos-incident-postmortem",
+      "provenance": "mechanical",
+      "full_len": 172
+    },
+    {
+      "id": "macos-plugin/macos-performance-benchmark",
+      "provenance": "mechanical",
+      "full_len": 198
+    },
+    {
+      "id": "macos-plugin/macos-performance-triage",
+      "provenance": "mechanical",
+      "full_len": 271
+    },
+    {
+      "id": "macos-plugin/tui-keybinding-debug",
+      "provenance": "mechanical",
+      "full_len": 183
+    },
+    {
+      "id": "migration-patterns-plugin/black-to-ruff-format",
+      "provenance": "mechanical",
+      "full_len": 143
+    },
+    {
+      "id": "migration-patterns-plugin/dual-write",
+      "provenance": "mechanical",
+      "full_len": 174
+    },
+    {
+      "id": "migration-patterns-plugin/eslint-to-biome",
+      "provenance": "mechanical",
+      "full_len": 128
+    },
+    {
+      "id": "migration-patterns-plugin/flake8-to-ruff",
+      "provenance": "mechanical",
+      "full_len": 161
+    },
+    {
+      "id": "migration-patterns-plugin/mypy-to-ty",
+      "provenance": "mechanical",
+      "full_len": 136
+    },
+    {
+      "id": "migration-patterns-plugin/shadow-mode",
+      "provenance": "mechanical",
+      "full_len": 180
+    },
+    {
+      "id": "networking-plugin/dns-tools",
+      "provenance": "mechanical",
+      "full_len": 149
+    },
+    {
+      "id": "networking-plugin/http-load-testing",
+      "provenance": "mechanical",
+      "full_len": 167
+    },
+    {
+      "id": "networking-plugin/interface-state",
+      "provenance": "mechanical",
+      "full_len": 186
+    },
+    {
+      "id": "networking-plugin/layer2-discovery",
+      "provenance": "mechanical",
+      "full_len": 161
+    },
+    {
+      "id": "networking-plugin/network-diagnostics",
+      "provenance": "mechanical",
+      "full_len": 150
+    },
+    {
+      "id": "networking-plugin/network-discovery",
+      "provenance": "mechanical",
+      "full_len": 148
+    },
+    {
+      "id": "networking-plugin/network-monitoring",
+      "provenance": "mechanical",
+      "full_len": 171
+    },
+    {
+      "id": "obsidian-plugin/bases",
+      "provenance": "mechanical",
+      "full_len": 165
+    },
+    {
+      "id": "obsidian-plugin/bookmarks",
+      "provenance": "mechanical",
+      "full_len": 132
+    },
+    {
+      "id": "obsidian-plugin/command-palette",
+      "provenance": "mechanical",
+      "full_len": 148
+    },
+    {
+      "id": "obsidian-plugin/dev-tools",
+      "provenance": "mechanical",
+      "full_len": 152
+    },
+    {
+      "id": "obsidian-plugin/file-history",
+      "provenance": "mechanical",
+      "full_len": 152
+    },
+    {
+      "id": "obsidian-plugin/plugins-themes",
+      "provenance": "mechanical",
+      "full_len": 135
+    },
+    {
+      "id": "obsidian-plugin/properties",
+      "provenance": "mechanical",
+      "full_len": 144
+    },
+    {
+      "id": "obsidian-plugin/publish-sync",
+      "provenance": "mechanical",
+      "full_len": 143
+    },
+    {
+      "id": "obsidian-plugin/search-discovery",
+      "provenance": "mechanical",
+      "full_len": 156
+    },
+    {
+      "id": "obsidian-plugin/tasks",
+      "provenance": "mechanical",
+      "full_len": 142
+    },
+    {
+      "id": "obsidian-plugin/templates",
+      "provenance": "mechanical",
+      "full_len": 142
+    },
+    {
+      "id": "obsidian-plugin/vault-files",
+      "provenance": "mechanical",
+      "full_len": 137
+    },
+    {
+      "id": "obsidian-plugin/vault-frontmatter",
+      "provenance": "mechanical",
+      "full_len": 144
+    },
+    {
+      "id": "obsidian-plugin/vault-management",
+      "provenance": "mechanical",
+      "full_len": 157
+    },
+    {
+      "id": "obsidian-plugin/vault-mocs",
+      "provenance": "mechanical",
+      "full_len": 156
+    },
+    {
+      "id": "obsidian-plugin/vault-orphans",
+      "provenance": "mechanical",
+      "full_len": 154
+    },
+    {
+      "id": "obsidian-plugin/vault-stubs",
+      "provenance": "mechanical",
+      "full_len": 164
+    },
+    {
+      "id": "obsidian-plugin/vault-tags",
+      "provenance": "mechanical",
+      "full_len": 147
+    },
+    {
+      "id": "obsidian-plugin/vault-templates",
+      "provenance": "mechanical",
+      "full_len": 142
+    },
+    {
+      "id": "obsidian-plugin/vault-wikilinks",
+      "provenance": "mechanical",
+      "full_len": 159
+    },
+    {
+      "id": "obsidian-plugin/workspaces",
+      "provenance": "mechanical",
+      "full_len": 152
+    },
+    {
+      "id": "project-plugin/changelog-review",
+      "provenance": "mechanical",
+      "full_len": 152
+    },
+    {
+      "id": "project-plugin/project-continue",
+      "provenance": "mechanical",
+      "full_len": 171
+    },
+    {
+      "id": "project-plugin/project-discovery",
+      "provenance": "mechanical",
+      "full_len": 173
+    },
+    {
+      "id": "project-plugin/project-init",
+      "provenance": "mechanical",
+      "full_len": 174
+    },
+    {
+      "id": "project-plugin/project-refocus",
+      "provenance": "mechanical",
+      "full_len": 151
+    },
+    {
+      "id": "project-plugin/project-skill-scripts",
+      "provenance": "mechanical",
+      "full_len": 173
+    },
+    {
+      "id": "project-plugin/project-test-loop",
+      "provenance": "mechanical",
+      "full_len": 154
+    },
+    {
+      "id": "prompt-engineering-plugin/prompt-engineering-ground-response",
+      "provenance": "mechanical",
+      "full_len": 171
+    },
+    {
+      "id": "prose-plugin/prose-distill",
+      "provenance": "mechanical",
+      "full_len": 167
+    },
+    {
+      "id": "prose-plugin/prose-synthesize",
+      "provenance": "mechanical",
+      "full_len": 167
+    },
+    {
+      "id": "python-plugin/basedpyright-type-checking",
+      "provenance": "mechanical",
+      "full_len": 166
+    },
+    {
+      "id": "python-plugin/pytest-advanced",
+      "provenance": "mechanical",
+      "full_len": 159
+    },
+    {
+      "id": "python-plugin/python-code-quality",
+      "provenance": "mechanical",
+      "full_len": 132
+    },
+    {
+      "id": "python-plugin/python-development",
+      "provenance": "mechanical",
+      "full_len": 180
+    },
+    {
+      "id": "python-plugin/python-packaging",
+      "provenance": "mechanical",
+      "full_len": 147
+    },
+    {
+      "id": "python-plugin/python-testing",
+      "provenance": "mechanical",
+      "full_len": 161
+    },
+    {
+      "id": "python-plugin/ruff-formatting",
+      "provenance": "mechanical",
+      "full_len": 156
+    },
+    {
+      "id": "python-plugin/ruff-linting",
+      "provenance": "mechanical",
+      "full_len": 157
+    },
+    {
+      "id": "python-plugin/ty-type-checking",
+      "provenance": "mechanical",
+      "full_len": 167
+    },
+    {
+      "id": "python-plugin/uv-advanced-dependencies",
+      "provenance": "mechanical",
+      "full_len": 179
+    },
+    {
+      "id": "python-plugin/uv-project-management",
+      "provenance": "mechanical",
+      "full_len": 160
+    },
+    {
+      "id": "python-plugin/uv-python-versions",
+      "provenance": "mechanical",
+      "full_len": 164
+    },
+    {
+      "id": "python-plugin/uv-run",
+      "provenance": "mechanical",
+      "full_len": 156
+    },
+    {
+      "id": "python-plugin/uv-tool-management",
+      "provenance": "mechanical",
+      "full_len": 163
+    },
+    {
+      "id": "python-plugin/uv-workspaces",
+      "provenance": "mechanical",
+      "full_len": 157
+    },
+    {
+      "id": "python-plugin/vulture-dead-code",
+      "provenance": "mechanical",
+      "full_len": 172
+    },
+    {
+      "id": "rust-plugin/cargo-llvm-cov",
+      "provenance": "mechanical",
+      "full_len": 166
+    },
+    {
+      "id": "rust-plugin/cargo-machete",
+      "provenance": "mechanical",
+      "full_len": 134
+    },
+    {
+      "id": "rust-plugin/cargo-nextest",
+      "provenance": "mechanical",
+      "full_len": 155
+    },
+    {
+      "id": "rust-plugin/cargo-worktree-builds",
+      "provenance": "mechanical",
+      "full_len": 275
+    },
+    {
+      "id": "rust-plugin/clippy-advanced",
+      "provenance": "mechanical",
+      "full_len": 165
+    },
+    {
+      "id": "rust-plugin/mockito-http-mocking",
+      "provenance": "mechanical",
+      "full_len": 288
+    },
+    {
+      "id": "rust-plugin/rust-development",
+      "provenance": "mechanical",
+      "full_len": 177
+    },
+    {
+      "id": "session-plugin/session-distill",
+      "provenance": "mechanical",
+      "full_len": 262
+    },
+    {
+      "id": "session-plugin/session-end",
+      "provenance": "mechanical",
+      "full_len": 158
+    },
+    {
+      "id": "session-plugin/session-spinup",
+      "provenance": "mechanical",
+      "full_len": 148
+    },
+    {
+      "id": "session-plugin/session-wrap",
+      "provenance": "mechanical",
+      "full_len": 130
+    },
+    {
+      "id": "software-design-plugin/design-by-contract",
+      "provenance": "mechanical",
+      "full_len": 171
+    },
+    {
+      "id": "software-design-plugin/design-deep-modules",
+      "provenance": "mechanical",
+      "full_len": 162
+    },
+    {
+      "id": "software-design-plugin/design-legacy-seams",
+      "provenance": "mechanical",
+      "full_len": 163
+    },
+    {
+      "id": "software-design-plugin/design-patterns",
+      "provenance": "mechanical",
+      "full_len": 169
+    },
+    {
+      "id": "software-design-plugin/design-pseudocode",
+      "provenance": "mechanical",
+      "full_len": 171
+    },
+    {
+      "id": "taskwarrior-plugin/install-native-hooks",
+      "provenance": "mechanical",
+      "full_len": 193
+    },
+    {
+      "id": "taskwarrior-plugin/task-add",
+      "provenance": "mechanical",
+      "full_len": 169
+    },
+    {
+      "id": "taskwarrior-plugin/task-bulk-ops",
+      "provenance": "mechanical",
+      "full_len": 187
+    },
+    {
+      "id": "taskwarrior-plugin/task-claim",
+      "provenance": "mechanical",
+      "full_len": 163
+    },
+    {
+      "id": "taskwarrior-plugin/task-coordinate",
+      "provenance": "mechanical",
+      "full_len": 165
+    },
+    {
+      "id": "taskwarrior-plugin/task-done",
+      "provenance": "mechanical",
+      "full_len": 164
+    },
+    {
+      "id": "taskwarrior-plugin/task-reconcile",
+      "provenance": "mechanical",
+      "full_len": 152
+    },
+    {
+      "id": "taskwarrior-plugin/task-release",
+      "provenance": "mechanical",
+      "full_len": 178
+    },
+    {
+      "id": "taskwarrior-plugin/task-status",
+      "provenance": "mechanical",
+      "full_len": 174
+    },
+    {
+      "id": "terraform-plugin/infrastructure-terraform",
+      "provenance": "mechanical",
+      "full_len": 163
+    },
+    {
+      "id": "terraform-plugin/tfc-list-runs",
+      "provenance": "mechanical",
+      "full_len": 163
+    },
+    {
+      "id": "terraform-plugin/tfc-plan-json",
+      "provenance": "mechanical",
+      "full_len": 149
+    },
+    {
+      "id": "terraform-plugin/tfc-run-logs",
+      "provenance": "mechanical",
+      "full_len": 144
+    },
+    {
+      "id": "terraform-plugin/tfc-run-status",
+      "provenance": "mechanical",
+      "full_len": 168
+    },
+    {
+      "id": "terraform-plugin/tfc-workspace-runs",
+      "provenance": "mechanical",
+      "full_len": 159
+    },
+    {
+      "id": "testing-plugin/mutation-testing",
+      "provenance": "mechanical",
+      "full_len": 166
+    },
+    {
+      "id": "testing-plugin/odiff-image-diffing",
+      "provenance": "mechanical",
+      "full_len": 149
+    },
+    {
+      "id": "testing-plugin/playwright-cli",
+      "provenance": "mechanical",
+      "full_len": 174
+    },
+    {
+      "id": "testing-plugin/playwright-testing",
+      "provenance": "mechanical",
+      "full_len": 165
+    },
+    {
+      "id": "testing-plugin/property-based-testing",
+      "provenance": "mechanical",
+      "full_len": 177
+    },
+    {
+      "id": "testing-plugin/test-analyze",
+      "provenance": "mechanical",
+      "full_len": 191
+    },
+    {
+      "id": "testing-plugin/test-consult",
+      "provenance": "mechanical",
+      "full_len": 173
+    },
+    {
+      "id": "testing-plugin/test-focus",
+      "provenance": "mechanical",
+      "full_len": 173
+    },
+    {
+      "id": "testing-plugin/test-full",
+      "provenance": "mechanical",
+      "full_len": 169
+    },
+    {
+      "id": "testing-plugin/test-quality-analysis",
+      "provenance": "mechanical",
+      "full_len": 165
+    },
+    {
+      "id": "testing-plugin/test-quick",
+      "provenance": "mechanical",
+      "full_len": 171
+    },
+    {
+      "id": "testing-plugin/test-report",
+      "provenance": "mechanical",
+      "full_len": 162
+    },
+    {
+      "id": "testing-plugin/test-run",
+      "provenance": "mechanical",
+      "full_len": 172
+    },
+    {
+      "id": "testing-plugin/test-setup",
+      "provenance": "mechanical",
+      "full_len": 174
+    },
+    {
+      "id": "testing-plugin/test-strategy-review",
+      "provenance": "mechanical",
+      "full_len": 236
+    },
+    {
+      "id": "testing-plugin/test-tier-selection",
+      "provenance": "mechanical",
+      "full_len": 166
+    },
+    {
+      "id": "testing-plugin/vitest-testing",
+      "provenance": "mechanical",
+      "full_len": 176
+    },
+    {
+      "id": "tools-plugin/binary-analysis",
+      "provenance": "mechanical",
+      "full_len": 161
+    },
+    {
+      "id": "tools-plugin/cli-smoke-recipes",
+      "provenance": "mechanical",
+      "full_len": 166
+    },
+    {
+      "id": "tools-plugin/d2-diagrams",
+      "provenance": "mechanical",
+      "full_len": 165
+    },
+    {
+      "id": "tools-plugin/deps-install",
+      "provenance": "mechanical",
+      "full_len": 153
+    },
+    {
+      "id": "tools-plugin/fd-file-finding",
+      "provenance": "mechanical",
+      "full_len": 144
+    },
+    {
+      "id": "tools-plugin/generate-image",
+      "provenance": "mechanical",
+      "full_len": 147
+    },
+    {
+      "id": "tools-plugin/hf-downloads",
+      "provenance": "mechanical",
+      "full_len": 228
+    },
+    {
+      "id": "tools-plugin/imagemagick-conversion",
+      "provenance": "mechanical",
+      "full_len": 162
+    },
+    {
+      "id": "tools-plugin/jq-json-processing",
+      "provenance": "mechanical",
+      "full_len": 162
+    },
+    {
+      "id": "tools-plugin/justfile-expert",
+      "provenance": "mechanical",
+      "full_len": 163
+    },
+    {
+      "id": "tools-plugin/mermaid-diagrams",
+      "provenance": "mechanical",
+      "full_len": 177
+    },
+    {
+      "id": "tools-plugin/nushell-data-processing",
+      "provenance": "mechanical",
+      "full_len": 191
+    },
+    {
+      "id": "tools-plugin/rg-code-search",
+      "provenance": "mechanical",
+      "full_len": 152
+    },
+    {
+      "id": "tools-plugin/shell-expert",
+      "provenance": "mechanical",
+      "full_len": 160
+    },
+    {
+      "id": "tools-plugin/yq-yaml-processing",
+      "provenance": "mechanical",
+      "full_len": 158
+    },
+    {
+      "id": "typescript-plugin/biome-tooling",
+      "provenance": "mechanical",
+      "full_len": 154
+    },
+    {
+      "id": "typescript-plugin/bun-add",
+      "provenance": "mechanical",
+      "full_len": 157
+    },
+    {
+      "id": "typescript-plugin/bun-build",
+      "provenance": "mechanical",
+      "full_len": 159
+    },
+    {
+      "id": "typescript-plugin/bun-debug",
+      "provenance": "mechanical",
+      "full_len": 161
+    },
+    {
+      "id": "typescript-plugin/bun-development",
+      "provenance": "mechanical",
+      "full_len": 235
+    },
+    {
+      "id": "typescript-plugin/bun-install",
+      "provenance": "mechanical",
+      "full_len": 167
+    },
+    {
+      "id": "typescript-plugin/bun-lockfile-update",
+      "provenance": "mechanical",
+      "full_len": 162
+    },
+    {
+      "id": "typescript-plugin/bun-outdated",
+      "provenance": "mechanical",
+      "full_len": 160
+    },
+    {
+      "id": "typescript-plugin/bun-package-manager",
+      "provenance": "mechanical",
+      "full_len": 249
+    },
+    {
+      "id": "typescript-plugin/bun-publish",
+      "provenance": "mechanical",
+      "full_len": 165
+    },
+    {
+      "id": "typescript-plugin/bun-publishing",
+      "provenance": "mechanical",
+      "full_len": 236
+    },
+    {
+      "id": "typescript-plugin/bun-test",
+      "provenance": "mechanical",
+      "full_len": 163
+    },
+    {
+      "id": "typescript-plugin/knip-dead-code",
+      "provenance": "mechanical",
+      "full_len": 163
+    },
+    {
+      "id": "typescript-plugin/nodejs-development",
+      "provenance": "mechanical",
+      "full_len": 159
+    },
+    {
+      "id": "typescript-plugin/typescript-debugging",
+      "provenance": "mechanical",
+      "full_len": 245
+    },
+    {
+      "id": "typescript-plugin/typescript-sentry",
+      "provenance": "mechanical",
+      "full_len": 239
+    },
+    {
+      "id": "typescript-plugin/typescript-strict",
+      "provenance": "mechanical",
+      "full_len": 170
+    },
+    {
+      "id": "workflow-orchestration-plugin/workflow-checkpoint-refactor",
+      "provenance": "mechanical",
+      "full_len": 179
+    },
+    {
+      "id": "workflow-orchestration-plugin/workflow-preflight",
+      "provenance": "mechanical",
+      "full_len": 167
+    },
+    {
+      "id": "workflow-orchestration-plugin/workflow-verify-before-filing",
+      "provenance": "mechanical",
+      "full_len": 180
+    },
+    {
+      "id": "workflow-orchestration-plugin/workflow-wave-dispatch",
+      "provenance": "mechanical",
+      "full_len": 175
+    }
+  ]
+}

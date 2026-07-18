@@ -1,0 +1,7 @@
+description: Give the user a live control for a perceptual param (timing/color) the agent can't judge itself, instead of guessing a constant. Distinct from other agent patterns.
+prompt: |
+  I'm fiddling with the timing and color of a UI animation, but honestly I can't tell from the code what looks right — that's a judgment only a person watching it can make. Rather than me guessing a magic number, I'd like to hand the user a live control they can nudge until it feels right.
+gold: agent-patterns-plugin/expose-tunable-knob
+plugin: agent-patterns-plugin
+name_transparency: opaque
+length_band: mid

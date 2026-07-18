@@ -1,0 +1,8 @@
+description: "Baits kubernetes helm skills via 'helm/take the helm', but it's a leadership-transition question, not Helm charts."
+prompt: |
+  I'm taking the helm of our team as the new lead next month. It's my first
+  time managing former peers — any advice on making that transition go
+  smoothly?
+gold: NONE
+kind: near-miss-none
+baits: kubernetes-plugin/helm-release-management

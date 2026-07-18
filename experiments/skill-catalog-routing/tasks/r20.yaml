@@ -1,0 +1,7 @@
+description: Flag wasteful CI — bot-triggered runs, missing concurrency, skipped runs — with fixes. Distinct from run-duration analysis or billing overview.
+prompt: |
+  Our GitHub Actions bill keeps climbing and I think a lot of it is runs that never needed to happen — bot-triggered rebuilds, jobs with no concurrency cancellation, redundant runs on every push. I want those pinpointed with concrete fixes.
+gold: finops-plugin/finops-waste
+plugin: finops-plugin
+name_transparency: opaque
+length_band: short

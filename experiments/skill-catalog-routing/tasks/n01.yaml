@@ -1,0 +1,9 @@
+description: Pair 1 git-commit vs git-commit-push-pr — "local only, not sending anywhere remote" makes local commit correct, not the end-to-end PR flow.
+prompt: |
+  I've finished this change and want to record it in my local history with a
+  proper conventional message and an issue reference. I'm not ready to send it
+  anywhere remote yet — just capture the snapshot here on my machine.
+gold: git-plugin/git-commit
+near_miss: git-plugin/git-commit-push-pr
+plugin: git-plugin
+pair: 1

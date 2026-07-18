@@ -1,0 +1,6 @@
+description: Variable-naming advice is ordinary conversation; no catalog skill names identifiers (code-quality skills analyze/refactor, they don't suggest names).
+prompt: |
+  I've got a boolean that tracks whether the user has already dismissed the
+  cookie consent banner. What's a clear, readable name for it?
+gold: NONE
+kind: plain

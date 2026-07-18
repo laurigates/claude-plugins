@@ -1,0 +1,7 @@
+description: Measure test-suite strength by deliberately breaking code and seeing if tests notice. Distinct from smell/flaky quality analysis.
+prompt: |
+  My suite is all green but I don't trust that it would actually catch a real regression. I want to gauge how strong the checks really are by deliberately introducing small faults into the code and seeing whether any check fails.
+gold: testing-plugin/mutation-testing
+plugin: testing-plugin
+name_transparency: transparent
+length_band: short

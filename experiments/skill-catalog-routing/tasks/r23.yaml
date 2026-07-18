@@ -1,0 +1,7 @@
+description: Turn on the tightest type-safety flags in tsconfig and sort module resolution. Distinct from lint/format tooling or debugging.
+prompt: |
+  I want to crank my tsconfig up to the tightest possible type-safety settings and sort out the module-resolution flags to match a modern bundler setup. Expect the compiler to start complaining and I want to migrate cleanly.
+gold: typescript-plugin/typescript-strict
+plugin: typescript-plugin
+name_transparency: transparent
+length_band: short

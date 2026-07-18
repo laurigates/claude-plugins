@@ -1,0 +1,7 @@
+description: Safe DB transition by sending data to both old and new store during cutover. Distinct from shadow/dark-launch traffic mirroring.
+prompt: |
+  We're moving data from our old database to a new store and I want a safe transition where, during cutover, every change lands in both systems simultaneously so they stay in sync until we fully switch over.
+gold: migration-patterns-plugin/dual-write
+plugin: migration-patterns-plugin
+name_transparency: opaque
+length_band: short

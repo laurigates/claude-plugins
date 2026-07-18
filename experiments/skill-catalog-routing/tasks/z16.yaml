@@ -1,0 +1,7 @@
+description: "Baits git deadbranch/git-maintain via 'prune branches', but it's about a literal apple tree."
+prompt: |
+  When's the right time of year to prune the branches on an apple tree? Mine
+  got pretty overgrown this summer and I don't want to hurt next year's fruit.
+gold: NONE
+kind: near-miss-none
+baits: git-plugin/deadbranch

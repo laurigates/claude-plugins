@@ -1,0 +1,1627 @@
+{
+  "variant": "full",
+  "source_sha": "020bfd9049809681d21d5b6469696f079f249bd3",
+  "skill_count": 405,
+  "entries": [
+    {
+      "id": "accessibility-plugin/accessibility-implementation",
+      "line": "accessibility-plugin/accessibility-implementation: WCAG 2.1/2.2 compliance, ARIA patterns, keyboard nav, focus management, a11y testing. Use when implementing accessible components or user mentions WCAG/ARIA/screen readers."
+    },
+    {
+      "id": "accessibility-plugin/design-tokens",
+      "line": "accessibility-plugin/design-tokens: Design tokens and CSS custom properties: theme systems, dark mode, component libraries. Use when implementing design systems or user mentions tokens, CSS variables, or theming."
+    },
+    {
+      "id": "agent-patterns-plugin/adversarial-review",
+      "line": "agent-patterns-plugin/adversarial-review: Adversarial second-pass review that tries to break code, designs, plans, or ADRs. Use when stakes are high and a normal review already ran."
+    },
+    {
+      "id": "agent-patterns-plugin/agent-teams",
+      "line": "agent-patterns-plugin/agent-teams: Configure Claude Code agent teams (implicit team, SendMessage, TaskUpdate). Use when running parallel agents, coordinating with messaging, or setting up a lead/teammate architecture."
+    },
+    {
+      "id": "agent-patterns-plugin/cold-read-gate",
+      "line": "agent-patterns-plugin/cold-read-gate: Gate outward-bound text (upstream issues, docs, PR bodies) through isolated haiku fresh-reader critique before publishing. Use when an artifact must survive a reader with zero project context."
+    },
+    {
+      "id": "agent-patterns-plugin/custom-agent-definitions",
+      "line": "agent-patterns-plugin/custom-agent-definitions: Write and configure custom agent definitions in Claude Code agents/ directory. Use when creating an agent .md file, defining a specialized agent, or configuring agent tools."
+    },
+    {
+      "id": "agent-patterns-plugin/exclusive-lock-dispatch",
+      "line": "agent-patterns-plugin/exclusive-lock-dispatch: Pre-dump-then-dispatch for tools holding an exclusive lock (Ghidra, migrations, single-writer caches). Use when fanning out parallel agents needing a non-concurrent resource."
+    },
+    {
+      "id": "agent-patterns-plugin/execution-grounded-review",
+      "line": "agent-patterns-plugin/execution-grounded-review: Execution-grounded review: run tests first, trace each acceptance criterion to execution evidence. Use when verifying an implementation meets spec."
+    },
+    {
+      "id": "agent-patterns-plugin/expose-tunable-knob",
+      "line": "agent-patterns-plugin/expose-tunable-knob: Expose a live-adjustable control instead of guessing a magic constant for a parameter the agent cannot itself perceive. Use when tuning visual, audio, or UX output (color, size, position, timing, volume) that only the user can judge."
+    },
+    {
+      "id": "agent-patterns-plugin/mcp-code-execution",
+      "line": "agent-patterns-plugin/mcp-code-execution: Scaffold the code execution pattern for MCP-based agents. Use when agents call many MCP tools, intermediate data exceeds context, you need loops, or PII must stay out of context."
+    },
+    {
+      "id": "agent-patterns-plugin/mcp-management",
+      "line": "agent-patterns-plugin/mcp-management: Install and configure MCP servers for Claude Code. Use when adding/enabling servers, updating .mcp.json, managing OAuth remote servers, or troubleshooting connections."
+    },
+    {
+      "id": "agent-patterns-plugin/mcp-server-authoring",
+      "line": "agent-patterns-plugin/mcp-server-authoring: FastMCP authoring for Python MCP servers \u2014 tools, resources, prompts, TDD, release-please. Use when building or extending an MCP server, adding a tool/resource, or scaffolding a new server."
+    },
+    {
+      "id": "agent-patterns-plugin/meta-assimilate",
+      "line": "agent-patterns-plugin/meta-assimilate: Copy, generalize, or merge a project's .claude/{agents,commands} into user-scoped configuration. Use when assimilating another project's Claude setup or generalizing an agent."
+    },
+    {
+      "id": "agent-patterns-plugin/meta-audit",
+      "line": "agent-patterns-plugin/meta-audit: Audit Claude subagent configs for completeness, security, and best practices. Use when reviewing agents/ for missing frontmatter, overprivileged tools, or bad model choices."
+    },
+    {
+      "id": "agent-patterns-plugin/meta-context-diet",
+      "line": "agent-patterns-plugin/meta-context-diet: Audit CLAUDE.md and .claude/rules for always-loaded content that should become an on-demand skill. Use when CLAUDE.md feels bloated, trimming context, or promoting a rule into a skill."
+    },
+    {
+      "id": "agent-patterns-plugin/meta-promote",
+      "line": "agent-patterns-plugin/meta-promote: Promote rules, skills, or agents from project scope to parent or user-global scope. Use when reorganizing .claude/ directories or when sibling repos hold near-duplicate rules."
+    },
+    {
+      "id": "agent-patterns-plugin/multi-model-delegation",
+      "line": "agent-patterns-plugin/multi-model-delegation: Multi-model design consults via PAL (kimi, glm, gemini, gpt). Use when asking other models to brainstorm a design or reconciling their split answers."
+    },
+    {
+      "id": "agent-patterns-plugin/parallel-agent-dispatch",
+      "line": "agent-patterns-plugin/parallel-agent-dispatch: Dispatch contract for spawning parallel agents covering worktree collisions, scope overflow, and silent exits. Use when fanning out concurrent agents or authoring a lead prompt."
+    },
+    {
+      "id": "agent-patterns-plugin/plugin-settings",
+      "line": "agent-patterns-plugin/plugin-settings: Configure per-project plugin settings via .claude/plugin-name.local.md files. Use when building plugins with user-configurable behavior, storing agent state, or controlling hooks."
+    },
+    {
+      "id": "agent-patterns-plugin/verify-before-plan",
+      "line": "agent-patterns-plugin/verify-before-plan: Verify orchestrator premises (file counts, build state, artefact presence) before dispatching parallel subagents. Use when a wave's briefs cite a number, path, or behaviour not yet checked."
+    },
+    {
+      "id": "agent-patterns-plugin/wave-based-dispatch",
+      "line": "agent-patterns-plugin/wave-based-dispatch: Sequential-wave dispatch for WO chains where output of one feeds the next, shared locks, or shared files prevent fan-out. Use when planning dependent multi-WO landings."
+    },
+    {
+      "id": "agents-plugin/agents-analyze",
+      "line": "agents-plugin/agents-analyze: Audit plugins for sub-agent opportunities \u2014 verbose skills, coverage gaps, over-permissions. Use when reviewing where sub-agents would help or auditing agents against the always-Opus standard."
+    },
+    {
+      "id": "api-plugin/api-testing",
+      "line": "api-plugin/api-testing: HTTP API testing with Supertest (TS) and httpx/pytest (Python). Use when the user mentions API testing, Supertest, httpx, REST/GraphQL validation, or HTTP response errors."
+    },
+    {
+      "id": "bevy-plugin/bevy-ecs-patterns",
+      "line": "bevy-plugin/bevy-ecs-patterns: Advanced Bevy ECS: complex queries, system scheduling, change detection, and performance tuning. Use when optimizing Bevy architecture or implementing complex game systems."
+    },
+    {
+      "id": "bevy-plugin/bevy-game-engine",
+      "line": "bevy-plugin/bevy-game-engine: Bevy game engine: ECS, rendering, input, and asset management. Use when building Bevy games, working with entities/components/systems, or mentioning Rust gamedev or 2D/3D games."
+    },
+    {
+      "id": "blog-plugin/blog-post",
+      "line": "blog-plugin/blog-post: Create a blog post via guided prompts with git context auto-populated. Use when writing a quick update, retrospective, tutorial, deep dive, or devlog entry."
+    },
+    {
+      "id": "blog-plugin/blog-post-writing",
+      "line": "blog-plugin/blog-post-writing: Style guide for technical blog posts \u2014 updates, retrospectives, tutorials, deep dives. Use when writing about work done, documenting a project, or mentioning blog/post/devlog."
+    },
+    {
+      "id": "blueprint-plugin/adr-relationships",
+      "line": "blueprint-plugin/adr-relationships: Domain analysis, conflict detection, and relationship validation for Architecture Decision Records. Use when creating or validating ADRs to ensure consistency."
+    },
+    {
+      "id": "blueprint-plugin/blueprint-adr-list",
+      "line": "blueprint-plugin/blueprint-adr-list: List ADRs as a markdown table with title, status, date, domain. Use when generating an ADR index, auditing ADR status, or reviewing all architecture decisions."
+    },
+    {
+      "id": "blueprint-plugin/blueprint-adr-validate",
+      "line": "blueprint-plugin/blueprint-adr-validate: Validate ADR relationships, domain consistency, and duplicate ADR numbers. Use when auditing ADRs before release, finding broken supersedes/extends links, cycles, or number collisions."
+    },
+    {
+      "id": "blueprint-plugin/blueprint-autopilot",
+      "line": "blueprint-plugin/blueprint-autopilot: Run due blueprint maintenance ambiently at autonomy level 2+. Use when a drift nudge reports blueprint tasks due or suggests /blueprint:autopilot."
+    },
+    {
+      "id": "blueprint-plugin/blueprint-claude-md",
+      "line": "blueprint-plugin/blueprint-claude-md: Generate or update CLAUDE.md from blueprint artifacts. Use when adding team instructions, converting inline content to @imports, or setting up CLAUDE.local.md."
+    },
+    {
+      "id": "blueprint-plugin/blueprint-curate-docs",
+      "line": "blueprint-plugin/blueprint-curate-docs: Curate library gotchas and project patterns into .claude/rules/ entries for AI context. Use when documenting library knowledge for PRP reuse."
+    },
+    {
+      "id": "blueprint-plugin/blueprint-derive-plans",
+      "line": "blueprint-plugin/blueprint-derive-plans: Derive PRDs, ADRs, PRPs from git history, docs, and codebase. Use when onboarding a project to blueprint, generating a PRD or ADRs retroactively, or extracting features from conventional commits."
+    },
+    {
+      "id": "blueprint-plugin/blueprint-derive-rules",
+      "line": "blueprint-plugin/blueprint-derive-rules: Derive Claude rules from git commit history. Use when extracting implicit decisions from commits or codifying code-style, testing, and API-design rules."
+    },
+    {
+      "id": "blueprint-plugin/blueprint-derive-tests",
+      "line": "blueprint-plugin/blueprint-derive-tests: Derive test regression plans from git history by finding commits lacking tests. Use when finding untested bug fixes, coverage gaps, or generating a test backlog."
+    },
+    {
+      "id": "blueprint-plugin/blueprint-development",
+      "line": "blueprint-plugin/blueprint-development: Generate project-specific rules from PRDs for Blueprint Development. Use when generating architecture, testing, or quality rules from requirements documents."
+    },
+    {
+      "id": "blueprint-plugin/blueprint-docs-currency",
+      "line": "blueprint-plugin/blueprint-docs-currency: Enforce same-commit landing of code and docs (APIs, formats, ADRs). Use when committing API/format changes, promoting research to docs/, or landing an ADR decision."
+    },
+    {
+      "id": "blueprint-plugin/blueprint-docs-list",
+      "line": "blueprint-plugin/blueprint-docs-list: List blueprint documents (ADRs, PRDs, PRPs) with frontmatter metadata. Use when listing docs, auditing statuses, or generating an index for project documentation."
+    },
+    {
+      "id": "blueprint-plugin/blueprint-execute",
+      "line": "blueprint-plugin/blueprint-execute: Blueprint meta command: determine and execute the next logical action. Use when asked 'what's next?', 'continue blueprint', or 'run blueprint' without a subcommand."
+    },
+    {
+      "id": "blueprint-plugin/blueprint-feature-tracker-status",
+      "line": "blueprint-plugin/blueprint-feature-tracker-status: Display feature tracker stats, phase progress, and completion summary. Use when checking feature status, viewing blocked features, or seeing ready-to-start work."
+    },
+    {
+      "id": "blueprint-plugin/blueprint-feature-tracker-sync",
+      "line": "blueprint-plugin/blueprint-feature-tracker-sync: Sync feature tracker with TODO.md, taskwarrior sidecars, and PRDs. Use when reconciling TODO.md vs tracker, draining WO entries, or recalculating stats."
+    },
+    {
+      "id": "blueprint-plugin/blueprint-generate-rules",
+      "line": "blueprint-plugin/blueprint-generate-rules: Generate project-specific rules from PRDs with path-scoped frontmatter. Use when auto-creating architecture, testing, or quality rules from docs/prds/."
+    },
+    {
+      "id": "blueprint-plugin/blueprint-init",
+      "line": "blueprint-plugin/blueprint-init: Initialize Blueprint Development structure. Use when bootstrapping docs/blueprint/ with manifest, PRD/ADR/PRP directories, and feature tracking for the first time."
+    },
+    {
+      "id": "blueprint-plugin/blueprint-migration",
+      "line": "blueprint-plugin/blueprint-migration: Versioned migration procedures for blueprint format upgrades (v1.x to v3.3). Use when blueprint-upgrade needs version-specific logic, content hashing, or rollback."
+    },
+    {
+      "id": "blueprint-plugin/blueprint-promote",
+      "line": "blueprint-plugin/blueprint-promote: Move generated artifact to custom layer to preserve manual edits. Use when promoting a generated rule, preserving .claude/rules/ changes, or stopping sync warnings."
+    },
+    {
+      "id": "blueprint-plugin/blueprint-prp-create",
+      "line": "blueprint-plugin/blueprint-prp-create: Create a PRP (Product Requirement Prompt) with research, context, and validation gates. Use when planning a feature packet for subagent execution with TDD and confidence scoring."
+    },
+    {
+      "id": "blueprint-plugin/blueprint-prp-execute",
+      "line": "blueprint-plugin/blueprint-prp-execute: Execute a PRP with validation loop, TDD, and quality gates. Use when asked to execute a PRP, run a planned feature from docs/prps/, or delegate a PRP to subagents."
+    },
+    {
+      "id": "blueprint-plugin/blueprint-rules",
+      "line": "blueprint-plugin/blueprint-rules: Manage modular rules in .claude/rules/ with path-specific globs. Use when adding or listing rules, syncing with CLAUDE.md, or validating path frontmatter."
+    },
+    {
+      "id": "blueprint-plugin/blueprint-status",
+      "line": "blueprint-plugin/blueprint-status: Show blueprint version, config, PRD/ADR/PRP counts, and feature tracker progress. Use when auditing traceability, orphan docs, or stale generated content."
+    },
+    {
+      "id": "blueprint-plugin/blueprint-story-audit",
+      "line": "blueprint-plugin/blueprint-story-audit: Audit user stories against codebase and tests for tier-ranked coverage gaps. Use when running story audit, PRD reconciliation, or surfacing PRD-code drift."
+    },
+    {
+      "id": "blueprint-plugin/blueprint-story-reconcile",
+      "line": "blueprint-plugin/blueprint-story-reconcile: Reconcile PRD requirements with a story-audit drift report. Use when marking PRD entries implemented/partial/missing, or promoting code-only stories into the PRD."
+    },
+    {
+      "id": "blueprint-plugin/blueprint-sync",
+      "line": "blueprint-plugin/blueprint-sync: Check for stale generated content and offer regeneration or promotion. Use when syncing blueprint after PRD changes, or reconciling .claude/rules/ drift."
+    },
+    {
+      "id": "blueprint-plugin/blueprint-sync-ids",
+      "line": "blueprint-plugin/blueprint-sync-ids: Scan blueprint docs and assign missing PRD/ADR/PRP/WO IDs. Use when assigning IDs to docs; --dry-run to preview, --link-issues to create GitHub issues for orphans."
+    },
+    {
+      "id": "blueprint-plugin/blueprint-upgrade",
+      "line": "blueprint-plugin/blueprint-upgrade: Upgrade blueprint structure to the latest format version. Use when migrating between format versions, enabling monorepo workspaces, or batch upgrading repos."
+    },
+    {
+      "id": "blueprint-plugin/blueprint-work-order",
+      "line": "blueprint-plugin/blueprint-work-order: Create a work-order for isolated subagent execution, optionally linked to a GitHub issue. Use when breaking a PRP into delegatable tasks or spawning from an issue."
+    },
+    {
+      "id": "blueprint-plugin/blueprint-workspace-scan",
+      "line": "blueprint-plugin/blueprint-workspace-scan: Discover child blueprint workspaces and refresh the manifest. Use when adding/removing a child blueprint or when status shows stale portfolio data."
+    },
+    {
+      "id": "blueprint-plugin/confidence-scoring",
+      "line": "blueprint-plugin/confidence-scoring: Assess quality of PRPs and work-orders using systematic confidence scoring. Use when evaluating readiness for execution or subagent delegation."
+    },
+    {
+      "id": "blueprint-plugin/document-detection",
+      "line": "blueprint-plugin/document-detection: Detect PRD/ADR/PRP opportunities in conversations and prompt for document creation. Use when the user discusses feature requirements, tech trade-offs, or implementation plans."
+    },
+    {
+      "id": "blueprint-plugin/document-linking",
+      "line": "blueprint-plugin/document-linking: Unified ID system for PRDs, ADRs, PRPs, and GitHub issues with bidirectional links. Use when linking docs, finding orphans, auto-assigning IDs, or validating cross-doc references."
+    },
+    {
+      "id": "blueprint-plugin/feature-tracking",
+      "line": "blueprint-plugin/feature-tracking: Track feature implementation against requirements with hierarchical FR codes and TODO.md sync. Use when linking features to PRDs or recalculating completion stats."
+    },
+    {
+      "id": "code-quality-plugin/ast-grep-search",
+      "line": "code-quality-plugin/ast-grep-search: Find and replace code patterns structurally with ast-grep. Use when matching code by AST structure, finding functions with specific signatures, or detecting anti-patterns regex cannot match."
+    },
+    {
+      "id": "code-quality-plugin/bulk-sweep-classify",
+      "line": "code-quality-plugin/bulk-sweep-classify: Classify every regex match before a bulk find-replace/syntax-modernization sweep \u2014 four match categories, scoped transform, allowlist-aware verification. Use when bulk-renaming commands/tools/paths or migrating syntax across many files."
+    },
+    {
+      "id": "code-quality-plugin/code-antipatterns",
+      "line": "code-quality-plugin/code-antipatterns: Analyze a codebase for anti-patterns using ast-grep. Use when finding magic numbers, console.logs, var usage, excessive any, eval/innerHTML security issues, or deep nesting."
+    },
+    {
+      "id": "code-quality-plugin/code-complexity",
+      "line": "code-quality-plugin/code-complexity: Analyze code complexity metrics (cyclomatic, cognitive, function length, coupling). Use when identifying refactoring targets, tracking codebase health, or reviewing large changes."
+    },
+    {
+      "id": "code-quality-plugin/code-dead-code",
+      "line": "code-quality-plugin/code-dead-code: Detect dead code, unused exports, unreachable branches, and orphaned files. Use when reducing maintenance burden, cleaning up after refactors, or auditing codebase health."
+    },
+    {
+      "id": "code-quality-plugin/code-dep-audit",
+      "line": "code-quality-plugin/code-dep-audit: Audit dependencies for security vulnerabilities, outdated packages, and license compliance. Use when checking supply chain security, preparing releases, or responding to CVEs."
+    },
+    {
+      "id": "code-quality-plugin/code-docs-quality",
+      "line": "code-quality-plugin/code-docs-quality: Analyze docs quality across PRDs, ADRs, PRPs, CLAUDE.md, .claude/rules/. Use when auditing documentation, checking for stale ADRs/PRDs, or validating rule frontmatter structure."
+    },
+    {
+      "id": "code-quality-plugin/code-hidden-failures",
+      "line": "code-quality-plugin/code-hidden-failures: Scan for hidden failures: swallowed errors (empty catch, || true, 2>/dev/null) and silent degradation (success on zero results). Use when failures vanish or success masks empty output."
+    },
+    {
+      "id": "code-quality-plugin/code-lint",
+      "line": "code-quality-plugin/code-lint: Universal linter that auto-detects ruff/eslint/clippy/gofmt for the project language. Use when linting code, auto-fixing, formatting, or running pre-commit checks."
+    },
+    {
+      "id": "code-quality-plugin/code-refactor",
+      "line": "code-quality-plugin/code-refactor: Refactor toward pure functions, immutability, composition. Use when extracting pure functions, removing side effects, replacing loops with map/filter/reduce, or separating I/O."
+    },
+    {
+      "id": "code-quality-plugin/code-review",
+      "line": "code-quality-plugin/code-review: Code review for quality, security, performance, and architecture. Use when reviewing code, auditing OWASP, checking SOLID, or finding perf bottlenecks and test gaps."
+    },
+    {
+      "id": "code-quality-plugin/code-review-checklist",
+      "line": "code-quality-plugin/code-review-checklist: Checklist for security, correctness, and performance review. Use when reviewing PRs, checking for secrets/injection, verifying error handling, or auditing N+1 queries."
+    },
+    {
+      "id": "code-quality-plugin/code-test-quality",
+      "line": "code-quality-plugin/code-test-quality: Analyze test quality: smells, empty assertions, flaky patterns, coverage gaps. Use when tests are unreliable, coverage is misleading, or after major refactors."
+    },
+    {
+      "id": "code-quality-plugin/debugging-methodology",
+      "line": "code-quality-plugin/debugging-methodology: Systematic debugging for memory, performance, and system-level issues. Use when diagnosing memory leaks, tracing syscalls with strace/eBPF, profiling, or reasoning about races."
+    },
+    {
+      "id": "code-quality-plugin/dry-consolidation",
+      "line": "code-quality-plugin/dry-consolidation: Find and extract duplicated code into shared abstractions. Use when seeing repeated utilities, copy-pasted components, duplicated hooks, or boilerplate repeated across files."
+    },
+    {
+      "id": "codebase-attributes-plugin/attributes-collect",
+      "line": "codebase-attributes-plugin/attributes-collect: Collect codebase health attributes as structured JSON. Use when assessing project health before routing to specialized agents via attributes-route."
+    },
+    {
+      "id": "codebase-attributes-plugin/attributes-dashboard",
+      "line": "codebase-attributes-plugin/attributes-dashboard: Codebase health dashboard with scores and severity for docs, testing, security, and CI/CD. Use when wanting a health overview or terminal-style summary with action suggestions."
+    },
+    {
+      "id": "codebase-attributes-plugin/attributes-route",
+      "line": "codebase-attributes-plugin/attributes-route: Route to specialized agents (security, test, refactor, docs) based on codebase health attributes by severity. Use when the user has attribute data and wants automated remediation."
+    },
+    {
+      "id": "comfyui-plugin/comfy-cli",
+      "line": "comfyui-plugin/comfy-cli: The `comfy` CLI for ComfyUI: install/update/bisect custom nodes, snapshot/restore state, publish to the registry, run workflows headlessly. Use when the user runs `comfy`, `comfy node`, or `comfy run`."
+    },
+    {
+      "id": "comfyui-plugin/comfy-conditionals",
+      "line": "comfyui-plugin/comfy-conditionals: ComfyUI predicate/boolean nodes: compare, AND/OR/XOR/NOT, ternary, null/empty/type probes, ExecutionBlocker. Use when forming the boolean that drives a workflow switch or blocker."
+    },
+    {
+      "id": "comfyui-plugin/comfy-corpus-validation",
+      "line": "comfyui-plugin/comfy-corpus-validation: Verify ComfyUI sampler/scheduler facts: source-of-truth ladder, measured sigma curves, coverage gaps. Use when writing or auditing sampler corpus metadata."
+    },
+    {
+      "id": "comfyui-plugin/comfy-debug-preview",
+      "line": "comfyui-plugin/comfy-debug-preview: ComfyUI debug/preview nodes: show text/numbers/JSON/tensor shapes, image previews, counts, VRAM/CPU telemetry, timing. Use when inspecting a value mid-graph without changing it."
+    },
+    {
+      "id": "comfyui-plugin/comfy-flow-control",
+      "line": "comfyui-plugin/comfy-flow-control: ComfyUI routing nodes: typed switches, index switches, broadcast (Anything Everywhere), pipe/context bundles, for/while loops, ExecutionBlocker gates. Use when wiring where a signal routes in a workflow."
+    },
+    {
+      "id": "comfyui-plugin/comfy-image-utils",
+      "line": "comfyui-plugin/comfy-image-utils: ComfyUI non-inference image ops: resize/crop/pad/tile/batch/mask utilities, plus image-to-text captioners (Florence-2, WD14, BLIP, DeepDanbooru). Use when manipulating images or generating captions/tags in a workflow."
+    },
+    {
+      "id": "comfyui-plugin/comfy-math-strings",
+      "line": "comfyui-plugin/comfy-math-strings: ComfyUI compute/string nodes: constants, sliders, math expressions, string concat/split/replace/regex, type conversion, JSON/list utilities. Use when computing a value or assembling a string in a workflow."
+    },
+    {
+      "id": "comfyui-plugin/comfy-metadata",
+      "line": "comfyui-plugin/comfy-metadata: Extract/analyze ComfyUI metadata embedded in output files - PNG tEXt, WebP EXIF, MP4/WebM container, .latent safetensors. Use when figuring out what prompt/settings produced a file, or comparing runs."
+    },
+    {
+      "id": "comfyui-plugin/comfy-node",
+      "line": "comfyui-plugin/comfy-node: Orchestrate a ComfyUI node pack from idea to registry: scaffold, create + seed the repo, open the gitops adoption PR. Use when releasing or spinning up a new comfyui node pack."
+    },
+    {
+      "id": "comfyui-plugin/comfy-registry-lifecycle",
+      "line": "comfyui-plugin/comfy-registry-lifecycle: Comfy Registry release pipeline: release-please + lockfile drift traps, the empty-web/dist publish bug, version status states, phantom versions, icon/banner generation. Use when debugging a pack's publish pipeline."
+    },
+    {
+      "id": "comfyui-plugin/comfy-subgraphs-app-mode",
+      "line": "comfyui-plugin/comfy-subgraphs-app-mode: ComfyUI Subgraphs, Subgraph Blueprints, and App Mode: creating/publishing subgraphs, why Blueprint instances are snapshots not live refs, turning a workflow into a form UI. Use when deciding how to package a workflow stage."
+    },
+    {
+      "id": "comfyui-plugin/comfy-workflow-json",
+      "line": "comfyui-plugin/comfy-workflow-json: Programmatically edit ComfyUI workflow JSON: edge-list link rebuilds, link-encoding schemas, preserving the extra block (App Mode config). Use when a workflow JSON is too large to hand-edit or a transform drops state."
+    },
+    {
+      "id": "comfyui-plugin/comfy-workflow-layout",
+      "line": "comfyui-plugin/comfy-workflow-layout: Auto-layout a ComfyUI workflow JSON with a layered DAG algorithm. Use when a workflow's nodes overlap, are messy or cramped, or were imported and need tidying before use."
+    },
+    {
+      "id": "comfyui-plugin/comfyui-node-authoring",
+      "line": "comfyui-plugin/comfyui-node-authoring: ComfyUI frontend/backend authoring facts: hiding/serializing widgets, DOM event isolation, endpoints, tooltip lookup, canvas hit-testing, sourcemap verification. Use when writing or patching a custom node's code."
+    },
+    {
+      "id": "comfyui-plugin/comfyui-node-scaffold",
+      "line": "comfyui-plugin/comfyui-node-scaffold: Scaffold a new ComfyUI custom-node repo (TypeScript + bun build, CI, release-please, vitest+pytest) consuming @laurigates/comfy-modal-kit. Use when bootstrapping or init-ing a comfyui node pack."
+    },
+    {
+      "id": "comfyui-plugin/comfyui-pack-live-smoke",
+      "line": "comfyui-plugin/comfyui-pack-live-smoke: Live-smoke a ComfyUI pack in a running instance: browser-driven and headless API-driven checks catch frontend/backend bugs unit tests miss. Use when verifying a pack before opening a registry PR."
+    },
+    {
+      "id": "comfyui-plugin/comfyui-screenshot-pipeline",
+      "line": "comfyui-plugin/comfyui-screenshot-pipeline: Containerized README-screenshot pipeline (Docker + Playwright) for ComfyUI custom-node packs. Use when generating pack screenshots, adding `just screenshots`, or capturing modal/gesture node UI."
+    },
+    {
+      "id": "communication-plugin/google-chat-formatting",
+      "line": "communication-plugin/google-chat-formatting: Convert Markdown to Google Chat formatting. Use when formatting messages for Google Chat or converting Markdown documents to Google Chat syntax."
+    },
+    {
+      "id": "communication-plugin/ticket-drafting-guidelines",
+      "line": "communication-plugin/ticket-drafting-guidelines: Guidelines for drafting GitHub issues using What/Why/How format. Use when creating issues, drafting tickets, or writing bug reports with concise and positive framing."
+    },
+    {
+      "id": "component-patterns-plugin/components-version-badge",
+      "line": "component-patterns-plugin/components-version-badge: Version badge with build-info tooltip (version, commit, changelog). Use when adding version display to app header/footer for Next.js, Nuxt, SvelteKit, Vite, React, Vue, or Svelte."
+    },
+    {
+      "id": "component-patterns-plugin/version-badge-pattern",
+      "line": "component-patterns-plugin/version-badge-pattern: Version badge UI showing build version, git commit, and changelog in a tooltip. Use when adding version visibility for support or debugging. Works with React, Vue, Svelte, and JS."
+    },
+    {
+      "id": "configure-plugin/ci-workflows",
+      "line": "configure-plugin/ci-workflows: GitHub Actions workflow standards. Use when checking CI/CD compliance, referencing canonical workflow shapes, or another skill needs workflow structure guidance."
+    },
+    {
+      "id": "configure-plugin/claude-security-settings",
+      "line": "configure-plugin/claude-security-settings: Claude Code security settings: permission wildcards, shell operator protections, project-level allowlists. Use when auditing or hardening .claude/settings.json permissions."
+    },
+    {
+      "id": "configure-plugin/config-sync",
+      "line": "configure-plugin/config-sync: Config sync across FVH repos: extract, diff, propagate tooling improvements. Use when syncing workflows or configs across multiple repos."
+    },
+    {
+      "id": "configure-plugin/configure-all",
+      "line": "configure-plugin/configure-all: Run all infrastructure standards checks and fixes. Use when onboarding a new project, doing a full compliance audit, or batch-fixing with --fix."
+    },
+    {
+      "id": "configure-plugin/configure-api-tests",
+      "line": "configure-plugin/configure-api-tests: API contract testing: Pact, OpenAPI validation, JSON Schema/Zod. Use when adding consumer/provider contract tests or detecting breaking API changes in CI."
+    },
+    {
+      "id": "configure-plugin/configure-argocd-automerge",
+      "line": "configure-plugin/configure-argocd-automerge: ArgoCD auto-merge: configure GitHub Actions for image-updater-** branches. Use when setting up argocd-automerge.yml or verifying PAT permissions."
+    },
+    {
+      "id": "configure-plugin/configure-cache-busting",
+      "line": "configure-plugin/configure-cache-busting: Cache-busting for Next.js and Vite: content hashing, CDN cache headers. Use when adding Vercel/Cloudflare cache headers or auditing static asset caching."
+    },
+    {
+      "id": "configure-plugin/configure-claude-plugins",
+      "line": "configure-plugin/configure-claude-plugins: Claude plugins marketplace setup: .claude/settings.json, GitHub Actions, plugin pinning. Use when onboarding to claude-plugins, setting up claude.yml, pinning plugins, or overriding global plugins."
+    },
+    {
+      "id": "configure-plugin/configure-container",
+      "line": "configure-plugin/configure-container: Container infrastructure: GHCR builds, Trivy/Grype scanning, devcontainer. Use when setting up multi-platform GHCR workflows or adding container scanning to CI."
+    },
+    {
+      "id": "configure-plugin/configure-coverage",
+      "line": "configure-plugin/configure-coverage: Code coverage: thresholds and reporters for Vitest, Jest, pytest, Rust. Use when setting thresholds, adding Codecov/Coveralls, or wiring lcov/HTML reports."
+    },
+    {
+      "id": "configure-plugin/configure-dead-code",
+      "line": "configure-plugin/configure-dead-code: Dead-code detection: Knip, Vulture, cargo-machete, deadcode. Use when setting up unused-code scanning, migrating tools, or adding dead-code CI checks."
+    },
+    {
+      "id": "configure-plugin/configure-dockerfile",
+      "line": "configure-plugin/configure-dockerfile: Dockerfile standards: Alpine/slim base, non-root user, multi-stage builds. Use when creating a Dockerfile, hardening security, or auditing image size."
+    },
+    {
+      "id": "configure-plugin/configure-docs",
+      "line": "configure-plugin/configure-docs: Code docs: TSDoc, JSDoc, pydoc, rustdoc, TypeDoc, MkDocs, Sphinx. Use when setting up docstrings, configuring a docs generator, or enforcing doc coverage in CI."
+    },
+    {
+      "id": "configure-plugin/configure-editor",
+      "line": "configure-plugin/configure-editor: EditorConfig and VS Code workspace settings for team consistency. Use when setting up format-on-save, recommended extensions, or debug configurations."
+    },
+    {
+      "id": "configure-plugin/configure-feature-flags",
+      "line": "configure-plugin/configure-feature-flags: Feature flags with OpenFeature and providers (GOFF, flagd, LaunchDarkly). Use when setting up the SDK, configuring a relay proxy, or adding flag test helpers."
+    },
+    {
+      "id": "configure-plugin/configure-formatting",
+      "line": "configure-plugin/configure-formatting: Biome formatter for JS/TS/JSON/CSS \u2014 the modern Prettier/ESLint replacement. Also Ruff (Python) and rustfmt. Use when setting up formatting, replacing Prettier, or wiring CI format checks."
+    },
+    {
+      "id": "configure-plugin/configure-gitattributes",
+      "line": "configure-plugin/configure-gitattributes: Configure .gitattributes: union-merge for append-only tables, linguist-generated for build output, LF normalization. Use when setting up .gitattributes or taming append-only merge conflicts."
+    },
+    {
+      "id": "configure-plugin/configure-github-pages",
+      "line": "configure-plugin/configure-github-pages: GitHub Pages deployment workflows for docs sites. Use when setting up Pages, migrating to actions/deploy-pages, or auditing Pages action versions."
+    },
+    {
+      "id": "configure-plugin/configure-gitignore",
+      "line": "configure-plugin/configure-gitignore: Manage .gitignore's Claude Code block \u2014 worktrees, scheduled-task lock, local settings. Use when onboarding a repo or .gitignore lacks Claude entries."
+    },
+    {
+      "id": "configure-plugin/configure-instrumentation",
+      "line": "configure-plugin/configure-instrumentation: Observability instrumentation: OpenTelemetry traces/metrics, structured logging, Sentry. Use when wiring telemetry, tracing, or logging into a repo."
+    },
+    {
+      "id": "configure-plugin/configure-integration-tests",
+      "line": "configure-plugin/configure-integration-tests: Integration testing: Supertest, pytest, Testcontainers. Use when setting up integration tests, creating docker-compose.test.yml, or separating from unit tests."
+    },
+    {
+      "id": "configure-plugin/configure-justfile",
+      "line": "configure-plugin/configure-justfile: Check and configure Justfiles with standard recipes. Use when setting up a Justfile, auditing for missing recipes, or migrating from Makefile to Justfile."
+    },
+    {
+      "id": "configure-plugin/configure-linting",
+      "line": "configure-plugin/configure-linting: Modern linters: Biome, Ruff, Clippy. Use when setting up linting, migrating ESLint/Prettier to Biome, or wiring lint into pre-commit and CI."
+    },
+    {
+      "id": "configure-plugin/configure-load-tests",
+      "line": "configure-plugin/configure-load-tests: Load testing: k6, Artillery, Locust. Use when setting up load tests, auditing smoke/stress/spike/soak coverage, or adding CI performance regression detection."
+    },
+    {
+      "id": "configure-plugin/configure-makefile",
+      "line": "configure-plugin/configure-makefile: Makefile with standard targets (help, test, build, clean, lint). Use when setting up a Makefile, auditing missing targets, or adding language-specific targets."
+    },
+    {
+      "id": "configure-plugin/configure-mcp",
+      "line": "configure-plugin/configure-mcp: Check and configure MCP servers for project integration. Use when setting up MCP servers, checking MCP status, or adding new servers to a project."
+    },
+    {
+      "id": "configure-plugin/configure-memory-profiling",
+      "line": "configure-plugin/configure-memory-profiling: Memory profiling with pytest-memray for Python. Use when setting up memory profiling, adding CI memory regression detection, or setting memory thresholds."
+    },
+    {
+      "id": "configure-plugin/configure-mise",
+      "line": "configure-plugin/configure-mise: mise runtime/tool version manager - mise.toml, backends (pipx/aqua/npm/cargo/go), tasks, env, lockfile. Use when setting up, pinning runtimes/CLI tools, or migrating from asdf/nvm/pyenv/brew/Make."
+    },
+    {
+      "id": "configure-plugin/configure-package-management",
+      "line": "configure-plugin/configure-package-management: Package managers: uv (Python), bun (TypeScript). Use when setting up uv or bun, migrating from pip/npm/yarn/poetry/pipenv, or resolving lockfile conflicts."
+    },
+    {
+      "id": "configure-plugin/configure-pre-commit",
+      "line": "configure-plugin/configure-pre-commit: pre-commit hooks setup and validation. Use when installing hooks, configuring frontend/infrastructure/python project types, or migrating to pre-commit."
+    },
+    {
+      "id": "configure-plugin/configure-readme",
+      "line": "configure-plugin/configure-readme: README.md with logo, badges, features, tech stack sections. Use when creating a README, auditing missing sections, or adding shields.io badges."
+    },
+    {
+      "id": "configure-plugin/configure-release-please",
+      "line": "configure-plugin/configure-release-please: release-please workflow setup and auditing. Use when configuring release-please, upgrading release-please-action, or adding a package to a monorepo config."
+    },
+    {
+      "id": "configure-plugin/configure-repo",
+      "line": "configure-plugin/configure-repo: Repo onboarding driver: .claude/ directory, SessionStart hook, install_pkgs.sh. Use when onboarding any repo to Claude Code with the claude-plugins marketplace."
+    },
+    {
+      "id": "configure-plugin/configure-reusable-workflows",
+      "line": "configure-plugin/configure-reusable-workflows: Reusable GitHub Actions workflows for security, quality, accessibility. Use when adding OWASP/secret/code-smell scans or WCAG checks to PR pipelines."
+    },
+    {
+      "id": "configure-plugin/configure-security",
+      "line": "configure-plugin/configure-security: Security scanning: dependency audits, SAST, secrets detection. Use when setting up Dependabot, CodeQL, or TruffleHog in CI, or creating a SECURITY.md policy."
+    },
+    {
+      "id": "configure-plugin/configure-select",
+      "line": "configure-plugin/configure-select: Interactive selector for infrastructure standards. Use when setting up specific components or building infrastructure incrementally instead of running /configure:all."
+    },
+    {
+      "id": "configure-plugin/configure-sentry",
+      "line": "configure-plugin/configure-sentry: Sentry error tracking setup. Use when installing the Sentry SDK, fixing hardcoded DSNs, or adding source map upload for frontend, Next.js, Node, or Python."
+    },
+    {
+      "id": "configure-plugin/configure-skaffold",
+      "line": "configure-plugin/configure-skaffold: Skaffold for Kubernetes: port forwarding, dotenvx hooks, API version. Use when fixing 0.0.0.0 binding, adding secret generation hooks, or creating skaffold.yaml."
+    },
+    {
+      "id": "configure-plugin/configure-status",
+      "line": "configure-plugin/configure-status: Infrastructure compliance status (read-only). Use when checking overall compliance, generating a report, or reviewing project health without making changes."
+    },
+    {
+      "id": "configure-plugin/configure-surface",
+      "line": "configure-plugin/configure-surface: Surface doc-drift gate: scaffold surf.toml + hubs, wire the SHA-pinned pre-commit/Action. Use when adding a docs-governed-like-code CI gate."
+    },
+    {
+      "id": "configure-plugin/configure-tests",
+      "line": "configure-plugin/configure-tests: Test frameworks: Vitest, Jest, pytest, cargo-nextest. Use when setting up test infrastructure, migrating to a modern framework, or validating coverage config."
+    },
+    {
+      "id": "configure-plugin/configure-ux-testing",
+      "line": "configure-plugin/configure-ux-testing: UX testing: Playwright E2E, axe-core a11y, visual regression. Use when setting up E2E testing, screenshot assertions, browser automation, or a11y CI workflows."
+    },
+    {
+      "id": "configure-plugin/configure-web-session",
+      "line": "configure-plugin/configure-web-session: SessionStart hook for Claude Code web sessions to install tools (helm, terraform, gitleaks, just). Use when CI tools fail in remote sessions due to missing binaries."
+    },
+    {
+      "id": "configure-plugin/configure-workflows",
+      "line": "configure-plugin/configure-workflows: GitHub Actions CI/CD workflows for container builds, tests, releases. Use when updating outdated action versions, adding multi-platform builds, or auditing workflows."
+    },
+    {
+      "id": "configure-plugin/configure-worktreeinclude",
+      "line": "configure-plugin/configure-worktreeinclude: Generate a .worktreeinclude so Claude Code copies gitignored env/secret/config files into new worktrees. Use when worktrees miss .env or local config."
+    },
+    {
+      "id": "configure-plugin/go-feature-flag",
+      "line": "configure-plugin/go-feature-flag: GO Feature Flag (GOFF) self-hosted feature flags with OpenFeature integration \u2014 config, relay proxy, targeting, rollouts. Use when working with GOFF or flags.goff.yaml."
+    },
+    {
+      "id": "configure-plugin/multi-repo-discipline",
+      "line": "configure-plugin/multi-repo-discipline: Multi-repo workspace rules: read-only fixtures, upstream/downstream pairs. Use when dispatching agents across sibling repos or editing another repo's .claude/."
+    },
+    {
+      "id": "configure-plugin/openfeature",
+      "line": "configure-plugin/openfeature: OpenFeature vendor-agnostic feature flag SDK: installation, evaluation, providers. Use when implementing feature flags, A/B testing, or progressive rollouts."
+    },
+    {
+      "id": "container-plugin/container-development",
+      "line": "container-plugin/container-development: Container development \u2014 Docker, multi-stage builds, Skaffold, non-root users, Alpine/slim images, security hardening. Use when working with Docker, Dockerfiles, docker-compose, or container security."
+    },
+    {
+      "id": "container-plugin/deploy-handoff",
+      "line": "container-plugin/deploy-handoff: Generate deployment handoff docs \u2014 tech stack, access URLs, config, monitoring, dev checklist. Use when handing off a service, documenting deployments, or creating client-facing summaries."
+    },
+    {
+      "id": "container-plugin/deploy-release",
+      "line": "container-plugin/deploy-release: Create and publish releases via release-please or manual GitHub releases. Use when cutting a release, tagging a version, or setting up release-please config."
+    },
+    {
+      "id": "container-plugin/go-containers",
+      "line": "container-plugin/go-containers: Go container optimization \u2014 scratch/distroless images, static binaries, CGO, ldflags, trimpath (846MB to 2.5MB). Use when working with Go containers or optimizing Go image sizes."
+    },
+    {
+      "id": "container-plugin/nodejs-containers",
+      "line": "container-plugin/nodejs-containers: Node.js container optimization \u2014 Alpine, multi-stage builds, node_modules caching, BuildKit mounts (900MB to ~100MB). Use when working with Node.js containers or optimizing image sizes."
+    },
+    {
+      "id": "container-plugin/python-containers",
+      "line": "container-plugin/python-containers: Python container optimization \u2014 slim images (not Alpine), virtualenv, multi-stage, pip/poetry/uv, musl gotchas (1GB to ~120MB). Use when working with Python containers or optimizing image sizes."
+    },
+    {
+      "id": "container-plugin/skaffold-filesync",
+      "line": "container-plugin/skaffold-filesync: Skaffold file sync \u2014 copy changed files to containers without rebuilding. Use when optimizing the dev loop, configuring sync rules, or the user mentions hot reload or fast iteration."
+    },
+    {
+      "id": "container-plugin/skaffold-orbstack",
+      "line": "container-plugin/skaffold-orbstack: OrbStack-optimized Skaffold for local Kubernetes dev without port-forward. Use when configuring Skaffold with OrbStack, k8s.orb.local, LoadBalancer, or eliminating port-forward."
+    },
+    {
+      "id": "container-plugin/skaffold-testing",
+      "line": "container-plugin/skaffold-testing: Container image validation with Skaffold test/verify stages \u2014 container-structure-tests, security scans. Use when configuring pre-deploy tests or integration tests in Skaffold."
+    },
+    {
+      "id": "css-plugin/lightning-css",
+      "line": "css-plugin/lightning-css: Lightning CSS transpilation, bundling, and minification. Use when configuring CSS in Vite, replacing PostCSS/autoprefixer, setting browser targets, or enabling CSS modules."
+    },
+    {
+      "id": "css-plugin/unocss",
+      "line": "css-plugin/unocss: UnoCSS atomic CSS engine for on-demand utility classes. Use when setting up utility-first CSS, configuring presets (wind3/wind4, icons, typography), or integrating with Vite."
+    },
+    {
+      "id": "documentation-plugin/claude-blog-sources",
+      "line": "documentation-plugin/claude-blog-sources: Fetch Claude Blog and official Claude Code docs. Use when researching Claude Code capabilities, CLAUDE.md optimization, memory hierarchy, or @import patterns."
+    },
+    {
+      "id": "documentation-plugin/docs-decommission",
+      "line": "documentation-plugin/docs-decommission: Generate DECOMMISSION-<service>.md covering infra, data, access, DNS, dependencies, monitoring, and financial checklists. Use when decommissioning a service."
+    },
+    {
+      "id": "documentation-plugin/docs-generate",
+      "line": "documentation-plugin/docs-generate: Generate or update docs from code annotations, docstrings, and git history. Use when wanting API reference, README from code, or CHANGELOG from conventional commits."
+    },
+    {
+      "id": "documentation-plugin/docs-latex",
+      "line": "documentation-plugin/docs-latex: Convert Markdown to LaTeX with TikZ and compile to PDF. Use when wanting a presentation-quality PDF, a professional report with diagrams, or print-ready documentation."
+    },
+    {
+      "id": "documentation-plugin/docs-sync",
+      "line": "documentation-plugin/docs-sync: Sync docs with actual skills, commands, and agents. Use when docs are out of sync, updating the skill catalog, or regenerating command reference to fix mismatches."
+    },
+    {
+      "id": "evaluate-plugin/evaluate-improve",
+      "line": "evaluate-plugin/evaluate-improve: Suggest improvements to SKILL.md content, descriptions, or tool config from eval results. Use when raising pass rates, fixing triggering, or iterating on a skill after evaluation."
+    },
+    {
+      "id": "evaluate-plugin/evaluate-legibility",
+      "line": "evaluate-plugin/evaluate-legibility: Cold-read a SKILL.md with a zero-context agent reader to check its intent is legible. Use when validating whether a skill says clearly when to invoke it and how to start."
+    },
+    {
+      "id": "evaluate-plugin/evaluate-matrix",
+      "line": "evaluate-plugin/evaluate-matrix: Cross-model skill evals with real execution and grading \u2014 the executability gate. Use when checking whether a weak model can actually do a skill, not just comprehend it."
+    },
+    {
+      "id": "evaluate-plugin/evaluate-plugin-batch",
+      "line": "evaluate-plugin/evaluate-plugin-batch: Batch evaluate every skill in a plugin and produce a plugin-level report. Use when auditing an entire plugin's quality or validating before a release."
+    },
+    {
+      "id": "evaluate-plugin/evaluate-report",
+      "line": "evaluate-plugin/evaluate-report: View evaluation results and benchmark reports for a skill or plugin. Use when reviewing past eval results, comparing benchmark runs, or tracking quality trends."
+    },
+    {
+      "id": "evaluate-plugin/evaluate-skill",
+      "line": "evaluate-plugin/evaluate-skill: Evaluate a skill by running test cases and grading results. Use when testing whether a skill produces correct guidance, validating improvements, or benchmarking before release."
+    },
+    {
+      "id": "feedback-plugin/feedback-session",
+      "line": "feedback-plugin/feedback-session: Analyze session for skill feedback and create GitHub issues. Use when a skill gave wrong guidance, a command failed, you found a better pattern, or a skill worked well."
+    },
+    {
+      "id": "finops-plugin/finops-caches",
+      "line": "finops-plugin/finops-caches: GitHub Actions cache analysis \u2014 size, prefix/branch breakdown, stale detection. Use when investigating cache bloat, stale caches, or auditing cache key strategies."
+    },
+    {
+      "id": "finops-plugin/finops-compare",
+      "line": "finops-plugin/finops-compare: FinOps metrics comparison across repos in an org. Use when benchmarking repos, identifying worst-performing ones, or doing org-wide CI cost analysis."
+    },
+    {
+      "id": "finops-plugin/finops-overview",
+      "line": "finops-plugin/finops-overview: FinOps snapshot \u2014 org billing, workflow stats, cache usage. Use when you want a high-level view of CI spending or workflow health before diving deeper."
+    },
+    {
+      "id": "finops-plugin/finops-waste",
+      "line": "finops-plugin/finops-waste: Identify GitHub Actions waste \u2014 skipped runs, bot triggers, missing concurrency \u2014 and suggest fixes. Use when CI costs are high or workflows run too often."
+    },
+    {
+      "id": "finops-plugin/finops-workflows",
+      "line": "finops-plugin/finops-workflows: Analyze workflow runs \u2014 frequency, duration, success rates, efficiency. Use when investigating slow CI, high failure rates, or run patterns over time."
+    },
+    {
+      "id": "finops-plugin/github-actions-cache-optimization",
+      "line": "finops-plugin/github-actions-cache-optimization: GitHub Actions cache analysis and optimization. Use when investigating cache bloat, finding stale caches, optimizing keys, or comparing cache usage across repos."
+    },
+    {
+      "id": "finops-plugin/github-actions-finops",
+      "line": "finops-plugin/github-actions-finops: GitHub Actions billing, workflow efficiency, and waste analysis at org or repo level. Use when investigating CI/CD costs, wasted runs, or optimizing triggers."
+    },
+    {
+      "id": "foundryvtt-plugin/foundryvtt-module",
+      "line": "foundryvtt-plugin/foundryvtt-module: FoundryVTT module idea to gitops-adopted repo: scaffold, create + seed the repo, open the gitops adoption PR. Use when releasing or spinning up a new foundry module."
+    },
+    {
+      "id": "foundryvtt-plugin/foundryvtt-module-scaffold",
+      "line": "foundryvtt-plugin/foundryvtt-module-scaffold: Scaffold a new FoundryVTT v13 module repo (Vite + TS + bun + biome, CI, release-please) with basic/app/libwrapper variants. Use when bootstrapping or init-ing a foundry module."
+    },
+    {
+      "id": "git-plugin/deadbranch",
+      "line": "git-plugin/deadbranch: deadbranch CLI for stale-branch cleanup \u2014 dry-run preview, TUI or non-interactive delete, protects main/develop/WIP. Use when asked to clean up branches, prune branches, or remove stale branches."
+    },
+    {
+      "id": "git-plugin/gh-cli-agentic",
+      "line": "git-plugin/gh-cli-agentic: gh CLI commands with JSON output for agent workflows. Use when querying PRs, issues, workflow runs, or repo metadata; inspecting PR checks; fetching failed CI logs; or resolving a github.com URL to an API call."
+    },
+    {
+      "id": "git-plugin/gh-workflow-monitoring",
+      "line": "git-plugin/gh-workflow-monitoring: Monitor GitHub Actions runs with blocking watch commands instead of polling loops. Use when waiting for CI after push, following a workflow to completion, or diagnosing failed runs with --log-failed."
+    },
+    {
+      "id": "git-plugin/git-api-pr",
+      "line": "git-plugin/git-api-pr: GitHub API PR creation without local git. Use when submitting file changes as a PR without local commits \u2014 quick fixes, typos, config updates, or bypassing local git state."
+    },
+    {
+      "id": "git-plugin/git-branch-naming",
+      "line": "git-plugin/git-branch-naming: Git branch naming conventions \u2014 type prefixes (feat/fix/chore), issue linking, kebab-case. Use when creating branches or setting up repo conventions."
+    },
+    {
+      "id": "git-plugin/git-branch-pr-workflow",
+      "line": "git-plugin/git-branch-pr-workflow: Branch management and PR workflows \u2014 git switch/restore, GitHub MCP. Use when creating branches, opening PRs, or working with feature branches."
+    },
+    {
+      "id": "git-plugin/git-cli-agentic",
+      "line": "git-plugin/git-cli-agentic: Git commands with porcelain and machine-readable output for agent workflows. Use when scripting status/diff/log, porcelain=v2, --numstat counts, custom --format placeholders, or branch tracking info."
+    },
+    {
+      "id": "git-plugin/git-commit",
+      "line": "git-plugin/git-commit: Create commits with conventional messages and issue references. Use when user says \"commit\", \"save changes\", or \"stage and commit\". Local commits only \u2014 see git-push for remote."
+    },
+    {
+      "id": "git-plugin/git-commit-push-pr",
+      "line": "git-plugin/git-commit-push-pr: End-to-end commit-to-PR workflow. Use when the user says \"create pr\", \"commit and pr\", \"push and pr\", or wants to go from uncommitted changes to an open PR."
+    },
+    {
+      "id": "git-plugin/git-commit-trailers",
+      "line": "git-plugin/git-commit-trailers: Git commit trailer conventions \u2014 BREAKING CHANGE, Co-authored-by, Signed-off-by. Use when composing messages with trailers or parsing via git interpret-trailers."
+    },
+    {
+      "id": "git-plugin/git-commit-workflow",
+      "line": "git-plugin/git-commit-workflow: Conventional commit format, staging, and message conventions. Use when writing commit messages, staging files, grouping changes, or auto-detecting linked issues."
+    },
+    {
+      "id": "git-plugin/git-conflicts",
+      "line": "git-plugin/git-conflicts: Resolve merge conflicts file-by-file. Use when a merge/rebase has conflicts, a PR can't merge, \"fix conflicts\" is requested, or branches have diverged."
+    },
+    {
+      "id": "git-plugin/git-coworker-check",
+      "line": "git-plugin/git-coworker-check: Detect coworker Claude agents in a shared checkout. Use when starting a session in a shared clone, before destructive git ops (stash, reset, checkout), or before bulk-edit / commit-loop workflows."
+    },
+    {
+      "id": "git-plugin/git-derive-docs",
+      "line": "git-plugin/git-derive-docs: Derive ADRs, rules, PRDs from git commit history. Use when finding doc gaps, detecting unrecorded decisions, deriving conventions from commits, or generating skeleton docs."
+    },
+    {
+      "id": "git-plugin/git-fix-pr",
+      "line": "git-plugin/git-fix-pr: Analyze and fix failing PR checks. Use when asked to fix a PR, resolve red CI checks, auto-fix lint/test failures, or reproduce CI errors locally before pushing."
+    },
+    {
+      "id": "git-plugin/git-fork-workflow",
+      "line": "git-plugin/git-fork-workflow: Fork management and upstream sync. Use when working with forks, syncing with upstream, detecting divergence, or preparing commits for contribution."
+    },
+    {
+      "id": "git-plugin/git-issue",
+      "line": "git-plugin/git-issue: Process GitHub issues end-to-end with TDD and parallel work. Use when asked to work on an issue, fix issue #N, pick issues to tackle, or batch-process several."
+    },
+    {
+      "id": "git-plugin/git-issue-hierarchy",
+      "line": "git-plugin/git-issue-hierarchy: Manage GitHub sub-issues and dependencies (blocked_by/blocking). Use when breaking issues into sub-tasks, checking progress, or viewing a dependency graph."
+    },
+    {
+      "id": "git-plugin/git-issue-manage",
+      "line": "git-plugin/git-issue-manage: GitHub issue admin operations. Use when transferring issues, pinning, locking discussions, creating dev branches from issues, bulk ops, or managing custom fields."
+    },
+    {
+      "id": "git-plugin/git-maintain",
+      "line": "git-plugin/git-maintain: Repo maintenance \u2014 incremental repack, gc, branch pruning, stash cleanup, fsck. Use when asked to clean up the repo, run git maintenance/gc, delete merged branches, prune stashes, or shrink .git."
+    },
+    {
+      "id": "git-plugin/git-pr",
+      "line": "git-plugin/git-pr: Create pull requests with descriptions, labels, and issue references. Use when user says \"create PR\", \"open pull request\", or \"submit for review\". From pushed branches."
+    },
+    {
+      "id": "git-plugin/git-pr-feedback",
+      "line": "git-plugin/git-pr-feedback: Address PR review comments and resolve threads. Use when CHANGES_REQUESTED is set, working through unresolved review threads, or replying to reviewer feedback."
+    },
+    {
+      "id": "git-plugin/git-pr-sync-check",
+      "line": "git-plugin/git-pr-sync-check: Checks whether the current PR branch is still live and in sync (merged/behind/changes-requested). Use when continuing work on a PR branch before adding commits."
+    },
+    {
+      "id": "git-plugin/git-pr-watch",
+      "line": "git-plugin/git-pr-watch: Subscribe to a PR's activity and react to reviews and CI as they arrive. Use when watching/monitoring/babysitting a PR after opening it, or unsubscribing with --unsubscribe."
+    },
+    {
+      "id": "git-plugin/git-push",
+      "line": "git-plugin/git-push: Push local commits to remote \u2014 handles branch tracking, upstream setup, safe push patterns. Use when user says \"push\", \"send to remote\", or \"update remote\". Pushes existing commits \u2014 see git-commit for commits and git-pr for PR creation."
+    },
+    {
+      "id": "git-plugin/git-rebase-patterns",
+      "line": "git-plugin/git-rebase-patterns: Advanced git rebase \u2014 linear history, stacked PRs, --update-refs, --onto. Use when rebasing branches, cleaning history, managing PR stacks, or fixing merge-heavy branches."
+    },
+    {
+      "id": "git-plugin/git-repo-detection",
+      "line": "git-plugin/git-repo-detection: Detect GitHub repo owner/name from git remotes. Use when needing the owner/repo identifier for GitHub CLI or API calls, especially across multiple repos."
+    },
+    {
+      "id": "git-plugin/git-security-checks",
+      "line": "git-plugin/git-security-checks: Pre-commit security validation and secret detection via gitleaks. Use when scanning for secrets, setting up gitleaks, or configuring .gitleaks.toml pre-commit security."
+    },
+    {
+      "id": "git-plugin/git-triage",
+      "line": "git-plugin/git-triage: Triage GitHub issues and PRs \u2014 cross-link, flag stale items, recommend actions. Use when grooming the backlog, pre-release cleanup, or asked to triage issues/PRs."
+    },
+    {
+      "id": "git-plugin/git-upstream-pr",
+      "line": "git-plugin/git-upstream-pr: Submit PRs to upstream repos from a fork \u2014 commit selection, squashing, cross-fork creation. Use when contributing changes upstream or cherry-picking fork commits."
+    },
+    {
+      "id": "git-plugin/git-upstream-pr-diverged",
+      "line": "git-plugin/git-upstream-pr-diverged: Submit a diverged-fork commit to upstream as a clean PR via cherry-pick with re-derive fallback, message scrubbing, and regression checks. Use when direct rebase fails."
+    },
+    {
+      "id": "git-plugin/github-issue-autodetect",
+      "line": "git-plugin/github-issue-autodetect: Auto-detect GitHub issues that staged changes may fix or close. Analyzes diffs, paths, and issue metadata to suggest closing keywords (Fixes/Closes/Resolves) for commit messages. Use when committing to ensure proper issue linkage."
+    },
+    {
+      "id": "git-plugin/github-issue-writing",
+      "line": "git-plugin/github-issue-writing: Create well-structured GitHub issues with clear titles, descriptions, and acceptance criteria. Use when filing bugs, requesting features, or structuring issue content."
+    },
+    {
+      "id": "git-plugin/github-labels",
+      "line": "git-plugin/github-labels: Discover and apply GitHub labels via gh CLI. Use when asked to label a PR/issue, list available labels, or create new labels for a repository."
+    },
+    {
+      "id": "git-plugin/github-pr-title",
+      "line": "git-plugin/github-pr-title: Craft PR titles using conventional commits format. Use when creating PRs or ensuring consistent PR naming. PR titles MUST follow conventional commits to drive release-please automation and maintain consistent git history."
+    },
+    {
+      "id": "git-plugin/release-please-configuration",
+      "line": "git-plugin/release-please-configuration: release-please monorepo config \u2014 component tags, per-package extra-files, tag migration. Use when adding packages or fixing duplicate-tag / no-bump failures."
+    },
+    {
+      "id": "git-plugin/release-please-pr-workflow",
+      "line": "git-plugin/release-please-pr-workflow: Manage release-please PR merging for monorepos \u2014 batch merging, conflict resolution via PR closure/recreation, iterative processing. Use when merging release PRs, handling PR conflicts, or managing release automation in monorepos."
+    },
+    {
+      "id": "git-plugin/release-please-protection",
+      "line": "git-plugin/release-please-protection: Block manual edits to release-please files (CHANGELOG, version fields). Use when editing changelogs, bumping versions, or releasing to avoid conflicting with automation."
+    },
+    {
+      "id": "github-actions-plugin/claude-code-github-workflows",
+      "line": "github-actions-plugin/claude-code-github-workflows: Claude Code GitHub Actions workflow patterns \u2014 PR reviews, issue triage, CI/CD integration. Use when creating or modifying workflows that integrate Claude Code."
+    },
+    {
+      "id": "github-actions-plugin/github-actions-auth-security",
+      "line": "github-actions-plugin/github-actions-auth-security: GitHub Actions auth and security for Claude Code \u2014 OIDC, AWS Bedrock, Vertex AI, secrets, permission scoping. Use when setting up workflow authentication or security."
+    },
+    {
+      "id": "github-actions-plugin/github-actions-inspection",
+      "line": "github-actions-plugin/github-actions-inspection: Inspect GitHub Actions runs, analyze logs, debug failures. Use when investigating CI/CD failures, checking workflow status, or debugging GitHub Actions issues."
+    },
+    {
+      "id": "github-actions-plugin/github-actions-mcp-config",
+      "line": "github-actions-plugin/github-actions-mcp-config: MCP server config for GitHub Actions \u2014 tool permissions, env vars, multi-server setups. Use when configuring MCP servers in GitHub Actions workflows."
+    },
+    {
+      "id": "github-actions-plugin/github-issue-search",
+      "line": "github-actions-plugin/github-issue-search: Search GitHub issues for solutions and workarounds. Use when encountering errors with OSS libraries, finding upstream bug workarounds, or researching known issues."
+    },
+    {
+      "id": "github-actions-plugin/github-social-preview",
+      "line": "github-actions-plugin/github-social-preview: Generate 1280x640 PNG social preview images for GitHub repos using nano-banana-pro. Use when asked for social preview, Open Graph image, or repo images for social media."
+    },
+    {
+      "id": "github-actions-plugin/github-workflow-auto-fix",
+      "line": "github-actions-plugin/github-workflow-auto-fix: Set up automated CI fixing with Claude Code. Use when adding a workflow that analyzes failures, applies fixes, and files issues; pass --reusable for a multi-repo workflow_call template."
+    },
+    {
+      "id": "github-actions-plugin/workflow-dev",
+      "line": "github-actions-plugin/workflow-dev: Automated dev loop \u2014 run tests, file issues for failures, TDD fix on branch, open PR, watch CI. Use when running a continuous dev loop, autonomous TDD, or fix-and-PR cycles."
+    },
+    {
+      "id": "health-plugin/health-agentic-audit",
+      "line": "health-plugin/health-agentic-audit: Audit skills, commands, and agents for agentic output compliance \u2014 optimization tables, bare CLI commands. Use when batch-checking skill documentation quality."
+    },
+    {
+      "id": "health-plugin/health-audit",
+      "line": "health-plugin/health-audit: Plugin audit against detected stack (Python, Node, Rust, Go, Terraform, Docker, K8s). Use when cleaning up unused plugins or discovering stack-relevant ones for a project."
+    },
+    {
+      "id": "health-plugin/health-check",
+      "line": "health-plugin/health-check: Claude Code health check \u2014 scans plugins, settings, hooks, MCP, runtime state, usage telemetry, permissions, marketplace with optional fixes. Use when checking project health or troubleshooting setup."
+    },
+    {
+      "id": "health-plugin/health-plugins",
+      "line": "health-plugin/health-plugins: Diagnose and fix Claude Code plugin registry corruption \u2014 orphaned entries, stale keys, scope conflicts. Use when seeing plugin-already-installed errors or registry drift."
+    },
+    {
+      "id": "health-plugin/health-skill-audit",
+      "line": "health-plugin/health-skill-audit: Audit skill tree for overlap, split-pressure, and consolidation candidates. Use when finding confusing skill clusters or surfacing REFERENCE.md extraction candidates."
+    },
+    {
+      "id": "health-plugin/plugin-registry",
+      "line": "health-plugin/plugin-registry: Claude Code plugin registry structure, installation scopes, and common issues. Use when troubleshooting plugin installation problems or manually fixing registry entries."
+    },
+    {
+      "id": "health-plugin/settings-configuration",
+      "line": "health-plugin/settings-configuration: Claude Code settings hierarchy, permission wildcards, and configuration patterns. Use when setting up permissions, debugging settings issues, or understanding allowed tools."
+    },
+    {
+      "id": "home-assistant-plugin/ha-automations",
+      "line": "home-assistant-plugin/ha-automations: Home Assistant automation creation and management. Use when working with HA triggers, conditions, actions, scripts, scenes, or blueprints."
+    },
+    {
+      "id": "home-assistant-plugin/ha-configuration",
+      "line": "home-assistant-plugin/ha-configuration: Home Assistant YAML configuration management. Use when editing configuration.yaml, setting up integrations, configuring secrets, or troubleshooting HA configuration."
+    },
+    {
+      "id": "home-assistant-plugin/ha-entities",
+      "line": "home-assistant-plugin/ha-entities: Home Assistant entity and domain management. Use when working with entity IDs, device classes, template entities, groups, or domain-specific attribute customizations."
+    },
+    {
+      "id": "home-assistant-plugin/ha-validate",
+      "line": "home-assistant-plugin/ha-validate: Validate Home Assistant YAML for syntax errors, undefined secrets, and duplicate keys. Use when validating HA config, diagnosing YAML errors, or running hass check_config."
+    },
+    {
+      "id": "hooks-plugin/hooks-configuration",
+      "line": "hooks-plugin/hooks-configuration: Claude Code hooks configuration and development. Use when the user mentions hooks, PreToolUse, PostToolUse, SessionStart, SubagentStart, PermissionRequest, or TaskCompleted."
+    },
+    {
+      "id": "hooks-plugin/hooks-permission-request-hook",
+      "line": "hooks-plugin/hooks-permission-request-hook: Generate a PermissionRequest hook with auto-approve/deny rules. Use when needing a safer alternative to --dangerouslySkipPermissions tailored to your project stack."
+    },
+    {
+      "id": "hooks-plugin/hooks-session-end-issue-hook",
+      "line": "hooks-plugin/hooks-session-end-issue-hook: Configure a Stop hook that surfaces unfinished todos at session end. Use when you want deferred work automatically flagged for GitHub issue creation."
+    },
+    {
+      "id": "hooks-plugin/hooks-session-start-hook",
+      "line": "hooks-plugin/hooks-session-start-hook: Create a SessionStart hook for Claude Code on the web. Use when setting up a repo so dependencies install and tests/linters run automatically on remote session start."
+    },
+    {
+      "id": "kubernetes-plugin/argocd-login",
+      "line": "kubernetes-plugin/argocd-login: ArgoCD CLI auth with SSO and gRPC-Web. Use when the user mentions ArgoCD login, argocd authentication, SSO auth, or accessing ArgoCD applications and clusters."
+    },
+    {
+      "id": "kubernetes-plugin/helm-chart-development",
+      "line": "kubernetes-plugin/helm-chart-development: Create, test, and package Helm charts \u2014 Chart.yaml, templates, dependencies, repo publishing. Use when the user mentions Helm charts, helm lint/template/package, or Kubernetes packaging."
+    },
+    {
+      "id": "kubernetes-plugin/helm-debugging",
+      "line": "kubernetes-plugin/helm-debugging: Debug Helm failures \u2014 template errors, dry-run, YAML parse errors, value type errors, resource conflicts. Use when the user mentions Helm errors or template rendering issues."
+    },
+    {
+      "id": "kubernetes-plugin/helm-release-management",
+      "line": "kubernetes-plugin/helm-release-management: Manage Helm releases \u2014 install, upgrade, uninstall, list, inspect, history. Use when the user mentions deploying Helm charts, upgrading releases, or managing Kubernetes deployments."
+    },
+    {
+      "id": "kubernetes-plugin/helm-release-recovery",
+      "line": "kubernetes-plugin/helm-release-recovery: Recover from failed Helm deployments \u2014 rollback, fix stuck states (pending-install/upgrade), atomic deployments. Use when the user mentions rollback, failed Helm upgrade, or stuck releases."
+    },
+    {
+      "id": "kubernetes-plugin/helm-values-management",
+      "line": "kubernetes-plugin/helm-values-management: Manage Helm values \u2014 override precedence, multi-env configs, --set, schema validation, secrets. Use when the user mentions Helm values, env-specific configs, or values.yaml."
+    },
+    {
+      "id": "kubernetes-plugin/kubectl-debugging",
+      "line": "kubernetes-plugin/kubectl-debugging: Debug K8s pods/nodes with kubectl debug \u2014 ephemeral containers, pod copying, debug profiles, interactive sessions. Use when the user mentions kubectl debug or debugging pods."
+    },
+    {
+      "id": "kubernetes-plugin/kubernetes-operations",
+      "line": "kubernetes-plugin/kubernetes-operations: Kubernetes operations \u2014 deployment, management, troubleshooting, kubectl mastery. Use when the user mentions K8s, kubectl, pods, deployments, services, ingress, or cluster stability."
+    },
+    {
+      "id": "langchain-plugin/deep-agents",
+      "line": "langchain-plugin/deep-agents: Build hierarchical AI agents with the deepagents npm package. Use when creating orchestrators that plan multi-step tasks, delegate to child agents, or maintain persistent memory."
+    },
+    {
+      "id": "langchain-plugin/langchain-development",
+      "line": "langchain-plugin/langchain-development: LangChain JS/TS framework for building LLM-powered apps. Use when working with chat models, prompt templates, LCEL chains, tool binding, or RAG pipelines."
+    },
+    {
+      "id": "langchain-plugin/langchain-init",
+      "line": "langchain-plugin/langchain-init: Initialize a new LangChain TypeScript project. Use when starting an LLM-powered app, scaffolding an AI agent project, or setting up LangChain from scratch."
+    },
+    {
+      "id": "langchain-plugin/langgraph-agents",
+      "line": "langchain-plugin/langgraph-agents: LangGraph stateful AI agents with graph-based workflows. Use when creating state-machine agents with checkpoints, human-in-the-loop, streaming execution, or subgraph composition."
+    },
+    {
+      "id": "macos-plugin/endpoint-security-cpu",
+      "line": "macos-plugin/endpoint-security-cpu: macOS EndpointSecurity/EDR high CPU & battery drain. Use when Kandji ESF / XProtect pegs a core; trace the exec storm via powermetrics + eslogger."
+    },
+    {
+      "id": "macos-plugin/kitty-session-persistence",
+      "line": "macos-plugin/kitty-session-persistence: Snapshot and restore kitty terminal sessions on macOS. Use when surviving WindowServer hangs without losing tabs, configuring snapshots, or restoring after a force-reboot."
+    },
+    {
+      "id": "macos-plugin/launchservices-health",
+      "line": "macos-plugin/launchservices-health: Diagnose macOS LaunchServices DB bloat and launchservicesd CPU spikes. Use when launchservicesd is pegged at high CPU or WindowServer XPC stalls are suspected."
+    },
+    {
+      "id": "macos-plugin/macos-disk-usage",
+      "line": "macos-plugin/macos-disk-usage: macOS disk-usage forensics and space recovery on APFS. Use when df reports a disk near-full, hunting what's eating space, reclaiming OrbStack/Docker, or pruning caches and local snapshots."
+    },
+    {
+      "id": "macos-plugin/macos-incident-postmortem",
+      "line": "macos-plugin/macos-incident-postmortem: Reconstruct macOS freeze, panic, or reboot from DiagnosticReports and shell history. Use when investigating hangs, panics, watchdog timeouts, jetsam, or thermal throttling."
+    },
+    {
+      "id": "macos-plugin/macos-performance-benchmark",
+      "line": "macos-plugin/macos-performance-benchmark: Repeatable macOS/Apple-Silicon benchmark + diagnostics scored PASS/WARN/FAIL with saved reports. Use when baselining a Mac, verifying it performs to spec, or tracking CPU/memory/disk/thermal health."
+    },
+    {
+      "id": "macos-plugin/macos-performance-triage",
+      "line": "macos-plugin/macos-performance-triage: Live macOS/Apple-Silicon performance triage \u2014 find what's heating the Mac (hot WindowServer, GPU compositing, a CPU-heavy browser/Electron app) and attribute it to the driving process. Use when fans spin up, the Mac is hot/slow, or WindowServer/an app shows high CPU/GPU."
+    },
+    {
+      "id": "macos-plugin/tui-keybinding-debug",
+      "line": "macos-plugin/tui-keybinding-debug: Debug dead TUI/terminal keybindings \u2014 terminal interception (kitty), layout-impossible chords, legacy key aliasing. Use when a configured key does nothing in a TUI, fzf, or shell app."
+    },
+    {
+      "id": "migration-patterns-plugin/black-to-ruff-format",
+      "line": "migration-patterns-plugin/black-to-ruff-format: Migrate Python formatting from black to ruff-format. Use when psf/black is in .pre-commit-config.yaml or [tool.black] exists in pyproject.toml."
+    },
+    {
+      "id": "migration-patterns-plugin/dual-write",
+      "line": "migration-patterns-plugin/dual-write: Dual-write pattern for safe data store transitions. Use when planning DB migrations, switching storage backends, or reviewing code writing to multiple systems simultaneously."
+    },
+    {
+      "id": "migration-patterns-plugin/eslint-to-biome",
+      "line": "migration-patterns-plugin/eslint-to-biome: Migrate JS/TS linting from ESLint+Prettier to Biome. Use when .eslintrc* or eslint.config.* exists and no biome.json is present."
+    },
+    {
+      "id": "migration-patterns-plugin/flake8-to-ruff",
+      "line": "migration-patterns-plugin/flake8-to-ruff: Migrate Python linting from flake8/isort to ruff. Use when pycqa/flake8 or PyCQA/isort is in .pre-commit-config.yaml or [tool.flake8]/[tool.isort] config exists."
+    },
+    {
+      "id": "migration-patterns-plugin/mypy-to-ty",
+      "line": "migration-patterns-plugin/mypy-to-ty: Migrate Python type checking from mypy to ty (Astral). Use when mirrors-mypy is in .pre-commit-config.yaml or [tool.mypy] config exists."
+    },
+    {
+      "id": "migration-patterns-plugin/shadow-mode",
+      "line": "migration-patterns-plugin/shadow-mode: Shadow mode / dark-launch for validating new systems under production load. Use when testing replacement services, comparing behavior, or planning traffic mirroring for migrations."
+    },
+    {
+      "id": "networking-plugin/dns-tools",
+      "line": "networking-plugin/dns-tools: DNS resolution and propagation debugging. Use when looking up A/AAAA/MX/TXT records, verifying DNS changes across resolvers, or querying via DoT/DoH."
+    },
+    {
+      "id": "networking-plugin/http-load-testing",
+      "line": "networking-plugin/http-load-testing: HTTP load testing with oha. Use when measuring latency percentiles, finding a server's breaking point, or validating SLA targets under coordinated-omission correction."
+    },
+    {
+      "id": "networking-plugin/interface-state",
+      "line": "networking-plugin/interface-state: Local interface, address, route, and neighbor state with iproute2. Use when viewing or configuring a host's own IPs, links, routes, or ARP/NDP cache \u2014 the ifconfig/route/arp replacement."
+    },
+    {
+      "id": "networking-plugin/layer2-discovery",
+      "line": "networking-plugin/layer2-discovery: Layer 2 device discovery and topology mapping. Use when finding switch port assignments, enumerating hosts via ARP, or identifying unknown devices by MAC vendor."
+    },
+    {
+      "id": "networking-plugin/network-diagnostics",
+      "line": "networking-plugin/network-diagnostics: Network connectivity and latency diagnostics. Use when tracing routes, comparing ping latency across endpoints, or inspecting local socket/port usage."
+    },
+    {
+      "id": "networking-plugin/network-discovery",
+      "line": "networking-plugin/network-discovery: Network host and port discovery with nmap. Use when scanning TCP ports, enumerating hosts on a subnet, or identifying running services and versions."
+    },
+    {
+      "id": "networking-plugin/network-monitoring",
+      "line": "networking-plugin/network-monitoring: Real-time network traffic and per-process bandwidth monitoring. Use when finding which app consumes bandwidth, inspecting active connections, or capturing traffic samples."
+    },
+    {
+      "id": "obsidian-plugin/bases",
+      "line": "obsidian-plugin/bases: Obsidian Bases (database-over-notes): list base files/views, create items, run view queries with json/csv/tsv/md output. Use when user mentions Bases or .base files."
+    },
+    {
+      "id": "obsidian-plugin/bookmarks",
+      "line": "obsidian-plugin/bookmarks: Obsidian bookmarks: list and add file/folder/heading/saved-search/URL bookmarks. Use when starring or saving notes for quick access."
+    },
+    {
+      "id": "obsidian-plugin/command-palette",
+      "line": "obsidian-plugin/command-palette: Run, list, and inspect Obsidian commands and hotkeys from the CLI. Use when triggering a command, enumerating commands, or checking hotkey bindings."
+    },
+    {
+      "id": "obsidian-plugin/dev-tools",
+      "line": "obsidian-plugin/dev-tools: Obsidian plugin/theme dev: DevTools, CDP, JS eval, console/error buffers, CSS/DOM inspection, mobile emulation, screenshots. Use when debugging the app."
+    },
+    {
+      "id": "obsidian-plugin/file-history",
+      "line": "obsidian-plugin/file-history: Obsidian File Recovery and Sync history: inspect, diff, restore previous note versions. Use when undoing edits, restoring versions, or recovering files."
+    },
+    {
+      "id": "obsidian-plugin/plugins-themes",
+      "line": "obsidian-plugin/plugins-themes: Obsidian community plugins/themes/CSS snippets management. Use when installing, enabling, switching theme, or toggling restricted mode."
+    },
+    {
+      "id": "obsidian-plugin/properties",
+      "line": "obsidian-plugin/properties: Obsidian YAML frontmatter properties: read, set, remove on notes. Use when user mentions frontmatter, metadata, tags, aliases, status, or dates."
+    },
+    {
+      "id": "obsidian-plugin/publish-sync",
+      "line": "obsidian-plugin/publish-sync: Obsidian Publish and Sync operations. Use when publishing notes, managing change sets, pausing/resuming sync, or recovering sync-deleted files."
+    },
+    {
+      "id": "obsidian-plugin/search-discovery",
+      "line": "obsidian-plugin/search-discovery: Obsidian vault search: full-text/grep, tag listing, link traversal, outline, orphan/dead-end detection, broken wikilink audit. Use when exploring backlinks."
+    },
+    {
+      "id": "obsidian-plugin/tasks",
+      "line": "obsidian-plugin/tasks: Obsidian tasks via CLI: list open tasks, create tasks, mark complete. Use when user mentions Obsidian tasks, todos, checklists, or completion."
+    },
+    {
+      "id": "obsidian-plugin/templates",
+      "line": "obsidian-plugin/templates: Obsidian Templates plugin: list, read, insert templates with {{date}}/{{time}}/{{title}} variables. Use when inserting or applying a template."
+    },
+    {
+      "id": "obsidian-plugin/vault-files",
+      "line": "obsidian-plugin/vault-files: Obsidian vault file ops via CLI: read, create, append, move, rename, delete, listings, daily/random notes. Use when managing vault files."
+    },
+    {
+      "id": "obsidian-plugin/vault-frontmatter",
+      "line": "obsidian-plugin/vault-frontmatter: Offline YAML frontmatter maintenance for Obsidian notes. Use when stripping legacy `id:`, cleaning Templater markers, or fixing bare emoji tags."
+    },
+    {
+      "id": "obsidian-plugin/vault-management",
+      "line": "obsidian-plugin/vault-management: Obsidian vault inspection and cross-vault routing via `vault=` prefix. Use when checking vault info (path, size, file count) or targeting a non-active vault."
+    },
+    {
+      "id": "obsidian-plugin/vault-mocs",
+      "line": "obsidian-plugin/vault-mocs: Map-of-Content (MOC) curation for Obsidian vaults. Use when creating a MOC for a tag, extending with orphans, fixing legacy MOC tags, or analyzing coverage."
+    },
+    {
+      "id": "obsidian-plugin/vault-orphans",
+      "line": "obsidian-plugin/vault-orphans: Triage orphaned notes (zero in/out wikilinks) in an Obsidian vault. Use when finding orphans, linking them into a MOC, or reconnecting Zettelkasten notes."
+    },
+    {
+      "id": "obsidian-plugin/vault-stubs",
+      "line": "obsidian-plugin/vault-stubs: Work-namespace redirect-stub classification in an Obsidian vault. Use when cleaning stubs, converting duplicates to redirects, or merging content into Zettelkasten."
+    },
+    {
+      "id": "obsidian-plugin/vault-tags",
+      "line": "obsidian-plugin/vault-tags: Emoji-prefixed tag taxonomy for Obsidian vaults. Use when consolidating drifted tags, collapsing bare emoji placeholders, or reducing over-tagging."
+    },
+    {
+      "id": "obsidian-plugin/vault-templates",
+      "line": "obsidian-plugin/vault-templates: Obsidian Templater drift repair. Use when fixing unrendered `<% tp.file.cursor() %>` markers or replacing `{{title}}`/`{{date}}` placeholders."
+    },
+    {
+      "id": "obsidian-plugin/vault-wikilinks",
+      "line": "obsidian-plugin/vault-wikilinks: Broken Obsidian wikilink detection and repair. Use when fixing `[[Target]]` links, rewriting renamed-note refs, or resolving Zettelkasten/work-namespace paths."
+    },
+    {
+      "id": "obsidian-plugin/workspaces",
+      "line": "obsidian-plugin/workspaces: Obsidian editor workspace: list open tabs, recent files, saved Workspaces. Use when checking what's open, switching layouts, or opening files into tabs."
+    },
+    {
+      "id": "project-plugin/changelog-review",
+      "line": "project-plugin/changelog-review: Claude Code changelog analysis for plugin impact. Use when checking new features, breaking changes, or upgrade opportunities from a Claude Code release."
+    },
+    {
+      "id": "project-plugin/project-continue",
+      "line": "project-plugin/project-continue: Resume development from current project state. Use when the user asks to continue work, pick up where we left off, find the next task, or resume a TDD cycle after a break."
+    },
+    {
+      "id": "project-plugin/project-discovery",
+      "line": "project-plugin/project-discovery: Project orientation for unfamiliar codebases. Use when entering a new project, exploring unknown repos, or working on shaky assumptions about build, test, lint, or CI setup."
+    },
+    {
+      "id": "project-plugin/project-init",
+      "line": "project-plugin/project-init: Scaffold a new project with base structure (git, README, LICENSE, CI, pre-commit). Use when starting a new project, initializing a repo, or bootstrapping Python/Node/Rust/Go."
+    },
+    {
+      "id": "project-plugin/project-refocus",
+      "line": "project-plugin/project-refocus: Refresh the plan to focus on the task at hand. Use when context grew, completed steps muddy it, or you want to clear context and continue in auto mode."
+    },
+    {
+      "id": "project-plugin/project-skill-scripts",
+      "line": "project-plugin/project-skill-scripts: Find and create supporting scripts for plugin skills. Use when auditing skills for script opportunities, improving token efficiency, or extracting bash blocks from SKILL.md."
+    },
+    {
+      "id": "project-plugin/project-test-loop",
+      "line": "project-plugin/project-test-loop: Automated TDD test-fix-refactor cycle until tests pass. Use when looping on failing tests, running a TDD cycle, or driving RED/GREEN/REFACTOR until green."
+    },
+    {
+      "id": "prompt-engineering-plugin/prompt-engineering-ground-response",
+      "line": "prompt-engineering-plugin/prompt-engineering-ground-response: Citation-backed responses with direct quotes from source documents. Use when analyzing long docs, answering codebase/spec questions, or when response accuracy is critical."
+    },
+    {
+      "id": "prose-plugin/prose-distill",
+      "line": "prose-plugin/prose-distill: Prose distill: condense verbose text to its essence. Use when asked to condense, tighten, shorten, reduce verbosity, or omit needless words while preserving substance."
+    },
+    {
+      "id": "prose-plugin/prose-synthesize",
+      "line": "prose-plugin/prose-synthesize: Prose synthesize: turn unstructured notes into a structured, actionable plan. Use when given brain dumps, stream-of-consciousness, or scattered thoughts needing order."
+    },
+    {
+      "id": "python-plugin/basedpyright-type-checking",
+      "line": "python-plugin/basedpyright-type-checking: Basedpyright static type checker for Python. Use when setting up type checking, configuring LSP, or comparing type checkers (basedpyright, pyright, mypy alternative)."
+    },
+    {
+      "id": "python-plugin/pytest-advanced",
+      "line": "python-plugin/pytest-advanced: Advanced pytest: fixtures, markers, parametrization, parallel execution. Use when implementing test infrastructure, writing fixtures, or running with coverage."
+    },
+    {
+      "id": "python-plugin/python-code-quality",
+      "line": "python-plugin/python-code-quality: Python code quality with ruff and ty. Use when the user mentions ruff, ty, linting, formatting, type checking, or Python code style."
+    },
+    {
+      "id": "python-plugin/python-development",
+      "line": "python-plugin/python-development: Core Python development idioms and language features (3.10+). Use when mentioning Python, type hints, or async. For scripts see uv-run; for project setup see uv-project-management."
+    },
+    {
+      "id": "python-plugin/python-packaging",
+      "line": "python-plugin/python-packaging: Build and publish Python packages with uv. Use when the user mentions building packages, publishing to PyPI, wheel/sdist creation, or entry points."
+    },
+    {
+      "id": "python-plugin/python-testing",
+      "line": "python-plugin/python-testing: Python testing with pytest, coverage, fixtures, and mocking. Use when the user mentions pytest, unit tests, coverage, fixtures, mocking, or writing Python tests."
+    },
+    {
+      "id": "python-plugin/ruff-formatting",
+      "line": "python-plugin/ruff-formatting: Python code formatting with ruff format. Fast, Black-compatible formatter. Use when formatting Python files, enforcing style, or checking format compliance."
+    },
+    {
+      "id": "python-plugin/ruff-linting",
+      "line": "python-plugin/ruff-linting: Python linting with ruff. Fast linting, rule selection, auto-fixing, and config. Use when checking Python code quality, enforcing standards, or finding bugs."
+    },
+    {
+      "id": "python-plugin/ty-type-checking",
+      "line": "python-plugin/ty-type-checking: ty: Astral's extremely fast Python type checker (mypy/Pyright alternative). Use when checking Python types or setting up type checking. Triggers: ty, mypy alternative."
+    },
+    {
+      "id": "python-plugin/uv-advanced-dependencies",
+      "line": "python-plugin/uv-advanced-dependencies: Advanced uv dependencies: Git deps, path deps, editable installs, groups, extras, custom indexes. Use when the user mentions git+https deps, editable installs, or private indexes."
+    },
+    {
+      "id": "python-plugin/uv-project-management",
+      "line": "python-plugin/uv-project-management: Python project setup, deps, and lockfiles with uv. Use when the user mentions uv, creating Python projects, managing dependencies, lockfiles, or pyproject.toml."
+    },
+    {
+      "id": "python-plugin/uv-python-versions",
+      "line": "python-plugin/uv-python-versions: Install and manage Python interpreter versions with uv. Use when the user mentions installing Python versions, .python-version, uv python, or managing CPython/PyPy."
+    },
+    {
+      "id": "python-plugin/uv-run",
+      "line": "python-plugin/uv-run: Run Python scripts with uv (PEP 723 inline deps, --with for one-off deps). Use when running scripts without venv activation or needing one-off dependencies."
+    },
+    {
+      "id": "python-plugin/uv-tool-management",
+      "line": "python-plugin/uv-tool-management: Install and manage global Python CLI tools with uv (pipx alternative). Use when the user mentions uv tool, uvx, installing CLI tools globally, or pipx replacement."
+    },
+    {
+      "id": "python-plugin/uv-workspaces",
+      "line": "python-plugin/uv-workspaces: Manage multi-package Python projects with uv workspaces. Use when the user mentions uv workspaces, Python monorepo, shared lockfiles, or member dependencies."
+    },
+    {
+      "id": "python-plugin/vulture-dead-code",
+      "line": "python-plugin/vulture-dead-code: Vulture and deadcode tools for detecting unused Python code (functions, classes, imports). Use when cleaning up codebases or removing dead code. Triggers vulture, deadcode."
+    },
+    {
+      "id": "rust-plugin/cargo-llvm-cov",
+      "line": "rust-plugin/cargo-llvm-cov: cargo-llvm-cov: Rust code coverage with LLVM instrumentation. Use when measuring coverage, enforcing thresholds, generating reports, or integrating codecov/coveralls."
+    },
+    {
+      "id": "rust-plugin/cargo-machete",
+      "line": "rust-plugin/cargo-machete: cargo-machete: detect unused Rust dependencies. Use when auditing Cargo.toml, optimizing build times, or cleaning up dependency bloat."
+    },
+    {
+      "id": "rust-plugin/cargo-nextest",
+      "line": "rust-plugin/cargo-nextest: cargo-nextest: fast Rust test runner with parallel execution and advanced filtering. Use when running tests, setting up CI, or diagnosing flaky/slow tests."
+    },
+    {
+      "id": "rust-plugin/cargo-worktree-builds",
+      "line": "rust-plugin/cargo-worktree-builds: Share one CARGO_TARGET_DIR across parallel git-worktree agents so Rust deps compile once. Use when running cargo/clippy/test in several worktrees concurrently, when parallel agent builds rebuild dependencies N times, or when N worktrees blow up disk with N copies of target/."
+    },
+    {
+      "id": "rust-plugin/clippy-advanced",
+      "line": "rust-plugin/clippy-advanced: Advanced Clippy configuration for Rust \u2014 custom rules, pedantic/nursery lints, clippy.toml, IDE and CI integration. Use when configuring or enforcing lint standards."
+    },
+    {
+      "id": "rust-plugin/mockito-http-mocking",
+      "line": "rust-plugin/mockito-http-mocking: mockito HTTP mocking for Rust integration tests: expectation semantics, mock matching order, and taming polling clients against instant mock servers. Use when mocking an HTTP API in Rust tests, when a wait-until-matched loop hangs, or when tests pass alone but hang under concurrent load."
+    },
+    {
+      "id": "rust-plugin/rust-development",
+      "line": "rust-plugin/rust-development: Rust development \u2014 cargo, clippy, rustfmt, async, Tokio, Serde, memory safety. Use when mentioning Rust, cargo, ownership, lifetimes, fearless concurrency, or async programming."
+    },
+    {
+      "id": "session-plugin/session-distill",
+      "line": "session-plugin/session-distill: Distill session insights into rules, skill improvements, recipes, and cross-repo promotions to marketplace plugins. Use when capturing learnings, codifying workflow into .claude/rules, or promoting a session-invented pattern into a specific plugin/skill as a PR."
+    },
+    {
+      "id": "session-plugin/session-end",
+      "line": "session-plugin/session-end: End-of-session orchestrator. Previews which of wrap/distill/feedback/taskwarrior-sync qualify, single confirm, then sequence. Use when winding down a session."
+    },
+    {
+      "id": "session-plugin/session-spinup",
+      "line": "session-plugin/session-spinup: Read-only session-start briefing of open tasks, git state, journal todos. Use when user says spin up, what was I doing, or pick up where I left off."
+    },
+    {
+      "id": "session-plugin/session-wrap",
+      "line": "session-plugin/session-wrap: End-of-session capture to taskwarrior, optional journal, GitHub issues. Use when user says wrap up, session wrap, or done for now."
+    },
+    {
+      "id": "software-design-plugin/design-by-contract",
+      "line": "software-design-plugin/design-by-contract: Design with explicit contracts \u2014 preconditions, postconditions, invariants, guard clauses. Use when designing a function/class, hardening a boundary, or adding assertions."
+    },
+    {
+      "id": "software-design-plugin/design-deep-modules",
+      "line": "software-design-plugin/design-deep-modules: Judge interface depth \u2014 deep modules hide complexity behind small interfaces. Use when designing a module/API, reviewing a class boundary, or reducing complexity."
+    },
+    {
+      "id": "software-design-plugin/design-legacy-seams",
+      "line": "software-design-plugin/design-legacy-seams: Get legacy code under test before changing it \u2014 find seams, write characterization tests. Use when changing untested code, breaking dependencies, or taming legacy."
+    },
+    {
+      "id": "software-design-plugin/design-patterns",
+      "line": "software-design-plugin/design-patterns: Select a design pattern from a symptom \u2014 strategy, observer, factory, adapter, decorator. Use when a structure resists change, or choosing between Gang-of-Four patterns."
+    },
+    {
+      "id": "software-design-plugin/design-pseudocode",
+      "line": "software-design-plugin/design-pseudocode: Design a routine by stepwise refinement \u2014 pseudocode the intent before coding, then promote it to comments. Use when designing a complex function or non-trivial algorithm."
+    },
+    {
+      "id": "taskwarrior-plugin/install-native-hooks",
+      "line": "taskwarrior-plugin/install-native-hooks: Install opt-in taskwarrior native on-add/on-modify/on-exit hooks: auto-stamp project, enforce claims, batch GitHub sync, maintain coworker markers. Use when hardening a local taskwarrior store."
+    },
+    {
+      "id": "taskwarrior-plugin/task-add",
+      "line": "taskwarrior-plugin/task-add: Add a taskwarrior task with blueprint linkage and optional GitHub issue. Use when adding coordination tasks, linking a blueprint WO, or mirroring a GitHub issue locally."
+    },
+    {
+      "id": "taskwarrior-plugin/task-bulk-ops",
+      "line": "taskwarrior-plugin/task-bulk-ops: Batch taskwarrior operations without the ID-renumbering and stdin foot-guns. Use when closing/triaging/modifying many tasks in one pass, bulk `task done` loops, or scripting task queries."
+    },
+    {
+      "id": "taskwarrior-plugin/task-claim",
+      "line": "taskwarrior-plugin/task-claim: Claim a taskwarrior task as in-flight (+ACTIVE) and write a coworker marker. Use when picking up a task from task-coordinate output before starting implementation."
+    },
+    {
+      "id": "taskwarrior-plugin/task-coordinate",
+      "line": "taskwarrior-plugin/task-coordinate: Surface next N unblocked taskwarrior tasks by urgency, skipping lock-contending tasks. Use when planning a parallel-agent wave or choosing tasks for a dispatch slot."
+    },
+    {
+      "id": "taskwarrior-plugin/task-done",
+      "line": "taskwarrior-plugin/task-done: Close a taskwarrior task with landing commit annotation and optional GitHub issue/PR close. Use when finishing a coordination task or marking a work order complete."
+    },
+    {
+      "id": "taskwarrior-plugin/task-reconcile",
+      "line": "taskwarrior-plugin/task-reconcile: Close taskwarrior tasks whose linked GitHub issue/PR closed or merged. Use when stale trackers pile up, after a PR-merge sweep, or auditing queue drift."
+    },
+    {
+      "id": "taskwarrior-plugin/task-release",
+      "line": "taskwarrior-plugin/task-release: Release a taskwarrior task without closing it \u2014 stops +ACTIVE clock and annotates state for handoff. Use when pausing mid-task, handing off to another agent, or aborting cleanly."
+    },
+    {
+      "id": "taskwarrior-plugin/task-status",
+      "line": "taskwarrior-plugin/task-status: Read-only taskwarrior queue report \u2014 pending, blocked, ready tasks and drift vs linked PRs. Use when auditing queue health, orienting before a wave, or for standup summaries."
+    },
+    {
+      "id": "terraform-plugin/infrastructure-terraform",
+      "line": "terraform-plugin/infrastructure-terraform: Terraform IaC: HCL, state management, modules, plan-apply workflows. Use when the user mentions Terraform, HCL, terraform plan/apply, tfstate, or IaC provisioning."
+    },
+    {
+      "id": "terraform-plugin/tfc-list-runs",
+      "line": "terraform-plugin/tfc-list-runs: List Terraform Cloud workspace runs filtered by status or date. Use when reviewing run history, finding failed runs, or auditing infra changes. Requires TFE_TOKEN."
+    },
+    {
+      "id": "terraform-plugin/tfc-plan-json",
+      "line": "terraform-plugin/tfc-plan-json: TFC plan JSON download and analysis. Use when diffing resource changes, inspecting replacements, or feeding plan data downstream. Requires TFE_TOKEN."
+    },
+    {
+      "id": "terraform-plugin/tfc-run-logs",
+      "line": "terraform-plugin/tfc-run-logs: Retrieve plan and apply logs from Terraform Cloud runs. Use when debugging failed plans/applies or reviewing TFC run output. Requires TFE_TOKEN."
+    },
+    {
+      "id": "terraform-plugin/tfc-run-status",
+      "line": "terraform-plugin/tfc-run-status: Terraform Cloud run status with resource counts and actions. Use when polling a run, checking pass/fail, or seeing if it can be applied or canceled. Requires TFE_TOKEN."
+    },
+    {
+      "id": "terraform-plugin/tfc-workspace-runs",
+      "line": "terraform-plugin/tfc-workspace-runs: List TFC runs across known workspaces (github, sentry, gcp, onelogin, twingate). Use when checking TFC status or listing runs by workspace. Requires TFE_TOKEN."
+    },
+    {
+      "id": "testing-plugin/mutation-testing",
+      "line": "testing-plugin/mutation-testing: Mutation testing with Stryker (TS/JS) and mutmut (Python). Use when finding weak tests that pass on mutated code, or improving test quality through mutation analysis."
+    },
+    {
+      "id": "testing-plugin/odiff-image-diffing",
+      "line": "testing-plugin/odiff-image-diffing: odiff pixel-by-pixel image diffing. Use when comparing screenshots, detecting visual regressions, diffing before/after PNGs, asserting golden images."
+    },
+    {
+      "id": "testing-plugin/playwright-cli",
+      "line": "testing-plugin/playwright-cli: Playwright CLI browser automation \u2014 navigate, screenshot, fill forms, click. Use when automating browser tasks from the shell; 4-10x more token-efficient than Playwright MCP."
+    },
+    {
+      "id": "testing-plugin/playwright-testing",
+      "line": "testing-plugin/playwright-testing: Playwright E2E testing \u2014 cross-browser, visual regression, API testing, mobile emulation. Use when writing E2E tests or setting up automated UI testing for web apps."
+    },
+    {
+      "id": "testing-plugin/property-based-testing",
+      "line": "testing-plugin/property-based-testing: Property-based testing with fast-check (TS/JS) and Hypothesis (Python). Use when generating test data, finding edge cases, testing properties, or writing QuickCheck-style tests."
+    },
+    {
+      "id": "testing-plugin/test-analyze",
+      "line": "testing-plugin/test-analyze: Analyze test results and create a fix plan with subagents. Use when triaging failing tests, analyzing JUnit XML, planning fixes for accessibility/security, or categorizing flaky/E2E failures."
+    },
+    {
+      "id": "testing-plugin/test-consult",
+      "line": "testing-plugin/test-consult: Consult the test-architecture agent for strategy decisions. Use when asking about coverage gaps, test pyramid, framework selection, flaky-test remediation, or how to test X."
+    },
+    {
+      "id": "testing-plugin/test-focus",
+      "line": "testing-plugin/test-focus: Run one test file fail-fast for rapid TDD \u2014 Playwright, Vitest, Jest, pytest, cargo, go test. Use when iterating on a failing spec, headed/debug mode, or serial WebGL tests."
+    },
+    {
+      "id": "testing-plugin/test-full",
+      "line": "testing-plugin/test-full: Run complete test suite in pyramid order \u2014 unit, integration, E2E. Use when running all tests before a PR, generating coverage reports, or doing pre-commit verification."
+    },
+    {
+      "id": "testing-plugin/test-quality-analysis",
+      "line": "testing-plugin/test-quality-analysis: Detect test smells, overmocking, flaky tests, and coverage issues. Use when reviewing tests, improving test quality, or analyzing test effectiveness and reliability."
+    },
+    {
+      "id": "testing-plugin/test-quick",
+      "line": "testing-plugin/test-quick: Run fast unit tests only, skip slow/integration/E2E. Use when checking units after a change, running affected tests since last commit, watch mode TDD, or sub-30s feedback."
+    },
+    {
+      "id": "testing-plugin/test-report",
+      "line": "testing-plugin/test-report: Show cached test status without re-running. Use when checking test health, standup status, coverage summary, history, or identifying flaky tests from recent runs."
+    },
+    {
+      "id": "testing-plugin/test-run",
+      "line": "testing-plugin/test-run: Universal test runner auto-detecting pytest, vitest, jest, cargo, go test. Use when running tests, targeting a file/pattern, running with coverage, or watch-mode dev loops."
+    },
+    {
+      "id": "testing-plugin/test-setup",
+      "line": "testing-plugin/test-setup: Configure testing infrastructure with CI/CD. Use when setting up tests, scaffolding test dirs, adding pre-commit hooks, GitHub Actions workflows, Codecov, or coverage badges."
+    },
+    {
+      "id": "testing-plugin/test-strategy-review",
+      "line": "testing-plugin/test-strategy-review: Evaluate whether a test suite actually tests what it aims to, using an adversarial pass plus a tests-hidden cold read, then verify every finding against the code. Use when a suite is green but you doubt it would catch a real regression."
+    },
+    {
+      "id": "testing-plugin/test-tier-selection",
+      "line": "testing-plugin/test-tier-selection: Auto-select test tiers based on change scope \u2014 unit for small, full suite for large. Use when running tests, discussing testing strategy, or after code modifications."
+    },
+    {
+      "id": "testing-plugin/vitest-testing",
+      "line": "testing-plugin/vitest-testing: Vitest test runner \u2014 Vite-native, ESM, watch/UI mode, coverage, mocking, snapshots. Use when setting up tests for Vite projects, migrating from Jest, or needing fast execution."
+    },
+    {
+      "id": "tools-plugin/binary-analysis",
+      "line": "tools-plugin/binary-analysis: Binary analysis: strings, binwalk, hexdump, xxd, file, objdump. Use when identifying unknown files, extracting strings, hunting credentials, or entropy analysis."
+    },
+    {
+      "id": "tools-plugin/cli-smoke-recipes",
+      "line": "tools-plugin/cli-smoke-recipes: CLI smoke recipes: expose pure-function modules via subcommands with a bulk-smoke justfile recipe. Use when designing data-transform modules or authoring smoke tests."
+    },
+    {
+      "id": "tools-plugin/d2-diagrams",
+      "line": "tools-plugin/d2-diagrams: Generate diagrams from text using D2 with automatic layouts and themes. Use when creating architecture diagrams, flowcharts, decision trees, sequence flows, or ERDs."
+    },
+    {
+      "id": "tools-plugin/deps-install",
+      "line": "tools-plugin/deps-install: Deps install: auto-detect package manager (uv, bun, npm, yarn, pnpm, cargo, go) and run the right install. Use when installing deps or syncing lockfiles."
+    },
+    {
+      "id": "tools-plugin/fd-file-finding",
+      "line": "tools-plugin/fd-file-finding: fd fast file finding: smart defaults, gitignore-aware, parallel. Use when searching for files by name, extension, or pattern across directories."
+    },
+    {
+      "id": "tools-plugin/generate-image",
+      "line": "tools-plugin/generate-image: Image generation via Gemini 3 Pro Image: aspect ratio, resolution, reference images. Use when creating artwork, product photos, or mockups with AI."
+    },
+    {
+      "id": "tools-plugin/hf-downloads",
+      "line": "tools-plugin/hf-downloads: Hugging Face model downloads without filling root disk \u2014 HF_HOME/xet cache redirection, token/gated-repo auth, staging pattern. Use when downloading HF models, hf download errors, ENOSPC during downloads, or GatedRepoError/401s."
+    },
+    {
+      "id": "tools-plugin/imagemagick-conversion",
+      "line": "tools-plugin/imagemagick-conversion: ImageMagick image manipulation: format conversion, resizing, batch processing, quality. Use when converting, resizing, batch-processing, or generating thumbnails."
+    },
+    {
+      "id": "tools-plugin/jq-json-processing",
+      "line": "tools-plugin/jq-json-processing: jq JSON processing: query, filter, transform JSON. Use when parsing JSON files, filtering arrays/objects, transforming structures, or extracting fields from JSON."
+    },
+    {
+      "id": "tools-plugin/justfile-expert",
+      "line": "tools-plugin/justfile-expert: Just command runner expertise \u2014 Justfile syntax, recipes, parameters, modules, shebang recipes. Use when authoring justfiles, project commands, or task automation."
+    },
+    {
+      "id": "tools-plugin/mermaid-diagrams",
+      "line": "tools-plugin/mermaid-diagrams: Render Mermaid diagrams (mmdc) to SVG/PNG/PDF \u2014 flowcharts, sequence, ERDs, class, state, Gantt, pie, gitGraph. Use when rendering .mmd or embedding diagrams in GitHub Markdown."
+    },
+    {
+      "id": "tools-plugin/nushell-data-processing",
+      "line": "tools-plugin/nushell-data-processing: Structured data processing with nushell \u2014 native tables, multi-format parsing (JSON/YAML/TOML/CSV/XML), pipelines, group-by. Use when running multi-step cross-format transforms awkward in jq."
+    },
+    {
+      "id": "tools-plugin/rg-code-search",
+      "line": "tools-plugin/rg-code-search: ripgrep (rg) fast code search: smart defaults, regex, file filtering. Use when searching for text patterns, code snippets, or doing multi-file analysis."
+    },
+    {
+      "id": "tools-plugin/shell-expert",
+      "line": "tools-plugin/shell-expert: Shell scripting: bash, zsh, POSIX, CLI tools, cross-platform automation. Use when writing shell scripts, pipes, command-line automation, or portable shell code."
+    },
+    {
+      "id": "tools-plugin/yq-yaml-processing",
+      "line": "tools-plugin/yq-yaml-processing: yq YAML processing: query, filter, transform YAML. Use when parsing configs, modifying Kubernetes manifests or GitHub Actions workflows, or transforming YAML."
+    },
+    {
+      "id": "typescript-plugin/biome-tooling",
+      "line": "typescript-plugin/biome-tooling: Biome all-in-one JS/TS formatter and linter, 15-20x faster than ESLint/Prettier. Use when setting up formatting/linting or migrating from ESLint+Prettier."
+    },
+    {
+      "id": "typescript-plugin/bun-add",
+      "line": "typescript-plugin/bun-add: Bun add: install a package, add dev dependency, pin exact version, or target a workspace. Use when the user wants to add/install a specific package with bun."
+    },
+    {
+      "id": "typescript-plugin/bun-build",
+      "line": "typescript-plugin/bun-build: Bun build: bundle or compile JS/TS to production bundle or standalone binary. Use when the user wants to bundle, compile, or build for browser/bun/node target."
+    },
+    {
+      "id": "typescript-plugin/bun-debug",
+      "line": "typescript-plugin/bun-debug: Bun debugger via --inspect. Use when the user wants to debug a TS/JS file interactively, break at first line, wait for attach, or debug tests with --inspect-brk."
+    },
+    {
+      "id": "typescript-plugin/bun-development",
+      "line": "typescript-plugin/bun-development: Bun runtime workflows for running scripts, testing, building, and initializing projects with agent-optimized flags. Use when running a TS file, watch/hot reload, configuring `bun test`, bundling/compiling, or scaffolding a Bun project."
+    },
+    {
+      "id": "typescript-plugin/bun-install",
+      "line": "typescript-plugin/bun-install: Bun install: install all deps from package.json. Use when bootstrapping a checkout, running a reproducible CI install (--frozen-lockfile), or deploying (--production)."
+    },
+    {
+      "id": "typescript-plugin/bun-lockfile-update",
+      "line": "typescript-plugin/bun-lockfile-update: Bun lockfile update (bun.lock): bun update, regeneration, security audits. Use when updating dependencies, resolving lockfile conflicts, or regenerating bun.lock."
+    },
+    {
+      "id": "typescript-plugin/bun-outdated",
+      "line": "typescript-plugin/bun-outdated: Bun outdated: check which deps have newer versions. Use when auditing freshness, spotting major updates, or deciding between bun update and bun update --latest."
+    },
+    {
+      "id": "typescript-plugin/bun-package-manager",
+      "line": "typescript-plugin/bun-package-manager: Fast JavaScript package management with Bun \u2014 install, add, remove, update. Use when installing all deps, adding/removing packages, running `bun update`/`outdated`, managing workspaces, doing a `--frozen-lockfile` CI install, or debugging conflicts."
+    },
+    {
+      "id": "typescript-plugin/bun-publish",
+      "line": "typescript-plugin/bun-publish: Bun publish to npm. Use when the user wants to release to npm, preview with --dry-run, publish a scoped package with --access public, or enable --provenance signing."
+    },
+    {
+      "id": "typescript-plugin/bun-publishing",
+      "line": "typescript-plugin/bun-publishing: Publish npm packages built with Bun: package.json config, CLI tool packaging, provenance signing, release automation. Use when setting up `publishConfig`/`files`/`bin`, packaging a CLI, enabling `--provenance`, or wiring release-please."
+    },
+    {
+      "id": "typescript-plugin/bun-test",
+      "line": "typescript-plugin/bun-test: Bun test runner with compact agent-friendly output. Use when running bun tests, targeting a pattern, collecting --coverage, watching, or emitting JUnit XML for CI."
+    },
+    {
+      "id": "typescript-plugin/knip-dead-code",
+      "line": "typescript-plugin/knip-dead-code: Knip dead-code detector for JS/TS: unused files, deps, exports, types. Use when cleaning up codebases, finding dead exports, or enforcing dependency hygiene in CI."
+    },
+    {
+      "id": "typescript-plugin/nodejs-development",
+      "line": "typescript-plugin/nodejs-development: Node.js development with Bun, Vite, Vue 3, Pinia, TypeScript. Use when the user mentions Node.js, Bun, Vite, Vue, Pinia, npm, pnpm, or modern JS/TS frameworks."
+    },
+    {
+      "id": "typescript-plugin/typescript-debugging",
+      "line": "typescript-plugin/typescript-debugging: Modern TypeScript/JavaScript debugging with Bun \u2014 inspector flags, debug.bun.sh, VSCode launch.json, memory profiling, heap analysis. Use when setting up interactive debugging, investigating leaks, CPU profiling with `--cpu-prof`, or sourcemaps."
+    },
+    {
+      "id": "typescript-plugin/typescript-sentry",
+      "line": "typescript-plugin/typescript-sentry: Error monitoring and performance with Sentry SDK for Bun/Node.js/Next.js \u2014 error capture, breadcrumbs, spans, cron monitoring, source maps, structured logging, profiling. Use when adding Sentry, instrumenting cron, or uploading sourcemaps."
+    },
+    {
+      "id": "typescript-plugin/typescript-strict",
+      "line": "typescript-plugin/typescript-strict: TypeScript strict mode: tsconfig.json, strict flags, Bundler/NodeNext moduleResolution, verbatimModuleSyntax. Use when setting up TS or migrating to stricter type safety."
+    },
+    {
+      "id": "workflow-orchestration-plugin/workflow-checkpoint-refactor",
+      "line": "workflow-orchestration-plugin/workflow-checkpoint-refactor: Multi-phase refactoring with checkpoint files that survive context limits. Use when refactoring spans 10+ files, needs phased rollout, or risks running out of context mid-session."
+    },
+    {
+      "id": "workflow-orchestration-plugin/workflow-preflight",
+      "line": "workflow-orchestration-plugin/workflow-preflight: Pre-work validation before implementation. Use when starting an issue or fix to verify remote state, check for existing PRs, and detect branch conflicts before coding."
+    },
+    {
+      "id": "workflow-orchestration-plugin/workflow-verify-before-filing",
+      "line": "workflow-orchestration-plugin/workflow-verify-before-filing: Verify accumulated bug claims at upstream HEAD and dedup against trackers before filing issues. Use when filing upstream reports from backlogs, audit docs, or git-history findings."
+    },
+    {
+      "id": "workflow-orchestration-plugin/workflow-wave-dispatch",
+      "line": "workflow-orchestration-plugin/workflow-wave-dispatch: Sequential-wave dispatch for multi-agent work with cross-task dependencies. Use when planning multi-step work, fixing parallel-dispatch order, or gating waves on verification."
+    }
+  ]
+}

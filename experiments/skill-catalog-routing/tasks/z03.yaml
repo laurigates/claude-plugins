@@ -1,0 +1,6 @@
+description: Plain science explanation for a child's question; no catalog skill covers general-knowledge teaching.
+prompt: |
+  My daughter asked me why the sky is blue and I completely blanked. Can you
+  explain it simply enough that I could repeat it back to a six-year-old?
+gold: NONE
+kind: plain

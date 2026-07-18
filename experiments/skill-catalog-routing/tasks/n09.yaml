@@ -1,0 +1,9 @@
+description: Pair 5 helm-release-recovery vs helm-release-management — "upgrade stuck in pending, wedged, roll it back to the previous revision, unstick it" is the failure-recovery path, not routine management.
+prompt: |
+  Our last chart upgrade to the cluster got stuck in a pending state and never
+  finished — the deployment is wedged and now nothing will apply. I need to roll
+  it back to the last working revision and get it out of the stuck condition.
+gold: kubernetes-plugin/helm-release-recovery
+near_miss: kubernetes-plugin/helm-release-management
+plugin: kubernetes-plugin
+pair: 5

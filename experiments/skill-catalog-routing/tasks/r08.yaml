@@ -1,0 +1,7 @@
+description: Find + remove unused Rust dependencies to speed builds. Distinct from Rust test running or coverage.
+prompt: |
+  My Rust project's dependency manifest has almost certainly collected crates that nothing imports anymore, and it's dragging out build times. I want to detect the ones that are genuinely unused and drop them.
+gold: rust-plugin/cargo-machete
+plugin: rust-plugin
+name_transparency: opaque
+length_band: short

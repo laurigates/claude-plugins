@@ -1,0 +1,7 @@
+description: Smart-home YAML won't start; suspect syntax error / undefined secret / duplicate key. Distinct from general config editing.
+prompt: |
+  After I edited my smart-home YAML files the whole system refuses to start up. I suspect there's a syntax mistake, a duplicate key, or a secret I referenced that was never defined, and I want to pinpoint it before restarting.
+gold: home-assistant-plugin/ha-validate
+plugin: home-assistant-plugin
+name_transparency: transparent
+length_band: mid

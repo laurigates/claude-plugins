@@ -1,0 +1,9 @@
+description: Pair 9 tasks vs search-discovery — "see all open to-do checkboxes, add new ones, mark finished items done" is to-do item management, not link/text exploration.
+prompt: |
+  In my Obsidian vault I want to pull up all my open to-do checkboxes, add a
+  couple of new ones for this week, and tick off the items I've already
+  finished. Basically manage my checklist items across the notes.
+gold: obsidian-plugin/tasks
+near_miss: obsidian-plugin/search-discovery
+plugin: obsidian-plugin
+pair: 9

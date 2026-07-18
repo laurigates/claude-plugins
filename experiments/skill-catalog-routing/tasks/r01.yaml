@@ -1,0 +1,7 @@
+description: Stale-merged-branch cleanup with dry-run preview + protection for main/develop; unambiguous vs git-maintain (broad gc/repack).
+prompt: |
+  My local repo has piled up dozens of old feature lines that were merged into main ages ago. I'd like a safe, interactive way to preview which ones are truly gone and remove them, while it refuses to ever touch main or develop.
+gold: git-plugin/deadbranch
+plugin: git-plugin
+name_transparency: opaque
+length_band: mid

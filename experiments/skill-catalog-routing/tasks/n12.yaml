@@ -1,0 +1,9 @@
+description: Pair 6 macos-performance-benchmark vs macos-performance-triage — "establish a baseline, repeatable scored run I can save and compare over time" is the scored/report path, not live triage.
+prompt: |
+  I want to establish a baseline for this Mac and verify it runs to spec — a
+  repeatable scored pass I can save and compare against later to track its CPU,
+  memory, disk, and thermal health over successive weeks.
+gold: macos-plugin/macos-performance-benchmark
+near_miss: macos-plugin/macos-performance-triage
+plugin: macos-plugin
+pair: 6

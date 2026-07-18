@@ -1,0 +1,7 @@
+description: On-demand atomic utility CSS classes generated only for what's used, with icon/typography presets, wired into Vite. Distinct from CSS transpile/minify.
+prompt: |
+  I want a utility-first styling setup where the atomic classes are generated on demand — only for the ones I actually use — with presets for icons and typography, all hooked into my Vite build.
+gold: css-plugin/unocss
+plugin: css-plugin
+name_transparency: opaque
+length_band: short

@@ -1,0 +1,9 @@
+description: Pair 10 code-dead-code vs code-dep-audit — "exports nothing imports, unreachable branches, files no longer referenced" is the unused-code detector, not the dependency/vulnerability auditor.
+prompt: |
+  After a big refactor I want to find exports that nothing imports anymore,
+  branches that can never be reached, and files no longer referenced anywhere in
+  the project, so I can strip out the cruft and shrink maintenance burden.
+gold: code-quality-plugin/code-dead-code
+near_miss: code-quality-plugin/code-dep-audit
+plugin: code-quality-plugin
+pair: 10

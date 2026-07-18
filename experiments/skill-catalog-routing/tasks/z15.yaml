@@ -1,0 +1,7 @@
+description: "Baits rust-plugin via 'rust', but it's iron oxide on a bike chain, not the language."
+prompt: |
+  There's a fair bit of rust on my bike chain after it sat out in the rain all
+  winter. What's the best way to get it off without wrecking the drivetrain?
+gold: NONE
+kind: near-miss-none
+baits: rust-plugin/rust-development

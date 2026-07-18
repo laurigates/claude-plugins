@@ -1,0 +1,7 @@
+description: Build an AI workflow as a stateful graph/state-machine with checkpoints + human-in-the-loop + streaming. Distinct from generic LLM chains or orchestrator agents.
+prompt: |
+  I'm building an AI assistant modeled as a state machine — it should support checkpoints so it can pause and resume, allow a human approval step midway, and stream its progress as it moves between states.
+gold: langchain-plugin/langgraph-agents
+plugin: langchain-plugin
+name_transparency: opaque
+length_band: mid

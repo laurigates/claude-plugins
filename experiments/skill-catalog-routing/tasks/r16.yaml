@@ -1,0 +1,7 @@
+description: Resolve a stalled merge/rebase where both branches changed the same lines. Distinct from rebase history-cleanup patterns.
+prompt: |
+  My merge halted partway through and several files are now marked because both sides changed the same lines. I need to work through them one by one and settle which version wins in each spot.
+gold: git-plugin/git-conflicts
+plugin: git-plugin
+name_transparency: transparent
+length_band: short

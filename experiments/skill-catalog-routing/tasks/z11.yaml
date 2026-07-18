@@ -1,0 +1,6 @@
+description: Consumer hardware buying advice; no purchasing-advice skill (macos skills diagnose an existing Mac, they don't recommend purchases).
+prompt: |
+  I'm shopping for a new laptop for photo editing, budget around 1500 euros.
+  Which specs should I prioritise and which are safe to skimp on?
+gold: NONE
+kind: plain

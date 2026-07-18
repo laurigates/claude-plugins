@@ -1,0 +1,45 @@
+# Condition matrix: cartesian product of (model) × (catalog variant).
+#
+# The independent variable is `catalog` — how much of the skill listing the
+# router sees — on a monotone information ladder:
+#   none   = C0  no catalog (task only; null control, free-recall)
+#   names  = C1  ids only, no descriptions            (~5.8k tok)
+#   short  = C2  "Use when <first trigger>"  ≤40 char
+#   medium = C3  "Use when <triggers>"       ≤80 char
+#   full   = C4  the current full description         (~22.9k tok)
+#
+# The catalog is injected into a catalog-free `--system-prompt-file` (built by
+# build-arm-prompt.sh) so the ONLY skill vocabulary the model sees is the one we
+# inject — Claude Code's own ~22-25k built-in skill listing is stripped by the
+# system-prompt replacement, for every arm including C0. run-one.sh asserts that.
+#
+# `effort` is fixed to `low`: routing is shallow classification, and higher
+# effort lets the model reason around a terse catalog, washing out the
+# description-length signal we are trying to measure.
+#
+# Models are the three pinned aliases in this repo (there is NO `fable` here):
+#   haiku  = claude-haiku-4-5
+#   sonnet = claude-sonnet-4-6
+#   opus   = claude-opus-4-8
+
+conditions:
+  # ---- haiku (weak-model measurement instrument) ----------------------------
+  - {id: haiku-C0, model: claude-haiku-4-5, effort: low, catalog: none}
+  - {id: haiku-C1, model: claude-haiku-4-5, effort: low, catalog: names}
+  - {id: haiku-C2, model: claude-haiku-4-5, effort: low, catalog: short}
+  - {id: haiku-C3, model: claude-haiku-4-5, effort: low, catalog: medium}
+  - {id: haiku-C4, model: claude-haiku-4-5, effort: low, catalog: full}
+
+  # ---- sonnet ---------------------------------------------------------------
+  - {id: sonnet-C0, model: claude-sonnet-4-6, effort: low, catalog: none}
+  - {id: sonnet-C1, model: claude-sonnet-4-6, effort: low, catalog: names}
+  - {id: sonnet-C2, model: claude-sonnet-4-6, effort: low, catalog: short}
+  - {id: sonnet-C3, model: claude-sonnet-4-6, effort: low, catalog: medium}
+  - {id: sonnet-C4, model: claude-sonnet-4-6, effort: low, catalog: full}
+
+  # ---- opus (upper anchor) --------------------------------------------------
+  - {id: opus-C0, model: claude-opus-4-8, effort: low, catalog: none}
+  - {id: opus-C1, model: claude-opus-4-8, effort: low, catalog: names}
+  - {id: opus-C2, model: claude-opus-4-8, effort: low, catalog: short}
+  - {id: opus-C3, model: claude-opus-4-8, effort: low, catalog: medium}
+  - {id: opus-C4, model: claude-opus-4-8, effort: low, catalog: full}

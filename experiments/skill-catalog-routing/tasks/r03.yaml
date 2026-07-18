@@ -1,0 +1,7 @@
+description: Sweep a subnet for live hosts + open ports + service versions (nmap). Distinct from ARP layer2 or bandwidth monitoring.
+prompt: |
+  I want to sweep my office subnet to see which machines are actually up, and for each one enumerate the open TCP ports plus the running services and their versions.
+gold: networking-plugin/network-discovery
+plugin: networking-plugin
+name_transparency: transparent
+length_band: short

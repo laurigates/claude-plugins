@@ -1,0 +1,9 @@
+description: Pair 10 code-dep-audit vs code-dead-code — "third-party packages for known vulnerabilities, which are outdated, license compliance" is the supply-chain dependency auditor, not unused-code detection.
+prompt: |
+  Before this release I need to vet our third-party packages for known security
+  vulnerabilities, flag which ones are outdated and need bumping, and confirm
+  their licenses are all compliant with our policy.
+gold: code-quality-plugin/code-dep-audit
+near_miss: code-quality-plugin/code-dead-code
+plugin: code-quality-plugin
+pair: 10
