@@ -335,6 +335,34 @@ release version:
     git push origin "v{{version}}"
 ```
 
+**Shared imports + modules: pass per-project values as recipe parameters**
+
+When a monorepo registers submodules (`mod name 'path'`) whose justfiles `import`
+a shared recipe file, hand per-project values to the shared recipes as recipe
+**parameters** — not via a shared *variable*. Two `just` behaviours make the
+variable approach fail:
+
+- An `import` that *defaults* a variable a module also assigns is a **conflict**,
+  not an override: `error: variable `X` has multiple definitions`.
+- An imported recipe that references `{{X}}` is resolved at **load time**, so it
+  forces *every* importing module to define `X` (else `error: variable `X` not
+  defined`) — even modules that never run that recipe.
+
+Passing the value as a recipe argument sidesteps both and keeps it explicit at the
+call site:
+
+```just
+# shared.just — take the value as a parameter, not a shared variable
+[private]
+_flash bin:
+    esptool ... 0x10000 build/{{bin}}.bin
+
+# project justfile
+import 'shared.just'
+bin_name := "my-app"          # this module's own variable
+flash: (_flash bin_name)      # pass it as an argument
+```
+
 ## MCP Integration (just-mcp)
 
 The `just-mcp` MCP server enables AI assistants to discover and execute justfile recipes through the Model Context Protocol, reducing context waste since the AI doesn't need to read the full justfile.
