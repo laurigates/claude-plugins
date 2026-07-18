@@ -5,8 +5,8 @@ user-invocable: false
 allowed-tools: Bash(d2 *), Read, Write, Grep, Glob, TodoWrite
 model: sonnet
 created: 2025-12-26
-modified: 2026-05-09
-reviewed: 2026-02-06
+modified: 2026-07-18
+reviewed: 2026-07-18
 ---
 
 # D2 Diagrams
@@ -289,9 +289,9 @@ box: {
 ```d2
 vars: {
   d2-config: {
-    layout: elk
-    theme: 4
-    dark-theme: 200
+    layout-engine: elk
+    theme-id: 4
+    dark-theme-id: 200
     pad: 20
     sketch: true
   }
