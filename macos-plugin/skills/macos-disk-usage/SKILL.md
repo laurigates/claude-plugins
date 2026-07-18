@@ -2,10 +2,10 @@
 name: macos-disk-usage
 description: macOS disk-usage forensics and space recovery on APFS. Use when df reports a disk near-full, hunting what's eating space, reclaiming OrbStack/Docker, or pruning caches and local snapshots.
 user-invocable: false
-allowed-tools: Bash(uname *), Bash(df *), Bash(du *), Bash(diskutil *), Bash(tmutil *), Bash(docker *), Bash(brew *), Bash(go *), Bash(pip *), Bash(uv *), Bash(dust *), Bash(dua *), Bash(gdu *), Bash(ncdu *), Bash(mise *), Read, Grep, Glob, TodoWrite
+allowed-tools: Bash(bash *), Bash(uname *), Bash(df *), Bash(du *), Bash(find *), Bash(diskutil *), Bash(tmutil *), Bash(docker *), Bash(brew *), Bash(go *), Bash(pip *), Bash(uv *), Bash(dust *), Bash(dua *), Bash(gdu *), Bash(ncdu *), Bash(mise *), Read, Grep, Glob, TodoWrite
 created: 2026-06-21
-modified: 2026-06-21
-reviewed: 2026-06-21
+modified: 2026-07-18
+reviewed: 2026-07-18
 ---
 
 # macOS Disk Usage & Space Recovery
@@ -62,6 +62,29 @@ tmutil listlocalsnapshots /
 # Thin them (reclaims purgeable space invisible to du); needs sudo
 sudo tmutil thinlocalsnapshots / 999999999999 4
 ```
+
+## Step 1.5: Fast-path — the usual-suspects scan
+
+Step 1 gives the honest *total*; this gives *where it went* without re-deriving the hunt by hand each time. `scripts/scan-suspects.sh` reads a public catalog of known reclaim targets (`scripts/suspects.tsv` — dev caches, build-artifact dirs, VM images), `du`s the ones that exist on this machine, and emits a ranked rollup with the **cleanup command and safety tier already attached**:
+
+```bash
+# Whole home (thorough; slower — du walks every tree)
+bash "${CLAUDE_SKILL_DIR}/scripts/scan-suspects.sh" --home-dir "$HOME" --root "$HOME"
+
+# Bound the build-artifact search to where projects live, raise the noise floor
+bash "${CLAUDE_SKILL_DIR}/scripts/scan-suspects.sh" --root ~/repos --min-mb 1000
+```
+
+Output follows the structured `SUSPECT id=… tier=… size_kb=… cmd="…"` convention, plus a ranked human table and per-tier totals (`TIER_SAFE_KB=…`, `RECLAIMABLE_SAFE=…`). Work the tiers exactly as Step 4 — exhaust `safe` before `decision`, never blind-delete `userdata`.
+
+**This augments Step 1, it does not replace it.** The scan is pure measurement; the judgment stays with the agent — reading the APFS `Avail`-not-`Capacity %` picture, checking purgeable snapshots when `du` and `df` disagree, and deciding *which* `decision`/`userdata` items to actually remove.
+
+**The `UNKNOWN` lines are the feedback loop.** Any big directory *not* in the catalog is surfaced as `UNKNOWN size_kb=… path=…`. When one recurs, add it to `suspects.tsv` **as a pattern** (never a machine-specific path — this repo is public) and open a PR; the catalog grows from real findings. Catalog columns and placeholders (`{dir}`, `{parent}`) are documented in the file's header.
+
+Two operational notes:
+
+- **Runtime scales with disk size** — `du` walks every tree, so a full disk can take a minute or two. Bound with `--root <project-dir>` and `--min-mb`; swap in `dust` (Step 3) if you want the walk parallelised.
+- **The catalog is the shared artifact; the scan *output* is machine-specific** — keep it in scratch, never commit it.
 
 ## Step 2: The OrbStack / Docker recovery play
 
@@ -126,6 +149,7 @@ Work top-down — exhaust the safe tier before touching anything that needs a de
 
 | Context | Command |
 |---------|---------|
+| Ranked usual-suspects rollup | `bash "${CLAUDE_SKILL_DIR}/scripts/scan-suspects.sh" --root ~/repos` |
 | Honest free space | `df -h / \| awk 'NR==2{print $4" avail"}'` |
 | Container free space | `diskutil apfs list \| grep -i 'Capacity In Use\|Free'` |
 | Top home consumers | `du -hx -d1 ~ 2>/dev/null \| sort -h \| tail -15` |
@@ -138,6 +162,7 @@ Work top-down — exhaust the safe tier before touching anything that needs a de
 
 | Need | Command |
 |------|---------|
+| Fast-path suspect scan | `bash "${CLAUDE_SKILL_DIR}/scripts/scan-suspects.sh"` |
 | Honest free space | `df -h /` (read `Avail`, not `Capacity %`) |
 | APFS container truth | `diskutil apfs list` |
 | Disk hog scan | `du -hx -d1 <dir>` or `dust -d2 -r <dir>` |
