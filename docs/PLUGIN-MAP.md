@@ -33,7 +33,7 @@ The development loop: plan, code, commit, ship.
 
 | Plugin | Skills | Purpose |
 |--------|--------|---------|
-| blueprint-plugin | 34 | PRD/ADR/PRP/TRP methodology, `/blueprint:execute` auto-pilot, ambient autonomy levels (`/blueprint:autopilot`), monorepo portfolio tracking, story-audit/reconcile |
+| blueprint-plugin | 35 | PRD/ADR/PRP/TRP methodology, `/blueprint:execute` auto-pilot, ambient autonomy levels (`/blueprint:autopilot`, `/blueprint:autonomy-level3`), monorepo portfolio tracking, story-audit/reconcile |
 | git-plugin | 38 + 1 agent | Commits, branches, PRs, issues, forks, worktrees, release-please |
 | project-plugin | 7 | Project init, modernization, maintenance |
 | session-plugin | 4 | Session bookends: spinup briefing, wrap capture, end orchestrator, distill |

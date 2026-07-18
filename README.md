@@ -79,7 +79,7 @@ the rules, skills, and hooks that embody it.
 | Plugin | Skills | Description |
 |--------|--------|-------------|
 | **api-plugin** | 1 | API integration and testing - REST endpoints, client generation |
-| **blueprint-plugin** | 34 | Blueprint Development methodology - PRD/PRP workflow with version tracking |
+| **blueprint-plugin** | 35 | Blueprint Development methodology - PRD/PRP workflow with version tracking |
 | **comfyui-plugin** | 17 | ComfyUI custom-node pack lifecycle - scaffold, seed repo, gitops adoption, registry publish |
 | **home-assistant-plugin** | 4 | Home Assistant configuration - automations, scripts, scenes, entities |
 | **obsidian-plugin** | 21 | Obsidian CLI operations - vault management, search, properties, tasks |
