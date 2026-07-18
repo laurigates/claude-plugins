@@ -1,0 +1,33 @@
+# macos-disk-usage usual-suspects catalog. Tab-separated; consumed by scan-suspects.sh.
+# Columns: kind(path|dir)  id  target  marker  tier(safe|decision|userdata)  command  regen  note
+#   path: literal path (relative to --home-dir unless absolute); du'd if it exists.
+#   dir : basename found under --root; counted only if <marker> exists in its parent (- = no marker).
+#   command placeholders: {dir} = matched path, {parent} = its parent dir.
+# Patterns only - never machine-specific paths (this repo is public).
+kind	id	target	marker	tier	command	regen	note
+path	uv-cache	.cache/uv	-	safe	uv cache clean	re-downloaded on next resolve	fails if a uv process holds the lock
+path	pip-cache	.cache/pip	-	safe	pip cache purge	re-downloaded	-
+path	pre-commit-cache	.cache/pre-commit	-	safe	pre-commit clean	rebuilt on next hook run	-
+path	hf-cache	.cache/huggingface	-	decision	rm -rf {dir}	re-downloaded from HF, large and slow	relocate via tools-plugin:hf-downloads (HF_HOME)
+path	ollama-models	.ollama/models	-	decision	ollama rm <model>	re-pulled from registry, large	pick per-model, never bulk-delete
+path	bun-store	.bun/install	-	safe	bun pm cache rm	re-fetched on next install	slows next offline install
+path	npm-cache	.npm/_cacache	-	safe	npm cache clean --force	re-downloaded	-
+path	cargo-registry-cache	.cargo/registry/cache	-	safe	rm -rf {dir}	re-downloaded on next build	-
+path	gradle-caches	.gradle/caches	-	safe	rm -rf {dir}	re-downloaded on next build	-
+path	go-build-cache	Library/Caches/go-build	-	safe	go clean -cache	rebuilt on next go build	-
+path	go-modcache	go/pkg/mod	-	safe	go clean -modcache	re-downloaded	go clean handles read-only perms
+path	brew-cache	Library/Caches/Homebrew	-	safe	brew cleanup -s	re-downloaded on next install	-
+path	playwright-cache	Library/Caches/ms-playwright	-	safe	rm -rf {dir}	re-downloaded on next install	-
+path	xcode-derived	Library/Developer/Xcode/DerivedData	-	safe	rm -rf {dir}	rebuilt on next Xcode build	-
+path	xcode-devicesupport	Library/Developer/Xcode/iOS DeviceSupport	-	safe	rm -rf {dir}	re-created when device reconnects	-
+path	xcode-archives	Library/Developer/Xcode/Archives	-	userdata	(review)	NOT regenerable - shipped app archives	keep releases you need
+path	simulator-caches	Library/Developer/CoreSimulator/Caches	-	decision	xcrun simctl delete unavailable	rebuilt on demand	can be tens of GB
+path	orbstack-image	Library/Group Containers/HUAQ24HBR6.dev.orbstack/data/data.img.raw	-	decision	docker system prune -a -f	OrbStack auto-shrinks after in-VM prune	never delete the .raw directly
+path	docker-desktop-vms	Library/Containers/com.docker.docker/Data/vms	-	decision	docker system prune -a -f	manual reclaim on Docker Desktop	-
+path	trash	.Trash	-	userdata	rm -rf {dir}/*	permanent	confirm before emptying
+dir	rust-target	target	Cargo.toml	safe	cargo clean --manifest-path {parent}/Cargo.toml	rebuilt on next cargo build	matched only beside a Cargo.toml
+dir	node-modules	node_modules	package.json	safe	rm -rf {dir}	restored by npm/bun/yarn install	-
+dir	py-venv-dot	.venv	-	safe	rm -rf {dir}	recreate via uv venv or python -m venv	skip the active env
+dir	py-venv	venv	-	safe	rm -rf {dir}	recreate via uv venv or python -m venv	skip the active env
+dir	next-build	.next	package.json	safe	rm -rf {dir}	rebuilt by next build	-
+dir	python-cache	__pycache__	-	safe	rm -rf {dir}	regenerated on import	many small dirs
