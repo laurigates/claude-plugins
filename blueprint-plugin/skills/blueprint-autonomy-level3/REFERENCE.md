@@ -44,7 +44,6 @@ Additive fields under `automation` in `docs/blueprint/manifest.json` (format
     "autonomy_level": 3,
     "work_orders": {
       "auto_execute": true,
-      "max_per_run": 1,
       "max_per_day": 3,
       "max_cycles": 3
     }
@@ -56,15 +55,28 @@ Additive fields under `automation` in `docs/blueprint/manifest.json` (format
 |-------|---------|-------|
 | `automation.autonomy_level >= 3` | `0` | both workflows (autorun + executor) |
 | `automation.work_orders.auto_execute` | `false` | the executor only |
-| `automation.work_orders.max_per_run` | `1` | orders executed per single trigger |
 | `automation.work_orders.max_per_day` | `3` | orders executed per calendar day |
 | `automation.work_orders.max_cycles` | `3` | attempts on ONE order before "stuck → human" |
 
 `blueprint-wo-guard.sh` emits a deterministic `PROCEED=true|false` + `REASON=`
 (`autonomy_level_below_3`, `auto_execute_disabled`, `daily_budget_exhausted`,
 `stuck_max_cycles_reached`, …). The dynamic counts (`--ran-today`, `--attempts`)
-are computed in-workflow via `gh` from `blueprint/wo-*` PR head branches, so no
-extra state store is needed.
+are computed in-workflow via `gh` from `blueprint/wo-*` PR head branches (by
+`startswith`, and **fail-closed**: an unreadable PR history HALTs rather than
+defaulting the budget to 0), so no extra state store is needed.
+
+### Required: default-branch protection
+
+The `execute` job runs a model with broad `Bash` + `contents: write` — it must,
+to run the consumer's arbitrary test suite and push its work branch — and
+GitHub's built-in token cannot be ref-scoped to `blueprint/wo-*`. So the
+"human PR review is the final gate" guarantee is **not** self-enforcing; it
+depends on the consumer protecting the default branch (require PR review,
+restrict pushes, disallow force-push/self-merge). `/blueprint:autonomy-level3`
+prints this as a REQUIRED activation step. The workflow adds defense-in-depth
+(a provenance gate refusing non-pipeline issues; a prompt prohibition on
+pushing to / merging into the default branch), but branch protection is the
+load-bearing control.
 
 ## Loop integrity (`.claude/rules/loop-integrity.md`)
 
@@ -78,9 +90,9 @@ extra state store is needed.
 
 | Item | How |
 |------|-----|
-| Least-privilege `GITHUB_TOKEN` | Top-level `permissions: contents: read`; each job escalates only what it needs (`issues: write`, `pull-requests: write`, `contents: write`, `id-token: write`). |
+| Least-privilege `GITHUB_TOKEN` | Top-level `permissions: contents: read`; each job escalates only what it needs (`issues: write`, `pull-requests: write`, `contents: write`). No `id-token: write` — auth is the static `CLAUDE_CODE_OAUTH_TOKEN` (no OIDC), so it is not granted. |
 | Script-injection indirection | The **untrusted** issue body is bound to `env: WO_ISSUE_BODY`, written to `wo-body.md`, and parsed by `blueprint-wo-packet.sh` — never interpolated `${{ … }}` into a `run:` line. |
-| Prompt-injection defense | `blueprint-wo-packet.sh` emits only booleans/counts/a sanitized `WO-NNN` id — never raw body text — so a body cannot inject `KEY=VALUE`/`PROCEED=` lines a downstream shell would misparse. The executing agent is told to treat `wo-packet.md` as **task data**, not harness instructions. |
+| Prompt-injection defense | `blueprint-wo-packet.sh` emits only booleans/counts/a sanitized `WO-NNN` id — never raw body text — so a body cannot inject `KEY=VALUE`/`PROCEED=` lines a downstream shell would misparse. The executing agent reads `wo-packet.md` as **task data** and is told not to merge/push-to-default-branch. Because it still holds broad write, the real containment is the **provenance gate** (non-pipeline issues refused) + **human approval** + **default-branch protection** (see above), not the "task data" instruction alone. |
 | Pinned actions | `actions/checkout@v6`, `anthropics/claude-code-action@v1` — the same pins this repo's own workflows use. |
 | Model / effort | Every `claude-code-action` invocation pins `--model opus` + explicit `--effort` (`medium` for autorun/verify, `high` for execution) per `.claude/rules/workflow-model-effort.md`. |
 

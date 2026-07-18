@@ -83,7 +83,6 @@ jobs:
       contents: read
       issues: write
       pull-requests: write
-      id-token: write
     steps:
       - uses: actions/checkout@v6
       - name: Pre-compute due agent tasks (deterministic, no model)

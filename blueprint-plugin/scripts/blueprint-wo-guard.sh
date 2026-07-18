@@ -17,7 +17,6 @@
 #
 # Budgets (loop-integrity: no runaway; see .claude/rules/loop-integrity.md) read
 # from the manifest with defaults, overridable by flags:
-#   automation.work_orders.max_per_run  (default 1)  — orders per single run
 #   automation.work_orders.max_per_day  (default 3)  — orders per calendar day
 #   automation.work_orders.max_cycles   (default 3)  — attempts on ONE order
 #                                                      before "stuck -> human"
@@ -30,8 +29,7 @@
 # (PROCEED= carries the verdict; a HALT is not a script error — parallel-safe).
 #
 # Usage: blueprint-wo-guard.sh --mode autorun|wo-execute [--project-dir DIR]
-#            [--ran-today N] [--attempts N]
-#            [--max-per-run N] [--max-per-day N] [--max-cycles N]
+#            [--ran-today N] [--attempts N] [--max-per-day N] [--max-cycles N]
 
 set -u
 
@@ -39,7 +37,6 @@ mode=""
 project_dir="."
 ran_today=0
 attempts=0
-override_per_run=""
 override_per_day=""
 override_cycles=""
 
@@ -49,7 +46,6 @@ while [ $# -gt 0 ]; do
         --project-dir) project_dir="${2:-.}"; shift 2 ;;
         --ran-today)   ran_today="${2:-0}"; shift 2 ;;
         --attempts)    attempts="${2:-0}"; shift 2 ;;
-        --max-per-run) override_per_run="${2:-}"; shift 2 ;;
         --max-per-day) override_per_day="${2:-}"; shift 2 ;;
         --max-cycles)  override_cycles="${2:-}"; shift 2 ;;
         *)             shift ;;
@@ -118,13 +114,11 @@ manifest_num() { # manifest_num <jsonpath> <default>
     v=$(jq -r "$1 // empty" "$manifest" 2>/dev/null || echo "")
     case "$v" in ''|*[!0-9]*) echo "$2" ;; *) echo "$v" ;; esac
 }
-max_per_run=$(intval "${override_per_run:-$(manifest_num '.automation.work_orders.max_per_run' 1)}")
 max_per_day=$(intval "${override_per_day:-$(manifest_num '.automation.work_orders.max_per_day' 3)}")
 max_cycles=$(intval "${override_cycles:-$(manifest_num '.automation.work_orders.max_cycles' 3)}")
 
 printf 'RAN_TODAY=%s\n' "$ran_today"
 printf 'ATTEMPTS=%s\n' "$attempts"
-printf 'MAX_PER_RUN=%s\n' "$max_per_run"
 printf 'MAX_PER_DAY=%s\n' "$max_per_day"
 printf 'MAX_CYCLES=%s\n' "$max_cycles"
 
