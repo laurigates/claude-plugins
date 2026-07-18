@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.6.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.6.0...hooks-plugin-v2.6.1) (2026-07-18)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** ignore tool idioms inside # comments in bash-antipatterns ([#2111](https://github.com/laurigates/claude-plugins/issues/2111)) ([519ae90](https://github.com/laurigates/claude-plugins/commit/519ae90d01b461f202b3eba3423ba828b6a720de)), closes [#2106](https://github.com/laurigates/claude-plugins/issues/2106)
+
 ## [2.6.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.5.15...hooks-plugin-v2.6.0) (2026-07-17)
 
 
