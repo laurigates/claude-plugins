@@ -183,6 +183,32 @@ Symptom signature: a state check reports an issue closed/missing, but
 authoritative. (Observed 2026-06-21: a 39-issue repo's open-state check missed
 two issues that were genuinely open.)
 
+## Search qualifiers: `head:` is exact-match, not a prefix
+
+`gh pr list --search "head:<X>"` (and the underlying GitHub search `head:`
+qualifier) matches PRs whose head branch is **exactly** `<X>` — it is **not** a
+prefix/glob match. So `gh pr list --search "head:feat/wo-"` matches a branch
+literally named `feat/wo-` (usually none), returning **zero** — not "every
+`feat/wo-*` branch". The failure is silent: the command succeeds, the count is
+just wrong, and any budget/threshold keyed on that count never fires.
+
+```bash
+# Wrong — reads as "PRs on feat/wo-* branches"; actually matches the exact name feat/wo-
+COUNT=$(gh pr list --state all --search "head:feat/wo- created:>=$TODAY" --json number --jq 'length')  # ~always 0
+
+# Right — enumerate head branches and prefix-filter in jq
+COUNT=$(gh pr list --state all --limit 200 --json headRefName,createdAt \
+  --jq --arg d "$TODAY" '[.[] | select(.headRefName | startswith("feat/wo-")) | select(.createdAt | startswith($d))] | length')
+```
+
+Note `gh pr list --head "<branch>"` (the flag, not the search qualifier) **is**
+an exact-branch filter and is correct for "PRs on this one branch". Reserve the
+`--search "head:"` form for a known full branch name; reach for `--json
+headRefName` + `startswith` whenever you mean a **prefix**. (Observed 2026-07-18:
+a level-3 daily-budget count keyed on `--search "head:blueprint/wo-"` was always
+0, so the budget never enforced — caught only by an adversarial review, not by
+CI.)
+
 ## Related
 
 - `.claude/rules/github-metadata-hygiene.md` (parent

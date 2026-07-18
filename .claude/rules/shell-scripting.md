@@ -132,6 +132,40 @@ This is distinct from hook scripts, which *should* fail fast — the rule is
 that emits its own PASS/WARN/FAIL per section wants to run every section, so drop
 `-e`/`pipefail` and guard only unset vars.
 
+#### `set -e` + `OUT=$(cmd-that-exits-nonzero)` aborts *before* the next line
+
+Under `set -e` (which GitHub Actions applies to every `run:` block by default —
+`bash -eo pipefail`), a command substitution whose command **exits non-zero**
+fails the whole statement, so the script aborts **at the assignment**, before
+any code that inspects `OUT`. A script deliberately designed to exit `1` as a
+*signal* (an invalid-input parser, a validator that carries its verdict in
+`STATUS=`/`VALID=` output) is the classic trap: the intended "read the output,
+branch on it" step never runs.
+
+```yaml
+# Wrong (GitHub Actions run: — set -eo pipefail): parser exits 1 on bad input,
+# so the step aborts here; the `valid=` output and the reject branch never run.
+- run: |
+    OUT=$(bash validate.sh --in x)      # validate.sh exits 1 on invalid → step dies
+    echo "valid=$(printf '%s\n' "$OUT" | grep -m1 '^VALID=' | cut -d= -f2)" >> "$GITHUB_OUTPUT"
+- if: steps.x.outputs.valid != 'true'   # never reached
+  run: echo "rejected"
+```
+
+```yaml
+# Right: neutralize the exit so the verdict flows through the OUTPUT, not $?
+- run: |
+    OUT=$(bash validate.sh --in x) || true
+    echo "valid=$(printf '%s\n' "$OUT" | grep -m1 '^VALID=' | cut -d= -f2)" >> "$GITHUB_OUTPUT"
+```
+
+Applies anywhere `set -e` is active (an Actions `run:`, a `set -euo pipefail`
+script). Prefer a script whose exit code and its structured `STATUS=` output
+agree *and* a caller that reads the output — capture with `|| true` when you
+mean to branch on the content rather than abort on the exit. (Observed
+2026-07-18: a workflow's "reject an invalid packet + comment" step was dead code
+because `OUT=$(bash parser.sh)` aborted the step before the comment path.)
+
 ### Block Function
 
 Hook scripts that block tool use (exit code 2) must use a standard `block()` function:
