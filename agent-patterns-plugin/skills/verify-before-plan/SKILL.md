@@ -4,7 +4,8 @@ description: Verify orchestrator premises (file counts, build state, artefact pr
 allowed-tools: Read, Glob, Grep, Bash(git status *), Bash(git diff *), Bash(gh pr view *), TodoWrite
 model: opus
 created: 2026-05-14
-modified: 2026-05-14
+modified: 2026-07-18
+compatibility: claude-code
 reviewed: 2026-05-14
 ---
 

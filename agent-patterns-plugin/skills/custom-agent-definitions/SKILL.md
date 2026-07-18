@@ -4,7 +4,8 @@ description: Write and configure custom agent definitions in Claude Code agents/
 user-invocable: false
 allowed-tools: Bash(cat *), Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-01-20
-modified: 2026-06-14
+modified: 2026-07-18
+compatibility: claude-code
 reviewed: 2026-06-14
 ---
 

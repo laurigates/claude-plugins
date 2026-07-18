@@ -4,7 +4,8 @@ description: Gate outward-bound text (upstream issues, docs, PR bodies) through 
 allowed-tools: Agent, Read, Write, Edit, TodoWrite
 model: opus
 created: 2026-06-11
-modified: 2026-07-17
+modified: 2026-07-18
+compatibility: claude-code
 reviewed: 2026-06-11
 ---
 

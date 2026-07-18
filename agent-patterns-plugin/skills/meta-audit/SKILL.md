@@ -1,6 +1,7 @@
 ---
 created: 2025-12-16
-modified: 2026-06-18
+modified: 2026-07-18
+compatibility: claude-code
 reviewed: 2026-04-25
 allowed-tools: Glob, Read, TodoWrite
 model: opus

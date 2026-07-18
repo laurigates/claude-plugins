@@ -6,7 +6,8 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash, TodoWrite
 argument-hint: "--strict to deny unknown commands, --category git|test|lint|build|gh|deny"
 disable-model-invocation: true
 created: 2026-03-13
-modified: 2026-06-18
+modified: 2026-07-18
+compatibility: claude-code
 reviewed: 2026-04-29
 ---
 

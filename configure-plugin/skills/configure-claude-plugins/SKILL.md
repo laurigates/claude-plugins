@@ -1,6 +1,7 @@
 ---
 created: 2026-01-23
 modified: 2026-06-18
+compatibility: claude-code
 reviewed: 2026-06-10
 description: "Claude plugins marketplace setup: .claude/settings.json, GitHub Actions, plugin pinning. Use when onboarding to claude-plugins, setting up claude.yml, pinning plugins, or overriding global plugins."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash(mkdir *), Bash(test *), Bash(ls *), Bash(git remote *), Bash(gh api *), Bash(jq *), AskUserQuestion, TodoWrite

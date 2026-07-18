@@ -1,6 +1,7 @@
 ---
 created: 2026-04-24
-modified: 2026-06-18
+modified: 2026-07-18
+compatibility: claude-code
 reviewed: 2026-04-24
 description: "Audit skill tree for overlap, split-pressure, and consolidation candidates. Use when finding confusing skill clusters or surfacing REFERENCE.md extraction candidates."
 allowed-tools: Bash(python3 *), Read, TodoWrite

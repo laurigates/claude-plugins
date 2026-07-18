@@ -6,7 +6,8 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash, TodoWrite
 argument-hint: "--no-verify to skip gh auth verification"
 disable-model-invocation: true
 created: 2026-02-27
-modified: 2026-06-18
+modified: 2026-07-18
+compatibility: claude-code
 reviewed: 2026-03-30
 ---
 

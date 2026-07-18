@@ -5,7 +5,8 @@ args: <plugin/skill-name> [--apply] [--description-only] [--best-of N]
 allowed-tools: Task, Read, Write, Edit, Glob, Grep, Bash(bash *), Bash(python3 *), Bash(cat *), Bash(jq *), Bash(find *), Bash(diff *), AskUserQuestion, TodoWrite
 argument-hint: "git-plugin/git-commit [--apply] [--best-of 3]"
 created: 2026-03-04
-modified: 2026-06-23
+modified: 2026-07-18
+compatibility: claude-code
 reviewed: 2026-03-04
 ---
 
