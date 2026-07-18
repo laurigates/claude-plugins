@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.41.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.40.0...blueprint-plugin-v3.41.0) (2026-07-18)
+
+
+### Features
+
+* **blueprint-plugin:** implement autonomy level 3 scaffold (ADR-0020) ([0f2df12](https://github.com/laurigates/claude-plugins/commit/0f2df1278384cdd1389c82f45152acebdcdf3b05)), closes [#2005](https://github.com/laurigates/claude-plugins/issues/2005)
+
+
+### Bug Fixes
+
+* **blueprint-plugin:** harden level-3 executor per adversarial review ([8d002d1](https://github.com/laurigates/claude-plugins/commit/8d002d1195d856d3a4a66cfb451bbd41832e0c13)), closes [#2005](https://github.com/laurigates/claude-plugins/issues/2005)
+
 ## [3.40.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.39.1...blueprint-plugin-v3.40.0) (2026-07-05)
 
 
