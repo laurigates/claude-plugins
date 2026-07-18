@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.7.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.6.1...hooks-plugin-v2.7.0) (2026-07-18)
+
+
+### Features
+
+* **hooks-plugin:** structural ast-grep classifier for bash-antipatterns read/write detectors ([#2114](https://github.com/laurigates/claude-plugins/issues/2114)) ([50513c0](https://github.com/laurigates/claude-plugins/commit/50513c010db1321595c60c28888297e4cc42340a))
+
 ## [2.6.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.6.0...hooks-plugin-v2.6.1) (2026-07-18)
 
 
