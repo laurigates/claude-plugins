@@ -1,0 +1,10 @@
+{
+  "measured_with": {
+    "note": "total input tokens incl. fixed router+tooling constant"
+  },
+  "none": 23157,
+  "names": 27326,
+  "short": 30382,
+  "medium": 34109,
+  "full": 43853
+}
