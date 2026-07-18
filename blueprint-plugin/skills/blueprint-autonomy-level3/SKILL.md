@@ -112,7 +112,17 @@ alone leaves everything dormant:
 3. **Labels** — `work-order-draft` (proposals) and `work-order-approved` (the
    human relabel that triggers execution). Offer to create the approval label:
    `gh label create work-order-approved --description "Blueprint level-3: execute this approved work order (ADR-0020)" --color 0E8A16`.
-4. **Enable the plugin in CI** — the caller repo needs `blueprint-plugin`
+4. **Branch protection (REQUIRED — load-bearing).** The executor job runs with
+   broad `Bash` + `contents: write` (it must, to run the consumer's arbitrary
+   test suite and push its work branch), and GitHub cannot ref-scope that token
+   to `blueprint/wo-*`. So the "human PR review is the final gate" guarantee
+   rests on the **default branch being protected**: require a pull-request
+   review, restrict who can push, and disallow force-push/self-merge. State
+   plainly that **without this, a prompt-injected work order could push to or
+   self-merge into the default branch.** Report whether the default branch is
+   protected (`gh api repos/{owner}/{repo}/branches/{branch}/protection` returns
+   200) and refuse to call the setup "done" until it is.
+5. **Enable the plugin in CI** — the caller repo needs `blueprint-plugin`
    available to `claude-code-action` (marketplace + `.claude/settings.json`).
 
 ### Step 5: Summarize the safety model
@@ -123,10 +133,14 @@ enabling (full detail in [REFERENCE.md](REFERENCE.md)):
 - **Gating** — `blueprint-wo-guard.sh` HALTs every run unless
   `autonomy_level >= 3` (autorun) and additionally `auto_execute: true`
   (executor). Both default off.
-- **Human approval stays required** — a work order executes only after a human
-  relabels its proposal issue to `work-order-approved`; the PR is the final gate.
-- **Budgets + stuck ceiling** — per-run/per-day caps and "same order attempted
-  `max_cycles`× → stuck → surface to human" (loop-integrity).
+- **Human approval + provenance** — a work order executes only after a human
+  relabels its proposal issue to `work-order-approved`, **and** the gate refuses
+  any issue that didn't come through the pipeline (no `work-order-draft`/
+  `work-order` label). The protected default branch + human PR review are the
+  final gate (see requirement 4).
+- **Budgets + stuck ceiling** — per-day cap (`RAN_TODAY` counted fail-closed)
+  and "same order attempted `max_cycles`× → stuck → surface to human"
+  (loop-integrity).
 - **Independent verifier** — the executing agent never certifies its own work;
   the PR's CI suite plus a **fresh** reviewer agent (the `verify` job) judge
   "done", and each iteration writes a state-packet issue comment.
