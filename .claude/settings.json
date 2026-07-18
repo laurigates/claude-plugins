@@ -32,7 +32,6 @@
       "Bash(rg *)",
       "Edit(.claude/rules/**)",
       "WebFetch(domain:agentic-patterns.com)",
-      "Write(.claude/rules/**)",
       "mcp__chrome-devtools",
       "mcp__context7",
       "mcp__github__issue_read",

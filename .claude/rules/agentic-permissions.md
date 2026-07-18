@@ -278,18 +278,19 @@ These narrow rules carry over into auto mode and skip the classifier. Avoid broa
 
 Claude Code's built-in classifier treats `.claude/**` as a protected directory (except for `.claude/commands`, `.claude/agents`, `.claude/skills`, and `.claude/worktrees` — see `auto-mode.md`). Writes route through the classifier in auto mode and prompt in lower modes. Subagents observe this denial as a hard block on `Edit`/`Write`, regardless of the parent session's permission mode.
 
-`Edit(<glob>)` and `Write(<glob>)` allow rules in `settings.json` resolve at step 1 of the decision chain and override the protected-path check. Use this to carve out documentation directories under `.claude/` that should be subagent-writable:
+An `Edit(<glob>)` allow rule in `settings.json` resolves at step 1 of the decision chain and overrides the protected-path check. Use this to carve out documentation directories under `.claude/` that should be subagent-writable:
 
 ```json
 {
   "permissions": {
     "allow": [
-      "Edit(.claude/rules/**)",
-      "Write(.claude/rules/**)"
+      "Edit(.claude/rules/**)"
     ]
   }
 }
 ```
+
+One `Edit(<glob>)` rule covers **all** file-editing tools — `Edit`, `Write`, and `NotebookEdit`. A matching `Write(<glob>)` rule is dead weight: file permission checks only consult `Edit(path)` rules, so Claude Code warns on startup (`Write(...) is not matched by file permission checks — only Edit(path) rules are`) and ignores it. Do not pair a `Write(<glob>)` allow rule with the `Edit(<glob>)` one.
 
 This repo carves out `.claude/rules/**` because the files there are documentation read by humans and injected into agent context — not configuration that affects the harness. Skills, agents, and commands directories are already in Claude Code's default carve-out for the same reason; rules belong in the same trust tier.
 
