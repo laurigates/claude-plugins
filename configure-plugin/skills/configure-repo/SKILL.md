@@ -5,7 +5,8 @@ allowed-tools: Glob, Grep, Read, Write, Edit, Bash(git add *), Bash(git status *
 args: "[--check-only] [--skip-health] [--skip-migrations]"
 argument-hint: "[--check-only] [--skip-health] [--skip-migrations]"
 created: 2026-04-14
-modified: 2026-06-22
+modified: 2026-07-18
+compatibility: claude-code
 reviewed: 2026-06-25
 ---
 

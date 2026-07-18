@@ -4,7 +4,8 @@ description: "Claude Code security settings: permission wildcards, shell operato
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-01-20
-modified: 2026-07-17
+modified: 2026-07-18
+compatibility: claude-code
 reviewed: 2026-07-17
 ---
 

@@ -4,7 +4,8 @@ description: Configure per-project plugin settings via .claude/plugin-name.local
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-03-06
-modified: 2026-03-06
+modified: 2026-07-18
+compatibility: claude-code
 reviewed: 2026-03-06
 ---
 

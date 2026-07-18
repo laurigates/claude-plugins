@@ -6,7 +6,8 @@ allowed-tools: Task, Read, Write, Glob, Grep, Bash(bash *), SlashCommand, TodoWr
 argument-hint: "git-plugin [--create-missing-evals]"
 agent: general-purpose
 created: 2026-03-04
-modified: 2026-06-18
+modified: 2026-07-18
+compatibility: claude-code
 reviewed: 2026-03-04
 ---
 

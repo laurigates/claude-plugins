@@ -7,6 +7,7 @@ argument-hint: "--remote-only to only run in web sessions, --no-verify to skip t
 disable-model-invocation: true
 created: 2026-02-07
 modified: 2026-06-18
+compatibility: claude-code
 reviewed: 2026-03-30
 ---
 

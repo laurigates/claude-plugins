@@ -5,7 +5,8 @@ allowed-tools: Bash(bash *), Bash(mkdir *), Bash(git diff *), Bash(git log *), B
 argument-hint: "--rules | --skills | --recipes | --process | --all | --dry-run"
 args: "[--rules] [--skills] [--recipes] [--process] [--all] [--dry-run]"
 created: 2026-02-11
-modified: 2026-07-14
+modified: 2026-07-18
+compatibility: claude-code
 reviewed: 2026-07-14
 ---
 

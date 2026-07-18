@@ -7,7 +7,8 @@ argument-hint: "git-plugin/git-commit --models opus,haiku --with-skill-only"
 model: opus
 agent: general-purpose
 created: 2026-06-13
-modified: 2026-06-18
+modified: 2026-07-18
+compatibility: claude-code
 reviewed: 2026-06-13
 ---
 

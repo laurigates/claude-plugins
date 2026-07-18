@@ -1,6 +1,7 @@
 ---
 created: 2026-02-04
 modified: 2026-06-17
+compatibility: claude-code
 reviewed: 2026-06-17
 description: "Claude Code health check — scans plugins, settings, hooks, MCP, runtime state, usage telemetry, permissions, marketplace with optional fixes. Use when checking project health or troubleshooting setup."
 allowed-tools: Bash(bash *), Bash(pre-commit *), Read, Glob, Grep, TodoWrite, AskUserQuestion

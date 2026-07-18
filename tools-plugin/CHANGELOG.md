@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.9.2](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.9.1...tools-plugin-v2.9.2) (2026-07-18)
+
+
+### Documentation
+
+* **tools-plugin:** justfile shared-import + module parameter gotcha ([#2110](https://github.com/laurigates/claude-plugins/issues/2110)) ([74c0b95](https://github.com/laurigates/claude-plugins/commit/74c0b958cda5a31fa2fe71cdea9cf58f27b4e4dd))
+
 ## [2.9.1](https://github.com/laurigates/claude-plugins/compare/tools-plugin-v2.9.0...tools-plugin-v2.9.1) (2026-07-18)
 
 

@@ -3,7 +3,8 @@ name: session-wrap
 description: End-of-session capture to taskwarrior, optional journal, GitHub issues. Use when user says wrap up, session wrap, or done for now.
 allowed-tools: Bash(bash *), Bash(task *), Bash(git *), Bash(gh *), Read, Write, Edit, AskUserQuestion, TodoWrite
 created: 2026-05-12
-modified: 2026-07-12
+modified: 2026-07-18
+compatibility: claude-code
 reviewed: 2026-06-24
 ---
 

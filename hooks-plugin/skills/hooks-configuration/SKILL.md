@@ -4,7 +4,8 @@ description: Claude Code hooks configuration and development. Use when the user 
 user-invocable: false
 allowed-tools: Bash(bash *), Bash(cat *), Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2025-12-16
-modified: 2026-05-23
+modified: 2026-07-18
+compatibility: claude-code
 reviewed: 2026-04-10
 ---
 
