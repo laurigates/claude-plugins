@@ -60,9 +60,16 @@ The hook's logic for each:
 
 - **`grep` / `rg`** — never blocked (demoted to the opt-in teach nudge, #1909/#1871). `Grep` is the context-efficient choice when present, but the Bash form always runs.
 - **`ls`** — never blocked (demoted to the opt-in teach nudge, #2036). `Glob` is the context-efficient choice for pattern listings when present, but the Bash form always runs.
-- **`cat` / `head` / `tail`** — blocked for a plain file read; passes through when the file path is `/dev/stdin`, `/dev/null`, a here-doc target, or a pipeline. The hook is checking for *file reads*, not stream handling.
+- **`cat` / `head` / `tail`** — blocked for a plain file read; passes through when the file path is `/dev/stdin`, `/dev/null`, a here-doc target, or a pipeline. The hook is checking for *file reads*, not stream handling. As of #2008 this (and the `echo`/`printf`/`cat`-write and `sed -i` blocks) is decided **structurally** by `ast-grep --lang bash` rather than regex — a real parse tells a command apart from a string/heredoc-body/pipeline/argument, so the block **fails open** (no-op) where `ast-grep` is unavailable. It is a style nudge with no regex twin; the safety blocks (`chmod 777`, `curl|bash`, `git add -A`, …) stay pure-regex and fire everywhere.
 
 ### Remote-exec commands are exempt (issue #1900)
+
+> **As of #2008 the remote-exec guard is only needed by the safety blocks.** The
+> read/write nudges moved to the structural `ast-grep` path, which never treats a
+> read inside `ssh host <<EOF…EOF`, `ssh host 'ls|grep'`, or `kubectl exec … --
+> cat` as a local command in the first place (it is a heredoc-body / string /
+> argument node). The first-token suppression below still governs the pure-regex
+> safety blocks.
 
 When the command's **first token** is a remote-exec launcher — `ssh`, `rsh`,
 `slogin`, `dokku`, `kubectl exec`, `docker exec` (and `podman`/`nerdctl`/`oc`

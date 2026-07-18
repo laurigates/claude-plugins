@@ -25,6 +25,20 @@ HOOK="$(dirname "$0")/bash-antipatterns.sh"
 PASS=0
 FAIL=0
 
+# The scoping-sensitive read/write detectors (cat/head/tail reads, echo/printf/cat
+# writes, sed -i, task-output reads) are classified structurally via ast-grep, so
+# their block assertions require ast-grep on PATH. When it is absent these are
+# STYLE nudges that fail open (verified in the "fail-open" section below, which
+# forces the no-op path via CLAUDE_HOOKS_BASH_ANTIPATTERNS_NO_ASTGREP=1). Mirror
+# code-quality's rule-project suites: SKIP the whole suite rather than report the
+# read/write blocks as failures where the parser is unavailable. CI installs
+# ast-grep (npm i -g @ast-grep/cli), so full coverage always runs there.
+if ! command -v ast-grep >/dev/null 2>&1 && ! command -v sg >/dev/null 2>&1; then
+    echo "SKIP: ast-grep not installed; structural read/write assertions require it."
+    echo "      Install: npm install -g @ast-grep/cli   (CI pins @ast-grep/cli@0.43.0)"
+    exit 0
+fi
+
 assert_exit() {
     local desc="$1" expected="$2" cmd="$3"
     local json
@@ -1050,6 +1064,41 @@ assert_exit_complex \
     "GUARD INTEGRITY: ssh heredoc 'chmod 777' still blocked (safety, #1900)" 2 \
     "$ssh_chmod_777"
 
+# ── fail-open when ast-grep is unavailable (issue #2008) ─────────────────────
+# The read/write detectors are classified structurally via ast-grep and fail
+# OPEN: when the parser is absent (sandboxes, subagents) these STYLE nudges
+# simply do not fire — losing a "use Read instead of cat" steer where the parser
+# is unavailable costs nothing irreversible. There is deliberately no regex twin
+# to keep in lockstep. The SAFETY blocks (curl|bash, chmod 777, git add -A, reset
+# --hard) and the regex grep-chain detector are NOT structural and MUST still
+# fire. CLAUDE_HOOKS_BASH_ANTIPATTERNS_NO_ASTGREP=1 forces the no-op path so this
+# runs even where ast-grep IS installed.
+echo ""
+echo "fail-open: read/write nudges no-op without ast-grep; safety/regex blocks preserved (#2008):"
+
+assert_exit_noast() {
+    local desc="$1" expected="$2" cmd="$3"
+    local json exit_code=0
+    json=$(jq -nc --arg cmd "$cmd" '{tool_name:"Bash",tool_input:{command:$cmd}}')
+    printf '%s' "$json" | CLAUDE_HOOKS_BASH_ANTIPATTERNS_NO_ASTGREP=1 bash "$HOOK" >/dev/null 2>&1 || exit_code=$?
+    if [ "$exit_code" -eq "$expected" ]; then
+        printf "  PASS: %s\n" "$desc"; PASS=$((PASS + 1))
+    else
+        printf "  FAIL: %s (expected exit %d, got %d)\n" "$desc" "$expected" "$exit_code"; FAIL=$((FAIL + 1))
+    fi
+}
+
+assert_exit_noast "cat read no-ops without ast-grep"            0 "cat file.txt"
+assert_exit_noast "head read no-ops without ast-grep"           0 "head -50 file.md"
+assert_exit_noast "echo > file no-ops without ast-grep"         0 "echo hi > realfile.txt"
+assert_exit_noast "cat > file no-ops without ast-grep"          0 "cat > /tmp/scratch.txt"
+assert_exit_noast "sed -i repo file no-ops without ast-grep"    0 "sed -i s/a/b/ src/main.py"
+assert_exit_noast "task-output read no-ops without ast-grep"    0 "cat /tmp/x/tasks/run.output"
+assert_exit_noast "SAFETY: chmod 777 still blocks without ast-grep"   2 "chmod 777 x"
+assert_exit_noast "SAFETY: git add -A still blocks without ast-grep"  2 "git add -A"
+assert_exit_noast "SAFETY: git reset --hard still blocks without ast-grep" 2 "git reset --hard HEAD"
+assert_exit_noast "REGEX: grep-chain over .output still blocks without ast-grep" 2 \
+    "cat run.output | grep Error | grep -v warn | sed s/a/b/"
 # ── tool idioms inside `#` comments are ignored (issue #2106) ─────────────────
 # Regression: the detectors scan the command string, so a tool idiom appearing
 # only inside a trailing `# comment` — documentation prose, an explanatory aside
