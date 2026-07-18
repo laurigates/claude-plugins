@@ -278,6 +278,8 @@ This repo runs `blueprint-plugin` against itself in a deliberately constrained m
 
 **Always run `/blueprint:sync-ids` with `--dry-run` first.** Each disabled task carries a `context.disabled_reason` in the manifest — read it before flipping any flag back on.
 
+**Autonomy level 3 is consumer-only (ADR-0020, #2005).** This repo stays at `automation.autonomy_level: 1` and never runs the level-3 out-of-band pipeline. `/blueprint:autonomy-level3` scaffolds that pipeline (the `blueprint-autorun` + `blueprint-wo-execute` workflow templates + gate/parser scripts) into a *downstream* consumer repo that opts in; it is authored and tested here but not exercised here.
+
 ### Commit-scope convention for blueprint work
 
 | Scope | Effect | Use for |

@@ -64,6 +64,7 @@ PRD (Product Requirements) → PRP (Product Requirement Prompt) → Work-Order �
 |-------|-------------|
 | `blueprint-execute` | **Smart meta command** - Analyzes repository state and executes the next logical blueprint action (idempotent) |
 | `blueprint-autopilot` | **Level-2 ambient executor** (ADR-0020) - Runs due agent-judgment maintenance tasks quietly and drafts `work-order-draft` proposal issues; no menus, one-line receipt |
+| `blueprint-autonomy-level3` | **Level-3 scaffold** (ADR-0020) - Installs the out-of-band pipeline into a consumer repo: scheduled `blueprint-autorun` + label-triggered `blueprint-wo-execute` workflows (gated, budgeted, independently verified, injection-safe) |
 | `blueprint-status` | Show blueprint version, configuration, and traceability report |
 | `blueprint-upgrade` | Upgrade to latest blueprint format |
 | `blueprint-rules` | Manage modular rules |

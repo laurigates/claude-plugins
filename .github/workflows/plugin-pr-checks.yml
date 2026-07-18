@@ -130,6 +130,16 @@ jobs:
       - name: Check auto-resolve-conflicts polls for mergeability
         run: bash scripts/check-auto-resolve-mergeability-poll.sh
 
+      - name: Self-test the blueprint level-3 template guard (#2005)
+        # The ADR-0020 level-3 workflow templates live in blueprint-plugin/templates/,
+        # OUTSIDE .github/workflows/, so check-workflow-model.sh + actionlint do not
+        # scan them. This guard pins model/effort, script-injection safety, and the
+        # loop-integrity invariants; the self-test proves it before it gates the tree.
+        run: bash scripts/tests/test-check-blueprint-level3-templates.sh
+
+      - name: Check blueprint level-3 workflow templates
+        run: bash scripts/check-blueprint-level3-templates.sh
+
       - name: Self-test the shell-script lint guard
         # Whole-repo invariant (every shell script follows shell-scripting.md:
         # #!/usr/bin/env bash shebang, set flags, block()). Runs unconditionally

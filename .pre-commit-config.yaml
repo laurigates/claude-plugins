@@ -98,6 +98,18 @@ repos:
         language: script
         files: '^\.github/workflows/auto-resolve-conflicts\.ya?ml$'
         pass_filenames: false
+      - id: test-check-blueprint-level3-templates
+        name: blueprint level-3 template guard regression (#2005)
+        entry: bash ./scripts/tests/test-check-blueprint-level3-templates.sh
+        language: system
+        files: '^(blueprint-plugin/templates/blueprint-(autorun|wo-execute)\.workflow\.yml|scripts/(check-blueprint-level3-templates\.sh|tests/test-check-blueprint-level3-templates\.sh))$'
+        pass_filenames: false
+      - id: check-blueprint-level3-templates
+        name: blueprint level-3 workflow templates carry model/effort + injection + loop-integrity invariants (#2005)
+        entry: ./scripts/check-blueprint-level3-templates.sh
+        language: script
+        files: '^(blueprint-plugin/templates/blueprint-(autorun|wo-execute)\.workflow\.yml|scripts/check-blueprint-level3-templates\.sh)$'
+        pass_filenames: false
       - id: check-agent-failure-contract
         name: dispatch skills carry the loud-failure / completion-manifest contract (#1422, #1601)
         entry: ./scripts/check-agent-failure-contract.sh

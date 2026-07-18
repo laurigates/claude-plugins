@@ -4,8 +4,8 @@
 id: ADR-0020
 date: 2026-07-05
 created: 2026-07-05
-modified: 2026-07-05
-status: Proposed
+modified: 2026-07-18
+status: Accepted
 deciders: claude-plugins team
 domain: automation
 relates-to:
@@ -74,7 +74,7 @@ Adopt a **tiered autonomy-level model**, expressed in a new manifest
 | 0 | manual | nothing (today's behavior) | — | human `/blueprint:work-order` only |
 | 1 | ambient bookkeeping | deterministic due tasks; on-change syncs; session-end drain | SessionStart/PostToolUse command hooks + `scripts/blueprint-autorun.sh` | unchanged |
 | 2 | quiet autopilot | + agent-judgment due tasks in-session; quiet interaction mode | `blueprint-autopilot` skill, triggered by the drift nudge | + auto-**draft** WO issues; human promotes via `--from-issue` |
-| 3 | scheduled pipeline (deferred) | + out-of-band cron runs; approved-WO execution → PRs | GitHub Actions + claude-code-action | + auto-execute **approved** WOs; human reviews the PR |
+| 3 | scheduled pipeline (opt-in) | + out-of-band cron runs; approved-WO execution → PRs | GitHub Actions + claude-code-action | + auto-execute **approved** WOs; human reviews the PR |
 
 ### The deterministic runner (level 1)
 
@@ -120,7 +120,7 @@ governs automation-initiated flows and closing menus only.
   deterministic, unambiguous facts (drift rules).
 - A missing `automation` block ≡ level 0 — 3.3.0 manifests keep working
   unchanged.
-- Level 3 (deferred until a consumer repo wants it) requires the
+- Level 3 (opt-in per consumer repo) requires the
   `.claude/rules/loop-integrity.md` machinery: an independent verifier (CI +
   fresh reviewer, never the executing agent) and issue-comment state packets
   per iteration; `blueprint-autorun.yml` follows the `blueprint-health` job
@@ -128,6 +128,23 @@ governs automation-initiated flows and closing menus only.
 
 This repository dogfoods at level 1 with only the already-enabled read-leaning
 tasks; consumer repos opt higher.
+
+### Implementation status
+
+Levels 0–2 shipped in PR #2003. **Level 3 shipped (issue #2005) as an opt-in
+scaffold**, `/blueprint:autonomy-level3`, rather than as live workflows in this
+repo (which is level-1 constrained and cannot exercise level 3). It installs
+two templated workflows — `Blueprint: Autorun` (scheduled) and `Blueprint:
+Execute approved work order` (`work-order-approved` label trigger) — plus the
+deterministic gate/parser scripts, into a consumer repo. The
+`blueprint-wo-guard.sh` gate keeps everything dormant until a consumer's
+manifest sets `automation.autonomy_level >= 3` (and `work_orders.auto_execute:
+true` for the executor). All the safety rails above (independent verifier +
+state packets, per-run/per-day budgets + a `max_cycles` stuck ceiling, the
+least-privilege + script-injection GitHub Actions baseline for the untrusted
+issue-body WO packet) are implemented and guarded by
+`scripts/check-blueprint-level3-templates.sh` plus the `blueprint-wo-packet.sh`
+/ `blueprint-wo-guard.sh` regression suites.
 
 ## Options Considered
 
@@ -143,8 +160,9 @@ tasks; consumer repos opt higher.
 3. **Out-of-band scheduled pipeline** (GitHub Actions runs everything,
    including executing approved WOs into PRs). Highest risk: headless
    execution quality, loop-integrity machinery required up front, and this
-   constrained repo cannot dogfood it. Survives as **level 3**, designed but
-   deferred.
+   constrained repo cannot dogfood it. Survives as **level 3**, shipped as an
+   opt-in scaffold (`/blueprint:autonomy-level3`, issue #2005) rather than live
+   in this repo.
 
 4. **Fully autonomous WO creation** (drop `disable-model-invocation` and let
    the model create real work orders). Rejected: it deletes a deliberate
@@ -192,7 +210,7 @@ tasks; consumer repos opt higher.
 | Autopilot mis-fires in sessions where blueprint is irrelevant | Level-gated silent exit; only triggered by a drift finding that says tasks are due |
 | Draft-issue noise if confidence scoring is generous | Dedupe by label + PRP id; open-draft cap; drafts are additive and closable |
 | Ambient token cost at session start | TTL debounce; deterministic tasks cost zero model tokens; one-task-per-session budget for agent tasks |
-| Level 3 runaway loops | Deferred entirely; ships only with loop-integrity verifier + state packets + run budgets |
+| Level 3 runaway loops | Ships only with the loop-integrity verifier + state packets + per-run/per-day budgets + a `max_cycles` stuck ceiling (implemented; opt-in per repo) |
 
 ## Related ADRs
 

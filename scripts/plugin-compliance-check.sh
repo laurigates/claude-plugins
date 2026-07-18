@@ -317,6 +317,22 @@ check_skill_body() {
       fi
     fi
 
+    # Regression: blueprint-autonomy-level3 (ADR-0020 level 3, issue #2005) is
+    # the scaffold for the scheduled-pipeline + approved-WO-execution workflows.
+    # Its load-bearing security/gating invariants must survive bulk edits: the
+    # human-approval trigger label, the deterministic gate + untrusted-body
+    # parser scripts, and the manifest execute gate. Dropping any silently
+    # removes a safety rail (auto-execute without approval / without the level-3
+    # gate / parsing the untrusted body unsafely).
+    if [ "$skill_name" = "blueprint-autonomy-level3" ]; then
+      for token in "work-order-approved" "blueprint-wo-guard.sh" "blueprint-wo-packet.sh" "auto_execute"; do
+        if ! grep -q "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain '${token}' (ADR-0020 level-3 safety invariant, issue #2005)")
+          has_errors=true
+        fi
+      done
+    fi
+
     # Regression: configure-claude-plugins documents two suffix forms
     # (`@claude-plugins` for settings.json enabledPlugins, `@laurigates-claude-plugins`
     # for workflow plugins: blocks) that are visually similar but semantically distinct.

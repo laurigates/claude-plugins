@@ -1,0 +1,134 @@
+# Blueprint autonomy level 3 — scheduled out-of-band pipeline (ADR-0020).
+#
+# TEMPLATE: scaffolded into a CONSUMER repo's .github/workflows/blueprint-autorun.yml
+# by `/blueprint:autonomy-level3`. It is dormant until the consumer's
+# docs/blueprint/manifest.json sets automation.autonomy_level >= 3 — the
+# blueprint-wo-guard.sh gate below HALTs every run below that. This repo
+# (claude-plugins) dogfoods at level 1 and never runs it.
+#
+# Requires (copied alongside by the scaffold skill): .github/blueprint/{blueprint-autorun.sh,
+# blueprint-wo-guard.sh,get-automation-config.sh}. Secret: CLAUDE_CODE_OAUTH_TOKEN.
+#
+# Security baseline (.claude/rules/github-actions-security.md): least-privilege
+# per-job GITHUB_TOKEN; no untrusted run-context is interpolated into run: (this
+# workflow is schedule/dispatch-triggered, so github.event carries no attacker
+# input). Model/effort pinned per .claude/rules/workflow-model-effort.md.
+name: "Blueprint: Autorun"
+
+on:
+  schedule:
+    - cron: "0 8 * * *" # daily 08:00 UTC
+  workflow_dispatch:
+
+# Default to read-only; each job escalates only what it needs.
+permissions:
+  contents: read
+
+jobs:
+  # --- Deterministic gate: HALT the whole pipeline below autonomy level 3 ---
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      proceed: ${{ steps.guard.outputs.proceed }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Level-3 gate
+        id: guard
+        run: |
+          OUT=$(bash .github/blueprint/blueprint-wo-guard.sh --mode autorun)
+          echo "$OUT"
+          PROCEED=$(printf '%s\n' "$OUT" | grep -m1 '^PROCEED=' | cut -d= -f2)
+          echo "proceed=${PROCEED:-false}" >> "$GITHUB_OUTPUT"
+
+  # --- Deterministic due tasks: apply + PR the writeback (never push to main) ---
+  deterministic:
+    needs: gate
+    if: needs.gate.outputs.proceed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+      - name: Run deterministic autorun (applies due deterministic tasks)
+        run: bash .github/blueprint/blueprint-autorun.sh
+      - name: Open a PR for the manifest writeback if anything changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "no deterministic writeback — nothing to PR"
+            exit 0
+          fi
+          DATE=$(date -u +%Y-%m-%d)
+          BRANCH="blueprint/autorun-${DATE}-${GITHUB_RUN_ID}"
+          git config user.name "blueprint-autorun[bot]"
+          git config user.email "blueprint-autorun@users.noreply.github.com"
+          git switch -c "$BRANCH"
+          git add -A
+          git commit -m "chore(blueprint): autorun deterministic writeback ${DATE}"
+          git push origin "$BRANCH"
+          gh pr create \
+            --base "${GITHUB_REF_NAME}" \
+            --head "$BRANCH" \
+            --title "chore(blueprint): autorun writeback ${DATE}" \
+            --body "Deterministic blueprint bookkeeping (ADR-0020 level 3). Review and merge."
+
+  # --- Due agent-judgment tasks + work-order drafts (model in the loop) ---
+  agent-tasks:
+    needs: gate
+    if: needs.gate.outputs.proceed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+      - name: Pre-compute due agent tasks (deterministic, no model)
+        id: due
+        run: |
+          OUT=$(bash .github/blueprint/blueprint-autorun.sh --report)
+          echo "$OUT"
+          DUE=$(printf '%s\n' "$OUT" | grep -m1 '^DUE_AGENT_TASKS=' | cut -d= -f2)
+          echo "due=${DUE:-}" >> "$GITHUB_OUTPUT"
+      - name: Run due agent-judgment tasks + draft work orders
+        if: steps.due.outputs.due != ''
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ github.token }}
+          claude_args: "--model opus --effort medium --max-turns 25"
+          additional_permissions: |
+            Read
+            Grep
+            Glob
+            TodoWrite
+            Bash(gh issue *)
+            Bash(gh pr *)
+          # This is the level-2 /blueprint:autopilot pass, run out-of-band. Due
+          # tasks come pre-computed above (${{ steps.due.outputs.due }}). Draft
+          # work-order proposals are labeled work-order-draft and deduped —
+          # never promoted here (that stays the human /blueprint:work-order act).
+          prompt: |
+            Run the blueprint autopilot pass for autonomy level 3, quietly.
+
+            Due agent-judgment tasks (pre-computed, comma-separated):
+            ${{ steps.due.outputs.due }}
+
+            For EACH due task, run its report/dry-run form and apply only
+            unambiguous, evidence-backed updates (per /blueprint:autopilot):
+            - adr-validate     -> report findings only
+            - feature-tracker-sync -> apply only drain-evidence-backed completions
+            - story-audit      -> write only its dated artifact under docs/blueprint/audits/
+            Never AskUserQuestion; never invoke /blueprint:work-order or
+            /blueprint:prp-execute (both human-only).
+
+            Then draft work-order PROPOSALS for ready PRPs (confidence >= 9) that
+            lack a work order: file a GitHub issue titled
+            "[work-order-draft] <PRP-id>: <title>" labeled work-order-draft, body =
+            the full WO packet (Objective, Required Files, TDD Requirements,
+            Success Criteria) + "Promote with /blueprint:work-order --from-issue <N>".
+            Dedupe by label + PRP id (check --state all); draft at most 2 per run;
+            file nothing if >= 5 open work-order-draft issues already exist.

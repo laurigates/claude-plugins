@@ -51,6 +51,9 @@
     "story-audit",
     "coverage-gap",
     "drift-detection",
-    "prd-reconciliation"
+    "prd-reconciliation",
+    "autonomy-levels",
+    "scheduled-pipeline",
+    "work-order-execution"
   ]
 }
