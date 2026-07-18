@@ -22,6 +22,31 @@ A PreToolUse hook that intercepts Bash commands and blocks those that should use
 | `git X && git Y` | Run git commands as separate Bash calls (avoids index.lock race condition) |
 | `git reset --hard` | Use safer alternatives; if truly needed, ask user to run manually |
 
+### Structural classification (ast-grep) and fail-open (#2008)
+
+The scoping-sensitive read/write detectors — `cat`/`head`/`tail` reads,
+`echo`/`printf`/`cat` writes, `sed -i`, and task-output reads — are classified
+**structurally** with `ast-grep --lang bash` (tree-sitter-bash) rather than
+regex. A real parse gives distinct AST node shapes for "`cat` reading a file"
+vs "`cat` in a pipeline" vs "`cat <<EOF`" vs "`cat > file`" vs a `cat`
+*mentioned* inside a string or heredoc body — distinctions the old regex path
+faked with three pre-stripping passes and a remote-exec guard, and repeatedly
+got wrong (#1701, #1721, #1722, #1848, #1900, #2052, #2058). A read command
+inside `ssh host <<EOF … EOF`, `ssh host 'ls|grep'`, or `kubectl exec … -- cat`
+is a heredoc-body / string / argument node, never a `command_name`, so it is
+never mis-detected — the remote-exec guard is no longer needed.
+
+These are **style nudges** and **fail open**: when `ast-grep` is absent
+(sandboxes, subagents) they simply do not fire. Losing a "use Read instead of
+`cat`" steer where the parser is unavailable costs nothing irreversible, and
+there is deliberately **no regex twin** to keep in lockstep. The **safety /
+correctness blocks** (`curl|bash`, `chmod 777`, `git add -A`, `git reset
+--hard`, `git push -u` footgun, block-device writes, fork bombs, the index-lock
+chain, the grep-chain test-output scrape, `awk`/`cat`-to-commit-file) stay
+pure-regex and fire in **every** context. Set
+`CLAUDE_HOOKS_BASH_ANTIPATTERNS_NO_ASTGREP=1` to force the no-op path (used by
+the regression suite to exercise fail-open).
+
 ### Demoted to opt-in teach nudges (not blocked)
 
 `find` (→ **Glob**, #1871), `grep`/`rg` (→ **Grep**, #1909), `ls <glob>`

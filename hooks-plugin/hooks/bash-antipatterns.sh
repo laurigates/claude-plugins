@@ -1,6 +1,22 @@
 #!/usr/bin/env bash
 # PreToolUse hook for Bash tool - detects anti-patterns and reminds Claude
 # to use built-in tools instead of shell commands
+#
+# Two-tier classification:
+#   1. Scoping-sensitive read/write anti-patterns (cat/head/tail reads,
+#      echo/printf/cat writes, sed -i, task-output reads) are classified
+#      STRUCTURALLY with ast-grep (tree-sitter-bash). A real parse gives distinct
+#      AST node shapes for "cat reading a file" vs "cat in a pipeline" vs
+#      "cat <<EOF" vs "cat > file" vs a `cat` mentioned inside a string/heredoc —
+#      distinctions the old regex path faked with three pre-stripping passes and a
+#      remote-exec guard, and repeatedly got wrong (#1701, #1721, #1722, #1848,
+#      #1900, #2052, #2058). These are STYLE nudges: when ast-grep is absent
+#      (sandboxes, subagents) they simply do not fire. There is no regex twin.
+#   2. Safety / correctness blocks (curl|bash, chmod 777, git add -A, reset
+#      --hard, push -u footgun, block-device writes, fork bombs, git index-lock
+#      chains, grep-chain test-output scrapes, awk/cat-to-commit-file) stay
+#      pure-regex and fire in EVERY context — they must not depend on a binary
+#      that may be missing.
 
 set -euo pipefail
 
@@ -15,11 +31,13 @@ if [ -z "$COMMAND" ]; then
     exit 0
 fi
 
-# Strip heredoc body content up front so detectors that scan the whole command
-# string don't false-positive on literal text inside a heredoc body. The main
-# offender is `gh pr create --body "$(cat <<'EOF' ... EOF)"` whose body may
-# contain example shell commands (e.g. "git add && git commit") that are just
-# documentation, not executable code.
+# Strip heredoc body content up front so the regex detectors below that scan the
+# whole command string don't false-positive on literal text inside a heredoc
+# body. The main offender is `gh pr create --body "$(cat <<'EOF' ... EOF)"` whose
+# body may contain example shell commands (e.g. a log-stream pipeline) that are
+# documentation, not executable code. (Now consumed only by the log-stream and
+# grep-chain regex detectors — the read/write detectors moved to the AST path,
+# which understands heredoc-body nodes natively.)
 #
 # The awk program walks the command line-by-line. When it sees `<<DELIM` it
 # enters heredoc mode and suppresses subsequent lines until it sees a line
@@ -44,11 +62,12 @@ COMMAND_SHELL_ONLY=$(echo "$COMMAND" | awk '
 ')
 
 # A further-stripped view with quoted-string literals removed (on top of the
-# heredoc stripping above). Detectors that key off *content tokens* an agent
-# would only ever read (e.g. task-output file paths like `.../tasks/x.output`)
-# must scan this view, not raw $COMMAND — otherwise a `gh issue create --body
-# "... see run.output ..."` whose prose merely *mentions* such a path triggers
-# the read-task-output block even though no read happens (issue #1591).
+# heredoc stripping above). The git index-lock chain detector and the
+# source-file-grep exemption key off *content tokens* that must survive as real
+# operands, not literal text inside a quoted `--body`/`--title` argument — e.g. a
+# `gh issue create --body "... git add && git commit ..."` that merely documents a
+# chain (issue #1587), or a `grep -n 'app-id|fail-fast' file.yml` whose file
+# operand must be seen past the quoted pattern's own `|` (issue #1914).
 # shellcheck disable=SC2001  # bash pattern substitution can't do `[^']*` char class
 COMMAND_NO_STRINGS=$(echo "$COMMAND_SHELL_ONLY" | sed "s/'[^']*'//g; s/\"[^\"]*\"//g")
 
@@ -58,62 +77,150 @@ block() {
     exit 2
 }
 
-# Remote-exec guard (issue #1900).
+# ── Structural read/write classification (ast-grep --lang bash) ───────────────
 #
-# When the TOP-LEVEL command runs on another host or container — ssh/rsh/slogin,
-# `kubectl exec`, `docker exec`, dokku — every filesystem path inside its payload
-# (a quoted remote command, a heredoc fed over stdin, or bare args) targets the
-# REMOTE side. The local-filesystem tools the read/list reminders point to (Read,
-# Grep, Glob) run on the LOCAL machine and cannot reach that target, so the
-# suggested substitution is inapplicable and the reminder is pure friction.
+# The scoping-sensitive read/write detectors are classified via tree-sitter-bash.
+# A read command inside `ssh host <<EOF … EOF`, `ssh host 'ls|grep'`, or
+# `kubectl exec … -- cat` is a heredoc-body / string / argument node — never a
+# command_name — so the remote-exec guard (#1900) is unnecessary: those forms are
+# never mis-detected in the first place. A `cat`/`sed -i` MENTIONED inside a
+# quoted string or heredoc body (#2052, #2058) is likewise not a command node.
 #
-# The heredoc form is the concrete false positive:
-#   ssh host <<EOF ... ls /remote/*.json ... EOF
-# puts the `ls`/`cat`/`grep` on its own line, which the (line-anchored) read/list
-# detectors match — and block — even though it runs on the remote host.
-#
-# Only the read/list *style* reminders (cat/head/tail→Read, grep/rg→Grep,
-# ls→Glob) are suppressed for these commands. Safety blocks (curl|bash,
-# chmod 777, git add -A, reset --hard, block-device writes, fork bombs) are NOT
-# suppressed — those hazards apply on the remote host too, and per
-# hook-block-vs-nudge.md a safety exit-2 is earned regardless of where the
-# command runs. The guard is anchored to the FIRST token (after optional env
-# assignments) so a local `cat x && ssh host …` still blocks the local `cat`.
-IS_REMOTE_EXEC=false
-if echo "$COMMAND" | grep -Eq '^\s*([A-Za-z_][A-Za-z0-9_]*=\S*\s+)*(ssh|rsh|slogin|dokku)\s' || \
-   echo "$COMMAND" | grep -Eq '^\s*(kubectl|oc)\s[^|]*\bexec\b' || \
-   echo "$COMMAND" | grep -Eq '^\s*(docker|podman|nerdctl)\s[^|]*\bexec\b'; then
-    IS_REMOTE_EXEC=true
+# ast-grep is a single fast binary but is NOT assumed present (PreToolUse hooks
+# fire in sandboxes and subagents). When it is absent these STYLE nudges simply
+# do not fire — losing a "use Read instead of cat" steer where the parser is
+# unavailable costs nothing irreversible, and the SAFETY blocks further down are
+# pure-regex and fire in every context. Set
+# CLAUDE_HOOKS_BASH_ANTIPATTERNS_NO_ASTGREP=1 to force the no-op path (tests).
+ASTGREP=""
+if [ "${CLAUDE_HOOKS_BASH_ANTIPATTERNS_NO_ASTGREP:-}" != "1" ]; then
+    if command -v ast-grep >/dev/null 2>&1; then
+        ASTGREP="ast-grep"
+    elif command -v sg >/dev/null 2>&1; then
+        ASTGREP="sg"
+    fi
 fi
 
-# Check for cat used to read files (but allow cat in pipelines and heredocs)
-# Patterns: cat file, cat /path/file, cat "./file"
-# Allow cat as first command in a pipeline (cat file | ...) since the data flows to other tools
-if [ "$IS_REMOTE_EXEC" = false ] && \
-   echo "$COMMAND" | grep -Eq '^\s*cat\s+[^|><]' && \
-   ! echo "$COMMAND" | grep -Eq '<<|cat\s*>' && \
-   ! echo "$COMMAND" | grep -q '|'; then
-    block "BLOCKED: 'cat /path/to/file.md' →
+if [ -n "$ASTGREP" ]; then
+    # Six rules, `---`-separated. Each keys on a distinct AST shape:
+    #  - cat-read / head-tail-read: a read command with a (non-flag) file operand,
+    #    NOT inside a pipeline (a pipeline read feeds another tool — allowed).
+    #  - cat-write: a `cat` redirected to a real (non-/dev) file with NO source
+    #    argument and NO heredoc (a heredoc write is the recommended body pattern).
+    #  - echo-printf-write: an echo/printf file_redirect to a real (non-/dev)
+    #    target; fd redirects like `2>/dev/null` carry a /dev destination and a
+    #    redirect inside a sibling `$(…)` binds to that inner command, not the echo.
+    #  - sed-inplace: `sed -i`/`--in-place` whose operands do NOT include a
+    #    scratch path (/tmp, /private/tmp, /var/folders) — scratch edits are fine.
+    #  - task-output-read: cat/head/tail of a `.output`/`/tasks/` path, not piped.
+    AST_RULES=$(cat <<'SGRULES'
+id: cat-read
+language: bash
+rule:
+  kind: command
+  all:
+    - has: { field: name, regex: '^cat$' }
+    - has:
+        any:
+          - { kind: word, regex: '^[^-]' }
+          - { kind: string }
+          - { kind: raw_string }
+          - { kind: concatenation }
+    - not: { inside: { kind: pipeline, stopBy: end } }
+---
+id: head-tail-read
+language: bash
+rule:
+  kind: command
+  all:
+    - has: { field: name, regex: '^(head|tail)$' }
+    - has:
+        any:
+          - { kind: word, regex: '^[^-]' }
+          - { kind: string }
+          - { kind: raw_string }
+          - { kind: concatenation }
+    - not: { inside: { kind: pipeline, stopBy: end } }
+---
+id: cat-write
+language: bash
+rule:
+  kind: file_redirect
+  all:
+    - has: { field: destination, kind: word }
+    - not: { has: { field: destination, regex: '^/dev/' } }
+    - inside:
+        all:
+          - { kind: redirected_statement }
+          - has:
+              field: body
+              kind: command
+              all:
+                - { has: { field: name, regex: '^cat$' } }
+                - { not: { has: { kind: word } } }
+          - { not: { has: { kind: heredoc_redirect, stopBy: end } } }
+---
+id: echo-printf-write
+language: bash
+rule:
+  kind: file_redirect
+  all:
+    - has: { field: destination, kind: word }
+    - not: { has: { field: destination, regex: '^/dev/' } }
+    - inside:
+        kind: redirected_statement
+        has:
+          field: body
+          kind: command
+          has: { field: name, regex: '^(echo|printf)$' }
+---
+id: sed-inplace
+language: bash
+rule:
+  kind: command
+  all:
+    - has: { field: name, regex: '^sed$' }
+    - has: { kind: word, regex: '^(-i|--in-place)' }
+    - not: { has: { kind: word, regex: '^((/private)?/tmp/|/var/folders/)' } }
+---
+id: task-output-read
+language: bash
+rule:
+  kind: command
+  all:
+    - has: { field: name, regex: '^(cat|head|tail)$' }
+    - has: { kind: word, regex: '(\.output|/tasks/)' }
+    - not: { inside: { kind: pipeline, stopBy: end } }
+SGRULES
+)
+
+    # Fail open: any ast-grep/jq error yields an empty match set (no nudge).
+    AST_IDS=$(printf '%s' "$COMMAND" | "$ASTGREP" scan --inline-rules "$AST_RULES" --stdin --json=compact 2>/dev/null | jq -r '.[].ruleId' 2>/dev/null | sort -u) || AST_IDS=""
+
+    ast_matched() { printf '%s\n' "$AST_IDS" | grep -qx "$1"; }
+
+    # Priority = the original detector order, with the more-specific task-output
+    # message ahead of the generic cat read (both would match a `.output` read).
+    if ast_matched "task-output-read"; then
+        block "REMINDER: Use the Read tool on the task-output file path from the task
+notification instead of cat/tail/head. (The TaskOutput tool is deprecated.)
+
+For a large structured output file, Read'ing the whole thing is wasteful — pipe
+an extraction to a compact summary instead (pipelines are allowed):
+  cat <output-file> | jq '<filter>'    or    cat <output-file> | python3 …"
+    fi
+
+    if ast_matched "cat-read"; then
+        block "BLOCKED: 'cat /path/to/file.md' →
   Read(file_path=\"/path/to/file.md\")
 
 The Read tool returns line-numbered content and respects token budgets.
 Pipelines (cat file | jq) and heredocs (cat <<EOF) are still allowed.
 See .claude/rules/bash-tool-replacements.md for the full table."
-fi
+    fi
 
-# Check for head/tail used to read files (not in pipelines)
-#
-# Scan COMMAND_SHELL_ONLY (heredoc bodies stripped) so a `head`/`tail` token that
-# is an identifier inside a quoted heredoc payload handed to another interpreter
-# — e.g. `python3 - <<'PY' … head = txt[:idx] … PY` — is not mistaken for a
-# `head <file>` invocation (issue #1848). The `[^|=]` (was `[^|]`) also excludes
-# the assignment form `head = "x"` / `tail = …` at line start (a Python/awk
-# variable in a single-quoted multi-line script the heredoc strip does not cover);
-# a real `head`/`tail` file argument never begins with `=`.
-if [ "$IS_REMOTE_EXEC" = false ] && \
-   echo "$COMMAND_SHELL_ONLY" | grep -Eq '^\s*(head|tail)\s+(-[0-9n]+\s+)?[^|=]' && \
-   ! echo "$COMMAND_SHELL_ONLY" | grep -q '|'; then
-    block "BLOCKED: 'head -50 file.md' →
+    if ast_matched "head-tail-read"; then
+        block "BLOCKED: 'head -50 file.md' →
   Read(file_path=\"/abs/path/to/file.md\", limit=50)
 
 BLOCKED: 'tail -50 file.md' →
@@ -122,71 +229,25 @@ BLOCKED: 'tail -50 file.md' →
 The Read tool with offset/limit reads the same byte range with
 line-numbered output. Pipelines (head file | …) are still allowed.
 See .claude/rules/bash-tool-replacements.md for the full table."
-fi
+    fi
 
-# Check for sed used for editing (in-place edits)
-#
-# Scan COMMAND_NO_STRINGS (heredoc bodies AND quoted-string literals stripped)
-# so an issue/PR body that merely *documents* `sed -i` — filing a bug report
-# about this very rule, writing docs about the antipattern — does not fire
-# (issue #2052 item 4). Only a `sed -i` that survives quote/heredoc stripping
-# is an actual invocation.
-#
-# Exempt targets under scratch/temp paths (/tmp, /private/tmp, /var/folders,
-# $TMPDIR): an in-place stream edit of a throwaway generated file is fine —
-# the Edit tool's precision matters for repo files, and forcing a Read + Edit
-# round-trip on a generated scratch file can pull secret material (e.g. a
-# freshly generated private key) into the transcript that the stream edit
-# would not have (issue #2052 item 3). The tmp-path check runs on
-# COMMAND_SHELL_ONLY (quotes kept) so a quoted tmp path still exempts.
-# shellcheck disable=SC2016  # the \$TMPDIR is a literal regex token, not an expansion
-SED_TMP_TARGET_RE='sed[[:space:]]+(-i[^[:space:]]*|--in-place[^[:space:]]*)[^;&|]*[[:space:]]['"'"'"]?((/private)?/tmp/|/var/folders/|\$TMPDIR)'
-if echo "$COMMAND_NO_STRINGS" | grep -Eq "sed\s+(-i|--in-place)" && \
-   ! echo "$COMMAND_SHELL_ONLY" | grep -Eq "$SED_TMP_TARGET_RE"; then
-    block "REMINDER: Use the Edit tool instead of 'sed -i' to modify files. The Edit tool provides safer, more precise string replacements with proper error handling. (In-place edits of scratch files under /tmp are allowed.)"
+    if ast_matched "cat-write"; then
+        block "REMINDER: Use the Write tool instead of 'cat > file' to create files. The Write tool is the proper way to write file contents."
+    fi
+
+    if ast_matched "echo-printf-write"; then
+        block "REMINDER: Use the Write tool instead of 'echo/printf > file' to create files. The Write tool properly handles file creation and provides better error handling."
+    fi
+
+    if ast_matched "sed-inplace"; then
+        block "REMINDER: Use the Edit tool instead of 'sed -i' to modify files. The Edit tool provides safer, more precise string replacements with proper error handling. (In-place edits of scratch files under /tmp are allowed.)"
+    fi
 fi
 
 # Check for awk used for file modifications
 if echo "$COMMAND" | grep -Eq "awk\s+.*>\s*['\"]?[^|]+" && \
    echo "$COMMAND" | grep -Eq "(>|>>)\s*['\"]?\\\$"; then
     block "REMINDER: Use the Edit tool instead of 'awk' for file modifications. The Edit tool is safer and more precise."
-fi
-
-# Check for echo/printf writing to a FILE (not stdout, a pipe, or a /dev stream).
-#
-# Use [^;&|]* instead of .* to avoid crossing command separators (;, &&, ||, |)
-# which would cause false positives when echo "text" is followed by an unrelated
-# 2>/dev/null.
-#
-# Scan COMMAND_NO_STRINGS (heredoc bodies AND quoted-string literals stripped) so
-# a `>` that is merely text inside a quoted argument — a section header, prose, or
-# a documented redirect example like `echo "use foo > out.txt"` — is not mistaken
-# for a real shell redirection. Only a `>` that survives quote stripping is an
-# actual redirection operator (issue #1701). Stripping single quotes alone left
-# double-quoted `>` content (the common section-header case) firing this block.
-#
-# Exempt stream targets, mirroring the cat/head/tail /dev exemptions: stdout and
-# pipes leave no surviving `>`, `>&N` fd-duplication is excluded by the `[^&]`
-# after `>`, and any redirect to a `/dev/*` device/stream target (/dev/null,
-# /dev/stderr, /dev/stdout, /dev/tty, /dev/fd/N) is stream handling, not file
-# creation (issue #1701).
-#
-# An fd-prefixed redirect to /dev/* (`2>/dev/null`, `1>/dev/null`, bare
-# `>/dev/null`) is stream handling too, not a file write (issues #1722, #1721).
-# The previous `[^0-9]>\s*/dev/` exemption did not fire when `2>/dev/null` was
-# the ONLY redirect (the leading `2` is a digit), so a stderr-only redirect on an
-# `echo`/`printf` was falsely blocked as a file write — including when the
-# redirect lived inside a `$(...)` belonging to a sibling command. Instead of an
-# exemption, strip every `[0-9]*>\s*/dev/<target>` from the scanned view first;
-# a `>` to a real (non-/dev) file is then the only signal left. This preserves
-# the #1701 mixed-write case: `echo x > out.txt 2>/dev/null` keeps `> out.txt`
-# after the strip and still blocks.
-COMMAND_NO_DEVNULL=$(echo "$COMMAND_NO_STRINGS" | sed -E 's#[0-9]*>[[:space:]]*/dev/[^[:space:];&|]*##g')
-if echo "$COMMAND_NO_DEVNULL" | grep -Eq '(^|\s)(echo|printf)\s+[^;&|]*>\s*[^&]'; then
-    # Block only when the redirect target is a real file path.
-    if echo "$COMMAND_NO_DEVNULL" | grep -Eq '(echo|printf)\s+[^;&|>]*>\s*[a-zA-Z/.]'; then
-        block "REMINDER: Use the Write tool instead of 'echo/printf > file' to create files. The Write tool properly handles file creation and provides better error handling."
-    fi
 fi
 
 # Check for commit message being written to temp file
@@ -212,24 +273,6 @@ Body text here.
 Fixes #123
 EOF
 )\""
-fi
-
-# Check for cat > file (writing files).
-# Exempt heredoc writes (cat > file <<EOF ... EOF): writing a temp file via a
-# heredoc and feeding it to a later command (e.g. gh pr create --body-file) is
-# the recommended multi-line pattern (copy-paste-commands.md), and the hook's own
-# cat-read message above already states heredocs are allowed (issue #1584, #1587).
-# A plain `cat > file` with no heredoc is still blocked in favour of the Write tool.
-#
-# Scan COMMAND_SHELL_ONLY (heredoc bodies stripped) so a `cat > file` that is
-# merely *text inside a heredoc body* — e.g. a PR/issue body written via
-# `gh pr create --body "$(cat <<'EOF' … EOF)"` that documents the pattern —
-# does not fire (issue #2058). The heredoc-opening line itself is kept, so a
-# real `cat > file <<EOF` write is still visible to the exemption below, and
-# a real plain `cat > file` still blocks.
-if echo "$COMMAND_SHELL_ONLY" | grep -Eq 'cat\s*>\s*[^|]' && \
-   ! echo "$COMMAND_SHELL_ONLY" | grep -Eq 'cat\s*>\s*\S.*<<'; then
-    block "REMINDER: Use the Write tool instead of 'cat > file' to create files. The Write tool is the proper way to write file contents."
 fi
 
 # Check for timeout command
@@ -307,56 +350,17 @@ fi
 # nudge (`glob-ls`), which steers toward Glob without dead-ending anyone.
 # See .claude/rules/bash-tool-replacements.md for the ls/Glob guidance.
 
-# Check for reading task output files (should use the Read tool)
-# Detects patterns like: cat /tmp/claude/*/tasks/*.output, tail ...tasks/...output, sleep && cat ...output
-#
-# Scans COMMAND_NO_STRINGS (heredoc bodies and quoted literals stripped) so that
-# a `gh issue create --body "...mentions run.output..."` whose prose merely names
-# a task-output path is not mistaken for an actual read (issue #1591).
-#
-# TaskOutput is deprecated — its own tool guidance now says to Read the output
-# file path from the task notification. For large structured outputs, an
-# extraction pipeline (`cat … | jq`/`python3`) to a compact summary is allowed
-# and is the context-efficient path; only a *standalone* cat/tail/head read of a
-# task-output file (no pipe) is nudged toward Read here (issue #1591).
-if { echo "$COMMAND_NO_STRINGS" | grep -Eq '(cat|tail|head)\s[^|]*(/tasks/|\.output)' || \
-     echo "$COMMAND_NO_STRINGS" | grep -Eq 'sleep[^|]*&&[^|]*(cat|tail)\s[^|]*(/tasks/|\.output)'; } && \
-   ! echo "$COMMAND_NO_STRINGS" | grep -q '|'; then
-    block "REMINDER: Use the Read tool on the task-output file path from the task
-notification instead of cat/tail/head. (The TaskOutput tool is deprecated.)
+# NOTE: the cat/head/tail read, echo/printf/cat write, sed -i, and task-output
+# read detectors moved to the ast-grep structural path near the top of this hook.
+# They are STYLE nudges (no-op when ast-grep is absent), not safety blocks. The
+# long-pipeline block was also removed (demoted to the teach nudge, #1873/#2051/
+# #2052). LOG_STREAM_RE survives below because the multi-grep chain block uses it.
 
-For a large structured output file, Read'ing the whole thing is wasteful — pipe
-an extraction to a compact summary instead (pipelines are allowed):
-  cat <output-file> | jq '<filter>'    or    cat <output-file> | python3 …"
-fi
-
-# NOTE: the long-pipeline (5+ pipes from a discouraged head) block was REMOVED.
-#
-# The pipe-count block was demoted from a hard block to a non-blocking teach
-# nudge (bash-antipatterns-teach.sh `long-pipeline`, opt-in via
-# CLAUDE_HOOKS_ENABLE_BASH_ANTIPATTERNS_TEACH=1), following the same
-# hook-block-vs-nudge.md litigation as the find (#1871), grep/rg (#1909), and
-# ls (#2036) demotions. The block did NO safety work — its own message conceded
-# that "a long pipeline of legitimate transforms … is fine", i.e. it exempted
-# every genuinely-useful form and fired only on a cat/echo/printf text-scrape
-# head or a redundant grep | grep — a style/context-efficiency concern. It
-# dead-ended subagents lacking jq/Grep substitution paths, and it carried a
-# sustained mid-20s same-session repeat-block rate across six friction-learner
-# readings (37.5 → 24.0 → 27.3 → 17.4 → 28.1%, issue #1873), i.e. it was not
-# teaching. It also had two outright counting defects (issue #2051, #2052):
-# PIPE_COUNT summed pipes across INDEPENDENT statements in one Bash call, and
-# a `printf … | tee <file>` writer was treated as a scrape head — so a batch
-# of five 1-pipe `gh issue create | tail -1` statements plus one printf | tee
-# rollup was blocked as a "6-pipe scrape". The teach nudge counts pipes
-# per-pipeline (statement-split) and so has neither defect.
-#
-# LOG_STREAM_RE survives because the multi-grep chain block below still uses it.
-# Log-stream sources — `kubectl logs`, `journalctl`, `docker logs`, `stern`, … —
-# emit an unstructured text stream with no --json/jq alternative, so
-# `… | grep <inc> | grep -v <exc> | tail` is the *idiomatic* read path during
-# incident diagnosis, not a data-processing scrape to nudge away from (issue
-# #1833). The `<tool> logs` arm requires the `logs` subcommand to sit in the
-# same pipe segment as a known log-producing CLI (`[^|]*[[:space:]]logs`) so an
+# Log-stream sources emit an unstructured text stream with no --json/jq
+# alternative, so `… | grep <inc> | grep -v <exc> | tail` is the *idiomatic* read
+# path during incident diagnosis, not a data-processing scrape to nudge away from
+# (issue #1833). The `<tool> logs` arm requires the `logs` subcommand to sit in
+# the same pipe segment as a known log-producing CLI (`[^|]*[[:space:]]logs`) so an
 # unrelated `ls logs/` does not match.
 LOG_STREAM_RE='\b(journalctl|stern)\b|\b(kubectl|oc|docker|podman|nerdctl|nomad|heroku|gcloud|crictl|flyctl|fly|k)\b[^|]*[[:space:]]logs\b'
 IS_LOG_STREAM=false
@@ -371,7 +375,7 @@ fi
 # unstructured log stream has no structured-output alternative, so a
 # `grep | grep -v | sed | tail` over it is the idiomatic incident-diagnosis read,
 # and the Error/fail tokens this keys on are exactly what log diagnostics search
-# for (issue #1833). IS_LOG_STREAM is computed in the pipe-count block above.
+# for (issue #1833). IS_LOG_STREAM is computed above.
 #
 # Require a POSITIVE test/task-output signal — a task-output file (.output or
 # /tasks/) OR a known test-runner invocation — instead of the bare

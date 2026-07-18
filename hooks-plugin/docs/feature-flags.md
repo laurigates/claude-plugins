@@ -28,6 +28,7 @@ Three shapes:
 | `CLAUDE_HOOKS_ENABLE_BASH_ANTIPATTERNS_TEACH` | PostToolUse "teach" hook — augments tool output with a non-blocking nudge instead of blocking (carries the `find→Glob` and other soft nudges) | hooks · `hooks/bash-antipatterns-teach.sh` |
 | `CLAUDE_HOOKS_ENABLE_CALENDAR_ESTIMATES` | Stop hook nudging the agent to restate estimates in tokens / effort tiers instead of calendar time | hooks · `hooks/no-calendar-estimates.sh` |
 | `CLAUDE_HOOKS_ENABLE_EVENT_LOGGER` | Dev/debug hook logging every hook event to a file | hooks · `hooks/event-logger.sh` |
+| `CLAUDE_HOOKS_BASH_ANTIPATTERNS_NO_ASTGREP` | Forces the bash-antipatterns read/write detectors' no-op (ast-grep-absent) path even when ast-grep is installed — the structural cat/head/tail-read, echo/printf/cat-write, sed -i, and task-output detectors are skipped; safety/regex blocks still fire. Used by the regression suite to exercise fail-open (#2008) | hooks · `hooks/bash-antipatterns.sh` |
 
 **Non-env opt-in:** the taskwarrior **native hooks** (`on-modify`, `on-exit`
 ghsync queue) are installed by running `/taskwarrior:install-native-hooks` — an
