@@ -6,6 +6,7 @@ args: "[--check-only] [--fix] [--tools <list>]"
 argument-hint: "[--check-only] [--fix] [--tools <list>]"
 created: 2026-02-25
 modified: 2026-06-21
+compatibility: claude-code
 reviewed: 2026-06-21
 ---
 

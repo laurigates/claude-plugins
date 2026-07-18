@@ -4,7 +4,8 @@ description: "Claude Code plugin registry structure, installation scopes, and co
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-02-04
-modified: 2026-02-05
+modified: 2026-07-18
+compatibility: claude-code
 reviewed: 2026-02-05
 ---
 

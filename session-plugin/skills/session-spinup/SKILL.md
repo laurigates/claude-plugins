@@ -3,7 +3,8 @@ name: session-spinup
 description: Read-only session-start briefing of open tasks, git state, journal todos. Use when user says spin up, what was I doing, or pick up where I left off.
 allowed-tools: Bash(bash *), Read, TodoWrite
 created: 2026-05-13
-modified: 2026-07-05
+modified: 2026-07-18
+compatibility: claude-code
 reviewed: 2026-06-24
 ---
 

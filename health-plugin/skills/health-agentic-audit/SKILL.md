@@ -1,6 +1,7 @@
 ---
 created: 2026-02-05
-modified: 2026-04-19
+modified: 2026-07-18
+compatibility: claude-code
 reviewed: 2026-04-15
 user-invocable: false
 description: "Audit skills, commands, and agents for agentic output compliance — optimization tables, bare CLI commands. Use when batch-checking skill documentation quality."

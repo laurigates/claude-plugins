@@ -1,6 +1,7 @@
 ---
 created: 2026-02-04
-modified: 2026-06-03
+modified: 2026-07-18
+compatibility: claude-code
 reviewed: 2026-06-03
 user-invocable: false
 description: "Diagnose and fix Claude Code plugin registry corruption — orphaned entries, stale keys, scope conflicts. Use when seeing plugin-already-installed errors or registry drift."

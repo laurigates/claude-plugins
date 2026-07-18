@@ -1,6 +1,7 @@
 ---
 created: 2026-05-09
-modified: 2026-06-18
+modified: 2026-07-18
+compatibility: claude-code
 reviewed: 2026-05-09
 allowed-tools: Glob, Read, Edit, Write, Bash(git status *), Bash(git diff *), Bash(git mv *), Bash(diff *), Bash(rm *), AskUserQuestion, TodoWrite
 model: opus

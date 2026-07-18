@@ -5,7 +5,8 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-25
-modified: 2026-06-06
+modified: 2026-07-18
+compatibility: claude-code
 reviewed: 2026-06-06
 ---
 

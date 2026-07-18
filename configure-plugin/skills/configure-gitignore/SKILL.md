@@ -5,7 +5,8 @@ args: "[--check-only] [--fix]"
 argument-hint: "[--check-only] [--fix]"
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash(git add *), Bash(git status *), Bash(git check-ignore *), Bash(find *), AskUserQuestion, TodoWrite
 created: 2026-06-24
-modified: 2026-06-24
+modified: 2026-07-18
+compatibility: claude-code
 reviewed: 2026-06-24
 ---
 

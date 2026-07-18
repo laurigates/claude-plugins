@@ -1,6 +1,7 @@
 ---
 created: 2026-02-05
-modified: 2026-06-18
+modified: 2026-07-18
+compatibility: claude-code
 reviewed: 2026-04-15
 user-invocable: false
 description: "Plugin audit against detected stack (Python, Node, Rust, Go, Terraform, Docker, K8s). Use when cleaning up unused plugins or discovering stack-relevant ones for a project."

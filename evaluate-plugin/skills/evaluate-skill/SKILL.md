@@ -7,7 +7,8 @@ argument-hint: "git-plugin/git-commit [--create-evals] [--runs 3] [--baseline]"
 agent: general-purpose
 context: fork
 created: 2026-03-04
-modified: 2026-07-04
+modified: 2026-07-18
+compatibility: claude-code
 reviewed: 2026-03-04
 ---
 

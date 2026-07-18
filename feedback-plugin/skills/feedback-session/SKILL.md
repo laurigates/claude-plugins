@@ -6,7 +6,8 @@ allowed-tools: Bash(gh issue *), Bash(gh label *), Bash(gh search *), Bash(git s
 model: opus
 argument-hint: "--dry-run | --target-repo owner/repo | plugin-name"
 created: 2026-02-18
-modified: 2026-06-28
+modified: 2026-07-18
+compatibility: claude-code
 reviewed: 2026-06-28
 ---
 
