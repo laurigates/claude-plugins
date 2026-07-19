@@ -274,8 +274,8 @@ repo: OLMap
   Status: Will update (sha def456 → abc123)
   Diff:
     @@ -12,1 +12,1 @@
-    -    uses: actions/checkout@v3
-    +    uses: actions/checkout@v4
+    -    uses: actions/checkout@v3.6.0
+    +    uses: actions/checkout@v4.3.1
 
 repo: theme-management
   Status: Will update (sha def456 → abc123)

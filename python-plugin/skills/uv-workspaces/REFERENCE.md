@@ -583,9 +583,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.3.1
 
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v5.4.2
 
       - name: Install dependencies
         run: uv sync --all-packages --frozen
@@ -608,7 +608,7 @@ jobs:
 ### Basic Workspace Dockerfile
 
 ```dockerfile
-FROM python:3.12-slim
+FROM python:3.13-slim
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
@@ -633,7 +633,7 @@ RUN uv sync --frozen --package my-api
 
 ```dockerfile
 # Build stage
-FROM python:3.12-slim AS builder
+FROM python:3.13-slim AS builder
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
@@ -644,7 +644,7 @@ COPY packages/ packages/
 RUN uv sync --frozen --all-packages --no-dev
 
 # Runtime stage
-FROM python:3.12-slim
+FROM python:3.13-slim
 
 COPY --from=builder /app/.venv /app/.venv
 COPY --from=builder /app/packages /app/packages

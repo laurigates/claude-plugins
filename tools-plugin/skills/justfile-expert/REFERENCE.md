@@ -688,7 +688,7 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.3.1
       - uses: extractions/setup-just@v2
       - run: just ci
 ```

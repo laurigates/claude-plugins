@@ -170,10 +170,10 @@ jobs:
   mutation:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.3.1
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
+        uses: oven-sh/setup-bun@v1.2.2
 
       - name: Install dependencies
         run: bun install
@@ -182,7 +182,7 @@ jobs:
         run: bun run stryker run
 
       - name: Upload mutation report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v3.2.2
         if: always()
         with:
           name: mutation-report
@@ -203,10 +203,10 @@ jobs:
   mutation:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.3.1
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v1
+        uses: astral-sh/setup-uv@v1.0.7
 
       - name: Install dependencies
         run: uv sync
@@ -223,7 +223,7 @@ jobs:
         run: uv run mutmut html
 
       - name: Upload report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v3.2.2
         if: always()
         with:
           name: mutation-report

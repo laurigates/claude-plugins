@@ -68,12 +68,12 @@ jobs:
       actions: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v5.0.1
         with:
           fetch-depth: 1
 
       - name: Run Claude Code
-        uses: anthropics/claude-code-action@v1
+        uses: anthropics/claude-code-action@v1.0.175
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
@@ -96,8 +96,8 @@ jobs:
       pull-requests: write
       id-token: write
     steps:
-      - uses: actions/checkout@v5
-      - uses: anthropics/claude-code-action@v1
+      - uses: actions/checkout@v5.0.1
+      - uses: anthropics/claude-code-action@v1.0.175
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           track_progress: true
@@ -129,8 +129,8 @@ jobs:
       pull-requests: write
       actions: read
     steps:
-      - uses: actions/checkout@v5
-      - uses: anthropics/claude-code-action@v1
+      - uses: actions/checkout@v5.0.1
+      - uses: anthropics/claude-code-action@v1.0.175
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: |
@@ -155,7 +155,7 @@ jobs:
     permissions:
       issues: write
     steps:
-      - uses: anthropics/claude-code-action@v1
+      - uses: anthropics/claude-code-action@v1.0.175
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: |
@@ -183,8 +183,8 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      - uses: actions/checkout@v5
-      - uses: anthropics/claude-code-action@v1
+      - uses: actions/checkout@v5.0.1
+      - uses: anthropics/claude-code-action@v1.0.175
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: |
@@ -212,8 +212,8 @@ jobs:
       pull-requests: write
       issues: write
     steps:
-      - uses: actions/checkout@v5
-      - uses: anthropics/claude-code-action@v1
+      - uses: actions/checkout@v5.0.1
+      - uses: anthropics/claude-code-action@v1.0.175
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           trigger_phrase: "/claude-review"
@@ -243,11 +243,11 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5.0.1
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - uses: anthropics/claude-code-action@v1
+      - uses: anthropics/claude-code-action@v1.0.175
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: |
@@ -276,7 +276,7 @@ output:
 
 ```yaml
 - id: scan
-  uses: anthropics/claude-code-action@v1
+  uses: anthropics/claude-code-action@v1.0.175
   with:
     claude_args: >-
       --json-schema '{"type":"object","properties":{"total_issues":{"type":"integer"}},"required":["total_issues"]}'
@@ -327,7 +327,7 @@ set of failing AI jobs across re-runs of the same commit.
 ### Checkout Optimization
 ```yaml
 # Fast checkout for large repos
-- uses: actions/checkout@v5
+- uses: actions/checkout@v5.0.1
   with:
     fetch-depth: 1          # Shallow clone
     sparse-checkout: |      # Only needed paths

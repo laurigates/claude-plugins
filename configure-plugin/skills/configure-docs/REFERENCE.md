@@ -205,7 +205,7 @@ jobs:
   docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.3.1
       - name: Check documentation
         run: |
           cargo doc --no-deps
@@ -218,7 +218,7 @@ jobs:
 repos:
   # Python
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.15
+    rev: v0.15.22
     hooks:
       - id: ruff
         args: [--select, D, --fix]
