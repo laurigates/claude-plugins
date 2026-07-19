@@ -152,31 +152,30 @@ describe("static import restrictions", () => {
     expect(violations).toEqual([]);
   });
 
-  // pi/ lands in #2090; the restriction is encoded now so a future dep
-  // addition cannot silently depend on unverified jiti-in-binary
-  // node_modules resolution. Skips gracefully while the dir is absent.
+  // pi/ restriction (#2090): a future dep addition must not silently depend
+  // on unverified jiti-in-binary node_modules resolution. Type-only imports
+  // from the pi package (single- or multi-line) are erased at transpile
+  // time, so they are scrubbed before scanning; any remaining pi-package
+  // specifier — i.e. a value import — is a violation.
   const piDir = join(ADAPTERS_ROOT, "pi");
-  test.skipIf(!existsSync(piDir))(
-    "pi/ imports only typebox, type-only pi-coding-agent, node:*, and relative paths",
-    () => {
-      const violations: string[] = [];
-      for (const file of tsFilesUnder(piDir)) {
-        const source = readFileSync(file, "utf8");
-        for (const line of source.split("\n")) {
-          const m = /(?:from\s+|import\s+|import\s*\(\s*|require\s*\(\s*)["']([^"']+)["']/.exec(
-            line,
-          );
-          if (!m) continue;
-          const spec = m[1] as string;
-          if (spec.startsWith("node:") || spec.startsWith("./") || spec.startsWith("../")) continue;
-          if (spec === "typebox") continue;
-          if (spec === "@earendil-works/pi-coding-agent" && /^\s*import\s+type\s/.test(line)) {
-            continue; // type-only: erased at transpile time
-          }
-          violations.push(`${file}: ${line.trim()}`);
-        }
+  test("pi/ exists (the #2090 binding is present)", () => {
+    expect(existsSync(piDir)).toBe(true);
+  });
+
+  test("pi/ imports only typebox, type-only pi-coding-agent, node:*, and relative paths", () => {
+    const violations: string[] = [];
+    for (const file of tsFilesUnder(piDir)) {
+      const source = readFileSync(file, "utf8").replace(
+        /import\s+type\s+[^;]*?from\s+["']@earendil-works\/pi-coding-agent["'];?/g,
+        "",
+      );
+      for (const match of source.matchAll(IMPORT_RE)) {
+        const spec = match[1] as string;
+        if (spec.startsWith("node:") || spec.startsWith("./") || spec.startsWith("../")) continue;
+        if (spec === "typebox") continue;
+        violations.push(`${file}: ${spec}`);
       }
-      expect(violations).toEqual([]);
-    },
-  );
+    }
+    expect(violations).toEqual([]);
+  });
 });

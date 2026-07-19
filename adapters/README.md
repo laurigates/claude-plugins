@@ -19,7 +19,7 @@ stable, but the binding files do not exist yet.
 |------|------|
 | `core/` | Indexer (marketplace scan + DIY frontmatter parse + compatibility filter), BM25 (Lucene IDF, k1=1.2, b=0.75), ollama `/api/embed` client (`search_document:`/`search_query:` prefixes, BM25 fallback), RRF fusion (k=60), L2-normalized Float32Array vector index, XDG content-hash embedding cache, shared render templates |
 | `eval/` | `tasks.json` (committed golden task set, k=5), `run-eval.ts` runner, ranker seam (`hybrid \| bm25Only \| embeddingOnly \| random(seed) \| oracle \| nameSubstring \| descriptionSubstring`), baseline derivation (`pi/tiers.yaml` + the export-opencode glob, computed offline), `results/` (gitignored per-run output) |
-| `pi/` | pi binding — **#2090, not yet present** |
+| `pi/` | pi binding (#2090) — default-exported extension factory: `search_skills` pull tool + `before_agent_start` push injection, `skill-discovery.json` config |
 | `opencode/` | OpenCode binding — **#2091, not yet present** |
 | `tests/` | `bun test` suites: frontmatter diff vs `Bun.YAML`, BM25 goldens + committed `rank_bm25` fixture, indexer over the mini-marketplace fixture, cache, fusion, embeddings fallback matrix, eval meta-tests |
 
@@ -55,23 +55,49 @@ This populates `adapters/node_modules`, which serves the OpenCode binding,
 at runtime (pi's extension loader aliases `typebox` and pi types to its own
 bundled copies); the install still matters for type-checking and tests.
 
-### pi (landing in #2090)
+### pi
+
+1. `cd <checkout>/claude-plugins/adapters && bun install` (once per checkout).
+   The pi binding resolves nothing from `node_modules` at pi runtime — pi's
+   extension loader aliases `typebox` to its bundled copy and the pi types
+   are `import type`-only — but skipping the install still surfaces as an
+   explicit "run `bun install` in `<checkout>/adapters`" error rather than a
+   bare resolution stack, and the install is required for `tsc`/`bun test`.
+2. Register the extension file:
 
 ```jsonc
 // <project>/.pi/settings.json
 { "extensions": ["/abs/path/to/claude-plugins/adapters/pi/index.ts"] }
 ```
 
-- Registers a `search_skills` tool (pull) and injects pins + top-k into the
-  system prompt per turn via `before_agent_start` (push), replacing the
-  native `<available_skills>` listing.
-- Caveat: project-scope extensions load only post-trust; in `-p`/json/rpc
-  modes with `defaultProjectTrust: ask` the extension is silently skipped —
-  prefer global registration (`~/.pi/agent/settings.json`) or `--approve`
-  for headless runs.
+- Registers a `search_skills` tool (pull) and injects pins + ranked top-k
+  into the system prompt per turn via `before_agent_start` (push), replacing
+  the native `<available_skills>` listing in place (before the
+  `Current working directory:` line). The binding never contributes paths
+  via `resources_discover` — that would refeed the uncapped native listing
+  it exists to replace.
+- **Trust caveat**: project-scope extensions load only **post-trust**; in
+  `-p`/json/rpc modes with `defaultProjectTrust: ask` (the default) the
+  extension is **silently skipped** — prefer global registration
+  (`~/.pi/agent/settings.json`) or `--approve` for headless runs.
 - Config: `~/.pi/agent/skill-discovery.json`, overridden key-by-key by
-  project `.pi/skill-discovery.json` (`repoRoot`, `k`, `endpoint`, `model`,
-  `pins`, `push`). Missing file = all defaults.
+  project `.pi/skill-discovery.json`. Missing file = all defaults
+  (`repoRoot` derives from the extension's own location in this checkout):
+
+```jsonc
+// .pi/skill-discovery.json — all keys optional
+{
+  "repoRoot": "/abs/path/to/claude-plugins", // marketplace checkout to index
+  "k": 5,                                    // push top-k (and search_skills default)
+  "endpoint": "http://localhost:11434",      // embedding endpoint
+  "model": "nomic-embed-text",               // embedding model
+  "pins": ["git-plugin:git-commit"],         // always injected; ranked results fill k after pins
+  "push": true                               // false = pull-only (debug/ablation)
+}
+```
+
+  Unknown pins warn and are skipped; malformed config files are ignored
+  with a warning (never fatal to the session).
 - Run consumers with no natively installed marketplace skills; `--no-skills`
   is optional (the binding never feeds the native loader).
 
