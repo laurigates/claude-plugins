@@ -1,0 +1,681 @@
+{
+  "version": 1,
+  "k": 5,
+  "gate": {
+    "cutover_thresholds": {
+      "status": "unfrozen — derive via the documented hybrid-simulation procedure before #2093/#2094"
+    }
+  },
+  "tasks": [
+    {
+      "id": "t-gen-001",
+      "prompt": "I'm done editing — get these changes recorded in the repository history with a properly formatted note that links the ticket they resolve.",
+      "expected_skills": ["git-plugin:git-commit"],
+      "acceptable_skills": ["git-plugin:git-commit-workflow"],
+      "negative": false,
+      "tags": ["stratum:paraphrase"],
+      "provenance": "paraphrased-from-description"
+    },
+    {
+      "id": "t-gen-002",
+      "prompt": "This branch is already up on GitHub — get it in front of my teammates for sign-off, with a decent writeup and the right tags attached.",
+      "expected_skills": ["git-plugin:git-pr"],
+      "acceptable_skills": ["git-plugin:git-branch-pr-workflow"],
+      "negative": false,
+      "tags": ["stratum:paraphrase"],
+      "provenance": "paraphrased-from-description"
+    },
+    {
+      "id": "t-gen-003",
+      "prompt": "Before I wipe my uncommitted state in this working copy, can you tell whether another assistant session is operating in the same directory?",
+      "expected_skills": ["git-plugin:git-coworker-check"],
+      "acceptable_skills": [],
+      "negative": false,
+      "tags": ["stratum:paraphrase"],
+      "provenance": "paraphrased-from-description"
+    },
+    {
+      "id": "t-gen-004",
+      "prompt": "From the terminal, grab the error output of the latest broken pipeline execution and give me machine-parseable data about the open change requests on this repository.",
+      "expected_skills": ["git-plugin:gh-cli-agentic"],
+      "acceptable_skills": [],
+      "negative": false,
+      "tags": ["stratum:paraphrase"],
+      "provenance": "paraphrased-from-description"
+    },
+    {
+      "id": "t-gen-005",
+      "prompt": "Before this goes anywhere public, sweep the staged changes for anything that looks like an access token or a password.",
+      "expected_skills": ["git-plugin:git-security-checks"],
+      "acceptable_skills": [],
+      "negative": false,
+      "tags": ["stratum:paraphrase"],
+      "provenance": "paraphrased-from-description"
+    },
+    {
+      "id": "t-gen-006",
+      "prompt": "My local work is ahead of what's on the server — send it up and make sure the branch is wired to its counterpart on GitHub.",
+      "expected_skills": ["git-plugin:git-push"],
+      "acceptable_skills": [],
+      "negative": false,
+      "tags": ["stratum:paraphrase"],
+      "provenance": "paraphrased-from-description"
+    },
+    {
+      "id": "t-gen-007",
+      "prompt": "First time inside this repo — figure out how it's assembled, what verifies it, and how the automation is wired before I touch anything.",
+      "expected_skills": ["project-plugin:project-discovery"],
+      "acceptable_skills": [],
+      "negative": false,
+      "tags": ["stratum:paraphrase"],
+      "provenance": "paraphrased-from-description"
+    },
+    {
+      "id": "t-gen-008",
+      "prompt": "I've got a huge API response saved to disk and need to pull a couple of nested keys out of every element of the list inside it.",
+      "expected_skills": ["tools-plugin:jq-json-processing"],
+      "acceptable_skills": ["tools-plugin:nushell-data-processing"],
+      "negative": false,
+      "tags": ["stratum:paraphrase"],
+      "provenance": "paraphrased-from-description"
+    },
+    {
+      "id": "t-gen-009",
+      "prompt": "Turn this written description of how our services talk to each other into a rendered picture of the system.",
+      "expected_skills": ["tools-plugin:d2-diagrams"],
+      "acceptable_skills": ["tools-plugin:mermaid-diagrams"],
+      "negative": false,
+      "tags": ["stratum:paraphrase"],
+      "provenance": "paraphrased-from-description"
+    },
+    {
+      "id": "t-gen-010",
+      "prompt": "make this run the same on mac and linux terminals",
+      "expected_skills": ["tools-plugin:shell-expert"],
+      "acceptable_skills": [],
+      "negative": false,
+      "tags": ["stratum:terse"],
+      "provenance": "invented-intent"
+    },
+    {
+      "id": "t-gen-011",
+      "prompt": "quick sanity pass that my edit didn't break anything",
+      "expected_skills": ["testing-plugin:test-quick"],
+      "acceptable_skills": ["testing-plugin:test-run", "testing-plugin:test-tier-selection"],
+      "negative": false,
+      "tags": ["stratum:terse"],
+      "provenance": "invented-intent"
+    },
+    {
+      "id": "t-gen-012",
+      "prompt": "things go wrong in this app but nothing ever surfaces — find where it all gets eaten",
+      "expected_skills": ["code-quality-plugin:code-hidden-failures"],
+      "acceptable_skills": [],
+      "negative": false,
+      "tags": ["stratum:terse"],
+      "provenance": "invented-intent"
+    },
+    {
+      "id": "t-gen-013",
+      "prompt": "clear out all these stale todos in one go",
+      "expected_skills": ["taskwarrior-plugin:task-bulk-ops"],
+      "acceptable_skills": ["taskwarrior-plugin:task-reconcile"],
+      "negative": false,
+      "tags": ["stratum:terse"],
+      "provenance": "invented-intent"
+    },
+    {
+      "id": "t-gen-014",
+      "prompt": "Which parts of this codebase are the hardest to follow? I want numbers ranking the worst offenders so I know where to start untangling.",
+      "expected_skills": ["code-quality-plugin:code-complexity"],
+      "acceptable_skills": [],
+      "negative": false,
+      "tags": ["stratum:paraphrase"],
+      "provenance": "paraphrased-from-description"
+    },
+    {
+      "id": "t-gen-015",
+      "prompt": "The suite is all green but I suspect the assertions wouldn't trip on a genuine defect — deliberately sabotage the source and see whether anything complains.",
+      "expected_skills": ["testing-plugin:mutation-testing"],
+      "acceptable_skills": [
+        "testing-plugin:test-quality-analysis",
+        "testing-plugin:test-strategy-review"
+      ],
+      "negative": false,
+      "tags": ["stratum:paraphrase"],
+      "provenance": "paraphrased-from-description"
+    },
+    {
+      "id": "t-gen-016",
+      "prompt": "I have to change an old module that nothing exercises — how do I make it safe to modify without rewriting the whole thing first?",
+      "expected_skills": ["software-design-plugin:design-legacy-seams"],
+      "acceptable_skills": [],
+      "negative": false,
+      "tags": ["stratum:paraphrase"],
+      "provenance": "paraphrased-from-description"
+    },
+    {
+      "id": "t-gen-017",
+      "prompt": "We're moving the persistence layer from one database to another and can't lose records — what's the approach for keeping both in agreement during the changeover?",
+      "expected_skills": ["migration-patterns-plugin:dual-write"],
+      "acceptable_skills": ["migration-patterns-plugin:shadow-mode"],
+      "negative": false,
+      "tags": ["stratum:paraphrase"],
+      "provenance": "paraphrased-from-description"
+    },
+    {
+      "id": "t-gen-018",
+      "prompt": "Before I write any code for this ticket, make sure nobody already has a branch underway or an open change addressing it.",
+      "expected_skills": ["workflow-orchestration-plugin:workflow-preflight"],
+      "acceptable_skills": [],
+      "negative": false,
+      "tags": ["stratum:paraphrase"],
+      "provenance": "paraphrased-from-description"
+    },
+    {
+      "id": "t-gen-019",
+      "prompt": "Here's a rambling voice-memo transcript of everything on my mind about the project — shape it into an organized set of next steps.",
+      "expected_skills": ["prose-plugin:prose-synthesize"],
+      "acceptable_skills": [],
+      "negative": false,
+      "tags": ["stratum:paraphrase"],
+      "provenance": "paraphrased-from-description"
+    },
+    {
+      "id": "t-gen-020",
+      "prompt": "Produce browsable reference pages for our public functions from the inline comments that already document them, plus release notes derived from past changes.",
+      "expected_skills": ["documentation-plugin:docs-generate"],
+      "acceptable_skills": [],
+      "negative": false,
+      "tags": ["stratum:paraphrase"],
+      "provenance": "paraphrased-from-description"
+    },
+    {
+      "id": "t-dom-001",
+      "prompt": "I've got a single-file Python helper that needs requests and rich available, but I don't want to create a whole project or activate any environment first — what's the quickest way to just execute it?",
+      "expected_skills": ["python-plugin:uv-run"],
+      "acceptable_skills": ["python-plugin:uv-project-management"],
+      "negative": false,
+      "tags": ["stratum:paraphrase", "domain:lang"],
+      "provenance": "SKILL.md description of python-plugin/skills/uv-run, read 2026-07-19; prompt hand-paraphrased"
+    },
+    {
+      "id": "t-dom-002",
+      "prompt": "Our Python repo has years of cruft — I'm sure there are whole functions and classes nobody references anymore. Help me find them and strip them out safely.",
+      "expected_skills": ["python-plugin:vulture-dead-code"],
+      "acceptable_skills": ["code-quality-plugin:code-dead-code"],
+      "negative": false,
+      "tags": ["stratum:paraphrase", "domain:lang"],
+      "provenance": "SKILL.md description of python-plugin/skills/vulture-dead-code, read 2026-07-19; prompt hand-paraphrased"
+    },
+    {
+      "id": "t-dom-003",
+      "prompt": "In our TypeScript app I want to know which source modules and package.json entries nothing actually references, so we can trim the bundle and make the pipeline fail when new ones sneak in.",
+      "expected_skills": ["typescript-plugin:knip-dead-code"],
+      "acceptable_skills": [
+        "code-quality-plugin:code-dead-code",
+        "configure-plugin:configure-dead-code"
+      ],
+      "negative": false,
+      "tags": ["stratum:paraphrase", "domain:lang"],
+      "provenance": "SKILL.md description of typescript-plugin/skills/knip-dead-code, read 2026-07-19; prompt hand-paraphrased"
+    },
+    {
+      "id": "t-dom-004",
+      "prompt": "our rust test suite takes forever and a couple of cases fail randomly in CI, sort it out",
+      "expected_skills": ["rust-plugin:cargo-nextest"],
+      "acceptable_skills": ["testing-plugin:test-run", "rust-plugin:rust-development"],
+      "negative": false,
+      "tags": ["stratum:terse", "domain:lang"],
+      "provenance": "SKILL.md description of rust-plugin/skills/cargo-nextest, read 2026-07-19; prompt hand-paraphrased (terse variant)"
+    },
+    {
+      "id": "t-dom-005",
+      "prompt": "My Rust integration test spins up a fake HTTP endpoint, and the client code that retries until it gets a 200 just sits there forever — and it only misbehaves when the whole suite executes at once, never in isolation.",
+      "expected_skills": ["rust-plugin:mockito-http-mocking"],
+      "acceptable_skills": [],
+      "negative": false,
+      "tags": ["stratum:paraphrase", "domain:lang"],
+      "provenance": "SKILL.md description of rust-plugin/skills/mockito-http-mocking, read 2026-07-19; prompt hand-paraphrased"
+    },
+    {
+      "id": "t-dom-006",
+      "prompt": "My Bevy game's frame rate tanks once there are a few thousand entities on screen — I think the way I iterate components each frame and the order everything executes in needs a rework.",
+      "expected_skills": ["bevy-plugin:bevy-ecs-patterns"],
+      "acceptable_skills": ["bevy-plugin:bevy-game-engine"],
+      "negative": false,
+      "tags": ["stratum:paraphrase", "domain:gamedev"],
+      "provenance": "SKILL.md description of bevy-plugin/skills/bevy-ecs-patterns, read 2026-07-19; prompt hand-paraphrased"
+    },
+    {
+      "id": "t-dom-007",
+      "prompt": "I'd like Tailwind-style class names generated on the fly in my Vite project instead of shipping one big stylesheet — how do I wire that up?",
+      "expected_skills": ["css-plugin:unocss"],
+      "acceptable_skills": ["css-plugin:lightning-css"],
+      "negative": false,
+      "tags": ["stratum:paraphrase", "domain:frontend"],
+      "provenance": "SKILL.md description of css-plugin/skills/unocss, read 2026-07-19; prompt hand-paraphrased"
+    },
+    {
+      "id": "t-dom-008",
+      "prompt": "Our dropdown menu can't be operated without a mouse and VoiceOver announces nothing useful when it opens — fix it so we meet the conformance level our public-sector client requires.",
+      "expected_skills": ["accessibility-plugin:accessibility-implementation"],
+      "acceptable_skills": ["configure-plugin:configure-ux-testing"],
+      "negative": false,
+      "tags": ["stratum:paraphrase", "domain:frontend"],
+      "provenance": "SKILL.md description of accessibility-plugin/skills/accessibility-implementation, read 2026-07-19; prompt hand-paraphrased"
+    },
+    {
+      "id": "t-dom-009",
+      "prompt": "I want automated checks that exercise our Express endpoints and assert on status codes and JSON bodies without standing up a real server — what's the idiomatic setup?",
+      "expected_skills": ["api-plugin:api-testing"],
+      "acceptable_skills": [
+        "configure-plugin:configure-api-tests",
+        "configure-plugin:configure-integration-tests"
+      ],
+      "negative": false,
+      "tags": ["stratum:paraphrase", "domain:backend"],
+      "provenance": "SKILL.md description of api-plugin/skills/api-testing, read 2026-07-19; prompt hand-paraphrased"
+    },
+    {
+      "id": "t-dom-010",
+      "prompt": "I'm building an assistant that moves through explicit stages, can pause for a person to approve a step, and picks up where it stopped after a crash. What framework pattern should I reach for?",
+      "expected_skills": ["langchain-plugin:langgraph-agents"],
+      "acceptable_skills": [
+        "langchain-plugin:langchain-development",
+        "langchain-plugin:deep-agents"
+      ],
+      "negative": false,
+      "tags": ["stratum:paraphrase", "domain:ai"],
+      "provenance": "SKILL.md description of langchain-plugin/skills/langgraph-agents, read 2026-07-19; prompt hand-paraphrased"
+    },
+    {
+      "id": "t-dom-011",
+      "prompt": "A chart upgrade died halfway and now the release refuses any further operation, claiming another operation is in progress — get me back to the last good version.",
+      "expected_skills": ["kubernetes-plugin:helm-release-recovery"],
+      "acceptable_skills": [
+        "kubernetes-plugin:helm-debugging",
+        "kubernetes-plugin:helm-release-management"
+      ],
+      "negative": false,
+      "tags": ["stratum:paraphrase", "domain:infra"],
+      "provenance": "SKILL.md description of kubernetes-plugin/skills/helm-release-recovery, read 2026-07-19; prompt hand-paraphrased"
+    },
+    {
+      "id": "t-dom-012",
+      "prompt": "Something errored overnight in one of our Terraform Cloud workspaces — pull down the console output from that execution so we can see what actually broke.",
+      "expected_skills": ["terraform-plugin:tfc-run-logs"],
+      "acceptable_skills": ["terraform-plugin:tfc-run-status", "terraform-plugin:tfc-list-runs"],
+      "negative": false,
+      "tags": ["stratum:paraphrase", "domain:infra"],
+      "provenance": "SKILL.md description of terraform-plugin/skills/tfc-run-logs, read 2026-07-19; prompt hand-paraphrased"
+    },
+    {
+      "id": "t-dom-013",
+      "prompt": "my python docker image is over a gig, shrink it",
+      "expected_skills": ["container-plugin:python-containers"],
+      "acceptable_skills": [
+        "container-plugin:container-development",
+        "configure-plugin:configure-dockerfile"
+      ],
+      "negative": false,
+      "tags": ["stratum:terse", "domain:infra"],
+      "provenance": "SKILL.md description of container-plugin/skills/python-containers, read 2026-07-19; prompt hand-paraphrased (terse variant)"
+    },
+    {
+      "id": "t-dom-014",
+      "prompt": "I changed a domain's mail-routing entries yesterday and some providers still answer with the old values — check what different public servers around the world are currently returning for it.",
+      "expected_skills": ["networking-plugin:dns-tools"],
+      "acceptable_skills": ["networking-plugin:network-diagnostics"],
+      "negative": false,
+      "tags": ["stratum:paraphrase", "domain:infra"],
+      "provenance": "SKILL.md description of networking-plugin/skills/dns-tools, read 2026-07-19; prompt hand-paraphrased"
+    },
+    {
+      "id": "t-dom-015",
+      "prompt": "why is the build red on main?",
+      "expected_skills": ["github-actions-plugin:github-actions-inspection"],
+      "acceptable_skills": ["git-plugin:gh-workflow-monitoring", "git-plugin:gh-cli-agentic"],
+      "negative": false,
+      "tags": ["stratum:terse", "domain:ci"],
+      "provenance": "SKILL.md description of github-actions-plugin/skills/github-actions-inspection, read 2026-07-19; prompt hand-paraphrased (terse variant)"
+    },
+    {
+      "id": "t-dom-016",
+      "prompt": "Our GitHub Actions bill doubled this quarter and I suspect a lot of executions are pointless — kicked off by automation accounts or duplicate pushes with nothing canceling the older ones. Find where the money goes and what to change.",
+      "expected_skills": ["finops-plugin:finops-waste"],
+      "acceptable_skills": [
+        "finops-plugin:github-actions-finops",
+        "finops-plugin:finops-workflows",
+        "finops-plugin:finops-overview"
+      ],
+      "negative": false,
+      "tags": ["stratum:paraphrase", "domain:ci"],
+      "provenance": "SKILL.md description of finops-plugin/skills/finops-waste, read 2026-07-19; prompt hand-paraphrased"
+    },
+    {
+      "id": "t-dom-017",
+      "prompt": "I found a great render in my ComfyUI outputs folder from weeks ago but have no idea which checkpoint or text input made it — can we dig that information out of the image file itself?",
+      "expected_skills": ["comfyui-plugin:comfy-metadata"],
+      "acceptable_skills": [],
+      "negative": false,
+      "tags": ["stratum:paraphrase", "domain:comfyui"],
+      "provenance": "SKILL.md description of comfyui-plugin/skills/comfy-metadata, read 2026-07-19; prompt hand-paraphrased"
+    },
+    {
+      "id": "t-dom-018",
+      "prompt": "My MacBook says only 8 GB remain, but adding up my folders in Finder gets nowhere near the drive's capacity — figure out where it all went and reclaim some of it.",
+      "expected_skills": ["macos-plugin:macos-disk-usage"],
+      "acceptable_skills": ["macos-plugin:macos-performance-triage"],
+      "negative": false,
+      "tags": ["stratum:paraphrase", "domain:host"],
+      "provenance": "SKILL.md description of macos-plugin/skills/macos-disk-usage, read 2026-07-19; prompt hand-paraphrased"
+    },
+    {
+      "id": "t-dom-019",
+      "prompt": "home assistant refuses to restart after my last edit",
+      "expected_skills": ["home-assistant-plugin:ha-validate"],
+      "acceptable_skills": ["home-assistant-plugin:ha-configuration"],
+      "negative": false,
+      "tags": ["stratum:terse", "domain:homeassistant"],
+      "provenance": "SKILL.md description of home-assistant-plugin/skills/ha-validate, read 2026-07-19; prompt hand-paraphrased (terse variant)"
+    },
+    {
+      "id": "t-dom-020",
+      "prompt": "A bunch of notes in my Obsidian vault have no connections in either direction — nothing points at them and they point at nothing. Help me hook them back into the rest of the knowledge network.",
+      "expected_skills": ["obsidian-plugin:vault-orphans"],
+      "acceptable_skills": ["obsidian-plugin:vault-mocs", "obsidian-plugin:search-discovery"],
+      "negative": false,
+      "tags": ["stratum:paraphrase", "domain:obsidian"],
+      "provenance": "SKILL.md description of obsidian-plugin/skills/vault-orphans, read 2026-07-19; prompt hand-paraphrased"
+    },
+    {
+      "id": "t-amb-001",
+      "prompt": "This is a Python repo — go over src/ with the linter, flag any code-quality problems, and apply the safe auto-fixes.",
+      "expected_skills": ["python-plugin:ruff-linting"],
+      "acceptable_skills": ["code-quality-plugin:code-lint", "python-plugin:python-code-quality"],
+      "negative": false,
+      "tags": ["stratum:ambiguity", "domain:linting"],
+      "provenance": "ambiguity-pair"
+    },
+    {
+      "id": "t-amb-002",
+      "prompt": "There's no lint tooling in this TypeScript repo at all yet — get a modern linter set up and hooked into the commit-time checks and the CI pipeline.",
+      "expected_skills": ["configure-plugin:configure-linting"],
+      "acceptable_skills": ["typescript-plugin:biome-tooling", "code-quality-plugin:code-lint"],
+      "negative": false,
+      "tags": ["stratum:ambiguity", "domain:linting"],
+      "provenance": "ambiguity-pair"
+    },
+    {
+      "id": "t-amb-003",
+      "prompt": "I just changed one small function — give me the fastest possible test feedback, skip anything slow, integration, or end-to-end.",
+      "expected_skills": ["testing-plugin:test-quick"],
+      "acceptable_skills": ["testing-plugin:test-run", "testing-plugin:test-tier-selection"],
+      "negative": false,
+      "tags": ["stratum:ambiguity", "domain:testing"],
+      "provenance": "ambiguity-pair"
+    },
+    {
+      "id": "t-amb-004",
+      "prompt": "This project runs on Bun — run its test suite and emit JUnit XML so CI can pick up the results.",
+      "expected_skills": ["typescript-plugin:bun-test"],
+      "acceptable_skills": ["testing-plugin:test-run", "typescript-plugin:bun-development"],
+      "negative": false,
+      "tags": ["stratum:ambiguity", "domain:testing"],
+      "provenance": "ambiguity-pair"
+    },
+    {
+      "id": "t-amb-005",
+      "prompt": "I want a sequence diagram of the auth flow that renders natively when people view the README on GitHub.",
+      "expected_skills": ["tools-plugin:mermaid-diagrams"],
+      "acceptable_skills": ["tools-plugin:d2-diagrams"],
+      "negative": false,
+      "tags": ["stratum:ambiguity", "domain:diagrams"],
+      "provenance": "ambiguity-pair"
+    },
+    {
+      "id": "t-amb-006",
+      "prompt": "Produce an architecture diagram of our deployment topology as a standalone SVG with auto-layout for the docs site.",
+      "expected_skills": ["tools-plugin:d2-diagrams"],
+      "acceptable_skills": ["tools-plugin:mermaid-diagrams"],
+      "negative": false,
+      "tags": ["stratum:ambiguity", "domain:diagrams"],
+      "provenance": "ambiguity-pair"
+    },
+    {
+      "id": "t-amb-007",
+      "prompt": "Our Python service's Docker image has ballooned past a gigabyte — get the size down without breaking the pip-installed native deps.",
+      "expected_skills": ["container-plugin:python-containers"],
+      "acceptable_skills": [
+        "container-plugin:container-development",
+        "configure-plugin:configure-dockerfile"
+      ],
+      "negative": false,
+      "tags": ["stratum:ambiguity", "domain:containers"],
+      "provenance": "ambiguity-pair"
+    },
+    {
+      "id": "t-amb-008",
+      "prompt": "This new repo needs a Dockerfile that follows our standards — it shouldn't run as the superuser, should build in stages, and should start from a minimal base image — write one and audit it.",
+      "expected_skills": ["configure-plugin:configure-dockerfile"],
+      "acceptable_skills": ["container-plugin:container-development"],
+      "negative": false,
+      "tags": ["stratum:ambiguity", "domain:containers"],
+      "provenance": "ambiguity-pair"
+    },
+    {
+      "id": "t-amb-009",
+      "prompt": "Stage what I changed and commit it locally with a proper conventional message that references the issue it fixes.",
+      "expected_skills": ["git-plugin:git-commit"],
+      "acceptable_skills": ["git-plugin:git-commit-workflow", "git-plugin:github-issue-autodetect"],
+      "negative": false,
+      "tags": ["stratum:ambiguity", "domain:git"],
+      "provenance": "ambiguity-pair"
+    },
+    {
+      "id": "t-amb-010",
+      "prompt": "The branch is already pushed — open a pull request for review with a good description, labels, and the linked issue.",
+      "expected_skills": ["git-plugin:git-pr"],
+      "acceptable_skills": ["git-plugin:git-branch-pr-workflow", "git-plugin:github-pr-title"],
+      "negative": false,
+      "tags": ["stratum:ambiguity", "domain:git"],
+      "provenance": "ambiguity-pair"
+    },
+    {
+      "id": "t-amb-011",
+      "prompt": "Hunt down unused exports, unreferenced files, and dependencies we no longer need in this TypeScript codebase.",
+      "expected_skills": ["typescript-plugin:knip-dead-code"],
+      "acceptable_skills": [
+        "code-quality-plugin:code-dead-code",
+        "configure-plugin:configure-dead-code"
+      ],
+      "negative": false,
+      "tags": ["stratum:ambiguity", "domain:dead-code"],
+      "provenance": "ambiguity-pair"
+    },
+    {
+      "id": "t-amb-012",
+      "prompt": "mypy is dragging this project down — move our type checking over to Astral's ty, config and pre-commit hook included.",
+      "expected_skills": ["migration-patterns-plugin:mypy-to-ty"],
+      "acceptable_skills": ["python-plugin:ty-type-checking", "python-plugin:python-code-quality"],
+      "negative": false,
+      "tags": ["stratum:ambiguity", "domain:type-checking"],
+      "provenance": "ambiguity-pair"
+    },
+    {
+      "id": "t-amb-013",
+      "prompt": "CI went red on main — pull the failed workflow run's logs and figure out which step broke and why.",
+      "expected_skills": ["github-actions-plugin:github-actions-inspection"],
+      "acceptable_skills": ["git-plugin:gh-workflow-monitoring", "finops-plugin:finops-workflows"],
+      "negative": false,
+      "tags": ["stratum:ambiguity", "domain:ci"],
+      "provenance": "ambiguity-pair"
+    },
+    {
+      "id": "t-amb-014",
+      "prompt": "Fresh checkout of this Bun project — install the dependencies exactly the way CI would, without touching the lockfile.",
+      "expected_skills": ["typescript-plugin:bun-install"],
+      "acceptable_skills": ["tools-plugin:deps-install", "typescript-plugin:bun-package-manager"],
+      "negative": false,
+      "tags": ["stratum:ambiguity", "domain:dependencies"],
+      "provenance": "ambiguity-pair"
+    },
+    {
+      "id": "t-amb-015",
+      "prompt": "This Python repo still formats with black — switch the formatting stack over to ruff and clean up the leftover config.",
+      "expected_skills": ["migration-patterns-plugin:black-to-ruff-format"],
+      "acceptable_skills": [
+        "python-plugin:ruff-formatting",
+        "configure-plugin:configure-formatting"
+      ],
+      "negative": false,
+      "tags": ["stratum:ambiguity", "domain:formatting"],
+      "provenance": "ambiguity-pair"
+    },
+    {
+      "id": "t-neg-001",
+      "prompt": "Why is this function returning undefined when I call it with an empty array? It works fine with non-empty input.",
+      "expected_skills": [],
+      "acceptable_skills": [],
+      "negative": true,
+      "tags": ["stratum:negative"],
+      "provenance": "authored 2026-07-19, negatives+excluded stratum; generic single-function debugging question — verified no skill covers ad-hoc logic debugging (code-quality-plugin:debugging-methodology is scoped to memory/perf/syscall-level; typescript-plugin:typescript-debugging is Bun inspector setup)"
+    },
+    {
+      "id": "t-neg-002",
+      "prompt": "Rename the variable usr to user everywhere in this file.",
+      "expected_skills": [],
+      "acceptable_skills": [],
+      "negative": true,
+      "tags": ["stratum:negative"],
+      "provenance": "authored 2026-07-19; single-file mechanical edit fully covered by base Edit tool — code-quality-plugin:bulk-sweep-classify is scoped to bulk cross-file sweeps, not one file"
+    },
+    {
+      "id": "t-neg-003",
+      "prompt": "What does CRDT stand for, and can you give me a one-paragraph explanation of how they avoid merge conflicts?",
+      "expected_skills": [],
+      "acceptable_skills": [],
+      "negative": true,
+      "tags": ["stratum:negative"],
+      "provenance": "authored 2026-07-19; pure conceptual Q&A, no operational task — no marketplace skill covers CS concept explanation"
+    },
+    {
+      "id": "t-neg-004",
+      "prompt": "Open src/config.ts and tell me what the default request timeout is set to.",
+      "expected_skills": [],
+      "acceptable_skills": [],
+      "negative": true,
+      "tags": ["stratum:negative"],
+      "provenance": "authored 2026-07-19; single-file lookup fully covered by base Read tool — verified rg/fd/jq tool skills target search workflows, not a named-file value lookup"
+    },
+    {
+      "id": "t-neg-005",
+      "prompt": "There's a typo in the README heading — 'Instalation' should be 'Installation'. Fix it.",
+      "expected_skills": [],
+      "acceptable_skills": [],
+      "negative": true,
+      "tags": ["stratum:negative"],
+      "provenance": "authored 2026-07-19; trivial edit via base tools — configure-plugin:configure-readme is for scaffolding/auditing README structure, not typo fixes (and is exclude-tier anyway)"
+    },
+    {
+      "id": "t-neg-006",
+      "prompt": "Thanks, that fixed it! Before we move on, can you briefly explain why the off-by-one happened in the loop bound?",
+      "expected_skills": [],
+      "acceptable_skills": [],
+      "negative": true,
+      "tags": ["stratum:negative"],
+      "provenance": "authored 2026-07-19; conversational follow-up asking for explanation of already-fixed bug — no skill should fire on acknowledgment + explanation requests"
+    },
+    {
+      "id": "t-neg-007",
+      "prompt": "What's the practical difference between TCP and UDP, and when would I pick one over the other for a game server?",
+      "expected_skills": [],
+      "acceptable_skills": [],
+      "negative": true,
+      "tags": ["stratum:negative"],
+      "provenance": "authored 2026-07-19; conceptual networking question — networking-plugin skills are all operational (dig/nmap/iproute2/oha diagnostics), none covers protocol theory Q&A"
+    },
+    {
+      "id": "t-neg-008",
+      "prompt": "Convert this for-loop into a while loop so I can add an early-exit condition halfway through the body.",
+      "expected_skills": [],
+      "acceptable_skills": [],
+      "negative": true,
+      "tags": ["stratum:negative"],
+      "provenance": "authored 2026-07-19; trivial in-place syntax change via base Edit — code-quality-plugin:code-refactor is scoped to pure-function/immutability/composition refactors, not loop-form swaps"
+    },
+    {
+      "id": "t-exc-001",
+      "prompt": "Every commit in this Python repo should get automatically checked for lint and formatting problems before it lands — install the framework that does that and give me a working config.",
+      "expected_skills": ["configure-plugin:configure-pre-commit"],
+      "acceptable_skills": ["configure-plugin:configure-linting"],
+      "negative": false,
+      "tags": ["stratum:excluded"],
+      "provenance": "authored 2026-07-19; configure-plugin is tier: exclude in pi/tiers.yaml (reason: CC onboarding config); configure-pre-commit/SKILL.md verified to lack compatibility: claude-code marker, so it IS in the adapter's foreign-harness index while the pi general baseline fails closed"
+    },
+    {
+      "id": "t-exc-002",
+      "prompt": "My MacBook keeps warning that the disk is almost full but Finder gives me no clue which folders are responsible — track it down and free up what you safely can.",
+      "expected_skills": ["macos-plugin:macos-disk-usage"],
+      "acceptable_skills": [],
+      "negative": false,
+      "tags": ["stratum:excluded"],
+      "provenance": "authored 2026-07-19; macos-plugin is tier: domain (category: host) in pi/tiers.yaml — never in the pi general baseline; SKILL.md carries no compatibility marker"
+    },
+    {
+      "id": "t-exc-003",
+      "prompt": "I renamed a bunch of notes in my Obsidian vault and now lots of [[wikilinks]] point at nothing — find the broken ones and repair them.",
+      "expected_skills": ["obsidian-plugin:vault-wikilinks"],
+      "acceptable_skills": ["obsidian-plugin:search-discovery"],
+      "negative": false,
+      "tags": ["stratum:excluded"],
+      "provenance": "authored 2026-07-19; obsidian-plugin is tier: domain (category: obsidian) — outside the pi general baseline; no compatibility marker; search-discovery accepted as it also advertises broken-wikilink audit"
+    },
+    {
+      "id": "t-exc-004",
+      "prompt": "In my Home Assistant setup I want the balcony lights to come on at sunset and switch off at midnight — write the automation for me.",
+      "expected_skills": ["home-assistant-plugin:ha-automations"],
+      "acceptable_skills": [],
+      "negative": false,
+      "tags": ["stratum:excluded"],
+      "provenance": "authored 2026-07-19; home-assistant-plugin is tier: domain (category: homeassistant) — outside the pi general baseline; no compatibility marker"
+    },
+    {
+      "id": "t-exc-005",
+      "prompt": "I want to expose our internal ticketing API to the agent over MCP, in Python — scaffold the service with FastMCP and give it operations for creating and searching tickets.",
+      "expected_skills": ["agent-patterns-plugin:mcp-server-authoring"],
+      "acceptable_skills": [],
+      "negative": false,
+      "tags": ["stratum:excluded"],
+      "provenance": "authored 2026-07-19; agent-patterns-plugin is tier: exclude in pi/tiers.yaml, but mcp-server-authoring is one of five skills in it verified to LACK the compatibility: claude-code marker (MCP is harness-agnostic) — so it is in the adapter index while pi's baseline drops the whole plugin"
+    },
+    {
+      "id": "t-exc-006",
+      "prompt": "Before we hand this feature off to a subagent, put together a full requirement prompt packet for it — background research, the relevant codebase context, and explicit validation gates it must pass.",
+      "expected_skills": ["blueprint-plugin:blueprint-prp-create"],
+      "acceptable_skills": ["blueprint-plugin:confidence-scoring"],
+      "negative": false,
+      "tags": ["stratum:excluded"],
+      "provenance": "authored 2026-07-19; blueprint-plugin is tier: exclude (whole 34-skill plugin dropped from pi); blueprint-prp-create/SKILL.md verified marker-free; intent paraphrases the PRP concept without naming it"
+    },
+    {
+      "id": "t-exc-007",
+      "prompt": "Pin the Node and Python versions for this repo with mise so everyone gets the same toolchain, and add a couple of task shortcuts while you're at it.",
+      "expected_skills": ["configure-plugin:configure-mise"],
+      "acceptable_skills": [],
+      "negative": false,
+      "tags": ["stratum:excluded"],
+      "provenance": "authored 2026-07-19; configure-plugin is tier: exclude; configure-mise verified marker-free (mise setup is harness-agnostic despite the plugin's CC-centric exclude reason) — measures adapter headroom over the baseline"
+    },
+    {
+      "id": "t-exc-008",
+      "prompt": "I just changed the MX records for our domain about an hour ago — check whether the change has actually propagated across the major public resolvers.",
+      "expected_skills": ["networking-plugin:dns-tools"],
+      "acceptable_skills": [],
+      "negative": false,
+      "tags": ["stratum:excluded"],
+      "provenance": "authored 2026-07-19; networking-plugin is tier: domain (category: infra) — outside the pi general baseline; no compatibility marker; dns-tools description explicitly covers MX lookup + propagation verification across resolvers"
+    }
+  ]
+}
