@@ -179,4 +179,22 @@ describe("static import restrictions", () => {
       expect(violations).toEqual([]);
     },
   );
+
+  // opencode/ (#2091): the documented single runtime dependency is
+  // @opencode-ai/plugin (value, type, and dynamic `import(...)` forms all
+  // allowed — the binding deliberately funnels the value import through one
+  // dynamic import for the bun-install rethrow). Anything else — including
+  // a direct @opencode-ai/sdk import, which is only a transitive dep of the
+  // plugin package and would be a phantom dependency — is a violation.
+  test("opencode/ imports only @opencode-ai/plugin, node:*, and relative paths", () => {
+    const violations: string[] = [];
+    for (const file of tsFilesUnder(join(ADAPTERS_ROOT, "opencode"))) {
+      for (const spec of importSpecifiers(file)) {
+        if (spec.startsWith("node:") || spec.startsWith("./") || spec.startsWith("../")) continue;
+        if (spec === "@opencode-ai/plugin") continue;
+        violations.push(`${file}: ${spec}`);
+      }
+    }
+    expect(violations).toEqual([]);
+  });
 });

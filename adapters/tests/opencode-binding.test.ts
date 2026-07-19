@@ -11,12 +11,11 @@
  * with zero network.
  */
 
-import { beforeAll, describe, expect, test } from "bun:test";
-import { cpSync, existsSync, mkdtempSync, readdirSync, renameSync } from "node:fs";
+import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { cpSync, existsSync, mkdtempSync, readdirSync, renameSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import type { Hooks, PluginInput, ToolContext } from "@opencode-ai/plugin";
-import type { Model, Part } from "@opencode-ai/sdk";
 import {
   AVAILABLE_SKILLS_CLOSE,
   AVAILABLE_SKILLS_OPEN,
@@ -44,6 +43,17 @@ beforeAll(() => {
     if (existsSync(src)) renameSync(src, join(fixtureRoot, entry.name, "skills"));
   }
 });
+
+afterAll(() => rmSync(fixtureRoot, { recursive: true, force: true }));
+
+// Types derived from the plugin package's own hook surface — no direct
+// @opencode-ai/sdk import (it is not a declared dependency of adapters/;
+// relying on hoisting of the plugin package's transitive dep would be a
+// phantom dependency).
+type SystemTransformInput = Parameters<NonNullable<Hooks["experimental.chat.system.transform"]>>[0];
+type Model = SystemTransformInput["model"];
+type MessagesOutput = Parameters<NonNullable<Hooks["experimental.chat.messages.transform"]>>[1];
+type Part = MessagesOutput["messages"][number]["parts"][number];
 
 const STUB_MODEL = { modelID: "stub", providerID: "stub" } as unknown as Model;
 const STUB_TOOL_CONTEXT = {
@@ -84,12 +94,17 @@ function assistantMessage(text: string): { info: { role: "assistant" }; parts: P
   };
 }
 
-type MessagesOutput = Parameters<NonNullable<Hooks["experimental.chat.messages.transform"]>>[1];
-
+/**
+ * Runs the hook and returns the ORIGINAL array — never `output.system`.
+ * Upstream request.ts keeps reading its local `system` array after the
+ * trigger (Plugin.trigger does no copy-back), so only in-place mutation of
+ * the original array reference is observed by real OpenCode. Asserting on
+ * the original reference is what pins that contract; asserting on
+ * `output.system` would let a reassignment bug pass silently.
+ */
 async function runSystemTransform(hooks: Hooks, system: string[]): Promise<string[]> {
-  const output = { system };
-  await hooks["experimental.chat.system.transform"]?.({ model: STUB_MODEL }, output);
-  return output.system;
+  await hooks["experimental.chat.system.transform"]?.({ model: STUB_MODEL }, { system });
+  return system;
 }
 
 async function runMessagesTransform(hooks: Hooks, messages: MessagesOutput["messages"]) {
@@ -233,9 +248,44 @@ describe("search_skills tool", () => {
 
 describe("experimental.chat.system.transform — strip + inject", () => {
   const NATIVE_BLOCK = `${AVAILABLE_SKILLS_OPEN}\n  <skill><name>native</name><description>d</description><location>/x</location></skill>\n${AVAILABLE_SKILLS_CLOSE}`;
+  /** Captures a user message so the push channel has a ranking input. */
+  async function captureMessage(hooks: Hooks): Promise<void> {
+    await runMessagesTransform(hooks, [
+      userMessage("render architecture diagrams from my notes"),
+    ] as MessagesOutput["messages"]);
+  }
 
-  test("native block element is stripped and one adapter block appended", async () => {
+  test("mutates the passed system array in place — reassignment would be invisible upstream", async () => {
     const hooks = await makeHooks();
+    await captureMessage(hooks);
+    const system = ["header", NATIVE_BLOCK];
+    const output = { system };
+    await hooks["experimental.chat.system.transform"]?.({ model: STUB_MODEL }, output);
+    // Same reference: upstream reads its local array, not output.system.
+    expect(output.system).toBe(system);
+    expect(system.some((s) => s.includes("<name>native</name>"))).toBe(false);
+    expect(system[system.length - 1]?.endsWith(INJECTED_BLOCK_TRAILER)).toBe(true);
+  });
+
+  test("real call-site shape: one pre-joined element — only the native block span is removed", async () => {
+    // Upstream request.ts joins agent prompt + env + native skills block +
+    // instructions into a SINGLE array element before the hook fires.
+    // Whole-element filtering would delete the entire system prompt here.
+    const hooks = await makeHooks();
+    await captureMessage(hooks);
+    const joined = `You are opencode.\n<env>cwd: /x</env>\n${NATIVE_BLOCK}\ntrailing instructions`;
+    const system = await runSystemTransform(hooks, [joined]);
+    expect(system[0]).toContain("You are opencode.");
+    expect(system[0]).toContain("<env>cwd: /x</env>");
+    expect(system[0]).toContain("trailing instructions");
+    expect(system[0]).not.toContain("<name>native</name>");
+    expect(system[0]).not.toContain(AVAILABLE_SKILLS_OPEN);
+    expect(system[system.length - 1]?.endsWith(INJECTED_BLOCK_TRAILER)).toBe(true);
+  });
+
+  test("native block as its own element is removed entirely and one adapter block appended", async () => {
+    const hooks = await makeHooks();
+    await captureMessage(hooks);
     const system = await runSystemTransform(hooks, ["You are opencode.", NATIVE_BLOCK, "cwd: /x"]);
     const withBlock = system.filter((s) => s.includes(AVAILABLE_SKILLS_OPEN));
     expect(withBlock).toHaveLength(1); // only the adapter's own block survives
@@ -245,8 +295,17 @@ describe("experimental.chat.system.transform — strip + inject", () => {
     expect(system).toContain("cwd: /x");
   });
 
+  test("malformed (unclosed) native block: element left untouched, never truncated", async () => {
+    const hooks = await makeHooks();
+    await captureMessage(hooks);
+    const unclosed = `header\n${AVAILABLE_SKILLS_OPEN}\n  <skill><name>native</name></skill>\ntrailing`;
+    const system = await runSystemTransform(hooks, [unclosed]);
+    expect(system[0]).toBe(unclosed);
+  });
+
   test("block absent (permission.skill deny did its job): elements untouched, block appended", async () => {
     const hooks = await makeHooks();
+    await captureMessage(hooks);
     const system = await runSystemTransform(hooks, ["header", "body"]);
     expect(system.slice(0, 2)).toEqual(["header", "body"]);
     expect(system).toHaveLength(3);
@@ -255,13 +314,23 @@ describe("experimental.chat.system.transform — strip + inject", () => {
 
   test("positions collapsed: the block is found by content, never by index", async () => {
     const hooks = await makeHooks();
+    await captureMessage(hooks);
     // Simulates a pre-collapsed / reordered array: the native block rides
     // inside a merged element at a non-canonical position.
     const merged = `environment details\n${NATIVE_BLOCK}\ntrailing instructions`;
     const system = await runSystemTransform(hooks, [merged, "header moved"]);
     expect(system.some((s) => s.includes("<name>native</name>"))).toBe(false);
-    expect(system[0]).toBe("header moved");
+    expect(system[0]).toContain("environment details");
+    expect(system[0]).toContain("trailing instructions");
+    expect(system[1]).toBe("header moved");
     expect(system[system.length - 1]?.endsWith(INJECTED_BLOCK_TRAILER)).toBe(true);
+  });
+
+  test("no pins and no captured message: nothing is injected (no empty block + false trailer)", async () => {
+    const hooks = await makeHooks(); // default pins: []
+    const system = await runSystemTransform(hooks, ["header", NATIVE_BLOCK]);
+    // Defensive strip still runs; the push is skipped entirely.
+    expect(system).toEqual(["header"]);
   });
 
   test("first turn with no captured message injects pins only", async () => {
@@ -297,6 +366,28 @@ describe("experimental.chat.messages.transform — ranking-input capture", () =>
     const block = system[system.length - 1] as string;
     const first = block.split("\n").find((l) => l.startsWith("  <skill>"));
     expect(first).toContain("<name>gamma-plugin:folded-description</name>");
+  });
+
+  test("parts marked ignored are excluded from the ranking capture", async () => {
+    const hooks = await makeHooks();
+    await runMessagesTransform(hooks, [
+      {
+        info: { role: "user" },
+        parts: [
+          {
+            type: "text",
+            text: "render architecture diagrams from my notes",
+            ignored: true,
+          } as unknown as Part,
+          { type: "text", text: "inspect JSON payloads from the API" } as unknown as Part,
+        ],
+      },
+    ] as MessagesOutput["messages"]);
+    const system = await runSystemTransform(hooks, []);
+    const block = system[0] as string;
+    const first = block.split("\n").find((l) => l.startsWith("  <skill>"));
+    // The ignored diagrams text must not drive ranking; the JSON text does.
+    expect(first).toContain("<name>beta-plugin:no-name</name>");
   });
 
   test("a trailing assistant message keeps the previous user capture (one-turn-stale contract)", async () => {

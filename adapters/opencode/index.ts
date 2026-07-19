@@ -32,6 +32,7 @@ import {
   SEARCH_SKILLS_TOOL_DESCRIPTION,
   type SkillEntry,
   type SkillIndex,
+  stripAvailableSkillsBlocks,
 } from "../core/index.ts";
 import { DEFAULT_REPO_ROOT, type OpencodeBindingConfig, resolveOptions } from "./config.ts";
 
@@ -153,8 +154,13 @@ export const SkillDiscoveryPlugin: Plugin = async (input, options) => {
       for (let i = output.messages.length - 1; i >= 0; i--) {
         const message = output.messages[i];
         if (message?.info.role !== "user") continue;
+        // Skip both upstream part flags: `synthetic` (OpenCode-generated
+        // text) and `ignored` (text OpenCode excludes from the request) —
+        // neither should drive the push ranking.
         const text = message.parts
-          .flatMap((part) => (part.type === "text" && !part.synthetic ? [part.text] : []))
+          .flatMap((part) =>
+            part.type === "text" && !part.synthetic && !part.ignored ? [part.text] : [],
+          )
           .join("\n")
           .trim();
         if (text.length > 0) latestUserMessage = text;
@@ -166,14 +172,32 @@ export const SkillDiscoveryPlugin: Plugin = async (input, options) => {
     // it knows, so on older OpenCode versions this is silently never
     // invoked and the binding degrades to pull-only.
     "experimental.chat.system.transform": async (_input, output) => {
-      // Defensive strip (§4.3 secondary): drop any element carrying the
-      // native <available_skills> block. Whole-element filter/append only —
-      // OpenCode may collapse system[1..n] into one string after the hook,
-      // so positions are never relied on. v2-rewrite note: SkillGuidance
-      // drops <location> from the native block but keeps the
-      // <available_skills> tag this grep matches — re-check at cutover
+      // In-place mutation is the upstream contract: request.ts (verified at
+      // v1.18.3 and dev) reads the SAME local `system` array after the
+      // trigger — Plugin.trigger does no copy-back, so reassigning
+      // `output.system` is silently discarded. Every change below mutates
+      // the original array object (index writes / length=0 + push).
+      //
+      // Defensive strip (§4.3 secondary): remove the native
+      // <available_skills>…</available_skills> span by SUBSTRING, keeping
+      // the rest of the element — upstream pre-joins the entire system
+      // prompt into ONE element before this hook fires, so dropping whole
+      // matching elements would delete the whole prompt. Elements that
+      // were nothing but the block are removed. v2-rewrite note:
+      // SkillGuidance drops <location> from the native block but keeps the
+      // <available_skills> tag this scan matches — re-check at cutover
       // (#2094).
-      output.system = output.system.filter((element) => !element.includes(AVAILABLE_SKILLS_OPEN));
+      const kept: string[] = [];
+      for (const element of output.system) {
+        if (!element.includes(AVAILABLE_SKILLS_OPEN)) {
+          kept.push(element);
+          continue;
+        }
+        const stripped = stripAvailableSkillsBlocks(element);
+        if (stripped.trim().length > 0) kept.push(stripped);
+      }
+      output.system.length = 0;
+      output.system.push(...kept);
 
       try {
         const { index, pins } = await getState();
@@ -183,7 +207,13 @@ export const SkillDiscoveryPlugin: Plugin = async (input, options) => {
             : await index.search(latestUserMessage, config.k, {
                 excludeIds: pins.map((pin) => pin.id),
               });
-        output.system.push(renderInjectedBlock(pins, ranked, config.k));
+        // Nothing selected (no pins, no captured message or no ranked
+        // hits): inject nothing — an empty <available_skills> block with
+        // the "listed above" trailer would be self-contradictory, and
+        // search_skills remains the routing surface.
+        if (pins.length + ranked.length > 0) {
+          output.system.push(renderInjectedBlock(pins, ranked, config.k));
+        }
       } catch (error) {
         // Push is best-effort by design; the pull tool remains the recourse.
         if (!pushFailureLogged) {
