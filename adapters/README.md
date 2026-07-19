@@ -20,7 +20,7 @@ stable, but the binding files do not exist yet.
 | `core/` | Indexer (marketplace scan + DIY frontmatter parse + compatibility filter), BM25 (Lucene IDF, k1=1.2, b=0.75), ollama `/api/embed` client (`search_document:`/`search_query:` prefixes, BM25 fallback), RRF fusion (k=60), L2-normalized Float32Array vector index, XDG content-hash embedding cache, shared render templates |
 | `eval/` | `tasks.json` (committed golden task set, k=5), `run-eval.ts` runner, ranker seam (`hybrid \| bm25Only \| embeddingOnly \| random(seed) \| oracle \| nameSubstring \| descriptionSubstring`), baseline derivation (`pi/tiers.yaml` + the export-opencode glob, computed offline), `results/` (gitignored per-run output) |
 | `pi/` | pi binding — **#2090, not yet present** |
-| `opencode/` | OpenCode binding — **#2091, not yet present** |
+| `opencode/` | OpenCode binding (#2091) — named `SkillDiscoveryPlugin` plugin: `search_skills` tool (pull), `experimental.chat.system.transform` push injection + defensive listing strip, `experimental.chat.messages.transform` ranking-input capture, `[path, options]` tuple config |
 | `tests/` | `bun test` suites: frontmatter diff vs `Bun.YAML`, BM25 goldens + committed `rank_bm25` fixture, indexer over the mini-marketplace fixture, cache, fusion, embeddings fallback matrix, eval meta-tests |
 
 There is **no build step**: `tsconfig.json` is `noEmit` and both harnesses
@@ -75,7 +75,21 @@ bundled copies); the install still matters for type-checking and tests.
 - Run consumers with no natively installed marketplace skills; `--no-skills`
   is optional (the binding never feeds the native loader).
 
-### OpenCode (landing in #2091)
+### OpenCode
+
+Step 1 (as above):
+
+```
+cd <checkout>/claude-plugins/adapters && bun install
+```
+
+The plugin file resolves `@opencode-ai/plugin` from `adapters/node_modules`
+— OpenCode's background-install into config dirs does not cover a
+checkout-resident plugin. A missing install surfaces as an explicit
+"run `bun install` in `<checkout>/adapters`" error at plugin load.
+
+Step 2 — wire the plugin (path-like specs resolve relative to the declaring
+config file; the tuple form carries the options):
 
 ```jsonc
 // opencode.json
@@ -88,9 +102,24 @@ bundled copies); the install still matters for type-checking and tests.
 - `permission.skill = "deny"` is the primary native-listing suppression: it
   removes the `<available_skills>` block and the native `skill` tool in one
   stable config line. (`"tools": { "skill": false }` is a deprecated-surface
-  alias.) Delivery is the model reading the path `search_skills` returns.
-- Push injection rides `experimental.chat.system.transform` and degrades to
-  a silent no-op on versions without the hook — the binding is pull-first.
+  alias — the top-level `tools` boolean map is normalized into root
+  `permission` upstream.) Delivery is the model reading the path
+  `search_skills` returns. The binding also defensively strips any
+  remaining `<available_skills>` element in `system.transform` for
+  consumers who forgot the config line.
+- Options (all optional): `repoRoot` (default: this checkout, derived from
+  the plugin file's location), `k` (push top-k, default 5), `endpoint` /
+  `model` (embeddings; default `http://localhost:11434` /
+  `nomic-embed-text`), `pins` (skill ids always injected first; unknown ids
+  warn and skip). Invalid values warn and fall back to defaults.
+- Push injection rides `experimental.chat.system.transform` (declared
+  unconditionally — older OpenCode versions silently never call unknown
+  hook names) and ranks against the latest user message captured via
+  `experimental.chat.messages.transform`; the first turn injects pins only,
+  and the ranked list can be one turn stale if the hooks race — the binding
+  is pull-first by design. At init the binding logs the server version from
+  `GET /global/health` (informational, never gating) to aid "why no
+  injected block" debugging.
 
 ## Embeddings (soft dependency)
 
