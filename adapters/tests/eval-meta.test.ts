@@ -6,7 +6,7 @@
  */
 
 import { beforeAll, describe, expect, test } from "bun:test";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { tokenize } from "../core/bm25.ts";
 import { parseFrontmatter } from "../core/frontmatter.ts";
@@ -77,14 +77,54 @@ describe("5. schema checks", () => {
     expect(missing).toEqual([]);
   });
 
-  const distPresent = countExportedOcSkills(REPO_ROOT) !== null;
-  test.skipIf(!distPresent)(
-    "derived OC baseline count matches the export's OUTPUT_SKILLS accounting (dist/ present)",
-    () => {
-      const derived = deriveOcBaseline(REPO_ROOT).ids.size;
-      expect(countExportedOcSkills(REPO_ROOT)).toBe(derived);
-    },
-  );
+  test("every expected/acceptable skill id is present in the built foreign index (reachable by real rankers)", () => {
+    // Disk existence alone is not enough: a target carrying
+    // `compatibility: claude-code` (or lacking a description) is out of the
+    // foreign index, making the task structurally unwinnable for every real
+    // ranker while the oracle still scores 100% — this keeps meta-test 1's
+    // achievability proof honest.
+    const indexIds = new Set(index.entries.map((e) => e.id));
+    const unreachable: string[] = [];
+    for (const task of taskSet.tasks) {
+      for (const id of [...task.expected_skills, ...task.acceptable_skills]) {
+        if (!indexIds.has(id)) unreachable.push(`${task.id}: ${id}`);
+      }
+    }
+    expect(unreachable).toEqual([]);
+  });
+
+  test("derived OC baseline equals a live count of the export glob (dist-independent)", () => {
+    // Independent recount of the exact glob export-opencode.sh iterates
+    // (`*-plugin/skills/*/SKILL.md`), so the assertion holds in CI where the
+    // gitignored dist/ never exists.
+    const derived = deriveOcBaseline(REPO_ROOT).ids.size;
+    let live = 0;
+    for (const top of readdirSync(REPO_ROOT, { withFileTypes: true })) {
+      if (!top.isDirectory() || !top.name.endsWith("-plugin")) continue;
+      const skillsDir = join(REPO_ROOT, top.name, "skills");
+      if (!existsSync(skillsDir)) continue;
+      for (const sub of readdirSync(skillsDir, { withFileTypes: true })) {
+        if (sub.isDirectory() && existsSync(join(skillsDir, sub.name, "SKILL.md"))) live++;
+      }
+    }
+    expect(derived).toBe(live);
+  });
+
+  test("dist/ OUTPUT_SKILLS cross-check (informational — dist is a point-in-time artifact, absent in CI)", () => {
+    const exported = countExportedOcSkills(REPO_ROOT);
+    if (exported === null) {
+      console.warn(
+        "dist/opencode absent — OC export cross-check skipped (runs only after `just export-opencode`; CI always skips)",
+      );
+      return;
+    }
+    const derived = deriveOcBaseline(REPO_ROOT).ids.size;
+    if (exported !== derived) {
+      console.warn(
+        `dist/opencode is stale: exported ${exported} vs derived ${derived} — rerun \`just export-opencode\` (informational, not a failure)`,
+      );
+    }
+  });
 });
 
 describe("1. random fails every seed; oracle passes", () => {
@@ -140,12 +180,24 @@ describe("3. token calibration (per-skill)", () => {
     () => {
       // 111 tok/skill was measured on pi 0.80.6 with a real tokenizer. Our
       // chars/4 proxy over the same render measured −13.6% vs that (94.6
-      // tok/skill over the then-95-skill tier; 104.0 at authoring time with
-      // this checkout's absolute paths) — inside the ±20% band [88.8, 133.2].
-      // Record the offset so future drift is interpretable: a breach means
-      // either the render template diverged from what pi injects, or the
-      // tier's description profile shifted materially.
-      const { perSkillMean } = listingTokens((piBaseline as NonNullable<typeof piBaseline>).skills);
+      // tok/skill over the then-95-skill tier; 104.0 at authoring time) —
+      // inside the ±20% band [88.8, 133.2]. Record the offset so future
+      // drift is interpretable: a breach means either the render template
+      // diverged from what pi injects, or the tier's description profile
+      // shifted materially.
+      //
+      // The render embeds each SKILL.md's absolute <location> path, so the
+      // raw mean shifts with checkout-path length (a shallow clone could
+      // spuriously breach the lower bound). Calibrate over a path-normalized
+      // render: fixed 45-char prefix (the length of the checkout the 111
+      // tok/skill reference was measured in) + the repo-relative path. The
+      // runner's informational TOKENS output keeps real paths.
+      const CANONICAL_PREFIX = "/canonical/checkout/claude-plugins".padEnd(45, "-");
+      const normalized = (piBaseline as NonNullable<typeof piBaseline>).skills.map((s) => ({
+        ...s,
+        path: CANONICAL_PREFIX + s.path.slice(REPO_ROOT.length),
+      }));
+      const { perSkillMean } = listingTokens(normalized);
       expect(perSkillMean).toBeGreaterThanOrEqual(111 * 0.8);
       expect(perSkillMean).toBeLessThanOrEqual(111 * 1.2);
     },

@@ -16,10 +16,13 @@ export const DEFAULT_ENDPOINT = "http://localhost:11434";
 export const DEFAULT_MODEL = "nomic-embed-text";
 export const DEFAULT_DIMENSIONS = 768;
 
-/** Recorded in the cache key; changing prefixes invalidates cached vectors. */
-export const PREFIX_SCHEME = "search_document:/search_query:";
 export const DOCUMENT_PREFIX = "search_document: ";
 export const QUERY_PREFIX = "search_query: ";
+/**
+ * Recorded in the cache key; derived from the actual prefixes so any prefix
+ * edit auto-invalidates cached vectors (one source of truth).
+ */
+export const PREFIX_SCHEME = `${DOCUMENT_PREFIX}/${QUERY_PREFIX}`;
 
 /** 3 s on the initial probe (embed one short string at build). */
 export const PROBE_TIMEOUT_MS = 3_000;
@@ -85,7 +88,20 @@ export async function embedBatch(
   ) {
     throw new EmbedUnavailableError("malformed embeddings payload");
   }
-  return embeddings as number[][];
+  const rows = embeddings as number[][];
+  // Width guard: an endpoint that ignores the Matryoshka `dimensions` knob
+  // (older Ollama) would otherwise feed mismatched vectors into a truncating
+  // matrix build — degrade to BM25-only instead of computing wrong cosines.
+  const width = (rows[0] as number[]).length;
+  if (!rows.every((row) => row.length === width)) {
+    throw new EmbedUnavailableError("non-uniform embedding widths in batch");
+  }
+  if (opts.dimensions !== undefined && width !== opts.dimensions) {
+    throw new EmbedUnavailableError(
+      `embedding width ${width} != requested dimensions ${opts.dimensions}`,
+    );
+  }
+  return rows;
 }
 
 /** Embed corpus texts with the mandatory search_document prefix. */

@@ -1,5 +1,5 @@
 {
-  "generator": "tests/gen-bm25-reference.py (rank-bm25 0.2.2)",
+  "generator": "tests/gen-bm25-reference.py (rank-bm25 0.2.2, k1=1.2 b=0.75 \u2014 mirrors core/bm25.ts BM25_K1/BM25_B)",
   "note": "expected_rank_order = doc indices with score>0, by (-score, idx)",
   "corpus": [
     {
@@ -86,43 +86,140 @@
   "cases": [
     {
       "query": "commit my staged changes with a good message",
-      "expected_rank_order": [0, 16, 3, 9, 2, 14, 4, 19, 18, 11, 6, 12, 1, 10, 17]
+      "expected_rank_order": [
+        0,
+        16,
+        3,
+        9,
+        2,
+        14,
+        4,
+        19,
+        18,
+        11,
+        6,
+        12,
+        1,
+        10,
+        17
+      ]
     },
     {
       "query": "open a pull request for review",
-      "expected_rank_order": [1, 14, 3, 4, 16, 19, 9, 18, 2, 8, 11, 0, 13]
+      "expected_rank_order": [
+        1,
+        14,
+        3,
+        4,
+        16,
+        19,
+        9,
+        18,
+        2,
+        8,
+        11,
+        0,
+        13
+      ]
     },
     {
       "query": "run the fast unit tests only",
-      "expected_rank_order": [9, 11, 15, 0, 8, 12, 14, 10]
+      "expected_rank_order": [
+        9,
+        11,
+        15,
+        0,
+        8,
+        12,
+        14,
+        10
+      ]
     },
     {
       "query": "extract fields from a json file",
-      "expected_rank_order": [5, 8, 4, 6, 1, 15, 3, 16, 19, 14, 9, 18]
+      "expected_rank_order": [
+        5,
+        8,
+        4,
+        6,
+        1,
+        15,
+        3,
+        16,
+        19,
+        14,
+        9,
+        18
+      ]
     },
     {
       "query": "recover a failed helm upgrade",
-      "expected_rank_order": [15, 4, 3, 16, 19, 14, 9, 18]
+      "expected_rank_order": [
+        15,
+        4,
+        3,
+        16,
+        19,
+        14,
+        9,
+        18
+      ]
     },
     {
       "query": "check dns record propagation",
-      "expected_rank_order": [16, 3]
+      "expected_rank_order": [
+        16,
+        3
+      ]
     },
     {
       "query": "shrink a python docker image",
-      "expected_rank_order": [17, 18, 12, 10, 11, 3, 16, 19, 14, 9, 4]
+      "expected_rank_order": [
+        17,
+        18,
+        12,
+        10,
+        11,
+        3,
+        16,
+        19,
+        14,
+        9,
+        4
+      ]
     },
     {
       "query": "find unused exports in typescript",
-      "expected_rank_order": [13, 19, 3]
+      "expected_rank_order": [
+        13,
+        19,
+        3
+      ]
     },
     {
       "query": "run a python script without a virtualenv",
-      "expected_rank_order": [11, 17, 9, 12, 3, 10, 16, 19, 14, 18, 4]
+      "expected_rank_order": [
+        11,
+        17,
+        9,
+        12,
+        3,
+        10,
+        16,
+        19,
+        14,
+        18,
+        4
+      ]
     },
     {
       "query": "free up disk space on my mac",
-      "expected_rank_order": [18, 16, 10, 13]
+      "expected_rank_order": [
+        18,
+        16,
+        10,
+        13
+      ]
     }
   ]
 }

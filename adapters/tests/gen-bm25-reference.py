@@ -100,7 +100,9 @@ def main() -> None:
         corpus.append({"id": skill_id, "text": f"{name} {description}"})
 
     tokenized = [tokenize(doc["text"]) for doc in corpus]
-    bm25 = BM25Okapi(tokenized)
+    # Mirror BM25_K1/BM25_B from core/bm25.ts — rank_bm25's own default is
+    # k1=1.5, which genuinely reorders close-scored tails vs our k1=1.2.
+    bm25 = BM25Okapi(tokenized, k1=1.2, b=0.75)
 
     cases = []
     for query in QUERIES:
@@ -114,7 +116,7 @@ def main() -> None:
     FIXTURE.write_text(
         json.dumps(
             {
-                "generator": "tests/gen-bm25-reference.py (rank-bm25 0.2.2)",
+                "generator": "tests/gen-bm25-reference.py (rank-bm25 0.2.2, k1=1.2 b=0.75 — mirrors core/bm25.ts BM25_K1/BM25_B)",
                 "note": "expected_rank_order = doc indices with score>0, by (-score, idx)",
                 "corpus": corpus,
                 "cases": cases,

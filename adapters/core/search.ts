@@ -80,6 +80,9 @@ export class SkillIndex {
     if (matrix === null || embedOpts === null) return null;
     return async (query, k) => {
       const queryVec = normalizeVector(await embedQuery(query, embedOpts, BATCH_TIMEOUT_MS));
+      if (queryVec.length !== this.dims) {
+        throw new Error(`query embedding width ${queryVec.length} != index dims ${this.dims}`);
+      }
       return this.cosineRank(queryVec)
         .slice(0, k)
         .map(({ docIdx, score }) => ({ id: (this.entries[docIdx] as SkillEntry).id, score }));
@@ -132,6 +135,9 @@ export class SkillIndex {
       let embedList: RankedItem[] | null = null;
       try {
         const queryVec = normalizeVector(await embedQuery(query, this.embedOpts, BATCH_TIMEOUT_MS));
+        if (queryVec.length !== this.dims) {
+          throw new Error(`query embedding width ${queryVec.length} != index dims ${this.dims}`);
+        }
         embedList = this.cosineRank(queryVec)
           .map(({ docIdx, score }) => ({ id: (this.entries[docIdx] as SkillEntry).id, score }))
           .filter((item) => inCandidates(item.id));
@@ -214,7 +220,10 @@ export async function buildIndex(opts: IndexOptions): Promise<SkillIndex> {
         rows[entryIdx] = embedded[j] ?? null;
       });
     }
-    if (rows.some((row) => row === null)) {
+    if (rows.some((row) => row === null || row.length !== dims)) {
+      // Includes the width guard: a cache entry or fresh row whose length
+      // differs from the expected dims must not reach the truncating matrix
+      // build — degrade to BM25-only instead.
       return new SkillIndex(entries, warnings, "bm25-only", null, null, dims);
     }
 

@@ -64,6 +64,10 @@ jobs:
         run: bun test
 
       - name: Smoke eval (BM25-only, machinery gate)
+        # pipefail so run-eval's own exit code survives the tee — without it
+        # the pipeline's status is tee's and a crash after the report prints
+        # would pass on the grep alone.
         run: |
+          set -o pipefail
           bun eval/run-eval.ts | tee /tmp/adapters-eval.out
           grep -q '^=== GATE === STATUS=PASS$' /tmp/adapters-eval.out
