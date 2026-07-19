@@ -56,6 +56,29 @@ export function renderInjectedBlock(
   return lines.join("\n");
 }
 
+/**
+ * Remove every `<available_skills>…</available_skills>` span from a
+ * system-prompt element, keeping the surrounding text (DESIGN §3.3
+ * indexOf/slice approach, shared with the pi binding).
+ *
+ * Substring granularity is load-bearing for the OpenCode binding: upstream
+ * request.ts pre-joins the ENTIRE system prompt (agent prompt + env + native
+ * skills block + instructions) into a single array element before the
+ * system.transform hook fires, so dropping whole matching elements would
+ * delete the whole prompt. A malformed span (open tag with no close after
+ * it) is left untouched rather than truncating the element.
+ */
+export function stripAvailableSkillsBlocks(element: string): string {
+  let out = element;
+  for (;;) {
+    const open = out.indexOf(AVAILABLE_SKILLS_OPEN);
+    if (open === -1) return out;
+    const close = out.indexOf(AVAILABLE_SKILLS_CLOSE, open);
+    if (close === -1) return out; // unclosed: leave as-is, never truncate
+    out = out.slice(0, open) + out.slice(close + AVAILABLE_SKILLS_CLOSE.length);
+  }
+}
+
 /** Pull-tool result text: ranked entries with the SKILL.md path to read. */
 export function renderToolResult(results: Array<RenderableSkill & { score: number }>): string {
   if (results.length === 0) return "No matching skills found.";
