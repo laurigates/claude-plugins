@@ -23,7 +23,7 @@ When adding a workflow, pick the existing domain that fits or extend the table b
 | `Release:` | release-please ecosystem — version bumps, changelog, release-PR doc audit, conflict repair |
 | `PR:` | Cross-cutting PR governance — conflict resolution, conventional-commit enforcement |
 | `Auto-fix:` | Autonomous CI failure remediation triggered by `workflow_run` |
-| `Test:` | Repo test suites — skill-local regression tests |
+| `Test:` | Repo test suites — skill-local regression tests, the adapters (skill-discovery core) suite |
 | `Sync:` | Cross-repo artifact sync — regenerate compiled prompts for the extracted agent CLIs and PR them to their standalone repos |
 | _(none)_ | One-off standalones with no obvious domain peer (e.g. `Renovate`) |
 
@@ -52,6 +52,7 @@ Release: release-please
 Renovate
 Sync: git-repo-agent prompts
 Sync: vault-agent prompts
+Test: Adapters
 Test: Skill scripts
 ```
 
