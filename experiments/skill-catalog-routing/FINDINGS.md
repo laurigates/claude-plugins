@@ -77,3 +77,52 @@ their ~16.5k tokens specifically on near-miss and opaque-named skills. Shorter
 descriptions can likely recover most of that benefit **only if they preserve the
 capability/domain phrase** rather than the `Use when` trigger tail — the single
 most useful follow-up this experiment points to.
+
+---
+
+# Follow-up: domain-preserving shortening (haiku)
+
+The prediction above is **confirmed**. Run `haiku-ladder2` (all 70 tasks, 2 runs,
+980 transcripts, 0 parse failures) added domain-first variants token-matched to
+the trigger-first ones:
+
+| arm | catalog | tokens | top-1 | near-miss | false-trigger |
+|-----|---------|--------|-------|-----------|---------------|
+| C1 | names | 27.3k | 0.83 | 0.82 | 0.07 |
+| C2 | short (trigger, ≤40c) | 30.3k | 0.90 | 0.85 | 0.10 |
+| **C2d** | **domain-short (≤40c)** | 31.0k | 0.89 | 0.90 | 0.10 |
+| C3 | medium (trigger, ≤80c) | 34.1k | 0.91 | 0.88 | 0.07 |
+| **C3d** | **domain-medium (≤80c)** | 33.8k | **0.97** | **0.95** | **0.03** |
+| C5 | compact (domain head + `Use when`, ≤80c) | 34.6k | 0.95 | 0.93 | 0.05 |
+| C4 | full | 43.8k | 0.99 | 1.00 | 0.05 |
+
+**Domain-first vs trigger-first at equal budget:**
+
+- **~80c: domain-first wins decisively.** `C3d` (domain-medium) hits **0.97 top-1
+  / 0.95 near-miss** vs `C3` (trigger-medium) **0.91 / 0.88** — +0.06 top-1,
+  +0.07 near-miss — and it does so at **half the tokens of the full description**
+  (33.8k vs 43.8k) while landing within 0.02 of full's 0.99. `C3d` also has the
+  **lowest false-trigger rate of any arm (0.03)** — keeping the capability phrase
+  both routes better *and* over-triggers less.
+- **~40c: roughly tied on top-1** (`C2` 0.90 vs `C2d` 0.89), but domain-first
+  already wins on near-miss discrimination (0.90 vs 0.85). At 40 chars there isn't
+  room for the capability phrase to fully pay off.
+
+**Compact (`C5`)** — a compressed capability head *plus* a `Use when` trigger, so
+it stays valid for the real auto-invocation matcher (#1278) — reaches 0.95, just
+below pure domain-medium. For a **production** description the recommendation is
+`C5`-shaped (keep the `Use when` literal); for pure routing signal, the capability
+phrase alone (`C3d`) is marginally stronger.
+
+## The answer to "how short can descriptions be — could shorter be better?"
+
+On haiku: **a ~80-char description that keeps the capability/domain phrase
+(`C3d`/`C5`) recovers ~all of the full description's routing benefit at roughly
+half the token cost, and lowers false-triggering.** The earlier "descriptions
+barely help" pilot reading and the "trigger-only short descriptions underperform"
+ladder reading are both resolved: descriptions help a lot, but the *content* that
+matters is the capability phrase, not the `Use when` trigger tail. "Shorter is
+better" holds — provided you shorten toward the domain, not the trigger.
+
+_Cross-model (sonnet/opus) portability results follow when the `xmodel` run
+completes._
