@@ -94,7 +94,7 @@ def main() -> int:
         def g(arm: str, key: str = "top1"):
             c = conds.get(f"{model}-{arm}")
             return c[key] if c else None
-        c0, c1, c2, c3, c4 = (g(a) for a in ARMS)
+        c0, c1, c2, c3, c4 = (g("C0"), g("C1"), g("C2"), g("C3"), g("C4"))
         if c4 is None:
             continue
         catalog_value = f"{c4 - c0:+.2f}" if c0 is not None else "—"
