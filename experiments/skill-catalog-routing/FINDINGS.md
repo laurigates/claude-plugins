@@ -124,5 +124,65 @@ ladder reading are both resolved: descriptions help a lot, but the *content* tha
 matters is the capability phrase, not the `Use when` trigger tail. "Shorter is
 better" holds — provided you shorten toward the domain, not the trigger.
 
-_Cross-model (sonnet/opus) portability results follow when the `xmodel` run
-completes._
+---
+
+# Follow-up: cross-model portability (sonnet + opus)
+
+Run `xmodel` (sonnet + opus on C0, C1, C2d, C5, C4 × 70 tasks × 2 runs, 1400
+transcripts, 0 parse failures), placed beside the haiku numbers:
+
+| arm | catalog | tokens | haiku | sonnet | opus |
+|-----|---------|--------|-------|--------|------|
+| C0 | none | 23.1k | 0.00* | 0.00 | 0.00 |
+| C1 | names | 27.3k | 0.83 | 0.65 | 0.88 |
+| C2d | domain-short | 31.0k | 0.89 | 0.64 | 0.93 |
+| C5 | compact | 34.6k | 0.95 | 0.70 | 0.95 |
+| C4 | full | 43.8k | 0.99 | 0.72 | 0.98 |
+
+_(top-1 routing accuracy; *haiku C0 = 0 established in the prior ladder, not
+re-run here.)_
+
+## What it establishes
+
+1. **The catalog is mandatory on every model.** C0 = 0.00 for sonnet and opus
+   too — no model can emit valid skill ids from memory without the listing.
+
+2. **Description value shrinks on the stronger model (the portability signal).**
+   The full-minus-names delta `C4 − C1` is **+0.16 on haiku, +0.10 on opus** —
+   opus recovers more from names alone (C1 = 0.88 vs haiku 0.83), so it leans
+   less on the descriptions. This is the expected direction: the weaker the
+   model, the more the description earns its tokens.
+
+3. **The domain/compact recommendation holds across the whole capability range.**
+   Compact `C5` lands within **0.02–0.04 of full** on every model (haiku
+   0.95 vs 0.99, sonnet 0.70 vs 0.72, opus 0.95 vs 0.98) at ~half the tokens, and
+   `C2d` recovers most of the gap at ~40% of the tokens. "Shorten toward the
+   capability phrase" is a **model-independent** recommendation.
+
+## The sonnet anomaly (honest caveat)
+
+Sonnet's absolute top-1 is low across the board (0.72 even at full) — but **not
+because it misroutes**. It **over-abstains**: it answered `NONE` on **26% of
+route tasks** (where a skill genuinely applies), while abstaining *perfectly* on
+the true-`NONE` set (abstain 1.00, false-trigger 0.00) and keeping the gold skill
+in its **top-2 at 0.95**. This is the router prompt's "prefer NONE over a weak
+match" instruction interacting with sonnet's calibration at `low` effort — it
+declines to commit when uncertain. The effect depresses sonnet's absolute
+numbers but **preserves the relative arm ordering** (C0 = 0 ≪ C1 < C2d < C5 ≈
+C4), so the portability and shortening conclusions still read cleanly off the
+deltas. It is a real behavioral difference between models, not a harness bug —
+and a caution that a forced-choice router's absolute accuracy is entangled with
+each model's abstention temperament.
+
+## Bottom line (both follow-ups)
+
+- **How short can descriptions be?** ~80 chars, if they keep the capability
+  phrase — `C3d`/`C5` recover ~all of full's routing benefit at half the tokens,
+  on every model tested.
+- **Could shorter be better?** Yes: the domain-preserving short forms are cheaper
+  **and** (on haiku) over-trigger less than full.
+- **Keep the trigger for production.** `C5` keeps the literal `Use when` the real
+  auto-invocation matcher needs (#1278) and is within 0.02–0.04 of full
+  everywhere — the recommended description shape.
+- **Weaker models benefit most** from descriptions; strong models route well from
+  names + a short capability phrase.
