@@ -95,7 +95,7 @@ Remove `pycqa/flake8`, `PyCQA/isort`, and any flake8 plugin repos. Add or extend
 
 ```yaml
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.9.1  # use latest stable ruff version
+  rev: v0.15.22  # use latest stable ruff version
   hooks:
     - id: ruff
       args: [--fix]

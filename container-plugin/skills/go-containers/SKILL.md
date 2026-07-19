@@ -44,7 +44,7 @@ This demonstrates systematic optimization achieving 99.7% size reduction:
 
 ```dockerfile
 # ❌ BAD: Includes full Go toolchain, Debian system, unnecessary tools
-FROM golang:1.23
+FROM golang:1.26
 WORKDIR /app
 COPY . .
 RUN go build -o main .
@@ -64,7 +64,7 @@ CMD ["./main"]
 
 ```dockerfile
 # ✅ BETTER: Alpine reduces OS overhead
-FROM golang:1.23-alpine
+FROM golang:1.26-alpine
 WORKDIR /app
 COPY . .
 RUN go build -o main .
@@ -83,7 +83,7 @@ CMD ["./main"]
 ```dockerfile
 # ✅ GOOD: Separate build from runtime
 # Build stage
-FROM golang:1.23-alpine AS builder
+FROM golang:1.26-alpine AS builder
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
@@ -110,7 +110,7 @@ CMD ["./main"]
 ```dockerfile
 # ✅ BETTER: Optimized build flags
 # Build stage
-FROM golang:1.23-alpine AS builder
+FROM golang:1.26-alpine AS builder
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
@@ -157,7 +157,7 @@ CMD ["./main"]
 
 ```dockerfile
 # Build stage
-FROM golang:1.23-alpine AS builder
+FROM golang:1.26-alpine AS builder
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
@@ -190,7 +190,7 @@ CMD ["/main"]
 
 ```dockerfile
 # Build stage (same as above)
-FROM golang:1.23-alpine AS builder
+FROM golang:1.26-alpine AS builder
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
@@ -348,7 +348,7 @@ When your Go application uses CGO (C libraries, database drivers like SQLite, et
 
 ```dockerfile
 # When CGO is required (database drivers, C libraries)
-FROM golang:1.23-alpine AS builder
+FROM golang:1.26-alpine AS builder
 
 # Install C dependencies
 RUN apk add --no-cache gcc musl-dev

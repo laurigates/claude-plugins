@@ -39,7 +39,7 @@ fi
 
 # --- just (latest stable) ---
 # renovate: datasource=github-releases depName=casey/just
-JUST_VERSION="1.52.0"
+JUST_VERSION="1.56.0"
 if ! has just; then
   echo "[install_pkgs] Installing just ${JUST_VERSION}..."
   tmpdir=$(mktemp -d)

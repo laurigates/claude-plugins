@@ -127,14 +127,14 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.3.1
       - name: Run linters
         run: echo "Linting step - configure based on project type"
 
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.3.1
       - name: Run tests
         run: echo "Testing step - configure based on project type"
 ```

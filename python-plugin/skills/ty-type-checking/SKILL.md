@@ -212,10 +212,10 @@ jobs:
   type-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.3.1
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v2
+        uses: astral-sh/setup-uv@v2.1.2
         with:
           enable-cache: true
 
@@ -229,7 +229,7 @@ jobs:
 # .pre-commit-config.yaml
 repos:
   - repo: https://github.com/astral-sh/ty
-    rev: v0.0.10
+    rev: 0.0.60
     hooks:
       - id: ty
 ```
@@ -239,7 +239,7 @@ repos:
 ```yaml
 ty-check:
   stage: test
-  image: python:3.12
+  image: python:3.14
   before_script:
     - pip install ty
   script:

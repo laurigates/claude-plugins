@@ -8,7 +8,7 @@ Detailed reference material for Python container optimization patterns.
 
 ```dockerfile
 # Full Debian with all dev packages
-FROM python:3.11
+FROM python:3.14
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install -r requirements.txt
@@ -27,7 +27,7 @@ CMD ["python", "app.py"]
 ### Step 2: Slim Base (400MB)
 
 ```dockerfile
-FROM python:3.11-slim
+FROM python:3.13-slim
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
@@ -46,7 +46,7 @@ CMD ["python", "app.py"]
 
 ```dockerfile
 # Build stage
-FROM python:3.11-slim AS builder
+FROM python:3.13-slim AS builder
 WORKDIR /app
 
 # Install uv (modern pip replacement, 10-100x faster)
@@ -58,7 +58,7 @@ RUN uv sync --frozen --no-dev
 COPY . .
 
 # Runtime stage
-FROM python:3.11-slim
+FROM python:3.13-slim
 WORKDIR /app
 
 # Create non-root user
@@ -82,7 +82,7 @@ CMD ["python", "-m", "myapp"]
 ### poetry
 
 ```dockerfile
-FROM python:3.11-slim AS builder
+FROM python:3.13-slim AS builder
 WORKDIR /app
 
 # Install poetry
@@ -99,7 +99,7 @@ COPY . .
 RUN poetry install --only=main
 
 # Runtime
-FROM python:3.11-slim
+FROM python:3.13-slim
 COPY --from=builder /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
 ```
@@ -107,7 +107,7 @@ ENV PATH="/app/.venv/bin:$PATH"
 ### pip with requirements.txt
 
 ```dockerfile
-FROM python:3.11-slim AS builder
+FROM python:3.13-slim AS builder
 WORKDIR /app
 
 # Install to specific directory
@@ -115,7 +115,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 # Runtime
-FROM python:3.11-slim
+FROM python:3.13-slim
 COPY --from=builder /install /usr/local
 ```
 
@@ -215,7 +215,7 @@ logs/
 
 ```dockerfile
 # Build stage - includes build tools
-FROM python:3.11-slim AS builder
+FROM python:3.13-slim AS builder
 WORKDIR /app
 
 # Install build dependencies
@@ -231,7 +231,7 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
 
 # Runtime stage - only runtime libraries
-FROM python:3.11-slim
+FROM python:3.13-slim
 WORKDIR /app
 
 # Install only runtime dependencies (no compilers)
@@ -277,14 +277,14 @@ RUN apt-get install -y --no-install-recommends \
 ### FastAPI / Uvicorn
 
 ```dockerfile
-FROM python:3.11-slim AS builder
+FROM python:3.13-slim AS builder
 WORKDIR /app
 RUN pip install --no-cache-dir uv
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
 COPY . .
 
-FROM python:3.11-slim
+FROM python:3.13-slim
 WORKDIR /app
 RUN addgroup --gid 1001 appgroup && \
     adduser --uid 1001 --gid 1001 --disabled-password appuser
@@ -304,7 +304,7 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ### Django
 
 ```dockerfile
-FROM python:3.11-slim AS builder
+FROM python:3.13-slim AS builder
 WORKDIR /app
 RUN pip install --no-cache-dir uv
 COPY pyproject.toml uv.lock ./
@@ -314,7 +314,7 @@ COPY . .
 # Collect static files
 RUN .venv/bin/python manage.py collectstatic --noinput
 
-FROM python:3.11-slim
+FROM python:3.13-slim
 WORKDIR /app
 RUN addgroup --gid 1001 appgroup && \
     adduser --uid 1001 --gid 1001 --disabled-password appuser
@@ -336,14 +336,14 @@ CMD ["gunicorn", "project.wsgi:application", "--bind", "0.0.0.0:8000"]
 ### Flask / Gunicorn
 
 ```dockerfile
-FROM python:3.11-slim AS builder
+FROM python:3.13-slim AS builder
 WORKDIR /app
 RUN pip install --no-cache-dir uv
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
 COPY . .
 
-FROM python:3.11-slim
+FROM python:3.13-slim
 WORKDIR /app
 RUN addgroup --gid 1001 appgroup && \
     adduser --uid 1001 --gid 1001 --disabled-password appuser
@@ -364,7 +364,7 @@ CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8000", "app:create_app()"]
 
 ```dockerfile
 # Build stage
-FROM python:3.11-slim AS builder
+FROM python:3.13-slim AS builder
 WORKDIR /app
 RUN pip install --no-cache-dir uv
 COPY pyproject.toml uv.lock ./

@@ -53,7 +53,7 @@ repos:
         stages: [commit-msg]
 
   - repo: https://github.com/biomejs/pre-commit
-    rev: v2.4.16
+    rev: v2.5.4
     hooks:
       - id: biome-check
         additional_dependencies: ["@biomejs/biome@2.4.16"]
@@ -149,7 +149,7 @@ repos:
         stages: [commit-msg]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.15
+    rev: v0.15.22
     hooks:
       - id: ruff
         args: [--fix]

@@ -262,18 +262,18 @@ jobs:
       packages: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.3.1
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v3.12.0
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v3.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v5.10.0
         with:
           images: ghcr.io/${{ github.repository }}
           # Add custom labels to auto-generated ones
@@ -288,7 +288,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=sha
 
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v6.19.2
         with:
           context: .
           push: true
@@ -308,7 +308,7 @@ jobs:
 #### Manual Labels in GitHub Actions
 
 ```yaml
-- uses: docker/build-push-action@v6
+- uses: docker/build-push-action@v6.19.2
   with:
     context: .
     push: true
@@ -340,7 +340,7 @@ crane config ghcr.io/owner/myapp:latest | jq '.config.Labels'
 For multi-arch images, labels in the Dockerfile apply to each architecture. The manifest-level annotations require the `--provenance` flag or explicit annotation:
 
 ```yaml
-- uses: docker/build-push-action@v6
+- uses: docker/build-push-action@v6.19.2
   with:
     context: .
     platforms: linux/amd64,linux/arm64
@@ -383,7 +383,7 @@ COPY . .
 
 ```dockerfile
 # Explicitly declare dependencies
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 # Use lock files for reproducible builds
 COPY requirements.txt requirements-lock.txt ./
@@ -484,7 +484,7 @@ CMD ["node", "dist/server.js"]
 
 ```dockerfile
 # Execute as stateless processes
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 # Don't store state in the container
 # Use external services for sessions, cache, etc.
@@ -630,7 +630,7 @@ logger.info({ userId: 123 }, 'User logged in');
 
 ```dockerfile
 # Run admin tasks as one-off processes
-FROM python:3.11-slim
+FROM python:3.13-slim
 WORKDIR /app
 
 # Same image for app and admin tasks
@@ -742,7 +742,7 @@ RUN apk add --no-cache ca-certificates && \
     rm -rf /var/cache/apk/*
 
 # Use specific versions
-FROM node:20.10.0-alpine3.19
+FROM node:20.18.1-alpine3.19
 ```
 
 ### Read-Only Filesystem
@@ -782,7 +782,7 @@ jobs:
   scan:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.3.1
 
       - name: Build image
         run: docker build -t myapp:${{ github.sha }} .
@@ -796,7 +796,7 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
       - name: Upload results
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v2.28.1
         with:
           sarif_file: 'trivy-results.sarif'
 ```
@@ -1466,7 +1466,7 @@ CMD ["node", "server.js"]
 ### Logging Configuration
 
 ```dockerfile
-FROM python:3.11-slim
+FROM python:3.13-slim
 WORKDIR /app
 
 # Log to stdout/stderr

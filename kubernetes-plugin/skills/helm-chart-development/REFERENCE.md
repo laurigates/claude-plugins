@@ -320,10 +320,10 @@ jobs:
   lint-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v3.6.0
 
       - name: Set up Helm
-        uses: azure/setup-helm@v3
+        uses: azure/setup-helm@v3.5
         with:
           version: '3.12.0'
 
@@ -337,7 +337,7 @@ jobs:
             --validate
 
       - name: Install Chart Testing
-        uses: helm/chart-testing-action@v2
+        uses: helm/chart-testing-action@v2.8.0
 
       - name: Run Chart Tests
         run: ct lint-and-install --charts ./charts/mychart

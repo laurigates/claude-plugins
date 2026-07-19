@@ -29,9 +29,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.3
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v6.5.0
         with:
           node-version: '24'
           cache: 'npm'
@@ -83,9 +83,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.3
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v6.3.0
         with:
           python-version: '3.13'
 
@@ -138,9 +138,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.3
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v6.3.0
         with:
           python-version: '3.13'
 
@@ -195,7 +195,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.3
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -251,7 +251,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.3
 
       - uses: actions/configure-pages@v6
 
