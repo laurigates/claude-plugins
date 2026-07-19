@@ -1,0 +1,29 @@
+{
+  "name": "mini-marketplace",
+  "plugins": [
+    {
+      "name": "alpha-plugin",
+      "source": "./alpha-plugin",
+      "description": "Alpha test plugin",
+      "version": "1.0.0",
+      "keywords": ["alpha", "testing"],
+      "category": "test-a"
+    },
+    {
+      "name": "beta-plugin",
+      "source": "./beta-plugin",
+      "description": "Beta test plugin",
+      "version": "1.0.0",
+      "keywords": ["beta"],
+      "category": "test-b"
+    },
+    {
+      "name": "gamma-plugin",
+      "source": "./gamma-plugin",
+      "description": "Gamma test plugin",
+      "version": "1.0.0",
+      "keywords": ["gamma"],
+      "category": "test-a"
+    }
+  ]
+}
