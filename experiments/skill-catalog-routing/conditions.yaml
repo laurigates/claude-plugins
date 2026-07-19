@@ -43,3 +43,18 @@ conditions:
   - {id: opus-C2, model: claude-opus-4-8, effort: low, catalog: short}
   - {id: opus-C3, model: claude-opus-4-8, effort: low, catalog: medium}
   - {id: opus-C4, model: claude-opus-4-8, effort: low, catalog: full}
+
+  # ---- domain-preserving variants (follow-up: finding #4) -------------------
+  # C2d = domain-short (~40c, capability phrase instead of the trigger tail),
+  # C3d = domain-medium (~80c), C5 = compact (domain head + "Use when <trigger>",
+  # keeps the literal "Use when"). Token-matched to C2/C3 so the A/B is
+  # domain-first vs trigger-first at equal budget.
+  # Haiku runs the full new ladder; sonnet/opus run the recommendation
+  # candidates (C2d, C5) alongside the C0/C1/C4 portability anchors.
+  - {id: haiku-C2d, model: claude-haiku-4-5, effort: low, catalog: domain-short}
+  - {id: haiku-C3d, model: claude-haiku-4-5, effort: low, catalog: domain-medium}
+  - {id: haiku-C5, model: claude-haiku-4-5, effort: low, catalog: compact}
+  - {id: sonnet-C2d, model: claude-sonnet-4-6, effort: low, catalog: domain-short}
+  - {id: sonnet-C5, model: claude-sonnet-4-6, effort: low, catalog: compact}
+  - {id: opus-C2d, model: claude-opus-4-8, effort: low, catalog: domain-short}
+  - {id: opus-C5, model: claude-opus-4-8, effort: low, catalog: compact}

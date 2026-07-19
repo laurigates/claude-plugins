@@ -1,7 +1,7 @@
 {
   "variant": "medium",
-  "source_sha": "020bfd9049809681d21d5b6469696f079f249bd3",
-  "skill_count": 405,
+  "source_sha": "0ed1791a1abb10ba687ae115adf637b9f5b9cc59",
+  "skill_count": 406,
   "entries": [
     {
       "id": "accessibility-plugin/accessibility-implementation",
@@ -122,6 +122,10 @@
     {
       "id": "blueprint-plugin/blueprint-adr-validate",
       "line": "blueprint-plugin/blueprint-adr-validate: Use when auditing ADRs before release, finding broken supersedes/extends links"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-autonomy-level3",
+      "line": "blueprint-plugin/blueprint-autonomy-level3: Use when enabling out-of-band blueprint automation in a repo"
     },
     {
       "id": "blueprint-plugin/blueprint-autopilot",

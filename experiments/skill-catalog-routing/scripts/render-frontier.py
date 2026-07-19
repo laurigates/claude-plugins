@@ -23,8 +23,17 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-ARMS = ["C0", "C1", "C2", "C3", "C4"]
-ARM_CATALOG = {"C0": "none", "C1": "names", "C2": "short", "C3": "medium", "C4": "full"}
+# Ordered by catalog token cost; domain-first variants sit beside their
+# trigger-first counterparts (C2/C2d ~40c, C3/C3d ~80c) for direct comparison.
+ARMS = ["C0", "C1", "C2", "C2d", "C3", "C3d", "C5", "C4"]
+ARM_CATALOG = {
+    "C0": "none", "C1": "names",
+    "C2": "short", "C2d": "domain-short",
+    "C3": "medium", "C3d": "domain-medium",
+    "C5": "compact", "C4": "full",
+}
+# Domain-first vs trigger-first pairs at equal budget (finding #4).
+DOMAIN_PAIRS = [("C2", "C2d"), ("C3", "C3d")]
 MODELS = ["haiku", "sonnet", "opus"]
 PORTABILITY_THRESHOLD = 0.15
 
@@ -95,6 +104,37 @@ def main() -> int:
         slope_s = f"{slope:+.2f}" if slope is not None else "—"
         c3c4 = f"{c3:.2f} vs {c4:.2f}" if c3 is not None else "—"
         lines.append(f"| {model} | {catalog_value} | {desc_value} | {slope_s} | {c3c4} |")
+    lines.append("")
+
+    # Domain-first vs trigger-first at equal budget (finding #4): does keeping
+    # the capability phrase beat keeping the "Use when" trigger tail?
+    lines += ["## Domain-first vs trigger-first (equal budget)", "",
+              "| model | budget | trigger-first | domain-first | Δ (domain−trigger) |",
+              "|---|---|---|---|---|"]
+    for model in MODELS:
+        for trig, dom in DOMAIN_PAIRS:
+            tc = conds.get(f"{model}-{trig}")
+            dc = conds.get(f"{model}-{dom}")
+            if not tc or not dc:
+                continue
+            band = "~40c" if trig == "C2" else "~80c"
+            delta = dc["top1"] - tc["top1"]
+            lines.append(
+                f"| {model} | {band} | {tc['top1']:.2f} ({trig}) | "
+                f"{dc['top1']:.2f} ({dom}) | {delta:+.2f} |"
+            )
+    # Compact (domain + trigger) vs full.
+    lines += ["", "| model | compact C5 top1 | full C4 top1 | C5−C4 | C5 tokens | C4 tokens |",
+              "|---|---|---|---|---|---|"]
+    for model in MODELS:
+        c5 = conds.get(f"{model}-C5")
+        c4 = conds.get(f"{model}-C4")
+        if not c5 or not c4:
+            continue
+        lines.append(
+            f"| {model} | {c5['top1']:.2f} | {c4['top1']:.2f} | {c5['top1'] - c4['top1']:+.2f} "
+            f"| {tokens.get('compact', '—')} | {tokens.get('full', '—')} |"
+        )
     lines.append("")
 
     # Portability read.
