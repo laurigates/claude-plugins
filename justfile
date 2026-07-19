@@ -103,6 +103,30 @@ pr-rebase-all:
     done
 
 ####################
+# Adapters (skill-discovery core — ADR-0022)
+####################
+
+# Run the adapters test suite (bun test; includes the eval meta-tests)
+[group: "adapters"]
+adapters-test:
+    cd adapters && bun test
+
+# Type-check + lint the adapters package (local↔CI parity with test-adapters.yml)
+[group: "adapters"]
+adapters-check:
+    cd adapters && bunx tsc --noEmit && bunx biome ci .
+
+# Run the retrieval eval (BM25-only smoke; structured === SECTION === output)
+[group: "adapters"]
+eval-adapter *args:
+    cd adapters && bun eval/run-eval.ts {{args}}
+
+# Run the retrieval eval with hybrid fusion (needs a reachable ollama /api/embed)
+[group: "adapters"]
+eval-adapter-hybrid:
+    cd adapters && bun eval/run-eval.ts --with-embeddings
+
+####################
 # OpenCode export
 ####################
 

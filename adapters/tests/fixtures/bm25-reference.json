@@ -1,0 +1,225 @@
+{
+  "generator": "tests/gen-bm25-reference.py (rank-bm25 0.2.2, k1=1.2 b=0.75 \u2014 mirrors core/bm25.ts BM25_K1/BM25_B)",
+  "note": "expected_rank_order = doc indices with score>0, by (-score, idx)",
+  "corpus": [
+    {
+      "id": "git-plugin:git-commit",
+      "text": "git-commit Create commits with conventional messages and issue references. Use when user says \"commit\", \"save changes\", or \"stage and commit\". Local commits only \u2014 see git-push for remote."
+    },
+    {
+      "id": "git-plugin:git-pr",
+      "text": "git-pr Create pull requests with descriptions, labels, and issue references. Use when user says \"create PR\", \"open pull request\", or \"submit for review\". From pushed branches."
+    },
+    {
+      "id": "git-plugin:git-push",
+      "text": "git-push Push local commits to remote \u2014 handles branch tracking, upstream setup, safe push patterns. Use when user says \"push\", \"send to remote\", or \"update remote\". Pushes existing commits \u2014 see git-commit for commits and git-pr for PR creation."
+    },
+    {
+      "id": "git-plugin:git-coworker-check",
+      "text": "git-coworker-check Detect coworker Claude agents in a shared checkout. Use when starting a session in a shared clone, before destructive git ops (stash, reset, checkout), or before bulk-edit / commit-loop workflows."
+    },
+    {
+      "id": "git-plugin:gh-cli-agentic",
+      "text": "gh-cli-agentic gh CLI commands with JSON output for agent workflows. Use when querying PRs, issues, workflow runs, or repo metadata; inspecting PR checks; fetching failed CI logs; or resolving a github.com URL to an API call."
+    },
+    {
+      "id": "tools-plugin:jq-json-processing",
+      "text": "jq-json-processing jq JSON processing: query, filter, transform JSON. Use when parsing JSON files, filtering arrays/objects, transforming structures, or extracting fields from JSON."
+    },
+    {
+      "id": "tools-plugin:d2-diagrams",
+      "text": "d2-diagrams Generate diagrams from text using D2 with automatic layouts and themes. Use when creating architecture diagrams, flowcharts, decision trees, sequence flows, or ERDs."
+    },
+    {
+      "id": "tools-plugin:shell-expert",
+      "text": "shell-expert Shell scripting: bash, zsh, POSIX, CLI tools, cross-platform automation. Use when writing shell scripts, pipes, command-line automation, or portable shell code."
+    },
+    {
+      "id": "tools-plugin:fd-file-finding",
+      "text": "fd-file-finding fd fast file finding: smart defaults, gitignore-aware, parallel. Use when searching for files by name, extension, or pattern across directories."
+    },
+    {
+      "id": "testing-plugin:test-quick",
+      "text": "test-quick Run fast unit tests only, skip slow/integration/E2E. Use when checking units after a change, running affected tests since last commit, watch mode TDD, or sub-30s feedback."
+    },
+    {
+      "id": "testing-plugin:mutation-testing",
+      "text": "mutation-testing Mutation testing with Stryker (TS/JS) and mutmut (Python). Use when finding weak tests that pass on mutated code, or improving test quality through mutation analysis."
+    },
+    {
+      "id": "python-plugin:uv-run",
+      "text": "uv-run Run Python scripts with uv (PEP 723 inline deps, --with for one-off deps). Use when running scripts without venv activation or needing one-off dependencies."
+    },
+    {
+      "id": "python-plugin:ruff-linting",
+      "text": "ruff-linting Python linting with ruff. Fast linting, rule selection, auto-fixing, and config. Use when checking Python code quality, enforcing standards, or finding bugs."
+    },
+    {
+      "id": "typescript-plugin:knip-dead-code",
+      "text": "knip-dead-code Knip dead-code detector for JS/TS: unused files, deps, exports, types. Use when cleaning up codebases, finding dead exports, or enforcing dependency hygiene in CI."
+    },
+    {
+      "id": "typescript-plugin:bun-test",
+      "text": "bun-test Bun test runner with compact agent-friendly output. Use when running bun tests, targeting a pattern, collecting --coverage, watching, or emitting JUnit XML for CI."
+    },
+    {
+      "id": "kubernetes-plugin:helm-release-recovery",
+      "text": "helm-release-recovery Recover from failed Helm deployments \u2014 rollback, fix stuck states (pending-install/upgrade), atomic deployments. Use when the user mentions rollback, failed Helm upgrade, or stuck releases."
+    },
+    {
+      "id": "networking-plugin:dns-tools",
+      "text": "dns-tools DNS resolution and propagation debugging. Use when looking up A/AAAA/MX/TXT records, verifying DNS changes across resolvers, or querying via DoT/DoH."
+    },
+    {
+      "id": "container-plugin:python-containers",
+      "text": "python-containers Python container optimization \u2014 slim images (not Alpine), virtualenv, multi-stage, pip/poetry/uv, musl gotchas (1GB to ~120MB). Use when working with Python containers or optimizing image sizes."
+    },
+    {
+      "id": "macos-plugin:macos-disk-usage",
+      "text": "macos-disk-usage macOS disk-usage forensics and space recovery on APFS. Use when df reports a disk near-full, hunting what's eating space, reclaiming OrbStack/Docker, or pruning caches and local snapshots."
+    },
+    {
+      "id": "obsidian-plugin:vault-orphans",
+      "text": "vault-orphans Triage orphaned notes (zero in/out wikilinks) in an Obsidian vault. Use when finding orphans, linking them into a MOC, or reconnecting Zettelkasten notes."
+    }
+  ],
+  "cases": [
+    {
+      "query": "commit my staged changes with a good message",
+      "expected_rank_order": [
+        0,
+        16,
+        3,
+        9,
+        2,
+        14,
+        4,
+        19,
+        18,
+        11,
+        6,
+        12,
+        1,
+        10,
+        17
+      ]
+    },
+    {
+      "query": "open a pull request for review",
+      "expected_rank_order": [
+        1,
+        14,
+        3,
+        4,
+        16,
+        19,
+        9,
+        18,
+        2,
+        8,
+        11,
+        0,
+        13
+      ]
+    },
+    {
+      "query": "run the fast unit tests only",
+      "expected_rank_order": [
+        9,
+        11,
+        15,
+        0,
+        8,
+        12,
+        14,
+        10
+      ]
+    },
+    {
+      "query": "extract fields from a json file",
+      "expected_rank_order": [
+        5,
+        8,
+        4,
+        6,
+        1,
+        15,
+        3,
+        16,
+        19,
+        14,
+        9,
+        18
+      ]
+    },
+    {
+      "query": "recover a failed helm upgrade",
+      "expected_rank_order": [
+        15,
+        4,
+        3,
+        16,
+        19,
+        14,
+        9,
+        18
+      ]
+    },
+    {
+      "query": "check dns record propagation",
+      "expected_rank_order": [
+        16,
+        3
+      ]
+    },
+    {
+      "query": "shrink a python docker image",
+      "expected_rank_order": [
+        17,
+        18,
+        12,
+        10,
+        11,
+        3,
+        16,
+        19,
+        14,
+        9,
+        4
+      ]
+    },
+    {
+      "query": "find unused exports in typescript",
+      "expected_rank_order": [
+        13,
+        19,
+        3
+      ]
+    },
+    {
+      "query": "run a python script without a virtualenv",
+      "expected_rank_order": [
+        11,
+        17,
+        9,
+        12,
+        3,
+        10,
+        16,
+        19,
+        14,
+        18,
+        4
+      ]
+    },
+    {
+      "query": "free up disk space on my mac",
+      "expected_rank_order": [
+        18,
+        16,
+        10,
+        13
+      ]
+    }
+  ]
+}

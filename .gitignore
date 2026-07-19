@@ -16,6 +16,12 @@ git-repo-agent/uv.lock
 # Eval results (transient run data)
 **/eval-results/
 
+# Adapters (skill-discovery core, ADR-0022) — deps + per-run eval output,
+# scoped to adapters/ (currently the repo's only JS package).
+# No dist/ entry is needed: the package is noEmit (no build output exists).
+adapters/node_modules/
+adapters/eval/results/
+
 # Temporary files
 tmp/
 
