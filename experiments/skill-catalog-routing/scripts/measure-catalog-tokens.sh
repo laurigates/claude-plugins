@@ -52,7 +52,7 @@ printf 'VARIANT\trep\ttotal_input\n'
 
 tmp_json="$root/catalogs/catalog_tokens.json"
 declare -A mean
-for variant in none names short medium full; do
+for variant in none names short domain-short medium domain-medium compact full; do
   arm_prompt="$("$here/build-arm-prompt.sh" "$variant")"
   sum=0; got=0
   for ((i = 1; i <= reps; i++)); do
@@ -73,13 +73,18 @@ for variant in none names short medium full; do
 done
 
 # Emit JSON for the frontier renderer.
-python3 - "$tmp_json" "${mean[none]}" "${mean[names]}" "${mean[short]}" "${mean[medium]}" "${mean[full]}" <<'PY'
+python3 - "$tmp_json" \
+  "${mean[none]}" "${mean[names]}" "${mean[short]}" "${mean[domain-short]}" \
+  "${mean[medium]}" "${mean[domain-medium]}" "${mean[compact]}" "${mean[full]}" <<'PY'
 import json, sys
-out, none, names, short, medium, full = sys.argv[1:7]
+out = sys.argv[1]
+none, names, short, dshort, medium, dmedium, compact, full = (int(x) for x in sys.argv[2:10])
 json.dump({
     "measured_with": {"note": "total input tokens incl. fixed router+tooling constant"},
-    "none": int(none), "names": int(names), "short": int(short),
-    "medium": int(medium), "full": int(full),
+    "none": none, "names": names,
+    "short": short, "domain-short": dshort,
+    "medium": medium, "domain-medium": dmedium,
+    "compact": compact, "full": full,
 }, open(out, "w"), indent=2)
 print(f"wrote {out}")
 PY

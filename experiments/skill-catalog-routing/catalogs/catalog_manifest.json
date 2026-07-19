@@ -1,14 +1,17 @@
 {
-  "source_sha": "020bfd9049809681d21d5b6469696f079f249bd3",
-  "skill_count": 405,
+  "source_sha": "0ed1791a1abb10ba687ae115adf637b9f5b9cc59",
+  "skill_count": 406,
   "content_hashes": {
-    "names": "312a3f2906f4a5ef",
-    "short": "65adefebd659ef37",
-    "medium": "cd0c7b2d4fca78fe",
-    "full": "eb4eea1bd954bc97"
+    "names": "b0d50886f869b5d3",
+    "short": "9983f0600ed963c7",
+    "medium": "5f43577a3a79d1b3",
+    "full": "25e054d10d782563",
+    "domain-short": "eeb08427ca8aba26",
+    "domain-medium": "aa2cc8a6b57007ad",
+    "compact": "85019abf0390ac06"
   },
   "provenance_counts": {
-    "mechanical": 405
+    "mechanical": 406
   },
   "band_char_ceilings": {
     "short": 40,
@@ -164,6 +167,11 @@
       "id": "blueprint-plugin/blueprint-adr-validate",
       "provenance": "mechanical",
       "full_len": 184
+    },
+    {
+      "id": "blueprint-plugin/blueprint-autonomy-level3",
+      "provenance": "mechanical",
+      "full_len": 176
     },
     {
       "id": "blueprint-plugin/blueprint-autopilot",

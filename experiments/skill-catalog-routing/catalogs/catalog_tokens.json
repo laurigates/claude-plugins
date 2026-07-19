@@ -2,9 +2,12 @@
   "measured_with": {
     "note": "total input tokens incl. fixed router+tooling constant"
   },
-  "none": 23157,
-  "names": 27326,
-  "short": 30382,
-  "medium": 34109,
-  "full": 43853
+  "none": 23083,
+  "names": 27264,
+  "short": 30330,
+  "domain-short": 30974,
+  "medium": 34061,
+  "domain-medium": 33839,
+  "compact": 34586,
+  "full": 43836
 }

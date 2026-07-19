@@ -1,0 +1,1631 @@
+{
+  "variant": "domain-short",
+  "source_sha": "0ed1791a1abb10ba687ae115adf637b9f5b9cc59",
+  "skill_count": 406,
+  "entries": [
+    {
+      "id": "accessibility-plugin/accessibility-implementation",
+      "line": "accessibility-plugin/accessibility-implementation: WCAG 2.1/2.2 compliance, ARIA patterns"
+    },
+    {
+      "id": "accessibility-plugin/design-tokens",
+      "line": "accessibility-plugin/design-tokens: Design tokens and CSS custom properties:"
+    },
+    {
+      "id": "agent-patterns-plugin/adversarial-review",
+      "line": "agent-patterns-plugin/adversarial-review: Adversarial second-pass review that"
+    },
+    {
+      "id": "agent-patterns-plugin/agent-teams",
+      "line": "agent-patterns-plugin/agent-teams: Configure Claude Code agent teams"
+    },
+    {
+      "id": "agent-patterns-plugin/cold-read-gate",
+      "line": "agent-patterns-plugin/cold-read-gate: Gate outward-bound text (upstream"
+    },
+    {
+      "id": "agent-patterns-plugin/custom-agent-definitions",
+      "line": "agent-patterns-plugin/custom-agent-definitions: Write and configure custom agent"
+    },
+    {
+      "id": "agent-patterns-plugin/exclusive-lock-dispatch",
+      "line": "agent-patterns-plugin/exclusive-lock-dispatch: Pre-dump-then-dispatch for tools holding"
+    },
+    {
+      "id": "agent-patterns-plugin/execution-grounded-review",
+      "line": "agent-patterns-plugin/execution-grounded-review: Execution-grounded review: run tests"
+    },
+    {
+      "id": "agent-patterns-plugin/expose-tunable-knob",
+      "line": "agent-patterns-plugin/expose-tunable-knob: Expose a live-adjustable control instead"
+    },
+    {
+      "id": "agent-patterns-plugin/mcp-code-execution",
+      "line": "agent-patterns-plugin/mcp-code-execution: Scaffold the code execution pattern"
+    },
+    {
+      "id": "agent-patterns-plugin/mcp-management",
+      "line": "agent-patterns-plugin/mcp-management: Install and configure MCP servers"
+    },
+    {
+      "id": "agent-patterns-plugin/mcp-server-authoring",
+      "line": "agent-patterns-plugin/mcp-server-authoring: FastMCP authoring for Python MCP servers"
+    },
+    {
+      "id": "agent-patterns-plugin/meta-assimilate",
+      "line": "agent-patterns-plugin/meta-assimilate: Copy, generalize, or merge a project's"
+    },
+    {
+      "id": "agent-patterns-plugin/meta-audit",
+      "line": "agent-patterns-plugin/meta-audit: Audit Claude subagent configs"
+    },
+    {
+      "id": "agent-patterns-plugin/meta-context-diet",
+      "line": "agent-patterns-plugin/meta-context-diet: Audit CLAUDE.md and .claude/rules"
+    },
+    {
+      "id": "agent-patterns-plugin/meta-promote",
+      "line": "agent-patterns-plugin/meta-promote: Promote rules, skills, or agents from"
+    },
+    {
+      "id": "agent-patterns-plugin/multi-model-delegation",
+      "line": "agent-patterns-plugin/multi-model-delegation: Multi-model design consults via PAL"
+    },
+    {
+      "id": "agent-patterns-plugin/parallel-agent-dispatch",
+      "line": "agent-patterns-plugin/parallel-agent-dispatch: Dispatch contract for spawning parallel"
+    },
+    {
+      "id": "agent-patterns-plugin/plugin-settings",
+      "line": "agent-patterns-plugin/plugin-settings: Configure per-project plugin settings"
+    },
+    {
+      "id": "agent-patterns-plugin/verify-before-plan",
+      "line": "agent-patterns-plugin/verify-before-plan: Verify orchestrator premises (file"
+    },
+    {
+      "id": "agent-patterns-plugin/wave-based-dispatch",
+      "line": "agent-patterns-plugin/wave-based-dispatch: Sequential-wave dispatch for WO chains"
+    },
+    {
+      "id": "agents-plugin/agents-analyze",
+      "line": "agents-plugin/agents-analyze: Audit plugins for sub-agent"
+    },
+    {
+      "id": "api-plugin/api-testing",
+      "line": "api-plugin/api-testing: HTTP API testing with Supertest (TS)"
+    },
+    {
+      "id": "bevy-plugin/bevy-ecs-patterns",
+      "line": "bevy-plugin/bevy-ecs-patterns: Advanced Bevy ECS: complex queries"
+    },
+    {
+      "id": "bevy-plugin/bevy-game-engine",
+      "line": "bevy-plugin/bevy-game-engine: Bevy game engine: ECS, rendering, input"
+    },
+    {
+      "id": "blog-plugin/blog-post",
+      "line": "blog-plugin/blog-post: Create a blog post via guided prompts"
+    },
+    {
+      "id": "blog-plugin/blog-post-writing",
+      "line": "blog-plugin/blog-post-writing: Style guide for technical blog posts \u2014"
+    },
+    {
+      "id": "blueprint-plugin/adr-relationships",
+      "line": "blueprint-plugin/adr-relationships: Domain analysis, conflict detection,"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-adr-list",
+      "line": "blueprint-plugin/blueprint-adr-list: List ADRs as a markdown table"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-adr-validate",
+      "line": "blueprint-plugin/blueprint-adr-validate: Validate ADR relationships, domain"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-autonomy-level3",
+      "line": "blueprint-plugin/blueprint-autonomy-level3: Install blueprint autonomy level 3"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-autopilot",
+      "line": "blueprint-plugin/blueprint-autopilot: Run due blueprint maintenance ambiently"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-claude-md",
+      "line": "blueprint-plugin/blueprint-claude-md: Generate or update CLAUDE.md from"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-curate-docs",
+      "line": "blueprint-plugin/blueprint-curate-docs: Curate library gotchas and project"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-derive-plans",
+      "line": "blueprint-plugin/blueprint-derive-plans: Derive PRDs, ADRs, PRPs from git"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-derive-rules",
+      "line": "blueprint-plugin/blueprint-derive-rules: Derive Claude rules from git commit"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-derive-tests",
+      "line": "blueprint-plugin/blueprint-derive-tests: Derive test regression plans from git"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-development",
+      "line": "blueprint-plugin/blueprint-development: Generate project-specific rules from"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-docs-currency",
+      "line": "blueprint-plugin/blueprint-docs-currency: Enforce same-commit landing of code"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-docs-list",
+      "line": "blueprint-plugin/blueprint-docs-list: List blueprint documents (ADRs, PRDs"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-execute",
+      "line": "blueprint-plugin/blueprint-execute: Blueprint meta command: determine"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-feature-tracker-status",
+      "line": "blueprint-plugin/blueprint-feature-tracker-status: Display feature tracker stats, phase"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-feature-tracker-sync",
+      "line": "blueprint-plugin/blueprint-feature-tracker-sync: Sync feature tracker with TODO.md"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-generate-rules",
+      "line": "blueprint-plugin/blueprint-generate-rules: Generate project-specific rules from"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-init",
+      "line": "blueprint-plugin/blueprint-init: Initialize Blueprint Development"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-migration",
+      "line": "blueprint-plugin/blueprint-migration: Versioned migration procedures"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-promote",
+      "line": "blueprint-plugin/blueprint-promote: Move generated artifact to custom layer"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-prp-create",
+      "line": "blueprint-plugin/blueprint-prp-create: Create a PRP (Product Requirement"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-prp-execute",
+      "line": "blueprint-plugin/blueprint-prp-execute: Execute a PRP with validation loop, TDD"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-rules",
+      "line": "blueprint-plugin/blueprint-rules: Manage modular rules in .claude/rules/"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-status",
+      "line": "blueprint-plugin/blueprint-status: Show blueprint version, config"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-story-audit",
+      "line": "blueprint-plugin/blueprint-story-audit: Audit user stories against codebase"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-story-reconcile",
+      "line": "blueprint-plugin/blueprint-story-reconcile: Reconcile PRD requirements"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-sync",
+      "line": "blueprint-plugin/blueprint-sync: Check for stale generated content"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-sync-ids",
+      "line": "blueprint-plugin/blueprint-sync-ids: Scan blueprint docs and assign missing"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-upgrade",
+      "line": "blueprint-plugin/blueprint-upgrade: Upgrade blueprint structure"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-work-order",
+      "line": "blueprint-plugin/blueprint-work-order: Create a work-order for isolated"
+    },
+    {
+      "id": "blueprint-plugin/blueprint-workspace-scan",
+      "line": "blueprint-plugin/blueprint-workspace-scan: Discover child blueprint workspaces"
+    },
+    {
+      "id": "blueprint-plugin/confidence-scoring",
+      "line": "blueprint-plugin/confidence-scoring: Assess quality of PRPs and work-orders"
+    },
+    {
+      "id": "blueprint-plugin/document-detection",
+      "line": "blueprint-plugin/document-detection: Detect PRD/ADR/PRP opportunities"
+    },
+    {
+      "id": "blueprint-plugin/document-linking",
+      "line": "blueprint-plugin/document-linking: Unified ID system for PRDs, ADRs, PRPs"
+    },
+    {
+      "id": "blueprint-plugin/feature-tracking",
+      "line": "blueprint-plugin/feature-tracking: Track feature implementation against"
+    },
+    {
+      "id": "code-quality-plugin/ast-grep-search",
+      "line": "code-quality-plugin/ast-grep-search: Find and replace code patterns"
+    },
+    {
+      "id": "code-quality-plugin/bulk-sweep-classify",
+      "line": "code-quality-plugin/bulk-sweep-classify: Classify every regex match before a bulk"
+    },
+    {
+      "id": "code-quality-plugin/code-antipatterns",
+      "line": "code-quality-plugin/code-antipatterns: Analyze a codebase for anti-patterns"
+    },
+    {
+      "id": "code-quality-plugin/code-complexity",
+      "line": "code-quality-plugin/code-complexity: Analyze code complexity metrics"
+    },
+    {
+      "id": "code-quality-plugin/code-dead-code",
+      "line": "code-quality-plugin/code-dead-code: Detect dead code, unused exports"
+    },
+    {
+      "id": "code-quality-plugin/code-dep-audit",
+      "line": "code-quality-plugin/code-dep-audit: Audit dependencies for security"
+    },
+    {
+      "id": "code-quality-plugin/code-docs-quality",
+      "line": "code-quality-plugin/code-docs-quality: Analyze docs quality across PRDs, ADRs"
+    },
+    {
+      "id": "code-quality-plugin/code-hidden-failures",
+      "line": "code-quality-plugin/code-hidden-failures: Scan for hidden failures: swallowed"
+    },
+    {
+      "id": "code-quality-plugin/code-lint",
+      "line": "code-quality-plugin/code-lint: Universal linter that auto-detects"
+    },
+    {
+      "id": "code-quality-plugin/code-refactor",
+      "line": "code-quality-plugin/code-refactor: Refactor toward pure functions"
+    },
+    {
+      "id": "code-quality-plugin/code-review",
+      "line": "code-quality-plugin/code-review: Code review for quality, security"
+    },
+    {
+      "id": "code-quality-plugin/code-review-checklist",
+      "line": "code-quality-plugin/code-review-checklist: Checklist for security, correctness,"
+    },
+    {
+      "id": "code-quality-plugin/code-test-quality",
+      "line": "code-quality-plugin/code-test-quality: Analyze test quality: smells, empty"
+    },
+    {
+      "id": "code-quality-plugin/debugging-methodology",
+      "line": "code-quality-plugin/debugging-methodology: Systematic debugging for memory"
+    },
+    {
+      "id": "code-quality-plugin/dry-consolidation",
+      "line": "code-quality-plugin/dry-consolidation: Find and extract duplicated code into"
+    },
+    {
+      "id": "codebase-attributes-plugin/attributes-collect",
+      "line": "codebase-attributes-plugin/attributes-collect: Collect codebase health attributes as"
+    },
+    {
+      "id": "codebase-attributes-plugin/attributes-dashboard",
+      "line": "codebase-attributes-plugin/attributes-dashboard: Codebase health dashboard with scores"
+    },
+    {
+      "id": "codebase-attributes-plugin/attributes-route",
+      "line": "codebase-attributes-plugin/attributes-route: Route to specialized agents (security"
+    },
+    {
+      "id": "comfyui-plugin/comfy-cli",
+      "line": "comfyui-plugin/comfy-cli: The `comfy` CLI for ComfyUI:"
+    },
+    {
+      "id": "comfyui-plugin/comfy-conditionals",
+      "line": "comfyui-plugin/comfy-conditionals: ComfyUI predicate/boolean nodes:"
+    },
+    {
+      "id": "comfyui-plugin/comfy-corpus-validation",
+      "line": "comfyui-plugin/comfy-corpus-validation: Verify ComfyUI sampler/scheduler facts:"
+    },
+    {
+      "id": "comfyui-plugin/comfy-debug-preview",
+      "line": "comfyui-plugin/comfy-debug-preview: ComfyUI debug/preview nodes: show"
+    },
+    {
+      "id": "comfyui-plugin/comfy-flow-control",
+      "line": "comfyui-plugin/comfy-flow-control: ComfyUI routing nodes: typed switches"
+    },
+    {
+      "id": "comfyui-plugin/comfy-image-utils",
+      "line": "comfyui-plugin/comfy-image-utils: ComfyUI non-inference image ops:"
+    },
+    {
+      "id": "comfyui-plugin/comfy-math-strings",
+      "line": "comfyui-plugin/comfy-math-strings: ComfyUI compute/string nodes: constants"
+    },
+    {
+      "id": "comfyui-plugin/comfy-metadata",
+      "line": "comfyui-plugin/comfy-metadata: Extract/analyze ComfyUI metadata"
+    },
+    {
+      "id": "comfyui-plugin/comfy-node",
+      "line": "comfyui-plugin/comfy-node: Orchestrate a ComfyUI node pack from"
+    },
+    {
+      "id": "comfyui-plugin/comfy-registry-lifecycle",
+      "line": "comfyui-plugin/comfy-registry-lifecycle: Comfy Registry release pipeline:"
+    },
+    {
+      "id": "comfyui-plugin/comfy-subgraphs-app-mode",
+      "line": "comfyui-plugin/comfy-subgraphs-app-mode: ComfyUI Subgraphs, Subgraph Blueprints"
+    },
+    {
+      "id": "comfyui-plugin/comfy-workflow-json",
+      "line": "comfyui-plugin/comfy-workflow-json: Programmatically edit ComfyUI workflow"
+    },
+    {
+      "id": "comfyui-plugin/comfy-workflow-layout",
+      "line": "comfyui-plugin/comfy-workflow-layout: Auto-layout a ComfyUI workflow JSON"
+    },
+    {
+      "id": "comfyui-plugin/comfyui-node-authoring",
+      "line": "comfyui-plugin/comfyui-node-authoring: ComfyUI frontend/backend authoring"
+    },
+    {
+      "id": "comfyui-plugin/comfyui-node-scaffold",
+      "line": "comfyui-plugin/comfyui-node-scaffold: Scaffold a new ComfyUI custom-node repo"
+    },
+    {
+      "id": "comfyui-plugin/comfyui-pack-live-smoke",
+      "line": "comfyui-plugin/comfyui-pack-live-smoke: Live-smoke a ComfyUI pack in a running"
+    },
+    {
+      "id": "comfyui-plugin/comfyui-screenshot-pipeline",
+      "line": "comfyui-plugin/comfyui-screenshot-pipeline: Containerized README-screenshot pipeline"
+    },
+    {
+      "id": "communication-plugin/google-chat-formatting",
+      "line": "communication-plugin/google-chat-formatting: Convert Markdown to Google Chat"
+    },
+    {
+      "id": "communication-plugin/ticket-drafting-guidelines",
+      "line": "communication-plugin/ticket-drafting-guidelines: Guidelines for drafting GitHub issues"
+    },
+    {
+      "id": "component-patterns-plugin/components-version-badge",
+      "line": "component-patterns-plugin/components-version-badge: Version badge with build-info tooltip"
+    },
+    {
+      "id": "component-patterns-plugin/version-badge-pattern",
+      "line": "component-patterns-plugin/version-badge-pattern: Version badge UI showing build version"
+    },
+    {
+      "id": "configure-plugin/ci-workflows",
+      "line": "configure-plugin/ci-workflows: GitHub Actions workflow standards"
+    },
+    {
+      "id": "configure-plugin/claude-security-settings",
+      "line": "configure-plugin/claude-security-settings: Claude Code security settings:"
+    },
+    {
+      "id": "configure-plugin/config-sync",
+      "line": "configure-plugin/config-sync: Config sync across FVH repos: extract"
+    },
+    {
+      "id": "configure-plugin/configure-all",
+      "line": "configure-plugin/configure-all: Run all infrastructure standards checks"
+    },
+    {
+      "id": "configure-plugin/configure-api-tests",
+      "line": "configure-plugin/configure-api-tests: API contract testing: Pact, OpenAPI"
+    },
+    {
+      "id": "configure-plugin/configure-argocd-automerge",
+      "line": "configure-plugin/configure-argocd-automerge: ArgoCD auto-merge: configure GitHub"
+    },
+    {
+      "id": "configure-plugin/configure-cache-busting",
+      "line": "configure-plugin/configure-cache-busting: Cache-busting for Next.js and Vite:"
+    },
+    {
+      "id": "configure-plugin/configure-claude-plugins",
+      "line": "configure-plugin/configure-claude-plugins: Claude plugins marketplace setup:"
+    },
+    {
+      "id": "configure-plugin/configure-container",
+      "line": "configure-plugin/configure-container: Container infrastructure: GHCR builds"
+    },
+    {
+      "id": "configure-plugin/configure-coverage",
+      "line": "configure-plugin/configure-coverage: Code coverage: thresholds and reporters"
+    },
+    {
+      "id": "configure-plugin/configure-dead-code",
+      "line": "configure-plugin/configure-dead-code: Dead-code detection: Knip, Vulture"
+    },
+    {
+      "id": "configure-plugin/configure-dockerfile",
+      "line": "configure-plugin/configure-dockerfile: Dockerfile standards: Alpine/slim base"
+    },
+    {
+      "id": "configure-plugin/configure-docs",
+      "line": "configure-plugin/configure-docs: Code docs: TSDoc, JSDoc, pydoc, rustdoc"
+    },
+    {
+      "id": "configure-plugin/configure-editor",
+      "line": "configure-plugin/configure-editor: EditorConfig and VS Code workspace"
+    },
+    {
+      "id": "configure-plugin/configure-feature-flags",
+      "line": "configure-plugin/configure-feature-flags: Feature flags with OpenFeature"
+    },
+    {
+      "id": "configure-plugin/configure-formatting",
+      "line": "configure-plugin/configure-formatting: Biome formatter for JS/TS/JSON/CSS \u2014"
+    },
+    {
+      "id": "configure-plugin/configure-gitattributes",
+      "line": "configure-plugin/configure-gitattributes: Configure .gitattributes: union-merge"
+    },
+    {
+      "id": "configure-plugin/configure-github-pages",
+      "line": "configure-plugin/configure-github-pages: GitHub Pages deployment workflows"
+    },
+    {
+      "id": "configure-plugin/configure-gitignore",
+      "line": "configure-plugin/configure-gitignore: Manage .gitignore's Claude Code block \u2014"
+    },
+    {
+      "id": "configure-plugin/configure-instrumentation",
+      "line": "configure-plugin/configure-instrumentation: Observability instrumentation:"
+    },
+    {
+      "id": "configure-plugin/configure-integration-tests",
+      "line": "configure-plugin/configure-integration-tests: Integration testing: Supertest, pytest"
+    },
+    {
+      "id": "configure-plugin/configure-justfile",
+      "line": "configure-plugin/configure-justfile: Check and configure Justfiles"
+    },
+    {
+      "id": "configure-plugin/configure-linting",
+      "line": "configure-plugin/configure-linting: Modern linters: Biome, Ruff, Clippy"
+    },
+    {
+      "id": "configure-plugin/configure-load-tests",
+      "line": "configure-plugin/configure-load-tests: Load testing: k6, Artillery, Locust"
+    },
+    {
+      "id": "configure-plugin/configure-makefile",
+      "line": "configure-plugin/configure-makefile: Makefile with standard targets (help"
+    },
+    {
+      "id": "configure-plugin/configure-mcp",
+      "line": "configure-plugin/configure-mcp: Check and configure MCP servers"
+    },
+    {
+      "id": "configure-plugin/configure-memory-profiling",
+      "line": "configure-plugin/configure-memory-profiling: Memory profiling with pytest-memray"
+    },
+    {
+      "id": "configure-plugin/configure-mise",
+      "line": "configure-plugin/configure-mise: mise runtime/tool version manager -"
+    },
+    {
+      "id": "configure-plugin/configure-package-management",
+      "line": "configure-plugin/configure-package-management: Package managers: uv (Python), bun"
+    },
+    {
+      "id": "configure-plugin/configure-pre-commit",
+      "line": "configure-plugin/configure-pre-commit: pre-commit hooks setup and validation"
+    },
+    {
+      "id": "configure-plugin/configure-readme",
+      "line": "configure-plugin/configure-readme: README.md with logo, badges, features"
+    },
+    {
+      "id": "configure-plugin/configure-release-please",
+      "line": "configure-plugin/configure-release-please: release-please workflow setup"
+    },
+    {
+      "id": "configure-plugin/configure-repo",
+      "line": "configure-plugin/configure-repo: Repo onboarding driver: .claude/"
+    },
+    {
+      "id": "configure-plugin/configure-reusable-workflows",
+      "line": "configure-plugin/configure-reusable-workflows: Reusable GitHub Actions workflows"
+    },
+    {
+      "id": "configure-plugin/configure-security",
+      "line": "configure-plugin/configure-security: Security scanning: dependency audits"
+    },
+    {
+      "id": "configure-plugin/configure-select",
+      "line": "configure-plugin/configure-select: Interactive selector for infrastructure"
+    },
+    {
+      "id": "configure-plugin/configure-sentry",
+      "line": "configure-plugin/configure-sentry: Sentry error tracking setup"
+    },
+    {
+      "id": "configure-plugin/configure-skaffold",
+      "line": "configure-plugin/configure-skaffold: Skaffold for Kubernetes: port"
+    },
+    {
+      "id": "configure-plugin/configure-status",
+      "line": "configure-plugin/configure-status: Infrastructure compliance status"
+    },
+    {
+      "id": "configure-plugin/configure-surface",
+      "line": "configure-plugin/configure-surface: Surface doc-drift gate: scaffold"
+    },
+    {
+      "id": "configure-plugin/configure-tests",
+      "line": "configure-plugin/configure-tests: Test frameworks: Vitest, Jest, pytest"
+    },
+    {
+      "id": "configure-plugin/configure-ux-testing",
+      "line": "configure-plugin/configure-ux-testing: UX testing: Playwright E2E, axe-core"
+    },
+    {
+      "id": "configure-plugin/configure-web-session",
+      "line": "configure-plugin/configure-web-session: SessionStart hook for Claude Code web"
+    },
+    {
+      "id": "configure-plugin/configure-workflows",
+      "line": "configure-plugin/configure-workflows: GitHub Actions CI/CD workflows"
+    },
+    {
+      "id": "configure-plugin/configure-worktreeinclude",
+      "line": "configure-plugin/configure-worktreeinclude: Generate a .worktreeinclude so Claude"
+    },
+    {
+      "id": "configure-plugin/go-feature-flag",
+      "line": "configure-plugin/go-feature-flag: GO Feature Flag (GOFF) self-hosted"
+    },
+    {
+      "id": "configure-plugin/multi-repo-discipline",
+      "line": "configure-plugin/multi-repo-discipline: Multi-repo workspace rules: read-only"
+    },
+    {
+      "id": "configure-plugin/openfeature",
+      "line": "configure-plugin/openfeature: OpenFeature vendor-agnostic feature flag"
+    },
+    {
+      "id": "container-plugin/container-development",
+      "line": "container-plugin/container-development: Container development \u2014 Docker"
+    },
+    {
+      "id": "container-plugin/deploy-handoff",
+      "line": "container-plugin/deploy-handoff: Generate deployment handoff docs \u2014 tech"
+    },
+    {
+      "id": "container-plugin/deploy-release",
+      "line": "container-plugin/deploy-release: Create and publish releases via"
+    },
+    {
+      "id": "container-plugin/go-containers",
+      "line": "container-plugin/go-containers: Go container optimization \u2014"
+    },
+    {
+      "id": "container-plugin/nodejs-containers",
+      "line": "container-plugin/nodejs-containers: Node.js container optimization \u2014 Alpine"
+    },
+    {
+      "id": "container-plugin/python-containers",
+      "line": "container-plugin/python-containers: Python container optimization \u2014 slim"
+    },
+    {
+      "id": "container-plugin/skaffold-filesync",
+      "line": "container-plugin/skaffold-filesync: Skaffold file sync \u2014 copy changed files"
+    },
+    {
+      "id": "container-plugin/skaffold-orbstack",
+      "line": "container-plugin/skaffold-orbstack: OrbStack-optimized Skaffold for local"
+    },
+    {
+      "id": "container-plugin/skaffold-testing",
+      "line": "container-plugin/skaffold-testing: Container image validation with Skaffold"
+    },
+    {
+      "id": "css-plugin/lightning-css",
+      "line": "css-plugin/lightning-css: Lightning CSS transpilation, bundling"
+    },
+    {
+      "id": "css-plugin/unocss",
+      "line": "css-plugin/unocss: UnoCSS atomic CSS engine for on-demand"
+    },
+    {
+      "id": "documentation-plugin/claude-blog-sources",
+      "line": "documentation-plugin/claude-blog-sources: Fetch Claude Blog and official Claude"
+    },
+    {
+      "id": "documentation-plugin/docs-decommission",
+      "line": "documentation-plugin/docs-decommission: Generate DECOMMISSION-<service>.md"
+    },
+    {
+      "id": "documentation-plugin/docs-generate",
+      "line": "documentation-plugin/docs-generate: Generate or update docs from code"
+    },
+    {
+      "id": "documentation-plugin/docs-latex",
+      "line": "documentation-plugin/docs-latex: Convert Markdown to LaTeX with TikZ"
+    },
+    {
+      "id": "documentation-plugin/docs-sync",
+      "line": "documentation-plugin/docs-sync: Sync docs with actual skills, commands"
+    },
+    {
+      "id": "evaluate-plugin/evaluate-improve",
+      "line": "evaluate-plugin/evaluate-improve: Suggest improvements to SKILL.md"
+    },
+    {
+      "id": "evaluate-plugin/evaluate-legibility",
+      "line": "evaluate-plugin/evaluate-legibility: Cold-read a SKILL.md with a zero-context"
+    },
+    {
+      "id": "evaluate-plugin/evaluate-matrix",
+      "line": "evaluate-plugin/evaluate-matrix: Cross-model skill evals with real"
+    },
+    {
+      "id": "evaluate-plugin/evaluate-plugin-batch",
+      "line": "evaluate-plugin/evaluate-plugin-batch: Batch evaluate every skill in a plugin"
+    },
+    {
+      "id": "evaluate-plugin/evaluate-report",
+      "line": "evaluate-plugin/evaluate-report: View evaluation results and benchmark"
+    },
+    {
+      "id": "evaluate-plugin/evaluate-skill",
+      "line": "evaluate-plugin/evaluate-skill: Evaluate a skill by running test cases"
+    },
+    {
+      "id": "feedback-plugin/feedback-session",
+      "line": "feedback-plugin/feedback-session: Analyze session for skill feedback"
+    },
+    {
+      "id": "finops-plugin/finops-caches",
+      "line": "finops-plugin/finops-caches: GitHub Actions cache analysis \u2014 size"
+    },
+    {
+      "id": "finops-plugin/finops-compare",
+      "line": "finops-plugin/finops-compare: FinOps metrics comparison across repos"
+    },
+    {
+      "id": "finops-plugin/finops-overview",
+      "line": "finops-plugin/finops-overview: FinOps snapshot \u2014 org billing, workflow"
+    },
+    {
+      "id": "finops-plugin/finops-waste",
+      "line": "finops-plugin/finops-waste: Identify GitHub Actions waste \u2014 skipped"
+    },
+    {
+      "id": "finops-plugin/finops-workflows",
+      "line": "finops-plugin/finops-workflows: Analyze workflow runs \u2014 frequency"
+    },
+    {
+      "id": "finops-plugin/github-actions-cache-optimization",
+      "line": "finops-plugin/github-actions-cache-optimization: GitHub Actions cache analysis"
+    },
+    {
+      "id": "finops-plugin/github-actions-finops",
+      "line": "finops-plugin/github-actions-finops: GitHub Actions billing, workflow"
+    },
+    {
+      "id": "foundryvtt-plugin/foundryvtt-module",
+      "line": "foundryvtt-plugin/foundryvtt-module: FoundryVTT module idea to gitops-adopted"
+    },
+    {
+      "id": "foundryvtt-plugin/foundryvtt-module-scaffold",
+      "line": "foundryvtt-plugin/foundryvtt-module-scaffold: Scaffold a new FoundryVTT v13 module"
+    },
+    {
+      "id": "git-plugin/deadbranch",
+      "line": "git-plugin/deadbranch: deadbranch CLI for stale-branch cleanup"
+    },
+    {
+      "id": "git-plugin/gh-cli-agentic",
+      "line": "git-plugin/gh-cli-agentic: gh CLI commands with JSON output"
+    },
+    {
+      "id": "git-plugin/gh-workflow-monitoring",
+      "line": "git-plugin/gh-workflow-monitoring: Monitor GitHub Actions runs"
+    },
+    {
+      "id": "git-plugin/git-api-pr",
+      "line": "git-plugin/git-api-pr: GitHub API PR creation without local git"
+    },
+    {
+      "id": "git-plugin/git-branch-naming",
+      "line": "git-plugin/git-branch-naming: Git branch naming conventions \u2014 type"
+    },
+    {
+      "id": "git-plugin/git-branch-pr-workflow",
+      "line": "git-plugin/git-branch-pr-workflow: Branch management and PR workflows \u2014 git"
+    },
+    {
+      "id": "git-plugin/git-cli-agentic",
+      "line": "git-plugin/git-cli-agentic: Git commands with porcelain"
+    },
+    {
+      "id": "git-plugin/git-commit",
+      "line": "git-plugin/git-commit: Create commits with conventional"
+    },
+    {
+      "id": "git-plugin/git-commit-push-pr",
+      "line": "git-plugin/git-commit-push-pr: End-to-end commit-to-PR workflow"
+    },
+    {
+      "id": "git-plugin/git-commit-trailers",
+      "line": "git-plugin/git-commit-trailers: Git commit trailer conventions \u2014"
+    },
+    {
+      "id": "git-plugin/git-commit-workflow",
+      "line": "git-plugin/git-commit-workflow: Conventional commit format, staging,"
+    },
+    {
+      "id": "git-plugin/git-conflicts",
+      "line": "git-plugin/git-conflicts: Resolve merge conflicts file-by-file"
+    },
+    {
+      "id": "git-plugin/git-coworker-check",
+      "line": "git-plugin/git-coworker-check: Detect coworker Claude agents"
+    },
+    {
+      "id": "git-plugin/git-derive-docs",
+      "line": "git-plugin/git-derive-docs: Derive ADRs, rules, PRDs from git commit"
+    },
+    {
+      "id": "git-plugin/git-fix-pr",
+      "line": "git-plugin/git-fix-pr: Analyze and fix failing PR checks"
+    },
+    {
+      "id": "git-plugin/git-fork-workflow",
+      "line": "git-plugin/git-fork-workflow: Fork management and upstream sync"
+    },
+    {
+      "id": "git-plugin/git-issue",
+      "line": "git-plugin/git-issue: Process GitHub issues end-to-end"
+    },
+    {
+      "id": "git-plugin/git-issue-hierarchy",
+      "line": "git-plugin/git-issue-hierarchy: Manage GitHub sub-issues"
+    },
+    {
+      "id": "git-plugin/git-issue-manage",
+      "line": "git-plugin/git-issue-manage: GitHub issue admin operations"
+    },
+    {
+      "id": "git-plugin/git-maintain",
+      "line": "git-plugin/git-maintain: Repo maintenance \u2014 incremental repack"
+    },
+    {
+      "id": "git-plugin/git-pr",
+      "line": "git-plugin/git-pr: Create pull requests with descriptions"
+    },
+    {
+      "id": "git-plugin/git-pr-feedback",
+      "line": "git-plugin/git-pr-feedback: Address PR review comments and resolve"
+    },
+    {
+      "id": "git-plugin/git-pr-sync-check",
+      "line": "git-plugin/git-pr-sync-check: Checks whether the current PR branch is"
+    },
+    {
+      "id": "git-plugin/git-pr-watch",
+      "line": "git-plugin/git-pr-watch: Subscribe to a PR's activity and react"
+    },
+    {
+      "id": "git-plugin/git-push",
+      "line": "git-plugin/git-push: Push local commits to remote \u2014 handles"
+    },
+    {
+      "id": "git-plugin/git-rebase-patterns",
+      "line": "git-plugin/git-rebase-patterns: Advanced git rebase \u2014 linear history"
+    },
+    {
+      "id": "git-plugin/git-repo-detection",
+      "line": "git-plugin/git-repo-detection: Detect GitHub repo owner/name from git"
+    },
+    {
+      "id": "git-plugin/git-security-checks",
+      "line": "git-plugin/git-security-checks: Pre-commit security validation"
+    },
+    {
+      "id": "git-plugin/git-triage",
+      "line": "git-plugin/git-triage: Triage GitHub issues and PRs \u2014"
+    },
+    {
+      "id": "git-plugin/git-upstream-pr",
+      "line": "git-plugin/git-upstream-pr: Submit PRs to upstream repos from a fork"
+    },
+    {
+      "id": "git-plugin/git-upstream-pr-diverged",
+      "line": "git-plugin/git-upstream-pr-diverged: Submit a diverged-fork commit"
+    },
+    {
+      "id": "git-plugin/github-issue-autodetect",
+      "line": "git-plugin/github-issue-autodetect: Auto-detect GitHub issues that staged"
+    },
+    {
+      "id": "git-plugin/github-issue-writing",
+      "line": "git-plugin/github-issue-writing: Create well-structured GitHub issues"
+    },
+    {
+      "id": "git-plugin/github-labels",
+      "line": "git-plugin/github-labels: Discover and apply GitHub labels via gh"
+    },
+    {
+      "id": "git-plugin/github-pr-title",
+      "line": "git-plugin/github-pr-title: Craft PR titles using conventional"
+    },
+    {
+      "id": "git-plugin/release-please-configuration",
+      "line": "git-plugin/release-please-configuration: release-please monorepo config \u2014"
+    },
+    {
+      "id": "git-plugin/release-please-pr-workflow",
+      "line": "git-plugin/release-please-pr-workflow: Manage release-please PR merging"
+    },
+    {
+      "id": "git-plugin/release-please-protection",
+      "line": "git-plugin/release-please-protection: Block manual edits to release-please"
+    },
+    {
+      "id": "github-actions-plugin/claude-code-github-workflows",
+      "line": "github-actions-plugin/claude-code-github-workflows: Claude Code GitHub Actions workflow"
+    },
+    {
+      "id": "github-actions-plugin/github-actions-auth-security",
+      "line": "github-actions-plugin/github-actions-auth-security: GitHub Actions auth and security"
+    },
+    {
+      "id": "github-actions-plugin/github-actions-inspection",
+      "line": "github-actions-plugin/github-actions-inspection: Inspect GitHub Actions runs, analyze"
+    },
+    {
+      "id": "github-actions-plugin/github-actions-mcp-config",
+      "line": "github-actions-plugin/github-actions-mcp-config: MCP server config for GitHub Actions \u2014"
+    },
+    {
+      "id": "github-actions-plugin/github-issue-search",
+      "line": "github-actions-plugin/github-issue-search: Search GitHub issues for solutions"
+    },
+    {
+      "id": "github-actions-plugin/github-social-preview",
+      "line": "github-actions-plugin/github-social-preview: Generate 1280x640 PNG social preview"
+    },
+    {
+      "id": "github-actions-plugin/github-workflow-auto-fix",
+      "line": "github-actions-plugin/github-workflow-auto-fix: Set up automated CI fixing with Claude"
+    },
+    {
+      "id": "github-actions-plugin/workflow-dev",
+      "line": "github-actions-plugin/workflow-dev: Automated dev loop \u2014 run tests, file"
+    },
+    {
+      "id": "health-plugin/health-agentic-audit",
+      "line": "health-plugin/health-agentic-audit: Audit skills, commands, and agents"
+    },
+    {
+      "id": "health-plugin/health-audit",
+      "line": "health-plugin/health-audit: Plugin audit against detected stack"
+    },
+    {
+      "id": "health-plugin/health-check",
+      "line": "health-plugin/health-check: Claude Code health check \u2014 scans"
+    },
+    {
+      "id": "health-plugin/health-plugins",
+      "line": "health-plugin/health-plugins: Diagnose and fix Claude Code plugin"
+    },
+    {
+      "id": "health-plugin/health-skill-audit",
+      "line": "health-plugin/health-skill-audit: Audit skill tree for overlap"
+    },
+    {
+      "id": "health-plugin/plugin-registry",
+      "line": "health-plugin/plugin-registry: Claude Code plugin registry structure"
+    },
+    {
+      "id": "health-plugin/settings-configuration",
+      "line": "health-plugin/settings-configuration: Claude Code settings hierarchy"
+    },
+    {
+      "id": "home-assistant-plugin/ha-automations",
+      "line": "home-assistant-plugin/ha-automations: Home Assistant automation creation"
+    },
+    {
+      "id": "home-assistant-plugin/ha-configuration",
+      "line": "home-assistant-plugin/ha-configuration: Home Assistant YAML configuration"
+    },
+    {
+      "id": "home-assistant-plugin/ha-entities",
+      "line": "home-assistant-plugin/ha-entities: Home Assistant entity and domain"
+    },
+    {
+      "id": "home-assistant-plugin/ha-validate",
+      "line": "home-assistant-plugin/ha-validate: Validate Home Assistant YAML for syntax"
+    },
+    {
+      "id": "hooks-plugin/hooks-configuration",
+      "line": "hooks-plugin/hooks-configuration: Claude Code hooks configuration"
+    },
+    {
+      "id": "hooks-plugin/hooks-permission-request-hook",
+      "line": "hooks-plugin/hooks-permission-request-hook: Generate a PermissionRequest hook"
+    },
+    {
+      "id": "hooks-plugin/hooks-session-end-issue-hook",
+      "line": "hooks-plugin/hooks-session-end-issue-hook: Configure a Stop hook that surfaces"
+    },
+    {
+      "id": "hooks-plugin/hooks-session-start-hook",
+      "line": "hooks-plugin/hooks-session-start-hook: Create a SessionStart hook for Claude"
+    },
+    {
+      "id": "kubernetes-plugin/argocd-login",
+      "line": "kubernetes-plugin/argocd-login: ArgoCD CLI auth with SSO and gRPC-Web"
+    },
+    {
+      "id": "kubernetes-plugin/helm-chart-development",
+      "line": "kubernetes-plugin/helm-chart-development: Create, test, and package Helm charts \u2014"
+    },
+    {
+      "id": "kubernetes-plugin/helm-debugging",
+      "line": "kubernetes-plugin/helm-debugging: Debug Helm failures \u2014 template errors"
+    },
+    {
+      "id": "kubernetes-plugin/helm-release-management",
+      "line": "kubernetes-plugin/helm-release-management: Manage Helm releases \u2014 install, upgrade"
+    },
+    {
+      "id": "kubernetes-plugin/helm-release-recovery",
+      "line": "kubernetes-plugin/helm-release-recovery: Recover from failed Helm deployments \u2014"
+    },
+    {
+      "id": "kubernetes-plugin/helm-values-management",
+      "line": "kubernetes-plugin/helm-values-management: Manage Helm values \u2014 override"
+    },
+    {
+      "id": "kubernetes-plugin/kubectl-debugging",
+      "line": "kubernetes-plugin/kubectl-debugging: Debug K8s pods/nodes with kubectl debug"
+    },
+    {
+      "id": "kubernetes-plugin/kubernetes-operations",
+      "line": "kubernetes-plugin/kubernetes-operations: Kubernetes operations \u2014 deployment"
+    },
+    {
+      "id": "langchain-plugin/deep-agents",
+      "line": "langchain-plugin/deep-agents: Build hierarchical AI agents"
+    },
+    {
+      "id": "langchain-plugin/langchain-development",
+      "line": "langchain-plugin/langchain-development: LangChain JS/TS framework for building"
+    },
+    {
+      "id": "langchain-plugin/langchain-init",
+      "line": "langchain-plugin/langchain-init: Initialize a new LangChain TypeScript"
+    },
+    {
+      "id": "langchain-plugin/langgraph-agents",
+      "line": "langchain-plugin/langgraph-agents: LangGraph stateful AI agents"
+    },
+    {
+      "id": "macos-plugin/endpoint-security-cpu",
+      "line": "macos-plugin/endpoint-security-cpu: macOS EndpointSecurity/EDR high CPU &"
+    },
+    {
+      "id": "macos-plugin/kitty-session-persistence",
+      "line": "macos-plugin/kitty-session-persistence: Snapshot and restore kitty terminal"
+    },
+    {
+      "id": "macos-plugin/launchservices-health",
+      "line": "macos-plugin/launchservices-health: Diagnose macOS LaunchServices DB bloat"
+    },
+    {
+      "id": "macos-plugin/macos-disk-usage",
+      "line": "macos-plugin/macos-disk-usage: macOS disk-usage forensics and space"
+    },
+    {
+      "id": "macos-plugin/macos-incident-postmortem",
+      "line": "macos-plugin/macos-incident-postmortem: Reconstruct macOS freeze, panic,"
+    },
+    {
+      "id": "macos-plugin/macos-performance-benchmark",
+      "line": "macos-plugin/macos-performance-benchmark: Repeatable macOS/Apple-Silicon benchmark"
+    },
+    {
+      "id": "macos-plugin/macos-performance-triage",
+      "line": "macos-plugin/macos-performance-triage: Live macOS/Apple-Silicon performance"
+    },
+    {
+      "id": "macos-plugin/tui-keybinding-debug",
+      "line": "macos-plugin/tui-keybinding-debug: Debug dead TUI/terminal keybindings \u2014"
+    },
+    {
+      "id": "migration-patterns-plugin/black-to-ruff-format",
+      "line": "migration-patterns-plugin/black-to-ruff-format: Migrate Python formatting from black"
+    },
+    {
+      "id": "migration-patterns-plugin/dual-write",
+      "line": "migration-patterns-plugin/dual-write: Dual-write pattern for safe data store"
+    },
+    {
+      "id": "migration-patterns-plugin/eslint-to-biome",
+      "line": "migration-patterns-plugin/eslint-to-biome: Migrate JS/TS linting from"
+    },
+    {
+      "id": "migration-patterns-plugin/flake8-to-ruff",
+      "line": "migration-patterns-plugin/flake8-to-ruff: Migrate Python linting from flake8/isort"
+    },
+    {
+      "id": "migration-patterns-plugin/mypy-to-ty",
+      "line": "migration-patterns-plugin/mypy-to-ty: Migrate Python type checking from mypy"
+    },
+    {
+      "id": "migration-patterns-plugin/shadow-mode",
+      "line": "migration-patterns-plugin/shadow-mode: Shadow mode / dark-launch for validating"
+    },
+    {
+      "id": "networking-plugin/dns-tools",
+      "line": "networking-plugin/dns-tools: DNS resolution and propagation debugging"
+    },
+    {
+      "id": "networking-plugin/http-load-testing",
+      "line": "networking-plugin/http-load-testing: HTTP load testing with oha"
+    },
+    {
+      "id": "networking-plugin/interface-state",
+      "line": "networking-plugin/interface-state: Local interface, address, route,"
+    },
+    {
+      "id": "networking-plugin/layer2-discovery",
+      "line": "networking-plugin/layer2-discovery: Layer 2 device discovery and topology"
+    },
+    {
+      "id": "networking-plugin/network-diagnostics",
+      "line": "networking-plugin/network-diagnostics: Network connectivity and latency"
+    },
+    {
+      "id": "networking-plugin/network-discovery",
+      "line": "networking-plugin/network-discovery: Network host and port discovery"
+    },
+    {
+      "id": "networking-plugin/network-monitoring",
+      "line": "networking-plugin/network-monitoring: Real-time network traffic"
+    },
+    {
+      "id": "obsidian-plugin/bases",
+      "line": "obsidian-plugin/bases: Obsidian Bases (database-over-notes):"
+    },
+    {
+      "id": "obsidian-plugin/bookmarks",
+      "line": "obsidian-plugin/bookmarks: Obsidian bookmarks: list and add"
+    },
+    {
+      "id": "obsidian-plugin/command-palette",
+      "line": "obsidian-plugin/command-palette: Run, list, and inspect Obsidian commands"
+    },
+    {
+      "id": "obsidian-plugin/dev-tools",
+      "line": "obsidian-plugin/dev-tools: Obsidian plugin/theme dev: DevTools"
+    },
+    {
+      "id": "obsidian-plugin/file-history",
+      "line": "obsidian-plugin/file-history: Obsidian File Recovery and Sync history:"
+    },
+    {
+      "id": "obsidian-plugin/plugins-themes",
+      "line": "obsidian-plugin/plugins-themes: Obsidian community plugins/themes/CSS"
+    },
+    {
+      "id": "obsidian-plugin/properties",
+      "line": "obsidian-plugin/properties: Obsidian YAML frontmatter properties:"
+    },
+    {
+      "id": "obsidian-plugin/publish-sync",
+      "line": "obsidian-plugin/publish-sync: Obsidian Publish and Sync operations"
+    },
+    {
+      "id": "obsidian-plugin/search-discovery",
+      "line": "obsidian-plugin/search-discovery: Obsidian vault search: full-text/grep"
+    },
+    {
+      "id": "obsidian-plugin/tasks",
+      "line": "obsidian-plugin/tasks: Obsidian tasks via CLI: list open tasks"
+    },
+    {
+      "id": "obsidian-plugin/templates",
+      "line": "obsidian-plugin/templates: Obsidian Templates plugin: list, read"
+    },
+    {
+      "id": "obsidian-plugin/vault-files",
+      "line": "obsidian-plugin/vault-files: Obsidian vault file ops via CLI: read"
+    },
+    {
+      "id": "obsidian-plugin/vault-frontmatter",
+      "line": "obsidian-plugin/vault-frontmatter: Offline YAML frontmatter maintenance"
+    },
+    {
+      "id": "obsidian-plugin/vault-management",
+      "line": "obsidian-plugin/vault-management: Obsidian vault inspection"
+    },
+    {
+      "id": "obsidian-plugin/vault-mocs",
+      "line": "obsidian-plugin/vault-mocs: Map-of-Content (MOC) curation"
+    },
+    {
+      "id": "obsidian-plugin/vault-orphans",
+      "line": "obsidian-plugin/vault-orphans: Triage orphaned notes (zero in/out"
+    },
+    {
+      "id": "obsidian-plugin/vault-stubs",
+      "line": "obsidian-plugin/vault-stubs: Work-namespace redirect-stub"
+    },
+    {
+      "id": "obsidian-plugin/vault-tags",
+      "line": "obsidian-plugin/vault-tags: Emoji-prefixed tag taxonomy for Obsidian"
+    },
+    {
+      "id": "obsidian-plugin/vault-templates",
+      "line": "obsidian-plugin/vault-templates: Obsidian Templater drift repair"
+    },
+    {
+      "id": "obsidian-plugin/vault-wikilinks",
+      "line": "obsidian-plugin/vault-wikilinks: Broken Obsidian wikilink detection"
+    },
+    {
+      "id": "obsidian-plugin/workspaces",
+      "line": "obsidian-plugin/workspaces: Obsidian editor workspace: list open"
+    },
+    {
+      "id": "project-plugin/changelog-review",
+      "line": "project-plugin/changelog-review: Claude Code changelog analysis"
+    },
+    {
+      "id": "project-plugin/project-continue",
+      "line": "project-plugin/project-continue: Resume development from current project"
+    },
+    {
+      "id": "project-plugin/project-discovery",
+      "line": "project-plugin/project-discovery: Project orientation for unfamiliar"
+    },
+    {
+      "id": "project-plugin/project-init",
+      "line": "project-plugin/project-init: Scaffold a new project with base"
+    },
+    {
+      "id": "project-plugin/project-refocus",
+      "line": "project-plugin/project-refocus: Refresh the plan to focus on the task at"
+    },
+    {
+      "id": "project-plugin/project-skill-scripts",
+      "line": "project-plugin/project-skill-scripts: Find and create supporting scripts"
+    },
+    {
+      "id": "project-plugin/project-test-loop",
+      "line": "project-plugin/project-test-loop: Automated TDD test-fix-refactor cycle"
+    },
+    {
+      "id": "prompt-engineering-plugin/prompt-engineering-ground-response",
+      "line": "prompt-engineering-plugin/prompt-engineering-ground-response: Citation-backed responses with direct"
+    },
+    {
+      "id": "prose-plugin/prose-distill",
+      "line": "prose-plugin/prose-distill: Prose distill: condense verbose text"
+    },
+    {
+      "id": "prose-plugin/prose-synthesize",
+      "line": "prose-plugin/prose-synthesize: Prose synthesize: turn unstructured"
+    },
+    {
+      "id": "python-plugin/basedpyright-type-checking",
+      "line": "python-plugin/basedpyright-type-checking: Basedpyright static type checker"
+    },
+    {
+      "id": "python-plugin/pytest-advanced",
+      "line": "python-plugin/pytest-advanced: Advanced pytest: fixtures, markers"
+    },
+    {
+      "id": "python-plugin/python-code-quality",
+      "line": "python-plugin/python-code-quality: Python code quality with ruff and ty"
+    },
+    {
+      "id": "python-plugin/python-development",
+      "line": "python-plugin/python-development: Core Python development idioms"
+    },
+    {
+      "id": "python-plugin/python-packaging",
+      "line": "python-plugin/python-packaging: Build and publish Python packages"
+    },
+    {
+      "id": "python-plugin/python-testing",
+      "line": "python-plugin/python-testing: Python testing with pytest, coverage"
+    },
+    {
+      "id": "python-plugin/ruff-formatting",
+      "line": "python-plugin/ruff-formatting: Python code formatting with ruff format"
+    },
+    {
+      "id": "python-plugin/ruff-linting",
+      "line": "python-plugin/ruff-linting: Python linting with ruff. Fast linting"
+    },
+    {
+      "id": "python-plugin/ty-type-checking",
+      "line": "python-plugin/ty-type-checking: ty: Astral's extremely fast Python type"
+    },
+    {
+      "id": "python-plugin/uv-advanced-dependencies",
+      "line": "python-plugin/uv-advanced-dependencies: Advanced uv dependencies: Git deps, path"
+    },
+    {
+      "id": "python-plugin/uv-project-management",
+      "line": "python-plugin/uv-project-management: Python project setup, deps,"
+    },
+    {
+      "id": "python-plugin/uv-python-versions",
+      "line": "python-plugin/uv-python-versions: Install and manage Python interpreter"
+    },
+    {
+      "id": "python-plugin/uv-run",
+      "line": "python-plugin/uv-run: Run Python scripts with uv (PEP 723"
+    },
+    {
+      "id": "python-plugin/uv-tool-management",
+      "line": "python-plugin/uv-tool-management: Install and manage global Python CLI"
+    },
+    {
+      "id": "python-plugin/uv-workspaces",
+      "line": "python-plugin/uv-workspaces: Manage multi-package Python projects"
+    },
+    {
+      "id": "python-plugin/vulture-dead-code",
+      "line": "python-plugin/vulture-dead-code: Vulture and deadcode tools for detecting"
+    },
+    {
+      "id": "rust-plugin/cargo-llvm-cov",
+      "line": "rust-plugin/cargo-llvm-cov: cargo-llvm-cov: Rust code coverage"
+    },
+    {
+      "id": "rust-plugin/cargo-machete",
+      "line": "rust-plugin/cargo-machete: cargo-machete: detect unused Rust"
+    },
+    {
+      "id": "rust-plugin/cargo-nextest",
+      "line": "rust-plugin/cargo-nextest: cargo-nextest: fast Rust test runner"
+    },
+    {
+      "id": "rust-plugin/cargo-worktree-builds",
+      "line": "rust-plugin/cargo-worktree-builds: Share one CARGO_TARGET_DIR across"
+    },
+    {
+      "id": "rust-plugin/clippy-advanced",
+      "line": "rust-plugin/clippy-advanced: Advanced Clippy configuration for Rust \u2014"
+    },
+    {
+      "id": "rust-plugin/mockito-http-mocking",
+      "line": "rust-plugin/mockito-http-mocking: mockito HTTP mocking for Rust"
+    },
+    {
+      "id": "rust-plugin/rust-development",
+      "line": "rust-plugin/rust-development: Rust development \u2014 cargo, clippy"
+    },
+    {
+      "id": "session-plugin/session-distill",
+      "line": "session-plugin/session-distill: Distill session insights into rules"
+    },
+    {
+      "id": "session-plugin/session-end",
+      "line": "session-plugin/session-end: End-of-session orchestrator. Previews"
+    },
+    {
+      "id": "session-plugin/session-spinup",
+      "line": "session-plugin/session-spinup: Read-only session-start briefing of open"
+    },
+    {
+      "id": "session-plugin/session-wrap",
+      "line": "session-plugin/session-wrap: End-of-session capture to taskwarrior"
+    },
+    {
+      "id": "software-design-plugin/design-by-contract",
+      "line": "software-design-plugin/design-by-contract: Design with explicit contracts \u2014"
+    },
+    {
+      "id": "software-design-plugin/design-deep-modules",
+      "line": "software-design-plugin/design-deep-modules: Judge interface depth \u2014 deep modules"
+    },
+    {
+      "id": "software-design-plugin/design-legacy-seams",
+      "line": "software-design-plugin/design-legacy-seams: Get legacy code under test before"
+    },
+    {
+      "id": "software-design-plugin/design-patterns",
+      "line": "software-design-plugin/design-patterns: Select a design pattern from a symptom \u2014"
+    },
+    {
+      "id": "software-design-plugin/design-pseudocode",
+      "line": "software-design-plugin/design-pseudocode: Design a routine by stepwise refinement"
+    },
+    {
+      "id": "taskwarrior-plugin/install-native-hooks",
+      "line": "taskwarrior-plugin/install-native-hooks: Install opt-in taskwarrior native"
+    },
+    {
+      "id": "taskwarrior-plugin/task-add",
+      "line": "taskwarrior-plugin/task-add: Add a taskwarrior task with blueprint"
+    },
+    {
+      "id": "taskwarrior-plugin/task-bulk-ops",
+      "line": "taskwarrior-plugin/task-bulk-ops: Batch taskwarrior operations without"
+    },
+    {
+      "id": "taskwarrior-plugin/task-claim",
+      "line": "taskwarrior-plugin/task-claim: Claim a taskwarrior task as in-flight"
+    },
+    {
+      "id": "taskwarrior-plugin/task-coordinate",
+      "line": "taskwarrior-plugin/task-coordinate: Surface next N unblocked taskwarrior"
+    },
+    {
+      "id": "taskwarrior-plugin/task-done",
+      "line": "taskwarrior-plugin/task-done: Close a taskwarrior task with landing"
+    },
+    {
+      "id": "taskwarrior-plugin/task-reconcile",
+      "line": "taskwarrior-plugin/task-reconcile: Close taskwarrior tasks whose linked"
+    },
+    {
+      "id": "taskwarrior-plugin/task-release",
+      "line": "taskwarrior-plugin/task-release: Release a taskwarrior task without"
+    },
+    {
+      "id": "taskwarrior-plugin/task-status",
+      "line": "taskwarrior-plugin/task-status: Read-only taskwarrior queue report \u2014"
+    },
+    {
+      "id": "terraform-plugin/infrastructure-terraform",
+      "line": "terraform-plugin/infrastructure-terraform: Terraform IaC: HCL, state management"
+    },
+    {
+      "id": "terraform-plugin/tfc-list-runs",
+      "line": "terraform-plugin/tfc-list-runs: List Terraform Cloud workspace runs"
+    },
+    {
+      "id": "terraform-plugin/tfc-plan-json",
+      "line": "terraform-plugin/tfc-plan-json: TFC plan JSON download and analysis"
+    },
+    {
+      "id": "terraform-plugin/tfc-run-logs",
+      "line": "terraform-plugin/tfc-run-logs: Retrieve plan and apply logs from"
+    },
+    {
+      "id": "terraform-plugin/tfc-run-status",
+      "line": "terraform-plugin/tfc-run-status: Terraform Cloud run status with resource"
+    },
+    {
+      "id": "terraform-plugin/tfc-workspace-runs",
+      "line": "terraform-plugin/tfc-workspace-runs: List TFC runs across known workspaces"
+    },
+    {
+      "id": "testing-plugin/mutation-testing",
+      "line": "testing-plugin/mutation-testing: Mutation testing with Stryker (TS/JS)"
+    },
+    {
+      "id": "testing-plugin/odiff-image-diffing",
+      "line": "testing-plugin/odiff-image-diffing: odiff pixel-by-pixel image diffing"
+    },
+    {
+      "id": "testing-plugin/playwright-cli",
+      "line": "testing-plugin/playwright-cli: Playwright CLI browser automation \u2014"
+    },
+    {
+      "id": "testing-plugin/playwright-testing",
+      "line": "testing-plugin/playwright-testing: Playwright E2E testing \u2014 cross-browser"
+    },
+    {
+      "id": "testing-plugin/property-based-testing",
+      "line": "testing-plugin/property-based-testing: Property-based testing with fast-check"
+    },
+    {
+      "id": "testing-plugin/test-analyze",
+      "line": "testing-plugin/test-analyze: Analyze test results and create a fix"
+    },
+    {
+      "id": "testing-plugin/test-consult",
+      "line": "testing-plugin/test-consult: Consult the test-architecture agent"
+    },
+    {
+      "id": "testing-plugin/test-focus",
+      "line": "testing-plugin/test-focus: Run one test file fail-fast for rapid"
+    },
+    {
+      "id": "testing-plugin/test-full",
+      "line": "testing-plugin/test-full: Run complete test suite in pyramid order"
+    },
+    {
+      "id": "testing-plugin/test-quality-analysis",
+      "line": "testing-plugin/test-quality-analysis: Detect test smells, overmocking, flaky"
+    },
+    {
+      "id": "testing-plugin/test-quick",
+      "line": "testing-plugin/test-quick: Run fast unit tests only, skip"
+    },
+    {
+      "id": "testing-plugin/test-report",
+      "line": "testing-plugin/test-report: Show cached test status without"
+    },
+    {
+      "id": "testing-plugin/test-run",
+      "line": "testing-plugin/test-run: Universal test runner auto-detecting"
+    },
+    {
+      "id": "testing-plugin/test-setup",
+      "line": "testing-plugin/test-setup: Configure testing infrastructure"
+    },
+    {
+      "id": "testing-plugin/test-strategy-review",
+      "line": "testing-plugin/test-strategy-review: Evaluate whether a test suite actually"
+    },
+    {
+      "id": "testing-plugin/test-tier-selection",
+      "line": "testing-plugin/test-tier-selection: Auto-select test tiers based on change"
+    },
+    {
+      "id": "testing-plugin/vitest-testing",
+      "line": "testing-plugin/vitest-testing: Vitest test runner \u2014 Vite-native, ESM"
+    },
+    {
+      "id": "tools-plugin/binary-analysis",
+      "line": "tools-plugin/binary-analysis: Binary analysis: strings, binwalk"
+    },
+    {
+      "id": "tools-plugin/cli-smoke-recipes",
+      "line": "tools-plugin/cli-smoke-recipes: CLI smoke recipes: expose pure-function"
+    },
+    {
+      "id": "tools-plugin/d2-diagrams",
+      "line": "tools-plugin/d2-diagrams: Generate diagrams from text using D2"
+    },
+    {
+      "id": "tools-plugin/deps-install",
+      "line": "tools-plugin/deps-install: Deps install: auto-detect package"
+    },
+    {
+      "id": "tools-plugin/fd-file-finding",
+      "line": "tools-plugin/fd-file-finding: fd fast file finding: smart defaults"
+    },
+    {
+      "id": "tools-plugin/generate-image",
+      "line": "tools-plugin/generate-image: Image generation via Gemini 3 Pro Image:"
+    },
+    {
+      "id": "tools-plugin/hf-downloads",
+      "line": "tools-plugin/hf-downloads: Hugging Face model downloads without"
+    },
+    {
+      "id": "tools-plugin/imagemagick-conversion",
+      "line": "tools-plugin/imagemagick-conversion: ImageMagick image manipulation: format"
+    },
+    {
+      "id": "tools-plugin/jq-json-processing",
+      "line": "tools-plugin/jq-json-processing: jq JSON processing: query, filter"
+    },
+    {
+      "id": "tools-plugin/justfile-expert",
+      "line": "tools-plugin/justfile-expert: Just command runner expertise \u2014 Justfile"
+    },
+    {
+      "id": "tools-plugin/mermaid-diagrams",
+      "line": "tools-plugin/mermaid-diagrams: Render Mermaid diagrams (mmdc)"
+    },
+    {
+      "id": "tools-plugin/nushell-data-processing",
+      "line": "tools-plugin/nushell-data-processing: Structured data processing with nushell"
+    },
+    {
+      "id": "tools-plugin/rg-code-search",
+      "line": "tools-plugin/rg-code-search: ripgrep (rg) fast code search: smart"
+    },
+    {
+      "id": "tools-plugin/shell-expert",
+      "line": "tools-plugin/shell-expert: Shell scripting: bash, zsh, POSIX, CLI"
+    },
+    {
+      "id": "tools-plugin/yq-yaml-processing",
+      "line": "tools-plugin/yq-yaml-processing: yq YAML processing: query, filter"
+    },
+    {
+      "id": "typescript-plugin/biome-tooling",
+      "line": "typescript-plugin/biome-tooling: Biome all-in-one JS/TS formatter"
+    },
+    {
+      "id": "typescript-plugin/bun-add",
+      "line": "typescript-plugin/bun-add: Bun add: install a package, add dev"
+    },
+    {
+      "id": "typescript-plugin/bun-build",
+      "line": "typescript-plugin/bun-build: Bun build: bundle or compile JS/TS"
+    },
+    {
+      "id": "typescript-plugin/bun-debug",
+      "line": "typescript-plugin/bun-debug: Bun debugger via --inspect"
+    },
+    {
+      "id": "typescript-plugin/bun-development",
+      "line": "typescript-plugin/bun-development: Bun runtime workflows for running"
+    },
+    {
+      "id": "typescript-plugin/bun-install",
+      "line": "typescript-plugin/bun-install: Bun install: install all deps from"
+    },
+    {
+      "id": "typescript-plugin/bun-lockfile-update",
+      "line": "typescript-plugin/bun-lockfile-update: Bun lockfile update (bun.lock): bun"
+    },
+    {
+      "id": "typescript-plugin/bun-outdated",
+      "line": "typescript-plugin/bun-outdated: Bun outdated: check which deps have"
+    },
+    {
+      "id": "typescript-plugin/bun-package-manager",
+      "line": "typescript-plugin/bun-package-manager: Fast JavaScript package management"
+    },
+    {
+      "id": "typescript-plugin/bun-publish",
+      "line": "typescript-plugin/bun-publish: Bun publish to npm"
+    },
+    {
+      "id": "typescript-plugin/bun-publishing",
+      "line": "typescript-plugin/bun-publishing: Publish npm packages built with Bun:"
+    },
+    {
+      "id": "typescript-plugin/bun-test",
+      "line": "typescript-plugin/bun-test: Bun test runner with compact"
+    },
+    {
+      "id": "typescript-plugin/knip-dead-code",
+      "line": "typescript-plugin/knip-dead-code: Knip dead-code detector for JS/TS:"
+    },
+    {
+      "id": "typescript-plugin/nodejs-development",
+      "line": "typescript-plugin/nodejs-development: Node.js development with Bun, Vite, Vue"
+    },
+    {
+      "id": "typescript-plugin/typescript-debugging",
+      "line": "typescript-plugin/typescript-debugging: Modern TypeScript/JavaScript debugging"
+    },
+    {
+      "id": "typescript-plugin/typescript-sentry",
+      "line": "typescript-plugin/typescript-sentry: Error monitoring and performance"
+    },
+    {
+      "id": "typescript-plugin/typescript-strict",
+      "line": "typescript-plugin/typescript-strict: TypeScript strict mode: tsconfig.json"
+    },
+    {
+      "id": "workflow-orchestration-plugin/workflow-checkpoint-refactor",
+      "line": "workflow-orchestration-plugin/workflow-checkpoint-refactor: Multi-phase refactoring with checkpoint"
+    },
+    {
+      "id": "workflow-orchestration-plugin/workflow-preflight",
+      "line": "workflow-orchestration-plugin/workflow-preflight: Pre-work validation before"
+    },
+    {
+      "id": "workflow-orchestration-plugin/workflow-verify-before-filing",
+      "line": "workflow-orchestration-plugin/workflow-verify-before-filing: Verify accumulated bug claims at"
+    },
+    {
+      "id": "workflow-orchestration-plugin/workflow-wave-dispatch",
+      "line": "workflow-orchestration-plugin/workflow-wave-dispatch: Sequential-wave dispatch for multi-agent"
+    }
+  ]
+}

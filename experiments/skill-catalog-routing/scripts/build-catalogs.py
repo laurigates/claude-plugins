@@ -163,6 +163,66 @@ def shorten(desc: str) -> tuple[str, str, str]:
     return short, medium, "mechanical"
 
 
+def _domain_of(desc: str) -> str:
+    """The capability/domain phrase: everything BEFORE the 'Use when' clause.
+
+    Descriptions are '<domain>. Use when <triggers>.' — the domain sentence
+    ('ripgrep fast code search: smart defaults, regex, file filtering') is what
+    the trigger-first short/medium variants dropped. Returns the whole
+    description when there is no 'Use when' marker.
+    """
+    m = _USE_WHEN_RE.search(desc)
+    head = desc[: m.start()] if m else desc
+    return head.strip().rstrip(" .;,")
+
+
+def domain_shorten(desc: str) -> tuple[str, str, str]:
+    """Return (domain_short ≤40c, domain_medium ≤80c, provenance).
+
+    The DOMAIN-preserving counterpart of shorten(): keep the capability phrase,
+    drop the 'Use when' trigger tail. Token-matched to short/medium so the A/B
+    is domain-first vs trigger-first at equal budget. These deliberately do NOT
+    carry 'Use when' — the experiment measures routing signal, not the
+    production auto-invocation matcher (see compact_shorten for that).
+    """
+    domain = _domain_of(desc)
+    if not domain:
+        # Degenerate: 'Use when' at position 0. Fall back to the trigger form.
+        s, m_, _ = shorten(desc)
+        return s, m_, "domain-fallback"
+    d_medium = _truncate_word_boundary(domain, MEDIUM_MAX)
+    d_short = _truncate_word_boundary(domain, SHORT_MAX)
+    return d_short, d_medium, "domain"
+
+
+def compact_shorten(desc: str) -> tuple[str, str]:
+    """Return (compact_text ≤80c, provenance) — the production recommendation
+    candidate: a short domain head PLUS 'Use when <first trigger>', keeping the
+    literal 'Use when' so it stays valid for the real auto-invocation matcher
+    (#1278). Best-of-both: capability phrase for routing + trigger for the
+    matcher, within the medium budget.
+    """
+    domain = _domain_of(desc)
+    short_trigger, _, prov = shorten(desc)  # "Use when <first scenario>" ≤40
+    if prov != "mechanical" or not domain:
+        # No clean domain+trigger split — fall back to the medium trigger form.
+        _, medium, _ = shorten(desc)
+        return _truncate_word_boundary(medium, MEDIUM_MAX), "compact-fallback"
+    # Budget the domain head so "domain: Use when <trigger>" fits ≤80.
+    # Reserve room for ": " + the trigger clause.
+    reserve = len(short_trigger) + 2
+    head_budget = max(0, MEDIUM_MAX - reserve)
+    head = _truncate_word_boundary(domain, head_budget)
+    # Strip a trailing dangling separator (em/en-dash, colon) left by truncating
+    # the domain mid-phrase, so the join reads "<head>: Use when ..." cleanly.
+    head = head.rstrip(" —–-:;,.").strip()
+    if head:
+        combined = f"{head}: {short_trigger}"
+    else:
+        combined = short_trigger
+    return _truncate_word_boundary(combined, MEDIUM_MAX), "compact"
+
+
 def build() -> tuple[list[dict], str]:
     sha = "unknown"
     try:
@@ -182,15 +242,21 @@ def build() -> tuple[list[dict], str]:
             rid = routing_id(path)
             rows.append({
                 "id": rid, "full": "", "medium": "", "short": "",
+                "domain-short": "", "domain-medium": "", "compact": "",
                 "provenance": "empty", "full_len": 0,
             })
             continue
         short, medium, provenance = shorten(desc)
+        d_short, d_medium, _ = domain_shorten(desc)
+        compact, _ = compact_shorten(desc)
         rows.append({
             "id": routing_id(path),
             "full": desc,
             "medium": medium,
             "short": short,
+            "domain-short": d_short,
+            "domain-medium": d_medium,
+            "compact": compact,
             "provenance": provenance,
             "full_len": len(desc),
         })
@@ -208,6 +274,9 @@ def write_catalogs(rows: list[dict], sha: str) -> dict[str, str]:
         "short": lambda r: _line(r["id"], r["short"]),
         "medium": lambda r: _line(r["id"], r["medium"]),
         "full": lambda r: _line(r["id"], r["full"]),
+        "domain-short": lambda r: _line(r["id"], r["domain-short"]),
+        "domain-medium": lambda r: _line(r["id"], r["domain-medium"]),
+        "compact": lambda r: _line(r["id"], r["compact"]),
     }
     hashes = {}
     for variant, render in variants.items():
@@ -269,6 +338,23 @@ def validate(rows: list[dict]) -> int:
         # Monotonicity: short must be a prefix of medium (token-subset).
         if r["short"] and not r["medium"].startswith(r["short"]):
             fail(f"{r['id']} short is not a prefix of medium:\n  short={r['short']!r}\n  medium={r['medium']!r}")
+
+        # Domain-preserving variants: band ceilings + monotone within the domain
+        # ladder. These deliberately do NOT carry 'Use when' (they keep the
+        # capability phrase instead of the trigger tail).
+        if len(r["domain-short"]) > SHORT_MAX:
+            fail(f"{r['id']} domain-short exceeds {SHORT_MAX}c: {len(r['domain-short'])}")
+        if len(r["domain-medium"]) > MEDIUM_MAX:
+            fail(f"{r['id']} domain-medium exceeds {MEDIUM_MAX}c: {len(r['domain-medium'])}")
+        if r["domain-short"] and not r["domain-medium"].startswith(r["domain-short"]):
+            fail(f"{r['id']} domain-short is not a prefix of domain-medium:\n  ds={r['domain-short']!r}\n  dm={r['domain-medium']!r}")
+        # Compact: within the medium ceiling and MUST keep the literal 'Use when'
+        # (it is the best-of-both form intended to stay matcher-valid, #1278)
+        # — except where the source had no clean domain+trigger split.
+        if len(r["compact"]) > MEDIUM_MAX:
+            fail(f"{r['id']} compact exceeds {MEDIUM_MAX}c: {len(r['compact'])}")
+        if r["provenance"] == "mechanical" and _domain_of(r["full"]) and "use when" not in r["compact"].lower():
+            fail(f"{r['id']} compact lost 'Use when': {r['compact']!r}")
 
     total = len(rows)
     print(f"Validated {total} skills; {failures} failures.", file=sys.stderr)

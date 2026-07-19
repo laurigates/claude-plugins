@@ -25,9 +25,19 @@ sees. Each shorter band is a genuine token-subset of the next.
 |-----|---------|-------------------|------|
 | C0 | none (task only) | 0 | null control (free-recall) |
 | C1 | names only | ~4.2k | isolates the value of descriptions |
-| C2 | names + `Use when <first trigger>` ≤40c | measured | minimal trigger |
-| C3 | names + `Use when <triggers>` ≤80c | measured | mid |
+| C2 | names + `Use when <first trigger>` ≤40c | ~7.2k | minimal trigger (trigger-first) |
+| C2d | names + capability phrase ≤40c | ~7.9k | domain-first, token-matched to C2 |
+| C3 | names + `Use when <triggers>` ≤80c | ~11.0k | mid (trigger-first) |
+| C3d | names + capability phrase ≤80c | ~10.8k | domain-first, token-matched to C3 |
+| C5 | names + capability head + `Use when <trigger>` ≤80c | ~11.5k | compact best-of-both (keeps `Use when`) |
 | C4 | names + full description (current) | ~20.7k | upper anchor (status quo) |
+
+The `C2d`/`C3d`/`C5` arms are the **domain-preserving** follow-up: the haiku
+ladder showed trigger-only shortening (`C2`/`C3`) stalls because it drops the
+leading capability/domain phrase. `C2d`/`C3d` keep that phrase instead (dropping
+the `Use when` tail) at equal budget; `C5` keeps a compressed capability head
+**plus** a `Use when` trigger so it also stays valid for the real auto-invocation
+matcher. `build-catalogs.py` emits all seven catalog variants.
 
 **Measured base**: a router with no catalog costs ~23k input tokens (the user's
 global `~/.claude` memory, a fixed additive constant across all arms). Adding the

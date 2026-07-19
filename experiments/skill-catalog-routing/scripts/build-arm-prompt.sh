@@ -22,30 +22,25 @@ out="$out_dir/system.$variant.md"
 [ -f "$router" ] || { echo "ERROR: router prompt not found: $router" >&2; exit 1; }
 mkdir -p "$out_dir"
 
-case "$variant" in
-  none)
-    # C0 — no catalog. Router prompt only.
-    cp "$router" "$out"
-    ;;
-  names|short|medium|full)
-    catalog="$root/catalogs/catalog.$variant.json"
-    [ -f "$catalog" ] || { echo "ERROR: catalog not found: $catalog — run build-catalogs.py first" >&2; exit 1; }
-    {
-      cat "$router"
-      printf '\n\n## Available skills\n\n'
-      # One skill per line, exactly as stored in the catalog's `line` field.
-      python3 -c '
+if [ "$variant" = "none" ]; then
+  # C0 — no catalog. Router prompt only.
+  cp "$router" "$out"
+else
+  # Any variant whose catalog file exists (names/short/medium/full/domain-*/
+  # compact/…). New variants need no edit here — just a built catalog.
+  catalog="$root/catalogs/catalog.$variant.json"
+  [ -f "$catalog" ] || { echo "ERROR: catalog not found: $catalog — run build-catalogs.py first (unknown variant '$variant'?)" >&2; exit 1; }
+  {
+    cat "$router"
+    printf '\n\n## Available skills\n\n'
+    # One skill per line, exactly as stored in the catalog's `line` field.
+    python3 -c '
 import json, sys
 data = json.load(open(sys.argv[1]))
 for e in data["entries"]:
     print(e["line"])
 ' "$catalog"
-    } > "$out"
-    ;;
-  *)
-    echo "ERROR: unknown catalog variant: $variant" >&2
-    exit 1
-    ;;
-esac
+  } > "$out"
+fi
 
 printf '%s\n' "$out"
