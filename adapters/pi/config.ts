@@ -20,6 +20,16 @@ import { DEFAULT_ENDPOINT, DEFAULT_K, DEFAULT_MODEL } from "../core/index.ts";
 
 export const CONFIG_FILE_NAME = "skill-discovery.json";
 
+/**
+ * pi's config dir name, hardcoded deliberately: pi exports `CONFIG_DIR_NAME`
+ * for this (pi-api.md §1), but it is a runtime *value* export and the DESIGN
+ * §1.2 import-surface restriction (enforced by the static check in
+ * tests/indexer.test.ts) allows only type-only imports from
+ * `@earendil-works/pi-coding-agent`. If pi ever renames the dir, this one
+ * constant is the only line to change.
+ */
+export const PI_CONFIG_DIR = ".pi";
+
 export interface SkillDiscoveryConfig {
   /** Marketplace checkout root; default derived from the extension's own location. */
   repoRoot: string;
@@ -135,8 +145,8 @@ export function loadConfig(opts: {
   globalPath?: string;
   projectPath?: string;
 }): LoadedConfig {
-  const globalPath = opts.globalPath ?? join(homedir(), ".pi", "agent", CONFIG_FILE_NAME);
-  const projectPath = opts.projectPath ?? join(process.cwd(), ".pi", CONFIG_FILE_NAME);
+  const globalPath = opts.globalPath ?? join(homedir(), PI_CONFIG_DIR, "agent", CONFIG_FILE_NAME);
+  const projectPath = opts.projectPath ?? join(process.cwd(), PI_CONFIG_DIR, CONFIG_FILE_NAME);
   const warnings: string[] = [];
 
   const readPartial = (path: string): Partial<SkillDiscoveryConfig> => {

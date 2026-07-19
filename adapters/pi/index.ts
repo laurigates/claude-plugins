@@ -103,6 +103,29 @@ export interface PushContext {
   config: SkillDiscoveryConfig;
 }
 
+/** Session warning emitted once when the index degraded to BM25-only (DESIGN §2.5). */
+export const BM25_ONLY_MODE_WARNING =
+  "embedding endpoint unreachable — degraded to BM25-only ranking for this session";
+
+/**
+ * Emit each not-yet-seen warning once, prefixed for attribution. pi exposes
+ * no extension-facing logging API (pi-api.md), so the default sink is
+ * `console.warn` — extension code runs in pi's process, where stderr reaches
+ * the user. The `seen` set is session-scoped (cleared on session_shutdown)
+ * so per-turn pin warnings do not repeat every turn.
+ */
+export function emitWarningsOnce(
+  seen: Set<string>,
+  warnings: readonly string[],
+  sink: (message: string) => void = (message) => console.warn(message),
+): void {
+  for (const warning of warnings) {
+    if (seen.has(warning)) continue;
+    seen.add(warning);
+    sink(`skill-discovery: ${warning}`);
+  }
+}
+
 /**
  * Build the per-turn system prompt: strip the native listing, rank against
  * the user prompt, inject pins + ranked top-k (pins first, deduped via the
@@ -132,9 +155,15 @@ export async function buildTurnSystemPrompt(
 export async function handleBeforeAgentStart(
   event: { prompt: string; systemPrompt: string },
   ctx: PushContext,
+  onWarnings?: (warnings: string[]) => void,
 ): Promise<{ systemPrompt: string } | undefined> {
   if (!ctx.config.push) return undefined;
-  const { systemPrompt } = await buildTurnSystemPrompt(event.systemPrompt, event.prompt, ctx);
+  const { systemPrompt, warnings } = await buildTurnSystemPrompt(
+    event.systemPrompt,
+    event.prompt,
+    ctx,
+  );
+  if (warnings.length > 0) onWarnings?.(warnings);
   return { systemPrompt };
 }
 
@@ -143,13 +172,15 @@ export async function handleBeforeAgentStart(
  * `details: {}` is always present — the AgentToolResult type declares it
  * required while docs examples omit it, so the defensive choice is to always
  * supply it. Failures throw (pi's convention) rather than being encoded in
- * content.
+ * content. `defaultK` is the config-level default (config.k, which is also
+ * the push top-k); an explicit `params.k` from the model always wins.
  */
 export async function runSearchSkills(
   index: Pick<SkillSearchIndex, "search">,
   params: { query: string; k?: number },
+  defaultK: number = DEFAULT_K,
 ): Promise<{ content: Array<{ type: "text"; text: string }>; details: Record<string, never> }> {
-  const results = await index.search(params.query, params.k ?? DEFAULT_K);
+  const results = await index.search(params.query, params.k ?? defaultK);
   return { content: [{ type: "text", text: renderToolResult(results) }], details: {} };
 }
 
@@ -211,19 +242,37 @@ const skillDiscovery = async (pi: ExtensionAPI): Promise<void> => {
 
   let loaded: { config: SkillDiscoveryConfig; warnings: string[] } | null = null;
   let indexPromise: Promise<SkillIndex> | null = null;
+  /** Warnings already surfaced this session — emitted once, not per turn. */
+  const warned = new Set<string>();
 
   const getConfig = (): SkillDiscoveryConfig => {
     loaded ??= loadConfig({ defaultRepoRoot: DEFAULT_REPO_ROOT });
+    // Surface config-file warnings ("ignored with a warning" is the
+    // documented fail-safe contract); the dedupe set makes this once per
+    // session even though getConfig runs every turn.
+    emitWarningsOnce(warned, loaded.warnings);
     return loaded.config;
   };
 
   const ensureIndex = (): Promise<SkillIndex> => {
     if (indexPromise === null) {
       const config = getConfig();
-      indexPromise = buildIndex({
+      const built = buildIndex({
         repoRoot: config.repoRoot,
         embed: { endpoint: config.endpoint, model: config.model },
+      }).then((index) => {
+        // DESIGN §2.5: degradation is silent in the core; the binding logs
+        // the resolved mode once.
+        if (index.mode === "bm25-only") emitWarningsOnce(warned, [BM25_ONLY_MODE_WARNING]);
+        return index;
       });
+      // A rejected build must not poison the whole session: clear the cache
+      // so the next call retries, while the current caller still sees the
+      // original rejection. Identity-guarded so a newer retry isn't clobbered.
+      built.catch(() => {
+        if (indexPromise === built) indexPromise = null;
+      });
+      indexPromise = built;
     }
     return indexPromise;
   };
@@ -244,7 +293,9 @@ const skillDiscovery = async (pi: ExtensionAPI): Promise<void> => {
       "After search_skills returns, read the SKILL.md path of the best match before acting.",
     ],
     async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
-      return runSearchSkills(await ensureIndex(), params);
+      // config.k is the tool's default k too (config.ts / README contract);
+      // an explicit params.k from the model wins.
+      return runSearchSkills(await ensureIndex(), params, getConfig().k);
     },
   });
 
@@ -255,6 +306,7 @@ const skillDiscovery = async (pi: ExtensionAPI): Promise<void> => {
   pi.on("session_shutdown", () => {
     loaded = null;
     indexPromise = null;
+    warned.clear();
   });
 
   pi.on("before_agent_start", async (event) => {
@@ -263,6 +315,7 @@ const skillDiscovery = async (pi: ExtensionAPI): Promise<void> => {
     return handleBeforeAgentStart(
       { prompt: event.prompt, systemPrompt: event.systemPrompt },
       { index, config },
+      (warnings) => emitWarningsOnce(warned, warnings),
     );
   });
 };

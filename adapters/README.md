@@ -7,11 +7,13 @@ top-k push injection instead of an uncapped static listing; delivery is
 always the model **reading the SKILL.md path** — skills are never copied.
 
 Architecture: [`docs/adrs/0022-adapter-over-export-for-foreign-harnesses.md`](../docs/adrs/0022-adapter-over-export-for-foreign-harnesses.md).
-Scope here (#2089): `core/` + `eval/` + tests. The harness bindings are
-**landing in [#2090](https://github.com/laurigates/claude-plugins/issues/2090)
-(pi) and [#2091](https://github.com/laurigates/claude-plugins/issues/2091)
-(OpenCode)** — the consumer wiring below is documented ahead so the shape is
-stable, but the binding files do not exist yet.
+`core/` + `eval/` + tests landed in
+[#2089](https://github.com/laurigates/claude-plugins/issues/2089); the pi
+binding (`pi/`) landed in
+[#2090](https://github.com/laurigates/claude-plugins/issues/2090). The
+OpenCode binding
+([#2091](https://github.com/laurigates/claude-plugins/issues/2091)) is
+documented ahead so the shape is stable, but its files do not exist yet.
 
 ## Layout
 
@@ -97,7 +99,9 @@ bundled copies); the install still matters for type-checking and tests.
 ```
 
   Unknown pins warn and are skipped; malformed config files are ignored
-  with a warning (never fatal to the session).
+  with a warning (never fatal to the session). Warnings — including the
+  BM25-only degradation notice when the embedding endpoint is unreachable —
+  are emitted once per session on stderr, prefixed `skill-discovery:`.
 - Run consumers with no natively installed marketplace skills; `--no-skills`
   is optional (the binding never feeds the native loader).
 

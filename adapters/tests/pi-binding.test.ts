@@ -27,9 +27,11 @@ import {
   resolvePins,
 } from "../pi/config.ts";
 import skillDiscovery, {
+  BM25_ONLY_MODE_WARNING,
   buildTurnSystemPrompt,
   CWD_MARKER,
   DEFAULT_REPO_ROOT,
+  emitWarningsOnce,
   handleBeforeAgentStart,
   injectSkillsBlock,
   runSearchSkills,
@@ -254,6 +256,18 @@ describe("runSearchSkills", () => {
     expect(index.calls[0]?.k).toBe(2);
   });
 
+  test("configured default k (config.k) is used when params.k is absent", async () => {
+    const index = stubIndex();
+    await runSearchSkills(index, { query: "q" }, 9);
+    expect(index.calls[0]?.k).toBe(9);
+  });
+
+  test("explicit params.k wins over the configured default", async () => {
+    const index = stubIndex();
+    await runSearchSkills(index, { query: "q", k: 2 }, 9);
+    expect(index.calls[0]?.k).toBe(2);
+  });
+
   test("failures propagate as thrown errors, never encoded in content", async () => {
     const failing: Pick<SkillSearchIndex, "search"> = {
       search: async () => {
@@ -299,6 +313,29 @@ describe("buildTurnSystemPrompt / handleBeforeAgentStart", () => {
     expect(warnings[0]).toContain("nope:missing");
   });
 
+  test("pin warnings are forwarded to the onWarnings callback", async () => {
+    const index = stubIndex();
+    const received: string[][] = [];
+    await handleBeforeAgentStart(
+      { prompt: "q", systemPrompt: PROMPT_WITHOUT_BLOCK },
+      { index, config: { ...config, pins: ["nope:missing"] } },
+      (warnings) => received.push(warnings),
+    );
+    expect(received).toHaveLength(1);
+    expect(received[0]?.[0]).toContain("nope:missing");
+  });
+
+  test("onWarnings is not called when there are no warnings", async () => {
+    const index = stubIndex();
+    const received: string[][] = [];
+    await handleBeforeAgentStart(
+      { prompt: "q", systemPrompt: PROMPT_WITHOUT_BLOCK },
+      { index, config },
+      (warnings) => received.push(warnings),
+    );
+    expect(received).toHaveLength(0);
+  });
+
   test("push: false yields undefined (pull-only mode)", async () => {
     const index = stubIndex();
     const result = await handleBeforeAgentStart(
@@ -321,6 +358,26 @@ describe("buildTurnSystemPrompt / handleBeforeAgentStart", () => {
     expect(result?.systemPrompt).toContain(AVAILABLE_SKILLS_OPEN);
     expect(event.systemPrompt).toBe(PROMPT_WITH_BLOCK); // input untouched
     expect(systemPromptOptions).toEqual({ cwd: "/work/dir" });
+  });
+});
+
+// --- session warning emission ---------------------------------------------
+
+describe("emitWarningsOnce", () => {
+  test("emits each warning once with the skill-discovery prefix", () => {
+    const seen = new Set<string>();
+    const sunk: string[] = [];
+    emitWarningsOnce(seen, ["bad config", "unknown pin"], (m) => sunk.push(m));
+    emitWarningsOnce(seen, ["bad config", "unknown pin"], (m) => sunk.push(m)); // repeat turn
+    expect(sunk).toEqual(["skill-discovery: bad config", "skill-discovery: unknown pin"]);
+  });
+
+  test("new warnings still emit after earlier ones were seen", () => {
+    const seen = new Set<string>();
+    const sunk: string[] = [];
+    emitWarningsOnce(seen, ["first"], (m) => sunk.push(m));
+    emitWarningsOnce(seen, ["first", BM25_ONLY_MODE_WARNING], (m) => sunk.push(m));
+    expect(sunk).toEqual(["skill-discovery: first", `skill-discovery: ${BM25_ONLY_MODE_WARNING}`]);
   });
 });
 
