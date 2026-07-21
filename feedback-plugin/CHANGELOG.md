@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.2](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.10.1...feedback-plugin-v1.10.2) (2026-07-21)
+
+
+### Code Refactoring
+
+* **feedback-plugin:** drop inert memory: user from friction-learner ([#2125](https://github.com/laurigates/claude-plugins/issues/2125)) ([4339a9e](https://github.com/laurigates/claude-plugins/commit/4339a9e7374f68baa8413e1cb392665a6eea902a))
+
 ## [1.10.1](https://github.com/laurigates/claude-plugins/compare/feedback-plugin-v1.10.0...feedback-plugin-v1.10.1) (2026-07-04)
 
 
