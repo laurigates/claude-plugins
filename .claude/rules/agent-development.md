@@ -1,7 +1,7 @@
 ---
 created: 2026-02-25
-modified: 2026-07-03
-reviewed: 2026-07-04
+modified: 2026-07-21
+reviewed: 2026-07-21
 paths:
   - "**/agents/**"
   - "**/git_repo_agent/**"
@@ -311,6 +311,15 @@ When `git worktree remove` fails (e.g., gitignored build artifacts or in-progres
 
 ## Persistent Agent Memory
 
+> **This repo deliberately does not use agent `memory:` (and keeps Claude's auto
+> memory disabled).** Durable knowledge lives in **curated rules and skills** —
+> version-controlled, reviewable, and deliberately steerable — not in an opaque
+> per-agent `MEMORY.md` that accretes without a gate. This is `docs/PRINCIPLES.md`
+> §5 ("Codify the fix; don't promise to remember"): the substrate remembers so
+> the agent doesn't have to. The section below documents the Claude Code feature
+> for completeness; treat it as reference, not a recommendation. No agent in this
+> repo sets `memory:`, and no `MEMORY.md` is tracked.
+
 The `memory` field enables per-agent persistent memory that survives across conversations:
 
 ```yaml
@@ -318,7 +327,6 @@ The `memory` field enables per-agent persistent memory that survives across conv
 name: code-reviewer
 memory: user
 ---
-Update your agent memory with patterns, conventions, and recurring issues you discover.
 ```
 
 | Scope | Location | Use When |
@@ -355,7 +363,7 @@ For rules an agent **must not forget** between threads — the friction-mining o
 
 ### Auto Memory Pattern
 
-The auto memory directory (`~/.claude/projects/<project>/memory/`) is loaded into every conversation. Use it to persist cross-session knowledge:
+Claude's auto memory directory (`~/.claude/projects/<project>/memory/`) is loaded into every conversation when enabled:
 
 ```
 ~/.claude/projects/<project>/memory/
@@ -364,7 +372,7 @@ The auto memory directory (`~/.claude/projects/<project>/memory/`) is loaded int
 └── debugging.md       # Project-specific debugging notes
 ```
 
-Agents can read and write to auto memory files to build on knowledge across sessions.
+**This repo keeps auto memory disabled** and captures cross-session knowledge as curated rules and skills instead (see the stance note under "Persistent Agent Memory" above, and `session-plugin:session-distill` for the capture→rule/skill path). The pattern is documented here as reference only.
 
 ## Agent Teams (Multi-Agent Collaboration)
 
