@@ -19,6 +19,7 @@ OpenCode binding (`opencode/`) in
 | Path | What |
 |------|------|
 | `core/` | Indexer (marketplace scan + DIY frontmatter parse + compatibility filter), BM25 (Lucene IDF, k1=1.2, b=0.75), ollama `/api/embed` client (`search_document:`/`search_query:` prefixes, BM25 fallback), RRF fusion (k=60), L2-normalized Float32Array vector index, XDG content-hash embedding cache, shared render templates |
+| `CUTOVER.md` | The #2093/#2094 gate: measurement procedure, the frozen threshold + provenance, the hybrid-integrity guards, and the refuted gate constructions |
 | `eval/` | `tasks.json` (committed golden task set, k=5), `run-eval.ts` runner, ranker seam (`hybrid \| bm25Only \| embeddingOnly \| random(seed) \| oracle \| nameSubstring \| descriptionSubstring`), baseline derivation (`pi/tiers.yaml` + the export-opencode glob, computed offline), `results/` (gitignored per-run output) |
 | `pi/` | pi binding (#2090) — default-exported extension factory: `search_skills` pull tool + `before_agent_start` push injection, `skill-discovery.json` config |
 | `opencode/` | OpenCode binding (#2091) — named `SkillDiscoveryPlugin` plugin: `search_skills` tool (pull), `experimental.chat.system.transform` push injection + defensive listing strip, `experimental.chat.messages.transform` ranking-input capture, `[path, options]` tuple config |
@@ -165,22 +166,49 @@ in-repo).
 `bun eval/run-eval.ts` emits the structured contract (DESIGN §5.3):
 
 ```
-=== RETRIEVAL_IN_TIER === HIT_AT_1= HIT_AT_K= MRR= BASELINE_ARM=PRESENT|ABSENT
-=== RETRIEVAL_EXCLUDED_STRATUM === HIT_AT_1= HIT_AT_K= MRR=
+=== EVAL === MODE=hybrid|bm25-only K= TASKS= DEGRADED_QUERIES=
+=== RETRIEVAL_MAIN === HIT_AT_1= HIT_AT_K= MRR= TASKS=
+=== RETRIEVAL_HEADROOM === HIT_AT_1= HIT_AT_K= MRR= TASKS=
 === NEGATIVES === TOP1_MARGIN_NEG_P50= ... (report-only)
-=== TOKENS === BASELINE_PI_TOKENS= BASELINE_OC_TOKENS_ESTIMATED= ADAPTER_TOKENS=
-=== CUTOVER === STATUS=UNFROZEN|PASS|FAIL   (informational; frozen only by the §5.6 procedure)
-=== GATE === STATUS=PASS|FAIL               (machinery only — the CI assertion)
+=== TOKENS === BASELINE_PI_TOKENS= BASELINE_OC_TOKENS_ESTIMATED= ADAPTER_TOKENS= BASELINE_ARM=PRESENT|ABSENT
+=== CUTOVER === STATUS=UNFROZEN|PASS|FAIL|NA_BM25   (informational; see CUTOVER.md)
+=== GATE === STATUS=PASS|FAIL                       (machinery only — the CI assertion)
 ```
+
+The two strata are pinned to the task set's own `stratum:` tags, never derived
+from `pi/tiers.yaml` — `RETRIEVAL_MAIN` is paraphrase + ambiguity + terse (55
+tasks), `RETRIEVAL_HEADROOM` is `stratum:excluded` (8). `MAIN` means exactly
+*retrieval quality on the main positives* and asserts nothing about any
+baseline. The threshold is hybrid-scoped, so the BM25-only CI run reports
+`CUTOVER STATUS=NA_BM25` rather than a bogus `FAIL`.
 
 Retrieval/token metrics are informational in CI; the correctness teeth are
 the meta-tests in `tests/eval-meta.test.ts` (random-fails-every-seed /
 oracle-passes, substring-ranker separation, per-skill token calibration
-111±20%, trigram leakage lint, schema checks). The #2093/#2094 cutover
-thresholds are frozen only by the documented local hybrid-simulation
-procedure, never by CI. `BASELINE_OC_TOKENS_ESTIMATED` is a pi-template
-proxy, uncalibrated — a real OpenCode measurement session is a #2094
-prerequisite.
+111±20%, trigram leakage lint, schema checks, hybrid-integrity guards).
+The #2093/#2094 cutover threshold is frozen only by the local procedure in
+[`CUTOVER.md`](CUTOVER.md), never by CI. `BASELINE_OC_TOKENS_ESTIMATED` is a
+pi-template proxy, uncalibrated — a real OpenCode measurement session is a
+#2094 prerequisite.
+
+## Freezing the cutover threshold
+
+Full procedure, guards, and the refuted constructions:
+[`CUTOVER.md`](CUTOVER.md). Frozen 2026-07-22 at `main_hit_at_k_min = 0.57`
+(measured 0.6727 hybrid). The measurement:
+
+```
+ollama pull nomic-embed-text
+mv "${XDG_CACHE_HOME:-$HOME/.cache}/claude-plugins-adapters/embeddings" /tmp/emb-bak
+cd adapters && bun eval/run-eval.ts --with-embeddings
+```
+
+A run is admissible only if the *same* run reports `MODE=hybrid`,
+`DEGRADED_QUERIES=0`, and `GATE STATUS=PASS`. Three guards make a fake hybrid
+run a `GATE FAIL` instead of a silent pass: the mode check (both directions),
+the per-query degradation counter (`core/search.ts` swallows those failures
+for the shipping path, so `mode` alone is not sufficient), and a score-shape
+check (RRF caps at 0.0333; raw BM25 tops ~1–10).
 
 To regenerate the BM25 reference fixture (only when deliberately taking a
 fresh corpus snapshot): `uv run tests/gen-bm25-reference.py`.
@@ -193,5 +221,6 @@ fresh corpus snapshot): `uv run tests/gen-bm25-reference.py`.
   from this checkout.
 - Not a replacement for the still-operational `pi/tiers.yaml` +
   `scripts/install-pi.sh` and rulesync export pipelines — those stay
-  authoritative until the eval gate passes and #2093/#2094 execute their
-  documented cutover steps.
+  authoritative until #2093/#2094 execute their documented cutover steps.
+  The eval gate now passes (frozen 2026-07-22), so those issues are
+  unblocked, but nothing in this package removes the incumbents.
