@@ -191,10 +191,10 @@ jobs:
           version: "latest"
 
       - name: Run Ruff Linter
-        run: uv run ruff check .
+        run: uvx ruff check .
 
       - name: Run Ruff Formatter Check
-        run: uv run ruff format --check .
+        run: uvx ruff format --check .
 
       - name: Install actionlint
         # GitHub Actions YAML schema/best-practice lint — the one workflow gate
