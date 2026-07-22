@@ -1,8 +1,9 @@
 /**
  * Eval meta-tests (DESIGN §5.5) — the CI teeth, per
  * validate-adversarial-constructions (both halves: broken-fails AND
- * correct-passes). The cutover comparison itself is the §5.6 local
- * procedure, not CI.
+ * correct-passes). The cutover comparison itself is the local procedure in
+ * adapters/CUTOVER.md, not CI — but the guards that make that procedure
+ * trustworthy (describe 6) are CI teeth like the rest.
  */
 
 import { beforeAll, describe, expect, test } from "bun:test";
@@ -28,7 +29,15 @@ import {
   oracleRanker,
   randomRanker,
 } from "../eval/rankers.ts";
-import { loadTaskSet, TASKS_PATH, validateTaskSet } from "../eval/run-eval.ts";
+import {
+  computeCutoverStatus,
+  loadTaskSet,
+  partitionByStratum,
+  runEval,
+  TASKS_PATH,
+  type TaskScore,
+  validateTaskSet,
+} from "../eval/run-eval.ts";
 
 const REPO_ROOT = resolve(import.meta.dir, "..", "..");
 
@@ -233,5 +242,200 @@ describe("4. leakage lint (deterministic)", () => {
       }
     }
     expect(offenders).toEqual([]);
+  });
+});
+
+describe("6. hybrid-integrity guards", () => {
+  const stub = (task: EvalTask): TaskScore => ({
+    task,
+    rankedIds: [],
+    scores: [],
+    hitAt1: false,
+    hitAtK: false,
+    reciprocalRank: 0,
+    top1Margin: null,
+  });
+  const allScores = taskSet.tasks.map(stub);
+
+  // --- stratification: properties, not pinned counts -----------------------
+
+  test("every task carries exactly one stratum: tag", () => {
+    const offenders = taskSet.tasks
+      .filter((t) => (t.tags ?? []).filter((tag) => tag.startsWith("stratum:")).length !== 1)
+      .map((t) => t.id);
+    expect(offenders).toEqual([]);
+  });
+
+  test("partition is disjoint, covers every positive, and excludes negatives", () => {
+    const { main, headroom } = partitionByStratum(allScores);
+    const mainIds = new Set(main.map((s) => s.task.id));
+    const headroomIds = new Set(headroom.map((s) => s.task.id));
+    const positiveIds = new Set(positiveTasks.map((t) => t.id));
+
+    expect([...mainIds].filter((id) => headroomIds.has(id))).toEqual([]);
+    expect(mainIds.size + headroomIds.size).toBe(positiveIds.size);
+    expect([...mainIds, ...headroomIds].filter((id) => !positiveIds.has(id))).toEqual([]);
+    expect(main.concat(headroom).filter((s) => s.task.negative)).toEqual([]);
+  });
+
+  test("both strata are non-degenerate (a threshold over an empty stratum is meaningless)", () => {
+    const { main, headroom } = partitionByStratum(allScores);
+    expect(main.length).toBeGreaterThanOrEqual(10);
+    expect(headroom.length).toBeGreaterThanOrEqual(5);
+  });
+
+  test("partitionByStratum takes no repoRoot — structurally cannot read pi/tiers.yaml (#2093)", () => {
+    expect(partitionByStratum.length).toBe(1);
+  });
+
+  // --- computeCutoverStatus: every branch, incl. the adversarial typo ------
+
+  const FROZEN = { main_hit_at_k_min: 0.6 };
+  const UNFROZEN = { status: "unfrozen — derive via the documented procedure" };
+
+  const cases: Array<{
+    name: string;
+    thresholds: Record<string, unknown>;
+    mode: "hybrid" | "bm25-only";
+    hitAtK: number;
+    expected: ReturnType<typeof computeCutoverStatus>;
+  }> = [
+    {
+      name: "frozen, hybrid, above",
+      thresholds: FROZEN,
+      mode: "hybrid",
+      hitAtK: 0.7,
+      expected: "PASS",
+    },
+    {
+      name: "frozen, hybrid, exactly at",
+      thresholds: FROZEN,
+      mode: "hybrid",
+      hitAtK: 0.6,
+      expected: "PASS",
+    },
+    {
+      name: "frozen, hybrid, below",
+      thresholds: FROZEN,
+      mode: "hybrid",
+      hitAtK: 0.5,
+      expected: "FAIL",
+    },
+    {
+      name: "frozen, bm25-only → NA_BM25, never a bogus FAIL",
+      thresholds: FROZEN,
+      mode: "bm25-only",
+      hitAtK: 0.1,
+      expected: "NA_BM25",
+    },
+    {
+      name: "unfrozen, hybrid",
+      thresholds: UNFROZEN,
+      mode: "hybrid",
+      hitAtK: 0.9,
+      expected: "UNFROZEN",
+    },
+    {
+      name: "unfrozen, bm25-only",
+      thresholds: UNFROZEN,
+      mode: "bm25-only",
+      hitAtK: 0.9,
+      expected: "UNFROZEN",
+    },
+    {
+      name: "numeric-first: a leftover 'unfrozen' string cannot mask a frozen number",
+      thresholds: { ...UNFROZEN, ...FROZEN },
+      mode: "hybrid",
+      hitAtK: 0.5,
+      expected: "FAIL",
+    },
+    {
+      name: "adversarial typo: misspelled key does NOT silently pass as frozen",
+      thresholds: { main_hit_at_k_mim: 0.6 },
+      mode: "hybrid",
+      hitAtK: 0.1,
+      expected: "UNFROZEN",
+    },
+  ];
+
+  for (const c of cases) {
+    test(`computeCutoverStatus — ${c.name}`, () => {
+      expect(computeCutoverStatus(c.thresholds, c.mode, c.hitAtK)).toBe(c.expected);
+    });
+  }
+
+  // --- the freeze block is itself validated --------------------------------
+
+  const withThresholds = (thresholds: Record<string, unknown>) => ({
+    ...taskSet,
+    gate: { cutover_thresholds: thresholds },
+  });
+  const FULL_PROVENANCE = {
+    main_hit_at_k_min: 0.6,
+    measured_main_hit_at_k: 0.7,
+    margin: 0.1,
+    mode: "hybrid",
+    embedding_model: "nomic-embed-text",
+    embedding_model_digest: "sha256:abc",
+    embedding_dimensions: 768,
+    prefix_scheme: "search_document: /search_query: ",
+    corpus_entries: 400,
+    task_count_main_stratum: 55,
+    frozen_at: "2026-07-22",
+    frozen_commit: "deadbeef",
+    procedure: "adapters/CUTOVER.md",
+  };
+
+  test("the shipped task set validates clean", () => {
+    expect(validateTaskSet(taskSet)).toEqual([]);
+  });
+
+  test("a misspelled threshold key is a GATE FAIL, not a silent permanent UNFROZEN", () => {
+    const errors = validateTaskSet(withThresholds({ main_hit_at_k_mim: 0.6 }));
+    expect(errors.some((e) => e.includes("unknown key"))).toBe(true);
+  });
+
+  test("neither status nor numeric threshold is rejected", () => {
+    expect(validateTaskSet(withThresholds({})).some((e) => e.includes("exactly one of"))).toBe(
+      true,
+    );
+  });
+
+  test("both status and numeric threshold is rejected", () => {
+    const errors = validateTaskSet(
+      withThresholds({ ...FULL_PROVENANCE, status: "unfrozen — stale" }),
+    );
+    expect(errors.some((e) => e.includes("exactly one of"))).toBe(true);
+  });
+
+  test("an out-of-range threshold is rejected", () => {
+    const errors = validateTaskSet(withThresholds({ ...FULL_PROVENANCE, main_hit_at_k_min: 1.5 }));
+    expect(errors.some((e) => e.includes("outside [0, 1]"))).toBe(true);
+  });
+
+  test("a frozen threshold must carry its provenance", () => {
+    const { embedding_model_digest, frozen_commit, ...partial } = FULL_PROVENANCE;
+    const errors = validateTaskSet(withThresholds(partial));
+    expect(errors.some((e) => e.includes("embedding_model_digest"))).toBe(true);
+    expect(errors.some((e) => e.includes("frozen_commit"))).toBe(true);
+  });
+
+  test("a fully-provenanced frozen block validates clean", () => {
+    expect(validateTaskSet(withThresholds(FULL_PROVENANCE))).toEqual([]);
+  });
+
+  // --- a fake hybrid run cannot report GATE PASS ---------------------------
+
+  test("--with-embeddings against a dead endpoint is a GATE FAIL, not a silent BM25 PASS", async () => {
+    const run = await runEval({
+      withEmbeddings: true,
+      repoRoot: REPO_ROOT,
+      // Reserved-for-testing port: dead on any dev machine, so this never
+      // goes hybrid just because the author happens to be running ollama.
+      embedEndpoint: "http://127.0.0.1:1",
+    });
+    expect(run.mode).toBe("bm25-only");
+    expect(run.gateStatus).toBe("FAIL");
+    expect(run.gateIssues.some((i) => i.includes("index degraded"))).toBe(true);
   });
 });
