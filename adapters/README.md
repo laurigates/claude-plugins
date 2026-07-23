@@ -59,6 +59,21 @@ bundled copies); the install still matters for type-checking and tests.
 
 ### pi
 
+**Try it with zero config changes** (nothing mutated — `-e` loads the extension
+for one run):
+
+```
+just pi-adapter-check    # verify prereqs (node_modules + ollama), no model call
+just pi-adapter          # launch pi with the extension; add -p "…" for one-shot
+```
+
+`just pi-adapter` expands to `pi -e <checkout>/adapters/pi/index.ts`. The binding
+derives `repoRoot` from its own location, so no config file is needed. Confirm
+the replacement worked: with the extension the system prompt carries ~5 injected
+skills instead of the ~95-skill native listing (measured 92→5 on pi 0.80.7).
+
+**To make it permanent**, register the extension globally:
+
 1. `cd <checkout>/claude-plugins/adapters && bun install` (once per checkout).
    The pi binding resolves nothing from `node_modules` at pi runtime — pi's
    extension loader aliases `typebox` to its bundled copy and the pi types
@@ -68,9 +83,14 @@ bundled copies); the install still matters for type-checking and tests.
 2. Register the extension file:
 
 ```jsonc
-// <project>/.pi/settings.json
+// ~/.pi/agent/settings.json — prefer global over project scope (Trust caveat below)
 { "extensions": ["/abs/path/to/claude-plugins/adapters/pi/index.ts"] }
 ```
+
+You do **not** need to uninstall the native tier skills first — the binding
+strips `<available_skills>` and injects in its place, so the token saving lands
+whether or not `~/.pi/agent/skills/` is populated. (Removing the tier system is
+separate work, gated behind #2093.)
 
 - Registers a `search_skills` tool (pull) and injects pins + ranked top-k
   into the system prompt per turn via `before_agent_start` (push), replacing

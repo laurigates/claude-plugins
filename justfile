@@ -126,6 +126,38 @@ eval-adapter *args:
 eval-adapter-hybrid:
     cd adapters && bun eval/run-eval.ts --with-embeddings
 
+# node_modules populated + ollama reachable with nomic-embed-text = hybrid ranker;
+# a missing embed model still works but degrades to BM25-only (worse ranking).
+# Verify the pi adapter's prerequisites (deterministic, no model call, no cost)
+[group: "adapters"]
+pi-adapter-check:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    ext="{{justfile_directory()}}/adapters/pi/index.ts"
+    echo "=== PI ADAPTER PREREQS ==="
+    command -v pi >/dev/null && echo "PI=$(pi --version 2>&1 | head -1)" || echo "PI=MISSING (bun install -g @earendil-works/pi)"
+    [ -f "$ext" ] && echo "EXTENSION=$ext" || echo "EXTENSION=MISSING"
+    [ -d "{{justfile_directory()}}/adapters/node_modules" ] && echo "NODE_MODULES=present" || echo "NODE_MODULES=MISSING (cd adapters && bun install)"
+    endpoint="${OLLAMA_ENDPOINT:-http://localhost:11434}"
+    if models="$(curl -s --max-time 3 "$endpoint/api/tags" 2>/dev/null)"; then
+        if grep -q '"name":"nomic-embed-text' <<<"$models"; then
+            echo "EMBED_MODEL=nomic-embed-text (hybrid ranker available)"
+        else
+            echo "EMBED_MODEL=MISSING — ranker degrades to BM25-only (ollama pull nomic-embed-text)"
+        fi
+    else
+        echo "OLLAMA=unreachable at $endpoint — ranker degrades to BM25-only"
+    fi
+
+# Launches pi with the ADR-0022 skill-discovery extension via --extension,
+# replacing the uncapped native <available_skills> listing with pins + ranked
+# top-k. Pass args through, e.g. `just pi-adapter -p "find a git-commit skill"`.
+# Make it permanent by adding the path to ~/.pi/agent/settings.json — see README.
+# Trial the pi adapter with ZERO config changes (interactive unless -p is passed)
+[group: "adapters"]
+pi-adapter *args:
+    pi -e "{{justfile_directory()}}/adapters/pi/index.ts" {{args}}
+
 ####################
 # OpenCode export
 ####################
