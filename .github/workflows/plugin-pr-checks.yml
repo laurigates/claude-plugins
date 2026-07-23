@@ -185,6 +185,17 @@ jobs:
         # unconditionally so the installer contract stays verified.
         run: bash scripts/tests/test-install-pi.sh
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Run Ruff Linter
+        run: uvx ruff check .
+
+      - name: Run Ruff Formatter Check
+        run: uvx ruff format --check .
+
       - name: Install actionlint
         # GitHub Actions YAML schema/best-practice lint — the one workflow gate
         # check-workflow-model.sh does not cover. ubuntu-latest ships Go but does
