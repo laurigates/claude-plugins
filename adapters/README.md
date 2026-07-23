@@ -59,18 +59,52 @@ bundled copies); the install still matters for type-checking and tests.
 
 ### pi
 
-1. `cd <checkout>/claude-plugins/adapters && bun install` (once per checkout).
-   The pi binding resolves nothing from `node_modules` at pi runtime — pi's
-   extension loader aliases `typebox` to its bundled copy and the pi types
-   are `import type`-only — but skipping the install still surfaces as an
-   explicit "run `bun install` in `<checkout>/adapters`" error rather than a
-   bare resolution stack, and the install is required for `tsc`/`bun test`.
-2. Register the extension file:
+**Try it with zero config changes** (nothing mutated — `-e` loads the extension
+for one run):
+
+```
+just pi-adapter-check    # verify prereqs (node_modules + ollama), no model call
+just pi-adapter          # launch pi with the extension; add -p "…" for one-shot
+```
+
+`just pi-adapter` expands to `pi -e <checkout>/adapters/pi/index.ts`. The binding
+derives `repoRoot` from its own location, so no config file is needed. Confirm
+the replacement worked: with the extension the system prompt carries ~5 injected
+skills instead of the ~95-skill native listing (measured 92→5 on pi 0.80.7).
+
+**To make it permanent:**
+
+```
+just pi-adapter-register     # append to ~/.pi/agent/settings.json extensions[]
+just pi-adapter-unregister   # reverse it
+```
+
+`pi-adapter-register` is idempotent and non-clobbering — it appends only the
+one absolute path to the `extensions` array, preserves every other key, creates
+the file if absent, and writes it mode `600`. Target a project scope instead
+with `PI_SETTINGS=<project>/.pi/settings.json just pi-adapter-register` (but see
+the Trust caveat below — global is preferred). Equivalent by hand:
 
 ```jsonc
-// <project>/.pi/settings.json
+// ~/.pi/agent/settings.json — prefer global over project scope (Trust caveat below)
 { "extensions": ["/abs/path/to/claude-plugins/adapters/pi/index.ts"] }
 ```
+
+- **`extensions`, not `packages`.** pi loads a local extension file from the
+  `extensions` array. That is a *different* mechanism from the `packages` array
+  that `pi install` / `pi remove` / `pi list` manage (npm/git/local-path
+  sources) — so `pi list` does **not** show the adapter, and that is expected,
+  not a failure. `pi-adapter-register` edits `extensions` for exactly this
+  reason; `pi install` would write the wrong key.
+- `cd <checkout>/adapters && bun install` is required for `tsc` / `bun test`
+  but **not** at pi runtime — pi's extension loader aliases `typebox` to its
+  bundled copy and the pi types are `import type`-only. Skipping it surfaces as
+  an explicit "run `bun install` in `<checkout>/adapters`" error, not a bare
+  resolution stack.
+- You do **not** need to uninstall the native tier skills first — the binding
+  strips `<available_skills>` and injects in its place, so the token saving
+  lands whether or not `~/.pi/agent/skills/` is populated. (Removing the tier
+  system is separate work, gated behind #2093.)
 
 - Registers a `search_skills` tool (pull) and injects pins + ranked top-k
   into the system prompt per turn via `before_agent_start` (push), replacing
