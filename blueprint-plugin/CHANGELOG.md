@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.42.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.41.0...blueprint-plugin-v3.42.0) (2026-07-26)
+
+
+### Features
+
+* **blueprint-plugin:** add tracker-integrity check and widen ADR collision guard ([#2133](https://github.com/laurigates/claude-plugins/issues/2133)) ([26aa1ad](https://github.com/laurigates/claude-plugins/commit/26aa1adcc0b0c222079e2cea6ab815da3ffdd4c0))
+
 ## [3.41.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.40.0...blueprint-plugin-v3.41.0) (2026-07-18)
 
 
