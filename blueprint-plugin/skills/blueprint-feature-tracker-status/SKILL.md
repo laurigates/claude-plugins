@@ -1,7 +1,7 @@
 ---
 created: 2026-01-02
-modified: 2026-05-09
-reviewed: 2026-05-03
+modified: 2026-07-26
+reviewed: 2026-07-26
 description: Display feature tracker stats, phase progress, and completion summary. Use when checking feature status, viewing blocked features, or seeing ready-to-start work.
 allowed-tools: Read, Bash, AskUserQuestion
 model: sonnet
@@ -41,6 +41,22 @@ Display feature tracker statistics, phase progress, and completion summary.
    - Calculate completion percentage
    - Count features per phase
    - Count PRDs by status
+
+3a. **Confirm the statistics cache is trustworthy** (read-only):
+
+   Everything this skill displays is quoted from `statistics`, which is a
+   **cache** of the features collection — so verify it before quoting it:
+
+   ```bash
+   bash "${CLAUDE_SKILL_DIR}/../../scripts/blueprint-tracker-check.sh" --project-dir "$(pwd)"
+   ```
+
+   On `STATUS=ERROR` with `TYPE=statistics_divergence` rows, display the
+   recomputed `EXPECTED=` figures (not the cached ones) and add a line to the
+   report: `Statistics cache is stale — run /blueprint:feature-tracker-sync`.
+   Surface any other `ISSUES:` rows verbatim under a "Tracker Integrity"
+   heading. This skill never writes, so it reports and defers the fix to
+   `/blueprint:feature-tracker-sync` (its Step 7a).
 
 4. **Display status report**:
    ```
@@ -226,3 +242,12 @@ Quick commands for feature tracker:
 - jq '.. | objects | select(.status == "not_started") | .name' docs/blueprint/feature-tracker.json
 - jq '.prds | to_entries | .[] | "\(.key): \(.value.status)"' docs/blueprint/feature-tracker.json
 ```
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Cached stats only | `jq -c '.statistics' docs/blueprint/feature-tracker.json` |
+| Is the cache trustworthy? | `bash "${CLAUDE_SKILL_DIR}/../../scripts/blueprint-tracker-check.sh" \| grep -E '^(STATUS\|ISSUE_COUNT)='` |
+| Recomputed vs cached figures | `bash "${CLAUDE_SKILL_DIR}/../../scripts/blueprint-tracker-check.sh" \| grep -E '^(EXPECTED\|ACTUAL)_'` |
+| Blocked features only | `jq -r '.. \| objects \| select(.status? == "blocked") \| .name' docs/blueprint/feature-tracker.json` |

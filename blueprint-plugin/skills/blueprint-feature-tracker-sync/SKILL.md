@@ -1,7 +1,7 @@
 ---
 created: 2026-01-02
-modified: 2026-07-05
-reviewed: 2026-06-10
+modified: 2026-07-26
+reviewed: 2026-07-26
 description: Sync feature tracker with TODO.md, taskwarrior sidecars, and PRDs. Use when reconciling TODO.md vs tracker, draining WO entries, or recalculating stats.
 allowed-tools: Read, Write, Bash, Glob, AskUserQuestion
 model: sonnet
@@ -225,6 +225,41 @@ feature-tracker contains any feature with a non-empty `implemented_by` array.
 - Update PRD status if features changed
 - Update `current_phase` to first incomplete phase
 
+### Step 7a: Verify tracker integrity (deterministic)
+
+Sync **writes** the tracker; this step **verifies** what was written. Run it after
+every write path (Full Sync Step 7 and Sidecar Drain Step 5) — nothing else
+detects a tracker that drifted by any other route, so the drift compounds
+silently:
+
+```bash
+bash "${CLAUDE_SKILL_DIR}/../../scripts/blueprint-tracker-check.sh" --project-dir "$(pwd)"
+```
+
+Parse `STATUS=` and the `ISSUES:` rows. `statistics` is a **cache** of the
+features collection, so `statistics_divergence` rows (which carry
+`FIELD=`/`EXPECTED=`/`ACTUAL=`) mean every downstream "N% complete" figure quoted
+from this file is wrong — fix the cache in the same run, then re-run the check.
+Handle the rest as follows:
+
+| `TYPE=` | Response |
+|---------|----------|
+| `statistics_divergence` | Write the `EXPECTED=` value; the checker uses the same `round(complete/total*1000)/10` formula as Step 6 |
+| `feature_status_near_miss` | Rewrite the status to the `CANONICAL=` spelling |
+| `feature_status_unknown` | Ask the user which schema status was meant (`not_started`, `in_progress`, `partial`, `complete`, `blocked`) |
+| `task_feature_disagreement` | An undrained `tasks.pending` entry (route to `--drain-wave`) or a task closed ahead of its feature |
+| `fr_cited_not_minted` | Mint the FR, or correct the citing document — an unminted FR is invisible to every status query |
+| `doc_status_stale` | Offer to advance the doc's frontmatter `status:` (it is still unfinished while every FR it cites has landed) |
+| `dead_statistics_bucket` / `duplicate_timestamp_field` | Drop the non-schema bucket; keep `last_updated`, drop the alias |
+
+Repo conventions (document status vocabulary, doc globs, excluded basenames)
+come from the manifest `validation` block via
+`scripts/get-validation-config.sh` — absent, it uses working defaults.
+
+The check never reports an FR id appearing in **both** the features collection
+and a task list as a duplicate: that repetition is the documented drain design.
+Status is read from the features collection only.
+
 ### Step 8: Update TODO.md (if exists)
 
 - Ensure checkbox states match feature status
@@ -388,7 +423,9 @@ already-`complete` FR.
 
 Re-run Step 6 of **Mode: Full Sync (Default)** so the totals reflect the
 drained WOs and any flipped FRs. Then write the updated `last_updated` and
-`current_phase` per Step 7 of Full Sync.
+`current_phase` per Step 7 of Full Sync, and verify the result with **Step 7a**
+of Full Sync — a drain moves ids between `tasks.pending` and `tasks.completed`,
+which is exactly when `statistics` and task/feature agreement drift.
 
 ### Step 6: Report
 
@@ -425,6 +462,19 @@ on-disk shape. Prefer `/taskwarrior:task-done` when you also need to close
 the linked taskwarrior task; this skill only edits the tracker.
 
 ---
+
+## Agentic Optimizations
+
+| Context | Command |
+|---------|---------|
+| Verify tracker integrity (read-only, no writes) | `bash "${CLAUDE_SKILL_DIR}/../../scripts/blueprint-tracker-check.sh" --project-dir "$(pwd)"` |
+| Integrity roll-up only (two lines) | `bash "${CLAUDE_SKILL_DIR}/../../scripts/blueprint-tracker-check.sh" \| grep -E '^(STATUS\|ISSUE_COUNT)='` |
+| Just the recomputed-vs-cached statistics | `bash "${CLAUDE_SKILL_DIR}/../../scripts/blueprint-tracker-check.sh" \| grep -E '^(EXPECTED\|ACTUAL)_'` |
+| Sync core without writing | `bash "${CLAUDE_SKILL_DIR}/scripts/blueprint-feature-tracker-sync.sh" --project-dir "$(pwd)" --dry-run` |
+| Progress summary, stdout only | `/blueprint:feature-tracker-sync --summary` |
+
+The integrity check exits 0 on `OK`/`WARN` and 1 on `ERROR`, so it is
+parallel-batch-safe and usable as a pre-commit or CI gate.
 
 ## Direct Edits & Sample Output
 
