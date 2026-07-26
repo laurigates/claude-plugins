@@ -1,0 +1,1186 @@
+{
+  "contested": [
+    {
+      "dim": "C4",
+      "gap": 2,
+      "scores": [
+        3,
+        5
+      ],
+      "unit": "agent-patterns-plugin/skills/meta-context-diet/SKILL.md"
+    }
+  ],
+  "coverage": {
+    "judgments": 20,
+    "units_judged": 10,
+    "units_with_two_judges": 10
+  },
+  "dimension_means": {
+    "C1": 3.9,
+    "C2": 3.86,
+    "C3": 2.9,
+    "C4": 2.65,
+    "C5": 1.67,
+    "C6": 3.15
+  },
+  "leakage": [
+    {
+      "house_standards_seen": [
+        ".claude/rules/agent-coworker-detection.md (the unit itself, auto-injected before I opened it)",
+        ".claude/rules/agentic-optimization.md",
+        ".claude/rules/agentic-permissions.md",
+        ".claude/rules/auto-mode.md",
+        ".claude/rules/loop-integrity.md",
+        ".claude/rules/offload-to-deterministic-substrate.md",
+        ".claude/rules/regression-testing.md",
+        ".claude/rules/skill-argument-handling.md",
+        ".claude/rules/skill-consolidation.md",
+        ".claude/rules/skill-development.md",
+        ".claude/rules/skill-evaluation.md",
+        ".claude/rules/skill-execution-structure.md",
+        ".claude/rules/skill-fork-context.md",
+        ".claude/rules/skill-quality.md",
+        ".claude/rules/version-pinning.md",
+        "CLAUDE.md (full project instructions, incl. plugin lifecycle and rules index)"
+      ],
+      "influenced_scoring": false,
+      "judge": "j1",
+      "unit": ".claude/rules/agent-coworker-detection.md"
+    },
+    {
+      "house_standards_seen": [
+        ".claude/rules/agent-coworker-detection.md \u2014 the unit under judgment was itself auto-injected into my context before I read it",
+        ".claude/rules/regression-testing.md, conventional-commits.md, agentic-optimization.md, agentic-permissions.md, skill-execution-structure.md, skill-consolidation.md, skill-naming.md, skill-fork-context.md, skill-argument-handling.md, auto-mode.md, sandbox-guidance.md, version-pinning.md, loop-integrity.md, bash-tool-replacements.md, gh-json-fields.md, parallel-safe-queries.md, terminology.md, task-id-stability.md, offload-to-deterministic-substrate.md, docs-currency.md, pr-branch-sync.md, handling-blocked-hooks.md",
+        ".claude/rules/skill-development.md \u2014 auto-injected in full despite the hard constraint",
+        ".claude/rules/skill-evaluation.md \u2014 auto-injected in full despite the hard constraint",
+        ".claude/rules/skill-quality.md \u2014 auto-injected in full despite the hard constraint not to read it",
+        "CLAUDE.md (project instructions, injected in full including the rules index table)"
+      ],
+      "influenced_scoring": false,
+      "judge": "j2",
+      "unit": ".claude/rules/agent-coworker-detection.md"
+    },
+    {
+      "house_standards_seen": [
+        ".claude/rules/agent-coworker-detection.md",
+        ".claude/rules/bash-tool-replacements.md",
+        ".claude/rules/conventional-commits.md",
+        ".claude/rules/docs-currency.md",
+        ".claude/rules/gh-json-fields.md",
+        ".claude/rules/handling-blocked-hooks.md",
+        ".claude/rules/loop-integrity.md",
+        ".claude/rules/offload-to-deterministic-substrate.md",
+        ".claude/rules/parallel-safe-queries.md",
+        ".claude/rules/pr-branch-sync.md",
+        ".claude/rules/task-id-stability.md",
+        ".claude/rules/terminology.md \u2014 the unit under judgment was itself auto-injected into my context before I read it",
+        "CLAUDE.md project instructions auto-injected in full (plugin lifecycle, rules index, conventional-commit scopes)"
+      ],
+      "influenced_scoring": false,
+      "judge": "j1",
+      "unit": ".claude/rules/terminology.md"
+    },
+    {
+      "house_standards_seen": [
+        ".claude/rules/agent-coworker-detection.md",
+        ".claude/rules/bash-tool-replacements.md",
+        ".claude/rules/conventional-commits.md",
+        ".claude/rules/docs-currency.md",
+        ".claude/rules/gh-json-fields.md",
+        ".claude/rules/handling-blocked-hooks.md",
+        ".claude/rules/loop-integrity.md",
+        ".claude/rules/offload-to-deterministic-substrate.md",
+        ".claude/rules/parallel-safe-queries.md",
+        ".claude/rules/pr-branch-sync.md",
+        ".claude/rules/task-id-stability.md",
+        ".claude/rules/terminology.md \u2014 the unit under judgment was itself auto-injected into my context before I opened it",
+        "CLAUDE.md (project instructions, auto-injected in full)"
+      ],
+      "influenced_scoring": false,
+      "judge": "j2",
+      "unit": ".claude/rules/terminology.md"
+    },
+    {
+      "house_standards_seen": [
+        "CLAUDE.md itself is auto-injected into every agent context in this repo, so the unit under judgment was already present before I read it",
+        "several .claude/rules/*.md are auto-injected too (pr-branch-sync, loop-integrity, bash-tool-replacements, gh-json-fields, parallel-safe-queries, terminology, conventional-commits, task-id-stability, offload-to-deterministic-substrate, docs-currency, agent-coworker-detection, handling-blocked-hooks)",
+        "the excluded house conventions (conventional-commit scopes, release-please dogfooding, plugin lifecycle bookkeeping) are visible in the injected copy"
+      ],
+      "influenced_scoring": false,
+      "judge": "j1",
+      "unit": "CLAUDE.md"
+    },
+    {
+      "house_standards_seen": [
+        "conventional-commit scopes and release-please dogfooding",
+        "created/modified/reviewed frontmatter dates in the file's own header and its skill templates",
+        "mandatory Agentic Optimizations table (CLAUDE.md instructs skills to include one)",
+        "plugin lifecycle bookkeeping (marketplace.json / release-please-config.json / enabledPlugins updates)"
+      ],
+      "influenced_scoring": false,
+      "judge": "j2",
+      "unit": "CLAUDE.md"
+    },
+    {
+      "house_standards_seen": [
+        ".claude/rules/agentic-optimization.md",
+        ".claude/rules/agentic-permissions.md",
+        ".claude/rules/auto-mode.md",
+        ".claude/rules/regression-testing.md",
+        ".claude/rules/sandbox-guidance.md",
+        ".claude/rules/skill-argument-handling.md",
+        ".claude/rules/skill-consolidation.md",
+        ".claude/rules/skill-development.md",
+        ".claude/rules/skill-evaluation.md",
+        ".claude/rules/skill-execution-structure.md",
+        ".claude/rules/skill-fork-context.md",
+        ".claude/rules/skill-naming.md",
+        ".claude/rules/skill-quality.md",
+        ".claude/rules/version-pinning.md",
+        "CLAUDE.md (project instructions, incl. Plugin Lifecycle and skill-creation quick start)"
+      ],
+      "influenced_scoring": false,
+      "judge": "j1",
+      "unit": "agent-patterns-plugin/skills/meta-context-diet/SKILL.md"
+    },
+    {
+      "house_standards_seen": [
+        ".claude/rules/agentic-optimization.md",
+        ".claude/rules/agentic-permissions.md",
+        ".claude/rules/auto-mode.md",
+        ".claude/rules/loop-integrity.md",
+        ".claude/rules/offload-to-deterministic-substrate.md",
+        ".claude/rules/regression-testing.md",
+        ".claude/rules/sandbox-guidance.md",
+        ".claude/rules/skill-argument-handling.md",
+        ".claude/rules/skill-consolidation.md",
+        ".claude/rules/skill-development.md (auto-injected despite being on the do-not-read list)",
+        ".claude/rules/skill-evaluation.md (auto-injected despite being on the do-not-read list)",
+        ".claude/rules/skill-execution-structure.md",
+        ".claude/rules/skill-fork-context.md",
+        ".claude/rules/skill-naming.md",
+        ".claude/rules/skill-quality.md (auto-injected despite being on the do-not-read list)",
+        "CLAUDE.md (project instructions, auto-injected)"
+      ],
+      "influenced_scoring": false,
+      "judge": "j2",
+      "unit": "agent-patterns-plugin/skills/meta-context-diet/SKILL.md"
+    },
+    {
+      "house_standards_seen": [
+        ".claude/rules/agent-coworker-detection.md",
+        ".claude/rules/agentic-optimization.md",
+        ".claude/rules/agentic-permissions.md",
+        ".claude/rules/auto-mode.md",
+        ".claude/rules/bash-tool-replacements.md",
+        ".claude/rules/conventional-commits.md",
+        ".claude/rules/docs-currency.md",
+        ".claude/rules/gh-json-fields.md",
+        ".claude/rules/handling-blocked-hooks.md",
+        ".claude/rules/loop-integrity.md",
+        ".claude/rules/offload-to-deterministic-substrate.md",
+        ".claude/rules/parallel-safe-queries.md",
+        ".claude/rules/pr-branch-sync.md",
+        ".claude/rules/regression-testing.md",
+        ".claude/rules/sandbox-guidance.md",
+        ".claude/rules/skill-argument-handling.md",
+        ".claude/rules/skill-consolidation.md",
+        ".claude/rules/skill-development.md (auto-injected in full)",
+        ".claude/rules/skill-evaluation.md (auto-injected in full)",
+        ".claude/rules/skill-execution-structure.md",
+        ".claude/rules/skill-fork-context.md",
+        ".claude/rules/skill-naming.md",
+        ".claude/rules/skill-quality.md (auto-injected in full despite the hard constraint \u2014 size ceilings, mandatory When-to-Use and Agentic Optimizations tables, description length band, model policy)",
+        ".claude/rules/task-id-stability.md",
+        ".claude/rules/terminology.md",
+        ".claude/rules/version-pinning.md",
+        "CLAUDE.md (project instructions, auto-injected)"
+      ],
+      "influenced_scoring": false,
+      "judge": "j1",
+      "unit": "agent-patterns-plugin/skills/parallel-agent-dispatch/SKILL.md"
+    },
+    {
+      "house_standards_seen": [
+        ".claude/rules/agent-coworker-detection.md",
+        ".claude/rules/agentic-optimization.md",
+        ".claude/rules/agentic-permissions.md",
+        ".claude/rules/auto-mode.md",
+        ".claude/rules/bash-tool-replacements.md",
+        ".claude/rules/conventional-commits.md",
+        ".claude/rules/docs-currency.md",
+        ".claude/rules/gh-json-fields.md",
+        ".claude/rules/handling-blocked-hooks.md",
+        ".claude/rules/loop-integrity.md",
+        ".claude/rules/offload-to-deterministic-substrate.md",
+        ".claude/rules/parallel-safe-queries.md",
+        ".claude/rules/pr-branch-sync.md",
+        ".claude/rules/regression-testing.md",
+        ".claude/rules/sandbox-guidance.md",
+        ".claude/rules/skill-argument-handling.md",
+        ".claude/rules/skill-consolidation.md",
+        ".claude/rules/skill-development.md",
+        ".claude/rules/skill-evaluation.md",
+        ".claude/rules/skill-execution-structure.md",
+        ".claude/rules/skill-fork-context.md",
+        ".claude/rules/skill-naming.md",
+        ".claude/rules/skill-quality.md",
+        ".claude/rules/task-id-stability.md",
+        ".claude/rules/terminology.md",
+        ".claude/rules/version-pinning.md",
+        "CLAUDE.md"
+      ],
+      "influenced_scoring": false,
+      "judge": "j2",
+      "unit": "agent-patterns-plugin/skills/parallel-agent-dispatch/SKILL.md"
+    },
+    {
+      "house_standards_seen": [
+        ".claude/rules/agent-coworker-detection.md",
+        ".claude/rules/agentic-optimization.md",
+        ".claude/rules/agentic-permissions.md",
+        ".claude/rules/auto-mode.md",
+        ".claude/rules/bash-tool-replacements.md",
+        ".claude/rules/conventional-commits.md",
+        ".claude/rules/docs-currency.md",
+        ".claude/rules/gh-json-fields.md",
+        ".claude/rules/handling-blocked-hooks.md",
+        ".claude/rules/loop-integrity.md",
+        ".claude/rules/offload-to-deterministic-substrate.md",
+        ".claude/rules/parallel-safe-queries.md",
+        ".claude/rules/pr-branch-sync.md",
+        ".claude/rules/regression-testing.md",
+        ".claude/rules/sandbox-guidance.md",
+        ".claude/rules/skill-argument-handling.md",
+        ".claude/rules/skill-consolidation.md",
+        ".claude/rules/skill-development.md (auto-injected, on exclusion list)",
+        ".claude/rules/skill-evaluation.md (auto-injected, on exclusion list)",
+        ".claude/rules/skill-execution-structure.md",
+        ".claude/rules/skill-fork-context.md",
+        ".claude/rules/skill-naming.md",
+        ".claude/rules/skill-quality.md (auto-injected despite being on the exclusion list)",
+        ".claude/rules/task-id-stability.md",
+        ".claude/rules/terminology.md",
+        ".claude/rules/version-pinning.md",
+        "CLAUDE.md (project instructions, incl. Plugin Lifecycle and Conventions)"
+      ],
+      "influenced_scoring": false,
+      "judge": "j1",
+      "unit": "comfyui-plugin/skills/comfy-node/SKILL.md"
+    },
+    {
+      "house_standards_seen": [
+        ".claude/rules/skill-development.md (auto-injected)",
+        ".claude/rules/skill-evaluation.md (auto-injected)",
+        ".claude/rules/skill-execution-structure.md, skill-consolidation.md, skill-argument-handling.md, skill-fork-context.md, agentic-optimization.md, agentic-permissions.md, regression-testing.md, and ~10 further rules (auto-injected)",
+        ".claude/rules/skill-quality.md (auto-injected: 26,000-char ceiling, mandatory When-to-Use and Agentic Optimizations tables, description length band, model policy)",
+        "CLAUDE.md (project instructions, incl. plugin lifecycle and conventional-commit scopes)"
+      ],
+      "influenced_scoring": false,
+      "judge": "j2",
+      "unit": "comfyui-plugin/skills/comfy-node/SKILL.md"
+    },
+    {
+      "house_standards_seen": [
+        ".claude/rules/agent-coworker-detection.md",
+        ".claude/rules/agentic-optimization.md",
+        ".claude/rules/agentic-permissions.md",
+        ".claude/rules/auto-mode.md",
+        ".claude/rules/bash-tool-replacements.md",
+        ".claude/rules/conventional-commits.md",
+        ".claude/rules/docs-currency.md",
+        ".claude/rules/gh-json-fields.md",
+        ".claude/rules/handling-blocked-hooks.md",
+        ".claude/rules/loop-integrity.md",
+        ".claude/rules/offload-to-deterministic-substrate.md",
+        ".claude/rules/parallel-safe-queries.md",
+        ".claude/rules/pr-branch-sync.md",
+        ".claude/rules/regression-testing.md",
+        ".claude/rules/sandbox-guidance.md",
+        ".claude/rules/skill-argument-handling.md",
+        ".claude/rules/skill-consolidation.md",
+        ".claude/rules/skill-development.md",
+        ".claude/rules/skill-evaluation.md",
+        ".claude/rules/skill-execution-structure.md",
+        ".claude/rules/skill-fork-context.md",
+        ".claude/rules/skill-naming.md",
+        ".claude/rules/skill-quality.md",
+        ".claude/rules/structured-script-output.md (referenced)",
+        ".claude/rules/task-id-stability.md",
+        ".claude/rules/terminology.md",
+        ".claude/rules/version-pinning.md",
+        "CLAUDE.md (project instructions, auto-injected)"
+      ],
+      "influenced_scoring": false,
+      "judge": "j1",
+      "unit": "configure-plugin/skills/configure-claude-plugins/SKILL.md"
+    },
+    {
+      "house_standards_seen": [
+        ".claude/rules/agentic-optimization.md",
+        ".claude/rules/agentic-permissions.md",
+        ".claude/rules/auto-mode.md",
+        ".claude/rules/regression-testing.md",
+        ".claude/rules/sandbox-guidance.md",
+        ".claude/rules/skill-argument-handling.md",
+        ".claude/rules/skill-consolidation.md",
+        ".claude/rules/skill-development.md",
+        ".claude/rules/skill-evaluation.md",
+        ".claude/rules/skill-execution-structure.md",
+        ".claude/rules/skill-fork-context.md",
+        ".claude/rules/skill-naming.md",
+        ".claude/rules/skill-quality.md",
+        ".claude/rules/version-pinning.md",
+        "CLAUDE.md (project instructions)"
+      ],
+      "influenced_scoring": false,
+      "judge": "j2",
+      "unit": "configure-plugin/skills/configure-claude-plugins/SKILL.md"
+    },
+    {
+      "house_standards_seen": [
+        ".claude/rules/agentic-optimization.md",
+        ".claude/rules/agentic-permissions.md",
+        ".claude/rules/regression-testing.md",
+        ".claude/rules/skill-argument-handling.md",
+        ".claude/rules/skill-consolidation.md",
+        ".claude/rules/skill-development.md",
+        ".claude/rules/skill-evaluation.md",
+        ".claude/rules/skill-execution-structure.md",
+        ".claude/rules/skill-fork-context.md",
+        ".claude/rules/skill-quality.md (auto-injected in full despite being on the do-not-read list, including the 26,000-char ceiling, the mandatory When-to-Use and Agentic Optimizations tables, description length band, and the model policy)",
+        ".claude/rules/version-pinning.md",
+        "CLAUDE.md project instructions"
+      ],
+      "influenced_scoring": false,
+      "judge": "j1",
+      "unit": "configure-plugin/skills/configure-security/SKILL.md"
+    },
+    {
+      "house_standards_seen": [
+        ".claude/rules/agentic-optimization.md",
+        ".claude/rules/agentic-permissions.md",
+        ".claude/rules/auto-mode.md",
+        ".claude/rules/regression-testing.md",
+        ".claude/rules/sandbox-guidance.md",
+        ".claude/rules/skill-argument-handling.md",
+        ".claude/rules/skill-consolidation.md",
+        ".claude/rules/skill-development.md (auto-injected)",
+        ".claude/rules/skill-evaluation.md (auto-injected)",
+        ".claude/rules/skill-execution-structure.md",
+        ".claude/rules/skill-fork-context.md",
+        ".claude/rules/skill-naming.md",
+        ".claude/rules/skill-quality.md (auto-injected, not read by me)",
+        ".claude/rules/version-pinning.md",
+        "CLAUDE.md (project instructions, incl. plugin lifecycle and rules index)"
+      ],
+      "influenced_scoring": false,
+      "judge": "j2",
+      "unit": "configure-plugin/skills/configure-security/SKILL.md"
+    },
+    {
+      "house_standards_seen": [
+        ".claude/rules/agent-coworker-detection.md",
+        ".claude/rules/agentic-optimization.md",
+        ".claude/rules/conventional-commits.md",
+        ".claude/rules/pr-branch-sync.md",
+        ".claude/rules/regression-testing.md",
+        ".claude/rules/skill-argument-handling.md",
+        ".claude/rules/skill-development.md (auto-injected, not opened)",
+        ".claude/rules/skill-evaluation.md (auto-injected, not opened)",
+        ".claude/rules/skill-execution-structure.md",
+        ".claude/rules/skill-quality.md (auto-injected, not opened)",
+        "CLAUDE.md (project instructions, auto-injected)"
+      ],
+      "influenced_scoring": false,
+      "judge": "j1",
+      "unit": "git-plugin/skills/git-commit/SKILL.md"
+    },
+    {
+      "house_standards_seen": [
+        ".claude/rules/agentic-optimization.md",
+        ".claude/rules/agentic-permissions.md",
+        ".claude/rules/auto-mode.md",
+        ".claude/rules/conventional-commits.md",
+        ".claude/rules/regression-testing.md",
+        ".claude/rules/sandbox-guidance.md",
+        ".claude/rules/skill-argument-handling.md",
+        ".claude/rules/skill-consolidation.md",
+        ".claude/rules/skill-development.md",
+        ".claude/rules/skill-evaluation.md",
+        ".claude/rules/skill-execution-structure.md",
+        ".claude/rules/skill-fork-context.md",
+        ".claude/rules/skill-naming.md",
+        ".claude/rules/skill-quality.md (size limits, mandatory When-to-Use and Agentic Optimizations tables, description length band)",
+        ".claude/rules/version-pinning.md",
+        "CLAUDE.md (project instructions, full)",
+        "plus pr-branch-sync, loop-integrity, bash-tool-replacements, gh-json-fields, parallel-safe-queries, terminology, task-id-stability, offload-to-deterministic-substrate, docs-currency, agent-coworker-detection, handling-blocked-hooks"
+      ],
+      "influenced_scoring": false,
+      "judge": "j2",
+      "unit": "git-plugin/skills/git-commit/SKILL.md"
+    },
+    {
+      "house_standards_seen": [
+        ".claude/rules/agentic-optimization.md",
+        ".claude/rules/agentic-permissions.md",
+        ".claude/rules/auto-mode.md",
+        ".claude/rules/offload-to-deterministic-substrate.md",
+        ".claude/rules/regression-testing.md",
+        ".claude/rules/sandbox-guidance.md",
+        ".claude/rules/skill-argument-handling.md",
+        ".claude/rules/skill-consolidation.md",
+        ".claude/rules/skill-development.md (auto-injected, same)",
+        ".claude/rules/skill-evaluation.md (auto-injected, same)",
+        ".claude/rules/skill-execution-structure.md",
+        ".claude/rules/skill-fork-context.md",
+        ".claude/rules/skill-naming.md",
+        ".claude/rules/skill-quality.md (auto-injected despite being on the do-not-read list)",
+        ".claude/rules/version-pinning.md",
+        "CLAUDE.md (project instructions, auto-injected)",
+        "~12 other .claude/rules/*.md files"
+      ],
+      "influenced_scoring": false,
+      "judge": "j1",
+      "unit": "testing-plugin/skills/test-tier-selection/SKILL.md"
+    },
+    {
+      "house_standards_seen": [
+        ".claude/rules/agentic-optimization.md",
+        ".claude/rules/agentic-permissions.md",
+        ".claude/rules/auto-mode.md",
+        ".claude/rules/regression-testing.md",
+        ".claude/rules/sandbox-guidance.md",
+        ".claude/rules/skill-argument-handling.md",
+        ".claude/rules/skill-consolidation.md",
+        ".claude/rules/skill-development.md",
+        ".claude/rules/skill-evaluation.md",
+        ".claude/rules/skill-execution-structure.md",
+        ".claude/rules/skill-fork-context.md",
+        ".claude/rules/skill-naming.md",
+        ".claude/rules/skill-quality.md",
+        "CLAUDE.md"
+      ],
+      "influenced_scoring": false,
+      "judge": "j2",
+      "unit": "testing-plugin/skills/test-tier-selection/SKILL.md"
+    }
+  ],
+  "leakage_summary": {
+    "judgments_reporting_influence": 0,
+    "judgments_total": 20
+  },
+  "schema_version": 1,
+  "units": {
+    ".claude/rules/agent-coworker-detection.md": {
+      "counter_findings": [
+        "The asymmetry that committed work survives in the reflog while untracked work does not \u2014 and the resulting 'treat `git status` as everyone's changes, stage explicit paths' stance \u2014 is a true every-turn invariant that no skill trigger would reliably fire on before the damage is done, and it should stay always-loaded.",
+        "The Response Rules plus the 'never force-remove a worktree you don't own' invariant genuinely must be resident every turn \u2014 they fire before any git operation regardless of what the user asked, their violation is unrecoverable peer data loss, and no on-demand skill can be relied on to load first."
+      ],
+      "dimensions": {
+        "C1": {
+          "contested": false,
+          "gap": 1,
+          "median": 4.5,
+          "scores": [
+            4,
+            5
+          ]
+        },
+        "C2": {
+          "contested": false,
+          "median": "n/a",
+          "scores": [
+            "n/a",
+            "n/a"
+          ]
+        },
+        "C3": {
+          "contested": false,
+          "gap": 0,
+          "median": 2.0,
+          "scores": [
+            2,
+            2
+          ]
+        },
+        "C4": {
+          "contested": false,
+          "gap": 0,
+          "median": 2.0,
+          "scores": [
+            2,
+            2
+          ]
+        },
+        "C5": {
+          "contested": false,
+          "gap": 0,
+          "median": 2.0,
+          "scores": [
+            2,
+            2
+          ]
+        },
+        "C6": {
+          "contested": false,
+          "gap": 1,
+          "median": 2.5,
+          "scores": [
+            2,
+            3
+          ]
+        }
+      },
+      "judges": [
+        "j1",
+        "j2"
+      ],
+      "kind": "always_loaded",
+      "mean_median": 2.6,
+      "top_findings": [
+        "Cut the six inline signal implementations and the post-corruption recovery material down to one gotcha line each and hand the procedure to `/git:coworker-check` and its `detect-coworkers.sh` by name, which already own and test it.",
+        "Move the six signal implementations, their bash blocks, the bare-flip recovery table and the Limitations caveats into git-plugin/skills/git-coworker-check/REFERENCE.md, leaving the always-loaded rule as the hazard statement, the response invariants, the verdict vocabulary and a named pointer to the skill."
+      ]
+    },
+    ".claude/rules/terminology.md": {
+      "counter_findings": [
+        "The ownership boundary \u2014 plugin-specific vocabulary stays in that plugin's rules and cross-links here, with Related naming agent-development.md as the owner of the formal subagent definitions \u2014 is cheap, non-obvious, and prevents exactly the duplication C4 penalises, so it should survive any trim.",
+        "The explicit ownership boundary \u2014 plugin-specific vocabulary stays in that plugin's rules and cross-links back here \u2014 is real single-source-of-truth discipline that tells a future edit where to land, and should survive any trimming."
+      ],
+      "dimensions": {
+        "C1": {
+          "contested": false,
+          "gap": 0,
+          "median": 4.0,
+          "scores": [
+            4,
+            4
+          ]
+        },
+        "C2": {
+          "contested": false,
+          "median": "n/a",
+          "scores": [
+            "n/a",
+            "n/a"
+          ]
+        },
+        "C3": {
+          "contested": false,
+          "gap": 0,
+          "median": 2.0,
+          "scores": [
+            2,
+            2
+          ]
+        },
+        "C4": {
+          "contested": false,
+          "gap": 0,
+          "median": 4.0,
+          "scores": [
+            4,
+            4
+          ]
+        },
+        "C5": {
+          "contested": false,
+          "gap": 0,
+          "median": 1.0,
+          "scores": [
+            1,
+            1
+          ]
+        },
+        "C6": {
+          "contested": false,
+          "gap": 0,
+          "median": 3.0,
+          "scores": [
+            3,
+            3
+          ]
+        }
+      },
+      "judges": [
+        "j1",
+        "j2"
+      ],
+      "kind": "always_loaded",
+      "mean_median": 2.8,
+      "top_findings": [
+        "Cut the file to the handful of terms that carry house-specific meaning plus the ownership pointers, and move the rest (or the whole glossary) to an on-demand lookup surface, since a Claude 5 model already uses 'happy path', 'dry-run', 'extract', and 'staging' correctly without being told on every turn.",
+        "Move the glossary off the always-loaded surface \u2014 path-scope it or promote it to an on-demand skill referenced by name \u2014 and keep in context only the handful of entries whose meaning is house-specific rather than universal software vocabulary."
+      ]
+    },
+    "CLAUDE.md": {
+      "counter_findings": [
+        "The Blueprint constrained-dogfooding section earns its tokens outright: the disabled-task reasons, the consumer-only autonomy-level-3 caveat and the deliberately non-matching `blueprint` commit scope are non-discoverable traps that would cause real damage if a model re-derived them from the repo.",
+        "The Blueprint constrained-dogfooding section earns its always-loaded tokens: which tasks are deliberately disabled and why, the --dry-run precondition, and the consumer-only autonomy-level-3 boundary are non-derivable facts that must hold before any turn touches docs/blueprint/."
+      ],
+      "dimensions": {
+        "C1": {
+          "contested": false,
+          "gap": 0,
+          "median": 3.0,
+          "scores": [
+            3,
+            3
+          ]
+        },
+        "C2": {
+          "contested": false,
+          "median": "n/a",
+          "scores": [
+            "n/a",
+            "n/a"
+          ]
+        },
+        "C3": {
+          "contested": false,
+          "gap": 1,
+          "median": 3.5,
+          "scores": [
+            4,
+            3
+          ]
+        },
+        "C4": {
+          "contested": false,
+          "gap": 0,
+          "median": 2.0,
+          "scores": [
+            2,
+            2
+          ]
+        },
+        "C5": {
+          "contested": false,
+          "gap": 0,
+          "median": 2.0,
+          "scores": [
+            2,
+            2
+          ]
+        },
+        "C6": {
+          "contested": false,
+          "gap": 1,
+          "median": 3.5,
+          "scores": [
+            4,
+            3
+          ]
+        }
+      },
+      "judges": [
+        "j1",
+        "j2"
+      ],
+      "kind": "always_loaded",
+      "mean_median": 2.8,
+      "top_findings": [
+        "Promote the four always-loaded procedures (Creating New Skills, Creating User-Invocable Skills, Plugin Lifecycle, Development Workflow) into an authoring skill and leave one named reference line each, so the always-loaded surface keeps only the gotchas.",
+        "Promote the authoring procedures (Quick Start, Creating User-Invocable Skills, Plugin Lifecycle, Development Workflow) into one plugin-authoring skill referenced by name, leaving CLAUDE.md as repo blurb plus rules index plus gotchas."
+      ]
+    },
+    "agent-patterns-plugin/skills/meta-context-diet/SKILL.md": {
+      "counter_findings": [
+        "The destructive-vs-non-destructive confirmation tier table earns every token it costs: it draws the one distinction that decides whether an approval can be batched, and states the reason (a lossy edit to always-loaded context degrades every downstream turn) so the model can classify a disposition the table never enumerates.",
+        "The destructive-vs-non-destructive confirmation tier table earns every token it costs: it draws an irreversibility boundary (a lossy edit to an every-turn file degrades every downstream turn) at exactly the point a capable model would otherwise batch for convenience, and it says why, so it generalises to dispositions the table does not enumerate."
+      ],
+      "dimensions": {
+        "C1": {
+          "contested": false,
+          "gap": 1,
+          "median": 4.5,
+          "scores": [
+            4,
+            5
+          ]
+        },
+        "C2": {
+          "contested": false,
+          "gap": 0,
+          "median": 4.0,
+          "scores": [
+            4,
+            4
+          ]
+        },
+        "C3": {
+          "contested": false,
+          "gap": 0,
+          "median": 2.0,
+          "scores": [
+            2,
+            2
+          ]
+        },
+        "C4": {
+          "contested": true,
+          "gap": 2,
+          "median": 4.0,
+          "scores": [
+            3,
+            5
+          ]
+        },
+        "C5": {
+          "contested": false,
+          "median": "n/a",
+          "scores": [
+            "n/a",
+            "n/a"
+          ]
+        },
+        "C6": {
+          "contested": false,
+          "gap": 0,
+          "median": 2.0,
+          "scores": [
+            2,
+            2
+          ]
+        }
+      },
+      "judges": [
+        "j1",
+        "j2"
+      ],
+      "kind": "skill",
+      "mean_median": 3.3,
+      "top_findings": [
+        "Bundle an inventory script that emits each always-loaded file with its char/token count and `paths:`-glob status as structured output, and move the disposition rubric, execution-mechanics table, report template, and batch-approval path into a supporting file \u2014 turning the 13.8K single file into a lean entry point over a deterministic sweep.",
+        "Extract the deterministic half of the audit \u2014 always-loaded file discovery, `wc -c` sizing, token estimation, and the net-delta arithmetic \u2014 into a bundled script the skill runs, which simultaneously earns back C6 and lets the rare-path batch-approval and report-template material move out of the single 13,784-char body."
+      ]
+    },
+    "agent-patterns-plugin/skills/parallel-agent-dispatch/SKILL.md": {
+      "counter_findings": [
+        "The loud-failure contract earns its tokens outright \u2014 the paste-into-every-brief sentence plus the success/partial/total-blocker escalation table converts an invisible failure mode (a one-word summary read as success, worktree cleaned, work lost) into a mechanically checkable status field.",
+        "The loud-failure contract earns its tokens outright: the status enum plus the one-sentence brief to paste verbatim converts a silent, unrecoverable failure mode (a one-word final message the harness reads as 'no changes') into a machine-checkable outcome, and it should not be cut."
+      ],
+      "dimensions": {
+        "C1": {
+          "contested": false,
+          "gap": 0,
+          "median": 5.0,
+          "scores": [
+            5,
+            5
+          ]
+        },
+        "C2": {
+          "contested": false,
+          "gap": 0,
+          "median": 4.0,
+          "scores": [
+            4,
+            4
+          ]
+        },
+        "C3": {
+          "contested": false,
+          "gap": 0,
+          "median": 3.0,
+          "scores": [
+            3,
+            3
+          ]
+        },
+        "C4": {
+          "contested": false,
+          "gap": 1,
+          "median": 3.5,
+          "scores": [
+            4,
+            3
+          ]
+        },
+        "C5": {
+          "contested": false,
+          "median": "n/a",
+          "scores": [
+            "n/a",
+            "n/a"
+          ]
+        },
+        "C6": {
+          "contested": false,
+          "gap": 1,
+          "median": 4.5,
+          "scores": [
+            5,
+            4
+          ]
+        }
+      },
+      "judges": [
+        "j1",
+        "j2"
+      ],
+      "kind": "skill",
+      "mean_median": 4.0,
+      "top_findings": [
+        "Split the single REFERENCE.md into path-specific files and move the rare worktree-hazard case studies (#1838 nested-repo, #1692 GIT_DIR export, #1480 cwd-reset) out of the entry point into them, leaving one-line pointers behind.",
+        "Split the single REFERENCE.md into path-scoped files and move the inlined rare-path hazard narratives (#1692, #1838, #1546, #1868, #2039) out of the entry point into them, leaving one-line pointers \u2014 which also removes the #1868/#1319 duplication against the always-loaded coworker-detection rule."
+      ]
+    },
+    "comfyui-plugin/skills/comfy-node/SKILL.md": {
+      "counter_findings": [
+        "The Phase 3 explanation of why main is seeded directly, plus the branch-protection hook note, earn their tokens outright: both pre-empt a non-obvious and expensive rename/default-branch/base-branch recovery that a model reasoning from ordinary feature-branch habits would walk straight into.",
+        "The Phase 3 rationale plus the branch-protection hook blockquote earns its tokens outright \u2014 it records an empirically confirmed harness false positive and the concrete missing-main/rename cost of the obvious workaround, which no model could re-derive from the repo."
+      ],
+      "dimensions": {
+        "C1": {
+          "contested": false,
+          "gap": 0,
+          "median": 5.0,
+          "scores": [
+            5,
+            5
+          ]
+        },
+        "C2": {
+          "contested": false,
+          "gap": 0,
+          "median": 4.0,
+          "scores": [
+            4,
+            4
+          ]
+        },
+        "C3": {
+          "contested": false,
+          "gap": 1,
+          "median": 3.5,
+          "scores": [
+            3,
+            4
+          ]
+        },
+        "C4": {
+          "contested": false,
+          "gap": 0,
+          "median": 2.0,
+          "scores": [
+            2,
+            2
+          ]
+        },
+        "C5": {
+          "contested": false,
+          "median": "n/a",
+          "scores": [
+            "n/a",
+            "n/a"
+          ]
+        },
+        "C6": {
+          "contested": false,
+          "gap": 1,
+          "median": 4.5,
+          "scores": [
+            4,
+            5
+          ]
+        }
+      },
+      "judges": [
+        "j1",
+        "j2"
+      ],
+      "kind": "skill",
+      "mean_median": 3.8,
+      "top_findings": [
+        "Designate one owner for the shared gitops repo-adoption procedure (Phases 3-5, the branch-protection note, the failure-mode rows) and have this skill reference it rather than carry its own copy, since the twin in foundryvtt-plugin/skills/foundryvtt-module/SKILL.md has already drifted from it.",
+        "Designate one owner for the gitops adoption procedure shared verbatim with foundryvtt-plugin:foundryvtt-module and have the other reference it by plugin:skill name, and delete the Notes bullets that restate Phase 2 rather than pointing at it."
+      ]
+    },
+    "configure-plugin/skills/configure-claude-plugins/SKILL.md": {
+      "counter_findings": [
+        "The Step 3 suffix callout table earns its tokens outright \u2014 two visually-similar suffix forms whose confusion fails silently in one direction and hard in the other is exactly the non-inferable gotcha a skill should spend tokens on.",
+        "The Step 3 suffix-form callout \u2014 the two-row table plus the explicit consequence of each wrong choice \u2014 encodes a silent-failure mode the model cannot infer from the file names alone and must not be cut."
+      ],
+      "dimensions": {
+        "C1": {
+          "contested": false,
+          "gap": 0,
+          "median": 4.0,
+          "scores": [
+            4,
+            4
+          ]
+        },
+        "C2": {
+          "contested": false,
+          "gap": 0,
+          "median": 4.0,
+          "scores": [
+            4,
+            4
+          ]
+        },
+        "C3": {
+          "contested": false,
+          "gap": 0,
+          "median": 2.0,
+          "scores": [
+            2,
+            2
+          ]
+        },
+        "C4": {
+          "contested": false,
+          "gap": 0,
+          "median": 2.0,
+          "scores": [
+            2,
+            2
+          ]
+        },
+        "C5": {
+          "contested": false,
+          "median": "n/a",
+          "scores": [
+            "n/a",
+            "n/a"
+          ]
+        },
+        "C6": {
+          "contested": false,
+          "gap": 0,
+          "median": 2.0,
+          "scores": [
+            2,
+            2
+          ]
+        }
+      },
+      "judges": [
+        "j1",
+        "j2"
+      ],
+      "kind": "skill",
+      "mean_median": 2.8,
+      "top_findings": [
+        "Split the file: move the `--exhaustive` derivation/composition path and the two full workflow YAML templates into separately-loadable supporting files (and turn the settings.json merge + map composition into a runnable script), leaving a lean entry point that carries only the default path.",
+        "Split the file: move the two workflow YAML bodies and the `--exhaustive` enumeration branch into separately-loadable supporting files, and replace the prose merge/compose/diff/report procedure with a bundled script the skill runs, so the entry point carries only the core path."
+      ]
+    },
+    "configure-plugin/skills/configure-security/SKILL.md": {
+      "counter_findings": [
+        "The bundled detection script plus its STATUS=/KEY=VALUE parse contract earns its tokens outright \u2014 it replaces what would otherwise be a page of prose describing how to detect languages and the four security layers, and it runs without ever entering context.",
+        "Step 2's script invocation plus its named STATUS=/ISSUES:/KEY=VALUE output contract earns its tokens outright \u2014 it replaces an entire prose detection procedure with a deterministic artifact the model runs rather than reads."
+      ],
+      "dimensions": {
+        "C1": {
+          "contested": false,
+          "gap": 1,
+          "median": 3.5,
+          "scores": [
+            4,
+            3
+          ]
+        },
+        "C2": {
+          "contested": false,
+          "gap": 0,
+          "median": 4.0,
+          "scores": [
+            4,
+            4
+          ]
+        },
+        "C3": {
+          "contested": false,
+          "gap": 0,
+          "median": 4.0,
+          "scores": [
+            4,
+            4
+          ]
+        },
+        "C4": {
+          "contested": false,
+          "gap": 0,
+          "median": 3.0,
+          "scores": [
+            3,
+            3
+          ]
+        },
+        "C5": {
+          "contested": false,
+          "median": "n/a",
+          "scores": [
+            "n/a",
+            "n/a"
+          ]
+        },
+        "C6": {
+          "contested": false,
+          "gap": 0,
+          "median": 4.0,
+          "scores": [
+            4,
+            4
+          ]
+        }
+      },
+      "judges": [
+        "j1",
+        "j2"
+      ],
+      "kind": "skill",
+      "mean_median": 3.7,
+      "top_findings": [
+        "Split the single ~13KB sidecar into per-layer references (dependency, SAST, secrets, policy, CI workflow) so a --type secrets run loads only secret-detection templates instead of every template in the skill.",
+        "Fold Step 1's six-link manual version lookup into the detection script (or drop it in favour of a pinned version list) so the one remaining block of mechanical work stops being re-derived in prose on every invocation."
+      ]
+    },
+    "git-plugin/skills/git-commit/SKILL.md": {
+      "counter_findings": [
+        "The quoted-heredoc escaping warning earns its tokens outright \u2014 it names a non-obvious failure the model would otherwise reflexively commit and states the exact downstream cost (a literal backslash surviving into git log, needing an --amend).",
+        "The quoted-heredoc warning earns its tokens outright \u2014 it names a real, non-obvious failure (a reflexive backslash-escape surviving into `git log` and needing an `--amend`) that a model would otherwise reproduce every time."
+      ],
+      "dimensions": {
+        "C1": {
+          "contested": false,
+          "gap": 1,
+          "median": 3.5,
+          "scores": [
+            4,
+            3
+          ]
+        },
+        "C2": {
+          "contested": false,
+          "gap": 0,
+          "median": 4.0,
+          "scores": [
+            4,
+            4
+          ]
+        },
+        "C3": {
+          "contested": false,
+          "gap": 0,
+          "median": 4.0,
+          "scores": [
+            4,
+            4
+          ]
+        },
+        "C4": {
+          "contested": false,
+          "gap": 0,
+          "median": 2.0,
+          "scores": [
+            2,
+            2
+          ]
+        },
+        "C5": {
+          "contested": false,
+          "median": "n/a",
+          "scores": [
+            "n/a",
+            "n/a"
+          ]
+        },
+        "C6": {
+          "contested": false,
+          "gap": 1,
+          "median": 3.5,
+          "scores": [
+            3,
+            4
+          ]
+        }
+      },
+      "judges": [
+        "j1",
+        "j2"
+      ],
+      "kind": "skill",
+      "mean_median": 3.4,
+      "top_findings": [
+        "Delete the duplicated conventional-commit type table and Fixes/Closes/Refs keyword table, keeping only the existing link to .claude/rules/conventional-commits.md as the single owner.",
+        "Delete the conventional-commit type table and the Fixes/Closes/Refs table from the body and keep only the existing one-line pointer to `.claude/rules/conventional-commits.md`, which already owns both and is loaded anyway."
+      ]
+    },
+    "testing-plugin/skills/test-tier-selection/SKILL.md": {
+      "counter_findings": [
+        "The Escalation Signals section earns its tokens: it names the underlying conditions (multi-file spans, service boundaries, auth changes, critical paths) that let the model generalise to change types the matrix never enumerates.",
+        "The named hand-off targets \u2014 test-consult for strategy, and the test-architecture / test-runner / system-debugging agents for their respective failure shapes \u2014 are local routing facts the model cannot derive from the repo and should stay even if the trigger bullets under them are trimmed."
+      ],
+      "dimensions": {
+        "C1": {
+          "contested": false,
+          "gap": 0,
+          "median": 2.0,
+          "scores": [
+            2,
+            2
+          ]
+        },
+        "C2": {
+          "contested": false,
+          "gap": 0,
+          "median": 3,
+          "scores": [
+            3,
+            "n/a"
+          ]
+        },
+        "C3": {
+          "contested": false,
+          "gap": 0,
+          "median": 3.0,
+          "scores": [
+            3,
+            3
+          ]
+        },
+        "C4": {
+          "contested": false,
+          "gap": 0,
+          "median": 2.0,
+          "scores": [
+            2,
+            2
+          ]
+        },
+        "C5": {
+          "contested": false,
+          "median": "n/a",
+          "scores": [
+            "n/a",
+            "n/a"
+          ]
+        },
+        "C6": {
+          "contested": false,
+          "gap": 0,
+          "median": 2.0,
+          "scores": [
+            2,
+            2
+          ]
+        }
+      },
+      "judges": [
+        "j1",
+        "j2"
+      ],
+      "kind": "skill",
+      "mean_median": 2.4,
+      "top_findings": [
+        "Replace the prose escalation criteria with a runnable scope-detection command (e.g. `git diff --name-only`/`--stat` against the base) so the tier decision is grounded in the actual change instead of re-derived from a static matrix each run.",
+        "Replace the hand-maintained 'Commands by Tier' and tier-definition tables with a pointer to the real skill interfaces (test-quick / test-full and its declared flags), since `/test:full --coverage` does not run the integration tier and the duplicated tables have already drifted from testing-plugin/README.md."
+      ]
+    }
+  }
+}

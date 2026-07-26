@@ -8,7 +8,7 @@
       "rationale": "The only hard, unconditional constraints concern irreversibility (no lossy edit to an every-turn file without per-candidate confirmation) and each states why; everything else is delegated to a stated judgment question the model can generalise from, and the confirmation shape is derived from a principle (how lossy) rather than enumerated by convenience.",
       "evidence": [
         {"quote": "The deciding question is **\"must this be true on every turn regardless of what the user asked?\"**"},
-        {"quote": "The confirmation shape depends on **how lossy the disposition is**, not on convenience."}
+        {"quote": "The confirmation shape depends on **how lossy the disposition is**, not on convenience"}
       ]
     },
     "C2": {

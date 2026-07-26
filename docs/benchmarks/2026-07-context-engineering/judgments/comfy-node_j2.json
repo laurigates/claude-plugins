@@ -1,0 +1,66 @@
+{
+  "unit": "comfyui-plugin/skills/comfy-node/SKILL.md",
+  "unit_kind": "skill",
+  "judge_id": "j2",
+  "dimensions": {
+    "C1": {
+      "score": 5,
+      "rationale": "Nearly every hard constraint concerns irreversibility on shared infrastructure or a failed-state push, and each states its reason inline so the model can generalise (why the merge gate is human, why a red pack must not be pushed, why seeding a feature branch is rejected); derivation of names/topics/descriptions is delegated to judgment via a 'how to derive' table rather than prescribed. Only 'Don't fight the hook with quoting tricks either.' is a bare prohibition without a stated why.",
+      "evidence": [
+        {"quote": "(merging the gitops PR) is intentionally human — it feeds the apply pipeline on"},
+        {"quote": "re-run — do not create the remote repo on a red pack."}
+      ]
+    },
+    "C2": {
+      "score": 4,
+      "rationale": "The interface it actually drives — scaffold.py's flags — is declared as a parameters table with alternatives enumerated at the point of declaration and the invalid combination named ('modal variants only; omit for gesture'), so examples illustrate rather than define. Short of exemplary only because the skill's own invocation surface is undeclared: no args or argument-hint in frontmatter, so 'an idea' as free text has no stated shape.",
+      "evidence": [
+        {"quote": "| `--variant` | `gesture` for canvas interactions (resize/move/region); `frontend` for a per-widget modal; `backend` only if it reads disk / serves data. | `gesture` |"}
+      ]
+    },
+    "C3": {
+      "score": 4,
+      "rationale": "Generation is deferred to an executable script that runs without being read into context, and two whole downstream pipelines are deferred to separately-loadable sibling skills named inline (comfyui-node-scaffold, comfyui-screenshot-pipeline). It falls short of 5 because the unit ships no supporting file of its own — the rare paths (the branch-protection hook workaround blockquote, the failure-modes table, the Notes section) are all inlined into the single entry point rather than split out.",
+      "evidence": [
+        {"quote": "PNGs. The screenshot pipeline stays deferred to the `comfyui-screenshot-pipeline`"},
+        {"quote": "python3 .claude/skills/comfyui-node-scaffold/scaffold.py --name comfyui-touch-resize"}
+      ]
+    },
+    "C4": {
+      "score": 2,
+      "rationale": "The gitops-adoption procedure is maintained twice: foundryvtt-plugin/skills/foundryvtt-module/SKILL.md is a structural twin (same phase numbering, same mermaid shape, same preconditions and failure-modes rows) and reproduces several lines verbatim, including the tofu-apply Notes bullet and the human-gate sentence quoted below — with no pointer in either direction naming an owner. Internally the unit also repeats itself: the Notes section restates the Phase 2 finishing-pass paragraph and then points back at it, and 'do not merge it for them' restates the earlier gate rule.",
+      "evidence": [
+        {"quote": "- The orchestrator never runs `tofu apply` — all applies go through the gitops"},
+        {"quote": "for the rest; `just assets` (rsvg-convert) produces the served PNGs. See the"},
+        {"quote": "GitHub Actions workflow). Never merge it on the"},
+        {"quote": "`tofu-apply.yml`). Do not merge it for them."}
+      ]
+    },
+    "C5": {
+      "score": "n/a",
+      "rationale": "C5 applies only to always-loaded surfaces (CLAUDE.md, .claude/rules/*). This is a SKILL.md body that costs tokens only once the skill fires.",
+      "evidence": []
+    },
+    "C6": {
+      "score": 5,
+      "rationale": "Every mechanical step points at an executable or exact artifact rather than prose: generation runs scaffold.py, the green gate is `just check`, rasterization is `just assets`, the infra edits are literal HCL blocks to paste rather than described, and post-apply wiring is verified by two gh commands paired with the exact expected result. The unit is explicit throughout about running the artifact versus reading it (it notes the scaffold prints its own follow-ups and its own finishing-pass audit).",
+      "evidence": [
+        {"quote": "python3 .claude/skills/comfyui-node-scaffold/scaffold.py --name comfyui-touch-resize"},
+        {"quote": "`REGISTRY_ACCESS_TOKEN` should be listed; the variable lookup should return its"}
+      ]
+    }
+  },
+  "top_finding": "Designate one owner for the gitops adoption procedure shared verbatim with foundryvtt-plugin:foundryvtt-module and have the other reference it by plugin:skill name, and delete the Notes bullets that restate Phase 2 rather than pointing at it.",
+  "counter_finding": "The Phase 3 rationale plus the branch-protection hook blockquote earns its tokens outright — it records an empirically confirmed harness false positive and the concrete missing-main/rename cost of the obvious workaround, which no model could re-derive from the repo.",
+  "leakage": {
+    "house_standards_seen": [
+      "CLAUDE.md (project instructions, incl. plugin lifecycle and conventional-commit scopes)",
+      ".claude/rules/skill-quality.md (auto-injected: 26,000-char ceiling, mandatory When-to-Use and Agentic Optimizations tables, description length band, model policy)",
+      ".claude/rules/skill-development.md (auto-injected)",
+      ".claude/rules/skill-evaluation.md (auto-injected)",
+      ".claude/rules/skill-execution-structure.md, skill-consolidation.md, skill-argument-handling.md, skill-fork-context.md, agentic-optimization.md, agentic-permissions.md, regression-testing.md, and ~10 further rules (auto-injected)"
+    ],
+    "influenced_scoring": false,
+    "note": "Several files on the hard-constraint no-read list (skill-quality.md, skill-development.md, skill-evaluation.md) were auto-injected into my context by the repo before my first tool call; I did not open them and did not use them as anchors. Concretely, I neither credited the unit for having a 'When to Use This Skill' table nor penalised it for lacking an 'Agentic Optimizations' table, and C3 was scored on disclosure structure (script + named sibling skills vs everything inlined) rather than against any character threshold. C4 used repo search (foundryvtt-plugin:foundryvtt-module) as the rubric permits, not a house dedupe rule."
+  }
+}

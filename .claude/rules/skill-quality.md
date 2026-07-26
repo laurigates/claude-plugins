@@ -31,11 +31,24 @@ The cost a `SKILL.md` body imposes once it loads is **tokens**, not lines. Lines
 
 ## Required Sections
 
-Every skill MUST have:
+> **Demoted 2026-07-26 by [`context-engineering.md`](context-engineering.md).**
+> The "When to Use" table is now **recommended where it disambiguates sibling
+> skills**, and "Agentic Optimizations" is **optional**. Measurement:
+> `When to Use` costs ~70K tokens across 407 skills (9.2% of all body mass) for
+> guidance Anthropic's Claude 5 context-engineering post locates in the
+> `description` field. See
+> [`docs/benchmarks/2026-07-context-engineering/`](../../docs/benchmarks/2026-07-context-engineering/) § 5 F2.
+> The rest of this section stands.
+
+Every skill SHOULD have:
 
 ### 1. "When to Use" Decision Table
 
 Place immediately after the title. Helps Claude decide when to load the skill vs alternatives.
+
+Keep it when two or more sibling skills could plausibly match the same intent —
+that disambiguation is what the judges credited it for. Drop it when the
+`description` already carries the trigger and no sibling competes.
 
 ```markdown
 ## When to Use This Skill

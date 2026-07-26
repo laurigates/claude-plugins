@@ -93,6 +93,7 @@ Tier 0/1.
 
 ## Related
 
+- `.claude/rules/context-engineering.md` — the *context-cost* axis: how the corpus measures against the Claude 5 context-engineering rules, and why ablation (Tier 2) is what would turn those judgments into measurements
 - [`evaluate-plugin/docs/cross-model-evaluation.md`](../../evaluate-plugin/docs/cross-model-evaluation.md) — full design, run engine, token math
 - `evaluate-plugin` — the skills and scripts that implement this
 - `.claude/rules/regression-testing.md` — keeping a fixed bug fixed (the complement to effectiveness)

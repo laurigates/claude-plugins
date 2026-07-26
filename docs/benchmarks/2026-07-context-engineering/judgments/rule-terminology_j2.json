@@ -1,0 +1,78 @@
+{
+  "unit": ".claude/rules/terminology.md",
+  "unit_kind": "always_loaded",
+  "judge_id": "j2",
+  "dimensions": {
+    "C1": {
+      "score": 4,
+      "rationale": "The unit imposes almost no directives: it explicitly disclaims prescriptive force and frames every entry as a 'Use when' condition that selects a word rather than a prohibition on other words, which is the delegated-judgment shape the anchor rewards. It falls short of 5 only because the few constraints it does carry (the four-step 'Extending' list) are glossary bookkeeping rather than load-bearing rules that generalise.",
+      "evidence": [
+        {"quote": "The list is descriptive of current practice, not prescriptive: extend it as the vocabulary matures."}
+      ]
+    },
+    "C2": {
+      "score": "n/a",
+      "rationale": "The unit is a narrative/definitional reference with no invocation interface — no arguments, flags, or parameters to make self-describing. The rubric directs 'a pure narrative reference is n/a'.",
+      "evidence": []
+    },
+    "C3": {
+      "score": 2,
+      "rationale": "One flat always-loaded file carries everything: seven full reference tables, a meta-section explaining how to read a three-column table, and a maintenance procedure that only matters on the rare occasion someone adds a term — none of it split into a separately-loadable surface. The only disclosure gesture is pushing plugin-specific terms outward to plugin rules, which keeps it above anchor 1 but well short of competent.",
+      "evidence": [
+        {"quote": "When a new term earns its place in the team's vocabulary:"}
+      ]
+    },
+    "C4": {
+      "score": 4,
+      "rationale": "Ownership is unusually explicit for a glossary: it names where plugin-specific vocabulary must live instead, cross-links rather than restating (parallel-agent-dispatch, agent-development, conventional-commits), and openly flags the one acknowledged overlap. Short of 5 because a handful of entries (Fan-out agents, Spin up a subagent, Checkpoint, Adversarial review) do re-define concepts already owned by named plugin skills the file itself points at.",
+      "evidence": [
+        {"quote": "If the term is plugin-specific (e.g. blueprint's `ADR`, `PRD`, `PRP`), keep it in that plugin's rules and cross-link instead."}
+      ]
+    },
+    "C5": {
+      "score": 1,
+      "rationale": "This is the anchor-1 case almost exactly: ~55 definitions loaded into every turn of every session, the overwhelming majority of which state the obvious to a Claude 5 generation model. Nothing in 'Code operations' (hoist, lift, extract, inline, refactor in place, normalize), 'Requirements framing' (user story, happy path, edge cases, invariants, acceptance criteria), or 'Work state' (resume, park, unblock, stage) redefines a term against its universal software meaning — a capable model already uses every one of them correctly without being told. Perhaps five entries carry any house-specific hook, and the file also inlines a maintenance procedure that only matters when a term is being added. Almost none of it must hold on a turn where the user asked about something else.",
+      "evidence": [
+        {"quote": "| Extract | Pull logic out into its own unit (function, module, file) | A block has earned a name or wants reuse |"},
+        {"quote": "| Happy path | The nominal flow when nothing goes wrong | Establishing the baseline behaviour first |"}
+      ]
+    },
+    "C6": {
+      "score": 3,
+      "rationale": "Genuinely narrative material — definitions and disambiguating conditions are not mechanical work a script or schema could state more exactly, so the dimension applies only weakly and the unit is not penalised. It does point at the higher-fidelity artifacts that own the concepts (plugin skills and sibling rules) by name rather than re-describing their behaviour in prose.",
+      "evidence": []
+    }
+  },
+  "top_finding": "Move the glossary off the always-loaded surface — path-scope it or promote it to an on-demand skill referenced by name — and keep in context only the handful of entries whose meaning is house-specific rather than universal software vocabulary.",
+  "counter_finding": "The explicit ownership boundary — plugin-specific vocabulary stays in that plugin's rules and cross-links back here — is real single-source-of-truth discipline that tells a future edit where to land, and should survive any trimming.",
+  "section_verdicts": [
+    {"section": "## How to read an entry", "verdict": "drop", "why": "a table explaining the columns of a three-column table is self-evident to any reader"},
+    {"section": "## Scoping & planning", "verdict": "lean", "why": "triage/descope/spike/decompose are universal; only 'Set the seam' carries distinctive intent"},
+    {"section": "## Review & verification", "verdict": "path-scope", "why": "adversarial review and red-team map to named skills; the rest is generic and only matters during review work"},
+    {"section": "## Parallelism & delegation", "verdict": "lean", "why": "the cross-links to parallel-agent-dispatch and parallel-safe-queries are the value; the five definitions are not"},
+    {"section": "## Work state", "verdict": "drop", "why": "resume/park/unblock/hand off/stage are already used correctly without definition"},
+    {"section": "## Code operations", "verdict": "drop", "why": "twelve rows of standard refactoring vocabulary paid for on every turn"},
+    {"section": "## Requirements framing", "verdict": "drop", "why": "user story, happy path, edge cases, invariants are textbook terms no model needs defined"},
+    {"section": "## Extending the glossary", "verdict": "promote-to-skill", "why": "a maintenance procedure that matters only when someone is adding a term"},
+    {"section": "## Related", "verdict": "keep", "why": "cheap pointers that establish ownership and name the surfaces that own overlapping vocabulary"}
+  ],
+  "leakage": {
+    "house_standards_seen": [
+      "CLAUDE.md (project instructions, auto-injected in full)",
+      ".claude/rules/terminology.md — the unit under judgment was itself auto-injected into my context before I opened it",
+      ".claude/rules/pr-branch-sync.md",
+      ".claude/rules/handling-blocked-hooks.md",
+      ".claude/rules/loop-integrity.md",
+      ".claude/rules/bash-tool-replacements.md",
+      ".claude/rules/gh-json-fields.md",
+      ".claude/rules/parallel-safe-queries.md",
+      ".claude/rules/conventional-commits.md",
+      ".claude/rules/task-id-stability.md",
+      ".claude/rules/offload-to-deterministic-substrate.md",
+      ".claude/rules/docs-currency.md",
+      ".claude/rules/agent-coworker-detection.md"
+    ],
+    "influenced_scoring": false,
+    "note": "The repo auto-injected CLAUDE.md and twelve rules — including the full text of terminology.md itself — into this agent's context before any tool call. None of the excluded house standards (skill-quality.md, skill-development.md, skill-evaluation.md, the marketplace-quality rubric, metrics.json, sibling judgments) appeared, and I read none of them. I scored only against the frozen rubric's anchors. The injection is worth recording because it is a direct demonstration of the cost model C5 judges: this file was paid for in my context whether or not the task involved vocabulary, which is the rubric's own always-loaded framing rather than a house criterion. I checked that no auto-injected rule's phrasing was used as an anchor; conventional-commits.md was visible but its subject matter is on the exclusion list and carried no weight."
+  }
+}

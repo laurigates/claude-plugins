@@ -1,0 +1,52 @@
+{
+  "unit": "agent-patterns-plugin/skills/parallel-agent-dispatch/SKILL.md",
+  "unit_kind": "skill",
+  "judge_id": "j2",
+  "dimensions": {
+    "C1": {
+      "score": 5,
+      "rationale": "Every hard constraint concerns irreversibility or an automation contract (lost worktree work, duplicate PRs, a shared checkout flipped to bare) and each one states its mechanism, so the model can generalise past the enumerated case: the preflight table pairs each check with a Rationale column, and the loud-failure rule explains that a one-word summary is indistinguishable from success so the harness reclaims the worktree. Defaults and tuning are delegated to judgment rather than fenced (start conservative and scale, prefer sequential waves, agents push their own commits with named exceptions), and the rate-limit signal is explicitly reframed as backoff rather than failure.",
+      "evidence": [
+        {"quote": "| Main working tree is clean (`git status --porcelain` empty) | Agents inherit cwd; uncommitted changes cross-contaminate worktrees |"},
+        {"quote": "Prefer **sequential waves of small batches** over one big fan-out beyond ~4"}
+      ]
+    },
+    "C2": {
+      "score": 4,
+      "rationale": "The unit takes no arguments itself but it defines the interface every dispatched agent must speak, and it does so by enumeration rather than by example: the Return Contract status values are declared as a three-row outcome table with the precise condition for each, agentType selection is a typed table of named alternatives with a Why column, and the invalid combination is named outright (a lock-contender cannot share a wave). Short of exemplary because the field list of the schema you are told to paste verbatim is given only as an inline parenthetical here, with the authoritative declaration deferred to REFERENCE.md.",
+      "evidence": [
+        {"quote": "| **Partial blocker** | Push the WIP, open a **draft PR**, return its URL **plus an explicit \"what's blocked\" list** — `status: partial` |"}
+      ]
+    },
+    "C3": {
+      "score": 3,
+      "rationale": "Disclosure is real and well-signposted — the core path stays here and lookup tables, templates, salvage routines and evidence trails are deferred to a supporting file referenced by name with per-section deep anchors — which meets the competent anchor. It does not reach exemplary: the deferral is into a single 30k-char sidecar rather than several files split by the path that needs them, there are no bundled executable scripts, and the entry point is not lean, carrying paragraph-length rare-path hazard narratives (#1692 GIT_DIR export leak, #1838 nested repos, #1546, #1868, #2039) inline alongside the core three-pillar procedure.",
+      "evidence": []
+    },
+    "C4": {
+      "score": 3,
+      "rationale": "Ownership is mostly clean and explicit: this file is the canonical owner of the dispatch contract and sibling skills point at it by name rather than copying it (workflow-wave-dispatch maps 'Return Contract reuse' to this skill's section, and wave-based-dispatch even checklists 'Return Contract referenced from parallel-agent-dispatch, never redefined'). It falls to competent rather than exemplary because two hazard narratives are maintained in full in more than one surface: the resumeFromRunId section restates the #1868 story, duplicate PR #1858 and the sequential re-dispatch remedy included, which is also carried at length by the always-loaded `.claude/rules/agent-coworker-detection.md` and again by `.claude/rules/agent-development.md:288`; the #1319 transient-leak paragraph likewise overlaps that same rule. The pointer is appended after the copy instead of replacing it.",
+      "evidence": []
+    },
+    "C5": {
+      "score": "n/a",
+      "rationale": "C5 applies only to always-loaded surfaces (CLAUDE.md and .claude/rules/*.md). This is a SKILL.md body, which costs tokens only once the skill fires, so the always-loaded budget anchors do not apply.",
+      "evidence": []
+    },
+    "C6": {
+      "score": 4,
+      "rationale": "Mechanical verification is delegated to real artifacts rather than re-derived in prose: a bulk-edit type maps to the exact command to run, the exit-code contract is stated so the agent knows what to do with the result, the closed-list case mandates re-running the authoritative checker (knip/build/test) and diffing rather than trusting a self-report, the missing-return case gives the two runnable git commands with a decision table on their output, and the return schema is explicitly a copy-verbatim read of another file because agents follow concrete schemas more reliably than prose. Short of exemplary because the unit's own most-repeated mechanical routine — the five-row worktree preflight and the orchestrator checklist — is still a prose table for the model to re-execute by hand, where a bundled preflight script could state and verify it exactly.",
+      "evidence": [
+        {"quote": "Exit 0 means ship; non-zero means fix-and-re-run inside the same agent's budget"},
+        {"quote": "| SKILL.md description rewrites | `python3 scripts/audit-skill-descriptions.py --strict-all` |"}
+      ]
+    }
+  },
+  "top_finding": "Split the single REFERENCE.md into path-scoped files and move the inlined rare-path hazard narratives (#1692, #1838, #1546, #1868, #2039) out of the entry point into them, leaving one-line pointers — which also removes the #1868/#1319 duplication against the always-loaded coworker-detection rule.",
+  "counter_finding": "The loud-failure contract earns its tokens outright: the status enum plus the one-sentence brief to paste verbatim converts a silent, unrecoverable failure mode (a one-word final message the harness reads as 'no changes') into a machine-checkable outcome, and it should not be cut.",
+  "leakage": {
+    "house_standards_seen": ["CLAUDE.md", ".claude/rules/skill-quality.md", ".claude/rules/skill-development.md", ".claude/rules/skill-evaluation.md", ".claude/rules/skill-execution-structure.md", ".claude/rules/skill-consolidation.md", ".claude/rules/skill-naming.md", ".claude/rules/skill-argument-handling.md", ".claude/rules/skill-fork-context.md", ".claude/rules/agentic-optimization.md", ".claude/rules/agentic-permissions.md", ".claude/rules/regression-testing.md", ".claude/rules/agent-coworker-detection.md", ".claude/rules/loop-integrity.md", ".claude/rules/offload-to-deterministic-substrate.md", ".claude/rules/auto-mode.md", ".claude/rules/sandbox-guidance.md", ".claude/rules/conventional-commits.md", ".claude/rules/gh-json-fields.md", ".claude/rules/parallel-safe-queries.md", ".claude/rules/bash-tool-replacements.md", ".claude/rules/terminology.md", ".claude/rules/task-id-stability.md", ".claude/rules/pr-branch-sync.md", ".claude/rules/version-pinning.md", ".claude/rules/docs-currency.md", ".claude/rules/handling-blocked-hooks.md"],
+    "influenced_scoring": false,
+    "note": "Three files on my do-not-read list (skill-quality.md, skill-development.md, skill-evaluation.md) were auto-injected by the harness into my context before my first turn; I could not prevent it. I deliberately did not use any excluded house criterion as an anchor: I did not score the presence of the 'When to Use This Skill' table or the absence of an 'Agentic Optimizations' table, did not apply the 26,000-char ceiling (the unit is 26,024 chars, which I never treated as evidence), did not score the REFERENCE.md filename as such, and did not score description length, frontmatter dates, model policy, or positive-framing style. My C3 remark that the entry point is not lean comes from the rubric's own anchor-5 wording ('a lean entry point'), not from the house char gate. For C4 I used the rubric's explicit permission to search the wider repo, and cite .claude/rules/agent-coworker-detection.md and .claude/rules/agent-development.md as the duplicate owners; agent-coworker-detection.md was in my injected context but is not on the exclusion list."
+  }
+}

@@ -28,6 +28,7 @@ Static compliance checks (`plugin-compliance-check.sh`) verify structure — thi
 | `/evaluate:improve` | Suggest improvements based on eval results |
 | `/evaluate:legibility` | Cold-read a SKILL.md with a zero-context agent reader to check its intent is legible (comprehension gate) |
 | `/evaluate:matrix` | Run a skill's evals across pinned models with real execution and grade the artifact (executability gate) |
+| `/evaluate:context-engineering` | Audit skills and always-loaded rules against the six Claude 5 context-engineering shifts (C1–C6) |
 
 ## Agents
 
@@ -106,6 +107,21 @@ winner. The ranking is recorded in `history.json`.
 | `scripts/grade_deterministic.py` | Grade machine-checkable (regex/substring) assertions with zero judge tokens; defers fuzzy ones to `eval-grader` |
 | `scripts/render_matrix_report.py` | Render the cross-model delta report from a `model-matrix.json` (delta verdict, portability flag, `executable_on_haiku` executability flag) |
 | `scripts/apply_fixture.sh` | Apply/tear down an eval's opt-in `fixture` block in an isolated temp workdir so context-needing skills can honestly execute |
+| `skills/evaluate-context-engineering/scripts/check-context-engineering.py` | Channel M scanner — deterministic C1–C6 proxies over the tree (`scripts/check-context-engineering.py` at the repo root is a shim onto it) |
+
+## Context Engineering
+
+`/evaluate:context-engineering` measures the corpus against Anthropic's
+[new context-engineering rules for Claude 5 generation models](https://claude.com/blog/the-new-rules-of-context-engineering-for-claude-5-generation-models):
+rules→judgment, examples→interface design, upfront→progressive disclosure,
+repetition→single source of truth, always-loaded budget, and specs→rich
+references.
+
+It runs the same two-channel design as the marketplace benchmark — a free
+deterministic scan (Channel M) and an anchored blind rubric (Channel J) — which
+are reported separately and never blended. The frozen rubric and the 2026-07
+findings live in
+[`docs/benchmarks/2026-07-context-engineering/`](../docs/benchmarks/2026-07-context-engineering/).
 
 ## Cross-Model Evaluation
 
