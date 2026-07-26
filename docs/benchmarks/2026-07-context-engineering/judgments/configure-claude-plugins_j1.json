@@ -1,0 +1,90 @@
+{
+  "unit": "configure-plugin/skills/configure-claude-plugins/SKILL.md",
+  "unit_kind": "skill",
+  "judge_id": "j1",
+  "dimensions": {
+    "C1": {
+      "score": 4,
+      "rationale": "Nearly every hard constraint is load-bearing and states its consequence — the suffix callout, the remote gate, the merge-preservation rule, and the diff-before-write gate all name the failure they prevent, so the model can generalise beyond the enumerated cases; it falls short of 5 only because a few directives (granular Bash patterns, the fixed 'Always include' plugin set, the alphabetised-map instruction) are bare prescriptions with no stated why.",
+      "evidence": [
+        {"quote": "Wrong suffix in `enabledPlugins` → entry silently ignored (marketplace key does not match). Wrong suffix in the workflow `plugins:` block → action rejects the run."},
+        {"quote": "workflows that cannot run (no remote → no GitHub Actions) should not be scaffolded by default"},
+        {"quote": "Use granular patterns only — do not add `Bash(bash *)` for CLI tools."}
+      ]
+    },
+    "C2": {
+      "score": 4,
+      "rationale": "The interface is self-describing: every flag is enumerated at the point of declaration in `argument-hint`, each has a `## Parameters` row stating its default, and the Step 4 gate table exhaustively names all six (has_remote × flag) combinations so no interaction is left ambiguous; short of 5 because the bare no-argument invocation and the `--check-only` + `--fix` combination are never defined.",
+      "evidence": [
+        {"quote": "argument-hint: \"[--check-only] [--fix] [--exhaustive] [--plugins <plugin1,plugin2,...>] [--workflows] [--no-workflows]\""},
+        {"quote": "| `--workflows` | Force-scaffold the `claude.yml` / `claude-code-review.yml` workflows even when no git remote is detected (default: scaffold only when a remote exists). |"}
+      ]
+    },
+    "C3": {
+      "score": 2,
+      "rationale": "One ~24,000-char file carries everything with no supporting files at all: the rare `--exhaustive` path (~70 lines of derivation tables, composition rules and a sample map), two complete workflow YAML bodies, the full settings stanza, and the report template are inlined alongside the core procedure. It is above a 1 only because the marketplace plugin list is deferred to a runtime query rather than enumerated in the body.",
+      "evidence": [
+        {"quote": "#### Exhaustive enumeration (when `--exhaustive` is set)"},
+        {"quote": "gh api repos/laurigates/claude-plugins/contents/.claude-plugin/marketplace.json --jq '.content' | base64 -d | jq -r '.plugins[].name'"}
+      ]
+    },
+    "C4": {
+      "score": 2,
+      "rationale": "The unit maintains the same guidance in two places internally: `## Parameters` and `## Flags` are two full tables covering the identical six flags with near-verbatim descriptions, and the two-suffix rule appears in the Step 3 callout, as inline comments in both workflow blocks, and again in Important Notes. Externally, `configure-plugin/skills/configure-repo/SKILL.md` restates the web-session rationale (\"extraKnownMarketplaces in .claude/settings.json is the key to surviving ephemeral web sessions\") rather than pointing here. The Important Notes bullet does at least cite the canonical table before restating it.",
+      "evidence": [
+        {"quote": "| `--check-only` | Report current status without making changes |"},
+        {"quote": "| `--exhaustive` | Enumerate every marketplace plugin as an explicit `true`/`false` so the project fully overrides global toggles."},
+        {"quote": "`extraKnownMarketplaces` in `.claude/settings.json` is the key to surviving ephemeral web sessions"}
+      ]
+    },
+    "C5": {
+      "score": "n/a",
+      "rationale": "This is a skill body, loaded only when the skill fires, not an always-loaded surface like CLAUDE.md or .claude/rules/*.md.",
+      "evidence": []
+    },
+    "C6": {
+      "score": 2,
+      "rationale": "The genuinely mechanical work — composing the exhaustive enabledPlugins map, merging into an existing settings.json without duplicating entries, deriving each plugin boolean from repo signals, and grouping the diff — is specified in prose for the model to re-derive each run, with no bundled script, schema, or validator. It clears a 1 because the two artifacts it writes are given as exact copy-ready YAML/JSON templates and the marketplace read is a concrete runnable jq/gh command rather than a description.",
+      "evidence": [
+        {"quote": "Build the full `enabledPlugins` map by reading every plugin name from the two relevant marketplaces, then writing each one with an explicit `true`/`false`."},
+        {"quote": "Render compact (a small markdown table or a `+`/`-` list)."}
+      ]
+    }
+  },
+  "top_finding": "Split the file: move the `--exhaustive` derivation/composition path and the two full workflow YAML templates into separately-loadable supporting files (and turn the settings.json merge + map composition into a runnable script), leaving a lean entry point that carries only the default path.",
+  "counter_finding": "The Step 3 suffix callout table earns its tokens outright — two visually-similar suffix forms whose confusion fails silently in one direction and hard in the other is exactly the non-inferable gotcha a skill should spend tokens on.",
+  "leakage": {
+    "house_standards_seen": [
+      "CLAUDE.md (project instructions, auto-injected)",
+      ".claude/rules/skill-quality.md",
+      ".claude/rules/skill-development.md",
+      ".claude/rules/skill-evaluation.md",
+      ".claude/rules/skill-execution-structure.md",
+      ".claude/rules/skill-argument-handling.md",
+      ".claude/rules/skill-consolidation.md",
+      ".claude/rules/skill-naming.md",
+      ".claude/rules/skill-fork-context.md",
+      ".claude/rules/agentic-optimization.md",
+      ".claude/rules/agentic-permissions.md",
+      ".claude/rules/auto-mode.md",
+      ".claude/rules/regression-testing.md",
+      ".claude/rules/offload-to-deterministic-substrate.md",
+      ".claude/rules/structured-script-output.md (referenced)",
+      ".claude/rules/version-pinning.md",
+      ".claude/rules/sandbox-guidance.md",
+      ".claude/rules/conventional-commits.md",
+      ".claude/rules/gh-json-fields.md",
+      ".claude/rules/parallel-safe-queries.md",
+      ".claude/rules/bash-tool-replacements.md",
+      ".claude/rules/loop-integrity.md",
+      ".claude/rules/task-id-stability.md",
+      ".claude/rules/agent-coworker-detection.md",
+      ".claude/rules/pr-branch-sync.md",
+      ".claude/rules/handling-blocked-hooks.md",
+      ".claude/rules/terminology.md",
+      ".claude/rules/docs-currency.md"
+    ],
+    "influenced_scoring": false,
+    "note": "Three files on the hard-constraint no-read list (skill-quality.md, skill-development.md, skill-evaluation.md) were auto-injected into my context by the repo's system-reminder mechanism before I saw the task; I did not open them. Notably skill-quality.md names this exact file as its worked size example and mandates the When-to-Use / Agentic Optimizations tables and the REFERENCE.md filename — all on the rubric's exclusion list. I deliberately gave no credit or penalty for the presence of those two tables, and C3 is scored on the absence of any multi-file split (the post's 'divide it into many files'), not on any char threshold or on the REFERENCE.md name. C4's cross-surface finding was discovered independently via Grep over configure-plugin and health-plugin, not from any rule file. Residual anchoring risk on C3 cannot be fully ruled out, but no excluded criterion is cited in any rationale."
+  }
+}

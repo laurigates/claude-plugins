@@ -1,0 +1,94 @@
+{
+  "unit": ".claude/rules/agent-coworker-detection.md",
+  "unit_kind": "always_loaded",
+  "judge_id": "j1",
+  "dimensions": {
+    "C1": {
+      "score": 4,
+      "rationale": "The hard constraints all guard irreversible data loss (stashing a coworker's uncommitted work, force-removing peer worktrees) and each states why — 'committed refs survive, uncommitted does not' — so the model can generalise beyond the enumerated cases; softer guidance is explicitly framed as judgment rather than prohibition. Short of 5 because a few directives are stated as bare imperatives without the reasoning attached (the numbered Response Rules, the 'never auto-clean' anti-pattern row).",
+      "evidence": [
+        {"quote": "When no signal reports a coworker, still prefer explicit paths over bulk staging — the detection is best-effort, not a guarantee."},
+        {"quote": "Treat the verdict as a strong hint, not a proof."}
+      ]
+    },
+    "C2": {
+      "score": "n/a",
+      "rationale": "This is a narrative rule file with no arguments, flags, or invocation interface; the parameterised surface belongs to the git-coworker-check skill, not to this unit.",
+      "evidence": []
+    },
+    "C3": {
+      "score": 2,
+      "rationale": "One file carries everything: the core invariant, six signal implementations as inline bash, a post-corruption recovery table, a Workflow-resume war story, and a limitations list — all resident every turn. It cross-references three sibling rules but splits none of its own rare-path material out, even though a plugin skill with a REFERENCE.md and scripts/ already exists to hold it.",
+      "evidence": [
+        {"quote": "case \"$cwd\" in \"$repo_root\"|\"$repo_root\"/*) echo \"$pid\" ;; esac"},
+        {"quote": "macOS uses `lsof -a -d cwd -c claude -c node -Fpn` since `/proc` is not available."}
+      ]
+    },
+    "C4": {
+      "score": 2,
+      "rationale": "git-plugin/skills/git-coworker-check/SKILL.md independently maintains the same verdict vocabulary, the same bare-flip recovery steps, and a near-verbatim commit-early paragraph; the drift has already started (this file says the skill 'runs all three signals' while the skill and its scripts implement six). Guidance that a skill owns is restated here rather than pointed at.",
+      "evidence": [
+        {"quote": "**Commit early.** Untracked files are the only work a concurrent branch switch / reset can destroy with no recovery path"},
+        {"quote": "| Restore the working tree | `git config core.bare false`; if that refuses, `GIT_DIR=.git GIT_WORK_TREE=. git -c core.bare=false status` |"}
+      ]
+    },
+    "C5": {
+      "score": 2,
+      "rationale": "Primary dimension. A genuine every-turn invariant exists here (treat `git status` as everyone's changes; untracked work has no recovery path), but most of the file is procedure with an explicit trigger — capture a baseline at session start, probe before a destructive op, recover after a bare flip, prune worktrees at cleanup, re-dispatch after a workflow resume — none of which must be resident when the user asked about something else. An on-demand skill (`/git:coworker-check`) already owns exactly that procedure, so the promotion target exists and was not used.",
+      "evidence": [
+        {"quote": "At the start of each session / skill invocation, capture a baseline:"},
+        {"quote": "Before any destructive operation (`stash`, `restore`, `checkout -- .`, `reset --hard`), compare current state against the baseline."}
+      ]
+    },
+    "C6": {
+      "score": 2,
+      "rationale": "Runnable artifacts for this exact logic exist and are not named: detect-coworkers.sh, claim-session.sh, release-session.sh, and the tests test_bare_flip.sh / test_worktree_leak.sh. The file instead transcribes approximations of that logic as illustrative shell, and points only at the skill by name — a pointer already stale on signal count. Credit for one real citation (check-git-sandbox-guards.sh), but the unit never says whether the model should run or merely read anything.",
+      "evidence": [
+        {"quote": "| `git-coworker-check` skill | User-invocable diagnostic — runs all three signals and reports |"},
+        {"quote": "for wt in $(git worktree list --porcelain | awk '/^worktree / && $2 != repo_root {print $2}'); do"}
+      ]
+    }
+  },
+  "top_finding": "Cut the six inline signal implementations and the post-corruption recovery material down to one gotcha line each and hand the procedure to `/git:coworker-check` and its `detect-coworkers.sh` by name, which already own and test it.",
+  "counter_finding": "The asymmetry that committed work survives in the reflog while untracked work does not — and the resulting 'treat `git status` as everyone's changes, stage explicit paths' stance — is a true every-turn invariant that no skill trigger would reliably fire on before the damage is done, and it should stay always-loaded.",
+  "section_verdicts": [
+    {"section": "## The Problem", "verdict": "keep", "why": "states the non-obvious shared-checkout invariant in a few lines"},
+    {"section": "## Detection Signals", "verdict": "lean", "why": "keep the six-row signal table as orientation, drop the per-signal bash subsections"},
+    {"section": "### Baseline drift", "verdict": "promote-to-skill", "why": "session-start/pre-destructive-op procedure the skill's claim-session.sh already implements"},
+    {"section": "### Session marker file", "verdict": "promote-to-skill", "why": "marker format and trap belong with claim-session.sh, not every turn"},
+    {"section": "### Process scan", "verdict": "promote-to-skill", "why": "platform-specific enumeration loop is reference detail for the fallback signal"},
+    {"section": "### Taskwarrior `+ACTIVE` claims", "verdict": "promote-to-skill", "why": "UDA table and probe command only matter when the taskwarrior signal is being run"},
+    {"section": "### Worktree leak (issue #1319)", "verdict": "lean", "why": "the harness gotcha earns a line; the issue quote and probe loop do not"},
+    {"section": "### Bare flip (issue #1692)", "verdict": "lean", "why": "keep the one-line symptom-to-cause mapping, move the detection snippet out"},
+    {"section": "#### Recovery and commit-early", "verdict": "promote-to-skill", "why": "recovery table duplicates the skill's Recovery section; only the commit-early invariant stays"},
+    {"section": "## Response Rules", "verdict": "keep", "why": "four load-bearing lines that must hold whenever a signal fires"},
+    {"section": "### Cleanup: never force-remove worktrees you don't own (issue: 2026-06-28)", "verdict": "lean", "why": "the never-force-remove-a-branch-you-didn't-create rule is invariant; the 24-worktree war story is not"},
+    {"section": "## Integration Points", "verdict": "path-scope", "why": "wiring table is authoring-time information for plugin work, not every-turn context"},
+    {"section": "## Anti-Patterns", "verdict": "keep", "why": "compact Don't/Do table carrying the invariants at the lowest token cost in the file"},
+    {"section": "### `Workflow` resume re-runs already-succeeded worktree agents (issue: 2026-06-28)", "verdict": "promote-to-skill", "why": "applies only when resuming a workflow; belongs with the dispatch skill that owns resume"},
+    {"section": "## Limitations", "verdict": "lean", "why": "collapse to the one operative caveat (signals detect presence, not clobbering)"},
+    {"section": "## Related Rules", "verdict": "keep", "why": "three-line pointer set, correct single-source-of-truth shape"}
+  ],
+  "leakage": {
+    "house_standards_seen": [
+      "CLAUDE.md (full project instructions, incl. plugin lifecycle and rules index)",
+      ".claude/rules/agent-coworker-detection.md (the unit itself, auto-injected before I opened it)",
+      ".claude/rules/skill-quality.md",
+      ".claude/rules/skill-development.md",
+      ".claude/rules/skill-evaluation.md",
+      ".claude/rules/skill-execution-structure.md",
+      ".claude/rules/skill-consolidation.md",
+      ".claude/rules/skill-argument-handling.md",
+      ".claude/rules/skill-fork-context.md",
+      ".claude/rules/agentic-optimization.md",
+      ".claude/rules/agentic-permissions.md",
+      ".claude/rules/regression-testing.md",
+      ".claude/rules/auto-mode.md",
+      ".claude/rules/version-pinning.md",
+      ".claude/rules/loop-integrity.md",
+      ".claude/rules/offload-to-deterministic-substrate.md"
+    ],
+    "influenced_scoring": false,
+    "note": "The harness auto-injected CLAUDE.md and ~20 .claude/rules/*.md into my context as system-reminders, including the unit under judgment and four files the task forbade me from reading (skill-quality.md, skill-development.md, skill-evaluation.md, and via CLAUDE.md the house rules index). I did not open any of them with a tool and did not use their standards as anchors: no score cites the 26,000-char ceiling, the mandatory When-to-Use or Agentic-Optimizations tables, description-length bands, date frontmatter, or the model policy. Two house rules did surface as corroborating repo facts rather than yardsticks — regression-testing.md confirmed that detect-coworkers.sh and its bare-flip/worktree-leak tests exist (C6), and offload-to-deterministic-substrate.md names this file's own family — but the C6 and C4 defects were established from the unit text and the git-plugin skill files I read directly."
+  }
+}

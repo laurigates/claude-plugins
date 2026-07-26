@@ -54,7 +54,14 @@ value_of() {
   printf '%s\n' "$1" | grep -m1 -E "^$2=" | cut -d= -f2-
 }
 
+# Neutralise inherited git context before any git op (#1745): an exported
+# GIT_DIR/GIT_WORK_TREE overrides `git -C`, so a sandbox `git init` would
+# target the real shared .git instead of the throwaway dir.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_COMMON_DIR GIT_NAMESPACE GIT_PREFIX
+
 fixture="$(mktemp -d)"
+# Guard the empty-mktemp vector (#1692): `git -C ""` falls back to the CWD.
+[ -n "$fixture" ] || { echo "FAIL: mktemp -d returned empty" >&2; exit 1; }
 trap 'rm -rf "$fixture"' EXIT
 
 # --- fixture: two skills and two rules with deliberately known properties ----
@@ -204,6 +211,14 @@ hash_b="$(PYTHONHASHSEED=1 "$scanner" --project-dir "$fixture" --json | sha256su
 hash_c="$(PYTHONHASHSEED=random "$scanner" --project-dir "$fixture" --json | sha256sum | cut -d' ' -f1)"
 assert "JSON is stable across runs" "$hash_a" "$hash_b"
 assert "JSON is stable under PYTHONHASHSEED=random" "$hash_a" "$hash_c"
+
+# Default project-dir resolves from the CWD, not from the script's own location.
+# Regression: the scanner lives inside a plugin skill, so a __file__-derived
+# default scanned the skill directory and reported SKILL_COUNT=0 — a silent
+# "nothing to fix" indistinguishable from a clean repo.
+git -C "$fixture" init --quiet
+default_out="$(cd "$fixture" && "$scanner" 2>&1)"
+assert "default project-dir finds the repo root from CWD" "$(value_of "$default_out" SKILL_COUNT)" "2"
 
 # --target scopes the scan to one skill.
 target_out="$("$scanner" --project-dir "$fixture" --target demo-plugin/skills/lean-skill 2>&1)"

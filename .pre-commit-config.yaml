@@ -72,7 +72,7 @@ repos:
         name: always-loaded context surface stays within budget (C5 ratchet)
         entry: python3 ./scripts/check-context-engineering.py --strict
         language: system
-        files: '^(CLAUDE\.md|\.claude/rules/.*\.md|scripts/check-context-engineering\.py)$'
+        files: '^(CLAUDE\.md|\.claude/rules/.*\.md|scripts/check-context-engineering\.py|evaluate-plugin/skills/evaluate-context-engineering/scripts/check-context-engineering\.py)$'
         pass_filenames: false
       - id: lint-taskwarrior-tags
         name: lint taskwarrior-plugin docs for hyphenated tag names

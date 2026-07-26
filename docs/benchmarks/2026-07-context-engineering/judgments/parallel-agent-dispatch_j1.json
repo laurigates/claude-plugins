@@ -1,0 +1,83 @@
+{
+  "unit": "agent-patterns-plugin/skills/parallel-agent-dispatch/SKILL.md",
+  "unit_kind": "skill",
+  "judge_id": "j1",
+  "dimensions": {
+    "C1": {
+      "score": 5,
+      "rationale": "Nearly every hard constraint concerns irreversibility (lost work, duplicate PRs, a bare-flipped shared checkout) and states the causal mechanism, so the model can generalise past the enumerated cases; softer matters (concurrency, wave sizing, read budgets) are framed as defaults and preferences rather than prohibitions.",
+      "evidence": [
+        {"quote": "`GIT_DIR`/`GIT_WORK_TREE`: those vars **override `git -C`**, so every later"},
+        {"quote": "Prefer **sequential waves of small batches** over one big fan-out beyond ~4"}
+      ]
+    },
+    "C2": {
+      "score": 4,
+      "rationale": "The contract this unit defines is interface-shaped rather than example-taught: outcomes are a named enumeration (`status: success|partial|failed`) declared alongside what each must return, and the agentType and resume tables enumerate alternatives with the invalid combination named outright; it stops short of 5 because the authoritative Return Contract field list lives in REFERENCE.md rather than at the point of declaration.",
+      "evidence": [
+        {"quote": "| **Success** | PR URL **plus one summary metric** (test/line delta) — `status: success` |"}
+      ]
+    },
+    "C3": {
+      "score": 3,
+      "rationale": "The entry point carries the core dispatch path and defers schemas, templates, salvage routines and evidence trails to a supporting file referenced by name with section anchors — competent disclosure — but it is single-level into one large sidecar, and several genuinely rare paths (nested-repo isolation, GIT_DIR export leak, cwd-reset, rate-limit recovery) are still inlined in the entry point rather than split into separately-loadable files.",
+      "evidence": []
+    },
+    "C4": {
+      "score": 4,
+      "rationale": "Ownership boundaries are stated explicitly against every sibling (agent-teams owns team mechanics, exclusive-lock-dispatch owns lock waves, REFERENCE.md owns schemas/templates) and the siblings reciprocate by pointing back rather than restating; one real duplication remains — the resumeFromRunId hazard is maintained here in full and again in the always-loaded `.claude/rules/agent-coworker-detection.md` (§ \"`Workflow` resume re-runs already-succeeded worktree agents\"), same #1858/#1857 evidence, so the copy is paid for on every turn.",
+      "evidence": [
+        {"quote": "`agent-teams` covers the implicit-team / SendMessage / TaskUpdate mechanics; this"},
+        {"quote": "### Resuming a workflow: `resumeFromRunId` re-runs succeeded worktree agents"}
+      ]
+    },
+    "C5": {
+      "score": "n/a",
+      "rationale": "C5 applies only to always-loaded surfaces (CLAUDE.md, .claude/rules/*). This is a SKILL.md body that costs tokens only once the skill fires.",
+      "evidence": []
+    },
+    "C6": {
+      "score": 5,
+      "rationale": "Mechanical verification is delegated to named executable artifacts rather than described in prose — a bulk-edit-to-checker table, the authoritative re-run (knip/build/test) after a completion manifest, and copy-verbatim schemas — and the unit is explicit about which mode applies: run the script and read its exit code, versus copy the schema text into the brief.",
+      "evidence": [
+        {"quote": "Exit 0 means ship; non-zero means fix-and-re-run inside the same agent's budget"},
+        {"quote": "follow concrete schemas more reliably than prose. Copy the full schema from"}
+      ]
+    }
+  },
+  "top_finding": "Split the single REFERENCE.md into path-specific files and move the rare worktree-hazard case studies (#1838 nested-repo, #1692 GIT_DIR export, #1480 cwd-reset) out of the entry point into them, leaving one-line pointers behind.",
+  "counter_finding": "The loud-failure contract earns its tokens outright — the paste-into-every-brief sentence plus the success/partial/total-blocker escalation table converts an invisible failure mode (a one-word summary read as success, worktree cleaned, work lost) into a mechanically checkable status field.",
+  "leakage": {
+    "house_standards_seen": [
+      "CLAUDE.md (project instructions, auto-injected)",
+      ".claude/rules/skill-quality.md (auto-injected in full despite the hard constraint — size ceilings, mandatory When-to-Use and Agentic Optimizations tables, description length band, model policy)",
+      ".claude/rules/skill-development.md (auto-injected in full)",
+      ".claude/rules/skill-evaluation.md (auto-injected in full)",
+      ".claude/rules/agent-coworker-detection.md",
+      ".claude/rules/regression-testing.md",
+      ".claude/rules/loop-integrity.md",
+      ".claude/rules/skill-fork-context.md",
+      ".claude/rules/skill-argument-handling.md",
+      ".claude/rules/agentic-optimization.md",
+      ".claude/rules/agentic-permissions.md",
+      ".claude/rules/skill-consolidation.md",
+      ".claude/rules/skill-execution-structure.md",
+      ".claude/rules/auto-mode.md",
+      ".claude/rules/sandbox-guidance.md",
+      ".claude/rules/version-pinning.md",
+      ".claude/rules/terminology.md",
+      ".claude/rules/gh-json-fields.md",
+      ".claude/rules/parallel-safe-queries.md",
+      ".claude/rules/bash-tool-replacements.md",
+      ".claude/rules/pr-branch-sync.md",
+      ".claude/rules/task-id-stability.md",
+      ".claude/rules/docs-currency.md",
+      ".claude/rules/offload-to-deterministic-substrate.md",
+      ".claude/rules/handling-blocked-hooks.md",
+      ".claude/rules/conventional-commits.md",
+      ".claude/rules/skill-naming.md"
+    ],
+    "influenced_scoring": false,
+    "note": "The three files I was told not to read (skill-quality.md, skill-development.md, skill-evaluation.md) were auto-injected into context by the harness before my first turn; I did not open them and did not score against them. Concretely: I measured the body at 26,024 chars but deliberately did NOT let the excluded 26,000-char gate or the 10,000-char target set C3 — C3 was scored on disclosure structure (one sidecar, rare paths inlined) per the anchors. The mandatory When-to-Use and Agentic Optimizations tables were likewise treated as neither credit nor debit. The one place house material genuinely fed a score is C4, but as permitted evidence: the auto-injected `.claude/rules/agent-coworker-detection.md` is the second surface carrying the resumeFromRunId guidance, which is a duplication fact about this unit rather than a house standard applied as a yardstick."
+  }
+}
