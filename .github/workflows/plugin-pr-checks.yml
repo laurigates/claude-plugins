@@ -165,7 +165,7 @@ jobs:
         # the scanner's determinism contract (stable shingle hashing under
         # PYTHONHASHSEED=random) and each C1-C6 proxy against a synthetic
         # fixture, so a silent proxy collapse cannot read as "already compliant".
-        run: bash scripts/tests/test-check-context-engineering.sh
+        run: bash evaluate-plugin/skills/evaluate-context-engineering/scripts/tests/test-check-context-engineering.sh
 
       - name: Check the always-loaded context surface stays within budget
         # C5 ratchet: CLAUDE.md + unscoped .claude/rules must not grow past the

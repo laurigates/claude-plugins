@@ -1,0 +1,59 @@
+{
+  "unit": "configure-plugin/skills/configure-claude-plugins/SKILL.md",
+  "unit_kind": "skill",
+  "judge_id": "j2",
+  "dimensions": {
+    "C1": {
+      "score": 4,
+      "rationale": "Nearly every hard constraint is load-bearing (silent-misconfiguration, merge-destruction, never-flip-a-deliberate-choice) and states its consequence inline so the model can generalise; a few residual bare prohibitions ('Use granular patterns only', the fully templated report and diff-rendering prose) prescribe presentation the model would handle unaided, keeping it short of exemplary.",
+      "evidence": [
+        {"quote": "Wrong suffix in `enabledPlugins` → entry silently ignored (marketplace key does not match). Wrong suffix in the workflow `plugins:` block → action rejects the run."},
+        {"quote": "only fill in *missing* entries from this logic, so a deliberate prior choice is never silently flipped."}
+      ]
+    },
+    "C2": {
+      "score": 4,
+      "rationale": "Flags are enumerated at the point of declaration (args/argument-hint plus a Parameters table), values are typed (`--plugins <plugin1,plugin2,...>`), and the Step 4 has_remote × flag matrix names every combination including the force and skip cases; it falls short of 5 only because `--check-only` vs `--fix` precedence and the bare no-flag default are never stated.",
+      "evidence": [
+        {"quote": "args: \"[--check-only] [--fix] [--exhaustive] [--plugins <plugin1,plugin2,...>] [--workflows] [--no-workflows]\""},
+        {"quote": "| `false` | `--workflows` | Force-scaffold anyway (e.g. the user plans to add a remote later) |"}
+      ]
+    },
+    "C3": {
+      "score": 2,
+      "rationale": "The skill directory contains SKILL.md and nothing else — no supporting file, no scripts — so the core path, the rare `--exhaustive` branch (~70 lines), two full workflow YAML bodies, the settings stanza, and the report template are all inlined into one file with no deferred loading; the only mitigation is that rare-path material is at least sectioned under its own headings.",
+      "evidence": [
+        {"quote": "#### Exhaustive enumeration (when `--exhaustive` is set)"},
+        {"quote": "name: Claude Code Review"}
+      ]
+    },
+    "C4": {
+      "score": 2,
+      "rationale": "The unit repeats itself across sections: the `## Flags` table restates the `## Parameters` table nearly verbatim for all six flags, and the workflow-gating rule and both suffix forms are restated again under `## Important Notes` (which at least names the Step 3 callout as canonical). Externally it is better behaved — `configure-plugin/skills/configure-repo/SKILL.md` and `configure-plugin/README.md` reference the marketplace-enrollment fact in one line each rather than copying the stanza.",
+      "evidence": [
+        {"quote": "| `--check-only` | Report current configuration status without changes |"},
+        {"quote": "| `--check-only` | Report current status without making changes |"}
+      ]
+    },
+    "C5": {
+      "score": "n/a",
+      "rationale": "C5 applies only to always-loaded surfaces (CLAUDE.md, .claude/rules/*). This is a SKILL.md body that costs tokens only once invoked.",
+      "evidence": []
+    },
+    "C6": {
+      "score": 2,
+      "rationale": "The genuinely deterministic work — merging into an existing settings.json without duplication, composing and alphabetising the exhaustive map, computing the already-correct/will-add/will-change diff, and emitting the status report — is all prose for the model to re-derive each run, with no bundled script or schema in the directory; it rises above pure prose only because the marketplace-name lookup is given as two runnable commands (local `jq` and a `gh api` fallback) and the workflow templates are real YAML.",
+      "evidence": [
+        {"quote": "If `.claude/settings.json` already exists, **MERGE** without duplicating entries. Preserve any existing `hooks`, `env`, or other fields."},
+        {"quote": "**Compose the map** with all entries, alphabetised within each marketplace block."}
+      ]
+    }
+  },
+  "top_finding": "Split the file: move the two workflow YAML bodies and the `--exhaustive` enumeration branch into separately-loadable supporting files, and replace the prose merge/compose/diff/report procedure with a bundled script the skill runs, so the entry point carries only the core path.",
+  "counter_finding": "The Step 3 suffix-form callout — the two-row table plus the explicit consequence of each wrong choice — encodes a silent-failure mode the model cannot infer from the file names alone and must not be cut.",
+  "leakage": {
+    "house_standards_seen": ["CLAUDE.md (project instructions)", ".claude/rules/skill-quality.md", ".claude/rules/skill-development.md", ".claude/rules/skill-evaluation.md", ".claude/rules/skill-execution-structure.md", ".claude/rules/skill-argument-handling.md", ".claude/rules/skill-consolidation.md", ".claude/rules/skill-naming.md", ".claude/rules/skill-fork-context.md", ".claude/rules/agentic-optimization.md", ".claude/rules/agentic-permissions.md", ".claude/rules/regression-testing.md", ".claude/rules/auto-mode.md", ".claude/rules/version-pinning.md", ".claude/rules/sandbox-guidance.md"],
+    "influenced_scoring": false,
+    "note": "The repo auto-injected these into my context via system-reminder before I could avoid them, including several on the hard-constraint no-read list (skill-quality.md, skill-development.md, skill-evaluation.md). I scored only against the frozen rubric's anchors: I neither credited the mandatory 'When to Use This Skill' / 'Agentic Optimizations' tables nor penalised the file's size against the 26,000-char house ceiling, and C3 was scored on absence of file-splitting rather than on any threshold. One near-miss worth flagging: the injected regression-testing.md contains a row documenting that the Step 3 suffix callout was added in response to a real reported misconfiguration (issue #1337), which corroborated my counter_finding — but the callout states its own failure consequences inline, so I would have judged it load-bearing from the unit alone, and no score moved on that external knowledge."
+  }
+}

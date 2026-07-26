@@ -1,0 +1,52 @@
+{
+  "unit": "testing-plugin/skills/test-tier-selection/SKILL.md",
+  "unit_kind": "skill",
+  "judge_id": "j2",
+  "dimensions": {
+    "C1": {
+      "score": 2,
+      "rationale": "Nearly every line is an unconditional verdict — a nine-row Required/Skip/Optional matrix, two escalation lists, and 'must pass' recipes — over defaults a capable model already handles (run unit tests after a small fix), and not one row says why, so the model cannot generalise to a change type the table omits. Nothing here concerns safety, irreversibility, or an automation contract; the 'Optional' cells are the only place judgment is delegated, which is what keeps this off a 1.",
+      "evidence": [
+        {"quote": "| Refactoring | Required | Required | Optional |"},
+        {"quote": "2. All tiers must pass"}
+      ]
+    },
+    "C2": {
+      "score": "n/a",
+      "rationale": "The unit declares `user-invocable: false` and carries no `args`, no `argument-hint`, and no `## Parameters` section — it is auto-discovered guidance with no invocation surface of its own, so there is no interface to judge as self-describing.",
+      "evidence": []
+    },
+    "C3": {
+      "score": 3,
+      "rationale": "A single flat file with no supporting files, but nothing reference-shaped or long is inlined (3.6 KB total), and the deeper paths are handed off by name to separately-loadable surfaces (test-consult, the test-architecture / test-runner / system-debugging agents) rather than restated in full. Competent for a unit this small; not exemplary, since there is no multi-file split and the rarer per-scenario recipes sit inline with the core matrix.",
+      "evidence": []
+    },
+    "C4": {
+      "score": 2,
+      "rationale": "Two of the unit's four substantive sections are copies of guidance owned elsewhere, and both have already drifted. The tier definitions duplicate testing-plugin/README.md:40-44 ('Tiered Test Execution'), which maps Integration to `/test:full` while this file maps it to `/test:full --coverage`; the agent-consultation triggers duplicate testing-plugin/skills/test-consult/SKILL.md:25-30 ('Use when: ... Test strategy needs adjustment / Coverage gaps identified / Flaky tests detected'), with one bullet verbatim identical. The unit also restates its own matrix twice more, as 'Escalation Signals' and again as 'Quick Reference'.",
+      "evidence": [
+        {"quote": "- Test strategy needs adjustment"},
+        {"quote": "| **Unit** | < 30s | Single function/module | After every code change |"}
+      ]
+    },
+    "C5": {
+      "score": "n/a",
+      "rationale": "C5 applies only to always-loaded surfaces (CLAUDE.md, .claude/rules/*). This is a SKILL.md body that costs tokens only once the skill fires.",
+      "evidence": []
+    },
+    "C6": {
+      "score": 2,
+      "rationale": "The skill's whole deliverable — map a change to a tier and then to a command — is a prose table that a real interface already states exactly, and the prose gets it wrong: test-full/SKILL.md:6 declares `args: \"[--coverage] [--parallel] [--report]\"` where `--coverage` only 'Generate coverage report', so `/test:full --coverage` runs the entire pyramid rather than the integration tier this file assigns it to. The mechanical input to the matrix (files changed, paths touched) is likewise left for the model to re-derive each run, despite Bash/Glob/Grep sitting in allowed-tools and no script or command being pointed at.",
+      "evidence": [
+        {"quote": "# Tier 2: Integration (feature completion)"}
+      ]
+    }
+  },
+  "top_finding": "Replace the hand-maintained 'Commands by Tier' and tier-definition tables with a pointer to the real skill interfaces (test-quick / test-full and its declared flags), since `/test:full --coverage` does not run the integration tier and the duplicated tables have already drifted from testing-plugin/README.md.",
+  "counter_finding": "The named hand-off targets — test-consult for strategy, and the test-architecture / test-runner / system-debugging agents for their respective failure shapes — are local routing facts the model cannot derive from the repo and should stay even if the trigger bullets under them are trimmed.",
+  "leakage": {
+    "house_standards_seen": [".claude/rules/skill-quality.md", ".claude/rules/skill-development.md", ".claude/rules/skill-evaluation.md", ".claude/rules/skill-execution-structure.md", ".claude/rules/skill-argument-handling.md", ".claude/rules/agentic-optimization.md", ".claude/rules/regression-testing.md", ".claude/rules/skill-consolidation.md", ".claude/rules/skill-naming.md", ".claude/rules/skill-fork-context.md", ".claude/rules/agentic-permissions.md", ".claude/rules/auto-mode.md", ".claude/rules/sandbox-guidance.md", "CLAUDE.md"],
+    "influenced_scoring": false,
+    "note": "I opened none of these; the repo auto-injected them into my context via system-reminder before I saw the rubric, including three files the task explicitly forbade reading. I scored only against the frozen anchors and deliberately did not penalise the excluded house criteria: the unit has no Agentic Optimizations table (no score effect), its When-to-Use table was neither credited nor charged, and body size, description length, and frontmatter dates were ignored. The C4 duplication findings were discovered by my own Grep over testing-plugin/, not from any house rule."
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "unit": "agent-patterns-plugin/skills/meta-context-diet/SKILL.md",
+  "unit_kind": "skill",
+  "judge_id": "j2",
+  "dimensions": {
+    "C1": {
+      "score": 5,
+      "rationale": "The only hard, unconditional constraints concern irreversibility (no lossy edit to an every-turn file without per-candidate confirmation) and each states why; everything else is delegated to a stated judgment question the model can generalise from, and the confirmation shape is derived from a principle (how lossy) rather than enumerated by convenience.",
+      "evidence": [
+        {"quote": "The deciding question is **\"must this be true on every turn regardless of what the user asked?\"**"},
+        {"quote": "The confirmation shape depends on **how lossy the disposition is**, not on convenience."}
+      ]
+    },
+    "C2": {
+      "score": 4,
+      "rationale": "The decision surface is enumerated at the point of declaration (six dispositions with a signal column, a seven-option approval menu, two confirmation tiers) and the invalid combination is named impossible rather than merely discouraged; the argument surface itself is typed with an explicit default, but `argument-hint` restates `args` verbatim and conveys nothing the declaration does not, so the interface is not quite self-sufficient on its own.",
+      "evidence": [
+        {"quote": "`scope-path` (optional, default `.`) — the directory whose `CLAUDE.md` and `.claude/rules/` are audited."},
+        {"quote": "Drop, Consolidate-that-deletes, and Promote-to-skill are never batched, regardless of audit size."}
+      ]
+    },
+    "C3": {
+      "score": 2,
+      "rationale": "The skill directory holds exactly one file (13,784 chars, no supporting files, no scripts): the core path, the full disposition rubric, the execution-mechanics table, a report template, an anti-patterns table, and a rare path that only applies at ~15+ candidates are all inlined together, so nothing is deferred to a separately-loadable file — the pointers it does carry are to other units' rules, not to its own deferred detail.",
+      "evidence": [
+        {"quote": "#### Batch-approval mode for large surfaces"},
+        {"quote": "For a **small audit** (fewer than ~15 candidates) the per-item loop is cheap — prompt each candidate individually and skip batch mode."}
+      ]
+    },
+    "C4": {
+      "score": 5,
+      "rationale": "Overlapping guidance is consistently pointed at rather than restated, and the ownership boundary is drawn explicitly in both directions — the skill positions itself against its three nearest siblings and names which surface owns the cost model and the plugin-lifecycle mechanics; the sibling `evaluate-plugin/skills/evaluate-context-engineering/SKILL.md` independently defers migration to this skill (\"This skill measures and recommends; it does not rewrite\"), and no `.claude/rules/*.md` file duplicates the diet rubric. The only copies are two cited numbers (the chars/4 proxy and the ≤150-char target), each carrying its owner inline.",
+      "evidence": [
+        {"quote": "Cost model: `skill-quality.md` (listing budget, `skillListingBudgetFraction`) and `skill-development.md` (path-scoped rule frontmatter, description front-loading)."},
+        {"quote": "**Inverse** of `session-distill` (*creates* rules from sessions), orthogonal to `meta-promote` (moves config *between scopes*)."}
+      ]
+    },
+    "C5": {
+      "score": "n/a",
+      "rationale": "This is a SKILL.md body, not an always-loaded surface — it costs tokens only once its intent fires, so the always-loaded budget dimension does not apply.",
+      "evidence": []
+    },
+    "C6": {
+      "score": 2,
+      "rationale": "The genuinely mechanical half of this audit — enumerating the always-loaded set, measuring each file, converting to an estimated token count, and computing the net always-loaded delta for the final table — is described in prose for the model to re-derive on every run, where a bundled script emitting structured output would state it exactly; the only executable delegation is the two `find` commands in the Context block, and there is no `scripts/` directory in the skill at all.",
+      "evidence": [
+        {"quote": "For each file, record its size (`wc -c`, est. tokens ≈ chars/4 — same proxy as `skill-quality.md`)"},
+        {"quote": "Emit a final table and the net context saving:"}
+      ]
+    }
+  },
+  "top_finding": "Extract the deterministic half of the audit — always-loaded file discovery, `wc -c` sizing, token estimation, and the net-delta arithmetic — into a bundled script the skill runs, which simultaneously earns back C6 and lets the rare-path batch-approval and report-template material move out of the single 13,784-char body.",
+  "counter_finding": "The destructive-vs-non-destructive confirmation tier table earns every token it costs: it draws an irreversibility boundary (a lossy edit to an every-turn file degrades every downstream turn) at exactly the point a capable model would otherwise batch for convenience, and it says why, so it generalises to dispositions the table does not enumerate.",
+  "leakage": {
+    "house_standards_seen": [
+      "CLAUDE.md (project instructions, auto-injected)",
+      ".claude/rules/skill-quality.md (auto-injected despite being on the do-not-read list)",
+      ".claude/rules/skill-development.md (auto-injected despite being on the do-not-read list)",
+      ".claude/rules/skill-evaluation.md (auto-injected despite being on the do-not-read list)",
+      ".claude/rules/skill-execution-structure.md",
+      ".claude/rules/skill-consolidation.md",
+      ".claude/rules/skill-argument-handling.md",
+      ".claude/rules/skill-naming.md",
+      ".claude/rules/skill-fork-context.md",
+      ".claude/rules/agentic-optimization.md",
+      ".claude/rules/agentic-permissions.md",
+      ".claude/rules/regression-testing.md",
+      ".claude/rules/auto-mode.md",
+      ".claude/rules/sandbox-guidance.md",
+      ".claude/rules/offload-to-deterministic-substrate.md",
+      ".claude/rules/loop-integrity.md"
+    ],
+    "influenced_scoring": false,
+    "note": "Three files on the hard-constraint do-not-read list (skill-quality.md, skill-development.md, skill-evaluation.md) were auto-injected into context by the repo before I could avoid them; I did not open them deliberately. I explicitly withheld every excluded house criterion from scoring: the unit's `## When to Use This Skill` table and its absent `## Agentic Optimizations` table were treated as neither credit nor debit; its 13,784-char size was not scored against the 10,000/26,000 gates (C3 was scored on disclosure structure — one file, no supporting files, a rare path inlined — which stands independently of any threshold); the absence of a literal `REFERENCE.md` was not itself the defect; and the description length, model tag, and date frontmatter were ignored. One residual exposure worth naming: `offload-to-deterministic-substrate.md` states a principle close to C6's anchor, but C6 here was scored on the published shift (prose spec vs runnable artifact) and the concrete observation that the skill ships no scripts."
+  }
+}
