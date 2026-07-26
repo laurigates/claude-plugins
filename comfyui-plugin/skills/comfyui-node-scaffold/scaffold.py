@@ -66,7 +66,17 @@ MODAL_KIT_VERSION = "^0.2.0"
 # failure. The regression check in scripts/plugin-compliance-check.sh asserts
 # every generated biome pin stays on this single version.
 BIOME_VERSION = "2.4.15"
-COMFY_FRONTEND_TYPES_VERSION = "^1.43.0"
+# Pinned to the 1.45.x line (`~`, not `^`). A caret range here resolves to the
+# newest 1.x, and 1.48.x peer-depends on `@comfyorg/comfyui-desktop-bridge-types@0.1.3`
+# — a version that does not exist on npm (only 0.1.0–0.1.2 were published), so
+# `bun install` HARD-FAILS on a freshly scaffolded pack:
+#   error: No version matching "0.1.3" found for specifier
+#          "@comfyorg/comfyui-desktop-bridge-types" (but package exists)
+# It bit comfyui-output-swap at scaffold time. The 1.45.x releases peer-depend
+# only on vue + zod, so they resolve cleanly, and 1.45 is what the current
+# ComfyUI installs actually ship. Re-widen only after verifying the newer line
+# installs: `npm view '@comfyorg/comfyui-frontend-types@<range>' peerDependencies`.
+COMFY_FRONTEND_TYPES_VERSION = "~1.45.0"
 # jsdom is added to devDependencies ONLY for the standalone-modal variant, whose
 # smoke test mounts the modal under a DOM (`@vitest-environment jsdom`). The
 # widget/gesture variants test pure helpers under the node environment and don't
@@ -91,6 +101,44 @@ def derive(name: str) -> dict[str, str]:
         "PY_MODULE": short.replace("-", "_"),  # touch_numeric  (backend .py)
         "EXT_CONST_CAMEL": _camel(short),  # touchNumeric  (JS guard-flag prefix)
     }
+
+
+# The banner draws the tagline at font-size 44 starting at x=340 on a 1344px
+# canvas, leaving ~1000px. Helvetica at that size averages ~21px/char, so ~46
+# chars is the point where the text runs off the right edge. Measured against
+# the shipped sibling banners (comfyui-touch-shim's 43-char tagline fits with
+# room to spare; comfyui-output-swap's full 130-char --desc overflowed badly).
+MAX_TAGLINE_CHARS = 46
+
+
+def derive_tagline(desc: str) -> str:
+    """Condense a one-line --desc into a banner-safe tagline.
+
+    The banner subtitle is a *tagline*, not the full description. Passing --desc
+    straight through overflows the canvas, which is invisible until someone
+    renders the PNG and looks at it. Take the first clause, then trim to a word
+    boundary, warning so the author can supply a better one via --tagline.
+    """
+    text = " ".join(desc.split())
+    # First clause: the description's headline idea, before any elaboration.
+    for sep in ("—", " - ", ". ", ": ", "; "):
+        head = text.split(sep, 1)[0].strip()
+        if head != text:
+            text = head
+            break
+    text = text.rstrip(" .")
+
+    if len(text) <= MAX_TAGLINE_CHARS:
+        return text
+
+    truncated = text[:MAX_TAGLINE_CHARS].rsplit(" ", 1)[0].rstrip(" ,;:-")
+    print(
+        f"warning: banner tagline derived from --desc is longer than "
+        f"{MAX_TAGLINE_CHARS} chars and would overflow the banner; using "
+        f"{truncated!r}. Pass --tagline to set a better one.",
+        file=sys.stderr,
+    )
+    return truncated
 
 
 def _camel(short: str) -> str:
@@ -1137,6 +1185,12 @@ check: typecheck build lint test
 # Rasterize icon.svg + banner.svg to the PNGs the registry serves (commit them).
 [group: "assets"]
 assets:
+    # Placeholder gate: the scaffold ships a letter-initial glyph so the SVGs are
+    # valid from commit one, but no pack may PUBLISH it — pyproject already points
+    # Icon/Banner at the PNGs this recipe writes, so a forgotten placeholder ships
+    # a generic letter tile to registry.comfy.org (nearly happened on
+    # comfyui-output-swap). Draw the bespoke pictogram, delete the marker comment.
+    grep -q 'PLACEHOLDER-GLYPH' icon.svg banner.svg && { echo "icon.svg/banner.svg still carry the PLACEHOLDER-GLYPH marker — replace the letter glyph with a bespoke pictogram (family spec: #ffb02e line-art on the dark tile) and delete the marker comment before rasterizing."; exit 1; } || true
     rsvg-convert -w 400 -h 400 icon.svg -o icon.png
     rsvg-convert -w 1344 -h 576 banner.svg -o banner.png
     # Consistency gate: the family tile must trim to 346x346+27+27 on a 400x400
@@ -2207,7 +2261,10 @@ ICON_SVG = """\
     </linearGradient>
   </defs>
   <rect x="28" y="28" width="344" height="344" rx="76" fill="url(#tile)" stroke="#2a2a36" stroke-width="2"/>
-  <!-- PLACEHOLDER glyph — replace with a bespoke orange (#ffb02e) pictogram. -->
+  <!-- PLACEHOLDER-GLYPH: replace this <text> with a bespoke #ffb02e pictogram,
+       then delete this comment. `just assets` refuses to rasterize while the
+       PLACEHOLDER-GLYPH marker is present, because the PNGs it writes are what
+       registry.comfy.org serves. -->
   <text x="200" y="212" fill="#ffb02e" font-family="Inter, Segoe UI, system-ui, sans-serif"
         font-size="210" font-weight="700" text-anchor="middle" dominant-baseline="central">@@INITIAL@@</text>
 </svg>
@@ -2253,14 +2310,15 @@ BANNER_SVG = """\
   <path d="M0 520 C 360 420, 900 540, 1344 360" stroke="url(#sweep)" stroke-width="6" fill="none"/>
   <g transform="translate(96,188) scale(0.5)">
     <rect x="28" y="28" width="344" height="344" rx="76" fill="url(#tile)" stroke="#2a2a36" stroke-width="2"/>
-    <!-- PLACEHOLDER glyph — mirror icon.svg's bespoke pictogram here. -->
+    <!-- PLACEHOLDER-GLYPH: mirror icon.svg's bespoke pictogram here, then delete
+         this comment. See the note in icon.svg. -->
     <text x="200" y="212" fill="#ffb02e" font-family="Inter, Segoe UI, system-ui, sans-serif"
           font-size="210" font-weight="700" text-anchor="middle" dominant-baseline="central">@@INITIAL@@</text>
   </g>
   <text x="334" y="300" font-family="Helvetica, Arial, sans-serif" font-weight="bold"
         font-size="120" fill="#f5f5f7" letter-spacing="-2">@@DISPLAY@@</text>
   <text x="340" y="372" font-family="Helvetica, Arial, sans-serif" font-weight="500"
-        font-size="44" fill="#ffb02e">@@DESC@@</text>
+        font-size="44" fill="#ffb02e">@@TAGLINE@@</text>
 </svg>
 """
 
@@ -2442,6 +2500,13 @@ def build_file_map(
     # DisplayName, uppercased (falls back to "C" for comfyui).
     initial = next((c for c in ctx["DISPLAY"] if c.isalnum()), "C")
     ctx["INITIAL"] = initial.upper()
+
+    # Banner tagline. NOT the full --desc: the banner renders it at 44px starting
+    # at x=340 on a 1344px canvas, so anything past ~46 chars runs off the edge.
+    # Guarded rather than setdefault() — setdefault evaluates its default eagerly,
+    # so deriving there emits a bogus overflow warning even when --tagline was given.
+    if "TAGLINE" not in ctx:
+        ctx["TAGLINE"] = derive_tagline(ctx["DESC"])
 
     # Variant-conditional pyproject bits.
     ctx["BACKEND_DEP_NOTE"] = (
@@ -2870,6 +2935,13 @@ def main() -> int:
     )
     p.add_argument("--desc", required=True, help="one-line description")
     p.add_argument(
+        "--tagline",
+        help=(
+            f"short banner subtitle (<= {MAX_TAGLINE_CHARS} chars); "
+            "derived from --desc when omitted"
+        ),
+    )
+    p.add_argument(
         "--variant",
         choices=["frontend", "backend", "gesture", "shim"],
         default="frontend",
@@ -2897,6 +2969,15 @@ def main() -> int:
         YEAR=str(datetime.date.today().year),
         DATE=datetime.date.today().isoformat(),
     )
+    if args.tagline:
+        tagline = " ".join(args.tagline.split())
+        if len(tagline) > MAX_TAGLINE_CHARS:
+            print(
+                f"warning: --tagline is {len(tagline)} chars; anything over "
+                f"{MAX_TAGLINE_CHARS} overflows the banner canvas.",
+                file=sys.stderr,
+            )
+        ctx["TAGLINE"] = tagline
     widgets = [w.strip() for w in args.widgets.split(",") if w.strip()]
     # A modal variant (frontend/backend) with no --widgets gets the
     # standalone-modal skeleton instead of the per-widget intercept. See #1806.
