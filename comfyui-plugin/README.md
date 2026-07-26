@@ -36,6 +36,10 @@ Scaffold a new ComfyUI custom-node repository ready for implementation, in the
   aiohttp endpoints), `gesture` (canvas pointer layer — pinch/drag), `shim`
   (scoped CSS injection + commands — no modal, for papering over upstream
   frontend bugs)
+- registry art (`icon.svg` / `banner.svg` + a `just assets` rasterizer) that
+  **refuses to produce the published PNGs while the placeholder glyph marker is
+  still present**, plus a banner tagline sized to the canvas (`--tagline`;
+  derived from `--desc` when omitted)
 
 The `frontend`/`backend` (modal) variants consume the shared
 [`@laurigates/comfy-modal-kit`](https://www.npmjs.com/package/@laurigates/comfy-modal-kit)
