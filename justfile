@@ -40,6 +40,11 @@ lint-infra:
 lint-taskwarrior-tags:
     ./scripts/lint-taskwarrior-tags.sh
 
+# Channel M scan for the six context-engineering shifts (C1-C6); --strict gates the always-loaded ratchet
+[group: "lint"]
+lint-context-engineering *args:
+    ./scripts/check-context-engineering.py {{args}}
+
 # Lint all shell scripts for shell-scripting.md compliance (shebang, set flags, block())
 [group: "lint"]
 lint-shell *args:
@@ -47,7 +52,7 @@ lint-shell *args:
 
 # Run all lint checks
 [group: "lint"]
-lint-all: lint-context-commands lint-compliance lint-health lint-infra lint-taskwarrior-tags lint-shell
+lint-all: lint-context-commands lint-compliance lint-health lint-infra lint-taskwarrior-tags lint-shell lint-context-engineering
 
 ####################
 # Testing
