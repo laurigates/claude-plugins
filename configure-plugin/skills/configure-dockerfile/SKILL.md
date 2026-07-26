@@ -163,7 +163,7 @@ RUN --mount=type=cache,target=/root/.npm \
     --mount=type=cache,target=/app/node_modules/.vite \
     npm run build
 
-FROM nginx:1.30-alpine
+FROM nginx:1.31-alpine
 
 # OCI labels for GHCR integration
 LABEL org.opencontainers.image.source="https://github.com/OWNER/REPO" \

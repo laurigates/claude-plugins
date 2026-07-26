@@ -116,7 +116,7 @@ hand-transcribe a SHA from memory.
 
 ```yaml
 - repo: https://github.com/Connorrmcd6/surface
-  rev: v0.6.2   # --pin tag; Renovate-managed (github-tags)
+  rev: v0.8.0   # --pin tag; Renovate-managed (github-tags)
   hooks:
     - id: surf-lint   # anchors resolve
     - id: surf-check  # the gate — blocks on drift
@@ -131,8 +131,8 @@ jobs:
   surface:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-      - uses: Connorrmcd6/surface@004c9169f182fb5e577d389749e6447521e6e6aa # v0.6.2
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: Connorrmcd6/surface@091b937ae34ac81a02386604fed977dd24f1f0cf # v0.8.0
         with:
           args: check
 ```

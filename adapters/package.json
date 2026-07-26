@@ -10,11 +10,11 @@
   },
   "dependencies": {
     "@opencode-ai/plugin": "^1.18.3",
-    "typebox": "~1.1.38"
+    "typebox": "~1.3.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.4",
-    "@earendil-works/pi-coding-agent": "^0.80.10",
+    "@earendil-works/pi-coding-agent": "^0.81.0",
     "@types/bun": "^1.3.14",
     "typescript": "^5.9.3"
   }
