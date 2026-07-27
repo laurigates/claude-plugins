@@ -1,7 +1,7 @@
 ---
 created: 2026-06-04
-modified: 2026-07-01
-reviewed: 2026-07-01
+modified: 2026-07-27
+reviewed: 2026-07-27
 model: opus
 name: comfy-node
 description: >-
@@ -21,6 +21,15 @@ This is the orchestrator around the `comfyui-node-scaffold` skill (which only
 generates the local repo). Use `comfyui-node-scaffold` alone if you just want
 the files; use **this** when you want the GitHub repo created, pushed, and
 adopted into gitops too.
+
+> **Canonical owner of the gitops repo-adoption procedure.** Phases 3–5 below
+> (seed `main` → open the gitops PR → human gate → remove the import block),
+> the branch-protection hook note, and the generic failure-mode rows are the
+> single source of truth for **every** laurigates repo class, not just ComfyUI
+> packs. `foundryvtt-plugin:foundryvtt-module` carries only its own deltas and
+> defers here. If you arrived from another skill, read
+> [Adapting Phases 3–5 to another repo class](#adapting-phases-35-to-another-repo-class)
+> first — it names every value you substitute.
 
 ## When to Use This Skill
 
@@ -101,7 +110,7 @@ All three must report free. Stop and surface any collision.
 ## Phase 2 — Scaffold + local green check
 
 ```sh
-python3 .claude/skills/comfyui-node-scaffold/scaffold.py --name comfyui-touch-resize --display "Touch Resize" --desc "Selection-gated pinch-to-resize for ComfyUI nodes and groups on touch devices." --variant gesture
+python3 ${CLAUDE_SKILL_DIR}/../comfyui-node-scaffold/scaffold.py --name comfyui-touch-resize --display "Touch Resize" --desc "Selection-gated pinch-to-resize for ComfyUI nodes and groups on touch devices." --variant gesture
 ```
 
 Then bring the pack to green locally (the scaffold prints these too):
@@ -283,6 +292,25 @@ git -C gitops push -u origin chore/remove-comfyui-touch-resize-import
 gh pr create -R laurigates/gitops -a laurigates -l chore --fill --title "chore: remove comfyui-touch-resize import block"
 ```
 
+## Adapting Phases 3–5 to another repo class
+
+Phases 3–5 are repo-class-agnostic: the seed-`main`-first rationale, the
+branch-protection hook workaround, the `import`-block mechanics, the human gate,
+and the import-block-removal follow-up are identical for a ComfyUI pack, a
+FoundryVTT module, or anything else gitops adopts. Only these values change —
+substitute them and the phases read verbatim:
+
+| Substitute | ComfyUI pack (the examples above) | How to find yours |
+|---|---|---|
+| Repo name | `comfyui-touch-resize` | The caller skill's Phase 0 spec |
+| Workspace → gitops path | `gitops/` (run from `repos/laurigates/`) | `gitops/` if the clone is a sibling; `../gitops/` from a nested workspace |
+| `repositories.tf` adoption flags | `release_please = true` + `comfy_registry = true` | `release_please = true` is universal; extra flags are per-repo-class |
+| Seed commit subject | `feat: scaffold <name> (gesture pack)` | `feat: scaffold <name> (<variant> <noun>)` |
+| Phase 5 verification | `gh secret list` (`REGISTRY_ACCESS_TOKEN`) **and** the `RELEASE_PLEASE_APP_ID` variable lookup | Check one probe per flag you set; `release_please` always means the `RELEASE_PLEASE_APP_ID` variable |
+
+Everything else — the commands, the PR-body guidance, the labels, the metadata
+hygiene, the failure-mode rows below — applies unchanged.
+
 ## Phase 6 — Hand back to implementation
 
 The pipeline is now live: conventional-commit feature PRs → merge → release-please
@@ -301,7 +329,7 @@ DOM test gap) to `project:comfyui-nodes` per `taskwarrior-cross-session`.
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | `publish.yml` fails `Option '--token' requires an argument` | `comfy_registry` flag not yet applied | Confirm the tofu apply landed; `gh secret list` shows `REGISTRY_ACCESS_TOKEN`; re-run `gh workflow run publish.yml -R laurigates/<name>` |
-| release-please job fails on empty `app-id` | `release_please` credentials not applied, or repo on the legacy PAT workflow | The scaffold ships the App-token `release-please.yml`; confirm apply landed, re-run via `workflow_dispatch` |
+| release-please job fails on empty `app-id` | `release_please` credentials not applied, or repo on the legacy PAT workflow | The scaffold ships the App-token `release-please.yml`; confirm the apply landed (`gh api repos/laurigates/<name>/actions/variables/RELEASE_PLEASE_APP_ID --jq .name` returns a name), re-run via `workflow_dispatch` |
 | `403 Resource not accessible by integration` on repo create | Tried to create via the gitops App, not a personal token | Create with personal `gh auth`; the App only adopts via import |
 | The tofu plan shows a *create* (not *import*) for the repo | Import block missing or `id` wrong | The `id` is the bare repo name, not `owner/name`; add/fix the import block |
 | `just check` red in gitops | `tofu fmt`/`validate` failure | `just format` then re-check before pushing |
