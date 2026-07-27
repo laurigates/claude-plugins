@@ -1403,10 +1403,17 @@ check_skill_when_to_use() {
 # Check 9: Skill body size
 # The cost a SKILL.md body imposes once loaded is *tokens*, not lines — and
 # lines are a poor token proxy (chars/line varies ~3.6x across this repo, so
-# equal line counts can differ 2-3x in tokens). We gate on bytes (≈ characters
-# via `wc -c`), the cheapest tight proxy for tokens (~4 chars/token for English
+# equal line counts can differ 2-3x in tokens). We gate on decoded UTF-8
+# *characters*, the cheapest tight proxy for tokens (~4 chars/token for English
 # prose), and surface an estimated token count (chars/4, matching the
-# description-budget convention in .claude/rules/skill-quality.md). Thresholds:
+# description-budget convention in .claude/rules/skill-quality.md).
+#
+# Counting is done with python3 (already a hard dependency of this script, see
+# check_skill_frontmatter) rather than `wc`: `wc -c` counts BYTES, and bare
+# `wc -m` counts characters only under a UTF-8 locale — under C/POSIX it
+# silently returns bytes again. For a body using em-dashes/arrows (most skills
+# here) bytes exceed characters, so a byte gate tightens the budget by encoding
+# overhead alone and unevenly across skills (issue #2135). Thresholds:
 #   ≤ 10000 chars (~2500 tok)        → OK (silent)
 #   10001 – 26000 (~2500-6500 tok)   → WARN (review for REFERENCE.md / scripts/ extraction)
 #   > 26000 chars (~6500 tok)        → ERROR (exceeds ceiling — must extract before merge)
@@ -1428,7 +1435,9 @@ check_skill_size() {
     skill_name=$(basename "$(dirname "$skill_file")")
 
     local char_count est_tokens
-    char_count=$(wc -c < "$skill_file" | tr -d ' ')
+    # Decoded UTF-8 characters, locale-independent (see the note above).
+    # surrogateescape keeps a malformed byte as one character instead of raising.
+    char_count=$(python3 -c 'import sys; print(len(open(sys.argv[1], encoding="utf-8", errors="surrogateescape").read()))' "$skill_file")
     est_tokens=$(( char_count / 4 ))
 
     if [ "$char_count" -gt 26000 ]; then
