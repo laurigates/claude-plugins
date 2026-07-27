@@ -24,7 +24,7 @@
       "name": "agent-patterns-plugin",
       "source": "./agent-patterns-plugin",
       "description": "Agent configuration utilities - project assimilation, config auditing, teammate definitions, MCP management, MCP code execution patterns",
-      "version": "2.36.0",
+      "version": "2.37.0",
       "keywords": [
         "agents",
         "configuration",
@@ -98,7 +98,7 @@
       "name": "blueprint-plugin",
       "source": "./blueprint-plugin",
       "description": "Blueprint Development methodology - PRD/PRP workflow with version tracking, modular rules, CLAUDE.md management, and monorepo portfolio tracking",
-      "version": "3.42.0",
+      "version": "3.43.0",
       "keywords": [
         "blueprint",
         "prd",
@@ -149,7 +149,7 @@
       "name": "comfyui-plugin",
       "source": "./comfyui-plugin",
       "description": "ComfyUI custom-node pack lifecycle - scaffold a pack, create + seed the repo, open the gitops adoption PR, publish to the Comfy Registry, and add README screenshots",
-      "version": "1.9.3",
+      "version": "1.9.4",
       "keywords": [
         "comfyui",
         "custom-node",
@@ -293,7 +293,7 @@
       "name": "foundryvtt-plugin",
       "source": "./foundryvtt-plugin",
       "description": "FoundryVTT module lifecycle - scaffold a v13 module (Vite + TS + bun), create + seed the repo, open the gitops adoption PR",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "keywords": [
         "foundryvtt",
         "foundry-vtt",
@@ -390,7 +390,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.7.0",
+      "version": "2.7.1",
       "keywords": [
         "hooks",
         "automation",
@@ -511,7 +511,7 @@
       "name": "project-plugin",
       "source": "./project-plugin",
       "description": "Project initialization, management, and maintenance - setup, changelog review, and continuous development workflows",
-      "version": "1.21.0",
+      "version": "1.21.1",
       "keywords": [
         "project",
         "initialization",
@@ -589,7 +589,7 @@
       "name": "session-plugin",
       "source": "./session-plugin",
       "description": "Session bookends - spinup briefing, wrap-up capture, end-of-session orchestration, and knowledge distillation",
-      "version": "1.9.0",
+      "version": "1.9.1",
       "keywords": [
         "session",
         "spinup",

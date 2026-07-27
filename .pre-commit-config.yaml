@@ -262,6 +262,12 @@ repos:
         language: system
         files: '^scripts/(check-context-command-execution\.sh|lib/extract-md-elements\.py|tests/test-check-context-command-execution\.sh)$'
         pass_filenames: false
+      - id: test-lint-context-commands
+        name: context-command denylist regression
+        entry: bash ./scripts/tests/test-lint-context-commands.sh
+        language: system
+        files: '^scripts/(lint-context-commands\.sh|tests/test-lint-context-commands\.sh)$'
+        pass_filenames: false
       - id: test-check-version-pin-coverage
         name: version-pin coverage guard regression
         entry: bash ./scripts/tests/test-check-version-pin-coverage.sh

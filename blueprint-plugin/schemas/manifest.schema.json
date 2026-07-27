@@ -1,0 +1,325 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "blueprint-plugin/manifest.schema.json",
+  "title": "Blueprint Manifest",
+  "description": "Schema for docs/blueprint/manifest.json — the control surface every blueprint skill reads. Blocks with a fixed key set are closed (additionalProperties: false) so a typo like `autonomy_levle` or `adr_dris` is an error instead of a silent default; blocks whose keys are user/registry data stay open.",
+  "x-blueprint-format-version": "3.4.0",
+  "type": "object",
+  "required": ["format_version"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Optional reference to this schema file"
+    },
+    "format_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Blueprint format version (see blueprint-migration/migrations/ for the ladder)"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of blueprint initialization"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of the last manifest write"
+    },
+    "created_by": {
+      "type": "object",
+      "description": "Tool -> version map for whatever wrote this manifest (open: new tools may appear)",
+      "additionalProperties": { "type": "string" }
+    },
+    "project": { "$ref": "#/definitions/project" },
+    "structure": { "$ref": "#/definitions/structure" },
+    "feature_tracker": { "$ref": "#/definitions/featureTracker" },
+    "generated": { "$ref": "#/definitions/generated" },
+    "custom_overrides": { "$ref": "#/definitions/customOverrides" },
+    "automation": { "$ref": "#/definitions/automation" },
+    "validation": { "$ref": "#/definitions/validation" },
+    "task_registry": { "$ref": "#/definitions/taskRegistry" },
+    "id_registry": { "$ref": "#/definitions/idRegistry" },
+    "workspaces": { "$ref": "#/definitions/workspaces" },
+    "upgrade_history": {
+      "type": "array",
+      "description": "Append-only record of format-version migrations",
+      "items": { "$ref": "#/definitions/upgradeHistoryEntry" }
+    }
+  },
+  "definitions": {
+    "project": {
+      "type": "object",
+      "description": "Project identity. Fixed key set — closed.",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Project name (from package.json / pyproject.toml / directory name)"
+        },
+        "type": {
+          "type": "string",
+          "description": "Free-form project classification (e.g. team, solo) — read by blueprint-status"
+        },
+        "detected_stack": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Detected technologies (e.g. typescript, bun, python)"
+        }
+      }
+    },
+    "structure": {
+      "type": "object",
+      "description": "Which blueprint artifacts this repo carries, plus the generated-rules output path. Fixed key set — closed (a misspelled `generated_rules_path` would otherwise silently write to the default, issues #1043/#1675).",
+      "additionalProperties": false,
+      "properties": {
+        "has_prds": { "type": "boolean" },
+        "has_adrs": { "type": "boolean" },
+        "has_prps": { "type": "boolean" },
+        "has_work_orders": { "type": "boolean" },
+        "has_modular_rules": { "type": "boolean" },
+        "has_feature_tracker": { "type": "boolean" },
+        "has_document_detection": { "type": "boolean" },
+        "claude_md_mode": {
+          "type": "string",
+          "enum": ["single", "modular", "both"],
+          "description": "How CLAUDE.md content is organised"
+        },
+        "generated_rules_path": {
+          "type": "string",
+          "description": "Directory generated rules are written to (default .claude/rules/)"
+        }
+      }
+    },
+    "featureTracker": {
+      "type": "object",
+      "description": "Feature-tracker wiring. Fixed key set — closed.",
+      "additionalProperties": false,
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "Tracker filename relative to docs/blueprint/ (feature-tracker.json)"
+        },
+        "source_document": {
+          "type": ["string", "null"],
+          "description": "Primary requirements document the tracker syncs from"
+        },
+        "sync_targets": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Files kept in sync with the tracker (e.g. TODO.md)"
+        }
+      }
+    },
+    "generated": {
+      "type": "object",
+      "description": "Provenance for blueprint-generated artifacts, keyed by filename. The three buckets are fixed; the filenames inside them are not.",
+      "additionalProperties": false,
+      "properties": {
+        "rules": { "$ref": "#/definitions/generatedBucket" },
+        "commands": { "$ref": "#/definitions/generatedBucket" },
+        "skills": { "$ref": "#/definitions/generatedBucket" }
+      }
+    },
+    "generatedBucket": {
+      "type": "object",
+      "description": "Filename -> provenance record. Open: keys are user filenames.",
+      "additionalProperties": { "$ref": "#/definitions/generatedRecord" }
+    },
+    "generatedRecord": {
+      "type": "object",
+      "description": "Generation provenance for one artifact. Open — migrations may add provenance fields.",
+      "additionalProperties": true,
+      "properties": {
+        "source": { "type": "string" },
+        "source_hash": { "type": "string" },
+        "generated_at": { "type": "string" },
+        "plugin_version": { "type": "string" },
+        "content_hash": { "type": "string" },
+        "status": {
+          "type": "string",
+          "enum": ["current", "modified", "stale"]
+        }
+      }
+    },
+    "customOverrides": {
+      "type": "object",
+      "description": "User-maintained artifacts blueprint must not regenerate. Deliberately OPEN — the bucket set varies by repo and format version.",
+      "additionalProperties": true,
+      "properties": {
+        "skills": { "type": "array", "items": { "type": "string" } },
+        "commands": { "type": "array", "items": { "type": "string" } },
+        "rules": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "automation": {
+      "type": "object",
+      "description": "Autonomy configuration (ADR-0020), read by blueprint-plugin/scripts/get-automation-config.sh. Fixed key set — closed: `autonomy_levle` reads as level 0 with no warning otherwise.",
+      "additionalProperties": false,
+      "properties": {
+        "autonomy_level": {
+          "type": "integer",
+          "enum": [0, 1, 2, 3],
+          "description": "0 fully interactive, 1 ambient bookkeeping, 2 auto-run, 3 out-of-band work orders"
+        },
+        "interaction_mode": {
+          "type": "string",
+          "enum": ["quiet", "normal", "interactive"],
+          "description": "Prompting verbosity; absent means level>=2 defaults to quiet, else normal"
+        },
+        "work_orders": {
+          "type": "object",
+          "description": "Level-3 work-order gates (blueprint-wo-guard.sh). Fixed key set — closed.",
+          "additionalProperties": false,
+          "properties": {
+            "auto_draft": { "type": "boolean" },
+            "auto_execute": { "type": "boolean" },
+            "max_per_day": { "type": "integer", "minimum": 0 },
+            "max_cycles": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "context": {
+          "type": "object",
+          "description": "Free-form human rationale for the chosen level",
+          "additionalProperties": true
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "description": "Shared validation config (issues #2128/#2129) read by blueprint-plugin/scripts/get-validation-config.sh. Fixed key set — closed: `adr_dris` reads as unconfigured otherwise.",
+      "additionalProperties": false,
+      "properties": {
+        "status_vocabulary": {
+          "type": "object",
+          "description": "Document-frontmatter statuses meaning done vs unfinished. NOT the feature-record status enum (that is feature-tracker.schema.json's, and is not configurable).",
+          "additionalProperties": false,
+          "properties": {
+            "done": { "type": "array", "items": { "type": "string" } },
+            "unfinished": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "exclude_basenames": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Basenames skipped when sweeping requirement docs (default README.md)"
+        },
+        "doc_globs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Globs enumerating requirement documents"
+        },
+        "adr_dirs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "ADR directories in precedence order (default docs/adrs then docs/adr)"
+        }
+      }
+    },
+    "taskRegistry": {
+      "type": "object",
+      "description": "Maintenance-task registry. Deliberately OPEN at the task-name level — skills are added and renamed independently of this schema.",
+      "additionalProperties": { "$ref": "#/definitions/taskRegistryEntry" }
+    },
+    "taskRegistryEntry": {
+      "type": "object",
+      "description": "One maintenance task. Open (a task may carry extra bookkeeping) but typed where a consumer reads it.",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "auto_run": { "type": "boolean" },
+        "last_completed_at": { "type": ["string", "null"] },
+        "last_result": { "type": ["string", "null"] },
+        "schedule": { "type": "string" },
+        "stats": { "type": "object" },
+        "context": { "type": "object" }
+      }
+    },
+    "idRegistry": {
+      "type": "object",
+      "description": "Document ID <-> path <-> GitHub issue traceability. Fixed key set — closed; the maps inside it are open.",
+      "additionalProperties": false,
+      "properties": {
+        "last_prd": { "type": "integer", "minimum": 0 },
+        "last_prp": { "type": "integer", "minimum": 0 },
+        "last_trp": { "type": "integer", "minimum": 0 },
+        "documents": {
+          "type": "object",
+          "description": "Document ID -> record. Open: keys are PRD-NNN / ADR-NNNN / PRP-NNN / WO-NNN ids.",
+          "additionalProperties": { "$ref": "#/definitions/idRegistryDocument" }
+        },
+        "github_issues": {
+          "type": "object",
+          "description": "Reverse index: issue number (as a string key) -> document ids.",
+          "additionalProperties": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "idRegistryDocument": {
+      "type": "object",
+      "description": "One registered document. Open — link kinds are additive.",
+      "additionalProperties": true,
+      "properties": {
+        "path": { "type": "string" },
+        "title": { "type": "string" },
+        "status": { "type": "string" },
+        "github_issues": {
+          "type": "array",
+          "items": { "type": "integer" }
+        },
+        "relates_to": { "type": "array", "items": { "type": "string" } },
+        "implements": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "workspaces": {
+      "type": "object",
+      "description": "Monorepo portfolio wiring (format_version >= 3.3.0). Fixed key set — closed.",
+      "additionalProperties": false,
+      "properties": {
+        "role": {
+          "type": "string",
+          "enum": ["root", "child"]
+        },
+        "discovery_strategy": { "type": "string" },
+        "last_scanned_at": { "type": ["string", "null"] },
+        "root_relative_path": {
+          "type": "string",
+          "description": "Child manifests only: relative path from here to the root blueprint"
+        },
+        "children": {
+          "type": "array",
+          "description": "Root manifests only: cached child-workspace registry (blueprint-workspace-scan)",
+          "items": { "$ref": "#/definitions/workspaceChild" }
+        }
+      }
+    },
+    "workspaceChild": {
+      "type": "object",
+      "description": "One discovered child workspace. Open — cached-stat fields are additive.",
+      "additionalProperties": true,
+      "properties": {
+        "path": { "type": "string" },
+        "project_name": { "type": "string" },
+        "manifest_format_version": { "type": "string" },
+        "has_feature_tracker": { "type": "boolean" },
+        "last_synced_at": { "type": "string" },
+        "cached_stats": { "type": ["object", "null"] }
+      }
+    },
+    "upgradeHistoryEntry": {
+      "type": "object",
+      "description": "One recorded migration. Open — a migration document may record extra detail.",
+      "additionalProperties": true,
+      "properties": {
+        "from": { "type": "string" },
+        "to": { "type": "string" },
+        "date": { "type": "string" },
+        "changes": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

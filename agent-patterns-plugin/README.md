@@ -156,7 +156,8 @@ Protocol for consulting *other* models (kimi, glm, gemini, gpt via the PAL MCP g
 - The disagreement-is-the-signal protocol: identical briefs, independent round one, diff for the split
 - Adjudicate splits against the codebase (which usually already decided), never model confidence
 - Graft-never-adopt-wholesale synthesis guidance
-- PAL mechanics that bite: `listmodels` first, `absolute_file_paths` over pasting, the kimi `temperature` 400
+- PAL mechanics that bite: `listmodels` first, the kimi `temperature` 400, per-model `absolute_file_paths` budgets, the `PAL_WORKSPACE_ROOT` restriction, and `model_used` scrambling under concurrency
+- The curated excerpt bundle: one §-numbered verbatim-excerpt file, sized under the smallest model's budget, attached unchanged to every model
 
 #### `verify-before-plan`
 Verify orchestrator premises (file counts, build state, artefact presence) before dispatching parallel subagents. Sits before `parallel-agent-dispatch` in the dispatch sequence — bad premises propagate to every brief in the wave.

@@ -337,6 +337,36 @@ export BLUEPRINT_AUTORUN_DISABLE=1
 export BLUEPRINT_AUTORUN_TTL=7200
 ```
 
+## Manifest Validation
+
+`docs/blueprint/manifest.json` is the control surface every skill reads, and
+every consumer degrades gracefully on bad input — which is correct at runtime
+but makes a **typo indistinguishable from an intentional omission**:
+`autonomy_levle: 3` reads as level 0, `adr_dris: [...]` reads as unconfigured.
+
+[`schemas/manifest.schema.json`](schemas/manifest.schema.json) closes that gap.
+`/blueprint:status` runs it as part of its read-only report:
+
+```bash
+uv run --quiet --script <plugin-root>/scripts/check-manifest-schema.py --project-dir .
+```
+
+| Closed (`additionalProperties: false`) | Open |
+|---|---|
+| root, `project`, `structure`, `feature_tracker`, `automation` (+`work_orders`), `validation` (+`status_vocabulary`), `id_registry`, `workspaces`, `generated` (bucket names) | `task_registry` and its entries, `custom_overrides`, `created_by`, the `generated` / `id_registry.documents` / `github_issues` maps, `upgrade_history` entries |
+
+Closed blocks have a key set this plugin owns, so an unknown key is a typo.
+Open blocks hold user or registry data (task names, filenames, document ids,
+issue numbers) whose keys legitimately vary — closing them would fail valid
+manifests. Unknown keys aside, typed values are enforced everywhere:
+`autonomy_level` ∈ 0–3, `interaction_mode` ∈ quiet/normal/interactive,
+`claude_md_mode` ∈ single/modular/both, and the `validation.*` fields must be
+arrays of strings.
+
+The check is a diagnostic, never a gate: no manifest, a `format_version` older
+than the schema's (`WARN` → run `/blueprint:upgrade`), or a missing
+`uv`/`jsonschema` all exit 0 without claiming the manifest is clean.
+
 ## Feature Tracking (Optional)
 
 Track implementation progress against requirements documents using hierarchical FR codes.

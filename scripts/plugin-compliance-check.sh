@@ -483,6 +483,28 @@ check_skill_body() {
           has_errors=true
         fi
       done
+
+      # Regression: the [PROMOTE] hand-off must stay isolated from the shared,
+      # long-lived claude-plugins checkout (issue #2113). Editing that checkout
+      # directly races a concurrent Claude session, which can autostash the
+      # in-flight edit and move HEAD between two calls — the following
+      # add/commit then reports "nothing to commit, working tree clean" and the
+      # work is silently lost. The isolation is a throwaway `git clone`, not a
+      # `git worktree` (a worktree registers in the shared checkout's .git and
+      # was itself observed failing once HEAD moved). The semantic invariants:
+      # the clone command survives, the shared-checkout cross-reference
+      # survives, and the old `git -C "$PLUGINS_REPO" switch` form does not
+      # come back.
+      for token in "git clone --depth 1 --single-branch" "shared-checkout-branch-isolation" "git-plugin:git-coworker-check"; do
+        if ! grep -q -- "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain '${token}' (isolated-clone PROMOTE hand-off, issue #2113)")
+          has_errors=true
+        fi
+      done
+      if grep -q -- 'PLUGINS_REPO" switch' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must not branch the shared PLUGINS_REPO checkout — promote via a throwaway clone (issue #2113)")
+        has_errors=true
+      fi
     fi
 
     # Regression: blueprint-adr-validate must retain the ADR-number collision
@@ -659,6 +681,42 @@ check_skill_body() {
       done
     fi
 
+    # Regression (#2142): comfy-node and foundryvtt-module shared 824 eight-word
+    # shingles (containment 0.482) of a common gitops repo-adoption procedure,
+    # and the two copies had already DRIFTED — a correctness problem, not just
+    # double cost. Deduped by designating comfy-node the canonical owner
+    # (cross-plugin ⇒ reference by `plugin:skill` NAME, never a shared
+    # REFERENCE.md, whose relative path dies when only one plugin is installed —
+    # see .claude/rules/skill-consolidation.md §2). Two invariants must survive
+    # a future bulk edit:
+    #   (a) comfy-node keeps the counter-findings the benchmark judged
+    #       load-bearing — the Phase 3 explanation of WHY `main` is seeded
+    #       directly (the rename/default-branch/base-branch recovery it
+    #       pre-empts) and the branch-protection hook note with its empirical
+    #       "confirmed on the first real run" evidence.
+    #   (b) foundryvtt-module keeps the name-reference to the owner; dropping it
+    #       leaves the deferred procedure unreachable, and re-inlining a copy
+    #       re-opens the drift.
+    if [ "$plugin" = "comfyui-plugin" ] && [ "$skill_name" = "comfy-node" ]; then
+      for token in 'rename + default-branch change + base-branch fixups' 'confirmed on the first real run' 'Adapting Phases 3–5 to another repo class'; do
+        if ! grep -qF "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain gitops-adoption owner token '${token}' (#2142 counter-findings)")
+          has_errors=true
+        fi
+      done
+    fi
+    if [ "$plugin" = "foundryvtt-plugin" ] && [ "$skill_name" = "foundryvtt-module" ]; then
+      if ! grep -qF 'comfyui-plugin:comfy-node' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must reference the gitops-adoption owner by name 'comfyui-plugin:comfy-node' (#2142)")
+        has_errors=true
+      fi
+      # Re-inlining the delegated procedure is the regression this guards.
+      if grep -qF 'transient import block alongside the existing' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md re-inlines the delegated gitops procedure — defer to comfyui-plugin:comfy-node Phases 3-5 (#2142)")
+        has_errors=true
+      fi
+    fi
+
     # Regression: configure-worktreeinclude generates a .worktreeinclude whose
     # patterns copy gitignored inputs into new worktrees. Its load-bearing
     # invariants are (a) the include list is built from the repo's *actual*
@@ -687,6 +745,24 @@ check_skill_body() {
       for token in 'disagreement, not the union' 'Adjudicate against the code' 'temperature` for kimi'; do
         if ! grep -qF "$token" "$skill_file"; then
           issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain token '${token}' (disagreement-is-the-signal protocol + kimi temperature gotcha)")
+          has_errors=true
+        fi
+      done
+      # Regression (#2120): three PAL dispatch mechanics observed live in a
+      # 3-provider consult. (a) absolute_file_paths is capped per MODEL
+      # (~60% of context headroom; kimi ≈ 28K vs gpt ≈ 77K on a 262K context),
+      # so the SMALLEST model's budget bounds a shared attachment — the fix is
+      # the curated excerpt bundle, not per-model trimming, which would break
+      # the identical-briefs invariant the whole protocol rests on.
+      # (b) working_directory_absolute_path outside PAL_WORKSPACE_ROOT is
+      # rejected outright. (c) model_used scrambles under CONCURRENCY, so
+      # provider_used is the only independence signal. Dropping any of these
+      # re-introduces a silent dispatch failure, so assert all three survive.
+      for token in "smallest model's budget bounds the bundle" \
+                   "must reside within the PAL workspace root" \
+                   "untrustworthy under concurrency"; do
+        if ! grep -qF "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain token '${token}' (per-model attachment budget + workspace-root restriction + model_used concurrency caveat)")
           has_errors=true
         fi
       done
@@ -1381,10 +1457,17 @@ check_skill_when_to_use() {
 # Check 9: Skill body size
 # The cost a SKILL.md body imposes once loaded is *tokens*, not lines — and
 # lines are a poor token proxy (chars/line varies ~3.6x across this repo, so
-# equal line counts can differ 2-3x in tokens). We gate on bytes (≈ characters
-# via `wc -c`), the cheapest tight proxy for tokens (~4 chars/token for English
+# equal line counts can differ 2-3x in tokens). We gate on decoded UTF-8
+# *characters*, the cheapest tight proxy for tokens (~4 chars/token for English
 # prose), and surface an estimated token count (chars/4, matching the
-# description-budget convention in .claude/rules/skill-quality.md). Thresholds:
+# description-budget convention in .claude/rules/skill-quality.md).
+#
+# Counting is done with python3 (already a hard dependency of this script, see
+# check_skill_frontmatter) rather than `wc`: `wc -c` counts BYTES, and bare
+# `wc -m` counts characters only under a UTF-8 locale — under C/POSIX it
+# silently returns bytes again. For a body using em-dashes/arrows (most skills
+# here) bytes exceed characters, so a byte gate tightens the budget by encoding
+# overhead alone and unevenly across skills (issue #2135). Thresholds:
 #   ≤ 10000 chars (~2500 tok)        → OK (silent)
 #   10001 – 26000 (~2500-6500 tok)   → WARN (review for REFERENCE.md / scripts/ extraction)
 #   > 26000 chars (~6500 tok)        → ERROR (exceeds ceiling — must extract before merge)
@@ -1406,7 +1489,9 @@ check_skill_size() {
     skill_name=$(basename "$(dirname "$skill_file")")
 
     local char_count est_tokens
-    char_count=$(wc -c < "$skill_file" | tr -d ' ')
+    # Decoded UTF-8 characters, locale-independent (see the note above).
+    # surrogateescape keeps a malformed byte as one character instead of raising.
+    char_count=$(python3 -c 'import sys; print(len(open(sys.argv[1], encoding="utf-8", errors="surrogateescape").read()))' "$skill_file")
     est_tokens=$(( char_count / 4 ))
 
     if [ "$char_count" -gt 26000 ]; then
