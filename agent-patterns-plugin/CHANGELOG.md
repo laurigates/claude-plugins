@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.37.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.36.0...agent-patterns-plugin-v2.37.0) (2026-07-27)
+
+
+### Features
+
+* **agent-patterns-plugin:** encode PAL attachment budgets and the curated-excerpt-bundle pattern ([#2151](https://github.com/laurigates/claude-plugins/issues/2151)) ([fa623b2](https://github.com/laurigates/claude-plugins/commit/fa623b2a8152d51b51f486dc74fa7590d975bdc2))
+
 ## [2.36.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.35.1...agent-patterns-plugin-v2.36.0) (2026-07-17)
 
 
