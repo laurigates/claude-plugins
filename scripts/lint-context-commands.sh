@@ -26,6 +26,8 @@
 # 16. git rev-parse / git remote in context: write to stderr when invoked outside
 #     a git repository; stderr from a Context backtick aborts the skill before its
 #     body runs (issue #1351)
+# 17. which <tool> in context: exits 1 SILENTLY (nothing on stderr) when the tool
+#     is absent, aborting the skill before its body runs (issue #2145)
 #
 # Exit codes:
 #   0 - no issues
@@ -194,6 +196,30 @@ check_pattern ERROR \
   "command-v-in-context" \
   '^- .*!`command -v ' \
   "replace 'command -v <tool>' with '<tool> --version' (or 'tool version'); 'command' is a builtin not covered by Bash(<tool> *) permission"
+
+# which <tool> in context: `which` signals "not found" purely through its exit
+# code — it exits 1 and writes NOTHING to stderr. A non-zero exit from a Context
+# backtick aborts the skill before its body runs, so a `which` probe makes the
+# skill unusable on any machine that lacks the probed tool. `type` and `hash`
+# share the exit-1 behaviour and are equally unsuitable.
+#
+# The silent-stderr part is why this shipped: scripts/check-context-command-execution.sh
+# classifies FAIL vs ENV_MISSING from stderr text, and it only fires when the
+# harness box itself lacks the tool — so on any developer/CI machine that HAS the
+# tool the probe passes and the abort stays latent.
+#
+# Fix shape: probe the tool in the skill BODY via the Bash tool, where a non-zero
+# exit is survivable, and report the availability answer from there. A `find` over
+# a fixed set of bin directories is not a substitute: it errors to stderr when a
+# start directory is absent (the #1482 class) and cannot see tools installed via
+# mise/asdf/nix/cargo.
+#
+# Regression: project-init used `which gh`, aborting /project:init for every user
+# without gh on PATH — exactly the fresh-machine case the skill exists for (issue #2145)
+check_pattern ERROR \
+  "which-in-context" \
+  '^- .*!`\([^`]*[[:space:]]\)\?which [^`]*`' \
+  "move the probe into the skill body and run it via the Bash tool (a non-zero exit is survivable there), then report availability from the body; 'which'/'type'/'hash' exit 1 silently when the tool is absent, which aborts the skill"
 
 # git config --get <key> in context: exits 1 when the requested key is unset.
 # A non-zero exit aborts the skill before its body runs.
