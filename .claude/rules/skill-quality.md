@@ -1,7 +1,7 @@
 ---
 created: 2026-03-02
-modified: 2026-05-13
-reviewed: 2026-05-13
+modified: 2026-07-27
+reviewed: 2026-07-27
 paths:
   - "**/skills/**"
   - "**/SKILL.md"
@@ -13,7 +13,7 @@ Quality standards for maintaining effective, discoverable skills.
 
 ## Size Limits
 
-The cost a `SKILL.md` body imposes once it loads is **tokens**, not lines. Lines are a poor proxy: across this repo `chars/line` ranges ~19–69 (a 3.6× spread), so two skills at the same line count can differ 2–3× in tokens — a 416-line file of dense tables (`configure-claude-plugins`, ~5,970 tokens) outweighs a 491-line file of prose. We therefore gate on **characters** (`wc -c`), the cheapest tight proxy for tokens (~4 chars/token for English prose), and report an estimated token count (chars / 4 — the same convention used for the description budget below).
+The cost a `SKILL.md` body imposes once it loads is **tokens**, not lines. Lines are a poor proxy: across this repo `chars/line` ranges ~19–69 (a 3.6× spread), so two skills at the same line count can differ 2–3× in tokens — a 416-line file of dense tables (`configure-claude-plugins`, ~5,970 tokens) outweighs a 491-line file of prose. We therefore gate on **characters** (decoded UTF-8, not bytes), the cheapest tight proxy for tokens (~4 chars/token for English prose), and report an estimated token count (chars / 4 — the same convention used for the description budget below).
 
 | Characters | ~Tokens | Severity | Action |
 |------------|---------|----------|--------|
@@ -25,9 +25,11 @@ The cost a `SKILL.md` body imposes once it loads is **tokens**, not lines. Lines
 
 **Local hard ceiling**: 26,000 chars / ~6,500 tokens (enforced by `scripts/plugin-compliance-check.sh` `check_skill_size()`).
 
+> **Characters, not bytes** (issue [#2135](https://github.com/laurigates/claude-plugins/issues/2135)). `wc -c` counts **bytes**, and a bare `wc -m` counts characters only under a UTF-8 locale — under `C`/`POSIX` it silently falls back to bytes. Every non-ASCII character this repo uses heavily (em-dash `—`, arrows `→`, box-drawing) is 2–3 bytes, so a byte gate tightens the budget by encoding overhead alone, unevenly across skills: `parallel-agent-dispatch` measured 26,024 bytes vs 25,850 characters — an ERROR on 174 bytes of UTF-8 overhead from 87 non-ASCII characters. `check_skill_size()` therefore counts with `python3` (`len(open(f, encoding="utf-8").read())`), which is locale-independent by construction. Use the same method when checking a body by hand; `LC_ALL=C.UTF-8 wc -m` also works where that locale is guaranteed present.
+
 `REFERENCE.md` has no size limit — it is a supporting file loaded on demand.
 
-> **Why not gate on tokens directly?** Tokens are the real cost, but counting them needs Claude's tokenizer (the `count_tokens` API = network + per-file calls), too heavy for a pre-commit/CI lint. Characters track tokens tightly at `wc -c` cost. Lines are kept only as a human reference (they map to scroll length and to `head -N` partial reads), not as the gate.
+> **Why not gate on tokens directly?** Tokens are the real cost, but counting them needs Claude's tokenizer (the `count_tokens` API = network + per-file calls), too heavy for a pre-commit/CI lint. Characters track tokens tightly at near-`wc` cost. Lines are kept only as a human reference (they map to scroll length and to `head -N` partial reads), not as the gate.
 
 ## Required Sections
 

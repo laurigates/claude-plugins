@@ -390,7 +390,7 @@
       "name": "hooks-plugin",
       "source": "./hooks-plugin",
       "description": "Claude Code hooks for enforcing best practices and workflow automation",
-      "version": "2.7.0",
+      "version": "2.7.1",
       "keywords": [
         "hooks",
         "automation",
@@ -589,7 +589,7 @@
       "name": "session-plugin",
       "source": "./session-plugin",
       "description": "Session bookends - spinup briefing, wrap-up capture, end-of-session orchestration, and knowledge distillation",
-      "version": "1.9.0",
+      "version": "1.9.1",
       "keywords": [
         "session",
         "spinup",
