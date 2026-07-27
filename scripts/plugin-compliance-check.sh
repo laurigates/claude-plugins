@@ -483,6 +483,28 @@ check_skill_body() {
           has_errors=true
         fi
       done
+
+      # Regression: the [PROMOTE] hand-off must stay isolated from the shared,
+      # long-lived claude-plugins checkout (issue #2113). Editing that checkout
+      # directly races a concurrent Claude session, which can autostash the
+      # in-flight edit and move HEAD between two calls — the following
+      # add/commit then reports "nothing to commit, working tree clean" and the
+      # work is silently lost. The isolation is a throwaway `git clone`, not a
+      # `git worktree` (a worktree registers in the shared checkout's .git and
+      # was itself observed failing once HEAD moved). The semantic invariants:
+      # the clone command survives, the shared-checkout cross-reference
+      # survives, and the old `git -C "$PLUGINS_REPO" switch` form does not
+      # come back.
+      for token in "git clone --depth 1 --single-branch" "shared-checkout-branch-isolation" "git-plugin:git-coworker-check"; do
+        if ! grep -q -- "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain '${token}' (isolated-clone PROMOTE hand-off, issue #2113)")
+          has_errors=true
+        fi
+      done
+      if grep -q -- 'PLUGINS_REPO" switch' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must not branch the shared PLUGINS_REPO checkout — promote via a throwaway clone (issue #2113)")
+        has_errors=true
+      fi
     fi
 
     # Regression: blueprint-adr-validate must retain the ADR-number collision

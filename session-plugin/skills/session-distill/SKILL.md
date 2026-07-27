@@ -1,11 +1,11 @@
 ---
 name: session-distill
 description: "Distill session insights into rules, skill improvements, recipes, and cross-repo promotions to marketplace plugins. Use when capturing learnings, codifying workflow into .claude/rules, or promoting a session-invented pattern into a specific plugin/skill as a PR."
-allowed-tools: Bash(bash *), Bash(mkdir *), Bash(git diff *), Bash(git log *), Bash(git status *), Bash(git fetch *), Bash(git switch *), Bash(git checkout *), Bash(git add *), Bash(git commit *), Bash(git branch *), Bash(git push *), Bash(just *), Bash(gh pr *), Bash(gh label *), Read, Grep, Glob, Edit, Write, AskUserQuestion, TodoWrite
+allowed-tools: Bash(bash *), Bash(mkdir *), Bash(mktemp *), Bash(git diff *), Bash(git log *), Bash(git status *), Bash(git fetch *), Bash(git clone *), Bash(git switch *), Bash(git checkout *), Bash(git add *), Bash(git commit *), Bash(git branch *), Bash(git push *), Bash(just *), Bash(gh pr *), Bash(gh label *), Read, Grep, Glob, Edit, Write, AskUserQuestion, TodoWrite
 argument-hint: "--rules | --skills | --recipes | --process | --all | --dry-run"
 args: "[--rules] [--skills] [--recipes] [--process] [--all] [--dry-run]"
 created: 2026-02-11
-modified: 2026-07-18
+modified: 2026-07-27
 compatibility: claude-code
 reviewed: 2026-07-14
 ---
@@ -194,27 +194,49 @@ read the closest few, and prefer extending an existing skill (a new section +
 cross-link) over a new skill unless the pattern is genuinely its own topic
 (`Update Over Add` still applies — across repos now).
 
-### The PR hand-off (never edit cwd, never push to default)
+### The PR hand-off (isolated clone — never edit cwd, never push to default)
 
-The plugin source lives in its own repo (`PLUGINS_REPO` below). Open a PR there;
-the human reviews and merges. Match the repo's conventions: skills are
-auto-discovered (add `skills/<name>/SKILL.md` with dated frontmatter +
-`user-invocable`/`allowed-tools`), update the plugin README's skill catalog,
-keep `!`-context commands free of pipes/redirects, use a conventional commit
-(`feat(<plugin>):` for a new skill, `docs(<plugin>):` for an edit — release-please
-versions from it), and apply the `<plugin>` routing label (create it if missing).
+The plugin source lives in its own repo. Open a PR there; the human reviews and
+merges. Match the repo's conventions: skills are auto-discovered (add
+`skills/<name>/SKILL.md` with dated frontmatter + `user-invocable`/`allowed-tools`),
+update the plugin README's skill catalog, keep `!`-context commands free of pipes/
+redirects, use a conventional commit (`feat(<plugin>):` for a new skill,
+`docs(<plugin>):` for an edit — release-please versions from it), and apply the
+`<plugin>` routing label (create it if missing).
+
+**Do the whole promote in a throwaway clone, never in a long-lived local
+checkout of the plugins repo.** That checkout is frequently contended by a
+concurrent Claude session: a coworker's operation can autostash your in-flight
+edit and move `HEAD` between two of your calls, so the next `git add`/`commit`
+reports *"nothing to commit, working tree clean"* and the edit is silently gone
+(issue #2113). A fresh clone shares no `.git` with that checkout, so no coworker
+can move `HEAD` under it. `git worktree add` is **not** equivalent — it
+registers in the shared checkout's `.git` and was itself observed failing
+(`already used by worktree`) once `HEAD` had moved.
 
 ```bash
-PLUGINS_REPO="$HOME/repos/laurigates/claude-plugins"     # the plugin source repo
-git -C "$PLUGINS_REPO" fetch origin
-git -C "$PLUGINS_REPO" switch -c <type>/<short-slug> origin/main
-# ... Write/Edit the SKILL.md + README under "$PLUGINS_REPO" (absolute paths) ...
-git -C "$PLUGINS_REPO" add <paths>
-git -C "$PLUGINS_REPO" commit -m "<conventional message>"
-git -C "$PLUGINS_REPO" push -u origin <branch>
-gh pr create -R laurigates/claude-plugins --base main --head <branch> \
-  --title "<conventional title>" --body-file /tmp/promote-body.md -l <plugin>
+WORK=$(mktemp -d); test -n "$WORK" || exit 1
+git clone --depth 1 --single-branch --branch main https://github.com/laurigates/claude-plugins.git "$WORK/claude-plugins"
+git -C "$WORK/claude-plugins" switch -c <type>/<short-slug>
+# ... Write/Edit the SKILL.md + README under "$WORK/claude-plugins" (absolute paths) ...
+git -C "$WORK/claude-plugins" add <paths>
+git -C "$WORK/claude-plugins" commit -m "<conventional message>"
+git -C "$WORK/claude-plugins" log --oneline origin/main..HEAD
+git -C "$WORK/claude-plugins" push -u origin <branch>
+gh pr create -R laurigates/claude-plugins --base main --head <branch> --title "<conventional title>" --body-file /tmp/promote-body.md -l <plugin>
+rm -rf "$WORK"
 ```
+
+Remove the throwaway (`rm -rf "$WORK"`) only after the PR URL is in hand — it is
+the only copy of the work until the push lands.
+
+Cross-references for the shared-checkout hazard this avoids:
+`repos/.claude/rules/shared-checkout-branch-isolation.md` (the
+`git log --oneline origin/main..HEAD` verification above — a branch must contain
+only your own commits before you push), `repos/.claude/rules/concurrent-session-pr-check.md`
+(before recreating work that "vanished", check whether a peer session already
+opened a PR for it — never pop a shared stash), and `git-plugin:git-coworker-check`
+(run it before any operation that genuinely must touch a shared checkout).
 
 The PR body should cite the session as evidence (what the pattern is, why it's
 reusable, where it was used) — the additive analogue of the friction loop's
