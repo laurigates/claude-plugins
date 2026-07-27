@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.3](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.9.2...comfyui-plugin-v1.9.3) (2026-07-27)
+
+
+### Bug Fixes
+
+* **comfyui-node-scaffold:** unbreak bun install, gate placeholder art, fit the banner tagline ([9c8f5f4](https://github.com/laurigates/claude-plugins/commit/9c8f5f47c2633a4e40d59ecaaea629af0517f59e))
+
 ## [1.9.2](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.9.1...comfyui-plugin-v1.9.2) (2026-07-17)
 
 
