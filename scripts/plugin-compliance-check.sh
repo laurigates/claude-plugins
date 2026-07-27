@@ -690,6 +690,24 @@ check_skill_body() {
           has_errors=true
         fi
       done
+      # Regression (#2120): three PAL dispatch mechanics observed live in a
+      # 3-provider consult. (a) absolute_file_paths is capped per MODEL
+      # (~60% of context headroom; kimi ≈ 28K vs gpt ≈ 77K on a 262K context),
+      # so the SMALLEST model's budget bounds a shared attachment — the fix is
+      # the curated excerpt bundle, not per-model trimming, which would break
+      # the identical-briefs invariant the whole protocol rests on.
+      # (b) working_directory_absolute_path outside PAL_WORKSPACE_ROOT is
+      # rejected outright. (c) model_used scrambles under CONCURRENCY, so
+      # provider_used is the only independence signal. Dropping any of these
+      # re-introduces a silent dispatch failure, so assert all three survive.
+      for token in "smallest model's budget bounds the bundle" \
+                   "must reside within the PAL workspace root" \
+                   "untrustworthy under concurrency"; do
+        if ! grep -qF "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain token '${token}' (per-model attachment budget + workspace-root restriction + model_used concurrency caveat)")
+          has_errors=true
+        fi
+      done
     fi
 
     # Regression: github-actions-auth-security must document the GitHub Actions
