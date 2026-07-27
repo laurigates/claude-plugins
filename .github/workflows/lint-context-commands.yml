@@ -8,6 +8,7 @@ on:
       - '**/skills/**/REFERENCE.md'
       - 'taskwarrior-plugin/**/*.md'
       - 'scripts/lint-context-commands.sh'
+      - 'scripts/tests/test-lint-context-commands.sh'
       - 'scripts/check-context-command-execution.sh'
       - 'scripts/lib/extract-md-elements.py'
       - 'scripts/audit-skill-descriptions.py'
@@ -22,6 +23,7 @@ on:
       - '**/skills/**/REFERENCE.md'
       - 'taskwarrior-plugin/**/*.md'
       - 'scripts/lint-context-commands.sh'
+      - 'scripts/tests/test-lint-context-commands.sh'
       - 'scripts/check-context-command-execution.sh'
       - 'scripts/lib/extract-md-elements.py'
       - 'scripts/audit-skill-descriptions.py'
@@ -42,6 +44,11 @@ jobs:
         # scripts/lib/extract-md-elements.py, a self-contained `uv run` PEP723
         # script (tree-sitter + tree-sitter-markdown).
         uses: astral-sh/setup-uv@v6
+
+      - name: Context-command denylist regression
+        # Guards the lint's own rules (notably which-in-context, #2145) against
+        # a silent revert. See scripts/tests/test-lint-context-commands.sh.
+        run: bash ./scripts/tests/test-lint-context-commands.sh
 
       - name: Lint context commands
         run: ./scripts/lint-context-commands.sh
