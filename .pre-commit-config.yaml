@@ -1,9 +1,12 @@
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.4.8
+    # Keep in sync with the pinned `uvx ruff@<version>` steps in
+    # plugin-pr-checks.yml — a version skew makes pre-commit and CI disagree
+    # about formatting. Config: ruff.toml at the repo root.
+    rev: v0.15.8
     hooks:
-      - id: ruff
-        args: [ --fix ]
+      - id: ruff-check
+        args: [--fix]
       - id: ruff-format
   - repo: https://github.com/shellcheck-py/shellcheck-py
     rev: v0.10.0.1
@@ -282,6 +285,18 @@ repos:
         entry: bash ./scripts/check-git-sandbox-guards.sh --strict
         language: system
         files: '\.sh$'
+        pass_filenames: false
+      - id: check-ruff-version-sync
+        name: ruff pins agree between pre-commit and CI
+        entry: bash ./scripts/check-ruff-version-sync.sh --strict
+        language: system
+        files: '^(\.pre-commit-config\.yaml|\.github/workflows/plugin-pr-checks\.yml)$'
+        pass_filenames: false
+      - id: test-check-ruff-version-sync
+        name: ruff-version-sync guard regression
+        entry: bash ./scripts/tests/test-check-ruff-version-sync.sh
+        language: system
+        files: '^scripts/(check-ruff-version-sync\.sh|tests/test-check-ruff-version-sync\.sh)$'
         pass_filenames: false
       - id: test-check-git-sandbox-guards
         name: git-sandbox-guard linter regression
