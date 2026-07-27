@@ -191,7 +191,9 @@ def main() -> int:
     lines.append("SCHEMA_APPLICABLE=true")
 
     validator = Draft7Validator(schema)
-    errors = sorted(validator.iter_errors(manifest), key=lambda e: list(e.absolute_path))
+    errors = sorted(
+        validator.iter_errors(manifest), key=lambda e: list(e.absolute_path)
+    )
     issues = [("ERROR", "schema_violation", describe(e)) for e in errors]
     return emit(lines, "ERROR" if issues else "OK", issues)
 

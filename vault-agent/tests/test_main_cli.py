@@ -67,8 +67,9 @@ class TestNonInteractiveGate:
 
         fake_stdin = mock.Mock(isatty=mock.Mock(return_value=True))
         fake_stdout = mock.Mock(isatty=mock.Mock(return_value=True))
-        with mock.patch("vault_agent.main.sys.stdin", fake_stdin), mock.patch(
-            "vault_agent.main.sys.stdout", fake_stdout
+        with (
+            mock.patch("vault_agent.main.sys.stdin", fake_stdin),
+            mock.patch("vault_agent.main.sys.stdout", fake_stdout),
         ):
             cfg = _build_ni_config(
                 non_interactive=False,
@@ -227,7 +228,9 @@ class TestVaultAndGitValidation:
         vault_dir.mkdir()
         (vault_dir / "note.md").write_text("# hi\n")
         runner = CliRunner()
-        result = runner.invoke(app, ["lint", str(vault_dir), "--fix", "--non-interactive"])
+        result = runner.invoke(
+            app, ["lint", str(vault_dir), "--fix", "--non-interactive"]
+        )
         assert result.exit_code == EXIT_CONFIG_ERROR
         flat = " ".join(result.stdout.split())
         assert "not a git repository" in flat
@@ -238,7 +241,9 @@ class TestVaultAndGitValidation:
         (vault_dir / "note.md").write_text("# hi\n")
         subprocess.run(["git", "init", "-q", "-b", "main"], cwd=vault_dir, check=True)
         runner = CliRunner()
-        result = runner.invoke(app, ["lint", str(vault_dir), "--fix", "--non-interactive"])
+        result = runner.invoke(
+            app, ["lint", str(vault_dir), "--fix", "--non-interactive"]
+        )
         assert result.exit_code == EXIT_CONFIG_ERROR
         flat = " ".join(result.stdout.split())
         assert "no commits yet" in flat

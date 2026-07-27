@@ -22,9 +22,7 @@ from vault_agent.fixers.templater_cleaner import clean_templater_leakage
 from vault_agent.orchestrator import commit_all, enter_worktree
 from vault_agent.worktree import (
     WorktreeHandle,
-    cleanup_worktree,
     format_review_instructions,
-    worktree_commit_count,
     worktree_file_change_count,
 )
 
@@ -110,9 +108,7 @@ def run_lint(vault: Path, *, apply: bool = False) -> LintResult:
     )
 
     if not apply:
-        return LintResult(
-            dry_run=True, plan=plan, audit=audit, handle=None, commits=[]
-        )
+        return LintResult(dry_run=True, plan=plan, audit=audit, handle=None, commits=[])
 
     handle = enter_worktree(vault)
     commits: list[str] = []
@@ -124,7 +120,9 @@ def run_lint(vault: Path, *, apply: bool = False) -> LintResult:
         handle,
         f"fix(frontmatter): remove legacy id: field from {len(changed)} notes",
     ):
-        commits.append(f"fix(frontmatter): remove legacy id: field from {len(changed)} notes")
+        commits.append(
+            f"fix(frontmatter): remove legacy id: field from {len(changed)} notes"
+        )
 
     # 2) Tags normalization
     targets = _translate_paths(handle, vault, plan.tag_issues)
@@ -134,7 +132,9 @@ def run_lint(vault: Path, *, apply: bool = False) -> LintResult:
         handle,
         f"fix(tags): normalize bare 📝/🌱/🗺️/null in {changed_count} notes",
     ):
-        commits.append(f"fix(tags): normalize bare 📝/🌱/🗺️/null in {changed_count} notes")
+        commits.append(
+            f"fix(tags): normalize bare 📝/🌱/🗺️/null in {changed_count} notes"
+        )
 
     # 3) Templater cleanup
     targets = _translate_paths(handle, vault, plan.templater)
@@ -144,7 +144,9 @@ def run_lint(vault: Path, *, apply: bool = False) -> LintResult:
         handle,
         f"fix(templates): remove Templater leakage from {changed_count} notes",
     ):
-        commits.append(f"fix(templates): remove Templater leakage from {changed_count} notes")
+        commits.append(
+            f"fix(templates): remove Templater leakage from {changed_count} notes"
+        )
 
     return LintResult(
         dry_run=False, plan=plan, audit=audit, handle=handle, commits=commits

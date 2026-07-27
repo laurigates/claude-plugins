@@ -39,7 +39,9 @@ class TestToolDetail:
         assert _tool_detail("Grep", {"pattern": "TODO"}) == "TODO"
 
     def test_grep_pattern_with_path(self):
-        assert _tool_detail("Grep", {"pattern": "TODO", "path": "src/"}) == "TODO in src/"
+        assert (
+            _tool_detail("Grep", {"pattern": "TODO", "path": "src/"}) == "TODO in src/"
+        )
 
     def test_agent_description(self):
         assert _tool_detail("Agent", {"description": "explore code"}) == "explore code"
@@ -284,21 +286,15 @@ class TestBuildOnboardPhase2Prompt:
     """
 
     def test_embeds_plan_verbatim(self):
-        prompt = _build_onboard_phase2_prompt(
-            PLAN_FIXTURE, "all", "setup/onboard"
-        )
+        prompt = _build_onboard_phase2_prompt(PLAN_FIXTURE, "all", "setup/onboard")
         assert PLAN_FIXTURE in prompt
 
     def test_embeds_user_selection(self):
-        prompt = _build_onboard_phase2_prompt(
-            PLAN_FIXTURE, "1,3", "setup/onboard"
-        )
+        prompt = _build_onboard_phase2_prompt(PLAN_FIXTURE, "1,3", "setup/onboard")
         assert "1,3" in prompt
 
     def test_all_selection_instructs_execution(self):
-        prompt = _build_onboard_phase2_prompt(
-            PLAN_FIXTURE, "all", "setup/onboard"
-        )
+        prompt = _build_onboard_phase2_prompt(PLAN_FIXTURE, "all", "setup/onboard")
         # Agent must be told to make tool calls, not re-plan or stop.
         assert "Execute exactly those steps" in prompt
         assert "tool calls" in prompt
@@ -306,9 +302,7 @@ class TestBuildOnboardPhase2Prompt:
         assert "Do NOT create new branches" in prompt
 
     def test_yes_treated_as_apply(self):
-        prompt = _build_onboard_phase2_prompt(
-            PLAN_FIXTURE, "yes", "setup/onboard"
-        )
+        prompt = _build_onboard_phase2_prompt(PLAN_FIXTURE, "yes", "setup/onboard")
         # "yes" is a non-none choice so it should route into the execute
         # branch (worktree note included, no skip directive).
         assert "Execute exactly those steps" in prompt
@@ -334,24 +328,18 @@ class TestBuildOnboardPhase2Prompt:
         # after presenting the numbered plan". Phase 2 must not repeat
         # that, or the agent will wrap up without tool calls (issue
         # #1120's original failure mode for onboard).
-        prompt = _build_onboard_phase2_prompt(
-            PLAN_FIXTURE, "all", "setup/onboard"
-        )
+        prompt = _build_onboard_phase2_prompt(PLAN_FIXTURE, "all", "setup/onboard")
         assert "end your response after presenting" not in prompt.lower()
         # Explicit anti-instruction should be present instead.
         assert "Execute now" in prompt
 
     def test_all_forbids_asking_questions(self):
-        prompt = _build_onboard_phase2_prompt(
-            PLAN_FIXTURE, "all", "setup/onboard"
-        )
+        prompt = _build_onboard_phase2_prompt(PLAN_FIXTURE, "all", "setup/onboard")
         assert "Do not ask the user any questions" in prompt
 
     def test_warns_against_cd_before_commit(self):
         """Regression: same cd-escape antipattern applies to onboard (issue #1260)."""
-        prompt = _build_onboard_phase2_prompt(
-            PLAN_FIXTURE, "all", "setup/onboard"
-        )
+        prompt = _build_onboard_phase2_prompt(PLAN_FIXTURE, "all", "setup/onboard")
         assert "Never `cd`" in prompt or "IMPORTANT" in prompt
         assert "cd" in prompt
         assert "worktree root" in prompt or "working directory" in prompt
@@ -365,7 +353,9 @@ class TestBuildOnboardPhase2Prompt:
 
 class TestPhase2SystemPrompt:
     def test_appends_override_section(self):
-        result = _phase2_system_prompt("# Original system prompt\n\nStop after findings.")
+        result = _phase2_system_prompt(
+            "# Original system prompt\n\nStop after findings."
+        )
         assert "# Original system prompt" in result
         assert "Phase 2 Override" in result
         assert "make tool calls" in result.lower()

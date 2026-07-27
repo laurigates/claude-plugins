@@ -513,9 +513,7 @@ def make_prp_execute_phase(prp_name: str) -> Phase:
     )
 
 
-def make_work_order_phase(
-    from_issue: int | None = None, publish: bool = True
-) -> Phase:
+def make_work_order_phase(from_issue: int | None = None, publish: bool = True) -> Phase:
     """Build a one-shot phase that creates an isolated work order."""
     hints: list[str] = []
     if from_issue is not None:
@@ -638,9 +636,7 @@ class BlueprintDriver:
 
         for phase in phases:
             if self._should_skip(phase):
-                _console.print(
-                    f"[dim]  • {phase.name}: skipped (policy)[/dim]"
-                )
+                _console.print(f"[dim]  • {phase.name}: skipped (policy)[/dim]")
                 result.phases.append(
                     PhaseResult(name=phase.name, status="skipped", message="policy")
                 )
@@ -648,9 +644,7 @@ class BlueprintDriver:
 
             skip_reason = self._artifact_skip_reason(phase)
             if skip_reason is not None:
-                _console.print(
-                    f"[dim]  • {phase.name}: skipped ({skip_reason})[/dim]"
-                )
+                _console.print(f"[dim]  • {phase.name}: skipped ({skip_reason})[/dim]")
                 result.phases.append(
                     PhaseResult(name=phase.name, status="skipped", message=skip_reason)
                 )
@@ -663,9 +657,7 @@ class BlueprintDriver:
                     PhaseResult(name=phase.name, status="ok", text=text)
                 )
             except Exception as exc:  # noqa: BLE001
-                _console.print(
-                    f"[red]  ✗ {phase.name} failed: {exc}[/red]"
-                )
+                _console.print(f"[red]  ✗ {phase.name} failed: {exc}[/red]")
                 result.phases.append(
                     PhaseResult(name=phase.name, status="error", message=str(exc))
                 )
@@ -698,15 +690,9 @@ class BlueprintDriver:
         # Size-aware gating (issue #1355).
         if self.options.size_aware:
             size = self.project_size
-            if (
-                size.has_no_fixes
-                and phase.name in _SKIP_PHASES_NO_FIXES
-            ):
+            if size.has_no_fixes and phase.name in _SKIP_PHASES_NO_FIXES:
                 return "no fix: commits in history (size-aware)"
-            if (
-                size.is_tiny_single_feat
-                and phase.name in _SKIP_PHASES_TINY_SINGLE_FEAT
-            ):
+            if size.is_tiny_single_feat and phase.name in _SKIP_PHASES_TINY_SINGLE_FEAT:
                 return (
                     f"tiny single-feat project "
                     f"({size.total_commits} commits, "
@@ -811,6 +797,4 @@ class BlueprintDriver:
             if message.is_error:
                 _console.print(f"[red]    error: {message.result}[/red]")
             if message.total_cost_usd:
-                _console.print(
-                    f"[dim]    cost: ${message.total_cost_usd:.4f}[/dim]"
-                )
+                _console.print(f"[dim]    cost: ${message.total_cost_usd:.4f}[/dim]")

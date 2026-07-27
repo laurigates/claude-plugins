@@ -26,7 +26,6 @@ from vault_agent.orchestrator import commit_all, enter_worktree
 from vault_agent.worktree import (
     WorktreeHandle,
     format_review_instructions,
-    worktree_file_change_count,
 )
 
 
@@ -145,9 +144,7 @@ def render_dry_run(plan: LinksPlan) -> str:
         if len(plan.ambiguous_basenames) > 10:
             lines.append(f"  ... ({len(plan.ambiguous_basenames) - 10} more)")
         lines.append("")
-    lines.append(
-        "Low-leverage broken targets (for reference — not auto-fixed):"
-    )
+    lines.append("Low-leverage broken targets (for reference — not auto-fixed):")
     excluded = set(plan.rewrites_available.keys())
     remaining = [(t, c) for t, c in plan.low_leverage_broken if t not in excluded]
     for target, count in remaining[:10]:

@@ -10,6 +10,11 @@ on:
       # Workflow changes must trigger the agent-model and workflow-model guards
       # (both run unconditionally below) — workflow model/effort drift lives here.
       - '.github/workflows/**'
+      # The ruff lint/format gate below is the repo's only Python check, so a
+      # PR touching Python outside a plugin (scripts/, vault-agent/,
+      # git-repo-agent/, experiments/) has to reach it too.
+      - '**/*.py'
+      - 'ruff.toml'
 
 concurrency:
   group: plugin-pr-checks-${{ github.event.pull_request.number }}
@@ -196,6 +201,25 @@ jobs:
         # domain->project, exclude->never). Hermetic fixture test; runs
         # unconditionally so the installer contract stays verified.
         run: bash scripts/tests/test-install-pi.sh
+
+      - name: Self-test the ruff-version-sync guard
+        # Proves the guard before it gates the tree: the ruff version pinned
+        # here and the ruff-pre-commit rev must agree, or CI rejects formatting
+        # the local hook just produced.
+        run: bash scripts/tests/test-check-ruff-version-sync.sh
+
+      - name: Check ruff pins agree between pre-commit and CI
+        run: bash scripts/check-ruff-version-sync.sh --strict
+
+      - name: Lint Python with ruff
+        # uv is already set up above. The ruff version is pinned so CI and the
+        # ruff-pre-commit hook in .pre-commit-config.yaml agree — an unpinned
+        # `uvx ruff` would drift and flag formatting pre-commit considers clean.
+        # Keep both pins in sync when bumping. Config: ruff.toml at the repo root.
+        run: uvx ruff@0.15.8 check .
+
+      - name: Check Python formatting with ruff
+        run: uvx ruff@0.15.8 format --check .
 
       - name: Install actionlint
         # GitHub Actions YAML schema/best-practice lint — the one workflow gate

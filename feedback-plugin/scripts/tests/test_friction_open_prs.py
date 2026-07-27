@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Unit tests for friction_open_prs.py pure-logic helpers."""
+
 from __future__ import annotations
 
 import importlib.util
@@ -23,13 +24,17 @@ def test_repo_slug_accepts_slug():
 
 
 def test_repo_slug_accepts_https_url():
-    assert module.repo_slug("https://github.com/laurigates/claude-plugins.git") \
+    assert (
+        module.repo_slug("https://github.com/laurigates/claude-plugins.git")
         == "laurigates/claude-plugins"
+    )
 
 
 def test_repo_slug_accepts_ssh_url():
-    assert module.repo_slug("git@github.com:laurigates/claude-plugins.git") \
+    assert (
+        module.repo_slug("git@github.com:laurigates/claude-plugins.git")
         == "laurigates/claude-plugins"
+    )
 
 
 def test_repo_short():
@@ -45,20 +50,33 @@ def test_quiet_window_skips_without_gh_or_repos():
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp)
         clusters = tmp_path / "clusters.json"
-        clusters.write_text(json.dumps({
-            "total_events": 1, "actionable": [{"path": "x", "body": "y"}],
-        }))
+        clusters.write_text(
+            json.dumps(
+                {
+                    "total_events": 1,
+                    "actionable": [{"path": "x", "body": "y"}],
+                }
+            )
+        )
         body = tmp_path / "pr-body.md"
         body.write_text("# body")
 
         proc = subprocess.run(
-            [sys.executable, str(SCRIPT),
-             "--clusters", str(clusters),
-             "--pr-body", str(body),
-             "--target-repo", "laurigates/claude-plugins",
-             "--min-total-events", "5",
-             "--dry-run"],
-            capture_output=True, text=True,
+            [
+                sys.executable,
+                str(SCRIPT),
+                "--clusters",
+                str(clusters),
+                "--pr-body",
+                str(body),
+                "--target-repo",
+                "laurigates/claude-plugins",
+                "--min-total-events",
+                "5",
+                "--dry-run",
+            ],
+            capture_output=True,
+            text=True,
         )
         assert proc.returncode == 0, proc.stderr
         assert "quiet window" in proc.stderr, proc.stderr
@@ -73,20 +91,30 @@ def test_no_actionable_clusters_skips():
         body.write_text("# body")
 
         proc = subprocess.run(
-            [sys.executable, str(SCRIPT),
-             "--clusters", str(clusters),
-             "--pr-body", str(body),
-             "--target-repo", "laurigates/claude-plugins",
-             "--dry-run"],
-            capture_output=True, text=True,
+            [
+                sys.executable,
+                str(SCRIPT),
+                "--clusters",
+                str(clusters),
+                "--pr-body",
+                str(body),
+                "--target-repo",
+                "laurigates/claude-plugins",
+                "--dry-run",
+            ],
+            capture_output=True,
+            text=True,
         )
         assert proc.returncode == 0, proc.stderr
         assert "no actionable clusters" in proc.stderr, proc.stderr
 
 
 def main() -> int:
-    tests = [fn for name, fn in globals().items()
-             if name.startswith("test_") and callable(fn)]
+    tests = [
+        fn
+        for name, fn in globals().items()
+        if name.startswith("test_") and callable(fn)
+    ]
     failed = 0
     for fn in tests:
         try:

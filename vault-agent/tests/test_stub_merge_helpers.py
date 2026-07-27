@@ -9,7 +9,6 @@ from __future__ import annotations
 import textwrap
 from pathlib import Path
 
-import pytest
 
 from vault_agent.fixers.stub_rewriter import (
     CANONICAL_REDIRECT_TEMPLATE,

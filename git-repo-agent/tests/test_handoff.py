@@ -278,11 +278,14 @@ class TestStreamInteractiveHandoff:
     def test_handoff_raises_and_skips_phase2(self, monkeypatch, tmp_path):
         _FakeSDKClient.instances = []
         monkeypatch.setattr(
-            "git_repo_agent.orchestrator.ClaudeSDKClient", _FakeSDKClient,
+            "git_repo_agent.orchestrator.ClaudeSDKClient",
+            _FakeSDKClient,
         )
         # Mock console.input to return the handoff verb.
         monkeypatch.setattr(
-            orchestrator.console, "input", lambda _label: "claude feedback here",
+            orchestrator.console,
+            "input",
+            lambda _label: "claude feedback here",
         )
         _install_subprocess_mock(monkeypatch)
 
@@ -343,7 +346,9 @@ class TestRunMaintainHandoff:
             lambda _path: "## Pre-computed analysis (stub)",
         )
         monkeypatch.setattr(
-            orchestrator, "get_base_branch", lambda _path: "main",
+            orchestrator,
+            "get_base_branch",
+            lambda _path: "main",
         )
 
         # create_worktree returns a path we control; subsequent helpers
@@ -355,7 +360,9 @@ class TestRunMaintainHandoff:
             lambda _repo, _branch, base_ref=None: worktree,
         )
         monkeypatch.setattr(
-            orchestrator, "_snapshot_parent_sha", lambda _path: "deadbeef",
+            orchestrator,
+            "_snapshot_parent_sha",
+            lambda _path: "deadbeef",
         )
 
         # The freshness probe shells out to git; stub it for this unit test.
@@ -365,7 +372,10 @@ class TestRunMaintainHandoff:
             orchestrator,
             "probe_base_freshness",
             lambda _repo, _base: BaseFreshness(
-                fetched=False, has_remote=False, behind=0, base_branch=_base,
+                fetched=False,
+                has_remote=False,
+                behind=0,
+                base_branch=_base,
             ),
         )
 
@@ -381,10 +391,13 @@ class TestRunMaintainHandoff:
         # Mock the SDK and console.input
         _FakeSDKClient.instances = []
         monkeypatch.setattr(
-            "git_repo_agent.orchestrator.ClaudeSDKClient", _FakeSDKClient,
+            "git_repo_agent.orchestrator.ClaudeSDKClient",
+            _FakeSDKClient,
         )
         monkeypatch.setattr(
-            orchestrator.console, "input", lambda _label: "claude",
+            orchestrator.console,
+            "input",
+            lambda _label: "claude",
         )
         _install_subprocess_mock(monkeypatch)
 

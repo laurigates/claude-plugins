@@ -5,7 +5,6 @@ from __future__ import annotations
 import textwrap
 from pathlib import Path
 
-import pytest
 
 from vault_agent.analyzers.vault_index import scan
 from vault_agent.fixers.link_patcher import (
@@ -65,7 +64,7 @@ class TestApplyRewrites:
             },
         )
         index = scan(vault)
-        results = apply_rewrites(index, {"OriginalName": "Target"})
+        apply_rewrites(index, {"OriginalName": "Target"})
         content = (vault / "Note.md").read_text()
         assert "[[Target#Install|Install guide]]" in content
 
@@ -119,7 +118,7 @@ class TestUnqualifyKanban:
             },
         )
         index = scan(vault)
-        results = unqualify_kanban_links(index)
+        unqualify_kanban_links(index)
         # Two Main.md notes mean [[Main]] is ambiguous; unqualify is skipped.
         note_content = (vault / "Note.md").read_text()
         assert "[[Kanban/Main]]" in note_content

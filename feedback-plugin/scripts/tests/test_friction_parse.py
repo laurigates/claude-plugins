@@ -3,6 +3,7 @@
 
 Run: python3 feedback-plugin/scripts/tests/test_friction_parse.py
 """
+
 from __future__ import annotations
 
 import json
@@ -18,7 +19,9 @@ FIXTURES = HERE / "fixtures"
 def run_parser(fixture_dir: Path) -> list[dict]:
     proc = subprocess.run(
         [sys.executable, str(PARSER), "--root", str(fixture_dir), "--since", "3650d"],
-        capture_output=True, text=True, check=True,
+        capture_output=True,
+        text=True,
+        check=True,
     )
     return [json.loads(line) for line in proc.stdout.splitlines() if line.strip()]
 
@@ -63,7 +66,9 @@ def test_bash_antipatterns_blocked_format_classifies_by_pattern():
 
     # All 8 events should classify as hook_block kind with a specific signature.
     hook_blocks = [e for e in events if e["kind"] == "hook_block"]
-    assert len(hook_blocks) == 8, f"expected 8 hook_block events, got {len(hook_blocks)}: {events}"
+    assert len(hook_blocks) == 8, (
+        f"expected 8 hook_block events, got {len(hook_blocks)}: {events}"
+    )
 
     # No event should fall through to the generic unclassified bucket.
     assert "hook:unclassified" not in by_sig, (
@@ -90,18 +95,30 @@ def test_tool_use_id_resolves_to_bash():
     """
     events = run_parser(FIXTURES / "bash_tool_error")
     tools = [e["tool"] for e in events]
-    assert "?" not in tools, f"parser emitted tool='?' for {len(events)} event(s): {events}"
+    assert "?" not in tools, (
+        f"parser emitted tool='?' for {len(events)} event(s): {events}"
+    )
     by_kind = {e["kind"]: e for e in events}
-    assert "tool_error" in by_kind, f"expected tool_error event, got kinds={list(by_kind)}"
+    assert "tool_error" in by_kind, (
+        f"expected tool_error event, got kinds={list(by_kind)}"
+    )
     assert by_kind["tool_error"]["tool"] == "Bash", by_kind["tool_error"]
-    assert by_kind["tool_error"]["signature"].startswith("error:bash"), by_kind["tool_error"]
-    assert "user_reject" in by_kind, f"expected user_reject event, got kinds={list(by_kind)}"
+    assert by_kind["tool_error"]["signature"].startswith("error:bash"), by_kind[
+        "tool_error"
+    ]
+    assert "user_reject" in by_kind, (
+        f"expected user_reject event, got kinds={list(by_kind)}"
+    )
     assert by_kind["user_reject"]["tool"] == "Edit", by_kind["user_reject"]
     assert by_kind["user_reject"]["signature"] == "reject:edit", by_kind["user_reject"]
 
 
 def main() -> int:
-    tests = [fn for name, fn in globals().items() if name.startswith("test_") and callable(fn)]
+    tests = [
+        fn
+        for name, fn in globals().items()
+        if name.startswith("test_") and callable(fn)
+    ]
     failed = 0
     for fn in tests:
         try:

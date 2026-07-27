@@ -71,7 +71,9 @@ def _read_pil(path: Path) -> dict[str, str]:
                         continue
                     k2, _, val = raw.partition(":")
                     k2 = k2.strip()
-                    if k2 in {"prompt", "workflow"} and val.lstrip().startswith(("{", "[")):
+                    if k2 in {"prompt", "workflow"} and val.lstrip().startswith(
+                        ("{", "[")
+                    ):
                         out.setdefault(k2, val)
             except Exception:
                 pass
@@ -287,8 +289,16 @@ _SAMPLERS = {
 # and stitch onto the SamplerCustomAdvanced call below.
 _AUX_SAMPLER_FIELDS = {
     "KSamplerSelect": {"sampler": "sampler_name"},
-    "BasicScheduler": {"scheduler": "scheduler", "steps": "steps", "denoise": "denoise"},
-    "AlignYourStepsScheduler": {"scheduler": "scheduler", "steps": "steps", "denoise": "denoise"},
+    "BasicScheduler": {
+        "scheduler": "scheduler",
+        "steps": "steps",
+        "denoise": "denoise",
+    },
+    "AlignYourStepsScheduler": {
+        "scheduler": "scheduler",
+        "steps": "steps",
+        "denoise": "denoise",
+    },
     "SDTurboScheduler": {"steps": "steps", "denoise": "denoise"},
     "BetaSamplingScheduler": {"steps": "steps", "denoise": "denoise"},
     "RandomNoise": {"seed": "noise_seed"},
@@ -426,17 +436,30 @@ def summarize(api_prompt: dict[str, Any]) -> Summary:
             # For SamplerCustomAdvanced the widget fields are all None on
             # the sampler node itself; merge in the harvested aux_fields.
             use_aux = cls == "SamplerCustomAdvanced"
-            cfg_default = 1.0 if (use_aux and has_basic_guider and "cfg" not in aux_fields) else None
+            cfg_default = (
+                1.0
+                if (use_aux and has_basic_guider and "cfg" not in aux_fields)
+                else None
+            )
             s.samplers.append(
                 SamplerCall(
                     node_id=nid,
                     class_type=cls,
-                    sampler=g("sampler_name") or g("sampler") or (aux_fields.get("sampler") if use_aux else None),
-                    scheduler=g("scheduler") or (aux_fields.get("scheduler") if use_aux else None),
+                    sampler=g("sampler_name")
+                    or g("sampler")
+                    or (aux_fields.get("sampler") if use_aux else None),
+                    scheduler=g("scheduler")
+                    or (aux_fields.get("scheduler") if use_aux else None),
                     steps=g("steps") or (aux_fields.get("steps") if use_aux else None),
-                    cfg=g("cfg") if g("cfg") is not None else (aux_fields.get("cfg", cfg_default) if use_aux else None),
-                    denoise=g("denoise") if g("denoise") is not None else (aux_fields.get("denoise") if use_aux else None),
-                    seed=g("seed") or g("noise_seed") or (aux_fields.get("seed") if use_aux else None),
+                    cfg=g("cfg")
+                    if g("cfg") is not None
+                    else (aux_fields.get("cfg", cfg_default) if use_aux else None),
+                    denoise=g("denoise")
+                    if g("denoise") is not None
+                    else (aux_fields.get("denoise") if use_aux else None),
+                    seed=g("seed")
+                    or g("noise_seed")
+                    or (aux_fields.get("seed") if use_aux else None),
                     start_step=g("start_step") or g("start_at_step"),
                     end_step=g("end_step") or g("end_at_step"),
                     add_noise=g("add_noise"),
@@ -472,7 +495,15 @@ def summarize(api_prompt: dict[str, Any]) -> Summary:
                         if val not in s.positive:
                             s.positive.append(val)
 
-        if cls in {"SaveImage", "SaveVideo", "SaveAudio", "SaveAnimatedWEBP", "SaveAnimatedPNG", "imageSaveSimple", "VHS_VideoCombine"}:
+        if cls in {
+            "SaveImage",
+            "SaveVideo",
+            "SaveAudio",
+            "SaveAnimatedWEBP",
+            "SaveAnimatedPNG",
+            "imageSaveSimple",
+            "VHS_VideoCombine",
+        }:
             fp = inputs.get("filename_prefix")
             if isinstance(fp, str):
                 s.output_filenames.append(fp)
@@ -662,7 +693,9 @@ def main(argv: list[str] | None = None) -> int:
     sc.add_argument(
         "--no-recursive", action="store_true", help="only the top-level directory"
     )
-    sc.add_argument("-v", "--verbose", action="store_true", help="print summary to stderr")
+    sc.add_argument(
+        "-v", "--verbose", action="store_true", help="print summary to stderr"
+    )
     sc.set_defaults(func=_cmd_scan)
 
     df = sub.add_parser("diff", help="diff summarized settings of two files")

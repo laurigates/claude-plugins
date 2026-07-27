@@ -26,6 +26,7 @@ Usage:
   --check   Report files that WOULD change, exit 1 if any. No writes.
   PATH      SKILL.md files; defaults to */skills/*/SKILL.md under cwd.
 """
+
 from __future__ import annotations
 
 import glob

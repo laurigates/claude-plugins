@@ -73,7 +73,9 @@ class FrontmatterReport:
     def to_dict(self) -> dict:
         return {
             "total_notes": self.total_notes,
-            "notes_without_frontmatter": [str(p) for p in self.notes_without_frontmatter],
+            "notes_without_frontmatter": [
+                str(p) for p in self.notes_without_frontmatter
+            ],
             "notes_with_legacy_id": [str(p) for p in self.notes_with_legacy_id],
             "notes_with_bare_placeholder": [
                 str(p) for p in self.notes_with_bare_placeholder
@@ -84,12 +86,8 @@ class FrontmatterReport:
             "notes_with_templater_leak": [
                 str(p) for p in self.notes_with_templater_leak
             ],
-            "notes_with_corrupt_emoji": [
-                str(p) for p in self.notes_with_corrupt_emoji
-            ],
-            "ns_notes_missing_context": [
-                str(p) for p in self.ns_notes_missing_context
-            ],
+            "notes_with_corrupt_emoji": [str(p) for p in self.notes_with_corrupt_emoji],
+            "ns_notes_missing_context": [str(p) for p in self.ns_notes_missing_context],
             "tag_frequency": self.tag_frequency,
             "tag_duplicate_candidates": self.tag_duplicate_candidates,
         }

@@ -43,9 +43,7 @@ class VaultAudit:
         }
 
 
-def run_audit(
-    vault_root: Path | str, config: VaultConfig | None = None
-) -> VaultAudit:
+def run_audit(vault_root: Path | str, config: VaultConfig | None = None) -> VaultAudit:
     if config is None:
         config = load_config(vault_root)
     index = scan(vault_root)

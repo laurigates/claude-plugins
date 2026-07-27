@@ -375,8 +375,10 @@ def format_attributes_terminal(data: dict[str, Any]) -> str:
         cat_bar = "\u2588" * cat_score + "\u2591" * (20 - cat_score)
         # Count critical/high findings for this category
         cat_critical = sum(
-            1 for a in attributes
-            if a.get("category") == cat_key and a.get("severity") in ("critical", "high")
+            1
+            for a in attributes
+            if a.get("category") == cat_key
+            and a.get("severity") in ("critical", "high")
         )
         suffix = f"  {cat_critical} critical/high" if cat_critical else ""
         lines.append(f"  {cat_name:<15} {cat_score:>2}/20  [{cat_bar}]{suffix}")
@@ -399,7 +401,13 @@ def format_attributes_terminal(data: dict[str, Any]) -> str:
     for sev in ("critical", "high", "medium", "low"):
         sev_attrs = [a for a in attributes if a.get("severity") == sev]
         if sev_attrs:
-            icon = "\u26a0" if sev in ("critical", "high") else "\u25b2" if sev == "medium" else "\u25cb"
+            icon = (
+                "\u26a0"
+                if sev in ("critical", "high")
+                else "\u25b2"
+                if sev == "medium"
+                else "\u25cb"
+            )
             lines.append("")
             lines.append(f"  {icon} {sev.title()} ({len(sev_attrs)})")
             for attr in sev_attrs:
@@ -436,11 +444,13 @@ def format_routing_instructions(
             finding_summary += f" (+{len(findings) - 3} more)"
         lines.append(f"{i}. **{agent}** (priority {score}): {finding_summary}")
 
-    lines.extend([
-        "",
-        "For each finding, the suggested action and auto-fixability are listed "
-        "in the attributes JSON above.",
-    ])
+    lines.extend(
+        [
+            "",
+            "For each finding, the suggested action and auto-fixability are listed "
+            "in the attributes JSON above.",
+        ]
+    )
     return "\n".join(lines)
 
 

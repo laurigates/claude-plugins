@@ -33,22 +33,89 @@ import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
 
-NAME_OVERLAP_ERROR = 0.5   # over half the name tokens echoed → hard leak
-NAME_OVERLAP_WARN = 0.34   # a third echoed → review
+NAME_OVERLAP_ERROR = 0.5  # over half the name tokens echoed → hard leak
+NAME_OVERLAP_WARN = 0.34  # a third echoed → review
 
 # Generic tokens that appear in many skill names AND naturally in symptom prose;
 # echoing these is not meaningful leakage.
 GENERIC = {
-    "code", "test", "tests", "git", "check", "run", "build", "file", "files",
-    "search", "review", "audit", "plugin", "config", "python", "rust", "node",
-    "management", "development", "workflow", "tool", "tools", "analysis", "add",
-    "status", "install", "advanced", "cli", "quality", "docs", "data",
+    "code",
+    "test",
+    "tests",
+    "git",
+    "check",
+    "run",
+    "build",
+    "file",
+    "files",
+    "search",
+    "review",
+    "audit",
+    "plugin",
+    "config",
+    "python",
+    "rust",
+    "node",
+    "management",
+    "development",
+    "workflow",
+    "tool",
+    "tools",
+    "analysis",
+    "add",
+    "status",
+    "install",
+    "advanced",
+    "cli",
+    "quality",
+    "docs",
+    "data",
 }
 STOP = {
-    "a", "an", "the", "to", "of", "for", "in", "on", "and", "or", "with", "my",
-    "i", "is", "are", "it", "this", "that", "how", "do", "can", "need", "want",
-    "am", "have", "has", "get", "there", "when", "use", "using", "some", "any",
-    "me", "we", "our", "your", "but", "so", "up", "out", "into", "from", "at",
+    "a",
+    "an",
+    "the",
+    "to",
+    "of",
+    "for",
+    "in",
+    "on",
+    "and",
+    "or",
+    "with",
+    "my",
+    "i",
+    "is",
+    "are",
+    "it",
+    "this",
+    "that",
+    "how",
+    "do",
+    "can",
+    "need",
+    "want",
+    "am",
+    "have",
+    "has",
+    "get",
+    "there",
+    "when",
+    "use",
+    "using",
+    "some",
+    "any",
+    "me",
+    "we",
+    "our",
+    "your",
+    "but",
+    "so",
+    "up",
+    "out",
+    "into",
+    "from",
+    "at",
 }
 
 
@@ -97,7 +164,8 @@ def main() -> int:
             t = yaml.safe_load(tf.read_text())
         except yaml.YAMLError as e:
             rec["issues"].append(("ERROR", f"yaml parse: {e}"))
-            rows.append(rec); errors += 1
+            rows.append(rec)
+            errors += 1
             continue
         prompt = str(t.get("prompt", "")).strip()
         gold = str(t.get("gold", "")).strip()
@@ -127,9 +195,19 @@ def main() -> int:
                 overlap = round(len(hit) / len(nt), 3)
                 rec["leaked_tokens"] = sorted(hit)
                 if overlap >= NAME_OVERLAP_ERROR:
-                    rec["issues"].append(("ERROR", f"name_overlap {overlap} ≥ {NAME_OVERLAP_ERROR}: {sorted(hit)}"))
+                    rec["issues"].append(
+                        (
+                            "ERROR",
+                            f"name_overlap {overlap} ≥ {NAME_OVERLAP_ERROR}: {sorted(hit)}",
+                        )
+                    )
                 elif overlap >= NAME_OVERLAP_WARN:
-                    rec["issues"].append(("WARN", f"name_overlap {overlap} ≥ {NAME_OVERLAP_WARN}: {sorted(hit)}"))
+                    rec["issues"].append(
+                        (
+                            "WARN",
+                            f"name_overlap {overlap} ≥ {NAME_OVERLAP_WARN}: {sorted(hit)}",
+                        )
+                    )
         rec["name_overlap"] = overlap
 
         for sev, _ in rec["issues"]:

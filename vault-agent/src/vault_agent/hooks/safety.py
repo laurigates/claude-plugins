@@ -92,7 +92,11 @@ def _rm_rf_allowed(command: str) -> bool:
     # Very cheap: require that at least one allowlisted segment appears
     # after the rm invocation. Not a full shell parser, but conservative.
     for seg in RM_RF_ALLOWLIST_SEGMENTS:
-        if f"/{seg}/" in command or command.endswith(f"/{seg}") or f" {seg}/" in command:
+        if (
+            f"/{seg}/" in command
+            or command.endswith(f"/{seg}")
+            or f" {seg}/" in command
+        ):
             return True
     return False
 
@@ -149,9 +153,7 @@ _TOOL_VALIDATORS = {
 }
 
 
-def validate_tool_use(
-    tool_name: str, tool_input: dict[str, Any]
-) -> SafetyDecision:
+def validate_tool_use(tool_name: str, tool_input: dict[str, Any]) -> SafetyDecision:
     """Return SafetyDecision for a PreToolUse event.
 
     Unknown tools are allowed by default — we only guard the ones that

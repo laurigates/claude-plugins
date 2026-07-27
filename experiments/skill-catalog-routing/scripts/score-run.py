@@ -171,7 +171,17 @@ def main() -> int:
         conf = str(decision.get("confidence", ""))
 
     correct = 1 if (parse == "ok" and predicted == gold) else 0
-    row = [task_id, cond_id, str(run_n), gold, predicted, runner_up, conf, str(correct), parse]
+    row = [
+        task_id,
+        cond_id,
+        str(run_n),
+        gold,
+        predicted,
+        runner_up,
+        conf,
+        str(correct),
+        parse,
+    ]
     print("\t".join(row))
     return 0
 

@@ -23,8 +23,13 @@ from git_repo_agent.worktree import (
 class TestExitCodes:
     def test_contract(self):
         # ADR-005 contract: these are part of the public API.
-        assert (EXIT_SUCCESS, EXIT_RUNTIME_ERROR, EXIT_CONFIG_ERROR,
-                EXIT_LOCKED, EXIT_HOOK_BLOCKED) == (0, 1, 2, 3, 4)
+        assert (
+            EXIT_SUCCESS,
+            EXIT_RUNTIME_ERROR,
+            EXIT_CONFIG_ERROR,
+            EXIT_LOCKED,
+            EXIT_HOOK_BLOCKED,
+        ) == (0, 1, 2, 3, 4)
 
 
 class TestNonInteractiveConfig:
@@ -109,7 +114,7 @@ class TestTimestampedBranch:
         b = timestamped_branch("maintain")
         assert b.startswith("maintain/")
         # YYYY-MM-DDTHH-MM -> 16 chars
-        suffix = b[len("maintain/"):]
+        suffix = b[len("maintain/") :]
         assert len(suffix) == 16
         assert suffix[4] == "-" and suffix[7] == "-" and suffix[10] == "T"
 

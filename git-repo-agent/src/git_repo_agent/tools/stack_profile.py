@@ -22,7 +22,8 @@ from pathlib import Path
 # job is to expose a ``WEB_DIRECTORY`` constant; auditing it as if it
 # were a Python library is noise.
 _COMFYUI_PACK_MARKERS = re.compile(
-    r"^\s*WEB_DIRECTORY\s*=", re.MULTILINE,
+    r"^\s*WEB_DIRECTORY\s*=",
+    re.MULTILINE,
 )
 
 # Heuristic threshold: when total non-test Python LOC is below this,
@@ -55,11 +56,15 @@ class StackProfile:
     has_ruff_lint: bool = False
     has_ruff_format: bool = False
     has_python_type_checker: bool = False  # mypy, pyright, basedpyright, ty
-    python_type_checker_kind: str = ""  # "mypy" | "pyright" | "basedpyright" | "ty" | ""
+    python_type_checker_kind: str = (
+        ""  # "mypy" | "pyright" | "basedpyright" | "ty" | ""
+    )
     uses_uv: bool = False
 
     # CI security stack
-    ci_has_security_scanning: bool = False  # gitleaks, trivy, semgrep, codeql, snyk, etc.
+    ci_has_security_scanning: bool = (
+        False  # gitleaks, trivy, semgrep, codeql, snyk, etc.
+    )
     ci_security_tools: tuple[str, ...] = field(default_factory=tuple)
 
     # Project shape
@@ -80,15 +85,26 @@ def _detect_js_stack(repo: Path) -> dict[str, bool]:
     """Detect installed JS/TS tooling configs at the repo root."""
     has_biome = (repo / "biome.json").exists() or (repo / "biome.jsonc").exists()
     has_eslint = any(
-        (repo / name).exists() for name in (
-            ".eslintrc", ".eslintrc.json", ".eslintrc.js", ".eslintrc.cjs",
-            "eslint.config.js", "eslint.config.mjs", "eslint.config.cjs",
+        (repo / name).exists()
+        for name in (
+            ".eslintrc",
+            ".eslintrc.json",
+            ".eslintrc.js",
+            ".eslintrc.cjs",
+            "eslint.config.js",
+            "eslint.config.mjs",
+            "eslint.config.cjs",
         )
     )
     has_prettier = any(
-        (repo / name).exists() for name in (
-            ".prettierrc", ".prettierrc.json", ".prettierrc.yaml",
-            ".prettierrc.yml", "prettier.config.js", "prettier.config.mjs",
+        (repo / name).exists()
+        for name in (
+            ".prettierrc",
+            ".prettierrc.json",
+            ".prettierrc.yaml",
+            ".prettierrc.yml",
+            "prettier.config.js",
+            "prettier.config.mjs",
             "prettier.config.cjs",
         )
     )
@@ -135,7 +151,11 @@ def _detect_python_stack(repo: Path) -> dict[str, object]:
         or "[mypy" in setupcfg_text
     ):
         type_checker_kind = "mypy"
-    elif "pyright" in precommit_text or "mypy" in precommit_text or "ty" in precommit_text:
+    elif (
+        "pyright" in precommit_text
+        or "mypy" in precommit_text
+        or "ty" in precommit_text
+    ):
         # Fall back to pre-commit declarations; can't distinguish
         # confidently without parsing, so report a generic marker.
         type_checker_kind = "precommit"
@@ -213,7 +233,9 @@ def _count_python_loc_outside_tests(repo: Path) -> int:
 def _detect_project_shape(repo: Path) -> dict[str, object]:
     """Detect ComfyUI-pack pattern and Python-incidental projects."""
     init_py = repo / "__init__.py"
-    is_comfyui_pack = bool(init_py.exists() and _COMFYUI_PACK_MARKERS.search(_read_text(init_py)))
+    is_comfyui_pack = bool(
+        init_py.exists() and _COMFYUI_PACK_MARKERS.search(_read_text(init_py))
+    )
 
     # Also scan the top-level package dir for the marker (some packs
     # put __init__.py inside the slug-named directory).
@@ -221,9 +243,8 @@ def _detect_project_shape(repo: Path) -> dict[str, object]:
         for sub in repo.iterdir():
             if sub.is_dir() and not sub.name.startswith("."):
                 child_init = sub / "__init__.py"
-                if (
-                    child_init.exists()
-                    and _COMFYUI_PACK_MARKERS.search(_read_text(child_init))
+                if child_init.exists() and _COMFYUI_PACK_MARKERS.search(
+                    _read_text(child_init)
                 ):
                     is_comfyui_pack = True
                     break

@@ -32,8 +32,14 @@ import sys
 
 EXTREME_SCORES = {1, 2, 4, 5}
 FOLD = {
-    "‘": "'", "’": "'", "“": '"', "”": '"',
-    "–": "-", "—": "-", "…": "...", " ": " ",
+    "‘": "'",
+    "’": "'",
+    "“": '"',
+    "”": '"',
+    "–": "-",
+    "—": "-",
+    "…": "...",
+    " ": " ",
 }
 
 
@@ -46,7 +52,9 @@ def normalise(text: str) -> str:
 def main() -> int:
     here = os.path.dirname(os.path.abspath(__file__))
     ap = argparse.ArgumentParser()
-    ap.add_argument("--project-dir", default=os.path.abspath(os.path.join(here, "..", "..", "..")))
+    ap.add_argument(
+        "--project-dir", default=os.path.abspath(os.path.join(here, "..", "..", ".."))
+    )
     ap.add_argument("--judgments", default=os.path.join(here, "judgments"))
     args = ap.parse_args()
 
@@ -67,7 +75,9 @@ def main() -> int:
         unit_path = os.path.join(args.project_dir, unit)
         if unit not in cache:
             try:
-                cache[unit] = normalise(open(unit_path, encoding="utf-8", errors="replace").read())
+                cache[unit] = normalise(
+                    open(unit_path, encoding="utf-8", errors="replace").read()
+                )
             except OSError:
                 cache[unit] = ""
                 problems.append(f"{name}: unit file not found: {unit}")
@@ -87,7 +97,9 @@ def main() -> int:
                     problems.append(f"{name} {dim}: empty quote")
                 elif quote not in haystack:
                     failed += 1
-                    problems.append(f"{name} {dim}: quote not found in {unit}: {quote[:110]!r}")
+                    problems.append(
+                        f"{name} {dim}: quote not found in {unit}: {quote[:110]!r}"
+                    )
 
     print("=== QUOTE CHECK ===")
     print(f"JUDGMENT_FILES={len(glob.glob(os.path.join(args.judgments, '*.json')))}")

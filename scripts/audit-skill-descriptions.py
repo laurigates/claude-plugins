@@ -209,7 +209,7 @@ def audit(root: Path) -> list[dict]:
             auto_invokable = not _DISABLE_RE.search(fm_text)
         else:
             desc = fm.get("description")
-            auto_invokable = not (fm.get("disable-model-invocation") is True)
+            auto_invokable = fm.get("disable-model-invocation") is not True
         category = classify(desc)
         length_category, length = classify_length(desc)
         preview = ""
@@ -242,7 +242,9 @@ def print_summary(results: list[dict]) -> None:
         per_plugin[r["plugin"]][r["category"]] += 1
 
     auto_bad = sum(1 for r in results if r["category"] != "OK" and r["auto_invokable"])
-    explicit_only_bad = sum(1 for r in results if r["category"] != "OK" and not r["auto_invokable"])
+    explicit_only_bad = sum(
+        1 for r in results if r["category"] != "OK" and not r["auto_invokable"]
+    )
 
     print(f"Audited {total} skills across {len(per_plugin)} plugins")
     print()
@@ -252,9 +254,13 @@ def print_summary(results: list[dict]) -> None:
         pct = (n / total * 100) if total else 0.0
         print(f"  {cat:<11} {n:>4}  ({pct:5.1f}%)")
     bad = total - overall.get("OK", 0)
-    print(f"  {'NEEDS FIX':<11} {bad:>4}  ({(bad / total * 100) if total else 0:5.1f}%)")
+    print(
+        f"  {'NEEDS FIX':<11} {bad:>4}  ({(bad / total * 100) if total else 0:5.1f}%)"
+    )
     print(f"    auto-invokable: {auto_bad:>3}  (priority)")
-    print(f"    explicit-only:  {explicit_only_bad:>3}  (disable-model-invocation: true)")
+    print(
+        f"    explicit-only:  {explicit_only_bad:>3}  (disable-model-invocation: true)"
+    )
     print()
     print("Length axis (listing-budget consumption):")
     length_labels = {
@@ -271,11 +277,20 @@ def print_summary(results: list[dict]) -> None:
     print()
 
     # Per-plugin breakdown, sorted by worst-offender count
-    print(f"{'Plugin':<32} {'OK':>5} {'NO_TRIG':>8} {'EMPTY':>7} {'MISSING':>8} {'TOTAL':>6}")
+    print(
+        f"{'Plugin':<32} {'OK':>5} {'NO_TRIG':>8} {'EMPTY':>7} {'MISSING':>8} {'TOTAL':>6}"
+    )
     print("-" * 72)
     rows = sorted(
         per_plugin.items(),
-        key=lambda kv: (-(kv[1].get("EMPTY", 0) + kv[1].get("NO_TRIGGER", 0) + kv[1].get("MISSING", 0)), kv[0]),
+        key=lambda kv: (
+            -(
+                kv[1].get("EMPTY", 0)
+                + kv[1].get("NO_TRIGGER", 0)
+                + kv[1].get("MISSING", 0)
+            ),
+            kv[0],
+        ),
     )
     for plugin, counts in rows:
         tot = sum(counts.values())
@@ -303,10 +318,18 @@ def print_list(results: list[dict], show_ok: bool) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--list", action="store_true", help="List every offender (non-OK skills)")
-    parser.add_argument("--all", action="store_true", help="With --list, include OK skills too")
-    parser.add_argument("--category", choices=CATEGORIES, help="Filter output to one trigger category")
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument(
+        "--list", action="store_true", help="List every offender (non-OK skills)"
+    )
+    parser.add_argument(
+        "--all", action="store_true", help="With --list, include OK skills too"
+    )
+    parser.add_argument(
+        "--category", choices=CATEGORIES, help="Filter output to one trigger category"
+    )
     parser.add_argument(
         "--length-category",
         choices=LENGTH_CATEGORIES,
@@ -364,7 +387,10 @@ def main() -> int:
     if args.strict_all:
         bad = [r for r in results if r["category"] != "OK" and r["auto_invokable"]]
         if bad:
-            print(f"\n{len(bad)} auto-invokable skills need description fixes", file=sys.stderr)
+            print(
+                f"\n{len(bad)} auto-invokable skills need description fixes",
+                file=sys.stderr,
+            )
             return 1
         return 0
     if args.strict_length:
@@ -388,7 +414,10 @@ def main() -> int:
     if args.strict:
         bad = [r for r in results if r["category"] in ("MISSING", "EMPTY")]
         if bad:
-            print(f"\n{len(bad)} skills have MISSING or EMPTY description:", file=sys.stderr)
+            print(
+                f"\n{len(bad)} skills have MISSING or EMPTY description:",
+                file=sys.stderr,
+            )
             for r in bad:
                 print(f"  {r['path']} ({r['category']})", file=sys.stderr)
             return 1

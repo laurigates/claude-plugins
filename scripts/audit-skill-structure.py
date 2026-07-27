@@ -472,8 +472,7 @@ def split_candidates(skill: Skill) -> list[SplitFinding]:
         findings.append(
             SplitFinding(
                 skill,
-                f"{skill.fenced_lines} fenced-code lines "
-                "→ consider scripts/ directory",
+                f"{skill.fenced_lines} fenced-code lines → consider scripts/ directory",
                 "warn",
             )
         )
@@ -559,9 +558,7 @@ def render_summary(
         lines.append("| Skill | Lines | Reason |")
         lines.append("|-------|------:|--------|")
         for f in sorted(errors, key=lambda f: -f.skill.lines)[:20]:
-            lines.append(
-                f"| `{f.skill.rel_path}` | {f.skill.lines} | {f.reason} |"
-            )
+            lines.append(f"| `{f.skill.rel_path}` | {f.skill.lines} | {f.reason} |")
     else:
         lines.append("_None._")
     lines += ["", "## Largest overlap clusters", ""]
@@ -622,7 +619,9 @@ def render_overlap_clusters(clusters: list[Cluster]) -> str:
         ambiguous = ambiguous_within_cluster(cluster)
         if ambiguous:
             out.append("")
-            out.append("**Ambiguity markers** (description tokens dominated by a sibling):")
+            out.append(
+                "**Ambiguity markers** (description tokens dominated by a sibling):"
+            )
             out.append("")
             for a in ambiguous:
                 out.append(f"- `{a['skill']}` dominated by `{a['dominated_by']}`")

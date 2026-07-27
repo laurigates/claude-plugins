@@ -56,7 +56,9 @@ def _redact_secrets(data: Any) -> Any:
     """Recursively redact values whose keys match secret patterns."""
     if isinstance(data, dict):
         return {
-            k: "***REDACTED***" if _SECRET_KEY_PATTERNS.search(k) else _redact_secrets(v)
+            k: "***REDACTED***"
+            if _SECRET_KEY_PATTERNS.search(k)
+            else _redact_secrets(v)
             for k, v in data.items()
         }
     if isinstance(data, list):
@@ -112,18 +114,22 @@ def _collect_kubectl(namespace: str | None) -> dict[str, Any]:
                 status = pod.get("status", {})
                 containers = status.get("containerStatuses", [])
                 restart_count = sum(c.get("restartCount", 0) for c in containers)
-                pod_summaries.append({
-                    "name": metadata.get("name"),
-                    "namespace": metadata.get("namespace"),
-                    "phase": status.get("phase"),
-                    "restart_count": restart_count,
-                    "ready": all(c.get("ready", False) for c in containers) if containers else False,
-                    "conditions": [
-                        {"type": c.get("type"), "status": c.get("status")}
-                        for c in status.get("conditions", [])
-                        if c.get("status") != "True"
-                    ],
-                })
+                pod_summaries.append(
+                    {
+                        "name": metadata.get("name"),
+                        "namespace": metadata.get("namespace"),
+                        "phase": status.get("phase"),
+                        "restart_count": restart_count,
+                        "ready": all(c.get("ready", False) for c in containers)
+                        if containers
+                        else False,
+                        "conditions": [
+                            {"type": c.get("type"), "status": c.get("status")}
+                            for c in status.get("conditions", [])
+                            if c.get("status") != "True"
+                        ],
+                    }
+                )
             result["data"]["pods"] = pod_summaries
     else:
         result["data"]["pods_error"] = output
@@ -131,10 +137,14 @@ def _collect_kubectl(namespace: str | None) -> dict[str, Any]:
     # Recent events (errors and warnings only)
     ok, output = _run_cmd(
         [
-            "kubectl", "get", "events", *ns_args,
+            "kubectl",
+            "get",
+            "events",
+            *ns_args,
             "--sort-by=.lastTimestamp",
             "--field-selector=type!=Normal",
-            "-o", "json",
+            "-o",
+            "json",
         ],
         timeout=15,
     )
@@ -209,8 +219,12 @@ def _collect_argocd(app_name: str | None, namespace: str | None) -> dict[str, An
                 result["data"]["apps"] = [
                     {
                         "name": a.get("metadata", {}).get("name"),
-                        "sync_status": a.get("status", {}).get("sync", {}).get("status"),
-                        "health_status": a.get("status", {}).get("health", {}).get("status"),
+                        "sync_status": a.get("status", {})
+                        .get("sync", {})
+                        .get("status"),
+                        "health_status": a.get("status", {})
+                        .get("health", {})
+                        .get("status"),
                     }
                     for a in parsed
                 ]
@@ -232,7 +246,11 @@ def _summarise_argocd_resources(resources: list[dict]) -> dict[str, int]:
     }
     for r in resources:
         sync = r.get("status")
-        health = r.get("health", {}).get("status") if isinstance(r.get("health"), dict) else None
+        health = (
+            r.get("health", {}).get("status")
+            if isinstance(r.get("health"), dict)
+            else None
+        )
         if sync == "Synced":
             summary["synced"] += 1
         elif sync == "OutOfSync":
@@ -253,9 +271,13 @@ def _collect_gh_actions(repo_path: Path) -> dict[str, Any]:
     # Recent runs
     ok, output = _run_cmd(
         [
-            "gh", "run", "list",
-            "--limit", str(_MAX_WORKFLOW_RUNS),
-            "--json", "databaseId,status,conclusion,name,headBranch,url,createdAt",
+            "gh",
+            "run",
+            "list",
+            "--limit",
+            str(_MAX_WORKFLOW_RUNS),
+            "--json",
+            "databaseId,status,conclusion,name,headBranch,url,createdAt",
         ],
         cwd=repo_path,
         timeout=15,
@@ -302,12 +324,14 @@ def _collect_gh_actions(repo_path: Path) -> dict[str, Any]:
                     if j.get("conclusion") == "failure"
                 ]
                 if failed_jobs:
-                    failed_details.append({
-                        "run_id": run_id,
-                        "name": run.get("name"),
-                        "url": run.get("url"),
-                        "failed_jobs": failed_jobs,
-                    })
+                    failed_details.append(
+                        {
+                            "run_id": run_id,
+                            "name": run.get("name"),
+                            "url": run.get("url"),
+                            "failed_jobs": failed_jobs,
+                        }
+                    )
 
     result["data"]["failed_details"] = failed_details
     return result
@@ -397,11 +421,17 @@ def collect_pipeline_diagnostics(
     if "actions" in requested and "actions" in available:
         results["github_actions"] = _collect_gh_actions(repo_path)
     elif "actions" in requested:
-        results["github_actions"] = {"status": "unavailable", "message": "gh CLI not authenticated"}
+        results["github_actions"] = {
+            "status": "unavailable",
+            "message": "gh CLI not authenticated",
+        }
 
     if "packages" in requested and "packages" in available:
         results["github_packages"] = _collect_gh_packages(repo_path)
     elif "packages" in requested:
-        results["github_packages"] = {"status": "unavailable", "message": "gh CLI not authenticated"}
+        results["github_packages"] = {
+            "status": "unavailable",
+            "message": "gh CLI not authenticated",
+        }
 
     return results

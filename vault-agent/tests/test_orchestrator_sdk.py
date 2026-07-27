@@ -22,16 +22,13 @@ from vault_agent.orchestrator import (
     _extract_report_section,
     _has_sdk_work,
     _build_safety_hook_callback,
-    build_system_prompt,
 )
 
 
 def _init_repo(path: Path) -> Path:
     path.mkdir(parents=True, exist_ok=True)
     subprocess.run(["git", "init", "-q", "-b", "main"], cwd=path, check=True)
-    subprocess.run(
-        ["git", "config", "user.email", "t@e"], cwd=path, check=True
-    )
+    subprocess.run(["git", "config", "user.email", "t@e"], cwd=path, check=True)
     subprocess.run(["git", "config", "user.name", "T"], cwd=path, check=True)
     (path / "seed.md").write_text("# seed\n")
     subprocess.run(["git", "add", "."], cwd=path, check=True)
@@ -76,9 +73,7 @@ class TestHasSdkWork:
         audit = run_audit(vault)
         assert _has_sdk_work("lint", audit) is False
 
-    def test_mocs_has_work_when_categories_have_orphans(
-        self, tmp_path: Path
-    ) -> None:
+    def test_mocs_has_work_when_categories_have_orphans(self, tmp_path: Path) -> None:
         # Build a vault that has orphan notes with emoji tags but no MOC.
         files = {}
         for i in range(15):
@@ -88,9 +83,7 @@ class TestHasSdkWork:
         vault = _make_vault(tmp_path, files)
         audit = run_audit(vault)
         # If any coverage row has orphans → SDK work
-        if any(
-            cov.unlinked_note_count > 0 for cov in audit.mocs.coverage_by_category
-        ):
+        if any(cov.unlinked_note_count > 0 for cov in audit.mocs.coverage_by_category):
             assert _has_sdk_work("mocs", audit) is True
 
     def test_unknown_mode_returns_false(self, tmp_path: Path) -> None:
@@ -138,7 +131,10 @@ class TestSafetyHookCallback:
         with pytest.raises(HookBlockedError):
             asyncio.run(
                 cb(
-                    {"tool_name": "Bash", "tool_input": {"command": "git push origin main"}},
+                    {
+                        "tool_name": "Bash",
+                        "tool_input": {"command": "git push origin main"},
+                    },
                     None,
                     {"signal": None},
                 )
@@ -160,7 +156,6 @@ class TestRunModeWithSdkSmoke:
         subprocess.run(["git", "commit", "-qm", "seed"], cwd=vault, check=True)
 
         # Build a fake SDK message stream.
-        from types import SimpleNamespace
 
         class FakeTextBlock:
             def __init__(self, text: str) -> None:
@@ -207,14 +202,13 @@ class TestRunModeWithSdkSmoke:
         # isinstance() in _display_message succeeds.
         import claude_agent_sdk
 
-        with mock.patch.object(
-            claude_agent_sdk, "ClaudeSDKClient", FakeClient
-        ), mock.patch.object(
-            claude_agent_sdk, "AssistantMessage", FakeAssistantMessage
-        ), mock.patch.object(
-            claude_agent_sdk, "TextBlock", FakeTextBlock
-        ), mock.patch.object(
-            claude_agent_sdk, "ResultMessage", FakeResultMessage
+        with (
+            mock.patch.object(claude_agent_sdk, "ClaudeSDKClient", FakeClient),
+            mock.patch.object(
+                claude_agent_sdk, "AssistantMessage", FakeAssistantMessage
+            ),
+            mock.patch.object(claude_agent_sdk, "TextBlock", FakeTextBlock),
+            mock.patch.object(claude_agent_sdk, "ResultMessage", FakeResultMessage),
         ):
             from vault_agent.orchestrator import run_mode_with_sdk
 

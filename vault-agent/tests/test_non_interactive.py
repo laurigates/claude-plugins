@@ -49,9 +49,7 @@ class TestNonInteractiveConfig:
 
     def test_non_positive_cost(self) -> None:
         with pytest.raises(NonInteractiveUsageError):
-            NonInteractiveConfig.build(
-                apply=False, max_cost_usd=0.0, log_format="text"
-            )
+            NonInteractiveConfig.build(apply=False, max_cost_usd=0.0, log_format="text")
 
     def test_frozen(self) -> None:
         cfg = NonInteractiveConfig.build(

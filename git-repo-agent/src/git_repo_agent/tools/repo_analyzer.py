@@ -160,7 +160,13 @@ def _detect_linter(repo: Path, language: str) -> str:
     if language in ("javascript", "typescript"):
         if (repo / "biome.json").exists() or (repo / "biome.jsonc").exists():
             return "biome"
-        for eslint in [".eslintrc.json", ".eslintrc.js", ".eslintrc.cjs", "eslint.config.js", "eslint.config.mjs"]:
+        for eslint in [
+            ".eslintrc.json",
+            ".eslintrc.js",
+            ".eslintrc.cjs",
+            "eslint.config.js",
+            "eslint.config.mjs",
+        ]:
             if (repo / eslint).exists():
                 return "eslint"
     elif language == "python":

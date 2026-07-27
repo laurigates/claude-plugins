@@ -37,11 +37,18 @@ class TestSelectPlugins:
     def test_python_adds_stack_plugins(self):
         result = set(select_plugins(["python"]))
         assert set(ALWAYS_ON_PLUGINS).issubset(result)
-        assert {"python-plugin", "testing-plugin", "code-quality-plugin", "git-plugin"}.issubset(result)
+        assert {
+            "python-plugin",
+            "testing-plugin",
+            "code-quality-plugin",
+            "git-plugin",
+        }.issubset(result)
 
     def test_multiple_indicators_merge(self):
         result = set(select_plugins(["python", "docker", "github-actions"]))
-        assert {"python-plugin", "container-plugin", "github-actions-plugin"}.issubset(result)
+        assert {"python-plugin", "container-plugin", "github-actions-plugin"}.issubset(
+            result
+        )
 
     def test_extra_plugins_merged_and_deduped(self):
         result = select_plugins(
@@ -158,6 +165,7 @@ class TestWriteSettingsJson:
         assert path.is_file()
 
         import json as _json
+
         data = _json.loads(path.read_text(encoding="utf-8"))
         assert data["enabledPlugins"]["python-plugin@claude-plugins"] is True
 
@@ -166,9 +174,12 @@ class TestWriteSettingsJson:
         write_settings_json(tmp_path, ["python-plugin"], ["Bash(git:*)"])
         # Second run: add a docker indicator's plugin + permission.
         path = write_settings_json(
-            tmp_path, ["container-plugin"], ["Bash(docker:*)"],
+            tmp_path,
+            ["container-plugin"],
+            ["Bash(docker:*)"],
         )
         import json as _json
+
         data = _json.loads(path.read_text(encoding="utf-8"))
         # Both plugins should survive.
         assert "python-plugin@claude-plugins" in data["enabledPlugins"]

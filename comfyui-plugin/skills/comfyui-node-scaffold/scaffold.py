@@ -2727,14 +2727,18 @@ def build_file_map(
         ctx["DEP_FLOOR_NOTE"] = (
             "Floor tied to the registerExtension boolean-settings API."
         )
-        ctx["WHAT_DESC"] = "the CSS shims it injects and the upstream bugs they paper over"
+        ctx["WHAT_DESC"] = (
+            "the CSS shims it injects and the upstream bugs they paper over"
+        )
         ctx["VEIN"] = (
             "A home for SMALL, individually-toggleable stopgap fixes in the *CSS/shim* "
             "vein: a frontend extension that papers over upstream ComfyUI-frontend bugs "
             "by injecting scoped, managed `<style>` tags — one per shim, driven by a "
             "boolean setting — and registers commands. There are **no target widgets to "
             "hook** and **no modal**, so there is no `TARGET_WIDGETS` / `onPointerDown` "
-            "wrapping and **no `" + MODAL_KIT_PKG + "` dependency**. Every shim links the "
+            "wrapping and **no `"
+            + MODAL_KIT_PKG
+            + "` dependency**. Every shim links the "
             "upstream issue it papers over (in `upstream` + the settings tooltip) and is "
             "deleted the release the upstream fix ships. Selectors target stable "
             "`data-testid` hooks where the frontend provides them; anything keyed on "
@@ -2861,9 +2865,7 @@ REFERENCE_SIBLINGS = (
 )
 
 
-def print_finishing_pass_audit(
-    target: Path, parent: Path, variant: str
-) -> None:
+def print_finishing_pass_audit(target: Path, parent: Path, variant: str) -> None:
     """Report the registry-ready / fleet-consistent 'finishing pass'.
 
     The scaffold now EMITS the deterministic pieces (icon.svg + banner.svg with
@@ -3006,11 +3008,7 @@ def main() -> int:
         "  git init -b main                       # seed main directly (no branch juggling)\n"
         "  uv sync --group dev\n"
         "  bun install                            # TypeScript, Biome, Vitest, knip"
-        + (
-            ", comfy-modal-kit\n"
-            if args.variant in ("frontend", "backend")
-            else "\n"
-        )
+        + (", comfy-modal-kit\n" if args.variant in ("frontend", "backend") else "\n")
         + "  pre-commit install\n"
         "  just check                              # typecheck + build + lint + test should pass green\n"
         "\nThen:\n"

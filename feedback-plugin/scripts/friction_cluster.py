@@ -21,6 +21,7 @@ Deliverable mapping:
 so a human can decide which (if any) rule is justified. They never write a
 committed file or auto-prescribe a fix. See issue #1110.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -29,7 +30,6 @@ import sys
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Iterable
 
 _CLASSIFY_BODIES = {
     "plan:entered-plan-mode": """\
@@ -175,12 +175,15 @@ def propose(signature: str, hits: list[dict]) -> dict:
                 "body": "",
             }
     evidence_block = "\n".join(
-        f"- `{h.get('session','?')[:8]}` at {h.get('ts','?')}: {h.get('evidence','')[:200].strip()}"
+        f"- `{h.get('session', '?')[:8]}` at {h.get('ts', '?')}: {h.get('evidence', '')[:200].strip()}"
         for h in hits[:5]
     )
     rendered_body = (
-        spec["body"].replace("__COUNT__", str(len(hits))).replace("__EVIDENCE__", evidence_block)
-        if spec["body"] else ""
+        spec["body"]
+        .replace("__COUNT__", str(len(hits)))
+        .replace("__EVIDENCE__", evidence_block)
+        if spec["body"]
+        else ""
     )
     return {
         "signature": signature,
@@ -190,13 +193,20 @@ def propose(signature: str, hits: list[dict]) -> dict:
         "title": spec["title"],
         "body": rendered_body,
         "samples": [
-            {"session": h.get("session"), "ts": h.get("ts"), "tool": h.get("tool"), "evidence": h.get("evidence")}
+            {
+                "session": h.get("session"),
+                "ts": h.get("ts"),
+                "tool": h.get("tool"),
+                "evidence": h.get("evidence"),
+            }
             for h in hits[:3]
         ],
     }
 
 
-def render_pr_body(proposals: list[dict], total_events: int, total_sessions: int, window: str) -> str:
+def render_pr_body(
+    proposals: list[dict], total_events: int, total_sessions: int, window: str
+) -> str:
     week = datetime.now(tz=timezone.utc).strftime("%G-W%V")
     lines = [
         f"## Friction Report: {week}",
@@ -210,7 +220,9 @@ def render_pr_body(proposals: list[dict], total_events: int, total_sessions: int
         "|---|---|---|---|",
     ]
     for p in sorted(proposals, key=lambda x: -x["count"]):
-        lines.append(f"| `{p['signature']}` | {p['count']} | {p['kind']} | `{p['path'] or '—'}` |")
+        lines.append(
+            f"| `{p['signature']}` | {p['count']} | {p['kind']} | `{p['path'] or '—'}` |"
+        )
     classify = [p for p in proposals if p["kind"] == "classify-required"]
     if classify:
         lines += [
@@ -223,7 +235,14 @@ def render_pr_body(proposals: list[dict], total_events: int, total_sessions: int
             "",
         ]
         for p in sorted(classify, key=lambda x: -x["count"]):
-            lines += [f"### {p['title']} ({p['count']})", "", p["body"].rstrip(), "", "**Sample evidence:**", ""]
+            lines += [
+                f"### {p['title']} ({p['count']})",
+                "",
+                p["body"].rstrip(),
+                "",
+                "**Sample evidence:**",
+                "",
+            ]
             for sample in p.get("samples", []):
                 ev = (sample.get("evidence") or "").strip().replace("\n", " ")
                 if len(ev) > 200:
@@ -235,13 +254,22 @@ def render_pr_body(proposals: list[dict], total_events: int, total_sessions: int
             lines.append("")
     lines += ["", "## Proposed changes", ""]
     proposed_changes = [
-        p for p in proposals
+        p
+        for p in proposals
         if p["kind"] not in ("watch", "classify-required") and p["body"] and p["path"]
     ]
     if not proposed_changes:
         lines += ["_No auto-prescribed changes this run._", ""]
     for p in proposed_changes:
-        lines += [f"### {p['title']}", f"**File**: `{p['path']}`", "", "```markdown", p["body"].rstrip(), "```", ""]
+        lines += [
+            f"### {p['title']}",
+            f"**File**: `{p['path']}`",
+            "",
+            "```markdown",
+            p["body"].rstrip(),
+            "```",
+            "",
+        ]
     return "\n".join(lines) + "\n"
 
 
@@ -250,7 +278,11 @@ def main() -> int:
     ap.add_argument("--in", dest="infile", default="-")
     ap.add_argument("--min-count", type=int, default=3)
     ap.add_argument("--out", default="-")
-    ap.add_argument("--render-pr-body", default="", help="Also write a PR body markdown to this path")
+    ap.add_argument(
+        "--render-pr-body",
+        default="",
+        help="Also write a PR body markdown to this path",
+    )
     ap.add_argument("--window", default="7d")
     args = ap.parse_args()
 

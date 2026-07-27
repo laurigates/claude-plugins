@@ -138,15 +138,11 @@ def insert_link_alphabetically(
         raise ValueError("cannot insert into a dataview-generated MOC")
 
     structure = parse_moc_sections(body)
-    target_section = next(
-        (s for s in structure.sections if s.heading == heading), None
-    )
+    target_section = next((s for s in structure.sections if s.heading == heading), None)
     if target_section is None:
         raise ValueError(f"section {heading!r} not found in MOC")
 
-    wikilink = (
-        f"[[{new_target}|{alias}]]" if alias else f"[[{new_target}]]"
-    )
+    wikilink = f"[[{new_target}|{alias}]]" if alias else f"[[{new_target}]]"
 
     # Parse the section's body into lines so we can place the bullet.
     body_lines = target_section.body.split("\n") if target_section.body else []
@@ -157,7 +153,10 @@ def insert_link_alphabetically(
         return body  # idempotent
 
     # Decide placement.
-    if _is_alphabetical(target_section.wikilink_targets) and target_section.wikilink_targets:
+    if (
+        _is_alphabetical(target_section.wikilink_targets)
+        and target_section.wikilink_targets
+    ):
         # Insert before the first bullet whose target sorts after ours.
         inserted = False
         new_lines: list[str] = []
@@ -177,9 +176,7 @@ def insert_link_alphabetically(
     return _rebuild_moc(structure, heading, new_section_body)
 
 
-def _rebuild_moc(
-    structure: MocStructure, replaced_heading: str, new_body: str
-) -> str:
+def _rebuild_moc(structure: MocStructure, replaced_heading: str, new_body: str) -> str:
     """Reassemble a MOC body after editing one section."""
     parts: list[str] = []
     if structure.frontmatter:

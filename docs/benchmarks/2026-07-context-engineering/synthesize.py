@@ -67,9 +67,13 @@ def main() -> int:
             }
             dim_totals[dim].append(median)
             if is_contested:
-                contested.append({"unit": unit, "dim": dim, "scores": numeric, "gap": gap})
+                contested.append(
+                    {"unit": unit, "dim": dim, "scores": numeric, "gap": gap}
+                )
 
-        numeric_medians = [d["median"] for d in dims.values() if isinstance(d["median"], (int, float))]
+        numeric_medians = [
+            d["median"] for d in dims.values() if isinstance(d["median"], (int, float))
+        ]
         units[unit] = {
             "kind": judgments[0].get("unit_kind", "skill"),
             "judges": [j["judge_id"] for j in judgments],
@@ -88,7 +92,9 @@ def main() -> int:
                     "unit": unit,
                     "judge": j["judge_id"],
                     "influenced_scoring": bool(leak.get("influenced_scoring")),
-                    "house_standards_seen": sorted(leak.get("house_standards_seen") or []),
+                    "house_standards_seen": sorted(
+                        leak.get("house_standards_seen") or []
+                    ),
                 }
             )
 
@@ -96,7 +102,8 @@ def main() -> int:
         "schema_version": 1,
         "units": units,
         "dimension_means": {
-            d: round(sum(v) / len(v), 2) if v else None for d, v in sorted(dim_totals.items())
+            d: round(sum(v) / len(v), 2) if v else None
+            for d, v in sorted(dim_totals.items())
         },
         "contested": sorted(contested, key=lambda c: (-c["gap"], c["unit"], c["dim"])),
         "coverage": {
@@ -106,7 +113,9 @@ def main() -> int:
         },
         "leakage": sorted(leakage_rows, key=lambda r: (r["unit"], r["judge"])),
         "leakage_summary": {
-            "judgments_reporting_influence": sum(1 for r in leakage_rows if r["influenced_scoring"]),
+            "judgments_reporting_influence": sum(
+                1 for r in leakage_rows if r["influenced_scoring"]
+            ),
             "judgments_total": len(leakage_rows),
         },
     }
@@ -122,8 +131,12 @@ def main() -> int:
     for dim in DIMS:
         print(f"MEAN_MEDIAN_{dim}={out['dimension_means'][dim]}")
     print(f"CONTESTED_PAIRS={len(out['contested'])}")
-    print(f"LEAKAGE_INFLUENCED={out['leakage_summary']['judgments_reporting_influence']}")
-    print(f"STATUS={'OK' if out['coverage']['units_with_two_judges'] == len(units) else 'WARN'}")
+    print(
+        f"LEAKAGE_INFLUENCED={out['leakage_summary']['judgments_reporting_influence']}"
+    )
+    print(
+        f"STATUS={'OK' if out['coverage']['units_with_two_judges'] == len(units) else 'WARN'}"
+    )
     print("=== END SYNTHESIS ===")
     return 0
 

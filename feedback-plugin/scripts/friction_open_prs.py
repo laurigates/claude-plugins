@@ -30,6 +30,7 @@ Guardrails (mirrors ``feedback-plugin/agents/friction-learner.md``):
 - Redaction is handled upstream in ``friction_parse.py``; this script only
   writes what the clusterer produced.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -63,8 +64,13 @@ def iso_week_tag(now: datetime | None = None) -> str:
     return now.strftime("%G-W%V")
 
 
-def run(cmd: list[str], *, cwd: Path | None = None, check: bool = True,
-        capture: bool = False) -> subprocess.CompletedProcess:
+def run(
+    cmd: list[str],
+    *,
+    cwd: Path | None = None,
+    check: bool = True,
+    capture: bool = False,
+) -> subprocess.CompletedProcess:
     kwargs: dict = {"cwd": str(cwd) if cwd else None}
     if capture:
         kwargs.update(stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -95,13 +101,28 @@ def clone_or_reuse(slug: str, cache_dir: Path | None) -> Path:
 
 
 def resolve_default_branch(checkout: Path) -> str:
-    res = run(["git", "symbolic-ref", "--short", "refs/remotes/origin/HEAD"],
-              cwd=checkout, check=False, capture=True)
+    res = run(
+        ["git", "symbolic-ref", "--short", "refs/remotes/origin/HEAD"],
+        cwd=checkout,
+        check=False,
+        capture=True,
+    )
     if res.returncode == 0 and res.stdout.strip():
         return res.stdout.strip().split("/", 1)[-1]
     # Fallback: ask gh.
-    res = run(["gh", "repo", "view", "--json", "defaultBranchRef", "-q",
-               ".defaultBranchRef.name"], cwd=checkout, capture=True)
+    res = run(
+        [
+            "gh",
+            "repo",
+            "view",
+            "--json",
+            "defaultBranchRef",
+            "-q",
+            ".defaultBranchRef.name",
+        ],
+        cwd=checkout,
+        capture=True,
+    )
     name = res.stdout.strip()
     return name or "main"
 
@@ -109,11 +130,14 @@ def resolve_default_branch(checkout: Path) -> str:
 def checkout_branch(checkout: Path, branch: str, base: str) -> None:
     # If the branch already exists on origin, reset to its tip; otherwise
     # branch off the base.
-    remote = run(["git", "ls-remote", "--heads", "origin", branch],
-                 cwd=checkout, capture=True, check=False)
+    remote = run(
+        ["git", "ls-remote", "--heads", "origin", branch],
+        cwd=checkout,
+        capture=True,
+        check=False,
+    )
     if remote.stdout.strip():
-        run(["git", "fetch", "origin", f"{branch}:{branch}"],
-            cwd=checkout, check=False)
+        run(["git", "fetch", "origin", f"{branch}:{branch}"], cwd=checkout, check=False)
         run(["git", "checkout", branch], cwd=checkout)
     else:
         run(["git", "checkout", "-B", branch, f"origin/{base}"], cwd=checkout)
@@ -136,8 +160,7 @@ def write_proposals(checkout: Path, clusters: dict) -> list[Path]:
 
 def stage_and_commit(checkout: Path, week_tag: str, dry_run: bool) -> bool:
     run(["git", "add", "-A"], cwd=checkout)
-    diff = run(["git", "diff", "--cached", "--name-only"],
-               cwd=checkout, capture=True)
+    diff = run(["git", "diff", "--cached", "--name-only"], cwd=checkout, capture=True)
     if not diff.stdout.strip():
         return False
     msg = f"docs(rules): add friction-learner findings for week {week_tag}"
@@ -153,16 +176,38 @@ def push_branch(checkout: Path, branch: str, dry_run: bool) -> None:
     if dry_run:
         sys.stderr.write(f"[dry-run] would push: {branch}\n")
         return
-    run(["git", "push", "--force-with-lease", "-u", "origin", branch],
-        cwd=checkout)
+    run(["git", "push", "--force-with-lease", "-u", "origin", branch], cwd=checkout)
 
 
-def open_or_update_pr(checkout: Path, slug: str, branch: str, base: str,
-                      title: str, body_path: Path, dry_run: bool) -> str:
-    existing = run(["gh", "pr", "list", "--repo", slug, "--head", branch,
-                    "--state", "open", "--json", "number,url",
-                    "--jq", ".[0]"],
-                   cwd=checkout, capture=True, check=False)
+def open_or_update_pr(
+    checkout: Path,
+    slug: str,
+    branch: str,
+    base: str,
+    title: str,
+    body_path: Path,
+    dry_run: bool,
+) -> str:
+    existing = run(
+        [
+            "gh",
+            "pr",
+            "list",
+            "--repo",
+            slug,
+            "--head",
+            branch,
+            "--state",
+            "open",
+            "--json",
+            "number,url",
+            "--jq",
+            ".[0]",
+        ],
+        cwd=checkout,
+        capture=True,
+        check=False,
+    )
     existing_json = existing.stdout.strip()
     if existing_json:
         info = json.loads(existing_json)
@@ -170,24 +215,60 @@ def open_or_update_pr(checkout: Path, slug: str, branch: str, base: str,
         if dry_run:
             sys.stderr.write(f"[dry-run] would update PR {url}\n")
             return url
-        run(["gh", "pr", "edit", str(info["number"]), "--repo", slug,
-             "--title", title, "--body-file", str(body_path)],
-            cwd=checkout)
+        run(
+            [
+                "gh",
+                "pr",
+                "edit",
+                str(info["number"]),
+                "--repo",
+                slug,
+                "--title",
+                title,
+                "--body-file",
+                str(body_path),
+            ],
+            cwd=checkout,
+        )
         return url
 
     if dry_run:
-        sys.stderr.write(f"[dry-run] would create draft PR on {slug} from {branch} -> {base}\n")
+        sys.stderr.write(
+            f"[dry-run] would create draft PR on {slug} from {branch} -> {base}\n"
+        )
         return ""
-    res = run(["gh", "pr", "create", "--repo", slug, "--draft",
-               "--base", base, "--head", branch,
-               "--title", title, "--body-file", str(body_path)],
-              cwd=checkout, capture=True)
+    res = run(
+        [
+            "gh",
+            "pr",
+            "create",
+            "--repo",
+            slug,
+            "--draft",
+            "--base",
+            base,
+            "--head",
+            branch,
+            "--title",
+            title,
+            "--body-file",
+            str(body_path),
+        ],
+        cwd=checkout,
+        capture=True,
+    )
     return res.stdout.strip()
 
 
-def process_repo(slug: str, clusters: dict, pr_body: Path, week_tag: str,
-                 branch_template: str, cache_dir: Path | None,
-                 dry_run: bool) -> dict:
+def process_repo(
+    slug: str,
+    clusters: dict,
+    pr_body: Path,
+    week_tag: str,
+    branch_template: str,
+    cache_dir: Path | None,
+    dry_run: bool,
+) -> dict:
     checkout = clone_or_reuse(slug, cache_dir)
     base = resolve_default_branch(checkout)
     branch = branch_template.format(iso_week=week_tag, repo_slug=repo_short(slug))
@@ -195,31 +276,47 @@ def process_repo(slug: str, clusters: dict, pr_body: Path, week_tag: str,
 
     written = write_proposals(checkout, clusters)
     if not written:
-        return {"repo": slug, "branch": branch, "pr_url": "",
-                "status": "no-proposals"}
+        return {"repo": slug, "branch": branch, "pr_url": "", "status": "no-proposals"}
 
     if not stage_and_commit(checkout, week_tag, dry_run):
-        return {"repo": slug, "branch": branch, "pr_url": "",
-                "status": "no-changes"}
+        return {"repo": slug, "branch": branch, "pr_url": "", "status": "no-changes"}
 
     push_branch(checkout, branch, dry_run)
     title = f"docs(rules): add friction-learner findings for week {week_tag}"
     pr_url = open_or_update_pr(checkout, slug, branch, base, title, pr_body, dry_run)
-    return {"repo": slug, "branch": branch, "pr_url": pr_url,
-            "status": "dry-run" if dry_run else "opened"}
+    return {
+        "repo": slug,
+        "branch": branch,
+        "pr_url": pr_url,
+        "status": "dry-run" if dry_run else "opened",
+    }
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--clusters", required=True, help="Path to clusters.json")
-    ap.add_argument("--pr-body", required=True, help="Path to rendered PR body markdown")
-    ap.add_argument("--target-repo", action="append", default=[], required=True,
-                    help="Target repo (owner/repo or URL). Repeatable.")
+    ap.add_argument(
+        "--pr-body", required=True, help="Path to rendered PR body markdown"
+    )
+    ap.add_argument(
+        "--target-repo",
+        action="append",
+        default=[],
+        required=True,
+        help="Target repo (owner/repo or URL). Repeatable.",
+    )
     ap.add_argument("--branch-template", default="friction/{iso_week}-{repo_slug}")
-    ap.add_argument("--cache-dir", default="",
-                    help="Optional directory to cache clones between runs")
-    ap.add_argument("--min-total-events", type=int, default=5,
-                    help="Skip entirely if clusters.total_events is below this")
+    ap.add_argument(
+        "--cache-dir",
+        default="",
+        help="Optional directory to cache clones between runs",
+    )
+    ap.add_argument(
+        "--min-total-events",
+        type=int,
+        default=5,
+        help="Skip entirely if clusters.total_events is below this",
+    )
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
@@ -258,17 +355,31 @@ def main() -> int:
             slug = repo_slug(target)
         except ValueError as err:
             sys.stderr.write(f"error: {err}\n")
-            results.append({"repo": target, "branch": "", "pr_url": "",
-                            "status": f"error:{err}"})
+            results.append(
+                {"repo": target, "branch": "", "pr_url": "", "status": f"error:{err}"}
+            )
             continue
         try:
-            results.append(process_repo(
-                slug, clusters, pr_body_path, week_tag,
-                args.branch_template, cache_dir, args.dry_run,
-            ))
+            results.append(
+                process_repo(
+                    slug,
+                    clusters,
+                    pr_body_path,
+                    week_tag,
+                    args.branch_template,
+                    cache_dir,
+                    args.dry_run,
+                )
+            )
         except subprocess.CalledProcessError as err:
-            results.append({"repo": slug, "branch": "", "pr_url": "",
-                            "status": f"error:exit-{err.returncode}"})
+            results.append(
+                {
+                    "repo": slug,
+                    "branch": "",
+                    "pr_url": "",
+                    "status": f"error:exit-{err.returncode}",
+                }
+            )
 
     json.dump({"week": week_tag, "results": results}, sys.stdout, indent=2)
     sys.stdout.write("\n")

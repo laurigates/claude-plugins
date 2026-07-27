@@ -15,6 +15,7 @@ Kinds:
   plan_mode          assistant tool_use name == "ExitPlanMode"
   push_to_pr_branch  git push result mentioning an existing open PR / protected branch
 """
+
 from __future__ import annotations
 
 import argparse
@@ -24,14 +25,22 @@ import re
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Iterable, Iterator
+from typing import Iterator
 
 HOME = Path(os.path.expanduser("~"))
 DEFAULT_ROOT = HOME / ".claude" / "projects"
 
-HOOK_BLOCK_RE = re.compile(r"(blocked by (?:a |the )?hook|exit(?:ed)? (?:with )?(?:code )?2|PreToolUse.*blocked)", re.I)
-USER_REJECT_RE = re.compile(r"user (?:doesn'?t|does not|did not|refused to|declined)", re.I)
-PUSH_PR_RE = re.compile(r"(open pull request|protected branch|pr .*already open|has an open PR|refusing to push)", re.I)
+HOOK_BLOCK_RE = re.compile(
+    r"(blocked by (?:a |the )?hook|exit(?:ed)? (?:with )?(?:code )?2|PreToolUse.*blocked)",
+    re.I,
+)
+USER_REJECT_RE = re.compile(
+    r"user (?:doesn'?t|does not|did not|refused to|declined)", re.I
+)
+PUSH_PR_RE = re.compile(
+    r"(open pull request|protected branch|pr .*already open|has an open PR|refusing to push)",
+    re.I,
+)
 INTERRUPT_RE = re.compile(r"^\[Request interrupted")
 SECRET_RE = re.compile(r"\b[A-Za-z0-9_\-]{32,}\b")
 
@@ -58,7 +67,9 @@ def redact(text: str) -> str:
     if not text:
         return text
     text = text.replace(str(HOME), "$HOME")
-    text = SECRET_RE.sub(lambda m: m.group(0)[:6] + "…" if len(m.group(0)) > 40 else m.group(0), text)
+    text = SECRET_RE.sub(
+        lambda m: m.group(0)[:6] + "…" if len(m.group(0)) > 40 else m.group(0), text
+    )
     return text
 
 
@@ -113,8 +124,9 @@ def canonical_signature(kind: str, tool: str, evidence: str) -> str:
             # Forward-compatible: future substitution-format upgrades
             # (W22 watch-list candidates — see ~/.claude/rules/friction/
             # 2026-W22-frictions.md "Other watch-list patterns").
-            if "ls" in ev and ("glob tool for pattern-based file listing" in ev
-                               or "blocked: 'ls" in ev):
+            if "ls" in ev and (
+                "glob tool for pattern-based file listing" in ev or "blocked: 'ls" in ev
+            ):
                 return "hook:bash-antipatterns:ls-glob"
             if "this command has " in ev and " pipes" in ev:
                 return "hook:bash-antipatterns:long-pipeline"
@@ -149,7 +161,11 @@ def canonical_signature(kind: str, tool: str, evidence: str) -> str:
     if kind == "user_interrupt":
         return "interrupt:user"
     if kind == "tool_error":
-        m = re.search(r"\b(ENOENT|EACCES|not found|permission denied|timeout|connection refused)\b", ev, re.I)
+        m = re.search(
+            r"\b(ENOENT|EACCES|not found|permission denied|timeout|connection refused)\b",
+            ev,
+            re.I,
+        )
         if m:
             return f"error:{tool.lower()}:{m.group(1).lower().replace(' ', '-')}"
         return f"error:{tool.lower()}"
@@ -287,8 +303,11 @@ def extract_frictions(path: Path) -> Iterator[dict]:
             text = first_text(content)
             if text and INTERRUPT_RE.match(text):
                 yield {
-                    "session": session, "ts": ts, "kind": "user_interrupt",
-                    "tool": "-", "signature": "interrupt:user",
+                    "session": session,
+                    "ts": ts,
+                    "kind": "user_interrupt",
+                    "tool": "-",
+                    "signature": "interrupt:user",
                     "evidence": redact(text[:400]),
                 }
                 continue
@@ -296,10 +315,15 @@ def extract_frictions(path: Path) -> Iterator[dict]:
             tur = rec.get("toolUseResult") or {}
             if not isinstance(tur, dict):
                 tur = {"content": tur}
-            is_error = tur.get("is_error") or (isinstance(content, list) and any(
-                isinstance(i, dict) and i.get("type") == "tool_result" and i.get("is_error")
-                for i in content
-            ))
+            is_error = tur.get("is_error") or (
+                isinstance(content, list)
+                and any(
+                    isinstance(i, dict)
+                    and i.get("type") == "tool_result"
+                    and i.get("is_error")
+                    for i in content
+                )
+            )
             if is_error:
                 tool = lookup_tool_name(rec, tool_index)
                 body = text or json.dumps(tur)[:400]
@@ -307,12 +331,18 @@ def extract_frictions(path: Path) -> Iterator[dict]:
                     kind = "hook_block"
                 elif USER_REJECT_RE.search(body):
                     kind = "user_reject"
-                elif tool == "Bash" and "git push" in body.lower() and PUSH_PR_RE.search(body):
+                elif (
+                    tool == "Bash"
+                    and "git push" in body.lower()
+                    and PUSH_PR_RE.search(body)
+                ):
                     kind = "push_to_pr_branch"
                 else:
                     kind = "tool_error"
                 yield {
-                    "session": session, "ts": ts, "kind": kind,
+                    "session": session,
+                    "ts": ts,
+                    "kind": kind,
                     "tool": tool,
                     "signature": canonical_signature(kind, tool, body),
                     "evidence": redact(body[:400]),
@@ -330,18 +360,28 @@ def extract_frictions(path: Path) -> Iterator[dict]:
                         kind = classify_plan_mode(last_user_prompt)
                         if kind == "plan_mode":
                             yield {
-                                "session": session, "ts": ts, "kind": kind,
+                                "session": session,
+                                "ts": ts,
+                                "kind": kind,
                                 "tool": "ExitPlanMode",
-                                "signature": canonical_signature(kind, "ExitPlanMode", plan),
+                                "signature": canonical_signature(
+                                    kind, "ExitPlanMode", plan
+                                ),
                                 "evidence": redact(str(plan)[:400]),
                             }
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--since", default="7d", help="Time window (e.g. 7d, 24h, ISO timestamp)")
-    ap.add_argument("--root", action="append", default=[],
-                    help="Transcript root (repeatable). Defaults to ~/.claude/projects")
+    ap.add_argument(
+        "--since", default="7d", help="Time window (e.g. 7d, 24h, ISO timestamp)"
+    )
+    ap.add_argument(
+        "--root",
+        action="append",
+        default=[],
+        help="Transcript root (repeatable). Defaults to ~/.claude/projects",
+    )
     ap.add_argument("--out", default="-", help="Output path; '-' for stdout")
     args = ap.parse_args()
 
@@ -361,7 +401,9 @@ def main() -> int:
         if out is not sys.stdout:
             out.close()
 
-    sys.stderr.write(f"parsed {total_files} transcript(s), emitted {total_events} friction event(s)\n")
+    sys.stderr.write(
+        f"parsed {total_files} transcript(s), emitted {total_events} friction event(s)\n"
+    )
     return 0
 
 

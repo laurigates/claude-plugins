@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-import pytest
 
-from vault_agent.hooks.safety import SafetyDecision, validate_tool_use
+from vault_agent.hooks.safety import validate_tool_use
 
 
 class TestFileWriteHook:
@@ -28,9 +27,7 @@ class TestFileWriteHook:
         assert not decision.allow
 
     def test_blocks_git_internals(self) -> None:
-        decision = validate_tool_use(
-            "Write", {"file_path": "/vault/.git/HEAD"}
-        )
+        decision = validate_tool_use("Write", {"file_path": "/vault/.git/HEAD"})
         assert not decision.allow
 
     def test_blocks_files_dir(self) -> None:
@@ -53,35 +50,25 @@ class TestBashHook:
         assert decision.allow
 
     def test_blocks_git_push(self) -> None:
-        decision = validate_tool_use(
-            "Bash", {"command": "git push origin main"}
-        )
+        decision = validate_tool_use("Bash", {"command": "git push origin main"})
         assert not decision.allow
         assert "push" in decision.reason
 
     def test_blocks_reset_hard(self) -> None:
-        decision = validate_tool_use(
-            "Bash", {"command": "git reset --hard HEAD~5"}
-        )
+        decision = validate_tool_use("Bash", {"command": "git reset --hard HEAD~5"})
         assert not decision.allow
 
     def test_blocks_rm_rf_on_vault(self) -> None:
-        decision = validate_tool_use(
-            "Bash", {"command": "rm -rf /vault/Zettelkasten"}
-        )
+        decision = validate_tool_use("Bash", {"command": "rm -rf /vault/Zettelkasten"})
         assert not decision.allow
         assert "rm" in decision.reason.lower()
 
     def test_allows_rm_rf_in_tmp(self) -> None:
-        decision = validate_tool_use(
-            "Bash", {"command": "rm -rf /vault/tmp/scratch"}
-        )
+        decision = validate_tool_use("Bash", {"command": "rm -rf /vault/tmp/scratch"})
         assert decision.allow
 
     def test_allows_rm_rf_in_pycache(self) -> None:
-        decision = validate_tool_use(
-            "Bash", {"command": "rm -rf src/__pycache__"}
-        )
+        decision = validate_tool_use("Bash", {"command": "rm -rf src/__pycache__"})
         assert decision.allow
 
     def test_allows_rm_rf_processed(self) -> None:

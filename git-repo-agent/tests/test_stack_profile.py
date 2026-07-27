@@ -217,7 +217,7 @@ class TestScoreQualityStackAware:
         """uv+ruff project gets the ty-variant wording, not generic."""
         _write(
             tmp_path / "pyproject.toml",
-            '[tool.ruff]\nline-length = 100\n\n'
+            "[tool.ruff]\nline-length = 100\n\n"
             '[build-system]\nrequires = ["uv_build"]\n',
         )
         # Add enough Python LOC so the project isn't tagged "incidental".
@@ -225,9 +225,9 @@ class TestScoreQualityStackAware:
         _write(tmp_path / "src" / "lib.py", body)
         profile = profile_stack(tmp_path)
         _, findings = _score_quality(tmp_path, profile=profile)
-        assert any(
-            "ty" in f and "Astral" in f for f in findings
-        ), f"Expected ty/Astral wording in: {findings}"
+        assert any("ty" in f and "Astral" in f for f in findings), (
+            f"Expected ty/Astral wording in: {findings}"
+        )
 
 
 class TestScoreSecurityStackAware:

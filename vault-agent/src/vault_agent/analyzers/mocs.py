@@ -13,7 +13,6 @@ links to related content. This analyzer answers:
 
 from __future__ import annotations
 
-from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -147,7 +146,6 @@ def analyze_mocs(index: VaultIndex, *, sample_size: int = 10) -> MocReport:
         )
 
     # Pass 3: categories that would benefit from a new MOC.
-    moc_basenames_lower = {m.basename.lower() for m in report.mocs}
     for cov in report.coverage_by_category:
         if cov.unlinked_note_count < NEW_MOC_THRESHOLD:
             continue

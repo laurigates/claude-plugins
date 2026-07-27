@@ -27,6 +27,8 @@ REAL = os.path.join(
 )
 
 if not os.path.isfile(REAL):
-    sys.exit(f"check-context-engineering.py: scanner not found at {os.path.normpath(REAL)}")
+    sys.exit(
+        f"check-context-engineering.py: scanner not found at {os.path.normpath(REAL)}"
+    )
 
 runpy.run_path(os.path.normpath(REAL), run_name="__main__")

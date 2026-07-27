@@ -26,12 +26,11 @@ import logging
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Optional
 
 from vault_agent.analyzers.audit import VaultAudit, run_audit
 from vault_agent.worktree import (
     WorktreeHandle,
-    cleanup_worktree,
     create_worktree,
     format_review_instructions,
     timestamped_branch,
@@ -327,7 +326,9 @@ def _display_message(
             console.print(f"[dim]Cost: ${message.total_cost_usd:.4f}[/dim]")
     elif isinstance(message, SystemMessage):
         if message.subtype == "init":
-            session_id = message.data.get("session_id", "") if hasattr(message, "data") else ""
+            session_id = (
+                message.data.get("session_id", "") if hasattr(message, "data") else ""
+            )
             if session_id:
                 console.print(f"[dim]Session: {session_id}[/dim]")
 
@@ -378,9 +379,7 @@ def _build_safety_hook_callback():
         # Per SDK: block + reason so the agent sees a tool error and
         # the caller can inspect the transcript. Raise on critical blocks
         # so _run_write_mode maps to EXIT_HOOK_BLOCKED.
-        raise HookBlockedError(
-            f"safety hook refused {tool_name}: {decision.reason}"
-        )
+        raise HookBlockedError(f"safety hook refused {tool_name}: {decision.reason}")
 
     return _callback
 
@@ -455,7 +454,6 @@ async def run_mode_with_sdk(
     vault = Path(vault).expanduser().resolve()
     audit = preflight(vault)
 
-    own_worktree = handle is None
     if apply and handle is None:
         handle = enter_worktree(vault)
     work_dir = handle.worktree_path if handle is not None else vault
@@ -463,7 +461,14 @@ async def run_mode_with_sdk(
     system_prompt = build_system_prompt(mode, audit)
 
     allowed_tools = [
-        "Read", "Write", "Edit", "Bash", "Glob", "Grep", "TodoWrite", "Task",
+        "Read",
+        "Write",
+        "Edit",
+        "Bash",
+        "Glob",
+        "Grep",
+        "TodoWrite",
+        "Task",
     ]
 
     options = ClaudeAgentOptions(
@@ -472,7 +477,9 @@ async def run_mode_with_sdk(
         max_turns=60,
         allowed_tools=allowed_tools,
         permission_mode="acceptEdits",
-        agents={name: defn for name, defn in ALL_DEFINITIONS.items() if defn is not None},
+        agents={
+            name: defn for name, defn in ALL_DEFINITIONS.items() if defn is not None
+        },
         hooks={
             "PreToolUse": [
                 HookMatcher(

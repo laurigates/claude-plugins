@@ -28,7 +28,6 @@ from .non_interactive import (
     EXIT_HOOK_BLOCKED,
     EXIT_LOCKED,
     EXIT_RUNTIME_ERROR,
-    EXIT_SUCCESS,
     HookBlockedError,
     LockedError,
     NonInteractiveConfig,
@@ -104,7 +103,9 @@ def _ensure_git_repo(vault: Path) -> None:
     """
     inside = subprocess.run(
         ["git", "rev-parse", "--is-inside-work-tree"],
-        cwd=vault, capture_output=True, text=True,
+        cwd=vault,
+        capture_output=True,
+        text=True,
     )
     if inside.returncode != 0 or inside.stdout.strip() != "true":
         console.print(
@@ -116,7 +117,9 @@ def _ensure_git_repo(vault: Path) -> None:
 
     head = subprocess.run(
         ["git", "rev-parse", "--verify", "HEAD"],
-        cwd=vault, capture_output=True, text=True,
+        cwd=vault,
+        capture_output=True,
+        text=True,
     )
     if head.returncode != 0:
         console.print(
@@ -405,17 +408,22 @@ def report(
 @app.command()
 def lint(
     vault: Path = typer.Argument(..., exists=True, file_okay=False, dir_okay=True),
-    dry_run: bool = typer.Option(True, "--dry-run/--fix", help="Preview or apply fixes."),
+    dry_run: bool = typer.Option(
+        True, "--dry-run/--fix", help="Preview or apply fixes."
+    ),
     non_interactive: bool = typer.Option(
-        False, "--non-interactive",
+        False,
+        "--non-interactive",
         help="Run without prompting (required when stdin is not a TTY).",
     ),
     max_cost_usd: Optional[float] = typer.Option(
-        None, "--max-cost-usd",
+        None,
+        "--max-cost-usd",
         help="Warn if session cost exceeds this amount (enforced when SDK session runs).",
     ),
     log_format: Optional[str] = typer.Option(
-        None, "--log-format",
+        None,
+        "--log-format",
         help="Output format: text, json, plain. Default: plain when not a TTY.",
     ),
 ) -> None:
@@ -440,24 +448,31 @@ def lint(
             "health_before": r.audit.health.total,
             **_handle_result(r.handle),
         },
-        render=lambda r: render_lint_dry_run(r.plan) if r.dry_run else render_lint_apply(r),
+        render=lambda r: (
+            render_lint_dry_run(r.plan) if r.dry_run else render_lint_apply(r)
+        ),
     )
 
 
 @app.command()
 def links(
     vault: Path = typer.Argument(..., exists=True, file_okay=False, dir_okay=True),
-    dry_run: bool = typer.Option(True, "--dry-run/--fix", help="Preview or apply fixes."),
+    dry_run: bool = typer.Option(
+        True, "--dry-run/--fix", help="Preview or apply fixes."
+    ),
     non_interactive: bool = typer.Option(
-        False, "--non-interactive",
+        False,
+        "--non-interactive",
         help="Run without prompting (required when stdin is not a TTY).",
     ),
     max_cost_usd: Optional[float] = typer.Option(
-        None, "--max-cost-usd",
+        None,
+        "--max-cost-usd",
         help="Warn if session cost exceeds this amount (enforced when SDK session runs).",
     ),
     log_format: Optional[str] = typer.Option(
-        None, "--log-format",
+        None,
+        "--log-format",
         help="Output format: text, json, plain. Default: plain when not a TTY.",
     ),
 ) -> None:
@@ -482,24 +497,31 @@ def links(
             "health_before": r.audit.health.total,
             **_handle_result(r.handle),
         },
-        render=lambda r: render_links_dry_run(r.plan) if r.dry_run else render_links_apply(r),
+        render=lambda r: (
+            render_links_dry_run(r.plan) if r.dry_run else render_links_apply(r)
+        ),
     )
 
 
 @app.command()
 def stubs(
     vault: Path = typer.Argument(..., exists=True, file_okay=False, dir_okay=True),
-    dry_run: bool = typer.Option(True, "--dry-run/--fix", help="Preview or apply fixes."),
+    dry_run: bool = typer.Option(
+        True, "--dry-run/--fix", help="Preview or apply fixes."
+    ),
     non_interactive: bool = typer.Option(
-        False, "--non-interactive",
+        False,
+        "--non-interactive",
         help="Run without prompting (required when stdin is not a TTY).",
     ),
     max_cost_usd: Optional[float] = typer.Option(
-        None, "--max-cost-usd",
+        None,
+        "--max-cost-usd",
         help="Warn if session cost exceeds this amount (enforced when SDK session runs).",
     ),
     log_format: Optional[str] = typer.Option(
-        None, "--log-format",
+        None,
+        "--log-format",
         help="Output format: text, json, plain. Default: plain when not a TTY.",
     ),
 ) -> None:
@@ -524,7 +546,9 @@ def stubs(
             "health_before": r.audit.health.total,
             **_handle_result(r.handle),
         },
-        render=lambda r: render_stubs_dry_run(r.plan) if r.dry_run else render_stubs_apply(r),
+        render=lambda r: (
+            render_stubs_dry_run(r.plan) if r.dry_run else render_stubs_apply(r)
+        ),
     )
 
 
@@ -549,17 +573,22 @@ def maintain(
         "--modes",
         help=f"Comma-separated modes. Available: {','.join(AVAILABLE_MODES)}",
     ),
-    dry_run: bool = typer.Option(True, "--dry-run/--fix", help="Preview or apply fixes."),
+    dry_run: bool = typer.Option(
+        True, "--dry-run/--fix", help="Preview or apply fixes."
+    ),
     non_interactive: bool = typer.Option(
-        False, "--non-interactive",
+        False,
+        "--non-interactive",
         help="Run without prompting (required when stdin is not a TTY).",
     ),
     max_cost_usd: Optional[float] = typer.Option(
-        None, "--max-cost-usd",
+        None,
+        "--max-cost-usd",
         help="Warn if session cost exceeds this amount (enforced when SDK session runs).",
     ),
     log_format: Optional[str] = typer.Option(
-        None, "--log-format",
+        None,
+        "--log-format",
         help="Output format: text, json, plain. Default: plain when not a TTY.",
     ),
 ) -> None:

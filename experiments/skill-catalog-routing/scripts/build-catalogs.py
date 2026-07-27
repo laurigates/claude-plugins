@@ -129,7 +129,18 @@ def _truncate_word_boundary(s: str, n: int) -> str:
     # Drop a dangling trailing conjunction/preposition — but never "use"/"when",
     # which are the literal marker auto-invocation depends on (#1278).
     words = cut.split()
-    while words and words[-1].lower() in {"or", "and", "the", "a", "to", "of", "for", "in", "on", "with"}:
+    while words and words[-1].lower() in {
+        "or",
+        "and",
+        "the",
+        "a",
+        "to",
+        "of",
+        "for",
+        "in",
+        "on",
+        "with",
+    }:
         words.pop()
     return " ".join(words)
 
@@ -148,7 +159,7 @@ def shorten(desc: str) -> tuple[str, str, str]:
         short = _truncate_word_boundary(desc, SHORT_MAX)
         return short, medium, "prefix"
 
-    clause = desc[m.start():].strip()  # "Use when <triggers>."
+    clause = desc[m.start() :].strip()  # "Use when <triggers>."
     # medium: truncate the whole clause to ≤80, always keeping "Use when".
     medium = _truncate_word_boundary(clause, MEDIUM_MAX)
     # short: first scenario only, truncated to ≤40.
@@ -228,7 +239,10 @@ def build() -> tuple[list[dict], str]:
     try:
         sha = subprocess.run(
             ["git", "rev-parse", "HEAD"],
-            cwd=REPO_ROOT, capture_output=True, text=True, check=True,
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
         ).stdout.strip()
     except (subprocess.CalledProcessError, OSError):
         pass
@@ -240,26 +254,36 @@ def build() -> tuple[list[dict], str]:
             # Skills with no usable description are still real routing targets;
             # keep the id with an empty description so the closed set is complete.
             rid = routing_id(path)
-            rows.append({
-                "id": rid, "full": "", "medium": "", "short": "",
-                "domain-short": "", "domain-medium": "", "compact": "",
-                "provenance": "empty", "full_len": 0,
-            })
+            rows.append(
+                {
+                    "id": rid,
+                    "full": "",
+                    "medium": "",
+                    "short": "",
+                    "domain-short": "",
+                    "domain-medium": "",
+                    "compact": "",
+                    "provenance": "empty",
+                    "full_len": 0,
+                }
+            )
             continue
         short, medium, provenance = shorten(desc)
         d_short, d_medium, _ = domain_shorten(desc)
         compact, _ = compact_shorten(desc)
-        rows.append({
-            "id": routing_id(path),
-            "full": desc,
-            "medium": medium,
-            "short": short,
-            "domain-short": d_short,
-            "domain-medium": d_medium,
-            "compact": compact,
-            "provenance": provenance,
-            "full_len": len(desc),
-        })
+        rows.append(
+            {
+                "id": routing_id(path),
+                "full": desc,
+                "medium": medium,
+                "short": short,
+                "domain-short": d_short,
+                "domain-medium": d_medium,
+                "compact": compact,
+                "provenance": provenance,
+                "full_len": len(desc),
+            }
+        )
     return rows, sha
 
 
@@ -309,7 +333,9 @@ def write_manifest(rows: list[dict], sha: str, hashes: dict[str, str]) -> None:
             for r in rows
         ],
     }
-    (OUT_DIR / "catalog_manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    (OUT_DIR / "catalog_manifest.json").write_text(
+        json.dumps(manifest, indent=2) + "\n"
+    )
 
 
 def validate(rows: list[dict]) -> int:
@@ -337,23 +363,35 @@ def validate(rows: list[dict]) -> int:
                 fail(f"{r['id']} medium lost 'Use when': {r['medium']!r}")
         # Monotonicity: short must be a prefix of medium (token-subset).
         if r["short"] and not r["medium"].startswith(r["short"]):
-            fail(f"{r['id']} short is not a prefix of medium:\n  short={r['short']!r}\n  medium={r['medium']!r}")
+            fail(
+                f"{r['id']} short is not a prefix of medium:\n  short={r['short']!r}\n  medium={r['medium']!r}"
+            )
 
         # Domain-preserving variants: band ceilings + monotone within the domain
         # ladder. These deliberately do NOT carry 'Use when' (they keep the
         # capability phrase instead of the trigger tail).
         if len(r["domain-short"]) > SHORT_MAX:
-            fail(f"{r['id']} domain-short exceeds {SHORT_MAX}c: {len(r['domain-short'])}")
+            fail(
+                f"{r['id']} domain-short exceeds {SHORT_MAX}c: {len(r['domain-short'])}"
+            )
         if len(r["domain-medium"]) > MEDIUM_MAX:
-            fail(f"{r['id']} domain-medium exceeds {MEDIUM_MAX}c: {len(r['domain-medium'])}")
+            fail(
+                f"{r['id']} domain-medium exceeds {MEDIUM_MAX}c: {len(r['domain-medium'])}"
+            )
         if r["domain-short"] and not r["domain-medium"].startswith(r["domain-short"]):
-            fail(f"{r['id']} domain-short is not a prefix of domain-medium:\n  ds={r['domain-short']!r}\n  dm={r['domain-medium']!r}")
+            fail(
+                f"{r['id']} domain-short is not a prefix of domain-medium:\n  ds={r['domain-short']!r}\n  dm={r['domain-medium']!r}"
+            )
         # Compact: within the medium ceiling and MUST keep the literal 'Use when'
         # (it is the best-of-both form intended to stay matcher-valid, #1278)
         # — except where the source had no clean domain+trigger split.
         if len(r["compact"]) > MEDIUM_MAX:
             fail(f"{r['id']} compact exceeds {MEDIUM_MAX}c: {len(r['compact'])}")
-        if r["provenance"] == "mechanical" and _domain_of(r["full"]) and "use when" not in r["compact"].lower():
+        if (
+            r["provenance"] == "mechanical"
+            and _domain_of(r["full"])
+            and "use when" not in r["compact"].lower()
+        ):
             fail(f"{r['id']} compact lost 'Use when': {r['compact']!r}")
 
     total = len(rows)
@@ -362,8 +400,14 @@ def validate(rows: list[dict]) -> int:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--validate", action="store_true", help="assert invariants; exit 1 on any failure")
+    ap = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    ap.add_argument(
+        "--validate",
+        action="store_true",
+        help="assert invariants; exit 1 on any failure",
+    )
     args = ap.parse_args()
 
     rows, sha = build()
@@ -373,7 +417,9 @@ def main() -> int:
     prov = {}
     for r in rows:
         prov[r["provenance"]] = prov.get(r["provenance"], 0) + 1
-    print(f"Wrote {len(rows)} skills to {OUT_DIR.relative_to(REPO_ROOT)}/ (sha {sha[:8]})")
+    print(
+        f"Wrote {len(rows)} skills to {OUT_DIR.relative_to(REPO_ROOT)}/ (sha {sha[:8]})"
+    )
     print(f"Provenance: {prov}")
     print(f"Content hashes: {hashes}")
 

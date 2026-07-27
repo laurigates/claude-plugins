@@ -125,13 +125,13 @@ def main() -> int:
             print(f"Generated {output_path.relative_to(REPO_ROOT)} ({lines} lines)")
 
     for skill_relpath in _collect_blueprint_phase_skills():
-        _, this_stale = _process_skill(
-            skill_relpath, check=args.check, stdout=False
-        )
+        _, this_stale = _process_skill(skill_relpath, check=args.check, stdout=False)
         stale = stale or this_stale
 
     if args.check and stale:
-        print("\nGenerated files are stale (runtime compilation handles this automatically).")
+        print(
+            "\nGenerated files are stale (runtime compilation handles this automatically)."
+        )
         return 1
 
     return 0
