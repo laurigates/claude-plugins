@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.1](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.9.0...session-plugin-v1.9.1) (2026-07-27)
+
+
+### Bug Fixes
+
+* **session-plugin:** isolate session-distill promote from the shared checkout ([298fdca](https://github.com/laurigates/claude-plugins/commit/298fdcaf3899017ed117f52d712753d04c8f6375)), closes [#2113](https://github.com/laurigates/claude-plugins/issues/2113)
+
 ## [1.9.0](https://github.com/laurigates/claude-plugins/compare/session-plugin-v1.8.0...session-plugin-v1.9.0) (2026-07-14)
 
 

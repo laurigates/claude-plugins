@@ -657,6 +657,68 @@ assert_exit \
     "GUARD: grep chain over a .output file (no source-file operand) still blocks" 2 \
     "grep -n Error run.output | grep -v warn | sed s/a/b/"
 
+# ── awk file-modification block must not span a pipe (issue #2131) ────────────
+# Regression: condition 1's greedy `awk\s+.*>` crossed the pipe, so a READ-ONLY
+# awk upstream of a DOWNSTREAM redirect — `… | awk -F/ '{print $1}' | sort -u >
+# "$f"`, where `sort` is the writer — was blocked as if awk rewrote the file.
+# The trailing `[^|]+` only ever constrained the chars AFTER `>`, never the span
+# before it. Confining that span to one pipe segment (`awk\s+[^|]*>`) keeps the
+# true positive (`awk '…' file > "$f"`) and drops the false positive. Rows below
+# are the issue's reproduction table plus the >> and non-variable variants.
+echo ""
+echo "awk block confines itself to one pipe segment; awk-owned redirects still block (#2131):"
+
+# Single-quoted awk programs (the form the issue reported) can't live in a
+# single-quoted bash string, so build these command strings via heredocs.
+awk_downstream_redirect_cmd=$(cat <<'OUTER'
+chezmoi managed 2>/dev/null | awk -F/ '{print $1}' | sort -u > "$SP/chezmoi-toplevel.txt"
+OUTER
+)
+awk_uniq_redirect_cmd=$(cat <<'OUTER'
+cat access.log | awk '{print $2}' | sort | uniq -c > "$DEST/counts.txt"
+OUTER
+)
+awk_no_redirect_cmd=$(cat <<'OUTER'
+chezmoi managed | awk -F/ '{print $1}' | sort -u
+OUTER
+)
+awk_owns_redirect_cmd=$(cat <<'OUTER'
+awk '{print $1}' data.txt > "$OUT/f.txt"
+OUTER
+)
+awk_owns_append_cmd=$(cat <<'OUTER'
+awk '{print $1}' data.txt >> "$OUT/f.txt"
+OUTER
+)
+awk_literal_target_cmd=$(cat <<'OUTER'
+awk '{print $1}' data.txt > out.txt
+OUTER
+)
+
+assert_exit_complex \
+    "read-only awk upstream of a downstream redirect is allowed (#2131 exact repro)" 0 \
+    "$awk_downstream_redirect_cmd"
+
+assert_exit_complex \
+    "read-only awk mid-pipeline, uniq -c writes to a var path, is allowed (#2131)" 0 \
+    "$awk_uniq_redirect_cmd"
+
+assert_exit_complex \
+    "read-only awk with no redirect at all is allowed (#2131)" 0 \
+    "$awk_no_redirect_cmd"
+
+assert_exit_complex \
+    "GUARD: awk owning the redirect to a var path still blocks (#2131)" 2 \
+    "$awk_owns_redirect_cmd"
+
+assert_exit_complex \
+    "GUARD: awk owning an append redirect to a var path still blocks (#2131)" 2 \
+    "$awk_owns_append_cmd"
+
+assert_exit_complex \
+    "awk redirecting to a literal (non-variable) path is allowed (condition 2 unchanged)" 0 \
+    "$awk_literal_target_cmd"
+
 # ── git push -u colon-refspec footgun, no-colon form allowed (issue #1600) ────
 # Regression: the push -u detector blocked the legitimate no-colon form
 # `git push -u origin feat/x` (which pushes feat/x, never touching main) on a
