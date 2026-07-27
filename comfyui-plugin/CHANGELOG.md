@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.4](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.9.3...comfyui-plugin-v1.9.4) (2026-07-27)
+
+
+### Code Refactoring
+
+* **comfyui-plugin,foundryvtt-plugin:** give the gitops adoption procedure one owner ([#2153](https://github.com/laurigates/claude-plugins/issues/2153)) ([b09c500](https://github.com/laurigates/claude-plugins/commit/b09c5000fbcf1a0cc5180332fcb05fcdb316a2b8)), closes [#2137](https://github.com/laurigates/claude-plugins/issues/2137)
+
 ## [1.9.3](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.9.2...comfyui-plugin-v1.9.3) (2026-07-27)
 
 
