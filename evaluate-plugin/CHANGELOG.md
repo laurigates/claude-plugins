@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.12.0](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.11.0...evaluate-plugin-v1.12.0) (2026-07-27)
+
+
+### Features
+
+* **evaluate-plugin:** add /evaluate:context-engineering audit skill ([e55b686](https://github.com/laurigates/claude-plugins/commit/e55b68639ab31f34728a62fdddf66a2390558c44))
+
+
+### Documentation
+
+* **benchmarks:** publish the 2026-07 context-engineering findings ([47002ab](https://github.com/laurigates/claude-plugins/commit/47002abb6a066d8d1a90ea896f6bbc42b2c9ffff))
+
 ## [1.11.0](https://github.com/laurigates/claude-plugins/compare/evaluate-plugin-v1.10.0...evaluate-plugin-v1.11.0) (2026-07-05)
 
 
