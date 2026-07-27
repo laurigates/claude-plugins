@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.1](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.21.0...project-plugin-v1.21.1) (2026-07-27)
+
+
+### Bug Fixes
+
+* **project-plugin:** stop project-init aborting when gh is absent ([#2155](https://github.com/laurigates/claude-plugins/issues/2155)) ([49a3e36](https://github.com/laurigates/claude-plugins/commit/49a3e3638cb262848988a6e519eba19a27fd38d0))
+
 ## [1.21.0](https://github.com/laurigates/claude-plugins/compare/project-plugin-v1.20.0...project-plugin-v1.21.0) (2026-07-04)
 
 
