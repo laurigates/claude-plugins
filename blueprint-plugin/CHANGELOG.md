@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.43.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.42.0...blueprint-plugin-v3.43.0) (2026-07-27)
+
+
+### Features
+
+* **blueprint-plugin:** validate the manifest against a JSON schema ([#2156](https://github.com/laurigates/claude-plugins/issues/2156)) ([2aba801](https://github.com/laurigates/claude-plugins/commit/2aba8019b47a04510c277eacf6077c5b6a994979))
+
 ## [3.42.0](https://github.com/laurigates/claude-plugins/compare/blueprint-plugin-v3.41.0...blueprint-plugin-v3.42.0) (2026-07-26)
 
 
