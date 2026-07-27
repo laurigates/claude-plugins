@@ -1,7 +1,7 @@
 ---
 created: 2026-06-26
-modified: 2026-06-26
-reviewed: 2026-06-26
+modified: 2026-07-27
+reviewed: 2026-07-27
 name: foundryvtt-module
 description: >-
   FoundryVTT module idea to gitops-adopted repo: scaffold, create + seed the
@@ -12,53 +12,51 @@ allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite, AskUserQuestion
 
 # foundryvtt-module
 
-Take a FoundryVTT **module idea** and drive it from empty to release-ready,
-collapsing the manual repo-creation + gitops wiring into one orchestrated pass
-with a single human approval gate.
+Drives a FoundryVTT **module idea** to a release-ready, gitops-adopted GitHub
+repository in one pass, pausing at exactly one human approval.
 
-This is the orchestrator around the `foundryvtt-module-scaffold` skill (which
-only generates the local repo). Use `foundryvtt-module-scaffold` alone if you
-just want the files; use **this** when you want the GitHub repo created, pushed,
-and adopted into gitops too.
+Reach for `foundryvtt-module-scaffold` on its own when all you want is the local
+file tree. Reach for **this** skill when the remote repo should also exist, be
+seeded, and be under Terraform management by the time you stop.
+
+## Delegated: the gitops repo-adoption procedure
+
+The second half of this pipeline — creating and seeding the GitHub repo, opening
+the gitops adoption PR, the human merge gate, and the import-block-removal
+follow-up — is **not duplicated here**. It is identical for every laurigates repo
+class and is owned by:
+
+> **`comfyui-plugin:comfy-node`, Phases 3 → 5** (plus its branch-protection hook
+> note and its generic failure-mode rows).
+
+That skill's *Adapting Phases 3–5 to another repo class* section names every
+value to substitute. Run Phases 0 → 2 here, apply the deltas in
+[FoundryVTT deltas](#foundryvtt-deltas), then execute Phases 3 → 5 there.
+
+Two consequences of that procedure worth stating up front, because they shape
+what you do in Phase 2 below:
+
+- The seed commit lands on `main` with no intervening branch or PR — read the
+  owner's Phase 3 for *why* that ordering is load-bearing, not just convenient.
+- A Claude Code session will hit a `branch-protection` hook block on that seed.
+  The owner's note explains the hand-off; do not invent a workaround.
 
 ## When to Use This Skill
 
-| Use this skill when... | Use the alternative when... |
+| Reach for this skill | Reach elsewhere |
 |---|---|
-| The user gives an idea and wants the whole pipeline stood up — repo created, seeded, and gitops-adopted | You only want the local files → `foundryvtt-module-scaffold` |
-| Spinning up a new FoundryVTT module end to end | Adding a feature to an *existing* module → edit that repo directly |
-
-Do **not** use it to add a feature to an existing module, or to publish a release
-(release-please + the release workflow automate that once the repo exists).
-
-## The shape it automates
-
-```mermaid
-flowchart LR
-  idea["idea"] --> sc["scaffold.py"] --> gh["gh repo create<br/>+ seed main"] --> gop["gitops PR<br/>(entry + import block)"]
-  gop --> gate["👤 merge gitops PR"] --> apply["tofu-apply on release:<br/>adopt + release-please<br/>creds + protection"] --> rm["remove import block"] --> impl["implement + release"]
-  classDef g fill:#1b4332,stroke:#2d6a4f,color:#fff
-  classDef m fill:#6a040f,stroke:#9d0208,color:#fff
-  class sc,gh,gop,apply,rm g
-  class gate,impl m
-```
-
-Everything left of the gate is one orchestrated pass. There is **no scaffold
-PR** — the seed goes straight to `main` (the repo is unprotected until adoption).
-The single gate (merging the gitops PR) is intentionally human — it feeds the
-apply pipeline on shared infra state (release-please cuts a gitops release,
-whose publication triggers the `tofu-apply.yml` GitHub Actions workflow). Never
-merge it on the user's behalf.
+| An idea needs to become a live repo — files, remote, gitops entry, release pipeline | Only local files are wanted → `foundryvtt-module-scaffold` |
+| Nothing exists yet under that module name | The module already exists → work in its repo |
+| Someone asks to "spin up" or "stand up" a Foundry module | A release is due → release-please and the release workflow already handle it |
 
 ## Preconditions
 
-- Run from the FoundryVTT workspace (`repos/laurigates/foundryvtt-dev/`) so the
-  new repo lands as a sibling of `foundryvtt-mcp` / `foundryvtt-mediasoup-webrtc`.
-- `gh auth status` is a **personal** account that can create repos. The gitops
-  GitHub App *cannot* create repos on user accounts — that is why the repo is
-  created out-of-band here and then imported into Terraform state.
-- The gitops repo is clean (no uncommitted `repositories.tf` / `main.tf`
-  changes) so the orchestrator's gitops PR is isolated.
+- Work from the FoundryVTT workspace (`repos/laurigates/foundryvtt-dev/`), so the
+  new checkout sits beside `foundryvtt-mcp` / `foundryvtt-mediasoup-webrtc`. The
+  gitops clone is therefore at `../gitops`.
+- The remaining preconditions (a **personal** `gh auth` that may create repos, and
+  an uncommitted-change-free gitops clone) are stated once in the owner skill —
+  satisfy them before Phase 3.
 
 ## Phase 0 — Derive and confirm the spec
 
@@ -74,10 +72,13 @@ From the idea, derive and **show the user** before creating anything external:
 | `--fvtt-verified` | The major Foundry version the harness pins. | `13` |
 | topics | `["foundryvtt", "module", …]` + facet tags. | `…,"combat","initiative"` |
 
-Confirm the **name, id, and variant** with the user — these are hard to change
-after the repo exists.
+Get explicit user sign-off on **name, id, and variant** — renaming any of the
+three after the repo exists is expensive.
 
-## Phase 1 — Preflight (fail fast if the name is taken)
+## Phase 1 — Preflight
+
+Three lookups; every one must come back free before you continue. Any collision
+is a full stop — report it and wait.
 
 ```sh
 test ! -e foundryvtt-initiative-tweaks && echo "local: free" || echo "local: EXISTS"
@@ -91,17 +92,14 @@ grep -q '"foundryvtt-initiative-tweaks"' ../gitops/repositories.tf && echo "gito
 gh repo view laurigates/foundryvtt-initiative-tweaks >/dev/null 2>&1 && echo "github: EXISTS" || echo "github: free"
 ```
 
-All three must report free. Stop and surface any collision. (The `../gitops`
-path assumes the foundryvtt-dev workspace layout; adjust if the gitops clone is
-elsewhere.)
+(`../gitops` assumes the foundryvtt-dev layout; point it at wherever the gitops
+clone actually lives.)
 
-## Phase 2 — Scaffold + local green check
+## Phase 2 — Scaffold, init, and get to green
 
 ```sh
 python3 ${CLAUDE_SKILL_DIR}/../foundryvtt-module-scaffold/scaffold.py --name foundryvtt-initiative-tweaks --display "Initiative Tweaks" --desc "Small quality-of-life tweaks to the combat initiative tracker." --variant basic
 ```
-
-Then bring the module to green locally:
 
 ```sh
 cd foundryvtt-initiative-tweaks
@@ -119,51 +117,32 @@ bun install
 just check
 ```
 
-`just check` (typecheck + build + lint + test) must pass before anything is
-pushed. `bun install` writes `bun.lock` — it must be in the seed commit (CI uses
-`--frozen-lockfile`). If `just check` fails, fix locally and re-run — do not
-create the remote repo on a red module.
+Notes specific to this stack:
 
-## Phase 3 — Create the GitHub repo and seed `main`
+- **`git init -b main` precedes `bun install`** — the install step wires git
+  tooling and expects a repository to already be present.
+- **`bun.lock` belongs in the seed commit.** `bun install` writes it and CI runs
+  `--frozen-lockfile`; a seed without it fails on the first workflow run.
+- `just check` is typecheck + build + lint + test. A red module never reaches
+  GitHub — repair it here and re-run.
 
-Seed `main` **directly** as the first commit — no scaffold branch, no PR. The
-repo has no branch protection yet (gitops adds it on adoption in Phase 5), so
-this is allowed, and it avoids the missing-`main`/rename juggling a feature-branch
-first push would cause. Implementation work afterward goes through feature-branch
-PRs as normal.
+## FoundryVTT deltas
 
-```sh
-git add -A
-```
+Substitutions to apply while executing `comfyui-plugin:comfy-node` Phases 3 → 5.
+Everything the owner skill states that is not listed here applies verbatim.
 
-```sh
-git commit -m "feat: scaffold foundryvtt-initiative-tweaks (basic module)"
-```
+| Owner's step | FoundryVTT value |
+|---|---|
+| Repo name | `foundryvtt-initiative-tweaks` |
+| gitops clone path | `../gitops` — so `git -C ../gitops …` throughout, and `grep … ../gitops/repositories.tf` |
+| Seed commit subject | `feat: scaffold foundryvtt-initiative-tweaks (basic module)` |
+| `repositories.tf` entry | `release_please = true` and **no registry flag** — see below |
+| PR title | `feat: adopt foundryvtt-initiative-tweaks` |
+| What merging the PR pushes | The release-please App credentials only (no registry token) |
+| Phase 5 verification | `gh api repos/laurigates/foundryvtt-initiative-tweaks/actions/variables/RELEASE_PLEASE_APP_ID --jq .name` — it should echo the variable name. Skip the owner's `gh secret list` probe; there is no registry secret to find. |
 
-```sh
-gh repo create laurigates/foundryvtt-initiative-tweaks --public --source . --remote origin --push
-```
-
-> **Branch-protection hook note (expect this):** in a Claude Code session the
-> `branch-protection` hook **will** block the agent from `git add`/`commit` on
-> `main` for a brand-new, not-yet-protected repo (a false positive). Hand the
-> whole seed to the user as one paste-safe line to run with the `! ` prefix:
->
-> ```
-> cd <repo> && git add -A && git commit -m "feat: scaffold <name> (<variant> module)" && gh repo create laurigates/<name> --public --source . --remote origin --push
-> ```
->
-> Do **not** work around it by seeding a feature branch — that reintroduces the
-> missing-`main`/rename juggling this phase exists to avoid.
-
-The `--push` makes the seeded `main` the default branch.
-
-## Phase 4 — Open the gitops PR (entry + transient import block)
-
-Two edits in the `gitops/` repo, on a dedicated branch.
-
-**`gitops/repositories.tf`** — add to the active repositories `locals` block,
-next to the other `foundryvtt-*` entries (mirror `foundryvtt-mcp`):
+The entry to add under the active repositories `locals` block, beside the other
+`foundryvtt-*` entries (mirror `foundryvtt-mcp`):
 
 ```hcl
     "foundryvtt-initiative-tweaks" = {
@@ -174,126 +153,44 @@ next to the other `foundryvtt-*` entries (mirror `foundryvtt-mcp`):
     }
 ```
 
-**`gitops/main.tf`** — add a transient `import` block alongside the existing
-ones at the top of the file:
-
-```hcl
-import {
-  to = github_repository.this["foundryvtt-initiative-tweaks"]
-  id = "foundryvtt-initiative-tweaks"
-}
-```
-
-FoundryVTT modules distribute via GitHub releases — there is **no registry flag**
-(unlike comfy packs' `comfy_registry`). The only adoption flag is
-`release_please = true`, which makes gitops push the release-please App
-credentials on apply.
-
-Validate, branch, commit, push, open the PR (run inside `gitops/`):
-
-```sh
-just check
-```
-
-```sh
-git -C ../gitops switch -c feat/adopt-foundryvtt-initiative-tweaks
-```
-
-```sh
-git -C ../gitops add repositories.tf main.tf
-```
-
-```sh
-git -C ../gitops commit -m "feat: adopt foundryvtt-initiative-tweaks"
-```
-
-```sh
-git -C ../gitops push -u origin feat/adopt-foundryvtt-initiative-tweaks
-```
-
-```sh
-gh pr create -R laurigates/gitops -a laurigates -l chore -l opentofu --title "feat: adopt foundryvtt-initiative-tweaks" --body-file /tmp/gitops-pr-body.md
-```
-
-Write a short body (to `/tmp/gitops-pr-body.md`) rather than `--fill` — it's an
-infra PR that triggers an apply, so spell out what merge does: imports the repo,
-pushes the release-please App credentials, applies the branch-protection ruleset,
-and that a follow-up PR removes the import block. Use labels `chore` + `opentofu`
-(check `gh label list -R laurigates/gitops` if unsure). Set metadata per
-`github-metadata-hygiene` (assignee `laurigates`; skip self-reviewer — the author
-is the running user). The `tofu-plan.yml` workflow posts the plan as a comment
-on the PR; the expected plan **imports** the repo and **creates** the
-release-please var/secret + branch-protection ruleset.
-
-## Phase 5 — Human gate, then finish
-
-Hand the user the new repo URL and the **gitops PR** URL. **The user merges the
-gitops PR** — that starts the apply chain on shared infra state (release-please
-cuts a gitops release PR; merging that publishes a release, which triggers
-`tofu-apply.yml`). Do not merge it for them.
-
-After the user confirms the tofu apply landed, verify the release-please
-credentials and remove the now-dead import block:
-
-```sh
-gh api repos/laurigates/foundryvtt-initiative-tweaks/actions/variables/RELEASE_PLEASE_APP_ID --jq .name
-```
-
-The variable lookup should return its name. Then open the import-block-removal
-follow-up PR:
-
-```sh
-git -C ../gitops switch -c chore/remove-foundryvtt-initiative-tweaks-import
-```
-
-Remove the `import { … "foundryvtt-initiative-tweaks" … }` block from `main.tf`,
-then:
-
-```sh
-git -C ../gitops commit -am "chore: remove one-time import block for foundryvtt-initiative-tweaks"
-```
-
-```sh
-git -C ../gitops push -u origin chore/remove-foundryvtt-initiative-tweaks-import
-```
-
-```sh
-gh pr create -R laurigates/gitops -a laurigates -l chore --fill --title "chore: remove foundryvtt-initiative-tweaks import block"
-```
+**Why no registry flag:** Foundry modules are distributed as GitHub release
+assets, not through a package registry, so there is no analogue of a ComfyUI
+pack's `comfy_registry`. `release_please = true` is the whole adoption surface.
 
 ## Phase 6 — Hand back to implementation
 
-The pipeline is now live: conventional-commit feature PRs → merge →
-release-please PR → merge → tag → the release workflow builds, zips `dist/`, and
-attaches `<id>.zip` + `module.json` to the GitHub release (the manifest URL).
-Tell the user what's left:
+Once the apply lands, the delivery chain is live: conventional-commit PRs →
+release-please PR → tag → the release workflow builds, zips `dist/`, and attaches
+`<id>.zip` plus `module.json` (the manifest URL) to the GitHub release.
 
-- Implement the module logic (`basic`: `src/module.ts` + `src/settings.ts`;
-  `app`: `src/app.ts` + `templates/app.hbs`; `libwrapper`: replace the
-  `Token._draw` example in `src/patches.ts`).
-- Test against the local `foundryvtt-harness` (`bun run dev`, or build + symlink
-  `dist/` into the harness's `Data/modules/<id>`). Keep `module.json`
-  `compatibility` in sync with the harness-pinned Foundry version.
-- First merged `feat:`/`fix:` commits drive the first release-please PR.
+Remaining work to hand over:
 
-Log durable follow-ups to the user's FoundryVTT taskwarrior project per
+- Write the module logic — `basic`: `src/module.ts` + `src/settings.ts`; `app`:
+  `src/app.ts` + `templates/app.hbs`; `libwrapper`: swap the `Token._draw`
+  example in `src/patches.ts` for the real patch.
+- Exercise it against the local `foundryvtt-harness` (`bun run dev`, or build and
+  symlink `dist/` into `Data/modules/<id>`). Keep `module.json` `compatibility`
+  aligned with the Foundry version the harness pins.
+- The first `feat:`/`fix:` merge triggers the first release-please PR.
+
+Record durable follow-ups in the user's FoundryVTT taskwarrior project per
 `taskwarrior-cross-session`.
 
-## Failure modes & guards
+## Failure modes specific to FoundryVTT
+
+The gitops-side failures (empty release-please `app-id`, `403 Resource not
+accessible by integration`, a plan that *creates* instead of *imports*, a red
+`just check` in gitops) are diagnosed in the owner skill's table. Foundry adds
+one of its own:
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| release-please job fails on empty `app-id` | release-please credentials not yet applied | Confirm the tofu apply landed; `gh api … variables/RELEASE_PLEASE_APP_ID` returns a name; re-run via `workflow_dispatch` |
-| `403 Resource not accessible by integration` on repo create | Tried to create via the gitops App, not a personal token | Create with personal `gh auth`; the App only adopts via import |
-| The tofu plan shows a *create* (not *import*) for the repo | Import block missing or `id` wrong | The `id` is the bare repo name, not `owner/name`; add/fix the import block |
-| `just check` red in gitops | `tofu fmt`/`validate` failure | `just format` then re-check before pushing |
-| Module fails to load in Foundry | `esmodules` path ≠ Vite output, or `id` ≠ folder | The scaffold pins these; confirm `dist/<id>.mjs` exists and the install folder is `<id>` |
+| Module fails to load in Foundry | `esmodules` path ≠ Vite output, or `id` ≠ install folder | The scaffold pins both; confirm `dist/<id>.mjs` exists and the installed folder is named `<id>` |
+| CI fails on the very first run with a lockfile error | `bun.lock` missing from the seed commit | Commit it — `--frozen-lockfile` has nothing to check against |
 
 ## Notes
 
-- The orchestrator never runs `tofu apply` — all applies go through the gitops
-  repo's `tofu-apply.yml` GitHub Actions workflow, triggered by publishing the
-  release-please release (see `gitops/CLAUDE.md`). Local gitops work is
-  `plan`/`validate` only.
-- Playwright integration tests against the harness and a Quench in-Foundry suite
-  are not scaffolded; add them later if the module warrants them.
+- Playwright integration tests against the harness, and a Quench in-Foundry
+  suite, are deliberately not scaffolded. Add them when the module earns them.
+- Local gitops work stays read-only (`plan` / `validate`); the owner skill
+  explains why applies only ever run through `tofu-apply.yml`.
