@@ -681,6 +681,42 @@ check_skill_body() {
       done
     fi
 
+    # Regression (#2142): comfy-node and foundryvtt-module shared 824 eight-word
+    # shingles (containment 0.482) of a common gitops repo-adoption procedure,
+    # and the two copies had already DRIFTED — a correctness problem, not just
+    # double cost. Deduped by designating comfy-node the canonical owner
+    # (cross-plugin ⇒ reference by `plugin:skill` NAME, never a shared
+    # REFERENCE.md, whose relative path dies when only one plugin is installed —
+    # see .claude/rules/skill-consolidation.md §2). Two invariants must survive
+    # a future bulk edit:
+    #   (a) comfy-node keeps the counter-findings the benchmark judged
+    #       load-bearing — the Phase 3 explanation of WHY `main` is seeded
+    #       directly (the rename/default-branch/base-branch recovery it
+    #       pre-empts) and the branch-protection hook note with its empirical
+    #       "confirmed on the first real run" evidence.
+    #   (b) foundryvtt-module keeps the name-reference to the owner; dropping it
+    #       leaves the deferred procedure unreachable, and re-inlining a copy
+    #       re-opens the drift.
+    if [ "$plugin" = "comfyui-plugin" ] && [ "$skill_name" = "comfy-node" ]; then
+      for token in 'rename + default-branch change + base-branch fixups' 'confirmed on the first real run' 'Adapting Phases 3–5 to another repo class'; do
+        if ! grep -qF "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain gitops-adoption owner token '${token}' (#2142 counter-findings)")
+          has_errors=true
+        fi
+      done
+    fi
+    if [ "$plugin" = "foundryvtt-plugin" ] && [ "$skill_name" = "foundryvtt-module" ]; then
+      if ! grep -qF 'comfyui-plugin:comfy-node' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must reference the gitops-adoption owner by name 'comfyui-plugin:comfy-node' (#2142)")
+        has_errors=true
+      fi
+      # Re-inlining the delegated procedure is the regression this guards.
+      if grep -qF 'transient import block alongside the existing' "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md re-inlines the delegated gitops procedure — defer to comfyui-plugin:comfy-node Phases 3-5 (#2142)")
+        has_errors=true
+      fi
+    fi
+
     # Regression: configure-worktreeinclude generates a .worktreeinclude whose
     # patterns copy gitignored inputs into new worktrees. Its load-bearing
     # invariants are (a) the include list is built from the repo's *actual*

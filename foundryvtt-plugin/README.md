@@ -55,6 +55,13 @@ block so gitops adopts the repo. Stops at the single human gate (merging the
 gitops PR feeds the release-please → `tofu-apply.yml` chain), then finishes the
 import-block-removal follow-up.
 
+The gitops repo-adoption half of that pipeline is identical for every laurigates
+repo class, so it lives in exactly one place: this skill carries the FoundryVTT
+spec, preflight, scaffold, and deltas, and defers Phases 3–5 to
+`comfyui-plugin:comfy-node` by name. Installing `comfyui-plugin` alongside this
+one gets you the full procedure inline; without it, the skill still names every
+step and value you need.
+
 **Use when** releasing or spinning up a new FoundryVTT module with minimal
 manual steps.
 
