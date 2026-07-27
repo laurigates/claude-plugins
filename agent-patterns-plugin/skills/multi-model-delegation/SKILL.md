@@ -5,8 +5,8 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite, mcp__pal__listmodels, mcp__pal__chat, mcp__pal__consensus, mcp__pal__thinkdeep
 model: opus
 created: 2026-07-17
-modified: 2026-07-17
-reviewed: 2026-07-17
+modified: 2026-07-27
+reviewed: 2026-07-27
 ---
 
 # Multi-Model Delegation
@@ -59,7 +59,9 @@ Different prompts produce divergences that are artifacts of the framing, not
 of the problem — and afterward you cannot tell a real design tension from a
 wording accident. Pass code via the `absolute_file_paths` parameter rather
 than pasting it into the prompt: it is what the parameter is for, and the
-pasted copy risks truncation.
+pasted copy risks truncation. Attachments carry a **per-model token budget**
+that a multi-file set routinely exceeds — when it does, build one curated
+excerpt bundle rather than trimming per model (see below).
 
 ### Step 3: Keep round one independent
 
@@ -109,18 +111,38 @@ the good parts from the runner-up; reject what doesn't fit and say why.
 
 ## PAL Mechanics That Bite
 
-- **`kimi-k2.7-code` 400s whenever `temperature` is sent** (OpenCode Go
-  provider). The error is opaque — `Error from provider (Console Go):
-  Upstream request failed` — naming neither the parameter nor the
-  constraint, so it reads as flakiness or as "prompt too long". Prompt
-  length, file attachments, and `thinking_mode` are all innocent; `glm-5.2`
-  accepts `temperature` fine. Omit `temperature` for kimi. Tracked:
-  [laurigates/pal-mcp-server#67](https://github.com/laurigates/pal-mcp-server/issues/67).
-- **Isolate a model failure with controlled probes before believing your
-  first theory.** The intuitive suspects (big prompt, file attachments) were
-  both innocent here, twice — a bug filed on either would have sent the
-  maintainer down the wrong path. A two-word prompt plus the one suspect
-  parameter settles it in a single call.
+| Mechanic | Symptom | Fix |
+|---|---|---|
+| `kimi-k2.7-code` 400s whenever `temperature` is sent (OpenCode Go) | Opaque `Error from provider (Console Go): Upstream request failed` — names neither parameter nor constraint, so it reads as flakiness or "prompt too long" | Omit `temperature` for kimi; `glm-5.2` accepts it fine. Prompt length, attachments, `thinking_mode` are all innocent. [pal#67](https://github.com/laurigates/pal-mcp-server/issues/67) |
+| `absolute_file_paths` is capped at ~60% of context headroom, and the cap varies **wildly** by model | The attachment set is rejected for exceeding the budget. Observed on a 262K context: `gpt-5.3-codex` ≈ 76,800 tokens but `kimi-k2.7-code` only ≈ 28,311 — one ~84K, 7-file set bounced on **both** | Size attachments to the **smallest** target model's budget. Because the identical-briefs invariant is load-bearing, one model's ceiling trims the set for *all* of them — build a curated excerpt bundle instead |
+| `working_directory_absolute_path` must live inside `PAL_WORKSPACE_ROOT` | A scratchpad path outside the repo is rejected: `must reside within the PAL workspace root` | Work in `<repo>/tmp/<consult>/`, never a system temp dir |
+| `model_used` is **untrustworthy under concurrency** | Three *concurrent* `chat` calls returned `model_used` values rotated across each other while `provider_used` stayed request-consistent | Verify independence via `provider_used`, and pick models on **different providers** — a silently same-model pair breaks the disagreement-is-the-payload logic. [pal#68](https://github.com/laurigates/pal-mcp-server/issues/68) |
+| Registry models get retired upstream mid-consult | A `listmodels`-listed id 404s ("no longer available") | Pick a same-provider fallback *before* dispatching, and re-send the **identical** brief — a reworded one breaks the invariant |
+
+**Isolate a model failure with controlled probes before believing your first
+theory.** The intuitive suspects (big prompt, file attachments) were innocent
+twice — a bug filed on either would have sent the maintainer down the wrong
+path. A two-word prompt plus the one suspect parameter settles it in one call.
+
+## The Curated Excerpt Bundle
+
+When the load-bearing code spans more than the smallest model's attachment
+budget allows, **do not trim per model** — that silently un-identicals the
+briefs. Build one file and attach *it* to every model:
+
+1. Write it **inside the workspace**: `<repo>/tmp/<consult>/context-excerpts.md`.
+2. Include **verbatim** excerpts of exactly the load-bearing regions — no
+   paraphrase; the whole point is that the models read the real code.
+3. Number the sections (`§1`…`§N`), each titled with its **real file path +
+   line range**, so a cited `§7` resolves back to source.
+4. **The smallest model's budget bounds the bundle.** Size the whole file
+   under it, then attach that one path to every model.
+5. Reference sections from the brief by number ("weigh §3 against §9").
+
+> Canonical case (loractl #132, 2026-07): a 7-file, ~84K-token attachment set
+> bounced on both `gpt-5.3-codex` and `kimi-k2.7-code`. An 11-section bundle
+> at ~21K tokens fit all three budgets, kept the briefs byte-identical, and
+> the models cited sections accurately.
 
 ## Agentic Optimizations
 
@@ -128,6 +150,7 @@ the good parts from the runner-up; reject what doesn't fit and say why.
 |---|---|
 | Resolve registry IDs and aliases | `mcp__pal__listmodels` |
 | Independent round-one draw (repeat per model, same prompt) | `mcp__pal__chat` with `model` + `absolute_file_paths`; omit `temperature` for kimi |
+| Attachment set exceeds the smallest model's budget | One `<repo>/tmp/<consult>/context-excerpts.md` bundle, attached to every model |
 | Structured multi-model verdict with per-model stances | `mcp__pal__consensus` |
 | Deep single-model dig after the split is found | `mcp__pal__thinkdeep` |
 
