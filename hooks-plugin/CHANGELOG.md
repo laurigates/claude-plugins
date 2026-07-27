@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.7.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.7.0...hooks-plugin-v2.7.1) (2026-07-27)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** confine the awk file-modification block to one pipe segment ([34fcb28](https://github.com/laurigates/claude-plugins/commit/34fcb2897597d26bf837f53b09164f935249179b)), closes [#2131](https://github.com/laurigates/claude-plugins/issues/2131)
+
 ## [2.7.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.6.1...hooks-plugin-v2.7.0) (2026-07-18)
 
 

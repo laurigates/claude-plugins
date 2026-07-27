@@ -299,7 +299,15 @@ See .claude/rules/bash-tool-replacements.md for the full table."
 fi
 
 # Check for awk used for file modifications
-if echo "$COMMAND" | grep -Eq "awk\s+.*>\s*['\"]?[^|]+" && \
+#
+# Condition 1 must confine the span between `awk` and the redirect to a SINGLE
+# pipe segment (`[^|]*`, not `.*`). The old greedy `awk\s+.*>` crossed pipes, so
+# a read-only `awk` upstream of a DOWNSTREAM redirect —
+# `… | awk -F/ '{print $1}' | sort -u > "$f"`, where `sort` does the writing —
+# was blocked as if awk were rewriting the file (issue #2131). The trailing
+# `[^|]+` only ever constrained the chars AFTER `>`, never the span before it.
+# `awk\s+[^|]*>` still matches the true positive `awk '…' data.txt > "$f"`.
+if echo "$COMMAND" | grep -Eq "awk\s+[^|]*>\s*['\"]?[^|]+" && \
    echo "$COMMAND" | grep -Eq "(>|>>)\s*['\"]?\\\$"; then
     block "REMINDER: Use the Edit tool instead of 'awk' for file modifications. The Edit tool is safer and more precise."
 fi
