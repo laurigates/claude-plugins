@@ -1,7 +1,7 @@
 ---
 created: 2026-01-02
-modified: 2026-07-26
-reviewed: 2026-07-26
+modified: 2026-07-27
+reviewed: 2026-07-27
 description: Sync feature tracker with TODO.md, taskwarrior sidecars, and PRDs. Use when reconciling TODO.md vs tracker, draining WO entries, or recalculating stats.
 allowed-tools: Read, Write, Bash, Glob, AskUserQuestion
 model: sonnet
@@ -81,31 +81,7 @@ jq -r '
 ' docs/blueprint/feature-tracker.json
 ```
 
-Output example:
-```markdown
-# Work Overview: my-project
-
-## Current Phase: phase-1
-
-**Progress**: 22/42 features (52.4%)
-
-### In Progress
-- Implement OAuth integration [FR2.3]
-- Add rate limiting [FR3.1]
-
-### Pending
-- Webhook support [FR4.1]
-- Admin dashboard [FR5.1]
-
-### Recently Completed
-- User authentication [FR2.1]
-- Session management [FR2.2]
-
-## Phase Status
-- Foundation: complete
-- Core Features: in_progress
-- Advanced Features: not_started
-```
+For a sample of the rendered output, see [REFERENCE.md](REFERENCE.md#work-overview-summary-output---summary).
 
 **Exit** after displaying summary.
 
@@ -179,43 +155,11 @@ status, re-derive phase status from the contained features:
 
 Run only when the manifest at the root has `workspaces.role == "root"` AND the
 feature-tracker contains any feature with a non-empty `implemented_by` array.
+Skip this step entirely otherwise.
 
-1. For each feature with `implemented_by`:
-   - For every `{workspace, ref}` entry, read
-     `<workspace>/docs/blueprint/feature-tracker.json` and look up `ref`.
-   - Collect the child statuses. If any entry cannot be resolved (missing file
-     or missing ref), record a warning and treat that entry as `not_started`
-     for the rollup.
-   - Derive the root feature's `status` using this rule:
-
-     | Child statuses observed | Derived status |
-     |-------------------------|----------------|
-     | All resolved entries `complete` | `complete` |
-     | Any `blocked` | `blocked` |
-     | Any `in_progress`, or a mix of `complete`/`not_started` | `partial` |
-     | All `not_started` | `not_started` |
-
-   - Overwrite the feature's `status` with the derived value. Do NOT touch
-     `implementation` on portfolio features; status alone is recomputed.
-
-2. Rebuild the top-level `workspaces` summary by reading each child's
-   `statistics` block:
-
-   ```json
-   "workspaces": {
-     "projects/esp32-lamp": {
-       "total": 14, "complete": 6, "completion_percentage": 42.9,
-       "current_phase": "phase-1", "last_synced_at": "<now>"
-     }
-   }
-   ```
-
-3. Recompute root `statistics` after the derived statuses are applied so the
-   portfolio-level totals reflect the child-driven states.
-
-4. Emit warnings in the sync report (Step 9) for unresolved `implemented_by`
-   entries, and suggest `/blueprint:workspace-scan` when a referenced
-   workspace is not present in the root manifest's `workspaces.children`.
+For the child-status rollup table, the `workspaces` summary shape, and the
+unresolved-entry warnings, see
+[REFERENCE.md](REFERENCE.md#portfolio-link-resolution-v330-root-blueprints-only).
 
 ### Step 7: Update feature-tracker.json
 
@@ -240,25 +184,13 @@ Parse `STATUS=` and the `ISSUES:` rows. `statistics` is a **cache** of the
 features collection, so `statistics_divergence` rows (which carry
 `FIELD=`/`EXPECTED=`/`ACTUAL=`) mean every downstream "N% complete" figure quoted
 from this file is wrong — fix the cache in the same run, then re-run the check.
-Handle the rest as follows:
 
-| `TYPE=` | Response |
-|---------|----------|
-| `statistics_divergence` | Write the `EXPECTED=` value; the checker uses the same `round(complete/total*1000)/10` formula as Step 6 |
-| `feature_status_near_miss` | Rewrite the status to the `CANONICAL=` spelling |
-| `feature_status_unknown` | Ask the user which schema status was meant (`not_started`, `in_progress`, `partial`, `complete`, `blocked`) |
-| `task_feature_disagreement` | An undrained `tasks.pending` entry (route to `--drain-wave`) or a task closed ahead of its feature |
-| `fr_cited_not_minted` | Mint the FR, or correct the citing document — an unminted FR is invisible to every status query |
-| `doc_status_stale` | Offer to advance the doc's frontmatter `status:` (it is still unfinished while every FR it cites has landed) |
-| `dead_statistics_bucket` / `duplicate_timestamp_field` | Drop the non-schema bucket; keep `last_updated`, drop the alias |
-
-Repo conventions (document status vocabulary, doc globs, excluded basenames)
-come from the manifest `validation` block via
-`scripts/get-validation-config.sh` — absent, it uses working defaults.
-
-The check never reports an FR id appearing in **both** the features collection
-and a task list as a duplicate: that repetition is the documented drain design.
-Status is read from the features collection only.
+For the per-`TYPE=` response table (`statistics_divergence`,
+`feature_status_near_miss`, `feature_status_unknown`,
+`task_feature_disagreement`, `fr_cited_not_minted`, `doc_status_stale`,
+`dead_statistics_bucket` / `duplicate_timestamp_field`), the manifest
+`validation` conventions, and the features-vs-tasks duplicate caveat, see
+[REFERENCE.md](REFERENCE.md#tracker-integrity-issue-types).
 
 ### Step 8: Update TODO.md (if exists)
 
@@ -273,19 +205,10 @@ Print: statistics block (total/complete/partial/in_progress/not_started/blocked 
 
 ### Step 10: Update task registry
 
-Update the task registry entry in `docs/blueprint/manifest.json`:
-
-```bash
-jq --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-  --arg todo_hash "$(sha256sum TODO.md 2>/dev/null | cut -d' ' -f1)" \
-  --argjson processed "${FEATURES_SYNCED:-0}" \
-  '.task_registry["feature-tracker-sync"].last_completed_at = $now |
-   .task_registry["feature-tracker-sync"].last_result = "success" |
-   .task_registry["feature-tracker-sync"].context.last_todo_hash = $todo_hash |
-   .task_registry["feature-tracker-sync"].stats.runs_total = ((.task_registry["feature-tracker-sync"].stats.runs_total // 0) + 1) |
-   .task_registry["feature-tracker-sync"].stats.items_processed = $processed' \
-  docs/blueprint/manifest.json > tmp.json && mv tmp.json docs/blueprint/manifest.json
-```
+Update the `task_registry["feature-tracker-sync"]` entry in
+`docs/blueprint/manifest.json` — `last_completed_at`, `last_result`,
+`context.last_todo_hash`, and the `stats` counters. For the `jq` recipe, see
+[REFERENCE.md](REFERENCE.md#task-registry-update-jq-recipe).
 
 ### Step 11: Prompt for next action
 
@@ -382,33 +305,8 @@ that entry and continue. Do not error the whole wave.
 
 For each feature whose `implementing_wos` array overlaps the drained wave,
 recompute its `status`. The flip is the second hand-jq pattern users
-repeat per wave; do it once here:
-
-```bash
-jq --arg today "$today" '
-  (.features // [])
-  |= map(
-    if (.implementing_wos // []) | length > 0 then
-      . as $fr
-      | (.implementing_wos
-         | map(. as $woid
-               | (($fr | .. | objects | select(has("id")) | select(.id == $woid))
-                  // null)
-               | . != null)) as $resolved
-      | (((.implementing_wos | length) > 0)
-         and ([.implementing_wos[] as $wo
-                | any(($fr.parent_tracker.tasks.completed // [])[]; .id == $wo)]
-              | all)) as $all_done
-      | if $all_done and (.status // "") != "complete"
-        then . + {"status": "complete", "completed_at": $today}
-        else .
-        end
-    else .
-    end
-  )
-' docs/blueprint/feature-tracker.json > docs/blueprint/feature-tracker.json.tmp
-mv docs/blueprint/feature-tracker.json.tmp docs/blueprint/feature-tracker.json
-```
+repeat per wave; do it once here. For the `jq` recipe, see
+[REFERENCE.md](REFERENCE.md#fr-status-flip-jq-recipe---drain-wave-step-4).
 
 If the tracker schema stores features in a flat `features` array but with a
 different shape (e.g., nested under `phases[].features[]`), adapt the path
@@ -429,27 +327,10 @@ which is exactly when `statistics` and task/feature agreement drift.
 
 ### Step 6: Report
 
-Print a Drain Report:
-
-```
-Sidecar Drain Report
-====================
-Wave: WO-031, WO-032, WO-033
-Drained:
-- WO-031: pending -> completed  (evidence: 142 chars from tw annotation)
-- WO-032: pending -> completed  (evidence: 209 chars from /tmp/wo032_ev.txt)
-- WO-033: skipped (not in tasks.pending)
-
-FR flips:
-- FR-017 (Skill Progression): in_progress -> complete
-
-Statistics:
-- Total Features: 42
-- Complete: 23 (54.8%)  [+1 from FR-017]
-- Recently Completed: WO-031, WO-032 added to top of tasks.completed
-
-Next: run /taskwarrior:task-done if any sibling tasks should also close.
-```
+Print a Drain Report covering the wave list, each WO's drained/skipped outcome
+with its evidence source, the FR flips, the updated statistics, and the
+`/taskwarrior:task-done` follow-up. For the report template, see
+[REFERENCE.md](REFERENCE.md#sidecar-drain-report-example).
 
 Clean up temp evidence files with `rm -f "$ev_file"`.
 
@@ -476,9 +357,9 @@ the linked taskwarrior task; this skill only edits the tracker.
 The integrity check exits 0 on `OK`/`WARN` and 1 on `ERROR`, so it is
 parallel-batch-safe and usable as a pre-commit or CI gate.
 
-## Direct Edits & Sample Output
+## Direct Edits, Recipes & Sample Output
 
-For ad-hoc tracker surgery (`jq` recipes for adding to `in_progress`, completing tasks, queueing pending work) and a sample summary report, see [REFERENCE.md](REFERENCE.md).
+For ad-hoc tracker surgery (`jq` recipes for adding to `in_progress`, completing tasks, queueing pending work), the evidence-backfill / task-registry / FR-status-flip `jq` recipes, the portfolio-link rollup rules, the tracker-integrity issue-type responses, and the sync / summary / drain report samples, see [REFERENCE.md](REFERENCE.md).
 
 ## Related
 
