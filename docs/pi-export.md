@@ -5,6 +5,15 @@ Run this marketplace's skills inside **pi** ([pi.dev](https://pi.dev),
 ollama). The sibling of [`opencode-export.md`](opencode-export.md) — same goal
 (local-model testing of our skills), a much thinner pipeline.
 
+> **Successor path (ADR-0022):** the curated **tier installer** documented here
+> (`install-pi` / `setup-pi`, the `## …skill listing` gap below) is being
+> replaced by the **skill-discovery adapter** — a `search_skills` pull tool plus
+> a per-turn ranked top-k push injection that reaches all ~400 skills at ~600
+> standing tokens instead of the 95-skill tier's ~9,900. To try that instead of
+> the tier install, run `just pi-adapter` and see
+> [`../adapters/README.md`](../adapters/README.md) § pi. The tier system here
+> stays fully operational until #2093 retires it (gate frozen + PASS 2026-07-22).
+
 ## Why pi needs almost no pipeline
 
 pi loads Claude Code `SKILL.md` files **unmodified**. Validated this session

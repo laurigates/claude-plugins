@@ -497,6 +497,36 @@ check_skill_body() {
         issues+=("❌ ${plugin}/${skill_name}: SKILL.md must wire in the ADR-number collision guard (check-adr-numbers.sh) (issue #1585)")
         has_errors=true
       fi
+      # Regression: the #1585 guard reported STATUS=OK on a REAL ADR-0016
+      # double-assignment because it derived numbers from the BASENAME only and
+      # resolved a SINGLE ADR directory — so a file claiming its number in
+      # frontmatter, in a second directory, was structurally invisible
+      # (issue #2129). The fix widens collection to frontmatter `id:` claims
+      # across MULTIPLE directories, adds the manifest `id_registry` as the
+      # unambiguous arbiter, and turns the unfixable adr_missing_index_row WARN
+      # into a repairable state via generate-adr-index.sh. Dropping any of these
+      # invocations silently restores the false negative.
+      for adr_token in "generate-adr-index.sh" "--adr-dir" "id_registry"; do
+        if ! grep -q -- "$adr_token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain '${adr_token}' (frontmatter/multi-dir/registry ADR collision detection + index generation) (issue #2129)")
+          has_errors=true
+        fi
+      done
+    fi
+
+    # Regression: the feature tracker's `statistics` block is a CACHE of the
+    # features collection, so a stale cache made every downstream "68% complete"
+    # figure wrong with nothing recomputing it — one of five mechanical tracker
+    # defects that accumulated ~3 months undetected because no check existed
+    # (issue #2128). blueprint-tracker-check.sh is that check. The sync skill
+    # WRITES the tracker and the status skill READS it, so both must keep the
+    # verification wired in — a sync that can't detect its own divergence is how
+    # the drift went unnoticed in the first place.
+    if [ "$skill_name" = "blueprint-feature-tracker-sync" ] || [ "$skill_name" = "blueprint-feature-tracker-status" ]; then
+      if ! grep -q "blueprint-tracker-check.sh" "$skill_file"; then
+        issues+=("❌ ${plugin}/${skill_name}: SKILL.md must wire in the tracker-integrity check (blueprint-tracker-check.sh) (issue #2128)")
+        has_errors=true
+      fi
     fi
 
     # Regression: task-reconcile is the only skill that ACTS on the stale-task

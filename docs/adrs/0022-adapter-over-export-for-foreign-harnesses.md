@@ -180,11 +180,45 @@ shared discovery core, and the export pipelines are superseded.
 | [#2090](https://github.com/laurigates/claude-plugins/issues/2090) | pi binding (hybrid push+pull) | eval vs tier baseline |
 | [#2091](https://github.com/laurigates/claude-plugins/issues/2091) | OpenCode binding (pull-first) | eval vs rulesync baseline |
 | [#2092](https://github.com/laurigates/claude-plugins/issues/2092) | `compatibility` frontmatter sweep | precedes cutovers |
-| [#2093](https://github.com/laurigates/claude-plugins/issues/2093) | Remove pi tier system | gated on #2090 |
-| [#2094](https://github.com/laurigates/claude-plugins/issues/2094) | Retire rulesync export | gated on #2091 |
+| [#2093](https://github.com/laurigates/claude-plugins/issues/2093) | Remove pi tier system | gate frozen + PASS (2026-07-22) |
+| [#2094](https://github.com/laurigates/claude-plugins/issues/2094) | Retire rulesync export | gate frozen + PASS; OC token calibration still outstanding |
+
+## Amendment (2026-07-22) — the cutover gate is tag-pinned and frozen
+
+The gate threshold was measured on the shipping hybrid configuration and frozen
+at `main_hit_at_k_min = 0.57` (measured 0.6727, margin 0.10) in
+`adapters/eval/tasks.json`. #2093 and #2094 are now unblocked by a green gate;
+the incumbents remain fully operational until those issues execute their own
+cutover steps (`tool-migration-cutover`).
+
+Two decisions in this ADR are superseded:
+
+1. **The eval's stratification is pinned to the task set's own `stratum:`
+   tags, not derived from `pi/tiers.yaml`.** A tiers-derived partition would
+   have inverted the gate: #2093 deletes that file, at which point the in-tier
+   metrics went `null` and the frozen threshold would have evaluated FAIL
+   forever — failing precisely when it is meant to authorize the deletion.
+   `partitionByStratum` therefore takes no `repoRoot` at all, so the coupling
+   cannot return. The strata are consequently much larger and differently
+   composed (main 27 → **55**, headroom 36 → **8**).
+
+2. **The "in-tier baseline reachability is 1.0 by construction" reading is
+   retired.** With membership no longer defining the stratum, `RETRIEVAL_MAIN`
+   means exactly *hybrid retrieval quality on the main positives* and asserts
+   nothing about any baseline. Reachability-delta reasoning against the pi
+   listing no longer applies; `derivePiBaseline` survives only for the
+   informational token figure and the calibration meta-test, both of which
+   already degrade cleanly when `pi/tiers.yaml` disappears.
+
+The procedure, its guards against a hybrid run that is silently BM25, and the
+refuted gate constructions now live in `adapters/CUTOVER.md` — previously they
+existed only in an ephemeral scratchpad while shipped source cited them as
+"DESIGN §5.6".
 
 ## References
 
+- `adapters/CUTOVER.md` — the cutover gate procedure, frozen threshold, and
+  refuted constructions
 - `docs/pi-export.md` — the measured listing-cost data and the original
   "skill-search extension" deferral this ADR supersedes
 - `docs/opencode-export.md` — the rulesync pipeline being retired

@@ -49,7 +49,7 @@ Automated quality enforcement.
 | code-quality-plugin | 15 | Review, refactoring, linting, ast-grep, debugging, silent degradation, dead code, dep audit, test quality, complexity, bulk-sweep classification |
 | software-design-plugin | 5 | Deep modules, design by contract, GoF pattern selection, legacy seams, design by pseudocode |
 | documentation-plugin | 5 | API docs, README generation, knowledge graphs |
-| evaluate-plugin | 6 + 3 agents | Skill evaluation, benchmarking, quality improvement |
+| evaluate-plugin | 7 + 3 agents | Skill evaluation, benchmarking, quality improvement |
 
 ### Tier 3+ - Pick What Applies
 

@@ -47,6 +47,7 @@ Claude Code plugin collection providing skills and agents for development workfl
 | `.claude/rules/skill-fork-context.md` | When to set `context: fork` and `agent:` on skills |
 | `.claude/rules/regression-testing.md` | **Required**: add a script check for every skill bug fixed |
 | `.claude/rules/skill-evaluation.md` | How we measure skill *effectiveness*: tiered cost, deterministic-vs-judge grading, cross-model delta signal |
+| `.claude/rules/context-engineering.md` | **Claude 5 context-engineering position** — rank cuts by always-loaded cost, scope new rules with `paths:`, split large skills across many files; demotes three `skill-quality.md` mandates |
 | `.claude/rules/sandbox-guidance.md` | Sandbox constraints, `CLAUDE_CODE_REMOTE` detection, and remote/local skill patterns |
 | `.claude/rules/plugin-flow-diagrams.md` | When and how to add Mermaid flow diagrams |
 | `.claude/rules/agent-coworker-detection.md` | Detect other agents working in the same repo clone before destructive git ops |
@@ -261,10 +262,11 @@ Run this marketplace's skills inside local-model coding agents. Two targets, two
 
 | Target | Source of truth | Doc | Recipes |
 |--------|-----------------|-----|---------|
-| **pi** (pi.dev) | `pi/tiers.yaml` (tier classification, enforced by `scripts/check-pi-tiers.sh`) | [`docs/pi-export.md`](docs/pi-export.md) | `just check-pi-tiers`, `pi-tiers`, `install-pi`, `install-pi-domain <cat>`, `serve-pi-model`, `setup-pi` (group `pi`) |
+| **pi** (pi.dev) — tier installer | `pi/tiers.yaml` (tier classification, enforced by `scripts/check-pi-tiers.sh`) | [`docs/pi-export.md`](docs/pi-export.md) | `just check-pi-tiers`, `pi-tiers`, `install-pi`, `install-pi-domain <cat>`, `serve-pi-model`, `setup-pi` (group `pi`) |
+| **pi** (pi.dev) — adapter (ADR-0022, successor) | `adapters/pi/` binding | [`adapters/README.md`](adapters/README.md) § pi | `just pi-adapter-check`, `pi-adapter`, `pi-adapter-register`, `pi-adapter-unregister` (group `adapters`) |
 | **OpenCode** | rulesync export | [`docs/opencode-export.md`](docs/opencode-export.md) | `just export-opencode`, `install-opencode`, `setup-opencode` (group `opencode`) |
 
-pi loads Claude Code `SKILL.md` unmodified but does **not** budget the skill listing (~111 tok/skill, uncapped), so `pi/tiers.yaml` curates which skills install where (`general` → `~/.pi/agent/skills/`, a `domain` category → `.pi/skills/`, `exclude` → never). See `docs/pi-export.md`.
+pi loads Claude Code `SKILL.md` unmodified but does **not** budget the skill listing (~111 tok/skill, uncapped). The **tier installer** curates which skills install where via `pi/tiers.yaml` (`general` → `~/.pi/agent/skills/`, a `domain` category → `.pi/skills/`, `exclude` → never); see `docs/pi-export.md`. The **adapter** (ADR-0022) is the successor: a `search_skills` pull tool + per-turn ranked top-k push injection reaching all ~400 skills at ~600 standing tokens vs the tier's ~9,900 — `just pi-adapter`, see `adapters/README.md`. The tier system stays operational until #2093 retires it (gate frozen 2026-07-22).
 
 ## Blueprint (constrained dogfooding)
 

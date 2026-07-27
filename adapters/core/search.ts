@@ -40,6 +40,19 @@ export class SkillIndex {
   readonly mode: "hybrid" | "bm25-only";
   readonly warnings: string[];
 
+  /**
+   * Count of queries that fell back to BM25 because their embedding failed.
+   *
+   * The shipping path deliberately swallows per-query embedding failures, so
+   * `mode` alone is NOT a sufficient signal that a run was actually hybrid:
+   * an index can report `mode === "hybrid"` while every individual query
+   * degraded. The eval raises a gate issue on any non-zero count, so a
+   * threshold can never be frozen from a partly-BM25 run.
+   */
+  degradedQueries = 0;
+  /** Message of the most recent per-query embedding failure (diagnosis aid). */
+  lastDegradeReason: string | null = null;
+
   private readonly bm25: Bm25Index;
   private readonly idToIdx: Map<string, number>;
   private readonly embedOpts: EmbedOptions | null;
@@ -141,8 +154,12 @@ export class SkillIndex {
         embedList = this.cosineRank(queryVec)
           .map(({ docIdx, score }) => ({ id: (this.entries[docIdx] as SkillEntry).id, score }))
           .filter((item) => inCandidates(item.id));
-      } catch {
+      } catch (error) {
         // Per-query embedding failure degrades this query to BM25-only.
+        // Swallowed for the shipping path (search never hard-fails on the
+        // embedding side) but counted so the eval can see it.
+        this.degradedQueries++;
+        this.lastDegradeReason = error instanceof Error ? error.message : String(error);
         embedList = null;
       }
       fused =

@@ -12,9 +12,8 @@ color: "#E53E3E"
 tools: Bash(python3 *), Bash(jq *), Bash(git status *), Bash(git diff *), Bash(git log *), Bash(git branch *), Bash(git add *), Bash(git commit *), Bash(git push *), Bash(gh pr *), Bash(gh issue *), Bash(find *), Read, Write, Edit, Glob, Grep, TodoWrite
 context: fork
 maxTurns: 40
-memory: user
 created: 2026-04-16
-modified: 2026-06-28
+modified: 2026-07-21
 reviewed: 2026-04-28
 ---
 

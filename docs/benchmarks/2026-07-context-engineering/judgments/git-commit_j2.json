@@ -1,0 +1,73 @@
+{
+  "unit": "git-plugin/skills/git-commit/SKILL.md",
+  "unit_kind": "skill",
+  "judge_id": "j2",
+  "dimensions": {
+    "C1": {
+      "score": 3,
+      "rationale": "Constraints are proportionate: the two hard ones (heredoc quoting, and stopping when the PR-sync verdict is not in_sync) are contract/irreversibility matters and both state why, but the closing numbered 'Best Practices' list is generic imperative guidance restating defaults a capable model already applies (imperative mood, 72-char subjects, always reference issues), which keeps it at competent rather than exemplary.",
+      "evidence": [
+        {"quote": "2. **Always reference issues** - Maintains traceability"}
+      ]
+    },
+    "C2": {
+      "score": 4,
+      "rationale": "The vocabulary the skill actually exposes is enumerated at the point of declaration rather than taught by accumulated examples: nine commit types with use case and version bump, and three issue-reference keywords with their exact effect; the single retained example (the heredoc block) covers a genuine ambiguity rather than restating the interface. Short of 5 because the enumeration is a copy of a table owned elsewhere and no invalid combinations are named.",
+      "evidence": [
+        {"quote": "| `Refs #N` | Links without closing (partial work) |"}
+      ]
+    },
+    "C3": {
+      "score": 4,
+      "rationale": "The body is a lean 5.8k-char entry point that carries only the core commit path and defers each rarer branch to a separately-loadable surface named explicitly — trailers to git-commit-trailers, issue matching to github-issue-autodetect, remote work to git-push/git-pr, branch reality to /git:pr-sync-check. Short of 5 only because nothing is bundled as an executable or reference artifact of its own.",
+      "evidence": [
+        {"quote": "For trailer conventions (Co-authored-by, Signed-off-by, BREAKING CHANGE, Release-As), see **git-commit-trailers** skill."}
+      ]
+    },
+    "C4": {
+      "score": 2,
+      "rationale": "Three copies rather than pointers: the nine-row conventional-commit type table and the Fixes/Closes/Refs table are both restated here while `.claude/rules/conventional-commits.md` owns them (the skill links to that owner one line after copying it, and github-pr-title/SKILL.md carries the same type table), and the frontmatter description's trigger phrases are restated verbatim in the body's trigger-phrase list. Pointers dominate elsewhere, which keeps it above 1.",
+      "evidence": [
+        {"quote": "See [Conventional Commits Standards](../../.claude/rules/conventional-commits.md) for complete reference."},
+        {"quote": "| `feat` | New feature | Minor |"}
+      ]
+    },
+    "C5": {
+      "score": "n/a",
+      "rationale": "C5 applies only to always-loaded surfaces (CLAUDE.md, .claude/rules/*). This is a SKILL.md body that costs tokens only once the skill fires.",
+      "evidence": []
+    },
+    "C6": {
+      "score": 4,
+      "rationale": "The deterministic parts are given as exact runnable artifacts rather than described in prose — porcelain-v2 status, pre-commit invocation, and a copy-pasteable quoted-heredoc commit template that encodes the escaping trap it warns about — and the unit is unambiguous that these are to be run. Short of 5 because the issue-matching step remains prose confidence heuristics with no script or fixture, and the skill's own evals.json sits beside it unreferenced.",
+      "evidence": [
+        {"quote": "git commit -m \"$(cat <<'EOF'"}
+      ]
+    }
+  },
+  "top_finding": "Delete the conventional-commit type table and the Fixes/Closes/Refs table from the body and keep only the existing one-line pointer to `.claude/rules/conventional-commits.md`, which already owns both and is loaded anyway.",
+  "counter_finding": "The quoted-heredoc warning earns its tokens outright — it names a real, non-obvious failure (a reflexive backslash-escape surviving into `git log` and needing an `--amend`) that a model would otherwise reproduce every time.",
+  "leakage": {
+    "house_standards_seen": [
+      "CLAUDE.md (project instructions, full)",
+      ".claude/rules/skill-quality.md (size limits, mandatory When-to-Use and Agentic Optimizations tables, description length band)",
+      ".claude/rules/skill-development.md",
+      ".claude/rules/skill-execution-structure.md",
+      ".claude/rules/skill-evaluation.md",
+      ".claude/rules/skill-consolidation.md",
+      ".claude/rules/skill-argument-handling.md",
+      ".claude/rules/skill-naming.md",
+      ".claude/rules/skill-fork-context.md",
+      ".claude/rules/agentic-optimization.md",
+      ".claude/rules/agentic-permissions.md",
+      ".claude/rules/regression-testing.md",
+      ".claude/rules/conventional-commits.md",
+      ".claude/rules/auto-mode.md",
+      ".claude/rules/sandbox-guidance.md",
+      ".claude/rules/version-pinning.md",
+      "plus pr-branch-sync, loop-integrity, bash-tool-replacements, gh-json-fields, parallel-safe-queries, terminology, task-id-stability, offload-to-deterministic-substrate, docs-currency, agent-coworker-detection, handling-blocked-hooks"
+    ],
+    "influenced_scoring": false,
+    "note": "skill-quality.md and skill-development.md were auto-injected before I read the rubric, despite the instruction not to read them — I could not prevent that. I scored strictly against the rubric anchors: I gave no credit for the mandatory `## When to Use This Skill` table or for the absence of an Agentic Optimizations table, and I ignored char-count thresholds (C3 was scored on disclosure structure, i.e. named deferrals to sibling skills, not on the 10,000-char target). Where a house artifact was scorable under a published property I said so explicitly: the duplicated when-to-use surfaces counted under C4 single-sourcing, not as house non-compliance. conventional-commits.md was used only as C4 evidence of where the duplicated table is owned, which the rubric explicitly permits discovering via repo search."
+  }
+}

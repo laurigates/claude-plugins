@@ -160,6 +160,18 @@ jobs:
           bash scripts/tests/test-check-version-pin-coverage.sh
           bash scripts/tests/test-check-context-command-execution.sh
 
+      - name: Self-test the context-engineering scanner
+        # Channel M of the context-engineering benchmark. The self-test proves
+        # the scanner's determinism contract (stable shingle hashing under
+        # PYTHONHASHSEED=random) and each C1-C6 proxy against a synthetic
+        # fixture, so a silent proxy collapse cannot read as "already compliant".
+        run: bash evaluate-plugin/skills/evaluate-context-engineering/scripts/tests/test-check-context-engineering.sh
+
+      - name: Check the always-loaded context surface stays within budget
+        # C5 ratchet: CLAUDE.md + unscoped .claude/rules must not grow past the
+        # declared budget. Report-only for every other dimension.
+        run: python3 scripts/check-context-engineering.py --strict
+
       - name: Self-test the configure-components drift guard
         # Whole-repo invariant: configure-plugin's skill taxonomy has one
         # source of truth (skills/configure-all/components.yaml); configure-all

@@ -149,13 +149,34 @@ python3 ${CLAUDE_SKILL_DIR}/scaffold.py --name comfyui-touch-shim --display "Tou
 ```
 
 Flags: `--name` (repo + served URL segment), `--display` (Comfy DisplayName),
-`--desc`, `--variant {frontend,backend,gesture,shim}`, `--widgets` (CSV → the TS
-stub's `TARGET_WIDGETS`; on a modal variant, **omitting** it emits the
-standalone-modal skeleton instead of the widget-intercept one; ignored by
-`gesture` and `shim`), `--publisher` (default `laurigates`), `--dir` (parent dir,
-default cwd).
+`--desc`, `--tagline` (banner subtitle, ≤46 chars — see below), `--variant
+{frontend,backend,gesture,shim}`, `--widgets` (CSV → the TS stub's
+`TARGET_WIDGETS`; on a modal variant, **omitting** it emits the standalone-modal
+skeleton instead of the widget-intercept one; ignored by `gesture` and `shim`),
+`--publisher` (default `laurigates`), `--dir` (parent dir, default cwd).
 
 It refuses to overwrite an existing directory.
+
+### The banner tagline is not the description
+
+`banner.svg` renders its subtitle at 44px starting at x=340 on a 1344px canvas,
+so anything past **~46 characters runs off the edge** — invisible until someone
+rasterizes the PNG and looks at it. Omitting `--tagline` derives one from
+`--desc` (first clause, trimmed to a word boundary) and warns when it had to
+truncate. Pass `--tagline` for anything better than a machine truncation:
+
+```sh
+--desc "Drag one output onto another to take over its downstream links — reroute a connection's source." --tagline "Move a connection's source in one drag"
+```
+
+### The placeholder glyph is gated, not just commented
+
+`icon.svg`/`banner.svg` ship a letter-initial glyph so they're valid from commit
+one, but `pyproject.toml` already points `Icon`/`Banner` at the PNGs, so a
+forgotten placeholder publishes a generic letter tile to registry.comfy.org.
+**`just assets` refuses to rasterize** while the `PLACEHOLDER-GLYPH` marker
+comment is present — draw the bespoke pictogram (family spec: `#ffb02e` line-art
+on the dark tile), delete the marker, then run it.
 
 ## What you get
 

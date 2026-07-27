@@ -36,6 +36,7 @@ export {
   renderSkillEntry,
   renderToolResult,
   SEARCH_SKILLS_TOOL_DESCRIPTION,
+  stripAvailableSkillsBlocks,
 } from "./render.ts";
 export { buildIndex, SkillIndex } from "./search.ts";
 export type {

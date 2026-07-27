@@ -3,7 +3,19 @@
   "k": 5,
   "gate": {
     "cutover_thresholds": {
-      "status": "unfrozen — derive via the documented hybrid-simulation procedure before #2093/#2094"
+      "main_hit_at_k_min": 0.57,
+      "measured_main_hit_at_k": 0.6727,
+      "margin": 0.1,
+      "mode": "hybrid",
+      "embedding_model": "nomic-embed-text",
+      "embedding_model_digest": "sha256:0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f",
+      "embedding_dimensions": 768,
+      "prefix_scheme": "search_document: /search_query: ",
+      "corpus_entries": 363,
+      "task_count_main_stratum": 55,
+      "frozen_at": "2026-07-22",
+      "frozen_commit": "8fa6607694dcda0cc23e7d70265c424b38373ff5",
+      "procedure": "adapters/CUTOVER.md"
     }
   },
   "tasks": [

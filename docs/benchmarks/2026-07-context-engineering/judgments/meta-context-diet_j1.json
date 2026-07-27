@@ -1,0 +1,56 @@
+{
+  "unit": "agent-patterns-plugin/skills/meta-context-diet/SKILL.md",
+  "unit_kind": "skill",
+  "judge_id": "j1",
+  "dimensions": {
+    "C1": {
+      "score": 4,
+      "rationale": "The hard constraints are genuinely load-bearing (an irreversible, every-turn-degrading edit to shared context) and each states its why, and the classification guidance is framed as judgment via a litmus test rather than prohibition; it stops short of 5 because the same confirmation constraint is re-imposed four times across sections, which reads as fencing rather than trust.",
+      "evidence": [
+        {"quote": "**Never make a lossy or destructive edit to an always-loaded file without explicit per-candidate confirmation**"},
+        {"quote": "The litmus test — *if the user never raises this topic, does the guidance still need to be in context?* If no, it is a skill."}
+      ]
+    },
+    "C2": {
+      "score": 4,
+      "rationale": "The one parameter is expressively named with its default and semantics declared in a `## Parameters` section, and the skill's real interface — the disposition set — is enumerated at the point of declaration and paired with an explicit statement of which combinations are invalid (destructive dispositions are never batchable); it misses 5 because batch mode is triggered by a fuzzy '~15+ candidates' heuristic rather than an enumerated option the caller can select.",
+      "evidence": [
+        {"quote": "The disposition menu via `AskUserQuestion` (Keep / Lean / Path-scope / Promote-to-skill / Consolidate / Drop / Skip)."},
+        {"quote": "`scope-path` (optional, default `.`) — the directory whose `CLAUDE.md` and `.claude/rules/` are audited."}
+      ]
+    },
+    "C3": {
+      "score": 2,
+      "rationale": "The skill directory contains a single 13,784-char SKILL.md and nothing else — no supporting file, no scripts — so the core procedure, the full disposition rubric, the execution-mechanics table, the report template, and a rare large-surface path are all inlined together; ironically the skill itself instructs that large tables go to REFERENCE.md while inlining four of them.",
+      "evidence": [
+        {"quote": "#### Batch-approval mode for large surfaces"},
+        {"quote": "**Body shape** — the procedure as imperative `## Execution` steps (`skill-execution-structure.md`); large tables go to `REFERENCE.md`."}
+      ]
+    },
+    "C4": {
+      "score": 3,
+      "rationale": "External single-sourcing is strong: overlapping guidance is pointed at by owner rather than restated (skill-naming.md, skill-quality.md for the listing budget, skill-consolidation.md for cross-plugin references, CLAUDE.md's Plugin Lifecycle) and the boundaries against the sibling skills it could duplicate are named explicitly (`meta-promote` for cross-scope moves, `session-distill` as its inverse, `health-skill-audit` for skill-to-skill overlap) — I checked those siblings and the domains genuinely differ. What holds it at competent rather than higher is internal repetition: the no-lossy-edit-without-per-candidate-confirmation invariant is written out in full in `## Your task`, in the Step 4 tier table, again in the batch-mode paragraph, and again in the anti-patterns table — four copies to keep in sync, not one-line pointers.",
+      "evidence": []
+    },
+    "C5": {
+      "score": "n/a",
+      "rationale": "This is a SKILL.md body, which costs tokens only once the skill's intent fires; it is not CLAUDE.md or a .claude/rules file, so the always-loaded budget dimension does not apply.",
+      "evidence": []
+    },
+    "C6": {
+      "score": 2,
+      "rationale": "The mechanical, repeatable half of this skill — enumerating the always-loaded surface across three roots, measuring each file, estimating tokens, detecting which rules carry a `paths:` glob, and totalling the saved every-turn tokens — is described in prose for the model to re-derive on every run, in a repo whose convention is exactly the opposite (a bundled `check-*.sh` emitting KEY=VALUE); there is no `scripts/` directory here and the only executable artifact named is `scripts/plugin-compliance-check.sh`, cited as somebody else's job rather than as this skill's substrate.",
+      "evidence": [
+        {"quote": "For each file, record its size (`wc -c`, est. tokens ≈ chars/4 — same proxy as `skill-quality.md`)"},
+        {"quote": "You only want frontmatter/size hygiene on existing skills — use `scripts/plugin-compliance-check.sh`"}
+      ]
+    }
+  },
+  "top_finding": "Bundle an inventory script that emits each always-loaded file with its char/token count and `paths:`-glob status as structured output, and move the disposition rubric, execution-mechanics table, report template, and batch-approval path into a supporting file — turning the 13.8K single file into a lean entry point over a deterministic sweep.",
+  "counter_finding": "The destructive-vs-non-destructive confirmation tier table earns every token it costs: it draws the one distinction that decides whether an approval can be batched, and states the reason (a lossy edit to always-loaded context degrades every downstream turn) so the model can classify a disposition the table never enumerates.",
+  "leakage": {
+    "house_standards_seen": ["CLAUDE.md (project instructions, incl. Plugin Lifecycle and skill-creation quick start)", ".claude/rules/skill-quality.md", ".claude/rules/skill-development.md", ".claude/rules/skill-execution-structure.md", ".claude/rules/skill-consolidation.md", ".claude/rules/skill-evaluation.md", ".claude/rules/skill-argument-handling.md", ".claude/rules/skill-naming.md", ".claude/rules/skill-fork-context.md", ".claude/rules/agentic-optimization.md", ".claude/rules/agentic-permissions.md", ".claude/rules/regression-testing.md", ".claude/rules/auto-mode.md", ".claude/rules/sandbox-guidance.md", ".claude/rules/version-pinning.md"],
+    "influenced_scoring": false,
+    "note": "These were auto-injected by the harness before my first turn, including three files the brief told me not to read (skill-quality.md, skill-development.md, skill-evaluation.md); I did not open them and did not use them as anchors. Concretely: I gave no credit for the `## When to Use This Skill` table, applied no penalty for the absent Agentic Optimizations table, and scored C3 on disclosure structure (single file, no supporting files) rather than against the 26,000-char ceiling — the 13,784-char figure is reported as context for how much is inlined, not as a threshold verdict. The skill's own one-line restatement of the ~150-char description target is scored under C4 as a cited pointer, not judged for correctness."
+  }
+}

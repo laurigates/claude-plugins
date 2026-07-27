@@ -1,0 +1,68 @@
+{
+  "unit": "configure-plugin/skills/configure-security/SKILL.md",
+  "unit_kind": "skill",
+  "judge_id": "j1",
+  "dimensions": {
+    "C1": {
+      "score": 4,
+      "rationale": "No unconditional MUST/NEVER/ALWAYS directives and no style micromanagement; the only hard constraints are consent gates on the irreversible parts (each file-writing step is conditioned on --fix or explicit user confirmation) and the --check-only stop, while presentation and edge-case handling are delegated as judgment (report format deferred to REFERENCE, error table says 'skip'/'warn' rather than prescribing exact behaviour). Short of 5 because the remaining constraints state what to do without stating why, so the model cannot generalise to security layers the steps do not enumerate.",
+      "evidence": [
+        {"quote": "### Step 4: Configure dependency auditing (if --fix or user confirms)"},
+        {"quote": "- **No package manager detected**: Skip dependency auditing"}
+      ]
+    },
+    "C2": {
+      "score": 4,
+      "rationale": "The interface is self-describing at the point of declaration: --type's alternatives are enumerated inline in both args and argument-hint, and a Parameters section names each flag's effect, so the flags are understandable without reading any example. Short of 5 because the contradictory --check-only + --fix combination is neither prevented nor named, and the six-row command table mostly restates the interface rather than covering genuine ambiguity.",
+      "evidence": [
+        {"quote": "args: \"[--check-only] [--fix] [--type <dependencies|sast|secrets|all>]\""}
+      ]
+    },
+    "C3": {
+      "score": 4,
+      "rationale": "Disclosure is genuinely multi-level: the entry file carries only the ten-step control flow, every template and report format is deferred to a sidecar named at the point of need, and the detection logic is an executable script invoked by path so it never enters context at all. Short of 5 because all deferred material sits in a single ~13KB sidecar shared by every path — the dependency, SAST, secret-detection, policy and CI-workflow templates could each be a separately-loadable file so a --type secrets run never loads CodeQL and Dependabot templates.",
+      "evidence": [
+        {"quote": "bash \"${CLAUDE_SKILL_DIR}/scripts/configure-security.sh\" --home-dir \"$HOME\" --project-dir \"$(pwd)\""},
+        {"quote": "For the compliance report format, see [REFERENCE.md](REFERENCE.md)."}
+      ]
+    },
+    "C4": {
+      "score": 3,
+      "rationale": "Overlapping material is mostly pointed at rather than copied — templates live in the sidecar and the See Also section defers pre-commit configuration to /configure:pre-commit — but Step 6's gitleaks install commands and pre-commit-hook instruction restate guidance already owned by git-plugin/skills/git-security-checks/SKILL.md (which owns gitleaks install, .gitleaks.toml allowlists and pre-commit integration) and by configure-plugin/skills/configure-pre-commit/REFERENCE.md (which owns the gitleaks pre-commit hook block). The restatement is short and the cross-link exists, but ownership is never declared, so a future edit has no signal about where the gitleaks story should land.",
+      "evidence": []
+    },
+    "C5": {
+      "score": "n/a",
+      "rationale": "This is a SKILL.md body, not CLAUDE.md or an unscoped .claude/rules file; it costs tokens only once the skill fires, so the always-loaded budget dimension does not apply.",
+      "evidence": []
+    },
+    "C6": {
+      "score": 4,
+      "rationale": "The deterministic half of the work is offloaded to a bundled executable script with a structured KEY=VALUE / STATUS= output contract that the skill tells the model to run and parse, and the skill is explicit about which artifacts are run versus read (script invoked, REFERENCE consulted). Short of 5 because Step 1 still asks the model to re-derive six tool versions by hand from release pages on every invocation — mechanical, repeatable work that a script or a managed pin surface could state exactly — and the bundled test suite under scripts/tests/ is never referenced as a verification artifact.",
+      "evidence": [
+        {"quote": "Parse `STATUS=` and the `ISSUES:` block from the output."},
+        {"quote": "Use WebSearch or WebFetch to verify current versions."}
+      ]
+    }
+  },
+  "top_finding": "Split the single ~13KB sidecar into per-layer references (dependency, SAST, secrets, policy, CI workflow) so a --type secrets run loads only secret-detection templates instead of every template in the skill.",
+  "counter_finding": "The bundled detection script plus its STATUS=/KEY=VALUE parse contract earns its tokens outright — it replaces what would otherwise be a page of prose describing how to detect languages and the four security layers, and it runs without ever entering context.",
+  "leakage": {
+    "house_standards_seen": [
+      ".claude/rules/skill-quality.md (auto-injected in full despite being on the do-not-read list, including the 26,000-char ceiling, the mandatory When-to-Use and Agentic Optimizations tables, description length band, and the model policy)",
+      ".claude/rules/skill-development.md",
+      ".claude/rules/skill-execution-structure.md",
+      ".claude/rules/agentic-optimization.md",
+      ".claude/rules/agentic-permissions.md",
+      ".claude/rules/skill-argument-handling.md",
+      ".claude/rules/regression-testing.md",
+      ".claude/rules/skill-consolidation.md",
+      ".claude/rules/skill-evaluation.md",
+      ".claude/rules/skill-fork-context.md",
+      ".claude/rules/version-pinning.md",
+      "CLAUDE.md project instructions"
+    ],
+    "influenced_scoring": false,
+    "note": "Several excluded house standards were force-injected into my context by the repo's auto-injection, including the full text of skill-quality.md which I was instructed not to read. I did not use them as anchors: the presence of the When-to-Use and Agentic Optimizations tables earned no credit anywhere, no char-count threshold entered C3 (I scored the shape of the split, not the size), and no description-length or frontmatter-date criterion was applied. The one place a house artifact touched a score is C6, where I noted the bundled tests exist but are unreferenced — that is the rubric's own run-vs-read criterion, not the regression-testing rule. The Agentic Optimizations table counted against C2 only as examples-restating-interface, which is the published C2 property."
+  }
+}
