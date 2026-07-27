@@ -19,22 +19,24 @@ class HookResult:
 
 
 # Directories that rm -rf is allowed on (build artifacts)
-SAFE_RM_DIRS = frozenset({
-    "node_modules",
-    "dist",
-    "build",
-    ".venv",
-    "venv",
-    "__pycache__",
-    ".cache",
-    ".next",
-    ".nuxt",
-    "target",  # Rust
-    "coverage",
-    ".pytest_cache",
-    ".mypy_cache",
-    ".ruff_cache",
-})
+SAFE_RM_DIRS = frozenset(
+    {
+        "node_modules",
+        "dist",
+        "build",
+        ".venv",
+        "venv",
+        "__pycache__",
+        ".cache",
+        ".next",
+        ".nuxt",
+        "target",  # Rust
+        "coverage",
+        ".pytest_cache",
+        ".mypy_cache",
+        ".ruff_cache",
+    }
+)
 
 # File patterns that should never be written/edited
 SENSITIVE_FILE_PATTERNS = [
@@ -53,35 +55,39 @@ SENSITIVE_FILE_PATTERNS = [
 PROTECTED_BRANCHES = frozenset({"main", "master", "production", "release"})
 
 # Read-only kubectl commands (allowlist approach)
-KUBECTL_READONLY_VERBS = frozenset({
-    "get",
-    "describe",
-    "logs",
-    "top",
-    "api-resources",
-    "api-versions",
-    "cluster-info",
-    "version",
-    "explain",
-    "auth",  # auth can-i is read-only
-})
+KUBECTL_READONLY_VERBS = frozenset(
+    {
+        "get",
+        "describe",
+        "logs",
+        "top",
+        "api-resources",
+        "api-versions",
+        "cluster-info",
+        "version",
+        "explain",
+        "auth",  # auth can-i is read-only
+    }
+)
 
 # Read-only argocd subcommands (allowlist approach)
-ARGOCD_READONLY_COMMANDS = frozenset({
-    "app get",
-    "app list",
-    "app history",
-    "app manifests",
-    "app diff",
-    "app logs",
-    "app resources",
-    "cluster list",
-    "proj list",
-    "proj get",
-    "repo list",
-    "repo get",
-    "version",
-})
+ARGOCD_READONLY_COMMANDS = frozenset(
+    {
+        "app get",
+        "app list",
+        "app history",
+        "app manifests",
+        "app diff",
+        "app logs",
+        "app resources",
+        "cluster list",
+        "proj list",
+        "proj get",
+        "repo list",
+        "repo get",
+        "version",
+    }
+)
 
 
 def check_bash_command(command: str) -> HookResult:

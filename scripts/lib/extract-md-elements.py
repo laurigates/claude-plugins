@@ -54,6 +54,7 @@ Usage:
 Only files that parse are reported; an unreadable/unparseable file is skipped
 with a warning on stderr (never aborts the whole run).
 """
+
 from __future__ import annotations
 
 import argparse
@@ -149,7 +150,9 @@ def extract(path: str, src: bytes, want: set[str], records: list):
             inline_bytes = node.text
             base_row = node.start_point[0]
             for row, sbyte, content in _code_spans(inline_bytes):
-                is_bang = 1 if sbyte > 0 and inline_bytes[sbyte - 1 : sbyte] == b"!" else 0
+                is_bang = (
+                    1 if sbyte > 0 and inline_bytes[sbyte - 1 : sbyte] == b"!" else 0
+                )
                 records.append(
                     (
                         "inline_code",
@@ -168,9 +171,19 @@ def extract(path: str, src: bytes, want: set[str], records: list):
             cell_bytes = node.text
             base_row = node.start_point[0]
             for row, sbyte, content in _code_spans(cell_bytes):
-                is_bang = 1 if sbyte > 0 and cell_bytes[sbyte - 1 : sbyte] == b"!" else 0
+                is_bang = (
+                    1 if sbyte > 0 and cell_bytes[sbyte - 1 : sbyte] == b"!" else 0
+                )
                 records.append(
-                    ("inline_code", path, base_row + row + 1, "table_cell", 0, is_bang, content)
+                    (
+                        "inline_code",
+                        path,
+                        base_row + row + 1,
+                        "table_cell",
+                        0,
+                        is_bang,
+                        content,
+                    )
                 )
             # Cell has no inline-node children to descend into for code spans.
             continue
@@ -188,7 +201,11 @@ def extract(path: str, src: bytes, want: set[str], records: list):
                 records.append(("fence", path, open_row + 1, close_row + 1, lang))
             if "fence_line" in want:
                 for row in range(open_row + 1, close_row):
-                    line_text = src_lines[row].decode("utf-8", "replace") if row < len(src_lines) else ""
+                    line_text = (
+                        src_lines[row].decode("utf-8", "replace")
+                        if row < len(src_lines)
+                        else ""
+                    )
                     records.append(("fence_line", path, row + 1, lang, line_text))
 
         stack.extend(node.children)
@@ -209,7 +226,11 @@ def main(argv: list[str]) -> int:
     want = {t.strip() for t in args.types.split(",") if t.strip()}
     paths = list(args.files)
     if args.files_from:
-        stream = sys.stdin if args.files_from == "-" else open(args.files_from, encoding="utf-8")
+        stream = (
+            sys.stdin
+            if args.files_from == "-"
+            else open(args.files_from, encoding="utf-8")
+        )
         with stream:
             paths.extend(line.strip() for line in stream if line.strip())
 
@@ -224,7 +245,9 @@ def main(argv: list[str]) -> int:
         try:
             extract(path, src, want, records)
         except Exception as exc:  # pragma: no cover - defensive
-            print(f"extract-md-elements: parse failed for {path}: {exc}", file=sys.stderr)
+            print(
+                f"extract-md-elements: parse failed for {path}: {exc}", file=sys.stderr
+            )
             continue
 
     out = sys.stdout

@@ -41,9 +41,13 @@ def _resilient_parse_message(data):
         return _original_parse_message(data)
     except Exception as exc:
         if "Unknown message type" in str(exc):
-            msg_type = data.get("type", "unknown") if isinstance(data, dict) else "unknown"
+            msg_type = (
+                data.get("type", "unknown") if isinstance(data, dict) else "unknown"
+            )
             logger.debug("Skipping unrecognized message type: %s", msg_type)
-            return SystemMessage(subtype=msg_type, data=data if isinstance(data, dict) else {})
+            return SystemMessage(
+                subtype=msg_type, data=data if isinstance(data, dict) else {}
+            )
         raise
 
 
@@ -59,7 +63,9 @@ _sdk_client.parse_message = _resilient_parse_message
 # received the ResultMessage by then.
 import claude_agent_sdk._internal.transport.subprocess_cli as _sdk_subprocess  # noqa: E402
 
-_original_read_messages_impl = _sdk_subprocess.SubprocessCLITransport._read_messages_impl
+_original_read_messages_impl = (
+    _sdk_subprocess.SubprocessCLITransport._read_messages_impl
+)
 
 
 async def _quiet_read_messages_impl(self):  # type: ignore[no-untyped-def]
@@ -188,6 +194,7 @@ def _install_cleanup_handler(cleanup):
             signal.signal(signum, signal.SIG_DFL)
             # Re-raise with the default handler (propagates exit code).
             import os
+
             os.kill(os.getpid(), signum)
 
     signal.signal(signal.SIGTERM, _handler)
@@ -209,9 +216,13 @@ def _non_interactive_allowed_tools(base: list[str]) -> list[str]:
 def _snapshot_parent_sha(repo_path: Path) -> str:
     """Capture the current HEAD SHA of the parent repo for post-run integrity check."""
     import subprocess as _sp
+
     return _sp.run(
         ["git", "rev-parse", "HEAD"],
-        cwd=repo_path, capture_output=True, text=True, check=True,
+        cwd=repo_path,
+        capture_output=True,
+        text=True,
+        check=True,
     ).stdout.strip()
 
 
@@ -229,9 +240,12 @@ def _warn_if_parent_moved(
     Regression: issue #1260 — maintain commit landed on parent main.
     """
     import subprocess as _sp
+
     result = _sp.run(
         ["git", "rev-parse", "HEAD"],
-        cwd=repo_path, capture_output=True, text=True,
+        cwd=repo_path,
+        capture_output=True,
+        text=True,
     )
     if result.returncode != 0:
         return True  # can't verify; don't block
@@ -479,7 +493,14 @@ async def run_onboard(
         # _stream_interactive instead. Removing it from allowed_tools makes
         # accidental use fail loudly rather than silently.
         allowed_tools = [
-            "Read", "Write", "Edit", "Bash", "Glob", "Grep", "Task", "TodoWrite",
+            "Read",
+            "Write",
+            "Edit",
+            "Bash",
+            "Glob",
+            "Grep",
+            "Task",
+            "TodoWrite",
         ]
 
         # Build orchestrator options
@@ -530,7 +551,9 @@ async def run_onboard(
                 "for plan review."
             )
         if dry_run:
-            prompt_parts.append("DRY RUN — report what you would do without making changes.")
+            prompt_parts.append(
+                "DRY RUN — report what you would do without making changes."
+            )
         if skip_ci:
             prompt_parts.append("Skip CI/CD setup.")
         if blueprint_already_done:
@@ -564,7 +587,9 @@ async def run_onboard(
                 return
         elif non_interactive is not None:
             agent_output = await _stream_messages_collecting(
-                prompt, options, "Onboarding complete.",
+                prompt,
+                options,
+                "Onboarding complete.",
             )
         else:
             # Dry-run interactive: agent reports without making changes.
@@ -582,13 +607,22 @@ async def run_onboard(
         if worktree_path and not dry_run:
             if non_interactive is not None:
                 pr_result = await _auto_handle_pr(
-                    repo_path, worktree_path, branch, base_branch,
-                    "setup/onboard", agent_output, non_interactive,
+                    repo_path,
+                    worktree_path,
+                    branch,
+                    base_branch,
+                    "setup/onboard",
+                    agent_output,
+                    non_interactive,
                 )
                 summary.update(pr_result)
             else:
                 await _prompt_pr_creation(
-                    repo_path, worktree_path, branch, base_branch, "onboard",
+                    repo_path,
+                    worktree_path,
+                    branch,
+                    base_branch,
+                    "onboard",
                 )
 
         if non_interactive is not None:
@@ -701,7 +735,14 @@ async def run_maintain(
 
     try:
         allowed_tools = [
-            "Read", "Write", "Edit", "Bash", "Glob", "Grep", "Task", "TodoWrite",
+            "Read",
+            "Write",
+            "Edit",
+            "Bash",
+            "Glob",
+            "Grep",
+            "Task",
+            "TodoWrite",
         ]
         if not interactive and non_interactive is None:
             allowed_tools.append("AskUserQuestion")
@@ -734,7 +775,9 @@ async def run_maintain(
             "Repository analysis and health score are in your system prompt. Execute the maintenance workflow.",
         ]
         if report_only:
-            prompt_parts.append("REPORT ONLY — do not make any changes, just generate a report.")
+            prompt_parts.append(
+                "REPORT ONLY — do not make any changes, just generate a report."
+            )
         elif fix:
             prompt_parts.append("FIX MODE — apply safe auto-fixes for issues found.")
             prompt_parts.append(
@@ -768,7 +811,9 @@ async def run_maintain(
                 return
         else:
             collected = await _stream_messages_collecting(
-                prompt, options, "Maintenance complete.",
+                prompt,
+                options,
+                "Maintenance complete.",
             )
 
         summary: dict = {
@@ -788,20 +833,31 @@ async def run_maintain(
 
             if non_interactive is not None:
                 pr_result = await _auto_handle_pr(
-                    repo_path, worktree_path, branch, base_branch,
-                    "maintain", collected, non_interactive,
+                    repo_path,
+                    worktree_path,
+                    branch,
+                    base_branch,
+                    "maintain",
+                    collected,
+                    non_interactive,
                 )
                 summary.update(pr_result)
             else:
                 await _prompt_pr_creation(
-                    repo_path, worktree_path, branch, base_branch, "maintain",
+                    repo_path,
+                    worktree_path,
+                    branch,
+                    base_branch,
+                    "maintain",
                     agent_output=collected,
                 )
 
         if report_only and collected:
             if non_interactive is not None:
                 issue_result = await _auto_handle_issues(
-                    repo_path, collected, non_interactive,
+                    repo_path,
+                    collected,
+                    non_interactive,
                 )
                 summary.update(issue_result)
             else:
@@ -924,9 +980,7 @@ async def run_diagnose(
             "Create a GitHub issue with the aggregated diagnostic findings."
         )
     if dry_run:
-        prompt_parts.append(
-            "DRY RUN — display diagnostics without creating issues."
-        )
+        prompt_parts.append("DRY RUN — display diagnostics without creating issues.")
 
     prompt = " ".join(prompt_parts)
 
@@ -950,7 +1004,9 @@ async def run_diagnose(
 
 def run_health(repo_path: Path) -> None:
     """Quick health check — no subagents, no LLM calls, just tools."""
-    console.print(f"[bold]Git Repo Agent[/bold] — Health Check [cyan]{repo_path}[/cyan]")
+    console.print(
+        f"[bold]Git Repo Agent[/bold] — Health Check [cyan]{repo_path}[/cyan]"
+    )
     console.print()
 
     scores = compute_health_score(repo_path)
@@ -1145,9 +1201,7 @@ def _launch_claude_handoff(
 
     timestamp = datetime.now(timezone.utc).isoformat()
     branch_line = f"- Branch: `{worktree_branch}`\n" if worktree_branch else ""
-    feedback_section = (
-        f"\n## User feedback\n\n{feedback}\n" if feedback else ""
-    )
+    feedback_section = f"\n## User feedback\n\n{feedback}\n" if feedback else ""
 
     handoff_path.write_text(
         f"# git-repo-agent handoff\n\n"
@@ -1426,7 +1480,11 @@ def _extract_report_section(agent_output: str) -> str:
 
     for line in lines:
         # Start capturing at report-like headings
-        if line.startswith("## ") or line.startswith("# Maintenance") or line.startswith("# Health"):
+        if (
+            line.startswith("## ")
+            or line.startswith("# Maintenance")
+            or line.startswith("# Health")
+        ):
             capturing = True
         if capturing:
             report_lines.append(line)
@@ -1504,9 +1562,7 @@ def _build_pr_content(workflow: str, agent_output: str) -> tuple[str, str]:
     report = _extract_report_section(agent_output)
     fixed_items = _extract_fixed_items(report)
     pr_title = _build_pr_title(workflow, fixed_items)
-    heading = _WORKFLOW_REPORT_HEADINGS.get(
-        workflow, f"{workflow.capitalize()} Report"
-    )
+    heading = _WORKFLOW_REPORT_HEADINGS.get(workflow, f"{workflow.capitalize()} Report")
 
     if report:
         pr_body = (
@@ -1560,15 +1616,23 @@ async def _prompt_pr_creation(
 
     console.print()
     console.print(f"[bold]Changes committed on branch [cyan]{branch}[/cyan][/bold]")
-    create_pr = console.input(
-        "[bold]Create a pull request?[/bold] ([green]yes[/green]/[yellow]no[/yellow]): "
-    ).strip().lower()
+    create_pr = (
+        console.input(
+            "[bold]Create a pull request?[/bold] ([green]yes[/green]/[yellow]no[/yellow]): "
+        )
+        .strip()
+        .lower()
+    )
 
     if create_pr in ("yes", "y"):
         pr_title, pr_body = _build_pr_content(workflow, agent_output)
         console.print("[dim]Pushing branch and creating PR...[/dim]")
         pr_url = push_and_create_pr(
-            worktree_path, branch, base_branch, pr_title, pr_body,
+            worktree_path,
+            branch,
+            base_branch,
+            pr_title,
+            pr_body,
         )
         if pr_url:
             console.print(f"[bold green]PR created:[/bold green] {pr_url}")
@@ -1602,10 +1666,14 @@ async def _prompt_issue_creation(
     for i, f in enumerate(findings, 1):
         console.print(f"  {i}. {f['title']}")
 
-    create_issues = console.input(
-        "\n[bold]Create GitHub issues?[/bold] "
-        "([green]all[/green], comma-separated numbers, or [yellow]none[/yellow]): "
-    ).strip().lower()
+    create_issues = (
+        console.input(
+            "\n[bold]Create GitHub issues?[/bold] "
+            "([green]all[/green], comma-separated numbers, or [yellow]none[/yellow]): "
+        )
+        .strip()
+        .lower()
+    )
 
     if create_issues in ("none", "n", ""):
         console.print("[yellow]No issues created.[/yellow]")

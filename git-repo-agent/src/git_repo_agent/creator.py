@@ -44,11 +44,11 @@ class NewProjectSpec:
     ``intent.py`` parser that derives it from a natural-language idea.
     """
 
-    name: str                        # human-readable display name
-    slug: str                        # directory / repo name (kebab-case)
-    description: str                 # 1-line summary for README + gh repo create
-    idea: str                        # original idea string
-    language: str                    # "python" | "typescript" | ... | "default"
+    name: str  # human-readable display name
+    slug: str  # directory / repo name (kebab-case)
+    description: str  # 1-line summary for README + gh repo create
+    idea: str  # original idea string
+    language: str  # "python" | "typescript" | ... | "default"
     stack_indicators: tuple[str, ...]  # e.g. ("python", "github-actions")
     extra_plugins: tuple[str, ...] = ()
 
@@ -200,12 +200,12 @@ def create_repo(
 
     files_written: list[Path] = []
     files_written.append(_write(target / "README.md", _render_readme(spec)))
-    files_written.append(_write(target / ".gitignore", _render_gitignore(spec.language)))
+    files_written.append(
+        _write(target / ".gitignore", _render_gitignore(spec.language))
+    )
     prd_path = target / "docs" / "prds" / "0001-project-goal.md"
     files_written.append(_write(prd_path, _render_prd(spec)))
-    files_written.append(
-        write_settings_json(target, plugins, permissions)
-    )
+    files_written.append(write_settings_json(target, plugins, permissions))
 
     _run_git(["add", "-A"], cwd=target)
     message = commit_message or f"chore: initialize {spec.slug}"
@@ -249,11 +249,16 @@ def gh_repo_create(
     target = f"{owner}/{slug}" if owner else slug
     result = subprocess.run(
         [
-            "gh", "repo", "create", target,
-            "--source", str(repo_path),
+            "gh",
+            "repo",
+            "create",
+            target,
+            "--source",
+            str(repo_path),
             "--push",
             f"--{visibility}",
-            "--description", description,
+            "--description",
+            description,
         ],
         check=True,
         capture_output=True,

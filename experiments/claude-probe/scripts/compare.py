@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import argparse
 import collections
-import json
 import subprocess
 import sys
 from pathlib import Path
@@ -32,7 +31,10 @@ def score_transcript(transcript: Path, use_judge: bool) -> list[list[str]]:
         check=False,
     )
     if proc.returncode != 0:
-        print(f"WARN: score-run.py failed for {transcript.name}: {proc.stderr}", file=sys.stderr)
+        print(
+            f"WARN: score-run.py failed for {transcript.name}: {proc.stderr}",
+            file=sys.stderr,
+        )
     for line in proc.stdout.splitlines():
         if line.strip():
             rows.append(line.split("\t"))
@@ -45,7 +47,10 @@ def score_transcript(transcript: Path, use_judge: bool) -> list[list[str]]:
             check=False,
         )
         if proc.returncode != 0:
-            print(f"WARN: llm-judge.py failed for {transcript.name}: {proc.stderr}", file=sys.stderr)
+            print(
+                f"WARN: llm-judge.py failed for {transcript.name}: {proc.stderr}",
+                file=sys.stderr,
+            )
         for line in proc.stdout.splitlines():
             if line.strip():
                 rows.append(line.split("\t"))
@@ -110,7 +115,9 @@ def main() -> int:
             row.append(f"{p}/{n}" if n else "-")
         lines.append("| " + " | ".join(row) + " |")
 
-    lines.extend(["", "## Raw scores", "", f"See `{scores_path.relative_to(ROOT)}`", ""])
+    lines.extend(
+        ["", "## Raw scores", "", f"See `{scores_path.relative_to(ROOT)}`", ""]
+    )
 
     report = "\n".join(lines)
     print(report)

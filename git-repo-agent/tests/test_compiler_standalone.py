@@ -65,10 +65,7 @@ class TestPerSkillFallback:
         import re
 
         driver_src = (
-            compiler._REPO_ROOT
-            / "src"
-            / "git_repo_agent"
-            / "blueprint_driver.py"
+            compiler._REPO_ROOT / "src" / "git_repo_agent" / "blueprint_driver.py"
         ).read_text(encoding="utf-8")
         return sorted(set(re.findall(r'skill_relpath="([^"]+)"', driver_src)))
 
@@ -94,9 +91,7 @@ class TestPerSkillFallback:
         #     ``generated/skills/<plugin>/<skill>.md``
         rel = "blueprint-plugin/skills/blueprint-init/SKILL.md"
         expected = (
-            compiler._GENERATED_SKILLS_DIR
-            / "blueprint-plugin"
-            / "blueprint-init.md"
+            compiler._GENERATED_SKILLS_DIR / "blueprint-plugin" / "blueprint-init.md"
         )
         assert compiler._generated_skill_path(rel) == expected
 
@@ -117,7 +112,5 @@ class TestMonorepoTakesPrecedence:
         # may be stale by a few chars; live compilation is authoritative.
         skill_paths = compiler.SUBAGENT_SKILLS["configure"]
         if any(compiler._plugin_skill_available(p) for p in skill_paths):
-            assert live == compiler.compile_subagent(
-                "configure", skill_paths
-            )
+            assert live == compiler.compile_subagent("configure", skill_paths)
         compiler.get_compiled_prompt.cache_clear()

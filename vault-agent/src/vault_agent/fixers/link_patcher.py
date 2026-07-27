@@ -63,9 +63,7 @@ def _build_wikilink_re(target: str) -> re.Pattern[str]:
     """
     escaped = re.escape(target)
     # Group 1: section (#...), Group 2: alias (|...)
-    return re.compile(
-        rf"\[\[{escaped}(#[^\]|]+)?(\|[^\]]+)?\]\]"
-    )
+    return re.compile(rf"\[\[{escaped}(#[^\]|]+)?(\|[^\]]+)?\]\]")
 
 
 def _rewrite_one(body: str, old: str, new: str) -> tuple[str, int]:
@@ -84,15 +82,9 @@ def _rewrite_one(body: str, old: str, new: str) -> tuple[str, int]:
     return new_body, count
 
 
-def _applicable_rules(
-    index: VaultIndex, table: dict[str, str]
-) -> dict[str, str]:
+def _applicable_rules(index: VaultIndex, table: dict[str, str]) -> dict[str, str]:
     """Keep only rules whose NEW target resolves uniquely in the vault."""
-    return {
-        old: new
-        for old, new in table.items()
-        if len(index.resolve(new)) == 1
-    }
+    return {old: new for old, new in table.items() if len(index.resolve(new)) == 1}
 
 
 def apply_rewrites(
@@ -240,9 +232,7 @@ def fuzzy_basename_candidates(
     return out
 
 
-def classify_match(
-    target: str, candidates: list[BasenameMatch]
-) -> ConfidenceTier:
+def classify_match(target: str, candidates: list[BasenameMatch]) -> ConfidenceTier:
     """Map the top candidate's similarity to a :class:`ConfidenceTier`.
 
     Rules, in order:

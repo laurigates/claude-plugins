@@ -80,11 +80,13 @@ class TestParseModelResponse:
             _parse_model_response(idea="foo", raw=_valid_json(name="   "))
 
     def test_description_defaults_to_idea_when_missing(self):
-        raw = json.dumps({
-            "name": "Foo",
-            "language": "python",
-            "stack_indicators": ["python"],
-        })
+        raw = json.dumps(
+            {
+                "name": "Foo",
+                "language": "python",
+                "stack_indicators": ["python"],
+            }
+        )
         spec = _parse_model_response(idea="the original idea", raw=raw)
         assert spec.description == "the original idea"
 
@@ -123,11 +125,13 @@ class TestParseModelResponse:
         assert spec.stack_indicators == ("python", "github-actions")
 
     def test_stack_indicators_wrong_type_raises(self):
-        raw = json.dumps({
-            "name": "Foo",
-            "language": "python",
-            "stack_indicators": "python,github-actions",  # string, not list
-        })
+        raw = json.dumps(
+            {
+                "name": "Foo",
+                "language": "python",
+                "stack_indicators": "python,github-actions",  # string, not list
+            }
+        )
         with pytest.raises(IntentParseError, match="stack_indicators"):
             _parse_model_response(idea="foo", raw=raw)
 
@@ -177,6 +181,7 @@ class _FakeClient:
 def _make_fake_client_factory(response_json: str):
     def factory(options):
         return _FakeClient(response_json)
+
     return factory
 
 
@@ -203,7 +208,8 @@ class TestParseIntent:
                 return False
 
         monkeypatch.setattr(
-            "git_repo_agent.intent.ClaudeSDKClient", _BoomClient,
+            "git_repo_agent.intent.ClaudeSDKClient",
+            _BoomClient,
         )
         with pytest.raises(IntentParseError, match="Could not reach Claude"):
             asyncio.run(parse_intent("anything"))

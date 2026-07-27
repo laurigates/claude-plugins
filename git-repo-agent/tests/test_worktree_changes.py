@@ -32,7 +32,9 @@ needs_git = pytest.mark.skipif(not _git_available(), reason="git not installed")
 
 
 def _init_repo(path: Path) -> None:
-    subprocess.run(["git", "init", "-b", "main", str(path)], check=True, capture_output=True)
+    subprocess.run(
+        ["git", "init", "-b", "main", str(path)], check=True, capture_output=True
+    )
     for key, value in [
         ("user.email", "test@example.com"),
         ("user.name", "Test"),
@@ -40,13 +42,17 @@ def _init_repo(path: Path) -> None:
     ]:
         subprocess.run(
             ["git", "-C", str(path), "config", key, value],
-            check=True, capture_output=True,
+            check=True,
+            capture_output=True,
         )
     (path / "README.md").write_text("init\n")
-    subprocess.run(["git", "-C", str(path), "add", "-A"], check=True, capture_output=True)
+    subprocess.run(
+        ["git", "-C", str(path), "add", "-A"], check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "-C", str(path), "commit", "-m", "init"],
-        check=True, capture_output=True,
+        check=True,
+        capture_output=True,
     )
 
 
@@ -75,13 +81,17 @@ class TestWorktreeHasChanges:
         _init_repo(repo)
         subprocess.run(
             ["git", "-C", str(repo), "checkout", "-b", "feature"],
-            check=True, capture_output=True,
+            check=True,
+            capture_output=True,
         )
         (repo / "new_file.md").write_text("content\n")
-        subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True, capture_output=True)
+        subprocess.run(
+            ["git", "-C", str(repo), "add", "-A"], check=True, capture_output=True
+        )
         subprocess.run(
             ["git", "-C", str(repo), "commit", "-m", "feat: add file"],
-            check=True, capture_output=True,
+            check=True,
+            capture_output=True,
         )
         assert worktree_has_changes(repo, "main") is True
 
@@ -103,12 +113,16 @@ class TestAutoCommitIfDirty:
 
         log = subprocess.run(
             ["git", "-C", str(repo), "log", "--oneline"],
-            check=True, capture_output=True, text=True,
+            check=True,
+            capture_output=True,
+            text=True,
         )
         assert "chore: safety-net" in log.stdout
         status = subprocess.run(
             ["git", "-C", str(repo), "status", "--porcelain"],
-            check=True, capture_output=True, text=True,
+            check=True,
+            capture_output=True,
+            text=True,
         )
         assert status.stdout.strip() == ""
 
@@ -128,7 +142,9 @@ class TestParentBranchIntegrity:
         sha = _snapshot_parent_sha(repo)
         expected = subprocess.run(
             ["git", "-C", str(repo), "rev-parse", "HEAD"],
-            check=True, capture_output=True, text=True,
+            check=True,
+            capture_output=True,
+            text=True,
         ).stdout.strip()
         assert sha == expected
         assert len(sha) == 40
@@ -147,13 +163,19 @@ class TestParentBranchIntegrity:
 
         # Simulate the agent escaping the worktree and committing to parent main.
         (repo / "escaped.txt").write_text("written by agent outside worktree\n")
-        subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True, capture_output=True)
+        subprocess.run(
+            ["git", "-C", str(repo), "add", "-A"], check=True, capture_output=True
+        )
         subprocess.run(
             ["git", "-C", str(repo), "commit", "-m", "oops: commit on wrong branch"],
-            check=True, capture_output=True,
+            check=True,
+            capture_output=True,
         )
 
-        assert _warn_if_parent_moved(repo, sha_before, "main", "maintain/2026-05-07") is False
+        assert (
+            _warn_if_parent_moved(repo, sha_before, "main", "maintain/2026-05-07")
+            is False
+        )
 
     def test_worktree_commit_does_not_affect_parent(self, tmp_path: Path):
         """Regression: commits inside a git worktree must not move the parent HEAD."""
@@ -164,16 +186,29 @@ class TestParentBranchIntegrity:
         # Create a real git worktree on a feature branch.
         worktree = tmp_path / "worktree"
         subprocess.run(
-            ["git", "-C", str(repo), "worktree", "add", "-b", "maintain/test", str(worktree)],
-            check=True, capture_output=True,
+            [
+                "git",
+                "-C",
+                str(repo),
+                "worktree",
+                "add",
+                "-b",
+                "maintain/test",
+                str(worktree),
+            ],
+            check=True,
+            capture_output=True,
         )
 
         # Commit inside the worktree (the correct pattern).
         (worktree / "fix.txt").write_text("fix applied in worktree\n")
-        subprocess.run(["git", "-C", str(worktree), "add", "-A"], check=True, capture_output=True)
+        subprocess.run(
+            ["git", "-C", str(worktree), "add", "-A"], check=True, capture_output=True
+        )
         subprocess.run(
             ["git", "-C", str(worktree), "commit", "-m", "fix: applied in worktree"],
-            check=True, capture_output=True,
+            check=True,
+            capture_output=True,
         )
 
         # Parent HEAD must not have moved.

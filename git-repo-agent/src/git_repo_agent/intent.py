@@ -36,8 +36,15 @@ _KNOWN_LANGUAGES: frozenset[str] = frozenset(
 )
 _KNOWN_INDICATORS: frozenset[str] = frozenset(
     {
-        "python", "typescript", "javascript", "rust", "go",
-        "docker", "github-actions", "esp-idf", "esphome",
+        "python",
+        "typescript",
+        "javascript",
+        "rust",
+        "go",
+        "docker",
+        "github-actions",
+        "esp-idf",
+        "esphome",
     }
 )
 
@@ -83,9 +90,7 @@ async def parse_intent(idea: str) -> NewProjectSpec:
     collected: list[str] = []
     try:
         async with ClaudeSDKClient(options) as client:
-            await client.query(
-                f"Project idea: {idea}\n\nRespond with the JSON object."
-            )
+            await client.query(f"Project idea: {idea}\n\nRespond with the JSON object.")
             async for msg in client.receive_response():
                 if isinstance(msg, AssistantMessage):
                     for block in msg.content:

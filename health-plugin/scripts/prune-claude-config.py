@@ -19,7 +19,9 @@ from typing import Any, Dict, List, Tuple
 class ClaudeConfigPruner:
     """Manages pruning of Claude Code configuration file."""
 
-    def __init__(self, config_path: Path, dry_run: bool = False, interactive: bool = False):
+    def __init__(
+        self, config_path: Path, dry_run: bool = False, interactive: bool = False
+    ):
         self.config_path = config_path
         self.dry_run = dry_run
         self.interactive = interactive
@@ -81,7 +83,9 @@ class ClaudeConfigPruner:
         """Calculate approximate size of JSON data in bytes."""
         return len(json.dumps(data))
 
-    def prune_config(self, config: Dict[str, Any]) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    def prune_config(
+        self, config: Dict[str, Any]
+    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         """
         Prune configuration by removing orphaned projects and cached data.
 
@@ -108,7 +112,9 @@ class ClaudeConfigPruner:
 
         return pruned, removed
 
-    def print_analysis(self, config: Dict[str, Any], orphaned: List[str], cached: List[str]) -> None:
+    def print_analysis(
+        self, config: Dict[str, Any], orphaned: List[str], cached: List[str]
+    ) -> None:
         """Print detailed analysis of what will be pruned."""
         total_projects = len(config.get("projects", {}))
         remaining_projects = total_projects - len(orphaned)
@@ -119,13 +125,13 @@ class ClaudeConfigPruner:
         print(f"\nConfiguration file: {self.config_path}")
         print(f"Current size: {self.config_path.stat().st_size / 1024:.1f} KB")
 
-        print(f"\nProjects:")
+        print("\nProjects:")
         print(f"  Total: {total_projects}")
         print(f"  Orphaned (will be removed): {len(orphaned)}")
         print(f"  Remaining: {remaining_projects}")
 
         if orphaned and len(orphaned) <= 10:
-            print(f"\n  Orphaned project paths:")
+            print("\n  Orphaned project paths:")
             for path in orphaned:
                 print(f"    - {path}")
         elif orphaned:
@@ -133,7 +139,7 @@ class ClaudeConfigPruner:
             for path in orphaned[:10]:
                 print(f"    - {path}")
 
-        print(f"\nCached data to remove:")
+        print("\nCached data to remove:")
         if cached:
             for key in cached:
                 size = len(json.dumps(config.get(key, "")))
@@ -152,7 +158,7 @@ class ClaudeConfigPruner:
         print("\n" + "=" * 70)
         print("Pruning Results")
         print("=" * 70)
-        print(f"\nRemoved:")
+        print("\nRemoved:")
         print(f"  - {self.stats['orphaned_projects']} orphaned project entries")
         print(f"  - {self.stats['cached_keys_removed']} cached data keys")
 
@@ -162,7 +168,7 @@ class ClaudeConfigPruner:
             saved = original_size - new_size
             pct = (saved / original_size * 100) if original_size > 0 else 0
 
-            print(f"\nFile size:")
+            print("\nFile size:")
             print(f"  Original: {original_size:.1f} KB")
             print(f"  New: {new_size:.1f} KB")
             print(f"  Saved: {saved:.1f} KB ({pct:.1f}%)")
@@ -204,7 +210,9 @@ class ClaudeConfigPruner:
             backup_path = self.create_backup()
 
         # Prune configuration
-        print("Pruning configuration..." if not self.dry_run else "Analyzing (dry-run)...")
+        print(
+            "Pruning configuration..." if not self.dry_run else "Analyzing (dry-run)..."
+        )
         pruned_config, removed = self.prune_config(config)
         self.stats["new_size"] = self.calculate_size(pruned_config)
 
@@ -242,13 +250,15 @@ Your settings, MCP servers, and tips history are preserved.
     )
 
     parser.add_argument(
-        "-n", "--dry-run",
+        "-n",
+        "--dry-run",
         action="store_true",
         help="Show what would be removed without making changes",
     )
 
     parser.add_argument(
-        "-i", "--interactive",
+        "-i",
+        "--interactive",
         action="store_true",
         help="Prompt for confirmation before making changes",
     )

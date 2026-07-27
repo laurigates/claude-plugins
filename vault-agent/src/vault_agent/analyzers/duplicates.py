@@ -1,9 +1,9 @@
 """Duplicate-note detector.
 
-  * Same basename in multiple paths (e.g. ``Zettelkasten/Docker.md`` and
-    ``work/z/Docker.md``). Some are legitimate redirect stubs — the stubs
-    analyzer classifies those separately. This one emits the raw list.
-  * ``Untitled``, ``Untitled 1``, ``Untitled 2`` style placeholders.
+* Same basename in multiple paths (e.g. ``Zettelkasten/Docker.md`` and
+  ``work/z/Docker.md``). Some are legitimate redirect stubs — the stubs
+  analyzer classifies those separately. This one emits the raw list.
+* ``Untitled``, ``Untitled 1``, ``Untitled 2`` style placeholders.
 """
 
 from __future__ import annotations

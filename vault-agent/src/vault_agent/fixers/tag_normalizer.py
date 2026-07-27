@@ -25,7 +25,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from vault_agent.fixers._frontmatter_io import FrontmatterFile, load, save
+from vault_agent.fixers._frontmatter_io import load, save
 
 # Bare placeholder tags — no-ops we want to drop.
 BARE_PLACEHOLDERS: frozenset[str] = frozenset({"📝", "🌱", "📝/🌱"})

@@ -6,7 +6,6 @@ import json
 import textwrap
 from pathlib import Path
 
-import pytest
 
 from vault_agent.analyzers.audit import run_audit
 from vault_agent.orchestrator import build_system_prompt, _compact_audit_for_prompt
@@ -56,6 +55,4 @@ class TestCompactAudit:
         compact = _compact_audit_for_prompt(audit, sample=5)
         fm = compact["frontmatter"]
         # 40 notes without frontmatter; expect trimmed list with marker
-        assert any(
-            "more" in str(item) for item in fm["notes_without_frontmatter"]
-        )
+        assert any("more" in str(item) for item in fm["notes_without_frontmatter"])

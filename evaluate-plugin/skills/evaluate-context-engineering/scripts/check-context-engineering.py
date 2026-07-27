@@ -67,8 +67,12 @@ SAFETY_RE = re.compile(
 )
 SAFETY_WINDOW = 160  # chars either side of the marker
 
-EXAMPLE_HEADING_RE = re.compile(r"^#{2,}\s*.*\b(example|usage|sample)s?\b", re.IGNORECASE)
-PARAMS_HEADING_RE = re.compile(r"^#{2,}\s*.*\b(parameter|argument|option|flag)s?\b", re.IGNORECASE)
+EXAMPLE_HEADING_RE = re.compile(
+    r"^#{2,}\s*.*\b(example|usage|sample)s?\b", re.IGNORECASE
+)
+PARAMS_HEADING_RE = re.compile(
+    r"^#{2,}\s*.*\b(parameter|argument|option|flag)s?\b", re.IGNORECASE
+)
 PROCEDURAL_HEADING_RE = re.compile(
     r"^#{2,}\s*.*\b(step \d|steps|workflow|procedure|how to|checklist|recipe|"
     r"execution|your task|quick start)\b",
@@ -182,7 +186,9 @@ def discover(root: str, target: str | None) -> tuple[list[str], list[str], str |
     skills: list[str] = []
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = sorted(
-            d for d in dirnames if d not in {".git", "node_modules", ".venv", "__pycache__"}
+            d
+            for d in dirnames
+            if d not in {".git", "node_modules", ".venv", "__pycache__"}
         )
         if "SKILL.md" not in filenames:
             continue
@@ -222,7 +228,9 @@ def analyse_skill(root: str, rel: str) -> dict:
     safety_adjacent = sum(
         1
         for m in markers
-        if SAFETY_RE.search(prose[max(0, m.start() - SAFETY_WINDOW) : m.end() + SAFETY_WINDOW])
+        if SAFETY_RE.search(
+            prose[max(0, m.start() - SAFETY_WINDOW) : m.end() + SAFETY_WINDOW]
+        )
     )
     density = round(len(markers) * 1000 / body_chars, 3) if body_chars else 0.0
 
@@ -328,7 +336,9 @@ def shingles(text: str) -> set[int]:
         return set()
     return {
         int.from_bytes(
-            hashlib.blake2b(" ".join(words[i : i + SHINGLE_W]).encode(), digest_size=8).digest(),
+            hashlib.blake2b(
+                " ".join(words[i : i + SHINGLE_W]).encode(), digest_size=8
+            ).digest(),
             "big",
         )
         for i in range(len(words) - SHINGLE_W + 1)
@@ -375,7 +385,9 @@ def overlap_pairs(units: dict[str, set[int]]) -> tuple[list[dict], int]:
 # ------------------------------------------------------------------- reporting
 
 
-def build_issues(skills: list[dict], rules: list[dict], always_loaded: int, budget: int) -> list[dict]:
+def build_issues(
+    skills: list[dict], rules: list[dict], always_loaded: int, budget: int
+) -> list[dict]:
     issues: list[dict] = []
 
     if always_loaded > budget:
@@ -390,7 +402,10 @@ def build_issues(skills: list[dict], rules: list[dict], always_loaded: int, budg
         )
 
     for s in skills:
-        if s["c1_markers"] >= CONSTRAINT_MIN_MARKERS and s["c1_density_per_1k"] >= CONSTRAINT_DENSITY_FLAG:
+        if (
+            s["c1_markers"] >= CONSTRAINT_MIN_MARKERS
+            and s["c1_density_per_1k"] >= CONSTRAINT_DENSITY_FLAG
+        ):
             issues.append(
                 {
                     "severity": "WARN",
@@ -411,7 +426,11 @@ def build_issues(skills: list[dict], rules: list[dict], always_loaded: int, budg
                     "msg": "args: declared with no argument-hint: to describe the interface",
                 }
             )
-        if s["c2_has_args"] and not s["c2_arg_enumerated"] and not s["c2_has_params_section"]:
+        if (
+            s["c2_has_args"]
+            and not s["c2_arg_enumerated"]
+            and not s["c2_has_params_section"]
+        ):
             issues.append(
                 {
                     "severity": "WARN",
@@ -421,7 +440,10 @@ def build_issues(skills: list[dict], rules: list[dict], always_loaded: int, budg
                     "msg": "args: neither enumerates its alternatives nor has a parameters section",
                 }
             )
-        if s["c2_example_ratio"] >= EXAMPLE_RATIO_FLAG and not s["c2_has_params_section"]:
+        if (
+            s["c2_example_ratio"] >= EXAMPLE_RATIO_FLAG
+            and not s["c2_has_params_section"]
+        ):
             issues.append(
                 {
                     "severity": "WARN",
@@ -465,7 +487,9 @@ def build_issues(skills: list[dict], rules: list[dict], always_loaded: int, budg
                 }
             )
 
-    issues.sort(key=lambda i: (i["severity"] != "ERROR", i["dim"], i["type"], i["unit"]))
+    issues.sort(
+        key=lambda i: (i["severity"] != "ERROR", i["dim"], i["type"], i["unit"])
+    )
     return issues
 
 
@@ -503,7 +527,9 @@ def emit_text(data: dict, n_top: int, max_issues: int) -> None:
 
     for name in sorted(BOILERPLATE_SECTIONS):
         chars = t["c4_boilerplate"][name]["chars"]
-        out(f"C4_BOILERPLATE_{name.upper()}_SKILLS={t['c4_boilerplate'][name]['skills']}\n")
+        out(
+            f"C4_BOILERPLATE_{name.upper()}_SKILLS={t['c4_boilerplate'][name]['skills']}\n"
+        )
         out(f"C4_BOILERPLATE_{name.upper()}_CHARS={chars}\n")
         out(f"C4_BOILERPLATE_{name.upper()}_PCT={t['c4_boilerplate'][name]['pct']}\n")
     out(f"C4_OVERLAP_PAIRS={t['c4_overlap_pairs']}\n")
@@ -529,9 +555,13 @@ def emit_text(data: dict, n_top: int, max_issues: int) -> None:
         out(f"ISSUES_SHOWN={len(shown)}\n")
         out("ISSUES:\n")
         for i in shown:
-            out(f"  - SEVERITY={i['severity']} DIM={i['dim']} TYPE={i['type']} UNIT={i['unit']} MSG={i['msg']}\n")
+            out(
+                f"  - SEVERITY={i['severity']} DIM={i['dim']} TYPE={i['type']} UNIT={i['unit']} MSG={i['msg']}\n"
+            )
         if len(shown) < len(data["issues"]):
-            out(f"  - TRUNCATED={len(data['issues']) - len(shown)} MSG=rerun with --max-issues 0 or --json for the full list\n")
+            out(
+                f"  - TRUNCATED={len(data['issues']) - len(shown)} MSG=rerun with --max-issues 0 or --json for the full list\n"
+            )
 
     skills = data["skills"]
     if skills and n_top:
@@ -574,7 +604,9 @@ def find_project_root(start: str) -> str:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     ap.add_argument("--project-dir", default=find_project_root(os.getcwd()))
     ap.add_argument("--target", default=None)
     ap.add_argument("--json", action="store_true")
@@ -621,7 +653,11 @@ def main() -> int:
         }
 
     issues = build_issues(skills, rules, always_loaded, args.always_loaded_budget)
-    status = "ERROR" if any(i["severity"] == "ERROR" for i in issues) else ("WARN" if issues else "OK")
+    status = (
+        "ERROR"
+        if any(i["severity"] == "ERROR" for i in issues)
+        else ("WARN" if issues else "OK")
+    )
 
     data = {
         "schema_version": SCHEMA_VERSION,
@@ -629,7 +665,9 @@ def main() -> int:
         "totals": {
             "skill_count": len(skills),
             # Published marketplace skills, excluding repo-local `.claude/skills/*`.
-            "skill_count_marketplace": sum(1 for s in skills if not s["path"].startswith(".")),
+            "skill_count_marketplace": sum(
+                1 for s in skills if not s["path"].startswith(".")
+            ),
             "skill_body_chars": total_body,
             "skill_body_est_tokens": total_body // 4,
             "skill_body_median_chars": median,
@@ -649,7 +687,9 @@ def main() -> int:
             "c2_opaque_arg_interfaces": sum(
                 1
                 for s in skills
-                if s["c2_has_args"] and not s["c2_arg_enumerated"] and not s["c2_has_params_section"]
+                if s["c2_has_args"]
+                and not s["c2_arg_enumerated"]
+                and not s["c2_has_params_section"]
             ),
             "c2_example_chars_total": sum(s["c2_example_chars"] for s in skills),
             "c2_fenced_chars_total": sum(s["c2_fenced_chars"] for s in skills),
@@ -662,7 +702,9 @@ def main() -> int:
             "c3_level2": sum(1 for s in skills if s["c3_levels"] == 2),
             "c3_level3": sum(1 for s in skills if s["c3_levels"] == 3),
             "c3_flat_large_bodies": sum(
-                1 for s in skills if s["body_chars"] > FLAT_BODY_CHARS and not s["c3_support_files"]
+                1
+                for s in skills
+                if s["body_chars"] > FLAT_BODY_CHARS and not s["c3_support_files"]
             ),
             "c4_boilerplate": boiler,
             "c4_overlap_pairs": len(pairs),
@@ -676,7 +718,9 @@ def main() -> int:
             "c5_always_loaded_budget": args.always_loaded_budget,
             "c6_skills_with_scripts": sum(1 for s in skills if s["c3_has_scripts"]),
             "c6_prose_procedure_no_script": sum(
-                1 for s in skills if s["c6_multiline_shell_blocks"] >= 3 and not s["c3_has_scripts"]
+                1
+                for s in skills
+                if s["c6_multiline_shell_blocks"] >= 3 and not s["c3_has_scripts"]
             ),
         },
         "skills": skills,
@@ -689,7 +733,9 @@ def main() -> int:
         json.dump(data, sys.stdout, indent=2, sort_keys=True)
         sys.stdout.write("\n")
     else:
-        emit_text(data, args.top, args.max_issues if args.max_issues > 0 else len(issues))
+        emit_text(
+            data, args.top, args.max_issues if args.max_issues > 0 else len(issues)
+        )
 
     if args.strict and status == "ERROR":
         return 1

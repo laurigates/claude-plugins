@@ -40,6 +40,7 @@ Usage:
 Output: structured KEY=value section by default; full JSON with --json.
 Exit code: 0 normally; with --strict, 1 when a deterministic check fails.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -90,7 +91,9 @@ def grade_expectation(exp, output: str) -> dict:
         if check == "regex":
             flags = _compile_flags(exp.get("flags", ""))
             ok = re.search(exp["pattern"], text, flags) is not None
-            evidence = f"/{exp['pattern']}/ {'matched' if ok else 'no match'} in {scope}"
+            evidence = (
+                f"/{exp['pattern']}/ {'matched' if ok else 'no match'} in {scope}"
+            )
         elif check == "absent_regex":
             flags = _compile_flags(exp.get("flags", ""))
             ok = re.search(exp["pattern"], text, flags) is None
@@ -167,9 +170,13 @@ def render_structured(graded: dict) -> tuple[str, int]:
     lines.append("RESULTS:")
     for r in graded["deterministic"]:
         verdict = "PASS" if r.get("passed") else "FAIL"
-        lines.append(f"  - CHECK={r['check']} RESULT={verdict} ASSERTION={r['assertion']!r}")
+        lines.append(
+            f"  - CHECK={r['check']} RESULT={verdict} ASSERTION={r['assertion']!r}"
+        )
     for r in graded["deferred"]:
-        lines.append(f"  - CHECK={r['check']} RESULT=DEFERRED ASSERTION={r['assertion']!r}")
+        lines.append(
+            f"  - CHECK={r['check']} RESULT=DEFERRED ASSERTION={r['assertion']!r}"
+        )
     lines.append("=== END DETERMINISTIC GRADING ===")
     return "\n".join(lines), severity
 
@@ -178,15 +185,26 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="Deterministic skill-eval grader")
     parser.add_argument("--evals", required=True, help="Path to evals.json")
     parser.add_argument("--eval-id", required=True, help="Eval case id to grade")
-    parser.add_argument("--output", required=True, help="Skill output file, or - for stdin")
-    parser.add_argument("--json", action="store_true", help="Emit JSON instead of KEY=value")
-    parser.add_argument("--strict", action="store_true", help="Exit 1 when a deterministic check fails")
+    parser.add_argument(
+        "--output", required=True, help="Skill output file, or - for stdin"
+    )
+    parser.add_argument(
+        "--json", action="store_true", help="Emit JSON instead of KEY=value"
+    )
+    parser.add_argument(
+        "--strict", action="store_true", help="Exit 1 when a deterministic check fails"
+    )
     args = parser.parse_args(argv)
 
     evals = json.loads(Path(args.evals).read_text())
-    eval_case = next((e for e in evals.get("evals", []) if e.get("id") == args.eval_id), None)
+    eval_case = next(
+        (e for e in evals.get("evals", []) if e.get("id") == args.eval_id), None
+    )
     if eval_case is None:
-        print(f"ERROR: eval id {args.eval_id!r} not found in {args.evals}", file=sys.stderr)
+        print(
+            f"ERROR: eval id {args.eval_id!r} not found in {args.evals}",
+            file=sys.stderr,
+        )
         return 2
 
     output = sys.stdin.read() if args.output == "-" else Path(args.output).read_text()

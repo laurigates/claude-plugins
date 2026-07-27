@@ -133,7 +133,12 @@ def _dispatch(coro) -> None:
 
 
 _VALID_LANGUAGES: tuple[str, ...] = (
-    "python", "typescript", "javascript", "rust", "go", "default",
+    "python",
+    "typescript",
+    "javascript",
+    "rust",
+    "go",
+    "default",
 )
 _VALID_VISIBILITIES: tuple[str, ...] = ("private", "public")
 
@@ -156,14 +161,20 @@ def _commit_if_dirty(repo_path: Path, message: str) -> bool:
 
     status = subprocess.run(
         ["git", "status", "--porcelain"],
-        cwd=repo_path, capture_output=True, text=True, check=True,
+        cwd=repo_path,
+        capture_output=True,
+        text=True,
+        check=True,
     )
     if not status.stdout.strip():
         return False
     subprocess.run(["git", "add", "-A"], cwd=repo_path, check=True)
     subprocess.run(
         ["git", "commit", "-m", message],
-        cwd=repo_path, check=True, capture_output=True, text=True,
+        cwd=repo_path,
+        check=True,
+        capture_output=True,
+        text=True,
     )
     return True
 
@@ -177,9 +188,7 @@ def _print_new_plan(result, *, spec, remote_target: str | None) -> None:
     plugin_lines = ", ".join(result.plugins)
     console.print(f"[bold]Plugins:[/bold]      {plugin_lines}")
     if spec.stack_indicators:
-        console.print(
-            f"[bold]Indicators:[/bold]   {', '.join(spec.stack_indicators)}"
-        )
+        console.print(f"[bold]Indicators:[/bold]   {', '.join(spec.stack_indicators)}")
     if result.dry_run:
         console.print("[yellow]DRY RUN — no filesystem changes were made[/yellow]")
     else:
@@ -399,7 +408,9 @@ def new(
                     description=spec.description,
                     visibility=visibility,
                 )
-            except Exception as exc:  # subprocess.CalledProcessError / FileNotFoundError
+            except (
+                Exception
+            ) as exc:  # subprocess.CalledProcessError / FileNotFoundError
                 console.print(
                     f"[red]Failed to create GitHub repo:[/red] {exc}. "
                     f"Local repo preserved at {result.path}."
@@ -436,31 +447,38 @@ def onboard(
         help="Branch name for onboarding changes.",
     ),
     non_interactive: bool = typer.Option(
-        False, "--non-interactive",
+        False,
+        "--non-interactive",
         help="Run without prompting (required when stdin is not a TTY).",
     ),
     auto_pr: str = typer.Option(
-        "on-changes", "--auto-pr",
+        "on-changes",
+        "--auto-pr",
         help="Non-interactive PR policy: always, never, on-changes.",
     ),
     auto_issues: str = typer.Option(
-        "never", "--auto-issues",
+        "never",
+        "--auto-issues",
         help="Non-interactive issue policy (unused by onboard): always, never, on-findings.",
     ),
     on_duplicate: str = typer.Option(
-        "skip", "--on-duplicate",
+        "skip",
+        "--on-duplicate",
         help="Policy if an open PR on the same branch prefix exists: skip, append, new.",
     ),
     refresh_base: bool = typer.Option(
-        False, "--refresh-base/--no-refresh-base",
+        False,
+        "--refresh-base/--no-refresh-base",
         help="git fetch + fast-forward the base branch before starting.",
     ),
     max_cost_usd: Optional[float] = typer.Option(
-        None, "--max-cost-usd",
+        None,
+        "--max-cost-usd",
         help="Warn if session cost exceeds this amount.",
     ),
     log_format: Optional[str] = typer.Option(
-        None, "--log-format",
+        None,
+        "--log-format",
         help="Output format: text, json, plain. Default: plain when not a TTY.",
     ),
 ) -> None:
@@ -518,31 +536,38 @@ def maintain(
         help="Comma-separated areas to focus on (docs,tests,security).",
     ),
     non_interactive: bool = typer.Option(
-        False, "--non-interactive",
+        False,
+        "--non-interactive",
         help="Run without prompting (required when stdin is not a TTY).",
     ),
     auto_pr: str = typer.Option(
-        "on-changes", "--auto-pr",
+        "on-changes",
+        "--auto-pr",
         help="Non-interactive PR policy: always, never, on-changes.",
     ),
     auto_issues: str = typer.Option(
-        "on-findings", "--auto-issues",
+        "on-findings",
+        "--auto-issues",
         help="Non-interactive issue policy (report-only): always, never, on-findings.",
     ),
     on_duplicate: str = typer.Option(
-        "skip", "--on-duplicate",
+        "skip",
+        "--on-duplicate",
         help="Policy if an open PR exists for the same workflow: skip, append, new.",
     ),
     refresh_base: bool = typer.Option(
-        False, "--refresh-base/--no-refresh-base",
+        False,
+        "--refresh-base/--no-refresh-base",
         help="git fetch + fast-forward the base branch before starting.",
     ),
     max_cost_usd: Optional[float] = typer.Option(
-        None, "--max-cost-usd",
+        None,
+        "--max-cost-usd",
         help="Warn if session cost exceeds this amount.",
     ),
     log_format: Optional[str] = typer.Option(
-        None, "--log-format",
+        None,
+        "--log-format",
         help="Output format: text, json, plain. Default: plain when not a TTY.",
     ),
 ) -> None:
@@ -618,19 +643,23 @@ def diagnose(
         help="ArgoCD application name.",
     ),
     non_interactive: bool = typer.Option(
-        False, "--non-interactive",
+        False,
+        "--non-interactive",
         help="Run without prompting (required when stdin is not a TTY).",
     ),
     auto_issues: str = typer.Option(
-        "on-findings", "--auto-issues",
+        "on-findings",
+        "--auto-issues",
         help="Non-interactive issue policy: always, never, on-findings.",
     ),
     max_cost_usd: Optional[float] = typer.Option(
-        None, "--max-cost-usd",
+        None,
+        "--max-cost-usd",
         help="Warn if session cost exceeds this amount.",
     ),
     log_format: Optional[str] = typer.Option(
-        None, "--log-format",
+        None,
+        "--log-format",
         help="Output format: text, json, plain. Default: plain when not a TTY.",
     ),
 ) -> None:
@@ -856,7 +885,8 @@ def blueprint_status(
 def blueprint_upgrade(
     repo: str = typer.Argument(".", help="Path to the repository."),
     dry_run: bool = typer.Option(
-        False, "--dry-run",
+        False,
+        "--dry-run",
         help="Report what would change without writing files.",
     ),
 ) -> None:
@@ -868,7 +898,8 @@ def blueprint_upgrade(
 def blueprint_sync(
     repo: str = typer.Argument(".", help="Path to the repository."),
     dry_run: bool = typer.Option(
-        False, "--dry-run",
+        False,
+        "--dry-run",
         help="Report drift without regenerating stale content.",
     ),
 ) -> None:
@@ -880,7 +911,8 @@ def blueprint_sync(
 def blueprint_scan(
     repo: str = typer.Argument(".", help="Path to the monorepo root."),
     dry_run: bool = typer.Option(
-        False, "--dry-run",
+        False,
+        "--dry-run",
         help="Preview workspace discovery without updating the root manifest.",
     ),
 ) -> None:
@@ -903,7 +935,8 @@ def blueprint_adr_list(
 def blueprint_derive_plans(
     repo: str = typer.Argument(".", help="Path to the repository."),
     dry_run: bool = typer.Option(
-        False, "--dry-run",
+        False,
+        "--dry-run",
         help="Preview what would be derived without writing artifacts.",
     ),
 ) -> None:
@@ -915,7 +948,8 @@ def blueprint_derive_plans(
 def blueprint_generate_rules(
     repo: str = typer.Argument(".", help="Path to the repository."),
     dry_run: bool = typer.Option(
-        False, "--dry-run",
+        False,
+        "--dry-run",
         help="Preview rules without writing them.",
     ),
 ) -> None:
@@ -969,11 +1003,13 @@ def blueprint_prp_execute(
 def blueprint_work_order(
     repo: str = typer.Argument(".", help="Path to the repository."),
     from_issue: Optional[int] = typer.Option(
-        None, "--from-issue",
+        None,
+        "--from-issue",
         help="Create a work order from an existing GitHub issue number.",
     ),
     no_publish: bool = typer.Option(
-        False, "--no-publish",
+        False,
+        "--no-publish",
         help="Keep the work order local; do not push or publish it.",
     ),
 ) -> None:

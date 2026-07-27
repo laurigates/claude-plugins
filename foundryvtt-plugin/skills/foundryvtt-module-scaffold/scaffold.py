@@ -1196,7 +1196,9 @@ def main() -> int:
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     p.add_argument(
-        "--name", required=True, help="GitHub repo name, e.g. foundryvtt-initiative-tweaks"
+        "--name",
+        required=True,
+        help="GitHub repo name, e.g. foundryvtt-initiative-tweaks",
     )
     p.add_argument(
         "--id",
@@ -1216,7 +1218,9 @@ def main() -> int:
     p.add_argument("--publisher", default=PUBLISHER_DEFAULT)
     p.add_argument("--author", default=AUTHOR_DEFAULT)
     p.add_argument(
-        "--dir", default=".", help="parent directory to create the module in (default: cwd)"
+        "--dir",
+        default=".",
+        help="parent directory to create the module in (default: cwd)",
     )
     args = p.parse_args()
 
@@ -1235,7 +1239,9 @@ def main() -> int:
     parent = Path(args.dir).resolve()
     target = parent / args.name
     if target.exists():
-        print(f"error: {target} already exists — refusing to overwrite", file=sys.stderr)
+        print(
+            f"error: {target} already exists — refusing to overwrite", file=sys.stderr
+        )
         return 1
 
     file_map = build_file_map(ctx, args.variant)
@@ -1245,7 +1251,9 @@ def main() -> int:
         dest.write_text(content)
 
     n = len(file_map)
-    print(f"\nScaffolded {args.name} (id: {ctx['MODULE_ID']}, {args.variant}) — {n} files in {target}")
+    print(
+        f"\nScaffolded {args.name} (id: {ctx['MODULE_ID']}, {args.variant}) — {n} files in {target}"
+    )
     print(
         "\nNext steps:\n"
         f"  cd {target}\n"

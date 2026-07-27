@@ -27,10 +27,14 @@ ROOT = Path(__file__).resolve().parent.parent
 # trigger-first counterparts (C2/C2d ~40c, C3/C3d ~80c) for direct comparison.
 ARMS = ["C0", "C1", "C2", "C2d", "C3", "C3d", "C5", "C4"]
 ARM_CATALOG = {
-    "C0": "none", "C1": "names",
-    "C2": "short", "C2d": "domain-short",
-    "C3": "medium", "C3d": "domain-medium",
-    "C5": "compact", "C4": "full",
+    "C0": "none",
+    "C1": "names",
+    "C2": "short",
+    "C2d": "domain-short",
+    "C3": "medium",
+    "C3d": "domain-medium",
+    "C5": "compact",
+    "C4": "full",
 }
 # Domain-first vs trigger-first pairs at equal budget (finding #4).
 DOMAIN_PAIRS = [("C2", "C2d"), ("C3", "C3d")]
@@ -71,9 +75,12 @@ def main() -> int:
         present = [a for a in ARMS if f"{model}-{a}" in conds]
         if not present:
             continue
-        lines += [f"## {model}", "",
-                  "| arm | catalog | tokens | top1 | near_miss | false_trigger | abstain |",
-                  "|---|---|---|---|---|---|---|"]
+        lines += [
+            f"## {model}",
+            "",
+            "| arm | catalog | tokens | top1 | near_miss | false_trigger | abstain |",
+            "|---|---|---|---|---|---|---|",
+        ]
         for arm in present:
             r = conds[f"{model}-{arm}"]
             cat = ARM_CATALOG[arm]
@@ -86,14 +93,18 @@ def main() -> int:
 
     # Headline deltas.
     lines += ["## Headline signals", ""]
-    lines += ["| model | C4−C0 (catalog value) | C4−C1 (desc value) | "
-              "C4−C2 (length slope) | C3 vs C4 top1 |",
-              "|---|---|---|---|---|"]
+    lines += [
+        "| model | C4−C0 (catalog value) | C4−C1 (desc value) | "
+        "C4−C2 (length slope) | C3 vs C4 top1 |",
+        "|---|---|---|---|---|",
+    ]
     slopes = {}
     for model in MODELS:
+
         def g(arm: str, key: str = "top1"):
             c = conds.get(f"{model}-{arm}")
             return c[key] if c else None
+
         c0, c1, c2, c3, c4 = (g("C0"), g("C1"), g("C2"), g("C3"), g("C4"))
         if c4 is None:
             continue
@@ -103,14 +114,19 @@ def main() -> int:
         slopes[model] = slope
         slope_s = f"{slope:+.2f}" if slope is not None else "—"
         c3c4 = f"{c3:.2f} vs {c4:.2f}" if c3 is not None else "—"
-        lines.append(f"| {model} | {catalog_value} | {desc_value} | {slope_s} | {c3c4} |")
+        lines.append(
+            f"| {model} | {catalog_value} | {desc_value} | {slope_s} | {c3c4} |"
+        )
     lines.append("")
 
     # Domain-first vs trigger-first at equal budget (finding #4): does keeping
     # the capability phrase beat keeping the "Use when" trigger tail?
-    lines += ["## Domain-first vs trigger-first (equal budget)", "",
-              "| model | budget | trigger-first | domain-first | Δ (domain−trigger) |",
-              "|---|---|---|---|---|"]
+    lines += [
+        "## Domain-first vs trigger-first (equal budget)",
+        "",
+        "| model | budget | trigger-first | domain-first | Δ (domain−trigger) |",
+        "|---|---|---|---|---|",
+    ]
     for model in MODELS:
         for trig, dom in DOMAIN_PAIRS:
             tc = conds.get(f"{model}-{trig}")
@@ -124,8 +140,11 @@ def main() -> int:
                 f"{dc['top1']:.2f} ({dom}) | {delta:+.2f} |"
             )
     # Compact (domain + trigger) vs full.
-    lines += ["", "| model | compact C5 top1 | full C4 top1 | C5−C4 | C5 tokens | C4 tokens |",
-              "|---|---|---|---|---|---|"]
+    lines += [
+        "",
+        "| model | compact C5 top1 | full C4 top1 | C5−C4 | C5 tokens | C4 tokens |",
+        "|---|---|---|---|---|---|",
+    ]
     for model in MODELS:
         c5 = conds.get(f"{model}-C5")
         c4 = conds.get(f"{model}-C4")
@@ -138,7 +157,12 @@ def main() -> int:
     lines.append("")
 
     # Portability read.
-    if "haiku" in slopes and "opus" in slopes and slopes["haiku"] is not None and slopes["opus"] is not None:
+    if (
+        "haiku" in slopes
+        and "opus" in slopes
+        and slopes["haiku"] is not None
+        and slopes["opus"] is not None
+    ):
         gap = slopes["haiku"] - slopes["opus"]
         lines += ["## Portability", ""]
         if gap >= PORTABILITY_THRESHOLD:

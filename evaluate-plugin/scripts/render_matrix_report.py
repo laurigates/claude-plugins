@@ -13,6 +13,7 @@ verdicts are interpreted.
 Usage:
   render_matrix_report.py <model-matrix.json> [--out <file.md>]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -21,9 +22,9 @@ import sys
 from pathlib import Path
 
 # Verdict thresholds (delta = with_skill - baseline). See the design doc's 2x2.
-EARNS_KEEP_DELTA = 0.15   # with-skill clearly beats baseline
+EARNS_KEEP_DELTA = 0.15  # with-skill clearly beats baseline
 REDUNDANT_BASELINE = 0.85  # baseline already strong; skill may be redundant
-FIGHTING_DELTA = -0.05    # with-skill underperforms baseline
+FIGHTING_DELTA = -0.05  # with-skill underperforms baseline
 
 # Executability floor (absolute with-skill pass rate, not a delta). The
 # executability gate asks "can a weak model actually DO the task" — distinct
@@ -128,11 +129,7 @@ def render(matrix: dict) -> str:
     # model cannot actually *do* the task even with the skill loaded. Additive
     # and backward compatible — emits nothing when haiku is at/above the floor
     # (or either model is missing).
-    if (
-        opus is not None
-        and haiku is not None
-        and haiku < HAIKU_EXEC_FLOOR <= opus
-    ):
+    if opus is not None and haiku is not None and haiku < HAIKU_EXEC_FLOOR <= opus:
         out.append(
             f"> **Executability flag:** `executable_on_haiku=false` — haiku with-skill "
             f"pass rate ({_pct(haiku)}) is below the {round(HAIKU_EXEC_FLOOR * 100)}% "

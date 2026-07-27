@@ -108,13 +108,19 @@ class TestCreateRepoFullGenesis:
         # Initial commit is on main with expected scope.
         branch = subprocess.run(
             ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-            cwd=result.path, capture_output=True, text=True, check=True,
+            cwd=result.path,
+            capture_output=True,
+            text=True,
+            check=True,
         ).stdout.strip()
         assert branch == "main"
 
         log = subprocess.run(
             ["git", "log", "--format=%s", "-n", "1"],
-            cwd=result.path, capture_output=True, text=True, check=True,
+            cwd=result.path,
+            capture_output=True,
+            text=True,
+            check=True,
         ).stdout.strip()
         assert log.startswith("chore: initialize")
 

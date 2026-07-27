@@ -29,7 +29,6 @@ from vault_agent.orchestrator import commit_all, enter_worktree
 from vault_agent.worktree import (
     WorktreeHandle,
     format_review_instructions,
-    worktree_file_change_count,
 )
 
 AVAILABLE_MODES: tuple[str, ...] = ("lint", "links", "stubs", "mocs")
@@ -135,10 +134,7 @@ def _run_stubs_in(
     results = rewrite_broken_redirects(wt_index, config)
     c = sum(1 for r in results if r.changed)
     if c:
-        msg = (
-            f"fix(stubs): restore canonical redirect body in "
-            f"{c} work-namespace files"
-        )
+        msg = f"fix(stubs): restore canonical redirect body in {c} work-namespace files"
         if commit_all(handle, msg):
             commits.append(msg)
     return commits
@@ -150,9 +146,7 @@ def run_maintain(
     vault = Path(vault).expanduser().resolve()
     invalid = [m for m in modes if m not in AVAILABLE_MODES]
     if invalid:
-        raise ValueError(
-            f"Unknown modes: {invalid}. Available: {AVAILABLE_MODES}"
-        )
+        raise ValueError(f"Unknown modes: {invalid}. Available: {AVAILABLE_MODES}")
 
     # MOCs is analysis-only — compute once regardless of apply.
     audit = run_audit(vault)

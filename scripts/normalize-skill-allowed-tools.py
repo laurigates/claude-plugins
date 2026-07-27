@@ -20,6 +20,7 @@ Usage:
   --check   Report files that WOULD change, exit 1 if any. No writes.
   PATH      SKILL.md files or globs; defaults to */skills/*/SKILL.md under cwd.
 """
+
 from __future__ import annotations
 
 import glob
@@ -63,7 +64,7 @@ def process(path: Path, check: bool) -> bool:
     if not changed:
         return False
     if not check:
-        new_text = m.group(1) + new_body + m.group(3) + text[m.end():]
+        new_text = m.group(1) + new_body + m.group(3) + text[m.end() :]
         path.write_text(new_text, encoding="utf-8")
     return True
 

@@ -16,7 +16,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from vault_agent.analyzers.vault_index import Note, VaultIndex, Wikilink
+from vault_agent.analyzers.vault_index import VaultIndex, Wikilink
 
 
 @dataclass

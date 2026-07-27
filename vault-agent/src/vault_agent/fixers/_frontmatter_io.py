@@ -24,12 +24,7 @@ class FrontmatterFile:
     def join(self) -> str:
         if not self.has_frontmatter:
             return self.body
-        return (
-            "---" + self.eol
-            + "".join(self.fm_lines)
-            + "---" + self.eol
-            + self.body
-        )
+        return "---" + self.eol + "".join(self.fm_lines) + "---" + self.eol + self.body
 
 
 def _detect_eol(text: str) -> str:

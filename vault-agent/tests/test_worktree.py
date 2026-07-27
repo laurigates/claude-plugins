@@ -16,7 +16,6 @@ from vault_agent.worktree import (
     create_worktree,
     cleanup_worktree,
     format_review_instructions,
-    get_base_branch,
     release_lock,
     timestamped_branch,
     worktree_commit_count,
@@ -85,9 +84,7 @@ class TestWorktreeLifecycle:
         handle = create_worktree(tmp_path, timestamped_branch())
 
         (handle.worktree_path / "new.md").write_text("# new\n")
-        subprocess.run(
-            ["git", "add", "new.md"], cwd=handle.worktree_path, check=True
-        )
+        subprocess.run(["git", "add", "new.md"], cwd=handle.worktree_path, check=True)
         subprocess.run(
             ["git", "commit", "-qm", "fix(lint): add new"],
             cwd=handle.worktree_path,

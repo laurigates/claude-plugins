@@ -10,7 +10,6 @@ from __future__ import annotations
 import textwrap
 from pathlib import Path
 
-import pytest
 
 from vault_agent.analyzers import scan
 from vault_agent.analyzers.audit import run_audit
@@ -353,7 +352,8 @@ class TestStubs:
                     tags: [🌱]
                     context: work
                     ---
-                    Lots and lots of duplicated docker content here. """ + ("x" * 300),
+                    Lots and lots of duplicated docker content here. """
+                + ("x" * 300),
             },
         )
         report = analyze_stubs(scan(vault))

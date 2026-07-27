@@ -102,7 +102,9 @@ def refresh_base(repo_path: Path, base_branch: str) -> bool:
         text=True,
     )
     if fetch.returncode != 0:
-        logger.warning("git fetch origin %s failed: %s", base_branch, fetch.stderr.strip())
+        logger.warning(
+            "git fetch origin %s failed: %s", base_branch, fetch.stderr.strip()
+        )
         return False
     # Only fast-forward if the local branch is checked out and behind.
     current = subprocess.run(
@@ -120,7 +122,9 @@ def refresh_base(repo_path: Path, base_branch: str) -> bool:
         text=True,
     )
     if ff.returncode != 0:
-        logger.warning("Non-fast-forward refresh of %s: %s", base_branch, ff.stderr.strip())
+        logger.warning(
+            "Non-fast-forward refresh of %s: %s", base_branch, ff.stderr.strip()
+        )
         return False
     return True
 
@@ -146,7 +150,9 @@ def _has_origin(repo_path: Path) -> bool:
     """True if the repo has an ``origin`` remote configured."""
     result = subprocess.run(
         ["git", "remote", "get-url", "origin"],
-        cwd=repo_path, capture_output=True, text=True,
+        cwd=repo_path,
+        capture_output=True,
+        text=True,
     )
     return result.returncode == 0
 
@@ -159,7 +165,9 @@ def _count_behind(repo_path: Path, local_ref: str, remote_ref: str) -> int:
     """
     result = subprocess.run(
         ["git", "rev-list", "--count", f"{local_ref}..{remote_ref}"],
-        cwd=repo_path, capture_output=True, text=True,
+        cwd=repo_path,
+        capture_output=True,
+        text=True,
     )
     if result.returncode != 0:
         return 0
@@ -182,25 +190,39 @@ def probe_base_freshness(repo_path: Path, base_branch: str) -> BaseFreshness:
     """
     if not _has_origin(repo_path):
         return BaseFreshness(
-            fetched=False, has_remote=False, behind=0, base_branch=base_branch,
+            fetched=False,
+            has_remote=False,
+            behind=0,
+            base_branch=base_branch,
         )
     fetch = subprocess.run(
         ["git", "fetch", "origin", base_branch],
-        cwd=repo_path, capture_output=True, text=True,
+        cwd=repo_path,
+        capture_output=True,
+        text=True,
     )
     if fetch.returncode != 0:
         logger.warning(
             "git fetch origin %s failed: %s",
-            base_branch, fetch.stderr.strip(),
+            base_branch,
+            fetch.stderr.strip(),
         )
         return BaseFreshness(
-            fetched=False, has_remote=True, behind=0, base_branch=base_branch,
+            fetched=False,
+            has_remote=True,
+            behind=0,
+            base_branch=base_branch,
         )
     behind = _count_behind(
-        repo_path, base_branch, f"origin/{base_branch}",
+        repo_path,
+        base_branch,
+        f"origin/{base_branch}",
     )
     return BaseFreshness(
-        fetched=True, has_remote=True, behind=behind, base_branch=base_branch,
+        fetched=True,
+        has_remote=True,
+        behind=behind,
+        base_branch=base_branch,
     )
 
 
@@ -216,11 +238,17 @@ def find_existing_pr(
     """
     result = subprocess.run(
         [
-            "gh", "pr", "list",
-            "--state", "open",
-            "--base", base_branch,
-            "--json", "url,headRefName",
-            "--limit", "100",
+            "gh",
+            "pr",
+            "list",
+            "--state",
+            "open",
+            "--base",
+            base_branch,
+            "--json",
+            "url,headRefName",
+            "--limit",
+            "100",
         ],
         cwd=repo_path,
         capture_output=True,
@@ -247,11 +275,17 @@ def find_existing_issue(repo_path: Path, title: str) -> str | None:
     """
     result = subprocess.run(
         [
-            "gh", "issue", "list",
-            "--state", "open",
-            "--search", f'in:title "{title}"',
-            "--json", "url,title",
-            "--limit", "50",
+            "gh",
+            "issue",
+            "list",
+            "--state",
+            "open",
+            "--search",
+            f'in:title "{title}"',
+            "--json",
+            "url,title",
+            "--limit",
+            "50",
         ],
         cwd=repo_path,
         capture_output=True,
@@ -340,7 +374,9 @@ def create_worktree(
 
     logger.info(
         "Created worktree at %s on branch %s (base: %s)",
-        worktree_path, branch, base_ref,
+        worktree_path,
+        branch,
+        base_ref,
     )
     return worktree_path
 
@@ -388,14 +424,20 @@ def auto_commit_if_dirty(worktree_path: Path, message: str) -> bool:
     """
     status = subprocess.run(
         ["git", "status", "--porcelain"],
-        cwd=worktree_path, capture_output=True, text=True, check=True,
+        cwd=worktree_path,
+        capture_output=True,
+        text=True,
+        check=True,
     )
     if not status.stdout.strip():
         return False
     subprocess.run(["git", "add", "-A"], cwd=worktree_path, check=True)
     subprocess.run(
         ["git", "commit", "-m", message],
-        cwd=worktree_path, check=True, capture_output=True, text=True,
+        cwd=worktree_path,
+        check=True,
+        capture_output=True,
+        text=True,
     )
     return True
 
@@ -436,11 +478,17 @@ def push_and_create_pr(
     # Create PR
     result = subprocess.run(
         [
-            "gh", "pr", "create",
-            "--title", title,
-            "--body", body,
-            "--base", base_branch,
-            "--head", branch,
+            "gh",
+            "pr",
+            "create",
+            "--title",
+            title,
+            "--body",
+            body,
+            "--base",
+            base_branch,
+            "--head",
+            branch,
         ],
         cwd=worktree_path,
         capture_output=True,
@@ -478,9 +526,13 @@ def create_github_issues(
     urls = []
     for finding in findings:
         cmd = [
-            "gh", "issue", "create",
-            "--title", finding["title"],
-            "--body", finding["body"],
+            "gh",
+            "issue",
+            "create",
+            "--title",
+            finding["title"],
+            "--body",
+            finding["body"],
         ]
         if finding.get("labels"):
             cmd.extend(["--label", finding["labels"]])
@@ -494,7 +546,9 @@ def create_github_issues(
         if result.returncode == 0:
             urls.append(result.stdout.strip())
         else:
-            logger.error("Failed to create issue '%s': %s", finding["title"], result.stderr)
+            logger.error(
+                "Failed to create issue '%s': %s", finding["title"], result.stderr
+            )
 
     return urls
 
@@ -516,13 +570,15 @@ def parse_report_only_findings(agent_output: str) -> list[dict[str, str]]:
     for match in pattern.finditer(agent_output):
         category = match.group(1)
         description = match.group(2).strip()
-        findings.append({
-            "title": f"[{category}] {description}",
-            "body": (
-                f"**Category:** {category}\n\n"
-                f"**Finding:** {description}\n\n"
-                f"*Created by git-repo-agent maintain --report-only*"
-            ),
-            "labels": category,
-        })
+        findings.append(
+            {
+                "title": f"[{category}] {description}",
+                "body": (
+                    f"**Category:** {category}\n\n"
+                    f"**Finding:** {description}\n\n"
+                    f"*Created by git-repo-agent maintain --report-only*"
+                ),
+                "labels": category,
+            }
+        )
     return findings

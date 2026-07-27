@@ -74,8 +74,12 @@ def _union_merge(base: str, ours: str, theirs: str) -> str:
         (d / "ours").write_text(ours)
         (d / "theirs").write_text(theirs)
         result = _git(
-            "merge-file", "-p", "--union",
-            str(d / "ours"), str(d / "base"), str(d / "theirs"),
+            "merge-file",
+            "-p",
+            "--union",
+            str(d / "ours"),
+            str(d / "base"),
+            str(d / "theirs"),
         )
     return result.stdout
 

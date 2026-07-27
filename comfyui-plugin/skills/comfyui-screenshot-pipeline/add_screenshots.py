@@ -934,22 +934,54 @@ def main() -> int:
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    p.add_argument("--name", required=True, help="pack dir name = served URL segment, e.g. comfyui-touch-numeric")
+    p.add_argument(
+        "--name",
+        required=True,
+        help="pack dir name = served URL segment, e.g. comfyui-touch-numeric",
+    )
     p.add_argument(
         "--variant",
         choices=["modal", "gesture-affordance", "gesture-overlay"],
         default="modal",
     )
-    p.add_argument("--out", default="picker.png", help="output PNG filename (also EXPECTED_OUTPUTS)")
-    p.add_argument("--node", default="KSampler", help="node type for workflow.json (modal/affordance)")
-    p.add_argument("--widget", default="seed", help="widget name the pack patches (modal)")
-    p.add_argument("--flag", default="_examplePatched", help="pack's per-widget patch-guard property (modal)")
-    p.add_argument("--ready", default=".cmp-body", help="inner dialog selector proving the body rendered (modal)")
-    p.add_argument("--seed-models", action="store_true", help="emit seed_models.py + Dockerfile seeding (backend model packs)")
+    p.add_argument(
+        "--out",
+        default="picker.png",
+        help="output PNG filename (also EXPECTED_OUTPUTS)",
+    )
+    p.add_argument(
+        "--node",
+        default="KSampler",
+        help="node type for workflow.json (modal/affordance)",
+    )
+    p.add_argument(
+        "--widget", default="seed", help="widget name the pack patches (modal)"
+    )
+    p.add_argument(
+        "--flag",
+        default="_examplePatched",
+        help="pack's per-widget patch-guard property (modal)",
+    )
+    p.add_argument(
+        "--ready",
+        default=".cmp-body",
+        help="inner dialog selector proving the body rendered (modal)",
+    )
+    p.add_argument(
+        "--seed-models",
+        action="store_true",
+        help="emit seed_models.py + Dockerfile seeding (backend model packs)",
+    )
     p.add_argument("--comfy-ref", default="v0.22.0", help="ComfyUI release to pin")
-    p.add_argument("--playwright", default="1.49.1", help="Playwright version (Dockerfile FROM + package.json)")
+    p.add_argument(
+        "--playwright",
+        default="1.49.1",
+        help="Playwright version (Dockerfile FROM + package.json)",
+    )
     p.add_argument("--dir", default=".", help="pack repo root (default: cwd)")
-    p.add_argument("--force", action="store_true", help="overwrite an existing screenshots/ dir")
+    p.add_argument(
+        "--force", action="store_true", help="overwrite an existing screenshots/ dir"
+    )
     args = p.parse_args()
 
     pack_dir = os.path.abspath(args.dir)
@@ -958,7 +990,10 @@ def main() -> int:
         return 1
     ss_dir = os.path.join(pack_dir, "screenshots")
     if os.path.isdir(ss_dir) and not args.force:
-        print(f"error: {ss_dir} already exists (use --force to overwrite)", file=sys.stderr)
+        print(
+            f"error: {ss_dir} already exists (use --force to overwrite)",
+            file=sys.stderr,
+        )
         return 1
 
     repl = {
@@ -978,7 +1013,10 @@ def main() -> int:
     write(os.path.join(ss_dir, "entrypoint.sh"), ENTRYPOINT, executable=True)
     write(os.path.join(ss_dir, "package.json"), render(PACKAGE_JSON, repl))
     write(os.path.join(ss_dir, "Dockerfile"), render(DOCKERFILE, repl))
-    write(os.path.join(ss_dir, "workflow.json"), render(pick_workflow(args.variant, args.node), repl))
+    write(
+        os.path.join(ss_dir, "workflow.json"),
+        render(pick_workflow(args.variant, args.node), repl),
+    )
     write(os.path.join(ss_dir, "capture.mjs"), render(pick_capture(args.variant), repl))
     write(os.path.join(ss_dir, "README.md"), render(README_TMPL, repl))
     if args.seed_models:
@@ -988,9 +1026,15 @@ def main() -> int:
     print("\nNext steps:")
     print(f"  1. Tailor screenshots/capture.mjs + workflow.json to {args.name}.")
     if args.variant == "modal":
-        print(f"     Verify --widget ({args.widget}), --flag ({args.flag}), --ready ({args.ready}) against the pack JS.")
-    print("  2. Iterate fast (mount capture.mjs/workflow.json into the cached image - see screenshots/README.md).")
-    print("  3. just screenshots  -> docs/" + args.out + ", then embed it in the README.")
+        print(
+            f"     Verify --widget ({args.widget}), --flag ({args.flag}), --ready ({args.ready}) against the pack JS."
+        )
+    print(
+        "  2. Iterate fast (mount capture.mjs/workflow.json into the cached image - see screenshots/README.md)."
+    )
+    print(
+        "  3. just screenshots  -> docs/" + args.out + ", then embed it in the README."
+    )
     return 0
 
 

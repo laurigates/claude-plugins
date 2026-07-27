@@ -185,11 +185,13 @@ def check_output_not_matches(events, pattern) -> tuple[bool, str]:
     return ok, f"/{pattern}/ {'absent' if ok else 'unexpectedly matched'}"
 
 
-def run_checks(test: dict[str, Any], events: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def run_checks(
+    test: dict[str, Any], events: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
     tool_uses = list(iter_tool_uses(events))
     results = []
     for i, check in enumerate(test.get("checks", [])):
-        cid = check.get("id") or f"check{i+1}"
+        cid = check.get("id") or f"check{i + 1}"
         kind = check.get("type")
         observational = bool(check.get("observational"))
         try:
@@ -206,20 +208,50 @@ def run_checks(test: dict[str, Any], events: list[dict[str, Any]]) -> list[dict[
             elif kind == "output_not_matches":
                 ok, detail = check_output_not_matches(events, check["pattern"])
             elif kind == "llm_judge":
-                results.append({"id": cid, "type": kind, "result": "SKIP", "detail": "run llm-judge.py"})
+                results.append(
+                    {
+                        "id": cid,
+                        "type": kind,
+                        "result": "SKIP",
+                        "detail": "run llm-judge.py",
+                    }
+                )
                 continue
             else:
-                results.append({"id": cid, "type": kind, "result": "ERROR", "detail": f"unknown type: {kind}"})
+                results.append(
+                    {
+                        "id": cid,
+                        "type": kind,
+                        "result": "ERROR",
+                        "detail": f"unknown type: {kind}",
+                    }
+                )
                 continue
             if observational:
                 # Preserve the underlying verdict in detail; report as INFO so
                 # compare.py excludes it from pass-rate totals.
                 outcome = "PASS" if ok else "FAIL"
-                results.append({"id": cid, "type": kind, "result": "INFO", "detail": f"observational[{outcome}]: {detail}"})
+                results.append(
+                    {
+                        "id": cid,
+                        "type": kind,
+                        "result": "INFO",
+                        "detail": f"observational[{outcome}]: {detail}",
+                    }
+                )
             else:
-                results.append({"id": cid, "type": kind, "result": "PASS" if ok else "FAIL", "detail": detail})
+                results.append(
+                    {
+                        "id": cid,
+                        "type": kind,
+                        "result": "PASS" if ok else "FAIL",
+                        "detail": detail,
+                    }
+                )
         except Exception as e:  # noqa: BLE001
-            results.append({"id": cid, "type": kind, "result": "ERROR", "detail": repr(e)})
+            results.append(
+                {"id": cid, "type": kind, "result": "ERROR", "detail": repr(e)}
+            )
     return results
 
 
@@ -233,7 +265,11 @@ def main() -> int:
     mpath = tpath.with_suffix(".meta.json") if tpath.suffix == ".jsonl" else None
     if mpath is None or not mpath.exists():
         # Derive meta path by stripping .jsonl and appending .meta.json
-        stem = tpath.name[: -len(".jsonl")] if tpath.name.endswith(".jsonl") else tpath.stem
+        stem = (
+            tpath.name[: -len(".jsonl")]
+            if tpath.name.endswith(".jsonl")
+            else tpath.stem
+        )
         mpath = tpath.with_name(stem + ".meta.json")
 
     with mpath.open() as f:

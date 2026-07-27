@@ -38,6 +38,7 @@ def _generated_skill_path(skill_relpath: str) -> Path:
     # Fallback: flatten the relpath under the generated tree.
     return _GENERATED_SKILLS_DIR / Path(skill_relpath).with_suffix(".md")
 
+
 # Subagent → list of skill files (relative to PLUGINS_ROOT).
 #
 # The `blueprint` subagent is intentionally absent — the blueprint lifecycle is

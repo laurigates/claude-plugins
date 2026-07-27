@@ -63,10 +63,15 @@ def load_task_meta() -> dict[str, dict]:
 def score(transcript: Path) -> list[str] | None:
     proc = subprocess.run(
         [str(HERE / "score-run.py"), str(transcript)],
-        capture_output=True, text=True, check=False,
+        capture_output=True,
+        text=True,
+        check=False,
     )
     if proc.returncode != 0:
-        print(f"WARN: score-run failed for {transcript.name}: {proc.stderr}", file=sys.stderr)
+        print(
+            f"WARN: score-run failed for {transcript.name}: {proc.stderr}",
+            file=sys.stderr,
+        )
         return None
     line = proc.stdout.strip()
     return line.split("\t") if line else None
@@ -101,21 +106,47 @@ def main() -> int:
     rows = [r for t in transcripts if (r := score(t))]
 
     # Persist raw scores.
-    header = ["task_id", "condition_id", "run_n", "gold", "predicted",
-              "runner_up", "confidence", "correct", "parse"]
+    header = [
+        "task_id",
+        "condition_id",
+        "run_n",
+        "gold",
+        "predicted",
+        "runner_up",
+        "confidence",
+        "correct",
+        "parse",
+    ]
     with (run_dir / "scores.tsv").open("w") as f:
         f.write("\t".join(header) + "\n")
         for r in rows:
             f.write("\t".join(r) + "\n")
 
     # Aggregate per condition.
-    agg: dict[str, dict] = collections.defaultdict(lambda: {
-        "route_correct": 0, "route_n": 0,
-        "nm_correct": 0, "nm_top2": 0, "nm_n": 0,
-        "none_abstain": 0, "none_n": 0,
-        "parse_fail": 0, "total": 0,
-    })
-    for task_id, cond, _run_n, gold, predicted, runner_up, _conf, correct, parse in rows:
+    agg: dict[str, dict] = collections.defaultdict(
+        lambda: {
+            "route_correct": 0,
+            "route_n": 0,
+            "nm_correct": 0,
+            "nm_top2": 0,
+            "nm_n": 0,
+            "none_abstain": 0,
+            "none_n": 0,
+            "parse_fail": 0,
+            "total": 0,
+        }
+    )
+    for (
+        task_id,
+        cond,
+        _run_n,
+        gold,
+        predicted,
+        runner_up,
+        _conf,
+        correct,
+        parse,
+    ) in rows:
         m = task_meta.get(task_id)
         if m is None:
             continue
@@ -166,11 +197,22 @@ def main() -> int:
     (run_dir / "results.json").write_text(json.dumps(out, indent=2) + "\n")
 
     # Markdown report.
-    cols = ["top1", "near_miss", "top2_nearmiss", "false_trigger", "abstain", "parse_fail"]
-    lines = [f"# skill-catalog-routing run {run_id}", "",
-             f"Transcripts: {len(transcripts)}  ·  scored rows: {len(rows)}", "",
-             "| condition | " + " | ".join(cols) + " | n_route |",
-             "|" + "---|" * (len(cols) + 2)]
+    cols = [
+        "top1",
+        "near_miss",
+        "top2_nearmiss",
+        "false_trigger",
+        "abstain",
+        "parse_fail",
+    ]
+    lines = [
+        f"# skill-catalog-routing run {run_id}",
+        "",
+        f"Transcripts: {len(transcripts)}  ·  scored rows: {len(rows)}",
+        "",
+        "| condition | " + " | ".join(cols) + " | n_route |",
+        "|" + "---|" * (len(cols) + 2),
+    ]
     for cond in sorted(results):
         r = results[cond]
         cells = [f"{r[c]:.2f}" for c in cols]

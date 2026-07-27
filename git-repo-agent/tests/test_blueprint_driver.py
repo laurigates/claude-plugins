@@ -77,9 +77,7 @@ class TestPhaseRegistry:
         heading, the compiled output omitted format_version entirely
         and the model wrote v1.0.0 from training memory.
         """
-        content = get_compiled_skill(
-            "blueprint-plugin/skills/blueprint-init/SKILL.md"
-        )
+        content = get_compiled_skill("blueprint-plugin/skills/blueprint-init/SKILL.md")
         assert "format_version" in content, (
             "blueprint-init compiled output is missing 'format_version' — "
             "the model will have to guess the current schema version."
@@ -175,7 +173,8 @@ class TestBlueprintSkillCompilation:
     """
 
     @pytest.mark.parametrize(
-        "skill_relpath", _all_blueprint_skill_paths(),
+        "skill_relpath",
+        _all_blueprint_skill_paths(),
         ids=lambda p: Path(p).parent.name,
     )
     def test_every_blueprint_skill_compiles_substantively(self, skill_relpath):
@@ -200,7 +199,8 @@ class TestBlueprintSkillCompilation:
         )
 
     @pytest.mark.parametrize(
-        "skill_relpath", _all_blueprint_skill_paths(),
+        "skill_relpath",
+        _all_blueprint_skill_paths(),
         ids=lambda p: Path(p).parent.name,
     )
     def test_no_actionable_content_under_dropped_heading(self, skill_relpath):
@@ -228,9 +228,7 @@ class TestBlueprintSkillCompilation:
         assert not offenders, (
             f"{skill_relpath} has actionable step content under "
             f"heading(s) the compiler drops:\n"
-            + "\n".join(
-                f"  - '## {h}' contains {m}" for h, m in offenders
-            )
+            + "\n".join(f"  - '## {h}' contains {m}" for h, m in offenders)
             + f"\n\nDROP_HEADINGS = {sorted(DROP_HEADINGS)}\n"
             f"Fix: promote the '**Steps**:' faux-heading to a real "
             f"'## Steps' heading so it survives compilation."
@@ -280,11 +278,13 @@ class TestProjectSizeSniff:
         _sp.run(["git", "init", "-q"], cwd=repo, check=True)
         _sp.run(
             ["git", "config", "user.email", "test@example.com"],
-            cwd=repo, check=True,
+            cwd=repo,
+            check=True,
         )
         _sp.run(
             ["git", "config", "user.name", "Test"],
-            cwd=repo, check=True,
+            cwd=repo,
+            check=True,
         )
 
     @staticmethod
@@ -297,7 +297,8 @@ class TestProjectSizeSniff:
         _sp.run(["git", "add", "marker"], cwd=repo, check=True)
         _sp.run(
             ["git", "commit", "-q", "--allow-empty-message", "-m", message],
-            cwd=repo, check=True,
+            cwd=repo,
+            check=True,
         )
 
     def test_unknown_when_not_a_git_repo(self, tmp_path: Path):
@@ -356,11 +357,13 @@ class TestSizeAwareGating:
         _sp.run(["git", "init", "-q"], cwd=repo, check=True)
         _sp.run(
             ["git", "config", "user.email", "test@example.com"],
-            cwd=repo, check=True,
+            cwd=repo,
+            check=True,
         )
         _sp.run(
             ["git", "config", "user.name", "Test"],
-            cwd=repo, check=True,
+            cwd=repo,
+            check=True,
         )
         for msg in messages:
             marker = repo / "marker"
@@ -368,7 +371,8 @@ class TestSizeAwareGating:
             _sp.run(["git", "add", "marker"], cwd=repo, check=True)
             _sp.run(
                 ["git", "commit", "-q", "-m", msg],
-                cwd=repo, check=True,
+                cwd=repo,
+                check=True,
             )
 
     def test_derive_tests_skipped_when_no_fix_commits(self, tmp_path: Path):
@@ -408,9 +412,7 @@ class TestSizeAwareGating:
     def test_feature_tracker_sync_skipped_on_tiny_single_feat(self, tmp_path: Path):
         self._init_with_commits(tmp_path, ["feat: ship it"])
         driver = BlueprintDriver(tmp_path, DriverOptions())
-        phase = next(
-            p for p in ONBOARD_PHASES if p.name == "feature_tracker_sync"
-        )
+        phase = next(p for p in ONBOARD_PHASES if p.name == "feature_tracker_sync")
         assert driver._artifact_skip_reason(phase) is not None
 
     def test_init_not_skipped_by_size_gating(self, tmp_path: Path):
@@ -426,11 +428,15 @@ class TestSizeAwareGating:
         """``size_aware=False`` bypasses the gating entirely."""
         self._init_with_commits(tmp_path, ["feat: ship it"])
         driver = BlueprintDriver(
-            tmp_path, DriverOptions(size_aware=False),
+            tmp_path,
+            DriverOptions(size_aware=False),
         )
         for phase_name in (
-            "derive_tests", "derive_adr", "derive_prd",
-            "derive_rules", "feature_tracker_sync",
+            "derive_tests",
+            "derive_adr",
+            "derive_prd",
+            "derive_rules",
+            "feature_tracker_sync",
         ):
             phase = next(p for p in ONBOARD_PHASES if p.name == phase_name)
             assert driver._artifact_skip_reason(phase) is None, phase_name
@@ -442,8 +448,11 @@ class TestSizeAwareGating:
         self._init_with_commits(tmp_path, messages)
         driver = BlueprintDriver(tmp_path, DriverOptions())
         for phase_name in (
-            "derive_tests", "derive_adr", "derive_prd",
-            "derive_rules", "feature_tracker_sync",
+            "derive_tests",
+            "derive_adr",
+            "derive_prd",
+            "derive_rules",
+            "feature_tracker_sync",
         ):
             phase = next(p for p in ONBOARD_PHASES if p.name == phase_name)
             assert driver._artifact_skip_reason(phase) is None, phase_name

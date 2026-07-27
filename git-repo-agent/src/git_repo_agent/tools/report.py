@@ -8,7 +8,13 @@ from typing import Any
 from claude_agent_sdk import tool
 
 # Grade emoji mapping
-_GRADE_EMOJI = {"A": "\u2705", "B": "\U0001f7e2", "C": "\U0001f7e1", "D": "\U0001f7e0", "F": "\U0001f534"}
+_GRADE_EMOJI = {
+    "A": "\u2705",
+    "B": "\U0001f7e2",
+    "C": "\U0001f7e1",
+    "D": "\U0001f7e0",
+    "F": "\U0001f534",
+}
 
 # Category display names
 _CATEGORY_NAMES = {

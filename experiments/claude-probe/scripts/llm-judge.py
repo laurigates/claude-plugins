@@ -69,7 +69,9 @@ def transcript_to_text(events: list[dict[str, Any]]) -> str:
                 inp = json.dumps(block.get("input", {}), sort_keys=True)
                 lines.append(f"<tool_use name={block.get('name')}>{inp}</tool_use>")
             elif btype == "tool_result":
-                lines.append(f"<tool_result>{str(block.get('content',''))[:400]}</tool_result>")
+                lines.append(
+                    f"<tool_result>{str(block.get('content', ''))[:400]}</tool_result>"
+                )
         parts.append("\n".join(lines))
     return "\n\n".join(parts)
 
@@ -106,15 +108,28 @@ def run_judge(prompt_text: str) -> tuple[str, str]:
     if not shutil.which("claude"):
         return "ERROR", "claude CLI not on PATH"
     proc = subprocess.run(
-        ["claude", "-p", prompt_text, "--model", JUDGE_MODEL, "--output-format", "text"],
+        [
+            "claude",
+            "-p",
+            prompt_text,
+            "--model",
+            JUDGE_MODEL,
+            "--output-format",
+            "text",
+        ],
         capture_output=True,
         text=True,
         check=False,
     )
     out = (proc.stdout or "").strip()
     if proc.returncode != 0:
-        return "ERROR", f"judge exit={proc.returncode}: {(proc.stderr or '').strip()[:200]}"
-    m = re.match(r"VERDICT:\s*(PASS|FAIL|INDETERMINATE)\b(.*)", out, re.IGNORECASE | re.DOTALL)
+        return (
+            "ERROR",
+            f"judge exit={proc.returncode}: {(proc.stderr or '').strip()[:200]}",
+        )
+    m = re.match(
+        r"VERDICT:\s*(PASS|FAIL|INDETERMINATE)\b(.*)", out, re.IGNORECASE | re.DOTALL
+    )
     if not m:
         return "ERROR", f"unparseable: {out[:200]}"
     verdict = m.group(1).upper()
@@ -146,7 +161,7 @@ def main() -> int:
     transcript_text = transcript_to_text(events)
 
     for i, check in enumerate(judge_checks):
-        cid = check.get("id") or f"judge{i+1}"
+        cid = check.get("id") or f"judge{i + 1}"
         observational = bool(check.get("observational"))
         rubric = check.get("rubric", "")
         prompt = render_prompt(rubric, test.get("prompt", ""), transcript_text)

@@ -37,7 +37,8 @@ def _init_repo(path: Path) -> None:
     """Initialize a fresh repo with one commit on ``main``."""
     subprocess.run(
         ["git", "init", "-b", "main", str(path)],
-        check=True, capture_output=True,
+        check=True,
+        capture_output=True,
     )
     for key, value in [
         ("user.email", "test@example.com"),
@@ -46,16 +47,19 @@ def _init_repo(path: Path) -> None:
     ]:
         subprocess.run(
             ["git", "-C", str(path), "config", key, value],
-            check=True, capture_output=True,
+            check=True,
+            capture_output=True,
         )
     (path / "README.md").write_text("init\n")
     subprocess.run(
         ["git", "-C", str(path), "add", "-A"],
-        check=True, capture_output=True,
+        check=True,
+        capture_output=True,
     )
     subprocess.run(
         ["git", "-C", str(path), "commit", "-m", "init"],
-        check=True, capture_output=True,
+        check=True,
+        capture_output=True,
     )
 
 
@@ -79,21 +83,25 @@ def _make_remote_with_extra_commits(
     _init_repo(upstream)
     subprocess.run(
         ["git", "init", "--bare", str(remote)],
-        check=True, capture_output=True,
+        check=True,
+        capture_output=True,
     )
     subprocess.run(
         ["git", "-C", str(upstream), "remote", "add", "origin", str(remote)],
-        check=True, capture_output=True,
+        check=True,
+        capture_output=True,
     )
     subprocess.run(
         ["git", "-C", str(upstream), "push", "-u", "origin", "main"],
-        check=True, capture_output=True,
+        check=True,
+        capture_output=True,
     )
 
     # Clone the local working copy.
     subprocess.run(
         ["git", "clone", str(remote), str(local)],
-        check=True, capture_output=True,
+        check=True,
+        capture_output=True,
     )
     # Match the test repo identity in the local clone.
     for key, value in [
@@ -103,7 +111,8 @@ def _make_remote_with_extra_commits(
     ]:
         subprocess.run(
             ["git", "-C", str(local), "config", key, value],
-            check=True, capture_output=True,
+            check=True,
+            capture_output=True,
         )
 
     # Now move the remote forward by N commits via the upstream working copy.
@@ -111,19 +120,26 @@ def _make_remote_with_extra_commits(
         (upstream / f"file_{i}.txt").write_text(f"merged after clone {i}\n")
         subprocess.run(
             ["git", "-C", str(upstream), "add", "-A"],
-            check=True, capture_output=True,
+            check=True,
+            capture_output=True,
         )
         subprocess.run(
             [
-                "git", "-C", str(upstream), "commit",
-                "-m", f"feat: post-clone change {i}",
+                "git",
+                "-C",
+                str(upstream),
+                "commit",
+                "-m",
+                f"feat: post-clone change {i}",
             ],
-            check=True, capture_output=True,
+            check=True,
+            capture_output=True,
         )
     if extra_commits:
         subprocess.run(
             ["git", "-C", str(upstream), "push", "origin", "main"],
-            check=True, capture_output=True,
+            check=True,
+            capture_output=True,
         )
 
     return local, remote
@@ -172,14 +188,18 @@ class TestProbeBaseFreshness:
 
         head_before = subprocess.run(
             ["git", "-C", str(local), "rev-parse", "HEAD"],
-            check=True, capture_output=True, text=True,
+            check=True,
+            capture_output=True,
+            text=True,
         ).stdout.strip()
 
         probe_base_freshness(local, "main")
 
         head_after = subprocess.run(
             ["git", "-C", str(local), "rev-parse", "HEAD"],
-            check=True, capture_output=True, text=True,
+            check=True,
+            capture_output=True,
+            text=True,
         ).stdout.strip()
         assert head_before == head_after
 
@@ -193,13 +213,17 @@ class TestCreateWorktreeWithBaseRef:
         _init_repo(repo)
         head = subprocess.run(
             ["git", "-C", str(repo), "rev-parse", "HEAD"],
-            check=True, capture_output=True, text=True,
+            check=True,
+            capture_output=True,
+            text=True,
         ).stdout.strip()
 
         wt = create_worktree(repo, "feature/test")
         wt_head = subprocess.run(
             ["git", "-C", str(wt), "rev-parse", "HEAD"],
-            check=True, capture_output=True, text=True,
+            check=True,
+            capture_output=True,
+            text=True,
         ).stdout.strip()
         assert wt_head == head
 
@@ -214,14 +238,18 @@ class TestCreateWorktreeWithBaseRef:
 
         local_head = subprocess.run(
             ["git", "-C", str(local), "rev-parse", "main"],
-            check=True, capture_output=True, text=True,
+            check=True,
+            capture_output=True,
+            text=True,
         ).stdout.strip()
         # Force the fetch via the probe helper, so origin/main is in the
         # local clone's ref database when create_worktree runs.
         probe_base_freshness(local, "main")
         origin_head = subprocess.run(
             ["git", "-C", str(local), "rev-parse", "origin/main"],
-            check=True, capture_output=True, text=True,
+            check=True,
+            capture_output=True,
+            text=True,
         ).stdout.strip()
         assert local_head != origin_head, (
             "Test setup invariant: local main must differ from origin/main"
@@ -230,7 +258,9 @@ class TestCreateWorktreeWithBaseRef:
         wt = create_worktree(local, "maintain/test", base_ref="origin/main")
         wt_head = subprocess.run(
             ["git", "-C", str(wt), "rev-parse", "HEAD"],
-            check=True, capture_output=True, text=True,
+            check=True,
+            capture_output=True,
+            text=True,
         ).stdout.strip()
         assert wt_head == origin_head, (
             "Worktree must be branched off origin/main, not local main"

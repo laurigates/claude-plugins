@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import subprocess
 import textwrap
 from pathlib import Path
 
@@ -35,9 +34,7 @@ class TestIsInlineTagSyntax:
     def test_detects_generic_nouns(self, target: str) -> None:
         assert is_inline_tag_syntax(target) is True
 
-    @pytest.mark.parametrize(
-        "target", ["ArgoCD", "Kafka", "CI/CD", "Raspberry Pi"]
-    )
+    @pytest.mark.parametrize("target", ["ArgoCD", "Kafka", "CI/CD", "Raspberry Pi"])
     def test_allows_real_note_basenames(self, target: str) -> None:
         assert is_inline_tag_syntax(target) is False
 
@@ -84,8 +81,7 @@ class TestClassifyMatch:
     def test_inline_tag_syntax_always_skip(self) -> None:
         # Even with a perfect match, we skip inline-tag syntax.
         assert (
-            classify_match("code", [BasenameMatch("code", 1.0)])
-            == ConfidenceTier.SKIP
+            classify_match("code", [BasenameMatch("code", 1.0)]) == ConfidenceTier.SKIP
         )
 
 

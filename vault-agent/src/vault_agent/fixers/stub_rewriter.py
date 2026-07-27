@@ -43,9 +43,7 @@ See [[Zettelkasten/{basename}|{basename}]] in the main knowledge base.
 """
 
 
-_FRONTMATTER_RE = re.compile(
-    r"\A\s*---\n(.*?)\n---\n", re.DOTALL
-)
+_FRONTMATTER_RE = re.compile(r"\A\s*---\n(.*?)\n---\n", re.DOTALL)
 
 _H2_RE = re.compile(r"^##\s+(.*?)\s*$", re.MULTILINE)
 
@@ -187,8 +185,6 @@ def rewrite_broken_redirects(
         )
         cls.path.write_text(new_body, encoding="utf-8")
         results.append(
-            StubRewriteResult(
-                path=cls.path, changed=True, previous_size=previous_size
-            )
+            StubRewriteResult(path=cls.path, changed=True, previous_size=previous_size)
         )
     return results

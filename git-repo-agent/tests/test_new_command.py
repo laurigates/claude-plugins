@@ -26,11 +26,16 @@ class TestNewDryRun:
         result = runner.invoke(
             app,
             [
-                "new", "Just an idea",
-                "--name", "My Cool Project",
-                "--language", "python",
-                "--stack-indicators", "github-actions",
-                "--parent-dir", str(tmp_path),
+                "new",
+                "Just an idea",
+                "--name",
+                "My Cool Project",
+                "--language",
+                "python",
+                "--stack-indicators",
+                "github-actions",
+                "--parent-dir",
+                str(tmp_path),
                 "--no-remote",
                 "--dry-run",
             ],
@@ -46,11 +51,16 @@ class TestNewDryRun:
         result = runner.invoke(
             app,
             [
-                "new", "idea",
-                "--name", "x",
-                "--language", "cobol",
-                "--parent-dir", str(tmp_path),
-                "--no-remote", "--dry-run",
+                "new",
+                "idea",
+                "--name",
+                "x",
+                "--language",
+                "cobol",
+                "--parent-dir",
+                str(tmp_path),
+                "--no-remote",
+                "--dry-run",
             ],
         )
         assert result.exit_code == 2
@@ -60,11 +70,16 @@ class TestNewDryRun:
         result = runner.invoke(
             app,
             [
-                "new", "idea",
-                "--name", "x",
-                "--visibility", "secret",
-                "--parent-dir", str(tmp_path),
-                "--no-remote", "--dry-run",
+                "new",
+                "idea",
+                "--name",
+                "x",
+                "--visibility",
+                "secret",
+                "--parent-dir",
+                str(tmp_path),
+                "--no-remote",
+                "--dry-run",
             ],
         )
         assert result.exit_code == 2
@@ -74,10 +89,16 @@ class TestNewDryRun:
         result = runner.invoke(
             app,
             [
-                "new", "idea",
-                "--name", "x", "--language", "python",
-                "--parent-dir", "/nonexistent/does/not/exist",
-                "--no-remote", "--dry-run",
+                "new",
+                "idea",
+                "--name",
+                "x",
+                "--language",
+                "python",
+                "--parent-dir",
+                "/nonexistent/does/not/exist",
+                "--no-remote",
+                "--dry-run",
             ],
         )
         assert result.exit_code == 2
@@ -96,11 +117,16 @@ class TestNewFullGenesis:
         result = runner.invoke(
             app,
             [
-                "new", "A small CLI that does a thing",
-                "--name", "Small CLI",
-                "--language", "python",
-                "--stack-indicators", "github-actions",
-                "--parent-dir", str(tmp_path),
+                "new",
+                "A small CLI that does a thing",
+                "--name",
+                "Small CLI",
+                "--language",
+                "python",
+                "--stack-indicators",
+                "github-actions",
+                "--parent-dir",
+                str(tmp_path),
                 "--no-remote",
                 "--skip-blueprint",
             ],
@@ -120,9 +146,16 @@ class TestNewFullGenesis:
         assert "github-actions-plugin@claude-plugins" in settings["enabledPlugins"]
 
         # Single initial commit on main (blueprint-init was skipped).
-        log = subprocess.run(
-            ["git", "log", "--format=%s"],
-            cwd=repo, capture_output=True, text=True, check=True,
-        ).stdout.strip().splitlines()
+        log = (
+            subprocess.run(
+                ["git", "log", "--format=%s"],
+                cwd=repo,
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            .stdout.strip()
+            .splitlines()
+        )
         assert len(log) == 1
         assert log[0].startswith("chore: initialize")
