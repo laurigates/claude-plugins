@@ -1,7 +1,7 @@
 ---
 created: 2025-12-17
-modified: 2026-05-09
-reviewed: 2026-05-03
+modified: 2026-07-27
+reviewed: 2026-07-27
 description: Show blueprint version, config, PRD/ADR/PRP counts, and feature tracker progress. Use when auditing traceability, orphan docs, or stale generated content.
 args: "[--report-only]"
 argument-hint: "--report-only to display status without interactive prompts"
@@ -64,9 +64,39 @@ Display the current blueprint configuration status with three-layer architecture
      - `disabled`: `enabled: false`
      - `never`: `last_completed_at` is null (never tracked)
 
+2a. **Validate the manifest against its schema** (issue #2136):
+
+   Every consumer of the manifest degrades gracefully on bad input, which is
+   correct at runtime but makes a **typo indistinguishable from an intentional
+   omission** — `autonomy_levle: 3` reads as level 0, `adr_dris: [...]` reads as
+   unconfigured, and nothing says a word. Status is the read-only diagnostic
+   that already parses the whole manifest, so the schema check belongs here:
+
+   ```bash
+   uv run --quiet --script "${CLAUDE_SKILL_DIR}/../../scripts/check-manifest-schema.py" --project-dir "$(pwd)"
+   ```
+
+   It validates against
+   [`blueprint-plugin/schemas/manifest.schema.json`](../../schemas/manifest.schema.json)
+   and emits the structured `STATUS=` / `ISSUE_COUNT=` convention. Blocks with a
+   fixed key set (`automation`, `validation`, `structure`, `project`,
+   `workspaces`, `id_registry`, and the root) are closed, so an unknown key is an
+   error naming the typo and its JSON pointer; `task_registry`,
+   `custom_overrides`, and the `generated` / `documents` / `github_issues` maps
+   stay open because their keys are user or registry data.
+
+   Read the emitted keys:
+
+   | Key | Meaning |
+   |-----|---------|
+   | `STATUS=OK` | Manifest matches the schema (or there is nothing to validate) |
+   | `STATUS=ERROR` + `schema_violation` issues | Each issue names an `AT=<json-pointer>` and the offending key — surface all of them in the Step 5 report |
+   | `STATUS=WARN` + `format_version_below_schema` | The manifest predates the schema's format version; recommend `/blueprint:upgrade` rather than reporting schema findings |
+   | `SOURCE=…:no_validator` | Neither `uv` nor an installed `jsonschema` is available — the check is skipped, not failed. Say so instead of claiming the manifest is clean |
+
 3. **Check for upgrade availability**:
    - Compare `format_version` in manifest with current plugin version
-   - Current format version: **3.3.0**
+   - Current format version: **3.4.0**
    - If manifest version < current → upgrade available
 
 3a. **Monorepo portfolio refresh (v3.3.0+)**:
@@ -171,6 +201,14 @@ Display the current blueprint configuration status with three-layer architecture
    - #{N}: {title}
    - #{M}: {title}
 
+   {If Step 2a reported schema_violation issues:}
+   Manifest schema: {N} violation(s) in docs/blueprint/manifest.json
+   - {AT=/automation}: {Additional properties are not allowed ('autonomy_levle' was unexpected)}
+      A misspelled key reads as unconfigured — the consumer silently uses its default.
+
+   {If Step 2a reported SOURCE=…:no_validator:}
+   Manifest schema: not checked (no uv / jsonschema available)
+
    Structure:
    ✅ docs/blueprint/manifest.json
    {✅|❌} docs/prds/
@@ -199,6 +237,10 @@ Display the current blueprint configuration status with three-layer architecture
    ```
 
 6. **Additional checks**:
+   - Report every `schema_violation` from Step 2a with its `AT=` pointer — a
+     misspelled key is silently ignored by its consumer, so the schema check is
+     the only place it surfaces
+   - Warn if Step 2a reported `format_version_below_schema` (recommend `/blueprint:upgrade`)
    - Warn if any tasks are overdue (e.g., "3 maintenance tasks overdue - run `/blueprint:execute` to catch up")
    - Warn if feature-tracker.json is stale (> 1 day since last update)
    - Warn if PRDs exist but no generated rules

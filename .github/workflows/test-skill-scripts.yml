@@ -13,6 +13,8 @@ on:
     types: [opened, synchronize, reopened]
     paths:
       - '**/skills/**/scripts/**'
+      - '*-plugin/scripts/**'
+      - '*-plugin/schemas/**'
       - '*-plugin/hooks/**'
       - 'scripts/run-skill-script-tests.sh'
       - 'scripts/configure-opencode.sh'
@@ -31,6 +33,8 @@ on:
     branches: [main]
     paths:
       - '**/skills/**/scripts/**'
+      - '*-plugin/scripts/**'
+      - '*-plugin/schemas/**'
       - '*-plugin/hooks/**'
       - 'scripts/run-skill-script-tests.sh'
       - 'scripts/configure-opencode.sh'
@@ -55,6 +59,12 @@ jobs:
       # version the fixtures were authored against.
       - name: Install ast-grep
         run: npm install -g @ast-grep/cli@0.43.0
+
+      # blueprint-plugin/scripts/check-manifest-schema.py is a self-contained
+      # `uv run` PEP723 script (jsonschema). Absent uv, its regression suite
+      # SKIPs; installed, the manifest-schema gate actually runs in CI (#2136).
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
 
       - name: Run skill-local regression tests
         run: bash scripts/run-skill-script-tests.sh
