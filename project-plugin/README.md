@@ -15,7 +15,9 @@ Base project initialization that creates universal project structure for any pro
 - Sets up pre-commit hooks configuration
 - Creates base GitHub Actions CI workflow
 - Generates universal Makefile with common targets
-- Optional GitHub repository creation
+- Optional GitHub repository creation — `gh` availability is probed in the skill
+  body and reported; when `gh` is missing the local scaffold still completes and
+  repo creation is skipped with an install hint (never an abort)
 
 **Usage:**
 ```bash
