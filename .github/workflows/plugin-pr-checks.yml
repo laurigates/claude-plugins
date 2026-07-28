@@ -98,6 +98,14 @@ jobs:
         if: contains(steps.changed.outputs.plugins, 'blueprint-plugin')
         run: bash scripts/check-blueprint-upgrade-target.sh
 
+      - name: Self-test the plugin-compliance when-to-use advisory (#2141)
+        # The compliance run above is wrapped in `|| true`, so a regression that
+        # re-promotes the when-to-use section to a blocking ❌ would be invisible
+        # in CI and bite only local pre-commit runs. This self-test is the CI
+        # signal for that: it asserts a SKILL.md without the section yields a ⚠️
+        # and exit 0, and carries a guard-integrity counter-case.
+        run: bash scripts/tests/test-plugin-compliance-check.sh
+
       - name: Self-test the agent-failure / completion-manifest contract guard (#1601)
         # Whole-repo invariant (the dispatch skills + refactor agent carry the
         # loud-failure and completion-manifest contracts). The self-test proves

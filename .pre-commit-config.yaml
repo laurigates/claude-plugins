@@ -256,6 +256,12 @@ repos:
         language: system
         files: '^scripts/(plugin-compliance-check\.sh|tests/test-plugin-compliance-frontmatter-dupkey\.sh)$'
         pass_filenames: false
+      - id: test-plugin-compliance-check
+        name: when-to-use section is advisory, not a blocking error (#2141)
+        entry: bash ./scripts/tests/test-plugin-compliance-check.sh
+        language: system
+        files: '^scripts/(plugin-compliance-check\.sh|tests/test-plugin-compliance-check\.sh)$'
+        pass_filenames: false
       - id: test-audit-scripts-exit
         name: scheduled-audits scripts exit 0 under set -euo pipefail (scheduled-audits)
         entry: bash ./scripts/tests/test-audit-scripts-exit.sh
