@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.37.2](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.37.1...agent-patterns-plugin-v2.37.2) (2026-07-28)
+
+
+### Code Refactoring
+
+* **agent-patterns-plugin:** extract parallel-agent-dispatch material to REFERENCE.md ([#2189](https://github.com/laurigates/claude-plugins/issues/2189)) ([926814e](https://github.com/laurigates/claude-plugins/commit/926814e6807063b56e0b6f4aa17edbf35473649a)), closes [#2174](https://github.com/laurigates/claude-plugins/issues/2174)
+
 ## [2.37.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.37.0...agent-patterns-plugin-v2.37.1) (2026-07-28)
 
 
