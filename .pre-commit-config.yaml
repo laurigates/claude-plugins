@@ -344,7 +344,7 @@ repos:
         name: looping skills keep an independent stop condition + state packet (loop-integrity.md)
         entry: bash ./scripts/check-loop-integrity.sh --strict
         language: system
-        files: '(loop-integrity\.md|workflow-checkpoint-refactor/SKILL\.md|project-test-loop/SKILL\.md|adversarial-review/SKILL\.md|check-loop-integrity\.sh)$'
+        files: '(loop-integrity\.md|workflow-checkpoint-refactor/SKILL\.md|project-test-loop/SKILL\.md|adversarial-review/SKILL\.md|execution-grounded-review/SKILL\.md|check-loop-integrity\.sh)$'
         pass_filenames: false
       - id: test-check-loop-integrity
         name: loop-integrity guard regression
