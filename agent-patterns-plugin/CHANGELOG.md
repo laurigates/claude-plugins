@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.37.1](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.37.0...agent-patterns-plugin-v2.37.1) (2026-07-28)
+
+
+### Documentation
+
+* **agent-patterns-plugin:** a refuted model claim can still mark a real gap ([#2177](https://github.com/laurigates/claude-plugins/issues/2177)) ([84de81a](https://github.com/laurigates/claude-plugins/commit/84de81a3f42bfc12b3cb7c9329da3bac737424a2))
+
 ## [2.37.0](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.36.0...agent-patterns-plugin-v2.37.0) (2026-07-27)
 
 
