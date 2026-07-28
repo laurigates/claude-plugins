@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-07-28
 reviewed: 2025-12-16
 name: knip-dead-code
 description: "Knip dead-code detector for JS/TS: unused files, deps, exports, types. Use when cleaning up codebases, finding dead exports, or enforcing dependency hygiene in CI."
@@ -12,14 +12,7 @@ allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebFetch, WebSear
 
 Knip is a comprehensive tool for finding unused code, dependencies, and exports in JavaScript and TypeScript projects. It helps maintain clean codebases and catch dead code before it accumulates.
 
-## When to Use This Skill
-
-| Use this skill when... | Use another approach when... |
-|------------------------|------------------------------|
-| Finding unused dependencies | Removing unused CSS (use PurgeCSS) |
-| Detecting unused exports in libraries | Finding runtime dead code paths |
-| Cleaning up codebases after refactors | Optimizing bundle size (use bundler tree-shaking) |
-| Enforcing dependency hygiene in CI | Detecting duplicate dependencies (use npm-dedupe) |
+Knip finds *statically* unreachable code. Reach for a different tool for unused CSS (PurgeCSS), runtime dead code paths, bundle-size trimming (bundler tree-shaking), or duplicate dependencies (npm-dedupe).
 
 ## Core Expertise
 
