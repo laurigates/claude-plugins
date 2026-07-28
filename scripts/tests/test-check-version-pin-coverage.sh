@@ -10,6 +10,10 @@
 #   C. managed shapes (tag form + SHA-with-version-comment) are NOT flagged
 #   D. version numbers in prose (outside code fences) are ignored by design
 #   E. floating refs (@main) are intentionally not flagged
+#   G. transitive-pin gap (#2175): a SHA-pinned installer action whose own
+#      `version:` input is absent or floating is flagged ERROR, while the same
+#      step with an explicit tag is not — the pin must cover the BINARY, not
+#      just the wrapper
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -120,6 +124,101 @@ assert "no extra ERROR from the worktree copy's uncovered pin" \
   "$([ "$(printf '%s\n' "$wt_out" | grep -c 'SEVERITY=ERROR' || true)" -eq "$before_errors" ] && echo true || echo false)"
 assert "no WARN/ERROR issue references a .claude/worktrees/ path" \
   "$([ "$(contains "$wt_out" '.claude/worktrees/')" = "false" ] && echo true || echo false)"
+
+echo "=== TEST G: transitive binary pin — version: input (#2175) ==="
+# A SHA-pinned `uses:` pins the composite action, NOT the binary its installer
+# downloads. Connorrmcd6/surface's action.yml declares `version:` with
+# `default: latest`, so a step that omits the input (or sets a floating value)
+# ships a workflow that reads as fully pinned while installing a fresh binary on
+# every run. Kept in its own fixture so TEST D's exact-ERROR-count and TEST F's
+# worktree-prune assertions stay independent of these cases.
+fixture_bad="$(mktemp -d)"
+[ -n "$fixture_bad" ] || { echo "FAIL: mktemp -d returned empty" >&2; exit 1; }
+fixture_good="$(mktemp -d)"
+[ -n "$fixture_good" ] || { echo "FAIL: mktemp -d returned empty" >&2; exit 1; }
+trap 'rm -rf "$fixture" "$fixture_bad" "$fixture_good"' EXIT
+
+mkdir -p "$fixture_bad/demo-plugin/skills/demo"
+cat > "$fixture_bad/demo-plugin/skills/demo/SKILL.md" <<'EOF'
+# Demo
+
+Absent version input — the defect shape reported in #2175:
+
+```yaml
+- uses: Connorrmcd6/surface@091b937ae34ac81a02386604fed977dd24f1f0cf # v0.8.0
+  with:
+    args: check
+```
+
+Present but floating — same outcome, stated out loud:
+
+```yaml
+- uses: Connorrmcd6/surface@091b937ae34ac81a02386604fed977dd24f1f0cf # v0.8.0
+  with:
+    version: latest
+    args: check
+```
+EOF
+
+mkdir -p "$fixture_good/demo-plugin/skills/demo"
+cat > "$fixture_good/demo-plugin/skills/demo/SKILL.md" <<'EOF'
+# Demo
+
+Both pins present — the corrected shape:
+
+```yaml
+- uses: Connorrmcd6/surface@091b937ae34ac81a02386604fed977dd24f1f0cf # v0.8.0
+  with:
+    version: v0.8.0
+    args: check
+```
+
+A non-installer action needs no version input (guard integrity — this must not
+become "every pinned action must declare a version"):
+
+```yaml
+- uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+  with:
+    fetch-depth: 1
+```
+
+An action outside the curated installer list keeps its floating `version:` — a
+toolchain setup action tracking the latest release is a deliberate choice, not a
+gate-stability hazard, and flagging it would make the guard opine on files a
+reporting PR never touched:
+
+```yaml
+- uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6.4.3
+  with:
+    version: "latest"
+```
+EOF
+
+bad_out="$(bash "$checker" --project-dir "$fixture_bad")"
+assert "absent version: input is flagged version_input_missing" \
+  "$(contains "$bad_out" "version_input_missing")"
+assert "version: latest is flagged version_input_floating" \
+  "$(contains "$bad_out" "version_input_floating")"
+assert "bad fixture STATUS should be ERROR" \
+  "$([ "$(field "$bad_out" STATUS)" = "ERROR" ] && echo true || echo false)"
+assert "exactly two ERRORs in the bad fixture (one per defect shape)" \
+  "$([ "$(printf '%s\n' "$bad_out" | grep -c 'SEVERITY=ERROR' || true)" -eq 2 ] && echo true || echo false)"
+bad_rc=0
+bash "$checker" --project-dir "$fixture_bad" --strict >/dev/null || bad_rc=$?
+assert "--strict should exit 1 on an unpinned binary version" \
+  "$([ "$bad_rc" -eq 1 ] && echo true || echo false)"
+
+good_out="$(bash "$checker" --project-dir "$fixture_good")"
+assert "explicit version: tag, bare checkout, and off-list floating are all unflagged" \
+  "$([ "$(contains "$good_out" "version_input")" = "false" ] && echo true || echo false)"
+assert "good fixture STATUS should not be ERROR" \
+  "$([ "$(field "$good_out" STATUS)" != "ERROR" ] && echo true || echo false)"
+assert "explicit version: tag counts toward VERSION_INPUT_COVERED" \
+  "$([ "$(field "$good_out" VERSION_INPUT_COVERED)" -ge 1 ] && echo true || echo false)"
+good_rc=0
+bash "$checker" --project-dir "$fixture_good" --strict >/dev/null || good_rc=$?
+assert "--strict should exit 0 when both pins are present" \
+  "$([ "$good_rc" -eq 0 ] && echo true || echo false)"
 
 echo ""
 echo "=== SUMMARY ==="

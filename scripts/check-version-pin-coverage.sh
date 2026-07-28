@@ -10,6 +10,11 @@
 # rot). It deliberately does NOT demand SHA pins: tag form is "covered" too, so
 # the guard never deadlocks against Renovate's own digest-pinning first run.
 #
+# It also catches the *transitive* gap (#2175): an action that installs a binary
+# of its own is only half-pinned by `uses:` — if the step leaves the action's
+# `version:` input at its floating default, the workflow looks pinned but pulls
+# a fresh binary on every run. See INSTALLER_ACTIONS below.
+#
 # Only fenced code blocks are scanned, so illustrative version numbers in prose
 # tables are ignored by design (see the "illustrative vs. managed" table in the
 # rule). Fence detection comes from a real markdown parse (tree-sitter) via the
@@ -48,6 +53,7 @@ uses_covered=0
 from_covered=0
 image_covered=0
 rev_covered=0
+version_input_covered=0
 
 add_issue() {
   # add_issue <severity> <type> <message>
@@ -86,6 +92,82 @@ is_version_shaped_ref() {
   return 1
 }
 
+# --- Transitive pins: the action installs a binary of its own (#2175) ---------
+# A SHA-pinned `uses:` pins the composite action and its bundled installer — NOT
+# the artifact that installer downloads. When the action exposes a `version:`
+# input whose default floats (Connorrmcd6/surface's action.yml: `version:
+# default: latest`, then install.sh resolves releases/latest over the API at run
+# time), an example that omits `version:` produces a workflow that LOOKS fully
+# pinned while installing a floating binary on every run. Checksum verification
+# does not close it: the checksum proves the download matches its own published
+# hash, not that it is the version the consumer pinned.
+#
+# Both new checks (absent `version:`, and present-but-floating `version:`) are
+# gated on membership. Scoping to a curated list rather than every pinned action
+# is deliberate: a `version: latest` on a toolchain setup-* action is frequently
+# an intentional "track the latest toolchain" choice, so blanket-flagging it
+# would turn a correctness guard into a style opinion on files the reporting PR
+# never touched. Add an action here when its floating default is a real gate-
+# stability hazard — a candidate observed while writing this check is
+# `astral-sh/setup-uv` (python-plugin/skills/python-development/REFERENCE.md
+# pins the ref but leaves `version: "latest"`), left out pending a decision.
+declare -a INSTALLER_ACTIONS=(
+  "Connorrmcd6/surface"
+)
+
+is_installer_action() {
+  local ref="$1" known
+  for known in "${INSTALLER_ACTIONS[@]}"; do
+    [ "$ref" = "$known" ] && return 0
+  done
+  return 1
+}
+
+uses_action_id() {
+  # "  - uses: owner/repo@<ref> # vX.Y.Z"  ->  "owner/repo"
+  local rest="$1"
+  rest="${rest#*uses:}"
+  rest="${rest#"${rest%%[![:space:]]*}"}"   # ltrim
+  rest="${rest%%[[:space:]]*}"              # first token only
+  rest="${rest%%@*}"                        # drop the @ref
+  rest="${rest#\"}"; rest="${rest#\'}"
+  rest="${rest%\"}"; rest="${rest%\'}"
+  printf '%s' "$rest"
+}
+
+is_floating_version_value() {
+  # The values that mean "resolve it fresh at run time".
+  local val="$1"
+  val="${val#\"}"; val="${val%\"}"
+  val="${val#\'}"; val="${val%\'}"
+  [ -z "$val" ] && return 0
+  case "$val" in
+    latest|main|master|stable|nightly|edge|HEAD) return 0 ;;
+  esac
+  return 1
+}
+
+# Pending-step state for the transitive-pin check. The scan loop below runs in
+# the current shell (process substitution), so this state survives iterations —
+# same mechanism the pre-commit `last_repo` lookahead already relies on.
+pending_uses_ref=""
+pending_uses_rel=""
+pending_uses_installer=false
+pending_version_seen=false
+
+flush_pending_uses() {
+  if [ -n "$pending_uses_ref" ] \
+     && [ "$pending_uses_installer" = true ] \
+     && [ "$pending_version_seen" = false ]; then
+    add_issue ERROR version_input_missing \
+      "$pending_uses_rel: '$pending_uses_ref' installs its own binary but the step sets no 'version:' input — the pinned uses: covers the action, not the binary (its version input defaults to a floating 'latest')"
+  fi
+  pending_uses_ref=""
+  pending_uses_rel=""
+  pending_uses_installer=false
+  pending_version_seen=false
+}
+
 # Discover files to scan. Prune agent worktree copies (.claude/worktrees/*) —
 # they are full repo checkouts created by concurrently-running isolated agents,
 # so descending into them re-scans every skill file N× and litters WARN output
@@ -119,6 +201,7 @@ if [ "$files_scanned" -gt 0 ]; then
   while IFS=$'\t' read -r rectype file lineno lang line; do
     [ "$rectype" = "fence_line" ] || continue
     if [ "$file" != "$prev_file" ]; then
+      flush_pending_uses
       prev_file="$file"
       last_repo=""
       rel="${file#"$proj_dir"/}"
@@ -126,6 +209,8 @@ if [ "$files_scanned" -gt 0 ]; then
 
     # --- GitHub Action refs ---------------------------------------------------
     if [[ "$line" =~ uses:[[:space:]]+[^[:space:]]+@ ]]; then
+      # A new step ends the previous one's `with:` block — settle it first.
+      flush_pending_uses
       if is_floating_or_local_ref "$line"; then
         :  # intentionally unpinned
       elif is_managed_uses_ref "$line"; then
@@ -133,6 +218,28 @@ if [ "$files_scanned" -gt 0 ]; then
       elif is_version_shaped_ref "$line"; then
         add_issue ERROR uses_uncovered \
           "$rel: version-shaped 'uses:' ref not in a Renovate-managed form (use @vX.Y.Z tag or @<sha> # vX.Y.Z): ${line#"${line%%uses:*}"}"
+      fi
+      # Track pinned steps so a following `version:` input can be judged (#2175).
+      if ! is_floating_or_local_ref "$line"; then
+        pending_uses_ref="$(uses_action_id "$line")"
+        pending_uses_rel="$rel"
+        if is_installer_action "$pending_uses_ref"; then
+          pending_uses_installer=true
+        fi
+      fi
+    fi
+
+    # --- Transitive binary pin: the step's own `version:` input (#2175) -------
+    if [ "$pending_uses_installer" = true ] && [[ "$line" =~ ^[[:space:]]*version:[[:space:]]*(.*)$ ]]; then
+      version_value="${BASH_REMATCH[1]}"
+      version_value="${version_value%%#*}"                                  # strip trailing comment
+      version_value="${version_value%"${version_value##*[![:space:]]}"}"    # rtrim
+      pending_version_seen=true
+      if is_floating_version_value "$version_value"; then
+        add_issue ERROR version_input_floating \
+          "$rel: 'version: ${version_value:-<empty>}' under pinned 'uses: $pending_uses_ref' — the pinned ref covers the action, not the binary it installs; set an explicit release tag"
+      else
+        version_input_covered=$((version_input_covered + 1))
       fi
     fi
 
@@ -173,6 +280,8 @@ if [ "$files_scanned" -gt 0 ]; then
     fi
   done < <(printf '%s\n' "${scan_files[@]}" \
              | uv run --quiet "$helper" --types fence_line --files-from - 2>/dev/null)
+  # Settle the last step of the last file.
+  flush_pending_uses
 fi
 
 # --- Status -------------------------------------------------------------------
@@ -194,6 +303,7 @@ echo "USES_COVERED=$uses_covered"
 echo "FROM_COVERED=$from_covered"
 echo "IMAGE_COVERED=$image_covered"
 echo "REV_COVERED=$rev_covered"
+echo "VERSION_INPUT_COVERED=$version_input_covered"
 echo "STATUS=$overall_status"
 echo "ISSUE_COUNT=$issue_count"
 if [ "$issue_count" -gt 0 ]; then
