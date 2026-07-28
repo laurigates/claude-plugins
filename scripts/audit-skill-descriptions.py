@@ -80,18 +80,42 @@ def classify_length(description) -> tuple[str, int]:
 
 
 def find_skills(root: Path) -> list[Path]:
-    """Return all SKILL.md / skill.md files under *-plugin directories."""
+    """Return all SKILL.md / skill.md files under *-plugin directories.
+
+    Both globs are needed. On a case-SENSITIVE filesystem (Linux, CI) a
+    genuinely lowercase `skill.md` is matched only by the second glob — see
+    `scripts/check-skill-filename-case.sh`, which exists because 45 skills once
+    carried that name.
+
+    On macOS's case-INSENSITIVE APFS the two globs return the *same* files, so
+    the results must be deduplicated by filesystem identity — `(st_dev,
+    st_ino)`. Path equality is not enough (the two spellings are distinct
+    strings) and `os.path.realpath` is not enough either (it does not
+    canonicalise case on APFS: it returns whichever spelling was asked for).
+    Deduplicating by path/realpath left every skill audited twice, so every
+    count the script reported was 2x (issue #2119).
+
+    The `SKILL.md` glob runs first, so on a case-insensitive filesystem the
+    canonical uppercase spelling is the one kept.
+    """
     skills: list[Path] = []
+    seen: set[tuple[int, int]] = set()
     for plugin_dir in sorted(root.glob("*-plugin")):
         if not plugin_dir.is_dir():
             continue
         skills_dir = plugin_dir / "skills"
         if not skills_dir.is_dir():
             continue
-        for skill_md in sorted(skills_dir.rglob("SKILL.md")):
-            skills.append(skill_md)
-        for skill_md in sorted(skills_dir.rglob("skill.md")):
-            if skill_md not in skills:
+        for pattern in ("SKILL.md", "skill.md"):
+            for skill_md in sorted(skills_dir.rglob(pattern)):
+                try:
+                    st = skill_md.stat()
+                except OSError:
+                    continue
+                identity = (st.st_dev, st.st_ino)
+                if identity in seen:
+                    continue
+                seen.add(identity)
                 skills.append(skill_md)
     return skills
 
