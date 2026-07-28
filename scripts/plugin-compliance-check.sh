@@ -1394,11 +1394,27 @@ check_skill_descriptions() {
   return 0
 }
 
-# Check 8: "When to Use This Skill" section presence
-# Regression: Wave 3 issue draining (umbrella issue #1156) swept every plugin's
-# skills to comply with .claude/rules/skill-quality.md (lines 27-38), which
-# requires every SKILL.md to have a `## When to Use This Skill` heading
-# immediately followed by a markdown table. This check keeps the tree compliant.
+# Check 8: "When to Use This Skill" section presence — ADVISORY (issue #2141)
+#
+# History: Wave 3 issue draining (umbrella issue #1156) swept every plugin's
+# skills to comply with .claude/rules/skill-quality.md, which then REQUIRED a
+# `## When to Use This Skill` heading followed by a markdown table, and this
+# check enforced that as a hard ❌ ERROR.
+#
+# That mandate was DEMOTED on 2026-07-26 by .claude/rules/context-engineering.md
+# ("Supersedes" table) on the evidence in
+# docs/benchmarks/2026-07-context-engineering/ § 5 F2: the section costs ~70K
+# tokens across 407 skills (9.2% of all body mass) for guidance Anthropic's
+# Claude 5 context-engineering post locates in the `description` field. It is
+# now *recommended where it disambiguates sibling skills*, not required —
+# .claude/rules/skill-quality.md § Required Sections carries the same banner.
+#
+# The check therefore emits a ⚠️ recommendation (return 1) rather than a ❌
+# error (return 2): a SKILL.md without the heading must NOT fail the run. The
+# structural half — a heading present but not followed by a table within 10
+# lines — stays advisory too, since the section itself is optional.
+#
+# Regression guard: scripts/tests/test-plugin-compliance-check.sh.
 check_skill_when_to_use() {
   local plugin="$1"
   local skills_dir="${plugin}/skills"
@@ -1416,7 +1432,7 @@ check_skill_when_to_use() {
     return 0
   fi
 
-  local has_errors=false
+  local has_warnings=false
 
   for skill_file in "${skill_files[@]}"; do
     local skill_name
@@ -1427,8 +1443,8 @@ check_skill_when_to_use() {
     heading_line=$(grep -n '^## When to Use This Skill$' "$skill_file" | head -1 | cut -d: -f1)
 
     if [ -z "$heading_line" ]; then
-      issues+=("❌ ${plugin}/${skill_name}: SKILL.md missing '## When to Use This Skill' heading (see .claude/rules/skill-quality.md)")
-      has_errors=true
+      recommendations+=("⚠️ ${plugin}/${skill_name}: SKILL.md has no '## When to Use This Skill' section — recommended where sibling skills compete for the same intent, otherwise the description carries the trigger (see .claude/rules/context-engineering.md)")
+      has_warnings=true
       continue
     fi
 
@@ -1442,13 +1458,13 @@ check_skill_when_to_use() {
       'NR >= start && NR <= end && /^\|/ { print NR; exit }' "$skill_file")
 
     if [ -z "$table_line" ]; then
-      issues+=("❌ ${plugin}/${skill_name}: SKILL.md '## When to Use This Skill' heading at line ${heading_line} not followed by a markdown table within 10 lines")
-      has_errors=true
+      recommendations+=("⚠️ ${plugin}/${skill_name}: SKILL.md '## When to Use This Skill' heading at line ${heading_line} is not followed by a markdown table within 10 lines")
+      has_warnings=true
     fi
   done
 
-  if $has_errors; then
-    return 2
+  if $has_warnings; then
+    return 1
   fi
 
   return 0

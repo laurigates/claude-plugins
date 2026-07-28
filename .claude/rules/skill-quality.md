@@ -40,6 +40,8 @@ The cost a `SKILL.md` body imposes once it loads is **tokens**, not lines. Lines
 > guidance Anthropic's Claude 5 context-engineering post locates in the
 > `description` field. See
 > [`docs/benchmarks/2026-07-context-engineering/`](../../docs/benchmarks/2026-07-context-engineering/) § 5 F2.
+> The lint agrees: `plugin-compliance-check.sh` `check_skill_when_to_use()`
+> emits a ⚠️ recommendation and exits 0 (issue #2141) — it does not block.
 > The rest of this section stands.
 
 Every skill SHOULD have:
@@ -206,8 +208,8 @@ my-skill/
 When reviewing skill/command changes:
 
 - [ ] SKILL.md body is under 26,000 chars / ~6,500 tokens (target: ≤ 10,000 chars / ~2,500 tokens)
-- [ ] Has "When to Use" decision table
-- [ ] Has "Agentic Optimizations" table (for CLI/tool skills)
+- [ ] Has a "When to Use" decision table *if* a sibling skill competes for the same intent (advisory — `check_skill_when_to_use()` warns, never blocks; issue #2141)
+- [ ] Has "Agentic Optimizations" table (optional; keep where the commands are the payload)
 - [ ] Description matches user intents (not just tool jargon)
 - [ ] Description ≤ 150 chars with trigger keywords in the first ~120 chars (see "Description Length and the Listing Budget")
 - [ ] Model selection follows extremes-only rule (`opus` for deep reasoning, `sonnet` for mechanical tasks, unset otherwise; never `haiku`)
