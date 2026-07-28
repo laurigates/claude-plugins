@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.33.5](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.33.4...configure-plugin-v1.33.5) (2026-07-28)
+
+
+### Bug Fixes
+
+* **configure-plugin:** pin the installed binary version in configure-surface's Action example ([#2190](https://github.com/laurigates/claude-plugins/issues/2190)) ([c1b385c](https://github.com/laurigates/claude-plugins/commit/c1b385c2cde3d6e1e28e1a3998a2b20c895a8e66)), closes [#2175](https://github.com/laurigates/claude-plugins/issues/2175)
+
 ## [1.33.4](https://github.com/laurigates/claude-plugins/compare/configure-plugin-v1.33.3...configure-plugin-v1.33.4) (2026-07-17)
 
 
