@@ -31,9 +31,9 @@ context: fork
 
 ## Your task
 
-**Delegate this task to the `code-review` agent.**
+**Delegate this task to the `agents-plugin:review` agent.**
 
-Use the Agent tool with `subagent_type: code-review` to perform a comprehensive code review.
+Use the Agent tool with `subagent_type: agents-plugin:review` to perform a comprehensive code review.
 
 First, use the Glob tool to discover source files to review:
 - `**/*.py`, `**/*.js`, `**/*.ts`, `**/*.go`, `**/*.rs` for source files
