@@ -262,6 +262,12 @@ repos:
         language: system
         files: '^scripts/(blueprint-health-check\.sh|infra-compliance-check\.sh|tests/test-audit-scripts-exit\.sh)$'
         pass_filenames: false
+      - id: test-audit-skill-descriptions-dedup
+        name: skill-description audit counts each skill once, not 2x (#2119)
+        entry: bash ./scripts/tests/test-audit-skill-descriptions-dedup.sh
+        language: system
+        files: '^scripts/(audit-skill-descriptions\.py|tests/test-audit-skill-descriptions-dedup\.sh)$'
+        pass_filenames: false
       - id: test-extract-md-elements
         name: tree-sitter markdown extraction helper regression
         entry: bash ./scripts/tests/test-extract-md-elements.sh
