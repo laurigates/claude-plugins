@@ -6,7 +6,7 @@ argument-hint: "path|PR|file|plan description; optional 'focus on X'"
 allowed-tools: Agent, Read, Glob, Grep, Bash(git diff *), Bash(git log *), Bash(gh pr view *), TodoWrite
 model: opus
 created: 2026-06-21
-modified: 2026-07-18
+modified: 2026-07-28
 compatibility: claude-code
 reviewed: 2026-06-21
 ---
@@ -156,15 +156,6 @@ review can't resolve.
 | Using a weak model "to be tougher" | Opus — subtle faults are a reasoning task (inverse of cold-read-gate) |
 | Restating each lens's checklist inline | Delegate to the owning skill; this is a posture, not a checklist |
 | Looping until the reviewer goes silent | One revise round; persistent faults = structural problem |
-
-## Agentic Optimizations
-
-| Context | Command |
-|---|---|
-| Review current diff, no target given | `git diff HEAD` as the target; state the default |
-| Review a PR | `gh pr view <N> --json title,body,files` then diff |
-| Single lens, isolated reviewer | One `Agent(subagent_type: general-purpose, model: opus)` |
-| Multiple lenses, not on `[1m]` | Parallel `Agent` batch, one per lens |
 
 ## Related
 

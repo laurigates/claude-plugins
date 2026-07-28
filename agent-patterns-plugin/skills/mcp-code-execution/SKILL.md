@@ -4,7 +4,7 @@ description: Scaffold the code execution pattern for MCP-based agents. Use when 
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-02-08
-modified: 2026-06-14
+modified: 2026-07-28
 reviewed: 2026-06-14
 ---
 
@@ -97,17 +97,6 @@ The agent loop becomes: explore `servers/` → generate code → execute in sand
 | Audit logging of all executions | Recommended |
 | Read-only access to `servers/` | Recommended |
 | Scoped write access to `workspace/` only | Recommended |
-
-## Agentic Optimizations
-
-| Context | Approach |
-|---------|----------|
-| Many tools (50+) | Use progressive discovery via file tree |
-| Large intermediate data | Filter in sandbox, return summaries |
-| Multi-step workflows | Generate single code block with control flow |
-| Sensitive data pipelines | Enable PII tokenization in MCP client |
-| Long-running tasks | Use `workspace/` for state persistence |
-| Repeated operations | Extract to `skills/` for reuse |
 
 ## Quick Reference
 
