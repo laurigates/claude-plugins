@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.5](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.9.4...comfyui-plugin-v1.9.5) (2026-07-28)
+
+
+### Bug Fixes
+
+* **comfyui-plugin:** remove personal-install details from public skills ([#2180](https://github.com/laurigates/claude-plugins/issues/2180)) ([ce0c91f](https://github.com/laurigates/claude-plugins/commit/ce0c91f54b434a40b1a4a9468fb56f3c667ff9cb))
+
 ## [1.9.4](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.9.3...comfyui-plugin-v1.9.4) (2026-07-27)
 
 
