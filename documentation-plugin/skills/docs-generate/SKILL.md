@@ -35,11 +35,11 @@ context: fork
 
 ## Your task
 
-**Delegate this task to the `documentation` agent.**
+**Delegate this task to the `agents-plugin:docs` agent.**
 
-Use the Agent tool with `subagent_type: documentation` to generate or update project documentation. Pass all the context gathered above and the parsed parameters to the agent.
+Use the Agent tool with `subagent_type: agents-plugin:docs` to generate or update project documentation. Pass all the context gathered above and the parsed parameters to the agent.
 
-The documentation agent should:
+The docs agent should:
 
 1. **Analyze codebase**:
    - Extract docstrings and type annotations

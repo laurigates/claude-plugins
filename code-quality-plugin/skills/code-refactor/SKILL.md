@@ -29,11 +29,11 @@ name: code-refactor
 
 ## Your task
 
-**Delegate this task to the `code-refactoring` agent.**
+**Delegate this task to the `agents-plugin:refactor` agent.**
 
-Use the Agent tool with `subagent_type: code-refactoring` to refactor the specified code. Pass all the context gathered above to the agent.
+Use the Agent tool with `subagent_type: agents-plugin:refactor` to refactor the specified code. Pass all the context gathered above to the agent.
 
-The code-refactoring agent should:
+The refactor agent should:
 
 1. **Identify refactoring opportunities** — look for these FP code smells:
    - Side effects (mutation, I/O, logging) mixed into computation functions

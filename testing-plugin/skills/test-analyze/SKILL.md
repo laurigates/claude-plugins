@@ -4,8 +4,8 @@ args: "<results-path> [--type <test-type>] [--focus <area>]"
 argument-hint: "Path to test results (e.g., ./test-results/), optional --type and --focus filters"
 allowed-tools: Task, Read, Glob, Grep, TodoWrite
 created: 2025-12-16
-modified: 2026-07-04
-reviewed: 2026-04-25
+modified: 2026-07-28
+reviewed: 2026-07-28
 name: test-analyze
 agent: general-purpose
 context: fork
@@ -77,40 +77,27 @@ Analyzes test results from any testing framework, uses Zen planner to create a s
    - Estimate effort and priority
 
 3. **Delegate to Subagents**
-   - **Accessibility issues** → `code-review` agent (WCAG compliance)
-   - **Security vulnerabilities** → `security-audit` agent
-   - **Performance problems** → `system-debugging` agent
-   - **Code quality issues** → `code-refactoring` agent
-   - **Test infrastructure** → `test-architecture` agent
-   - **Integration failures** → `system-debugging` agent
-   - **Documentation gaps** → `documentation` agent
+   - Route each issue category through the [Subagent Routing](#subagent-routing) table below — it is the single source of truth for every `subagent_type` this skill dispatches.
 
 4. **Execute Plan**
    - Sequential execution based on dependencies
    - Verification after each fix
    - Re-run tests to confirm resolution
 
-## Subagent Selection Logic
+## Subagent Routing
 
-The command uses this decision tree to delegate:
+**This table is the single source of truth for delegation.** Every `subagent_type` this skill dispatches is listed here; no other section restates it. The values are plugin-qualified `plugin:agent` IDs — the form the `Task`/`Agent` tool resolves for plugin-provided agents (a bare name only resolves for user- or project-level agents in `~/.claude/agents/` or `.claude/agents/`).
 
-- **Accessibility violations** (WCAG, ARIA, contrast)
-  → `code-review` agent with accessibility focus
-
-- **Security issues** (XSS, SQLi, auth bypass)
-  → `security-audit` agent with OWASP analysis
-
-- **Performance bottlenecks** (slow queries, memory leaks)
-  → `system-debugging` agent with profiling
-
-- **Code smells** (duplicates, complexity, coupling)
-  → `code-refactoring` agent with SOLID principles
-
-- **Flaky tests** (race conditions, timing issues)
-  → `test-architecture` agent with stability analysis
-
-- **Build/CI failures** (pipeline errors, dependency issues)
-  → `cicd-pipelines` agent with workflow optimization
+| Issue category | Triggers | Dispatch | Focus to pass |
+|---|---|---|---|
+| Accessibility violations | WCAG, ARIA, colour contrast, keyboard nav | `subagent_type: agents-plugin:review` | WCAG 2.1 compliance, semantic HTML, ARIA best practices |
+| Security vulnerabilities | XSS, SQLi, CSRF, auth bypass | `subagent_type: agents-plugin:security-audit` | OWASP Top 10, input validation, authentication |
+| Performance issues | Slow tests/queries, memory leaks, timeouts | `subagent_type: agents-plugin:performance` | Profiling, bottleneck identification, optimization |
+| Code quality / smells | Duplication, complexity, coupling, maintainability | `subagent_type: agents-plugin:refactor` | SOLID principles, DRY, behaviour-preserving restructure |
+| Flaky tests / test infrastructure | Race conditions, timing, shared state, isolation | `subagent_type: agents-plugin:test` | Test stability, isolation, determinism |
+| Integration failures | Failing behaviour needing root-cause diagnosis | `subagent_type: agents-plugin:debug` | Root cause, minimal fix, verification |
+| Build / CI failures | Pipeline errors, dependency issues | `subagent_type: agents-plugin:ci` | GitHub Actions, dependency management, caching |
+| Documentation gaps | Missing docs, outdated examples | `subagent_type: agents-plugin:docs` | API docs, test documentation, migration guides |
 
 ## Output
 
@@ -188,35 +175,7 @@ Call `mcp__pal__planner` with model "gemini-2.5-pro" to create a systematic fix 
 
 **Step 3: Subagent Delegation Strategy**
 
-Based on the issue categories, delegate to:
-
-- **Accessibility violations** (WCAG, ARIA, color contrast, keyboard nav)
-  → Use `Task` tool with `subagent_type: code-review`
-  → Focus: WCAG 2.1 compliance, semantic HTML, ARIA best practices
-
-- **Security vulnerabilities** (XSS, SQLi, CSRF, auth issues)
-  → Use `Task` tool with `subagent_type: security-audit`
-  → Focus: OWASP Top 10, input validation, authentication
-
-- **Performance issues** (slow tests, memory leaks, timeouts)
-  → Use `Task` tool with `subagent_type: system-debugging`
-  → Focus: Profiling, bottleneck identification, optimization
-
-- **Code quality** (duplicates, complexity, maintainability)
-  → Use `Task` tool with `subagent_type: code-refactoring`
-  → Focus: SOLID principles, DRY, code smells
-
-- **Flaky/unreliable tests** (race conditions, timing, dependencies)
-  → Use `Task` tool with `subagent_type: test-architecture`
-  → Focus: Test stability, isolation, determinism
-
-- **CI/CD failures** (build errors, pipeline issues)
-  → Use `Task` tool with `subagent_type: cicd-pipelines`
-  → Focus: GitHub Actions, dependency management, caching
-
-- **Documentation gaps** (missing docs, outdated examples)
-  → Use `Task` tool with `subagent_type: documentation`
-  → Focus: API docs, test documentation, migration guides
+For each issue category found, look it up in the **Subagent Routing** table above and dispatch a `Task` with that row's `subagent_type` (a plugin-qualified `plugin:agent` ID) and that row's focus. Do not invent a `subagent_type` that is absent from the table — an unlisted value does not resolve and the dispatch fails.
 
 **Step 4: Create Execution Plan**
 
