@@ -487,18 +487,20 @@ assert_exit \
     "gh issue body merely mentioning a .output path is allowed (quoted string)" 0 \
     "gh issue create --body 'then tail the run.output file for results'"
 
-# The sleep-then-cat polling form reaches the task-output detector specifically
-# (a bare `cat`/`tail` read is caught by the generic cat/head-tail detectors
-# first). Assert that detector's message recommends Read, not TaskOutput.
+# The task-output detector has priority over the generic cat/head-tail detectors
+# (both match a bare `.output` read), so a bare task-output read carries ITS
+# message. Assert that message recommends Read, not the deprecated TaskOutput.
+# (Pre-#2148 these used the `sleep 5 && cat …` compound form; that shape is now
+# out of scope for every read detector — see the #2148 block below.)
 assert_stderr_contains \
     "task-output block recommends the Read tool, not TaskOutput" \
     'Use the Read tool' \
-    "sleep 5 && cat /tmp/claude/x/tasks/run.output"
+    "cat /tmp/claude/x/tasks/run.output"
 
 assert_stderr_contains \
     "task-output block no longer names the deprecated TaskOutput tool as the fix" \
     'TaskOutput tool is deprecated' \
-    "sleep 5 && cat /tmp/claude/x/tasks/run.output"
+    "cat /tmp/claude/x/tasks/run.output"
 
 # ── long-pipeline block is no longer blocked (demoted, #1873/#2051/#2052) ────
 # The 5+-pipe discouraged-head block was demoted from a hard block to the
@@ -1099,11 +1101,19 @@ assert_exit_complex \
     "env-prefixed 'FOO=bar ssh host …' is still recognised as remote-exec" 0 \
     "FOO=bar ssh host 'ls /x/*.json'"
 
-# GUARD INTEGRITY: the remote-exec guard is anchored to the FIRST token, so a
-# LOCAL read/list is still nudged even when an ssh runs later in the command.
+# A LOCAL read in a compound command that also runs an ssh is out of scope for
+# the read detectors as of #2148 (the read is not the whole command, so there is
+# no clean one-to-one Read substitution). The #1900 property this row originally
+# guarded — that the AST path classifies `cat local.txt` as a genuine LOCAL
+# command node rather than remote payload — is preserved by the bare-read row
+# immediately below, which still blocks.
 assert_exit_complex \
-    "GUARD INTEGRITY: local 'cat x && ssh host …' still blocks the local cat (#1900)" 2 \
+    "local 'cat x && ssh host …' is allowed post-#2148 (compound, no clean substitution)" 0 \
     "cat local.txt && ssh host 'do thing'"
+
+assert_exit_complex \
+    "GUARD INTEGRITY: a bare local 'cat local.txt' is still a local command node and blocks (#1900)" 2 \
+    "cat local.txt"
 
 # GUARD INTEGRITY: safety blocks are NOT suppressed for remote-exec commands.
 ssh_curl_bash=$(cat <<'OUTER'
@@ -1219,6 +1229,93 @@ assert_exit \
 assert_exit_complex \
     "GUARD INTEGRITY: quoted '#' does not hide a real file write after it (#2106)" 2 \
     'echo "#!/bin/sh" > script.sh'
+
+# ── read block fires only when the read IS the whole command (issue #2148) ────
+# Regression: #2114's structural classifier widened the cat/head/tail read block
+# from "a bare read as the whole command" (the pre-#2114 `^\s*cat\s+…` + "no pipe
+# anywhere" regex) to "a bare read ANYWHERE in a compound command". W31 friction:
+# same-session repeat-block rate 15.2% → 46.3% (3.0× above a stable six-reading
+# 6.3–20.0% band), 70 events / 41 sessions; ~65% of recovered blocked commands did
+# not begin with cat/head/tail. A compound diagnostic has NO single-call Read
+# substitution, so the agent re-attempts a variant and is re-blocked in the same
+# session — which is exactly what the repeat metric measures.
+#
+# The rules now require the read to be the SOLE statement of the program. These
+# rows are the issue's differential-reproduction table: every compound form must
+# exit 0, every bare read must still exit 2.
+echo ""
+echo "read block fires only when the read is the WHOLE command (#2148):"
+
+# The compound shapes recovered from W31's blocked events — all newly blocked by
+# #2114, all must pass again.
+assert_exit_complex \
+    "cd … && git log && cat package.json && ls -R is allowed (#2148 repro)" 0 \
+    'cd /repo && git log --oneline -3 && cat package.json && ls -R src'
+
+assert_exit \
+    "ls dir/; head -20 file is allowed (#2148 repro)" 0 \
+    "ls tests/js/; head -20 tests/js/index.test.js"
+
+assert_exit_complex \
+    'echo "=== … ===" && cat -n file is allowed (#2148 repro)' 0 \
+    'echo "=== requirements.txt ===" && cat -n requirements.txt'
+
+assert_exit_complex \
+    "git status | head && echo … && head -25 file is allowed (#2148 repro)" 0 \
+    'git status --porcelain | head -30 && echo "---" && head -25 docs/index.md'
+
+assert_exit_complex \
+    "cat f; echo …; ls dir 2>&1 | head is allowed (#2148 repro)" 0 \
+    'cat knip.json; echo "=== resolve ==="; ls node_modules/@x/ 2>&1 | head'
+
+# The exact preflight command that motivated this fix: one segment is a head.
+assert_exit \
+    "multi-segment diagnostic containing one head segment is allowed (#2148)" 0 \
+    "git fetch; git status | head -3; wc -l notes.md; head -20 notes.md; ls docs"
+
+# A read that trails a compound command is equally out of scope.
+assert_exit \
+    "sleep 5 && cat <task-output> is allowed (task-output rule narrowed too, #2148)" 0 \
+    "sleep 5 && cat /tmp/claude/x/tasks/run.output"
+
+# GUARD INTEGRITY: the narrowing must not retire the steer it was earning at its
+# pre-#2114 scope. Every bare whole-command read still blocks.
+assert_exit \
+    "GUARD: bare cat file.md still blocks (#2148)" 2 \
+    "cat notes.md"
+
+assert_exit \
+    "GUARD: bare head -50 file.md still blocks (#2148)" 2 \
+    "head -50 notes.md"
+
+assert_exit \
+    "GUARD: bare tail -50 file.md still blocks (#2148)" 2 \
+    "tail -50 notes.md"
+
+assert_exit \
+    "GUARD: bare cat of a task-output file still blocks (#2148)" 2 \
+    "cat /tmp/claude/x/tasks/run.output"
+
+# A trailing `# comment` is a sibling AST node, not a statement — it must not
+# smuggle a bare read past the sole-statement gate.
+assert_exit \
+    "GUARD: bare read with a trailing '# comment' still blocks (#2148)" 2 \
+    "cat notes.md  # the design notes"
+
+# The WRITE detectors keep their original (wider) scope — they guard file
+# mutation, not context budget, and #2148 does not implicate them.
+#
+# NOTE: the `;` form is used here deliberately. In an `&&` list tree-sitter-bash
+# makes the whole list the `body` of the redirected_statement, so `cd x && echo
+# y > f` does not match `has: {field: body, kind: command}` — a pre-existing
+# #2114-era under-detection, unrelated to and untouched by #2148.
+assert_exit_complex \
+    "GUARD: echo > file inside a compound command still blocks (writes unnarrowed, #2148)" 2 \
+    'cd /repo; echo "data" > realfile.txt'
+
+assert_exit \
+    "GUARD: sed -i on a repo file inside a compound command still blocks (#2148)" 2 \
+    "cd /repo && sed -i 's/a/b/' src/main.py"
 
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo ""

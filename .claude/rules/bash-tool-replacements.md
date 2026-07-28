@@ -6,12 +6,18 @@ reviewed: 2026-07-10
 
 # Bash → Tool Replacements
 
-One list pattern in Bash — `cat`/`head`/`tail` — is blocked by the
-`bash-antipatterns` hook because the dedicated `Read` tool covers the same ground
-faster, with structured output, and without paying the parallel-batch cost.
+One read pattern in Bash — a **whole-command** `cat`/`head`/`tail` file read — is
+blocked by the `bash-antipatterns` hook because the dedicated `Read` tool covers
+the same ground faster, with structured output, and without paying the
+parallel-batch cost.
 
 The hook is a soft-block (exit 2) — by the time you read this, you've probably
 already been blocked. Use this table to pick the right replacement.
+
+> **The block fires only when the read IS the whole command** (#2148). `cat
+> file.md` blocks; `cd repo && cat file.md`, `ls dir/; head -20 file`, and
+> `echo "===" && cat -n file` all pass — a compound command has no single-call
+> `Read` substitution.
 
 > **`find`, `grep`/`rg`, and `ls` are no longer blocked.** All three redirects
 > were demoted from a hard block to an **opt-in teach nudge**
@@ -43,7 +49,7 @@ already been blocked. Use this table to pick the right replacement.
 
 ## The replacement table
 
-Only the `cat`/`head`/`tail` rows are **blocked** (exit 2). The
+Only a **whole-command** `cat`/`head`/`tail` read is **blocked** (exit 2). The
 `grep`/`rg`/`find`/`ls` rows are **nudges** — the Bash form runs; the tool is
 the more context-efficient choice when it's available in your session.
 
@@ -51,38 +57,30 @@ the more context-efficient choice when it's available in your session.
 |---|---|---|
 | `grep -rn 'foo' src/` | `Grep(pattern="foo", path="src", -r=true, -n=true)` | Nudge (opt-in teach hook) — Bash form runs |
 | `rg 'foo' --type ts` | `Grep(pattern="foo", glob="*.ts")` | Nudge — same as `grep` |
-| `cat /abs/path/file.md` | `Read(file_path="/abs/path/file.md")` | **Blocked** — except a *here-doc* (`cat <<EOF`) or a pipeline (`cat file \| jq`) |
-| `head -50 file.md` | `Read(file_path="/abs/path/file.md", limit=50)` | **Blocked** — except in a pipeline, or inside a hook script |
+| `cat /abs/path/file.md` | `Read(file_path="/abs/path/file.md")` | **Blocked** — only as the whole command; a here-doc (`cat <<EOF`), a pipeline (`cat file \| jq`), or any compound command passes |
+| `head -50 file.md` | `Read(file_path="/abs/path/file.md", limit=50)` | **Blocked** — same whole-command scope |
 | `tail -50 file.md` | `Read(file_path=..., offset=<lines - 50>, limit=50)` | **Blocked** — same |
+| `cd repo && cat file.md` | (decompose only if you want to) | **Allowed** — compound command, no single-call substitution (#2148) |
 | `ls -1 docs/*.md` | `Glob(pattern="docs/*.md")` | Nudge (opt-in teach hook) — Bash form runs (#2036) |
 
 The hook's logic for each:
 
 - **`grep` / `rg`** — never blocked (demoted to the opt-in teach nudge, #1909/#1871). `Grep` is the context-efficient choice when present, but the Bash form always runs.
 - **`ls`** — never blocked (demoted to the opt-in teach nudge, #2036). `Glob` is the context-efficient choice for pattern listings when present, but the Bash form always runs.
-- **`cat` / `head` / `tail`** — blocked for a plain file read; passes through when the file path is `/dev/stdin`, `/dev/null`, a here-doc target, or a pipeline. The hook is checking for *file reads*, not stream handling. As of #2008 this (and the `echo`/`printf`/`cat`-write and `sed -i` blocks) is decided **structurally** by `ast-grep --lang bash` rather than regex — a real parse tells a command apart from a string/heredoc-body/pipeline/argument, so the block **fails open** (no-op) where `ast-grep` is unavailable. It is a style nudge with no regex twin; the safety blocks (`chmod 777`, `curl|bash`, `git add -A`, …) stay pure-regex and fire everywhere.
+- **`cat` / `head` / `tail`** — blocked for a plain file read **that is the entire command**. Exempt: a pipeline (`cat file | jq`), a here-doc (`cat <<EOF`), a `/dev/stdin` or `/dev/null` path, and **any compound command** — a `&&`/`||` chain, a `;`-separated sequence, a subshell, or a command substitution (#2148). A trailing `# comment` does not count as a second statement, so `cat f.md  # notes` still blocks. As of #2008 this (and the `echo`/`printf`/`cat`-write and `sed -i` blocks) is decided **structurally** by `ast-grep --lang bash` rather than regex — a real parse tells a command apart from a string/heredoc-body/pipeline/argument, so the block **fails open** (no-op) where `ast-grep` is unavailable. It is a style nudge with no regex twin; the safety blocks (`chmod 777`, `curl|bash`, `git add -A`, …) stay pure-regex and fire everywhere.
+- **`echo`/`printf`/`cat` writes and `sed -i`** — unchanged by #2148. They guard file *mutation*, not context budget, so they still fire inside a compound command.
 
 ### Remote-exec commands are exempt (issue #1900)
 
-> **As of #2008 the remote-exec guard is only needed by the safety blocks.** The
-> read/write nudges moved to the structural `ast-grep` path, which never treats a
-> read inside `ssh host <<EOF…EOF`, `ssh host 'ls|grep'`, or `kubectl exec … --
-> cat` as a local command in the first place (it is a heredoc-body / string /
-> argument node). The first-token suppression below still governs the pure-regex
-> safety blocks.
-
-When the command's **first token** is a remote-exec launcher — `ssh`, `rsh`,
-`slogin`, `dokku`, `kubectl exec`, `docker exec` (and `podman`/`nerdctl`/`oc`
-equivalents) — the read/list nudges (`ls`→Glob, `cat`/`head`/`tail`→Read,
-`grep`/`rg`→Grep) are **suppressed** for the whole command. The Read/Grep/Glob
-tools operate on the **local** filesystem via the harness; they cannot reach a
-path on the remote host or inside a container, so the suggested substitution is
-inapplicable. This covers both the quoted form (`ssh host 'ls /r/*'`) and the
-heredoc form (`ssh host <<EOF … ls /r/*.json … EOF`), which was the concrete
-false positive. Only *style* nudges are suppressed — **safety** blocks
-(`curl | bash`, `chmod 777`, `git add -A`, block-device writes) still fire, since
-those hazards apply on the remote host too. The guard is anchored to the first
-token, so a local `cat x.txt && ssh host …` still nudges the local `cat`.
+A read that runs on another host or container — `ssh host 'cat /r/f'`,
+`ssh host <<EOF … cat /r/f … EOF`, `kubectl exec … -- cat` — targets the
+**remote** filesystem, which `Read`/`Grep`/`Glob` cannot reach, so nudging is
+pointless. Since #2008 this needs **no guard code**: the structural parse makes
+those reads a string / heredoc-body / argument node, never a command node, so
+they are never detected in the first place. (The `IS_REMOTE_EXEC` first-token
+suppression #1900 shipped was deleted by #2114.) Safety blocks are pure-regex
+and still fire on remote-exec commands — those hazards apply on the remote host
+too.
 
 ## Why this exists
 
@@ -111,6 +109,17 @@ start with `ls` and contain a `*` anywhere later (e.g.
 blocks remain — those prevent real context-budget waste on plain file reads
 with a clean `Read` substitution, and never dead-end anyone (pipelines and
 heredocs pass).
+
+The `cat`/`head`/`tail` block was **narrowed** (not demoted) in W31 (#2148).
+PR #2114's structural port unintentionally widened it from "a bare read as the
+whole command" to "a bare read anywhere in a compound command", and the
+same-session repeat-block rate broke from a stable six-reading 6.3–20.0% band
+to **46.3%** (70 events / 41 sessions; ~65% of blocked commands didn't begin
+with a read). The repeat rate is the diagnostic: a compound command has no
+one-to-one `Read` substitution, so the agent re-attempts a variant and is
+re-blocked. The three read rules now require the read to be the sole statement
+of the parsed program. Full demotion was rejected — the block was never
+problematic at its pre-#2114 scope, and #2114's false-positive fixes all stand.
 
 ## When to reach for `grep` / `rg` in Bash
 
