@@ -5,20 +5,20 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-21
-modified: 2026-07-18
+modified: 2026-07-28
 compatibility: claude-code
 reviewed: 2026-07-05
 ---
 
 # Parallel Agent Dispatch
 
-Conventions that apply every time more than one agent runs in parallel.
-Prevents the top failure modes observed across real multi-agent sessions:
-dirty-worktree cross-contamination, context overflow mid-task, and silent
-exits that require manual salvage from orphan branches.
+Conventions that apply every time more than one agent runs in parallel. Prevents
+the top failure modes observed across real multi-agent sessions: dirty-worktree
+cross-contamination, context overflow mid-task, and silent exits that require
+manual salvage from orphan branches.
 
-For lookup tables, worked examples, evidence trails, and the detailed
-salvage / recovery routines, see [REFERENCE.md](REFERENCE.md).
+For lookup tables, worked examples, evidence trails, and the detailed salvage /
+recovery routines, see [REFERENCE.md](REFERENCE.md).
 
 ## When to Use This Skill
 
@@ -31,17 +31,16 @@ salvage / recovery routines, see [REFERENCE.md](REFERENCE.md).
 
 ## Dispatch from the Main Thread When Possible
 
-`Agent` and other parallel-spawn tools may not be present in a
-sub-agent's sandbox even when they are available in the main conversation.
-Designing a fan-out from inside a coordinating sub-agent risks silent
-degradation to sequential single-thread execution.
+`Agent` and other parallel-spawn tools may be absent from a sub-agent's sandbox
+even when available in the main conversation, so designing a fan-out from inside
+a coordinating sub-agent risks silent degradation to sequential execution.
 
 - **Default**: dispatch from the main conversation — the full tool surface is
   guaranteed.
-- **Sub-agent orchestrator**: only when the team's outputs do not need to feed
-  back into the main thread. Brief it to verify tool availability up front and
-  report sequential fallback as a first-class outcome (see `agent-teams` →
-  "Sub-Agent Caveat").
+- **Sub-agent orchestrator**: only when the team's outputs need not feed back
+  into the main thread. Brief it to verify tool availability up front and report
+  sequential fallback as a first-class outcome (`agent-teams` → "Sub-Agent
+  Caveat").
 
 ## The Three Pillars
 
@@ -89,43 +88,26 @@ until inside the worktree. After the agent returns, run the post-run main-repo
 integrity check (see [REFERENCE.md](REFERENCE.md) "Worktree cwd-reset guardrail
 (#1480)") — a changed branch or new dirty state is silent main-repo mutation.
 
-**`GIT_DIR`/`GIT_WORK_TREE` export leak (#1692 sibling).** An agent meeting a
-corrupted worktree (`core.bare = true` / `fatal: this operation must be run in
-a work tree`) must treat it as shared-checkout corruption — **STOP and report
-it**, repair `core.bare`, and never "work around" it by exporting
-`GIT_DIR`/`GIT_WORK_TREE`: those vars **override `git -C`**, so every later
-git call (and any test/hook subprocess that shells to git) targets the shared
-common config, flipping the whole checkout to bare and breaking **all**
-sibling worktrees at once. When a subprocess genuinely must run git in a
-sandbox, neutralize inherited env first:
+**`GIT_DIR`/`GIT_WORK_TREE` export leak (#1692 sibling).** A worktree reporting
+`core.bare = true` (`fatal: this operation must be run in a work tree`) is
+shared-checkout corruption — **STOP and report it**; never "work around" it by
+exporting `GIT_DIR`/`GIT_WORK_TREE`, which **override `git -C`** so every later
+git call (and any git-shelling test/hook subprocess) targets the shared common
+config, breaking **all** sibling worktrees at once. A subprocess that must run
+git in a sandbox neutralizes inherited env first:
 `env -u GIT_DIR -u GIT_WORK_TREE git -C "$dir" …`. See
 [REFERENCE.md](REFERENCE.md) "Worktree GIT_DIR-export leak (#1692)".
 
 **Nested-repo workspaces — `isolation: "worktree"` isolates the *outer* repo (#1838).**
-`isolation: "worktree"` resolves against the **session's** git repo, not the
-repo the agent is told to edit. In a nested-repo / portfolio layout (the
-`repos/<org>/<repo>` shape — see `shared-checkout-branch-isolation.md`,
-`concurrent-session-pr-check.md`), where the target files live in an
-**independent nested git repo** untracked by the outer session repo, the harness
-worktrees the **outer** repo. The nested repo isn't present in that worktree, so
-the agent's only path to the target files is the **shared checkout** — which the
-Edit-tool isolation guard correctly blocks. The isolation guarantee silently
-didn't apply to the repo that mattered, and the agent must hand-roll its own
-worktree to make progress.
-
-Detect it before dispatch: the target path's enclosing repo
-(`git -C <target-dir> rev-parse --show-toplevel`) differs from the session repo
-(`git rev-parse --show-toplevel`). When they differ, do **not** assume
-`isolation: "worktree"` isolated the target. Instead, the lead should either:
-
-- **(a)** create the **nested repo's** worktree explicitly off its own
-  `origin/main` and point the agent at that path, or
-- **(b)** brief the agent that its *first* step is
-  `git -C <nested-repo> fetch && git -C <nested-repo> worktree add <path> origin/main`
-  for the **specific nested repo** — never assuming it is already isolated — and
-  to do all work in that dedicated worktree.
-
-See [REFERENCE.md](REFERENCE.md) "Nested-repo worktree isolation (#1838)".
+The harness worktrees the **session's** repo, not the repo the agent was told to
+edit. In a nested-repo / portfolio layout the target files live in an independent
+nested repo that is **absent** from that worktree, so the agent's only path to
+them is the shared checkout — which the Edit-tool isolation guard correctly
+blocks. Detect it before dispatch: `git -C <target-dir> rev-parse --show-toplevel`
+≠ `git rev-parse --show-toplevel`. When they differ, either create the **nested**
+repo's worktree explicitly off its own `origin/main` and point the agent there, or
+brief the agent to do so as its *first* step. See [REFERENCE.md](REFERENCE.md)
+"Nested-repo worktree isolation (#1838)" for detection script and rules.
 
 ### 2. Scope Budget (per-agent prompt rules)
 
@@ -142,13 +124,12 @@ These budgets prevent the "agent hit context limits" and "prompt too long"
 failure modes — without them an agent exhausts its window on exploration and
 truncates its deliverable.
 
-**Orchestrator-only files.** Even with disjoint write scopes, a second list of
-shared files must be excluded from every agent's write-path under a
-`### Orchestrator-only files` heading in the brief: the blueprint manifest
-(ID registry), the feature tracker, top-level plan/roadmap docs, build manifests
-(`pyproject.toml`/`package.json`/`Cargo.toml`/`go.mod`), `justfile`/`Makefile`,
-and local task-queue stores. Last-writer-wins silently destroys earlier work on
-these. See [REFERENCE.md](REFERENCE.md) for the full template and evidence.
+**Orchestrator-only files.** Even with disjoint write scopes, shared files must
+be excluded from every agent's write-path under an `### Orchestrator-only files`
+heading in the brief: the blueprint manifest (ID registry), the feature tracker,
+top-level plan/roadmap docs, build manifests, `justfile`/`Makefile`, and local
+task-queue stores. Last-writer-wins silently destroys earlier work on these. See
+[REFERENCE.md](REFERENCE.md) for the full template and evidence.
 
 **Pre-allocated IDs.** The shared-counter snapshot must expand into **explicit
 per-agent ID assignment** in each brief ("Use WO-012; others claim WO-013/014").
@@ -177,8 +158,8 @@ the failure-mode → schema-field rationale, see
 [REFERENCE.md → Failure modes](REFERENCE.md#failure-modes--schema-field).
 
 Orchestrator edits needed must be **verbatim patches, not prose** (literal CMake
-blocks, full justfile recipes, literal doc paragraphs) — and the agent writes
-the final prose for any docs update its slice requires. See
+blocks, full justfile recipes, literal doc paragraphs), and the agent writes the
+final prose for any docs update its slice requires. See
 [REFERENCE.md → Verbatim patches](REFERENCE.md#verbatim-patches--detail-and-rationale).
 
 #### Loud-failure contract (never surrender silently)
@@ -186,10 +167,9 @@ the final prose for any docs update its slice requires. See
 A dispatched agent that hits a wall must say so **loudly**. The dominant failure
 shape (issue [#1422](https://github.com/laurigates/claude-plugins/issues/1422))
 is an agent that runs 50–200 tool calls, thrashes against hooks, then emits a
-one-word final message — `Terminal.`, `Done.`, `Stopped.` — with no PR URL, no
-error, no blocked list. A one-word summary is **indistinguishable from success**
-to the orchestrator, so the harness reads "no changes", cleans up the worktree,
-and the work is lost.
+one-word final message — `Terminal.`, `Done.`, `Stopped.` — with no PR URL and
+no blocked list. That is **indistinguishable from success** to the orchestrator,
+so the harness reads "no changes", cleans up the worktree, and the work is lost.
 
 Tie the escalation to the Return Contract's `status` field:
 
@@ -224,17 +204,15 @@ the agent's diff and the agent already has the context to fix it. See
 and `.claude/rules/regression-testing.md`.
 
 **Closed-list mechanical batches need a completion manifest, not just a
-self-report.** When a `refactor` agent is assigned a fixed list (symbols to
-delete, files to touch), brief it to emit a machine-checkable manifest of what
-it actually completed, and **never** trust that manifest alone — re-run the
-authoritative checker (`knip` / build / test) after it returns and diff the
-result against the assignment. A truncated or optimistic summary reads as
-success even when the batch fell short (issue
+self-report.** A `refactor` agent assigned a fixed list (symbols to delete, files
+to touch) must emit a machine-checkable manifest of what it completed — and
+**never** trust that manifest alone: re-run the authoritative checker (`knip` /
+build / test) afterward and diff against the assignment. A truncated or
+optimistic summary reads as success even when the batch fell short (issue
 [#1601](https://github.com/laurigates/claude-plugins/issues/1601): a ~23-symbol
-batch completed only ~5, invisible until the orchestrator re-ran `knip`). Cap
-the per-agent batch so an early stop costs little. See
-[REFERENCE.md → Refactor-brief template](REFERENCE.md#refactor-brief-template)
-and the refactor agent's batch-size guidance.
+batch completed only ~5, invisible until `knip` was re-run). Cap the per-agent
+batch so an early stop costs little. See
+[REFERENCE.md → Refactor-brief template](REFERENCE.md#refactor-brief-template).
 
 ### 5. Reviewer-agent verification (verify-then-fix)
 
@@ -252,14 +230,11 @@ comments instead. See [REFERENCE.md → Reviewer-agent verification](REFERENCE.m
 ## Who Pushes?
 
 Agents push their own commits in the normal case — worktree isolation plus
-per-agent branches makes this safe and keeps the lead context lean. Exceptions
-where the lead pushes instead:
-
-- **Web sandbox sessions** (`CLAUDE_CODE_REMOTE=true`) — teammates may hit TLS
-  errors on push (see `agent-teams`).
-- **Cross-agent dependencies** where Phase 1 commits must land as a single merge
-  base for Phase 2.
-- **Explicit user instruction** ("I'll push manually").
+per-agent branches makes this safe and keeps the lead context lean. The lead
+pushes instead only for: **web sandbox sessions** (`CLAUDE_CODE_REMOTE=true`,
+where teammates may hit TLS errors on push — see `agent-teams`), **cross-agent
+dependencies** where Phase 1 commits must land as a single merge base for Phase
+2, and **explicit user instruction** ("I'll push manually").
 
 ## Handling a Missing Return
 
@@ -282,23 +257,21 @@ intact: a pre-commit hook blocking `git commit`, or a rate-limit cut-off after
 the implementation but before the StructuredOutput call (issue
 [#1491](https://github.com/laurigates/claude-plugins/issues/1491)).
 
-Defensive mitigation: instruct worktree-isolated agents to `git add -A &&
-git commit` **WIP at checkpoints** — after each substantive slice and before
-they would terminate — so partial work is always captured even if the structured
-result is lost. See
+Defensive mitigation: instruct worktree-isolated agents to commit
+**WIP at checkpoints** — after each substantive slice and before they would
+terminate — so partial work survives a lost structured result. See
 [REFERENCE.md → Agent stalled at commit / push](REFERENCE.md#agent-stalled-at-commit--push--salvage-routine)
 and [REFERENCE.md → WIP salvage before re-dispatch](REFERENCE.md#wip-salvage-before-re-dispatch-1491).
 
 ### Idle without report (#2039)
 
-An implementer can **finish its work** (clean commit + tree) then go
-idle emitting only an `idle_notification` — the report never arrives; the
-work isn't lost, the *communication* is (intermittent — siblings can deliver
-fine). Not a failure signal: run the empty-vs-dirty check above, then
-`SendMessage` the named agent to resend the Return Contract (a read-only
-continuation, so the #1546 caveat below does not apply). Never respawn — a
-fresh agent lacks context and can't take the branch. Prevention: implementers
-`SendMessage` the report to the lead as their final act. See
+An implementer can **finish its work** (clean commit + tree) then go idle
+emitting only an `idle_notification` — the work isn't lost, the *communication*
+is (intermittent; siblings can deliver fine). Not a failure signal: run the
+empty-vs-dirty check above, then `SendMessage` the named agent to resend the
+Return Contract (read-only, so the #1546 caveat below does not apply). Never
+respawn — a fresh agent lacks context and can't take the branch. Prevention:
+implementers `SendMessage` the report to the lead as their final act. See
 [REFERENCE.md → Idle without report](REFERENCE.md#idle-without-report-2039).
 
 ## Killing a Thrashing Agent Preserves Its Worktree
@@ -307,8 +280,7 @@ fresh agent lacks context and can't take the branch. Prevention: implementers
 with every uncommitted change intact, making `TaskStop` a **recovery
 affordance**. When an agent is thrashing (high Bash:Edit ratio with a rising
 error rate on hook-blocked Bash calls), killing it early and salvaging beats
-waiting for a silent give-up. After `TaskStop`, decide salvage vs restart from
-the worktree state:
+waiting for a silent give-up. Then decide from the worktree state:
 
 | Worktree state | Decision |
 |----------------|----------|
@@ -331,46 +303,37 @@ a guarantee. **Start conservative, then scale up:**
 | Light (read-only analysis, single-file edits) | up to 5 |
 
 Prefer **sequential waves of small batches** over one big fan-out beyond ~4
-heavy agents. **Treat the rate-limit signal as backoff-and-retry, not task
+heavy agents, and treat the rate-limit signal as **backoff-and-retry, not task
 failure** — re-dispatch rejected agents with backoff *and reduced concurrency*.
-When the burst **killed agents at startup** (an `isolation: "worktree"` fan-out
-that all died before committing), the dead worktrees leave **empty branch refs**
-behind: `git worktree prune` and delete those branches before the retry, or each
-agent's `git switch -c <branch>` collides with the leftover ref.
+When the burst killed agents **at startup**, the dead worktrees leave empty
+branch refs behind: `git worktree prune` and delete them before the retry, or
+each agent's `git switch -c <branch>` collides with the leftover ref.
 See [REFERENCE.md → Concurrent rate-limit recovery](REFERENCE.md#concurrent-rate-limit-risk--recovery-dispatch-routine)
-and `.claude/rules/skill-fork-context.md` for the upstream tickets.
+and `.claude/rules/skill-fork-context.md`.
 
 ## Skill-less agentType for Read-Only Fan-Out
 
 For read-only / structured-output fan-out — classification, verification, audit
 sweeps where each agent **reads files and emits a result, nothing more** —
 dispatch a **Skill-less agentType** rather than `general-purpose`. A
-`general-purpose` subagent carries the `Skill` tool, and every `Skill`-bearing
-agent pays a large fixed context tax *before it runs a single tool call*: the
+`general-purpose` subagent carries the `Skill` tool, which injects a
 **`skill_listing` attachment (~88k chars / ~22k tokens)** plus a
-**`deferred_tools_delta` (~12k chars / ~3k tokens)** are injected up front. Add
-~10 file reads and a forced `StructuredOutput` schema on top and that ~25k fixed
-overhead pushes the subagent over its context window — observed as
-`Prompt is too long` and **40–100% batch-failure rates** in a real fan-out
-(issue [#1549](https://github.com/laurigates/claude-plugins/issues/1549)).
-
-Agents without the `Skill` tool receive **no `skill_listing` injection at all**,
-so the same workload fits comfortably.
+`deferred_tools_delta` (~3k tokens) *before its first tool call*; add file reads
+and a forced `StructuredOutput` schema and that ~25k fixed tax pushes the
+subagent over its window (`Prompt is too long`, 40–100% batch failures — issue
+[#1549](https://github.com/laurigates/claude-plugins/issues/1549)). Agents
+without the `Skill` tool receive **no `skill_listing` injection at all**.
 
 | Fan-out need | agentType | Why |
 |---|---|---|
 | Read-only classify / verify / audit | `agents-plugin:review` | Read/Glob/Grep, no `Skill` tool → no `skill_listing` tax; its review system prompt does not interfere given an explicit rubric + schema |
 | Read **plus** `Write` (e.g. emit a report file) | `agents-plugin:docs` | Same Skill-less lean tool set, with write capability |
-| Genuinely needs the skill catalog or broad `Bash` (`gh`/`task` filing) | `general-purpose` | Reserve `general-purpose` for agents that actually use `Skill` / broad Bash — the ~25k tax is only worth paying when the catalog is used |
+| Genuinely needs the skill catalog or broad `Bash` (`gh`/`task` filing) | `general-purpose` | The ~25k tax is only worth paying when the catalog is actually used |
 
-`agents-plugin:review` doubles as a **token-lean structured-output classifier**:
-given a procedure-vs-judgment rubric and a forced `StructuredOutput` schema it
-cleanly classified a 10-file batch where identical `general-purpose` agents
-failed with `Prompt is too long` (issue
-[#1550](https://github.com/laurigates/claude-plugins/issues/1550)). Preserve its
-lean, no-`Skill` tool set when reaching for it as a fan-out building block.
-
-Sibling guidance for writing such agents lives in `custom-agent-definitions`.
+Preserve `agents-plugin:review`'s lean, no-`Skill` tool set when reaching for it
+as a fan-out building block. See [REFERENCE.md](REFERENCE.md) "Skill-less
+agentType — evidence"; sibling authoring guidance is in
+`custom-agent-definitions`.
 
 ## Composition with agent-teams
 
@@ -381,42 +344,35 @@ fan-out. When both apply, follow both — the out-of-scope protocol from
 
 ### Resuming agents: SendMessage loses worktree isolation
 
-`SendMessage`-resume of a **completed** worktree-isolated agent (one spawned via
-`Agent` with `isolation: "worktree"`) does **not** re-enter that agent's
-worktree — the resumed run executes in the **orchestrator's main checkout**. A
-resume therefore **loses worktree isolation**: resuming several file-mutating
-agents this way runs them concurrently in the main checkout, tangling branch
-state (issue [#1546](https://github.com/laurigates/claude-plugins/issues/1546)).
+`SendMessage`-resume of a **completed** worktree-isolated agent does **not**
+re-enter that agent's worktree — the resumed run executes in the
+**orchestrator's main checkout**, so the resume **loses worktree isolation**;
+resuming several file-mutating agents this way runs them concurrently in the
+main checkout and tangles branch state (issue
+[#1546](https://github.com/laurigates/claude-plugins/issues/1546)).
 
 | Continuation | Safe to `SendMessage`-resume? | Do instead |
 |---|---|---|
 | Read-only / single-checkout follow-up | Yes — no worktree to re-enter | Resume freely |
-| Parallel **file-mutating** agent that must stay in its worktree | No — resume runs in the main checkout | **Re-dispatch a fresh `Agent` with `isolation: "worktree"`** for the remaining work |
-
-The rule: for parallel file-mutating work, never resume a finished
-worktree-isolated agent via `SendMessage` — re-dispatch a new
-`isolation: "worktree"` agent instead. Reserve `SendMessage`-resume for
-read-only or single-checkout continuations.
+| Parallel **file-mutating** agent that must stay in its worktree | No — resume runs in the main checkout | **Re-dispatch a fresh `Agent` with `isolation: "worktree"`** |
 
 ### Resuming a workflow: `resumeFromRunId` re-runs succeeded worktree agents
 
-`Workflow({resumeFromRunId})`'s resume contract — "completed `agent()` calls
-return cached results" — holds for ordinary `agent()` calls but **not** for
-`isolation: "worktree"` agents: on resume a worktree agent that **already
-succeeded** is **re-executed**, not served from cache. Opposite failure to the
-`SendMessage` case above (there the resume loses its worktree; here it re-runs
-the whole agent, side effects and all). The damage is outward and
-non-idempotent — an agent that opened a PR opens a **duplicate** one on resume
-(PR #1858 dup of #1857), needing manual cleanup (issue
-[#1868](https://github.com/laurigates/claude-plugins/issues/1868)).
+`Workflow({resumeFromRunId})`'s "completed `agent()` calls return cached
+results" holds for ordinary agents but **not** for `isolation: "worktree"`
+ones: a worktree agent that **already succeeded** is **re-executed** on resume,
+re-firing its outward side effects — an agent that opened a PR opens a
+**duplicate** (PR #1858 dup of #1857; issue
+[#1868](https://github.com/laurigates/claude-plugins/issues/1868)). Opposite
+failure to the `SendMessage` case above (there the resume loses its worktree;
+here it re-runs the whole agent).
 
-So to retry a few rate-limited/failed worktree agents from a finished workflow,
-do **not** resume the whole run — the succeeded ones re-run and duplicate their
-PRs. **Re-dispatch only the failed agents** with a fresh **sequential** pass
-(which also dodges the burst rate limit). Check for an already-open PR first
+So to retry a few failed worktree agents, do **not** resume the whole run —
+**re-dispatch only the failed agents** in a fresh **sequential** pass (which
+also dodges the burst rate limit), checking for an already-open PR first
 (`gh pr list --state all --search …`, reading `state`/`mergedAt` per
-`.claude/rules/gh-json-fields.md`). Non-worktree stages cache correctly — the
-hazard is worktree-specific. See `.claude/rules/agent-coworker-detection.md`.
+`.claude/rules/gh-json-fields.md`). Non-worktree stages cache correctly. See
+`.claude/rules/agent-coworker-detection.md`.
 
 ## Quick Reference
 

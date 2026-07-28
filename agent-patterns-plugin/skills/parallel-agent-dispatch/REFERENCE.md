@@ -508,6 +508,36 @@ target_root=$(git -C "<target-dir>" rev-parse --show-toplevel)
 | (a) Create the **nested repo's** worktree explicitly off its own `origin/main` and point the agent at that path; **or** (b) brief the agent to `git -C <nested-repo> fetch && git -C <nested-repo> worktree add <path> origin/main` as its first step. | Both give the agent a real isolated checkout of the repo it edits, instead of the blocked shared checkout. |
 | Have the agent operate inside that nested-repo worktree (prefix `git -C "$WORKTREE"`, per the #1480 cwd-reset rule) and open its PR from there. | Keeps the work isolated and avoids the shared-checkout collisions `shared-checkout-branch-isolation.md` guards against. |
 
+## Skill-less agentType — evidence
+
+`SKILL.md` § "Skill-less agentType for Read-Only Fan-Out" carries the routing
+table; this is the measurement behind it.
+
+Every `Skill`-bearing subagent pays a large **fixed** context tax before it runs
+a single tool call:
+
+| Injected up front | Size |
+|---|---|
+| `skill_listing` attachment | ~88k chars / ~22k tokens |
+| `deferred_tools_delta` | ~12k chars / ~3k tokens |
+
+That ~25k overhead is paid whether or not the agent ever calls `Skill`. Add ~10
+file reads and a forced `StructuredOutput` schema and a read-only classifier
+subagent exceeds its context window — observed as `Prompt is too long` with
+**40–100% batch-failure rates** in a real fan-out (issue
+[#1549](https://github.com/laurigates/claude-plugins/issues/1549)). Agents whose
+tool set omits `Skill` receive **no `skill_listing` injection at all**, so the
+identical workload fits comfortably.
+
+`agents-plugin:review` doubles as a **token-lean structured-output classifier**:
+given a procedure-vs-judgment rubric and a forced `StructuredOutput` schema it
+cleanly classified a 10-file batch where identical `general-purpose` agents
+failed with `Prompt is too long` (issue
+[#1550](https://github.com/laurigates/claude-plugins/issues/1550)). Its review
+system prompt does not interfere when the brief supplies an explicit rubric and
+schema. Preserve its lean, no-`Skill` tool set when reaching for it as a fan-out
+building block — adding `Skill` to it reinstates the full tax.
+
 ## Target-branch preflight (#1969)
 
 `isolation: "worktree"` names the fresh worktree's branch **automatically** (an
