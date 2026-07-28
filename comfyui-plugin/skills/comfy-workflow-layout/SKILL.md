@@ -172,7 +172,7 @@ Once the user confirms one workflow lays out cleanly, the rest in the
 same bucket usually follow. Batch with `--in-place`:
 
 ```
-for f in user/default/workflows/nsfw/2026-05/*.json; do
+for f in user/default/workflows/<bucket>/2026-05/*.json; do
   case "$f" in *-laidout.json) continue ;; esac
   .venv/bin/python scripts/layout_workflow.py --in-place --verify "$f"
 done

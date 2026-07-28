@@ -120,7 +120,7 @@ Ground truth is **regenerated on demand, never committed** — a committed
 snapshot is just another stale secondary source.
 
 ```
-COMFY_SSH_HOST=popos.intra.lakuz.com just corpus-check
+COMFY_SSH_HOST=<your-comfyui-host> just corpus-check
 ```
 
 Two halves, split because only one of them needs a GPU box:
