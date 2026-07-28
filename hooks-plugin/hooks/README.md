@@ -10,14 +10,13 @@ A PreToolUse hook that intercepts Bash commands and blocks those that should use
 
 | Pattern | Reminder |
 |---------|----------|
-| `cat file` | Use **Read** tool instead |
-| `head`/`tail file` | Use **Read** tool with offset/limit |
+| `cat file` (whole command only — #2148) | Use **Read** tool instead |
+| `head`/`tail file` (whole command only — #2148) | Use **Read** tool with offset/limit |
 | `sed -i` on repo files (targets under `/tmp`, `/private/tmp`, `/var/folders`, `$TMPDIR` are exempt — #2052) | Use **Edit** tool instead |
 | `echo > file` | Use **Write** tool instead |
 | `cat > file` | Use **Write** tool instead |
 | `timeout cmd` | Remove timeout (Bash tool has its own, human approval time exceeds it anyway); append a `# allow-timeout` comment to bound a genuinely-never-exiting process (REPL, stdio server) — #2041 |
-| `cat/tail ...tasks/*.output` | Use **Read** tool on the output path (or pipe an extraction for large files) |
-| `sleep && cat/tail ...output` | Use **Read** tool on the output path |
+| `cat/tail ...tasks/*.output` (whole command only — #2148) | Use **Read** tool on the output path (or pipe an extraction for large files) |
 | `git add -A` / `git add .` | Stage specific files by name instead of broad staging |
 | `git X && git Y` | Run git commands as separate Bash calls (avoids index.lock race condition) |
 | `git reset --hard` | Use safer alternatives; if truly needed, ask user to run manually |
@@ -35,6 +34,17 @@ got wrong (#1701, #1721, #1722, #1848, #1900, #2052, #2058). A read command
 inside `ssh host <<EOF … EOF`, `ssh host 'ls|grep'`, or `kubectl exec … -- cat`
 is a heredoc-body / string / argument node, never a `command_name`, so it is
 never mis-detected — the remote-exec guard is no longer needed.
+
+**Read detectors fire only on a whole-command read (#2148).** The structural
+port widened the read block from "a bare read as the whole command" (the
+pre-#2114 regex scope) to "a bare read anywhere in a compound command"; W31
+friction measured the cost as a 15.2% → **46.3%** same-session repeat-block
+rate. The three read rules (`cat-read`, `head-tail-read`, `task-output-read`)
+now additionally require `inside: { kind: program }` plus a first-and-last
+`nthChild` gate (comment siblings excluded), so `cat f.md` blocks while
+`cd repo && cat f.md` and `ls d/; head -20 f` pass. The three **write**
+detectors keep their original scope — they guard file mutation, not context
+budget. See `.claude/rules/bash-tool-replacements.md`.
 
 These are **style nudges** and **fail open**: when `ast-grep` is absent
 (sandboxes, subagents) they simply do not fire. Losing a "use Read instead of

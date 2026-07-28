@@ -41,7 +41,9 @@ string/heredoc-body/pipeline/argument, retiring the regex false-positive
 treadmill (#1701/#1721/#1722/#1848/#2052/#2058) and the remote-exec guard
 (#1900). They are style nudges that **fail open** when `ast-grep` is absent
 (no regex twin, #2008); the safety blocks below stay pure-regex and fire in
-every context.
+every context. The three **read** rules additionally require the read to be the
+**whole command** (#2148) — `cat f.md` blocks, `cd repo && cat f.md` and
+`ls d/; head -20 f` do not; the write rules are unscoped by that narrowing.
 
 `find` (#1871), `grep`/`rg` (#1909), `ls <glob>` (#2036), and long pipelines
 (5+ pipes from a cat/echo/printf or grep|grep head, #1873) are **not**
