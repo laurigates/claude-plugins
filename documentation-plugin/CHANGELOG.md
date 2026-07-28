@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.1](https://github.com/laurigates/claude-plugins/compare/documentation-plugin-v1.10.0...documentation-plugin-v1.10.1) (2026-07-28)
+
+
+### Bug Fixes
+
+* **testing-plugin:** route test-analyze to agent types that exist ([#2196](https://github.com/laurigates/claude-plugins/issues/2196)) ([3f586bf](https://github.com/laurigates/claude-plugins/commit/3f586bf05306968e4edde675c2d47e898e65e546)), closes [#2170](https://github.com/laurigates/claude-plugins/issues/2170) [#2174](https://github.com/laurigates/claude-plugins/issues/2174)
+
 ## [1.10.0](https://github.com/laurigates/claude-plugins/compare/documentation-plugin-v1.9.0...documentation-plugin-v1.10.0) (2026-07-05)
 
 

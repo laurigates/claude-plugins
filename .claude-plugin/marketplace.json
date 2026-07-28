@@ -117,7 +117,7 @@
       "name": "code-quality-plugin",
       "source": "./code-quality-plugin",
       "description": "Code review, refactoring, linting, dependency auditing, dead code detection, test quality, complexity metrics, and static analysis",
-      "version": "1.22.0",
+      "version": "1.22.1",
       "keywords": [
         "code-review",
         "refactoring",
@@ -236,7 +236,7 @@
       "name": "documentation-plugin",
       "source": "./documentation-plugin",
       "description": "Documentation generation - API docs, README, knowledge graphs, LaTeX PDF conversion",
-      "version": "1.10.0",
+      "version": "1.10.1",
       "keywords": [
         "documentation",
         "docs",
@@ -652,7 +652,7 @@
       "name": "testing-plugin",
       "source": "./testing-plugin",
       "description": "Test execution, TDD workflow, and testing strategies",
-      "version": "3.17.0",
+      "version": "3.17.1",
       "keywords": [
         "testing",
         "tdd",
