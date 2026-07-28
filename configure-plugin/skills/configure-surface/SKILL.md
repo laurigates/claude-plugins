@@ -1,11 +1,11 @@
 ---
 created: 2026-06-14
-modified: 2026-06-18
-reviewed: 2026-06-14
+modified: 2026-07-28
+reviewed: 2026-07-28
 description: "Surface doc-drift gate: scaffold surf.toml + hubs, wire the SHA-pinned pre-commit/Action. Use when adding a docs-governed-like-code CI gate."
 allowed-tools: Glob, Grep, Read, Write, Edit, Bash, AskUserQuestion, TodoWrite, WebFetch
 args: "[--check-only] [--fix] [--pin <tag>]"
-argument-hint: "[--check-only] [--fix] [--pin v0.6.2]"
+argument-hint: "[--check-only] [--fix] [--pin v0.8.0]"
 name: configure-surface
 language: rust
 ---
@@ -85,6 +85,9 @@ Land the Action ref as `Connorrmcd6/surface@<sha> # <tag>` and the pre-commit `r
 (github-tags datasource — Renovate manages both; see `.claude/rules/version-pinning.md`). Do **not**
 hand-transcribe a SHA from memory.
 
+Carry the **same tag** into the Action step's `version:` input (Step 5) — the ref pins the action,
+not the binary it installs.
+
 ### Step 4: Scaffold (greenfield)
 
 1. Create `surf.toml`:
@@ -116,13 +119,14 @@ hand-transcribe a SHA from memory.
 
 ```yaml
 - repo: https://github.com/Connorrmcd6/surface
-  rev: v0.6.2   # --pin tag; Renovate-managed (github-tags)
+  rev: v0.8.0   # --pin tag; Renovate-managed (github-tags)
   hooks:
     - id: surf-lint   # anchors resolve
     - id: surf-check  # the gate — blocks on drift
 ```
 
-**GitHub Action** — scaffold `.github/workflows/` with a **SHA-pinned** ref:
+**GitHub Action** — scaffold `.github/workflows/` with a **SHA-pinned** ref **and an explicit
+`version:`**:
 
 ```yaml
 name: "Docs: Surface drift gate"
@@ -132,20 +136,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-      - uses: Connorrmcd6/surface@004c9169f182fb5e577d389749e6447521e6e6aa # v0.6.2
+      - uses: Connorrmcd6/surface@091b937ae34ac81a02386604fed977dd24f1f0cf # v0.8.0
         with:
+          version: v0.8.0   # pins the BINARY; the input defaults to floating `latest`
           args: check
 ```
 
-> **Installer pin (the release-tag SHA is the anchor).** Pin the **commit SHA of a verified release
-> tag** (the `@<sha> # vX.Y.Z` form above); a tag can be re-pointed after release, so the SHA — not
-> the tag — is the real immutable anchor. The installer-pin gap (Surface's `action.yml` historically
-> piped `install.sh` from mutable `main`) is **fixed upstream**: `action.yml` now runs the bundled
-> `${{ github.action_path }}/install.sh` at the pinned ref. That fix is on `main` (commit `d83101b`)
-> but not yet in a tagged release — the example's `v0.6.2` SHA predates it. Until the first release
-> after v0.6.2 is cut, you can pin `d83101b` in your **own** repo to get the installer pin today,
-> then move to that release's tag-SHA once you've verified it. Pinning v0.6.2 or earlier keeps the
-> gap; vendor `install.sh` at that ref if you must stay there.
+> **Two pins, not one.** The `@<sha> # vX.Y.Z` ref pins the composite action *and* its bundled
+> `install.sh`; `version:` pins the **binary that installer downloads**. Omit it and `action.yml`'s
+> own default (`latest`) resolves `releases/latest` over the API on every run — a new upstream
+> release then changes gate behaviour with no local change, landing as a red merge gate nobody can
+> attribute to an edit. Checksum verification does not close this: it proves the download matches
+> *its own* published hash, not that it is the version you pinned. Keep the two values equal;
+> Renovate bumps the ref, so update `version:` to match in the same PR.
+>
+> The historical installer-pin gap (`action.yml` piping `install.sh` from mutable `main`) is fixed
+> and shipped — v0.8.0 runs `sh "${{ github.action_path }}/install.sh"`. Pinning **v0.6.2 or
+> earlier** still carries that gap; vendor `install.sh` at that ref if you must stay there.
 
 ### Step 6: Document the JSON → reviewer handoff
 
@@ -157,14 +164,15 @@ where our skills add the most value.
 
 ### Step 7: Report
 
-Print: scaffold actions taken, the resolved pin (`<sha> # <tag>`), pre-commit + Action wiring status,
-and the hardening checklist below with each item ✓/✗.
+Print: scaffold actions taken, the resolved pin (`<sha> # <tag>`), the `version:` input value, the
+pre-commit + Action wiring status, and the hardening checklist below with each item ✓/✗.
 
 ## Hardening checklist
 
 | Control | Target state |
 |---------|-------------|
 | Action ref | SHA-pinned with `# <tag>` comment, not a floating major |
+| Binary version | Pinned via `version: <tag>` in `with:`, not left at the floating `latest` default |
 | Installer | Checksum-verified (default) or vendored at the pinned ref |
 | Pin freshness | `rev:` / `uses:` Renovate-visible (github-tags shape) |
 | Gate scope | `surf check --base <ref>` to diff-scope to changed files in CI |
@@ -175,7 +183,7 @@ and the hardening checklist below with each item ✓/✗.
 | Context | Command |
 |---------|---------|
 | Status + pin audit | `/configure:surface --check-only` |
-| Scaffold + harden | `/configure:surface --fix --pin v0.6.2` |
+| Scaffold + harden | `/configure:surface --fix --pin v0.8.0` |
 | The gate (CI) | `surf check` |
 | Scope to changed files | `surf check --base origin/main` |
 | Machine-readable verdict | `surf check --format json` |
@@ -192,11 +200,12 @@ and the hardening checklist below with each item ✓/✗.
 
 ## Upstream contributions
 
-The installer-pin gap was reported and **fixed upstream**:
-
-- **PR (merged)**: `action.yml` now runs the bundled `${{ github.action_path }}/install.sh`, so a
-  SHA-pinned `uses:` also pins the installer. Lands in the first tagged release after v0.6.2 — until
-  then, the version-dependent caveat in Step 5 applies to v0.6.2 and earlier.
+- **Installer pin — reported, merged, shipped**: `action.yml` now runs the bundled
+  `${{ github.action_path }}/install.sh`, so a SHA-pinned `uses:` also pins the installer. Released;
+  the caveat in Step 5 applies only to v0.6.2 and earlier.
+- **Floating `version:` default — reported, open** ([Connorrmcd6/surface#169](https://github.com/Connorrmcd6/surface/issues/169)):
+  proposes the default itself stop being `latest`, so the SHA pin becomes transitive. Independent of
+  the fix here — set `version:` explicitly regardless, since anyone pinning an older release needs it.
 
 ## See Also
 
