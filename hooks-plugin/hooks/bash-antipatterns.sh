@@ -157,8 +157,8 @@ fi
 
 if [ -n "$ASTGREP" ]; then
     # Six rules, `---`-separated. Each keys on a distinct AST shape:
-    #  - cat-read / head-tail-read: a read command with a (non-flag) file operand,
-    #    NOT inside a pipeline (a pipeline read feeds another tool — allowed).
+    #  - cat-read / head-tail-read: a read command with a (non-flag) file operand
+    #    that is the WHOLE command — see the sole-statement gate below.
     #  - cat-write: a `cat` redirected to a real (non-/dev) file with NO source
     #    argument and NO heredoc (a heredoc write is the recommended body pattern).
     #  - echo-printf-write: an echo/printf file_redirect to a real (non-/dev)
@@ -166,7 +166,50 @@ if [ -n "$ASTGREP" ]; then
     #    redirect inside a sibling `$(…)` binds to that inner command, not the echo.
     #  - sed-inplace: `sed -i`/`--in-place` whose operands do NOT include a
     #    scratch path (/tmp, /private/tmp, /var/folders) — scratch edits are fine.
-    #  - task-output-read: cat/head/tail of a `.output`/`/tasks/` path, not piped.
+    #  - task-output-read: cat/head/tail of a `.output`/`/tasks/` path, whole-command.
+    #
+    # SOLE-STATEMENT GATE on the three READ rules (issue #2148).
+    #
+    # The three read detectors fire only when the read IS the whole command:
+    #   inside: { kind: program }                       — parent is the top level, so
+    #     the read is not an arm of a `&&`/`||` list, not a stage of a pipeline
+    #     (that parent is `pipeline`), not inside a subshell / substitution / body
+    #   nthChild 1 forward AND reverse, ofRule "not a comment"
+    #     — it is the ONLY statement of that program (a trailing `# comment` is a
+    #       sibling node and is excluded from the count, so `cat f.md  # notes`
+    #       still fires; `ls d/; cat f` does not)
+    #
+    # Why: #2114 replaced the regex path with this structural one and, as a side
+    # effect nobody intended, WIDENED the catch surface from "a bare read as the
+    # whole command" (the old `^\s*cat\s+…` + "no pipe anywhere" regex) to "a bare
+    # read ANYWHERE in a compound command". The W31 friction reading measured the
+    # cost: same-session repeat-block rate 15.2% → 46.3% (3.0× above a stable
+    # six-reading 6.3–20.0% band), 70 events / 41 sessions, ~30% of all friction
+    # events that week; per-session prevalence 21.6% → 68.3%. Of 72 recovered
+    # blocked commands, ~47 (65%) did not begin with cat/head/tail and would have
+    # passed pre-#2114.
+    #
+    # The repeat rate is the tell. For a bare `cat f.md` the substitution is clean
+    # and one-to-one: Read(file_path=…). For `cd repo && git log -3 && cat p.json`
+    # there is NO single-call substitution — the agent must decompose one Bash call
+    # into a Bash call plus N Read calls and re-plan, so it re-attempts a variant
+    # and is blocked again in the same session. Per hook-block-vs-nudge.md the
+    # exit-2 is only earned where the substitution is clean; the compound case is
+    # style with no clean fix, and style does not warrant a hard block.
+    #
+    # This restores the pre-#2114 scope (remedy (a) in #2148) rather than demoting
+    # the whole steer (remedy (b), the find/#1871 · grep/#1909 · ls/#2036 ·
+    # long-pipeline/#1873 path) — the block sat happily at 6–20% for six readings
+    # at its narrow scope, so the minimal correct action is to revert the widening.
+    #
+    # The `not: { inside: { kind: pipeline, stopBy: end } }` clause the read rules
+    # used to carry is GONE because `inside: { kind: program }` subsumes it: a read
+    # in a pipeline has `pipeline` as its parent, never `program`. Pipelines and
+    # heredocs remain exempt exactly as before (pinned by the test suite).
+    #
+    # The three WRITE detectors (cat-write, echo-printf-write, sed-inplace) keep
+    # their original scope — they guard file MUTATION, not context budget, and
+    # neither #2148 nor the friction data implicates them.
     AST_RULES=$(cat <<'SGRULES'
 id: cat-read
 language: bash
@@ -180,7 +223,9 @@ rule:
           - { kind: string }
           - { kind: raw_string }
           - { kind: concatenation }
-    - not: { inside: { kind: pipeline, stopBy: end } }
+    - inside: { kind: program }
+    - nthChild: { position: 1, ofRule: { not: { kind: comment } } }
+    - nthChild: { position: 1, reverse: true, ofRule: { not: { kind: comment } } }
 ---
 id: head-tail-read
 language: bash
@@ -194,7 +239,9 @@ rule:
           - { kind: string }
           - { kind: raw_string }
           - { kind: concatenation }
-    - not: { inside: { kind: pipeline, stopBy: end } }
+    - inside: { kind: program }
+    - nthChild: { position: 1, ofRule: { not: { kind: comment } } }
+    - nthChild: { position: 1, reverse: true, ofRule: { not: { kind: comment } } }
 ---
 id: cat-write
 language: bash
@@ -244,7 +291,9 @@ rule:
   all:
     - has: { field: name, regex: '^(cat|head|tail)$' }
     - has: { kind: word, regex: '(\.output|/tasks/)' }
-    - not: { inside: { kind: pipeline, stopBy: end } }
+    - inside: { kind: program }
+    - nthChild: { position: 1, ofRule: { not: { kind: comment } } }
+    - nthChild: { position: 1, reverse: true, ofRule: { not: { kind: comment } } }
 SGRULES
 )
 
@@ -269,7 +318,8 @@ an extraction to a compact summary instead (pipelines are allowed):
   Read(file_path=\"/path/to/file.md\")
 
 The Read tool returns line-numbered content and respects token budgets.
-Pipelines (cat file | jq) and heredocs (cat <<EOF) are still allowed.
+This fires only when the read is the WHOLE command. Pipelines (cat file | jq),
+heredocs (cat <<EOF), and compound commands (cd x && cat f) are all allowed.
 See .claude/rules/bash-tool-replacements.md for the full table."
     fi
 
@@ -281,7 +331,8 @@ BLOCKED: 'tail -50 file.md' →
   Read(file_path=\"/abs/path/to/file.md\", offset=<total_lines - 50>, limit=50)
 
 The Read tool with offset/limit reads the same byte range with
-line-numbered output. Pipelines (head file | …) are still allowed.
+line-numbered output. This fires only when the read is the WHOLE command.
+Pipelines (head file | …) and compound commands (ls d/; head -20 f) are allowed.
 See .claude/rules/bash-tool-replacements.md for the full table."
     fi
 
