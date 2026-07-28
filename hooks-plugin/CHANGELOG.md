@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.7.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.7.1...hooks-plugin-v2.7.2) (2026-07-28)
+
+
+### Bug Fixes
+
+* **hooks-plugin:** narrow the cat/head/tail read block to whole-command reads ([#2191](https://github.com/laurigates/claude-plugins/issues/2191)) ([3c9d5b8](https://github.com/laurigates/claude-plugins/commit/3c9d5b84222aaa06744de94fdcc3d2ba3357bd20)), closes [#2148](https://github.com/laurigates/claude-plugins/issues/2148)
+
 ## [2.7.1](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.7.0...hooks-plugin-v2.7.1) (2026-07-27)
 
 
