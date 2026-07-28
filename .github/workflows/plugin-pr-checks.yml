@@ -153,6 +153,16 @@ jobs:
       - name: Check blueprint level-3 workflow templates
         run: bash scripts/check-blueprint-level3-templates.sh
 
+      - name: Self-test the loop-integrity guard
+        # The Pillar-1/Pillar-2 invariants (independent stop condition + compact
+        # state packet) live as prose across five files, so a bulk edit can drop
+        # them with a passing parse. Runs unconditionally like the pairs above —
+        # the self-test proves the guard before it gates the tree.
+        run: bash scripts/tests/test-check-loop-integrity.sh
+
+      - name: Check looping skills keep an independent stop condition
+        run: bash scripts/check-loop-integrity.sh --strict
+
       - name: Self-test the shell-script lint guard
         # Whole-repo invariant (every shell script follows shell-scripting.md:
         # #!/usr/bin/env bash shebang, set flags, block()). Runs unconditionally
