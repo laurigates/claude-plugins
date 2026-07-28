@@ -86,20 +86,23 @@ from `summary.samplers[0]` and the source file's mtime.
 
 `summarize()` covers the API `prompt`, but `extract()["workflow"]` (the
 UI form) carries data the summarizer doesn't surface — most usefully
-**save-node widgets**. A workflow that wrote itself to `nsfw/<date>/…`
-self-labels its outputs:
+**save-node widgets**. A workflow that wrote itself to a dedicated output
+bucket (`<bucket>/<date>/…`) self-labels its outputs, so the prefix is a
+free classification signal:
 
 ```python
+BUCKET = "<bucket>/"          # whatever prefix your install sorts into
+
 ex = comfy_meta.extract(p)
 workflow = ex.get("workflow") or {}
 for n in workflow.get("nodes", []) or []:
     wv = n.get("widgets_values")
     # SaveImage / SaveWEBM: list[0] is the filename_prefix
-    if isinstance(wv, list) and wv and isinstance(wv[0], str) and wv[0].startswith("nsfw/"):
-        return "nsfw"
+    if isinstance(wv, list) and wv and isinstance(wv[0], str) and wv[0].startswith(BUCKET):
+        return BUCKET.rstrip("/")
     # VHS_VideoCombine: dict["filename_prefix"]
-    if isinstance(wv, dict) and str(wv.get("filename_prefix", "")).startswith("nsfw/"):
-        return "nsfw"
+    if isinstance(wv, dict) and str(wv.get("filename_prefix", "")).startswith(BUCKET):
+        return BUCKET.rstrip("/")
 ```
 
 `rename_outputs.py`'s NSFW classifier combines this self-label signal

@@ -257,7 +257,7 @@ LoadAndResizeImage (kjnodes) ─► image_path (STRING, full path)
                                        │
                                        ▼ (bare basename, no path, no ext)
                           JoinStringMulti (kjnodes)
-                          in_1: "nsfw/%date:yyyy-MM-dd%/%date:hhmmss%_%ksampler.sampler_name%_%ksampler.scheduler%_s%ksampler.seed%_"
+                          in_1: "<bucket>/%date:yyyy-MM-dd%/%date:hhmmss%_%ksampler.sampler_name%_%ksampler.scheduler%_s%ksampler.seed%_"
                           in_2: <bare basename>   # the <descriptor> segment
                                        │
                                        ▼
@@ -266,9 +266,9 @@ LoadAndResizeImage (kjnodes) ─► image_path (STRING, full path)
 
 `%date:%` tokens pass through verbatim into the SaveImage prefix
 substitution (resolved at save time). String manipulation chain lives
-in `comfy-math-strings`; the save node lives in easy-use. The full
-required prefix shape (mandatory sampler/scheduler/seed) is the "Output
-filename_prefix convention" in `.claude/rules/editing-workflow-json.md`.
+in `comfy-math-strings`; the save node lives in easy-use. The prefix
+convention itself is per-install — see "Naming conventions are
+per-install" in `comfy-workflow-json`.
 
 ### Caption a folder of images for batch dataset prep
 

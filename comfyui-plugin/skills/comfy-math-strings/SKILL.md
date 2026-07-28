@@ -223,12 +223,11 @@ SD/Flux/Wan latent alignment automatically.
 ### Filename templating
 
 `SaveImage.filename_prefix` accepts `%date:yyyy-MM-dd%` / `%date:hhmmss%`
-substitution plus `%NodeName.widget%`. The **required shape** (mandatory
-sampler/scheduler/seed run-signature) is the "Output filename_prefix
-convention" in `.claude/rules/editing-workflow-json.md`; its "SaveImage
-filename substitution" section covers the native syntax. When the native
-substitution isn't enough (e.g. you need to strip an extension from a
-source filename), assemble the prefix via:
+substitution plus `%NodeName.widget%`. A run-signature shape
+(sampler/scheduler/seed) keeps runs distinguishable, but the exact
+convention is per-install — see "Naming conventions are per-install" in
+`comfy-workflow-json`. When the native substitution isn't enough (e.g. you
+need to strip an extension from a source filename), assemble the prefix via:
 
 ```
 LoadAndResizeImage ──► image_path (STRING, kjnodes)
@@ -241,7 +240,7 @@ LoadAndResizeImage ──► image_path (STRING, kjnodes)
                             │
                             ▼ (basename without ext, STRING)
               JoinStringMulti (kjnodes)
-                 in_1: "nsfw/%date:yyyy-MM-dd%/%date:hhmmss%_%ksampler.sampler_name%_%ksampler.scheduler%_s%ksampler.seed%_"
+                 in_1: "<bucket>/%date:yyyy-MM-dd%/%date:hhmmss%_%ksampler.sampler_name%_%ksampler.scheduler%_s%ksampler.seed%_"
                  in_2: <stripped basename>   # the <descriptor> segment
                             │
                             ▼
