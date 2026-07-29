@@ -23,7 +23,8 @@ permissions:
 
 jobs:
   find-conflicts:
-    runs-on: ubuntu-latest
+    # Orchestration only (scripts + `gh`) — 1-CPU slim runner is 3x cheaper.
+    runs-on: ubuntu-slim
     outputs:
       matrix: ${{ steps.find.outputs.matrix }}
       has_conflicts: ${{ steps.find.outputs.has_conflicts }}

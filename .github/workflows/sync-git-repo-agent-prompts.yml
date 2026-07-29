@@ -29,7 +29,8 @@ permissions:
 
 jobs:
   sync:
-    runs-on: ubuntu-latest
+    # Orchestration only (scripts + `gh`) — 1-CPU slim runner is 3x cheaper.
+    runs-on: ubuntu-slim
     steps:
       - name: Checkout claude-plugins
         uses: actions/checkout@v6
