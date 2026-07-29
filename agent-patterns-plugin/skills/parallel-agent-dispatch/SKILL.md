@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-04-21
-modified: 2026-07-28
+modified: 2026-07-29
 compatibility: claude-code
 reviewed: 2026-07-05
 ---
@@ -17,8 +17,8 @@ the top failure modes observed across real multi-agent sessions: dirty-worktree
 cross-contamination, context overflow mid-task, and silent exits that require
 manual salvage from orphan branches.
 
-For lookup tables, worked examples, evidence trails, and the detailed salvage /
-recovery routines, see [REFERENCE.md](REFERENCE.md).
+Supporting material is split across `references/` by the path that needs it;
+[REFERENCE.md](REFERENCE.md) is the index. Sections below link the specific file.
 
 ## When to Use This Skill
 
@@ -69,7 +69,7 @@ name is free (`git branch -a --list "$target"`, `git worktree list`,
 this task — **stop and reconcile**, not race to a duplicate PR
 (`.claude/rules/concurrent-session-pr-check.md`). **Mitigation:** push via
 explicit refspec (`git push origin HEAD:$target`) instead of renaming. See
-[REFERENCE.md](REFERENCE.md) "Target-branch preflight (#1969)".
+[references/worktree-hazards.md → Target-branch preflight](references/worktree-hazards.md#target-branch-preflight-1969).
 
 **Transient worktree leaks (#1319).** While a wave runs, a file a child wrote
 inside its worktree can briefly appear in the **parent** as an untracked entry
@@ -85,8 +85,9 @@ Brief every git-write agent: pin the root once
 (`git rev-parse --show-toplevel` → `$WORKTREE`) and prefix every call with
 `git -C "$WORKTREE" …`; forbid bare `git checkout -B` / `git rebase --autostash`
 until inside the worktree. After the agent returns, run the post-run main-repo
-integrity check (see [REFERENCE.md](REFERENCE.md) "Worktree cwd-reset guardrail
-(#1480)") — a changed branch or new dirty state is silent main-repo mutation.
+integrity check (see [references/worktree-hazards.md → cwd-reset
+guardrail](references/worktree-hazards.md#worktree-cwd-reset-guardrail-1480)) —
+a changed branch or new dirty state is silent main-repo mutation.
 
 **`GIT_DIR`/`GIT_WORK_TREE` export leak (#1692 sibling).** A worktree reporting
 `core.bare = true` (`fatal: this operation must be run in a work tree`) is
@@ -96,7 +97,7 @@ git call (and any git-shelling test/hook subprocess) targets the shared common
 config, breaking **all** sibling worktrees at once. A subprocess that must run
 git in a sandbox neutralizes inherited env first:
 `env -u GIT_DIR -u GIT_WORK_TREE git -C "$dir" …`. See
-[REFERENCE.md](REFERENCE.md) "Worktree GIT_DIR-export leak (#1692)".
+[references/worktree-hazards.md → GIT_DIR-export leak](references/worktree-hazards.md#worktree-git_dir-export-leak-1692).
 
 **Nested-repo workspaces — `isolation: "worktree"` isolates the *outer* repo (#1838).**
 The harness worktrees the **session's** repo, not the repo the agent was told to
@@ -106,8 +107,9 @@ them is the shared checkout — which the Edit-tool isolation guard correctly
 blocks. Detect it before dispatch: `git -C <target-dir> rev-parse --show-toplevel`
 ≠ `git rev-parse --show-toplevel`. When they differ, either create the **nested**
 repo's worktree explicitly off its own `origin/main` and point the agent there, or
-brief the agent to do so as its *first* step. See [REFERENCE.md](REFERENCE.md)
-"Nested-repo worktree isolation (#1838)" for detection script and rules.
+brief the agent to do so as its *first* step. See
+[references/worktree-hazards.md → Nested-repo isolation](references/worktree-hazards.md#nested-repo-worktree-isolation-1838)
+for detection script and rules.
 
 ### 2. Scope Budget (per-agent prompt rules)
 
@@ -129,7 +131,8 @@ be excluded from every agent's write-path under an `### Orchestrator-only files`
 heading in the brief: the blueprint manifest (ID registry), the feature tracker,
 top-level plan/roadmap docs, build manifests, `justfile`/`Makefile`, and local
 task-queue stores. Last-writer-wins silently destroys earlier work on these. See
-[REFERENCE.md](REFERENCE.md) for the full template and evidence.
+[references/brief-templates.md](references/brief-templates.md) for the full
+template and evidence.
 
 **Pre-allocated IDs.** The shared-counter snapshot must expand into **explicit
 per-agent ID assignment** in each brief ("Use WO-012; others claim WO-013/014").
@@ -143,7 +146,7 @@ it alone, or pre-compute its artefacts so downstream agents are read-only. See
 `exclusive-lock-dispatch`.
 
 **Refactor briefs.** For bulk content rewrites, use the per-step / PRECIOUS /
-per-file-cap shape — see [REFERENCE.md → Refactor-brief template](REFERENCE.md#refactor-brief-template).
+per-file-cap shape — see [references/brief-templates.md → Refactor-brief template](references/brief-templates.md#refactor-brief-template).
 
 ### 3. Return Contract (mandatory structured summary)
 
@@ -153,14 +156,14 @@ commits / worktree, plus Scope delivered, Deferred, Issues encountered, and
 Orchestrator action needed). Include the schema **verbatim** in every dispatched
 agent's prompt under a heading like `### Return contract (mandatory)` — agents
 follow concrete schemas more reliably than prose. Copy the full schema from
-[REFERENCE.md → Return Contract schema](REFERENCE.md#return-contract-schema); for
-the failure-mode → schema-field rationale, see
-[REFERENCE.md → Failure modes](REFERENCE.md#failure-modes--schema-field).
+[references/dispatch-contract.md → Return Contract schema](references/dispatch-contract.md#return-contract-schema);
+for the failure-mode → schema-field rationale, see
+[references/dispatch-contract.md → Failure modes](references/dispatch-contract.md#failure-modes--schema-field).
 
 Orchestrator edits needed must be **verbatim patches, not prose** (literal CMake
 blocks, full justfile recipes, literal doc paragraphs), and the agent writes the
 final prose for any docs update its slice requires. See
-[REFERENCE.md → Verbatim patches](REFERENCE.md#verbatim-patches--detail-and-rationale).
+[references/brief-templates.md → Verbatim patches](references/brief-templates.md#verbatim-patches--detail-and-rationale).
 
 #### Loud-failure contract (never surrender silently)
 
@@ -200,7 +203,7 @@ shifting validation from commit-time to edit-time.
 
 Treating the script as advisory defeats the purpose — the regression lands in
 the agent's diff and the agent already has the context to fix it. See
-[REFERENCE.md → Bulk-edit self-verification](REFERENCE.md#bulk-edit-self-verification--worked-example)
+[references/brief-templates.md → Bulk-edit self-verification](references/brief-templates.md#bulk-edit-self-verification--worked-example)
 and `.claude/rules/regression-testing.md`.
 
 **Closed-list mechanical batches need a completion manifest, not just a
@@ -212,7 +215,7 @@ optimistic summary reads as success even when the batch fell short (issue
 [#1601](https://github.com/laurigates/claude-plugins/issues/1601): a ~23-symbol
 batch completed only ~5, invisible until `knip` was re-run). Cap the per-agent
 batch so an early stop costs little. See
-[REFERENCE.md → Refactor-brief template](REFERENCE.md#refactor-brief-template).
+[references/brief-templates.md → Refactor-brief template](references/brief-templates.md#refactor-brief-template).
 
 ### 5. Reviewer-agent verification (verify-then-fix)
 
@@ -225,7 +228,7 @@ inline or dispatch a follow-up worker — do not close on the worker's self-clai
 
 **Self-author guard for `gh pr` flows**: `gh pr review --reviewer <user>` returns
 HTTP 422 when the target is the PR author; brief reviewers to post inline
-comments instead. See [REFERENCE.md → Reviewer-agent verification](REFERENCE.md#reviewer-agent-verification--evidence).
+comments instead. See [references/brief-templates.md → Reviewer-agent verification](references/brief-templates.md#reviewer-agent-verification--evidence).
 
 ## Who Pushes?
 
@@ -260,8 +263,8 @@ the implementation but before the StructuredOutput call (issue
 Defensive mitigation: instruct worktree-isolated agents to commit
 **WIP at checkpoints** — after each substantive slice and before they would
 terminate — so partial work survives a lost structured result. See
-[REFERENCE.md → Agent stalled at commit / push](REFERENCE.md#agent-stalled-at-commit--push--salvage-routine)
-and [REFERENCE.md → WIP salvage before re-dispatch](REFERENCE.md#wip-salvage-before-re-dispatch-1491).
+[references/failure-recovery.md → Agent stalled at commit / push](references/failure-recovery.md#agent-stalled-at-commit--push--salvage-routine)
+and [references/failure-recovery.md → WIP salvage before re-dispatch](references/failure-recovery.md#wip-salvage-before-re-dispatch-1491).
 
 ### Idle without report (#2039)
 
@@ -272,7 +275,7 @@ empty-vs-dirty check above, then `SendMessage` the named agent to resend the
 Return Contract (read-only, so the #1546 caveat below does not apply). Never
 respawn — a fresh agent lacks context and can't take the branch. Prevention:
 implementers `SendMessage` the report to the lead as their final act. See
-[REFERENCE.md → Idle without report](REFERENCE.md#idle-without-report-2039).
+[references/failure-recovery.md → Idle without report](references/failure-recovery.md#idle-without-report-2039).
 
 ## Killing a Thrashing Agent Preserves Its Worktree
 
@@ -288,7 +291,7 @@ waiting for a silent give-up. Then decide from the worktree state:
 | Empty / trivial diff, or wrong design | **Restart** — `git worktree remove <path>` first, then re-dispatch |
 
 For the quantitative kill thresholds and the rate-limit vs hook-block
-discriminator, see [REFERENCE.md → Killed-agent worktree recovery](REFERENCE.md#killed-agent-worktree-recovery-taskstop).
+discriminator, see [references/failure-recovery.md → Killed-agent worktree recovery](references/failure-recovery.md#killed-agent-worktree-recovery-taskstop).
 
 ## Concurrent Rate-Limit Risk
 
@@ -308,7 +311,7 @@ failure** — re-dispatch rejected agents with backoff *and reduced concurrency*
 When the burst killed agents **at startup**, the dead worktrees leave empty
 branch refs behind: `git worktree prune` and delete them before the retry, or
 each agent's `git switch -c <branch>` collides with the leftover ref.
-See [REFERENCE.md → Concurrent rate-limit recovery](REFERENCE.md#concurrent-rate-limit-risk--recovery-dispatch-routine)
+See [references/failure-recovery.md → Concurrent rate-limit recovery](references/failure-recovery.md#concurrent-rate-limit-risk--recovery-dispatch-routine)
 and `.claude/rules/skill-fork-context.md`.
 
 ## Skill-less agentType for Read-Only Fan-Out
@@ -331,9 +334,9 @@ without the `Skill` tool receive **no `skill_listing` injection at all**.
 | Genuinely needs the skill catalog or broad `Bash` (`gh`/`task` filing) | `general-purpose` | The ~25k tax is only worth paying when the catalog is actually used |
 
 Preserve `agents-plugin:review`'s lean, no-`Skill` tool set when reaching for it
-as a fan-out building block. See [REFERENCE.md](REFERENCE.md) "Skill-less
-agentType — evidence"; sibling authoring guidance is in
-`custom-agent-definitions`.
+as a fan-out building block. See
+[references/dispatch-contract.md → Skill-less agentType](references/dispatch-contract.md#skill-less-agenttype--evidence);
+sibling authoring guidance is in `custom-agent-definitions`.
 
 ## Composition with agent-teams
 
@@ -400,7 +403,7 @@ also dodges the burst rate limit), checking for an already-open PR first
 
 ## Related
 
-- [REFERENCE.md](REFERENCE.md) — failure-mode table, refactor-brief template, salvage routines, evidence trails
+- [REFERENCE.md](REFERENCE.md) — index over `references/`: dispatch contract, brief templates, failure recovery, worktree hazards
 - `agent-teams` — implicit-team / SendMessage mechanics, out-of-scope discovery protocol
 - `custom-agent-definitions` — agent file structure, tool restrictions, context forking
 - `.claude/rules/agent-development.md` — agent authoring conventions

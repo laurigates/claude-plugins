@@ -97,10 +97,12 @@ call where the worktree holds the work.
 
 For concurrency caps, wave-splitting mechanics, and the recovery-dispatch
 routine for rate-limited agents, see
-`agent-patterns-plugin:parallel-agent-dispatch` § Concurrent rate-limit
-risk and
-[REFERENCE.md → Concurrent rate-limit recovery](../../agent-patterns-plugin/skills/parallel-agent-dispatch/REFERENCE.md).
-Do not duplicate that guidance here.
+`agent-patterns-plugin:parallel-agent-dispatch` § Concurrent rate-limit risk
+and its `references/failure-recovery.md` § Concurrent rate-limit risk —
+recovery-dispatch routine. (Named, not path-linked: a relative path into
+another plugin is dead for anyone who installed only one of the two —
+`.claude/rules/skill-consolidation.md` § 2.) Do not duplicate that guidance
+here.
 
 ## Gate Failure: Roll Back, Don't Paper Over
 

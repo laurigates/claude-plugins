@@ -1,7 +1,7 @@
 ---
 created: 2026-03-02
-modified: 2026-07-27
-reviewed: 2026-07-27
+modified: 2026-07-29
+reviewed: 2026-07-29
 paths:
   - "**/skills/**"
   - "**/SKILL.md"
@@ -191,6 +191,48 @@ my-skill/
 ├── examples.md        # Usage examples (optional)
 └── scripts/           # Helper scripts (optional)
 ```
+
+### `references/` — a multi-file split for large skills
+
+A single `REFERENCE.md` defers content but is all-or-nothing: a run that needs
+one salvage routine loads every table in the file. For a large skill, split the
+sidecar into a `references/` directory instead — see
+[`context-engineering.md`](context-engineering.md) § "Split long skills across
+files" for why.
+
+```
+my-skill/
+├── SKILL.md                      # Core instructions
+├── REFERENCE.md                  # Thin index: one row per reference file
+└── references/
+    ├── <concern-a>.md
+    └── <concern-b>.md
+```
+
+| Prefer | When |
+|---|---|
+| Single `REFERENCE.md` | The sidecar is small, or its material is read as one piece |
+| `references/*.md` + index | The sidecar is large **and** different invocation paths need disjoint parts of it |
+
+Conventions:
+
+- **Split by the path that needs the detail, not by size.** The point is that a
+  scoped run loads only its own material — an even split down the middle defeats
+  it. Name each file for the consumer's situation (`failure-recovery.md`,
+  `worktree-hazards.md`), not for the document's structure (`part-2.md`).
+- **Keep `REFERENCE.md` as a thin index** — one row per file naming the path the
+  reader is on and what that file carries. It stays the stable entry point, so
+  sibling skills' links keep resolving and nothing becomes unreachable.
+- **A file nothing links to is unreachable.** When a regression guard pins a
+  literal in the sidecar, repoint it at the file that now owns it *in the same
+  commit*, and assert the index still links every reference file
+  (`.claude/rules/regression-testing.md`).
+- **Cross-plugin stays a name reference.** `references/` is a relative path like
+  any other — a link into another plugin's `references/` is dead for anyone who
+  installed one of the two (`.claude/rules/skill-consolidation.md` § 2).
+
+Reference implementation: `agent-patterns-plugin/skills/parallel-agent-dispatch`
+(issue [#2143](https://github.com/laurigates/claude-plugins/issues/2143)).
 
 ### What Goes Where
 

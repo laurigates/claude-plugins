@@ -25,6 +25,14 @@
 #   custom-agent-definitions/SKILL.md
 #     - references issue #1422 (the cross-reference to the contract)
 #
+# Supporting material for parallel-agent-dispatch lives in references/*.md
+# (issue #2143 — multi-file progressive disclosure, split by the path that needs
+# the detail). REFERENCE.md is a thin index over those files, so the markers
+# below are asserted against the specific reference file that owns each one, and
+# the index itself is asserted to still link every reference file. A split that
+# moves a pinned marker without updating this script breaks the build; that is
+# the point.
+#
 # Usage:
 #   bash scripts/check-agent-failure-contract.sh
 #
@@ -38,6 +46,13 @@ cd "$(dirname "$0")/.." || exit 1
 
 dispatch_skill="agent-patterns-plugin/skills/parallel-agent-dispatch/SKILL.md"
 agentdef_skill="agent-patterns-plugin/skills/custom-agent-definitions/SKILL.md"
+
+# parallel-agent-dispatch's supporting material, split by consumer path (#2143).
+dispatch_refs="agent-patterns-plugin/skills/parallel-agent-dispatch/references"
+reference_index="agent-patterns-plugin/skills/parallel-agent-dispatch/REFERENCE.md"
+brief_templates_md="$dispatch_refs/brief-templates.md"
+failure_recovery_md="$dispatch_refs/failure-recovery.md"
+worktree_hazards_md="$dispatch_refs/worktree-hazards.md"
 
 errors=0
 
@@ -64,16 +79,25 @@ require_marker "$dispatch_skill" "#1422" "the issue reference"
 # custom-agent-definitions carries the cross-reference best practice.
 require_marker "$agentdef_skill" "#1422" "the issue reference / cross-link"
 
-# Regression #1424: REFERENCE.md must carry the QUANTITATIVE hook-thrashing
-# heuristic so an orchestrator can intervene programmatically.  A bulk edit
-# that "tightens" the prose may silently remove the threshold numbers, leaving
-# only qualitative guidance and restoring the deferral to "issue #1424".
+# Regression #2143: REFERENCE.md is now an INDEX over references/*.md. If a
+# future edit drops a row, the material behind it becomes unreachable from the
+# skill even though the file still exists — so assert the index still links
+# every reference file the markers below are pinned in.
+for ref in "$brief_templates_md" "$failure_recovery_md" "$worktree_hazards_md" \
+           "$dispatch_refs/dispatch-contract.md"; do
+  require_marker "$reference_index" "references/$(basename "$ref")" \
+    "index link to $(basename "$ref") (issue #2143)"
+done
+
+# Regression #1424: the recovery reference must carry the QUANTITATIVE
+# hook-thrashing heuristic so an orchestrator can intervene programmatically. A
+# bulk edit that "tightens" the prose may silently remove the threshold numbers,
+# leaving only qualitative guidance and restoring the deferral to "issue #1424".
 # Check for the specific numeric threshold strings that make the heuristic
 # actionable (9:1 ratio and the 30% / 3-consecutive-blocks is_error rate).
-reference_md="agent-patterns-plugin/skills/parallel-agent-dispatch/REFERENCE.md"
-require_marker "$reference_md" "9:1" "Bash:Edit ratio threshold (issue #1424)"
-require_marker "$reference_md" "is_error" "is_error rate signal (issue #1424)"
-require_marker "$reference_md" "30%" "30% is_error-rate threshold (issue #1424)"
+require_marker "$failure_recovery_md" "9:1" "Bash:Edit ratio threshold (issue #1424)"
+require_marker "$failure_recovery_md" "is_error" "is_error rate signal (issue #1424)"
+require_marker "$failure_recovery_md" "30%" "30% is_error-rate threshold (issue #1424)"
 
 # Regression #1491: an agent cut off (e.g. by a rate limit) AFTER implementing
 # its change but BEFORE emitting StructuredOutput is reported failed, yet the
@@ -82,12 +106,13 @@ require_marker "$reference_md" "30%" "30% is_error-rate threshold (issue #1424)"
 #   1) SKILL.md "Handling a Missing Return" must (a) tell the orchestrator to
 #      DISCRIMINATE an empty worktree from a dirty one before re-dispatching,
 #      and (b) instruct the brief to commit WIP at checkpoints.
-#   2) REFERENCE.md must carry the "WIP salvage before re-dispatch" subsection.
+#   2) references/failure-recovery.md must carry the "WIP salvage before
+#      re-dispatch" subsection.
 require_marker "$dispatch_skill" "empty vs dirty" "empty-vs-dirty discrimination (issue #1491)"
 require_marker "$dispatch_skill" "WIP at checkpoints" "checkpoint-WIP-commit brief instruction (issue #1491)"
 require_marker "$dispatch_skill" "#1491" "the issue reference"
-require_marker "$reference_md" "WIP salvage before re-dispatch" "the salvage subsection heading (issue #1491)"
-require_marker "$reference_md" "#1491" "the issue reference"
+require_marker "$failure_recovery_md" "WIP salvage before re-dispatch" "the salvage subsection heading (issue #1491)"
+require_marker "$failure_recovery_md" "#1491" "the issue reference"
 
 # Regression #1480: a git-write agent under isolation:worktree leaked its git
 # writes into the MAIN repo because the agent-thread cwd reset landed on the
@@ -130,19 +155,20 @@ require_marker "$dispatch_skill" "#1868" "the issue reference"
 # worktrees. DISTINCT from the empty-mktemp vector guarded by
 # check-git-sandbox-guards.sh (#1692): there the path is empty; here the path is
 # correct and the exported env is the hijack. Assert the SKILL.md carries the
-# hazard reference + the env-neutralizing idiom, and REFERENCE.md the section.
+# hazard reference + the env-neutralizing idiom, and the worktree-hazards
+# reference the section.
 require_marker "$dispatch_skill" "#1692" "the GIT_DIR-export worktree-leak reference (#1692 sibling)"
 require_marker "$dispatch_skill" "env -u GIT_DIR" "the env-neutralizing git idiom (#1692 sibling)"
-require_marker "$reference_md" "Worktree GIT_DIR-export leak" "the REFERENCE.md GIT_DIR-export section (#1692 sibling)"
+require_marker "$worktree_hazards_md" "Worktree GIT_DIR-export leak" "the references/worktree-hazards.md GIT_DIR-export section (#1692 sibling)"
 
 # Regression #1838: in a nested-repo workspace, isolation:"worktree" worktrees
 # the OUTER session repo, not the nested independent repo the agent was told to
 # edit — so the nested repo is absent and the agent must hand-roll its own
 # worktree. The fix documents detecting the nesting and isolating the nested repo
-# explicitly. Assert the SKILL.md carries the #1838 reference and the REFERENCE.md
-# section survives bulk edits.
+# explicitly. Assert the SKILL.md carries the #1838 reference and the
+# worktree-hazards reference section survives bulk edits.
 require_marker "$dispatch_skill" "#1838" "the nested-repo worktree-isolation reference (#1838)"
-require_marker "$reference_md" "Nested-repo worktree isolation" "the REFERENCE.md nested-repo isolation section (#1838)"
+require_marker "$worktree_hazards_md" "Nested-repo worktree isolation" "the references/worktree-hazards.md nested-repo isolation section (#1838)"
 # Regression #1601: a refactor subagent assigned a large CLOSED LIST of
 # mechanical deletions (symbols/files) stops early but returns a plausible
 # (often truncated) self-report, so the under-delivery is invisible unless the
@@ -151,16 +177,16 @@ require_marker "$reference_md" "Nested-repo worktree isolation" "the REFERENCE.m
 #   1) agents-plugin/agents/refactor.md must carry the Completion Manifest
 #      requirement (a machine-checkable list of what actually landed) AND the
 #      batch-size cap referencing #1601.
-#   2) parallel-agent-dispatch SKILL.md + REFERENCE.md must reference #1601 and
-#      carry the manifest / never-trust-self-report-alone language alongside the
-#      existing Pillar 4/5 verification guidance.
+#   2) parallel-agent-dispatch SKILL.md + references/brief-templates.md must
+#      reference #1601 and carry the manifest / never-trust-self-report-alone
+#      language alongside the existing Pillar 4/5 verification guidance.
 refactor_agent="agents-plugin/agents/refactor.md"
 require_marker "$refactor_agent" "Completion Manifest" "the completion-manifest section (issue #1601)"
 require_marker "$refactor_agent" "#1601" "the issue reference in the refactor agent (batch-size cap)"
 require_marker "$dispatch_skill" "#1601" "the completion-manifest reference (issue #1601)"
 require_marker "$dispatch_skill" "completion manifest" "the manifest language in the dispatch skill (issue #1601)"
-require_marker "$reference_md" "#1601" "the completion-manifest reference (issue #1601)"
-require_marker "$reference_md" "Completion manifest" "the manifest line in the refactor-brief template (issue #1601)"
+require_marker "$brief_templates_md" "#1601" "the completion-manifest reference (issue #1601)"
+require_marker "$brief_templates_md" "Completion manifest" "the manifest line in the refactor-brief template (issue #1601)"
 
 # Regression #1969: an isolation:"worktree" dispatch creates a fresh worktree
 # with an AUTO-GENERATED branch name; when the agent later RENAMES onto a fixed
@@ -191,11 +217,12 @@ require_marker "$dispatch_skill" "#2039" "the issue reference"
 if [ "$errors" -ne 0 ]; then
   echo
   echo "The loud-failure contract (issue #1422) and the hook-thrashing heuristic"
-  echo "(issue #1424) must remain in the dispatch skills / REFERENCE.md."
+  echo "(issue #1424) must remain in the dispatch skills / references/*.md."
   echo "See .claude/rules/regression-testing.md and:"
   echo "  - 'Loud-failure contract' section in $dispatch_skill"
-  echo "  - 'Killed-agent worktree recovery' section in $reference_md"
-  echo "  - 'WIP salvage before re-dispatch' section in $reference_md (issue #1491)"
+  echo "  - 'Killed-agent worktree recovery' section in $failure_recovery_md"
+  echo "  - 'WIP salvage before re-dispatch' section in $failure_recovery_md (issue #1491)"
+  echo "  - the references/*.md index rows in $reference_index (issue #2143)"
   exit 1
 fi
 
