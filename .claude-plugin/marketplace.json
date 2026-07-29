@@ -684,7 +684,7 @@
       "name": "typescript-plugin",
       "source": "./typescript-plugin",
       "description": "TypeScript development - strict types, ESLint, Biome",
-      "version": "1.8.8",
+      "version": "1.8.9",
       "keywords": [
         "typescript",
         "eslint",
