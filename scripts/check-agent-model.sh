@@ -11,11 +11,19 @@
 # (§ "Model Selection for Agents").
 #
 # The sole sanctioned non-Opus subagent is the `agent-patterns-plugin`
-# cold-read-gate haiku reader — but that is a **skill-inline**
-# `Agent(model: haiku)` dispatch, not an agent `.md` file, so no agent file is
-# exempt today. The AGENT_MODEL_ALLOWLIST seam below exists for any future
-# measurement-instrument agent file (a low-capability model used as the
-# instrument, not as a delegate).
+# cold-read-gate haiku reader — the measurement instrument, not a delegate
+# (`~/.claude/rules/agent-and-tool-selection.md` § "Sanctioned exception").
+# It is a **skill-inline** `Agent(model: haiku)` dispatch, not an agent `.md`
+# file, so **no agent file is exempt today** and AGENT_MODEL_ALLOWLIST is empty.
+# The seam below stays for any future measurement-instrument agent file.
+#
+# Sibling guards reached the same exception by their own route: as of issue
+# #2216, `scripts/check-workflow-js-model.sh` exempts a bundled harness's
+# `agent(…, {label:'coldread:…', model:'haiku'})` call — keyed on the call's
+# LABEL rather than on the file, because one harness holds both the cold reader
+# and its ordinary opus delegates. Keep the two seams distinct: this script's
+# unit is a whole agent FILE, so a file-granular allowlist is the right shape
+# here; a call-granular label key is the right shape there.
 #
 # Usage:
 #   bash scripts/check-agent-model.sh [--project-dir <path>] [agent.md ...]

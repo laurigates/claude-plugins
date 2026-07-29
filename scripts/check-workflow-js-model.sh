@@ -19,7 +19,9 @@
 # WHAT IT ASSERTS
 #
 #   Per `agent()` call in a bundled workflow script:
-#     ERROR non_opus_model   opts.model is present and is not 'opus'
+#     ERROR non_opus_model   opts.model is present and is not 'opus' (except the
+#                            sanctioned cold-read haiku reader — see "THE ONE
+#                            SANCTIONED EXCEPTION" below)
 #     WARN  missing_model    opts.model is absent (the call inherits the session
 #                            model — acceptable per issue #2210, but the repo
 #                            standard is an explicit opus, so it is surfaced;
@@ -56,6 +58,41 @@
 # IS surfaced as a WARN so the drift is visible. WARN keeps STATUS non-OK while
 # still exiting 0, per .claude/rules/structured-script-output.md.
 #
+# THE ONE SANCTIONED EXCEPTION — the cold-read haiku reader (issue #2216)
+# `~/.claude/rules/agent-and-tool-selection.md` § "Sanctioned exception: cold-read
+# gates run on Haiku" carves out exactly one non-Opus subagent:
+#
+#   "That agent is not a delegate producing work — it is the measurement
+#    instrument: the test is 'can a low-context, low-capability reader act on
+#    this text alone?', and a stronger model would answer a different, easier
+#    question. Do not 'fix' haiku cold readers to Opus."
+#
+# Forcing that reader to opus does not make it safer — it destroys what it
+# measures. So a call is EXEMPT from the model check when BOTH hold:
+#
+#   1. `opts.label` is a static string/template whose leading text matches
+#      COLDREAD_LABEL_RE (`coldread:…`, `recoldread:…`, `cold-read…`, any case),
+#      and
+#   2. `opts.model` is the literal 'haiku'.
+#
+# Why keyed on the LABEL and not the file: a harness has exactly one cold-read
+# stage, so a file-granular allowlist (the shape `check-agent-model.sh` uses for
+# agent .md FILES) would silently also permit a `sonnet` planner sitting beside
+# the cold reader in the same harness. The label is self-documenting at the call
+# site and needs no external list to drift.
+#
+# Why 'haiku' and not "any non-opus": the sanctioned instrument IS haiku. A call
+# that labels itself `coldread:` but runs `sonnet` still ERRORs — mislabelling
+# cannot buy a blanket bypass, only the one documented model. What a deliberate
+# mislabel CAN buy is haiku on a non-instrument call; that is accepted (it is
+# visible in the diff) and it is never silent — every exemption is counted in
+# EXEMPTED_CALLS= and itemised in the EXEMPTIONS: block.
+#
+# An exempted call is also exempt from `missing_effort`: haiku supports no
+# `effort` at all (`.claude/rules/workflow-model-effort.md` § "Haiku supports no
+# --effort"), so requiring one would make a compliant cold reader impossible to
+# write. An effort that IS present is still validated against the tier list.
+#
 # EMPTY CORPUS
 # Zero bundled `.js` files is the CURRENT state of this repo and is reported as
 # STATUS=OK / exit 0. A guard that errors on an empty corpus is broken.
@@ -91,6 +128,11 @@ Usage: check-workflow-js-model.sh [--strict] [--project-dir DIR]
 Guards bundled dynamic-workflow harnesses (*/skills/*/workflows/*.workflow.js):
 every agent() call pins an opus (or inherited) model and an explicit valid
 effort, and every harness is reachable from its sibling SKILL.md.
+
+One exemption: a call whose opts.label starts with coldread/recoldread AND whose
+opts.model is 'haiku' is the sanctioned measurement instrument, not a delegate.
+Exemptions are counted in EXEMPTED_CALLS= and itemised under EXEMPTIONS:.
+
 See .claude/rules/workflow-model-effort.md and .claude/rules/workflow-vs-skill.md.
 USAGE
 }
@@ -119,10 +161,13 @@ VALID_EFFORTS="low medium high xhigh max"
 
 error_count=0
 warn_count=0
+exempted_calls=0
 declare -a issues=()
+declare -a exemptions=()
 
 add_error() { issues+=("  - SEVERITY=ERROR $1"); error_count=$((error_count + 1)); }
 add_warn()  { issues+=("  - SEVERITY=WARN $1");  warn_count=$((warn_count + 1)); }
+add_exemption() { exemptions+=("  - $1"); exempted_calls=$((exempted_calls + 1)); }
 
 # ---------------------------------------------------------------------------
 # Discovery.
@@ -146,8 +191,12 @@ python_ok=1
 command -v python3 >/dev/null 2>&1 || python_ok=0
 
 # parse_agent_calls <file> — emit one line per agent() call:
-#   CALL <line> MODEL=<literal|-|?> EFFORT=<literal|-|?>
+#   CALL <line> MODEL=<literal|-|?> EFFORT=<literal|-|?> COLDREAD=<yes|no> LABEL=<slug|->
 # `-` = key absent, `?` = value is an expression, not a string literal.
+#
+# LABEL is sanitised to a space-free slug so the fixed row shape survives the
+# caller's deliberate word-split; COLDREAD carries the classification itself so
+# the shell never has to re-derive it from a truncated label.
 #
 # Comment bodies and string/template-literal contents are masked before the
 # scan, so an `agent(…, {model:'sonnet'})` inside a prompt string or a `//`
@@ -294,12 +343,40 @@ def top_level_pairs(lo, hi):
 
 LITERAL = re.compile(r"""^(['"`])([A-Za-z0-9._-]*)\1$""")
 
+# The sanctioned cold-read exception (issue #2216). Anchored at the START of the
+# label so a merely-adjacent mention ("quoted-coldread", "not-a-coldread") does
+# not qualify: the label must DECLARE the call's purpose, not merely contain it.
+COLDREAD_LABEL_RE = re.compile(r"^(?:re)?cold[-_]?read", re.IGNORECASE)
+LABEL_UNSAFE = re.compile(r"[^A-Za-z0-9._:${}/-]+")
+
 
 def render(pairs, key):
     if key not in pairs:
         return "-"
     m = LITERAL.match(pairs[key])
     return m.group(2) if m else "?"
+
+
+def label_text(pairs):
+    """Leading static text of opts.label, or None when it is not a literal.
+
+    Handles the template-literal form the #2168 sketch uses
+    (`` `coldread:${c.id}` ``) by cutting at the first interpolation: the
+    leading segment is static and is what the classification keys on.
+    """
+    raw = pairs.get("label")
+    if raw is None:
+        return None
+    raw = raw.strip()
+    if not raw or raw[0] not in "'\"`":
+        return None  # an identifier or expression — no static text to read
+    quote, body = raw[0], raw[1:]
+    end = len(body)
+    for stop in (quote, "${"):
+        idx = body.find(stop)
+        if idx != -1:
+            end = min(end, idx)
+    return body[:end]
 
 
 for m in re.finditer(r"(?<![A-Za-z0-9_$.])agent\s*\(", masked):
@@ -310,7 +387,11 @@ for m in re.finditer(r"(?<![A-Za-z0-9_$.])agent\s*\(", masked):
     line = src.count("\n", 0, m.start()) + 1
     span = last_top_object(masked, open_paren + 1, close_paren)
     pairs = top_level_pairs(*span) if span else {}
-    print("CALL %d MODEL=%s EFFORT=%s" % (line, render(pairs, "model"), render(pairs, "effort")))
+    label = label_text(pairs)
+    coldread = "yes" if label is not None and COLDREAD_LABEL_RE.match(label) else "no"
+    slug = LABEL_UNSAFE.sub("_", label)[:48] if label else ""
+    print("CALL %d MODEL=%s EFFORT=%s COLDREAD=%s LABEL=%s" % (
+        line, render(pairs, "model"), render(pairs, "effort"), coldread, slug or "-"))
 PY
 }
 
@@ -363,17 +444,33 @@ for js in "${js_files[@]+"${js_files[@]}"}"; do
         call_line="$2"
         model="${3#MODEL=}"
         effort="${4#EFFORT=}"
+        coldread="${5#COLDREAD=}"
+        call_label="${6#LABEL=}"
         agent_calls=$((agent_calls + 1))
 
-        case "$model" in
-            opus) : ;;
-            -)    add_warn  "TYPE=missing_model FILE=$rel LINE=$call_line MSG=agent() omits opts.model (inherits the session model; prefer an explicit opus)" ;;
-            '?')  add_warn  "TYPE=dynamic_model FILE=$rel LINE=$call_line MSG=opts.model is an expression — cannot verify it resolves to opus" ;;
-            *)    add_error "TYPE=non_opus_model FILE=$rel LINE=$call_line MODEL=$model MSG=must be opus (effort, not model, is the cost lever)" ;;
-        esac
+        # The one sanctioned carve-out (#2216): a cold-read-labelled haiku call
+        # is the measurement instrument, not a delegate. Narrow by construction —
+        # it needs BOTH the declaring label AND the literal 'haiku', so a
+        # mislabelled sonnet planner beside it in the same file still ERRORs.
+        exempt=0
+        if [ "$coldread" = "yes" ] && [ "$model" = "haiku" ]; then
+            exempt=1
+            add_exemption "TYPE=coldread_haiku FILE=$rel LINE=$call_line LABEL=$call_label MODEL=$model MSG=sanctioned cold-read measurement instrument (agent-and-tool-selection.md)"
+        fi
+
+        if [ "$exempt" -eq 0 ]; then
+            case "$model" in
+                opus) : ;;
+                -)    add_warn  "TYPE=missing_model FILE=$rel LINE=$call_line MSG=agent() omits opts.model (inherits the session model; prefer an explicit opus)" ;;
+                '?')  add_warn  "TYPE=dynamic_model FILE=$rel LINE=$call_line MSG=opts.model is an expression — cannot verify it resolves to opus" ;;
+                *)    add_error "TYPE=non_opus_model FILE=$rel LINE=$call_line MODEL=$model MSG=must be opus (effort, not model, is the cost lever; only a cold-read-labelled haiku reader is exempt — see #2216)" ;;
+            esac
+        fi
 
         case "$effort" in
-            -)   add_error "TYPE=missing_effort FILE=$rel LINE=$call_line MSG=agent() needs an explicit opts.effort (opus defaults to high; the savings are forfeited)" ;;
+            # An exempted haiku reader has no effort lever to forfeit, so an
+            # absent effort is not an error there. A PRESENT one is still tiered.
+            -)   [ "$exempt" -eq 1 ] || add_error "TYPE=missing_effort FILE=$rel LINE=$call_line MSG=agent() needs an explicit opts.effort (opus defaults to high; the savings are forfeited)" ;;
             '?') add_warn  "TYPE=dynamic_effort FILE=$rel LINE=$call_line MSG=opts.effort is an expression — cannot verify it is a valid tier" ;;
             *)
                 case " $VALID_EFFORTS " in
@@ -398,9 +495,16 @@ echo "STATUS=$status"
 echo "ISSUE_COUNT=$issue_count"
 echo "ERROR_COUNT=$error_count"
 echo "WARN_COUNT=$warn_count"
+# Always emitted, even at 0: a carve-out that only appears when it fires is a
+# carve-out you cannot notice is missing (#2216).
+echo "EXEMPTED_CALLS=$exempted_calls"
 if [ "$issue_count" -gt 0 ]; then
     echo "ISSUES:"
     printf '%s\n' "${issues[@]}"
+fi
+if [ "$exempted_calls" -gt 0 ]; then
+    echo "EXEMPTIONS:"
+    printf '%s\n' "${exemptions[@]}"
 fi
 echo "=== END WORKFLOW JS MODEL/EFFORT ==="
 
