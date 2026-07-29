@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.37.3](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.37.2...agent-patterns-plugin-v2.37.3) (2026-07-29)
+
+
+### Code Refactoring
+
+* **agent-patterns-plugin:** apply the demoted body-section mandates ([#2201](https://github.com/laurigates/claude-plugins/issues/2201)) ([ccb6457](https://github.com/laurigates/claude-plugins/commit/ccb6457a738ecc27202ecf440b4cd3b13f6fbe28)), closes [#2141](https://github.com/laurigates/claude-plugins/issues/2141)
+
 ## [2.37.2](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.37.1...agent-patterns-plugin-v2.37.2) (2026-07-28)
 
 
