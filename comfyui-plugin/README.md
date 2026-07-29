@@ -17,6 +17,64 @@ testing, workflow-JSON editing, and workflow-graph node-selection reference —
 useful in **any** ComfyUI pack or install, not just this plugin's own scaffold
 output.
 
+## Skills at a glance
+
+Grouped by the job they do. Each links to its detail section below.
+
+**Build and ship a pack** — laurigates pack family + its gitops adoption flow:
+
+| Skill | Use when |
+|-------|----------|
+| [`comfy-node`](#comfy-node) | Releasing or spinning up a new pack end to end — scaffold, create + seed the repo, open the gitops adoption PR |
+| [`comfyui-node-scaffold`](#comfyui-node-scaffold) | Bootstrapping the local repo only (TypeScript + bun build, CI, release-please, vitest + pytest) |
+| [`comfyui-screenshot-pipeline`](#comfyui-screenshot-pipeline) | Generating README screenshots for a pack (Docker + Playwright) |
+
+**Author, verify, and publish** — general ComfyUI knowledge, any pack:
+
+| Skill | Use when |
+|-------|----------|
+| [`comfyui-node-authoring`](#comfyui-node-authoring) | Writing or patching a custom node's frontend/backend code |
+| [`comfyui-pack-live-smoke`](#comfyui-pack-live-smoke) | Verifying a pack in a running ComfyUI before opening a registry PR |
+| [`comfy-registry-lifecycle`](#comfy-registry-lifecycle) | Debugging a pack's release-please → `publish.yml` → registry pipeline |
+| [`comfy-corpus-validation`](#comfy-corpus-validation) | Writing or auditing sampler/scheduler/model metadata |
+
+**Work on a workflow graph** — any ComfyUI install:
+
+| Skill | Use when |
+|-------|----------|
+| [`comfy-workflow-json`](#comfy-workflow-json) | A workflow JSON is too large to hand-edit, or a transform drops state |
+| [`comfy-workflow-layout`](#workflow-graph-node-selection-reference) | Nodes overlap or an imported workflow needs tidying |
+| [`comfy-subgraphs-app-mode`](#comfy-subgraphs-app-mode) | Deciding how to package a workflow stage (subgraph / Blueprint / App Mode) |
+| [`comfy-cli`](#workflow-graph-node-selection-reference) | Running `comfy` — install/update/bisect nodes, snapshots, headless runs |
+| [`comfy-metadata`](#workflow-graph-node-selection-reference) | Figuring out what prompt/settings produced an output file |
+
+**Pick the right node** — the "which node do I use for X" reference set:
+
+| Skill | Covers |
+|-------|--------|
+| [`comfy-conditionals`](#workflow-graph-node-selection-reference) | Predicates, boolean logic, `ExecutionBlocker` |
+| [`comfy-flow-control`](#workflow-graph-node-selection-reference) | Typed/index switches, broadcast, pipe bundles, loops |
+| [`comfy-math-strings`](#workflow-graph-node-selection-reference) | Constants, math expressions, string/JSON/list utilities |
+| [`comfy-image-utils`](#workflow-graph-node-selection-reference) | Resize/crop/pad/tile/mask ops + image-to-text captioners |
+| [`comfy-debug-preview`](#workflow-graph-node-selection-reference) | Inspecting a value mid-graph without changing it |
+
+## Installation
+
+This plugin ships in the [laurigates/claude-plugins](https://github.com/laurigates/claude-plugins)
+marketplace. Add the marketplace, then enable the plugin:
+
+```
+/plugin marketplace add laurigates/claude-plugins
+```
+
+```
+/plugin install comfyui-plugin@claude-plugins
+```
+
+`comfy-node` and `comfyui-node-scaffold` additionally expect `python3` (the
+generator is stdlib-only), plus `uv`, `bun`, and `just` in the generated pack.
+`just assets` needs `rsvg-convert`; `comfyui-screenshot-pipeline` needs Docker.
+
 ## Skills
 
 ### comfyui-node-scaffold
@@ -40,6 +98,22 @@ Scaffold a new ComfyUI custom-node repository ready for implementation, in the
   **refuses to produce the published PNGs while the placeholder glyph marker is
   still present**, plus a banner tagline sized to the canvas (`--tagline`;
   derived from `--desc` when omitted)
+- a **finishing-pass gate** in the generated pack: `test_publish_hygiene.py`
+  fails CI while the PNGs `[tool.comfy]` points at are missing or still
+  placeholders, so a pack can no longer publish a 404 icon with everything green
+
+The finishing pass is **re-checkable at any time**, against any existing pack —
+it is a gate, not a note printed once during scaffolding:
+
+```
+python3 scaffold.py --verify path/to/comfyui-<name>
+```
+
+It emits `ICON_PNG=` / `PLACEHOLDER_GLYPH=` / `SCREENSHOTS=`, a
+`SIBLING_GAP_COUNT=` diff against a mature sibling pack, and a
+`STATUS=OK|WARN|ERROR` verdict (exit 1 on ERROR). ERROR means the pack would
+publish a user-visible defect; WARN means a piece is pack-specific and
+legitimately deferrable.
 
 The `frontend`/`backend` (modal) variants consume the shared
 [`@laurigates/comfy-modal-kit`](https://www.npmjs.com/package/@laurigates/comfy-modal-kit)
@@ -63,7 +137,10 @@ Orchestrate a pack from idea to live-on-registry: scaffold (via
 that adds the `comfy_registry = true` entry and a transient import block so
 gitops adopts the repo. Stops at the single human gate (merging the gitops PR
 feeds the release-please → `tofu-apply.yml` chain), then finishes the
-import-block-removal follow-up.
+import-block-removal follow-up. Before handing back it runs the scaffold's
+`--verify` gate and reads the `STATUS=` verdict, so a pack cannot be reported
+done while a publish-blocking piece (unrasterized registry PNGs, surviving
+placeholder art) is still outstanding.
 
 **Use when** releasing or spinning up a new comfyui node pack with minimal manual
 steps.
