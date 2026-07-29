@@ -94,28 +94,21 @@ It refuses to overwrite an existing directory.
 
 ### Alternative: the cargo-generate template (pilot)
 
-`templates/foundryvtt-module/` in this plugin is a
-[cargo-generate](https://cargo-generate.github.io/cargo-generate/) port of
-`scaffold.py`, evaluating whether a template of **real files** beats a generator
-of **Python strings**. The emitted TypeScript/JSON/YAML lives in the template as
-the files it will become, so `tsc`, `biome`, and `actionlint` can see it; inside
-`scaffold.py` the same content is string literals nothing can check.
+`templates/foundryvtt-module/` is a cargo-generate port of `scaffold.py` whose
+emitted files are real files (so `tsc`/`biome`/`actionlint` can check them)
+rather than Python strings. Output is byte-identical, enforced by
+`scripts/tests/test-template-parity.sh`.
 
-**`scaffold.py` remains the default.** Reach for the template when you want to
-edit the scaffold itself, or to try the flow before it is promoted:
+**`scaffold.py` remains the default.** Reach for the template to edit the
+scaffold itself, or to try the flow before it is promoted:
 
 ```sh
-cargo generate --path ${CLAUDE_SKILL_DIR}/../../templates/foundryvtt-module --name foundryvtt-initiative-tweaks --vcs none --define 'display_name=Initiative Tweaks' --define 'description=Small quality-of-life tweaks to the combat initiative tracker.' --define variant=basic
+cargo generate --path ${CLAUDE_SKILL_DIR}/../../templates/foundryvtt-module --name foundryvtt-initiative-tweaks --vcs none --define 'display_name=Initiative Tweaks' --define 'description=…' --define variant=basic
 ```
 
-Requires `cargo install cargo-generate --locked` — it is not in the base image,
-which is the main cost of the port for a TypeScript repo.
-
-Output is byte-identical to `scaffold.py` across all three variants, enforced by
-`scripts/tests/test-template-parity.sh`. One deliberate difference: given a name
-that is not kebab-case, `scaffold.py` exits 2 while cargo-generate silently
-kebab-cases it. See
-[`templates/README.md`](../../templates/README.md) for the full comparison, the
+Needs `cargo install cargo-generate --locked` — not in the base image, and the
+main cost of the port. See [`templates/README.md`](../../templates/README.md)
+for the comparison, the one deliberate divergence (a non-kebab-case name), the
 Liquid brace-collision fixes, and what promoting the template would take.
 
 ## What you get
@@ -185,7 +178,6 @@ chains scaffold → `gh repo create` → seed `main` → the gitops PR.
 | Scaffold a basic module | `python3 ${CLAUDE_SKILL_DIR}/scaffold.py --name foundryvtt-X --display "X" --desc "…"` |
 | Scaffold an app module | `python3 ${CLAUDE_SKILL_DIR}/scaffold.py --name foundryvtt-X --display "X" --desc "…" --variant app` |
 | Verify a generated module | `cd foundryvtt-X && bun install && just check` |
-| Scaffold via the cargo-generate pilot | `cargo generate --path ${CLAUDE_SKILL_DIR}/../../templates/foundryvtt-module --name foundryvtt-X --vcs none --silent -d 'display_name=X' -d 'description=…' -d variant=basic` |
 | Check the pilot still matches scaffold.py | `bash ${CLAUDE_SKILL_DIR}/scripts/tests/test-template-parity.sh` |
 
 ## Notes & deferrals
