@@ -4,7 +4,7 @@ args: "[pattern] [--coverage] [--bail] [--watch]"
 allowed-tools: Bash, BashOutput, Read
 argument-hint: "[test-pattern] [--coverage] [--bail] [--watch]"
 created: 2025-12-20
-modified: 2026-05-09
+modified: 2026-07-28
 reviewed: 2025-12-20
 name: bun-test
 ---
@@ -42,6 +42,11 @@ bun test --dots --bail=1 $PATTERN
 bun test --dots --coverage $PATTERN
 ```
 
+**Filter by test name (not file path):**
+```bash
+bun test --dots --bail=1 -t "pattern"
+```
+
 **Watch mode:**
 ```bash
 bun test --watch $PATTERN
@@ -59,16 +64,6 @@ bun test --reporter=junit --reporter-outfile=junit.xml $PATTERN
 | `.` | Test passed |
 | `F` | Test failed |
 | `S` | Test skipped |
-
-## Agentic Optimizations
-
-| Context | Command |
-|---------|---------|
-| Quick test | `bun test --dots --bail=1` |
-| Filtered test | `bun test --dots --bail=1 -t "pattern"` |
-| With coverage | `bun test --dots --coverage` |
-| CI output | `bun test --reporter=junit --reporter-outfile=junit.xml` |
-| Watch mode | `bun test --watch` |
 
 ## Post-test
 

@@ -4,7 +4,7 @@ args: <package> [--dev] [--exact]
 allowed-tools: Bash, Read
 argument-hint: package-name [--dev] [--exact]
 created: 2025-12-20
-modified: 2026-05-09
+modified: 2026-07-28
 reviewed: 2025-12-20
 name: bun-add
 ---
@@ -50,17 +50,10 @@ bun add --exact react@18.2.0
 
 # Add to specific workspace
 bun add lodash --cwd packages/utils
+
+# Preview without writing package.json
+bun add --dry-run zod
 ```
-
-## Agentic Optimizations
-
-| Context | Command |
-|---------|---------|
-| Add runtime dep | `bun add <package>` |
-| Add dev dep | `bun add --dev <package>` |
-| Pin exact version | `bun add --exact <package>` |
-| Add to workspace | `bun add <package> --cwd <path>` |
-| Preview changes | `bun add --dry-run <package>` |
 
 ## Post-add
 
