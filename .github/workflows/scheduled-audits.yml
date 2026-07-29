@@ -12,7 +12,8 @@ permissions:
 
 jobs:
   blueprint-health:
-    runs-on: ubuntu-latest
+    # Orchestration only (scripts + `gh`) — 1-CPU slim runner is 3x cheaper.
+    runs-on: ubuntu-slim
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -50,7 +51,8 @@ jobs:
             --body-file /tmp/issue-body.md
 
   infra-compliance:
-    runs-on: ubuntu-latest
+    # Orchestration only (scripts + `gh`) — 1-CPU slim runner is 3x cheaper.
+    runs-on: ubuntu-slim
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -241,7 +243,8 @@ jobs:
             ```
 
   docs-index:
-    runs-on: ubuntu-latest
+    # Orchestration only (scripts + `gh`) — 1-CPU slim runner is 3x cheaper.
+    runs-on: ubuntu-slim
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
