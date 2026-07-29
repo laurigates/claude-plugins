@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.9](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.8.8...typescript-plugin-v1.8.9) (2026-07-29)
+
+
+### Code Refactoring
+
+* **typescript-plugin:** apply the demoted body-section mandates ([#2200](https://github.com/laurigates/claude-plugins/issues/2200)) ([9bb2fec](https://github.com/laurigates/claude-plugins/commit/9bb2fecbb364e8ced44862bc1932dda2bc09e2e4)), closes [#2141](https://github.com/laurigates/claude-plugins/issues/2141)
+
 ## [1.8.8](https://github.com/laurigates/claude-plugins/compare/typescript-plugin-v1.8.7...typescript-plugin-v1.8.8) (2026-06-30)
 
 
