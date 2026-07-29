@@ -58,7 +58,7 @@ Claude Code plugin collection providing skills and agents for development workfl
 | `.claude/rules/github-actions-security.md` | **GitHub Actions secure-use baseline** — least-privilege `GITHUB_TOKEN`, script-injection env-var indirection, `pull_request_target` hazards, CODEOWNERS on workflows; the checklist every workflow-scaffolding skill follows |
 | `.claude/rules/workflow-model-effort.md` | **Workflow Claude model/effort standard** — every `.github/workflows` invocation pins `--model opus` + explicit `--effort` (cost-economics, not the subagent-contamination argument); enforced by `check-workflow-model.sh` |
 | `.claude/rules/bash-tool-replacements.md` | `find`/`grep`/`rg`/`cat`/`head`/`tail` → dedicated tools; when the Bash form is genuinely fine |
-| `.claude/rules/gh-json-fields.md` | Correct `gh --json` field names (PR `state`/`mergedAt`, not `merged`); how to discover field lists |
+| `.claude/rules/gh-json-fields.md` | Correct `gh --json` field names (PR `state`/`mergedAt`, not `merged`); `--limit` and `head:` truncation traps |
 | `.claude/rules/structured-script-output.md` | `=== HEADER ===` / `KEY=VALUE` / `STATUS=` convention for diagnostic shell scripts |
 | `.claude/rules/typer-cli-completion.md` | Bypass `shellingham` in Python/Typer CLIs by adding an explicit `completion <shell>` subcommand using Click's `get_completion_class` |
 | `.claude/rules/terminology.md` | Glossary of development terms with strong intent (scoping, review, parallelism, work state, code ops, requirements) — positive definitions with *Use when* disambiguation |
@@ -70,58 +70,9 @@ Claude Code plugin collection providing skills and agents for development workfl
 | `.claude/rules/gitattributes.md` | `.gitattributes` conventions — `merge=union` only for one-line-per-entry append-only files, `linguist-generated` for build output (always safe), LF normalization; the `configure-gitattributes` skill + `resolve-additive-conflicts.py` pre-pass |
 | `.claude/rules/task-id-stability.md` | Taskwarrior numeric IDs renumber after every close — resolve the immutable UUID once and mutate by UUID, including *within* a single skill's own multi-step lifecycle, not just across bulk loops |
 
-## Creating New Skills
+## Authoring Skills and Plugins
 
-See `.claude/rules/skill-development.md` for detailed patterns.
-
-> **Note (Claude Code 2.1.157):** plugins placed in `.claude/skills` are now auto-loaded without a marketplace entry — handy for local or quick one-off plugins. This repo's *published* plugins still use the full marketplace + release-please lifecycle described in Plugin Lifecycle below.
-
-### Quick Start
-
-1. Create skill directory: `mkdir -p <plugin>/skills/<skill-name>`
-2. Create `skill.md` with YAML frontmatter:
-   ```yaml
-   ---
-   name: <Skill Name>
-   description: <1-2 sentence description>
-   allowed-tools: Bash, Read, Grep, Glob, TodoWrite
-   created: YYYY-MM-DD
-   modified: YYYY-MM-DD
-   reviewed: YYYY-MM-DD
-   ---
-   ```
-3. Follow content structure: Core Expertise → Commands → Patterns → Quick Reference
-4. Include agentic optimizations table
-5. Update all metadata files (see Plugin Lifecycle section)
-
-### Skill Granularity Decision
-
-| Choose... | When... |
-|-----------|---------|
-| Single skill | Operations are related and share context |
-| Multiple skills | Distinct workflows, different user intents |
-
-Example: `bun-package-manager` (deps) vs `bun-development` (run/test/build)
-
-## Creating User-Invocable Skills
-
-Skills are invocable via `/plugin:skill-name` syntax. See `.claude/rules/skill-naming.md` for naming conventions.
-
-1. Create skill directory: `mkdir -p <plugin>/skills/<skill-name>`
-2. Create `SKILL.md` with YAML frontmatter:
-   ```yaml
-   ---
-   name: <skill-name>
-   description: What it does. Use when...
-   args: <arg-spec>
-   allowed-tools: Bash, Read
-   argument-hint: human hint
-   created: YYYY-MM-DD
-   modified: YYYY-MM-DD
-   reviewed: YYYY-MM-DD
-   ---
-   ```
-3. Include: Context → Execution → Post-actions
+Invoke `/plugin-authoring` — it carries the create-a-skill and create-a-user-invocable-skill frontmatter shapes, the seven metadata files a plugin add/delete must touch, and the development workflow. All four are procedures with a clear trigger, so they live in a skill rather than here (#2140).
 
 ## Agentic Optimization
 
@@ -141,76 +92,6 @@ Key principles:
 | Language-focused | `typescript-plugin` | Language ecosystem skills |
 | Workflow-focused | `git-plugin` | Git/GitHub operations |
 | Infrastructure | `configure-plugin` | Configuration automation |
-
-## Plugin Lifecycle
-
-### Files to Update
-
-When creating, modifying, or deleting a plugin, update these files:
-
-| File | Location | Action |
-|------|----------|--------|
-| `plugin.json` | `<plugin>/.claude-plugin/plugin.json` | Create/update plugin manifest |
-| `README.md` | `<plugin>/README.md` | Create/update plugin documentation |
-| `marketplace.json` | `.claude-plugin/marketplace.json` | Add/update/remove plugin entry |
-| `release-please-config.json` | Root | Add/remove plugin package config |
-| `.release-please-manifest.json` | Root | Add/remove plugin version entry |
-| `PLUGIN-MAP.md` | `docs/PLUGIN-MAP.md` | Add/remove plugin from navigation map |
-| `settings.json` | `.claude/settings.json` | Add/remove the plugin in `enabledPlugins` (`<plugin>@laurigates-claude-plugins`) — enforced by the `Plugin: Enablement drift` check |
-
-### Creating a New Plugin
-
-> **Quick scaffold (Claude Code 2.1.157):** `claude plugin init <name>` scaffolds a new plugin in `.claude/skills` (auto-loaded, no marketplace entry needed). Use it for local/quick plugins; for plugins published from this repo, follow the full marketplace + release-please steps below.
-
-1. Create plugin directory structure (see Project Structure above)
-2. Create `.claude-plugin/plugin.json` with required fields
-3. Create `README.md` with plugin documentation
-4. Add entry to `.claude-plugin/marketplace.json` (under the `plugins` array):
-   ```json
-   {
-     "name": "new-plugin",
-     "source": "./new-plugin",
-     "description": "Plugin description",
-     "version": "1.0.0",
-     "keywords": ["keyword1", "keyword2"],
-     "category": "category-name"
-   }
-   ```
-   Note: marketplace.json has structure `{ "name": "...", "plugins": [...] }` — add to the `plugins` array.
-5. Add to `release-please-config.json`:
-   ```json
-   "new-plugin": {
-     "component": "new-plugin",
-     "release-type": "simple",
-     "extra-files": [
-       {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"}
-     ],
-     "changelog-sections": [
-       {"type": "feat", "section": "Features"},
-       {"type": "fix", "section": "Bug Fixes"},
-       {"type": "perf", "section": "Performance"},
-       {"type": "refactor", "section": "Code Refactoring"},
-       {"type": "docs", "section": "Documentation"}
-     ]
-   }
-   ```
-6. Add to `.release-please-manifest.json`:
-   ```json
-   "new-plugin": "1.0.0"
-   ```
-7. Enable it in `.claude/settings.json` so the repo dogfoods it:
-   ```json
-   "enabledPlugins": { "new-plugin@laurigates-claude-plugins": true }
-   ```
-   The `Plugin: Enablement drift` check (`scripts/check-enabled-plugins-drift.sh`) fails CI if a marketplace plugin is left disabled.
-
-### Deleting a Plugin
-
-1. Remove plugin directory
-2. Remove entry from `.claude-plugin/marketplace.json`
-3. Remove package from `release-please-config.json`
-4. Remove version from `.release-please-manifest.json`
-5. Remove the `<plugin>@laurigates-claude-plugins` key from `.claude/settings.json` `enabledPlugins`
 
 ## Git Workflow
 
@@ -247,16 +128,6 @@ Refs #99"
 # PR title must also be conventional
 gh pr create --title "feat(git-plugin): add new workflow"
 ```
-
-## Development Workflow
-
-1. **Research documentation** - Use context7, web search
-2. **Plan skill structure** - Decide granularity, scope
-3. **Write skills** - Follow standard structure
-4. **Update all metadata files** - See Plugin Lifecycle section
-5. **Commit early** - Use conventional commit format (see Git Workflow section)
-6. **Test** - Verify skills load and work
-7. **Create PR** - Use conventional commit format for title (drives automation)
 
 ## Local-model export
 

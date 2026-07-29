@@ -312,7 +312,7 @@ if [ "$emit_issue_body" = true ]; then
       echo "| $sev | \`$typ\` | $msg |"
     done
     echo ""
-    echo "See \`.claude/rules\` and the Plugin Lifecycle section of CLAUDE.md. Tracked under the recurring Layer 1 audit (#1460)."
+    echo "See \`.claude/rules\` and the Plugin Lifecycle section of the \`/plugin-authoring\` skill. Tracked under the recurring Layer 1 audit (#1460)."
   fi
 else
   echo "=== DOCS INDEX AUDIT ==="
