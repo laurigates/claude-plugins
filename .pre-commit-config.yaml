@@ -137,6 +137,20 @@ repos:
         language: script
         files: '^(blueprint-plugin/templates/blueprint-(autorun|wo-execute)\.workflow\.yml|scripts/check-blueprint-level3-templates\.sh)$'
         pass_filenames: false
+      - id: test-check-workflow-js-model
+        name: bundled workflow .js model/effort guard regression (#2210)
+        entry: bash ./scripts/tests/test-check-workflow-js-model.sh
+        language: system
+        files: '^scripts/(check-workflow-js-model\.sh|tests/test-check-workflow-js-model\.sh)$'
+        pass_filenames: false
+      - id: check-workflow-js-model
+        name: bundled workflow .js agent() calls pin opus + explicit effort and stay reachable (#2210)
+        entry: bash ./scripts/check-workflow-js-model.sh --strict
+        language: system
+        # SKILL.md is in scope because the reachability half of the guard reads
+        # the sibling skill's `## Workflow harness (template)` framing section.
+        files: '^([^/]+-plugin/skills/[^/]+/(workflows/.*\.js|SKILL\.md)|scripts/check-workflow-js-model\.sh)$'
+        pass_filenames: false
       - id: check-agent-failure-contract
         name: dispatch skills carry the loud-failure / completion-manifest contract (#1422, #1601)
         entry: ./scripts/check-agent-failure-contract.sh

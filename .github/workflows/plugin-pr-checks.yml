@@ -153,6 +153,17 @@ jobs:
       - name: Check blueprint level-3 workflow templates
         run: bash scripts/check-blueprint-level3-templates.sh
 
+      - name: Self-test the bundled workflow .js model/effort guard (#2210)
+        # Bundled dynamic-workflow harnesses live at */skills/*/workflows/*.js —
+        # outside every existing gate's discovery scope (check-agent-model.sh
+        # globs */agents/*.md, check-workflow-model.sh globs .github/workflows/,
+        # lint-shell-scripts.sh globs *.sh, and pre-commit has no JS linter). The
+        # self-test proves the guard before it gates the tree.
+        run: bash scripts/tests/test-check-workflow-js-model.sh
+
+      - name: Check bundled workflow .js agent() model/effort
+        run: bash scripts/check-workflow-js-model.sh --strict
+
       - name: Self-test the loop-integrity guard
         # The Pillar-1/Pillar-2 invariants (independent stop condition + compact
         # state packet) live as prose across five files, so a bulk edit can drop
