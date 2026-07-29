@@ -1,18 +1,19 @@
 ---
 name: workflow-verify-before-filing
 description: Verify accumulated bug claims at upstream HEAD and dedup against trackers before filing issues. Use when filing upstream reports from backlogs, audit docs, or git-history findings.
-allowed-tools: Agent, Read, Write, Edit, Bash(glab *), Bash(gh *), TodoWrite
+allowed-tools: Agent, Read, Write, Edit, Bash(bash *), Bash(glab *), Bash(gh *), TodoWrite
 model: opus
 created: 2026-06-11
-modified: 2026-06-11
-reviewed: 2026-06-11
+modified: 2026-07-29
+reviewed: 2026-07-29
 ---
 
 # Verify Before Filing
 
 > Operational scaffolding — the complete Workflow script skeleton (agent
-> prompts, schemas, gate logic), the paced filing script, and the data flow —
-> lives in [REFERENCE.md](REFERENCE.md). This file is the decision layer.
+> prompts, schemas, gate logic), the pacing rationale, and the data flow — lives
+> in [REFERENCE.md](REFERENCE.md). The paced filing loop itself is executable:
+> [`scripts/file-wave.sh`](scripts/file-wave.sh). This file is the decision layer.
 
 A backlog of upstream bug candidates — audit docs, "file this later" notes,
 workaround commits — is a list of **hypotheses dated to when they were
@@ -139,16 +140,27 @@ one revise round, re-gate only if the verdict was `needs-revision`).
 
 ### Phase 3 — Paced filing
 
-Issue-creation endpoints rate-limit aggressively (observed: a GitLab
-instance returning 429 after a single create; treat the numbers below as a
-starting point, not a spec). File from a script with ≥70 s pacing between
-creates and, on failure, up to 4 retries with ~130 s backoff each; append
-every created URL to a `filed-urls.txt` manifest, and record `FAILED` lines
-for anything that exhausts retries — continue past failures and report them
-at the end rather than aborting the batch. Cross-link related new issues
-afterwards (also paced).
-`GITLAB_HOST=<instance> glab issue create -R <project> ...` for GitLab
-instances; `gh` for GitHub. Created GitLab issues may surface as
+Issue-creation endpoints rate-limit aggressively (observed: a GitLab instance
+returning 429 after a **single** create). Never loop `gh`/`glab issue create`
+by hand — write the Phase 1+2 result array to a JSON file and run the script,
+which owns the pacing, the retries, and the URL manifest:
+
+```bash
+bash "${CLAUDE_SKILL_DIR}/scripts/file-wave.sh" --results /abs/path/results.json --dry-run
+bash "${CLAUDE_SKILL_DIR}/scripts/file-wave.sh" --results /abs/path/results.json --forge glab --host <instance>
+```
+
+Run the real invocation with Bash `run_in_background: true` — at 70 s per
+create a wave outlives a foreground call. Dry-run first: it resolves every
+title and target project and creates nothing.
+
+The script files only `disposition: "file"` entries, exits 0 on an empty set,
+appends every URL **and** every failure to `filed-urls.txt`, and continues past
+a failure rather than aborting the batch. Forge dispatch is deterministic:
+`--forge gh|glab` > `$FILE_WAVE_FORGE` > a set `GITLAB_HOST` (implies `glab`) >
+`gh`. `--help` documents every flag; the pacing *rationale* and the invariants
+its tests pin are in [REFERENCE.md](REFERENCE.md). Cross-link related new
+issues afterwards (also paced). Created GitLab issues may surface as
 `/-/work_items/` URLs.
 
 ### Phase 4 — Bookkeeping (the dispositions are deliverables)
@@ -183,7 +195,7 @@ drifting from reality. Correct the doc in the same pass.
 | Filing the backlog as written ("the audit already verified it") | The audit verified it *then*; verify at HEAD *now* |
 | Dedup against the tracker but not your own issues | Your earlier reports' by-catch findings are duplicates too |
 | Quoting your old observed version in the issue | Quote HEAD/latest-tag content; cite the refs you checked |
-| Bulk-creating issues in a loop with no pacing | 429 after the first create; ≥70 s pacing + backoff |
+| Bulk-creating issues in a hand-written loop | 429 after the first create; run `scripts/file-wave.sh` (pacing + backoff + manifest) |
 | Discarding gated-out candidates silently | Dispositions update docs, retire forks, close tracking issues |
 | Letting verify agents have write access upstream | Read-only until the dedicated, paced filing step |
 
