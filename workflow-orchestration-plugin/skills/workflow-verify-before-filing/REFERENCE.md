@@ -134,39 +134,36 @@ comments, implicit repo).\n\n${cold.critique}`,
 return results.filter(Boolean)
 ```
 
-## Phase 3 — Paced filing script
+## Phase 3 — Paced filing: why the numbers are what they are
 
-Generated from the result JSON's `disposition: 'file'` entries; run with
-Bash `run_in_background: true`.
+The loop itself is **not** here. It lives in
+[`scripts/file-wave.sh`](scripts/file-wave.sh) and the skill invokes it — Phase 3
+is purely mechanical, so retyping it out of this file each run would re-derive it
+slightly differently every time
+(`.claude/rules/offload-to-deterministic-substrate.md`). What stays here is the
+*rationale*, which is the part a future run actually has to re-decide.
 
-```bash
-#!/usr/bin/env bash
-set -uo pipefail
-export GITLAB_HOST=<instance>
-DIR="$(cd "$(dirname "$0")" && pwd)"
+| Default | Value | Why |
+|---|---|---|
+| `--pace-seconds` | 70 | Observed: a GitLab instance returned **429 after a single create**. 70 s cleared it with margin. Treat as a starting point, not a spec — raise it if a wave still 429s. |
+| `--backoff-seconds` | 130 | Roughly 2× the pace: a 429 means the window is already exhausted, so a retry needs more than the steady-state gap. |
+| `--max-attempts` | 4 | Attempts *including* the first (so 3 retries). Beyond this a create is failing for a reason pacing won't fix — bad project path, revoked token — and burning 130 s per attempt buys nothing. |
 
-declare -A TARGETS=(
-  [<draft-file>.md]="<group/project>"
-  # ... one line per gate-passing draft
-)
+Three behaviours are load-bearing and non-obvious, so they are pinned by
+[`scripts/tests/test-file-wave.sh`](scripts/tests/test-file-wave.sh):
 
-for f in <draft files in order>; do
-  repo="${TARGETS[$f]}"
-  title="$(sed -n 's/^# //p;/^# /q' "$DIR/$f" | head -1)"   # first heading
-  body="$(sed '1d' "$DIR/$f" | grep -v '^<!--')"            # strip title + HTML comments
-  echo "==> $f -> $repo"
-  ok=""
-  for attempt in 1 2 3 4; do
-    if url="$(glab issue create -R "$repo" -t "$title" -d "$body" -y 2>&1 | tail -1)" \
-       && [[ "$url" == https://* ]]; then
-      echo "    filed: $url"; echo "$f -> $url" >> "$DIR/filed-urls.txt"; ok=1; break
-    fi
-    echo "    attempt $attempt failed, backing off 130s: $url"; sleep 130
-  done
-  [ -z "$ok" ] && echo "$f -> FAILED" >> "$DIR/filed-urls.txt"   # continue, don't abort
-  sleep 70
-done
-```
+- **A failure never aborts the batch.** The run continues to the next draft and
+  reports every failure at the end. A half-filed wave with no record is the worst
+  outcome — you cannot tell which issues exist.
+- **Every outcome is appended to `filed-urls.txt`**, success (`draft -> URL`) and
+  failure (`draft -> FAILED`) alike. That manifest is what Phase 4 dispositions
+  and the cross-link pass read.
+- **Pacing sits *between* writes**, not after each one, so a wave never pays a
+  trailing wait it cannot use.
+
+Invocation and the forge dispatch (`gh` vs `glab`) are documented in the script's
+own header — run `bash scripts/file-wave.sh --help`. Use `--dry-run` to see the
+resolved title/target for every draft without creating anything.
 
 Created GitLab issues may surface as `/-/work_items/<n>` URLs; the issues API
 addresses them by the same iid (`projects/<id>/issues/<iid>`). Cross-link
