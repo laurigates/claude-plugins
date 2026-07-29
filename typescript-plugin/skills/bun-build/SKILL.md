@@ -4,7 +4,7 @@ args: <entry> [--compile] [--minify]
 allowed-tools: Bash, Read
 argument-hint: ./src/index.ts [--compile] [--minify]
 created: 2025-12-20
-modified: 2026-05-09
+modified: 2026-07-28
 reviewed: 2025-12-20
 name: bun-build
 ---
@@ -58,16 +58,6 @@ bun build $ENTRY --target=bun --outdir=dist
 # Node.js
 bun build $ENTRY --target=node --outdir=dist
 ```
-
-## Agentic Optimizations
-
-| Context | Command |
-|---------|---------|
-| Prod bundle | `bun build ./src/index.ts --outdir=dist --minify --sourcemap=external` |
-| Compile to exe | `bun build --compile --minify ./app.ts --outfile myapp` |
-| Dev bundle | `bun build ./src/index.ts --outdir=dist --sourcemap=inline` |
-| Browser target | `bun build ./src/index.ts --target=browser --outdir=dist` |
-| Node target | `bun build ./src/index.ts --target=node --outdir=dist` |
 
 ## Post-build
 

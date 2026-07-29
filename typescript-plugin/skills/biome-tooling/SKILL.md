@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-07-28
 reviewed: 2025-12-16
 name: biome-tooling
 description: "Biome all-in-one JS/TS formatter and linter, 15-20x faster than ESLint/Prettier. Use when setting up formatting/linting or migrating from ESLint+Prettier."
@@ -12,14 +12,7 @@ allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebFetch, WebSear
 
 Biome is a modern, performant toolchain for JavaScript, TypeScript, and related web languages. It combines formatting, linting, and import organization into a single tool that's **15-20x faster** than ESLint/Prettier.
 
-## When to Use This Skill
-
-| Use this skill when... | Use another approach when... |
-|------------------------|------------------------------|
-| Starting a new JS/TS project | Need specific ESLint plugins (React hooks, a11y) |
-| Want zero-config formatting/linting | Have complex custom ESLint rules |
-| Need fast CI/CD pipelines | Need framework-specific rules (Next.js, Nuxt) |
-| Migrating from ESLint+Prettier | Legacy codebase with heavy ESLint customization |
+**Keep ESLint alongside** when the project needs plugin-only rules (React hooks, a11y), framework-specific rules (Next.js, Nuxt), or carries heavy custom ESLint configuration.
 
 **Hybrid approach**: Use Biome for formatting, ESLint for specialized linting.
 

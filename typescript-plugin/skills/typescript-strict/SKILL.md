@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-07-28
 reviewed: 2025-12-16
 name: typescript-strict
 description: "TypeScript strict mode: tsconfig.json, strict flags, Bundler/NodeNext moduleResolution, verbatimModuleSyntax. Use when setting up TS or migrating to stricter type safety."
@@ -11,15 +11,6 @@ allowed-tools: Glob, Grep, Read, Bash, Edit, Write, TodoWrite, WebFetch, WebSear
 # TypeScript Strict Mode
 
 Modern TypeScript configuration with strict type checking for maximum safety and developer experience. This guide focuses on TypeScript 5.x best practices for 2025.
-
-## When to Use This Skill
-
-| Use this skill when... | Use another approach when... |
-|------------------------|------------------------------|
-| Setting up a new TypeScript project | Debugging runtime errors (use debugger) |
-| Migrating to stricter type safety | Configuring build tools (use bundler docs) |
-| Choosing moduleResolution strategy | Writing application logic |
-| Enabling noUncheckedIndexedAccess | Optimizing bundle size (use bundler skills) |
 
 ## Core Expertise
 

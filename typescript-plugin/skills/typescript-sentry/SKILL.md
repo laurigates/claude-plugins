@@ -4,23 +4,13 @@ description: Error monitoring and performance with Sentry SDK for Bun/Node.js/Ne
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-01-22
-modified: 2026-05-09
+modified: 2026-07-28
 reviewed: 2026-01-22
 ---
 
 # TypeScript Sentry
 
-## When to Use This Skill
-
-| Use this skill when... | Use another approach when... |
-|------------------------|------------------------------|
-| Adding error monitoring to a project | Setting up logging (use a logger library) |
-| Instrumenting performance spans | Monitoring infrastructure metrics (use Prometheus/Grafana) |
-| Setting up cron job monitoring | Setting up uptime monitoring (use Pingdom/UptimeRobot) |
-| Configuring source maps for Sentry | Debugging errors locally (use debugger) |
-| Adding structured logging to Sentry | Configuring project-level Sentry compliance (use `/configure:sentry`) |
-| Setting up profiling, replay, or enrichment helpers | Managing Sentry project settings in the dashboard |
-| Implementing error/transaction filtering | Creating Sentry alerting rules |
+This skill covers the **SDK-side** work: capture, spans, cron monitors, source maps, profiling, filtering. For project-level Sentry compliance (DSN hygiene, sourcemap-upload wiring in CI) use `/configure:sentry`; for local step-through debugging use `typescript-debugging`.
 
 ## Core Expertise
 

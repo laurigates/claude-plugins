@@ -1,6 +1,6 @@
 ---
 created: 2025-12-16
-modified: 2026-05-09
+modified: 2026-07-28
 reviewed: 2025-12-16
 name: nodejs-development
 description: "Node.js development with Bun, Vite, Vue 3, Pinia, TypeScript. Use when the user mentions Node.js, Bun, Vite, Vue, Pinia, npm, pnpm, or modern JS/TS frameworks."
@@ -24,19 +24,6 @@ Expert knowledge for modern JavaScript/TypeScript development with focus on high
 | Managing npm/Bun dependencies | No - use `bun-package-manager` | `bun-add` for quick additions |
 | Debugging TypeScript/JS applications | No - use `typescript-debugging` | N/A |
 | Error monitoring with Sentry | No - use `typescript-sentry` | N/A |
-
-## Agentic Optimizations
-
-| Context | Command |
-|---------|---------|
-| Create Vue+TS project | `bun create vite my-app --template vue-ts` |
-| Dev server | `bun dev` |
-| Production build | `bun build` |
-| Lint and format | `bun run check` |
-| Run tests | `bun run test` |
-| Node.js debug | `node --inspect script.js` |
-| Bun debug | `bun --inspect script.ts` |
-| CPU profile | `node --prof script.js` |
 
 ## Core Expertise
 
