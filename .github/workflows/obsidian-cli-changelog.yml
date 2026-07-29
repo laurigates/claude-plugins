@@ -25,7 +25,8 @@ env:
 
 jobs:
   check-cli-doc:
-    runs-on: ubuntu-latest
+    # Orchestration only (scripts + `gh`) — 1-CPU slim runner is 3x cheaper.
+    runs-on: ubuntu-slim
     outputs:
       has_updates: ${{ steps.compare.outputs.has_updates }}
       latest_sha: ${{ steps.fetch.outputs.latest_sha }}
