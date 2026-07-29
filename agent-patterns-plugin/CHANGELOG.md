@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.37.4](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.37.3...agent-patterns-plugin-v2.37.4) (2026-07-29)
+
+
+### Code Refactoring
+
+* **agent-patterns-plugin:** split parallel-agent-dispatch into references/ ([#2207](https://github.com/laurigates/claude-plugins/issues/2207)) ([fae2307](https://github.com/laurigates/claude-plugins/commit/fae230775286f2a4e4d4a509e7e96950bef85b0a)), closes [#2143](https://github.com/laurigates/claude-plugins/issues/2143)
+
 ## [2.37.3](https://github.com/laurigates/claude-plugins/compare/agent-patterns-plugin-v2.37.2...agent-patterns-plugin-v2.37.3) (2026-07-29)
 
 
