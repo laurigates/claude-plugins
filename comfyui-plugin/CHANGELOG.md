@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.7](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.9.6...comfyui-plugin-v1.9.7) (2026-07-29)
+
+
+### Documentation
+
+* **comfyui-plugin:** add a skills index, installation, and the finishing-pass gate ([#2229](https://github.com/laurigates/claude-plugins/issues/2229)) ([953cba1](https://github.com/laurigates/claude-plugins/commit/953cba13d09ebfe449bb21ae83263fa44c03b217))
+
 ## [1.9.6](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.9.5...comfyui-plugin-v1.9.6) (2026-07-29)
 
 
