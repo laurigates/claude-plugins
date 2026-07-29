@@ -198,6 +198,16 @@ Two clauses every template that dispatches `isolation:'worktree'` agents must
   rule, the `CLAUDE.md` row, and any guard script are `chore` / `ci`.
 - A harness that encodes a bug fix needs a script check like any other
   (`regression-testing.md`) — the template is not the guard.
+- **Enforced by `scripts/check-workflow-js-model.sh --strict`** (+
+  `scripts/tests/test-check-workflow-js-model.sh`), wired into
+  `.pre-commit-config.yaml` and `plugin-pr-checks.yml`. It is the only gate that
+  sees a bundled `.js` at all, and it asserts the mechanically checkable half of
+  this rule: every `agent()` call pins an opus model (or inherits — never
+  `sonnet`/`haiku`) and an explicit valid `effort`; the file is named
+  `<purpose>.workflow.js`; it is reachable from a sibling
+  `## Workflow harness (template)` section that names it; and a template
+  dispatching `isolation:'worktree'` agents carries the two clauses above.
+  The three gating axes stay a judgement call — no script can decide them.
 
 ## Related
 
