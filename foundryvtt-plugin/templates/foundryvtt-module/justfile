@@ -1,0 +1,32 @@
+# {{ project-name }} — task runner. Run `just` (or `just --list`) for recipes.
+
+# Show available recipes.
+default:
+    @just --list
+
+# Run the Vite dev server (proxies to Foundry on :30000 with HMR).
+dev:
+    bun run dev
+
+# Build the ESM bundle + static assets to dist/.
+build:
+    bun run build
+
+# Typecheck the TypeScript source (tsc --noEmit).
+typecheck:
+    bun run typecheck
+
+# Lint TS/JSON with biome (no changes).
+lint:
+    bun run lint
+
+# Auto-format + auto-fix with biome.
+format:
+    bun run lint:fix
+
+# Run the Vitest suite.
+test:
+    bun run test
+
+# Typecheck + build + lint + test — the local CI gate.
+check: typecheck build lint test

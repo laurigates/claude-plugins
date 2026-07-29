@@ -1,0 +1,59 @@
+name: "Release: release-please"
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: {}
+
+concurrency:
+  group: release-please-{% raw %}${{ github.repository }}{% endraw %}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate GitHub App Token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: {% raw %}${{ vars.RELEASE_PLEASE_APP_ID }}{% endraw %}
+          private-key: {% raw %}${{ secrets.RELEASE_PLEASE_PRIVATE_KEY }}{% endraw %}
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: {% raw %}${{ steps.app-token.outputs.token }}{% endraw %}
+
+      # When a release is cut, build the module, zip dist/, and attach the
+      # FoundryVTT install assets to the GitHub release. The manifest URL
+      # (releases/latest/download/module.json) and download URL
+      # (releases/latest/download/{{ module_id }}.zip) resolve to these assets.
+      - name: Checkout
+        if: {% raw %}${{ steps.release.outputs.release_created }}{% endraw %}
+        uses: actions/checkout@v4
+      - name: Set up Bun
+        if: {% raw %}${{ steps.release.outputs.release_created }}{% endraw %}
+        uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        if: {% raw %}${{ steps.release.outputs.release_created }}{% endraw %}
+        run: bun install --frozen-lockfile
+      - name: Build module
+        if: {% raw %}${{ steps.release.outputs.release_created }}{% endraw %}
+        run: bun run build
+      - name: Package module zip
+        if: {% raw %}${{ steps.release.outputs.release_created }}{% endraw %}
+        run: |
+          cd dist
+          zip -r ../{{ module_id }}.zip .
+      - name: Upload release assets
+        if: {% raw %}${{ steps.release.outputs.release_created }}{% endraw %}
+        env:
+          GITHUB_TOKEN: {% raw %}${{ steps.app-token.outputs.token }}{% endraw %}
+        run: |
+          gh release upload "{% raw %}${{ steps.release.outputs.tag_name }}{% endraw %}" \
+            {{ module_id }}.zip dist/module.json --clobber

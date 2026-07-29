@@ -1,0 +1,20 @@
+/* All selectors are scoped under the module id to avoid clobbering core or
+ * other modules' styles. Keep this prefix on every rule you add. */
+.{{ module_id }}-app-body {
+  padding: 0.75rem;
+}
+
+.{{ module_id }}-app-body h2 {
+  margin-top: 0;
+}
+
+.{{ module_id }}-gm-note {
+  font-style: italic;
+  opacity: 0.8;
+}
+
+.{{ module_id }}-app-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}

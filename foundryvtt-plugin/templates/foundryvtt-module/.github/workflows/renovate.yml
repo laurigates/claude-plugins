@@ -1,0 +1,28 @@
+name: Renovate
+
+on:
+  schedule:
+    - cron: '23 */4 * * *'
+  workflow_dispatch:
+    inputs:
+      dryRun:
+        description: 'Dry run mode'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'full'
+          - 'lookup'
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  packages: read
+
+jobs:
+  renovate:
+    uses: laurigates/.github/.github/workflows/reusable-renovate.yml@main
+    with:
+      dry-run: ${{ inputs.dryRun || 'false' }}

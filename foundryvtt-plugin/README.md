@@ -46,6 +46,12 @@ Three variants:
 
 **Use when** bootstrapping / init-ing a new FoundryVTT module repo.
 
+The generator is `scaffold.py`. A [cargo-generate](https://cargo-generate.github.io/cargo-generate/)
+port of it lives in [`templates/foundryvtt-module/`](templates/README.md) as a
+pilot — byte-identical output, enforced by a parity test — evaluating whether a
+template of real files beats a generator of Python strings. `scaffold.py`
+remains the default.
+
 ### foundryvtt-module
 
 Orchestrate a module from idea to release-ready: scaffold (via

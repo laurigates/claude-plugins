@@ -1,0 +1,13 @@
+{%- assign hb = "{{" -%}
+<section class="{{ module_id }}-app-body">
+  <h2>{{ hb }}moduleTitle}}</h2>
+  <p>{{ hb }}localize "{{ module_id }}.App.Body"}}</p>
+  {{ hb }}#if isGM}}
+  <p class="{{ module_id }}-gm-note">{{ hb }}localize "{{ module_id }}.App.GMNote"}}</p>
+  {{ hb }}/if}}
+  <footer class="{{ module_id }}-app-footer">
+    <button type="button" data-action="refresh">
+      <i class="fa-solid fa-rotate"></i> {{ hb }}localize "{{ module_id }}.App.Refresh"}}
+    </button>
+  </footer>
+</section>
