@@ -23,6 +23,10 @@
 #      lives inside a comment or a template-literal prompt, AND the compliant
 #      fixture must report AGENT_CALLS>0 (otherwise every "no issues" verdict in
 #      this file is vacuous and the test has silently degraded to a no-op).
+#   L. The sanctioned cold-read haiku exemption (issue #2216) — and, weighted
+#      much harder, that the carve-out stays NARROW: it needs the declaring
+#      label AND the literal 'haiku', it never spreads to a sibling call in the
+#      same file, and it is counted rather than silent.
 
 set -uo pipefail
 
@@ -133,6 +137,10 @@ check "B: compliant exit 0 --strict"  "0"  "$(run "$root" --strict)"
 # GUARD INTEGRITY (K, part 1): if the parser found no agent() call, every
 # "no issues" assertion above proves nothing.
 check "K: compliant fixture AGENT_CALLS=1" "1" "$(field "$o" AGENT_CALLS)"
+# The counter is emitted even at zero — a carve-out that only appears when it
+# fires is one you cannot notice has gone missing (#2216).
+check "B: EXEMPTED_CALLS=0 always emitted" "0" "$(field "$o" EXEMPTED_CALLS)"
+check "B: no EXEMPTIONS block when zero"   "0" "$(printf '%s\n' "$o" | grep -c '^EXEMPTIONS:')"
 
 # ---------------------------------------------------------------------------
 # C. Missing effort → ERROR; --strict exits 1, plain run still exits 0.
@@ -260,6 +268,104 @@ o=$(out "$root")
 check "K: only the real call is parsed"   "1"  "$(field "$o" AGENT_CALLS)"
 check "K: comment/template text is clean" "OK" "$(field "$o" STATUS)"
 check "K: no phantom non_opus_model"      "0"  "$(printf '%s\n' "$o" | grep -c 'TYPE=non_opus_model')"
+
+# ---------------------------------------------------------------------------
+# L. The sanctioned cold-read haiku exemption (issue #2216).
+#
+# L1 uses the VERBATIM shape from docs/plans/dynamic-workflow-migration.md
+# lines 81/86 — a template-literal label with an interpolation and no `effort`
+# key — so this is a real repro, not a convenient simplification of one.
+# ---------------------------------------------------------------------------
+root=$(mk_root L1)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+cat > "$d/workflows/audit.workflow.js" <<'JS'
+export default async function ({ agent }) {
+  let cold = await agent(COLDREAD_PROMPT(c.draft.body),
+    {label:`coldread:${c.id}`, phase:'ColdRead', model:'haiku', schema:COLD_SCHEMA})
+  if (cold?.verdict === 'needs-revision') {
+    cold = await agent(COLDREAD_PROMPT(c.draft.body),
+      {label:`recoldread:${c.id}`, phase:'ColdRead', model:'haiku', schema:COLD_SCHEMA})
+  }
+  return cold
+}
+JS
+o=$(out "$root")
+check "L1: cold reader raises no non_opus_model" "0" "$(printf '%s\n' "$o" | grep -c 'TYPE=non_opus_model')"
+check "L1: cold reader raises no missing_effort" "0" "$(printf '%s\n' "$o" | grep -c 'TYPE=missing_effort')"
+check "L1: cold reader STATUS=OK"                "OK" "$(field "$o" STATUS)"
+check "L1: cold reader ERROR_COUNT=0"            "0"  "$(field "$o" ERROR_COUNT)"
+check "L1: --strict exit 0"                      "0"  "$(run "$root" --strict)"
+# Both calls (coldread + recoldread) parsed and both exempted — a fixture that
+# parsed zero calls would satisfy every "no issues" assertion above vacuously.
+check "L1: both calls parsed"                    "2"  "$(field "$o" AGENT_CALLS)"
+check "L1: both calls exempted"                  "2"  "$(field "$o" EXEMPTED_CALLS)"
+# The carve-out is itemised, not silent.
+check "L1: EXEMPTIONS block present"             "1"  "$(printf '%s\n' "$o" | grep -c '^EXEMPTIONS:')"
+check "L1: exemption names the label"            "1"  "$(printf '%s\n' "$o" | grep -c 'LABEL=coldread:')"
+check "L1: exemption typed coldread_haiku"       "2"  "$(printf '%s\n' "$o" | grep -c 'TYPE=coldread_haiku')"
+
+# L2. GUARD INTEGRITY, the load-bearing case: a `sonnet` planner sitting BESIDE
+# the cold reader in the SAME file must still ERROR. This is precisely what a
+# file-granular allowlist (option 2 in #2216) would have silently permitted.
+root=$(mk_root L2)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+cat > "$d/workflows/audit.workflow.js" <<'JS'
+export default async function ({ agent }) {
+  const plan = await agent(PLAN_PROMPT, {label:'plan', model:'sonnet', effort:'low'})
+  const cold = await agent(COLDREAD_PROMPT(plan),
+    {label:`coldread:${plan.id}`, phase:'ColdRead', model:'haiku'})
+  return [plan, cold]
+}
+JS
+o=$(out "$root")
+check "L2: sibling sonnet still ERRORs"    "1" "$(printf '%s\n' "$o" | grep -c 'TYPE=non_opus_model')"
+check "L2: sibling sonnet named"           "1" "$(printf '%s\n' "$o" | grep -c 'MODEL=sonnet')"
+check "L2: STATUS=ERROR"                   "ERROR" "$(field "$o" STATUS)"
+check "L2: --strict exit 1"                "1" "$(run "$root" --strict)"
+check "L2: exemption stays call-scoped"    "1" "$(field "$o" EXEMPTED_CALLS)"
+
+# L3. A `sonnet` call that LABELS ITSELF cold-read is still an ERROR: the
+# exemption needs the declaring label AND the literal 'haiku', so a mislabel
+# can never buy a blanket bypass — only the one documented model.
+root=$(mk_root L3)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+printf 'export default async function ({ agent }) {\n  return await agent(P, {label:%s, model:%s, effort:%s});\n}\n' \
+    "'coldread:x'" "'sonnet'" "'low'" > "$d/workflows/audit.workflow.js"
+o=$(out "$root")
+check "L3: mislabelled sonnet still ERRORs" "1" "$(printf '%s\n' "$o" | grep -c 'TYPE=non_opus_model')"
+check "L3: mislabelled sonnet not exempted" "0" "$(field "$o" EXEMPTED_CALLS)"
+check "L3: --strict exit 1"                 "1" "$(run "$root" --strict)"
+
+# L4. A haiku call WITHOUT a cold-read label is still an ERROR: haiku alone is
+# not the exemption — the label is what declares the measurement-instrument role.
+root=$(mk_root L4)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+mk_js "$d" audit.workflow.js haiku low
+o=$(out "$root")
+check "L4: unlabelled haiku still ERRORs"  "1" "$(printf '%s\n' "$o" | grep -c 'TYPE=non_opus_model')"
+check "L4: unlabelled haiku not exempted"  "0" "$(field "$o" EXEMPTED_CALLS)"
+check "L4: --strict exit 1"                "1" "$(run "$root" --strict)"
+
+# L5. The label must DECLARE the role, not merely contain the word: a label that
+# only mentions cold-read late ("quoted-coldread") does not qualify.
+root=$(mk_root L5)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+printf 'export default async function ({ agent }) {\n  return await agent(P, {label:%s, model:%s, effort:%s});\n}\n' \
+    '"not-a-coldread"' "'haiku'" "'low'" > "$d/workflows/audit.workflow.js"
+o=$(out "$root")
+check "L5: non-leading match not exempted" "0" "$(field "$o" EXEMPTED_CALLS)"
+check "L5: non-leading match still ERRORs" "1" "$(printf '%s\n' "$o" | grep -c 'TYPE=non_opus_model')"
+
+# L6. An exempted call with a PRESENT but invalid effort is still tiered — the
+# carve-out covers the model check and an ABSENT effort, nothing more.
+root=$(mk_root L6)
+d=$(mk_skill "$root" demo-plugin demo-skill)
+printf 'export default async function ({ agent }) {\n  return await agent(P, {label:%s, model:%s, effort:%s});\n}\n' \
+    "'coldread:x'" "'haiku'" "'turbo'" > "$d/workflows/audit.workflow.js"
+o=$(out "$root")
+check "L6: exempted call still tiers effort" "1" "$(printf '%s\n' "$o" | grep -c 'TYPE=invalid_effort')"
+check "L6: exempted call has no model error" "0" "$(printf '%s\n' "$o" | grep -c 'TYPE=non_opus_model')"
+check "L6: still exempted"                   "1" "$(field "$o" EXEMPTED_CALLS)"
 
 printf '\n%s: %d passed, %d failed\n' "$(basename "$0")" "$pass" "$fail"
 [ "$fail" -eq 0 ]
