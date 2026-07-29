@@ -78,6 +78,8 @@ Expert knowledge for modern systems programming with Rust, focusing on memory sa
 cargo new my-project      # Binary crate
 cargo new my-lib --lib    # Library crate
 cargo init                # Initialize in existing directory
+# From a template repo instead of an empty crate — see the cargo-generate skill
+cargo generate --git <template-url> --name my-project
 
 # Development workflow
 cargo build                      # Debug build
