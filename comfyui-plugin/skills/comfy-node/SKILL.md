@@ -1,7 +1,7 @@
 ---
 created: 2026-06-04
-modified: 2026-07-27
-reviewed: 2026-07-27
+modified: 2026-07-29
+reviewed: 2026-07-29
 model: opus
 name: comfy-node
 description: >-
@@ -136,11 +136,16 @@ re-run — do not create the remote repo on a red pack.
 
 The scaffold prints a **finishing-pass audit** (issue #1877): it emits the
 registry icon/banner SVGs + `Icon`/`Banner` wiring and the renovate /
-registry-health / clear-autorelease workflows, and flags the follow-ups it can't
+registry-health / clear-autorelease workflows, and grades the follow-ups it can't
 do itself. Before the first release, run `just assets` (rasterizes `icon.svg` /
 `banner.svg` → the PNGs the registry serves; needs `rsvg-convert`) and commit the
 PNGs. The screenshot pipeline stays deferred to the `comfyui-screenshot-pipeline`
 skill (`just screenshots`) — surface it as a Phase 6 follow-up.
+
+Treat the audit's ERROR rows as blocking, not as notes: `Icon`/`Banner` already
+point at PNG URLs, so a pack that skips `just assets` publishes a 404 icon. The
+pack's own `tests/test_publish_hygiene.py` fails CI on exactly that, and Phase 6
+re-checks it before hand-back.
 
 ## Phase 3 — Create the GitHub repo and seed `main`
 
@@ -311,7 +316,26 @@ substitute them and the phases read verbatim:
 Everything else — the commands, the PR-body guidance, the labels, the metadata
 hygiene, the failure-mode rows below — applies unchanged.
 
-## Phase 6 — Hand back to implementation
+## Phase 6 — Verify the finishing pass, then hand back
+
+**Run the gate before declaring done** — do not close on a self-authored summary:
+
+```sh
+python3 ${CLAUDE_SKILL_DIR}/../comfyui-node-scaffold/scaffold.py --verify comfyui-touch-resize
+```
+
+Read `STATUS=`; the exit code is 1 on ERROR.
+
+| `STATUS=` | Action |
+|-----------|--------|
+| `ERROR` | **Not done.** Finish it now — the ERROR rows are publish-blocking (missing `icon.png`/`banner.png`, or surviving `PLACEHOLDER-GLYPH`). `just assets`, commit the PNGs, re-run. |
+| `WARN` | Deferrable. Log each WARN to `project:comfyui-nodes` in taskwarrior (the queue that outlives this session) and say so in the hand-back. |
+| `OK` | Hand back. |
+
+An ERROR is never a follow-up item. It shipped that way three times —
+`comfyui-touch-manager` (`Icon = ""`, weeks), `comfyui-output-swap` (31 hours),
+`comfyui-touch-shim` — each recorded in the closing report as "tracked, not
+blocking" and each caught only when the user noticed.
 
 The pipeline is now live: conventional-commit feature PRs → merge → release-please
 PR → merge → tag → `publish.yml` publishes to registry.comfy.org. Tell the user
