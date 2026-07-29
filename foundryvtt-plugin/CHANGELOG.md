@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/laurigates/claude-plugins/compare/foundryvtt-plugin-v1.1.2...foundryvtt-plugin-v1.2.0) (2026-07-29)
+
+
+### Features
+
+* **rust-plugin:** add cargo-generate skill and foundryvtt template pilot ([#2205](https://github.com/laurigates/claude-plugins/issues/2205)) ([ca33968](https://github.com/laurigates/claude-plugins/commit/ca33968090643eae701cf5e96acaabfae2e98cbe))
+
 ## [1.1.2](https://github.com/laurigates/claude-plugins/compare/foundryvtt-plugin-v1.1.1...foundryvtt-plugin-v1.1.2) (2026-07-27)
 
 

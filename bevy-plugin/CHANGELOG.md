@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/laurigates/claude-plugins/compare/bevy-plugin-v1.3.3...bevy-plugin-v1.4.0) (2026-07-29)
+
+
+### Features
+
+* **rust-plugin:** add cargo-generate skill and foundryvtt template pilot ([#2205](https://github.com/laurigates/claude-plugins/issues/2205)) ([ca33968](https://github.com/laurigates/claude-plugins/commit/ca33968090643eae701cf5e96acaabfae2e98cbe))
+
 ## [1.3.3](https://github.com/laurigates/claude-plugins/compare/bevy-plugin-v1.3.2...bevy-plugin-v1.3.3) (2026-05-14)
 
 
