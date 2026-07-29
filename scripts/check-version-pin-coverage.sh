@@ -172,10 +172,18 @@ flush_pending_uses() {
 # they are full repo checkouts created by concurrently-running isolated agents,
 # so descending into them re-scans every skill file N× and litters WARN output
 # with their paths (#1492). The guard only ever audits the real tree.
+#
+# Prune dist/ for the same reason in generated form (#2214): it is the
+# gitignored rulesync build output, so a finding there is unactionable by
+# construction — the fix site is always the source skill, and the next
+# `just export-opencode` overwrites it. A stale local dist/ otherwise hard-ERRORs
+# every local commit while CI (which never sees dist/) stays green. The sibling
+# scripts/lint-context-commands.sh already excludes it via --exclude-dir='dist'.
 declare -a scan_files=()
 while IFS= read -r -d '' file; do
   scan_files+=("$file")
 done < <(find "$proj_dir" -path '*/.claude/worktrees/*' -prune -o \
+           -path '*/dist/*' -prune -o \
            -path '*/skills/*' -name '*.md' -type f -print0 2>/dev/null)
 files_scanned=${#scan_files[@]}
 

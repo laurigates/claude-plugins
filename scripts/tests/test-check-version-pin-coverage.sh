@@ -14,6 +14,9 @@
 #      `version:` input is absent or floating is flagged ERROR, while the same
 #      step with an explicit tag is not — the pin must cover the BINARY, not
 #      just the wrapper
+#   H. the gitignored dist/ rulesync build output is pruned, not scanned
+#      (#2214) — with a guard-integrity half proving the same defective pin at
+#      a real path is still reported
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -219,6 +222,50 @@ good_rc=0
 bash "$checker" --project-dir "$fixture_good" --strict >/dev/null || good_rc=$?
 assert "--strict should exit 0 when both pins are present" \
   "$([ "$good_rc" -eq 0 ] && echo true || echo false)"
+
+echo "=== TEST H: dist/ build output is pruned, not scanned (#2214) ==="
+# dist/ is the GITIGNORED rulesync export — a generated copy of the same skill
+# tree. A finding there is unactionable by construction (the fix site is always
+# the source skill, and the next `just export-opencode` overwrites it), and a
+# stale local dist/ hard-ERRORs every local commit while CI — which never has a
+# dist/ — stays green. Same class as TEST F's worktree prune (#1492): a walk
+# descending into a copy of the repo.
+before_scanned_h="$(field "$wt_out" FILES_SCANNED)"
+before_errors_h="$(printf '%s\n' "$wt_out" | grep -c 'SEVERITY=ERROR' || true)"
+mkdir -p "$fixture/dist/opencode/skills/demo"
+cp "$fixture/demo-plugin/skills/demo/SKILL.md" \
+   "$fixture/dist/opencode/skills/demo/SKILL.md"
+dist_out="$(bash "$checker" --project-dir "$fixture")"
+assert "FILES_SCANNED unchanged after adding a dist/ export copy" \
+  "$([ "$(field "$dist_out" FILES_SCANNED)" -eq "$before_scanned_h" ] && echo true || echo false)"
+assert "no extra ERROR from the dist/ copy's uncovered pin" \
+  "$([ "$(printf '%s\n' "$dist_out" | grep -c 'SEVERITY=ERROR' || true)" -eq "$before_errors_h" ] && echo true || echo false)"
+assert "no issue references a dist/ path" \
+  "$([ "$(contains "$dist_out" 'dist/')" = "false" ] && echo true || echo false)"
+
+# Guard integrity: without this half the three assertions above would ALSO pass
+# with the whole check disabled. Plant one distinct defective pin at BOTH a real
+# path and a dist/ path — the real one must still be flagged, exactly once.
+mkdir -p "$fixture/real-plugin/skills/real"
+cat > "$fixture/real-plugin/skills/real/SKILL.md" <<'EOF'
+# Real source skill
+
+```yaml
+- uses: guard/integrity@7
+```
+EOF
+mkdir -p "$fixture/dist/opencode/skills/real"
+cp "$fixture/real-plugin/skills/real/SKILL.md" \
+   "$fixture/dist/opencode/skills/real/SKILL.md"
+guard_out="$(bash "$checker" --project-dir "$fixture")"
+assert "the same defective pin at a REAL path is still flagged" \
+  "$(contains "$guard_out" 'real-plugin/skills/real/SKILL.md')"
+assert "the defective pin is reported exactly once (dist/ twin not counted)" \
+  "$([ "$(printf '%s\n' "$guard_out" | grep -c 'guard/integrity' || true)" -eq 1 ] && echo true || echo false)"
+assert "FILES_SCANNED grew by exactly 1 (only the real source file)" \
+  "$([ "$(field "$guard_out" FILES_SCANNED)" -eq "$((before_scanned_h + 1))" ] && echo true || echo false)"
+assert "still no issue references a dist/ path" \
+  "$([ "$(contains "$guard_out" 'dist/')" = "false" ] && echo true || echo false)"
 
 echo ""
 echo "=== SUMMARY ==="
