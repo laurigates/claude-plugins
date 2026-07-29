@@ -58,7 +58,7 @@ Claude Code plugin collection providing skills and agents for development workfl
 | `.claude/rules/github-actions-security.md` | **GitHub Actions secure-use baseline** — least-privilege `GITHUB_TOKEN`, script-injection env-var indirection, `pull_request_target` hazards, CODEOWNERS on workflows; the checklist every workflow-scaffolding skill follows |
 | `.claude/rules/workflow-model-effort.md` | **Workflow Claude model/effort standard** — every `.github/workflows` invocation pins `--model opus` + explicit `--effort` (cost-economics, not the subagent-contamination argument); enforced by `check-workflow-model.sh` |
 | `.claude/rules/bash-tool-replacements.md` | `find`/`grep`/`rg`/`cat`/`head`/`tail` → dedicated tools; when the Bash form is genuinely fine |
-| `.claude/rules/gh-json-fields.md` | Correct `gh --json` field names (PR `state`/`mergedAt`, not `merged`); how to discover field lists |
+| `.claude/rules/gh-json-fields.md` | Correct `gh --json` field names (PR `state`/`mergedAt`, not `merged`); `--limit` and `head:` truncation traps |
 | `.claude/rules/structured-script-output.md` | `=== HEADER ===` / `KEY=VALUE` / `STATUS=` convention for diagnostic shell scripts |
 | `.claude/rules/typer-cli-completion.md` | Bypass `shellingham` in Python/Typer CLIs by adding an explicit `completion <shell>` subcommand using Click's `get_completion_class` |
 | `.claude/rules/terminology.md` | Glossary of development terms with strong intent (scoping, review, parallelism, work state, code ops, requirements) — positive definitions with *Use when* disambiguation |
