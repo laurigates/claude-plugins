@@ -141,7 +141,7 @@ repos:
         name: dispatch skills carry the loud-failure / completion-manifest contract (#1422, #1601)
         entry: ./scripts/check-agent-failure-contract.sh
         language: script
-        files: '^(agent-patterns-plugin/skills/(parallel-agent-dispatch|custom-agent-definitions)/(SKILL|REFERENCE)\.md|agents-plugin/agents/refactor\.md|scripts/check-agent-failure-contract\.sh)$'
+        files: '^(agent-patterns-plugin/skills/(parallel-agent-dispatch|custom-agent-definitions)/((SKILL|REFERENCE)\.md|references/.*\.md)|agents-plugin/agents/refactor\.md|scripts/check-agent-failure-contract\.sh)$'
         pass_filenames: false
       - id: test-check-agent-failure-contract
         name: completion-manifest contract regression (#1601)

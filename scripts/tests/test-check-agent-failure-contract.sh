@@ -16,11 +16,14 @@
 #   C. refactor.md missing the "Completion Manifest" section → exit 1
 #   D. refactor.md missing the "#1601" reference → exit 1
 #   E. parallel-agent-dispatch SKILL.md missing "#1601" → exit 1
-#   F. parallel-agent-dispatch REFERENCE.md missing "Completion manifest" → exit 1
+#   F. references/brief-templates.md missing "Completion manifest" → exit 1
 #   G. parallel-agent-dispatch SKILL.md missing the #1868 resume-hazard caveat → exit 1
 #   H. parallel-agent-dispatch SKILL.md missing "#1868" → exit 1
 #   I. parallel-agent-dispatch SKILL.md missing "idle_notification" → exit 1
 #   J. parallel-agent-dispatch SKILL.md missing "#2039" → exit 1
+#   K. references/failure-recovery.md missing the #1424 "9:1" threshold → exit 1
+#   L. references/worktree-hazards.md missing "Nested-repo worktree isolation" → exit 1
+#   M. REFERENCE.md index no longer links references/failure-recovery.md → exit 1
 #
 # Issue #1868: Workflow({resumeFromRunId}) re-runs an already-succeeded
 # isolation:"worktree" agent instead of returning its cached result, re-firing
@@ -31,6 +34,14 @@
 # only an idle_notification — the final report never reaches the orchestrator
 # (communication loss, not work loss; recovery is SendMessage-to-resend, never
 # respawn). Guards I/J keep the "Idle without report" variant documented.
+#
+# Issue #2143: parallel-agent-dispatch's supporting material was split from one
+# REFERENCE.md into references/*.md by consumer path, and REFERENCE.md became a
+# thin index. The markers the checker pins therefore live in specific reference
+# files now. Guards K/L prove the checker actually reads those files (a split
+# that silently stopped asserting them would still exit 0 without these), and
+# guard M proves the index is required to keep linking them — a reference file
+# nothing links to is unreachable from the skill even though it still exists.
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -64,6 +75,10 @@ build_fixture() {
      "$root/agent-patterns-plugin/skills/parallel-agent-dispatch/SKILL.md"
   cp "$repo_root/agent-patterns-plugin/skills/parallel-agent-dispatch/REFERENCE.md" \
      "$root/agent-patterns-plugin/skills/parallel-agent-dispatch/REFERENCE.md"
+  # references/*.md (#2143) — the split supporting material the checker pins.
+  mkdir -p "$root/agent-patterns-plugin/skills/parallel-agent-dispatch/references"
+  cp "$repo_root/agent-patterns-plugin/skills/parallel-agent-dispatch/references/"*.md \
+     "$root/agent-patterns-plugin/skills/parallel-agent-dispatch/references/"
   cp "$repo_root/agent-patterns-plugin/skills/custom-agent-definitions/SKILL.md" \
      "$root/agent-patterns-plugin/skills/custom-agent-definitions/SKILL.md"
   cp "$repo_root/agents-plugin/agents/refactor.md" \
@@ -122,11 +137,11 @@ assert "E: dispatch SKILL.md missing #1601 fails (exit 1)" \
   "$([ "$(run_fixture "$fx_e")" -eq 1 ] && echo true || echo false)"
 rm -rf "$fx_e"
 
-# --- Guard F: REFERENCE.md missing the manifest line ---
+# --- Guard F: references/brief-templates.md missing the manifest line ---
 fx_f="$(mktemp -d)"
 build_fixture "$fx_f"
-strip_marker "$fx_f/agent-patterns-plugin/skills/parallel-agent-dispatch/REFERENCE.md" "Completion manifest"
-assert "F: REFERENCE.md missing 'Completion manifest' fails (exit 1)" \
+strip_marker "$fx_f/agent-patterns-plugin/skills/parallel-agent-dispatch/references/brief-templates.md" "Completion manifest"
+assert "F: brief-templates.md missing 'Completion manifest' fails (exit 1)" \
   "$([ "$(run_fixture "$fx_f")" -eq 1 ] && echo true || echo false)"
 rm -rf "$fx_f"
 
@@ -168,5 +183,34 @@ assert "J: dispatch SKILL.md missing #2039 fails (exit 1)" \
   "$([ "$(run_fixture "$fx_j")" -eq 1 ] && echo true || echo false)"
 rm -rf "$fx_j"
 
-echo "check-agent-failure-contract (#1601/#1868/#2039): ${pass_count} passed, ${fail_count} failed"
+# --- Guard K: references/failure-recovery.md missing the #1424 kill threshold ---
+# The quantitative hook-thrashing heuristic moved out of REFERENCE.md into the
+# failure-recovery reference (#2143). Strip the ratio and confirm the checker
+# still reads that file — otherwise the split would have silently disarmed it.
+fx_k="$(mktemp -d)"
+build_fixture "$fx_k"
+strip_marker "$fx_k/agent-patterns-plugin/skills/parallel-agent-dispatch/references/failure-recovery.md" "9:1"
+assert "K: failure-recovery.md missing the 9:1 threshold fails (exit 1)" \
+  "$([ "$(run_fixture "$fx_k")" -eq 1 ] && echo true || echo false)"
+rm -rf "$fx_k"
+
+# --- Guard L: references/worktree-hazards.md missing the #1838 section ---
+fx_l="$(mktemp -d)"
+build_fixture "$fx_l"
+strip_marker "$fx_l/agent-patterns-plugin/skills/parallel-agent-dispatch/references/worktree-hazards.md" "Nested-repo worktree isolation"
+assert "L: worktree-hazards.md missing the nested-repo section fails (exit 1)" \
+  "$([ "$(run_fixture "$fx_l")" -eq 1 ] && echo true || echo false)"
+rm -rf "$fx_l"
+
+# --- Guard M: REFERENCE.md index no longer links a reference file ---
+# A reference file nothing links to is unreachable from the skill even though it
+# still exists on disk — the failure mode a thin index introduces.
+fx_m="$(mktemp -d)"
+build_fixture "$fx_m"
+strip_marker "$fx_m/agent-patterns-plugin/skills/parallel-agent-dispatch/REFERENCE.md" "references/failure-recovery.md"
+assert "M: REFERENCE.md index dropping a references/ link fails (exit 1)" \
+  "$([ "$(run_fixture "$fx_m")" -eq 1 ] && echo true || echo false)"
+rm -rf "$fx_m"
+
+echo "check-agent-failure-contract (#1601/#1868/#2039/#2143): ${pass_count} passed, ${fail_count} failed"
 [ "$fail_count" -eq 0 ]
