@@ -4,7 +4,7 @@ description: Configure per-project plugin settings via .claude/plugin-name.local
 user-invocable: false
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, TodoWrite
 created: 2026-03-06
-modified: 2026-07-18
+modified: 2026-07-28
 compatibility: claude-code
 reviewed: 2026-03-06
 ---
@@ -13,15 +13,7 @@ reviewed: 2026-03-06
 
 Per-project plugin configuration using `.claude/plugin-name.local.md` files with YAML frontmatter for structured settings and markdown body for additional context.
 
-## When to Use This Skill
-
-| Use plugin settings when... | Use alternatives when... |
-|-----------------------------|--------------------------|
-| Plugin needs per-project configuration | Settings are global (use `~/.claude/settings.json`) |
-| Hooks need runtime enable/disable control | Hook behavior is always-on |
-| Agent state persists between sessions | State is ephemeral within a session |
-| Users customize plugin behavior per-project | Plugin has no configurable behavior |
-| Configuration includes prose/prompts alongside structured data | All config is purely structured (use `.json`) |
+Reach for a different mechanism when the settings are **global** (`~/.claude/settings.json`) or **purely structured** with no prose/prompt content (a plain `.json` file). The `.local.md` form earns its keep when config must carry prompts or instructions alongside structured fields.
 
 ## File Structure
 
@@ -190,12 +182,3 @@ When adding settings to a plugin:
 | Validate values | Check numeric ranges, enum membership |
 | File permissions | Settings files should be user-readable only (`chmod 600`) |
 | Restart notice | Document that hook-related changes need a Claude Code restart |
-
-## Agentic Optimizations
-
-| Context | Command |
-|---------|---------|
-| Check settings exist | `[[ -f ".claude/plugin.local.md" ]]` |
-| Extract single field | `head -50 file \| grep -m1 "^field:" \| sed 's/^[^:]*:[[:space:]]*//'` |
-| Extract body | `awk '/^---$/{i++; next} i>=2' file` |
-| Quick enable check | `[[ "$(extract_field file enabled)" == "true" ]]` |

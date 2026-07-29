@@ -5,7 +5,7 @@ user-invocable: false
 allowed-tools: Read, Glob, Grep, TodoWrite
 model: opus
 created: 2026-03-03
-modified: 2026-07-18
+modified: 2026-07-28
 compatibility: claude-code
 reviewed: 2026-06-23
 ---
@@ -144,16 +144,6 @@ In web sessions (`CLAUDE_CODE_REMOTE=true`):
 - Sub-agents (teammates) may encounter TLS errors on `git push` — delegate all push/PR operations to the lead.
 - Each teammate runs in its own process context.
 - Worktree isolation is recommended for independent filesystem changes.
-
-## Agentic Optimizations
-
-| Context | Approach |
-|---------|----------|
-| Quick parallel review | Spawn 2–4 teammates, assign tasks |
-| Large codebase split | Assign directory subsets as separate tasks |
-| Long-running work | Background teammates, poll via TaskList |
-| Minimize API cost | Prefer `message` over `broadcast` |
-| Fast shutdown | Send a `shutdown_request` to each teammate (no team teardown needed) |
 
 ## Quick Reference
 

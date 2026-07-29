@@ -4,7 +4,7 @@ description: Write and configure custom agent definitions in Claude Code agents/
 user-invocable: false
 allowed-tools: Bash(cat *), Read, Write, Edit, Glob, Grep, TodoWrite
 created: 2026-01-20
-modified: 2026-07-18
+modified: 2026-07-28
 compatibility: claude-code
 reviewed: 2026-06-14
 ---
@@ -127,15 +127,6 @@ agent: security-auditor
    [#1550](https://github.com/laurigates/claude-plugins/issues/1550)).
 
 Worked YAML for each practice is in [REFERENCE.md → Best-practice snippets](REFERENCE.md#best-practice-snippets).
-
-## Agentic Optimizations
-
-| Context | Configuration |
-|---------|---------------|
-| Exploratory research | `context: fork`, minimal read-only tools |
-| Security analysis | `context: fork`, `disallowedTools: Bash, Write, Edit` |
-| Quick lookups | minimal tools |
-| Complex implementation | `model: sonnet`, full tools |
 
 ## Quick Reference
 

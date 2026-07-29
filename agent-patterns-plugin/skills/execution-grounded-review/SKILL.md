@@ -6,7 +6,7 @@ argument-hint: "diff|PR|files to verify; optional --criteria <file> of acceptanc
 allowed-tools: Agent, Read, Glob, Grep, Bash(git diff *), Bash(git log *), Bash(gh pr view *), Bash(npm *), Bash(npx *), Bash(uv run *), Bash(pytest *), Bash(cargo *), Bash(go test *), TodoWrite
 model: opus
 created: 2026-06-22
-modified: 2026-07-18
+modified: 2026-07-28
 compatibility: claude-code
 reviewed: 2026-07-05
 ---
@@ -191,15 +191,6 @@ human, not to keep grinding.
 | Feeding the verifier the author's plan/rationale | Intent-starved inputs — criteria + diff + execution evidence only |
 | Inventing requirements the spec never stated | Triage (Step 4) — FAIL only on listed criteria |
 | Looping until the verifier goes quiet | One revise round; persistent fail = structural problem |
-
-## Agentic Optimizations
-
-| Context | Command |
-|---|---|
-| Verify current change, no target given | `git diff HEAD` as the target; state the default |
-| Verify a PR | `gh pr view <N> --json title,body,files` then diff |
-| Capture execution evidence | `npm test -- --bail=1 2>&1 \| tee /tmp/evidence.txt` (or `uv run pytest -q`) |
-| Single target, isolated verifier | One `Agent(subagent_type: general-purpose, model: opus)` |
 
 ## Related
 
