@@ -47,6 +47,7 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import re
 import sys
 from pathlib import Path
 
@@ -1465,8 +1466,6 @@ import re
 import subprocess
 from pathlib import Path
 
-import pathspec
-
 REPO = Path(__file__).resolve().parents[1]
 
 # Top-level entries that are allowed to ship (directories end with "/").
@@ -1514,8 +1513,24 @@ def _includes() -> list[str]:
     return re.findall(r'"([^"]+)"', match.group(1)) if match else []
 
 
-def _ignore_spec() -> pathspec.PathSpec | None:
-    # Mirrors comfy-cli's _load_comfyignore_spec.
+def _comfy_display_assets() -> dict[str, str]:
+    """[tool.comfy] Icon/Banner -> the repo-root filename each URL resolves to."""
+    text = (REPO / "pyproject.toml").read_text(encoding="utf-8")
+    found = {}
+    for key in ("Icon", "Banner"):
+        match = re.search(rf'^{key}\s*=\s*"([^"]+)"', text, re.M)
+        if match and match.group(1).strip():
+            found[key] = match.group(1).rstrip("/").rsplit("/", 1)[-1]
+    return found
+
+
+def _ignore_spec():
+    # Mirrors comfy-cli's _load_comfyignore_spec. pathspec is imported lazily so
+    # the module stays importable without it — test_registry_display_assets_present
+    # needs only git + a regex, and the scaffold's own regression test executes it
+    # standalone in an environment that has no dev group installed.
+    import pathspec
+
     path = REPO / ".comfyignore"
     if not path.exists():
         return None
@@ -1550,6 +1565,54 @@ def test_web_dist_is_force_included():
     assert "web/dist" in _includes(), (
         "[tool.comfy] includes must force-ship web/dist — without it a "
         "checkout-wiped build publishes an empty frontend"
+    )
+
+
+def test_registry_display_assets_present():
+    """The PNGs [tool.comfy] points at must exist and be bespoke, not placeholders.
+
+    Icon/Banner are raw-GitHub URLs that registry.comfy.org resolves at display
+    time, so a pack that never ran `just assets` publishes a 404 icon — and no
+    other gate notices: lint, typecheck, build, both test suites and the registry
+    security scan all stay green. EXPECTED_RUNTIME above allowlists icon.png and
+    banner.png as *permitted to ship*; nothing asserted they *exist*.
+
+    icon.png/banner.png are derived from icon.svg/banner.svg exactly as web/dist
+    is derived from src/, and web/dist already has a freshness gate in CI. This
+    is that gate for the display assets.
+
+    Observed: comfyui-touch-manager published with `Icon = ""` and no Banner key
+    for weeks; comfyui-output-swap seeded with Icon/Banner pointing at PNGs that
+    were not rasterized until 31 hours later, both caught only by a human.
+    """
+    assets = _comfy_display_assets()
+    assert assets, (
+        "[tool.comfy] declares neither Icon nor Banner, so the registry listing "
+        "renders without artwork. Point them at "
+        "https://raw.githubusercontent.com/<publisher>/<name>/main/icon.png "
+        "and .../banner.png, then run 'just assets'."
+    )
+
+    tracked = set(_tracked_files())
+    problems = []
+    for key, filename in sorted(assets.items()):
+        if filename not in tracked:
+            problems.append(
+                f"[tool.comfy] {key} points at {filename}, which is not a tracked "
+                "file — run 'just assets' and commit icon.png + banner.png"
+            )
+            continue
+        source = REPO / (Path(filename).stem + ".svg")
+        if source.exists() and "PLACEHOLDER-GLYPH" in source.read_text(
+            encoding="utf-8", errors="replace"
+        ):
+            problems.append(
+                f"{source.name} still carries the PLACEHOLDER-GLYPH marker, so "
+                f"{filename} is the generic letter tile — draw the bespoke "
+                "pictogram, delete the marker comment, re-run 'just assets'"
+            )
+    assert not problems, "Registry display assets are not publish-ready:\n  " + "\n  ".join(
+        problems
     )
 
 
@@ -2136,6 +2199,29 @@ RELEASE_CHECKLIST = """\
       and `RELEASE_PLEASE_PRIVATE_KEY` (secret) automatically — no manual secret
       creation. The `/comfy-node` orchestrator does this wiring for you.
 - [ ] Verify the secrets landed: `gh secret list -R laurigates/<name>`.
+
+## Finishing pass (before the first release)
+
+The scaffold emits the SVG artwork and wires `[tool.comfy]` `Icon`/`Banner` at
+the PNGs the registry serves — but it cannot rasterize them. Until it does, the
+registry listing resolves those URLs to a 404.
+
+- [ ] Draw the bespoke pictogram in `icon.svg` / `banner.svg` (family spec:
+      `#ffb02e` line-art on the dark tile) and delete the `PLACEHOLDER-GLYPH`
+      marker comments.
+- [ ] `just assets` — rasterize to `icon.png` + `banner.png` (needs
+      `rsvg-convert`), then commit both.
+- [ ] Flesh out README `## What it does` (ships as a family placeholder).
+- [ ] Add the screenshot pipeline + README hero: run the
+      `comfyui-screenshot-pipeline` skill, then `just screenshots`.
+
+The first two are enforced — `tests/test_publish_hygiene.py` fails CI while the
+PNGs are missing or the placeholder marker survives. The last two are advisory.
+This list is not the source of truth; ask the generator instead:
+
+```
+python3 <claude-plugins>/comfyui-plugin/skills/comfyui-node-scaffold/scaffold.py --verify .
+```
 
 ## Per release
 
@@ -2865,64 +2951,282 @@ REFERENCE_SIBLINGS = (
 )
 
 
-def print_finishing_pass_audit(target: Path, parent: Path, variant: str) -> None:
-    """Report the registry-ready / fleet-consistent 'finishing pass'.
+# --- Finishing pass: one findings function, two thin callers ----------------
+#
+# The audit shipped for #1877 was a one-shot print in the *generator's* session.
+# That is not a gate: nothing consumed it, it could not be re-run against an
+# existing pack, and it died with the scaffolding context while the follow-ups
+# are performed later, in the *generated* repo, usually in another session.
+# Observed cost: comfyui-touch-manager published with `Icon = ""` and no Banner
+# for weeks; comfyui-output-swap deferred `just assets` for 31 hours after the
+# audit had already flagged it. Both were caught only when a human noticed.
+#
+# `finishing_pass_findings` is now the single source of truth for "is this pack
+# registry-ready". The post-scaffold print and `--verify` are two thin callers,
+# so the emit path and the check path cannot disagree.
 
-    The scaffold now EMITS the deterministic pieces (icon.svg + banner.svg with
-    Icon/Banner wired into pyproject, the renovate + registry-health +
-    clear-autorelease workflows). Two pieces still need a follow-up the
-    generator can't do from stdlib alone — rasterizing the PNGs (rsvg-convert)
-    and the heavy, pack-specific screenshot pipeline — so they are flagged, not
-    silently absent (issue #1877).
+# Severity grading matters: a flat `[ ]` list made a publish-blocking gap look
+# identical to a legitimately deferrable one, which is exactly how "tracked, not
+# blocking" became a defensible read of a missing icon.
+SEVERITY_RANK = {"OK": 0, "WARN": 1, "ERROR": 2}
+
+# Top-level entries a fresh scaffold legitimately lacks (build/VCS artifacts).
+SIBLING_GAP_IGNORE = {
+    ".git",
+    ".venv",
+    "node_modules",
+    "bun.lock",
+    "uv.lock",
+    "pylock.toml",
+    "web",
+    "CHANGELOG.md",
+}
+
+
+def _display_assets(target: Path) -> dict[str, str]:
+    """[tool.comfy] Icon/Banner -> the repo-root filename each URL resolves to."""
+    path = target / "pyproject.toml"
+    if not path.exists():
+        return {}
+    text = path.read_text(encoding="utf-8", errors="replace")
+    found: dict[str, str] = {}
+    for key in ("Icon", "Banner"):
+        match = re.search(rf'^{key}\s*=\s*"([^"]+)"', text, re.M)
+        if match and match.group(1).strip():
+            found[key] = match.group(1).rstrip("/").rsplit("/", 1)[-1]
+    return found
+
+
+def finishing_pass_findings(target: Path) -> list[tuple[str, str, str, str]]:
+    """Grade a pack's registry-ready / fleet-consistent finishing pass.
+
+    Returns (severity, KEY, value, message) tuples. ERROR means the pack would
+    publish a user-visible defect to registry.comfy.org; WARN means a piece is
+    pack-specific and legitimately deferrable.
     """
-    emitted = [
-        "icon.svg + banner.svg emitted; Icon/Banner wired in pyproject [tool.comfy]",
-        "renovate.json + renovate.yml (no dependabot.yml)",
-        "registry-health.yml + clear-autorelease-labels.yml workflows",
-    ]
-    todo = [
-        "rasterize the PNGs the registry serves:  just assets  "
-        "(needs rsvg-convert; commit icon.png + banner.png)",
-        "add the screenshot pipeline + README hero:  run the "
-        "comfyui-screenshot-pipeline skill, then  just screenshots",
-        "flesh out README '## What it does' (currently a family placeholder)",
-    ]
+    findings: list[tuple[str, str, str, str]] = []
 
-    print("\nFinishing pass (registry-ready / fleet-consistent):")
-    for item in emitted:
-        print(f"  [x] {item}")
-    for item in todo:
-        print(f"  [ ] {item}")
+    # 1. The PNGs the registry actually serves. ERROR: pyproject already points
+    #    Icon/Banner at these URLs, so a missing file publishes a 404.
+    assets = _display_assets(target)
+    for key, attr in (("Icon", "ICON_PNG"), ("Banner", "BANNER_PNG")):
+        filename = assets.get(key)
+        if filename is None:
+            findings.append(
+                (
+                    "ERROR",
+                    attr,
+                    "undeclared",
+                    f"[tool.comfy] {key} is unset — the registry listing renders "
+                    "without artwork (this is how comfyui-touch-manager shipped)",
+                )
+            )
+        elif (target / filename).exists():
+            findings.append(("OK", attr, "present", f"{filename} committed"))
+        else:
+            findings.append(
+                (
+                    "ERROR",
+                    attr,
+                    "missing",
+                    f"[tool.comfy] {key} points at {filename}, which does not "
+                    "exist — run 'just assets' and commit icon.png + banner.png",
+                )
+            )
 
-    # Diff top-level entries against the first mature sibling present in the
-    # parent dir — the `comm -23 <(ls sibling) <(ls newpack)` gap check, done in
-    # stdlib so it works anywhere the scaffold runs.
+    # 2. Placeholder art. ERROR: shipping the generic letter tile is as
+    #    user-visible as shipping no tile at all.
+    placeholders = [
+        svg
+        for svg in ("icon.svg", "banner.svg")
+        if (target / svg).exists()
+        and "PLACEHOLDER-GLYPH"
+        in (target / svg).read_text(encoding="utf-8", errors="replace")
+    ]
+    if placeholders:
+        findings.append(
+            (
+                "ERROR",
+                "PLACEHOLDER_GLYPH",
+                "present",
+                f"{', '.join(placeholders)} still carry the PLACEHOLDER-GLYPH "
+                "marker — draw the bespoke pictogram (#ffb02e line-art on the "
+                "dark tile), delete the marker, re-run 'just assets'",
+            )
+        )
+    else:
+        findings.append(("OK", "PLACEHOLDER_GLYPH", "absent", "artwork is bespoke"))
+
+    # 3. Fleet consistency: renovate-not-dependabot, and the two registry
+    #    workflows. WARN — invisible to users, but this is the drift that made
+    #    comfyui-touch-manager the lone outlier across nine packs.
+    if (target / ".github" / "dependabot.yml").exists():
+        findings.append(
+            (
+                "WARN",
+                "RENOVATE",
+                "dependabot-present",
+                "dependabot.yml is present — the fleet migrated to renovate",
+            )
+        )
+    elif (target / "renovate.json").exists():
+        findings.append(("OK", "RENOVATE", "ok", "renovate.json, no dependabot"))
+    else:
+        findings.append(("WARN", "RENOVATE", "missing", "renovate.json is absent"))
+
+    absent_workflows = [
+        wf
+        for wf in ("registry-health.yml", "clear-autorelease-labels.yml")
+        if not (target / ".github" / "workflows" / wf).exists()
+    ]
+    if absent_workflows:
+        findings.append(
+            (
+                "WARN",
+                "REGISTRY_WORKFLOWS",
+                "missing:" + ",".join(absent_workflows),
+                f"absent: {', '.join(absent_workflows)}",
+            )
+        )
+    else:
+        findings.append(("OK", "REGISTRY_WORKFLOWS", "ok", "both present"))
+
+    # 4. Screenshots + README prose. WARN — genuinely pack-specific and the one
+    #    thing a pack may reasonably publish without.
+    readme = target / "README.md"
+    readme_text = (
+        readme.read_text(encoding="utf-8", errors="replace") if readme.exists() else ""
+    )
+    # `docs/` alone is not evidence — the scaffold emits docs/adr/. Require an
+    # actual captured image.
+    has_shots = (target / "screenshots").is_dir() or any(
+        (target / "docs").glob("*.png")
+    )
+    if has_shots:
+        findings.append(("OK", "SCREENSHOTS", "present", "screenshot assets exist"))
+    else:
+        findings.append(
+            (
+                "WARN",
+                "SCREENSHOTS",
+                "deferred",
+                "no screenshot assets — run the comfyui-screenshot-pipeline "
+                "skill, then 'just screenshots'",
+            )
+        )
+    if "<!-- Hero screenshot:" in readme_text:
+        findings.append(
+            (
+                "WARN",
+                "README_HERO",
+                "placeholder",
+                "README still carries the hero-screenshot placeholder comment",
+            )
+        )
+    else:
+        findings.append(("OK", "README_HERO", "written", "hero placeholder resolved"))
+    if "Expand this section with the" in readme_text:
+        findings.append(
+            (
+                "WARN",
+                "README_INTRO",
+                "placeholder",
+                "README '## What it does' is still the family placeholder",
+            )
+        )
+    else:
+        findings.append(("OK", "README_INTRO", "written", "intro fleshed out"))
+
+    return findings
+
+
+def sibling_gap(target: Path, parent: Path) -> tuple[str | None, list[str]]:
+    """Top-level entries a mature sibling pack has that `target` lacks.
+
+    Informational only — the `comm -23 <(ls sibling) <(ls newpack)` check done in
+    stdlib so it works anywhere the scaffold runs.
+    """
     sibling = next(
         (parent / s for s in REFERENCE_SIBLINGS if (parent / s).is_dir()),
         None,
     )
-    if sibling is not None and sibling.resolve() != target.resolve():
-        sib_entries = {p.name for p in sibling.iterdir()}
-        new_entries = {p.name for p in target.iterdir()}
-        missing = sorted(sib_entries - new_entries)
-        # Ignore repo-local artifacts a fresh scaffold legitimately lacks.
-        ignore = {
-            ".git",
-            ".venv",
-            "node_modules",
-            "bun.lock",
-            "uv.lock",
-            "pylock.toml",
-            "web",
-            "CHANGELOG.md",
-        }
-        missing = [m for m in missing if m not in ignore]
-        print(f"\n  Gap vs sibling {sibling.name}/ (top-level entries):")
+    if sibling is None or sibling.resolve() == target.resolve():
+        return None, []
+    missing = sorted(
+        {p.name for p in sibling.iterdir()} - {p.name for p in target.iterdir()}
+    )
+    return sibling.name, [m for m in missing if m not in SIBLING_GAP_IGNORE]
+
+
+def print_finishing_pass_audit(target: Path, parent: Path, variant: str) -> None:
+    """Human-readable audit printed right after a scaffold run.
+
+    Every ERROR here is expected on a fresh scaffold — the generator emits the
+    SVGs but cannot rasterize them (rsvg-convert is not a stdlib dep). The point
+    is that the pack is NOT registry-ready yet and `--verify` will say so until
+    someone finishes it.
+    """
+    findings = finishing_pass_findings(target)
+    marker = {"OK": "[x]", "WARN": "[ ]", "ERROR": "[!]"}
+
+    print("\nFinishing pass (registry-ready / fleet-consistent):")
+    for severity, _key, _value, message in findings:
+        suffix = "" if severity == "OK" else f"   <- {severity}"
+        print(f"  {marker[severity]} {message}{suffix}")
+
+    name, missing = sibling_gap(target, parent)
+    if name is not None:
+        print(f"\n  Gap vs sibling {name}/ (top-level entries):")
         if missing:
-            for m in missing:
-                print(f"    - missing: {m}")
+            for entry in missing:
+                print(f"    - missing: {entry}")
         else:
             print("    - none (matches the mature sibling)")
+
+    print(
+        "\n  Re-check any time (this is a gate, not a note):\n"
+        f"    python3 {Path(__file__).name} --verify {target}"
+    )
+
+
+def verify_pack(target: Path) -> int:
+    """`--verify <pack-dir>`: re-run the audit against an existing pack.
+
+    Emits the structured-script-output contract so a later session, /comfy-node
+    Phase 6, or a drift sweep can read a verdict instead of re-deriving one.
+    Exit 0 on OK/WARN, 1 on ERROR.
+    """
+    print("=== SCAFFOLD FINISHING PASS ===")
+    if not (target / "pyproject.toml").exists():
+        print(f"PACK={target}")
+        print("STATUS=ERROR")
+        print("ISSUE_COUNT=1")
+        print(f"ERROR_1=not a ComfyUI pack (no pyproject.toml at {target})")
+        print("=== END SCAFFOLD FINISHING PASS ===")
+        return 1
+
+    findings = finishing_pass_findings(target)
+    worst = max((SEVERITY_RANK[f[0]] for f in findings), default=0)
+    status = {0: "OK", 1: "WARN", 2: "ERROR"}[worst]
+    issues = [f for f in findings if f[0] != "OK"]
+
+    print(f"PACK={target.name}")
+    for _severity, key, value, _message in findings:
+        print(f"{key}={value}")
+
+    name, missing = sibling_gap(target, target.parent)
+    if name is not None:
+        print(f"SIBLING_REFERENCE={name}")
+        print(f"SIBLING_GAP_COUNT={len(missing)}")
+        if missing:
+            print(f"SIBLING_GAP={','.join(missing)}")
+
+    print(f"ISSUE_COUNT={len(issues)}")
+    print(f"STATUS={status}")
+    for i, (severity, key, _value, message) in enumerate(issues, 1):
+        print(f"{severity}_{i}={key}: {message}")
+    print("=== END SCAFFOLD FINISHING PASS ===")
+    return 1 if status == "ERROR" else 0
 
 
 def main() -> int:
@@ -2930,12 +3234,17 @@ def main() -> int:
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     p.add_argument(
-        "--name", required=True, help="pack/repo name, e.g. comfyui-touch-numeric"
+        "--verify",
+        metavar="PACK_DIR",
+        help=(
+            "re-run the finishing-pass audit against an EXISTING pack and emit a "
+            "machine verdict (STATUS=OK|WARN|ERROR); exits 1 on ERROR. "
+            "Scaffolding arguments are ignored in this mode."
+        ),
     )
-    p.add_argument(
-        "--display", required=True, help='Comfy DisplayName, e.g. "Touch Numeric"'
-    )
-    p.add_argument("--desc", required=True, help="one-line description")
+    p.add_argument("--name", help="pack/repo name, e.g. comfyui-touch-numeric")
+    p.add_argument("--display", help='Comfy DisplayName, e.g. "Touch Numeric"')
+    p.add_argument("--desc", help="one-line description")
     p.add_argument(
         "--tagline",
         help=(
@@ -2961,6 +3270,14 @@ def main() -> int:
         help="parent directory to create the pack in (default: cwd)",
     )
     args = p.parse_args()
+
+    if args.verify:
+        return verify_pack(Path(args.verify).resolve())
+
+    # Required only for scaffolding — --verify takes no spec.
+    absent = [f"--{f}" for f in ("name", "display", "desc") if not getattr(args, f)]
+    if absent:
+        p.error("the following arguments are required: " + ", ".join(absent))
 
     ctx = derive(args.name)
     ctx.update(

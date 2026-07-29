@@ -1,7 +1,7 @@
 ---
 created: 2026-06-04
-modified: 2026-07-04
-reviewed: 2026-07-04
+modified: 2026-07-29
+reviewed: 2026-07-29
 name: comfyui-node-scaffold
 description: >-
   Scaffold a new ComfyUI custom-node repo (TypeScript + bun build, CI,
@@ -206,17 +206,33 @@ A CI-green pack is not yet a registry-ready, fleet-consistent one. The scaffold
 **emits** the deterministic finishing-pass pieces and **audits + warns** (at the
 end of every run) for the two it can't do from stdlib alone (issue #1877):
 
-| Piece | Status | Follow-up |
-|-------|--------|-----------|
-| Registry icon | emitted `icon.svg` + `Icon = …/main/icon.png` | `just assets` (needs `rsvg-convert`) → commit `icon.png` |
-| Registry banner | emitted `banner.svg` + `Banner = …/main/banner.png` | `just assets` → commit `banner.png` |
-| Renovate (not dependabot) | emitted `renovate.json` + `renovate.yml` + `registry-health.yml` + `clear-autorelease-labels.yml` | — |
-| Screenshot pipeline | **deferred** (heavy, pack-specific) | run `comfyui-screenshot-pipeline`, then `just screenshots` + embed the README hero |
+| Piece | Severity if absent | Follow-up |
+|-------|--------------------|-----------|
+| Registry icon | **ERROR** — `Icon` already points at `…/main/icon.png`, so a missing PNG publishes a 404 | `just assets` (needs `rsvg-convert`) → commit `icon.png` |
+| Registry banner | **ERROR** — same, for `Banner` | `just assets` → commit `banner.png` |
+| Bespoke artwork | **ERROR** while `PLACEHOLDER-GLYPH` survives | draw the pictogram, delete the marker, re-run `just assets` |
+| Renovate (not dependabot) + registry workflows | WARN | emitted by the scaffold; a gap means drift |
+| Screenshot pipeline / README prose | WARN — pack-specific, deferrable | run `comfyui-screenshot-pipeline`, then `just screenshots` |
 
-The final audit also diffs the new pack's top-level entries against a mature
-sibling (`comfyui-gallery-loader` / `comfyui-sampler-info` / …) and reports the
-gap — the drift this fixes was `comfyui-touch-manager` silently missing all four
-for weeks while CI stayed green.
+**Ask the generator; do not read this table for status.** The audit is
+re-runnable against any existing pack, and it is the authority:
+
+```sh
+python3 ${CLAUDE_SKILL_DIR}/scaffold.py --verify path/to/comfyui-<name>
+```
+
+It emits `ICON_PNG=`, `PLACEHOLDER_GLYPH=`, `SCREENSHOTS=`, a `SIBLING_GAP_COUNT=`
+diff against a mature sibling, and a `STATUS=OK|WARN|ERROR` verdict — exit 1 on
+ERROR. Run it before opening the registry PR, and any time you inherit a pack
+someone else scaffolded.
+
+Two gates back it up, because a printed note is not a gate: `just assets` refuses
+to rasterize placeholder art, and the pack's own
+`tests/test_publish_hygiene.py::test_registry_display_assets_present` fails CI
+while the PNGs `[tool.comfy]` names are missing or still placeholders. That test
+is why this can no longer go unnoticed — `comfyui-touch-manager` published with
+`Icon = ""` for weeks with CI green, and `comfyui-output-swap` sat 31 hours after
+its own audit flagged the rasterize, both caught only when a human looked.
 
 ## After scaffolding
 
