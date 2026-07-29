@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.1](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.9.0...workflow-orchestration-plugin-v1.9.1) (2026-07-29)
+
+
+### Code Refactoring
+
+* **workflow-orchestration-plugin:** extract file-wave.sh with gh|glab dispatch ([#2206](https://github.com/laurigates/claude-plugins/issues/2206)) ([41934fd](https://github.com/laurigates/claude-plugins/commit/41934fdd714429a0832747fcd61ba575530a9cc9)), closes [#2166](https://github.com/laurigates/claude-plugins/issues/2166) [#2174](https://github.com/laurigates/claude-plugins/issues/2174)
+
 ## [1.9.0](https://github.com/laurigates/claude-plugins/compare/workflow-orchestration-plugin-v1.8.1...workflow-orchestration-plugin-v1.9.0) (2026-06-23)
 
 
