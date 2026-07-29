@@ -20,6 +20,9 @@ Core Bevy development expertise including:
 - **Game States**: State management, transitions, and conditional systems
 - **Events**: Typed message passing between systems
 - **Resources**: Global singleton data accessible to systems
+- **Project setup**: Scaffolding from the official Bevy templates via
+  `cargo generate` (see rust-plugin's `cargo-generate` skill), or from an empty
+  crate with `cargo new`
 
 **Use when**: Building games with Bevy, working with entities/components/systems, implementing game features, or when the user mentions Bevy, game development in Rust, or 2D/3D games.
 

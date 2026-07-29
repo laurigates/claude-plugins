@@ -1,0 +1,15 @@
+{
+  "{{ module_id }}.Settings.Enabled.Name": "Enable {{ display_name }}",
+{%- if variant == "app" %}
+  "{{ module_id }}.Settings.Enabled.Hint": "Toggle the {{ display_name }} module on or off.",
+  "{{ module_id }}.Menu.Name": "{{ display_name }}",
+  "{{ module_id }}.Menu.Label": "Open {{ display_name }}",
+  "{{ module_id }}.Menu.Hint": "Open the {{ display_name }} panel.",
+  "{{ module_id }}.App.Title": "{{ display_name }}",
+  "{{ module_id }}.App.Body": "This is the {{ display_name }} panel. Replace this with your UI.",
+  "{{ module_id }}.App.GMNote": "You are the GM.",
+  "{{ module_id }}.App.Refresh": "Refresh"
+{%- else %}
+  "{{ module_id }}.Settings.Enabled.Hint": "Toggle the {{ display_name }} module on or off."
+{%- endif %}
+}

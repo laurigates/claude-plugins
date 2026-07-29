@@ -74,6 +74,13 @@ This plugin provides expert knowledge for Rust development with a focus on:
 - Workspace support
 - Dependency audit workflows
 
+**cargo-generate** - Project scaffolding from git templates
+- Generating from published templates (Bevy, wasm-pack) and local directories
+- Authoring templates: `cargo-generate.toml` placeholders, conditionals, Rhai hooks
+- Non-interactive use (`--define`, `--template-values-file`, `--silent`)
+- Liquid brace collisions with GitHub Actions / Handlebars, and the fixes
+- Works for non-Rust projects — a template needs no `Cargo.toml`
+
 **cargo-worktree-builds** - Shared target dir for parallel worktree agents
 - One pre-warmed `CARGO_TARGET_DIR` across N git worktrees
 - Dependencies compile once instead of N times
@@ -121,7 +128,9 @@ cargo machete --with-metadata
 
 ### Project Setup
 ```bash
-cargo new my-project
+cargo new my-project              # plain binary/library
+# — or scaffold from a template (see the cargo-generate skill)
+# cargo generate --git https://github.com/TheBevyFlock/bevy_new_2d --name my_game
 cd my-project
 cargo add tokio --features full
 cargo add serde --features derive

@@ -1,0 +1,48 @@
+[template]
+cargo_generate_version = ">=0.23.0"
+
+# Removed from the generated project entirely.
+ignore = ["hooks"]
+
+# Copied verbatim instead of rendered. Both carry GitHub Actions `${{ }}`
+# expressions — which Liquid would render to the empty string — and neither
+# carries a template value, so keeping Liquid away from them is safer and
+# clearer than escaping every expression.
+#
+# renovate.yml's `uses: laurigates/.github/...` is the org that HOSTS the
+# reusable workflow, not the module's publisher: scaffold.py hardcodes it
+# regardless of `--publisher`, and this template preserves that rather than
+# silently retargeting it at `github_owner`.
+#
+# release-please.yml DOES carry the module id (zip name), so it is rendered —
+# its `${{ }}` expressions are wrapped in `{% raw %}` in the file itself.
+exclude = [
+  ".github/workflows/ci.yml",
+  ".github/workflows/renovate.yml",
+]
+
+[hooks]
+# Derives `module_id` from the repo name (foundryvtt-x -> x) and validates it,
+# mirroring scaffold.py's `--id` default.
+pre = ["hooks/derive-module-id.rhai"]
+
+[placeholders]
+display_name = { type = "string", prompt = "Human-readable module title (module.json `title`)" }
+description = { type = "string", prompt = "One-line description" }
+variant = { type = "string", prompt = "Module shape", choices = [
+  "basic",
+  "app",
+  "libwrapper",
+], default = "basic" }
+github_owner = { type = "string", prompt = "GitHub owner", default = "laurigates" }
+author_name = { type = "string", prompt = "Author name (module.json `authors[0].name`)", default = "Lauri Gates" }
+fvtt_min = { type = "string", prompt = "compatibility.minimum", default = "12" }
+fvtt_verified = { type = "string", prompt = "compatibility.verified", default = "13" }
+
+# `ignore` lists files dropped when the expression is TRUE, so each block names
+# the variants that do NOT get the file.
+[conditional.'variant != "app"']
+ignore = ["src/app.ts", "templates"]
+
+[conditional.'variant != "libwrapper"']
+ignore = ["src/patches.ts"]

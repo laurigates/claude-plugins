@@ -1,0 +1,49 @@
+{
+  "id": "{{ module_id }}",
+  "title": "{{ display_name }}",
+  "description": "{{ description }}",
+  "version": "0.1.0",
+  "compatibility": {
+    "minimum": "{{ fvtt_min }}",
+    "verified": "{{ fvtt_verified }}"
+  },
+  "authors": [
+    {
+      "name": "{{ author_name }}"
+    }
+  ],
+  "esmodules": ["{{ module_id }}.mjs"],
+  "styles": ["styles/{{ module_id }}.css"],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
+  "url": "https://github.com/{{ github_owner }}/{{ project-name }}",
+  "manifest": "https://github.com/{{ github_owner }}/{{ project-name }}/releases/latest/download/module.json",
+  "download": "https://github.com/{{ github_owner }}/{{ project-name }}/releases/latest/download/{{ module_id }}.zip",
+  "readme": "https://github.com/{{ github_owner }}/{{ project-name }}/blob/main/README.md",
+  "changelog": "https://github.com/{{ github_owner }}/{{ project-name }}/blob/main/CHANGELOG.md",
+  "bugs": "https://github.com/{{ github_owner }}/{{ project-name }}/issues",
+{%- if variant == "libwrapper" %}
+  "relationships": {
+    "recommends": [
+      {
+        "id": "lib-wrapper",
+        "type": "module",
+        "reason": "Reduces conflicts when patching core methods.",
+        "manifest": "https://github.com/ruipin/fvtt-lib-wrapper/releases/latest/download/module.json",
+        "compatibility": { "minimum": "1.0.0.0" }
+      }
+    ]
+  },
+{%- endif %}
+  "flags": {
+    "hotReload": {
+      "extensions": ["css", "hbs", "json"],
+      "paths": ["styles", "templates", "lang"]
+    }
+  }
+}

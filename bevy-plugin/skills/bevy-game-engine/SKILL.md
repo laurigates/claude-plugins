@@ -251,7 +251,12 @@ fn handle_collisions(
 ## Essential Commands
 
 ```bash
-# Create new Bevy project
+# Create new Bevy project from the official template (recommended — ships an
+# opinionated app skeleton, CI, and release profiles). See rust-plugin's
+# cargo-generate skill.
+cargo generate --git https://github.com/TheBevyFlock/bevy_new_2d --name my_game
+
+# Or start from an empty crate
 cargo new my_game
 cd my_game
 cargo add bevy
