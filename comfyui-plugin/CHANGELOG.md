@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.6](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.9.5...comfyui-plugin-v1.9.6) (2026-07-29)
+
+
+### Bug Fixes
+
+* **comfyui-plugin:** gate the scaffold finishing pass instead of printing it ([#2226](https://github.com/laurigates/claude-plugins/issues/2226)) ([96bb015](https://github.com/laurigates/claude-plugins/commit/96bb015ae19f9703badeaefdad747e7a6b9f3ac6)), closes [#1877](https://github.com/laurigates/claude-plugins/issues/1877)
+
 ## [1.9.5](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.9.4...comfyui-plugin-v1.9.5) (2026-07-28)
 
 
