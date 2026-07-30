@@ -2613,7 +2613,9 @@ jobs:
 # Generation
 # --------------------------------------------------------------------------- #
 def build_file_map(
-    ctx: dict[str, str], variant: str, widgets: list[str],
+    ctx: dict[str, str],
+    variant: str,
+    widgets: list[str],
     subfamily: str = SUBFAMILY_DEFAULT,
 ) -> dict[str, str]:
     backend = variant == "backend"
