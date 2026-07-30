@@ -3,7 +3,7 @@ name: session-wrap
 description: End-of-session capture to taskwarrior, optional journal, GitHub issues. Use when user says wrap up, session wrap, or done for now.
 allowed-tools: Bash(bash *), Bash(task *), Bash(git *), Bash(gh *), Read, Write, Edit, AskUserQuestion, TodoWrite
 created: 2026-05-12
-modified: 2026-07-18
+modified: 2026-07-30
 compatibility: claude-code
 reviewed: 2026-06-24
 ---
@@ -41,7 +41,7 @@ worked example: [REFERENCE.md](REFERENCE.md).
 
 | Destination | When | What goes there |
 |---|---|---|
-| **taskwarrior** | Every wrap | Mark completed tasks done; annotate in-flight tasks with PR / blocker / state; add tasks for surfaced threads |
+| **taskwarrior** | Every wrap | Mark completed tasks done; annotate in-flight tasks with PR / blocker / state; add tasks **only** for threads no open PR or issue already tracks (see "Don't duplicate an existing tracker") |
 | **Journal** (e.g. Obsidian daily note) | Only when configured AND the session matches `journal_scopes` | Narrative log entry; actionable todo items |
 | **GitHub issues** | Only when cwd has a `github.com` origin AND a PR merged (or is about to) with post-merge follow-ups | One issue per follow-up, linked from the PR description |
 | **Upstream issue/PR candidate** | A bug/gap noticed in a *third-party* `github.com` repo, or a local fix that belongs upstream | Track for later (`+upstream` task) OR a **verified** issue / local-fix backport — never filed blind (Step 4 routes each candidate) |
@@ -54,22 +54,45 @@ unclear — better than spamming it. Ask once if genuinely ambiguous.
 
 This is the whole point. Log only what the user would miss tomorrow.
 
-**LOG IT**: PR open and waiting (capture URL + gate) · task started but
-blocked · manual follow-up outside Claude Code · deferred decision ·
-untracked loose thread (bug noticed in passing, doc to write) ·
-investigation finding worth not losing · upstream candidate
-(bug/docs-gap/feature-gap noticed in a dependency, or a local fix that
-belongs upstream — route it in Step 4, never file blind).
+**LOG IT**: task started but blocked · manual follow-up outside Claude
+Code · deferred decision · untracked loose thread (bug noticed in
+passing, doc to write) · investigation finding worth not losing ·
+upstream candidate (bug/docs-gap/feature-gap noticed in a dependency, or
+a local fix that belongs upstream — route it in Step 4, never file blind).
 
 **DO NOT LOG**: work that finished cleanly (mark the task done, don't
-narrate it) · anything already tracked that didn't change state · routine
-ops · self-resolving items ("CI still running") · conversational context
-· speculation ("might refactor X someday") · anything already tracked
-upstream (an existing third-party issue/PR that didn't change).
+narrate it) · **an open PR or assigned issue as its own task** — the
+PR/issue *is* the tracker (below) · anything already tracked that didn't
+change state · routine ops · self-resolving items ("CI still running") ·
+conversational context · speculation ("might refactor X someday") ·
+anything already tracked upstream (an existing third-party issue/PR that
+didn't change).
 
-Litmus: *"If I don't write this down, will the user notice the gap
-tomorrow?"* Yes → log. No → skip. 3-6 items per wrap is the right shape;
-10+ means the filter is too loose. Worked examples: [REFERENCE.md](REFERENCE.md).
+Litmus, both clauses: *"If I don't write this down, will the user notice
+the gap tomorrow — **and** is there no open PR or issue already carrying
+it?"* Both yes → log. Either no → skip. 3-6 items per wrap is the right
+shape; 10+ means the filter is too loose. Worked examples:
+[REFERENCE.md](REFERENCE.md).
+
+### Don't duplicate an existing tracker
+
+An open PR or assigned issue **is its own tracker**. The Step 1 digest's
+`PRS` section carries every open PR (with `PR_n_STALE_DAYS`) and
+`GITHUB_DRIFT` every assigned-but-untracked issue, and
+`session-plugin:session-spinup` surfaces both next session — so a task
+reading *"PR #N is open / needs merging"* only duplicates them, and
+`taskwarrior-plugin:task-reconcile` closes it on merge anyway. A task
+earns its existence when it carries something the PR or issue does **not**:
+
+| Situation | Destination |
+|---|---|
+| PR open, awaiting review/merge, nothing else to say | **nothing** — the `PRS` section is the reminder |
+| PR open **and** an existing task covers that work | annotate the existing task with the PR URL (this is what lets reconcile close it on merge) — never a second task |
+| Assigned GitHub issue, no local task | **nothing** — `GITHUB_DRIFT` surfaces it at spinup |
+| A manual step, deferred decision, or blocker the PR/issue body doesn't record | taskwarrior task — or, for a post-merge step, one GitHub issue linked from the PR |
+
+Check a candidate's PR/issue number against `PRS` / `GITHUB_DRIFT` before
+adding — a hit means annotate, not add. Same test for journal todos.
 
 ## Execution
 
@@ -98,6 +121,7 @@ discussed but not done.
 |---|---|
 | Done this session | `task <uuid> done` |
 | In-flight, well-tracked | Annotate the existing task with the new state |
+| Already tracked by an open PR / assigned issue | No task — annotate an existing task with the URL if one covers the work; otherwise skip (spinup replays it) |
 | In-flight, untracked | New taskwarrior task **or** journal todo (not both) |
 | Loose thread, in journal scope | Journal log (narrative) or todo (action) |
 | Loose thread, out of scope | Taskwarrior only, with `project:<name>` |

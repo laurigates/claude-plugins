@@ -454,6 +454,27 @@ check_skill_body() {
           has_errors=true
         fi
       done
+
+      # Regression: wrap must NOT create a task whose only content is "PR #N
+      # is open / needs merging". An open PR or assigned issue is its own
+      # tracker: the collector's PRS section carries every open PR with its
+      # STALE_DAYS, GITHUB_DRIFT carries every assigned-but-untracked issue,
+      # session-spinup is required to surface both next session, and
+      # task-reconcile closes any task whose linked PR merged. Such a task is
+      # therefore created at wrap, shown at spinup beside the PR it
+      # duplicates, and closed by reconcile — churn with no signal. The
+      # REFERENCE row that used to justify it ("Won't resurface by itself")
+      # was simply false once spinup existed. Three load-bearing tokens:
+      # (1) the principle, (2) the positive alternative (annotate, which is
+      # also what lets reconcile auto-close), and (3) the two digest sections
+      # that make the principle true — naming them keeps the rule falsifiable
+      # rather than a bare assertion.
+      for token in "is its own tracker" "annotate the existing task" "GITHUB_DRIFT"; do
+        if ! grep -q -- "$token" "$skill_file"; then
+          issues+=("❌ ${plugin}/${skill_name}: SKILL.md must retain '${token}' (redundant-tracker test: an open PR/issue needs no mirroring task)")
+          has_errors=true
+        fi
+      done
     fi
 
     # Regression: session-end's Wrap-pass note wires the upstream candidate
