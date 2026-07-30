@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.9.8...comfyui-plugin-v1.10.0) (2026-07-30)
+
+
+### Features
+
+* **comfyui-plugin:** add a deterministic fleet-drift checker for the pack repos ([#2238](https://github.com/laurigates/claude-plugins/issues/2238)) ([065ed95](https://github.com/laurigates/claude-plugins/commit/065ed9571e0517c2c9477227b0db173b6aab5f13))
+
 ## [1.9.8](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.9.7...comfyui-plugin-v1.9.8) (2026-07-30)
 
 
