@@ -14,7 +14,7 @@ Design background: [`docs/archive/session-plugin-workflow.md`](../docs/archive/s
 | Skill | Purpose |
 |---|---|
 | `session-spinup` | Read-only session-start briefing: open taskwarrior tasks, git state (uncommitted / unpushed / open PRs), optional journal todos |
-| `session-wrap` | End-of-session capture of loose threads to taskwarrior, an optional journal, GitHub follow-up issues, and upstream issue/PR candidates (track-for-later or verify-then-file, never blind) |
+| `session-wrap` | End-of-session capture of loose threads to taskwarrior, an optional journal, GitHub follow-up issues, and upstream issue/PR candidates (track-for-later or verify-then-file, never blind). Skips anything an open PR/issue already tracks — those resurface via `session-spinup` |
 | `session-end` | Orchestrator: one survey, preview which of wrap / distill / feedback / taskwarrior-sync / blueprint tracker-sync qualify, **single confirmation**, then sequence them |
 | `session-distill` | Distill session insights into `.claude/rules/`, skill improvements, justfile recipes, and process/methodology captures (project-local `.claude/skills/` or `scripts/`+recipe); driven by the read-only `distill-survey.sh` collector |
 

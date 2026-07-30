@@ -90,11 +90,13 @@ topic at 3+ items:
 ### Todo entry shape
 
 Single `- [ ]` line with enough context to act without re-reading the
-conversation:
+conversation. The redundancy test applies here too — a todo whose whole
+content is "merge / nudge PR #N" duplicates a tracker that already
+surfaces itself, so write the todo only for the part the PR can't hold:
 
 ```
-- [ ] Nudge production GKE Standard PR #1607 reviewers (stale 7d, ADR-0024)
 - [ ] Confirm Hetzner db01-03 shutdown date with Aapo (Podio #838)
+- [ ] Decide OpenCost vs Kubecost before the ADR-0029 review (no artifact yet)
 ```
 
 ## Taskwarrior conventions
@@ -102,6 +104,11 @@ conversation:
 - Add: `task rc.confirmation:no add project:<slug> +<tag> [priority:H] '<description>'`
   — description must make sense in 6 weeks with no context (reference PR
   numbers, paths, decision criteria inline).
+- Prefer annotating over adding when a PR or issue already tracks the
+  item: `task <uuid> annotate '<PR URL> — <the gate>'` links the two so
+  `taskwarrior-plugin:task-reconcile` closes the task when the PR merges.
+  A task added *because* a PR is open has no such upside — reconcile just
+  closes it later.
 - Annotate before closing (`task <uuid> annotate "..."` then
   `task rc.confirmation:no <uuid> done`) — completed tasks lose their
   numeric ID.
@@ -113,10 +120,13 @@ conversation:
 
 | Candidate | Verdict | Why |
 |---|---|---|
-| PR #1774 opened, awaiting review | LOG (annotate task with URL + gate) | Won't resurface by itself |
+| PR #1774 opened, awaiting review; task `aaaa-1111` covers that work | Annotate `aaaa-1111` with the PR URL — **no new task** | The annotation is what lets `task-reconcile` close it on merge; the PR itself is the reminder |
+| PR #1774 opened, awaiting review; no task exists | SKIP | The digest's `PRS` section replays it next session with `PR_n_STALE_DAYS` — a "merge PR #1774" task would only duplicate it |
+| Assigned issue #851 filed today, no local task | SKIP | `GITHUB_DRIFT` surfaces assigned-but-untracked issues at spinup |
+| PR #1774 merged, but a DNS record must be flipped by hand afterwards | LOG (GitHub issue linked from the PR) | Post-merge step the PR body can't carry once closed |
 | Commit landed, PR merged, task complete | task done only | Finished cleanly; narrating it is noise |
 | "We should revisit the retry logic someday" | SKIP | Speculation, rot-magnet |
-| Invalid version spec found in passing | LOG (new task) | Real bug, otherwise lost |
+| Invalid version spec found in passing | LOG (new task) | Real bug, no PR or issue holds it |
 | CI still running on a green-trending PR | SKIP | Self-resolving |
 | Deploy step the user must run by hand | LOG | Manual follow-up outside Claude Code |
 
@@ -139,3 +149,9 @@ to taskwarrior". This skill enforces it at the natural checkpoint (end of
 session) and adds an optional journal destination for narrative
 continuity. The signal filter is the value: a wrap that captures 4 real
 loose threads beats one that mechanically lists everything touched.
+
+The same rule cuts the other way, which is why the redundancy test exists:
+that cross-session rule also says *don't* duplicate something already
+tracked durably. An open PR or issue is durable tracking, and
+`session-plugin:session-spinup` reads it back — so mirroring it into
+taskwarrior buys nothing and costs a task the user has to dismiss twice.
