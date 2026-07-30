@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.8](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.9.7...comfyui-plugin-v1.9.8) (2026-07-30)
+
+
+### Bug Fixes
+
+* **comfyui-plugin:** make the two finishing-pass gates agree on an undeclared Banner ([#2233](https://github.com/laurigates/claude-plugins/issues/2233)) ([769fab2](https://github.com/laurigates/claude-plugins/commit/769fab2dcd18433b01da2d6489dc44825e21b9eb)), closes [#1877](https://github.com/laurigates/claude-plugins/issues/1877)
+
 ## [1.9.7](https://github.com/laurigates/claude-plugins/compare/comfyui-plugin-v1.9.6...comfyui-plugin-v1.9.7) (2026-07-29)
 
 
