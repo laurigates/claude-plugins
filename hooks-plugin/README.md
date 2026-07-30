@@ -125,6 +125,30 @@ A PreToolUse hook that blocks write operations on protected branches (main, mast
 
 **Toggle:** `export CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1` in your shell environment (e.g. in a personal repo, dotfiles, or main-branch-dev workflow). This is a **human-operator** opt-in — inline prefixes like `CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1 git commit ...` on a Bash command are intentionally not honored, so that agents cannot self-serve the bypass. When blocked on a protected branch, an agent should follow `.claude/rules/handling-blocked-hooks.md` and delegate to the user instead.
 
+### external-pr-merge-guard.sh
+
+A PreToolUse hook that refuses to let an agent merge a pull request authored by anyone other than the authenticated user or a bot.
+
+A public repo attracts drive-by PRs, and merge tooling is built for bulk-merging your *own* and bots' PRs. A stranger's PR riding that bulk reflex is merged code nobody read — and a PR that adds a workflow, a hook, or a shell script executes on merge. Deciding whether an outside contribution is trustworthy is a human judgement call, so the agent path is closed and pointed at the human one.
+
+| Author of the PR | Behavior |
+|------------------|----------|
+| The authenticated user (`gh api user`) | Allowed silently |
+| A bot — `is_bot`, an `app/<name>` login, or a `<name>[bot]` login | Allowed silently |
+| Anyone else | **Denied**, naming the author, their `author_association`, and which touched paths execute |
+| Not determinable (no network, unresolvable `$var` selector, bad PR number) | **Denied** — "cannot verify" is not "safe" |
+| Any non-merge command | Allowed, immediately |
+
+Covers every merge route: `gh pr merge` (in any flag order, inside a compound command, with or without `--repo`), `gh api ... /pulls/N/merge`, and the GitHub MCP `merge_pull_request` tool. `--admin` does not bypass it.
+
+**Does not defer to auto mode**, unlike `branch-protection.sh`. Auto mode's classifier models destructive-git and protected-branch risk; it has no notion of PR *authorship trust*, so deferring would leave the gap open rather than avoid a double-gate.
+
+The human-side counterpart lives in the `ghsq`/`ghrb` zsh wrappers (dotfiles): external PRs are hidden from the merge picker by default (`ghsq -x` includes them, marked `⚠`) and merging one requires typing `merge` — never a single keypress, and never swept up by `a`=all.
+
+**Toggle:** `export CLAUDE_HOOKS_DISABLE_EXTERNAL_PR_MERGE=1` in your shell environment. Like branch protection, this is a **human-operator** opt-in — an inline `CLAUDE_HOOKS_DISABLE_EXTERNAL_PR_MERGE=1 gh pr merge ...` prefix is intentionally not honored, so agents cannot self-serve the bypass.
+
+**Tests:** `bash hooks-plugin/hooks/test-external-pr-merge-guard.sh` (hermetic — `gh` is stubbed).
+
 ### auto-checkpoint.sh
 
 A PreToolUse hook that creates a git stash checkpoint before destructive operations.
@@ -369,6 +393,7 @@ Every hook can be individually enabled or disabled via environment variables. Se
 |------|-----------------|---------|
 | secret-protection.sh | `CLAUDE_HOOKS_DISABLE_SECRET_PROTECTION=1` | Enabled |
 | branch-protection.sh | `CLAUDE_HOOKS_DISABLE_BRANCH_PROTECTION=1` | Enabled |
+| external-pr-merge-guard.sh | `CLAUDE_HOOKS_DISABLE_EXTERNAL_PR_MERGE=1` | Enabled |
 | auto-checkpoint.sh | `CLAUDE_HOOKS_DISABLE_AUTO_CHECKPOINT=1` | Enabled |
 | permission-auto-approve.sh | `CLAUDE_HOOKS_DISABLE_PERMISSION_AUTO=1` | Enabled |
 | task-completeness.sh | `CLAUDE_HOOKS_DISABLE_TASK_COMPLETENESS=1` | Enabled |
