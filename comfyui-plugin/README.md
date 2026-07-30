@@ -115,6 +115,30 @@ It emits `ICON_PNG=` / `PLACEHOLDER_GLYPH=` / `SCREENSHOTS=`, a
 publish a user-visible defect; WARN means a piece is pack-specific and
 legitimately deferrable.
 
+Once several packs exist they drift — from the template and from each other.
+`scripts/check-fleet-drift.py` sweeps the whole fleet:
+
+```
+python3 scripts/check-fleet-drift.py                    # ~/repos/laurigates/comfyui-nodes
+python3 scripts/check-fleet-drift.py --pack comfyui-X   # scope to one pack
+```
+
+It derives the comparable file set by importing the generator (never a
+hand-copied list), and reads per-file authority from `fleet-policy.toml`:
+`managed` (byte-identity; drift is an ERROR), `seed` (pack-owned; never
+compared), `shared` (the fleet leads and the template back-ports), and `block`
+(a named section of a placeholder-carrying template — the justfile's `Assets`
+recipe). Output follows the `STATUS=` / `ISSUE_COUNT=` convention; a template
+with no policy entry is itself an ERROR, so the manifest cannot fall behind the
+scaffold.
+
+It **reports and never writes**, because drift is bidirectional: all 13 packs
+are ahead of the template on `release-please.yml`, the template is ahead on
+`RELEASE-CHECKLIST.md`, and Renovate independently pushes packs ahead on pinned
+versions — so an automatic apply would silently revert work across 13 repos.
+The weekly `Plugin: Fleet drift audit` workflow runs the same script and opens
+one issue when it finds drift.
+
 The `frontend`/`backend` (modal) variants consume the shared
 [`@laurigates/comfy-modal-kit`](https://www.npmjs.com/package/@laurigates/comfy-modal-kit)
 primitives via an `import` (inlined by `bun build`) — they no longer copy

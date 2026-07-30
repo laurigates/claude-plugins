@@ -1,0 +1,106 @@
+name: "Plugin: Fleet drift audit"
+
+# Sweeps the generated ComfyUI pack repos against the comfyui-node-scaffold
+# template and files ONE issue when they have drifted apart.
+#
+# Scheduled rather than event-driven for the same reason as the stranded-work
+# audit: drift is not a local event. A pack repo diverges through its own PRs,
+# through a Renovate bump, or by the template moving under it — none of which
+# fire anything here (see .claude/rules/drift-detection-triggering.md).
+#
+# The audit REPORTS ONLY. Drift is bidirectional (all 13 packs are ahead of the
+# template on release-please.yml; the template is ahead on RELEASE-CHECKLIST.md),
+# so an automatic apply would be a silent-revert bug across 13 repos. A human
+# classifies each row's direction. Per-file authority lives in
+# comfyui-plugin/skills/comfyui-node-scaffold/fleet-policy.toml.
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Mondays 09:00 UTC, an hour after the stranded-work sweep
+  workflow_dispatch:
+    inputs:
+      pack_owner:
+        description: "GitHub owner whose comfyui-* repos form the fleet"
+        required: false
+        default: 'laurigates'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  fleet-drift:
+    # Orchestration only (git clone + a stdlib python script) — 1-CPU slim
+    # runner is 3x cheaper.
+    runs-on: ubuntu-slim
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'  # tomllib needs >= 3.11
+
+      - name: Check for existing open issue
+        id: check_issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EXISTING=$(gh issue list --label "fleet-drift" --state open --json number --jq 'length')
+          echo "exists=$([ "$EXISTING" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+      - name: Clone the pack fleet
+        if: steps.check_issue.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Untrusted-ish dispatch input reaches the shell as data, never as
+          # interpolated code (.claude/rules/github-actions-security.md).
+          PACK_OWNER: ${{ inputs.pack_owner || 'laurigates' }}
+        run: |
+          mkdir -p "${RUNNER_TEMP}/fleet"
+          # The repo list is derived from the forge, not hand-maintained here —
+          # a hardcoded list would drift exactly like the thing being audited.
+          gh repo list "$PACK_OWNER" --limit 200 --no-archived \
+            --json name --jq '.[].name | select(startswith("comfyui-"))' \
+            > "${RUNNER_TEMP}/packs.txt"
+          while IFS= read -r pack; do
+            [ -n "$pack" ] || continue
+            git clone --depth 1 --quiet \
+              "https://github.com/${PACK_OWNER}/${pack}.git" \
+              "${RUNNER_TEMP}/fleet/${pack}" || echo "skip: ${pack} (clone failed)"
+          done < "${RUNNER_TEMP}/packs.txt"
+          echo "cloned $(find "${RUNNER_TEMP}/fleet" -maxdepth 1 -mindepth 1 -type d | wc -l) packs"
+
+      - name: Run fleet-drift audit
+        if: steps.check_issue.outputs.exists == 'false'
+        id: audit
+        run: |
+          # Full KEY=VALUE report into the job log for debugging. It exits 1 on
+          # ERROR, which must not abort the step — the verdict travels in the
+          # issue body, not the exit code (.claude/rules/shell-scripting.md).
+          python3 comfyui-plugin/skills/comfyui-node-scaffold/scripts/check-fleet-drift.py \
+            --fleet-root "${RUNNER_TEMP}/fleet" || true
+          RESULT=$(python3 comfyui-plugin/skills/comfyui-node-scaffold/scripts/check-fleet-drift.py \
+            --fleet-root "${RUNNER_TEMP}/fleet" --issue-body)
+          {
+            echo "result<<FLEET_DRIFT_EOF"
+            echo "$RESULT"
+            echo "FLEET_DRIFT_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      # `--issue-body` emits nothing when the fleet is clean, so this step is
+      # skipped on a clean sweep and no issue is created.
+      - name: Create fleet-drift issue
+        if: steps.check_issue.outputs.exists == 'false' && steps.audit.outputs.result
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_BODY: ${{ steps.audit.outputs.result }}
+        run: |
+          DATE=$(date +%Y-%m-%d)
+          printf '%s' "$ISSUE_BODY" > "${RUNNER_TEMP}/issue-body.md"
+          gh issue create \
+            --title "Fleet drift: ComfyUI packs vs the scaffold template ($DATE)" \
+            --label "fleet-drift,comfyui-plugin,maintenance" \
+            --assignee laurigates \
+            --body-file "${RUNNER_TEMP}/issue-body.md"

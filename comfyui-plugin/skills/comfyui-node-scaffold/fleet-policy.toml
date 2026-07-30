@@ -1,0 +1,156 @@
+# Fleet sync policy for the ComfyUI pack fleet.
+#
+# `scaffold.py` generates 13 pack repos under ~/repos/laurigates/comfyui-nodes.
+# Files it emits drift from the template over time, in BOTH directions, and
+# until `scripts/check-fleet-drift.py` nothing detected it.
+#
+# WHY THIS FILE EXISTS AND NOT A SYNC SCRIPT
+# -----------------------------------------
+# Drift here is bidirectional, so an automatic template -> pack apply is a
+# silent-revert bug. Measured 2026-07-30 against the live fleet:
+#
+#   * `.github/workflows/release-please.yml` — all 13 packs are AHEAD of the
+#     template (`runs-on: ubuntu-slim`, a deliberate 3x-cheaper runner, and
+#     `googleapis/release-please-action@v5`; the template still says
+#     `ubuntu-latest` / `@v4`). Applying the template would revert both across
+#     13 repos.
+#   * `RELEASE-CHECKLIST.md` — the TEMPLATE is ahead (packs lack its
+#     finishing-pass section).
+#   * `tests/js/__mocks__/app.js` — pack-owned; each pack legitimately extends
+#     the mock for its own tests. Not drift at all.
+#   * Renovate makes packs ahead even on `managed` files: `comfyui-touch-manager`
+#     is on `actions/checkout@v7` and `comfyui-touch-tooltips` on biome 2.4.16
+#     while the template pins v6 / 2.4.15.
+#
+# So the checker REPORTS; a human or agent classifies the direction and lands
+# the fix on whichever side is behind.
+#
+# POLICIES
+# --------
+#   managed  Template is authoritative for byte-identity. Any divergence is an
+#            ERROR to reconcile — in EITHER direction. It does not mean
+#            "overwrite the pack".
+#   seed     Template is only a starting point. Never compared.
+#   shared   Must be consistent ACROSS PACKS, but the fleet leads and the
+#            template back-ports. Packs are compared to each other: a pack
+#            differing from the fleet majority is a WARN, and a fleet consensus
+#            that differs from the template is a back-port signal.
+#   block    A named `##########` section of a placeholder-carrying template,
+#            compared with `managed` semantics after rendering with the pack's
+#            own derived context. Whole-file comparison of these templates is
+#            too noisy to be useful.
+#
+# COMPLETENESS
+# ------------
+# Every context-invariant template `scaffold.py` emits must appear below.
+# `check-fleet-drift.py` derives that set by importing the generator and
+# rendering `build_file_map` across every variant and two distinct pack names;
+# a template with no entry here is itself an ERROR, so this manifest cannot
+# silently fall behind the scaffold.
+
+version = 1
+
+# --------------------------------------------------------------------------- #
+# managed — template authoritative; drift is an ERROR
+# --------------------------------------------------------------------------- #
+
+[files.".comfyignore"]
+policy = "managed"
+reason = "Registry publish exclusions. A per-pack difference means one pack ships a different file set to registry.comfy.org."
+
+[files."tsconfig.json"]
+policy = "managed"
+reason = "Strict TS compiler settings. Divergence means one pack typechecks under weaker rules."
+
+[files."renovate.json"]
+policy = "managed"
+reason = "Dependency-update policy. Divergence silently changes which pins Renovate manages."
+
+[files."tests/test_publish_hygiene.py"]
+policy = "managed"
+reason = "The registry publish gate. Intended to be byte-identical fleet-wide and had NO gate at all before this checker — the motivating case."
+
+[files."src/comfyui-shims.d.ts"]
+policy = "managed"
+reason = "Ambient type shims for the ComfyUI frontend. Divergence means one pack typechecks against a different frontend surface."
+
+[files.".github/workflows/registry-health.yml"]
+policy = "managed"
+reason = "Scheduled registry-listing health probe. Identical by construction across packs."
+
+[files.".github/workflows/renovate.yml"]
+policy = "managed"
+reason = "Renovate runner. Divergence changes update cadence for one pack only."
+
+[files."knip.json"]
+policy = "managed"
+reason = "Dead-code detection config. Divergence means one pack's unused-export gate is weaker."
+
+[files."vitest.config.js"]
+policy = "managed"
+reason = "Vitest harness (jsdom/node environment, app.js alias). Divergence changes what the JS tests can even see."
+
+[files."biome.json"]
+policy = "managed"
+reason = "Lint/format rules AND the biome schema pin, which must stay in lockstep with .pre-commit-config.yaml, CI and the justfile."
+
+[files.".pre-commit-config.yaml"]
+policy = "managed"
+reason = "Carries the biome pin that must match biome.json/CI. comfyui-touch-tooltips is on 2.4.16 while the template pins 2.4.15 — a Renovate bump, i.e. the PACK is ahead. Reported, never auto-applied."
+
+[files."RELEASE-CHECKLIST.md"]
+policy = "managed"
+reason = "Release procedure. Currently 13/13 drift with the TEMPLATE ahead (packs predate the finishing-pass section) — the clearest template-leads case in the fleet."
+
+[files.".github/workflows/clear-autorelease-labels.yml"]
+policy = "managed"
+reason = "release-please label hygiene. No legitimate per-pack variation."
+
+[files.".github/workflows/publish.yml"]
+policy = "managed"
+reason = "Registry publish pipeline, incl. the SHA-pinned publish-node-action. Divergence means packs publish through different code paths."
+
+# --------------------------------------------------------------------------- #
+# shared — the fleet leads, the template back-ports
+# --------------------------------------------------------------------------- #
+
+[files.".github/workflows/release-please.yml"]
+policy = "shared"
+reason = "All 13 packs are ahead of the template (ubuntu-slim + release-please-action@v5). Template->pack sync would revert a deliberate 3x-cheaper runner across the whole fleet; the template needs the back-port instead."
+
+[files.".gitignore"]
+policy = "shared"
+reason = "Packs legitimately APPEND pack-specific entries (comfyui-sampler-info ignores tmp/ and docs/blueprint/work-orders/). Byte-identity would be a permanent false ERROR; fleet-consistency is the real invariant."
+
+[files.".gitattributes"]
+policy = "shared"
+reason = "Mostly wording drift, but the lockfile line legitimately differs (bun.lock vs package-lock.json) for packs on a different package manager. Fleet-consistency, not template identity."
+
+# --------------------------------------------------------------------------- #
+# seed — template is a starting point only; never compared
+# --------------------------------------------------------------------------- #
+
+[files."tests/js/__mocks__/app.js"]
+policy = "seed"
+reason = "Pack-owned test double. Every pack extends it for its own tests (comfyui-touch-manager models app.api + extensionManager for a jsdom modal test). Not drift."
+
+[files.".github/workflows/ci.yml"]
+policy = "seed"
+reason = "Deliberate per-pack extension point: comfyui-image-browser adds a vendored-drift job, comfyui-model-gallery adds a knip job. 10 distinct shapes across 13 packs, all legitimate."
+
+[files.".release-please-manifest.json"]
+policy = "seed"
+reason = "Holds the pack's LIVE released version. The template ships 0.1.0, so a managed policy would ERROR on every released pack forever."
+
+[files."tests/test_init.py"]
+policy = "seed"
+reason = "The pack's own loader smoke test, extended as the pack grows a backend or more node mappings."
+
+# --------------------------------------------------------------------------- #
+# block — a named section of a placeholder-carrying template
+# --------------------------------------------------------------------------- #
+
+[files."justfile"]
+policy = "block"
+block = "Assets"
+reason = "The `assets` recipe rasterizes icon.svg/banner.svg to the PNGs the registry serves. A stale copy silently distorted banner artwork in one pack for months — the original bug. The rest of the justfile carries @@NAME@@/@@BIOME_VERSION@@ and pack-specific recipes, so whole-file comparison is too noisy; the Assets block itself is placeholder-free and byte-comparable."
