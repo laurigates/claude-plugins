@@ -2344,6 +2344,48 @@ the primitives that were previously copied byte-identically across packs.
 # renders the pack initial; REPLACE the <text> with a bespoke pictogram before
 # release (no sibling pack uses a letter in its final art). Accent: #ffb02e for
 # touch/interaction packs, #6ba6ff for info/gallery packs.
+# The two SVG templates below are authored in the ORANGE (touch/interaction)
+# palette. `apply_accent` rewrites those tokens for the blue info/gallery
+# sub-family, so the generator can actually EMIT the rule the comment above
+# states — before this, both templates hardcoded orange and every scaffolded
+# pack started orange regardless of `--subfamily`.
+#
+# Only accent tokens are mapped. The tile gradient (#1f1f2a -> #12121a), its
+# #2a2a36 stroke, the #000000 backdrop and the #f5f5f7 wordmark are neutral in
+# both sub-families and must survive untouched, or the family tile drifts and
+# `just assets`' 346x346+27+27 consistency gate fails.
+#
+# Regression this encodes: the vector-banner restyle (2026-07-30) hardcoded the
+# orange palette across four info/gallery packs, flipping their banners from
+# blue to orange against a blue icon and silently erasing the sub-family signal
+# their previous banners carried.
+ACCENT_TOKENS = ("#ff8a00", "#b85e00", "#ff9a1f", "#ffb86b", "#ffce8a", "#ffb02e")
+ACCENT_PALETTES: dict[str, dict[str, str]] = {
+    # glyph + tagline + chrome for touch/interaction packs (the authored form)
+    "touch": {tok: tok for tok in ACCENT_TOKENS},
+    # info/gallery packs — hue-rotated to the documented #6ba6ff family accent,
+    # each token keeping its role (glow inner/mid, sweep, web, dots, glyph).
+    "info": {
+        "#ff8a00": "#0a84ff",
+        "#b85e00": "#0a4a8f",
+        "#ff9a1f": "#4d9bff",
+        "#ffb86b": "#8fc0ff",
+        "#ffce8a": "#b3d4ff",
+        "#ffb02e": "#6ba6ff",
+    },
+}
+SUBFAMILY_DEFAULT = "touch"
+
+
+def apply_accent(svg: str, subfamily: str) -> str:
+    """Rewrite the accent tokens of an authored-orange SVG for `subfamily`."""
+    palette = ACCENT_PALETTES[subfamily]
+    for orange, replacement in palette.items():
+        if orange != replacement:
+            svg = svg.replace(orange, replacement)
+    return svg
+
+
 ICON_SVG = """\
 <svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400" role="img" aria-label="@@DISPLAY@@">
   <title>@@DISPLAY@@</title>
@@ -2571,7 +2613,10 @@ jobs:
 # Generation
 # --------------------------------------------------------------------------- #
 def build_file_map(
-    ctx: dict[str, str], variant: str, widgets: list[str]
+    ctx: dict[str, str],
+    variant: str,
+    widgets: list[str],
+    subfamily: str = SUBFAMILY_DEFAULT,
 ) -> dict[str, str]:
     backend = variant == "backend"
     gesture = variant == "gesture"
@@ -2907,8 +2952,8 @@ def build_file_map(
         "release-please-config.json": RP_CONFIG,
         ".release-please-manifest.json": RP_MANIFEST,
         "renovate.json": RENOVATE_JSON,
-        "icon.svg": ICON_SVG,
-        "banner.svg": BANNER_SVG,
+        "icon.svg": apply_accent(ICON_SVG, subfamily),
+        "banner.svg": apply_accent(BANNER_SVG, subfamily),
         ".github/workflows/ci.yml": CI_YML,
         ".github/workflows/publish.yml": PUBLISH_YML,
         ".github/workflows/release-please.yml": RELEASE_PLEASE_YML,
@@ -3269,6 +3314,16 @@ def main() -> int:
         default="",
         help="CSV of target widget names for the TS stub (modal variants only)",
     )
+    p.add_argument(
+        "--subfamily",
+        choices=sorted(ACCENT_PALETTES),
+        default=SUBFAMILY_DEFAULT,
+        help=(
+            "glyph/banner accent family: 'touch' (#ffb02e, touch+interaction "
+            "packs) or 'info' (#6ba6ff, info+gallery packs). See "
+            "comfy-registry-lifecycle: glyph colour encodes the sub-family."
+        ),
+    )
     p.add_argument("--publisher", default=PUBLISHER_DEFAULT)
     p.add_argument("--author", default=AUTHOR_DEFAULT)
     p.add_argument(
@@ -3318,7 +3373,7 @@ def main() -> int:
         )
         return 1
 
-    file_map = build_file_map(ctx, args.variant, widgets)
+    file_map = build_file_map(ctx, args.variant, widgets, args.subfamily)
     for rel, content in file_map.items():
         dest = target / rel
         dest.parent.mkdir(parents=True, exist_ok=True)

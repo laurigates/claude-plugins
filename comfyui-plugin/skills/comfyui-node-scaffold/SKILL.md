@@ -149,7 +149,7 @@ python3 ${CLAUDE_SKILL_DIR}/scaffold.py --name comfyui-touch-shim --display "Tou
 ```
 
 Flags: `--name` (repo + served URL segment), `--display` (Comfy DisplayName),
-`--desc`, `--tagline` (banner subtitle, ≤46 chars — see below), `--variant
+`--desc`, `--subfamily` (`touch`|`info`, accent palette), `--tagline` (banner subtitle, ≤46 chars — see below), `--variant
 {frontend,backend,gesture,shim}`, `--widgets` (CSV → the TS stub's
 `TARGET_WIDGETS`; on a modal variant, **omitting** it emits the standalone-modal
 skeleton instead of the widget-intercept one; ignored by `gesture` and `shim`),
@@ -375,8 +375,11 @@ The generated `publish.yml` builds `web/dist/` then publishes via
   inset tile `rect 28,28,344,344 rx76` + one accent glyph; 1344×576 family
   banner) — canonical spec in `comfy-registry-lifecycle` "Icon design system".
   The emitted glyph is a **placeholder letter**: replace it with a bespoke
-  pictogram (no sibling pack ships a letter) in the family accent (`#ffb02e`
-  touch / `#6ba6ff` info-gallery). The PNGs the registry serves are produced by
+  pictogram (no sibling pack ships a letter) in the family accent — pass
+  `--subfamily touch` (default, `#ffb02e`) or `--subfamily info` (`#6ba6ff`)
+  and BOTH the icon and the banner are emitted in that accent. Before this
+  flag both templates hardcoded orange, so an info/gallery pack silently
+  started off-spec and had to be recoloured by hand. The PNGs the registry serves are produced by
   `just assets` (rsvg-convert), not at scaffold time (stdlib-only generator);
   that recipe also **gates framing** — the tile must trim to `346×346+27+27` on
   a 400×400 canvas, which catches an icon that drifted off-spec (the trap that

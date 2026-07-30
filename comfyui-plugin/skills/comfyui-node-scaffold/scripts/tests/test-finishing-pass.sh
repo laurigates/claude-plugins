@@ -314,5 +314,33 @@ PY
         "$(grep -qx 'ICON_PNG=present' <<<"$VERIFY_OUT" && echo yes || echo no)"
 fi
 
+# 13. Sub-family accent. comfy-registry-lifecycle documents that glyph colour
+#     encodes the sub-family (#ffb02e touch/interaction, #6ba6ff info/gallery),
+#     but both SVG templates hardcoded orange, so the generator could not emit
+#     the rule it documented. The 2026-07-30 vector-banner restyle then flipped
+#     four info/gallery packs from blue to orange against a blue icon.
+python3 "$SCAFFOLD" --name comfyui-fp-info --display "FP Info" --desc "i" \
+    --variant gesture --subfamily info --dir "$WORK" >/dev/null 2>&1
+IPACK="$WORK/comfyui-fp-info"
+
+for asset in icon.svg banner.svg; do
+    check "info sub-family emits the blue accent in $asset" "yes" \
+        "$(grep -q '#6ba6ff' "$IPACK/$asset" && echo yes || echo no)"
+    check "  ...and no orange accent survives in $asset" "yes" \
+        "$(grep -qiE '#(ffb02e|ff8a00|ff9a1f|ffb86b|ffce8a|b85e00)' "$IPACK/$asset" && echo no || echo yes)"
+    # Guard integrity: the default sub-family must still be orange, or the
+    # assertions above would pass against a template recoloured blue wholesale.
+    check "touch sub-family still emits the orange accent in $asset" "yes" \
+        "$(grep -q '#ffb02e' "$PACK/$asset" && echo yes || echo no)"
+done
+
+# The tile/backdrop/wordmark are neutral in BOTH sub-families. Recolouring them
+# would drift the family tile and break just assets' 346x346+27+27 gate.
+for tok in '#1f1f2a' '#12121a' '#2a2a36' '#f5f5f7'; do
+    check "neutral $tok count is identical across sub-families" \
+        "$(grep -o "$tok" "$PACK/banner.svg" | wc -l | tr -d ' ')" \
+        "$(grep -o "$tok" "$IPACK/banner.svg" | wc -l | tr -d ' ')"
+done
+
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]
