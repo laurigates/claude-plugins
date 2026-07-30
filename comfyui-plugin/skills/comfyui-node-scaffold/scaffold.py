@@ -1584,17 +1584,24 @@ def test_registry_display_assets_present():
     Observed: comfyui-touch-manager published with `Icon = ""` and no Banner key
     for weeks; comfyui-output-swap seeded with Icon/Banner pointing at PNGs that
     were not rasterized until 31 hours later, both caught only by a human.
+
+    BOTH keys are required, not "at least one". An earlier revision asserted only
+    that the assets dict was non-empty, which let a pack declaring `Icon` and no
+    `Banner` pass here while `scaffold.py --verify` graded the same pack ERROR —
+    two gates disagreeing about whether one pack is publish-ready. The registry
+    listing renders an undeclared banner as blank, so the strict reading is the
+    correct one and this test now matches the audit.
     """
     assets = _comfy_display_assets()
-    assert assets, (
-        "[tool.comfy] declares neither Icon nor Banner, so the registry listing "
-        "renders without artwork. Point them at "
-        "https://raw.githubusercontent.com/<publisher>/<name>/main/icon.png "
-        "and .../banner.png, then run 'just assets'."
-    )
+    problems = [
+        f"[tool.comfy] {key} is unset, so the registry listing renders without "
+        f"artwork. Point it at https://raw.githubusercontent.com/<publisher>/"
+        f"<name>/main/{key.lower()}.png, then run 'just assets'."
+        for key in ("Icon", "Banner")
+        if key not in assets
+    ]
 
     tracked = set(_tracked_files())
-    problems = []
     for key, filename in sorted(assets.items()):
         if filename not in tracked:
             problems.append(
