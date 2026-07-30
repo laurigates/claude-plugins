@@ -154,3 +154,39 @@ reason = "The pack's own loader smoke test, extended as the pack grows a backend
 policy = "block"
 block = "Assets"
 reason = "The `assets` recipe rasterizes icon.svg/banner.svg to the PNGs the registry serves. A stale copy silently distorted banner artwork in one pack for months — the original bug. The rest of the justfile carries @@NAME@@/@@BIOME_VERSION@@ and pack-specific recipes, so whole-file comparison is too noisy; the Assets block itself is placeholder-free and byte-comparable."
+
+# ---------------------------------------------------------------------------
+# SUB-FAMILY ACCENT
+# ---------------------------------------------------------------------------
+# comfy-registry-lifecycle "Icon design system": glyph colour ENCODES the
+# sub-family — #ffb02e (orange) for touch/interaction packs, #6ba6ff (blue)
+# for info/gallery packs. Secondary accents (#ffd866, #6bff8e) may appear
+# sparingly in either, so only the PRIMARY glyph/tagline accent decides it.
+#
+# Artwork is pack-specific, so icon.svg/banner.svg are NOT in [files] and no
+# template comparison can speak to them. But the accent is not free: the two
+# files must agree with each other AND with the sub-family declared here.
+#
+# Why this table exists: on 2026-07-30 a vector-banner restyle built from a
+# hardcoded-orange template flipped four info/gallery packs' banners to orange
+# while their icons stayed blue. Every managed-file check stayed green — the
+# regression was in artwork nothing compared. Without a DECLARED sub-family a
+# checker cannot tell a deliberate blue pack from a drifted one, so the split
+# reads as arbitrary drift and the honest default becomes "ignore artwork".
+#
+# A pack missing from this table is an ERROR (UNCLASSIFIED_PACK): a new pack
+# must state its sub-family rather than silently opting out of the check.
+[subfamily]
+comfyui-filename-prefix = "touch"
+comfyui-gallery-loader = "info"
+comfyui-image-browser = "touch"
+comfyui-model-gallery = "info"
+comfyui-output-swap = "touch"
+comfyui-prompt-editor = "info"
+comfyui-sampler-info = "info"
+comfyui-touch-connect = "touch"
+comfyui-touch-manager = "touch"
+comfyui-touch-numeric = "touch"
+comfyui-touch-resize = "touch"
+comfyui-touch-shim = "touch"
+comfyui-touch-tooltips = "touch"
