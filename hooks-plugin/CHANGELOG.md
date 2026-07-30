@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.8.0](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.7.2...hooks-plugin-v2.8.0) (2026-07-30)
+
+
+### Features
+
+* **hooks-plugin:** refuse agent merges of external-contributor PRs ([#2240](https://github.com/laurigates/claude-plugins/issues/2240)) ([2839081](https://github.com/laurigates/claude-plugins/commit/2839081c2467595e38e7880b429708a5a6d93453)), closes [#2231](https://github.com/laurigates/claude-plugins/issues/2231)
+
 ## [2.7.2](https://github.com/laurigates/claude-plugins/compare/hooks-plugin-v2.7.1...hooks-plugin-v2.7.2) (2026-07-28)
 
 
